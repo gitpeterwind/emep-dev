@@ -23,7 +23,6 @@
                       ,me,NPROC                    &
                       ,GIMAX,GJMAX
   use Io_ml,         only : ios, open_file
-  use GridValues_ml, only : fi, an, xp, yp, ij2ij !pw emep1.2beta
 
   integer,private  :: i, j, n         ! Local variables
   integer, private, parameter :: BIG = IILARDOM*JJLARDOM
