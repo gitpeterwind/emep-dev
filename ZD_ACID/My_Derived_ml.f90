@@ -89,6 +89,13 @@ private
        character(len=10) :: unit ! Unit (writen in netCDF output)
     end type Deriv
 
+   integer, public, parameter :: NOUTPUT_ABS_HEIGHTS = 6
+
+   real, public, parameter, dimension(NOUTPUT_ABS_HEIGHTS) :: &
+          OUTPUT_ABS_HEIGHTS = &
+             (/ 0.0, 1.0, 3.0, 5.0, 10.0, 20.0 /)  ! Above ground
+            ! Note - values below d+z0m will be set to d+z0m
+
    logical, private, parameter :: T = .true., F = .false. ! shorthands only
 
    !/** Depositions are stored in separate arrays for now - to keep size of
