@@ -545,12 +545,12 @@ foreach $datafile ( qw ( Volcanoes.dat tf2_gfac1.dat tf2_gfac2.dat tf2_biomass.d
 
 foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
-        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\n";
+        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\n";
 
 if ( $INTERACTIVE ) {
   die " -- INTERACTIVE: can now run for inputs: NTERM, NASS,  EXCLU, NDX, NDY 
   with mpirun -np 1 prog.exe << XXX
-  $NTERM\n$NASS\n$exclu\n$NDX\n$NDY\nXXX"; 
+  $NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n$iyr_trendXXX"; 
 }
 
     #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 
@@ -561,7 +561,7 @@ if ( $INTERACTIVE ) {
     #   open (PROG, "|$PROGRAM") || 
     #          die "Unable to execute $PROGRAM. Exiting.\\n";
     
-    print PROG "$NTERM\n\n$NASS\n$exclu\n$NDX\n$NDY\n";
+    print PROG "$NTERM\n\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
     close(PROG);
 }
 #------------    End of Run model -------------------------------------
