@@ -16,8 +16,8 @@
 !*************************************************************************
 !
 !hf u2   use My_Runmode_ml,    only : stop_test, DEBUG
-   use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST,&  !u7.4vg 
-                 D2_VG_REF,D2_VG_1M, D2_VG_STO,D2_FX_REF,D2_FX_STO
+   use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST  !u7.4vg 
+!rv1.2 TMP     D2_VG_REF,D2_VG_1M, D2_VG_STO,D2_FX_REF,D2_FX_STO
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  Asc2D, hr_out      ! Required outputs
 
@@ -157,12 +157,12 @@
           case ( "D2D" )        ! No cfac for short-lived species
             name = "D_2D"       ! Default
 
-            if( ispec == D2_HMIX) name = "Hmix"
-            if( ispec == D2_VG_REF) name = "Vg_Ref"
-            if( ispec == D2_VG_1M ) name = "Vg_1m"
-            if( ispec == D2_VG_STO) name = "Vg_Sto"
-            if( ispec == D2_FX_REF) name = "Flux_ref"
-            if( ispec == D2_FX_STO) name = "Flux_sto"
+            !rv1.2 if( ispec == D2_HMIX) name = "Hmix"
+            !rv1.2 if( ispec == D2_VG_REF) name = "Vg_Ref"
+            !rv1.2 if( ispec == D2_VG_1M ) name = "Vg_1m"
+            !rv1.2 if( ispec == D2_VG_STO) name = "Vg_Sto"
+            !rv1.2 if( ispec == D2_FX_REF) name = "Flux_ref"
+            !rv1.2 if( ispec == D2_FX_STO) name = "Flux_sto"
 
             !if ( me == 17 .and. ispec == D2_VG_REF ) then
             !   print "(a10,2es12.3)", "HRFLUXES", d_2d(ispec,2,6,IOU_INST), hr_out(ih)%unitconv
@@ -172,6 +172,7 @@
             !end if
             !u7.5vg FIX forall ( i=1:limax, j=1:ljmax)
             !u7.5vgc forall ( i=li0:li1, j=lj0:lj1)
+
             forall ( i=1:limax, j=1:ljmax)
                ! hourly(i,j) = pzpbl(i,j)
                hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * hr_out(ih)%unitconv

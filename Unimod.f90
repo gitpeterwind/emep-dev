@@ -66,7 +66,8 @@ program myeul
   use GridValues_ml,    only : DefGrid  ! sets gl, gb, xm, gridwidth_m, etc.
   use Io_ml  ,          only : IO_MYTIM,IO_RES
   use MassBudget_ml,           only : Init_massbudget,massbudget
-  use Met_ml  ,         only : infield,metvar,in_isnowc, mm5,&
+  !ds rv1.2 use Met_ml  ,         only : infield,metvar,in_isnowc, mm5,&
+  use Met_ml  ,         only : infield,metvar,MetModel_LandUse, mm5,&
                                tiphys
   use ModelConstants_ml,only : KMAX_MID, current_date  &
                               ,METSTEP   &   !u2 - replaces metstep
@@ -142,7 +143,8 @@ program myeul
 !
 !             aircraft_nox - (optional) seasonal aircraft emissions
 !
-!             in_isnowc    - Reads monthly snow cover data
+!             MetModel_LandUse  - Reads monthly snow cover and yearly roughness data
+!                                 as used in HIRLAM/xx met model.
 !
 !             newmonth     - Reads natural so2 emissions (Should the name be
 !                             changed to ie monthly_DMS ??? )
@@ -338,13 +340,6 @@ program myeul
 
     call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
 
-!su    the landuse_input-call is moved to readpar_made, since currently
-!su    rivm is called only for made
-!
-!    if(MADE) call landuse_input
-!u7.2
-!u7lu TMP     call ReadLanduse()
-!
     call infield(1)
 
     call Add_2timing(3,tim_after,tim_before,"After infield")
@@ -358,6 +353,7 @@ program myeul
       call dayno(current_date%month,current_date%day,daynumber) !u3
 
 
+    call MetModel_LandUse(1)   !ds rv1.2  call (1) -> iclass
 
     if ( NFORESTVOC > 0  ) call Forests_init()
 
@@ -375,16 +371,15 @@ program myeul
 
     call vgrid    !  ??????
 
-
     call metvar(1)
-!hf NEW
-    call tiphys(1)  
+
+    call tiphys(1)  !hf NEW
+
     call adv_var(1)
 
     call Add_2timing(4,tim_after,tim_before,"After tabs, defs, adv_var")
 !
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
 !
 !
 !     performance of physical and chemical calculations
@@ -402,9 +397,7 @@ program myeul
 
       do numt = 2, nterm + nadd
 
-         ! Count the days since 1 January
-
-           mm = current_date%month
+       mm = current_date%month
 
       if (mm == 12 .or. mm < 3) then
         newseason = 1
@@ -436,11 +429,11 @@ program myeul
 
           call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
-          call in_isnowc
+          call MetModel_LandUse(2)   !ds rv1.2 call (2) -> snow
+
           call newmonth
 
           call Add_2timing(7,tim_after,tim_before,"newmonth")
-
 
           if ( AIRNOX .and. .not. mm5 ) call lightning()
 

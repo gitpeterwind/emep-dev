@@ -49,6 +49,12 @@ module My_UKDep_ml    ! DryDep_ml
 
   integer, public, parameter :: CDEP_SET = -99    
 
+
+ ! WE NEED A FLUX_CDEP, FLUX_ADV FOR OZONE; 
+
+  integer, public, parameter :: FLUX_CDEP  = CDEP_O3
+  integer, public, parameter :: FLUX_ADV   = IXADV_O3
+
  
   integer, public, parameter, dimension(NDRYDEP_CALC) :: &
     DRYDEP_CALC = (/ WES_HNO3, WES_O3,   WES_SO2, &

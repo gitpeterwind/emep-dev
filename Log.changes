@@ -1,0 +1,85 @@
+=========================================================================================================
+=========== Dave  , Sept.  2002, emep1.2beta2 ===========================================================
+=========================================================================================================
+=========================================================================================================
+
+
+1) Merged Peter's, Hilde's and my changes in emep1.2beta2, plus
+
+  EmisDef_ml- ANTROP_SECTORS added
+  EmisGet_ml- ANTROP_SECTORS added
+
+2) Fixed bugs listed on forum
+  Derived_ml - fixed timefrac
+
+
+3) Re-coded DryDep model to work for ACID
+
+4) ACID version update and tested
+
+5) Merged inpar, in_isnowc and (commented out SetZ0) into MetModel_LandUSe
+   in Met_ml. The idea is to keep all HIRLAM/mm5 met data in the same place
+
+6) Moved V_RAIn to ModelCOnstants. Put DEBUG_i, DEBUG_j into ModelConstants -
+   used to specifiy which grid square print-outs are wanted for.
+
+7) Setup_1d_ml.f90 - max(1,izen) added
+                - In trotrep version xn_shl was reset
+  to xn_2d. In emep1.2beta this wasn't done. The 2beta
+  version is therefore faster, but this reset allows
+  stats such as max_oh to be calculated. Therefore trotrep
+  version adopted.
+
+
+
+=========================================================================================================
+=========== Peter , summer 2002  ========================================================================
+=========================================================================================================
+=========================================================================================================
+1)Added a test in ReadField_ml, to see if we use the
+ EMEP map. If not the field is transformed into the current map.
+
+2)Included routines ij2lb, lb2ij and ij2ij in GridValues_ml.
+
+3)Moved routine inpar and array iclass from GridValues to DryDep
+
+4)Moved  "call inpar" from GridValues to Unimod.f90
+
+5)inpar: explicit loop instead of (:)
+
+6)Commented out routine and call SetZ0 (never used)
+
+7)Changed formula for precipitations (pr) when not found (MM5 case),
+  defined V_RAIN in PhysicalConstants_ml
+
+8)Changed 2 last decimals of PI in PhysicalConstants_ml
+
+9)Dates_ml: add_dates_s : Allow to add 3600 seconds (before 3599 was 
+  largest allowed). 
+
+10)Print max Courant number in Advection_ml
+
+11)(Changed by Hilde) Loop for skh in Met_ml k=2,KMAX (instead of k=1,KMAX), and z_mid(i,j,k-1)
+
+12)Tabulations : use T0 from PhysicalConstants
+
+13)Rsurface.f90 :(Changed by Dave) /D_i instead of /diffc
+
+14)grun.pl Included an if test in loop for meteo files
+
+15)included a DEBUG compiler option in Makefile
+
+16)commented out a declaration (amax,amin) 
+
+17)Commented out call to smoosp. The routine is not well parallelized.
+
+18)replaced izen = int ( zen(i,j) + 0.5 ) by  izen = max(1,int ( zen(i,j) + 0.5 )) in Setup_1d_ml
+
+19)Jej: My_derived_ml commented out O3= ... !/ (roa ...)
+
+20)Corrected a small bug in advvk in Advection_ml
+
+21)Removed an amax1(.,.) in tiphys (Met_ml)
+
+22)Include  -TARG:exc_min=OZV as compiler option. This will stop the execution if
+   wrong operations are done (such as 0/0 , NaN ).

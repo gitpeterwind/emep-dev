@@ -152,6 +152,10 @@ module Ammonium_ml
 
       Kp(:)  =  tab_Kp_amni( itemp(:) ) ! was: miscrcit(ICRS,itk)
 
+!hf Initialize rcnh4 to tab_Kp_amni,need roappm
+      roappm(:) = amk(:)*PPB
+      rcnh4(:)  =  tab_Kp_amni( itemp(:) )*roappm(:)* roappm(:)
+
 !  The lines below are a CPU-efficient way of calculating the
 !  power of 1.75  for  Mozurkewich Kp, suggested by  su.
 
@@ -167,9 +171,9 @@ module Ammonium_ml
         roappm = amk*PPB
         rcnh4  = Kp * roappm * roappm   ! old misrc(ICRCNH3,k)
 
-      elsewhere
+!hf BUG      elsewhere
 
-        rcnh4 = 0.0
+!hf BUG        rcnh4 = 0.0
       end where
 
 
@@ -210,10 +214,11 @@ module Ammonium_ml
      eqnh3 = (xn(NH3,:) - xn(HNO3,:))*0.5   & 
                 + sqrt( 0.25*(xn(NH3,:) -xn(HNO3,:))**2 + rcnh4 )+1.
                                                       !ds - why +1 here?
-
+    !hf eqnh3 er i størrelsesorden 10^20.
 
      delteq     = eqnh3 - xn(NH3,:)
      delteq     = min(delteq,xn(AMNI,:))   ! ds - used to have delt here
+
      xn(AMNI,:) = xn(AMNI,:) - delteq
      xn(NH3,:)  = xn(NH3,:)  + delteq
      xn(HNO3,:) = xn(HNO3,:) + delteq

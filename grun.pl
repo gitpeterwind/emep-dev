@@ -78,13 +78,13 @@ $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 $version     = "Unimod" ;  
-$subv        = "emep1.2beta" ;              # sub-version (to track changes)
+$subv        = "emep1.2beta" ;                 # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/Unify/$version"       # input of source-code
-$MyDataDir   = "$USER/Unify/MyData";        # for each user's femis, etc.
+$ProgDir     = "$USER/Unify/$version";         # input of source-code
+$MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/$subv";        # working directory
+$WORKDIR     = "$WORK{$USER}/$version";        # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 $LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
@@ -496,7 +496,7 @@ foreach $datafile ( qw ( Volcanoes.dat ukdep_gfac1.dat ukdep_gfac2.dat ukdep_bio
  open(RMF,">Remove.sh");
  foreach $f ( @list_of_files ) {
      print RMF "rm $f \n";
-     print "REMOVE $f \n";
+     # print "REMOVE $f \n";
  }
  close(RMF);
 

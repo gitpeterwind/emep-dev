@@ -38,19 +38,24 @@ module My_UKDep_ml    ! DryDep_ml
   !/** IMPORTANT: the variables below must match up in the sense that, for 
   ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
-  integer, public, parameter :: NDRYDEP_CALC = 6
+  integer, public, parameter :: NDRYDEP_CALC = 5
 
   integer, public, parameter :: &
-       CDEP_HNO3 = 1, CDEP_O3  = 2, CDEP_SO2 = 3  &
-      ,CDEP_NH3  = 4, CDEP_NO2 = 5, CDEP_PAN = 6
+       CDEP_HNO3 = 1, CDEP_NO2 = 2, CDEP_SO2 = 3  &
+      ,CDEP_NH3  = 4, CDEP_PAN = 5
 
   integer, public, parameter :: CDEP_SET = -99    
+
+ ! WE NEED A FAKE FLUX_CDEP, FLUX_ADV FOR ACID; SET HERE TO -99
+
+  integer, public, parameter :: FLUX_CDEP  = -99   
+  integer, public, parameter :: FLUX_ADV   = -99   
 
 !also have CDEP_H2O2=, CDEP_ALD, CDEP_HCHO, CDEP
  
   integer, public, parameter, dimension(NDRYDEP_CALC) :: &
-    DRYDEP_CALC = (/ WES_HNO3, WES_O3,   WES_SO2, &
-                     WES_NH3,  WES_NO2 , WES_PAN /)
+    DRYDEP_CALC = (/ WES_HNO3, WES_NO2,  WES_SO2, &
+                     WES_NH3,  WES_PAN /)
 
   !/** Compensation pount approach from CEH used?:
 
@@ -61,8 +66,8 @@ module My_UKDep_ml    ! DryDep_ml
 !        module or the program test_dep
 
 !  character(len=6), public, parameter, dimension(NDRYDEP_CALC) :: & 
-!      GASNAME = (/ "  HNO3", "    O3", "   SO2", &
-!                   "   NH3", "   NO2", "PAN"  /)
+!      GASNAME = (/ "  HNO3", "   NO2", "   SO2", &
+!                   "   NH3", "   PAN" /)
   
       
 

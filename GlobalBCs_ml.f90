@@ -102,16 +102,17 @@ contains
   integer i1
   real hel1,hel2
   integer,intent(out)   :: iglobact,jglobact
+!hf iglbeg and jglbeg is changed!!
     hel1 = (ISMBEG +1.)/3.!global i 150*150 emep coord of start of domain
     hel2 = (ISMBEG+GIMAX)/3.!global i 150*150 emep coord of end of domain
-    iglbeg = int(hel1)
-    iglend = int(hel2)+1
+    iglbeg = nint(hel1)
+    iglend = nint(hel2)
     iglobact = iglend-iglbeg+1
 
-    hel1 = (JSMBEG+1)/3     !global j 150*150 emep coord of start of domain
+    hel1 = (JSMBEG+1.)/3.     !global j 150*150 emep coord of start of domain
     hel2 = (JSMBEG + GJMAX)/3.!global j 150*150 emep coord of end of domain
-    jglbeg = int(hel1)
-    jglend = int(hel2)+1
+    jglbeg = nint(hel1)
+    jglend = nint(hel2)
     jglobact = jglend-jglbeg+1
 
     print *,'iglbeg,iglend,iglobact',iglbeg,iglend,iglobact
@@ -122,13 +123,12 @@ contains
  !-------
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  subroutine GetGlobalData(month,ibc,used        &
-   !u3 subroutine GetGlobalData(month,used        &
                 ,iglobact,jglobact,bc_data,io_num,errcode)
 
   use Io_ml,             only : IO_GLOBBC, ios, open_file
 !hf BC
- use ModelConstants_ml, only: KMAX_MID     !u7.4vg, daynumber
- use Dates_ml,   only : daynumber
+ use ModelConstants_ml, only: KMAX_MID
+ use Dates_ml,   only : daynumber    ! ds rv1.2
  use Par_ml,     only : me,NPROC
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -171,7 +171,6 @@ contains
 
  if ( DEBUG_Logan ) print *, "DEBUG_LOgan ibc, mm", ibc, month
 
- !u3 - NEW****
  ! ========= first call =========================================
    if ( my_first_call ) then
       ! Set up arrays to contain Logan's grid as lat/long

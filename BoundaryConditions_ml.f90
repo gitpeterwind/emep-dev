@@ -663,10 +663,10 @@ endif
 !hf BC Global 150*150 emep point of local emep 50*50
 !
    do i=1,MAXLIMAX
-       i150(i)=nint((i_glob(i) -ISMBEG+2 )/3.)
+       i150(i)=nint((i_glob(i) -ISMBEG+2.0 )/3.0)
    enddo
    do j=1,MAXLJMAX
-      j150(j)=nint((j_glob(j) -JSMBEG+2 )/3.)
+      j150(j)=nint((j_glob(j) -JSMBEG+2.0 )/3.0)
    enddo
 
 

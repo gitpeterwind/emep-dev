@@ -206,13 +206,14 @@ contains
     ! A function to add a time in seconds to a date
     ! and return the new date. usually
     ! used to add some time-step to the current date. Only designed
-    ! for s values less than one hour (s<3600).
+    ! for s values less or equal to one hour (s<=3600).
     !---------------------------------------------------------------------
         type(date), intent(in) ::  date_1
         integer, intent(in)    ::  s          ! No. seconds
         type(date)             ::  newdate
 
-        if ( .not. Init_done .or. s>=3600) then
+!pw emep1.2beta        if ( .not. Init_done .or. s>=3600) then
+        if ( .not. Init_done .or. s>3600) then
             print *, " ERROR: Invalid in add_dates_s",s
             newdate = date( -999, -999, -999, -999 , -999 )
             return 
@@ -256,3 +257,4 @@ contains
     end function add_dates_s
 
 end module DATES_ML
+

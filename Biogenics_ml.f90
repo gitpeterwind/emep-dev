@@ -15,7 +15,6 @@ module Biogenics_ml
 
   !/-- subroutines
   public ::  Forests_Init      ! was rforest
-!hf u2:
   logical, private, parameter:: DEBUG = .false.
   integer, public, parameter :: NBIO = NFORESTVOC
   integer, public, save      :: BIO_ISOP, BIO_TERP
@@ -30,7 +29,8 @@ module Biogenics_ml
   !    - from Guenther's papers
   !    - light correction v. crude just now, = 1 or 0. Fix later..
 
-  real, public, save, dimension(NFORESTVOC,40) :: canopy_ecf  ! Canopy env. factors
+  real, public, save, dimension(NFORESTVOC,40) :: &
+        canopy_ecf  ! Canopy env. factors
                                                         
   !/-- DMS factors
 
@@ -44,12 +44,12 @@ module Biogenics_ml
     subroutine Forests_Init()
 
   use Par_ml   , only : GIMAX,GJMAX &
-                ,ISMBEG,JSMBEG &
-                ,NPROC,me,MSG_READ1 &
-                ,li0,li1,lj0,lj1
+                       ,ISMBEG,JSMBEG &
+                       ,NPROC,me,MSG_READ1 &
+                       ,li0,li1,lj0,lj1
   use My_Emis_ml       , only : FORESTVOC
-!hf u2  use My_Runmode_ml    , only :  DEBUG, stop_test 
-  use GridValues_ml    , only : iclass,xm2
+  use GridValues_ml    , only : xm2
+  use Met_ml           , only : iclass   ! HIRLAM/xxx met model land classes
   use Io_ml            , only : IO_FORES, open_file, ios
 !    Read forest data for natural VOC emissions
 !-----------------------------------------------------------------------------

@@ -23,8 +23,8 @@ use My_Outputs_ml, only : &   ! for sitesout
           NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &
           SONDE_ADV, SONDE_SHL, SONDE_XTRA, &
           FREQ_SONDE
-use My_Derived_ml, only : d_2d, IOU_INST, &
-          D2_VG_REF, D2_VG_1M, D2_VG_STO, D2_FX_REF, D2_FX_STO
+use My_Derived_ml, only : d_2d, IOU_INST !, &
+    !rv1.2 TMP  D2_VG_REF, D2_VG_1M, D2_VG_STO, D2_FX_REF, D2_FX_STO
 
 use Par_ml , only : ISMBEG,JSMBEG,GIMAX,GJMAX,  &
               GI0,GI1,GJ0,GJ1,me,NPROC,MAXLIMAX,MAXLJMAX
@@ -394,16 +394,17 @@ end subroutine Init_sites
           out(nn,i)   = th(ix,iy,KMAX_MID,1)
        case ( "hmix" ) 
           out(nn,i)   = pzpbl(ix,iy)
-       case ( "Vg_ref" ) 
-          out(nn,i)   = d_2d(D2_VG_REF,ix,iy,IOU_INST)
-       case ( "Vg_1m" ) 
-          out(nn,i)   = d_2d(D2_VG_1M ,ix,iy,IOU_INST)
-       case ( "Vg_sto" ) 
-          out(nn,i)   = d_2d(D2_VG_STO ,ix,iy,IOU_INST)
-       case ( "Flux_ref" ) 
-          out(nn,i)   = d_2d(D2_FX_REF ,ix,iy,IOU_INST)
-       case ( "Flux_sto" ) 
-          out(nn,i)   = d_2d(D2_FX_STO ,ix,iy,IOU_INST)
+       !rv1.2 TMP case ( "Vg_ref" ) 
+       !rv1.2 TMP    out(nn,i)   = d_2d(D2_VG_REF,ix,iy,IOU_INST)
+       !rv1.2 TMP case ( "Vg_1m" ) 
+       !rv1.2 TMP    out(nn,i)   = d_2d(D2_VG_1M ,ix,iy,IOU_INST)
+       !rv1.2 TMP case ( "Vg_sto" ) 
+       !rv1.2 TMP    out(nn,i)   = d_2d(D2_VG_STO ,ix,iy,IOU_INST)
+       !rv1.2 TMP case ( "Flux_ref" ) 
+       !rv1.2 TMP    out(nn,i)   = d_2d(D2_FX_REF ,ix,iy,IOU_INST)
+       !rv1.2 TMP case ( "Flux_sto" ) 
+       !rv1.2 TMP    out(nn,i)   = d_2d(D2_FX_STO ,ix,iy,IOU_INST)
+
        end select 
     end do
   end do

@@ -114,8 +114,8 @@ contains
   character(len=12) :: spec_name
   integer ispec_name
 
-  real, dimension(NSPEC_ADV) ::  &
-           amax, amin        ! max/min of conc. (long lived)
+!pw  real, dimension(NSPEC_ADV) ::  &
+!pw           amax, amin        ! max/min of conc. (long lived)
 
   real, dimension(3)         :: family_int  & ! initial total mass of 
                                               ! species family

@@ -39,10 +39,10 @@ private
            ,bulk     ! true for land-classes without LAI
 
 !.. very crude for now:
- integer, public, parameter :: NDEP_FLUX = 5,  &  ! 
-     DEP_VG_REF = 1, DEP_VG_1M = 2, DEP_VG_STO = 3, &
-     DEP_FL_REF = 4, DEP_FL_STO = 5
- real, public, save, dimension(NDEP_FLUX,MAXLIMAX,MAXLJMAX,2) :: dep_flux
+!rv1.2 integer, public, parameter :: NDEP_FLUX = 5,  &  ! 
+!rv1.2     DEP_VG_REF = 1, DEP_VG_1M = 2, DEP_VG_STO = 3, &
+!rv1.2     DEP_FL_REF = 4, DEP_FL_STO = 5
+!rv1.2 real, public, save, dimension(NDEP_FLUX,MAXLIMAX,MAXLJMAX,2) :: dep_flux
 
  integer,public,save,dimension(MAXLIMAX,MAXLJMAX)        :: landuse_ncodes 
  integer,public,save,dimension(MAXLIMAX,MAXLJMAX,NLUMAX) :: landuse_codes  

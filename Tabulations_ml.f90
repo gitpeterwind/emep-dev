@@ -10,7 +10,7 @@ module Tabulations_ml
  ! are tabulated here.
  !
  !----------------------------------------------------------------------------
-  use PhysicalConstants_ml, only : RGAS_J, CP, XKAP
+  use PhysicalConstants_ml, only : RGAS_J, CP, XKAP, T0
   use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX  ! temperature range
   !u3 use GenRates_rct_ml, only : &  ! From GenOut_ml 
   !u3                NRCT, &         ! No. temperature dependant coefficients
@@ -55,7 +55,7 @@ module Tabulations_ml
  !
 
     real, dimension(CHEMTMIN:CHEMTMAX) :: temp
-    real    :: p, T0, a
+    real    :: p, a  
     integer :: i
 
     !  Exner function

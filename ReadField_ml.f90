@@ -20,8 +20,10 @@
                       ,ISMBEG,JSMBEG               &
                       ,MAXLIMAX,MAXLJMAX           &
                       ,MSG_READ7,MSG_READ5         &
-                      ,me,NPROC
+                      ,me,NPROC                    &
+                      ,GIMAX,GJMAX
   use Io_ml,         only : ios, open_file
+  use GridValues_ml, only : fi, an, xp, yp, ij2ij !pw emep1.2beta
 
   integer,private  :: i, j, n         ! Local variables
   integer, private, parameter :: BIG = IILARDOM*JJLARDOM
@@ -43,7 +45,10 @@ contains
   !/-- We need an array for the whole model domain
 
   real :: in_field(IILARDOM,JJLARDOM)! Field to be read
+  real :: out_field(GIMAX - ISMBEG +1,GJMAX - JSMBEG +1)!pw
 
+  integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
+  real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
 
     if (me==0)then
        call open_file(IO_INFILE,"r",fname,needed=.true.)
@@ -72,6 +77,47 @@ contains
            write(6,*) 'error in reading IO_INFILE', fname
            call gc_abort(me,NPROC,"error reading IO_INFILE")
        endif
+
+!pw emep1.2beta
+
+       fi_EMEP = -32.0
+       an_EMEP = 237.7316364 ! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
+       xp_EMEP =  43.0
+       yp_EMEP = 121.0
+
+       if(abs(fi_EMEP-fi)+abs(an_EMEP-an)+ &
+          abs(xp_EMEP-xp)+abs(yp_EMEP-yp) > 0.0001)then
+
+!Convert from EMEP coordinates to present coordinates if the map 
+!is not the EMEP map
+
+          write(*,*)'Converting fields read from ',fname,' to present map'
+          write(*,*)fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP
+          write(*,*)fi,an,xp,yp
+
+          imaxout = GIMAX - ISMBEG +1
+          jmaxout = GJMAX - JSMBEG +1
+          xpout = xp -ISMBEG +1
+          ypout = yp -JSMBEG +1
+          fiout = fi
+          anout = an
+          imaxin = IILARDOM
+          jmaxin = JJLARDOM
+       call ij2ij(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
+                   fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP, &
+                   fiout,anout,xpout,ypout)
+
+! Shift array
+       do j = JSMBEG,GJMAX
+          j0 = j-JSMBEG+1
+          do i = ISMBEG,GIMAX
+             i0 = i - ISMBEG+1
+             in_field(i,j) = out_field(i0,j0)
+          enddo
+       enddo
+
+       endif
+
     endif !me==0
             
     call global2local(in_field,local_field,MSG_READ7                 &
@@ -89,6 +135,11 @@ contains
   !/-- We need an array for the whole model domain
 
   integer :: in_field(IILARDOM,JJLARDOM)! Field to be read
+  real :: in_field_r(IILARDOM,JJLARDOM)
+  real :: out_field(GIMAX - ISMBEG +1,GJMAX - JSMBEG +1) !pw
+
+  integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
+  real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
 
    if (me==0)then
       call open_file(IO_INFILE,"r",fname,needed=.true.)
@@ -118,6 +169,46 @@ contains
            write(6,*) 'error in reading IO_INFILE', fname
            call gc_abort(me,NPROC,"error reading IO_INFILE")
         endif !ios
+!pw emep1.2beta
+       fi_EMEP = -32.0
+       an_EMEP = 237.7316364 ! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
+       xp_EMEP =  43.0
+       yp_EMEP = 121.0
+
+       if(abs(fi_EMEP-fi)+abs(an_EMEP-an)+ &
+          abs(xp_EMEP-xp)+abs(yp_EMEP-yp) > 0.0001)then
+
+
+!Convert from EMEP coordinates to present coordinates if the map 
+!is not the EMEP map
+
+          write(*,*)'Converting fields read from ',fname,' to present map'
+          in_field_r = real(in_field)
+          
+          imaxout = GIMAX - ISMBEG +1
+          jmaxout = GJMAX - JSMBEG +1
+          xpout = xp -ISMBEG +1
+          ypout = yp -JSMBEG +1
+          fiout = fi
+          anout = an
+          imaxin = IILARDOM
+          jmaxin = JJLARDOM
+       call ij2ij(in_field_r,imaxin,jmaxin,out_field,imaxout,jmaxout, &
+                   fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP, &
+                   fiout,anout,xpout,ypout)
+
+! Shift array 
+       do j = JSMBEG,GJMAX
+          j0 = j-JSMBEG+1
+          do i = ISMBEG,GIMAX
+             i0 = i - ISMBEG+1
+             in_field(i,j) = nint(out_field(i0,j0))
+          enddo
+       enddo
+
+       endif
+
+
     endif !me==0
 
     call global2local_int(in_field,local_field,MSG_READ5               &

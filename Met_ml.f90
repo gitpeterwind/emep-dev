@@ -5,7 +5,8 @@
                          module Met_ml
 
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! From MADE/MACHO, with snow added
+! ds rv1.2 MetModel_LandUse added here for snow and iclass
+!  - combined from hf and pw Met_ml
 ! October 2001 hf added call to ReadField
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
@@ -102,33 +103,34 @@ private
   real,public, save, &
       dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: z_mid ! height of half layers
 
-  !
-  integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: snow
+!ds rv1.2  keep HIRLAM/xx met model landuse stuff in same routine
+  integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: & 
+       snow,    &  ! monthly snow (1=true), read in MetModel_LandUse
+       iclass      ! roughness class ,         "       "       "
+
 
   logical, public, save :: foundclouds,foundustar,foundpreta,mm5 !pw u3
 
 
 !hf tiphys
 !check dimension
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: xksig !estimated exchange 
-                                        !coefficient, Kz, in intermediate sigma levels, m2/s
+  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
+                xksig ! estimated exchange coefficient, Kz, in intermediate 
+                      ! sigma levels, m2/s
 
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: pzpbl !stores H(ABL) for averaging 
-                                                           !and plotting purposes, m
+  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
+       pzpbl,   &  !stores H(ABL) for averaging and plotting purposes, m
+       Kz_min      ! Min Kz below hmix  !hf Hilde&Anton
 
-!hf Hilde&Anton
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: Kz_min ! Min Kz below hmix
-                                                            !
-
-  real, dimension(MAXLIMAX,MAXLJMAX) :: ven !ventilation coefficient, m3
+!ds  real, dimension(MAXLIMAX,MAXLJMAX) :: ven !ventilation coefficient, m3
 !hf end tiphys
 
  public :: infield
- public :: in_isnowc
+ public :: MetModel_LandUse    ! rv1.2 combines old in_isnowc and inpar
+ !ds rv1.2 public :: in_isnowc
  public :: metvar
  public :: metint
-!hf NEW
- public :: tiphys
+ public :: tiphys           !hf NEW
 
  contains
 
@@ -201,7 +203,6 @@ private
 	  ierr=0
 
 	endif ! me == 0
-!hf u2        call stop_test(.true.,me,NPROC,ios,"infield")
 
         foundclouds = .false.
         foundustar = .false.
@@ -304,7 +305,6 @@ private
                      print *,'meteo step',METSTEP
 
                      call gc_abort(me,NPROC,"infield - time")
-!hf u2                      call stop_test(.true.,me,NPROC,99,"infield - time")
                endif
 
 !pw u3	      next_inptime = date(nyear, nmonth, nday, nhour, 0 )
@@ -329,7 +329,6 @@ private
 !                     print *,'current time',current_date
 !                     print *,'next input time - 3 hours',next_inptime
 !                     call gc_abort(me,NPROC,"infield - time")
-!!hf u2                     call stop_test(.true.,me,NPROC,99,"infield - time")
 !               endif
 !
 !	  add 3 hours to get the real time for printout
@@ -427,8 +426,8 @@ private
 	  case (36)
 
 	      call getmetfield(ident(20),itmp,fh(1,1,nr))
-!ds u7.4vg fl added
-	  case (37)
+
+	  case (37)       !ds u7.4vg fl added
 
               call getmetfield(ident(20),itmp,fl(1,1,nr))
 
@@ -474,12 +473,11 @@ private
 			,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC		&
 			,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
         use GridValues_ml , only : xm,xmd, sigma_bnd,sigma_mid
-	use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP !u2
-	use PhysicalConstants_ml, only : KARMAN, XKAP, R, CP, GRAV, ROWATER
+	use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP,&
+                         V_RAIN  !rv1.2
+	use PhysicalConstants_ml, only : KARMAN, XKAP, R, CP, GRAV      &
+			,ROWATER
 	use Tabulations_ml , only : TPI,PBAS,PINC
-!o6        use My_Outputs_ml   , only : DRV2_PREC, deriv_2d
-!Hf
-!        use My_Derived_ml       , only :IOU_DAY,IOU_MON,IOU_YEAR,WDEP_PREC,wdep
 	implicit none
 
 	integer, intent(in):: numt
@@ -626,15 +624,6 @@ private
 
     !u1 - jej err    prhelp(:) = prhelp(:) * pr_factor
 
-!o6	    if(numt >= 2)then
-!o6               deriv_2d(i,j,DRV2_PREC) = deriv_2d(i,j,DRV2_PREC) + pr(i,j,KMAX_MID)
-!o6	    end if
-!hf need for acc precip output
-!	    if(numt >= 2)then
-!               wdep(WDEP_PREC,i,j,IOU_DAY)=wdep(WDEP_PREC,i,j,IOU_DAY)+pr(i,j,KMAX_MID)
-!               wdep(WDEP_PREC,i,j,IOU_MON)=wdep(WDEP_PREC,i,j,IOU_MON)+pr(i,j,KMAX_MID)
-!               wdep(WDEP_PREC,i,j,IOU_YEAR)=wdep(WDEP_PREC,i,j,IOU_YEAR)+pr(i,j,KMAX_MID)
-!            endif
 !hf I add up in WetDeposition, to have the prec used in the model
 
 	    pr(i,j,:) = prhelp(:)*divt
@@ -808,11 +797,12 @@ private
 !                xkh=sl2*0.5 + xkmin
 !                write(*,*)'New xkh',i,j,k,me,xkh,th(i,j,k-1,nr)-th(i,j,k,nr)
 !              endif
-!Super adiabat: Theta ved bakken høyere enn Theta i lag k, der lagene k-1,..har lavere pot. T 
-!Rask konveksjon
+!Super adiabat: Theta ved bakken høyere enn Theta i lag k, der 
+!l agene k-1,..har lavere pot. T 
 !pass på lag 20. ok
-!               if ( th(i,j,k,nr)<th(i,j,KMAX_MID,nr).and.th(i,j,k,nr)>th(i,j,k+1,nr))then
-!		 xkh = sl2*5.
+!    if ( th(i,j,k,nr)<th(i,j,KMAX_MID,nr).and. &
+!         th(i,j,k,nr)>th(i,j,k+1,nr))then
+!                xkh = sl2*5.
 !vil at alle lagene under også skal ha rask utveksling
 !Ri=-2 is large=>(Ri)=13
 !               endif
@@ -839,15 +829,24 @@ private
 !            if (i.eq.it.and.j.eq.jt) write(6,*)'th,u,v,dvdzm',
 !     1           th(i,j,k,nr),u(i,j,k,nr),v(i,j,k,nr),dvdzm
 
-!pw u3 derive precipitations (in mm/s) from rainwater (in kg(air)/kg(water))
-!                  pr = divt * trw * roa * dz /rowater 
+!pw u3 (corrected emep1.2beta)
+!    derive precipitations (in mm/s) from rainwater (in kg(water)/kg(air))
+!                  pr = V_RAIN * trw * roa  /rowater 
+!    trw*roa = kgwater/m3
+!    trw * roa  /rowater = vol(water)/vol
+!    in one second a "volume" will change height by RAINV. 
+!    The volume which comes through the level boundary contains   
+!     RAINV*trw*roa/rowater meters of water.
+!
+! TO BE IMPROVED!
 
             if(.not.foundpreta)then
 
-               pr(i,j,k) = 1000.*divt*max(0.0, trw(i,j,k) * roa(i,j,k,nr) * &
-                            (z_bnd(i,j,k)-z_bnd(i,j,k+1))/ROWATER  )
+              pr(i,j,k) = 1000.*V_RAIN*max(0.0, trw(i,j,k) * roa(i,j,k,nr)  &
+                            /ROWATER  )
 
             endif
+
 
 
 	    enddo ! k
@@ -1052,32 +1051,89 @@ private
 
 	end subroutine metint
 
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	subroutine in_isnowc
-        use ModelConstants_ml, only : current_date
-	use Io_ml, only :   IO_SNOW, ios, open_file  
-        use ReadField_ml, only : ReadField ! reads ascii fields
-	implicit none
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   subroutine MetModel_LandUse(callnum)
 
-	integer i,j
-	character*20 fname
+  !ds rv1.2 combines old subroutines in_isnowc and inpar
+  ! (and commented out SetZ0)
+   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+   !
+   !     This subroutine reads parameterfields from file
+   !     reading surface roughness classes from file: rough.170
+   !     reading snow                      from file: rough.170
+   !
+   !     ... fields as used in meteorological model
+   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-!ds SNOW c..hj..read DNMI snow cover data from file: snowc
+    use ModelConstants_ml, only : current_date
+    use Io_ml, only :   IO_SNOW, IO_ROUGH,  ios, open_file  
+    use ReadField_ml, only : ReadField ! reads ascii fields
+    implicit none
 
-ios = 0
-if (me == 0) then
+    integer, intent(in) :: callnum
+    integer ::  i,j, err
+    real, allocatable, dimension(:,:) :: r_class  ! Roughness (real) 
+    character*20 fname
 
-    write(fname,fmt='(''snowc'',i2.2,''.dat'')') 	&
-			current_date%month
-    write(6,*) 'filename for snow ',fname
-endif !me==0
+    ios = 0
 
-!hf start
-    call ReadField(IO_SNOW,fname,snow)
+    if ( callnum == 1  ) then 
 
+        if ( me == 0  ) then
+           write(fname,fmt='(''rough.170'')') 
+           write(6,*) 'filename for landuse ',fname
+        end if
 
-   end subroutine in_isnowc
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        allocate(r_class(MAXLIMAX,MAXLJMAX),stat=err)
+        if ( err /= 0 ) call gc_abort(me,NPROC,"alloc err:rough")
+
+        call ReadField(IO_ROUGH,fname,r_class)
+   
+       ! And convert from real to integer field
+      
+        do j=1,ljmax
+           do i=1,limax
+              iclass(i,j)=nint(r_class(i,j)) 
+           enddo
+        enddo
+        deallocate(r_class,stat=err)
+        if ( err /= 0 ) call gc_abort(me,NPROC,"dealloc err:rough")
+    else ! callnum == 2
+        if (me == 0) then
+           write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
+           write(6,*) 'filename for snow ',fname
+
+        endif !me==0
+
+        call ReadField(IO_SNOW,fname,snow)
+
+    end if ! callnum == 1 
+
+  !ds rv1.2 commented out code put here for possible future use.
+  ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+   !  subroutine SetZ0()
+   !
+   !    ! This routine is not used? (emep1.2beta)
+   !    !
+   !    !  Set the surface roughness equal to the lam50e values.
+   !    !  (ds comment - all this rougness stuff has to be reviewed/replaced 
+   !    !   with new  deposition modules, at least that from RIVM)
+   !
+   !    integer              :: i, j, icl
+   !    real, dimension(0:6) ::  class   ! Some surface roughnesses ??
+   !
+   !    class =  (/ 1.0e-4,1.0e-3,3.0e-1,3.0e-1,3.0e-1,3.0e-1,1.0e-3 /)
+   !
+   !    do j = 1,ljmax
+   !      do i = 1,limax
+   !         icl = iclass(i,j)
+   !         z0(i,j) = class(icl)
+   !      end do
+   !    end do
+   !
+   !  end subroutine SetZ0
+ end subroutine MetModel_LandUse
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !Originally tiphys.f in hmix.f
@@ -1504,7 +1560,7 @@ endif !me==0
           vdfac(MAXLIMAX,MAXLJMAX),xkhs(MAXLIMAX),xkdz(MAXLIMAX),xkzi(MAXLIMAX),hs(MAXLIMAX),&
 !hf new
           sm,pref,xtime,umax,eps,ric,ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,&
-          dvdz,xl2,uvhs,zimhs,zimz,zmhs,ux0,fac,fac2,dex12,ro, xkh100(MAXLIMAX)
+          dvdz,xl2,uvhs,zimhs,zimz,zmhs,ux0,fac,fac2,dex12,ro,xkh100(MAXLIMAX)
 !hf Hilde&ANton
       real hsurfl
 !hf new
@@ -1893,7 +1949,7 @@ endif !me==0
 
 !..spatial smoothing of new zi:
 
-      call smoosp(zixx,limax,ljmax,iip,jjp,zimin,zlimax)
+!pw not yet //!      call smoosp(zixx,limax,ljmax,iip,jjp,zimin,zlimax)
 
       do j=1,ljmax
          do i=1,limax
@@ -1966,10 +2022,12 @@ endif !me==0
                xkdz(i)=xkhs(i)*(1.-xfrco*hsl/(3.*(1.-xfrco*hsl)))/hs(i)
             endif
 !Hilde&Anton
-            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
+!pw & hf            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
+!pw & hf                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
+            hsurfl=KARMAN*GRAV*100.*fh(i,j,nr)*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
 
-            if(hsurfl.ge.-2.) then
+            if(hsurfl >= -2.) then
                xkh100(i)=ux0*KARMAN*100.*sqrt(1.-9.*hsurfl)/0.74
             else
                xkh100(i)=ux0*KARMAN*100.*(1.-xfrco*hsurfl)**exfrco/0.74
@@ -2053,19 +2111,21 @@ endif !me==0
 !c
 !c
 
-      do 80 k=1,KMAX_MID
+!pw emep1.2      do 80 k=1,KMAX_MID
+      do 80 k=2,KMAX_MID
 
          do i=1,limax
             do j=1,ljmax
 !hf Anton&Hilde
-               if ( (pzpbl(i,j)>z_mid(i,j,k+1)) .and. k>1 )then
-                xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
+!pw emep1.2               if ( (pzpbl(i,j)>z_mid(i,j,k+1)) .and. k>1 )then
+               if ( (pzpbl(i,j)>z_mid(i,j,k-1)) )then
+                  xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
                endif 
                help(i,j) = xksig(i,j,k)
             enddo
          enddo
 
-         call smoosp(help,limax,ljmax,iip,jjp,kzmin,kzmax)
+!pw not yet //!          call smoosp(help,limax,ljmax,iip,jjp,kzmin,kzmax)
 
          do i=1,limax
             do j=1,ljmax
@@ -2135,8 +2195,7 @@ endif !me==0
 !c..spatial smoothing of ven:
 !c
 !hf not needed      call smoosp(ven,limax,ljmax,iip,jjp,venmin,venmax)
-!c      
-      return
+
       end subroutine tiphys
 
 !c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -2259,39 +2318,6 @@ implicit none
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-
-
-
-
-
   end module met_ml
-
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-
-!REMOVED
-!   call open_file(IO_SNOW,"r",fname,needed=.true.)
-!    if ( ios /= 0 )		&
-!     	write(6,*) 'error in opening snow cover file, snowc'
-!   endif
-!
-!    call stop_test(.true.,me,NPROC,ios,'newmonth: error opening snow')
-!
-!    if (me == 0) then
-!	    READSNOW : do j=1,JJLARDOM
-!	      do i=1,IILARDOM
-!		read(IO_SNOW,*,iostat=ios) ijin,rsnow(i,j)
-!		if ( ios /= 0 ) exit READSNOW
-!	      enddo
-!	    enddo READSNOW
-!
-!	    close(IO_SNOW)
-!	    if ( ios /= 0 )		&
-!               write(6,*) 'error in reading snow cover file, snowc'
-!
-!     endif  ! me==0
-!
-!     call stop_test(.true.,me,NPROC,ios,'newmonth: error reading snow')
-!
-!hf end

@@ -15,23 +15,23 @@ module DryDep_ml
                           NDRYDEP_CALC, &  ! No. Vd values calculated 
                           NDRYDEP_ADV, &   ! No. advected species affected
                           CDEP_SET,    &   ! for so4
-                          CDEP_O3,     &   ! for fluxes - hardcoded :-(
+                          FLUX_CDEP,   &   ! for stom. fluxes if wanted
                           DepLoss, Add_ddep, &
                           Dep        ! Mapping (type = depmap)
 
  use Dates_ml,       only : daynumber !u7.lu
  use Chemfields_ml , only : xn_adv,cfac
- use GenSpec_adv_ml, only : NSPEC_ADV  &
-  ,IXADV_O3    ! TMP FIX UKDEP ONLY
- use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea,iclass, gb, &
+ use GenSpec_adv_ml, only : NSPEC_ADV
+ use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
                             i_glob, j_glob   !u1 for testing
  use MassBudget_ml,  only : totddep
  use Met_ml,         only : roa,fm,fh,z_bnd,th2m,th,ps,u,v,z_mid&
                             ,snow, pr, psurf, cc3dmax, t2, q    & ! u7.lu
+                            ,iclass   & ! ds rv1.2
                             ,ustar,foundustar, fl
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
-                                  !u7.lu  daynumber,  &  !u3 for seasonal  Vg
-                                  current_date, &  ! u7.lu
+                                  current_date,     &  ! u7.lu
+                                  DEBUG_i, DEBUG_j, &
                                   ATWAIR, atwS, atwN, PPBINV
  use Par_ml,               only : me,NPROC,li0,li1,lj0,lj1
  use PhysicalConstants_ml, only : XKAP, PI, KARMAN, GRAV, RGAS_KG, CP
@@ -39,9 +39,10 @@ module DryDep_ml
                                  ,SolBio      &!u7.lu extras
                                  ,coszen
 !u7.4vg -
- use My_Derived_ml,    only : d_2d, IOU_INST , &  ! Store results here
-                             D2_VG_REF, D2_VG_1M, D2_VG_STO, &
-                             D2_FX_REF, D2_FX_STO
+!rv1.2 use My_Derived_ml,    only : d_2d, IOU_INST , &  ! Store results here
+!rv1.2                             D2_VG_REF, D2_VG_1M, D2_VG_STO, &
+!rv1.2                             D2_FX_REF, D2_FX_STO
+ use My_Derived_ml                ! -> d_2d, IOU_INST, D2_VG etc...
  
  use DepVariables_ml,  only: LU_WATER, &
              g_pot, g_temp,g_vpd,g_light,g_swp  !u7.4 for possible outputs
@@ -49,10 +50,10 @@ module DryDep_ml
  use UKdep_ml,         only : Init_ukdep, ReadLanduse, SetLandUse  & 
                               ,landuse_ncodes, landuse_codes, landuse_data  &
                               ,landuse_SGS, landuse_EGS &
-                              ,landuse_LAI,    landuse_hveg &
-                              ,dep_flux      &
-                             ,DEP_VG_REF, DEP_VG_1M, DEP_VG_STO &
-                             ,DEP_FL_REF, DEP_FL_STO
+                              ,landuse_LAI,    landuse_hveg 
+!rv1.2                        ,dep_flux      &
+!rv1.2                       ,DEP_VG_REF, DEP_VG_1M, DEP_VG_STO &
+!rv1.2                       ,DEP_FL_REF, DEP_FL_STO
 
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
@@ -67,12 +68,6 @@ module DryDep_ml
   logical, private, save :: my_first_call = .true.
   logical, private, parameter :: DEBUG_VG = .false.
   logical, private, parameter :: DEBUG_UK = .false.
- !integer, private, parameter :: debug_i=79, debug_j=56 ! Eskdalemuir
- !integer, private, parameter :: debug_i=97, debug_j=62 !  Waldhof
- !integer, private, parameter :: debug_i=73, debug_j=48 ! Mace Head
- !integer, private, parameter :: debug_i=91, debug_j=71 ! Rorvik
- !integer, private, parameter :: debug_i=82, debug_j=72 !  Voss, has some snow
- integer, private, parameter :: debug_i=101, debug_j=51 !  Schauinsland
 
 
  contains
@@ -93,6 +88,7 @@ module DryDep_ml
  logical, dimension(NDRYDEP_ADV), save :: vg_set 
 
  integer i, j, n, ilu, lu, nlu, ncalc, nadv, ind   ! help indexes
+ integer :: imm, idd, ihh     ! date
 
  real ustar_sq, & ! u star squared
       abshd,    & ! abs value of surfae flux of sens. heat W/m^2
@@ -102,8 +98,6 @@ module DryDep_ml
       convfac2, & ! rescaling to different units
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
-
-  real :: sin2, cos2, seasonfac   !u3 For seasonal variation
 
   real, save :: inv_gridarea  ! inverse of grid area, m2
   integer, save ::  old_daynumber = -99
@@ -118,7 +112,7 @@ module DryDep_ml
    real :: lai, hveg        ! For convenience  
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
    real ::  LE   ! Latent Heat flux, into surface (opp. sign to fh!)
-   logical :: debug_flag   ! set true when i,j match debug_i, debug_j
+   logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
    real :: nmole_o3    ! O3 in nmole/m3
    real :: lat_factor   ! latitide-based correction for lai, hveg
 
@@ -140,7 +134,7 @@ module DryDep_ml
 
      call Init_ukdep()
      call Init_GasCoeff()
-     call ReadLanduse(debug_i,debug_j)
+     call ReadLanduse(DEBUG_i,DEBUG_j)
 
      do n = 1, NDRYDEP_ADV  
          nadv    = Dep(n)%adv
@@ -159,8 +153,10 @@ module DryDep_ml
 
   end if
 
-!1) return
-  ustar_sq = -99.99   ! for debugging
+  ustar_sq = -99.99                           ! for debugging
+  imm      =    current_date%month            ! for debugging
+  idd      =    current_date%day              ! for debugging
+  ihh      =    current_date%hour             ! for debugging
 
   do j = lj0,lj1
     do i = li0,li1
@@ -170,7 +166,7 @@ module DryDep_ml
      ! to Rsurface_ml
 
       debug_flag = .false. 
-      if ( i_glob(i)==debug_i .and. j_glob(j)==debug_j) debug_flag = .true.
+      if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) debug_flag = .true.
 
       ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
       if ( DEBUG_UK .and. debug_flag ) then
@@ -182,8 +178,8 @@ module DryDep_ml
 
      !ds - I prefer micromet terminology here:
 
-      Hd = -fh(i,j,1)       ! Heat flux, *into* surface
-      LE = -fl(i,j,1)       ! Heat flux, *into* surface
+      Hd = -fh(i,j,1)       ! Heat flux, *away from* surface
+      LE = -fl(i,j,1)       ! Heat flux, *away from* surface
 
 
       if(foundustar)then                      !pw u3
@@ -214,18 +210,10 @@ module DryDep_ml
                ,Idfuse, Idrctt)   ! output radiation
       
     if ( DEBUG_UK .and. debug_flag ) then
-             print "(a10,i4,3i3,f6.1,f8.3,4f7.2)", "UKDEP SOL", &
-                  daynumber,&
-                  current_date%month, &
-                  current_date%day, &
-                  current_date%hour, &
-                 zen(i,j), coszen(i,j), &
-                 cc3dmax(i,j,KMAX_MID), 1.0e-5*psurf(i,j), Idfuse, Idrctt
-             print "(a10,i4,3i3,i6,2f8.3)", "UKDEP Hs ",  &
-                  daynumber,&
-                  current_date%month, &
-                  current_date%day, &
-                  current_date%hour,  current_date%seconds, Hd, LE
+             print "(a10,i4,3i3,i6,f6.1,f8.3,4f7.2)", "UKDEP SOL", &
+                  daynumber, imm, idd, ihh, current_date%seconds, &
+                   zen(i,j), coszen(i,j), cc3dmax(i,j,KMAX_MID), &
+                     1.0e-5*psurf(i,j), Idfuse, Idrctt
     end if
 
     !   we must use L (the Monin-Obukhov length) to calculate deposition,
@@ -247,10 +235,7 @@ module DryDep_ml
 
     if ( DEBUG_UK .and. debug_flag ) then
              print "(a10,i4,3i3,2f8.3,es12.4,f8.4)", "UKDEP NWP", &
-                  daynumber,&
-                  current_date%month, &
-                  current_date%day, &
-                  current_date%hour, &
+                  daynumber, imm, idd, ihh,  &
                   Hd, LE, invL_nwp, ustar_nwp
     end if
                  
@@ -274,9 +259,8 @@ module DryDep_ml
         Ts_C    = t2(i,j)-273.15
         lai     = landuse_LAI(i,j,ilu)
         hveg    = landuse_hveg(i,j,ilu)
-        if ( lu == 15 .and. hveg > 0.0 ) then
-            print *, "HIGHW!!! is", i,j,ilu
-            print *, "HIGHW!!! h,lai,cov",  hveg, lai,cover
+        if ( DEBUG_UK .and. lu == LU_WATER .and. hveg > 0.0 ) then
+            print *, "HIGHW!!! h,lai,cov", i,j,ilu, hveg, lai,cover
             call gc_abort(me,NPROC,"WATER!")
         end if
 
@@ -303,35 +287,29 @@ module DryDep_ml
         end if
 
 
-        if ( DEBUG_VG )then
-           if ( lu <= 0 ) call gc_abort(me,NPROC,"LU ERORR")
-           if (  DEBUG_UK .and. debug_flag ) then
-                write(6,"(a40,4i3,f6.1,2i4)") &
+             if (  DEBUG_UK .and. debug_flag ) then
+                write(6,"(a40,4i3,f6.1,2i4,3f7.3,2i4,2f6.2)") &
                     "DEBUG_veg: me,nlu,ilu,lu, lat, SGS, EGS ", &
                           me,nlu,ilu, lu, gb(i,j), &
-                         landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu)
-                write(6,"(a44,3f7.3,2i4,2f6.2)") &
-                  "DEBUG_veg: cover, lai, hveg,jd,snow,SWP,Ts", &
-                  cover, lai, hveg, &  ! tmp
-                  daynumber, snow(i,j), SWP(daynumber), &
-                  Ts_C
-           end if ! debug_flag
-        end if ! DEBUG
+                         landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), &
+                         cover, lai, hveg,  daynumber, snow(i,j), &
+                         SWP(daynumber), Ts_C
+             end if ! DEBUG
 
         ustar_loc = ustar_nwp       ! First guess = NWP value
         invL      = invL_nwp        ! First guess = NWP value
 
-       call Get_Submet(hveg,t2(i,j),Hd,LE, psurf(i,j), &
+        call Get_Submet(hveg,t2(i,j),Hd,LE, psurf(i,j), &
                z_mid(i,j,KMAX_MID), u_ref, q(i,j,KMAX_MID,1), & ! qw_ref
                        debug_flag,                        &    ! in
                        ustar_loc, invL,                   &    ! in-out
                        z0,d, Ra_ref,Ra_1m,rh,vpd)                    ! out
 
-    if ( DEBUG_UK .and. debug_flag ) then
-             print "(a10,2i4,2f7.2,2es12.3,3f8.3)", &
-             "UKDEP SUB", me, &
-             lu, ustar_nwp, ustar_loc, invL_nwp, invL, Ra_ref, Ra_1m,rh
-    end if
+             if ( DEBUG_UK .and. debug_flag ) then
+                  print "(a10,2i4,2f7.2,2es12.3,3f8.3)", &
+                  "UKDEP SUB", me, &
+                  lu, ustar_nwp, ustar_loc, invL_nwp, invL, Ra_ref, Ra_1m,rh
+             end if
 
 
          call Rsurface(lu,debug_flag, &
@@ -365,96 +343,35 @@ module DryDep_ml
            Vg_1m(n)  = 1.0 / ( Ra_1m  + Rb(n) + Rsur(n) )
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)
-           if ( Vg_ref(n) < 0.0 .or. Vg_ref(n) > 0.1 ) then
-               print *, "VGREF ERROR", me, n, Vg_ref(n)
-               print *, "VGREF ERROR Ras", Ra_ref, Rb(n), Rsur(n)
+
+           if ( Vg_ref(n) < 0.0 .or. Vg_ref(n) > 0.1 .or. Vg_1m(n)<Vg_ref(n) ) then
+               print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", Ra_ref, Rb(n), Rsur(n)
                print *, "VGREF ERROR stab", z0, d, ustar_loc, invL, g_sto
                call gc_abort(me, NPROC, "VGREF ERROR")
            end if
+
          end do
-           if ( Vg_ref(CDEP_O3) > 0.04 ) then
+
+         if ( FLUX_CDEP > 0 .and. Vg_ref(1) > 0.04 ) then !CRUDE FIX WITH (1)
                print *, "VGREFO3 ERROR", me, n, Vg_ref(n)
                print *, "VGREFO3 ERROR Ras", Ra_ref, Rb(n), Rsur(n)
                print *, "VGREFO3 ERROR stab", z0, d, ustar_loc, invL, g_sto
                call gc_abort(me, NPROC, "VGREFO3 ERROR")
-           end if
+         end if
 
          Sumcover = Sumcover + cover
 
 
-       ! Stomatal flux = G_sto/G_Sur * Vg * O3
-       !               = ( LAI * g_Sto) / Gsur * Vg * O3
-       !               = LAI*g_Sto*Rsur * Vg * O3
-
-    !!real, parameter ::  MOLARVOL = 1000.0/22.41  = 44.6
-          !Vg_sto_ref(lu) =  lai * g_sto*Rsur(CDEP_O3) * Vg_ref(CDEP_O3)
-
-          if ( lu == 1 ) then   ! Conif. forest
-
-             nmole_o3 = xn_adv(IXADV_O3,i,j,KMAX_MID) * 41.0 * PPBINV
-
-
-             dep_flux(DEP_VG_REF,i,j,1) = Vg_ref(CDEP_O3)
-             dep_flux(DEP_VG_1M ,i,j,1) = Vg_1m (CDEP_O3)
-             dep_flux(DEP_VG_STO,i,j,1) = lai * g_sto*Rsur(CDEP_O3) * &
-                                             Vg_ref(CDEP_O3)
-             dep_flux(DEP_FL_REF,i,j,1) = Vg_ref(CDEP_O3) * nmole_o3
-             dep_flux(DEP_FL_STO,i,j,1) = lai * g_sto*Rsur(CDEP_O3) * &
-                                             Vg_ref(CDEP_O3) * nmole_o3
-
-             d_2d(D2_VG_REF,i,j,IOU_INST) = Vg_ref(CDEP_O3)
-             d_2d(D2_VG_1M ,i,j,IOU_INST) = Vg_1m (CDEP_O3)
-             d_2d(D2_VG_STO,i,j,IOU_INST) = lai * g_sto*Rsur(CDEP_O3) * &
-                                             Vg_ref(CDEP_O3)
-             d_2d(D2_FX_REF,i,j,IOU_INST) = Vg_ref(CDEP_O3) * nmole_o3
-             d_2d(D2_FX_STO,i,j,IOU_INST) = lai * g_sto*Rsur(CDEP_O3) * &
-                                             Vg_ref(CDEP_O3) * nmole_o3
-
-             if ( DEBUG_UK .and. debug_flag ) then
-                print "(a10,4es12.3)","OZONE", &
-                    nmole_o3, &
-                    PPBINV,   &
-                   xn_adv(IXADV_O3,i,j,KMAX_MID), &
-                   xn_adv(IXADV_O3,i,j,KMAX_MID) * PPBINV
-
-                print "(a10,3i3,3f8.5, f9.2, 2f10.3,)", "FLUXES: ", &
-                  current_date%month, &
-                  current_date%day, &
-                  current_date%hour, &
-                  Vg_ref(CDEP_O3), Vg_1m(CDEP_O3), &
-                   lai * g_sto*Rsur(CDEP_O3) * Vg_ref(CDEP_O3), &
-                  nmole_o3, &
-                  dep_flux(DEP_FL_REF,i,j,1), dep_flux(DEP_FL_STO,i,j,1)
-             end if
-          end if
-
-          !flux(lu) =  lai * g_sto*Rsur(CDEP_O3) * Vg_ref(CDEP_O3)
-
-!IPM HERE
         !/-- only grab gradients over land-areas
 
          if ( lu /= LU_WATER ) then
             Sumland = Sumland + cover
             do n = 1, NDRYDEP_CALC 
-                if( Vg_1m(n) == 0.0 .or. Vg_1m(n)<Vg_ref(n) ) then
-                     print  "(a15,i3,2i4, i5,i4)", "Vg LANDcoorsd ", &
-                         me, i, j, i_glob(i), j_glob(j)
-                     print  "(a15,i3,2f12.4)", "Vg LANDVgs ", &
-                              n, Vg_1m(n), Vg_ref(n)
-                     print  "(a15,3f12.4)", "Vg LANDcovers ",  &
-                               cover, Sumland, Sumcover
-                     print  "(a15,4f12.4)", "Vg LANDRs ",  &
-                               Ra_ref, Ra_1m, Rb(n), Rsur(n)
-                     call gc_abort(me,NPROC,"Vg PROBLEMS!")
-                end if
                 Vg_ratio(n) =  Vg_ratio(n) + cover * Vg_ref(n)/Vg_1m(n)
             end do
          else
             do n = 1, NDRYDEP_CALC 
                sea_ratio(n) =  Vg_ref(n)/Vg_1m(n)
-               if( Vg_1m(n) == 0.0 .or. Vg_1m(n)<Vg_ref(n) ) then
-                    call gc_abort(me,NPROC,"Vg Sea PROBLEMS!")
-               end if
             end do
          end if
 
@@ -462,9 +379,8 @@ module DryDep_ml
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP RATVG", ilu, lu, cover, &
                 Vg_1m(2), Vg_ref(2), Sumland, Sumcover, Vg_ratio(2)
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP FINVG", ilu, lu, cover, &
-                   lai, &   ! tmp
-                   100.0*g_sto, &  ! tmp, in cm/s 
-                Ra_ref, Rb(2), Rsur(2), 100.0/(Ra_ref + Rb(2) + Rsur(2) )
+                   lai,100.0*g_sto, &  ! tmp, in cm/s 
+                   Ra_ref, Rb(2), Rsur(2), 100.0/(Ra_ref + Rb(2) + Rsur(2) )
         end if
          
        !=======================
@@ -474,16 +390,8 @@ module DryDep_ml
        !=======================
 
         if ( DEBUG_UK .and. Sumland > 1.011  ) then
-            print *, "SUMLAND ", me, nlu, i,j,i_glob(i), j_glob(j)
-            print "(a10,f12.6)", "SUMLAND ", Sumland
-            cover = 0.0
-            do ilu= 1, nlu
-              lu  = landuse_codes(i,j,ilu)
-              cover = cover + landuse_data (i,j,ilu)
-              print "(a10,i4,f8.3,f12.4)", "SUMLAND",lu,&
-                  landuse_data (i,j,ilu), cover
-             end do
-             call gc_abort(me,NPROC,"SUMLAND!")
+            print *, "SUMLAND ", me, nlu, i,j,i_glob(i), j_glob(j), Sumland
+            call gc_abort(me,NPROC,"SUMLAND!")
         end if
 
 
@@ -494,17 +402,9 @@ module DryDep_ml
         end if
 
         if ( DEBUG_UK .and. debug_flag ) then
-            print "(a14,i2,3i3,9f8.3)", "UKDEP VG_UKR", &
-                   snow(i,j),          &
-                   current_date%month, &
-                   current_date%day, &
-                   current_date%hour, &
-                 (100.0*Grid_Vg_ref(n), n = 1, min(5,NDRYDEP_CALC))
-            print "(a14,i3,3i3,9f8.3)", "UKDEP VG_UK1", &
-                   snow(i,j),          &
-                   current_date%month, &
-                   current_date%day, &
-                   current_date%hour, &
+            print "(a14,i2,3i3,10f6.2)", "UKDEP VG_UKR", &
+                   snow(i,j), imm, idd, ihh,  &
+                 (100.0*Grid_Vg_ref(n), n = 1, min(5,NDRYDEP_CALC)), &
                  (100.0*Grid_Vg_1m(n), n = 1, min(5,NDRYDEP_CALC))
         end if
 
@@ -524,7 +424,6 @@ module DryDep_ml
 
          if ( vg_set(n) ) then
 
-   !WHY??? DepLoss(:) = 0.0 !FIXXX
              DepLoss(nadv) =   & ! Use directly set Vg
                  ( 1.0 - exp ( -Dep(n)%vg * dtz ) ) * xn_adv( nadv,i,j,KMAX_MID)
              cfac(nadv, i,j) = 1.0   ! Crude, for now.
@@ -533,10 +432,10 @@ module DryDep_ml
              DepLoss(nadv) =   vg_fac( ncalc )  * xn_adv( nadv,i,j,KMAX_MID)
              cfac(nadv, i,j) = gradient_fac( ncalc )
          end if
+
          if ( DepLoss(nadv) < 0.0 ) then
            call gc_abort(me,NPROC,"NEG DEPLOSS")
-         end if
-         if ( DepLoss(nadv) > xn_adv( nadv,i,j,KMAX_MID) )  then
+         else if ( DepLoss(nadv) > xn_adv( nadv,i,j,KMAX_MID) )  then
            call gc_abort(me,NPROC,"NEG XN DEPLOSS")
          end if
 
@@ -553,8 +452,8 @@ module DryDep_ml
           if ( vg_set(n) ) then
               print "(a30,2i4,f8.3)", "DEBUG DryDep SET ",  n,nadv, Dep(n)%vg
           else
-              print "(a30,3i4)", "DEBUG DryDep n, adv, calc ",  n,nadv, ncalc
-              print "(a20,f12.5)", "DEBUG grad fac", gradient_fac( ncalc)
+              print "(a30,3i4,f12.5)", &
+                  "DEBUG DryDep n, adv, calc, fac ",  n,nadv, ncalc, gradient_fac( ncalc)
               print "(a20,2e12.4)", &
                 "DEBUG xn, DepLoss ", xn_adv(nadv, i,j,KMAX_MID), DepLoss(nadv)
               print "(a20,2f8.4)", "DEBUG gv_fac( ncalc)", &

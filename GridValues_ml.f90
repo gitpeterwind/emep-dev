@@ -15,10 +15,9 @@
 ! Nov. 2001 - tidied up a bit (ds). Use statements moved to top of module
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
-!u1  use My_Runmode_ml,        only: DEBUG
  use Io_ml,                only : IO_ROUGH
  use ModelConstants_ml,    only : KMAX_BND, KMAX_MID   ! vertical extent
- use ReadField_ml,         only : Readfield
+!pw emep1.2beta use ReadField_ml,         only : Readfield
  use Par_ml, only : &
         MAXLIMAX,MAXLJMAX   & ! max. possible i, j in this domain
       ,limax,ljmax          & ! actual max.   i, j in this domain
@@ -34,11 +33,16 @@
  !-- contains subroutine:
 
  Public :: DefGrid     ! =>  GRIDWIDTH_M, map-factor stuff, calls other routines
+ Public :: ij2lb       !pw grid to longitude latitude
+ Public :: lb2ij       !pw longitude latitude to grid
+ Public :: ij2ij       !pw grid1 to grid2
+
 !Hf BC
  Public :: GlobalPosition     ! => 
  private :: Position   ! => lat(gb), long (gl)
- private :: SetZ0      ! =>  z0 (from RIVM ???)
- private :: inpar    ! input of iclass
+!emep1.2beta private :: SetZ0      ! =>  z0 (from RIVM ???)
+!pw moved to DryDep_ml private :: inpar    ! input of iclass
+!ds moved instead to Met_ml
 
 
   !** 1) Public (saved) Variables from module:
@@ -65,19 +69,16 @@
 
   real, public, save,  dimension(MAXLIMAX,MAXLJMAX) :: &
             gl   &               !longitude of EMEP grid center
-           ,gb   &               !latitude  of EMEP grid center
-          , z0              !ds: From LAM50 - replace a.s.a.p. !
+           ,gb                  !latitude  of EMEP grid center
+!          , z0 !ds: From LAM50 - replace a.s.a.p. !removed by pw emep1.2beta 
 
-!hf BC
-    real, public, save,  dimension(IILARDOM,JJLARDOM) :: &
+    real, public, save,  dimension(IILARDOM,JJLARDOM) :: &    !hf BC
             gb_glob,   &               !longitude of EMEP grid center
             gl_glob                    !longitude of EMEP grid center
 
 
   real, public, save :: gbacmax,gbacmin,glacmax,glacmin
 
-  integer, public, save, &
-          dimension(MAXLIMAX,MAXLJMAX) ::  iclass  ! roughness class
 
   !/** Map factor stuff:
 
@@ -179,12 +180,6 @@ contains
         print *, "DefGrid:  gb - 1,1, MAXLIMAX, MAXLJMAX",  &
                               gb(1,1), gb(MAXLIMAX,MAXLJMAX)
     end if
-
-   ! read iclass
-    call inpar
-
-   ! set z0
-    call SetZ0()
 
   end subroutine DefGrid
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -305,88 +300,201 @@ contains
     end do ! j
 
 end subroutine GlobalPosition
-  ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-  subroutine inpar
-
-   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-   !
-   !     This subroutine reads parameterfields from file
-   !     reading surface roughness classes from file: rough.170
-   !
-   !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    character*20 fname
-    integer i
-
-    integer il,jl,ill,jll
-
-    real, dimension(MAXLIMAX, MAXLJMAX) :: &
-                 r_class  ! Roughness (real) in rough.170
 
 
-      if (me ==  0) then
-       write(fname,fmt='(''rough.170'')') 
-       write(6,*) 'filename for landuse ',fname
-     endif
+  subroutine lb2ij(imax,jmax,gl,gb,ir2,jr2,fi2,an2,xp2,yp2)
+    !-------------------------------------------------------------------! 
+    !      calculates coordinates ir2, jr2 (real values) from gl(lat),gb(long) 
+    !
+    !      input:  xp2,yp2:   coord. of the polar point in grid2
+    !              an2:   number of grid-distances from pole to equator in grid2.
+    !              fi2:      rotational angle for the grid2 (at i2=0).
+    !              i1max,j1max: number of points (grid1) in  x- og y- direction
+    !
+    !
+    !      output: i2(i1,j1): i coordinates in grid2 
+    !              j2(i1,j1): j coordinates in grid2 
+    !-------------------------------------------------------------------! 
 
-    !6b Just need to read real numbers from rough.170 into r_class:
+!    use Par_ml,   only : MAXLIMAX, MAXLJMAX
 
-      call ReadField(IO_ROUGH,fname,r_class)
-
-     ! And convert from real to integer field
-
-      iclass(:,:)=nint(r_class(:,:)) 
+    implicit none
 
 
-  end subroutine inpar
-  ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine SetZ0()
+    integer :: imax,jmax,i1, j1
+    real    :: fi2,an2,xp2,yp2
+    real    :: gl(imax,jmax),gb(imax,jmax)
+    real    :: ir2(imax,jmax),jr2(imax,jmax)
 
-    !  Set the surface roughness equal to the lam50e values.
-    !  (ds comment - all this rougness stuff has to be reviewed/replaced 
-    !   with new  deposition modules, at least that from RIVM)
+    real, parameter :: PI=3.14159265358979323
+    real    :: PId4,dr,dr2
 
-    integer              :: i, j, icl
-    real, dimension(0:6) ::  class   ! Some surface roughnesses ??
 
-    class =  (/ 1.0e-4,1.0e-3,3.0e-1,3.0e-1,3.0e-1,3.0e-1,1.0e-3 /)
+    PId4    = PI/4.      
+    dr2    = PI/180.0/2.      ! degrees to radians /2
+    dr    = PI/180.0      ! degrees to radians 
 
-    do j = 1,ljmax
-      do i = 1,limax
-         icl = iclass(i,j)
-         z0(i,j) = class(icl)
-      end do
-    end do
+    do j1 = 1, jmax
+       do i1 = 1, imax
 
-  end subroutine SetZ0
+          ir2(i1,j1)=xp2+an2*tan(PId4-gb(i1,j1)*dr2)*sin(dr*(gl(i1,j1)-fi2))
+          jr2(i1,j1)=yp2-an2*tan(PId4-gb(i1,j1)*dr2)*cos(dr*(gl(i1,j1)-fi2))
+!          write(*,*)i1,j1,ir2(i1,j1),jr2(i1,j1),gl(i1,j1),gb(i1,j1)
+
+       end do ! i
+    end do ! j
+
+    return
+  end subroutine lb2ij
+
+  subroutine ij2lb(imax,jmax,gl,gb,fi,an,xp,yp)
+  !-------------------------------------------------------------------! 
+  !      calculates l(lat),b(long) (geographical coord.) 
+  !      in every grid point. 
+  !
+  !      input:  xp,yp:   coord. of the polar point.
+  !              an:      number of grid-distances from pole to equator.
+  !              fi:      rotational angle for the x,y grid (at i=0).
+  !              imax,jmax:   number of points in  x- og y- direction
+  !              glmin:   gives min.value of geographical lenght
+  !                       =>  glmin <= l <= glmin+360.  
+  !                           (example glmin = -180. or 0.)
+  !                       if "geopos","georek" is used
+  !                       then glmin must be the lenght i(1,1) in the
+  !                       geographical grid (gl1 to "geopos")
+  !      output: gl(ii,jj): longitude glmin <= l <= glmin+360. 
+  !              gb(ii,jj): latitude  -90. <= b <= +90. 
+  !-------------------------------------------------------------------! 
+
+
+
+    implicit none
+
+
+    integer :: i, j, imax, jmax
+    real    :: gl(imax,jmax),gb(imax,jmax)
+    real    :: fi, an, xp, yp 
+    real    :: om, om2, glmin, glmax,dy, dy2,rp,rb, rl, dx, dr
+    real, parameter :: PI=3.14159265358979323
+
+
+!    fi = -32.0
+    glmin = -180.0
+
+    glmax = glmin + 360.0
+    dr    = PI/180.0      ! degrees to radians
+    om    = 180.0/PI      ! radians to degrees (om=Norwegian omvendt?)
+    om2   = om * 2.0
+
+    do j = 1, jmax          
+       dy  = yp - j            
+       dy2 = dy*dy
+       do i = 1, imax       
+
+         dx = i - xp    ! ds - changed
+         rp = sqrt(dx*dx+dy2)           ! => distance to pole
+         rb = 90.0 - om2 * atan(rp/AN)  ! => latitude
+         rl = 0.0
+         if (rp >  1.0e-10) rl = fi + om*atan2(dx,dy)
+         if (rl <  glmin)   rl = rl + 360.0
+         if (rl >  glmax)   rl = rl - 360.0
+         gl(i,j)=rl                     !     longitude
+         gb(i,j)=rb                     !     latitude
+!         write(*,*)i,j,gl(i,j),gb(i,j)
+       end do ! i
+    end do ! j
+
+   return
+  end subroutine ij2lb
+
+  subroutine ij2ij(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
+                   fiin,anin,xpin,ypin,fiout,anout,xpout,ypout)
+
+!   Converts data (in_field) stored in coordinates (fiin,anin,xpin,ypin) 
+!   into data (out_field) in coordinates (fiout,anout,xpout,ypout)
+!   pw august 2002
+
+    use Par_ml   ,      only :  me, NPROC
+
+	implicit none
+        integer, intent(in) :: imaxin,jmaxin,imaxout,jmaxout
+        real, intent(in) :: fiin,anin,xpin,ypin,fiout,anout,xpout,ypout
+        real, intent(in) :: in_field(imaxin,jmaxin)! Field to be transformed
+        real, intent(out) :: out_field(imaxout,jmaxout)! Field to be transformed
+
+        real, allocatable,dimension(:,:) :: x,y,gb,gl
+        integer alloc_err,i,j
+
+       allocate(x(imaxout,jmaxout), stat=alloc_err)
+       allocate(y(imaxout,jmaxout), stat=alloc_err)
+       allocate(gb(imaxout,jmaxout), stat=alloc_err)
+       allocate(gl(imaxout,jmaxout), stat=alloc_err)
+       if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "ij2ij alloc failed")
+
+! find longitude, latitude of wanted area
+    call ij2lb(imaxout,jmaxout,gl,gb,fiout,anout,xpout,ypout)
+
+! find corresponding coordinates (i,j) in in_field coordinates 
+    call lb2ij(imaxout,jmaxout,gl,gb,x,y,fiin,anin,xpin,ypin)
+
+
+    ! check if the corners of the domain are inside the area covered by the 
+    ! in_grid: (In principle we should test for all i,j , but test the corners
+    ! should be good enough in practice) 
+
+    if(int(x(1,1)) < 1 .or. int(x(1,1))+1 > imaxin .or. &
+         int(x(imaxout,1)) < 1 .or. int(x(imaxout,1))+1 > imaxin .or. &
+         int(x(1,jmaxout)) < 1 .or. int(x(1,jmaxout))+1 > imaxin .or. &
+         int(x(imaxout,jmaxout)) < 1 .or. &
+          int(x(imaxout,jmaxout))+1 > imaxin .or. &
+         int(y(1,1)) < 1 .or. int(y(1,1))+1 > jmaxin .or. &
+         int(y(imaxout,1)) < 1 .or. int(y(imaxout,1))+1 > jmaxin .or. &
+         int(y(1,jmaxout)) < 1 .or. int(y(1,jmaxout))+1 > jmaxin .or. &
+         int(y(imaxout,jmaxout)) < 1 .or. &
+         int(y(imaxout,jmaxout))+1 > jmaxin ) then
+       write(*,*)'Did not find all the necessary data in in_field'
+       write(*,*)'values needed: '
+       write(*,*)x(1,1),y(1,1)
+       write(*,*)x(imaxout,1),y(imaxout,1)
+       write(*,*)x(1,jmaxout),y(1,jmaxout)
+       write(*,*)x(imaxout,jmaxout),y(imaxout,jmaxout)
+       write(*,*)'max values found: ',imaxin ,jmaxin
+       call gc_abort(me,NPROC, "ij2ij: area to small")
+    endif
+
+
+! At present the fileds are not interpolated.
+!
+!    if(interpolate)then
+!    call bilin_interpolate(x,y,ixp,iyp,wt_00,wt_01,wt_10,wt_11)
+!    do j = 1, ljmax
+!       do i = 1,limax
+!          out_field(i,j) =  &
+!               wt_00(i,j) * in_field(ixp(i,j), iyp(i,j)) +  & 
+!               wt_01(i,j) * in_field(ixp(i,j), iyp(i,j)+1) +  & 
+!               wt_10(i,j) * in_field(ixp(i,j)+1,iyp(i,j)) +  & 
+!               wt_11(i,j) * in_field(ixp(i,j)+1,iyp(i,j)+1)
+!       enddo
+!    enddo
+!    else
+
+    do j = 1, jmaxout
+       do i = 1,imaxout
+          out_field(i,j) =in_field(nint(x(i,j)),nint(y(i,j)))
+       enddo
+    enddo
+
+!    endif
+
+       deallocate(x,stat=alloc_err)
+       deallocate(y,stat=alloc_err)
+       deallocate(gb,stat=alloc_err)
+       deallocate(gl,stat=alloc_err)
+       if ( alloc_err /= 0 ) call gc_abort(me,NPROC,"ij2ij de-alloc_err")
+    
+    end subroutine ij2ij
+
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 end module GridValues_ml
-
 !==============================================================================
-!REMOVED
-!REM    use par_ml , only : IILARDOM,JJLARDOM        &
-!REM            ,MSG_INIT0            &
-!
-!hf start      open(IO_ROUGH,file='rough.170',err=62)
-!
-!      do i=1,IILARDOM*JJLARDOM
-!        read(IO_ROUGH,*,err=62)ill,jll,r_cl
-!          r_class(ill,jll)=nint(r_cl)
-!      enddo
-!      close(IO_ROUGH)
-!    endif
-!
-!    call global2local_int(r_class,iclass,MSG_INIT0        &
-!        ,IILARDOM,JJLARDOM,1,ISMBEG,JSMBEG)
-!    goto 1000
-!62    continue
-!    write(6,*) 'error in opening land use file, landuse'
-!
-!hf end
-!REM 1000    return
-
-  !!6b real, dimension(MAXLIMAX,MAXLJMAX) ::  loc_class ! Real iclass
-  !!6b                                         !(Local,real roughness field)
-    !!6b real r_cl(IILARDOM,JJLARDOM)
-    !!6b integer r_class(IILARDOM,JJLARDOM)

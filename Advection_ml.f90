@@ -278,7 +278,7 @@
 	real sdotmaxk,sdotmink
 	real sdotmaxadv,sum1
 
-        real xcmax(KMAX_MID),ycmax(KMAX_MID),scmax,sdcmax
+        real xcmax(KMAX_MID),ycmax(KMAX_MID),scmax,sdcmax,c_max
         real dt_xysmax,dt_xymax(KMAX_MID),dt_smax
         real dt_xys,dt_xy(KMAX_MID),dt_s
         integer niterxys,niterxy(KMAX_MID),niters,nxy
@@ -393,14 +393,16 @@
 !        endif
         enddo
         if(me.eq.0)then
-        write(*,47)niterxys-1,nxy-KMAX_MID,niters-1
+           c_max=maxval(xcmax(1:KMAX_MID)*dt_xy(1:KMAX_MID)/GRIDWIDTH_M)
+           write(*,47)niterxys-1,nxy-KMAX_MID,niters-1,       &
+                      c_max,xcmax(KMAX_MID)*dt_xy(KMAX_MID)/GRIDWIDTH_M
         endif
 !        if(me.eq.0)then
 !        write(*,47)nxy,nxy/20.
 !        endif
 45      format(2F12.4,I6)
 46      format('k = ',I6,2F12.4,I6,2F12.4,I6)
-47      format('extra iterations (xyz,xy,z): ',3I6)
+47      format('extra iterations (xyz,xy,z), C_max, C_max_surface: ',3I6,2F10.4)
 
         call Add_2timing(20,tim_after,tim_before,	&
 			"advecdiff:initialisations")
@@ -699,15 +701,25 @@
 	  fc3 = fc1*fc2
 	  n1k = 0
 	  if(fc1.lt.0)n1k=1
-	  zzfl1 = alfnew(1,k,n1k)*fc1		&
-		 + alfnew(2,k,n1k)*fc2		&
-		 + alfnew(3,k,n1k)*fc3
-	  zzfl2 = alfnew(4,k,n1k)*fc1		&
-		 + alfnew(5,k,n1k)*fc2		&
-		 + alfnew(6,k,n1k)*fc3
-	  zzfl3 = alfnew(7,k,n1k)*fc1		&
-		 + alfnew(8,k,n1k)*fc2		&
-		 + alfnew(9,k,n1k)*fc3
+!pw bug corrected 29/8-2002 (emep1.2beta):
+!	  zzfl1 = alfnew(1,k,n1k)*fc1		&
+!		 + alfnew(2,k,n1k)*fc2		&
+!		 + alfnew(3,k,n1k)*fc3
+!	  zzfl2 = alfnew(4,k,n1k)*fc1		&
+!		 + alfnew(5,k,n1k)*fc2		&
+!		 + alfnew(6,k,n1k)*fc3
+!	  zzfl3 = alfnew(7,k,n1k)*fc1		&
+!		 + alfnew(8,k,n1k)*fc2		&
+!		 + alfnew(9,k,n1k)*fc3
+	  zzfl1 = alfnew(1,k+1,n1k)*fc1		&
+		 + alfnew(2,k+1,n1k)*fc2		&
+		 + alfnew(3,k+1,n1k)*fc3
+	  zzfl2 = alfnew(4,k+1,n1k)*fc1		&
+		 + alfnew(5,k+1,n1k)*fc2		&
+		 + alfnew(6,k+1,n1k)*fc3
+	  zzfl3 = alfnew(7,k+1,n1k)*fc1		&
+		 + alfnew(8,k+1,n1k)*fc2		&
+		 + alfnew(9,k+1,n1k)*fc3
 
 	  k1 = k-1+n1k
 

@@ -67,19 +67,20 @@ FC = f90
 #_CRAY_FFLAGS = -O 3,fusion,aggress,bl,msgs,negmsgs,unroll2
 #FFLAGS = -default64 -O3
 #FFLAGS = -64 -r8 -O 3
-FFLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3
-#FFLAGS = -64 -r8 -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON
+FFLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
+FFLAGS = -64 -r8 -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
+FFLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
 
 F90 = f90
 #F90FLAGS = -64 -r8 -O3 -fullwarn
-F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3
-#F90FLAGS = -64 -r8 -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON
+F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
+F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
 #_CRAY_F90FLAGS = -O 3,fusion,aggress,bl,unroll2,msgs,negmsgs
 
 #_CRAY_LDFLAGS = -X8 -O 3,fusion,aggress,bl,msgs,negmsgs,unroll2 
 #LDFLAGS = -default64 -O3
-LDFLAGS = -64 -r8 -O 3 -OPT:IEEE_arithm=3:roundoff=3
-#LDFLAGS = -64 -r8 -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON
+LDFLAGS = -64 -r8 -O 3 -g -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
+LDFLAGS = -64 -r8 -C -g -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
 LD = f90
 
 all: $(PROG)
@@ -179,10 +180,9 @@ GlobalBCs_ml.o: Dates_ml.o GridValues_ml.o Io_ml.o ModelConstants_ml.o \
 	Par_ml.o
 	$(F90) $(F90FLAGS) -c Dates_ml.o GridValues_ml.o Io_ml.o \
 		ModelConstants_ml.o Par_ml.o GlobalBCs_ml.f90
-GridValues_ml.o: Io_ml.o ModelConstants_ml.o Par_ml.o PhysicalConstants_ml.o \
-	ReadField_ml.o
+GridValues_ml.o: Io_ml.o ModelConstants_ml.o Par_ml.o PhysicalConstants_ml.o
 	$(F90) $(F90FLAGS) -c Io_ml.o ModelConstants_ml.o Par_ml.o \
-		PhysicalConstants_ml.o ReadField_ml.o GridValues_ml.f90
+		PhysicalConstants_ml.o GridValues_ml.f90
 MassBudget_ml.o: Chem_ml.o GridValues_ml.o Io_ml.o Met_ml.o \
 	ModelConstants_ml.o My_Chem_ml.o My_Derived_ml.o My_MassBudget_ml.o \
 	Par_ml.o
@@ -259,8 +259,8 @@ Radiation_ml.o: Dates_ml.o GridValues_ml.o ModelConstants_ml.o Par_ml.o \
 	$(F90) $(F90FLAGS) -c Dates_ml.o GridValues_ml.o \
 		ModelConstants_ml.o Par_ml.o PhysicalConstants_ml.o \
 		Radiation_ml.f90
-ReadField_ml.o: Io_ml.o Par_ml.o
-	$(F90) $(F90FLAGS) -c Io_ml.o Par_ml.o ReadField_ml.f90
+ReadField_ml.o: Io_ml.o Par_ml.o GridValues_ml.o
+	$(F90) $(F90FLAGS) -c Io_ml.o Par_ml.o GridValues_ml.o ReadField_ml.f90
 Rsurface_ml.o: Dates_ml.o DepVariables_ml.o Functions_ml.o Io_ml.o \
 	My_DryDep_ml.o PhysicalConstants_ml.o Radiation_ml.o SoilWater_ml.o \
 	UKsetup_ml.o Wesely_ml.o
