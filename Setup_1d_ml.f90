@@ -47,7 +47,8 @@
 !hf VOL
                              ,gi0,gi1,gj0,gj1,ISMBEG,JSMBEG
   use PhysicalConstants_ml,  only :  AVOG, XKAP, PI
-  use Radiation_ml,          only :  zen ! zenith angle, degrees
+  use Radiation_ml,          only :  zen,   &! zenith angle, degrees
+                                     Idirectt, Idiffuse, PARfrac, Wm2_uE  ! ds rv1_6_x for bio
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
@@ -295,6 +296,14 @@ contains
   integer la,it2m,n,k,base,top,iclcat
   real clear
 
+ !ds rv1_6_x  - light effects added for isoprene emissions
+
+  real            :: par   !ds Photosynthetically active radiation
+  real            :: cL    !ds Factor for light effects
+  real, parameter :: &
+      CL1 = 1.066  , &    !ds Alex Guenther's params
+      ALPHA = 0.0027      !ds Alex Guenther's params
+
   if ( NFORESTVOC == 0  ) return   ! e.g. for MADE
 
 
@@ -308,7 +317,12 @@ contains
   ! Isoprene has emissions in daytime only:
   rcbio(BIO_ISOP,:) = 0.0
   if (izen <= 90) then
-      rcbio(BIO_ISOP,KMAX_MID) = emnat(BIO_ISOP,i,j)*canopy_ecf(BIO_ISOP,it2m)
+
+     ! ds light effects from Guenther G93
+      par = (Idirectt(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
+      cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
+
+      rcbio(BIO_ISOP,KMAX_MID) = emnat(BIO_ISOP,i,j)*canopy_ecf(BIO_ISOP,it2m) * cL
   endif
 
   end subroutine setup_bio
