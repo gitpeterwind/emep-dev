@@ -245,10 +245,6 @@ contains
         z_3md  = z_3m  - d          !  minus displacement height
 
 
-    if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        print "(a12,6f8.3)", "UKDEP SUB1", h, ustar, z0, d, z_refd, z_3md
-    end if
-
     do iter = 1, NITER 
 
         ! ****
@@ -260,9 +256,11 @@ contains
         !..L=F(u*), since we do not know the EMEP subgrid averaged 
         !..z0-values ...
 
-    if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        print "(a12,4f8.3)", "UKDEP SUB3", z0, d, z_refd, invL
-    end if
+        if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
+            write(6,"(a12,i2,5f8.3,f12.3)") "UKDEP SUBI", iter, &
+                       h, z0, d, z_refd, z_3md, invL
+        end if
+
        ustar = u_ref * KARMAN/ &
          (log( z_refd/z0 )-  PsiM( z_refd*invL ) + PsiM( z0*invL ) )
 
@@ -292,7 +290,7 @@ contains
 
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        print "(a12,4f8.3)", "UKDEP SUB4", z0, d, z_refd, invL
+        write(6,"(a12,4f8.3)") "UKDEP SUBL", z0, d, z_refd, invL
     end if
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
@@ -333,6 +331,7 @@ contains
         Ra_ref = AerRes(z0,z_refd,ustar,invL,KARMAN)
         Ra_3m  = AerRes(z0,z_3md,ustar,invL,KARMAN)
         Ra_2m  = AerRes(z0,1.0+z_1m,ustar,invL,KARMAN)
+
     if ( Ra_ref < 0 .or. Ra_3m < 0 .or. Ra_2m < 0  ) then
       print *, "RAREF NEG ", z0, z_refd, ustar, invL, KARMAN
     end if
@@ -340,7 +339,7 @@ contains
         print "(a22,f12.3)", "ERROR!!! Ra_ref<Ra_3",  Ra_ref, Ra_3m
     end if
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        print "(a22,f12.3)", "UKDEP SUB5 Ra_ref",  Ra_ref
+        write(6,"(a22,f12.3)") "UKDEP SUB5 Ra_ref",  Ra_ref
     end if
 
 
@@ -373,11 +372,21 @@ contains
 
 
      esat = ESAT0 * exp(0.622*2.5e6*((1.0/T0) - (1.0/t2))/RGAS_KG )
+
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
         print "(a15,2f12.6,2f12.3)", "UKDEP SUB water", qw_ref, qw, LE, 100.0*e/esat
     end if
 
-     rh   = min( e/esat, 1.0 ) !!! FIX - NEEDS REVIEW IN 2002 
+   !ds - fix for bug found by Svetlana:.
+   ! Straighforward calculation sometimes gives rh<0 or rh>1.0 -
+   ! probbaly due to mismatches between the assumptions used for the stability
+   ! profile here and in HIRLAM. Here we set crude limits on e to prevent
+   ! impossible rh values at least:
+
+
+     e = max(0.001*esat,e)    ! keeps rh >= 0.1%
+     e = min(esat,e)          ! keeps rh <= 1
+     rh = e/esat
 
 !ds  ****  leaf sat. vapour pressure
 
@@ -392,7 +401,7 @@ contains
       !end if
       !esat =  0.tab_esat_Pa( t_ref )
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        print "(a22,2f12.4)", "UKDEP SUB7 e/esat, rh", e/esat, rh
+        write(6,"(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, rh
     end if
 
   end subroutine Get_Submet

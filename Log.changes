@@ -1,3 +1,9 @@
+================== Dave     13/12/2003, rv1_9_12 =============================
+
+Bug-fix. Submet_ml:
+Svetlana found negative RH. Vapour pressure e now restricted to be
+at least 0.1% of esat, and <= esat.
+
 ================== Hilde    12/12/2003, rv1_9_11 =============================
 NH4 and NO3 BCs added:
 My_BoundConditions
