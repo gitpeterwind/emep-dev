@@ -144,11 +144,12 @@ module Functions_ml
 
      real, dimension(ndays) :: daily
      integer    :: d           
-     real, save :: shift = ndays/4.0      ! Shifts sine curve to give max 
+     real, save :: shift                  ! Shifts sine curve to give max 
                                           ! when d = dmax
      real, save :: twopi                  ! Could use PhysiclConstants_ml
      twopi = 8.0 * atan(1.0)              ! but I prefer to keep Functions_ml
                                           ! standalone
+     shift = ndays/4.0
 
      do d = 1, ndays
       daily(d) = mean + amp * sin ( twopi * (d + shift - dmax)/ ndays )
