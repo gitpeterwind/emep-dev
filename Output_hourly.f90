@@ -17,14 +17,15 @@
 !
    use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST  !u7.4vg 
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
+                                 FREQ_HOURLY, &     ! No. hours between outputs
                                  Asc2D, hr_out      ! Required outputs
 
    use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
                                 ,li0,li1,lj0,lj1 &  ! u7.5vg FIX
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
-   use ModelConstants_ml,only : current_date,KMAX_MID
+   use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   use Met_ml,           only : t2,th, roa   !u7.4vg temp2m, th
+   use Met_ml,           only : t2,th, roa, surface_precip   !u7.4vg temp2m, th
    use GenSpec_shl_ml , only : NSPEC_SHL  ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
    use GridValues_ml,    only :  i_glob, j_glob   ! Gives emep coordinates
@@ -44,11 +45,14 @@
 
    ! local variables
    logical, save     :: my_first_call = .true. ! Set false after file opened
+   logical, save     :: debug_flag = .false.
+   integer, save     :: i_debug, j_debug       ! Coords matching i,j
    integer msnr                        ! Message number for gc_rsend
    real hourly(MAXLIMAX,MAXLJMAX)      ! Local hourly value  (e.g. ppb)
    real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
    real :: arrmax                      ! Maximum value from array
    real :: unit_conv                   ! Unit conversion (ppb ug etc.)
+   real :: g                           ! tmp - saves value of ghourly(i,j)
    integer, dimension(2) :: maxpos     ! Location of max value 
    integer i,j,ih,ispec,itot           ! indices
    integer ist,ien,jst,jen             ! start and end coords
@@ -61,7 +65,36 @@
 
    !tmp type(date)    :: nextop_time        ! Time for next output
 
-   ! if ( my_first_call ) then
+  !ds Debug coordinates:
+    if ( my_first_call ) then
+
+      !/ds rv1.6.2
+      !/ Ensure that domain limits specified in My_Outputs lie within
+      !  model domain. In emep coordinates we have:
+
+        do ih = 1, NHOURLY_OUT
+
+           hr_out(ih)%ix1 = max(ISMBEG,hr_out(ih)%ix1)
+           hr_out(ih)%iy1 = max(JSMBEG,hr_out(ih)%iy1)
+           hr_out(ih)%ix2 = min(GIMAX+ISMBEG-1,hr_out(ih)%ix2)
+           hr_out(ih)%iy2 = min(GJMAX+JSMBEG-1,hr_out(ih)%iy2)
+
+        end do ! ih
+        if ( DEBUG ) then
+           do j = 1, ljmax
+              do i = 1, limax
+                  if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) then
+                       debug_flag = .true.
+                       i_debug = i
+                       j_debug = j
+                       !print *, "DEBUG FOUNDIJ me ", me, " IJ ", i, j
+                  end if
+              end do
+            end do
+        end if ! DEBUG
+        my_first_call = .false.
+    end if  ! first_call
+
    !     hourly(:,:) = 0.0      ! Initialise (ljmax+1:MAXLJMAX, limax+1:LIMAX
    !                            !  would have done,  but this is simpler)
    ! else                        
@@ -71,9 +104,10 @@
 
         !u7.5vg FIX hourly(limax+1:MAXLIMAX,:) = 0.0
         !u7.5vg FIX hourly(1:limax,ljmax+1:MAXLJMAX) = 0.0
-        hourly(:,:) = 0.0
 
-   ! end if
+     hourly(:,:) = 0.0
+
+    !end if  ! first_call
 
    if(me == 0 .and. current_date%month /= prev_month ) then
 
@@ -87,11 +121,16 @@
         open(file=name,unit=IO_HOURLY,action="write")
         prev_month = current_date%month
 
-       !rv1.6.1
+       !ds rv1.6.2: Write summary of outputs to top of Hourly file
+       !  - remember - with corrected domain limits here
+
         write(IO_HOURLY,*) NHOURLY_OUT, " Outputs"
+        write(IO_HOURLY,*) FREQ_HOURLY, " Hours betwen outputs"
+
         do ih = 1, NHOURLY_OUT
-           write(IO_HOURLY,*) hr_out(ih)
+           write(IO_HOURLY,fmt="(a12,a8,a10,i4,4i4,a8,es12.5,es10.3)") hr_out(ih)
         end do
+
    end if
 
 
@@ -111,91 +150,56 @@
 
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec 
+      name  = hr_out(ih)%name   !ds rv1.6.1 
+      if ( debug_flag ) print *, "DEBUG OH ", me, ispec, name,  hr_out(ih)%type
 
        OPTIONS: select case ( hr_out(ih)%type ) 
          case ( "ADVppbv" )
-            !u1 itot = MAP_ADV2TOT( ispec )
-            !u1 advected species follow short-lived in totals array
             itot = NSPEC_SHL + ispec 
             name = species(itot)%name
             unit_conv =  hr_out(ih)%unitconv
-            do j = 1, ljmax
-               do i = 1, limax
+            forall ( i=1:limax, j=1:ljmax)
                   hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
                                  * cfac(ispec,i,j) &    ! 50m->1m conversion
                                  * unit_conv            ! Units conv.
-		if(DEBUG .and. i.eq.3.and.j.eq.3) then
-                  print *,"HOURLY",me,ih,ispec,xn_adv(ispec,i,j,KMAX_MID),&
-                     cfac(ispec,i,j), hr_out(ih)%unitconv
-		end if
-               enddo
-            enddo
+            end forall
 
          case ( "ADVugm3" )
-            !u1 itot = MAP_ADV2TOT( ispec )
-            !u1 advected species follow short-lived in totals array
             itot = NSPEC_SHL + ispec 
             name = species(itot)%name
             unit_conv =  hr_out(ih)%unitconv * species(itot)%molwt
-            do j = 1, ljmax
-               do i = 1, limax
+            forall ( i=1:limax, j=1:ljmax)
                   hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
                                  * cfac(ispec,i,j) &     ! 50m->1m conversion
                                  * unit_conv       &     ! Units conv.
                                  * roa(i,j,KMAX_MID,1)   ! density.
-		if(DEBUG .and. i.eq.3.and.j.eq.3) then
-                  print *,"HOURLYug",me,ih,ispec,itot,xn_adv(ispec,i,j,KMAX_MID),&
-                     cfac(ispec,i,j), hr_out(ih)%unitconv,species(itot)%molwt, &
-                     roa(i,j,KMAX_MID,1)
-		end if
-               enddo
-            enddo
+            end forall
 
           case ( "SHLmcm3" )        ! No cfac for short-lived species
-            !u1 itot = MAP_SHL2TOT( ispec )
             itot = ispec 
             name = species(itot)%name
-            do j = 1, ljmax
-                do i = 1, limax
+            forall ( i=1:limax, j=1:ljmax)
                      hourly(i,j) = xn_shl(ispec,i,j,KMAX_MID) &
                                     * hr_out(ih)%unitconv  ! Units conv.
-		if(DEBUG .and. i.eq.3.and.j.eq.3) then
-                  print *,"HOURLY",me,ih,ispec,xn_shl(ispec,i,j,KMAX_MID),&
-                      hr_out(ih)%unitconv
-		end if
-                enddo
-            enddo
+            end forall
 
-          case ( "T2 " )        ! No cfac for short-lived species
-            name = "T2"
+          case ( "T2_C   " )        ! No cfac for short-lived species
             forall ( i=1:limax, j=1:ljmax)
                hourly(i,j) = t2(i,j) - 273.15     ! Skip Units conv.
             end forall
 
-          case ( "th " )        ! No cfac for short-lived species
-            name = "theta"      ! Potential tempeature
+          case ( "theta  " )        ! No cfac for short-lived species
             forall ( i=1:limax, j=1:ljmax)
                hourly(i,j) = th(i,j,KMAX_MID,1)  ! Skip Units conv.
             end forall
 
+          case ( "PRECIP " )        ! No cfac for short-lived species
+            forall ( i=1:limax, j=1:ljmax)
+               hourly(i,j) = surface_precip(i,j)     ! Skip Units conv.
+            end forall
+
           case ( "D2D" )        ! No cfac for short-lived species
-            name = "D_2D"       ! Default
-
-            !rv1.2 if( ispec == D2_HMIX) name = "Hmix"
-            !rv1.2 if( ispec == D2_VG_REF) name = "Vg_Ref"
-            !rv1.2 if( ispec == D2_VG_1M ) name = "Vg_1m"
-            !rv1.2 if( ispec == D2_VG_STO) name = "Vg_Sto"
-            !rv1.2 if( ispec == D2_FX_REF) name = "Flux_ref"
-            !rv1.2 if( ispec == D2_FX_STO) name = "Flux_sto"
-
-            !if ( me == 17 .and. ispec == D2_VG_REF ) then
-            !   print "(a10,2es12.3)", "HRFLUXES", d_2d(ispec,2,6,IOU_INST), hr_out(ih)%unitconv
-            !end if
-            !if ( me == 17 .and. ispec == D2_FX_REF ) then
-            !   print "(a10,2es12.3)", "HXFLUXES", d_2d(ispec,2,6,IOU_INST), hr_out(ih)%unitconv
-            !end if
-            !u7.5vg FIX forall ( i=1:limax, j=1:ljmax)
-            !u7.5vgc forall ( i=li0:li1, j=lj0:lj1)
+            !ds name = "D_2D"       ! Default
 
             forall ( i=1:limax, j=1:ljmax)
                ! hourly(i,j) = pzpbl(i,j)
@@ -203,11 +207,23 @@
             end forall
 
           case DEFAULT 
-             errmsg = "ERROR! Hourly_out: " // hr_out(ih)%type 
+             errmsg = "ERROR-DEF! Hourly_out: " // hr_out(ih)%type 
+             !print *,"HOURLY-DROP",me,ih,ispec,surface_precip(i,j),errmsg
+             call gc_abort(me,NPROC,"hourly type not found")
 
        end select OPTIONS 
 
+	if(DEBUG .and. debug_flag ) then
+             i = i_debug
+             j = j_debug
+             print *,"DEBUG-HOURLY-TH ",me,ih,ispec,hourly(i,j),&
+                      hr_out(ih)%unitconv
+        end if
 
+
+     !ds rv1.6.2 ---- why needed?
+        hourly(limax+1:MAXLIMAX,:) = 0.0
+        hourly(1:limax,ljmax+1:MAXLJMAX) = 0.0
 
       !/ Get maximum value of hourly array
 
@@ -217,25 +233,19 @@
             write(6,*) "Species : ", name," : ",  " ispec ", ispec
             write(6,*) "max allowed is : ",  hr_out(ih)%max
             write(6,*) "unitconv was   : ", hr_out(ih)%unitconv
-            write(6,*) " me, limax, ljmax : ",   me, limax, ljmax 
+            write(6,*) " me, limax, ljmax, MAXLIMAX,MAXLJMAX : ",  me, &
+                             limax, ljmax ,MAXLIMAX,MAXLJMAX
             maxpos = maxloc(hourly)
             write(6,*) "Location is i=", maxpos(1), " j=", maxpos(2)
             write(6,*) "EMEP coords ix=", i_glob(maxpos(1)), " iy=", j_glob(maxpos(2))
+            write(6,*) "hourly is ", hourly(maxpos(1),maxpos(2))
             if ( hr_out(ih)%type == "ADV" ) then
-              write(6,*) "hourly is ", hourly(maxpos(1),maxpos(2))
               write(6,*) "xn_ADV is ", xn_adv(ispec,maxpos(1),maxpos(2),KMAX_MID)
               write(6,*) "cfac   is ",   cfac(ispec,maxpos(1),maxpos(2))
             end if
-            !call stop_all('hourly too big')
-!f u2            errmsg = "hourly too big"
+
             call gc_abort(me,NPROC,"hourly too big")
        endif
-
-      !/ Consistency check on first_call
-
-!hf u2       if ( errmsg .ne. "ok" ) then
-!hf u2             call stop_test(.false.,me,NPROC,99,errmsg)
-!hf u2       end if
 
 
       !/ Send to ghourly
@@ -246,34 +256,28 @@
 
             !....   write out for a sub-section of the grid:
 
-            !6d: write(IO_HOURLY,"('Spec ',i3,' = ',a12,' Date:',i5,7i4,es12.5)")  &
-            !6d:       ispec,  name                                                &
-            !6d:      ,current_date%year,current_date%month,current_date%day       &
-            !6d:      ,current_date%hour                                           &
-            !6d:      ,hr_out(ih)%ix1, hr_out(ih)%ix2                              &
-            !6d:      ,hr_out(ih)%iy1, hr_out(ih)%iy2, hr_out(ih)%unitconv
-  
             !/** We need to correct for small run-domains and the asked-for
             !    output domain. We can only print out the intersection of
             !    these two rectangles.
 
-            !/ In emep coordinates we have:
+            !ds!/ In emep coordinates we have:
 
-            ist = max(ISMBEG,hr_out(ih)%ix1)
-            jst = max(JSMBEG,hr_out(ih)%iy1)
-            ien = min(GIMAX+ISMBEG-1,hr_out(ih)%ix2)
-            jen = min(GJMAX+JSMBEG-1,hr_out(ih)%iy2)
+            !dsist = max(ISMBEG,hr_out(ih)%ix1)
+            !dsjst = max(JSMBEG,hr_out(ih)%iy1)
+            !dsien = min(GIMAX+ISMBEG-1,hr_out(ih)%ix2)
+            !dsjen = min(GJMAX+JSMBEG-1,hr_out(ih)%iy2)
 
-            write(IO_HOURLY,"('Spec ',i3,' = ',a12,' Date:',i5,7i4,es12.5)")  &
+            !dswrite(IO_HOURLY,"('Spec ',i3,' = ',a12,' Date:',i5,7i4,es12.5)")  &
+            write(IO_HOURLY,"('Spec ',i3,' = ',a12,' Date:',i5,3i3)")  &
                   ispec,  name                                                &
                  ,current_date%year,current_date%month,current_date%day       &
-                 ,current_date%hour                                           &
-                 ,ist, ien, jst, jen,         &
-                  unit_conv
+                 ,current_date%hour !ds                                           &
+                 !ds ,ist, ien, jst, jen,         &
+                 !ds  unit_conv
 
             if ( DEBUG ) print *, "TTTHOUR ISTS", me, ist, ien, jst, jen 
 
-            !/ Then in model coordinates we have:
+            !/ In model coordinates we have:
 
             ist = max(1,hr_out(ih)%ix1-ISMBEG+1)
             jst = max(1,hr_out(ih)%iy1-JSMBEG+1)
@@ -283,7 +287,12 @@
             do i = ist,ien
               do j = jst,jen
 
-                write(IO_HOURLY, fmt=hr_out(ih)%ofmt ) ghourly(i,j)
+                g = ghourly(i,j)
+                if ( g /= 0.0 ) then
+                    write(IO_HOURLY, fmt=hr_out(ih)%ofmt ) g
+                else ! Save disc-space used by thousands of  0.00000
+                    write(IO_HOURLY, fmt="(i1)" ) 0
+                end if
 
               end do ! j
             end do   ! i
@@ -292,8 +301,8 @@
 
       end do HLOOP
 
-     if ( my_first_call ) then
-          my_first_call = .false.
-     end if
+     !ds if ( my_first_call ) then
+     !ds      my_first_call = .false.
+     !ds end if
 
   end subroutine hourly_out
