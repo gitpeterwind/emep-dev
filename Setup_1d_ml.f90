@@ -174,8 +174,8 @@ contains
   !u2 - NEW ****
   !u3 - amk added to arguments
 
-   if (BGN_2D) &
-     call Set_2dBgnd(izen,cc3dmax(i,j,:),amk)  ! Sets remaining xn_2d_bgn
+!hf   if (BGN_2D) &
+!hf     call Set_2dBgnd(izen,cc3dmax(i,j,:),amk)  ! Sets remaining xn_2d_bgn
 
   ! 5 ) Rates 
 

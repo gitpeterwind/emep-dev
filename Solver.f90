@@ -23,7 +23,7 @@ contains
     use GenSpec_bgn_ml      ! => IXBGN_  indices and xn_2d_bgn values
     use GenRates_rct_ml,    only : set_night_rct, ONLY_NIGHT
     use Par_ml,              only : me,MAXLIMAX,MAXLJMAX,li1,lj1,li0,lj0  ! me for TEST
-    use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4,VOLFACNO3,VOLFACNH4 
+    use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4,VOLFACNO3,VOLFACNH4 ,PPB,PPBINV
     use Setup_1dfields_ml,   only : &
          rcemis,izen           & ! photolysis, emissions
          ,rcbio                & ! biogenic emis
@@ -31,7 +31,7 @@ contains
          xn_2d,&               ! rename xn_2d to use simply x inside chemistry
          !hf u2
     rh, f_Riemer  & ! to weight the hydrolysis of N2O5 with NO3,SO4 mass
-   ,rcss            !SeaS 
+   ,rcss,amk            !SeaS ,ACID bgn
 
     !u2 !hf MADE 
     !u2          xn_2d_bgn

@@ -75,6 +75,74 @@ private
    !    derived arrays smaller and to allow possible move to a Deposition
    !    module at a later stage.
 
+
+  !ds 24/3/2004:
+  !dsNSR - new system for distinguishing source-receptor (SR) stuff from model
+  !        evaluation.  The SR runs should use as few as possible outputs
+  !        to keep CPU and disc-requirements down. We define first then the
+  !        minimum list of outputs for use in SR, then define an extra list
+  !        of parameters needed in model evaluation, or even for the base-case
+  !        of SR runs.
+
+
+
+  !============ parameters for source-receptor modelling: ===================!
+
+  !ds 24/3/2004:
+  ! This logical variable is not used here, but in Derived_ml, we set all IOU_DAY
+  ! false if SOURCE_RECPTOR = .true.. We don't (generally) want daily outputs
+  ! for SR runs.
+
+    logical, public, parameter :: SOURCE_RECEPTOR = .false.
+
+ ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
+
+    integer, public, parameter :: NSR_2D = 17
+
+    character(len=12), public, parameter, dimension(NSR_2D) :: &
+  D2_SR = (/ &
+!
+!    Particles: components
+       "D2_SO4      ","D2_aNO3     ","D2_pNO3     ","D2_aNH4     " &
+      ,"D2_PPM25    ","D2_PPMco    ","D2_PM25_H2O " &
+!
+!    Particles: sums
+      ,"D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
+      ,"D2_SS       ","D2_tNO3     " &
+!
+
+!    NOy-type sums 
+      ,"D2_NO2      ","D2_OXN      ","D2_NOX      ","D2_NOZ      " &
+!
+!    Ecosystem - fluxes:
+!      ,"D2_FSTDF00  ","D2_FSTDF16  ","D2_FSTWH00  ","D2_FSTWH30  " &
+!      ,"D2_FSTWH60  ","D2_O3DF     ","D2_O3WH     " &
+  /)
+
+  !============ Extra parameters for model evaluation: ===================!
+
+    integer, private, parameter :: NEXTRA_2D =  7
+    character(len=12), public, parameter, dimension(NEXTRA_2D) :: &
+  D2_EXTRA = (/ &
+       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
+      ,"D2_REDN     ","D2_SSfi     ","D2_SSco     " &
+  /)
+
+
+   !============ Choose here (Comment out EXTRA stuff for SR runs ============!
+   ! Number of other 2D derived fields used:
+
+   integer, public, parameter :: NDERIV_2D = &
+           !NSR_2D                   ! SOURCE_RECEPTOR = .true.
+           NSR_2D + NEXTRA_2D       ! SOURCE_RECEPTOR = .false.
+
+   character(len=12), public, parameter, dimension(NDERIV_2D) :: &
+      D2_USED = (/  D2_SR &
+                   ,D2_EXTRA /)   ! SOURCE_RECEPTOR = .false.
+                   !,D2_EXTRA /)  ! SOURCE_RECEPTOR = .true.
+
+
+
    !=== NEW MY_DERIVED SYSTEM ======================================
    !ds 16/12/2003
 
@@ -83,7 +151,7 @@ private
   integer, public, parameter :: &
         NWDEP     =  4   &  !
        ,NDDEP     =  9   &  !
-       ,NDERIV_2D = 22   &  ! Number of other 2D derived fields used    !water!SeaS(18)
+!hf       ,NDERIV_2D = 22   &  ! Number of other 2D derived fields used    !water!SeaS(18)
        ,NDERIV_3D =  0      ! Number of 3D derived fields
 
   ! then use character arrays to specify which are used.
@@ -99,22 +167,22 @@ private
        ,"DDEP_RDNSW","DDEP_RDNCF","DDEP_RDNDF"  &
      /)    !  "DDEP_PM   " not needed?
 
-    character(len=12), public, parameter, dimension(NDERIV_2D) :: &
-      D2_USED = (/  &
+!hf    character(len=12), public, parameter, dimension(NDERIV_2D) :: &
+!hf      D2_USED = (/  &
 !
 !   Source-receptor basics:  (Are all really needed?)
-       "D2_OXN      ","D2_REDN     " &
-      ,"D2_aNO3     ","D2_pNO3     ","D2_aNH4     ","D2_tNO3     ","D2_SIA      "&
-      ,"D2_PPM25    ","D2_PPMco    ","D2_PM25     ","D2_PMco     ","D2_PM10     "&
-      ,"D2_H2O      ","D2_SSfi     ","D2_SSco     ","D2_SS       " &    !water & !SeaS
+!hf       "D2_OXN      ","D2_REDN     " &
+!hf      ,"D2_aNO3     ","D2_pNO3     ","D2_aNH4     ","D2_tNO3     ","D2_SIA      "&
+!hf      ,"D2_PPM25    ","D2_PPMco    ","D2_PM25     ","D2_PMco     ","D2_PM10     "&
+!hf      ,"D2_H2O      ","D2_SSfi     ","D2_SSco     ","D2_SS       " &    !water & !SeaS
 !
 !    Ecosystem - fluxes:
 !?      None?
 !
 !    Model verification params:
-      ,"D2_SO2      ","D2_SO4      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
-      ,"D2_NO2      "&
-     /)
+!      ,"D2_SO2      ","D2_SO4      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
+!      ,"D2_NO2      "&
+!     /)
 ! Less often needed:
       !,"D2_ACCSU    ", Buggy
       !,"D2_HMIX    ","D2_HMIX00   ","D2_HMIX12   "   !mixing heights

@@ -15,16 +15,24 @@
  ! as function of local meteorology or zenith angle
  !   o2, m,  and for MADE-like, oh, ch3coo2
 
-   integer, public, parameter ::  NSPEC_BGN = 0 ! No. 3D bgn species
-   integer, public, parameter ::  NSPEC_COL = 0 ! total no. prescribed specs
+!hfOH   integer, public, parameter ::  NSPEC_BGN = 0 ! No. 3D bgn species
+!hfOH   integer, public, parameter ::  NSPEC_COL = 0 ! total no. prescribed specs
+   integer, public, parameter ::  NSPEC_BGN = 4 ! No. 3D bgn species
+   integer, public, parameter ::  NSPEC_COL = 4 ! total no. prescribed specs
 
   !/ u2 define xn_2d_bgn here.
    !u3 real, public, save, dimension(NSPEC_COL,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
    !u3 assign dimesnion 1 for compilation only
    real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
 
-  !/ In ACID we now specify IXBGN_xx values. Omitted here.
-  !REMds real, public, parameter :: O3fix=10. !add 10 ppb to Logan data
+!hfOH BCS for species in ACID also in OZONE
+!**/ All species from previous version of OZONE, large domain
+   integer, public, parameter ::   & 
+     IXBGN_O3            =   1     &
+    ,IXBGN_H2O2          =   2     &
+    ,IXBGN_OH            =   3     &      
+    ,IXBGN_CH3COO2       =   4       
+
 !-----------------------------------------------------------
   end module GenSpec_bgn_ml
 

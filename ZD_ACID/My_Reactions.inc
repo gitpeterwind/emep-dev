@@ -14,6 +14,10 @@
       L =  &
 
       rct(1,k)* xn_2d_bgn(IXBGN_O3,k )  
+!if ((i==2).and.(j==2).and.(k==20))then
+!write(*,*)'Ozone',xn_2d_bgn(IXBGN_O3,k)*PPBINV/amk(k)
+!write(*,*)'H2O2',xn_2d_bgn(IXBGN_H2O2,k)*PPBINV/amk(k)
+!endif
        xnew(NO)=  amax1(0.0, ( xold(NO) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
 
@@ -72,14 +76,15 @@
 
 !-> SO2 
 
+!hf
+     psd_h2o2 = xn_2d_bgn(IXBGN_H2O2,k)*xn_2d_bgn(IXBGN_H2O2,k)/&
+               (xn_2d_bgn(IXBGN_H2O2,k)+ xnew(SO2))
+
       P =   &
 
      (1-0.05)*rcemis(QRCSO2,K) 
 
       L =  &
-!hf
-     psd_h2o2 = xn_2d_bgn(IXBGN_H2O2,k)*xn_2d_bgn(IXBGN_H2O2,k)/&
-               (xn_2d_bgn(IXBGN_H2O2,k)+ xnew(SO2))
 
 !       rcmisc(9,k)  ! Eliassen+Saltbones
       2e-12*aqrck(ICLOHSO2,K)* xn_2d_bgn(IXBGN_OH,k )  &
@@ -104,7 +109,8 @@
       P =   &
 
       2e-12*aqrck(ICLOHSO2,K) * xn_2d_bgn(IXBGN_OH,k ) * xnew(SO2 )  &
-       + aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k) * xnew(SO2 )  &
+!hfOH       + aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k) * xnew(SO2 )  &
+       + aqrck(ICLRC1,K)*psd_h2o2 * xnew(SO2 )  &
        + aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k) * xnew(SO2 )  &
        + aqrck(ICLRC3,K) * xnew(SO2 )  &
 !       rcmisc(9,k) * xnew(SO2) &    !! Eliassen+Saltbones

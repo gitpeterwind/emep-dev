@@ -16,7 +16,8 @@
  ! as function of local meteorology or zenith angle
  !   o2, m,  and for MADE-like, oh, ch3coo2
  
-   integer, public, parameter ::  NSPEC_BGN = 2 ! No. 3D bgn species
+!   integer, public, parameter ::  NSPEC_BGN = 2 ! No. 3D bgn species
+   integer, public, parameter ::  NSPEC_BGN = 4 ! No. 3D bgn species
    integer, public, parameter ::  NSPEC_COL = 4 ! total no. prescribed specs
 
 
@@ -85,11 +86,11 @@
      IXADV_CO     = 1, &
      IXSHL_OH     = 1,&
      IXADV_CH3COO2 = 1,&
-     IXSHL_PHNO3 =1,&
+     IXSHL_PHNO3=1,&
      HCHO = 1,&
      CH3CHO = 1,&
      OH = 1,&
-     PHNO3 = 1
+     PHNO3=1
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
 !>_________________________________________________________<
@@ -459,14 +460,14 @@ end module  GenRates_rct_ml
 
      radzen= izen * DEG2RAD        !convert to radians
 
-     if( izen < 90  ) then !daytime
-        diur=exp( -0.25/cos(radzen) )
-        xn_2d_bgn(IXBGN_OH,:)      = ( 1.e4 + 4.e6*diur)*reduce_fac
-        xn_2d_bgn(IXBGN_CH3COO2,:) = ( 0.5*(1.e6 + 5.e6*diur) )*reduce_fac
-     else
-        xn_2d_bgn(IXBGN_OH,:)      = 1.e4
-        xn_2d_bgn(IXBGN_CH3COO2,:) = 1.e6
-     endif
+!     if( izen < 90  ) then !daytime
+!        diur=exp( -0.25/cos(radzen) )
+!       xn_2d_bgn(IXBGN_OH,:)      = ( 1.e4 + 4.e6*diur)*reduce_fac
+!       xn_2d_bgn(IXBGN_CH3COO2,:) = ( 0.5*(1.e6 + 5.e6*diur) )*reduce_fac
+!    else
+!       xn_2d_bgn(IXBGN_OH,:)      = 1.e4
+!       xn_2d_bgn(IXBGN_CH3COO2,:) = 1.e6
+!    endif
  
      !u3 call set_daily
      !u7.1  xn_2d_bgn(IXBGN_H2O2,:) = tab_h2o2(daynumber) * m(:) 

@@ -36,7 +36,7 @@ module My_BoundConditions_ml
 ! and is i,j dependendant
 !_____________________________________________________________________________
 !hf
-  use GenSpec_bgn_ml, only: NSPEC_BGN,IXBGN_O3,IXBGN_H2O2  !u3 ,IXBGN_H2O2
+  use GenSpec_bgn_ml, only: NSPEC_BGN,IXBGN_O3,IXBGN_H2O2,IXBGN_OH,IXBGN_CH3COO2  !hfOH 
   use GenSpec_adv_ml, only: NSPEC_ADV   & ! No. advected species
                            ,IXADV_HNO3,IXADV_SO4,IXADV_PAN  &
                            ,IXADV_NO,IXADV_NO2, IXADV_SO2
@@ -49,7 +49,7 @@ module My_BoundConditions_ml
                       ,IBC_O3          & ! u3 - tmp
                       ,IBC_HNO3,IBC_PAN   &
                       ,IBC_SO2, IBC_SO4   &
-                      ,IBC_NO,IBC_NO2,IBC_H2O2    !u3   ,IBC_H2O2
+                      ,IBC_NO,IBC_NO2,IBC_H2O2,IBC_OH,IBC_CH3COO2    !u3  hfOH
 
 
  implicit none
@@ -60,7 +60,7 @@ module My_BoundConditions_ml
  public :: My_bcmap            ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
            !u3 set_daily           !set daily bgn conc of h2o2
  
- !/-- model-type
+ !/-- model-type 
  !    for consistency checks, possibly to match label in My_model_ml??
    character(len=12), public :: MY_MODEL = "uni-made"
 
@@ -207,6 +207,8 @@ module My_BoundConditions_ml
 !/** mappings for bgn species from global model ***********
   bc2xn_bgn(IBC_O3      ,IXBGN_O3      )   =   1.0
   bc2xn_bgn(IBC_H2O2    ,IXBGN_H2O2    )   =   1.0
+  bc2xn_bgn(IBC_CH3COO2    ,IXBGN_CH3COO2    )   =   1.0 !hfOH
+  bc2xn_bgn(IBC_OH    ,IXBGN_OH    )   =   1.0 !hfOH
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  end subroutine My_bcmap

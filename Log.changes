@@ -1,3 +1,17 @@
+=================== Hilde,               01/06/2004, rv2_0_1  ==========================
+ACID and OZONE changes to include BCs from OZONE (OH,CH3COO2,H2O2, O3(acid)). For OZONE, this will have
+ effect only when a smaller domain than 170*133 is used.  
+Link to Logan files in mixing ratio.
+Some SR-My_Derived stuff that should not have been put into ACID removed.
+Files changed:
+grun.pl
+GlobalBCs_ml
+My_BoundConditions_ml
+My_Derived_ml, only for ACID
+My_DryDep_ml
+Setup_1d_ml
+My_Chem_ml
+
 ================== Peter/Dave               01/04/2004, rv2_0beta  ==========================
 
 New grun.pl which also runs SR if required.

@@ -134,7 +134,7 @@ DDEP_SOX   = find_one_index("DDEP_SOX",f_ddep(:)%name)
 DDEP_OXN   = find_one_index("DDEP_OXN",f_ddep(:)%name)
 DDEP_RDN   = find_one_index("DDEP_RDN",f_ddep(:)%name)
 
-ds 25/3/2004: General change: waters and wetland categories removed after
+!ds 25/3/2004: General change: waters and wetland categories removed after
 !    discussions with CCE/IIASA
 !
 !ds DDEP_OXNSW = find_one_index("DDEP_OXNSW",f_ddep(:)%name)
@@ -244,7 +244,7 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
           DepLoss(IXADV_aNO3)+  DepLoss(IXADV_pNO3)  ) * convfac * atwN
 
 !BUG FIX!!!!??? 16/1/2004!!!!
-ds 25/3/2004: General change: waters and wetland categories removed after
+!ds 25/3/2004: General change: waters and wetland categories removed after
 !    discussions with CCE/IIASA
 
      !ds ddep(DDEP_OXNSW,i,j,IOU_INST) = 0.0

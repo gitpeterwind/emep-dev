@@ -62,8 +62,8 @@ require "flush.pl";
 $year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
-my $SR = 1;   #NEW Set to 1 for source-receptor stuff
-my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
+my $SR = 0;   #NEW Set to 1 for source-receptor stuff
+my $PM_ADDED     = 0;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 my $MERLIN_CITY= 0;  # Adds in African emissions for y=1..11
 
@@ -96,7 +96,7 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $DAVE ;      
+$USER        =  $HILDE ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -104,36 +104,34 @@ $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 #ds - simplified treatment of BCs and emissions:
 
-$OZONE = 1, $ACID = 0;     # Specify model type here
+$OZONE = 0, $ACID = 1;     # Specify model type here
 
   # check:
   die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
 
+
+
+     #XD: New source of BCs for OH, CH3COO2, O3 and H2O2: (from OZONE)
+     $BCDIR    =     # NEW XD structure
+       "$HILDE/BC_data/Unimod.rv2_0beta.${year}";
+     die "NO DIR $BCDIR \n" unless -d $BCDIR;
+
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
-
-$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
-
-# Also, list emissions to be used:
 
 if ( $OZONE ) {
     #$OZONEDIR    = "$HILDE/BC_data/CTM2_data/50Data"; 
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_34";
+     $testv       = "rv2_0beta";
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
-     $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
-     if( $SR) {
-       $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv1.9.emis2010.1997met";
-       $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.9.emis2010.1997met";
-       $OHDIR       = "$HILDE/BC_data/EMEPOH_rv1.9.emis2010.1997met";
-     }
+      $OZONEDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_9_22acid";
+     $testv       = "rv2_0beta.oh.acid";
      $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
 } 
@@ -142,6 +140,7 @@ $subv        = "$testv" ;                  # sub-version (to track changes)
 $Split       = "BASE_MAR2004" ;               #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/Unimod.$testv";   # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
+$DaveDataDir   = "$DAVE/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
@@ -187,11 +186,11 @@ if ( $SR ) {
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
 #@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
-@smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
-#@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
+#@smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
+@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
-#@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
+@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
 
 $RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
@@ -208,12 +207,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  1 ;       # last month
+$mm2   =  12 ;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM = 2;       # for testing, simply reset here
+# $NTERM = 2;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -479,16 +478,22 @@ for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
 
     # Naming system simplified, 27/2/2003, ds
     #
-    # Ozone and H2O2 data are needed for all model versions:
-    # (Assumes all ozone data have same name, i.e. ozone.mm)
+    # Ozone,H2O2,OH, CH3COO2 data are needed for all model versions:
 
-    $old = sprintf "$OZONEDIR/ozone.%02d", $mm ;
-    $new = sprintf "ozone.%02d", $mm ;
-    mylink( "Linking BCs:", $old,$new ) ;
+    foreach $bc ( qw ( D3_O3 D3_H2O2 D3_OH D3_CH3COO2 )) { #XD
+            $old = sprintf "$BCDIR/$bc.%02d", $mm ;
+            $new = sprintf "$bc.%02d", $mm ;
+            mylink( "Linking $bc BCs:", $old,$new ) ;
+    }
 
-    $old = sprintf "$H2O2DIR/h2o2.%02d", $mm ;
-    $new = sprintf "h2o2.%02d", $mm ;
-    mylink( "Linking H2O2 BCs:", $old,$new ) ;
+
+#HF    $old = sprintf "$OZONEDIR/ozone.%02d", $mm ;
+#HF    $new = sprintf "ozone.%02d", $mm ;
+#HF    mylink( "Linking BCs:", $old,$new ) ;
+
+#HF    $old = sprintf "$H2O2DIR/h2o2.%02d", $mm ;
+#HF    $new = sprintf "h2o2.%02d", $mm ;
+#HF    mylink( "Linking H2O2 BCs:", $old,$new ) ;
 
     $old = sprintf "$SRCINPUTDIR/lt21-nox.dat%02d", $mm;
     $new = sprintf "lightn%02d.dat", $mm;
@@ -547,15 +552,15 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
     $new   = "femis.dat";
     mylink( "Femis  ", $old,$new ) ;
 
-    $old   = "$MyDataDir/splits/pm25split.defaults.$Split" ;
+    $old   = "$DaveDataDir/splits/pm25split.defaults.$Split" ;
     $new   = "pm25split.defaults";
     mylink( "Split pm25", $old,$new ) ;
 
-    $old   = "$MyDataDir/splits/vocsplit.defaults.$Split" ;
+    $old   = "$DaveDataDir/splits/vocsplit.defaults.$Split" ;
     $new   = "vocsplit.defaults";
     mylink( "Split voc", $old,$new ) ;
 
-    $old   = "$MyDataDir/splits/vocsplit.special.$Split" ;
+    $old   = "$DaveDataDir/splits/vocsplit.special.$Split" ;
     $new   = "vocsplit.special";
     mylink( "Split voc", $old,$new ) ;
 
