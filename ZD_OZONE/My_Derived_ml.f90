@@ -94,7 +94,7 @@ private
 
   ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
 
-    integer, public, parameter :: NSR_2D = 42
+    integer, public, parameter :: NSR_2D = 43
 
     character(len=12), public, parameter, dimension(NSR_2D) :: &
   D2_SR = (/ &
@@ -113,7 +113,7 @@ private
       ,"D2_AOT30f   ","D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
       ,"D2_EUAOT30WH","D2_EUAOT30DF","D2_EUAOT40WH","D2_EUAOT40DF" &
       ,"D2_UNAOT30WH","D2_UNAOT30DF","D2_UNAOT40WH","D2_UNAOT40DF" &
-      ,"D2_SOMO35   " &
+      ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums 
       ,"D2_NO2      ","D2_OXN      ","D2_NOX      ","D2_NOZ      " &

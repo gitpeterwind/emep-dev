@@ -113,7 +113,7 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 63  & ! Number of 2D derived fields defined
+      ,NDEF_DERIV_2D = 64  & ! Number of 2D derived fields defined
       ,NDEF_DERIV_3D = 16  & ! Number of 3D derived fields defined
       ,NTDAY = 72            ! Number of 2D O3 to be saved each day (for SOMO)
 
@@ -396,6 +396,7 @@ def_2d = (/&
 ,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O ", "ug/m3")&   !water
 ,Deriv( 646, "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3")& 
 ,Deriv( 627, "SOM", F, 35, 1.,   F, F, T, T, F,"D2_SOMO35", "ppb day")& 
+,Deriv( 628, "SOM", F,  0, 1.,   F, F, T, T, F,"D2_SOMO0", "ppb day")& 
  /)
 
 !-- 3-D fields
