@@ -51,7 +51,7 @@ subroutine runchem()
    integer :: dt_chem,nchem  !  Time-step for chemistry solver
    integer :: Niter          !  No. iterations used in 2step
    logical , save :: reset_chem = .true.  ! =>  more iterns. at start of chem.
-   logical, parameter :: debug_flag = .false. ! =>   Set true for selected i,j
+   logical ::  debug_flag    ! =>   Set true for selected i,j
 
    integer ::  iday, ihour, ispec, n
    integer ::  advec,errcode
@@ -95,11 +95,12 @@ subroutine runchem()
 
                      call Code_Timer(tim_before)
 
-                     i_emep = i + ISMBEG + gi0 - 2  ! EMEP coordinates
-                     j_emep = j + JSMBEG + gj0 - 2  ! EMEP coordinates
-
                      !****** debug cell set here *******
                      if ( MYDEBUG ) then
+
+                       i_emep = i + ISMBEG + gi0 - 2  ! EMEP coordinates
+                       j_emep = j + JSMBEG + gj0 - 2  ! EMEP coordinates
+
                        debug_flag = ( i_emep == DEBUG_i .and. j_emep == DEBUG_j )
                      end if
                      !****** debug cell set here *******
