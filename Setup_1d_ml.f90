@@ -101,6 +101,7 @@ contains
 
     !6c izen = max(1,int(acos(zeta(i,j))*180.0/PI+0.5))
      izen = int ( zen(i,j) + 0.5 )
+     izen = max(1, izen)    ! Just to avoid zero in indices.
 
     do k = KCHEMTOP, KMAX_MID
  
@@ -134,11 +135,10 @@ contains
        rh(k) = min( q(i,j,k,1)/qsat , 1.0) 
 
         ! 1)/ Short-lived species - no need to scale with M
-!        do n = 1, NSPEC_SHL
-              !u1 ispec = MAP_SHL2TOT(n)
-              !xn_2d(ispec,k) = max(0.0,xn_shl(n,i,j,k))
-!              xn_2d(n,k) = max(0.0,xn_shl(n,i,j,k))
-!        end do ! ispec
+        !  13/9/2002 - reintroduced reset of xn_2d
+         do n = 1, NSPEC_SHL
+               xn_2d(n,k) = max(0.0,xn_shl(n,i,j,k))
+         end do ! ispec
 
         ! 2)/ Advected species
         do n = 1, NSPEC_ADV
@@ -321,17 +321,15 @@ contains
  
 
            ! 1)/ Short-lived species - no need to scale with M
+           !  13/9/2002 - reintroduced reset of xn_2d
 
-!           do n = 1, NSPEC_SHL
-              !u1 ispec = MAP_SHL2TOT(n)
-              !u1 xn_shl(n,i,j,k) = xn_2d(ispec,k)
-!              xn_shl(n,i,j,k) = xn_2d(n,k)
-!           end do ! ispec
+            do n = 1, NSPEC_SHL
+               xn_shl(n,i,j,k) = xn_2d(n,k)
+            end do ! ispec
  
            ! 2)/ Advected species
 
            do n = 1, NSPEC_ADV
-              !u1 ispec = MAP_ADV2TOT(n)
               ispec = NSPEC_SHL + n
 !              xn_adv(n,i,j,k) = max(0.0, xn_2d(ispec,k)/amk(k))
               xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
