@@ -314,7 +314,7 @@
 
   type, public :: Chemical 
        character(len=12) :: name
-       integer           :: molwt
+       real              :: molwt       
        integer           :: nmhc      ! nmhc (1) or not(0)
        integer           :: carbons   ! Carbon-number
        real              :: nitrogens ! Nitrogen-number
