@@ -1374,8 +1374,8 @@ private
 !c**********************************************************************
 !ds rv1_6_x
  logical, parameter :: DEBUG_KZ = .false.
- logical, parameter :: PIELKE_KZ = .true.
- logical, parameter :: TKE_DIFF = .false.
+ logical, parameter :: PIELKE_KZ = .true.    ! Default
+ logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP STILL!!!!
  logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
 
 
@@ -2103,25 +2103,29 @@ implicit none
 !     Local arrays 
    
       integer, dimension(MAXLIMAX,MAXLJMAX)      ::iblht      ! Level of the PBL top
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: t_virt    ! Potential temperature (K)
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND):: eddyz     ! Eddy coefficients (m2/s)
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: e         ! Kinetic energy with respect to height                                                               ! (m2/s2)
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: dzq       ! Tickness of sigma interface layers (m)
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: u_mid     ! Wind speed in x-direction (m/s)  
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: v_mid     ! Wind speed in y-direction (m/s)       
-      real, dimension(MAXLIMAX,MAXLJMAX,KLM):: dza            ! Tickness of half sigma layers (m)
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: &
+                    t_virt    &! Potential temperature (K)
+                   ,e         &! Kinetic energy with respect to height (m2/s2)
+                   ,dzq       &! Thickness of sigma interface layers (m)
+                   ,u_mid     &! Wind speed in x-direction (m/s)  
+                   ,v_mid      ! Wind speed in y-direction (m/s)       
+      real, dimension(MAXLIMAX,MAXLJMAX,KLM):: &
+                   dza       ! Thickness of half sigma layers (m)
 
-      real, dimension(MAXLIMAX,MAXLJMAX):: pblht ,            &! PBL (Holstag, 1990) (m)    
-                                           h_flux,            &! Sensible heat flux  (W/m2)
-                                           ust_r ,            &! Friction velocity (m/s) 
-                                           ro_sur,            &! Air density (kg/m3)
-                                           mol   ,            &! Monin-obukhov length (m)
-                                           wstar               ! Convective velocity (m/s)
+      real, dimension(MAXLIMAX,MAXLJMAX):: &
+                   pblht ,            &! PBL (Holstag, 1990) (m)    
+                   h_flux,            &! Sensible heat flux  (W/m2)
+                   ust_r ,            &! Friction velocity (m/s) 
+                   ro_sur,            &! Air density (kg/m3)
+                   mol   ,            &! Monin-obukhov length (m)
+                   wstar               ! Convective velocity (m/s)
                                                        
-      real, dimension(KMAX_BND) :: rib                         ! Bulk Richardson number 
-      real, dimension(KMAX_MID) :: rich,                      &! Richardson number 
-                                   psi_zi               ! Array used in the vertical integration
-      real, dimension (10) :: psi_z, zovh               ! Arrays used for calculating the TKE
+      real, dimension(KMAX_BND) :: rib         ! Bulk Richardson number 
+      real, dimension(KMAX_MID) :: &
+                   rich,           &! Richardson number 
+                   psi_zi           ! Used in the vertical integration
+      real, dimension (10) :: psi_z, zovh  ! Used for calculating the TKE
 
 !     Local variables
       real dtmp, tog, wssq1, wssq2, wssq, tconv, wss, wst, PSI_TKE,    &
@@ -2129,20 +2133,22 @@ implicit none
            part1, part2, fract1, fract2, apbl, fac0, fac02, kz0,       &
            cell, dum1, rpsb, press, teta_h, u_s, goth, pressure
 
-!     Functions for averaging the vertical turbulent kinetic energy (Alapaty, 2003)
+!     Functions for averaging the vertical turbulent kinetic energy 
+!      (Alapaty, 2003)
       data psi_z /0.00,2.00,1.85,1.51,1.48,1.52,1.43,1.10,1.20,0.25/
       data zovh  /0.00,0.05,0.10,0.20,0.40,0.60,0.80,1.00,1.10,1.20/
 
 !     Store the NMW meteorology and variables derived from its
    
 !     Change the sign
-      h_flux(1:limax,1:ljmax)=-fh(1:limax,1:ljmax,nr)  ! Sensible heat flux (W/m2)
+      h_flux(1:limax,1:ljmax)=-fh(1:limax,1:ljmax,nr)
 
 !     Avoid devision by zero later in the code
      
       where (ABS(h_flux(1:limax,1:ljmax))<0.0001) h_flux(1:limax,1:ljmax)=0.0001 
 
-!     Check PBL height
+!     Check PBL height   !ds - strange tests! Negative pzpbl check? From 1 to 100m
+                         !   - odd!
       do i=1,limax
        do j=1,ljmax
             if(ABS(pzpbl(i,j)) < 1.) then
@@ -2166,21 +2172,27 @@ implicit none
       enddo
 
 !     Avoid small values
-      where (ABS(u_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) u_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
-      where (ABS(v_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) v_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
+      where (ABS(u_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) &
+                                u_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
+      where (ABS(v_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) &
+                                v_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
 
 !     Initialize eddy difussivity arrays
       eddyz(1:limax,1:ljmax,1:KMAX_MID)=0.
 
 !     Calculate tickness of the layers
-      dzq(1:limax,1:ljmax,1:KMAX_MID)=z_bnd(1:limax,1:ljmax,1:KMAX_MID)-  &
-                                      z_bnd(1:limax,1:ljmax,2:KMAX_BND)     ! Full levels
-      dza(1:limax,1:ljmax,1:KLM)=z_mid(1:limax,1:ljmax,1:KLM)-          &
-                                 z_mid(1:limax,1:ljmax,2:KMAX_MID)          ! Half-sigma lavels
+      dzq(1:limax,1:ljmax,1:KMAX_MID)= &
+            z_bnd(1:limax,1:ljmax,1:KMAX_MID)-  &
+            z_bnd(1:limax,1:ljmax,2:KMAX_BND)     ! Full levels
+
+      dza(1:limax,1:ljmax,1:KLM)= &
+            z_mid(1:limax,1:ljmax,1:KLM)-          &
+            z_mid(1:limax,1:ljmax,2:KMAX_MID)          ! Half-sigma lavels
 
 !     Calculate virtual temperature
 
-      t_virt(1:limax,1:ljmax,1:KMAX_MID)=th(1:limax,1:ljmax,1:KMAX_MID,nr)*     &
+      t_virt(1:limax,1:ljmax,1:KMAX_MID)=&
+             th(1:limax,1:ljmax,1:KMAX_MID,nr)* &
                     (1.0+0.622*q(1:limax,1:ljmax,1:KMAX_MID,nr))
 
 
