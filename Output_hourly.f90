@@ -28,8 +28,9 @@
    use Met_ml,           only : t2,th, roa, surface_precip   !u7.4vg temp2m, th
    use GenSpec_shl_ml , only : NSPEC_SHL  ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
-   use GridValues_ml,    only :  i_glob, j_glob   ! Gives emep coordinates
+   use GridValues_ml,    only : i_glob, j_glob   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
+   use Radiation_ml,     only : Idirectt, Idiffuse
    implicit none
 
    !*.. Components of  hr_out
@@ -62,8 +63,6 @@
    integer, save :: prev_month = -99   ! Initialise with non-possible month
 !hf u2:
    logical, parameter :: DEBUG = .false.
-
-   !tmp type(date)    :: nextop_time        ! Time for next output
 
   !ds Debug coordinates:
     if ( my_first_call ) then
@@ -128,7 +127,7 @@
         write(IO_HOURLY,*) FREQ_HOURLY, " Hours betwen outputs"
 
         do ih = 1, NHOURLY_OUT
-           write(IO_HOURLY,fmt="(a12,a8,a10,i4,4i4,a8,es12.5,es10.3)") hr_out(ih)
+           write(IO_HOURLY,fmt="(a12,a8,a10,i4,4i4,a13,es12.5,es10.3)") hr_out(ih)
         end do
 
    end if
@@ -197,6 +196,16 @@
           case ( "PRECIP " )        ! No cfac for short-lived species
             forall ( i=1:limax, j=1:ljmax)
                hourly(i,j) = surface_precip(i,j)     ! Skip Units conv.
+            end forall
+
+          case ( "Idirect" )        !  Direct radiation (W/m2)
+            forall ( i=1:limax, j=1:ljmax)
+               hourly(i,j) = Idirectt(i,j)    ! Skip Units conv.
+            end forall
+
+          case ( "Idiffus" )        !  Diffuse radiation (W/m2)
+            forall ( i=1:limax, j=1:ljmax)
+               hourly(i,j) = Idiffuse(i,j)    ! Skip Units conv.
             end forall
 
           case ( "D2D" )        ! No cfac for short-lived species
