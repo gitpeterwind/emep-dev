@@ -37,6 +37,7 @@ contains
 
   use My_Emis_ml                        ! => QRCNO, etc.
   use DefPhotolysis_ml                  ! => IDHNO3, etc.
+  use Emissions_ml, only : KEMISTOP     !rv1.2.1 change
   use OrganicAerosol_ml, only : Fgas
 !
 !**********************************************************************
@@ -137,10 +138,11 @@ contains
 ! su's suggetsion to help include My_Reactions only once:
 !  toiter gives the number of iterations used in TWOSTEP. Use
 !  more iterations near ground:
+!rv1.2.1 - changed to KEMISTOP
 
    toiter(KCHEMTOP:5)    = 1    ! Upper levels - slow chemistry
-   toiter(6:KMAX_MID-4)     = 2    ! Medium and cloud levels 
-   toiter(KMAX_MID-3:KMAX_MID) = 3    !  Near-ground, emis levels
+   toiter(6:KEMISTOP-1)     = 2    ! Medium and cloud levels 
+   toiter(KEMISTOP:KMAX_MID) = 3    !  Near-ground, emis levels
 
 !...  if we run with dt_chem less than dt_advec sec., we start a loop here.
 
