@@ -1,3 +1,24 @@
+============== Dave  17/2-2005            , rv2_1_6 =====================
+
+
+ReadField_ml
+  -Initialisation to zero added, so now we do not need to input an array which
+   covers the whole domain. 
+
+   Also, print used instead of write for error messages, and
+   errmsg more explicit now.
+
+Sites_ml: Fix for Embla/Gridur bug,  where printouts of numbers < 1.0e-99
+            were messed up.
+
+          Also, N_NIT renamed to N_NOy, and sum_NIT renamed to sum_NOy, since
+          NIT is confusing with nitrate, which NOy isn't.
+
+ZD_.../My_Outputs:   N_NIT -> N_NOy
+
+         Also, max NSITES_MAX and NSONDES_MAX increased to 99. 
+         (Temporary. Will make arrays allocatable soon....)
+
 ============== Peter, 9/2-2005            , rv2_1_5 =====================
 
 N_NIT was not defined in ZD_ACID 
