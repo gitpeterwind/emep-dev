@@ -1,4 +1,4 @@
-#!/usr/local/bin/perl
+c#!/usr/local/bin/perl
 ######################################################################
 # Features
 # 1. work directory now deduced from user-name
@@ -107,8 +107,8 @@ if ( $OZONE ) {
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
      $testv       = "rv1_4_16acid";
 } 
-$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
-
+#$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
+$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
 $version     = "Unimod" ;  
 $subv        = "acidpm" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
