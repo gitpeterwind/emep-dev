@@ -189,7 +189,7 @@ real    ,intent(in) :: scale
 real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
 
 
-character*13 :: varname
+character*18 :: varname
 character*8 ::lastmodified_date
 character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
 integer :: varID,new,nrecords,ncFileID

@@ -85,7 +85,7 @@ private
        logical  :: year     ! True when yearly averages wanted
        logical  :: month    ! True when monthly averages wanted
        logical  :: day      ! True when daily averages wanted
-       character(len=10) :: name ! Name of the variable (writen in netCDF output)
+       character(len=15) :: name ! Name of the variable (writen in netCDF output)
        character(len=10) :: unit ! Unit (writen in netCDF output)
     end type Deriv
 

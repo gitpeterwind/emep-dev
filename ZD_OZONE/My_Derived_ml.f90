@@ -87,7 +87,7 @@ private
        logical  :: year     ! True when yearly averages wanted
        logical  :: month    ! True when monthly averages wanted
        logical  :: day      ! True when daily averages wanted
-       character(len=10) :: name ! Name of the variable (writen in netCDF output)
+       character(len=15) :: name ! Name of the variable (writen in netCDF output)
        character(len=10) :: unit ! Unit (writen in netCDF output)
     end type Deriv
 
@@ -273,10 +273,10 @@ private
  f_ddep(DDEP_RDNR) = Deriv( 553, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNR","mg/m2")
 
  f_ddep(DDEP_STOCFU) = Deriv( 571, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
- f_ddep(DDEP_STODFU) = Deriv( 572, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
- f_ddep(DDEP_STOTCU) = Deriv( 573, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
- f_ddep(DDEP_STOMCU) = Deriv( 574, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
- f_ddep(DDEP_STOGRU) = Deriv( 575, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
+ f_ddep(DDEP_STODFU) = Deriv( 572, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STODFU","mg/m2")
+ f_ddep(DDEP_STOTCU) = Deriv( 573, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOTCU","mg/m2")
+ f_ddep(DDEP_STOMCU) = Deriv( 574, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOMCU","mg/m2")
+ f_ddep(DDEP_STOGRU) = Deriv( 575, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOGRU","mg/m2")
  f_ddep(DDEP_STOCFL) = Deriv( 581, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFL","mg/m2")
  f_ddep(DDEP_STODFL) = Deriv( 582, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STODFL","mg/m2")
  f_ddep(DDEP_STOTCL) = Deriv( 583, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOTCL","mg/m2")
