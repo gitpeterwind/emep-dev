@@ -5,6 +5,7 @@ use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
                       ,luname              &
                       ,crops, bulk, water  & ! logical variables
                       ,forest,conif_forest & !    "      "
+                      ,vegetation, urban   & !
                       ,STUBBLE             & ! Ht. of stubble (m)
                       ,SAIadd              & ! surface-area index, rv1.4.6
                       ,hveg_max, b_inc, albedo, NH4_pl, SGS50, DSGS   &
