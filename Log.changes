@@ -1,7 +1,31 @@
 ================== Svetlana,     4/03/2004, rv1_9_26 ==========================
-commited by Dave, so changes need to be filled in later. 
-
 PM Water added to aerosols for OZONE.  Needs extension to ACID but to be done.....
+commited by Dave, so changes need to be filled in later.  From Sevtlana:
+
+======================================
+Hi, Dave and Peter
+
+I put PM_water (parameter 662) to ACID/OZONE_rv.1.9.25
+I've made one-day runs with ACID and OZONE. The values for water
+looked reasonable
+
+Everuthing  is on ~mifast/Unified__rv.1.9.25/Unimod.
+
+New lines are marked with  "!water". 
+
+The modules affected are:
+  phyche.f
+  Runchem_ml      (calls Aero_water when daily output)
+  Derived_ml
+  Chem_ml
+
+and  My_Aerosols_ml      (got new subroutine Aero_water)
+         My_Derived_ml
+
+I've also attached for Peter my earlier e-mail ( see below).
+I reckon you, guys, can decide between yourself on how to procede.
+======================================
+
 
 AFRIC_ADDED bit (non-serious bug) fixed in grun.pl
 
