@@ -73,6 +73,7 @@ program myeul
                               ,METSTEP   &   !u2 - replaces metstep
                               ,nprint,nass,nterm,assign_nmax
                               !u7.4vg ,daynumber &  ! u3
+  use NetCDF_ml,        only : InitnetCDF
   use out_restri_ml,    only : set_outrestri
   use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1, parinit
   use Polinat_ml,       only : polinat_init,polinat_in
@@ -370,6 +371,8 @@ program myeul
 
 
     call vgrid    !  ??????
+
+    if ( me == 0 ) call InitnetCDF
 
     call metvar(1)
 

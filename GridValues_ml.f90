@@ -36,6 +36,7 @@
  Public :: ij2lb       !pw grid to longitude latitude
  Public :: lb2ij       !pw longitude latitude to grid
  Public :: ij2ij       !pw grid1 to grid2
+ Public :: coordzero   !pw i,j coordinates at 60N,fi
 
 !Hf BC
  Public :: GlobalPosition     ! => 
@@ -495,6 +496,24 @@ end subroutine GlobalPosition
     end subroutine ij2ij
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    subroutine coordzero(izero,jzero)
+      !finds the i,j coordinates at the points where 
+      !  the latitude has "true"  projection (fixed at 60N by now) and 
+      !  longitude = fi
+
+      implicit none
+      real , intent(out) :: izero,jzero
+      real  :: izerom(1,1),jzerom(1,1)
+      real :: lat(1,1),long(1,1)
+
+      lat(1,1)=60.0
+      long(1,1)=fi
+      call lb2ij(1,1,long,lat,izerom,jzerom,fi,AN,xp-(ISMBEG-1),yp-(JSMBEG-1))
+      izero=izerom(1,1)
+      jzero=jzerom(1,1)
+
+    end subroutine coordzero
 
 end module GridValues_ml
 !==============================================================================

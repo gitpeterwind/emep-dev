@@ -65,7 +65,7 @@ module DryDep_ml
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
- use Setup_1dfields_ml,    only : xn_2d
+ use Setup_1dfields_ml,    only : xn_2d,amk
  use GenSpec_shl_ml,        only :  NSPEC_SHL
 
  implicit none
@@ -569,7 +569,7 @@ module DryDep_ml
         call DryDep_Budget(i,j,Deploss,convfac)
 
        ! inv_gridarea = xm2(i,j)/(GRIDWIDTH_M*GRIDWIDTH_M)
-       convfac2 = convfac * xm2(i,j) * inv_gridarea
+       convfac2 = convfac * xm2(i,j) * inv_gridarea/amk(KMAX_MID)
 
 
       !.. Add DepLoss to budgets if needed:

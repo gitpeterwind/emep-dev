@@ -384,9 +384,9 @@ contains
          nadv    = Dep(n)%adv
          totddep( nadv ) = totddep (nadv) + DryLoss(nadv) 
 
-  if ((i==2 .and.j==2).and. nadv==IXADV_SO2)then
-      write(*,*)'DRYDEP BUDGET nadv,DryLoss(nadv),totddep(nadv)', nadv,DryLoss(nadv),totddep(nadv)
-  endif
+!  if ((i==2 .and.j==2).and. nadv==IXADV_SO2)then
+!      write(*,*)'DRYDEP BUDGET nadv,DryLoss(nadv),totddep(nadv)', nadv,DryLoss(nadv),totddep(nadv)
+!  endif
       enddo
   end subroutine DryDep_Budget
 

@@ -18,7 +18,7 @@ SRCS =	Aero_water_ml.f90 Ammonium_ml.f90 Advection_ml.f90 AirEmis_ml.f90 Aqueous
 	Met_ml.f90 EQSAM_ml.f90 MARS_ml.f90 ModelConstants_ml.f90 My_Aerosols_ml.f90 \
 	My_BoundConditions_ml.f90 My_Chem_ml.f90 My_Derived_ml.f90 \
 	My_DryDep_ml.f90 My_Emis_ml.f90 My_MassBudget_ml.f90 \
-	My_Outputs_ml.f90 My_WetDep_ml.f90 Nest_ml.f90 Out_restri_ml.f90 \
+	My_Outputs_ml.f90 My_WetDep_ml.f90 Nest_ml.f90 NetCDF_ml.f90 Out_restri_ml.f90 \
 	Output_binary.f90 Output_hourly.f90 Par_ml.f90 \
 	PhysicalConstants_ml.f90 Polinat_ml.f90 Radiation_ml.f90 \
 	ReadField_ml.f90 Rsurface_ml.f90 Runchem_ml.f90 SOA_ml.f90 Setup_1d_ml.f90 \
@@ -37,7 +37,7 @@ OBJS =	Aero_water_ml.o Advection_ml.o Ammonium_ml.o AirEmis_ml.o Aqueous_ml.o Bi
 	GlobalBCs_ml.o GridValues_ml.o Io_ml.o EQSAM_ml.o MARS_ml.o MassBudget_ml.o Met_ml.o \
 	ModelConstants_ml.o My_Aerosols_ml.o My_BoundConditions_ml.o \
 	My_Chem_ml.o My_Derived_ml.o My_DryDep_ml.o My_Emis_ml.o \
-	My_MassBudget_ml.o My_Outputs_ml.o My_WetDep_ml.o Nest_ml.o \
+	My_MassBudget_ml.o My_Outputs_ml.o My_WetDep_ml.o Nest_ml.o NetCDF_ml.o \
 	Out_restri_ml.o Output_binary.o Output_hourly.o Par_ml.o \
 	PhysicalConstants_ml.o Polinat_ml.o Radiation_ml.o ReadField_ml.o \
 	Rsurface_ml.o Runchem_ml.o Setup_1d_ml.o Setup_1dfields_ml.o \
@@ -53,7 +53,11 @@ OBJS =	Aero_water_ml.o Advection_ml.o Ammonium_ml.o AirEmis_ml.o Aqueous_ml.o Bi
 ARCH = PGON
 #_CRAY_CF77LIBS =
 CF77LIBS = -lmpi
-LIBS = $(CF77LIBS)	
+#LIBS = $(CF77LIBS)	
+LIBS = -lmpi -lnetcdf
+INCL = -I/home/u4/mifahik/netcdf/include
+LLIB = -L/home/u4/mifahik/netcdf/lib64
+
 CPP = cpp
 #_CRAY_CPPFLAGS	= -P -N -DMPI_SRC 
 CPPFLAGS	= -P -cpp -DMPI_SRC -DFLP_64B
@@ -70,8 +74,8 @@ FFLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
 
 F90 = f90
 #F90FLAGS = -64 -r8 -O3 -fullwarn
-F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
-#F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
+F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
+#F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV  $(INCL)
 #_CRAY_F90FLAGS = -O 3,fusion,aggress,bl,unroll2,msgs,negmsgs
 
 #_CRAY_LDFLAGS = -X8 -O 3,fusion,aggress,bl,msgs,negmsgs,unroll2 
@@ -84,7 +88,7 @@ LD = f90
 all: $(PROG)
 
 $(PROG): $(OBJS)
-	$(F90) $(LDFLAGS) -o $@ $(OBJS) $(LIBS)
+	$(F90) $(LDFLAGS) $(LLIB) -o $@ $(OBJS) $(INCL) $(LIBS)
 #_CRAY_$(PROG): $(OBJS)
 #_CRAY_	$(F90) $(LDFLAGS) -o $@ $(OBJS)) $(LIBS)
 
@@ -94,7 +98,7 @@ clean:
 .SUFFIXES: $(SUFFIXES) .c .f .f90 .F
 
 .f90.o:
-	$(F90) $(F90FLAGS) -c $<
+	$(F90) $(F90FLAGS)  -c $<
 
 .F.o:	
 	-rm -f $*.f $*.i
@@ -242,13 +246,16 @@ Nest_ml.o: Chem_ml.o Dates_ml.o Functions_ml.o GridValues_ml.o Io_ml.o \
 	$(F90) $(F90FLAGS) -c Chem_ml.o Dates_ml.o Functions_ml.o \
 		GridValues_ml.o Io_ml.o Met_ml.o ModelConstants_ml.o \
 		My_Chem_ml.o Par_ml.o Nest_ml.f90
+NetCDF_ml.o: Dates_ml.o GridValues_ml.o ModelConstants_ml.o Par_ml.o GridValues_ml.o
+	$(F90) $(F90FLAGS) -c Dates_ml.o GridValues_ml.o ModelConstants_ml.o \
+		Par_ml.o GridValues_ml.o NetCDF_ml.f90 
 Out_restri_ml.o: My_Outputs_ml.o Par_ml.o
 	$(F90) $(F90FLAGS) -c My_Outputs_ml.o Par_ml.o \
 		Out_restri_ml.f90
 Output_binary.o: Derived_ml.o GridValues_ml.o Io_ml.o ModelConstants_ml.o \
-	My_Derived_ml.o Par_ml.o
+	My_Derived_ml.o NetCDF_ml.o Par_ml.o
 	$(F90) $(F90FLAGS) -c Derived_ml.o GridValues_ml.o Io_ml.o \
-		ModelConstants_ml.o My_Derived_ml.o Par_ml.o \
+		ModelConstants_ml.o My_Derived_ml.o NetCDF_ml.o Par_ml.o \
 		Output_binary.f90
 Output_hourly.o: Chem_ml.o GridValues_ml.o Io_ml.o Met_ml.o \
 	ModelConstants_ml.o My_Chem_ml.o My_Outputs_ml.o Par_ml.o
@@ -331,7 +338,7 @@ UKsetup_ml.o: DepVariables_ml.o Io_ml.o Met_ml.o
 Unimod.o: Advection_ml.o AirEmis_ml.o Biogenics_ml.o BoundaryConditions_ml.o \
 	Chem_ml.o Dates_ml.o DefPhotolysis_ml.o Emissions_ml.o \
 	GridValues_ml.o Io_ml.o MassBudget_ml.o Met_ml.o ModelConstants_ml.o \
-	My_Chem_ml.o My_Emis_ml.o My_Outputs_ml.o My_WetDep_ml.o \
+	My_Chem_ml.o My_Emis_ml.o My_Outputs_ml.o My_WetDep_ml.o NetCDF_ml.o \
 	Out_restri_ml.o Par_ml.o Polinat_ml.o Sites_ml.o Tabulations_ml.o \
 	Timing_ml.o
 	$(F90) $(F90FLAGS) -c Advection_ml.o AirEmis_ml.o \
@@ -339,7 +346,7 @@ Unimod.o: Advection_ml.o AirEmis_ml.o Biogenics_ml.o BoundaryConditions_ml.o \
 		Dates_ml.o DefPhotolysis_ml.o Emissions_ml.o \
 		GridValues_ml.o Io_ml.o MassBudget_ml.o Met_ml.o \
 		ModelConstants_ml.o My_Chem_ml.o My_Emis_ml.o \
-		My_Outputs_ml.o My_WetDep_ml.o Out_restri_ml.o \
+		My_Outputs_ml.o My_WetDep_ml.o NetCDF_ml.o Out_restri_ml.o \
 		Par_ml.o Polinat_ml.o Sites_ml.o Tabulations_ml.o \
 		Timing_ml.o Unimod.f90
 Volcanos_ml.o: EmisDef_ml.o GridValues_ml.o Io_ml.o Met_ml.o \
