@@ -68,8 +68,8 @@ contains
        wdepred = sumloss(4)  + sumloss(3) !hf& 
                           !hf +1.5 * sumloss(3) !!! (NH4)1.5 SO4
   
-      !wdepox  = sumloss(HNO3) + sumloss(AMNI)
-       wdepox  = sumloss(6) + sumloss(5)
+      !wdepox  = sumloss(HNO3) + sumloss(AMNI) + pNO3
+       wdepox  = sumloss(6) + sumloss(5) + sumloss(9)
 
        totwdep(IXADV_SO4)  = totwdep(IXADV_SO4) + wdeps
        totwdep(IXADV_HNO3) = totwdep(IXADV_HNO3) + wdepox
