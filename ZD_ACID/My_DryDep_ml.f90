@@ -128,12 +128,12 @@ contains
 
   end subroutine Init_DepMap
 
-  subroutine Add_ddep(i,j,convfac,convo3fac,fluxfrac)
+  subroutine Add_ddep(i,j,convfac,convo3fac,fluxfrac,c_hvegppb)
      ! Adds deposition losses to ddep arrays
      integer, intent(in) :: i,j             ! coordinates
-
      real,    intent(in) ::  convfac, convo3fac !
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
+     real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      integer :: n, nadv
 
      integer, parameter :: N_OXN = 5        ! Number in ox. nitrogen family
