@@ -343,7 +343,7 @@ def_2d = (/&
 ,Deriv( 603,"TOXN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_OXN","ugN/m3")&
 ,Deriv( 605,"TRDN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_REDN","ugN/m3")&
 ,Deriv( 624,"FRNIT", T,   -1  ,1.0 ,    F , F,T,T,T,"D2_FRNIT","(1)")&
-,Deriv( 625,"MAXADV", F,IXADV_O3,PPBINV, F, F,F,F,T,"D2_MAXO3","ppb")&
+,Deriv( 625,"MAXADV", F,IXADV_O3,PPBINV, F, F,F,T,T,"D2_MAXO3","ppb")&
 ,Deriv( 626,"MAXSHL", F,IXSHL_OH,1.0e13,F , F,F,F,T,"D2_MAXOH","?")&
 !
 ,Deriv( 617, "tNO3 ", T, -1, ugN,    T, F, T, T, T,"D2_tNO3", "ugN/m3")&
