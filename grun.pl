@@ -178,6 +178,8 @@ $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 $NSCAL =  0;
 $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
 # 
+# Check that we have an existing prog dir:
+die "Wrong ProgDir\n" unless -d $ProgDir;
 
 # quick check that the small domain
 # is within the current 170, 133 large domain
