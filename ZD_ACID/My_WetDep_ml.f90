@@ -63,7 +63,7 @@ contains
      integer,            intent(in) ::  i,j
      real, dimension(:), intent(in) :: sumloss
      real, intent(in)  :: invgridarea
-     real :: wdeps, wdepox, wdepred
+     real :: wdeps, wdepox, wdepred,wdeppm25,wdeppmco
 
 
       !wdeps = sumloss(SO2) + sumloss(SO4) + sumloss(AMSU)
@@ -71,17 +71,20 @@ contains
 
       !wdepred = sumloss(NH3)  + sumloss(AMNI) & 
       !                    +1.5 * sumloss(AMSU) !!! (NH4)1.5 SO4
-!hf amsu       wdepred = sumloss(4)  + sumloss(5) & 
-!hf amsu                           +1.5 * sumloss(3) !!! (NH4)1.5 SO4
+      !hf amsu wdepred = sumloss(4)  + sumloss(5) & 
+      !hf amsu     +1.5 * sumloss(3) !!! (NH4)1.5 SO4
          wdepred = sumloss(3)  + sumloss(4) 
 
       !wdepox  = sumloss(HNO3) + sumloss(AMNI) + pNO3
        wdepox  = sumloss(6) + sumloss(5) + sumloss(9)
-
+      wdeppm25= sumloss(7) 
+      wdeppmco= sumloss(8) 
 
        totwdep(IXADV_SO4)  = totwdep(IXADV_SO4) + wdeps
        totwdep(IXADV_HNO3) = totwdep(IXADV_HNO3) + wdepox
        totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)  + wdepred
+       totwdep(IXADV_PM25)  = totwdep(IXADV_PM25)  + wdeppm25
+       totwdep(IXADV_PMco)  = totwdep(IXADV_PMco)  + wdeppmco
 
 
        wdep(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 
