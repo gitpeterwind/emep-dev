@@ -2118,7 +2118,8 @@ private
             do j=1,ljmax
 !hf Anton&Hilde
 !pw emep1.2               if ( (pzpbl(i,j)>z_mid(i,j,k+1)) .and. k>1 )then
-               if ( (pzpbl(i,j)>z_mid(i,j,k-1)) )then
+!hf new               if ( (pzpbl(i,j)>z_mid(i,j,k-1)) )then
+               if ( (pzpbl(i,j)>z_mid(i,j,k)) )then
                   xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
                endif 
                help(i,j) = xksig(i,j,k)
