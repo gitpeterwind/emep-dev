@@ -21,7 +21,7 @@ use My_Outputs_ml, only : &   ! for sitesout
           FREQ_SITE, &
         NSONDES_MAX, &
         NLEVELS_SONDE, & !ds rv1_9_13
-          NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, N_NIT,  &
+          NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, N_NOy,  &
           SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
           FREQ_SONDE, NOy_SPEC
 !ds rv1_9_16 21/12/2003 use My_Derived_ml !ICP , only : d_2d, IOU_INST !, &
@@ -231,6 +231,7 @@ contains
              write(6,*) "sitesdef : end of file after ", nin-1,  infile
              exit SITELOOP
            end if ! ioerr
+           print *, infile, "site: ", nin,   s, x,y
 
          !RESTRI:  check if the output site belongs to the restricted domain 
          !         at all, if not print a warning message
@@ -467,7 +468,7 @@ use GridValues_ml,         only : sigma_bnd,sigma_mid
 
   integer, dimension(NLEVELS_SONDE)       :: itemp
 
-  real, dimension(KMAX_MID)               :: pp, temp, qsat, rh, sum_NIT
+  real, dimension(KMAX_MID)               :: pp, temp, qsat, rh, sum_NOy
   real, dimension(NOUT_SONDE,NSONDES_MAX) :: out
  
   ! --- ////////////// code ////////////////////////////////// ---
@@ -517,15 +518,15 @@ use GridValues_ml,         only : sigma_bnd,sigma_mid
         do ispec = 1, NXTRA_SONDE
           select case ( SONDE_XTRA(ispec) )
           case ( "NOy" ) 
-           sum_NIT(:) = 0.
+           sum_NOy(:) = 0.
            do k = 1, KMAX_MID
-           do ii = 1, N_NIT
-             sum_NIT(k) = sum_NIT(k) + xn_adv(NOy_SPEC(ii),ix,iy,k)
+           do ii = 1, N_NOy
+             sum_NOy(k) = sum_NOy(k) + xn_adv(NOy_SPEC(ii),ix,iy,k)
            end do
            end do 
            out(nn+1:nn+KMAX_MID,i) = PPBINV                                 &
-                                    * sum_NIT(KMAX_MID:1:-1)
-!!!                                   *(xn_adv(NOy_SPEC(1:N_NIT)),ix,iy,KMAX_MID:1:-1)
+                                    * sum_NOy(KMAX_MID:1:-1)
+!!!                                   *(xn_adv(NOy_SPEC(1:N_NOy)),ix,iy,KMAX_MID:1:-1)
 
           case ( "RH   " ) 
              do k = 1,KMAX_MID
@@ -663,6 +664,16 @@ end subroutine siteswrt_sondes
              g_out(:,nglob) = out(:,n)
           end do ! n
       end do ! d
+
+
+      !---- BUG fix, rv2_1_6
+      ! ds 17/2/2005. Embla/gridur print out e.g. "2.23-123" instead of "2.23e-123"
+      ! when numbes get too small. Here we make a correction for this:
+
+      where( abs(g_out) > 0.0 .and. abs(g_out) < 1.0e-99 )
+         g_out = 0.0
+      end where
+      !---- BUG fix
 
 
       ! Final output ***** 
