@@ -59,7 +59,7 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2000";
+$year = "2003";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 my $SR = 0;   #NEW Set to 1 for source-receptor stuff
@@ -96,7 +96,7 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $DAVE ;      
+$USER        =  $PETER ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -119,10 +119,11 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv2_0_2";
+     $testv       = "rv2_0_5";
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
-  $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";  # Fake ok for O3
+  $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";  # for CH3COO2 and H2O2
+  $BCDIRO3    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar_mixratio";  # Logan for O3
 
 } elsif ( $ACID ) {
       $OZONEDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";
@@ -132,17 +133,20 @@ if ( $OZONE ) {
      $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
   #XD: New source of BCs for OH, CH3COO2, O3 and H2O2: (from OZONE)
   $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.${year}";
-} 
+  $BCDIRO3    = $BCDIR;  # 
+  }
   die "NO DIR $BCDIR \n" unless -d $BCDIR;
+  die "NO DIR $BCDIRO3 \n" unless -d $BCDIRO3;
 $version     = "Unimod" ;  
 $subv        = "$testv" ;                  # sub-version (to track changes)
 $Split       = "BASE_MAR2004" ;               #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/Unimod.$testv";   # input of source-code
+#$ProgDir     = "$USER/Unify/temp";   # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DaveDataDir   = "$DAVE/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
+$WORKDIR     = "$WORK{$USER}/Unimod.$testv";    # working directory
 
 # $femis       = "$MyDataDir/femis.dat";      # emission control file
 $femis_dir   = "$WORKDIR/D_femis";      # emission control file
@@ -190,8 +194,9 @@ if ( $SR ) {
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
 #@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
-#@smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
-@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
+@smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
+#@smalldomain = (  60, 169,  40, 124 ) ;     # OSPAR/HELCOM domain+border-south
+#@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
@@ -202,7 +207,7 @@ $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
 
-$NDX   =  8;           # Processors in x-direction
+$NDX   = 8;           # Processors in x-direction
 $NDY   =  4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
@@ -211,12 +216,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  12 ;       # last month
+$mm2   =  1 ;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- #$NTERM = 8;       # for testing, simply reset here
+ $NTERM = 9;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -368,7 +373,6 @@ chdir "$ProgDir";
 #-- generate Makefile each time, to avoid forgetting changed "pat" file!
 #odin system "sed 's/NPROC/$NPROC/'  Makefile.pat > Makefile" ;
 
-
 if ( $RESET ) { unlink ("Make.log") }  # Gone!
 
 open(MAKELOG,"<Make.log");
@@ -484,8 +488,14 @@ for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
     #
     # Ozone,H2O2,OH, CH3COO2 data are needed for all model versions:
 
-    foreach $bc ( qw ( D3_O3 D3_H2O2 D3_OH D3_CH3COO2 )) { #XD
+    foreach $bc ( qw ( D3_H2O2 D3_OH D3_CH3COO2 )) { #XD
             $old = sprintf "$BCDIR/$bc.%02d", $mm ;
+            $new = sprintf "$bc.%02d", $mm ;
+            mylink( "Linking $bc BCs:", $old,$new ) ;
+    }
+
+    foreach $bc ( qw ( D3_O3 )) { #XD
+            $old = sprintf "$BCDIRO3/$bc.%02d", $mm ;
             $new = sprintf "$bc.%02d", $mm ;
             mylink( "Linking $bc BCs:", $old,$new ) ;
     }
@@ -792,6 +802,8 @@ if ( -r $last_sondes ) {
 }  ############################### END OF SCENARIO RUNS ######################
 ################################## END OF SCENARIO RUNS ######################
 
+system "/usr/bin/ja -s"; #end of resource info gathering; give summary
+
 exit 0;
 # And compress the big files
 $nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
@@ -861,7 +873,6 @@ die "accounting error, $nleft $nproc_bsub" unless $nleft<$nproc_bsub;
 }
 
 
-system "/usr/bin/ja -s"; #end of resource info gathering; give summary
 
 exit 0;
 
