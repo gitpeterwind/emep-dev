@@ -13,7 +13,7 @@ module RunChem_ml
 
 
 !    logical, private, save :: my_first_call = .true.
-    logical, private, save :: MYDEBUG         = .false.
+    logical, private, save :: MYDEBUG         = .true.
 
 contains
 
@@ -24,7 +24,8 @@ subroutine runchem()
    use Par_ml,           only : lj0,lj1,li0,li1  &
                         ,gi0, gj0, me,NPROC & !! for testing
                         ,ISMBEG, JSMBEG    !! for testing
-   use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec
+   use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
+                            DEBUG_i, DEBUG_j    ! rv1.2
 
    use Setup_1d_ml,       only: setup_1d, &
                                 setup_bio, setup_rcemis, reset_3d
@@ -98,7 +99,9 @@ subroutine runchem()
                      j_emep = j + JSMBEG + gj0 - 2  ! EMEP coordinates
 
                      !****** debug cell set here *******
-                     ! debug_flag = ( i_emep == 106 .and. j_emep == 55 )
+                     if ( MYDEBUG ) then
+                       debug_flag = ( i_emep == DEBUG_i .and. j_emep == DEBUG_j )
+                     end if
                      !****** debug cell set here *******
 
                      call setup_1d(i,j)   ! g12 - now calculates izen
@@ -106,14 +109,7 @@ subroutine runchem()
                      call Add_2timing(27,tim_after,tim_before,&
                                               "Runchem:setup_1d")
 
-      if ( MYDEBUG .and. i == 3 .and. j == 3 ) then
-        print *, "DEBUG_RUN me pre  presetn", me, prclouds_present
-      end if
                      call Setup_Clouds(i,j)
-
-      if ( MYDEBUG .and. i == 3 .and. j == 3 ) then
-        print *, "DEBUG_RUN me aft presetn", me, prclouds_present
-      end if
 
                      call setup_bio(i,j)    ! new
 
@@ -147,9 +143,10 @@ subroutine runchem()
                      call Add_2timing(32,tim_after,tim_before,&
                                                  "Runchem:ammonium")
 
-      if ( MYDEBUG .and. i == 3 .and. j == 3 ) then
-        print *, "DEBUG_RUN me pre WetDep", me, prclouds_present
-      end if
+                      if ( MYDEBUG .and. debug_flag  ) then
+                         write(6,*) "DEBUG_RUN me pre WetDep", me, prclouds_present
+                      end if
+
                      if ( prclouds_present)  &
                         call WetDeposition(i,j)
 
