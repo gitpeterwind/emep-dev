@@ -17,8 +17,7 @@ module  My_Outputs_ml
   use GenSpec_adv_ml, only : NSPEC_ADV          &
         ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
         ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
-!hf amsu        ,IXADV_AMSU, IXADV_AMNI    !6s                &
-        ,IXADV_aNH4, IXADV_aNO3    !6s                &
+        ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
 !6s         ,IXADV_SOA, IXADV_ASOA, IXADV_BSOA
 !  use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
 !                IXSHL_OH,IXSHL_HO2
@@ -110,7 +109,8 @@ module  My_Outputs_ml
     integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
 
     type, public:: Asc2D
-         character(len=3) :: type   ! "ADV" or "SHL" (or user-defined)
+!         character(len=3) :: type   ! "ADV" or "SHL" (or user-defined)
+         character(len=7) :: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3" 
         character(len=12) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
                                     !ds u7.4vg .. or other arrays
@@ -175,14 +175,16 @@ contains
    integer           :: i       ! Loop index
 
    real                :: to_ug_S & ! conversion to ug of S
-                         ,to_ug_N   ! conversion to ug of N
- 
+                         ,to_ug_N & ! conversion to ug of N
+                         ,to_mgSIA& ! conversion to mg of N
+                         ,to_ugSIA  ! conversion to ug of N 
  
 !jej - added 11/5/01 following Joffen's suggestion:
 
   to_ug_S = atwS*PPBINV/ATWAIR ! in output only accounting for Sulphur
   to_ug_N = atwN*PPBINV/ATWAIR ! in output only accounting for Nitrogen
-
+  to_mgSIA= PPBINV/ATWAIR*1000.
+  to_ugSIA= PPBINV/ATWAIR
 
  !/** Hourly outputs
  !    Note that the hourly output uses **lots** of disc space, so specify
@@ -194,10 +196,12 @@ contains
   !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
 
   hr_out(1)= &
-    Asc2D("ADV", "(f8.4)",IXADV_NO, 55, 150, 10, 100, "ppb",PPBINV,600.0)
+    Asc2D("ADVugm3", "(f8.4)",IXADV_aNO3, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
   hr_out(2)= &
-    Asc2D("ADV", "(f8.4)",IXADV_NO2, 55, 150, 10, 100, "ppb",PPBINV,600.0)
-!  hr_out(3)= &
+    Asc2D("ADVugm3", "(f8.4)",IXADV_aNH4, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
+  hr_out(3)= &
+    Asc2D("ADVugm3", "(f8.4)",IXADV_pNO3, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
+
 !    Asc2D("ADV", "(f8.4)",IXADV_PAN, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
 !  hr_out(4)= &
 !    Asc2D("ADV", "(f8.4)",IXADV_SO2, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
@@ -213,8 +217,8 @@ contains
  !ds u7.4vg - or from d_2d arrays.
 
   !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
-  hr_out(3)= &
-     Asc2D("D2D", "(f6.1)",   D2_HMIX, 70, 150, 10, 100, "m",1.0   ,10000.0)
+  !hr_out(3)= &
+  !   Asc2D("D2D", "(f6.1)",   D2_HMIX, 70, 150, 10, 100, "m",1.0   ,10000.0)
 
  !/** theta is in deg.K
  ! hr_out(5)= &
@@ -246,5 +250,7 @@ contains
 
  end subroutine set_output_defs
 end module My_Outputs_ml
+
+
 
 

@@ -1,4 +1,12 @@
 ==============================================================================
+=========== Hilde/Joffen/Dave  28th March 2003, rv1.4.29   ========================
+==============================================================================
+Units changed to tot. mass in My_Outputs_ml.f90
+ADVppbv, ADVugm3, SHLmcm3 now used for Hourly outputs
+Output heights put to 3m (or top of tree, er, too difficult to explain, so say 3m )
+ - spo use Vg_3m in DryDep and Ra_3m in SubMet_ml
+
+==============================================================================
 =========== Dave  27th March 2003, rv1.4.29   ========================
 ==============================================================================
 ZD_ACID: My_Reactions re-corrected for old errors which seemed to come back!

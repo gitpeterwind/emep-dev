@@ -110,7 +110,7 @@ contains
   subroutine Get_Submet(h,t2,Hd,LE,psurf, z_ref, u_ref, qw_ref, & ! in-
                         debug_flag,                        &    ! in
                         ustar, invL,                       &    ! in-out
-                        z0,d, Ra_ref,Ra_1m,rh,vpd)                    ! out
+                        z0,d, Ra_ref,Ra_3m,rh,vpd)                    ! out
 
 !---------------------------------------------------------------
 !  Sub-grid calculations of  stability, Ra and ustar for this landuse
@@ -162,7 +162,7 @@ contains
     real, intent(out) :: z0               ! roughness length (m)
     real, intent(out) :: d                ! zero-plane displacament height (m)
     real, intent(out) :: Ra_ref           ! resistances for SEI  landuse
-    real, intent(out) :: Ra_1m            ! resistances for SEI  landuse
+    real, intent(out) :: Ra_3m            ! resistances for SEI  landuse
     real, intent(out) :: rh               ! relative humidity
     real, intent(out) :: vpd              ! vapour pressure deficit in leaf    
 
@@ -174,7 +174,9 @@ contains
 !u7.lu    real :: d                      ! displacement height ~ 0.7 * h 
     real :: Psi_h0, Psi_h2         ! stability functions, heat
     real :: tmpinvL, tmpinvL_nwp   ! 1/L values for printout
-    real :: z_1m                   !  1m above vegetation, rel to displace ht.
+    real :: z_1m                   !  1m above vegetation
+    real :: z_3m                   !  3m above ground, or top of trees
+    real :: z_3md                  !  minus displacemt ht.
     
     
     logical, save ::  my_first_call = .true.
@@ -229,18 +231,22 @@ contains
              z0 = CHARNOCK * ustar * ustar/GRAV
              z0 = max(z0,0.01)  ! u7.5vgc 
              z_1m   = 1.0       ! 1m above sea surface
+             z_3m   = 3.0       ! 3m above sea surface
         else
              d  =  0.7 * h
              z0 =  0.1 * h
              z0 = max(z0,0.001) !  Fix for deserts, ice, snow (where, if the 
                                 !  ground is bare, h=0 and hence z0=0)
              z_1m   = (h + 1.0) - d !  1m above vegetation, rel to displace ht.
+             z_3m   = max(3.0,h)    !  3m above ground, or top of trees 
         end if
           
-        z_refd = z_ref - d
+        z_refd = z_ref - d          !  minus displacement height
+        z_3md  = z_3m  - d          !  minus displacement height
+
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        print "(a12,6f8.3)", "UKDEP SUB1", h, ustar, z0, d, z_refd, z_1m
+        print "(a12,6f8.3)", "UKDEP SUB1", h, ustar, z0, d, z_refd, z_3md
     end if
 
     do iter = 1, NITER 
@@ -325,14 +331,13 @@ contains
 !      Only Ra_ref is used in the present subroutine.  
       
         Ra_ref = AerRes(z0,z_refd,ustar,invL,KARMAN)
-        Ra_1m  = AerRes(z0,z_1m,ustar,invL,KARMAN)
+        Ra_3m  = AerRes(z0,z_3md,ustar,invL,KARMAN)
         Ra_2m  = AerRes(z0,1.0+z_1m,ustar,invL,KARMAN)
-    if ( Ra_ref < 0 .or. Ra_1m < 0 .or. Ra_2m < 0  ) then
-      print *, "RAREF NEG ", z0, z_refd, ustar, invL, KARMAN, &
-         Ra_ref, Ra_1m, Ra_2m
+    if ( Ra_ref < 0 .or. Ra_3m < 0 .or. Ra_2m < 0  ) then
+      print *, "RAREF NEG ", z0, z_refd, ustar, invL, KARMAN
     end if
-    if ( DEBUG_SUB .and.  Ra_1m > Ra_ref ) then
-        print "(a22,f12.3)", "ERROR!!! Ra_ref<Ra_1",  Ra_ref, Ra_1m
+    if ( DEBUG_SUB .and.  Ra_3m > Ra_ref ) then
+        print "(a22,f12.3)", "ERROR!!! Ra_ref<Ra_3",  Ra_ref, Ra_3m
     end if
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
         print "(a22,f12.3)", "UKDEP SUB5 Ra_ref",  Ra_ref

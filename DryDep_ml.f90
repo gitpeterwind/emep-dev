@@ -146,14 +146,14 @@ module DryDep_ml
          ,Rsur_wet       ! rv1.4.8 - Rsur over wet surface
 !stDry
  real, dimension(NDRYDEP_TOT) :: &
-          gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 1m
+          gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
          ,vg_fac       & ! Loss factor due to dry dep.
          ,Vg_ref       & ! Vg at ref ht.
-         ,Vg_1m        & ! Vg at  1m over veg.
+         ,Vg_3m        & ! Vg at  3m
          ,Grid_Vg_ref  & ! Grid average of Vg at ref ht. (effective Vg for cell)
-         ,Grid_Vg_1m   & ! Grid average Vg at  1m over veg.
-         ,Vg_ratio     & ! Ratio Vg_ref/Vg_1m = ratio C(1m)/C(ref), over land
-         ,sea_ratio      ! Ratio Vg_ref/Vg_1m = ratio C(1m)/C(ref), over sea
+         ,Grid_Vg_3m   & ! Grid average Vg at  3m (or tree height)
+         ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
+         ,sea_ratio      ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
 
  integer, intent(in):: i,j
  integer n, ilu, lu, nlu, ncalc, nadv, ind, err,k   ! help indexes
@@ -184,7 +184,7 @@ module DryDep_ml
    real :: cover , Sumcover, Sumland   ! Land-coverage
    real :: z0, g_sto   &
          ,Ra_ref       & ! Ra from ref ht.  to z0
-         ,Ra_1m        & ! Ra from 1m over veg. to z0
+         ,Ra_3m        & ! Ra from 3m over veg. to z0
          ,Idrctt, Idfuse   ! Direct-total and diffuse radiation
    real :: wetarea         ! Fraction of grid square assumed wet 
    real :: ustar_nwp, ustar_loc, vpd, invL, rho_surf, invL_nwp, d, rh, Ts_C
@@ -207,7 +207,7 @@ module DryDep_ml
    real    :: lu_cover(NLUMAX)
    real    :: lu_lai(NLUMAX)  ! TMP for debug
 
-!     first calculate the 1m deposition velocity following the same
+!     first calculate the 3m deposition velocity following the same
 !     procedure as in the lagmod. second the flux and the accumulated 
 !     deposition is calculated.
 !
@@ -348,7 +348,7 @@ module DryDep_ml
     !/ Initialise Grid-avg Vg for this grid square:
 
     Grid_Vg_ref(:) = 0.0
-    Grid_Vg_1m(:) = 0.0
+    Grid_Vg_3m(:) = 0.0
     Vg_ref_lu(:,:) = 0.0
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
@@ -417,7 +417,7 @@ module DryDep_ml
                z_mid(i,j,KMAX_MID), u_ref, q(i,j,KMAX_MID,1), & ! qw_ref
                        debug_flag,                        &    ! in
                        ustar_loc, invL,                   &    ! in-out
-                       z0,d, Ra_ref,Ra_1m,rh,vpd)                    ! out
+                       z0,d, Ra_ref,Ra_3m,rh,vpd)                    ! out
 
              if ( DEBUG_UK .and. debug_flag ) then
                 write(6,"(a40,4i3,f6.1,2i4,3f7.3,2i4,2f6.2)") &
@@ -427,7 +427,7 @@ module DryDep_ml
                    cover, lai, hveg,daynumber, snow(i,j), SWP(daynumber),Ts_C
 
                 write(6,"(a10,2i4,2f7.2,2es12.3,3f8.3)") "UKDEP SUB", me, &
-                  lu, ustar_nwp, ustar_loc, invL_nwp, invL, Ra_ref, Ra_1m,rh
+                  lu, ustar_nwp, ustar_loc, invL_nwp, invL, Ra_ref, Ra_3m,rh
 
              end if
 
@@ -487,18 +487,18 @@ module DryDep_ml
                   (1.0-wetarea) / (Ra_ref + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
                 +      wetarea  / (Ra_ref + aeRbw(nae) + RaVs  *aeRbw(nae) )
                     
-                RaVs = Ra_1m  * Vs(nae)  ! Mainly to keep the equations short, ds!
+                RaVs = Ra_3m  * Vs(nae)  ! Mainly to keep the equations short, ds!
 
-                Vg_1m(n)  = Vs(nae) +       &
-                  (1.0-wetarea) / (Ra_1m + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
-                +      wetarea  / (Ra_1m + aeRbw(nae) + RaVs  *aeRbw(nae) )
+                Vg_3m(n)  = Vs(nae) +       &
+                  (1.0-wetarea) / (Ra_3m + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
+                +      wetarea  / (Ra_3m + aeRbw(nae) + RaVs  *aeRbw(nae) )
 
             else                           ! gases
                Vg_ref(n) = (1.0-wetarea) / ( Ra_ref + Rb(n) + Rsur(n) ) &
                      +      wetarea  / ( Ra_ref + Rb(n) + Rsur_wet(n) )
 
-               Vg_1m (n) = (1.0-wetarea) / ( Ra_1m + Rb(n) + Rsur(n) ) &
-                     +      wetarea  / ( Ra_1m + Rb(n) + Rsur_wet(n) )
+               Vg_3m (n) = (1.0-wetarea) / ( Ra_3m + Rb(n) + Rsur(n) ) &
+                     +      wetarea  / ( Ra_3m + Rb(n) + Rsur_wet(n) )
 
             endif
 
@@ -528,14 +528,14 @@ module DryDep_ml
             end if
 
             Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
-            Vg_1m (CDEP_NO2) = Vg_1m (CDEP_NO2) * no2fac
+            Vg_3m (CDEP_NO2) = Vg_3m (CDEP_NO2) * no2fac
           end if ! CDEP_NO2
 
            Vg_ref_lu(n,ilu) = Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
-           Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)
+           Grid_Vg_3m(n)  = Grid_Vg_3m(n)  + cover * Vg_3m(n)
 
-           if ( DEBUG_VG .and.  Vg_ref(n) < 0.0 .or. Vg_1m(n)<Vg_ref(n) ) then
+           if ( DEBUG_VG .and.  Vg_ref(n) < 0.0 .or. Vg_3m(n)<Vg_ref(n) ) then
                print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", &
                   Ra_ref, Rb(n), Rsur(n)
                print *, "VGREF ERROR stab", z0, d, ustar_loc, invL, g_sto
@@ -553,12 +553,12 @@ module DryDep_ml
 
          if ( water(lu) ) then
             do n = 1, NDRYDEP_TOT  !stDep NDRYDEP_CALC
-               sea_ratio(n) =  Vg_ref(n)/Vg_1m(n)
+               sea_ratio(n) =  Vg_ref(n)/Vg_3m(n)
             end do
          else
             Sumland = Sumland + cover
             do n = 1, NDRYDEP_TOT  !stDep  NDRYDEP_CALC
-                Vg_ratio(n) =  Vg_ratio(n) + cover * Vg_ref(n)/Vg_1m(n)
+                Vg_ratio(n) =  Vg_ratio(n) + cover * Vg_ref(n)/Vg_3m(n)
             end do
          end if
 
@@ -567,7 +567,7 @@ module DryDep_ml
            write(6,*) ' >=>=>=>=>=>=>  Dry deposition velocity at :', &
               i_glob(i), j_glob(j)
            write(6,'(7(i3,f8.3))') &
-              (n, 100.*Grid_Vg_1m(n), n = 1,NDRYDEP_TOT)
+              (n, 100.*Grid_Vg_3m(n), n = 1,NDRYDEP_TOT)
            write(6,'(7(i3,f8.3))') &
               (n, 100.*Grid_Vg_ref(n), n = 1,NDRYDEP_TOT)
            write(6,*)' >=>=>=>=>=>=>>=>=>=>=>=>=>>=>=>=>=>=>=>=>=>=>=>=>=>>=>=>=>=>=>=>>'
@@ -575,7 +575,7 @@ module DryDep_ml
 
         if ( DEBUG_UK .and. debug_flag ) then
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP RATVG",ilu,lu,cover,&
-                100.0*Vg_1m(4), 100.0*Vg_ref(4), Sumland, Sumcover, &
+                100.0*Vg_3m(4), 100.0*Vg_ref(4), Sumland, Sumcover, &
                    Vg_ratio(4)   !helcom, 4=NH3
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP FINVG", ilu, lu, cover, &
                    lai,100.0*g_sto, &  ! tmp, in cm/s 
@@ -615,7 +615,7 @@ module DryDep_ml
             print "(a14,i2,3i3,10f6.2)", "UKDEP VG_UKR", &
                    snow(i,j), imm, idd, ihh,  &
                  (100.0*Grid_Vg_ref(n), n = 1, min(5,NDRYDEP_CALC)), &
-                 (100.0*Grid_Vg_1m(n), n = 1, min(5,NDRYDEP_CALC))
+                 (100.0*Grid_Vg_3m(n), n = 1, min(5,NDRYDEP_CALC))
         end if
 
 

@@ -27,7 +27,7 @@
    use ModelConstants_ml,only : current_date,KMAX_MID
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
    ! tmp use Dates_ml,         only : date ,add_dates
-   use Met_ml,           only : t2,th   !u7.4vg temp2m, th
+   use Met_ml,           only : t2,th, roa   !u7.4vg temp2m, th
    use GenSpec_shl_ml , only : NSPEC_SHL  ! Maps indices
    !u1 use GenSpec_maps_ml , only : MAP_ADV2TOT, MAP_SHL2TOT   ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
@@ -36,7 +36,7 @@
    implicit none
 
    !*.. Components of  hr_out
-   !*  character(len=3) :: type   ! "ADV" or "SHL" or "T2 "
+   !*  character(len=3) :: type   ! "ADVp" or "ADVu" or "SHL" or "T2 "
    !*  integer          :: spec   ! Species number in xn_adv or xn_shl array
    !* character(len=12) :: ofmt   ! Output format (e.g. es12.4)
    !*  integer          :: ix1    ! bottom-left x
@@ -52,6 +52,7 @@
    real hourly(MAXLIMAX,MAXLJMAX)      ! Local hourly value  (e.g. ppb)
    real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
    real :: arrmax                      ! Maximum value from array
+   real :: unit_conv                   ! Unit conversion (ppb ug etc.)
    integer, dimension(2) :: maxpos     ! Location of max value 
    integer i,j,ih,ispec,itot           ! indices
    integer ist,ien,jst,jen             ! start and end coords
@@ -110,16 +111,17 @@
       ispec = hr_out(ih)%spec 
 
        OPTIONS: select case ( hr_out(ih)%type ) 
-         case ( "ADV" )
+         case ( "ADVppbv" )
             !u1 itot = MAP_ADV2TOT( ispec )
             !u1 advected species follow short-lived in totals array
             itot = NSPEC_SHL + ispec 
             name = species(itot)%name
+            unit_conv =  hr_out(ih)%unitconv
             do j = 1, ljmax
                do i = 1, limax
                   hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
                                  * cfac(ispec,i,j) &    ! 50m->1m conversion
-                                 * hr_out(ih)%unitconv  ! Units conv.
+                                 * unit_conv            ! Units conv.
 		if(DEBUG .and. i.eq.3.and.j.eq.3) then
                   print *,"HOURLY",me,ih,ispec,xn_adv(ispec,i,j,KMAX_MID),&
                      cfac(ispec,i,j), hr_out(ih)%unitconv
@@ -127,7 +129,27 @@
                enddo
             enddo
 
-          case ( "SHL" )        ! No cfac for short-lived species
+         case ( "ADVugm3" )
+            !u1 itot = MAP_ADV2TOT( ispec )
+            !u1 advected species follow short-lived in totals array
+            itot = NSPEC_SHL + ispec 
+            name = species(itot)%name
+            unit_conv =  hr_out(ih)%unitconv * species(itot)%molwt
+            do j = 1, ljmax
+               do i = 1, limax
+                  hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
+                                 * cfac(ispec,i,j) &     ! 50m->1m conversion
+                                 * unit_conv       &     ! Units conv.
+                                 * roa(i,j,KMAX_MID,1)   ! density.
+		if(DEBUG .and. i.eq.3.and.j.eq.3) then
+                  print *,"HOURLYug",me,ih,ispec,itot,xn_adv(ispec,i,j,KMAX_MID),&
+                     cfac(ispec,i,j), hr_out(ih)%unitconv,species(itot)%molwt, &
+                     roa(i,j,KMAX_MID,1)
+		end if
+               enddo
+            enddo
+
+          case ( "SHLmcm3" )        ! No cfac for short-lived species
             !u1 itot = MAP_SHL2TOT( ispec )
             itot = ispec 
             name = species(itot)%name
@@ -245,7 +267,7 @@
                  ,current_date%year,current_date%month,current_date%day       &
                  ,current_date%hour                                           &
                  ,ist, ien, jst, jen,         &
-                  hr_out(ih)%unitconv
+                  unit_conv
 
             if ( DEBUG ) print *, "TTTHOUR ISTS", me, ist, ien, jst, jen 
 

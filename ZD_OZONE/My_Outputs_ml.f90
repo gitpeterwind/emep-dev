@@ -109,7 +109,7 @@ module  My_Outputs_ml
     integer, public, parameter :: FREQ_HOURLY = 3  ! 3 hours between outputs
 
     type, public:: Asc2D
-         character(len=3) :: type   ! "ADV" or "SHL" 
+         character(len=7) :: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3" 
         character(len=12) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
                                     !ds u7.4vg .. or other arrays
@@ -168,7 +168,9 @@ contains
    integer           :: i       ! Loop index
 
    real, save          :: to_ug_S & ! conversion to ug of S
-                         ,to_ug_N   ! conversion to ug of N
+                         ,to_ug_N & ! conversion to ug of N
+                         ,to_mgSIA& ! conversion to mg of N
+                         ,to_ugSIA  ! conversion to ug of N
    real, save :: m_s = 100.0 ! From cm/s to m/s
  
  
@@ -176,7 +178,8 @@ contains
 
   to_ug_S = atwS*PPBINV/ATWAIR ! in output only accounting for Sulphur
   to_ug_N = atwN*PPBINV/ATWAIR ! in output only accounting for Nitrogen
-
+  to_mgSIA= PPBINV/ATWAIR*1000.
+  to_ugSIA= PPBINV/ATWAIR
 
  !/** Hourly outputs
  !    Note that the hourly output uses **lots** of disc space, so specify
@@ -188,15 +191,16 @@ contains
   !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
 
   hr_out(1)= &
-    Asc2D("ADV", "(f9.5)",IXADV_O3, 55, 150, 10, 100, "ppb",PPBINV,600.0)
+    Asc2D("ADVppbv", "(f9.5)",IXADV_O3, 45, 170, 1, 133, "ppb",PPBINV,600.0)
   hr_out(2)= &
-    Asc2D("ADV", "(f8.4)",IXADV_aNH4, 55, 150, 10, 100, "ppb",PPBINV,600.0)
+   Asc2D("ADVugm3", "(f8.4)",IXADV_aNH4, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
   hr_out(3)= &
-    Asc2D("ADV", "(f8.4)",IXADV_aNO3, 55, 150, 10, 100, "ppb",PPBINV,600.0)
+   Asc2D("ADVugm3", "(f8.4)",IXADV_aNO3, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
   hr_out(4)= &
-    Asc2D("ADV", "(f8.2)",IXADV_SO4, 55, 150, 10, 100, "ppb",PPBINV,4000.0)
+   Asc2D("ADVugm3", "(f8.4)",IXADV_SO4, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
   hr_out(5)= &
-    Asc2D("ADV", "(f8.2)",IXADV_pNO3, 55, 150, 10, 100, "ppb",PPBINV,4000.0)
+   Asc2D("ADVugm3", "(f8.4)",IXADV_pNO3, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
+
 !    Asc2D("ADV", "(g9.3)",IXADV_SOA, 70, 150, 10, 100, "ppb",PPBINV,400.0)
 !  hr_out(3)= &
 !    Asc2D("ADV", "(g9.3)",IXADV_ASOA, 70, 150, 10, 100, "ppb",PPBINV,400.0)
