@@ -1,89 +1,149 @@
-!This program is a tool to make F90 routines for reading and processing of netCDF files
-!
-!for details see: 
-!http://www.unidata.ucar.edu/packages/netcdf/f90/Documentation/f90-html-docs/
-!
-!
-!compile with:
-!f90 -o ReadCDF -L/home/u4/mifahik/netcdf/lib64 -I/home/u4/mifahik/netcdf/include -64 ReadCDF_ml.f90 -lnetcdf
-!
-!view results.nc with:
-!xrdb -load /home/u4/mifahik/.app-defaults/Ncview  (once only)
-!/home/u4/mifahik/bin/ncview results.nc
-!or
-!/home/u4/mifahik/bin/ncdump results.nc |less
-!____________________________________________________________________________________________________________
+program ReadCDF
+  !
+  ! Routines for reading and netCDF files 
+  ! and writing results in binary xfeltformat
+  !
+  ! Written by Peter August 2003
+  !
+  !compile with:
+  !f90 -o ReadCDF -L/home/u4/mifahik/netcdf/lib64 -I/home/u4/mifahik/netcdf/include -64 ReadCDF.f90 -lnetcdf
 
-   PROGRAM ReadCDF_ml
-!
-! Routines for reading and manipulating netCDF files
-!
-! Written by Peter january 2003
-!
+  
 
-  character (len=*), parameter :: fileName1 = 'results.nc'
-  character (len=*), parameter :: fileName2 = 'results00.nc'
+  implicit none
+!  character (len=*), parameter :: dirroot = '/home/u4/mifapw/nonlin/'
+  character (len=*), parameter :: dirroot = '/work/mifapw/last/'
+  character (len=*), parameter :: fileName0 =  dirroot//'out_year.nc'
+
+  integer, parameter :: Numberofrecords=1 !increase for out_month or out_day
   character*30  :: varname
+  character*30 ::  SIA,  SO2,  Dsox,  Dnox,  Drdn
+  character*30 ::  WDsox,  WDnox,  WDrdn,  PM25,  PMco
   integer :: GIMAX,GJMAX,KMAX
-  real, dimension(170,133,20) :: var1,var2
+  real, dimension(170,133,Numberofrecords) :: var1,var2,var3
+  real, dimension(170,133,13) :: tofelt
   real :: factor(170,133)
 
   real :: ddepsum1,wdepsum1,depsum1,ddepsum2,wdepsum2,depsum2
+  real :: x,xmax,xmin
+  integer ::n,i,j,k,ij,ntofelt,nin,imax,jmax
 
-  varname='Out_2D0521'
-  call GetCDF(varname,fileName1,var1,GIMAX,GJMAX,KMAX)
+  integer ::nrecords,ident(20),lpack,iscal,E,IO_num2=77
+  integer*2::iutdpack(20),nyipack(170*133+3)
+  real :: maxfield,locmaxfield,fac1
 
-     call mgm2toton(factor,GIMAX,GJMAX)
-     depsum1=0.
-     do j=1,GJMAX
-     do i=1,GIMAX
-        ddepsum1=ddepsum1+var1(i,j,1)*factor(i,j)
-     enddo
-     enddo
-     print *, 'sum dry dep in ',fileName1,ddepsum1
-  varname='Out_2D0541'
-  call GetCDF(varname,fileName1,var1,GIMAX,GJMAX,KMAX)
-     depsum1=0.
-     do j=1,GJMAX
-     do i=1,GIMAX
-        wdepsum1=wdepsum1+var1(i,j,1)*factor(i,j)
-     enddo
-     enddo
-     print *, 'sum wet dep in ',fileName1,wdepsum1
-     depsum1=ddepsum1+wdepsum1
-     print *, 'sum wet+dry dep in ',fileName1,depsum1
+  write(*,*)fileName0
 
-  varname='Out_2D0521'
-  call GetCDF(varname,fileName2,var2,GIMAX,GJMAX,KMAX)
-     depsum2=0.
-     do j=1,GJMAX
-     do i=1,GIMAX
-        ddepsum2=ddepsum2+var2(i,j,1)*factor(i,j)
+  Dnox='DDEP_OXN'
+  WDnox='WDEP_OXN'
+
+  varname=Dnox
+  call GetCDF(varname,fileName0,var1,GIMAX,GJMAX,nrecords,ident)
+
+  varname=WDnox
+  call GetCDF(varname,fileName0,var2,GIMAX,GJMAX,nrecords,ident)
+
+  var3=(var1+var2)
+
+  nin=1
+  tofelt(:,:,1)=var1(:,:,nin)
+  tofelt(:,:,2)=var2(:,:,nin)
+  tofelt(:,:,3)=var3(:,:,nin)
+
+     n=3
+     maxfield=0.
+     do j=1,ident(11)
+        do i = 1,ident(10)
+           if(abs(tofelt(i,j,n))>maxfield)then
+              imax=i
+              jmax=j
+           endif
+           maxfield=max(maxfield,abs(tofelt(i,j,n)))
+        enddo
      enddo
-     enddo
-     print *, 'sum dry dep in ',fileName2,ddepsum2
-  varname='Out_2D0541'
-  call GetCDF(varname,fileName2,var2,GIMAX,GJMAX,KMAX)
-     depsum2=0.
-     do j=1,GJMAX
-     do i=1,GIMAX
-        wdepsum2=wdepsum2+var2(i,j,1)*factor(i,j)
-     enddo
-     enddo
-     print *, 'sum wet dep in ',fileName2,wdepsum2
-     depsum2=ddepsum2+wdepsum2
-     print *, 'sum wet+dry dep in ',fileName2,depsum2
-     print *
-     print *, 'diff of wet+dry dep (tons) in ',fileName1,' and ',fileName2,' is ',depsum2-depsum1
+     write(*,*)'max ',imax,jmax,maxfield
+stop
+  ntofelt=3
+
+  open(IO_num2,file='utfelt.flt',form='unformatted',status='unknown')
+
+  !     iutdpack(1)=88
+  !     iutdpack(2)=1841
+  !     iutdpack(3)=2
+  !     iutdpack(4)=6
+  !     iutdpack(5)=2
+  !
+  !     iutdpack(6)=606  !parameter code
+  !
+  !     iutdpack(7)=1000
+  !     iutdpack(8)=0
+  !     iutdpack(9)=1
+  !     iutdpack(10)=IMAX
+  !     iutdpack(11)=JMAX
+  !     iutdpack(12)=1999
+  !     iutdpack(13)=101
+  !     iutdpack(14)=600
+  !     iutdpack(15)=100*xp1
+  !     iutdpack(16)=100*yp1
+  !     iutdpack(17)=gridwidth1/100.
+  !     iutdpack(18)=fi2
+  !     iutdpack(19)=200
+  !     iutdpack(20)=0
 
 
-   end PROGRAM ReadCDF_ml
+
+  do n=1,ntofelt
+     iutdpack=ident
+     iutdpack(6)=601
+     lpack=iutdpack(10)*iutdpack(11)
+
+     if(n>31)stop
+!     iutdpack(13)=100+n
+     iutdpack(6)=iutdpack(6)+n-1
+     maxfield=0.0
+     do j=1,iutdpack(11)
+        do i = 1,iutdpack(10)
+           maxfield=max(maxfield,abs(tofelt(i,j,n)))
+        enddo
+     enddo
+     E = 0
+     if(maxfield.gt.(1.e-32))then
+        maxfield = maxfield/3.2e4
+        locmaxfield = log10(maxfield)
+        if(locmaxfield.le.0.)E = -int(-locmaxfield)
+        if(locmaxfield.gt.0.)E = int(locmaxfield)+1
+     endif
+
+     iutdpack(20)=E
+     fac1=10.**(-E)
+     write(*,*)fac1,E,maxfield*3.2e4,lpack,lpack/4.
+!     lpack = (lpack+3)/4
+!     do i=lpack+1,
+
+     write(IO_num2,err=90) (iutdpack(i),i=1,20)
+     write(*,*)'wrote ident'
+     ij = 0
+     do j=1,iutdpack(11)
+        do i = 1,iutdpack(10)
+           ij = ij+1
+           nyipack(ij)=nint(tofelt(i,j,n)*fac1)
+        enddo
+     enddo
+
+     write(IO_num2,err=90) (nyipack(i),i=1,lpack)
+  enddo
+
+  stop
+
+90 continue
+  write(*,*)'ERROR'
 
 
+end program ReadCDF
 
 !_______________________________________________________________________
 
-subroutine GetCDF(varname,fileName,var,GIMAX,GJMAX,kmax)
+subroutine GetCDF(varname,fileName,var,GIMAX,GJMAX,nrecords,xfelt_ident)
 !
 ! open and reads CDF file
 !
@@ -98,12 +158,12 @@ subroutine GetCDF(varname,fileName,var,GIMAX,GJMAX,kmax)
   character (len=*),intent(in) :: fileName 
 
   character (len = *),intent(in) ::varname
-  integer, intent(out) :: GIMAX,GJMAX,kmax
+  integer, intent(out) :: GIMAX,GJMAX,nrecords,xfelt_ident(20)
 !  real, dimension(:,:,:),intent(out) :: var
-  real, dimension(170,133,20),intent(out) :: var
+  real, dimension(170,133,12),intent(out) :: var
 
-  integer :: varID,nrecords,status,ndims,alloc_err
-  integer :: KMAX_MID  
+  integer :: varID,status,ndims,alloc_err
+  integer :: KMAX_MID,n,KMAX
   integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
 
   real (kind = FourByteReal), allocatable,dimension(:,:,:,:)  :: values
@@ -150,7 +210,7 @@ subroutine GetCDF(varname,fileName,var,GIMAX,GJMAX,kmax)
      if(ndims==3)then
         kmax=1
         !allocate a 2D array 
-        allocate(values(GIMAX,GJMAX,1,nrecords), stat=alloc_err)
+        allocate(values(GIMAX,GJMAX,nrecords,1), stat=alloc_err)
         if ( alloc_err /= 0 ) then
            print *, 'alloc failed in ReadCDF_ml: ',alloc_err,ndims
            stop
@@ -172,16 +232,22 @@ subroutine GetCDF(varname,fileName,var,GIMAX,GJMAX,kmax)
      !get variable attributes
      !example:
      attribute=''
-     call check(nf90_get_att(ncFileID, VarID, "periodlength", attribute))
-     print *,'periodlength ',attribute
+     call check(nf90_get_att(ncFileID, VarID, "long_name", attribute))
+     print *,'long_name ',attribute
      
+     call check(nf90_get_att(ncFileID, VarID, "xfelt_ident", xfelt_ident))
+ 
+
      !get variable
      call check(nf90_get_var(ncFileID, VarID, values))
      depsum=0.
+     do n=1,nrecords
+!        write(*,*)n,values(62,92,n,1)
      do j=1,GJMAX
      do i=1,GIMAX
-        var(i,j,1)=values(i,j,1,1)
-        depsum=depsum+values(i,j,1,1)
+        var(i,j,n)=values(i,j,n,1)
+!        depsum=depsum+values(i,j,1,1)
+     enddo
      enddo
      enddo
 !        print *, values(51,64,1,1), values(50,64,1,1), values(49,63,1,1), values(49,62,1,1)
@@ -205,51 +271,3 @@ subroutine GetCDF(varname,fileName,var,GIMAX,GJMAX,kmax)
       stop
     end if
   end subroutine check  
-
-  subroutine mgm2toton(factor,GIMAX,GJMAX)
-
-! GRIDWIDTH_M = 50000.0 meter
-! AN = 6.371e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M = 237.768957  
-! xp,yp:   coord. of the polar point (read from fields)
-!           xp = ident(15)/100. (= 43.00  ?)
-!           yp = ident(16)/100. (= 121.00 ?)
-! PI = 3.14159265358979323
-! i,j map coordinates (1<= i <=170 , 1<= j <=133 ?)
-
-implicit none
-
-real :: factor(170,133)
-real :: gridwidth,PI,AN,xp,yp,an2,y,x,rpol2
-real :: xm(170,133)
-
-integer ::i,j,GIMAX,GJMAX
-
-if(GIMAX/=132 .or. GJMAX/=111)then
-   print *,'WARNING: mapping factor probably wrong!'
-endif
-
- !  map factor = xm
-  gridwidth = 50000.
-  PI = 3.14159265358979323
-  AN = 237.768957
-  xp = 43.00-35.  !assumes  a domain @smalldomain = (36, 167,  12, 122)
-  yp = 121.00-11. !
-  an2 = AN*AN
-  do j=1,GJMAX        
-     y = j - yp     
-     do i=1,GIMAX
-        x = i - xp   
-        rpol2 = (x*x + y*y)/an2
-        xm(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2)
-!        write(*,*)i,j,xm(i,j)
-     end do
-  end do
-
-!convert xm into a factor which converts mg/m^2 into tons
-  do i=1,GIMAX
-     do j=1,GJMAX
-        factor(i,j)=gridwidth**2/xm(i,j)**2/1000000000
-     end do
-  end do
-
-  end subroutine mgm2toton

@@ -225,8 +225,9 @@ contains
           if ( wanted ) then 
               ident(6)  = def(icmp)%code      ! Identifier for DNMI/xfelt
               scale  = def(icmp)%scale
-              if ( nav(icmp,iotyp) > 0  ) scale  = &
-                                         def(icmp)%scale / nav(icmp,iotyp)
+!pw rv1.8.1          if ( nav(icmp,iotyp) > 0  ) scale  = &
+              if ( nav(icmp,iotyp) > 0  .and.iotyp /= IOU_INST  ) & 
+                                  scale  = def(icmp)%scale / nav(icmp,iotyp)
               msgnr = 5040 + icmp
 
               call outarr_int2(msgnr,IO_OUT,ident,dim,icmp, &

@@ -223,18 +223,27 @@ private
 	    nmonth=ident(13)/100
 	    nday=ident(13)-(ident(13)/100)*100
 	    nhour=ident(14)/100
-	    xp = ident(15)/100.
-	    yp = ident(16)/100.
+            if(ident(17)>0.0)then
+               xp = ident(15)/100.
+               yp = ident(16)/100.
+            else
+               xp = ident(15)/1.
+               yp = ident(16)/1.
+            endif
+            fi = ident(18)
             if(ident(2).eq.1841)then
                GRIDWIDTH_M = 50000.0 ! =~ 1000.*abs(ident(17))/10.
-               fi = ident(18)
-            elseif(ident(2).eq.1600)then
+            else
+               GRIDWIDTH_M = 1000.*abs(ident(17))/10.
+               if(me==0)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
+                    'AN= ',6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M
+            endif
+            if(ident(2).eq.1600)then
                mm5 = .true.
                xp = 41.006530761718750 !=~ ident(15)
                yp = 3234.5815429687500 !=~ ident(16)
-               !AN = 11888.44824218750
-               GRIDWIDTH_M = 1000.*abs(ident(17))/10.
                fi = 10.50000 ! =~ ident(18)
+               if(me==0)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
             endif
             nprognosis = ident(4)
 
@@ -865,6 +874,32 @@ private
                pr(i,j,k) = 1000.*divt*max(0.0, trw(i,j,k) * roa(i,j,k,nr) * &
                             (z_bnd(i,j,k)-z_bnd(i,j,k+1))/ROWATER  )
             endif
+
+
+
+!            if(mm5)then
+!!pw calculate sdot from a mass conservation principle
+! Please do not remove
+!
+!               inv_GRIDWIDTH_M=1./GRIDWIDTH_M
+!!               do j=1,ljmax
+!!                  do i=1,limax
+!                     sdot(i,j,KMAX_BND,nr)=0.
+!                     do k=KMAX_BND-1,1,-1
+!if(i==5.and.j==5)then
+!                        write(*,*)i,j,k,sdot(i,j,k,nr)-sdot(i,j,k+1,nr),&
+!            -xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))*inv_GRIDWIDTH_M*&
+!           (u(i-1,j,k,nr)-u(i,j,k,nr)+v(i,j-1,k,nr)-v(i,j,k,nr))
+!endif
+!!                        sdot(i,j,k,nr)=sdot(i,j,k+1,nr)- &
+!!            xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))*inv_GRIDWIDTH_M*&
+!!           (u(i-1,j,k,nr)-u(i,j,k,nr)+v(i,j-1,k,nr)-v(i,j,k,nr))
+!                     enddo
+!!                  enddo
+!!               enddo
+!            endif
+!               
+
                
 ! ------------------------------------------------------------------
 

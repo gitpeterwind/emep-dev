@@ -25,12 +25,14 @@
   use netcdf
   implicit none
 
+  character (len=*), parameter :: fileName_inst = 'out_inst.nc'
   character (len=*), parameter :: fileName_day = 'out_day.nc'
   character (len=*), parameter :: fileName_month = 'out_month.nc'
   character (len=*), parameter :: fileName_year = 'out_year.nc'
   character (len=15) :: fileName ,period_type
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
+  integer,save :: ncFileID_inst=closedID  
   integer,save :: ncFileID_day=closedID  
   integer,save :: ncFileID_month=closedID
   integer,save :: ncFileID_year=closedID
@@ -49,6 +51,7 @@ contains
 
 subroutine InitnetCDF
 
+write(*,*)'initnetcdf'
 fileName = fileName_year
 period_type = 'yearly'
 call CreatenetCDFfile
@@ -58,24 +61,28 @@ call CreatenetCDFfile
 fileName = fileName_day
 period_type = 'daily'
 call CreatenetCDFfile
+fileName = fileName_inst
+period_type = 'instant'
+call CreatenetCDFfile
 
 end subroutine InitnetCDF
 
 subroutine CreatenetCDFfile
   ! Create the netCDF file
 
-use GridValues_ml,         only : GRIDWIDTH_M
-use Par_ml,                only : GIMAX,GJMAX
+use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp
+use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG
 use ModelConstants_ml,     only : KMAX_MID   
 use GridValues_ml,         only : coordzero,sigma_mid
 use My_Derived_ml,         only : model
-  implicit none
+use PhysicalConstants_ml,  only : PI       
+   implicit none
 
-character (len=*), parameter :: version='Unimod rv1.4'       
+character (len=*), parameter :: version='Unimod rv1.6'       
 character (len=*), parameter :: author_of_run='Unimod group' 
 character (len=*), parameter :: projection='Stereographic'
-character (len=*), parameter :: projection_params='60.0 -32.0 1.0'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
+character (len=19) :: projection_params='90.0 -32.0 0.933013' !set later on
 
 real (kind = FourByteReal) :: xcoord(GIMAX),ycoord(GJMAX),kcoord(KMAX_MID)
 
@@ -88,7 +95,7 @@ real :: izero,jzero
   ! nf90_clobber: protect existing datasets
   ! ncFileID: netcdf ID
 
-
+write(*,*)'start init',fileName
   call check(nf90_create(path = fileName, cmode = nf90_clobber, ncid = ncFileID))
 
   ! Define the dimensions
@@ -114,6 +121,7 @@ real :: izero,jzero
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
 
   call check(nf90_put_att(ncFileID, nf90_global, "projection",projection))
+  write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,(1.+sin(PI/3.0))/2.
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
   call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
   call check(nf90_put_att(ncFileID, nf90_global, "period_type", period_type))
@@ -146,15 +154,16 @@ real :: izero,jzero
 
   call check(nf90_open(path = fileName, mode = nf90_write, ncid = ncFileID))
 
-  call coordzero(izero,jzero)
+!  call coordzero(izero,jzero)
 !  print *, 'izero,jzero ',izero,jzero
-  xcoord(1)=-izero*GRIDWIDTH_M/1000.
+!  xcoord(1)=(1.-izero)*GRIDWIDTH_M/1000.
+  xcoord(1)=(ISMBEG-xp)*GRIDWIDTH_M/1000.
   do i=2,GIMAX
      xcoord(i)=xcoord(i-1)+GRIDWIDTH_M/1000.
 !     print *, i,xcoord(i)
   enddo
   call check(nf90_put_var(ncFileID, iVarID, xcoord) )
-  ycoord(1)=-jzero*GRIDWIDTH_M/1000.
+  ycoord(1)=(JSMBEG-yp)*GRIDWIDTH_M/1000.
   do j=2,GJMAX
      ycoord(j)=ycoord(j-1)+GRIDWIDTH_M/1000.
   enddo
@@ -201,8 +210,24 @@ real (kind = FourByteReal), allocatable,dimension(:,:,:)  :: data3D
 
 !rv1.4.15 changed:
 !==================================================================
-  return     !TEMP - to avoid slowdown - suggested by pw, 26 Feb 2003.
+!  return     !TEMP - to avoid slowdown - suggested by pw, 26 Feb 2003.
 !==================================================================
+!make variable name
+  if(ndim==2)then
+!     write(varname,fmt='(A,''_2D'')')trim(def1%name)
+     write(varname,fmt='(A)')trim(def1%name)
+  elseif(ndim==3)then
+     write(varname,fmt='(A,''_3D'')')trim(def1%name)
+  else
+     write(varname,fmt='(A,''_XX'')')trim(def1%name)
+  endif
+
+!to shorten the output we can save only the components explicitely named here
+!if(varname.ne.'D2_NO2'.and.varname.ne.'D2_O3' &
+!                         .and.varname.ne.'D2_PM10')return
+
+!do not write 3D fields (in order to shorten outputs)
+if(ndim==3)return
 
 if(iotyp==IOU_YEAR)then
    fileName = fileName_year
@@ -214,6 +239,9 @@ elseif(iotyp==IOU_DAY)then
    fileName = fileName_day
    ncFileID = ncFileID_day
 !   return
+elseif(iotyp==IOU_INST)then
+   fileName = fileName_inst
+   ncFileID = ncFileID_inst
 else
    return
 endif 
@@ -292,17 +320,11 @@ if(me==0)then
          ncFileID_month = ncFileID
       elseif(iotyp==IOU_DAY)then
          ncFileID_day = ncFileID
+      elseif(iotyp==IOU_INST)then
+         ncFileID_inst = ncFileID
       endif
    endif
 
-!make variable name
-  if(ndim==2)then
-     write(varname,fmt='(A,''_2D'')')trim(def1%name)
-  elseif(ndim==3)then
-     write(varname,fmt='(A,''_3D'')')trim(def1%name)
-  else
-     write(varname,fmt='(A,''_XX'')')trim(def1%name)
-  endif
   !test first if the variable is already defined:
   status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
   
@@ -464,6 +486,11 @@ integer :: ncFileID
        ncFileID = ncFileID_day
        call check(nf90_close(ncFileID))
        ncFileID_day=closedID
+    endif
+    if(ncFileID_inst/=closedID)then
+       ncFileID = ncFileID_inst
+       call check(nf90_close(ncFileID))
+       ncFileID_inst=closedID
     endif
 
   end subroutine CloseNetCDF

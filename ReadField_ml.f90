@@ -45,7 +45,7 @@ contains
   !/-- We need an array for the whole model domain
 
   real :: in_field(IILARDOM,JJLARDOM)! Field to be read
-  real :: out_field(GIMAX - ISMBEG +1,GJMAX - JSMBEG +1)!pw
+  real :: out_field(GIMAX ,GJMAX )!pw
 
   integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
   real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
@@ -95,8 +95,8 @@ contains
           write(*,*)fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP
           write(*,*)fi,an,xp,yp
 
-          imaxout = GIMAX - ISMBEG +1
-          jmaxout = GJMAX - JSMBEG +1
+          imaxout = GIMAX 
+          jmaxout = GJMAX 
           xpout = xp -ISMBEG +1
           ypout = yp -JSMBEG +1
           fiout = fi
@@ -107,10 +107,10 @@ contains
                    fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP, &
                    fiout,anout,xpout,ypout)
 
-! Shift array
-       do j = JSMBEG,GJMAX
+! Shift array (for compatibility) 
+       do j = JSMBEG,JSMBEG+GJMAX-1
           j0 = j-JSMBEG+1
-          do i = ISMBEG,GIMAX
+          do i = ISMBEG,ISMBEG+GIMAX-1
              i0 = i - ISMBEG+1
              in_field(i,j) = out_field(i0,j0)
           enddo
@@ -136,7 +136,8 @@ contains
 
   integer :: in_field(IILARDOM,JJLARDOM)! Field to be read
   real :: in_field_r(IILARDOM,JJLARDOM)
-  real :: out_field(GIMAX - ISMBEG +1,GJMAX - JSMBEG +1) !pw
+  real :: out_field(GIMAX ,GJMAX ) !pw
+
 
   integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
   real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
@@ -185,8 +186,8 @@ contains
           write(*,*)'Converting fields read from ',fname,' to present map'
           in_field_r = real(in_field)
           
-          imaxout = GIMAX - ISMBEG +1
-          jmaxout = GJMAX - JSMBEG +1
+          imaxout = GIMAX
+          jmaxout = GJMAX
           xpout = xp -ISMBEG +1
           ypout = yp -JSMBEG +1
           fiout = fi
@@ -197,10 +198,10 @@ contains
                    fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP, &
                    fiout,anout,xpout,ypout)
 
-! Shift array 
-       do j = JSMBEG,GJMAX
+! Shift array (for compatibility)
+       do j = JSMBEG,JSMBEG+GJMAX-1
           j0 = j-JSMBEG+1
-          do i = ISMBEG,GIMAX
+          do i = ISMBEG,ISMBEG+GIMAX-1
              i0 = i - ISMBEG+1
              in_field(i,j) = nint(out_field(i0,j0))
           enddo
