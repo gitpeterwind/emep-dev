@@ -46,6 +46,9 @@ subroutine runchem(numt)
    use GenSpec_tot_ml
    use GenSpec_adv_ml
   use Chemfields_ml,     only: xn_adv  ! DEBUG XXXXX
+!SeaS
+   use SeaSalt_ml,        only : SeaSalt_flux   !SeaS
+   use My_Aerosols_ml,    only : SEASALT        !SeaS
 !/
    integer, intent(in) :: numt       !water
 
@@ -140,6 +143,9 @@ subroutine runchem(numt)
                                            "Runchem:1st setups")
 
                      call setup_rcemis(i,j)
+!SeaS
+                     if ( SEASALT ) &
+                      call SeaSalt_flux(i,j)
 
                      if ( ORGANIC_AEROSOLS ) &
                       call OrganicAerosol(debug_flag)

@@ -99,7 +99,7 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 52  & ! Number of 2D derived fields defined        !water (was 51)
+      ,NDEF_DERIV_2D = 55  & ! Number of 2D derived fields defined   !water&SeaS (was 51)
       ,NDEF_DERIV_3D = 16    ! Number of 3D derived fields defined
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
@@ -207,7 +207,7 @@ private
     real, save    :: ugS = atwS*PPBINV/ATWAIR
     real, save    :: ugN = atwN*PPBINV/ATWAIR
     real, save    :: ugSO4, ugHCHO, ugCH3CHO
-    real, save    :: ugPMad, ugPMde    !st advected and derived PM's
+    real, save    :: ugPMad, ugPMde, ugSS    !st advected and derived PM's & SeaS
 
 
   !ds rv1_9_28  - for debug  - now not affecting ModelConstants version
@@ -219,6 +219,7 @@ private
 
      ugPMad = species(PM25)%molwt * PPBINV /ATWAIR 
      ugPMde = PPBINV /ATWAIR
+     ugSS  = species( SSfi )%molwt * PPBINV /ATWAIR  !SeaS
 
      ugSO4 = species( SO4 )%molwt * PPBINV /ATWAIR
      ugHCHO   = species ( HCHO )%molwt * PPBINV /ATWAIR
@@ -300,6 +301,9 @@ def_2d = (/&
 !&
 ,Deriv( 615, "ADV  ",T,IXADV_PM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")&
 ,Deriv( 616, "ADV  ",T,IXADV_PMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")&
+!SeaS
+,Deriv( 659, "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")&
+,Deriv( 660, "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")&
 !&
 ,Deriv( 468, "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")&
 ,Deriv( 469, "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")&
@@ -360,7 +364,8 @@ def_2d = (/&
 ,Deriv( 619, "PMco ", T, -1, ugPMde, T, F, T, T, T,"D2_PMco", "ug/m3")&
 ,Deriv( 648, "PM25 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM25", "ug/m3")&
 ,Deriv( 649, "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")&
-,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O", "ug/m3")&   !water
+,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O ", "ug/m3")&   !water
+,Deriv( 646, "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3")& 
  /)
 
 !-- 3-D fields

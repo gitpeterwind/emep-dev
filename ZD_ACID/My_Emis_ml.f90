@@ -90,7 +90,13 @@ implicit none
          , QRCNO  =   2      & ! IQNOX   &   ! 2
          , QRCNH3 =   3      & ! IQCO        ! 4
          , QRCPM25=   4      & ! IQSO2   &   ! 1
-         , QRCPMCO=   5        
+         , QRCPMCO=   5 
+
+!SeaS
+   integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
+                                 ,QSSFI = 1 &   ! production of fine SS
+                                 ,QSSCO = 2     ! production of coarse SS  
+       
       !/**now we deal with the emissions which are split,e.g.VOC
       !  ******************************************************
       !  **** must be in same order as EMIS_SPLIT array **** **

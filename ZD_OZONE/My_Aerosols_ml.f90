@@ -23,7 +23,8 @@
                                 , ORGANIC_AEROSOLS   = .false.   
 !stDep
     integer, public, parameter :: NSIZE = 2    ! number of aerosol sizes (1-fine, 2-coarse)
-
+!SeaS
+    logical, public, parameter :: SEASALT = .true. 
 contains
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -199,6 +200,7 @@ contains
 !.............................
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 
 
  !water 

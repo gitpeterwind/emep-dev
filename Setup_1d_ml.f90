@@ -40,7 +40,8 @@
   use My_Emis_ml,           only : NRCEMIS , AIRNOX, QRCAIR &
                                   ,NFORESTVOC&
 !hf VOL 
-                                  ,QRCVOL,VOLCANOES   ! u3 -extended VOL
+                                  ,QRCVOL,VOLCANOES &  ! u3 -extended VOL
+                                  ,NSS  !SeaS
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
 !hf u2
   use My_BoundConditions_ml, only : BGN_2D
@@ -53,12 +54,16 @@
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
-    ,rct, rcmisc  &  ! emission terms
+    ,rct, rcmisc          &  ! emission terms
+    ,rcss                 &  !SeaS - sea salt
     ,rh, temp, itemp,pp      &  ! 
     ,amk                  &  ! Air concentrations 
     ,izen &
     ,f_Riemer  !weighting factor for N2O5 hydrolysis    
                      ! integer of zenith angle
+   use My_Aerosols_ml,    only : SEASALT        !SeaS
+   use SeaSalt_ml,        only : SS_prod   !SeaS
+
 !u2hf MADE
 !u2    ,xn_2d_bgn
 !u3 - rcit moved
@@ -205,6 +210,7 @@ contains
 
 !hf VOL initilize
     rcemis(:,:)=0.    
+    rcss(:,:) = 0.  !SeaS 
    
      !rv1.2.1 do k=KMAX_MID-3,KMAX_MID -- bug spotted by st, 2/12/2002
      do k=KEMISTOP,KMAX_MID
@@ -261,6 +267,17 @@ contains
 
      end if ! AIRNOX
 
+!SeaS......
+     !/** Add sea salt production
+    
+     if ( SEASALT  ) then
+
+          do iqrc = 1, NSS
+            rcss(iqrc,KMAX_MID) = SS_prod(iqrc,i,j)
+          enddo
+
+     endif
+!SeaS......
 
 !6b Mass Budget calculations
 !  jej Adding up the emissions in each timestep

@@ -23,7 +23,7 @@ SRCS =	Aero_Rb_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 	Output_binary.f90 Output_hourly.f90 Par_ml.f90 \
 	PhysicalConstants_ml.f90 Polinat_ml.f90 Radiation_ml.f90 \
 	ReadField_ml.f90 Rsurface_ml.f90 Runchem_ml.f90 SOA_ml.f90 Setup_1d_ml.f90 \
-	Setup_1dfields_ml.f90 Sites_ml.f90 SoilWater_ml.f90 Solver.f90 \
+	Setup_1dfields_ml.f90 Sites_ml.f90 SoilWater_ml.f90 Solver.f90 SeaSalt_ml.f90 \
 	SubMet_ml.f90 Tabulations_ml.f90 Timefactors_ml.f90 Timing_ml.f90 \
 	UK_ml.f90 UKsetup_ml.f90 Unimod.f90 Volcanos_ml.f90 Wesely_ml.f90 \
 	Wrtchem.f90 global2local.f local2global.f outchem_restri.f phyche.f

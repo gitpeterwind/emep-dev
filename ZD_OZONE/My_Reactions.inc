@@ -1366,6 +1366,23 @@
       ! L = 0.0
        xnew(PMCO)=  amax1(0.0,  xold(PMCO) + dt2 * P)
 
+!SeaS
+   if (SEASALT) then
+
+!-> Sea salt fine
+
+      P =   &
+     rcss(QSSFI,K) 
+      ! L = 0.0
+       xnew(SSfi)=  amax1(0.0,  xold(SSfi) + dt2 * P)
+
+!-> Sea salt coarse
+
+      P =   &
+     rcss(QSSCO,K) 
+      ! L = 0.0
+       xnew(SSco)=  amax1(0.0,  xold(SSco) + dt2 * P)
+   endif
 
 !-> AMSU 
       ! P = 0.0

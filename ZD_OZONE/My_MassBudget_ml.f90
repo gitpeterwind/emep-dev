@@ -31,10 +31,10 @@ module My_MassBudget_ml
    !  Note - we can any number of species we need here - the dimensions 
    !  are obtained in MassBudget_ml with a size command.
 
-   integer, public, parameter, dimension(14) :: MY_MASS_PRINT = &
+   integer, public, parameter, dimension(16) :: MY_MASS_PRINT = &    !SeaS
      (/  IXADV_O3, IXADV_HNO3, IXADV_PAN, IXADV_NO3, IXADV_N2O5 ,IXADV_NO, &
          IXADV_NO2,  IXADV_SO2, IXADV_SO4, IXADV_NH3, IXADV_aNH4, IXADV_aNO3 &
-        ,IXADV_PM25, IXADV_PMco /)
+        ,IXADV_PM25, IXADV_PMco, IXADV_SSfi, IXADV_SSco /)  !SeaS
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

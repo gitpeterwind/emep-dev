@@ -9,7 +9,7 @@
   !u2 - new aray added to keep o2, m, and for MADE oh, etc
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
-  use My_Emis_ml,            only :  NRCEMIS
+  use My_Emis_ml,            only :  NRCEMIS, NSS  !SeaS
   use Biogenics_ml,          only :  NBIO     ! Not used yet...
   use GenSpec_tot_ml,        only :  NSPEC_TOT
   use GenSpec_bgn_ml,        only :  NSPEC_COL
@@ -41,7 +41,8 @@
    real, public, dimension(NRCT   ,KCHEMTOP:KMAX_MID), save :: rct    ! T-dependant
    real, public, dimension(NRCMISC,KCHEMTOP:KMAX_MID), save :: rcmisc ! T,M,H2O-dependant
 !fix   real, public, dimension(NRCBIO ,KCHEMTOP:KMAX_MID), save :: rcbio  !  Biogenic emissions
-   real, public, dimension(NBIO ,KCHEMTOP:KMAX_MID), save :: rcbio  !  Biogenic emissions
+   real, public, dimension(NBIO ,KCHEMTOP:KMAX_MID), save   :: rcbio  !  Biogenic emissions
+   real, public, dimension(NSS,KCHEMTOP:KMAX_MID),     save :: rcss   !emissions    !SeaS
 
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)

@@ -28,7 +28,7 @@ module My_Derived_ml
 use GenSpec_adv_ml        ! Use IXADV_ indices...
 use GenSpec_shl_ml        ! Use IXSHL_ indices...
 use GenSpec_tot_ml,  only : SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                           ,aNO3, pNO3, aNH4, PM25, PMCO 
+                           ,aNO3, pNO3, aNH4, PM25, PMCO
 use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , KMAX_MID &  ! =>  z dimension
@@ -85,7 +85,7 @@ private
   integer, public, parameter :: &
         NWDEP     =  4   &  !
        ,NDDEP     = 21   &  !
-       ,NDERIV_2D = 42   &  ! Number of other 2D derived fields used
+       ,NDERIV_2D = 45   &  ! Number of other 2D derived fields used  !water&!SeaS
        ,NDERIV_3D =  0      ! Number of 3D derived fields
 
   ! then use character arrays to specify which are used.
@@ -113,7 +113,7 @@ private
       ,"D2_AOT30    ","D2_AOT40    ","D2_AOT60    ","D2_MAXO3    "&
       ,"D2_aNO3     ","D2_pNO3     ","D2_aNH4     ","D2_tNO3     ","D2_SIA      "&
       ,"D2_PPM25    ","D2_PPMco    ","D2_PM25     ","D2_PMco     ","D2_PM10     "&
-      ,"D2_PM25_H2O "&  !rv1_9_28 - from Svetlan's version, but renamed
+      ,"D2_PM25_H2O ","D2_SSfi     ","D2_SSco     ","D2_SS       " &    !water & !SeaS !rv1_9_28 - from Svetlan's version, but renamed
 !
 !    Ecosystem - fluxes:
       ,"D2_FSTDF00  ","D2_FSTDF08  ","D2_FSTDF16  ","D2_FSTWH00  ","D2_FSTWH20  " &
@@ -178,7 +178,7 @@ private
       !MOVED      call aot_calc( e_2d, n, ndef, timefrac )
 
       !ds rv1_9_17 case ( "TSO4", "TOXN", "TRDN", "FRNIT", "tNO3 "    )
-      case ( "TOXN", "TRDN", "FRNIT", "tNO3 "    )
+      case ( "TOXN", "TRDN", "FRNIT", "tNO3 " , "SSalt"   )
 
 !!print *, "Calling misc_xn for ", class
            call misc_xn( e_2d, n, class, density )
@@ -340,6 +340,15 @@ private
           e_2d(  i,j ) = &
               ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
               + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) )&
+              * density(i,j)
+      end forall
+
+!SeaS
+    case ( "SSalt" )
+      forall ( i=1:limax, j=1:ljmax )
+          e_2d( i,j ) = &
+              ( xn_adv(IXADV_SSfi,i,j,KMAX_MID) * cfac(IXADV_SSfi,i,j) &
+              + xn_adv(IXADV_SSco,i,j,KMAX_MID) * cfac(IXADV_SSco,i,j) )&
               * density(i,j)
       end forall
 

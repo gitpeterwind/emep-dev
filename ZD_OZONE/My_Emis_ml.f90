@@ -136,6 +136,10 @@ implicit none
    integer, public, parameter ::   & 
                QRCISOP    = 18     &
               ,QRCTERP    = 19
+!SeaS
+   integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
+                                 ,QSSFI = 1 &   ! production of fine SS
+                                 ,QSSCO = 2     ! production of coarse SS  
 
     real, public, dimension(NRCEMIS), save  :: molwt ! Molecular weights                                                             
 

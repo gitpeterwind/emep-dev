@@ -26,7 +26,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP = 11  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP =  13  !SeaS 11  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
  !ds NEW 16/12/2003:
@@ -64,6 +64,8 @@ contains
     WetDep(9)   = WScav(pNO3,   1.0,  EFFCO) !!dstest rv1_8b  ds, from Svetlana's PMco stuff
     WetDep(10)  = WScav(PM25,   1.0,  EFF25)
     WetDep(11)  = WScav(PMCO,   1.0,  EFFCO)
+    WetDep(12)  = WScav(SSFI,   1.0,  EFF25)   !SeaS
+    WetDep(13)  = WScav(SSCO,   1.0,  EFFCO)   !SeaS
 
    !####################### ds NEW define indices here ##########
 

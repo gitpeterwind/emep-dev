@@ -26,7 +26,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP = 9  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP = 11 ! SeaS  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
  !ds NEW 16/12/2003:
@@ -64,7 +64,8 @@ contains
     WetDep(9)  = WScav(PMCO,   1.0,  EFFCO)
     !WetDep(10)   = WScav(H2O2,   1.4,  0.5)   ! jej, maybe should be 0.6*0.7??
     !WetDep(11)   = WScav(HCHO,   0.1,  0.03)  ! jej, plus ds 1/3 rule
-
+    WetDep(10)  = WScav(SSFI,   1.0,  EFF25)   !SeaS
+    WetDep(11)  = WScav(SSCO,   1.0,  EFFCO)   !SeaS
    !####################### ds NEW define indices here ##########
 
      WDEP_PREC= find_one_index("WDEP_PREC",f_wdep(:)%name)

@@ -99,7 +99,7 @@ module My_UKDep_ml    ! DryDep_ml
   ! The actual species used and their relation to the CDEP_ indices
   ! above will be defined in Init_DepMap
 
-  integer, public, parameter ::  NDRYDEP_ADV  = 19
+  integer, public, parameter ::  NDRYDEP_ADV  = 21  !SeaS 19
 
   !/-- we define a type to map indices of species to be deposited
   !   to the lesser number of species where Vg is calculated
@@ -143,7 +143,8 @@ contains
    Dep(17) =  depmap( IXADV_pNO3,  CDEP_COA, -1.)
    Dep(18) =  depmap( IXADV_PM25,  CDEP_FIN, -1. )
    Dep(19) =  depmap( IXADV_PMco,  CDEP_COA, -1. )
-
+   Dep(20) =  depmap( IXADV_SSfi,  CDEP_FIN, -1. )   !SeaS
+   Dep(21) =  depmap( IXADV_SSco,  CDEP_COA, -1. )   !SeaS
 
 !####################### ds NEW define indices here #######################
 

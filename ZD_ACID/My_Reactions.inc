@@ -160,7 +160,24 @@
       P = rcmisc(10,k)  * xnew(HNO3)
       xnew(pNO3)=  amax1(0.0,  xold(pNO3) + dt2 * P)
 
+!SeaS
+   if (SEASALT) then
 
+!-> Sea salt fine
+
+      P =   &
+     rcss(QSSFI,K) 
+      ! L = 0.0
+       xnew(SSfi)=  amax1(0.0,  xold(SSfi) + dt2 * P)
+
+!-> Sea salt coarse
+
+      P =   &
+     rcss(QSSCO,K) 
+      ! L = 0.0
+       xnew(SSco)=  amax1(0.0,  xold(SSco) + dt2 * P)
+
+   endif
 
 
 

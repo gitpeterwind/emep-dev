@@ -29,7 +29,12 @@ contains
          ,rcbio                & ! biogenic emis
     ,rct, rcmisc, & ! rate-coeffients
          xn_2d,&               ! rename xn_2d to use simply x inside chemistry
-    rh, f_Riemer   ! to weight the hydrolysis of N2O5 with NO3,SO4 mass 
+         !hf u2
+    rh, f_Riemer  & ! to weight the hydrolysis of N2O5 with NO3,SO4 mass
+   ,rcss            !SeaS 
+
+    !u2 !hf MADE 
+    !u2          xn_2d_bgn
     use Aqueous_ml,        only : &
          aqrck,                    &
          ICLOHSO2  &
@@ -40,6 +45,8 @@ contains
     use DefPhotolysis_ml                  ! => IDHNO3, etc.
     use Emissions_ml, only : KEMISTOP     !rv1.2.1 change
     use OrganicAerosol_ml, only : Fgas
+    use My_Aerosols_ml,    only : SEASALT        !SeaS
+
     !
     !**********************************************************************
     ! The following solver is a simplified version of that suggested by

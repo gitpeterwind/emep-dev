@@ -40,7 +40,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 56 
+   integer, public, parameter ::  NSPEC_ADV = 58 !SeaS
  
  ! Aerosols:
 
@@ -122,7 +122,9 @@
   ,  IXADV_aNO3        =   54   & !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
 !st
   ,  IXADV_PM25        =   55  &
-  ,  IXADV_PMco        =   56    
+  ,  IXADV_PMco        =   56  &
+  ,  IXADV_SSfi        =   57  &  !SeaS 
+  ,  IXADV_SSco        =   58    
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
 !>_________________________________________________________<
@@ -182,7 +184,8 @@
 
    logical, public, parameter ::  ORG_AEROSOLS = .false. 
 
-   integer, public, parameter ::  NSPEC_TOT = 72 
+   integer, public, parameter ::  NSPEC_TOT = 74   !SeaS 
+
  
  ! Aerosols:
            integer, public, parameter :: &
@@ -278,7 +281,10 @@
   ,  aNH4        =   69   &
   ,  aNO3        =   70  &
   ,  PM25        =   71  &
-  ,  PMco        =   72   
+  ,  PMco        =   72  &
+  ,  SSFI        =   73  &    !SeaS
+  ,  SSCO        =   74   
+
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
 !>_________________________________________________________<
@@ -390,6 +396,9 @@
        species( 70) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
        species( 71) = Chemical("PM25        ", 100,  0,  0,   0,  0 ) 
        species( 72) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
+       species( 73) = Chemical("SSfi        ", 58,   0,  0,   0,  0 )  !SeaS
+       species( 74) = Chemical("SSco        ", 58,   0,  0,   0,  0 )
+
    end subroutine define_chemicals
  end module GenChemicals_ml
  !-----------------------------------------------------------
