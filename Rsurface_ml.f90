@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.5 2002-11-18 11:25:17 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.6 2003-01-22 16:26:00 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -32,6 +32,7 @@ use SoilWater_ml, only : SWP
 !d1.5.2                         SAIadd          
 use Wesely_ml, only  : Wesely_tab2, & ! Wesely Table 2 for 14 gases
                        WES_HNO3, & ! indices to identify HNO3
+                       WES_NH3,  & ! indices to identify NH3  
                        Rb_cor,  &! correction factor used in evaluating Rb
                        DRx       !  Ratio of diffusivities to ozone
 implicit none
@@ -155,6 +156,8 @@ contains
                                 ! 1989, p.1296, left column) 
     real :: xRgsS, xRgsO        ! see  DepVariables_ml
     real :: Ggs                 ! ground surface conductance, any gas
+!hf
+    real :: r_water !non stomatal resistance for NH3
 !rv1.5.2   real :: Gext                ! external conductance
 !CORR    real :: diffc               ! molecular gas diffusivity coefficient 
 !CORR                                ! (extracted from Wesely_tab2)
@@ -333,17 +336,44 @@ contains
 
          ! ##############   4. Calculate Rsur for canopies   ###############
 
-           Rsur(icmp) = 1.0/( LAI*DRx(iwes) *g_sto + SAI*Gext + Ggs )
+!hf
+           if ( DRYDEP_CALC(icmp) == WES_NH3 ) then
+           !/** r_water   RIS eq. (24)
 
-           if ( Rsur(icmp) < 1.0 ) then
-             print *, "LOWRSUR", icmp, iwes, Rsur(icmp), lu
-             print *, "LOWRSUR bits", LAI*DRx(iwes) *g_sto, SAI*Gext, Ggs
-             print *, "LOWRSUR bit2", LAI,DRx(iwes),g_sto, SAI
-             print *, "LOWRSUR H,f0", Hstar,f0
-             print *, "LOWRSUR Rx",  RextS, RextO    
-             print *, "LOWRSUR h,ustar,cosz",  hveg, ustar, coszen
-             print *, "LOWRSUR gs",  Rgs, Rinc, RgsS(lu), Rlow, xRgsS
-           end if
+             if (Ts_C >0 ) then    ! Use "rh" - now in fraction 0..1.0
+
+               r_water =10.0 * log10(Ts_C+2.0) * exp(100.0*(1.0-rh)/7.0)
+
+               r_water = min( 200.0, r_water)  ! After discussion with Ron
+               r_water = max(  10.0,r_water)
+
+             else if ( Ts_C > -5 ) then
+
+               r_water=200.0
+
+             else
+
+               r_water=1000.0
+
+             end if !Ts_C
+
+              Rsur(icmp) =1.0/( LAI*DRx(iwes) *g_sto + (1./r_water) )
+!hf
+           else  ! Not NH3:
+
+               Rsur(icmp) = 1.0/( LAI*DRx(iwes) *g_sto + SAI*Gext + Ggs )
+
+
+              if ( Rsur(icmp) < 1.0 ) then
+                print *, "LOWRSUR", icmp, iwes, Rsur(icmp), lu
+                print *, "LOWRSUR bits", LAI*DRx(iwes) *g_sto, SAI*Gext, Ggs
+                print *, "LOWRSUR bit2", LAI,DRx(iwes),g_sto, SAI
+                print *, "LOWRSUR H,f0", Hstar,f0
+                print *, "LOWRSUR Rx",  RextS, RextO    
+                print *, "LOWRSUR h,ustar,cosz",  hveg, ustar, coszen
+                print *, "LOWRSUR gs",  Rgs, Rinc, RgsS(lu), Rlow, xRgsS
+              end if
+           end if  ! NH3 test
               
        else   ! Non-Canopy modelling:
 
