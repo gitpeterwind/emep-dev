@@ -48,7 +48,7 @@ module Biogenics_ml
                        ,NPROC,me,MSG_READ1 &
                        ,li0,li1,lj0,lj1
   use My_Emis_ml       , only : FORESTVOC
-  use GridValues_ml    , only : xm2
+  use GridValues_ml    , only : xm2, gb
   use Met_ml           , only : iclass   ! HIRLAM/xxx met model land classes
   use Io_ml            , only : IO_FORES, open_file, ios
 !    Read forest data for natural VOC emissions
@@ -57,18 +57,23 @@ module Biogenics_ml
 !     to obtain terpene emissions. Many old lines deleted
 !     cemfa for isoprene renamed to ecf_isop. ecf_terp added for terpene
 !-----------------------------------------------------------------------------
+!ds 10/06/2003
+!   Emissions now read from 50x50 landuse file, forests.tf2, derived from 
+!   landuse.tf2. Emission rates now based upon Simpson et al., 1999, JGR,
+!   Vol 104, D7, 8113-8152.
 
 
+    integer, parameter :: NVEG = 6   ! dsrv1_6_5s99
     integer i, j, d, info, ii, jj, it, cat
     integer itmp, jtmp, i50, j50
-    real tmp(6)
+    real tmp(NVEG)
     real sumland
 
-    real, dimension(6,GIMAX,GJMAX)       ::  gforest  ! Forest on global domain
-    real, dimension(6,MAXLIMAX,MAXLJMAX) ::  forest   ! Forest on local domain
-    real :: forsum(6), isopsum, terpsum
+    real, dimension(NVEG,GIMAX,GJMAX)       :: gforest  !Forest on global domain
+    real, dimension(NVEG,MAXLIMAX,MAXLJMAX) :: forest   !Forest on local domain
+    real :: forsum(NVEG), isopsum, terpsum
     real agts, agr, agtm, agct1, agct2, agcl &
-               , agct, oak, decid, conif, spruc, crops, sitka &
+               , agct, oak, decid, conif, spruc, crops, sitka, snl &
                ,itk, fac
     integer :: inp_error
 
@@ -79,7 +84,6 @@ module Biogenics_ml
             BIO_TERP = i
       else
           call gc_abort(me,NPROC,"BIO_ERROR")
-!hf u2    call stop_test(.true.,me,NPROC,99,"BIO_ERROR")
       end if
     end do
 
@@ -91,11 +95,11 @@ module Biogenics_ml
       !ds.......................start of new 1.................................
       !     Read in forest Land-use data in percent
 
-        call open_file(IO_FORES,"r","forest.pcnt",needed=.true.)
-        if (ios /= 0) call gc_abort(me,NPROC,"ios error: forest.pcnt")
+        !ds call open_file(IO_FORES,"r","forest.pcnt",needed=.true.)
+        call open_file(IO_FORES,"r","forest.tf2",needed=.true.,skip=1)
+        if (ios /= 0) call gc_abort(me,NPROC,"ios error: forest.tf2")
     endif
 
-!hf u2    call stop_test(.true.,me,NPROC,ios,"ios error: forest.pcnt")
 
     if (me ==  0) then
 !  
@@ -105,27 +109,29 @@ module Biogenics_ml
 !      up to one if there are no sea areas)
 !
         do while (.true.)
-          read(IO_FORES,*,err=1000,end=1000) itmp,jtmp,(tmp(i),i=1,6)
-          itmp = 3*itmp + 34     ! Convert itmp from 150 to 50km grid
-          jtmp = 3*jtmp + 10     ! Convert jtmp from 150 to 50km grid
+          read(IO_FORES,*,err=1000,end=1000) itmp,jtmp,(tmp(i),i=1,NVEG)
+          !dsitmp = 3*itmp + 34     ! Convert itmp from 150 to 50km grid
+          !dsjtmp = 3*jtmp + 10     ! Convert jtmp from 150 to 50km grid
 
           tmp(:) = 0.01 * tmp(:)
           sumland = sum( tmp )
-          if( sumland >  1.0 ) tmp(:) = tmp(:)/sumland
+          !ds - no longer sums to 1
+          !ds if( sumland >  1.0 ) tmp(:) = tmp(:)/sumland
           if ( DEBUG .and. any( tmp<0 )  ) then
              print *, "Biogenics: negative data at ", itmp, jtmp
 	     inp_error = 999
              call gc_abort(me,NPROC,"ERROR:Forest_Init")
-!hf u2	     goto 99    ! call stop_all("ERROR:Forest_Init")
           end if 
 
 !          write(6,*) 'skogting',itmp,jtmp,sumland,(tmp(i),i=1,2)
 !          Distribute percentage cover over 9 50km grids:
-          do j = -1,1
-              j50 = jtmp + j - JSMBEG + 1
-              if(j50.ge.1.and.j50.le.GJMAX)then
-           do i = -1,1
-              i50 = itmp + i - ISMBEG + 1
+          !ds do j = -1,1
+              !ds j50 = jtmp + j - JSMBEG + 1
+          j50 = jtmp  - JSMBEG + 1
+          if(j50.ge.1.and.j50.le.GJMAX)then
+           !dsdo i = -1,1
+              !dsi50 = itmp + i - ISMBEG + 1
+              i50 = itmp - ISMBEG + 1
               if(i50.ge.1.and.i50.le.GIMAX)then
 !ds2.... add Grid area:   PLEASE CHECK MAP FACTOR USAGE !
 !su            gridarea_m2 = 50000. * 50000. * xmd(i50,j50)
@@ -135,20 +141,18 @@ module Biogenics_ml
 !                    gforest(cat,i50,j50) = tmp(cat)
 !                 enddo    !ncat
                endif        !i50
-            enddo        !i
+            !dsenddo        !i
           endif        !j50
-        enddo        !j
+        !ds enddo        !j
       enddo            !do while
 1000  close(IO_FORES)
     endif  ! me = 0
 
 
-!hf u299	call stop_test(.true.,me,NPROC,inp_error,"ERROR:Forest_Init")
-
 !
 !ds.......................end of new 1.................................
 !
-    call global2local(gforest,forest,MSG_READ1,6,GIMAX,GJMAX,1,1,1)
+    call global2local(gforest,forest,MSG_READ1,NVEG,GIMAX,GJMAX,1,1,1)
 
     forsum(:) = 0.0
 
@@ -158,9 +162,9 @@ module Biogenics_ml
             forsum(:)=forsum(:)+forest(:,i,j)
        end do
     end do
-    call gc_rsum(6,NPROC,info,forsum)
+    call gc_rsum(NVEG,NPROC,info,forsum)
     if (me == 0) write(unit=6,fmt="(a12,6f10.2)") "forest sum:", &
-                                                  (forsum(cat),cat=1,6)
+                                                  (forsum(cat),cat=1,NVEG)
 
 
 
@@ -177,31 +181,50 @@ module Biogenics_ml
       do i = li0,li1    !gv2  1, limax   !gv  li0,li1
 
         !1) Isoprene
-        oak   =  300.*41.2 *forest(1,i,j)
-        decid =  300.* 1.2 *forest(2,i,j)
+        !ds oak   =  300.*41.2 *forest(1,i,j)
+        !ds decid =  300.* 1.2 *forest(2,i,j)
+        decid =  320.0 * 0.1 * forest(1,i,j)
+        conif = 1000.0 * 0.1 * forest(2,i,j)
+        oak   =  320.0 * 60.0* forest(3,i,j)
+        snl   =  200.0 * 8.0 * forest(6,i,j)
 !ds         if(gb(i,j).lt.40.) then
 !ds           decid = decid + 0.9*oak
 !ds           oak = oak*0.1
 !ds         end if
-        conif = 1000.* 0.4 *forest(3,i,j)
-        spruc = 1400.* 1.24*forest(4,i,j)
-        crops =   40.* 0.3 *forest(5,i,j)
-        sitka = 1400.* 6.24*forest(6,i,j)
+        !ds conif = 1000.* 0.4 *forest(3,i,j)
+        !ds conif = 1000.* 0.4 *forest(3,i,j)
+
+        if( gb(i,j) >= 60.0 ) then
+            spruc =  800.* 1.0*forest(4,i,j)
+            sitka =  800.* 6.0*forest(5,i,j)
+        else if( gb(i,j) >= 55.0 ) then
+            spruc = 1400.* 1.0*forest(4,i,j)
+            sitka = 1400.* 6.0*forest(5,i,j)
+        else
+            spruc = 1600.* 1.0*forest(4,i,j)
+            sitka = 1600.* 6.0*forest(5,i,j)
+        end if
+        !ds spruc = 1400.* 1.24*forest(4,i,j)
+        !ds crops =   40.* 0.3 *forest(5,i,j)
+        !ds sitka = 1400.* 6.24*forest(6,i,j)
 !ds        Convert percent to fraction
 !ds        xiso(i,j) = 0.01*(oak+decid+conif+spruc+crops+sitka)
 
        ! xiso -> emforest(BIO_ISOP
-        emforest(BIO_ISOP,i,j) = (oak+decid+conif+spruc+crops+sitka)*xm2(i,j)
+        !dsemforest(BIO_ISOP,i,j) = (oak+decid+conif+spruc+crops+sitka)*xm2(i,j)
+        emforest(BIO_ISOP,i,j) = (decid+conif+oak+spruc+snl+sitka)*xm2(i,j)
 
         !2) Terpene  (crude for Mexico job......)
-        conif = 1000.* 3.0 *forest(3,i,j)
+        !ds conif = 1000.* 3.0 *forest(3,i,j)
+        conif = 1000.* 3.0 *forest(2,i,j)
         spruc = 1400.* 3.0 *forest(4,i,j)
-        sitka = 1400.* 3.0 *forest(6,i,j)
+        !ds sitka = 1400.* 3.0 *forest(6,i,j)
+        sitka = 1400.* 3.0 *forest(5,i,j)
 
         emforest(BIO_TERP,i,j) = (conif+spruc+sitka)*xm2(i,j)
 
 !       Exclude emissions from sea grids:  crude !!!
-        if(iclass(i,j) == 0) emforest(:,i,j) = 0.0
+        !ds if(iclass(i,j) == 0) emforest(:,i,j) = 0.0
 
         isopsum   = isopsum   + emforest(BIO_ISOP,i,j)
         terpsum   = terpsum   + emforest(BIO_TERP,i,j)

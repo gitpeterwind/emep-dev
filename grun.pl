@@ -100,12 +100,12 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_5";
+     $testv       = "rv1_6_8";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_4_16acid";
+     $testv       = "rv1_6_8";
 } 
 #$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
@@ -469,8 +469,10 @@ foreach $poll  ( @emislist  ) {
     mylink( "Sondes", $old,$new ) ;
 
 # Forest data
-    $old   = "$o3dir/forest.pcnt" ;
-    $new   = "forest.pcnt";
+    #ds $old   = "$o3dir/forest.pcnt" ;
+    #ds $new   = "forest.pcnt";
+    $old   = "$DataDir/forests.tf2" ;
+    $new   = "forest.tf2";
     mylink( "Forest % cover", $old,$new ) ;
 
 # Aircraft emissions
