@@ -146,6 +146,7 @@ contains
      ddep(DDEP_FOR,i,j,IOU_INST) = 0.0
 
      do n = 1, N_OXN
+         nadv = OXN(n)
          
          ddep(DDEP_JRK,i,j,IOU_INST) = ddep(DDEP_JRK,i,j,IOU_INST) +  &
               fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
