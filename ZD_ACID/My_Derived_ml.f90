@@ -232,7 +232,7 @@ private
 
    !-- 3-D fields
 
-    f_3d( D3_SO2  ) = Deriv( 401, "ADV  ", T, IXADV_SO2 , ugS , T , T , T , T , F )
+    f_3d( D3_SO2  ) = Deriv( 401, "ADV  ", T, IXADV_SO2 , PPBINV , F , T , T , T , F )
     f_3d( D3_NO2 ) = Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV , F , T , T , T , F )
     f_3d( D3_NO ) = Deriv( 407, "ADV  ", T,  IXADV_NO , PPBINV , F , T , T , T , F )
     f_3d( D3_PAN ) = Deriv( 408, "ADV  ", T,  IXADV_PAN , PPBINV , F , T , T , T , F )

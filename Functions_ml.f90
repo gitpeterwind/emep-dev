@@ -1,6 +1,8 @@
 module Functions_ml
 !____________________________________________________________________
 ! Miscellaneous collection of "standard" (or guessed ) functions
+! Including Troe, sine and cosine curves, aerodynamics (PsiM, PsiH,
+! AerRes, bilinear-interpolation routines, and Polygon.
 !____________________________________________________________________
 !
 !** includes
@@ -23,6 +25,25 @@ module Functions_ml
   public ::  Daily_halfsine ! Similar, but only half-sine curve (0..pi)
                             ! used. (E.g. for H2O2 in ACID versions)
 
+  public :: Polygon         ! Used in deposition work.
+
+
+ !/-- Micromet (Aerodynamic) routines
+
+  public :: rh2vpd
+
+  public :: AerRes
+
+  public :: PsiH
+
+  public :: PsiM
+
+  !/-- grid-handling subroutine
+
+   public :: GridAllocate   ! allocates e.g. emissions, landuse an their
+                            ! codes for each gridsquare
+   character(len=30) :: errmsg  
+
   !/-- interpolation stuff
   public  :: bilin_interpolate                         !  "Generic" subroutine
   private :: bilin_interp_elem
@@ -34,6 +55,14 @@ module Functions_ml
      module procedure bilin_interp_array
      module procedure bilin_interp_elem
   end interface
+
+
+  !/-- define PI here rather than use PhysicalCOnstants_ml, to
+  !    preserve self-sufficiency
+
+  real, public, parameter  ::    &
+       PI      = 3.14159265358979312000   ! pi, from 4.0*atan(1.) on cray
+
 
   !========================================
   contains
@@ -147,6 +176,66 @@ module Functions_ml
   
 
   !___________________________________________________________________________
+  !+ subroutine which can be used with data such as emissions, landuse, where
+  !  several indices area llowed per grid square
+  !___________________________________________________________________________
+
+! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine GridAllocate(label,i,j,ic,ncmax,iland,&
+                           ncmaxfound,land,nland, errmsg)
+
+    !-- Checks if a country "ic" (or landuse type, lu) whose data has just 
+    !   been read in has already been found within the given grid square.
+    !   If not, the array "nland" is incremented by one and the
+    !   country (or landuse) index added to "land".
+    !
+    !u7.2 
+    !ds - moved LandAllocate from EmisDef since the same subrotuine can
+    !     be used for landuse data also.
+ 
+     character(len=*), intent(in) :: label   ! Type of data
+     integer, intent(in) :: i,j
+     integer, intent(in) :: ic        ! Index of country (lu) just read in
+     integer, intent(in) :: ncmax     ! Max. no countries (lu) allowed
+
+     integer, intent(out)   :: iland         ! Index of country in that grid
+     integer, intent(inout) :: ncmaxfound    ! No. countries found so far
+     integer, dimension(:,:,:), intent(inout) :: land   ! Land-codes
+     integer, dimension(:,:),   intent(inout) ::nland   ! No. countries
+     character(len=*), intent(out) :: errmsg   !  "ok" or not
+
+     integer :: nc, k, iland      ! local variables
+
+       nc=nland(i,j)       ! nc = no. countries known so far
+       errmsg = "ok"
+
+       do k = 1,nc
+          if( land(i,j,k) == ic) then
+              iland = k        ! country is already in the list
+              goto 100
+          endif
+       enddo
+
+       nland(i,j) = nland(i,j) + 1    ! country is a new one
+       land(i,j,nc+1) = ic
+       iland=nc+1
+
+       if( iland >  ncmaxfound) then
+           ncmaxfound = iland
+           write(*,*) "GridAlloc ", label, "increased ncmaxfound:",i,j,iland
+           write(*,*) "GridAlloc ", label," now have:", &
+                           (land(i,j,k),k=1,ncmaxfound)
+           if ( ncmaxfound >  ncmax ) then
+               errmsg = "GridAlloc ncmax ERROR" // label
+               print *, errmsg
+           endif
+        endif
+ 100    continue
+
+  end subroutine GridAllocate
+  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  !___________________________________________________________________________
   !+ subroutines which can be used in 2-D interpolation
   !  - includes "generic" subroutine bilin_interpolate
   !___________________________________________________________________________
@@ -258,5 +347,172 @@ module Functions_ml
 
   end subroutine bilin_interp_elem
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-   
+
+!d1.1    - checks for LenS, LenE = 0 introduced
+!d1.3    - simplified following Margaret's suggestion: removed 
+!          if-tests and possibility of EGS > 366
+!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+!=======================================================================
+function Polygon(jdayin,yydays,Ymin,Ystart,Ymax,Sday,LenS,Eday,LenE) &
+result (Poly)
+!=======================================================================
+
+!     Calculates the value of a parameter Y with a polygon
+!     distribution - currently LAI and g_pot
+
+!            _____________       <- Ymax
+!           /             \
+!          /               \
+!         /                 \
+!        /                   \
+!       |                     |  <- Ystart
+!       |                     |
+!       |                     |
+!  ----------------------------- <- Ymin
+!       S  S1            E1   E
+!
+!   Inputs
+    integer, intent(in) :: jdayin      !day of year
+    integer, intent(in) :: yydays      !no. days in year (365 or 366)
+    real, intent(in) ::    Ymin        !minimum value of Y
+    real, intent(in) ::    Ystart      !value Y at start of growing season
+    real, intent(in) ::    Ymax        !maximum value of Y
+    real, intent(in) ::    Sday        !start day (e.g. of growing season)
+    real, intent(in) ::    LenS        !length of Start period (S..S1 above)
+    real, intent(in) ::    Eday        !end day (e.g. of growing season)
+    real, intent(in) ::    LenE        !length of end period (E..E1 above)
+
+!  Output:
+    real ::   Poly  ! value at day jday
+
+! Local
+    integer :: jday  ! day of year, after any co-ordinate change
+    real ::    S   !  start day
+    real ::    E   !  end day
+    
+    jday = jdayin
+    E = Eday
+    S = Sday
+
+  ! Here we removed a lot of code associated with the leaf-age
+  ! version of g_pot. 
+       
+    if ( jday  <  S .or. jday >  E ) then
+       Poly = Ymin
+       return
+    end if
+
+  !d1.3 - slightly re-written tests:
+
+    if (jday <=  S+LenS  .and. LenS > 0 ) then
+
+        Poly = (Ymax-Ystart) * (jday-S)/LenS  + Ystart 
+
+    else if ( jday >=  E-LenE .and. LenE > 0.0 ) then   !d1.1 test for LenE
+
+        Poly = (Ymax-Ystart) * (E-jday)/LenE + Ystart
+
+    else
+
+        Poly =Ymax
+    end if
+    
+
+ end function Polygon
+
+ !=======================================================================
+
+
+  !--------------------------------------------------------------------
+  function rh2vpd(T,rh) result (vpd_res)
+  !This function is not currently in use.
+
+    real, intent(in) ::  T    ! Temperature (K)
+    real, intent(in) ::  rh   ! relative humidity (%)
+    real :: vpd_res     ! vpd   = water vapour pressure deficit (Pa)
+
+    !   Local:
+    real :: vpSat       ! vpSat = saturated water vapour pressure (Pa)
+    real :: arg
+
+    arg   = 17.67 * (T-273.15)/(T-29.65)
+    vpSat = 611.2 * exp(arg)
+    vpd_res   = (1.0 - rh/100.0) * vpSat
+
+  end function rh2vpd
+
+  !--------------------------------------------------------------------
+  function AerRes(z1,z2,uStar,Linv,Karman) result (Ra)
+!...
+!   Ref: Garratt, 1994, pp.55-58
+!   In:
+    real, intent(in) ::   z1     ! lower height (m), equivalent to h-d+1 or h-d+3
+    real, intent(in) ::   z2     ! upper height (m), equivalent to z-d
+    real, intent(in) ::   uStar  ! friction velocity (m/s)
+    real, intent(in) ::   Linv   ! inverse of the Obukhov length (1/m)
+    
+    real, intent(in) ::   Karman ! von Karman's constant 
+!   For AerRes, the above dummy argument is replaced by the actual argument 
+!   KARMAN in the module GetMet_ml.
+
+!   Out:
+    real :: Ra      ! =  aerodynamic resistance to transfer of sensible heat
+                    !from z2 to z1 (s/m)
+
+!   uses functions:
+!   PsiH   = integral flux-gradient stability function for heat 
+!...
+
+    Ra = log(z2/z1) - PsiH(z2*Linv) + PsiH(z1*Linv)
+    Ra = Ra/(Karman*uStar)
+    Ra = min(Ra,9999.9)
+
+  end function AerRes
+
+  !--------------------------------------------------------------------
+  function PsiH(zL) result (stab_h)
+    !  PsiH = integral flux-gradient stability function for heat 
+    !  Ref: Garratt, 1994, pp52-54
+
+    ! In:
+    real, intent(in) :: zL   ! surface layer stability parameter, (z-d)/L 
+    
+    ! Out:
+    real :: stab_h         !   PsiH(zL) 
+    
+   ! Local
+   real :: x
+ 
+    if (zL <  0) then !unstable
+        x    = sqrt(1.0 - 16.0 * zL)
+        stab_h = 2.0 * log( (1.0 + x)/2.0 )
+    else             !stable
+        stab_h = -5.0 * zL
+    end if
+
+  end function PsiH
+
+  !--------------------------------------------------------------------
+  function PsiM(zL) result (stab_m)
+   !   Out:
+   !   PsiM = integral flux-gradient stability function for momentum 
+   !   Ref: Garratt, 1994, pp52-54
+
+    real, intent(in) ::  zL    ! = surface layer stability parameter, (z-d)/L 
+                               ! notation must be preserved         
+    real :: stab_m
+    real  :: x
+ 
+    if( zL < 0) then !unstable
+       x    = sqrt(sqrt(1.0 - 16.0*zL))
+       stab_m = log( 0.125*(1.0+x)*(1.0+x)*(1.0+x*x) ) +  PI/2.0 - 2.0*atan(x)
+    else             !stable
+       stab_m = -5.0 * zL
+    end if
+
+  end function PsiM
+
+!--------------------------------------------------------------------
+
 end module Functions_ml

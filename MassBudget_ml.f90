@@ -26,7 +26,7 @@
  use Chemfields_ml , only : xn_adv
  use GridValues_ml , only : carea,xmd
  use Io_ml         , only : IO_RES
- use Met_ml        , only : ps, psa
+ use Met_ml        , only : ps, psurf   !u7.4vg - was psa
  use ModelConstants_ml , &
                      only : KMAX_MID  &  ! Number of points (levels) in vertical
                            ,PT        &  ! Pressure at top
@@ -161,7 +161,7 @@ contains
       do j = lj0,lj1
         do i = li0,li1
 !            helsum = carea(k)*xmd(i,j) * (ps(i,j,1) - PT)
-            helsum = carea(k)*xmd(i,j) * (psa(i,j) - PT)
+            helsum = carea(k)*xmd(i,j) * (psurf(i,j) - PT)
 
             xmax(:) = amax1(xmax(:),xn_adv(:,i,j,k))
             xmin(:) = amin1(xmin(:),xn_adv(:,i,j,k))

@@ -26,14 +26,16 @@ contains
 
   subroutine Init_WetDep()
 
-  !/ INCLOUDFAC is A/v where A is 5.2 m3 kg-1 s-1, !  and v is the fallspeed (5 m/s). 
-    real, parameter ::  FALLSPEED = 5.0                            ! m/s 
+  !/ INCLOUDFAC is A/v where A is 5.2 m3 kg-1 s-1,   and v is the 
+  !                                            fallspeed (5 m/s). 
+    real, parameter ::  FALLSPEED = 5.0                   ! m/s 
     real, parameter ::  INCLOUDFAC = 5.2 / FALLSPEED
 
   !/ e is the scavenging efficiency (0.1 for fine particles, 0.4 for course)
 
     real, parameter ::  EFF25 = 0.1*INCLOUDFAC  & 
-                      , EFFCO = 0.4*INCLOUDFAC  ! collection efficiency b/clouds - coarse
+                      , EFFCO = 0.4*INCLOUDFAC  ! collection efficiency
+                                                ! below clouds - coarse
 
    !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
    !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
@@ -47,8 +49,8 @@ contains
     WetDep(4)   = WScav(NH3,    0.7,  0.35)
     WetDep(5)   = WScav(AMNI,   0.7,  EFF25)  
     WetDep(6)   = WScav(HNO3,   0.7,  0.35)
-   !OZ WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
-   !OZ WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
+!OZ WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
+!OZ WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
 
   end subroutine Init_WetDep
 

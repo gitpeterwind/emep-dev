@@ -55,7 +55,7 @@ module Tabulations_ml
  !
 
     real, dimension(CHEMTMIN:CHEMTMAX) :: temp
-    real    :: p
+    real    :: p, T0, a
     integer :: i
 
     !  Exner function
@@ -80,18 +80,37 @@ module Tabulations_ml
     ! Tabulation of other rates:
     !-------------------------------------------------------------------
     !  Saturation vapour pressure
+    !  Clausius-Clapyron, as given by Jakobsen, eqn 2.55 (now in Pa):
+
+    !   T0  = 273.15
+    !   tab_esat_Pa(:) = 611.2*exp( 6816.0*(1.0/T0 + 1.0/temp(:))  &
+    !                               + 5.1309 * (T0/temp(:)      )
+
+    !   where T0 is standrard temperature 273.15
     !   Ref: Bolton's formula - really only valid for -35C < T < 35C 
     !   Units: Pa
     !   (MADE/MACHO notes  : was miscrcit(ICES,it)
     !   Corrected  to Pa, 30/10/01
- 
-    tab_esat_Pa(:) = 611.2*exp(17.67*(temp(:)-273.15)/ (temp(:) - 29.65))
+    !
+    !tab_esat_Pa(:) = 611.2*exp(17.67*(temp(:)-273.15)/ (temp(:) - 29.65))
 
-    ! An alternative would be to use Clausius-Clapyron, as given by 
-    ! Jakobsen, eqn 2.55 (for hPa):
-    ! tab_esat(:) = 6.112*exp( 6816.0*(1.0/T0 + 1.0/temp(:)) 
-    !                           + 5.1309 * (T0/temp(:)      )
-    !   where T0 is standrard temperature 273.15
+    ! From Bohren+Albrecht, Atmospheric Thermodynamics, 1998
+    ! ln e/es = 6808(1/T0-1/T) - 5.09 ln(T/T0)
+    !=> e = es * exp( 6808(1/T0-1/T)) * (T/T0)**5.09
+    !
+    !  tab_ba(:) = 611.2* ( exp( 6808.0*(1.0/T0 - 1.0/temp(:)) )  &
+    !                               * ( T0/temp(:) )**5.09  )
+
+    ! But, for now  I chose the formula used by HIRLAM; as provided
+    ! by Anna, May 2002
+    ! with  eps*zxl/Rd in Clausius-Clapyron
+
+       a = 0.622*2.5e6/287.0   ! = 5418
+
+       tab_esat_Pa(:) = 611.2* exp( a *(1.0/T0 - 1.0/temp(:)) ) 
+
+    !
+    ! An alternative would be to use 
     !-------------------------------------------------------------------
     !   relative humidity of deliquescence for ammonium nitrate
     !   Ref:  Mozurkewich (1993)  - Journal???

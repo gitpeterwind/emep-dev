@@ -12,6 +12,7 @@ module  My_Outputs_ml
   ! Hourly - ascii output of selected species, selcted domain
   ! Restri - Full 3-D output of all species, selected domain
 
+  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX   !u7.4vg
   use Dates_ml,       only : date  
   use GenSpec_adv_ml, only : NSPEC_ADV          &
         ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
@@ -40,7 +41,7 @@ module  My_Outputs_ml
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    0          & ! No. short-lived species
-    ,NXTRA_SITE =    1            ! No. Misc. met. params  ( now T2)
+    ,NXTRA_SITE =    2            ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
     !jej SITE_ADV =  (/ IXADV_NO, IXADV_NO2, IXADV_O3 /) 
@@ -54,7 +55,7 @@ module  My_Outputs_ml
   ! we can choose from T2, or th (pot. temp.)
 
    character(len=10), public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA=  (/ "th" /)
+    SITE_XTRA=  (/ "th  ", "hmix" /)
 
 
 
@@ -103,13 +104,14 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
-    integer, public, parameter :: NHOURLY_OUT = 7  ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT = 3  ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
 
     type, public:: Asc2D
-         character(len=3) :: type   ! "ADV" or "SHL" 
+         character(len=3) :: type   ! "ADV" or "SHL" (or user-defined)
         character(len=12) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
+                                    !ds u7.4vg .. or other arrays
          integer          :: ix1    ! bottom-left x
          integer          :: ix2    ! bottom-left y
          integer          :: iy1    ! upper-right x
@@ -193,23 +195,28 @@ contains
     Asc2D("ADV", "(f8.4)",IXADV_NO, 55, 150, 10, 100, "ppb",PPBINV,600.0)
   hr_out(2)= &
     Asc2D("ADV", "(f8.4)",IXADV_NO2, 55, 150, 10, 100, "ppb",PPBINV,600.0)
-  hr_out(3)= &
-    Asc2D("ADV", "(f8.4)",IXADV_PAN, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
-  hr_out(4)= &
-    Asc2D("ADV", "(f8.4)",IXADV_SO2, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
-  hr_out(5)= &
-    Asc2D("ADV", "(f8.4)",IXADV_SO4, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
-  hr_out(6)= &
-    Asc2D("ADV", "(f8.4)",IXADV_NH3, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
-  hr_out(7)= &
-    Asc2D("ADV", "(f8.4)",IXADV_HNO3, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!  hr_out(3)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_PAN, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!  hr_out(4)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_SO2, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!  hr_out(5)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_SO4, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!  hr_out(6)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_NH3, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!  hr_out(7)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_HNO3, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
 
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)
+ !ds u7.4vg - or from d_2d arrays.
+
+  !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
+  hr_out(3)= &
+     Asc2D("D2D", "(f6.1)",   D2_HMIX, 70, 150, 10, 100, "m",1.0   ,10000.0)
 
  !/** theta is in deg.K
-!  hr_out(5)= &
-!     Asc2D("th ", "(f5.1)",     -99, 70, 150, 10, 100, "degK",1.0   ,400.0)
+ ! hr_out(5)= &
+ !    Asc2D("th ", "(f5.1)",     -99, 70, 150, 10, 100, "degK",1.0   ,400.0)
 
  !/**Asc2D("T2 ", "(f5.1)",     -99, 87, 110, 51, 75, "degC",1.0   ,100.0)
 
@@ -231,9 +238,9 @@ contains
   !    output is wanted. Replaces the hard-coding which was
   !    in wrtchem:
 
-     wanted_dates_bi(1) = date(-1,7,2,0,0)
-     wanted_dates_bi(2) = date(-1,7,2,6,0)
-     wanted_dates_bi(3) = date(-1,7,2,12,0)
+     wanted_dates_bi(1) = date(-1,7,7,0,0)
+     wanted_dates_bi(2) = date(-1,7,7,6,0)
+     wanted_dates_bi(3) = date(-1,7,7,12,0)
 
  end subroutine set_output_defs
 end module My_Outputs_ml

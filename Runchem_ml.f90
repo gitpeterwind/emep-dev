@@ -41,11 +41,11 @@ subroutine runchem()
    use GenSpec_tot_ml
    use GenSpec_adv_ml
   use Chemfields_ml,     only: xn_adv  ! DEBUG XXXXX
-  use Met_ml,            only: z_bnd
+
 
 !/ local
 
-   integer :: i, j, k
+   integer :: i, j
    integer :: i_emep, j_emep ! EMEP coordinates - for testing
    integer :: dt_chem,nchem  !  Time-step for chemistry solver
    integer :: Niter          !  No. iterations used in 2step
@@ -97,13 +97,6 @@ subroutine runchem()
                      i_emep = i + ISMBEG + gi0 - 2  ! EMEP coordinates
                      j_emep = j + JSMBEG + gj0 - 2  ! EMEP coordinates
 
-                     if (i_emep .eq. 104 .and. j_emep.eq.48) &
-                        write(6,*) 'Jungfraujoch ',(z_bnd(i,j,k),k=10,21)
-                     if (i_emep .eq. 106 .and. j_emep.eq.53) &
-                        write(6,*) 'Zugspitze ',(z_bnd(i,j,k),k=10,21)
-                     if (i_emep .eq. 111 .and. j_emep.eq.47) &
-                        write(6,*) 'Monte Cimone ',(z_bnd(i,j,k),k=10,21)
-                     
                      !****** debug cell set here *******
                      ! debug_flag = ( i_emep == 106 .and. j_emep == 55 )
                      !****** debug cell set here *******

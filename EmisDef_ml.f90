@@ -44,10 +44,6 @@ public :: EmisDef_Index   ! function to find index of given pollutant name
    integer, public, parameter :: &
           NSECTORS  = 11       ! Number of SNAP-sectors in emissions
 !hf
-!hf SECENARIO
-  integer, public, parameter :: &
-          ANTROP_SECTORS=10 ! Non-natural sectors
-
    integer, public, parameter :: &
           ISNAP_NAT  = 11,&      ! SNAP index for volcanoe emissions 
           ISNAP_SHIP = 8         ! SNAP index for flat emissions,e.g ship

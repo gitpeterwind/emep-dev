@@ -387,8 +387,8 @@
   
   use PhysicalConstants_ml,  only : PI, RGAS_J
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP,&
-                                      daynumber, &  ! for so2ox
                                       VOLFAC        ! for N2O5-> NO3-
+  use Dates_ml,              only : daynumber !u7.4vg  for so2ox
   use Functions_ml,          only : troe
   implicit none
   private
@@ -575,8 +575,9 @@ end module GenRates_rct_ml
 !u3   use My_BoundConditions_ml, only : set_daily, h2o2conc
 !u3   use Setup_1dfields_ml, only        : amk
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP, KCLOUDTOP &
-                                     ,CHEMTMIN, CHEMTMAX & !u3 temp. range
-                                     ,daynumber  !u3
+                                     ,CHEMTMIN, CHEMTMAX  !u3 temp. range
+  !u7.4vg                                   ,daynumber  !u3
+  use Dates_ml,              only : daynumber !u7.4vg  for so2ox
   use PhysicalConstants_ml,  only : PI, DEG2RAD
   implicit none
   private
@@ -617,8 +618,7 @@ end module GenRates_rct_ml
      ! Coefficients taken from Eliassen+Saltbones (1983) (also in
      ! Berge and Jakobsen, 1998
 
-        tab_so2ox = Daily_sine(4.0e-6,2.0e-6,80,366) ! increased from 3 to 4
-                                                     ! (from HF 24/6 02)
+        tab_so2ox = Daily_sine(3.0e-6,2.0e-6,80,366)
       
 
     end subroutine  Init_mychem

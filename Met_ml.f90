@@ -9,9 +9,15 @@
 ! October 2001 hf added call to ReadField
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
-!hf u2use My_Runmode_ml        , only : stop_test
-use Par_ml               , only : MAXLIMAX,MAXLJMAX,NPROC,me
-use ModelConstants_ml    , only : KMAX_BND,KMAX_MID,NMET
+use GridValues_ml,     only : xm,xmd, sigma_bnd,sigma_mid
+use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP, &
+                              KMAX_BND,KMAX_MID,NMET
+use Par_ml           , only : MAXLIMAX,MAXLJMAX,NPROC,me  &
+                               ,limax,ljmax,li0,li1,lj0,lj1  &
+                               ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
+                               ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
+use PhysicalConstants_ml, only : KARMAN, XKAP, R, CP, GRAV, ROWATER
+use Tabulations_ml , only : TPI,PBAS,PINC
 implicit none
 private
 
@@ -77,7 +83,8 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,NMET) :: &
                      ps      & ! Surface pressure hPa (or Pa- CHECK!)
                     ,th2m    & ! Temp 2 m   deg. K
-                    ,fh      & ! surf.flux.sens.heat W/m^2
+                    ,fh      & ! surf.flux.sens.heat W/m^2   ! ds u7.4vg added
+                    ,fl      & ! latent heat flux W/m^2
                     ,fm      & ! surf. stress  N/m^2
                     ,ustar     ! pw u3 friction velocity m/s ustar^2 = fm/roa
 
@@ -87,15 +94,15 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-                                 psa       & ! Surface pressure hPa
-                                ,temp2m      ! Temp 2 m   deg. C
-!6c                  ,zeta        ! zenith angle ( now in Radiation_ml)
+                                 psurf & !u7.4lu psa  Surface pressure hPa
+                                ,t2      !u7.4vg temp2m  Temp 2 m   deg. K
 
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: z_bnd ! height of full layers
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: z_mid ! height of half layers
+  real,public, save, &
+      dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: z_bnd ! height of full layers
+  real,public, save, &
+      dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: z_mid ! height of half layers
 
   !
-  !6b integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: isnowc
   integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: snow
 
   logical, public, save :: foundclouds,foundustar,foundpreta,mm5 !pw u3
@@ -160,8 +167,9 @@ private
 !	definition of the parameter number of the meteorological variables
 !	read from field-files:
 
+!ds u7.4vg fl added
 !	u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
-!	ps(8),th2m(31),fh(36),fm(38),ustar(53),trw(845)
+!	ps(8),th2m(31),fh(36),fl(37),fm(38),ustar(53),trw(845)
 
 !	scaling factor to be read from field file.
 
@@ -419,6 +427,10 @@ private
 	  case (36)
 
 	      call getmetfield(ident(20),itmp,fh(1,1,nr))
+!ds u7.4vg fl added
+	  case (37)
+
+              call getmetfield(ident(20),itmp,fl(1,1,nr))
 
 	  case (38)
 
@@ -567,11 +579,11 @@ private
 !     conversion of pressure from mb to Pascal.
 
 	    ps(i,j,nr) = ps(i,j,nr)*PASCAL
-	    psa(i,j) = ps(i,j,nr)
+	    psurf(i,j) = ps(i,j,nr) !u7.4vg - was psa
 
 !     surface temperature to potential temperature 
 
-	    temp2m(i,j) = th2m(i,j,nr) -273.15
+	    t2(i,j) = th2m(i,j,nr)  !u7.4vg not -273.15
 !su	    th2m(i,j,nr) = th2m(i,j,nr)*(1.e+5/ps(i,j,nr))**(XKAP)
 	    th2m(i,j,nr) = th2m(i,j,nr)*exp(-XKAP*log(ps(i,j,nr)*1.e-5))
 	    prhelp_sum = 0.0
@@ -970,14 +982,21 @@ private
 	  roa(:,:,:,1) = roa(:,:,:,1) 				&
 			+ (roa(:,:,:,2) - roa(:,:,:,1))*div
 
-	  psa(:,:) = ps(:,:,1)
+	  psurf(:,:) = ps(:,:,1)  !u7.4vg was psa
 
 	  ps(:,:,1) = ps(:,:,1) 				&
 			+ (ps(:,:,2) - ps(:,:,1))*div
 	  th2m(:,:,1) = th2m(:,:,1) 				&
 			+ (th2m(:,:,2) - th2m(:,:,1))*div
+!u7.4vg - note we need pressure first
+          t2(:,:)    =   th2m(:,:,1) * exp(XKAP*log(psurf(:,:)*1.e-5))
+
 	  fh(:,:,1) = fh(:,:,1) 				&
 			+ (fh(:,:,2) - fh(:,:,1))*div
+!ds u7.4vg fl added
+	  fl(:,:,1) = fl(:,:,1) 				&
+			+ (fl(:,:,2) - fl(:,:,1))*div
+
 	  fm(:,:,1) = fm(:,:,1) 				&
 			+ (fm(:,:,2) - fm(:,:,1))*div
           if(foundustar)then
@@ -1009,12 +1028,19 @@ private
 	  roa(:,:,:,1) = roa(:,:,:,2)
 
 !su	don't forget psa !!!!
-	  psa(:,:) = ps(:,:,1)
+	  !7.4vg, but put after ps update psa(:,:) = ps(:,:,1)
 
 	  ps(:,:,1) = ps(:,:,2)
+	  psurf(:,:) = ps(:,:,1)   ! u7.4vg
 	  th2m(:,:,1) = th2m(:,:,2)
+
+!u7.4vg - note we need pressure first
+          t2(:,:)    =   th2m(:,:,1) * exp(XKAP*log(psurf(:,:)*1.e-5))
+
 	  fh(:,:,1) = fh(:,:,2)
 	  fm(:,:,1) = fm(:,:,2)
+!ds u7.4vg fl added
+	  fl(:,:,1) = fl(:,:,2)
 	  if(foundustar) ustar(:,:,1) = ustar(:,:,2)
 
 !gv	  if(MADE)then				!MADE
@@ -1028,22 +1054,15 @@ private
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 	subroutine in_isnowc
-!6b use Par_ml   , only : IILARDOM,JJLARDOM		&
-!6b 		,MSG_READ5,ISMBEG,JSMBEG
         use ModelConstants_ml, only : current_date
 	use Io_ml, only :   IO_SNOW, ios, open_file  
         use ReadField_ml, only : ReadField ! reads ascii fields
 	implicit none
 
 	integer i,j
-	!6b integer ijin(2) 
-	!6b integer rsnow(IILARDOM,JJLARDOM)
-        !6b integer snow(IILARDOM,JJLARDOM)
 	character*20 fname
 
 !ds SNOW c..hj..read DNMI snow cover data from file: snowc
-!ds SNOW c
-!ds SNOW c
 
 ios = 0
 if (me == 0) then
@@ -1055,8 +1074,6 @@ endif !me==0
 
 !hf start
     call ReadField(IO_SNOW,fname,snow)
-    !6b  call global2local_int(rsnow,isnowc,MSG_READ5		&
-    !6b          ,IILARDOM,JJLARDOM,1,ISMBEG,JSMBEG)
 
 
    end subroutine in_isnowc
@@ -1144,6 +1161,7 @@ endif !me==0
 !c	exnm	: exner function in the full sigma-levels, J/(kg K)
 !c	exns	: exner function in the half sigma-levels, J/(kg K)
 !c	fh	: surface flux of sensible heat, W/m2
+!c	fl	: surface flux of sensible heat, W/m2 ! ds u7.4vg
 !c	fm	: surface stress (flux of momentum), N/m2
 !c	g	: gravitational acceleration, m/s2
 !c	hs	: height of surface layer (i.e. prandtl-layer), m
@@ -1486,7 +1504,7 @@ endif !me==0
           vdfac(MAXLIMAX,MAXLJMAX),xkhs(MAXLIMAX),xkdz(MAXLIMAX),xkzi(MAXLIMAX),hs(MAXLIMAX),&
 !hf new
           sm,pref,xtime,umax,eps,ric,ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,&
-          dvdz,xl2,uvhs,zimhs,zimz,zmhs,ux0,fac,fac2,dex12,ro,xkh100(MAXLIMAX)
+          dvdz,xl2,uvhs,zimhs,zimz,zmhs,ux0,fac,fac2,dex12,ro, xkh100(MAXLIMAX)
 !hf Hilde&ANton
       real hsurfl
 !hf new
@@ -1902,8 +1920,8 @@ endif !me==0
 !c..exchange parameter and its vertical derivative at z = hs
 
       do 60 i=1,limax
-!Hilde&Anton
-         xkh100(i)=0.
+
+         xkh100(i)=0.  !Hilde&Anton
          xkhs(i)=0.                                            
          xkdz(i)=0.
          xkzi(i)=0.
@@ -1947,15 +1965,14 @@ endif !me==0
                xkhs(i)=ux0*KARMAN*hs(i)*(1.-xfrco*hsl)**exfrco/0.74  
                xkdz(i)=xkhs(i)*(1.-xfrco*hsl/(3.*(1.-xfrco*hsl)))/hs(i)
             endif
-
 !Hilde&Anton
             hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
 
-            if(hsurfl.ge.-2.) then  
-               xkh100(i)=ux0*KARMAN*100.*sqrt(1.-9.*hsurfl)/0.74   
+            if(hsurfl.ge.-2.) then
+               xkh100(i)=ux0*KARMAN*100.*sqrt(1.-9.*hsurfl)/0.74
             else
-               xkh100(i)=ux0*KARMAN*100.*(1.-xfrco*hsurfl)**exfrco/0.74  
+               xkh100(i)=ux0*KARMAN*100.*(1.-xfrco*hsurfl)**exfrco/0.74
             endif
 
             Kz_min(i,j)=xkh100(i)
@@ -1979,12 +1996,11 @@ endif !me==0
 
             xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(0.74+4.7*hsl)   
 
+         endif
 !hf Hilde&Anton
             hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
             Kz_min(i,j)=1.35*ux0*KARMAN*100./(0.74+4.7*hsurfl)
-
-         endif
 !c
 !c...............................................................
 !c..factor for reduction of dry-deposition speed from 1m to hs..:
@@ -2042,10 +2058,9 @@ endif !me==0
          do i=1,limax
             do j=1,ljmax
 !hf Anton&Hilde
-               if ((pzpbl(i,j)>z_mid(i,j,k-1) ).and.k>1)then
+               if ( (pzpbl(i,j)>z_mid(i,j,k+1)) .and. k>1 )then
                 xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
                endif 
-
                help(i,j) = xksig(i,j,k)
             enddo
          enddo
@@ -2181,7 +2196,8 @@ endif !me==0
 !c      include 'metnew.inc'
 !c
 implicit none
-       real f(MAXLIMAX,MAXLJMAX),h1(0:MAXLIMAX+1,0:MAXLJMAX+1),rmin,rmax                                                       
+       real f(MAXLIMAX,MAXLJMAX),h1(0:MAXLIMAX+1,0:MAXLJMAX+1),rmin,rmax
+
 !hf ERROR      real f(iif,jjf),h1(0:iih,0:jjh),rmin,rmax
 !iih,jjh not defined
 !                                                     

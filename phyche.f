@@ -148,6 +148,11 @@ c
           current_date = add_dates(current_date,nint(dt_advec))
           !====================================
 
+        !u7.4vg - move here to allow some d_2d variables to be set
+        !         and then used in ascii printouts.
+
+          call SumDerived(dt_advec)
+
 	  if ( current_date%seconds == 0 ) then
 
               if ( modulo(current_date%hour, FREQ_SITE) == 0 ) 
@@ -166,7 +171,7 @@ c
           call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
 
-          call SumDerived(dt_advec)
+        !u7.4vg   call SumDerived(dt_advec)
 	  call metint
 	  call adv_int
 

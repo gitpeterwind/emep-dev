@@ -12,16 +12,16 @@ module  My_Outputs_ml
   ! Hourly - ascii output of selected species, selcted domain
   ! Restri - Full 3-D output of all species, selected domain
 
+  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX , &  !u7.4vg
+        D2_VG_REF, D2_VG_1M, D2_VG_STO, D2_FX_REF, D2_FX_STO
   use Dates_ml,       only : date  
   use GenSpec_adv_ml, only : NSPEC_ADV          &
         ,IXADV_O3 , IXADV_PAN , IXADV_CO , IXADV_NO , IXADV_NO2  &
         ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
         ,IXADV_HCHO,IXADV_CH3CHO, IXADV_NO3                      &
         ,IXADV_N2O5 , IXADV_AMSU, IXADV_AMNI    !6s                &
-!6s         ,IXADV_SOA, IXADV_ASOA, IXADV_BSOA
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
-                IXSHL_OH,IXSHL_HO2,  NSPEC_SHL
-  !u1 use GenSpec_maps_ml, only:    MAP_ADV2TOT
+                IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml , only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
   use Par_ml,            only: me, NPROC   ! for gc_abort
@@ -37,25 +37,26 @@ module  My_Outputs_ml
 
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
-     NSITES_MAX =    30         & ! Max. no surface sites allowed
+     NSITES_MAX =    51         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
-    ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
-    ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE =    1            ! No. Misc. met. params  ( now T2)
+    ,NADV_SITE  =    3 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+    ,NSHL_SITE  =    1          & ! No. short-lived species
+    ,NXTRA_SITE =    7            ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
-    !jej SITE_ADV =  (/ IXADV_NO, IXADV_NO2, IXADV_O3 /) 
-    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
+    SITE_ADV =  (/ (isite, isite=1,3) /)       ! Everything!!
+    !SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
-!!    SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!
-    SITE_SHL =  (/ (isite, isite=1,NSHL_SITE) /)       ! TROTREP everything!!
+    SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!
 
   ! Extra parameters - need to be coded in Sites_ml also. So far
   ! we can choose from T2, or th (pot. temp.)
 
    character(len=10), public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA=  (/ "th" /)
+!    SITE_XTRA=  (/ "hmix    ", "Vg_ref  ", "Vg_1m   " /) 
+    SITE_XTRA=  (/ "th      ", "hmix    ", "Vg_ref  ", "Vg_1m   ", &
+                   "Vg_sto  ", "Flux_ref", "Flux_sto" /)
 
 
 
@@ -82,14 +83,14 @@ module  My_Outputs_ml
    ! These must be defined in Sites_ml.f90.
 
    integer, public, parameter :: &
-     NSONDES_MAX =    30               &   ! Max. no sondes allowed
+     NSONDES_MAX =    51               &   ! Max. no sondes allowed
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
-    ,NADV_SONDE  =    4                &   ! No.  advected species
+    ,NADV_SONDE  =    3                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
     ,NXTRA_SONDE =    1                    ! No. Misc. met. params  (now th)
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
-    SONDE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO /)
+    SONDE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2 /)
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
@@ -104,13 +105,14 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
-    integer, public, parameter :: NHOURLY_OUT = 1  ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT = 6  ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 1  ! 3 hours between outputs
 
     type, public:: Asc2D
          character(len=3) :: type   ! "ADV" or "SHL" 
         character(len=12) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
+                                    !ds u7.4vg .. or other arrays
          integer          :: ix1    ! bottom-left x
          integer          :: ix2    ! bottom-left y
          integer          :: iy1    ! upper-right x
@@ -150,14 +152,6 @@ module  My_Outputs_ml
         ,ISPEC_OUTEND = -125  &     ! Set negative here to exclude
         ,JSPEC_OUTEND = -80         ! Set negative here to exclude
 
-!   integer, public, parameter :: NPARUPP = NSPEC_ADV ! 39
-
-! Defines integers which represent output species (former mod_def):
-
-!6c  integer, public, parameter ::  & 
-!6c       NSPEC_ADD_ADV = 1        !& ! additional ps advection, if = 1
-!       , NPARADV = NSPEC_ADV + NSPEC_ADD_ADV  ! total species to be advected
-
 
    public :: set_output_defs
 
@@ -171,8 +165,9 @@ contains
    character(len=30) :: errmsg  ! Local error message
    integer           :: i       ! Loop index
 
-   real                :: to_ug_S & ! conversion to ug of S
+   real, save          :: to_ug_S & ! conversion to ug of S
                          ,to_ug_N   ! conversion to ug of N
+   real, save :: m_s = 100.0 ! From cm/s to m/s
  
  
 !jej - added 11/5/01 following Joffen's suggestion:
@@ -208,6 +203,22 @@ contains
 
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)
+ !ds u7.4vg - or from d_2d arrays.
+
+!ZDEP  !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
+!ZDEP  hr_out(2)= &
+!ZDEP     Asc2D("D2D", "(f6.1)",   D2_HMIX, 70, 150, 10, 100, "m",1.0   ,10000.0)
+
+  hr_out(2)= &
+     Asc2D("D2D", "(f8.5)",   D2_VG_REF, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
+  hr_out(3)=&
+     Asc2D("D2D", "(f8.5)",   D2_VG_1M , 70, 150, 10, 100, "cm/s", m_s  ,90.0)
+  hr_out(4)=&
+     Asc2D("D2D", "(f8.5)",   D2_VG_STO, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
+  hr_out(5)=&
+     Asc2D("D2D", "(f10.4)",   D2_FX_REF, 70, 150, 10, 100, "m",1.0   ,900.0)
+  hr_out(6)=&
+     Asc2D("D2D", "(f10.4)",   D2_FX_STO, 70, 150, 10, 100, "m",1.0   ,900.0)
 
  !/** theta is in deg.K
 !  hr_out(5)= &

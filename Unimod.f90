@@ -59,7 +59,7 @@ program myeul
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Forests_init
   use BoundaryConditions_ml, only : BoundaryConditions
-  use Dates_ml,         only : date, dayno
+  use Dates_ml,         only : date, dayno,daynumber   ! u7.4vg
   use DefPhotolysis_ml, only : readdiss
   !u7lu use NEWdep_ml,        only : ReadLanduse     !u7.2, ds
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
@@ -69,9 +69,9 @@ program myeul
   use Met_ml  ,         only : infield,metvar,in_isnowc, mm5,&
                                tiphys
   use ModelConstants_ml,only : KMAX_MID, current_date  &
-                              ,daynumber &  ! u3
                               ,METSTEP   &   !u2 - replaces metstep
                               ,nprint,nass,nterm,assign_nmax
+                              !u7.4vg ,daynumber &  ! u3
   use out_restri_ml,    only : set_outrestri
   use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1, parinit
   use Polinat_ml,       only : polinat_init,polinat_in

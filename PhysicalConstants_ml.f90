@@ -10,8 +10,11 @@ implicit none
 
   real , public, parameter ::         &
     AVOG   = 6.023e23                 & ! Avogadros number
-  , RGAS_ATML= 0.08205                & ! Molar Gas constant (atm M-1 K-1)
-  , RGAS_J   = 8.314                    ! Molar Gas constant (J mol-1 K-1)
+  , ATWAIR = 28.964                   & ! mol wt of air, g/mol
+  , RGAS_ATML = 0.08205               & ! Molar Gas constant (atm M-1 K-1)
+  , RGAS_KG   = 287.0                 & ! Molar Gas constant (J K-1 kg-1)
+  , RGAS_J    = 8.314                   ! Molar Gas constant (J mol-1 K-1)
+
                                         ! NB. ( J = N m2 = kg m2 s-2 )
                                         !       M = mol l-1
 
@@ -26,6 +29,28 @@ implicit none
     ,  PI      = 3.14159265358979312000 & ! pi, from 4.0*atan(1.) on cray
     ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians
     ,  ROWATER = 1000.               ! pw density of water kg m-3
+
+!=================== DEP CODE ================================Y:0
+
+  ! CHARNOCK is used to calculate the roughness length for the 
+  ! landuse category water
+
+   real, public, parameter  :: &
+       PRANDTL = 0.71,            &   ! Prandtl number (see Garratt, 1992)
+       Sc_H20  = 0.6,             &   ! Schmidt number for water
+    CHARNOCK = 0.032   ! Charnock's alpha:
+                       ! see Nordeng (1986), p.31, 
+                       ! Nordeng(1991), JGR, 96, no. C4, pp. 7167-7174.
+                       ! In the second of these publications, Nordeng uses
+                       ! "m" to denote Charnock's alpha whilst in the first
+                       ! he specifies the value 0.032.
+
+  ! Standard temperature :
+
+  real, public, parameter :: T0 = 273.15   ! zero degrees Celsius in Kelvin 
+
+!=================== DEP CODE ================================Y:0
+
 
 
 end  module PhysicalConstants_ml

@@ -23,6 +23,8 @@ use My_Outputs_ml, only : &   ! for sitesout
           NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &
           SONDE_ADV, SONDE_SHL, SONDE_XTRA, &
           FREQ_SONDE
+use My_Derived_ml, only : d_2d, IOU_INST, &
+          D2_VG_REF, D2_VG_1M, D2_VG_STO, D2_FX_REF, D2_FX_STO
 
 use Par_ml , only : ISMBEG,JSMBEG,GIMAX,GJMAX,  &
               GI0,GI1,GJ0,GJ1,me,NPROC,MAXLIMAX,MAXLJMAX
@@ -57,9 +59,9 @@ integer, private, save, dimension (0:NPROC-1,NSITES_MAX) :: site_gindex
 integer, private, save, dimension (0:NPROC-1,NSONDES_MAX) :: sonde_gindex
 
 integer, private, save, dimension (NSITES_MAX) ::  &
-         site_gx, site_gy, site_gz   & ! global coordinates
-       , site_x, site_y, site_z      & ! local coordinates
-       , site_n                        ! number in global
+         site_gx, site_gy   & ! global coordinates
+       , site_x, site_y     & ! local coordinates
+       , site_n               ! number in global
 integer, private, save, dimension (NSONDES_MAX) ::  &
          sonde_gx, sonde_gy   & ! global coordinates
        , sonde_x, sonde_y     & ! local coordinates
@@ -86,7 +88,7 @@ integer, private  :: d, info            ! processor index and gc_send info
 integer, private  :: i, n, nloc, ioerr  ! general integers
 
  !-- Debugging parameter:
- logical, private, parameter :: MY_DEBUG = .true.
+ logical, private, parameter :: MY_DEBUG = .false.
 
 contains
 
@@ -100,13 +102,12 @@ contains
 
      call Init_sites("sites",IO_SITES,NSITES_MAX, &
            nglobal_sites,nlocal_sites, &
-           site_gindex, site_gx, site_gy, site_gz, site_x, site_y, site_z, &
-           site_n, site_name)
+           site_gindex, site_gx, site_gy, site_x, site_y, site_n, &
+           site_name)
 
      call Init_sites("sondes",IO_SONDES,NSONDES_MAX, &
            nglobal_sondes,nlocal_sondes, &
-           sonde_gindex, sonde_gx, sonde_gy, site_gz, &
-           sonde_x, sonde_y, site_z, sonde_n, &
+           sonde_gindex, sonde_gx, sonde_gy, sonde_x, sonde_y, sonde_n, &
            sonde_name)
 
      call set_species(SITE_ADV,SITE_SHL,SITE_XTRA,site_species)
@@ -149,7 +150,7 @@ contains
 !==================================================================== >
    subroutine Init_sites(fname,io_num,NMAX, &
            nglobal,nlocal, &
-           s_gindex, s_gx, s_gy, s_gz, s_x, s_y, s_z, s_n, s_name)
+           s_gindex, s_gx, s_gy, s_x, s_y, s_n, s_name)
    ! -------------------------------------------------------------------------
    ! Reads the file "sites.dat" and "sondes.dat" to get coordinates of 
    ! surface measurement stations or locations where vertical profiles
@@ -170,18 +171,18 @@ contains
    integer, intent(out)  :: nglobal, nlocal   ! No. sites 
    integer, intent(out), dimension (0:,:) :: s_gindex  ! index, starts at me=0
    integer, intent(out), dimension (:) ::  &   
-                        s_gx, s_gy, s_gz   & ! global coordinates
-                      , s_x, s_y, s_z      & ! local coordinates
+                              s_gx, s_gy   & ! global coordinates
+                            , s_x, s_y     & ! local coordinates
                             , s_n            ! number in global
    character(len=*), intent(out), dimension (:) ::  s_name
  
    !-- Local:
    integer,  dimension (NMAX) :: s_n_recv  ! number in global
 
-   integer           :: nin       ! loop index
-   real              :: x, y, lev ! coordinates read in
-   character(len=20) :: s         ! Name of site read in
-   character(len=30) :: comment   ! comment on site location
+   integer           :: nin      ! loop index
+   real              :: x, y     ! coordinates read in
+   character(len=20) :: s        ! Name of site read in
+   character(len=30) :: comment  ! comment on site location
    character(len=40) :: infile
 
     infile  = fname // ".dat"
@@ -211,7 +212,7 @@ contains
    SITEREAD: if(me == 0) then   
      SITELOOP:  do nin = 1, NMAX
 
-         read (unit=io_num,fmt=*,iostat=ioerr) s, x, y, lev
+         read (unit=io_num,fmt=*,iostat=ioerr) s, x, y
 
            if ( ioerr < 0 ) then
              write(6,*) "sitesdef : end of file after ", nin-1,  infile
@@ -228,7 +229,6 @@ contains
               n = n + 1
               s_gx(n)   = x  
               s_gy(n)   = y  
-              s_gz(n)   = lev  
               if ( x == gibegpos .or. x == giendpos .or. &
                    y == gjbegpos .or. y == gjendpos ) then
 
@@ -259,7 +259,6 @@ contains
    call gc_ibcast(680,1,0,NPROC,info,nglobal)
    call gc_ibcast(681,nglobal,0,NPROC,info,s_gx)
    call gc_ibcast(682,nglobal,0,NPROC,info,s_gy)
-   call gc_ibcast(683,nglobal,0,NPROC,info,s_gz)
 
 !/**   define local coordinates of first and last element of the
 !      arrays with respect to the larger domain  **/
@@ -280,13 +279,12 @@ contains
         nlocal      = nlocal + 1
         s_x(nlocal) = s_gx(n)-ibegpos+1
         s_y(nlocal) = s_gy(n)-jbegpos+1
-        s_z(nlocal) = s_gz(n)
         s_n(nlocal) = n
 
         if ( MY_DEBUG ) then
            write(6,*) "sitesdef Site on me : ", me, " No. ", nlocal, &
                 s_gx(n), s_gy(n) , " =>  ", &
-                s_x(nlocal), s_y(nlocal), s_z(nlocal)
+                s_x(nlocal), s_y(nlocal)
         end if
 
       endif
@@ -334,7 +332,8 @@ end subroutine Init_sites
   ! will be improved later to allow choice of output parameter
   ! should look at chemint also - seems similar for somethings
   ! ---------------------------------------------------------------------
-   use Met_ml, only : temp2m, th   ! Output with concentrations
+   !u7.4vg use Met_ml, only : temp2m, th   ! Output with concentrations
+   use Met_ml, only : t2, th, pzpbl   ! Output with concentrations
 
   ! -- arguments
   real, dimension(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID), intent(in) :: xn_adv
@@ -343,17 +342,16 @@ end subroutine Init_sites
 
 
   ! Local
-  integer :: nglob, nloc, ix, iy, iz, ispec !/** Site indices           **/
-  integer :: nn                             !/** species index          **/
-  logical, save :: my_first_call = .true.   !/** for debugging          **/
+  integer :: nglob, nloc, ix, iy, ispec   !/** Site indices           **/
+  integer :: nn                           !/** species index          **/
+  logical, save :: my_first_call = .true. !/** for debugging          **/
 
    real,dimension(NOUT_SITE,NSITES_MAX) :: out    !/** for output, local node**/
 
      if ( MY_DEBUG ) then 
         print *, "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me 
         do i = 1, nlocal_sites
-          print *, "sitesdef Into surf  x,y ",site_x(i),site_y(i),site_z(i),&
-                   " me ", me
+           print *, "sitesdef Into surf  x,y ",site_x(i),site_y(i)," me ", me
         end do
  
         if ( me == 0 ) then
@@ -371,35 +369,41 @@ end subroutine Init_sites
   do i = 1, nlocal_sites
      ix = site_x(i)
      iy = site_y(i)
-     iz = site_z(i)
 
      do ispec = 1, NADV_SITE
-       if(iz == KMAX_MID ) then   !  corrected to surface
-         out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
+        out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
                             cfac( SITE_ADV(ispec),ix,iy) * PPBINV
 
-       else                 ! Mountain sites not corrected to surface
-         out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,iz ) * PPBINV
-       end if
      end do
      my_first_call = .false.
 
      do ispec = 1, NSHL_SITE
-       out(NADV_SITE+ispec,i)  = xn_shl( SITE_SHL(ispec) ,ix,iy,iz )
-!       write(6,*) 'oh values ',  SITE_SHL(ispec), ix, iy, &
-!           xn_shl( SITE_SHL(ispec) ,ix,iy,iz ), out(NADV_SITE+ispec,i) 
+        out(NADV_SITE+ispec,i)  = xn_shl( SITE_SHL(ispec) ,ix,iy,KMAX_MID )
      end do
 
     !/** then print out XTRA stuff, usually the temmp
     !    or pressure
+    !SITE_XTRA=  (/ "th  ", "hmix", "Vg_ref", "Vg_1m", "Vg_sto", "Flux_ref", "Flux_sto" /)
 
     do ispec = 1, NXTRA_SITE
        nn = NADV_SITE + NSHL_SITE + ispec
        select case ( SITE_XTRA(ispec) )
        case ( "T2" ) 
-          out(nn,i)   = temp2m(ix,iy) 
+          out(nn,i)   = t2(ix,iy) - 273.15 
        case ( "th" ) 
           out(nn,i)   = th(ix,iy,KMAX_MID,1)
+       case ( "hmix" ) 
+          out(nn,i)   = pzpbl(ix,iy)
+       case ( "Vg_ref" ) 
+          out(nn,i)   = d_2d(D2_VG_REF,ix,iy,IOU_INST)
+       case ( "Vg_1m" ) 
+          out(nn,i)   = d_2d(D2_VG_1M ,ix,iy,IOU_INST)
+       case ( "Vg_sto" ) 
+          out(nn,i)   = d_2d(D2_VG_STO ,ix,iy,IOU_INST)
+       case ( "Flux_ref" ) 
+          out(nn,i)   = d_2d(D2_FX_REF ,ix,iy,IOU_INST)
+       case ( "Flux_sto" ) 
+          out(nn,i)   = d_2d(D2_FX_STO ,ix,iy,IOU_INST)
        end select 
     end do
   end do

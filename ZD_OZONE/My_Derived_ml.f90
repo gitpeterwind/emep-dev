@@ -109,7 +109,7 @@ private
        ,DDEP_RDN   = 3      ! sum reduced  nitrogen (was  xddep(IXDD_NH3))
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 24 &   ! Number of 2D derived fields
+        NDERIV_2D = 29 &   ! Number of 2D derived fields
        ,D2_AOT40  = 1  &   ! was IAOT_40
        ,D2_AOT60  = 2  &   ! was IAOT_60
        ,D2_ACCSU  = 3  &   ! was NUM_ACCSU 
@@ -121,10 +121,7 @@ private
        ,D2_NO     = 8  &   ! was xnsurf(..)
        ,D2_NO2    = 9  &   ! was xnsurf(..)
        ,D2_O3     =10  &   ! was xnsurf(..)
-       ,D2_CO     =11  &   ! was xnsurf(..)
-       ,D2_AMSU   =19  &   ! was xnsurf(..)
-       ,D2_MAXO3  =20  &   ! for TROTREP
-       ,D2_MAXOH  =21      ! for TROTREP
+       ,D2_CO     =11      ! was xnsurf(..)
        
    integer, public, parameter ::  & 
         D2T_HCHO    = 12  &  ! was xnsu8to16(IXSU_CH2O)
@@ -134,12 +131,25 @@ private
        ,D2_SOX      = 15  &  ! Sum of sulphates, 
        ,D2_OXN      = 16  &  ! Total nitrates (HNO3 + part. NITRATE) 
        ,D2_REDN     = 17  &  ! Annonia + ammonium 
-       ,D2_FRNIT    = 18     ! Annonia + ammonium / total nitrate 
+       ,D2_FRNIT    = 18  &  ! Annonia + ammonium / total nitrate 
+!
+       ,D2_AMSU   =19  &   ! was xnsurf(..)
+       ,D2_MAXO3  =20  &   ! for TROTREP
+       ,D2_MAXOH  =21      ! for TROTREP
 !hf hmix
    integer, public, parameter ::  & 
         D2_HMIX   = 22     &
        ,D2_HMIX00 = 23    &!mixing height at 00
        ,D2_HMIX12 = 24     !mixing height at 12
+
+!ds - uk flux and externally se
+   integer, public, parameter ::  & 
+        D2_VG_REF = 25     &
+       ,D2_VG_1M  = 26     &!
+       ,D2_VG_STO = 27     &!
+       ,D2_FX_REF = 28     &
+       ,D2_FX_STO = 29      !
+       
 
    integer, public, parameter ::  & 
         NDERIV_3D = 3    & ! Number of 3D derived fields
@@ -220,10 +230,21 @@ private
 
  f_2d(D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T )
  f_2d(D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T )
+
 !hf hmix
- f_2d(D2_HMIX) = Deriv( 468, "HMIX  ",T,  0.0 ,       1.0, T  , F , T , T , T )
- f_2d(D2_HMIX00)=Deriv( 469, "HMIX00",T,  0.0 ,       1.0, T  , F , T , T , T )
- f_2d(D2_HMIX12)=Deriv( 470, "HMIX12",T,  0.0 ,       1.0, T  , F , T , T , T )
+ f_2d(D2_HMIX) = Deriv( 468, "HMIX  ",T,  0 ,       1.0, T  , F , T , T , T )
+ f_2d(D2_HMIX00)=Deriv( 469, "HMIX00",T,  0 ,       1.0, T  , F , T , T , T )
+ f_2d(D2_HMIX12)=Deriv( 470, "HMIX12",T,  0 ,       1.0, T  , F , T , T , T )
+
+!ds drydep
+!   set as "external" parameters - ie set outside Derived subroutine
+!   use index as lu, here 10=grass
+
+ f_2d(D2_VG_REF)=Deriv( 471, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
+ f_2d(D2_VG_1M )=Deriv( 472, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
+ f_2d(D2_VG_STO)=Deriv( 473, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
+ f_2d(D2_FX_REF)=Deriv( 474, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
+ f_2d(D2_FX_STO)=Deriv( 475, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
 
 ! --  time-averages - here 8-16 , as used in MACHO
 
@@ -341,18 +362,14 @@ private
            !u4 if ( izen < 85 ) then
            if ( izen < AOT_HORIZON ) then
                 o3 = xn_adv(IXADV_O3,i,j,KMAX_MID) &
-                  * cfac(IXADV_O3,i,j) * PPBINV 
-
-!!jej 26/8 02  &  already in mixing ratio
-!!                  / ( roa(i,j,KMAX_MID,1)*MFAC ) 
+                  * cfac(IXADV_O3,i,j) * PPBINV &
+                  / ( roa(i,j,KMAX_MID,1)*MFAC ) 
 
                 o3 = max( o3 - threshold , 0.0 )   ! Definition of AOTs
 
-!              d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST)+ o3 * timefrac  
-              d_2d( n, i,j,IOU_INST) = o3 * timefrac  
+              d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST) + o3 * timefrac  
 
            end if
-
         end do
       end do
    end subroutine aot_calc

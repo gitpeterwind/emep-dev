@@ -44,7 +44,6 @@ module ModelConstants_ml
   , KCLOUDTOP= 8           &  ! limit of clouds (for MADE dj ??) 
   , KUPPER   = 6           &  ! limit of clouds (for wet dep.)
   , AOT_HORIZON = 89          ! Limit of daylight zenith angle for AOTs
-                              ! (50 w m-2 correspond to approx. 85 deg.)
 
   real, public, parameter  ::    &
        CLOUDTHRES =  1.0e-5         !pw when cloudwater is larger than 
@@ -66,7 +65,7 @@ module ModelConstants_ml
   integer, public, save , dimension(20)   :: identi   !! ????
 
   type(date), public, save :: current_date
-  integer,    public, save :: daynumber    ! Days from 1st Jan   
+  !u7.lu integer,    public, save :: daynumber    ! Days from 1st Jan   
 
   integer, public, parameter :: NNLANDUSE  = 10 ! Number of land use types 
                                                 ! for rivm  (tmp)

@@ -10,7 +10,7 @@
   use Volcanos_ml
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
-  use Chemfields_ml,         only :  xn_adv,xn_bgn, xn_shl         
+  use Chemfields_ml,         only :  xn_adv,xn_bgn         
   use Dates_ml,              only : date, dayno
 !hf VOL
   use Emissions_ml,          only :  gridrcemis !hf u2,rcemis_volc
@@ -27,7 +27,8 @@
   use GridValues_ml,         only :  sigma_mid, xmd, carea
   use MassBudget_ml,         only :  totem    ! sum of emissions
 !hf made
-  use Met_ml,                only :  roa, th, ps, q, temp2m, cc3dmax, mm5
+  !u7.4vg use Met_ml,            only :  roa, th, ps, q, temp2m, cc3dmax, mm5
+  use Met_ml,                only :  roa, th, ps, q, t2, cc3dmax, mm5
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
     ,dt_advec                        & ! time-step
@@ -99,7 +100,7 @@ contains
     ! - calculate zenith angle here
 
     !6c izen = max(1,int(acos(zeta(i,j))*180.0/PI+0.5))
-     izen = max(1,int ( zen(i,j) + 0.5 ))
+     izen = int ( zen(i,j) + 0.5 )
 
     do k = KCHEMTOP, KMAX_MID
  
@@ -295,7 +296,7 @@ contains
 
 
 
-  it2m = nint(temp2m(i,j))
+  it2m = nint(t2(i,j)-273.15)
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
@@ -321,11 +322,11 @@ contains
 
            ! 1)/ Short-lived species - no need to scale with M
 
-           do n = 1, NSPEC_SHL
+!           do n = 1, NSPEC_SHL
               !u1 ispec = MAP_SHL2TOT(n)
               !u1 xn_shl(n,i,j,k) = xn_2d(ispec,k)
-              xn_shl(n,i,j,k) = xn_2d(n,k)
-           end do ! ispec
+!              xn_shl(n,i,j,k) = xn_2d(n,k)
+!           end do ! ispec
  
            ! 2)/ Advected species
 

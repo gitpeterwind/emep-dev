@@ -127,7 +127,8 @@ contains
 
   use Io_ml,             only : IO_GLOBBC, ios, open_file
 !hf BC
-  use ModelConstants_ml, only: KMAX_MID, daynumber
+ use ModelConstants_ml, only: KMAX_MID     !u7.4vg, daynumber
+ use Dates_ml,   only : daynumber
  use Par_ml,     only : me,NPROC
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

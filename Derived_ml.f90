@@ -148,8 +148,7 @@ private
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
 
-!      timefrac = 3600.0/dt
-      timefrac = dt/3600.0
+      timefrac = 3600.0/dt
 
 
      !/***** 2-D fields **************************
@@ -267,6 +266,15 @@ private
           case ( "VOC", "TVOC" )
 
             call voc_2dcalc()
+
+          case ( "EXT" )
+
+          ! Externally set for IOU_INST (in other routines); so no new work needed
+            if ( MY_DEBUG .and. me == 0 ) then
+                 print *, "EXTDer:Externally set d_2d should already have values"
+                 print *, "EXTDer:", typ
+                 print *, "EXTDer: d_2d(2,2) is ", d_2d(n,2,2,IOU_INST)
+            end if
 
           case  default
 
@@ -389,8 +397,7 @@ private
 
       if (.not. any( f_3d%class == "PROD" ) ) return
 
-!      timefrac = 3600.0/dt
-      timefrac = dt/3600.0
+      timefrac = 3600.0/dt
      !/***** 3-D fields **************************
 
      do n = 1, NDERIV_3D

@@ -293,7 +293,7 @@ contains
 
            emsum(iem) = sum( globemis(:,:,:,:) ) + &
                         sum( globemis_flat(:,:,:) )    ! hf
-      endif
+      endif  ! me==0
       if ( ios /= 0) call gc_abort(me,NPROC,"ios error: EmisGet")
 
       !CC**  Send data to processors ........
@@ -303,14 +303,11 @@ contains
       !.................................
       !      send to nodes
 
-!gv2         call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,   &
-!su          call global2local(globemis,localemis,MSG_READ1,   &
-          call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,   &
+       call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,   &
                NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
 !hf F
-      call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
+       call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
                1,GIMAX,GJMAX,FNCMAX,1,1)
-!su          snapemis(:,:,:,:,iem) = localemis(:,:,:,:)
 
     end do ! iem = 1, NEMIS-loop
 

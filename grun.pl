@@ -1,13 +1,20 @@
 #!/usr/bin/perl
 
 ######################################################################
-# Changes
+# Features
 # 1. work directory now deduced from user-name
 # 2. Check that the number of processors asked for by bsub is same as
-# number set here. Note that this method will not allow a simple
-# interactive use of grun.pl. "bsub" must be used.
-# 3. Removed "REMOVED" printout - it was too boring and extensivej
-# 4. Added more user-names and home-directories 
+#   number set here. Note that this method will not allow a simple
+#   interactive use of grun.pl, except if COMPILE_ONLY is set to one.
+#   "bsub" must be used.
+# 3. Produces Remove.sh file which contains "rm xxxx" for all files
+#    which should have been deleted at the end of the run. If a run
+#    hangs or crashes for some reason, type "sh Remove.sh" to get rid
+#    of all the linked files.  
+# Bugs
+# Not working for year 2000 (and Dec. 1999) yet.
+# Still assumes 2-digit years. Needs to be updated to 4-digit when we
+# start using Anna's new system.
 ######################################################################
 #
 # Script to prepare files before running Eulerian model on 
@@ -54,6 +61,7 @@ require "flush.pl";
 
 $year  = 99;       # BEWARE: watch out for pathname hardcodings !
 $MetDir = "/noserc/emep/meteorology/eulmet$year" ;
+$MetDir = "/work/mifahf/out_uni7.test_dt/met";    # TMP!
 
 #---  User-specific directories (changeable)
 
@@ -70,15 +78,16 @@ $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 $version     = "Unimod" ;  
-$subv        = "uni.2" ;                 # sub-version (to track changes)
+$subv        = "emep1.2beta" ;                 # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/$subv";         # input of source-code
-$MyDataDir   = "$USER/Unify/Data";          # for each user's femis, etc.
+$MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
+$DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/out_$subv";    # working directory
+$WORKDIR     = "$WORK{$USER}/$subv";        # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
-$LOGANDIR    = "$HILDE/LOGAN_O3_DATA";   # emissions stuff
+$LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
 #$emisyear   = "$emisdir/emis${year}";    # emissions
 $emisyear    = "$emisdir/emis98";   # emissions
 
@@ -98,7 +107,7 @@ $emisyear    = "$emisdir/emis98";   # emissions
 #                 x0   x1  y0   y1
 @largedomain = (   1, 170,  1, 133 ) ;
 @smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
-#@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
+@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
 #@smalldomain = (  95, 105, 46, 56 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
@@ -109,7 +118,7 @@ $emisyear    = "$emisdir/emis98";   # emissions
 $NDX   =  2;           # Processors in x-direction
 $NDY   =  4;           # Processors in y-direction
 
-$RESET        = 1   ;  # usually 0 (false) is ok, but set to 1 for full restart
+$RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
 $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
@@ -153,16 +162,11 @@ $NPROC =  $NDX * $NDY ;
 
 $nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
 
-if ( $NPROC != $nproc_bsub ) {
+if ( $COMPILE_ONLY != 1 && $NPROC != $nproc_bsub ) {
     die " -- Requested wrong number of processors --
       bsub asked for $nproc_bsub whereas NPROC = $NDX x $NDY = $NPROC \n";
 }
 
-
-# Some model specs
-# Set only for MACHO-ds if ( $version eq "eulmach")    { 
-$emis  = "ds"  , $model = "MACHO", $nonmodel = "MADE"; 
-# }
 
 # ---- calculate domain widths
 # (For the model, we need first x0, y0, then width (number of cells) in x and y)
@@ -178,7 +182,7 @@ $dom_wy = $smalldomain[3] - $smalldomain[2] + 1 ;
 $MIROOT      = "/home/";
 $MIFAJEJ     = "/home/u2/mifajej";     # Needed for some input data
 $SRCINPUTDIR = "/home/u2/mifajej/data/climatology";   # landuse, snow, rough....
-$BCINPUTDIR  = "$HILDE/BC_data";       #  UiO boundary condistions
+#FIX#$BCINPUTDIR  = "$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #  Logan boundary conditions
 $o3dir       = "$MIFAJEJ/data" ;       # ancat (=aircraft), 
 $MIFADS      = "/home/u2/mifajej/data/mifads";    # Ozone data for now
 $EULDATA     = "/home/u2/mifajej/data/euldata" ;   # emissions, monthlyfac,..., JAN.dat*
@@ -186,7 +190,7 @@ $EULDATA     = "/home/u2/mifajej/data/euldata" ;   # emissions, monthlyfac,..., 
 @MIDIRS  = ("$MIROOT", "$USER", "$MIFAJEJ", "$MIFADS" , "$o3dir", "$EULDATA");
 
 #--- Verify data directories
-foreach $d ( @MIDIRS, $SRCINPUTDIR ) {
+foreach $d ( @MIDIRS, $SRCINPUTDIR, $WORKDIR ) {
     unless ( -d "$d" &&  -x _ && -r _ ) {
 	die "*** ERROR *** directory $d not accessible. Exiting.\n";
     }
@@ -198,12 +202,6 @@ foreach $f ( @pattern_files ) {
     unless ( -r "$ProgDir/$f" ) {
 	die "*** ERROR *** file $f not available. Exiting.\n";
     }
-}
-
-# if WORKDIR doesn't exist, create it:
-print "Checking for work directory $WORKDIR\n";
-if ( ! -d "$WORKDIR" ) {
-    mkdir("$WORKDIR",0777) || die "Cannot mkdir $WORKDIR. Check upper dirs";
 }
 
 
@@ -240,15 +238,15 @@ open(MAKELOG,"<Make.log");
 ($oldversion, $olddx , $olddy , $old_x0, $old_y0, $old_wx, $old_wy ) = split ' ', <MAKELOG> ;
 close(MAKELOG);
 
-print "From Make.log we had model $oldmodel emis-type $emis
+print "From Make.log we had Subversion $subv
            Procs:  $olddx $olddy 
            Domain: $old_x0, $old_y0, $old_wx, $old_wy \n";
 
 
-if ( $oldversion ne $version ) {
+if ( $oldversion ne $subv ) {
 
    print " We are changing version!!!!!............. 
-            from $oldversion to $version \n " ;
+            from $oldversion to $subv \n " ;
    $RESET = 1 ;
 }
 
@@ -284,7 +282,7 @@ if ( $RESET == 1  ) { ########## Recompile everything!
    }
    # For now, we simply recompile everything!
    unlink($PROGRAM);
-   system "touch  *.f *.f90 *.F *.F90";
+   system "touch -c  *.f *.f90 *.F *.F90";
 }
 system "pwd";
 print "Check last files modified:\n";
@@ -294,7 +292,7 @@ system "make" ;
 
 die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
 open(MAKELOG,">Make.log");    # Over-write Make.log
-print MAKELOG "$version $NDX  $NDY  $dom_x0  $dom_y0  $dom_wx  $dom_wy \n" ;
+print MAKELOG "$subv $NDX  $NDY  $dom_x0  $dom_y0  $dom_wx  $dom_wy \n" ;
 close(MAKELOG);
 
 if ( $COMPILE_ONLY) {     ## exit after make ##
@@ -334,8 +332,8 @@ for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
         mylink( "Linking UiO BCs:", $old,$new ) ;
 
     } elsif ( $LOGAN_BCS ) {
-        $old   = "$LOGANDIR/ozone.%02d", $mm ;
-        $new = sprintf "gl_ass%02d.dat", $mm;
+        $old = sprintf "$LOGANDIR/ozone.%02d", $mm ;
+        $new = sprintf "ozone.%02d", $mm ;
         mylink( "Linking Logan BCs:", $old,$new ) ;
     }
 
@@ -347,15 +345,17 @@ for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
 
 #-- individual treatment of the last record 
 
+#BUG - FIX FOR 2000 NEEDED
 if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
    if ( $mm2 == 12 ) {
         print "NEED TO SET H00 FROM NEXT YEAR \n";
 	$old = sprintf "$MetDir/f00.%02d0101", ($year+1)%100;
+	$new = sprintf "fil%04d", $nnn;    #BUG_FIX : MISSING
         mylink( "LAST RECORD, NEED TO SET H00 FROM NEXT YEAR", $old,$new ) ;
    } else { #  Need 1st record of next month:
         $hhlast = 0 ;   #
         $ddlast = 1 ;
-	$old = sprintf "$MetDir/f%02d.%d%02d%02d", $hhlast, $year, $mm2+1, $ddlast;
+	$old = sprintf "$MetDir/f%02d.%02d%02d%02d", $hhlast, $year, $mm2+1, $ddlast;
 	$new = sprintf "fil%04d", $nnn;
         mylink( "NEED TO SET H00 FROM NEXT MONTH", $old,$new ) ;
    }
@@ -465,10 +465,13 @@ foreach $s ( keys(%seasons) ) {
     $new = sprintf "landuse.170";
     mylink( "Landuse ", $old,$new ) ;
 
-  # TMP LOCATION
-    $old   = "$MyDataDir/Volcanoes.dat" ;
-    $new = sprintf "Volcanoes.dat";
-    mylink( "Volcanoes ", $old,$new ) ;
+ # TMP LOCATION for some datafiles : MyDataDir
+foreach $datafile ( qw ( Volcanoes.dat ukdep_gfac1.dat ukdep_gfac2.dat ukdep_biomass.dat ) ) {
+    #ds $old   = "$MyDataDir/$datafile" ;
+    $old   = "$DataDir/$datafile" ;
+    $new   = "$datafile" ;
+    mylink( "$datafile", $old,$new ) ;
+}
 
 
 # FIX later - was the only emission control thingy....
@@ -479,18 +482,27 @@ foreach $s ( keys(%seasons) ) {
 #------------      Run model ------------------------------------------
 #------------      Run model ------------------------------------------
 
-&flush(STDOUT);
+ &flush(STDOUT);
+
+# Link execultable also, since gridur is funny about these
+# things....
+
+  $LPROG = "prog.exe";
+  mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
+
+# Write out list of linked files to a shell-script, useful in case the program
+# hangs or crashes:
+
+ open(RMF,">Remove.sh");
+ foreach $f ( @list_of_files ) {
+     print RMF "rm $f \n";
+     print "REMOVE $f \n";
+ }
+ close(RMF);
 
 foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
         NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\n";
-    # 
-    system "/bin/pwd";
-
-    # Link execultable also, since gridur is funny about these
-    # things....
-    $LPROG = "prog.exe";
-    mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
 
     #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 
     open (PROG, "|mpirun -np $NPROC $LPROG") || 

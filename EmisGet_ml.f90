@@ -5,8 +5,9 @@ module EmisGet_ml
                           , NEMIS_PLAIN, NEMIS_SPLIT, EMIS_NSPLIT
   use Country_ml,   only : NLAND    & !u4 movde other stuff here
                             ,IC_NAT,IC_VUL, Country
-  use EmisDef_ml,   only : NSECTORS, ANTROP_SECTORS,NCMAX, FNCMAX & 
+  use EmisDef_ml,   only : NSECTORS, NCMAX, FNCMAX & 
                             ,ISNAP_SHIP, ISNAP_NAT  !u3 for NAT
+  use Functions_ml, only : GridAllocate       !ds u7.2
   use Io_ml,        only : open_file,  wordsplit &      ! subs
                           ,NO_FILE, ios, IO_EMIS         ! variables
   use Par_ml,       only : me, NPROC
@@ -34,6 +35,7 @@ module EmisGet_ml
 
    real, public, dimension(NRCSPLIT,NSECTORS,NLAND), save :: emisfrac
 
+
   !/ some common variables
   character(len=40), private :: fname             ! File name
   character(len=40), private :: errmsg            ! Error message!
@@ -50,6 +52,8 @@ contains
 !  in here are the global arrays (allocatable)
 !
 !**    REVISION HISTORY:
+!      1/5/02 u7.2 Code moved to Functions/GridAllocate, ds
+!      .../2002  Flat emissions added, hf
 !      25/1/01   Re-coded as separate module, and for F
 !      30/5/00   Created from earlier readem, ds
 !
@@ -89,9 +93,8 @@ contains
        endif
      !>============================
 
-        globemis (:,:,:,:) = 0.0
-!hf F
-        globemis_flat(:,:,:) = 0.0
+        globemis   (:,:,:,:) = 0.0
+        globemis_flat(:,:,:) = 0.0 !hf F
 
         write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, emisname
         fname = "emislist." // emisname
@@ -122,10 +125,11 @@ READEMIS: do   ! ************* Loop over emislist files **********************
              if ( Country(ic)%is_sea ) then    ! ship emissions
 
                 ! ..........................................................
-                ! generate new land allocation in 50 km grid for FLAT EMISSIONS(ships). 
-                ! First, we check if
+                ! generate new land allocation in 50 km grid for FLAT 
+                ! EMISSIONS(ships). First, we check if
                 ! country "ic" has already  been found within that grid. If not,
-                ! then ic is added to flat_landcode and flat_nlandcode increased by one.
+                ! then ic is added to flat_landcode and flat_nlandcode 
+                ! increased by one.
    
                 !/** Test that ship emissions are only in sector ISNAP_SHIP
                 do isec=1,(ISNAP_SHIP-1) 
@@ -138,34 +142,13 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                 enddo
                 !/** end test
 
-                call LandAllocate("FLat",i,j,ic,FNCMAX, &
-                 flat_iland,flat_ncmaxfound,flat_globland,flat_globnland)
-
-!u4                flat_nc=flat_globnland(i,j)! no. of "countries" with flat emissions
-!u4                                         ! known so far
-!u4                do k=1,flat_nc
-!u4                   if( flat_globland(i,j,k) == ic) then
-!u4                     flat_iland = k        ! country is already in the list
-!u4                     goto 101
-!u4                   endif
-!u4                enddo
-!u4                flat_globnland(i,j) = flat_globnland(i,j) + 1    ! country is a new one
-!u4                flat_globland(i,j,flat_nc+1) = ic
-!u4                flat_iland=flat_nc+1
-!u4                if( flat_iland >  flat_ncmaxfound) then
-!u4                    flat_ncmaxfound = flat_iland
-!u4                    write(*,*) "increased flat_ncmaxfound :",i,j,flat_iland
-!u4                    write(*,*) "countries here:", &
-!u4                        (flat_globland(i,j,k),k=1,flat_ncmaxfound)
-!u4
-!u4                    if ( flat_ncmaxfound >  FNCMAX ) then
-!u4                          call gc_abort(me,NPROC,"EMISGET3, FNCMAX") 
-!u4                    endif
-!u4                endif
-!u4 101            continue
+                call GridAllocate("FLat",i,j,ic,FNCMAX, flat_iland, &
+                    flat_ncmaxfound,flat_globland,flat_globnland,errmsg)
+                if ( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
 
               ! ...................................................
-              ! Assign e_fact corrected emissions to global FLAT emission matrices.
+              ! Assign e_fact corrected emissions to global FLAT 
+              ! emission matrices.
               ! ...................................................
 
                  globemis_flat(i,j,flat_iland) = globemis_flat(i,j,flat_iland) &
@@ -193,7 +176,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                    i_volc(volc_no)=i
                    j_volc(volc_no)=j
                    !write(*,*)'Volcano i,j ',i_volc(volc_no),j_volc(volc_no)
-                   emis_volc(volc_no)=tmpsec(ISNAP_NAT)*e_fact(ISNAP_NAT,IC_VUL,iemis)
+                   emis_volc(volc_no)=tmpsec(ISNAP_NAT) * &
+                                         e_fact(ISNAP_NAT,IC_VUL,iemis)
                    nvolc=volc_no
                    if (nvolc>NMAX_VOLC)then
                       call gc_abort (me,NPROC,"EMISGET, NMAX_VULC: STOP")
@@ -222,36 +206,9 @@ READEMIS: do   ! ************* Loop over emislist files **********************
              ! country "ic" has already  been found within that grid. If not,
              ! then ic is added to landcode and nlandcode increased by one.
 
-              call LandAllocate("SNAP",i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,globland,globnland)
-
-!u4              nc=globnland(i,j)       ! nc = no. countries known so far
-!u4
-!u4!              if( nc ==  0 ) then     ! ic is first country found for grid
-!u4!                 globnland(i,j)   = 1
-!u4!                 globland(i,j,1) = ic
-!u4!                 iland = 1
-!u4!              else
-!u4                 do k = 1,nc
-!u4                   if( globland(i,j,k) == ic) then
-!u4                     iland = k        ! country is already in the list
-!u4                     goto 100
-!u4                   endif
-!u4                 enddo
-!u4                 globnland(i,j) = globnland(i,j) + 1    ! country is a new one
-!u4                 globland(i,j,nc+1) = ic
-!u4                 iland=nc+1
-!u4!              endif
-!u4              if( iland >  ncmaxfound) then
-!u4                ncmaxfound = iland
-!u4                write(unit=6,fmt=*) "increased ncmaxfound :",i,j,iland
-!u4                write(unit=6,fmt=*)"now have:", (globland(i,j,k),k=1,ncmaxfound)
-!u4                if ( ncmaxfound >  NCMAX ) then
-!u4		  print *,"NCMAX"
-!u4                  call gc_abort (me,NPROC,"EMISGET, NCMAX")
-!u4		endif
-!u4              endif
-!u4 100          continue
+              call GridAllocate("SNAP",i,j,ic,NCMAX, &
+                                 iland,ncmaxfound,globland,globnland,errmsg)
+                if ( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
 
               ! ...................................................
               ! ...................................................
@@ -260,11 +217,6 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                  globemis(:,i,j,iland) = globemis(:,i,j,iland) &
                         + e_fact(:,ic,iemis) *  tmpsec(:)
 
-
-              ! if ( ic == 8 .and. iemis == 1 ) then ! France TTT
-              !   write(6,*) "FRANCE", i,j,e_fact(1,ic,iemis)
-              !   write(6,*) " =>   ", tmpsec
-              ! end if
 
               !..        Sum over all sectors, store as ktonne:
 
@@ -277,52 +229,52 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 	ios = 0
   end subroutine EmisGet
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine LandAllocate(label,i,j,ic,ncmax,iland,ncmaxfound,land,nland)
-
-    !-- Checks if a country "ic" whose data has just been read in has
-    !   already been found within the given emissions square.
-    !   If not, the array "nland" is incremented by one and the
-    !   country index added to "land".
- 
-     character(len=*), intent(in) :: label   ! Type of data
-     integer, intent(in) :: i,j
-     integer, intent(in) :: ic        ! Index of country just read in
-     integer, intent(in) :: ncmax     ! Max. no countries allowed
-
-     integer, intent(out)   :: iland         ! Index of country in that grid
-     integer, intent(inout) :: ncmaxfound    ! No. countries found so far
-     integer, dimension(:,:,:), intent(inout) :: land   ! Land-codes
-     integer, dimension(:,:),   intent(inout) ::nland   ! No. countries
-
-     integer :: nc, k, iland      ! local variables
-
-       nc=nland(i,j)       ! nc = no. countries known so far
-
-       do k = 1,nc
-          if( land(i,j,k) == ic) then
-              iland = k        ! country is already in the list
-              goto 100
-          endif
-       enddo
-
-       nland(i,j) = nland(i,j) + 1    ! country is a new one
-       land(i,j,nc+1) = ic
-       iland=nc+1
-
-       if( iland >  ncmaxfound) then
-           ncmaxfound = iland
-           write(*,*) "LandAlloc ", label, "increased ncmaxfound:",i,j,iland
-           write(*,*) "LandAlloc ", label," now have:", &
-                           (land(i,j,k),k=1,ncmaxfound)
-           if ( ncmaxfound >  ncmax ) then
-		  print *,"LandAlloc ncmax ERROR ", label, "NCMAX"
-                  call gc_abort (me,NPROC,"EMISGET, NCMAX")
-           endif
-        endif
- 100    continue
-
-  end subroutine LandAllocate
+!u7.2 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+!u7.2   subroutine LandAllocate(label,i,j,ic,ncmax,iland,ncmaxfound,land,nland)
+!u7.2 
+!u7.2     !-- Checks if a country "ic" whose data has just been read in has
+!u7.2     !   already been found within the given emissions square.
+!u7.2     !   If not, the array "nland" is incremented by one and the
+!u7.2     !   country index added to "land".
+!u7.2  
+!u7.2      character(len=*), intent(in) :: label   ! Type of data
+!u7.2      integer, intent(in) :: i,j
+!u7.2      integer, intent(in) :: ic        ! Index of country just read in
+!u7.2      integer, intent(in) :: ncmax     ! Max. no countries allowed
+!u7.2 
+!u7.2      integer, intent(out)   :: iland         ! Index of country in that grid
+!u7.2      integer, intent(inout) :: ncmaxfound    ! No. countries found so far
+!u7.2      integer, dimension(:,:,:), intent(inout) :: land   ! Land-codes
+!u7.2      integer, dimension(:,:),   intent(inout) ::nland   ! No. countries
+!u7.2 
+!u7.2      integer :: nc, k, iland      ! local variables
+!u7.2 
+!u7.2        nc=nland(i,j)       ! nc = no. countries known so far
+!u7.2 
+!u7.2        do k = 1,nc
+!u7.2           if( land(i,j,k) == ic) then
+!u7.2               iland = k        ! country is already in the list
+!u7.2               goto 100
+!u7.2           endif
+!u7.2        enddo
+!u7.2 
+!u7.2        nland(i,j) = nland(i,j) + 1    ! country is a new one
+!u7.2        land(i,j,nc+1) = ic
+!u7.2        iland=nc+1
+!u7.2 
+!u7.2        if( iland >  ncmaxfound) then
+!u7.2            ncmaxfound = iland
+!u7.2            write(*,*) "LandAlloc ", label, "increased ncmaxfound:",i,j,iland
+!u7.2            write(*,*) "LandAlloc ", label," now have:", &
+!u7.2                            (land(i,j,k),k=1,ncmaxfound)
+!u7.2            if ( ncmaxfound >  ncmax ) then
+!u7.2 		  print *,"LandAlloc ncmax ERROR ", label, "NCMAX"
+!u7.2                   call gc_abort (me,NPROC,"EMISGET, NCMAX")
+!u7.2            endif
+!u7.2         endif
+!u7.2  100    continue
+!u7.2 
+!u7.2   end subroutine LandAllocate
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   subroutine femis()
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -340,7 +292,6 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 !   we actually have, and the species can be specified in any order, as given
 !   on the top line. (Thus, we can use the same femis file for MADE,MACHO
 !   or AERO.
-!hf 100 for Sector means all sectors except the natural one (11) 
 
   !su    (for compatibility NEMIS as last index)
 
@@ -436,11 +387,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
       if (isec == 0 ) then    ! All sectors
           isec1 = 1
           isec2 = NSECTORS
-!hf scenario
-      elseif (isec==100) then
-          isec1 = 1
-          isec2 = ANTROP_SECTORS
-      else                   ! one sector: isec
+      else                       ! one sector: isec
           isec1 = isec
           isec2 = isec
       end if

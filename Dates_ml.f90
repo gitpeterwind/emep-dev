@@ -38,6 +38,9 @@ module Dates_ml
 
  integer, public, dimension(12), save ::  nmdays       ! No. days per month
  integer, public,                save ::  nydays       ! No. days per year
+ integer, public, dimension(12), save ::  mday1  ! Day no. of 1st day of month
+ integer, public,                save ::  daynumber    ! Day no. (1st jan=1).
+
 
  integer, public, parameter :: NMONTHS  = 12   !  No. months per year (was NM)
 
@@ -60,7 +63,7 @@ contains
 
  type(date), intent(in) ::  indate
  !/..local
- integer             ::  yy
+ integer             ::  yy, mm
 
   yy = indate%year
   if ( yy < 1900 .and.  yy > 50 ) yy = 1900 + indate%year
@@ -70,6 +73,12 @@ contains
    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
    nmdays(2) = 28  + is_leap(yy)
    nydays    = 365 + is_leap(yy)
+
+  !u7.lu
+   mday1(1) = 1  ! Jan 1st.
+   do mm = 2, 12
+      mday1(mm) = mday1(mm-1) + nmdays(mm-1) 
+   end do
 
    Init_done = .true.     !/** so that other functions know !
 

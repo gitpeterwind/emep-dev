@@ -401,7 +401,8 @@ contains
        ! Choose a point at mid-latitudes (j=24), around 0 long
        do k = KMAX_MID, 1, -1
            print "(a23,i3,e14.4)", "BCs at mid-lat (1,24):",   k  & 
-                 ,xn_bgn(itest,1,24,k)/PPB 
+                 ,xn_bgn(itest,2,2,k)/PPB 
+          !ds - too big for some tests   ,xn_bgn(itest,1,24,k)/PPB 
        end do
     end if ! 
 

@@ -16,15 +16,18 @@
 !*************************************************************************
 !
 !hf u2   use My_Runmode_ml,    only : stop_test, DEBUG
-   use My_Outputs_ml,    only : NHOURLY_OUT, &          ! No. outputs
+   use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST,&  !u7.4vg 
+                 D2_VG_REF,D2_VG_1M, D2_VG_STO,D2_FX_REF,D2_FX_STO
+   use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  Asc2D, hr_out      ! Required outputs
 
    use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
+                                ,li0,li1,lj0,lj1 &  ! u7.5vg FIX
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
    use ModelConstants_ml,only : current_date,KMAX_MID
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
    ! tmp use Dates_ml,         only : date ,add_dates
-   use Met_ml,           only : temp2m, th
+   use Met_ml,           only : t2,th   !u7.4vg temp2m, th
    use GenSpec_shl_ml , only : NSPEC_SHL  ! Maps indices
    !u1 use GenSpec_maps_ml , only : MAP_ADV2TOT, MAP_SHL2TOT   ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
@@ -69,8 +72,9 @@
    ! This makes the code a bit neater below, but costs some CPU time here,
    ! and in evaluating maxval over the whole MAXLIMAX*MAXLJMAX dimension.
 
-        hourly(limax+1:MAXLIMAX,:) = 0.0
-        hourly(1:limax,ljmax+1:MAXLJMAX) = 0.0
+        !u7.5vg FIX hourly(limax+1:MAXLIMAX,:) = 0.0
+        !u7.5vg FIX hourly(1:limax,ljmax+1:MAXLJMAX) = 0.0
+        hourly(:,:) = 0.0
 
    ! end if
 
@@ -141,13 +145,36 @@
           case ( "T2 " )        ! No cfac for short-lived species
             name = "T2"
             forall ( i=1:limax, j=1:ljmax)
-               hourly(i,j) = temp2m(i,j)     ! Skip Units conv.
+               hourly(i,j) = t2(i,j) - 273.15     ! Skip Units conv.
             end forall
 
           case ( "th " )        ! No cfac for short-lived species
             name = "theta"      ! Potential tempeature
             forall ( i=1:limax, j=1:ljmax)
                hourly(i,j) = th(i,j,KMAX_MID,1)  ! Skip Units conv.
+            end forall
+
+          case ( "D2D" )        ! No cfac for short-lived species
+            name = "D_2D"       ! Default
+
+            if( ispec == D2_HMIX) name = "Hmix"
+            if( ispec == D2_VG_REF) name = "Vg_Ref"
+            if( ispec == D2_VG_1M ) name = "Vg_1m"
+            if( ispec == D2_VG_STO) name = "Vg_Sto"
+            if( ispec == D2_FX_REF) name = "Flux_ref"
+            if( ispec == D2_FX_STO) name = "Flux_sto"
+
+            !if ( me == 17 .and. ispec == D2_VG_REF ) then
+            !   print "(a10,2es12.3)", "HRFLUXES", d_2d(ispec,2,6,IOU_INST), hr_out(ih)%unitconv
+            !end if
+            !if ( me == 17 .and. ispec == D2_FX_REF ) then
+            !   print "(a10,2es12.3)", "HXFLUXES", d_2d(ispec,2,6,IOU_INST), hr_out(ih)%unitconv
+            !end if
+            !u7.5vg FIX forall ( i=1:limax, j=1:ljmax)
+            !u7.5vgc forall ( i=li0:li1, j=lj0:lj1)
+            forall ( i=1:limax, j=1:ljmax)
+               ! hourly(i,j) = pzpbl(i,j)
+               hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * hr_out(ih)%unitconv
             end forall
 
           case DEFAULT 

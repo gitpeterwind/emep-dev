@@ -32,7 +32,8 @@ integer, public, save :: ios                   ! i/o error status number
    ,IO_COMPA    = 9   &! o3mod.f(c)-input comp_array
    ,IO_MYTIM    = 20  &! o3mod.f(c)-output mytim.out 
    ,IO_RES      = 25  &! o3mod,massbud(o) - ! out eulmod.res
-   ,IO_CHECK    = 26   ! readpar(o?) - check output
+   ,IO_CHECK    = 26  &! readpar(o?) - check output
+   ,IO_TMP      = 27   ! General IO number (files *must* be type (c))
 
 
 ! tmp units 30-39 reserved for sondes. Will be set of
@@ -54,6 +55,8 @@ integer, public, save :: ios                   ! i/o error status number
    ,IO_DJ       = 55  &! readdiss.f(c) - inp. solar r.
    ,IO_AIRCR    = 66  &! phyche.f(c) - write aircraft conc.
    ,IO_OUT      = 80  &! (c)write outday etc.
+   ,IO_UKDEP    = 81  &! (o)write fluxes, etc.
+   ,IO_STAB     = 82  &! (o)write fluxes, etc.
    ,IO_EMIS     = 84  &! Used for femis , emis_split(c)
    ,IO_TIMEFACS = 85   ! Used for monthly
 
@@ -118,11 +121,16 @@ subroutine open_file(io_num,mode,fname,needed,skip)
 
   if ( .not. fexist ) then
 
-     print *, "OPEN_FILE ::: missing file is :: ", fname
-     if ( needed ) then
-        ios = -1
+     if ( mode == "r" ) then
+         if ( needed ) then
+             print *, "OPEN_FILE ::: missing file is :: ", fname
+             ios = -1
+         else
+            ios = NO_FILE
+         end if
      else
-        ios = NO_FILE
+        write(unit=6,fmt=*) "File created: ", io_num, fname
+        open(io_num,file=fname,status="new",action="write",iostat=ios)
      end if
   else
      write(unit=6,fmt=*) "File exists: ", fname
@@ -137,6 +145,7 @@ subroutine open_file(io_num,mode,fname,needed,skip)
         end if ! skip
         ! ***  
      case ("w")
+        write(unit=6,fmt=*) "File created: ", fname
         open(io_num,file=fname,status="new",action="write",iostat=ios)
      case default
         print *, "OPEN FILE: Incorrect mode: ", mode

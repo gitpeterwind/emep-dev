@@ -1,47 +1,70 @@
-module My_DryDep_ml
+module My_UKDep_ml    ! DryDep_ml
 !+
 ! Module to define the dry deposition components and rates. We
 ! define the min (vd_min) and max dep. velocity (Vg) first and then derive the
 ! daytime addition (vd_day).
+!/**************************************************************************
+!  Specifies which of the possible species (from Wesely's list)
+!  are required in the current air pollution model   
+!/**************************************************************************
 
-!Bugs found:
-! PAN Vg not defined
-! coszen used for day/night, but this gives v. low values for high latitudes
-! z_mid used instead of z_bnd for height of lowest layer
-! 
-
-
-  use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN, &
+ use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN, &
                              IOU_INST    &!updates inst. dep. fields
                            , ddep         ! 2d fields
-  use GenSpec_adv_ml , only: NSPEC_ADV &
+ use GenSpec_adv_ml , only: NSPEC_ADV &
                    ,IXADV_SO2,IXADV_NO2  &
                    ,IXADV_HNO3 &  !! ,IXADV_EC  ,IXADV_OC & 
     ,  IXADV_PAN ,IXADV_SO4,IXADV_NH3,IXADV_AMNI, IXADV_AMSU
  use ModelConstants_ml , only : atwS, atwN
+ use Wesely_ml
  implicit none
  private
 
   public :: Init_vd
   public :: Add_ddep
 
-  ! Indices from land-use database:
 
-   integer, public, parameter :: SEA=0, ICE=1, TUNDRA=2, AGRIC=3, &
-                         UNDEF=4, FOREST=5, DESERT=6
+  !/** Variables used in deposition calculations
+ 
+  ! DDEP_xx gives the index that will be used in the EMEP model
+  ! WES_xx gives the index of the Wesely gas to which this corresponds
 
-  ! here we define the minimum set of species which has different
+
+  ! Here we define the minimum set of species which has different
   ! deposition velocities. We calculate Vg for these, and then
   ! can use the rates for other similar species. (e.g. AMSU can use
-  ! the Vg for SO4.  Must set NDRYDEP species
+  ! the Vg for SO4.  Must set NDRYDEP_CALC species
 
-  integer, public, parameter ::  NDRYDEP_CALC = 5
+  !/** IMPORTANT: the variables below must match up in the sense that, for 
+  ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
-  ! .. CDEP = calculated dep:
+  integer, public, parameter :: NDRYDEP_CALC = 6
 
-  integer, public, parameter ::  &
-    CDEP_HNO3 = 1, CDEP_NO2 = 2, &
-    CDEP_SO2= 3, CDEP_SO4  = 4, CDEP_PAN = 5
+  integer, public, parameter :: &
+       CDEP_HNO3 = 1, CDEP_O3  = 2, CDEP_SO2 = 3  &
+      ,CDEP_NH3  = 4, CDEP_NO2 = 5, CDEP_PAN = 6
+
+  integer, public, parameter :: CDEP_SET = -99    
+
+!also have CDEP_H2O2=, CDEP_ALD, CDEP_HCHO, CDEP
+ 
+  integer, public, parameter, dimension(NDRYDEP_CALC) :: &
+    DRYDEP_CALC = (/ WES_HNO3, WES_O3,   WES_SO2, &
+                     WES_NH3,  WES_NO2 , WES_PAN /)
+
+  !/** Compensation pount approach from CEH used?:
+
+  logical, public, parameter :: COMPENSATION_PT = .false. 
+
+
+! **sc: characters for printout which is generated directly from Rsurface 
+!        module or the program test_dep
+
+!  character(len=6), public, parameter, dimension(NDRYDEP_CALC) :: & 
+!      GASNAME = (/ "  HNO3", "    O3", "   SO2", &
+!                   "   NH3", "   NO2", "PAN"  /)
+  
+      
 
   ! We define also the number of species which will be deposited in
   ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_CALC
@@ -56,6 +79,7 @@ module My_DryDep_ml
    type, public :: depmap
       integer :: adv   ! Index of species in IXADV_ arrays
       integer :: calc ! Index of species in  calculated dep arrays
+      real    :: vg   ! if CDEP_SET, give vg in m/s
    end type depmap
 
    type(depmap), public, dimension(NDRYDEP_ADV):: Dep
@@ -63,94 +87,23 @@ module My_DryDep_ml
    real, public, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
 
 
-  !/-- we define two velocities, vd_day and vd_min, in order to allow
-  !    diurnal variations (Vd). In subroutine Init_vd an
-  !    additional set of values, vd_max is used. vd_day is the
-  !    difference between vd_max and vd_min. For some components the max 
-  !    and min will be identical, whereas for others (e.g. ozone) the
-  !    max will be significantly higher than the min.
-
-   real, public, save, dimension(NDRYDEP_CALC,0:6) :: &
-       vd_day,      & ! Extra (noontime-ish)  Vd above the min Vd
-       vd_min         ! min. (nightime-ish)  Vd.
-
    logical, private, parameter :: MY_DEBUG = .false.
 
 contains
   subroutine Init_vd
+   real :: cms = 0.01     ! Convert to m/s
 
-!------------------------------------------------------------------------------
-!------- DEPOSITION VELOCITIES, FROM HOUGH JGR,96, D4, pp 7325-7362, 1991 -----
-!------- OR SEINFELD+PANDIS OR EMEP REPORTS 2/93 OR 2/2001 
-!------- 6 landclasses in the model: 0 = ocean, 1 = ice, 2 = tundra, 
-!        3 = agriculture, 4 = undef, 5 = forest, 6 = desert 
-!------------------------------------------------------------------------------
-   real    :: cm_s = 0.01   !  Converts cm/s to m/s
-   real, dimension(NDRYDEP_CALC,0:6) :: vd_max
-
-   vd_max(:,:) = 0.0
-   vd_min(:,:) = 0.0
-!
-!  The deposition array is declared as vd(NSPEC_ADV,0:6)
-
-
-!..2) HNO3
-        vd_max(CDEP_HNO3,SEA)          =  1.0 * cm_s    ! Seinfeld, p969
-        vd_max(CDEP_HNO3,ICE:TUNDRA)   =  0.5 * cm_s    !  " ", guessed for tundra
-        vd_max(CDEP_HNO3,AGRIC:FOREST) =  4.0 * cm_s    ! Seinfeld, p969
-        vd_max(CDEP_HNO3,DESERT)       =  2.0 * cm_s    ! ?
-
-        vd_min (CDEP_HNO3,:)           = vd_max(CDEP_HNO3,:)  ! default
-
-!..5) NO2
-
-        vd_max(CDEP_NO2,SEA)          =  0.02 * cm_s  ! Seinfeld, p969
-        vd_max(CDEP_NO2,ICE)          = 0.002 * cm_s  ! Seinfeld, p969
-        vd_max(CDEP_NO2,TUNDRA)       = 0.2  * cm_s   ! TROTREP1c
-        vd_max(CDEP_NO2,AGRIC:FOREST) = 0.5  * cm_s   ! TROTREP1a EMEP 2/93
-        vd_max(CDEP_NO2,DESERT)       = 0.02 * cm_s      
-
-        vd_min(CDEP_NO2,:)            = vd_max(CDEP_NO2,:)  ! default
-        !u6 ERROR vd_min(CDEP_NO2,AGRIC:FOREST) = 0.5 * cm_s
-        vd_min(CDEP_NO2,TUNDRA:FOREST) = 0.06 * cm_s
-
-!..6) SO2
-        vd_max(CDEP_SO2,:)      = 1.0 * cm_s       
-        vd_max(CDEP_SO2,ICE)    = 0.1 * cm_s       ! Guess....
-        vd_max(CDEP_SO2,DESERT) = 0.1 * cm_s       ! Guess....
-
-        vd_min(CDEP_SO2,:)            = vd_max(CDEP_SO2,:)  ! default
-        vd_min(CDEP_SO2,TUNDRA:FOREST) = 0.3 *  cm_s
-
-!..7) SO4
-	vd_max(CDEP_SO4,:)            =  0.1 * cm_s   ! Small for particles
-        vd_min(CDEP_SO4,:)            =  vd_max(CDEP_SO4,:)  ! default
-
-!..8) PAN
-        vd_max(CDEP_PAN,:) = 0.5 * vd_max(CDEP_NO2,:)
-        vd_min(CDEP_PAN,:) = 0.5 * vd_min(CDEP_NO2,:)
-
-! ... Now find daytime extra by subtraction:
-
-       vd_day(:,:) = vd_max(:,:) - vd_min(:,:)
-
-       if ( any (vd_min<0.0) .or. any(vd_day<0.0)  ) then
-          print *, "ERROR IN VDINIT!!!! VD_MAX: ", vd_max
-          print *, "ERROR IN VDINIT!!!! VD_MIN: ", vd_min
-          print *, "ERROR IN VDINIT!!!! VD_DAY: ", vd_day
-       end if
-
- ! .... Now, we define the mapping between the advected species and
+ ! .... Define the mapping between the advected species and
  !      the specied for which the calculation needs to be done.
 
-   Dep(1) =  depmap( IXADV_HNO3 , CDEP_HNO3)
-   Dep(2) =  depmap( IXADV_PAN,   CDEP_PAN)   !u7
-   Dep(3) =  depmap( IXADV_NO2,   CDEP_NO2)
-   Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2)
-   Dep(5) =  depmap( IXADV_SO4,   CDEP_SO4)
-   Dep(6) =  depmap( IXADV_NH3,   CDEP_SO2)
-   Dep(7)=  depmap( IXADV_AMSU,  CDEP_SO4)
-   Dep(8)=  depmap( IXADV_AMNI,  CDEP_SO4)
+   Dep(1) =  depmap( IXADV_HNO3 , CDEP_HNO3, -1.)
+   Dep(2) =  depmap( IXADV_PAN,   CDEP_PAN, -1. ) 
+   Dep(3) =  depmap( IXADV_NO2,   CDEP_NO2, -1. )
+   Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
+   Dep(5) =  depmap( IXADV_SO4,   CDEP_SET,  0.1 * cms )
+   Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
+   Dep(7) =  depmap( IXADV_AMSU,  CDEP_SET,  0.1 * cms  )
+   Dep(8) =  depmap( IXADV_AMNI,  CDEP_SET,  0.1 * cms  )
 
   end subroutine Init_vd
 
@@ -179,5 +132,5 @@ contains
                                     ) * convfac * atwN
   end subroutine  Add_ddep
 
-end module My_DryDep_ml
+  end module My_UKDep_ml
 
