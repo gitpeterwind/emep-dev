@@ -147,7 +147,7 @@ contains
 
    do iemis = 1, NEMIS
 
-       fname = "Monthlyfac." // trim ( EMIS_NAME(iemis) )
+       fname = "MonthlyFac." // trim ( EMIS_NAME(iemis) )
        call open_file(IO_TIMEFACS,"r",fname,needed=.true.)
        if ( ios /= 0 ) then
           print *,"ios error: Monthlyfac"
@@ -178,7 +178,7 @@ contains
 
   do iemis = 1, NEMIS
 
-       fname = "Dailyfac." // trim ( EMIS_NAME(iemis) )
+       fname = "DailyFac." // trim ( EMIS_NAME(iemis) )
        call open_file(IO_TIMEFACS,"r",fname,needed=.true.)
        if ( ios /= 0 ) then
 	  print *,"ios error: Dailyfac"
