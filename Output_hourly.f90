@@ -24,7 +24,7 @@
    use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
                                 ,li0,li1,lj0,lj1 &  ! u7.5vg FIX
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
-   use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j,identi
+   use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
    use Met_ml,           only : t2,th, roa, surface_precip   !u7.4vg temp2m, th
    use GenSpec_shl_ml ,  only : NSPEC_SHL  ! Maps indices
@@ -128,7 +128,7 @@
         open(file=name,unit=IO_HOURLY,action="write")
         prev_month = current_date%month
 
-        netCDFName ="out_hour" // "."// suffix // ".nc"
+        netCDFName =trim(runlabel1)//"_hour" // "."// suffix // ".nc"
         call Init_new_netCDF(netCDFName,IOU_HOUR)
 
        !ds rv1.6.2: Write summary of outputs to top of Hourly file

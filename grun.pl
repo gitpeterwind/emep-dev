@@ -112,14 +112,16 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_7";
+     $testv       = "rv1_9_8";
      $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_7_3";
+     $testv       = "rv1_9_8";
+     $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
+     $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
 } 
 #$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone

@@ -636,11 +636,11 @@ if(me==0)then
   !get variable id
   call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
   call secondssince1970(ndate,nseconds)
-  !middle of period:
+  !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
       if(iotyp==IOU_YEAR)then
-         nseconds=nseconds-43200*365-43200*is_leap(ndate(1))
+         nseconds=nseconds-43200*365-43200*is_leap(ndate(1)-1)
       elseif(iotyp==IOU_MON)then
-         nseconds=nseconds-43200*nmdays(ndate(2))
+         nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
       elseif(iotyp==IOU_DAY)then
          nseconds=nseconds-43200 !24*3600/2=43200
       elseif(iotyp==IOU_HOUR)then
