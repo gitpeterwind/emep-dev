@@ -2,7 +2,7 @@
 
 Moved the parameter NTDAY from Derived_ml into ModelConstant_ml.
 Added some comments.
-
+Changed a comment in Advection_ml.
 
 ============== Hilde/Dave 18/2-2005            , rv2_1_7 =====================
 

@@ -456,7 +456,7 @@
                enddo
             enddo
  	elseif(ADVEC_TYPE==1)then !this option is recommended (?). 
-                                  !It is "concentration conservative" (uses advected p*)
+                                  !It is "mixing ratio  conservative" (uses advected p*)
            do k=1,KMAX_MID
               do j = lj0,lj1
                  do i = li0,li1
