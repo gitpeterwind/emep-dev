@@ -140,6 +140,7 @@ if ( $SR ) {
 	$emisdir     = "$PETER/Unify/MyData/"; # emissions directory
 	$emisdir     = "$emisdir/2010_CLE_2000";    # emissions
 } else {
+        $emisdir     = "$HILDE/emis/trends2003";
 	$emisdir     = "$emisdir/emis${yy}-V3";    # emissions
 }
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
