@@ -18,24 +18,18 @@ contains
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 !
   subroutine chemistry(i,j,dt,Niter,reset_chem)
-    !hf MADE
     use Radiation_ml,          only :  zen ! zenith angle, degrees
     use GenSpec_tot_ml     ! => NSPEC_TOT, O3, NO2, etc.
-    !u2 !hf MADE
     use GenSpec_bgn_ml      ! => IXBGN_  indices and xn_2d_bgn values
     use GenRates_rct_ml,    only : set_night_rct, ONLY_NIGHT
     use Par_ml,              only : me,MAXLIMAX,MAXLJMAX,li1,lj1,li0,lj0  ! me for TEST
     use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4,VOLFACNO3,VOLFACNH4 
     use Setup_1dfields_ml,   only : &
-         rcemis,izen       & ! photolysis, emissions
+         rcemis,izen           & ! photolysis, emissions
          ,rcbio                & ! biogenic emis
-         !u1 ,rct, rctroe, rcmisc, & ! rate-coeffients
     ,rct, rcmisc, & ! rate-coeffients
          xn_2d,&               ! rename xn_2d to use simply x inside chemistry
-         !hf u2
     rh, f_Riemer   ! to weight the hydrolysis of N2O5 with NO3,SO4 mass 
-    !u2 !hf MADE 
-    !u2          xn_2d_bgn
     use Aqueous_ml,        only : &
          aqrck,                    &
          ICLOHSO2  &
@@ -113,6 +107,7 @@ contains
     real    ::  dt2    ,dt2save              ! For su2step, 2/3* dt
     real    ::  inv3                  ! For su2step, 1.0/3.0
     real    ::  P, L                ! Production, loss terms
+    !ds rv1_9_28real    :: PHNO3               ! ds rv1_9_28 !NO3 prod.
     ! su's suggestion to help include My_Reactions only once:
     integer, dimension(KCHEMTOP:KMAX_MID) :: toiter
 
@@ -240,6 +235,9 @@ contains
 
        Dchem(:,k,i,j) = (xnew(:)   - xn_2d(:,k))*dt_advec_inv
        xn_2d(:,k) = xnew(:)
+
+!HF Save NO2->HNO3 reaction rate   (rv1_9_28)
+!rv1_9_28       xn_2d(PRODHNO3,k) = PHNO3 !reaction rate in s-1
 
        !>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

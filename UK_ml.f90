@@ -21,7 +21,7 @@ use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
 use Functions_ml,   only: GridAllocate, Polygon
 use GridValues_ml,  only: gb_glob, gb, i_glob, j_glob  ! latitude, coordinates
 use Io_ml,          only: open_file, ios, IO_FORES
-use ModelConstants_ml,  only : current_date, debug_i, debug_j, NNLANDUSE
+use ModelConstants_ml,  only : current_date, DEBUG_i, DEBUG_j, NNLANDUSE
 use UKsetup_ml,     only: ukdep_init, get_growing_season
 use Par_ml,         only: GIMAX, GJMAX, ISMBEG, JSMBEG, &
                           li0, lj0, IILARDOM, JJLARDOM, &
@@ -154,7 +154,7 @@ subroutine ReadLanduse()
       do n = 1, BIG
          read(IO_FORES,*,iostat=ios) i,j, ( tmp(lu), lu=1,NNLANDUSE)
          if ( ios /= 0 ) exit   ! likely end of file
-         if ( DEBUG_DEP ) debug_flag = ( i == debug_i .and. j == debug_j )
+         if ( DEBUG_DEP ) debug_flag = ( i == DEBUG_i .and. j == DEBUG_j )
 
          i_in   = i ! for debug
          j_in   = j

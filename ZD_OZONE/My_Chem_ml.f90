@@ -136,7 +136,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_SHL = 15 
+   integer, public, parameter ::  NSPEC_SHL = 16 
  
  ! Aerosols:
            integer, public, parameter :: &
@@ -163,8 +163,8 @@
   ,  IXSHL_MEKO2       =  12   &
   ,  IXSHL_MALO2       =  13   &
   ,  IXSHL_MVKO2       =  14   &
-  ,  IXSHL_MACRO2      =  15
-
+  ,  IXSHL_MACRO2      =  15 &
+  ,  IXSHL_PHNO3       =  16 
  !-----------------------------------------------------------
   end module GenSpec_shl_ml
 !>_________________________________________________________<
@@ -182,7 +182,7 @@
 
    logical, public, parameter ::  ORG_AEROSOLS = .false. 
 
-   integer, public, parameter ::  NSPEC_TOT = 71 
+   integer, public, parameter ::  NSPEC_TOT = 72 
  
  ! Aerosols:
            integer, public, parameter :: &
@@ -210,74 +210,75 @@
   ,  MALO2       =  13   &
   ,  MVKO2       =  14   &
   ,  MACRO2      =  15   &
-  ,  O3          =  16   &
-  ,  NO          =  17   &
-  ,  NO2         =  18   &
-  ,  PAN         =  19
+  ,  PHNO3       =  16   &
+  ,  O3          =  17   &
+  ,  NO          =  18   &
+  ,  NO2         =  19   &
+  ,  PAN         =  20
 
    integer, public, parameter ::   & 
-     MPAN        =  20   &
-  ,  NO3         =  21   &
-  ,  N2O5        =  22   &
-  ,  ISONO3      =  23   &
-  ,  HNO3        =  24   &
-  ,  CH2CCH3     =  25   &
-  ,  CH3COO2     =  26   &
-  ,  MACR        =  27   &
-  ,  ISNI        =  28   &
-  ,  ISNIR       =  29
+     MPAN        =  21   &
+  ,  NO3         =  22   &
+  ,  N2O5        =  23   &
+  ,  ISONO3      =  24   &
+  ,  HNO3        =  25   &
+  ,  CH2CCH3     =  26   &
+  ,  CH3COO2     =  27   &
+  ,  MACR        =  28   &
+  ,  ISNI        =  29   &
+  ,  ISNIR       =  30
 
    integer, public, parameter ::   & 
-     GLYOX       =  30   &
-  ,  MGLYOX      =  31   &
-  ,  MAL         =  32   &
-  ,  MEK         =  33   &
-  ,  MVK         =  34   &
-  ,  HCHO        =  35   &
-  ,  CH3CHO      =  36   &
-  ,  C2H6        =  37   &
-  ,  NC4H10      =  38   &
-  ,  C2H4        =  39
+     GLYOX       =  31   &
+  ,  MGLYOX      =  32   &
+  ,  MAL         =  33   &
+  ,  MEK         =  34   &
+  ,  MVK         =  35   &
+  ,  HCHO        =  36   &
+  ,  CH3CHO      =  37   &
+  ,  C2H6        =  38   &
+  ,  NC4H10      =  39   &
+  ,  C2H4        =  40
 
    integer, public, parameter ::   & 
-     C3H6        =  40   &
-  ,  OXYL        =  41   &
-  ,  ISOP        =  42   &
-  ,  CH3O2H      =  43   &
-  ,  C2H5OOH     =  44   &
-  ,  BURO2H      =  45   &
-  ,  ETRO2H      =  46   &
-  ,  PRRO2H      =  47   &
-  ,  OXYO2H      =  48   &
-  ,  MEKO2H      =  49
+     C3H6        =  41   &
+  ,  OXYL        =  42   &
+  ,  ISOP        =  43   &
+  ,  CH3O2H      =  44   &
+  ,  C2H5OOH     =  45   &
+  ,  BURO2H      =  46   &
+  ,  ETRO2H      =  47   &
+  ,  PRRO2H      =  48   &
+  ,  OXYO2H      =  49   &
+  ,  MEKO2H      =  50
 
    integer, public, parameter ::   & 
-     MALO2H      =  50   &
-  ,  MVKO2H      =  51   &
-  ,  MARO2H      =  52   &
-  ,  ISRO2H      =  53   &
-  ,  H2O2        =  54   &
-  ,  CH3COO2H    =  55   &
-  ,  CH2CO2HCH3  =  56   &
-  ,  ISONO3H     =  57   &
-  ,  ISNIRH      =  58   &
-  ,  CH3OH       =  59
+     MALO2H      =  51   &
+  ,  MVKO2H      =  52   &
+  ,  MARO2H      =  53   &
+  ,  ISRO2H      =  54   &
+  ,  H2O2        =  55   &
+  ,  CH3COO2H    =  56   &
+  ,  CH2CO2HCH3  =  57   &
+  ,  ISONO3H     =  58   &
+  ,  ISNIRH      =  59   &
+  ,  CH3OH       =  60
 
    integer, public, parameter ::   & 
-     C2H5OH      =  60   &
-  ,  H2          =  61   &
-  ,  CO          =  62   &
-  ,  CH4         =  63   &
-  ,  SO2         =  64   &
-  ,  SO4         =  65   &
-  ,  pNO3        =  66   &
-  ,  NH3         =  67   &
+     C2H5OH      =  61   &
+  ,  H2          =  62   &
+  ,  CO          =  63   &
+  ,  CH4         =  64   &
+  ,  SO2         =  65   &
+  ,  SO4         =  66   &
+  ,  pNO3        =  67   &
+  ,  NH3         =  68   &
 !hf  ,  AMSU        =  68   &
 !hf  ,  AMNI        =  69
-  ,  aNH4        =   68   &
-  ,  aNO3        =   69  &
-  ,  PM25        =   70  &
-  ,  PMco        =   71   
+  ,  aNH4        =   69   &
+  ,  aNO3        =   70  &
+  ,  PM25        =   71  &
+  ,  PMco        =   72   
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
 !>_________________________________________________________<
@@ -330,64 +331,65 @@
        species( 13) = Chemical("MALO2       ", 147,  0,  5,   0,  0 ) 
        species( 14) = Chemical("MVKO2       ", 119,  0,  4,   0,  0 ) 
        species( 15) = Chemical("MACRO2      ", 102,  0,  4,   0,  0 ) 
-       species( 16) = Chemical("O3          ",  48,  0,  0,   0,  0 ) 
-       species( 17) = Chemical("NO          ",  30,  0,  0,   1,  0 ) 
-       species( 18) = Chemical("NO2         ",  46,  0,  0,   1,  0 ) 
-       species( 19) = Chemical("PAN         ", 121,  0,  2,   1,  0 ) 
-       species( 20) = Chemical("MPAN        ", 132,  0,  4,   1,  0 ) 
-       species( 21) = Chemical("NO3         ",  62,  0,  0,   1,  0 ) 
-       species( 22) = Chemical("N2O5        ", 108,  0,  0,   2,  0 ) 
-       species( 23) = Chemical("ISONO3      ", 110,  0,  5,   1,  1 ) !ds1
-       species( 24) = Chemical("HNO3        ",  63,  0,  0,   1,  0 ) 
-       species( 25) = Chemical("CH2CCH3     ",  73,  0,  3,   0,  0 ) 
-       species( 26) = Chemical("CH3COO2     ",  75,  0,  2,   0,  0 ) 
-       species( 27) = Chemical("MACR        ",  70,  0,  4,   0,  0 ) 
-       species( 28) = Chemical("ISNI        ",  46,  0,  4,   1,  1 ) !ds1
-       species( 29) = Chemical("ISNIR       ",  46,  0,  4,   1,  1 ) !ds1 
-       species( 30) = Chemical("GLYOX       ",  58,  0,  2,   0,  0 ) 
-       species( 31) = Chemical("MGLYOX      ",  72,  0,  3,   0,  0 ) 
-       species( 32) = Chemical("MAL         ",  98,  0,  5,   0,  0 ) 
-       species( 33) = Chemical("MEK         ",  72,  0,  4,   0,  0 ) 
-       species( 34) = Chemical("MVK         ",  70,  0,  4,   0,  0 ) 
-       species( 35) = Chemical("HCHO        ",  30,  0,  1,   0,  0 ) 
-       species( 36) = Chemical("CH3CHO      ",  44,  0,  2,   0,  0 ) 
-       species( 37) = Chemical("C2H6        ",  30,  1,  2,   0,  0 ) 
-       species( 38) = Chemical("NC4H10      ",  58,  1,  4,   0,  0 ) 
-       species( 39) = Chemical("C2H4        ",  28,  1,  2,   0,  0 ) 
-       species( 40) = Chemical("C3H6        ",  42,  1,  3,   0,  0 ) 
-       species( 41) = Chemical("OXYL        ", 106,  1,  8,   0,  0 ) 
-       species( 42) = Chemical("ISOP        ",  68,  1,  5,   0,  0 ) 
-       species( 43) = Chemical("CH3O2H      ",  48,  0,  1,   0,  0 ) 
-       species( 44) = Chemical("C2H5OOH     ",  62,  0,  2,   0,  0 ) 
-       species( 45) = Chemical("BURO2H      ",  90,  0,  4,   0,  0 ) 
-       species( 46) = Chemical("ETRO2H      ",  78,  0,  2,   0,  0 ) 
-       species( 47) = Chemical("PRRO2H      ",  92,  0,  3,   0,  0 ) 
-       species( 48) = Chemical("OXYO2H      ",   1,  0,  8,   0,  0 ) !ds1 
-       species( 49) = Chemical("MEKO2H      ", 104,  0,  4,   0,  0 ) 
-       species( 50) = Chemical("MALO2H      ", 147,  0,  5,   0,  0 ) 
-       species( 51) = Chemical("MVKO2H      ",   1,  0,  4,   0,  0 ) !ds1
-       species( 52) = Chemical("MARO2H      ",   1,  0,  5,   0,  0 ) !ds1 
-       species( 53) = Chemical("ISRO2H      ",   1,  0,  5,   0,  0 ) !ds1
-       species( 54) = Chemical("H2O2        ",  34,  0,  0,   0,  0 ) 
-       species( 55) = Chemical("CH3COO2H    ",  76,  0,  2,   0,  0 ) 
-       species( 56) = Chemical("CH2CO2HCH3  ",  74,  0,  3,   0,  0 ) 
-       species( 57) = Chemical("ISONO3H     ",   1,  0,  5,   0,  0 ) !ds1
-       species( 58) = Chemical("ISNIRH      ",   1,  0,  5,   0,  0 ) !ds1
-       species( 59) = Chemical("CH3OH       ",  32,  0,  1,   0,  0 ) 
-       species( 60) = Chemical("C2H5OH      ",  46,  0,  2,   0,  0 ) 
-       species( 61) = Chemical("H2          ",   2,  0,  0,   0,  0 ) 
-       species( 62) = Chemical("CO          ",  28,  0,  1,   0,  0 ) 
-       species( 63) = Chemical("CH4         ",  16,  0,  1,   0,  0 ) 
-       species( 64) = Chemical("SO2         ",  64,  0,  0,   0,  1 ) 
-       species( 65) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
-       species( 66) = Chemical("pNO3        ",  62,  0,  0,   1,  0 ) 
-       species( 67) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
+       species( 16) = Chemical("PHNO3       ",   0,  0,  0,   0,  0 ) 
+       species( 17) = Chemical("O3          ",  48,  0,  0,   0,  0 ) 
+       species( 18) = Chemical("NO          ",  30,  0,  0,   1,  0 ) 
+       species( 19) = Chemical("NO2         ",  46,  0,  0,   1,  0 ) 
+       species( 20) = Chemical("PAN         ", 121,  0,  2,   1,  0 ) 
+       species( 21) = Chemical("MPAN        ", 132,  0,  4,   1,  0 ) 
+       species( 22) = Chemical("NO3         ",  62,  0,  0,   1,  0 ) 
+       species( 23) = Chemical("N2O5        ", 108,  0,  0,   2,  0 ) 
+       species( 24) = Chemical("ISONO3      ", 110,  0,  5,   1,  1 ) !ds1
+       species( 25) = Chemical("HNO3        ",  63,  0,  0,   1,  0 ) 
+       species( 26) = Chemical("CH2CCH3     ",  73,  0,  3,   0,  0 ) 
+       species( 27) = Chemical("CH3COO2     ",  75,  0,  2,   0,  0 ) 
+       species( 28) = Chemical("MACR        ",  70,  0,  4,   0,  0 ) 
+       species( 29) = Chemical("ISNI        ",  46,  0,  4,   1,  1 ) !ds1
+       species( 30) = Chemical("ISNIR       ",  46,  0,  4,   1,  1 ) !ds1 
+       species( 31) = Chemical("GLYOX       ",  58,  0,  2,   0,  0 ) 
+       species( 32) = Chemical("MGLYOX      ",  72,  0,  3,   0,  0 ) 
+       species( 33) = Chemical("MAL         ",  98,  0,  5,   0,  0 ) 
+       species( 34) = Chemical("MEK         ",  72,  0,  4,   0,  0 ) 
+       species( 35) = Chemical("MVK         ",  70,  0,  4,   0,  0 ) 
+       species( 36) = Chemical("HCHO        ",  30,  0,  1,   0,  0 ) 
+       species( 37) = Chemical("CH3CHO      ",  44,  0,  2,   0,  0 ) 
+       species( 38) = Chemical("C2H6        ",  30,  1,  2,   0,  0 ) 
+       species( 39) = Chemical("NC4H10      ",  58,  1,  4,   0,  0 ) 
+       species( 40) = Chemical("C2H4        ",  28,  1,  2,   0,  0 ) 
+       species( 41) = Chemical("C3H6        ",  42,  1,  3,   0,  0 ) 
+       species( 42) = Chemical("OXYL        ", 106,  1,  8,   0,  0 ) 
+       species( 43) = Chemical("ISOP        ",  68,  1,  5,   0,  0 ) 
+       species( 44) = Chemical("CH3O2H      ",  48,  0,  1,   0,  0 ) 
+       species( 45) = Chemical("C2H5OOH     ",  62,  0,  2,   0,  0 ) 
+       species( 46) = Chemical("BURO2H      ",  90,  0,  4,   0,  0 ) 
+       species( 47) = Chemical("ETRO2H      ",  78,  0,  2,   0,  0 ) 
+       species( 48) = Chemical("PRRO2H      ",  92,  0,  3,   0,  0 ) 
+       species( 49) = Chemical("OXYO2H      ",   1,  0,  8,   0,  0 ) !ds1 
+       species( 50) = Chemical("MEKO2H      ", 104,  0,  4,   0,  0 ) 
+       species( 51) = Chemical("MALO2H      ", 147,  0,  5,   0,  0 ) 
+       species( 52) = Chemical("MVKO2H      ",   1,  0,  4,   0,  0 ) !ds1
+       species( 53) = Chemical("MARO2H      ",   1,  0,  5,   0,  0 ) !ds1 
+       species( 54) = Chemical("ISRO2H      ",   1,  0,  5,   0,  0 ) !ds1
+       species( 55) = Chemical("H2O2        ",  34,  0,  0,   0,  0 ) 
+       species( 56) = Chemical("CH3COO2H    ",  76,  0,  2,   0,  0 ) 
+       species( 57) = Chemical("CH2CO2HCH3  ",  74,  0,  3,   0,  0 ) 
+       species( 58) = Chemical("ISONO3H     ",   1,  0,  5,   0,  0 ) !ds1
+       species( 59) = Chemical("ISNIRH      ",   1,  0,  5,   0,  0 ) !ds1
+       species( 60) = Chemical("CH3OH       ",  32,  0,  1,   0,  0 ) 
+       species( 61) = Chemical("C2H5OH      ",  46,  0,  2,   0,  0 ) 
+       species( 62) = Chemical("H2          ",   2,  0,  0,   0,  0 ) 
+       species( 63) = Chemical("CO          ",  28,  0,  1,   0,  0 ) 
+       species( 64) = Chemical("CH4         ",  16,  0,  1,   0,  0 ) 
+       species( 65) = Chemical("SO2         ",  64,  0,  0,   0,  1 ) 
+       species( 66) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
+       species( 67) = Chemical("pNO3        ",  62,  0,  0,   1,  0 ) 
+       species( 68) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
 !hf       species( 68) = Chemical("AMSU        ", 114,  0,  0,   1,  1 ) 
 !hf       species( 69) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
-       species( 68) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
-       species( 69) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
-       species( 70) = Chemical("PM25        ", 100,  0,  0,   0,  0 ) 
-       species( 71) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
+       species( 69) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
+       species( 70) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
+       species( 71) = Chemical("PM25        ", 100,  0,  0,   0,  0 ) 
+       species( 72) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
    end subroutine define_chemicals
  end module GenChemicals_ml
  !-----------------------------------------------------------

@@ -22,7 +22,7 @@ c
       use ModelConstants_ml , only : KMAX_MID
      &			, dt_advec    ! time-step for phyche/advection
      &			,nmax,nstep
-     &                  ,current_date   ! date-type
+     &                  ,current_date, END_OF_EMEPDAY   ! date-type and end of "EMEP" day (usually 6am)
       use Nest_ml,         only : readxn, wrtxn
       use Emissions_ml,    only : EmisSet  
       use Timefactors_ml,  only : NewDayFactors  
@@ -36,6 +36,8 @@ c
       implicit none
       integer i,j,k,n  ! DEBUG
       logical, parameter :: DEBUG = .false.
+      logical, save :: End_of_Day = .false.    ! ds rv1_9_23
+
 c
 
 cds
@@ -163,7 +165,18 @@ c
         !         and then used in ascii printouts.
 
 !jej          call SumDerived(dt_advec)
-          call Derived(dt_advec)
+
+          !ds rv1_9_28: to be consisten with reset of IOU_DAY
+
+          End_of_Day = (current_date%seconds==0.and.
+     &                  current_date%hour==END_OF_EMEPDAY)
+          if( End_of_Day .and. me == 0 ) then
+              write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY, Hour,seconds=",
+     &          END_OF_EMEPDAY, current_date%hour,current_date%seconds
+          endif
+
+
+          call Derived(dt_advec,End_of_Day)  !rv1_9_28 change
 
 	  if ( current_date%seconds == 0 ) then
 
@@ -172,7 +185,6 @@ c
 
               if ( modulo(current_date%hour, FREQ_SONDE) == 0 ) 
      &            call siteswrt_sondes(xn_adv,xn_shl)
-!!odin.3      &            call siteswrt_sondes(z_bnd,z_mid,roa,xn_adv,xn_shl)
 
               if ( NHOURLY_OUT > 0 .and. 
      &             modulo(current_date%hour, FREQ_HOURLY) == 0 ) 

@@ -13,7 +13,7 @@ module RunChem_ml
 
 
 !    logical, private, save :: my_first_call = .true.
-    logical, private, save :: MYDEBUG         = .true.
+    logical, private, save :: MYDEBUG         = .false.
 
 contains
 

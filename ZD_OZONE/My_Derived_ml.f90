@@ -85,7 +85,7 @@ private
   integer, public, parameter :: &
         NWDEP     =  4   &  !
        ,NDDEP     = 21   &  !
-       ,NDERIV_2D = 42   &  ! Number of other 2D derived fields used  !water(41)
+       ,NDERIV_2D = 42   &  ! Number of other 2D derived fields used
        ,NDERIV_3D =  0      ! Number of 3D derived fields
 
   ! then use character arrays to specify which are used.
@@ -113,7 +113,7 @@ private
       ,"D2_AOT30    ","D2_AOT40    ","D2_AOT60    ","D2_MAXO3    "&
       ,"D2_aNO3     ","D2_pNO3     ","D2_aNH4     ","D2_tNO3     ","D2_SIA      "&
       ,"D2_PPM25    ","D2_PPMco    ","D2_PM25     ","D2_PMco     ","D2_PM10     "&
-      ,"D2_H2O      "&    !water
+      ,"D2_PM25_H2O "&  !rv1_9_28 - from Svetlan's version, but renamed
 !
 !    Ecosystem - fluxes:
       ,"D2_FSTDF00  ","D2_FSTDF08  ","D2_FSTDF16  ","D2_FSTWH00  ","D2_FSTWH20  " &
@@ -136,8 +136,12 @@ private
  !"D2_FRNIT  ","D2_MAXOH  ","D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 " &
 
 
-     character(len=10), public, parameter, dimension(0:NDERIV_3D) :: &
+!     character(len=13), public, parameter, dimension(0:NDERIV_3D) :: &
+     character(len=13), public, parameter, dimension(NDERIV_3D) :: &
        D3_USED = (/ "DUMMY" /) ! Dummy value if empty
+!ds    D3_USED = (/"D3_O3        ","D3_OH        ", "D3_CH3COO2   ","D3_PHNO3     "&
+!ds               ,"D3_H2O2      "   &
+!ds               ,"D3_MAXOH     ", "D3_MAXCH3COO2" /) ! Dummy value if empty
 
     !ds - lines defining ddep, wdep, etc. moved to Derived_ml
 !====

@@ -24,28 +24,34 @@
    !      -- End_of_Run logical introduced to help readability.
    !-----------------------------------------------------------------------
 !ds New deriv system, 21/12/2003:
-   use My_Derived_ml, only: NDERIV_2D
+   use My_Derived_ml, only: NDERIV_2D, & !dsAscii3D
+                            NDERIV_3D
 
    use Dates_ml,           only: nmdays             !ds-out
 !ds New Deriv:
    use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, f_2d, d_2d &
+                                ,f_3d, d_3d, nav_3d  & !dsAscii3D
                                 ,ResetDerived
-   use Io_ml   ,           only: IO_AOT
-   use ModelConstants_ml , only: nprint,current_date, END_OF_EMEPDAY
-   use My_Outputs_ml,      only: NBDATES, wanted_dates_bi
+   use Io_ml   ,           only: IO_WRTCHEM
+   use ModelConstants_ml , only: nprint,current_date, END_OF_EMEPDAY , & !dsAscii3d
+                                  KMAX_MID
+   use My_Outputs_ml,      only: NBDATES, wanted_dates_bi, & !dsAcii3D
+                                 Ascii3D_WANTED
    use out_restri_ml,      only: to_out_restri    ! su - allows 3-h output 
    use Output_binary_ml,   only: Output_binary
-   use Par_ml,             only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX ,limax,ljmax,me
+   use Par_ml,             only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX ,limax,ljmax,me,&
+                                  ISMBEG,JSMBEG   !dsOH
    implicit none
 
    integer, intent(in) ::  numt
 
    real, dimension(MAXLIMAX, MAXLJMAX)  ::  local_2d  ! copy of local array
    real, dimension(GIMAX, GJMAX)        ::  glob_2d   ! array for whole domain
+   !!real, allocatable, dimension(:,:,:)  ::  glob_3d   ! 3-D array for whole domain
    integer msnr1, msnr2,nmonpr
-   integer i,j,n
+   integer i,j,n,k
    character*30 outfilename
-   integer nyear,nmonth,nday,nhour
+   integer nyear,nmonth,nday,nhour,nmonpr
    integer :: yy_out, mm_out, dd_out   !ds - after allowance for END_OF_EMEPDAY
    logical :: Jan_1st, End_of_Run
 
@@ -59,8 +65,10 @@
    Jan_1st    = ( nmonth == 1 .and. nday == 1 )
    End_of_Run = ( mod(numt,nprint) == 0       )
 
-   if(me==0)write(6,"(a12,i5,5i4)") "DAILY PRE ", numt, nmonth, mm_out, nday, dd_out, nhour
-   if(me==0)write(6,"(a12,i5)") "DAILY DD_OUT ", dd_out
+   if(me==0) then
+          write(6,"(a12,i5,5i4)") "DAILY PRE ", numt, nmonth, mm_out, nday, dd_out, nhour
+          write(6,"(a12,i5)") "DAILY DD_OUT ", dd_out
+   end if
    if ( END_OF_EMEPDAY  <= 7 ) then
 
          dd_out = nday - 1     ! only used for daily outputs
@@ -189,13 +197,13 @@
                                      nyear,nmonth,nday,nhour
                endif
 
-               open(IO_AOT,file=outfilename)
+               open(IO_WRTCHEM,file=outfilename)
                do i = 1,GIMAX
                  do j = 1,GJMAX
-                     write(IO_AOT,'(1x,i4,1x,i4,f17.6)') i,j,glob_2d(i,j)
+                     write(IO_WRTCHEM,'(1x,i4,1x,i4,f17.6)') i,j,glob_2d(i,j)
                  end do
                end do
-               close(IO_AOT)
+               close(IO_WRTCHEM)
 
              end if  ! me loop
             
@@ -213,6 +221,50 @@
 
      nmonpr = nmonth-1
      if(nmonpr.eq.0)nmonpr=12
+
+    !dsAcii3D =============================================================
+    if( NDERIV_3D > 0) then
+          !!!if (me  ==  0) allocate(glob_3d(GIMAX, GJMAX,KMAX_MID), stat=msnr2)
+          msnr1 = 2000
+
+          do n = 1, NDERIV_3D
+
+
+            if( me == 0 ) then
+               write(outfilename,fmt='(a,a1,i2.2)')  trim( f_3d(n)%name ), ".",  nmonpr
+               open(IO_WRTCHEM,file=outfilename)
+               write(IO_WRTCHEM,fmt="(4i4)")  ISMBEG, GIMAX+ISMBEG-1,&
+                                              JSMBEG, GJMAX+JSMBEG-1 ! domain
+            end if
+
+            if( nav_3d(n,IOU_MON) == 0 ) then
+                    write(IO_WRTCHEM,*) "ERRROROR"!
+            else 
+
+              do k = 1, KMAX_MID
+                   local_2d(:,:) = d_3d(n,:,:,k,IOU_MON) / nav_3d(n,IOU_MON)  ! make 2-d copy
+                   call local2global(local_2d,glob_2d,msnr1)
+
+                   if (me  ==  0) then
+
+                       write(*,*) "XF FINISH ", n, f_3d(n)%name, nav_3d(n,IOU_MON) 
+        
+                       do j=1,GJMAX
+                          do i=1,GIMAX
+                             write(IO_WRTCHEM,"(es10.3)") glob_2d(i,j)
+                          end do
+                       end do
+
+                    end if  ! me loop
+               end do ! k
+            end if ! nav == 0
+
+            if( me == 0 ) close(IO_WRTCHEM)
+            
+        end do 
+     end if
+    !dsAcii3D =============================================================
+
      write(outfilename,fmt='(''outmonth'',i4.4,''.dat'')') nmonpr
      call Output_binary(IOU_MON,outfilename)
      call ResetDerived(IOU_MON)

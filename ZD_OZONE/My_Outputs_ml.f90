@@ -29,6 +29,7 @@ module  My_Outputs_ml
 
 
   logical, public, parameter :: out_binary = .false.
+  logical, public, parameter :: Ascii3D_WANTED = .true.
   ! out_binary = .True. gives also binary files (for use in xfelt).
   !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
@@ -41,14 +42,16 @@ module  My_Outputs_ml
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
      NSITES_MAX =    35          & ! Max. no surface sites allowed
-    ,FREQ_SITE  =    3          & ! Interval (hrs) between outputs
-    ,NADV_SITE  =    3 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+    ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
+    ,NADV_SITE  =    10 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
     ,NXTRA_SITE =    2            ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
     !SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
-    SITE_ADV =  (/ (isite, isite=1,3) /)       ! Everything!!
+    SITE_ADV =  (/ (isite, isite=1,3), IXADV_SO4, IXADV_PAN, &
+                   IXADV_aNO3, IXADV_pNO3, IXADV_HNO3, IXADV_aNH4, &
+                   IXADV_CH3COO2  /)
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
     SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!
@@ -158,11 +161,11 @@ module  My_Outputs_ml
    !      all layers.
    !----------------------------------------------------------------
 
-    logical, public, parameter :: Hourly_ASCII = .false.
+    logical, public, parameter :: Hourly_ASCII = .true.
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
      !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
-    integer, public, parameter :: NHOURLY_OUT =  1 ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT =  5 ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
@@ -241,7 +244,7 @@ contains
    integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  !restricted EMEP
 
   !ds New Deriv system:
-   integer :: D2_O3WH, D2_O3DF, D2_FSTDF00
+   integer :: D2_O3WH, D2_O3DF, D2_FSTDF00, D2_FSTWH00
 
 !pw:WARNING: If the specification of the subdomain is different for
 !            different components (ix1=125 for ozone and ix1=98 for 
@@ -276,16 +279,19 @@ contains
 
 !ds New deriv system
  
- !D2_O3WH = find_one_index("D2_O3WH",f_2d(:)%name)
- !D2_O3DF = find_one_index("D2_O3DF",f_2d(:)%name)
- !D2_FSTDF00 = find_one_index("D2_FSTDF00",f_2d(:)%name)
+ D2_O3WH = find_one_index("D2_O3WH",f_2d(:)%name)
+ D2_O3DF = find_one_index("D2_O3DF",f_2d(:)%name)
+ D2_FSTDF00 = find_one_index("D2_FSTDF00",f_2d(:)%name)
+ D2_FSTWH00 = find_one_index("D2_FSTWH00",f_2d(:)%name)
 
- !hr_out(2)= Asc2D("O3_Wheat", "D2D", &
- !                 "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
- !hr_out(2)= Asc2D("O3_Beech", "D2D", &
- !                 "(f7.3)", D2_O3DF, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
- !hr_out(3)= Asc2D("FST_DF00", "D2D", &
- !                 "(f7.3)", D2_FSTDF00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
+ hr_out(2)= Asc2D("O3_Wheat", "D2D", &
+                  "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
+ hr_out(3)= Asc2D("O3_Beech", "D2D", &
+                  "(f7.3)", D2_O3DF, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
+ hr_out(4)= Asc2D("FST_DF00", "D2D", &
+                  "(f7.3)", D2_FSTDF00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
+ hr_out(5)= Asc2D("FST_WH00", "D2D", &
+                  "(f7.3)", D2_FSTWH00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
 
 !  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
 !                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
