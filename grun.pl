@@ -121,7 +121,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_27";
+     $testv       = "rv1_9_34";
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
 
@@ -139,28 +139,45 @@ if ( $OZONE ) {
 } 
 $version     = "Unimod" ;  
 $subv        = "$testv" ;                  # sub-version (to track changes)
-$Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
+$Split       = "BASE_MAR2004" ;               #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/Unimod.$testv";   # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
-$femis       = "$MyDataDir/femis.dat";      # emission control file
+
+# $femis       = "$MyDataDir/femis.dat";      # emission control file
+$femis_dir   = "$WORKDIR/D_femis";      # emission control file
+system("mkdir $femis_dir");
 $Africa      = "$DAVE/Unify/D_emis";        # Emissions for Africa, y=1..11
+$timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 
-#Latest: (not used for PM though).
+#ds new for SR version. One lement arrays if SR not specified:
+$mk_SRfemis = "$DAVE/Unify/Progs/mkp.SRfemis";   #  Generates femis files
+
+# New system. For "normal runs", we just put one run-name into the array @runs.
+# For SR runs we can add many scenarios - dealt with later. 
+# The effect is to choose the approproate femis file
+
+my $scenario = "Base";     # Reset later if SR
+@runs        = ( $scenario );
+@scenarios   = ( "Base");
+system("cp  $MyDataDir/femis.dat  $femis_dir/femis.$scenario");  
+
+
 $emisdir     = "$PETER/Vigdis/Emissions/Modruns/Modrun03";
-
 if ( $SR ) {
-	$emisdir     = "$emisdir/2003_emis2010_CLE_2000_V5";    # emissions
-	$WORKDIR     = "$WORK{$USER}/CLE/Unimod.$testv.$year";    # working directory
+	#? $emisdir     = "$emisdir/2003_emis2010_CLE_2000_V5";    # emissions
+	$emisdir     = "$emisdir/2004_emis2010_CLE_2000_V6";    # emissions
 } elsif ( $year == 2000)  {
-	$emisdir     = "$emisdir/2003_emis00_V5_WEB";    # emissions
+	#? $emisdir     = "$emisdir/2003_emis00_V5_WEB";    # emissions
+	$emisdir     = "$emisdir/2004_emis00_V6";    # emissions
+} elsif ( $year == 2001)  {
+	$emisdir     = "$emisdir/2004_emis01_V6";    # emissions
 } else {
         $emisdir     = "$HILDE/emis/trends2003";
 	$emisdir     = "$emisdir/emis${yy}-V3";    # emissions
 }
-$timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
@@ -177,7 +194,7 @@ $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003)
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
 
-$RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
+$RESET        = 1   ;  # usually 0 (false) is ok, but set to 1 for full restart
 $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
@@ -191,14 +208,63 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  12 ;       # last month
+$mm2   =  1 ;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- #$NTERM = 16;       # for testing, simply reset here
+ $NTERM = 4;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
+
+# <---------- end of normal use section ---------------------->
+# <---------- start of SR   use section ---------------------->
+
+#SR additions:
+# Define all coutnries and nums here: Heiko's lib might be faster:
+%country_nums = ( AT => 2, BE => 3, DK => 6, FI => 7, FR => 8,
+                  DE => 10, GR => 11, IE => 14, IT => 15,
+                  NL => 17 , PT => 20, ES => 22, SE => 23,
+                  UK => 27,
+                  HU => 12, PL => 19, CY => 55, CZ => 46, EE => 43,
+                  LT => 45, LV => 44, MA => 57, SK => 47, SI => 48 );
+# EU countries:
+@eu = qw ( AT BE DK FI FR DE GR IE IT NL PT ES SE UK );
+@eu1 = qw ( AT BE DK FI FR );  # DE GR );
+@eu2 = qw ( IE IT NL PT );
+@eu3 = qw ( ES SE UK DE GR );  # Added 2 from eu1
+@euaccess = qw ( HU PL CY CZ EE LT LV MA SK SI );
+@eu25 = ( @eu, @euaccess );
+@countries = @eu3 ;  # List of wanted countries this run
+#@countries = qw ( IT ) ;  # List of wanted countries this run
+                                # EU25 is "special"
+my $scenario = "Base";
+if ( $SR ) {
+        $base        = "CLE";
+        $Split       = "CLE_MAR2004";    # IER VOC splits
+        $rednflag    = "P25";  # 10% reduction for label
+        $redn        = "0.75";  # 10% reduction
+        @polls       = qw ( AV );  # NP, BASE already done
+
+	$nrun = 0;
+	foreach $pollut ( @polls ) {
+	    foreach $cc ( @countries ) {
+       		print "STARTING CC $cc\n";
+
+       		$scenario = "${base}_${cc}_${pollut}_${rednflag}";
+       		$scenario = "${base}" if $pollut eq "BASE" ;
+
+		# create list of runs to be done:
+		$run[$nrun] = $scenario;
+       		print "scenario: N $nrun S $scenario \n";
+		$nrun++ ;
+	
+	    }
+	}
+	# Run mkp.SRfemis to generate femis files. This script will die 
+
+	system("$mk_SRfemis -b $base -f $rednflag -r $redn -d $femis_dir");
+}
 
 
 # <---------- end of user-changeable section ----------------->
@@ -369,12 +435,26 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
 }
 
 
-#--- Change to WORKDIR
-chdir "$WORKDIR"; 
+########################### START OF SCENARIO RUNS  ##########################
+########################### START OF SCENARIO RUNS  ##########################
+########################### START OF SCENARIO RUNS  ##########################
 
-   # Erase any .nc files to avoid confusion:
-   @nc_files = glob("$WORKDIR/*.nc");
-   foreach $f ( @nc_files) { unlink($f) };
+foreach $scenario ( @runs ) {
+	print "STARTING RUN $scenario \n";
+
+	$runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
+	$runlabel2    = "${testv}_${scenario}_$year";   # NO SPACES! LONG (written into CDF files)
+
+	#--- Change to RESDIR
+
+	my $RESDIR = "$WORKDIR/$base/$scenario";
+	system("mkdir -p $RESDIR");
+
+	chdir "$RESDIR"; 
+
+	# Erase any .nc files to avoid confusion:
+	@nc_files = ( glob("$RESDIR/*.nc"),  glob("$RESDIR/*.nc.bz2") );
+	foreach $f ( @nc_files) { unlink($f) };
 
 
 #assign '-R';       # resets assignments    (huge)
@@ -461,19 +541,21 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
 
 # Emissions setup:
 
-    $old   = "$MyDataDir/femis.dat" ;
+    #$old   = "$MyDataDir/femis.dat" ;
+    $old   = "$femis_dir/femis.$scenario" ;
+    die "ERROR::  NO femis $old !!!! \n" unless -r $old;
     $new   = "femis.dat";
     mylink( "Femis  ", $old,$new ) ;
 
-    $old   = "$MyDataDir/splits/pm25split.defaults.$Case" ;
+    $old   = "$MyDataDir/splits/pm25split.defaults.$Split" ;
     $new   = "pm25split.defaults";
     mylink( "Split pm25", $old,$new ) ;
 
-    $old   = "$MyDataDir/splits/vocsplit.defaults.$Case" ;
+    $old   = "$MyDataDir/splits/vocsplit.defaults.$Split" ;
     $new   = "vocsplit.defaults";
     mylink( "Split voc", $old,$new ) ;
 
-    $old   = "$MyDataDir/splits/vocsplit.special.$Case" ;
+    $old   = "$MyDataDir/splits/vocsplit.special.$Split" ;
     $new   = "vocsplit.special";
     mylink( "Split voc", $old,$new ) ;
 
@@ -487,6 +569,7 @@ foreach $poll  ( @emislist  ) {
    #}
 #
    $new   = "emislist.$poll";
+   push @list_of_files, $new ;
    if( -r $new ) { unlink($new) };  # Get rid of any files from previous runs
 
 # Africa and PM changes. 
@@ -527,8 +610,8 @@ if ( $emissions_adjusted  ) {   # Copy since we want to change the file
 if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
    print "STARTING PM ADDITION\n";
    system("$DAVE/Unify/D_emis/mkp.pmemis_from_nox");
-   system("cat emislist.pm25 > test_emislist.pm25");
-   system("cat emislist.pmco > test_emislist.pmco");
+   #system("cat emislist.pm25 > test_emislist.pm25");
+   #system("cat emislist.pmco > test_emislist.pmco");
 }
 
 # Surface measurement sites
@@ -549,7 +632,7 @@ if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
     #ds $new   = "forest.pcnt";
 #MAR2004     $old   = "$DataDir/forests.tf2" ;
     $old   = "$DataDir/forests.mar2004b" ;
-    $new   = "forest.tf2";
+    $new   = "forest.dat";
     mylink( "Forest % cover", $old,$new ) ;
 
 # Aircraft emissions
@@ -633,6 +716,8 @@ foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
         NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2";
 
+# die #"STOP HERE  \n";
+
 if ( $INTERACTIVE ) {
   die " -- INTERACTIVE: can now run for inputs: NTERM, NASS,  EXCLU, NDX, NDY 
   with mpirun -np 1 prog.exe << XXX
@@ -640,6 +725,9 @@ if ( $INTERACTIVE ) {
 }
 
     #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 
+
+    my $tmpdir = $ENV{PWD};
+    $ENV{PWD} = $RESDIR;
     open (PROG, "|mpirun -np $NPROC $LPROG") || 
                die "Unable to execute $LPROG. Exiting.\\n" ;
 
@@ -651,6 +739,7 @@ if ( $INTERACTIVE ) {
     #print PROG "$NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
 #pw put into INPUT.PARA    print PROG "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n";
     close(PROG);
+    $ENV{PWD} =$tmpdir;
 }
 #------------    End of Run model -------------------------------------
 #------------    End of Run model -------------------------------------
@@ -672,17 +761,27 @@ if ( -r core )  {
 system("mv RunLog.out  ${runlabel1}_RunLog");
 
 #tar sites
-system("tar cvf ${runlabel1}.sites sites.*");
+my $last_sites = sprintf  "sites.%02d%2d", $mm2, $yy;
+print "LOOKING FOR LAST SITES $last_sites\n";
+if ( -r $last_sites ) {
+	print "FOUND LAST SITES $last_sites\n";
+	system("tar cvf ${runlabel1}.sites sites.*");
+	system(	"tar cvf ${runlabel1}.sondes sondes.*");
+}
 
 # Make a list of big .nc files
-   @n_files = glob("$WORKDIR/*_hour.nc");
-   @d_files = glob("$WORKDIR/*_day.nc");
+   @n_files = glob("$RESDIR/*_hour.nc");
+   @d_files = glob("$RESDIR/*_day.nc");
 #    foreach $f ( @n_files, @d_files ) {
 #        system("bzip2 -f $f");
 #    }
 
 #append to the list of files to be compressed
 @bigfile_list = ( @bigfile_list, @n_files, @d_files );
+
+################################## END OF SCENARIO RUNS ######################
+}  ############################### END OF SCENARIO RUNS ######################
+################################## END OF SCENARIO RUNS ######################
 
 # And compress the big files
 $nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
