@@ -15,9 +15,7 @@
 !
 !*************************************************************************
 !
-!hf u2   use My_Runmode_ml,    only : stop_test, DEBUG
    use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST  !u7.4vg 
-!rv1.2 TMP     D2_VG_REF,D2_VG_1M, D2_VG_STO,D2_FX_REF,D2_FX_STO
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  Asc2D, hr_out      ! Required outputs
 
@@ -26,10 +24,8 @@
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
    use ModelConstants_ml,only : current_date,KMAX_MID
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   ! tmp use Dates_ml,         only : date ,add_dates
    use Met_ml,           only : t2,th, roa   !u7.4vg temp2m, th
    use GenSpec_shl_ml , only : NSPEC_SHL  ! Maps indices
-   !u1 use GenSpec_maps_ml , only : MAP_ADV2TOT, MAP_SHL2TOT   ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
    use GridValues_ml,    only :  i_glob, j_glob   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
@@ -90,6 +86,12 @@
         name = "Hourly" // "." // suffix
         open(file=name,unit=IO_HOURLY,action="write")
         prev_month = current_date%month
+
+       !rv1.6.1
+        write(IO_HOURLY,*) NHOURLY_OUT, " Outputs"
+        do ih = 1, NHOURLY_OUT
+           write(IO_HOURLY,*) hr_out(ih)
+        end do
    end if
 
 

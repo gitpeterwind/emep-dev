@@ -12,16 +12,17 @@ module  My_Outputs_ml
   ! Hourly - ascii output of selected species, selcted domain
   ! Restri - Full 3-D output of all species, selected domain
 
-  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX , &  !u7.4vg
-        D2_VG_REF, D2_VG_1M, D2_VG_STO, D2_FX_REF, D2_FX_STO
+  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX   !u7.4vg
   use Dates_ml,       only : date  
   use GenSpec_adv_ml, only : NSPEC_ADV          &
-        ,IXADV_O3 , IXADV_PAN , IXADV_CO , IXADV_NO , IXADV_NO2  &
+        ,IXADV_O3 &
+        ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
         ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
-        ,IXADV_HCHO,IXADV_CH3CHO, IXADV_NO3                      &
-        ,IXADV_N2O5 , IXADV_aNH4, IXADV_aNO3, IXADV_pNO3
+        ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
+!6s         ,IXADV_SOA, IXADV_ASOA, IXADV_BSOA
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
+!  use GenSpec_maps_ml, only:    MAP_ADV2TOT
   use GenChemicals_ml , only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
   use Par_ml,            only: me, NPROC   ! for gc_abort
@@ -106,18 +107,19 @@ module  My_Outputs_ml
    !     need change in hourly_out.f also).
 
     integer, public, parameter :: NHOURLY_OUT = 5  ! No. outputs
-    integer, public, parameter :: FREQ_HOURLY = 3  ! 3 hours between outputs
+    integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
 
     type, public:: Asc2D
+         character(len=12):: name   ! Name (no spaces!)
          character(len=7) :: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3" 
-        character(len=12) :: ofmt   ! Output format (e.g. es12.4)
+         character(len=9) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
                                     !ds u7.4vg .. or other arrays
          integer          :: ix1    ! bottom-left x
          integer          :: ix2    ! bottom-left y
          integer          :: iy1    ! upper-right x
          integer          :: iy2    ! upper-right y
-         character(len=4) :: unit   ! Unit used 
+         character(len=6) :: unit   ! Unit used 
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
     end type Asc2D
@@ -147,10 +149,18 @@ module  My_Outputs_ml
 !       ,ISPEC_OUTEND = ISMBEG+GIMAX-1  &
 !       ,JSPEC_OUTEND = JSMBEG+GJMAX-1
   integer, public, parameter ::  &
-        ISPEC_OUTBEG = 70  &
-        ,JSPEC_OUTBEG = 25  &
-        ,ISPEC_OUTEND = -125  &     ! Set negative here to exclude
-        ,JSPEC_OUTEND = -80         ! Set negative here to exclude
+        ISPEC_OUTBEG = 101  &
+        ,JSPEC_OUTBEG = 51  &
+        ,ISPEC_OUTEND = -100  &     ! Set negative here to exclude
+        ,JSPEC_OUTEND = -50         ! Set negative here to exclude
+
+!   integer, public, parameter :: NPARUPP = NSPEC_ADV ! 39
+
+! Defines integers which represent output species (former mod_def):
+
+!6c  integer, public, parameter ::  & 
+!6c       NSPEC_ADD_ADV = 1        !& ! additional ps advection, if = 1
+!       , NPARADV = NSPEC_ADV + NSPEC_ADD_ADV  ! total species to be advected
 
 
    public :: set_output_defs
@@ -158,22 +168,26 @@ module  My_Outputs_ml
 contains
 
  subroutine set_output_defs
-   !ds - use not needed here since we have it at top.
-   !ds use GenSpec_adv_ml, only:  IXADV_O3 , IXADV_aNH4 , IXADV_aNO3 , IXADV_SO4
-                                                         ! for Hourly outputs
-   !ds use GenSpec_shl_ml, only:  IXSHL_OH   ! for Hourly outputs
+!   use GenSpec_adv_ml, only:  IXADV_O3  ! for Hourly outputs
+!   use GenSpec_shl_ml, only:  IXSHL_OH   ! for Hourly outputs
    implicit none
 
-   character(len=30) :: errmsg  ! Local error message
+   character(len=44) :: errmsg  ! Local error message
    integer           :: i       ! Loop index
 
-   real, save          :: to_ug_S & ! conversion to ug of S
+   real                :: to_ug_S & ! conversion to ug of S
                          ,to_ug_N & ! conversion to ug of N
                          ,to_mgSIA& ! conversion to mg of N
-                         ,to_ugSIA  ! conversion to ug of N
+                         ,to_ugSIA  ! conversion to ug of N 
    real, save :: m_s = 100.0 ! From cm/s to m/s
- 
- 
+
+
+  ! introduce some integers to make specification of domain simpler
+  ! and less error-prone. Numbers can be changed as desired.
+
+   integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
+
+
 !jej - added 11/5/01 following Joffen's suggestion:
 
   to_ug_S = atwS*PPBINV/ATWAIR ! in output only accounting for Sulphur
@@ -188,51 +202,44 @@ contains
  ! ** REMEMBER : ADV species are mixing ratio !!
  ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
 
-  !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
+  !**               name     type   
+  !**                ofmt   ispec     ix1 ix2  iy1 iy2  unit conv    max
 
-  hr_out(1)= &
-    Asc2D("ADVppbv", "(f9.5)",IXADV_O3, 45, 170, 1, 133, "ppb",PPBINV,600.0)
-  hr_out(2)= &
-   Asc2D("ADVugm3", "(f8.4)",IXADV_aNH4, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
-  hr_out(3)= &
-   Asc2D("ADVugm3", "(f8.4)",IXADV_aNO3, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
-  hr_out(4)= &
-   Asc2D("ADVugm3", "(f8.4)",IXADV_SO4, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
-  hr_out(5)= &
-   Asc2D("ADVugm3", "(f8.4)",IXADV_pNO3, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
+  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
+                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
+  hr_out(2)=  Asc2D("aNH4-air", "ADVugm3", &
+                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+  hr_out(3)=  Asc2D("aNO3-air", "ADVugm3", &
+                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+  hr_out(4)=  Asc2D("SO4-air", "ADVugm3", &
+                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+  hr_out(5)=  Asc2D("pNO3-air", "ADVugm3", &
+                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,400.0)
 
-!    Asc2D("ADV", "(g9.3)",IXADV_SOA, 70, 150, 10, 100, "ppb",PPBINV,400.0)
-!  hr_out(3)= &
-!    Asc2D("ADV", "(g9.3)",IXADV_ASOA, 70, 150, 10, 100, "ppb",PPBINV,400.0)
+!    Asc2D("ADV", "(f8.4)",IXADV_PAN, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 !  hr_out(4)= &
-!    Asc2D("ADV", "(g9.3)",IXADV_BSOA, 70, 150, 10, 100, "ppb",PPBINV,400.0)
-!!!hr_out(2)= &
-!!  Asc2D("SHL", "(f8.4)",IXSHL_OH, 87, 150, 51, 75, "10^5",1.0e-5,999.0)
+!    Asc2D("ADV", "(f8.4)",IXADV_SO2, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
+!  hr_out(5)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_SO4, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
+!  hr_out(6)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_NH3, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
+!  hr_out(7)= &
+!    Asc2D("ADV", "(f8.4)",IXADV_HNO3, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)
  !ds u7.4vg - or from d_2d arrays.
 
-!ZDEP  !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
-!ZDEP  hr_out(2)= &
-!ZDEP     Asc2D("D2D", "(f6.1)",   D2_HMIX, 70, 150, 10, 100, "m",1.0   ,10000.0)
-
-!  hr_out(2)= &
-!     Asc2D("D2D", "(f8.5)",   D2_VG_REF, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
-!  hr_out(3)=&
-!     Asc2D("D2D", "(f8.5)",   D2_VG_1M , 70, 150, 10, 100, "cm/s", m_s  ,90.0)
-!  hr_out(4)=&
-!     Asc2D("D2D", "(f8.5)",   D2_VG_STO, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
-!  hr_out(5)=&
-!     Asc2D("D2D", "(f10.4)",   D2_FX_REF, 70, 150, 10, 100, "m",1.0   ,900.0)
-!  hr_out(6)=&
-!     Asc2D("D2D", "(f10.4)",   D2_FX_STO, 70, 150, 10, 100, "m",1.0   ,900.0)
+  !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
+  !hr_out(3)= &
+  !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
 
  !/** theta is in deg.K
-!  hr_out(5)= &
-!     Asc2D("th ", "(f5.1)",     -99, 70, 150, 10, 100, "degK",1.0   ,400.0)
+ !hr_out(1)=  Asc2D("T2_C",   "T2_C   ", &
+ !                "(f5.1)",     -99, ix1,ix2,iy1,iy2, "degC",1.0   ,100.0)
+ !hr_out(2)=  Asc2D("Precip", "PRECIP ", &
+ !                "(f11.7)",    -99, ix1,ix2,iy1,iy2, "mm/hr",1.0,  200.0)
 
- !/**Asc2D("T2 ", "(f5.1)",     -99, 87, 110, 51, 75, "degC",1.0   ,100.0)
 
 
   !/** Consistency checks
@@ -252,9 +259,13 @@ contains
   !    output is wanted. Replaces the hard-coding which was
   !    in wrtchem:
 
-     wanted_dates_bi(1) = date(-1,6,6,12,0)
-     wanted_dates_bi(2) = date(-1,6,8,12,0)
-     wanted_dates_bi(3) = date(-1,6,14,12,0)
+     wanted_dates_bi(1) = date(-1,1,1,0,0)
+     wanted_dates_bi(2) = date(-1,1,1,3,0)
+     wanted_dates_bi(3) = date(-1,1,1,6,0)
 
  end subroutine set_output_defs
 end module My_Outputs_ml
+
+
+
+

@@ -109,16 +109,16 @@ module  My_Outputs_ml
     integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
 
     type, public:: Asc2D
-!         character(len=3) :: type   ! "ADV" or "SHL" (or user-defined)
+         character(len=12):: name   ! Name (no spaces!)
          character(len=7) :: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3" 
-        character(len=12) :: ofmt   ! Output format (e.g. es12.4)
+         character(len=9) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
                                     !ds u7.4vg .. or other arrays
          integer          :: ix1    ! bottom-left x
          integer          :: ix2    ! bottom-left y
          integer          :: iy1    ! upper-right x
          integer          :: iy2    ! upper-right y
-         character(len=4) :: unit   ! Unit used 
+         character(len=6) :: unit   ! Unit used 
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
     end type Asc2D
@@ -179,6 +179,13 @@ contains
                          ,to_mgSIA& ! conversion to mg of N
                          ,to_ugSIA  ! conversion to ug of N 
  
+
+  ! introduce some integers to make specification of domain simpler
+  ! and less error-prone. Numbers can be changed as desired.
+
+   integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
+
+
 !jej - added 11/5/01 following Joffen's suggestion:
 
   to_ug_S = atwS*PPBINV/ATWAIR ! in output only accounting for Sulphur
@@ -193,24 +200,25 @@ contains
  ! ** REMEMBER : ADV species are mixing ratio !!
  ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
 
-  !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
+  !**               name     type   
+  !**                ofmt   ispec     ix1 ix2  iy1 iy2  unit conv    max
 
-  hr_out(1)= &
-    Asc2D("ADVugm3", "(f8.4)",IXADV_aNO3, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
-  hr_out(2)= &
-    Asc2D("ADVugm3", "(f8.4)",IXADV_aNH4, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
-  hr_out(3)= &
-    Asc2D("ADVugm3", "(f8.4)",IXADV_pNO3, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
+  hr_out(1)=  Asc2D("aNO3", "ADVugm3", &
+                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+  hr_out(2)=  Asc2D("aNH4", "ADVugm3", &
+                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+  hr_out(3)=  Asc2D("pNO3", "ADVugm3", &
+                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,400.0)
 
-!    Asc2D("ADV", "(f8.4)",IXADV_PAN, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!    Asc2D("ADV", "(f8.4)",IXADV_PAN, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 !  hr_out(4)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_SO2, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!    Asc2D("ADV", "(f8.4)",IXADV_SO2, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 !  hr_out(5)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_SO4, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!    Asc2D("ADV", "(f8.4)",IXADV_SO4, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 !  hr_out(6)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_NH3, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!    Asc2D("ADV", "(f8.4)",IXADV_NH3, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 !  hr_out(7)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_HNO3, 55, 150, 10, 100, "ppb",PPBINV,9600.0)
+!    Asc2D("ADV", "(f8.4)",IXADV_HNO3, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)
@@ -218,13 +226,14 @@ contains
 
   !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
   !hr_out(3)= &
-  !   Asc2D("D2D", "(f6.1)",   D2_HMIX, 70, 150, 10, 100, "m",1.0   ,10000.0)
+  !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
 
  !/** theta is in deg.K
- ! hr_out(5)= &
- !    Asc2D("th ", "(f5.1)",     -99, 70, 150, 10, 100, "degK",1.0   ,400.0)
+ !hr_out(1)=  Asc2D("T2_C",   "T2_C   ", &
+ !                "(f5.1)",     -99, ix1,ix2,iy1,iy2, "degC",1.0   ,100.0)
+ !hr_out(2)=  Asc2D("Precip", "PRECIP ", &
+ !                "(f11.7)",    -99, ix1,ix2,iy1,iy2, "mm/hr",1.0,  200.0)
 
- !/**Asc2D("T2 ", "(f5.1)",     -99, 87, 110, 51, 75, "degC",1.0   ,100.0)
 
 
   !/** Consistency checks
