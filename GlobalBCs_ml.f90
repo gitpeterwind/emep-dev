@@ -276,7 +276,7 @@ else if( iyr_trend == 2002) then
    USso2trend=0.59
    USnoxtrend=0.78
    USnh4trend=0.74
-else if( iyr_trend == 2003) then
+else if( iyr_trend >= 2003) then
    USso2trend=0.62
    USnoxtrend=0.77
    USnh4trend=0.74
@@ -710,7 +710,7 @@ elseif ( year == 2003 ) then
       bc_rawdata=bc_rawdata*USso2trend
    case(IBC_aNH4)
       bc_rawdata=bc_rawdata*USnh4trend
-   case(IBC_aNO3, IBC_pNO3, IBC_HNO3)
+   case(IBC_aNO3, IBC_pNO3, IBC_HNO3, IBC_NO2, IBC_NO, IBC_PAN)
       bc_rawdata=bc_rawdata*USnoxtrend
    end select
 !  =========================================
