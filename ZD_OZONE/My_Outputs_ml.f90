@@ -42,7 +42,7 @@ module  My_Outputs_ml
 
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
-     NSITES_MAX =    50          & ! Max. no surface sites allowed
+     NSITES_MAX =    99          & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    10 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
@@ -108,14 +108,14 @@ module  My_Outputs_ml
  !  ,FREQ_SONDE  =     1               &   ! Interval (hrs) between outputs
  !  ,NADV_SONDE  =    30                &   ! No.  advected species
 !ELSE SR RUNS USE:::::
-     NSONDES_MAX =    35               &   ! Max. no sondes allowed
+     NSONDES_MAX =    99               &   ! Max. no sondes allowed
     ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =     8                &   ! No.  advected species
 !END
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
     ,NXTRA_SONDE =    4                &   ! No. Misc. met. params  (now th)
-    ,N_NIT       =   10                    ! # of N species in NOy
+    ,N_NOy       =   10                    ! # of N species in NOy
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
 !MERLIN USES...
@@ -131,7 +131,7 @@ module  My_Outputs_ml
    IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
 !END
 
-   integer, public, parameter, dimension(N_NIT) :: &
+   integer, public, parameter, dimension(N_NOy) :: &
      NOy_SPEC =  (/ IXADV_HNO3, IXADV_NO,  IXADV_NO2,  IXADV_PAN,    &
                     IXADV_MPAN, IXADV_NO3, IXADV_N2O5, IXADV_ISONO3, &
                     IXADV_ISNI, IXADV_ISNIR /)

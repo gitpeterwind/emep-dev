@@ -41,7 +41,7 @@ module  My_Outputs_ml
 
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
-     NSITES_MAX =    55         & ! Max. no surface sites allowed
+     NSITES_MAX =    99         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    0          & ! No. short-lived species
@@ -92,18 +92,18 @@ module  My_Outputs_ml
    ! These must be defined in Sites_ml.f90.
 
    integer, public, parameter :: &
-     NSONDES_MAX =    55               &   ! Max. no sondes allowed
+     NSONDES_MAX =    99               &   ! Max. no sondes allowed
     ,NLEVELS_SONDE =  10               &   ! No. k-levels (9 => 0--2500 m) 
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =    1                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species (fake for ACID)
     ,NXTRA_SONDE =    3                    ! No. Misc. met. params  (now th)
-    ,N_NIT       =    1                    ! # of N species in NOy NOT USED in ACID?
+    ,N_NOy       =    1                    ! # of N species in NOy NOT USED in ACID?
 
 !dsXNSHL_TEST
    integer, public, dimension(NADV_SONDE) :: &
     SONDE_ADV =  (/ IXADV_NO2 /)
-   integer, public, parameter, dimension(N_NIT) :: &!Not used in ACID?
+   integer, public, parameter, dimension(N_NOy) :: &!Not used in ACID?
      NOy_SPEC =  (/ IXADV_NO2 /)
    integer, public, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ -99 /)   !fake ! (/ IXSHL_OH /)
