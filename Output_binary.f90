@@ -144,12 +144,12 @@ contains
     ident(10) = GIMAX
     ident(11) = GJMAX
 
-    if(identi(17).gt.0)then !pw u3
+    if(identi(17) > 0)then !pw test for standard felt-format
     ident(15) = 100 * ( nint(xp)  - (ISMBEG - 1) )
     ident(16) = 100 * ( nint(yp)  - (JSMBEG - 1) )
-    else
-    ident(15) = ( nint(xp)  - (ISMBEG - 1) ) +28  !+28 and -11 are to be removed!!!!
-    ident(16) = ( nint(yp)  - (JSMBEG - 1) ) -11  !
+       !ds rv1.2 else
+       !ds rv1.2 ident(15) = ( nint(xp)  - (ISMBEG - 1) ) +28  !+28 and -11 are to be removed!!!!
+       !ds rv1.2 ident(16) = ( nint(yp)  - (JSMBEG - 1) ) -11  !
     endif
 
 
@@ -158,7 +158,7 @@ contains
 
 
 
-  ! ODIN6 - Start output of data:
+  ! Start output of data:
   !     
   !   put the 2-d derived fields, e.g. aot, accsu, So2, SO4, etc.
   !cccccccccccccccccccccccccc
