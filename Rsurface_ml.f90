@@ -366,7 +366,7 @@ contains
              if (Ts_C >0 ) then    ! Use "rh" - now in fraction 0..1.0
 
                r_water =10.0 * log10(Ts_C+2.0) * exp(100.0*(1.0-rh)/7.0)
-
+               r_water = r_water*(1./22.)*10.0**( (-1.1099*so2nh3ratio)+1.6769 ) !so2/nh3 dependency
                r_water = min( 200.0, r_water)  ! After discussion with Ron
                r_water = max(  10.0,r_water)
 
