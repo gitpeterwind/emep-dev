@@ -14,13 +14,10 @@
 !              added. NLAT and CLOUDTOP added.
 !-------------------------------------------------------------------------------
 
-!hf u2   use My_Runmode_ml, only: stop_test
    use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP
-!hf u2   use My_Model_ml,          only: NRCPHOT    ! No. species needed in chemistry
    implicit none
    private
 
-!hf u2 change
    integer, public, parameter :: &
              NRCPHOT      = 17   ! Number of photolytic reactions
    
@@ -92,7 +89,6 @@
            if (ios /= 0) call gc_abort(me,NPROC,"ios error: jclear")  
         endif
 
-!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jclear")
 
 !       Format of input data from Phodis - careful with "17" and NPHODIS
 999     FORMAT(1x, f8.3, 17(1x, 1pe8.2))
@@ -128,7 +124,6 @@
            if (ios /= 0)call gc_abort(me,NPROC,"ios error: jcl1km")
         endif
 
-!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl1km")
 
         if(me == 0)then
 
@@ -166,7 +161,6 @@
            if (ios /= 0)call gc_abort(me,NPROC,"ios error: jcl3km")    
         endif
 
-!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl3km")
 
         if(me == 0)then
 
@@ -251,7 +245,6 @@
 
              !csu   if all cc3d so far are <1.e-4 we are done
 
-             !ODIN6 if(base == 6) goto 4732
               if( base < CLOUDTOP ) then 
 
                 !csu   we have found a k>=CLOUDTOP with cc3d>=1.e-4, now search for top
