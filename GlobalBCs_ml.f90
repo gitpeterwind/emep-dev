@@ -281,7 +281,13 @@ contains
               where ( bc_rawdata > 300.0 )
                   bc_rawdata = 300.0 
               end where
-
+!rv1.4.7 As use of the Logan BCs seems to give too little  O3 at classic
+!        background stations such as Mace Head, we add 10 ppb. Crude, but
+!        the Logan dataset is very large-scale and derived from not too
+!        many sondes. Given the discrepancy, I (ds) prefer to get Mace Head
+!        right.
+!rv1.4.7 TEST HF Increase O3 BC
+                  bc_rawdata=bc_rawdata+10.
 
 !            case   ( IBC_SO2 )
 !              write(*,*)'I READ SO2'
