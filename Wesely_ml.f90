@@ -45,7 +45,10 @@ integer, public, parameter :: NWESELY = 14   ! no. of gases in Wesely tables
    1.6, 2.4e2, 9999.0,     2.0, 0.1,    &! 9 = (OP)     Methyl hydroperoxide
    2.0, 5.4e2, 9999.0,   6.0e2, 0.1,    &! 10 = PAA     Peroxyacetic acid
    1.6, 4.0e6,   -8.0,  9999.0, 0.0,    &! 11 = (ORA)   Formic acid
-   1.0, 2.0e4, 9999.0,  9999.0, 0.0,    &! 12 = NH3     Ammonia
+ !rv1.4.4 ds - follwoed CEH recommendation and set H* NH3 equal to sulphur
+ ! (actually, CEH would have set it much higher than SO2!)
+ !rv1.4.4  1.0, 2.0e4, 9999.0,  9999.0, 0.0,    &! 12 = NH3     Ammonia
+   1.0, 1.0e5, 9999.0,  9999.0, 0.0,    &! 12 = NH3     Ammonia
    2.6, 3.6e0, 9999.0,   3.0e3, 0.1,    &! 13 = PAN     Peroxyacetyl nitrate
    1.6, 1.0e5,    6.0,  4.0e-4, 0.1     &! 14 = HNO2    Nitrous acid
   /), &
