@@ -1,3 +1,47 @@
+================== Dave,               31/03/2004, rv1_9_32   ==========================
+
+ My_Derived_ml:
+
+  !ds 24/3/2004:
+  !dsNSR - new system for distinguishing source-receptor (SR) stuff from model
+  !        evaluation.  The SR runs should use as few as possible outputs
+  !        to keep CPU and disc-requirements down. We define first then the
+  !        minimum list of outputs for use in SR ("NSR_2D"), then define an extra list
+  !        of parameters (dimesnion NEXTRA_"2D) needed in model evaluation, or even 
+  !        for the base-case  of SR runs.
+
+  Also define SOURCE_RECPEPTOR in My_Derived. Used in Derived to set all daily
+  outputs to false if .true.
+
+  Also defined two new params: NOX=NO+NO2, NOZ=lots of NOxzy thingies
+
+ Derived_ml:
+
+  Consistency_check in Derived now checks that if SOURCE_RECPETOR=.true. then
+  dimension of NDERIV_2D == NSR_2D
+
+  FST30 added to def_2d. Other FSTs renumbered
+
+  Also defined two new params: NOX=NO+NO2, NOZ=lots of NOxzy thingies
+
+ DepVariables_ml
+
+     ECO_SEMINAT redefined to include more categories
+
+  My_DryDep_ml
+
+     Depositions to water and wetlands removed.
+
+
+private added to:
+Dates_ml.f90
+ModelConstants_ml.f90
+
+
+And, for information, the file Sorted.Deriv is now in my Unify directory - it
+gives the numbers used in the Derived fields. Makes it easy to find some
+free numbers for new variables.
+
 ================== Svetlana/Peter,     24/03/2004, rv1_9_31   ==========================
 
 SeaSalt included into PM10, PM25, PMco

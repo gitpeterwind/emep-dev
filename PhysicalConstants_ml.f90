@@ -3,6 +3,7 @@
 !  Defines Physical constants 
 !----------------------------------------------------------------------------
 implicit none
+private
 
 !-- contains no subroutine:
 

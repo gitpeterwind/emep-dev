@@ -134,11 +134,14 @@ DDEP_SOX   = find_one_index("DDEP_SOX",f_ddep(:)%name)
 DDEP_OXN   = find_one_index("DDEP_OXN",f_ddep(:)%name)
 DDEP_RDN   = find_one_index("DDEP_RDN",f_ddep(:)%name)
 
-DDEP_OXNSW = find_one_index("DDEP_OXNSW",f_ddep(:)%name)
+ds 25/3/2004: General change: waters and wetland categories removed after
+!    discussions with CCE/IIASA
+!
+!ds DDEP_OXNSW = find_one_index("DDEP_OXNSW",f_ddep(:)%name)
 DDEP_OXNCF = find_one_index("DDEP_OXNCF",f_ddep(:)%name)
 DDEP_OXNDF = find_one_index("DDEP_OXNDF",f_ddep(:)%name)
 
-DDEP_RDNSW = find_one_index("DDEP_RDNSW",f_ddep(:)%name)
+!ds DDEP_RDNSW = find_one_index("DDEP_RDNSW",f_ddep(:)%name)
 DDEP_RDNCF = find_one_index("DDEP_RDNCF",f_ddep(:)%name)
 DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
 
@@ -241,8 +244,10 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
           DepLoss(IXADV_aNO3)+  DepLoss(IXADV_pNO3)  ) * convfac * atwN
 
 !BUG FIX!!!!??? 16/1/2004!!!!
+ds 25/3/2004: General change: waters and wetland categories removed after
+!    discussions with CCE/IIASA
 
-     ddep(DDEP_OXNSW,i,j,IOU_INST) = 0.0
+     !ds ddep(DDEP_OXNSW,i,j,IOU_INST) = 0.0
      ddep(DDEP_OXNCF,i,j,IOU_INST) = 0.0
      ddep(DDEP_OXNDF,i,j,IOU_INST) = 0.0
 
@@ -252,8 +257,8 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
       ! == ds make use of ECO_ arrays from DepVariables - specifies   ==== !
       !    which landuse is in which category                         ==== !
 
-       ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
+       !ds ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST) +  &
+       !ds      sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
        ddep(DDEP_OXNCF,i,j,IOU_INST) = ddep(DDEP_OXNCF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
@@ -267,7 +272,7 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
 
      end do
 
-     ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST)*convfac*atwN
+     !ds ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST)*convfac*atwN
      ddep(DDEP_OXNCF,i,j,IOU_INST) = ddep(DDEP_OXNCF,i,j,IOU_INST)*convfac*atwN
      ddep(DDEP_OXNDF,i,j,IOU_INST) = ddep(DDEP_OXNDF,i,j,IOU_INST)*convfac*atwN
 
@@ -281,7 +286,7 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
 
 !BUG FIX!!!!??? 16/1/2004!!!!
 
-     ddep(DDEP_RDNSW,i,j,IOU_INST) = 0.0
+     !ds ddep(DDEP_RDNSW,i,j,IOU_INST) = 0.0
      ddep(DDEP_RDNCF,i,j,IOU_INST) = 0.0
      ddep(DDEP_RDNDF,i,j,IOU_INST) = 0.0
 
@@ -291,8 +296,8 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
       ! == ds make use of ECO_ arrays from DepVariables - specifies   ==== !
       !    which landuse is in which category                         ==== !
 
-       ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
+      !ds  ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST) +  &
+      !ds       sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
        ddep(DDEP_RDNCF,i,j,IOU_INST) = ddep(DDEP_RDNCF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
@@ -305,7 +310,7 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
 
      end do
 
-     ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST)*convfac*atwN
+    !ds  ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST)*convfac*atwN
      ddep(DDEP_RDNCF,i,j,IOU_INST) = ddep(DDEP_RDNCF,i,j,IOU_INST)*convfac*atwN
      ddep(DDEP_RDNDF,i,j,IOU_INST) = ddep(DDEP_RDNDF,i,j,IOU_INST)*convfac*atwN
     !ddep(DDEP_RDNCR,i,j,IOU_INST) = ddep(DDEP_RDNCR,i,j,IOU_INST)*convfac*atwN

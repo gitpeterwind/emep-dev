@@ -22,7 +22,11 @@ real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
 integer, public, parameter,dimension(2) :: ECO_CONIF_FOREST =  (/ 1, 3 /)
 integer, public, parameter,dimension(2) :: ECO_DECID_FOREST =  (/ 2, 4 /)
 integer, public, parameter,dimension(3) :: ECO_CROP =  (/ 5, 6,7 /) 
-integer, public, parameter,dimension(4) :: ECO_SEMINAT =  (/ 8, 10, 11, 13 /)
+!ds integer, public, parameter,dimension(4) :: ECO_SEMINAT =  (/ 8, 10, 11, 13 /)
+!ds After discussions with Max Posch (CCE), we define seminat as basically
+!   everything except awater, forest and crops
+!   8=moorland, grass=10, medscrub=11,wetlands=12,tundra=13
+integer, public, parameter,dimension(5) :: ECO_SEMINAT =  (/ 8, 10, 11, 12, 13 /)
 integer, public, parameter,dimension(1) :: ECO_WETLAND =  (/ 12 /)
 integer, public, parameter,dimension(1) :: ECO_WATER   =  (/ 15 /)
 integer, public, parameter  :: WHEAT =  9  !ds, rv1_9_3

@@ -99,7 +99,7 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 55  & ! Number of 2D derived fields defined   !water&SeaS (was 51)
+      ,NDEF_DERIV_2D = 58  & ! Number of 2D derived fields defined
       ,NDEF_DERIV_3D = 16    ! Number of 3D derived fields defined
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
@@ -298,6 +298,9 @@ def_2d = (/&
 ,Deriv( 612, "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")&
 ,Deriv( 670, "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")&
 ,Deriv( 671, "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")&
+!ds 31/3/2004 new:
+,Deriv( 672,"NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")&
+,Deriv( 673,"NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")&
 !&
 ,Deriv( 615, "ADV  ",T,IXADV_PM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")&
 ,Deriv( 616, "ADV  ",T,IXADV_PMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")&
@@ -321,8 +324,9 @@ def_2d = (/&
 ,Deriv( 852, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTDF16","nmol/m2/s")&
 ,Deriv( 853, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH00","nmol/m2/s")&
 ,Deriv( 854, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH20","nmol/m2/s")&
-,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH40","nmol/m2/s")&
-,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH60","nmol/m2/s")&
+,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH30","nmol/m2/s")& !New IAM version
+,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH40","nmol/m2/s")&
+,Deriv( 857, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH60","nmol/m2/s")&
 
 !      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
 ,Deriv( 860, "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")&
@@ -394,6 +398,13 @@ def_3d = (/ &
 ,Deriv( 416, "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?")&
 /)
 
+   !ds new, 25/3/2004:
+
+     if ( SOURCE_RECEPTOR ) then  ! We assume that no daily outputs are wanted.
+        def_2d(:)%day = .false.
+        def_ddep(:)%day = .false.
+        def_wdep(:)%day = .false.
+     end if
 
    !Initialise to zero
    ! was previously in subroutine Set_My_Derived()
@@ -554,6 +565,14 @@ def_3d = (/ &
            end do
            call gc_abort(me,NPROC,"Derived code problem!!")
        end if
+
+     !ds 25/3/2004:
+
+      if ((      SOURCE_RECEPTOR .and.  NDERIV_2D /= NSR_2D )   .or.  &
+          ( .not.SOURCE_RECEPTOR .and.  NDERIV_2D == NSR_2D )) then
+           print *, "Error! Wrong number of 2D params ", NDERIV_2D, NSR_2D
+           call gc_abort(me,NPROC,"Derived code problem!!")
+      end if
      end subroutine
 
     !=========================================================================
@@ -572,6 +591,15 @@ def_3d = (/ &
            code = data(i)%code
            if ( code > max ) call gc_abort(me,NPROC,"My_Derived code >max!")
            index_used( code )  = index_used( code )  + 1
+           !if( me == 0 ) print "(a6,i3,i4,2a15,i2)", "CODE ", i, code, 
+           !     data(i)%name, data(i)%class, index_used(code)
+
+           if( index_used(i) > 1 ) then
+                print *, "Derived code problem, Consistency checks: me ",  me, &
+                       " index: ",i, index_used(code)
+                call gc_abort(me,NPROC,"Consistency code problem!!")
+           end if
+
         end do
      end subroutine Consistency_count
     

@@ -4,6 +4,7 @@ module Dates_ml
 !  - aslo "date" type and date "increment" function 
 !-----------------------------------------------------------------------------
  implicit none
+ private
 
  !/ subroutines:
  public  :: Init_nmdays   ! sets number of days per month, year, calls is_leap

@@ -56,13 +56,7 @@ private
            ,pm_calc              ! Miscelleaneous PM's
 
 
-  ! Which model?
-
-    character(len=8),  public ,parameter :: model='ZD_OZONE'
-
-  !ds 16/12/2003 - lines removed -  IOU_INST etc.
-  !ds 16/12/2003 - lines removed -  LENOUT2D etc.
-  !ds 16/12/2003 - lines removed -  moved Deriv type to Derived_ml
+   character(len=8),  public ,parameter :: model='ZD_OZONE'
 
    integer, public, parameter :: NOUTPUT_ABS_HEIGHTS = 6
 
@@ -78,6 +72,85 @@ private
    !    module at a later stage.
    !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
 
+  !ds 24/3/2004:
+  !dsNSR - new system for distinguishing source-receptor (SR) stuff from model
+  !        evaluation.  The SR runs should use as few as possible outputs
+  !        to keep CPU and disc-requirements down. We define first then the
+  !        minimum list of outputs for use in SR, then define an extra list
+  !        of parameters needed in model evaluation, or even for the base-case
+  !        of SR runs.
+
+
+
+  !============ parameters for source-receptor modelling: ===================!
+
+  !ds 24/3/2004:
+  ! This logical variable is not used here, but in Derived_ml, we set all IOU_DAY
+  ! false if SOURCE_RECPTOR = .true.. We don't (generally) want daily outputs
+  ! for SR runs.
+
+    logical, public, parameter :: SOURCE_RECEPTOR = .false.
+
+
+  ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
+
+    integer, public, parameter :: NSR_2D = 37
+
+    character(len=12), public, parameter, dimension(NSR_2D) :: &
+  D2_SR = (/ &
+!
+!    Particles: components
+       "D2_SO4      ","D2_aNO3     ","D2_pNO3     ","D2_aNH4     " &
+      ,"D2_PPM25    ","D2_PPMco    ","D2_PM25_H2O " &
+!
+!    Particles: sums
+      ,"D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
+      ,"D2_SS       ","D2_tNO3     " &
+!
+!    Ozone and AOTs
+      ,"D2_O3       ","D2_MAXO3    " &
+      ,"D2_AOT30    ","D2_AOT40    ","D2_AOT60    " &
+      ,"D2_EUAOT30WH","D2_EUAOT30DF","D2_EUAOT40WH","D2_EUAOT40DF" &
+      ,"D2_UNAOT30WH","D2_UNAOT30DF","D2_UNAOT40WH","D2_UNAOT40DF" &
+!
+!    NOy-type sums 
+      ,"D2_NO2      ","D2_OXN      ","D2_NOX      ","D2_NOZ      " &
+!
+!    Ecosystem - fluxes:
+      ,"D2_FSTDF00  ","D2_FSTDF16  ","D2_FSTWH00  ","D2_FSTWH30  " &
+      ,"D2_FSTWH60  ","D2_O3DF     ","D2_O3WH     " &
+  /)
+
+  !============ Extra parameters for model evaluation: ===================!
+
+    integer, private, parameter :: NEXTRA_2D =  7
+    character(len=12), public, parameter, dimension(NEXTRA_2D) :: &
+  D2_EXTRA = (/ &
+       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
+      ,"D2_REDN     ","D2_SSfi     ","D2_SSco     " &
+  /)
+
+
+   !============ Choose here (Comment out EXTRA stuff for SR runs ============!
+   ! Number of other 2D derived fields used:
+
+   integer, public, parameter :: NDERIV_2D = &
+           !NSR_2D                   ! SOURCE_RECEPTOR = .true.
+           NSR_2D + NEXTRA_2D       ! SOURCE_RECEPTOR = .false.
+
+   character(len=12), public, parameter, dimension(NDERIV_2D) :: &
+      D2_USED = (/  D2_SR &
+                   ,D2_EXTRA /)   ! SOURCE_RECEPTOR = .false.
+                   !,D2_EXTRA /)  ! SOURCE_RECEPTOR = .true.
+
+
+!----------------------
+! Less often needed:
+ !exc  "D2_CO     ","D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ",
+ !exc ,"D2_O3CF   ","D2_O3TC   ","D2_O3GR   ","D2_ACCSU  ",
+ !"D2_FRNIT  ","D2_MAXOH  ","D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 " &
+ !exc  "D2_PAN    ","D2_AOT20    " /)
+
    !=== NEW MY_DERIVED SYSTEM ======================================
    !ds 16/12/2003
 
@@ -85,8 +158,8 @@ private
 
   integer, public, parameter :: &
         NWDEP     =  4   &  !
-       ,NDDEP     = 21   &  !
-       ,NDERIV_2D = 45   &  ! Number of other 2D derived fields used  !water&!SeaS
+       ,NDDEP     = 15   &  ! wetlands and water now removed
+!dsNSR ,NDERIV_2D = 45   &  ! Number of other 2D derived fields used  !water&!SeaS
        ,NDERIV_3D =  0      ! Number of 3D derived fields
 
   ! then use character arrays to specify which are used.
@@ -95,46 +168,15 @@ private
        WDEP_USED = (/ "WDEP_PREC", "WDEP_SOX ", "WDEP_OXN ", &
                       "WDEP_RDN " /)   ! WDEP_PM not used
 
+  !ds waters and wetlands removed:
+
    character(len=10), public, parameter, dimension(NDDEP) :: &
      DDEP_USED = (/  &
         "DDEP_SOX  ","DDEP_OXN  ","DDEP_RDN  "  &
-       ,"DDEP_OXSSW","DDEP_OXSCF","DDEP_OXSDF"  &
-       ,"DDEP_OXSCR","DDEP_OXSSN","DDEP_OXSWE"  &
-       ,"DDEP_OXNSW","DDEP_OXNCF","DDEP_OXNDF"  &
-       ,"DDEP_OXNCR","DDEP_OXNSN","DDEP_OXNWE"  &
-       ,"DDEP_RDNSW","DDEP_RDNCF","DDEP_RDNDF"  &
-       ,"DDEP_RDNCR","DDEP_RDNSN","DDEP_RDNWE"  &
+       ,"DDEP_OXSCF","DDEP_OXSDF","DDEP_OXSCR","DDEP_OXSSN"  &
+       ,"DDEP_OXNCF","DDEP_OXNDF","DDEP_OXNCR","DDEP_OXNSN"  &
+       ,"DDEP_RDNCF","DDEP_RDNDF","DDEP_RDNCR","DDEP_RDNSN"  &
      /)    !  "DDEP_PM   " not needed?
-
-    character(len=12), public, parameter, dimension(NDERIV_2D) :: &
-      D2_USED = (/  &
-!
-!   Source-receptor basics:  (Are all really needed?)
-       "D2_OXN      ","D2_REDN     ","D2_AOT20    " &
-      ,"D2_AOT30    ","D2_AOT40    ","D2_AOT60    ","D2_MAXO3    "&
-      ,"D2_aNO3     ","D2_pNO3     ","D2_aNH4     ","D2_tNO3     ","D2_SIA      "&
-      ,"D2_PPM25    ","D2_PPMco    ","D2_PM25     ","D2_PMco     ","D2_PM10     "&
-      ,"D2_PM25_H2O ","D2_SSfi     ","D2_SSco     ","D2_SS       " &    !water & !SeaS !rv1_9_28 - from Svetlan's version, but renamed
-!
-!    Ecosystem - fluxes:
-      ,"D2_FSTDF00  ","D2_FSTDF08  ","D2_FSTDF16  ","D2_FSTWH00  ","D2_FSTWH20  " &
-      ,"D2_FSTWH40  ","D2_FSTWH60  " &
-      ,"D2_O3DF     ","D2_O3WH     " &
-      ,"D2_EUAOT30WH","D2_EUAOT30DF" &
-      ,"D2_EUAOT40WH","D2_EUAOT40DF" &
-      ,"D2_UNAOT30WH","D2_UNAOT30DF" &
-      ,"D2_UNAOT40WH","D2_UNAOT40DF" &
-!
-!    Model verification params:
-      ,"D2_SO2      ","D2_SO4      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
-      ,"D2_NO2      ","D2_O3       "&
-     /)
-! Less often needed:
- !exc  "D2_PAN    ",
- !exc  "D2_CO     ","D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ",
- !exc ,"D2_O3CF   ","D2_O3DF   ","D2_O3TC   ","D2_O3GR   ","D2_O3WH   "&
- !exc "D2_ACCSU  ",
- !"D2_FRNIT  ","D2_MAXOH  ","D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 " &
 
 
      character(len=13), public, parameter, dimension(0:NDERIV_3D) :: &
@@ -179,7 +221,8 @@ private
       !MOVED      call aot_calc( e_2d, n, ndef, timefrac )
 
       !ds rv1_9_17 case ( "TSO4", "TOXN", "TRDN", "FRNIT", "tNO3 "    )
-      case ( "TOXN", "TRDN", "FRNIT", "tNO3 " , "SSalt"   )
+      !ds rv1_9_32 case ( "TOXN", "TRDN", "FRNIT", "tNO3 " , "SSalt"   )
+      case ( "NOX", "NOZ", "TOXN", "TRDN", "FRNIT", "tNO3 " , "SSalt"   )
 
 !!print *, "Calling misc_xn for ", class
            call misc_xn( e_2d, n, class, density )
@@ -317,6 +360,31 @@ private
               + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
               + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j)) &
               * density(i,j)
+      end forall
+
+!ds 31/3/04 .. added new groupngs for SR: NOX, NOZ
+! Shoudl allow calculation of NOy = NOx + NOz
+
+    case ( "NOX" )
+      forall ( i=1:limax, j=1:ljmax )
+          e_2d( i,j ) = &
+              ( xn_adv(IXADV_NO,i,j,KMAX_MID) &
+              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j) &
+              ) * density(i,j)
+      end forall
+
+    case ( "NOZ" )
+      forall ( i=1:limax, j=1:ljmax )
+          e_2d( i,j ) = &
+              ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
+              + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
+              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) &
+              + xn_adv(IXADV_PAN,i,j,KMAX_MID) * cfac(IXADV_PAN,i,j) &
+              + xn_adv(IXADV_MPAN,i,j,KMAX_MID) * cfac(IXADV_MPAN,i,j) &
+              + xn_adv(IXADV_NO3,i,j,KMAX_MID) &
+              + 2.0* xn_adv(IXADV_N2O5,i,j,KMAX_MID) &
+              + xn_adv(IXADV_ISNI,i,j,KMAX_MID) &
+              ) * density(i,j)
       end forall
 
 
