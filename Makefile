@@ -103,7 +103,7 @@ depend .depend:
 
 clean:
 	rm -f $(PROG) *.o *.mod .depend; \
-	touch .depend
+	#touch .depend
 #make depend
 
 
