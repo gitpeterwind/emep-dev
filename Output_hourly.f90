@@ -30,12 +30,13 @@
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
    use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   use Met_ml,           only : t2,th, roa, surface_precip   !u7.4vg temp2m, th
+   use Met_ml,           only : t2,th, roa, surface_precip, &
+                                   Idirect, Idiffuse ! ds mar2005
    use GenSpec_shl_ml ,  only : NSPEC_SHL  ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
    use GridValues_ml,    only : i_glob, j_glob   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
-   use Radiation_ml,     only : Idirectt, Idiffuse
+  !ds mar2005  use Radiation_ml,     only : Idirectt, Idiffuse
    use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF &
                                 ,Int1,Int2,Int4,Real4,Real8 !Output data type to choose
 
@@ -248,7 +249,7 @@
 
           case ( "Idirect" )        !  Direct radiation (W/m2)
             forall ( i=1:limax, j=1:ljmax)
-               hourly(i,j) = Idirectt(i,j)    ! Skip Units conv.
+               hourly(i,j) = Idirect(i,j)    ! Skip Units conv.
             end forall
 
           case ( "Idiffus" )        !  Diffuse radiation (W/m2)

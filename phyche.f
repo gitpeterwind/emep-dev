@@ -5,20 +5,18 @@ c
 c     (3) physical and chemical calculations begin
 c
       subroutine phyche(numt)
-      !ds New Deriv use My_Derived_ml, only :wdep,ddep,IOU_INST 
       use My_Outputs_ml , only : NHOURLY_OUT
      &                   ,FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
       use Sites_ml, only: siteswrt_surf, siteswrt_sondes
       use My_Timing_ml, only : Code_timer, Add_2timing, 
      &                         tim_before, tim_after  
       use Dates_ml,     only : date, add_dates,dayno, daynumber
-!ds New Deriv
       use Derived_ml, only :wdep,ddep,IOU_INST , 
      &                       DerivedProds,Derived
-!ds  &                       SumDerived, DerivedProds,Derived
       use DryDep_ml,    only : drydep,init_drydep
       use Par_ml   ,    only : me, MAXLIMAX, MAXLJMAX
-      use Met_ml ,      only : roa,z_bnd,z_mid,metint, psurf, cc3dmax  ! dsrv1_6_x for SolBio2D
+      use Met_ml ,      only : roa,z_bnd,z_mid,metint, psurf, cc3dmax,
+     &                            zen,coszen,Idirect,Idiffuse
       use ModelConstants_ml , only : KMAX_MID
      &			, dt_advec    ! time-step for phyche/advection
      &			,nmax,nstep
@@ -27,11 +25,16 @@ c
       use Emissions_ml,    only : EmisSet  
       use Timefactors_ml,  only : NewDayFactors  
       use Chemfields_ml,   only : xn_adv,cfac,xn_shl
-      use Radiation_ml,  only : ZenAng,    ! gets zenith angle
-     &                          SolBio2D   ! Idirect, Idiffuse
+      use Radiation_ml,  only : SolarSetup,        !ds mar2005 - sets up radn params
+     &                          ZenithAngle,       ! gets zenith angle
+     &                          ClearSkyRadn,      ! Idirect, Idiffuse
+     &                          CloudAtten         ! Idirect, Idiffuse
+!ds  &                          SolBio2D       ! Idirect, Idiffuse
+!ds  &                          ,zen, coszen    ! TMP test of RAD
       use Runchem_ml  , only : runchem   ! Calls setup subs and runs chemistry
       use Advection_ml, only: advecdiff,adv_int
       use Polinat_ml, only : polinat_out
+      use GridValues_ml, only : i_glob, j_glob, gl, gb ! DEBUG RAD !TMP
 
       implicit none
       integer i,j,k,n  ! DEBUG
@@ -49,7 +52,6 @@ c
         if ( DEBUG ) 
      &    write(6,*)"enters phyche proc:", me,  
      &        "  current_date:", current_date
-c
 c
 c     start of inner time loop which calls the physical and
 c     chemical routines.
@@ -100,8 +102,22 @@ c
 c
 c   date needed for the calculation of solar zenith angle
 c
-        call ZenAng(thour)
-        call SolBio2D(daynumber,cc3dmax(:,:,KMAX_MID),psurf)
+!     ds mar2005 - new system using elemental subroutines:
+
+        call SolarSetup(current_date%year,current_date%month,
+     &                     current_date%day,thour)
+
+        call ZenithAngle(thour, gb, gl, zen, coszen )
+
+        if( DEBUG .and. me == 0 ) then
+          write(*,*) "ZenRad ", current_date%day, current_date%hour, 
+     &        thour, gl(3,3),gb(3,3),zen(3,3),coszen(3,3)
+        end if
+        !ds mar2005 call SolBio2D(daynumber,cc3dmax(:,:,KMAX_MID),psurf)
+
+        call ClearSkyRadn(psurf,coszen,Idirect,Idiffuse)
+
+        call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
 
         call Add_2timing(16,tim_after,tim_before,"phyche:ZenAng")
 

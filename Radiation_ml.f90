@@ -1,143 +1,109 @@
 module Radiation_ml
-  !---------------------------------------------------------------------------
-  !DESCRIPTION
-  !*ZenAng*  written by brian a. ridley at york univ., ca. 1978
-  !*  based on equations given by w.h.smart "textbook of spherical astronomy,"
-  !*                6th ed. cambridge u. press
-  !* this subroutine calculates solar zenith and azimuth angles for a particular
-  !* time and location.  must specify:
-  !*
-  !* input:
-  !*       gb - latitude in decimal degrees 
-  !*       gl - longitude in decimal degrees
-  !*       idate - date at greenwich - specify year (19yy), month (mm), day (dd)
-  !*              format is six-digit integer:  yymmdd
-  !*       thour - erstatter gmt
-  !*       gmt  - greenwich mean time - decimal military eg.
-  !*               22.75 = 45 min after ten pm gmt
-  !* output  
-  !*       zeta
-  !!
-  !DESCRIPTION
-  !*solbio*
-  !* from T. Pierce.
-  !---------------------------------------------------------------------------
-  !* ZenAng Optimised by Steffen Unger, 2000?
-  !* converted to F90 module, Dave Simpson, Nov. 2001
-  !' Added solbio, UK stuff, ds May 2002
-  !* ToDo: Check leap-years for centuries etc.
-  !---------------------------------------------------------------------------
 
-    use Par_ml   , only : MAXLIMAX,MAXLJMAX,li0,li1,lj0,lj1
-    use Dates_ml , only: nmdays
-    use GridValues_ml,         only: gl,gb
-    use ModelConstants_ml ,    only: current_date
-    use PhysicalConstants_ml , only: PI,DEG2RAD,RAD2DEG
-    implicit none
-    private
+  !+ Collection of routines to calculate radiation terms, also for
+  !  canopies. IMPORTANT - Most routines expect SolarSetup to 
+  !  have been called first.
+  !ds mar2005:
+  !  F-compliant.  Module usable by stand-alone deposition code.
 
- !  Subroutines:
+  use PhysicalConstants_ml  , only: PI, DEG2RAD, RAD2DEG, DAY_ZEN, DAY_COSZEN
+  use TimeDate_ml  , only: julian_date, day_of_year
+  implicit none
+  private
 
-  public :: ZenAng         ! => coszen=cos(zen), zen=zenith angle (degrees) 
-  public :: UKZenAng         ! => coszen=cos(zen), zen=zenith angle (degrees) 
-  public :: SolBio         ! => irradiance (W/m2)
-  public :: SolBio2D       ! => 2D fields of direct and diffuse irradiance (W/m2)
+  !/ Subroutines:
+  public :: SolarSetup     ! => decl, sindecl, eqt_h, etc., + daytime, solarnoon
+  public :: ZenithAngle    ! => CosZen=cos(Zen), Zen=zenith angle (degrees) 
+  public :: ZenithAngleS   !    (simpler version)
+  public :: ClearSkyRadn   ! => irradiance (W/m2), clear-sky
+  public :: CloudAtten     ! => Cloud-Attenuation factor
+  public :: CanopyPAR      ! => sun & shade PAR  values, and LAIsunfrac
+  public :: ScaleRad       !  Scales modelled radiation where observed values
+                           !  available.
 
- ! Public Variables:
+  !/ Functions:
+  public :: daytime        ! true if zen < 89.9 deg
+  public :: daylength      ! Lenght of day, hours
+  public :: solarnoon      ! time of solarnoon
 
-    real, public, dimension(MAXLIMAX, MAXLJMAX), save:: &
-        zen          &  ! Zenith angle (degrees)
-       ,coszen=0.       &  ! cos of zenith angle
-       ,Idiffuse     &  ! diffuse solar radiation (W/m^2)        ! ds rv1_6_x
-       ,Idirectt        ! total direct solar radiation (W/m^2)   ! ds rv1_6_x
 
-    real, public, save :: daylength(0:90), solarnoon(-180:180)    ! ds_OH
-
-    real, public, parameter :: &
+  real, public, parameter :: &
       PARfrac = 0.45,   & ! approximation to fraction (0.45 to 0.5) of total 
                           ! radiation in PAR waveband (400-700nm)
-      Wm2_uE  = 4.57      ! converts from W/m^2 to umol/m^2/s
+      Wm2_uE  = 4.57,   & ! converts from W/m^2 to umol/m^2/s
+      Wm2_2uEPAR= PARfrac * Wm2_uE  ! converts from W/m^2 to umol/m^2/s PAR
 
- !u7.lu removed from Dep part
- ! real, public, save :: Idrctn      ! => irradiance (W/m^2), normal to beam
- !                      solar     & ! => irradiance (W/m^2)
 
+  ! Some variables which are dependent only on day of year and GMT time
+  ! - hence they do not vary from grid to grid and can safely be stored here
+
+  real, private, save :: rdecl,sinrdecl,cosrdecl
+  real, private, save :: eqtime, eqt_h, tan_decl
+
+logical, private, parameter :: DEBUG = .true.
+
+
+  !================== Ashrae/Iqbal stuff  -- see ClearSkyRad subroutine
+
+    type, public :: ashrae_tab
+        integer :: nday
+        real    :: a
+        real    :: b
+        real    :: c
+    end type ashrae_tab
+
+    type(ashrae_tab), save, public ::  Ashrae    ! Current values
+
+    type(ashrae_tab), parameter, dimension(14), private ::  ASHRAE_REV = (/ &
+    !         nday    a      b      c
+         ashrae_tab(  1, 1203.0, 0.141, 0.103 ) &
+        ,ashrae_tab( 21, 1202.0, 0.141, 0.103 ) &
+        ,ashrae_tab( 52, 1187.0, 0.142, 0.104 ) &
+        ,ashrae_tab( 81, 1164.0, 0.149, 0.109 ) &
+        ,ashrae_tab(112, 1130.0, 0.164, 0.120 ) &
+        ,ashrae_tab(142, 1106.0, 0.177, 0.130 ) &
+        ,ashrae_tab(173, 1092.0, 0.185, 0.137 ) &
+        ,ashrae_tab(203, 1093.0, 0.186, 0.138 ) &
+        ,ashrae_tab(234, 1107.0, 0.182, 0.134 ) &
+        ,ashrae_tab(265, 1136.0, 0.165, 0.121 ) &
+        ,ashrae_tab(295, 1136.0, 0.152, 0.111 ) &
+        ,ashrae_tab(326, 1190.0, 0.144, 0.106 ) &
+        ,ashrae_tab(356, 1204.0, 0.141, 0.103 ) &
+        ,ashrae_tab(366, 1203.0, 0.141, 0.103 ) &
+      /)
+  !=============================
   
-  logical, private, parameter :: DEBUG = .false.
 
 contains
+
  !<===========================================================================
-  subroutine ZenAng(thour)
+  subroutine SolarSetup(year,month,day,hour)
 
-    real, intent(in) :: thour
+    ! Sets up decelention and related terms, as well as Ashrae coefficients
+    ! Should be called before other routines.
 
-    real :: dr
-    integer :: ii,jj,i,iiyear,iyear,imth,iday,iiy,nyears
-    integer :: leap,noleap,ijd,in,ij
-    real :: d,jd,yr,ml,rml,w,wr,ec,epsi,yt,pepsi,cww
+    integer, intent(in) :: year,month,day
+    real, intent(in) :: hour
+
+    real :: d,ml,rml,w,wr,ec,epsi,yt,pepsi,cww
     real :: sw,ssw, eyt, feqt1, feqt2, feqt3, feqt4, feqt5, &
-            feqt6, feqt7, feqt,eqt,ra,reqt,zpt
-    real :: rdecl,sinrdecl,cosrdecl,rlt,lzgmt,lbgmt,csz,rra  !dsOH,tab
-    real :: eqt_h, tan_decl, arg     !dsOH  (tan_decl replaces tab)
-    integer :: ilat, ilong           !dsOH
+            feqt6, feqt7, feqt,ra,reqt  
+    real :: dayinc
+    integer :: i
+
     logical, parameter :: MY_DEBUG = .false.
 
-!* convert to radians
 
-    dr = pi/180.
+!* count days from dec.31,1973 
 
-!* parse date
+    d = julian_date(year,month,day) - julian_date(1973,12,31) + 1 
+    d = d + hour/24.0
 
-    iiyear = current_date%year
-    !dsOH BUG FIX!! iyear = 19*100 + iiyear
-       iyear = iiyear
-    imth = current_date%month
-    iday = current_date%day
-
-!* identify and correct leap years
-
-    iiy = (iiyear/4)*4
-
-!* count days from dec.31,1973 to jan 1
-
-    nyears = iyear - 1974
-    leap = (nyears+1)/4
-    if(nyears <= -1) leap = (nyears-2)/4
-    noleap = nyears - leap
-    yr = 365.0*noleap + 366.0*leap
-
-    ijd = 0
-    in = imth - 1
-!ds    if(in == 0) go to 40
-!ds    do i=1,in
-!ds      ijd = ijd + nmdays(i)
-!ds    end do
-!ds    ijd = ijd + iday
-!ds    go to 50
-!ds40  ijd = iday
-!ds50  ij = iyear - 1973
-
-    if(in == 0) then
-        ijd = iday
-    else
-        do i=1,in
-          ijd = ijd + nmdays(i)
-        end do
-        ijd = ijd + iday
-    end if   
-    ij = iyear - 1973
-
-!* julian days current "ijd"  
-!ds comment - actually Julian dates started with jday=1 at 12 noon
-! in the year 13xx so the word is used incorrectly here.
-
-    jd = ijd + yr
-    d = jd + thour/24.0
 
 !* calc geom mean longitude
 
-    ml = 279.2801988 + .9856473354*d + 2.267e-13*d*d
-    rml = ml*dr
+    ml = 279.2801988 + 0.9856473354*d + 2.267e-13*d*d
+    rml = ml*DEG2RAD
 
 !* calc equation of time in sec
 !*  w = mean long of perigee
@@ -145,103 +111,103 @@ contains
 !*  epsi = mean obliquity of ecliptic
 
     w = 282.4932328 + 4.70684e-5*d + 3.39e-13*d*d
-    wr = w*dr
+    wr = w*DEG2RAD
     ec = 1.6720041e-2 - 1.1444e-9*d - 9.4e-17*d*d
     epsi = 23.44266511 - 3.5626e-7*d - 1.23e-15*d*d
-    pepsi = epsi*dr
-    yt = (tan(pepsi/2.0))**2
+    pepsi = epsi*DEG2RAD
+    yt = tan(pepsi/2.0)
+    yt = yt*yt
     cww = cos(wr)
     sw = sin(wr)
     ssw = sin(2.0*wr)
-    eyt = 2.*ec*yt
-    feqt1 = sin(rml)*(-eyt*cww - 2.*ec*cww)
-    feqt2 = cos(rml)*(2.*ec*sw - eyt*sw)
-    feqt3 = sin(2.*rml)*(yt - (5.*ec**2/4.)*(cww**2-sw**2))
-    feqt4 = cos(2.*rml)*(5.*ec**2*ssw/4.) 
-    feqt5 = sin(3.*rml)*(eyt*cww)
-    feqt6 = cos(3.*rml)*(-eyt*sw)
-    feqt7 = -sin(4.*rml)*(.5*yt**2)
+    eyt = 2.0*ec*yt
+    feqt1 = sin(rml)*(-eyt*cww - 2.0*ec*cww)
+    feqt2 = cos(rml)*(2.0*ec*sw - eyt*sw)
+    feqt3 = sin(2.0*rml)*(yt - (5.0*ec*ec/4.0)*(cww*cww-sw*sw))
+    feqt4 = cos(2.0*rml)*(5.0*ec*ec*ssw/4.0) 
+    feqt5 = sin(3.0*rml)*(eyt*cww)
+    feqt6 = cos(3.0*rml)*(-eyt*sw)
+    feqt7 = -sin(4.0*rml)*(0.5*yt*yt)
     feqt = feqt1 + feqt2 + feqt3 + feqt4 + feqt5 + feqt6 + feqt7
-    eqt = feqt*13751.0
+
+    eqtime = feqt*13751.0
 
 !* equation of time in hrs:
 
-    eqt_h = eqt/3600.   !dsOH added back
+    eqt_h = eqtime/3600.0
 
 !* convert eq of time from sec to deg
 
-    reqt = eqt/240.
+    reqt = eqtime/240.0
 
 !* calc right ascension in rads
 
     ra = ml - reqt
-    rra = ra*dr
 
 !* calc declination in rads, deg
 
-    !dsOH tab = 0.43360*sin(rra)
-    tan_decl = 0.43360*sin(rra)
+    tan_decl = 0.43360*sin( ra * DEG2RAD )
 
-!* ds added: calculation of solar noon and daylength
-  ! Caculate solar noon, length of day, following Jones, Appendix 7:
-
-     do ilat = 0, 90
-
-        arg =  -tan_decl * tan( DEG2RAD*ilat )
-
-        if( arg <= -1.0 ) then 
-           daylength(ilat) = 24.0  !! Polar summer
-        else if( arg >= 1.0 ) then 
-           daylength(ilat) = 0.0   !! Polar night
-        else
-           daylength(ilat) = acos( -tan_decl * tan( DEG2RAD*ilat ) ) * RAD2DEG * 2.0/15.0  ! eqn A7.2, Jones
-        end if
-     end do
-
-     do ilong = -180, 180
-        solarnoon(ilong) = 12.0 - eqt_h - ilong*24./360.
-     end do
-
-
-    rdecl = atan(tan_decl)
+    rdecl    = atan(tan_decl)
     sinrdecl = sin(rdecl)
     cosrdecl = cos(rdecl)
-!su    decl = rdecl/dr         
 
-    if ( MY_DEBUG ) then
-        write(*,*) "DEBUG ZenAng: iyear ", iyear, " noleap? ", noleap, " leap? ", leap, " yr ", yr
-        write(*,*) "DEBUG ZenAng: ijd ", ijd, " decl ", rdecl/dr , " eqt(mins) ", eqt/60.0
-    end if
-!* calc local hour angle
+  !-----------------------------------------------------------------
 
-    do jj=lj0,lj1
-      do ii=li0,li1
-        rlt = gb(ii,jj)*dr
-        lbgmt = 12.0 - eqt/3600. - gl(ii,jj)*24./360.
-        lzgmt = 15.0*(thour - lbgmt)
-        zpt = lzgmt*dr
-        csz = sin(rlt)*sinrdecl + cos(rlt)*cosrdecl*cos(zpt)
-!su        csz = sin(rlt)*sin(rdecl) + cos(rlt)*cos(rdecl)*cos(zpt)
-    
-        if(csz  >  1.) csz = 1.
-        if(csz  < -1.) csz = -1.
-        coszen(ii,jj) = csz
-        zen(ii,jj) = acos(csz)/dr 
-!6c        zeta(ii,jj) = csz
-!        raz = acos(csz)
-!        zeta(ii,jj) = raz/dr
-      end do
-    end do
+     ! Find coefficients for Iqbal/Ashrae algorith, used in ClearSkyRadn routine
+     ! first, perform the table look up
 
- end subroutine ZenAng
- !6cend subroutine zenit_angle
+      d = day_of_year(year,month,day)
+      do i = 1, 14
+        if (d <=   ASHRAE_REV(i)%nday ) exit
+      end  do
+
+      if ( DEBUG .and. i<1.or.i>14) write(unit=6,fmt=*) "solbio: index err!"
+
+      if ( ASHRAE_REV(i)%nday == 1) then
+        Ashrae%a = ASHRAE_REV(1)%a
+        Ashrae%b = ASHRAE_REV(1)%b
+        Ashrae%c = ASHRAE_REV(1)%c
+      else
+        dayinc = real( d-ASHRAE_REV(i-1)%nday ) / &
+                 real( ASHRAE_REV(i)%nday-ASHRAE_REV(i-1)%nday )
+        Ashrae%a = ASHRAE_REV(i-1)%a + ( ASHRAE_REV(i)%a - ASHRAE_REV(i-1)%a )*dayinc
+        Ashrae%b = ASHRAE_REV(i-1)%b + ( ASHRAE_REV(i)%b - ASHRAE_REV(i-1)%b )*dayinc
+        Ashrae%c = ASHRAE_REV(i-1)%c + ( ASHRAE_REV(i)%c - ASHRAE_REV(i-1)%c )*dayinc
+      end if
+
+ end subroutine SolarSetup
+
+
  !<===========================================================================
+  elemental subroutine ZenithAngle(thour, latitude, longitude, Z, CosZ )
+  !   IMPORTANT - Call SolarSetup before use to get decl terms and eqt_H
 
+    real, intent(in) :: thour
+    real, intent(in) :: latitude
+    real, intent(in) :: longitude
+    real, intent(out) :: Z                  ! Zenith Angle (degrees)
+    real, intent(out) :: CosZ               ! cos(Z)
+
+    real :: rlt,lzgmt,zpt,lbgmt
+
+        rlt = latitude *DEG2RAD
+        lbgmt = 12.0 - eqt_h - longitude *24.0/360.0
+        lzgmt = 15.0*(thour - lbgmt)
+        zpt = lzgmt*DEG2RAD
+        CosZ = sin(rlt)*sinrdecl + cos(rlt)*cosrdecl*cos(zpt)
+    
+        CosZ = min( 1.0, CosZ)
+        CosZ = max(-1.0, CosZ)
+        Z = acos(CosZ)*RAD2DEG
+
+ end subroutine ZenithAngle
   ! ======================================================================
- subroutine UKZenAng(lon, lat, daynr, nydays, hr,coszen,zen)
+ elemental subroutine ZenithAngleS(lon, lat, daynr, nydays, hr, Z, CosZ )
   ! ======================================================================
   !  routine determines (approximate) cos(zen), where "zen" denotes the zenith 
   !  angle, (in accordance with Iversen and Nordeng (1987, p.28))
+  !  dnmi  29-9-95  Hugo Jakobsen, modified Dave, 2002-2004
   !
   ! arguments:              
     real,    intent(in) ::  lon      ! longitude (degrees), east is positive
@@ -249,53 +215,36 @@ contains
     integer, intent(in) ::  daynr    ! day nr. (1..366)
     integer, intent(in) ::  nydays   ! number of days per year (365 or 366)
     real,    intent(in) ::  hr       ! hour  (0-24, gmt)  ! ds - was integer
-  
+    real,    intent(out) ::  Z       ! zenith angle (degrees) 
+    real,    intent(out) ::  CosZ
     
-    real, intent(out) :: coszen     ! cos(zen) 
-    real, intent(out) :: zen        ! zenith angle (degrees)                              
-  !
-  !                                       dnmi  29-9-95  Hugo Jakobsen
-
-  ! ZenAng to be compared with zenith angle routine in UK model
-  ! ======================================================================
-
      !/ Local....
      real    :: lonr, latr, arg, decl, tangle
 
-     lonr=lon*(PI/180.0)          ! convert to radians
-     latr=lat*(PI/180.0)          ! convert to radians
+     lonr=lon*DEG2RAD             ! convert to radians
+     latr=lat*DEG2RAD             ! convert to radians
 
-     arg = ((daynr - 80.0)/nydays) * 2.0 * PI  !matches monthly year angle
-                                               !calculation in UK model     
+     arg = ((daynr - 80.0)/nydays) * 2.0 * PI
 
-     decl = 23.5 * sin(arg) * (PI/180.0)  !EMEP procedure for calculating the 
-                                          !sun's declination (in radians): 
-                                          !differs       
-                                          !from the UK procedure (compare)
+     decl = 23.5 * sin(arg) * DEG2RAD
      
-     tangle = lonr + (hr/12.0-1.0)*PI      !no time correction (change?)
-     coszen =(sin(decl)*sin(latr)+cos(decl)*cos(latr)*cos(tangle))
-     zen = acos(coszen)*180/PI
-  end subroutine UKZenAng
+     tangle = lonr + (hr/12.0-1.0)*PI      !no eqtime correction
+     CosZ   =(sin(decl)*sin(latr)+cos(decl)*cos(latr)*cos(tangle))
+     Z      = acos(CosZ) * RAD2DEG 
+  end subroutine ZenithAngleS
 
   !=============================================================================
-  !u7.lu subroutine SolBio(jday,coszen,zen,cl,pres, solar,Idrctn,Idfuse,Idrctt)
-  !u7.lu removed some superfluous variables
-  subroutine SolBio(jday,coszen,cl,pres, Idfuse,Idrctt)
-  !=============================================================================
-  !
-  !
-  !  function:
-  !
-  !     computes the radiation terms needed for stomatal calculations
-  !     one term is computed: total solar radiation (W/m^2)
-  !     methodology for this calculation taken from Iqbal, M., 1983,
+
+  elemental subroutine ClearSkyRadn(p,CosZ,Idirect,Idiffuse)
+
+  !     Computes the radiation terms needed for stomatal and BVOC calculations.
+  !     Methodology for this calculation taken from Iqbal, M., 1983,
   !     An introduction to solar radiation, Academic Press, New York, 
   !     pp. 202-210.
   !
   !  history:
   !
-  !     modified for EMEP model
+  !     From T. Pierce's SolBio code:
   !     Development of this routine was prompted by the need for a
   !     horizontal rather than an actinic flux calculation (which had
   !     been performed by Soleng). Furthermore, Soleng computed total
@@ -304,33 +253,22 @@ contains
   !     for stomatal calculations.
   !
   !     8/90    initial development of SolBio by T. Pierce
-  !     9/95    modified by Hugo Jakobsen, 29/9-95 
-  !     1-3/01  modified by Dave Simpson, with albedo as input
-  !     and Idrct, Idfuse as output, and converted to F90
-  !     19/9/01 - albedo removed, Solar thus gives total incoming
-  !     ToDo
-  !          - could consider alternative schemes for cloud attenuation,
-  !      notably use of low, medium and high cloud (see e.g.  Stull (1988) 
-  !          - check clearness number, pressure assumptions (too American?)
-  !
-  !  argument list description:
-  !
-      integer, intent(in)  :: jday   ! day no. from 1 Jan (Julian day)
-      real,    intent(in)  :: coszen ! cos(zen) where zen is zenith angle
+  !     95       modified by Hugo Jakobsen, 29/9-95
+  !     04-05    modified by Dave Simpson for EMEP and DO3SE models
 
-      real,    intent(in)  :: cl     ! opaque sky cover (fraction, from 0 to 1)
-      
-      real,    intent(in)  :: pres   ! surface air pressure 
-     
-   
+    real, intent(in) :: p                  ! Pressure, Pa
+    real, intent(in) :: CosZ               ! Cos(Zenith)
 
-  !     output arguments:
+  ! Calculates clear-sky values of:
 
-      real, intent(out) :: Idfuse  ! diffuse solar radiation (W/m^2)
-      real, intent(out) :: Idrctt  ! total direct solar radiation (W/m^2)
-  !
-  !     internal arguments:
-  !
+    real, intent(out) :: Idirect  ! total direct solar radiation (W/m2)
+    real, intent(out) :: Idiffuse ! diffuse solar radiation (W/m)
+
+  ! Local:
+    real ::  Idrctn               ! direct normal solar radiation (W/m2)
+    real, parameter  :: PRES0 = 101300.0  ! std sea-level pressure (Pa)
+
+    real, parameter  :: cn = 1.0
   !        cn    - clearness number (defined as the ratio of normal
   !                incident radiation, under local mean water vapour,
   !                divided by the normal incident radiation, for
@@ -338,243 +276,164 @@ contains
   !              - currently, this value set equal to 1.0, but eventually
   !                may vary as a function of latitude and month pending further
   !                literature review.
-  !        a     - solar constant at sea-level, varies by day (W/m^2)
-  !        aday  - fixed values of a used in the table look up
-  !        b     - inverse air mass, varies by day (atm^-1)
-  !        bday  - fixed values of b used in the table look up
-  !        pres0 - std sea-level pressure (101300 N/m^2)
-  !        c     - constant which accounts for water vapour, varies by
-  !                Julian day (unitless)
-  !        cday  - fixed values of c used in the table look up
-  !        iday  - fixed values of Julian day corresponding to aday,
-  !                bday and cday
-  !        dayinc - day increment used in interpolating between days
 
-  !**********************************************************************
-  !     declarations:
-
-
-  real    ::  a, b, c, dayinc  ! As above
-  real :: expa            ! exp. function with zenith angle and air mass
-  real :: catten          ! cloud attenuation (unitless), from 0 to 1
-  integer :: i
-  integer, dimension(14), save ::   &
-       nday = (/  1, 21, 52, 81,112,142,173, 203,234,265,295,326,356,366/)
-
-  real, dimension(14), save ::   &
-       aday = (/1203.0,1202.0,1187.0,1164.0,1130.0,1106.0,1092.0,   &
-                1093.0,1107.0,1136.0,1136.0,1190.0,1204.0,1203.0/)  &
-      ,bday = (/0.141,0.141,0.142,0.149,0.164,0.177,0.185,          &
-                0.186,0.182,0.165,0.152,0.144,0.141,0.141/)         &
-      ,cday = (/0.103,0.103,0.104,0.109,0.120,0.130,0.137,          &
-                0.138,0.134,0.121,0.111,0.106,0.103,0.103/)
-
-  real, save  :: cn = 1.0
-  real, save  :: pres0 = 101300.0 
-
-  real :: solar  !total solar radiation, diff.+direct (W/m^2)
-  real :: Idrctn  ! direct normal solar radiation (W/m^2)
-
-
-
- if ( coszen  < 1.0e-15 ) then  ! night or too close to zen=90.0 
-                                              ! for comfort!
-     Idfuse = 0.0
-     Idrctt = 0.0
-     return  !  Nothing else to do!
-
-  else !...compute radiation
-
-     ! first, perform the table look up
-      do i = 1, 14
-        if (jday <=   nday(i)) then 
-      exit    ! ds go to 20
-      end if
-      end  do
-      if ( DEBUG .and. i < 1 .or. i > 14) then
-        write(unit=6,fmt=*) "solbio: day index out of range"
-      end if
-
-      if (nday(i) == 1) then
-        a = aday(1)
-        b = bday(1)
-        c = cday(1)
-      else
-        dayinc = real(jday-nday(i-1)) / real(nday(i)-nday(i-1))
-        a = aday(i-1) + (aday(i)-aday(i-1))*dayinc
-        b = bday(i-1) + (bday(i)-bday(i-1))*dayinc
-        c = cday(i-1) + (cday(i)-cday(i-1))*dayinc
-      end if
-
-      expa = exp(-b*(pres/pres0)/coszen)
-     
-
-    !...compute cloud attenuation
-
-      catten = 1.0 - 0.75*cl**3.4     !(source: Kasten & Czeplak (1980)) 
-
-    !ds - catten applied first to Idrctn
-
-      Idrctn  = cn*a*expa* catten
-      Idfuse =  c*Idrctn
-      Idrctt  = Idrctn*coszen
-
-     !u7.lu solar  = Idrctt + Idfuse
-
-    ! ds- removed
-    !...compute absorbed radiation (W/m2)...
-    !...the albedo is set constant equal to 0.23 ... life is hard #$@!
-    ! real,    intent(in)  ::  albedo !  albedo (0..1, default = 0.23)
-    !..   solar = solar *(1-albedo)
-
-  end if ! daylight
-
-  end subroutine SolBio
-
-  !=============================================================================
-  subroutine SolBio2D(jday,cl,pres)
-  !=============================================================================
-  !
-  !
-  !  function:
-  !
-  !     computes the radiation terms needed for stomatal calculations
-  !     one term is computed: total solar radiation (W/m^2)
-  !     methodology for this calculation taken from Iqbal, M., 1983,
-  !     An introduction to solar radiation, Academic Press, New York, 
-  !     pp. 202-210.
-  !
-  !  history:
-  !
-  !     modified for EMEP model
-  !     Development of this routine was prompted by the need for a
-  !     horizontal rather than an actinic flux calculation (which had
-  !     been performed by Soleng). Furthermore, Soleng computed total
-  !     radiation only out to the near-ir spectrum. This program
-  !     is designed only for approximate radiation estimates to be used
-  !     for stomatal calculations.
-  !
-  !     8/90    initial development of SolBio by T. Pierce
-  !     9/95    modified by Hugo Jakobsen, 29/9-95 
-  !     1-3/01  modified by Dave Simpson, with albedo as input
-  !     and Idrct, Idfuse as output, and converted to F90
-  !     19/9/01 - albedo removed, Solar thus gives total incoming
-  !     ToDo
-  !          - could consider alternative schemes for cloud attenuation,
-  !      notably use of low, medium and high cloud (see e.g.  Stull (1988) 
-  !          - check clearness number, pressure assumptions (too American?)
-  !
-  !  argument list description:
-  !
-      integer, intent(in)  :: jday   ! day no. from 1 Jan (Julian day)
-
-      real,    intent(in), dimension(:,:) :: &
-!ds               coszen   &! cos(zen) where zen is zenith angle
-               cl       &! opaque sky cover (fraction, from 0 to 1)
-              ,pres      ! surface air pressure 
-
-  !     output arguments:
-  !ds    real,    intent(out), dimension(:,:) :: &
-  !ds                         Idfuse &! diffuse solar radiation (W/m^2)
-  !ds                        ,Idrctt  ! total direct solar radiation (W/m^2)
-  !
-  !     internal arguments:
-  !
-  !        cn    - clearness number (defined as the ratio of normal
-  !                incident radiation, under local mean water vapour,
-  !                divided by the normal incident radiation, for
-  !                water vapour in a basic atmosphere)  
-  !              - currently, this value set equal to 1.0, but eventually
-  !                may vary as a function of latitude and month pending further
-  !                literature review.
-  !        a     - solar constant at sea-level, varies by day (W/m^2)
-  !        aday  - fixed values of a used in the table look up
-  !        b     - inverse air mass, varies by day (atm^-1)
-  !        bday  - fixed values of b used in the table look up
-  !        pres0 - std sea-level pressure (101300 N/m^2)
-  !        c     - constant which accounts for water vapour, varies by
-  !                Julian day (unitless)
-  !        cday  - fixed values of c used in the table look up
-  !        iday  - fixed values of Julian day corresponding to aday,
-  !                bday and cday
-  !        dayinc - day increment used in interpolating between days
-
-  !**********************************************************************
-  !     declarations:
-
-
-  real    ::  a, b, c, dayinc  ! As above
-!ds  real :: expa            ! exp. function with zenith angle and air mass
-!ds  real :: catten          ! cloud attenuation (unitless), from 0 to 1
-  integer :: i
-  integer, dimension(14), save ::   &
-       nday = (/  1, 21, 52, 81,112,142,173, 203,234,265,295,326,356,366/)
-
-  real, dimension(14), save ::   &
-       aday = (/1203.0,1202.0,1187.0,1164.0,1130.0,1106.0,1092.0,   &
-                1093.0,1107.0,1136.0,1136.0,1190.0,1204.0,1203.0/)  &
-      ,bday = (/0.141,0.141,0.142,0.149,0.164,0.177,0.185,          &
-                0.186,0.182,0.165,0.152,0.144,0.141,0.141/)         &
-      ,cday = (/0.103,0.103,0.104,0.109,0.120,0.130,0.137,          &
-                0.138,0.134,0.121,0.111,0.106,0.103,0.103/)
-
-  real, save  :: cn = 1.0
-  real, save  :: pres0 = 101300.0 
-
-  real :: solar  !total solar radiation, diff.+direct (W/m^2)
-!ds  real :: Idrctn  ! direct normal solar radiation (W/m^2)
-!ds:
-  real, dimension(size(coszen,1),size(coszen,2)) :: expa, catten, Idrctn
-
- ! first, perform the table look up
-    do i = 1, 14
-        if (jday <=   nday(i)) then 
-            exit    ! ds go to 20
-        end if
-    end  do
-    if ( DEBUG .and. i < 1 .or. i > 14) then
-        write(unit=6,fmt=*) "solbio: day index out of range"
-    end if
-
-    if (nday(i) == 1) then
-        a = aday(1)
-        b = bday(1)
-        c = cday(1)
+    if ( CosZ > DAY_COSZEN ) then
+      Idrctn     = cn * Ashrae%a * exp(- Ashrae%b * (p/PRES0)/CosZ)
+      Idiffuse   = Ashrae%c * Idrctn
+      Idirect    = Idrctn *  CosZ
     else
-        dayinc = real(jday-nday(i-1)) / real(nday(i)-nday(i-1))
-        a = aday(i-1) + (aday(i)-aday(i-1))*dayinc
-        b = bday(i-1) + (bday(i)-bday(i-1))*dayinc
-        c = cday(i-1) + (cday(i)-cday(i-1))*dayinc
+      Idirect    = 0.0
+      Idiffuse   = 0.0
     end if
 
- where ( coszen  < 1.0e-15 ) ! night or too close to zen=90.0 
-                             ! for comfort!
-     Idiffuse = 0.0
-     Idirectt = 0.0
+   !X solar  = Idirect + Idiffuse ! total solar radiation, diff.+direct (W/m2)
 
-  else where !...compute radiation
 
-      expa = exp(-b*(pres/pres0)/coszen)
+  end subroutine ClearSkyRadn
+!===========================================================================
+  elemental subroutine CloudAtten(cl,a,b,c)
+    ! Routine applies a cloud-attenuation factor to arguments, which could
+    ! be say, Idrctt,Idfuse,solar, or just solar: the last 2 arguments are
+    ! optional
 
-    !...compute cloud attenuation
+    ! Agument
+      real, intent(in)  :: cl               ! cloud fraction   (0-1)
+      real, intent(inout)           :: a     
+      real, intent(inout), optional :: b,c
 
-      catten = 1.0 - 0.75*cl**3.4     !(source: Kasten & Czeplak (1980)) 
+      real :: f           ! cloud attenuation factor
 
-    !ds - catten applied first to Idrctn
+      f = 1.0 - 0.75*cl**3.4     !(source: Kasten & Czeplak (1980)) 
 
-      Idrctn    = cn*a*expa* catten
-      Idiffuse  = c*Idrctn
-      Idirectt  = Idrctn*coszen
+      a = a * f
 
-    ! ds- removed
-    !...compute absorbed radiation (W/m2)...
-    !...the albedo is set constant equal to 0.23 ... life is hard #$@!
-    ! real,    intent(in)  ::  albedo !  albedo (0..1, default = 0.23)
-    !..   solar = solar *(1-albedo)
+      if( present(b) ) b = b * f
+      if( present(c) ) c = c * f
 
-  end where ! daylight
+  end subroutine CloudAtten
 
-  end subroutine SolBio2D
+!===========================================================================
+    subroutine CanopyPAR(LAI,albedo,sinB,Idrctt,Idfuse,&
+                            PARsun,PARshade,LAIsunfrac)
+!===========================================================================
+!
+!    Calculates g_light, using methodology as described in Emberson et 
+!    al. (1998), eqns. 31-35, based upon sun/shade method of Norman (1979,1982)
+
+!     input arguments:
+
+    real, intent(in)  :: LAI       ! leaf area index (m^2/m^2), one-sided
+    real, intent(in)  :: albedo    ! Fraction, 0-1
+    real, intent(in)  :: sinB      ! B = solar elevation angle; sinB = CosZen
+    real, intent(in)  :: Idrctt, Idfuse
+    real, intent(out) :: PARsun, PARshade
+    real, intent(out) :: LAIsunfrac
+
+
+!     internal variables:
+
+    real :: LAIsun    ! sunlit LAI
+
+    real, parameter :: cosA    = 0.5   ! A = mean leaf inclination (60 deg.), 
+     ! where it is assumed that leaf inclination has a spherical distribution
+
+
+
+    LAIsun = (1.0 - exp(-0.5*LAI/sinB) ) * sinB/cosA
+    LAIsunfrac = LAIsun/LAI
+
+! PAR flux densities evaluated using method of
+! Norman (1982, p.79): 
+! "conceptually, 0.07 represents a scattering coefficient"  
+
+    PARshade = Idfuse * exp(-0.5*LAI**0.7) +  &
+               0.07 * Idrctt  * (1.1-0.1*LAI)*exp(-sinB)   
+
+    PARsun = Idrctt *cosA/sinB + PARshade
+
+!.. Convert units, and to PAR fraction
+!.. and multiply by albedo
+
+    PARshade = PARshade * Wm2_2uEPAR * ( 1.0 - albedo )
+    PARsun   = PARsun   * Wm2_2uEPAR * ( 1.0 - albedo )
+
+  end subroutine CanopyPAR
+
+!--------------------------------------------------------------------
+
+  subroutine ScaleRad(ObsRad, Idrctt,Idfuse)
+      real, intent(in) :: ObsRad
+      real, intent(inout) :: Idrctt, Idfuse
+
+      real :: Scale
+      logical :: MY_DEBUG = .true.
+              
+   !-----  
+   ! Observation frequently don't have PAR, but instead have global radiation.
+   ! We scale the modelled global radiation (solar) by the observed, and
+   ! distribute Idrctt and Idrctn according to this.
+      
+          if ( ObsRad > 0.0 ) Scale =  ObsRad/(Idrctt+Idfuse)
+
+          if (MY_DEBUG) then
+              if (Scale <0.1 .or. Scale>10.0) then
+                 print  "(a35,2f10.3)","Obs and Mod Radiation large diff", &
+                     ObsRad,Idrctt+Idfuse
+              endif
+           end if
+           Idrctt=Scale*Idrctt
+           Idfuse=Scale*Idfuse
+   end subroutine ScaleRad
+
+  !=============================================================================
+  ! FUNCTIONS
+  !=============================================================================
+
+  ! Define function for daytime, to keep definitions consistent throughout code.
+  ! NB - older code had a check for zen>1.0e-15 --- Why?!
+
+  elemental function daytime(zen) result (day)
+       real, intent(in) :: zen    ! Zenith angle (degrees)
+       logical :: day
+ 
+       if( zen < DAY_ZEN ) then
+            day = .true.
+       else
+            day = .false.
+       end if
+  end function daytime
+
+  !-----------------------------------------------------------------
+  !ds Caculate length of day, following Jones, Appendix 7:
+  !   IMPORTANT - Call SolarSetup before use to get tan_decl
+
+  elemental function daylength(lat) result (len)
+       real, intent(in) :: lat    !  Latitude, deg.
+       real :: len, arg
+       real, parameter :: TIMEFAC = RAD2DEG * 2.0 /15.0
+
+        arg =  -tan_decl * tan( DEG2RAD*lat )
+
+        if( arg <= -1.0 ) then 
+           len = 24.0  !! Polar summer
+        else if( arg >= 1.0 ) then 
+           len = 0.0   !! Polar night
+        else
+           len = acos( -tan_decl * tan( DEG2RAD*lat ) ) &
+                              * TIMEFAC  ! eqn A7.2, Jones
+        end if
+  end function daylength
+  !-----------------------------------------------------------------
+  !ds Caculate solar noon, following Jones, Appendix 7:
+  !   IMPORTANT - Call SolarSetup before use to get eqt_t
+
+  elemental function solarnoon(long) result (noon)
+       real, intent(in) :: long    !  Longitude, deg.
+       real :: noon
+
+        noon = 12.0 - eqt_h - long*24.0/360.0
+
+  end function solarnoon
 !===============================================================
 end module Radiation_ml
 !===============================================================

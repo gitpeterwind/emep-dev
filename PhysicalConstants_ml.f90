@@ -3,7 +3,7 @@
 !  Defines Physical constants 
 !----------------------------------------------------------------------------
 implicit none
-private
+!F private
 
 !-- contains no subroutine:
 
@@ -14,13 +14,11 @@ private
   , ATWAIR = 28.964                   & ! mol wt of air, g/mol
   , RGAS_ATML = 0.08205               & ! Molar Gas constant (atm M-1 K-1)
   , RGAS_KG   = 287.0                 & ! Molar Gas constant (J K-1 kg-1)
-  , RGAS_J    = 8.314                   ! Molar Gas constant (J mol-1 K-1)
+  , RGAS_J    = 8.3144                  ! Molar Gas constant (J mol-1 K-1)
 
                                         ! NB. ( J = N m2 = kg m2 s-2 )
                                         !       M = mol l-1
 
-!  additional parameters, former set in defcon, from former eulcon.inc
-!
   real, public, parameter  ::    &
        GRAV    = 9.807           &   ! Gravity, m s-2
     ,  CP      = 1004.0          &   ! Specific heat at const. pressure
@@ -30,11 +28,17 @@ private
     ,  PI      = 3.141592653589793238462643383279 & ! www.verbose.net/Pi.html
     ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians
     ,  RAD2DEG = 180.0/PI        &   ! COnverts radians to degrees
-    ,  ROWATER = 1000.           &   ! pw density of water kg m-3
+    ,  ROWATER = 1000.0          &   ! pw density of water kg m-3
     ,  BOLTZMANN = 1.380e-23     &   ! Boltzmann'c constant[J/deg/molec]
-    !ds ,  NU        = 1.46e-5       &   ! kinematic air viscosity[m2/s]
     ,  FREEPATH  = 6.5e-8        &   ! Mean Free Path of air [m]
-    ,  VISCO     = 1.46e-5           ! Air viscosity [m2/s]
+    ,  VISCO     = 1.46e-5           ! Air viscosity [m2/s]   (was NU)
+
+! Some definitions for daylight, in terms of zenith angle and cos(zen):
+! (calculated from criteria that DAY_COSZEN > 1.0e-10 as daytime)
+
+  real, public, parameter  ::  &
+       DAY_ZEN   = 89.9999999942704 & !
+      ,DAY_COSZEN = 1.0e-10
 
 !=================== DEP CODE ================================Y:0
 
@@ -55,13 +59,10 @@ private
 
   real, public, parameter :: T0 = 273.15   ! zero degrees Celsius in Kelvin 
 
-!=================== DEP CODE ================================Y:0
-
+!=============================================================Y:0
 
 
 end  module PhysicalConstants_ml
 
 !REMOVED
 !    ATWAIR = 0.79*28.0 + 0.21*32.0    & ! Atomic weight of air
-
-

@@ -12,24 +12,20 @@
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
   use Dates_ml,              only : date, dayno
-!hf VOL
-  use Emissions_ml,          only :  gridrcemis, KEMISTOP
+  use Emissions_ml,          only :  gridrcemis, KEMISTOP    !hf VOL
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
   use GenSpec_adv_ml,        only :  NSPEC_ADV
   use GenSpec_shl_ml,        only :  NSPEC_SHL
   use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN &
     ,xn_2d_bgn         !u2 concentration terms, specified species
-  !u3 use GenMisc_ml,        only :  Set_2dBgnd
   use MyChem_ml,             only :  Set_2dBgnd
-  !u1 use GenSpec_maps_ml,   only :  MAP_ADV2TOT, MAP_SHL2TOT
   use GenRates_rct_ml,       only :  NRCT & 
                                       ,rcit !u3 Tabulated rate coeffs
   use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
-  use GridValues_ml,         only :  sigma_mid, xmd, carea
+  use GridValues_ml,         only :  sigma_mid, xmd, carea, i_glob, j_glob
   use MassBudget_ml,         only :  totem    ! sum of emissions
-!hf made
-  !u7.4vg use Met_ml,            only :  roa, th, ps, q, temp2m, cc3dmax, mm5
-  use Met_ml,                only :  roa, th, ps, q, t2, cc3dmax
+  use Met_ml,                only :  roa, th, ps, q, t2, cc3dmax &
+                                    ,zen, Idirect, Idiffuse
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
     ,dt_advec                        & ! time-step
@@ -39,8 +35,7 @@
     ,KMAX_MID ,KCHEMTOP                ! Start and upper k for 1d fields
   use My_Emis_ml,           only : NRCEMIS , AIRNOX, QRCAIR &
                                   ,NFORESTVOC&
-!hf VOL 
-                                  ,QRCVOL,VOLCANOES &  ! u3 -extended VOL
+                                  ,QRCVOL,VOLCANOES &  ! hf -extended VOL
                                   ,NSS  !SeaS
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
 !hf u2
@@ -49,8 +44,8 @@
 !hf VOL
                              ,gi0,gi1,gj0,gj1,ISMBEG,JSMBEG
   use PhysicalConstants_ml,  only :  AVOG, XKAP, PI
-  use Radiation_ml,          only :  zen,   &! zenith angle, degrees
-                                     Idirectt, Idiffuse, PARfrac, Wm2_uE  ! ds rv1_6_x for bio
+  use Radiation_ml,          only : & !ds mar2005 zen, Idirectt, Idiffuse, 
+                              PARfrac, Wm2_uE  ! ds rv1_6_x for bio
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
@@ -63,11 +58,7 @@
                      ! integer of zenith angle
    use My_Aerosols_ml,    only : SEASALT        !SeaS
    use SeaSalt_ml,        only : SS_prod   !SeaS
-
-!u2hf MADE
-!u2    ,xn_2d_bgn
-!u3 - rcit moved
-  use Tabulations_ml,        only :  tab_esat_Pa
+   use Tabulations_ml,        only :  tab_esat_Pa
   implicit none
   private
   !-----------------------------------------------------------------------!
@@ -97,18 +88,11 @@ contains
     real              :: qsat ! saturation water content
 
 
-!u2 moved to GenOut_ml !hf MADE
-!u2    real              :: diurA ! zenith angle dependency of bgn conc.
-!u2    real              :: radzen ! zenith angle in radians
-!u2    real              :: reduce_fac !Factor to reduce oh and ch3coo
-                                    !depending on clouds
-
     real ,dimension(KCHEMTOP:KMAX_MID) :: tinv, & ! Inverse of temp.
         h2o, o2k     ! water, O2
 
-    ! - calculate zenith angle here
+    ! - calculate integer of local zenith angle here
 
-    !6c izen = max(1,int(acos(zeta(i,j))*180.0/PI+0.5))
      izen = int ( zen(i,j) + 0.5 )
      izen = max(1, izen)    ! Just to avoid zero in indices.
 
@@ -344,7 +328,7 @@ contains
   if (izen <= 90) then
 
      ! ds light effects from Guenther G93
-      par = (Idirectt(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
+      par = (Idirect(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
 
       rcbio(BIO_ISOP,KMAX_MID) = emnat(BIO_ISOP,i,j)*canopy_ecf(BIO_ISOP,it2m) * cL

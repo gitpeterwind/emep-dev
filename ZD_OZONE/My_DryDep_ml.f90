@@ -21,7 +21,8 @@ module My_UKDep_ml    ! DryDep_ml
  use ModelConstants_ml , only : atwS, atwN &
                               , current_date, AOT_HORIZON  !ds rv1_9_17
  use PhysicalConstants_ml, only : AVOG
- use Radiation_ml,  only :  zen               !ds rv1_9_17
+ !ds mar2005 use Radiation_ml,  only :  zen               !ds rv1_9_17
+ use Setup_1dfields_ml,     only : izen ! integer of zenith angle, ds mar2005
  use Wesely_ml
  implicit none
  private
@@ -213,7 +214,7 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
      real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      integer :: n, nadv, ihh, idd
      real :: o3WH, o3DF   ! O3 over wheat, decid forest
-     integer :: izen                    ! integer of zenith angle
+     !ds mar2005 integer :: izen                    ! integer of zenith angle
      logical, parameter :: DEBUG_ECO = .false.
 
      integer, parameter :: N_OXS = 2        ! Number in ox. sulphur family
@@ -452,7 +453,7 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
     !/-- Calcuates AOT values for specific veg. Daylight values calculated
     !    only, for zenith < AOT_HORIZON ( e.g. 89 )
 
-           izen = max(1,int( zen(i,j) + 0.5))
+           !ds mar2005 izen = max(1,int( zen(i,j) + 0.5))
 
            if ( izen < AOT_HORIZON ) then
 

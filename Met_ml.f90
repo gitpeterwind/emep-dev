@@ -125,6 +125,14 @@ private
        Kz_min      ! Min Kz below hmix  !hf Hilde&Anton
 
 
+ !ds apr2005 - temnporary placement of solar radiation variations
+
+    real, public, dimension(MAXLIMAX, MAXLJMAX), save:: &
+        zen          &  ! Zenith angle (degrees)
+       ,coszen=0.0   &  ! cos of zenith angle
+       ,Idiffuse     &  ! diffuse solar radiation (W/m^2)
+       ,Idirect         ! total direct solar radiation (W/m^2)
+
 
 !ds  real, dimension(MAXLIMAX,MAXLJMAX) :: ven !ventilation coefficient, m3
 !hf end tiphys

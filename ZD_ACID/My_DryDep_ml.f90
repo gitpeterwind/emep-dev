@@ -18,9 +18,9 @@ module My_UKDep_ml    ! DryDep_ml
 
  use GenSpec_adv_ml               !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use ModelConstants_ml , only : atwS, atwN &
-                              , current_date, AOT_HORIZON  !ds rv1_9_17
+                              , current_date  !ds rv1_9_17
  use PhysicalConstants_ml, only : AVOG
- use Radiation_ml,  only :  zen               !ds rv1_9_17
+ !ds mar2005 use Radiation_ml,  only :  zen
  use Wesely_ml
  implicit none
  private
@@ -162,7 +162,7 @@ DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
      real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      integer :: n, nadv, ihh, idd
-     integer :: izen                    ! integer of zenith angle
+     !ds mar2005 integer :: izen                    ! integer of zenith angle
      logical, parameter :: DEBUG_ECO = .false.
 
      integer, parameter :: N_OXS = 2        ! Number in ox. sulphur family
