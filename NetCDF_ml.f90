@@ -186,8 +186,9 @@ real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
 character*13 :: varname
 character*8 ::lastmodified_date
 character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
-integer :: ncFileID,varID,new,nrecords
-
+integer :: varID,new,nrecords,ncFileID
+integer,parameter ::closedID=-999
+integer,save :: ncFileID_day=closedID,ncFileID_month=closedID,ncFileID_year=closedID
 integer :: nyear,nmonth,nday,nhour,ndate(4)
 integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
 !real*4 :: buff 
@@ -196,11 +197,14 @@ real (kind = FourByteReal), allocatable,dimension(:,:,:)  :: data3D
 
 if(iotyp==IOU_YEAR)then
    fileName = fileName_year
+   ncFileID = ncFileID_year
 elseif(iotyp==IOU_MON)then
    fileName = fileName_month
+   ncFileID = ncFileID_month
 elseif(iotyp==IOU_DAY)then
    fileName = fileName_day
-   return !too slow in the rpesent version!
+   ncFileID = ncFileID_day
+!   return
 else
    return
 endif 
@@ -269,9 +273,18 @@ if(me==0)then
    ndate(3)  = current_date%day
    ndate(4)  = current_date%hour
 
-   
+!test if the file is already open
+   if(ncFileID==closedID)then
 !open an existing netcdf dataset
-  call check(nf90_open(path = fileName, mode = nf90_write, ncid = ncFileID))
+      call check(nf90_open(path = fileName, mode = nf90_write, ncid = ncFileID))
+      if(iotyp==IOU_YEAR)then
+         ncFileID_year = ncFileID
+      elseif(iotyp==IOU_MON)then
+         ncFileID_month = ncFileID
+      elseif(iotyp==IOU_DAY)then
+         ncFileID_day = ncFileID
+      endif
+   endif
 
 !make variable name
   if(ndim==2)then
@@ -334,8 +347,8 @@ if(me==0)then
   call secondsfrom1january(ndate,nseconds)
   call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
 
-!close file
-  call check(nf90_close(ncFileID))
+!!close file
+!  call check(nf90_close(ncFileID))
 
 endif !me=0
 
