@@ -25,7 +25,7 @@ contains
     use GenSpec_bgn_ml      ! => IXBGN_  indices and xn_2d_bgn values
     use GenRates_rct_ml,    only : set_night_rct, ONLY_NIGHT
     use Par_ml,              only : me,MAXLIMAX,MAXLJMAX,li1,lj1,li0,lj0  ! me for TEST
-    use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec
+    use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4,VOLFACNO3,VOLFACNH4 
     use Setup_1dfields_ml,   only : &
          rcemis,izen       & ! photolysis, emissions
          ,rcbio                & ! biogenic emis

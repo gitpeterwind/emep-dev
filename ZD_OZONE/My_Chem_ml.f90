@@ -398,8 +398,8 @@
 
   
   use PhysicalConstants_ml,  only : PI, RGAS_J
-  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP,&
-                                      VOLFAC        ! for N2O5-> NO3-
+  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
+!                                      VOLFAC        ! for N2O5-> NO3-
   use Dates_ml,              only : daynumber !u7.4vg  for so2ox
   use Functions_ml,          only : troe
   implicit none
@@ -442,9 +442,11 @@
        do k = KCHEMTOP, KMAX_MID
           if ( rh(k) > 0.4) then
 !6sj     !       rcmisc(8,k) = VOLFAC * tab_vav_n2o5( itemp(k) ) * rh(k)
-            rcmisc(8,k) = VOLFAC * rh(k) &
+!            rcmisc(8,k) = VOLFAC * rh(k) &
+!                * sqrt(3.0 * RGAS_J * itemp(k) / 0.108)  ! m/s !
+            rcmisc(8,k) = (2.5 - rh(k)*1.25) & !density, corrected for rh (moderate approx.)
+                                               !VOLFAC now in My_Reactions
                 * sqrt(3.0 * RGAS_J * itemp(k) / 0.108)  ! m/s !
-
           else
             rcmisc(8,k) = 0.0
           endif

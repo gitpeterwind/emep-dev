@@ -158,7 +158,7 @@ contains
         end do ! ispec   
 
 !hf setup weighting factor for hydrolysis  
-             f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62*xn_2d(aNO3,k)) )
+             f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(aNO3,k)) )
 
    end do ! k
 

@@ -615,9 +615,12 @@
 ! N ch      + 1.0e-5  &
 !      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
 
-      !eff+ f_Riemer(k)*0.2*rcmisc(8,k)*(xnew(SO4)) & !0.2 smaller than dentener
-      !eff+  (1-f_Riemer(k))*0.02*rcmisc(8,k)*(xnew(SO4)) &  !0.02 smaller than dentener
-      + (0.18*f_Riemer(k)+0.02) *rcmisc(8,k)*(xnew(SO4)) & !0.2 smaller than dentener
+      !eff+ f_Riemer(k)**rcmisc(8,k)*(xnew(SO4)) & !
+      !eff+  (1-f_Riemer(k))*0.1*rcmisc(8,k)*(xnew(SO4)) &  !0.1 smaller for gamma(nitrate)
+
+      + (0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)  & !Total sulphateaerosol surface
+      + (0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3) & !Total nitrate aerosol surface
+      + (0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4) & !Total ammonium aerosol surface
 
       + rcphot(IDN2O5,K) 
 
@@ -686,7 +689,11 @@
 
       !eff+ f_Riemer(k)*0.2*2.*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) & !0.2 smalller than dentener
       !eff+  (1-f_Riemer(k))*0.02*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)  !0.02 smalller than dentener
-      + (0.18*f_Riemer(k)+0.02)*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)
+!hf      + (0.18*f_Riemer(k)+0.02)*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)
+      + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)*xnew(N2O5)  & !Total sulphateaerosol surface
+      + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3)*xnew(N2O5) & !Total nitrate aerosol surface
+      + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4)*xnew(N2O5)   !Total ammonium aerosol surface
+
       L =  &
      rct(11,k)* xnew(OH )  &
 ! N ch     + 1.0e-5  &

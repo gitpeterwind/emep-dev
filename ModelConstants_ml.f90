@@ -142,7 +142,17 @@ module ModelConstants_ml
 !    Collect constants in VOLFAC:
 !    VOLFAC =  V0* 3/4*alpha/raero
 !===========================================================================
-  real, parameter, public  :: VOLFAC = 96.0/(AVOG*2.0) * 0.75 *0.1/0.034e-6
+!  real, parameter, public  :: VOLFAC = 96.0/(AVOG*2.0) * 0.75 *0.1/0.034e-6
+!HF 3/r REPLACED BY surface/volume calculated using Whitby particle distribution
+!with number mean radius 0.034  and standars deviation (Sigma)=2. 
+! Then surface/volume=3/r *  exp( -5/2 *(lnSigma)^2)=26.54 
+! 3* exp( -5/2 *(lnSigma)^2)=0.90236
+! Before: monodisperse aerosols; 3/r=88.2
+
+  real, parameter, public  :: VOLFACSO4 = 96.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+  real, parameter, public  :: VOLFACNO3 = 62.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+  real, parameter, public  :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+
 
  contains
 
