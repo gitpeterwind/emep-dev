@@ -1,5 +1,5 @@
 #!/usr/local/bin/perl
-
+#Dette er rv1.3.1_Aq med O3 og H2O2 fra UNI-OZONE
 ######################################################################
 # Features
 # 1. work directory now deduced from user-name
@@ -59,7 +59,7 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "1997";
+$year = "2000";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 print "Year is $yy YEAR $year\n";
@@ -81,7 +81,7 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $DAVE ;      
+$USER        =  $HILDE ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -90,28 +90,31 @@ $version     = "Unimod" ;
 $testv       = ".rv1_4_3acid";
 $subv        = "rv143" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/Unify/$version$testv";         # input of source-code
+$ProgDir     = "$USER/CVS/rv1.3.1_Aq/$version";         # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/$version${testv}.$year";    # working directory
+$WORKDIR     = "$WORK{$USER}/out_rv1.4.7_testACID";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 $emisyear    = "$emisdir/emis${yy}";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 #rv1.4:$LOGANDIR ="$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
-$LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data_900mbar"; #Logan boundary conditions
-
+$LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; #Logan boundary conditions
+$H2O2DIR    = "$HILDE/BC_data/H2O2";
+$OZONEDIR    = "$HILDE/BC_data/O3";
 # Change for PM:
 #$emisdir     = "$SVETLANA/Unify/Data/emission";   # emissions stuff
 #$emisyear    = "$SVETLANA/Unify/Data/emission";   # emissions stuff
 
     # List emissions to be used:
     #pm @emislist = qw ( sox nox nh3 co voc pm25 pmco ) ;
-    @emislist = qw ( sox nox nh3 co voc pm25 ) ;
+    @emislist = qw ( sox nox nh3  ) ;
 
     # And boundary conditions from:
-    $LOGAN_BCS = 1;
+    $LOGAN_BCS = 0;
+    $O3_BCS  = 1;
+    $H2O2_BCS  = 1;
     $UIO_BCS   = 0;
 
 # Specify small domain if required. 
@@ -131,7 +134,7 @@ $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
 
-$NDX   =  4;           # Processors in x-direction
+$NDX   =  8;           # Processors in x-direction
 $NDY   =  4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
@@ -145,7 +148,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- #$NTERM =  12;       # for testing, simply reset here
+#$NTERM =  12;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -351,6 +354,16 @@ for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
         $new = sprintf "ozone.%02d", $mm ;
         mylink( "Linking Logan BCs:", $old,$new ) ;
     }
+    if ( $H2O2_BCS ) {
+        $old = sprintf "$H2O2DIR/h2o2.%02d", $mm ;
+        $new = sprintf "h2o2.%02d", $mm ;
+        mylink( "Linking H2O2 BCs:", $old,$new ) ;
+    }
+    if ( $O3_BCS ) {
+        $old = sprintf "$OZONEDIR/o3.%02d", $mm ;
+        $new = sprintf "ozone.%02d", $mm ;
+        mylink( "Linking O3 BCs:", $old,$new ) ;
+    }
 
     $old = sprintf "$SRCINPUTDIR/lt21-nox.dat%02d", $mm;
     $new = sprintf "lightn%02d.dat", $mm;
@@ -435,12 +448,12 @@ foreach $poll  ( @emislist  ) {
 } 
 
 # Surface measurement sites
-    $old   = "$MyDataDir/sites.dat" ;
+    $old   = "$MyDataDir/O3sites.dat" ;
     $new   =  "sites.dat";
     mylink("Sites ",  $old,$new ) ;
 
 # Sondes
-    $old   = "$MyDataDir/sondes.dat" ;
+    $old   = "$MyDataDir/O3sondes.dat" ;
     $new   = "sondes.dat";
     mylink( "Sondes", $old,$new ) ;
 
