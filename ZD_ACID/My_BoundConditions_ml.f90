@@ -36,7 +36,7 @@ module My_BoundConditions_ml
 ! and is i,j dependendant
 !_____________________________________________________________________________
 !hf
-  use GenSpec_bgn_ml, only: NSPEC_BGN,IXBGN_O3  !u3 ,IXBGN_H2O2
+  use GenSpec_bgn_ml, only: NSPEC_BGN,IXBGN_O3,IXBGN_H2O2  !u3 ,IXBGN_H2O2
   use GenSpec_adv_ml, only: NSPEC_ADV   & ! No. advected species
                            ,IXADV_HNO3,IXADV_SO4,IXADV_PAN  &
                            ,IXADV_NO,IXADV_NO2, IXADV_SO2
@@ -49,7 +49,9 @@ module My_BoundConditions_ml
                       ,IBC_O3          & ! u3 - tmp
                       ,IBC_HNO3,IBC_PAN   &
                       ,IBC_SO2, IBC_SO4   &
-                      ,IBC_NO,IBC_NO2    !u3   ,IBC_H2O2
+                      ,IBC_NO,IBC_NO2,IBC_H2O2    !u3   ,IBC_H2O2
+
+
  implicit none
  private
 
@@ -191,7 +193,7 @@ module My_BoundConditions_ml
   bc2xn_adv(IBC_NO      ,IXADV_NO      )   =   1.0
   bc2xn_adv(IBC_NO2     ,IXADV_NO2     )   =   1.0
   bc2xn_adv(IBC_SO2     ,IXADV_SO2     )   =   1.0
-  bc2xn_adv(IBC_SO4     ,IXADV_SO4     )   =   0.0
+  bc2xn_adv(IBC_SO4     ,IXADV_SO4     )   =   1.0
 
   
 ! The following species are excluded either because they have no corresponding
@@ -203,7 +205,7 @@ module My_BoundConditions_ml
 
 !/** mappings for bgn species from global model ***********
   bc2xn_bgn(IBC_O3      ,IXBGN_O3      )   =   1.0
-!hf h2o2  bc2xn_bgn(IBC_H2O2    ,IXBGN_H2O2    )   =   1.0
+  bc2xn_bgn(IBC_H2O2    ,IXBGN_H2O2    )   =   1.0
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  end subroutine My_bcmap

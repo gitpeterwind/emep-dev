@@ -118,10 +118,9 @@ private
        ,D2_aNO3    = 5  &   ! was xnsurf(..)
        ,D2_NH3    = 6  &   ! was xnsurf(..)
        ,D2_aNH4    = 7  &   ! was xnsurf(..)
-!h amsu       ,D2_AMSU   =8   &   ! was xnsurf(..)
 !hf hmix
-       ,D2_HMIX   = 8     &
-       ,D2_HMIX00 = 9    &!mixing height at 00
+       ,D2_NO2    = 8     &
+       ,D2_HMIX = 9    &!mixing height at 00
        ,D2_HMIX12 = 10     !mixing height at 12
    integer, public, parameter ::  & 
         D2_SOX      = 11 &  ! Sum of sulphates, 
@@ -207,11 +206,11 @@ private
     f_2d( D2_HNO3) = Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T  , F ,  T , T ,  T )
     f_2d( D2_aNO3 ) = Deriv( 604, "ADV  ", T, IXADV_aNO3, ugN, T  , F ,  T , T ,  T )
     f_2d( D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T )
-    f_2d( D2_aNH4 ) = Deriv( 606, "ADV  ", T, IXADV_aNH4, ugN, T  , F ,  T , T ,  T )
+    f_2d( D2_aNH4 ) = Deriv( 610, "ADV  ", T, IXADV_aNH4, ugN, T  , F ,  T , T ,  T )
 !hf amsu    f_2d( D2_AMSU) = Deriv( 619, "ADV  ", T,IXADV_AMSU, ugS, T  , F ,  T , T ,  T )
 !hf hmix
-    f_2d( D2_HMIX)   = Deriv( 468, "HMIX    ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T )
-    f_2d( D2_HMIX00) = Deriv( 469, "HMIX00  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T )
+    f_2d( D2_NO2)   = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T )
+    f_2d( D2_HMIX) = Deriv( 469, "HMIX  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T )
     f_2d( D2_HMIX12) = Deriv( 470, "HMIX12  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T )
 !    f_2d( D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T )
 !    f_2d( D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T )
@@ -246,13 +245,6 @@ private
     f_3d( D3_aNO3 ) = Deriv( 408, "ADV  ", T,  IXADV_aNO3 , PPBINV , F , T , T , T , F )
     f_3d( D3_XKSIG00 ) = Deriv( 409, "XKSIG00  ", T,  0. , 1. , F , T , T , T , F )
     f_3d( D3_XKSIG12 ) = Deriv( 410, "XKSIG12  ", T,  0. , 1. , F , T , T , T , F )
-
-
-      wdep( :,:,:,:) = 0.0
-      ddep( :,:,:,:) = 0.0
-      d_2d( :,:,:,:) = 0.0
-      d_3d( :,:,:,:,:) = 0.0
-
   end subroutine Set_My_Derived
  !=========================================================================
   subroutine My_DerivFunc( n, class , timefrac, density )
@@ -359,7 +351,7 @@ private
           d_2d( n, i,j,IOU_INST) = &
 !hf amsu                xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
                 xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
-            / max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))   &
+            / (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j)   &
 !hf amsu            +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j) )    
             +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) )    
       end forall

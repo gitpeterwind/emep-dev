@@ -76,10 +76,10 @@
 
       L =  &
 
-       rcmisc(9,k)  ! Eliassen+Saltbones
-     !u7.1 2e-12*aqrck(ICLOHSO2,K)* xn_2d_bgn(IXBGN_OH,k )  &
-     !u7.1  + 1*aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k)  &
-     !u7.1  + 1*aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k)  
+!       rcmisc(9,k)  ! Eliassen+Saltbones
+      2e-12*aqrck(ICLOHSO2,K)* xn_2d_bgn(IXBGN_OH,k )  &
+       + 1*aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k)  &
+       + 1*aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k)  
 
 
        xnew(SO2)=  amax1(0.0, ( xold(SO2) + dt2 * P))  &
@@ -96,13 +96,12 @@
 
       P =   &
 
-    !u7.1  2e-12*aqrck(ICLOHSO2,K) * xn_2d_bgn(IXBGN_OH,k ) * xnew(SO2 )  &
-    !u7.1   + 1*aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k) * xnew(SO2 )  &
-    !u7.1   + 1*aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k) * xnew(SO2 )  &
-       rcmisc(9,k) * xnew(SO2) &    !! Eliassen+Saltbones
+      2e-12*aqrck(ICLOHSO2,K) * xn_2d_bgn(IXBGN_OH,k ) * xnew(SO2 )  &
+       + 1*aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k) * xnew(SO2 )  &
+       + 1*aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k) * xnew(SO2 )  &
+!       rcmisc(9,k) * xnew(SO2) &    !! Eliassen+Saltbones
       + 0.05*rcemis(QRCSO2,K) 
 
- 
 
        xnew(SO4)=  amax1(0.0,  xold(SO4) + dt2 * P)
 

@@ -74,8 +74,13 @@ FFLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
 
 F90 = f90
 #F90FLAGS = -64 -r8 -O3 -fullwarn
+
+#F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
+#F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
+
 F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
 #F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV  $(INCL)
+
 #_CRAY_F90FLAGS = -O 3,fusion,aggress,bl,unroll2,msgs,negmsgs
 
 #_CRAY_LDFLAGS = -X8 -O 3,fusion,aggress,bl,msgs,negmsgs,unroll2 
@@ -185,9 +190,9 @@ Emissions_ml.o: Biogenics_ml.o Country_ml.o Dates_ml.o EmisDef_ml.o \
 		ReadField_ml.o Timefactors_ml.o Volcanos_ml.o \
 		Emissions_ml.f90
 GlobalBCs_ml.o: Dates_ml.o GridValues_ml.o Io_ml.o ModelConstants_ml.o \
-	Par_ml.o
+	Par_ml.o My_Chem_ml.o
 	$(F90) $(F90FLAGS) -c Dates_ml.o GridValues_ml.o Io_ml.o \
-		ModelConstants_ml.o Par_ml.o GlobalBCs_ml.f90
+		ModelConstants_ml.o Par_ml.o  My_Chem_ml.o GlobalBCs_ml.f90
 GridValues_ml.o: Io_ml.o ModelConstants_ml.o Par_ml.o PhysicalConstants_ml.o
 	$(F90) $(F90FLAGS) -c Io_ml.o ModelConstants_ml.o Par_ml.o \
 		PhysicalConstants_ml.o GridValues_ml.f90
