@@ -46,9 +46,10 @@ module ModelConstants_ml
   , AOT_HORIZON = 89          ! Limit of daylight zenith angle for AOTs
 
   real, public, parameter  ::    &
-       CLOUDTHRES =  1.0e-5         !pw when cloudwater is larger than 
-                                    !CLOUDTHRES, there are clouds. 
-                                    !THIS VALUE MUST BE CHECKED BEFORE USE! 
+      V_RAIN   = 5.              &  ! pw approximate vertical speed of rain m/
+     ,CLOUDTHRES =  1.0e-5         !pw when cloudwater is larger than 
+                                   !CLOUDTHRES, there are clouds. 
+                                   !THIS VALUE MUST BE CHECKED BEFORE USE! 
  
 !
 !  additional parameters, formerly set in defcon, eulcon.inc
@@ -65,7 +66,6 @@ module ModelConstants_ml
   integer, public, save , dimension(20)   :: identi   !! ????
 
   type(date), public, save :: current_date
-  !u7.lu integer,    public, save :: daynumber    ! Days from 1st Jan   
 
   integer, public, parameter :: NNLANDUSE  = 10 ! Number of land use types 
                                                 ! for rivm  (tmp)
@@ -89,6 +89,18 @@ module ModelConstants_ml
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
 
     real, public, parameter   :: MFAC = 0.001*AVOG/ATWAIR
+
+
+  ! For debugging, we often want to print out for  a specific location
+  ! Set here:
+
+ !integer, private, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
+ !integer, private, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
+ !integer, private, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
+ !integer, private, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
+ !integer, private, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
+
+  integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
 
 
 !===========================================================================
@@ -141,7 +153,8 @@ module ModelConstants_ml
 	  if (me .eq. 0) then
 	    write(6,*)
 	    write(6,*)'**********************************************'
-	    write(6,*)'Impossible dt_advec,  dt_advec = (dt_advec/60) must be an integer'
+            write(6,*)&
+           'Impossible dt_advec, dt_advec = (dt_advec/60) must be an integer'
 	    write(6,*)
 	  endif
 	endif
