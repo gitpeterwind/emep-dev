@@ -27,6 +27,13 @@ module ModelConstants_ml
 
   real, public,  parameter :: dt_advec  = 1200.0   ! time-step for advection (s)
 
+  !NTDAY:  Number of 2D O3 to be saved each day (for SOMO)       
+  ! 24/NTDAY is the time integration step for SOMO
+  !large value-> large memory use; too small value ->bad approximation for SOMO
+  !NB must be choosen:  24*3600/dt_advec <= NTDAY >=3 and 
+  !preferably an integer fraction of 24*3600/dt_advec
+  integer, public, parameter ::      NTDAY = 72  
+
  !/-- choose temperature range: from 148 K (-125C) ro 333K (+60C).
 
  integer, parameter, public :: &

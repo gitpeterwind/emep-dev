@@ -58,7 +58,8 @@ use ModelConstants_ml, &
                         , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
                         , AOT_HORIZON&! limit of daylight for AOT calcs
                         ,DEBUG_i, DEBUG_j & !ds rv_9_16
-                        , current_date
+                        , current_date&
+                        , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me, NPROC,         &   ! for gc_abort checks
                      gi0,gj0,ISMBEG,JSMBEG,&! rv1_9_28 for i_glob, j_glob
@@ -114,8 +115,7 @@ private
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
       ,NDEF_DERIV_2D = 66  & ! Number of 2D derived fields defined
-      ,NDEF_DERIV_3D = 17  & ! Number of 3D derived fields defined
-      ,NTDAY = 72            ! Number of 2D O3 to be saved each day (for SOMO)
+      ,NDEF_DERIV_3D = 17   ! Number of 3D derived fields defined
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
    integer, public, dimension(NDDEP),     save :: nused_ddep
@@ -859,6 +859,8 @@ def_3d = (/ &
            case( "SOM" )
 
 
+              !dt/7200: half a dt time step in hours
+              !dayfrac "points" to the middle of the integration step
               dayfrac= (thour-(dt/7200.))/24. !must be < 1
               ntime=int(dayfrac*NTDAY )+1 !must be >=1 and <= NTDAY
               if(dayfrac<0)ntime=NTDAY !midnight
