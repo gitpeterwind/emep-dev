@@ -1,3 +1,11 @@
+================== Dave,        17/01/2004, rv1_9_21 ==========================
+
+New Derived system added for ACID also. See comments on OZONE introduction
+below.
+
+Bug-fix: ddep needed initialisations for ecosystem stuff!
+
+
 ================== Dave,        13/01/2004, rv1_9_20 ==========================
 
 Derived_ml -- added T for month in D2_MAXO3 

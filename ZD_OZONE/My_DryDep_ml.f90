@@ -239,6 +239,15 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
      ddep(DDEP_SOX,i,j,IOU_INST) = (  &
           DepLoss(IXADV_SO2) + DepLoss(IXADV_SO4) ) * convfac * atwS
 
+   !BUG FIX!!!!??? 16/1/2004!!!!
+
+     ddep(DDEP_OXSSW,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXSCF,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXSDF,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXSCR,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXSSN,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXSWE,i,j,IOU_INST) = 0.0
+
      do n = 1,N_OXS
        nadv = OXS(n)
 
@@ -280,9 +289,19 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
 !! OXIDIZED NITROGEN
 !!-----------------------
 
+
      ddep(DDEP_OXN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_HNO3) +  DepLoss(IXADV_PAN) +  DepLoss(IXADV_NO2) + &
           DepLoss(IXADV_aNO3)+  DepLoss(IXADV_pNO3)  ) * convfac * atwN
+
+   !BUG FIX!!!!??? 17/1/2004!!!!
+
+     ddep(DDEP_OXNSW,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXNCF,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXNDF,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXNCR,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXNSN,i,j,IOU_INST) = 0.0
+     ddep(DDEP_OXNWE,i,j,IOU_INST) = 0.0
 
      do n = 1, N_OXN
        nadv = OXN(n)
@@ -328,6 +347,16 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
 
      ddep(DDEP_RDN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_NH3) +  DepLoss(IXADV_aNH4)  ) * convfac * atwN
+
+
+   !BUG FIX!!!!??? 17/1/2004!!!!
+
+     ddep(DDEP_RDNSW,i,j,IOU_INST) = 0.0
+     ddep(DDEP_RDNCF,i,j,IOU_INST) = 0.0
+     ddep(DDEP_RDNDF,i,j,IOU_INST) = 0.0
+     ddep(DDEP_RDNCR,i,j,IOU_INST) = 0.0
+     ddep(DDEP_RDNSN,i,j,IOU_INST) = 0.0
+     ddep(DDEP_RDNWE,i,j,IOU_INST) = 0.0
 
      do n = 1, N_RDN
        nadv = RDN(n)

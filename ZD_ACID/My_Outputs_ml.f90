@@ -12,7 +12,7 @@ module  My_Outputs_ml
   ! Hourly - ascii output of selected species, selcted domain
   ! Restri - Full 3-D output of all species, selected domain
 
-  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX   !u7.4vg
+  use Derived_ml, only : f_2d, d_2d,find_one_index
   use Dates_ml,       only : date  
   use GenSpec_adv_ml, only : NSPEC_ADV          &
         ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
@@ -92,6 +92,7 @@ module  My_Outputs_ml
 
    integer, public, parameter :: &
      NSONDES_MAX =    55               &   ! Max. no sondes allowed
+    ,NLEVELS_SONDE =  10               &   ! No. k-levels (9 => 0--2500 m) 
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =    1                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species (fake for ACID)

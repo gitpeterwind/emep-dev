@@ -32,7 +32,6 @@
 !u7.1    ,IXBGN_H2O2           =   4   
 
    real, public, save, dimension(NSPEC_COL,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-   !rv1.4.15 REMreal, public, parameter :: O3fix=0. !add 10 ppb to Logan data
 
 !-----------------------------------------------------------
   end module GenSpec_bgn_ml
@@ -69,13 +68,23 @@
   ,  IXADV_SO2         =   5   &
   ,  IXADV_SO4         =   6   &
   ,  IXADV_NH3         =   7   &
-!hf amsu  ,  IXADV_AMSU        =   8   &
-!hf amsu  ,  IXADV_AMNI        =   9
   ,  IXADV_aNH4        =   8   & !total NH4
   ,  IXADV_aNO3        =   9   & !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
   ,  IXADV_PM25        =   10  &
   ,  IXADV_PMco        =   11  &  
   ,  IXADV_pNO3        =   12   
+
+!FAKEES TO KEEP DERIVED WORKING:
+   integer, public, parameter :: &
+     IXADV_O3 = 1, &
+     IXADV_HCHO = 1,&
+     IXADV_CH3CHO = 1,&
+     IXADV_H2O2   = 1,&
+     IXADV_CO     = 1, &
+     IXSHL_OH     = 1,&
+     HCHO = 1,&
+     CH3CHO = 1
+
 
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
@@ -201,9 +210,8 @@
 !-----------------------------------------------------------
 
   
-  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP,&
-                                      VOLFAC ! for N2O5-> NO3-
-                                      !u7.4 daynumber, & ! for so2ox
+  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
+                                      !ds rv1_9_21 VOLFAC ! for N2O5-> NO3-
   use Dates_ml,              only : daynumber    ! for so2ox
   use Functions_ml,          only : troe
   implicit none
