@@ -534,7 +534,7 @@
      !u1 rctroe(3,k)  &
      rcmisc(13,k)  &
 ! N ch      + 1.0e-5  &
-      + rcmisc(8,k)*(xnew(SO4)+xnew(AMSU))  & ! N ch
+      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
       + rcphot(IDN2O5,K) 
 
        xnew(N2O5)=  amax1(0.0, ( xold(N2O5) + dt2 * P))  &
@@ -561,7 +561,7 @@
      !u1 rctroe(4,k) * xnew(NO2 ) * xnew(OH )  &
      rcmisc(14,k) * xnew(NO2 ) * xnew(OH )  &
       + 5.8e-16 * xnew(NO3 ) * xnew(HCHO )  & 
-      +2.0*rcmisc(8,k)*(xnew(SO4)+xnew(AMSU))*xnew(N2O5) !N ch
+      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
       L =  &
      rct(11,k)* xnew(OH )  &
 ! N ch     + 1.0e-5  &
