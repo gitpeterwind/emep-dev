@@ -213,7 +213,7 @@ contains
        do icmp = 1, dim
           typ = f_2d(icmp)%class
           wanted = .false.
-          if( iotyp == IOU_YEAR) wanted = def(icmp)%day
+          if( iotyp == IOU_YEAR) wanted = def(icmp)%year
           if( iotyp == IOU_MON ) wanted = def(icmp)%month
           if( iotyp == IOU_DAY ) wanted = def(icmp)%day
           if( iotyp == IOU_INST) wanted = def(icmp)%inst
@@ -256,7 +256,7 @@ contains
        do icmp = 1, dim
 
           wanted = .false.
-          if( iotyp == IOU_YEAR) wanted = def(icmp)%day
+          if( iotyp == IOU_YEAR) wanted = def(icmp)%year
           if( iotyp == IOU_MON ) wanted = def(icmp)%month
           if( iotyp == IOU_DAY ) wanted = def(icmp)%day  ! Should be falseF
           if( iotyp == IOU_INST) wanted = def(icmp)%inst
