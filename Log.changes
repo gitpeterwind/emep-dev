@@ -1,4 +1,12 @@
 ==============================================================================
+=================== Dave, 11th June, rv1.6.9  =================================
+==============================================================================
+Sites_ml extended to include height of site, based upon Joffen's trotrep work
+landuse.tfw used instead of landuse.tf2 (small change)
+metdata, emissions, files updated in grun.pl
+My_Outputs - some D_2D outputs removed while considering errors
+
+==============================================================================
 =================== Dave, 10th June, rv1.6.8  =================================
 ==============================================================================
 Biogenics_ml.f90

@@ -63,8 +63,12 @@ print "Year is $yy YEAR $year\n";
 
 if ( $year == 2000 ) {
   $MetDir = "/work/mifapw/metdata/$year" ;
-} elsif ( $year == 1997 ) {
-  $MetDir = "/work/mifajej/metdata/$year" ;  # Needed for 1997
+} elsif ( $year == 1999 ) {
+  $MetDir = "/work/mifaab/metdata/$year" ;
+} elsif ( $year == 1995 ) {
+  $MetDir = "/work/mifaab/metdata/$year" ;
+} elsif ( $year == 1990 ) {
+  $MetDir = "/work/mifads/metdata/$year" ;  # Needed for 1997
 } else {
   $MetDir = "/work/mifaab/metdata/$year" ;
 }
@@ -100,12 +104,12 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_8";
+     $testv       = "rv1_6_9";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_6_8";
+     $testv       = "rv1_6_9";
 } 
 #$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
@@ -126,7 +130,9 @@ $femis       = "$MyDataDir/femis.dat";      # emission control file
 # Use tmp ds-fix for UK, applied to Trends_02 emissions from Hilde:
 #$emisdir     = "$HILDE/emis/trends_2002";   # emissions stuff
 $emisdir     = "$DataDir/D_Emis/emis_ukfix_trends_2002";   # emissions stuff
-$emisyear    = "$emisdir/emis${year}";    # emissions
+$emisdir     = "$SVETLANA/Unify/MyData/emission";   # emissions directory
+#$emisyear    = "$emisdir/emis${year}_02-rev";    # emissions
+$emisyear    = "$emisdir/emis${yy}_02-rev";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 #
 # Change for PM:
@@ -140,8 +146,8 @@ $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003)
 #@smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
 #@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
-@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
-#@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
+#@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
+@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
@@ -152,7 +158,7 @@ $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
 
 $NDX   =  4;           # Processors in x-direction
-$NDY   =  4;           # Processors in y-direction
+$NDY   =  8;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
 
@@ -165,7 +171,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- #$NTERM =  12;       # for testing, simply reset here
+ #$NTERM =  6;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -459,12 +465,12 @@ foreach $poll  ( @emislist  ) {
 } 
 
 # Surface measurement sites
-    $old   = "$MyDataDir/O3sites.dat" ;
+    $old   = "$MyDataDir/sites.rep03" ;
     $new   =  "sites.dat";
     mylink("Sites ",  $old,$new ) ;
 
 # Sondes
-    $old   = "$MyDataDir/O3sondes.dat" ;
+    $old   = "$MyDataDir/sondes.rep03" ;
     $new   = "sondes.dat";
     mylink( "Sondes", $old,$new ) ;
 
@@ -504,7 +510,7 @@ foreach $s ( keys(%seasons) ) {
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
 
-    $old   = "$DataDir/landuse.tf2" ;  #ds rv1_6_5 change
+    $old   = "$DataDir/landuse.tfw" ;  #ds rv1_6_9 change
     $new   = "landuse.tf2";            #ds rv1_6_5 change
     mylink( "Landuse ", $old,$new ) ;
 
