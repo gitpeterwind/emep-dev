@@ -123,7 +123,7 @@ if ( $OZONE ) {
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
   $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";  # for CH3COO2 and H2O2
-  $BCDIRO3    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar_mixratio";  # Logan for O3
+  $BCDIRO3    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar_mixratio_firstline";  # Logan for O3
 
 } elsif ( $ACID ) {
       $OZONEDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";

@@ -1,3 +1,7 @@
+============== Peter, 5/10-2004            , rv2_0_9  =====================
+
+in grun.pl:  $BCDIRO3    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar_mixratio_firstline"
+
 ============== Dave, 29/9-2004            , rv2_0_8  =====================
 
 skip=1 on open_file in Global_ml
