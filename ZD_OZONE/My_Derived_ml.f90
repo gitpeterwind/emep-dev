@@ -142,7 +142,7 @@ private
 
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 30 &   ! Number of 2D derived fields
+        NDERIV_2D = 31 &   ! Number of 2D derived fields
        ,D2_AOT40  = 1  &   ! was IAOT_40
        ,D2_AOT60  = 2  &   ! was IAOT_60
        ,D2_ACCSU  = 3  &   ! was NUM_ACCSU 
@@ -169,8 +169,8 @@ private
        ,D2_aNH4   =19  &   ! was xnsurf(..)
 !!       ,D2_aNO3   =20  &   ! was xnsurf(..)
        ,D2_MAXO3  =20  &   ! for TROTREP
-       ,D2_MAXOH  =21  &    ! for TROTREP
-       ,D2_tNO3  =22       ! 
+       ,D2_MAXOH  =21      ! for TROTREP
+
 !hf hmix
    integer, public, parameter ::  & 
         D2_HMIX   = 22     &
@@ -184,7 +184,10 @@ private
        ,D2_VG_STO = 27     &!
        ,D2_FX_REF = 28     &
        ,D2_FX_STO = 29      !
-       
+
+   integer, public, parameter ::  & 
+       ,D2_tNO3   = 30  &     ! 
+       ,D2_NH3    = 31       ! 
 
    integer, public, parameter ::  & 
         NDERIV_3D = 9    & ! Number of 3D derived fields
