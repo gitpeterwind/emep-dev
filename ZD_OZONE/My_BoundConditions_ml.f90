@@ -50,7 +50,8 @@ module My_BoundConditions_ml
                 ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
                 ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_aNH4,IBC_aNO3,IBC_pNO3&
 !hfOH   
-               ,IBC_H2O2,IBC_OH,IBC_CH3COO2
+!hf err               ,IBC_H2O2,IBC_OH,IBC_CH3COO2
+               ,IBC_H2O2,IBC_CH3COO2
                 !u3 ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H4,IBC_C2H6   &
                 !u3 ,IBC_C3H6,IBC_C4H10,IBC_C6H14,IBC_CH2O,IBC_CH3CHO    &
                 !u3 ,IBC_H2O2,IBC_CH3O2H,IBC_ISOPRENE,IBC_RCOHCO,IBC_NO  &
@@ -230,9 +231,13 @@ module My_BoundConditions_ml
   bc2xn_adv(IBC_pNO3    ,IXADV_pNO3    )   =   1.0
   bc2xn_adv(IBC_aNH4    ,IXADV_aNH4    )   =   1.0
 !hfOH NEW: When a smaller domain than the full, there are BCs for these from OZONE  
-  bc2xn_bgn(IBC_H2O2    ,IXADV_H2O2    )   =   1.0!hfOH
-  bc2xn_bgn(IBC_CH3COO2 ,IXADV_CH3COO2 )   =   1.0 !hfOH
-  bc2xn_bgn(IBC_OH      ,IXSHL_OH    )   =   1.0 !hfOH 
+!hf err  bc2xn_bgn(IBC_H2O2    ,IXADV_H2O2    )   =   1.0!hfOH
+!hf err   bc2xn_bgn(IBC_CH3COO2 ,IXADV_CH3COO2 )   =   1.0 !hfOH
+!hf err   bc2xn_bgn(IBC_OH      ,IXSHL_OH    )   =   1.0 !hfOH 
+  bc2xn_adv(IBC_H2O2    ,IXADV_H2O2    )   =   1.0!hfOH
+  bc2xn_adv(IBC_CH3COO2 ,IXADV_CH3COO2 )   =   1.0 !hfOH
+
+
 ! The following species are excluded either because they have no corresponding
 ! species in the emep model, or because they have lifetimes which are so
 ! short that initialisation is uncessary.
