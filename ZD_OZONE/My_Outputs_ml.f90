@@ -126,7 +126,7 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
-    integer, public, parameter :: NHOURLY_OUT = 1 ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT = 5 ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
     type, public:: Asc2D
@@ -252,18 +252,18 @@ contains
   !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
 
 !ICP
-!IZ    hr_out(2)= Asc2D("Fst_TConif  ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTCF0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
-!IZ    hr_out(3)= Asc2D("Fst_TBroad  ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTDF0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+   hr_out(2)= Asc2D("Fst_TConif  ", "D2D", "(f8.5)",&
+                  D2_FSTCF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
+   hr_out(3)= Asc2D("Fst_TBroad  ", "D2D", "(f8.5)",&
+                  D2_FSTDF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !IZ    hr_out(4)= Asc2D("Fst_MConif  ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTTC0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+!IZ                   D2_FSTTC0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !IZ    hr_out(5)= Asc2D("Fst_MBroad  ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTMC0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
-!IZ    hr_out(6)= Asc2D("Fst_Grass   ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTGR0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
-!IZ    hr_out(7)= Asc2D("Fst_Wheat   ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTWH0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+!IZ                   D2_FSTMC0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
+   hr_out(4)= Asc2D("Fst_Grass   ", "D2D", "(f8.5)",&
+                  D2_FSTGR0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
+   hr_out(5)= Asc2D("Fst_Wheat   ", "D2D", "(f8.5)",&
+                  D2_FSTWH0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !IZ    hr_out(8)= Asc2D("O3__Wheat   ", "D2D", "(f7.3)",&
 !IZ                   D2_O3WH,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
 !IZ    hr_out(9)= Asc2D("O3__Beech   ", "D2D", "(f7.3)",&

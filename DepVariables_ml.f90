@@ -15,6 +15,17 @@ integer, public, parameter :: NLANDUSE =   17 !number of land-use classes
 integer, public, parameter :: LU_WATER =   15 !  Sea/lakes
 real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
 
+!/-- assign UK 17 to categories - used in dry deposition outputs.
+! Note that wheat is a "fake" crop, so this is not added in.
+! See ~mifads/Unify/Data/Landuse.list for full list
+
+integer, public, parameter,dimension(2) :: ECO_CONIF_FOREST =  (/ 1, 3 /)
+integer, public, parameter,dimension(2) :: ECO_DECID_FOREST =  (/ 2, 4 /)
+integer, public, parameter,dimension(3) :: ECO_CROP =  (/ 5, 6,7 /) 
+integer, public, parameter,dimension(4) :: ECO_SEMINAT =  (/ 8, 10, 11, 13 /)
+integer, public, parameter,dimension(1) :: ECO_WETLAND =  (/ 12 /)
+integer, public, parameter,dimension(1) :: ECO_WATER   =  (/ 15 /)
+
 !d1.4 integer, public, save :: lu            !land-use class index
 
 ! g_sto factors in UK dep method:

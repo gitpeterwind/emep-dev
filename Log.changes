@@ -1,10 +1,16 @@
 
 ==============================================================================
-=================== Dave, 17th June, rv1.6.12 =================================
+=================== Dave, 18th June, rv1.6.12 =================================
 ==============================================================================
 
+Derived_ml - added defintions of ecosystems: ECO_CONIF_FOREST, etc.
+Changed My_DryDep in ZD_OZONE to make use of these. (Needs same
+change in ZD_ACID still)
+
+grun.pl - added check for ProgDir
 Makefile: touch depend removed from clean
-Output_hourly - Idrectt, Idiffuse added as options
+Output_hourly - Idirectt, Idiffuse added as options
+
 My_Outputs_ml - SITE_XTRA_INDEX, SONDE_XTRA_INDEX introduced to simplify
       access to data from d_2d, d_3d  arrays. 
 Sites_ml - d2index, d3index introduced to simplify
@@ -12,10 +18,12 @@ Sites_ml - d2index, d3index introduced to simplify
       FSTCF0 cases etc.
 ZD_ACID/
     My_Derived - added NOUTPUT_ABS_HEIGHTS - no effect but allows compilation
-    My_DryDep - added c_hveg to Add_ddep
+    My_DryDep  - added c_hveg to Add_ddep
     My_Outputs - as above
 ZD_OZONE/
-    My_Outputs - as above
+    My_Outputs     - as above
+    My_Derived_ml  - new definations for ddep and ecosystem-specific stuff 
+    My_DryDep      - added use of ECO_ arrays 
 
 ==============================================================================
 =================== Hilde, Dave, 11th June, rv1.6.11 =================================

@@ -8,24 +8,27 @@ module My_UKDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- use DepVariables_ml, only : unit_flux, lai_flux, leaf_flux
- use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN, &
-                          !!  ECOSYSTEM Specific
-                            DDEP_OXSW, DDEP_OXSF, DDEP_OXSC, DDEP_OXSM, & 
-                            DDEP_OXNW, DDEP_OXNF, DDEP_OXNC, DDEP_OXNM, & 
-                            DDEP_RDNW, DDEP_RDNF, DDEP_RDNC, DDEP_RDNM, & 
-                            DDEP_O3W,  DDEP_O3F,  DDEP_O3C,  DDEP_O3M,  & 
-                            DDEP_OXSR, DDEP_OXNR, DDEP_RDNR,            & 
-                            DDEP_STOCFU, DDEP_STODFU, DDEP_STOTCU,      &
-                            DDEP_STOMCU, DDEP_STOGRU,                   &
-                            DDEP_STOCFL, DDEP_STODFL, DDEP_STOTCL,      &
-                            DDEP_STOMCL, DDEP_STOGRL, &
-        D2_FSTCF0, D2_FSTDF0, D2_FSTTC0, D2_FSTMC0, D2_FSTGR0, D2_FSTWH0, &
+ use DepVariables_ml, only : unit_flux, lai_flux, leaf_flux, & 
+            ECO_WATER,ECO_CONIF_FOREST,ECO_DECID_FOREST, & !ds rv1.6.12
+            ECO_CROP,ECO_SEMINAT,ECO_WETLAND               !ds rv1.6.12
+
+ use My_Derived_ml !, only : DDEP_SOX,DDEP_OXN,DDEP_RDN, &
+                   !       !!  ECOSYSTEM Specific
+                   !         DDEP_OXSW, DDEP_OXSF, DDEP_OXSC, DDEP_OXSM, & 
+                   !         DDEP_OXNW, DDEP_OXNF, DDEP_OXNC, DDEP_OXNM, & 
+                   !         DDEP_RDNW, DDEP_RDNF, DDEP_RDNC, DDEP_RDNM, & 
+                   !         DDEP_O3W,  DDEP_O3F,  DDEP_O3C,  DDEP_O3M,  & 
+                   !         DDEP_OXSR, DDEP_OXNR, DDEP_RDNR,            & 
+                   !         DDEP_STOCFU, DDEP_STODFU, DDEP_STOTCU,      &
+                   !         DDEP_STOMCU, DDEP_STOGRU,                   &
+                   !         DDEP_STOCFL, DDEP_STODFL, DDEP_STOTCL,      &
+                   !         DDEP_STOMCL, DDEP_STOGRL, &
+        !D2_FSTCF0, D2_FSTDF0, D2_FSTTC0, D2_FSTMC0, D2_FSTGR0, D2_FSTWH0, &
         !D2_O3CF, D2_O3DF, D2_O3TC, D2_O3GR, D2_O3WH, &
-                             IOU_INST    &!updates inst. dep. fields
-                           , d_2d        &! 2d fields
-                           ,DDEP_PM, IOU_INST    &!updates inst. dep. fields
-                           , ddep         ! 2d fields
+        !                     IOU_INST    &!updates inst. dep. fields
+        !                   , d_2d        &! 2d fields
+        !                   ,DDEP_PM, IOU_INST    &!updates inst. dep. fields
+        !                   , ddep         ! 2d fields
  use GenSpec_adv_ml !, only: NSPEC_ADV &
                    !,IXADV_O3,IXADV_H2O2,
                   ! ,IXADV_SO2,IXADV_NO2  &
@@ -186,32 +189,47 @@ contains
 
      do n = 1,N_OXS
        nadv = OXS(n)
-         
-       ddep(DDEP_OXSW,i,j,IOU_INST) = ddep(DDEP_OXSW,i,j,IOU_INST) +  &
-            fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
 
-       ddep(DDEP_OXSF,i,j,IOU_INST) = ddep(DDEP_OXSF,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,1) + fluxfrac(nadv,2) + &
-              fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
+      ! == ds make use of ECO_ arrays from DepVariables - specifies   ==== !
+      !    which landuse is in which category                         ==== !
 
-       ddep(DDEP_OXSC,i,j,IOU_INST) = ddep(DDEP_OXSC,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,5) + fluxfrac(nadv,6) ) * DepLoss(nadv)
+       ddep(DDEP_OXSSW,i,j,IOU_INST) = ddep(DDEP_OXSSW,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXSM,i,j,IOU_INST) = ddep(DDEP_OXSM,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,8) + fluxfrac(nadv,11) ) * DepLoss(nadv)
+       ddep(DDEP_OXSCF,i,j,IOU_INST) = ddep(DDEP_OXSCF,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXSR,i,j,IOU_INST) = ddep(DDEP_OXSR,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,7) + fluxfrac(nadv,9) + &
-              fluxfrac(nadv,10) + fluxfrac(nadv,12) + &
-              fluxfrac(nadv,13) + fluxfrac(nadv,14) + &
-              fluxfrac(nadv,16) + fluxfrac(nadv,17)   ) * DepLoss(nadv) 
+
+       ddep(DDEP_OXSDF,i,j,IOU_INST) = ddep(DDEP_OXSDF,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_DECID_FOREST) ) * DepLoss(nadv)
+
+       ddep(DDEP_OXSCR,i,j,IOU_INST) = ddep(DDEP_OXSCR,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_CROP) ) * DepLoss(nadv)
+
+
+       ddep(DDEP_OXSSN,i,j,IOU_INST) = ddep(DDEP_OXSSN,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_SEMINAT) ) * DepLoss(nadv)
+
+       ddep(DDEP_OXSWE,i,j,IOU_INST) = ddep(DDEP_OXSWE,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_WETLAND) ) * DepLoss(nadv)
+      ! ==                                                            ==== !
+
+        !ds fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
+         !ds( fluxfrac(nadv,1) + fluxfrac(nadv,2) + &
+         !ds  fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
+        !ds ( fluxfrac(nadv,8) + fluxfrac(nadv,11) ) * DepLoss(nadv)
+        !ds ( fluxfrac(nadv,7) + fluxfrac(nadv,9) + &
+        !ds   fluxfrac(nadv,10) + fluxfrac(nadv,12) + &
+        !ds   fluxfrac(nadv,13) + fluxfrac(nadv,14) + &
+        !ds   fluxfrac(nadv,16) + fluxfrac(nadv,17)   ) * DepLoss(nadv) 
 
      end do
-     ddep(DDEP_OXSW,i,j,IOU_INST) = ddep(DDEP_OXSW,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSF,i,j,IOU_INST) = ddep(DDEP_OXSF,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSC,i,j,IOU_INST) = ddep(DDEP_OXSC,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSM,i,j,IOU_INST) = ddep(DDEP_OXSM,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSR,i,j,IOU_INST) = ddep(DDEP_OXSR,i,j,IOU_INST)*convfac*atwS
+     ddep(DDEP_OXSSW,i,j,IOU_INST) = ddep(DDEP_OXSSW,i,j,IOU_INST)*convfac*atwS
+     ddep(DDEP_OXSCF,i,j,IOU_INST) = ddep(DDEP_OXSCF,i,j,IOU_INST)*convfac*atwS
+     ddep(DDEP_OXSDF,i,j,IOU_INST) = ddep(DDEP_OXSDF,i,j,IOU_INST)*convfac*atwS
+     ddep(DDEP_OXSCR,i,j,IOU_INST) = ddep(DDEP_OXSCR,i,j,IOU_INST)*convfac*atwS
+     ddep(DDEP_OXSSN,i,j,IOU_INST) = ddep(DDEP_OXSSN,i,j,IOU_INST)*convfac*atwS
+     ddep(DDEP_OXSWE,i,j,IOU_INST) = ddep(DDEP_OXSWE,i,j,IOU_INST)*convfac*atwS
 
 
 
@@ -229,32 +247,63 @@ contains
      do n = 1, N_OXN
        nadv = OXN(n)
          
-       ddep(DDEP_OXNW,i,j,IOU_INST) = ddep(DDEP_OXNW,i,j,IOU_INST) +  &
-            fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
+      ! == ds make use of ECO_ arrays from DepVariables - specifies   ==== !
+      !    which landuse is in which category                         ==== !
 
-       ddep(DDEP_OXNF,i,j,IOU_INST) = ddep(DDEP_OXNF,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,1) + fluxfrac(nadv,2) + &
-              fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
+       ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXNC,i,j,IOU_INST) = ddep(DDEP_OXNC,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,5) + fluxfrac(nadv,6) ) * DepLoss(nadv)
+       ddep(DDEP_OXNCF,i,j,IOU_INST) = ddep(DDEP_OXNCF,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXNM,i,j,IOU_INST) = ddep(DDEP_OXNM,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,8) + fluxfrac(nadv,11) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXNR,i,j,IOU_INST) = ddep(DDEP_OXNR,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,7) + fluxfrac(nadv,9) + &
-              fluxfrac(nadv,10) + fluxfrac(nadv,12) + &
-              fluxfrac(nadv,13) + fluxfrac(nadv,14) + &
-              fluxfrac(nadv,16) + fluxfrac(nadv,17)   ) * DepLoss(nadv) 
+       ddep(DDEP_OXNDF,i,j,IOU_INST) = ddep(DDEP_OXNDF,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_DECID_FOREST) ) * DepLoss(nadv)
+
+       ddep(DDEP_OXNCR,i,j,IOU_INST) = ddep(DDEP_OXNCR,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_CROP) ) * DepLoss(nadv)
+
+
+       ddep(DDEP_OXNSN,i,j,IOU_INST) = ddep(DDEP_OXNSN,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_SEMINAT) ) * DepLoss(nadv)
+
+       ddep(DDEP_OXNWE,i,j,IOU_INST) = ddep(DDEP_OXNWE,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_WETLAND) ) * DepLoss(nadv)
+      ! ==                                                            ==== !
+
+   !ds  ddep(DDEP_OXNW,i,j,IOU_INST) = ddep(DDEP_OXNW,i,j,IOU_INST) +  &
+   !ds       fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
+
+   !ds  ddep(DDEP_OXNF,i,j,IOU_INST) = ddep(DDEP_OXNF,i,j,IOU_INST) +  &
+   !ds       ( fluxfrac(nadv,1) + fluxfrac(nadv,2) + &
+   !ds         fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
+
+   !ds  ddep(DDEP_OXNC,i,j,IOU_INST) = ddep(DDEP_OXNC,i,j,IOU_INST) +  &
+   !ds       ( fluxfrac(nadv,5) + fluxfrac(nadv,6) ) * DepLoss(nadv)
+
+   !ds  ddep(DDEP_OXNM,i,j,IOU_INST) = ddep(DDEP_OXNM,i,j,IOU_INST) +  &
+   !ds       ( fluxfrac(nadv,8) + fluxfrac(nadv,11) ) * DepLoss(nadv)
+
+   !ds  ddep(DDEP_OXNR,i,j,IOU_INST) = ddep(DDEP_OXNR,i,j,IOU_INST) +  &
+   !ds       ( fluxfrac(nadv,7) + fluxfrac(nadv,9) + &
+   !ds         fluxfrac(nadv,10) + fluxfrac(nadv,12) + &
+   !ds         fluxfrac(nadv,13) + fluxfrac(nadv,14) + &
+   !ds         fluxfrac(nadv,16) + fluxfrac(nadv,17)   ) * DepLoss(nadv) 
 
 
      end do
-     ddep(DDEP_OXNW,i,j,IOU_INST) = ddep(DDEP_OXNW,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNF,i,j,IOU_INST) = ddep(DDEP_OXNF,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNC,i,j,IOU_INST) = ddep(DDEP_OXNC,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNM,i,j,IOU_INST) = ddep(DDEP_OXNM,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNR,i,j,IOU_INST) = ddep(DDEP_OXNR,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_OXNW,i,j,IOU_INST) = ddep(DDEP_OXNW,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_OXNF,i,j,IOU_INST) = ddep(DDEP_OXNF,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_OXNC,i,j,IOU_INST) = ddep(DDEP_OXNC,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_OXNM,i,j,IOU_INST) = ddep(DDEP_OXNM,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_OXNR,i,j,IOU_INST) = ddep(DDEP_OXNR,i,j,IOU_INST)*convfac*atwN
+
+     ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_OXNCF,i,j,IOU_INST) = ddep(DDEP_OXNCF,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_OXNDF,i,j,IOU_INST) = ddep(DDEP_OXNDF,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_OXNCR,i,j,IOU_INST) = ddep(DDEP_OXNCR,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_OXNSN,i,j,IOU_INST) = ddep(DDEP_OXNSN,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_OXNWE,i,j,IOU_INST) = ddep(DDEP_OXNWE,i,j,IOU_INST)*convfac*atwN
 
 
 
@@ -270,44 +319,74 @@ contains
      do n = 1, N_RDN
        nadv = RDN(n)
          
-       ddep(DDEP_RDNW,i,j,IOU_INST) = ddep(DDEP_RDNW,i,j,IOU_INST) +  &
-            fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
+      ! == ds make use of ECO_ arrays from DepVariables - specifies   ==== !
+      !    which landuse is in which category                         ==== !
 
-       ddep(DDEP_RDNF,i,j,IOU_INST) = ddep(DDEP_RDNF,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,1) + fluxfrac(nadv,2) + &
-              fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
+       ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
-       ddep(DDEP_RDNC,i,j,IOU_INST) = ddep(DDEP_RDNC,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,5) + fluxfrac(nadv,6) ) * DepLoss(nadv)
+       ddep(DDEP_RDNCF,i,j,IOU_INST) = ddep(DDEP_RDNCF,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
 
-       ddep(DDEP_RDNM,i,j,IOU_INST) = ddep(DDEP_RDNM,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,8) + fluxfrac(nadv,11) ) * DepLoss(nadv)
 
-       ddep(DDEP_RDNR,i,j,IOU_INST) = ddep(DDEP_RDNR,i,j,IOU_INST) +  &
-            ( fluxfrac(nadv,7) + fluxfrac(nadv,9) + &
-              fluxfrac(nadv,10) + fluxfrac(nadv,12) + &
-              fluxfrac(nadv,13) + fluxfrac(nadv,14) + &
-              fluxfrac(nadv,16) + fluxfrac(nadv,17)   ) * DepLoss(nadv) 
+       ddep(DDEP_RDNDF,i,j,IOU_INST) = ddep(DDEP_RDNDF,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_DECID_FOREST) ) * DepLoss(nadv)
+
+       ddep(DDEP_RDNCR,i,j,IOU_INST) = ddep(DDEP_RDNCR,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_CROP) ) * DepLoss(nadv)
+
+
+       ddep(DDEP_RDNSN,i,j,IOU_INST) = ddep(DDEP_RDNSN,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_SEMINAT) ) * DepLoss(nadv)
+
+       ddep(DDEP_RDNWE,i,j,IOU_INST) = ddep(DDEP_RDNWE,i,j,IOU_INST) +  &
+            sum( fluxfrac(nadv,ECO_WETLAND) ) * DepLoss(nadv)
+      ! ==                                                            ==== !
+    !ds   ddep(DDEP_RDNW,i,j,IOU_INST) = ddep(DDEP_RDNW,i,j,IOU_INST) +  &
+    !ds        fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
+
+    !ds   ddep(DDEP_RDNF,i,j,IOU_INST) = ddep(DDEP_RDNF,i,j,IOU_INST) +  &
+    !ds        ( fluxfrac(nadv,1) + fluxfrac(nadv,2) + &
+    !ds          fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
+
+    !ds   ddep(DDEP_RDNC,i,j,IOU_INST) = ddep(DDEP_RDNC,i,j,IOU_INST) +  &
+    !ds        ( fluxfrac(nadv,5) + fluxfrac(nadv,6) ) * DepLoss(nadv)
+
+    !ds   ddep(DDEP_RDNM,i,j,IOU_INST) = ddep(DDEP_RDNM,i,j,IOU_INST) +  &
+    !ds        ( fluxfrac(nadv,8) + fluxfrac(nadv,11) ) * DepLoss(nadv)
+
+    !ds   ddep(DDEP_RDNR,i,j,IOU_INST) = ddep(DDEP_RDNR,i,j,IOU_INST) +  &
+    !ds        ( fluxfrac(nadv,7) + fluxfrac(nadv,9) + &
+    !ds          fluxfrac(nadv,10) + fluxfrac(nadv,12) + &
+    !ds          fluxfrac(nadv,13) + fluxfrac(nadv,14) + &
+    !ds          fluxfrac(nadv,16) + fluxfrac(nadv,17)   ) * DepLoss(nadv) 
 
      end do
-     ddep(DDEP_RDNW,i,j,IOU_INST) = ddep(DDEP_RDNW,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNF,i,j,IOU_INST) = ddep(DDEP_RDNF,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNC,i,j,IOU_INST) = ddep(DDEP_RDNC,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNM,i,j,IOU_INST) = ddep(DDEP_RDNM,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNR,i,j,IOU_INST) = ddep(DDEP_RDNR,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_RDNW,i,j,IOU_INST) = ddep(DDEP_RDNW,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_RDNF,i,j,IOU_INST) = ddep(DDEP_RDNF,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_RDNC,i,j,IOU_INST) = ddep(DDEP_RDNC,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_RDNM,i,j,IOU_INST) = ddep(DDEP_RDNM,i,j,IOU_INST)*convfac*atwN
+    !ds ddep(DDEP_RDNR,i,j,IOU_INST) = ddep(DDEP_RDNR,i,j,IOU_INST)*convfac*atwN
 
-     ddep(DDEP_STOCFU,i,j,IOU_INST) = unit_flux(1) ! * to_nmole
-     ddep(DDEP_STODFU,i,j,IOU_INST) = unit_flux(2) !* to_nmole
-     ddep(DDEP_STOTCU,i,j,IOU_INST) = unit_flux(5) !* to_nmole
-     ddep(DDEP_STOMCU,i,j,IOU_INST) = unit_flux(6) !* to_nmole
-     ddep(DDEP_STOGRU,i,j,IOU_INST) = unit_flux(10) !* to_nmole
+     ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_RDNCF,i,j,IOU_INST) = ddep(DDEP_RDNCF,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_RDNDF,i,j,IOU_INST) = ddep(DDEP_RDNDF,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_RDNCR,i,j,IOU_INST) = ddep(DDEP_RDNCR,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_RDNSN,i,j,IOU_INST) = ddep(DDEP_RDNSN,i,j,IOU_INST)*convfac*atwN
+     ddep(DDEP_RDNWE,i,j,IOU_INST) = ddep(DDEP_RDNWE,i,j,IOU_INST)*convfac*atwN
+
+   !ds   ddep(DDEP_STOCFU,i,j,IOU_INST) = unit_flux(1) ! * to_nmole
+   !ds   ddep(DDEP_STODFU,i,j,IOU_INST) = unit_flux(2) !* to_nmole
+   !ds   ddep(DDEP_STOTCU,i,j,IOU_INST) = unit_flux(5) !* to_nmole
+   !ds   ddep(DDEP_STOMCU,i,j,IOU_INST) = unit_flux(6) !* to_nmole
+   !ds   ddep(DDEP_STOGRU,i,j,IOU_INST) = unit_flux(10) !* to_nmole
 
 
-     ddep(DDEP_STOCFL,i,j,IOU_INST) = lai_flux(1) !* to_nmole
-     ddep(DDEP_STODFL,i,j,IOU_INST) =  lai_flux(2) !* to_nmole
-     ddep(DDEP_STOTCL,i,j,IOU_INST) =  lai_flux(5) !* to_nmole
-     ddep(DDEP_STOMCL,i,j,IOU_INST) =  lai_flux(6) !* to_nmole
-     ddep(DDEP_STOGRL,i,j,IOU_INST) =  lai_flux(10)! * to_nmole
+   !ds   ddep(DDEP_STOCFL,i,j,IOU_INST) = lai_flux(1) !* to_nmole
+   !ds   ddep(DDEP_STODFL,i,j,IOU_INST) =  lai_flux(2) !* to_nmole
+   !ds   ddep(DDEP_STOTCL,i,j,IOU_INST) =  lai_flux(5) !* to_nmole
+   !ds   ddep(DDEP_STOMCL,i,j,IOU_INST) =  lai_flux(6) !* to_nmole
+   !ds   ddep(DDEP_STOGRL,i,j,IOU_INST) =  lai_flux(10)! * to_nmole
 
      d_2d(D2_FSTCF0,i,j,IOU_INST) =  leaf_flux(1) !* to_nmole
      d_2d(D2_FSTDF0,i,j,IOU_INST) =  leaf_flux(2) !* to_nmole

@@ -110,45 +110,55 @@ private
    integer, public, parameter ::  & 
         NWDEP = 5       &   ! Number of 2D deposition fields
        ,WDEP_PREC  = 1  &   ! sum rainfall, was IPRDEP
-       ,WDEP_SOX   = 2  &   ! sum of sulphur        (was xwdep (IXWD_SOX)
-       ,WDEP_OXN   = 3  &   ! sum oxidised nitrogen (was  xddep(IXWD_HNO3))
-       ,WDEP_RDN   = 4  &   ! sum reduced  nitrogen (was  xddep(IXWD_NH3))
+       ,WDEP_SOX   = 2  &   ! sum of sulphur
+       ,WDEP_OXN   = 3  &   ! sum oxidised nitrogen
+       ,WDEP_RDN   = 4  &   ! sum reduced  nitrogen
        ,WDEP_PM    = 5
    integer, public, parameter ::  & 
-        NDDEP = 33       &   ! Number of 2D deposition fields
-       ,DDEP_SOX   = 1  &   ! sum of sulphur        (was xwdep (IXDD_SOX)
-       ,DDEP_OXN   = 2  &   ! sum oxidised nitrogen (was  xddep(IXDD_HNO3))
-       ,DDEP_RDN   = 3  &   ! sum reduced  nitrogen (was  xddep(IXDD_NH3))
-       ,DDEP_OXSW  = 4  &   ! sum sulphur dep over seas (ecosystems)
-       ,DDEP_OXSF  = 5  &   ! sum sulphur dep over forest (ecosystems)
-       ,DDEP_OXSC  = 6  &   ! sum sulphur dep over crops (ecosyatems)
-       ,DDEP_OXSM  = 7  &   ! sum sulphur dep over moorland (ecosystems)
-       ,DDEP_OXNW  = 8  &   ! sum ox. nitrogen dep over seas (ecosystems)
-       ,DDEP_OXNF  = 9  &   ! sum ox. nitrogen dep over forest (ecosystems)
-       ,DDEP_OXNC  =10  &   ! sum ox. nitrogen dep over crops (ecosyatems)
-       ,DDEP_OXNM  =11  &   ! sum ox. nitrogen dep over moorland (ecosystems)
-       ,DDEP_RDNW  =12  &   ! sum red. nitrogen dep over seas (ecosystems)
-       ,DDEP_RDNF  =13  &   ! sum red. nitrogen dep over forest (ecosystems)
-       ,DDEP_RDNC  =14  &   ! sum red. nitrogen dep over crops (ecosyatems)
-       ,DDEP_RDNM  =15  &   ! sum red. nitrogen dep over moorland (ecosystems)
-       ,DDEP_O3W   =16  &   ! sum ozone dep over seas (ecosystems)
-       ,DDEP_O3F   =17  &   ! sum ozone dep over forest (ecosystems)
-       ,DDEP_O3C   =18  &   ! sum ozone dep over crops (ecosyatems)
-       ,DDEP_O3M   =19  &   ! sum ozone dep over moorland (ecosystems)
-       ,DDEP_OXSR  =20  &   ! sum ox. sulphur dep over remaining (ecosystems)
-       ,DDEP_OXNR  =21  &   ! sum ox. nirogen dep over remaining (ecosystems)
-       ,DDEP_RDNR  =22  &   ! sum red. nitrogen dep over remaining (ecosystems)
-       ,DDEP_STOCFU  =23&   ! ozone flux (ecosystems)
-       ,DDEP_STODFU  =24&   ! ozone flux (ecosystems)
-       ,DDEP_STOTCU  =25&   ! ozone flux (ecosystems)
-       ,DDEP_STOMCU  =26&   ! ozone flux (ecosystems)
-       ,DDEP_STOGRU  =27&   ! ozone flux (ecosystems)
-       ,DDEP_STOCFL  =28&   ! sum red. nitrogen dep over remaining (ecosystems)
-       ,DDEP_STODFL  =29&   ! ozone flux (ecosystems)
-       ,DDEP_STOTCL  =30&   ! ozone flux (ecosystems)
-       ,DDEP_STOMCL  =31&   ! ozone flux (ecosystems)
-       ,DDEP_STOGRL  =32&   ! ozone flux (ecosystems)
-       ,DDEP_PM    = 33
+        NDDEP = 22      &   ! Number of 2D deposition fields
+       ,DDEP_SOX   = 1  &   ! sum of sulphur
+       ,DDEP_OXN   = 2  &   ! sum oxidised nitrogen
+       ,DDEP_RDN   = 3  &   ! sum reduced  nitrogen
+!
+       ,DDEP_OXSSW = 4  &   ! sum sulphur dep over seas/water (ecosystems)
+       ,DDEP_OXSCF = 5  &   ! sum sulphur dep over conif forest (ecosystems)
+       ,DDEP_OXSDF = 6  &   ! sum sulphur dep over decid forest (ecosystems)
+       ,DDEP_OXSCR = 7  &   ! sum sulphur dep over crops (ecosystems)
+       ,DDEP_OXSSN = 8  &   ! sum sulphur dep over seminat=grass/moorland/tundra (ecosystems)
+       ,DDEP_OXSWE = 9  &   ! sum sulphur dep over wetlands (ecosystems)
+!
+       ,DDEP_OXNSW = 10 &   ! sum sulphur dep over seas/water (ecosystems)
+       ,DDEP_OXNCF = 11 &   ! sum sulphur dep over conif forest (ecosystems)
+       ,DDEP_OXNDF = 12 &   ! sum sulphur dep over decid forest (ecosystems)
+       ,DDEP_OXNCR = 13 &   ! sum sulphur dep over crops (ecosystems)
+       ,DDEP_OXNSN = 14 &   ! sum sulphur dep over seminat=grass/moorland/tundra (ecosystems)
+       ,DDEP_OXNWE = 15 &   ! sum sulphur dep over wetlands
+!
+       ,DDEP_RDNSW = 16 &   ! sum sulphur dep over seas/water (ecosystems)
+       ,DDEP_RDNCF = 17 &   ! sum sulphur dep over conif forest (ecosystems)
+       ,DDEP_RDNDF = 18 &   ! sum sulphur dep over decid forest (ecosystems)
+       ,DDEP_RDNCR = 19 &   ! sum sulphur dep over crops (ecosystems)
+       ,DDEP_RDNSN = 20 &   ! sum sulphur dep over seminat=grass/moorland/tundra (ecosystems)
+       ,DDEP_RDNWE = 21 &   ! sum sulphur dep over wetlands
+!
+!ds    ,DDEP_O3W   =16  &   ! sum ozone dep over seas (ecosystems)
+!ds    ,DDEP_O3F   =17  &   ! sum ozone dep over forest (ecosystems)
+!ds    ,DDEP_O3C   =18  &   ! sum ozone dep over crops (ecosyatems)
+!ds    ,DDEP_O3M   =19  &   ! sum ozone dep over grass/moorland (ecosystems)
+!ds    ,DDEP_OXSR  =20  &   ! sum ox. sulphur dep over remaining (ecosystems)
+!ds    ,DDEP_OXNR  =21  &   ! sum ox. nirogen dep over remaining (ecosystems)
+!ds    ,DDEP_RDNR  =22  &   ! sum red. nitrogen dep over remaining (ecosystems)
+!ds    ,DDEP_STOCFU  =23&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STODFU  =24&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STOTCU  =25&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STOMCU  =26&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STOGRU  =27&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STOCFL  =28&   ! sum red. nitrogen dep over remaining (ecosystems)
+!ds    ,DDEP_STODFL  =29&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STOTCL  =30&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STOMCL  =31&   ! ozone flux (ecosystems)
+!ds    ,DDEP_STOGRL  =32&   ! ozone flux (ecosystems)
+       ,DDEP_PM    = 22
 
    integer, public, parameter ::  & 
         NDERIV_2D = 37 &   ! Number of 2D derived fields
@@ -278,36 +288,52 @@ private
  f_ddep(DDEP_RDN  ) = Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mg/m2")
 
  !--test fields for ecosystem specific---
- f_ddep(DDEP_OXSW) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSW","mg/m2")
- f_ddep(DDEP_OXSF) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSF","mg/m2")
- f_ddep(DDEP_OXSC) = Deriv( 526, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSC","mg/m2")
- f_ddep(DDEP_OXSM) = Deriv( 527, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSM","mg/m2")
+ f_ddep(DDEP_OXSSW) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSSW","mg/m2")
+ f_ddep(DDEP_OXSCF) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSCF","mg/m2")
+ f_ddep(DDEP_OXSDF) = Deriv( 526, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSDF","mg/m2")
+ f_ddep(DDEP_OXSCR) = Deriv( 527, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSCR","mg/m2")
+ f_ddep(DDEP_OXSSN) = Deriv( 528, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSSN","mg/m2")
+ f_ddep(DDEP_OXSWE) = Deriv( 529, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSWE","mg/m2")
 
- f_ddep(DDEP_OXNW) = Deriv( 528, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNW","mg/m2")
- f_ddep(DDEP_OXNF) = Deriv( 529, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNF","mg/m2")
- f_ddep(DDEP_OXNC) = Deriv( 530, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNC","mg/m2")
- f_ddep(DDEP_OXNM) = Deriv( 531, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNM","mg/m2")
+ f_ddep(DDEP_OXNSW) = Deriv( 530, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNSW","mg/m2")
+ f_ddep(DDEP_OXNCF) = Deriv( 531, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNCF","mg/m2")
+ f_ddep(DDEP_OXNDF) = Deriv( 532, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNDF","mg/m2")
+ f_ddep(DDEP_OXNCR) = Deriv( 533, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNCR","mg/m2")
+ f_ddep(DDEP_OXNSN) = Deriv( 534, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNSN","mg/m2")
+ f_ddep(DDEP_OXNWE) = Deriv( 535, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNWE","mg/m2")
 
- f_ddep(DDEP_RDNW) = Deriv( 532, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNW","mg/m2")
- f_ddep(DDEP_RDNF) = Deriv( 533, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNF","mg/m2")
- f_ddep(DDEP_RDNC) = Deriv( 534, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNC","mg/m2")
- f_ddep(DDEP_RDNM) = Deriv( 535, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNM","mg/m2")
+ f_ddep(DDEP_RDNSW) = Deriv( 536, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNSW","mg/m2")
+ f_ddep(DDEP_RDNCF) = Deriv( 537, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNCF","mg/m2")
+ f_ddep(DDEP_RDNDF) = Deriv( 538, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNDF","mg/m2")
+ f_ddep(DDEP_RDNCR) = Deriv( 539, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNCR","mg/m2")
+ f_ddep(DDEP_RDNSN) = Deriv( 540, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNSN","mg/m2")
+ f_ddep(DDEP_RDNWE) = Deriv( 541, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNWE","mg/m2")
 
-
- f_ddep(DDEP_OXSR) = Deriv( 551, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSR","mg/m2")
- f_ddep(DDEP_OXNR) = Deriv( 552, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNR","mg/m2")
- f_ddep(DDEP_RDNR) = Deriv( 553, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNR","mg/m2")
-
- f_ddep(DDEP_STOCFU) = Deriv( 571, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
- f_ddep(DDEP_STODFU) = Deriv( 572, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STODFU","mg/m2")
- f_ddep(DDEP_STOTCU) = Deriv( 573, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOTCU","mg/m2")
- f_ddep(DDEP_STOMCU) = Deriv( 574, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOMCU","mg/m2")
- f_ddep(DDEP_STOGRU) = Deriv( 575, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOGRU","mg/m2")
- f_ddep(DDEP_STOCFL) = Deriv( 581, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFL","mg/m2")
- f_ddep(DDEP_STODFL) = Deriv( 582, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STODFL","mg/m2")
- f_ddep(DDEP_STOTCL) = Deriv( 583, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOTCL","mg/m2")
- f_ddep(DDEP_STOMCL) = Deriv( 584, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOMCL","mg/m2")
- f_ddep(DDEP_STOGRL) = Deriv( 585, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOGRL","mg/m2")
+!ds f_ddep(DDEP_OXNW) = Deriv( 528, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNW","mg/m2")
+!ds f_ddep(DDEP_OXNF) = Deriv( 529, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNF","mg/m2")
+!ds f_ddep(DDEP_OXNC) = Deriv( 530, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNC","mg/m2")
+!ds f_ddep(DDEP_OXNM) = Deriv( 531, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNM","mg/m2")
+!ds
+!ds f_ddep(DDEP_RDNW) = Deriv( 532, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNW","mg/m2")
+!ds f_ddep(DDEP_RDNF) = Deriv( 533, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNF","mg/m2")
+!ds f_ddep(DDEP_RDNC) = Deriv( 534, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNC","mg/m2")
+!ds f_ddep(DDEP_RDNM) = Deriv( 535, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNM","mg/m2")
+!ds
+!ds
+!ds f_ddep(DDEP_OXSR) = Deriv( 551, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSR","mg/m2")
+!ds f_ddep(DDEP_OXNR) = Deriv( 552, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNR","mg/m2")
+!ds f_ddep(DDEP_RDNR) = Deriv( 553, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNR","mg/m2")
+!ds
+!ds f_ddep(DDEP_STOCFU) = Deriv( 571, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
+!ds f_ddep(DDEP_STODFU) = Deriv( 572, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STODFU","mg/m2")
+!ds f_ddep(DDEP_STOTCU) = Deriv( 573, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOTCU","mg/m2")
+!ds f_ddep(DDEP_STOMCU) = Deriv( 574, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOMCU","mg/m2")
+!ds f_ddep(DDEP_STOGRU) = Deriv( 575, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOGRU","mg/m2")
+!ds f_ddep(DDEP_STOCFL) = Deriv( 581, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFL","mg/m2")
+!ds f_ddep(DDEP_STODFL) = Deriv( 582, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STODFL","mg/m2")
+!ds f_ddep(DDEP_STOTCL) = Deriv( 583, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOTCL","mg/m2")
+!ds f_ddep(DDEP_STOMCL) = Deriv( 584, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOMCL","mg/m2")
+!ds f_ddep(DDEP_STOGRL) = Deriv( 585, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOGRL","mg/m2")
 
 !-- 2-D fields - the complex ones
 
