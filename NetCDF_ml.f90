@@ -30,13 +30,19 @@
   character (len=*), parameter :: fileName_year = 'out_year.nc'
   character (len=15) :: fileName ,period_type
 
+  integer,parameter ::closedID=-999     !flag for showing that a file is closed
+  integer,save :: ncFileID_day=closedID  
+  integer,save :: ncFileID_month=closedID
+  integer,save :: ncFileID_year=closedID
+
   public :: InitnetCDF
   public :: Out_netCDF
+  public :: CloseNetCDF
 
   private :: CreatenetCDFfile
   private :: createnewvariable
   private :: check
-  private :: secondsfrom1january
+  private :: secondssince1970
 
 contains
 !_______________________________________________________________________
@@ -126,12 +132,12 @@ real :: izero,jzero
   call check(nf90_def_var(ncFileID, "k", nf90_float, dimids = kDimID, varID = kVarID) )
   call check(nf90_put_att(ncFileID, kVarID, "coord_alias", "level"))
   call check(nf90_put_att(ncFileID, kVarID, "long_name", "vertical eta coordinates"))
-  call check(nf90_put_att(ncFileID, kVarID, "units", "sigma_level"))
+  call check(nf90_put_att(ncFileID, kVarID, "units", "eta_level"))
   call check(nf90_put_att(ncFileID, kVarID, "positive", "down"))
 
-  call check(nf90_def_var(ncFileID, "time", nf90_float, dimids = timeDimID, varID = VarID) )
+  call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
   call check(nf90_put_att(ncFileID, VarID, "long_name", "current time at end of period"))
-  call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 2000-1-1 00:00:00.0 +00:00"))
+  call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
 
 
 
@@ -187,8 +193,6 @@ character*13 :: varname
 character*8 ::lastmodified_date
 character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
 integer :: varID,new,nrecords,ncFileID
-integer,parameter ::closedID=-999
-integer,save :: ncFileID_day=closedID,ncFileID_month=closedID,ncFileID_year=closedID
 integer :: nyear,nmonth,nday,nhour,ndate(4)
 integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
 !real*4 :: buff 
@@ -317,9 +321,13 @@ if(me==0)then
 
 
  !append new values
+  if(ndim==3)then
   do k=1,kmax
   call check(nf90_put_var(ncFileID, VarID, data3D(:, :, k), start = (/ 1, 1, k,nrecords /)) )
   enddo
+  else 
+  call check(nf90_put_var(ncFileID, VarID, data3D(:, :, 1), start = (/ 1, 1, nrecords /)) )
+  endif
 
 !  if(icmp == dim)then
      deallocate(data3D, stat=alloc_err)
@@ -344,7 +352,7 @@ if(me==0)then
 
   !get variable id
   call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
-  call secondsfrom1january(ndate,nseconds)
+  call secondssince1970(ndate,nseconds)
   call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
 
 !!close file
@@ -428,10 +436,37 @@ end subroutine  createnewvariable
     end if
   end subroutine check  
 
-  subroutine secondsfrom1january(ndate,nseconds)
+  subroutine CloseNetCDF
+!close open files
+!NB the data in a NetCDF file is not "safe" before the file
+!is closed. The files are NOT automatically properly 
+!closed after end of program, and data may be lost if the files are not
+!closed explicitely.
+
+integer :: ncFileID
+
+    if(ncFileID_year/=closedID)then
+       ncFileID = ncFileID_year
+       call check(nf90_close(ncFileID))
+       ncFileID_year=closedID
+    endif
+    if(ncFileID_month/=closedID)then
+       ncFileID = ncFileID_month
+       call check(nf90_close(ncFileID))
+       ncFileID_month=closedID
+    endif
+    if(ncFileID_day/=closedID)then
+       ncFileID = ncFileID_day
+       call check(nf90_close(ncFileID))
+       ncFileID_day=closedID
+    endif
+
+  end subroutine CloseNetCDF
+
+  subroutine secondssince1970(ndate,nseconds)
     !calculate how many seconds have passed since the start of the year
 
-    use Dates_ml, only: nmdays
+    use Dates_ml, only: nmdays,is_leap 
     implicit none
 
     integer, intent(in) :: ndate(4)
@@ -445,6 +480,11 @@ end subroutine  createnewvariable
 
     nseconds=3600*(ndate(4)+24*(nday-1))
 
-  end subroutine secondsfrom1january
+!add seconds from each year since 1970
+    do n=1970,ndate(1)-1
+       nseconds=nseconds+24*3600*365+24*3600*is_leap(n)
+    enddo
+
+  end subroutine secondssince1970
 
 end module NetCDF_ml

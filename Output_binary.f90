@@ -90,7 +90,7 @@ module Output_binary_ml
  use Derived_ml, only : &
            nav_wdep, nav_ddep, nav_2d, nav_3d   ! No. terms for averging
 
- use NetCDF_ml,  only: Out_netCDF
+ use NetCDF_ml,  only: Out_netCDF,CloseNetCDF
 
  implicit none
  private
@@ -191,6 +191,7 @@ contains
 
 
       if (me == 0) close(IO_OUT)
+      if (me == 0) call CloseNetCDF
 
    end subroutine Output_binary
 !<==========================================================================
