@@ -239,10 +239,8 @@ private
     f_2d( D2_SO4 ) = Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T  , F ,  T , T ,  T ,"D2_SO4","ugS/m3")
     f_2d( D2_HNO3) = Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T  , F ,  T , T ,  T ,"D2_HNO3","ugN/m3")
     f_2d( D2_aNO3 ) = Deriv( 604, "ADV  ", T, IXADV_aNO3, ugN, T  , F ,  T , T ,  T ,"D2_aNO3","ugN/m3")
-    f_2d( D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T ,"D2_NH3","ugN/m3")
-    f_2d( D2_aNH4 ) = Deriv( 606, "ADV  ", T, IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
-!hf f_2d( D2_AMSU) = Deriv( 619, "ADV  ", T,IXADV_AMSU, ugS, T  , F ,  T , T ,  T ,"D2_AMSU","ugS/m3")
-!hf hmix
+    f_2d( D2_NH3 ) = Deriv( 622, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T ,"D2_NH3","ugN/m3")
+    f_2d( D2_aNH4 ) = Deriv( 619, "ADV  ", T, IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
     f_2d( D2_HMIX)   = Deriv( 468, "HMIX    ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX","m")
     f_2d( D2_HMIX00) = Deriv( 469, "HMIX00  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX00","m")
     f_2d( D2_HMIX12) = Deriv( 470, "HMIX12  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX12","m")
