@@ -197,7 +197,7 @@
             unit_conv =  hr_out(ih)%unitconv
             forall ( i=1:limax, j=1:ljmax)
                   hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
-                                 * cfac(ispec,i,j) &    ! 50m->1m conversion
+                                 * cfac(ispec,i,j) &    ! 50m->3m conversion
                                  * unit_conv            ! Units conv.
             end forall
 
@@ -207,7 +207,7 @@
             unit_conv =  hr_out(ih)%unitconv
             forall ( i=1:limax, j=1:ljmax)
                   hourly(i,j) = xn_adv(ispec,i,j,ik) & !BCV:KMAX_MID) &
-                                 !BCV * cfac(ispec,i,j) &    ! 50m->1m conversion
+                                 !BCV * cfac(ispec,i,j) &    ! 50m->3m conversion
                                  * unit_conv            ! Units conv.
             end forall
             if ( DEBUG .and. debug_flag ) print *, "K-level", ik, name, itot
@@ -218,7 +218,7 @@
             unit_conv =  hr_out(ih)%unitconv * species(itot)%molwt
             forall ( i=1:limax, j=1:ljmax)
                   hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
-                                 * cfac(ispec,i,j) &     ! 50m->1m conversion
+                                 * cfac(ispec,i,j) &     ! 50m->3m conversion
                                  * unit_conv       &     ! Units conv.
                                  * roa(i,j,KMAX_MID,1)   ! density.
             end forall

@@ -1,3 +1,5 @@
+Output_hourly  -- cfac comments fixed to 50m->3m
+
 =================== Dave,              6-11/07/2004, rv2_0_2  ================
 
 GlobalBCs_ml: 2002 and 2003 added to mace_head. Preliminary values needed for 
