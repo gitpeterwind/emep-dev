@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.4 2002-09-30 07:41:51 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.5 2002-11-18 11:25:17 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -54,9 +54,10 @@ logical, private, parameter :: DEBUG_RSURF = .false.
 contains
 ! =======================================================================
 
-  subroutine Rsurface(lu,debug_flag, LAI,hveg,&
+!hf ddep  subroutine Rsurface(lu,debug_flag, LAI,hveg,&
+  subroutine Rsurface(rh,lu,debug_flag, LAI,hveg,&
                       z0,ustar,Ts_C,vpd,SWP, &
-                      psurf, pr, &                    !u7.lu
+                      psurf, pr_acc, &                    !u7.lu
                       coszen, Idfuse, Idrctt, &       !u7.lu
                       snow, &                    !u7.lu
                         g_sto,Rsur,Rb)
@@ -125,12 +126,14 @@ contains
     real, intent(in) :: vpd             ! vapour pressure deficit (kPa)
     real, intent(in) :: SWP             ! soil water potential (MPa)
     real, intent(in) ::  psurf
-    real, intent(in) ::  pr
+!hf    real, intent(in) ::  pr
+    real, intent(in) ::  pr_acc         !acc precip at surface
     real, intent(in) ::  coszen
     real, intent(in) ::  Idfuse
     real, intent(in) ::  Idrctt
     integer, intent(in) :: snow         ! snow=1, non-snow=0
-
+!hf ddep
+    real, intent(in) ::  rh
 ! Output:
 
    real, intent(out)             :: g_sto !  Stomatal conducatance (s/m)
@@ -315,7 +318,8 @@ contains
 
 
           !rv1.3 crude fix
-           if ( pr > 1.0e-7 ) then
+           if ( pr_acc > 1.0e-7 ) then
+!hf           if ( pr > 1.0e-7 .or. rh>0.95) then
               wRextS =  200.0
            else
               wRextS = RextS

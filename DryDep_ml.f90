@@ -38,7 +38,8 @@ module DryDep_ml
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
                                   current_date,     &  ! u7.lu
                                   DEBUG_i, DEBUG_j, &
-                                  ATWAIR, atwS, atwN, PPBINV
+                                  ATWAIR, atwS, atwN, PPBINV,&
+                                  KUPPER     !hf ddep
  use Par_ml,               only : me,NPROC,li0,li1,lj0,lj1
  use PhysicalConstants_ml, only : XKAP, PI, KARMAN, GRAV, RGAS_KG, CP
  use Radiation_ml,         only : zen         &! zenith angle (degrees)
@@ -67,6 +68,9 @@ module DryDep_ml
 
  public :: drydep
 
+!hf ddep
+   real, private, save, dimension(KUPPER:KMAX_MID) :: &
+         pr_acc                 ! Accumulated precipitation
 
 
   logical, private, save :: my_first_call = .true.
@@ -91,7 +95,7 @@ module DryDep_ml
 
  logical, dimension(NDRYDEP_ADV), save :: vg_set 
 
- integer i, j, n, ilu, lu, nlu, ncalc, nadv, ind, err   ! help indexes
+ integer i, j, n, ilu, lu, nlu, ncalc, nadv, ind, err,k   ! help indexes
  integer :: imm, idd, ihh     ! date
 
  real ustar_sq, & ! u star squared
@@ -126,8 +130,6 @@ module DryDep_ml
    real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
    integer :: lu_used(NLUMAX), nlu_used
    real    :: lu_cover(NLUMAX)
-
-
 
 !     first calculate the 1m deposition velocity following the same
 !     procedure as in the lagmod. second the flux and the accumulated 
@@ -173,6 +175,24 @@ module DryDep_ml
 
   do j = lj0,lj1
     do i = li0,li1
+
+
+!hf
+! Need pr_acc for wet surfaces
+! Add up the precipitation in the column
+! Note that this is accumulated prec per second
+! but this is the same as used in Aqueues 
+! as threshold for precipitating clouds
+! ds -  in the longer term we might save pr_acc in Met_ml, or even the
+!  original "pr" as read in from HIRLAM, but this can wait until we
+!  settle on a final scheme for RextS in Rsurface_ml.
+
+    pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) )   ! prec inc. from above 
+    do k= KUPPER+1, KMAX_MID
+      pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
+      pr_acc(k) = max( pr_acc(k), 0.0 ) !u7.2 ds - FIX
+    end do
+
 
      ! - Set up debugging coordinates first. ---------------------------!
      ! If location matches debug i,j value, set debug_flag. Also passed
@@ -329,7 +349,8 @@ module DryDep_ml
              end if
 
 
-         call Rsurface(lu,debug_flag, &
+!hf ddep         call Rsurface(lu,debug_flag, &
+         call Rsurface(rh,lu,debug_flag, &
                    lai, &   ! tmp
                    hveg, &  ! tmp
                    z0,ustar_loc,       &
@@ -337,7 +358,8 @@ module DryDep_ml
                    vpd,                & ! CHECK 
                    SWP(daynumber),     & ! NEEDS i,j later
                    psurf(i,j),         &
-                   pr(i,j,KMAX_MID),   &  ! CHECK   
+!hf ddep           pr(i,j,KMAX_MID)    &
+                   pr_acc(KMAX_MID),   &  ! CHECK   
                    coszen(i,j),        &  ! CHECK   
                    Idfuse,             &  ! CHECK   
                    Idrctt,             &  ! CHECK   
@@ -516,8 +538,13 @@ module DryDep_ml
        !end if 
        call Add_ddep(i,j,convfac2,fluxfrac_adv)
 
+
      enddo   !j
    enddo    !i
  end subroutine drydep
 
 end module DryDep_ml
+
+
+
+
