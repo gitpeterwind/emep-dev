@@ -135,7 +135,7 @@ private
 !TROTREP       ,D2T_VOC     = 14  &  ! was xnsu8to16(IXSU_VOC)
        ,D2_VOC     = 14  &  ! was xnsu8to16(IXSU_VOC)
        ,D2_SOX      = 15  &  ! Sum of sulphates, 
-       ,D2_OXN      = 16  &  ! Total nitrates (HNO3 + part. NITRATE) 
+       ,D2_OXN      = 16  &  ! Total nitrates (HNO3 + part. pNO3) 
        ,D2_REDN     = 17  &  ! Annonia + ammonium 
        ,D2_FRNIT    = 18  &  ! Annonia + ammonium / total nitrate 
 !

@@ -450,7 +450,7 @@
 
     !ux - new SO2 -> SO4 method from old MADE/hf code
 
-      rcmisc(9,:) = tab_so2ox(daynumber)
+    !ds rcmisc(9,:) = tab_so2ox(daynumber)
 
 
     !u1 - troe stuff put here to simplify .....

@@ -128,7 +128,7 @@
       + rct(10,k) * xnew(OH ) * xnew(H2 )  &
       !u7.1   + 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
       + 2.0e-12* xnew(OH ) * xnew(SO2 )  &
-      + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
+  !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
       + rcmisc(7,k) * xnew(OH ) * xnew(CO )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -208,8 +208,8 @@
       + rcphot(IDCH3O2H,K) * xnew(CH3COO2H ) 
 
       L =  &
-        4.0e-17* xnew(SO2 )  &
-      + rct(13,k)* xnew(NO )  &
+   !ds   4.0e-17* xnew(SO2 )  &
+        rct(13,k)* xnew(NO )  &
       + rct(14,k)* xnew(CH3O2 )  &
       + rct(14,k)* xnew(CH3O2 )  &
       + rct(15,k)* xnew(CH3O2 )  &
@@ -676,6 +676,7 @@
       L =  &
      rct(11,k)* xnew(OH )  &
 ! N ch     + 1.0e-5  &
+      + rcmisc(10,k) &   ! Coarse pNO3 formation
       + rcphot(IDHNO3,K) 
 
        xnew(HNO3)=  amax1(0.0, ( xold(HNO3) + dt2 * P))  &
@@ -819,8 +820,8 @@
 !-> HCHO 
 
       P =   &
-       4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
-      + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
+   !ds 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
+        rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
       + rct(15,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
       + rct(16,k) * xnew(OH ) * xnew(CH3OH )  &
@@ -1255,12 +1256,12 @@
      !u1 1*(1-0.05-0.15)*rcemis(QRCSO2,K) 
 
       L =  &
-     !u7.1  2e-12*aqrck(ICLOHSO2,K)* xnew(OH )  &
-      rcmisc(9,k) &   ! Eliassen+Saltbones rate
-     !u7.1 + 1*aqrck(ICLRC1,K)*XNEW(H2O2)  &
-     !u7.1 + 1*aqrck(ICLRC2,K)*XNEW(O3)  &
-     !u7.1 + aqrck(ICLRC3,K)  &
-      + 4.0e-17* xnew(CH3O2 ) 
+       2e-12*aqrck(ICLOHSO2,K)* xnew(OH )  &
+     !ds  rcmisc(9,k) &   ! Eliassen+Saltbones rate
+      + aqrck(ICLRC1,K)*XNEW(H2O2)  &
+      + aqrck(ICLRC2,K)*XNEW(O3)  &
+      + aqrck(ICLRC3,K) !ds  Fe-catalysed reaction   &
+     !ds + 4.0e-17* xnew(CH3O2 ) 
 
        xnew(SO2)=  amax1(0.0, ( xold(SO2) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
@@ -1276,12 +1277,12 @@
 !-> SO4 
 
       P =   &
-     !u7.1 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-     !u7.1  + 1*aqrck(ICLRC1,K)*XNEW(H2O2) * xnew(SO2 )  &
-     !u7.1  + 1*aqrck(ICLRC2,K)*XNEW(O3) * xnew(SO2 )  &
-     !u7.1  + aqrck(ICLRC3,K) * xnew(SO2 )  &
-      + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
-      + rcmisc(9,k) * xnew(SO2) &   ! Eliassen+Saltbones rate
+      2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
+       + aqrck(ICLRC1,K)*XNEW(H2O2) * xnew(SO2 )  &
+       + aqrck(ICLRC2,K)*XNEW(O3) * xnew(SO2 )  &
+       + aqrck(ICLRC3,K) * xnew(SO2 )  &
+    !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
+    !ds + rcmisc(9,k) * xnew(SO2) &   ! Eliassen+Saltbones rate
       + 0.05*rcemis(QRCSO2,K) 
       ! L = 0.0
  
@@ -1289,15 +1290,16 @@
        xnew(SO4)=  amax1(0.0,  xold(SO4) + dt2 * P)
 
 
-!-> NITRATE 
+!-> pNO3
 
-! N ch      P =   &
-! N ch    2.*1.0e-5 * xnew(N2O5 )  &
-! N ch     + 1.0e-5 * xnew(HNO3 ) 
-      ! L = 0.0
- 
+      P =   &
+        rcmisc(10,k) * xnew(HNO3)
+  !  2.*1.0e-5 * xnew(N2O5 )  &
+  !   + 1.0e-5 * xnew(HNO3 )
+      L = 0.0
 
-! N ch       xnew(NITRATE)=  amax1(0.0,  xold(NITRATE) + dt2 * P)
+
+       xnew(pNO3)=  amax1(0.0,  xold(pNO3) + dt2 * P)
 
 
 !-> NH3 
