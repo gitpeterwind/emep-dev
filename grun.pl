@@ -106,12 +106,12 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_12";
+     $testv       = "rv1_7_3";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_6_12";
+     $testv       = "rv1_7_3";
 } 
 #$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
@@ -119,8 +119,6 @@ $version     = "Unimod" ;
 $subv        = "$testv" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
 #HF $ProgDir     = "$USER/CVS/rv1.3.1_Aq/$version";  # input of source-code
-#$ProgDir     = "$USER/Unify/$version.$testv";        # input of source-code
-# TMP - same for all versions
 $ProgDir     = "$USER/Unify/$version.$testv"; # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
@@ -129,8 +127,12 @@ $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 
 # Fixed
-$emisdir     = "$SVETLANA/Unify/MyData/emission";   # emissions directory
-$emisyear    = "$emisdir/emis${yy}_02-rev";    # emissions
+#$emisdir     = "$SVETLANA/Unify/MyData/emission";   # emissions directory
+#$emisdir     = "$HILDE/emis/modrun03";   # emissions directory
+#$emisyear    = "$emisdir/emis${yy}_02-rev";    # emissions
+#Latest: (not used for PM though).
+$emisdir     = "$DAVE/Unify/Data/emis/Scale_14082003"; # emissions directory
+$emisyear    = "$emisdir/emis${year}";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 
 # Specify small domain if required. 
@@ -140,8 +142,8 @@ $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003)
 #@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
+#@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
 @smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
-@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
