@@ -4,6 +4,7 @@ module Country_ml
  !
  ! Language : F
  ! History  :
+ !   xnd version: 13/11/2003 - jej/ds, new countries, corrected 29
  !   2nd version: 12/12/2001 - ds,  added is_sea to country type
  !   1st version: 24/1/2001 - ds, using timezones from Vigdis.
  !
@@ -19,7 +20,7 @@ module Country_ml
 
   public :: Country_Init     ! sets country details
 
-  integer, parameter, public :: NLAND = 63
+  integer, parameter, public :: NLAND = 69
   logical, parameter, private :: T = .true.   ! shorthand
   logical, parameter, private :: F = .false.  ! shorthand
 
@@ -63,7 +64,7 @@ module Country_ml
   integer, parameter, public ::  IC_SU =  26   ! Former USSE                   
   integer, parameter, public ::  IC_GB =  27   ! United Kingdom                
   integer, parameter, public :: IC_VUL =  28   ! Vulcanoes                     
-  integer, parameter, public :: IC_NOA =  29   ! North Africa                  
+  integer, parameter, public :: IC_REM =  29   ! Remaining                     
   integer, parameter, public :: IC_BAS =  30   ! The Baltic Sea                
   integer, parameter, public :: IC_NOS =  31   ! The North Sea                 
   integer, parameter, public :: IC_ATL =  32   ! Remaining NE Atlantic Ocean   
@@ -97,10 +98,15 @@ module Country_ml
   integer, parameter, public ::  IC_DE =  60   ! Germany                       
   integer, parameter, public ::  IC_RU =  61   ! Russian                       
   integer, parameter, public ::  IC_MC =  62   ! Monaco                        
-  integer, parameter, public :: IC_REM =  63   ! Remaining                     
-  !ex integer, parameter, public ::  IC_EU =  64   ! European                      
-  !ex integer, parameter, public ::  IC_US =  65   ! USA                           
-  !ex integer, parameter, public ::  IC_CA =  66   ! Canada                        
+  integer, parameter, public :: IC_NOA =  63   ! North Africa                  
+  integer, parameter, public ::  IC_EU =  64   ! European
+  integer, parameter, public ::  IC_US =  65   ! USA
+  integer, parameter, public ::  IC_CA =  66   ! Canada
+  integer, parameter, public ::  IC_DUMMY1 =  67 ! Not-defined
+  integer, parameter, public :: IC_KG  =  68 ! Kyrgyzstan(outside dommain)
+  integer, parameter, public :: IC_AZ  =  69   ! Azerbaijan                 
+
+
 
 
   contains
@@ -117,7 +123,7 @@ Country( IC_AL ) = cc(  "AL " ,  1 ,F,  1  , "Albania                       " )
 Country( IC_AT ) = cc(  "AT " ,  2 ,F,  1  , "Austria                       " )
 Country( IC_BE ) = cc(  "BE " ,  3 ,F,  1  , "Belgium                       " )
 Country( IC_BG ) = cc(  "BG " ,  4 ,F,  2  , "Bulgaria                      " )
-Country( IC_CS ) = cc(  "CS " ,  5 ,F,  1  , "Former Yugoslavia             " )
+Country( IC_CS ) = cc(  "CS " ,  5 ,F,  1  , "Former Czechoslovakia         " )
 Country( IC_DK ) = cc(  "DK " ,  6 ,F,  1  , "Denmark                       " )
 Country( IC_FI ) = cc(  "FI " ,  7 ,F,  2  , "Finland                       " )
 Country( IC_FR ) = cc(  "FR " ,  8 ,F,  1  , "France                        " )
@@ -140,8 +146,8 @@ Country( IC_CH ) = cc(  "CH " , 24 ,F,  1  , "Switzerland                   " )
 Country( IC_TR ) = cc(  "TR " , 25 ,F,  2  , "Turkey                        " )
 Country( IC_SU ) = cc(  "SU " , 26 ,F,  3  , "Former USSR                   " )
 Country( IC_GB ) = cc(  "GB " , 27 ,F,  0  , "United Kingdom                " )
-Country( IC_VUL) = cc(  "VUL" , 28 ,F,  1  , "Vulcanoes                     " )
-Country( IC_NOA) = cc(  "NOA" , 29 ,F,  1  , "North Africa                  " )
+Country( IC_VUL) = cc(  "VUL" , 28 ,F,  1  , "Volcanoes                     " )
+Country( IC_REM) = cc(  "REM" , 29 ,F,  1  , "Remaining land areas          " )
 Country( IC_BAS) = cc(  "BAS" , 30 ,T,  1  , "The Baltic Sea                " )
 Country( IC_NOS) = cc(  "NOS" , 31 ,T,  1  , "The North Sea                 " )
 Country( IC_ATL) = cc(  "ATL" , 32 ,T,  1  , "Remaining NE Atlantic Ocean   " )
@@ -175,10 +181,14 @@ Country( IC_LI ) = cc(  "LI " , 59 ,F,  1  , "Lichtenstein                  " )
 Country( IC_DE ) = cc(  "DE " , 60 ,F,  1  , "Germany                       " )
 Country( IC_RU ) = cc(  "RU " , 61 ,F,  3  , "Russian Federation            " )
 Country( IC_MC ) = cc(  "MC " , 62 ,F,  1  , "Monaco                        " )
-Country( IC_REM) = cc(  "REM" , 63 ,F,  1  , "Remaining land areas          " )
-!ex Country( IC_EU ) = cc(  "EU " , 64   ,  1  , "European Community            " )
-!ex Country( IC_US ) = cc(  "US " , 65   ,  1  , "USA                           " )
-!ex Country( IC_CA ) = cc(  "CA " , 66   ,  1  , "Canada                        " )
+Country( IC_NOA) = cc(  "NOA" , 63 ,F,  1  , "North Africa                  " )
+Country( IC_EU ) = cc(  "EU " , 64 ,F,  1  , "European Community            " )
+Country( IC_US ) = cc(  "US " , 65 ,F,  1  , "USA                           " )
+Country( IC_CA ) = cc(  "CA " , 66 ,F,  1  , "Canada                        " )
+Country( IC_DUMMY1 ) &
+                 = cc(  "N/A" , 67 ,F,  0  , "Not_defined                   " )
+Country( IC_KG ) = cc(  "KG " , 68 ,F,  6  , "Kyrgyzstan                    " )
+Country( IC_AZ ) = cc(  "AZ " , 69 ,F,  3  , "Azerbaijan                    " )
 
   end subroutine Country_Init
 end module Country_ml
