@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/local/bin/perl
 
 ######################################################################
 # Features
@@ -87,17 +87,18 @@ $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 $version     = "Unimod" ;  
-$testv       = "";
-$subv        = "rv1.4" ;                  # sub-version (to track changes)
+$testv       = ".rv1_4_3acid";
+$subv        = "rv143" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/$version$testv";         # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/$version.${testv}$year";    # working directory
+$WORKDIR     = "$WORK{$USER}/$version${testv}.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 $emisyear    = "$emisdir/emis${yy}";    # emissions
+$timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 #rv1.4:$LOGANDIR ="$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
 $LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data_900mbar"; #Logan boundary conditions
 
@@ -423,13 +424,14 @@ foreach $poll  ( @emislist  ) {
    $new   = "emislist.$poll";
    mylink( "Emis $poll : ", $old,$new ) ;
 
-   $old   = "$emisdir/Monthlyfac.$poll" ;
-   $new   = "Monthlyfac.$poll";
-   mylink( "Monthlfac ", $old,$new ) ;
+   #rv141:$old   = "$emisdir/Monthlyfac.$poll" ;
+   $old   = "$timeseries/MonthlyFac.$poll" ;
+   $new   = "MonthlyFac.$poll";
+   mylink( "MonthlFac ", $old,$new ) ;
 
-   $old   = "$emisdir/Dailyfac.$poll" ;
-   $new   = "Dailyfac.$poll";
-   mylink( "Dailyfac ", $old,$new ) ;
+   $old   = "$timeseries/DailyFac.$poll" ;
+   $new   = "DailyFac.$poll";
+   mylink( "DailyFac ", $old,$new ) ;
 } 
 
 # Surface measurement sites
