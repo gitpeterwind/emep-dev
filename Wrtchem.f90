@@ -231,7 +231,9 @@
 
 
             if( me == 0 ) then
-               write(outfilename,fmt='(a,a1,i2.2)')  trim( f_3d(n)%name ), ".",  nmonpr
+!change output name to be different from input
+!hf               write(outfilename,fmt='(a,a1,i2.2)')  trim( f_3d(n)%name ), ".",  nmonpr
+               write(outfilename,fmt='(a,a5,i2.2)')  trim( f_3d(n)%name ), ".out.",  nmonpr
                open(IO_WRTCHEM,file=outfilename)
                write(IO_WRTCHEM,fmt="(4i4)")  ISMBEG, GIMAX+ISMBEG-1,&
                                               JSMBEG, GJMAX+JSMBEG-1 ! domain
