@@ -210,7 +210,11 @@ contains
    !integer, save :: ix1 = 75, ix2 = 150, iy1=12, iy2 = 102 
    !integer, save :: ix1 = 110, ix2 = 115, iy1=60, iy2 = 60
    integer, save :: ix1 = 125, ix2 = 150, iy1=45, iy2 =  65  !! Athens/Thess. 
-
+!pw:WARNING: If the specification of the subdomain is different for
+!            different components (ix1=125 for ozone and ix1=98 for 
+!            NH4 for example) , the variables i_EMEP, j_EMEP
+!            latitude and longitude in NetCDF output will be
+!            wrong. 
 
 !jej - added 11/5/01 following Joffen's suggestion:
 

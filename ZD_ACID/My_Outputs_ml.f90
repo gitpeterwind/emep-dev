@@ -213,6 +213,11 @@ contains
    integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
    !integer, save :: ix1 = 70, ix2 =  95, iy1=40, iy2 = 70   ! UK
    !integer, save :: ix1 = 70, ix2 = 150, iy1=12, iy2 = 120   ! NOFRETETE=EU
+!pw:WARNING: If the specification of the subdomain is different for
+!            different components (ix1=125 for ozone and ix1=98 for 
+!            NH4 for example) , the variables i_EMEP, j_EMEP
+!            latitude and longitude in NetCDF output will be
+!            wrong. 
 
 
 !jej - added 11/5/01 following Joffen's suggestion:
