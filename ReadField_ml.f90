@@ -51,10 +51,6 @@ contains
   ! errmsg more explicit now.
 
   real :: in_field(IILARDOM,JJLARDOM)! Field to be read
-  real :: out_field(GIMAX ,GJMAX )!pw
-
-  integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
-  real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
 
   in_field(:,:)    = 0.0       ! Initialise - ds, 15/1/2005      
   local_field(:,:) = 0.0       ! Initialise - ds, 15/1/2005      
@@ -111,11 +107,6 @@ contains
 
   integer :: in_field(IILARDOM,JJLARDOM)! Field to be read
   real :: in_field_r(IILARDOM,JJLARDOM)
-  real :: out_field(GIMAX ,GJMAX ) !pw
-
-
-  integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
-  real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
 
   errmsg = "ok"
 
