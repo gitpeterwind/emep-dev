@@ -564,7 +564,7 @@ module DryDep_ml
 !hf Not needed inside IXADV_ loop
 
         if (i==2 .and. j==2 .and. nadv==49)then
-        write(*,*)'nadv, Deploss',49,DepLoss(49)
+        write(*,*)'nadv, Deploss',49,DepLoss(nadv)
         endif
         call DryDep_Budget(i,j,Deploss,convfac)
 
