@@ -1,8 +1,8 @@
  subroutine Wrtchem(numt)
    !-----------------------------------------------------------------------
    ! DESCRIPTION
-   ! Writes out binary data fields, and ascii fields for AOT if
-   ! present. 
+   ! Writes out data fields as NetCDF and (if out_binary defined)
+   ! as binary. The latter option will be removed soon (ds 18/3/2005).
    !
    ! HISTORY
    ! Wrtchem.f90 version created by ds to make use of new Derived
@@ -22,6 +22,8 @@
    !          occur at 6am of the 1st day, but this should be over-written
    !          as soon as a full day of data is available).
    !      -- End_of_Run logical introduced to help readability.
+   ! 21/3/2005 - ds changes
+   !    AOT outputs removed.
    !-----------------------------------------------------------------------
 !ds New deriv system, 21/12/2003:
    use My_Derived_ml, only: NDERIV_2D, & !dsAscii3D
@@ -66,8 +68,7 @@
    End_of_Run = ( mod(numt,nprint) == 0       )
 
    if(me==0) then
-          write(6,"(a12,i5,5i4)") "DAILY PRE ", numt, nmonth, mm_out, nday, dd_out, nhour
-          write(6,"(a12,i5)") "DAILY DD_OUT ", dd_out
+          write(6,"(a12,i5,5i4)") "DAILY DD_OUT ", numt, nmonth, mm_out, nday, dd_out, nhour
    end if
    if ( END_OF_EMEPDAY  <= 7 ) then
 
@@ -158,58 +159,6 @@
        call Output_binary(IOU_YEAR,outfilename)
 
    end if    ! last numt check
-
-!su   aot each month or end of run
-!ds ODIN6 - more flexible version?: Here we search all the derived 2d
-!   fields. If the class is AOT we print-out. However, it is straightfoward
-!   to test for other classes here also, e.g. we could add ACCSU also.
-!
-! The output file name is built up from the class and index of the 2d field,
-!  e.g. AOT40.0589, AOT60.0590, or ACCSU-1.0590
-!   ( and hope the index stays below 100 for the near future...)
-
-! note - I introduced an extra array local_2d before passing to local2global.
-! This is hopefully easier to understand, although not so efficient, as
-! passing a portion of the 4d array
- 
-  if ( (mod(numt,nprint) == 0) .or. (nday == 1.and.nhour == 0) )then
-    do n = 1, NDERIV_2D
-      select case ( f_2d(n)%class )
-        case ( "AOT" )
-
-            msnr1 = 2000
-            local_2d(:,:) = d_2d(n,:,:,IOU_MON)   ! make 2-d copy
-            call local2global(local_2d,glob_2d,msnr1)
-            if (me  ==  0) then
-
-               if(nday == 1.and.nhour == 0)then
-                   nmonpr = nmonth-1
-                   if( nmonpr == 0) nmonpr=12
-                   write(outfilename,fmt='(a,i2.2,i2.2)')  &  ! Build-up 
-                                                              ! output name
-                               trim( f_2d(n)%class ),  &
-                                     f_2d(n)%index ,  &
-                                     nmonpr
-               else if ( mod(numt,nprint) == 0)then
-                   write(outfilename,fmt='(a,i2.2,i4.4,i2.2,i2.2,i2.2)')  &  
-                               trim( f_2d(n)%class ),  &
-                                     f_2d(n)%index ,  &
-                                     nyear,nmonth,nday,nhour
-               endif
-
-               open(IO_WRTCHEM,file=outfilename)
-               do i = 1,GIMAX
-                 do j = 1,GJMAX
-                     write(IO_WRTCHEM,'(1x,i4,1x,i4,f17.6)') i,j,glob_2d(i,j)
-                 end do
-               end do
-               close(IO_WRTCHEM)
-
-             end if  ! me loop
-            
-       end select
-     end do 
-  end if    ! last numt check
 
 
 !su   move the monthly output from the nn.ne.nold to this place
