@@ -246,6 +246,13 @@ private
     f_3d( D3_aNO3 ) = Deriv( 408, "ADV  ", T,  IXADV_aNO3 , PPBINV , F , T , T , T , F )
     f_3d( D3_XKSIG00 ) = Deriv( 409, "XKSIG00  ", T,  0. , 1. , F , T , T , T , F )
     f_3d( D3_XKSIG12 ) = Deriv( 410, "XKSIG12  ", T,  0. , 1. , F , T , T , T , F )
+
+
+      wdep( :,:,:,:) = 0.0
+      ddep( :,:,:,:) = 0.0
+      d_2d( :,:,:,:) = 0.0
+      d_3d( :,:,:,:,:) = 0.0
+
   end subroutine Set_My_Derived
  !=========================================================================
   subroutine My_DerivFunc( n, class , timefrac, density )
@@ -352,7 +359,7 @@ private
           d_2d( n, i,j,IOU_INST) = &
 !hf amsu                xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
                 xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
-            / (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j)   &
+            / max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))   &
 !hf amsu            +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j) )    
             +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) )    
       end forall

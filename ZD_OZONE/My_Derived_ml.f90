@@ -436,7 +436,7 @@ private
           d_2d( n, i,j,IOU_INST) = &
              ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
             +  xn_adv(IXADV_NITRATE,i,j,KMAX_MID) * cfac(IXADV_NITRATE,i,j)) &
-            / (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j)   &
+            /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))   &
             +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)    &
             +  xn_adv(IXADV_NITRATE,i,j,KMAX_MID) * cfac(IXADV_NITRATE,i,j))
       end forall
