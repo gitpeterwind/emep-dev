@@ -6,6 +6,7 @@ use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
                       ,crops, bulk, water  & ! logical variables
                       ,forest,conif_forest & !    "      "
                       ,STUBBLE             & ! Ht. of stubble (m)
+                      ,SAIadd              & ! surface-area index, rv1.4.6
                       ,hveg_max, b_inc, albedo, NH4_pl, SGS50, DSGS   &
                       ,EGS50, DEGS, LAImin, LAImax, SLAIlen, ELAIlen  &
                       ,g_pot_min , Sg_potlen , Eg_potlen     &
@@ -44,8 +45,8 @@ private
 !rv1.2            crops   &! true for veg which grows...
 !rv1.2           ,bulk     ! true for land-classes without LAI
 
- real, public, dimension(NLANDUSE), save :: &
-       SAIadd                  ! Additional surface area for bark, twigs
+!rv1.4.6 real, public, dimension(NLANDUSE), save :: &
+!rv1.4.6       SAIadd                  ! Additional surface area for bark, twigs
 
 !.. very crude for now:
 !rv1.2 integer, public, parameter :: NDEP_FLUX = 5,  &  ! 
