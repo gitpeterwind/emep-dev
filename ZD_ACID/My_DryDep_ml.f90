@@ -136,10 +136,10 @@ contains
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
      integer :: n, nadv
 
-     integer, parameter :: N_OXN = 4        ! Number in ox. nitrogen family
+     integer, parameter :: N_OXN = 5        ! Number in ox. nitrogen family
      integer, parameter, dimension(N_OXN) :: OXN = &
 !hf amsu     (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_AMNI /)
-             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_aNO3 /)
+             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_aNO3 ,IXADV_pNO3/)
 
 !hf amsu     integer, parameter :: N_RDN = 3        ! Number in rd. nitrogen family
 !hf amsu      integer, parameter, dimension(N_RDN) :: RDN = &
