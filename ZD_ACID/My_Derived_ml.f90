@@ -201,7 +201,7 @@ private
 
      ! To give same units as MACHO....  (multiplied with roa in layers?? ==> rho "false" )
     sf = species ( SO4 )%molwt * PPBINV /ATWAIR
-    f_2d( D2_ACCSU) = Deriv( 611, "ACCSU", T, -1, sf ,   F  , F  ,  T , T ,  F  )
+    f_2d( D2_ACCSU) = Deriv( 611, "ACCSU", T, -1, sf ,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")
 
    ! -- simple advected species
 
