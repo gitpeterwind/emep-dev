@@ -20,14 +20,15 @@ contains
 subroutine runchem()
 
 !/ Definitions 
-
+!hf
+   use DryDep_ml, only : drydep
    use My_Aerosols_ml, only: My_MARS,My_EQSAM,AERO_DYNAMICS,INORGANIC_AEROSOLS&
                             ,RUN_MARS,RUN_EQSAM,ORGANIC_AEROSOLS  
    use Par_ml,           only : lj0,lj1,li0,li1  &
                         ,gi0, gj0, me,NPROC & !! for testing
                         ,ISMBEG, JSMBEG    !! for testing
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
-                            DEBUG_i, DEBUG_j    ! rv1.2
+                            DEBUG_i, DEBUG_j,nstep    ! rv1.2
 
    use Setup_1d_ml,       only: setup_1d, &
                                 setup_bio, setup_rcemis, reset_3d
@@ -139,14 +140,28 @@ subroutine runchem()
 
                      call Add_2timing(31,tim_after,tim_before,&
                                                "Runchem:chemistry")
-!hf dec-2002 Add check that one and only one is chosen
-                     if ( INORGANIC_AEROSOLS ) call ammonium() 
-                     if ( RUN_MARS )           call My_MARS(debug_flag)
-                     if ( RUN_EQSAM )          call My_EQSAM(debug_flag) 
 
+                     !????????????????????????????????????????????????????
+                     !ALTERNATING DRYDEP AND EQ
+!hf dec-2002 Add check that one and only one eq is chosen
+                     if(mod(nstep,2) /= 0 )then !do eq first, then drydep
+
+                        if ( INORGANIC_AEROSOLS ) call ammonium() 
+                        if ( RUN_MARS )           call My_MARS(debug_flag)
+                        if ( RUN_EQSAM )          call My_EQSAM(debug_flag) 
+
+                        call DryDep(i,j)
+                     else !do drydep first, then eq
+
+                        call DryDep(i,j)
+                        if ( INORGANIC_AEROSOLS ) call ammonium() 
+                        if ( RUN_MARS )           call My_MARS(debug_flag)
+                        if ( RUN_EQSAM )          call My_EQSAM(debug_flag) 
+                     endif
+                    !????????????????????????????????????????????????????
 
                      call Add_2timing(32,tim_after,tim_before,&
-                                                 "Runchem:ammonium")
+                                                 "Runchem:ammonium+Drydep")
 
                       if ( MYDEBUG .and. debug_flag  ) then
                          write(6,*) "DEBUG_RUN me pre WetDep", me, prclouds_present

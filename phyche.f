@@ -5,7 +5,7 @@ c
 c     (3) physical and chemical calculations begin
 c
       subroutine phyche(numt)
-
+      use My_Derived_ml, only :wdep,ddep,IOU_INST 
 chf u2      use My_Runmode_ml,  only : DEBUG
       use My_Outputs_ml , only : NHOURLY_OUT
      &                   ,FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
@@ -13,7 +13,7 @@ chf u2      use My_Runmode_ml,  only : DEBUG
       use My_Timing_ml, only : Code_timer, Add_2timing, 
      &                         tim_before, tim_after  
       use Dates_ml,     only : date, add_dates,dayno
-      use DryDep_ml,    only : drydep
+      use DryDep_ml,    only : drydep,init_drydep
       use Par_ml   ,    only : me, MAXLIMAX, MAXLJMAX
       use Met_ml ,      only : roa,z_bnd,z_mid,metint
       use ModelConstants_ml , only : KMAX_MID
@@ -24,7 +24,7 @@ chf u2      use My_Runmode_ml,  only : DEBUG
       use Emissions_ml,    only : EmisSet  
       use Timefactors_ml,  only : NewDayFactors  
       use Chemfields_ml,   only : xn_adv,cfac,xn_shl
-      use Derived_ml,      only : SumDerived, DerivedProds
+      use Derived_ml,      only : SumDerived, DerivedProds,Derived
       use Radiation_ml,  only : ZenAng   !6c - gets zenith angle
       use Runchem_ml  , only : runchem   ! Calls setup subs and runs chemistry
       use Advection_ml, only: advecdiff,adv_int
@@ -84,7 +84,12 @@ c
 
     	call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
-!        ==================
+!jej
+          call sumDerived(dt_advec)    !< =====  Should add these lines
+
+          wdep(:,:,:,IOU_INST) = 0.
+          ddep(:,:,:,IOU_INST) = 0.
+cc!        ==================
 c
 c
 c
@@ -113,6 +118,10 @@ c
 
           call Add_2timing(26,tim_after,tim_before,"phyche:MACHO-prod")
 
+         !hf===================================
+           call init_drydep()
+         !===================================
+
          !=========================================================
 
           call runchem()   !  calls setup subs and runs chemistry
@@ -130,7 +139,7 @@ c
 c
 	  call Code_timer(tim_before)
           !=============================
-	  call drydep()
+!hf	  call drydep()
           !=============================
           call Add_2timing(34,tim_after,tim_before,"phyche:drydep")
 
@@ -151,7 +160,8 @@ c
         !u7.4vg - move here to allow some d_2d variables to be set
         !         and then used in ascii printouts.
 
-          call SumDerived(dt_advec)
+!jej          call SumDerived(dt_advec)
+          call Derived(dt_advec)
 
 	  if ( current_date%seconds == 0 ) then
 

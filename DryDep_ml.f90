@@ -10,6 +10,7 @@ module DryDep_ml
 
  !-- model specific dry dep values are set in My_UKDep_ml:
  !   (in file My_DryDep_ml)
+ !hf dec-02 Structure changed so that DryDep can go inside loop in Runchem
 
  use My_UKDep_ml, only : Init_DepMap,  &   ! Maps indices between Vg-calculated (CDEP..
                                        &   !and advected  (IXADV_..)
@@ -20,17 +21,18 @@ module DryDep_ml
                           DepLoss, Add_ddep, &
                           Dep        ! Mapping (type = depmap)
 
+
  use My_Derived_ml                ! -> d_2d, IOU_INST, D2_VG etc...
 
  use Dates_ml,       only : daynumber !u7.lu
  use DepVariables_ml,only : NLANDUSE,  LU_WATER, &
                             forest, g_pot, g_temp,g_vpd, &
                             g_light,g_swp
- use Chemfields_ml , only : xn_adv,cfac
+ use Chemfields_ml , only : cfac!,xn_adv
  use GenSpec_adv_ml, only : NSPEC_ADV
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
                             i_glob, j_glob   !u1 for testing
- use MassBudget_ml,  only : totddep
+ use MassBudget_ml,  only : totddep,DryDep_Budget !hf
  use Met_ml,         only : roa,fm,fh,z_bnd,th2m,th,ps,u,v,z_mid&
                             ,snow, pr, psurf, cc3dmax, t2, q    & ! u7.lu
                             ,iclass   & ! ds rv1.2
@@ -63,15 +65,18 @@ module DryDep_ml
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
+ use Setup_1dfields_ml,    only : xn_2d
+ use GenSpec_shl_ml,        only :  NSPEC_SHL
+
  implicit none
  private
 
- public :: drydep
+ public :: drydep, init_drydep
 
 !hf ddep
    real, private, save, dimension(KUPPER:KMAX_MID) :: &
          pr_acc                 ! Accumulated precipitation
-
+     logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
   logical, private, save :: my_first_call = .true.
   logical, private, parameter :: DEBUG_VG = .false.
@@ -79,7 +84,52 @@ module DryDep_ml
 
 
  contains
-  subroutine drydep
+
+!hf  subroutine drydep
+
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+     subroutine init_drydep
+
+
+     integer, save ::  old_daynumber = -99
+     integer ::nadv,n
+
+  if ( my_first_call ) then 
+
+     call Init_DepMap()                          ! Maps CDEP to IXADV
+
+
+     call Init_ukdep()                ! reads ukdep_biomass, etc.
+     call Init_GasCoeff()             ! Sets Wesely coeffs.
+     call ReadLanduse()
+
+     nadv = 0
+     do n = 1, NDRYDEP_ADV  
+         nadv       = max( Dep(n)%adv, nadv )  ! Looking for highest IXADV
+         vg_set(n)  = ( Dep(n)%calc == CDEP_SET ) ! for set vg
+         if ( DEBUG_UK .and. me == 0 ) print *, "VGSET ", n, nadv, vg_set(n)
+     end do
+
+     my_first_call = .false.
+
+  end if !  my_first_call
+
+  if ( old_daynumber /= daynumber ) then
+
+      call SetLandUse()         ! Sets landuse_LAI, landuse_hveg 
+      old_daynumber = daynumber
+
+  end if
+
+!hf  ustar_sq = -99.99                           ! for debugging
+!hf  imm      =    current_date%month            ! for debugging
+!hf  idd      =    current_date%day              ! for debugging
+!hf  ihh      =    current_date%hour             ! for debugging
+
+  end subroutine init_drydep
+
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine drydep(i,j)
 
  real, dimension(NDRYDEP_CALC) :: &
           gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 1m
@@ -93,11 +143,11 @@ module DryDep_ml
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_1m = ratio C(1m)/C(ref), over land
          ,sea_ratio      ! Ratio Vg_ref/Vg_1m = ratio C(1m)/C(ref), over sea
 
- logical, dimension(NDRYDEP_ADV), save :: vg_set 
-
- integer i, j, n, ilu, lu, nlu, ncalc, nadv, ind, err,k   ! help indexes
+!hf logical, dimension(NDRYDEP_ADV), save :: vg_set 
+ integer, intent(in):: i,j
+ integer n, ilu, lu, nlu, ncalc, nadv, ind, err,k   ! help indexes
  integer :: imm, idd, ihh     ! date
-
+ integer :: nadv2d !index of adv species in xn_2d array
  real ustar_sq, & ! u star squared
       abshd,    & ! abs value of surfae flux of sens. heat W/m^2
       u_ref       ! horizontal vind   !ds - was uvhs
@@ -108,7 +158,7 @@ module DryDep_ml
                   ! z = height of layer)
 
   real, save :: inv_gridarea  ! inverse of grid area, m2
-  integer, save ::  old_daynumber = -99
+!hf  integer, save ::  old_daynumber = -99
 
 ! Landuse, UKDEP
    real :: cover , Sumcover, Sumland   ! Land-coverage
@@ -140,43 +190,16 @@ module DryDep_ml
 !     Dry deposion rates are specified in subroutine readpar
 !
 
-  if ( my_first_call ) then 
+!hf  do j = lj0,lj1
+!hf    do i = li0,li1
 
-     call Init_DepMap()                          ! Maps CDEP to IXADV
-
-     inv_gridarea = 1.0/(GRIDWIDTH_M*GRIDWIDTH_M) 
-
-     call Init_ukdep()                ! reads ukdep_biomass, etc.
-     call Init_GasCoeff()             ! Sets Wesely coeffs.
-     call ReadLanduse()
-
-     nadv = 0
-     do n = 1, NDRYDEP_ADV  
-         nadv       = max( Dep(n)%adv, nadv )  ! Looking for highest IXADV
-         vg_set(n)  = ( Dep(n)%calc == CDEP_SET ) ! for set vg
-         if ( DEBUG_UK .and. me == 0 ) print *, "VGSET ", n, nadv, vg_set(n)
-     end do
-
-     my_first_call = .false.
-
-  end if !  my_first_call
-
-  if ( old_daynumber /= daynumber ) then
-
-      call SetLandUse()         ! Sets landuse_LAI, landuse_hveg 
-      old_daynumber = daynumber
-
-  end if
-
+!hf FOR DEBUGGING s
   ustar_sq = -99.99                           ! for debugging
   imm      =    current_date%month            ! for debugging
   idd      =    current_date%day              ! for debugging
   ihh      =    current_date%hour             ! for debugging
 
-  do j = lj0,lj1
-    do i = li0,li1
-
-
+     inv_gridarea = 1.0/(GRIDWIDTH_M*GRIDWIDTH_M) 
 !hf
 ! Need pr_acc for wet surfaces
 ! Add up the precipitation in the column
@@ -454,27 +477,35 @@ module DryDep_ml
 
       do n = 1, NDRYDEP_ADV 
          nadv    = Dep(n)%adv
+         nadv2d    = NSPEC_SHL + Dep(n)%adv
+
          ncalc   = Dep(n)%calc
 
          if ( vg_set(n) ) then
 
              DepLoss(nadv) =   & ! Use directly set Vg
-                 ( 1.0 - exp ( -Dep(n)%vg * dtz ) ) * xn_adv( nadv,i,j,KMAX_MID)
+!hf                 ( 1.0 - exp ( -Dep(n)%vg * dtz ) ) * xn_adv( nadv,i,j,KMAX_MID)
+                 ( 1.0 - exp ( -Dep(n)%vg * dtz ) ) * xn_2d( nadv2d,KMAX_MID)
              cfac(nadv, i,j) = 1.0   ! Crude, for now.
   
          else
-             DepLoss(nadv) =   vg_fac( ncalc )  * xn_adv( nadv,i,j,KMAX_MID)
+!hf             DepLoss(nadv) =   vg_fac( ncalc )  * xn_adv( nadv,i,j,KMAX_MID)
+             DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( nadv2d,KMAX_MID)
              cfac(nadv, i,j) = gradient_fac( ncalc )
          end if
 
          if ( DepLoss(nadv) < 0.0 .or. &
-              DepLoss(nadv)>xn_adv(nadv,i,j,KMAX_MID) ) then
-           print *,"NEG XN DEPLOSS!!! ", DepLoss(nadv), xn_adv(nadv,i,j,KMAX_MID)
+!hf              DepLoss(nadv)>xn_adv(nadv,i,j,KMAX_MID) ) then
+              DepLoss(nadv)>xn_2d(nadv2d,KMAX_MID) ) then
+!hf           print *,"NEG XN DEPLOSS!!! ", nadv,DepLoss(nadv), xn_adv(nadv,i,j,KMAX_MID)
+           print *,"NEG XN DEPLOSS!!! ", nadv,DepLoss(nadv), xn_2d(nadv2d,KMAX_MID)
            call gc_abort(me,NPROC,"NEG XN DEPLOSS")
          end if
 
-         xn_adv( nadv,i,j,KMAX_MID) = &
-             xn_adv( nadv,i,j,KMAX_MID) - DepLoss(nadv)
+!hf         xn_adv( nadv,i,j,KMAX_MID) = &
+!hf             xn_adv( nadv,i,j,KMAX_MID) - DepLoss(nadv)
+        xn_2d( nadv2d,KMAX_MID) = &
+             xn_2d( nadv2d,KMAX_MID) - DepLoss(nadv)
 
       !.. ecosystem specific deposition - translate from calc to adv and normalise
 
@@ -507,7 +538,8 @@ module DryDep_ml
       !..accumulated dry deposition per grid square and summed over the whole
       !  domain
 
-         totddep( nadv ) = totddep (nadv) + Deploss(nadv) * convfac
+!         totddep( nadv ) = totddep (nadv) + Deploss(nadv) * convfac
+
 
         if ( DEBUG_UK .and. debug_flag ) then
           if ( vg_set(n) ) then
@@ -516,13 +548,25 @@ module DryDep_ml
               print "(a30,3i4,f12.5)", &
                   "DEBUG DryDep n, adv, calc, fac ",  n,nadv, ncalc, gradient_fac( ncalc)
               print "(a20,2e12.4)", &
-                "DEBUG xn, DepLoss ", xn_adv(nadv, i,j,KMAX_MID), DepLoss(nadv)
+!hf                "DEBUG xn, DepLoss ", xn_adv(nadv, i,j,KMAX_MID), DepLoss(nadv)
+                "DEBUG xn, DepLoss ", xn_2d(nadv2d,KMAX_MID), DepLoss(nadv)
               print "(a20,2f8.4)", "DEBUG gv_fac( ncalc)", &
                  vg_fac(ncalc), 1.0-vg_fac(ncalc)
           end if
         end if
 
+!        if (i==2 .and. j==2 .and. nadv==50)then
+!        write(*,*)'nadv, Deploss',nadv,DepLoss(nadv)
+!        endif
+
        end do ! n
+
+!hf Not needed inside IXADV_ loop
+
+        if (i==2 .and. j==2 .and. nadv==49)then
+        write(*,*)'nadv, Deploss',49,DepLoss(49)
+        endif
+        call DryDep_Budget(i,j,Deploss,convfac)
 
        ! inv_gridarea = xm2(i,j)/(GRIDWIDTH_M*GRIDWIDTH_M)
        convfac2 = convfac * xm2(i,j) * inv_gridarea
@@ -536,11 +580,11 @@ module DryDep_ml
        !      Sumcover, Sumland, fluxfrac_adv(7,15), fluxfrac_adv(8,15), &
        !      fluxfrac_adv(9,15)
        !end if 
+
        call Add_ddep(i,j,convfac2,fluxfrac_adv)
 
-
-     enddo   !j
-   enddo    !i
+!hf     enddo   !j
+!hf   enddo    !i
  end subroutine drydep
 
 end module DryDep_ml

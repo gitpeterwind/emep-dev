@@ -191,11 +191,11 @@ MARS_ml.o: Aero_water_ml.o
 	$(F90) $(F90FLAGS) -c Aero_water_ml.o MARS_ml.f90
 MassBudget_ml.o: Chem_ml.o GridValues_ml.o Io_ml.o Met_ml.o \
 	ModelConstants_ml.o My_Chem_ml.o My_Derived_ml.o My_MassBudget_ml.o \
-	Par_ml.o
+	Par_ml.o  My_DryDep_ml.o Setup_1dfields_ml.o
 	$(F90) $(F90FLAGS) -c Chem_ml.o GridValues_ml.o Io_ml.o \
 		Met_ml.o ModelConstants_ml.o My_Chem_ml.o \
-		My_Derived_ml.o My_MassBudget_ml.o Par_ml.o \
-		MassBudget_ml.f90
+		My_Derived_ml.o My_MassBudget_ml.o Par_ml.o  Setup_1dfields_ml.o\
+		My_DryDep_ml.o MassBudget_ml.f90
 Met_ml.o: Dates_ml.o GridValues_ml.o Io_ml.o ModelConstants_ml.o Par_ml.o \
 	PhysicalConstants_ml.o ReadField_ml.o Tabulations_ml.o
 	$(F90) $(F90FLAGS) -c Dates_ml.o GridValues_ml.o Io_ml.o \

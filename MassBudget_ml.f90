@@ -63,7 +63,7 @@ private
 
   public :: Init_massbudget
   public :: massbudget
-  
+  public :: DryDep_Budget
 
 contains
 
@@ -363,6 +363,34 @@ contains
  end subroutine massbudget
 
 
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+  subroutine DryDep_Budget(i,j,Loss,convfac)
+     use Setup_1dfields_ml, only : amk ! Air concentrations 
+     use GenSpec_adv_ml
+     use My_UKDep_ml, only : NDRYDEP_ADV, Dep 
+!     real, dimension(NDRYDEP_ADV), intent(in) :: Loss
+!     real, dimension(NDRYDEP_ADV) :: DryLoss
+      real, dimension(NSPEC_ADV), intent(in) :: Loss
+      real, dimension(NSPEC_ADV) :: DryLoss
+ 
+     real, intent(in)  :: convfac
+     integer :: n,nadv,i,j  ! index in IXADV_  arrays
+
+     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio ?
+
+      do n = 1, NDRYDEP_ADV 
+         nadv    = Dep(n)%adv
+         totddep( nadv ) = totddep (nadv) + DryLoss(nadv) 
+
+  if ((i==2 .and.j==2).and. nadv==IXADV_SO2)then
+      write(*,*)'DRYDEP BUDGET nadv,DryLoss(nadv),totddep(nadv)', nadv,DryLoss(nadv),totddep(nadv)
+  endif
+      enddo
+  end subroutine DryDep_Budget
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
              end module MassBudget_ml
 !MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
