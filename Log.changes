@@ -1,3 +1,39 @@
+
+==============================================================================
+=========== Peter , January 2003, rv1.4.2  ====================================
+==============================================================================
+==============================================================================
+
+1)DryDep_ml: 
+	use amk
+	confac2=... /amk(KMAX_MID) 
+        ds-Bug created whewn xn_2d used instead of xn_adv (when put inside i,j loop ?)
+
+2)NetCDF_ml: new module
+3)Unimod.f90: call to netCDF_ml
+4)Output_binary_ml: call to NetCDF_ml
+
+3)GridValues_ml: added routine coordzero (used by NetCDF_ml)
+
+4)ReadCDF_ml: not used by the model, but contains routines that can read the
+	NetCDF output.
+
+5)Makefile: 
+	LIBS = -lmpi -lnetcdf
+	INCL = -I/home/u4/mifahik/netcdf/include
+	LLIB = -L/home/u4/mifahik/netcdf/lib64
+
+
+6)My_Derived: included /max(1E-80, (xn_adv(...))) in order to avoid division by zero for 0 concentrations.
+
+
+7)./ZD_ACID/My_Derived_ml:      (was done in ZD_OZONE, but not in ZD_ACID)
+	 wdep( :,:,:,:) = 0.0
+      ddep( :,:,:,:) = 0.0
+      d_2d( :,:,:,:) = 0.0
+      d_3d( :,:,:,:,:) = 0.0
+
+
 ==============================================================================
 ==============================================================================
 =========== Dave, 14 Jan 2003  rv1.4.1  ======================================
@@ -198,38 +234,4 @@ Dave  corrected nadv  for ecosystem-specific dep.
 
 22)Include  -TARG:exc_min=OZV as compiler option. This will stop the execution if
    wrong operations are done (such as 0/0 , NaN ).
-
-==============================================================================
-=========== Peter , January 2003  =============================================
-==============================================================================
-==============================================================================
-
-1)DryDep_ml: 
-	use amk
-	confac2=... /amk(KMAX_MID) 
-
-2)NetCDF_ml: new module
-3)Unimod.f90: call to netCDF_ml
-4)Output_binary_ml: call to NetCDF_ml
-
-3)GridValues_ml: added routine coordzero (used by NetCDF_ml)
-
-4)ReadCDF_ml: not used by the model, but contains routines that can read the
-	NetCDF output.
-
-5)Makefile: 
-	LIBS = -lmpi -lnetcdf
-	INCL = -I/home/u4/mifahik/netcdf/include
-	LLIB = -L/home/u4/mifahik/netcdf/lib64
-
-
-6)My_Derived: included /max(1E-80, (xn_adv(...))) in order to avoid division by zero for 0 concentrations.
-
-
-7)./ZD_ACID/My_Derived_ml:      (was done in ZD_OZONE, but not in ZD_ACID)
-	 wdep( :,:,:,:) = 0.0
-      ddep( :,:,:,:) = 0.0
-      d_2d( :,:,:,:) = 0.0
-      d_3d( :,:,:,:,:) = 0.0
-
 
