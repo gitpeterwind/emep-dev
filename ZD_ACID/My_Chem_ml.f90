@@ -15,24 +15,25 @@
  ! Species which can be specified simply for each column, e.g.
  ! as function of local meteorology or zenith angle
  !   o2, m,  and for MADE-like, oh, ch3coo2
- 
+
+
    integer, public, parameter ::  NSPEC_BGN = 2 ! No. 3D bgn species
    integer, public, parameter ::  NSPEC_COL = 4 ! total no. prescribed specs
 
 
 !**/ First species from global CTM
    integer, public, parameter ::   & 
-     IXBGN_O3            =   1     
-
+     IXBGN_O3            =   1     &
+    ,IXBGN_H2O2          =   2     
 !**/ THEN (!!) species prescribed by zenith angle 
    integer, public, parameter ::   & 
-     IXBGN_OH            =   2& !3     &
-    ,IXBGN_CH3COO2       =   3       
+     IXBGN_OH            =   3&      
+    ,IXBGN_CH3COO2       =   4       
 !**/ THEN (!!) simple function reset daily
 !u7.1    ,IXBGN_H2O2           =   4   
 
    real, public, save, dimension(NSPEC_COL,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-
+   real, public, parameter :: O3fix=0. !add 10 ppb to Logan data
 
 !-----------------------------------------------------------
   end module GenSpec_bgn_ml

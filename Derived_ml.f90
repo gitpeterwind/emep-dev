@@ -28,7 +28,7 @@ module Derived_ml
   !---------------------------------------------------------------------------
 
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
-use Chemfields_ml, only : xn_adv, xn_shl, cfac
+use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml,  only : NSPEC_SHL  ! Use NSPEC_SHL to map adv to tot.indices
 !u1 use GenSpec_maps_ml, only : MAP_ADV2TOT
@@ -351,6 +351,11 @@ private
               d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
             end forall
 
+         case ( "BGN" )
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = xn_bgn(index,i,j,k)
+            end forall
 !hf hmix xksig
          case ("XKSIG00", "XKSIG12" )
 
@@ -516,3 +521,13 @@ private
  !=========================================================================
 
 end module Derived_ml
+
+
+
+
+
+
+
+
+
+

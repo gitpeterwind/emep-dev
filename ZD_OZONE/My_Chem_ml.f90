@@ -24,8 +24,7 @@
    real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
 
   !/ In ACID we now specify IXBGN_xx values. Omitted here.
-
-
+   real, public, parameter :: O3fix=10. !add 10 ppb to Logan data
 !-----------------------------------------------------------
   end module GenSpec_bgn_ml
 
