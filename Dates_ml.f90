@@ -45,13 +45,16 @@ module Dates_ml
  integer, public, parameter :: NMONTHS  = 12   !  No. months per year (was NM)
 
 
-!.. set start dates for years 1990-2001 ( Y2K compliant!) 
+!.. set start dates for years 1980-2001 ( Y2K compliant!) 
 
   integer, public, parameter :: MON=1, TUE=2, WED=3, THU=4,  &
                                 FRI=5, SAT=6, SUN=7
 
-  integer, public, parameter, dimension(1990:2001) ::  &
-    STARTDAY= (/ MON,TUE,WED,FRI,SAT,SUN,MON,WED,THU,FRI,SAT,MON /)
+  integer, public, parameter :: FIRST_SDYEAR = 1980, LAST_SDYEAR = 2001
+  integer, public, parameter, dimension(FIRST_SDYEAR:LAST_SDYEAR) ::  &
+    STARTDAY= (/ TUE,THU,FRI,SAT,SUN,TUE,WED,THU,FRI,SUN, &
+    !...          80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 
+                 MON,TUE,WED,FRI,SAT,SUN,MON,WED,THU,FRI,SAT,MON /)
     !...          90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 00, 01 
 
   logical, private, save :: Init_done = .false.
@@ -74,7 +77,6 @@ contains
    nmdays(2) = 28  + is_leap(yy)
    nydays    = 365 + is_leap(yy)
 
-  !u7.lu
    mday1(1) = 1  ! Jan 1st.
    do mm = 2, 12
       mday1(mm) = mday1(mm-1) + nmdays(mm-1) 
@@ -95,7 +97,6 @@ contains
 
     if (iyear < 100 ) then
          ! print *,"Error in is_leap, needs 4 digit year!"
-         ! call stop_all("Err in is_year")
        iyear = year + 1900
     endif
     is = 0
@@ -212,7 +213,6 @@ contains
         integer, intent(in)    ::  s          ! No. seconds
         type(date)             ::  newdate
 
-!pw emep1.2beta        if ( .not. Init_done .or. s>=3600) then
         if ( .not. Init_done .or. s>3600) then
             print *, " ERROR: Invalid in add_dates_s",s
             newdate = date( -999, -999, -999, -999 , -999 )

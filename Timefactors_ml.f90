@@ -30,6 +30,7 @@
   use Dates_ml, only:       & ! subroutine, sets:
                    date,           & ! date-type definition
                    nmdays, nydays, & ! days per month (12), days per year
+                   FIRST_SDYEAR, LAST_SDYEAR, & ! Limits defined in Dates_ml
                    STARTDAY,       & ! specifies start day of year (MON, etc.)
                    SUN               ! =7, index for Sunday
   use Io_ml, only : &
@@ -62,7 +63,6 @@
 
   real, public, save, dimension(NLAND)  :: timezone  ! time-diff from GMT
 
-!hf u2:
   logical, private, parameter :: DEBUG = .false.
 
   !/** used for general file calls and gc routines below **/
@@ -126,8 +126,8 @@ contains
   write(unit=6,fmt=*) "into timefactors.f "
 
   ios = 0
-  if ( year  <  1990 .or. year > 2002  ) then
-	print *,"ERROR:fix year< 1990 or > 2002"
+  if ( year  <  FIRST_SDYEAR .or. year > LAST_SDYEAR  ) then
+	print *,"ERROR:fix year< FIRST_SDYEAR or > LAST_SDYEAR"
 	ios = 1
   endif
   if ( nydays < 365 )  then
@@ -186,8 +186,8 @@ contains
 	endif
 
        n = 0
-	ios = 0
-       do !gv while(.true.)
+       ios = 0
+       do
            read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
             (fac_edd(inland,i,insec,iemis),i=1,7)
            if ( ios <  0 ) exit   ! End of file
@@ -336,7 +336,6 @@ contains
   enddo
   nday=nday+newdate%day
 
-!pw  weekday = STARTDAY( newdate%year ) + nydays - 1 
   weekday = STARTDAY( newdate%year ) + nday - 1 
   weekday = modulo(weekday,7)        ! restores day to 1--6
   if ( weekday == 0 ) weekday = SUN  ! restores sunday 
