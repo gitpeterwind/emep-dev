@@ -233,8 +233,8 @@ My_Derived_ml.o: Chem_ml.o Met_ml.o ModelConstants_ml.o My_Chem_ml.o Par_ml.o \
 	$(F90) $(F90FLAGS) -c Chem_ml.o Met_ml.o ModelConstants_ml.o \
 		My_Chem_ml.o Par_ml.o PhysicalConstants_ml.o \
 		Radiation_ml.o My_Derived_ml.f90
-My_DryDep_ml.o: ModelConstants_ml.o My_Chem_ml.o My_Derived_ml.o Wesely_ml.o
-	$(F90) $(F90FLAGS) -c ModelConstants_ml.o My_Chem_ml.o \
+My_DryDep_ml.o: DepVariables_ml.o ModelConstants_ml.o My_Chem_ml.o My_Derived_ml.o Wesely_ml.o
+	$(F90) $(F90FLAGS) -c DepVariables_ml.o ModelConstants_ml.o My_Chem_ml.o \
 		My_Derived_ml.o Wesely_ml.o My_DryDep_ml.f90
 My_MassBudget_ml.o: My_Chem_ml.o My_Emis_ml.o
 	$(F90) $(F90FLAGS) -c My_Chem_ml.o My_Emis_ml.o \
