@@ -5,7 +5,7 @@ Defined "ref_latitude" which is latitude for true distances (60 for PARLAM-PS)
 GlobalBCs_ml: defined IGLOB = IILARDOM and JGLOB = JJLARDOM (resulting values 
 are the same as before, but in new grids these will change)
 
-
+Removed part in ReadField for non-EMEP grid.
 
 ============== Peter, rv2_2_0 =================================================
 

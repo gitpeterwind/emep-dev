@@ -89,45 +89,6 @@ contains
            call gc_abort(me,NPROC,"error reading IO_INFILE")
        endif
 
-!pw emep1.2beta
-
-       fi_EMEP = -32.0
-       an_EMEP = 237.7316364 ! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
-       xp_EMEP =  43.0
-       yp_EMEP = 121.0
-
-       if(abs(fi_EMEP-fi)+abs(an_EMEP-an)+ &
-          abs(xp_EMEP-xp)+abs(yp_EMEP-yp) > 0.0001)then
-
-!Convert from EMEP coordinates to present coordinates if the map 
-!is not the EMEP map
-
-          write(*,*)'Converting fields read from ',fname,' to present map'
-          write(*,*)fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP
-          write(*,*)fi,an,xp,yp
-
-          imaxout = GIMAX 
-          jmaxout = GJMAX 
-          xpout = xp -ISMBEG +1
-          ypout = yp -JSMBEG +1
-          fiout = fi
-          anout = an
-          imaxin = IILARDOM
-          jmaxin = JJLARDOM
-       call ij2ij(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
-                   fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP, &
-                   fiout,anout,xpout,ypout)
-
-! Shift array (for compatibility) 
-       do j = JSMBEG,JSMBEG+GJMAX-1
-          j0 = j-JSMBEG+1
-          do i = ISMBEG,ISMBEG+GIMAX-1
-             i0 = i - ISMBEG+1
-             in_field(i,j) = out_field(i0,j0)
-          enddo
-       enddo
-
-       endif
 
     endif !me==0
             
@@ -188,45 +149,6 @@ contains
            print *, 'error in reading IO_INFILE', fname
            call gc_abort(me,NPROC,"error reading IO_INFILE")
         endif !ios
-!pw emep1.2beta
-       fi_EMEP = -32.0
-       an_EMEP = 237.7316364 ! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
-       xp_EMEP =  43.0
-       yp_EMEP = 121.0
-
-       if(abs(fi_EMEP-fi)+abs(an_EMEP-an)+ &
-          abs(xp_EMEP-xp)+abs(yp_EMEP-yp) > 0.0001)then
-
-
-!Convert from EMEP coordinates to present coordinates if the map 
-!is not the EMEP map
-
-          write(*,*)'Converting fields read from ',fname,' to present map'
-          in_field_r = real(in_field)
-          
-          imaxout = GIMAX
-          jmaxout = GJMAX
-          xpout = xp -ISMBEG +1
-          ypout = yp -JSMBEG +1
-          fiout = fi
-          anout = an
-          imaxin = IILARDOM
-          jmaxin = JJLARDOM
-       call ij2ij(in_field_r,imaxin,jmaxin,out_field,imaxout,jmaxout, &
-                   fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP, &
-                   fiout,anout,xpout,ypout)
-
-! Shift array (for compatibility)
-       do j = JSMBEG,JSMBEG+GJMAX-1
-          j0 = j-JSMBEG+1
-          do i = ISMBEG,ISMBEG+GIMAX-1
-             i0 = i - ISMBEG+1
-             in_field(i,j) = nint(out_field(i0,j0))
-          enddo
-       enddo
-
-       endif
-
 
     endif !me==0
 
