@@ -2040,27 +2040,37 @@ private
              /(ps(i,j,nr)*ux0*ux0*ux0)
 
 
-            if(hsl.ge.-2.) then           
-               xkhs(i)=ux0*KARMAN*hs(i)*sqrt(1.-9.*hsl)/0.74   
-               xkdz(i)=xkhs(i)*(1.-4.5*hsl/(1.-9.*hsl))/hs(i)        
-            else
+        !ds rv1_7_2 changes: use simple Garratt \Phi function
+        !   instead of "older" Businge and Iversen/Nordeng stuff:
+
+	! old code distinguished free convection from less unstable
+	! we don't bother now.
+            !dsif(hsl >= 0  ) then           ! Unstable
+               xkhs(i)=ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)/1.00   
+               xkdz(i)=xkhs(i)*(1.-5.0*hsl/(1.0-16.0*hsl))/hs(i)        
+            !dselse
+            !dsif(hsl.ge.-2.) then           
+            !ds   xkhs(i)=ux0*KARMAN*hs(i)*sqrt(1.-9.*hsl)/0.74   
+            !ds   xkdz(i)=xkhs(i)*(1.-4.5*hsl/(1.-9.*hsl))/hs(i)        
+            !dselse
 
 !                                              
 !c..free convection :                                            
-               xkhs(i)=ux0*KARMAN*hs(i)*(1.-xfrco*hsl)**exfrco/0.74  
-               xkdz(i)=xkhs(i)*(1.-xfrco*hsl/(3.*(1.-xfrco*hsl)))/hs(i)
-            endif
+            !ds   xkhs(i)=ux0*KARMAN*hs(i)*(1.-xfrco*hsl)**exfrco/0.74  
+            !ds   xkdz(i)=xkhs(i)*(1.-xfrco*hsl/(3.*(1.-xfrco*hsl)))/hs(i)
+            !dsendif
 !Hilde&Anton
 !pw & hf            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
 !pw & hf                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
             hsurfl=KARMAN*GRAV*100.*fh(i,j,nr)*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
 
-            if(hsurfl >= -2.) then
-               xkh100(i)=ux0*KARMAN*100.*sqrt(1.-9.*hsurfl)/0.74
-            else
-               xkh100(i)=ux0*KARMAN*100.*(1.-xfrco*hsurfl)**exfrco/0.74
-            endif
+            !ds rv1_7_2
+            !if(hsurfl >= -2.) then
+               xkh100(i)=ux0*KARMAN*100.*sqrt(1.-16.*hsurfl)/1.00
+            !else
+            !   xkh100(i)=ux0*KARMAN*100.*(1.-xfrco*hsurfl)**exfrco/0.74
+            !endif
 
             Kz_min(i,j)=xkh100(i)
             xksig(i,j,KMAX_MID)=xkhs(i)
@@ -2081,13 +2091,15 @@ private
              /(ps(i,j,nr)*ux0*ux0*ux0)
 
 
-            xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(0.74+4.7*hsl)   
+            !xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(0.74+4.7*hsl)   
+            xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)   
 
          endif
 !hf Hilde&Anton
             hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
-            Kz_min(i,j)=1.35*ux0*KARMAN*100./(0.74+4.7*hsurfl)
+            !Kz_min(i,j)=1.35*ux0*KARMAN*100./(0.74+4.7*hsurfl)
+            Kz_min(i,j)=ux0*KARMAN*100./(1.00+5.0*hsurfl)
 !c
 !c...............................................................
 !c..factor for reduction of dry-deposition speed from 1m to hs..:
