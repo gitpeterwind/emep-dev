@@ -49,7 +49,7 @@ use GenSpec_tot_ml
 use GenChemicals_ml, only : species
 !ds rv1_9_28: big-fix, i_glob hasn't been defined yet.
 !ds use GridValues_ml,   only : i_glob, j_glob !ds  rv1_9_16 for debug
-use Met_ml, only :   roa,pzpbl,xksig,ps,th
+use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen  !ds mar2005 zen added
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
                         , atwS, atwN, ATWAIR  &
@@ -65,7 +65,7 @@ use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      gi0,gj0,ISMBEG,JSMBEG,&! rv1_9_28 for i_glob, j_glob
                      limax, ljmax           ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
-use Radiation_ml,  only :  zen
+!ds mar2005 use Radiation_ml,  only :  zen
 
 
 implicit none

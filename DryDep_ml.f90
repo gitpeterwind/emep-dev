@@ -54,6 +54,7 @@ module DryDep_ml
  use Met_ml,         only : roa,fm,fh,z_bnd,th2m,th,ps,u,v,z_mid&
                             ,snow, pr, psurf, cc3dmax, t2, q &
                             ,surface_precip & ! ds rv1.6.2 
+                            ,zen,coszen,Idirect,Idiffuse & !ds mar2005
                             ,iclass   &
                             ,ustar,foundustar, fl &
                             ,pzpbl&  !stDep
@@ -65,9 +66,9 @@ module DryDep_ml
                                   KUPPER     !hf ddep
  use Par_ml,               only : me,NPROC,li0,li1,lj0,lj1
  use PhysicalConstants_ml, only : XKAP, PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
- use Radiation_ml,         only : zen         &! zenith angle (degrees)
-                                 ,SolBio      &!u7.lu extras
-                                 ,coszen
+!ds mar2005 use Radiation_ml,         only : zen         &! zenith angle (degrees)
+!ds mar2005                                 ,SolBio      &!u7.lu extras
+!ds mar2005                                 ,coszen
  
  use SubMet_ml,        only: Get_Submet
  use UKdep_ml,         only : Init_ukdep, ReadLanduse, SetLandUse  & 
@@ -320,10 +321,11 @@ module DryDep_ml
         (roa(i,j,KMAX_MID,1)*CP*th(i,j,KMAX_MID,1))) ** (1./3.)
 
 
-    call SolBio(daynumber, coszen(i,j), &
-               cc3dmax(i,j,KMAX_MID)  & ! cloud cover above surface
-               ,psurf(i,j)            &
-               ,Idfuse, Idrctt)   ! output radiation
+    !ds mar2005 - now done in phyche.f
+    !ds mar2005 call SolBio(daynumber, coszen(i,j), &
+    !ds mar2005            cc3dmax(i,j,KMAX_MID)  & ! cloud cover above surface
+    !ds mar2005            ,psurf(i,j)            &
+    !ds mar2005            ,Idfuse, Idrctt)   ! output radiation
       
 
     !   we must use L (the Monin-Obukhov length) to calculate deposition,
@@ -498,8 +500,10 @@ module DryDep_ml
                    is_wet,             &  !ds rv1.6.2 true if wet
                    !ds pr_acc(KMAX_MID),   &  ! Bug fixed by hf - was pr
                    coszen(i,j),        &  ! CHECK   
-                   Idfuse,             &  ! CHECK   
-                   Idrctt,             &  ! CHECK   
+                   Idirect(i,j),       &  ! ds mar2005 
+                   Idiffuse(i,j),      &  ! ds mar2005
+                   !ds mar2005Idfuse,             &  ! CHECK   
+                   !ds mar2005Idrctt,             &  ! CHECK   
                    snow(i,j),          &
                    so2nh3ratio,        & !SO2/NH3
                    g_sto,  &

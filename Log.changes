@@ -1,3 +1,27 @@
+============== Dave,  rv2_2_5 =================================================
+
+Re-write of Radiation_ml and associated handling
+
+**** NEW *****
+TimeDate_ml.f90 - added. Much nicer date calculations! (Will supercede Dates_ml
+                    in future code)
+**** NEW *****
+
+Radiation_ml - subdivided with new routines and re-arranged. Now doesn't need Par_ml. 
+               Uses elemntal routines to allow use in both 1-d models and EMEP
+
+               Some changes 
+                 SolarSetup  subroutine
+                 Ashrea table ......
+                 ZenithAngle sub
+                 etc.-
+
+Causes small changes in many routines which used radiation, zen, etc., inc:
+
+   Met_ml - now used to store Idirect, Idiffuse
+   PhysicalConstants_ml - DAY_ZEN, DAY_COSZEN added
+   phyche.f -  subroutine calls changed
+
 ============== Hilde, rv2_2_4  =================================================
 GlobalBCs_ml - BC for so2,nox,nh4 allowed for year>2003. Trend BCs also for NO,NO2,PAN
 My_BoundConditions, ACID - no3, nh4 bcs added
