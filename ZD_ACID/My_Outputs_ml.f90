@@ -17,7 +17,8 @@ module  My_Outputs_ml
   use GenSpec_adv_ml, only : NSPEC_ADV          &
         ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
         ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
-        ,IXADV_AMSU, IXADV_AMNI    !6s                &
+!hf amsu        ,IXADV_AMSU, IXADV_AMNI    !6s                &
+        ,IXADV_aNH4, IXADV_aNO3    !6s                &
 !6s         ,IXADV_SOA, IXADV_ASOA, IXADV_BSOA
 !  use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
 !                IXSHL_OH,IXSHL_HO2
@@ -239,9 +240,9 @@ contains
   !    output is wanted. Replaces the hard-coding which was
   !    in wrtchem:
 
-     wanted_dates_bi(1) = date(-1,7,7,0,0)
-     wanted_dates_bi(2) = date(-1,7,7,6,0)
-     wanted_dates_bi(3) = date(-1,7,7,12,0)
+     wanted_dates_bi(1) = date(-1,1,1,0,0)
+     wanted_dates_bi(2) = date(-1,1,1,3,0)
+     wanted_dates_bi(3) = date(-1,1,1,6,0)
 
  end subroutine set_output_defs
 end module My_Outputs_ml

@@ -14,7 +14,9 @@ module My_UKDep_ml    ! DryDep_ml
  use GenSpec_adv_ml , only: NSPEC_ADV &
                    ,IXADV_SO2,IXADV_NO2  &
                    ,IXADV_HNO3 &  !! ,IXADV_EC  ,IXADV_OC & 
-    ,  IXADV_PAN ,IXADV_SO4,IXADV_NH3,IXADV_AMNI, IXADV_AMSU
+    ,  IXADV_PAN ,IXADV_SO4,IXADV_NH3,&
+!hf amsuIXADV_AMNI, IXADV_AMSU
+        IXADV_aNO3,IXADV_aNH4
  use ModelConstants_ml , only : atwS, atwN
  use Wesely_ml
  implicit none
@@ -107,9 +109,10 @@ contains
    Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
    Dep(5) =  depmap( IXADV_SO4,   CDEP_SET,  0.1 * cms )
    Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
-   Dep(7) =  depmap( IXADV_AMSU,  CDEP_SET,  0.1 * cms  )
-   Dep(8) =  depmap( IXADV_AMNI,  CDEP_SET,  0.1 * cms  )
-
+!hf amsu   Dep(7) =  depmap( IXADV_AMSU,  CDEP_SET,  0.1 * cms  )
+!hf amsu   Dep(8) =  depmap( IXADV_AMNI,  CDEP_SET,  0.1 * cms  )
+   Dep(7) =  depmap( IXADV_aNH4,  CDEP_SET,  0.1 * cms  )
+   Dep(8) =  depmap( IXADV_aNO3,  CDEP_SET,  0.1 * cms  )
   end subroutine Init_DepMap
 
   subroutine Add_ddep(i,j,convfac,fluxfrac)
@@ -121,31 +124,41 @@ contains
 
      integer, parameter :: N_OXN = 4        ! Number in ox. nitrogen family
      integer, parameter, dimension(N_OXN) :: OXN = &
-             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_AMNI /)
+!hf amsu     (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_AMNI /)
+             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_aNO3 /)
 
-     integer, parameter :: N_RDN = 3        ! Number in rd. nitrogen family
+!hf amsu     integer, parameter :: N_RDN = 3        ! Number in rd. nitrogen family
+!hf amsu      integer, parameter, dimension(N_RDN) :: RDN = &
+!hf amsu              (/ IXADV_NH3, IXADV_AMSU, IXADV_AMNI /)
+!hf amsu      real, parameter, dimension(N_RDN) :: RDN_FAC = &
+!hf amsu              (/ 1.0,       1.5,       1.0 /)
+
+     integer, parameter :: N_RDN = 2        ! Number in rd. nitrogen family
      integer, parameter, dimension(N_RDN) :: RDN = &
-             (/ IXADV_NH3, IXADV_AMSU, IXADV_AMNI /)
-     real, parameter, dimension(N_RDN) :: RDN_FAC = &
-             (/ 1.0,       1.5,       1.0 /)
+             (/ IXADV_NH3, IXADV_aNH4 /)
+      real, parameter, dimension(N_RDN) :: RDN_FAC = &
+              (/ 1.0,       1.0 /)
+
 
      ddep(DDEP_SOX,i,j,IOU_INST) = (  &
           DepLoss(IXADV_SO2) + &
-          DepLoss(IXADV_SO4) + &
-          DepLoss(IXADV_AMSU)  &
+          DepLoss(IXADV_SO4) &!hf+ &
+!hf amsu          DepLoss(IXADV_AMSU)  &
                                     ) * convfac * atwS
 
      ddep(DDEP_OXN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_HNO3) + &
           DepLoss(IXADV_PAN) + &
           DepLoss(IXADV_NO2) + &
-          DepLoss(IXADV_AMNI)  &
+!hf amsu          DepLoss(IXADV_AMNI)  &
+          DepLoss(IXADV_aNO3)  &
                                     ) * convfac * atwN
 
      ddep(DDEP_RDN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_NH3) + &
-    1.5 * DepLoss(IXADV_AMSU) + &
-          DepLoss(IXADV_AMNI)  &
+!hf amsu    1.5 * DepLoss(IXADV_AMSU) + &
+!hf amsu          DepLoss(IXADV_AMNI)  &
+          DepLoss(IXADV_aNH4)  &
                                     ) * convfac * atwN
 
    !---- ecosystem specific -----------------------------------------------
