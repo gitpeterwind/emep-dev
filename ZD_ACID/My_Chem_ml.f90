@@ -384,7 +384,10 @@ end module  GenRates_rct_ml
      ! Coefficients taken from Eliassen+Saltbones (1983) (also in
      ! Berge and Jakobsen, 1998
 
-        tab_so2ox = Daily_sine(4.0e-6,2.5e-6,80,366)
+        !ds tab_so2ox = Daily_sine(4.0e-6,2.5e-6,80,366)
+        !ds Changed to use real dmax instead of day of mean in argument
+
+        tab_so2ox = Daily_sine(4.0e-6,2.5e-6,80+91,366)
 
     end subroutine  Init_mychem
     !------------------------------------------------------------------
