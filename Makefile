@@ -54,19 +54,19 @@ FC = f90
 #FFLAGS = -default64 -O3
 #FFLAGS = -64 -r8 -O 3
 FFLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
-FFLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
+#FFLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
 
 F90 = f90
 #F90FLAGS = -64 -r8 -O3 -fullwarn
 F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
-F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV $(INCL)
+#F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV $(INCL)
 #_CRAY_F90FLAGS = -O 3,fusion,aggress,bl,unroll2,msgs,negmsgs
 
 #_CRAY_LDFLAGS = -X8 -O 3,fusion,aggress,bl,msgs,negmsgs,unroll2 
 #LDFLAGS = -default64 -O3
 #QUERY LDFLAGS = -64 -r8 -O 3 -g -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
 LDFLAGS = -64 -r8 -O 3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
-LDFLAGS = -64 -r8 -C -g -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
+#LDFLAGS = -64 -r8 -C -g -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
 LD = f90
 
 #_CRAY_$(PROG): $(OBJS)
