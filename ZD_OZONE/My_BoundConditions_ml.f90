@@ -103,9 +103,10 @@ module My_BoundConditions_ml
  !-------
  contains
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine My_bcmap()    ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
+ subroutine My_bcmap(trend_year)    ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+    integer, intent(in) :: trend_year !ds Year for which BCs are wanted 
     real    :: ppb = 1.0e-9
     integer :: ii,i,j,k 
     real :: decrease_factor(NGLOB_BC+1:NTOT_BC) ! Decrease factor for misc bc's
@@ -131,8 +132,27 @@ module My_BoundConditions_ml
     !
     ! 18.09.01 -hf- misc bc'c as function of sigma possible 
 
-        top_misc_bc(IBC_CH4) = 1760.0 * ppb
+        !ds top_misc_bc(IBC_CH4) = 1760.0 * ppb
+
+        !ds set values of 1625 in 1980, 1780 in 1990, and 1820 in 2000. Interpolate
+        ! between these for other years. Values from EMEP Rep 3/97, Table 6.2 for
+        ! 1980, 1990, and from CDIAC (Mace Head) data for 2000.
+ 
+        if ( trend_year >= 1990 ) then
+
+            top_misc_bc(IBC_CH4) = 1780.0 + &
+                        (trend_year-1990) * 0.1*(1820-1780.0)
+
+        else 
+
+            top_misc_bc(IBC_CH4) = 1780.0 * &
+                        exp(-0.01*0.91*(1990-trend_year)) ! Zander,1975-1990
+        end if
+
+        top_misc_bc(IBC_CH4)  =  top_misc_bc(IBC_CH4) * ppb
+
         top_misc_bc(IBC_H2)  =  600.0 * ppb
+
         !! top_misc_bc(IBC_OC) =   0.0 !!! 1.0 * ppb
 
         decrease_factor(IBC_H2) =0.0 !No increase/decrease with height

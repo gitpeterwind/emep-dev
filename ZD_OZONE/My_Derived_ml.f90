@@ -408,14 +408,14 @@ private
 !-- 3-D fields
 
  f_3d(D3_O3  ) = Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV , F , T , T , T , F ,"D3_O3","ppb")
- f_3d(D3_SO2 ) = Deriv( 402, "ADV  ", T, IXADV_SO2, PPBINV , F , T , T , T , F ,"D3_SO2","ppb")
- f_3d(D3_PAN ) = Deriv( 403, "ADV  ", T, IXADV_PAN, PPBINV , F , T , T , T , F ,"D3_PAN","ppb")
- f_3d(D3_HNO3 ) = Deriv( 404, "ADV  ", T, IXADV_HNO3, PPBINV , F , T , T , T , F ,"D3_HNO3","ppb")
- f_3d(D3_aNO3 ) = Deriv( 405, "ADV  ", T, IXADV_ANO3, PPBINV , F , T , T , T , F ,"D3_aNO3","ppb")
- f_3d(D3_NO2 ) = Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
- f_3d(D3_VOC ) = Deriv( 407, "VOC  ", T,       -1 , PPBINV , F , T , T , T , F ,"D3_VOC","ppb")
- f_3d(D3_aNH4 ) = Deriv( 408, "ADV  ", T, IXADV_aNH4, PPBINV , F , T , T , T , F ,"D3_aNH4","ppb")
- f_3d(D3_SO4 ) = Deriv( 409, "ADV  ", T, IXADV_SO4, PPBINV , F , T , T , T , F ,"D3_SO4","ppb")
+! f_3d(D3_SO2 ) = Deriv( 402, "ADV  ", T, IXADV_SO2, PPBINV , F , T , T , T , F ,"D3_SO2","ppb")
+! f_3d(D3_PAN ) = Deriv( 403, "ADV  ", T, IXADV_PAN, PPBINV , F , T , T , T , F ,"D3_PAN","ppb")
+! f_3d(D3_HNO3 ) = Deriv( 404, "ADV  ", T, IXADV_HNO3, PPBINV , F , T , T , T , F ,"D3_HNO3","ppb")
+! f_3d(D3_aNO3 ) = Deriv( 405, "ADV  ", T, IXADV_ANO3, PPBINV , F , T , T , T , F ,"D3_aNO3","ppb")
+! f_3d(D3_NO2 ) = Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
+! f_3d(D3_VOC ) = Deriv( 407, "VOC  ", T,       -1 , PPBINV , F , T , T , T , F ,"D3_VOC","ppb")
+! f_3d(D3_aNH4 ) = Deriv( 408, "ADV  ", T, IXADV_aNH4, PPBINV , F , T , T , T , F ,"D3_aNH4","ppb")
+! f_3d(D3_SO4 ) = Deriv( 409, "ADV  ", T, IXADV_SO4, PPBINV , F , T , T , T , F ,"D3_SO4","ppb")
  f_3d(D3_H2O2 ) = Deriv( 410, "ADV  ", T, IXADV_H2O2, PPBINV , F , T , T , T , F ,"D3_H2O2","ppb")
 
 

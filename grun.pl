@@ -70,7 +70,7 @@ if ( $year == 2000 ) {
 } elsif ( $year == 1990 ) {
   $MetDir = "/work/mifads/metdata/$year" ;  # Needed for 1997
 } else {
-  $MetDir = "/work/mifaab/metdata/$year" ;
+  $MetDir = "/work/mifahf/metdata/$year" ;
 }
 
 #---  User-specific directories (changeable)
@@ -104,7 +104,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_9";
+     $testv       = "rv1_6_10";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -125,20 +125,11 @@ $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
-#$emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 
-# Use tmp ds-fix for UK, applied to Trends_02 emissions from Hilde:
-#$emisdir     = "$HILDE/emis/trends_2002";   # emissions stuff
-$emisdir     = "$DataDir/D_Emis/emis_ukfix_trends_2002";   # emissions stuff
+# Fixed
 $emisdir     = "$SVETLANA/Unify/MyData/emission";   # emissions directory
-#$emisyear    = "$emisdir/emis${year}_02-rev";    # emissions
 $emisyear    = "$emisdir/emis${yy}_02-rev";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
-#
-# Change for PM:
-#$emisdir     = "$SVETLANA/Unify/Data/emission";   # emissions stuff
-#$emisyear    = "$SVETLANA/Unify/Data/emission";   # emissions stuff
-
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
@@ -158,7 +149,7 @@ $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
 
 $NDX   =  4;           # Processors in x-direction
-$NDY   =  8;           # Processors in y-direction
+$NDY   =  4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
 
@@ -166,7 +157,7 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  12;       # last month
+$mm2   = 12;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
@@ -465,12 +456,13 @@ foreach $poll  ( @emislist  ) {
 } 
 
 # Surface measurement sites
-    $old   = "$MyDataDir/sites.rep03" ;
+# From $DAVE directory for these
+    $old   = "$DataDir/sites.rep03" ;
     $new   =  "sites.dat";
     mylink("Sites ",  $old,$new ) ;
 
 # Sondes
-    $old   = "$MyDataDir/sondes.rep03" ;
+    $old   = "$DataDir/sondes.rep03" ;
     $new   = "sondes.dat";
     mylink( "Sondes", $old,$new ) ;
 
