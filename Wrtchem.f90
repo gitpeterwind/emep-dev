@@ -9,18 +9,31 @@
    ! field methods and Output_binary_ml.
    ! wrtchem routines originally from MACHO, modified by su to use IOU_
    ! type outputs.
+   !
+   ! 23/10/2002 - ds changes
+   !    Introduced END_OF_EMEPDAY into ModelConstants_ml.
+   !      -- for "EMEP" days which end between 0 and 6am we need to use the previous 
+   !         day as the output name. We assume that this is wanted for days
+   !         where the END_OF_EMEPDAY is less than or equal to 7am
+   !      -- Jan_1st logical introduced to deal with this  special case
+   !         since first output should occur just as Jan 2nd starts (e.g.
+   !         at 6am on 2nd Jan), and Jan_1st also marks end of a year run.
+   !         (For runs starting in other months, one partial write-out will
+   !          occur at 6am of the 1st day, but this should be over-written
+   !          as soon as a full day of data is available).
+   !      -- End_of_Run logical introduced to help readability.
    !-----------------------------------------------------------------------
    use My_Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY &
                ,NDERIV_2D, f_2d, d_2d
 
-   use Derived_ml, only: ResetDerived  ! 6c d_2d
-             !ODIN6  ,valin_day,valin_month
-   use Io_ml   , only : IO_AOT
-   use ModelConstants_ml , only : nprint,current_date
-   use My_Outputs_ml, only: NBDATES, wanted_dates_bi
-   use out_restri_ml, only: to_out_restri    ! su - allows 3-h output 
-   use Output_binary_ml, only : Output_binary   ! ODIN6 replaces out_typ1_4
-   use Par_ml   , only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX ,limax,ljmax,me
+   use Dates_ml,           only: nmdays             !ds-out
+   use Derived_ml,         only: ResetDerived
+   use Io_ml   ,           only: IO_AOT
+   use ModelConstants_ml , only: nprint,current_date, END_OF_EMEPDAY
+   use My_Outputs_ml,      only: NBDATES, wanted_dates_bi
+   use out_restri_ml,      only: to_out_restri    ! su - allows 3-h output 
+   use Output_binary_ml,   only: Output_binary
+   use Par_ml,             only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX ,limax,ljmax,me
    implicit none
 
    integer, intent(in) ::  numt
@@ -31,11 +44,33 @@
    integer i,j,n
    character*30 outfilename
    integer nyear,nmonth,nday,nhour,nmonpr
+   integer :: yy_out, mm_out, dd_out   !ds - after allowance for END_OF_EMEPDAY
+   logical :: Jan_1st, End_of_Run
 
    nyear  = current_date%year
    nmonth = current_date%month
    nday   = current_date%day
    nhour  = current_date%hour
+
+   dd_out = nday
+   mm_out = nmonth
+   Jan_1st    = ( nmonth == 1 .and. nday == 1 )
+   End_of_Run = ( mod(numt,nprint) == 0       )
+
+   if(me==0)write(6,"(a12,i5,5i4)") "DAILY PRE ", numt, nmonth, mm_out, nday, dd_out, nhour
+   if(me==0)write(6,"(a12,i5)") "DAILY DD_OUT ", dd_out
+   if ( END_OF_EMEPDAY  <= 7 ) then
+
+         dd_out = nday - 1     ! only used for daily outputs
+         if(me==0)write(6,"(a12,i5,5i4)") "DAILY SET ", numt, nmonth, mm_out, nday, dd_out, nhour 
+         if ( dd_out == 0 ) then
+             mm_out = nmonth - 1
+             if ( nmonth == 1 ) mm_out = 12
+             dd_out = nmdays( mm_out )  !  Last day of month
+             if(me==0)write(6,"(a12,i5,4i4)") "DAILY FIX ", numt, nmonth, mm_out, nday, dd_out 
+         end if
+
+   end if
 !
 !   actualize identi:
 !   identi(12) = nyear
@@ -71,25 +106,40 @@
 
 !su   daily output - outday
 
-   if (nhour ==  6) then
+   !ds-out if (nhour ==  6) then
+   if (nhour ==  END_OF_EMEPDAY ) then
 
-     write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') nmonth,nday
+     !ds write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') nmonth,nday
 
-     call Output_binary(IOU_DAY,outfilename)
-     call ResetDerived(IOU_DAY)
+     if ( numt > 1 .and. .not. Jan_1st ) then   !ds don't write out
+       write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') mm_out, dd_out
+       if(me==0)write(6,"(a12,i5,4i4,i5,2x,a30)") "DAILY FILE ", numt, nmonth, &
+                   mm_out,nday,dd_out, nhour, outfilename
+
+       call Output_binary(IOU_DAY,outfilename)
+
+     end if
+
+     call ResetDerived(IOU_DAY)    ! ds reset even on 1st jan.
 
    end if
 
 !su   end of run:
 
-   if (mod(numt,nprint) == 0) then
+   !ds if (mod(numt,nprint) == 0) then
+
+   if ( End_of_Run ) then
 
       !su   write the remaining part of outday for the hours 6-0 at end of run
 
-       write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') nmonth,nday
+       !ds-out write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') nmonth,nday
+
+       write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') mm_out,dd_out
        call Output_binary(IOU_DAY,outfilename)
 
-       if(nmonth == 1 .and.nday == 1 .and.nhour == 0)then
+       !ds if(nmonth == 1 .and.nday == 1 .and.nhour == 0)then
+
+       if( Jan_1st .and.nhour == 0)then  ! End of year !
             write(outfilename,fmt='(''outyear'',i4.4,''.dat'')') nyear-1
 
        else
