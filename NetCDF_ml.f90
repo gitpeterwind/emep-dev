@@ -199,6 +199,11 @@ integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
 real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID) 
 real (kind = FourByteReal), allocatable,dimension(:,:,:)  :: data3D
 
+!rv1.4.15 changed:
+!==================================================================
+  return     !TEMP - to avoid slowdown - suggested by pw, 26 Feb 2003.
+!==================================================================
+
 if(iotyp==IOU_YEAR)then
    fileName = fileName_year
    ncFileID = ncFileID_year

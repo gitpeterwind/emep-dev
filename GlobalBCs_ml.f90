@@ -1,4 +1,4 @@
-module GlobalBCs_ml    !u3 Logan_ml
+module GlobalBCs_ml
 !
 !+ DATA/SUBROUTINES FOR USING Logan climatology for BOUNDARY
 !  CONDITIONS  (bcs)
@@ -23,7 +23,7 @@ module GlobalBCs_ml    !u3 Logan_ml
 !  are since these names are not seen outside this module.
 !   -- for use with BoundConditions_ml and My_BoundConditions_ml --
 !____________________________________________________________________________
-  use GenSpec_bgn_ml, only :O3fix !10ppb added to Logan data
+!rv1.4.15 ds  use GenSpec_bgn_ml, only :O3fix !10ppb added to Logan data
   use GridValues_ml, only: gbacmax,gbacmin,glacmax,glacmin,&
 !hf BC
   gl,gb_glob,GlobalPosition
@@ -303,7 +303,7 @@ contains
 !        many sondes. Given the discrepancy, I (ds) prefer to get Mace Head
 !        right.
 !rv1.4.7 TEST HF Increase O3 BC
-                  bc_rawdata=bc_rawdata+O3fix
+!rv1.4.15 Not needed now,     bc_rawdata=bc_rawdata+O3fix
 
 !            case   ( IBC_SO2 )
 !              write(*,*)'I READ SO2'

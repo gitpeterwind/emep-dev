@@ -33,7 +33,7 @@
 !u7.1    ,IXBGN_H2O2           =   4   
 
    real, public, save, dimension(NSPEC_COL,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-   real, public, parameter :: O3fix=0. !add 10 ppb to Logan data
+   !rv1.4.15 REMds real, public, parameter :: O3fix=0. !add 10 ppb to Logan data
 
 !-----------------------------------------------------------
   end module GenSpec_bgn_ml

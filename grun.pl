@@ -1,5 +1,4 @@
 #!/usr/local/bin/perl
-#Dette er rv1.3.1_Aq med O3 og H2O2 fra UNI-OZONE
 ######################################################################
 # Features
 # 1. work directory now deduced from user-name
@@ -12,9 +11,7 @@
 #    hangs or crashes for some reason, type "sh Remove.sh" to get rid
 #    of all the linked files.  
 # Bugs
-# Not working for year 2000 (and Dec. 1999) yet.???
-# Still assumes 2-digit years for some inputs. Needs to be updated to 4-digit 
-# system fully.
+# None known?
 ######################################################################
 #
 # Script to prepare files before running Eulerian model on 
@@ -59,7 +56,7 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2000";
+$year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 print "Year is $yy YEAR $year\n";
@@ -81,41 +78,55 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $HILDE ;      
+$USER        =  $DAVE ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
+
+#ds - simplified treatment of BCs and emissions:
+
+$OZONE = 1, $ACID = 0;     # Specify model type here
+
+  # check:
+  die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
+
+# Boundary conditions: set source direcories here:
+# BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
+# Also, list emissions to be used:
+
+if ( $OZONE ) {
+    #$OZONEDIR    = "$HILDE/BC_data/CTM2_data/50Data"; 
+    #$OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
+     $OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
+     @emislist = qw ( sox nox nh3 co voc pm25 ); 
+     $testv       = "rv1_bcozone";
+
+} elsif ( $ACID ) {
+     $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
+     @emislist = qw ( sox nox nh3  ) ; # pm25 pmco ) ;
+     $testv       = "rv1_bcacid";
+} 
+$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
+
 $version     = "Unimod" ;  
-$testv       = ".rv1_4_3acid";
-$subv        = "rv143" ;                  # sub-version (to track changes)
+$subv        = "rv1415" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/CVS/rv1.3.1_Aq/$version";         # input of source-code
+#HF $ProgDir     = "$USER/CVS/rv1.3.1_Aq/$version";  # input of source-code
+$ProgDir     = "$USER/Unify/$version.$testv";        # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/out_rv1.4.7_testACID";    # working directory
+$WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 $emisyear    = "$emisdir/emis${yy}";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
-#rv1.4:$LOGANDIR ="$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
-$LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; #Logan boundary conditions
-$H2O2DIR    = "$HILDE/BC_data/H2O2";
-$OZONEDIR    = "$HILDE/BC_data/O3";
+#
 # Change for PM:
 #$emisdir     = "$SVETLANA/Unify/Data/emission";   # emissions stuff
 #$emisyear    = "$SVETLANA/Unify/Data/emission";   # emissions stuff
 
-    # List emissions to be used:
-    #pm @emislist = qw ( sox nox nh3 co voc pm25 pmco ) ;
-    @emislist = qw ( sox nox nh3  ) ;
-
-    # And boundary conditions from:
-    $LOGAN_BCS = 0;
-    $O3_BCS  = 1;
-    $H2O2_BCS  = 1;
-    $UIO_BCS   = 0;
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
@@ -134,7 +145,7 @@ $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
 
-$NDX   =  8;           # Processors in x-direction
+$NDX   =  4;           # Processors in x-direction
 $NDY   =  4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
@@ -143,12 +154,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  12;       # last month
+$mm2   =  1;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
-#$NTERM =  12;       # for testing, simply reset here
+ $NTERM =  12;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -341,29 +352,18 @@ for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
         mylink( "Linking:", $old,$new ) ;
     }
 
-    if ( $UIO_BCS ) {
-        # New boundary-value files from Jostein: JAN.dat .. DEC.dat
-        $MONTH = $month_abbrev[$mm];
-        $MONTH =~ tr/a-z/A-Z/;     # uppercase to match Joffen's filenames
-        $old   = "$BCINPUTDIR/$MONTH.dat" ;
-        $new = sprintf "gl_ass%02d.dat", $mm;
-        mylink( "Linking UiO BCs:", $old,$new ) ;
+    # Naming system simplified, 27/2/2003, ds
+    #
+    # Ozone and H2O2 data are needed for all model versions:
+    # (Assumes all ozone data have same name, i.e. ozone.mm)
 
-    } elsif ( $LOGAN_BCS ) {
-        $old = sprintf "$LOGANDIR/ozone.%02d", $mm ;
-        $new = sprintf "ozone.%02d", $mm ;
-        mylink( "Linking Logan BCs:", $old,$new ) ;
-    }
-    if ( $H2O2_BCS ) {
-        $old = sprintf "$H2O2DIR/h2o2.%02d", $mm ;
-        $new = sprintf "h2o2.%02d", $mm ;
-        mylink( "Linking H2O2 BCs:", $old,$new ) ;
-    }
-    if ( $O3_BCS ) {
-        $old = sprintf "$OZONEDIR/o3.%02d", $mm ;
-        $new = sprintf "ozone.%02d", $mm ;
-        mylink( "Linking O3 BCs:", $old,$new ) ;
-    }
+    $old = sprintf "$OZONEDIR/ozone.%02d", $mm ;
+    $new = sprintf "ozone.%02d", $mm ;
+    mylink( "Linking BCs:", $old,$new ) ;
+
+    $old = sprintf "$H2O2DIR/h2o2.%02d", $mm ;
+    $new = sprintf "h2o2.%02d", $mm ;
+    mylink( "Linking H2O2 BCs:", $old,$new ) ;
 
     $old = sprintf "$SRCINPUTDIR/lt21-nox.dat%02d", $mm;
     $new = sprintf "lightn%02d.dat", $mm;
