@@ -1,3 +1,11 @@
+=================== Dave  23/11/2003, rv1_9_7 ==============================
+
+Correction! Use lde_biomass instead of tf2_biomass in grun.pl, UKsetup_ml
+WHEAT used properly to set Wheat g_pot=0.8 in DryDep_ml
+grun.pl changes:
+    $SR introduced - to help in setting iyr_trend and emisdir properly
+    $emisyear removed, replaced by just $emisdir.
+
 =================== Peter  20/11/2003, rv1_9_6 ==============================
 
 runlabel read in grun.pl used to "label" the output

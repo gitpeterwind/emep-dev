@@ -58,11 +58,16 @@ require "flush.pl";
 
 $year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
-# NEW: iyr_trend can be set to meteorology year or arbitrary year, say 2050
-$iyr_trend = $year;  
-#$iyr_trend = "2010";     # For CLE runs, SR runs, etc.
 
-print "Year is $yy YEAR $year\n";
+my $SR = 0;   #NEW Set to 1 for source-receptor stuff
+
+# iyr_trend:
+# :can be set to meteorology year or arbitrary year, say 2050
+
+$iyr_trend = $year;  
+$iyr_trend = "2010" if $SR ;  # 2010 assumed for SR runs here
+
+print "Year is $yy YEAR $year Trend year $ir_trend\n";
 
 if ( $year == 2000 ) {
   $MetDir = "/work/mifapw/metdata/$year" ;
@@ -107,9 +112,9 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_6";
+     $testv       = "rv1_9_7";
      $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
-     $runlabel2    = "${testv}_CLE_$year";   # NO SPACES! LONG (written into CDF files)
+     $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -121,20 +126,20 @@ $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and
 $version     = "Unimod" ;  
 $subv        = "$testv" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/Unify/Unimod.$testv"; # input of source-code
+$ProgDir     = "$USER/Unify/Unimod.$testv";   # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 
-# Fixed
-#$emisdir     = "$SVETLANA/Unify/MyData/emission";   # emissions directory
 #Latest: (not used for PM though).
-#$emisdir     = "$HILDE/emis/trends2003"; # emissions directory
-#$emisyear    = "$emisdir/emis${yy}-V3";    # emissions
-$emisdir     = "$PETER/Unify/MyData/"; # emissions directory
-$emisyear    = "$emisdir/2010_CLE_2000";    # emissions
+if ( $SR ) {
+	$emisdir     = "$PETER/Unify/MyData/"; # emissions directory
+	$emisdir     = "$emisdir/2010_CLE_2000";    # emissions
+} else {
+	$emisdir     = "$emisdir/emis${yy}-V3";    # emissions
+}
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 
 # Specify small domain if required. 
@@ -447,15 +452,16 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
     mylink( "Split voc", $old,$new ) ;
 
 foreach $poll  ( @emislist  ) {
-#  if ( $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
-#   $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
-#  } else {
-   $old   = "$emisyear/grid$gridmap{$poll}" ;
-#  }
+
+   $old   = "$emisdir/grid$gridmap{$poll}" ;
+
+   if ( ! $SR  && $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
+       $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
+   }
+
    $new   = "emislist.$poll";
    mylink( "Emis $poll : ", $old,$new ) ;
 
-   #rv141:$old   = "$emisdir/Monthlyfac.$poll" ;
    $old   = "$timeseries/MonthlyFac.$poll" ;
    $new   = "MonthlyFac.$poll";
    mylink( "MonthlFac ", $old,$new ) ;
@@ -517,8 +523,8 @@ foreach $s ( keys(%seasons) ) {
     mylink( "Landuse ", $old,$new ) ;
 
  # TMP LOCATION for some datafiles : MyDataDir
-#dsforeach $datafile ( qw ( Volcanoes.dat ukdep_gfac1.dat ukdep_gfac2.dat ukdep_biomass.dat ) ) {
-foreach $datafile ( qw ( Volcanoes.dat tf2_gfac1.dat tf2_gfac2.dat tf2_biomass.dat ) ) {
+#ldefix foreach $datafile ( qw ( Volcanoes.dat tf2_gfac1.dat tf2_gfac2.dat tf2_biomass.dat ) ) {
+foreach $datafile ( qw ( Volcanoes.dat lde_gfac1.dat lde_gfac2.dat lde_biomass.dat ) ) {
     $old   = "$DataDir/$datafile" ;
     $new   = "$datafile" ;
     mylink( "$datafile", $old,$new ) ;

@@ -38,6 +38,7 @@ module DryDep_ml
                             luflux_wanted, & ! true if fluxes wanted for landuse lu
                             g_light,g_swp, &
                             STUBBLE,       & ! Small ht., 1 cm
+                            WHEAT,         & ! Used for Wheat Fst calculations, rv1_9_7
                             SAIadd,        &
                             SLAIlen,       & !rv1_7_4 for SAIadd
                             leaf_flux,   &! = flag-leaf sto. flux per m2
@@ -423,7 +424,7 @@ module DryDep_ml
         hveg    = landuse_hveg(i,j,ilu)
         g_pot   = landuse_gpot(i,j,ilu)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
+if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         if ( DEBUG_UK .and. water(lu) .and. hveg > 0.0 ) then
