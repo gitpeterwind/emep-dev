@@ -56,7 +56,8 @@ module DryDep_ml
                             ,surface_precip & ! ds rv1.6.2 
                             ,iclass   &
                             ,ustar,foundustar, fl &
-                            ,pzpbl  !stDep
+                            ,pzpbl&  !stDep
+                            ,u_ref !horizontal wind 
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
                                   current_date,     &  ! u7.lu
                                   DEBUG_i, DEBUG_j, &
@@ -162,7 +163,7 @@ module DryDep_ml
  integer :: nadv2d !index of adv species in xn_2d array
  real ustar_sq, & ! u star squared
       abshd,    & ! abs value of surfae flux of sens. heat W/m^2
-      u_ref,    & ! horizontal vind   !ds - was uvhs
+!      u_ref,    & ! horizontal vind   !ds - was uvhs
       z_ref       !  reference level - middle of cell, ca. 45m
 
  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
@@ -303,9 +304,10 @@ module DryDep_ml
 
      ! wind-speed at reference height, which we take as centre of
      ! lowest layer:
-
-      u_ref = 0.5*sqrt( (u(i,j,KMAX_MID,1)+u(i-1,j,KMAX_MID,1))**2  &
-                     + (v(i,j,KMAX_MID,1)+v(i,j-1,KMAX_MID,1))**2 )
+!pw rv2_2_2: defined in Met_ml with different definition:
+!         uses mapping factor, and averages over 4 edges
+!      u_ref = 0.5*sqrt( (u(i,j,KMAX_MID,1)+u(i-1,j,KMAX_MID,1))**2  &
+!                     + (v(i,j,KMAX_MID,1)+v(i,j-1,KMAX_MID,1))**2 )
 
       z_ref = z_mid(i,j,KMAX_MID)
 
@@ -467,7 +469,7 @@ module DryDep_ml
         end if
 
         call Get_Submet(hveg,t2(i,j),Hd,LE, psurf(i,j), &
-               z_ref, u_ref, q(i,j,KMAX_MID,1), & ! qw_ref
+               z_ref, u_ref(i,j), q(i,j,KMAX_MID,1), & ! qw_ref
                        debug_flag,                        &    ! in
                        ustar_loc, invL,                   &    ! in-out
                        z0,d, Ra_ref,Ra_3m,rh,vpd)                    ! out
@@ -514,7 +516,7 @@ module DryDep_ml
          convec = wstar*wstar/(ustar_loc*ustar_loc)     ! Convection velocity scale  
 
         call Aero_Rb ( ustar_loc, convec, roa(i,j,KMAX_MID,1)     &
-                     , u_ref, lu, snow(i,j), wetarea, t2(i,j)      &   
+                     , u_ref(i,j), lu, snow(i,j), wetarea, t2(i,j)      &   
                      , Vs, aeRb, aeRbw )
        !===================
 
@@ -642,12 +644,12 @@ module DryDep_ml
             write(6,*) "FLUX ZERO ", lu, nmole_o3, FLUX_CDEP, Vg_ref(FLUX_CDEP)
           end if
 
-          u_hveg  = u_ref *  &
+          u_hveg  = u_ref(i,j) *  &
              ( log((hveg-d)/z0)  -PsiM((hveg-d)*invL) + PsiM(z0*invL)  )/ &
              ( log((z_ref-d)/z0) -PsiM((z_ref-d)*invL) + PsiM(z0*invL))
 
           if ( DEBUG_FLUX .and. u_hveg <= 1.0e-19 ) then
-            print *, "ERRROR UHVEG", u_ref, u_hveg, z_ref,d,z0,hveg
+            print *, "ERRROR UHVEG", u_ref(i,j), u_hveg, z_ref,d,z0,hveg
             print *, "ERRROR UHVEG DATE ",  imm, idd, ihh
             print *, "ERRROR UHVEG HTS ", lu, hveg, d, z0
             print *, "ERRROR UHVEG TERMS", &

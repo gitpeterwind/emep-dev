@@ -401,7 +401,7 @@ program myeul
                          !   (read input files "sites.dat" and "sondes.dat" )
 
 
-    call vgrid    !  ??????
+    call vgrid    !  initialisation of constants used in vertical advection
 
     if ( me == 0 ) then
        fileName=trim(runlabel1)//'_inst.nc'
@@ -425,7 +425,7 @@ program myeul
 
     call metvar(1)
 
-    call tiphys(1)  !hf NEW
+!put into metvar     call tiphys(1)  !hf NEW
 
     call adv_var(1)
 
@@ -548,7 +548,7 @@ program myeul
 
       call metvar(numt)
 
-      call tiphys(numt) 
+!put into metvar      call tiphys(numt) 
       call adv_var(numt)
 
       call Add_2timing(11,tim_after,tim_before,"metvar")

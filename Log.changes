@@ -1,3 +1,29 @@
+============== Peter, rv2_2_2 =================================================
+
+Redefined u_ref into Met_ml including the map factor: 
+NB: Will influence the depositions rates,
+specially in Southern areas (15% higher deposition rate in Greece?).
+Concentrations and depositions may change by several % in Southern areas.
+
+
+I propose the following principle for variables derived from
+meteo variables in Met_ml:
+
+one routine (metvar) controls the variables derived from the meteofields 
+after every meteoread (every METSTEP)
+
+one routine (metint) redefines (interpolates) the meteo fields between 
+each meteoread (every dt_advec)
+
+one routine (met_derived (new)) derives the meteofields after each 
+interpolation (i.e. met_derived is called from or after metint)
+
+In this logic tiphys is called from metvar  and u_ref is defined 
+in met_derived
+
+metvar needs some cleaning. Volunteers?
+
+
 ============== Peter, rv2_2_1 =================================================
 
 Defined "ref_latitude" which is latitude for true distances (60 for PARLAM-PS)

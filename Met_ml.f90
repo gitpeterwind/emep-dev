@@ -96,8 +96,8 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
                   psurf & !u7.4lu psa  Surface pressure hPa
                  ,surface_precip    & ! Surface precip mm/hr   ! ds rv1.6.2
-                 ,t2      !u7.4vg temp2m  Temp 2 m   deg. K
-
+                 ,t2&      !u7.4vg temp2m  Temp 2 m   deg. K
+                 ,u_ref !wind speed
   real,public, save, &
       dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: z_bnd ! height of full layers
   real,public, save, &
@@ -606,6 +606,10 @@ private
 
    subroutine metvar(numt)
 
+! This routines postprocess the meteo fields:
+! Unit changes, special definitions etc...
+
+
 	use Par_ml , only : limax,ljmax,li0,li1,lj0,lj1,me		&
 			,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC		&
 			,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
@@ -789,7 +793,7 @@ private
             endif
 	  
 !  set sdot equal to zero at the top and bottom of atmosphere. 
-            sdot(:,:,KMAX_BND,nr)=0.
+            sdot(:,:,KMAX_BND,nr)=0.0
             sdot(i,j,1,nr)=0.0
 
 !ko	conversion from % to fractions (<0,1>) for cloud cover
@@ -824,7 +828,7 @@ private
 	    lx1 = x1
           exf1(KMAX_BND) = tpi(lx1)                  &
 			+ (x1-lx1)*(tpi(lx1+1) - tpi(lx1))
-          z_bnd(i,j,KMAX_BND) = 0.
+          z_bnd(i,j,KMAX_BND) = 0.0
           do k = KMAX_MID,1,-1
 
 !     eddy diffusivity in the surface-layer follows the formulation used 
@@ -969,37 +973,31 @@ private
 	enddo
 
 
-
-
 !     Horizontal velocity divided by map-factor.
      
       do k = 1,KMAX_MID
-
-	  do j = 1,ljmax
-	    do i = 0,limax
-
-	      u(i,j,k,nr) = 2.*u(i,j,k,nr)/(xm(i,j)+xm(i+1,j))
-
+         do j = 1,ljmax
+	    do i = 0,limax               
+               u(i,j,k,nr) = 2.*u(i,j,k,nr)/(xm(i,j)+xm(i+1,j))
 	    enddo
 	  enddo
-
 	  do j = 0,ljmax
 	    do i = 1,limax
-
 	      v(i,j,k,nr) = 2.*v(i,j,k,nr)/(xm(i,j)+xm(i,j+1))
-
 	    enddo
 	  enddo
+       enddo
+       
+       call met_derived !compute derived meteo fields
+       call tiphys(numt) 
 
-	enddo
-
-	return
-
-	end subroutine metvar
+       return
+       
+     end subroutine metvar
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-	subroutine metint
+     subroutine metint
 
 !     this routine does the forward linear stepping of the meteorological
 !     fields read or derived every 3 hours.
@@ -1008,7 +1006,8 @@ private
 
 	implicit none
 
-	real div
+        integer :: i,j
+	real :: div,ii
      
 	if (nstep.lt.nmax) then
  
@@ -1089,7 +1088,48 @@ private
 
 	endif
 
-	end subroutine metint
+        call met_derived !update derived meteo fields
+
+      end subroutine metint
+
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   subroutine met_derived
+
+! This routine calculates fields derived from meteofields.
+! The interpolation in time is done for the meteofields and the
+! fields here are derived from the interpolated fields after 
+! each interpolation (i.e. every dt_advec). 
+! CPU costly fields (those with special functions like log )
+! can be computed in metvar only once every METSTEP and interpolated 
+! in metint.
+
+!horizontal wind speed (averaged over the four edges)       
+!Note that u and v are wind velocities divided by xm
+!At present u_ref is defined at KMAX_MID
+
+     implicit none
+     integer ::i,j
+
+     do j = 1,ljmax
+        do i = 1,limax
+           u_ref(i,j)=0.125*(&
+                sqrt(0.25*( u(i,j,KMAX_MID,1)*(xm(i,j)+xm(i+1,j))&
+                +u(i-1,j,KMAX_MID,1)*(xm(i-1,j)+xm(i,j)) )**2&
+                +( v(i,j,KMAX_MID,1)*(xm(i,j)+xm(i,j+1) ))**2)&
+                +sqrt(0.25*( u(i,j,KMAX_MID,1)*(xm(i,j)+xm(i+1,j))&
+                +u(i-1,j,KMAX_MID,1)*(xm(i-1,j)+xm(i,j)) )**2&
+                +( v(i,j-1,KMAX_MID,1)*(xm(i,j-1)+xm(i,j)) )**2)&
+                +sqrt(( u(i,j,KMAX_MID,1)*(xm(i,j)+xm(i+1,j)) )**2&
+                +0.25*( v(i,j,KMAX_MID,1)*(xm(i,j)+xm(i,j+1))&
+                +v(i,j-1,KMAX_MID,1)*(xm(i,j-1)+xm(i,j)) )**2)&
+                +sqrt((u(i-1,j,KMAX_MID,1)*(xm(i-1,j)+xm(i,j)))**2&
+                +0.25*( v(i,j,KMAX_MID,1)*(xm(i,j)+xm(i,j+1))&
+                +v(i,j-1,KMAX_MID,1)*(xm(i,j-1)+xm(i,j)) )**2) )
+           
+        enddo  
+     enddo
+
+   end subroutine met_derived
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    subroutine MetModel_LandUse(callnum)
