@@ -161,8 +161,6 @@ if ( $SR ) {
 	$emisdir     = "$emisdir/emis${yy}-V3";    # emissions
 }
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
-	    $emisdir     = "$PETER/Vigdis/Emissions/Modruns/Modrun03";
-	    $emisdir     = "$emisdir/2003_emis2010_CLE_2000_V5";    # emissions
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
@@ -700,50 +698,58 @@ $nloops = ($Nnc-$nleft)/$nproc_bsub;
 #    print "number lefts: $nleft \n";
 
 for ($i=1; $i<=$nloops; $i++){
+    my $nkids=0;
     for ($j=1; $j<=$nproc_bsub; $j++){
 	$nextfile=pop(@bigfile_list);
 	
 	if (my $pid = fork) {
+	    $nkids++;
 	    # parent, does nothing
 #	    print "I am parent $pid \n";	    
 	} else {
 	    die "fork failed: $!" unless defined $pid;
 	    # child, running compression
-	    print "prosessing $nextfile \n";	    
+	    print "processing $nextfile \n";	    
 	    system("bzip2", "-f", $nextfile);
 	    exit 0; # child exits here
 	}
     }
+    if($nkids>0){
 # parent wait:
     my $kid;
     do {
 	# wait until all kids have finished
 	$kid = waitpid(-1, WNOHANG);
     } until $kid > 0;
-    print "We have just prossessed $i x $nproc_bsub files \n";	    
+    print "We have just processed $i x $nproc_bsub files \n";	    
+}
 }
 
 #prosess the files left
 die "accounting error, $nleft $nproc_bsub" unless $nleft<$nproc_bsub;
+    my $nkids=0;
     for ($j=1; $j<=$nleft; $j++){
 	$nextfile=pop(@bigfile_list);
 	
 	if (my $pid = fork) {
+	    $nkids++;
 	    # parent, does nothing
 	} else {
 	    die "fork failed: $!" unless defined $pid;
 	    # child, running compression
-	    print "prosessing $nextfile \n";	    
+	    print "processing $nextfile \n";	    
 	    system("bzip2", "-f", $nextfile);
 	    exit 0; # child exits here
 	}
     }
+    if($nkids>0){
 #parent is just waiting
     my $kid;
     do {
 	# wait until all kids have finished
 	$kid = waitpid(-1, WNOHANG);
     } until $kid > 0;
+}
 
 
 system "/usr/bin/ja -s"; #end of resource info gathering; give summary
