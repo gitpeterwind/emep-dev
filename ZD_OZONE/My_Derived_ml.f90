@@ -142,7 +142,7 @@ private
 
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 29 &   ! Number of 2D derived fields
+        NDERIV_2D = 30 &   ! Number of 2D derived fields
        ,D2_AOT40  = 1  &   ! was IAOT_40
        ,D2_AOT60  = 2  &   ! was IAOT_60
        ,D2_ACCSU  = 3  &   ! was NUM_ACCSU 
@@ -169,7 +169,8 @@ private
        ,D2_aNH4   =19  &   ! was xnsurf(..)
 !!       ,D2_aNO3   =20  &   ! was xnsurf(..)
        ,D2_MAXO3  =20  &   ! for TROTREP
-       ,D2_MAXOH  =21      ! for TROTREP
+       ,D2_MAXOH  =21  &    ! for TROTREP
+       ,D2_tNO3  =22       ! 
 !hf hmix
    integer, public, parameter ::  & 
         D2_HMIX   = 22     &
@@ -298,14 +299,14 @@ private
  f_2d(D2_SO4 ) = Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T  , F ,  T , T ,  T ,"D2_SO4","ugS/m3")
  f_2d(D2_HNO3) = Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T  , F ,  T , T ,  T ,"D2_HNO3","ugN/m3")
  f_2d(D2_PAN ) = Deriv( 604, "ADV  ", T, IXADV_PAN, ugN, T  , F ,  T , T ,  T ,"D2_PAN","ugN/m3")
-!TROTREP f_2d(D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T ,"D2_NH3","ugN/m3")
+ f_2d(D2_NH3 ) = Deriv( 622, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T ,"D2_NH3","ugN/m3")
  f_2d(D2_NO  ) = Deriv( 623, "ADV  ", T, IXADV_NO , ugN, T  , F ,  T , T ,  T ,"D2_NO","ugN/m3")
  f_2d(D2_NO2 ) = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T ,"D2_NO2","ugN/m3")
  f_2d(D2_aNH4) = Deriv( 619, "ADV  ", T,IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
 
  f_2d(D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T ,"D2_O3","ppb")
  f_2d(D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T ,"D2_CO","ppb")
-
+ f_2d( D2_tNO3 ) = Deriv( 617, "tNO3 ", T, -1,    ugN,    T  , F ,  T , T ,  T,"D2_tNO3","ugN/m3")
 !hf hmix
  f_2d(D2_HMIX) = Deriv( 468, "HMIX  ",T,  0 ,       1.0, T  , F , T , T , T ,"D2_HMIX","m")
  f_2d(D2_HMIX00)=Deriv( 469, "HMIX00",T,  0 ,       1.0, T  , F , T , T , T ,"D2_HMIX00","m")
@@ -390,7 +391,7 @@ private
 
            call aot_calc( n, timefrac )
 
-      case ( "TSO4", "TOXN", "TRDN", "FRNIT"  )
+      case ( "TSO4", "TOXN", "TRDN", "FRNIT", "tNO3 "    )
 
 !!print *, "Calling misc_xn for ", class
            call misc_xn( n, class, density )
@@ -511,6 +512,15 @@ private
             +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)    &
             +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j))
       end forall
+
+    case ( "tNO3" )
+      forall ( i=1:limax, j=1:ljmax )
+          d_2d( n, i,j,IOU_INST) = &
+              ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
+              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) )&
+              * density(i,j)
+      end forall
+
 !!d_2d( n, i,j,IOU_INST) +  &
 
 !!print *, "misc_xn  After  :" , n, d_2d(n,2,2,IOU_INST)
