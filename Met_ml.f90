@@ -1750,7 +1750,8 @@ private
      if ( PIELKE_KZ  ) then
           if (risig(i,k) > ric ) then
               !xkds(k) = 0.1
-              xksig(i,j,k) = 0.1
+              !pw BUGxksig(i,j,k) = 0.1
+              xksig(i,j,k) = KZ_MINIMUM
           else
               !xkds(k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
               xksig(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
