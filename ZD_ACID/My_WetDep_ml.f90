@@ -44,18 +44,16 @@ contains
    !/..                        W_Sca  W_sub
   
     WetDep(1)   = WScav(SO2,    0.3,  0.15)   ! Berge+Jakobsen, issh
-    WetDep(2)   = WScav(SO4,    0.7,  EFF25)  ! Berge+Jokobsen, jej
-!hf amsu    WetDep(3)   = WScav(AMSU,   0.7,  EFF25)
-    WetDep(3)   = WScav(aNH4,   0.7,  EFF25)
-    WetDep(4)   = WScav(NH3,    0.7,  0.35)
-!hf amsu    WetDep(5)   = WScav(AMNI,   0.7,  EFF25)  
-    WetDep(5)   = WScav(aNO3,   0.7,  EFF25)  
-    WetDep(6)   = WScav(HNO3,   0.7,  0.35)
+    WetDep(2)   = WScav(SO4,    1.0,  EFF25)  ! Berge+Jokobsen, jej
+    WetDep(3)   = WScav(aNH4,   1.0,  EFF25)
+    WetDep(4)   = WScav(NH3,    1.4,   0.5 ) ! ds, subcloud = 1/3 of cloud for gases
+    WetDep(5)   = WScav(aNO3,   1.0,  EFF25)  
+    WetDep(6)   = WScav(HNO3,   1.4,  0.5)   ! ds
 !OZ WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
-!OZ WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
+!OZ WetDep(8)   = WScav(HCHO,   0.1,  0.03)  ! jej, plus ds 1/3 rule
     WetDep(7)   = WScav(PM25,   0.7,  EFF25)
     WetDep(8)   = WScav(PMCO,   0.7,  EFFCO)
-    WetDep(9)   = WScav(pNO3,   0.7,  EFFCO)
+    WetDep(9)   = WScav(pNO3,   1.4,  EFFCO)
 
   end subroutine Init_WetDep
 

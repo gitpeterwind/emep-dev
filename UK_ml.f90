@@ -69,7 +69,7 @@ private
          ,landuse_hveg  &    ! Max. height of veg.
          ,landuse_gpot        ! Potential (age) factor for Jarvis-calc
 
- logical, private, parameter :: DEBUG_DEP = .true.
+ logical, private, parameter :: DEBUG_DEP = .false.
  character(len=30), private :: errmsg
 
 
