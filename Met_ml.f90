@@ -95,8 +95,9 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-                                 psurf & !u7.4lu psa  Surface pressure hPa
-                                ,t2      !u7.4vg temp2m  Temp 2 m   deg. K
+                  psurf & !u7.4lu psa  Surface pressure hPa
+                 ,surface_precip    & ! Surface precip mm/hr   ! ds rv1.6.2
+                 ,t2      !u7.4vg temp2m  Temp 2 m   deg. K
 
   real,public, save, &
       dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: z_bnd ! height of full layers
@@ -495,14 +496,13 @@ private
 !su	send in y-direction
       real vsnd(MAXLIMAX,KMAX_MID)      
 !ko
-	real prhelp_sum    !u1 - jej ,pr_factor
+	real prhelp_sum         !u1 - jej ,pr_factor
+        real :: inv_METSTEP     ! ds
 
 	nr = 2
 	if (numt.eq.1) nr = 1
 
-!ko
-!ko	divt = 1./3600.*0.5
-        !u2 divt = 1./(3600.0*3.0)
+
         divt = 1./(3600.0*METSTEP)
 !su
 !	define u(i=0,v(j=0)
@@ -571,6 +571,8 @@ private
 
 	endif
 
+        inv_METSTEP = 1.0/METSTEP   !ds
+
 	do j = 1,ljmax
 	  do i = 1,limax
 
@@ -578,6 +580,11 @@ private
 
 	    ps(i,j,nr) = ps(i,j,nr)*PASCAL
 	    psurf(i,j) = ps(i,j,nr) !u7.4vg - was psa
+
+!ds rv1.6.2
+! surface precipitation, mm/hr
+
+	    surface_precip(i,j) = pr(i,j,KMAX_MID) * inv_METSTEP
 
 !     surface temperature to potential temperature 
 
