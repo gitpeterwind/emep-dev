@@ -16,8 +16,8 @@
  ! as function of local meteorology or zenith angle
  !   o2, m,  and for MADE-like, oh, ch3coo2
  
-   integer, public, parameter ::  NSPEC_BGN = 2 ! No. 3D bgn species
-   integer, public, parameter ::  NSPEC_COL = 4 ! total no. prescribed specs
+   integer, public, parameter ::  NSPEC_BGN = 1 ! No. 3D bgn species
+   integer, public, parameter ::  NSPEC_COL = 3 ! total no. prescribed specs
 
 
 !**/ First species from global CTM
