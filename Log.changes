@@ -1,3 +1,8 @@
+============== Dave, 29/9-2004            , rv2_0_8  =====================
+
+macehead=macehead+3 ppb  for 2010 runs
+
+
 ============== Svetlana, Peter  28/09-2004, rv2_0_7  =====================
 SeaSalt_ml.f90 used "rough.170" to find sea areas (iclas = 0)
 Now it has been changed to identify sea areas using "landuse.mars2004" data 
