@@ -288,7 +288,7 @@ module DryDep_ml
         !rv1.2                       !! Hard-coded 4  remove later!!
 
         if ( forest(lu) ) then  !! More realistic forests, test:
-                              !! Hard-coded 4  remove later!!
+
 
            ! if ( gb(i,j) < 50.0 .and. gb(i,j) > 42.5  ) then
            !    lai = 1.5 * lai
