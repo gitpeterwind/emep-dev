@@ -1,4 +1,17 @@
 ==============================================================================
+=================== Svetlana, 8th May  2003, rv1.6  ==========================
+
+grun.pl is updated to include PMco emissions.
+PM emissions are read from ~svetlana/Unify/MyData/emission/em2000 (instead of emis99)
+==============================================================================
+=================== Svetlana, 7th May  2003, rv1.6  ==========================
+
+
+Primary PM25 and PMco are included in OZONE version. Files modified are:
+My_Chem_ml.f90,  My_Emis_ml.f90,  My_DryDep_ml.f90,
+My_WetDep_ml.f90, My_MassBudget_ml.f90, My_Derived_ml.f90, My_Reactions
+ 
+==============================================================================
 =================== Hilde, 7th MAy  2003, rv1.6  ============================
 My_Reaction.inc : Added H2O2 loss due to SO2 ox
 My_Derived_ml.f90: Fixed D3_names (before all was D3_NO2)

@@ -99,7 +99,7 @@ if ( $OZONE ) {
     #$OZONEDIR    = "$HILDE/BC_data/CTM2_data/50Data"; 
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
-     @emislist = qw ( sox nox nh3 co voc pm25 ); 
+     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
      $testv       = "rv1_4_16ozone";
 
 } elsif ( $ACID ) {
@@ -437,7 +437,7 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
 
 foreach $poll  ( @emislist  ) {
   if ( $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
-   $old   = "$SVETLANA/Unify/MyData/emission/emis99/grid$gridmap{$poll}" ;
+   $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
   } else {
    $old   = "$emisyear/grid$gridmap{$poll}" ;
   }
