@@ -101,6 +101,7 @@ contains
           EMIS_NAME,    &   ! Names of species ("sox  ",...)
           NEMIS_SPLIT,  &   ! No. emission files to be speciated
           NRCSPLIT,     &   ! No. emis species from split emissions species
+          QRCVOL,       &   ! For volcanoes
           set_molwts      ! subroutine to set molwt
   use Biogenics_ml, only:               &
           Forests_Init                  &
@@ -382,6 +383,9 @@ contains
 
 !hf Volc
     if ( VOLCANOES ) then    !u3
+
+       conv = tonne_to_kgm2s * EmisDef( eindex(QRCVOL) )%conv   !st - bug found
+
        do volc_no=1,nvolc 
           i=i_volc(volc_no)
           j=j_volc(volc_no)
