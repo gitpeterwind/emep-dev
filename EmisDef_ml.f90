@@ -64,15 +64,16 @@ public :: EmisDef_Index   ! function to find index of given pollutant name
    VERTFAC =                     &  ! Vertical distribution of SNAP emissions
              reshape (           &  ! Vertical distribution of SNAP emissions
 !       Ground , ...       High
-    (/  0.0    , 0.00, 0.078, 0.459,0.286,0.176,0.00, & ! SNAP1= public power stations,150m nat gas
-        0.5    , 0.5, 0.0, 0.0,0.0,0.0,0.0,           & ! SNAP2 = Comm./inst. combustion 
-        0.0    , 0.041, 0.19, 0.414,0.295,0.06,0.0,   & ! SNAP3 = Industrial combustion !60m nat gas
-        0.9    , 0.1, 0.0, 0.0,0.0,0.0,0.0,           & ! SNAP4 = Production processes
+    (/  0.0    , 0.00, 0.08, 0.46,0.29,0.17,0.00, & ! SNAP1= public power stations,150m nat gas
+        0.5    , 0.5, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP2 = Comm./inst. combustion 
+        0.0    , 0.04, 0.19, 0.41,0.30,0.06,0.0,  & ! SNAP3 = Industrial combustion !60m nat gas
+        0.9    , 0.1, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP4 = Production processes
         0.9    , 0.1, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP5 = Extracton fossil fuels
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,           & ! SNAP6 = Solvents
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,           & ! SNAP7 = Road traffic
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,           & ! SNAP8 = Other mobile (trains+planes, ...)
-        0.001  , 0.178, 0.433, 0.388,0.0,0.0,0.0,     & ! SNAP9 = Waste!60m nat gas, waste incin
+        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP6 = Solvents
+        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP7 = Road traffic
+        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP8 = Other mobile (trains+planes, ...)
+        !0.001  , 0.178, 0.433, 0.388,0.0,0.0,0.0,     & ! SNAP9 = Waste!60m nat gas, waste incin
+        0.10  , 0.15, 0.40, 0.35,0.0,0.0,0.0,     & ! SNAP9 = Waste! .. ds + some ground level
         1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,           & ! SNAP10= Agriculture
         1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0            & ! SNAP11= Nature
         /), &
