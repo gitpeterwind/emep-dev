@@ -171,7 +171,7 @@ contains
 
  !-------
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- subroutine BoundaryConditions(month)
+ subroutine BoundaryConditions(year,month)
 
 
 
@@ -185,6 +185,7 @@ contains
  !
  ! On the first call, we also run the setup-subroutines
  !____________________________________________________________________________
+  integer, intent(in) :: year
   integer, intent(in) :: month
   integer :: ibc, iem, k,iem1,i,j     ! loop variables
   integer :: info              !  used in gc_rsend
@@ -267,7 +268,7 @@ contains
 
                    !=================================================
       !u3 if(me == 0) call GetGlobalData(month,bc_used(ibc) &
-      if(me == 0) call GetGlobalData(month,ibc,bc_used(ibc) &
+      if(me == 0) call GetGlobalData(year,month,ibc,bc_used(ibc) &
                  ,iglobact,jglobact,bc_data,io_num,errcode)
                    !=================================================
       if ( DEBUG_BCS ) then

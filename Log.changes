@@ -1,8 +1,13 @@
-
-
 ==============================================================================
-=================== Dave, 4th June  2003, rv1.6.3t =============================
+=================== Dave, 4th June, rv1.6.4  =================================
 ==============================================================================
+New GLobalBCs_ml, using Mace Head BCs correction to Logan
+(Needs current_date%year to be passed in Unimod.f90 and BoundaryConditions_ml also).
+Makefile reset to not use -g as default
+
+=============================================================================
+=================== Dave, 4th June  2003, rv1.6.3t ==========================
+=============================================================================
 
 Makefile changed to default without -g option.
 Small change to grun.pl to use trends_2003 emissions

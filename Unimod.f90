@@ -459,7 +459,7 @@ program myeul
 
       if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
                if( DEBUG_UNI ) print *, "Into BCs" , me
-               call BoundaryConditions(mm)
+               call BoundaryConditions(current_date%year,mm)
                if( DEBUG_UNI ) print *, "Finished BCs" , me
                if(numt == 2) call Init_massbudget()
                if( DEBUG_UNI ) print *, "Finished Initmass" , me

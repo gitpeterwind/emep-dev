@@ -130,7 +130,7 @@ contains
  end subroutine setgl_actarray
  !-------
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- subroutine GetGlobalData(month,ibc,used        &
+ subroutine GetGlobalData(year,month,ibc,used        &
                 ,iglobact,jglobact,bc_data,io_num,errcode)
 
   use Io_ml,             only : IO_GLOBBC, ios, open_file
@@ -144,6 +144,7 @@ contains
    !   global model, and do the vertical interpolation to EMEP k values
    !   here if the species is to be used.
   !u3 integer   :: iglobact,jglobact
+   integer,             intent(in) :: year   ! ds for Mace Head correction
    integer,             intent(in) :: month
    integer,             intent(in) :: ibc    ! Index of BC, u3
    integer,             intent(in) :: used   ! set to 1 if species wanted
@@ -170,12 +171,57 @@ contains
 
    real, dimension(NGLOB_BC,6:14), save  :: latfunc  !u3  lat. function
    real, save ::  twopi_yr, cosfac   ! for time-variations !u3
+   real, dimension(12) :: macehead_O3
+   real :: O3fix
    integer :: i, j , k,i1,j1
    real ::val
    character(len=30) :: fname    ! input filename
    integer, save     :: oldmonth = -1  
    io_num = IO_GLOBBC          ! for closure in BoundCOnditions_ml
 
+  !ds - rv1.6.x   Mace Head ozone concentrations for backgroudn sectors
+  ! from Fig 5.,  Derwent et al., 1998, AE Vol. 32, No. 2, pp 145-157
+
+
+!=========== Generated from Mace Head Data =======================
+if( year == 1990) then 
+   macehead_O3 = (/    35.3,    36.3,    38.4,    43.0,    41.2,    33.4 & 
+	,    35.1,    27.8,    33.7,    36.2,    28.4,    37.7/) 
+ else if( year == 1991) then 
+   macehead_O3 = (/    36.1,    38.7,    37.7,    45.8,    38.8,    36.3 & 
+	,    29.6,    33.1,    33.4,    35.7,    37.3,    36.7/) 
+ else if( year == 1992) then 
+   macehead_O3 = (/    36.1,    37.3,    41.8,    39.6,    41.2,    31.5 & 
+	,    28.3,    30.3,    31.3,    34.2,    36.1,    34.9/) 
+ else if( year == 1993) then 
+   macehead_O3 = (/    37.6,    40.4,    44.4,    42.6,    43.4,    29.2 & 
+	,    28.5,    29.6,    32.2,     0.0,    37.3,    38.3/) 
+ else if( year == 1994) then 
+   macehead_O3 = (/    38.6,    37.3,    45.7,    43.8,    42.9,    35.1 & 
+	,    30.8,    30.5,    33.8,    36.5,    34.0,    37.3/) 
+ else if( year == 1995) then 
+   macehead_O3 = (/    37.5,    37.1,    41.6,    42.4,    41.1,    33.1 & 
+	,    29.1,    28.7,    33.7,    34.8,    35.0,    36.0/) 
+ else if( year == 1996) then 
+   macehead_O3 = (/    37.0,    40.1,    42.9,    44.6,    41.3,    38.3 & 
+	,    29.3,    29.4,    35.6,    38.4,    37.8,    38.4/) 
+ else if( year == 1997) then 
+   macehead_O3 = (/    36.2,    41.9,    41.8,    40.4,    40.6,    34.4 & 
+	,    26.2,    29.3,    31.3,    35.2,    25.7,    39.5/) 
+ else if( year == 1998) then 
+   macehead_O3 = (/    38.6,    42.0,    44.6,    45.1,    44.2,    33.0 & 
+	,    29.7,    32.9,    35.7,    38.8,    39.7,    40.4/) 
+ else if( year == 1999) then 
+   macehead_O3 = (/    39.9,    44.5,    49.4,    45.0,    42.8,    34.3 & 
+	,    29.0,    30.0,    31.8,    36.9,    39.6,    39.2/) 
+ else if( year == 2000) then 
+   macehead_O3 = (/    39.5,    42.1,    41.8,    43.8,    43.4,    34.5 & 
+	,    28.0,    27.3,    33.6,    37.4,    35.6,    35.8/) 
+ else  ! Defaults, from 1990-2000 average !
+   macehead_O3 = (/  37.6, 40.0, 42.9, 43.2, 41.9, 33.9, &
+                     29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
+ end if
+!=========== Generated from Mace Head Data =======================
    errcode = 0
 
  if ( DEBUG_Logan ) print *, "DEBUG_LOgan ibc, mm", ibc, month
@@ -304,6 +350,15 @@ contains
 !        right.
 !rv1.4.7 TEST HF Increase O3 BC
 !rv1.4.15 Not needed now,     bc_rawdata=bc_rawdata+O3fix
+
+       ! ds Mace Head adjustment: get mean ozone from Eastern sector
+
+          O3fix = sum( bc_rawdata(1:73,1:80,20) )
+          O3fix = O3fix/(73.0*80.0)  - macehead_O3(month)
+
+          write(6,"(a10,i4,3f8.3)") "O3FIXes ", &
+                 month, bc_rawdata(73,48,20), macehead_O3(month), O3fix
+          bc_rawdata=max(15.0,bc_rawdata-O3fix)
 
 !            case   ( IBC_SO2 )
 !              write(*,*)'I READ SO2'
