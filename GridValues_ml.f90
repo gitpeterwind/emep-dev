@@ -85,7 +85,7 @@
   real, public, save, dimension(0:MAXLIMAX+1,0:MAXLJMAX+1) ::  &
                 xm     &    ! map-factor
                ,xm2    &    ! xm*xm
-               ,xmd    &    ! 1/xm
+               ,xmd    &    ! 1/(xm*xm)    ! ds 1/xm
                ,rpol2       ! square of (distance from pole to i,j
                             ! divided by AN )
 

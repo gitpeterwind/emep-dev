@@ -78,7 +78,6 @@
      call Output_binary(IOU_DAY,outfilename)
      call ResetDerived(IOU_DAY)
 
-     !ODIN6 call valin_day
    end if
 
 !su   end of run:
@@ -166,7 +165,6 @@
      call Output_binary(IOU_MON,outfilename)
      call ResetDerived(IOU_MON)
    endif
-     !ODIN6 call valin_month
 
    end subroutine Wrtchem
 
