@@ -41,11 +41,12 @@ module DryDep_ml
  use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
 
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
-                            i_glob, j_glob   !u1 for testing
+                            i_glob, j_glob   ! for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
  use Met_ml,         only : roa,fm,fh,z_bnd,th2m,th,ps,u,v,z_mid&
-                            ,snow, pr, psurf, cc3dmax, t2, q    & ! u7.lu
-                            ,iclass   & ! ds rv1.2
+                            ,snow, pr, psurf, cc3dmax, t2, q &
+                            ,surface_precip & ! ds rv1.6.2 
+                            ,iclass   &
                             ,ustar,foundustar, fl &
                             ,pzpbl  !stDep
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
@@ -81,8 +82,9 @@ module DryDep_ml
  public :: drydep, init_drydep
 
 !hf ddep
-   real, private, save, dimension(KUPPER:KMAX_MID) :: &
-         pr_acc                 ! Accumulated precipitation
+!ds rv1.6.2 - now uses surface_precip and is_wet
+!ds   real, private, save, dimension(KUPPER:KMAX_MID) :: &
+!ds         pr_acc                 ! Accumulated precipitation
      logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
   logical, private, save :: my_first_call = .true.
@@ -171,6 +173,7 @@ module DryDep_ml
       convfaco3,& ! rescaling to different units
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
+ logical :: is_wet  ! set true if surface_precip>0
 !stDep
  integer :: nae
  real, dimension(NSIZE):: aeRb, aeRbw , Vs
@@ -236,16 +239,21 @@ module DryDep_ml
 !  original "pr" as read in from HIRLAM, but this can wait until we
 !  settle on a final scheme for RextS in Rsurface_ml.
 
-    pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) )   ! prec inc. from above 
-    do k= KUPPER+1, KMAX_MID
-      pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
-      pr_acc(k) = max( pr_acc(k), 0.0 ) !u7.2 ds - FIX
-    end do
+!ds    pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) )   ! prec inc. from above 
+!ds    do k= KUPPER+1, KMAX_MID
+!ds      pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
+!ds      pr_acc(k) = max( pr_acc(k), 0.0 ) !u7.2 ds - FIX
+!ds    end do
 
   !ds   We assume that the area of grid which is wet is
   !     proportional to cloud-cover:
 
-     if ( pr_acc(KMAX_MID) > 0.0 ) then
+!ds     if ( pr_acc(KMAX_MID) > 0.0 ) then
+!ds rv1.6.2: new
+
+     is_wet = ( surface_precip(i,j) > 0.0 )
+
+     if ( is_wet ) then
          wetarea = cc3dmax(i,j,KMAX_MID) ! cloud cover above surface
      else
          wetarea = 0.0
@@ -440,7 +448,8 @@ module DryDep_ml
                    vpd,                & ! CHECK 
                    SWP(daynumber),     & ! NEEDS i,j later
                    psurf(i,j),         &
-                   pr_acc(KMAX_MID),   &  ! Bug fixed by hf - was pr
+                   is_wet,             &  !ds rv1.6.2 true if wet
+                   !ds pr_acc(KMAX_MID),   &  ! Bug fixed by hf - was pr
                    coszen(i,j),        &  ! CHECK   
                    Idfuse,             &  ! CHECK   
                    Idrctt,             &  ! CHECK   
