@@ -19,6 +19,7 @@ module Aqueous_ml
   !   call Setup_Clouds(i,j)     from Runchem_ml
   !   call WetDeposition(i,j)    from Runchem_ml if prec. clouds_present
   !
+!hf test
 
   use My_WetDep_ml, only : WetDep, NWETDEP, WetDep_Budget
   use My_Derived_ml       , only : NWDEP, WDEP_PREC &
@@ -32,17 +33,24 @@ module Aqueous_ml
      ,KCHEMTOP                 & ! top of chemistry, now k=2
      , dt => dt_advec          & ! model timestep
      ,PT, ATWAIR                 ! Pressure at top, atw. air
-  use Met_ml,               only :  pr, cw, roa, z_bnd, cc3d, ps
+  use Met_ml,               only :  pr, cw, roa, z_bnd, cc3d, ps&
+!hf cum
+                                    ,lwc
   use Par_ml              , only : me   ! for DEBUG
   use Setup_1dfields_ml,    only : xn_2d, amk
   implicit none
   private
 
   !/-- subroutines
-
+!hf cum
+  public ::  init_aqueous
   public :: Setup_Clouds   ! characterises clouds and calls WetDeposition if rain
 
   public :: WetDeposition   !u7.2, ds -  simplified setup_wetdep
+!hf lwc
+  private ::  tabulate_aqueous
+  private ::  get_frac
+  private ::  setup_aqurates
 
 
  !/ Outputs:
@@ -64,8 +72,52 @@ module Aqueous_ml
 
    real, private, parameter :: &      ! Define limits for "cloud"
        PR_LIMIT = 1.0e-7  &   ! for accumulated precipitation
-      ,CW_LIMIT = 1.0e-7      ! for cloud water
-!u7.2 , B_LIMIT = 1.0e-3      ! for cloud cover (fraction)
+!hf cum      ,CW_LIMIT = 1.0e-7      ! for cloud water
+!hf lwc is another unit than cw
+      ,CW_LIMIT = 1.0e-10   &   ! for cloud water
+      , B_LIMIT = 1.0e-3      ! for cloud cover (fraction)
+!hf cum
+   real, private, save  :: & !  Set in init below (F wouldn't accept **0.4 in param
+           INV_Hplus             & ! = 1.0/Hplus      1/H+,         was:HINRAT
+          ,INV_Hplus0p4            ! =INV_Hplus**0.4  (1/H+)**0.4
+
+ ! The Henry's law coefficients, K, given in units of M or M atm-1,
+ ! are calculated as effective. A factor K1fac = 1+K1/H+ is defined
+ ! here also. 
+ !-------------------------------------------------------------------
+  integer, public, parameter :: &
+  NHENRY = 3, &       ! No.species with Henry's law applied
+  NK1    = 1, &       ! No.species needing effective Henry's calc.
+  IH_SO2  = 1, &
+  IH_H2O2 = 2, &
+  IH_O3   = 3
+
+   ! Aqueous fractions:
+    real, public, dimension ( NHENRY, KUPPER:KMAX_MID ), save :: frac_aq
+
+real, private, dimension (NHENRY, CHEMTMIN:CHEMTMAX), save  :: H
+real, private, dimension (NK1,CHEMTMIN:CHEMTMAX), save  :: K1fac  ! old Hso2eff
+
+ !/ Outputs:
+ ! Aqueous reaction rates for usage in gas-phase chemistry
+ !-------------------------------------------------------------------
+   integer, private, parameter :: NAQUEOUS = 4  ! No. aqueous rates
+   integer, private, parameter :: NAQRC    = 3   ! No. constant rates
+
+   real, public, dimension(NAQUEOUS,KCHEMTOP:KMAX_MID), save :: aqrck
+   real, private, dimension(NAQRC),        save :: aqrc ! constant rates for
+                                                       !  so2 oxidn.
+   real, private, dimension(2),        save :: vw ! constant rates for
+   logical, public,save :: prclouds_present ! true if precipitating clouds
+
+   integer, public, parameter :: &
+      ICLOHSO2  = 1    &   ! for oh + so2 ->                (was IC4055)
+     ,ICLRC1    = 2    &   ! for  [h2o2] + [so2]            (was IAQRC1)
+     ,ICLRC2    = 3    &   ! for  [o3] + [so2]              (was IAQRC2)
+     ,ICLRC3    = 4       ! for [o3] + [o2] (Fe catalytic) (was IAQRC3)
+
+                                                       !  so2 oxidn.
+
 
 !==============================================================================!
 
@@ -132,18 +184,20 @@ contains
 !u7.2          b                     !  Cloud-area (fraction)
 !u7.2    ,cloudwater            !  Cloud-water (volume mixing ratio) 
 !u7.2                                !  cloudwater = 1.e-6 same as 1.g m^-3
+!hf cum
+   real, dimension(KUPPER:KMAX_MID) :: &
+          b           &          !  Cloud-area (fraction)
+         ,cloudwater            !  Cloud-water (volume mixing ratio) 
 
     integer         ::  k
 
 
 ! Add up the precipitation in the column
- 
     pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) )   ! prec inc. from above 
     do k= KUPPER+1, KMAX_MID
       pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
       pr_acc(k) = max( pr_acc(k), 0.0 ) !u7.2 ds - FIX
     end do
-
 
    prclouds_present = .false.  
    if ( pr_acc(KMAX_MID) > PR_LIMIT )  prclouds_present = .true. ! Precipitation
@@ -153,7 +207,8 @@ contains
   !su  initialise with .false. and 0, 
 
     incloud(:)  = .false.
-      !u7.2 cloudwater(:) = 0.
+!hf SO2aq
+    cloudwater(:) = 0.
 
 
 
@@ -162,7 +217,8 @@ contains
     ksubcloud = KMAX_MID+1    ! k-coordinate of sub-cloud limit
 
     do  k = KMAX_MID, KUPPER, -1  
-        if ( cw(i,j,k,1) >  CW_LIMIT ) exit  !  out of loop
+!hf cum        if ( cw(i,j,k,1) >  CW_LIMIT ) exit  !  out of loop
+        if ( lwc(i,j,k) >  CW_LIMIT ) exit  !  out of loop
         ksubcloud = k
     end do
     if ( ksubcloud == 0 ) return  ! No cloud water found below level 6
@@ -181,7 +237,8 @@ contains
 
     kcloudtop = -1              ! k-level of cloud top
     do k = KUPPER, ksubcloud-1
-
+!hf cum
+        b(k) = cc3d(i,j,k)
         !u7.2 b(k) = cc3d(i,j,k)  ! ds simplify tests
         !u7.2 if ( cw(i,j,k,1) > CW_LIMIT .and. b(k) > B_LIMIT ) then
         !  Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
@@ -189,13 +246,16 @@ contains
         !  (when devided bu cloud fraction b )
         !u7.2   cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)   
 
-        if ( cw(i,j,k,1) > CW_LIMIT ) then
-
+ 
+!hf cum        if ( cw(i,j,k,1) > CW_LIMIT ) then
+        if ( cw(i,j,k,1) > 1.0e-7   .and. b(k) > B_LIMIT ) then
+                cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)  
                 incloud(k) = .true.
                 if ( kcloudtop < 0 ) kcloudtop   = k
         end if
 
     end do
+
     
     if ( prclouds_present .and. kcloudtop == -1 ) then
            if ( DEBUG_AQ ) write(6,"(a20,i3,2i4,3es12.4)") &
@@ -210,7 +270,7 @@ contains
 !u7.2    call setup_aqurates(b ,cloudwater,incloud)
 
 
-
+    call setup_aqurates(b ,cloudwater,incloud)
    !u7.2 if ( prclouds_present )  then
    !u7.2        call WetDeposition(i,j)
    !u7.2 end if
@@ -226,6 +286,224 @@ contains
 
    end subroutine Setup_Clouds
    !--------------------------------------------------------------------------
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+subroutine init_aqueous() 
+  use PhysicalConstants_ml, only: AVOG    ! Gas-constant, Avo's No.
+   
+   !** DESCRIPTION
+   ! Calls initial tabulations, sets frac_aq to zero above cloud level, and
+   ! sets constant rates.
+
+   !   MTRLIM represents mass transport limitations between the clouds
+   !   and the reminder of the grid-box volume. (so2 will be rapidly depleted 
+   !   within the clouds, and must be replenished from the surounding cloud 
+   !   free volume.
+   !     old tests:    MTRLIM = clfr_loc, 0.8, 1.0
+
+   real, parameter ::           &! H+ stuff. Assume ph approx 4.5, then:
+           Hplus     = 5.0e-5          ! Hydrogen ion concentration
+   real, parameter :: MASSTRLIM = 1.0  ! Mass transport limitation
+
+   ! H+ stuff:
+
+      INV_Hplus     = 1.0/Hplus      ! 1/H+,         was:HINRAT
+      INV_Hplus0p4  =INV_Hplus**0.4  ! (1/H+)**0.4
+
+
+   ! tabulations
+
+     !======================
+     call tabulate_aqueous()
+     !======================
+
+
+   ! Constant rates: The rates given in Berge (1993) are in mol-1 l.
+   ! These need to be multiplied by 1.0e3/AVOG/Vf,so we perform the
+   ! 1.0e3/AVOG scaling here.
+
+   !so2aq + h2o2   ---> so4,             ref: B93, M\"oller 1980
+
+      aqrc(1) = 8.3e5 * 1.0e3/AVOG * MASSTRLIM
+
+
+   ! (so2aq + hso3-) + H+ + o3 ---> so4, ref: B93, from Martin&Damschen 1981
+
+      aqrc(2) = 1.8e4 * 1.0e3/AVOG * MASSTRLIM
+
+
+   ! (so2aq + hso3-) + o2 ( + Fe ) --> so4,  ! See documentation below
+
+      aqrc(3) = 3.3e-10  * MASSTRLIM  
+
+   ! Regarding aqrc(3):
+   ! catalytic oxidation with Fe. The assumption is that 2% of SIV
+   ! is oxidised per hour inside the droplets, corresponding to a conversion
+   ! rate of 5.6^-6 (units s^-1  -- Therfore no conversion from mol l^-1)
+
+   ! Ref: Seland, \O. and T. Iversen (1999) A scheme for black carbon and
+   ! sulphate aerosols tested in a hemispheric scale, Eulerian dispersion
+   ! model. Atm.  Env. Vol. 33, pp 2853 -- 2879.
+
+   ! !   5.6e-6 * 0.5e-6 (liquid water fraction) /8.5e-3 (fso2 at 10 deg C)
+
+   ! I multiply with the assumed liquid water fraction from Seland and Iversen
+   ! (0.5e-6) and with an assumed fso2 since the reaction is scaled by the
+   ! calculated value for these parameters later.
+
+
+
+end subroutine init_aqueous
+
+!------------------------------------------------------------------------------
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+subroutine tabulate_aqueous()
+
+  !** DESCRIPTION
+  ! Tabulates Henry's law coefficients over the temperature range
+  ! defined in Tabulations_ml.
+  !   For SO2, the effective Henry's law is given by
+  ! Heff = H * ( 1 + K1/H+ )  
+  ! where k2 is omitted as it is significant only at high pH.
+  ! We tabulate also the factor 1+K1/H+ as K1fac.
+
+  real, dimension(CHEMTMIN:CHEMTMAX)  :: t, tfac   ! Temperature, K, & factor
+  integer :: i
+
+     t(:)           = (/ ( real(i), i=CHEMTMIN, CHEMTMAX ) /)
+     tfac(:)        = 1.0/t(:) -  1.0/298.0
+
+     H (IH_SO2 ,:)  = 1.23    * exp(3020.0*tfac(:) ) 
+     H (IH_H2O2,:)  = 7.1e4   * exp(6800.0*tfac(:) )
+     H (IH_O3  ,:)  = 1.13e-2 * exp(2300.0*tfac(:) )
+!hf     H (IH_HCHO,:)  = 2.97e3  * exp(7194.0*tfac(:) )
+
+
+     ! Need  effective Henry's coefficient for SO2:
+     K1fac(IH_SO2  ,:)  =  &
+            ( 1.0 + 1.23e-2 * exp(2010.0*tfac(:) ) * INV_Hplus)
+
+
+     H (IH_SO2 ,:)  = H(IH_SO2,:) * K1fac(IH_SO2,:)
+
+
+  end subroutine tabulate_aqueous
+  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine setup_aqurates(b ,cloudwater,incloud)
+  use Setup_1dfields_ml, only : &
+      itemp          ! temperature (K)
+   
+   !**DESCRIPTION
+   !  sets the rate-coefficients for thr aqueous-phase reactions
+
+   real, dimension(KUPPER:KMAX_MID) :: &
+          b                   & !  Cloud-aread (fraction)
+         ,cloudwater            !  Cloud-water
+   logical, dimension(KUPPER:KMAX_MID) :: &
+           incloud               ! True for in-cloud k values 
+   !/Outputs  -> aqurates
+
+   !/-- local
+   real, dimension(KUPPER:KMAX_MID) :: &
+                      fso2grid  & ! f_aq * b = {f_aq}      (was: fso2loc)
+                     ,fso2aq    & ! only so2.h2o part (not hso4-)
+                     ,caqh2o2   & ! rate of oxidation of so2 with H2O2
+                     ,caqo3     & ! rate of oxidation of so2 with H2O2
+                     ,caqsx       ! rate of oxidation of so2 with o2 ( Fe )
+     
+	integer k
+
+
+   call get_frac(cloudwater,incloud)     ! => frac_aq
+    
+!hf initialize
+       aqrck(:,:)=0.
+
+
+!hf Gas phase ox. of SO2 is "default"
+!in cloudy air, only the part remaining in gas phase (not dissolved)
+!is oxidized 
+
+    aqrck(ICLOHSO2,:) = 1.0 
+!    prclouds_present = .false.  
+
+   do k = KUPPER,KMAX_MID
+      if ( incloud(k) ) then       !!! Vf > 1.0e-10) !lwc>CW_limit
+       fso2grid(k) = b(k) * frac_aq(IH_SO2,k) 
+       fso2aq  (k) = fso2grid(k) / K1fac(IH_SO2,itemp(k)) 
+       caqh2o2 (k) = aqrc(1) * frac_aq(IH_H2O2,k)/cloudwater(k)
+       caqo3   (k) = aqrc(2) * frac_aq(IH_O3,k)  /cloudwater(k)
+   !6z - error spotted, jej, caqsx(k) = aqrc(3) * fso2grid(k)/cloudwater(k)  
+       caqsx   (k) = aqrc(3) /cloudwater(k)  
+
+
+    
+      ! oh + so2 gas-phase         ! made/macho had:  aqrck(IC4055,k)
+       aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) )   ! Now correction factor!
+    
+       aqrck(ICLRC1,k)   = caqh2o2(k) * fso2aq(k)
+    
+       aqrck(ICLRC2,k)   = caqo3(k) * INV_Hplus0p4 * fso2grid(k)
+    
+!       aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k) 
+
+     end if
+
+   enddo
+
+ end subroutine setup_aqurates
+!------------------------------------------------------------------------------
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+subroutine get_frac(cloudwater,incloud)
+  use Setup_1dfields_ml, only : &
+      temp           &! temperature (K)
+     ,itemp          ! temperature (K)
+  use PhysicalConstants_ml, only: RGAS_ATML    ! Gas-constant, Avo's No.
+
+  !** DESCRIPTION
+  ! Calculating pH dependant solubility fractions:
+  ! Calculates the fraction of each soluble gas in the aqueous phase, frac_aq
+  !
+
+  !/-- in from used modules :  cloudwater and logical incloud
+  !/-- out to rest of module: frac_aq
+  !/-- local
+   real, dimension (KUPPER:KMAX_MID) :: &
+                      cloudwater         ! Volume fraction  - see notes above
+   logical, dimension(KUPPER:KMAX_MID) :: &
+          incloud               ! True for in-cloud k values 
+  real, dimension (KUPPER:KMAX_MID) :: VfRT       ! Vf * Rgas * Temp
+
+  integer :: ih, k   ! index over species with Henry's law, vertical level k
+
+
+  ! Make sure frac_aq is zero outside clouds
+
+  frac_aq(:,:) = 0.
+
+  do k = KUPPER, KMAX_MID
+
+     ! the old test was clw=1.0e-3cw/clfr_loc > 0.05e-7
+     ! ie  cw > 0.05e-4.clfr_loc, dvs cw > 0.05e-7 for b=0.001
+
+     if  ( incloud(k) ) then  
+
+
+         VfRT(k) = cloudwater(k) * RGAS_ATML * temp(k)
+
+         ! Get aqueous fractions:
+         do ih = 1, NHENRY
+
+            frac_aq(ih,k) = 1.0/ ( 1.0+1.0/( H(ih,itemp(k)) * VfRT(k) ) )
+
+         end do
+
+     end if
+  end do
+
+end subroutine get_frac
+   
+!------------------------------------------------------------------------------
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine WetDeposition(i,j)
@@ -298,7 +576,7 @@ contains
          adv = WetDep(spec)%adv
 
          do k = kcloudtop, KMAX_MID
-              loss =   xn_2d(adv,k) * ( 1.0 - exp( -vw(k)*pr_acc(k)*dt ) )
+              loss =  xn_2d(adv,k) * ( 1.0 - exp( -vw(k)*pr_acc(k)*dt ) )
               xn_2d(adv,k) = xn_2d(adv,k) - loss
               sumloss(spec) = sumloss(spec) + loss * rho(k)
 
@@ -330,5 +608,8 @@ contains
 
 !------------------------------------------------------------------------------
 end module Aqueous_ml
+
+
+
 
 

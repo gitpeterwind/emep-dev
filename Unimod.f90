@@ -55,7 +55,8 @@ program myeul
   use MyChem_ml,        only : Init_mychem   
 
   use Advection_ml,     only : vgrid,adv_var,MIN_ADVGRIDS
-  !u7.2 use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
+!hf cum
+  use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Forests_init
   use BoundaryConditions_ml, only : BoundaryConditions
@@ -440,7 +441,8 @@ program myeul
 
           if ( AIRNOX .and. .not. mm5 ) call lightning()
 
-          !u7.2 call init_aqueous()
+!hf aq         
+          call init_aqueous()
 
           if(numt == 2) call tstfld
 

@@ -49,6 +49,7 @@ integer, public, save :: ios                   ! i/o error status number
    ,IO_LIGHT    = 49  &! lightning.f(c) - read lightning. emiss.
    ,IO_JOST     = 49  &! newjostinit(c) - read  global mixing ratios
    ,IO_GLOBBC   = 49  &!u3 - read  global mixing ratios e.g. Logan
+   ,IO_GLOBBC2  = 91  &!u3 - read  global mixing ratios e.g. h2o2
    ,IO_INFIELD  = 50  &! infield.F(c) -reads fil000xx  
    ,IO_ROUGH    = 52  &! inpar.f -reads roughn. class  
    ,IO_SNOW     = 53  &! newmonth(c): for snow

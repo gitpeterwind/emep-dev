@@ -74,10 +74,10 @@ private
                      pr      & ! Precipitation
                     ,cc3d    & ! 3-d cloud cover (cc3d),
                     ,cc3dmax & ! and maximum for layers above a given layer
-                    ,trw       ! total rainwater kg/kg 
+                    ,trw    & ! total rainwater kg/kg 
                                ! NB: trw: accumulated during metstep. ( Direct output 
                                ! from MM5 gives accumulated during prognosis length )
-
+                    ,lwc       !liquid water content
 
 
 ! surface fields
@@ -653,10 +653,12 @@ private
 
 	    cc3d(i,j,1) = 0.01 * cc3d(i,j,1)
 	    cc3dmax(i,j,1) = cc3d(i,j,1)
-
+!hf
+            lwc(i,j,:)=0.
           do k=2,KMAX_MID
 	      cc3d(i,j,k) = 0.01 * cc3d(i,j,k)
 	      cc3dmax(i,j,k) = amax1(cc3dmax(i,j,k-1),cc3d(i,j,k-1))
+              lwc(i,j,k)=0.6e-6*cc3d(i,j,k)
 	    enddo
             else
 

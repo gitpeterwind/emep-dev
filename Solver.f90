@@ -29,10 +29,10 @@ contains
          rh
 !u2 !hf MADE 
 !u2          xn_2d_bgn
-!u7.2  use Aqueous_ml,        only : &
-!u7.2      aqrck,                    &
-!u7.2      ICLSCAG  ,ICLSCAP  ,ICLFSO2  ,ICLFHCHO ,ICLOHSO2  &
-!u7.2     ,ICLRC1   ,ICLRC2   ,ICLRC3   
+  use Aqueous_ml,        only : &
+      aqrck,                    &
+      ICLOHSO2  &
+     ,ICLRC1   ,ICLRC2   ,ICLRC3   
   use Biogenics_ml, only: BIO_ISOP, BIO_TERP
 
   use My_Emis_ml                        ! => QRCNO, etc.

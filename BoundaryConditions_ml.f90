@@ -80,7 +80,8 @@ module BoundaryConditions_ml
 
   use Chemfields_ml,         only: xn_adv, xn_bgn  ! emep model concs.
   use GenSpec_adv_ml                ! Lots, including NSPEC_ADV and IXADV_
-  use GenSpec_bgn_ml,        only :NSPEC_BGN  
+!hf
+  use GenSpec_bgn_ml,        only :NSPEC_BGN
   use GridValues_ml,         only: gl, gb    &! lat, long
                                    ,i_glob, j_glob  !u1 for testing
   use ModelConstants_ml ,    only: KMAX_MID  ! Number of levels in vertical
@@ -166,7 +167,6 @@ module BoundaryConditions_ml
         spc_used_bgn
 
 
-
 contains
 
  !-------
@@ -209,7 +209,8 @@ contains
   integer  :: iglobact,jglobact
   integer  ::  errcode
   integer, save :: idebug = 0, itest=1, i_test, j_test
-
+!h2o2
+   character(len=30) :: fname 
 
   if ( my_first_call ) then
 
@@ -233,7 +234,7 @@ contains
 
 !MUST CONTAIN DECIDED DIMENSION FOR READ-IN DATA
 !hf iglobac and jglobac are no the actual domains (the chosen domain)
-! given in the same coord as the data we read - no 150*150 
+! given in the same coord as the data we read - now 50*50
   call setgl_actarray(iglobact,jglobact)
 
   allocate(bc_data(iglobact,jglobact,KMAX_MID),stat=alloc_err1)
@@ -257,6 +258,8 @@ contains
 
 
   errcode = 0
+
+
 
  !== BEGIN READ_IN OF GLOBAL DATA 
 
@@ -662,12 +665,12 @@ endif
 
 !hf BC Global 150*150 emep point of local emep 50*50
 !
-   do i=1,MAXLIMAX
-       i150(i)=nint((i_glob(i) -ISMBEG+2.0 )/3.0)
-   enddo
-   do j=1,MAXLJMAX
-      j150(j)=nint((j_glob(j) -JSMBEG+2.0 )/3.0)
-   enddo
+!   do i=1,MAXLIMAX
+!       i150(i)=nint((i_glob(i) -ISMBEG+2.0 )/3.0)
+!   enddo
+!   do j=1,MAXLJMAX
+!      j150(j)=nint((j_glob(j) -JSMBEG+2.0 )/3.0)
+!   enddo
 
 
    !a) Advected species
@@ -676,7 +679,8 @@ endif
    forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_adv_changed, &
                 mask(i,j,k)  )
 
-       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,i150(i),j150(j), k)
+!       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,i150(i),j150(j), k)
+       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
 
    end forall    
 
@@ -685,28 +689,20 @@ endif
 
    forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_bgn_changed)
 
-          xn_bgn(spc_changed2bgn(n),i,j,k) =  bc_bgn(n,i150(i),j150(j), k)
+!          xn_bgn(spc_changed2bgn(n),i,j,k) =  bc_bgn(n,i150(i),j150(j), k)
+          xn_bgn(spc_changed2bgn(n),i,j,k) =  bc_bgn(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
 
    end forall    
 
 
-!write(*,*)'me=',me
-!do i=1,limax
-!do j=1,ljmax
-!k=1
-!n=1
-!write(*,*)i,j,k,i150(i),j150(j), i_glob(i),j_glob(j),&
-!xn_bgn(spc_changed2bgn(n),i,j,k)/ppb,&
-!bc_bgn(n,i150(i),j150(j), k)/ppb
-!enddo
-!enddo
+
 
    if ( DEBUG_BCS ) then
        itest = 1
-       print *, "SetBCs: for xn top:", &
-              xn_adv(itest,2,2,1)/ppb
-       print *, "SetBCs: for xn bottom:", &
-              xn_adv(itest,2,2,20)/ppb
+       print *, "SetBCADVs: for xn top-bottom:", &
+              (xn_adv(itest,2,2,k)/ppb,k=1,20)
+       print *, "SetBCBGNs: for xn top-bottom:", &
+              (xn_bgn(itest,2,2,k)/ppb,k=1,20)
    end if
 
  end subroutine Set_BoundaryConditions    ! call every 3-hours
