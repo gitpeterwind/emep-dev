@@ -27,6 +27,20 @@ module Derived_ml
   ! ds, 28/9/01
   !---------------------------------------------------------------------------
 
+!current definitions:
+!SOMO35: daily max is found over 00:00 to 24:00. (not emepday)
+!SOMO35: accumulated over one year
+!D2_MAXO3 :  daily max is found over an EMEPDAY
+!D2_MAXO3 : accumulated into yearly_output from April to September
+!AOTXXc: accumulated into yearly_output from May to July
+!AOTXXf: accumulated into yearly_output from April to September
+!D2_EUAOTXXWH: accumulated into yearly_output from May to July
+!D2_EUAOTXXDF: accumulated into yearly_output from April to September
+!D2_UNAOTXXWH: accumulated into yearly_output from May to July
+!D2_UNAOTXXDF: accumulated into yearly_output from April to September
+!D2_O3 is now yearly accumulated (is this correct ?)
+!D2_FSTXXXX: unit correct? (accumulated but unit in /s)
+
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
@@ -99,8 +113,9 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 58  & ! Number of 2D derived fields defined
-      ,NDEF_DERIV_3D = 16    ! Number of 3D derived fields defined
+      ,NDEF_DERIV_2D = 63  & ! Number of 2D derived fields defined
+      ,NDEF_DERIV_3D = 16  & ! Number of 3D derived fields defined
+      ,NTDAY = 72            ! Number of 2D O3 to be saved each day (for SOMO)
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
    integer, public, dimension(NDDEP),     save :: nused_ddep
@@ -144,6 +159,10 @@ private
       d_2d( NDERIV_2D,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !other deriv
       d_3d( NDERIV_3D,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
 
+!pw to be used for SOMO35
+    real, save,  public :: &   !save O3 every hour during one day to find running max
+     D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0.
+ 
 
   !ds END OF NEW SYSTEM - added 16/12/2003 ========================
 
@@ -176,6 +195,8 @@ private
    integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
                                                    ! reset if DEBUG 
    integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
+   integer, public, parameter:: startmonth_forest=4,endmonth_forest=9&
+                                ,startmonth_crops=5,endmonth_crops=7
 
    contains
 
@@ -280,6 +301,10 @@ def_2d = (/&
 ,Deriv( 630, "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")&
 ,Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")&
 ,Deriv( 609, "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")&
+,Deriv( 680, "AOT  ", F, 30, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT30f","ppb h")&
+,Deriv( 681, "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")&
+,Deriv( 682, "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")&
+,Deriv( 683, "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")&
 !BUGGY ,Deriv( 611, "ACCSU", T, -1, ugSO4,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")&
 !&
 ! -- simple advected species. Note that some indices need to be set as dummys
@@ -360,8 +385,8 @@ def_2d = (/&
 ,Deriv( 603,"TOXN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_OXN","ugN/m3")&
 ,Deriv( 605,"TRDN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_REDN","ugN/m3")&
 ,Deriv( 624,"FRNIT", T,   -1  ,1.0 ,    F , F,T,T,T,"D2_FRNIT","(1)")&
-,Deriv( 625,"MAXADV", F,IXADV_O3,PPBINV, F, F,F,T,T,"D2_MAXO3","ppb")&
-,Deriv( 626,"MAXSHL", F,IXSHL_OH,1.0e13,F , F,F,F,T,"D2_MAXOH","?")&
+,Deriv( 625,"MAXADV", F,IXADV_O3,PPBINV, F, F,T,T,T,"D2_MAXO3","ppb")&
+,Deriv( 626,"MAXSHL", F,IXSHL_OH,1.0e13,F , F,T,F,T,"D2_MAXOH","?")&
 !
 ,Deriv( 617, "tNO3 ", T, -1, ugN,    T, F, T, T, T,"D2_tNO3", "ugN/m3")&
 ,Deriv( 618, "SIA  ", T, -1, ugPMde, T, F, T, T, T,"D2_SIA" , "ug/m3")&
@@ -370,6 +395,7 @@ def_2d = (/&
 ,Deriv( 649, "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")&
 ,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O ", "ug/m3")&   !water
 ,Deriv( 646, "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3")& 
+,Deriv( 627, "SOM", F, 35, 1.,   F, F, T, T, F,"D2_SOMO35", "ppb day")& 
  /)
 
 !-- 3-D fields
@@ -640,13 +666,16 @@ def_3d = (/ &
       character(len=len(f_2d%class)) :: typ  !  See defs of f_2d
       real :: thour                          ! Time of day (GMT)
       real :: timefrac                       ! dt as fraction of hour (3600/dt)
+      real :: dayfrac                        ! fraction of day elapsed (in middle of dt)
+      integer :: ntime                       ! 1...NTDAYS
+      integer :: nhour                       ! hours of day (GMT) 
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
 
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D !ds rv1_9_28 
                 ! Inverse of No. air mols/cm3 = 1/M 
                 ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
-
+      logical :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
 
       !ds rv1_9_17 integer :: ndef 
 
@@ -657,7 +686,8 @@ def_3d = (/ &
      !/***** 2-D fields **************************
 
      do n = 1, NDERIV_2D
-        
+
+        accumulate_2dyear=.true.
         !rv1_9_17 ndef = nused_2d(n)
         typ = f_2d(n)%class
 
@@ -745,6 +775,19 @@ def_3d = (/ &
 
             end if
 
+            !pw rv2_1
+            !Monthly and yearly ARE averaged over days
+            if(End_of_Day)then
+              d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
+              nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
+              if(    current_date%month >= 4 &
+                 .or.current_date%month <= 9 )then
+              d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY) 
+              nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
+              endif
+            endif
+
+
           case ( "MAXSHL" )        ! Daily maxima - short-lived
 
             forall ( i=1:limax, j=1:ljmax )
@@ -754,6 +797,7 @@ def_3d = (/ &
                                    !u4  / (roa(:,:,KMAX_MID,1)*MFAC) )
             end forall
 
+
             if ( debug_flag ) then
                write(*, *) "SHL:MAX.,MFAC ", n, index  , MFAC
                write(*,fmt="(a12,2i4,4es12.3)") "SHL MAX. ", n, index  &
@@ -762,6 +806,17 @@ def_3d = (/ &
                       ,  density(i_debug,j_debug), MFAC
             end if
 
+            !pw rv2_1
+            !Monthly and yearly ARE averaged over days
+            if(End_of_Day)then
+              d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
+              nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
+              if(    current_date%month >= 4 &
+                 .or.current_date%month <= 9 )then
+              d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY) 
+              nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
+              endif
+            endif
 
           case ( "VOC", "TVOC" )
 
@@ -771,8 +826,53 @@ def_3d = (/ &
 
             call aot_calc( n, timefrac )
 
+            if(     current_date%month<startmonth_forest&
+                 .or.current_date%month>endmonth_forest)then
+               if( f_2d(n)%name=="D2_AOT30f".or.& 
+                   f_2d(n)%name=="D2_AOT40f".or.&
+                   f_2d(n)%name=="D2_AOT60f")then
+                   accumulate_2dyear=.false.
+               endif
+
+            endif
+            if(     current_date%month<startmonth_crops&
+               .or.current_date%month>endmonth_crops)then
+               if( f_2d(n)%name=="D2_AOT30c".or.&
+                   f_2d(n)%name=="D2_AOT40c".or.&
+                   f_2d(n)%name=="D2_AOT60c")then
+                   accumulate_2dyear=.false.
+               endif
+            endif
+
+
+           case( "SOM" )
+
+
+              dayfrac= (thour-(dt/7200.))/24. !must be < 1
+              ntime=int(dayfrac*NTDAY )+1 !must be >=1 and <= NTDAY
+              if(dayfrac<0)ntime=NTDAY !midnight
+
+!last value  (not averaged): 
+          D2_O3_DAY( : , : , ntime) =&
+           xn_adv(IXADV_O3,:,:,KMAX_MID)*cfac(IXADV_O3,:,:)*PPBINV
+
+              if(dayfrac<0)then !only at midnight: write on d_2d
+
+                 
+                 call som_calc( n )
+!accumulate
+                 d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY) 
+ !                if(current_date%month>=4.and.current_date%month<=9)then
+                 d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY) 
+ !                endif
+!overwritten anyway D2_O3_DAY = 0.
+              endif
+
+
+
           case ( "EXT" )
 
+             call setaccumulate_2dyear(n,accumulate_2dyear)
           ! Externally set for IOU_INST (in other routines); so no new work needed
             if ( debug_flag ) then
                  write(*,*) "EXTDer:Externally set d_2d should already have values"
@@ -798,15 +898,19 @@ def_3d = (/ &
 
         !/** add to daily, monthly and yearly average, and increment counters
         !    /wdep, ddep not done here ???)
-        !     Note that the MAXADV and MAXSHL needn't be summed here, but since
-        !     the INST values are zero it doesn't harm, and the code is shorter
+        !  Note that the MAXADV and MAXSHL and SOM needn't be summed here, but
+        !  since the INST values are zero it doesn't harm, and the code is 
+        !  shorter. These d_2d ( MAXADV, MAXSHL, SOM) are set elsewhere
 
         d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + d_2d(n,:,:,IOU_INST) 
+        if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
         d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_INST) 
-        d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_INST) 
-
-        if ( f_2d(n)%avg ) nav_2d(n,:) = nav_2d(n,:) + 1
-
+        if ( f_2d(n)%avg ) nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
+        if(accumulate_2dyear)then
+           d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_INST) 
+           if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
+        endif
+ 
      end do   ! NDERIV_2D
      !/***** WET DEPOSITION **************************
 
@@ -1167,7 +1271,89 @@ def_3d = (/ &
         end do
       end do
    end subroutine aot_calc
+
+!=========================================================================
+
+  subroutine som_calc( n )
+
+!pw rv2_1
+
+    !/-- Calculates SOM (8hours) values for input threshold.
+
+    implicit none
+    integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
+
+    real    :: threshold               ! Threshold, e.g. 35 (ppb)
+    real :: o3                         ! Ozone (ppb) - needed if SOMs
+    real :: sum8h
+    integer, parameter :: N8h = (NTDAY*8)/24 !number of periods in 8 hours
+    real, parameter :: N8h_inv=1./N8h
+    integer :: nh
+
+
+    threshold = f_2d(n)%index
+
+      do i=1,limax
+        do j=1,ljmax
+
+           !find max running 8h sum O3
+           sum8h=0.
+           do nh=1,N8h
+              sum8h = sum8h + D2_O3_DAY( i , j , nh)
+           enddo
+           o3=sum8h
+           do nh=N8h+1,NTDAY
+              sum8h =sum8h-D2_O3_DAY( i , j , nh-N8h)+D2_O3_DAY( i , j , nh)
+              o3=max(o3,sum8h)
+              if(n<0)write(*,*)o3 !pw fake for compiler!!
+           enddo
+
+           !divide by N8h to find 8h mean 
+           o3=o3*N8h_inv
+
+           o3 = max( o3 - threshold , 0.0 )   ! Definition of SOMs
+
+             ! d_2d values will be accumulated in Derived_ml
+
+           d_2d(n, i,j,IOU_DAY ) = o3  
+
+        end do
+      end do
+   end subroutine som_calc
+
  !=========================================================================
+
+   subroutine setaccumulate_2dyear(n,accumulate_2dyear)
+
+! We don't want the yearly output to accumulate over the whole year
+     integer, intent(in) :: n
+      logical, intent(inout) :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
+
+      if( f_2d(n)%name=="D2_EUAOT30DF".or.&
+          f_2d(n)%name=="D2_EUAOT40DF".or.&
+          f_2d(n)%name=="D2_UNAOT30DF".or.&
+          f_2d(n)%name=="D2_UNAOT40DF"    &
+          )then
+         if(   current_date%month<startmonth_forest&
+              .or.current_date%month>endmonth_forest)then
+            accumulate_2dyear=.false.
+         endif   
+      endif
+
+       if(f_2d(n)%name=="D2_EUAOT30WH".or.&
+          f_2d(n)%name=="D2_EUAOT40WH".or.&
+          f_2d(n)%name=="D2_UNAOT30WH".or.&
+          f_2d(n)%name=="D2_UNAOT40WH"    &
+          )then
+         if(   current_date%month<startmonth_crops&
+              .or.current_date%month>endmonth_crops)then
+            accumulate_2dyear=.false.
+
+         endif   
+      endif
+
+    end subroutine setaccumulate_2dyear
+
 end module Derived_ml
 
 

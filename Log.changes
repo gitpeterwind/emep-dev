@@ -1,3 +1,24 @@
+=================== Peter,  17/09-2004, rv2_0_4  =============================
+
+Derived_ml and ZD_OZONE/My_Derived_ml: 
+five new d_2d ("D2_SOMO35","D2_AOT30f",D2_AOT40f","D2_AOT60f","D2_AOT40c").
+
+NB: the definition of SOMO35 is slightly different than in "hourlyozone2ramot35":
+1)the running average is done over 20 minutes intervalles
+2)period 16-24 also taken into account (was not in in the first version of ramot35)
+Note that the end of SOMO35 day is at midnight (not end_of_emepday=06:00)
+
+Derived_ml
+Introduced new "averaging" for yearly and monthly output of AOTXXc, AOTXXf, SOMO35, D2_MAXO3, D2_MAXOH, D2_EUXXX og D2_UNXXX.
+
+NB: the D2_MAXO3 obtained in the yearly output is slightly different than that obtained using "hourlyozone2ramot35" on hourly output, because in the yearly the max is taken on EMEP_day, while "hourlyozone2ramot35" uses 00:00-24:00.
+
+Dry_Dep_ml: bug corrected (small effect (<1%) on results) in def of SAIadd
+	    
+My_BoundaryConditions_ml: removed a double declaration of IXADV_H2O2 (compiler on blizzard don't like that)
+
+small changes in grun.pl
+
 =================== Hilde,  27/08/2004, rv2_0_3  =============================
 
 GlobalBCs_ml

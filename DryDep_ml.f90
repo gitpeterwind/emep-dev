@@ -441,8 +441,9 @@ module DryDep_ml
                 else if ( daynumber < &
                           (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
                      SAIadd(lu) = ( 5.0/3.5 - 1.0) * lai
-                !pw else if ( daynumber < landuse_EGS(i,j,lu) ) then
-                else if ( daynumber <= landuse_EGS(i,j,lu) ) then
+            !pw else if ( daynumber < landuse_EGS(i,j,lu) ) then
+!rv2_0_4pw      else if ( daynumber <= landuse_EGS(i,j,lu) ) then
+                else if ( daynumber <= landuse_EGS(i,j,ilu) ) then
                      SAIadd(lu) = 1.5   ! Sensescent
             end if
         end if ! crops

@@ -76,7 +76,7 @@ $iyr_trend = "2010" if $SR ;  # 2010 assumed for SR runs here
 print "Year is $yy YEAR $year Trend year $ir_trend\n";
 
 if ( $year == 2000 ) {
-  $MetDir = "/work/mifahf/metdata/$year" ;
+  $MetDir = "/work/mifads/metdata/$year" ;
 } elsif ( $year == 1997 ) {
   $MetDir = "/work/mifapw/metdata/$year" ;
 } elsif ( $year == 2002 ) {
@@ -792,6 +792,7 @@ if ( -r $last_sondes ) {
 }  ############################### END OF SCENARIO RUNS ######################
 ################################## END OF SCENARIO RUNS ######################
 
+exit 0;
 # And compress the big files
 $nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
 

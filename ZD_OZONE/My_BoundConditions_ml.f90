@@ -38,7 +38,7 @@ module My_BoundConditions_ml
                 ,IXADV_H2O2,IXADV_CH3O2H,IXADV_ISOP,IXADV_NO,IXADV_NO2  &
                 ,IXADV_CH4,IXADV_aNH4,IXADV_pNO3,IXADV_aNO3 &
 !hfOH
-                ,IXADV_H2O2,IXADV_CH3COO2
+                ,IXADV_CH3COO2
   use GenSpec_shl_ml, only: IXSHL_OH
   use GridValues_ml,  only: sigma_mid    !sigma layer midpoint
   use Met_ml         ,only : z_mid       ! height of half layers
