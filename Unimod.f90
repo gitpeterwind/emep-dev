@@ -301,11 +301,11 @@ program myeul
     print *, "read standard input"
     call gc_ibcast(MSG_MAIN1, 4, 0, NPROC, info, ntmp)
     print *, "distributed standard input"
-    print *, " Trend Year is ", iyr_trend
 
     nterm = ntmp(1)
     nass = ntmp(2)
     iyr_trend = ntmp(4)   !ds rv1.6.10
+    print *, " Trend Year is ", iyr_trend
 
 
     !*** Timing ********

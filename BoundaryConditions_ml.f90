@@ -216,6 +216,7 @@ contains
   if ( my_first_call ) then
 
     write(*,*) "FIRST CALL TO BOUNDARY CONDITIONS, me :", me
+    write(*,*) "TREND YR, me ", iyr_trend, me
     !ds rv1.6.11 call My_bcmap()  ! assigns bc2xn_adv and bc2xn_bgn mappings
     call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
     call Set_bcmap()     ! assigns xn2adv_changed, etc.
@@ -228,6 +229,7 @@ contains
 
   end if ! first call
   write(*,*) "CALL TO BOUNDARY CONDITIONS, me, month :", me, month
+  write(*,*) "TREND2 YR, me ", iyr_trend, me
   
   if ( num_changed == 0 ) then           !u1
       write(*,*) "BCs: No species requested"  !u1 

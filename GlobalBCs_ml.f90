@@ -176,6 +176,7 @@ contains
          trend_co = exp(-0.01*0.85*(1990-iyr_trend)) ! Zander:CO
          trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
   end if
+  write(6,"(a20,3f8.3)") "GLOBAL TREND YEAR ",  iyr_trend
   write(6,"(a20,3f8.3)") "TRENDS O3,CO,VOC ", trend_o3, trend_co, trend_voc
   !trend_CH4 set in My_BoundaryConditions
   !trend_ch4= exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
