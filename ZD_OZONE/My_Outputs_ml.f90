@@ -28,7 +28,7 @@ module  My_Outputs_ml
   private
 
 
-  logical, public, parameter :: out_binary = .false.
+  logical, public, parameter :: out_binary = .true.
   logical, public, parameter :: Ascii3D_WANTED = .true.
 
   ! out_binary = .True. gives also binary files (for use in xfelt).
@@ -42,7 +42,7 @@ module  My_Outputs_ml
 
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
-     NSITES_MAX =    35          & ! Max. no surface sites allowed
+     NSITES_MAX =    50          & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    10 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
@@ -109,12 +109,13 @@ module  My_Outputs_ml
  !  ,NADV_SONDE  =    30                &   ! No.  advected species
 !ELSE SR RUNS USE:::::
      NSONDES_MAX =    35               &   ! Max. no sondes allowed
-    ,NLEVELS_SONDE =  10               &   ! No. k-levels (9 => 0--2500 m)
+    ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
-    ,NADV_SONDE  =     3                &   ! No.  advected species
+    ,NADV_SONDE  =     8                &   ! No.  advected species
 !END
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
-    ,NXTRA_SONDE =    3                    ! No. Misc. met. params  (now th)
+    ,NXTRA_SONDE =    4                &   ! No. Misc. met. params  (now th)
+    ,N_NIT       =   10                    ! # of N species in NOy
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
 !MERLIN USES...
@@ -126,20 +127,26 @@ module  My_Outputs_ml
  !  IXADV_mglyox,  IXADV_mek,  IXADV_mvk,  IXADV_mal,  IXADV_aNO3, & 
  !  IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4,  IXADV_pm25,  IXADV_pmco /)
 !ELSE SR RUNS USE:::::
-   SONDE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2 /)
+   SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_HNO3, IXADV_aNO3, & 
+   IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
 !END
+
+   integer, public, parameter, dimension(N_NIT) :: &
+     NOy_SPEC =  (/ IXADV_HNO3, IXADV_NO,  IXADV_NO2,  IXADV_PAN,    &
+                    IXADV_MPAN, IXADV_NO3, IXADV_N2O5, IXADV_ISONO3, &
+                    IXADV_ISNI, IXADV_ISNIR /)
 
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-    SONDE_XTRA=  (/ "U ", "V ", "th" /)     ! Height at mid-cell
-    !SONDE_XTRA=  (/ "z_mid" /)     ! Height at mid-cell
+    SONDE_XTRA=  (/ "NOy  ", "z_mid", "p_mid", "th   " /)  ! Height at mid-cell
+    !SONDE_XTRA=  (/ "z_mid", "p_mid", "th   ","RH   " /)  ! Height at mid-cell
 
  !ds - rv1.6.12 - can access d_3d fields through index here, by
  !     setting "D3D" above and say D3_XKSIG12 here:
 
    integer,           public, parameter, dimension(NXTRA_SONDE) :: &
-    SONDE_XTRA_INDEX=  (/     0, 0, 0 /)
+    SONDE_XTRA_INDEX=  (/     0, 0, 0, 0 /)
 
 
 
