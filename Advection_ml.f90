@@ -69,7 +69,6 @@
 
  real, private,save, dimension(MAXLIMAX,KMAX_MID,NMET) :: vs,vn
 
- !ADVEC_TYPE (MADE=0, MACHO=1)
  integer, public, parameter :: ADVEC_TYPE = 1 ! Divides by advected p*
 ! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by advected p*
 

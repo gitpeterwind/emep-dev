@@ -208,8 +208,7 @@ contains
      integer :: icmp       ! component index
      real    :: scale      ! Scaling factor
      character(len=size(f_2d%class)) :: typ  !  See defs of f_2d
-     character*30 ::varname
-     integer ::i,j,kmax ,ndim
+     integer ::i,j
 
        ident(7)  =  1000 ! Set artificial surface value for all 2-D fields
 
@@ -231,15 +230,10 @@ contains
 
               call outarr_int2(msgnr,IO_OUT,ident,dim,icmp, &
                                                  dat(1,1,1,iotyp),scale)
-              if( iotyp == IOU_YEAR)then 
-                 !writeout in netCDF output
-                 write(varname,fmt='(''Out_2D'',i4.4)')def(icmp)%code
-                 ndim=2                 
-                 kmax=1
-                 call Out_netCDF(ndim,varname,ident &
-                   ,dim,kmax,icmp,dat(:,:,:,IOU_YEAR),scale)
 
-              endif        
+                 call Out_netCDF(iotyp,def(icmp),2,ident &
+                   ,1,icmp,dat(:,:,:,iotyp),dim,scale)
+
 
           endif        ! wanted
        enddo        !icmp
@@ -265,8 +259,7 @@ contains
      logical :: wanted     ! Set true for required year, month, day or inst.
      integer :: icmp, k    ! component index, vertical coord.
      real    :: scale      ! Scaling factor
-     character*30 ::varname
-     integer ::i,j,kmax,ndim 
+     integer ::i,j
 
        do icmp = 1, dim
 
@@ -297,15 +290,8 @@ contains
 
               enddo    !k
 
-              if( iotyp == IOU_YEAR)then 
-                 !writeout in netCDF output
-                 write(varname,fmt='(''Out_3D'',i4.4)')def(icmp)%code
-                 ndim=3
-                 kmax=KMAX_MID
-                 call Out_netCDF(ndim,varname,ident &
-                   ,dim,kmax,icmp,dat(:,:,:,:,IOU_YEAR),scale)
-
-              endif        
+                 call Out_netCDF(iotyp,def(icmp),3,ident &
+                   ,KMAX_MID,icmp,dat(:,:,:,:,iotyp),dim,scale)
 
             endif        ! wanted
           enddo        !icmp

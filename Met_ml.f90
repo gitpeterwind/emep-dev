@@ -1947,11 +1947,12 @@ private
 !     End j-slice
 
 
- 40   continue
-
+40   continue
+            
 !..spatial smoothing of new zi:
 
-!pw not yet //!      call smoosp(zixx,limax,ljmax,iip,jjp,zimin,zlimax)
+44 format(I2,30F5.0)
+      call smoosp(zixx,zimin,zlimax)
 
       do j=1,ljmax
          do i=1,limax
@@ -2128,7 +2129,7 @@ private
             enddo
          enddo
 
-!pw not yet //!          call smoosp(help,limax,ljmax,iip,jjp,kzmin,kzmax)
+       call smoosp(help,kzmin,kzmax)
 
          do i=1,limax
             do j=1,ljmax
@@ -2204,12 +2205,14 @@ private
 !c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !c
 !c
-      subroutine smoosp(f,iif,jjf,iih,jjh,rmin,rmax)      
+      subroutine smoosp(f,rmin,rmax)      
 
 !c	file: eulmet-mnd.f
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c
 !c	written by Trond Iversen,  modified by Hugo Jakobsen, 080994
+!       parallellized and modified by Peter February 2003
+!
 !c
 !c	Called from: tiphys.f
 !c
@@ -2219,108 +2222,238 @@ private
 !c	to the field f usinh h as a work space also the boundaries 
 !c	are smoothed. f contains the smoothed field upon return.
 !c
-!c
-!c----------------------------------------------------------------------
-!c	files included:B
-!c
-!c	metpar.inc	: parameters for LAM50E-meteorology
-!c	metvar.inc	: dependent meteorological variables
-!c	metcon.inc	: constants for the model
-!c	&metnew.inc	: Some new parameters/variables used for
-!c			  subroutine "tiphys"
-!c
-!c
-!c----------------------------------------------------------------------
-!c
+
 !c    Definition of the variables:  
 !c
 !c
-!c	f	:
-!c	iif	:
-!c	jjf	:
-!c	h1	:
-!c	iih	:
-!c	jjh	:
-!c	rmin	:
-!c	rmax	:
-!c	s	:
-!c	is	:
-!c	jjp	:
-!c
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc      
-!c
-!c.. parameter statements
-!c
-!c
-!      include 'metpar.inc'
-!      include 'metvar.inc'
-!      include 'metcon.inc'
-!c      include 'metnew.inc'
+!c	f	: data to be smoothed
+!c	iif	: =limax
+!c	jjf	: =ljmax
+!c	h1,h2	: = help variable
+!c	rmin	: min allowed
+!c	rmax	: max allowed
 !c
 implicit none
-       real f(MAXLIMAX,MAXLJMAX),h1(0:MAXLIMAX+1,0:MAXLJMAX+1),rmin,rmax
+!       real f(MAXLIMAX,MAXLJMAX),h1(0:MAXLIMAX+1,0:MAXLJMAX+1),rmin,rmax
+       real, intent(inout):: f(MAXLIMAX,MAXLJMAX)
+       real, intent(in):: rmin,rmax
+       real, dimension(MAXLIMAX+4,MAXLJMAX+4):: h1, h2
 
-!hf ERROR      real f(iif,jjf),h1(0:iih,0:jjh),rmin,rmax
-!iih,jjh not defined
-!                                                     
-!c-----------------------------------------------------------        
-!c..........................................................
-!c..the s-loop (s=+/- 0.5):                                          
-!c
-!c
-
-
-!hf new
-    integer iif,jjf,iih,jjh,is,i,j
+    integer iif,jjf,is,i,j,ii,jj,iifl,jjfl
     real s
+    real, dimension(MAXLIMAX,2) ::f_south,f_north
+    real, dimension(MAXLJMAX+2*2,2) ::f_west,f_east
+    integer  thick
+
+    iif=limax
+    jjf=ljmax
+
+    thick=2  !we fetch 2 neighbors at once, so that we don't need to call readneighbours twice
+    iifl=iif+2*thick
+    jjfl=jjf+2*thick
+
+    call readneighbors(f,f_south,f_north,f_west,f_east,thick)
+
+    do j=1,jjf
+       jj=j+thick
+       do i=1,iif
+          ii=i+thick
+          h1(ii,jj) = f(i,j)
+       enddo
+    enddo
+    do j=1,thick
+       do i=1,iif
+          ii=i+thick
+          h1(ii,j) = f_south(i,j)
+       enddo
+    enddo
+    do j=1,thick
+       jj=j+jjf+thick
+       do i=1,iif
+          ii=i+thick
+          h1(ii,jj) = f_north(i,j)
+       enddo
+    enddo
+    do j=1,jjfl
+       do i=1,thick
+          h1(i,j) = f_west(j,i)
+       enddo
+    enddo
+    do j=1,jjfl
+       do i=1,thick
+          ii=i+iif+thick
+          h1(ii,j) = f_east(j,i)
+       enddo
+    enddo
+
+    do j=1,jjfl
+       h2(1,j) = 0.
+       h2(iifl,j) = 0.
+    enddo
+    do i=1,iifl
+       h2(i,1) = 0.
+       h2(i,jjfl) = 0.
+    enddo
+ 44 format(I2,30F5.0)
 
      do 30 is=2,1,-1                                          
 
-         s=is-1.5 
+         s=is-1.5  !s=0,5 s=-0.5
+         if(is /= 2)h1=h2
+                                           
+!..the smoothing
 
+         do 20 j=2,jjfl-1
+            do 20 i=2,iifl-1
+               h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
+                    +0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))   &  
+                    +s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
+               h2(i,j) = amax1(h2(i,j),rmin)
+               h2(i,j) = amin1(h2(i,j),rmax)
+         20 continue                                        
+               
+30  continue                                      
 
-      do i=0,iih
-         do j=0,jjh
-            h1(i,j) = 0.
-         enddo
-      enddo
-
-!c.........                 
-!c..fill h:                                              
-!            
-      do 24 j=1,jjf
-         do 21 i=1,iif
-            h1(i,j)=f(i,j)
- 21      continue
-         i=0
-            h1(i,j)=f(1,j)
-         i=iih
-            h1(i,j)=f(iif,j)
- 24   continue
-      do 25 i=0,iih
-         h1(i,0)=h1(i,1)
-         h1(i,jjh)=h1(i,jjf)
- 25   continue
-
-!                                           
-!c..the smoothing
-!c
-      do 20 j=1,jjf
-      do 20 i=1,iif
-         f(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
-             +0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))   &  
-             +s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
-      f(i,j) = amax1(f(i,j),rmin)
-      f(i,j) = amin1(f(i,j),rmax)
-  20  continue                                        
-
-  30  continue                                      
+    do j=1,jjf
+       jj=j+thick
+       do i=1,iif
+          ii=i+thick
+          f(i,j)=h2(ii,jj) 
+       enddo
+    enddo
                           
       return  
       end subroutine smoosp                                                             
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+   subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
+     
+     
+! Read data at the other side of the boundaries 
+!
+! thick is the number of gridcells in each direction to be transferred
+! Note that we also fetch data from processors in the "diagonal"
+! directions
+!
+! Written by Peter February 2003
 
-  end module met_ml
+!     use Par_ml , only : me,NPROC,limax,ljmax,MAXLIMAX,MAXLJMAX &
+!          ,neighbor,SOUTH,NORTH,WEST,EAST,NOPROC
+
+     implicit none
+
+     integer, intent(in) :: thick
+     real,intent(in), dimension(MAXLIMAX,MAXLJMAX) ::data
+     real,intent(out), dimension(MAXLIMAX,thick) ::data_south,data_north
+     real,intent(out), dimension(MAXLJMAX+2*thick,thick) ::data_west,data_east
+
+     integer :: msgnr,info
+     integer :: i,j,tj,jj,jt
+     
+ !check that limax and ljmax are large enough
+     if(limax < thick .or. ljmax < thick)then
+        print *,'me, limax, ljmax, thick ', me, limax, ljmax, thick
+        call gc_abort(me,NPROC,"ERROR readneighbors")
+     endif
+     
+     msgnr=1
+
+     data_south(:,:)=data(:,1:thick)
+     data_north(:,:)=data(:,ljmax-thick+1:ljmax)
+     if(neighbor(SOUTH) >= 0 )then
+        call gc_rsend(msgnr,MAXLIMAX*thick,		&
+             neighbor(SOUTH), info, data_south, data_south)
+     endif
+     if(neighbor(NORTH) >= 0 )then
+        call gc_rsend(msgnr+9,MAXLIMAX*thick,		&
+             neighbor(NORTH), info, data_north, data_north)
+     endif
+     
+     if(neighbor(SOUTH) >= 0 )then
+        call gc_rrecv(msgnr+9,MAXLIMAX*thick,		&
+             neighbor(SOUTH), info, data_south, data_south)
+     else
+        do tj=1,thick
+           data_south(:,tj)=data(:,1)
+        enddo
+     endif
+ 44 format(I2,30F5.0)
+     if(neighbor(NORTH) >= 0 )then
+        call gc_rrecv(msgnr,MAXLIMAX*thick,		&
+             neighbor(NORTH), info, data_north, data_north)
+     else
+        do tj=1,thick
+           data_north(:,tj)=data(:,ljmax)
+        enddo
+     endif
+     
+     jj=0
+     do jt=1,thick
+        jj=jj+1
+        data_west(jj,:)=data_south(:,jt)
+        data_east(jj,:)=data_south(limax-thick+1:limax,jt)
+     enddo
+     do j=1,ljmax
+        jj=jj+1
+        data_west(jj,:)=data(:,j)
+        data_east(jj,:)=data(limax-thick+1:limax,j)
+     enddo
+     do jt=1,thick
+        jj=jj+1
+        data_west(jj,:)=data_north(:,jt)
+        data_east(jj,:)=data_north(limax-thick+1:limax,jt)
+     enddo
+     
+     if(neighbor(WEST) >= 0 )then
+        call gc_rsend(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(WEST), info, data_west, data_west)
+     endif
+     if(neighbor(EAST) >= 0 )then
+        call gc_rsend(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(EAST), info, data_east, data_east)
+     endif
+     
+     if(neighbor(WEST) >= 0 )then
+       call gc_rrecv(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(WEST), info, data_west, data_west)
+     else
+        jj=0
+        do jt=1,thick
+           jj=jj+1
+           data_west(jj,:)=data_south(1,jt)
+        enddo
+        do j=1,ljmax
+           jj=jj+1
+           data_west(jj,:)=data(1,j)
+        enddo
+        do jt=1,thick
+           jj=jj+1
+           data_west(jj,:)=data_north(1,jt)
+        enddo
+     endif
+     if(neighbor(EAST) >= 0 )then
+        call gc_rrecv(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(EAST), info, data_east, data_east)
+     else
+        jj=0
+        do jt=1,thick
+           jj=jj+1
+           data_east(jj,:)=data_south(limax,jt)
+        enddo
+        do j=1,ljmax
+           jj=jj+1
+           data_east(jj,:)=data(limax,j)
+        enddo
+        do jt=1,thick
+           jj=jj+1
+           data_east(jj,:)=data_north(limax,jt)
+        enddo
+     endif
+     
+   end subroutine readneighbors
+end module met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+

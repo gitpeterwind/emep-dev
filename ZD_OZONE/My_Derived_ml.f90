@@ -75,7 +75,7 @@ private
   !       for Deriv3D and Deriv2D. Values now set in subroutine
   !       Set_My_Derived
 
-    type, public:: Deriv    ! Could be private ??
+    type, public:: Deriv    ! Could be private ?? NO, used by Ouput_binary_ml!!
        integer  :: code     ! Identifier for DNMI/xfelt (was ID6OUT_DERIV_3D)
        character(len=7) :: class ! Type of data, e.g. ADV or VOC
        logical  :: avg      ! True => average data (divide by nav at end), 
@@ -87,6 +87,8 @@ private
        logical  :: year     ! True when yearly averages wanted
        logical  :: month    ! True when monthly averages wanted
        logical  :: day      ! True when daily averages wanted
+       character(len=10) :: name ! Name of the variable (writen in netCDF output)
+       character(len=10) :: unit ! Unit (writen in netCDF output)
     end type Deriv
 
    logical, private, parameter :: T = .true., F = .false. ! shorthands only
@@ -180,6 +182,8 @@ private
       d_2d( NDERIV_2D,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !other deriv
       d_3d( NDERIV_3D,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
 
+    character(len=8),  public ,parameter :: model='ZD_OZONE'
+
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
    contains
@@ -199,91 +203,91 @@ private
 
    !-- Deposition fields
 
-! Deriv type has fields:     code class   avg? ind scale rho  Inst Yr  Mn   Day   
- f_wdep(WDEP_PREC ) = Deriv( 561, "PREC ", F, -1, 1.0,   F  , F  ,  T , T ,  T )
- f_wdep(WDEP_SOX  ) = Deriv( 541, "WDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
- f_wdep(WDEP_OXN  ) = Deriv( 542, "WDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
- f_wdep(WDEP_RDN  ) = Deriv( 543, "WDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
+! Deriv type has fields:     code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
+ f_wdep(WDEP_PREC ) = Deriv( 561, "PREC ", F, -1, 1.0,   F , F  , T ,T ,T ,"WDEP_PREC","mm")
+ f_wdep(WDEP_SOX  ) = Deriv( 541, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mg/m2")
+ f_wdep(WDEP_OXN  ) = Deriv( 542, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mg/m2")
+ f_wdep(WDEP_RDN  ) = Deriv( 543, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mg/m2")
 
- f_ddep(DDEP_SOX  ) = Deriv( 521, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
- f_ddep(DDEP_OXN  ) = Deriv( 522, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
- f_ddep(DDEP_RDN  ) = Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
+ f_ddep(DDEP_SOX  ) = Deriv( 521, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX","mg/m2")
+ f_ddep(DDEP_OXN  ) = Deriv( 522, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN","mg/m2")
+ f_ddep(DDEP_RDN  ) = Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mg/m2")
 
  !--test fields for ecosystem specific---
- f_ddep( DDEP_JRK  ) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
- f_ddep( DDEP_FOR  ) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
+ f_ddep( DDEP_JRK  ) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T ,"DDEP_JRK","mg/m2")
+ f_ddep( DDEP_FOR  ) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T ,"DDEP_FOR","mg/m2")
 
 
 
 !-- 2-D fields - the complex ones
 
-! Deriv type has fields:  code class  avg? ind scale rho  Inst  Yr  Mn   Day
- f_2d( D2_AOT40) = Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F  )
- f_2d( D2_AOT60) = Deriv( 609, "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F  )
+! Deriv type has fields:  code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
+ f_2d( D2_AOT40) = Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
+ f_2d( D2_AOT60) = Deriv( 609, "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
 
   ! To give same units as MACHO....  (multiplied with roa in layers?? ==> 
   !                                    rho "false" )
  sf = species ( SO4 )%molwt * PPBINV /ATWAIR
- f_2d( D2_ACCSU) = Deriv( 611, "ACCSU", T, -1, sf ,   F  , F  ,  T , T ,  F  )
+ f_2d( D2_ACCSU) = Deriv( 611, "ACCSU", T, -1, sf ,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2" )
 
 ! -- simple advected species
 
-! Deriv type has fields:     code class   avg? ind scale rho  Inst Yr  Mn   Day   
- f_2d(D2_SO2 ) = Deriv( 601, "ADV  ", T, IXADV_SO2, ugS, T  , F ,  T , T ,  T )
- f_2d(D2_SO4 ) = Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T  , F ,  T , T ,  T )
- f_2d(D2_HNO3) = Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T  , F ,  T , T ,  T )
- f_2d(D2_PAN ) = Deriv( 604, "ADV  ", T, IXADV_PAN, ugN, T  , F ,  T , T ,  T )
-!TROTREP f_2d(D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T )
- f_2d(D2_NO  ) = Deriv( 623, "ADV  ", T, IXADV_NO , ugN, T  , F ,  T , T ,  T )
- f_2d(D2_NO2 ) = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T )
- f_2d(D2_aNH4) = Deriv( 619, "ADV  ", T,IXADV_aNH4, ugN, T  , F ,  T , T ,  T )
+! Deriv type has fields:     code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
+ f_2d(D2_SO2 ) = Deriv( 601, "ADV  ", T, IXADV_SO2, ugS, T  , F ,  T , T ,  T ,"D2_SO2","ugS/m3")
+ f_2d(D2_SO4 ) = Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T  , F ,  T , T ,  T ,"D2_SO4","ugS/m3")
+ f_2d(D2_HNO3) = Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T  , F ,  T , T ,  T ,"D2_HNO3","ugN/m3")
+ f_2d(D2_PAN ) = Deriv( 604, "ADV  ", T, IXADV_PAN, ugN, T  , F ,  T , T ,  T ,"D2_PAN","ugN/m3")
+!TROTREP f_2d(D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T ,"D2_NH3","ugN/m3")
+ f_2d(D2_NO  ) = Deriv( 623, "ADV  ", T, IXADV_NO , ugN, T  , F ,  T , T ,  T ,"D2_NO","ugN/m3")
+ f_2d(D2_NO2 ) = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T ,"D2_NO2","ugN/m3")
+ f_2d(D2_aNH4) = Deriv( 619, "ADV  ", T,IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
 
- f_2d(D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T )
- f_2d(D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T )
+ f_2d(D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T ,"D2_O3","ppb")
+ f_2d(D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T ,"D2_CO","ppb")
 
 !hf hmix
- f_2d(D2_HMIX) = Deriv( 468, "HMIX  ",T,  0 ,       1.0, T  , F , T , T , T )
- f_2d(D2_HMIX00)=Deriv( 469, "HMIX00",T,  0 ,       1.0, T  , F , T , T , T )
- f_2d(D2_HMIX12)=Deriv( 470, "HMIX12",T,  0 ,       1.0, T  , F , T , T , T )
+ f_2d(D2_HMIX) = Deriv( 468, "HMIX  ",T,  0 ,       1.0, T  , F , T , T , T ,"D2_HMIX","m")
+ f_2d(D2_HMIX00)=Deriv( 469, "HMIX00",T,  0 ,       1.0, T  , F , T , T , T ,"D2_HMIX00","m")
+ f_2d(D2_HMIX12)=Deriv( 470, "HMIX12",T,  0 ,       1.0, T  , F , T , T , T ,"D2_HMIX12","m")
 
 !ds drydep
 !   set as "external" parameters - ie set outside Derived subroutine
 !   use index as lu, here 10=grass
 
- f_2d(D2_VG_REF)=Deriv( 471, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
- f_2d(D2_VG_1M )=Deriv( 472, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
- f_2d(D2_VG_STO)=Deriv( 473, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
- f_2d(D2_FX_REF)=Deriv( 474, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
- f_2d(D2_FX_STO)=Deriv( 475, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F )
+ f_2d(D2_VG_REF)=Deriv( 471, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_VG_REF","m/s")
+ f_2d(D2_VG_1M )=Deriv( 472, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_VG_1M","m/s")
+ f_2d(D2_VG_STO)=Deriv( 473, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_VG_STO","m/s")
+ f_2d(D2_FX_REF)=Deriv( 474, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_FX_REF","nmol/m2/s")
+ f_2d(D2_FX_STO)=Deriv( 475, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_FX_STO","nmol/m2/s")
 
 ! --  time-averages - here 8-16 , as used in MACHO
 
  sf = species ( HCHO )%molwt * PPBINV /ATWAIR
 
- f_2d(D2T_HCHO)  =Deriv( 613,"TADV ", T, IXADV_HCHO  ,sf , T , F , T , T , T)
+ f_2d(D2T_HCHO)  =Deriv( 613,"TADV ", T, IXADV_HCHO  ,sf , T , F , T , T , T,"D2T_HCHO","ug/m3")
 
  sf = species ( CH3CHO )%molwt * PPBINV /ATWAIR
 
- f_2d(D2T_CH3CHO)=Deriv( 614,"TADV ", T, IXADV_CH3CHO,sf , T , F , T , T , T)
-!TROTREP f_2d(D2T_VOC  ) =Deriv( 610,"TVOC ", T,   -1    ,PPBINV , F , F , T , T , T)
- f_2d(D2_VOC  ) =Deriv( 610,"VOC ", T,   -1    ,PPBINV , F , F , T , T , T)
+ f_2d(D2T_CH3CHO)=Deriv( 614,"TADV ", T, IXADV_CH3CHO,sf , T , F , T , T , T,"D2T_CH3CHO","ug/m3")
+!TROTREP f_2d(D2T_VOC  ) =Deriv( 610,"TVOC ", T,   -1    ,PPBINV , F , F , T , T , T,"D2T_VOC","ppb")
+ f_2d(D2_VOC  ) =Deriv( 610,"VOC ", T,   -1    ,PPBINV , F , F , T , T , T,"D2_VOC","ppb")
 
 
 ! -- miscellaneous user-defined functions
 
-! Deriv type has fields:     code class   avg? ind scale rho Inst Yr Mn  Day  
- f_2d(D2_SOX   ) =    Deriv( 602,"TSO4 ", T,   -1  ,ugS , T , F , T , T , T)
- f_2d(D2_OXN   ) =    Deriv( 603,"TOXN ", T,   -1  ,ugN , T , F , T , T , T)
- f_2d(D2_REDN   ) =   Deriv( 605,"TRDN ", T,   -1  ,ugN , T , F , T , T , T)
- f_2d(D2_FRNIT   ) =  Deriv( 624,"FRNIT", T,   -1  ,1.0 , F , F , T , T , T)
- f_2d(D2_MAXO3   ) =  Deriv( 625,"MAXADV", F,IXADV_O3,PPBINV, F , F , F , F,T)
- f_2d(D2_MAXOH   ) =  Deriv( 626,"MAXSHL", F,IXSHL_OH,1.0e13,F , F , F , F,T)
+! Deriv type has fields:     code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
+ f_2d(D2_SOX   ) =    Deriv( 602,"TSO4 ", T,   -1  ,ugS , T , F , T , T , T,"D2_SOX","ugS/m3")
+ f_2d(D2_OXN   ) =    Deriv( 603,"TOXN ", T,   -1  ,ugN , T , F , T , T , T,"D2_OXN","ugN/m3")
+ f_2d(D2_REDN   ) =   Deriv( 605,"TRDN ", T,   -1  ,ugN , T , F , T , T , T,"D2_REDN","ugN/m3")
+ f_2d(D2_FRNIT   ) =  Deriv( 624,"FRNIT", T,   -1  ,1.0 , F , F , T , T , T,"D2_FRNIT","(1)")
+ f_2d(D2_MAXO3   ) =  Deriv( 625,"MAXADV", F,IXADV_O3,PPBINV, F , F , F , F,T,"D2_MAXO3","ppb")
+ f_2d(D2_MAXOH   ) =  Deriv( 626,"MAXSHL", F,IXSHL_OH,1.0e13,F , F , F , F,T,"D2_MAXOH","?")
 
 !-- 3-D fields
 
- f_3d(D3_O3  ) = Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV , F , T , T , T , F )
- f_3d(D3_NO2 ) = Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV , F , T , T , T , F )
- f_3d(D3_VOC ) = Deriv( 407, "VOC  ", T,       -1 , PPBINV , F , T , T , T , F )
+ f_3d(D3_O3  ) = Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV , F , T , T , T , F ,"D3_O3","ppb")
+ f_3d(D3_NO2 ) = Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
+ f_3d(D3_VOC ) = Deriv( 407, "VOC  ", T,       -1 , PPBINV , F , T , T , T , F ,"D3_VOC","ppb")
 
 !u4 -- Initialise to zero
 

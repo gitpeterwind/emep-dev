@@ -25,11 +25,15 @@
   use netcdf
   implicit none
 
-  character (len=*), parameter :: fileName = 'results.nc'
+  character (len=*), parameter :: fileName_day = 'out_day.nc'
+  character (len=*), parameter :: fileName_month = 'out_month.nc'
+  character (len=*), parameter :: fileName_year = 'out_year.nc'
+  character (len=15) :: fileName ,period_type
 
   public :: InitnetCDF
   public :: Out_netCDF
 
+  private :: CreatenetCDFfile
   private :: createnewvariable
   private :: check
   private :: secondsfrom1january
@@ -39,17 +43,30 @@ contains
 
 subroutine InitnetCDF
 
+fileName = fileName_year
+period_type = 'yearly'
+call CreatenetCDFfile
+fileName = fileName_month
+period_type = 'monthly'
+call CreatenetCDFfile
+fileName = fileName_day
+period_type = 'daily'
+call CreatenetCDFfile
+
+end subroutine InitnetCDF
+
+subroutine CreatenetCDFfile
   ! Create the netCDF file
 
 use GridValues_ml,         only : GRIDWIDTH_M
 use Par_ml,                only : GIMAX,GJMAX
 use ModelConstants_ml,     only : KMAX_MID   
 use GridValues_ml,         only : coordzero,sigma_mid
-
+use My_Derived_ml,         only : model
   implicit none
 
 character (len=*), parameter :: version='Unimod rv1.4'       
-character (len=*), parameter :: author_of_run='My name, Unimod group' 
+character (len=*), parameter :: author_of_run='Unimod group' 
 character (len=*), parameter :: projection='Stereographic'
 character (len=*), parameter :: projection_params='60.0 -32.0 1.0'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
@@ -64,6 +81,8 @@ real :: izero,jzero
   ! fileName: Name of the new created file 
   ! nf90_clobber: protect existing datasets
   ! ncFileID: netcdf ID
+
+
   call check(nf90_create(path = fileName, cmode = nf90_clobber, ncid = ncFileID))
 
   ! Define the dimensions
@@ -77,8 +96,9 @@ real :: izero,jzero
      print *, 'created_hour: ',created_hour
 
   ! Write global attributes
-  call check(nf90_put_att(ncFileID, nf90_global, "Conventions", "COARDS, GDV" ))
+  call check(nf90_put_att(ncFileID, nf90_global, "Conventions", "GDV" ))
   call check(nf90_put_att(ncFileID, nf90_global, "version", version ))
+  call check(nf90_put_att(ncFileID, nf90_global, "model", model))
   call check(nf90_put_att(ncFileID, nf90_global, "author_of_run", author_of_run))
   call check(nf90_put_att(ncFileID, nf90_global, "created_date", created_date))
   call check(nf90_put_att(ncFileID, nf90_global, "created_hour", created_hour))
@@ -90,6 +110,7 @@ real :: izero,jzero
   call check(nf90_put_att(ncFileID, nf90_global, "projection",projection))
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
   call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
+  call check(nf90_put_att(ncFileID, nf90_global, "period_type", period_type))
 
 ! define coordinate variables
   call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
@@ -120,7 +141,7 @@ real :: izero,jzero
   call check(nf90_open(path = fileName, mode = nf90_write, ncid = ncFileID))
 
   call coordzero(izero,jzero)
-  print *, 'izero,jzero ',izero,jzero
+!  print *, 'izero,jzero ',izero,jzero
   xcoord(1)=-izero*GRIDWIDTH_M/1000.
   do i=2,GIMAX
      xcoord(i)=xcoord(i-1)+GRIDWIDTH_M/1000.
@@ -138,24 +159,31 @@ real :: izero,jzero
   call check(nf90_put_var(ncFileID, kVarID, kcoord) )
 
   call check(nf90_close(ncFileID))
-end subroutine InitnetCDF
+
+end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(ndim,varname,ident,dim,kmax,icmp,dat,scale)
+subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale)
 
 use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX
 use ModelConstants_ml,     only : KMAX_MID, current_date  
+use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D ,Deriv &
+                         ,IOU_INST, IOU_YEAR ,IOU_MON, IOU_DAY  
+
 
   implicit none
 
-character (len = *) ,intent(in) :: varname
+integer ,intent(in) :: icmp,ndim,kmax,dim
+type(Deriv),     intent(in) :: def1 ! definition of fields
+integer,                         intent(in) :: iotyp
 integer, dimension(:) ,intent(in) ::  ident
-integer ,intent(in) :: dim,icmp,ndim,kmax
 real    ,intent(in) :: scale 
 !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
 real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
 
+
+character*13 :: varname
 character*8 ::lastmodified_date
 character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
 integer :: ncFileID,varID,new,nrecords
@@ -165,6 +193,16 @@ integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
 !real*4 :: buff 
 real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID) 
 real (kind = FourByteReal), allocatable,dimension(:,:,:)  :: data3D
+
+if(iotyp==IOU_YEAR)then
+   fileName = fileName_year
+elseif(iotyp==IOU_MON)then
+   fileName = fileName_month
+elseif(iotyp==IOU_DAY)then
+   fileName = fileName_day
+else
+   return
+endif 
 
 
 if(ndim /= 2 .and. ndim /= 3 )then
@@ -234,14 +272,22 @@ if(me==0)then
 !open an existing netcdf dataset
   call check(nf90_open(path = fileName, mode = nf90_write, ncid = ncFileID))
 
+!make variable name
+  if(ndim==2)then
+     write(varname,fmt='(A,''_2D'')')trim(def1%name)
+  elseif(ndim==3)then
+     write(varname,fmt='(A,''_3D'')')trim(def1%name)
+  else
+     write(varname,fmt='(A,''_XX'')')trim(def1%name)
+  endif
   !test first if the variable is already defined:
   status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
   
   if(status == nf90_noerr) then     
-     print *, 'variable exists: ',varname
+!     print *, 'variable exists: ',varname
   else
-     print *, 'variable does not yet exist: ',varname!,nf90_strerror(status)
-     call  createnewvariable(ncFileID,varname,ndim,ident,ndate)
+     print *, 'creating variable: ',varname!,nf90_strerror(status)
+     call  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1)
   endif
 
 
@@ -280,7 +326,7 @@ if(me==0)then
 !update dates
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_date", lastmodified_date))
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
-  call check(nf90_put_att(ncFileID, nf90_global, "current_date_last",ndate ))
+  call check(nf90_put_att(ncFileID, VarID, "current_date_last",ndate ))
 
   !get variable id
   call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
@@ -298,12 +344,15 @@ end subroutine Out_netCDF
 !_______________________________________________________________________
 
 
-subroutine  createnewvariable(ncFileID,varname,ndim,ident,ndate)
+subroutine  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1)
 
   !create new netCDF variable
 
+use My_Derived_ml, only : Deriv 
+
   implicit none
 
+  type(Deriv),     intent(in) :: def1 ! definition of fields
   character (len = *),intent(in) ::varname
   integer ,intent(in) ::ndim,ncFileID
   integer, dimension(:) ,intent(in) ::  ident,ndate
@@ -334,19 +383,20 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ident,ndate)
      FillValue=0.
      scale=1.
      !define attributes of new variable
-     call check(nf90_put_att(ncFileID, varID, "_FillValue", FillValue  ))
-     call check(nf90_put_att(ncFileID, varID, "long_name",   "UNIMOD output"))
-     call check(nf90_put_att(ncFileID, varID, "scale_factor",  scale ))
+     call check(nf90_put_att(ncFileID, varID, "long_name",  def1%name ))
      nrecords=0
      call check(nf90_put_att(ncFileID, varID, "numberofrecords", nrecords))
 
-     call check(nf90_put_att(ncFileID, varID, "units",   "unknown"))
+     call check(nf90_put_att(ncFileID, varID, "units",   def1%unit))
+     call check(nf90_put_att(ncFileID, varID, "class",   def1%class))
+     call check(nf90_put_att(ncFileID, varID, "scale_factor",  scale ))
+     call check(nf90_put_att(ncFileID, varID, "_FillValue", FillValue  ))
 
-     call check(nf90_put_att(ncFileID, varID, "periodlength",   "yearly"))
+!     call check(nf90_put_att(ncFileID, varID, "periodlength",   "yearly"))
 
-     call check(nf90_put_att(ncFileID, nf90_global, "xfelt_ident",ident ))
-     call check(nf90_put_att(ncFileID, nf90_global, "current_date_start",ndate ))
-     call check(nf90_put_att(ncFileID, nf90_global, "current_date_last",ndate ))
+     call check(nf90_put_att(ncFileID, varID, "xfelt_ident",ident ))
+     call check(nf90_put_att(ncFileID, varID, "current_date_first",ndate ))
+     call check(nf90_put_att(ncFileID, varID, "current_date_last",ndate ))
    
      call check(nf90_enddef(ncid = ncFileID))
 
