@@ -47,10 +47,6 @@ module DryDep_ml
  use Radiation_ml,         only : zen         &! zenith angle (degrees)
                                  ,SolBio      &!u7.lu extras
                                  ,coszen
-!u7.4vg -
-!rv1.2 use My_Derived_ml,    only : d_2d, IOU_INST , &  ! Store results here
-!rv1.2                             D2_VG_REF, D2_VG_1M, D2_VG_STO, &
-!rv1.2                             D2_FX_REF, D2_FX_STO
  
  use SubMet_ml,        only: Get_Submet
  use UKdep_ml,         only : Init_ukdep, ReadLanduse, SetLandUse  & 
@@ -58,9 +54,6 @@ module DryDep_ml
                               ,landuse_ncodes, landuse_codes, landuse_data  &
                               ,landuse_SGS, landuse_EGS &
                               ,landuse_LAI,    landuse_hveg , landuse_gpot
-!rv1.2                        ,dep_flux      &
-!rv1.2                       ,DEP_VG_REF, DEP_VG_1M, DEP_VG_STO &
-!rv1.2                       ,DEP_FL_REF, DEP_FL_STO
 
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
@@ -81,6 +74,7 @@ module DryDep_ml
   logical, private, save :: my_first_call = .true.
   logical, private, parameter :: DEBUG_VG = .false.
   logical, private, parameter :: DEBUG_UK = .false.
+  logical, private, parameter :: DEBUG_WET = .true.
 
 
  contains
@@ -96,7 +90,7 @@ module DryDep_ml
 
   if ( my_first_call ) then 
 
-     call Init_DepMap()                          ! Maps CDEP to IXADV
+     call Init_DepMap()               ! Maps CDEP to IXADV
 
 
      call Init_ukdep()                ! reads ukdep_biomass, etc.
@@ -136,6 +130,7 @@ module DryDep_ml
          ,vg_fac       & ! Loss factor due to dry dep.
          ,Rb           & ! Quasi-boundary layer rsis.
          ,Rsur         & ! 
+         ,Rsur_wet     & ! rv1.4.8 - Rsur over wet surface
          ,Vg_ref       & ! Vg at ref ht.
          ,Vg_1m        & ! Vg at  1m over veg.
          ,Grid_Vg_ref  & ! Grid average of Vg at ref ht. (effective Vg for cell)
@@ -166,6 +161,7 @@ module DryDep_ml
          ,Ra_ref       & ! Ra from ref ht.  to z0
          ,Ra_1m        & ! Ra from 1m over veg. to z0
          ,Idrctt, Idfuse   ! Direct-total and diffuse radiation
+   real :: wetarea         ! Fraction of grid square assumed wet 
    real :: ustar_nwp, ustar_loc, vpd, invL, rho_surf, invL_nwp, d, rh, Ts_C
    real :: lai, hveg        ! For convenience  
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
@@ -257,8 +253,6 @@ module DryDep_ml
                      + (v(i,j,KMAX_MID,1)+v(i,j-1,KMAX_MID,1))**2 )
 
 
-      !BUG??  dtz      = dt_advec/z_mid(i,j,KMAX_MID)
-
       dtz      = dt_advec/z_bnd(i,j,KMAX_BND-1)
 
     call SolBio(daynumber, coszen(i,j), &
@@ -327,8 +321,6 @@ module DryDep_ml
             call gc_abort(me,NPROC,"WATER!")
         end if
 
-        !rv1.2 if ( lu  <= 4 ) then  !! More realistic forests, test:
-        !rv1.2                       !! Hard-coded 4  remove later!!
 
         if ( forest(lu) ) then  !! More realistic forests, test:
 
@@ -372,7 +364,6 @@ module DryDep_ml
              end if
 
 
-!hf ddep         call Rsurface(lu,debug_flag, &
          call Rsurface(rh,lu,debug_flag, &
                    lai, &   ! tmp
                    hveg, &  ! tmp
@@ -381,27 +372,48 @@ module DryDep_ml
                    vpd,                & ! CHECK 
                    SWP(daynumber),     & ! NEEDS i,j later
                    psurf(i,j),         &
-!hf ddep           pr(i,j,KMAX_MID)    &
-                   pr_acc(KMAX_MID),   &  ! CHECK   
+                   pr_acc(KMAX_MID),   &  ! Bug fixed by hf - was pr
                    coszen(i,j),        &  ! CHECK   
                    Idfuse,             &  ! CHECK   
                    Idrctt,             &  ! CHECK   
                    snow(i,j),          &
                    g_sto,  &
                    Rsur, &
+                   Rsur_wet, &
                    Rb)
 
-         !/... add to grid-average Vg:
+       !ds rv1.4.8 - we now allow for areas which are treated
+       !   as wet and use Rsur_wet.
+       !
+       !   We assume that the area of grid which is wet is
+       !   proportional to cloud-cover:
+
+         if ( pr_acc(KMAX_MID) > 0.0 ) then
+             wetarea = cc3dmax(i,j,KMAX_MID) ! cloud cover above surface
+         else
+             wetarea = 0.0
+         end if
+
+
+       !/... add to grid-average Vg:
 
 
          do n = 1, NDRYDEP_CALC
-           Vg_ref(n) = 1.0 / ( Ra_ref + Rb(n) + Rsur(n) )
-           Vg_1m(n)  = 1.0 / ( Ra_1m  + Rb(n) + Rsur(n) )
+
+          !ds Vg_ref(n) = 1.0 / ( Ra_ref + Rb(n) + Rsur(n) )
+           Vg_ref(n) = (1.0-wetarea) / ( Ra_ref + Rb(n) + Rsur(n) ) &
+                     +      wetarea  / ( Ra_ref + Rb(n) + Rsur_wet(n) )
+
+          !ds Vg_1m(n)  = 1.0 / ( Ra_1m  + Rb(n) + Rsur(n) )
+           Vg_1m (n) = (1.0-wetarea) / ( Ra_1m + Rb(n) + Rsur(n) ) &
+                     +      wetarea  / ( Ra_1m + Rb(n) + Rsur_wet(n) )
+
            Vg_ref_lu(n,ilu) = Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)
 
-           if ( Vg_ref(n) < 0.0 .or. Vg_ref(n) > 0.1 .or. Vg_1m(n)<Vg_ref(n) ) then
+           ! if ( Vg_ref(n) < 0.0 .or. Vg_ref(n) > 0.1 .or. Vg_1m(n)<Vg_ref(n) ) then
+           if ( Vg_ref(n) < 0.0 .or. Vg_1m(n)<Vg_ref(n) ) then
                print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", Ra_ref, Rb(n), Rsur(n)
                print *, "VGREF ERROR stab", z0, d, ustar_loc, invL, g_sto
                call gc_abort(me, NPROC, "VGREF ERROR")

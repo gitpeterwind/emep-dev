@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.6 2003-01-22 16:26:00 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.7 2003-01-27 13:03:10 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -10,26 +10,26 @@ module Rsurface_ml
 !d1.1 - zenith angle range now to 89.9, not 85.0
 !d1.3 - sinB now set to coszen, not 1/coszen
 !d1.4 - restructered for use in full EMEP model.
+!d1.7 - SO2 from CEH. Not LAI dependent, so a modified procedure
+!       is needed for other gases.
 
 use DepVariables_ml, only : g_pot, g_temp,g_vpd,g_light,g_swp,    & !u7.4
                               b_inc     , albedo    ,   &
                               SAIadd, &
+                              water, &     !ds rv1.8
                               g_max     , g_min     , g_lightfac,   &
                               g_temp_min, g_temp_opt, &
                               RgsS      , RgsO      , RextS, RextO, &
                               Rgs, Rinc, Gext, &
                               VPD_max   , VPD_min   , &
                               SWP_max   , PWP       , rootdepth 
-!d1.4 use Io_ml,        only : IO_UKDEP, open_file
+
 use My_UKDep_ml, only : NDRYDEP_CALC, & ! no. of Wesely species  used
-                         DRYDEP_CALC!,  & ! array with species which are needed
-                         !GASNAME    !array with names of gases considered
+                         DRYDEP_CALC    ! array with species which are needed
 
                     
 use PhysicalConstants_ml, only : KARMAN
 use SoilWater_ml, only : SWP
-!d1.5.2use UKsetup_ml, only :   canopy, leafy_canopy, &   ! logical characteristics
-!d1.5.2                         SAIadd          
 use Wesely_ml, only  : Wesely_tab2, & ! Wesely Table 2 for 14 gases
                        WES_HNO3, & ! indices to identify HNO3
                        WES_NH3,  & ! indices to identify NH3  
@@ -38,14 +38,8 @@ use Wesely_ml, only  : Wesely_tab2, & ! Wesely Table 2 for 14 gases
 implicit none
 private
 
-!u7.lu removed:
-!u7.lu use Metdata_ml,   only : snow, psurf, t2, METSTEP, pr 
-!u7.lu - pass in met params to preserve consistency with box-model:
-!u7.lu use Met_ml,   only : snow, psurf, t2, pr 
-!u7.lu use Radiation_ml, only : zen, coszen, Idfuse, Idrctt,SolBio
-
 public   ::  Rsurface
-!rv1.2 public   ::  Conif_gpot
+!d1.7  public   ::  Conif_gpot
 private  ::  g_stomatal    
 private  ::  get_glight
 
@@ -55,13 +49,12 @@ logical, private, parameter :: DEBUG_RSURF = .false.
 contains
 ! =======================================================================
 
-!hf ddep  subroutine Rsurface(lu,debug_flag, LAI,hveg,&
   subroutine Rsurface(rh,lu,debug_flag, LAI,hveg,&
                       z0,ustar,Ts_C,vpd,SWP, &
-                      psurf, pr_acc, &                    !u7.lu
+                      psurf, precip, &                    !u7.lu
                       coszen, Idfuse, Idrctt, &       !u7.lu
                       snow, &                    !u7.lu
-                        g_sto,Rsur,Rb)
+                        g_sto,Rsur,Rsur_wet,Rb)
 ! =======================================================================
 !
 !     Description
@@ -93,6 +86,7 @@ contains
 !  considered using Wesely's idea of deriving resistances for ozone 
 !  and SO2 first (e.g. RgsO, RgsS for Rgs) and then scaling using
 !  effective Henry coefficients (H*) and reactivity coefficients (f0)
+!  d1.7 - scaling applied to Gns, not individual resistances
 !
 !
 ! Structure of routine
@@ -116,6 +110,7 @@ contains
 !......................................
 ! Input:
 
+    real, intent(in) ::  rh             !hf d1.7 ddep
     integer, intent(in) :: lu           ! land-use index
     logical, intent(in) :: debug_flag   ! set true if output wanted 
                                         ! for this location
@@ -127,18 +122,16 @@ contains
     real, intent(in) :: vpd             ! vapour pressure deficit (kPa)
     real, intent(in) :: SWP             ! soil water potential (MPa)
     real, intent(in) ::  psurf
-!hf    real, intent(in) ::  pr
-    real, intent(in) ::  pr_acc         !acc precip at surface
+    real, intent(in) ::  precip         !acc precip at surface
     real, intent(in) ::  coszen
     real, intent(in) ::  Idfuse
     real, intent(in) ::  Idrctt
     integer, intent(in) :: snow         ! snow=1, non-snow=0
-!hf ddep
-    real, intent(in) ::  rh
 ! Output:
 
    real, intent(out)             :: g_sto !  Stomatal conducatance (s/m)
    real,dimension(:),intent(out) :: Rsur ! bulk canopy surface resistance (s/m)
+   real,dimension(:),intent(out) :: Rsur_wet !    " " for wet surfaces
    real,dimension(:),intent(out) :: Rb   ! quasi-laminar boundary layer
                                           ! resistance (s/m)
 
@@ -155,17 +148,22 @@ contains
     real :: Rlow                ! adjustment for low temperatures (Wesely,
                                 ! 1989, p.1296, left column) 
     real :: xRgsS, xRgsO        ! see  DepVariables_ml
+    real :: xRgsS_wet, Rgs_wet  !  ??????
     real :: Ggs                 ! ground surface conductance, any gas
-!hf
-    real :: r_water !non stomatal resistance for NH3
-!rv1.5.2   real :: Gext                ! external conductance
-!CORR    real :: diffc               ! molecular gas diffusivity coefficient 
-!CORR                                ! (extracted from Wesely_tab2)
-  ! CORR: use D_H2O, D_i instead of diffc !
+    real :: r_water             !hf CEH: non stomatal resistance for NH3 
     real, parameter :: D_H2O = 0.21e-4  ! Diffusivity of H2O, m2/s
-                                      ! From EMEP Notes
+                                        ! From EMEP Notes
     real            :: D_i              ! Diffusivity of gas species, m2/s
-    real            :: wRextS           !  TMP - crude wet Rext for S
+!dep1_8  real            :: wRextS           !  TMP - crude wet Rext for S
+
+!CEH resistances for SO2 in low NH3 conditions
+     real, save :: CEHd = 180.0, CEHw = 100.0  !  dry, wet, m/s
+     real :: cehfac   ! factor to interpolate between the 2,
+                      ! crudely introduced by ds, Jan 2003....!
+
+
+!dep1_7 : to interpolate CEH and O3 methods:
+    real :: GnsO, GnsS_dry, GnsS_wet, Gns_dry, Gns_wet, GgsO
 
 
 ! START OF PROGRAMME: 
@@ -177,28 +175,14 @@ contains
   GASLOOP1: do icmp = 1, NDRYDEP_CALC
       iwes = DRYDEP_CALC(icmp)          ! index in Wesely table
                   
-      if   ( hveg  >=  0.0 ) then
+      !ds rv1.8 if   ( hveg  >=  0.0 ) then
 
-          Rb(icmp) = 2.0 * Rb_cor(iwes)/(KARMAN*ustar)
-
-      if ( DEBUG_RSURF .and. Rb(icmp) < 0.0  ) then
-        print *, "ERROR RSURFB", lu, icmp, iwes, Rb_cor(iwes), Rb(icmp)
-        return          
-      end if
-
-      else ! water, sea, rb is calculated as per Hicks and Liss (1976)
-
-          ! CORR - old: ! 
-          ! CORR diffc = Wesely_tab2(1,iwes) ! molecular diffusivity coeff.
-
-          ! CORR - Wesely's table gives the ratio D_H2O/D_i
-          ! CORR - therefore D_i = D_H2O / Wesely
+    ! water, sea, rb is calculated as per Hicks and Liss (1976)
+      if   ( water(lu) ) then
 
           D_i = D_H2O / Wesely_tab2(1,iwes)  ! CORR !
 
-!CORR 19/8/2002 - spotted by pw. Corrected diffc to D_i by ds...
-! should double-check equations though.
-          !CORR Rb(icmp) = log( z0 * KARMAN * ustar/ diffc )
+         !CORR 19/8/2002 - spotted by pw. Corrected diffc to D_i by ds...
 
           Rb(icmp) = log( z0 * KARMAN * ustar/ D_i )
           Rb(icmp) = Rb(icmp)/(ustar*KARMAN)
@@ -209,7 +193,11 @@ contains
           Rb(icmp) = min( 1000.0, Rb(icmp) )    ! CORR - - gives min 0.001 m/s!
           Rb(icmp) = max(   10.0, Rb(icmp) )    ! CORR - - gives max 0.10 m/s!
 
+      else 
+
+          Rb(icmp) = 2.0 * Rb_cor(iwes)/(KARMAN*ustar)
       end if
+
       if ( DEBUG_RSURF .and. Rb(icmp) < 0.0  ) then
         print *, "ERROR RSURFB", lu, icmp, iwes, Rb_cor(iwes), Rb(icmp)
         return          
@@ -238,7 +226,6 @@ contains
     !d1.6 - set limit of coszen>0.001 which coresponds to zen = 89.94 degs.
 
    if( leafy_canopy  .and. coszen > 0.001 ) then  ! Daytime 
-    !u7.lu zen > 1.0e-15 .and. zen<=89.9 ) then  ! Daytime 
 
         call g_stomatal(debug_flag,lu,coszen,Idrctt,Idfuse, & 
                          Ts_C,psurf,LAI,vpd,SWP,g_sto)
@@ -249,37 +236,55 @@ contains
 
 
   !/** Calculate Rinc, Gext 
+  !NB-    previous if-test for snow replaced by more efficient
+  !       multiplication, since snow=0 or 1.
 
    if(  canopy ) then   
          SAI  = LAI + SAIadd(lu)                  ! Accounts for bark/twigs
          Rinc = b_inc(lu)* SAI * hveg  / ustar    ! Lisa's eqn. 48 for u*=0.5
          Rinc = min( Rinc, 1000.0)
 
+         !/ New from CEH
+         xRgsS     = CEHd  + Rlow  + snow * 2000.0
+         xRgsS_wet = CEHw  + Rlow  + snow * 2000.0
+
+        ! for now, use CEH stuff for canopies, keep Ggs for non-canopy
+
+         GnsS_dry = 1.0 /  xRgsS       ! For SO2, dry, low NH3 region
+         GnsS_wet = 1.0 /  xRgsS_wet   ! For SO2, wet, low NH3 region
+
    else   ! No canopy present
 
-        Rinc = -999.9
-        Gext = -999.9  !  (not needed maybe, but...)
+        SAI  = 0.0     ! dep1.7
+        Rinc = 0.0     ! dep1.8 -999.9
+        !d1.7  Gext = -999.9  !  (not needed maybe, but...)
+
+        !/ Here we preserve the values from the ukdep_gfac table
+        !  giving higher deposition to water, less to deserts
+
+        xRgsS     = RgsS(lu) + Rlow  + snow * 2000.0
+        xRgsS_wet = xRgsS    ! Hard to know what's best here
       
    end if !  canopy
+
+   !dep1_8 : For high RH we allow the canopy to take on wet characteristics.
+   !         ds  introduced square function for RH>0.95, which has the value
+   !         zero at RH=0.95 and 1 at RH=1.0:
+
+           cehfac = 0.0 
+           if ( rh > 0.95 ) then
+               cehfac = ( (rh-0.95)/(1.0-0.95) )**2
+           end if
 
 
 !####   2. Calculate Surface Resistance, Rsur, for HNO3 and  
 !####      Ground Surface Resistance, Rgs, for the remaining 
 !####      Gases of Interest                                
 
-!In his treatment of surface resistance, Wesley does not recommend that NO_2 
-! and HNO_3 be treated similarly to O_3 (see ibid. p.1296).
+   !/ Ozone values....
 
-!The reason for deviating from Wesley here (with respect to NO_2) is that 
-!whilst Wesley assumes that all NO_2 is deposited through stomata, it would 
-!seem more likely that deposition on other surfaces of plants should also be 
-!taken into consideration. 
-
- !u7.lu - previous if-test for snow replaced by more efficient
- !        multiplication, since snow=0 or 1.
-
-  xRgsS = RgsS(lu) + Rlow  + snow * 2000.0    !u7.lu
-  xRgsO = RgsO(lu) + Rlow  + snow *    0.0    !u7.lu QUERY???
+     xRgsO  = RgsO(lu) + Rlow  + snow *    0.0    !u7.lu QUERY???
+     GnsO   = SAI/RextO + 1.0/( xRgsO + Rinc ) ! (SAI=0 if no canopy)
 
 
 !.........  Loop over all required gases   ................................
@@ -289,9 +294,12 @@ contains
      !-------------------------------------------------------------------------
 
      !  code obtained from Wesely during 1994 personal communication
+     !  but changed (ds) to allow Vg(HNO3) to exceed Vg(SO2)
 
         if ( DRYDEP_CALC(icmp) == WES_HNO3 ) then
-            Rsur(icmp)  = max(10.0,Rlow)
+            !ds dep1_8 Rsur(icmp)  = max(10.0,Rlow)
+            Rsur(icmp)  = max(1.0,Rlow)
+            Rsur_wet(icmp)  = Rsur(icmp)
             cycle GASLOOP2
         end if
 
@@ -304,8 +312,6 @@ contains
     
      !-------------------------------------------------------------------------
 
-        Rgs = 1.0/(1.0e-5*Hstar/xRgsS + f0/xRgsO)      ! Eqn. (9)
-        Rgs = min(Rgs,9999.9)  
                           
 
      !   Use SAI to test for snow, ice, water, urban ...
@@ -320,18 +326,22 @@ contains
          ! with Rext/SAI.)
 
 
-          !rv1.3 crude fix
-           if ( pr_acc > 1.0e-7 ) then
-!hf           if ( pr > 1.0e-7 .or. rh>0.95) then
-              wRextS =  200.0
-           else
-              wRextS = RextS
-           end if
+    !dep1.8
+    ! In earlier versions both O3 and SO2 had the same basic formulation, so
+    ! that :
+    !     Rsur(icmp) = 1.0/( LAI*DRx(iwes) *g_sto + SAI*Gext + Ggs )
+    !
+    ! However, adopting the CEH recommendation that we just use an Rns 
+    ! (non-stomatal)
+    ! independant of LAI or SAI, we need to somehow figure out what to do for
+    ! gases in-between O3 and SO2. Instead of applying Wesely's Hstar, 
+    ! f0 to Rext and
+    ! Rgs separately, I suggest we apply it to the total Rns instead:
 
            !rv1.3b Gext  = 1.0e-5*Hstar/RextS + f0/RextO
-           Gext  = 1.0e-5*Hstar/wRextS + f0/RextO
+           !dep1_7   Gext  = 1.0e-5*Hstar/wRextS + f0/RextO
   
-           Ggs = 1.0/( Rgs + Rinc )
+
 
 
          ! ##############   4. Calculate Rsur for canopies   ###############
@@ -350,35 +360,48 @@ contains
              else if ( Ts_C > -5 ) then
 
                r_water=200.0
-
              else
 
                r_water=1000.0
-
              end if !Ts_C
 
-              Rsur(icmp) =1.0/( LAI*DRx(iwes) *g_sto + (1./r_water) )
+             Gns_dry = 1.0/r_water
+             Gns_wet =  Gns_dry
 !hf
            else  ! Not NH3:
 
-               Rsur(icmp) = 1.0/( LAI*DRx(iwes) *g_sto + SAI*Gext + Ggs )
+               Gns_dry = 1.0e-5*Hstar*GnsS_dry + f0 * GnsO 
+               Gns_wet = 1.0e-5*Hstar*GnsS_wet + f0 * GnsO 
+
+               !.. and allow for partially wet surfaces at high RH
+               Gns_dry = Gns_dry * (1.0-cehfac) + &
+                         Gns_wet * cehfac
+           end if  ! NH3 test
+
+   !dep1_7 Rsur(icmp) = 1.0/( LAI*DRx(iwes) *g_sto + SAI*Gext + Ggs )
 
 
-              if ( Rsur(icmp) < 1.0 ) then
+           Rsur(icmp)     = 1.0/( LAI*DRx(iwes) *g_sto + Gns_dry  )
+           Rsur_wet(icmp) = 1.0/( LAI*DRx(iwes) *g_sto + Gns_wet  )
+
+
+           if ( Rsur(icmp) < 1.0 ) then
                 print *, "LOWRSUR", icmp, iwes, Rsur(icmp), lu
-                print *, "LOWRSUR bits", LAI*DRx(iwes) *g_sto, SAI*Gext, Ggs
-                print *, "LOWRSUR bit2", LAI,DRx(iwes),g_sto, SAI
+                print *, "LOWRSUR bits", LAI,DRx(iwes),g_sto, SAI,Gns_dry
                 print *, "LOWRSUR H,f0", Hstar,f0
                 print *, "LOWRSUR Rx",  RextS, RextO    
                 print *, "LOWRSUR h,ustar,cosz",  hveg, ustar, coszen
-                print *, "LOWRSUR gs",  Rgs, Rinc, RgsS(lu), Rlow, xRgsS
-              end if
-           end if  ! NH3 test
+           end if
               
        else   ! Non-Canopy modelling:
 
-           Rsur(icmp) = Rgs
-           Ggs = 1.0/ Rgs
+           Rgs     = 1.0/(1.0e-5*Hstar/xRgsS + f0/xRgsO)      ! Eqn. (9)
+           Rgs_wet = 1.0/(1.0e-5*Hstar/xRgsS_wet + f0/xRgsO)  ! Eqn. (9)
+           Rgs = min(Rgs,9999.9)  
+
+           Rsur(icmp)     = Rgs
+           Rsur_wet(icmp) = Rgs
+           ! Ggs = 1.0/ Rgs
 
        end if  ! end of canopy tests 
 
@@ -594,3 +617,12 @@ contains
 !--------------------------------------------------------------------
 
 end module Rsurface_ml
+
+!COMMENTS
+!In his treatment of surface resistance, Wesley does not recommend that NO_2 
+! and HNO_3 be treated similarly to O_3 (see ibid. p.1296).
+
+!The reason for deviating from Wesley here (with respect to NO_2) is that 
+!whilst Wesley assumes that all NO_2 is deposited through stomata, it would 
+!seem more likely that deposition on other surfaces of plants should also be 
+!taken into consideration. 
