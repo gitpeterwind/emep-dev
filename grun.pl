@@ -141,6 +141,7 @@ $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003)
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
 @smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
+@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
