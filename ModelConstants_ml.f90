@@ -20,7 +20,12 @@ module ModelConstants_ml
  !/-- constants
 
   integer, public, parameter :: METSTEP   = 3  !u2 time-step of met. (h)
-  real, public, save :: dt_advec  = 1200.0   ! time-step (s)
+
+!ds-out EMEP measurements end at 6am, hence we print out daily averages
+!       for days ending at 6am:
+  integer, public, parameter :: END_OF_EMEPDAY  = 6  
+
+  real, public, save :: dt_advec  = 1200.0   ! time-step for advection (s)
 
  !/-- choose temperature range: from 148 K (-125C) ro 333K (+60C).
 
@@ -100,7 +105,8 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
 
- integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
+ !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
+ integer, public, parameter :: DEBUG_i=37, DEBUG_j=39 !  Sea
 
 !===========================================================================
 ! N2O5 -> nitrate calculation. Some constants for
