@@ -1,6 +1,20 @@
 
 
 ==============================================================================
+=================== Dave, 19th Aug.  rv1_7_3 ==================================
+==============================================================================
+Derived_ml: 
+--  Subroutines Consistency_checks and Consistency_count added to search 
+     for duplicate entries in derived fields.
+
+ZD_OZONE/My_Derived_ml: 
+--   Renumbered ecosystem-entires to avoid collision of numbers (had 541 for 
+     both WDEP_SOX and DDEP_RDNWE
+--   Added AOT30.
+
+grun.pl
+-- modified to point to latest emission files (after bug-fix from Heiko).
+==============================================================================
 =================== Dave, 1st Aug.  rv1_7_2 ==================================
 ==============================================================================
 
