@@ -27,7 +27,8 @@ private
   real, save, public :: &
      xn_adv (NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
     ,xn_shl (NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
-    ,xn_bgn (NSPEC_BGN,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0   
+    ,xn_bgn (NSPEC_BGN,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
+    ,PM_water (MAXLIMAX,MAXLJMAX,KMAX_MID)           = 0.0        !water
 !u2    ,xn_bgn (NSPEC_UIO,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0   
 
   real, save, public :: &

@@ -1,3 +1,12 @@
+================== Svetlana,     4/03/2004, rv1_9_26 ==========================
+commited by Dave, so changes need to be filled in later. 
+
+PM Water added to aerosols for OZONE.  Needs extension to ACID but to be done.....
+
+AFRIC_ADDED bit (non-serious bug) fixed in grun.pl
+
+
+
 ================== Dave,        20/02/2004, rv1_9_25 ==========================
 
 GlobalBCs_ml     ... bug fixed: SpecBC needs to be set for all used species 

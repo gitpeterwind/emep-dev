@@ -59,7 +59,7 @@ require "flush.pl";
 $year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
-my $SR = 1;   #NEW Set to 1 for source-receptor stuff
+my $SR = 0;   #NEW Set to 1 for source-receptor stuff
 my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 my $MERLIN_CITY= 0;  # Adds in African emissions for y=1..11
@@ -119,8 +119,8 @@ if ( $OZONE ) {
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
      $testv       = "rv1_9_25";
-     $runlabel1    = "CLE$testv";           # NO SPACES! SHORT name (used in CDF names)
-     $runlabel2    = "CLE${testv}_$year";   # NO SPACES! LONG (written into CDF files)
+     $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
+     $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -489,7 +489,7 @@ foreach $poll  ( @emislist  ) {
 # Africa and PM changes. 
 # IMPORTANT. Do Africa first to get the NOx emissions needed for PM
 
-$emissions_adjusted = $AFRICA + $PM_ADDED;  # >=1 if something done
+$emissions_adjusted = $AFRICA_ADDED + $PM_ADDED;  # >=1 if something done
 
 if ( $emissions_adjusted  ) {   # Copy since we want to change the file
    print "AFRICA $gridmap{$poll}\n";

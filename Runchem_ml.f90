@@ -17,17 +17,18 @@ module RunChem_ml
 
 contains
 
-subroutine runchem()
+subroutine runchem(numt)
 
 !/ Definitions 
 !hf
    use DryDep_ml, only : drydep
    use My_Aerosols_ml, only: My_MARS,My_EQSAM,AERO_DYNAMICS,INORGANIC_AEROSOLS&
-                            ,RUN_MARS,RUN_EQSAM,ORGANIC_AEROSOLS  
+                            ,RUN_MARS,RUN_EQSAM,ORGANIC_AEROSOLS, Aero_water    !water 
    use Par_ml,           only : lj0,lj1,li0,li1  &
                         ,gi0, gj0, me,NPROC & !! for testing
                         ,ISMBEG, JSMBEG    !! for testing
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
+                                  nprint,current_date, END_OF_EMEPDAY, & !water
                             DEBUG_i, DEBUG_j,nstep    ! rv1.2
 
    use Setup_1d_ml,       only: setup_1d, &
@@ -45,7 +46,8 @@ subroutine runchem()
    use GenSpec_tot_ml
    use GenSpec_adv_ml
   use Chemfields_ml,     only: xn_adv  ! DEBUG XXXXX
-
+!/
+   integer, intent(in) :: numt       !water
 
 !/ local
 
@@ -58,6 +60,8 @@ subroutine runchem()
 
    integer ::  iday, ihour, ispec, n
    integer ::  advec,errcode
+   integer ::  nmonth,nday,nhour      !water
+   logical ::  Jan_1st, End_of_Run    !water
 
 ! ========================= STARTS HERE ================================
       
@@ -73,6 +77,14 @@ subroutine runchem()
 
 	Niter = 2
 
+!water
+   nmonth = current_date%month
+   nday   = current_date%day
+   nhour  = current_date%hour
+
+   Jan_1st    = ( nmonth == 1 .and. nday == 1 )
+   End_of_Run = ( mod(numt,nprint) == 0       )
+!water
 
  !......................................................................
  !..  Get emission rates (molec/cm2/s) - man-made and biogenic
@@ -170,6 +182,11 @@ subroutine runchem()
 
                      if ( prclouds_present)  &
                         call WetDeposition(i,j)
+
+            !water
+                     if ( nhour == END_OF_EMEPDAY .or.  End_of_Run )    &
+                        call Aero_water(i,j)
+            !water                        
 
                      call reset_3d(i,j)
 

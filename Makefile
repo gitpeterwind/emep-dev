@@ -32,6 +32,8 @@ SRCS =	Aero_Rb_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 EXTRA_OBJS = put_restri_i2.o putflti2.o rmycop.o \
 	gc_com.o getflti2.o
 
+F90_CONFORM_CHECK_ABORT=ON
+
 ###################################################
 # Diff GRIDUR
 ARCH = PGON
@@ -54,12 +56,13 @@ FC = f90
 #FFLAGS = -default64 -O3
 #FFLAGS = -64 -r8 -O 3
 FFLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
-#FFLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
+FFLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -DEBUG:conform_check=ON -DEBUG:subscript_check:verbose_runtime=ON -DEBUG:fullwarn=ON -TARG:exc_min=0ZV
 
 F90 = f90
-#F90FLAGS = -64 -r8 -O3 -fullwarn
+
 F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
-#F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV $(INCL)
+F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV $(INCL)
+F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -DEBUG:conform_check=ON -DEBUG:subscript_check:verbose_runtime=ON -DEBUG:fullwarn=ON -TARG:exc_min=0ZV $(INCL)
 #_CRAY_F90FLAGS = -O 3,fusion,aggress,bl,unroll2,msgs,negmsgs
 
 #_CRAY_LDFLAGS = -X8 -O 3,fusion,aggress,bl,msgs,negmsgs,unroll2 
@@ -67,6 +70,7 @@ F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
 #QUERY LDFLAGS = -64 -r8 -O 3 -g -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
 LDFLAGS = -64 -r8 -O 3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
 #LDFLAGS = -64 -r8 -C -g -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
+LDFLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -DEBUG:conform_check=ON -DEBUG:subscript_check:verbose_runtime=ON -DEBUG:fullwarn=ON -TARG:exc_min=0ZV
 LD = f90
 
 #_CRAY_$(PROG): $(OBJS)

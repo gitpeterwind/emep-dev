@@ -28,7 +28,7 @@ module Derived_ml
   !---------------------------------------------------------------------------
 
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
-use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn
+use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml
 use GenSpec_tot_ml
@@ -97,7 +97,7 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 51  & ! Number of 2D derived fields defined
+      ,NDEF_DERIV_2D = 52  & ! Number of 2D derived fields defined        !water (was 51)
       ,NDEF_DERIV_3D = 10    ! Number of 3D derived fields defined
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
@@ -351,6 +351,7 @@ def_2d = (/&
 ,Deriv( 619, "PMco ", T, -1, ugPMde, T, F, T, T, T,"D2_PMco", "ug/m3")&
 ,Deriv( 648, "PM25 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM25", "ug/m3")&
 ,Deriv( 649, "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")&
+,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_H2O ", "ug/m3")&   !water
  /)
 
 !-- 3-D fields
@@ -659,6 +660,13 @@ def_3d = (/ &
               ,density(i_debug,j_debug), cfac(index,i_debug,j_debug)
             end if
 
+!water
+          case ( "H2O" )
+
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = PM_water(i,j,KMAX_MID)  
+            end forall
+  
 
           case ( "MAXADV" )
 

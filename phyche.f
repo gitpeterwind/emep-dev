@@ -126,7 +126,7 @@ c
 
          !=========================================================
 
-          call runchem()   !  calls setup subs and runs chemistry
+          call runchem(numt)   !  calls setup subs and runs chemistry
 
           call Add_2timing(28,tim_after,tim_before,"Runchem")
 

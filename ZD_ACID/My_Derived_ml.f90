@@ -82,7 +82,7 @@ private
   integer, public, parameter :: &
         NWDEP     =  4   &  !
        ,NDDEP     =  9   &  !
-       ,NDERIV_2D = 18   &  ! Number of other 2D derived fields used
+       ,NDERIV_2D = 19   &  ! Number of other 2D derived fields used    !water(18)
        ,NDERIV_3D =  0      ! Number of 3D derived fields
 
   ! then use character arrays to specify which are used.
@@ -105,6 +105,7 @@ private
        "D2_OXN      ","D2_REDN     " &
       ,"D2_aNO3     ","D2_pNO3     ","D2_aNH4     ","D2_tNO3     ","D2_SIA      "&
       ,"D2_PPM25    ","D2_PPMco    ","D2_PM25     ","D2_PMco     ","D2_PM10     "&
+      ,"D2_H2O      "&    !water
 !
 !    Ecosystem - fluxes:
 !?      None?
