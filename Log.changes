@@ -1,4 +1,11 @@
-============== Hilde, 15/12-2004            , rv2_1_1  =====================
+============== Hilde, 3/1-2005            , rv2_1_3  =====================
+
+Sites_ml.f90: increased nmax_sonde
+3D fields for pressures etc, from joffen: Derived_ml.f90, My_Derived
+Changes for trend output:My_Outputs_ml.f90
+Name on 3D ouput changed: Wrtchem.f90
+
+============== Hilde, 15/12-2004            , rv2_1_2  =====================
 
 BC trends 1980-2003 for S and N based on EPA emissions for 1980-2003 added in 
 GlobalBCs_ml. For NH4 the trend is based on 2/3SO2 +1/3NOx
