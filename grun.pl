@@ -106,12 +106,12 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_11";
+     $testv       = "rv1_6_12";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_6_11";
+     $testv       = "rv1_6_12";
 } 
 #$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
