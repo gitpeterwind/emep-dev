@@ -340,9 +340,9 @@ if( year == 1990) then
             ! advection scheme to cope with huge gradient properly. Hence, 
             ! CRUDE and temporary FIX:
  
-              where ( bc_rawdata > 300.0 )
-                  bc_rawdata = 300.0 
-              end where
+              !ds rv1_6_5x where ( bc_rawdata > 300.0 )
+              !ds rv1_6_5x    bc_rawdata = 300.0 
+              !ds rv1_6_5x end where
 !rv1.4.7 As use of the Logan BCs seems to give too little  O3 at classic
 !        background stations such as Mace Head, we add 10 ppb. Crude, but
 !        the Logan dataset is very large-scale and derived from not too
