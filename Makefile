@@ -16,7 +16,7 @@ SRCS =	Aero_Rb_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 	DefPhotolysis_ml.f90 DepVariables_ml.f90 Derived_ml.f90 DryDep_ml.f90 \
 	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 Functions_ml.f90 \
 	GlobalBCs_ml.f90 GridValues_ml.f90 Io_ml.f90 MassBudget_ml.f90 \
-	Met_ml.f90 EQSAM_v03d_ml.f90 MARS_ml.f90 ModelConstants_ml.f90 My_Aerosols_ml.f90 \
+	Met_ml.f90 EQSAM_ml.f90 MARS_ml.f90 ModelConstants_ml.f90 My_Aerosols_ml.f90 \
 	My_BoundConditions_ml.f90 My_Chem_ml.f90 My_Derived_ml.f90 \
 	My_DryDep_ml.f90 My_Emis_ml.f90 My_MassBudget_ml.f90 \
 	My_Outputs_ml.f90 My_WetDep_ml.f90 NetCDF_ml.f90 Nest_ml.f90 Out_restri_ml.f90 \
