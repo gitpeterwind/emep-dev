@@ -1,5 +1,15 @@
-=================== Dave  18/11/2003, rv1_9_5 ==============================
+=================== Peter  20/11/2003, rv1_9_6 ==============================
 
+runlabel read in grun.pl used to "label" the output
+
+Small Netcdf changes: use runlabel1 in file names.
+	              CDF time is set to current time - half period		      
+Unimod.f90: read runlabels
+Emissions: inverted a do and a if loop
+ModelConstants: define runlabel1 and runlabel2
+grun.pl: define runlabel1 and runlabel
+
+=================== Dave  18/11/2003, rv1_9_5 ==============================
 Correction. WHEAT = 9, not 10!
 
 =================== Dave  18/11/2003, rv1_9_4 ==============================
