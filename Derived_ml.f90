@@ -39,7 +39,7 @@ use ModelConstants_ml, &
                          , PPBINV &   ! for conversion of units for DEBUG
                          , current_date
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
-                     me,                &   ! for DEBUG
+                     me, NPROC,         &   ! for gc_abort checks
                      limax, ljmax           ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
 !hf hmix
@@ -52,6 +52,8 @@ private
  public  :: ResetDerived         ! Resets values to zero
  public  :: DerivedProds         ! Calculates any production terms
  private :: Setups 
+ private :: Consistency_checks   !ds  - checks index numbers from My_Derived
+ private :: Consistency_count    !ds  - checks index numbers from My_Derived
  private :: Setup_VOC            ! Defines VOC group
 !jej private :: Derived              ! Calculations of sums, avgs etc.
  public :: Derived              ! Calculations of sums, avgs etc.
@@ -100,7 +102,9 @@ private
       real, intent(in) :: dt  !  time-step used in intergrations
 
       if ( my_first_call ) then
+          print *, "INITIALISE My DERIVED STUFF"
           call Set_My_Derived()
+          call Consistency_checks()  !ds - checks index numbers from My_Derived
           call Setups()
           my_first_call = .false. 
 !jej      else
@@ -109,6 +113,49 @@ private
 
     end subroutine SumDerived
 
+    !=========================================================================
+     subroutine Consistency_checks()  
+
+    !/** ds - checks index numbers from My_Derived to look for duplicates
+
+       integer, parameter :: MAX_INDEX = 2000
+       integer, dimension(MAX_INDEX) :: index_used
+       integer :: i
+
+       index_used = 0
+       call  Consistency_count(MAX_INDEX, index_used, NWDEP, f_wdep) 
+       call  Consistency_count(MAX_INDEX, index_used, NDDEP, f_ddep)
+       call  Consistency_count(MAX_INDEX, index_used, NDERIV_2D, f_2d) 
+       call  Consistency_count(MAX_INDEX, index_used, NDERIV_3D, f_3d) 
+
+       if ( any( index_used > 1 ) ) then
+           do i = 1, MAX_INDEX
+             if( index_used(i) > 1 ) print *,  &
+                   "Derived code problem, index: ",i, index_used(i)
+           end do
+           call gc_abort(me,NPROC,"Derived code problem!!")
+       end if
+     end subroutine
+
+    !=========================================================================
+     subroutine Consistency_count(max,index_used, n,data)
+
+    !/** ds adds up number of times each code from derived data array
+    !    is used.
+
+      integer, intent(in) :: max, n
+      integer, dimension(:), intent(inout)  :: index_used
+      type(Deriv), dimension(n), intent(in) :: data
+
+      integer :: code, i
+
+        do i = 1, n
+           code = data(i)%code
+           if ( code > max ) call gc_abort(me,NPROC,"My_Derived code >max!")
+           index_used( code )  = index_used( code )  + 1
+        end do
+     end subroutine Consistency_count
+    
     !=========================================================================
      subroutine Setups()
 
