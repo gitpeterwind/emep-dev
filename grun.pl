@@ -108,29 +108,31 @@ $emisyear    = "$emisdir/emis98";   # emissions
 @largedomain = (   1, 170,  1, 133 ) ;
 @smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
 @smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
-#@smalldomain = (  95, 105, 46, 56 ) ;      # ERROR search (changeable)
-#@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
+#@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
+@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
 
-$NDX   =  2;           # Processors in x-direction
+$NDX   =  4;           # Processors in x-direction
 $NDY   =  4;           # Processors in y-direction
 
 $RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
 $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
+$INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
+                       # just before execution - so code can be run interactivel.
 
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-$mm1   =  4;       # first month
-$mm2   =  4;       # last month
+$mm1   =  1;       # first month
+$mm2   =  12;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM =  4;       # for testing, simply reset here
+ #$NTERM =  12;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -162,7 +164,7 @@ $NPROC =  $NDX * $NDY ;
 
 $nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
 
-if ( $COMPILE_ONLY != 1 && $NPROC != $nproc_bsub ) {
+if ( ! $INTERACTIVE && ! $COMPILE_ONLY  && $NPROC != $nproc_bsub ) {
     die " -- Requested wrong number of processors --
       bsub asked for $nproc_bsub whereas NPROC = $NDX x $NDY = $NPROC \n";
 }
@@ -504,6 +506,12 @@ foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
         NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\n";
 
+if ( $INTERACTIVE ) {
+  die " -- INTERACTIVE: can now run for inputs: NTERM, NASS,  EXCLU, NDX, NDY 
+  with mpirun -np 1 prog.exe << XXX
+  $NTERM\n$NASS\n$exclu\n$NDX\n$NDY\nXXX"; 
+}
+
     #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 
     open (PROG, "|mpirun -np $NPROC $LPROG") || 
                die "Unable to execute $LPROG. Exiting.\\n" ;
@@ -520,7 +528,7 @@ foreach $exclu ( @exclus) {
 #------------    End of Run model -------------------------------------
 
 if ( -r core )  {
-      unlink("core");   # Remove to save disk-space
+      #TEST unlink("core");   # Remove to save disk-space
       die "Error somewhere - Core dumped !!!!\n";
 } else {
       #-- Done.

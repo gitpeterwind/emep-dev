@@ -13,9 +13,9 @@
 !_____________________________________________________________________________
 
 !hf u2 use My_Runmode_ml , only : DEBUG
- use My_Derived_ml,  only : NWDEP, NDDEP & ! No. deposition fields
-                        ,f_wdep, f_ddep  & ! definitions of dep data fields
-                        , wdep, ddep       ! deposition data fields
+!ds rv1.2 use My_Derived_ml,  only : NWDEP, NDDEP & ! No. deposition fields
+!ds rv1.2                        ,f_wdep, f_ddep  & ! definitions of dep data fields
+!ds rv1.2                        , wdep, ddep       ! deposition data fields
  use My_MassBudget_ml,only: MY_MASS_PRINT  ! Species to be printed
                                            ! (old myprint array)
 

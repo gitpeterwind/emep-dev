@@ -3,6 +3,9 @@
 =========================================================================================================
 =========================================================================================================
 
+0) Started this Log.changes file. Please add your changes here as appropriate.
+  Of course, now the code is under CVS control, differences between releases
+  can be easily obtained, but a simple Log file is also helpful.
 
 1) Merged Peter's, Hilde's and my changes in emep1.2beta2, plus
 
@@ -11,7 +14,6 @@
 
 2) Fixed bugs listed on forum
   Derived_ml - fixed timefrac
-
 
 3) Re-coded DryDep model to work for ACID
 
@@ -30,7 +32,11 @@
   stats such as max_oh to be calculated. Therefore trotrep
   version adopted.
 
+8) Ecosystem-specific deposition added for OXN over seas and forests, for
+   Jurek's HELCOM request.
 
+9) INTERACTIVE option added to grun.pl - useful when preparing code for
+    running with totalview.
 
 =========================================================================================================
 =========== Peter , summer 2002  ========================================================================

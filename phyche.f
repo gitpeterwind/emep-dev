@@ -130,7 +130,7 @@ c
 c
 	  call Code_timer(tim_before)
           !=============================
-	  !TEST!! call drydep()
+	  call drydep()
           !=============================
           call Add_2timing(34,tim_after,tim_before,"phyche:drydep")
 

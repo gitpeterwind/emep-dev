@@ -11,7 +11,8 @@ module DryDep_ml
  !-- model specific dry dep values are set in My_UKDep_ml:
  !   (in file My_DryDep_ml)
 
- use My_UKDep_ml, only : Init_vd, & ! Initialisation
+ use My_UKDep_ml, only : Init_DepMap,  &   ! Maps indices between Vg-calculated (CDEP..
+                                       &   !and advected  (IXADV_..)
                           NDRYDEP_CALC, &  ! No. Vd values calculated 
                           NDRYDEP_ADV, &   ! No. advected species affected
                           CDEP_SET,    &   ! for so4
@@ -19,7 +20,12 @@ module DryDep_ml
                           DepLoss, Add_ddep, &
                           Dep        ! Mapping (type = depmap)
 
+ use My_Derived_ml                ! -> d_2d, IOU_INST, D2_VG etc...
+
  use Dates_ml,       only : daynumber !u7.lu
+ use DepVariables_ml,only : NLANDUSE,  LU_WATER, &
+                            forest, g_pot, g_temp,g_vpd, &
+                            g_light,g_swp
  use Chemfields_ml , only : xn_adv,cfac
  use GenSpec_adv_ml, only : NSPEC_ADV
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
@@ -42,15 +48,13 @@ module DryDep_ml
 !rv1.2 use My_Derived_ml,    only : d_2d, IOU_INST , &  ! Store results here
 !rv1.2                             D2_VG_REF, D2_VG_1M, D2_VG_STO, &
 !rv1.2                             D2_FX_REF, D2_FX_STO
- use My_Derived_ml                ! -> d_2d, IOU_INST, D2_VG etc...
  
- use DepVariables_ml,  only: LU_WATER, &
-             g_pot, g_temp,g_vpd,g_light,g_swp  !u7.4 for possible outputs
  use SubMet_ml,        only: Get_Submet
  use UKdep_ml,         only : Init_ukdep, ReadLanduse, SetLandUse  & 
+                              ,NLUMAX &  ! Max. no countries per grid
                               ,landuse_ncodes, landuse_codes, landuse_data  &
                               ,landuse_SGS, landuse_EGS &
-                              ,landuse_LAI,    landuse_hveg 
+                              ,landuse_LAI,    landuse_hveg , landuse_gpot
 !rv1.2                        ,dep_flux      &
 !rv1.2                       ,DEP_VG_REF, DEP_VG_1M, DEP_VG_STO &
 !rv1.2                       ,DEP_FL_REF, DEP_FL_STO
@@ -87,7 +91,7 @@ module DryDep_ml
 
  logical, dimension(NDRYDEP_ADV), save :: vg_set 
 
- integer i, j, n, ilu, lu, nlu, ncalc, nadv, ind   ! help indexes
+ integer i, j, n, ilu, lu, nlu, ncalc, nadv, ind, err   ! help indexes
  integer :: imm, idd, ihh     ! date
 
  real ustar_sq, & ! u star squared
@@ -116,6 +120,13 @@ module DryDep_ml
    real :: nmole_o3    ! O3 in nmole/m3
    real :: lat_factor   ! latitide-based correction for lai, hveg
 
+ ! Ecosystem specific deposition requires the fraction of dep in each landuse, lu:
+
+   real, dimension(NDRYDEP_CALC,NLANDUSE):: fluxfrac_calc
+   real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
+   integer :: lu_used(NLUMAX), nlu_used
+   real    :: lu_cover(NLUMAX)
+
 
 
 !     first calculate the 1m deposition velocity following the same
@@ -129,12 +140,13 @@ module DryDep_ml
 
   if ( my_first_call ) then 
 
-     call Init_vd()
+     call Init_DepMap()                          ! Maps CDEP to IXADV
+
      inv_gridarea = 1.0/(GRIDWIDTH_M*GRIDWIDTH_M) 
 
-     call Init_ukdep()
-     call Init_GasCoeff()
-     call ReadLanduse(DEBUG_i,DEBUG_j)
+     call Init_ukdep()                ! reads ukdep_biomass, etc.
+     call Init_GasCoeff()             ! Sets Wesely coeffs.
+     call ReadLanduse()
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  
@@ -170,9 +182,6 @@ module DryDep_ml
       if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) debug_flag = .true.
 
       ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
-      if ( DEBUG_UK .and. debug_flag ) then
-          print "(a26,4i4)", "DEBUG DryDep me, i,j, ind ", me, i,j, ind
-      end if
      ! -----------------------------------------------------------------!
 
 
@@ -210,12 +219,6 @@ module DryDep_ml
                ,psurf(i,j)            &
                ,Idfuse, Idrctt)   ! output radiation
       
-    if ( DEBUG_UK .and. debug_flag ) then
-             print "(a10,i4,3i3,i6,f6.1,f8.3,4f7.2)", "UKDEP SOL", &
-                  daynumber, imm, idd, ihh, current_date%seconds, &
-                   zen(i,j), coszen(i,j), cc3dmax(i,j,KMAX_MID), &
-                     1.0e-5*psurf(i,j), Idfuse, Idrctt
-    end if
 
     !   we must use L (the Monin-Obukhov length) to calculate deposition,
     !   therefore we calculate u*, t* from NWP-model data. 
@@ -235,7 +238,12 @@ module DryDep_ml
       invL_nwp  = min(  1.0, invL_nwp ) !! limit very stable
 
     if ( DEBUG_UK .and. debug_flag ) then
-             print "(a10,i4,3i3,2f8.3,es12.4,f8.4)", "UKDEP NWP", &
+          print "(a26,4i4)", "UKDEP DryDep me, i,j, ind ", me, i,j, ind
+          print "(a10,i4,3i3,i6,f6.1,f8.3,4f7.2)", "UKDEP SOL", &
+                  daynumber, imm, idd, ihh, current_date%seconds, &
+                   zen(i,j), coszen(i,j), cc3dmax(i,j,KMAX_MID), &
+                     1.0e-5*psurf(i,j), Idfuse, Idrctt
+          print "(a10,i4,3i3,2f8.3,es12.4,f8.4)", "UKDEP NWP", &
                   daynumber, imm, idd, ihh,  &
                   Hd, LE, invL_nwp, ustar_nwp
     end if
@@ -249,23 +257,33 @@ module DryDep_ml
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
     Sumland  = 0.0
+    !! fluxfrac_calc(:,:) = 0.0
+    fluxfrac_adv (:,:) = 0.0
 
     !/ And start the sub-grid stuff over different landuse (lu)
 
     nlu = landuse_ncodes(i,j)
     LULOOP: do ilu= 1, nlu
         lu      = landuse_codes(i,j,ilu)
-
         cover   = landuse_data (i,j,ilu)
+
+        lu_used (ilu) = lu    ! for eco dep
+        lu_cover(ilu) = cover
+
         Ts_C    = t2(i,j)-273.15
         lai     = landuse_LAI(i,j,ilu)
         hveg    = landuse_hveg(i,j,ilu)
+        g_pot   = landuse_gpot(i,j,ilu)
+
         if ( DEBUG_UK .and. lu == LU_WATER .and. hveg > 0.0 ) then
             print *, "HIGHW!!! h,lai,cov", i,j,ilu, hveg, lai,cover
             call gc_abort(me,NPROC,"WATER!")
         end if
 
-        if ( lu  <= 4 ) then  !! More realistic forests, test:
+        !rv1.2 if ( lu  <= 4 ) then  !! More realistic forests, test:
+        !rv1.2                       !! Hard-coded 4  remove later!!
+
+        if ( forest(lu) ) then  !! More realistic forests, test:
                               !! Hard-coded 4  remove later!!
 
            ! if ( gb(i,j) < 50.0 .and. gb(i,j) > 42.5  ) then
@@ -276,26 +294,14 @@ module DryDep_ml
            ! which suggest that the big-leaf model as coded will overestimate
            ! Gsto if we allow higher LAI in central Europe.
 
-           !report if ( gb(i,j) >= 62.0 ) then
-           !report    lai  = 0.5 * lai
-           !report    hveg = 0.5 * hveg
-           !report end if
             if ( gb(i,j) >= 60.0 ) then
                lat_factor  = max(0.3, ( 1.0 - 0.05* (gb(i,j)-60.0)) )
                lai   = lai  *  lat_factor
                hveg  = hveg *  lat_factor
             end if
-        end if
+        end if ! forest
 
 
-             if (  DEBUG_UK .and. debug_flag ) then
-                write(6,"(a40,4i3,f6.1,2i4,3f7.3,2i4,2f6.2)") &
-                    "DEBUG_veg: me,nlu,ilu,lu, lat, SGS, EGS ", &
-                          me,nlu,ilu, lu, gb(i,j), &
-                         landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), &
-                         cover, lai, hveg,  daynumber, snow(i,j), &
-                         SWP(daynumber), Ts_C
-             end if ! DEBUG
 
         ustar_loc = ustar_nwp       ! First guess = NWP value
         invL      = invL_nwp        ! First guess = NWP value
@@ -307,9 +313,15 @@ module DryDep_ml
                        z0,d, Ra_ref,Ra_1m,rh,vpd)                    ! out
 
              if ( DEBUG_UK .and. debug_flag ) then
-                  print "(a10,2i4,2f7.2,2es12.3,3f8.3)", &
-                  "UKDEP SUB", me, &
+                write(6,"(a40,4i3,f6.1,2i4,3f7.3,2i4,2f6.2)") &
+                    "DEBUG_veg: me,nlu,ilu,lu, lat, SGS, EGS ", &
+                    me,nlu,ilu, lu, gb(i,j), &
+                   landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), &
+                   cover, lai, hveg,daynumber, snow(i,j), SWP(daynumber),Ts_C
+
+                write(6,"(a10,2i4,2f7.2,2es12.3,3f8.3)") "UKDEP SUB", me, &
                   lu, ustar_nwp, ustar_loc, invL_nwp, invL, Ra_ref, Ra_1m,rh
+
              end if
 
 
@@ -336,6 +348,7 @@ module DryDep_ml
          do n = 1, NDRYDEP_CALC
            Vg_ref(n) = 1.0 / ( Ra_ref + Rb(n) + Rsur(n) )
            Vg_1m(n)  = 1.0 / ( Ra_1m  + Rb(n) + Rsur(n) )
+           ! fluxfrac_calc(n,lu) = cover * Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)
 
@@ -428,15 +441,40 @@ module DryDep_ml
              cfac(nadv, i,j) = gradient_fac( ncalc )
          end if
 
-         if ( DepLoss(nadv) < 0.0 ) then
-           call gc_abort(me,NPROC,"NEG DEPLOSS")
-         else if ( DepLoss(nadv) > xn_adv( nadv,i,j,KMAX_MID) )  then
+         if ( DepLoss(nadv) < 0.0 .or. &
+              DepLoss(nadv)>xn_adv(nadv,i,j,KMAX_MID) ) then
+           print *,"NEG XN DEPLOSS!!! ", DepLoss(nadv), xn_adv(nadv,i,j,KMAX_MID)
            call gc_abort(me,NPROC,"NEG XN DEPLOSS")
          end if
 
          xn_adv( nadv,i,j,KMAX_MID) = &
              xn_adv( nadv,i,j,KMAX_MID) - DepLoss(nadv)
 
+      !.. ecosystem specific deposition - translate from calc to adv and normalise
+
+         do ilu = 1, nlu
+            lu      = lu_used(ilu)    ! faster than using landuse_codes(i,j,ilu)????
+
+            if ( vg_set(n) )  then
+               fluxfrac_adv(nadv,lu) = lu_cover(ilu)  ! Since all vg_set equal
+            else
+               fluxfrac_adv(nadv,lu) = lu_cover(ilu)*Vg_ref(ncalc)/ Grid_Vg_ref(ncalc)
+            end if
+
+            if ( DEBUG_UK .and. debug_flag ) then
+
+               if ( vg_set(n) )  then
+                 write(6,"(a12,3i3,3f12.3)") "FLUXSET  ", ilu, lu, nadv, &
+                           Dep(n)%vg, lu_cover(ilu), fluxfrac_adv(nadv,lu)
+               else
+                 write(6,"(a12,3i3,3f12.3)") "FLUXFRAC ", ilu, lu, nadv, &
+                  Grid_Vg_ref(ncalc), lu_cover(ilu)*Vg_ref(ncalc), fluxfrac_adv(nadv,lu)
+               end if
+            end if
+         end do
+             
+
+          
 
       !..accumulated dry deposition per grid square and summed over the whole
       !  domain
@@ -464,7 +502,7 @@ module DryDep_ml
 
       !.. Add DepLoss to budgets if needed:
 
-       call Add_ddep(i,j,convfac2)
+       call Add_ddep(i,j,convfac2,fluxfrac_adv)
 
      enddo   !j
    enddo    !i

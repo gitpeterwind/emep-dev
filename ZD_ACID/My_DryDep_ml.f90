@@ -8,7 +8,7 @@ module My_UKDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN, &
+ use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN,DDEP_JRK, DDEP_FOR, &
                              IOU_INST    &!updates inst. dep. fields
                            , ddep         ! 2d fields
  use GenSpec_adv_ml , only: NSPEC_ADV &
@@ -20,7 +20,7 @@ module My_UKDep_ml    ! DryDep_ml
  implicit none
  private
 
-  public :: Init_vd
+  public :: Init_DepMap
   public :: Add_ddep
 
 
@@ -95,7 +95,7 @@ module My_UKDep_ml    ! DryDep_ml
    logical, private, parameter :: MY_DEBUG = .false.
 
 contains
-  subroutine Init_vd
+  subroutine Init_DepMap
    real :: cms = 0.01     ! Convert to m/s
 
  ! .... Define the mapping between the advected species and
@@ -110,12 +110,17 @@ contains
    Dep(7) =  depmap( IXADV_AMSU,  CDEP_SET,  0.1 * cms  )
    Dep(8) =  depmap( IXADV_AMNI,  CDEP_SET,  0.1 * cms  )
 
-  end subroutine Init_vd
+  end subroutine Init_DepMap
 
-  subroutine Add_ddep(i,j,convfac)
+  subroutine Add_ddep(i,j,convfac,fluxfrac)
      ! Adds deposition losses to ddep arrays
      integer, intent(in) :: i,j             ! coordinates
      real,    intent(in) ::  convfac   !
+     real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
+     integer, parameter :: N_OXN = 4        ! Number in ox. nitrogen family
+     integer :: n, nadv
+     real, parameter, dimension(N_OXN) :: OXN = &
+             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_AMNI /)
 
      ddep(DDEP_SOX,i,j,IOU_INST) = (  &
           DepLoss(IXADV_SO2) + &
@@ -135,6 +140,26 @@ contains
     1.5 * DepLoss(IXADV_AMSU) + &
           DepLoss(IXADV_AMNI)  &
                                     ) * convfac * atwN
+
+   !---- ecosystem specific -----------------------------------------------
+     ddep(DDEP_JRK,i,j,IOU_INST) = 0.0
+     ddep(DDEP_FOR,i,j,IOU_INST) = 0.0
+
+     do n = 1, N_OXN
+         
+         ddep(DDEP_JRK,i,j,IOU_INST) = ddep(DDEP_JRK,i,j,IOU_INST) +  &
+              fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
+
+         ddep(DDEP_FOR,i,j,IOU_INST) = ddep(DDEP_FOR,i,j,IOU_INST) +  &
+              ( fluxfrac(nadv,1) + fluxfrac(nadv,2) + &
+                fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
+     end do
+
+     ddep(DDEP_JRK,i,j,IOU_INST) = ddep(DDEP_JRK,i,j,IOU_INST) * convfac * atwN
+     ddep(DDEP_FOR,i,j,IOU_INST) = ddep(DDEP_FOR,i,j,IOU_INST) * convfac * atwN
+   !---- end ecosystem specific ----------------------------------------------
+
+
   end subroutine  Add_ddep
 
   end module My_UKDep_ml

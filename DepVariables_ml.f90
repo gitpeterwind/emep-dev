@@ -12,7 +12,6 @@ implicit none
 !FDS private
 
 integer, public, parameter :: NLANDUSE =   17 !number of land-use classes
-integer, public, parameter :: LU_CONIF =    1 ! Conif. forest (temp.)
 integer, public, parameter :: LU_WATER =   15 !  Sea/lakes
 real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
 

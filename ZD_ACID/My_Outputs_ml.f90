@@ -84,14 +84,15 @@ module  My_Outputs_ml
    integer, public, parameter :: &
      NSONDES_MAX =    10               &   ! Max. no sondes allowed
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
-    ,NADV_SONDE  =    0                &   ! No.  advected species
-    ,NSHL_SONDE  =    0                &   ! No. short-lived species
+    ,NADV_SONDE  =    1                &   ! No.  advected species
+    ,NSHL_SONDE  =    1                &   ! No. short-lived species (fake for ACID)
     ,NXTRA_SONDE =    3                    ! No. Misc. met. params  (now th)
 
+!dsXNSHL_TEST
    integer, public, dimension(NADV_SONDE) :: &
-    SONDE_ADV !empty =  (/ IXADV_NO3 /)
+    SONDE_ADV =  (/ IXADV_NO2 /)
    integer, public, dimension(NSHL_SONDE) :: &
-    SONDE_SHL !empty =  (/ IXSHL_OH /)
+    SONDE_SHL =  (/ -99 /)   !fake ! (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
     SONDE_XTRA=  (/ "z_mid", "xksig", "th   " /)     ! Height at mid-cell
 

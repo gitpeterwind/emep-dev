@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.2 2002-09-21 14:45:04 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.3 2002-09-24 09:25:41 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -44,7 +44,7 @@ private
 !u7.lu use Radiation_ml, only : zen, coszen, Idfuse, Idrctt,SolBio
 
 public   ::  Rsurface
-public   ::  Conif_gpot
+!rv1.2 public   ::  Conif_gpot
 private  ::  g_stomatal    
 private  ::  get_glight
 
@@ -233,10 +233,10 @@ contains
    if( leafy_canopy  .and. coszen > 0.001 ) then  ! Daytime 
     !u7.lu zen > 1.0e-15 .and. zen<=89.9 ) then  ! Daytime 
 
-         call g_stomatal(debug_flag,lu,coszen,Idrctt,Idfuse, & 
+        call g_stomatal(debug_flag,lu,coszen,Idrctt,Idfuse, & 
                          Ts_C,psurf,LAI,vpd,SWP,g_sto)
-   !d1.6 else
-   !d1.6     g_sto = 0.0    ! Dark, no stomatal conductance...
+   else
+        g_sto = 0.0    ! Dark, no stomatal conductance...
 
    end if ! leafy canopy and daytime
 
@@ -437,36 +437,36 @@ contains
 
 
 ! =====================================================================
-    subroutine Conif_gpot(imm,g_pot)
-! =====================================================================
-!   modifies g_pot (g_age) for effect of older needles, with the simple
-!   assumption that g_age(old) = 0.5.
-!
-   !/ arguments
-
-    integer, intent(in) :: imm    ! month
-    real,   intent(inout) :: g_pot   ! Requires initial input of g_pot 
-                                     ! (once obtained as output from g_stomatal)
-
-   !/ Some parameters:
-   !  Proportion of needles which are from current year:
-    real, parameter, dimension(12) :: Pc = (/  &
-                   0.53, 0.535, 0.54, 0.545, 0.1, 0.15,  &
-                   0.27,  0.36, 0.42,  0.48, 0.5,  0.5  /)
-
-    real, parameter :: G_POTOLD = 0.5  ! value of g_pot for old needles
-
-
-
-!needles from current year assumed to have g_pot as evaluated above;
-!needles from previous years assumed to have g_pot of 0.5
-!The sum of the g_pot's for the current year is added to the sum of the
-!g_pot's for previous years to obtain the overall g_pot for the landuse 
-!category temp. conif. forests.
-
-    g_pot = Pc(imm)*g_pot + (1.0-Pc(imm))*G_POTOLD
-
-  end subroutine Conif_gpot
+!rv1.2     subroutine Conif_gpot(imm,g_pot)
+!rv1.2 ! =====================================================================
+!rv1.2 !   modifies g_pot (g_age) for effect of older needles, with the simple
+!rv1.2 !   assumption that g_age(old) = 0.5.
+!rv1.2 !
+!rv1.2    !/ arguments
+!rv1.2 
+!rv1.2     integer, intent(in) :: imm    ! month
+!rv1.2     real,   intent(inout) :: g_pot   ! Requires initial input of g_pot 
+!rv1.2                                      ! (once obtained as output from g_stomatal)
+!rv1.2 
+!rv1.2    !/ Some parameters:
+!rv1.2    !  Proportion of needles which are from current year:
+!rv1.2     real, parameter, dimension(12) :: Pc = (/  &
+!rv1.2                    0.53, 0.535, 0.54, 0.545, 0.1, 0.15,  &
+!rv1.2                    0.27,  0.36, 0.42,  0.48, 0.5,  0.5  /)
+!rv1.2 
+!rv1.2     real, parameter :: G_POTOLD = 0.5  ! value of g_pot for old needles
+!rv1.2 
+!rv1.2 
+!rv1.2 
+!rv1.2 !needles from current year assumed to have g_pot as evaluated above;
+!rv1.2 !needles from previous years assumed to have g_pot of 0.5
+!rv1.2 !The sum of the g_pot's for the current year is added to the sum of the
+!rv1.2 !g_pot's for previous years to obtain the overall g_pot for the landuse 
+!rv1.2 !category temp. conif. forests.
+!rv1.2 
+!rv1.2     g_pot = Pc(imm)*g_pot + (1.0-Pc(imm))*G_POTOLD
+!rv1.2 
+!rv1.2   end subroutine Conif_gpot
 ! =====================================================================
 
 !===========================================================================

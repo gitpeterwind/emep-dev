@@ -18,6 +18,7 @@ use Functions_ml,   only: GridAllocate, Polygon
 use GridValues_ml,  only: &!u7.4vg GlobalPosition, &
                            gb_glob, gb, i_glob, j_glob  ! latitude
 use Io_ml,          only: open_file, ios, IO_FORES
+use ModelConstants_ml,  only : current_date, debug_i, debug_j
 use UKsetup_ml,     only: ukdep_init, get_growing_season
 use Par_ml,         only: GIMAX, GJMAX, ISMBEG, JSMBEG, &
                           li0, lj0, IILARDOM, JJLARDOM, &
@@ -32,6 +33,7 @@ private
   public :: Init_ukdep
   public :: ReadLanduse
   public :: SetLanduse
+  private :: Conif_Gpot
 
  integer, public, parameter :: NLUMAX = 7  ! max no. landuse per grid
 
@@ -61,17 +63,17 @@ private
 
  real,   public,save,dimension(MAXLIMAX,MAXLJMAX,NLUMAX) :: &
           landuse_LAI   &    ! Leaf-area-index (m2/m2)
-         ,landuse_hveg       ! Max. height of veg.
+         ,landuse_hveg  &    ! Max. height of veg.
+         ,landuse_gpot        ! Potential (age) factor for Jarvis-calc
 
- logical, private, parameter :: DEBUG_DEP = .false.
+ logical, private, parameter :: DEBUG_DEP = .true.
  character(len=30), private :: errmsg
 
 
- logical, private, parameter :: DEBUG_UKDEP = .false.
-
 contains
 
-subroutine Init_ukdep()
+ !--------------------------------------------------------------------------
+  subroutine Init_ukdep()
     character(len=20) :: errmsg
     integer :: gc_info   ! for error messages from gc
     integer :: i,j,lu    ! indices
@@ -80,7 +82,9 @@ subroutine Init_ukdep()
   !/ 1./ -- Read in basic data for UK model
 
     if ( me == 0 ) then 
+       !=====================================
         call ukdep_init(errmsg)
+       !=====================================
         if ( errmsg /= "ok" ) then
            errmsg = "ukdep_init: " // errmsg
            call gc_abort(me,NPROC,errmsg)
@@ -121,11 +125,10 @@ subroutine Init_ukdep()
 
 end subroutine Init_ukdep
  !--------------------------------------------------------------------------
-subroutine ReadLanduse(debug_i,debug_j)
+subroutine ReadLanduse()
 
 ! arrays for whole EMEP area ( allocated for me=0 only)
 
-  integer, intent(in) :: debug_i, debug_j   ! coords for debug-square
   integer, allocatable, dimension(:,:)      :: g_ncodes 
   integer, allocatable, dimension(:,:,:)    :: g_codes  
   real,    allocatable, dimension(:,:,:)    :: g_data 
@@ -204,18 +207,21 @@ subroutine ReadLanduse(debug_i,debug_j)
               j >= 1 .and. j <= GJMAX  ) then
              do lu = 1, NNLANDUSE
                  if ( tmp(lu) > 0.0 ) then
+
                     uklu = rivm2uk(lu)  ! uk code
+
                     call GridAllocate("LANDUSE",i,j,uklu,NLUMAX, &
                       index_lu, maxlufound, g_codes, g_ncodes,errmsg)
+
                     if ( DEBUG_DEP .and. debug_flag ) then
-                       print *, "UKDEP-uklu", lu, uklu, gb_glob(i_in,j_in)
-                       print *, i,j,lu, uklu, index_lu, errmsg
-                       print *, "g_ncodes ", g_ncodes(i,j)
+                       print "(a12,2i3,2i4,4i3,f12.2)", "UKDEP-Grid", lu, uklu, i_in,j_in,i,j,&
+                              index_lu,g_ncodes(i,j), tmp(lu)
                        ncodes = g_ncodes(i,j)
                        do kk = 1, ncodes
                          print *, "g_codes ", kk, g_codes(i,j,kk)
                        end do
                     end if ! DEBUG
+
                     if (errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
    
                     g_data(i,j,index_lu) = &
@@ -249,28 +255,18 @@ subroutine ReadLanduse(debug_i,debug_j)
        end if ! errors
    end if ! me==0
 
-   if ( DEBUG_DEP ) then
-       print "(a20,i4)", "UKDEP FinReadLU, me ", me
-       print "(a20,i4,i6,i3,f8.3)", "UKDEP FinReadLU, me ", me, &
-          landuse_ncodes(2,2), landuse_codes(2,2,1), landuse_data(2,2,1)
-       
-   !    if (  me == 2) then
-   !          print *, "RDLdep ", landuse_ncodes(2,1)
-   !          print *, "RDLdep ", i_glob(2), j_glob(1)
-   !          n = landuse_ncodes(2,1)
-   !          do kk = 1, n 
-   !            print "(a20,2i4)", "RDLdep codes", kk, landuse_codes(2,1,kk)
-   !            print "(a20,i4,f8.3)","RDLdep data ", kk, landuse_data (2,1,kk)
-   !          end do
-   !    end if ! me==7
-   end if ! DEBUG
+   !rv1.2 if ( DEBUG_DEP .and. local_i > 0 ) then
+   !rv1.2     print "(a20,i4)", "UKDEP FinReadLU, me ", me
+   !rv1.2     print "(a20,i4,i6,i3,f8.3)", "UKDEP FinReadLU, me ", me, &
+   !rv1.2       landuse_ncodes(local_i,local_j), landuse_codes(local_i,local_j,1), &
+   !rv1.2          landuse_data(local_i,local_j,1)
+   !rv1.2 end if ! DEBUG
 
   end subroutine  ReadLanduse
  
   !-------------------------------------------------------------------------
   subroutine  SetLandUse()
     integer :: i,j,ilu,lu, nlu, n ! indices
-    real,    parameter :: STUBBLE = 0.01   ! Veg. ht out of season
     logical, save :: my_first_call = .true.
     real :: hveg
 
@@ -284,21 +280,22 @@ subroutine ReadLanduse(debug_i,debug_j)
        !       over the growing season. Note changed rule below:
 
         do lu = 1, NLANDUSE
-         crops(ilu) = ( hveg_max(ilu) < 5 .and. SGS50(ilu) > 1 )
-         bulk (ilu) = ( LAImax(ilu)   < 0.0 )   ! Set neg. in ukdep_biomass.dat
-         water(ilu) = ( hveg_max(ilu) < 0.0 )   ! Set neg. in ukdep_biomass.dat
-         forest(ilu) = ( hveg_max(ilu) > 4.99 )
-         conif_forest(ilu) = ( forest(ilu) .and. SGS50(ilu) <=1 )
+         crops(lu) = ( hveg_max(lu) < 5 .and. SGS50(lu) > 1 )
+         bulk (lu) = ( LAImax(lu)   < 0.0 )   ! Set neg. in ukdep_biomass.dat
+         water(lu) = ( hveg_max(lu) < 0.0 )   ! Set neg. in ukdep_biomass.dat
+         forest(lu) = ( hveg_max(lu) > 4.99 .and. LAImax(lu) > 0.1 )
+         conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 )
 
         !/ Set input negative values to physical ones, since we have
         !  now set bulk, water, etc.
 
-         hveg_max(ilu) = max( hveg_max(ilu), 0.0)
-         LAImax(ilu)   = max( LAImax(ilu),   0.0)
+         hveg_max(lu) = max( hveg_max(lu), 0.0)
+         LAImax(lu)   = max( LAImax(lu),   0.0)
 
 
-           if ( DEBUG_DEP .and. me == 2 ) &
-              print *, "UKDEP_CROP", me, lu, crops(lu), bulk(lu)
+!Tried 4l3, but ....
+           if ( DEBUG_DEP .and. me == 0 ) print *, "UKDEP_VEG", lu, &
+                           crops(lu), bulk(lu), forest(lu), conif_forest(lu)
         end do
 
       !/ 2./ -- Calculate additional surface area for trees
@@ -326,6 +323,16 @@ subroutine ReadLanduse(debug_i,debug_j)
                    landuse_EGS(i,j,ilu) =  EGS50(lu)
                 end if
 
+               !/ for landuse classes with bulk-resistances, we only
+               !  need to specify height once. Dummy values are assigned
+               !  to LAI and gpot:
+
+                if ( bulk(lu) ) then
+                    landuse_hveg(i,j,ilu) =  hveg_max(lu)
+                    landuse_LAI(i,j,ilu)  =  0.0          
+                    landuse_gpot(i,j,ilu) =  0.0          
+                 end if
+
             end do ! ilu
           end do ! j
         end do ! i
@@ -340,41 +347,50 @@ subroutine ReadLanduse(debug_i,debug_j)
              lu      = landuse_codes(i,j,ilu)
              if ( lu <= 0 ) call gc_abort(me,NPROC,"SetLandUse lu<0")
 
-             if ( bulk(lu) ) then
-                landuse_LAI(i,j,ilu) =  -99.99
-                landuse_hveg(i,j,ilu) =  hveg_max(lu)
-                hveg =  hveg_max(lu)
+             !rv1.2 if ( bulk(lu) ) then
+             !rv1.2    landuse_LAI(i,j,ilu) =  -99.99
+             !rv1.2    landuse_hveg(i,j,ilu) =  hveg_max(lu)
+             !rv1.2    hveg =  hveg_max(lu)
 
-             else ! Growing veg present
+             if ( bulk(lu) ) cycle 
+                !rv1.2 else ! Growing veg present
 
-                 landuse_LAI(i,j,ilu) = Polygon(daynumber, &
-                                  0.0, LAImin(lu), LAImax(lu),&
-                                  landuse_SGS(i,j,ilu), SLAIlen(lu), &
-                                  landuse_EGS(i,j,ilu), ELAIlen(lu))
+             landuse_LAI(i,j,ilu) = Polygon(daynumber, &
+                                      0.0, LAImin(lu), LAImax(lu),&
+                                      landuse_SGS(i,j,ilu), SLAIlen(lu), &
+                                      landuse_EGS(i,j,ilu), ELAIlen(lu))
+
+             landuse_gpot(i,j,ilu) =  Polygon(daynumber,&
+                                       0.0,g_pot_min(lu),1.0,&
+                                       landuse_SGS(i,j,ilu), Sg_potlen(lu), &
+                                       landuse_EGS(i,j,ilu), Eg_potlen(lu))
 
 
-                 hveg = hveg_max(lu)   ! default
 
-                 if (  crops(lu) ) then
+          ! For coniferous forest we need to correct for old needles.
 
-                    if ( daynumber < landuse_SGS(i,j,ilu) .or. &
-                         daynumber > landuse_EGS(i,j,ilu)  ) then
-                         hveg = STUBBLE
-                    else if ( daynumber < &
-                              (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
-                         hveg=  hveg_max(lu) * landuse_LAI(i,j,ilu)/LAImax(lu)
-                    else if ( daynumber < landuse_EGS(i,j,lu) ) then
-                         hveg = hveg_max(lu)                  ! not needed?
-                    end if
-                 end if ! crops
-             end if ! bulk
+             if ( conif_forest(lu) )  &
+                   call Conif_gpot(current_date%month,landuse_gpot(i,j,ilu))
+
+
+
+             hveg = hveg_max(lu)   ! default
+
+             if (  crops(lu) ) then
+
+                if ( daynumber < landuse_SGS(i,j,ilu) .or. &
+                     daynumber > landuse_EGS(i,j,ilu)  ) then
+                     hveg = STUBBLE
+                else if ( daynumber < &
+                          (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
+                     hveg=  hveg_max(lu) * landuse_LAI(i,j,ilu)/LAImax(lu)
+                else if ( daynumber < landuse_EGS(i,j,lu) ) then
+                     hveg = hveg_max(lu)                  ! not needed?
+                end if
+             end if ! crops
+             !rv1.2 end if ! bulk
 
              landuse_hveg(i,j,ilu) =  hveg
-
-             if ( lu == 15 .and. landuse_hveg(i,j,ilu) > 0 ) then
-                  print *, "UKWATER", hveg, bulk(ilu)
-                  call gc_abort(me,NPROC,"UKWATER")
-             end if
 
          end do ! lu
        end do ! j
@@ -383,6 +399,39 @@ subroutine ReadLanduse(debug_i,debug_j)
 
   end subroutine  SetLandUse
   !-------------------------------------------------------------------------
+! =====================================================================
+    subroutine Conif_gpot(imm,g_pot)
+! =====================================================================
+!   modifies g_pot (g_age) for effect of older needles, with the simple
+!   assumption that g_age(old) = 0.5.
+!
+   !/ arguments
+
+    integer, intent(in) :: imm    ! month
+    real,   intent(inout) :: g_pot   ! Requires initial input of g_pot 
+                                     ! (once obtained as output from g_stomatal)
+
+   !/ Some parameters:
+   !  Proportion of needles which are from current year:
+    real, parameter, dimension(12) :: Pc = (/  &
+                   0.53, 0.535, 0.54, 0.545, 0.1, 0.15,  &
+                   0.27,  0.36, 0.42,  0.48, 0.5,  0.5  /)
+
+    real, parameter :: G_POTOLD = 0.5  ! value of g_pot for old needles
+
+
+
+!needles from current year assumed to have g_pot as evaluated above;
+!needles from previous years assumed to have g_pot of 0.5
+!The sum of the g_pot's for the current year is added to the sum of the
+!g_pot's for previous years to obtain the overall g_pot for the landuse 
+!category temp. conif. forests.
+
+    g_pot = Pc(imm)*g_pot + (1.0-Pc(imm))*G_POTOLD
+
+  end subroutine Conif_gpot
+! =====================================================================
+
                         
 end module UKdep_ml
 

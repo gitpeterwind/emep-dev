@@ -315,9 +315,9 @@ Timefactors_ml.o: Country_ml.o Dates_ml.o EmisDef_ml.o Io_ml.o My_Emis_ml.o
 	$(F90) $(F90FLAGS) -c Country_ml.o Dates_ml.o EmisDef_ml.o \
 		Io_ml.o My_Emis_ml.o Timefactors_ml.f90
 UK_ml.o: Dates_ml.o DepVariables_ml.o Functions_ml.o GridValues_ml.o Io_ml.o \
-	Par_ml.o UKsetup_ml.o
+	ModelConstants_ml.o Par_ml.o UKsetup_ml.o
 	$(F90) $(F90FLAGS) -c Dates_ml.o DepVariables_ml.o \
-		Functions_ml.o GridValues_ml.o Io_ml.o Par_ml.o \
+		Functions_ml.o GridValues_ml.o Io_ml.o ModelConstants_ml.o Par_ml.o \
 		UKsetup_ml.o UK_ml.f90
 UKsetup_ml.o: DepVariables_ml.o Io_ml.o Met_ml.o
 	$(F90) $(F90FLAGS) -c DepVariables_ml.o Io_ml.o Met_ml.o \
