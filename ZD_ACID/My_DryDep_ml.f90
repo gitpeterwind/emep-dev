@@ -122,10 +122,10 @@ contains
 
   end subroutine Init_DepMap
 
-  subroutine Add_ddep(i,j,convfac,fluxfrac)
+  subroutine Add_ddep(i,j,convfac,convo3fac,fluxfrac)
      ! Adds deposition losses to ddep arrays
      integer, intent(in) :: i,j             ! coordinates
-     real,    intent(in) ::  convfac   !
+     real,    intent(in) ::  convfac, convo3fac !
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
      integer :: n, nadv
 

@@ -106,12 +106,39 @@ private
        ,WDEP_RDN   = 4      ! sum reduced  nitrogen (was  xddep(IXWD_NH3))
 
    integer, public, parameter ::  & 
-        NDDEP = 5       &   ! Number of 2D deposition fields
+        NDDEP = 32       &   ! Number of 2D deposition fields
        ,DDEP_SOX   = 1  &   ! sum of sulphur        (was xwdep (IXDD_SOX)
        ,DDEP_OXN   = 2  &   ! sum oxidised nitrogen (was  xddep(IXDD_HNO3))
        ,DDEP_RDN   = 3  &   ! sum reduced  nitrogen (was  xddep(IXDD_NH3))
-       ,DDEP_JRK   = 4  &   ! sum nitrogen dep over seas for Jurek/HELCOM
-       ,DDEP_FOR   = 5      ! sum nitrogen dep over seas for Jurek/HELCOM
+       ,DDEP_OXSW  = 4  &   ! sum sulphur dep over seas (ecosystems)
+       ,DDEP_OXSF  = 5  &   ! sum sulphur dep over forest (ecosystems)
+       ,DDEP_OXSC  = 6  &   ! sum sulphur dep over crops (ecosyatems)
+       ,DDEP_OXSM  = 7  &   ! sum sulphur dep over moorland (ecosystems)
+       ,DDEP_OXNW  = 8  &   ! sum ox. nitrogen dep over seas (ecosystems)
+       ,DDEP_OXNF  = 9  &   ! sum ox. nitrogen dep over forest (ecosystems)
+       ,DDEP_OXNC  =10  &   ! sum ox. nitrogen dep over crops (ecosyatems)
+       ,DDEP_OXNM  =11  &   ! sum ox. nitrogen dep over moorland (ecosystems)
+       ,DDEP_RDNW  =12  &   ! sum red. nitrogen dep over seas (ecosystems)
+       ,DDEP_RDNF  =13  &   ! sum red. nitrogen dep over forest (ecosystems)
+       ,DDEP_RDNC  =14  &   ! sum red. nitrogen dep over crops (ecosyatems)
+       ,DDEP_RDNM  =15  &   ! sum red. nitrogen dep over moorland (ecosystems)
+       ,DDEP_O3W   =16  &   ! sum ozone dep over seas (ecosystems)
+       ,DDEP_O3F   =17  &   ! sum ozone dep over forest (ecosystems)
+       ,DDEP_O3C   =18  &   ! sum ozone dep over crops (ecosyatems)
+       ,DDEP_O3M   =19  &   ! sum ozone dep over moorland (ecosystems)
+       ,DDEP_OXSR  =20  &   ! sum ox. sulphur dep over remaining (ecosystems)
+       ,DDEP_OXNR  =21  &   ! sum ox. nirogen dep over remaining (ecosystems)
+       ,DDEP_RDNR  =22  &   ! sum red. nitrogen dep over remaining (ecosystems)
+       ,DDEP_STOCFU  =23&   ! ozone flux (ecosystems)
+       ,DDEP_STODFU  =24&   ! ozone flux (ecosystems)
+       ,DDEP_STOTCU  =25&   ! ozone flux (ecosystems)
+       ,DDEP_STOMCU  =26&   ! ozone flux (ecosystems)
+       ,DDEP_STOGRU  =27&   ! ozone flux (ecosystems)
+       ,DDEP_STOCFL  =28&   ! sum red. nitrogen dep over remaining (ecosystems)
+       ,DDEP_STODFL  =29&   ! ozone flux (ecosystems)
+       ,DDEP_STOTCL  =30&   ! ozone flux (ecosystems)
+       ,DDEP_STOMCL  =31&   ! ozone flux (ecosystems)
+       ,DDEP_STOGRL  =32    ! ozone flux (ecosystems)
 
 
    integer, public, parameter ::  & 
@@ -140,6 +167,7 @@ private
        ,D2_FRNIT    = 18  &  ! Annonia + ammonium / total nitrate 
 !
        ,D2_aNH4   =19  &   ! was xnsurf(..)
+!!       ,D2_aNO3   =20  &   ! was xnsurf(..)
        ,D2_MAXO3  =20  &   ! for TROTREP
        ,D2_MAXOH  =21      ! for TROTREP
 !hf hmix
@@ -158,10 +186,16 @@ private
        
 
    integer, public, parameter ::  & 
-        NDERIV_3D = 3    & ! Number of 3D derived fields
+        NDERIV_3D = 9    & ! Number of 3D derived fields
        ,D3_O3     = 1    & ! was xnav(o3) array
        ,D3_NO2    = 2    & ! was xnav(no2) array
-       ,D3_VOC    = 3      ! was xnav(voc) array
+       ,D3_VOC    = 3    & ! was xnav(voc) array
+       ,D3_SO2    = 4    & ! was xnav(voc) array
+       ,D3_PAN    = 5    & ! was xnav(voc) array
+       ,D3_aNO3   = 6    & ! was xnav(voc) array
+       ,D3_HNO3   = 7    & ! was xnav(voc) array
+       ,D3_aNH4   = 8    & ! was xnav(voc) array
+       ,D3_SO4    = 9      ! was xnav(voc) array
 
    ! We put definitions in f_2d, f_3d, and  data into d_2d, d_3d:
 
@@ -214,9 +248,36 @@ private
  f_ddep(DDEP_RDN  ) = Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mg/m2")
 
  !--test fields for ecosystem specific---
- f_ddep( DDEP_JRK  ) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T ,"DDEP_JRK","mg/m2")
- f_ddep( DDEP_FOR  ) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T ,"DDEP_FOR","mg/m2")
+ f_ddep(DDEP_OXSW) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSW","mg/m2")
+ f_ddep(DDEP_OXSF) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSF","mg/m2")
+ f_ddep(DDEP_OXSC) = Deriv( 526, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSC","mg/m2")
+ f_ddep(DDEP_OXSM) = Deriv( 527, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSM","mg/m2")
 
+ f_ddep(DDEP_OXNW) = Deriv( 528, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNW","mg/m2")
+ f_ddep(DDEP_OXNF) = Deriv( 529, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNF","mg/m2")
+ f_ddep(DDEP_OXNC) = Deriv( 530, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNC","mg/m2")
+ f_ddep(DDEP_OXNM) = Deriv( 531, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNM","mg/m2")
+
+ f_ddep(DDEP_RDNW) = Deriv( 532, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNW","mg/m2")
+ f_ddep(DDEP_RDNF) = Deriv( 533, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNF","mg/m2")
+ f_ddep(DDEP_RDNC) = Deriv( 534, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNC","mg/m2")
+ f_ddep(DDEP_RDNM) = Deriv( 535, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNM","mg/m2")
+
+
+ f_ddep(DDEP_OXSR) = Deriv( 551, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSR","mg/m2")
+ f_ddep(DDEP_OXNR) = Deriv( 552, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNR","mg/m2")
+ f_ddep(DDEP_RDNR) = Deriv( 553, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNR","mg/m2")
+
+ f_ddep(DDEP_STOCFU) = Deriv( 571, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
+ f_ddep(DDEP_STODFU) = Deriv( 572, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
+ f_ddep(DDEP_STOTCU) = Deriv( 573, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
+ f_ddep(DDEP_STOMCU) = Deriv( 574, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
+ f_ddep(DDEP_STOGRU) = Deriv( 575, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFU","mg/m2")
+ f_ddep(DDEP_STOCFL) = Deriv( 581, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOCFL","mg/m2")
+ f_ddep(DDEP_STODFL) = Deriv( 582, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STODFL","mg/m2")
+ f_ddep(DDEP_STOTCL) = Deriv( 583, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOTCL","mg/m2")
+ f_ddep(DDEP_STOMCL) = Deriv( 584, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOMCL","mg/m2")
+ f_ddep(DDEP_STOGRL) = Deriv( 585, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOGRL","mg/m2")
 
 
 !-- 2-D fields - the complex ones
@@ -286,8 +347,14 @@ private
 !-- 3-D fields
 
  f_3d(D3_O3  ) = Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV , F , T , T , T , F ,"D3_O3","ppb")
+ f_3d(D3_SO2 ) = Deriv( 402, "ADV  ", T, IXADV_SO2, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
+ f_3d(D3_PAN ) = Deriv( 403, "ADV  ", T, IXADV_PAN, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
+ f_3d(D3_HNO3 ) = Deriv( 404, "ADV  ", T, IXADV_HNO3, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
+ f_3d(D3_aNO3 ) = Deriv( 405, "ADV  ", T, IXADV_ANO3, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
  f_3d(D3_NO2 ) = Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
  f_3d(D3_VOC ) = Deriv( 407, "VOC  ", T,       -1 , PPBINV , F , T , T , T , F ,"D3_VOC","ppb")
+ f_3d(D3_aNH4 ) = Deriv( 408, "ADV  ", T, IXADV_aNH4, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
+ f_3d(D3_SO4 ) = Deriv( 409, "ADV  ", T, IXADV_SO4, PPBINV , F , T , T , T , F ,"D3_NO2","ppb")
 
 !u4 -- Initialise to zero
 
@@ -420,7 +487,6 @@ private
           d_2d( n, i,j,IOU_INST) = &
               ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
               + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
-!ds - not we had NITRATE here, despite it not being used earlier!
               + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j)) &
               * density(i,j)
       end forall
@@ -436,7 +502,6 @@ private
       end forall
 
 
-!ds - not we had NITRATE here, despite it not being used earlier!
     case ( "FRNIT" )
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &

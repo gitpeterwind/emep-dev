@@ -49,7 +49,7 @@ module DryDep_ml
                                   ATWAIR, atwS, atwN, PPBINV,&
                                   KUPPER     !hf ddep
  use Par_ml,               only : me,NPROC,li0,li1,lj0,lj1
- use PhysicalConstants_ml, only : XKAP, PI, KARMAN, GRAV, RGAS_KG, CP
+ use PhysicalConstants_ml, only : XKAP, PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
  use Radiation_ml,         only : zen         &! zenith angle (degrees)
                                  ,SolBio      &!u7.lu extras
                                  ,coszen
@@ -82,7 +82,7 @@ module DryDep_ml
   logical, private, parameter :: DEBUG_UK = .false.
   logical, private, parameter :: DEBUG_WET = .false.
   logical, private, parameter :: DEBUG_FLUX = .false.
-  logical, private, parameter :: DEBUG_NO2  = .true.
+  logical, private, parameter :: DEBUG_NO2 = .false.
 
 
  contains
@@ -155,11 +155,13 @@ module DryDep_ml
       abshd,    & ! abs value of surfae flux of sens. heat W/m^2
       u_ref       ! horizontal vind   !ds - was uvhs
 
+ real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
+
  real convfac,  & ! rescaling to different units
       convfac2, & ! rescaling to different units
+      convfaco3,& ! rescaling to different units
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
-  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
 
   real, save :: inv_gridarea  ! inverse of grid area, m2
 !hf  integer, save ::  old_daynumber = -99
@@ -176,8 +178,9 @@ module DryDep_ml
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
    real ::  LE   ! Latent Heat flux, into surface (opp. sign to fh!)
    logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
-   !real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG   ! Converts from mol/cm3 to nmole/m3
+!   real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG   ! Converts from mol/cm3 to nmole/m3
    real :: nmole_o3    ! O3 in nmole/m3
+   real :: loss,sto_frac,Vg_scale
    real :: lat_factor   ! latitide-based correction for lai, hveg
 
  ! Ecosystem specific deposition requires the fraction of dep in each landuse, lu:
@@ -186,6 +189,7 @@ module DryDep_ml
    real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
    integer :: lu_used(NLUMAX), nlu_used
    real    :: lu_cover(NLUMAX)
+   real    :: lu_lai(NLUMAX)  ! TMP for debug
 
 !     first calculate the 1m deposition velocity following the same
 !     procedure as in the lagmod. second the flux and the accumulated 
@@ -232,14 +236,21 @@ module DryDep_ml
 
       ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
      ! -----------------------------------------------------------------!
-
      !.and conversion facrtor,  convfac (( ps-pt)/grav... )  ===> 
      !      pressure in kg m-1 s-2
 
       convfac = (ps(i,j,1) - PT)*carea(KMAX_MID)*xmd(i,j)/ATWAIR
      ! -----------------------------------------------------------------!
 
-
+!JEJ  to be implemented
+!
+!     !.and factor,  kg_air_ij (( ps-pt)/grav... )  ===> 
+!     !      pressure in kg m-1 s
+!     !      used for converting from mixing ratio to kg
+!
+!      kg_air_ij = (ps(i,j,1) - PT)*carea(KMAX_MID)
+!     ! -----------------------------------------------------------------!
+!
 
      !ds - I prefer micromet terminology here:
 
@@ -314,10 +325,8 @@ module DryDep_ml
 
     if ( STO_FLUXES ) then
        unit_flux(:) = 0.0
-       !lai_flux(:) = 0.0
-       !nmole_o3 = xn_2d(NSPEC_SHL+FLUX_ADV,i,j,KMAX_MID) * NMOLE_O3
+       !ds lai_flux(:) = 0.0
     end if
-   !OLD nmole_o3 = xn_adv(FLUX_ADV,i,j,KMAX_MID) * 40.0 * PPBINV
 
 
     !/ And start the sub-grid stuff over different landuse (lu)
@@ -362,6 +371,7 @@ module DryDep_ml
 
 
 
+        lu_lai(ilu) = lai  ! tmp for debug
         ustar_loc = ustar_nwp       ! First guess = NWP value
         invL      = invL_nwp        ! First guess = NWP value
 
@@ -425,9 +435,9 @@ module DryDep_ml
 
            Vg_1m (n) = (1.0-wetarea) / ( Ra_1m + Rb(n) + Rsur(n) ) &
                      +      wetarea  / ( Ra_1m + Rb(n) + Rsur_wet(n) )
-         end do
-         
-         !   print *, "NO2FAC c, i, j ", CDEP_NO2, i_glob(i), j_glob(j)
+
+         ! NO2 compensation point approach:        
+
          no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   ! Here we have no2 in cm-3
          no2fac = max(1.0, no2fac)
          !   print *, "NO2FAC pre", xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)
@@ -452,7 +462,6 @@ module DryDep_ml
          Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
          Vg_1m (CDEP_NO2) = Vg_1m (CDEP_NO2) * no2fac
 
-         do n = 1, NDRYDEP_CALC
            Vg_ref_lu(n,ilu) = Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)
@@ -501,7 +510,10 @@ module DryDep_ml
        ! For now we just calculate the g_sto*R_sur bit:
        ! (Caution - g_sto is for O3 only)
 
-        if ( STO_FLUXES ) unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
+        if ( STO_FLUXES ) then
+          unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
+          lai_flux(lu)  = lai * unit_flux(lu)
+        end if        
 
        !=======================
         end do LULOOP
@@ -559,8 +571,6 @@ module DryDep_ml
 
          if ( DepLoss(nadv) < 0.0 .or. &
               DepLoss(nadv)>xn_2d(nadv2d,KMAX_MID) ) then
-           !ds print *,"NEG XN DEPLOSS!!! ", nadv,DepLoss(nadv), &
-           !ds      xn_2d(nadv2d,KMAX_MID)
            call gc_abort(me,NPROC,"NEG XN DEPLOSS")
          end if
 
@@ -575,7 +585,8 @@ module DryDep_ml
             if ( vg_set(n) )  then
                fluxfrac_adv(nadv,lu) = lu_cover(ilu)  ! Since all vg_set equal
             else
-               fluxfrac_adv(nadv,lu) = lu_cover(ilu)*Vg_ref_lu(ncalc,ilu)/ Grid_Vg_ref(ncalc)
+               Vg_scale = Vg_ref_lu(ncalc,ilu)/ Grid_Vg_ref(ncalc)
+               fluxfrac_adv(nadv,lu) = lu_cover(ilu)*Vg_scale
             end if
 
 
@@ -584,19 +595,38 @@ module DryDep_ml
           ! Vg*nmole_o3 is the instantaneous deposition flux of ozone, and
           ! the actual amount "deposited" is obtained from DepLoss(O3) using
           ! fluxfrac as obtained above.
-          ! Units ??? Still to be done...!!
+
+          ! Now, DepLoss is loss of molecules/cm3 over time-period dt_advec
+          ! and depth z_bnd over 1m2 of grid. For sto fluxes we need to
+          ! find values over 1m2 of vegeation (regardless of how much veg
+          ! is in grid, so we don't need lu_cover. Instead:
 
           if ( STO_FLUXES .and. nadv == FLUX_ADV ) then
 
-             unit_flux(lu) = unit_flux(lu) * fluxfrac_adv(nadv,lu) * &
-                                        DepLoss(FLUX_ADV)
+             loss  = Vg_scale &
+                    * DepLoss(FLUX_ADV)/AVOG*1.e6  &  ! From mol/cm3 to mole/m3
+                    * z_bnd(i,j,KMAX_BND-1) * 1.e9     ! mole/m3 -> nmole/m2
 
-             lai_flux (lu) = lai * unit_flux(lu)
+             ! dt_advec or dt_drydep ????? I guess ddep takes care of this
+             ! for accumulated?
 
-             if ( DEBUG_FLUX .and. debug_flag ) then
-                 print "(a14,2i4,3i4,2i4,f8.3,2es12.4)", "UKDEP STOFLX", &
-                        ilu, lu, imm, idd, ihh, &
-                        n, FLUX_ADV, lai, unit_flux(lu), lai_flux(lu)
+             unit_flux(lu) = unit_flux(lu) * loss
+
+             sto_frac      = lai_flux(lu)       ! eqv. to  LAI*gsto/Gsur
+             lai_flux(lu)  = lai_flux(lu)  * loss
+
+
+             if ( DEBUG_FLUX .and. debug_flag) then
+                 write (6,"(a5,i4,3i4,f6.1,f8.4,es10.2,f7.2,3f8.4,2es10.2)") &
+                   "OSTAD", lu, imm, idd, ihh, &
+                        lu_lai(ilu), &
+                        Vg_scale, &
+                      DepLoss(FLUX_ADV), & 
+                      z_bnd(i,j,KMAX_BND-1), &
+                       sto_frac, &
+                         4.0e-11*xn_2d(nadv2d,KMAX_MID),& ! O3 in ppb
+                        cfac(nadv,i,j), &
+                        unit_flux(lu)/dt_advec, lai_flux(lu)/dt_advec
              end if
            end if
 
@@ -650,6 +680,7 @@ module DryDep_ml
 
        ! inv_gridarea = xm2(i,j)/(GRIDWIDTH_M*GRIDWIDTH_M)
        convfac2 = convfac * xm2(i,j) * inv_gridarea/amk(KMAX_MID)
+       convfaco3 = convfac / (amk(KMAX_MID)*dtz)
 
 
       !.. Add DepLoss to budgets if needed:
@@ -661,7 +692,7 @@ module DryDep_ml
        !      fluxfrac_adv(9,15)
        !end if 
 
-       call Add_ddep(i,j,convfac2,fluxfrac_adv)
+       call Add_ddep(i,j,convfac2,convfaco3,fluxfrac_adv)
 
 !hf     enddo   !j
 !hf   enddo    !i

@@ -19,7 +19,7 @@ module  My_Outputs_ml
         ,IXADV_O3 , IXADV_PAN , IXADV_CO , IXADV_NO , IXADV_NO2  &
         ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
         ,IXADV_HCHO,IXADV_CH3CHO, IXADV_NO3                      &
-        ,IXADV_N2O5 , IXADV_aNH4, IXADV_aNO3    !6s                &
+        ,IXADV_N2O5 , IXADV_aNH4, IXADV_aNO3, IXADV_pNO3
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml , only: species
@@ -105,8 +105,8 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
-    integer, public, parameter :: NHOURLY_OUT = 6  ! No. outputs
-    integer, public, parameter :: FREQ_HOURLY = 1  ! 3 hours between outputs
+    integer, public, parameter :: NHOURLY_OUT = 5  ! No. outputs
+    integer, public, parameter :: FREQ_HOURLY = 3  ! 3 hours between outputs
 
     type, public:: Asc2D
          character(len=3) :: type   ! "ADV" or "SHL" 
@@ -158,8 +158,10 @@ module  My_Outputs_ml
 contains
 
  subroutine set_output_defs
-   use GenSpec_adv_ml, only:  IXADV_O3  ! for Hourly outputs
-   use GenSpec_shl_ml, only:  IXSHL_OH   ! for Hourly outputs
+   !ds - use not needed here since we have it at top.
+   !ds use GenSpec_adv_ml, only:  IXADV_O3 , IXADV_aNH4 , IXADV_aNO3 , IXADV_SO4
+                                                         ! for Hourly outputs
+   !ds use GenSpec_shl_ml, only:  IXSHL_OH   ! for Hourly outputs
    implicit none
 
    character(len=30) :: errmsg  ! Local error message
@@ -187,12 +189,14 @@ contains
 
   hr_out(1)= &
     Asc2D("ADV", "(f9.5)",IXADV_O3, 55, 150, 10, 100, "ppb",PPBINV,600.0)
- ! hr_out(2)= &
- !   Asc2D("ADV", "(f8.4)",IXADV_NO, 55, 150, 10, 100, "ppb",PPBINV,600.0)
- !! hr_out(3)= &
- !   Asc2D("ADV", "(f8.4)",IXADV_NO2, 55, 150, 10, 100, "ppb",PPBINV,600.0)
- ! hr_out(4)= &
- !   Asc2D("ADV", "(f8.2)",IXADV_CO, 55, 150, 10, 100, "ppb",PPBINV,4000.0)
+  hr_out(2)= &
+    Asc2D("ADV", "(f8.4)",IXADV_aNH4, 55, 150, 10, 100, "ppb",PPBINV,600.0)
+  hr_out(3)= &
+    Asc2D("ADV", "(f8.4)",IXADV_aNO3, 55, 150, 10, 100, "ppb",PPBINV,600.0)
+  hr_out(4)= &
+    Asc2D("ADV", "(f8.2)",IXADV_SO4, 55, 150, 10, 100, "ppb",PPBINV,4000.0)
+  hr_out(5)= &
+    Asc2D("ADV", "(f8.2)",IXADV_pNO3, 55, 150, 10, 100, "ppb",PPBINV,4000.0)
 !    Asc2D("ADV", "(g9.3)",IXADV_SOA, 70, 150, 10, 100, "ppb",PPBINV,400.0)
 !  hr_out(3)= &
 !    Asc2D("ADV", "(g9.3)",IXADV_ASOA, 70, 150, 10, 100, "ppb",PPBINV,400.0)
@@ -209,16 +213,16 @@ contains
 !ZDEP  hr_out(2)= &
 !ZDEP     Asc2D("D2D", "(f6.1)",   D2_HMIX, 70, 150, 10, 100, "m",1.0   ,10000.0)
 
-  hr_out(2)= &
-     Asc2D("D2D", "(f8.5)",   D2_VG_REF, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
-  hr_out(3)=&
-     Asc2D("D2D", "(f8.5)",   D2_VG_1M , 70, 150, 10, 100, "cm/s", m_s  ,90.0)
-  hr_out(4)=&
-     Asc2D("D2D", "(f8.5)",   D2_VG_STO, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
-  hr_out(5)=&
-     Asc2D("D2D", "(f10.4)",   D2_FX_REF, 70, 150, 10, 100, "m",1.0   ,900.0)
-  hr_out(6)=&
-     Asc2D("D2D", "(f10.4)",   D2_FX_STO, 70, 150, 10, 100, "m",1.0   ,900.0)
+!  hr_out(2)= &
+!     Asc2D("D2D", "(f8.5)",   D2_VG_REF, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
+!  hr_out(3)=&
+!     Asc2D("D2D", "(f8.5)",   D2_VG_1M , 70, 150, 10, 100, "cm/s", m_s  ,90.0)
+!  hr_out(4)=&
+!     Asc2D("D2D", "(f8.5)",   D2_VG_STO, 70, 150, 10, 100, "cm/s", m_s  ,90.0)
+!  hr_out(5)=&
+!     Asc2D("D2D", "(f10.4)",   D2_FX_REF, 70, 150, 10, 100, "m",1.0   ,900.0)
+!  hr_out(6)=&
+!     Asc2D("D2D", "(f10.4)",   D2_FX_STO, 70, 150, 10, 100, "m",1.0   ,900.0)
 
  !/** theta is in deg.K
 !  hr_out(5)= &

@@ -1,4 +1,13 @@
 
+
+==============================================================================
+=========== Dave,  March 21th 2003, rv1.4.19  ===============================
+==============================================================================
+
+Fixed My_Reactions for "old" SO2, new pNO3
+Extensive stomatal flux  changes in DryDep
+Many outputs in My_Derived, My_Outputs, etc.
+
 ==============================================================================
 =========== Peter, March 21th 2003, rv1.4.18  ===============================
 ==============================================================================
@@ -18,6 +27,8 @@ Met_ml bug fixed.
 SO2-> SO4 treatment unified in OZONE and ACID 
 (SO2+CH3O2 reaction removed from OZONE as part of this, Fe-reaction added to both).
 pNO3 introduced - coarse mode nitrate
+Forgot to say earlier: New NO2 deposition method, FNO2 = Vg. max(NO2-4,0)
+assumed compensation point of 4 ppb NO2.
 
 ==============================================================================
 =========== Dave, Svetlana, March 10th 2003, rv1.4.16  =======================
