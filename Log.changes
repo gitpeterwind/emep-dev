@@ -1,4 +1,18 @@
-=================== Dave, 17  Oct 2003, rv1_8_5 ==============================
+=================== Hilde, 12  Nov 2003, rv1_9 ==============================
+N2O5 changes added.
+
+Setup_1d_ml,
+Setup_1d_fields_ml
+Solver
+My_Reactions.inc
+
+updated to include changes of N2O5 hydrolysis rate on fine particles. Now we use 
+the method of Riemer et al (2003) with a
+'base' reaction probability of 0.02 (before 0.1) and then scaled with the realtive 
+mass of SO4 and NO3, SO4/(NO3+SO4). Only NO3 fine particles would led to a reaction 
+probability of 0.002.
+
+================== Dave, 17  Oct 2003, rv1_8_5 ==============================
 
 Bug-fix:
 ZD_OZONE/My_Emis_ml: Order of QRC assigments should be same as in vocsplit files
