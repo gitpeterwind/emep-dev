@@ -58,8 +58,8 @@ module Biogenics_ml
 !     cemfa for isoprene renamed to ecf_isop. ecf_terp added for terpene
 !-----------------------------------------------------------------------------
 !ds 10/06/2003
-!   Emissions now read from 50x50 landuse file, forests.tf2, derived from 
-!   landuse.tf2. Emission rates now based upon Simpson et al., 1999, JGR,
+!   Emissions now read from 50x50 landuse file, forests.dat, derived from 
+!   landuse.mar2004. Emission rates now based upon Simpson et al., 1999, JGR,
 !   Vol 104, D7, 8113-8152.
 
 
@@ -96,8 +96,8 @@ module Biogenics_ml
       !     Read in forest Land-use data in percent
 
         !ds call open_file(IO_FORES,"r","forest.pcnt",needed=.true.)
-        call open_file(IO_FORES,"r","forest.tf2",needed=.true.,skip=1)
-        if (ios /= 0) call gc_abort(me,NPROC,"ios error: forest.tf2")
+        call open_file(IO_FORES,"r","forest.dat",needed=.true.,skip=1)
+        if (ios /= 0) call gc_abort(me,NPROC,"ios error: forest.dat")
     endif
 
 
