@@ -54,7 +54,7 @@
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
     ,rct, rcmisc  &  ! emission terms
-    ,rh, temp, itemp      &  ! 
+    ,rh, temp, itemp,pp      &  ! 
     ,amk                  &  ! Air concentrations 
     ,izen &
     ,f_Riemer  !weighting factor for N2O5 hydrolysis    
@@ -88,7 +88,7 @@ contains
    !/* local
 
     integer           :: k, n, ispec, irc    ! loop variables
-    real              :: pp   ! pressure
+!1_9    real              :: pp   ! pressure
     real              :: qsat ! saturation water content
 
 
@@ -123,9 +123,9 @@ contains
       ! in LAM50 (and HIRLAM) often gives negative H2O....   :-(
 
 
-       pp = PT + sigma_mid(k)*(ps(i,j,1) - PT)
+       pp(k) = PT + sigma_mid(k)*(ps(i,j,1) - PT)
 
-       temp(k) = th(i,j,k,1)*exp(XKAP*log(pp*1.e-5))
+       temp(k) = th(i,j,k,1)*exp(XKAP*log(pp(k)*1.e-5))
 
        itemp(k) = nint( temp(k) )
 
@@ -135,7 +135,7 @@ contains
 
        !old pp   = PT + sigma_bnd(k)*(ps(i,j,1) - PT)
 
-       qsat  = 0.622 * tab_esat_Pa( itemp(k) ) / pp
+       qsat  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
        rh(k) = min( q(i,j,k,1)/qsat , 1.0) 
 
         ! 1)/ Short-lived species - no need to scale with M

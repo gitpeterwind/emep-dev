@@ -17,9 +17,9 @@
    !/-- public           !!  true if wanted
                     
     logical, public, parameter :: AERO_DYNAMICS      = .false.   &  
-                                , INORGANIC_AEROSOLS = .true.  & !old Ammonium stuff
+                                , INORGANIC_AEROSOLS = .false.  & !old Ammonium stuff
                                 , RUN_MARS           = .false. & !MARS
-                                , RUN_EQSAM          = .false. & !EQSAM
+                                , RUN_EQSAM          = .true. & !EQSAM
                                 , ORGANIC_AEROSOLS   = .false.   
 !stDep
     integer, public, parameter :: NSIZE = 2    ! number of aerosol sizes (1-fine, 2-coarse)
@@ -108,12 +108,13 @@ contains
     ! 
     !..................................................................
 
+ use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
  use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4,NO3
- use Setup_1dfields_ml,  only :  temp, rh
+ use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
- use EQSAM_ml, only: aero
+! use EQSAM_ml, only: aero
 
  implicit none
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
@@ -132,7 +133,14 @@ contains
              aH2Oout(KCHEMTOP:KMAX_MID), &
              aNH4out(KCHEMTOP:KMAX_MID), & 
              gNH3out(KCHEMTOP:KMAX_MID), &
-             gNO3out(KCHEMTOP:KMAX_MID)
+             gNO3out(KCHEMTOP:KMAX_MID), &
+!HF tmp fix
+             NAin(KCHEMTOP:KMAX_MID)  , &
+             CLin(KCHEMTOP:KMAX_MID) , &
+             aNAout(KCHEMTOP:KMAX_MID),&
+             aCLout(KCHEMTOP:KMAX_MID),&
+             gCLout(KCHEMTOP:KMAX_MID),&
+             gSO4out(KCHEMTOP:KMAX_MID)
 
   integer :: i,j,k, errmark
   logical :: debsub = .false.
@@ -152,13 +160,25 @@ contains
 !                                  xn_2d(NO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG !different for ACID/OZONE
       nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(aNH4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
 
- !--------------------------------------------------------------------------                
-    call aero (so4in, hno3in,no3in ,nh3in, nh4in , rh, temp,   &
-                  aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, ERRMARK,debsub) 
- !--------------------------------------------------------------------------
- ! SO4 is not changed so do not need to be reset
+      NAin(KCHEMTOP:KMAX_MID)  = 0.
+      CLin(KCHEMTOP:KMAX_MID)  = 0.
 
-     
+ !--------------------------------------------------------------------------                
+ !   call aero (so4in, hno3in,no3in ,nh3in, nh4in , rh, temp,   &
+ !                 aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, ERRMARK,debsub) 
+ !--------------------------------------------------------------------------
+ !--------------------------------------------------------------------------                
+  
+   call eqsam_v03d (so4in, hno3in,no3in,nh3in,nh4in,NAin,CLin, rh,temp,pp,   &
+                    aSO4out, aNO3out, aNH4out, aNAout, aCLout,               &
+                    gSO4out, gNH3out, gNO3out, gClout, aH2Oout)
+ 
+ !--------------------------------------------------------------------------
+ ! SO4 is not changed so do not need to be reset 
+
+!      if (so4in .ne. aSO4out) then
+!      write(*,*) 'STARNGE EQSAM RESULTS'
+!      endif
 
 !//.... micromoles/m**3  -> molec/cm3 
 !      xn_2d(NO3,KCHEMTOP:KMAX_MID)  = FLOOR !different for ACID/OZONE
@@ -167,6 +187,7 @@ contains
       xn_2d(NH3,KCHEMTOP:KMAX_MID)   = max(FLOOR,gNH3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(aNO3,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 ) 
       xn_2d(aNH4,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNH4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
+      xn_2d(SO4,KCHEMTOP:KMAX_MID)  = max(FLOOR,aSO4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
 
  if ( debsub .and. debug_cell ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
