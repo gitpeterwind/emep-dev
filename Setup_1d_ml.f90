@@ -13,7 +13,7 @@
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
   use Dates_ml,              only : date, dayno
 !hf VOL
-  use Emissions_ml,          only :  gridrcemis !hf u2,rcemis_volc
+  use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use GenSpec_adv_ml,        only :  NSPEC_ADV
   use GenSpec_shl_ml,        only :  NSPEC_SHL
   use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN &
@@ -199,7 +199,8 @@ contains
 !hf VOL initilize
     rcemis(:,:)=0.    
    
-     do k=KMAX_MID-3,KMAX_MID
+     !rv1.2.1 do k=KMAX_MID-3,KMAX_MID -- bug spotted by st, 2/12/2002
+     do k=KEMISTOP,KMAX_MID
 
         do iqrc = 1, NRCEMIS
           rcemis(iqrc,k) = gridrcemis(iqrc,k,i,j)
@@ -239,12 +240,14 @@ contains
        ! dummy value of 1. Avoids problems with
        !undefined QRCNO in non-NOx models.
 
-        do k=KCHEMTOP,KMAX_MID-4
+        !rv1.2.1 do k=KCHEMTOP,KMAX_MID-4  ! bug, 2/12/2002
+        do k=KCHEMTOP,KEMISTOP-1
           rcemis(QRCAIR,k) = airn(k,i,j)+airlig(k,i,j)
 
         enddo
 
-        do k=KMAX_MID-3,KMAX_MID
+        !rv1.2.1 do k=KMAX_MID-3,KMAX_MID  ! bug, 2/12/2002
+        do k=KEMISTOP,KMAX_MID
           rcemis(QRCAIR,k) = rcemis(QRCAIR,k) + airn(k,i,j)+airlig(k,i,j)
 
         enddo
