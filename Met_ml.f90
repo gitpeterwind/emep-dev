@@ -148,7 +148,7 @@ private
 	use ModelConstants_ml , only : current_date & ! date-type
                                        , METSTEP      ! Meteo read timestep
         use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
-                            fi, GRIDWIDTH_M,xm
+                            fi, GRIDWIDTH_M,xm,ref_latitude
         use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
  
 	implicit none
@@ -188,14 +188,19 @@ private
           write(*,*)'reading meteo from ',trim(meteoname)
 
           call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm,&
-               sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
+               ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
           if(me==0)then
              write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
              write(*,*)'grid resolution:',GRIDWIDTH_M
              write(*,*)'xcoordinate of North Pole, xp:',xp
              write(*,*)'ycoordinate of North Pole, yp:',yp
              write(*,*)'longitude rotation of grid, fi:',fi
+             write(*,*)'true distances latitude, ref_latitude:',ref_latitude
           endif
+
+! If origin of meteodomain does not coincide with origin of large domain,
+! xp and yp should be shifted here, and coordinates must be shifted when 
+! meteofields are read (not yet implemented)
 
 	endif ! numt==1
 
@@ -295,7 +300,7 @@ private
         use Dates_ml, only : nmdays,nydays,date,Init_nmdays	&
                             ,add_dates       ! No. days per year
         use GridValues_ml , only : sigma_bnd,sigma_mid, xp, yp, &
-                            fi, GRIDWIDTH_M
+                            fi, GRIDWIDTH_M,ref_latitude
 	use Io_ml ,only : IO_INFIELD, ios
 
 	implicit none
@@ -2894,7 +2899,7 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
 end subroutine GetCDF_short
 
    subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm,&
-        sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
+         ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
 !
 ! Get grid and time parameters as defined in the meteo file
 ! Do some checks on sizes and dates
@@ -2912,7 +2917,7 @@ end subroutine GetCDF_short
 
      character (len = *), intent(in) ::meteoname
      integer, intent(in):: nyear,nmonth,nday,nhour
-     real, intent(out) :: GRIDWIDTH_M,xp,yp,fi,&
+     real, intent(out) :: GRIDWIDTH_M,xp,yp,fi, ref_latitude,&
                           xm(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
      integer, intent(out):: Nhh,nhour_first
 
@@ -2987,6 +2992,7 @@ end subroutine GetCDF_short
    
   !get global attributes
   call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
+  call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
   call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole",xp ))
   call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole",yp ))
   call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
@@ -3007,13 +3013,14 @@ end subroutine GetCDF_short
 
   call gc_ibcast(199,1,0,NPROC,gc_info,Nhh)
   call gc_rbcast(200,1,0,NPROC,gc_info,GRIDWIDTH_M)
+  call gc_rbcast(198,1,0,NPROC,gc_info,ref_latitude)
   call gc_rbcast(201,1,0,NPROC,gc_info,xp)
   call gc_rbcast(202,1,0,NPROC,gc_info,yp)
   call gc_rbcast(203,1,0,NPROC,gc_info,fi)
   call gc_rbcast(204,KMAX_MID,0,NPROC,gc_info,sigma_mid)
   call gc_rbcast(205,GIMAX*GJMAX,0,NPROC,gc_info,xm_global(1:GIMAX,1:GJMAX))
 
-!complete along the four sides
+!complete along the four lateral sides
   do i=1,GIMAX
      xm_global(i,0)=xm_global(i,1)
      xm_global(i,GJMAX+1)=xm_global(i,GJMAX)
@@ -3027,7 +3034,7 @@ end subroutine GetCDF_short
 
 
 !keep only part of xm relevant to the local domain
-!note that xm is larger than local domain
+!note that xm has dimensions larger than local domain
   if(MAXLIMAX+1>limax+2.or.MAXLJMAX+1>ljmax+2)then
      call gc_abort(me,NPROC,"error in Met_ml sizes definitions")
   endif

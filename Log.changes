@@ -1,3 +1,12 @@
+============== Peter, rv2_2_1 =================================================
+
+Defined "ref_latitude" which is latitude for true distances (60 for PARLAM-PS)
+
+GlobalBCs_ml: defined IGLOB = IILARDOM and JGLOB = JJLARDOM (resulting values 
+are the same as before, but in new grids these will change)
+
+
+
 ============== Peter, rv2_2_0 =================================================
 
 Included a new routine into Met_ml which is able to read meteo fields 

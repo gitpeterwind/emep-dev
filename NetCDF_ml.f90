@@ -174,7 +174,7 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXc
 
 use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                   ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
-                                  ,GlobalPosition,gb_glob,gl_glob
+                                  ,GlobalPosition,gb_glob,gl_glob,ref_latitude
 use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG,IILARDOM,JJLARDOM
 use ModelConstants_ml,     only : KMAX_MID, runlabel1, runlabel2  
 use GridValues_ml,         only : sigma_mid
@@ -238,7 +238,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
 
   call check(nf90_put_att(ncFileID, nf90_global, "projection",projection))
-  write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,(1.+sin(PI/3.0))/2.
+  write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,(1.+sin(ref_latitude*PI/180.))/2.
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
   call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
   call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))

@@ -51,7 +51,8 @@
           xp, yp  &  ! Coordinates of North pole (from infield)
         , fi      &  ! projections rotation angle around y axis (from infield)
         , AN      &  ! Distance on the map from pole to equator (No. of cells)
-        ,GRIDWIDTH_M ! width of grid at 60N, in meters (old "h")(from infield)
+        ,GRIDWIDTH_M &! width of grid at 60N, in meters (old "h")(from infield)
+        ,ref_latitude ! latitude at which projection is true (degrees)
 
   !/ Variables to define global coordinates of local i,j values. 
 
@@ -122,7 +123,6 @@ contains
 
 !pw u3    GRIDWIDTH_M = 6.370e6*(1.0+0.5*sqrt(3.0))/AN    ! = 50000.0 m
 
-    AN = 6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km
 
 ! NB! HIRLAM uses Earth radius = 6.371e6 m : 
 ! AN = 6.371e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M = 237.768957  
@@ -148,8 +148,11 @@ contains
 
   !  map factor, and map factor squared.  !ko proper EMEP grid definition
 
-     an2 = AN*AN
  if( METEOfelt)then
+
+    ref_latitude=60.
+    AN = 6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km
+     an2 = AN*AN
 
     do j=0,MAXLJMAX+1           ! ds - changed from ljmax+1
           y = j_glob(j) - yp     ! ds - changed from gj0+JSMBEG-2+j
@@ -169,7 +172,10 @@ contains
       end do 
 
    else
-!mapping factor xm is read from the meteo file
+!mapping factor xm and ref_latitude are read from the meteo file
+
+    AN = 6.370e6*(1.0+sin( ref_latitude*PI/180.))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km and ref_latitude=60
+
     do j=0,MAXLJMAX+1        
        do i=0,MAXLIMAX+1     
           xm2(i,j) = xm(i,j)*xm(i,j)
