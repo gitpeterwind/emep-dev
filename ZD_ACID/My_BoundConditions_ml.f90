@@ -195,8 +195,10 @@ module My_BoundConditions_ml
   bc2xn_adv(IBC_NO2     ,IXADV_NO2     )   =   1.0
   bc2xn_adv(IBC_SO2     ,IXADV_SO2     )   =   1.0
   bc2xn_adv(IBC_SO4     ,IXADV_SO4     )   =   1.0
-
-  
+!added hf 31/3/2005
+  bc2xn_adv(IBC_aNO3    ,IXADV_aNO3    )   =   1.0
+  bc2xn_adv(IBC_pNO3    ,IXADV_pNO3    )   =   1.0
+  bc2xn_adv(IBC_aNH4    ,IXADV_aNH4    )   =   1.0
 ! The following species are excluded either because they have no corresponding
 ! species in the emep model, or because they have lifetimes which are so
 ! short that initialisation is uncessary.
