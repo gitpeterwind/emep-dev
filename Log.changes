@@ -1,11 +1,13 @@
 ==============================================================================
-=================== Dave, 4th June, rv1.6.4uk ================================
+=================== Dave, 5th June, rv1.6.5  =================================
 ==============================================================================
-grun.pl changed to use ds-fix for UK emissions
+Changed to SEI_based landuse, and added new-style (Fst) flux calculations. 
+Changes in DryDep, UK_ml, outouts, etc.
 
 ==============================================================================
 =================== Dave, 4th June, rv1.6.4  =================================
 ==============================================================================
+grun.pl changed to use ds-fix for UK emissions
 New GLobalBCs_ml, using Mace Head BCs correction to Logan
 (Needs current_date%year to be passed in Unimod.f90 and BoundaryConditions_ml also).
 Makefile reset to not use -g as default
