@@ -91,7 +91,7 @@ module DryDep_ml
   logical, private, parameter :: DEBUG_WET = .false.
   logical, private, parameter :: DEBUG_FLUX = .false.
   logical, private, parameter :: DEBUG_NO2 = .false.
-  logical, private, parameter :: DEBUG_AERO = .true.
+  logical, private, parameter :: DEBUG_AERO = .false.
 
 
  contains

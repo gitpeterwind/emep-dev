@@ -186,7 +186,7 @@ private
        ,D2_FX_STO = 29      !
 
    integer, public, parameter ::  & 
-       ,D2_tNO3   = 30  &     ! 
+        D2_tNO3   = 30  &     ! 
        ,D2_NH3    = 31       ! 
 
    integer, public, parameter ::  & 
