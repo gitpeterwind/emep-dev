@@ -1,4 +1,4 @@
-c#!/usr/local/bin/perl
+#!/usr/local/bin/perl
 ######################################################################
 # Features
 # 1. work directory now deduced from user-name
@@ -56,7 +56,7 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "1997";
+$year = "2000";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 print "Year is $yy YEAR $year\n";
@@ -66,7 +66,7 @@ if ( $year == 2000 ) {
 } elsif ( $year == 1997 ) {
   $MetDir = "/work/mifajej/metdata/$year" ;  # Needed for 1997
 } else {
-  $MetDir = "/work/mifads/metdata/$year" ;
+  $MetDir = "/work/mifaab/metdata/$year" ;
 }
 
 #---  User-specific directories (changeable)
@@ -86,7 +86,7 @@ $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 #ds - simplified treatment of BCs and emissions:
 
-$OZONE = 0, $ACID = 1;     # Specify model type here
+$OZONE = 1, $ACID = 0;     # Specify model type here
 
   # check:
   die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
@@ -100,7 +100,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_4_16ozone";
+     $testv       = "rv1_6_3t";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -110,7 +110,7 @@ if ( $OZONE ) {
 #$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
 $version     = "Unimod" ;  
-$subv        = "acidpm" ;                  # sub-version (to track changes)
+$subv        = "$testv" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
 #HF $ProgDir     = "$USER/CVS/rv1.3.1_Aq/$version";  # input of source-code
 #$ProgDir     = "$USER/Unify/$version.$testv";        # input of source-code
@@ -121,8 +121,11 @@ $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
-$emisdir     = "$JOFFEN/data/emis";   # emissions stuff
-$emisyear    = "$emisdir/emis${yy}";    # emissions
+#$emisdir     = "$JOFFEN/data/emis";   # emissions stuff
+
+# Use Trends_02 emissions from Hilde:
+$emisdir     = "$HILDE/emis/trends_2002";   # emissions stuff
+$emisyear    = "$emisdir/emis${yy}_02";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 #
 # Change for PM:
