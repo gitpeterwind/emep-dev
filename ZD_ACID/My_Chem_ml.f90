@@ -243,7 +243,7 @@
 
     !ux - new SO2 -> SO4 method from old MADE/hf code
 
-      rcmisc(9,:) = tab_so2ox(daynumber)
+    !ds  rcmisc(9,:) = tab_so2ox(daynumber)
 
   ! Coarse pNO3 formation rate:
    do k = KCHEMTOP, KMAX_MID

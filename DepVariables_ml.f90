@@ -56,18 +56,19 @@ real, public, save :: &
    character(len=20), public, dimension(NLANDUSE), save :: luname   
 
    logical, public, dimension(NLANDUSE), save :: &
-              crops   &! true for veg which grows...
-             ,bulk    &! true for land-classes without LAI
-             ,water    ! true for  water, set with h < 0
+              crops          &! true for veg which grows...
+             ,bulk           &! true for land-classes without LAI
+             ,water          &! true for  water, set with h < 0
+             ,forest,        &! Assumed when hveg_max > 5 m
+             ,conif_forest   &! Assumed when hveg_max > 5 m and SGS<=1
+             ,vegetation     &! Assumed when hveg > 5 m and not urban
+             ,urban          &! Assumed when hveg > 5 m && LAI < 0.0
 
 !dep1.5.2
 
   real, public,  dimension(NLANDUSE), save :: &
        SAIadd                  ! Additional surface area for bark, twigs
 
-  logical, public,  dimension(NLANDUSE), save :: &
-      forest,             & ! Assumed when hveg_max > 5 m
-      conif_forest          ! Assumed when hveg_max > 5 m and SGS<=1
 
 !rv1.2_got
   real, public,  dimension(NLANDUSE), save :: &

@@ -157,7 +157,7 @@
 !-> pNO3 
 
       P = rcmisc(10,k) 
-      xnew(pNO3)=  amax1(0.0,  xold(PM25) + dt2 * P)
+      xnew(pNO3)=  amax1(0.0,  xold(pNO3) + dt2 * P)
 
 
 

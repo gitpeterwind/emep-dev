@@ -183,6 +183,7 @@ module DryDep_ml
    real :: nmole_o3    ! O3 in nmole/m3
    real :: loss,sto_frac,Vg_scale
    real :: lat_factor   ! latitide-based correction for lai, hveg
+   real :: so2nh3ratio  ! So2/NH3 ratio, for Rsur calc
 
  ! Ecosystem specific deposition requires the fraction of dep in each landuse, lu:
 
@@ -323,6 +324,11 @@ module DryDep_ml
     Sumland  = 0.0
     fluxfrac_adv (:,:) = 0.0
 
+    !/ SO2/NH3 for Rsur calc
+    so2nh3ratio = &
+               xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID) / & !SO2/NH3
+               max(1.0,xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID))
+
 
     if ( STO_FLUXES ) then
        unit_flux(:) = 0.0
@@ -408,8 +414,7 @@ module DryDep_ml
                    Idfuse,             &  ! CHECK   
                    Idrctt,             &  ! CHECK   
                    snow(i,j),          &
-                   xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID) / & !SO2/NH3
-                   xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID), &
+                   so2nh3ratio,        & !SO2/NH3
                    g_sto,  &
                    Rsur, &
                    Rsur_wet, &

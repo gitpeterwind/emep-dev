@@ -287,6 +287,8 @@ subroutine ReadLanduse()
          forest(lu) = ( hveg_max(lu) > 4.99 .and. LAImax(lu) > 0.1 )
          conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 )  !Bug?
                                                     ! Includes Med. broadleaf!
+         urban (lu) = ( hveg_max(lu) > 5.0 .and. LAImax(lu) < 0.0 )
+         vegetation (lu) = ( hveg_max(lu) > 0.0 .and. .not.urban(lu) )
 
         !/ Set input negative values to physical ones, since we have
         !  now set bulk, water, etc.

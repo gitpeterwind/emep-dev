@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.12 2003-03-21 16:13:05 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.13 2003-03-24 14:07:09 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -252,7 +252,7 @@ contains
 
      ! TEST ds
          cehfac = 1.0
-         so2nh3  =so2nh3ratio*0.6 !0.6=correction for local nh3
+         so2nh3  = so2nh3ratio*0.6 !0.6=correction for local nh3
          if(so2nh3  < 2.0 ) cehfac = exp( -(2.0-so2nh3) )
      ! TEST ds
          xRgsS     = CEHd * cehfac  + Rlow  + snow * 2000.0
