@@ -21,6 +21,8 @@ subroutine runchem()
 
 !/ Definitions 
 
+   use My_Aerosols_ml, only: My_MARS,My_EQSAM,AERO_DYNAMICS,INORGANIC_AEROSOLS&
+                            ,RUN_MARS,RUN_EQSAM,ORGANIC_AEROSOLS  
    use Par_ml,           only : lj0,lj1,li0,li1  &
                         ,gi0, gj0, me,NPROC & !! for testing
                         ,ISMBEG, JSMBEG    !! for testing
@@ -33,8 +35,8 @@ subroutine runchem()
    use Setup_1dfields_ml, only: first_call  &  !DEBUG, ncalls & ! IS here best?
       ,amk , rcemis, rcbio, xn_2d  ! DEBUG for testing
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Ammonium_ml,       only: ammonium, INORGANIC_AEROSOLS
-   use OrganicAerosol_ml, only: OrganicAerosol, ORGANIC_AEROSOLS
+   use Ammonium_ml,       only: Ammonium!hf, INORGANIC_AEROSOLS
+   use OrganicAerosol_ml, only: OrganicAerosol!hf, ORGANIC_AEROSOLS
    use Chemsolver_ml,     only: chemistry
    use My_Timing_ml,      only: Code_timer, Add_2timing, tim_before, tim_after
    use DefPhotolysis_ml,  only: setup_phot
@@ -137,9 +139,11 @@ subroutine runchem()
 
                      call Add_2timing(31,tim_after,tim_before,&
                                                "Runchem:chemistry")
+!hf dec-2002 Add check that one and only one is chosen
+                     if ( INORGANIC_AEROSOLS ) call ammonium() 
+                     if ( RUN_MARS )           call My_MARS(debug_flag)
+                     if ( RUN_EQSAM )          call My_EQSAM(debug_flag) 
 
-                     if ( INORGANIC_AEROSOLS ) &
-                       call ammonium()   ! new wk42
 
                      call Add_2timing(32,tim_after,tim_before,&
                                                  "Runchem:ammonium")
