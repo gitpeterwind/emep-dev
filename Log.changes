@@ -1,3 +1,12 @@
+============== Peter, 29/10-2004            , rv2_0_9  =====================
+
+added file gc_com_for_1_proc.f
+This can be used as a "fake" gc_com.f in the cases where 
+NPROC=1 and no mpi compiler is available. 
+To use it: replace gc_com.f with gc_com_for_1_proc.f and remove the 
+preprocessing of gc_com.F from Makefile
+
+
 ============== Peter, 5/10-2004            , rv2_0_9  =====================
 
 in grun.pl:  $BCDIRO3    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar_mixratio_firstline"
