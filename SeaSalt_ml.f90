@@ -43,7 +43,7 @@
 
  use Met_ml,               only : fm, roa, z_bnd, iclass
  use UKdep_ml,             only : landuse_ncodes, landuse_codes, landuse_data   !st sept,2004
- use DepVariables_ml,      only:  water, LU_WATER                               !st sept,2004
+ use DepVariables_ml,      only:  water                                         !st sept,2004
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
  use GenSpec_tot_ml,       only : SSFI, SSCO
  use GenChemicals_ml,      only : species
@@ -70,6 +70,10 @@
     prodM_ss(:) = 0.
     prodN_ss(:) = 0.
 
+   !ds ================
+    if ( iclass(i,j) /= 0) return  !ds - faster to check here!
+   !ds ================
+
 !st sept,2004 - loop over the LU present in the grid
     nlu = landuse_ncodes(i,j)
       do ilu= 1, nlu
@@ -79,7 +83,8 @@
 !st sept,2004..  Obs!  All water is assumed here to be salt water
 !                double checking with the old rough.170 data 
 
-        if ( water(lu) .and. iclass(i,j) == 0) then
+        !ds if ( water(lu) .and. iclass(i,j) == 0) then
+        if ( water(lu) ) then
             water_frac = landuse_data (i,j,ilu)  ! grid fraction with water
 
           ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
