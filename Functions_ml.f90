@@ -42,6 +42,8 @@ module Functions_ml
 
   public :: PsiM
 
+  public :: PhiH       !ds Added 8/12/2004
+
   !/-- grid-handling subroutine
 
    public :: GridAllocate   ! allocates e.g. emissions, landuse an their
@@ -580,6 +582,27 @@ result (Poly)
 
   end function PsiM
 
+!--------------------------------------------------------------------
+  function PhiH(zL) result (phi_h)
+    !  PhiH = flux-gradient stability function for heat 
+    !  Ref: Garratt, 1994, pp52-54
+
+    ! In:
+    real, intent(in) :: zL   ! surface layer stability parameter, (z-d)/L 
+    
+    ! Out:
+    real :: phi_h         !   PhiH(zL) 
+    
+   ! Local
+   real :: x
+ 
+    if (zL <  0) then !unstable
+        phi_h    = sqrt(1.0 - 16.0 * zL)
+    else             !stable
+        phi_h = 1 + 5.0 * zL
+    end if
+
+  end function PhiH
 !--------------------------------------------------------------------
 
 end module Functions_ml
