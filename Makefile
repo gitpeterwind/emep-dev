@@ -297,11 +297,11 @@ Sites_ml.o: Io_ml.o Met_ml.o ModelConstants_ml.o My_Chem_ml.o My_Derived_ml.o \
 	$(F90) $(F90FLAGS) -c Io_ml.o Met_ml.o ModelConstants_ml.o \
 		My_Chem_ml.o My_Derived_ml.o \
 		My_Outputs_ml.o Par_ml.o Sites_ml.f90
-Solver.o: Biogenics_ml.o DefPhotolysis_ml.o ModelConstants_ml.o \
+Solver.o: Biogenics_ml.o DefPhotolysis_ml.o Emissions_ml.o ModelConstants_ml.o \
 	My_Aerosols_ml.o My_Chem_ml.o My_Emis_ml.o Par_ml.o Radiation_ml.o \
 	Setup_1dfields_ml.o My_Reactions.inc
 	$(F90) $(F90FLAGS) -c Biogenics_ml.o DefPhotolysis_ml.o \
-		ModelConstants_ml.o My_Aerosols_ml.o My_Chem_ml.o \
+		Emissions_ml.o ModelConstants_ml.o My_Aerosols_ml.o My_Chem_ml.o \
 		My_Emis_ml.o Par_ml.o Radiation_ml.o \
 		Setup_1dfields_ml.o Solver.f90
 SubMet_ml.o: Functions_ml.o Io_ml.o ModelConstants_ml.o \
