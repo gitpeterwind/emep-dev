@@ -406,7 +406,8 @@ module DryDep_ml
         g_pot   = landuse_gpot(i,j,ilu)
 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
+        if( lu ==  WHEAT ) g_pot = 1.0  !!!ds New Mapping Manual IAM suggestion, March 2004
+        !ds rv1_9_28 if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         if ( DEBUG_UK .and. water(lu) .and. hveg > 0.0 ) then
@@ -440,7 +441,8 @@ module DryDep_ml
                 else if ( daynumber < &
                           (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
                      SAIadd(lu) = ( 5.0/3.5 - 1.0) * lai
-                else if ( daynumber < landuse_EGS(i,j,lu) ) then
+                !pw else if ( daynumber < landuse_EGS(i,j,lu) ) then
+                else if ( daynumber <= landuse_EGS(i,j,lu) ) then
                      SAIadd(lu) = 1.5   ! Sensescent
             end if
         end if ! crops

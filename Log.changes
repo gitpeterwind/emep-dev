@@ -1,3 +1,37 @@
+================== Dave,     17/03/2004, rv1_9_28   ==========================
+
+Derived_ml: Many changes
+
+	Bug-fix i_glob defined ,locally
+	Deriv for new 3D fields added
+        d_3d for new 3D fields added, inc use of End_of_Day
+        gc_abort  added if 3d type not found
+
+DryDep_ml
+        Fixed bug in SAIadd found by Peter
+        changed g_pot to 1.0 for wheat
+Runchem
+        Test output of OH, H2O2, (TMP)
+UK_ml
+        debug_i => DEBUG_i
+Wrtchem
+        Allows ascii 3D output, for BCs
+
+ZD_OZONE/My_Chem_ml
+        NSPEC_SHL has 1 added for Hilde's IXSHL_PHNO3, PHNO3
+        Affects all NSPEC_TOT numbers
+
+ZD_OZONE/My_Reactions:_ml
+        PHNO3 added.
+        Slightly CPU-faster lines for VOLFAC stuff.
+
+ZD_OZONE/My_Derived
+        with extra 3D. Also renamed D2_H2O to D2_PM25_H2O
+
+ZD_OZONE/My_Outputs
+        Ascii_3D_WANTED added - generates 3D BCs if set
+        some extra ouputs (TMP!)
+
 ================== Peter,     5/03/2004, rv1_9_27   ==========================
 
 Version compatible with Intel and Lahey compiler on IBM cluster (blizzard)

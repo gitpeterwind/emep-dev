@@ -112,9 +112,9 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
 
- !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
+ integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
  !integer, public, parameter :: DEBUG_i=37, DEBUG_j=39 !  Sea
-  integer, public, parameter :: DEBUG_i=134, DEBUG_j=120 ! pw error?
+ !integer, public, parameter :: DEBUG_i=134, DEBUG_j=120 ! pw error?
 
 !===========================================================================
 ! N2O5 -> nitrate calculation. Some constants for

@@ -33,18 +33,21 @@ use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml
 use GenSpec_tot_ml
 use GenChemicals_ml, only : species
-use GridValues_ml,   only : i_glob, j_glob !ds  rv1_9_16 for debug
+!ds rv1_9_28: big-fix, i_glob hasn't been defined yet.
+!ds use GridValues_ml,   only : i_glob, j_glob !ds  rv1_9_16 for debug
 use Met_ml, only :   roa,pzpbl,xksig
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
                         , atwS, atwN, ATWAIR  &
                         , PPBINV  &   !   1.0e9, for conversion of units 
+                        , PPTINV  &   !   1.0e12, for conversion of units 
                         , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
                         , AOT_HORIZON&! limit of daylight for AOT calcs
                         ,DEBUG_i, DEBUG_j & !ds rv_9_16
                         , current_date
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me, NPROC,         &   ! for gc_abort checks
+                     gi0,gj0,ISMBEG,JSMBEG,&! rv1_9_28 for i_glob, j_glob
                      limax, ljmax           ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
 use Radiation_ml,  only :  zen
@@ -77,7 +80,7 @@ private
 
     type, public:: Deriv
        integer  :: code     ! Identifier for DNMI/xfelt
-       character(len=7) :: class ! Type of data, e.g. ADV or VOC
+       character(len=9) :: class ! Type of data, e.g. ADV or VOC
        logical  :: avg      ! True => average data (divide by nav at end),
                             !     else accumulate over run period
        integer  :: index    ! index in concentation array, or other
@@ -97,7 +100,7 @@ private
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
       ,NDEF_DERIV_2D = 52  & ! Number of 2D derived fields defined        !water (was 51)
-      ,NDEF_DERIV_3D = 10    ! Number of 3D derived fields defined
+      ,NDEF_DERIV_3D = 16    ! Number of 3D derived fields defined
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
    integer, public, dimension(NDDEP),     save :: nused_ddep
@@ -170,7 +173,8 @@ private
 
    logical, private, parameter :: MY_DEBUG = .false.
    logical, private, save :: debug_flag
-   integer, private, save :: i_debug, j_debug 
+   integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
+                                                   ! reset if DEBUG 
    integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
    contains
@@ -182,7 +186,7 @@ private
       !ds real, intent(in) :: dt  !  time-step used in intergrations
 
       !ds if ( my_first_call ) then
-          print *, "INITIALISE My DERIVED STUFF"
+          write(*,*) "INITIALISE My DERIVED STUFF"
           !ds call Set_My_Derived()
           call Define_Derived()
           call Consistency_checks()  !ds - checks index numbers from My_Derived
@@ -204,6 +208,12 @@ private
     real, save    :: ugN = atwN*PPBINV/ATWAIR
     real, save    :: ugSO4, ugHCHO, ugCH3CHO
     real, save    :: ugPMad, ugPMde    !st advected and derived PM's
+
+
+  !ds rv1_9_28  - for debug  - now not affecting ModelConstants version
+   integer, dimension(MAXLIMAX) :: i_glob
+   integer, dimension(MAXLJMAX) :: j_glob
+
 
     !   same mol.wt=100 assumed for PPM25 and PPMco
 
@@ -350,7 +360,7 @@ def_2d = (/&
 ,Deriv( 619, "PMco ", T, -1, ugPMde, T, F, T, T, T,"D2_PMco", "ug/m3")&
 ,Deriv( 648, "PM25 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM25", "ug/m3")&
 ,Deriv( 649, "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")&
-,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_H2O ", "ug/m3")&   !water
+,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O", "ug/m3")&   !water
  /)
 
 !-- 3-D fields
@@ -366,6 +376,17 @@ def_3d = (/ &
 ,Deriv( 408, "ADV  ", T, IXADV_aNH4,PPBINV, F, T, T, T, F ,"D3_aNH4","ppb")&
 ,Deriv( 409, "ADV  ", T, IXADV_SO4, PPBINV, F, T, T, T, F ,"D3_SO4","ppb")&
 ,Deriv( 410, "ADV  ", T, IXADV_H2O2,PPBINV, F, T, T, T, F ,"D3_H2O2","ppb")&
+!&
+!& rv1_9_28:
+! Set Year true to allow debug - change later
+,Deriv( 411, "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?")& ! ds from 1.0E16
+,Deriv( 412, "ADV",   T, IXADV_CH3COO2,&
+                                    PPTINV, F, F, T, T, F ,"D3_CH3COO2","?")&
+,Deriv( 413, "MAX3DSHL", T,IXSHL_OH,PPTINV, T, F, T, T, F ,"D3_MAXOH","?")&   ! rho true for shl
+,Deriv( 414, "MAX3DADV", T, IXADV_CH3COO2,&
+                                    PPTINV, F, F, T, T, F ,"D3_MAXCH3COO2","?")&
+,Deriv( 415, "PHNO3   ", T, IXSHL_PHNO3,1.0e8, F, F, T, T, F ,"D3_PHNO3","?")&
+,Deriv( 416, "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?")&
 /)
 
 
@@ -389,9 +410,9 @@ def_3d = (/ &
          call find_index( D3_USED(1:NDERIV_3D),   def_3d(:)%name, nused_3d  ) 
 
         !ds was some strange bevaious for another array here!
-         do i = 1, 3
-          print *, "AFTERNUSED ", i, nused_ddep(i), size(nused_ddep)
-         end do
+         !do i = 1, 3
+         ! print *, "AFTERNUSED ", i, nused_ddep(i), size(nused_ddep)
+         !end do
       end if
 
      ! And set f_xx fields  from these indices and the fuller def_xx fields:
@@ -404,14 +425,13 @@ def_3d = (/ &
          if( nused_3d(n) > 0) f_3d(n)   = def_3d( nused_3d(n) )
       end do
 
+      debug_flag = .false.    !ds rv1_9_28
       if ( MY_DEBUG ) then
-         do i = 1, 3
-          print *, "NUSED ", i, nused_ddep(i), size(nused_ddep)
-         end do
-         do i = 1, 3
-           print *, "CHECK DDEP ", i, f_ddep(i)%name, def_ddep(i)%name
-           print *, "CHECK F_2D ", i, f_2d(i)%name, def_2d(i)%name
-         end do 
+
+          !ds rv1_9_28: Need tod efine here since gridValues not yet set.
+
+          i_glob = (/ (n + gi0 + ISMBEG - 2, n=1,MAXLIMAX) /)
+          j_glob = (/ (n + gj0 + JSMBEG - 2, n=1,MAXLJMAX) /)
 
            do j = 1, ljmax
               do i = 1, limax
@@ -419,6 +439,7 @@ def_3d = (/ &
                        debug_flag = .true.
                        i_debug = i
                        j_debug = j
+                       write(*,*) "Derived DEBUG COORDS ", me, i_debug, j_debug
                   end if
               end do
             end do
@@ -573,23 +594,31 @@ def_3d = (/ &
     end subroutine Setups
     !=========================================================================
 
-    subroutine Derived(dt)
+    subroutine Derived(dt,End_of_Day)   !ds rv1_9_28: End_of_Day added
 
     !/** DESCRIPTION
     !  Integration and averaging of chemical fields. Intended to be
     !  a more flexible version of the old chemint routine.
     !  Includes AOT40, AOT60 if present
 
-      real, intent(in) :: dt  !  time-step used in intergrations
+      real, intent(in)    :: dt           !  time-step used in intergrations
+      logical, intent(in) :: End_of_Day   !ds rv1_9_28: End_of_Day added
 
       character(len=len(f_2d%class)) :: typ  !  See defs of f_2d
       real :: thour                          ! Time of day (GMT)
       real :: timefrac                       ! dt as fraction of hour (3600/dt)
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
+
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D !ds rv1_9_28 
+                ! Inverse of No. air mols/cm3 = 1/M 
+                ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
+
+
       !ds rv1_9_17 integer :: ndef 
 
       timefrac = dt/3600.0
+      thour = current_date%hour+current_date%seconds/3600.0  !ds rv1_9_28 moved here for 3D3D
 
 
      !/***** 2-D fields **************************
@@ -614,19 +643,19 @@ def_3d = (/ &
         !    f_2d as TADV or TVOC
 
         if ( typ == "TADV" .or. typ == "TVOC" ) then
-             thour = current_date%hour+current_date%seconds/3600.0
+             !ds thour = current_date%hour+current_date%seconds/3600.0
              if(thour <= 8.0 .or. thour > 16.0 ) cycle  ! Start next species
         end if
 
        !hf hmix average at 00 and 12:
 
         if ( typ == "HMIX00" .or. typ == "XKSIG00" ) then
-             thour = current_date%hour+current_date%seconds/3600.0
+             !ds thour = current_date%hour+current_date%seconds/3600.0
              if(thour /= 0.0 ) cycle  ! Start next species
         end if
 
         if ( typ == "HMIX12" .or. typ == "XKSIG12" ) then
-             thour = current_date%hour+current_date%seconds/3600.0
+             !ds thour = current_date%hour+current_date%seconds/3600.0
              if(thour /= 12.0 ) cycle  ! Start next species
         end if
 
@@ -641,7 +670,7 @@ def_3d = (/ &
             end forall
 
             if ( debug_flag ) then
-             print "(a12,2i4,4f12.3)", "HMIX" , n , d_2d(n,i_debug,j_debug,IOU_INST)       
+             write(*,fmt="(a12,2i4,4f12.3)") "HMIX" , n , d_2d(n,i_debug,j_debug,IOU_INST)       
             end if
 
          ! Simple advected species:
@@ -653,7 +682,7 @@ def_3d = (/ &
             end forall
 
             if ( debug_flag ) then
-             print "(a12,2i4,4f12.3)", "JUST ADV" , n, index  &
+             write(*,fmt="(a12,2i4,4f12.3)") "JUST ADV" , n, index  &
               ,d_2d(n,i_debug,j_debug,IOU_INST)*PPBINV &
               ,xn_adv(index,i_debug,j_debug,KMAX_MID)*PPBINV &
               ,density(i_debug,j_debug), cfac(index,i_debug,j_debug)
@@ -676,7 +705,7 @@ def_3d = (/ &
             end forall
 
             if ( debug_flag ) then
-             print "(a12,2i4,4f12.3)", "ADV MAX. ", n, index  &
+             write(*,fmt="(a12,2i4,4f12.3)") "ADV MAX. ", n, index  &
                       , d_2d(n,i_debug,j_debug,IOU_DAY) * PPBINV      &
                       ,  xn_adv(index,i_debug,j_debug,KMAX_MID)* PPBINV  &
                       ,  density(i_debug,j_debug), cfac(index,i_debug,j_debug)
@@ -693,8 +722,8 @@ def_3d = (/ &
             end forall
 
             if ( debug_flag ) then
-               print *, "SHL:MAX.,MFAC ", n, index  , MFAC
-               print "(a12,2i4,4es12.3)", "SHL MAX. ", n, index  &
+               write(*, *) "SHL:MAX.,MFAC ", n, index  , MFAC
+               write(*,fmt="(a12,2i4,4es12.3)") "SHL MAX. ", n, index  &
                       , d_2d(n,i_debug,j_debug,IOU_DAY) &
                       ,  xn_shl(index,i_debug,j_debug,KMAX_MID)  &
                       ,  density(i_debug,j_debug), MFAC
@@ -713,21 +742,20 @@ def_3d = (/ &
 
           ! Externally set for IOU_INST (in other routines); so no new work needed
             if ( debug_flag ) then
-                 print *, "EXTDer:Externally set d_2d should already have values"
-                 print *, "EXTDer:", typ
-                 print *, "EXTDer: d_2d(i_debug,j_debug) is ", &
+                 write(*,*) "EXTDer:Externally set d_2d should already have values"
+                 write(*,*) "EXTDer: d_2d(i_debug,j_debug) for", typ, " is ", &
                            d_2d(n,i_debug,j_debug,IOU_INST)
             end if
 
           case  default
 
             if ( debug_flag ) then
-                 print *, "My_Deriv called for n=", n, "Type ",typ
-                 print *, "My_Deriv index", index
-                 print *, "My_Deriv avg? ", f_2d(n)%avg,  &
+                 write(*,*) "My_Deriv called for n=", n, "Type ",typ
+                 write(*,*) "My_Deriv index", index
+                 write(*,*) "My_Deriv avg? ", f_2d(n)%avg,  &
                                    " for nav ", nav_2d(n,IOU_INST)
-                 print *, "Deriv: Length of f_2d is ", len(f_2d%class)
-                 print *, "Deriv: f_2d class is ", f_2d(n)%class
+                 write(*,*) "Deriv: Length of f_2d is ", len(f_2d%class)
+                 write(*,*) "Deriv: f_2d class is ", f_2d(n)%class
              end if 
 
              call My_DerivFunc( d_2d(n,:,:,IOU_INST), n, typ, timefrac, density ) 
@@ -737,7 +765,7 @@ def_3d = (/ &
 
         !/** add to daily, monthly and yearly average, and increment counters
         !    /wdep, ddep not done here ???)
-        !u4 - note that the MAXADV and MAXSHL needn't be summed here, but since
+        !     Note that the MAXADV and MAXSHL needn't be summed here, but since
         !     the INST values are zero it doesn't harm, and the code is shorter
 
         d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + d_2d(n,:,:,IOU_INST) 
@@ -754,7 +782,7 @@ def_3d = (/ &
         wdep(n,:,:,IOU_MON )  = wdep(n,:,:,IOU_MON )  + wdep(n,:,:,IOU_INST) 
         wdep(n,:,:,IOU_YEAR ) = wdep(n,:,:,IOU_YEAR ) + wdep(n,:,:,IOU_INST) 
 
-        if ( MY_DEBUG .and. me == 0 ) print *, "wet dep: ",wdep(n,3,3,IOU_DAY)
+        !ds if ( MY_DEBUG .and. me == 0 ) print *, "wet dep: ",wdep(n,3,3,IOU_DAY)
 
      end do  ! WET DEP.
      !/***** WET DEPOSITION **************************
@@ -765,17 +793,34 @@ def_3d = (/ &
         ddep(n,:,:,IOU_MON )  = ddep(n,:,:,IOU_MON )  + ddep(n,:,:,IOU_INST) 
         ddep(n,:,:,IOU_YEAR ) = ddep(n,:,:,IOU_YEAR ) + ddep(n,:,:,IOU_INST) 
 
-        if ( MY_DEBUG .and. me == 0 ) print *, "dry dep: ",ddep(n,3,3,IOU_DAY)
+        !ds if ( MY_DEBUG .and. me == 0 ) print *, "dry dep: ",ddep(n,3,3,IOU_DAY)
 
      end do  ! DRY DEP.
 
      !/***** 3-D fields **************************
 
+       if(debug_flag) then ! RUN through indices etc.
+            write(*, "(a12,2i4,f12.3)") "3D3D TIME ",  me, NDERIV_3D, &
+                     (current_date%hour+current_date%seconds/3600.0)
+            !do n = 1, NDERIV_3D
+            ! write(6,*) "3D3D CHECKING me, n,name,index,class ", me, &
+            !        n, f_3d(n)%name,f_3d(n)%index, f_3d(n)%class
+            !end do
+        end if
+
 
      do n = 1, NDERIV_3D
 
-        !rv1_9_17 ndef  = nused_3d(n)
         index = f_3d(n)%index
+
+       if ( f_3d(n)%rho ) then
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+                inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * MFAC )
+            end forall
+        else
+            !ds BUG air_density3D(i,j,k) = 1.0
+            inv_air_density3D(:,:,:) = 1.0
+        end if
 
         select case ( f_3d(n)%class )
 
@@ -798,26 +843,114 @@ def_3d = (/ &
               d_3d( n, i,j,k,IOU_INST) = xksig(i,j,k)
             end forall
 
+
+     ! ds rv1_9_28 changes -----------------------------------
+
+         case ( "PHNO3" )   !ds-hf  rv1_9_28
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = xn_shl(index,i,j,k)
+            end forall
+
+             if(debug_flag) write(*,"(a12,i4,2es12.3)") "3D3D PHNO3", n, &
+                  xn_shl(index,i_debug,j_debug,KMAX_MID), &
+                  d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST)
+
+         case ( "MAX3DSHL" )
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )! Daily maxima - short-lived
+              d_3d( n, i,j,k,IOU_INST) = max( d_3d( n, i,j,k,IOU_INST),&
+                                      xn_shl(index,i,j,k) &
+                                     * inv_air_density3D(i,j,k) )
+            end forall
+
+            if(debug_flag) write(*,"(a13,i4,f8.3,3es12.3)") "3D3D MAX3DSHL", n, thour, &
+              xn_shl(index,i_debug,j_debug,KMAX_MID), &
+              1.0/inv_air_density3D(i_debug,j_debug,KMAX_MID), &
+              d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST)
+
+          case ( "MAX3DADV" )
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) =  max( d_3d( n, i,j,k,IOU_INST),&
+                                               xn_adv(index,i,j,k) )
+            end forall
+
+             if(debug_flag) write(*,"(a12,i4,f8.3,4es12.3)") "SET MAX3DADV", n, thour, &
+                      xn_adv(index,i_debug,j_debug,KMAX_MID), &
+                      d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST)
+
+          case ( "SHL" )
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) =   xn_shl(index,i,j,k) * inv_air_density3D(i,j,k)
+            end forall
+
+
+
           case ( "VOC" )
 
             call voc_3dcalc()
 
           case  default
 
-            print *, "Derived 3D class NOT  FOUND", n
+           print *, "Derived 3D class NOT FOUND", n, index, &
+                         f_3d(n)%name,f_3d(n)%class
+           call gc_abort(me,NPROC,"3D FIELD - no match!!")
+
+
 
         end select
      
+       !ds v1_9_28:
 
-       !/** add to monthly and yearly average, and increment counters
+
+      !/** add to monthly and yearly average, and increment counters
        !    ( no daily averaging done for 3-D fields so far).
 
-        d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
-                               + d_3d(n,:,:,:,IOU_INST)
-        d_3d(n,:,:,:,IOU_YEAR) = d_3d(n,:,:,:,IOU_YEAR) &
-                               + d_3d(n,:,:,:,IOU_INST)
 
-        if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1
+       !ds for the MAX3D possibilities, we store maximum value of the
+       !   current day in the IOU_INST variables.
+       !   These are then added into IOU_MON **only** at the end of each day.
+       ! (NB there is an error made on 1st day used, since only 1st 6 hours
+       !  are checked. Still, not much happens on 1st Jan.... ;-)
+
+        if ( (f_3d(n)%class == "MAX3DSHL")  .or. &
+             (f_3d(n)%class == "MAX3DADV") )then
+           if (End_of_Day) then
+              d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
+                                     + d_3d(n,:,:,:,IOU_INST)
+              d_3d(n,:,:,:,IOU_YEAR) = d_3d(n,:,:,:,IOU_YEAR) &
+                                     + d_3d(n,:,:,:,IOU_INST) !men er d_3d reset paa samme tidspunkt?
+              if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1 !only collected for end_of_day
+
+              if( debug_flag ) then
+                    write(*,fmt="(a20,a9,i4,f8.3,2es12.3)") "END_OF_DAY MAX3D", &
+                      f_3d(n)%class, n, thour,  &
+                      d_3d(n,i_debug,j_debug,KMAX_MID,IOU_MON ),&
+                      d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST )
+                    write(*,"(a20,i4,2x,6i6)") "END_OF_DAY NAV ", &
+                      n, (nav_3d(n,i), i=1,LENOUT3D)
+              end if
+
+              d_3d(n,:,:,:,IOU_INST ) = 0.0  !! Reset d_3d  ! Was bug in Unimod.debug
+
+           endif ! End_of_Day
+        else
+           d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
+                + d_3d(n,:,:,:,IOU_INST)
+           d_3d(n,:,:,:,IOU_YEAR) = d_3d(n,:,:,:,IOU_YEAR) &
+                + d_3d(n,:,:,:,IOU_INST)
+           if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1
+        endif
+
+
+
+!      !/** add to monthly and yearly average, and increment counters
+!      !    ( no daily averaging done for 3-D fields so far).
+!
+!       d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
+!                              + d_3d(n,:,:,:,IOU_INST)
+!       d_3d(n,:,:,:,IOU_YEAR) = d_3d(n,:,:,:,IOU_YEAR) &
+!                              + d_3d(n,:,:,:,IOU_INST)
+!
+!       if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1
  
       end do
     end subroutine Derived

@@ -13,7 +13,7 @@ module RunChem_ml
 
 
 !    logical, private, save :: my_first_call = .true.
-    logical, private, save :: MYDEBUG         = .false.
+    logical, private, save :: MYDEBUG         = .true.
 
 contains
 
@@ -177,7 +177,12 @@ subroutine runchem(numt)
                                                  "Runchem:ammonium+Drydep")
 
                       if ( MYDEBUG .and. debug_flag  ) then
-                         write(6,*) "DEBUG_RUN me pre WetDep", me, prclouds_present
+                         !write(6,*) "DEBUG_RUN me pre WetDep", me, prclouds_present
+                           write(6,"(a20,2i3,i5,2es12.3)") "DEBUG_RUN me OH", &
+                            current_date%day, current_date%hour,&
+                             current_date%seconds, &
+                             xn_2d(OH,20), xn_2d(PHNO3,20)
+
                       end if
 
                      if ( prclouds_present)  &

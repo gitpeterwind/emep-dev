@@ -63,7 +63,7 @@ integer, public, save :: ios                   ! i/o error status number
 
   integer, parameter, public  :: &
     IO_DMS      = 90  &! newmonth(c): for DMS 
-   ,IO_AOT      = 118 &! o3mod(c): for 6-monthly values of AOT, mean
+   ,IO_WRTCHEM  = 118 &! Used in Wrtchem (c) for AOT (buggy output) and BCs
    ,IO_HOURLY   = 119 &! hourly_out(o)
 !hf
    ,IO_VOLC     = 54  &
