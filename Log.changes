@@ -1,3 +1,17 @@
+================== Hilde    12/12/2003, rv1_9_11 =============================
+NH4 and NO3 BCs added:
+My_BoundConditions
+GlobalBCs
+
+N2O5 hydrolysis improved:
+SOlver
+My_Reactions.inc
+ModelConstants
+Setup_1d_ml
+My_Chem
+
+(Changes only in ZD_OZONE for the My_ files)
+
 =================== Dave    6/12/2003, rv1_9_10 =============================
 
 Improved VOC definitions:
