@@ -12,10 +12,10 @@ chf u2      use My_Runmode_ml,  only : DEBUG
       use Sites_ml, only: siteswrt_surf, siteswrt_sondes
       use My_Timing_ml, only : Code_timer, Add_2timing, 
      &                         tim_before, tim_after  
-      use Dates_ml,     only : date, add_dates,dayno
+      use Dates_ml,     only : date, add_dates,dayno, daynumber
       use DryDep_ml,    only : drydep,init_drydep
       use Par_ml   ,    only : me, MAXLIMAX, MAXLJMAX
-      use Met_ml ,      only : roa,z_bnd,z_mid,metint
+      use Met_ml ,      only : roa,z_bnd,z_mid,metint, psurf, cc3dmax  ! dsrv1_6_x for SolBio2D
       use ModelConstants_ml , only : KMAX_MID
      &			, dt_advec    ! time-step for phyche/advection
      &			,nmax,nstep
@@ -25,7 +25,8 @@ chf u2      use My_Runmode_ml,  only : DEBUG
       use Timefactors_ml,  only : NewDayFactors  
       use Chemfields_ml,   only : xn_adv,cfac,xn_shl
       use Derived_ml,      only : SumDerived, DerivedProds,Derived
-      use Radiation_ml,  only : ZenAng   !6c - gets zenith angle
+      use Radiation_ml,  only : ZenAng,    ! gets zenith angle
+     &                          SolBio2D   ! Idirect, Idiffuse
       use Runchem_ml  , only : runchem   ! Calls setup subs and runs chemistry
       use Advection_ml, only: advecdiff,adv_int
       use Polinat_ml, only : polinat_out
@@ -96,8 +97,8 @@ c
 c
 c   date needed for the calculation of solar zenith angle
 c
-        !6c call zenit_angle(zeta,thour)
         call ZenAng(thour)
+        call SolBio2D(daynumber,cc3dmax(:,:,KMAX_MID),psurf)
 
         call Add_2timing(16,tim_after,tim_before,"phyche:ZenAng")
 
