@@ -111,7 +111,7 @@ private
 
 
   logical, public, save :: foundclouds,foundustar,foundpreta,mm5 !pw u3
-
+  logical, public, save :: sdot_at_mid !pw rv1_9_24 . set false if sdot is defined (when read) at level boundaries and therefore do not need to be interpolated.
 
 !hf tiphys
 !check dimension
@@ -205,6 +205,7 @@ private
 
 	endif ! me == 0
 
+        sdot_at_mid = .true.
         foundclouds = .false.
         foundustar = .false.
         foundpreta = .false.
@@ -397,7 +398,13 @@ private
 
 	      call getmetfield(ident(20),itmp,sdot(1,1,k,nr))
 
-	  case (810) !pw u3 MM5 SIGMADOT
+	  case (-11) !pw (not standard convention)
+
+	      call getmetfield(ident(20),itmp,sdot(1,1,k,nr))
+
+              sdot_at_mid = .false.
+
+ 	  case (810) !pw u3 MM5 SIGMADOT
 
 	      call getmetfield(ident(20),itmp,sdot(1,1,k,nr))
 
@@ -644,8 +651,8 @@ private
 
 	    pr(i,j,:) = prhelp(:)*divt
 
+          if(sdot_at_mid)then !pw rv1_9_24
 !ko  interpolation of sigma dot for half layers
-
           do k = KMAX_MID,2,-1
 
 !ko	  if(me.eq.0.and.numt.eq.1)write(6,*)' k i j sdot(k) sdot(k-1'
@@ -659,7 +666,9 @@ private
 !ko     &       ,i,j,k,sdot(i,j,k,1),sdot(i,j,k-1,1)
 
   	    enddo
-	    sdot(i,j,1,nr)=0.0
+            endif
+	  
+            sdot(i,j,1,nr)=0.0
 
             if(foundclouds)then
 

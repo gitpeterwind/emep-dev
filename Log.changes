@@ -1,3 +1,13 @@
+================== Peter,        17/02/2004, rv1_9_24 ==========================
+NetCDF_ml: Out_netCDF, optional input parameter "fileName_given", can be 
+	used to explicitely give the name of an output file. 
+	The use of fileName_given is probably slower than the implicit 
+	filename used by defining iotyp. Use it only if a "non-standard" 
+	output (i.e. not out_year.nc etc.) is needed
+
+Met_ml: defined case(-11) to define sdot when it is given at level 
+	boundaries instead of midlevels. (ident(6)=-11 is pw defined)
+
 ================== Dave,        29/01/2004, rv1_9_23 ==========================
 
 RunChem_ml ... debug_flag set false before DEBUG tests

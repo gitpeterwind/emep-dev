@@ -35,6 +35,7 @@
   character (len=125) :: fileName ,period_type
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
+  integer      :: ncFileID_new=closedID  !don't save because should always be redefined (in case several routines are using ncFileID_new with different filename_given)
   integer,save :: ncFileID_inst=closedID  
   integer,save :: ncFileID_hour=closedID  
   integer,save :: ncFileID_day=closedID  
@@ -141,8 +142,8 @@ elseif(iotyp==IOU_HOUR)then
 
 fileName_hour = trim(fileName)
 period_type = 'hourly'
-ISMBEGcdf=GIMAX+ISMBEG-1; JSMBEGcdf=GJMAX+JSMBEG-1
-GIMAXcdf=0; GJMAXcdf=0
+ISMBEGcdf=GIMAX+ISMBEG-1; JSMBEGcdf=GJMAX+JSMBEG-1 !initialisations
+GIMAXcdf=0; GJMAXcdf=0!initialisations
 KMAXcdf=1
 do ih=1,NHOURLY_OUT
    ISMBEGcdf=min(ISMBEGcdf,hr_out(ih)%ix1)
@@ -354,9 +355,13 @@ end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale,CDFtype,ist,jst,ien,jen,ik)
+subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
 
-use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX
+!The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
+
+
+use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX,ISMBEG,JSMBEG
+
 use ModelConstants_ml,     only : KMAX_MID, current_date  
 !ds 16/12/2003 Derived changes:
 use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
@@ -376,11 +381,13 @@ real    ,intent(in) :: scale
 real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
 integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
 integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4) 
+character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
+!NB if the file fileName_given exist (also from earlier runs) it will be appended
 
 character*18 :: varname
 character*8 ::lastmodified_date
 character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
-integer :: varID,new,nrecords,ncFileID
+integer :: varID,new,nrecords,ncFileID=closedID
 integer :: nyear,nmonth,nday,nhour,ndate(4)
 integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
 integer :: i1,i2,j1,j2
@@ -390,6 +397,10 @@ real*8 , allocatable,dimension(:,:,:)  :: Rdata3D
 integer*4, allocatable,dimension(:,:,:)  :: Idata3D
 integer, save ::SavedVar(KMAX_MID)=-999,SavedncFile(KMAX_MID)=-999
 integer :: OUTtype !local version of CDFtype
+integer :: iotyp_new
+  integer :: iDimID,jDimID,kDimID,timeDimID
+integer :: GIMAX_old,GJMAX_old,KMAX_old
+integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
 
 !rv1.4.15 changed:
 !==================================================================
@@ -414,8 +425,51 @@ if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return
 
 !do not write 3D fields (in order to shorten outputs)
 !if(ndim==3)return
+     
+iotyp_new=0
+if(present(fileName_given))then
+!NB if the file already exist (also from earlier runs) it will be appended
+   if(me==0)then
+      !try to open the file
+      status=nf90_open(path = trim(fileName_given), mode = nf90_write, ncid = ncFileID)
+      ISMBEGcdf=ISMBEG+i1-1
+      JSMBEGcdf=JSMBEG+j1-1
+      GIMAXcdf=i2-i1+1
+      GJMAXcdf=j2-j1+1
+      if(status /= nf90_noerr) then !the file does not exist yet
+         write(6,*) 'creating file: ',trim(fileName_given)
+         period_type = 'unknown'
+         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
+         ncFileID=closedID
+      else !test if the defined dimensions are compatible 
+         call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+         call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+         call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
+         call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_old))
+         call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_old))
+         call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_old))
 
-if(iotyp==IOU_YEAR)then
+!         write(6,*)'existing file ', trim(fileName_given),' has dimensions'
+!         write(6,*)GIMAX_old,GJMAX_old,KMAX_old
+         if(GIMAX_old<GIMAXcdf .or. GJMAX_old<GJMAXcdf .or.  KMAX_old<KMAX)then
+            write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
+            write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
+            write(6,*)'WARNING! OLD ', trim(fileName_given),' IS DELETED'
+            write(6,*) 'creating new file: ',trim(fileName_given)
+            period_type = 'unknown'
+            call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
+            ncFileID=closedID
+         endif
+      endif
+   endif
+   iotyp_new=1
+   ncFileID_new=ncFileID
+endif
+
+if(iotyp_new==1)then
+   fileName=trim(fileName_given)
+   ncFileID = ncFileID_new
+elseif(iotyp==IOU_YEAR)then
    fileName = fileName_year
    ncFileID = ncFileID_year
 elseif(iotyp==IOU_MON)then
@@ -424,7 +478,6 @@ elseif(iotyp==IOU_MON)then
 elseif(iotyp==IOU_DAY)then
    fileName = fileName_day
    ncFileID = ncFileID_day
-!   return
 elseif(iotyp==IOU_HOUR)then
    fileName = fileName_hour
    ncFileID = ncFileID_hour
@@ -534,7 +587,9 @@ if(me==0)then
    if(ncFileID==closedID)then
 !open an existing netcdf dataset
       call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
-      if(iotyp==IOU_YEAR)then
+      if(iotyp_new==1)then      !needed in case iotyp is defined
+         ncFileID_new = ncFileID!not really needed
+      elseif(iotyp==IOU_YEAR)then
          ncFileID_year = ncFileID
       elseif(iotyp==IOU_MON)then
          ncFileID_month = ncFileID
@@ -657,14 +712,17 @@ if(me==0)then
       elseif(iotyp==IOU_HOUR)then
          nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
       elseif(iotyp==IOU_INST)then
-           nseconds=nseconds       
+         nseconds=nseconds       
+      else
+         nseconds=nseconds       
       endif
 
   call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
 
-!!close file
-!  call check(nf90_close(ncFileID))
-
+!close file if present(fileName_given)
+  if(iotyp_new==1)then
+     call check(nf90_close(ncFileID))
+  endif
 endif !me=0
 
 return
