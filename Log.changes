@@ -3,6 +3,7 @@
 ==============================================================================
 
 Bug fixes found by Hilde in ZD_ACID. 
+Bug fix in Rsurface_ml (max in so2nh3ratio), Dave
 Logicals vegetation, urban, added to DepVariables_ml, UK_ml
 
 ==============================================================================
