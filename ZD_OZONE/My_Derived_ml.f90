@@ -94,7 +94,7 @@ private
 
   ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
 
-    integer, public, parameter :: NSR_2D = 43
+    integer, public, parameter :: NSR_2D = 45
 
     character(len=12), public, parameter, dimension(NSR_2D) :: &
   D2_SR = (/ &
@@ -117,10 +117,14 @@ private
 !
 !    NOy-type sums 
       ,"D2_NO2      ","D2_OXN      ","D2_NOX      ","D2_NOZ      " &
+      ,"D2_OX       "  &
 !
 !    Ecosystem - fluxes:
       ,"D2_FSTDF00  ","D2_FSTDF16  ","D2_FSTWH00  ","D2_FSTWH30  " &
       ,"D2_FSTWH60  ","D2_O3DF     ","D2_O3WH     " &
+!
+!    JEJ Surface  pressure (for cross section):
+      ,"D2_PS       " &
   /)
 
   !============ Extra parameters for model evaluation: ===================!
@@ -163,7 +167,7 @@ private
         NWDEP     =  4   &  !
        ,NDDEP     = 15   &  ! wetlands and water now removed
 !dsNSR ,NDERIV_2D = 45   &  ! Number of other 2D derived fields used  !water&!SeaS
-       ,NDERIV_3D =  0      ! Number of 3D derived fields
+       ,NDERIV_3D =  2      ! Number of 3D derived fields
 
   ! then use character arrays to specify which are used.
 
@@ -182,9 +186,11 @@ private
      /)    !  "DDEP_PM   " not needed?
 
 
-     character(len=13), public, parameter, dimension(0:NDERIV_3D) :: &
-!     character(len=13), public, parameter, dimension(NDERIV_3D) :: &
-       D3_USED = (/ "DUMMY" /) ! Dummy value if empty
+!     character(len=13), public, parameter, dimension(0:NDERIV_3D) :: &
+     character(len=13), public, parameter, dimension(NDERIV_3D) :: &
+!       D3_USED = (/ "DUMMY" /) ! Dummy value if empty
+       D3_USED = (/ "D3_O3        ","D3_TH        " /) ! only ozone
+
 !ds    D3_USED = (/"D3_O3        ","D3_OH        ", "D3_CH3COO2   ","D3_PHNO3     "&
 !ds               ,"D3_H2O2      "   &
 !ds               ,"D3_MAXOH     ", "D3_MAXCH3COO2" /) ! Dummy value if empty
@@ -225,7 +231,7 @@ private
 
       !ds rv1_9_17 case ( "TSO4", "TOXN", "TRDN", "FRNIT", "tNO3 "    )
       !ds rv1_9_32 case ( "TOXN", "TRDN", "FRNIT", "tNO3 " , "SSalt"   )
-      case ( "NOX", "NOZ", "TOXN", "TRDN", "FRNIT", "tNO3 " , "SSalt"   )
+      case ( "OX", "NOX", "NOZ", "TOXN", "TRDN", "FRNIT", "tNO3 ", "SSalt" )
 
 !!print *, "Calling misc_xn for ", class
            call misc_xn( e_2d, n, class, density )
@@ -364,6 +370,17 @@ private
               + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j)) &
               * density(i,j)
       end forall
+
+
+! JEJ 17/12/04  added OX for O3 and NO2 trend studies
+
+    case ( "OX" )
+      forall ( i=1:limax, j=1:ljmax )
+          e_2d( i,j ) = &
+                xn_adv(IXADV_O3,i,j,KMAX_MID)  * cfac(IXADV_O3,i,j)   &
+              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j) 
+      end forall
+
 
 !ds 31/3/04 .. added new groupngs for SR: NOX, NOZ
 ! Shoudl allow calculation of NOy = NOx + NOz

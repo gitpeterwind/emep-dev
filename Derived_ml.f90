@@ -49,7 +49,7 @@ use GenSpec_tot_ml
 use GenChemicals_ml, only : species
 !ds rv1_9_28: big-fix, i_glob hasn't been defined yet.
 !ds use GridValues_ml,   only : i_glob, j_glob !ds  rv1_9_16 for debug
-use Met_ml, only :   roa,pzpbl,xksig
+use Met_ml, only :   roa,pzpbl,xksig,ps,th
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
                         , atwS, atwN, ATWAIR  &
@@ -113,8 +113,8 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 64  & ! Number of 2D derived fields defined
-      ,NDEF_DERIV_3D = 16  & ! Number of 3D derived fields defined
+      ,NDEF_DERIV_2D = 66  & ! Number of 2D derived fields defined
+      ,NDEF_DERIV_3D = 17  & ! Number of 3D derived fields defined
       ,NTDAY = 72            ! Number of 2D O3 to be saved each day (for SOMO)
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
@@ -151,7 +151,7 @@ private
   ! is sufficient.
 
    integer, public, parameter ::  LENOUT2D = 4  ! Allows INST..DAY for 2d fields
-   integer, public, parameter ::  LENOUT3D = 3  ! Allows INST..MON for 3d fields
+   integer, public, parameter ::  LENOUT3D = 4  ! Allows INST..MON for 3d fields
 
     real, save,  public :: &
       wdep( NWDEP    ,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !wet dep
@@ -326,13 +326,14 @@ def_2d = (/&
 !ds 31/3/2004 new:
 ,Deriv( 672,"NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")&
 ,Deriv( 673,"NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")&
+,Deriv( 674,"OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")&
 !&
 ,Deriv( 615, "ADV  ",T,IXADV_PM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")&
 ,Deriv( 616, "ADV  ",T,IXADV_PMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")&
 !SeaS
 ,Deriv( 659, "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")&
 ,Deriv( 660, "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")&
-!&
+,Deriv(   8, "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"D2_PS","m")&
 ,Deriv( 468, "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")&
 ,Deriv( 469, "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")&
 ,Deriv( 470, "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")&
@@ -402,7 +403,9 @@ def_2d = (/&
 !-- 3-D fields
 
 def_3d = (/ &
- Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb")&
+ Deriv(  18, "TH  ",T,  0 ,       1.0, F , T, T, T, T ,"D3_TH","m")&
+
+, Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb")&
 ,Deriv( 402, "ADV  ", T, IXADV_SO2, PPBINV, F, T, T, T, F ,"D3_SO2","ppb")&
 ,Deriv( 403, "ADV  ", T, IXADV_PAN, PPBINV, F, T, T, T, F ,"D3_PAN","ppb")&
 ,Deriv( 404, "ADV  ", T, IXADV_HNO3,PPBINV, F, T, T, T, F ,"D3_HNO3","ppb")&
@@ -727,6 +730,13 @@ def_3d = (/ &
         index = f_2d(n)%index
         select case ( typ )
 
+          case ( "PS" )
+
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = ps(i,j,1)*0.01
+            end forall
+
+
           case ( "HMIX", "HMIX00", "HMIX12" )
 
             forall ( i=1:limax, j=1:ljmax )
@@ -981,6 +991,12 @@ def_3d = (/ &
               d_3d( n, i,j,k,IOU_INST) = xksig(i,j,k)
             end forall
 
+         case ("TH  " ) !JEJ Pot. temp (needed for cross sections)
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)
+            end forall
+
 
      ! ds rv1_9_28 changes -----------------------------------
 
@@ -1071,6 +1087,8 @@ def_3d = (/ &
 
            endif ! End_of_Day
         else
+           d_3d(n,:,:,:,IOU_DAY ) = d_3d(n,:,:,:,IOU_DAY ) &
+                + d_3d(n,:,:,:,IOU_INST)
            d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
                 + d_3d(n,:,:,:,IOU_INST)
            d_3d(n,:,:,:,IOU_YEAR) = d_3d(n,:,:,:,IOU_YEAR) &
