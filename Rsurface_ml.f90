@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.13 2003-03-24 14:07:09 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.14 2003-05-28 14:43:24 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -52,7 +52,7 @@ contains
 
   subroutine Rsurface(rh,lu,debug_flag, LAI,hveg,&
                       z0,ustar,Ts_C,vpd,SWP, &
-                      psurf, precip, &                    !u7.lu
+                      psurf, is_wet, &                    !u7.lu
                       coszen, Idfuse, Idrctt, &       !u7.lu
                       snow, &                    !u7.lu
                       so2nh3ratio, &        !so2/nh3 ratio
@@ -124,7 +124,7 @@ contains
     real, intent(in) :: vpd             ! vapour pressure deficit (kPa)
     real, intent(in) :: SWP             ! soil water potential (MPa)
     real, intent(in) ::  psurf
-    real, intent(in) ::  precip         !acc precip at surface
+    logical, intent(in) ::  is_wet      !ds rv1.6.2 precip at surface
     real, intent(in) ::  coszen
     real, intent(in) ::  Idfuse
     real, intent(in) ::  Idrctt
