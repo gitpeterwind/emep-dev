@@ -305,7 +305,9 @@ private
  f_2d(D2_NH3 ) = Deriv( 622, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T ,"D2_NH3","ugN/m3")
  f_2d(D2_NO  ) = Deriv( 623, "ADV  ", T, IXADV_NO , ugN, T  , F ,  T , T ,  T ,"D2_NO","ugN/m3")
  f_2d(D2_NO2 ) = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T ,"D2_NO2","ugN/m3")
- f_2d(D2_aNH4) = Deriv( 619, "ADV  ", T,IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
+!st suggsted 600 instead of 619
+ !ds f_2d(D2_aNH4) = Deriv( 619, "ADV  ", T,IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
+ f_2d(D2_aNH4) = Deriv( 600, "ADV  ", T,IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
 
  f_2d(D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T ,"D2_O3","ppb")
  f_2d(D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T ,"D2_CO","ppb")
