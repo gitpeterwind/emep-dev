@@ -20,7 +20,7 @@ module My_MassBudget_ml
 
    ! Mass budget equivalency terms
 
-    integer, public, parameter :: N_MASS_EQVS = 4  
+    integer, public, parameter :: N_MASS_EQVS = 3  
     integer, public, save , dimension( N_MASS_EQVS ):: &
           ixadv_eqv  & !  IXADV_ no. of species
            ,qrc_eqv    !  QRC_   no. of equivalent species
