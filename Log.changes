@@ -1,4 +1,12 @@
 ==============================================================================
+=========== Dave  27th March 2003, rv1.4.29   ========================
+==============================================================================
+ZD_ACID: My_Reactions re-corrected for old errors which seemed to come back!
+         : HNO3 mssing from pNO3 production, aqrck(ICL3 missing from SO4
+grun.pl - now calls "gmake depend" and "gmake" instead of just "make".
+	This creates the .depend file
+
+==============================================================================
 =========== Dave  27th March 2003, rv1.4.28   ========================
 ==============================================================================
 DEBUG_AERO set false in DryDep_ml

@@ -319,7 +319,8 @@ system "pwd";
 print "Check last files modified:\n";
 system "ls -lt | head -6 ";
 
-system "make" ;
+system "gmake depend" ;
+system "gmake" ;
 
 die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
 open(MAKELOG,">Make.log");    # Over-write Make.log

@@ -75,7 +75,7 @@ contains
       !hf amsu     +1.5 * sumloss(3) !!! (NH4)1.5 SO4
          wdepred = sumloss(3)  + sumloss(4) 
 
-      !wdepox  = sumloss(HNO3) + sumloss(AMNI) + pNO3
+      !wdepox  = sumloss(HNO3) + sumloss(aNO3) + pNO3
        wdepox  = sumloss(6) + sumloss(5) + sumloss(9)
       wdeppm25= sumloss(7) 
       wdeppmco= sumloss(8) 

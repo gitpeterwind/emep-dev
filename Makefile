@@ -104,7 +104,7 @@ depend .depend:
 clean:
 	rm -f $(PROG) *.o *.mod .depend; \
 	touch .depend
-	make depend
+#make depend
 
 
 ##########################################################

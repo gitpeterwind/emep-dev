@@ -65,7 +65,7 @@
 !added
       + rct(2,k) * xn_2d_bgn(IXBGN_O3,k) * xnew(NO2)
 
-      L = rcmisc(10,k)
+      L = rcmisc(10,k)    ! Coarse pNO3 formation
        xnew(HNO3)=  amax1(0.0, ( xold(HNO3) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
 
@@ -100,8 +100,9 @@
       P =   &
 
       2e-12*aqrck(ICLOHSO2,K) * xn_2d_bgn(IXBGN_OH,k ) * xnew(SO2 )  &
-       + 1*aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k) * xnew(SO2 )  &
-       + 1*aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k) * xnew(SO2 )  &
+       + aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k) * xnew(SO2 )  &
+       + aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k) * xnew(SO2 )  &
+       + aqrck(ICLRC3,K) * xnew(SO2 )  &
 !       rcmisc(9,k) * xnew(SO2) &    !! Eliassen+Saltbones
       + 0.05*rcemis(QRCSO2,K) 
 
@@ -156,7 +157,7 @@
 
 !-> pNO3 
 
-      P = rcmisc(10,k) 
+      P = rcmisc(10,k)  * xnew(HNO3)
       xnew(pNO3)=  amax1(0.0,  xold(pNO3) + dt2 * P)
 
 
