@@ -5,7 +5,7 @@ module EmisGet_ml
                           , NEMIS_PLAIN, NEMIS_SPLIT, EMIS_NSPLIT
   use Country_ml,   only : NLAND    & !u4 movde other stuff here
                             ,IC_NAT,IC_VUL, Country
-  use EmisDef_ml,   only : NSECTORS, NCMAX, FNCMAX & 
+  use EmisDef_ml,   only : NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX & 
                             ,ISNAP_SHIP, ISNAP_NAT  !u3 for NAT
   use Functions_ml, only : GridAllocate       !ds u7.2
   use Io_ml,        only : open_file,  wordsplit &      ! subs
@@ -387,6 +387,9 @@ READEMIS: do   ! ************* Loop over emislist files **********************
       if (isec == 0 ) then    ! All sectors
           isec1 = 1
           isec2 = NSECTORS
+      elseif (isec==100) then    !hf scenario
+          isec1 = 1
+          isec2 = ANTROP_SECTORS
       else                       ! one sector: isec
           isec1 = isec
           isec2 = isec
