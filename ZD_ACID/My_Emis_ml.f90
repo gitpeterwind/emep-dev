@@ -38,9 +38,9 @@ implicit none
    !   ------------------------------------------------------------------------
 
    integer, public, parameter :: &
-         NEMIS_PLAIN =  3   & ! No. emission files to be read for non-speciated
+         NEMIS_PLAIN =  5   & ! No. emission files to be read for non-speciated
        , NEMIS_SPLIT =  0   & ! No. emission files to be read for speciated
-       , NRCEMIS     =  3     ! No. chemical species with emissions 
+       , NRCEMIS     =  5     ! No. chemical species with emissions 
 
    integer, public, parameter :: &   ! ** derived ** shouldn't need to change:
          NEMIS       =      & ! Sum of the above - all emissions
@@ -56,7 +56,7 @@ implicit none
 
     character(len=6), public, save, dimension(NEMIS) :: &
       EMIS_NAME  = &
-      (/ "sox   ", "nox   ", "nh3   "   /)   ! =non-split first
+      (/ "sox   ", "nox   ", "nh3   ", "pm25  ", "pmco  " /)   ! =non-split first
 
 
     character(len=6), public, save, dimension(NEMIS_SPLIT) :: &
@@ -88,7 +88,9 @@ implicit none
    integer, public, parameter ::   &
            QRCSO2 =   1      & ! IQSO2   &   ! 1
          , QRCNO  =   2      & ! IQNOX   &   ! 2
-         , QRCNH3 =   3        ! IQCO        ! 4
+         , QRCNH3 =   3      & ! IQCO        ! 4
+         , QRCPM25=   4      & ! IQSO2   &   ! 1
+         , QRCPMCO=   5        
       !/**now we deal with the emissions which are split,e.g.VOC
       !  ******************************************************
       !  **** must be in same order as EMIS_SPLIT array **** **
@@ -130,6 +132,8 @@ implicit none
         molwt(QRCSO2)   = 32.0  ! Emissions as S
         molwt(QRCNO)    = 14.0  ! Emissions as N
         molwt(QRCNH3)   = 14.0  ! Emissions as N
+        molwt(QRCPM25)   = 100.0  !  Fake for PM2.5
+        molwt(QRCPMCO)   = 100.0  !  Fake for PM2.5
   end subroutine set_molwts
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 end module My_Emis_ml

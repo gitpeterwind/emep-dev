@@ -8,17 +8,16 @@ module My_UKDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- !OZONE use DepVariables_ml, only : unit_flux, lai_flux
- use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN,DDEP_SEAX, DDEP_SEAR, DDEP_FOR, &
-                             IOU_INST    &!updates inst. dep. fields
+ use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN,DDEP_SEAX, DDEP_SEAR, DDEP_FOR &
+                           ,DDEP_PM, IOU_INST    &!updates inst. dep. fields
                            , ddep         ! 2d fields
  use GenSpec_adv_ml , only: NSPEC_ADV &
                    ,IXADV_SO2,IXADV_NO2  &
                    ,IXADV_HNO3 &  !! ,IXADV_EC  ,IXADV_OC & 
     ,  IXADV_PAN ,IXADV_SO4,IXADV_NH3,&
 !hf amsuIXADV_AMNI, IXADV_AMSU
-        IXADV_aNO3,IXADV_aNH4
- use ModelConstants_ml , only : atwS, atwN
+        IXADV_aNO3,IXADV_aNH4,  IXADV_PM25,IXADV_PMco
+ use ModelConstants_ml , only : atwS, atwN, atwPM
  use Wesely_ml
  implicit none
  private
@@ -55,8 +54,7 @@ module My_UKDep_ml    ! DryDep_ml
 
   logical, public, parameter :: STO_FLUXES = .false.
   integer, public, parameter :: FLUX_CDEP  = 1
-  integer, public, parameter :: FLUX_ADV   = 1
-
+  integer, public, parameter :: FLUX_ADV   = 1   
 
 !also have CDEP_H2O2=, CDEP_ALD, CDEP_HCHO, CDEP
  
@@ -83,7 +81,7 @@ module My_UKDep_ml    ! DryDep_ml
   ! The actual species used and their relation to the CDEP_ indices
   ! above will be defined in Init_Vg
 
-  integer, public, parameter ::  NDRYDEP_ADV  = 8
+  integer, public, parameter ::  NDRYDEP_ADV  = 10
 
   !/-- we define a type to map indices of species to be deposited
   !   to the lesser number of species where Vg is calculated
@@ -118,6 +116,9 @@ contains
 !hf amsu   Dep(8) =  depmap( IXADV_AMNI,  CDEP_SET,  0.1 * cms  )
    Dep(7) =  depmap( IXADV_aNH4,  CDEP_SET,  0.1 * cms  )
    Dep(8) =  depmap( IXADV_aNO3,  CDEP_SET,  0.1 * cms  )
+   Dep(9) =  depmap( IXADV_PM25,  CDEP_SET,  0.1 * cms  )
+   Dep(10)=  depmap( IXADV_PMco,  CDEP_SET,  1.5 * cms  )
+
   end subroutine Init_DepMap
 
   subroutine Add_ddep(i,j,convfac,fluxfrac)
@@ -165,6 +166,11 @@ contains
 !hf amsu          DepLoss(IXADV_AMNI)  &
           DepLoss(IXADV_aNH4)  &
                                     ) * convfac * atwN
+
+!pm     ddep(DDEP_PM,i,j,IOU_INST) = (  &
+!pm          DepLoss(IXADV_PM25) + &
+!pm          DepLoss(IXADV_PMco) &
+!pm                                    ) * convfac * atwPM
 
    !---- ecosystem specific -----------------------------------------------
      ddep(DDEP_SEAX,i,j,IOU_INST) = 0.0

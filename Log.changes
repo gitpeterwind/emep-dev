@@ -1,3 +1,13 @@
+
+==============================================================================
+=========== Dave, Svetlana, March 10th 2003, rv1.4.16  ===============================
+==============================================================================
+
+Primary PM added into ACID version. This slows down ACID a bit, but removes
+the need for a separate PM directory. Also, S-R matrices can be done
+for PM and ACID substances at the same time - since they are independant.
+
+
 ==============================================================================
 =========== Peter ,  Feb. 27th 2003, rv1.4.15  ===============================
 =========== Dave  ,  Feb. 27th 2003,           ===============================

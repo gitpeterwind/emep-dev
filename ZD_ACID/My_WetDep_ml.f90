@@ -1,6 +1,6 @@
 module My_WetDep_ml
   use MassBudget_ml,     only : totwdep
-  use ModelConstants_ml, only : atwS, atwN
+  use ModelConstants_ml, only : atwS, atwN, atwPM
   use My_Derived_ml    , only : NWDEP, WDEP_SOX, WDEP_OXN, WDEP_RDN &
                                 ,IOU_INST &   ! Index: instantaneous values
                                 ,wdep         ! Wet deposition fields
@@ -19,7 +19,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP = 6  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP = 8  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
 contains
@@ -53,6 +53,8 @@ contains
     WetDep(6)   = WScav(HNO3,   0.7,  0.35)
 !OZ WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
 !OZ WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
+    WetDep(7)   = WScav(PM25,   0.7,  EFF25)
+    WetDep(8)   = WScav(PMCO,   0.7,  EFFco)
 
   end subroutine Init_WetDep
 
@@ -60,7 +62,7 @@ contains
      integer,            intent(in) ::  i,j
      real, dimension(:), intent(in) :: sumloss
      real, intent(in)  :: invgridarea
-     real :: wdeps, wdepox, wdepred
+     real :: wdeps, wdepox, wdepred, wdeppm
 
 
       !wdeps = sumloss(SO2) + sumloss(SO4) + sumloss(AMSU)
@@ -75,9 +77,13 @@ contains
       !wdepox  = sumloss(HNO3) + sumloss(AMNI)
        wdepox  = sumloss(6) + sumloss(5)
 
+       wdeppm  = sumloss(7) + sumloss(8)
+
        totwdep(IXADV_SO4)  = totwdep(IXADV_SO4) + wdeps
        totwdep(IXADV_HNO3) = totwdep(IXADV_HNO3) + wdepox
        totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)  + wdepred
+       totwdep(IXADV_PM25) = totwdep(IXADV_PM25)  + wdepred
+       totwdep(IXADV_PMco) = totwdep(IXADV_PMco)  + wdepred
 
 
        wdep(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 

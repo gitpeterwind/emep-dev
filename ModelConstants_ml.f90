@@ -87,7 +87,8 @@ module ModelConstants_ml
    real, public, parameter ::  &
     ATWAIR = 28.964                   & ! Mol. weight of air (Jones, 1992)
   , atwS   = 32.                      & ! Atomic weight of Sulphur
-  , atwN   = 14.                        ! Atomic weight of Nitrogen
+  , atwN   = 14.                      & ! Atomic weight of Nitrogen
+  , atwPM  = 100.                    
 
   ! MFAC replaces earlier use of CHEFAC and ATWAIR - to scale from
   ! density (roa, kg/m3) to  molecules/cm3

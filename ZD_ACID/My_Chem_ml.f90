@@ -15,8 +15,7 @@
  ! Species which can be specified simply for each column, e.g.
  ! as function of local meteorology or zenith angle
  !   o2, m,  and for MADE-like, oh, ch3coo2
-
-
+ 
    integer, public, parameter ::  NSPEC_BGN = 2 ! No. 3D bgn species
    integer, public, parameter ::  NSPEC_COL = 4 ! total no. prescribed specs
 
@@ -33,7 +32,7 @@
 !u7.1    ,IXBGN_H2O2           =   4   
 
    real, public, save, dimension(NSPEC_COL,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-   !rv1.4.15 REMds real, public, parameter :: O3fix=0. !add 10 ppb to Logan data
+   !rv1.4.15 REMreal, public, parameter :: O3fix=0. !add 10 ppb to Logan data
 
 !-----------------------------------------------------------
   end module GenSpec_bgn_ml
@@ -49,7 +48,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 9
+   integer, public, parameter ::  NSPEC_ADV = 11
  
  ! Aerosols:
 
@@ -73,7 +72,10 @@
 !hf amsu  ,  IXADV_AMSU        =   8   &
 !hf amsu  ,  IXADV_AMNI        =   9
   ,  IXADV_aNH4        =   8   & !total NH4
-  ,  IXADV_aNO3        =   9     !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
+  ,  IXADV_aNO3        =   9   & !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
+  ,  IXADV_PM25        =   10  &
+  ,  IXADV_PMco        =   11  
+
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
 !>_________________________________________________________<
@@ -115,7 +117,7 @@
 
    logical, public, parameter ::  ORG_AEROSOLS = .false. 
 
-   integer, public, parameter ::  NSPEC_TOT = 9 
+   integer, public, parameter ::  NSPEC_TOT = 11 
  
  ! Aerosols:
            integer, public, parameter :: &
@@ -136,7 +138,9 @@
 !hf amsu  ,  AMSU        =   8   &
 !hf amsu  ,  AMNI        =   9
   ,  aNH4        =   8   &
-  ,  aNO3        =   9
+  ,  aNO3        =   9   &
+  ,  PM25        =   10  &
+  ,  PMco        =   11  
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
 !>_________________________________________________________<
@@ -182,6 +186,8 @@
 !hf amsu       species( 9) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
        species( 8) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
        species( 9) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
+       species(10) = Chemical("PM25        ", 100,  0,  0,   0,  0 ) 
+       species(11) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
 
    end subroutine define_chemicals
  end module GenChemicals_ml

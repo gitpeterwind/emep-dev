@@ -27,7 +27,7 @@ module My_Derived_ml
   !---------------------------------------------------------------------------
  
 use GenSpec_adv_ml        ! Use IXADV_ indices...
-use GenSpec_tot_ml,  only : SO4 !, HCHO, CH3CHO     !  For mol. wts.
+use GenSpec_tot_ml,  only : SO4, aNO3, aNH4, PM25, PMCO !  For mol. wts.
 use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , KMAX_MID &  ! =>  z dimension
@@ -100,7 +100,8 @@ private
        ,WDEP_PREC  = 1  &   ! sum rainfall, was IPRDEP
        ,WDEP_SOX   = 2  &   ! sum of sulphur        (was xwdep (IXWD_SOX)
        ,WDEP_OXN   = 3  &   ! sum oxidised nitrogen (was  xddep(IXWD_HNO3))
-       ,WDEP_RDN   = 4      ! sum reduced  nitrogen (was  xddep(IXWD_NH3))
+       ,WDEP_RDN   = 4  &   ! sum reduced  nitrogen (was  xddep(IXWD_NH3))
+       ,WDEP_PM    = 5
 
    integer, public, parameter ::  & 
         NDDEP = 6       &   ! Number of 2D deposition fields
@@ -109,10 +110,11 @@ private
        ,DDEP_RDN   = 3  &   ! sum reduced  nitrogen (was  xddep(IXDD_NH3))
        ,DDEP_SEAX  = 4  &   ! sum ox. nitrogen dep over seas for Jurek/HELCOM
        ,DDEP_SEAR  = 5  &   ! sum rd. nitrogen dep over seas for Jurek/HELCOM
-       ,DDEP_FOR   = 6      ! sum nitrogen dep over forests for NOFRETETE
+       ,DDEP_FOR   = 6  &   ! sum nitrogen dep over forests for NOFRETETE
+       ,DDEP_PM    = 7  
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 14 &   ! Number of 2D derived fields
+        NDERIV_2D = 17 &   ! Number of 2D derived fields
        ,D2_ACCSU  = 1  &   ! was NUM_ACCSU 
        ,D2_SO2    = 2  &   ! was xnsurf(so2)
        ,D2_SO4    = 3  &   ! was xnsurf(..)
@@ -129,7 +131,11 @@ private
         D2_SOX      = 11 &  ! Sum of sulphates, 
        ,D2_OXN      = 12  &  ! Total nitrates (HNO3 + part. NITRATE) 
        ,D2_REDN     = 13  &  ! Annonia + ammonium 
-       ,D2_FRNIT    = 14     ! (part. nitrate)/(tot. nitrate)
+       ,D2_FRNIT    = 14  &  ! (part. nitrate)/(tot. nitrate)
+       ,D2_PM25     = 15  &  ! 
+       ,D2_PMCO     = 16  &  ! 
+       ,D2_PM10     = 17
+
 
    integer, public, parameter ::  & 
         NDERIV_3D = 6    & ! Number of 3D derived fields
@@ -158,7 +164,7 @@ private
       d_2d( NDERIV_2D,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !other deriv
       d_3d( NDERIV_3D,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
 
-    character(len=8),  public ,parameter :: model='ZD_ACID '
+    character(len=8),  public ,parameter :: model='ZD_ACID'
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
@@ -171,10 +177,28 @@ private
    ! used by DNMI/xfelt and scaling factors. (The scaling factors may
    ! be changed later in Derived_ml.
    
-    real          :: sf           ! scaling factor
     real, save    :: ugS = atwS*PPBINV/ATWAIR
     real, save    :: ugN = atwN*PPBINV/ATWAIR
 
+   ! ds - replaced sf, sf1, sf2 with ugSO4, ugPM25, ugPM10
+   ! New scaling factors for particles.
+
+     real, save  ::  ugPM25, ugPM10
+
+   ! Misc. scaling factors:
+   ! To give same units as MACHO for acc. SO4.. (multiplied with roa in 
+   !   layers?? ==> rho "false" )
+
+    real, save  ::  ugSO4
+    real  :: sf  ! Used for various species
+
+     ! New scaling factors for particles.
+     ! PM10 is derived in subroutine pm10_calc (below) from the sum of different 
+     ! species. Mol. wts. are used there, so we just need:
+
+    ugSO4  = species ( SO4 )%molwt  * PPBINV /ATWAIR
+    ugPM25 = species ( PM25)%molwt  * PPBINV /ATWAIR
+    ugPM10 =  PPBINV /ATWAIR
 
    !-- Deposition fields
    !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
@@ -199,9 +223,8 @@ private
 !    f_2d( D2_AOT40) = Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h"  )
 !    f_2d( D2_AOT60) = Deriv( 609, "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h"  )
 
-     ! To give same units as MACHO....  (multiplied with roa in layers?? ==> rho "false" )
-    sf = species ( SO4 )%molwt * PPBINV /ATWAIR
-    f_2d( D2_ACCSU) = Deriv( 611, "ACCSU", T, -1, sf ,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")
+
+    f_2d( D2_ACCSU) = Deriv( 611, "ACCSU", T, -1, ugSO4 , F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")
 
    ! -- simple advected species
 
@@ -212,13 +235,17 @@ private
     f_2d( D2_aNO3 ) = Deriv( 604, "ADV  ", T, IXADV_aNO3, ugN, T  , F ,  T , T ,  T ,"D2_aNO3","ugN/m3")
     f_2d( D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T ,"D2_NH3","ugN/m3")
     f_2d( D2_aNH4 ) = Deriv( 606, "ADV  ", T, IXADV_aNH4, ugN, T  , F ,  T , T ,  T ,"D2_aNH4","ugN/m3")
-!hf amsu    f_2d( D2_AMSU) = Deriv( 619, "ADV  ", T,IXADV_AMSU, ugS, T  , F ,  T , T ,  T ,"D2_AMSU","ugS/m3")
+!hf f_2d( D2_AMSU) = Deriv( 619, "ADV  ", T,IXADV_AMSU, ugS, T  , F ,  T , T ,  T ,"D2_AMSU","ugS/m3")
 !hf hmix
     f_2d( D2_HMIX)   = Deriv( 468, "HMIX    ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX","m")
     f_2d( D2_HMIX00) = Deriv( 469, "HMIX00  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX00","m")
     f_2d( D2_HMIX12) = Deriv( 470, "HMIX12  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX12","m")
 !    f_2d( D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T ,"D2_O3","ppb")
 !    f_2d( D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T ,"D2_CO","ppb")
+    f_2d( D2_PM25 ) = Deriv( 615, "ADV  ", T, IXADV_PM25, ugPM25, T  , F ,  T , T ,  T,"D2_PM25","ug/m3")
+    f_2d( D2_PMCO ) = Deriv( 616, "ADV  ", T, IXADV_PMco, ugPM25, T  , F ,  T , T ,  T,"D2_PMco","ug/m3")
+    f_2d( D2_PM10 ) = Deriv( 649, "PM   ", T, -1,         ugPM10, T  , F ,  T , T ,  T ,"D2_PM10","ug/m3")
+
 
    ! --  time-averages - here 8-16 , as used in MACHO
 
@@ -289,6 +316,10 @@ private
 !!print *, "Calling misc_xn for ", class
            call misc_xn( n, class, density )
 
+      case ( "PM" )
+
+          call pm10_calc(n, density)
+
       case  default
 
             print *, "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
@@ -307,12 +338,35 @@ private
 
     forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST) +  &
-              xn_adv(IXADV_SO4,i,j,KMAX_MID) * &! +    &
+               xn_adv(IXADV_SO4,i,j,KMAX_MID) * &! +    &
 !hf amsu               xn_adv(IXADV_AMSU,i,j,KMAX_MID) ) * &
                (z_bnd(i,j,k) - z_bnd(i,j,k+1)) *   &
                  roa(i,j,k,1)*1.0e9
     end forall
   end subroutine acc_sulphate
+ !=========================================================================
+ !=========================================================================
+
+  subroutine pm10_calc( n, density )
+
+    !/--  calulates PM10 = SIA + PPM2.5 + PPMco
+
+    integer, intent(in) :: n               ! Index for output field
+    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density  
+
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = &
+            ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
+    !ds bug ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_HNO3,i,j)  &
+            + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt *cfac(IXADV_aNO3,i,j) &
+            + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt *cfac(IXADV_aNH4,i,j) &
+            + xn_adv(IXADV_PM25,i,j,KMAX_MID)*species(PM25)%molwt *cfac(IXADV_PM25,i,j) &
+            + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt *cfac(IXADV_PMco,i,j))& 
+            * density(i,j)
+      end forall
+
+
+  end subroutine  pm10_calc
  !=========================================================================
 !hf aot out
  !=========================================================================

@@ -86,7 +86,7 @@ $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 #ds - simplified treatment of BCs and emissions:
 
-$OZONE = 1, $ACID = 0;     # Specify model type here
+$OZONE = 0, $ACID = 1;     # Specify model type here
 
   # check:
   die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
@@ -100,20 +100,22 @@ if ( $OZONE ) {
     #$OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
      $OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 ); 
-     $testv       = "rv1_bcozone";
+     $testv       = "rv1_4_16ozone";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
-     @emislist = qw ( sox nox nh3  ) ; # pm25 pmco ) ;
-     $testv       = "rv1_bcacid";
+     @emislist = qw ( sox nox nh3 pm25 pmco ) ;
+     $testv       = "rv1_4_16acid";
 } 
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 
 $version     = "Unimod" ;  
-$subv        = "rv1415" ;                  # sub-version (to track changes)
+$subv        = "acidpm" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
 #HF $ProgDir     = "$USER/CVS/rv1.3.1_Aq/$version";  # input of source-code
-$ProgDir     = "$USER/Unify/$version.$testv";        # input of source-code
+#$ProgDir     = "$USER/Unify/$version.$testv";        # input of source-code
+# TMP - same for all versions
+$ProgDir     = "$USER/Unify/$version.$testv"; # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
@@ -154,12 +156,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  1;       # last month
+$mm2   =  12;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM =  12;       # for testing, simply reset here
+ #$NTERM =  12;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -433,7 +435,11 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
     mylink( "Split voc", $old,$new ) ;
 
 foreach $poll  ( @emislist  ) {
+  if ( $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
+   $old   = "$SVETLANA/Unify/MyData/emission/emis99/grid$gridmap{$poll}" ;
+  } else {
    $old   = "$emisyear/grid$gridmap{$poll}" ;
+  }
    $new   = "emislist.$poll";
    mylink( "Emis $poll : ", $old,$new ) ;
 
