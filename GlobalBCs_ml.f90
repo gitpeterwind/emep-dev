@@ -3,7 +3,6 @@ module GlobalBCs_ml
 !+ DATA/SUBROUTINES FOR USING Logan climatology for BOUNDARY
 !  CONDITIONS  (bcs)
 ! From Hilde's uni.2_Logan_O3 but:
-!u3
 !  module name changed to GlobalBCs_ml, so that both UiO_ml and
 !  public subroutine names changed back:
 !        GelLoganData -> GetGlobalData   : UiO and Logan modules
@@ -24,7 +23,9 @@ module GlobalBCs_ml
 !   -- for use with BoundConditions_ml and My_BoundConditions_ml --
 !____________________________________________________________________________
   use GridValues_ml, only: gbacmax,gbacmin,glacmax,glacmin,&
-  gl,gb_glob,GlobalPosition
+                           gl,gb_glob,GlobalPosition, &
+                           sigma_mid             !ds for use in Hz scaling
+  use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
 
   implicit none
   private
@@ -34,6 +35,7 @@ module GlobalBCs_ml
   public :: setgl_actarray
   
   logical, parameter, private :: DEBUG_Logan = .false.
+  logical, parameter, private :: DEBUG_HZ    = .true.
 
   ! A. Define parameters and indices of global-model species
   ! ==========================================================================
@@ -122,8 +124,9 @@ contains
                 ,iglobact,jglobact,bc_data,io_num,errcode)
 
  use Io_ml,             only : IO_GLOBBC, ios, open_file
- use ModelConstants_ml, only: KMAX_MID
- use Dates_ml,   only : daynumber    ! ds rv1.2
+ use PhysicalConstants_ml, only: PI
+ use ModelConstants_ml, only: KMAX_MID, PT
+ use Dates_ml,   only : daynumber
  use Par_ml,     only : me,NPROC
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -160,6 +163,9 @@ contains
    character(len=30) :: errmsg   ! For error messages
    integer, save     :: oldmonth = -1  
    real :: trend_o3, trend_co, trend_voc  !ds rv1.6.11
+  !ds Use of standard atmosphere 
+   real, dimension(KMAX_MID), save :: p_kPa, h_km
+   real :: scale_old, scale_new
    io_num = IO_GLOBBC          ! for closure in BoundCOnditions_ml
 
 !==================================================================
@@ -194,7 +200,13 @@ contains
 !ds - here we use the meteorology year to get a reaslistic O3.
 !      Later we use iyr_trend to adjust for otyer years, say for 2050.
 
-if( year == 1990) then 
+!ds *** NEW *** for 2010, 2020 "trend" runs  - use 10 yr average as base-O3
+!   then later scale by trend_o3:
+
+ if ( iyr_trend /= year  ) then   ! For trends, use  defaults from 1990-2000 average
+   macehead_O3 = (/  37.6, 40.0, 42.9, 43.2, 41.9, 33.9, &
+                     29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
+ else if( year == 1990) then 
    macehead_O3 = (/    35.3,    36.3,    38.4,    43.0,    41.2,    33.4 & 
 	,    35.1,    27.8,    33.7,    36.2,    28.4,    37.7/) 
  else if( year == 1991) then 
@@ -243,7 +255,9 @@ if( year == 1990) then
       ! Set up arrays to contain Logan's grid as lat/long
       !/ COnversions derived from emeplat2Logan etc.:
 
-     twopi_yr = 4.0 * atan(1.0)  / 365.25  ! 2pi/365
+     !ds BUG 28/7/03 twopi_yr = 4.0 * atan(1.0)  / 365.25  ! 2pi/365
+     !ds twopi_yr = 8.0 * atan(1.0)  / 365.25  ! 2pi/365
+     twopi_yr = 2.0 * PI / 365.25
 
    call GlobalPosition  !get gb for global domaib
    do i = 1, IGLOB 
@@ -260,13 +274,15 @@ if( year == 1990) then
    !                           surf   dmax   amp   hz    vmin  hmin !ref
    !                            ppb          ppb   km     ppb   ppb
 
+   ! ds 29/7/2003 - replaced 100.0 km by 999.9 km to ensure more uniform
+   ! vertical scaling. 
   SpecBC(IBC_O3   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0) !N1  
-  SpecBC(IBC_SO2  ) = sineconc( 0.15 , 15.0, 0.05, 100.0, 0.05 , 0.03) !W99
+  SpecBC(IBC_SO2  ) = sineconc( 0.15 , 15.0, 0.05, 999.9, 0.15 , 0.03) !W99, bcKz vmin
   SpecBC(IBC_SO4  ) = sineconc( 0.15 ,180.0, 0.00, 1.6,  0.05 , 0.03) !W99
   SpecBC(IBC_NO   ) = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.03, 0.02)
   SpecBC(IBC_NO2  ) = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04)
-  SpecBC(IBC_PAN  ) = sineconc( 0.20 ,120.0, 0.15, 100.0, 0.10, 0.1 )
-  SpecBC(IBC_HNO3 ) = sineconc( 0.1  , 15.0, 0.03, 100.0, 0.05, 0.05 )!M
+  SpecBC(IBC_PAN  ) = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 )  !bcKz change vmin
+  SpecBC(IBC_HNO3 ) = sineconc( 0.1  , 15.0, 0.03, 999.9, 0.10, 0.05 )!M, bcKz vmin
   SpecBC(IBC_CO   ) = sineconc( 125.0, 75.0, 35.0,25.0  , 70.0, 30.0 )!JEJ-W
   SpecBC(IBC_C2H6 ) = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05 )
   SpecBC(IBC_C4H10) = sineconc( 2.0  , 45.0, 1.0 , 6.0  , 0.05, 0.05 )
@@ -298,6 +314,11 @@ if( year == 1990) then
    latfunc(IBC_NO2,:) = latfunc(IBC_SO2,:)
    latfunc(IBC_HCHO,:) = latfunc(IBC_HNO3,:)
    latfunc(IBC_CH3CHO,:) = latfunc(IBC_HNO3,:)
+
+  !ds 27/7/2003 - Use Standard Atmosphere to get average heights of layers
+
+    p_kPa(:) = 0.001*( PT + sigma_mid(:)*(101325.0-PT) ) ! Pressure in kPa
+    h_km     = StandardAtmos_kPa_2_km(p_kPa)
 
     my_first_call = .false.
 
@@ -361,14 +382,31 @@ if( year == 1990) then
 
                cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
 
-               bc_rawdata(:,:,1) =    SpecBC(ibc)%surf + &
+              !ds 28/7/2003 bug found? k=1 instead of KMAX_MID !!
+              !ds BUG bc_rawdata(:,:,1) =    SpecBC(ibc)%surf + &
+
+               bc_rawdata(:,:,KMAX_MID) =    SpecBC(ibc)%surf + &
                                        ( SpecBC(ibc)%amp * cosfac)
 
              !/ - correct for other heights
-               do k = 2, KMAX_MID
+               do k = 1, KMAX_MID-1
+               !ds bug: do k = 2, KMAX_MID
+
+		  scale_new = exp( -h_km(k)/SpecBC(ibc)%hz )
+
                   bc_rawdata(:,:,k) =   &
-                     bc_rawdata(:,:,1)*exp( -(k-1)/SpecBC(ibc)%hz )
+                     bc_rawdata(:,:,KMAX_MID)* scale_new
+
+                     !ds bc_rawdata(:,:,KMAX_MID)*exp( -(KMAX_MID-k)/SpecBC(ibc)%hz )
+                     !ds bugbc_rawdata(:,:,1)*exp( -(k-1)/SpecBC(ibc)%hz )
+  		  if (DEBUG_HZ) then
+		       scale_old = exp( -(KMAX_MID-k)/SpecBC(ibc)%hz )
+		       write(6,"(a8,2i3,2f8.3,i4,f8.2,f8.3,2f8.3)") "SCALE-HZ ", month, ibc, &
+				SpecBC(ibc)%surf, SpecBC(ibc)%hz, k, &
+				h_km(k), p_kPa(k), scale_old, scale_new
+		  end if ! DEBUG_HZ
                end do
+
                bc_rawdata = max( bc_rawdata, SpecBC(ibc)%vmin ) 
 
                      
@@ -423,7 +461,6 @@ if( year == 1990) then
              errmsg = "BC Error UNSPEC"
          end select 
 
-  !ds - Check failure here:
    if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
 
    if( DEBUG_Logan )then
