@@ -66,7 +66,7 @@ private
          ,landuse_hveg  &    ! Max. height of veg.
          ,landuse_gpot        ! Potential (age) factor for Jarvis-calc
 
- logical, private, parameter :: DEBUG_DEP = .true.
+ logical, private, parameter :: DEBUG_DEP = .false.
  character(len=30), private :: errmsg
 
 
@@ -284,7 +284,8 @@ subroutine ReadLanduse()
          bulk (lu) = ( LAImax(lu)   < 0.0 )   ! Set neg. in ukdep_biomass.dat
          water(lu) = ( hveg_max(lu) < 0.0 )   ! Set neg. in ukdep_biomass.dat
          forest(lu) = ( hveg_max(lu) > 4.99 .and. LAImax(lu) > 0.1 )
-         conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 )
+         conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 )  !Bug?
+                                                    ! Includes Med. broadleaf!
 
         !/ Set input negative values to physical ones, since we have
         !  now set bulk, water, etc.
