@@ -104,10 +104,10 @@ module My_BoundConditions_ml
  !-------
  contains
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine My_bcmap(year)    ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
+ subroutine My_bcmap(iyr_trend)    ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-    integer, intent(in) :: year
+    integer, intent(in) :: iyr_trend !ds Year for which BCs are wanted
     real    :: ppb = 1.0e-9
     integer :: ii,i,j,k 
     real :: decrease_factor(NGLOB_BC+1:NTOT_BC) ! Decrease factor for misc bc's
