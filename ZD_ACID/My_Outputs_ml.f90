@@ -28,6 +28,9 @@ module  My_Outputs_ml
   implicit none
   private
 
+  logical, public, parameter :: out_binary = .false. 
+  ! out_binary = .True. gives also binary files (for use in xfelt). 
+  !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
    !/*** Site outputs   (used in Sites_ml)
    !==============================================================
@@ -129,6 +132,10 @@ module  My_Outputs_ml
    !      BCVppbv to get grid-centre concentrations (relevant for
    !      all layers.
    !----------------------------------------------------------------
+
+    logical, public, parameter :: Hourly_ASCII = .false. 
+     ! Hourly_ASCII = .True. gives also Hourly files in ASCII format. 
+     !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
     integer, public, parameter :: NHOURLY_OUT = 4  ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs

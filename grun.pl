@@ -438,7 +438,8 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
 
 # Emissions setup:
 
-    $old   = "$MyDataDir/femis.dat" ;
+# pw ($femis already defined)  $old   = "$MyDataDir/femis.dat" ;
+    $old   = "$femis" ;
     $new   = "femis.dat";
     mylink( "Femis  ", $old,$new ) ;
 
@@ -594,6 +595,20 @@ if ( -r core )  {
       #-- Done.
       print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
 }
+# Put useful info into RunLog.${runlabel1}.out
+open(LOG,">RunLog.${runlabel1}.out");
+open(RUNLOG,"<RunLog.out");
+      while ($line=<RUNLOG>) {
+          print LOG $line ;
+      }
+close(RUNLOG) ;
+          print LOG "emis dir used:\n" ;
+          print LOG "$emisdir\n" ;
+
+          print LOG "femis used:\n" ;
+          print LOG "$femis\n" ;
+close(LOG);
+
 # Now clean up,
     foreach $f ( @list_of_files ) {
         unlink($f);

@@ -183,7 +183,7 @@ use PhysicalConstants_ml,  only : PI
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 character(len=*),  intent(in)  :: fileName 
 
-character (len=*), parameter :: version='Unimod rv1.9'       
+character (len=*), parameter :: version='Unimod rv2.0'       
 character (len=*), parameter :: author_of_run='Unimod group' 
 character (len=*), parameter :: projection='Stereographic'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'

@@ -92,6 +92,8 @@ module Output_binary_ml
 
  use NetCDF_ml,  only: Out_netCDF,CloseNetCDF
 
+ use My_Outputs_ml, only :out_binary !binary output or not
+
  implicit none
  private
 
@@ -124,8 +126,9 @@ contains
 
     integer i, k, n, ios
 
-    ios = 0
+    if(out_binary)then
 
+    ios = 0
     if(me == 0)then
 
       open(IO_OUT,file=outfilename,access='sequential',  &
@@ -136,6 +139,7 @@ contains
         call gc_abort(me,NPROC,"error in outchem")
       endif
 
+    endif
     endif
 
     ident(:) = identi(:)
@@ -178,7 +182,7 @@ contains
 
   !***  Wet deposition
   !cccccccccccccccccccccccccccc
-  
+ 
      if ( NWDEP > 0 ) &    ! u.1
       call Output2d(iotyp,NWDEP, nav_wdep, f_wdep, wdep)
 
@@ -190,8 +194,10 @@ contains
       call Output3d(iotyp,NDERIV_3D, nav_3d, f_3d, d_3d)
 
 
-      if (me == 0) close(IO_OUT)
-      if (me == 0) call CloseNetCDF
+     if(out_binary)then
+        if (me == 0) close(IO_OUT)
+     endif
+     if (me == 0) call CloseNetCDF
 
    end subroutine Output_binary
 !<==========================================================================
@@ -223,19 +229,21 @@ contains
           if( iotyp == IOU_INST) wanted = def(icmp)%inst
 
           if ( wanted ) then 
+
               ident(6)  = def(icmp)%code      ! Identifier for DNMI/xfelt
               scale  = def(icmp)%scale
 !pw rv1.8.1          if ( nav(icmp,iotyp) > 0  ) scale  = &
               if ( nav(icmp,iotyp) > 0  .and.iotyp /= IOU_INST  ) & 
                                   scale  = def(icmp)%scale / nav(icmp,iotyp)
+              if(out_binary)then
               msgnr = 5040 + icmp
 
-              call outarr_int2(msgnr,IO_OUT,ident,dim,icmp, &
+             call outarr_int2(msgnr,IO_OUT,ident,dim,icmp, &
                                                  dat(1,1,1,iotyp),scale)
+              endif
 
                  call Out_netCDF(iotyp,def(icmp),2,ident &
                    ,1,icmp,dat(:,:,:,iotyp),dim,scale)
-
 
           endif        ! wanted
        enddo        !icmp
@@ -280,6 +288,7 @@ contains
                    nav(icmp,iotyp) > 0  )  scale = def(icmp)%scale &
                                                  / nav(icmp,iotyp)
 
+              if(out_binary)then
 
               do k=1,KMAX_MID
                  ident(7)  = k
@@ -291,6 +300,7 @@ contains
                    ,dim,icmp,dat(1,1,1,k,iotyp),scale)
 
               enddo    !k
+              endif !out_binary
 
                  call Out_netCDF(iotyp,def(icmp),3,ident &
                    ,KMAX_MID,icmp,dat(:,:,:,:,iotyp),dim,scale)
