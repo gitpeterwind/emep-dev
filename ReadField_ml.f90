@@ -41,8 +41,14 @@ contains
   integer,      intent(in) :: IO_INFILE     ! File no.
   character*20, intent(in) :: fname         ! File name
   real, intent(out) :: local_field(MAXLIMAX,MAXLJMAX)! Local field
+  character*50 :: errmsg 
 
-  !/-- We need an array for the whole model domain
+  !/ rv2_1_6, ds 17/2/2005:
+  !  Initialisation to zero added, so now we do not need to input an array which
+  !  covers the whole domain. 
+  !
+  ! Also, print used instead of write for error messages, and
+  ! errmsg more explicit now.
 
   real :: in_field(IILARDOM,JJLARDOM)! Field to be read
   real :: out_field(GIMAX ,GJMAX )!pw
@@ -50,10 +56,14 @@ contains
   integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
   real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
 
+  in_field(:,:)    = 0.0       ! Initialise - ds, 15/1/2005      
+  local_field(:,:) = 0.0       ! Initialise - ds, 15/1/2005      
+  errmsg = "ok"
+
     if (me==0)then
        call open_file(IO_INFILE,"r",fname,needed=.true.)
           if ( ios /= 0 )then
-          write(6,*) 'error in opening IO_INFILE', fname
+          print *, 'error in opening IO_INFILE ', fname, ios
           call gc_abort(me,NPROC,"newmonth: error opening in_field")
           endif
     endif !me==0
@@ -63,18 +73,19 @@ contains
 
           READFIELD : do n = 1, BIG
              read(IO_INFILE,*,iostat=ios) i,j,in_field(i,j)
+            if ( ios /= 0 ) exit READFIELD
              if (  i < 1 .or. i > IILARDOM  .or. &
                    j < 1 .or. j > JJLARDOM  ) then  
-                  write(6,*)'error in i,j index in IO_INFILE=',fname, i,j
+                  errmsg = "error in i,j index in IO_INFILE="!!! ,fname, i,j
                   ios = 88  !! Set an error code
                   exit READFIELD
              endif
-            if ( ios /= 0 ) exit READFIELD
           enddo READFIELD
 
        close(IO_INFILE)
-       if ( ios /= 0 )then             
-           write(6,*) 'error in reading IO_INFILE', fname
+       if ( errmsg /= "ok" ) then      
+           print *, 'error in reading IO_INFILE', fname
+           print *,  errmsg
            call gc_abort(me,NPROC,"error reading IO_INFILE")
        endif
 
@@ -131,8 +142,11 @@ contains
   integer,      intent(in) :: IO_INFILE     ! File no.
   character*20, intent(in) :: fname         ! File name
   integer, intent(out)     :: local_field(MAXLIMAX,MAXLJMAX)
+  character*50 :: errmsg 
 
   !/-- We need an array for the whole model domain
+  !/-- We *do not* need an array for the whole model domain!
+  !    - changed ds, 15/1/2005
 
   integer :: in_field(IILARDOM,JJLARDOM)! Field to be read
   real :: in_field_r(IILARDOM,JJLARDOM)
@@ -142,10 +156,12 @@ contains
   integer :: imaxin,jmaxin,imaxout,jmaxout,i0,j0 !pw
   real :: fi_EMEP,an_EMEP,xp_EMEP,yp_EMEP,fiout,anout,xpout,ypout !pw
 
+  errmsg = "ok"
+
    if (me==0)then
       call open_file(IO_INFILE,"r",fname,needed=.true.)
       if ( ios /= 0 )then         
-         write(6,*) 'error in opening IO_INFILE', fname
+         print *, 'error in opening IO_INFILE', fname
          call gc_abort(me,NPROC," error opening in_field")
       endif
     endif !me==0
@@ -155,9 +171,10 @@ contains
 
         READFIELD : do n = 1, BIG
            read(IO_INFILE,*,iostat=ios) i,j,in_field(i,j)
+           if ( ios /= 0 ) exit READFIELD
            if (  i < 1 .or. i > IILARDOM  .or. &
                  j < 1 .or. j > JJLARDOM  ) then  
-              write(6,*)'error in i,j index in IO_INFILE=',fname
+              errmsg = "error in i,j index in IO_INFILE=" // fname
               ios = 88  !! Set an error code
               exit READFIELD
            endif
@@ -166,8 +183,9 @@ contains
 
         close(IO_INFILE)
 
-        if ( ios /= 0 )then             
-           write(6,*) 'error in reading IO_INFILE', fname
+       !ds if ( ios /= 0 )then             
+       if ( errmsg /= "ok" ) then      
+           print *, 'error in reading IO_INFILE', fname
            call gc_abort(me,NPROC,"error reading IO_INFILE")
         endif !ios
 !pw emep1.2beta
