@@ -21,9 +21,9 @@ use My_Outputs_ml, only : &   ! for sitesout
           FREQ_SITE, &
         NSONDES_MAX, &
         NLEVELS_SONDE, & !ds rv1_9_13
-          NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &
+          NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, N_NIT,  &
           SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
-          FREQ_SONDE
+          FREQ_SONDE, NOy_SPEC
 !ds rv1_9_16 21/12/2003 use My_Derived_ml !ICP , only : d_2d, IOU_INST !, &
 
 use Derived_ml, only : d_2d, d_3d, IOU_INST     !ds New deriv system
@@ -442,7 +442,11 @@ end subroutine siteswrt_surf
 !==================================================================== >
 
   subroutine siteswrt_sondes(xn_adv,xn_shl)
-   use Met_ml, only : z_bnd,z_mid,roa,th,xksig,u,v   ! Output with concentrations
+ use Met_ml,               only : z_bnd,z_mid,roa,th,xksig,u,v, ps, q 
+ use Tabulations_ml,       only :  tab_esat_Pa
+use PhysicalConstants_ml,  only : XKAP
+use ModelConstants_ml,     only : PT
+use GridValues_ml,         only : sigma_bnd,sigma_mid
   ! -------------------------------------------------------------------
   !  Writes vertical concentration  data to files.
   !  IO_SONDES is set in io_ml to be 30
@@ -457,11 +461,13 @@ end subroutine siteswrt_surf
   ! --  Output variables - none
 
   ! --  Local variables
-  integer :: n, i, k,  ix, iy, nn, ispec   ! Site and chem indices
+  integer :: n, i, ii, k,  ix, iy, nn, ispec   ! Site and chem indices
   integer :: d3index    !ds index for d_3d field access
   integer, parameter ::  KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1 !ds rv1_9_13
 
+  integer, dimension(NLEVELS_SONDE)       :: itemp
 
+  real, dimension(KMAX_MID)               :: pp, temp, qsat, rh, sum_NIT
   real, dimension(NOUT_SONDE,NSONDES_MAX) :: out
  
   ! --- ////////////// code ////////////////////////////////// ---
@@ -471,8 +477,9 @@ end subroutine siteswrt_surf
      !** Consistency check 
 
       do ispec = 1, NXTRA_SONDE
-            select case ( SONDE_XTRA(ispec) )
-            case ( "z_mid", "xksig ", "th   ", "U    ", "V    " )
+         select case ( SONDE_XTRA(ispec) )
+            case ( "NOy ", "RH ","z_mid", "p_mid", "xksig ", "th   ", &
+                   "U   ", "V    " )
                errmsg = "ok"
             case default
               errmsg = "ERROR: SONDE_XTRA:" // SONDE_XTRA(ispec) 
@@ -509,8 +516,34 @@ end subroutine siteswrt_surf
 
         do ispec = 1, NXTRA_SONDE
           select case ( SONDE_XTRA(ispec) )
+          case ( "NOy" ) 
+           sum_NIT(:) = 0.
+           do k = 1, KMAX_MID
+           do ii = 1, N_NIT
+             sum_NIT(k) = sum_NIT(k) + xn_adv(NOy_SPEC(ii),ix,iy,k)
+           end do
+           end do 
+           out(nn+1:nn+KMAX_MID,i) = PPBINV                                 &
+                                    * sum_NIT(KMAX_MID:1:-1)
+!!!                                   *(xn_adv(NOy_SPEC(1:N_NIT)),ix,iy,KMAX_MID:1:-1)
+
+          case ( "RH   " ) 
+             do k = 1,KMAX_MID
+               pp(k) = PT + sigma_mid(k)*(ps(ix,iy,1) - PT)
+               temp(k) = th(ix,iy,k,1)*exp(XKAP*log(pp(k)*1.e-5))
+
+               itemp(k) = nint( temp(k) )
+
+               qsat(k)  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
+               rh(k) = min( q(ix,iy,k,1)/qsat(k) , 1.0) 
+             end do
+             out(nn+1:nn+NLEVELS_SONDE,i) =  rh(KMAX_MID:KTOP_SONDE:-1)
+             !!out(nn+1:nn+NLEVELS_SONDE,i) =  rh_3d(ix,iy,KMAX_MID:KTOP_SONDE:-1)
           case ( "z_mid" ) 
              out(nn+1:nn+NLEVELS_SONDE,i) =  z_mid(ix,iy,KMAX_MID:KTOP_SONDE:-1)   
+          case ( "p_mid" ) 
+             out(nn+1:nn+NLEVELS_SONDE,i) = PT + sigma_mid(KMAX_MID:KTOP_SONDE:-1)&
+                                                 *(ps(ix,iy,1) - PT)
           case ( "xksig" ) 
              out(nn+1:nn+NLEVELS_SONDE,i) =  xksig(ix,iy,KMAX_MID:KTOP_SONDE:-1)   ! NXTRA  first
           case ( "th" ) 
