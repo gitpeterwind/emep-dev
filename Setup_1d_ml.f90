@@ -10,7 +10,7 @@
   use Volcanos_ml
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
-  use Chemfields_ml,         only :  xn_adv,xn_bgn         
+  use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
   use Dates_ml,              only : date, dayno
 !hf VOL
   use Emissions_ml,          only :  gridrcemis !hf u2,rcemis_volc

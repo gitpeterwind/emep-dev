@@ -78,10 +78,10 @@ $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 $version     = "Unimod" ;  
-$subv        = "emep1.2beta" ;                 # sub-version (to track changes)
+$subv        = "emep1.2beta" ;              # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/Unify/$subv";         # input of source-code
-$MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
+$ProgDir     = "$USER/Unify/$version"       # input of source-code
+$MyDataDir   = "$USER/Unify/MyData";        # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/$subv";        # working directory
