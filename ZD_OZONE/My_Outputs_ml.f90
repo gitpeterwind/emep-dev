@@ -166,7 +166,7 @@ module  My_Outputs_ml
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
      !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
-    integer, public, parameter :: NHOURLY_OUT =  5 ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT =  1 ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
@@ -285,14 +285,14 @@ contains
  D2_FSTDF00 = find_one_index("D2_FSTDF00",f_2d(:)%name)
  D2_FSTWH00 = find_one_index("D2_FSTWH00",f_2d(:)%name)
 
- hr_out(2)= Asc2D("O3_Wheat", "D2D", &
-                  "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
- hr_out(3)= Asc2D("O3_Beech", "D2D", &
-                  "(f7.3)", D2_O3DF, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
- hr_out(4)= Asc2D("FST_DF00", "D2D", &
-                  "(f7.3)", D2_FSTDF00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
- hr_out(5)= Asc2D("FST_WH00", "D2D", &
-                  "(f7.3)", D2_FSTWH00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
+! hr_out(2)= Asc2D("O3_Wheat", "D2D", &
+!                  "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
+! hr_out(3)= Asc2D("O3_Beech", "D2D", &
+!                  "(f7.3)", D2_O3DF, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
+! hr_out(4)= Asc2D("FST_DF00", "D2D", &
+!                 "(f7.3)", D2_FSTDF00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
+! hr_out(5)= Asc2D("FST_WH00", "D2D", &
+!                  "(f7.3)", D2_FSTWH00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
 
 !  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
 !                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)

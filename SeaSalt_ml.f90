@@ -51,7 +51,7 @@
 
    integer, intent(in) :: i,j    ! coordinates of column
    integer :: k, ii, jj
-   real    :: ustar, z0, z00, vind10, delz, zcoef, n2m, prodN_ss,     &
+   real    :: ustar, z0, z00, vind10, delz, zcoef, n2m,      &
               ss_flux(ss_mod1+ss_mod2), d3(ss_mod1+ss_mod2)  &
               ,prodM_ss(2),prodN_ss(2)
 !//---------------------------------------------------

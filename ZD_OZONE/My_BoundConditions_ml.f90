@@ -33,7 +33,7 @@ module My_BoundConditions_ml
   use GenSpec_bgn_ml, only: NSPEC_BGN
   use GenSpec_adv_ml, only: NSPEC_ADV & 
                 ,IXADV_H2,IXADV_O3, IXADV_SO2, IXADV_SO4  &
-                ,IXADV_HNO3,IXADV_SO4,IXADV_PAN,IXADV_CO,IXADV_C2H4  &
+                ,IXADV_HNO3,IXADV_PAN,IXADV_CO,IXADV_C2H4  &
                 ,IXADV_C2H6,IXADV_NC4H10,IXADV_HCHO,IXADV_CH3CHO   &
                 ,IXADV_H2O2,IXADV_CH3O2H,IXADV_ISOP,IXADV_NO,IXADV_NO2  &
                 ,IXADV_CH4,IXADV_aNH4,IXADV_pNO3,IXADV_aNO3

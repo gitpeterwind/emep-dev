@@ -1,3 +1,14 @@
+================== Peter,               31/03/2004, rv1_9_33   ==========================
+small changes in grun.pl:
+
+sites.* are tared: tar cvf ${runlabel1}.sites sites.*
+RunLog is renamed ${runlabel1}_RunLog
+bzip2 is made parallell: to compress files just add them into  @bigfile_list
+
+some removal of double declarations
+
+
+
 ================== Dave,               31/03/2004, rv1_9_32   ==========================
 
  My_Derived_ml:

@@ -48,7 +48,7 @@
    real, dimension(MAXLIMAX, MAXLJMAX)  ::  local_2d  ! copy of local array
    real, dimension(GIMAX, GJMAX)        ::  glob_2d   ! array for whole domain
    !!real, allocatable, dimension(:,:,:)  ::  glob_3d   ! 3-D array for whole domain
-   integer msnr1, msnr2,nmonpr
+   integer msnr1, msnr2
    integer i,j,n,k
    character*30 outfilename
    integer nyear,nmonth,nday,nhour,nmonpr

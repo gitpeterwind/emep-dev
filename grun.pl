@@ -51,6 +51,8 @@ require "flush.pl";
 
 @pattern_files = qw ( Par_ml.pat );
 
+@bigfile_list = qw ( ); #list of files to be compressed
+
 # <---------- start of user-changeable section ----------------->
 
 #  --- Here, the main changeable parameters are given. The variables 
@@ -158,6 +160,8 @@ if ( $SR ) {
 	$emisdir     = "$emisdir/emis${yy}-V3";    # emissions
 }
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
+	    $emisdir     = "$PETER/Vigdis/Emissions/Modruns/Modrun03";
+	    $emisdir     = "$emisdir/2003_emis2010_CLE_2000_V5";    # emissions
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
@@ -663,13 +667,80 @@ if ( -r core )  {
         unlink($f);
         #print "REMOVED $f \n";
     }
+#move RunLog 
+system("mv RunLog.out  ${runlabel1}_RunLog");
 
-# And compress the big .nc files! 
+#tar sites
+system("tar cvf ${runlabel1}.sites sites.*");
+
+# Make a list of big .nc files
    @n_files = glob("$WORKDIR/*_hour.nc");
    @d_files = glob("$WORKDIR/*_day.nc");
-    foreach $f ( @n_files, @d_files ) {
-        system("bzip2 -f $f");
+#    foreach $f ( @n_files, @d_files ) {
+#        system("bzip2 -f $f");
+#    }
+
+#append to the list of files to be compressed
+@bigfile_list = ( @bigfile_list, @n_files, @d_files );
+
+# And compress the big files
+$nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
+
+$Nnc=@bigfile_list;
+$nleft = $Nnc % $nproc_bsub;
+
+$nloops = ($Nnc-$nleft)/$nproc_bsub;
+    print "number of files to be bunzip2:  $Nnc\n";
+#exit;
+#    print "number of processors: $nproc_bsub \n";
+#    print "number of entire loops to be run:  $nloops\n";
+#    print "number lefts: $nleft \n";
+
+for ($i=1; $i<=$nloops; $i++){
+    for ($j=1; $j<=$nproc_bsub; $j++){
+	$nextfile=pop(@bigfile_list);
+	
+	if (my $pid = fork) {
+	    # parent, does nothing
+#	    print "I am parent $pid \n";	    
+	} else {
+	    die "fork failed: $!" unless defined $pid;
+	    # child, running compression
+	    print "prosessing $nextfile \n";	    
+	    system("bzip2", "-f", $nextfile);
+	    exit 0; # child exits here
+	}
     }
+# parent wait:
+    my $kid;
+    do {
+	# wait until all kids have finished
+	$kid = waitpid(-1, WNOHANG);
+    } until $kid > 0;
+    print "We have just prossessed $i x $nproc_bsub files \n";	    
+}
+
+#prosess the files left
+die "accounting error, $nleft $nproc_bsub" unless $nleft<$nproc_bsub;
+    for ($j=1; $j<=$nleft; $j++){
+	$nextfile=pop(@bigfile_list);
+	
+	if (my $pid = fork) {
+	    # parent, does nothing
+	} else {
+	    die "fork failed: $!" unless defined $pid;
+	    # child, running compression
+	    print "prosessing $nextfile \n";	    
+	    system("bzip2", "-f", $nextfile);
+	    exit 0; # child exits here
+	}
+    }
+#parent is just waiting
+    my $kid;
+    do {
+	# wait until all kids have finished
+	$kid = waitpid(-1, WNOHANG);
+    } until $kid > 0;
 
 exit 0;
 
