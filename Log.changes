@@ -1,3 +1,13 @@
+=================== Hilde,  27/08/2004, rv2_0_3  =============================
+
+GlobalBCs_ml
+ My_Chem_ml and My_BoundConditions_ml in OZONE
+ 
+ H2O2 and CH3COO2 BC corrected for H2O2 and CH3COO2.
+ OH BCs in OZONE taken out.
+ 
+ Hilde 27/8/2004
+
 Output_hourly  -- cfac comments fixed to 50m->3m
 
 =================== Dave,              6-11/07/2004, rv2_0_2  ================
