@@ -186,73 +186,103 @@ contains
 !==================================================================
 !Trends 1980-2003 derived from EPA emissions of so2,nox. nh4 derived from
 !2/3so3+1/3nox
+!hf 2/2-05 1920-1970 BCs derived from:
+!NH4: nh3 emissions
+!SOx: winter ice cores, Col du dome
+!NOx: winter ice cores
+!1890-1920: trender fra utslipp for SOx,NOx, NH3, Aardenne USA
 
-   if( year == 1980) then
-      USso2trend=1.
-      USnoxtrend=1.
-      USnh4trend=1.
-      
-   else if( year == 1985) then 
-      USso2trend=0.91
-      USnoxtrend=0.95
-      USnh4trend=0.94
-      
-   else if( year == 1990) then 
-      USso2trend=0.89
-      USnoxtrend=0.94
-      USnh4trend=0.93
-      
-   else if( year == 1995) then 
-      USso2trend=0.72
-      USnoxtrend=0.92
-      USnh4trend=0.88
-      
-   else if( year == 1996) then 
-      USso2trend=0.71
-      USnoxtrend=0.92
-      USnh4trend=0.88
-      
-   else if( year == 1997) then 
-      USso2trend=0.73
-      USnoxtrend=0.91
-      USnh4trend=0.88
-      
-   else if( year == 1998) then 
-      USso2trend=0.73
-      USnoxtrend=0.90
-      USnh4trend=0.87
-      
-   else if( year == 1999) then 
-      USso2trend=0.68
-      USnoxtrend=0.84
-      USnh4trend=0.81
-      
-   else if( year == 2000) then 
-      USso2trend=0.63
-      USnoxtrend=0.83
-      USnh4trend=0.80
-      
-   else if( year == 2001) then 
-      USso2trend=0.62
-      USnoxtrend=0.80
-      USnh4trend=0.76
-      
-   else if( year == 2002) then 
-      USso2trend=0.59
-      USnoxtrend=0.78
-      USnh4trend=0.74
-      
-   else if( year == 2003) then
-      USso2trend=0.62
-      USnoxtrend=0.77
-      USnh4trend=0.74
-      
-   else
-      print *,"Unspecified trend BCs for this year:", ibc, year
-      errmsg = "BC Error UNSPEC"
-      if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
-   endif
-   
+if (iyr_trend == 1890) then
+   USso2trend=0.12
+   USnoxtrend=0.15
+   USnh4trend=0.44
+elseif (iyr_trend == 1900) then
+   USso2trend=0.18
+   USnoxtrend=0.20
+   USnh4trend=0.48
+elseif (iyr_trend == 1910) then
+   USso2trend=0.27
+   USnoxtrend=0.27
+   USnh4trend=0.52
+elseif (iyr_trend == 1920) then
+   USso2trend=0.32
+   USnoxtrend=0.33
+   USnh4trend=0.59
+elseif(iyr_trend == 1930)then
+   USso2trend=0.35
+   USnoxtrend=0.33
+   USnh4trend=0.55
+elseif(iyr_trend == 1940)then
+   USso2trend=0.46
+   USnoxtrend=0.25
+   USnh4trend=0.59
+elseif(iyr_trend == 1950)then
+   USso2trend=0.59
+   USnoxtrend=0.33
+   USnh4trend=0.69
+elseif(iyr_trend == 1960)then
+   USso2trend=0.76
+   USnoxtrend=0.5
+   USnh4trend=0.76
+elseif(iyr_trend == 1970)then
+   USso2trend=0.95
+   USnoxtrend=0.75
+   USnh4trend=0.90
+elseif(iyr_trend == 1980)then
+   USso2trend=1.
+   USnoxtrend=1.
+   USnh4trend=1.
+else if( iyr_trend == 1985) then 
+   USso2trend=0.91
+   USnoxtrend=0.95
+   USnh4trend=0.94
+else if( iyr_trend == 1990) then 
+   USso2trend=0.89
+   USnoxtrend=0.94
+   USnh4trend=0.93
+else if( iyr_trend == 1995) then 
+   USso2trend=0.72
+   USnoxtrend=0.92
+   USnh4trend=0.88
+else if( iyr_trend == 1996) then 
+   USso2trend=0.71
+   USnoxtrend=0.92
+   USnh4trend=0.88
+else if( iyr_trend == 1997) then 
+   USso2trend=0.73
+   USnoxtrend=0.91
+   USnh4trend=0.88
+else if( iyr_trend == 1998) then 
+   USso2trend=0.73
+   USnoxtrend=0.90
+   USnh4trend=0.87
+else if( iyr_trend == 1999) then 
+   USso2trend=0.68
+   USnoxtrend=0.84
+   USnh4trend=0.81
+else if( iyr_trend == 2000) then 
+   USso2trend=0.63
+   USnoxtrend=0.83
+   USnh4trend=0.80
+else if( iyr_trend == 2001) then 
+   USso2trend=0.62
+   USnoxtrend=0.80
+   USnh4trend=0.76
+else if( iyr_trend == 2002) then 
+   USso2trend=0.59
+   USnoxtrend=0.78
+   USnh4trend=0.74
+else if( iyr_trend == 2003) then
+   USso2trend=0.62
+   USnoxtrend=0.77
+   USnh4trend=0.74
+else
+   print *,"Unspecified trend BCs for this year:", ibc, year
+   errmsg = "BC Error UNSPEC"
+   if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+endif
+
+
 !==================================================================
 ! Trends - derived from EMEP report 3/97
 !ds rv1.6.10 - adjustment for years outside the range 1990-2000.

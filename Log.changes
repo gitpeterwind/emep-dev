@@ -1,3 +1,8 @@
+============== Hilde/Dave 18/2-2005            , rv2_1_7 =====================
+
+Submitted Hilde's changes to BCs for historical runs.
+
+
 ============== Dave  17/2-2005            , rv2_1_6 =====================
 
 
@@ -22,7 +27,8 @@ ZD_.../My_Outputs:   N_NIT -> N_NOy
 ============== Peter, 9/2-2005            , rv2_1_5 =====================
 
 N_NIT was not defined in ZD_ACID 
-Updated ZD_ACID/My_Ouputs_ml so that it is compatible with the ZD_OZONE changes.I defined N_NIT=1. If necessary please define differently.
+Updated ZD_ACID/My_Ouputs_ml so that it is compatible with the ZD_OZONE 
+changes.I defined N_NIT=1. If necessary please define differently.
 (Also changed to NHOURLY_OUT = 1, since clouds do not seem to be defined.)
 
 ============== Hilde, 3/1-2005            , rv2_1_4  =====================
