@@ -62,7 +62,7 @@ require "flush.pl";
 $year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
-my $SR = 0;   #NEW Set to 1 for source-receptor stuff
+my $SR = 1;   #NEW Set to 1 for source-receptor stuff
 my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 my $MERLIN_CITY= 0;  # Adds in African emissions for y=1..11
@@ -194,7 +194,7 @@ if ( $SR ) {
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
 
-$RESET        = 1   ;  # usually 0 (false) is ok, but set to 1 for full restart
+$RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
 $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
@@ -213,7 +213,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM = 4;       # for testing, simply reset here
+ $NTERM = 2;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -236,32 +236,29 @@ $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 @euaccess = qw ( HU PL CY CZ EE LT LV MA SK SI );
 @eu25 = ( @eu, @euaccess );
 @countries = @eu3 ;  # List of wanted countries this run
-#@countries = qw ( IT ) ;  # List of wanted countries this run
+@countries = qw ( IT DE ) ;  # List of wanted countries this run
                                 # EU25 is "special"
 my $scenario = "Base";
 if ( $SR ) {
         $base        = "CLE";
         $Split       = "CLE_MAR2004";    # IER VOC splits
-        $rednflag    = "P25";  # 10% reduction for label
-        $redn        = "0.75";  # 10% reduction
+        $rednflag    = "P15";  # 10% reduction for label
+        $redn        = "0.85";  # 10% reduction
         @polls       = qw ( BASE NP );  # NP, BASE already done
 
 	$nrun = 0;
 	foreach $pollut ( @polls ) {
 	    foreach $cc ( @countries ) {
-       		print "STARTING CC $cc\n";
 
        		$scenario = "${base}_${cc}_${pollut}_${rednflag}";
-       		if ( $pollut eq "BASE" ) {
-	       		$scenario = "${base}";
-			last;
-		}
+       		$scenario = "${base}" if  $pollut eq "BASE";
 
 		# create list of runs to be done:
-		$run[$nrun] = $scenario;
+		$runs[$nrun] = $scenario;
        		print "scenario: N $nrun S $scenario \n";
 		$nrun++ ;
 	
+		last if $pollut eq "BASE";  # Do not repeat for each cc
 	    }
 	}
 	# Run mkp.SRfemis to generate femis files. This script will die 
@@ -763,11 +760,11 @@ if ( -r core )  {
 #move RunLog 
 system("mv RunLog.out  ${runlabel1}_RunLog");
 
-#tar sites
-my $last_sites = sprintf  "sites.%02d%2d", $mm2, $yy;
-print "LOOKING FOR LAST SITES $last_sites\n";
-if ( -r $last_sites ) {
-	print "FOUND LAST SITES $last_sites\n";
+#tar sites and sondes. Use sondes to check as these are produced les frequently.
+my $last_sondes = sprintf  "sondes.%02d%2d", $mm2, $yy;
+print "LOOKING FOR LAST SITES $last_sondes\n";
+if ( -r $last_sondes ) {
+	print "FOUND LAST sondes $last_sondes\n";
 	system("tar cvf ${runlabel1}.sites sites.*");
 	system(	"tar cvf ${runlabel1}.sondes sondes.*");
 }
