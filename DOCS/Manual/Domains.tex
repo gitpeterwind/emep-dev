@@ -1,0 +1,98 @@
+\chapter{Domains}
+
+Domains - a confusing word. In normal modelling terminology domains
+refer to the total area covered by the model simulation, and possibly
+to some output areas. In the unified model, and parallel-coding terminology,
+domains refer also to the area covered by each processor. To try to distinguish
+between these, we generally refer to the former type as global domains, 
+and the latter as local domains. (The word global is also confusing of course - here we 
+do not mean for the whole globe!)
+
+The model has a number of global-type domains:\\
+\\
+\begin{picture}(400,300)
+\put(2,2){\framebox(340,266)[br]{Meteorology}}
+\put(72,20){\framebox(260,240)[br]{EMEP area}}
+\put(92,40){\framebox(200,160)[br]{Run area}}
+\put(130,60){\dashbox{0.9}(180,180)[br]{Hourly output}}
+\put(200,90){\dashbox{0.6}(30,30)[br]{Restri output}}
+\end{picture}
+
+
+%TMP\section{Meteorology}
+%TMP
+%TMP\noindent
+%TMPSet in {\bf run.pl} : @largedomain = ( 1 , 171, 1 , 133 );\\
+%TMP\vspace{3mm}
+%TMP
+%TMPTranslated into \Par\ as:\\
+%TMP\begin{small}\begin{verbatim}
+%TMP  integer, public, parameter ::  &
+%TMP    IILARDOM    =    170         &
+%TMP  , JJLARDOM    =    133         &
+%TMP\end{verbatim}
+%TMP\end{small}
+%TMP
+%TMP
+%TMP\section{EMEP area} 
+%TMP
+%TMP\noindent
+%TMPSet in {\bf run.pl} : @smalldomain = ( 36, 160, 11, 123 ) ;
+%TMP\vspace{3mm}
+%TMP
+%TMPTranslated as for Run area (below)
+%TMP
+%TMP\section{ Run area  (and its shadow!) } 
+%TMP
+%TMP\noindent
+%TMPSet in {\bf run.pl} : @smalldomain = ( user-specified  );  \\
+%TMP\vspace{3mm}
+%TMP\\
+%TMPFor example, @smalldomain = ( 101, 140, 51, 90 ) 
+%TMPtranslates to the following in \Par:\\
+%TMP\begin{small}\begin{verbatim}
+%TMP  integer, public, parameter ::  &
+%TMP  , ISMBEG      =   101    & ! Starting x-coodinate
+%TMP  , JSMBEG      =   51     & ! Starting y-coodinate
+%TMP  , GIMAX       =   40     & ! Number of global points in longitude
+%TMP  , GJMAX       =   40     & ! Number of global points in latitude
+%TMP\end{verbatim}
+%TMP\end{small}
+%TMP
+%TMP
+%TMP
+%TMPThe area run by the model does not need to be the EMEP area, just
+%TMPany sub-domain of the meteorology domain. For standard EMEP runs
+%TMPthe two will be set equal, but for testing we could choose just to
+%TMPhave a tiny run-domain. For testing with 4 or 8 processors then
+%TMP\@smalldomain = ( 51, 160, 31, 120 ) works quite well.
+%TMP
+%TMP\subsection*{Shadow area}
+%TMP
+%TMPIMPORTANT - the grid cells on the boundaries of the run-area are
+%TMPexcluded from the chemical calculations, since the advection routines
+%TMPrequire one cell more than the chemistry. Thus, in \Par\ you will find:
+%TMP
+%TMP\begin{small}\begin{verbatim}
+%TMPFrom par_ml.f90
+%TMP     limax       & ! Actual number of local points in longitude
+%TMP   , ljmax         ! Actual number of local points in latitude
+%TMP
+%TMP     li0  & ! First local index in longitude when outer boundary is excluded
+%TMP   , li1  & ! Last local index in longitude when outer boundary is excluded
+%TMP   , lj0  & ! First local index in latitude when outer boundary is excluded
+%TMP   , lj1    ! Last local index in latitude when outer boundary is excluded
+%TMP\end{verbatim}
+%TMP\end{small}
+%TMP
+%TMP
+%TMPSo, if you loop over something that does not need
+%TMPinfo from neighboring boxes then it is ok to use li0:li1, lj0:lj1,
+%TMPbut if you need info from the "shadow area" (ie advection)  you must use
+%TMP1:limax,1:ljmax.
+%TMP\bigskip
+%TMP\bigskip
+%TMP
+%TMP
+%TMPThe domains used for the outputs are discussed more in section~\ref{OUTPUTS}.
+%TMP

@@ -1,0 +1,38 @@
+\chapter{Input files}
+
+\begin{table}[h]
+\caption{Gridded Input Files. NNNN: number, MM: month, POLL: pollutant, AA: text}
+\begin{tabular}{lcccc}\hline
+Data & name (in F90 code) & format& comment\\ \hline
+Meteorology&filNNNN&special/NetCDF& special treatment \\
+Boundary Conditions&POLL.MM&list&\\
+%LOGAN BC&&&&not used?\\
+Land use&landuse.dat&i j x1-x18& Deposition \\ %dsskip first line\\
+Snow cover&snowcMM.dat&i j x& Deposition\\
+Emissions&gridPOLL&i j x1-x13&\\
+Natural SO2&natso2MM.dat&i j x&\\
+Forest&forest.dat&i j x1-x6&for BVOC \\ %ds skip first line\\
+Volcanoes&Volcanoes.dat&i j k&   \\ %ds comment lines\\
+Lightning&lightnMM.dat&??& \\
+Sondes&sondes.dat& Name i j k AA& Output sites\\
+Sites&sites.dat  & Name i j k AA& Output sites\\ \hline
+\end{tabular}
+\end{table}
+%In addition aircraft NOx emissions are hardcoded in the Fortran code (AirEmis\_ml.f90).
+ 
+%\section{List of non-gridded input files}
+
+\begin{table}[h]
+\caption{Non-grid Input Files.}
+\begin{tabular}{lcccc}\hline
+Data & name   &format& comment\\ \hline
+Time series for emissions&MonthlyFac.POLL&EMEP&i j x1-x12&\\
+Time series for emissions&DailyFac.POLL&EMEP&i j x1-x7&\\
+PM Splits                   &pm25split.defaults&& \\
+VOC Splits&vocsplit.defaults&& \\
+femis.dat           &             & & Modified emissions \\
+Landcover parameters&MM\_gfac1.dat&& Dep. module \\
+Landcover parameters&lde\_gfac2.dat&& Dep. module \\
+Landcover parameters&lde\_biomass.dat&&Dep. module  \\\hline
+\end{tabular}
+\end{table}

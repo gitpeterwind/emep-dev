@@ -1,0 +1,179 @@
+\chapter{Outputs}
+\label{OUTPUTS}
+
+{\bf ***** Note *****\\
+Outputs are currenly being changed from binary to netCDF.
+The code relating to the binary outoputs will be deleted in future versions}
+
+%%%%%%%%%%%%%% Sites and Sondes %%%%%%%%%%%%%%%%%%
+\input{Sites}
+
+
+%%%%%%%%%%%%%% Hourly %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{Hourly out}
+
+\noindent
+Optional -  specify in \MyOutputs\, hourly\_out\%ix1, etc.\\
+Ascii
+\vspace{1cm}
+
+This output is intended to allow hourly (or any resolution) outputs of surface
+concentrations in
+variable precision for user-defined areas (see section~\ref{Output:ascii}). 
+Ascii format. Easy to use, but
+produces VERY LARGE output files. 
+
+
+In \MyOutputs\ we have for example:
+
+\begin{small}\begin{verbatim}
+  !**                    type   ofmt   ispec    ix1 ix2  iy1 iy2 conv    max
+
+  hr_out(1) = Hr_output("ADV", "(f8.4)",IXADV_O3, 87, 110, 51, 75, PPBINV,400.0)
+  hr_out(2) = Hr_output("SHL", "(f8.4)",IXSHL_OH, 87, 110, 51, 75, 1.0e-5,999.0)
+   !/** temp2m is in deg.C
+  hr_out(3) = Hr_output("T2 ", "(f5.1)",     -99, 87, 110, 51, 75, 1.0   ,100.0)
+\end{verbatim}
+\end{small}
+
+
+
+\section{Restricted output}
+(TO BE REMOVED! Same functionality available with either use of
+sondes files or use of Derived.)
+
+\noindent
+Optional -  specify in \MyOutputs\, hourly\_out\%ix1, etc.\\
+Binary
+\vspace{1cm}
+
+This output is intended to allow 3-hourly (??) outputs of the 3-D concentration
+fields for a limited area, for example Milan. Can thus provide boundary-values
+for input to other models. (These could also be provided by specifying the
+coordinates of the required boundary in the sites.dat file)
+
+In \MyOutputs\ we have for example:
+
+\begin{small}\begin{verbatim}
+  integer, public, parameter ::  &
+	 ISPEC_OUTBEG  = 121  &
+	,JSPEC_OUTBEG  =  61  &
+	,ISPEC_OUTEND  = -130 &     ! Set negative here to exclude
+	,JSPEC_OUTEND  = -80        ! Set negative here to exclude
+\end{verbatim}
+\end{small}
+
+
+\section{Derived fields and binary outputs}
+
+{\bf modules My\_Derived\_ml, Derived\_ml}\\
+
+\noindent
+The fields which are output as binary data from model runs consist
+of either 2-D or 3-D  arrays, with some identfiers. 
+Some data-fields will contain concentration, others depositions, still
+others user-defined fields such as column sulphate or AOT40.
+Some data will be averaged and printed out daily, other data will
+be accumulated to monthly or yearl average totals.
+The unified model 
+attempts to deal with the various possible data-fields through
+a consistent methdology, treating all of the above as simply "derived"
+fields.
+
+The basic idea is that users define the 2-d and 3-d fields they require
+in My\_Derived\_ml. A fortran'90 type, Deriv, is defined which contains
+a description of the parameters associated with each wanted field.
+In this module, derived fields are identified by a "class", such as "ADV" of "VOC".
+The user also specifies if averaging is wanted, and sets various
+time markers to be true or false. More details are supplied below.
+
+ The Derived\_ml should perform any integrations for these fields.
+ Several often-used routines (e.g. for AOTs, acc. sulphate, are defined 
+ in the Derived\_ml.f90, and these are only called if the appropriate
+ class is found from My\_Derived\_ml. (I think users should also be
+ able to define their own routines in My\_Derived\_ml, since
+ we do not use "use only" in Derived\_ml. However, as far as possible
+ I'd like to keep My\_Derived short and the routines flexible, so 
+  
+  
+ These 2 modules combine Steffen's rewriting of the output routines
+ (IOU notation), elements of chemint\_mach, Bud\_ml, etc.
+
+  \subsubsection*{IOU\_MON, etc.}
+
+  We define 4 possibilities
+  for output time-periods, corresponding to: instantaneous,year,month,day:
+
+  \begin{small}\begin{verbatim}
+   integer, public, parameter ::  NIOUTYP = 4
+   integer, public, parameter ::  & 
+        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4
+  \end{verbatim}
+  \end{small}
+
+
+   We also define a new type,`Deriv':
+
+  \begin{small}\begin{verbatim}
+    type, public:: Deriv    ! Could be private ??
+       integer  :: code     ! Identifier for DNMI/xfelt (was ID6OUT_DERIV_3D)
+       character(len=5) :: class ! Class of data, e.g. ADV or VOC
+       logical  :: avg      ! True => average data (divide by nav), else accumulate
+       integer  :: index    ! index in concentation array, or other
+       real     :: scale    ! Scaling factor          ! (was SCALOUT_DERIV_3D)
+       logical  :: inst     ! True when instantaneous values needed
+       logical  :: year     ! True when yearly averages wanted
+       logical  :: month    ! True when monthly averages wanted
+       logical  :: day      ! True when daily averages wanted
+    end type Deriv
+  \end{verbatim}
+  \end{small}
+
+
+  By using this Deriv type, we can specify the characteristics of the data
+  with just one line of fortran, for example:
+
+
+  \begin{small}\begin{verbatim}
+    f_wdep( WDEP_SOX  ) = Deriv( 541, "WDEP ", F, -1, 1.0e6, F  ,  T , T ,  T )
+  \end{verbatim}
+  \end{small}
+
+  (Note, F is shorthand for false, T for true.)\\
+  \bigskip
+
+
+ \noindent
+  For this example, we have already set the index WDEP\_SOX, have chosen the code
+  541 for the xfelt work, and a scaling factor of 1.0e6 for output. The index
+  is set to -1 since we do need access to any one index from say the xn\_adv arrays.
+   The class
+  "WDEP" will tell the rest of the code that this is a wet-deposition field,
+   and  calculations will be done accordingly. 
+
+   We have set the avg field to false, as wet-deposition needs to be accumulated,
+   not averaged. The time fields show that we want daily, monthly and yearly
+   output, but not output of instantaneous fields.
+
+   Associated with the definition array, f\_wdep, above, we also need the 
+   data array, wdep.  This is defined with dimension (NWDEP, MAXLIMAX, MAXLJMAX, NIOUTYP).
+   
+
+   In principal, all data could have been gathered into just one set of 2-D derived
+   fields and one set of 3-D fields. However, there may be advantages
+   in keeping deposition arrays seperate, so at least for now the model uses 4
+   basic type of data, each with an associated number of fields, f\_xx array for
+   definitions, and  another array for data, as summarised in Table~\ref{TABDRV}.
+
+   \begin{table}[h]
+   \caption{Summary of parameters, definition and data arrays for derived types}
+   \label{TABDRV}
+   \begin{tabular}{|lllp{6cm}|}\hline
+     No. fields    &  Definition array & Data array  & Comments  \\
+                   &               &                 &           \\
+     NWDEP         &    f\_wdep    &    wdep   & Wet deposition and accumalated precipitation  \\
+     NDDEP         &    d\_wdep    &    ddep   & Dry deposition   \\
+     NDERIV\_2D     &    f\_2d      &    d\_2d   & Derived 2-D fields, surface concs., etc.  \\
+     NDERIV\_3D     &    f\_3d      &    d\_3d   & Derived 3-D fields  \\ \hline
+   \end{tabular}
+   \end{table}
