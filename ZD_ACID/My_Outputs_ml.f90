@@ -231,9 +231,9 @@ contains
   !    output is wanted. Replaces the hard-coding which was
   !    in wrtchem:
 
-     wanted_dates_bi(1) = date(-1,7,7,0,0)
-     wanted_dates_bi(2) = date(-1,7,7,6,0)
-     wanted_dates_bi(3) = date(-1,7,7,12,0)
+     wanted_dates_bi(1) = date(-1,7,2,0,0)
+     wanted_dates_bi(2) = date(-1,7,2,6,0)
+     wanted_dates_bi(3) = date(-1,7,2,12,0)
 
  end subroutine set_output_defs
 end module My_Outputs_ml

@@ -27,7 +27,7 @@ c		if the output array is some combination of other arrays,
 c		then here this is assigned to rtmp	
 C     
 C----------------------------------------------------------------------------
-C     $Id: outchem_restri.f,v 1.1.1.1 2002-09-13 08:17:15 mifads Exp $
+C     $Id: outchem_restri.f,v 1.2 2002-09-13 08:26:24 mifads Exp $
 C     Erik Berge, DNMI    Roar Skaalin, SINTEF Applied Mathematics
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 c     

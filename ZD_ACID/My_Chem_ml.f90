@@ -381,8 +381,7 @@ end module  GenRates_rct_ml
      ! Tabulate SO2 oxidation rates with a safe 366 value for ndays
      ! Coefficients taken from Eliassen+Saltbones (1983) (also in
      ! Berge and Jakobsen, 1998
-
-        tab_so2ox = Daily_sine(4.0e-6,2.5e-6,80,366)
+        tab_so2ox = Daily_sine(3.0e-6,2.0e-6,80,366)
 
     end subroutine  Init_mychem
     !------------------------------------------------------------------

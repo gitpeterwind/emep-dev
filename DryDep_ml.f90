@@ -198,17 +198,29 @@ module DryDep_ml
         !u3 vd1m = vd_min(ncalc,ind) + dayfac * vd_day(ncalc,ind)
         !u6b test:
 
-        vd1m = vd_min(ncalc,ind) + dayfac * seasonfac * vd_day(ncalc,ind)
+!FIXVG  vd1m = vd_min(ncalc,ind) + dayfac * seasonfac * vd_day(ncalc,ind)
 
-        !u3 just make 1 dep vel for now, as in Hov et al. :
+!FIXVG  !u3 just make 1 dep vel for now, as in Hov et al. :
+!FIXVG
+!FIXVG  !u6b: vd1m = vd_min(ncalc,ind) + vd_day(ncalc,ind)
+!FIXVG
+!FIXVG !u3 ========= time facs over land squares
+!FIXVG
+!FIXVG  if ( ind /= SEA ) vd1m = vd1m * seasonfac
+!FIXVG
+!FIXVG !u3 ========= time facs
 
-        !u6b: vd1m = vd_min(ncalc,ind) + vd_day(ncalc,ind)
+        if ( ind == SEA ) then
 
-       !u3 ========= time facs over land squares
+           vd1m = vd_min(ncalc,ind) + vd_day(ncalc,ind)
 
-        if ( ind /= SEA ) vd1m = vd1m * seasonfac
+        else ! time facs over land squares
 
-       !u3 ========= time facs
+           vd1m = vd_min(ncalc,ind) + dayfac * seasonfac * vd_day(ncalc,ind)
+        end if
+
+!END OF FIXVG
+      
 
         gradient_fac(ncalc) = 1./(1. + vd1m*inv_CdV)
         veff = vd1m*gradient_fac(ncalc)
