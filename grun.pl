@@ -147,9 +147,9 @@ $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003)
 #@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
-@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
+#@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
-#@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
+@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
 
 $RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
