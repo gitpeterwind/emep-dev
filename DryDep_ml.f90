@@ -70,7 +70,7 @@ module DryDep_ml
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
- use Setup_1dfields_ml,    only : xn_2d,amk
+ use Setup_1dfields_ml,    only : xn_2d,amk,Idrctt,Idfuse
  use GenSpec_shl_ml,        only :  NSPEC_SHL
 !stDep
  use Aero_DryDep_ml,        only : Aero_Rb
@@ -187,8 +187,8 @@ module DryDep_ml
    real :: cover , Sumcover, Sumland   ! Land-coverage
    real :: z0, g_sto   &
          ,Ra_ref       & ! Ra from ref ht.  to z0
-         ,Ra_3m        & ! Ra from 3m over veg. to z0
-         ,Idrctt, Idfuse   ! Direct-total and diffuse radiation
+         ,Ra_3m          ! Ra from 3m over veg. to z0
+         !ds ,Idrctt, Idfuse   ! Direct-total and diffuse radiation
    real :: wetarea         ! Fraction of grid square assumed wet 
    real :: ustar_nwp, ustar_loc, vpd, invL, rho_surf, invL_nwp, d, rh, Ts_C
    real :: lai, hveg        ! For convenience  
