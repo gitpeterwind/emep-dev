@@ -12,9 +12,9 @@
 #    hangs or crashes for some reason, type "sh Remove.sh" to get rid
 #    of all the linked files.  
 # Bugs
-# Not working for year 2000 (and Dec. 1999) yet.
-# Still assumes 2-digit years. Needs to be updated to 4-digit when we
-# start using Anna's new system.
+# Not working for year 2000 (and Dec. 1999) yet.???
+# Still assumes 2-digit years for some inputs. Needs to be updated to 4-digit 
+# system fully.
 ######################################################################
 #
 # Script to prepare files before running Eulerian model on 
@@ -59,15 +59,13 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$yy    = "95" ;       #  TMP - just to keep emission right
-if ( $yy > 50 ) {
-     $year  = 1900 + $yy
-  } else        {
-     $year  = 2000 + $yy 
-} ; 
+$year = "2000";
+( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
+
 print "Year is $yy YEAR $year\n";
-if ( $year == 1999 ) {
-  $MetDir = "/work/mifahf/out_uni7.test_dt/met";    # TMP!
+
+if ( $year == 2000 ) {
+  $MetDir = "/work/mifapw/metdata/$year" ;
 } elsif ( $year == 1997 ) {
   $MetDir = "/work/mifajej/metdata/$year" ;  # Needed for 1997
 } else {
@@ -78,7 +76,7 @@ if ( $year == 1999 ) {
 
 $DAVE        = "/home/u2/mifads";      
 $JOFFEN      = "/home/u2/mifajej";      
-$HILDE       = "/home/u2/mifahf";      
+$HILDE       = "/home/u5/mifahf";      
 $STEFFEN     = "/home/u2/mifaung";      
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
@@ -89,19 +87,18 @@ $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 $version     = "Unimod" ;  
-$testv       = "newrv";
-$subv        = "emep1.2beta" ;                 # sub-version (to track changes)
+$testv       = "";
+$subv        = "emep1.2" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/Unify/$version";         # input of source-code
+$ProgDir     = "$USER/Unify/$version$testv";         # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/$version.$testv";        # working directory
+$WORKDIR     = "$WORK{$USER}/$version.${testv}$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
+$emisyear    = "$emisdir/emis${yy}";    # emissions
 $LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
-$emisyear   = "$emisdir/emis${yy}";    # emissions
-#$emisyear    = "$emisdir/emis98";   # emissions
 
 # Change for PM:
 #$emisdir     = "$SVETLANA/Unify/Data/emission";   # emissions stuff
@@ -118,8 +115,8 @@ $emisyear   = "$emisdir/emis${yy}";    # emissions
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
 @largedomain = (   1, 170,  1, 133 ) ;
-@smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
-@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
+#@smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
+#@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 @smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
