@@ -7,7 +7,7 @@
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! ds rv1.2 MetModel_LandUse added here for snow and iclass
 !  - combined from hf and pw Met_ml
-! October 2001 hf added call to ReadField
+! October 2001 hf added call to ReadField:::: WITH TKE scheme (Octobar 2004)
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
 use GridValues_ml,     only : xm,xmd, sigma_bnd,sigma_mid
@@ -66,8 +66,8 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
                            th      &  ! Potential teperature  ( deg. k )
                            ,q      &  ! Specific humidity
-                          ,cw         ! Cloud water           (kg water)/(kg air)
-
+                          ,cw      &  ! Cloud water           (kg water)/(kg air)
+                          ,ccc        ! Cumulus cloud cover   (%)  for ASSYCON
 
 !    since pr,cc3d,cc3dmax used only for 1 time layer - define without NMET
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
@@ -77,7 +77,8 @@ private
                     ,trw    & ! total rainwater kg/kg 
                                ! NB: trw: accumulated during metstep. ( Direct output 
                                ! from MM5 gives accumulated during prognosis length )
-                    ,lwc       !liquid water content
+                    ,lwc    &  !liquid water content
+                    ,sst       ! SST Sea Surface Temprature- ONLY from 2002
 
 
 ! surface fields
@@ -172,11 +173,11 @@ private
 
 !ds u7.4vg fl added
 !	u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
-!	ps(8),th2m(31),fh(36),fl(37),fm(38),ustar(53),trw(845)
+!	ps(8),th2m(31),fh(36),fl(37),fm(38),ustar(53),trw(845), sst(103)
 
 !	scaling factor to be read from field file.
 
-!	data  par/2, 3, 9, 11, 18, 22, 23, 39, 8, 31, 36, 38/
+!	data  par/2, 3, 9, 11, 18, 22, 23, 39, 8, 31, 36, 38, 103/
 
 	nr=2
 	if(numt == 1)then
@@ -418,6 +419,9 @@ private
 
 	      call getmetfield(ident(20),itmp,cw(1,1,k,nr))
 
+          case (26)                                          !ASSYCON
+              call getmetfield(ident(20),itmp,ccc(1,1,k,nr)) !ASSYCON
+               
 	  case (23)
 
               foundpreta = .true. !pw u3
@@ -458,6 +462,11 @@ private
 
               foundustar = .true.
 	      call getmetfield(ident(20),itmp,ustar(1,1,nr))
+
+	  case (103) ! SST
+
+	      call getmetfield(ident(20),itmp,sst(1,1,nr))
+
 
 	  end select
 
@@ -885,7 +894,8 @@ private
                pr(i,j,k) = 1000.*divt*max(0.0, trw(i,j,k) * roa(i,j,k,nr) * &
                             (z_bnd(i,j,k)-z_bnd(i,j,k+1))/ROWATER  )
             endif
-
+	  enddo
+	enddo
 
 
 !            if(mm5)then
@@ -911,70 +921,7 @@ private
 !            endif
 !               
 
-               
-! ------------------------------------------------------------------
 
-!ko computation of skh in the surface layer is commented
-      
-!ko          uvh2 = u(i,j,KMAX_MID,nr)*u(i,j,KMAX_MID,nr) +
-!ko     1           v(i,j,KMAX_MID,nr)*v(i,j,KMAX_MID,nr)
-!su	centred velocities, not yet divided by map factor
-!ko          uvh2 = 0.25*( (u(i,j,KMAX_MID,nr)+u(i-1,j,KMAX_MID,nr))**2 +
-!ko     1           (v(i,j,KMAX_MID,nr)+v(i,j-1,KMAX_MID,nr))**2 )
-!ko     &		*xmd(i,j)
-
-!ko	    if(uvh2.lt.0.0001) uvh2=0.0001
-
-!ko	    uvhs=sqrt(uvh2)
-
-!     local richardson number in the surface layer
-
-!ko          ri = 2.*G*z_mid(i,j,KMAX_MID)*(th(i,j,KMAX_MID,nr)-th2m(i,j,nr))/
-!ko     1           ((th(i,j,KMAX_MID,nr) + th2m(i,j,nr))*uvh2)
-
-!     roughness parameter
-
-!ko          z00 = z_mid(i,j,KMAX_MID)/z0(i,j)
-!ko	    a2 = alog(z00)
-!ko	    a2 = XKAR*XKAR/(a2*a2)
-
-!ko	    if(ri.lt.0.) then
-!ko	      cdh = a2*(1.-2.*bm*ri
-!ko     1              /(1.+3.*bm*cm*a2*sqrt(-ri*(1.+z00))))
-!ko	    else
-!ko	      cdh = bm*ri/sqrt(1.+dm*ri)
-!ko	      cdh = a2/(1.+3.*cdh)
-!ko	    endif
-
-!     convert to sigma-coordinates.
-
-!ko          ro = CP*((ps(i,j,nr) - PT)*sigma_mid(KMAX_MID) + PT)/
-!ko     1           (R*th(i,j,KMAX_MID,nr)*exf1(KMAX_BND))
-!ko          xkh = cdh*uvhs*z_mid(i,j,KMAX_MID)
-!ko          xkz(i,j,KMAX_MID) = xkh
-!eb            xkh = (fac*ro*(1.-sigma_mid(KMAX_MID)))
-!ko          skh(i,j,KMAX_BND,nr) = xkh*fac2*ro*ro
-!            xkh = cdh*uvhs*(fac*ro*(1.-sigma_mid(KMAX_MID)))
-
-!     stores the vertical diffusivity in the surface layer.
-
-!          skh(i,j,KMAX_BND,nr) = xkh
-
-!            if (i.eq.it.and.j.eq.jt) write(6,*)'metvar-surface 
-!     1           layer:i,j,cdh,uvhs,ps,z_bnd,z_mid,ri,th2m',i,j,cdh,uvhs,
-!     2           ps(i,j,nr),z_bnd(KMAX_MID),z_mid(KMAX_MID),ri,th2m(i,j,nr)
-
-	  enddo
-	enddo
-
-!su	do j=lj0,lj1
-!su	  do i=li0,li1
-!su          roa(i,j,1,nr) = CP*((ps(i,j,nr) - PT)*sigma_mid(1) + PT)/
-!su     1           (R*th(i,j,1,nr)*exf2(1))
-!su	  enddo
-!su	enddo
-
-! 1000 continue
 
 !     Horizontal velocity divided by map-factor.
      
@@ -1030,7 +977,9 @@ private
 	  q(:,:,:,1) = q(:,:,:,1) 				&
 			+ (q(:,:,:,2) - q(:,:,:,1))*div
 	  cw(:,:,:,1) = cw(:,:,:,1) 				&
-			+ (cw(:,:,:,2) - cw(:,:,:,1))*div
+			+ (cw(:,:,:,2) - cw(:,:,:,1))*div      
+          ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
+                        + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
 	  skh(:,:,:,1) = skh(:,:,:,1) 				&
 			+ (skh(:,:,:,2) - skh(:,:,:,1))*div
 	  roa(:,:,:,1) = roa(:,:,:,1) 				&
@@ -1057,15 +1006,12 @@ private
 	  ustar(:,:,1) = ustar(:,:,1) 				&
 			+ (ustar(:,:,2) - ustar(:,:,1))*div
           endif
+!SST
+	  sst(:,:,1)   = sst(:,:,1) 				&
+			+ (sst(:,:,2)   - sst(:,:,1))*div
+
 
 !ko  precipitation and cloud cover are no longer interpolated
-
-!gv	  if(MADE)then				!MADE
-!gv	    vd1komp(:,:,:,1) = vd1komp(:,:,:,1) 
-!gv     &			+ (vd1komp(:,:,:,2) - vd1komp(:,:,:,1))*div
-!gv	    vd50komp(:,:,:,1) = vd50komp(:,:,:,1) 
-!gv     &			+ (vd50komp(:,:,:,2) - vd50komp(:,:,:,1))*div
-!gv	  endif					!MADE
 
 	else
 
@@ -1078,6 +1024,7 @@ private
 	  th(:,:,:,1) = th(:,:,:,2)
 	  q(:,:,:,1) = q(:,:,:,2)
 	  cw(:,:,:,1) = cw(:,:,:,2)
+          ccc(:,:,:,1) = ccc(:,:,:,2)   !ASSYCON
 	  skh(:,:,:,1) = skh(:,:,:,2)
 	  roa(:,:,:,1) = roa(:,:,:,2)
 
@@ -1096,6 +1043,7 @@ private
 !ds u7.4vg fl added
 	  fl(:,:,1) = fl(:,:,2)
 	  if(foundustar) ustar(:,:,1) = ustar(:,:,2)
+	  sst(:,:,1) = sst(:,:,2)          !SST
 
 !gv	  if(MADE)then				!MADE
 !gv	    vd1komp(:,:,:,1) = vd1komp(:,:,:,2)
@@ -1148,7 +1096,7 @@ private
       
         do j=1,ljmax
            do i=1,limax
-              iclass(i,j)=nint(r_class(i,j)) 
+              iclass(i,j)=nint(r_class(i,j))              
            enddo
         enddo
         deallocate(r_class,stat=err)
@@ -1191,6 +1139,9 @@ private
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+!Variable names now more intuitive. This is a list with some new and ols 
+!variable names
 !Originally tiphys.f in hmix.f
 !imax=>limax(sums) ,MAXLIMAX(dimensions)
 !ljmax=>lljmax,MAXLJMAX
@@ -1367,188 +1318,6 @@ private
 !c	ztop	: height of the uppermost layer in s-coordinates
 !c
 !c-------------------------------------------------------------------
-!c
-!c	underlying models for (including litterature references):
-!c	----------------------------------------------------------
-!c
-!c	local air density (based on the ideal gas law):
-!c
-!c	roa = ro = p/(r*T) = (CP*p)/(r*th*exf)
-!c
-!c
-!c	local pressure:
-!c
-!c	p = PT + scor_*(ps - PT)
-!c
-!c
-!c	local values of the exner function:
-!c
-!c	exnm = CP*(p/pref)**XKAP
-!c
-!c
-!c	in the unstable (convective) surface layer:
-!c	___________________________________________
-!c
-!c
-!c			Iversen and Nordeng(1987), pp. 16-17, eq.(3.18)
-!c
-!c
-!c	xfrco = 0.5*(sqrt(6859.0)-1), 	eq.(3.22), p.17
-!c
-!c	exfrco = 1.0/3.0
-!c
-!c	ustar = (fm/roas)**(1/2),		uxo = amax1(ustar, 0.00001)
-!c
-!c
-!c	Monin-Obhukov length:
-!c
-!c	defined
-!c 
-!c
-!c 	L = theta*ustar**3/(KARMAN*GRAV*<w*theta>),
-!c	
-!c		where 
-!c			<w*theta> = ustar*theta0
-!c
-!c	  = theta*ustar**2/(KARMAN*GRAV*theta0),
-!c
-!c	    	where 
-!c			fh = CP*ro*<w*theta> = CP*ro*ustar*theta0 
-!c			   = - CP*ro*Kz*d(theta)/dz
-!c
-!c	  = ps*ustar**3*CP/(xhar*GRAV*fh*r)
-!c
-!c		where theta is set equal to T at the surface; ps=ro*r*T
-!c
-!c
-!c	
-!c	the local eddy diffusivity, Iversen and Nordeng(1987), 
-!c				    eq.(3.21)
-!c
-!c	z/L > -2 :
-!c	-----------
-!c
-!c	xkhs = ustar*KARMAN*z/phi(z/L)
-!c		
-!c		where	phi(z/L) = 0.74/(1-9*((z/L))**0.5
-!c
-!c	xkdz  = xkhs*(1.0-4.5*(z/L)/(1.0-9.0*(z/L)))/z
-!c 
-!c
-!c	z/L <= -2 :
-!c	-----------
-!c
-!c	xkhs = ustar*KARMAN*z/phi(z/L)
-!c		
-!c		where	phi(z/L) = 0.74/(1-xfrco*((z/L))**exfrco
-!c
-!c	xkdz  = xkhs*(1.0-xfrco*(z/L)/(3.0*(1.0-xfrco*(z/L)))/z
-!c
-!c
-!c
-!c-->	in the unstable boundary layer:
-!c	_______________________________
-!c
-!c
-!c	the profile formulae for the exchange coefficients used
-!c	when the surface layer heat flux is directed upwards
-!c	(fh<0, upwards, away from the surface), is the 
-!c	O'Brien (1970)-relation.
-!c
-!c
-!c			Iversen and Nordeng(1987), pp. 16, eq.(3.17)
-!c
-!c
-!c	Kz	=	z*Kz(hs)/hs	if z < hs
-!c 	
-!c		=	zs_bnd*xkhs/hs	if zs_bnd <= hs
-!c
-!c	and
-!c
-!c	Kz	=	((zi-z)/(zi-hs))**2*{dK/dz*(hs)-Kz(zi)
-!c			+ (z-hs)[Kz(hs)+2*(Kz(hs)-Kz(zi))/(zi-hss)]}
-!c
-!c					if hs <= z < zi
-!c
-!c		=	xkzi*((zimz/zimhs)**2*(xkhs-xkzi
-!c			+ zmhs*(xkdz + 2.0*(xkhs-xkzi/zimhs))
-!c
-!c					if hs <= zs_bnd < ziu
-!c
-!c
-!c
-!c
-!c-->	in the stable surface layer (Stull (1988), p.361, eq.(9.4.1d)):
-!c	_______________________________________________________________
-!c
-!c	the atmospheric boundary layer is defined as stable as a whole 
-!c	when the surface layer heat flux is directed downwards.
-!c	However, local unstable layers are possible.
-!c
-!c	xkhs = ustar*KARMAN*z/phi(z/L)
-!c
-!c		where	phi(z/L) = 0.74 + 4.7*(z/L)
-!c
-!c
-!c
-!c-->	above the boundary layer (i.e. in the free atmosphere),
-!c	and in the stable boundary layer:
-!c	________________________________________________________
-!c
-!c
-!c	local mixing height, Iversen and Nordeng(1987), 
-!c				p. 15, eq.(3.13)
-!c
-!c	xlmix = KARMAN*z	, if z <= zm
-!c	xlmix = KARMAN*zm	, if z >  zm,	where zm = 200 m
-!c
-!c
-!c	local richardson number (Louis (1979), eq.(23), p.193):
-!c
-!c	ri = GRAV*d(z)*d(th)/(th*d(v)**2)
-!c
-!c
-!c	critical richardson number, Iversen and Nordeng(1987), 
-!c				    p. 16, eq.(3.16); modified !!!
-!c
-!c	ric0 = A*(d(z)/z0)**B, 	where	A = 0.115, B = 0.175,
-!c					d(z) is the model layer thickness
-!c					d(z0) = (1/100) m
-!c
-!c	ric = amax1(0.25, ric0), 	i.e. ric,min = 0.25
-!c
-!c
-!c	local eddy diffusivity, Iversen and Nordeng(1987), p. 15
-!c				and Louis(1979), eq.(21), p.193
-!c
-!c
-!c	xksig = xl2*|u|*F(ri)/|z|
-!c
-!c	where
-!c		xl2   = (KARMAN*amin1(zs_bnd, zimin))**2
-!c
-!c		F(ri) = sqrt(1.1-87*ri),   if ri <= 0
-!c		F(ri) = 1.1-ri/ric,	   if 0 < ri <= 0.5*ric
-!c		F(ri) = 1.0-ri/ric,	   if 0.5*ric < ri < ric
-!c		F(ri) = 0.001		   if ri >= ric
-!c
-!c
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!c
-!c.. the ventilation coefficient:
-!c
-!c
-!c     ven = |U|*A*dt
-!c
-!c     where
-!c
-!!          |U| = sqrt(u**2 + v**2)
-!!           A  = 2.*h/sqrt(pi)*zi
-!!           dt = 6.*60.*60.
-!c
-!c
-!ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!c............................................
 !c..the following sketches the sigma-surfaces:
 !c
 !c
@@ -1606,6 +1375,7 @@ private
 !ds rv1_6_x
  logical, parameter :: DEBUG_KZ = .false.
  logical, parameter :: PIELKE_KZ = .true.
+ logical, parameter :: TKE_DIFF = .false.
  logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
 
 
@@ -1654,43 +1424,32 @@ private
       zlimax = 3000.
       zimin = 100.
       zmmin = 200.
-      !ds-Kz kzmin = 1.e-3
-      !ds-Kz kzmax = 1.e3
-!hf      venmin=0.
-!hf      venmax= sqrt(umax**2 + umax**2)*xtime*2.*h/sqrt(PI)*zlimax
+
       eps = 0.01
       dtz = 3600.
       sm = 0.04
 !c
 !c
 !c..preset=zero:
-      do 5 k=1,KMAX_MID
-      do 5 i=1,MAXLIMAX
-            xksm(i,k)=0.
-            risig(i,k)=0.
-      do 5 j=1,MAXLJMAX
-            xksig(i,j,k)=0.
- 5    continue
+   xksm(:,:)   = 0
+   risig(:,:)  = 0.
+   xksig(:,:,:)= 0.
+
+
 !c..................................
 !c..exner-function in the full sigma-levels..
 !c
-      do 10 k=1,KMAX_MID
-      do 10 j=1,ljmax
-      do 10 i=1,limax
+  do  k=1,KMAX_MID
+    do j=1,ljmax
+     do i=1,limax
 !c
 !c..pressure (pa)
         p = PT + sigma_mid(k)*(ps(i,j,nr) - PT)
 !c..exner (j/k kg)
         exnm(i,j,k)=CP*(p/pref)**XKAP
-!c..temp (K):
-!hf never used        temp(i,j,k)=th(i,j,k,nr)*exnm(i,j,k)/CP
-!c
-!c..thadj (K):
-!c
-!hf never used         thadj(i,j,k)=th(i,j,k,nr)
-!hf      if (k.eq.KMAX_MID) thadj(i,j,KMAX_BND) = th2m(i,j,nr)
- 10   continue
-!c
+      end do
+    end do
+  end do
 
 !c.........................................
 !c..procedure to arrive at mixing height..:
@@ -1701,50 +1460,52 @@ private
 !c
 !ds-Kz      lim = 0.1
 !c..hj..test lim=1.
-      do 40 j=1,ljmax
-!c
+
+
+   do 40 j=1,ljmax
+
 !c..exner in half-sigma levels:
-         do 15 k=1,KMAX_BND
-         do 15 i=1,limax
-            p = PT + sigma_bnd(k)*(ps(i,j,nr) - PT)
-            pz(i,k) = p
-            exns(i,j,k)=CP*(p/pref)**XKAP  
+     do  k=1,KMAX_BND
+       do i=1,limax
+          p = PT + sigma_bnd(k)*(ps(i,j,nr) - PT)
+          pz(i,k) = p
+          exns(i,j,k)=CP*(p/pref)**XKAP  
+       end do
+     end do
 !c
- 15      continue
 !c
 !c.. exns(KMAX_BND), th(KMAX_BND) and height of sigmas:
-         do 16 i=1,limax
-            zs_bnd(i,j,KMAX_BND)=0.
- 16      continue
+     do  i=1,limax
+       zs_bnd(i,j,KMAX_BND)=0.
+     end do
 !c
 !c     Height of the half levels
 !c
-         do 17 k=KMAX_BND-1,1,-1 
-         do 17 i=1,limax
+     do  k=KMAX_BND-1,1,-1 
+       do i=1,limax
             zs_bnd(i,j,k)=zs_bnd(i,j,k+1)+th(i,j,k,nr)*&
                  (exns(i,j,k+1)-exns(i,j,k))/GRAV
 
- 17      continue
+       end do
+     end do
 !c
 !c..height of sigma:
-         do 18 k=1,KMAX_MID
-         do 18 i=1,limax
-            zm(i,k)=((exnm(i,j,k)-exns(i,j,k))*zs_bnd(i,j,k+1)&
-                   +(exns(i,j,k+1)-exnm(i,j,k))*zs_bnd(i,j,k))&
-                  /(exns(i,j,k+1)-exns(i,j,k))    
-!c
- 18      continue
-!c
-!c
-!c
-!c
+     do  k=1,KMAX_MID
+       do i=1,limax
+          zm(i,k) = ((exnm(i,j,k)-exns(i,j,k))*zs_bnd(i,j,k+1)&
+                  + (exns(i,j,k+1)-exnm(i,j,k))*zs_bnd(i,j,k))&
+                  / (exns(i,j,k+1)-exns(i,j,k))    
+       end do
+     end do
+
+
 !c----------------------------------------------------------------------
 !c...........................................
 !c..the following variables in sigmas-levels:
 !c
-         do 19 k=2,KMAX_MID
-            km=k-1
-         do 19 i=1,limax
+     do  k=2,KMAX_MID
+       km=k-1
+       do i=1,limax
 !c
 !c.........................
 !c..wind sheare
@@ -1752,16 +1513,6 @@ private
 !HF Slightly different formulation of dvdz than in metvar
         dvdz = ( (u(i,j,km,nr)-u(i,j,k,nr))**2 &
               + (v(i,j,km,nr)-v(i,j,k,nr))**2 + eps)
-!c
-!c.........................
-!c..the richardsons number:
-!c
-!!           risig(i,k)=(2.*GRAV/(th(i,j,km,nr)+th(i,j,k,nr)))*
-!c     +          (th(i,j,km,nr)-th(i,j,k,nr))*(zm(i,km)-zm(i,k))
-!c     +       / ( (u(i,j,km,nr)-u(i,j,k,nr))**2 + 
-!c     +         (v(i,j,km,nr)-v(i,j,k,nr))**2 + eps )
-!c
-!c..modified
 !c
             risig(i,k)=(2.*GRAV/(th(i,j,km,nr)+th(i,j,k,nr)))*&
                (th(i,j,km,nr)-th(i,j,k,nr))*(zm(i,km)-zm(i,k))&
@@ -1779,30 +1530,19 @@ private
             ric=amax1(0.25,ric0)
 !c
 
-!c.............
-!c..wind shear:
-!c
-!!           dvdz = ( (u(i,j,km,nr)-u(i,j,k,nr))**2 
-!c     +              + (v(i,j,km,nr)-v(i,j,k,nr))**2 )**0.5
-!c     +             /(zm(i,km)-zm(i,k))
-!c
-!c..modified
 !c
             dvdz = sqrt(dvdz)/(zm(i,km)-zm(i,k))
 
 !c..................................................................
 !c..exchange coefficient (Pielke,...)
  !ds alternative
-     if ( PIELKE_KZ  ) then
+       if ( PIELKE_KZ  ) then
           if (risig(i,k) > ric ) then
-              !xkds(k) = 0.1
-              !pw BUGxksig(i,j,k) = 0.1
               xksig(i,j,k) = KZ_MINIMUM
           else
-              !xkds(k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
               xksig(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
           end if
-     else
+       else
 
 !c..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
 !c
@@ -1817,7 +1557,8 @@ private
             endif
     end if ! Pielke or Blackadar
 !c
- 19      continue
+      end do
+    end do
 !c
 !ctttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
 !c
@@ -1870,8 +1611,8 @@ private
            nh2(i) = 1        	
         enddo
 !c
-	do 25 k=KMAX_MID,2,-1
-	do 25 i=1,limax
+  do k=KMAX_MID,2,-1
+     do i=1,limax
 
 	!ds-Kz if(xksm(i,k).ge.lim .and. nh2(i).eq.1) then
 	if(xksm(i,k) >= KZ_SBL_LIMIT .and. nh2(i) == 1) then
@@ -1880,9 +1621,10 @@ private
            nh2(i)=0   ! Now stable
         endif
 !c
-  25	continue
+     end do
+  end do
 !c
-        do 26 i=1,limax
+   do i=1,limax
 !c
         k=nh1(i)
 !c
@@ -1900,7 +1642,7 @@ private
 
 	endif
 !c
-  26    continue
+    end do
 !c
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c
@@ -1967,11 +1709,11 @@ private
 !c
 !c	endres til 29 etter at algoritmene er sammenlignet?
 !c
-		do 281 k=KMAX_MID,kabl,-1
-		xdth = thc(i,kabl)-thc(i,k)
-		dpidth(i) = exnm(i,j,k)*xdth*(pz(i,k+1)-pz(i,k))/GRAV
-		pidth(i) = pidth(i) + dpidth(i)
- 281		continue
+      do k=KMAX_MID,kabl,-1
+	 xdth = thc(i,kabl)-thc(i,k)
+	 dpidth(i) = exnm(i,j,k)*xdth*(pz(i,k+1)-pz(i,k))/GRAV
+	 pidth(i) = pidth(i) + dpidth(i)
+      end do
 !c
 !c
 	  		if(pidth(i).ge.delq(i).and.trc(i).eq.1.) then
@@ -2016,10 +1758,11 @@ private
 !c.....................................................................
 
 
-         do 35 i=1,limax
+    do i=1,limax
 
-            zixx(i,j)=amax1(ziu(i,j),zis(i))
-            zixx(i,j)=amin1(zlimax,zixx(i,j))
+      zixx(i,j)=amax1(ziu(i,j),zis(i))
+      zixx(i,j)=amin1(zlimax,zixx(i,j))
+    end do
 
  35      continue
 
@@ -2044,6 +1787,646 @@ private
 !cttttttttttttttttttttttttttttttttttttttttttttttttttttttt
 !c..height of ABL finished..............................
 !c------------------------------------------------------
+
+
+
+
+!----------------------------------------------------------!
+       if( TKE_DIFF ) then
+          call tkediff (nr)                            ! guta
+       else 
+          call O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  & 
+                     , exns, exnm, zixx )
+       end if
+!----------------------------------------------------------!       
+
+      end subroutine tiphys
+
+!c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+!c
+!c
+      subroutine smoosp(f,rmin,rmax)      
+
+!c	file: eulmet-mnd.f
+!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+!c
+!c	written by Trond Iversen,  modified by Hugo Jakobsen, 080994
+!       parallellized and modified by Peter February 2003
+!
+!c
+!c	Called from: tiphys.f
+!c
+!c----------------------------------------------------------------------
+!c
+!c	This routine applies the shapiro filter with s=0.5 and s=-0.5         
+!c	to the field f usinh h as a work space also the boundaries 
+!c	are smoothed. f contains the smoothed field upon return.
+!c
+
+!c    Definition of the variables:  
+!c
+!c
+!c	f	: data to be smoothed
+!c	iif	: =limax
+!c	jjf	: =ljmax
+!c	h1,h2	: = help variable
+!c	rmin	: min allowed
+!c	rmax	: max allowed
+!c
+implicit none
+!       real f(MAXLIMAX,MAXLJMAX),h1(0:MAXLIMAX+1,0:MAXLJMAX+1),rmin,rmax
+       real, intent(inout):: f(MAXLIMAX,MAXLJMAX)
+       real, intent(in):: rmin,rmax
+       real, dimension(MAXLIMAX+4,MAXLJMAX+4):: h1, h2
+
+    integer iif,jjf,is,i,j,ii,jj,iifl,jjfl
+    real s
+    real, dimension(MAXLIMAX,2) ::f_south,f_north
+    real, dimension(MAXLJMAX+2*2,2) ::f_west,f_east
+    integer  thick
+
+    iif=limax
+    jjf=ljmax
+
+    thick=2  !we fetch 2 neighbors at once, so that we don't need to call readneighbours twice
+    iifl=iif+2*thick
+    jjfl=jjf+2*thick
+
+    call readneighbors(f,f_south,f_north,f_west,f_east,thick)
+
+    do j=1,jjf
+       jj=j+thick
+       do i=1,iif
+          ii=i+thick
+          h1(ii,jj) = f(i,j)
+       enddo
+    enddo
+    do j=1,thick
+       do i=1,iif
+          ii=i+thick
+          h1(ii,j) = f_south(i,j)
+       enddo
+    enddo
+    do j=1,thick
+       jj=j+jjf+thick
+       do i=1,iif
+          ii=i+thick
+          h1(ii,jj) = f_north(i,j)
+       enddo
+    enddo
+    do j=1,jjfl
+       do i=1,thick
+          h1(i,j) = f_west(j,i)
+       enddo
+    enddo
+    do j=1,jjfl
+       do i=1,thick
+          ii=i+iif+thick
+          h1(ii,j) = f_east(j,i)
+       enddo
+    enddo
+
+    do j=1,jjfl
+       h2(1,j) = 0.
+       h2(iifl,j) = 0.
+    enddo
+    do i=1,iifl
+       h2(i,1) = 0.
+       h2(i,jjfl) = 0.
+    enddo
+ 44 format(I2,30F5.0)
+
+     do 30 is=2,1,-1                                          
+
+         s=is-1.5  !s=0,5 s=-0.5
+         if(is /= 2)h1=h2
+                                           
+!..the smoothing
+
+         do 20 j=2,jjfl-1
+            do 20 i=2,iifl-1
+               h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
+                    +0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))   &  
+                    +s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
+               h2(i,j) = amax1(h2(i,j),rmin)
+               h2(i,j) = amin1(h2(i,j),rmax)
+         20 continue                                        
+               
+30  continue                                      
+
+    do j=1,jjf
+       jj=j+thick
+       do i=1,iif
+          ii=i+thick
+          f(i,j)=h2(ii,jj) 
+       enddo
+    enddo
+                          
+      return  
+      end subroutine smoosp                                                             
+!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+   subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
+     
+     
+! Read data at the other side of the boundaries 
+!
+! thick is the number of gridcells in each direction to be transferred
+! Note that we also fetch data from processors in the "diagonal"
+! directions
+!
+! Written by Peter February 2003
+!
+!Comment from Peter after ds bug-fix:
+!The data_west(jj,:)=data(1,j) is not a bug: when there is no west neighbour, 
+!the data is simply copied from the nearest points: data_west(jj,:) should 
+!be =data(-thick+1:0,j), but since this data does not exist, we 
+!put it =data(1,j).
+
+!     use Par_ml , only : me,NPROC,limax,ljmax,MAXLIMAX,MAXLJMAX &
+!          ,neighbor,SOUTH,NORTH,WEST,EAST,NOPROC
+
+     implicit none
+
+     integer, intent(in) :: thick
+     real,intent(in), dimension(MAXLIMAX,MAXLJMAX) ::data
+     real,intent(out), dimension(MAXLIMAX,thick) ::data_south,data_north
+     real,intent(out), dimension(MAXLJMAX+2*thick,thick) ::data_west,data_east
+        
+     integer :: msgnr,info
+     integer :: i,j,tj,jj,jt
+     
+ !check that limax and ljmax are large enough
+     if(limax < thick .or. ljmax < thick)then
+        print *,'me, limax, ljmax, thick ', me, limax, ljmax, thick
+        call gc_abort(me,NPROC,"ERROR readneighbors")
+     endif
+     
+     msgnr=1
+
+     data_south(:,:)=data(:,1:thick)
+     data_north(:,:)=data(:,ljmax-thick+1:ljmax)
+     if(neighbor(SOUTH) >= 0 )then
+        call gc_rsend(msgnr,MAXLIMAX*thick,		&
+             neighbor(SOUTH), info, data_south, data_south)
+     endif
+     if(neighbor(NORTH) >= 0 )then
+        call gc_rsend(msgnr+9,MAXLIMAX*thick,		&
+             neighbor(NORTH), info, data_north, data_north)
+     endif
+     
+     if(neighbor(SOUTH) >= 0 )then
+        call gc_rrecv(msgnr+9,MAXLIMAX*thick,		&
+             neighbor(SOUTH), info, data_south, data_south)
+     else
+        do tj=1,thick
+           data_south(:,tj)=data(:,1)
+        enddo
+     endif
+ 44 format(I2,30F5.0)
+     if(neighbor(NORTH) >= 0 )then
+        call gc_rrecv(msgnr,MAXLIMAX*thick,		&
+             neighbor(NORTH), info, data_north, data_north)
+     else
+        do tj=1,thick
+           data_north(:,tj)=data(:,ljmax)
+        enddo
+     endif
+     
+     jj=0
+     do jt=1,thick
+        jj=jj+1
+        !ds bug ? data_west(jj,:)=data_south(:,jt)
+        ! may be wrong! Check also assignments below.
+        data_west(jj,:)=data_south(1:thick,jt)
+        data_east(jj,:)=data_south(limax-thick+1:limax,jt)
+     enddo
+     do j=1,ljmax
+        jj=jj+1
+        !ds bug ? data_west(jj,:)=data(:,j)
+        data_west(jj,:)=data(1:thick,j)
+        data_east(jj,:)=data(limax-thick+1:limax,j)
+     enddo
+     do jt=1,thick
+        jj=jj+1
+        !ds bug data_west(jj,:)=data_north(:,jt)
+        data_west(jj,:)=data_north(1:thick,jt)
+        data_east(jj,:)=data_north(limax-thick+1:limax,jt)
+     enddo
+     
+     if(neighbor(WEST) >= 0 )then
+        call gc_rsend(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(WEST), info, data_west, data_west)
+     endif
+     if(neighbor(EAST) >= 0 )then
+        call gc_rsend(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(EAST), info, data_east, data_east)
+     endif
+     
+     if(neighbor(WEST) >= 0 )then
+       call gc_rrecv(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(WEST), info, data_west, data_west)
+     else
+        jj=0
+        do jt=1,thick
+           jj=jj+1
+           data_west(jj,:)=data_south(1,jt)
+        enddo
+        do j=1,ljmax
+           jj=jj+1
+           data_west(jj,:)=data(1,j)
+        enddo
+        do jt=1,thick
+           jj=jj+1
+           data_west(jj,:)=data_north(1,jt)
+        enddo
+     endif
+     if(neighbor(EAST) >= 0 )then
+        call gc_rrecv(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
+             neighbor(EAST), info, data_east, data_east)
+     else
+        jj=0
+        do jt=1,thick
+           jj=jj+1
+           data_east(jj,:)=data_south(limax,jt)
+        enddo
+        do j=1,ljmax
+           jj=jj+1
+           data_east(jj,:)=data(limax,j)
+        enddo
+        do jt=1,thick
+           jj=jj+1
+           data_east(jj,:)=data_north(limax,jt)
+        enddo
+     endif
+
+   end subroutine readneighbors
+
+!************************************************************************!
+     subroutine tkediff (nr)                                             !
+!************************************************************************!
+!                                                                        !   
+!    This routine computes vertical eddy diffusivities as a function     !
+!    altitude, height of PBL, and a velocity scale, square root of       !
+!    turbulent kinetic energy (TKE). This is a non-local scheme.         !
+!    The TKE at the surface is diagnosed using scales for horizontaland  !
+!    vertical velocities (ustar and wstar) in the surface layer          !
+!    (Alapaty 2004; Holstag et al. 1990 and Mihailovic et al. 2004)      !
+!    PBL ht is calculated using the EMEP formulation                     !
+!                                                                        !
+!    Written by DT Mihailovic (October 2004)                             !
+!    EMEP polishing and comments: JE Jonson and P Wind                   !
+!************************************************************************!
+
+      implicit none
+      integer i, j, k, l, kcbl
+
+!     Local constants
+      real   , parameter :: SZKM=1600.     &    ! Constant (Blackadar, 1976)
+             ,              CKZ=0.001      &    ! Constant (Zhang and Athens, 1982)
+             ,              REFPR=1.0E+05  &    ! Referent pressure
+             ,              KZ0LT=1.0E-04  &    ! Constant (Alapaty et al., 1997)
+             ,              RIC=0.10       &    ! Critical Richardson number (Holstlag et al., 1993)
+             ,              ROVG=R/GRAV         ! Used in Calculation of R-number
+      integer, parameter :: KLM =KMAX_MID-1   
+
+!     INPUT      
+      integer                              nr              ! Number of meteorological stored
+                                                           ! in arrays (1 or 2)
+     
+!     OUTPUT
+!     skh(i,j,k,nr) array    
+!     Values of the Kz coefficients (eddyz (i,j,k)) are transformed nto sigma system and
+!     then they stored in this array which is later used in ADVECTION module     
+
+
+!     Local arrays 
+   
+      integer, dimension(MAXLIMAX,MAXLJMAX)      ::iblht      ! Level of the PBL top
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: t_virt    ! Potential temperature (K)
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND):: eddyz     ! Eddy coefficients (m2/s)
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: e         ! Kinetic energy with respect to height                                                               ! (m2/s2)
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: dzq       ! Tickness of sigma interface layers (m)
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: u_mid     ! Wind speed in x-direction (m/s)  
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: v_mid     ! Wind speed in y-direction (m/s)       
+      real, dimension(MAXLIMAX,MAXLJMAX,KLM):: dza            ! Tickness of half sigma layers (m)
+
+      real, dimension(MAXLIMAX,MAXLJMAX):: pblht ,            &! PBL (Holstag, 1990) (m)    
+                                           h_flux,            &! Sensible heat flux  (W/m2)
+                                           ust_r ,            &! Friction velocity (m/s) 
+                                           ro_sur,            &! Air density (kg/m3)
+                                           mol   ,            &! Monin-obukhov length (m)
+                                           wstar               ! Convective velocity (m/s)
+                                                       
+      real, dimension(KMAX_BND) :: rib                         ! Bulk Richardson number 
+      real, dimension(KMAX_MID) :: rich,                      &! Richardson number 
+                                   psi_zi               ! Array used in the vertical integration
+      real, dimension (10) :: psi_z, zovh               ! Arrays used for calculating the TKE
+
+!     Local variables
+      real dtmp, tog, wssq1, wssq2, wssq, tconv, wss, wst, PSI_TKE,    &
+           dusq, dvsq, ri, ss, dthdz, busfc, zvh,                      &
+           part1, part2, fract1, fract2, apbl, fac0, fac02, kz0,       &
+           cell, dum1, rpsb, press, teta_h, u_s, goth, pressure
+
+!     Functions for averaging the vertical turbulent kinetic energy (Alapaty, 2003)
+      data psi_z /0.00,2.00,1.85,1.51,1.48,1.52,1.43,1.10,1.20,0.25/
+      data zovh  /0.00,0.05,0.10,0.20,0.40,0.60,0.80,1.00,1.10,1.20/
+
+!     Store the NMW meteorology and variables derived from its
+   
+!     Change the sign
+      h_flux(1:limax,1:ljmax)=-fh(1:limax,1:ljmax,nr)  ! Sensible heat flux (W/m2)
+
+!     Avoid devision by zero later in the code
+     
+      where (ABS(h_flux(1:limax,1:ljmax))<0.0001) h_flux(1:limax,1:ljmax)=0.0001 
+
+!     Check PBL height
+      do i=1,limax
+       do j=1,ljmax
+            if(ABS(pzpbl(i,j)) < 1.) then
+              pzpbl(i,j)=100. 
+            endif
+        enddo 
+       enddo
+
+!     Calculate velocity components in the (h) poits (Arakawa notation)
+      do k=1,KMAX_MID
+       do i=1,limax
+        do j=1,ljmax
+!          u_mid(i,j,k)=0.5*(u(i-1,j  ,k,nr)+u(i,j,k,nr))
+!          v_mid(i,j,k)=0.5*(v(i  ,j-1,k,nr)+v(i,j,k,nr))
+ 
+          u_mid(i,j,k)=u(i,j  ,k,nr)
+          v_mid(i,j,k)=v(i  ,j,k,nr)
+               
+       enddo
+       enddo
+      enddo
+
+!     Avoid small values
+      where (ABS(u_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) u_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
+      where (ABS(v_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) v_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
+
+!     Initialize eddy difussivity arrays
+      eddyz(1:limax,1:ljmax,1:KMAX_MID)=0.
+
+!     Calculate tickness of the layers
+      dzq(1:limax,1:ljmax,1:KMAX_MID)=z_bnd(1:limax,1:ljmax,1:KMAX_MID)-  &
+                                      z_bnd(1:limax,1:ljmax,2:KMAX_BND)     ! Full levels
+      dza(1:limax,1:ljmax,1:KLM)=z_mid(1:limax,1:ljmax,1:KLM)-          &
+                                 z_mid(1:limax,1:ljmax,2:KMAX_MID)          ! Half-sigma lavels
+
+!     Calculate virtual temperature
+
+      t_virt(1:limax,1:ljmax,1:KMAX_MID)=th(1:limax,1:ljmax,1:KMAX_MID,nr)*     &
+                    (1.0+0.622*q(1:limax,1:ljmax,1:KMAX_MID,nr))
+
+
+!     Calculate Monin-Obuhkov length   (Garratt, 1994)
+
+      do i=1,limax
+       do j=1,ljmax
+         ro_sur(i,j)=ps(i,j,nr)/(XKAP*th2m(i,j,nr)*                     &
+                     CP*(ps(i,j,nr)/REFPR)**XKAP)      ! Surface density
+           if(foundustar) then
+             ust_r(i,j)=ustar(i,j,1)
+           else
+             ust_r(i,j)=SQRT(fm(i,j,nr)/ro_sur(i,j))
+             ust_r(i,j)=AMAX1(ust_r(i,j),0.00001)
+           endif
+         u_s=ust_r(i,j)
+         mol(i,j)=-(ps(i,j,nr)*u_s*u_s*u_s)/                        &
+                   (KARMAN*GRAV*h_flux(i,j)*XKAP)
+       enddo
+      enddo
+
+!     Calculate the convective velocity (wstar)
+      do i=1,limax
+       do j=1,ljmax
+        wstar(i,j)=GRAV*h_flux(i,j)*pzpbl(i,j)/ro_sur(i,j)/CP/th(i,j,KMAX_MID,nr)
+           if(wstar(i,j) < 0.) then
+            wstar(i,j)=-ABS(wstar(i,j))**(0.3333)
+           else
+            wstar(i,j)=(wstar(i,j))**(0.3333)
+           endif
+       enddo
+      enddo
+
+!                            ------------------------------------------>
+!     Start with a long loop ------------------------------------------>
+!                            ------------------------------------------>
+      DO  i=1,limax
+      DO  j=1,ljmax
+
+       rib(1:KMAX_MID) = 0.0                        ! Initialize bulk Richardson number
+
+       part1=ust_r(i,j)*ust_r(i,j)*ust_r(i,j)
+       wst=AMAX1(wstar(i,j),1.0E-20)
+       part2=0.6*wst*wst*wst
+       wss=AMAX1(1.0E-4,(part1+part2))
+       wss=EXP(0.333333*ALOG(wss))
+
+       if (h_flux(i,j) < 0.0) then
+        tconv=0.0                                   ! Holstlag et al. (1990)
+       else
+        tconv=8.5*h_flux(i,j)/ro_sur(i,j)/CP/wss    !Conversion to kinematic flux
+      endif
+
+      do k=KMAX_MID,1,-1
+        dtmp=t_virt(i,j,k)-t_virt(i,j,KMAX_MID)-tconv
+        tog=0.5*(t_virt(i,j,k)+t_virt(i,j,KMAX_MID))/GRAV
+        wssq1=u_mid(i,j,k)*u_mid(i,j,k)
+        wssq2=v_mid(i,j,k)*v_mid(i,j,k)
+        wssq=wssq1+wssq2
+        wssq=AMAX1(wssq,1.0E-4)
+        rib(k)=z_mid(i,j,k)*dtmp/(tog*wssq)
+        if(rib(k).ge.RIC) go to 9001
+      enddo
+9001  continue
+
+!     Calculate PBL height according to Holtslag et al. (1993)
+      pblht(i,j)=0.
+          if(k.ne.KMAX_MID) then
+            fract1=(RIC-rib(k+1))/(rib(k)-rib(k+1))
+            fract2=1.-fract1
+            apbl=z_mid(i,j,k)*fract1
+            pblht(i,j)=apbl+z_mid(i,j,k+1)*fract2
+                if(pblht(i,j) > z_bnd(i,j,k+1)) then
+                   kcbl=k
+                else
+                   kcbl=k+1
+                endif
+           endif
+      iblht(i,j)=kcbl
+
+      if(pblht(i,j)<z_bnd(i,j,KMAX_MID)) then
+         pblht(i,j)=z_bnd(i,j,KMAX_MID)
+         iblht(i,j)=KMAX_MID
+      endif
+
+
+      if(pblht(i,j).le.100.) then              !Minimum of PBL height
+         pblht(i,j)=100.
+      endif
+            
+!     Find the critical Richardson number (Shir and Borestein, 1976)
+      do k=2,iblht(i,j)-1
+       rich(k)=0.257*dza(i,j,k)**0.175
+      enddo
+
+!     Free troposphere and cloudy case Kz values estimation
+      do k=2,iblht(i,j)-1
+        dusq=(u_mid(i,j,k-1)-u_mid(i,j,k))*(u_mid(i,j,k-1)-u_mid(i,j,k))
+        dvsq=(v_mid(i,j,k-1)-v_mid(i,j,k))*(v_mid(i,j,k-1)-v_mid(i,j,k))
+        ss=(dusq+dvsq)/(dza(i,j,k-1)*dza(i,j,k-1))+1.E-9
+        goth=2.*GRAV/(t_virt(i,j,k-1)+t_virt(i,j,k))
+        dthdz=(t_virt(i,j,k-1)-t_virt(i,j,k))/dza(i,j,k-1)
+        ri=goth*dthdz/ss
+
+!     (Duran and Clemp, 1982)
+
+      kz0=CKZ*dzq(i,j,k)
+       if (ri-rich(k) > 0.) then
+         eddyz(i,j,k)=kz0
+       else
+         eddyz(i,j,k)=kz0+SZKM*SQRT(ss)*(rich(k)-ri)/rich(k)
+       endif
+          eddyz(i,j,k)=AMIN1(eddyz(i,j,k),100.)
+      enddo
+
+!     Eddy diffusivity coefficients for all regimes in the mixed layer
+
+      do  k=iblht(i,j),KMAX_MID
+          if (mol(i,j) < 0.0) then                 !Unstable conditions
+             ri=(1.0-15.*z_mid(i,j,k)/mol(i,j))**(-0.25)
+             ri=ri/KARMAN/z_mid(i,j,k)
+             ri=ri*AMAX1(0.0,pblht(i,j)-z_mid(i,j,k))
+             dthdz=ri*ust_r(i,j)**3.
+             goth=AMAX1(wstar(i,j),0.0)
+             dusq=0.4*goth**3.
+             ri=(dthdz+dusq)**(2./3.)
+             e(i,j,k)=0.5*ri*(2.6)**(2./3.)        !Moeng and Sullivan (1994)
+          else
+             ri=z_bnd(i,j,k)/pblht(i,j)               !Stable
+             ri=z_mid(i,j,k)/pblht(i,j)               !New
+             ri=(1.0-ri)
+             ri=AMAX1(0.0,ri)
+             ri=(1.0-ri)**1.75
+             e(i,j,k)=6.*ust_r(i,j)*ust_r(i,j)*ri  !Lenshow(1988)
+          endif
+
+!     Calculate Ksi function using interpolation in the vertical
+!     Alapaty (2001, 2003)
+
+      zvh=z_mid(i,j,k)/pblht(i,j)
+          do l=1,9
+             if (zvh > zovh(l).and.                                    &
+                 zvh < zovh(l+1)) then
+               psi_zi(k)=(psi_z(l+1)-psi_z(l))/(zovh(l+1)-zovh(l))
+               psi_zi(k)=psi_zi(k)*(zvh-zovh(l))
+               psi_zi(k)=psi_zi(k)+psi_z(l)
+               psi_zi(k)=psi_zi(k)/2.0               !Normalized the value
+             endif
+          enddo
+       enddo
+
+!      Calculate integral for Ksi
+       psi_tke=0.
+        do k=KMAX_MID,iblht(i,j),-1
+          psi_tke=psi_tke+psi_zi(k)*dzq(i,j,k)*sqrt(e(i,j,k))
+        enddo
+       psi_tke=psi_tke/pblht(i,j)
+
+       do k=iblht(i,j),KMAX_MID                           !Calculate coefficients
+        goth=psi_tke
+        goth=goth*KARMAN*z_mid(i,j,k)
+        dthdz=z_mid(i,j,k)/pblht(i,j)
+        dthdz=1.0-dthdz
+        dthdz=AMAX1(1.0E-2,dthdz)
+          if(mol(i,j) > 0.0) then                         !Stable
+             goth=sqrt(e(i,j,iblht(i,j)))                 ! Mihailovic (2004)
+             goth=goth*KARMAN*z_mid(i,j,k)                 ! -----------------
+             dthdz=z_mid(i,j,k)/pzpbl(i,j)                 ! -----------------
+             dthdz=1.0-dthdz
+             dthdz=AMAX1(1.0E-2,dthdz)
+             busfc=0.74+4.7*z_mid(i,j,KMAX_MID)/mol(i,j)     
+             busfc=AMAX1(busfc,1.0)
+!             dthdz=dthdz*dthdz
+              dthdz=dthdz**1.50                                  !test (2004)
+              eddyz(i,j,k)=goth*dthdz/busfc
+          else
+             dthdz=dthdz*dthdz
+             busfc=1.0
+             eddyz(i,j,k)=goth*dthdz/busfc
+          endif
+       enddo
+
+!      Checking procedure
+       do k=2,iblht(i,j)-1
+         if(eddyz(i,j,k).le.0.0) THEN
+          eddyz(i,j,k)= KZ0LT
+         endif
+       enddo
+
+!      Avoid phisically unrealistic values
+       do k=2,KMAX_MID
+        IF(eddyz(i,j,k).le.0.1) then
+           eddyz(i,j,k)=0.1
+        endif
+       enddo
+
+!     To avoid loss of mass/energy through top of the model
+!     put eddyz (I,J,K) to zero at the last  level from top
+      eddyz(i,j,KMAX_BND)=0.0
+
+!     Calculate eddy coefficients at the interfaces
+      do k=2,KMAX_MID
+       eddyz(i,j,k)=0.5*(eddyz(i,j,k-1)+eddyz(i,j,k)) !!
+
+!              if(i.eq.10.and.j.eq.10.) then
+!             if (abs(u(i,j  ,k,nr)-u_mid(i,j,k)).gt.5.) then
+!
+!       print *,"NEW ",i,j,u(i,j  ,KMAX_MID,nr),u_mid(i,j,KMAX_MID)
+!              endif
+      enddo
+ 
+!     Transform values of the eddy coeficients into the the sigma coordinate
+    
+      do k=2,KMAX_MID
+       eddyz(i,j,k)=eddyz(i,j,k)*((sigma_mid(k)-sigma_mid(    k-1))/   &
+                                 (    z_mid(i,j,k)-z_mid(i,j,k-1)))**2.
+
+      enddo
+
+      ENDDO                  !---------------------------------------->
+      ENDDO                  !---------------------------------------->
+                             !---------------------------------------->
+
+!     Store diffusivity coefficients into skh(i,j,k,nr) array
+      do k=2,KMAX_MID
+       do i=1,limax
+        do j=1,ljmax
+            skh(i,j,k,nr)=eddyz(i,j,k)
+         enddo
+        enddo
+       enddo
+
+   ! For plotting set pblht  =  pzpbl
+     
+   pzpbl(:,:) = pblht(:,:)
+                     
+       RETURN 
+       end subroutine tkediff
+!---------------------------------------------------------------
+
+
+!************************************************************************!
+     subroutine O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
+                      , exns, exnm, zixx )                            !
+!************************************************************************!
+
 !c......................................................
 !c..exchange coefficients for convective boundary layer:
 !c..o'brien's profile formula:
@@ -2051,6 +2434,54 @@ private
 !c
 !c..constants for free-convection limit:
 !c
+
+ integer, intent(in) :: nr
+
+
+ real, intent(in) :: zimin        &
+                    ,KZ_MINIMUM   &
+                    ,KZ_MAXIMUM
+
+ real,intent(in), dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: zs_bnd &
+                                                          ,exns   
+ real,intent(in), dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: exnm 
+
+ real,intent(in), dimension(MAXLIMAX,MAXLJMAX) :: ziu    &
+                                                 ,zixx
+
+
+  real :: h100   & ! Top of lowest layer - replaces 100.0 
+         ,xfrco  &
+         ,exfrco &
+         ,sm     &
+         ,ux0    &
+         ,hsl    &
+         ,hsurfl &
+         ,zimhs  &
+         ,zimz   &
+         ,zmhs   &
+         ,fac    &
+         ,fac2   &
+         ,dex12  &
+         ,ro
+
+
+  integer :: i,j,k
+
+! local arrays:
+  real, dimension(MAXLIMAX)::   xkh100  &
+                                ,xkhs    &
+                                ,xkdz    &
+                                ,xkzi    &
+                                ,hs      
+
+
+  real, dimension(MAXLIMAX,MAXLJMAX) ::roas   &
+                                      ,help
+
+      sm = 0.04
+
+
       xfrco=0.5*(sqrt(6859.)-1)
       exfrco=1./3.
 
@@ -2279,267 +2710,12 @@ private
 !c
 !hf not needed      call smoosp(ven,limax,ljmax,iip,jjp,venmin,venmax)
 
-      end subroutine tiphys
 
-!c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!c
-!c
-      subroutine smoosp(f,rmin,rmax)      
+!c++++++++++++++++
+                     
+       RETURN 
+       end subroutine O_Brian
 
-!c	file: eulmet-mnd.f
-!cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!c
-!c	written by Trond Iversen,  modified by Hugo Jakobsen, 080994
-!       parallellized and modified by Peter February 2003
-!
-!c
-!c	Called from: tiphys.f
-!c
-!c----------------------------------------------------------------------
-!c
-!c	This routine applies the shapiro filter with s=0.5 and s=-0.5         
-!c	to the field f usinh h as a work space also the boundaries 
-!c	are smoothed. f contains the smoothed field upon return.
-!c
-
-!c    Definition of the variables:  
-!c
-!c
-!c	f	: data to be smoothed
-!c	iif	: =limax
-!c	jjf	: =ljmax
-!c	h1,h2	: = help variable
-!c	rmin	: min allowed
-!c	rmax	: max allowed
-!c
-implicit none
-!       real f(MAXLIMAX,MAXLJMAX),h1(0:MAXLIMAX+1,0:MAXLJMAX+1),rmin,rmax
-       real, intent(inout):: f(MAXLIMAX,MAXLJMAX)
-       real, intent(in):: rmin,rmax
-       real, dimension(MAXLIMAX+4,MAXLJMAX+4):: h1, h2
-
-    integer iif,jjf,is,i,j,ii,jj,iifl,jjfl
-    real s
-    real, dimension(MAXLIMAX,2) ::f_south,f_north
-    real, dimension(MAXLJMAX+2*2,2) ::f_west,f_east
-    integer  thick
-
-    iif=limax
-    jjf=ljmax
-
-    thick=2  !we fetch 2 neighbors at once, so that we don't need to call readneighbours twice
-    iifl=iif+2*thick
-    jjfl=jjf+2*thick
-
-    call readneighbors(f,f_south,f_north,f_west,f_east,thick)
-
-    do j=1,jjf
-       jj=j+thick
-       do i=1,iif
-          ii=i+thick
-          h1(ii,jj) = f(i,j)
-       enddo
-    enddo
-    do j=1,thick
-       do i=1,iif
-          ii=i+thick
-          h1(ii,j) = f_south(i,j)
-       enddo
-    enddo
-    do j=1,thick
-       jj=j+jjf+thick
-       do i=1,iif
-          ii=i+thick
-          h1(ii,jj) = f_north(i,j)
-       enddo
-    enddo
-    do j=1,jjfl
-       do i=1,thick
-          h1(i,j) = f_west(j,i)
-       enddo
-    enddo
-    do j=1,jjfl
-       do i=1,thick
-          ii=i+iif+thick
-          h1(ii,j) = f_east(j,i)
-       enddo
-    enddo
-
-    do j=1,jjfl
-       h2(1,j) = 0.
-       h2(iifl,j) = 0.
-    enddo
-    do i=1,iifl
-       h2(i,1) = 0.
-       h2(i,jjfl) = 0.
-    enddo
- 44 format(I2,30F5.0)
-
-     do 30 is=2,1,-1                                          
-
-         s=is-1.5  !s=0,5 s=-0.5
-         if(is /= 2)h1=h2
-                                           
-!..the smoothing
-
-         do 20 j=2,jjfl-1
-            do 20 i=2,iifl-1
-               h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
-                    +0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))   &  
-                    +s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
-               h2(i,j) = amax1(h2(i,j),rmin)
-               h2(i,j) = amin1(h2(i,j),rmax)
-         20 continue                                        
-               
-30  continue                                      
-
-    do j=1,jjf
-       jj=j+thick
-       do i=1,iif
-          ii=i+thick
-          f(i,j)=h2(ii,jj) 
-       enddo
-    enddo
-                          
-      return  
-      end subroutine smoosp                                                             
-!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-   subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
-     
-     
-! Read data at the other side of the boundaries 
-!
-! thick is the number of gridcells in each direction to be transferred
-! Note that we also fetch data from processors in the "diagonal"
-! directions
-!
-! Written by Peter February 2003
-!
-!Comment from Peter after ds bug-fix:
-!The data_west(jj,:)=data(1,j) is not a bug: when there is no west neighbour, 
-!the data is simply copied from the nearest points: data_west(jj,:) should 
-!be =data(-thick+1:0,j), but since this data does not exist, we 
-!put it =data(1,j).
-
-!     use Par_ml , only : me,NPROC,limax,ljmax,MAXLIMAX,MAXLJMAX &
-!          ,neighbor,SOUTH,NORTH,WEST,EAST,NOPROC
-
-     implicit none
-
-     integer, intent(in) :: thick
-     real,intent(in), dimension(MAXLIMAX,MAXLJMAX) ::data
-     real,intent(out), dimension(MAXLIMAX,thick) ::data_south,data_north
-     real,intent(out), dimension(MAXLJMAX+2*thick,thick) ::data_west,data_east
-
-     integer :: msgnr,info
-     integer :: i,j,tj,jj,jt
-     
- !check that limax and ljmax are large enough
-     if(limax < thick .or. ljmax < thick)then
-        print *,'me, limax, ljmax, thick ', me, limax, ljmax, thick
-        call gc_abort(me,NPROC,"ERROR readneighbors")
-     endif
-     
-     msgnr=1
-
-     data_south(:,:)=data(:,1:thick)
-     data_north(:,:)=data(:,ljmax-thick+1:ljmax)
-     if(neighbor(SOUTH) >= 0 )then
-        call gc_rsend(msgnr,MAXLIMAX*thick,		&
-             neighbor(SOUTH), info, data_south, data_south)
-     endif
-     if(neighbor(NORTH) >= 0 )then
-        call gc_rsend(msgnr+9,MAXLIMAX*thick,		&
-             neighbor(NORTH), info, data_north, data_north)
-     endif
-     
-     if(neighbor(SOUTH) >= 0 )then
-        call gc_rrecv(msgnr+9,MAXLIMAX*thick,		&
-             neighbor(SOUTH), info, data_south, data_south)
-     else
-        do tj=1,thick
-           data_south(:,tj)=data(:,1)
-        enddo
-     endif
- 44 format(I2,30F5.0)
-     if(neighbor(NORTH) >= 0 )then
-        call gc_rrecv(msgnr,MAXLIMAX*thick,		&
-             neighbor(NORTH), info, data_north, data_north)
-     else
-        do tj=1,thick
-           data_north(:,tj)=data(:,ljmax)
-        enddo
-     endif
-     
-     jj=0
-     do jt=1,thick
-        jj=jj+1
-        !ds bug ? data_west(jj,:)=data_south(:,jt)
-        ! may be wrong! Check also assignments below.
-        data_west(jj,:)=data_south(1:thick,jt)
-        data_east(jj,:)=data_south(limax-thick+1:limax,jt)
-     enddo
-     do j=1,ljmax
-        jj=jj+1
-        !ds bug ? data_west(jj,:)=data(:,j)
-        data_west(jj,:)=data(1:thick,j)
-        data_east(jj,:)=data(limax-thick+1:limax,j)
-     enddo
-     do jt=1,thick
-        jj=jj+1
-        !ds bug data_west(jj,:)=data_north(:,jt)
-        data_west(jj,:)=data_north(1:thick,jt)
-        data_east(jj,:)=data_north(limax-thick+1:limax,jt)
-     enddo
-     
-     if(neighbor(WEST) >= 0 )then
-        call gc_rsend(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(WEST), info, data_west, data_west)
-     endif
-     if(neighbor(EAST) >= 0 )then
-        call gc_rsend(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(EAST), info, data_east, data_east)
-     endif
-     
-     if(neighbor(WEST) >= 0 )then
-       call gc_rrecv(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(WEST), info, data_west, data_west)
-     else
-        jj=0
-        do jt=1,thick
-           jj=jj+1
-           data_west(jj,:)=data_south(1,jt)
-        enddo
-        do j=1,ljmax
-           jj=jj+1
-           data_west(jj,:)=data(1,j)
-        enddo
-        do jt=1,thick
-           jj=jj+1
-           data_west(jj,:)=data_north(1,jt)
-        enddo
-     endif
-     if(neighbor(EAST) >= 0 )then
-        call gc_rrecv(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(EAST), info, data_east, data_east)
-     else
-        jj=0
-        do jt=1,thick
-           jj=jj+1
-           data_east(jj,:)=data_south(limax,jt)
-        enddo
-        do j=1,ljmax
-           jj=jj+1
-           data_east(jj,:)=data(limax,j)
-        enddo
-        do jt=1,thick
-           jj=jj+1
-           data_east(jj,:)=data_north(limax,jt)
-        enddo
-     endif
-     
-   end subroutine readneighbors
 end module met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

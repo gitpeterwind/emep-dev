@@ -1,3 +1,23 @@
+============== Joffen (Peter) 7/3-2005       , rv2_1_9 =====================
+
+Additional meteo prameters are read: cloud convection and sea surface temp (ccc and sst)
+
+Gutas parameterization of the boundary layer turbulaence and the old parameterization are both included. To choose between them the logical parameter  TKE_DIFF has to be set.
+
+In addition some cleaning up of outdated programming has been done, as
+do xxx i = 1, iend
+
+
+xxx continue
+
+where xxx is a number
+
+has been replaced by
+do i = 1,iend
+
+end do
+
+
 ============== Peter 21/2-2005            , rv2_1_8 =====================
 
 Moved the parameter NTDAY from Derived_ml into ModelConstant_ml.
