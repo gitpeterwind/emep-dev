@@ -145,11 +145,11 @@ contains
     ident(11) = GJMAX
 
     if(identi(17) > 0)then !pw test for standard felt-format
-    ident(15) = 100 * ( nint(xp)  - (ISMBEG - 1) )
-    ident(16) = 100 * ( nint(yp)  - (JSMBEG - 1) )
-       !ds rv1.2 else
-       !ds rv1.2 ident(15) = ( nint(xp)  - (ISMBEG - 1) ) +28  !+28 and -11 are to be removed!!!!
-       !ds rv1.2 ident(16) = ( nint(yp)  - (JSMBEG - 1) ) -11  !
+       ident(15) = 100 * ( nint(xp)  - (ISMBEG - 1) )
+       ident(16) = 100 * ( nint(yp)  - (JSMBEG - 1) )
+    else
+       ident(15) = ( nint(xp)  - (ISMBEG - 1) )  
+       ident(16) = ( nint(yp)  - (JSMBEG - 1) )  
     endif
 
 
