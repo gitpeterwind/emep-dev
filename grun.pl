@@ -60,6 +60,7 @@ $year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 # NEW: iyr_trend can be set to meteorology year or arbitrary year, say 2050
 $iyr_trend = $year;  
+#$iyr_trend = "2010";     # For CLE runs, SR runs, etc.
 
 print "Year is $yy YEAR $year\n";
 
@@ -84,7 +85,7 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $DAVE ;      
+$USER        =  $PETER ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -107,7 +108,8 @@ if ( $OZONE ) {
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
      $testv       = "rv1_9_5";
-     $runlabel    = "${testv}_DUMMYTEXT_$year";   # NO SPACES!
+     $runlabel1    = "CLE";   # NO SPACES! SHORT name (used in CDF names)
+     $runlabel2    = "${testv}_CLE_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -119,8 +121,7 @@ $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and
 $version     = "Unimod" ;  
 $subv        = "$testv" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-#HF $ProgDir     = "$USER/CVS/rv1.3.1_Aq/$version";  # input of source-code
-$ProgDir     = "$USER/Unify/$version.$testv"; # input of source-code
+$ProgDir     = "$USER/Unify/$testv"; # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
@@ -129,10 +130,11 @@ $femis       = "$MyDataDir/femis.dat";      # emission control file
 
 # Fixed
 #$emisdir     = "$SVETLANA/Unify/MyData/emission";   # emissions directory
-#$emisdir     = "$HILDE/emis/modrun03";   # emissions directory
 #Latest: (not used for PM though).
-$emisdir     = "$HILDE/emis/trends2003"; # emissions directory
-$emisyear    = "$emisdir/emis${yy}-V3";    # emissions
+#$emisdir     = "$HILDE/emis/trends2003"; # emissions directory
+#$emisyear    = "$emisdir/emis${yy}-V3";    # emissions
+$emisdir     = "$PETER/Unify/MyData/"; # emissions directory
+$emisyear    = "$emisdir/2010_CLE_2000";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 
 # Specify small domain if required. 
@@ -154,8 +156,8 @@ $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
 
-$NDX   =  4;           # Processors in x-direction
-$NDY   =  8;           # Processors in y-direction
+$NDX   =  8;           # Processors in x-direction
+$NDY   =  4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
 
@@ -168,7 +170,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM =  3;       # for testing, simply reset here
+# $NTERM =  12;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -445,11 +447,11 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
     mylink( "Split voc", $old,$new ) ;
 
 foreach $poll  ( @emislist  ) {
-  if ( $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
-   $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
-  } else {
+#  if ( $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
+#   $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
+#  } else {
    $old   = "$emisyear/grid$gridmap{$poll}" ;
-  }
+#  }
    $new   = "emislist.$poll";
    mylink( "Emis $poll : ", $old,$new ) ;
 
@@ -551,12 +553,12 @@ foreach $datafile ( qw ( Volcanoes.dat tf2_gfac1.dat tf2_gfac2.dat tf2_biomass.d
 
 foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
-        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL $runlabel";
+        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2";
 
 if ( $INTERACTIVE ) {
   die " -- INTERACTIVE: can now run for inputs: NTERM, NASS,  EXCLU, NDX, NDY 
   with mpirun -np 1 prog.exe << XXX
-  $NTERM\n$NASS\n$iyr_trend\n${runlabel}\nXXX"; 
+  $NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\nXXX"; 
 }
 
     #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 
@@ -569,7 +571,7 @@ if ( $INTERACTIVE ) {
     
     #print PROG "$NTERM\n\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
     #print PROG "$NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
-    print PROG "$NTERM\n$NASS\n$iyr_trend\n${runlabel}\n";
+    print PROG "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n";
     close(PROG);
 }
 #------------    End of Run model -------------------------------------

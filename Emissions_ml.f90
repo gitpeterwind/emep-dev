@@ -320,17 +320,17 @@ contains
     if ( me == 0 ) then
         write(unit=6,fmt=*) "Country totals"
         write(unit=IO_LOG,fmt=*) "Country totals"
-        write(unit=6,fmt="(a4,3x,10a12)") " CC ",(EMIS_NAME(iem),iem=1,NEMIS)
-        write(unit=IO_LOG,fmt="(a4,3x,10a12)") " CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+        write(unit=6,fmt="(2a4,3x,10a12)")  " N"," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+        write(unit=IO_LOG,fmt="(2a4,3x,10a12)") " N"," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
 
         do ic = 1, NLAND
            ccsum = sum( sumemis(ic,:) )
            if ( ccsum > 0.0 ) then
-               write(unit=6,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
-                         (sumemis(ic,i),i=1,NEMIS)
-                write(unit=IO_LOG,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
-                         (sumemis(ic,i),i=1,NEMIS)
-             end if
+                    write(unit=6,fmt="(i3,1x,a4,3x,8f12.2)") &
+                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS)
+                    write(unit=IO_LOG,fmt="(i3,1x,a4,3x,8f12.2)")& 
+                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS)
+           end if
         end do
     end if
 
