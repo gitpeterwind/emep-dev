@@ -200,6 +200,7 @@ elseif(iotyp==IOU_MON)then
    fileName = fileName_month
 elseif(iotyp==IOU_DAY)then
    fileName = fileName_day
+   return !too slow in the rpesent version!
 else
    return
 endif 
