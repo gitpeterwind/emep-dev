@@ -17,6 +17,7 @@
 !
    use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST  !u7.4vg 
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
+                                 NLEVELS_HOURLY, &  ! ds rv1_8_2 
                                  FREQ_HOURLY, &     ! No. hours between outputs
                                  Asc2D, hr_out      ! Required outputs
 
@@ -56,15 +57,14 @@
    real :: g                           ! tmp - saves value of ghourly(i,j)
    integer, dimension(2) :: maxpos     ! Location of max value 
    integer i,j,ih,ispec,itot           ! indices
+   integer :: ik                       ! Index for vertical level
    integer ist,ien,jst,jen             ! start and end coords
    character(len=20) :: errmsg = "ok"  ! For  consistecny check
    character(len=20) :: name           ! For output file, species names
    character(len=4)  :: suffix         ! For date "mmyy"
    integer, save :: prev_month = -99   ! Initialise with non-possible month
-!hf u2:
-   logical, parameter :: DEBUG = .false.
+   logical, parameter :: DEBUG = .true.
 
-  !ds Debug coordinates:
     if ( my_first_call ) then
 
       !/ds rv1.6.2
@@ -125,6 +125,7 @@
 
         write(IO_HOURLY,*) NHOURLY_OUT, " Outputs"
         write(IO_HOURLY,*) FREQ_HOURLY, " Hours betwen outputs"
+        write(IO_HOURLY,*) NLEVELS_HOURLY, " Level(s)"    !ds rv1_8_2
 
         do ih = 1, NHOURLY_OUT
            write(IO_HOURLY,fmt="(a12,a8,a10,i4,4i4,a13,es12.5,es10.3)") hr_out(ih)
@@ -146,6 +147,7 @@
 
 
    HLOOP: do ih = 1, NHOURLY_OUT
+   KVLOOP: do ik = KMAX_MID, KMAX_MID-NLEVELS_HOURLY+1, -1
 
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec 
@@ -153,6 +155,20 @@
       if ( debug_flag ) print *, "DEBUG OH ", me, ispec, name,  hr_out(ih)%type
 
        if(DEBUG ) print *, "INTO HOUR TYPE ",hr_out(ih)%type
+
+   !----------------------------------------------------------------
+   !ds rv1_8_2: Added possibility of multi-layer output. Specify
+   ! NLEVELS_HOURLY here, and in hr_out defs use either:
+   !
+   !      ADVppbv to get surface concentrations (onyl relevant for
+   !              layer k=20 of course - gives meaningless  number f
+   !               or higher levels.
+   !Or,
+   !      BCVppbv to get grid-centre concentrations (relevant for
+   !      all layers.
+   !----------------------------------------------------------------
+
+
        OPTIONS: select case ( hr_out(ih)%type ) 
          case ( "ADVppbv" )
             itot = NSPEC_SHL + ispec 
@@ -163,6 +179,17 @@
                                  * cfac(ispec,i,j) &    ! 50m->1m conversion
                                  * unit_conv            ! Units conv.
             end forall
+
+         case ( "BCVppbv" )            !ds rv1_8_2 
+            itot = NSPEC_SHL + ispec 
+            name = species(itot)%name
+            unit_conv =  hr_out(ih)%unitconv
+            forall ( i=1:limax, j=1:ljmax)
+                  hourly(i,j) = xn_adv(ispec,i,j,ik) & !BCV:KMAX_MID) &
+                                 !BCV * cfac(ispec,i,j) &    ! 50m->1m conversion
+                                 * unit_conv            ! Units conv.
+            end forall
+            if ( DEBUG ) print *, "K-level", ik, name, itot
 
          case ( "ADVugm3" )
             itot = NSPEC_SHL + ispec 
@@ -216,8 +243,7 @@
 
           case DEFAULT 
              errmsg = "ERROR-DEF! Hourly_out: " // hr_out(ih)%type 
-             !print *,"HOURLY-DROP",me,ih,ispec,surface_precip(i,j),errmsg
-             call gc_abort(me,NPROC,"hourly type not found")
+             call gc_abort(me,NPROC,"ABORT! hourly type not found")
 
        end select OPTIONS 
 
@@ -275,9 +301,10 @@
             !dsien = min(GIMAX+ISMBEG-1,hr_out(ih)%ix2)
             !dsjen = min(GJMAX+JSMBEG-1,hr_out(ih)%iy2)
 
-            !dswrite(IO_HOURLY,"('Spec ',i3,' = ',a12,' Date:',i5,7i4,es12.5)")  &
-            write(IO_HOURLY,"('Spec ',i3,' = ',a12,' Date:',i5,3i3)")  &
-                  ispec,  name                                                &
+            !ds rv1_8_2 Extra info:
+            write(IO_HOURLY,"('Spec ',i3,' Var ',i2,' = ',2a12,'Lev: ',i2,' Date:',i5,3i3)")  &
+                  ispec,  ih, name, hr_out(ih)%name                          &
+                 ,ik  &  ! ds rv1_8_2 
                  ,current_date%year,current_date%month,current_date%day       &
                  ,current_date%hour !ds                                           &
                  !ds ,ist, ien, jst, jen,         &
@@ -307,10 +334,8 @@
 
        end if  ! me loop
 
+      end do KVLOOP
       end do HLOOP
 
-     !ds if ( my_first_call ) then
-     !ds      my_first_call = .false.
-     !ds end if
 
   end subroutine hourly_out

@@ -118,7 +118,20 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
+   !----------------------------------------------------------------
+   !ds rv1_8_2: Added possibility of multi-layer output. Specify
+   ! NLEVELS_HOURLY here, and in hr_out defs use either:
+   !
+   !      ADVppbv to get surface concentrations (onyl relevant for
+   !              layer k=20 of course - gives meaningless  number f
+   !               or higher levels.
+   !Or,
+   !      BCVppbv to get grid-centre concentrations (relevant for
+   !      all layers.
+   !----------------------------------------------------------------
+
     integer, public, parameter :: NHOURLY_OUT = 4  ! No. outputs
+    integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
 
     type, public:: Asc2D

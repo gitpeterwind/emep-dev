@@ -213,7 +213,8 @@ module Functions_ml
      integer, dimension(:,:),   intent(inout) ::nland   ! No. countries
      character(len=*), intent(out) :: errmsg   !  "ok" or not
 
-     integer :: nc, k, iland      ! local variables
+     !ds integer :: nc, k, iland      ! local variables
+     integer :: nc, k             ! local variables
 
        nc=nland(i,j)       ! nc = no. countries known so far
        errmsg = "ok"

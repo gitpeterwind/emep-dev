@@ -1,3 +1,18 @@
+
+=================== Dave, 25  Sep 2003, rv1_8_2 ==============================
+ds rv1_8_2: Added possibility of multi-layer output. Specify
+
+    NLEVELS_HOURLY in My_Outputs_ml, and in hr_out defs use either:
+   
+         ADVppbv to get surface concentrations (onyl relevant for
+                 layer k=20 of course - gives meaningless  number f
+                  or higher levels.
+   Or,
+         BCVppbv to get grid-centre concentrations (relevant for
+         all layers.
+
+Dave, 23/9/2003 - removed double definition of iland in Functions_ml
+
 =================== Peter, 23 Sep 2003, 1.8.1 =================================
 
 Several changes for nesting purposes and netcdf. 

@@ -16,15 +16,13 @@ module  My_Outputs_ml
         D2_FSTCF0, D2_FSTDF0, D2_FSTTC0, D2_FSTMC0, D2_FSTGR0, D2_FSTWH0,&
         D2_O3CF, D2_O3DF, D2_O3TC, D2_O3GR, D2_O3WH
   use Dates_ml,       only : date  
-  use GenSpec_adv_ml, only : NSPEC_ADV          &
-        ,IXADV_O3 &
-        ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
-        ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
-        ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
-!6s         ,IXADV_SOA, IXADV_ASOA, IXADV_BSOA
+  use GenSpec_adv_ml  , only : NSPEC_ADV          &
+                 ,IXADV_O3 &
+                 ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
+                 ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
+                 ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
-!  use GenSpec_maps_ml, only:    MAP_ADV2TOT
   use GenChemicals_ml , only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
   use Par_ml,            only: me, NPROC   ! for gc_abort
@@ -41,14 +39,14 @@ module  My_Outputs_ml
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
      NSITES_MAX =    51         & ! Max. no surface sites allowed
-    ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
-    ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+    ,FREQ_SITE  =    3          & ! Interval (hrs) between outputs
+    ,NADV_SITE  =    3 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
     ,NXTRA_SITE =    2            ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
-    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
-    !SITE_ADV =  (/ (isite, isite=1,3) /)       ! Everything!!
+    !SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
+    SITE_ADV =  (/ (isite, isite=1,3) /)       ! Everything!!
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
     SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!
@@ -126,8 +124,21 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
-    integer, public, parameter :: NHOURLY_OUT = 5 ! No. outputs
-    integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
+   !----------------------------------------------------------------
+   !ds rv1_8_2: Added possibility of multi-layer output. Specify
+   ! NLEVELS_HOURLY here, and in hr_out defs use either:
+   !
+   !      ADVppbv to get surface concentrations (onyl relevant for 
+   !              layer k=20 of course - gives meaningless  number f
+   !               or higher levels.
+   !Or,
+   !      BCVppbv to get grid-centre concentrations (relevant for 
+   !      all layers.
+   !----------------------------------------------------------------
+
+    integer, public, parameter :: NHOURLY_OUT =  2 ! No. outputs
+    integer, public, parameter :: NLEVELS_HOURLY = 2 ! No. outputs
+    integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
 
     type, public:: Asc2D
          character(len=12):: name   ! Name (no spaces!)
@@ -174,14 +185,6 @@ module  My_Outputs_ml
         ,ISPEC_OUTEND = -100  &     ! Set negative here to exclude
         ,JSPEC_OUTEND = -50         ! Set negative here to exclude
 
-!   integer, public, parameter :: NPARUPP = NSPEC_ADV ! 39
-
-! Defines integers which represent output species (former mod_def):
-
-!6c  integer, public, parameter ::  & 
-!6c       NSPEC_ADD_ADV = 1        !& ! additional ps advection, if = 1
-!       , NPARADV = NSPEC_ADV + NSPEC_ADD_ADV  ! total species to be advected
-
 
    public :: set_output_defs
 
@@ -201,8 +204,11 @@ contains
 
   ! introduce some integers to make specification of domain simpler
   ! and less error-prone. Numbers can be changed as desired.
-   integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
+   !merlininteger, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
+   !merlin:
+   !integer, save :: ix1 = 75, ix2 = 150, iy1=12, iy2 = 102 
    !integer, save :: ix1 = 110, ix2 = 115, iy1=60, iy2 = 60
+   integer, save :: ix1 = 125, ix2 = 150, iy1=45, iy2 =  65  !! Athens/Thess. 
 
 
 !jej - added 11/5/01 following Joffen's suggestion:
@@ -223,8 +229,14 @@ contains
   !**               name     type   
   !**                ofmt   ispec     ix1 ix2  iy1 iy2  unit conv    max
 
-  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
-                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
+ !   include 'merlin_ixadv'
+ hr_out(1)=  Asc2D("o3_50m", "BCVppbv", &
+                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2, "ppbv",PPBINV,9000.0)
+ hr_out(2)=  Asc2D("o3_3m", "ADVppbv", &
+                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2, "ppbv",PPBINV,9000.0)
+
+!  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
+!                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
 !  hr_out(2)=  Asc2D("aNH4-air", "ADVugm3", &
 !                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
 !  hr_out(3)=  Asc2D("aNO3-air", "ADVugm3", &
@@ -252,18 +264,18 @@ contains
   !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
 
 !ICP
-   hr_out(2)= Asc2D("Fst_TConif  ", "D2D", "(f8.5)",&
-                  D2_FSTCF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
-   hr_out(3)= Asc2D("Fst_TBroad  ", "D2D", "(f8.5)",&
-                  D2_FSTDF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
+!   hr_out(2)= Asc2D("Fst_TConif  ", "D2D", "(f8.5)",&
+!                  D2_FSTCF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
+!   hr_out(3)= Asc2D("Fst_TBroad  ", "D2D", "(f8.5)",&
+!                  D2_FSTDF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !IZ    hr_out(4)= Asc2D("Fst_MConif  ", "D2D", "(f8.5)",&
 !IZ                   D2_FSTTC0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !IZ    hr_out(5)= Asc2D("Fst_MBroad  ", "D2D", "(f8.5)",&
 !IZ                   D2_FSTMC0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
-   hr_out(4)= Asc2D("Fst_Grass   ", "D2D", "(f8.5)",&
-                  D2_FSTGR0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
-   hr_out(5)= Asc2D("Fst_Wheat   ", "D2D", "(f8.5)",&
-                  D2_FSTWH0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
+!   hr_out(4)= Asc2D("Fst_Grass   ", "D2D", "(f8.5)",&
+!                  D2_FSTGR0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
+!   hr_out(5)= Asc2D("Fst_Wheat   ", "D2D", "(f8.5)",&
+!                  D2_FSTWH0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !IZ    hr_out(8)= Asc2D("O3__Wheat   ", "D2D", "(f7.3)",&
 !IZ                   D2_O3WH,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
 !IZ    hr_out(9)= Asc2D("O3__Beech   ", "D2D", "(f7.3)",&
