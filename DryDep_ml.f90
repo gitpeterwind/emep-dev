@@ -578,24 +578,23 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
 
             no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   ! Here we have no2 in cm-3
             no2fac = max(1.0, no2fac)
-            !   print *, "NO2FAC pre", xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)
-            no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)      ! Comp. point of 4 ppb
+            no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac) ! Comp. point of 4 ppb
 
-            if (DEBUG_NO2 .and. debug_flag .and.  &
-                ( lu == 1 .or. lu == 10 ) .and. & 
-                   (current_date%seconds == 0)  ) then
-               if (lu==1) then 
-               write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "CONIF-NO2", &
-                  imm, idd, ihh, lu, &
-                     xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
-                      100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
-               else
-                  write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "GRASS-NO2", &
-                  imm, idd, ihh, lu, &
-                     xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
-                      100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
-               end if
-            end if
+            !dsif (DEBUG_NO2 .and. debug_flag .and.  &
+            !ds    ( lu == 1 .or. lu == WHEAT ) .and. & 
+            !ds       (current_date%seconds == 0)  ) then
+            !ds   if (lu==1) then 
+            !ds   write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "CONIF-NO2", &
+            !ds      imm, idd, ihh, lu, &
+            !ds         xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
+            !ds          100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
+            !ds   else
+            !ds      write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "GRASS-NO2", &
+            !ds      imm, idd, ihh, lu, &
+            !ds         xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
+            !ds          100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
+            !ds   end if
+            !dsend if
 
             Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
             Vg_3m (CDEP_NO2) = Vg_3m (CDEP_NO2) * no2fac
@@ -605,12 +604,12 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_3m(n)  = Grid_Vg_3m(n)  + cover * Vg_3m(n)
 
-           if ( DEBUG_VG .and.  Vg_ref(n) < 0.0 .or. Vg_3m(n)<Vg_ref(n) ) then
-               print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", &
-                  Ra_ref, Rb(n), Rsur(n)
-               print *, "VGREF ERROR stab", z0, d, ustar_loc, invL, g_sto
-               call gc_abort(me, NPROC, "VGREF ERROR")
-           end if
+           !ds if ( DEBUG_VG .and.  Vg_ref(n) < 0.0 .or. Vg_3m(n)<Vg_ref(n) ) then
+           !ds     print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", &
+           !ds        Ra_ref, Rb(n), Rsur(n)
+           !ds     print *, "VGREF ERROR stab", z0, d, ustar_loc, invL, g_sto
+           !ds     call gc_abort(me, NPROC, "VGREF ERROR")
+           !ds end if
 
          end do
 
@@ -665,16 +664,9 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
 
           ! ICP method for flag-leaf
 
-        !if ( hveg > 1.1 * z0 ) then
-        !if ( (hveg-d) > 1.1 * z0 ) then
-        !if ( (hveg-d) > STUBBLE ) then  !! Justa void non-zeros
-          !Ra_hveg = AerRes(z0,hveg-d,ustar_loc,invL,KARMAN)
           Ra_diff = AerRes(max(hveg-d, STUBBLE) ,z_ref-d,ustar_loc,invL,KARMAN)
           c_hveg         = nmole_o3 * ( 1.0 - Ra_diff * Vg_ref(FLUX_CDEP) )
           c_hvegppb(lu)  = ppb_o3   * ( 1.0 - Ra_diff * Vg_ref(FLUX_CDEP) )
-          !if (  c_hvegppb(lu) > 200.0  ) then
-          !  write(6,*) "FLUX DIFF1ERROR ", lu, ppb_o3, c_hvegppb(lu),i,j, hveg, d,  z0, lai, invL, Ra_diff, Vg_ref(FLUX_CDEP)
-          !end if
 
 
           if ( DEBUG_FLUX .and. c_hveg <= 1.0e-19 ) then
@@ -717,9 +709,6 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
                 "FST ", lu, imm, idd, ihh, lai, SAIadd(lu), &
                  nmole_o3, c_hveg, g_sto, gsun, u_hveg,leaf_flux(lu)
           end if
-        !else
-        !   c_hvegppb(lu) = ppb_o3 
-        !end if ! hveg check
         end if ! STO_FLUXES
 
        !=======================
@@ -888,13 +877,6 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
 
 
       !.. Add DepLoss to budgets if needed:
-
-       !if ( DEBUG_VG .and. debug_flag ) then
-       !  write(6,"(a7,5i5,3i3,i5,2f8.4,3f10.4)") "FLUX ",  me, i, j, nlu, &
-       !      lu_used(1), imm, idd, ihh, current_date%seconds, &
-       !      Sumcover, Sumland, fluxfrac_adv(7,15), fluxfrac_adv(8,15), &
-       !      fluxfrac_adv(9,15)
-       !end if 
 
        call Add_ddep(i,j,convfac2,convfaco3,fluxfrac_adv,c_hvegppb)
 

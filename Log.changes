@@ -1,3 +1,22 @@
+=================== Dave  18/11/2003, rv1_9_4 ==============================
+
+*** New landuse.nov2003 used *****
+
+Changes and cleanup in UK_ml.f90
+
+And....
+
+EQSAM_ml.f90 in Makefile, not EQSAM-v03d_ml.f90
+
+Output to RunLog.out added (with IO_LOG) to provide output file with emissions.
+(Maybe good for SR runs?)
+   => Changes in Emissions_ml, Unimod
+
+
+WHEAT(=10) added to DepVariables. 
+Used in UK_ml  (to provide more obvious hard-coding   ;-)
+
+
 =================== Dave  13/11/2003, rv1_9_3 ==============================
 EQSAM-v03d_ml.f90 moved to EQSAM_ml.f90. The former had't been "added"
 to the CVS and anyway it is better to update old file names than

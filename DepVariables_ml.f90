@@ -25,8 +25,8 @@ integer, public, parameter,dimension(3) :: ECO_CROP =  (/ 5, 6,7 /)
 integer, public, parameter,dimension(4) :: ECO_SEMINAT =  (/ 8, 10, 11, 13 /)
 integer, public, parameter,dimension(1) :: ECO_WETLAND =  (/ 12 /)
 integer, public, parameter,dimension(1) :: ECO_WATER   =  (/ 15 /)
+integer, public, parameter  :: WHEAT = 10  !ds, rv1_9_3
 
-!d1.4 integer, public, save :: lu            !land-use class index
 
 ! g_sto factors in UK dep method:
 

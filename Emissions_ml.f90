@@ -33,9 +33,9 @@
                                        ! emissions) per grid
                          ISNAP_SHIP,&  ! snap index for ship emissions
                          ISNAP_NAT     ! snap index for nat. (dms) emissions
+  use Io_ml,      only : IO_LOG
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,NPROC,me,gi0,gi1,gj0,gj1
 
-  !rv1.2 use ModelConstants_ml,     only :   KMAX_MID, KEMISTOP   !u4 
   use ModelConstants_ml,     only :   KMAX_MID
   use Volcanos_ml                   !hf
 
@@ -166,6 +166,7 @@ contains
 !hf
   integer :: i_l,j_l           ! Local i,j
   real   :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
+  real   :: ccsum             ! Sum of emissions for one country !ds, rv1_9_3
  
   !/ emissions for loal area and 1 pollutant. Temporary array to
   !  help tranfer through global2local subroutine:
@@ -318,11 +319,19 @@ contains
 
     if ( me == 0 ) then
         write(unit=6,fmt=*) "Country totals"
+        write(unit=IO_LOG,fmt=*) "Country totals"
         write(unit=6,fmt="(a4,3x,10a12)") " CC ",(EMIS_NAME(iem),iem=1,NEMIS)
-        do ic = 1, NLAND
-            write(unit=6,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
-                     (sumemis(ic,i),i=1,NEMIS)
-        end do
+        write(unit=IO_LOG,fmt="(a4,3x,10a12)") " CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+
+        ccsum = sum( sumemis(ic,:) )
+        if ( ccsum > 0.0 ) then
+            do ic = 1, NLAND
+                write(unit=6,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
+                         (sumemis(ic,i),i=1,NEMIS)
+                write(unit=IO_LOG,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
+                         (sumemis(ic,i),i=1,NEMIS)
+            end do
+        end if
     end if
 
     !su    now all values are read, snapemis is distributed, globnland and 
@@ -552,8 +561,6 @@ contains
   logical                         ::  hourchange   !      "     "           
   real, dimension(NRCEMIS)        ::  emis         !  local array for emissions
 
-!hf F  real ::  deploc,ehlpcom,ehlpcom0(4)
-!u4  real ::  deploc,ehlpcom,ehlpcom0(KMAX_MID)
   real ::  deploc,ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s               ! source term (emis) before splitting

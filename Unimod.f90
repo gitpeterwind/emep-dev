@@ -65,7 +65,7 @@ program myeul
   !u7lu use NEWdep_ml,        only : ReadLanduse     !u7.2, ds
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use GridValues_ml,    only : DefGrid  ! sets gl, gb, xm, gridwidth_m, etc.
-  use Io_ml  ,          only : IO_MYTIM,IO_RES
+  use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG
   use MassBudget_ml,           only : Init_massbudget,massbudget
   !ds rv1.2 use Met_ml  ,         only : infield,metvar,in_isnowc, mm5,&
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse, mm5,&
@@ -290,6 +290,7 @@ program myeul
     if (me  ==  0) then
 
       open(IO_RES,file='eulmod.res')
+      open(IO_LOG,file='RunLog.out')
 
 
       read(5,*) ntmp(1)

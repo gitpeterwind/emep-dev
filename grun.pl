@@ -56,7 +56,7 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2000";
+$year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 # NEW: iyr_trend can be set to meteorology year or arbitrary year, say 2050
 $iyr_trend = $year;  
@@ -65,8 +65,8 @@ print "Year is $yy YEAR $year\n";
 
 if ( $year == 2000 ) {
   $MetDir = "/work/mifapw/metdata/$year" ;
-} elsif ( $year == 1999 ) {
-  $MetDir = "/work/mifaab/metdata/$year" ;
+} elsif ( $year == 1997 ) {
+  $MetDir = "/work/mifapw/metdata/$year" ;
 } elsif ( $year == 1995 ) {
   $MetDir = "/work/mifaab/metdata/$year" ;
 } elsif ( $year == 1990 ) {
@@ -106,7 +106,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_7_3";
+     $testv       = "rv1_9_3";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -129,10 +129,9 @@ $femis       = "$MyDataDir/femis.dat";      # emission control file
 # Fixed
 #$emisdir     = "$SVETLANA/Unify/MyData/emission";   # emissions directory
 #$emisdir     = "$HILDE/emis/modrun03";   # emissions directory
-#$emisyear    = "$emisdir/emis${yy}_02-rev";    # emissions
 #Latest: (not used for PM though).
-$emisdir     = "$DAVE/Unify/Data/emis/Scale_14082003"; # emissions directory
-$emisyear    = "$emisdir/emis${year}";    # emissions
+$emisdir     = "$HILDE/emis/trends2003"; # emissions directory
+$emisyear    = "$emisdir/emis${yy}-V3";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 
 # Specify small domain if required. 
@@ -155,7 +154,7 @@ $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
 
 $NDX   =  4;           # Processors in x-direction
-$NDY   =  4;           # Processors in y-direction
+$NDY   =  8;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
 
@@ -168,7 +167,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- #$NTERM =  6;       # for testing, simply reset here
+ #$NTERM =  3;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -510,8 +509,8 @@ foreach $s ( keys(%seasons) ) {
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
 
-    $old   = "$DataDir/landuse.tfw" ;  #ds rv1_6_9 change
-    $new   = "landuse.tf2";            #ds rv1_6_5 change
+    $old   = "$DataDir/landuse.nov2003" ;  #ds rv1_6_9 change
+    $new   = "landuse.dat";            #ds rv1_6_5 change
     mylink( "Landuse ", $old,$new ) ;
 
  # TMP LOCATION for some datafiles : MyDataDir
