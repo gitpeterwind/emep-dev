@@ -122,7 +122,7 @@ module DryDep_ml
 
  ! Ecosystem specific deposition requires the fraction of dep in each landuse, lu:
 
-   real, dimension(NDRYDEP_CALC,NLANDUSE):: fluxfrac_calc
+   real, dimension(NDRYDEP_CALC,NLUMAX):: Vg_ref_lu
    real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
    integer :: lu_used(NLUMAX), nlu_used
    real    :: lu_cover(NLUMAX)
@@ -258,10 +258,10 @@ module DryDep_ml
 
     Grid_Vg_ref(:) = 0.0
     Grid_Vg_1m(:) = 0.0
+    Vg_ref_lu(:,:) = 0.0
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
     Sumland  = 0.0
-    !! fluxfrac_calc(:,:) = 0.0
     fluxfrac_adv (:,:) = 0.0
 
     !/ And start the sub-grid stuff over different landuse (lu)
@@ -352,7 +352,7 @@ module DryDep_ml
          do n = 1, NDRYDEP_CALC
            Vg_ref(n) = 1.0 / ( Ra_ref + Rb(n) + Rsur(n) )
            Vg_1m(n)  = 1.0 / ( Ra_1m  + Rb(n) + Rsur(n) )
-           ! fluxfrac_calc(n,lu) = cover * Vg_ref(n)
+           Vg_ref_lu(n,ilu) = Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)
 
@@ -364,12 +364,12 @@ module DryDep_ml
 
          end do
 
-         if ( FLUX_CDEP > 0 .and. Vg_ref(1) > 0.04 ) then !CRUDE FIX WITH (1)
-               print *, "VGREFO3 ERROR", me, n, Vg_ref(n)
-               print *, "VGREFO3 ERROR Ras", Ra_ref, Rb(n), Rsur(n)
-               print *, "VGREFO3 ERROR stab", z0, d, ustar_loc, invL, g_sto
-               call gc_abort(me, NPROC, "VGREFO3 ERROR")
-         end if
+         !if ( FLUX_CDEP > 0 .and. Vg_ref(1) > 0.04 ) then !CRUDE FIX WITH (1)
+         !      print *, "VGREFO3 ERROR", me, n, Vg_ref(n)
+         !      print *, "VGREFO3 ERROR Ras", Ra_ref, Rb(n), Rsur(n)
+         !      print *, "VGREFO3 ERROR stab", z0, d, ustar_loc, invL, g_sto
+         !      call gc_abort(me, NPROC, "VGREFO3 ERROR")
+         !end if
 
          Sumcover = Sumcover + cover
 
@@ -389,10 +389,10 @@ module DryDep_ml
 
         if ( DEBUG_UK .and. debug_flag ) then
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP RATVG", ilu, lu, cover, &
-                Vg_1m(2), Vg_ref(2), Sumland, Sumcover, Vg_ratio(2)
+                100.0*Vg_1m(4), 100.0*Vg_ref(4), Sumland, Sumcover, Vg_ratio(4)   !helcom, 4=NH3
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP FINVG", ilu, lu, cover, &
                    lai,100.0*g_sto, &  ! tmp, in cm/s 
-                   Ra_ref, Rb(2), Rsur(2), 100.0/(Ra_ref + Rb(2) + Rsur(2) )
+                   Ra_ref, Rb(4), Rsur(4), 100.0/(Ra_ref + Rb(4) + Rsur(4) )
         end if
          
        !=======================
@@ -462,17 +462,19 @@ module DryDep_ml
             if ( vg_set(n) )  then
                fluxfrac_adv(nadv,lu) = lu_cover(ilu)  ! Since all vg_set equal
             else
-               fluxfrac_adv(nadv,lu) = lu_cover(ilu)*Vg_ref(ncalc)/ Grid_Vg_ref(ncalc)
+               fluxfrac_adv(nadv,lu) = lu_cover(ilu)*Vg_ref_lu(ncalc,ilu)/ Grid_Vg_ref(ncalc)
             end if
 
             if ( DEBUG_UK .and. debug_flag ) then
 
                if ( vg_set(n) )  then
                  write(6,"(a12,3i3,3f12.3)") "FLUXSET  ", ilu, lu, nadv, &
-                           Dep(n)%vg, lu_cover(ilu), fluxfrac_adv(nadv,lu)
+                     100.0*Dep(n)%vg, lu_cover(ilu), fluxfrac_adv(nadv,lu)
                else
-                 write(6,"(a12,3i3,3f12.3)") "FLUXFRAC ", ilu, lu, nadv, &
-                  Grid_Vg_ref(ncalc), lu_cover(ilu)*Vg_ref(ncalc), fluxfrac_adv(nadv,lu)
+                 write(6,"(a12,3i3,f6.3,4f8.3)") "FLUXFRAC ", ilu, lu, nadv, &
+            lu_cover(ilu), &
+            100.0*Grid_Vg_ref(ncalc), 100.0*Vg_ref_lu(ncalc,ilu), &
+            100.0*lu_cover(ilu)*Vg_ref_lu(ncalc,ilu), fluxfrac_adv(nadv,lu)
                end if
             end if
          end do
@@ -506,6 +508,12 @@ module DryDep_ml
 
       !.. Add DepLoss to budgets if needed:
 
+       !if ( DEBUG_VG .and. debug_flag ) then
+       !  write(6,"(a7,5i5,3i3,i5,2f8.4,3f10.4)") "FLUX ",  me, i, j, nlu, &
+       !      lu_used(1), imm, idd, ihh, current_date%seconds, &
+       !      Sumcover, Sumland, fluxfrac_adv(7,15), fluxfrac_adv(8,15), &
+       !      fluxfrac_adv(9,15)
+       !end if 
        call Add_ddep(i,j,convfac2,fluxfrac_adv)
 
      enddo   !j
