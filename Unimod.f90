@@ -72,10 +72,13 @@ program myeul
                                tiphys
   use ModelConstants_ml,only : KMAX_MID, current_date  &
                               ,METSTEP   &   !u2 - replaces metstep
+                              ,runlabel1  &   !rv1_9_5 - explanatory text
+                              ,runlabel2  &   !rv1_9_5 - explanatory text
                               ,nprint,nass,nterm,iyr_trend, assign_nmax
-  use NetCDF_ml,        only : InitnetCDF
+  use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
+  use My_Derived_ml,    only : IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
   use out_restri_ml,    only : set_outrestri
-  use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1, parinit
+  use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2, parinit
   use Polinat_ml,       only : polinat_init,polinat_in
 
   use Sites_ml,         only : sitesdef  ! to get output sites
@@ -266,11 +269,11 @@ program myeul
     logical, parameter :: DEBUG_UNI = .false. 
     integer n, numt, nadd, ntmp(4), info, oldseason &
               ,newseason    !u2 , metstep
-    integer iupw, i, j, ii, k
+    integer iupw, i, j, ii, k, iotyp
     integer :: mm, mm_old   ! month and old-month  (was nn and nold)
     integer :: nproc_gc
+    character (len=130) :: fileName
 
-!ds rv1.6.10    common/ttmp/ntmp   ! TEST IF NEEDED
 !
 !     initialize the parallel topology
 !
@@ -296,12 +299,23 @@ program myeul
       read(5,*) ntmp(1)
       read(5,*) ntmp(2)
       read(5,*) ntmp(3)  ! ds - iyr_ytrend
+      read(5,fmt="(a)") runlabel1 ! ds, rv1_9_5 - explanation text short
+      read(5,fmt="(a)") runlabel2 ! ds, rv1_9_5 - explanation text long
+
+      write(unit=IO_LOG,fmt=*)trim(runlabel1)
+      write(unit=IO_LOG,fmt=*)trim(runlabel2)
+
     endif
 
     print *, "read standard input"
+    if( me == 0 ) print *, "RUNLABEL INPUT ", trim(runlabel1),' ',trim(runlabel2)
     call gc_ibcast(MSG_MAIN1, 4, 0, NPROC, info, ntmp)
+    call gc_bbcast(MSG_MAIN2, len(runlabel1), 0, NPROC, info, runlabel1)
+    call gc_bbcast(MSG_MAIN2, len(runlabel2), 0, NPROC, info, runlabel2)
+!    if( me == 0 ) then
     print *, "distributed standard input"
-
+    print *, " ME ", me, " LABELS ", trim(runlabel1),' ', trim(runlabel2)
+!    endif
     nterm = ntmp(1)
     nass = ntmp(2)
     iyr_trend = ntmp(3)   !ds rv1.6.10
@@ -375,7 +389,24 @@ program myeul
 
     call vgrid    !  ??????
 
-    if ( me == 0 ) call InitnetCDF
+    if ( me == 0 ) then
+       fileName=trim(runlabel1)//'_inst.nc'
+       iotyp=IOU_INST
+       call Init_new_netCDF(fileName,iotyp) 
+       fileName=trim(runlabel1)//'_hour.nc'
+       iotyp=IOU_HOUR
+       call Init_new_netCDF(fileName,iotyp) 
+       fileName=trim(runlabel1)//'_day.nc'
+       iotyp=IOU_DAY
+       call Init_new_netCDF(fileName,iotyp) 
+       fileName=trim(runlabel1)//'_month.nc'
+       iotyp=IOU_MON
+       call Init_new_netCDF(fileName,iotyp) 
+       fileName=trim(runlabel1)//'_year.nc'
+       iotyp=IOU_YEAR
+       call Init_new_netCDF(fileName,iotyp) 
+
+    endif
 
     call metvar(1)
 

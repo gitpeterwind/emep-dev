@@ -85,12 +85,13 @@ KMAXcdf=1
 do ih=1,NHOURLY_OUT
    ISMBEGcdf=min(ISMBEGcdf,hr_out(ih)%ix1)
    JSMBEGcdf=min(JSMBEGcdf,hr_out(ih)%iy1)
-enddo
-do ih=1,NHOURLY_OUT
-   GIMAXcdf=max(GIMAXcdf,hr_out(ih)%ix2-ISMBEGcdf+1)
-   GJMAXcdf=max(GJMAXcdf,hr_out(ih)%iy2-JSMBEGcdf+1)
+   GIMAXcdf=max(GIMAXcdf,hr_out(ih)%ix2-hr_out(ih)%ix1+1)
+   GJMAXcdf=max(GJMAXcdf,hr_out(ih)%iy2-hr_out(ih)%iy1+1)
    KMAXcdf =max(KMAXcdf,hr_out(ih)%nk)
 enddo
+GIMAXcdf=min(GIMAXcdf,GIMAX)
+GJMAXcdf=min(GJMAXcdf,GJMAX)
+
 !write(*,*)GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
 
@@ -174,7 +175,7 @@ use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                   ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                   ,GlobalPosition,gb_glob,gl_glob
 use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG,IILARDOM,JJLARDOM
-use ModelConstants_ml,     only : KMAX_MID   
+use ModelConstants_ml,     only : KMAX_MID, runlabel1, runlabel2  
 use GridValues_ml,         only : coordzero,sigma_mid
 use My_Derived_ml,         only : model
 use PhysicalConstants_ml,  only : PI       
@@ -182,7 +183,7 @@ use PhysicalConstants_ml,  only : PI
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 character(len=*),  intent(in)  :: fileName 
 
-character (len=*), parameter :: version='Unimod rv1.8'       
+character (len=*), parameter :: version='Unimod rv1.9'       
 character (len=*), parameter :: author_of_run='Unimod group' 
 character (len=*), parameter :: projection='Stereographic'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
@@ -231,6 +232,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
   call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
   call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))
+  call check(nf90_put_att(ncFileID, nf90_global, "run_label", trim(runlabel2)))
 
 ! define coordinate variables
   call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
@@ -267,7 +269,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, kVarID, "positive", "down"))
 
   call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
-  call check(nf90_put_att(ncFileID, VarID, "long_name", "current time at end of period"))
+  call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
 
 
@@ -348,6 +350,7 @@ use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,M
 use ModelConstants_ml,     only : KMAX_MID, current_date  
 use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D ,Deriv &
                          ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
+use Dates_ml, only: nmdays,is_leap 
 
 
   implicit none
@@ -416,7 +419,6 @@ elseif(iotyp==IOU_INST)then
 else
    return
 endif 
-
 
 if(ndim /= 2 .and. ndim /= 3 )then
    print *, 'error in NetCDF_ml ',ndim
@@ -634,6 +636,19 @@ if(me==0)then
   !get variable id
   call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
   call secondssince1970(ndate,nseconds)
+  !middle of period:
+      if(iotyp==IOU_YEAR)then
+         nseconds=nseconds-43200*365-43200*is_leap(ndate(1))
+      elseif(iotyp==IOU_MON)then
+         nseconds=nseconds-43200*nmdays(ndate(2))
+      elseif(iotyp==IOU_DAY)then
+         nseconds=nseconds-43200 !24*3600/2=43200
+      elseif(iotyp==IOU_HOUR)then
+         nseconds=nseconds-1800  !1800=half hour
+      elseif(iotyp==IOU_INST)then
+           nseconds=nseconds       
+      endif
+
   call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
 
 !!close file

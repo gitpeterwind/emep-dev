@@ -323,15 +323,15 @@ contains
         write(unit=6,fmt="(a4,3x,10a12)") " CC ",(EMIS_NAME(iem),iem=1,NEMIS)
         write(unit=IO_LOG,fmt="(a4,3x,10a12)") " CC ",(EMIS_NAME(iem),iem=1,NEMIS)
 
-        ccsum = sum( sumemis(ic,:) )
-        if ( ccsum > 0.0 ) then
-            do ic = 1, NLAND
-                write(unit=6,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
+        do ic = 1, NLAND
+           ccsum = sum( sumemis(ic,:) )
+           if ( ccsum > 0.0 ) then
+               write(unit=6,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
                          (sumemis(ic,i),i=1,NEMIS)
                 write(unit=IO_LOG,fmt="(a4,3x,8f12.2)") Country(ic)%code, &
                          (sumemis(ic,i),i=1,NEMIS)
-            end do
-        end if
+             end if
+        end do
     end if
 
     !su    now all values are read, snapemis is distributed, globnland and 

@@ -106,7 +106,8 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_3";
+     $testv       = "rv1_9_5";
+     $runlabel    = "${testv}_DUMMYTEXT_$year";   # NO SPACES!
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -167,7 +168,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- #$NTERM =  3;       # for testing, simply reset here
+ $NTERM =  3;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -509,8 +510,8 @@ foreach $s ( keys(%seasons) ) {
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
 
-    $old   = "$DataDir/landuse.nov2003" ;  #ds rv1_6_9 change
-    $new   = "landuse.dat";            #ds rv1_6_5 change
+    $old   = "$DataDir/landuse.nov2003" ;  #ds rv1_9_4 change
+    $new   = "landuse.dat";                #ds rv1_9_4 change
     mylink( "Landuse ", $old,$new ) ;
 
  # TMP LOCATION for some datafiles : MyDataDir
@@ -550,12 +551,12 @@ foreach $datafile ( qw ( Volcanoes.dat tf2_gfac1.dat tf2_gfac2.dat tf2_biomass.d
 
 foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
-        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND\n$iyr_trend\n";
+        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL $runlabel";
 
 if ( $INTERACTIVE ) {
   die " -- INTERACTIVE: can now run for inputs: NTERM, NASS,  EXCLU, NDX, NDY 
   with mpirun -np 1 prog.exe << XXX
-  $NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n$iyr_trendXXX"; 
+  $NTERM\n$NASS\n$iyr_trend\n${runlabel}\nXXX"; 
 }
 
     #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 
@@ -568,7 +569,7 @@ if ( $INTERACTIVE ) {
     
     #print PROG "$NTERM\n\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
     #print PROG "$NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
-    print PROG "$NTERM\n$NASS\n$iyr_trend\n";
+    print PROG "$NTERM\n$NASS\n$iyr_trend\n${runlabel}\n";
     close(PROG);
 }
 #------------    End of Run model -------------------------------------
