@@ -1,3 +1,22 @@
+
+==============================================================================
+=================== Dave, 17th June, rv1.6.12 =================================
+==============================================================================
+
+Makefile: touch depend removed from clean
+Output_hourly - Idrectt, Idiffuse added as options
+My_Outputs_ml - SITE_XTRA_INDEX, SONDE_XTRA_INDEX introduced to simplify
+      access to data from d_2d, d_3d  arrays. 
+Sites_ml - d2index, d3index introduced to simplify
+      access to data from d_2d, d_3d  arrays. Removes need for explicit
+      FSTCF0 cases etc.
+ZD_ACID/
+    My_Derived - added NOUTPUT_ABS_HEIGHTS - no effect but allows compilation
+    My_DryDep - added c_hveg to Add_ddep
+    My_Outputs - as above
+ZD_OZONE/
+    My_Outputs - as above
+
 ==============================================================================
 =================== Hilde, Dave, 11th June, rv1.6.11 =================================
 ==============================================================================

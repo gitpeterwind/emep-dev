@@ -65,6 +65,14 @@ module  My_Outputs_ml
 !                  "O3CF    ", "O3DF    ", "O3TC    ", "O3GR    ", &
 !                  "O3WH    " /) 
 
+ !ds - rv1.6.12 - can access d_2d fields through index here, by
+ !     setting "D2D" above and say D2_FSTCF0 here:
+
+   integer,           public, parameter, dimension(NXTRA_SITE) :: &
+    SITE_XTRA_INDEX=  (/     0,        0 /)     ! Height at mid-cell
+
+
+
 
 
    !/*** Aircraft outputs   (used in Polinat_ml)
@@ -103,6 +111,12 @@ module  My_Outputs_ml
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
     SONDE_XTRA=  (/ "z_mid" /)     ! Height at mid-cell
 
+ !ds - rv1.6.12 - can access d_3d fields through index here, by
+ !     setting "D3D" above and say D3_XKSIG12 here:
+
+   integer,           public, parameter, dimension(NXTRA_SONDE) :: &
+    SONDE_XTRA_INDEX=  (/     0 /)
+
 
 
    !==============================================================
@@ -125,7 +139,7 @@ module  My_Outputs_ml
          integer          :: ix2    ! bottom-left y
          integer          :: iy1    ! upper-right x
          integer          :: iy2    ! upper-right y
-         character(len=6) :: unit   ! Unit used 
+         character(len=12) :: unit   ! Unit used 
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
     end type Asc2D
@@ -262,6 +276,12 @@ contains
  !                "(f5.1)",     -99, ix1,ix2,iy1,iy2, "degC",1.0   ,100.0)
  !hr_out(2)=  Asc2D("Precip", "PRECIP ", &
  !                "(f11.7)",    -99, ix1,ix2,iy1,iy2, "mm/hr",1.0,  200.0)
+ !hr_out(3)=  Asc2D("Idir",   "Idirect", &
+ !                "(f5.1)",    -99, ix1,ix2,iy1,iy2, "umole/m2/s",1.0, 1000.0)
+ !hr_out(4)=  Asc2D("Idif",   "Idiffus", &
+ !                "(f5.1)",    -99, ix1,ix2,iy1,iy2, "umole/m2/s",1.0, 1000.0)
+
+
 
 
 

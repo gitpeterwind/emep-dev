@@ -37,7 +37,7 @@ module  My_Outputs_ml
 
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
-     NSITES_MAX =    30         & ! Max. no surface sites allowed
+     NSITES_MAX =    55         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    0          & ! No. short-lived species
@@ -56,6 +56,12 @@ module  My_Outputs_ml
 
    character(len=10), public, parameter, dimension(NXTRA_SITE) :: &
     SITE_XTRA=  (/ "th  ", "hmix" /)
+
+ !ds - rv1.6.12 - can access d_2d fields through index here, by
+ !     setting "D2C" above and say D2_FSTCF0 here:
+
+   integer,           public, parameter, dimension(NXTRA_SITE) :: &
+    SITE_XTRA_INDEX=  (/     0,        0 /)     ! Height at mid-cell
 
 
 
@@ -82,7 +88,7 @@ module  My_Outputs_ml
    ! These must be defined in Sites_ml.f90.
 
    integer, public, parameter :: &
-     NSONDES_MAX =    10               &   ! Max. no sondes allowed
+     NSONDES_MAX =    55               &   ! Max. no sondes allowed
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =    1                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species (fake for ACID)
@@ -93,8 +99,15 @@ module  My_Outputs_ml
     SONDE_ADV =  (/ IXADV_NO2 /)
    integer, public, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ -99 /)   !fake ! (/ IXSHL_OH /)
+
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-    SONDE_XTRA=  (/ "z_mid", "xksig", "th   " /)     ! Height at mid-cell
+    SONDE_XTRA      =  (/ "z_mid", "xksig", "th   " /)     ! Height at mid-cell
+
+ !ds - rv1.6.12 - can access d_3d fields through index here, by
+ !     setting "D3D" above and say D3_XKSIG12 here:
+
+   integer,           public, parameter, dimension(NXTRA_SONDE) :: &
+    SONDE_XTRA_INDEX=  (/     0,        0,      0 /)     ! Height at mid-cell
 
 
 
@@ -105,7 +118,7 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
-    integer, public, parameter :: NHOURLY_OUT = 3  ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT = 4  ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
 
     type, public:: Asc2D
@@ -118,7 +131,7 @@ module  My_Outputs_ml
          integer          :: ix2    ! bottom-left y
          integer          :: iy1    ! upper-right x
          integer          :: iy2    ! upper-right y
-         character(len=6) :: unit   ! Unit used 
+         character(len=12) :: unit   ! Unit used 
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
     end type Asc2D
@@ -184,6 +197,8 @@ contains
   ! and less error-prone. Numbers can be changed as desired.
 
    integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
+   !integer, save :: ix1 = 70, ix2 =  95, iy1=40, iy2 = 70   ! UK
+   !integer, save :: ix1 = 70, ix2 = 150, iy1=12, iy2 = 120   ! NOFRETETE=EU
 
 
 !jej - added 11/5/01 following Joffen's suggestion:
@@ -229,10 +244,14 @@ contains
   !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
 
  !/** theta is in deg.K
- !hr_out(1)=  Asc2D("T2_C",   "T2_C   ", &
- !                "(f5.1)",     -99, ix1,ix2,iy1,iy2, "degC",1.0   ,100.0)
- !hr_out(2)=  Asc2D("Precip", "PRECIP ", &
- !                "(f11.7)",    -99, ix1,ix2,iy1,iy2, "mm/hr",1.0,  200.0)
+ hr_out(4)=  Asc2D("T2_C",   "T2_C   ", &
+                 "(f5.1)",     -99, ix1,ix2,iy1,iy2, "degC",1.0   ,100.0)
+!hr_out(2)=  Asc2D("Precip", "PRECIP ", &
+!                "(f11.7)",    -99, ix1,ix2,iy1,iy2, "mm/hr",1.0,  200.0)
+!hr_out(3)=  Asc2D("Idir",   "Idirect", &
+!                "(f5.1)",    -99, ix1,ix2,iy1,iy2, "W/m2",1.0, 1000.0)
+!hr_out(4)=  Asc2D("Idif",   "Idiffus", &
+!                "(f5.1)",    -99, ix1,ix2,iy1,iy2, "W/m2",1.0, 1000.0)
 
 
 

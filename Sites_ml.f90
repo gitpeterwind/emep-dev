@@ -17,11 +17,11 @@ module Sites_ml
 use My_Outputs_ml, only : &   ! for sitesout
         NSITES_MAX, &
           NADV_SITE, NSHL_SITE, NXTRA_SITE, &
-          SITE_ADV, SITE_SHL, SITE_XTRA, &
+          SITE_ADV, SITE_SHL, SITE_XTRA, SITE_XTRA_INDEX, &
           FREQ_SITE, &
         NSONDES_MAX, &
           NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &
-          SONDE_ADV, SONDE_SHL, SONDE_XTRA, &
+          SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
           FREQ_SONDE
 use My_Derived_ml   !ICP , only : d_2d, IOU_INST !, &
     !rv1.2 TMP  D2_VG_REF, D2_VG_1M, D2_VG_STO, D2_FX_REF, D2_FX_STO
@@ -358,6 +358,7 @@ end subroutine Init_sites
   integer :: nglob, nloc, ix, iy,iz, ispec   !/** Site indices           **/
   integer :: nn                           !/** species index          **/
   logical, save :: my_first_call = .true. !/** for debugging          **/
+  integer :: d2index    !ds index for d_2d field access
 
    real,dimension(NOUT_SITE,NSITES_MAX) :: out    !/** for output, local node**/
 
@@ -415,18 +416,24 @@ end subroutine Init_sites
           out(nn,i)   = th(ix,iy,iz,1)
        case ( "hmix" ) 
           out(nn,i)   = pzpbl(ix,iy)
-       case ( "FSTCF0" ) 
-          out(nn,i)   = d_2d(D2_FSTCF0,ix,iy,IOU_INST)
-       case ( "FSTDF0" ) 
-          out(nn,i)   = d_2d(D2_FSTDF0,ix,iy,IOU_INST)
-       case ( "FSTTC0" ) 
-          out(nn,i)   = d_2d(D2_FSTTC0,ix,iy,IOU_INST)
-       case ( "FSTMC0" ) 
-          out(nn,i)   = d_2d(D2_FSTMC0,ix,iy,IOU_INST)
-       case ( "FSTGR0" ) 
-          out(nn,i)   = d_2d(D2_FSTGR0,ix,iy,IOU_INST)
-       case ( "FSTWH0" ) 
-          out(nn,i)   = d_2d(D2_FSTWH0,ix,iy,IOU_INST)
+
+      !ds rv1.6.12 - simplified use of d_2d fields by use of index
+       case ( "D2D" )    
+          d2index     = SITE_XTRA_INDEX(ispec)
+          out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
+ 
+       !ds case ( "FSTCF0" ) 
+       !ds   out(nn,i)   = d_2d(D2_FSTCF0,ix,iy,IOU_INST)
+       !dscase ( "FSTDF0" ) 
+       !ds   out(nn,i)   = d_2d(D2_FSTDF0,ix,iy,IOU_INST)
+       !dscase ( "FSTTC0" ) 
+       !ds   out(nn,i)   = d_2d(D2_FSTTC0,ix,iy,IOU_INST)
+       !dscase ( "FSTMC0" ) 
+       !ds   out(nn,i)   = d_2d(D2_FSTMC0,ix,iy,IOU_INST)
+       !dscase ( "FSTGR0" ) 
+       !ds   out(nn,i)   = d_2d(D2_FSTGR0,ix,iy,IOU_INST)
+       !dscase ( "FSTWH0" ) 
+       !ds   out(nn,i)   = d_2d(D2_FSTWH0,ix,iy,IOU_INST)
 
        end select 
     end do
@@ -461,6 +468,7 @@ end subroutine siteswrt_surf
 
   ! --  Local variables
   integer :: n, i, k,  ix, iy, nn, ispec   ! Site and chem indices
+  integer :: d3index    !ds index for d_3d field access
 
 
   real, dimension(NOUT_SONDE,NSONDES_MAX) :: out
@@ -477,7 +485,6 @@ end subroutine siteswrt_surf
                errmsg = "ok"
             case default
               errmsg = "ERROR: SONDE_XTRA:" // SONDE_XTRA(ispec) 
-!hf u2              call stop_test(.false.,me,NPROC,99,errmsg)
               call gc_abort(me,NPROC,"errmsg")
             end select
       end do
@@ -486,9 +493,6 @@ end subroutine siteswrt_surf
         n  = sonde_n(i)
         ix = sonde_x(i)
         iy = sonde_y(i)
-!hf        n  = site_n(i)
-!hf        ix = site_x(i)
-!hf        iy = site_y(i)
         nn = 0
 
 
@@ -518,6 +522,12 @@ end subroutine siteswrt_surf
              out(nn+1:nn+KMAX_MID,i) =  xksig(ix,iy,KMAX_MID:1:-1)   ! NXTRA  first
           case ( "th" ) 
              out(nn+1:nn+KMAX_MID,i) =  th(ix,iy,KMAX_MID:1:-1,1)   ! NXTRA  first
+
+      !ds rv1.6.12 - simplified use of d_2d fields by use of index
+           case ( "D3D" )    
+             d3index                 = SONDE_XTRA_INDEX(ispec)
+             out(nn+1:nn+KMAX_MID,i) =  d_3d(d3index,ix,iy,KMAX_MID:1:-1,IOU_INST)
+ 
           end select 
           nn = nn + KMAX_MID
         end do
