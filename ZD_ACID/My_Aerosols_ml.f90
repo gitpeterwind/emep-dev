@@ -1,290 +1,183 @@
-!File:  My_Aerosols_ml
-! Contains modules relating to aerosols.
-! These modules may be switched and altered as needed. 
-! ulic parameters ORGANIC_AEROSOLS AND INORGANIC_AEROSOLS are
-! assigned 
+ module My_Aerosols_ml
+
+   !----------------------------------------------------------------------
+   ! Allows to select aerosol types for the model run:
+   ! 1. AERO_DYNAMICS - for running UNI-AERO 
+   ! 2. INORGANIC_AEROSOLS - for run old Ammonium routine
+   ! 3. RUN_MARS - run MARS eq model
+   ! 4. RUN_EQSAM - run EQSAM eq model ! One of 2.,3. or 4. must be true
+   ! 5. ORGANIC_AEROSOLS - for including Secondary Organic Aerosol
+   !----------------------------------------------------------------------
+
+!st.. Made from the previous My_Aerosols, where Ammonium module is moved to
+!st.. Ammonium_ml.f90, and OrganicAerosol module is moved to SOA_ml.f90
 
-   !--------------- Inorganic and Organic  aerosols
-   ! .. 1) Ammonium_ml    - SO4, AMSU, AMNI, HNO3 equilib - EMEP traditional
-   ! .. 2) Organic_ml     - SOA formation    (here=dummy)
-
-
-module Ammonium_ml
- !----------------------------------------------------------------------------
- ! Module to set up and process the NH4-NO3-SO4 reaction system
- !
- ! Usage:
- !   "call ammonium()"  - from Runchem
- !     - on the first call this runs the tabulation routines. On all calls
- !     the equilibrium relationships are calculated and run to establish
- !     new values of ammonium sulphate (AMSU), NH3, HNO3, SO4 and 
- !     ammonium nitrate (AMNI).
- !----------------------------------------------------------------------------
- !
- use ModelConstants_ml   , only : CHEMTMIN, CHEMTMAX   &! Temp. range
-                                 , PPB             &! unit factors
-                                 , KCHEMTOP            &! k=2 - top of chemistry
-                                 , KMAX_MID                ! K=20 at ground
- implicit none
- private
-
-
- !/- subroutines:
- public   :: ammonium          ! Sets up most tables
-
- private  :: tabulate         ! Sets up most tables, and calls tab_rct_rates
- private  :: setup_ammonium   ! setup data for 1d column calculation
- private  :: calc_ammonium    ! Equilibrium distribution of NH4-SO4-NO3
-
- !/Wanted?
- logical, public, parameter :: INORGANIC_AEROSOLS = .true.
-
- !/- Outputs: - updated xn_2d concentrations after equilibrium
-
-
- !/-- Local:
-
-  real, private, dimension(CHEMTMIN:CHEMTMAX), save  :: &
-                   tab_rhdel   &  ! RH of deliquescence for ammonium nitrate
-                  ,tab_Kp_amni &  ! Equil. constant, nh3 + hno3  <--> nh4no3
-                  ,tab_MozP1   &  ! Mozurkewich P1 value for Kaq
-                  ,tab_MozP2   &  ! Mozurkewich P2 value for Kaq
-                  ,tab_MozP3   ! &  ! Mozurkewich P3 value for Kaq
-!                 ,tab_vav_n2o5   ! avg. molecular speed N2O5 
-				! Might move elsewhere
-
-   logical, private, save :: my_first_call = .true.
-
-
- contains
-
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine ammonium()
-!    integer :: k ! for print-out only
-
-   real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
-                                                      !was :  miscrc(ICRCNH3,k)
-
-     if ( my_first_call ) then
-        call tabulate()
-     	my_first_call = .false.
-     endif
-
-     call setup_ammonium(rcnh4)
-     call calc_ammonium(rcnh4)
-
-
-
- end subroutine ammonium
-
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine tabulate()
- !
-     integer :: i
-   real, dimension(CHEMTMIN:CHEMTMAX) :: t  ! temp.(K) for tabulations
-
-
-     !/-- current temperature range: from 148 K (-125C) ro 333K (+60C):
-
-      t = (/ (real(i),i=CHEMTMIN,CHEMTMAX) /)
-
-
-    ! Tabulations tab_rhedl, tab_Kp_amni, tab_MozP.., tab_vav_n2o5
-    !-------------------------------------------------------------------
-    !   relative humidity of deliquescence for ammonium nitrate
-    !   Ref:  Mozurkewich (1993)  - Journal???
-    !   Units : fraction 0-1
-    !   (MADE/MACHO notes  : was miscrcit(ICRHD,it)
-
-       tab_rhdel(:) = exp( 618.3/t(:) - 2.551 )
-
-    !-------------------------------------------------------------------
-    !    Equilibrium constant (Kp):  NH3 + HNO3  <-------> NH4NO3   
-    !    Ref: Mozurkewich (1993)
-    !    Units : (molecule/cm3)^2 for Kp
-    !   (MADE/MACHO notes  : was miscrcit(ICRS,it)
-    !
-    !      lnKp = 118.87 - 24084.0/T - 6.025* ln(T)
-    !
-    ! st: documentation has + 24084!
-    ! c.f. Seinfeld, eqn 9.91, p.532 - suggests minus, if it is relevant?
-
-       tab_Kp_amni(:) = exp( 118.87 - 24084.0/t(:)-6.025*alog(t(:)) )
-
-    !-------------------------------------------------------------------
-    !    temp. dependant constrants for calcolating dissos. rate 
-    !    for  the formation of ammonium nitrate  
-    !    Ref: Mozurkewich (1993)
-    !   (MADE/MACHO notes  : was miscrcit(ICXK1,it)..miscrcit(ICXK_3,it)
-    !    n.b. EMEP report 2/98 had 2446 in P3, but 24.46 is correct
-
-       tab_MozP1(:) = exp( -135.94 +  8763.0/t(:) + 19.12*alog( t(:) ) )
-       tab_MozP2(:) = exp( -122.65 +  9969.0/t(:) + 16.22*alog( t(:) ) )
-       tab_MozP3(:) = exp( -182.61 + 13875.0/t(:) + 24.46*alog( t(:) ) )
-
-
-  !-------------------------------------------------------------------
-  end subroutine tabulate
-
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine setup_ammonium(rcnh4)
-   !
-   ! Calculates the equilibrium constant for the ammonium-suphate
-   ! ammonium nitrate, Kp and Kaq (here denoted rcKaq). 
-   ! Ref: EMEP Report 2/98, pages B:3, Mozurkewich (1993)
-   !
-   !      Kpaq = [ P1 -P2(1-rh/100) + P3(1-rh/100)^2 ] .(1-rh/100)**1.75. Kp
-   !
-   ! Units :  Kp, Kaq : (molecules cm-3)^2
-   !          rc      ????
-   ! MADE/MACHO notes.. ds- replaced xk by Kp, miscrc(ICRCNH3) by rc...??
-   !--------------------------------------------------------------------------
- use Setup_1dfields_ml   , only : rh, amk, itemp
-
-   real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
-   real, dimension(KCHEMTOP:KMAX_MID) ::   rhd, Kp     ! deliq. rh, Kp
-    real, dimension(KCHEMTOP:KMAX_MID) ::    &
-               roappm                     &  ! density in ppm?
-              ,humd,humdsqrt,humdsqrt2       ! humd = 1-rh
-   !!          rhd, Kp                    &  ! deliq. rh, Kp
-
-      rhd(:) =  tab_rhdel( itemp(:) )   ! was: miscrcit(ICRHD,itk)
-
-      Kp(:)  =  tab_Kp_amni( itemp(:) ) ! was: miscrcit(ICRS,itk)
-
-!hf Initialize rcnh4 to tab_Kp_amni,need roappm
-      roappm(:) = amk(:)*PPB
-      rcnh4(:)  =  tab_Kp_amni( itemp(:) )*roappm(:)* roappm(:)
-
-!  The lines below are a CPU-efficient way of calculating the
-!  power of 1.75  for  Mozurkewich Kp, suggested by  su.
-
-      where ( rh >= rhd ) !  old: if(rh(k) >= rhd) then
-
-        humd = 1.0001 - rh                  ! ds why not 1.0?
-        humdsqrt = sqrt(humd)
-        humdsqrt2 = sqrt(humdsqrt)*humdsqrt
-        Kp = (   tab_MozP1(itemp) &
-               - tab_MozP2(itemp)*humd &
-               + tab_MozP3(itemp)*humd*humd  ) *humd*humdsqrt2*Kp
-
-        roappm = amk*PPB
-        rcnh4  = Kp * roappm * roappm   ! old misrc(ICRCNH3,k)
-
-!hf BUG      elsewhere
-
-!hf BUG        rcnh4 = 0.0
-      end where
-
-
- end subroutine setup_ammonium
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine calc_ammonium(rcnh4)
-     !** DESCRIPTION
-     !   Calculates the distribution of NH3, NH4SO4, NH4NO3
-     !   - needs more text...
-     !-------------------------------------------------------------------------
- use GenSpec_tot_ml      , only : SO4, AMSU, AMNI, NH3, HNO3
- use Setup_1dfields_ml   , only :  xn => xn_2d
-
-   real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
-     real, dimension(KCHEMTOP:KMAX_MID) :: eqnh3, delteq   !ds, delt
-
-
-     where ( 1.5*xn(SO4,:) >  xn(NH3,:) ) ! ammonium sulphate in excess of NH3
-
-            xn(AMSU,:) = xn(AMSU,:) +  xn(NH3,:)*2./3.
-
-            xn(SO4,:) = xn(SO4,:)    - xn(NH3,:)*2./3.
-
-            xn(NH3,:) = 0.
-
-     elsewhere
-
-            xn(AMSU,:) = xn(AMSU,:) + xn(SO4,:)
-
-            xn(NH3,:) = xn(NH3,:)   - xn(SO4,:)*1.5
-
-            xn(SO4,:) = 0.
-
-     end where
-
-     ! The equilibrium concentration of NH3 is:
-
-     eqnh3 = (xn(NH3,:) - xn(HNO3,:))*0.5   & 
-                + sqrt( 0.25*(xn(NH3,:) -xn(HNO3,:))**2 + rcnh4 )+1.
-                                                      !ds - why +1 here?
-    !hf eqnh3 er i størrelsesorden 10^20.
-
-     delteq     = eqnh3 - xn(NH3,:)
-     delteq     = min(delteq,xn(AMNI,:))   ! ds - used to have delt here
-
-     xn(AMNI,:) = xn(AMNI,:) - delteq
-     xn(NH3,:)  = xn(NH3,:)  + delteq
-     xn(HNO3,:) = xn(HNO3,:) + delteq
-
-   end subroutine calc_ammonium
-   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-end module Ammonium_ml
-
-!=============================================================================
-!=============================================================================
-!=====    Module 2: Organics =================================================
-!=============================================================================
-!=============================================================================
-
-module OrganicAerosol_ml
-! From BOX3D on 9/8/01
-   ! Calculates the amount of condesible species in the gas and aerosol
-   ! phases. 
-   ! Methodology from Andersson-Sk\"old and Simpson, 2000, Secondary Organic
-   ! Aerosol Formation in Northern Europe: a Model Study, to be published
-   ! in JGR.
-   !
-   ! Usage: call OrganicAerosol from Runchem, after setup of 1d-fields
-   ! finished.  The subroutine initialises itself on the first call
-   ! and thereafter modifies two external variables:
-   !   xn(SOA,k) : the concentrations of SOA 
-   !   Fgas(X,k) : The fraction of X which is gas and not aeorosl
-   !
-   ! Dave Simpson, August 2001 
-   !--------------------------------------------------------------------------
-   ! nb - we use all of GenSpec_tot_ml since different model versions
-   !  will have different species names. This module is intended to
-   !  insensitive to the actual names one day, so this should be
-   !  revised .. one day   - ds.
-   !--------------------------------------------------------------------------
-   use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
-                                    K2 => KMAX_MID, K1 => KCHEMTOP
-   use PhysicalConstants_ml, only : AVOG
-   use Setup_1dfields_ml,    only : itemp, xn => xn_2d
-   use GenChemicals_ml,      only : species   ! for molwts
-   use GenSpec_tot_ml,  A1 => FIRST_SOA , A2 => LAST_SOA
    implicit none
 
-   !/-- subroutines
-    public  :: OrganicAerosol
+   !/-- public           !!  true if wanted
+                    
+    logical, public, parameter :: AERO_DYNAMICS      = .false.   &  
+                                , INORGANIC_AEROSOLS = .false.  & !old Ammonium stuff
+                                , RUN_MARS           = .false. & !MARS
+                                , RUN_EQSAM          = .true. & !EQSAM
+                                , ORGANIC_AEROSOLS   = .false.   
+
+contains
+
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+      subroutine My_MARS(deb)
+
+    !..................................................................
+    ! Different pre-processing (and for aerosol dynamisc: fractioning) 
+    ! is needed for UNI-ACID and UNI-AERO. UNI-OZONE and UNI-ACID can 
+    ! use the same.
+    !
+    ! hf dec-2002
+    ! changed eg aNH4->aNH4out in call to rpmares
+    ! Should put k-loop into rpmares
+    ! Should change name rpmares to MARS
+    !..................................................................
+
+ use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
+ use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4
+ use Setup_1dfields_ml,  only :  temp, rh
+ use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
+ use GenChemicals_ml,    only :  species
+ use PhysicalConstants_ml, only : AVOG
+ use MARS_ml, only: rpmares
+
+ implicit none
+ real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
+
+ logical, intent(in)  :: deb
 
 
-   !/-- public
+ !.. local
+  real    :: so4in, no3in, nh4in, hno3in, nh3in,   &
+             aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
+             coef
+  integer :: k, ic, bin, spec, errmark
+  logical :: debsub
+ !-----------------------------------
 
-    logical, public, parameter :: ORGANIC_AEROSOLS = .false.   ! true if wanted
+   coef = 1.e12 / AVOG
 
-    real, public, dimension(A1:A2,K1:K2), save :: Fgas  ! Fraction in gas-phase
+   do k = KCHEMTOP, KMAX_MID
+  
+!//.... molec/cm3 -> ug/m3
+      so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef
+      hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef 
+      nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef
+      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef
+      nh4in  = xn_2d(aNH4,k) * species(aNH4)%molwt  *coef
 
-   contains
-   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-   !+ Driver routine for Secondary Organic Aerosol  module
+ !--------------------------------------------------------------------------                
+    call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+                  aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, ERRMARK,debsub) 
+ !--------------------------------------------------------------------------
+ ! SO4 is not changed so do not need to be reset
+     
 
-   subroutine OrganicAerosol(debug_flag)
-   logical, intent(in) :: debug_flag  ! for debugging purposes only
 
-     ! empty 
+      xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
+      xn_2d(NH3,k)   = max (FLOOR, gNH3out / (species(NH3)%molwt  *coef) )
+      xn_2d(aNO3,k)  = max (FLOOR, aNO3out / (species(aNO3)%molwt  *coef) )
+      xn_2d(aNH4,k)  = max (FLOOR, aNH4out / (species(aNH4)%molwt  *coef) )
 
-   end subroutine OrganicAerosol
+   enddo  ! K-levels
 
-end module OrganicAerosol_ml
-!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+ end subroutine My_MARS
+
+!.............................
+
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+      subroutine My_EQSAM(debug_cell)
+
+    !..................................................................
+    ! Different pre-processing (and for aerosol dynamisc: fractioning) 
+    ! is needed for UNI-ACID and UNI-AERO. UNI-OZONE and UNI-ACID can 
+    ! use the same.
+    !
+    ! hf dec-2002
+    ! Version aero_martijn included (same as in LOTUS)
+    ! 
+    ! 
+    !..................................................................
+
+ use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
+ use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4
+ use Setup_1dfields_ml,  only :  temp, rh
+ use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
+ use PhysicalConstants_ml, only : AVOG
+ use EQSAM_ml, only: aero
+
+ implicit none
+ real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
+
+ logical, intent(in)  :: debug_cell
+
+
+ !.. local
+  real    :: so4in(KCHEMTOP:KMAX_MID), &
+             no3in(KCHEMTOP:KMAX_MID), &
+             nh4in(KCHEMTOP:KMAX_MID), &
+             hno3in(KCHEMTOP:KMAX_MID), &
+             nh3in(KCHEMTOP:KMAX_MID),   &
+             aSO4out(KCHEMTOP:KMAX_MID), &
+             aNO3out(KCHEMTOP:KMAX_MID), &
+             aH2Oout(KCHEMTOP:KMAX_MID), &
+             aNH4out(KCHEMTOP:KMAX_MID), & 
+             gNH3out(KCHEMTOP:KMAX_MID), &
+             gNO3out(KCHEMTOP:KMAX_MID)
+
+  integer :: i,j,k, errmark
+  logical :: debsub = .false.
+ !-----------------------------------
+
+
+  if ( debsub .and. debug_cell ) then ! Selected debug cell
+    write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
+               xn_2d(NH3,20),xn_2d(aNO3,20),xn_2d(aNH4,20)
+  endif
+
+!//.... molec/cm3 -> micromoles/m**3
+      so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+      hno3in(KCHEMTOP:KMAX_MID) = xn_2d(HNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+      nh3in(KCHEMTOP:KMAX_MID)  = xn_2d(NH3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
+      no3in(KCHEMTOP:KMAX_MID)  = xn_2d(aNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+      nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(aNH4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+
+ !--------------------------------------------------------------------------                
+    call aero (so4in, hno3in,no3in ,nh3in, nh4in , rh, temp,   &
+                  aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, ERRMARK,debsub) 
+ !--------------------------------------------------------------------------
+ ! SO4 is not changed so do not need to be reset
+     
+
+!//.... micromoles/m**3  -> molec/cm3 
+      xn_2d(HNO3,KCHEMTOP:KMAX_MID)  = max(FLOOR,gNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
+      xn_2d(NH3,KCHEMTOP:KMAX_MID)   = max(FLOOR,gNH3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
+      xn_2d(aNO3,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 ) 
+      xn_2d(aNH4,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNH4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
+
+ if ( debsub .and. debug_cell ) then ! Selected debug cell
+    write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
+               xn_2d(NH3,20),xn_2d(aNO3,20),xn_2d(aNH4,20)
+  endif
+
+ end subroutine My_EQSAM
+
+!.............................
+
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ end module My_Aerosols_ml
+
+
+
+
 
 
