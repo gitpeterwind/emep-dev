@@ -49,7 +49,7 @@ contains
     WetDep(6)   = WScav(HNO3,   1.4,  0.5)   ! ds
     WetDep(7)   = WScav(H2O2,   1.4,  0.5)   ! jej, maybe should be 0.6*0.7??
     WetDep(8)   = WScav(HCHO,   0.1,  0.03)  ! jej, plus ds 1/3 rule
-    WetDep(9)   = WScav(pNO3,   1.4,  EFFCO) ! ds, from Svetlana's PMco stuff
+    WetDep(9)   = WScav(pNO3,   1.0,  EFFCO) !!dstest rv1_8b  ds, from Svetlana's PMco stuff
     WetDep(10)  = WScav(PM25,   1.0,  EFF25)
     WetDep(11)  = WScav(PMCO,   1.0,  EFFCO)
 

@@ -1,4 +1,41 @@
+==============================================================================
+=================== Dave,  1st Sep. 2003  rv1_8beta ==========================
+==============================================================================
+MODEL AS DOCUMENTED!! (Except need to change from tf2_ to new files)
+in Preport 1/2003, Part 1
 
+Changes made while documenting model:
+
+DryDep_ml.f90
+    -- Bug fix: SAIadd moved here from UK_ml
+GlobalBCs_ml
+    -- vmin fixed for HNO3, SO2
+Met_ml
+    -- zs1 renamed to zs_bnd
+    -- new params and variables:
+       real, parameter :: KZ_MINIMUM = 0.001   ! m2/s
+       real, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
+       real, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
+       real :: h100 ! Top of lowest layer - replaces 100.0
+PhysicalConstants_ml.f90
+    -- KARMAN = 0.41  (more consistent with Garratt)
+UK_ml
+    -- Bug fix: SAIadd moved to DryDep
+ZD_OZONE/My_Reactions.inc
+  -- GLYOX photolysis products changed
+ZD_OZONE/My_WetDep_ml.f90
+ZD_ACID/My_WetDep_ml.f90
+  -- WScav for pNO3 changed.
+
++ small tidy ups in DefPhotolysis
+
+==============================================================================
+=================== Dave, 24th Aug.  rv1_7_4 ==================================
+==============================================================================
+
+ZD_OZONE: My_Reactions_ml
+   --  Bug fix: changed products of glyoxal photolysis to be HO2 + 2 CO
+       instead of HO2 + CO.
 
 ==============================================================================
 =================== Dave, 19th Aug.  rv1_7_3 ==================================

@@ -25,7 +25,7 @@ implicit none
     ,  CP      = 1004.0          &   ! Specific heat at const. pressure
     ,  R       = 287.0           &   ! Gas constants J K-1 kg-1
     ,  XKAP    = R/CP            &
-    ,  KARMAN  = 0.4             &   ! Von Karman  (=0.35 elsehwere in code!)
+    ,  KARMAN  = 0.41            &   ! Von Karman  (=0.35 elsehwere in code!)
     ,  PI      = 3.141592653589793238462643383279 & ! www.verbose.net/Pi.html
     ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians
     ,  ROWATER = 1000.           &   ! pw density of water kg m-3

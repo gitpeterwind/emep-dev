@@ -277,12 +277,12 @@ contains
    ! ds 29/7/2003 - replaced 100.0 km by 999.9 km to ensure more uniform
    ! vertical scaling. 
   SpecBC(IBC_O3   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0) !N1  
-  SpecBC(IBC_SO2  ) = sineconc( 0.15 , 15.0, 0.05, 999.9, 0.15 , 0.03) !W99, bcKz vmin
+  SpecBC(IBC_SO2  ) = sineconc( 0.15 , 15.0, 0.05, 999.9, 0.03 , 0.03) !W99, bcKz vmin
   SpecBC(IBC_SO4  ) = sineconc( 0.15 ,180.0, 0.00, 1.6,  0.05 , 0.03) !W99
   SpecBC(IBC_NO   ) = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.03, 0.02)
   SpecBC(IBC_NO2  ) = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04)
   SpecBC(IBC_PAN  ) = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 )  !bcKz change vmin
-  SpecBC(IBC_HNO3 ) = sineconc( 0.1  , 15.0, 0.03, 999.9, 0.10, 0.05 )!M, bcKz vmin
+  SpecBC(IBC_HNO3 ) = sineconc( 0.1  , 15.0, 0.03, 999.9, 0.05, 0.05 )!M, bcKz vmin
   SpecBC(IBC_CO   ) = sineconc( 125.0, 75.0, 35.0,25.0  , 70.0, 30.0 )!JEJ-W
   SpecBC(IBC_C2H6 ) = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05 )
   SpecBC(IBC_C4H10) = sineconc( 2.0  , 45.0, 1.0 , 6.0  , 0.05, 0.05 )

@@ -158,7 +158,8 @@
       + 2*rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
-      + rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
+      !ds rv1.7.4 bug-fix + rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
+      + 0.5 * rcphot(IDHCOHCO,K) * xnew(GLYOX )  & !dsrv1_8b5
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcphot(IDCH3O2H,K) * xnew(C2H5OOH )  &
       + rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
@@ -842,6 +843,8 @@
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
       + 1.56*rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
       + rcphot(IDCH3O2H,K) * xnew(PRRO2H )  &
+!ds rv1_8b5
+      + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcemis(QRCHCHO,K) 
 
       L =  &
@@ -1230,7 +1233,8 @@
       + rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDBCH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
-      + rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
+      !ds rv1.7.4 bug-fix
+      + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcemis(QRCCO,K) 
 

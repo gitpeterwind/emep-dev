@@ -53,7 +53,7 @@ contains
 !OZ WetDep(8)   = WScav(HCHO,   0.1,  0.03)  ! jej, plus ds 1/3 rule
     WetDep(7)   = WScav(PM25,   0.7,  EFF25)
     WetDep(8)   = WScav(PMCO,   0.7,  EFFCO)
-    WetDep(9)   = WScav(pNO3,   1.4,  EFFCO)
+    WetDep(9)   = WScav(pNO3,   1.0,  EFFCO) !ds1.8beta
 
   end subroutine Init_WetDep
 

@@ -1311,13 +1311,13 @@ private
 !c	zlimax	: maximum value of ABL-height, zi, (2000), m
 !c	zimhs	: ziu - hs
 !c	zimin	: minimum value of ABL-height, zi, (200), m
-!c	zimz	: ziu - zs1
+!c	zimz	: ziu - zs_bnd
 !c	zis	: height of the stable ABL, m
 !c	ziu	: height of the unstable ABL, m
 !c	zixx	: Height og ABL (intermediate value), m
 !c	zm	: geopotential height of full sigma levels above topography, m
-!c	zmhs	: zs1 - hs
-!c	zs1	: geopotential height of  half sigma levels above topography, m
+!c	zmhs	: zs_bnd - hs
+!c	zs_bnd	: geopotential height of  half sigma levels above topography, m
 !c	ztop	: height of the uppermost layer in s-coordinates
 !c
 !c-------------------------------------------------------------------
@@ -1415,7 +1415,7 @@ private
 !c
 !c	Kz	=	z*Kz(hs)/hs	if z < hs
 !c 	
-!c		=	zs1*xkhs/hs	if zs1 <= hs
+!c		=	zs_bnd*xkhs/hs	if zs_bnd <= hs
 !c
 !c	and
 !c
@@ -1427,7 +1427,7 @@ private
 !c		=	xkzi*((zimz/zimhs)**2*(xkhs-xkzi
 !c			+ zmhs*(xkdz + 2.0*(xkhs-xkzi/zimhs))
 !c
-!c					if hs <= zs1 < ziu
+!c					if hs <= zs_bnd < ziu
 !c
 !c
 !c
@@ -1479,7 +1479,7 @@ private
 !c	xksig = xl2*|u|*F(ri)/|z|
 !c
 !c	where
-!c		xl2   = (KARMAN*amin1(zs1, zimin))**2
+!c		xl2   = (KARMAN*amin1(zs_bnd, zimin))**2
 !c
 !c		F(ri) = sqrt(1.1-87*ri),   if ri <= 0
 !c		F(ri) = 1.1-ri/ric,	   if 0 < ri <= 0.5*ric
@@ -1508,37 +1508,37 @@ private
 !c
 !!                ///////////////////
 !c    sigma_bnd(1) = 0 - -sigmas - - - - - sdot(1) = 0, xksig(1)=xksm(1)=0, 
-!!                                           pr(1)=0,PT,exns(1), zs1(1)
+!!                                           pr(1)=0,PT,exns(1), zs_bnd(1)
 !c
 !c        sigma_mid(1) ---sigmam---------- u, v, th, q, cw, exnm (1)
 !c
 !c
 !c        sigma_bnd(2) - - - - s - - - - - sdot(2), xksig(2), exns(2), pr(2) 
-!!                                                 zs1(2), xksm(2)
+!!                                                 zs_bnd(2), xksm(2)
 !c
 !c        sigma_mid(2) --------m---------- u, v, th, q, cw, exnm (2)
 !c
 !c
 !c        sigma_bnd(3) - - - - s - - - - - sdot(3), xksig(3), exns(3), pr(3)
-!!                                                 zs1(3), xksm(3)
+!!                                                 zs_bnd(3), xksm(3)
 !c
 !c        sigma_mid(3) --------m---------- u, v, th, q, cw, exnm (3)
 !c
 !c
 !c        sigma_bnd(4) - - - - s - - - - - sdot(4), xksig(4), exns(4), pr(4)
-!!                                                  zs1(4), xksm(4)
+!!                                                  zs_bnd(4), xksm(4)
 !c
 !c        sigma_mid(4) --------m---------- u, v, th, q, cw, exnm (4)
 !c
 !c
 !c        sigma_bnd(5) - - - - s - - - - - sdot(5), xksig(5), exns(5), pr(5)
-!!                                                  zs1(5), xksm(5)
+!!                                                  zs_bnd(5), xksm(5)
 !c
 !!                        :
 !!                        :
 !c
 !c  sigma_bnd(KMAX_BND-1) - - - - s - - - - - sdot(KMAX_BND-1), xksig(KMAX_MID), 
-!!                                    exns(KMAX_BND-1),zs1(KMAX_BND-1), 
+!!                                    exns(KMAX_BND-1),zs_bnd(KMAX_BND-1), 
 !!                                    pr(KMAX_BND-1),xksm(KMAX_MID)
 !c
 !c    sigma_mid(KMAX_MID) --------m---------- u, v, th, q, cw, exnm (KMAX_MID); 
@@ -1547,7 +1547,7 @@ private
 !c
 !c sigma_bnd(KMAX_BND) = 1- - - - s - - - - - sdot(KMAX_BND) = 0, ps, th2m, fh, 
 !!                ///////////////////        fm, mslp, xksig(KMAX_MID)=0, 
-!!                                           exns(KMAX_BND), zs1(KMAX_BND), 
+!!                                           exns(KMAX_BND), zs_bnd(KMAX_BND), 
 !!                                           pr(KMAX_BND),xksm(KMAX_BND)=0.
 !c
 !c
@@ -1566,7 +1566,7 @@ private
 
 !definer alle dimensjoner med MAXLIMAX,MAXLJMAX
       real exnm(MAXLIMAX,MAXLJMAX,KMAX_MID),exns(MAXLIMAX,MAXLJMAX,KMAX_BND),zm(MAXLIMAX,KMAX_MID),&
-          zs1(MAXLIMAX,MAXLJMAX,KMAX_BND),risig(MAXLIMAX,KMAX_BND),xksm(MAXLIMAX,KMAX_BND),&
+          zs_bnd(MAXLIMAX,MAXLJMAX,KMAX_BND),risig(MAXLIMAX,KMAX_BND),xksm(MAXLIMAX,KMAX_BND),&
           zis(MAXLIMAX),ziu(MAXLIMAX,MAXLJMAX),delq(MAXLIMAX),thsrf(MAXLIMAX),trc(MAXLIMAX),&
           pidth(MAXLIMAX),dpidth(MAXLIMAX),lim,help(MAXLIMAX,MAXLJMAX),a(MAXLIMAX,MAXLJMAX),&
           zixx(MAXLIMAX,MAXLJMAX),xdthdz,dthdz(MAXLIMAX,KMAX_MID),zmmin,&
@@ -1580,11 +1580,17 @@ private
       real hsurfl
 !hf new
       integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp
-         
-
+!ds Kz-tests
+      real, parameter :: KZ_MINIMUM = 0.001   ! m2/s
+      real, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
+      real, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
 
       integer nh1(MAXLIMAX),nh2(MAXLIMAX),nr
+      real :: h100 ! Top of lowest layer - replaces 100.0 
 
+!ds Check:
+      if(  KZ_SBL_LIMIT < 1.01*KZ_MINIMUM ) &
+             call gc_abort(me,NPROC,"SBL limit too low!!")
 !hf new
       iip = limax+1
       jjp = ljmax+1
@@ -1602,8 +1608,8 @@ private
       zlimax = 3000.
       zimin = 100.
       zmmin = 200.
-      kzmin = 1.e-3
-      kzmax = 1.e3
+      !ds-Kz kzmin = 1.e-3
+      !ds-Kz kzmax = 1.e3
 !hf      venmin=0.
 !hf      venmax= sqrt(umax**2 + umax**2)*xtime*2.*h/sqrt(PI)*zlimax
       eps = 0.01
@@ -1647,7 +1653,7 @@ private
 !c
 !c     Start j-slice here.
 !c
-      lim = 0.1
+!ds-Kz      lim = 0.1
 !c..hj..test lim=1.
       do 40 j=1,ljmax
 !c
@@ -1662,14 +1668,14 @@ private
 !c
 !c.. exns(KMAX_BND), th(KMAX_BND) and height of sigmas:
          do 16 i=1,limax
-            zs1(i,j,KMAX_BND)=0.
+            zs_bnd(i,j,KMAX_BND)=0.
  16      continue
 !c
 !c     Height of the half levels
 !c
          do 17 k=KMAX_BND-1,1,-1 
          do 17 i=1,limax
-            zs1(i,j,k)=zs1(i,j,k+1)+th(i,j,k,nr)*&
+            zs_bnd(i,j,k)=zs_bnd(i,j,k+1)+th(i,j,k,nr)*&
                  (exns(i,j,k+1)-exns(i,j,k))/GRAV
 
  17      continue
@@ -1677,8 +1683,8 @@ private
 !c..height of sigma:
          do 18 k=1,KMAX_MID
          do 18 i=1,limax
-            zm(i,k)=((exnm(i,j,k)-exns(i,j,k))*zs1(i,j,k+1)&
-                   +(exns(i,j,k+1)-exnm(i,j,k))*zs1(i,j,k))&
+            zm(i,k)=((exnm(i,j,k)-exns(i,j,k))*zs_bnd(i,j,k+1)&
+                   +(exns(i,j,k+1)-exnm(i,j,k))*zs_bnd(i,j,k))&
                   /(exns(i,j,k+1)-exns(i,j,k))    
 !c
  18      continue
@@ -1717,7 +1723,7 @@ private
 !c........................
 !c..mixing length squared:
 !c
-            xl2=(KARMAN*amin1(zs1(i,j,k),zmmin))**2
+            xl2=(KARMAN*amin1(zs_bnd(i,j,k),zmmin))**2
 
 !c
 !c..............................
@@ -1820,10 +1826,11 @@ private
 	do 25 k=KMAX_MID,2,-1
 	do 25 i=1,limax
 
-	if(xksm(i,k).ge.lim .and. nh2(i).eq.1) then
-           nh1(i)=k
+	!ds-Kz if(xksm(i,k).ge.lim .and. nh2(i).eq.1) then
+	if(xksm(i,k) >= KZ_SBL_LIMIT .and. nh2(i) == 1) then
+           nh1(i)=k   ! Still unstable
         else
-           nh2(i)=0
+           nh2(i)=0   ! Now stable
         endif
 !c
   25	continue
@@ -1832,12 +1839,12 @@ private
 !c
         k=nh1(i)
 !c
-	if(zs1(i,j,nh1(i)).ge.zimin) then
+	if(zs_bnd(i,j,nh1(i)).ge.zimin) then
 
            if( abs(xksm(i,k)-xksm(i,k-1)) .gt. eps) then 
 
-              zis(i)=((xksm(i,k)-lim)*zs1(i,j,k-1) &
-                  + (lim-xksm(i,k-1))*zs1(i,j,k))&
+              zis(i)=((xksm(i,k)-KZ_SBL_LIMIT )*zs_bnd(i,j,k-1) &
+                  + (KZ_SBL_LIMIT -xksm(i,k-1))*zs_bnd(i,j,k))&
                   /(xksm(i,k)-xksm(i,k-1))
            else
 
@@ -2010,6 +2017,7 @@ private
          xkhs(i)=0.                                            
          xkdz(i)=0.
          xkzi(i)=0.
+         h100 = zs_bnd(i,j,KMAX_MID)
 !c
 !c
 !c...................................................................
@@ -2027,11 +2035,11 @@ private
             hs(i)=sm*ziu(i,j)
 !c..u*
 !c
-         if(foundustar)then                      
-            ux0 = ustar(i,j,1)
-         else
-            ux0 = sqrt(fm(i,j,nr)/roas(i,j))
-         endif
+            if(foundustar)then                      
+               ux0 = ustar(i,j,1)
+            else
+               ux0 = sqrt(fm(i,j,nr)/roas(i,j))
+            endif
 
             ux0=amax1(ux0,0.00001)
 
@@ -2040,37 +2048,21 @@ private
              /(ps(i,j,nr)*ux0*ux0*ux0)
 
 
-        !ds rv1_7_2 changes: use simple Garratt \Phi function
-        !   instead of "older" Businge and Iversen/Nordeng stuff:
+           !ds rv1_7_2 changes: use simple Garratt \Phi function
+           !   instead of "older" Businge and Iversen/Nordeng stuff:
 
-	! old code distinguished free convection from less unstable
-	! we don't bother now.
-            !dsif(hsl >= 0  ) then           ! Unstable
-               xkhs(i)=ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)/1.00   
-               xkdz(i)=xkhs(i)*(1.-5.0*hsl/(1.0-16.0*hsl))/hs(i)        
-            !dselse
-            !dsif(hsl.ge.-2.) then           
-            !ds   xkhs(i)=ux0*KARMAN*hs(i)*sqrt(1.-9.*hsl)/0.74   
-            !ds   xkdz(i)=xkhs(i)*(1.-4.5*hsl/(1.-9.*hsl))/hs(i)        
-            !dselse
+               xkhs(i)=ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)  ! /Pr=1.00   
+               xkdz(i)=xkhs(i)*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs(i)        
 
-!                                              
-!c..free convection :                                            
-            !ds   xkhs(i)=ux0*KARMAN*hs(i)*(1.-xfrco*hsl)**exfrco/0.74  
-            !ds   xkdz(i)=xkhs(i)*(1.-xfrco*hsl/(3.*(1.-xfrco*hsl)))/hs(i)
-            !dsendif
 !Hilde&Anton
 !pw & hf            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
 !pw & hf                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
-            hsurfl=KARMAN*GRAV*100.*fh(i,j,nr)*XKAP&
+            !ds hsurfl=KARMAN*GRAV*100.*fh(i,j,nr)*XKAP&
+            hsurfl=KARMAN*GRAV*h100*fh(i,j,nr)*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
 
-            !ds rv1_7_2
-            !if(hsurfl >= -2.) then
-               xkh100(i)=ux0*KARMAN*100.*sqrt(1.-16.*hsurfl)/1.00
-            !else
-            !   xkh100(i)=ux0*KARMAN*100.*(1.-xfrco*hsurfl)**exfrco/0.74
-            !endif
+               !ds xkh100(i)=ux0*KARMAN*100.*sqrt(1.-16.*hsurfl) !/Pr=1.00
+               xkh100(i)=ux0*KARMAN*h100*sqrt(1.-16.*hsurfl)
 
             Kz_min(i,j)=xkh100(i)
             xksig(i,j,KMAX_MID)=xkhs(i)
@@ -2094,27 +2086,26 @@ private
             !xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(0.74+4.7*hsl)   
             xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)   
 
+   !ds TEST:
+    ! Should apply PhiM for all layers below:
+    !       if (hs(i) > zs_bnd(i,j,KMAX_MID) ) then
+    !         do k = KMAX_MID, nh1(i), -1
+    !            hsl=KARMAN*GRAV*zs_bnd(i,j,k)*amax1(0.001,fh(i,j,nr))*XKAP&
+    !             /(ps(i,j,nr)*ux0*ux0*ux0)
+    !            xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)   
+    !         end do
+    !       end if
+           
+
          endif
 !hf Hilde&Anton
             hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
             !Kz_min(i,j)=1.35*ux0*KARMAN*100./(0.74+4.7*hsurfl)
-            Kz_min(i,j)=ux0*KARMAN*100./(1.00+5.0*hsurfl)
+            !ds Kz_min(i,j)=ux0*KARMAN*100./(1.00+5.0*hsurfl)
+            Kz_min(i,j)=ux0*KARMAN*h100/(1.00+5.0*hsurfl)
 !c
 !c...............................................................
-!c..factor for reduction of dry-deposition speed from 1m to hs..:
-!c
-!NOT NEEDED
-!         abshd=abs(fh(i,j,nr))
-!         if(abshd.lt.0.1) then
-!            uvhs=(u(i,j,KMAX_MID,nr)*u(i,j,KMAX_MID,nr)&
-!               + v(i,j,KMAX_MID,nr)*v(i,j,KMAX_MID,nr))**0.5
-!            vdfac(i,j)=0.74*uvhs/(ux0*ux0)
-!         else
-!            xfac=(th(i,j,KMAX_MID,nr)/th2m(i,j,nr) - 1.)*ps(i,j,nr)&
-!                /(XKAP*abshd)
-!            vdfac(i,j)=abs(xfac)
-!         endif
 
  60   continue
 !c
@@ -2124,7 +2115,7 @@ private
       do 65 k=1,KMAX_MID
       do 65 i=1,limax
 
-         if(ziu(i,j).gt.zimin .and. zs1(i,j,k).ge.ziu(i,j)) then
+         if(ziu(i,j).gt.zimin .and. zs_bnd(i,j,k).ge.ziu(i,j)) then
             xkzi(i)=xksig(i,j,k)
          elseif (ziu(i,j).gt.zimin) then
 !c
@@ -2132,12 +2123,12 @@ private
 !c..the obrien-profile for z<ziu                      . 
 !c.....................................................                  
 !c
-            if(zs1(i,j,k).le.hs(i)) then   
-               xksig(i,j,k)=zs1(i,j,k)*xkhs(i)/hs(i)          
+            if(zs_bnd(i,j,k).le.hs(i)) then   
+               xksig(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)          
             else                                                      
                zimhs=ziu(i,j)-hs(i)   
-               zimz=ziu(i,j)-zs1(i,j,k)                     
-               zmhs=zs1(i,j,k)-hs(i)                  
+               zimz=ziu(i,j)-zs_bnd(i,j,k)                     
+               zmhs=zs_bnd(i,j,k)-hs(i)                  
                xksig(i,j,k)=xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &  
                  *(xkhs(i)-xkzi(i)+zmhs*(xkdz(i)+&
                  2.*(xkhs(i)-xkzi(i))/zimhs))
@@ -2160,6 +2151,8 @@ private
 !hf Anton&Hilde
 !pw emep1.2               if ( (pzpbl(i,j)>z_mid(i,j,k+1)) .and. k>1 )then
 !hf new               if ( (pzpbl(i,j)>z_mid(i,j,k-1)) )then
+!ds DaveTest         if ( (pzpbl(i,j)>z_mid(i,j,k)) )then
+!ds Restored:
                if ( (pzpbl(i,j)>z_mid(i,j,k)) )then
                   xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
                endif 
@@ -2167,7 +2160,8 @@ private
             enddo
          enddo
 
-       call smoosp(help,kzmin,kzmax)
+       !ds-Kz call smoosp(help,kzmin,kzmax)
+       call smoosp(help,KZ_MINIMUM ,KZ_MAXIMUM )
 
          do i=1,limax
             do j=1,ljmax
@@ -2208,18 +2202,18 @@ private
 !            uabs(i,j)=0.
 !
 !            do k=KMAX_MID,2,-1
-!               if(zixx(i,j).ge.zs1(i,j,k)) then
+!               if(zixx(i,j).ge.zs_bnd(i,j,k)) then
 !
-!                  dz = zs1(i,j,k)-zs1(i,j,k+1)
+!                  dz = zs_bnd(i,j,k)-zs_bnd(i,j,k+1)
 !
 !                  u2 = ( u(i,j,k,nr)**2 + v(i,j,k,nr)**2 )
 !
 !                  uabs(i,j)=uabs(i,j)+sqrt(u2)*dz
 !
-!               elseif (zs1(i,j,k).gt.zixx(i,j) &
-!                     .and. zs1(i,j,k+1).lt.zixx(i,j)) then
+!               elseif (zs_bnd(i,j,k).gt.zixx(i,j) &
+!                     .and. zs_bnd(i,j,k+1).lt.zixx(i,j)) then
 !
-!                    dz = zixx(i,j)-zs1(i,j,k+1)
+!                    dz = zixx(i,j)-zs_bnd(i,j,k+1)
 !
 !                    u2 = ( u(i,j,k,nr)**2 + v(i,j,k,nr)**2 )
 !
