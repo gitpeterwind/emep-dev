@@ -1,3 +1,13 @@
+================== Dave,        21/01/2004, rv1_9_21 ==========================
+
+GlobalBCs_ml   - add close(IO_GLOBBC)  statements after read. Maybe it doesn't 
+                 matter, but it feels safer!
+
+grun.pl - add OHDIR for acid if $SR
+        - remove any .nc files prsent in WORKDIR
+        - add new small domain for extended OSPAR
+        - compresses day.nc and hour.nc files with bzip2
+
 ================== Dave,        17/01/2004, rv1_9_21 ==========================
 
 New Derived system added for ACID also. See comments on OZONE introduction

@@ -366,6 +366,7 @@ contains
               if ( ios /= 0 ) errmsg = "BC Error H2O2"
 
               read(IO_GLOBBC,*) bc_rawdata
+              close(IO_GLOBBC)!ds rv1_9_22
 
 
             case  ( IBC_O3 ) 
@@ -375,6 +376,7 @@ contains
               if ( ios /= 0 ) errmsg = "BC Error O3"
 
               read(IO_GLOBBC,*) bc_rawdata
+              close(IO_GLOBBC)!ds rv1_9_22
 
 
        ! ds Mace Head adjustment: get mean ozone from Eastern sector
@@ -396,6 +398,7 @@ contains
 !              if ( ios /= 0 ) errmsg = "BC Error SO2"
 !
 !              read(IO_GLOBBC,*) bc_rawdata
+!             close(IO_GLOBBC) !ds rv1_9_22
 
 
             case ( IBC_NO, IBC_NO2, IBC_HNO3, IBC_CO, &

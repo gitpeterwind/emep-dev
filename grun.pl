@@ -108,6 +108,9 @@ $OZONE = 1, $ACID = 0;     # Specify model type here
 
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
+
+$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
+
 # Also, list emissions to be used:
 
 if ( $OZONE ) {
@@ -115,19 +118,22 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_19";
+     $testv       = "rv1_9_22";
      $runlabel1    = "CLE$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "CLE${testv}_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
+     if( $SR) {
+       $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv1.9.emis2010.1997met";
+       $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.9.emis2010.1997met";
+       $OHDIR       = "$HILDE/BC_data/EMEPOH_rv1.9.emis2010.1997met";
+     }
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_9_8";
+     $testv       = "rv1_9_22acid";
      $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
 } 
-#$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
-$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone
 $version     = "Unimod" ;  
 $subv        = "$testv" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
@@ -157,10 +163,11 @@ $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003)
 #                 x0   x1  y0   y1
 @largedomain = (   1, 170,  1, 133 ) ;
 #@smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
-@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
+#@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
-@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
+#@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
+@smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
 #@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
@@ -361,6 +368,11 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
 
 #--- Change to WORKDIR
 chdir "$WORKDIR"; 
+
+   # Erase any .nc files to avoid confusion:
+   @nc_files = glob("$WORKDIR/*.nc");
+   foreach $f ( @nc_files) { unlink($f) };
+
 
 #assign '-R';       # resets assignments    (huge)
 
@@ -643,6 +655,13 @@ if ( -r core )  {
     foreach $f ( @list_of_files ) {
         unlink($f);
         #print "REMOVED $f \n";
+    }
+
+# And compress the big .nc files! 
+   @n_files = glob("$WORKDIR/*_hour.nc");
+   @d_files = glob("$WORKDIR/*_day.nc");
+    foreach $f ( @n_files, @d_files ) {
+        system("bzip2 -f $f");
     }
 
 exit 0;
