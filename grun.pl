@@ -62,7 +62,7 @@ require "flush.pl";
 $year = "2000";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
-my $SR = 1;   #NEW Set to 1 for source-receptor stuff
+my $SR = 0;   #NEW Set to 1 for source-receptor stuff
 my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 my $MERLIN_CITY= 0;  # Adds in African emissions for y=1..11
@@ -76,27 +76,27 @@ $iyr_trend = "2010" if $SR ;  # 2010 assumed for SR runs here
 print "Year is $yy YEAR $year Trend year $ir_trend\n";
 
 if ( $year == 2000 ) {
-  $MetDir = "/work/mifads/metdata/$year" ;
+  $MetDir = "/work/mifamvl/metdata/$year" ;
 } elsif ( $year == 1997 ) {
+  $MetDir = "/work/mifads/metdata/$year" ;
+} elsif ( $year == 2001 ) {
   $MetDir = "/work/mifapw/metdata/$year" ;
 } elsif ( $year == 2002 ) {
-  $MetDir = "/work/mifahf/metdata/$year" ;
-} elsif ( $year == 1995 ) {
-  $MetDir = "/work/mifads/metdata/$year" ;  # Needed for 1997
+  $MetDir = "/work/mifapw/metdata/$year" ;  # Needed for 1997
 } else { # 2003 etc.
   $MetDir = "/work/mifapw/metdata/$year" ;  # Default
 }
 
 #---  User-specific directories (changeable)
 
-$DAVE        = "/home/u2/mifads";      
+$DAVE        = "/home/u7/mifads";      
 $JOFFEN      = "/home/u2/mifajej";      
-$HILDE       = "/home/u6/mifahf";      
+$HILDE       = "/home/u7/mifahf";      
 $STEFFEN     = "/home/u2/mifaung";      
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $DAVE ;      
+$USER        =  $HILDE ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -119,7 +119,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv2_0_6";
+     $testv       = "rv2_1_2.v2";
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
   $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";  # for CH3COO2 and H2O2
@@ -149,13 +149,15 @@ $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 
 # $femis       = "$MyDataDir/femis.dat";      # emission control file
-$femis_dir   = "$WORKDIR/D_femis";      # emission control file
-system("mkdir $femis_dir");
+#$femis_dir   = "$WORKDIR/D_femis";      # emission control file
+$femis_dir   = "$HILDE/Trend_runs/FEMIS";      # emission control file
+$sitesDir    = "$HILDE/Trend_runs/SITES_SONDES";      #
+#system("mkdir $femis_dir");
 $Africa      = "$DAVE/Unify/D_emis";        # Emissions for Africa, y=1..11
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 
 #ds new for SR version. One lement arrays if SR not specified:
-$mk_SRfemis = "$DAVE/Unify/Progs/mkp.SRfemis";   #  Generates femis files
+#$mk_SRfemis = "$DAVE/Unify/Progs/mkp.SRfemis";   #  Generates femis files
 
 # New system. For "normal runs", we just put one run-name into the array @runs.
 # For SR runs we can add many scenarios - dealt with later. 
@@ -164,28 +166,12 @@ $mk_SRfemis = "$DAVE/Unify/Progs/mkp.SRfemis";   #  Generates femis files
 my $scenario = "Base";     # Reset later if SR
 @runs        = ( $scenario );
 @scenarios   = ( "Base");
-system("cp  $MyDataDir/femis.dat  $femis_dir/femis.$scenario");  
+#system("cp  $MyDataDir/femis.dat  $femis_dir/femis.$scenario");  
 
 
-$emisdir     = "$PETER/Vigdis/Emissions/Modruns/Modrun03";
-if ( $SR ) {
-	#? $emisdir     = "$emisdir/2003_emis2010_CLE_2000_V5";    # emissions
-	$emisdir     = "$emisdir/2004_emis2010_CLE_2000_V6";    # emissions
-	$emisdir     = "$DAVE/Unify/D_emis/EMIS_Aug04/2004_emis2010_BL_Aug04_BaseV4c";    # emissions
-} elsif ( $year == 2000)  {
-	#? $emisdir     = "$emisdir/2003_emis00_V5_WEB";    # emissions
-	#$emisdir     = "$emisdir/2004_emis00_V6";    # emissions
-       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis00_V2";    # emissions
-} elsif ( $year == 2001)  {
-	$emisdir     = "$emisdir/2004_emis01_V6";    # emissions
-} elsif ( $year == 2002)  {
-       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis02_V2";    # emissions
-} elsif ( $year == 2003)  {
-       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis02_V2";    # emissions
-} else {
-	#
-       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis00_V2"; # 2000 emissions def
-}
+#$emisdir     = "$PETER/Vigdis/Emissions/Modruns/Modrun03";
+	    $emisdir     = "$HILDE/Trend_runs/EMIS/$year";
+
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
@@ -217,12 +203,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  1 ;       # last month
+$mm2   =  12 ;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM = 2;       # for testing, simply reset here
+#$NTERM = 2;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -562,7 +548,8 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
 # Emissions setup:
 
     #$old   = "$MyDataDir/femis.dat" ;
-    $old   = "$femis_dir/femis.$scenario" ;
+    #$old   = "$femis_dir/femis.$scenario" ;
+     $old   = "$femis_dir/femis.trend.$year" ;
     die "ERROR::  NO femis $old !!!! \n" unless -r $old;
     $new   = "femis.dat";
     mylink( "Femis  ", $old,$new ) ;
@@ -581,7 +568,7 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
 
 foreach $poll  ( @emislist  ) {
 
-   $old   = "$emisdir/grid$gridmap{$poll}" ;
+   $old   = "$emisdir/2004_grid$gridmap{$poll}_$year" ;
 
    #
    #if ( ! $SR  && $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
@@ -636,12 +623,12 @@ if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
 
 # Surface measurement sites
 # From $DAVE directory for these
-    $old   = "$DataDir/sites.rep03" ;
+    $old   = "$sitesDir/sites.dec04" ;
     $new   =  "sites.dat";
     mylink("Sites ",  $old,$new ) ;
 
 # Sondes
-    $old   = "$DataDir/sondes.jan04" ;
+    $old   = "$sitesDir/sondes.dec04" ;
     if( $SR          ) {$old   = "$DataDir/sondes.SR" };
     if( $MERLIN_CITY ) {$old   = "$DataDir/sondes.merlin_cities" };
     $new   = "sondes.dat";
