@@ -177,6 +177,7 @@ end subroutine open_file
   character(len=1) ::  c
 
   errcode = 0
+  wasinword = .false.   !To be safe, with spaces at start of line (spotted-hf)
   is = 0 ! string index
   iw = 1 ! Word index
   wordarray(1) = ""
