@@ -59,9 +59,20 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year  = 99;       # BEWARE: watch out for pathname hardcodings !
-$MetDir = "/noserc/emep/meteorology/eulmet$year" ;
-$MetDir = "/work/mifahf/out_uni7.test_dt/met";    # TMP!
+$yy    = "95" ;       #  TMP - just to keep emission right
+if ( $yy > 50 ) {
+     $year  = 1900 + $yy
+  } else        {
+     $year  = 2000 + $yy 
+} ; 
+print "Year is $yy YEAR $year\n";
+if ( $year == 1999 ) {
+  $MetDir = "/work/mifahf/out_uni7.test_dt/met";    # TMP!
+} elsif ( $year == 1997 ) {
+  $MetDir = "/work/mifajej/metdata/$year" ;  # Needed for 1997
+} else {
+  $MetDir = "/work/mifads/metdata/$year" ;
+}
 
 #---  User-specific directories (changeable)
 
@@ -78,18 +89,19 @@ $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 $version     = "Unimod" ;  
+$testv       = "newrv";
 $subv        = "emep1.2beta" ;                 # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/$version";         # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/$version";        # working directory
+$WORKDIR     = "$WORK{$USER}/$version.$testv";        # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 $LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
-#$emisyear   = "$emisdir/emis${year}";    # emissions
-$emisyear    = "$emisdir/emis98";   # emissions
+$emisyear   = "$emisdir/emis${yy}";    # emissions
+#$emisyear    = "$emisdir/emis98";   # emissions
 
 # Change for PM:
 #$emisdir     = "$SVETLANA/Unify/Data/emission";   # emissions stuff
@@ -115,13 +127,15 @@ $emisyear    = "$emisdir/emis98";   # emissions
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
 
-$NDX   =  4;           # Processors in x-direction
-$NDY   =  4;           # Processors in y-direction
-
 $RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
 $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
                        # just before execution - so code can be run interactivel.
+
+$NDX   =  4;           # Processors in x-direction
+$NDY   =  4;           # Processors in y-direction
+if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
+
 
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
@@ -351,13 +365,14 @@ for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
 if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
    if ( $mm2 == 12 ) {
         print "NEED TO SET H00 FROM NEXT YEAR \n";
-	$old = sprintf "$MetDir/f00.%02d0101", ($year+1)%100;
+	#97-fix $old = sprintf "$MetDir/f00.%04d0101", ($year+1)%100;
+	$old = sprintf "$MetDir/f00.%04d0101", $year+1;
 	$new = sprintf "fil%04d", $nnn;    #BUG_FIX : MISSING
         mylink( "LAST RECORD, NEED TO SET H00 FROM NEXT YEAR", $old,$new ) ;
    } else { #  Need 1st record of next month:
         $hhlast = 0 ;   #
         $ddlast = 1 ;
-	$old = sprintf "$MetDir/f%02d.%02d%02d%02d", $hhlast, $year, $mm2+1, $ddlast;
+	$old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hhlast, $year, $mm2+1, $ddlast;
 	$new = sprintf "fil%04d", $nnn;
         mylink( "NEED TO SET H00 FROM NEXT MONTH", $old,$new ) ;
    }
@@ -569,7 +584,7 @@ sub myfunc_mi2 {
 
     # meteorological data
     for ($hh = 0; $hh <= 21; $hh += 3) {
-	$old = sprintf "$MetDir/f%02d.%d%02d%02d", $hh, $year, $mm, $dd;
+	$old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hh, $year, $mm, $dd;
 	$new = sprintf "fil%04d", $nnn;
         symlink $old,$new;
 	push(@list_of_files , $new);    # For later deletion
