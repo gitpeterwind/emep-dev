@@ -420,7 +420,7 @@ elseif ( year == 2003 ) then
 
            case  ( IBC_OH)
                 write(unit=fname,fmt="(a6,i2.2)") "D3_OH.",month
-               call open_file(IO_GLOBBC,"r",fname,needed=.true.)
+               call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1)
              if ( ios /= 0 ) errmsg = "BC Error H2O2"
 
              read(IO_GLOBBC,*) bc_rawdata
@@ -429,7 +429,7 @@ elseif ( year == 2003 ) then
 
            case  ( IBC_CH3COO2)
               write(unit=fname,fmt="(a11,i2.2)") "D3_CH3COO2.",month
-              call open_file(IO_GLOBBC,"r",fname,needed=.true.)
+              call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1)
               if ( ios /= 0 ) errmsg = "BC Error H2O2"
 
               read(IO_GLOBBC,*) bc_rawdata
@@ -440,7 +440,7 @@ elseif ( year == 2003 ) then
             case  ( IBC_H2O2 ) 
 
               write(unit=fname,fmt="(a8,i2.2)") "D3_H2O2.",month
-              call open_file(IO_GLOBBC,"r",fname,needed=.true.) 
+              call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1) 
               if ( ios /= 0 ) errmsg = "BC Error H2O2"
 
               read(IO_GLOBBC,*) bc_rawdata
@@ -452,7 +452,7 @@ elseif ( year == 2003 ) then
             case  ( IBC_O3 ) 
 
               write(unit=fname,fmt="(a6,i2.2)") "D3_O3.",month
-              call open_file(IO_GLOBBC,"r",fname,needed=.true.) 
+              call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1) 
               if ( ios /= 0 ) errmsg = "BC Error O3"
 
               read(IO_GLOBBC,*) bc_rawdata
@@ -488,7 +488,7 @@ elseif ( year == 2003 ) then
 !            case   ( IBC_SO2 )
 !              write(*,*)'I READ SO2'
 !              write(unit=fname,fmt="(a4,i2.2)") "so2.",month
-!              call open_file(IO_GLOBBC,"r",fname,needed=.true.) 
+!              call open_file(IO_GLOBBC,"r",fname,needed=.true.) ,skip=1?
 !              if ( ios /= 0 ) errmsg = "BC Error SO2"
 !
 !              read(IO_GLOBBC,*) bc_rawdata
