@@ -626,6 +626,11 @@ module DryDep_ml
           !dsDEC unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
           !dsDEC lai_flux(lu)  = lai * unit_flux(lu)
 
+          !ds_sep27
+          if ( hveg < 1.1 * z0 ) then   ! needed for temp crops, outside growing season
+                leaf_flux(lu) = 0.0
+          else 
+
           ! ICP method for flag-leaf
 
           Ra_diff = AerRes(max(hveg-d, STUBBLE) ,z_ref-d,ustar_loc,invL,KARMAN)
@@ -643,6 +648,8 @@ module DryDep_ml
 
           if ( DEBUG_FLUX .and. u_hveg <= 1.0e-19 ) then
             print *, "ERRROR UHVEG", u_ref, u_hveg, z_ref,d,z0,hveg
+            print *, "ERRROR UHVEG DATE ",  imm, idd, ihh
+            print *, "ERRROR UHVEG HTS ", lu, hveg, d, z0
             print *, "ERRROR UHVEG TERMS", &
                              invL, &
                              log((hveg-d)/z0), &  
@@ -673,6 +680,8 @@ module DryDep_ml
                 "FST ", lu, imm, idd, ihh, lai, SAIadd(lu), &
                  nmole_o3, c_hveg, g_sto, gsun, u_hveg,leaf_flux(lu)
           end if
+
+          end if !ds_sep27-----------
         end if ! STO_FLUXES
 
        !=======================

@@ -266,7 +266,7 @@ subroutine ReadLanduse()
      ! fluxes for:   (inly used if STO_FLUXES set in My_DryDep)
 
       luflux_wanted = .false.
-      where ( forest .or. crops )
+      where ( forest .and. .not. conif_forest ) !ds_sep27  .or. crops )
         luflux_wanted = .true.
       end where
 

@@ -2,6 +2,8 @@
 
 grun.pl: Redefined BC from Logan for O3 for OZONE
 Defined SOMO0 in Derived_ml
+DryDep - modified for safer flux calculations
+UK_ml - luflux_wanted set true for decid forests and wheat only.
 
 
 ============== Peter,Svetlana,Dave  24/09-2004, rv2_0_5  =====================

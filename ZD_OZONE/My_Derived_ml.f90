@@ -128,7 +128,8 @@ private
     integer, private, parameter :: NEXTRA_2D =  7
     character(len=12), public, parameter, dimension(NEXTRA_2D) :: &
   D2_EXTRA = (/ &
-       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
+       !ds_sep27 "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
+       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
       ,"D2_REDN     ","D2_SSfi     ","D2_SSco     " &
   /)
 
