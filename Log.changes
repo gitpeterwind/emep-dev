@@ -1,5 +1,16 @@
 ================== Peter/Dave               01/04/2004, rv1_9_34   ==========================
 
+New grun.pl which also runs SR if required.
+
+new vocsplit data, obtained from a mxiture of IIASA emissions and IER speciation,
+for  year 2000 and year 2010.
+
+bunzip2 bug fixed
+
+Biogenics_ml.f90 forests.tf2 renamed to forests.dat
+
+================== Peter/Dave               01/04/2004, rv1_9_34   ==========================
+
 grun.pl added  ja and ja -s to give resource use info in the output
 
 New forest and landuse input data
