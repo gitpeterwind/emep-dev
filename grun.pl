@@ -100,7 +100,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_3t";
+     $testv       = "rv1_6_4uk";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -123,9 +123,10 @@ $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 #$emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 
-# Use Trends_02 emissions from Hilde:
-$emisdir     = "$HILDE/emis/trends_2002";   # emissions stuff
-$emisyear    = "$emisdir/emis${yy}_02";    # emissions
+# Use tmp ds-fix for UK, applied to Trends_02 emissions from Hilde:
+#$emisdir     = "$HILDE/emis/trends_2002";   # emissions stuff
+$emisdir     = "$DataDir/D_Emis/emis_ukfix_trends_2002";   # emissions stuff
+$emisyear    = "$emisdir/emis${year}";    # emissions
 $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003) 
 #
 # Change for PM:
