@@ -352,9 +352,8 @@ module Functions_ml
 !d1.3    - simplified following Margaret's suggestion: removed 
 !          if-tests and possibility of EGS > 366
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
 !=======================================================================
-function Polygon(jdayin,yydays,Ymin,Ystart,Ymax,Sday,LenS,Eday,LenE) &
+function Polygon(jdayin,Ymin,Ystart,Ymax,Sday,LenS,Eday,LenE) &
 result (Poly)
 !=======================================================================
 
@@ -372,25 +371,29 @@ result (Poly)
 !  ----------------------------- <- Ymin
 !       S  S1            E1   E
 !
+!1.4 The following has been simplified
+    
+
 !   Inputs
     integer, intent(in) :: jdayin      !day of year
-    integer, intent(in) :: yydays      !no. days in year (365 or 366)
+!d1.4 integer, intent(in) :: yydays    !no. days in year (365 or 366)
     real, intent(in) ::    Ymin        !minimum value of Y
     real, intent(in) ::    Ystart      !value Y at start of growing season
     real, intent(in) ::    Ymax        !maximum value of Y
-    real, intent(in) ::    Sday        !start day (e.g. of growing season)
-    real, intent(in) ::    LenS        !length of Start period (S..S1 above)
-    real, intent(in) ::    Eday        !end day (e.g. of growing season)
-    real, intent(in) ::    LenE        !length of end period (E..E1 above)
+    integer, intent(in) ::    Sday        !start day (e.g. of growing season)
+    integer, intent(in) ::    LenS        !length of Start period (S..S1 above)
+    integer, intent(in) ::    Eday        !end day (e.g. of growing season)
+    integer, intent(in) ::    LenE        !length of end period (E..E1 above)
 
 !  Output:
     real ::   Poly  ! value at day jday
 
 ! Local
     integer :: jday  ! day of year, after any co-ordinate change
-    real ::    S   !  start day
-    real ::    E   !  end day
+    integer ::    S   !  start day
+    integer ::    E   !  end day
     
+
     jday = jdayin
     E = Eday
     S = Sday
@@ -420,7 +423,6 @@ result (Poly)
     
 
  end function Polygon
-
  !=======================================================================
 
 

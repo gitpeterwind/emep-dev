@@ -136,8 +136,9 @@ module DryDep_ml
      call Init_GasCoeff()
      call ReadLanduse(DEBUG_i,DEBUG_j)
 
+     nadv = 0
      do n = 1, NDRYDEP_ADV  
-         nadv    = Dep(n)%adv
+         nadv       = max( Dep(n)%adv, nadv )  ! Looking for highest IXADV
          vg_set(n)  = ( Dep(n)%calc == CDEP_SET ) ! for set vg
          if ( DEBUG_UK .and. me == 0 ) print *, "VGSET ", n, nadv, vg_set(n)
      end do
@@ -313,8 +314,6 @@ module DryDep_ml
 
 
          call Rsurface(lu,debug_flag, &
-                   landuse_SGS(i,j,ilu),&
-                   landuse_EGS(i,j,ilu), &
                    lai, &   ! tmp
                    hveg, &  ! tmp
                    z0,ustar_loc,       &
@@ -327,10 +326,6 @@ module DryDep_ml
                    Idfuse,             &  ! CHECK   
                    Idrctt,             &  ! CHECK   
                    snow(i,j),          &
-                   current_date%month, &
-                   current_date%day, &
-                   current_date%hour, &
-                   Ra_ref,   &
                    g_sto,  &
                    Rsur, &
                    Rb)

@@ -61,8 +61,18 @@ real, public, save :: &
              ,bulk    &! true for land-classes without LAI
              ,water    ! true for  water, set with h < 0
 
+!dep1.5.2
 
-!.. common variables read from ukdep_biomass.dat   ...........................
+  real, public,  dimension(NLANDUSE), save :: &
+       SAIadd                  ! Additional surface area for bark, twigs
+
+  logical, public,  dimension(NLANDUSE), save :: &
+      forest,             & ! Assumed when hveg_max > 5 m
+      conif_forest          ! Assumed when hveg_max > 5 m and SGS<=1
+
+
+
+!.. commen variables read from ukdep_biomass.dat   ...........................
 ! Note:
 ! SGS(Lat) = SGS50 + (Lat-50)*DSG
 ! The above equation is introduced as a means

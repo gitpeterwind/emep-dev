@@ -35,7 +35,6 @@ module UKsetup_ml
 contains
 
 !=======================================================================
-  !u7.lu subroutine ukdep_init(lat,long)
   subroutine ukdep_init(errmsg)
 !=======================================================================
 !   Reads in data associated with UK deposition modules, e.g. land-use
@@ -94,10 +93,16 @@ contains
 
       !/ Some safety checks...
 
-       if ( txt /=   luname(lu)    .or.  &
-            PWP(lu) >=    SWP_max(lu)        ) then
+      !These are applied for those vegetations where the VPD, SWP stuff should
+      !be specified. For veg where VPD_max has been set to -1, we skip
+      !these tests.
+
+       if ( txt         /=   luname(lu)   .or.  &
+            VPD_max(lu) > 0               .and.  &
+                 (VPD_max(lu) >= VPD_min(lu).or. &
+                  PWP(lu)     >= SWP_max(lu)     )  ) then
                errmsg = "gfac2 problem : " // luname(lu)
-               return   !! Exits this loop
+               return   !! Exits subroutine
        endif
 
      end do
@@ -113,7 +118,6 @@ contains
 
   ! read in site-specific data: snow cover, lat, long, and z0 from NWP model
 
-  !u7.lu    call ukdep_z0snow(lat,long,z0_nwp,snow)
 
   end subroutine ukdep_init
 
@@ -134,7 +138,6 @@ contains
                                   ! through calling the sub-routine uk_dep_init
                                   ! from the current module) 
     integer, intent(out) :: SGS, EGS ! start and end of growing season
-    !u7.lu real, intent(out) :: SGS, EGS ! start and end of growing season
 
 
       SGS = int ( 0.5 +  SGS50(lu) + DSGS(lu) * (lat-50.0) )
@@ -143,37 +146,4 @@ contains
   end subroutine get_growing_season
 
 !=======================================================================
-!u7.lu 
-!u7.lu     subroutine ukdep_z0snow(lat,long,z0_nwp,snow)
-!u7.lu 
-!u7.lu !   reads in lat, long, NWP z0 value, and monthly snow as an index (1=present)
-!u7.lu !   NB - the z0 values were originally used by the sub-grid methodology,
-!u7.lu !   but aren't used anymore.  Still, just in case we read them in...
-!u7.lu 
-!u7.lu ! In... 
-!u7.lu !    none
-!u7.lu       
-!u7.lu ! Out..
-!u7.lu    real, intent(out) :: lat, long   ! latitude  and longitude
-!u7.lu    real, intent(out) :: z0_nwp                 ! z0 from NWP
-!u7.lu    integer, dimension(:), intent(out) :: snow
-!u7.lu 
-!u7.lu ! Local..
-!u7.lu     real, dimension(7) :: class   ! from MADE-RIVM model
-!u7.lu     integer :: ix, iy, imm, mm, iz0
-!u7.lu 
-!u7.lu      class = (/1.0e-4,1.0e-3,3.0e-1,3.0e-1,3.0e-1,3.0e-1,1.0e-3/)
-!u7.lu   
-!u7.lu      call open_file(IO_SNOW,"r","z0snow.in",needed=.true.)
-!u7.lu 
-!u7.lu      read(unit=IO_SNOW,fmt=*) ix, iy, iz0, lat, long
-!u7.lu      z0_nwp = class(iz0+1)
-!u7.lu       
-!u7.lu       do imm = 1, 12
-!u7.lu          read(unit=IO_SNOW,fmt=*) mm, snow(mm) 
-!u7.lu       end do
-!u7.lu   
-!u7.lu       close(unit=IO_SNOW)
-!u7.lu     end subroutine ukdep_z0snow
-!u7.lu     !====================================================================
 end module UKsetup_ml

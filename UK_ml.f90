@@ -2,6 +2,10 @@ module UKdep_ml
 
 use Dates_ml,       only: daynumber, nydays
 use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
+                      ,luname              &
+                      ,crops, bulk, water  & ! logical variables
+                      ,forest,conif_forest & !    "      "
+                      ,STUBBLE             & ! Ht. of stubble (m)
                       ,hveg_max, b_inc, albedo, NH4_pl, SGS50, DSGS   &
                       ,EGS50, DEGS, LAImin, LAImax, SLAIlen, ELAIlen  &
                       ,g_pot_min , Sg_potlen , Eg_potlen     &
@@ -34,9 +38,12 @@ private
  ! Keep crops and bulk variables here until I figure our
  ! how to use logicals in gc_send
 
- logical, private, dimension(NLANDUSE), save :: &
-            crops   &! true for veg which grows...
-           ,bulk     ! true for land-classes without LAI
+!rv1.2 logical, public, dimension(NLANDUSE), save :: &
+!rv1.2            crops   &! true for veg which grows...
+!rv1.2           ,bulk     ! true for land-classes without LAI
+
+ real, public, dimension(NLANDUSE), save :: &
+       SAIadd                  ! Additional surface area for bark, twigs
 
 !.. very crude for now:
 !rv1.2 integer, public, parameter :: NDEP_FLUX = 5,  &  ! 
@@ -277,14 +284,32 @@ subroutine ReadLanduse(debug_i,debug_j)
        !       over the growing season. Note changed rule below:
 
         do lu = 1, NLANDUSE
-           !old: crops(lu) = ( hveg_max(lu) < 5 .and. LAImax(lu) > 0.5 ) 
-           crops(lu) = ( hveg_max(lu) < 5 .and. SGS50(lu) > 1 ) 
-           bulk (lu) = ( LAImax(lu) < 0.0 ) 
+         crops(ilu) = ( hveg_max(ilu) < 5 .and. SGS50(ilu) > 1 )
+         bulk (ilu) = ( LAImax(ilu)   < 0.0 )   ! Set neg. in ukdep_biomass.dat
+         water(ilu) = ( hveg_max(ilu) < 0.0 )   ! Set neg. in ukdep_biomass.dat
+         forest(ilu) = ( hveg_max(ilu) > 4.99 )
+         conif_forest(ilu) = ( forest(ilu) .and. SGS50(ilu) <=1 )
+
+        !/ Set input negative values to physical ones, since we have
+        !  now set bulk, water, etc.
+
+         hveg_max(ilu) = max( hveg_max(ilu), 0.0)
+         LAImax(ilu)   = max( LAImax(ilu),   0.0)
+
+
            if ( DEBUG_DEP .and. me == 2 ) &
               print *, "UKDEP_CROP", me, lu, crops(lu), bulk(lu)
         end do
 
-      !/ 2./ -- Calculate growing seasons where needed
+      !/ 2./ -- Calculate additional surface area for trees
+
+      SAIadd = 0.0
+      where ( forest )
+        SAIadd = 1.0     ! Addition to LAI to get surface area
+      end where
+
+
+      !/ 3./ -- Calculate growing seasons where needed
 
         do i = li0, li1
           do j = lj0, lj1
@@ -308,18 +333,6 @@ subroutine ReadLanduse(debug_i,debug_j)
         my_first_call = .false.
     end if ! my_first_call
     
-    !print "(a8,5i3)", "UKGOT", me, li0, li1, lj0, lj1
-    !print "(a8,5i3)", "UKGOT", me,  daynumber
-    !print "(a8,i3,i5,i3)", "UKGOT", me, &
-    !  landuse_ncodes(2,2), landuse_codes(2,2,1)
-
-!     do i = li0, li1
-!       do j = lj0, lj1
-!    print "(a8,i3,i5,i3)", "UKGOTIJ", me, &
-!      landuse_ncodes(li0+1,lj0+1)
-!     end do
-!   end do
-!return
      do i = li0, li1
        do j = lj0, lj1
 
@@ -334,11 +347,10 @@ subroutine ReadLanduse(debug_i,debug_j)
 
              else ! Growing veg present
 
-                 landuse_LAI(i,j,ilu) = Polygon(daynumber, nydays, &
-                                  0.0, &   !
-                                  LAImin(lu), LAImax(lu),&
-                                  real( landuse_SGS(i,j,ilu) ), SLAIlen(lu), &
-                                  real( landuse_EGS(i,j,ilu) ), ELAIlen(lu))
+                 landuse_LAI(i,j,ilu) = Polygon(daynumber, &
+                                  0.0, LAImin(lu), LAImax(lu),&
+                                  landuse_SGS(i,j,ilu), SLAIlen(lu), &
+                                  landuse_EGS(i,j,ilu), ELAIlen(lu))
 
 
                  hveg = hveg_max(lu)   ! default

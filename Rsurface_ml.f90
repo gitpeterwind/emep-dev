@@ -1,63 +1,65 @@
 module Rsurface_ml
 
+!================== Now under CVS control =================
+! $Author: mifads $
+! $Id: Rsurface_ml.f90,v 1.2 2002-09-21 14:45:04 mifads Exp $
+! $Name: not supported by cvs2svn $
+! =========================================================
+
 !Changes from Version 1.0
 !d1.1 - zenith angle range now to 89.9, not 85.0
 !d1.3 - sinB now set to coszen, not 1/coszen
+!d1.4 - restructered for use in full EMEP model.
 
-use Dates_ml,     only : daynumber, nmdays, nydays
-use DepVariables_ml, only : NLANDUSE, & 
-                              LU_CONIF, & ! for use of g_pot
-                              g_pot, g_temp,g_vpd,g_light,g_swp,    & !u7.4
-                              hveg_max  , b_inc     , albedo    ,   &
-                              g_pot_min , Sg_potlen , Eg_potlen ,   &
+use DepVariables_ml, only : g_pot, g_temp,g_vpd,g_light,g_swp,    & !u7.4
+                              b_inc     , albedo    ,   &
+                              SAIadd, &
                               g_max     , g_min     , g_lightfac,   &
-                              g_temp_min, g_temp_opt, g_temp_max, &
+                              g_temp_min, g_temp_opt, &
                               RgsS      , RgsO      , RextS, RextO, &
+                              Rgs, Rinc, Gext, &
                               VPD_max   , VPD_min   , &
                               SWP_max   , PWP       , rootdepth 
-use Io_ml,        only : IO_UKDEP, open_file
-!u7.lu use Metdata_ml,   only : snow, psurf, t2, METSTEP, pr 
+!d1.4 use Io_ml,        only : IO_UKDEP, open_file
 use My_UKDep_ml, only : NDRYDEP_CALC, & ! no. of Wesely species  used
                          DRYDEP_CALC!,  & ! array with species which are needed
                          !GASNAME    !array with names of gases considered
 
                     
 use PhysicalConstants_ml, only : KARMAN
-!u7.lu - pass in met params to preserve consistency with box-model:
-!u7.lu use Met_ml,   only : snow, psurf, t2, pr 
-!u7.lu use Radiation_ml, only : zen, coszen, Idfuse, Idrctt,SolBio
-use Radiation_ml, only : SolBio
 use SoilWater_ml, only : SWP
-use UKsetup_ml
+!d1.5.2use UKsetup_ml, only :   canopy, leafy_canopy, &   ! logical characteristics
+!d1.5.2                         SAIadd          
 use Wesely_ml, only  : Wesely_tab2, & ! Wesely Table 2 for 14 gases
-                       WES_HNO3, WES_O3, & ! indices to identify HNO3, O3
-                       !u7.lu Init_GasCoeff,& ! subroutine for evaluating:
+                       WES_HNO3, & ! indices to identify HNO3
                        Rb_cor,  &! correction factor used in evaluating Rb
                        DRx       !  Ratio of diffusivities to ozone
-                        
-
-use Functions_ml, only : Polygon                      
 implicit none
 private
 
+!u7.lu removed:
+!u7.lu use Metdata_ml,   only : snow, psurf, t2, METSTEP, pr 
+!u7.lu - pass in met params to preserve consistency with box-model:
+!u7.lu use Met_ml,   only : snow, psurf, t2, pr 
+!u7.lu use Radiation_ml, only : zen, coszen, Idfuse, Idrctt,SolBio
+
 public   ::  Rsurface
+public   ::  Conif_gpot
 private  ::  g_stomatal    
-private  ::  Conif_gpot
 private  ::  get_glight
 
-logical, private, save :: my_first_call = .true.
 logical, private, parameter :: DEBUG_RSURF = .false.
  
     
 contains
 ! =======================================================================
 
-  subroutine Rsurface(lu,debug_flag,SGS,EGS, LAI,hveg,&
+  subroutine Rsurface(lu,debug_flag, LAI,hveg,&
                       z0,ustar,Ts_C,vpd,SWP, &
                       psurf, pr, &                    !u7.lu
                       coszen, Idfuse, Idrctt, &       !u7.lu
                       snow, &                    !u7.lu
-                        imm,idd,ihr,Ra_ref,g_sto,Rsur,Rb)
+                        g_sto,Rsur,Rb)
 ! =======================================================================
 !
 !     Description
@@ -115,8 +117,6 @@ contains
     integer, intent(in) :: lu           ! land-use index
     logical, intent(in) :: debug_flag   ! set true if output wanted 
                                         ! for this location
-!u7.lu - integer
-    integer, intent(in) :: SGS, EGS     ! start and end of growing season
     real, intent(in) :: LAI             ! leaf area index (m2/m2)
     real, intent(in) :: hveg            ! height of vegetation (variable)
     real, intent(in) :: z0              ! vegetation roughness length (in m)
@@ -124,16 +124,12 @@ contains
     real, intent(in) :: Ts_C            ! surface temp. (degrees C)
     real, intent(in) :: vpd             ! vapour pressure deficit (kPa)
     real, intent(in) :: SWP             ! soil water potential (MPa)
-  !u7.lu integer, intent(in), dimension(12) :: snow
     real, intent(in) ::  psurf
     real, intent(in) ::  pr
     real, intent(in) ::  coszen
     real, intent(in) ::  Idfuse
     real, intent(in) ::  Idrctt
     integer, intent(in) :: snow         ! snow=1, non-snow=0
-    integer, intent(in) :: imm,idd,ihr  ! for possible use in printouts
-    real, intent(in) :: Ra_ref  ! aerodynamic resistance from ca. 45 m above
-                                ! the ground to (z_0+d) m above the ground
 
 ! Output:
 
@@ -147,14 +143,16 @@ contains
    
     integer :: icmp             ! gaseous species
     integer :: iwes             ! gaseous species, Wesely tables
+    logical :: canopy,        & ! For SAI>0, .e.g grass, forest, also in winter
+         leafy_canopy           ! For LAI>0, only when green
+    real :: SAI                 ! Surface area index (m2/m2)
+    real, parameter :: SMALLSAI= 0.05  ! arbitrary value but small enough
     real :: Hstar, f0           ! Wesely tabulated Henry's coeff.'s, reactivity
     real :: Rlow                ! adjustment for low temperatures (Wesely,
                                 ! 1989, p.1296, left column) 
-    real :: Rinc                ! in-canopy resistance (s/m)
     real :: xRgsS, xRgsO        ! see  DepVariables_ml
-    real :: Rgs, Ggs            ! ground surface resistance + cond., any gas
-    real :: Gext                ! external conductance
-    real :: SAI                 ! surface area index (m2/m2)
+    real :: Ggs                 ! ground surface conductance, any gas
+!rv1.5.2   real :: Gext                ! external conductance
 !CORR    real :: diffc               ! molecular gas diffusivity coefficient 
 !CORR                                ! (extracted from Wesely_tab2)
   ! CORR: use D_H2O, D_i instead of diffc !
@@ -162,40 +160,9 @@ contains
                                       ! From EMEP Notes
     real            :: D_i              ! Diffusivity of gas species, m2/s
 
-!  Just for printouts
-    real :: tmpRsto, tmpRext   ! tmp,  for output (stomatal and external plant
-                               ! tissue resistances, respectively)
-    real :: tmpVg, tmpVg3,  tmpVgS, stoflux
-    integer :: i
-
-  ! Use SMALLSAI to decide on canopy modelling or not
-    real, parameter :: SMALLSAI= 0.05  ! arbitrary value but small enough, 
-                                       ! e.g. SAI usually assumes values of 
-                                       ! around 3 and 4 for forests and 
-                                       ! grassland, respectively
-    logical :: canopy, leafy_canopy
 
 ! START OF PROGRAMME: 
 
-  !/ Determine whether we have a canopy and if it is leafy.
-  !  Surface area vegetation assumed >= LAI for tall vegetation
-  !  to account for bare branches and trunk.
-
-   SAI = LAI
-   if ( hveg >=  5) then 
-       SAI   = max(LAI,1.0)    ! sets min of 1 for decid.
-   end if
-
-   canopy       = ( SAI > SMALLSAI )    ! careful - can include grass
-   leafy_canopy = ( LAI > SMALLSAI )    ! careful - can include grass
-
-   if ( DEBUG_RSURF .and. debug_flag ) then
-      print *, "INTO RSURF lu, sai,h", lu, SAI, hveg
-   endif
-   if ( DEBUG_RSURF .and. ( lu <=0 .or. lu > NLANDUSE ) ) then
-      print *, "ERROR RSURF", lu, NLANDUSE, SAI, hveg, NDRYDEP_CALC
-      return          
-   end if
 
   !/** Do Rb first:
   !===========================================================================
@@ -225,6 +192,7 @@ contains
 !CORR 19/8/2002 - spotted by pw. Corrected diffc to D_i by ds...
 ! should double-check equations though.
           !CORR Rb(icmp) = log( z0 * KARMAN * ustar/ diffc )
+
           Rb(icmp) = log( z0 * KARMAN * ustar/ D_i )
           Rb(icmp) = Rb(icmp)/(ustar*KARMAN)
 
@@ -241,31 +209,6 @@ contains
       end if
 
    end do GASLOOP1
-!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-!  diffc = -99.99  ! for DEBUG
-!  GASLOOP1: do icmp = 1, NDRYDEP_CALC
-!      iwes = DRYDEP_CALC(icmp)          ! index in Wesely table
-!                  
-!      if   ( hveg  >=  0.0 ) then
-!
-!          Rb(icmp) = 2.0 * Rb_cor(iwes)/(KARMAN*ustar)
-!
-!         if ( DEBUG_RSURF .and. debug_flag ) then
-!            print *, "RSURF LAND", icmp, iwes, Rb_cor(iwes), Rb(icmp)
-!         end if
-!      else ! water, sea, rb is calculated as per Hicks and Liss (1976)
-!
-!          diffc = Wesely_tab2(1,iwes)  ! molecular diffusivity coefficient
-!
-!          Rb(icmp) = log( z0 * KARMAN * ustar/ diffc )
-!          Rb(icmp) = Rb(icmp)/(ustar*KARMAN)
-!
-!          if ( DEBUG_RSURF .and. debug_flag ) then
-!             print *, "RSURF SEA", icmp, iwes, diffc, Rb(icmp)
-!          end if
-!   
-!      end if
-!   end do GASLOOP1
 
 
   !/** Now begin Rsur calculations:
@@ -278,32 +221,30 @@ contains
 
 
 !##############   1. Calculate In-Canopy Resistance, Rinc    ################
+
+    canopy       = ( LAI+SAIadd(lu) > SMALLSAI ) ! - can include grass
+    leafy_canopy = ( LAI     > SMALLSAI )        ! - can include grass
+
   !/** For canopies:
 
   !/** Calculate stomatal conductance if daytime and LAI > 0
+    !d1.6 - set limit of coszen>0.001 which coresponds to zen = 89.94 degs.
 
+   if( leafy_canopy  .and. coszen > 0.001 ) then  ! Daytime 
+    !u7.lu zen > 1.0e-15 .and. zen<=89.9 ) then  ! Daytime 
 
-   if( leafy_canopy  .and. &
-          !u7.lu zen > 1.0e-15 .and. zen<=89.9 ) then  ! Daytime 
-          coszen > 0.0 ) then  ! Daytime 
-
-         call g_stomatal(debug_flag,lu,daynumber,imm,coszen,Idrctt,Idfuse, & !u7.lu
-                         SGS,EGS, Ts_C,psurf,LAI,vpd,SWP,g_sto)
-   else
-
-         g_sto = 0.0    ! Dark, no stomatal conductance...
+         call g_stomatal(debug_flag,lu,coszen,Idrctt,Idfuse, & 
+                         Ts_C,psurf,LAI,vpd,SWP,g_sto)
+   !d1.6 else
+   !d1.6     g_sto = 0.0    ! Dark, no stomatal conductance...
 
    end if ! leafy canopy and daytime
 
-   if ( DEBUG_RSURF .and. debug_flag ) then
-      print *, "UKDEP RSURF leafy, coszen, lai", leafy_canopy, coszen, LAI
-      print "(a20,f6.1,f12.1,2i4,f12.4)", "UKDEP RSURF g_Sto", Ts_C, &
-         psurf, SGS, EGS,  g_sto
-   end if
 
   !/** Calculate Rinc, Gext 
 
    if(  canopy ) then   
+         SAI  = LAI + SAIadd(lu)                  ! Accounts for bark/twigs
          Rinc = b_inc(lu)* SAI * hveg  / ustar    ! Lisa's eqn. 48 for u*=0.5
          Rinc = min( Rinc, 1000.0)
 
@@ -362,10 +303,6 @@ contains
 
      !   Use SAI to test for snow, ice, water, urban ...
 
-   if ( DEBUG_RSURF .and. debug_flag ) then
-      print "(a20,2i3,es12.3,4f9.3)", "UKDEP RSURF LOOP2", icmp, iwes, &
-         Hstar, f0, xRgsS, xRgsO, Rgs
-   end if
        if ( canopy  ) then   
 
          ! ###   3. Calculate Cuticle conductance, Gext   ################
@@ -383,6 +320,7 @@ contains
          ! ##############   4. Calculate Rsur for canopies   ###############
 
            Rsur(icmp) = 1.0/( LAI*DRx(iwes) *g_sto + SAI*Gext + Ggs )
+
            if ( Rsur(icmp) < 1.0 ) then
              print *, "LOWRSUR", icmp, iwes, Rsur(icmp), lu
              print *, "LOWRSUR bits", LAI*DRx(iwes) *g_sto, SAI*Gext, Ggs
@@ -393,71 +331,13 @@ contains
              print *, "LOWRSUR gs",  Rgs, Rinc, RgsS(lu), Rlow, xRgsS
            end if
               
-   if ( DEBUG_RSURF .and. debug_flag ) then
-      print "(a20,2i3,es10.3,4f9.3)", "UKDEP RSURF CANOPY", icmp, iwes, &
-           Hstar, f0, Gext, Ggs, Rsur(icmp)
-   end if
-       
-
        else   ! Non-Canopy modelling:
 
            Rsur(icmp) = Rgs
            Ggs = 1.0/ Rgs
-   if ( DEBUG_RSURF .and. debug_flag ) then
-      print "(a20,2i3,3f12.4)", "UKDEP RSURF NON-C", icmp, iwes, Rsur(icmp), Hstar, f0
-   end if
 
-        end if  ! end of canopy tests 
+       end if  ! end of canopy tests 
 
-    !  write out resistances and Gsur  for comparison.
-     
-        if( DRYDEP_CALC(icmp) == WES_O3 ) then
-          
-           if (g_sto > 0.0) then 
-              tmpRsto = 1.0/(LAI*DRx(iwes)*g_sto)
-           else    !ds1   if (g_sto <= 0.0) then
-              tmpRsto = -99.0
-           end if
-
-           if( canopy )  then 
-              tmpRext = 1.0/(SAI*Gext)
-           else 
-              tmpRext = -99.9
-           end if
-   
-           if (my_first_call ) then  !  Header
-
-
-             if ( DEBUG_RSURF .and. debug_flag ) then
-                 call open_file(IO_UKDEP,"w","Rsurf.out",needed=.true.)
-                 write(unit=IO_UKDEP, fmt="(3a3,a5,a6,7a7,a9)") &
-                 "mm", "dd", "hh", &
-                 "Ts","u*","Ra","Rb", "Rgs", "Rinc", "Rext", "Rsto", &
-                 "Rsur","  (=>cm/s)"
-             end if
-             my_first_call = .false.
-           end if ! first_call 
-
-             if ( DEBUG_RSURF .and. debug_flag ) then
-                print *, "DEBUG_RSURF LAI, SAI, hveg " , LAI, SAI, hveg
-                print "(3i3,f5.0,f6.2,2f7.1,5f7.0,f9.3)",  &
-                 imm, idd, ihr, Ts_C, ustar, &
-                Ra_ref, Rb(icmp), Rgs, Rinc, tmpRext, tmpRsto, &
-                Rsur(icmp), 100.0/(Ra_ref + Rb(icmp) + Rsur(icmp))
-                write(unit=IO_UKDEP,fmt="(3i3,f5.0,f6.2,2f7.1,5f7.0,f9.3)")  &
-                 imm, idd, ihr, Ts_C, ustar, &
-                Ra_ref, Rb(icmp), Rgs, Rinc, tmpRext, tmpRsto, &
-                Rsur(icmp), 100.0/(Ra_ref + Rb(icmp) + Rsur(icmp))
-            end if
-        end if      ! WES_O3
-   
-   
-           !-------------------------
-           !call monthly_collect(ihr,LAI,DRx,g_sto,SAI,Gext,Ggs, &
-           !          Ra_ref,Rb,Rsur(icmp))     !This call MIGHT be used.
-           !-------------------------
-       
-      !ds1  end if
 
   end do GASLOOP2
 
@@ -465,9 +345,8 @@ contains
 
 !=======================================================================
 
-    subroutine g_stomatal(debug_flag,lu,jday, &
-                         imm,coszen,Idrctt,Idfuse, & !u7.lu
-                         SGS,EGS,Ts_C,pres,LAI,vpd,SWP,g_sto)
+    subroutine g_stomatal(debug_flag,lu, coszen,Idrctt,Idfuse, &
+                         Ts_C,pres,LAI,vpd,SWP,g_sto)
 !=======================================================================
 
 !    Calculates stomatal conductance g_sto based upon methodology from 
@@ -477,69 +356,47 @@ contains
 !
 ! Inputs:
 
-    logical, intent(in) :: debug_flag   ! set true if output wanted 
+  logical, intent(in) :: debug_flag   ! set true if output wanted 
   integer, intent(in) :: lu           ! land-use index (max = nlu)
-  integer, intent(in) :: jday         ! days since 1st Jan.
-  integer, intent(in) :: imm          ! month - (just for output)
   real, intent(in) :: coszen          ! cos of zenith angle
   real, intent(in) ::  Idfuse         ! Diffuse radn, u7.lu
   real, intent(in) ::  Idrctt         ! Direct  radn, u7.lu
-  integer, intent(in) :: SGS, EGS     ! start, end of growing season (day no.)
   real, intent(in) :: Ts_C            ! surface temperature at height 
                                       ! 2m (deg. C)
   real, intent(in) :: pres            ! surface  pressure (Pa) 
   real, intent(in) :: LAI             ! leaf area index   (m2/m2)
   real, intent(in) :: vpd             ! vapour pressure deficit (kPa)
   real, intent(in) :: SWP             ! soil water potential (MPa)
+!d1.4  integer, intent(in) :: SGS, EGS     ! start, end of growing season (day no.)
 
 ! Outputs:
  
   real, intent(out) :: g_sto         ! stomatal conductance
 
-!u7.4 real :: g_pot                         ! stomatal conductance age factor 
-!u7.4 real :: g_temp                        ! stomatal conductance temperature factor
-!u7.4 real :: g_vpd                         ! stomatal conductance vpd factor
-!u7.4 real :: g_light                       ! stomatal conductance light factor
-!u7.4 real :: g_swp                         ! stomatal conductance soil water factor
 
         
 !..1 ) Calculate g_pot. Max value is 1.0.
 !---------------------------------------
-!u7.lu - make SGS, EGS real here, to keep Polygon function general
-
-        g_pot =  Polygon(jday,nydays,g_pot_min(lu),g_pot_min(lu),1.0,&
-                         real(SGS), Sg_potlen(lu), real(EGS), Eg_potlen(lu))
-!la
-!la     For coniferous forest we need to use a different type of 
-!la     growing season to get g_pot, with SGS=120, EGS=485.
-!la:
-      if ( lu == LU_CONIF )  then
-           g_pot =  Polygon(jday,nydays,g_pot_min(lu),g_pot_min(lu),1.0, &
-                         120.0, Sg_potlen(lu), 485.0, Eg_potlen(lu)) 
-           call Conif_gpot(imm,g_pot) !The subroutine conif_g_pot 
-                                      !is defined below       
-      end if
-
-      ! Note that g_pot_min=g_pot at SGS.
-  
+!u7.lu - these calculations only needed once per day - moved alongside
+!        LAI calculations
+!        Subroutine Conif_gpot still kept in this modukle though.
+!... 
 
 
 !..2 ) Calculate g_light 
 !---------------------------------------
+ ! (n.b. subroutine get_glight is defined below)
 
   call get_glight(coszen,Idrctt,Idfuse,g_lightfac(lu),LAI,albedo(lu),g_light)    
   
-  !The subroutine get_glight is defined below.
 
 !..3) Calculate  g_temp
 !---------------------------------------
-
-!ds1  g_temp = 2.0
   
   g_temp = (Ts_C - g_temp_opt(lu)) / &
            (g_temp_opt(lu) - g_temp_min(lu))
   g_temp = 1.0 - (g_temp*g_temp)
-  !u7.lu g_temp = max(g_temp,g_min(lu) )
+  g_temp = max(g_temp,g_min(lu) )
 
 
 !..4) Calculate g_vpd
@@ -548,7 +405,7 @@ contains
  g_vpd = g_min(lu) + (1.0-g_min(lu)) * (VPD_min(lu)-vpd )/ &
                                     (VPD_min(lu)-VPD_max(lu) )
  g_vpd = min(g_vpd, 1.0)
- !u7.lu g_vpd = max(g_vpd, g_min(lu))
+ g_vpd = max(g_vpd, g_min(lu))
 
 
 !..5) Calculate g_swp
@@ -568,28 +425,22 @@ contains
 !  for 20 deg.C )
 
    g_sto = (g_light * g_temp * g_vpd * g_swp )
-    !if(  debug_flag  .and. lu == 10 ) then
-    !   print "(a10,5f12.4)", "MOOR PRE", g_temp, g_light, g_vpd, g_swp, g_sto
-    !end if 
    g_sto = max( g_sto,g_min(lu) )
    g_sto = ( g_max(lu) * g_pot * g_sto )/41000.0
-    !if(  debug_flag  .and. lu == 10 ) then
-    !   print "(a10,3f12.4)", "MOOR Post", g_sto, g_max(lu)/41000.0, g_pot
-    !end if 
 
-   if ( g_sto < 0 ) then
-     print *, "GSTO NEG" , jday, g_sto, g_pot, g_light, g_temp, g_vpd
-   end if
+  !if ( g_sto < 0 ) then
+  !   print *, "GSTO NEG" , jday, g_sto, g_pot, g_light, g_temp, g_vpd
+  ! end if
 
 
   end subroutine g_stomatal
 
 
-!la =====================================================================
+! =====================================================================
     subroutine Conif_gpot(imm,g_pot)
-!la =====================================================================
-!la   modifies g_pot (g_age) for effect of older needles, with the simple
-!la   assumption that g_age(old) = 0.5.
+! =====================================================================
+!   modifies g_pot (g_age) for effect of older needles, with the simple
+!   assumption that g_age(old) = 0.5.
 !
    !/ arguments
 
