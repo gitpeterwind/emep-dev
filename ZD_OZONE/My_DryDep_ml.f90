@@ -52,12 +52,17 @@ module My_UKDep_ml    ! DryDep_ml
   ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
   integer, public, parameter :: NDRYDEP_CALC = 10
+!stDep
+  integer, public, parameter :: NDRYDEP_AER = 2
+  integer, public, parameter :: NDRYDEP_TOT = NDRYDEP_CALC + NDRYDEP_AER
+
 
   integer, public, parameter :: &
        CDEP_HNO3 = 1, CDEP_O3  = 2, CDEP_SO2 = 3  &
       ,CDEP_NH3  = 4, CDEP_NO2 = 5, CDEP_PAN  = 6 &
       ,CDEP_H2O2 = 7, CDEP_ALD = 8, CDEP_HCHO = 9, &
-       CDEP_OP = 10
+       CDEP_OP = 10, &
+       CDEP_FIN = 11, CDEP_COA = 12 !stDep
 
   integer, public, parameter :: CDEP_SET = -99    
 
@@ -124,10 +129,10 @@ contains
    Dep(2) =  depmap( IXADV_PAN,   CDEP_PAN, -1. ) 
    Dep(3) =  depmap( IXADV_NO2,   CDEP_NO2, -1. )
    Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
-   Dep(5) =  depmap( IXADV_SO4,   CDEP_SET,  0.1 * cms )
+   Dep(5) =  depmap( IXADV_SO4,   CDEP_FIN,  -1) !ds 0.1 * cms )
    Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
-   Dep(7) =  depmap( IXADV_aNH4,  CDEP_SET,  0.1 * cms  )
-   Dep(8) =  depmap( IXADV_aNO3,  CDEP_SET,  0.1 * cms  )
+   Dep(7) =  depmap( IXADV_aNH4,  CDEP_FIN,  -1) !ds 0.1 * cms  )
+   Dep(8) =  depmap( IXADV_aNO3,  CDEP_FIN,  -1) !ds 0.1 * cms  )
    Dep(9) =  depmap( IXADV_O3   , CDEP_O3  , -1.)
    Dep(10) =  depmap( IXADV_H2O2 , CDEP_H2O2, -1.)
    Dep(11) =  depmap( IXADV_MPAN , CDEP_PAN , -1.)
@@ -136,7 +141,7 @@ contains
    Dep(14) =  depmap( IXADV_MAL   ,CDEP_ALD , -1.)
    Dep(15) =  depmap( IXADV_CH3O2H,CDEP_OP  , -1.)
    Dep(16) =  depmap( IXADV_C2H5OOH,CDEP_OP  , -1.)
-   Dep(17) =  depmap( IXADV_pNO3,CDEP_HNO3, -1.)
+   Dep(17) =  depmap( IXADV_pNO3,CDEP_COA, -1.)
 
   end subroutine Init_DepMap
 

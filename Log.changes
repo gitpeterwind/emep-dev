@@ -1,4 +1,13 @@
 ==============================================================================
+=========== Svetlana/Dave 25th March 2003, rv1.4.25   ========================
+==============================================================================
+
+Aero_Rb_ml added to enable particle deposition rates to be used.
+Fine and coarse rates for So4, aNO3, pNO3, etc.
++ pw bug fix (not changing results?) for no2fac usage in DryDep_ml.
++ reset INORGANIC_AEROSLS true, RUN_EQSAM false in My_Aerosols.
+
+==============================================================================
 =========== Hilde/Dave 24th 2003, rv1.4.24  ===============================
 ==============================================================================
 

@@ -51,8 +51,8 @@ private
 
  private :: acc_sulphate         ! Sums sulphate column
 ! private :: aot_calc             ! Calculates daylight AOTs
- private :: misc_xn              ! Miscelleaneous Sums and fractions of xn_adv
-
+ private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
+           ,pm_calc              ! Miscelleaneous PM's
 
   ! Define first the 4 possible former output types
   ! corresponding to instantaneous,year,month,day
@@ -114,28 +114,33 @@ private
        ,DDEP_PM    = 7  
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 17 &   ! Number of 2D derived fields
+        NDERIV_2D = 22 &   ! Number of 2D derived fields
        ,D2_ACCSU  = 1  &   ! was NUM_ACCSU 
        ,D2_SO2    = 2  &   ! was xnsurf(so2)
-       ,D2_SO4    = 3  &   ! was xnsurf(..)
-       ,D2_HNO3   = 4  &   ! was xnsurf(..)
-       ,D2_aNO3    = 5  &   ! was xnsurf(..)
-       ,D2_NH3    = 6  &   ! was xnsurf(..)
-       ,D2_aNH4    = 7  &   ! was xnsurf(..)
+       ,D2_NO2    = 3  &   !
+       ,D2_SO4    = 4  &   ! was xnsurf(..)
+       ,D2_HNO3   = 5  &   ! was xnsurf(..)
+       ,D2_aNO3   = 6  &   ! was xnsurf(..)
+       ,D2_NH3    = 7  &   ! was xnsurf(..)
+       ,D2_aNH4   = 8  &   ! was xnsurf(..)
 !h amsu       ,D2_AMSU   =8   &   ! was xnsurf(..)
 !hf hmix
-       ,D2_HMIX   = 8     &
-       ,D2_HMIX00 = 9    &!mixing height at 00
-       ,D2_HMIX12 = 10     !mixing height at 12
+       ,D2_HMIX   = 9     &
+       ,D2_HMIX00 = 10   &!mixing height at 00
+       ,D2_HMIX12 = 11     !mixing height at 12
    integer, public, parameter ::  & 
-        D2_SOX      = 11 &  ! Sum of sulphates, 
-       ,D2_OXN      = 12  &  ! Total nitrates (HNO3 + part. NITRATE) 
-       ,D2_REDN     = 13  &  ! Annonia + ammonium 
-       ,D2_FRNIT    = 14  &  ! (part. nitrate)/(tot. nitrate)
-       ,D2_PM25     = 15  &  ! 
-       ,D2_PMCO     = 16  &  ! 
-       ,D2_PM10     = 17
-
+        D2_SOX      = 12 &  ! Sum of sulphates, 
+       ,D2_OXN      = 13  &  ! Total nitrates (HNO3 + part. NITRATE) 
+       ,D2_REDN     = 14  &  ! Annonia + ammonium 
+       ,D2_FRNIT    = 15  &  ! (part. nitrate)/(tot. nitrate)
+!st
+       ,D2_tNO3     = 16  &  ! total particulate NO3=aNO3+pNO3
+       ,D2_SIA      = 17  &  ! SO4+NO3+NH4 
+       ,D2_PPM25    = 18  &  ! primary PM2.5
+       ,D2_PPMCO    = 19  &  ! primary PM coarse
+       ,D2_PM25     = 20  &  
+       ,D2_PMco     = 21  &
+       ,D2_PM10     = 22  
 
    integer, public, parameter ::  & 
         NDERIV_3D = 6    & ! Number of 3D derived fields
@@ -183,7 +188,7 @@ private
    ! ds - replaced sf, sf1, sf2 with ugSO4, ugPM25, ugPM10
    ! New scaling factors for particles.
 
-     real, save  ::  ugPM25, ugPM10
+     real, save  ::  ugPMad, ugPMde
 
    ! Misc. scaling factors:
    ! To give same units as MACHO for acc. SO4.. (multiplied with roa in 
@@ -197,8 +202,8 @@ private
      ! species. Mol. wts. are used there, so we just need:
 
     ugSO4  = species ( SO4 )%molwt  * PPBINV /ATWAIR
-    ugPM25 = species ( PM25)%molwt  * PPBINV /ATWAIR
-    ugPM10 =  PPBINV /ATWAIR
+    ugPMad = species ( PM25)%molwt  * PPBINV /ATWAIR ! same mol.wt=100 assumed for PPM25 and PPMco
+    ugPMde =  PPBINV /ATWAIR
 
    !-- Deposition fields
    !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
@@ -230,6 +235,7 @@ private
 
    ! Deriv type has fields:     code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
     f_2d( D2_SO2 ) = Deriv( 601, "ADV  ", T, IXADV_SO2, ugS, T  , F ,  T , T ,  T ,"D2_SO2","ugS/m3")
+    f_2d( D2_NO2 ) = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T ,"D2_NO2","ugN/m3")
     f_2d( D2_SO4 ) = Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T  , F ,  T , T ,  T ,"D2_SO4","ugS/m3")
     f_2d( D2_HNO3) = Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T  , F ,  T , T ,  T ,"D2_HNO3","ugN/m3")
     f_2d( D2_aNO3 ) = Deriv( 604, "ADV  ", T, IXADV_aNO3, ugN, T  , F ,  T , T ,  T ,"D2_aNO3","ugN/m3")
@@ -242,10 +248,8 @@ private
     f_2d( D2_HMIX12) = Deriv( 470, "HMIX12  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX12","m")
 !    f_2d( D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T ,"D2_O3","ppb")
 !    f_2d( D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T ,"D2_CO","ppb")
-    f_2d( D2_PM25 ) = Deriv( 615, "ADV  ", T, IXADV_PM25, ugPM25, T  , F ,  T , T ,  T,"D2_PM25","ug/m3")
-    f_2d( D2_PMCO ) = Deriv( 616, "ADV  ", T, IXADV_PMco, ugPM25, T  , F ,  T , T ,  T,"D2_PMco","ug/m3")
-    f_2d( D2_PM10 ) = Deriv( 649, "PM   ", T, -1,         ugPM10, T  , F ,  T , T ,  T ,"D2_PM10","ug/m3")
-
+    f_2d( D2_PPM25 ) = Deriv( 615, "ADV  ", T, IXADV_PM25, ugPMad, T  , F ,  T , T ,  T,"D2_PM25","ug/m3")
+    f_2d( D2_PPMCO ) = Deriv( 616, "ADV  ", T, IXADV_PMco, ugPMad, T  , F ,  T , T ,  T,"D2_PMco","ug/m3")
 
    ! --  time-averages - here 8-16 , as used in MACHO
 
@@ -268,6 +272,13 @@ private
     f_2d( D2_REDN   ) =   Deriv( 605,"TRDN ", T,   -1  ,ugN , T , F , T , T , T,"D2_REDN","ugN/m3")
 
     f_2d( D2_FRNIT   ) =  Deriv( 624,"FRNIT", T,   -1  ,1.0 , F , F , T , T , T,"D2_FRNIT","(1)")
+!st
+    f_2d( D2_tNO3 ) = Deriv( 617, "tNO3 ", T, -1,    ugN,    T  , F ,  T , T ,  T,"D2_tNO3","ugN/m3")
+    f_2d( D2_SIA )  = Deriv( 618, "SIA  ", T, -1,    ugPMde, T  , F ,  T , T ,  T,"D2_SIA" , "ug/m3")
+    f_2d( D2_PMCO ) = Deriv( 619, "PMco ", T, -1,    ugPMde, T  , F ,  T , T ,  T,"D2_PMco", "ug/m3")
+    f_2d( D2_PM25 ) = Deriv( 648, "PM25 ", T, -1,    ugPMde, T  , F ,  T , T ,  T,"D2_PM25", "ug/m3")
+    f_2d( D2_PM10 ) = Deriv( 649, "PM10 ", T, -1,    ugPMde, T  , F ,  T , T ,  T,"D2_PM10", "ug/m3")
+
 
    !-- 3-D fields
 
@@ -311,14 +322,14 @@ private
 
 !           call aot_calc( n, timefrac )
 
-      case ( "TSO4", "TOXN", "TRDN", "FRNIT"  )
+      case ( "TSO4", "TOXN", "TRDN", "FRNIT", "tNO3 "  )
 
 !!print *, "Calling misc_xn for ", class
            call misc_xn( n, class, density )
 
-      case ( "PM" )
+      case ( "SIA", "PM10", "PM25", "PMco" )
 
-          call pm10_calc(n, density)
+          call pm_calc(n, class,  density)
 
       case  default
 
@@ -347,17 +358,52 @@ private
  !=========================================================================
  !=========================================================================
 
-  subroutine pm10_calc( n, density )
+  subroutine pm_calc( n, class, density )
 
     !/--  calulates PM10 = SIA + PPM2.5 + PPMco
 
     integer, intent(in) :: n               ! Index for output field
+    character(len=*)    :: class   ! Type of data
     real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density  
+
+    select case ( class )
+
+    case ( "SIA" ) 
 
       forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = &
-            ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
-    !ds bug ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_HNO3,i,j)  &
+            ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt  *cfac(IXADV_SO4,i,j)  &
+            + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt *cfac(IXADV_aNO3,i,j) &
+            + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt *cfac(IXADV_pNO3,i,j) &
+            + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt *cfac(IXADV_aNH4,i,j))& 
+            * density(i,j)
+      end forall
+
+    case ( "PM25" ) 
+
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = &
+            ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt  *cfac(IXADV_SO4,i,j)  &
+            + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt *cfac(IXADV_aNO3,i,j) &
+            + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt *cfac(IXADV_aNH4,i,j) &
+            + xn_adv(IXADV_PM25,i,j,KMAX_MID)*species(PM25)%molwt *cfac(IXADV_PM25,i,j))& 
+            * density(i,j)
+      end forall
+
+    case ( "PMco" ) 
+
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = &
+            ( xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt *cfac(IXADV_pNO3,i,j) &
+            + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt *cfac(IXADV_PMco,i,j))& 
+            * density(i,j)
+      end forall
+
+    case ( "PM10" ) 
+
+      forall ( i=1:limax, j=1:ljmax )
+        d_2d( n, i,j,IOU_INST) = &
+            ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)   &
             + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt *cfac(IXADV_aNO3,i,j) &
             + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt *cfac(IXADV_pNO3,i,j) &
             + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt *cfac(IXADV_aNH4,i,j) &
@@ -366,8 +412,9 @@ private
             * density(i,j)
       end forall
 
+    end select
 
-  end subroutine  pm10_calc
+  end subroutine  pm_calc
  !=========================================================================
 !hf aot out
  !=========================================================================
@@ -416,15 +463,22 @@ private
 !hf What is this????
     case ( "FRNIT" )
       forall ( i=1:limax, j=1:ljmax )
-          d_2d( n, i,j,IOU_INST) = &
-!hf amsu                xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
-                xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
-            / max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))   &
-!hf amsu            +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j) )    
-            +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &    
-            +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) )    
+              d_2d( n, i,j,IOU_INST) = &
+             ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
+            +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j)) &
+            /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))   &
+            +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)    &
+            +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j))
       end forall
 !!d_2d( n, i,j,IOU_INST) +  &
+
+    case ( "tNO3" )
+      forall ( i=1:limax, j=1:ljmax )
+          d_2d( n, i,j,IOU_INST) = &
+              ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
+              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) )&
+              * density(i,j)
+      end forall
 
 !!print *, "misc_xn  After  :" , n, d_2d(n,2,2,IOU_INST)
     end select

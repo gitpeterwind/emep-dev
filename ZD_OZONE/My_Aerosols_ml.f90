@@ -17,10 +17,12 @@
    !/-- public           !!  true if wanted
                     
     logical, public, parameter :: AERO_DYNAMICS      = .false.   &  
-                                , INORGANIC_AEROSOLS = .false.  & !old Ammonium stuff
+                                , INORGANIC_AEROSOLS = .true.  & !old Ammonium stuff
                                 , RUN_MARS           = .false. & !MARS
-                                , RUN_EQSAM          = .true. & !EQSAM
+                                , RUN_EQSAM          = .false. & !EQSAM
                                 , ORGANIC_AEROSOLS   = .false.   
+!stDep
+    integer, public, parameter :: NSIZE = 2    ! number of aerosol sizes (1-fine, 2-coarse)
 
 contains
 

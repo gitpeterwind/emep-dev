@@ -28,7 +28,11 @@ implicit none
     ,  KARMAN  = 0.4             &   ! Von Karman  (=0.35 elsehwere in code!)
     ,  PI      = 3.141592653589793238462643383279 & ! www.verbose.net/Pi.html
     ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians
-    ,  ROWATER = 1000.               ! pw density of water kg m-3
+    ,  ROWATER = 1000.           &   ! pw density of water kg m-3
+    ,  BOLTZMANN = 1.380e-23     &   ! Boltzmann'c constant[J/deg/molec]
+    !ds ,  NU        = 1.46e-5       &   ! kinematic air viscosity[m2/s]
+    ,  FREEPATH  = 6.5e-8        &   ! Mean Free Path of air [m]
+    ,  VISCO     = 1.46e-5           ! Air viscosity [m2/s]
 
 !=================== DEP CODE ================================Y:0
 

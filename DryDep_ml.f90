@@ -10,6 +10,7 @@ module DryDep_ml
 
  !-- model specific dry dep values are set in My_UKDep_ml:
  !   (in file My_DryDep_ml)
+ !st mar-03 Particle stuff introduced
  !ds jan-03 STO_FLUX stuff re-introduced
  !hf dec-02 Structure changed so that DryDep can go inside loop in Runchem
 
@@ -17,6 +18,8 @@ module DryDep_ml
                                        &   !and advected  (IXADV_..)
                           NDRYDEP_CALC, &  ! No. Vd values calculated 
                           NDRYDEP_ADV, &   ! No. advected species affected
+                          NDRYDEP_AER, &   !st No. Vd values for aerosol size modes
+                          NDRYDEP_TOT, &   !st Total No. of  Vd values
                           STO_FLUXES,  &   ! true if fluxes wanted.  !got
                           CDEP_SET,    &   ! for so4
                           CDEP_NO2,    &   ! for NO2 comp pt. approach
@@ -43,7 +46,8 @@ module DryDep_ml
  use Met_ml,         only : roa,fm,fh,z_bnd,th2m,th,ps,u,v,z_mid&
                             ,snow, pr, psurf, cc3dmax, t2, q    & ! u7.lu
                             ,iclass   & ! ds rv1.2
-                            ,ustar,foundustar, fl
+                            ,ustar,foundustar, fl &
+                            ,pzpbl  !stDep
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
                                   current_date,     &  ! u7.lu
                                   DEBUG_i, DEBUG_j, &
@@ -67,6 +71,9 @@ module DryDep_ml
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
  use Setup_1dfields_ml,    only : xn_2d,amk
  use GenSpec_shl_ml,        only :  NSPEC_SHL
+!stDep
+ use Aero_DryDep_ml,        only : Aero_Rb
+ use My_Aerosols_ml,        only : NSIZE
 
  implicit none
  private
@@ -84,11 +91,10 @@ module DryDep_ml
   logical, private, parameter :: DEBUG_WET = .false.
   logical, private, parameter :: DEBUG_FLUX = .false.
   logical, private, parameter :: DEBUG_NO2 = .false.
+  logical, private, parameter :: DEBUG_AERO = .true.
 
 
  contains
-
-!hf  subroutine drydep
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
      subroutine init_drydep
@@ -135,11 +141,13 @@ module DryDep_ml
   subroutine drydep(i,j)
 
  real, dimension(NDRYDEP_CALC) :: &
+          Rb           & ! Quasi-boundary layer rsis.
+         ,Rsur         & ! 
+         ,Rsur_wet       ! rv1.4.8 - Rsur over wet surface
+!stDry
+ real, dimension(NDRYDEP_TOT) :: &
           gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 1m
          ,vg_fac       & ! Loss factor due to dry dep.
-         ,Rb           & ! Quasi-boundary layer rsis.
-         ,Rsur         & ! 
-         ,Rsur_wet     & ! rv1.4.8 - Rsur over wet surface
          ,Vg_ref       & ! Vg at ref ht.
          ,Vg_1m        & ! Vg at  1m over veg.
          ,Grid_Vg_ref  & ! Grid average of Vg at ref ht. (effective Vg for cell)
@@ -147,7 +155,6 @@ module DryDep_ml
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_1m = ratio C(1m)/C(ref), over land
          ,sea_ratio      ! Ratio Vg_ref/Vg_1m = ratio C(1m)/C(ref), over sea
 
-!hf logical, dimension(NDRYDEP_ADV), save :: vg_set 
  integer, intent(in):: i,j
  integer n, ilu, lu, nlu, ncalc, nadv, ind, err,k   ! help indexes
  integer :: imm, idd, ihh     ! date
@@ -157,15 +164,21 @@ module DryDep_ml
       u_ref       ! horizontal vind   !ds - was uvhs
 
  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
+ real :: RaVs    ! Ra_ref *Vs for particles
 
  real convfac,  & ! rescaling to different units
       convfac2, & ! rescaling to different units
       convfaco3,& ! rescaling to different units
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
+!stDep
+ integer :: nae
+ real, dimension(NSIZE):: aeRb, aeRbw , Vs
+ real :: wstar, convec   
+
+  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
 
   real, save :: inv_gridarea  ! inverse of grid area, m2
-!hf  integer, save ::  old_daynumber = -99
 
 ! Landuse, UKDEP
    real :: cover , Sumcover, Sumland   ! Land-coverage
@@ -187,7 +200,8 @@ module DryDep_ml
 
  ! Ecosystem specific deposition requires the fraction of dep in each landuse, lu:
 
-   real, dimension(NDRYDEP_CALC,NLUMAX):: Vg_ref_lu
+!stDep   real, dimension(NDRYDEP_CALC,NLUMAX):: Vg_ref_lu
+   real, dimension(NDRYDEP_TOT,NLUMAX):: Vg_ref_lu
    real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
    integer :: lu_used(NLUMAX), nlu_used
    real    :: lu_cover(NLUMAX)
@@ -228,6 +242,15 @@ module DryDep_ml
       pr_acc(k) = max( pr_acc(k), 0.0 ) !u7.2 ds - FIX
     end do
 
+  !ds   We assume that the area of grid which is wet is
+  !     proportional to cloud-cover:
+
+     if ( pr_acc(KMAX_MID) > 0.0 ) then
+         wetarea = cc3dmax(i,j,KMAX_MID) ! cloud cover above surface
+     else
+         wetarea = 0.0
+     end if
+
 
      ! - Set up debugging coordinates first. ---------------------------!
      ! If location matches debug i,j value, set debug_flag. Also passed
@@ -235,6 +258,7 @@ module DryDep_ml
 
       debug_flag = .false. 
       if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) debug_flag = .true.
+
 
       ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
      ! -----------------------------------------------------------------!
@@ -277,6 +301,13 @@ module DryDep_ml
 
 
       dtz      = dt_advec/z_bnd(i,j,KMAX_BND-1)
+
+     ! wstar for particle deposition
+        wstar = 0.                   ! w* ......Based on Wesely
+        if(Hd <  0.0 )   &          ! for unstable stratification
+        wstar = (-GRAV * pzpbl(i,j) * Hd /      &
+        (roa(i,j,KMAX_MID,1)*CP*th(i,j,KMAX_MID,1))) ** (1./3.)
+
 
     call SolBio(daynumber, coszen(i,j), &
                cc3dmax(i,j,KMAX_MID)  & ! cloud cover above surface
@@ -330,9 +361,9 @@ module DryDep_ml
                max(1.0,xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID))
 
 
+
     if ( STO_FLUXES ) then
        unit_flux(:) = 0.0
-       !ds lai_flux(:) = 0.0
     end if
 
 
@@ -420,55 +451,85 @@ module DryDep_ml
                    Rsur_wet, &
                    Rb)
 
-       !ds rv1.4.8 - we now allow for areas which are treated
-       !   as wet and use Rsur_wet.
-       !
-       !   We assume that the area of grid which is wet is
-       !   proportional to cloud-cover:
 
-         if ( pr_acc(KMAX_MID) > 0.0 ) then
-             wetarea = cc3dmax(i,j,KMAX_MID) ! cloud cover above surface
-         else
-             wetarea = 0.0
-         end if
+       !===================
+       !stDep
+       !// calculate dry deposition velocities for fine/coarse particles
+
+         convec = wstar*wstar/(ustar_loc*ustar_loc)     ! Convection velocity scale  
+
+        call Aero_Rb ( ustar_loc, convec, roa(i,j,KMAX_MID,1)     &
+                     , u_ref, lu, snow(i,j), wetarea, t2(i,j)      &   
+                     , Vs, aeRb, aeRbw )
+       !===================
+
+         if( DEBUG_AERO .and. debug_flag) then
+             write(6,*)  '  -- Gravitational settling --'
+             write(6,*) (Vs(n), n=1,NDRYDEP_AER)
+             write(6,*)  '  --Rb  --'
+             write(6,*) (aeRb(n), n=1,NDRYDEP_AER )
+         endif
+
 
 
        !/... add to grid-average Vg:
 
 
-         do n = 1, NDRYDEP_CALC
+         do n = 1, NDRYDEP_TOT  !stDep  NDRYDEP_CALC
 
-           Vg_ref(n) = (1.0-wetarea) / ( Ra_ref + Rb(n) + Rsur(n) ) &
+            !stDep
+            if ( n > NDRYDEP_CALC)  then    ! particles
+
+                nae = n - NDRYDEP_CALC
+                RaVs = Ra_ref * Vs(nae)  ! Mainly to keep lines <78 chars, ds!
+
+                Vg_ref(n) = Vs(nae) +      &
+                  (1.0-wetarea) / (Ra_ref + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
+                +      wetarea  / (Ra_ref + aeRbw(nae) + RaVs  *aeRbw(nae) )
+                    
+                RaVs = Ra_1m  * Vs(nae)  ! Mainly to keep the equations short, ds!
+
+                Vg_1m(n)  = Vs(nae) +       &
+                  (1.0-wetarea) / (Ra_1m + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
+                +      wetarea  / (Ra_1m + aeRbw(nae) + RaVs  *aeRbw(nae) )
+
+            else                           ! gases
+               Vg_ref(n) = (1.0-wetarea) / ( Ra_ref + Rb(n) + Rsur(n) ) &
                      +      wetarea  / ( Ra_ref + Rb(n) + Rsur_wet(n) )
 
-           Vg_1m (n) = (1.0-wetarea) / ( Ra_1m + Rb(n) + Rsur(n) ) &
+               Vg_1m (n) = (1.0-wetarea) / ( Ra_1m + Rb(n) + Rsur(n) ) &
                      +      wetarea  / ( Ra_1m + Rb(n) + Rsur_wet(n) )
+
+            endif
 
          ! NO2 compensation point approach:        
 
-         no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   ! Here we have no2 in cm-3
-         no2fac = max(1.0, no2fac)
-         !   print *, "NO2FAC pre", xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)
-         no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)      ! Comp. point of 4 ppb
+            if ( n == CDEP_NO2 ) then
 
-         if (DEBUG_NO2 .and. debug_flag .and.  &
+            no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   ! Here we have no2 in cm-3
+            no2fac = max(1.0, no2fac)
+            !   print *, "NO2FAC pre", xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)
+            no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)      ! Comp. point of 4 ppb
+
+            if (DEBUG_NO2 .and. debug_flag .and.  &
                 ( lu == 1 .or. lu == 10 ) .and. & 
                    (current_date%seconds == 0)  ) then
-            if (lu==1) then 
-            write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "CONIF-NO2", &
+               if (lu==1) then 
+               write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "CONIF-NO2", &
                   imm, idd, ihh, lu, &
                      xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
                       100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
-            else
-            write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "GRASS-NO2", &
+               else
+                  write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "GRASS-NO2", &
                   imm, idd, ihh, lu, &
                      xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
                       100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
+               end if
             end if
-         end if
 
-         Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
-         Vg_1m (CDEP_NO2) = Vg_1m (CDEP_NO2) * no2fac
+            Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
+            Vg_1m (CDEP_NO2) = Vg_1m (CDEP_NO2) * no2fac
+          end if ! CDEP_NO2
 
            Vg_ref_lu(n,ilu) = Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
@@ -491,16 +552,26 @@ module DryDep_ml
         !ds - Using water() is better than LU_WATER
 
          if ( water(lu) ) then
-            do n = 1, NDRYDEP_CALC
+            do n = 1, NDRYDEP_TOT  !stDep NDRYDEP_CALC
                sea_ratio(n) =  Vg_ref(n)/Vg_1m(n)
             end do
          else
             Sumland = Sumland + cover
-            do n = 1, NDRYDEP_CALC
+            do n = 1, NDRYDEP_TOT  !stDep  NDRYDEP_CALC
                 Vg_ratio(n) =  Vg_ratio(n) + cover * Vg_ref(n)/Vg_1m(n)
             end do
          end if
 
+        if( DEBUG_AERO .and. debug_flag ) then
+           write(6,*) 
+           write(6,*) ' >=>=>=>=>=>=>  Dry deposition velocity at :', &
+              i_glob(i), j_glob(j)
+           write(6,'(7(i3,f8.3))') &
+              (n, 100.*Grid_Vg_1m(n), n = 1,NDRYDEP_TOT)
+           write(6,'(7(i3,f8.3))') &
+              (n, 100.*Grid_Vg_ref(n), n = 1,NDRYDEP_TOT)
+           write(6,*)' >=>=>=>=>=>=>>=>=>=>=>=>=>>=>=>=>=>=>=>=>=>=>=>=>=>>=>=>=>=>=>=>>'
+        endif
 
         if ( DEBUG_UK .and. debug_flag ) then
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP RATVG",ilu,lu,cover,&
@@ -551,7 +622,7 @@ module DryDep_ml
 !-- loop through all affected advected species to calculate changes in
 !   concentration (xn_adv), the conc. ratios (cfac), and deposition 
 
-    do ncalc = 1, NDRYDEP_CALC
+    do ncalc = 1, NDRYDEP_TOT  !stDep NDRYDEP_CALC
 
         vg_fac (ncalc) = 1.0 - exp ( -Grid_Vg_ref(ncalc) * dtz ) 
 

@@ -100,14 +100,14 @@ module ModelConstants_ml
   ! For debugging, we often want to print out for  a specific location
   ! Set here:
 
- !integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
+  integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
  !integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
  !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
  !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
 
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
- integer, public, parameter :: DEBUG_i=37, DEBUG_j=39 !  Sea
+ !integer, public, parameter :: DEBUG_i=37, DEBUG_j=39 !  Sea
 
 !===========================================================================
 ! N2O5 -> nitrate calculation. Some constants for

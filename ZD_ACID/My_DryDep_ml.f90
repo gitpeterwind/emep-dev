@@ -41,10 +41,16 @@ module My_UKDep_ml    ! DryDep_ml
   ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
   integer, public, parameter :: NDRYDEP_CALC = 5
+!stDep
+  integer, public, parameter :: NDRYDEP_AER = 2
+  integer, public, parameter :: NDRYDEP_TOT = NDRYDEP_CALC + NDRYDEP_AER
 
   integer, public, parameter :: &
        CDEP_HNO3 = 1, CDEP_NO2 = 2, CDEP_SO2 = 3  &
       ,CDEP_NH3  = 4, CDEP_PAN = 5
+!stDep
+  integer, public, parameter :: &
+       CDEP_FIN = 6, CDEP_COA = 7
 
   integer, public, parameter :: CDEP_SET = -99    
 
@@ -110,21 +116,22 @@ contains
    Dep(2) =  depmap( IXADV_PAN,   CDEP_PAN, -1. ) 
    Dep(3) =  depmap( IXADV_NO2,   CDEP_NO2, -1. )
    Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
-   Dep(5) =  depmap( IXADV_SO4,   CDEP_SET,  0.1 * cms )
+   Dep(5) =  depmap( IXADV_SO4,   CDEP_FIN, -1. )
    Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
 !hf amsu   Dep(7) =  depmap( IXADV_AMSU,  CDEP_SET,  0.1 * cms  )
 !hf amsu   Dep(8) =  depmap( IXADV_AMNI,  CDEP_SET,  0.1 * cms  )
-   Dep(7) =  depmap( IXADV_aNH4,  CDEP_SET,  0.1 * cms  )
-   Dep(8) =  depmap( IXADV_aNO3,  CDEP_SET,  0.1 * cms  )
-   Dep(9) =  depmap( IXADV_PM25,  CDEP_SET,  0.1 * cms  )
-   Dep(10)=  depmap( IXADV_PMco,  CDEP_SET,  1.5 * cms  )
-   Dep(11)=  depmap( IXADV_pNO3,  CDEP_HNO3,  -1.)
+   Dep(7) =  depmap( IXADV_aNH4,  CDEP_FIN, -1. )
+   Dep(8) =  depmap( IXADV_aNO3,  CDEP_FIN, -1. )
+   Dep(9) =  depmap( IXADV_PM25,  CDEP_FIN, -1. )
+   Dep(10)=  depmap( IXADV_PMco,  CDEP_COA, -1. )
+   Dep(11)=  depmap( IXADV_pNO3,  CDEP_COA, -1.)
 
   end subroutine Init_DepMap
 
   subroutine Add_ddep(i,j,convfac,convo3fac,fluxfrac)
      ! Adds deposition losses to ddep arrays
      integer, intent(in) :: i,j             ! coordinates
+
      real,    intent(in) ::  convfac, convo3fac !
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
      integer :: n, nadv
