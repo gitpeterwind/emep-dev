@@ -1,3 +1,10 @@
+=================== Dave    6/12/2003, rv1_9_10 =============================
+
+Improved VOC definitions:
+Derived_ml: Setup_VOC now uses carbon numbers to define VOC, excluding
+            CO and CH4 by name.
+ZD_OZONE/My_Chem_ml: Completed carbon numbers
+
 =================== Peter  23/11/2003, rv1_9_9 ==============================
 
 Increased max sizes for Netcdf filenames to 125

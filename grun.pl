@@ -112,7 +112,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_8";
+     $testv       = "rv1_9_10";
      $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
 

@@ -55,10 +55,7 @@ private
  private :: Consistency_checks   !ds  - checks index numbers from My_Derived
  private :: Consistency_count    !ds  - checks index numbers from My_Derived
  private :: Setup_VOC            ! Defines VOC group
-!jej private :: Derived              ! Calculations of sums, avgs etc.
  public :: Derived              ! Calculations of sums, avgs etc.
-!6c private :: acc_sulphate         ! Sums sulphate column
-!6c private :: aot_calc             ! Calculates daylight AOTs
  private :: voc_2dcalc           ! Calculates sum of VOC for 2d fields
  private :: voc_3dcalc           ! Calculates sum of VOC for 3d fields
 
@@ -171,9 +168,9 @@ private
       if ( any(  f_2d(:)%class == "VOC" ) .or. &
            any(  f_3d(:)%class == "VOC" )  ) then
             call Setup_VOC()
-            print *, "Derived VOC setup returns ", nvoc, "vocs"
-            print "(a12,30i3)",  "indices ", voc_index(1:nvoc)
-            print "(a12,30i3)",  "carbons ", voc_carbon(1:nvoc)
+            write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
+            write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
+            write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
       end if
 
 
@@ -514,9 +511,17 @@ private
       !--------------------------------------------------------
        integer :: n
    
+
+     !ds rv1_9_10: VOC now properly defined. Previous definition
+     !             was for NMHC, not VOC.
+
       do n = 1, NSPEC_ADV
-        !u1 if ( species( MAP_ADV2TOT(n) )%nmhc == 1 ) then
-        if ( species( NSPEC_SHL+n )%nmhc == 1 ) then
+        !ds rv1_9_10 if ( species( NSPEC_SHL+n )%nmhc == 1 ) then
+
+        if ( species( NSPEC_SHL+n )%carbons > 0 .and. &
+             species( NSPEC_SHL+n )%name   /= "CO"  .and. &
+             species( NSPEC_SHL+n )%name   /= "CH4" ) then
+
              nvoc = nvoc + 1
              voc_index(nvoc) = n
              voc_carbon(nvoc) = species( NSPEC_SHL+n )%carbons
