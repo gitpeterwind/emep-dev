@@ -1,3 +1,8 @@
+============== Peter,Svetlana,Dave  24/09-2004, rv2_0_5  =====================
+
+ZD_ACID/,ZD_OZONE/My_Aerosols_ml:
+     t20(:)  = 293.  (instead of  t20(:)  = 283.)
+
 =================== Peter,  23/09-2004, rv2_0_4  =============================
 
 Modified Setup_1d and Met_ml: subtracted 1.E-9 from u,v, it2m and itemp.

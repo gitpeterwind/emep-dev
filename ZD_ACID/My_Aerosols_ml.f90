@@ -263,7 +263,7 @@ contains
       CLin(KCHEMTOP:KMAX_MID)  = 0.
 
       rh50(:) = 0.5
-      t20(:)  = 283.
+      t20(:)  = 293.
 
  !--------------------------------------------------------------------------                
  !   call aero (so4in, hno3in,no3in ,nh3in, nh4in , rh50, temp20,   &
