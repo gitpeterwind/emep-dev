@@ -117,7 +117,7 @@ module DryDep_ml
 
      call Init_ukdep()                ! reads ukdep_biomass, etc.
      call Init_GasCoeff()             ! Sets Wesely coeffs.
-     call ReadLanduse()
+     !ds rv2_2_3 call ReadLanduse()
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  

@@ -68,7 +68,7 @@ contains
 
   !/ 1./ -- Read in basic data for UK model
 
-    if ( me == 0 ) then 
+    !ds rv2_2_3   if ( me == 0 ) then 
        !=====================================
         call ukdep_init(errmsg)
        !=====================================
@@ -76,39 +76,39 @@ contains
            errmsg = "ukdep_init: " // errmsg
            call gc_abort(me,NPROC,errmsg)
         end if
-    end if
+    !ds rv2_2_3   end if
 
-    call gc_rbcast(101,NLANDUSE,0,NPROC,gc_info,hveg_max)
-    call gc_rbcast(102,NLANDUSE,0,NPROC,gc_info,b_inc)
-    call gc_rbcast(103,NLANDUSE,0,NPROC,gc_info,albedo)
-    call gc_rbcast(104,NLANDUSE,0,NPROC,gc_info,NH4_pl)
-    call gc_rbcast(105,NLANDUSE,0,NPROC,gc_info,SGS50)
-    call gc_rbcast(106,NLANDUSE,0,NPROC,gc_info,DSGS)
-    call gc_rbcast(107,NLANDUSE,0,NPROC,gc_info,EGS50)
-    call gc_rbcast(108,NLANDUSE,0,NPROC,gc_info,DEGS)
-    call gc_rbcast(109,NLANDUSE,0,NPROC,gc_info,LAImin)
-    call gc_rbcast(110,NLANDUSE,0,NPROC,gc_info,LAImax)
-    call gc_rbcast(111,NLANDUSE,0,NPROC,gc_info,SLAIlen)
-    call gc_rbcast(112,NLANDUSE,0,NPROC,gc_info,ELAIlen)
-
-                      
-    call gc_rbcast(120,NLANDUSE,0,NPROC,gc_info,g_pot_min)
-    call gc_rbcast(121,NLANDUSE,0,NPROC,gc_info, Sg_potlen) 
-    call gc_rbcast(122,NLANDUSE,0,NPROC,gc_info, Eg_potlen)
-    call gc_rbcast(123,NLANDUSE,0,NPROC,gc_info,g_max)    
-    call gc_rbcast(124,NLANDUSE,0,NPROC,gc_info, g_min)    
-    call gc_rbcast(125,NLANDUSE,0,NPROC,gc_info, g_lightfac)
-    call gc_rbcast(126,NLANDUSE,0,NPROC,gc_info,g_temp_min)
-    call gc_rbcast(127,NLANDUSE,0,NPROC,gc_info, g_temp_opt)
-    call gc_rbcast(128,NLANDUSE,0,NPROC,gc_info, g_temp_max)
-                      
-    call gc_rbcast(131,NLANDUSE,0,NPROC,gc_info,RgsS)
-    call gc_rbcast(132,NLANDUSE,0,NPROC,gc_info, RgsO)
-    call gc_rbcast(133,NLANDUSE,0,NPROC,gc_info,VPD_max)
-    call gc_rbcast(134,NLANDUSE,0,NPROC,gc_info, VPD_min)
-    call gc_rbcast(135,NLANDUSE,0,NPROC,gc_info,SWP_max)   
-    call gc_rbcast(136,NLANDUSE,0,NPROC,gc_info, PWP)       
-    call gc_rbcast(137,NLANDUSE,0,NPROC,gc_info, rootdepth) 
+!ds rv2_2_3    call gc_rbcast(101,NLANDUSE,0,NPROC,gc_info,hveg_max)
+!ds rv2_2_3    call gc_rbcast(102,NLANDUSE,0,NPROC,gc_info,b_inc)
+!ds rv2_2_3    call gc_rbcast(103,NLANDUSE,0,NPROC,gc_info,albedo)
+!ds rv2_2_3    call gc_rbcast(104,NLANDUSE,0,NPROC,gc_info,NH4_pl)
+!ds rv2_2_3    call gc_rbcast(105,NLANDUSE,0,NPROC,gc_info,SGS50)
+!ds rv2_2_3    call gc_rbcast(106,NLANDUSE,0,NPROC,gc_info,DSGS)
+!ds rv2_2_3    call gc_rbcast(107,NLANDUSE,0,NPROC,gc_info,EGS50)
+!ds rv2_2_3    call gc_rbcast(108,NLANDUSE,0,NPROC,gc_info,DEGS)
+!ds rv2_2_3    call gc_rbcast(109,NLANDUSE,0,NPROC,gc_info,LAImin)
+!ds rv2_2_3    call gc_rbcast(110,NLANDUSE,0,NPROC,gc_info,LAImax)
+!ds rv2_2_3    call gc_rbcast(111,NLANDUSE,0,NPROC,gc_info,SLAIlen)
+!ds rv2_2_3    call gc_rbcast(112,NLANDUSE,0,NPROC,gc_info,ELAIlen)
+!ds rv2_2_3
+!ds rv2_2_3                      
+!ds rv2_2_3    call gc_rbcast(120,NLANDUSE,0,NPROC,gc_info,g_pot_min)
+!ds rv2_2_3    call gc_rbcast(121,NLANDUSE,0,NPROC,gc_info, Sg_potlen) 
+!ds rv2_2_3    call gc_rbcast(122,NLANDUSE,0,NPROC,gc_info, Eg_potlen)
+!ds rv2_2_3    call gc_rbcast(123,NLANDUSE,0,NPROC,gc_info,g_max)    
+!ds rv2_2_3    call gc_rbcast(124,NLANDUSE,0,NPROC,gc_info, g_min)    
+!ds rv2_2_3    call gc_rbcast(125,NLANDUSE,0,NPROC,gc_info, g_lightfac)
+!ds rv2_2_3    call gc_rbcast(126,NLANDUSE,0,NPROC,gc_info,g_temp_min)
+!ds rv2_2_3    call gc_rbcast(127,NLANDUSE,0,NPROC,gc_info, g_temp_opt)
+!ds rv2_2_3    call gc_rbcast(128,NLANDUSE,0,NPROC,gc_info, g_temp_max)
+!ds rv2_2_3                      
+!ds rv2_2_3    call gc_rbcast(131,NLANDUSE,0,NPROC,gc_info,RgsS)
+!ds rv2_2_3    call gc_rbcast(132,NLANDUSE,0,NPROC,gc_info, RgsO)
+!ds rv2_2_3    call gc_rbcast(133,NLANDUSE,0,NPROC,gc_info,VPD_max)
+!ds rv2_2_3    call gc_rbcast(134,NLANDUSE,0,NPROC,gc_info, VPD_min)
+!ds rv2_2_3    call gc_rbcast(135,NLANDUSE,0,NPROC,gc_info,SWP_max)   
+!ds rv2_2_3    call gc_rbcast(136,NLANDUSE,0,NPROC,gc_info, PWP)       
+!ds rv2_2_3    call gc_rbcast(137,NLANDUSE,0,NPROC,gc_info, rootdepth) 
 
 end subroutine Init_ukdep
  !--------------------------------------------------------------------------

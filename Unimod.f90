@@ -85,6 +85,7 @@ program myeul
 
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
+  use UKdep_ml,         only : ReadLandUse   !ds rv2_2_3
 
 !           --------------------
 !
@@ -386,6 +387,8 @@ program myeul
 
 
     call MetModel_LandUse(1)   !ds rv1.2  call (1) -> iclass
+
+    call ReadLandUse()         !ds rv2_2_3 
 
     if ( NFORESTVOC > 0  ) call Forests_init()
 
