@@ -256,7 +256,7 @@ contains
     if ( prclouds_present .and. kcloudtop == -1 ) then
            if ( DEBUG_AQ ) write(6,"(a20,i3,2i4,3es12.4)") &
                "ERROR prclouds sum_cw", &
-                me, i,j, maxval(cw(i,j,KUPPER:KMAX_MID,1) ) , &
+                me, i,j, maxval(lwc(i,j,KUPPER:KMAX_MID),1) , &
                  maxval(pr(i,j,:)), pr_acc(KMAX_MID)
            kcloudtop = KUPPER ! for safety
     end if
