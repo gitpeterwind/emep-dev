@@ -63,14 +63,15 @@ program myeul
   use Dates_ml,         only : date, dayno,daynumber   ! u7.4vg
   use DefPhotolysis_ml, only : readdiss
 !ds New Deriv:
-  use Derived_ml,    only : IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
-                            Init_Derived 
+  use Derived_ml,    only :  Init_Derived &
+                               ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
-  use GridValues_ml,    only : DefGrid  ! sets gl, gb, xm, gridwidth_m, etc.
+  use GridValues_ml,    only : DefGrid&  ! sets gl, gb, xm, gridwidth_m, etc.
+                              ,METEOfelt!.true. if uses "old" (not CDF) meteo input
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
-  use MassBudget_ml,           only : Init_massbudget,massbudget
-  use Met_ml  ,         only : infield,metvar,MetModel_LandUse, mm5,&
-                               tiphys
+  use MassBudget_ml,    only : Init_massbudget,massbudget
+  use Met_ml  ,         only : infield,metvar,MetModel_LandUse,&
+                               tiphys,Meteoread_CDF
   use ModelConstants_ml,only : KMAX_MID, current_date  &
                               ,METSTEP   &   !u2 - replaces metstep
                               ,runlabel1  &   !rv1_9_5 - explanatory text
@@ -367,7 +368,11 @@ program myeul
 
     call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
 
-    call infield(1)
+      if(METEOfelt)then
+         call infield(1)
+      else
+         call Meteoread_CDF(1)
+      endif
 
     call Add_2timing(3,tim_after,tim_before,"After infield")
 
@@ -469,7 +474,7 @@ program myeul
 
           call readdiss(newseason)
 
-          if ( AIRNOX .and. .not. mm5 ) call aircraft_nox(newseason)
+          if ( AIRNOX ) call aircraft_nox(newseason)
 
           if (me == 0) write(6,*) 'maaned og sesong', &
                              numt,mm,mm_old,newseason,oldseason
@@ -482,7 +487,7 @@ program myeul
 
           call Add_2timing(7,tim_after,tim_before,"newmonth")
 
-          if ( AIRNOX .and. .not. mm5 ) call lightning()
+          if ( AIRNOX ) call lightning()
 
 !hf aq         
           call init_aqueous()
@@ -522,7 +527,11 @@ program myeul
       !bcs      call pvbound
                if( DEBUG_UNI ) print *, "1st Infield" , me, " numu ", numt
 
-      call infield(numt)
+      if(METEOfelt)then
+         call infield(numt)
+      else
+         call Meteoread_CDF(numt)
+      endif
 
       call Add_2timing(10,tim_after,tim_before,"infield")
 

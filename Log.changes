@@ -1,3 +1,12 @@
+============== Peter, rv2_1_11  =============================================
+
+Included a new routine into Met_ml which is able to read meteo fields 
+in NetCDF format. Still under development. 
+The old one is still used as default.
+
+Some cleaning. Removed some meteo fields which are not often used, 
+but kept SST for Svetlana)
+
 ============== Dave, rv2_1_10  =============================================
 
 UniMan added!

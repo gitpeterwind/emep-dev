@@ -23,7 +23,6 @@
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
 
-  use typeSizes
   use netcdf
   implicit none
 
@@ -178,7 +177,7 @@ use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                   ,GlobalPosition,gb_glob,gl_glob
 use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG,IILARDOM,JJLARDOM
 use ModelConstants_ml,     only : KMAX_MID, runlabel1, runlabel2  
-use GridValues_ml,         only : coordzero,sigma_mid
+use GridValues_ml,         only : sigma_mid
 use My_Derived_ml,         only : model
 use PhysicalConstants_ml,  only : PI       
    implicit none
@@ -191,7 +190,7 @@ character (len=*), parameter :: projection='Stereographic'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
 character (len=19) :: projection_params='90.0 -32.0 0.933013' !set later on
 
-real (kind = FourByteReal) :: xcoord(GIMAX),ycoord(GJMAX),kcoord(KMAX_MID)
+real :: xcoord(GIMAX),ycoord(GJMAX),kcoord(KMAX_MID)
 
 character*8 ::created_date,lastmodified_date
 character*10 ::created_hour,lastmodified_hour

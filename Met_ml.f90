@@ -65,20 +65,17 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! dp/dt
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
                            th      &  ! Potential teperature  ( deg. k )
-                           ,q      &  ! Specific humidity
-                          ,cw      &  ! Cloud water           (kg water)/(kg air)
-                          ,ccc        ! Cumulus cloud cover   (%)  for ASSYCON
+                           ,q         ! Specific humidity
+
 
 !    since pr,cc3d,cc3dmax used only for 1 time layer - define without NMET
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
                      pr      & ! Precipitation
                     ,cc3d    & ! 3-d cloud cover (cc3d),
                     ,cc3dmax & ! and maximum for layers above a given layer
-                    ,trw    & ! total rainwater kg/kg 
-                               ! NB: trw: accumulated during metstep. ( Direct output 
-                               ! from MM5 gives accumulated during prognosis length )
-                    ,lwc    &  !liquid water content
+                    ,lwc     & !liquid water content
                     ,sst       ! SST Sea Surface Temprature- ONLY from 2002
+
 
 
 ! surface fields
@@ -89,6 +86,7 @@ private
                     ,fl      & ! latent heat flux W/m^2
                     ,fm      & ! surf. stress  N/m^2
                     ,ustar     ! pw u3 friction velocity m/s ustar^2 = fm/roa
+
 
 
 
@@ -111,8 +109,10 @@ private
        iclass      ! roughness class ,         "       "       "
 
 
-  logical, public, save :: foundclouds,foundustar,foundpreta,mm5 !pw u3
-  logical, public, save :: sdot_at_mid !pw rv1_9_24 . set false if sdot is defined (when read) at level boundaries and therefore do not need to be interpolated.
+  logical, public, save :: foundustar !pw u3
+  logical, public, save :: sdot_at_mid !pw rv1_9_24 . set false if sdot 
+               !is defined (when read) at level  boundaries and therefore 
+               !do not need to be interpolated.
 
 !hf tiphys
 !check dimension
@@ -124,10 +124,12 @@ private
        pzpbl,   &  !stores H(ABL) for averaging and plotting purposes, m
        Kz_min      ! Min Kz below hmix  !hf Hilde&Anton
 
+
+
 !ds  real, dimension(MAXLIMAX,MAXLJMAX) :: ven !ventilation coefficient, m3
 !hf end tiphys
 
- public :: infield
+ public :: infield,Meteoread_CDF
  public :: MetModel_LandUse    ! rv1.2 combines old in_isnowc and inpar
  !ds rv1.2 public :: in_isnowc
  public :: metvar
@@ -137,6 +139,149 @@ private
  contains
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+      subroutine Meteoread_CDF(numt)
+
+!	the subroutine reads meteorological fields and parameters (every
+!	METSTEP-hours) from NetCDF fields-files, divide the fields into 
+!       domains	and sends subfields to the processors
+
+	use ModelConstants_ml , only : current_date & ! date-type
+                                       , METSTEP      ! Meteo read timestep
+        use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
+                            fi, GRIDWIDTH_M,xm
+        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
+ 
+	implicit none
+
+	integer, intent(in):: numt
+
+        character (len = 100),save ::meteoname !name of the meteofile
+        character (len = 100) :: namefield & ! name of the requested field
+                   ,period_of_validity !field is either instaneous or averaged
+        integer ::ndim,nyear,nmonth,nday,nhour,k
+        integer,save :: Nhh &    !number of field stored per 24 hours
+                   ,nhour_first& !time of the first meteo stored
+                   ,nrec     !nrec=record in meteofile, for example 
+                             !(Nhh=8): 1=00:00 2=03:00 ... 8=21:00
+                             !if nhour_first=3 then 1=03:00 2=06:00...8=24:00
+
+        integer :: nr!Fields are interpolate in time: between nr=1 and nr=2
+   	type(date) next_inptime,addhours_to_input
+
+	nr=2 !set to one only when the first time meteo is read
+	if(numt == 1)then !first time meteo is read
+	  nr = 1     
+          
+          sdot_at_mid = .true.
+          foundustar = .false.
+          
+          nyear=2001
+          nmonth=1
+          nday=1
+          nhour=0
+          current_date = date(nyear, nmonth, nday, nhour, 0 )
+          call Init_nmdays( current_date )
+          
+         !*********initialize grid parameters*********
+56        FORMAT(a5,i4.4,i2.2,i2.2,a3)
+          write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+          write(*,*)'reading meteo from ',trim(meteoname)
+
+          call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm,&
+               sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
+          if(me==0)then
+             write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
+             write(*,*)'grid resolution:',GRIDWIDTH_M
+             write(*,*)'xcoordinate of North Pole, xp:',xp
+             write(*,*)'ycoordinate of North Pole, yp:',yp
+             write(*,*)'longitude rotation of grid, fi:',fi
+          endif
+
+	endif ! numt==1
+
+        if(numt==1)then
+           next_inptime = current_date
+        else
+           addhours_to_input = date(0, 0, 0, METSTEP, 0 )
+           next_inptime = add_dates(current_date,addhours_to_input)
+        endif
+        nyear=next_inptime%year
+        nmonth=next_inptime%month
+        nday=next_inptime%day 
+        nhour=next_inptime%hour
+        if(  current_date%month == 1 .and.         &
+             current_date%day   == 1 .and.         &
+             current_date%hour  == 0 )	          &
+             call Init_nmdays( current_date )
+        
+        if(me == 0) write(6,*) 					&
+             '*** nyear,nmonth,nday,nhour,numt,nmdays2'	&
+             ,next_inptime%year,next_inptime%month,next_inptime%day	&
+             ,next_inptime%hour,numt,nmdays(2)
+        
+!Read rec=1 in case 00:00 from 1st January is missing
+        if((numt-1)*METSTEP<=nhour_first)nrec=0 
+        nrec=nrec+1
+        if(nrec>Nhh.or.nrec==1)then! define a new meteo input file
+           write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+           if(me==0)write(*,*)'reading ',trim(meteoname)
+           nrec = 1
+           !could open and close file here instead of in Getmeteofield
+        endif
+        if(me==0)write(*,*)'nrec,nhour=',nrec,nhour
+
+! 3D fields (i,j,k)
+        ndim=3
+        namefield='u_wind'
+!note that u and v have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX  
+!u(i=0) and v(j=0) are set in metvar
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+        namefield='v_wind'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity,v(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+        namefield='specific_humidity'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, q(:,:,:,nr))
+        namefield='sigma_dot'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, sdot(:,:,:,nr))
+        namefield='potential_temperature'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, th(:,:,:,nr))
+        namefield='precipitation'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, pr(:,:,:))
+        namefield='3D_cloudcover'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, cc3d(:,:,:))
+        if(trim(period_of_validity)/='averaged')then
+           if(me==0)write(*,*)'WARNING: 3D cloud cover is not averaged'
+        endif
+! 2D fields (surface) (i,j)
+        ndim=2
+        namefield='surface_pressure'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, ps(:,:,nr))
+        namefield='temperature_2m'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, th2m(:,:,nr))
+        namefield='surface_flux_sensible_heat'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, fh(:,:,nr))
+        if(period_of_validity=='averaged')fh(:,:,1)=fh(:,:,nr)
+        namefield='surface_flux_latent_heat'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, fl(:,:,nr))
+        if(period_of_validity=='averaged')fl(:,:,1)=fl(:,:,nr)
+        namefield='surface_stress'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             period_of_validity, fm(:,:,nr))
+         if(period_of_validity=='averaged')fm(:,:,1)=fm(:,:,nr)
+      
+
+      end subroutine Meteoread_CDF
+
       subroutine infield(numt)
 
 !	the subroutine reads meteorological fields and parameters every
@@ -159,7 +304,7 @@ private
 
 !	local
 
-	integer ierr,fid,nr, i, j, k, ident(20)
+	integer ierr,fid,nr, i, j, k, ij, ident(20)
 	integer*8 itmp(6+(MAXLIMAX*MAXLJMAX+3)/4)
 	character*20 fname
 	integer nyear,nmonth,nday,nhour,nprognosis
@@ -167,6 +312,7 @@ private
 	type(date) next_inptime, buf_date
 
 	real dumhel(MAXLIMAX,MAXLJMAX)
+        real ::xrand(20)
 
 !	definition of the parameter number of the meteorological variables
 !	read from field-files:
@@ -207,11 +353,8 @@ private
 	endif ! me == 0
 
         sdot_at_mid = .true.
-        foundclouds = .false.
         foundustar = .false.
-        foundpreta = .false.
-        mm5 = .false.
-
+        
 	do while(.true.)
 
 	  call getflti2(fid,ident,itmp,ierr)
@@ -241,7 +384,6 @@ private
                     'AN= ',6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M
             endif
             if(ident(2).eq.1600)then
-               mm5 = .true.
                xp = 41.006530761718750 !=~ ident(15)
                yp = 3234.5815429687500 !=~ ident(16)
                fi = 10.50000 ! =~ ident(18)
@@ -260,16 +402,6 @@ private
 !
 !vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 
-!ko... go 9 or 12 hours forward!
-!ko    this shift is necessary as the date in the heading is inconsistent 
-!ko    with the file name
-!ds      Also, the same date appears in two files in the input NWP data,
-!ds    hence we need to add 9 hours for nr=even, 12 hours for nr=odd to
-!ds    the right dates... :-(
-
-!g11 - introduce new date type
-!	initialise first nmonth etc, then add 12(9) hours
-
 !pw use nprognosis=ident(4) for determining the date of the prognosis
 
 
@@ -278,23 +410,23 @@ private
     	      call Init_nmdays( current_date )
 	      addhours_to_input = date(0, 0, 0, nprognosis, 0 )
 !pw	      addhours_to_input = date(0, 0, 0, 12, 0 )
-	      current_date = add_dates(current_date,addhours_to_input)
+	      current_date = add_dates(current_date,addhours_to_input)!
 
               !  if we start 1. of January, then nyear is the year before
-              !  so we have to rerun Init_nmdays
+              !  so we have to rerun Init_nmdays!
 
 	      if(current_date%year.ne.nyear)	&
 			call Init_nmdays( current_date )
 
-              ! for printout assign current_date to next_inptime
+              ! for printout assign current_date to next_inptime!
 
-	      next_inptime = add_dates(current_date,0)
+	      next_inptime = add_dates(current_date,0)!
 
 	  else
 
 !   find time for which meteorology is valid:
 
-	      next_inptime = date(nyear, nmonth, nday, nhour, 0 )
+      next_inptime = date(nyear, nmonth, nday, nhour, 0 )
               addhours_to_input = date(0, 0, 0, nprognosis, 0 )
 	      next_inptime = add_dates(next_inptime,addhours_to_input) 
 
@@ -318,37 +450,6 @@ private
 
                      call gc_abort(me,NPROC,"infield - time")
                endif
-
-!pw u3	      next_inptime = date(nyear, nmonth, nday, nhour, 0 )
-!	now make the correction for the correct input time, but with
-!	3 hours less to come to current_date
-!
-!	      if(mod(numt,2) == 1 )then
-!	        addhours_to_input = date(0, 0, 0, 9, 0 )
-!	      else
-!	        addhours_to_input = date(0, 0, 0, 6, 0 )
-!	      endif
-!	      next_inptime = add_dates(next_inptime,addhours_to_input) 
-!
-!	now check:
-!
-!              if(current_date%year    .ne. next_inptime%year   .or.        &
-!                 current_date%month   .ne. next_inptime%month  .or.        &
-!                 current_date%day     .ne. next_inptime%day    .or.        &
-!                 current_date%hour    .ne. next_inptime%hour   .or.        &
-!                 current_date%seconds .ne. next_inptime%seconds     ) then
-!                     print *,'error in infield, wrong next input time'
-!                     print *,'current time',current_date
-!                     print *,'next input time - 3 hours',next_inptime
-!                     call gc_abort(me,NPROC,"infield - time")
-!               endif
-!
-!	  add 3 hours to get the real time for printout
-!
-!               addhours_to_input = date(0, 0, 0, 3, 0 )
-!               next_inptime = add_dates(next_inptime,addhours_to_input)
-!pw u3
-
 
 !	now the last check, if we have reached a new year, i.e. current date
 !	is 1.1. midnight, then we have to rerun Init_nmdays
@@ -378,7 +479,8 @@ private
 	    do j = 1,ljmax
 	      do i = 1,limax
 		u(i,j,k,nr) = dumhel(i,j)-1.E-9
-!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
+!pw the "-1.E-9" is put in order to avoid possible different 
+!roundings on different machines. 
 	      enddo
 	    enddo
 
@@ -389,7 +491,8 @@ private
 	    do j = 1,ljmax
 	      do i = 1,limax
 		v(i,j,k,nr) = dumhel(i,j)-1.E-9
-!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
+!pw the "-1.E-9" is put in order to avoid possible different 
+!roundings on different machines. 
 	      enddo
 	    enddo
 
@@ -415,25 +518,23 @@ private
 
 	      call getmetfield(ident(20),itmp,th(1,1,k,nr))
 
-	  case (22)
+!	  case (22)
+!
+!	      call getmetfield(ident(20),itmp,cw(1,1,k,nr))
 
-	      call getmetfield(ident(20),itmp,cw(1,1,k,nr))
-
-          case (26)                                          !ASSYCON
-              call getmetfield(ident(20),itmp,ccc(1,1,k,nr)) !ASSYCON
+!          case (26)                                          !ASSYCON
+!              call getmetfield(ident(20),itmp,ccc(1,1,k,nr)) !ASSYCON
                
 	  case (23)
 
-              foundpreta = .true. !pw u3
               call getmetfield(ident(20),itmp,pr(1,1,k))
 
-	  case (845) ! pw u3 MM5 TOTALRW
-
-              call getmetfield(ident(20),itmp,trw(1,1,k))
+!	  case (845) ! pw u3 MM5 TOTALRW
+!
+!              call getmetfield(ident(20),itmp,trw(1,1,k))
 
 	  case (39)
 
-              foundclouds = .true.
 	      call getmetfield(ident(20),itmp,cc3d(1,1,k))
 
 !..2D fields!
@@ -476,20 +577,23 @@ private
 
 !     definition of the half-sigma levels from the full levels.
 
-      sigma_bnd(KMAX_BND) = 1.
-
-      do k = KMAX_MID,2,-1
-        sigma_bnd(k) = 2.*sigma_mid(k) - sigma_bnd(k+1)
-	enddo
-
-      sigma_bnd(1) = 0.
+!pw rv2_1_10: moved into DegGrid
+!      sigma_bnd(KMAX_BND) = 1.!
+!
+!      do k = KMAX_MID,2,-1
+!        sigma_bnd(k) = 2.*sigma_mid(k) - sigma_bnd(k+1)
+!	enddo
+!
+!      sigma_bnd(1) = 0.
 
 !              set sdot equal to zero at the boundaries.
 
 !ko    sdot is interpolated to get values at half levels; see metvar.f
 !ko	    sdot(:,:,1,nr)=0.
 !ko
-      sdot(:,:,KMAX_BND,nr)=0.
+
+!pw rv2_1_9: moved into metvar
+!      sdot(:,:,KMAX_BND,nr)=0.
 
    end subroutine infield
 
@@ -679,9 +783,9 @@ private
   	    enddo
             endif
 	  
+!  set sdot equal to zero at the top and bottom of atmosphere. 
+            sdot(:,:,KMAX_BND,nr)=0.
             sdot(i,j,1,nr)=0.0
-
-            if(foundclouds)then
 
 !ko	conversion from % to fractions (<0,1>) for cloud cover
 !ko	calculation of cc3dmax (see eulmc.inc) - 
@@ -691,27 +795,11 @@ private
 	    cc3dmax(i,j,1) = cc3d(i,j,1)
 !hf
             lwc(i,j,:)=0.
-          do k=2,KMAX_MID
+            do k=2,KMAX_MID
 	      cc3d(i,j,k) = 0.01 * cc3d(i,j,k)
 	      cc3dmax(i,j,k) = amax1(cc3dmax(i,j,k-1),cc3d(i,j,k-1))
               lwc(i,j,k)=0.6e-6*cc3d(i,j,k)
 	    enddo
-            else
-
-!pw u3     make cloud cover from cloud water!
-               where(cw(i,j,:,nr).gt.CLOUDTHRES)
-                  cc3d(i,j,:) = 1.0
-               else where
-                  cc3d(i,j,:) = 0.0
-               end where
-
-               cc3dmax(i,j,1) = cc3d(i,j,1)               
-               do k=2,KMAX_MID
-                  cc3dmax(i,j,k) = amax1(cc3dmax(i,j,k-1),cc3d(i,j,k-1))
-               enddo
-
-            endif
-
 
 	  enddo
 	enddo
@@ -848,8 +936,9 @@ private
 !     exhange coefficient in sigma-coordinates.
 
 !su            ro = ((ps(i,j,1) - PT)*sigma_bnd(k) + PT)*CP*(exf2(k) -
-            ro = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exf2(k) -      &
-			exf2(k-1))/(R*exf1(k)*dex12)
+!commented out: pw 6/3-2005: ro not used!
+!            ro = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exf2(k) -      &
+!			exf2(k-1))/(R*exf1(k)*dex12)
 !      if(me == 0)then
 !      write(*,*)'Richardson',i,j,k,ri,th(i,j,k-1,nr)-th(i,j,k,nr),ric,xkh
 !      endif
@@ -867,59 +956,13 @@ private
 !            if (i.eq.it.and.j.eq.jt) write(6,*)'th,u,v,dvdzm',
 !     1           th(i,j,k,nr),u(i,j,k,nr),v(i,j,k,nr),dvdzm
 
-!pw u3 (corrected emep1.2beta)
-!    derive precipitations (in mm/s) from rainwater (in kg(water)/kg(air))
-!                  pr = V_RAIN * trw * roa  /rowater 
-!    trw*roa = kgwater/m3
-!    trw * roa  /rowater = vol(water)/vol
-!    in one second a "volume" will change height by RAINV. 
-!    The volume which comes through the level boundary contains   
-!     RAINV*trw*roa/rowater meters of water.
-!
-! TO BE IMPROVED!
-
-            if(.not.foundpreta)then
-
-              pr(i,j,k) = 1000.*V_RAIN*max(0.0, trw(i,j,k) * roa(i,j,k,nr)  &
-                            /ROWATER  )
-
-            endif
-
-
 
 	    enddo ! k
 
-            if(.not.foundpreta)then !pw u3
-               k=1
-               pr(i,j,k) = 1000.*divt*max(0.0, trw(i,j,k) * roa(i,j,k,nr) * &
-                            (z_bnd(i,j,k)-z_bnd(i,j,k+1))/ROWATER  )
-            endif
+
 	  enddo
 	enddo
 
-
-!            if(mm5)then
-!!pw calculate sdot from a mass conservation principle
-! Please do not remove
-!
-!               inv_GRIDWIDTH_M=1./GRIDWIDTH_M
-!!               do j=1,ljmax
-!!                  do i=1,limax
-!                     sdot(i,j,KMAX_BND,nr)=0.
-!                     do k=KMAX_BND-1,1,-1
-!if(i==5.and.j==5)then
-!                        write(*,*)i,j,k,sdot(i,j,k,nr)-sdot(i,j,k+1,nr),&
-!            -xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))*inv_GRIDWIDTH_M*&
-!           (u(i-1,j,k,nr)-u(i,j,k,nr)+v(i,j-1,k,nr)-v(i,j,k,nr))
-!endif
-!!                        sdot(i,j,k,nr)=sdot(i,j,k+1,nr)- &
-!!            xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))*inv_GRIDWIDTH_M*&
-!!           (u(i-1,j,k,nr)-u(i,j,k,nr)+v(i,j-1,k,nr)-v(i,j,k,nr))
-!                     enddo
-!!                  enddo
-!!               enddo
-!            endif
-!               
 
 
 
@@ -976,10 +1019,8 @@ private
 			+ (th(:,:,:,2) - th(:,:,:,1))*div
 	  q(:,:,:,1) = q(:,:,:,1) 				&
 			+ (q(:,:,:,2) - q(:,:,:,1))*div
-	  cw(:,:,:,1) = cw(:,:,:,1) 				&
-			+ (cw(:,:,:,2) - cw(:,:,:,1))*div      
-          ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
-                        + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
+!          ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
+!                        + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
 	  skh(:,:,:,1) = skh(:,:,:,1) 				&
 			+ (skh(:,:,:,2) - skh(:,:,:,1))*div
 	  roa(:,:,:,1) = roa(:,:,:,1) 				&
@@ -1002,10 +1043,7 @@ private
 
 	  fm(:,:,1) = fm(:,:,1) 				&
 			+ (fm(:,:,2) - fm(:,:,1))*div
-          if(foundustar)then
-	  ustar(:,:,1) = ustar(:,:,1) 				&
-			+ (ustar(:,:,2) - ustar(:,:,1))*div
-          endif
+
 !SST
 	  sst(:,:,1)   = sst(:,:,1) 				&
 			+ (sst(:,:,2)   - sst(:,:,1))*div
@@ -1023,8 +1061,7 @@ private
 	  sdot(:,:,:,1) = sdot(:,:,:,2)
 	  th(:,:,:,1) = th(:,:,:,2)
 	  q(:,:,:,1) = q(:,:,:,2)
-	  cw(:,:,:,1) = cw(:,:,:,2)
-          ccc(:,:,:,1) = ccc(:,:,:,2)   !ASSYCON
+!          ccc(:,:,:,1) = ccc(:,:,:,2)   !ASSYCON
 	  skh(:,:,:,1) = skh(:,:,:,2)
 	  roa(:,:,:,1) = roa(:,:,:,2)
 
@@ -1042,13 +1079,8 @@ private
 	  fm(:,:,1) = fm(:,:,2)
 !ds u7.4vg fl added
 	  fl(:,:,1) = fl(:,:,2)
-	  if(foundustar) ustar(:,:,1) = ustar(:,:,2)
-	  sst(:,:,1) = sst(:,:,2)          !SST
 
-!gv	  if(MADE)then				!MADE
-!gv	    vd1komp(:,:,:,1) = vd1komp(:,:,:,2)
-!gv	    vd50komp(:,:,:,1) = vd50komp(:,:,:,2)
-!gv	  endif					!MADE
+	  sst(:,:,1) = sst(:,:,2)          !SST
 
 	endif
 
@@ -1381,17 +1413,18 @@ private
 
 
 !definer alle dimensjoner med MAXLIMAX,MAXLJMAX
-      real exnm(MAXLIMAX,MAXLJMAX,KMAX_MID),exns(MAXLIMAX,MAXLJMAX,KMAX_BND),zm(MAXLIMAX,KMAX_MID),&
-          zs_bnd(MAXLIMAX,MAXLJMAX,KMAX_BND),risig(MAXLIMAX,KMAX_BND),xksm(MAXLIMAX,KMAX_BND),&
-          zis(MAXLIMAX),ziu(MAXLIMAX,MAXLJMAX),delq(MAXLIMAX),thsrf(MAXLIMAX),trc(MAXLIMAX),&
-          pidth(MAXLIMAX),dpidth(MAXLIMAX),lim,help(MAXLIMAX,MAXLJMAX),a(MAXLIMAX,MAXLJMAX),&
-          zixx(MAXLIMAX,MAXLJMAX),xdthdz,dthdz(MAXLIMAX,KMAX_MID),zmmin,&
-          deltaz(MAXLIMAX,KMAX_MID),pz(MAXLIMAX,KMAX_BND),thc(MAXLIMAX,KMAX_MID),&
-          roas(MAXLIMAX,MAXLJMAX),zimin,zlimax,kzmin,kzmax,uabs(MAXLIMAX,MAXLJMAX),&
-          vdfac(MAXLIMAX,MAXLJMAX),xkhs(MAXLIMAX),xkdz(MAXLIMAX),xkzi(MAXLIMAX),hs(MAXLIMAX),&
-!hf new
-          sm,pref,xtime,umax,eps,ric,ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,&
-          dvdz,xl2,uvhs,zimhs,zimz,zmhs,ux0,fac,fac2,dex12,ro,xkh100(MAXLIMAX)
+ real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID)::exnm
+ real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND)::exns,zs_bnd
+ real, dimension(MAXLIMAX,KMAX_MID)::zm,dthdz,deltaz,thc
+ real, dimension(MAXLIMAX,KMAX_BND)::risig,xksm,pz
+ real, dimension(MAXLIMAX)::zis,delq,thsrf,trc,pidth,dpidth,xkhs,xkdz,xkzi,&
+                            hs,xkh100
+ real, dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,roas,uabs,vdfac
+ real ::lim,xdthdz,zmmin,zimin,zlimax,kzmin,kzmax,sm,pref,xtime,umax,eps,ric,&
+        ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,dvdz,xl2,uvhs,zimhs,&
+        zimz,zmhs,ux0,fac,fac2,dex12,ro
+
+
 !hf Hilde&ANton
       real hsurfl
 !hf new
@@ -1848,7 +1881,8 @@ implicit none
     iif=limax
     jjf=ljmax
 
-    thick=2  !we fetch 2 neighbors at once, so that we don't need to call readneighbours twice
+    thick=2  !we fetch 2 neighbors at once, so that we don't need to call
+             ! readneighbours twice
     iifl=iif+2*thick
     jjfl=jjf+2*thick
 
@@ -1906,7 +1940,7 @@ implicit none
          do 20 j=2,jjfl-1
             do 20 i=2,iifl-1
                h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
-                    +0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))   &  
+                    +0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))  &
                     +s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
                h2(i,j) = amax1(h2(i,j),rmin)
                h2(i,j) = amin1(h2(i,j),rmax)
@@ -1926,7 +1960,7 @@ implicit none
       end subroutine smoosp                                                             
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-   subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
+subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      
      
 ! Read data at the other side of the boundaries 
@@ -2727,6 +2761,347 @@ implicit none
                      
        RETURN 
        end subroutine O_Brian
+
+
+     subroutine Getmeteofield(meteoname,namefield,nrec,&
+                              ndim,period_of_validity,field)
+!
+! Read the meteofields and distribute to nodes
+!
+
+     use netcdf
+      use Par_ml,                only : me,NPROC,MSG_READ4,ISMBEG,JSMBEG&
+                                       ,GIMAX,GJMAX,MAXLIMAX,MAXLJMAX
+     use ModelConstants_ml,     only : KMAX_MID
+
+     implicit none
+
+     real, dimension(*),intent(out) :: field !dimensions: (MAXLIMAX,MAXLJMAX)
+                                             ! or (MAXLIMAX,MAXLJMAX,KMAX)
+     character (len = *),intent(in) ::meteoname,namefield
+     character (len = *),intent(out) ::period_of_validity
+     integer,intent(in) :: nrec,ndim
+
+     integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
+     integer*2, allocatable ::var_global(:,:,:) !faster if defined with fixed dimensions for all nodes?
+     real :: scalefactors(2)
+     integer :: gc_info,KMAX,ijk,i,k,j,nfetch
+
+     period_of_validity=''
+
+     if(ndim==3)KMAX=KMAX_MID
+     if(ndim==2)KMAX=1
+     if(me==0)then
+        allocate(var_global(GIMAX,GJMAX,KMAX))
+        nfetch=1
+        call GetCDF_short(namefield,meteoname,var_global,GIMAX,ISMBEG,GJMAX, &
+        JSMBEG,KMAX,nrec,nfetch,scalefactors,period_of_validity)
+     else
+        allocate(var_global(1,1,1)) !just to have the array defined
+     endif
+
+!note: var_global is defined only for me=0
+     call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
+                             KMAX,1,1)
+     call gc_rbcast(200,2,0,NPROC,gc_info,scalefactors)
+     call gc_bbcast(201,20,0,NPROC,gc_info,period_of_validity)
+ 
+     deallocate(var_global)
+ 
+
+     ijk=0
+     do k=1,KMAX ! KMAX is =1 for 2D arrays
+        do j=1,MAXLJMAX
+           do i=1,MAXLIMAX
+              ijk=ijk+1
+              field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
+           enddo
+        enddo
+     enddo
+     
+     return
+   end subroutine Getmeteofield
+
+subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
+     ,KMAX,nstart,nfetch,scalefactors,period_of_validity)
+  !
+  ! open and reads CDF file
+  !
+  ! The nf90 are functions which return 0 if no error occur.
+  ! check is only a subroutine which check wether the function returns zero
+  !
+  !
+  use netcdf
+  use Par_ml,                only : me,NPROC
+  implicit none
+
+  character (len=*),intent(in) :: fileName 
+
+  character (len = *),intent(in) ::varname
+  character (len = *),intent(out) ::period_of_validity
+  real,intent(out) :: scalefactors(2)
+  integer, intent(in) :: nstart,GIMAX,ISMBEG,GJMAX,JSMBEG,KMAX
+  integer, intent(inout) ::  nfetch
+  integer*2, dimension(GIMAX*GJMAX*KMAX*NFETCH),intent(out) :: var
+  integer :: varID,ndims
+  integer :: ncFileID,var_date,status
+  real :: scale,offset
+  character *100 :: period_read
+
+  ndims=3
+  if(KMAX==1)ndims=2
+!  print *,'  reading ',trim(varname),'from',trim(fileName)
+  !open an existing netcdf dataset
+  call check(nf90_open(path=trim(fileName),mode=nf90_nowrite,ncid=ncFileID))
+
+  !get varID:
+  call check(nf90_inq_varid(ncid=ncFileID,name=trim(varname),varID=VarID))
+
+  !get scale factors
+  scalefactors(1) = 1.0 !default
+  scalefactors(2) = 0.  !default
+
+  status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+  if(status == nf90_noerr) scalefactors(1) = scale
+  status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+  if(status == nf90_noerr) scalefactors(2) = offset
+
+  !find period_of_validity
+  period_of_validity='                                     ' !initialisation
+  period_read='                                     ' !initialisation
+  status = nf90_get_att(ncFileID, VarID, "period_of_validity", period_read  )
+  if(status == nf90_noerr)then
+     period_of_validity  = trim(period_read)
+  else
+     period_of_validity='instantaneous' !default
+  endif
+
+ ! if(Nfetch<nrecords)then
+ !    write(*,*)'Reading record',nstart,' to ',nstart+nfetch-1
+ ! endif
+ 
+  !get variable
+  if(ndims==2)then
+     call check(nf90_get_var(ncFileID, VarID, var,&
+          start=(/ISMBEG,JSMBEG,nstart/),count=(/ GIMAX,GJMAX,nfetch /)))
+  elseif(ndims==3)then
+     call check(nf90_get_var(ncFileID, VarID, var,&
+        start=(/ISMBEG,JSMBEG,1,nstart/),count=(/GIMAX,GJMAX,KMAX,nfetch /)))
+  endif
+
+ call check(nf90_close(ncFileID))
+
+end subroutine GetCDF_short
+
+   subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm,&
+        sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
+!
+! Get grid and time parameters as defined in the meteo file
+! Do some checks on sizes and dates
+!
+! This routine is called only once (and is therefore not optimized for speed)
+!
+
+     use netcdf
+     use Par_ml,                only : me,NPROC,ISMBEG,JSMBEG&
+                                       ,GIMAX,GJMAX,MAXLIMAX,MAXLJMAX&
+                                       ,gi0,gj0
+     use ModelConstants_ml,     only : KMAX_MID
+
+     implicit none
+
+     character (len = *), intent(in) ::meteoname
+     integer, intent(in):: nyear,nmonth,nday,nhour
+     real, intent(out) :: GRIDWIDTH_M,xp,yp,fi,&
+                          xm(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
+     integer, intent(out):: Nhh,nhour_first
+
+     integer :: gc_info,nseconds(1),n1,i,j
+     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid
+     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
+     real ::xm_global(0:GIMAX+2,0:GJMAX+2)
+
+
+  if(me==0)then
+  print *,'  reading ',trim(meteoname)
+  !open an existing netcdf dataset
+  call check(nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID))
+
+
+  !get dimensions id
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
+
+  !get dimensions length
+  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_file))
+  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_file))
+  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_file))
+  call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
+
+  write(*,*)'dimensions meteo grid',GIMAX_file,GJMAX_file,KMAX_file,Nhh
+
+  if(GIMAX+ISMBEG-1>GIMAX_file.or.GJMAX+JSMBEG-1>GJMAX_file)then
+     write(*,*)'outside domain',GIMAX,GIMAX_file,GJMAX,GJMAX_file
+     call gc_abort(me,NPROC,"error in NetCDF_ml")
+  endif
+  if(KMAX_MID>KMAX_file)then
+     write(*,*)'wrong vertical dimension',KMAX_MID,KMAX_file
+     call gc_abort(me,NPROC,"error in NetCDF_ml")
+  endif
+  if(24/Nhh/=METSTEP)then
+     write(*,*)'ERROR: METSTEP and meteo step not equal',Nhh,METSTEP
+     call gc_abort(me,NPROC,"error in NetCDF_ml")
+  endif
+  
+  
+  if(nhour/=0.and.nhour/=3)then
+     write(*,*)'WARNING: must start at hour=0 or 3'
+     write(*,*)nhour,' not tested'
+     call gc_abort(me,NPROC,"error in NetCDF_ml")
+  endif
+  ihh=1
+  n1=1
+  call check(nf90_get_var(ncFileID,timeDimID,nseconds,&
+             start=(/ihh/),count=(/n1 /)))
+  call datefromsecondssince1970(ndate,nseconds(1),0)
+  nhour_first=ndate(4)
+
+  if(ndate(1)/=nyear.or.ndate(2)/=nmonth.or.ndate(3)/=nday)then
+     write(*,*)'ERROR: wrong meteo date',ndate(1),nyear,ndate(2),&
+          nmonth,ndate(3),nday
+     call gc_abort(me,NPROC,"error in NetCDF_ml")
+  endif
+
+  do ihh=1,Nhh
+     call check(nf90_get_var(ncFileID, timeDimID, nseconds,&
+                start=(/ ihh /),count=(/ n1 /)))   
+     call datefromsecondssince1970(ndate,nseconds(1),0)
+     if(mod((ihh-1)*METSTEP+nhour_first,24)/=ndate(4))then
+        write(*,*)'ERROR: wrong meteo hour',ihh,Nhh,ndate(4),nhour_first
+        call gc_abort(me,NPROC,"error in NetCDF_ml")
+     endif
+  enddo
+
+   
+  !get global attributes
+  call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
+  call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole",xp ))
+  call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole",yp ))
+  call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
+  
+  !get variables
+  call check(nf90_inq_varid(ncid=ncFileID, name="map_factor", varID=varID))
+
+  call check(nf90_get_var(ncFileID, varID, xm_global(1:GIMAX,1:GJMAX) &
+          ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
+
+  call check(nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID))
+  call check(nf90_get_var(ncFileID, varID, sigma_mid ))
+
+
+  endif !me=0
+
+
+
+  call gc_ibcast(199,1,0,NPROC,gc_info,Nhh)
+  call gc_rbcast(200,1,0,NPROC,gc_info,GRIDWIDTH_M)
+  call gc_rbcast(201,1,0,NPROC,gc_info,xp)
+  call gc_rbcast(202,1,0,NPROC,gc_info,yp)
+  call gc_rbcast(203,1,0,NPROC,gc_info,fi)
+  call gc_rbcast(204,KMAX_MID,0,NPROC,gc_info,sigma_mid)
+  call gc_rbcast(205,GIMAX*GJMAX,0,NPROC,gc_info,xm_global(1:GIMAX,1:GJMAX))
+
+!complete along the four sides
+  do i=1,GIMAX
+     xm_global(i,0)=xm_global(i,1)
+     xm_global(i,GJMAX+1)=xm_global(i,GJMAX)
+     xm_global(i,GJMAX+2)=xm_global(i,GJMAX)
+  enddo
+  do j=0,GJMAX+2
+     xm_global(0,j)=xm_global(1,j)
+     xm_global(GIMAX+1,j)=xm_global(GIMAX,j)
+     xm_global(GIMAX+2,j)=xm_global(GIMAX,j)
+  enddo
+
+
+!keep only part of xm relevant to the local domain
+!note that xm is larger than local domain
+  if(MAXLIMAX+1>limax+2.or.MAXLJMAX+1>ljmax+2)then
+     call gc_abort(me,NPROC,"error in Met_ml sizes definitions")
+  endif
+  do j=0,MAXLJMAX+1
+     do i=0,MAXLIMAX+1
+        xm(i,j)=xm_global(gi0+i-1,gj0+j-1)
+     enddo
+  enddo
+
+
+  end subroutine Getgridparams
+
+  subroutine check(status)
+    use Par_ml,                only : me,NPROC
+    use netcdf
+    implicit none
+    integer, intent ( in) :: status
+    
+    if(status /= nf90_noerr) then 
+      print *, trim(nf90_strerror(status))
+      call gc_abort(me,NPROC,"error in NetCDF_ml")
+    end if
+  end subroutine check  
+!_______________________________________________________________________
+
+subroutine datefromsecondssince1970(ndate,nseconds,printdate)
+  !calculate date from seconds that have passed since the start of the year 1970
+
+!  use Dates_ml, only : nmdays
+  implicit none
+
+  integer, intent(out) :: ndate(4)
+  integer, intent(in) :: nseconds
+  integer,  intent(in) :: printdate
+
+  integer :: n,nday,nmdays(12),nmdays2(13)
+  nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
+
+  nmdays2(1:12)=nmdays
+  nmdays2(13)=0
+  ndate(1)=1969
+  n=0
+  do while(n<=nseconds)
+     n=n+24*3600*365
+     ndate(1)=ndate(1)+1
+     if(mod(ndate(1),4)==0)n=n+24*3600
+  enddo
+  n=n-24*3600*365
+  if(mod(ndate(1),4)==0)n=n-24*3600
+  if(mod(ndate(1),4)==0)nmdays2(2)=29
+  ndate(2)=0
+  do while(n<=nseconds)
+     ndate(2)=ndate(2)+1
+     n=n+24*3600*nmdays2(ndate(2))
+  enddo
+  n=n-24*3600*nmdays2(ndate(2))
+  ndate(3)=0
+  do while(n<=nseconds)
+     ndate(3)=ndate(3)+1
+     n=n+24*3600
+  enddo
+  n=n-24*3600
+  ndate(4)=-1
+  do while(n<=nseconds)
+     ndate(4)=ndate(4)+1
+     n=n+3600
+  enddo
+  n=n-3600
+  !    ndate(5)=nseconds-n
+  if(printdate>0)then
+  write(*,*)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
+       ndate(3),', hour: ',ndate(4),', seconds: ',nseconds-n
+  endif
+end subroutine datefromsecondssince1970
 
 end module met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD

@@ -29,7 +29,7 @@
   use MassBudget_ml,         only :  totem    ! sum of emissions
 !hf made
   !u7.4vg use Met_ml,            only :  roa, th, ps, q, temp2m, cc3dmax, mm5
-  use Met_ml,                only :  roa, th, ps, q, t2, cc3dmax, mm5
+  use Met_ml,                only :  roa, th, ps, q, t2, cc3dmax
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
     ,dt_advec                        & ! time-step
@@ -248,7 +248,7 @@ contains
 
     !/** lightning and aircraft ... Airial NOx emissions if required:
 
-     if ( AIRNOX .and. .not. mm5 ) then
+     if ( AIRNOX  ) then
 
        !QRCAIR is set to QRCNO if AIRNOX is true. Otherwise to a
        ! dummy value of 1. Avoids problems with

@@ -368,7 +368,6 @@ contains
     !____________________________________________________________________________
     use Chemfields_ml,         only: xn_adv  ! emep model concs.
     use GridValues_ml,         only: gl, gb    ! lat, long
-    use Met_ml,                only:     mm5
 
     implicit none
 

@@ -36,7 +36,6 @@
  Public :: ij2lb       !pw grid to longitude latitude
  Public :: lb2ij       !pw longitude latitude to grid
  Public :: ij2ij       !pw grid1 to grid2
- Public :: coordzero   !pw i,j coordinates at 60N,fi
 
 !Hf BC
  Public :: GlobalPosition     ! => 
@@ -107,6 +106,7 @@
 !pw u3  real, private, parameter :: AN = 237.731644  !No. grids from pole to equator?
 
   logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
+  logical,public,parameter :: METEOfelt=.true. !.true. if uses "old" (not CDF) meteo input
 
 contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -149,7 +149,9 @@ contains
   !  map factor, and map factor squared.  !ko proper EMEP grid definition
 
      an2 = AN*AN
-     do j=0,MAXLJMAX+1           ! ds - changed from ljmax+1
+ if( METEOfelt)then
+
+    do j=0,MAXLJMAX+1           ! ds - changed from ljmax+1
           y = j_glob(j) - yp     ! ds - changed from gj0+JSMBEG-2+j
           y = y*y
           do i=0,MAXLIMAX+1        ! ds - changed from limax+1
@@ -166,7 +168,26 @@ contains
           end do
       end do 
 
+   else
+!mapping factor xm is read from the meteo file
+    do j=0,MAXLJMAX+1        
+       do i=0,MAXLIMAX+1     
+          xm2(i,j) = xm(i,j)*xm(i,j)
+          xmd(i,j) = 1.0/xm2(i,j)
+          xm2ji(j,i) = xm2(i,j)
+          xmdji(j,i) = xmd(i,j)
+       enddo
+    enddo
 
+   endif
+!     definition of the half-sigma levels (boundaries between layers) from the full levels. 
+
+          sigma_bnd(KMAX_BND) = 1.
+          do k = KMAX_MID,2,-1
+             sigma_bnd(k) = 2.*sigma_mid(k) - sigma_bnd(k+1)
+          enddo
+          sigma_bnd(1) = 0.
+          
    !
    !     some conversion coefficients needed for budget calculations
    !
@@ -517,24 +538,6 @@ end subroutine GlobalPosition
     end subroutine ij2ij
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-    subroutine coordzero(izero,jzero)
-      !finds the i,j coordinates at the points where 
-      !  the latitude has "true"  projection (fixed at 60N by now) and 
-      !  longitude = fi
-
-      implicit none
-      real , intent(out) :: izero,jzero
-      real  :: izerom(1,1),jzerom(1,1)
-      real :: lat(1,1),long(1,1)
-
-      lat(1,1)=60.0
-      long(1,1)=fi
-      call lb2ij(1,1,long,lat,izerom,jzerom,fi,AN,xp-(ISMBEG-1),yp-(JSMBEG-1))
-      izero=izerom(1,1)
-      jzero=jzerom(1,1)
-
-    end subroutine coordzero
 
 end module GridValues_ml
 !==============================================================================
