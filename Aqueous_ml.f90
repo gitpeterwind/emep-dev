@@ -19,8 +19,6 @@ module Aqueous_ml
   !   call Setup_Clouds(i,j)     from Runchem_ml
   !   call WetDeposition(i,j)    from Runchem_ml if prec. clouds_present
   !
-!hf test
-
   use My_WetDep_ml, only : WetDep, NWETDEP, WetDep_Budget
   use My_Derived_ml       , only : NWDEP, WDEP_PREC &
                                     ,IOU_INST &   ! Index: instantaneous values
@@ -33,7 +31,7 @@ module Aqueous_ml
      ,KCHEMTOP                 & ! top of chemistry, now k=2
      , dt => dt_advec          & ! model timestep
      ,PT, ATWAIR                 ! Pressure at top, atw. air
-  use Met_ml,               only :  pr, cw, roa, z_bnd, cc3d, ps&
+  use Met_ml,               only :  pr, roa, z_bnd, cc3d, ps&
 !hf cum
                                     ,lwc
   use Par_ml              , only : me   ! for DEBUG
@@ -42,12 +40,9 @@ module Aqueous_ml
   private
 
   !/-- subroutines
-!hf cum
   public ::  init_aqueous
   public :: Setup_Clouds   ! characterises clouds and calls WetDeposition if rain
-
   public :: WetDeposition   !u7.2, ds -  simplified setup_wetdep
-!hf lwc
   private ::  tabulate_aqueous
   private ::  get_frac
   private ::  setup_aqurates
@@ -72,22 +67,21 @@ module Aqueous_ml
 
    real, private, parameter :: &      ! Define limits for "cloud"
        PR_LIMIT = 1.0e-7  &   ! for accumulated precipitation
-!hf cum      ,CW_LIMIT = 1.0e-7      ! for cloud water
-!hf lwc is another unit than cw
-      ,CW_LIMIT = 1.0e-10   &   ! for cloud water
-      , B_LIMIT = 1.0e-3      ! for cloud cover (fraction)
-!hf cum
+       !hf ,CW_LIMIT = 1.0e-7      ! for cloud water
+       !hf lwc is another unit than cw(LWC g/m3, cw kg(H2o)/kg(air))
+       ,CW_LIMIT = 1.0e-10   &   ! for cloud water
+       ,B_LIMIT = 1.0e-3        ! for cloud cover (fraction)
    real, private, save  :: & !  Set in init below (F wouldn't accept **0.4 in param
-           INV_Hplus             & ! = 1.0/Hplus      1/H+,         was:HINRAT
-          ,INV_Hplus0p4            ! =INV_Hplus**0.4  (1/H+)**0.4
+        INV_Hplus             & ! = 1.0/Hplus      1/H+,         was:HINRAT
+       ,INV_Hplus0p4            ! =INV_Hplus**0.4  (1/H+)**0.4
 
  ! The Henry's law coefficients, K, given in units of M or M atm-1,
  ! are calculated as effective. A factor K1fac = 1+K1/H+ is defined
  ! here also. 
  !-------------------------------------------------------------------
   integer, public, parameter :: &
-  NHENRY = 3, &       ! No.species with Henry's law applied
-  NK1    = 1, &       ! No.species needing effective Henry's calc.
+  NHENRY  = 3, &       ! No.species with Henry's law applied
+  NK1     = 1, &       ! No.species needing effective Henry's calc.
   IH_SO2  = 1, &
   IH_H2O2 = 2, &
   IH_O3   = 3
@@ -95,8 +89,8 @@ module Aqueous_ml
    ! Aqueous fractions:
     real, public, dimension ( NHENRY, KUPPER:KMAX_MID ), save :: frac_aq
 
-real, private, dimension (NHENRY, CHEMTMIN:CHEMTMAX), save  :: H
-real, private, dimension (NK1,CHEMTMIN:CHEMTMAX), save  :: K1fac  ! old Hso2eff
+   real, private, dimension (NHENRY, CHEMTMIN:CHEMTMAX), save  :: H
+   real, private, dimension (NK1,CHEMTMIN:CHEMTMAX), save  :: K1fac  ! old Hso2eff
 
  !/ Outputs:
  ! Aqueous reaction rates for usage in gas-phase chemistry
@@ -114,7 +108,7 @@ real, private, dimension (NK1,CHEMTMIN:CHEMTMAX), save  :: K1fac  ! old Hso2eff
       ICLOHSO2  = 1    &   ! for oh + so2 ->                (was IC4055)
      ,ICLRC1    = 2    &   ! for  [h2o2] + [so2]            (was IAQRC1)
      ,ICLRC2    = 3    &   ! for  [o3] + [so2]              (was IAQRC2)
-     ,ICLRC3    = 4       ! for [o3] + [o2] (Fe catalytic) (was IAQRC3)
+     ,ICLRC3    = 4        ! for [o3] + [o2] (Fe catalytic) (was IAQRC3)
 
                                                        !  so2 oxidn.
 
@@ -187,7 +181,7 @@ contains
 !hf cum
    real, dimension(KUPPER:KMAX_MID) :: &
           b           &          !  Cloud-area (fraction)
-         ,cloudwater            !  Cloud-water (volume mixing ratio) 
+         ,cloudwater             !  Cloud-water (volume mixing ratio) 
 
     integer         ::  k
 
@@ -217,7 +211,7 @@ contains
     ksubcloud = KMAX_MID+1    ! k-coordinate of sub-cloud limit
 
     do  k = KMAX_MID, KUPPER, -1  
-!hf cum        if ( cw(i,j,k,1) >  CW_LIMIT ) exit  !  out of loop
+        !hf if ( cw(i,j,k,1) >  CW_LIMIT ) exit  !  out of loop
         if ( lwc(i,j,k) >  CW_LIMIT ) exit  !  out of loop
         ksubcloud = k
     end do
@@ -248,8 +242,10 @@ contains
 
  
 !hf cum        if ( cw(i,j,k,1) > CW_LIMIT ) then
-        if ( cw(i,j,k,1) > 1.0e-7   .and. b(k) > B_LIMIT ) then
-                cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)  
+!hf old HIRLAM cw used        if ( cw(i,j,k,1) > 1.0e-7   .and. b(k) > B_LIMIT ) then
+!hf                           cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)  
+        if ( lwc(i,j,k) >  CW_LIMIT ) then
+                cloudwater(k) = lwc(i,j,k) / b(k) !value of cloudwater in the cloud fraction of the grid
                 incloud(k) = .true.
                 if ( kcloudtop < 0 ) kcloudtop   = k
         end if
@@ -267,8 +263,6 @@ contains
 
 !  sets up the aqueous phase reaction rates (SO2 oxidation) and the 
 !  fractional solubility 
-!u7.2    call setup_aqurates(b ,cloudwater,incloud)
-
 
     call setup_aqurates(b ,cloudwater,incloud)
    !u7.2 if ( prclouds_present )  then
@@ -469,7 +463,7 @@ subroutine get_frac(cloudwater,incloud)
   !/-- out to rest of module: frac_aq
   !/-- local
    real, dimension (KUPPER:KMAX_MID) :: &
-                      cloudwater         ! Volume fraction  - see notes above
+                      cloudwater         ! Volume fraction  - see notes above. Average for grid or value for cloud part?
    logical, dimension(KUPPER:KMAX_MID) :: &
           incloud               ! True for in-cloud k values 
   real, dimension (KUPPER:KMAX_MID) :: VfRT       ! Vf * Rgas * Temp
