@@ -1557,6 +1557,12 @@ private
 !!                     kkinm = kkin-1 = KMAX_MID-1                
 !c
 !c**********************************************************************
+!ds rv1_6_x
+ logical, parameter :: DEBUG_KZ = .false.
+ logical, parameter :: PIELKE_KZ = .true.
+ logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
+
+
 
 !definer alle dimensjoner med MAXLIMAX,MAXLJMAX
       real exnm(MAXLIMAX,MAXLJMAX,KMAX_MID),exns(MAXLIMAX,MAXLJMAX,KMAX_BND),zm(MAXLIMAX,KMAX_MID),&
@@ -1733,6 +1739,18 @@ private
             dvdz = sqrt(dvdz)/(zm(i,km)-zm(i,k))
 
 !c..................................................................
+!c..exchange coefficient (Pielke,...)
+ !ds alternative
+     if ( PIELKE_KZ  ) then
+          if (risig(i,k) > ric ) then
+              !xkds(k) = 0.1
+              xksig(i,j,k) = 0.1
+          else
+              !xkds(k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
+              xksig(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
+          end if
+     else
+
 !c..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
 !c
             if(risig(i,k).le.0.) then
@@ -1744,6 +1762,7 @@ private
             else
                xksig(i,j,k)=0.001
             endif
+    end if ! Pielke or Blackadar
 !c
  19      continue
 !c

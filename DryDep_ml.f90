@@ -42,7 +42,7 @@ module DryDep_ml
                             unit_flux,   &! = sto. flux per m2
                             lai_flux      ! = lai * unit_flux
  use Chemfields_ml , only : cfac!,xn_adv
- use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_O3, IXADV_NO2, IXADV_SO2, IXADV_NH3
+ use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
 
  use Functions_ml,   only : AerRes,PsiM
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
@@ -399,8 +399,10 @@ module DryDep_ml
        leaf_flux(:) = 0.0
 
     ! --- ICP -----
-       ppb_o3   =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * 4.0e-11  !Crude for now
-       nmole_o3 =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * NMOLE_M3
+       !ppb_o3   =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * 4.0e-11  !Crude for now
+       !nmole_o3 =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * NMOLE_M3
+       ppb_o3   =  xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID) * 4.0e-11  !Crude for now
+       nmole_o3 =  xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID) * NMOLE_M3
     end if
 
 
@@ -455,10 +457,10 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
         ! As a simple subsistute, we assume neutral condiutions for these
         ! situations.
 
-        !ds-tmp if( .not. water(lu) .and. hirlam_sea  ) then
-        !ds-tmp     invL = 0.0
-        !ds-tmp     Hd = 0.0
-        !ds-tmp end if
+        if( .not. water(lu) .and. hirlam_sea  ) then
+             invL = 0.0
+             Hd = 0.0
+        end if
 
         call Get_Submet(hveg,t2(i,j),Hd,LE, psurf(i,j), &
                z_ref, u_ref, q(i,j,KMAX_MID,1), & ! qw_ref

@@ -1,4 +1,15 @@
 ==============================================================================
+=================== Dave, 10th June, rv1.6.6  =================================
+==============================================================================
+DryDep_ml.f90
+IXADV_O3 replaced by FLUX_ADV
+Neutral stability assumed when we have land in a grid,  but Hirlam thinks it
+is a sea-square.
+
+Met_ml.f90
+Pielke's Kz instead of Iversen+Nordeng variety
+
+==============================================================================
 =================== Dave, 5th June, rv1.6.5  =================================
 ==============================================================================
 Changed to SEI_based landuse, and added new-style (Fst) flux calculations. 
