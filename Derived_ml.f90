@@ -179,12 +179,12 @@ private
         end if
 !hf hmix average at 00 and 12
 
-        if ( typ == "HMIX00" ) then
+        if ( typ == "HMIX00" .or. typ == "XKSIG00" ) then
              thour = current_date%hour+current_date%seconds/3600.0
              if(thour /= 0.0 ) cycle  ! Start next species
         end if
 
-        if ( typ == "HMIX12" ) then
+        if ( typ == "HMIX12" .or. typ == "XKSIG12" ) then
              thour = current_date%hour+current_date%seconds/3600.0
              if(thour /= 12.0 ) cycle  ! Start next species
         end if
@@ -329,28 +329,7 @@ private
 
      do n = 1, NDERIV_3D
 
-        typ = f_3d(n)%class
         index = f_3d(n)%index
-!hf
-        if ( f_3d(n)%rho ) then
-            forall ( i=1:limax, j=1:ljmax )
-                density(i,j) = roa(i,j,KMAX_MID,1)
-            end forall
-        else !u4
-            density(:,:) = 1.0
-        end if
-
-
-        if ( typ == "XKSIG00" ) then
-             thour = current_date%hour+current_date%seconds/3600.0
-             if(thour /= 0.0 ) cycle  ! Start next species
-        end if
-
-        if ( typ == "XKSIG12" ) then
-             thour = current_date%hour+current_date%seconds/3600.0
-             if(thour /= 12.0 ) cycle  ! Start next species
-        end if
-
 
         select case ( f_3d(n)%class )
 
@@ -358,7 +337,7 @@ private
           case ( "ADV" )
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-              d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)* density(i,j)
+              d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
             end forall
 
 !hf hmix xksig

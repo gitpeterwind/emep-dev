@@ -533,7 +533,8 @@
       L =  &
      !u1 rctroe(3,k)  &
      rcmisc(13,k)  &
-      + 1.0e-5  &
+! N ch      + 1.0e-5  &
+      + rcmisc(8,k)*(xnew(SO4)+xnew(AMSU))  & ! N ch
       + rcphot(IDN2O5,K) 
 
        xnew(N2O5)=  amax1(0.0, ( xold(N2O5) + dt2 * P))  &
@@ -559,11 +560,11 @@
       P =   &
      !u1 rctroe(4,k) * xnew(NO2 ) * xnew(OH )  &
      rcmisc(14,k) * xnew(NO2 ) * xnew(OH )  &
-      + 5.8e-16 * xnew(NO3 ) * xnew(HCHO ) 
-
+      + 5.8e-16 * xnew(NO3 ) * xnew(HCHO )  & 
+      +2.0*rcmisc(8,k)*(xnew(SO4)+xnew(AMSU))*xnew(N2O5) !N ch
       L =  &
      rct(11,k)* xnew(OH )  &
-      + 1.0e-5  &
+! N ch     + 1.0e-5  &
       + rcphot(IDHNO3,K) 
 
        xnew(HNO3)=  amax1(0.0, ( xold(HNO3) + dt2 * P))  &
@@ -1208,13 +1209,13 @@
 
 !-> NITRATE 
 
-      P =   &
-     2.*1.0e-5 * xnew(N2O5 )  &
-      + 1.0e-5 * xnew(HNO3 ) 
+! N ch      P =   &
+! N ch    2.*1.0e-5 * xnew(N2O5 )  &
+! N ch     + 1.0e-5 * xnew(HNO3 ) 
       ! L = 0.0
  
 
-       xnew(NITRATE)=  amax1(0.0,  xold(NITRATE) + dt2 * P)
+! N ch       xnew(NITRATE)=  amax1(0.0,  xold(NITRATE) + dt2 * P)
 
 
 !-> NH3 

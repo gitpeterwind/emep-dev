@@ -1486,7 +1486,7 @@ endif !me==0
           vdfac(MAXLIMAX,MAXLJMAX),xkhs(MAXLIMAX),xkdz(MAXLIMAX),xkzi(MAXLIMAX),hs(MAXLIMAX),&
 !hf new
           sm,pref,xtime,umax,eps,ric,ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,&
-          dvdz,xl2,uvhs,zimhs,zimz,zmhs,ux0,fac,fac2,dex12,ro,xkh100(MAXLIMAX)
+          dvdz,xl2,uvhs,zimhs,zimz,zmhs,ux0,fac,fac2,dex12,ro
 !hf Hilde&ANton
       real hsurfl
 !hf new
@@ -1902,8 +1902,7 @@ endif !me==0
 !c..exchange parameter and its vertical derivative at z = hs
 
       do 60 i=1,limax
-!Hilde&Anton
-         xkh100(i)=0.
+
          xkhs(i)=0.                                            
          xkdz(i)=0.
          xkzi(i)=0.
@@ -1948,17 +1947,7 @@ endif !me==0
                xkdz(i)=xkhs(i)*(1.-xfrco*hsl/(3.*(1.-xfrco*hsl)))/hs(i)
             endif
 
-!Hilde&Anton
-            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
-                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
 
-            if(hsurfl.ge.-2.) then  
-               xkh100(i)=ux0*KARMAN*100.*sqrt(1.-9.*hsurfl)/0.74   
-            else
-               xkh100(i)=ux0*KARMAN*100.*(1.-xfrco*hsurfl)**exfrco/0.74  
-            endif
-
-            Kz_min(i,j)=xkh100(i)
             xksig(i,j,KMAX_MID)=xkhs(i)
 
          else
@@ -1979,12 +1968,11 @@ endif !me==0
 
             xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(0.74+4.7*hsl)   
 
+         endif
 !hf Hilde&Anton
             hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
                  &             /(ps(i,j,nr)*ux0*ux0*ux0)
             Kz_min(i,j)=1.35*ux0*KARMAN*100./(0.74+4.7*hsurfl)
-
-         endif
 !c
 !c...............................................................
 !c..factor for reduction of dry-deposition speed from 1m to hs..:
@@ -2042,7 +2030,7 @@ endif !me==0
          do i=1,limax
             do j=1,ljmax
 !hf Anton&Hilde
-               if ((pzpbl(i,j)>z_mid(i,j,k-1) ).and.k>1)then
+               if (pzpbl(i,j)>z_bnd(i,j,k+1) )then
                 xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
                endif 
 
