@@ -28,7 +28,7 @@ module  My_Outputs_ml
   implicit none
   private
 
-  logical, public, parameter :: out_binary = .true. 
+  logical, public, parameter :: out_binary = .false. 
   logical, public, parameter :: Ascii3D_WANTED = .false.
   ! out_binary = .True. gives also binary files (for use in xfelt). 
   !NB: This option is only for safety: only NetCDF output will be availble in the future.
@@ -139,9 +139,9 @@ module  My_Outputs_ml
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format. 
      !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
-    integer, public, parameter :: NHOURLY_OUT = 4  ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT = 2  ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
-    integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
+    integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
     type, public:: Asc2D
          character(len=12):: name   ! Name (no spaces!)
@@ -219,9 +219,9 @@ contains
   ! introduce some integers to make specification of domain simpler
   ! and less error-prone. Numbers can be changed as desired.
 
-   integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
+   !integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
    !integer, save :: ix1 = 70, ix2 =  95, iy1=40, iy2 = 70   ! UK
-   !integer, save :: ix1 = 70, ix2 = 150, iy1=12, iy2 = 120   ! NOFRETETE=EU
+   integer, save :: ix1 = 70, ix2 = 150, iy1=12, iy2 = 120   ! NOFRETETE=EU
 !pw:WARNING: If the specification of the subdomain is different for
 !            different components (ix1=125 for ozone and ix1=98 for 
 !            NH4 for example) , the variables i_EMEP, j_EMEP
@@ -246,12 +246,12 @@ contains
   !**               name     type   
   !**                ofmt   ispec     ix1 ix2  iy1 iy2  nk unit conv    max
 
-  hr_out(1)=  Asc2D("aNO3", "ADVugm3", &
-                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,600.0)
-  hr_out(2)=  Asc2D("aNH4", "ADVugm3", &
-                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,600.0)
-  hr_out(3)=  Asc2D("pNO3", "ADVugm3", &
-                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,400.0)
+!NF  hr_out(1)=  Asc2D("aNO3", "ADVugm3", &
+!NF                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,600.0)
+!NF  hr_out(2)=  Asc2D("aNH4", "ADVugm3", &
+!NF                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,600.0)
+!NF  hr_out(3)=  Asc2D("pNO3", "ADVugm3", &
+!NF                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,400.0)
 
 !    Asc2D("ADV", "(f8.4)",IXADV_PAN, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 !  hr_out(4)= &
@@ -271,15 +271,20 @@ contains
   !hr_out(3)= &
   !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
 
+ !NF - NOFRETETE/AUT met data extracted here:
  !/** theta is in deg.K
- hr_out(4)=  Asc2D("T2_C",   "T2_C   ", &
-                 "(f5.1)",     -99, ix1,ix2,iy1,iy2, 1,"degC",1.0   ,100.0)
-!hr_out(2)=  Asc2D("Precip", "PRECIP ", &
-!                "(f11.7)",    -99, ix1,ix2,iy1,iy2, "mm/hr",1.0,  200.0)
-!hr_out(3)=  Asc2D("Idir",   "Idirect", &
-!                "(f5.1)",    -99, ix1,ix2,iy1,iy2, "W/m2",1.0, 1000.0)
-!hr_out(4)=  Asc2D("Idif",   "Idiffus", &
-!                "(f5.1)",    -99, ix1,ix2,iy1,iy2, "W/m2",1.0, 1000.0)
+ !hr_out(1)=  Asc2D("T2_C",   "T2_C   ", &
+ !                "(f5.1)",     -99, ix1,ix2,iy1,iy2, 1,"degC",1.0   ,100.0)
+
+ hr_out(1)=  Asc2D("Cloud",   "Cloud   ", &
+                 "(f6.3)",     -99, ix1,ix2,iy1,iy2, 1,"frac",1.0   ,1.1)
+ hr_out(2)=  Asc2D("Precip", "PRECIP ", &
+                "(f11.7)",    -99, ix1,ix2,iy1,iy2, 1,"mm/hr",1.0,  200.0)
+
+ !hr_out(3)=  Asc2D("Idir",   "Idirect", &
+ !               "(f5.1)",    -99, ix1,ix2,iy1,iy2, 1,"W/m2",1.0, 1000.0)
+ !hr_out(4)=  Asc2D("Idif",   "Idiffus", &
+ !               "(f5.1)",    -99, ix1,ix2,iy1,iy2, 1,"W/m2",1.0, 1000.0)
 
 
 

@@ -216,6 +216,7 @@ private
   integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
   character(len=*), intent(in)    :: class       ! Class of data
   real, intent(in)    :: timefrac    ! Timestep as frationof hour, dt/3600
+  logical, save :: warning_written = .false.   
 
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density     
 ! density = 1 ( or = roa when unit ug)
@@ -242,7 +243,13 @@ private
 
       case  default
 
-            print *, "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
+            !ds print *, "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
+            !ds the log file became enormous when this was written each time!
+
+            if ( .not. warning_written ) then
+                write *, "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
+                warning_written = .true.
+            end if
      end select
   
 

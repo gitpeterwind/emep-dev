@@ -255,6 +255,23 @@ contains
  else if( year == 2001) then
    macehead_O3 = (/    37.3,    38.0,    42.2,    44.8,    42.6,    34.9 &
         ,    28.9,    29.4,    29.9,    35.3,    37.3,    37.5/)
+!---------------------------------------------------------------------------
+! ds, 7/6/2004
+! Preliminary BCs generated using Mace Head CFC and other greenhouse gases
+! data to define clean air masses. Data cover all of 2002 and 9 months
+! of 2003. What to do for Oct-Dec 2003?
+! Could use (1) 2002 data or (2) 10-year average?
+! Simmonds paper would support (1), simplicity (2).
+! After seeing earlier 2003 plots, chose (2).
+!
+elseif ( year == 2002 ) then
+   macehead_O3 = (/  42.4 ,     44.4 ,     45.5 ,     45.0 ,     45.9 ,     39.8 &
+               ,     32.5 ,     28.7 ,     37.7 ,     39.3 ,     40.5 ,     42.3 /)
+elseif ( year == 2003 ) then
+   macehead_O3 = (/  40.5 ,     40.6 ,     45.0 ,     45.7 ,     46.5 ,     43.0 &
+               ,     33.9 ,     34.2 ,     35.3,      39.3 ,     40.5 ,     42.3 /)
+!---------------------------------------------------------------------------
+
  else  ! Defaults, from 1990-2000 average !
    macehead_O3 = (/  37.6, 40.0, 42.9, 43.2, 41.9, 33.9, &
                      29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)

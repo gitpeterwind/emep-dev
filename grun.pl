@@ -59,11 +59,11 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "1997";
+$year = "2000";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 my $SR = 0;   #NEW Set to 1 for source-receptor stuff
-my $PM_ADDED     = 0;  # Adds in PM emissions from NOx inventory scaling
+my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 my $MERLIN_CITY= 0;  # Adds in African emissions for y=1..11
 
@@ -76,14 +76,14 @@ $iyr_trend = "2010" if $SR ;  # 2010 assumed for SR runs here
 print "Year is $yy YEAR $year Trend year $ir_trend\n";
 
 if ( $year == 2000 ) {
-  $MetDir = "/work/mifapw/metdata/$year" ;
+  $MetDir = "/work/mifahf/metdata/$year" ;
 } elsif ( $year == 1997 ) {
   $MetDir = "/work/mifapw/metdata/$year" ;
+} elsif ( $year == 2002 ) {
+  $MetDir = "/work/mifahf/metdata/$year" ;
 } elsif ( $year == 1995 ) {
-  $MetDir = "/work/mifaab/metdata/$year" ;
-} elsif ( $year == 1990 ) {
   $MetDir = "/work/mifads/metdata/$year" ;  # Needed for 1997
-} else {
+} else { # 2003 etc.
   $MetDir = "/work/mifapw/metdata/$year" ;  # Default
 }
 
@@ -96,7 +96,7 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $HILDE ;      
+$USER        =  $DAVE ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -104,17 +104,12 @@ $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 #ds - simplified treatment of BCs and emissions:
 
-$OZONE = 0, $ACID = 1;     # Specify model type here
+$OZONE = 1, $ACID = 0;     # Specify model type here
 
   # check:
   die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
 
 
-
-     #XD: New source of BCs for OH, CH3COO2, O3 and H2O2: (from OZONE)
-     $BCDIR    =     # NEW XD structure
-       "$HILDE/BC_data/Unimod.rv2_0beta.${year}";
-     die "NO DIR $BCDIR \n" unless -d $BCDIR;
 
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
@@ -124,9 +119,10 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv2_0beta";
+     $testv       = "rv2_0_2";
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
+  $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";  # Fake ok for O3
 
 } elsif ( $ACID ) {
       $OZONEDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";
@@ -134,7 +130,10 @@ if ( $OZONE ) {
      $testv       = "rv2_0beta.oh.acid";
      $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
+  #XD: New source of BCs for OH, CH3COO2, O3 and H2O2: (from OZONE)
+  $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.${year}";
 } 
+  die "NO DIR $BCDIR \n" unless -d $BCDIR;
 $version     = "Unimod" ;  
 $subv        = "$testv" ;                  # sub-version (to track changes)
 $Split       = "BASE_MAR2004" ;               #  -- Scenario label for MACH - DS
@@ -170,12 +169,17 @@ if ( $SR ) {
 	$emisdir     = "$emisdir/2004_emis2010_CLE_2000_V6";    # emissions
 } elsif ( $year == 2000)  {
 	#? $emisdir     = "$emisdir/2003_emis00_V5_WEB";    # emissions
-	$emisdir     = "$emisdir/2004_emis00_V6";    # emissions
+	#$emisdir     = "$emisdir/2004_emis00_V6";    # emissions
+       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis00_V2";    # emissions
 } elsif ( $year == 2001)  {
 	$emisdir     = "$emisdir/2004_emis01_V6";    # emissions
+} elsif ( $year == 2002)  {
+       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis02_V2";    # emissions
+} elsif ( $year == 2003)  {
+       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis02_V2";    # emissions
 } else {
-        $emisdir     = "$HILDE/emis/trends2003";
-	$emisdir     = "$emisdir/emis${yy}-V3";    # emissions
+	#
+       $emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis00_V2"; # 2000 emissions def
 }
 
 # Specify small domain if required. 
@@ -212,7 +216,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
-# $NTERM = 2;       # for testing, simply reset here
+ #$NTERM = 8;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -766,7 +770,7 @@ if ( -r core )  {
 system("mv RunLog.out  ${runlabel1}_RunLog");
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
-my $last_sondes = sprintf  "sondes.%02d%2d", $mm2, $yy;
+my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;
 print "LOOKING FOR LAST SITES $last_sondes\n";
 if ( -r $last_sondes ) {
 	print "FOUND LAST sondes $last_sondes\n";
@@ -775,7 +779,7 @@ if ( -r $last_sondes ) {
 }
 
 # Make a list of big .nc files
-   @n_files = glob("$RESDIR/*_hour.nc");
+   #@n_files = glob("$RESDIR/*_hour.nc");  # Takes too long, and only 5% saving
    @d_files = glob("$RESDIR/*_day.nc");
 #    foreach $f ( @n_files, @d_files ) {
 #        system("bzip2 -f $f");
