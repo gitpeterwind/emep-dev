@@ -28,6 +28,7 @@ implicit none
     ,  KARMAN  = 0.41            &   ! Von Karman  (=0.35 elsehwere in code!)
     ,  PI      = 3.141592653589793238462643383279 & ! www.verbose.net/Pi.html
     ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians
+    ,  RAD2DEG = 180.0/PI        &   ! COnverts radians to degrees
     ,  ROWATER = 1000.           &   ! pw density of water kg m-3
     ,  BOLTZMANN = 1.380e-23     &   ! Boltzmann'c constant[J/deg/molec]
     !ds ,  NU        = 1.46e-5       &   ! kinematic air viscosity[m2/s]

@@ -1,3 +1,16 @@
+================== Dave,        20/02/2004, rv1_9_25 ==========================
+
+GlobalBCs_ml     ... bug fixed: SpecBC needs to be set for all used species 
+                    (H2O2 wasn't) check for this added
+
+PhysicalConstants_ml ...   RAD2DEG added
+
+Radiation_ml.f90 --- Bug found! 1900 wrongly added to year. Gives small
+                      shift in equation of time (e.g. 8 mins for Jul 1st), hence
+                      declention angle and zenith angle.
+
+                 --- solarnoon and daylength calculation added. Useful in ACID
+
 ================== Peter,        17/02/2004, rv1_9_24 ==========================
 NetCDF_ml: Out_netCDF, optional input parameter "fileName_given", can be 
 	used to explicitely give the name of an output file. 

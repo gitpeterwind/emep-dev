@@ -32,7 +32,7 @@ module Radiation_ml
     use Dates_ml , only: nmdays
     use GridValues_ml,         only: gl,gb
     use ModelConstants_ml ,    only: current_date
-    use PhysicalConstants_ml , only: PI
+    use PhysicalConstants_ml , only: PI,DEG2RAD,RAD2DEG
     implicit none
     private
 
@@ -51,6 +51,7 @@ module Radiation_ml
        ,Idiffuse     &  ! diffuse solar radiation (W/m^2)        ! ds rv1_6_x
        ,Idirectt        ! total direct solar radiation (W/m^2)   ! ds rv1_6_x
 
+    real, public, save :: daylength(0:90), solarnoon(-180:180)    ! ds_OH
 
     real, public, parameter :: &
       PARfrac = 0.45,   & ! approximation to fraction (0.45 to 0.5) of total 
@@ -65,7 +66,6 @@ module Radiation_ml
   logical, private, parameter :: DEBUG = .false.
 
 contains
- !6c subroutine zenit_angle(zeta,thour)
  !<===========================================================================
   subroutine ZenAng(thour)
 
@@ -77,7 +77,10 @@ contains
     real :: d,jd,yr,ml,rml,w,wr,ec,epsi,yt,pepsi,cww
     real :: sw,ssw, eyt, feqt1, feqt2, feqt3, feqt4, feqt5, &
             feqt6, feqt7, feqt,eqt,ra,reqt,zpt
-    real :: rdecl,sinrdecl,cosrdecl,rlt,lzgmt,lbgmt,csz,rra,tab
+    real :: rdecl,sinrdecl,cosrdecl,rlt,lzgmt,lbgmt,csz,rra  !dsOH,tab
+    real :: eqt_h, tan_decl, arg     !dsOH  (tan_decl replaces tab)
+    integer :: ilat, ilong           !dsOH
+    logical, parameter :: MY_DEBUG = .false.
 
 !* convert to radians
 
@@ -86,7 +89,8 @@ contains
 !* parse date
 
     iiyear = current_date%year
-    iyear = 19*100 + iiyear
+    !dsOH BUG FIX!! iyear = 19*100 + iiyear
+       iyear = iiyear
     imth = current_date%month
     iday = current_date%day
 
@@ -162,7 +166,7 @@ contains
 
 !* equation of time in hrs:
 
-!    eqh = eqt/3600.
+    eqt_h = eqt/3600.   !dsOH added back
 
 !* convert eq of time from sec to deg
 
@@ -175,12 +179,39 @@ contains
 
 !* calc declination in rads, deg
 
-    tab = 0.43360*sin(rra)
-    rdecl = atan(tab)
+    !dsOH tab = 0.43360*sin(rra)
+    tan_decl = 0.43360*sin(rra)
+
+!* ds added: calculation of solar noon and daylength
+  ! Caculate solar noon, length of day, following Jones, Appendix 7:
+
+     do ilat = 0, 90
+
+        arg =  -tan_decl * tan( DEG2RAD*ilat )
+
+        if( arg <= -1.0 ) then 
+           daylength(ilat) = 24.0  !! Polar summer
+        else if( arg >= 1.0 ) then 
+           daylength(ilat) = 0.0   !! Polar night
+        else
+           daylength(ilat) = acos( -tan_decl * tan( DEG2RAD*ilat ) ) * RAD2DEG * 2.0/15.0  ! eqn A7.2, Jones
+        end if
+     end do
+
+     do ilong = -180, 180
+        solarnoon(ilong) = 12.0 - eqt_h - ilong*24./360.
+     end do
+
+
+    rdecl = atan(tan_decl)
     sinrdecl = sin(rdecl)
     cosrdecl = cos(rdecl)
 !su    decl = rdecl/dr         
 
+    if ( MY_DEBUG ) then
+        write(*,*) "DEBUG ZenAng: iyear ", iyear, " noleap? ", noleap, " leap? ", leap, " yr ", yr
+        write(*,*) "DEBUG ZenAng: ijd ", ijd, " decl ", rdecl/dr , " eqt(mins) ", eqt/60.0
+    end if
 !* calc local hour angle
 
     do jj=lj0,lj1

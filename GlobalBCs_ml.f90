@@ -26,6 +26,7 @@ module GlobalBCs_ml
                            gl,gb_glob,GlobalPosition, &
                            sigma_mid             !ds for use in Hz scaling
   use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
+  use ModelConstants_ml, only:  PPB, PPT   !dsOH added
 
   implicit none
   private
@@ -35,7 +36,7 @@ module GlobalBCs_ml
   public :: setgl_actarray
   
   logical, parameter, private :: DEBUG_Logan = .false.
-  logical, parameter, private :: DEBUG_HZ    = .true.
+  logical, parameter, private :: DEBUG_HZ    = .false.
 
   ! A. Define parameters and indices of global-model species
   ! ==========================================================================
@@ -53,6 +54,7 @@ module GlobalBCs_ml
   ! ** usually only changed when global-model output changes **
 
   integer, public, parameter ::  NGLOB_BC  = 16 ! No. species setup here
+  !dsOH integer, public, parameter ::  NGLOB_BC  = 18 ! No. species setup here !dsOH
   integer, public, parameter :: &
     IBC_O3       =  1   &
    ,IBC_NO       =  2   &
@@ -67,9 +69,12 @@ module GlobalBCs_ml
    ,IBC_HCHO     = 11   &  
    ,IBC_CH3CHO   = 12   &
    ,IBC_H2O2     = 13   &
-   ,IBC_aNH4      = 14   &
+   ,IBC_aNH4     = 14   &
    ,IBC_aNO3     = 15   &
-   ,IBC_pNO3     = 16   
+   ,IBC_pNO3     = 16   !dsOH&
+   !dsOH,IBC_CH3COO2  = 17   &  !dsOH
+   !dsOH,IBC_OH       = 18      !dsOH NEED CH3COO2/OH LAST!!!
+
 
   ! we define some concentrations in terms of sine curves and other
   ! simple data:
@@ -116,8 +121,8 @@ contains
     jglend = nint(hel2)
     jglobact = GJMAX
 
-    print *,'iglbeg,iglend,iglobact',iglbeg,iglend,iglobact
-    print *,'jglbeg,jglend,jglobact',jglbeg,jglend,jglobact
+    !print *,'iglbeg,iglend,iglobact',iglbeg,iglend,iglobact
+    !print *,'jglbeg,jglend,jglobact',jglbeg,jglend,jglobact
 
 
  end subroutine setgl_actarray
@@ -169,6 +174,9 @@ contains
   !ds Use of standard atmosphere 
    real, dimension(KMAX_MID), save :: p_kPa, h_km
    real :: scale_old, scale_new
+  !dsOH crude (hard-coded) conversion factor for OH, CH3COO2:
+  !     Think of a more elegant solution anoter day......
+   real :: conv_factor
    io_num = IO_GLOBBC          ! for closure in BoundCOnditions_ml
 
 !==================================================================
@@ -254,7 +262,7 @@ contains
    errcode = 0
    errmsg = "ok"
 
- if ( DEBUG_Logan ) print *, "DEBUG_LOgan ibc, mm", ibc, month
+ if ( DEBUG_Logan ) write(*,*) "DEBUG_LOgan ibc, mm", ibc, month
 
  ! ========= first call =========================================
    if ( my_first_call ) then
@@ -299,6 +307,26 @@ contains
   SpecBC(IBC_aNO3  )= sineconc( 0.07 , 15.0, 0.03, 1.6,  0.025 , 0.02) !ACE-2
   SpecBC(IBC_pNO3  )= sineconc( 0.07 , 15.0, 0.00, 1.6,  0.025 , 0.02) !ACE-2
   SpecBC(IBC_aNH4  ) = sineconc( 0.15 , 180.0, 0.00, 1.6,  0.05 , 0.03) !ACE-2(SO4/NH4=1)
+
+ !dsOH  Consistency check:
+  SpecBC(IBC_H2O2 ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-6) !dsOH
+  !dsOH SpecBC(IBC_OH   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-6) !dsOH
+  !dsOH SpecBC(IBC_CH3COO2)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-6) !dsOH
+
+ !dsOH  Consistency check:
+
+   print *, "SPECBC NGLB ", NGLOB_BC
+   do i = 1, NGLOB_BC
+      print *, "SPECBC i, hmin ",  i, SpecBC(i)%surf, SpecBC(i)%hmin
+
+      if( SpecBC(i)%hmin < 1.0e-10) then
+     
+          errmsg =  "PECBC: Error: No SpecBC set for a species "
+          print *, errmsg, i
+          if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+      end if
+   end do
+
 
  !refs:
  ! N1 - for ozone we read Logan's data, so the only paramater specified
@@ -357,7 +385,33 @@ contains
    !/-- tmp and crude - we associate 1 km of scaleht with 1 Logan level
    !    - okayish for 1st 5-6 km in any case......
 
+    !dsOH
+      conv_factor = PPB       ! factor for most pollutants
+      fname = "none"           ! dummy for printout
+
+
       select case ( ibc )
+
+!dsOH:
+!dsOH            case  ( IBC_OH, IBC_CH3COO2   )
+!dsOH
+!dsOH              write(6,*) "dsOH RAW CALLED IBC NGLOB_BC ", ibc, NGLOB_BC
+!dsOH	      if ( ibc == IBC_OH) then
+!dsOH                     write(unit=fname,fmt="(a6,i2.2)") "ohmax.",month
+!dsOH                     conv_factor =  PPT
+!dsOH	      else if ( ibc == IBC_CH3COO2) then
+!dsOH                     write(unit=fname,fmt="(a11,i2.2)") "ch3coo2max.",month
+!dsOH                     conv_factor = PPT
+!dsOH              end if
+!dsOH              call open_file(IO_GLOBBC,"r",fname,needed=.true.)
+!dsOH              if ( ios /= 0 ) errmsg = "BC Error dsOH" // fname
+!dsOH
+!dsOH              read(IO_GLOBBC,*) bc_rawdata
+!dsOH              write(*,*) "dsOH READ IN1 ", fname, ": ", bc_rawdata(100,50,20)
+!dsOH              write(*,*) "dsOH READ IN2 ", fname, ": ", bc_rawdata(10,5,20)
+!dsOH              write(*,*) "dsOH READ IN3 ", fname, ": ", bc_rawdata(IGLOB/2,JGLOB/2,20)
+!dsOH              close(IO_GLOBBC)
+
 
             case  ( IBC_H2O2 ) 
 
@@ -367,6 +421,7 @@ contains
 
               read(IO_GLOBBC,*) bc_rawdata
               close(IO_GLOBBC)!ds rv1_9_22
+              write(*,*) "dsOH READ H2O2 ", fname, ": ", bc_rawdata(IGLOB/2,JGLOB/2,20)
 
 
             case  ( IBC_O3 ) 
@@ -377,6 +432,9 @@ contains
 
               read(IO_GLOBBC,*) bc_rawdata
               close(IO_GLOBBC)!ds rv1_9_22
+              !dsOHwrite(*,*) "dsOH READ OZONE1 ", fname, ": ", bc_rawdata(100, 50, 20)
+              !dsOHwrite(*,*) "dsOH READ OZONE2 ", fname, ": ", bc_rawdata(10, 5, 20)
+              write(*,*) "dsOH READ OZONE3 ", fname, ": ", bc_rawdata(IGLOB/2,JGLOB/2,20)
 
 
        ! ds Mace Head adjustment: get mean ozone from Eastern sector
@@ -409,23 +467,17 @@ contains
 
                cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
 
-              !ds 28/7/2003 bug found? k=1 instead of KMAX_MID !!
-              !ds BUG bc_rawdata(:,:,1) =    SpecBC(ibc)%surf + &
-
                bc_rawdata(:,:,KMAX_MID) =    SpecBC(ibc)%surf + &
                                        ( SpecBC(ibc)%amp * cosfac)
 
              !/ - correct for other heights
                do k = 1, KMAX_MID-1
-               !ds bug: do k = 2, KMAX_MID
 
 		  scale_new = exp( -h_km(k)/SpecBC(ibc)%hz )
 
                   bc_rawdata(:,:,k) =   &
                      bc_rawdata(:,:,KMAX_MID)* scale_new
 
-                     !ds bc_rawdata(:,:,KMAX_MID)*exp( -(KMAX_MID-k)/SpecBC(ibc)%hz )
-                     !ds bugbc_rawdata(:,:,1)*exp( -(k-1)/SpecBC(ibc)%hz )
   		  if (DEBUG_HZ) then
 		       scale_old = exp( -(KMAX_MID-k)/SpecBC(ibc)%hz )
 		       write(6,"(a8,2i3,2f8.3,i4,f8.2,f8.3,2f8.3)") "SCALE-HZ ", month, ibc, &
@@ -488,6 +540,8 @@ contains
              print *,"Error with specified BCs:", ibc
              errmsg = "BC Error UNSPEC"
          end select 
+         !================== end select ==================================
+         write(*,*) "dsOH FACTOR ", ibc, fname,  conv_factor
 
    if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
 
@@ -511,7 +565,8 @@ contains
 
    if ( used == 1 ) then
  
-       bc_rawdata(:,:,:)=bc_rawdata(:,:,:)*1.0e-9     !Convert to mixing ratio
+       !dsOH bc_rawdata(:,:,:)=bc_rawdata(:,:,:)*1.0e-9     !Convert to mixing ratio
+       bc_rawdata(:,:,:)=bc_rawdata(:,:,:)*conv_factor !Convert to mixing ratio
 
 !hf not needed  call vert_interpolation(iglobact,jglobact,bc_rawdata,bc_data)
 !put data only on actual domain
