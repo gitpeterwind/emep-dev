@@ -148,6 +148,7 @@ module My_BoundConditions_ml
 
             top_misc_bc(IBC_CH4) = 1780.0 * &
                         exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
+                     !exp(-0.01*0.6633*(1975-iyr_trend)) !Zander,1951-1975, check
         end if
         trend_ch4 = top_misc_bc(IBC_CH4)/1780.0  ! Crude for now.
         write(6,"(a20,i5,2f12.3)") "TREND CH4", iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)

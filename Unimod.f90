@@ -294,8 +294,7 @@ program myeul
 
       read(5,*) ntmp(1)
       read(5,*) ntmp(2)
-      read(5,*) ntmp(3)
-      read(5,*) ntmp(4)  ! ds - iyr_ytrend
+      read(5,*) ntmp(3)  ! ds - iyr_ytrend
     endif
 
     print *, "read standard input"
@@ -304,7 +303,7 @@ program myeul
 
     nterm = ntmp(1)
     nass = ntmp(2)
-    iyr_trend = ntmp(4)   !ds rv1.6.10
+    iyr_trend = ntmp(3)   !ds rv1.6.10
     print *, " Trend Year is ", iyr_trend
 
 

@@ -562,7 +562,8 @@ if ( $INTERACTIVE ) {
     #          die "Unable to execute $PROGRAM. Exiting.\\n";
     
     #print PROG "$NTERM\n\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
-    print PROG "$NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
+    #print PROG "$NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
+    print PROG "$NTERM\n$NASS\n$iyr_trend\n";
     close(PROG);
 }
 #------------    End of Run model -------------------------------------
