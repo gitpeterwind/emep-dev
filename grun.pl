@@ -41,6 +41,7 @@
 # mylink added and clean-up, ds, 2001
 #------------------------------------------------------------------------------
 
+system "/usr/bin/ja"; #start of resource info gathering
 require "flush.pl";
 
 # <---------- "Pattern files - different on huge and gridur ---->
@@ -548,7 +549,8 @@ if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
 # Forest data
     #ds $old   = "$o3dir/forest.pcnt" ;
     #ds $new   = "forest.pcnt";
-    $old   = "$DataDir/forests.tf2" ;
+#MAR2004     $old   = "$DataDir/forests.tf2" ;
+    $old   = "$DataDir/forests.mar2004b" ;
     $new   = "forest.tf2";
     mylink( "Forest % cover", $old,$new ) ;
 
@@ -582,7 +584,8 @@ foreach $s ( keys(%seasons) ) {
     mylink( "Roughness length", $old,$new ) ;
 
     #ds$old   = "$DataDir/landuse.nov2003" ;  #ds rv1_9_4 change
-    $old   = "$DataDir/landuse.dec2003" ;  #ds rv1_9_4 change
+#MAR2004    $old   = "$DataDir/landuse.dec2003" ;  #ds rv1_9_4 change
+    $old   = "$DataDir/landuse.mar2004" ;
     $new   = "landuse.dat";                #ds rv1_9_4 change
     mylink( "Landuse ", $old,$new ) ;
 
@@ -741,6 +744,9 @@ die "accounting error, $nleft $nproc_bsub" unless $nleft<$nproc_bsub;
 	# wait until all kids have finished
 	$kid = waitpid(-1, WNOHANG);
     } until $kid > 0;
+
+
+system "/usr/bin/ja -s"; #end of resource info gathering; give summary
 
 exit 0;
 
