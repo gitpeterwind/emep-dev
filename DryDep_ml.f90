@@ -35,7 +35,8 @@ module DryDep_ml
                             unit_flux,   &! = sto. flux per m2
                             lai_flux      ! = lai * unit_flux
  use Chemfields_ml , only : cfac!,xn_adv
- use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2
+ use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
+
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
                             i_glob, j_glob   !u1 for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
@@ -407,6 +408,8 @@ module DryDep_ml
                    Idfuse,             &  ! CHECK   
                    Idrctt,             &  ! CHECK   
                    snow(i,j),          &
+                   xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID) / & !SO2/NH3
+                   xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID), &
                    g_sto,  &
                    Rsur, &
                    Rsur_wet, &

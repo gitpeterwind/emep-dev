@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.9 2003-03-21 08:53:58 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.10 2003-03-21 15:44:08 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -13,7 +13,7 @@ module Rsurface_ml
 !d1.7 - SO2 from CEH. Not LAI dependent, so a modified procedure
 !       is needed for other gases.
 
-use DepVariables_ml, only : g_pot, g_temp,g_vpd,g_light,g_swp,    & !u7.4
+use DepVariables_ml, only : forest, g_pot, g_temp,g_vpd,g_light,g_swp, &
                               b_inc     , albedo    ,   &
                               SAIadd, &
                               water, &     !ds rv1.8
@@ -55,6 +55,7 @@ contains
                       psurf, precip, &                    !u7.lu
                       coszen, Idfuse, Idrctt, &       !u7.lu
                       snow, &                    !u7.lu
+                      so2nh3ratio, &        !so2/nh3 ratio
                         g_sto,Rsur,Rsur_wet,Rb)
 ! =======================================================================
 !
@@ -128,6 +129,8 @@ contains
     real, intent(in) ::  Idfuse
     real, intent(in) ::  Idrctt
     integer, intent(in) :: snow         ! snow=1, non-snow=0
+    real, intent(in) ::  so2nh3ratio    !so2/nh3 ratio
+
 ! Output:
 
    real, intent(out)             :: g_sto !  Stomatal conducatance (s/m)
@@ -152,6 +155,8 @@ contains
     real :: xRgsS_wet, Rgs_wet  !  ??????
     real :: Ggs                 ! ground surface conductance, any gas
     real :: r_water             !hf CEH: non stomatal resistance for NH3 
+    real :: Rhlim               !Rh limitation for wetness
+    real :: so2nh3fac           !so2/nh3 fac in Rons expression
     real, parameter :: D_H2O = 0.21e-4  ! Diffusivity of H2O, m2/s
                                         ! From EMEP Notes
     real            :: D_i              ! Diffusivity of gas species, m2/s
@@ -271,10 +276,16 @@ contains
    !dep1_8 : For high RH we allow the canopy to take on wet characteristics.
    !         ds  introduced square function for RH>0.95, which has the value
    !         zero at RH=0.95 and 1 at RH=1.0:
+   !hf Changed Rhlim according to Klemm. Not square anymore.
 
-           cehfac = 0.0 
-           if ( rh > 0.95 ) then
-               cehfac = ( (rh-0.95)/(1.0-0.95) )**2
+           cehfac = 0.0
+           if (forest(lu)) then
+              Rhlim=0.85     ! ds bug 85.
+           else
+              Rhlim=0.75     ! ds bug 75.
+           endif
+           if ( rh > Rhlim ) then
+               cehfac = ( (rh-Rhlim)/(1.0-Rhlim) )
            end if
 
 
@@ -371,7 +382,7 @@ contains
 !hf
            else  ! Not NH3 or NO2:
 
-               Gns_dry = 1.0e-5*Hstar*GnsS_dry + f0 * GnsO 
+               Gns_dry = 1.0e-5*Hstar*GnsS_dry + f0 * GnsO   ! OLD SO2!
                Gns_wet = 1.0e-5*Hstar*GnsS_wet + f0 * GnsO 
 
                !.. and allow for partially wet surfaces at high RH

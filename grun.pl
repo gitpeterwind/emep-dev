@@ -97,8 +97,8 @@ $OZONE = 0, $ACID = 1;     # Specify model type here
 
 if ( $OZONE ) {
     #$OZONEDIR    = "$HILDE/BC_data/CTM2_data/50Data"; 
-    #$OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
-     $OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
+     $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
+    #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 ); 
      $testv       = "rv1_4_16ozone";
 
