@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.11 2003-03-21 15:50:40 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.12 2003-03-21 16:13:05 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -156,7 +156,7 @@ contains
     real :: Ggs                 ! ground surface conductance, any gas
     real :: r_water             !hf CEH: non stomatal resistance for NH3 
     real :: Rhlim               !Rh limitation for wetness
-    real :: so2nh3fac           !so2/nh3 fac in Rons expression
+    real :: so2nh3              !so2/nh3 after correction with 0.6
     real, parameter :: D_H2O = 0.21e-4  ! Diffusivity of H2O, m2/s
                                         ! From EMEP Notes
     real            :: D_i              ! Diffusivity of gas species, m2/s
@@ -252,8 +252,8 @@ contains
 
      ! TEST ds
          cehfac = 1.0
-         so2nh3ratio=so2nh3ratio*0.6 !0.6=correction for local nh3
-         if(so2nh3ratio  < 2.0 ) cehfac = exp( -(2.0-so2nh3ratio) )
+         so2nh3  =so2nh3ratio*0.6 !0.6=correction for local nh3
+         if(so2nh3  < 2.0 ) cehfac = exp( -(2.0-so2nh3) )
      ! TEST ds
          xRgsS     = CEHd * cehfac  + Rlow  + snow * 2000.0
          xRgsS_wet = CEHw * cehfac  + Rlow  + snow * 2000.0
