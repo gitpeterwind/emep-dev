@@ -2,8 +2,8 @@
 =========== Dave  24th 2003, rv1.4.23  ===============================
 ==============================================================================
 
-Bug fixes found by Hilde in ZD_ACID. 
-Bug fix in Rsurface_ml (max in so2nh3ratio), Dave
+Bug fixes found by Hilde in ZD_ACID/My_WetDep_ml, My_Reactions, My_DryDep. 
+Bug fix in DryDep_ml (max in so2nh3ratio), Dave
 Logicals vegetation, urban, added to DepVariables_ml, UK_ml
 
 ==============================================================================
