@@ -117,8 +117,10 @@
      IXADV_SO4         =  50   &
   ,  IXADV_NITRATE     =  51   &
   ,  IXADV_NH3         =  52   &
-  ,  IXADV_AMSU        =  53   &
-  ,  IXADV_AMNI        =  54
+!hf  ,  IXADV_AMSU        =  53   &
+!hf  ,  IXADV_AMNI        =  54
+  ,  IXADV_aNH4        =   53   & !total NH4
+  ,  IXADV_aNO3        =   54     !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
 
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
@@ -269,9 +271,10 @@
   ,  SO4         =  65   &
   ,  NITRATE     =  66   &
   ,  NH3         =  67   &
-  ,  AMSU        =  68   &
-  ,  AMNI        =  69
-
+!hf  ,  AMSU        =  68   &
+!hf  ,  AMNI        =  69
+  ,  aNH4        =   68   &
+  ,  aNO3        =   69
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
 !>_________________________________________________________<
@@ -374,8 +377,10 @@
        species( 65) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
        species( 66) = Chemical("NITRATE     ",  62,  0,  0,   1,  0 ) 
        species( 67) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
-       species( 68) = Chemical("AMSU        ", 114,  0,  0,   1,  1 ) 
-       species( 69) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
+!hf       species( 68) = Chemical("AMSU        ", 114,  0,  0,   1,  1 ) 
+!hf       species( 69) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
+       species( 68) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
+       species( 69) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
    end subroutine define_chemicals
  end module GenChemicals_ml
  !-----------------------------------------------------------

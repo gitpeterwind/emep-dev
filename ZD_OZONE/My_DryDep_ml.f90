@@ -16,7 +16,7 @@ module My_UKDep_ml    ! DryDep_ml
                    !,IXADV_O3,IXADV_H2O2,
                   ! ,IXADV_SO2,IXADV_NO2  &
                   ! ,IXADV_HNO3 &  !! ,IXADV_EC  ,IXADV_OC & 
-   ! ,  IXADV_PAN ,IXADV_SO4,IXADV_NH3,IXADV_AMNI, IXADV_AMSU
+   ! ,  IXADV_PAN ,IXADV_SO4,IXADV_NH3,IXADV_aNO3, IXADV_aNH4
  use ModelConstants_ml , only : atwS, atwN
  use Wesely_ml
  implicit none
@@ -112,8 +112,8 @@ contains
    Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
    Dep(5) =  depmap( IXADV_SO4,   CDEP_SET,  0.1 * cms )
    Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
-   Dep(7) =  depmap( IXADV_AMSU,  CDEP_SET,  0.1 * cms  )
-   Dep(8) =  depmap( IXADV_AMNI,  CDEP_SET,  0.1 * cms  )
+   Dep(7) =  depmap( IXADV_aNH4,  CDEP_SET,  0.1 * cms  )
+   Dep(8) =  depmap( IXADV_aNO3,  CDEP_SET,  0.1 * cms  )
    Dep(9) =  depmap( IXADV_O3   , CDEP_O3  , -1.)
    Dep(10) =  depmap( IXADV_H2O2 , CDEP_H2O2, -1.)
    Dep(11) =  depmap( IXADV_MPAN , CDEP_PAN , -1.)
@@ -133,26 +133,26 @@ contains
      integer, parameter :: N_OXN = 4        ! Number in ox. nitrogen family
      integer :: n, nadv
      real, parameter, dimension(N_OXN) :: OXN = &
-             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_AMNI /)
+             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_aNO3 /)
 
 
      ddep(DDEP_SOX,i,j,IOU_INST) = (  &
           DepLoss(IXADV_SO2) + &
-          DepLoss(IXADV_SO4) + &
-          DepLoss(IXADV_AMSU)  &
+          DepLoss(IXADV_SO4)&!hf + &
+!hf          DepLoss(IXADV_AMSU)  &
                                     ) * convfac * atwS
 
      ddep(DDEP_OXN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_HNO3) + &
           DepLoss(IXADV_PAN) + &
           DepLoss(IXADV_NO2) + &
-          DepLoss(IXADV_AMNI)  &
+          DepLoss(IXADV_aNO3)  &
                                     ) * convfac * atwN
 
      ddep(DDEP_RDN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_NH3) + &
-    1.5 * DepLoss(IXADV_AMSU) + &
-          DepLoss(IXADV_AMNI)  &
+!hf    1.5 * DepLoss(IXADV_AMSU) + &
+          DepLoss(IXADV_aNH4)  &
                                     ) * convfac * atwN
    !---- ecosystem specific -----------------------------------------------
      ddep(DDEP_JRK,i,j,IOU_INST) = 0.0

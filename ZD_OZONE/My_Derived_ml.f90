@@ -137,7 +137,7 @@ private
        ,D2_REDN     = 17  &  ! Annonia + ammonium 
        ,D2_FRNIT    = 18  &  ! Annonia + ammonium / total nitrate 
 !
-       ,D2_AMSU   =19  &   ! was xnsurf(..)
+       ,D2_aNH4   =19  &   ! was xnsurf(..)
        ,D2_MAXO3  =20  &   ! for TROTREP
        ,D2_MAXOH  =21      ! for TROTREP
 !hf hmix
@@ -236,7 +236,7 @@ private
 !TROTREP f_2d(D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T )
  f_2d(D2_NO  ) = Deriv( 623, "ADV  ", T, IXADV_NO , ugN, T  , F ,  T , T ,  T )
  f_2d(D2_NO2 ) = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T )
- f_2d(D2_AMSU) = Deriv( 619, "ADV  ", T,IXADV_AMSU, ugS, T  , F ,  T , T ,  T )
+ f_2d(D2_aNH4) = Deriv( 619, "ADV  ", T,IXADV_aNH4, ugN, T  , F ,  T , T ,  T )
 
  f_2d(D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T )
  f_2d(D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T )
@@ -342,9 +342,9 @@ private
 
     forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST) +  &
-             ( xn_adv(IXADV_SO4,i,j,KMAX_MID) +    &
-               xn_adv(IXADV_AMSU,i,j,KMAX_MID) ) * &
-               (z_bnd(i,j,k) - z_bnd(i,j,k+1)) *   &
+              xn_adv(IXADV_SO4,i,j,KMAX_MID)*     &
+!hf               xn_adv(IXADV_AMSU,i,j,KMAX_MID) ) * &
+              (z_bnd(i,j,k) - z_bnd(i,j,k+1)) *   &
                  roa(i,j,k,1)*1.0e9
     end forall
   end subroutine acc_sulphate
@@ -405,8 +405,8 @@ private
     case ( "TSO4" ) 
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
-               ( xn_adv(IXADV_SO4,i,j,KMAX_MID) * cfac(IXADV_SO4,i,j)  &
-               + xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j) ) &
+                xn_adv(IXADV_SO4,i,j,KMAX_MID) * cfac(IXADV_SO4,i,j)  &
+!hf               + xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j) ) &
                * density(i,j)
       end forall
 
@@ -415,7 +415,7 @@ private
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
               ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
-              + xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j) &
+              + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
               + xn_adv(IXADV_NITRATE,i,j,KMAX_MID) * cfac(IXADV_NITRATE,i,j)) &
               * density(i,j)
       end forall
@@ -425,8 +425,8 @@ private
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
                ( xn_adv(IXADV_NH3,i,j,KMAX_MID) * cfac(IXADV_NH3,i,j)    &
-              +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
-          + 1.5* xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j)) & 
+              +  xn_adv(IXADV_aNH4,i,j,KMAX_MID) * cfac(IXADV_aNH4,i,j))  &
+!hf          + 1.5* xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j)) & 
                * density(i,j)
       end forall
 
@@ -434,10 +434,10 @@ private
     case ( "FRNIT" )
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
-             ( xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
+             ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
             +  xn_adv(IXADV_NITRATE,i,j,KMAX_MID) * cfac(IXADV_NITRATE,i,j)) &
             / (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j)   &
-            +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)    &
+            +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)    &
             +  xn_adv(IXADV_NITRATE,i,j,KMAX_MID) * cfac(IXADV_NITRATE,i,j))
       end forall
 !!d_2d( n, i,j,IOU_INST) +  &

@@ -19,7 +19,7 @@ module  My_Outputs_ml
         ,IXADV_O3 , IXADV_PAN , IXADV_CO , IXADV_NO , IXADV_NO2  &
         ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
         ,IXADV_HCHO,IXADV_CH3CHO, IXADV_NO3                      &
-        ,IXADV_N2O5 , IXADV_AMSU, IXADV_AMNI    !6s                &
+        ,IXADV_N2O5 , IXADV_aNH4, IXADV_aNO3    !6s                &
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml , only: species

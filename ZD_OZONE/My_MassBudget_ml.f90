@@ -32,7 +32,7 @@ module My_MassBudget_ml
 
    integer, public, parameter, dimension(12) :: MY_MASS_PRINT = &
      (/  IXADV_O3, IXADV_HNO3, IXADV_PAN, IXADV_NO3, IXADV_N2O5 ,IXADV_NO, &
-         IXADV_NO2,  IXADV_SO2, IXADV_SO4, IXADV_NH3, IXADV_AMSU, IXADV_AMNI/)
+         IXADV_NO2,  IXADV_SO2, IXADV_SO4, IXADV_NH3, IXADV_aNH4, IXADV_aNO3/)
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
