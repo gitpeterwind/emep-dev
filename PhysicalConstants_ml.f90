@@ -1,0 +1,36 @@
+      module PhysicalConstants_ml
+!----------------------------------------------------------------------------
+!  Defines Physical constants 
+!----------------------------------------------------------------------------
+implicit none
+
+!-- contains no subroutine:
+
+!
+
+  real , public, parameter ::         &
+    AVOG   = 6.023e23                 & ! Avogadros number
+  , RGAS_ATML= 0.08205                & ! Molar Gas constant (atm M-1 K-1)
+  , RGAS_J   = 8.314                    ! Molar Gas constant (J mol-1 K-1)
+                                        ! NB. ( J = N m2 = kg m2 s-2 )
+                                        !       M = mol l-1
+
+!  additional parameters, former set in defcon, from former eulcon.inc
+!
+  real, public, parameter  ::    &
+       GRAV    = 9.807           &   ! Gravity, m s-2
+    ,  CP      = 1004.0          &   ! Specific heat at const. pressure
+    ,  R       = 287.0           &   ! Gas constants J K-1 kg-1
+    ,  XKAP    = R/CP            &
+    ,  KARMAN  = 0.4             &   ! Von Karman  (=0.35 elsehwere in code!)
+    ,  PI      = 3.14159265358979312000 & ! pi, from 4.0*atan(1.) on cray
+    ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians
+    ,  ROWATER = 1000.               ! pw density of water kg m-3
+
+
+end  module PhysicalConstants_ml
+
+!REMOVED
+!    ATWAIR = 0.79*28.0 + 0.21*32.0    & ! Atomic weight of air
+
+

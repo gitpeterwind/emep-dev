@@ -1,0 +1,595 @@
+#!/usr/bin/perl
+
+######################################################################
+# Changes
+# 1. work directory now deduced from user-name
+# 2. Check that the number of processors asked for by bsub is same as
+# number set here. Note that this method will not allow a simple
+# interactive use of grun.pl. "bsub" must be used.
+# 3. Removed "REMOVED" printout - it was too boring and extensivej
+# 4. Added more user-names and home-directories 
+######################################################################
+#
+# Script to prepare files before running Eulerian model on 
+# Odin. The main advantage of this script is that
+# the domain size  and input/output files and directories
+# can be easily changed. The script does this by modifying the
+# Makefile.pat (on huge only) and Par_ml.pat file to produce the corresponding
+# Makefile and Par_ml.f90 file with appropriate set-up.  
+#
+# To submit on GRIDUR, put grun.pl into work directory, and from there
+# do something like:
+#
+#    bsub -n nr_of_nodes -o log.out < grun.pl
+
+#
+#   - assigns felt files to filxxx in the current directory
+#
+# It is assumed that all the sequential felt files have names on the
+# form f$hh.$yy$mm$dd
+#
+######################################################################
+
+#------------------------------------------------------------------------------
+# perl version of eulmod driver script
+# (C) 1999 Jorn Amundsen, NTNU
+# modified to run unified models, D. Simpson, 2000
+# mylink added and clean-up, ds, 2001
+#------------------------------------------------------------------------------
+
+require "flush.pl";
+
+# <---------- "Pattern files - different on huge and gridur ---->
+# These are changed by the  script accroding to the domain and
+# number of processors selected.
+# (but note that this script file is onlt for gridur these days)
+#huge: @pattern_files = ( Makefile.pat Par_ml.pat );
+
+@pattern_files = qw ( Par_ml.pat );
+
+# <---------- start of user-changeable section ----------------->
+
+#  --- Here, the main changeable parameters are given. The variables 
+#      are explained below, and derived variables set later.-
+
+$year  = 99;       # BEWARE: watch out for pathname hardcodings !
+$MetDir = "/noserc/emep/meteorology/eulmet$year" ;
+
+#---  User-specific directories (changeable)
+
+$DAVE        = "/home/u2/mifads";      
+$JOFFEN      = "/home/u2/mifajej";      
+$HILDE       = "/home/u2/mifahf";      
+$STEFFEN     = "/home/u2/mifaung";      
+$SVETLANA    = "/home/u2/mifast";      
+$PETER       = "/home/u4/mifapw";      
+
+$USER        =  $DAVE ;      
+
+$USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
+$WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
+
+$version     = "Unimod" ;  
+$subv        = "uni.2" ;                 # sub-version (to track changes)
+$Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
+$ProgDir     = "$USER/Unify/$subv";         # input of source-code
+$MyDataDir   = "$USER/Unify/Data";          # for each user's femis, etc.
+$PROGRAM     = "$ProgDir/$version";         # programme
+$WORKDIR     = "$WORK{$USER}/out_$subv";    # working directory
+$femis       = "$MyDataDir/femis.dat";      # emission control file
+$emisdir     = "$JOFFEN/data/emis";   # emissions stuff
+$LOGANDIR    = "$HILDE/LOGAN_O3_DATA";   # emissions stuff
+#$emisyear   = "$emisdir/emis${year}";    # emissions
+$emisyear    = "$emisdir/emis98";   # emissions
+
+# Change for PM:
+#$emisdir     = "$SVETLANA/Unify/Data/emission";   # emissions stuff
+#$emisyear    = "$SVETLANA/Unify/Data/emission";   # emissions stuff
+
+    # List emissions to be used:
+    #pm @emislist = qw ( sox nox nh3 co voc pm25 pmco ) ;
+    @emislist = qw ( sox nox nh3 co voc pm25 ) ;
+
+    # And boundary conditions from:
+    $LOGAN_BCS = 1;
+    $UIO_BCS   = 0;
+
+# Specify small domain if required. 
+#                 x0   x1  y0   y1
+@largedomain = (   1, 170,  1, 133 ) ;
+@smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
+#@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
+#@smalldomain = (  95, 105, 46, 56 ) ;      # ERROR search (changeable)
+#@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
+#@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
+#@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
+#@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
+                                    # simply uncomment this 
+
+$NDX   =  2;           # Processors in x-direction
+$NDY   =  4;           # Processors in y-direction
+
+$RESET        = 1   ;  # usually 0 (false) is ok, but set to 1 for full restart
+$COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
+
+@month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
+$month_days[2] += leap_year($year);
+
+$mm1   =  4;       # first month
+$mm2   =  4;       # last month
+$NTERM_CALC =  calc_nterm($mm1,$mm2);
+
+$NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
+  # -- or --
+ $NTERM =  4;       # for testing, simply reset here
+
+  print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
+
+
+# <---------- end of user-changeable section ----------------->
+#               (normally, that is...)
+
+#--- Other eulmod configs
+
+$NSCAL =  0;
+$NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
+# 
+
+# quick check that the small domain
+# is within the current 170, 133 large domain
+
+die " -- Domain error!!!" if ( 
+    $smalldomain[0] < $largedomain[0] ||  $smalldomain[1] > $largedomain[1] || 
+    $smalldomain[2] < $largedomain[2] ||  $smalldomain[3] > $largedomain[3] ) ;
+
+
+#--- calculate number of processors
+
+$NPROC =  $NDX * $NDY ;
+
+# and check that we have the same from the bsub command, by
+# accessing the LSB_MCPU_HOSTS environment variable.
+# (For a 5 cpu job this looks like: LSB_MCPU_HOSTS=gridur.ntnu.no 5)
+
+$nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
+
+if ( $NPROC != $nproc_bsub ) {
+    die " -- Requested wrong number of processors --
+      bsub asked for $nproc_bsub whereas NPROC = $NDX x $NDY = $NPROC \n";
+}
+
+
+# Some model specs
+# Set only for MACHO-ds if ( $version eq "eulmach")    { 
+$emis  = "ds"  , $model = "MACHO", $nonmodel = "MADE"; 
+# }
+
+# ---- calculate domain widths
+# (For the model, we need first x0, y0, then width (number of cells) in x and y)
+
+$dom_x0 = $smalldomain[0]; 
+$dom_y0 = $smalldomain[2]; 
+$dom_wx = $smalldomain[1] - $smalldomain[0] + 1 ; 
+$dom_wy = $smalldomain[3] - $smalldomain[2] + 1 ; 
+
+
+#---  Data directories   (do not change so often.... )
+
+$MIROOT      = "/home/";
+$MIFAJEJ     = "/home/u2/mifajej";     # Needed for some input data
+$SRCINPUTDIR = "/home/u2/mifajej/data/climatology";   # landuse, snow, rough....
+$BCINPUTDIR  = "$HILDE/BC_data";       #  UiO boundary condistions
+$o3dir       = "$MIFAJEJ/data" ;       # ancat (=aircraft), 
+$MIFADS      = "/home/u2/mifajej/data/mifads";    # Ozone data for now
+$EULDATA     = "/home/u2/mifajej/data/euldata" ;   # emissions, monthlyfac,..., JAN.dat*
+
+@MIDIRS  = ("$MIROOT", "$USER", "$MIFAJEJ", "$MIFADS" , "$o3dir", "$EULDATA");
+
+#--- Verify data directories
+foreach $d ( @MIDIRS, $SRCINPUTDIR ) {
+    unless ( -d "$d" &&  -x _ && -r _ ) {
+	die "*** ERROR *** directory $d not accessible. Exiting.\n";
+    }
+}
+
+#--- Verify New pattern files
+
+foreach $f ( @pattern_files ) {  
+    unless ( -r "$ProgDir/$f" ) {
+	die "*** ERROR *** file $f not available. Exiting.\n";
+    }
+}
+
+# if WORKDIR doesn't exist, create it:
+print "Checking for work directory $WORKDIR\n";
+if ( ! -d "$WORKDIR" ) {
+    mkdir("$WORKDIR",0777) || die "Cannot mkdir $WORKDIR. Check upper dirs";
+}
+
+
+#--- Calendar stuff
+@month_abbrev = ('','jan','feb','mar','apr','may','jun','jul','aug','sep','oct',
+		 'nov','dec');
+@season_abbrev = ('','jan','jan','apr','apr','apr','jul','jul','jul','oct','oct',
+		 'oct','jan');
+@month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
+
+%seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct" => "04") ;
+
+
+#--- adjust for leap year
+$month_days[2] += leap_year($year);
+
+# --- Start new compilations if needed
+
+# --- We check if the already-compiled version of $PROGRAM is the same
+#     as the one we are asking for. The old configuration should have 
+#     been stored in Make.log.  Read in this and split terms into 
+#     : model, emis, ndx, ndy and domain sizes
+
+
+chdir "$ProgDir";
+
+#-- generate Makefile each time, to avoid forgetting changed "pat" file!
+#odin system "sed 's/NPROC/$NPROC/'  Makefile.pat > Makefile" ;
+
+
+if ( $RESET ) { unlink ("Make.log") }  # Gone!
+
+open(MAKELOG,"<Make.log");
+($oldversion, $olddx , $olddy , $old_x0, $old_y0, $old_wx, $old_wy ) = split ' ', <MAKELOG> ;
+close(MAKELOG);
+
+print "From Make.log we had model $oldmodel emis-type $emis
+           Procs:  $olddx $olddy 
+           Domain: $old_x0, $old_y0, $old_wx, $old_wy \n";
+
+
+if ( $oldversion ne $version ) {
+
+   print " We are changing version!!!!!............. 
+            from $oldversion to $version \n " ;
+   $RESET = 1 ;
+}
+
+if ( $NDX      != $olddx  || $NDY      != $olddy  ||
+     $dom_x0   != $old_x0 || $dom_y0   != $old_y0 ||
+     $dom_wx   != $old_wx || $dom_wy   != $old_wy     ) {
+
+   print "Need to re-compile for new processor or domain  setup: 
+           Procs:  $NDX $NDY
+           Domain: $dom_x0, $dom_y0, $dom_wx, $dom_wy \n";
+   $RESET = 1 ;
+}
+
+
+if ( $RESET == 1  ) { ########## Recompile everything!
+
+
+   # Set values for domain size in Par_ml.f90 : 
+   foreach $f ( qw ( Par_ml )) {
+      open(EULPAR,"<$f.pat");
+      open(EULOUT,">$f.f90");
+      print "changing domain, nproc in $f.pat to $f.f90 \n";
+      while ($line=<EULPAR>) {
+          $line =~ s/nprocx/$NDX/ ; 
+          $line =~ s/nprocy/$NDY/ ;
+          $line =~ s/domainx0/$dom_x0/ ;
+          $line =~ s/domainy0/$dom_y0/ ;
+          $line =~ s/domaindx/$dom_wx/ ;
+          $line =~ s/domaindy/$dom_wy/ ;
+          print EULOUT $line ;
+      }
+      close(EULOUT) ;
+   }
+   # For now, we simply recompile everything!
+   unlink($PROGRAM);
+   system "touch  *.f *.f90 *.F *.F90";
+}
+system "pwd";
+print "Check last files modified:\n";
+system "ls -lt | head -6 ";
+
+system "make" ;
+
+die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
+open(MAKELOG,">Make.log");    # Over-write Make.log
+print MAKELOG "$version $NDX  $NDY  $dom_x0  $dom_y0  $dom_wx  $dom_wy \n" ;
+close(MAKELOG);
+
+if ( $COMPILE_ONLY) {     ## exit after make ##
+    exit();
+}
+
+
+#--- Change to WORKDIR
+chdir "$WORKDIR"; 
+
+#assign '-R';       # resets assignments    (huge)
+
+@list_of_files = ();   # Keep list of data-files
+
+for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
+
+
+    # Assign met files to fil001...etc.
+    for ($n = 1; $n <= $month_days[$mm]; $n++) {
+	# printf "file assign $mm1 $mm2 $mm %04d $n ==> ", $nnn;
+	$nnn = &myfunc_mi2($n, $nnn, $mm);
+	# printf "%04d $n\n", $nnn;
+    }
+
+    foreach $t ('snowc', 'natso2') {
+	$old = sprintf "$SRCINPUTDIR/%s%02d.dat.170", $t, $mm;
+	$new = sprintf "%s%02d.dat", $t, $mm;
+        mylink( "Linking:", $old,$new ) ;
+    }
+
+    if ( $UIO_BCS ) {
+        # New boundary-value files from Jostein: JAN.dat .. DEC.dat
+        $MONTH = $month_abbrev[$mm];
+        $MONTH =~ tr/a-z/A-Z/;     # uppercase to match Joffen's filenames
+        $old   = "$BCINPUTDIR/$MONTH.dat" ;
+        $new = sprintf "gl_ass%02d.dat", $mm;
+        mylink( "Linking UiO BCs:", $old,$new ) ;
+
+    } elsif ( $LOGAN_BCS ) {
+        $old   = "$LOGANDIR/ozone.%02d", $mm ;
+        $new = sprintf "gl_ass%02d.dat", $mm;
+        mylink( "Linking Logan BCs:", $old,$new ) ;
+    }
+
+    $old = sprintf "$SRCINPUTDIR/lt21-nox.dat%02d", $mm;
+    $new = sprintf "lightn%02d.dat", $mm;
+    mylink( "Lightning : ", $old,$new ) ;
+}
+
+
+#-- individual treatment of the last record 
+
+if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
+   if ( $mm2 == 12 ) {
+        print "NEED TO SET H00 FROM NEXT YEAR \n";
+	$old = sprintf "$MetDir/f00.%02d0101", ($year+1)%100;
+        mylink( "LAST RECORD, NEED TO SET H00 FROM NEXT YEAR", $old,$new ) ;
+   } else { #  Need 1st record of next month:
+        $hhlast = 0 ;   #
+        $ddlast = 1 ;
+	$old = sprintf "$MetDir/f%02d.%d%02d%02d", $hhlast, $year, $mm2+1, $ddlast;
+	$new = sprintf "fil%04d", $nnn;
+        mylink( "NEED TO SET H00 FROM NEXT MONTH", $old,$new ) ;
+   }
+}
+
+#--- byteswap and assign the f* files
+
+# double space for infield (io_infield=50, filxxx )
+#assign '-F f77,bufa:96:2 p:fil%';
+
+# double for outday, outmonth (io_out=80)
+#assign '-F f77,bufa:96:2 p:out%';
+
+
+
+#--- Prepare input data
+
+# Emissions. This part is still a mixture, witk the old ko emission files
+# left in for now. However, in future the only difference between
+# MADE, MACHO and maade AERO-MADE should be in the numbre of pollutants
+# used, which we can set in the @emisliost array.
+
+# First, emission files are labelled e.g. gridSOx, whiuch we assign to
+# emislist.sox to ensure compatability with the names (sox,...) used
+# in the model.
+
+%gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
+             "nox" => "NOx" , "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco" ) ;
+
+# Emissions setup:
+
+    $old   = "$MyDataDir/femis.dat" ;
+    $new   = "femis.dat";
+    mylink( "Femis  ", $old,$new ) ;
+
+    $old   = "$MyDataDir/splits/pm25split.defaults.$Case" ;
+    $new   = "pm25split.defaults";
+    mylink( "Split pm25", $old,$new ) ;
+
+    $old   = "$MyDataDir/splits/vocsplit.defaults.$Case" ;
+    $new   = "vocsplit.defaults";
+    mylink( "Split voc", $old,$new ) ;
+
+    $old   = "$MyDataDir/splits/vocsplit.special.$Case" ;
+    $new   = "vocsplit.special";
+    mylink( "Split voc", $old,$new ) ;
+
+foreach $poll  ( @emislist  ) {
+   $old   = "$emisyear/grid$gridmap{$poll}" ;
+   $new   = "emislist.$poll";
+   mylink( "Emis $poll : ", $old,$new ) ;
+
+   $old   = "$emisdir/Monthlyfac.$poll" ;
+   $new   = "Monthlyfac.$poll";
+   mylink( "Monthlfac ", $old,$new ) ;
+
+   $old   = "$emisdir/Dailyfac.$poll" ;
+   $new   = "Dailyfac.$poll";
+   mylink( "Dailyfac ", $old,$new ) ;
+} 
+
+# Surface measurement sites
+    $old   = "$MyDataDir/sites.dat" ;
+    $new   =  "sites.dat";
+    mylink("Sites ",  $old,$new ) ;
+
+# Sondes
+    $old   = "$MyDataDir/sondes.dat" ;
+    $new   = "sondes.dat";
+    mylink( "Sondes", $old,$new ) ;
+
+# Forest data
+    $old   = "$o3dir/forest.pcnt" ;
+    $new   = "forest.pcnt";
+    mylink( "Forest % cover", $old,$new ) ;
+
+# Aircraft emissions
+    $old   = "$o3dir/amilt42-nox.dat" ;
+    $new   = "ancatmil.dat";
+    mylink("Ancat ",  $old,$new ) ;
+
+# Seasonal stuff
+foreach $s ( keys(%seasons) ) {
+
+    $old   = "$o3dir/a${s}t42-nox.dat" ;
+    $new = sprintf "ancat$seasons{$s}.dat";
+    mylink( "Ancat seasonal ", $old,$new ) ;
+
+    $old   = "$o3dir/jclear.$s" ;
+    $new = sprintf "jclear$seasons{$s}.dat";
+    mylink( "Photolysis j-clear ", $old,$new ) ;
+
+    $old   = "$o3dir/jcl1.$s" ;
+    $new = sprintf "jcl1km$seasons{$s}.dat";
+    mylink( "Photolysis j-1km ", $old,$new ) ;
+
+    $old   = "$o3dir/jcl3.$s" ;
+    $new = sprintf "jcl3km$seasons{$s}.dat";
+    mylink( "Photolysis j-3km ", $old,$new ) ;
+} 
+
+    $old   = "$o3dir/rough.170" ;
+    $new = sprintf "rough.170";
+    mylink( "Roughness length", $old,$new ) ;
+
+    $old   = "$o3dir/landuse.170" ;
+    $new = sprintf "landuse.170";
+    mylink( "Landuse ", $old,$new ) ;
+
+  # TMP LOCATION
+    $old   = "$MyDataDir/Volcanoes.dat" ;
+    $new = sprintf "Volcanoes.dat";
+    mylink( "Volcanoes ", $old,$new ) ;
+
+
+# FIX later - was the only emission control thingy....
+  @exclus  = (9 ); #  NBOUND
+
+
+#------------      Run model ------------------------------------------
+#------------      Run model ------------------------------------------
+#------------      Run model ------------------------------------------
+
+&flush(STDOUT);
+
+foreach $exclu ( @exclus) {
+    print "starting $PROGRAM with 
+        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\n";
+    # 
+    system "/bin/pwd";
+
+    # Link execultable also, since gridur is funny about these
+    # things....
+    $LPROG = "prog.exe";
+    mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
+
+    #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 
+    open (PROG, "|mpirun -np $NPROC $LPROG") || 
+               die "Unable to execute $LPROG. Exiting.\\n" ;
+
+    # open (PROG, "|mp
+    #   open (PROG, "|$PROGRAM") || 
+    #          die "Unable to execute $PROGRAM. Exiting.\\n";
+    
+    print PROG "$NTERM\n\n$NASS\n$exclu\n$NDX\n$NDY\n";
+    close(PROG);
+}
+#------------    End of Run model -------------------------------------
+#------------    End of Run model -------------------------------------
+#------------    End of Run model -------------------------------------
+
+if ( -r core )  {
+      unlink("core");   # Remove to save disk-space
+      die "Error somewhere - Core dumped !!!!\n";
+} else {
+      #-- Done.
+      print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
+}
+# Now clean up,
+    foreach $f ( @list_of_files ) {
+        unlink($f);
+        #print "REMOVED $f \n";
+    }
+
+exit 0;
+
+
+### SUBPROGRAMS ################################################################
+
+sub leap_year {
+    local ($y) = ($_[0]);
+
+    if ($y < 20) {
+	$y += 2000;
+    } elsif ($y < 100) {
+	$y += 1900;
+    }
+
+    if ($y % 400 == 0) {
+	return 1;
+    } elsif ($y % 100 == 0) {
+	return 0;
+    } else {
+	return ($y % 4 == 0) ? 1 : 0;
+    }
+}
+
+sub myfunc_mi2 {
+    local ($dd,$nnn,$mm) = ($_[0], $_[1], $_[2]);
+    local ($d,$hh,$old,$new);
+
+    # meteorological data
+    for ($hh = 0; $hh <= 21; $hh += 3) {
+	$old = sprintf "$MetDir/f%02d.%d%02d%02d", $hh, $year, $mm, $dd;
+	$new = sprintf "fil%04d", $nnn;
+        symlink $old,$new;
+	push(@list_of_files , $new);    # For later deletion
+
+	$nnn++;
+    }
+
+    return $nnn;
+}
+
+
+sub mylink {
+  # links or assigns files from the original olcation (old) to
+  # the new location (new) - generally the working directory.
+  # Keeps track of all such linked files in list_of_files.
+  # On gridur/odin we use symlink
+
+    my ($text, $old,$new) = ($_[0], $_[1], $_[2]);
+
+    symlink $old,$new || die "symlink $old $new failed : $!";
+    # assign "-a $old   $new"  || die "assign $old $new failed : $!";
+
+   print "$text $old => $new \n";
+   push(@list_of_files , $new);    # For later deletion
+}
+
+sub calc_nterm {
+  # Calculates the number of 3-hourly steps from month mm1 to
+  #  mm2. Leap-years should already have been dealt with through
+  #  the global month_days array which is used.
+  #   $NTERM = 2921;    # works for non-leap year (365*8+1)
+
+  local ($mm1,$mm2) = ($_[0], $_[1]) ;
+  local($ndays=0,$i);
+
+  foreach $i ( $mm1..$mm2 ) {
+    $ndays += $month_days[$i] ;
+  }
+  $nterm = 1 + 8*$ndays ;
+  print "Calculated NTERM = $nterm\n";
+  return $nterm;
+}
+

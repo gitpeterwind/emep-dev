@@ -1,0 +1,320 @@
+
+!+ Photolysis coefficients
+!-------------------------------------------------------------------------------
+
+     module DefPhotolysis_ml
+!-------------------------------------------------------------------------------
+
+!    Data needed  for photolysis calculation.  NPHODIS is the number of
+!    tabulated rates from the Phodis model. NRCPHOT (<=NPHODIS) is the
+!    number of photolysis rats needed by the model
+!
+!   10/10/01 - corrected and tidied up by jej.
+!   11/10/01 - NDISS removed, minor F90 changes and docs
+!              added. NLAT and CLOUDTOP added.
+!-------------------------------------------------------------------------------
+
+!hf u2   use My_Runmode_ml, only: stop_test
+   use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP
+!hf u2   use My_Model_ml,          only: NRCPHOT    ! No. species needed in chemistry
+   implicit none
+   private
+
+!hf u2 change
+   integer, public, parameter :: &
+             NRCPHOT      = 17   ! Number of photolytic reactions
+   
+   real, public, dimension(NRCPHOT,KCHEMTOP:KMAX_MID), &
+        save :: rcphot       ! photolysis rates    -   main output
+
+   real, public, save :: sum_rcphot     ! was jej's sum1, for debug only
+   logical, public, parameter :: DEBUG_DJ = .false.
+
+   integer, parameter, private ::  &
+               HORIZON    = 90     & ! Integer solar zenith angle at sunset
+             , CLOUDTOP   = 6        ! k-value above which clear-sky dj assumed
+                                     ! (since..... Joffen?)
+
+   integer, parameter, private :: &
+               NPHODIS = 17       &  ! Max possible NRCPHOT
+              ,NLAT    = 6           ! No. latitude outputs
+
+    real, private, dimension(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON,NLAT) :: dj
+
+    real, private, dimension(NPHODIS,KCHEMTOP:KMAX_MID,HORIZON) :: &
+                   djcl1        &
+                  ,djcl3
+
+!  Indices of photolysis rates as available from Phodis files:
+
+    integer, public, parameter ::  &
+      IDAO3    =  1 , IDBO3    =  2 , IDNO2    =  3 , &
+      IDH2O2   =  4 , IDHNO3   =  5 , IDACH2O  =  6 , &
+      IDBCH2O  =  7 , IDCH3CHO =  8 , IDCH3COX =  9 , &
+      IDCH3COY = 10 , IDHCOHCO = 11 , IDRCOHCO = 12 , &
+      IDNO3    = 13 , IDN2O5   = 14 , IDCH3O2H = 15 , &
+      IDHO2NO2 = 16 , IDACETON = 17
+
+ !/ subroutines: 
+
+  public :: readdiss
+  public :: setup_phot
+
+ contains
+  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+    subroutine readdiss(newseason)
+
+      use Par_ml      ,    only : NPROC,me,MAXLIMAX,MAXLJMAX
+      use Io_ml,           only : IO_DJ, open_file, ios
+      implicit none
+
+      integer ::  newseason
+
+      integer ::  k     &  ! help index
+                 ,izen  &  ! integer zenith angle
+                 ,info  &  ! used for broadcast
+                 ,nr    &  ! numbering of photolytic reactions
+                 ,la       ! counting every 10 deg. latitude
+        real myz
+        character*20 fname1, fname2, fname3
+
+
+
+
+
+!    Open, read and broadcast clear sky rates
+!---------------
+
+        if(me == 0)then
+           write(fname1,fmt='(''jclear'',i2.2,''.dat'')') newseason
+           call open_file(IO_DJ,"r",fname1,needed=.true.)
+           if (ios /= 0) call gc_abort(me,NPROC,"ios error: jclear")  
+        endif
+
+!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jclear")
+
+!       Format of input data from Phodis - careful with "17" and NPHODIS
+999     FORMAT(1x, f8.3, 17(1x, 1pe8.2))
+
+
+        if(me == 0)then
+
+          do la = 1,NLAT
+            do izen = 1,HORIZON
+              do k = 1,KCHEMTOP
+                read(IO_DJ,999) myz,(dj(nr,KCHEMTOP,izen,la),nr=1,NPHODIS)
+              end do
+              do k = KCHEMTOP+1,KMAX_MID
+                read(IO_DJ,999) myz,(dj(nr,k,izen,la),nr=1,NPHODIS)
+              end do   ! k
+            end do    ! izen
+          end do     ! la
+          close(IO_DJ)
+        endif  ! me = 0
+
+      call gc_rbcast(517,NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON*NLAT            &
+            ,0, NPROC,info,dj)
+
+
+
+
+!    Open, read and broadcast light cloud rates
+!---------------
+
+        if(me == 0)then
+           write(fname2,fmt='(''jcl1km'',i2.2,''.dat'')') newseason
+           call open_file(IO_DJ,"r",fname2,needed=.true.)
+           if (ios /= 0)call gc_abort(me,NPROC,"ios error: jcl1km")
+        endif
+
+!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl1km")
+
+        if(me == 0)then
+
+          do izen = 1,HORIZON
+            do k = 1,KCHEMTOP
+              read(IO_DJ,999) myz,(djcl1(nr,KCHEMTOP,izen),nr=1,NPHODIS)
+            end do
+            do k = KCHEMTOP+1,KMAX_MID
+              read(IO_DJ,999) myz,(djcl1(nr,k,izen),nr=1,NPHODIS)
+            end do
+          end do  ! izen
+
+          do izen = 1,HORIZON
+            do k = KCHEMTOP,KMAX_MID
+              do nr=1,NPHODIS
+                djcl1(nr,k,izen)=djcl1(nr,k,izen)/dj(nr,k,izen,3)-1.0
+              enddo ! nr
+            end do ! k
+          end do  ! izen
+          close(IO_DJ)
+        endif   ! me = 0
+
+      call gc_rbcast(518,NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON &
+           ,0, NPROC,info,djcl1)
+
+
+
+
+!    Open, read and broadcast dense cloud rates
+!---------------
+
+        if(me == 0)then
+           write(fname3,fmt='(''jcl3km'',i2.2,''.dat'')') newseason
+           call open_file(IO_DJ,"r",fname3,needed=.true.)
+           if (ios /= 0)call gc_abort(me,NPROC,"ios error: jcl3km")    
+        endif
+
+!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl3km")
+
+        if(me == 0)then
+
+          do izen = 1,HORIZON
+            do k = 1,KCHEMTOP
+              read(IO_DJ,999) myz,(djcl3(nr,KCHEMTOP,izen),nr=1,NPHODIS)
+            end do
+            do k = KCHEMTOP+1,KMAX_MID
+              read(IO_DJ,999) myz,(djcl3(nr,k,izen),nr=1,NPHODIS)
+            end do  ! k
+          end do   ! izen
+          close(IO_DJ)
+          do izen = 1,HORIZON
+            do k = KCHEMTOP,KMAX_MID
+              do nr=1,NPHODIS
+                djcl3(nr,k,izen)=djcl3(nr,k,izen)/dj(nr,k,izen,3)-1.
+              enddo  ! nr
+            end do  ! k
+          end do   ! izen
+       endif      !  me = 0
+
+      call gc_rbcast(519,NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON &
+               ,0, NPROC,info,djcl3)
+
+
+!       if(me == 0) then
+!        do k=1,KMAX_MID
+!           write(6,*) 'jverdi i niv. k',k
+!           write(6,*) (dj(3,1,k,nr),nr=1,4)
+!           write(6,*) (djcl1(1,k,nr),nr=1,4)
+!           write(6,*) (djcl3(1,k,nr),nr=1,4)
+!         end do
+!       end if
+
+        return
+
+        end subroutine readdiss
+  ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        subroutine setup_phot(i,j,errcode)
+        use GridValues_ml    , only : gb
+        use Met_ml           , only : cc3d,cc3dmax,z_bnd
+        use Setup_1dfields_ml, only : izen
+        implicit none
+
+!       input
+        integer :: i,j
+        integer :: errcode
+
+!       local
+        integer la     &  ! counting every 10 deg. latitude
+               ,n      &  ! help index
+               ,k      &  ! vertical index
+               ,base   &  ! cloud base
+               ,top    &  ! cloud top
+               ,iclcat    ! cloud type
+
+        real clear        ! clear sky fraction
+        real sum1
+
+!---- assign photolysis rates ------------------------------------------------
+
+        errcode = 0
+
+
+        if ( izen > 90 ) then     ! Photolysis rates zero when the sun is
+                                  ! below the horizon
+             rcphot(:,:) = 0.0 
+
+        else !! (izen < 90)  -- sun above horizon
+
+
+        !/ first find cloud base and cloud top
+
+           iclcat = 0
+           if(cc3dmax(i,j,KMAX_MID) > 1.e-4) then
+
+              k = KMAX_MID
+              do while(cc3d(i,j,k) < 1.e-4 .and. k >= CLOUDTOP)
+                 k = k-1
+              end do
+              base = k+1
+
+             !csu   if all cc3d so far are <1.e-4 we are done
+
+             !ODIN6 if(base == 6) goto 4732
+              if( base < CLOUDTOP ) then 
+
+                !csu   we have found a k>=CLOUDTOP with cc3d>=1.e-4, now search for top
+
+                 k = CLOUDTOP
+                 do while(cc3d(i,j,k) < 1.0e-4)
+                     k = k+1
+                 end do
+                 top = k
+
+                 if(top >= base) then
+                   print *,'top,base'
+                   errcode = 17
+                   return
+                 endif
+                 iclcat = 1
+
+                 if(z_bnd(i,j,top)-z_bnd(i,j,base) > 1.5e3) iclcat = 2
+
+              end if  ! base<CLOUDTOP
+            end if   ! end cc3dmax
+4732        continue
+
+
+
+
+            la = max(1,int(0.1*gb(i,j)-2.0001))
+
+            if(iclcat == 0)then
+              do k = KCHEMTOP,KMAX_MID
+                do n=1,NRCPHOT
+                  rcphot(n,k)  = dj(n,k,izen,la)
+                enddo
+              enddo
+            else if(iclcat == 1)then
+              clear = cc3dmax(i,j,KMAX_MID)
+              do k = KCHEMTOP,KMAX_MID
+                do n=1,NRCPHOT
+                  rcphot(n,k)  = (1. +          &
+                               clear*djcl1(n,k,izen)) * dj(n,k,izen,la)
+                enddo  !  n
+              enddo   !  k
+
+
+            else
+              clear = cc3dmax(i,j,KMAX_MID)
+              do k = KCHEMTOP,KMAX_MID
+                do n=1,NRCPHOT
+                  rcphot(n,k)  = (1. +            &
+                               clear*djcl3(n,k,izen))*dj(n,k,izen,la)
+                 enddo
+              enddo
+            endif
+  
+            if ( DEBUG_DJ ) then
+                sum_rcphot = sum_rcphot + &
+                      sum ( rcphot(1:NRCPHOT, KCHEMTOP:KMAX_MID) )
+            end if
+
+
+          end if   !  end izen <  90 (daytime)  test
+
+    end subroutine setup_phot
+  ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+ end module DefPhotolysis_ml
