@@ -39,8 +39,8 @@ module ModelConstants_ml
     KMAX_MID   = 20           & ! Number of points (levels) in vertical
   , KMAX_BND   = KMAX_MID+1   & ! Number of points (levels) in vertical + 1
   , KTOP    = 1            & ! K-value at top of domain
-  , NMET    = 2            & ! No. met fields in memory
-  , KEMISTOP = KMAX_MID-3    ! k-limit for normal emissions input   !u4
+  , NMET    = 2              ! No. met fields in memory
+!rv1.2.1  , KEMISTOP = KMAX_MID-3    ! k-limit for normal emissions input !ds
 !
 ! some values derived from MACHO
 
