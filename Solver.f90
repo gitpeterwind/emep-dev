@@ -33,7 +33,7 @@ contains
     ,rct, rcmisc, & ! rate-coeffients
          xn_2d,&               ! rename xn_2d to use simply x inside chemistry
          !hf u2
-    rh
+    rh, f_Riemer   ! to weight the hydrolysis of N2O5 with NO3,SO4 mass 
     !u2 !hf MADE 
     !u2          xn_2d_bgn
     use Aqueous_ml,        only : &

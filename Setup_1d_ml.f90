@@ -14,6 +14,7 @@
   use Dates_ml,              only : date, dayno
 !hf VOL
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
+  use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
   use GenSpec_adv_ml,        only :  NSPEC_ADV
   use GenSpec_shl_ml,        only :  NSPEC_SHL
   use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN &
@@ -55,7 +56,9 @@
     ,rct, rcmisc  &  ! emission terms
     ,rh, temp, itemp      &  ! 
     ,amk                  &  ! Air concentrations 
-    ,izen                     ! integer of zenith angle
+    ,izen &
+    ,f_Riemer  !weighting factor for N2O5 hydrolysis    
+                     ! integer of zenith angle
 !u2hf MADE
 !u2    ,xn_2d_bgn
 !u3 - rcit moved
@@ -154,7 +157,8 @@ contains
               xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
         end do ! ispec   
 
-
+!hf setup weighting factor for hydrolysis  
+             f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62*xn_2d(aNO3,k)) )
 
    end do ! k
 
@@ -176,7 +180,9 @@ contains
 
    call set_rcmisc_rates(itemp,tinv,amk,o2k,h2o,rh,rcmisc)
 
- 
+
+
+
    end subroutine setup_1d
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     subroutine setup_rcemis(i,j)

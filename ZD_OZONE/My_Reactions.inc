@@ -613,7 +613,11 @@
      !u1 rctroe(3,k)  &
      rcmisc(13,k)  &
 ! N ch      + 1.0e-5  &
-      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
+!      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
+
+      + f_Riemer(k)*0.2*rcmisc(8,k)*(xnew(SO4)) & !0.2 smaller than dentener
+      +  (1-f_Riemer(k))*0.02*rcmisc(8,k)*(xnew(SO4)) &  !0.02 smaller than dentener
+
       + rcphot(IDN2O5,K) 
 
 !       xnew(N2O5)=  amax1(0.0, ( xold(N2O5) + dt2 * P))  &
@@ -675,7 +679,12 @@
      !u1 rctroe(4,k) * xnew(NO2 ) * xnew(OH )  &
      rcmisc(14,k) * xnew(NO2 ) * xnew(OH )  &
       + 5.8e-16 * xnew(NO3 ) * xnew(HCHO )  & 
-      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
+!      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
+! New based on Riemer 2003
+!f=xnew(SO4)*96/(xnew(SO4)*96+xnew(aNO3)*62)
+
+      + f_Riemer(k)*0.2*2.*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) & !0.2 smalller than dentener
+      +  (1-f_Riemer(k))*0.02*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)  !0.02 smalller than dentener
       L =  &
      rct(11,k)* xnew(OH )  &
 ! N ch     + 1.0e-5  &

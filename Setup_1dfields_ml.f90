@@ -46,8 +46,8 @@
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)
          ,amk                 & ! M - atmospheric conc.
-         ,temp                  ! temperature
-
+         ,temp                & ! temperature
+         ,f_Riemer              ! weighting factor for N2O5 hydrolysis
 
    integer, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           itemp                  ! int of temperature
