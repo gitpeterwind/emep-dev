@@ -110,31 +110,31 @@ private
        ,DDEP_FOR   = 6      ! sum nitrogen dep over forests for NOFRETETE
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 15 &   ! Number of 2D derived fields
+        NDERIV_2D = 14 &   ! Number of 2D derived fields
        ,D2_ACCSU  = 1  &   ! was NUM_ACCSU 
        ,D2_SO2    = 2  &   ! was xnsurf(so2)
        ,D2_SO4    = 3  &   ! was xnsurf(..)
        ,D2_HNO3   = 4  &   ! was xnsurf(..)
-       ,D2_PAN    = 5  &   ! was xnsurf(..)
+       ,D2_aNO3    = 5  &   ! was xnsurf(..)
        ,D2_NH3    = 6  &   ! was xnsurf(..)
-       ,D2_NO2    = 7  &   ! was xnsurf(..)
-       ,D2_AMSU   =8   &   ! was xnsurf(..)
+       ,D2_aNH4    = 7  &   ! was xnsurf(..)
+!h amsu       ,D2_AMSU   =8   &   ! was xnsurf(..)
 !hf hmix
-       ,D2_HMIX   = 9     &
-       ,D2_HMIX00 = 10    &!mixing height at 00
-       ,D2_HMIX12 = 11     !mixing height at 12
+       ,D2_HMIX   = 8     &
+       ,D2_HMIX00 = 9    &!mixing height at 00
+       ,D2_HMIX12 = 10     !mixing height at 12
    integer, public, parameter ::  & 
-        D2_SOX      = 12 &  ! Sum of sulphates, 
-       ,D2_OXN      = 13  &  ! Total nitrates (HNO3 + part. NITRATE) 
-       ,D2_REDN     = 14  &  ! Annonia + ammonium 
-       ,D2_FRNIT    = 15     ! (part. nitrate)/(tot. nitrate)
+        D2_SOX      = 11 &  ! Sum of sulphates, 
+       ,D2_OXN      = 12  &  ! Total nitrates (HNO3 + part. NITRATE) 
+       ,D2_REDN     = 13  &  ! Annonia + ammonium 
+       ,D2_FRNIT    = 14     ! (part. nitrate)/(tot. nitrate)
 
    integer, public, parameter ::  & 
         NDERIV_3D = 6    & ! Number of 3D derived fields
        ,D3_SO2    = 1   &  ! was xnav(no2) array
        ,D3_NO2    = 2   &
        ,D3_NO    = 3    &
-       ,D3_PAN = 4      &
+       ,D3_aNO3 = 4      &
        ,D3_XKSIG00= 5   &
        ,D3_XKSIG12=6
    ! We put definitions in f_2d, f_3d, and  data into d_2d, d_3d:
@@ -205,10 +205,10 @@ private
     f_2d( D2_SO2 ) = Deriv( 601, "ADV  ", T, IXADV_SO2, ugS, T  , F ,  T , T ,  T )
     f_2d( D2_SO4 ) = Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T  , F ,  T , T ,  T )
     f_2d( D2_HNO3) = Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T  , F ,  T , T ,  T )
-    f_2d( D2_PAN ) = Deriv( 604, "ADV  ", T, IXADV_PAN, ugN, T  , F ,  T , T ,  T )
+    f_2d( D2_aNO3 ) = Deriv( 604, "ADV  ", T, IXADV_aNO3, ugN, T  , F ,  T , T ,  T )
     f_2d( D2_NH3 ) = Deriv( 623, "ADV  ", T, IXADV_NH3, ugN, T  , F ,  T , T ,  T )
-    f_2d( D2_NO2 ) = Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T  , F ,  T , T ,  T )
-    f_2d( D2_AMSU) = Deriv( 619, "ADV  ", T,IXADV_AMSU, ugS, T  , F ,  T , T ,  T )
+    f_2d( D2_aNH4 ) = Deriv( 606, "ADV  ", T, IXADV_aNH4, ugN, T  , F ,  T , T ,  T )
+!hf amsu    f_2d( D2_AMSU) = Deriv( 619, "ADV  ", T,IXADV_AMSU, ugS, T  , F ,  T , T ,  T )
 !hf hmix
     f_2d( D2_HMIX)   = Deriv( 468, "HMIX    ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T )
     f_2d( D2_HMIX00) = Deriv( 469, "HMIX00  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T )
@@ -243,7 +243,7 @@ private
     f_3d( D3_SO2  ) = Deriv( 401, "ADV  ", T, IXADV_SO2 , PPBINV , F , T , T , T , F )
     f_3d( D3_NO2 ) = Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV , F , T , T , T , F )
     f_3d( D3_NO ) = Deriv( 407, "ADV  ", T,  IXADV_NO , PPBINV , F , T , T , T , F )
-    f_3d( D3_PAN ) = Deriv( 408, "ADV  ", T,  IXADV_PAN , PPBINV , F , T , T , T , F )
+    f_3d( D3_aNO3 ) = Deriv( 408, "ADV  ", T,  IXADV_aNO3 , PPBINV , F , T , T , T , F )
     f_3d( D3_XKSIG00 ) = Deriv( 409, "XKSIG00  ", T,  0. , 1. , F , T , T , T , F )
     f_3d( D3_XKSIG12 ) = Deriv( 410, "XKSIG12  ", T,  0. , 1. , F , T , T , T , F )
   end subroutine Set_My_Derived
@@ -296,8 +296,8 @@ private
 
     forall ( i=1:limax, j=1:ljmax )
         d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST) +  &
-             ( xn_adv(IXADV_SO4,i,j,KMAX_MID) +    &
-               xn_adv(IXADV_AMSU,i,j,KMAX_MID) ) * &
+              xn_adv(IXADV_SO4,i,j,KMAX_MID) * &! +    &
+!hf amsu               xn_adv(IXADV_AMSU,i,j,KMAX_MID) ) * &
                (z_bnd(i,j,k) - z_bnd(i,j,k+1)) *   &
                  roa(i,j,k,1)*1.0e9
     end forall
@@ -320,19 +320,18 @@ private
     case ( "TSO4" ) 
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
-               ( xn_adv(IXADV_SO4,i,j,KMAX_MID) * cfac(IXADV_SO4,i,j)  &
-               + xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j) ) &
+                xn_adv(IXADV_SO4,i,j,KMAX_MID) * cfac(IXADV_SO4,i,j)  &
+!hf amsu               + xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j) ) &
                * density(i,j)
       end forall
 
 
+!hf amsu
     case ( "TOXN" )
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
               ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
-              + xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j) )&
-!hf Changed for MADE version
-!              + xn_adv(IXADV_NITRATE,i,j,KMAX_MID) * cfac(IXADV_NITRATE,i,j)) &
+              + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) )&
               * density(i,j)
       end forall
 
@@ -341,8 +340,9 @@ private
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
                ( xn_adv(IXADV_NH3,i,j,KMAX_MID) * cfac(IXADV_NH3,i,j)    &
-              +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
-          + 1.5* xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j)) & 
+              +  xn_adv(IXADV_aNH4,i,j,KMAX_MID) * cfac(IXADV_aNH4,i,j))  &
+!hf amsu              +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
+!hf amsu          + 1.5* xn_adv(IXADV_AMSU,i,j,KMAX_MID) * cfac(IXADV_AMSU,i,j)) & 
                * density(i,j)
       end forall
 
@@ -350,9 +350,11 @@ private
     case ( "FRNIT" )
       forall ( i=1:limax, j=1:ljmax )
           d_2d( n, i,j,IOU_INST) = &
-                xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
+!hf amsu                xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j)  &
+                xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
             / (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j)   &
-            +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j) )    
+!hf amsu            +  xn_adv(IXADV_AMNI,i,j,KMAX_MID) * cfac(IXADV_AMNI,i,j) )    
+            +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) )    
       end forall
 !!d_2d( n, i,j,IOU_INST) +  &
 

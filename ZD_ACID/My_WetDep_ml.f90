@@ -45,9 +45,11 @@ contains
   
     WetDep(1)   = WScav(SO2,    0.3,  0.15)   ! Berge+Jakobsen, issh
     WetDep(2)   = WScav(SO4,    0.7,  EFF25)  ! Berge+Jokobsen, jej
-    WetDep(3)   = WScav(AMSU,   0.7,  EFF25)
+!hf amsu    WetDep(3)   = WScav(AMSU,   0.7,  EFF25)
+    WetDep(3)   = WScav(aNH4,   0.7,  EFF25)
     WetDep(4)   = WScav(NH3,    0.7,  0.35)
-    WetDep(5)   = WScav(AMNI,   0.7,  EFF25)  
+!hf amsu    WetDep(5)   = WScav(AMNI,   0.7,  EFF25)  
+    WetDep(5)   = WScav(aNO3,   0.7,  EFF25)  
     WetDep(6)   = WScav(HNO3,   0.7,  0.35)
 !OZ WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
 !OZ WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
@@ -62,13 +64,14 @@ contains
 
 
       !wdeps = sumloss(SO2) + sumloss(SO4) + sumloss(AMSU)
-       wdeps = sumloss(1) + sumloss(2) + sumloss(3)
+       wdeps = sumloss(1) + sumloss(2)  !hf amsu + sumloss(3)
 
       !wdepred = sumloss(NH3)  + sumloss(AMNI) & 
       !                    +1.5 * sumloss(AMSU) !!! (NH4)1.5 SO4
-       wdepred = sumloss(4)  + sumloss(5) & 
-                           +1.5 * sumloss(3) !!! (NH4)1.5 SO4
-  
+!hf amsu       wdepred = sumloss(4)  + sumloss(5) & 
+!hf amsu                           +1.5 * sumloss(3) !!! (NH4)1.5 SO4
+         wdepred = sumloss(3)  + sumloss(4) 
+
       !wdepox  = sumloss(HNO3) + sumloss(AMNI)
        wdepox  = sumloss(6) + sumloss(5)
 

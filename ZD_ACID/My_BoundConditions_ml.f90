@@ -191,7 +191,7 @@ module My_BoundConditions_ml
   bc2xn_adv(IBC_NO      ,IXADV_NO      )   =   1.0
   bc2xn_adv(IBC_NO2     ,IXADV_NO2     )   =   1.0
   bc2xn_adv(IBC_SO2     ,IXADV_SO2     )   =   1.0
-  bc2xn_adv(IBC_SO4     ,IXADV_SO4     )   =   1.0
+  bc2xn_adv(IBC_SO4     ,IXADV_SO4     )   =   0.0
 
   
 ! The following species are excluded either because they have no corresponding

@@ -16,8 +16,8 @@
  ! as function of local meteorology or zenith angle
  !   o2, m,  and for MADE-like, oh, ch3coo2
  
-   integer, public, parameter ::  NSPEC_BGN = 1 ! No. 3D bgn species
-   integer, public, parameter ::  NSPEC_COL = 3 ! total no. prescribed specs
+   integer, public, parameter ::  NSPEC_BGN = 2 ! No. 3D bgn species
+   integer, public, parameter ::  NSPEC_COL = 4 ! total no. prescribed specs
 
 
 !**/ First species from global CTM
@@ -69,9 +69,10 @@
   ,  IXADV_SO2         =   5   &
   ,  IXADV_SO4         =   6   &
   ,  IXADV_NH3         =   7   &
-  ,  IXADV_AMSU        =   8   &
-  ,  IXADV_AMNI        =   9
-
+!hf amsu  ,  IXADV_AMSU        =   8   &
+!hf amsu  ,  IXADV_AMNI        =   9
+  ,  IXADV_aNH4        =   8   & !total NH4
+  ,  IXADV_aNO3        =   9     !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
 !>_________________________________________________________<
@@ -131,9 +132,10 @@
   ,  SO2         =   5   &
   ,  SO4         =   6   &
   ,  NH3         =   7   &
-  ,  AMSU        =   8   &
-  ,  AMNI        =   9
-
+!hf amsu  ,  AMSU        =   8   &
+!hf amsu  ,  AMNI        =   9
+  ,  aNH4        =   8   &
+  ,  aNO3        =   9
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
 !>_________________________________________________________<
@@ -175,8 +177,11 @@
        species( 5) = Chemical("SO2         ",  64,  0,  0,   0,  1 ) 
        species( 6) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
        species( 7) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
-       species( 8) = Chemical("AMSU        ", 114,  0,  0,   1,  1 ) 
-       species( 9) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
+!hf amsu       species( 8) = Chemical("AMSU        ", 114,  0,  0,   1,  1 ) 
+!hf amsu       species( 9) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
+       species( 8) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
+       species( 9) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
+
    end subroutine define_chemicals
  end module GenChemicals_ml
  !-----------------------------------------------------------
@@ -387,8 +392,7 @@ end module  GenRates_rct_ml
         !ds tab_so2ox = Daily_sine(4.0e-6,2.5e-6,80,366)
         !ds Changed to use real dmax instead of day of mean in argument
 
-     !rv1.2.1 reset
-        tab_so2ox = Daily_sine(3.0e-6,2.5e-6,80+91,366)
+        tab_so2ox = Daily_sine(4.0e-6,2.5e-6,80+91,366)
 
     end subroutine  Init_mychem
     !------------------------------------------------------------------

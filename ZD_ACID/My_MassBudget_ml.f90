@@ -20,7 +20,7 @@ module My_MassBudget_ml
 
    ! Mass budget equivalency terms
 
-    integer, public, parameter :: N_MASS_EQVS = 3  
+    integer, public, parameter :: N_MASS_EQVS = 3!4  
     integer, public, save , dimension( N_MASS_EQVS ):: &
           ixadv_eqv  & !  IXADV_ no. of species
            ,qrc_eqv    !  QRC_   no. of equivalent species
@@ -32,7 +32,8 @@ module My_MassBudget_ml
 
    integer, public, parameter, dimension(9) :: MY_MASS_PRINT = &
      (/  IXADV_HNO3, IXADV_PAN, IXADV_NO, &
-         IXADV_NO2,  IXADV_SO2, IXADV_SO4, IXADV_NH3, IXADV_AMSU, IXADV_AMNI/)
+!hf amsu         IXADV_NO2,  IXADV_SO2, IXADV_SO4, IXADV_NH3, IXADV_AMSU, IXADV_AMNI/)
+         IXADV_NO2,  IXADV_SO2, IXADV_SO4, IXADV_NH3, IXADV_aNH4, IXADV_aNO3/)
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
