@@ -42,6 +42,8 @@
 !!.. for smaller particles and Monahan et al. for larger ones
 
  use Met_ml,               only : fm, roa, z_bnd, iclass
+ use UKdep_ml,             only : landuse_ncodes, landuse_codes, landuse_data   !st sept,2004
+ use DepVariables_ml,      only:  water, LU_WATER                               !st sept,2004
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
  use GenSpec_tot_ml,       only : SSFI, SSCO
  use GenChemicals_ml,      only : species
@@ -50,10 +52,10 @@
  implicit none
 
    integer, intent(in) :: i,j    ! coordinates of column
-   integer :: k, ii, jj
+   integer :: k, ii, jj, nlu, ilu, lu
    real    :: ustar, z0, z00, vind10, delz, zcoef, n2m, vind10_341,     &
               ss_flux(ss_mod1+ss_mod2), d3(ss_mod1+ss_mod2)  &
-              ,prodM_ss(2),prodN_ss(2)
+              ,prodM_ss(2),prodN_ss(2), water_frac
 !//---------------------------------------------------
 
     if ( my_first_call ) then 
@@ -64,25 +66,33 @@
 
     end if !  my_first_call
 
-     SS_prod(:,i,j) = 0.
-  prodM_ss(:) = 0.
-  prodN_ss(:) = 0.
+    SS_prod(:,i,j) = 0.
+    prodM_ss(:) = 0.
+    prodN_ss(:) = 0.
 
-!// over seas, ice free......
+!st sept,2004 - loop over the LU present in the grid
+    nlu = landuse_ncodes(i,j)
+      do ilu= 1, nlu
+        lu      = landuse_codes(i,j,ilu)
 
-   if (iclass(i,j) == 0 .and. iclass(i,j) /= 1) then
+!// only over water
+!st sept,2004..  Obs!  All water is assumed here to be salt water
+!                double checking with the old rough.170 data 
 
-      ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
+        if ( water(lu) .and. iclass(i,j) == 0) then
+            water_frac = landuse_data (i,j,ilu)  ! grid fraction with water
+
+          ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
 
           z0 = CHARNOCK * ustar * ustar/GRAV
           z0 = max(z0,0.01)  ! u7.5vgc 
           vind10 = ustar/KARMAN * log(10./z0)
 
-         delz = (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
-         zcoef = 1.e-6 / delz
-         n2m = n_to_mSS * zcoef *AVOG / species(SSFI)%molwt *1.e-15
+          delz = (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
+          zcoef = 1.e-6 / delz
+          n2m = n_to_mSS * zcoef *AVOG / species(SSFI)%molwt *1.e-15
 !pw         vind10341=vind10 ** (3.41)
-         vind10_341=exp(log(vind10) * (3.41))
+          vind10_341=exp(log(vind10) * (3.41))
 
    do ii = 1, ss_mod1
 
@@ -121,7 +131,8 @@
       prodM_ss(QSSFI) = prodM_ss(QSSFI) + ss_flux(ii)* d3(ii) *zcoef
 
       SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
-                         + ss_flux(ii) * d3(ii) * n2m
+                         + ss_flux(ii) * d3(ii) * n2m   &
+                         * water_frac                     !st sept,2004 
    enddo
 
 !..COARSE .. 
@@ -130,7 +141,8 @@
       prodM_ss(QSSCO) = prodM_ss(QSSCO) + ss_flux(ii)* d3(ii) *zcoef
 
       SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
-                         + ss_flux(ii) * d3(ii) * n2m
+                         + ss_flux(ii) * d3(ii) * n2m   &
+                         * water_frac                     !st sept,2004 
    enddo
 
 ! if(bug)  &
@@ -139,7 +151,8 @@
 !  write(6,'(a20,2e15.4)') '>>N-SS prod >>', prodN_ss(QSSFI), prodN_ss(QSSCO)
 !  write(6,'(a20,2e15.4)') '>>M-SS prod >>', prodM_ss(QSSFI), prodM_ss(QSSCO)
 ! endif                           
-   endif  ! over ice-free sea
+    endif  ! water_area > 0.
+   enddo  ! LU classes
 
    end subroutine SeaSalt_flux
 
