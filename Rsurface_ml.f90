@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.8 2003-02-06 14:57:44 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.9 2003-03-21 08:53:58 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -411,10 +411,10 @@ contains
        ! as a compensation-point problem, and measured fluxes are often
        ! from the ground (-ve Vg).
 
-       if ( DRYDEP_CALC(icmp) == WES_NO2 ) then
-           Rsur(icmp)     = Rsur(icmp) * 2.0
-           Rsur_wet(icmp) = Rsur_wet(icmp) * 2.0
-       end if
+       !if ( DRYDEP_CALC(icmp) == WES_NO2 ) then
+       !    Rsur(icmp)     = Rsur(icmp) * 2.0
+       !    Rsur_wet(icmp) = Rsur_wet(icmp) * 2.0
+       !end if
 
 
   end do GASLOOP2

@@ -1,6 +1,15 @@
 
 ==============================================================================
-=========== Dave, Svetlana, March 10th 2003, rv1.4.16  ===============================
+=========== Dave, March 21th 2003, rv1.4.17  ===============================
+==============================================================================
+
+Met_ml bug fixed. 
+SO2-> SO4 treatment unified in OZONE and ACID 
+(SO2+CH3O2 reaction removed from OZONE as part of this, Fe-reaction added to both).
+pNO3 introduced - coarse mode nitrate
+
+==============================================================================
+=========== Dave, Svetlana, March 10th 2003, rv1.4.16  =======================
 ==============================================================================
 
 Primary PM added into ACID version. This slows down ACID a bit, but removes

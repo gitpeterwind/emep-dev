@@ -2336,6 +2336,12 @@ implicit none
 ! directions
 !
 ! Written by Peter February 2003
+!
+!Comment from Peter after ds bug-fix:
+!The data_west(jj,:)=data(1,j) is not a bug: when there is no west neighbour, 
+!the data is simply copied from the nearest points: data_west(jj,:) should 
+!be =data(-thick+1:0,j), but since this data does not exist, we 
+!put it =data(1,j).
 
 !     use Par_ml , only : me,NPROC,limax,ljmax,MAXLIMAX,MAXLJMAX &
 !          ,neighbor,SOUTH,NORTH,WEST,EAST,NOPROC
@@ -2390,17 +2396,21 @@ implicit none
      jj=0
      do jt=1,thick
         jj=jj+1
-        data_west(jj,:)=data_south(:,jt)
+        !ds bug ? data_west(jj,:)=data_south(:,jt)
+        ! may be wrong! Check also assignments below.
+        data_west(jj,:)=data_south(1:thick,jt)
         data_east(jj,:)=data_south(limax-thick+1:limax,jt)
      enddo
      do j=1,ljmax
         jj=jj+1
-        data_west(jj,:)=data(:,j)
+        !ds bug ? data_west(jj,:)=data(:,j)
+        data_west(jj,:)=data(1:thick,j)
         data_east(jj,:)=data(limax-thick+1:limax,j)
      enddo
      do jt=1,thick
         jj=jj+1
-        data_west(jj,:)=data_north(:,jt)
+        !ds bug data_west(jj,:)=data_north(:,jt)
+        data_west(jj,:)=data_north(1:thick,jt)
         data_east(jj,:)=data_north(limax-thick+1:limax,jt)
      enddo
      

@@ -438,14 +438,14 @@ subroutine tabulate_aqueous()
 
 
     
-      ! oh + so2 gas-phase         ! made/macho had:  aqrck(IC4055,k)
+      ! oh + so2 gas-phase
        aqrck(ICLOHSO2,k) = ( 1.0-fso2grid(k) )   ! Now correction factor!
     
        aqrck(ICLRC1,k)   = caqh2o2(k) * fso2aq(k)
     
        aqrck(ICLRC2,k)   = caqo3(k) * INV_Hplus0p4 * fso2grid(k)
     
-!       aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k) 
+       aqrck(ICLRC3,k)   = caqsx(k) *  fso2grid(k) 
 
      end if
 
@@ -533,13 +533,6 @@ end subroutine get_frac
 
 
 !  Loop starting from above
-!u7.2    do k = KUPPER, KMAX_MID
-!u7.2       if ( cloudwater(k) .gt.1.e-8 ) then ! in cloud scavenging only for 
-                                           ! cloud water above 10^-2 g m^-3 
-!u7.2       end if
-!u7.2    end do
-!u7.2 roak1 = xmd(i,j)*(ps(i,j,1) - PT)*carea(k)/amk(k)/ATWAIR
-
 
     f_rho  = xmd(i,j)*(ps(i,j,1) - PT)/ATWAIR
 

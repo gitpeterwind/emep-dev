@@ -48,7 +48,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 11
+   integer, public, parameter ::  NSPEC_ADV = 12
  
  ! Aerosols:
 
@@ -74,7 +74,8 @@
   ,  IXADV_aNH4        =   8   & !total NH4
   ,  IXADV_aNO3        =   9   & !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
   ,  IXADV_PM25        =   10  &
-  ,  IXADV_PMco        =   11  
+  ,  IXADV_PMco        =   11  &  
+  ,  IXADV_pNO3        =   12   
 
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
@@ -117,7 +118,7 @@
 
    logical, public, parameter ::  ORG_AEROSOLS = .false. 
 
-   integer, public, parameter ::  NSPEC_TOT = 11 
+   integer, public, parameter ::  NSPEC_TOT = 12 
  
  ! Aerosols:
            integer, public, parameter :: &
@@ -140,7 +141,8 @@
   ,  aNH4        =   8   &
   ,  aNO3        =   9   &
   ,  PM25        =   10  &
-  ,  PMco        =   11  
+  ,  PMco        =   11  &  
+  ,  pNO3        =   12  
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
 !>_________________________________________________________<
@@ -188,6 +190,7 @@
        species( 9) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
        species(10) = Chemical("PM25        ", 100,  0,  0,   0,  0 ) 
        species(11) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
+       species(12) = Chemical("pNO3        ", 62,   0,  0,   1,  0 ) 
 
    end subroutine define_chemicals
  end module GenChemicals_ml
@@ -242,19 +245,30 @@
 
       rcmisc(9,:) = tab_so2ox(daynumber)
 
+  ! Coarse pNO3 formation rate:
+   do k = KCHEMTOP, KMAX_MID
+    if (rh(k) > 0.9 ) then
+         rcmisc(10,k) = 1.0e-4
+    else 
+         rcmisc(10,k) = 5.0e-6
+    end if
+   end do
+
     !u1 - troe stuff put here to simplify .....
 
   lt3(:) = log(300.0*tinv(:))
 
 
-  rcmisc(11,:) = troe(1.0e-31*exp(1.6*lt3(:)),3.0e-11*exp(-0.3*lt3(:)), -0.1625,m(:))
-  rcmisc(12,:) = troe(2.7e-30*exp(3.4*lt3(:)),2.0e-12*exp(-0.2*lt3(:)),  -1.109,m(:))
-  rcmisc(13,:) = troe(1.0e-3*exp(3.5*lt3(:))*exp(-11000*tinv(:)),9.70e14*exp(-0.1*lt3(:))*exp(-11080*tinv(:)),  -1.109,m(:)) 
+  !ds These rates are not used:
+  !ds rcmisc(11,:) = troe(1.0e-31*exp(1.6*lt3(:)),3.0e-11*exp(-0.3*lt3(:)), -0.1625,m(:))
+  !ds rcmisc(12,:) = troe(2.7e-30*exp(3.4*lt3(:)),2.0e-12*exp(-0.2*lt3(:)),  -1.109,m(:))
+  !ds rcmisc(13,:) = troe(1.0e-3*exp(3.5*lt3(:))*exp(-11000*tinv(:)),9.70e14*exp(-0.1*lt3(:))*exp(-11080*tinv(:)),  -1.109,m(:)) 
+
     rcmisc(14,:) = troe(2.6e-30*exp(2.9*lt3(:)),6.7e-11*exp(0.6*lt3(:)), -0.844,m(:))
     rcmisc(15,:) = troe(2.7e-28*exp(7.1*lt3(:)),1.2e-11*exp(0.1*lt3(:)), -1.204,m(:)) 
     rcmisc(16,:) = troe(4.9e-3*exp(-12100*tinv(:)),5.4e16*exp(-13830*tinv(:)),  -1.204,m(:)) 
-    rcmisc(17,:) = troe(7.0e-29*exp(3.1*lt3(:)),9.0e-12, -0.3567,m(:)) 
-    rcmisc(18,:) = troe(8.0e-17*exp(3.5*lt3(:)),3.0e-11,-0.6931,m(:)) 
+   !ds  rcmisc(17,:) = troe(7.0e-29*exp(3.1*lt3(:)),9.0e-12, -0.3567,m(:)) 
+  !pNO3  rcmisc(18,:) = troe(8.0e-17*exp(3.5*lt3(:)),3.0e-11,-0.6931,m(:)) 
 
   end subroutine set_rcmisc_rates
 end module  GenRates_rcmisc_ml

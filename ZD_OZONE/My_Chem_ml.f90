@@ -114,7 +114,7 @@
 
    integer, public, parameter ::   & 
      IXADV_SO4         =  50   &
-  ,  IXADV_NITRATE     =  51   &
+  ,  IXADV_pNO3        =  51   &
   ,  IXADV_NH3         =  52   &
 !hf  ,  IXADV_AMSU        =  53   &
 !hf  ,  IXADV_AMNI        =  54
@@ -268,7 +268,7 @@
   ,  CH4         =  63   &
   ,  SO2         =  64   &
   ,  SO4         =  65   &
-  ,  NITRATE     =  66   &
+  ,  pNO3        =  66   &
   ,  NH3         =  67   &
 !hf  ,  AMSU        =  68   &
 !hf  ,  AMNI        =  69
@@ -374,7 +374,7 @@
        species( 63) = Chemical("CH4         ",  16,  0,  1,   0,  0 ) 
        species( 64) = Chemical("SO2         ",  64,  0,  0,   0,  1 ) 
        species( 65) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
-       species( 66) = Chemical("NITRATE     ",  62,  0,  0,   1,  0 ) 
+       species( 66) = Chemical("pNO3        ",  62,  0,  0,   1,  0 ) 
        species( 67) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
 !hf       species( 68) = Chemical("AMSU        ", 114,  0,  0,   1,  1 ) 
 !hf       species( 69) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
@@ -433,13 +433,19 @@
 
        do k = KCHEMTOP, KMAX_MID
           if ( rh(k) > 0.4) then
-!6sj            rcmisc(8,k) = VOLFAC * tab_vav_n2o5( itemp(k) ) * rh(k)
+!6sj     !       rcmisc(8,k) = VOLFAC * tab_vav_n2o5( itemp(k) ) * rh(k)
             rcmisc(8,k) = VOLFAC * rh(k) &
                 * sqrt(3.0 * RGAS_J * itemp(k) / 0.108)  ! m/s !
 
           else
             rcmisc(8,k) = 0.0
           endif
+
+     if (rh(k) > 0.9 ) then
+         rcmisc(10,k) = 1.0e-4
+     else
+          rcmisc(10,k) = 5.0e-6
+     end if
        end do ! k
 
     !ux - new SO2 -> SO4 method from old MADE/hf code

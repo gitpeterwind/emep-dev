@@ -16,7 +16,7 @@ module My_UKDep_ml    ! DryDep_ml
                    ,IXADV_HNO3 &  !! ,IXADV_EC  ,IXADV_OC & 
     ,  IXADV_PAN ,IXADV_SO4,IXADV_NH3,&
 !hf amsuIXADV_AMNI, IXADV_AMSU
-        IXADV_aNO3,IXADV_aNH4,  IXADV_PM25,IXADV_PMco
+        IXADV_aNO3,IXADV_aNH4,  IXADV_PM25,IXADV_PMco, IXADV_pNO3
  use ModelConstants_ml , only : atwS, atwN, atwPM
  use Wesely_ml
  implicit none
@@ -81,7 +81,7 @@ module My_UKDep_ml    ! DryDep_ml
   ! The actual species used and their relation to the CDEP_ indices
   ! above will be defined in Init_Vg
 
-  integer, public, parameter ::  NDRYDEP_ADV  = 10
+  integer, public, parameter ::  NDRYDEP_ADV  = 11
 
   !/-- we define a type to map indices of species to be deposited
   !   to the lesser number of species where Vg is calculated
@@ -118,6 +118,7 @@ contains
    Dep(8) =  depmap( IXADV_aNO3,  CDEP_SET,  0.1 * cms  )
    Dep(9) =  depmap( IXADV_PM25,  CDEP_SET,  0.1 * cms  )
    Dep(10)=  depmap( IXADV_PMco,  CDEP_SET,  1.5 * cms  )
+   Dep(11)=  depmap( IXADV_pNO3,  CDEP_HNO3,  -1.)
 
   end subroutine Init_DepMap
 
@@ -156,6 +157,7 @@ contains
           DepLoss(IXADV_HNO3) + &
           DepLoss(IXADV_PAN) + &
           DepLoss(IXADV_NO2) + &
+          DepLoss(IXADV_pNO3) + &
 !hf amsu          DepLoss(IXADV_AMNI)  &
           DepLoss(IXADV_aNO3)  &
                                     ) * convfac * atwN

@@ -19,6 +19,7 @@ module DryDep_ml
                           NDRYDEP_ADV, &   ! No. advected species affected
                           STO_FLUXES,  &   ! true if fluxes wanted.  !got
                           CDEP_SET,    &   ! for so4
+                          CDEP_NO2,    &   ! for NO2 comp pt. approach
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
@@ -34,7 +35,7 @@ module DryDep_ml
                             unit_flux,   &! = sto. flux per m2
                             lai_flux      ! = lai * unit_flux
  use Chemfields_ml , only : cfac!,xn_adv
- use GenSpec_adv_ml, only : NSPEC_ADV
+ use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
                             i_glob, j_glob   !u1 for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
@@ -81,6 +82,7 @@ module DryDep_ml
   logical, private, parameter :: DEBUG_UK = .false.
   logical, private, parameter :: DEBUG_WET = .false.
   logical, private, parameter :: DEBUG_FLUX = .false.
+  logical, private, parameter :: DEBUG_NO2  = .true.
 
 
  contains
@@ -157,6 +159,7 @@ module DryDep_ml
       convfac2, & ! rescaling to different units
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
+  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
 
   real, save :: inv_gridarea  ! inverse of grid area, m2
 !hf  integer, save ::  old_daynumber = -99
@@ -422,7 +425,34 @@ module DryDep_ml
 
            Vg_1m (n) = (1.0-wetarea) / ( Ra_1m + Rb(n) + Rsur(n) ) &
                      +      wetarea  / ( Ra_1m + Rb(n) + Rsur_wet(n) )
+         end do
+         
+         !   print *, "NO2FAC c, i, j ", CDEP_NO2, i_glob(i), j_glob(j)
+         no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   ! Here we have no2 in cm-3
+         no2fac = max(1.0, no2fac)
+         !   print *, "NO2FAC pre", xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)
+         no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)      ! Comp. point of 4 ppb
 
+         if (DEBUG_NO2 .and. debug_flag .and.  &
+                ( lu == 1 .or. lu == 10 ) .and. & 
+                   (current_date%seconds == 0)  ) then
+            if (lu==1) then 
+            write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "CONIF-NO2", &
+                  imm, idd, ihh, lu, &
+                     xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
+                      100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
+            else
+            write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "GRASS-NO2", &
+                  imm, idd, ihh, lu, &
+                     xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
+                      100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
+            end if
+         end if
+
+         Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
+         Vg_1m (CDEP_NO2) = Vg_1m (CDEP_NO2) * no2fac
+
+         do n = 1, NDRYDEP_CALC
            Vg_ref_lu(n,ilu) = Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)

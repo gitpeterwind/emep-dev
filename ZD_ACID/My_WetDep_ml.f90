@@ -19,7 +19,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP = 8  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP = 9  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
 contains
@@ -54,7 +54,8 @@ contains
 !OZ WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
 !OZ WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
     WetDep(7)   = WScav(PM25,   0.7,  EFF25)
-    WetDep(8)   = WScav(PMCO,   0.7,  EFFco)
+    WetDep(8)   = WScav(PMCO,   0.7,  EFFCO)
+    WetDep(9)   = WScav(pNO3,   0.7,  EFFCO)
 
   end subroutine Init_WetDep
 
@@ -75,7 +76,7 @@ contains
          wdepred = sumloss(3)  + sumloss(4) 
 
       !wdepox  = sumloss(HNO3) + sumloss(AMNI)
-       wdepox  = sumloss(6) + sumloss(5)
+       wdepox  = sumloss(6) + sumloss(5) + sumloss(9)
 
        wdeppm  = sumloss(7) + sumloss(8)
 

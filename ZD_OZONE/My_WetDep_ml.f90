@@ -19,7 +19,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP = 8  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP = 9  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
 contains
@@ -49,6 +49,7 @@ contains
     WetDep(6)   = WScav(HNO3,   0.7,  0.35)
     WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
     WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
+    WetDep(9)   = WScav(pNO3,   0.7,  EFFCO) ! ds, from Svetlana's PMco stuff
 
   end subroutine Init_WetDep
 

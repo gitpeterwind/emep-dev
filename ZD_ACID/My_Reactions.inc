@@ -65,7 +65,9 @@
 !added
       + rct(2,k) * xn_2d_bgn(IXBGN_O3,k) * xnew(NO2)
 
-       xnew(HNO3)=  amax1(0.0, ( xold(HNO3) + dt2 * P))  
+      L = rcmisc(10,k)
+       xnew(HNO3)=  amax1(0.0, ( xold(HNO3) + dt2 * P))  &
+                     /(1.0 + dt2*L ) 
 
 
 !-> SO2 
@@ -78,8 +80,9 @@
 
 !       rcmisc(9,k)  ! Eliassen+Saltbones
       2e-12*aqrck(ICLOHSO2,K)* xn_2d_bgn(IXBGN_OH,k )  &
-       + 1*aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k)  &
-       + 1*aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k)  
+       + aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k)  &
+       + aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k)  &
+       + aqrck(ICLRC3,K)    ! Fe-catalysed reaction
 
 
        xnew(SO2)=  amax1(0.0, ( xold(SO2) + dt2 * P))  &
@@ -150,6 +153,11 @@
      rcemis(QRCPMCO,K) 
       ! L = 0.0
        xnew(PMCO)=  amax1(0.0,  xold(PMCO) + dt2 * P)
+
+!-> pNO3 
+
+      P = rcmisc(10,k) 
+      xnew(pNO3)=  amax1(0.0,  xold(PM25) + dt2 * P)
 
 
 

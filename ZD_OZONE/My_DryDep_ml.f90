@@ -85,7 +85,7 @@ module My_UKDep_ml    ! DryDep_ml
   ! The actual species used and their relation to the CDEP_ indices
   ! above will be defined in Init_DepMap
 
-  integer, public, parameter ::  NDRYDEP_ADV  = 16
+  integer, public, parameter ::  NDRYDEP_ADV  = 17
 
   !/-- we define a type to map indices of species to be deposited
   !   to the lesser number of species where Vg is calculated
@@ -126,6 +126,7 @@ contains
    Dep(14) =  depmap( IXADV_MAL   ,CDEP_ALD , -1.)
    Dep(15) =  depmap( IXADV_CH3O2H,CDEP_OP  , -1.)
    Dep(16) =  depmap( IXADV_C2H5OOH,CDEP_OP  , -1.)
+   Dep(17) =  depmap( IXADV_pNO3, CDEP_HNO3 , -1. ) ! Coarse nitrate
 
   end subroutine Init_DepMap
 
@@ -134,10 +135,10 @@ contains
      integer, intent(in) :: i,j             ! coordinates
      real,    intent(in) ::  convfac   !
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
-     integer, parameter :: N_OXN = 4        ! Number in ox. nitrogen family
+     integer, parameter :: N_OXN = 5        ! Number in ox. nitrogen family
      integer :: n, nadv
      real, parameter, dimension(N_OXN) :: OXN = &
-             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_aNO3 /)
+             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_aNO3, IXADV_pNO3 /)
 
 
      ddep(DDEP_SOX,i,j,IOU_INST) = (  &
@@ -150,7 +151,8 @@ contains
           DepLoss(IXADV_HNO3) + &
           DepLoss(IXADV_PAN) + &
           DepLoss(IXADV_NO2) + &
-          DepLoss(IXADV_aNO3)  &
+          DepLoss(IXADV_aNO3)+ &
+          DepLoss(IXADV_pNO3)  &
                                     ) * convfac * atwN
 
      ddep(DDEP_RDN,i,j,IOU_INST) = ( &
