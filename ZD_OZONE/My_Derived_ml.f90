@@ -141,7 +141,7 @@ private
    character(len=12), public, parameter, dimension(NDERIV_2D) :: &
       D2_USED = (/  D2_SR &
                    ,D2_EXTRA /)   ! SOURCE_RECEPTOR = .false.
-                   !,D2_EXTRA /)  ! SOURCE_RECEPTOR = .true.
+                   !         /)   ! SOURCE_RECEPTOR = .true.
 
 
 !----------------------
