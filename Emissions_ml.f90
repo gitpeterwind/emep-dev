@@ -77,7 +77,6 @@
   !/-- emissions for input to chemistry routines
 
    ! KEMISTOP added to avoid hard-coded KMAX_MID-3:
-   !rv1.2 now calculated from new NEMISLAYERS param
 
    integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
    real, public, save, dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) :: &
@@ -168,10 +167,6 @@ contains
   real   :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
   real   :: ccsum             ! Sum of emissions for one country !ds, rv1_9_3
  
-  !/ emissions for loal area and 1 pollutant. Temporary array to
-  !  help tranfer through global2local subroutine:
-!su  real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX) :: localemis
-
   ! arrays for whole EMEP area:
   !su--    additional arrays on host only for landcode,nlandcode
   !.. ds BIG arrays ... will be needed only on me=0. Make allocatable
@@ -212,7 +207,6 @@ contains
   do i = 1, NEMIS
      eindex(i) = EmisDef_Index( EMIS_NAME(i) )
   end do
-  !u4 - error checks moved to consistency_check
 
   !=========================
   !  Check that all is well!
@@ -250,8 +244,6 @@ contains
   !    Taken from IQ_DMS=35 for SO2 nature (sector 11)
   !    first_dms_read is true until first call to newmonth finished.
 
-  !gv print *, "TTT, after emisconv_and_iq, IQSO2 = ", IQSO2, emisconv(IQSO2)
-  !gv dms_fact = e_fact(11,IQ_DMS,IQSO2)
 
   !u4 dms_fact = 1.0            !! ** ds - temporary solution !!!!!
   first_dms_read = .true. 
@@ -562,7 +554,6 @@ contains
   !uni - save daytime value between calls, intiialise to zero
   integer, save, dimension(NLAND) ::  daytime = 0  !  0=night, 1=day
   integer                         ::  hourloc      !  local hour 
-!u4   integer                         ::  olddaytime   !      "     " 
   logical                         ::  hourchange   !      "     "           
   real, dimension(NRCEMIS)        ::  emis         !  local array for emissions
 
@@ -580,17 +571,9 @@ contains
  
 !hf initialize
     ehlpcom0(:)=0.0
-!TIL KMAX_BND???(endre dim)
-!hf u2   do k=1,4
-!u4   do k=1,KMAX_MID !due to volcanos
-!u4 - ds - ehlpcom0 isn't used in Volvano_ml - it has its own version.
-   !u4 do k=1,KMAX_MID !due to volcanos
-   !u4 - and now we make use of the new KEMISTOP parameter to define the
-   !u4   vertical range. Note that ehlpcom0 nopw has value KMAX_MID=20 at ground level.
 
    do k=KEMISTOP,KMAX_MID !due to volcanos
       ehlpcom0(k) = GRAV* 0.001*AVOG/ (sigma_bnd(k+1) - sigma_bnd(k))
-      !u4 ehlpcom0(k) = GRAV* 0.001*AVOG/ (sigma_bnd(KMAX_BND-k+1) - sigma_bnd(KMAX_BND-k))
    enddo
 
    !/** scaling for totemadd:
@@ -631,7 +614,6 @@ contains
 
     do iland = 1, NLAND
 
-       !u4 olddaytime     = daytime(iland)
        daytime(iland) = 0
        hourloc        = indate%hour + Country(iland)%timezone
 
@@ -653,7 +635,7 @@ contains
             do i = li0,li1
 
                ncc = nlandcode(i,j)            ! No. of countries in grid
-               !u4 ncc = nlandcode(i,j)       ! No. of countries in grid
+
               !*************************************************
               ! First loop over non-flat(one sector) emissions
               !*************************************************
@@ -848,15 +830,13 @@ contains
 
 
   !/** we now scale gridrcemis to get emissions in molecules/cm3/s
-  !u4   do k=1,4
+
    do k= KEMISTOP, KMAX_MID
      do j = lj0,lj1
         do i = li0,li1
-              !u4 ehlpcom= roa(i,j,KMAX_BND-k,1)/(ps(i,j,1)-PT)
+
               ehlpcom= roa(i,j,k,1)/(ps(i,j,1)-PT)
               do iqrc =1, NRCEMIS
-                 !u4 gridrcemis(iqrc,KMAX_BND-k,i,j) =  &
-                 !u4    gridrcemis0(iqrc,KMAX_BND-k,i,j)* ehlpcom
                  gridrcemis(iqrc,k,i,j) =  &
                     gridrcemis0(iqrc,k,i,j)* ehlpcom
               enddo  ! iqrc
@@ -872,8 +852,6 @@ contains
 
     do j = lj0,lj1
       do i = li0,li1
-
-        !u4 ehlpcom = ehlpcom0(1) * roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
 
         ehlpcom = ehlpcom0(KMAX_MID) * roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
 
@@ -939,7 +917,6 @@ contains
 	integer ijin(2) 
 !hf	integer n, ncmaxfound		! Max. no. countries found in grid
         integer n, flat_ncmaxfound      ! Max. no. countries w/flat emissions
-!6b	real rtmp(IILARDOM,JJLARDOM), rsnd(MAXLIMAX,MAXLJMAX)
 	real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
 	character*20 fname
 	real ktonne_to_kgm2s         ! Units conversion
