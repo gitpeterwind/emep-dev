@@ -161,7 +161,7 @@ private
        ,DDEP_PM    = 22
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 37 &   ! Number of 2D derived fields
+        NDERIV_2D = 38 &   ! Number of 2D derived fields
        ,D2_AOT40  = 1  &   ! was IAOT_40
        ,D2_AOT60  = 2  &   ! was IAOT_60
        ,D2_ACCSU  = 3  &   ! was NUM_ACCSU 
@@ -209,7 +209,8 @@ private
    integer, public, parameter ::  &
         D2_aNO3     = 35 &
        ,D2_pNO3     = 36 &
-       ,D2_NH3      = 37       ! 
+       ,D2_NH3      = 37 &     ! 
+       ,D2_AOT30    = 38
 !hf hmix
    integer, public, parameter ::  & 
         D2_HMIX   = 38 &     
@@ -288,26 +289,27 @@ private
  f_ddep(DDEP_RDN  ) = Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mg/m2")
 
  !--test fields for ecosystem specific---
- f_ddep(DDEP_OXSSW) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSSW","mg/m2")
- f_ddep(DDEP_OXSCF) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSCF","mg/m2")
- f_ddep(DDEP_OXSDF) = Deriv( 526, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSDF","mg/m2")
- f_ddep(DDEP_OXSCR) = Deriv( 527, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSCR","mg/m2")
- f_ddep(DDEP_OXSSN) = Deriv( 528, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSSN","mg/m2")
- f_ddep(DDEP_OXSWE) = Deriv( 529, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSWE","mg/m2")
+ !-- use index numbers 800+ 
+ f_ddep(DDEP_OXSSW) = Deriv( 824, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSSW","mg/m2")
+ f_ddep(DDEP_OXSCF) = Deriv( 825, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSCF","mg/m2")
+ f_ddep(DDEP_OXSDF) = Deriv( 826, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSDF","mg/m2")
+ f_ddep(DDEP_OXSCR) = Deriv( 827, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSCR","mg/m2")
+ f_ddep(DDEP_OXSSN) = Deriv( 828, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSSN","mg/m2")
+ f_ddep(DDEP_OXSWE) = Deriv( 829, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXSWE","mg/m2")
 
- f_ddep(DDEP_OXNSW) = Deriv( 530, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNSW","mg/m2")
- f_ddep(DDEP_OXNCF) = Deriv( 531, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNCF","mg/m2")
- f_ddep(DDEP_OXNDF) = Deriv( 532, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNDF","mg/m2")
- f_ddep(DDEP_OXNCR) = Deriv( 533, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNCR","mg/m2")
- f_ddep(DDEP_OXNSN) = Deriv( 534, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNSN","mg/m2")
- f_ddep(DDEP_OXNWE) = Deriv( 535, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNWE","mg/m2")
+ f_ddep(DDEP_OXNSW) = Deriv( 830, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNSW","mg/m2")
+ f_ddep(DDEP_OXNCF) = Deriv( 831, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNCF","mg/m2")
+ f_ddep(DDEP_OXNDF) = Deriv( 832, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNDF","mg/m2")
+ f_ddep(DDEP_OXNCR) = Deriv( 833, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNCR","mg/m2")
+ f_ddep(DDEP_OXNSN) = Deriv( 834, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNSN","mg/m2")
+ f_ddep(DDEP_OXNWE) = Deriv( 835, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNWE","mg/m2")
 
- f_ddep(DDEP_RDNSW) = Deriv( 536, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNSW","mg/m2")
- f_ddep(DDEP_RDNCF) = Deriv( 537, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNCF","mg/m2")
- f_ddep(DDEP_RDNDF) = Deriv( 538, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNDF","mg/m2")
- f_ddep(DDEP_RDNCR) = Deriv( 539, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNCR","mg/m2")
- f_ddep(DDEP_RDNSN) = Deriv( 540, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNSN","mg/m2")
- f_ddep(DDEP_RDNWE) = Deriv( 541, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNWE","mg/m2")
+ f_ddep(DDEP_RDNSW) = Deriv( 836, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNSW","mg/m2")
+ f_ddep(DDEP_RDNCF) = Deriv( 837, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNCF","mg/m2")
+ f_ddep(DDEP_RDNDF) = Deriv( 838, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNDF","mg/m2")
+ f_ddep(DDEP_RDNCR) = Deriv( 839, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNCR","mg/m2")
+ f_ddep(DDEP_RDNSN) = Deriv( 840, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNSN","mg/m2")
+ f_ddep(DDEP_RDNWE) = Deriv( 841, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDNWE","mg/m2")
 
 !ds f_ddep(DDEP_OXNW) = Deriv( 528, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNW","mg/m2")
 !ds f_ddep(DDEP_OXNF) = Deriv( 529, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXNF","mg/m2")
@@ -338,6 +340,7 @@ private
 !-- 2-D fields - the complex ones
 
 ! Deriv type has fields:  code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
+ f_2d( D2_AOT30) = Deriv( 630, "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")
  f_2d( D2_AOT40) = Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
  f_2d( D2_AOT60) = Deriv( 609, "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
 
