@@ -184,6 +184,12 @@ module DryDep_ml
       ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
      ! -----------------------------------------------------------------!
 
+     !.and conversion facrtor,  convfac (( ps-pt)/grav... )  ===> 
+     !      pressure in kg m-1 s-2
+
+      convfac = (ps(i,j,1) - PT)*carea(KMAX_MID)*xmd(i,j)/ATWAIR
+     ! -----------------------------------------------------------------!
+
 
 
      !ds - I prefer micromet terminology here:
@@ -207,8 +213,6 @@ module DryDep_ml
       u_ref = 0.5*sqrt( (u(i,j,KMAX_MID,1)+u(i-1,j,KMAX_MID,1))**2  &
                      + (v(i,j,KMAX_MID,1)+v(i,j-1,KMAX_MID,1))**2 )
 
-
-      convfac = (ps(i,j,1) - PT)*carea(KMAX_MID)*xmd(i,j)/ATWAIR
 
       !BUG??  dtz      = dt_advec/z_mid(i,j,KMAX_MID)
 

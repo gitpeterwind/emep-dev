@@ -94,6 +94,7 @@ private
    !/** Depositions are stored in separate arrays for now - to keep size of
    !    derived arrays smaller and to allow possible move to a Deposition
    !    module at a later stage.
+   !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
 
    integer, public, parameter ::  & 
         NWDEP = 4       &   ! Number of 2D deposition fields

@@ -172,6 +172,7 @@ private
 
 
    !-- Deposition fields
+   !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
 
    ! Deriv type has fields:     code class   avg? ind scale rho  Inst Yr  Mn   Day   
     f_wdep( WDEP_PREC ) = Deriv( 561, "PREC ", F, -1, 1.0,   F  , F  ,  T , T ,  T )
