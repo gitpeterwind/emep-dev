@@ -1,3 +1,8 @@
+=================== Dave  13/11/2003, rv1_9_3 ==============================
+EQSAM-v03d_ml.f90 moved to EQSAM_ml.f90. The former had't been "added"
+to the CVS and anyway it is better to update old file names than
+add new ones.
+
 =================== Hilde 13/11/2003, rv1_9_2 ==============================
 EQSAM version v03d added to OZONE and ACID. Now used as default.
 
