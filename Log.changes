@@ -3,6 +3,8 @@ SeaSalt_ml.f90 used "rough.170" to find sea areas (iclas = 0)
 Now it has been changed to identify sea areas using "landuse.mars2004" data 
 and scales the sea salt emissions with the water area fraction in the grid.
 
+New grun.pl with extra RunLog info.
+
 ============== Peter,Dave;Hilde  24-28/09-2004, rv2_0_6  =====================
 
 grun.pl: Redefined BC from Logan for O3 for OZONE

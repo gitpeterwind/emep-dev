@@ -59,10 +59,10 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2003";
+$year = "2000";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
-my $SR = 0;   #NEW Set to 1 for source-receptor stuff
+my $SR = 1;   #NEW Set to 1 for source-receptor stuff
 my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 my $MERLIN_CITY= 0;  # Adds in African emissions for y=1..11
@@ -96,7 +96,7 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $PETER ;      
+$USER        =  $DAVE ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -119,7 +119,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv2_0_5";
+     $testv       = "rv2_0_6";
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
   $BCDIR    = "$HILDE/BC_data/Unimod.rv2_0beta.1997";  # for CH3COO2 and H2O2
@@ -146,7 +146,7 @@ $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DaveDataDir   = "$DAVE/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/Unimod.$testv";    # working directory
+$WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 
 # $femis       = "$MyDataDir/femis.dat";      # emission control file
 $femis_dir   = "$WORKDIR/D_femis";      # emission control file
@@ -171,6 +171,7 @@ $emisdir     = "$PETER/Vigdis/Emissions/Modruns/Modrun03";
 if ( $SR ) {
 	#? $emisdir     = "$emisdir/2003_emis2010_CLE_2000_V5";    # emissions
 	$emisdir     = "$emisdir/2004_emis2010_CLE_2000_V6";    # emissions
+	$emisdir     = "$DAVE/Unify/D_emis/EMIS_Aug04/2004_emis2010_BL_Aug04_BaseV4c";    # emissions
 } elsif ( $year == 2000)  {
 	#? $emisdir     = "$emisdir/2003_emis00_V5_WEB";    # emissions
 	#$emisdir     = "$emisdir/2004_emis00_V6";    # emissions
@@ -221,7 +222,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM = 9;       # for testing, simply reset here
+ $NTERM = 2;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -284,7 +285,7 @@ $NSCAL =  0;
 $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
 # 
 # Check that we have an existing prog dir:
-die "Wrong ProgDir\n" unless -d $ProgDir;
+die "Wrong ProgDir: $ProgDir \n" unless -d $ProgDir;
 
 # quick check that the small domain
 # is within the current 170, 133 large domain
@@ -771,13 +772,26 @@ if ( -r core )  {
       #-- Done.
       print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
 }
+#move RunLog 
+system("mv RunLog.out  ${runlabel1}_RunLog");
+system("echo ------------------------------ >> ${runlabel1}_RunLog");
+system("echo Emis: $emisdir                 >> ${runlabel1}_RunLog");
+system("echo Version: $testv                >> ${runlabel1}_RunLog");
+system("echo Domain x0 $dom_x0 y0 $dom_y0 wx $dom_wx wy $dom_wy  >> ${runlabel1}_RunLog");
+system("echo Processors $NDX $NDY           >> ${runlabel1}_RunLog");
+system("echo Added? PM $PM_ADDED  Africa $AFRICA_ADDED >> ${runlabel1}_RunLog");
+system("echo SR?  $SR                       >> ${runlabel1}_RunLog");
+system("echo ------------------------------ >> ${runlabel1}_RunLog");
+system("echo femis: femis.$scenario         >> ${runlabel1}_RunLog");
+system("cat femis.dat >> ${runlabel1}_RunLog");
+system("echo ------------------------------ >> ${runlabel1}_RunLog");
+
+#Moved lower! DS
 # Now clean up,
     foreach $f ( @list_of_files ) {
         unlink($f);
         #print "REMOVED $f \n";
     }
-#move RunLog 
-system("mv RunLog.out  ${runlabel1}_RunLog");
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
 my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;
