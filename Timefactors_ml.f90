@@ -326,10 +326,18 @@ contains
   integer :: iemis         ! index over emissions (so2,nox,..)
   integer :: iland         ! index over countries 
   integer :: nmnd, nmnd2   ! this month, next month.
-  integer :: weekday       ! 1=monday, 2=
+  integer :: weekday,nday,n       ! 1=monday, 2=
   real    :: xday          ! used in interpolation
 
-  weekday = STARTDAY( newdate%year ) + nydays - 1 
+  nmnd  = newdate%month              ! gv: nmonth(1)
+  nday=0
+  do n=1,nmnd-1
+     nday=nday+nmdays(n)
+  enddo
+  nday=nday+newdate%day
+
+!pw  weekday = STARTDAY( newdate%year ) + nydays - 1 
+  weekday = STARTDAY( newdate%year ) + nday - 1 
   weekday = modulo(weekday,7)        ! restores day to 1--6
   if ( weekday == 0 ) weekday = SUN  ! restores sunday 
     
