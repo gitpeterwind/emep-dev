@@ -132,7 +132,8 @@ contains
 
        temp(k) = th(i,j,k,1)*exp(XKAP*log(pp(k)*1.e-5))
 
-       itemp(k) = nint( temp(k) )
+       itemp(k) = nint( temp(k) -1.E-9)
+!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
 
        ! relative humidity - moved here from setup_miscrc. Note that the
        ! MADE/MACHO codes used sigma_bnd instead of sigma_mid for this pp, but
@@ -331,7 +332,8 @@ contains
 
 
 
-  it2m = nint(t2(i,j)-273.15)
+  it2m = nint(t2(i,j)-273.15-1.E-9)
+!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines.
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 

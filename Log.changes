@@ -1,3 +1,9 @@
+=================== Peter,  23/09-2004, rv2_0_4  =============================
+
+Modified Setup_1d and Met_ml: subtracted 1.E-9 from u,v, it2m and itemp.
+This should not change results, but is there in order to avoid 
+rounding differences on gridur and cluster.
+
 =================== Peter,  17/09-2004, rv2_0_4  =============================
 
 Derived_ml and ZD_OZONE/My_Derived_ml: 

@@ -376,7 +376,8 @@ private
 
 	    do j = 1,ljmax
 	      do i = 1,limax
-		u(i,j,k,nr) = dumhel(i,j)
+		u(i,j,k,nr) = dumhel(i,j)-1.E-9
+!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
 	      enddo
 	    enddo
 
@@ -386,7 +387,8 @@ private
 
 	    do j = 1,ljmax
 	      do i = 1,limax
-		v(i,j,k,nr) = dumhel(i,j)
+		v(i,j,k,nr) = dumhel(i,j)-1.E-9
+!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
 	      enddo
 	    enddo
 
