@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.3 2002-09-24 09:25:41 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.4 2002-09-30 07:41:51 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -159,6 +159,7 @@ contains
     real, parameter :: D_H2O = 0.21e-4  ! Diffusivity of H2O, m2/s
                                       ! From EMEP Notes
     real            :: D_i              ! Diffusivity of gas species, m2/s
+    real            :: wRextS           !  TMP - crude wet Rext for S
 
 
 ! START OF PROGRAMME: 
@@ -312,7 +313,16 @@ contains
          ! using Wesely's eqn. 7 approach. (We identify leaf surface resistance
          ! with Rext/SAI.)
 
-           Gext  = 1.0e-5*Hstar/RextS + f0/RextO
+
+          !rv1.3 crude fix
+           if ( pr > 1.0e-7 ) then
+              wRextS =  200.0
+           else
+              wRextS = RextS
+           end if
+
+           !rv1.3b Gext  = 1.0e-5*Hstar/RextS + f0/RextO
+           Gext  = 1.0e-5*Hstar/wRextS + f0/RextO
   
            Ggs = 1.0/( Rgs + Rinc )
 

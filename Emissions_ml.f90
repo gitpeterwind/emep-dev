@@ -27,6 +27,7 @@
                                                ! indices
 
   use EmisDef_ml, only : NSECTORS,  &  ! No. sectors
+                         NEMISLAYERS,& !rv1.3b No. vertical layers for emission
                          NCMAX,&       ! Max. No. countries per grid
                          FNCMAX,&      ! Max. No. countries (with flat 
                                        ! emissions) per grid
@@ -34,7 +35,8 @@
                          ISNAP_NAT     ! snap index for nat. (dms) emissions
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,NPROC,me,gi0,gi1,gj0,gj1
 
-  use ModelConstants_ml,     only :   KMAX_MID, KEMISTOP   !u4 
+  !rv1.2 use ModelConstants_ml,     only :   KMAX_MID, KEMISTOP   !u4 
+  use ModelConstants_ml,     only :   KMAX_MID
   use Volcanos_ml                   !hf
 
   implicit none
@@ -74,9 +76,10 @@
 
   !/-- emissions for input to chemistry routines
 
-   !u4 real, public, save, dimension(NRCEMIS,KMAX_MID-3:KMAX_MID,MAXLIMAX,MAXLJMAX) :: &
-   !u4 KEMISTOP added to avoid hard-coded KMAX_MID-3:
+   ! KEMISTOP added to avoid hard-coded KMAX_MID-3:
+   !rv1.2 now calculated from new NEMISLAYERS param
 
+   integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
    real, public, save, dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) :: &
          gridrcemis         ! varies every time-step (as ps changes)
    real, private, save, dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) :: &
