@@ -27,7 +27,8 @@ module My_Derived_ml
   !---------------------------------------------------------------------------
  
 use GenSpec_adv_ml        ! Use IXADV_ indices...
-use GenSpec_tot_ml,  only : SO4, aNO3, pNO3, aNH4, PM25, PMCO !  For mol. wts.
+use GenSpec_tot_ml,  only : SO4, aNO3, pNO3, aNH4, PM25, PMCO& !  For mol. wts.
+                           ,SSfi, SSco  !SeaS
 use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , KMAX_MID &  ! =>  z dimension
@@ -236,7 +237,8 @@ private
          ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
          + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
          + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-         + xn_adv(IXADV_PM25,i,j,KMAX_MID)*species(PM25)%molwt*cfac(IXADV_PM25,i,j))& 
+         + xn_adv(IXADV_PM25,i,j,KMAX_MID)*species(PM25)%molwt*cfac(IXADV_PM25,i,j) & 
+         + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt *cfac(IXADV_SSfi,i,j))&  !SeaS
          * density(i,j)
       end forall
 
@@ -245,7 +247,8 @@ private
       forall ( i=1:limax, j=1:ljmax )
         pm_2d( i,j ) = &
          ( xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
-         + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt*cfac(IXADV_PMco,i,j))& 
+         + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt*cfac(IXADV_PMco,i,j)& 
+         + xn_adv(IXADV_SSco,i,j,KMAX_MID) *species(SSco)%molwt *cfac(IXADV_SSco,i,j))&  !SeaS
          * density(i,j)
       end forall
 
@@ -258,7 +261,9 @@ private
          + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
          + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
          + xn_adv(IXADV_PM25,i,j,KMAX_MID)*species(PM25)%molwt*cfac(IXADV_PM25,i,j) &
-         + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt*cfac(IXADV_PMco,i,j))& 
+         + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt*cfac(IXADV_PMco,i,j) & 
+         + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt *cfac(IXADV_SSfi,i,j) & !SeaS
+         + xn_adv(IXADV_SSco,i,j,KMAX_MID)*species(SSco)%molwt *cfac(IXADV_SSco,i,j))& !SeaS
          * density(i,j)
       end forall
 

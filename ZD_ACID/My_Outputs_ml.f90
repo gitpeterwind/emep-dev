@@ -29,6 +29,7 @@ module  My_Outputs_ml
   private
 
   logical, public, parameter :: out_binary = .false. 
+  logical, public, parameter :: Ascii3D_WANTED = .false.
   ! out_binary = .True. gives also binary files (for use in xfelt). 
   !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
