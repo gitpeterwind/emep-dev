@@ -1,3 +1,13 @@
+=================== Hilde 13/11/2003, rv1_9_2 ==============================
+EQSAM version v03d added to OZONE and ACID. Now used as default.
+
+Files changed:
+Setup_1d_ml.f90
+Setup_1dfields_ml.f90
+My_Aerosols_ml.f90 (both ACID and OZONE)
+Makefile
+EQSAM_v03d_ml.f90 added
+
 =================== Joffen 13/11/2003, rv1_9_1 ==============================
 
 Country numbers for REM, etc. corrected. NLAND extended to 69 with dummy values
