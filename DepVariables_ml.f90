@@ -59,10 +59,10 @@ real, public, save :: &
               crops          &! true for veg which grows...
              ,bulk           &! true for land-classes without LAI
              ,water          &! true for  water, set with h < 0
-             ,forest,        &! Assumed when hveg_max > 5 m
+             ,forest         &! Assumed when hveg_max > 5 m
              ,conif_forest   &! Assumed when hveg_max > 5 m and SGS<=1
              ,vegetation     &! Assumed when hveg > 5 m and not urban
-             ,urban          &! Assumed when hveg > 5 m && LAI < 0.0
+             ,urban           ! Assumed when hveg > 5 m && LAI < 0.0
 
 !dep1.5.2
 
