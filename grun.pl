@@ -59,7 +59,7 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2000";
+$year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 print "Year is $yy YEAR $year\n";
@@ -88,7 +88,7 @@ $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
 
 $version     = "Unimod" ;  
 $testv       = "";
-$subv        = "emep1.2" ;                  # sub-version (to track changes)
+$subv        = "rv1.4" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/$version$testv";         # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
@@ -98,7 +98,8 @@ $WORKDIR     = "$WORK{$USER}/$version.${testv}$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
 $emisdir     = "$JOFFEN/data/emis";   # emissions stuff
 $emisyear    = "$emisdir/emis${yy}";    # emissions
-$LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
+#rv1.4:$LOGANDIR ="$HILDE/BC_data/LOGAN_O3_DATA/150Data"; #Logan boundary conditions
+$LOGANDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/150Data_900mbar"; #Logan boundary conditions
 
 # Change for PM:
 #$emisdir     = "$SVETLANA/Unify/Data/emission";   # emissions stuff
