@@ -51,7 +51,7 @@
 
    integer, intent(in) :: i,j    ! coordinates of column
    integer :: k, ii, jj
-   real    :: ustar, z0, z00, vind10, delz, zcoef, n2m,      &
+   real    :: ustar, z0, z00, vind10, delz, zcoef, n2m, vind10_341,     &
               ss_flux(ss_mod1+ss_mod2), d3(ss_mod1+ss_mod2)  &
               ,prodM_ss(2),prodN_ss(2)
 !//---------------------------------------------------
@@ -81,13 +81,16 @@
          delz = (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
          zcoef = 1.e-6 / delz
          n2m = n_to_mSS * zcoef *AVOG / species(SSFI)%molwt *1.e-15
+!pw         vind10341=vind10 ** (3.41)
+         vind10_341=exp(log(vind10) * (3.41))
 
    do ii = 1, ss_mod1
 
 !// sea salt flux [part/m2/s]
 
         ss_flux(ii) = flux_help(ii) * ( log_dp2(ii) - log_dp1(ii) )    &
-                                   * vind10 ** (3.41) 
+!pw                                   * vind10 ** (3.41) 
+                                   * vind10_341
 
         d3(ii) = dp3(ii)
 
@@ -99,7 +102,8 @@
 
       jj = ii + ss_mod1
 
-        ss_flux(jj) = param_SS (ii)* vind10 **(3.41)
+!pw        ss_flux(jj) = param_SS (ii)* vind10 **(3.41)
+        ss_flux(jj) = param_SS (ii)*  vind10_341
 
 !   if(bug) write(6,'(a15,i5,e13.4)') 'Flux Monah ->',jj, ss_flux(jj)
 
@@ -240,6 +244,7 @@
 
     param_SS(i) = 1.373 * radSS(i)**(-3) * range(i) *     &
                          (1.+ 0.057 * radSS(i)**1.05) * 10. **a2
+
 
  if (me == 0) then
   write(6,*)

@@ -8,6 +8,8 @@ ZD_OZONE/My_Output: only O3 as hourly output
 some removal of double declarations
 removed version attribute from Netcdf files. (use runlabel instead)
 
+SeaSalt_ml: replaced vind10 ** (3.41) by exp(log(vind10) * (3.41))
+
 
 ================== Dave,               31/03/2004, rv1_9_32   ==========================
 

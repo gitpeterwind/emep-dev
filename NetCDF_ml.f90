@@ -185,7 +185,7 @@ use PhysicalConstants_ml,  only : PI
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 character(len=*),  intent(in)  :: fileName 
 
-character (len=*), parameter :: version='Unimod rv2.0'       
+!character (len=*), parameter :: version='Unimod rv2.0'       
 character (len=*), parameter :: author_of_run='Unimod group' 
 character (len=*), parameter :: projection='Stereographic'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
@@ -228,7 +228,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 
   ! Write global attributes
   call check(nf90_put_att(ncFileID, nf90_global, "Conventions", "GDV" ))
-  call check(nf90_put_att(ncFileID, nf90_global, "version", version ))
+!  call check(nf90_put_att(ncFileID, nf90_global, "version", version ))
   call check(nf90_put_att(ncFileID, nf90_global, "model", model))
   call check(nf90_put_att(ncFileID, nf90_global, "author_of_run", author_of_run))
   call check(nf90_put_att(ncFileID, nf90_global, "created_date", created_date))
