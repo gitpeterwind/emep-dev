@@ -15,12 +15,16 @@
 !
 !*************************************************************************
 !
-   use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST,IOU_HOUR,Deriv  !u7.4vg 
+   !dsNew Derived:use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST,IOU_HOUR,Deriv  !u7.4vg 
+
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  NLEVELS_HOURLY, &  ! ds rv1_8_2 
                                  FREQ_HOURLY, &     ! No. hours between outputs
                                  Asc2D, hr_out, &   ! Required outputs
                                  Hourly_ASCII       ! ASCII output or not
+!ds - New Derived system:
+   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR,Deriv, find_one_index
+
    use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
                                 ,li0,li1,lj0,lj1 &  ! u7.5vg FIX
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
@@ -132,8 +136,8 @@
 
         prev_month = current_date%month
 
-        netCDFName =trim(runlabel1)//"_hour" // "."// suffix // ".nc"
-        call Init_new_netCDF(netCDFName,IOU_HOUR)
+!        netCDFName =trim(runlabel1)//"_hour" // "."// suffix // ".nc"
+!        call Init_new_netCDF(netCDFName,IOU_HOUR)
 
         if(Hourly_ASCII)then
        !ds rv1.6.2: Write summary of outputs to top of Hourly file
@@ -168,9 +172,10 @@
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec 
       name  = hr_out(ih)%name   !ds rv1.6.1 
-      if ( debug_flag ) print *, "DEBUG OH ", me, ispec, name,  hr_out(ih)%type
+      if ( DEBUG .and. debug_flag ) print *, "DEBUG OH ", me, ispec, name,  &
+         hr_out(ih)%type
 
-       if(DEBUG ) print *, "INTO HOUR TYPE ",hr_out(ih)%type
+       if(DEBUG .and. debug_flag ) print *, "INTO HOUR TYPE ",hr_out(ih)%type
 
    !----------------------------------------------------------------
    !ds rv1_8_2: Added possibility of multi-layer output. Specify
@@ -205,7 +210,7 @@
                                  !BCV * cfac(ispec,i,j) &    ! 50m->1m conversion
                                  * unit_conv            ! Units conv.
             end forall
-            if ( DEBUG ) print *, "K-level", ik, name, itot
+            if ( DEBUG .and. debug_flag ) print *, "K-level", ik, name, itot
 
          case ( "ADVugm3" )
             itot = NSPEC_SHL + ispec 
@@ -256,6 +261,10 @@
             forall ( i=1:limax, j=1:ljmax)
                hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * hr_out(ih)%unitconv
             end forall
+
+    	    if( DEBUG  .and. debug_flag) &
+               write(6,"(a12,2i3,2es12.3)") "HHH DEBUG", ispec, ih, &
+                 hr_out(ih)%unitconv, hourly(i_debug,j_debug)
 
           case DEFAULT 
              errmsg = "ERROR-DEF! Hourly_out: " // hr_out(ih)%type 
@@ -349,7 +358,7 @@
                  !ds ,ist, ien, jst, jen,         &
                  !ds  unit_conv
 
-            if ( DEBUG ) print *, "TTTHOUR ISTS", me, ist, ien, jst, jen 
+            if ( DEBUG .and. debug_flag ) print *, "TTTHOUR ISTS", me, ist, ien, jst, jen 
 
             !/ In model coordinates we have:
 

@@ -79,16 +79,19 @@ module Output_binary_ml
  use Io_ml,           only : IO_OUT
 
  use My_Derived_ml, only : &
-            NDDEP, NWDEP, NDERIV_2D, NDERIV_3D &
+            NDDEP, NWDEP, NDERIV_2D, NDERIV_3D !ds rv1_9_16 New Deriv
+                                               ! rest moved to Derived_ml
+
+ use Derived_ml, only : &
+           nav_wdep, nav_ddep, nav_2d, nav_3d  & ! No. terms for averging
+         !ds
+         !ds rv1_9_16 21/12/2003: moved here:
            ,Deriv                              & ! Derived data "type" 
            ,LENOUT2D, LENOUT3D                 & ! Dimension of averaging arrays
            ,IOU_INST, IOU_YEAR                 & ! Defines period of avg.
            ,IOU_MON, IOU_DAY                   & !  "   "
            ,f_wdep, f_ddep, f_2d, f_3d         & ! Definitions
            ,wdep, ddep, d_2d, d_3d               ! Data fields
-
- use Derived_ml, only : &
-           nav_wdep, nav_ddep, nav_2d, nav_3d   ! No. terms for averging
 
  use NetCDF_ml,  only: Out_netCDF,CloseNetCDF
 

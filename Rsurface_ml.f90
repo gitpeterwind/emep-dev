@@ -13,7 +13,7 @@ use DepVariables_ml, only : forest, g_pot, g_temp,g_vpd,g_light,g_swp, &
                               SAIadd, &
                               water, &     !ds rv1.8
                               g_max     , g_min     , g_lightfac,   &
-                              g_temp_min, g_temp_opt, &
+                              g_temp_min, g_temp_opt, g_temp_max, &
                               RgsS      , RgsO      , RextS, RextO, &
                               Rgs, Rinc, Gext, &
                               VPD_max   , VPD_min   , &
@@ -466,6 +466,7 @@ contains
   real, intent(out) :: gsun          ! g_sto for upper-canopy sun-leaves
 
   real :: f_env                      ! product of environmental f factors
+  real :: dg, dTs, bt   ! rv1_9_15 for temperate calculation
 
 
         
@@ -488,11 +489,20 @@ contains
 
 !..3) Calculate  g_temp
 !---------------------------------------
+!rv1_9_15:Allow asymmetric  function from Mapping Manual
+!NB _ much more efficient to tabulate this - do later!
   
-  g_temp = (Ts_C - g_temp_opt(lu)) / &
-           (g_temp_opt(lu) - g_temp_min(lu))
-  g_temp = 1.0 - (g_temp*g_temp)
-  g_temp = max(g_temp,g_min(lu) )
+  dg  = ( g_temp_opt(lu) - g_temp_min(lu) )
+  bt  = ( g_temp_max(lu) - g_temp_opt(lu) ) / dg
+  dTs =   max( g_temp_max(lu) - Ts_C, 0.0 )
+  g_temp = dTs / ( g_temp_max(lu) - g_temp_opt(lu) )
+  g_temp = ( Ts_C - g_temp_min(lu) ) / dg *  g_temp**bt
+
+!rv1_9_15  g_temp = (Ts_C - g_temp_opt(lu)) / &
+!rv1_9_15             (g_temp_opt(lu) - g_temp_min(lu))
+!rv1_9_15    g_temp = 1.0 - (g_temp*g_temp)
+
+   g_temp = max(g_temp,g_min(lu) )
 
 
 !..4) Calculate g_vpd

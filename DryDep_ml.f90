@@ -89,11 +89,7 @@ module DryDep_ml
 
  public :: drydep, init_drydep
 
-!hf ddep
-!ds rv1.6.2 - now uses surface_precip and is_wet
-!ds   real, private, save, dimension(KUPPER:KMAX_MID) :: &
-!ds         pr_acc                 ! Accumulated precipitation
-     logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
+  logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
   logical, private, save :: my_first_call = .true.
   logical, private, parameter :: DEBUG_VG = .false.
@@ -140,11 +136,6 @@ module DryDep_ml
 
   end if
 
-!hf  ustar_sq = -99.99                           ! for debugging
-!hf  imm      =    current_date%month            ! for debugging
-!hf  idd      =    current_date%day              ! for debugging
-!hf  ihh      =    current_date%hour             ! for debugging
-
   end subroutine init_drydep
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -180,7 +171,8 @@ module DryDep_ml
 
  real convfac,  & ! rescaling to different units
       convfac2, & ! rescaling to different units
-      convfaco3,& ! rescaling to different units
+      lossfrac,  & !  If needed in My_DryDep - not used now.
+      !ds convfaco3,& ! rescaling to different units
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
  logical :: is_wet  ! set true if surface_precip>0
@@ -252,27 +244,9 @@ module DryDep_ml
   ihh      =    current_date%hour             ! for debugging
 
      inv_gridarea = 1.0/(GRIDWIDTH_M*GRIDWIDTH_M) 
-!hf
-! Need pr_acc for wet surfaces
-! Add up the precipitation in the column
-! Note that this is accumulated prec per second
-! but this is the same as used in Aqueues 
-! as threshold for precipitating clouds
-! ds -  in the longer term we might save pr_acc in Met_ml, or even the
-!  original "pr" as read in from HIRLAM, but this can wait until we
-!  settle on a final scheme for RextS in Rsurface_ml.
-
-!ds    pr_acc(KUPPER) = sum ( pr(i,j,1:KUPPER) )   ! prec inc. from above 
-!ds    do k= KUPPER+1, KMAX_MID
-!ds      pr_acc(k) = pr_acc(k-1) + pr(i,j,k)
-!ds      pr_acc(k) = max( pr_acc(k), 0.0 ) !u7.2 ds - FIX
-!ds    end do
 
   !ds   We assume that the area of grid which is wet is
   !     proportional to cloud-cover:
-
-!ds     if ( pr_acc(KMAX_MID) > 0.0 ) then
-!ds rv1.6.2: new
 
      is_wet = ( surface_precip(i,j) > 0.0 )
 
@@ -311,6 +285,7 @@ module DryDep_ml
 !      kg_air_ij = (ps(i,j,1) - PT)*carea(KMAX_MID)
 !     ! -----------------------------------------------------------------!
 !
+      lossfrac = 1.0 !  Ratio of xn before and after deposition
 
      !ds - I prefer micromet terminology here:
 
@@ -389,6 +364,8 @@ module DryDep_ml
     Sumcover = 0.0
     Sumland  = 0.0
     fluxfrac_adv (:,:) = 0.0
+    c_hvegppb(:) = 0.0   !ds rv1_9_16 needed for safety
+    leaf_flux(:) = 0.0   !ds rv1_9_17 bug-fix - 26/12/2003
 
     !/ SO2/NH3 for Rsur calc
     so2nh3ratio = &
@@ -398,15 +375,20 @@ module DryDep_ml
 
 
     if ( STO_FLUXES ) then
-       unit_flux(:) = 0.0
-       leaf_flux(:) = 0.0
+       !dsDEC unit_flux(:) = 0.0
+       !dsDEC leaf_flux(:) = 0.0
 
     ! --- ICP -----
        !ppb_o3   =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * 4.0e-11  !Crude for now
        !nmole_o3 =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * NMOLE_M3
-       ppb_o3   =  xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID) * 4.0e-11  !Crude for now
+       !ds ppb_o3   =  xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID) * 4.0e-11  !Crude for now
+
+    ! xn_2d is in #/cm3. x2_2d/amk gives mixing ratio, and 1.0e9*xn_2d/amk = ppb
+
+       ppb_o3   =  1.0e9* xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID)/amk(KMAX_MID)
        nmole_o3 =  xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID) * NMOLE_M3
-    end if
+
+    end if ! STO_FLUXES
 
 
     !/ And start the sub-grid stuff over different landuse (lu)
@@ -423,9 +405,10 @@ module DryDep_ml
         lai     = landuse_LAI(i,j,ilu)
         hveg    = landuse_hveg(i,j,ilu)
         g_pot   = landuse_gpot(i,j,ilu)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
+        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         if ( DEBUG_UK .and. water(lu) .and. hveg > 0.0 ) then
             print *, "HIGHW!!! h,lai,cov", i,j,ilu, hveg, lai,cover
@@ -486,7 +469,6 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
                        debug_flag,                        &    ! in
                        ustar_loc, invL,                   &    ! in-out
                        z0,d, Ra_ref,Ra_3m,rh,vpd)                    ! out
-!ds            z_mid(i,j,KMAX_MID), u_ref, q(i,j,KMAX_MID,1), & ! qw_ref
 
              if ( DEBUG_UK .and. debug_flag ) then
                 write(6,"(a40,4i3,f6.1,2i4,3f7.3,2i4,2f6.2)") &
@@ -581,22 +563,6 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
             no2fac = max(1.0, no2fac)
             no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac) ! Comp. point of 4 ppb
 
-            !dsif (DEBUG_NO2 .and. debug_flag .and.  &
-            !ds    ( lu == 1 .or. lu == WHEAT ) .and. & 
-            !ds       (current_date%seconds == 0)  ) then
-            !ds   if (lu==1) then 
-            !ds   write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "CONIF-NO2", &
-            !ds      imm, idd, ihh, lu, &
-            !ds         xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
-            !ds          100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
-            !ds   else
-            !ds      write(6,"(a10,3i3,i5,2f12.5,2f8.3)") "GRASS-NO2", &
-            !ds      imm, idd, ihh, lu, &
-            !ds         xn_2d(NSPEC_SHL+IXADV_NO2 ,KMAX_MID)*4.0e-11, no2fac,&
-            !ds          100.0*Vg_ref(CDEP_NO2), 100.0*Vg_ref(CDEP_NO2)*no2fac
-            !ds   end if
-            !dsend if
-
             Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
             Vg_3m (CDEP_NO2) = Vg_3m (CDEP_NO2) * no2fac
           end if ! CDEP_NO2
@@ -604,13 +570,6 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
            Vg_ref_lu(n,ilu) = Vg_ref(n)
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_3m(n)  = Grid_Vg_3m(n)  + cover * Vg_3m(n)
-
-           !ds if ( DEBUG_VG .and.  Vg_ref(n) < 0.0 .or. Vg_3m(n)<Vg_ref(n) ) then
-           !ds     print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", &
-           !ds        Ra_ref, Rb(n), Rsur(n)
-           !ds     print *, "VGREF ERROR stab", z0, d, ustar_loc, invL, g_sto
-           !ds     call gc_abort(me, NPROC, "VGREF ERROR")
-           !ds end if
 
          end do
 
@@ -640,7 +599,7 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
               (n, 100.*Grid_Vg_3m(n), n = 1,NDRYDEP_TOT)
            write(6,'(7(i3,f8.3))') &
               (n, 100.*Grid_Vg_ref(n), n = 1,NDRYDEP_TOT)
-           write(6,*)' >=>=>=>=>=>=>>=>=>=>=>=>=>>=>=>=>=>=>=>=>=>=>=>=>=>>=>=>=>=>=>=>>'
+           write(6,*)' >=>=>=>=>=>=>>=>=>=>=>=>=>>=>=>=>=>=>=>=>=>=>=>=>=>'
         endif
 
         if ( DEBUG_UK .and. debug_flag ) then
@@ -660,8 +619,10 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
        ! (Caution - g_sto is for O3 only)
 
         if ( STO_FLUXES .and. luflux_wanted(lu) ) then
-          unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
-          lai_flux(lu)  = lai * unit_flux(lu)
+          !dsDEC2003 - following stuff not needed any more. leaf_flux
+          !dsDEC2003   used instead
+          !dsDEC unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
+          !dsDEC lai_flux(lu)  = lai * unit_flux(lu)
 
           ! ICP method for flag-leaf
 
@@ -771,8 +732,26 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
            call gc_abort(me,NPROC,"NEG XN DEPLOSS")
          end if
 
+
         xn_2d( nadv2d,KMAX_MID) = &
              xn_2d( nadv2d,KMAX_MID) - DepLoss(nadv)
+
+
+
+        if ( STO_FLUXES .and. nadv == FLUX_ADV ) then
+           ! fraction by which xn is reduced - used in
+           !ds rv1_9_17: safety measure:
+             
+              if( xn_2d( nadv2d,KMAX_MID)  > 1.0e-30 ) then
+                  lossfrac = ( 1.0 - DepLoss(nadv)/ &
+                                (DepLoss(nadv)+xn_2d( nadv2d,KMAX_MID)))
+              end if
+              if ( DEBUG_FLUX .and. lossfrac < 0.1 ) then
+                  print *, "ERROR: LOSSFRAC ", lossfrac, nadv, nadv2d
+                  call gc_abort(me,NPROC,"LOSSFRAC!")
+              end if
+        end if
+
 
       !.. ecosystem specific deposition - translate from calc to adv and normalise
 
@@ -798,31 +777,37 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
           ! find values over 1m2 of vegeation (regardless of how much veg
           ! is in grid, so we don't need lu_cover. Instead:
 
-          if ( STO_FLUXES .and. nadv == FLUX_ADV ) then
+          !dsDEC2003 - Most of the following stuff not needed any more. leaf_flux
+          !            used instead
 
-             loss  = Vg_scale &
-                    * DepLoss(FLUX_ADV)/AVOG*1.e6  &  ! From mol/cm3 to mole/m3
-                    * z_bnd(i,j,KMAX_BND-1) * 1.e9     ! mole/m3 -> nmole/m2
+          !dsDEC2003 if ( STO_FLUXES .and. nadv == FLUX_ADV ) then
+!if(debug_flag) then
+!  print "(a15, 3i3,2es12.3,f8.4)","CHVEG ", i,j, lu, c_hveg, c_hvegppb(lu), lossfrac
+!end if
+
+             !dsDEC loss  = Vg_scale &
+             !dsDEC       * DepLoss(FLUX_ADV)/AVOG*1.e6  &  ! From mol/cm3 to mole/m3
+             !dsDEC       * z_bnd(i,j,KMAX_BND-1) * 1.e9     ! mole/m3 -> nmole/m2
 
              ! dt_advec or dt_drydep ????? I guess ddep takes care of this
              ! for accumulated?
 
-             unit_flux(lu) = unit_flux(lu) * loss
+             !dsDEC unit_flux(lu) = unit_flux(lu) * loss
 
-             sto_frac      = lai_flux(lu)       ! eqv. to  LAI*gsto/Gsur
-             lai_flux(lu)  = lai_flux(lu)  * loss
+             !dsDEC sto_frac      = lai_flux(lu)       ! eqv. to  LAI*gsto/Gsur
+             !dsDEC lai_flux(lu)  = lai_flux(lu)  * loss
 
 
-             if ( DEBUG_UK   .and. debug_flag) then
-                 write (6,"(a5,i4,3i4,f6.1,f8.4,es10.2,3f8.4,3es10.2)") &
-                   "OSTAD", lu, imm, idd, ihh, lu_lai(ilu), Vg_scale, &
-                      DepLoss(FLUX_ADV), sto_frac, &
-                         4.0e-11*xn_2d(nadv2d,KMAX_MID),& ! O3 in ppb
-                        cfac(nadv,i,j), &
-                        unit_flux(lu)/dt_advec, lai_flux(lu)/dt_advec,&
-                        leaf_flux(lu)
-             end if
-           end if
+             !dsDEC if ( DEBUG_UK   .and. debug_flag) then
+             !dsDEC    write (6,"(a5,i4,3i4,f6.1,f8.4,es10.2,3f8.4,3es10.2)") &
+             !dsDEC      "OSTAD", lu, imm, idd, ihh, lu_lai(ilu), Vg_scale, &
+             !dsDEC         DepLoss(FLUX_ADV), sto_frac, &
+             !dsDEC            4.0e-11*xn_2d(nadv2d,KMAX_MID),& ! O3 in ppb
+             !dsDEC           cfac(nadv,i,j), &
+             !dsDEC           unit_flux(lu)/dt_advec, lai_flux(lu)/dt_advec,&
+             !dsDEC           leaf_flux(lu)
+             !dsDEC end if
+           !dsDEC2003 end if
 
             if ( DEBUG_UK .and. debug_flag ) then
 
@@ -874,12 +859,13 @@ if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
 
        ! inv_gridarea = xm2(i,j)/(GRIDWIDTH_M*GRIDWIDTH_M)
        convfac2 = convfac * xm2(i,j) * inv_gridarea/amk(KMAX_MID)
-       convfaco3 = convfac / (amk(KMAX_MID)*dtz)
+       !ds convfaco3 = convfac / (amk(KMAX_MID)*dtz)
 
 
       !.. Add DepLoss to budgets if needed:
 
-       call Add_ddep(i,j,convfac2,convfaco3,fluxfrac_adv,c_hvegppb)
+       !ds call Add_ddep(i,j,convfac2,convfaco3,fluxfrac_adv,c_hvegppb)
+       call Add_ddep(debug_flag,dt_advec,i,j,convfac2,lossfrac,fluxfrac_adv,c_hvegppb)
 
 !hf     enddo   !j
 !hf   enddo    !i

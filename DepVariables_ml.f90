@@ -26,6 +26,7 @@ integer, public, parameter,dimension(4) :: ECO_SEMINAT =  (/ 8, 10, 11, 13 /)
 integer, public, parameter,dimension(1) :: ECO_WETLAND =  (/ 12 /)
 integer, public, parameter,dimension(1) :: ECO_WATER   =  (/ 15 /)
 integer, public, parameter  :: WHEAT =  9  !ds, rv1_9_3
+integer, public, parameter  :: BEECH =  2  !ds, rv1_9_15
 
 
 ! g_sto factors in UK dep method:

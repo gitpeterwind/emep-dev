@@ -20,11 +20,13 @@ use My_Outputs_ml, only : &   ! for sitesout
           SITE_ADV, SITE_SHL, SITE_XTRA, SITE_XTRA_INDEX, &
           FREQ_SITE, &
         NSONDES_MAX, &
+        NLEVELS_SONDE, & !ds rv1_9_13
           NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &
           SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
           FREQ_SONDE
-use My_Derived_ml   !ICP , only : d_2d, IOU_INST !, &
-    !rv1.2 TMP  D2_VG_REF, D2_VG_1M, D2_VG_STO, D2_FX_REF, D2_FX_STO
+!ds rv1_9_16 21/12/2003 use My_Derived_ml !ICP , only : d_2d, IOU_INST !, &
+
+use Derived_ml, only : d_2d, d_3d, IOU_INST     !ds New deriv system
 
 use Par_ml , only : ISMBEG,JSMBEG,GIMAX,GJMAX,  &
               GI0,GI1,GJ0,GJ1,me,NPROC,MAXLIMAX,MAXLJMAX
@@ -71,7 +73,8 @@ integer, private, save, dimension (NSONDES_MAX) ::  &
 
 integer, public, parameter :: &
      NOUT_SITE =            NADV_SITE  + NSHL_SITE + NXTRA_SITE  &! Total No.
-    ,NOUT_SONDE = KMAX_MID * ( NADV_SONDE + NSHL_SONDE+ NXTRA_SONDE )
+    !dsrv1_9_13 ,NOUT_SONDE = KMAX_MID * ( NADV_SONDE + NSHL_SONDE+ NXTRA_SONDE )
+    ,NOUT_SONDE = NLEVELS_SONDE * ( NADV_SONDE + NSHL_SONDE+ NXTRA_SONDE )
 
 character(len=50), private, save, dimension (NSITES_MAX) ::  site_name
 character(len=50), private, save, dimension (NSONDES_MAX)::  sonde_name
@@ -345,7 +348,6 @@ end subroutine Init_sites
   ! will be improved later to allow choice of output parameter
   ! should look at chemint also - seems similar for somethings
   ! ---------------------------------------------------------------------
-   !u7.4vg use Met_ml, only : temp2m, th   ! Output with concentrations
    use Met_ml, only : t2, th, pzpbl   ! Output with concentrations
 
   ! -- arguments
@@ -417,24 +419,12 @@ end subroutine Init_sites
        case ( "hmix" ) 
           out(nn,i)   = pzpbl(ix,iy)
 
+
       !ds rv1.6.12 - simplified use of d_2d fields by use of index
        case ( "D2D" )    
           d2index     = SITE_XTRA_INDEX(ispec)
           out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
  
-       !ds case ( "FSTCF0" ) 
-       !ds   out(nn,i)   = d_2d(D2_FSTCF0,ix,iy,IOU_INST)
-       !dscase ( "FSTDF0" ) 
-       !ds   out(nn,i)   = d_2d(D2_FSTDF0,ix,iy,IOU_INST)
-       !dscase ( "FSTTC0" ) 
-       !ds   out(nn,i)   = d_2d(D2_FSTTC0,ix,iy,IOU_INST)
-       !dscase ( "FSTMC0" ) 
-       !ds   out(nn,i)   = d_2d(D2_FSTMC0,ix,iy,IOU_INST)
-       !dscase ( "FSTGR0" ) 
-       !ds   out(nn,i)   = d_2d(D2_FSTGR0,ix,iy,IOU_INST)
-       !dscase ( "FSTWH0" ) 
-       !ds   out(nn,i)   = d_2d(D2_FSTWH0,ix,iy,IOU_INST)
-
        end select 
     end do
   end do
@@ -452,7 +442,7 @@ end subroutine siteswrt_surf
 !==================================================================== >
 
   subroutine siteswrt_sondes(xn_adv,xn_shl)
-   use Met_ml, only : z_bnd,z_mid,roa,th,xksig   ! Output with concentrations
+   use Met_ml, only : z_bnd,z_mid,roa,th,xksig,u,v   ! Output with concentrations
   ! -------------------------------------------------------------------
   !  Writes vertical concentration  data to files.
   !  IO_SONDES is set in io_ml to be 30
@@ -469,6 +459,7 @@ end subroutine siteswrt_surf
   ! --  Local variables
   integer :: n, i, k,  ix, iy, nn, ispec   ! Site and chem indices
   integer :: d3index    !ds index for d_3d field access
+  integer, parameter ::  KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1 !ds rv1_9_13
 
 
   real, dimension(NOUT_SONDE,NSONDES_MAX) :: out
@@ -481,11 +472,11 @@ end subroutine siteswrt_surf
 
       do ispec = 1, NXTRA_SONDE
             select case ( SONDE_XTRA(ispec) )
-            case ( "z_mid", "xksig ", "th   " )
+            case ( "z_mid", "xksig ", "th   ", "U    ", "V    " )
                errmsg = "ok"
             case default
               errmsg = "ERROR: SONDE_XTRA:" // SONDE_XTRA(ispec) 
-              call gc_abort(me,NPROC,"errmsg")
+              call gc_abort(me,NPROC,errmsg)
             end select
       end do
 
@@ -497,18 +488,20 @@ end subroutine siteswrt_surf
 
 
         !/** collect and print out with ground-level (KMAX_MID) first, hence &
-        !    KMAX_MID:1:-1 in arrays  **/
+        !ds    KMAX_MID:1:-1 in arrays  **/
+        !    KMAX_MID:KTOP_SONDE:-1 in arrays  **/
         !/** first the advected and short-lived species
 
         do ispec = 1, NADV_SONDE    !/ xn_adv in ppb
-           out(nn+1:nn+KMAX_MID,i) = PPBINV *  &
-                                xn_adv( SONDE_ADV(ispec) , ix,iy,KMAX_MID:1:-1)
-           nn = nn + KMAX_MID
+           !ds out(nn+1:nn+KMAX_MID,i) = PPBINV *  &
+           out(nn+1:nn+NLEVELS_SONDE,i) = PPBINV *  &
+                                xn_adv( SONDE_ADV(ispec) , ix,iy,KMAX_MID:KTOP_SONDE:-1)
+           nn = nn + NLEVELS_SONDE
         end do
 
         do ispec = 1, NSHL_SONDE    !/ xn_shl  in molecules/cm3 
-           out(nn+1:nn+KMAX_MID,i) = xn_shl( SONDE_SHL(ispec) , ix,iy,KMAX_MID:1:-1)
-           nn = nn + KMAX_MID
+           out(nn+1:nn+NLEVELS_SONDE,i) = xn_shl( SONDE_SHL(ispec) , ix,iy,KMAX_MID:KTOP_SONDE:-1)
+           nn = nn + NLEVELS_SONDE
         end do
 
         !/** then print out XTRA stuff first, usually the height
@@ -517,19 +510,25 @@ end subroutine siteswrt_surf
         do ispec = 1, NXTRA_SONDE
           select case ( SONDE_XTRA(ispec) )
           case ( "z_mid" ) 
-             out(nn+1:nn+KMAX_MID,i) =  z_mid(ix,iy,KMAX_MID:1:-1)   
+             out(nn+1:nn+NLEVELS_SONDE,i) =  z_mid(ix,iy,KMAX_MID:KTOP_SONDE:-1)   
           case ( "xksig" ) 
-             out(nn+1:nn+KMAX_MID,i) =  xksig(ix,iy,KMAX_MID:1:-1)   ! NXTRA  first
+             out(nn+1:nn+NLEVELS_SONDE,i) =  xksig(ix,iy,KMAX_MID:KTOP_SONDE:-1)   ! NXTRA  first
           case ( "th" ) 
-             out(nn+1:nn+KMAX_MID,i) =  th(ix,iy,KMAX_MID:1:-1,1)   ! NXTRA  first
+             out(nn+1:nn+NLEVELS_SONDE,i) =  th(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)   ! NXTRA  first
+          case ( "U" ) 
+             out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( u(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)   &
+                                            +u(ix-1,iy,KMAX_MID:KTOP_SONDE:-1,1) )
+          case ( "V" ) 
+             out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( v(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)  &
+                                            +v(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
 
       !ds rv1.6.12 - simplified use of d_2d fields by use of index
            case ( "D3D" )    
              d3index                 = SONDE_XTRA_INDEX(ispec)
-             out(nn+1:nn+KMAX_MID,i) =  d_3d(d3index,ix,iy,KMAX_MID:1:-1,IOU_INST)
+             out(nn+1:nn+NLEVELS_SONDE,i) =  d_3d(d3index,ix,iy,KMAX_MID:KTOP_SONDE:-1,IOU_INST)
  
           end select 
-          nn = nn + KMAX_MID
+          nn = nn + NLEVELS_SONDE
         end do
 
       end do ! i
@@ -636,7 +635,7 @@ end subroutine siteswrt_sondes
       ! Final output ***** 
       do n = 1, nglobal
           !MY_DEBUG write(6,*) ' Final out for n: ', n, s_name(n)
-          write(unit=io_num, "(a10,i5,3i3,i5)" ) &
+          write(unit=io_num, "(a20,i5,3i3,i5)" ) &
                s_name(n), current_date
           write(unit=io_num, "(5es10.3)" ) g_out(:,n)
       end do ! n

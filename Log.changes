@@ -1,3 +1,70 @@
+================== Dave,         7/01/2004, rv1_9_19 ==========================
+
+Changes to fix initialisation bug for AOT found by Peter:
+
+Derived_ml
+My_DryDep_ml
+
+grun.pl domain extended beyond OSPAR to East, but only to j=7 in
+south, because of BC problems (especially with rainfall from
+j=1..7).
+
+================== Dave,        26/12/2003, rv1_9_18 ==========================
+
+DryDep_ml   - leaf_flux initialised to zero for each landuse
+NetCDF_ml   - write used instead of print. (Reason: write output is buffered
+              whereas print is not. Hence, for normal use, write is better.
+              For trapping errors (e.g. before gc_abort=, print is better.
+
+
+================== Dave,     21-22/12/2003, rv1_9_17 ==========================
+
+New Derived system!! Changes in many routines. Main idea is to
+set variables by name in My_Derived_ml, and let Derived_ml work
+out what these are. "Master" lists of derived variables are kept
+in def_xx variables which correspond to the used f_xx (i.e.
+def_ddep contains the full list of possible f_ddep).
+
+In other routines, most changes are to "use Derived" instead of 
+"use My_Derived".
+
+BUG-FIX - c_hveg O3 calculation improved in DryDep_ml
+
+BUG-FIX -  grun.pl improved for usage of mkp.pmadd
+
+TSO4 removed from Derived list. This leaves compnr 620 for D2_SO4
+
+FIX: landuse.dec2003 used instead of landuse.nov2003 - solves "line"
+problem at ix=153
+
+
+================== Dave,     19/12/2003, rv1_9_15 =============================
+
+DepVariables_ml   ... BEECH added
+
+My_DryDep_ml  - to get FST for wheat, Beech (D2_FSTWH00, etc.)
+
+My_Outputs_ml - NLEVELS_SONDE added - gives number of vertical levels for
+                which sonde data are output.
+
+                Also, Some text to comment in/out for MERLIN cities
+                IMPORTANT - COMMENT OUT THE CORRECT BIT!
+                (default should be non-merlin)
+
+Sites_ml      - make uses of NLEVELS_SONDE. 
+
+Rsurface_ml: g_temp function changed.
+
+UK_ml   - MM_gfac1.dat not lde_gfac1.
+
+grun.pl - MM_gfac1.dat not lde_gfac1, and $MERLIN_CITIES option
+
+
+================== Dave,     18/12/2003, rv1_9_14 =============================
+
+grun.pl changed - to add Afican emissions and PM emissions where needed
+
+
 ================== Peter     16/12/2003, rv1_9_13 =============================
 
 NB: Default is no binary (felt) output!

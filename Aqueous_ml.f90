@@ -19,10 +19,13 @@ module Aqueous_ml
   !   call Setup_Clouds(i,j)     from Runchem_ml
   !   call WetDeposition(i,j)    from Runchem_ml if prec. clouds_present
   !
-  use My_WetDep_ml, only : WetDep, NWETDEP, WetDep_Budget
-  use My_Derived_ml       , only : NWDEP, WDEP_PREC &
-                                    ,IOU_INST &   ! Index: instantaneous values
-                                    ,wdep         ! Wet deposition fields
+
+! ds 16/12/2003 Some variables moved:
+
+  use My_WetDep_ml, only : WetDep, NWETDEP, WetDep_Budget, WDEP_PREC
+  use My_Derived_ml       , only : NWDEP      
+  use Derived_ml          , only : IOU_INST &   ! Index: instantaneous values
+                                  ,wdep         ! Wet deposition fields
   use GridValues_ml       , only : gridwidth_m,xm2,xmd,carea
   use ModelConstants_ml, only: &
       CHEMTMIN, CHEMTMAX       & ! Range of temperature 
@@ -31,9 +34,7 @@ module Aqueous_ml
      ,KCHEMTOP                 & ! top of chemistry, now k=2
      , dt => dt_advec          & ! model timestep
      ,PT, ATWAIR                 ! Pressure at top, atw. air
-  use Met_ml,               only :  pr, roa, z_bnd, cc3d, ps&
-!hf cum
-                                    ,lwc
+  use Met_ml,               only :  pr, roa, z_bnd, cc3d, ps,lwc
   use Par_ml              , only : me   ! for DEBUG
   use Setup_1dfields_ml,    only : xn_2d, amk
   implicit none
@@ -174,14 +175,11 @@ contains
     integer, intent(in) ::  i,j
 
     !/-local
-!u7.2   real, dimension(KUPPER:KMAX_MID) :: &
-!u7.2          b                     !  Cloud-area (fraction)
-!u7.2    ,cloudwater            !  Cloud-water (volume mixing ratio) 
-!u7.2                                !  cloudwater = 1.e-6 same as 1.g m^-3
-!hf cum
+
    real, dimension(KUPPER:KMAX_MID) :: &
           b           &          !  Cloud-area (fraction)
          ,cloudwater             !  Cloud-water (volume mixing ratio) 
+                                 !  cloudwater = 1.e-6 same as 1.g m^-3
 
     integer         ::  k
 
@@ -201,7 +199,6 @@ contains
   !su  initialise with .false. and 0, 
 
     incloud(:)  = .false.
-!hf SO2aq
     cloudwater(:) = 0.
 
 
@@ -211,7 +208,6 @@ contains
     ksubcloud = KMAX_MID+1    ! k-coordinate of sub-cloud limit
 
     do  k = KMAX_MID, KUPPER, -1  
-        !hf if ( cw(i,j,k,1) >  CW_LIMIT ) exit  !  out of loop
         if ( lwc(i,j,k) >  CW_LIMIT ) exit  !  out of loop
         ksubcloud = k
     end do
@@ -227,23 +223,20 @@ contains
 
  !  Define incloud part of the column requiring that both cloud water
  !  and cloud fractions are above limit values 
- !u7.2.  Skip test for cloud_fraction
 
     kcloudtop = -1              ! k-level of cloud top
     do k = KUPPER, ksubcloud-1
-!hf cum
+
         b(k) = cc3d(i,j,k)
-        !u7.2 b(k) = cc3d(i,j,k)  ! ds simplify tests
-        !u7.2 if ( cw(i,j,k,1) > CW_LIMIT .and. b(k) > B_LIMIT ) then
+
         !  Units: kg(w)/kg(air) * kg(air(m^3) / density of water 10^3 kg/m^3
         !  ==>  cloudwater (volume mixing ratio of water to air in cloud 
         !  (when devided bu cloud fraction b )
-        !u7.2   cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)   
+        !   cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)   
 
  
-!hf cum        if ( cw(i,j,k,1) > CW_LIMIT ) then
-!hf old HIRLAM cw used        if ( cw(i,j,k,1) > 1.0e-7   .and. b(k) > B_LIMIT ) then
-!hf                           cloudwater(k) = 1.0e-3 * cw(i,j,k,1) * roa(i,j,k,1) / b(k)  
+!hf old HIRLAM cw used if ( cw(i,j,k,1) > 1.0e-7   .and. b(k) > B_LIMIT ) then
+
         if ( lwc(i,j,k) >  CW_LIMIT ) then
                 cloudwater(k) = lwc(i,j,k) / b(k) !value of cloudwater in the cloud fraction of the grid
                 incloud(k) = .true.
@@ -265,9 +258,6 @@ contains
 !  fractional solubility 
 
     call setup_aqurates(b ,cloudwater,incloud)
-   !u7.2 if ( prclouds_present )  then
-   !u7.2        call WetDeposition(i,j)
-   !u7.2 end if
 
       if ( DEBUG_AQ .and. i == 3 .and. j == 3 ) then
         print *, "DEBUG_AQ me presetn", me, prclouds_present

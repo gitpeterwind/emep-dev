@@ -62,12 +62,13 @@ program myeul
   use BoundaryConditions_ml, only : BoundaryConditions
   use Dates_ml,         only : date, dayno,daynumber   ! u7.4vg
   use DefPhotolysis_ml, only : readdiss
-  !u7lu use NEWdep_ml,        only : ReadLanduse     !u7.2, ds
+!ds New Deriv:
+  use Derived_ml,    only : IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
+                            Init_Derived 
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use GridValues_ml,    only : DefGrid  ! sets gl, gb, xm, gridwidth_m, etc.
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG
   use MassBudget_ml,           only : Init_massbudget,massbudget
-  !ds rv1.2 use Met_ml  ,         only : infield,metvar,in_isnowc, mm5,&
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse, mm5,&
                                tiphys
   use ModelConstants_ml,only : KMAX_MID, current_date  &
@@ -76,7 +77,7 @@ program myeul
                               ,runlabel2  &   !rv1_9_5 - explanatory text
                               ,nprint,nass,nterm,iyr_trend, assign_nmax
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
-  use My_Derived_ml,    only : IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
+!ds New Deriv use My_Derived_ml,    only : IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
   use out_restri_ml,    only : set_outrestri
   use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2, parinit
   use Polinat_ml,       only : polinat_init,polinat_in
@@ -348,7 +349,8 @@ program myeul
     call Add_2timing(1,tim_after,tim_before,"Before define_Chemicals")
 
     call define_chemicals()    ! sets up species details
-!
+
+    call Init_Derived()        ! Derived field defs., rv1_9_16
 
     call set_output_defs()     ! Initialises outputs
 
@@ -394,9 +396,9 @@ program myeul
        iotyp=IOU_INST
        call Init_new_netCDF(fileName,iotyp) 
 !netCDF hourly is initiated in Output_hourly
-!       fileName=trim(runlabel1)//'_hour.nc'
-!       iotyp=IOU_HOUR
-!       call Init_new_netCDF(fileName,iotyp) 
+       fileName=trim(runlabel1)//'_hour.nc'
+       iotyp=IOU_HOUR
+       call Init_new_netCDF(fileName,iotyp) 
        fileName=trim(runlabel1)//'_day.nc'
        iotyp=IOU_DAY
        call Init_new_netCDF(fileName,iotyp) 

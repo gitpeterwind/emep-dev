@@ -1,9 +1,16 @@
 module My_WetDep_ml
   use MassBudget_ml,     only : totwdep
   use ModelConstants_ml, only : atwS, atwN, atwPM
-  use My_Derived_ml    , only : NWDEP, WDEP_SOX, WDEP_OXN, WDEP_RDN &
-                                ,IOU_INST &   ! Index: instantaneous values
-                                ,wdep         ! Wet deposition fields
+!ds  use My_Derived_ml    , only : NWDEP, WDEP_SOX, WDEP_OXN, WDEP_RDN &
+!ds                                ,IOU_INST &   ! Index: instantaneous values
+!ds                                ,wdep         ! Wet deposition fields
+
+ !ds use My_Derived_ml, only : WDEP_USED,D2_USED   !ds NEW system 16/12/2003
+ use Derived_ml,    only : f_wdep, wdep,  &   !ds NEW system 16/12/2003
+                           f_2d,   d_2d,  &
+                           find_one_index, IOU_INST
+
+
   use GenSpec_tot_ml          ! SO2, SO4, etc.
   use GenSpec_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
   implicit none
@@ -22,6 +29,11 @@ module My_WetDep_ml
   integer, public, parameter :: NWETDEP = 11  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
+ !ds NEW 16/12/2003:
+
+  integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
+  integer, private, save :: WDEP_SOX, WDEP_OXN, WDEP_RDN
+
 contains
 
   subroutine Init_WetDep()
@@ -52,6 +64,14 @@ contains
     WetDep(9)   = WScav(pNO3,   1.0,  EFFCO) !!dstest rv1_8b  ds, from Svetlana's PMco stuff
     WetDep(10)  = WScav(PM25,   1.0,  EFF25)
     WetDep(11)  = WScav(PMCO,   1.0,  EFFCO)
+
+   !####################### ds NEW define indices here ##########
+
+     WDEP_PREC= find_one_index("WDEP_PREC",f_wdep(:)%name)
+     WDEP_SOX = find_one_index("WDEP_SOX",f_wdep(:)%name)
+     WDEP_OXN = find_one_index("WDEP_OXN",f_wdep(:)%name)
+     WDEP_RDN = find_one_index("WDEP_RDN",f_wdep(:)%name)
+   !####################### ds END define indices here ##########
 
   end subroutine Init_WetDep
 
@@ -85,6 +105,7 @@ contains
        wdep(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 
        wdep(WDEP_OXN,i,j,IOU_INST) = wdepox * atwN * invgridarea 
        wdep(WDEP_RDN,i,j,IOU_INST) = wdepred * atwN * invgridarea 
+
 
   end subroutine WetDep_Budget
 end module My_WetDep_ml

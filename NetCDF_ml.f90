@@ -107,7 +107,8 @@ use Par_ml,           only : GIMAX,GJMAX,ISMBEG,JSMBEG
 use ModelConstants_ml,only : KMAX_MID   
 use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                              Asc2D, hr_out      ! Required outputs
-use My_Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
+!ds 16/12/2003use My_Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
+use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
 
 integer,  intent(in) :: iotyp
   character(len=*),  intent(in)  :: fileName 
@@ -221,8 +222,8 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_def_dim(ncid = ncFileID, name = "time", len = nf90_unlimited, dimid = timeDimID))
 
   call Date_And_Time(date=created_date,time=created_hour)
-     print *, 'created_date: ',created_date
-     print *, 'created_hour: ',created_hour
+     write(6,*) 'created_date: ',created_date
+     write(6,*) 'created_hour: ',created_hour
 
   ! Write global attributes
   call check(nf90_put_att(ncFileID, nf90_global, "Conventions", "GDV" ))
@@ -357,7 +358,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale,CDFtype,ist,
 
 use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX
 use ModelConstants_ml,     only : KMAX_MID, current_date  
-use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D ,Deriv &
+!ds 16/12/2003 Derived changes:
+use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
+use Derived_ml,    only : Deriv &
                          ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
 use Dates_ml, only: nmdays,is_leap 
 use My_Outputs_ml, only :FREQ_HOURLY 
@@ -550,7 +553,8 @@ if(me==0)then
   if(status == nf90_noerr) then     
 !     print *, 'variable exists: ',varname
   else
-     print *, 'creating variable: ',varname!,nf90_strerror(status)
+     !ds print *, 'creating variable: ',varname!,nf90_strerror(status)
+     write(6,*) 'creating variable: ',varname!,nf90_strerror(status)
      call  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1,OUTtype)
   endif
 
@@ -674,7 +678,8 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1,OUTtype)
   !create new netCDF variable
 
 use Par_ml,                only : NPROC,me
-use My_Derived_ml, only : Deriv 
+!ds 16/12/2003 use My_Derived_ml, only : Deriv 
+use Derived_ml, only : Deriv 
 
   implicit none
 

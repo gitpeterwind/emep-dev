@@ -12,15 +12,13 @@ module  My_Outputs_ml
   ! Hourly - ascii output of selected species, selcted domain
   ! Restri - Full 3-D output of all species, selected domain
 
-  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX , &  !u7.4vg
-        D2_FSTCF0, D2_FSTDF0, D2_FSTTC0, D2_FSTMC0, D2_FSTGR0, D2_FSTWH0,&
-        D2_O3CF, D2_O3DF, D2_O3TC, D2_O3GR, D2_O3WH
+  use Derived_ml, only : f_2d, d_2d, find_one_index
   use Dates_ml,       only : date  
-  use GenSpec_adv_ml  , only : NSPEC_ADV          &
-                 ,IXADV_O3 &
-                 ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
-                 ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
-                 ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
+  use GenSpec_adv_ml !merlin  , only : NSPEC_ADV          &
+                  !merlin,IXADV_O3 &
+                 !merlin ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
+                 !merlin ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
+                 !merlin ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml , only: species
@@ -29,8 +27,9 @@ module  My_Outputs_ml
   implicit none
   private
 
-  logical, public, parameter :: out_binary = .false. 
-  ! out_binary = .True. gives also binary files (for use in xfelt). 
+
+  logical, public, parameter :: out_binary = .false.
+  ! out_binary = .True. gives also binary files (for use in xfelt).
   !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
    !/*** Site outputs   (used in Sites_ml)
@@ -41,7 +40,7 @@ module  My_Outputs_ml
 
    integer, private :: isite              ! To assign arrays, if needed
    integer, public, parameter :: &
-     NSITES_MAX =    51         & ! Max. no surface sites allowed
+     NSITES_MAX =    35          & ! Max. no surface sites allowed
     ,FREQ_SITE  =    3          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    3 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
@@ -99,24 +98,44 @@ module  My_Outputs_ml
    ! These must be defined in Sites_ml.f90.
 
    integer, public, parameter :: &
-     NSONDES_MAX =    51               &   ! Max. no sondes allowed
+!MERLIN USES...
+ !   NSONDES_MAX =   340               &   ! Max. no sondes allowed
+ !  ,NLEVELS_SONDE =  10               &   ! No. k-levels (9 => 0--2500 m)
+ !  ,FREQ_SONDE  =     1               &   ! Interval (hrs) between outputs
+ !  ,NADV_SONDE  =    30                &   ! No.  advected species
+!ELSE SR RUNS USE:::::
+     NSONDES_MAX =    35               &   ! Max. no sondes allowed
+    ,NLEVELS_SONDE =  10               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
-    ,NADV_SONDE  =    3                &   ! No.  advected species
+    ,NADV_SONDE  =     3                &   ! No.  advected species
+!END
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
-    ,NXTRA_SONDE =    1                    ! No. Misc. met. params  (now th)
+    ,NXTRA_SONDE =    3                    ! No. Misc. met. params  (now th)
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
-    SONDE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2 /)
+!MERLIN USES...
+ ! SONDE_ADV = (/ &
+ !  IXADV_o3,  IXADV_no,  IXADV_no2,  IXADV_pan,  IXADV_hno3, &
+ !  IXADV_macr,  IXADV_hcho,  IXADV_ch3cho,  IXADV_c2h6,  IXADV_nc4h10, &
+ !  IXADV_c2h4,  IXADV_c3h6,  IXADV_oxyl,  IXADV_isop,  IXADV_h2o2, &
+ !  IXADV_h2,  IXADV_co,  IXADV_so2,  IXADV_nh3,  IXADV_glyox, &
+ !  IXADV_mglyox,  IXADV_mek,  IXADV_mvk,  IXADV_mal,  IXADV_aNO3, & 
+ !  IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4,  IXADV_pm25,  IXADV_pmco /)
+!ELSE SR RUNS USE:::::
+   SONDE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2 /)
+!END
+
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-    SONDE_XTRA=  (/ "z_mid" /)     ! Height at mid-cell
+    SONDE_XTRA=  (/ "U ", "V ", "th" /)     ! Height at mid-cell
+    !SONDE_XTRA=  (/ "z_mid" /)     ! Height at mid-cell
 
  !ds - rv1.6.12 - can access d_3d fields through index here, by
  !     setting "D3D" above and say D3_XKSIG12 here:
 
    integer,           public, parameter, dimension(NXTRA_SONDE) :: &
-    SONDE_XTRA_INDEX=  (/     0 /)
+    SONDE_XTRA_INDEX=  (/     0, 0, 0 /)
 
 
 
@@ -139,13 +158,13 @@ module  My_Outputs_ml
    !      all layers.
    !----------------------------------------------------------------
 
-    logical, public, parameter :: Hourly_ASCII = .false. 
-     ! Hourly_ASCII = .True. gives also Hourly files in ASCII format. 
+    logical, public, parameter :: Hourly_ASCII = .false.
+     ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
      !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
-    integer, public, parameter :: NHOURLY_OUT =  2 ! No. outputs
-    integer, public, parameter :: NLEVELS_HOURLY = 2 ! No. outputs
-    integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
+    integer, public, parameter :: NHOURLY_OUT =  1 ! No. outputs
+    integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
+    integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
     type, public:: Asc2D
          character(len=12):: name   ! Name (no spaces!)
@@ -216,7 +235,14 @@ contains
    !merlin:
    !integer, save :: ix1 = 75, ix2 = 150, iy1=12, iy2 = 102 
    !integer, save :: ix1 = 110, ix2 = 115, iy1=60, iy2 = 60
-   integer, save :: ix1 = 125, ix2 = 150, iy1=45, iy2 =  65  !! Athens/Thess. 
+   ! integer, save :: ix1 = 125, ix2 = 150, iy1=45, iy2 =  65  !! Athens/Thess. 
+
+   !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  !EMEP
+   integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  !restricted EMEP
+
+  !ds New Deriv system:
+   integer :: D2_O3WH, D2_O3DF, D2_FSTDF00
+
 !pw:WARNING: If the specification of the subdomain is different for
 !            different components (ix1=125 for ozone and ix1=98 for 
 !            NH4 for example) , the variables i_EMEP, j_EMEP
@@ -242,10 +268,24 @@ contains
   !**                ofmt   ispec     ix1 ix2  iy1 iy2  nk unit conv    max
 
  !   include 'merlin_ixadv'
- hr_out(1)=  Asc2D("o3_50m", "BCVppbv", &
-                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,2, "ppbv",PPBINV,9000.0)
- hr_out(2)=  Asc2D("o3_3m", "ADVppbv", &
-                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,9000.0)
+ !hr_out(1)=  Asc2D("o3_50m", "BCVppbv", &
+ !                 "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,2, "ppbv",PPBINV,9000.0)
+
+ hr_out(1)= Asc2D("o3_3m", "ADVppbv", &
+                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0)
+
+!ds New deriv system
+ 
+ !D2_O3WH = find_one_index("D2_O3WH",f_2d(:)%name)
+ !D2_O3DF = find_one_index("D2_O3DF",f_2d(:)%name)
+ !D2_FSTDF00 = find_one_index("D2_FSTDF00",f_2d(:)%name)
+
+ !hr_out(2)= Asc2D("O3_Wheat", "D2D", &
+ !                 "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
+ !hr_out(2)= Asc2D("O3_Beech", "D2D", &
+ !                 "(f7.3)", D2_O3DF, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
+ !hr_out(3)= Asc2D("FST_DF00", "D2D", &
+ !                 "(f7.3)", D2_FSTDF00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
 
 !  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
 !                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
@@ -288,12 +328,8 @@ contains
 !                  D2_FSTGR0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !   hr_out(5)= Asc2D("Fst_Wheat   ", "D2D", "(f8.5)",&
 !                  D2_FSTWH0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
-!IZ    hr_out(8)= Asc2D("O3__Wheat   ", "D2D", "(f7.3)",&
-!IZ                   D2_O3WH,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
-!IZ    hr_out(9)= Asc2D("O3__Beech   ", "D2D", "(f7.3)",&
-!IZ                   D2_O3DF,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
-!IZ    hr_out(10)= Asc2D("O3__Conif   ", "D2D", "(f7.3)",&
-!IZ                   D2_O3CF,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
+!    hr_out(10)= Asc2D("O3__Conif   ", "D2D", "(f7.3)",&
+!                   D2_O3CF,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
 
  !/** theta is in deg.K
  !hr_out(1)=  Asc2D("T2_C",   "T2_C   ", &

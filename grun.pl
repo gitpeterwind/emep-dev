@@ -59,7 +59,10 @@ require "flush.pl";
 $year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
-my $SR = 0;   #NEW Set to 1 for source-receptor stuff
+my $SR = 1;   #NEW Set to 1 for source-receptor stuff
+my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
+my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
+my $MERLIN_CITY= 0;  # Adds in African emissions for y=1..11
 
 # iyr_trend:
 # :can be set to meteorology year or arbitrary year, say 2050
@@ -112,9 +115,9 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_10";
-     $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
-     $runlabel2    = "${testv}_XXX_$year";   # NO SPACES! LONG (written into CDF files)
+     $testv       = "rv1_9_19";
+     $runlabel1    = "CLE$testv";           # NO SPACES! SHORT name (used in CDF names)
+     $runlabel2    = "CLE${testv}_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -134,11 +137,16 @@ $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 $femis       = "$MyDataDir/femis.dat";      # emission control file
+$Africa      = "$DAVE/Unify/D_emis";        # Emissions for Africa, y=1..11
 
 #Latest: (not used for PM though).
+$emisdir     = "$PETER/Vigdis/Emissions/Modruns/Modrun03";
+
 if ( $SR ) {
-	$emisdir     = "$PETER/Unify/MyData/"; # emissions directory
-	$emisdir     = "$emisdir/2010_CLE_2000";    # emissions
+	$emisdir     = "$emisdir/2003_emis2010_CLE_2000_V5";    # emissions
+	$WORKDIR     = "$WORK{$USER}/CLE/Unimod.$testv.$year";    # working directory
+} elsif ( $year == 2000)  {
+	$emisdir     = "$emisdir/2003_emis00_V5_WEB";    # emissions
 } else {
         $emisdir     = "$HILDE/emis/trends2003";
 	$emisdir     = "$emisdir/emis${yy}-V3";    # emissions
@@ -149,11 +157,11 @@ $timeseries  = "$DAVE/Unify/D_timeseries";   # New timeseries (ds 14/1/2003)
 #                 x0   x1  y0   y1
 @largedomain = (   1, 170,  1, 133 ) ;
 #@smalldomain = ( 101, 140, 51,  90 ) ;      # (changeable)
-#@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
+@smalldomain = (  71, 150, 31, 100 ) ;      # (changeable)
 #@smalldomain = (  95, 115, 46, 66 ) ;      # ERROR search (changeable)
 #@smalldomain = (  36, 160, 11, 123 ) ;      # (changeable)
-#@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
-@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
+@smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
+#@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
 #@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
@@ -173,12 +181,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   = 12;       # last month
+$mm2   =  12 ;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
- $NTERM =  3;       # for testing, simply reset here
+ #$NTERM = 16;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -438,8 +446,7 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
 
 # Emissions setup:
 
-# pw ($femis already defined)  $old   = "$MyDataDir/femis.dat" ;
-    $old   = "$femis" ;
+    $old   = "$MyDataDir/femis.dat" ;
     $new   = "femis.dat";
     mylink( "Femis  ", $old,$new ) ;
 
@@ -459,12 +466,39 @@ foreach $poll  ( @emislist  ) {
 
    $old   = "$emisdir/grid$gridmap{$poll}" ;
 
-   if ( ! $SR  && $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
-       $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
-   }
-
+   #
+   #if ( ! $SR  && $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
+   #    $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
+   #}
+#
    $new   = "emislist.$poll";
+   if( -r $new ) { unlink($new) };  # Get rid of any files from previous runs
+
+# Africa and PM changes. 
+# IMPORTANT. Do Africa first to get the NOx emissions needed for PM
+
+$emissions_adjusted = $AFRICA + $PM_ADDED;  # >=1 if something done
+
+if ( $emissions_adjusted  ) {   # Copy since we want to change the file
+   print "AFRICA $gridmap{$poll}\n";
+
+   if ( $poll =~ /pm/ ) {
+	print "Simply copy for  $new\n";
+   	system("cat $old >  $new");  #ds use cat instead of copy to get write access
+   } else {
+	print "Add Africa for  $new\n";
+	system("cat $old > tmp_$new");
+	system("wc tmp_$new");
+	system("cat tmp_$new $Africa/Africa$gridmap{$poll} > $new");
+	system("wc $new");
+	#system("cp $new africa_$new");  # For testing
+	unlink("tmp_$new");
+   }
+} else {
+   # Old system:
+   print "No emissions adjustment\n";
    mylink( "Emis $poll : ", $old,$new ) ;
+}
 
    $old   = "$timeseries/MonthlyFac.$poll" ;
    $new   = "MonthlyFac.$poll";
@@ -473,7 +507,14 @@ foreach $poll  ( @emislist  ) {
    $old   = "$timeseries/DailyFac.$poll" ;
    $new   = "DailyFac.$poll";
    mylink( "DailyFac ", $old,$new ) ;
-} 
+}  # end of emissions poll loop
+
+if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
+   print "STARTING PM ADDITION\n";
+   system("$DAVE/Unify/D_emis/mkp.pmemis_from_nox");
+   system("cat emislist.pm25 > test_emislist.pm25");
+   system("cat emislist.pmco > test_emislist.pmco");
+}
 
 # Surface measurement sites
 # From $DAVE directory for these
@@ -483,6 +524,7 @@ foreach $poll  ( @emislist  ) {
 
 # Sondes
     $old   = "$DataDir/sondes.rep03" ;
+    if( $MERLIN_CITY ) {$old   = "$DataDir/sondes.merlin_cities" };
     $new   = "sondes.dat";
     mylink( "Sondes", $old,$new ) ;
 
@@ -522,13 +564,15 @@ foreach $s ( keys(%seasons) ) {
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
 
-    $old   = "$DataDir/landuse.nov2003" ;  #ds rv1_9_4 change
+    #ds$old   = "$DataDir/landuse.nov2003" ;  #ds rv1_9_4 change
+    $old   = "$DataDir/landuse.dec2003" ;  #ds rv1_9_4 change
     $new   = "landuse.dat";                #ds rv1_9_4 change
     mylink( "Landuse ", $old,$new ) ;
 
  # TMP LOCATION for some datafiles : MyDataDir
 #ldefix foreach $datafile ( qw ( Volcanoes.dat tf2_gfac1.dat tf2_gfac2.dat tf2_biomass.dat ) ) {
-foreach $datafile ( qw ( Volcanoes.dat lde_gfac1.dat lde_gfac2.dat lde_biomass.dat ) ) {
+#foreach $datafile ( qw ( Volcanoes.dat lde_gfac1.dat lde_gfac2.dat lde_biomass.dat ) ) {
+foreach $datafile ( qw ( Volcanoes.dat  MM_gfac1.dat lde_gfac2.dat lde_biomass.dat ) ) {
     $old   = "$DataDir/$datafile" ;
     $new   = "$datafile" ;
     mylink( "$datafile", $old,$new ) ;
@@ -595,20 +639,6 @@ if ( -r core )  {
       #-- Done.
       print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
 }
-# Put useful info into RunLog.${runlabel1}.out
-open(LOG,">RunLog.${runlabel1}.out");
-open(RUNLOG,"<RunLog.out");
-      while ($line=<RUNLOG>) {
-          print LOG $line ;
-      }
-close(RUNLOG) ;
-          print LOG "emis dir used:\n" ;
-          print LOG "$emisdir\n" ;
-
-          print LOG "femis used:\n" ;
-          print LOG "$femis\n" ;
-close(LOG);
-
 # Now clean up,
     foreach $f ( @list_of_files ) {
         unlink($f);

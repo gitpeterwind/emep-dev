@@ -23,11 +23,13 @@
    !          as soon as a full day of data is available).
    !      -- End_of_Run logical introduced to help readability.
    !-----------------------------------------------------------------------
-   use My_Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY &
-               ,NDERIV_2D, f_2d, d_2d
+!ds New deriv system, 21/12/2003:
+   use My_Derived_ml, only: NDERIV_2D
 
    use Dates_ml,           only: nmdays             !ds-out
-   use Derived_ml,         only: ResetDerived
+!ds New Deriv:
+   use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, f_2d, d_2d &
+                                ,ResetDerived
    use Io_ml   ,           only: IO_AOT
    use ModelConstants_ml , only: nprint,current_date, END_OF_EMEPDAY
    use My_Outputs_ml,      only: NBDATES, wanted_dates_bi

@@ -66,7 +66,8 @@ contains
 
    ! read in Gpot modifiers, light and temperature factors
 
-     call open_file(IO_TMP,"r","lde_gfac1.dat",needed=.true.,skip=3)
+!rv1_9_15: changde from lde_ to MM_ for Beech
+     call open_file(IO_TMP,"r","MM_gfac1.dat",needed=.true.,skip=3)
 
      do lu = 1, NLANDUSE
        txt = luname(lu)
