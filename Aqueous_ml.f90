@@ -51,7 +51,6 @@ module Aqueous_ml
 
  !/ Outputs:
  !-------------------------------------------------------------------
-   logical, public,save :: prclouds_present ! true if precipitating clouds
 
    logical, public, save, dimension(KUPPER:KMAX_MID) :: &
            incloud               ! True for in-cloud k values 

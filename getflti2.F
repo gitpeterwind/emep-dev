@@ -87,7 +87,7 @@ c  cray uses ipack as a standard length integer
 c
 c
 c
-	integer i,isave,nsave,ios,ierror,info
+	integer isave,nsave,ios,ierror
 	integer nxin,nyin,nword,npack
 c
 	ierr = 0

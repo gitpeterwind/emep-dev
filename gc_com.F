@@ -74,7 +74,7 @@ C        the PAR interface by J.Amundsen. The MPL part is due to Z. Christidis,
 C        IBM T. J. Watson Research Center.
 C
 C-------------------------------------------------------------------------------
-C $Id: gc_com.F,v 1.5 2002-09-13 09:13:53 mifads Exp $
+C $Id: gc_com.F,v 1.6 2004-03-08 08:25:22 mifapw Exp $
 C (C) Jorn Amundsen, Roar Skaalin, SINTEF Industrial Mathematics.
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
@@ -675,6 +675,218 @@ C     ******************************************************************
 
 #if defined(MPL_SRC)
       CALL MP_BSEND(SARR,GC__RSIZE*LEN,RECI,MSG)
+#endif
+
+      END
+
+C NON-BLOCKING and WAIT routines added by Heiko Klein and Peter Wind
+
+      SUBROUTINE GC_RSEND_NONBLOCK (REQ,MSG,LEN,RECI,INFO,RARR,SARR)
+C     ******************************************************************
+C     * Purpose:
+C     *
+C     *  Send a real array from this processor to processor RECI.
+C     *  with non-blocking IO, only implemented for MPI!!!
+C     *
+C     * Input:
+C     *  REQ     - request
+C     *  MSG     - message tag
+C     *  LEN     - number of elements in message
+C     *  RECI    - receiver of the message
+C     *  INFO    - flag deciding if SHMEM_GET (default) or SHMEM_PUT 
+C     *            should be used (SHM_SRC only)
+C     *  RARR    - name of the array on recieving processor
+C     *            (SHM_SRC only)
+C     *  SARR    - array to be sent
+C     *
+C     * Output:
+C     *  INFO    - status of send 0 is OK (PVM_SRC and MPI_SRC only),
+C     *            refer to the header files for nonzero status codes
+C     *
+C     * NOTES:       
+C     *
+C     ******************************************************************
+
+      IMPLICIT NONE
+      INTEGER MSG, LEN, RECI,INFO
+      INTEGER REQ(1)
+      REAL RARR(LEN), SARR(LEN)
+#if defined(NX2_SRC)
+      INCLUDE 'fnx.h'
+#endif
+#if defined(PVM_SRC)
+      INCLUDE 'fpvm3.h'
+      INTEGER TIDS(-1:MAX_PROC-1), ARCS(0:MAX_PROC-1)
+      COMMON /GC__TIDS/ TIDS, ARCS
+#endif
+#if defined(MPI_SRC)
+      INCLUDE 'mpif.h'
+#endif
+#if defined(MPL_SRC)
+      INTEGER MPLBUF(4)
+      COMMON /MPLCOM/MPLBUF
+#endif
+
+
+#if defined(SHM_SRC)
+      IF (INFO .EQ. GC__SHM_PUT) CALL SHMEM_PUT(RARR, SARR, LEN, RECI)
+#endif
+
+#if defined(NX2_SRC)
+      CALL CSEND(MSG, SARR, GC__RSIZE*LEN, RECI, 0)
+#endif
+
+#if defined(PVM_SRC)
+#if defined(PVM_V33)
+      CALL PVMFPSEND(TIDS(RECI), MSG, SARR, GC__RSIZE*LEN, BYTE1, INFO)       
+#else
+      CALL PVMFINITSEND(GC__PVMENCODING,INFO)
+      CALL PVMFPACK(BYTE1, SARR, GC__RSIZE*LEN, 1, INFO)
+      CALL PVMFSEND(TIDS(RECI), MSG, INFO)
+#endif
+#endif
+
+#if defined(MPI_SRC)
+      CALL MPI_ISEND(SARR, GC__RSIZE*LEN, MPI_BYTE, RECI, MSG,
+     $     MPI_COMM_WORLD, REQ, INFO)
+#endif
+
+#if defined(MPL_SRC)
+      CALL MP_BSEND(SARR,GC__RSIZE*LEN,RECI,MSG)
+#endif
+
+      END
+
+
+      SUBROUTINE GC_RRECV_NONBLOCK (REQ,MSG,LEN,SEND,INFO,RARR,SARR)
+C     ******************************************************************
+C     * Purpose:
+C     *
+C     *  Receive a real array from processor SEND. non-blocking
+C     *  non-blocking only implemented for mpi!
+C     *
+C     * Input:
+C     *  REQ     - request handler (integer(1))
+C     *  MSG     - message tag
+C     *  LEN     - number of elements in message
+C     *  SEND    - sender of the message (SEND = -1 means any processor)
+C     *  INFO    - flag deciding if SHMEM_GET (default) or SHMEM_PUT 
+C     *            should be used (SHM_SRC only)
+C     *  SARR    - name of the array on the sending processor
+C     *            (SHM_SRC only)
+C     *
+C     * Output:
+C     *  RARR    - array to be received
+C     *  INFO    - status of send 0 is OK (PVM_SRC and MPI_SRC only),
+C     *            refer to the header files for nonzero status codes
+C     *
+C     * NOTES:       
+C     *
+C     ******************************************************************
+
+      IMPLICIT NONE
+      INTEGER MSG, LEN, SEND, INFO
+      INTEGER REQ(1)
+      REAL RARR(LEN), SARR(LEN)
+#if defined(NX2_SRC)
+      INCLUDE 'fnx.h'
+#endif
+#if defined(PVM_SRC)
+      INCLUDE 'fpvm3.h'
+      INTEGER TIDS(-1:MAX_PROC-1), ARCS(0:MAX_PROC-1), IBUF
+      COMMON /GC__TIDS/ TIDS, ARCS
+#if (defined(PVM_V33) || !defined(PVM_NBS)) && !defined(_CRAY)
+      INTEGER ASEND, AMSG, ALEN, I
+#endif
+#endif
+#if defined(MPI_SRC)
+      INCLUDE 'mpif.h'
+      INTEGER STATUS(MPI_STATUS_SIZE)
+#endif
+#if defined(MPL_SRC)
+      INTEGER MPLBUF(4)
+      COMMON /MPLCOM/MPLBUF
+#endif
+
+
+#if defined(SHM_SRC)
+      IF (INFO .NE. GC__SHM_PUT) CALL SHMEM_GET(RARR, SARR, LEN, SEND)
+#endif
+
+#if defined(NX2_SRC)
+      CALL CRECV(MSG, RARR, GC__RSIZE*LEN)
+#endif
+
+#if defined(PVM_SRC)
+#if defined(PVM_V33)
+      CALL PVMFPRECV(TIDS(SEND), MSG, RARR, GC__RSIZE*LEN, BYTE1, 
+     $     ASEND, AMSG, ALEN, INFO)
+#else
+      CALL PVMFRECV(TIDS(SEND), MSG, IBUF)
+#if !defined(PVM_NBS) && !defined(_CRAY)
+      IF (SEND .EQ. -1) CALL PVMFBUFINFO(IBUF, ALEN, AMSG, ASEND, INFO)
+#endif
+      CALL PVMFUNPACK(BYTE1, RARR, GC__RSIZE*LEN, 1, INFO)
+#endif
+#if !defined(PVM_NBS) && !defined(_CRAY)
+C     We have to figure out the sender if using the -1 wildcard
+      IF (SEND .EQ. -1) THEN
+         I = -1
+100      CONTINUE
+            I = I + 1
+         IF (I .LT. MAX_PROC .AND. ASEND .NE. TIDS(I)) GOTO 100
+         IF (I .EQ. MAX_PROC) THEN
+            INFO = -1
+            RETURN
+         ENDIF
+         ASEND = I
+      ELSE
+         ASEND = SEND
+      ENDIF
+      IF (ARCS(ASEND) .NE. 0) CALL GC__RSWAP(LEN, RARR)
+#endif
+#endif
+
+#if defined(MPI_SRC)
+      IF (SEND .EQ. -1) SEND = MPI_ANY_SOURCE
+      CALL MPI_IRECV(RARR, GC__RSIZE*LEN, MPI_BYTE, SEND, MSG,
+     $     MPI_COMM_WORLD, STATUS, REQ, INFO)
+#endif
+
+#if defined(MPL_SRC)
+      IF (SEND .EQ. -1) SEND = MPLBUF(1)
+      CALL MP_BRECV(RARR, GC__RSIZE*LEN, SEND, MSG, INFO)
+#endif
+
+      END
+
+
+      SUBROUTINE GC_WAIT (REQ,INFO)
+C     ******************************************************************
+C     * Purpose:
+C     *
+C     *  Waiting for corresponding non-blocking send/receive to 
+C     *  finish.
+C     *  Only implemented for MPI!!!
+C     *
+C     * Output:
+C     *  INFO    - status of send 0 is OK (PVM_SRC and MPI_SRC only),
+C     *            refer to the header files for nonzero status codes
+C     *
+C     * NOTES:       
+C     *
+C     ******************************************************************
+
+      IMPLICIT NONE
+#if defined(MPI_SRC)
+      INCLUDE 'mpif.h'
+      INTEGER STATUS(MPI_STATUS_SIZE)
+#endif
+      INTEGER INFO
+      INTEGER REQ(1)
+
+#if defined(MPI_SRC)
+      CALL MPI_WAIT(REQ, STATUS, INFO)
 #endif
 
       END

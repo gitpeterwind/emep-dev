@@ -282,7 +282,7 @@ contains
   subroutine GlobalPosition
 
     integer i,j
-    real :: dr,om,om2,dy,rb,rl,rp,dx,dy,dy2,glmax,glmin
+    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin
 
     glmin = -180.0
     glmax = glmin + 360.0

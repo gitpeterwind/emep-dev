@@ -462,7 +462,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
   real             ,      dimension(NRCSPLIT + NONREACTIVE ) :: tmp 
   integer           :: nsplit   ! No.columns data to be read
   real              :: sumtmp
-  integer           :: iland,isec,i,n
+  integer           :: iland,isec,i,n,nn
 
   logical  :: defaults    ! Set to true for defaults, false for specials
   integer  :: idef        ! Set to   0  for defaults, 1 for specials
@@ -542,14 +542,29 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 
            !/... some checks:
            sumtmp = sum( tmp(1:nsplit) )
-           if ( ( sumtmp  >    100.01 .or. sumtmp   <   99.99   )  .or. &
+!hkpw           if ( ( sumtmp  >    100.01 .or. sumtmp   <   99.99   )  .or. &
+!                ( defaults .and. iland /= 0                     )  .or. &
+!                ( defaults .and. isec  /= n                     )  .or. &
+!                ( .not. defaults .and. &
+!                 any( intext(1,1:nsplit) /= intext(0,1:nsplit) ))      &
+!                                                                  ) then
+!               print *, "ERROR: emisfrac:", idef, iland, isec, sumtmp 
+!               call gc_abort(me,NPROC,"emfracisec")
+!           end if
+          if ( ( sumtmp  >    100.01 .or. sumtmp   <   99.99   )  .or. &
                 ( defaults .and. iland /= 0                     )  .or. &
-                ( defaults .and. isec  /= n                     )  .or. &
-                ( .not. defaults .and. &
-                 any( intext(1,1:nsplit) /= intext(0,1:nsplit) ))      &
+                ( defaults .and. isec  /= n                     )  &
                                                                   ) then
                print *, "ERROR: emisfrac:", idef, iland, isec, sumtmp 
                call gc_abort(me,NPROC,"emfracisec")
+           end if
+           if (  .not. defaults ) then
+              do nn=1,nsplit
+                 if(intext(1,nn) /= intext(0,nn))then
+                    write(*,*)"ERROR: emisfrac:", intext(1,nn), intext(0,nn)
+                    call gc_abort(me,NPROC,"emfracisec")
+                 endif
+              enddo
            end if
 
            if ( defaults .or. iland == 0 ) then

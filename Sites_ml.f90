@@ -635,9 +635,9 @@ end subroutine siteswrt_sondes
       ! Final output ***** 
       do n = 1, nglobal
           !MY_DEBUG write(6,*) ' Final out for n: ', n, s_name(n)
-          write(unit=io_num, "(a20,i5,3i3,i5)" ) &
+          write(unit=io_num, fmt="(a20,i5,3i3,i5)" ) &
                s_name(n), current_date
-          write(unit=io_num, "(5es10.3)" ) g_out(:,n)
+          write(unit=io_num, fmt="(5es10.3)" ) g_out(:,n)
       end do ! n
 
    end if ! me

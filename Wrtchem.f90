@@ -45,7 +45,7 @@
    integer msnr1, msnr2,nmonpr
    integer i,j,n
    character*30 outfilename
-   integer nyear,nmonth,nday,nhour,nmonpr
+   integer nyear,nmonth,nday,nhour
    integer :: yy_out, mm_out, dd_out   !ds - after allowance for END_OF_EMEPDAY
    logical :: Jan_1st, End_of_Run
 

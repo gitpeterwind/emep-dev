@@ -201,8 +201,8 @@ contains
      real    :: scaling, scaling_k
 
 !hf VOL
-    integer ::  iqrc,k,n,i_help,j_help,i_l,j_l
-    real    :: scaling, scaling_k
+    integer ::  i_help,j_help,i_l,j_l
+
 !hf VOL initilize
     rcemis(:,:)=0.    
    

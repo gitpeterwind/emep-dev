@@ -246,7 +246,7 @@ contains
 
              rh50(KCHEMTOP:KMAX_MID),t20(KCHEMTOP:KMAX_MID)
 
-  integer :: i,j,k, errmark
+  integer :: k, errmark
   logical :: debsub = .false.
  !-----------------------------------
 

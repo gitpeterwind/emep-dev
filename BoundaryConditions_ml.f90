@@ -246,19 +246,19 @@ contains
 
   ! - check if anything has changed before allocating:
 
-  if ( num_adv_changed > 0 ) then
+  !pwhk if ( num_adv_changed > 0 ) then
       allocate(bc_adv(num_adv_changed,iglobact,jglobact,KMAX_MID), &
          stat=alloc_err2)
       if ( alloc_err2 /= 0 ) call gc_abort(me,NPROC, "BC alloc1 failed")
       bc_adv(:,:,:,:) = 0.0
-  end if
+   !pwhk  end if
 
-  if ( num_bgn_changed > 0 ) then
+  !pwhk  if ( num_bgn_changed > 0 ) then
       allocate(bc_bgn(num_bgn_changed,iglobact,jglobact,KMAX_MID), &
         stat=alloc_err3)
       if ( alloc_err3 /= 0 ) call gc_abort(me,NPROC, "BC alloc3 failed")
       bc_bgn(:,:,:,:) = 0.0
-  end if
+  !pwhk  end if
 
 
   errcode = 0
@@ -658,15 +658,25 @@ endif
 
    !a) Advected species
 
+!hk intel compiler doesn't understand mask(i,j,k) in forall
+!   forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_adv_changed, &
+!        mask(i,j,k)  )
 
-   forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_adv_changed, &
-                mask(i,j,k)  )
+   do k = 1, KMAX_MID
+      do j = 1, ljmax
+         do i = 1,limax
+            if (mask(i,j,k)) then                 
+               do n = 1, num_adv_changed
+                  !       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,i150(i),j150(j), k)
+                  xn_adv(spc_changed2adv(n),i,j,k) =   &
+                       bc_adv(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
+               end do
+            endif
+         end do
+      end do
+   end do
+   
 
-!       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,i150(i),j150(j), k)
-       xn_adv(spc_changed2adv(n),i,j,k) =   &
-             bc_adv(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
-
-   end forall    
 
 
    !b) Non-advected background species

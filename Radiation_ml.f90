@@ -47,7 +47,7 @@ module Radiation_ml
 
     real, public, dimension(MAXLIMAX, MAXLJMAX), save:: &
         zen          &  ! Zenith angle (degrees)
-       ,coszen       &  ! cos of zenith angle
+       ,coszen=0.       &  ! cos of zenith angle
        ,Idiffuse     &  ! diffuse solar radiation (W/m^2)        ! ds rv1_6_x
        ,Idirectt        ! total direct solar radiation (W/m^2)   ! ds rv1_6_x
 

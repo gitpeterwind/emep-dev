@@ -182,6 +182,11 @@ contains
              newdate%month = newdate%month + 1
         endif
 
+        if ( newdate%month > 12 ) then   ! pwhk again, test that newdate%month is not >12
+             newdate%month = newdate%month - 12
+             y_add = y_add + 1
+        endif
+
         ! Not elegant, but we need to repeat to catch the possible
         ! addition of 31days+31days:
 

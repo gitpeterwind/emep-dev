@@ -67,7 +67,7 @@ program myeul
                             Init_Derived 
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use GridValues_ml,    only : DefGrid  ! sets gl, gb, xm, gridwidth_m, etc.
-  use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG
+  use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use MassBudget_ml,           only : Init_massbudget,massbudget
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse, mm5,&
                                tiphys
@@ -295,13 +295,20 @@ program myeul
 
       open(IO_RES,file='eulmod.res')
       open(IO_LOG,file='RunLog.out')
+      open(IO_TMP,file='INPUT.PARA')
+    
 
+      read(IO_TMP,*) ntmp(1)
+      read(IO_TMP,*) ntmp(2)
+      read(IO_TMP,*) ntmp(3)  ! ds - iyr_ytrend
+      read(IO_TMP,fmt="(a)") runlabel1 ! ds, rv1_9_5 - explanation text short
+      read(IO_TMP,fmt="(a)") runlabel2 ! ds, rv1_9_5 - explanation text long
 
-      read(5,*) ntmp(1)
-      read(5,*) ntmp(2)
-      read(5,*) ntmp(3)  ! ds - iyr_ytrend
-      read(5,fmt="(a)") runlabel1 ! ds, rv1_9_5 - explanation text short
-      read(5,fmt="(a)") runlabel2 ! ds, rv1_9_5 - explanation text long
+!      read(5,*) ntmp(1)
+!      read(5,*) ntmp(2)
+!      read(5,*) ntmp(3)  ! ds - iyr_ytrend
+!      read(5,fmt="(a)") runlabel1 ! ds, rv1_9_5 - explanation text short
+!      read(5,fmt="(a)") runlabel2 ! ds, rv1_9_5 - explanation text long
 
       write(unit=IO_LOG,fmt=*)trim(runlabel1)
       write(unit=IO_LOG,fmt=*)trim(runlabel2)

@@ -955,10 +955,10 @@ module MARS_ml
 
             
      real, intent(in)  :: cat(2)    &  ! cation conc in moles/kg (input)
-                         ,an (3)       ! anion conc in moles/kg (input)
-     real, intent(out) :: gama(2,3) &  ! mean molal ionic activity coefs
+                         ,an (3)    &   ! anion conc in moles/kg (input)
                          ,molnu     &  ! tot # moles of all ions
                          ,phimult      ! multicomponent paractical osmotic coef
+     real, intent(out) :: gama(2,3)   ! mean molal ionic activity coefs
      logical, intent(in) :: deb
 
 !....................................................................

@@ -15,7 +15,7 @@ module DryDep_ml
  !hf dec-02 Structure changed so that DryDep can go inside loop in Runchem
 
  use My_UKDep_ml, only : Init_DepMap,  &   ! Maps indices between Vg-calculated (CDEP..
-                                       &   !and advected  (IXADV_..)
+                                       !&   !and advected  (IXADV_..)
                           NDRYDEP_CALC, &  ! No. Vd values calculated 
                           NDRYDEP_ADV, &   ! No. advected species affected
                           NDRYDEP_AER, &   !st No. Vd values for aerosol size modes
@@ -183,7 +183,6 @@ module DryDep_ml
  real, dimension(NSIZE):: aeRb, aeRbw , Vs
  real :: wstar, convec   
 
-  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
 
   real, save :: inv_gridarea  ! inverse of grid area, m2
 

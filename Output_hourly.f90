@@ -75,7 +75,7 @@
    integer :: NLEVELS_HOURLYih
    type(Deriv) :: def1 !for NetCDF
    real :: scale !for NetCDF
-   integer ::CDFtype,nk,klevel,ist,jst,ien,jen !for NetCDF
+   integer ::CDFtype,nk,klevel!for NetCDF
 
     if ( my_first_call ) then
 

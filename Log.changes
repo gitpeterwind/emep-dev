@@ -1,3 +1,39 @@
+================== Peter,     5/03/2004, rv1_9_27   ==========================
+
+Version compatible with Intel and Lahey compiler on IBM cluster (blizzard)
+
+NB: change in grun.pl: will not work with old grun.pl
+
+Several modules: Removed double declarations,
+	         Removed lines containing only a continuation line (&) (compiler bug)
+
+Advection_ml: preadvx,preadvy:
+		 small bug in array size declaration (preadvx only)
+	         non-blocking send with buffered arrays 
+BoundaryConditions_ml:
+		allocate also when size=0
+	        forall with mask replaced by loop
+
+Dates_ml: small bug in add_2dates (newdate%month could be > 12 at some intermediate stage)
+
+EmisGet: test of intext with "any" crashed: replaced by a loop
+
+Emissions_ml: initialisations
+
+MARS_ml: molnu,phimult defined as intent(in)
+
+Radiation_ml: initialize coszen=0. ( (?)so that it can be used in
+		"real, dimension(size(coszen,1),size(coszen,2)) :: expa, catten, Idrctn")
+
+Sites_ml: added fmt=" " in write(xxx,fmt=" " )
+
+Unimod.f90: read input parameters from file (INPUT.PARA) instead of from standard input
+		The file INPUT.PARA is produced by grun.pl
+
+grun.pl: produce INPUT.PARA to be read by Unimod.f90
+
+Makefile: commented out debug option
+
 ================== Svetlana,     4/03/2004, rv1_9_26 ==========================
 PM Water added to aerosols for OZONE.  Needs extension to ACID but to be done.....
 commited by Dave, so changes need to be filled in later.  From Sevtlana:

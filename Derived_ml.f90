@@ -38,7 +38,6 @@ use Met_ml, only :   roa,pzpbl,xksig
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
                         , atwS, atwN, ATWAIR  &
-                        , KMAX_MID &  ! =>  z dimension
                         , PPBINV  &   !   1.0e9, for conversion of units 
                         , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
                         , AOT_HORIZON&! limit of daylight for AOT calcs
@@ -243,14 +242,14 @@ def_ddep = (/&
 ,Deriv( 827, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCR","mg/m2")&
 ,Deriv( 828, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSN","mg/m2")&
 ,Deriv( 829, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSWE","mg/m2")&
-&
+!&
 ,Deriv( 830, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSW","mg/m2")&
 ,Deriv( 831, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCF","mg/m2")&
 ,Deriv( 832, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNDF","mg/m2")&
 ,Deriv( 833, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCR","mg/m2")&
 ,Deriv( 834, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSN","mg/m2")&
 ,Deriv( 835, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNWE","mg/m2")&
-&
+!&
 ,Deriv( 836, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSW","mg/m2")&
 ,Deriv( 837, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCF","mg/m2")&
 ,Deriv( 838, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNDF","mg/m2")&
@@ -271,10 +270,10 @@ def_2d = (/&
 ,Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")&
 ,Deriv( 609, "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")&
 !BUGGY ,Deriv( 611, "ACCSU", T, -1, ugSO4,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")&
-&
+!&
 ! -- simple advected species. Note that some indices need to be set as dummys
 !    in ACID, e.g. IXADV_O3
-&
+!&
 ,Deriv( 601, "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")&
 ,Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T, F , T , T , T ,"D2_SO4","ugS/m3")&
 ,Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T, F , T , T , T ,"D2_HNO3","ugN/m3")&
@@ -283,19 +282,19 @@ def_2d = (/&
 ,Deriv( 623, "ADV  ", T, IXADV_NO , ugN, T, F , T , T , T ,"D2_NO","ugN/m3")&
 ,Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T, F , T , T , T ,"D2_NO2","ugN/m3")&
 ,Deriv( 600, "ADV  ", T,IXADV_aNH4, ugN, T, F , T , T , T ,"D2_aNH4","ugN/m3")&
-&
+!&
 ,Deriv( 607, "ADV  ",T,IXADV_O3 ,PPBINV, F, F , T, T , T ,"D2_O3","ppb")&
 ,Deriv( 612, "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")&
 ,Deriv( 670, "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")&
 ,Deriv( 671, "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")&
-&
+!&
 ,Deriv( 615, "ADV  ",T,IXADV_PM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")&
 ,Deriv( 616, "ADV  ",T,IXADV_PMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")&
-&
+!&
 ,Deriv( 468, "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")&
 ,Deriv( 469, "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")&
 ,Deriv( 470, "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")&
-&
+!&
 !ds drydep
 !   set as "external" parameters - ie set outside Derived subroutine
 !   use index as lu, here 10=grass
@@ -1004,13 +1003,5 @@ def_3d = (/ &
    end subroutine aot_calc
  !=========================================================================
 end module Derived_ml
-
-
-
-
-
-
-
-
 
 

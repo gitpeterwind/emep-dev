@@ -118,7 +118,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_25";
+     $testv       = "rv1_9_27";
      $runlabel1    = "$testv";           # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_$year";   # NO SPACES! LONG (written into CDF files)
 
@@ -618,6 +618,12 @@ foreach $datafile ( qw ( Volcanoes.dat  MM_gfac1.dat lde_gfac2.dat lde_biomass.d
  }
  close(RMF);
 
+# make file with input parameters (to be read by Unimod.f90)
+system("rm INPUT.PARA");
+open(TMP,">INPUT.PARA");
+  print TMP "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n";
+close(TMP);
+
 foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
         NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2";
@@ -638,7 +644,7 @@ if ( $INTERACTIVE ) {
     
     #print PROG "$NTERM\n\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
     #print PROG "$NTERM\n$NASS\n$exclu\n$NDX\n$NDY\n\iyr_trend\n";
-    print PROG "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n";
+#pw put into INPUT.PARA    print PROG "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n";
     close(PROG);
 }
 #------------    End of Run model -------------------------------------

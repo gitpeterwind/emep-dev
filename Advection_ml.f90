@@ -2456,9 +2456,9 @@
 
 !	input
 	integer,intent(in):: msgnr
-	real,intent(in):: xn_adv(NSPEC_ADV,MAXLIMAX:MAXLIMAX*MAXLJMAX)
-	real,intent(in):: ps3d(MAXLIMAX:MAXLIMAX*MAXLJMAX)	&
-		,vel(MAXLIMAX+1:(MAXLIMAX+1)*MAXLJMAX)
+	real,intent(in):: xn_adv(NSPEC_ADV,MAXLIMAX:MAXLIMAX*(MAXLJMAX+1))
+	real,intent(in):: ps3d(MAXLIMAX:MAXLIMAX*(MAXLJMAX+1))	&
+		,vel(MAXLIMAX+1:(MAXLIMAX+1)*(MAXLJMAX+1))
 
 !	output
 	real,intent(out):: xnend(NSPEC_ADV,3,MAXLJMAX)		&
@@ -2469,115 +2469,129 @@
 !	local
 	integer  i, info
 
+        integer request1, request2, &
+             request_ps_w, request_ps_e, &
+             request_xn_w, request_xn_e
+        real buf_xn_w(NSPEC_ADV, 3, MAXLJMAX), &
+             buf_xn_e(NSPEC_ADV, 3, MAXLJMAX), &
+             buf_ps_w(3, MAXLJMAX), &
+             buf_ps_e(3, MAXLJMAX)
+
 !     Initialize arrays holding boundary slices
 
 !     send to WEST neighbor if any
 
 	if (neighbor(WEST).ge.0) then
-	  do i = lj0,lj1
- 
-	    xnbeg(:,1,i) = xn_adv(:,i*MAXLIMAX)
-	    xnbeg(:,2,i) = xn_adv(:,i*MAXLIMAX+1)
-	    xnbeg(:,3,i) = xn_adv(:,i*MAXLIMAX+2)
+	     do i = lj0,lj1
+                buf_xn_w(:,1,i) = xn_adv(:,i*MAXLIMAX)
+                buf_xn_w(:,2,i) = xn_adv(:,i*MAXLIMAX+1)
+                buf_xn_w(:,3,i) = xn_adv(:,i*MAXLIMAX+2)
+                
+                buf_ps_w(1,i) = ps3d(i*MAXLIMAX)
+                buf_ps_w(2,i) = ps3d(i*MAXLIMAX+1)
+                buf_ps_w(3,i) = ps3d(i*MAXLIMAX+2)
+             enddo
+             call gc_rsend_nonblock(request_xn_w,           &
+                  msgnr,3*MAXLJMAX*NSPEC_ADV,		&
+                  neighbor(WEST), info, buf_xn_w, buf_xn_w)
+             call gc_rsend_nonblock(request_ps_w,           &
+                  msgnr+100,3*MAXLJMAX,	                &
+                  neighbor(WEST), info, buf_ps_w, buf_ps_w)
+             
+             !         call gc_rsend(msgnr,3*MAXLJMAX*NSPEC_ADV,		&
+             !			neighbor(WEST), info, xnbeg, xnbeg)
+             !	  call gc_rsend(msgnr+100,3*MAXLJMAX,	        &
+             !			neighbor(WEST), info, psbeg, psbeg)
+          endif
 
-	    psbeg(1,i) = ps3d(i*MAXLIMAX)
-	    psbeg(2,i) = ps3d(i*MAXLIMAX+1)
-	    psbeg(3,i) = ps3d(i*MAXLIMAX+2)
+          if (neighbor(EAST).ge.0) then
+             do i = lj0,lj1
+                buf_xn_e(:,1,i) = xn_adv(:,i*MAXLIMAX+li1-3)
+                buf_xn_e(:,2,i) = xn_adv(:,i*MAXLIMAX+li1-2)
+                buf_xn_e(:,3,i) = xn_adv(:,i*MAXLIMAX+li1-1)
+                
+                buf_ps_e(1,i) = ps3d(i*MAXLIMAX+li1-3)
+                buf_ps_e(2,i) = ps3d(i*MAXLIMAX+li1-2)
+                buf_ps_e(3,i) = ps3d(i*MAXLIMAX+li1-1)
+             enddo
+             
+             call gc_rsend_nonblock(request_xn_e, msgnr,3*MAXLJMAX*NSPEC_ADV, &
+                  neighbor(EAST), info, buf_xn_e, buf_xn_e)
+             call gc_rsend_nonblock(request_ps_e, msgnr+100,3*MAXLJMAX,     &
+                  neighbor(EAST), info, buf_ps_e, buf_ps_e)
+             !	  call gc_rsend(msgnr,3*MAXLJMAX*NSPEC_ADV,		&
+             !			neighbor(EAST), info, xnend, xnend)
+             !	  call gc_rsend(msgnr+100,3*MAXLJMAX,			&
+             !			neighbor(EAST), info, psend, psend)
+          endif
 
-	  enddo
-	  call gc_rsend(msgnr,3*MAXLJMAX*NSPEC_ADV,		&
-			neighbor(WEST), info, xnbeg, xnbeg)
-	  call gc_rsend(msgnr+100,3*MAXLJMAX,			&
-			neighbor(WEST), info, psbeg, psbeg)
-	endif
 
-	if (neighbor(EAST).ge.0) then
+          if (neighbor(WEST).lt.0) then
+             do i = lj0,lj1
+                if(vel(i*(MAXLIMAX+1)+1).lt.0)then
+                   xnbeg(:,2,i) = 3.*xn_adv(:,i*MAXLIMAX+1)	&
+                        -2.*xn_adv(:,i*MAXLIMAX+2)
+                   xnbeg(:,3,i) = 2.*xn_adv(:,i*MAXLIMAX+1)	&
+                        -xn_adv(:,i*MAXLIMAX+2)
+                   
+                   psbeg(2,i) = 3.*ps3d(i*MAXLIMAX+1)-2.*ps3d(i*MAXLIMAX+2)
+                   psbeg(3,i) = 2.*ps3d(i*MAXLIMAX+1)-ps3d(i*MAXLIMAX+2)
+                else
+                   xnbeg(:,1,i) = xn_adv(:,i*MAXLIMAX)
+                   xnbeg(:,2,i) = xn_adv(:,i*MAXLIMAX)
+                   xnbeg(:,3,i) = xn_adv(:,i*MAXLIMAX)
+                   
+                   psbeg(1,i) = ps3d(i*MAXLIMAX)
+                   psbeg(2,i) = ps3d(i*MAXLIMAX)
+                   psbeg(3,i) = ps3d(i*MAXLIMAX)
+                endif
+             enddo
+          else 
+             call gc_rrecv(msgnr,MAXLJMAX*3*NSPEC_ADV,		&
+                  neighbor(WEST), info, xnbeg, xnbeg)
+             call gc_rrecv(msgnr+100,MAXLJMAX*3,			&
+                  neighbor(WEST), info, psbeg, psbeg)
+          endif
 
-	  do i = lj0,lj1
-	    xnend(:,1,i) = xn_adv(:,i*MAXLIMAX+li1-3)
-	    xnend(:,2,i) = xn_adv(:,i*MAXLIMAX+li1-2)
-	    xnend(:,3,i) = xn_adv(:,i*MAXLIMAX+li1-1)
+          if (neighbor(EAST).lt.0) then
+             do i = lj0,lj1
+                if(vel(i*(MAXLIMAX+1)+li1).ge.0)then
+                   xnend(:,1,i) = 2.*xn_adv(:,i*MAXLIMAX+li1-1)	&
+                        -xn_adv(:,i*MAXLIMAX+li1-2)
+                   xnend(:,2,i) = 3.*xn_adv(:,i*MAXLIMAX+li1-1)	&
+                        -2.*xn_adv(:,i*MAXLIMAX+li1-2)
+                   
+                   psend(1,i) = 2.*ps3d(i*MAXLIMAX+li1-1)	&
+                        -ps3d(i*MAXLIMAX+li1-2)
+                   psend(2,i) = 3.*ps3d(i*MAXLIMAX+li1-1)	&
+                        -2.*ps3d(i*MAXLIMAX+li1-2)
+                else
+                   xnend(:,1,i) = xn_adv(:,i*MAXLIMAX+li1)
+                   xnend(:,2,i) = xn_adv(:,i*MAXLIMAX+li1)
+                   xnend(:,3,i) = xn_adv(:,i*MAXLIMAX+li1)
+                   
+                   psend(1,i) = ps3d(i*MAXLIMAX+li1)
+                   psend(2,i) = ps3d(i*MAXLIMAX+li1)
+                   psend(3,i) = ps3d(i*MAXLIMAX+li1)
+                endif
+             enddo
+          else
+             call gc_rrecv(msgnr,MAXLJMAX*3*NSPEC_ADV,		&
+                  neighbor(EAST), info, xnend, xnend)
+             call gc_rrecv(msgnr+100,MAXLJMAX*3,			&
+                  neighbor(EAST), info, psend, psend)
+          endif
 
-	    psend(1,i) = ps3d(i*MAXLIMAX+li1-3)
-	    psend(2,i) = ps3d(i*MAXLIMAX+li1-2)
-	    psend(3,i) = ps3d(i*MAXLIMAX+li1-1)
-	  enddo
-	  call gc_rsend(msgnr,3*MAXLJMAX*NSPEC_ADV,		&
-			neighbor(EAST), info, xnend, xnend)
-	  call gc_rsend(msgnr+100,3*MAXLJMAX,			&
-			neighbor(EAST), info, psend, psend)
-	endif
-
-	if (neighbor(EAST).lt.0) then
-
-	  do i = lj0,lj1
- 	      
-
-	    if(vel(i*(MAXLIMAX+1)+li1).ge.0)then
-	      xnend(:,1,i) = 2.*xn_adv(:,i*MAXLIMAX+li1-1)	&
-			-xn_adv(:,i*MAXLIMAX+li1-2)
-	      xnend(:,2,i) = 3.*xn_adv(:,i*MAXLIMAX+li1-1)	&
-			-2.*xn_adv(:,i*MAXLIMAX+li1-2)
-
-	      psend(1,i) = 2.*ps3d(i*MAXLIMAX+li1-1)	&
-			-ps3d(i*MAXLIMAX+li1-2)
-	      psend(2,i) = 3.*ps3d(i*MAXLIMAX+li1-1)	&
-			-2.*ps3d(i*MAXLIMAX+li1-2)
-	    else
-	      xnend(:,1,i) = xn_adv(:,i*MAXLIMAX+li1)
-	      xnend(:,2,i) = xn_adv(:,i*MAXLIMAX+li1)
-	      xnend(:,3,i) = xn_adv(:,i*MAXLIMAX+li1)
-
-	      psend(1,i) = ps3d(i*MAXLIMAX+li1)
-	      psend(2,i) = ps3d(i*MAXLIMAX+li1)
-	      psend(3,i) = ps3d(i*MAXLIMAX+li1)
-	    endif
-	  enddo
-	endif
-
-	if (neighbor(WEST).lt.0) then
-
-	  do i = lj0,lj1
- 
-	    if(vel(i*(MAXLIMAX+1)+1).lt.0)then
-	      xnbeg(:,2,i) = 3.*xn_adv(:,i*MAXLIMAX+1)	&
-			-2.*xn_adv(:,i*MAXLIMAX+2)
-	      xnbeg(:,3,i) = 2.*xn_adv(:,i*MAXLIMAX+1)	&
-			-xn_adv(:,i*MAXLIMAX+2)
-
-	      psbeg(2,i) = 3.*ps3d(i*MAXLIMAX+1)-2.*ps3d(i*MAXLIMAX+2)
-	      psbeg(3,i) = 2.*ps3d(i*MAXLIMAX+1)-ps3d(i*MAXLIMAX+2)
-	    else
-
-	      xnbeg(:,1,i) = xn_adv(:,i*MAXLIMAX)
-	      xnbeg(:,2,i) = xn_adv(:,i*MAXLIMAX)
-	      xnbeg(:,3,i) = xn_adv(:,i*MAXLIMAX)
- 
-	      psbeg(1,i) = ps3d(i*MAXLIMAX)
-	      psbeg(2,i) = ps3d(i*MAXLIMAX)
-	      psbeg(3,i) = ps3d(i*MAXLIMAX)
-
-	    endif
-	  enddo
-	endif
-
-	if (neighbor(EAST).ge.0) then
-	  call gc_rrecv(msgnr,MAXLJMAX*3*NSPEC_ADV,		&
-			neighbor(EAST), info, xnend, xnend)
-	  call gc_rrecv(msgnr+100,MAXLJMAX*3,			&
-			neighbor(EAST), info, psend, psend)
-	endif
-
-!     receive from WEST neighbor if any
-
-	if (neighbor(WEST).ge.0) then
-	  call gc_rrecv(msgnr,MAXLJMAX*3*NSPEC_ADV,		&
-			neighbor(WEST), info, xnbeg, xnbeg)
-	  call gc_rrecv(msgnr+100,MAXLJMAX*3,			&
-			neighbor(WEST), info, psbeg, psbeg)
-	endif
-
-	end subroutine preadvx
+          !  synchronizing sent buffers (must be done for all ISENDs!!!)
+          if (neighbor(WEST) .ge. 0) then
+             call GC_WAIT(request_xn_w, info)
+             call GC_WAIT(request_ps_w, info)
+          endif
+          if (neighbor(EAST) .ge. 0) then
+             call GC_WAIT(request_xn_e, info)
+             call GC_WAIT(request_ps_e, info)
+          endif
+        end subroutine preadvx
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	subroutine preadvy(msgnr		&
@@ -2604,51 +2618,68 @@
 
 !	local
 	integer  i, info
+        
+        integer request1, request2, &
+             request_ps_n, request_ps_s, &
+             request_xn_n, request_xn_s
+        real buf_xn_n(NSPEC_ADV, 3, MAXLIMAX), &
+             buf_xn_s(NSPEC_ADV, 3, MAXLIMAX), &
+             buf_ps_n(3, MAXLIMAX), &
+             buf_ps_s(3, MAXLIMAX)
 
 !     Initialize arrays holding boundary slices
 
 !     send to SOUTH neighbor if any
 
-	if (neighbor(SOUTH).ge.0) then
+        if (neighbor(SOUTH) .ge. 0) then
+          !     send to SOUTH neighbor if any
 	  do i = li0,li1
  
-	    xnbeg(:,1,i) = xn_adv(:,i)
-	    xnbeg(:,2,i) = xn_adv(:,i+MAXLIMAX)
-	    xnbeg(:,3,i) = xn_adv(:,i+2*MAXLIMAX)
+             buf_xn_s(:,1,i) = xn_adv(:,i)
+             buf_xn_s(:,2,i) = xn_adv(:,i+MAXLIMAX)
+             buf_xn_s(:,3,i) = xn_adv(:,i+2*MAXLIMAX)
  
-	    psbeg(1,i) = ps3d(i)
-	    psbeg(2,i) = ps3d(i+MAXLIMAX)
-	    psbeg(3,i) = ps3d(i+2*MAXLIMAX)
+             buf_ps_s(1,i) = ps3d(i)
+             buf_ps_s(2,i) = ps3d(i+MAXLIMAX)
+             buf_ps_s(3,i) = ps3d(i+2*MAXLIMAX)
 
 	  enddo
-	  call gc_rsend(msgnr,3*MAXLIMAX*NSPEC_ADV,		&
-			neighbor(SOUTH), info, xnbeg, xnbeg)
-	  call gc_rsend(msgnr+100,3*MAXLIMAX,			&
-			neighbor(SOUTH), info, psbeg, psbeg)
 
-	endif
+	  call gc_rsend_nonblock(request_xn_s,msgnr,3*MAXLIMAX*NSPEC_ADV,&
+               neighbor(SOUTH), info, buf_xn_s, buf_xn_s)
+	  call gc_rsend_nonblock(request_ps_s,msgnr+100,3*MAXLIMAX,&
+               neighbor(SOUTH), info, buf_ps_s, buf_ps_s)
+!	  call gc_rsend(msgnr,3*MAXLIMAX*NSPEC_ADV,		&
+!			neighbor(SOUTH), info, xnbeg, xnbeg)
+!	  call gc_rsend(msgnr+100,3*MAXLIMAX,			&
+!			neighbor(SOUTH), info, psbeg, psbeg)
+       endif
 
-	if (neighbor(NORTH).ge.0) then
-
+       if (neighbor(NORTH) .ge. 0) then
 	  do i = li0,li1
-	    xnend(:,1,i) = xn_adv(:,i+(lj1-3)*MAXLIMAX)
-	    xnend(:,2,i) = xn_adv(:,i+(lj1-2)*MAXLIMAX)
-	    xnend(:,3,i) = xn_adv(:,i+(lj1-1)*MAXLIMAX)
+             buf_xn_n(:,1,i) = xn_adv(:,i+(lj1-3)*MAXLIMAX)
+             buf_xn_n(:,2,i) = xn_adv(:,i+(lj1-2)*MAXLIMAX)
+             buf_xn_n(:,3,i) = xn_adv(:,i+(lj1-1)*MAXLIMAX)
 
-	    psend(1,i) = ps3d(i+(lj1-3)*MAXLIMAX)
-	    psend(2,i) = ps3d(i+(lj1-2)*MAXLIMAX)
-	    psend(3,i) = ps3d(i+(lj1-1)*MAXLIMAX)
+             buf_ps_n(1,i) = ps3d(i+(lj1-3)*MAXLIMAX)
+             buf_ps_n(2,i) = ps3d(i+(lj1-2)*MAXLIMAX)
+             buf_ps_n(3,i) = ps3d(i+(lj1-1)*MAXLIMAX)
 	  enddo
-	  call gc_rsend(msgnr,3*MAXLIMAX*NSPEC_ADV,		&  
-			neighbor(NORTH), info, xnend, xnend)
-	  call gc_rsend(msgnr+100,3*MAXLIMAX,			&
-			neighbor(NORTH), info, psend, psend)
-	endif
+          call gc_rsend_nonblock(request_xn_n,msgnr,3*MAXLIMAX*NSPEC_ADV,&  
+               neighbor(NORTH), info, buf_xn_n, buf_xn_n)
+	  call gc_rsend_nonblock(request_ps_n,msgnr+100,3*MAXLIMAX,&
+               neighbor(NORTH), info, buf_ps_n, buf_ps_n)
+
+!	  call gc_rsend(msgnr,3*MAXLIMAX*NSPEC_ADV,		&  
+!			neighbor(NORTH), info, xnend, xnend)
+!	  call gc_rsend(msgnr+100,3*MAXLIMAX,			&
+!			neighbor(NORTH), info, psend, psend)
+       endif
+
+!     receive from SOUTH neighbor if any
 
 	if (neighbor(SOUTH).lt.0) then
-
 	  do i = li0,li1
-
 	    if(vel(i+MAXLIMAX).lt.0)then
 	      xnbeg(:,2,i) = 3.*xn_adv(:,i+MAXLIMAX)	&
 			-2.*xn_adv(:,i+2*MAXLIMAX)
@@ -2669,10 +2700,14 @@
 
 	    endif
 	  enddo
-	endif
+       else
+	  call gc_rrecv(msgnr,MAXLIMAX*3*NSPEC_ADV,		&
+			neighbor(SOUTH), info, xnbeg, xnbeg)
+	  call gc_rrecv(msgnr+100,MAXLIMAX*3,			&
+			neighbor(SOUTH), info, psbeg, psbeg)
+       endif
 
 	if (neighbor(NORTH).lt.0) then
-
 	  do i = li0,li1
  
 	    if(vel(i+lj1*MAXLIMAX).ge.0)then
@@ -2695,26 +2730,25 @@
 	      psend(3,i) = ps3d(i+lj1*MAXLIMAX)
 	    endif
 	  enddo
-	endif
-
-	if (neighbor(NORTH).ge.0) then
+       else
 	  call gc_rrecv(msgnr,MAXLIMAX*3*NSPEC_ADV,		&
 			neighbor(NORTH), info, xnend, xnend)
 	  call gc_rrecv(msgnr+100,MAXLIMAX*3,			&
 			neighbor(NORTH), info, psend, psend)
+       endif
+        
+!  synchronizing sent buffers (must be done for all ISENDs!!!)
+       if (neighbor(SOUTH) .ge. 0) then
+          call GC_WAIT(request_xn_s, info)
+          call GC_WAIT(request_ps_s, info)
+       endif
+       if (neighbor(NORTH) .ge. 0) then
+          call GC_WAIT(request_xn_n, info)
+          call GC_WAIT(request_ps_n, info)
+       endif
 
-	endif
+     end subroutine preadvy
 
-!     receive from SOUTH neighbor if any
-
-	if (neighbor(SOUTH).ge.0) then
-	  call gc_rrecv(msgnr,MAXLIMAX*3*NSPEC_ADV,		&
-			neighbor(SOUTH), info, xnbeg, xnbeg)
-	  call gc_rrecv(msgnr+100,MAXLIMAX*3,			&
-			neighbor(SOUTH), info, psbeg, psbeg)
-	endif
-
-	end subroutine preadvy
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	subroutine adv_var(numt)

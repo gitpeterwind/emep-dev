@@ -280,6 +280,11 @@ contains
        !/**  and  initialise  **/
        globnland(:,:) = 0     ! csu  initialise globnland with 0
        flat_globnland(:,:)=0  !hf
+       globland(:,:,:) = 0    !hk
+       globemis(:,:,:,:) = 0  !hk
+       flat_globland(:,:,:)=0 !hk
+       globemis_flat(:,:,:) =0!hk
+
    end if
 
    do iem = 1, NEMIS
