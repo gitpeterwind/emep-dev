@@ -320,8 +320,8 @@ contains
     if ( me == 0 ) then
         write(unit=6,fmt=*) "Country totals"
         write(unit=IO_LOG,fmt=*) "Country totals"
-        write(unit=6,fmt="(2a4,3x,10a12)")  " N"," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
-        write(unit=IO_LOG,fmt="(2a4,3x,10a12)") " N"," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+        write(unit=6,fmt="(2a4,3x,10a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+        write(unit=IO_LOG,fmt="(2a4,3x,10a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
 
         do ic = 1, NLAND
            ccsum = sum( sumemis(ic,:) )

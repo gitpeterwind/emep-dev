@@ -85,7 +85,7 @@ $STEFFEN     = "/home/u2/mifaung";
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
 
-$USER        =  $PETER ;      
+$USER        =  $DAVE ;      
 
 $USER  =~ /(\w+ $)/x ;       # puts word characters (\w+) at end ($) into "$1"
 $WORK{$USER} = "/work/$1";   # gives e.g. /work/mifads
@@ -107,8 +107,8 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_9_5";
-     $runlabel1    = "CLE";   # NO SPACES! SHORT name (used in CDF names)
+     $testv       = "rv1_9_6";
+     $runlabel1    = "TEST_of_$testv";   # NO SPACES! SHORT name (used in CDF names)
      $runlabel2    = "${testv}_CLE_$year";   # NO SPACES! LONG (written into CDF files)
 
 } elsif ( $ACID ) {
@@ -121,7 +121,7 @@ $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and
 $version     = "Unimod" ;  
 $subv        = "$testv" ;                  # sub-version (to track changes)
 $Case        = "DSTEST" ;                   #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/Unify/$testv"; # input of source-code
+$ProgDir     = "$USER/Unify/Unimod.$testv"; # input of source-code
 $MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
 $DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
 $PROGRAM     = "$ProgDir/$version";         # programme
@@ -170,7 +170,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
   # -- or --
-# $NTERM =  12;       # for testing, simply reset here
+ $NTERM =  3;       # for testing, simply reset here
 
   print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
