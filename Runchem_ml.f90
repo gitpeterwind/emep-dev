@@ -99,6 +99,7 @@ subroutine runchem()
                      call Code_Timer(tim_before)
 
                      !****** debug cell set here *******
+                     debug_flag =  .false.   !ds rv1_9_23 for safety
                      if ( MYDEBUG ) then
 
                        i_emep = i + ISMBEG + gi0 - 2  ! EMEP coordinates

@@ -1,4 +1,10 @@
-================== Dave,        21/01/2004, rv1_9_21 ==========================
+================== Dave,        29/01/2004, rv1_9_23 ==========================
+
+RunChem_ml ... debug_flag set false before DEBUG tests
+grun.pl  - now chooses sonde file depending on SR or not - fewer stations
+           used for SR runs.
+
+================== Dave,        21/01/2004, rv1_9_22 ==========================
 
 GlobalBCs_ml   - add close(IO_GLOBBC)  statements after read. Maybe it doesn't 
                  matter, but it feels safer!
