@@ -58,6 +58,8 @@ require "flush.pl";
 
 $year = "2000";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
+# NEW: iyr_trend can be set to meteorology year or arbitrary year, say 2050
+$iyr_trend = $year;  
 
 print "Year is $yy YEAR $year\n";
 
@@ -104,12 +106,12 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_10";
+     $testv       = "rv1_6_11";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
      @emislist = qw ( sox nox nh3 pm25 pmco ) ;
-     $testv       = "rv1_6_9";
+     $testv       = "rv1_6_11";
 } 
 #$H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv147";     # Needed for both acid and ozone
 $H2O2DIR     = "$HILDE/BC_data/EMEPH2O2_rv1.5.1oxlim";# Needed for both acid and ozone

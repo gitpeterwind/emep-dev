@@ -170,9 +170,7 @@ contains
 
  !-------
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- subroutine BoundaryConditions(year,month)
-
-
+ subroutine BoundaryConditions(year,iyr_trend,month)
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  !** DESCRIPTION
@@ -183,8 +181,12 @@ contains
  !   in Set_bcmap with atomic weights.... for the future..
  !
  ! On the first call, we also run the setup-subroutines
+ !
+ !ds rv1.6.10 change: year is now obtained from the iyr_trend set in grun.pl
+ ! Allows say runs with BCs for 2100 and met of 1990.
  !____________________________________________________________________________
-  integer, intent(in) :: year
+  integer, intent(in) :: year        ! "meteorology" year        ds  rv1.6.11
+  integer, intent(in) :: iyr_trend   ! "trend" year              ds  rv1.6.11 
   integer, intent(in) :: month
   integer :: ibc, iem, k,iem1,i,j     ! loop variables
   integer :: info              !  used in gc_rsend
@@ -204,19 +206,18 @@ contains
 
 !hf BC  real, dimension(MAXLIMAX,MAXLJMAX) :: wt_00, wt_01, wt_10, wt_11
 !hf BC  integer, dimension(MAXLIMAX,MAXLJMAX) :: &
-!hf BC            ixp, iyp !  global (UiO) model coordinates of emep point (i,j)
-                     !  (comes from InterpolationFactors subroutine)
+!hf BC     ixp, iyp !  global (UiO) model coordinates of emep point (i,j)
+                    !  (comes from InterpolationFactors subroutine)
   integer  :: iglobact,jglobact
   integer  ::  errcode
   integer, save :: idebug = 0, itest=1, i_test, j_test
-!h2o2
-   character(len=30) :: fname 
+  character(len=30) :: fname 
 
   if ( my_first_call ) then
 
     write(*,*) "FIRST CALL TO BOUNDARY CONDITIONS, me :", me
-    !ds rv1.6.10 call My_bcmap()      ! assigns bc2xn_adv and bc2xn_bgn mappings
-    call My_bcmap(year)      ! assigns bc2xn_adv and bc2xn_bgn mappings
+    !ds rv1.6.11 call My_bcmap()  ! assigns bc2xn_adv and bc2xn_bgn mappings
+    call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
     call Set_bcmap()     ! assigns xn2adv_changed, etc.
 
     num_changed = num_adv_changed + num_bgn_changed   !u1
@@ -267,12 +268,12 @@ contains
   do ibc = 1, NGLOB_BC
 
                    !=================================================
-      if(me == 0) call GetGlobalData(year,month,ibc,bc_used(ibc) &
+      if(me == 0) call GetGlobalData(year,iyr_trend,month,ibc,bc_used(ibc) &
                  ,iglobact,jglobact,bc_data,io_num,errcode)
                    !=================================================
       if ( DEBUG_BCS ) then
-          write(*,*)'Kaller GetGlobalData med ibc,month,bc_used=', &
-                    ibc,month,bc_used(ibc)
+          write(*,*)'Calls GetGlobalData: year,iyr_trend,ibc,month,bc_used=', &
+                    year,iyr_trend,ibc,month,bc_used(ibc)
 
       end if
       if(ibc == 1 .and. errcode /= 0 ) &

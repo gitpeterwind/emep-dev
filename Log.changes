@@ -1,7 +1,18 @@
 ==============================================================================
-=================== Hilde, 11th June, rv1.6.11 =================================
+=================== Hilde, Dave, 11th June, rv1.6.11 =================================
 ==============================================================================
 SO2/NH3 dependence for NH3 dry dep included in Rsurface_ml.f90
+
+Dates_ml changed to use FIRST_SDYEAR=1980, LAST_SDYEAR=2001
+  Timefactors_ml modified to use these also.
+
+iyr_ytrend introduced - allows "trend" year to get BCs outside the
+   normal 1990-2000 range, e.g. for 1980 or 2050. 
+   Changes in:
+        BoundaryConditions, ZD_XX/My_BoundaryCOnditions, Global_ml.f90,
+        grun.pl, ModelConstants_ml, Unimod.f90
+
+** Specify iyr_trend in grun.pl **
 
 ==============================================================================
 =================== Dave, 11th June, rv1.6.10 =================================

@@ -62,6 +62,9 @@ module ModelConstants_ml
 
   integer, public, save   :: nterm, nmax, nstep, nprint,  nass, nbound
 
+!rv1.6.10 change
+  integer, public, save   :: iyr_trend !ds Year specified for say BC changes
+
   ! was set in readpar_mach_ml, but not used!
   !real,    public, parameter   :: 
     ! alfa  = 1.5e-01   ! -> DRY DEP. FACTOR FOR SO2,SO4
@@ -73,7 +76,7 @@ module ModelConstants_ml
   type(date), public, save :: current_date
 
   integer, public, parameter :: NNLANDUSE  = 17 ! Number of land use types 
-                                                ! for TFMM !!! rivm  (tmp)
+                                                ! for SEI landuse
       
   real, public, parameter  ::    &
        EPSIL=1.0e-30             &  ! small number
@@ -192,10 +195,3 @@ module ModelConstants_ml
 
 end module ModelConstants_ml
 !_____________________________________________________________________________
-!REMOVED:
-!g11   ,  CHEFAC=6.023e20           &  ! Avog x 10-3
-!gv    ,  PINC=1000.0               &
-!gv    ,  PBAS=-PINC                &
-!g11   ,  CHEFAC=6.023e20           &  ! Avog x 10-3
-!gv    ,  PINC=1000.0               &
-!gv    ,  PBAS=-PINC                &

@@ -9,7 +9,7 @@
 ! eulpar.inc
 ! eulnx.inc
 !----------------------------------------------------------------------------
-!  $Id: Par_ml.pat,v 1.5 2002-09-13 09:13:52 mifads Exp $
+!  $Id: Par_ml.pat,v 1.6 2003-06-12 09:32:02 mifads Exp $
 !  Erik Berge, DNMI    Roar Skaalin, SINTEF Industrial Mathematics
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
@@ -27,9 +27,6 @@
 !  and  ismbeg,jsmbeg   to 1
 !  also we have now to distinguish mfsize for input and output: 
 !  mfsizeinp,mfsizeout!!!
-!RESTRI
-!
-!RESTRI + uni
 
 implicit none
 private
@@ -43,13 +40,10 @@ private
   , GJMAX       =   domaindy     & ! Number of global points in latitude
   , NPROCX      =   nprocx       & ! Actual number of processors in longitude
   , NPROCY      =   nprocy       & ! Actual number of processors in latitude
-!RESTRI + uni
   , MAXLIMAX   = (GIMAX+NPROCX-1)/NPROCX   & ! Maximum number of local points in longitude
   , MAXLJMAX   = (GJMAX+NPROCY-1)/NPROCY   & ! Maximum number of local points in latitude
-!RESTRI
   , MFSIZEINP = IILARDOM*JJLARDOM   & ! Maximum field size for input
   , MFSIZEOUT = GIMAX*GJMAX           ! Maximum field size for output
-!RESTRI
 !
  integer , public, parameter :: &
       NPROC = NPROCX*NPROCY     ! Actual total number of processors
@@ -117,20 +111,6 @@ private
       tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
 !
 !
-!     All variables *which were* stored in common blocks PARTOPO (single variables 
-!     and local tables) and TPARTOPO (tables common to all processors)
-!
-! integer, public, save ::                   &
-!            limax,  li0,  li1,  gi0,  gi1   &
-!         ,  ljmax,  lj0,  lj1,  gj0,  gj1   &
-!        ,  me,     mex,    mey
-! defined above:         ,  neighbor
-
-! integer, public, save ::       & 
-!      tlimax,  tgi0,  tgi1      &
-!    , tljmax,  tgj0,  tgj1
-
-
 !--- eulnx.inc follows:
 
 !------------------------------------------------------------------------------
@@ -189,13 +169,6 @@ private
 
 	subroutine parinit(min_grids)   !u4 - argument added to avoid "use"
 
-!	use PAR_ML   , only: GIMAX,GJMAX,NPROCX,NPROCY,NPROC   &
-!     			,li0,li1,limax,lj0,lj1,ljmax           &
-!     			,gi0,gi1,gj0,gj1		       &
-!     			,me,mex,mey			       &
-!     			,tgi0,tgi1,tlimax,tgj0,tgj1,tljmax     &
-!     			,neighbor,EAST,WEST,SOUTH,NORTH,NOPROC
-!u4 	use Advection_ml , only: MIN_ADVGRIDS
 
 	implicit none
         integer, intent(in) :: min_grids  ! u4

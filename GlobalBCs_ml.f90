@@ -23,9 +23,7 @@ module GlobalBCs_ml
 !  are since these names are not seen outside this module.
 !   -- for use with BoundConditions_ml and My_BoundConditions_ml --
 !____________________________________________________________________________
-!rv1.4.15 ds  use GenSpec_bgn_ml, only :O3fix !10ppb added to Logan data
   use GridValues_ml, only: gbacmax,gbacmin,glacmax,glacmin,&
-!hf BC
   gl,gb_glob,GlobalPosition
 
   implicit none
@@ -53,8 +51,6 @@ module GlobalBCs_ml
   ! ** usually only changed when global-model output changes **
 
   integer, public, parameter ::  NGLOB_BC  = 13 ! No. species setup here
-!u3  integer, public, parameter ::  NLOGAN_BC  = 1 ! No. species in Logans files
-!u3 - added : 
   integer, public, parameter :: &
     IBC_O3       =  1   &
    ,IBC_NO       =  2   &
@@ -70,7 +66,6 @@ module GlobalBCs_ml
    ,IBC_CH3CHO   = 12   &
    ,IBC_H2O2     = 13   
 
- !u3 - NEW**
   ! we define some concentrations in terms of sine curves and other
   ! simple data:
  
@@ -88,7 +83,6 @@ module GlobalBCs_ml
 ! the actual values - do not use IGLOB,JGLOB, but the actual one's
   integer, save, private  :: iglbeg,iglend
   integer, save, private  :: jglbeg,jglend
-!  real, save, private     :: stlongact,stlatact
 
   ! ==========================================================================
 
@@ -105,22 +99,16 @@ contains
   real hel1,hel2
   integer,intent(out)   :: iglobact,jglobact
 !hf iglbeg and jglbeg is changed!!
-    !hel1 = (ISMBEG +1.)/3.!global i 150*150 emep coord of start of domain
-    !hel2 = (ISMBEG+GIMAX)/3.!global i 150*150 emep coord of end of domain
     hel1 = ISMBEG
     hel2 = ISMBEG+GIMAX-1
-    iglbeg = nint(hel1)
+    iglbeg = nint(hel1)  ! global i emep coord of start of domain
     iglend = nint(hel2)
-    !iglobact = iglend-iglbeg+1
     iglobact = GIMAX  
 
-    !hel1 = (JSMBEG+1.)/3.     !global j 150*150 emep coord of start of domain
-    !hel2 = (JSMBEG + GJMAX)/3.!global j 150*150 emep coord of end of domain
     hel1 = JSMBEG
     hel2 = JSMBEG+GJMAX-1
     jglbeg = nint(hel1)
     jglend = nint(hel2)
-    !jglobact = jglend-jglbeg+1
     jglobact = GJMAX
 
     print *,'iglbeg,iglend,iglobact',iglbeg,iglend,iglobact
@@ -130,11 +118,10 @@ contains
  end subroutine setgl_actarray
  !-------
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- subroutine GetGlobalData(year,month,ibc,used        &
+ subroutine GetGlobalData(year,iyr_trend,month,ibc,used        &
                 ,iglobact,jglobact,bc_data,io_num,errcode)
 
-  use Io_ml,             only : IO_GLOBBC, ios, open_file
-!hf BC
+ use Io_ml,             only : IO_GLOBBC, ios, open_file
  use ModelConstants_ml, only: KMAX_MID
  use Dates_ml,   only : daynumber    ! ds rv1.2
  use Par_ml,     only : me,NPROC
@@ -143,8 +130,8 @@ contains
    !== HANDLES READ_IN OF GLOBAL DATA. We read in the raw data from the
    !   global model, and do the vertical interpolation to EMEP k values
    !   here if the species is to be used.
-  !u3 integer   :: iglobact,jglobact
    integer,             intent(in) :: year   ! ds for Mace Head correction
+   integer,             intent(in) :: iyr_trend !ds Allows future/past years
    integer,             intent(in) :: month
    integer,             intent(in) :: ibc    ! Index of BC, u3
    integer,             intent(in) :: used   ! set to 1 if species wanted
@@ -156,17 +143,11 @@ contains
    logical, save :: my_first_call = .true.      ! u3
 
    real, dimension(IGLOB,JGLOB,KMAX_MID) :: bc_rawdata   ! Data (was rtcdmp)
-!hf BC   real, dimension(IGLOB,JGLOB,ITOP) :: bc_rawdata   ! Data (was rtcdmp)
 
 
 ! Now we want fake data on EMEP 50*50 grid....
 !hf BC changes
-!   integer, dimension(IGLOB,JGLOB), save :: bc_long  !u3  long of 150*150 emep
-!   integer, dimension(IGLOB,JGLOB), save :: bc_lat   !u3  lat  of 150*150 emep
 
-   !integer, dimension(IGLOB), save :: i50  !emep 50*50 coord av emep 150*150 i
-   !integer, dimension(JGLOB), save :: j50  !emep 50*50 coord av emep 150*150 j
-!hf BC   integer, dimension(JGLOB), save :: lat5     !u3  for latfunc below
    integer, dimension(IGLOB,JGLOB), save :: lat5     !u3  for latfunc below
 
    real, dimension(NGLOB_BC,6:14), save  :: latfunc  !u3  lat. function
@@ -176,14 +157,42 @@ contains
    integer :: i, j , k,i1,j1
    real ::val
    character(len=30) :: fname    ! input filename
+   character(len=30) :: errmsg   ! For error messages
    integer, save     :: oldmonth = -1  
+   real :: trend_o3, trend_co, trend_voc  !ds rv1.6.11
    io_num = IO_GLOBBC          ! for closure in BoundCOnditions_ml
 
-  !ds - rv1.6.x   Mace Head ozone concentrations for backgroudn sectors
-  ! from Fig 5.,  Derwent et al., 1998, AE Vol. 32, No. 2, pp 145-157
+!==================================================================
+! Trends - derived from EMEP report 3/97
+!ds rv1.6.10 - adjustment for years outside the range 1990-2000.
 
 
-!=========== Generated from Mace Head Data =======================
+  if ( iyr_trend >=  1990 ) then
+         trend_o3 = 1.0
+         trend_co = 1.0
+         trend_voc= 1.0
+  else
+         trend_o3 = exp(-0.01*1.0 *(1990-iyr_trend))
+         trend_co = exp(-0.01*0.85*(1990-iyr_trend)) ! Zander:CO
+         trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
+  end if
+  write(6,"(a20,3f8.3)") "TRENDS O3,CO,VOC ", trend_o3, trend_co, trend_voc
+  !trend_CH4 set in My_BoundaryConditions
+  !trend_ch4= exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
+  !FMI if ( iyr_trend == 2050 ) trend_o3 = 1.46
+  !FMI if ( iyr_trend == 2051 ) trend_o3 = 1.26
+  !FMI if ( iyr_trend == 2050 ) trend_ch4 = 1.5
+  !FMI if ( iyr_trend == 2051 ) trend_ch4 = 1.4061
+
+!==================================================================
+!=========== BCs Generated from Mace Head Data =======================
+!
+!ds - rv1.6.x   Mace Head ozone concentrations for backgroudn sectors
+! from Fig 5.,  Derwent et al., 1998, AE Vol. 32, No. 2, pp 145-157
+!
+!ds - here we use the meteorology year to get a reaslistic O3.
+!      Later we use iyr_trend to adjust for otyer years, say for 2050.
+
 if( year == 1990) then 
    macehead_O3 = (/    35.3,    36.3,    38.4,    43.0,    41.2,    33.4 & 
 	,    35.1,    27.8,    33.7,    36.2,    28.4,    37.7/) 
@@ -222,7 +231,9 @@ if( year == 1990) then
                      29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
  end if
 !=========== Generated from Mace Head Data =======================
+
    errcode = 0
+   errmsg = "ok"
 
  if ( DEBUG_Logan ) print *, "DEBUG_LOgan ibc, mm", ibc, month
 
@@ -233,14 +244,9 @@ if( year == 1990) then
 
      twopi_yr = 4.0 * atan(1.0)  / 365.25  ! 2pi/365
 
-!hf BC
    call GlobalPosition  !get gb for global domaib
    do i = 1, IGLOB 
      do j = 1, JGLOB    ! Don't bother with south pole complications
-        !bc50 i50(i)=3*i -1
-        !bc50 j50(j)=3*j -1
-        !bc50 bc_lat(i,j) = gb_glob(i50(i),j50(j)) ! gb is local. Must make global
-        !lat5(i,j) = bc_lat(i,j)/5      ! lat/5 used in latfunc below
 
         lat5(i,j) = gb_glob(i,j)/5      ! lat/5 used in latfunc below
         lat5(i,j) = max(lat5(i,j),6)   ! Min value in latfunc
@@ -297,9 +303,6 @@ if( year == 1990) then
    end if ! my_first_call
  ! ========= end of first call ===================================
 
-!hf BC   if( ibc == IBC_O3 .and. month /= oldmonth ) then    !! Open new file
-!month /= oldmonth not needed
-
 
   !u3 - NEW - Read ozone for IBC_O3, set for others:
    !+
@@ -314,11 +317,7 @@ if( year == 1990) then
 
               write(unit=fname,fmt="(a5,i2.2)") "h2o2.",month
               call open_file(IO_GLOBBC,"r",fname,needed=.true.) 
-
-              if ( ios /= 0 )  then
-                call gc_abort (me,NPROC,"BC files module ios error ")
-              endif
-
+              if ( ios /= 0 ) errmsg = "BC Error H2O2"
 
               read(IO_GLOBBC,*) bc_rawdata
 
@@ -327,47 +326,28 @@ if( year == 1990) then
 
               write(unit=fname,fmt="(a6,i2.2)") "ozone.",month
               call open_file(IO_GLOBBC,"r",fname,needed=.true.) 
-
-              if ( ios /= 0 )  then
-                call gc_abort (me,NPROC,"BC files module ios error ")
-              endif
-
+              if ( ios /= 0 ) errmsg = "BC Error O3"
 
               read(IO_GLOBBC,*) bc_rawdata
 
-            ! Logan's data has more than 1000 ppb at the higher levels. This
-            ! might be correct, but I worry about the ability of our 
-            ! advection scheme to cope with huge gradient properly. Hence, 
-            ! CRUDE and temporary FIX:
- 
-              !ds rv1_6_5x where ( bc_rawdata > 300.0 )
-              !ds rv1_6_5x    bc_rawdata = 300.0 
-              !ds rv1_6_5x end where
-!rv1.4.7 As use of the Logan BCs seems to give too little  O3 at classic
-!        background stations such as Mace Head, we add 10 ppb. Crude, but
-!        the Logan dataset is very large-scale and derived from not too
-!        many sondes. Given the discrepancy, I (ds) prefer to get Mace Head
-!        right.
-!rv1.4.7 TEST HF Increase O3 BC
-!rv1.4.15 Not needed now,     bc_rawdata=bc_rawdata+O3fix
 
        ! ds Mace Head adjustment: get mean ozone from Eastern sector
 
-          O3fix = sum( bc_rawdata(1:73,1:80,20) )
-          O3fix = O3fix/(73.0*80.0)  - macehead_O3(month)
+              O3fix = sum( bc_rawdata(1:73,1:80,20) )
+              O3fix = O3fix/(73.0*80.0)  - macehead_O3(month)
 
-          write(6,"(a10,i4,3f8.3)") "O3FIXes ", &
+              write(6,"(a10,i4,3f8.3)") "O3FIXes ", &
                  month, bc_rawdata(73,48,20), macehead_O3(month), O3fix
-          bc_rawdata=max(15.0,bc_rawdata-O3fix)
+
+              bc_rawdata=max(15.0,bc_rawdata-O3fix)
+              bc_rawdata=trend_o3 * bc_rawdata  !ds rv1.6.11
+
 
 !            case   ( IBC_SO2 )
 !              write(*,*)'I READ SO2'
 !              write(unit=fname,fmt="(a4,i2.2)") "so2.",month
 !              call open_file(IO_GLOBBC,"r",fname,needed=.true.) 
-!
-!              if ( ios /= 0 )  then
-!                call gc_abort (me,NPROC,"BC files module ios error ")
-!              endif
+!              if ( ios /= 0 ) errmsg = "BC Error SO2"
 !
 !              read(IO_GLOBBC,*) bc_rawdata
 
@@ -384,7 +364,6 @@ if( year == 1990) then
                                        ( SpecBC(ibc)%amp * cosfac)
 
              !/ - correct for other heights
-!hf BC               do k = 2, ITOP
                do k = 2, KMAX_MID
                   bc_rawdata(:,:,k) =   &
                      bc_rawdata(:,:,1)*exp( -(k-1)/SpecBC(ibc)%hz )
@@ -396,16 +375,20 @@ if( year == 1990) then
 !hf BC
                do i = 1, IGLOB
                   do j = 1, JGLOB
-!hf BC                  bc_rawdata(:,j,:) = bc_rawdata(:,j,:) * latfunc(ibc,lat5(j))
                      bc_rawdata(i,j,:) = bc_rawdata(i,j,:) * latfunc(ibc,lat5(i,j))
                   enddo
                end do
              !/ - end of correction for latitude functions ---------------
 
-          case ( IBC_SO2, IBC_SO4, IBC_HCHO, IBC_CH3CHO  )
-!hf TEST reading so2
+             !/ ds trend adjustments:
+               if( ibc == IBC_C4H10 .or. ibc == IBC_C2H6 )then
+                 bc_rawdata = trend_voc * bc_rawdata
+               else if( ibc == IBC_CO )then
+                 bc_rawdata = trend_co * bc_rawdata
+               end if
 
-!              case ( IBC_SO4, IBC_HCHO, IBC_CH3CHO  )
+          case ( IBC_SO2, IBC_SO4, IBC_HCHO, IBC_CH3CHO  )
+
               ! (No vertical variation for S in marine atmosphere, see W99)
               !  and PAN is just temporary, with some guessing that
               !  since sources decrease with altitude, but lifetime
@@ -417,19 +400,16 @@ if( year == 1990) then
                                        ( SpecBC(ibc)%amp * cosfac)
 
              !/ - correct for latitude functions --------------------------
-               if ( DEBUG_Logan ) then
-                     write(*,*) "LOGAN HORIZ", ibc, SpecBC(ibc)%surf, cosfac
-               end if
+               if ( DEBUG_Logan ) write(*,*) "LOGAN HORIZ", &
+                       ibc, SpecBC(ibc)%surf, cosfac
 !hf BC
                do i = 1, IGLOB
                  do j = 1, JGLOB
 
                   bc_rawdata(i,j,:) = bc_rawdata(i,j,:) * latfunc(ibc,lat5(i,j))
-!hf BC                  bc_rawdata(:,j,:) = bc_rawdata(:,j,:) * latfunc(ibc,lat5(j))
 
                   if ( DEBUG_Logan ) then
                      write(6,"(2i4,f8.2,f15.4)")j, lat5(i,j), &
-!hf BC changed
                          latfunc(ibc,lat5(i,j)), bc_rawdata(36,j,1)
                   end if
                  enddo
@@ -439,15 +419,17 @@ if( year == 1990) then
 
          case  default
              print *,"Error with specified BCs:", ibc
-             errcode = 777
+             errmsg = "BC Error UNSPEC"
          end select 
+
+  !ds - Check failure here:
+   if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
 
    if( DEBUG_Logan )then
 
       write(*,"(a15,3i4,f8.3)") "DEBUG:LOGAN: ",ibc, used, month, cosfac
       write(*,*) "LOGAN BC MAX ", maxval ( bc_rawdata ), &
                          " MIN ", minval ( bc_rawdata )
-!hf BC      do k = ITOP, 1, -1        ! print out for equator, mid-lat
       do k = KMAX_MID, 1, -1        ! print out for equator, mid-lat
          write(*, "(i4,f12.3)") k,  bc_rawdata(15,15,k)
       end do
@@ -463,10 +445,9 @@ if( year == 1990) then
 
    if ( used == 1 ) then
  
-       !Convert to mixing ratio
-       bc_rawdata(:,:,:)=bc_rawdata(:,:,:)*1.0e-9
+       bc_rawdata(:,:,:)=bc_rawdata(:,:,:)*1.0e-9     !Convert to mixing ratio
 
-!hf BC not needed       call vert_interpolation(iglobact,jglobact,bc_rawdata,bc_data)
+!hf not needed  call vert_interpolation(iglobact,jglobact,bc_rawdata,bc_data)
 !put data only on actual domain
 
         j1 = 1
@@ -487,11 +468,6 @@ if( year == 1990) then
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-end module GlobalBCs_ml   !u3  Logan_ml
+end module GlobalBCs_ml
 
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-
-

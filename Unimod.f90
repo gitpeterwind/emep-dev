@@ -72,8 +72,7 @@ program myeul
                                tiphys
   use ModelConstants_ml,only : KMAX_MID, current_date  &
                               ,METSTEP   &   !u2 - replaces metstep
-                              ,nprint,nass,nterm,assign_nmax
-                              !u7.4vg ,daynumber &  ! u3
+                              ,nprint,nass,nterm,iyr_trend, assign_nmax
   use NetCDF_ml,        only : InitnetCDF
   use out_restri_ml,    only : set_outrestri
   use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1, parinit
@@ -265,13 +264,13 @@ program myeul
 
 
     logical, parameter :: DEBUG_UNI = .false. 
-    integer n, numt, nadd, ntmp(3), info, oldseason &
+    integer n, numt, nadd, ntmp(4), info, oldseason &
               ,newseason    !u2 , metstep
     integer iupw, i, j, ii, k
     integer :: mm, mm_old   ! month and old-month  (was nn and nold)
     integer :: nproc_gc
 
-    common/ttmp/ntmp   ! TEST IF NEEDED
+!ds rv1.6.10    common/ttmp/ntmp   ! TEST IF NEEDED
 !
 !     initialize the parallel topology
 !
@@ -296,14 +295,17 @@ program myeul
       read(5,*) ntmp(1)
       read(5,*) ntmp(2)
       read(5,*) ntmp(3)
+      read(5,*) ntmp(4)  ! ds - iyr_ytrend
     endif
 
     print *, "read standard input"
-    call gc_ibcast(MSG_MAIN1, 3, 0, NPROC, info, ntmp)
+    call gc_ibcast(MSG_MAIN1, 4, 0, NPROC, info, ntmp)
     print *, "distributed standard input"
+    print *, " Trend Year is ", iyr_trend
 
     nterm = ntmp(1)
     nass = ntmp(2)
+    iyr_trend = ntmp(4)   !ds rv1.6.10
 
 
     !*** Timing ********
@@ -459,7 +461,12 @@ program myeul
 
       if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
                if( DEBUG_UNI ) print *, "Into BCs" , me
-               call BoundaryConditions(current_date%year,mm)
+
+               !ds call BoundaryConditions(current_date%year,mm)
+               !ds rv1.6.10 We set BCs using the specified iyr_trend
+               !   which may or may not equal the meteorology year
+
+               call BoundaryConditions(current_date%year,iyr_trend,mm)
                if( DEBUG_UNI ) print *, "Finished BCs" , me
                if(numt == 2) call Init_massbudget()
                if( DEBUG_UNI ) print *, "Finished Initmass" , me
@@ -490,14 +497,11 @@ program myeul
       call Code_timer(tim_before)
 
       call metvar(numt)
-!hf NEW
+
       call tiphys(numt) 
       call adv_var(numt)
 
       call Add_2timing(11,tim_after,tim_before,"metvar")
-
-
-!gv          call rivm_vd(numt)
 
       call Code_timer(tim_before)
                if( DEBUG_UNI ) print *, "Before phyche" 
@@ -560,7 +564,6 @@ program myeul
 !     - assignes an initial test-distribution to a
 !       chemical component. Not currently used except as print-out
 !
-!u1   use My_Runmode_ml, only : DEBUG
     use Par_ml   , only : li0,li1,lj0,lj1,NPROC,me,  &
              tgi0,tgj0, &   ! FOR TESTING
              limax, ljmax, MAXLIMAX, MAXLJMAX, gi0, gj0, GIMAX, GJMAX
