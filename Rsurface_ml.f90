@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.10 2003-03-21 15:44:08 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.11 2003-03-21 15:50:40 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -250,9 +250,13 @@ contains
          Rinc = b_inc(lu)* SAI * hveg  / ustar    ! Lisa's eqn. 48 for u*=0.5
          Rinc = min( Rinc, 1000.0)
 
-         !/ New from CEH
-         xRgsS     = CEHd  + Rlow  + snow * 2000.0
-         xRgsS_wet = CEHw  + Rlow  + snow * 2000.0
+     ! TEST ds
+         cehfac = 1.0
+         so2nh3ratio=so2nh3ratio*0.6 !0.6=correction for local nh3
+         if(so2nh3ratio  < 2.0 ) cehfac = exp( -(2.0-so2nh3ratio) )
+     ! TEST ds
+         xRgsS     = CEHd * cehfac  + Rlow  + snow * 2000.0
+         xRgsS_wet = CEHw * cehfac  + Rlow  + snow * 2000.0
 
         ! for now, use CEH stuff for canopies, keep Ggs for non-canopy
 
