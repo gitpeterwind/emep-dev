@@ -44,6 +44,7 @@ module ModelConstants_ml
   , KCLOUDTOP= 8           &  ! limit of clouds (for MADE dj ??) 
   , KUPPER   = 6           &  ! limit of clouds (for wet dep.)
   , AOT_HORIZON = 89          ! Limit of daylight zenith angle for AOTs
+                              ! (50 w m-2 correspond to approx. 85 deg.)
 
   real, public, parameter  ::    &
        CLOUDTHRES =  1.0e-5         !pw when cloudwater is larger than 

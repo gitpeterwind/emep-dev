@@ -341,14 +341,18 @@ private
            !u4 if ( izen < 85 ) then
            if ( izen < AOT_HORIZON ) then
                 o3 = xn_adv(IXADV_O3,i,j,KMAX_MID) &
-                  * cfac(IXADV_O3,i,j) * PPBINV &
-                  / ( roa(i,j,KMAX_MID,1)*MFAC ) 
+                  * cfac(IXADV_O3,i,j) * PPBINV 
+
+!!jej 26/8 02  &  already in mixing ratio
+!!                  / ( roa(i,j,KMAX_MID,1)*MFAC ) 
 
                 o3 = max( o3 - threshold , 0.0 )   ! Definition of AOTs
 
-              d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST) + o3 * timefrac  
+!              d_2d( n, i,j,IOU_INST) = d_2d( n, i,j,IOU_INST)+ o3 * timefrac  
+              d_2d( n, i,j,IOU_INST) = o3 * timefrac  
 
            end if
+
         end do
       end do
    end subroutine aot_calc

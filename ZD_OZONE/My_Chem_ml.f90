@@ -617,7 +617,8 @@ end module GenRates_rct_ml
      ! Coefficients taken from Eliassen+Saltbones (1983) (also in
      ! Berge and Jakobsen, 1998
 
-        tab_so2ox = Daily_sine(3.0e-6,2.0e-6,80,366)
+        tab_so2ox = Daily_sine(4.0e-6,2.0e-6,80,366) ! increased from 3 to 4
+                                                     ! (from HF 24/6 02)
       
 
     end subroutine  Init_mychem

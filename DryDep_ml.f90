@@ -195,18 +195,23 @@ module DryDep_ml
         !u3 method  proposed by  Lemhaus et al., Hov et al., 1988
         !   (used in the EMEP Lagr. O3 model, surprise surprise...)
 
+! hf correction July 1
+
+         if ( IND == SEA ) then
+            vd1m = vd_min(ncalc,ind) + vd_day(ncalc,ind)
+         else
+            vd1m = vd_min(ncalc,ind) + dayfac * seasonfac * vd_day(ncalc,ind)
+         endif
+
+
         !u3 vd1m = vd_min(ncalc,ind) + dayfac * vd_day(ncalc,ind)
         !u6b test:
-
-        vd1m = vd_min(ncalc,ind) + dayfac * seasonfac * vd_day(ncalc,ind)
 
         !u3 just make 1 dep vel for now, as in Hov et al. :
 
         !u6b: vd1m = vd_min(ncalc,ind) + vd_day(ncalc,ind)
 
        !u3 ========= time facs over land squares
-
-        if ( ind /= SEA ) vd1m = vd1m * seasonfac
 
        !u3 ========= time facs
 

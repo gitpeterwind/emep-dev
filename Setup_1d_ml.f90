@@ -10,7 +10,7 @@
   use Volcanos_ml
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
-  use Chemfields_ml,         only :  xn_adv,xn_bgn         
+  use Chemfields_ml,         only :  xn_adv,xn_bgn, xn_shl         
   use Dates_ml,              only : date, dayno
 !hf VOL
   use Emissions_ml,          only :  gridrcemis !hf u2,rcemis_volc
@@ -99,7 +99,7 @@ contains
     ! - calculate zenith angle here
 
     !6c izen = max(1,int(acos(zeta(i,j))*180.0/PI+0.5))
-     izen = int ( zen(i,j) + 0.5 )
+     izen = max(1,int ( zen(i,j) + 0.5 ))
 
     do k = KCHEMTOP, KMAX_MID
  
@@ -321,11 +321,11 @@ contains
 
            ! 1)/ Short-lived species - no need to scale with M
 
-!           do n = 1, NSPEC_SHL
+           do n = 1, NSPEC_SHL
               !u1 ispec = MAP_SHL2TOT(n)
               !u1 xn_shl(n,i,j,k) = xn_2d(ispec,k)
-!              xn_shl(n,i,j,k) = xn_2d(n,k)
-!           end do ! ispec
+              xn_shl(n,i,j,k) = xn_2d(n,k)
+           end do ! ispec
  
            ! 2)/ Advected species
 

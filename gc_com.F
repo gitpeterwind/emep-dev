@@ -74,7 +74,7 @@ C        the PAR interface by J.Amundsen. The MPL part is due to Z. Christidis,
 C        IBM T. J. Watson Research Center.
 C
 C-------------------------------------------------------------------------------
-C $Id: gc_com.F,v 1.3 2002-09-13 08:49:01 mifads Exp $
+C $Id: gc_com.F,v 1.4 2002-09-13 08:55:39 mifads Exp $
 C (C) Jorn Amundsen, Roar Skaalin, SINTEF Industrial Mathematics.
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 

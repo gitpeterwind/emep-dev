@@ -148,7 +148,8 @@ private
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
 
-      timefrac = 3600.0/dt
+!      timefrac = 3600.0/dt
+      timefrac = dt/3600.0
 
 
      !/***** 2-D fields **************************
@@ -388,7 +389,8 @@ private
 
       if (.not. any( f_3d%class == "PROD" ) ) return
 
-      timefrac = 3600.0/dt
+!      timefrac = 3600.0/dt
+      timefrac = dt/3600.0
      !/***** 3-D fields **************************
 
      do n = 1, NDERIV_3D

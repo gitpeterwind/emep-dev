@@ -20,7 +20,7 @@ module  My_Outputs_ml
         ,IXADV_N2O5 , IXADV_AMSU, IXADV_AMNI    !6s                &
 !6s         ,IXADV_SOA, IXADV_ASOA, IXADV_BSOA
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
-                IXSHL_OH,IXSHL_HO2
+                IXSHL_OH,IXSHL_HO2,  NSPEC_SHL
   !u1 use GenSpec_maps_ml, only:    MAP_ADV2TOT
   use GenChemicals_ml , only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
@@ -40,7 +40,7 @@ module  My_Outputs_ml
      NSITES_MAX =    30         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
-    ,NSHL_SITE  =    1          & ! No. short-lived species
+    ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
     ,NXTRA_SITE =    1            ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
@@ -48,7 +48,8 @@ module  My_Outputs_ml
     SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
-    SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!
+!!    SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!
+    SITE_SHL =  (/ (isite, isite=1,NSHL_SITE) /)       ! TROTREP everything!!
 
   ! Extra parameters - need to be coded in Sites_ml also. So far
   ! we can choose from T2, or th (pot. temp.)
@@ -146,8 +147,8 @@ module  My_Outputs_ml
   integer, public, parameter ::  &
         ISPEC_OUTBEG = 70  &
         ,JSPEC_OUTBEG = 25  &
-        ,ISPEC_OUTEND = 125  &     ! Set negative here to exclude
-        ,JSPEC_OUTEND = 80         ! Set negative here to exclude
+        ,ISPEC_OUTEND = -125  &     ! Set negative here to exclude
+        ,JSPEC_OUTEND = -80         ! Set negative here to exclude
 
 !   integer, public, parameter :: NPARUPP = NSPEC_ADV ! 39
 

@@ -5,7 +5,7 @@ module EmisGet_ml
                           , NEMIS_PLAIN, NEMIS_SPLIT, EMIS_NSPLIT
   use Country_ml,   only : NLAND    & !u4 movde other stuff here
                             ,IC_NAT,IC_VUL, Country
-  use EmisDef_ml,   only : NSECTORS, NCMAX, FNCMAX & 
+  use EmisDef_ml,   only : NSECTORS, ANTROP_SECTORS,NCMAX, FNCMAX & 
                             ,ISNAP_SHIP, ISNAP_NAT  !u3 for NAT
   use Io_ml,        only : open_file,  wordsplit &      ! subs
                           ,NO_FILE, ios, IO_EMIS         ! variables
@@ -33,7 +33,6 @@ module EmisGet_ml
   !    emissions such as VOC; PM into species. 
 
    real, public, dimension(NRCSPLIT,NSECTORS,NLAND), save :: emisfrac
-
 
   !/ some common variables
   character(len=40), private :: fname             ! File name
@@ -341,6 +340,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 !   we actually have, and the species can be specified in any order, as given
 !   on the top line. (Thus, we can use the same femis file for MADE,MACHO
 !   or AERO.
+!hf 100 for Sector means all sectors except the natural one (11) 
 
   !su    (for compatibility NEMIS as last index)
 
@@ -436,7 +436,11 @@ READEMIS: do   ! ************* Loop over emislist files **********************
       if (isec == 0 ) then    ! All sectors
           isec1 = 1
           isec2 = NSECTORS
-      else                       ! one sector: isec
+!hf scenario
+      elseif (isec==100) then
+          isec1 = 1
+          isec2 = ANTROP_SECTORS
+      else                   ! one sector: isec
           isec1 = isec
           isec2 = isec
       end if
