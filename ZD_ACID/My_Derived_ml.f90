@@ -101,12 +101,13 @@ private
        ,WDEP_RDN   = 4      ! sum reduced  nitrogen (was  xddep(IXWD_NH3))
 
    integer, public, parameter ::  & 
-        NDDEP = 5       &   ! Number of 2D deposition fields
+        NDDEP = 6       &   ! Number of 2D deposition fields
        ,DDEP_SOX   = 1  &   ! sum of sulphur        (was xwdep (IXDD_SOX)
        ,DDEP_OXN   = 2  &   ! sum oxidised nitrogen (was  xddep(IXDD_HNO3))
        ,DDEP_RDN   = 3  &   ! sum reduced  nitrogen (was  xddep(IXDD_NH3))
-       ,DDEP_JRK   = 4  &   ! sum nitrogen dep over seas for Jurek/HELCOM
-       ,DDEP_FOR   = 5      ! sum nitrogen dep over seas for Jurek/HELCOM
+       ,DDEP_SEAX  = 4  &   ! sum ox. nitrogen dep over seas for Jurek/HELCOM
+       ,DDEP_SEAR  = 5  &   ! sum rd. nitrogen dep over seas for Jurek/HELCOM
+       ,DDEP_FOR   = 6      ! sum nitrogen dep over forests for NOFRETETE
 
    integer, public, parameter ::  & 
         NDERIV_2D = 15 &   ! Number of 2D derived fields
@@ -184,8 +185,9 @@ private
     f_ddep( DDEP_OXN  ) = Deriv( 522, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
     f_ddep( DDEP_RDN  ) = Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
    !--test fields for ecosystem specific---
-    f_ddep( DDEP_JRK  ) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
-    f_ddep( DDEP_FOR  ) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
+    f_ddep( DDEP_SEAX ) = Deriv( 524, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
+    f_ddep( DDEP_SEAR ) = Deriv( 525, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
+    f_ddep( DDEP_FOR  ) = Deriv( 526, "DDEP ", F, -1, 1.0e6, F  , F  ,  T , T ,  T )
 
    !-- 2-D fields - the complex ones
 

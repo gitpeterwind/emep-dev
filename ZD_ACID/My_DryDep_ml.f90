@@ -8,7 +8,7 @@ module My_UKDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN,DDEP_JRK, DDEP_FOR, &
+ use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN,DDEP_SEAX, DDEP_SEAR, DDEP_FOR, &
                              IOU_INST    &!updates inst. dep. fields
                            , ddep         ! 2d fields
  use GenSpec_adv_ml , only: NSPEC_ADV &
@@ -117,10 +117,17 @@ contains
      integer, intent(in) :: i,j             ! coordinates
      real,    intent(in) ::  convfac   !
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
-     integer, parameter :: N_OXN = 4        ! Number in ox. nitrogen family
      integer :: n, nadv
-     real, parameter, dimension(N_OXN) :: OXN = &
+
+     integer, parameter :: N_OXN = 4        ! Number in ox. nitrogen family
+     integer, parameter, dimension(N_OXN) :: OXN = &
              (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_AMNI /)
+
+     integer, parameter :: N_RDN = 3        ! Number in rd. nitrogen family
+     integer, parameter, dimension(N_RDN) :: RDN = &
+             (/ IXADV_NH3, IXADV_AMSU, IXADV_AMNI /)
+     real, parameter, dimension(N_RDN) :: RDN_FAC = &
+             (/ 1.0,       1.5,       1.0 /)
 
      ddep(DDEP_SOX,i,j,IOU_INST) = (  &
           DepLoss(IXADV_SO2) + &
@@ -142,13 +149,14 @@ contains
                                     ) * convfac * atwN
 
    !---- ecosystem specific -----------------------------------------------
-     ddep(DDEP_JRK,i,j,IOU_INST) = 0.0
+     ddep(DDEP_SEAX,i,j,IOU_INST) = 0.0
+     ddep(DDEP_SEAR,i,j,IOU_INST) = 0.0
      ddep(DDEP_FOR,i,j,IOU_INST) = 0.0
 
      do n = 1, N_OXN
          nadv = OXN(n)
          
-         ddep(DDEP_JRK,i,j,IOU_INST) = ddep(DDEP_JRK,i,j,IOU_INST) +  &
+         ddep(DDEP_SEAX,i,j,IOU_INST) = ddep(DDEP_SEAX,i,j,IOU_INST) +  &
               fluxfrac(nadv,15) * DepLoss(nadv)  !CRUDE, 15=water for now
 
          ddep(DDEP_FOR,i,j,IOU_INST) = ddep(DDEP_FOR,i,j,IOU_INST) +  &
@@ -156,8 +164,16 @@ contains
                 fluxfrac(nadv,3) + fluxfrac(nadv,4)   ) * DepLoss(nadv) 
      end do
 
-     ddep(DDEP_JRK,i,j,IOU_INST) = ddep(DDEP_JRK,i,j,IOU_INST) * convfac * atwN
-     ddep(DDEP_FOR,i,j,IOU_INST) = ddep(DDEP_FOR,i,j,IOU_INST) * convfac * atwN
+     do n = 1, N_RDN
+         nadv = RDN(n)
+         
+         ddep(DDEP_SEAR,i,j,IOU_INST) = ddep(DDEP_SEAR,i,j,IOU_INST) +  &
+              fluxfrac(nadv,15) * RDN_FAC(n) * DepLoss(nadv)  !CRUDE, 15=water for now
+     end do
+
+     ddep(DDEP_SEAX,i,j,IOU_INST) = ddep(DDEP_SEAX,i,j,IOU_INST) * convfac * atwN
+     ddep(DDEP_SEAR,i,j,IOU_INST) = ddep(DDEP_SEAR,i,j,IOU_INST) * convfac * atwN
+     ddep(DDEP_FOR,i,j,IOU_INST)  = ddep(DDEP_FOR,i,j,IOU_INST) * convfac * atwN
    !---- end ecosystem specific ----------------------------------------------
 
 
