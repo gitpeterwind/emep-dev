@@ -246,8 +246,8 @@ private
     f_2d( D2_HMIX12) = Deriv( 470, "HMIX12  ", T      ,0.0 , 1.0, T  , F ,  T , T ,  T ,"D2_HMIX12","m")
 !    f_2d( D2_O3  ) = Deriv( 607, "ADV  ", T, IXADV_O3 ,PPBINV, F  , F , T , T , T ,"D2_O3","ppb")
 !    f_2d( D2_CO  ) = Deriv( 612, "ADV  ", T, IXADV_CO ,PPBINV, F  , F , T , T , T ,"D2_CO","ppb")
-    f_2d( D2_PPM25 ) = Deriv( 615, "ADV  ", T, IXADV_PM25, ugPMad, T  , F ,  T , T ,  T,"D2_PM25","ug/m3")
-    f_2d( D2_PPMCO ) = Deriv( 616, "ADV  ", T, IXADV_PMco, ugPMad, T  , F ,  T , T ,  T,"D2_PMco","ug/m3")
+    f_2d( D2_PPM25 ) = Deriv( 615, "ADV  ", T, IXADV_PM25, ugPMad, T  , F ,  T , T ,  T,"D2_PPM25","ug/m3")
+    f_2d( D2_PPMCO ) = Deriv( 616, "ADV  ", T, IXADV_PMco, ugPMad, T  , F ,  T , T ,  T,"D2_PPMco","ug/m3")
 
    ! --  time-averages - here 8-16 , as used in MACHO
 
