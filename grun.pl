@@ -244,7 +244,7 @@ if ( $SR ) {
         $Split       = "CLE_MAR2004";    # IER VOC splits
         $rednflag    = "P25";  # 10% reduction for label
         $redn        = "0.75";  # 10% reduction
-        @polls       = qw ( AV );  # NP, BASE already done
+        @polls       = qw ( BASE NP );  # NP, BASE already done
 
 	$nrun = 0;
 	foreach $pollut ( @polls ) {
@@ -252,7 +252,10 @@ if ( $SR ) {
        		print "STARTING CC $cc\n";
 
        		$scenario = "${base}_${cc}_${pollut}_${rednflag}";
-       		$scenario = "${base}" if $pollut eq "BASE" ;
+       		if ( $pollut eq "BASE" ) {
+	       		$scenario = "${base}";
+			last;
+		}
 
 		# create list of runs to be done:
 		$run[$nrun] = $scenario;
