@@ -84,7 +84,7 @@ if ( $year == 2000 ) {
 } elsif ( $year == 1990 ) {
   $MetDir = "/work/mifads/metdata/$year" ;  # Needed for 1997
 } else {
-  $MetDir = "/work/mifahf/metdata/$year" ;
+  $MetDir = "/work/mifapw/metdata/$year" ;  # Default
 }
 
 #---  User-specific directories (changeable)
