@@ -3,6 +3,7 @@ module Functions_ml
 ! Miscellaneous collection of "standard" (or guessed ) functions
 ! Including Troe, sine and cosine curves, aerodynamics (PsiM, PsiH,
 ! AerRes, bilinear-interpolation routines, and Polygon.
+! ds and Standard Atmosphere p -> H conversion
 !____________________________________________________________________
 !
 !** includes
@@ -27,6 +28,7 @@ module Functions_ml
 
   public :: Polygon         ! Used in deposition work.
 
+  public :: StandardAtmos_kPa_2_km   ! US Standard Atmosphere conversion
 
  !/-- Micromet (Aerodynamic) routines
 
@@ -430,6 +432,33 @@ result (Poly)
     
 
  end function Polygon
+
+ !=======================================================================
+ elemental function StandardAtmos_kPa_2_km(p_kPa) result (h_km)
+ !=======================================================================
+   implicit none
+
+  !+ Converts pressure (kPa)  to height (km) for a US standard Atmosphere
+  !  Valid up to 20 km
+  !
+  ! ds 27/7/2003
+
+   real, intent(in) :: p_kPa
+   real             :: h_km
+   real :: t    ! Temperature (K)
+
+   if( p_kPa > 22.632 ) then   ! = 11 km height
+         ! t = 288.15/(p_kPa/101.325)**(-1.0/5.255876)
+         !- use the power function replacament, m**n == exp(n*log m)
+
+         t = 288.15/exp(-1.0/5.255876*log(p_kPa/101.325))
+         h_km = (288.15-t)/6.5
+   else
+         h_km = 11.0 + log( p_kPa/22.632)/(-0.1576884)
+   end if
+
+ end function StandardAtmos_kPa_2_km
+
  !=======================================================================
 
 
