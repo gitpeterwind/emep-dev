@@ -694,10 +694,10 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
          ! Flux in nmole/m2/s:
           leaf_flux(lu) = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * gsun 
 
-          !if ( DEBUG_FLUX  .and. debug_flag ) then ! .and. debug_flag  ) then
-          if ( debug_flag ) then ! .and. debug_flag  ) then
-            write(6,"(a8,3i3,i4,2f6.2,2f8.1,2es10.2,f6.2,es12.3)") "FST ", lu, &
-               imm, idd, ihh, lai, SAIadd(lu), nmole_o3, c_hveg, g_sto, gsun, u_hveg,leaf_flux(lu)
+          if ( DEBUG_FLAG .and. STO_FLUXES .and. debug_flag ) then 
+            write(6,"(a8,3i3,i4,2f6.2,2f8.1,2es10.2,f6.2,es12.3)") &
+                "FST ", lu, imm, idd, ihh, lai, SAIadd(lu), &
+                 nmole_o3, c_hveg, g_sto, gsun, u_hveg,leaf_flux(lu)
           end if
         !else
         !   c_hvegppb(lu) = ppb_o3 
