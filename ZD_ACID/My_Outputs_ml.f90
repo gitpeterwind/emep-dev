@@ -98,10 +98,13 @@ module  My_Outputs_ml
     ,NADV_SONDE  =    1                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species (fake for ACID)
     ,NXTRA_SONDE =    3                    ! No. Misc. met. params  (now th)
+    ,N_NIT       =    1                    ! # of N species in NOy NOT USED in ACID?
 
 !dsXNSHL_TEST
    integer, public, dimension(NADV_SONDE) :: &
     SONDE_ADV =  (/ IXADV_NO2 /)
+   integer, public, parameter, dimension(N_NIT) :: &!Not used in ACID?
+     NOy_SPEC =  (/ IXADV_NO2 /)
    integer, public, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ -99 /)   !fake ! (/ IXSHL_OH /)
 
@@ -139,7 +142,7 @@ module  My_Outputs_ml
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format. 
      !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
-    integer, public, parameter :: NHOURLY_OUT = 2  ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT = 1  ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
@@ -276,9 +279,9 @@ contains
  !hr_out(1)=  Asc2D("T2_C",   "T2_C   ", &
  !                "(f5.1)",     -99, ix1,ix2,iy1,iy2, 1,"degC",1.0   ,100.0)
 
- hr_out(1)=  Asc2D("Cloud",   "Cloud   ", &
-                 "(f6.3)",     -99, ix1,ix2,iy1,iy2, 1,"frac",1.0   ,1.1)
- hr_out(2)=  Asc2D("Precip", "PRECIP ", &
+! hr_out(1)=  Asc2D("Cloud",   "Cloud   ", &
+!                 "(f6.3)",     -99, ix1,ix2,iy1,iy2, 1,"frac",1.0   ,1.1)
+ hr_out(1)=  Asc2D("Precip", "PRECIP ", &
                 "(f11.7)",    -99, ix1,ix2,iy1,iy2, 1,"mm/hr",1.0,  200.0)
 
  !hr_out(3)=  Asc2D("Idir",   "Idirect", &
