@@ -53,7 +53,8 @@ private
  public  :: DerivedProds         ! Calculates any production terms
  private :: Setups 
  private :: Setup_VOC            ! Defines VOC group
- private :: Derived              ! Calculations of sums, avgs etc.
+!jej private :: Derived              ! Calculations of sums, avgs etc.
+ public :: Derived              ! Calculations of sums, avgs etc.
 !6c private :: acc_sulphate         ! Sums sulphate column
 !6c private :: aot_calc             ! Calculates daylight AOTs
  private :: voc_2dcalc           ! Calculates sum of VOC for 2d fields
@@ -102,8 +103,8 @@ private
           call Set_My_Derived()
           call Setups()
           my_first_call = .false. 
-      else
-          call Derived(dt)
+!jej      else
+!jej          call Derived(dt)
       end if
 
     end subroutine SumDerived
