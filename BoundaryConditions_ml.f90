@@ -41,6 +41,8 @@ module BoundaryConditions_ml
 ! History  :
 !
 !
+!ds Summer  2003: Added Mace Head corrections. Corrected bugs in twopi_year
+!                 and vertical scaling.
 !ds January 2002: modified for case with no BCs to be set (num_changed). 
 !                 Re-formatted, replaced stop_test by gc_abort
 !hf september-01: 2-dim mask changed into a 3-dim mask, and new restrictions 
@@ -79,22 +81,20 @@ module BoundaryConditions_ml
           ,bc2xn_adv, bc2xn_bgn     ! mapping arrays
 
   use Chemfields_ml,         only: xn_adv, xn_bgn  ! emep model concs.
-  use GenSpec_adv_ml                ! Lots, including NSPEC_ADV and IXADV_
-!hf
+  use GenSpec_adv_ml         ! Lots, including NSPEC_ADV and IXADV_
   use GenSpec_bgn_ml,        only :NSPEC_BGN
   use GridValues_ml,         only: gl, gb    &! lat, long
-                                   ,i_glob, j_glob  !u1 for testing
-  use ModelConstants_ml ,    only: KMAX_MID  ! Number of levels in vertical
+                                  ,i_glob, j_glob  !u1 for testing
+  use ModelConstants_ml ,    only: KMAX_MID, &  ! Number of levels in vertical
+                                   DEBUG_i, DEBUG_j
   use Par_ml,                only : &
            MAXLIMAX, MAXLJMAX, NPROC, limax, ljmax, me &
           ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
           ,NOPROC&
-!hf BC
           ,ISMBEG,JSMBEG
   use GlobalBCs_ml,                only: &
           NGLOB_BC                 &  ! Number of species from global-model
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.
-!          ,InterpolationFactors    &  ! Sub., horizontal interp. setup.
           ,setgl_actarray
   implicit none
   private
@@ -182,7 +182,7 @@ contains
  !
  ! On the first call, we also run the setup-subroutines
  !
- !ds rv1.6.10 change: year is now obtained from the iyr_trend set in grun.pl
+ !ds rv1.6.11 change: year is now obtained from the iyr_trend set in grun.pl
  ! Allows say runs with BCs for 2100 and met of 1990.
  !____________________________________________________________________________
   integer, intent(in) :: year        ! "meteorology" year        ds  rv1.6.11
@@ -210,16 +210,16 @@ contains
                     !  (comes from InterpolationFactors subroutine)
   integer  :: iglobact,jglobact
   integer  ::  errcode
-  integer, save :: idebug = 0, itest=1, i_test, j_test
+  integer, save :: idebug = 0, itest=1, i_test=0, j_test=0
   character(len=30) :: fname 
 
   if ( my_first_call ) then
 
     write(*,*) "FIRST CALL TO BOUNDARY CONDITIONS, me :", me
     write(*,*) "TREND YR, me ", iyr_trend, me
-    !ds rv1.6.11 call My_bcmap()  ! assigns bc2xn_adv and bc2xn_bgn mappings
+
     call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
-    call Set_bcmap()     ! assigns xn2adv_changed, etc.
+    call Set_bcmap()              ! assigns xn2adv_changed, etc.
 
     num_changed = num_adv_changed + num_bgn_changed   !u1
 
@@ -231,8 +231,8 @@ contains
   write(*,*) "CALL TO BOUNDARY CONDITIONS, me, month :", me, month
   write(*,*) "TREND2 YR, me ", iyr_trend, me
   
-  if ( num_changed == 0 ) then           !u1
-      write(*,*) "BCs: No species requested"  !u1 
+  if ( num_changed == 0 ) then
+      write(*,*) "BCs: No species requested"
       return
   end if
 
@@ -244,7 +244,7 @@ contains
   allocate(bc_data(iglobact,jglobact,KMAX_MID),stat=alloc_err1)
   if ( alloc_err1 /= 0 ) call gc_abort(me,NPROC, "BC alloc1 failed")
 
-  !u1 - check if anything has changed before allocating:
+  ! - check if anything has changed before allocating:
 
   if ( num_adv_changed > 0 ) then
       allocate(bc_adv(num_adv_changed,iglobact,jglobact,KMAX_MID), &
@@ -262,6 +262,16 @@ contains
 
 
   errcode = 0
+  if ( DEBUG_BCS ) then
+       do i = 1, limax
+            do j = 1, ljmax
+                if ( i_glob(i) == DEBUG_i .and. j_glob(j) == DEBUG_j ) then
+                    i_test = i
+                    j_test = j
+                end if
+            end do
+       end do
+  end if
 
 
 
@@ -273,7 +283,7 @@ contains
       if(me == 0) call GetGlobalData(year,iyr_trend,month,ibc,bc_used(ibc) &
                  ,iglobact,jglobact,bc_data,io_num,errcode)
                    !=================================================
-      if ( DEBUG_BCS ) then
+      if ( DEBUG_BCS .and. me == 0  ) then
           write(*,*)'Calls GetGlobalData: year,iyr_trend,ibc,month,bc_used=', &
                     year,iyr_trend,ibc,month,bc_used(ibc)
 
@@ -292,7 +302,7 @@ contains
           do i = 1, bc_used_adv(ibc)
              iem = spc_used_adv(ibc,i)
              iem1 = spc_adv2changed(iem)
-                 bc_adv (iem1,:,:,:) = bc_adv(iem1,:,:,:) + &
+             bc_adv (iem1,:,:,:) = bc_adv(iem1,:,:,:) + &
                                   bc2xn_adv(ibc,iem) * bc_data(:,:,:)
           end do
 
@@ -300,7 +310,7 @@ contains
           do i = 1, bc_used_bgn(ibc) 
              iem = spc_used_bgn(ibc,i)
              iem1 = spc_bgn2changed(iem)
-                 bc_bgn(iem1,:,:,:) = bc_bgn(iem1,:,:,:) + &
+             bc_bgn(iem1,:,:,:) = bc_bgn(iem1,:,:,:) + &
                                   bc2xn_bgn(ibc,iem) * bc_data(:,:,:)
           end do
 
@@ -308,12 +318,6 @@ contains
    end do  ! ibc
 
    if(me == 0) close(io_num)
-
-
-   !==========================================================
-!hf NOT NEEDED, interpolation already done
-!hf   call InterpolationFactors(gb,gl,ixp,iyp,wt_00,wt_01,wt_10,wt_11)
-   !==========================================================
 
    if ( my_first_call ) then
 
@@ -323,7 +327,6 @@ contains
       !  -> 3-D arrays of new BCs
       call MiscBoundaryConditions(iglobact,jglobact,bc_adv,bc_bgn) 
       call Set_BoundaryConditions("3d",iglobact,jglobact        &
-!hf BC                ,bc_adv,bc_bgn,ixp,iyp,wt_00,wt_01,wt_10,wt_11)
                 ,bc_adv,bc_bgn)
       !===================================
 
@@ -343,76 +346,55 @@ contains
       !  -> lateral (edge and top) arrays of new BCs
       call MiscBoundaryConditions(iglobact,jglobact,bc_adv,bc_bgn) 
       call Set_BoundaryConditions("lateral",iglobact,jglobact        &
-!hf BC                       ,bc_adv,bc_bgn,ixp,iyp,wt_00,wt_01,wt_10,wt_11)
                        ,bc_adv,bc_bgn)
       !===================================
    endif
 
 
-!Rorvik    i_test = 91    ! rorvik
-!Rorvik    j_test = 71    ! rorvik
-!Rorvik    if ( DEBUG_BCS ) then
-!Rorvik        do i = 1, limax
-!Rorvik           do j = 1, ljmax
-!Rorvik               if ( i_glob(i) == i_test .and. j_glob(j) == j_test ) then
-!Rorvik                   print "(a20,3i4,2f6.2)", &
-!Rorvik                           "DEBUG BCS Rorvik", me, i,j,gl(i,j),gb(i,j)
-!Rorvik                   print "(a20,3i4)", &
-!Rorvik                           "DEBUG BCS Rorvik DIMS", & 
-!Rorvik                       num_adv_changed,iglobact,jglobact
-!Rorvik                   print "(a20,i4,2f6.2)", &
-!Rorvik                           "DEBUG CO  Rorvik", KMAX_MID, &
-!Rorvik                               xn_adv(47,i,j,KMAX_MID)/ppb
-!Rorvik                   print "(a20,i4,2f6.2)", &
-!Rorvik                           "DEBUG NO  Rorvik", KMAX_MID, &
-!Rorvik                               xn_adv(2,i,j,KMAX_MID)/ppb
-!Rorvik                   print "(a20,i4,2f6.2)", &
-!Rorvik                           "DEBUG NO2 Rorvik", KMAX_MID, &
-!Rorvik                               xn_adv(3,i,j,KMAX_MID)/ppb
-!Rorvik                   print "(a20,i4,2f6.2)", &
-!Rorvik                           "DEBUG O3  Rorvik", KMAX_MID, &
-!Rorvik                               xn_adv(1,i,j,KMAX_MID)/ppb
-!Rorvik               end if
-!Rorvik           end do
-!Rorvik        end do
-!Rorvik    end if
+   if ( DEBUG_BCS .and. i_test > 0  ) then
+         write(6,"(a20,3i4,2f8.2)") "DEBUG BCS Rorvik", me, i,j,gl(i,j),gb(i,j)
+         write(6,"(a20,3i4)")       "DEBUG BCS Rorvik DIMS", & 
+                    num_adv_changed,iglobact,jglobact
+         do k = 1, KMAX_MID
+              write(6,"(a20,i4,f8.2)") "DEBUG CO  Rorvik", k, &
+                          xn_adv(IXADV_CO,i_test,j_test,k)/ppb
+         end do
+    end if ! DEBUG
 
    if ( DEBUG_BCS .and.  me == 0 ) then
        itest  = 1
 
-       print *, "BoundaryConditions: No CALLS TO BOUND Cs", &
+       write(6,*) "BoundaryConditions: No CALLS TO BOUND Cs", &
                                         my_first_call, idebug
-       do i=1,limax
-       do j=1,ljmax
-       do k=1,20
-       print *, "BCs: After Set_3d BOUND: me, O3, H2: " , me, i,j,&
-              xn_bgn(spc_bgn2changed(itest),i,j,k)/ppb
-       enddo
-       enddo
-       enddo
+       !ds do i=1,limax
+       !ds do j=1,ljmax
+       !ds do k=1,KMAX_MID
+       !ds write(6,*) "BCs: After Set_3d BOUND: me, O3, H2: " , me, i,j,&
+       !ds        xn_bgn(spc_bgn2changed(itest),i,j,k)/ppb
+       !ds enddo
+       !ds enddo
+       !ds enddo
 
         !/** the following uses hard-coded  IXADV_ values for testing. 
         !    Remove later **/
       info = 1   ! index for ozone in bcs
-       print *, "BCs: bc2xn(info,itest) : ", bc2xn_adv(info,itest)
-       print *, "BCs: After Set_3d BOUND: me, itest: " , me, itest, &
+       write(6,*) "BCs: bc2xn(info,itest) : ", bc2xn_adv(info,itest)
+       write(6,*) "BCs: After Set_3d BOUND: me, itest: " , me, itest, &
               bc_adv(spc_adv2changed(itest),1,1,1)/ppb
 
       info = 43   ! index for NO in bcs
-       print *, "BCs: NSPECS: BC, ADV, BG, ", NTOT_BC, NSPEC_ADV, NSPEC_BGN
-       print *, "BCs: Number  of bc_used: ", sum(bc_used)
-       print *, "BCs: limax, ljmax",  limax, ljmax
+       write(6,*) "BCs: NSPECS: BC, ADV, BG, ", NTOT_BC, NSPEC_ADV, NSPEC_BGN
+       write(6,*) "BCs: Number  of bc_used: ", sum(bc_used)
+       write(6,*) "BCs: limax, ljmax",  limax, ljmax
 
  
        ! Choose a point at mid-latitudes (j=24), around 0 long
        do k = KMAX_MID, 1, -1
-           print "(a23,i3,e14.4)", "BCs at mid-lat (1,24):",   k  & 
+           write(6,"(a23,i3,e14.4)") "BCs at mid-lat (1,24):",   k  & 
                  ,xn_bgn(itest,2,2,k)/PPB 
-          !ds - too big for some tests   ,xn_bgn(itest,1,24,k)/PPB 
        end do
     end if ! 
 
-  !u1 - add checks: 
     deallocate(bc_data,stat=alloc_err1)
     if ( alloc_err1 /= 0 ) call gc_abort(me,NPROC,"de-alloc_err1")
 
@@ -491,8 +473,8 @@ contains
     end do ! iem
 
     if ( DEBUG_BCS )  then 
-       print *, "TEST SET_BCMAP bc_used: "
-       print "(10i5)",  (bc_used(ibc),ibc=1, NTOT_BC)
+       write(6,*) "TEST SET_BCMAP bc_used: "
+       write(6,"(10i5)")  (bc_used(ibc),ibc=1, NTOT_BC)
     end if
     write(unit=6,fmt=*) "Finished Set_bcmap: Nbcused is ", sum(bc_used)
 
@@ -601,7 +583,8 @@ contains
 endif
 
   itest = 1
-  print "(a50,i4,/,(5es12.4))", "From MiscBoundaryConditions: ITEST (ppb): ",&
+  write(6,"(a50,i4,/,(5es12.4))") &
+      "From MiscBoundaryConditions: ITEST (ppb): ",&
           itest, ((bc_adv(spc_adv2changed(itest),1,1,k)/1.0e-9),k=1,20) 
 
  end subroutine MiscBoundaryConditions
@@ -650,11 +633,8 @@ endif
       if(neighbor(EAST)  == NOPROC)   mask(limax,:,2:KMAX_MID) = .true.
       if(neighbor(WEST)  == NOPROC)   mask(1,:,2:KMAX_MID)     = .true.
 
-!chf Set top layer
-      mask(:,:,1) = .true.
+      mask(:,:,1) = .true.        !hf Set top layer
    else
-      !u1 call stop_test(.true.,me,NPROC,99        &
-      !u1           ,"Illegal option for boundary conditions")
       call gc_abort(me,NPROC,"BCs: Illegal option ")
    endif
 
@@ -683,7 +663,8 @@ endif
                 mask(i,j,k)  )
 
 !       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,i150(i),j150(j), k)
-       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
+       xn_adv(spc_changed2adv(n),i,j,k) =   &
+             bc_adv(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
 
    end forall    
 
@@ -693,38 +674,24 @@ endif
    forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_bgn_changed)
 
 !          xn_bgn(spc_changed2bgn(n),i,j,k) =  bc_bgn(n,i150(i),j150(j), k)
-          xn_bgn(spc_changed2bgn(n),i,j,k) =  bc_bgn(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
+          xn_bgn(spc_changed2bgn(n),i,j,k) = & 
+             bc_bgn(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
 
    end forall    
 
 
 
 
-   if ( DEBUG_BCS ) then
-       itest = 1
-       print *, "SetBCADVs: for xn top-bottom:", &
-              (xn_adv(itest,2,2,k)/ppb,k=1,20)
-       print *, "SetBCBGNs: for xn top-bottom:", &
-              (xn_bgn(itest,2,2,k)/ppb,k=1,20)
-   end if
+!TMP   if ( DEBUG_BCS ) then
+!TMP       itest = 1
+!TMP       write(6,*) "SetBCADVs: for xn top-bottom:", &
+!TMP              (xn_adv(itest,2,2,k)/ppb,k=1,20)
+!TMP       write(6,*) "SetBCBGNs: for xn top-bottom:", &
+!TMP              (xn_bgn(itest,2,2,k)/ppb,k=1,20)
+!TMP   end if
 
  end subroutine Set_BoundaryConditions    ! call every 3-hours
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 end module BoundaryConditions_ml
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

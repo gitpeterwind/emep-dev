@@ -1,8 +1,34 @@
 
+==============================================================================
+=================== Dave, 1st Aug.  rv1_7_1 ==================================
+==============================================================================
+
+BoundaryConditions_ml.f90
+-- tidy up.
+-- replaced old Rorvik stuff with use of DEBUG_i,j
+
+GlobalBCs_ml.f90
+-- Bug fixes: 
+   1) 2*PI instead of 4.0 * atan(1.0) for twopi_yr 
+
+   2) bc_rawdata(k=20) set to specified BCs, not k=1 !!
+   (the BCs were upside down !)
+
+-- Improved vertical scaling - now  uses physical height instead of sigma index
+-- mace_head iyr_trend /= year option.
+    
+
+Functions_ml.f90
+
+-- added function StandardAtmos_kPa_2_km to convert model's pressure
+   level to standard height.
 
 ==============================================================================
-=================== Dave, 11st Aug.  rv1_7rep2003 =============================
+=================== Dave, 1st Aug.  rv1_7rep2003 =============================
 ==============================================================================
+
+    ****** THE REPORT VERSION ********
+
 
 REPORT 1 2003, Part II (model performance) used rv1.6.12. Couldn't tag
 as rv1.7 as this tag had been mistakenly applied before.  Use rv1_7rep2003
