@@ -1,4 +1,10 @@
-============================================================================
+============== Hilde, 15/12-2004            , rv2_1_1  =====================
+
+BC trends 1980-2003 for S and N based on EPA emissions for 1980-2003 added in 
+GlobalBCs_ml. For NH4 the trend is based on 2/3SO2 +1/3NOx
+ 
+Also, PhiH added to Functions_ml, Dave
+
 ============================================================================
 ============================================================================
     rv2.1 = rv2_0_8   same as used for SR matrix work for IIASA, Oct 2004
