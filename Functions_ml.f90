@@ -135,6 +135,8 @@ module Functions_ml
   function Daily_sine(mean, amp, dmax, ndays) result (daily)
   !+
   !   Specifies sine curve for a variable over a year
+  !   25/9/2002, ds, dmax redifined to be true dmax. Before it was
+  !   80 and actually the day when the mean ocrrurred (spotted by hf)
 
      real,    intent(in)  :: mean, amp    ! Annual mean and amplitude of sine
      integer, intent(in)  :: dmax         ! Day where maximum occurs
@@ -142,12 +144,14 @@ module Functions_ml
 
      real, dimension(ndays) :: daily
      integer    :: d           
+     real, save :: shift = ndays/4.0      ! Shifts sine curve to give max 
+                                          ! when d = dmax
      real, save :: twopi                  ! Could use PhysiclConstants_ml
      twopi = 8.0 * atan(1.0)              ! but I prefer to keep Functions_ml
                                           ! standalone
 
      do d = 1, ndays
-      daily(d) = mean + amp * sin ( twopi * (d - dmax)/ ndays )
+      daily(d) = mean + amp * sin ( twopi * (d + shift - dmax)/ ndays )
      end do
 
   end function Daily_sine
