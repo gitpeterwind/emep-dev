@@ -1,4 +1,13 @@
 ==============================================================================
+=================== Dave, 11th June, rv1.6.10 =================================
+==============================================================================
+Need to account for trends in runs from 1980..2000 :-(
+Changed ZD_OZONE/My_Bound..   to allow trend_year to set CH4
+(CH4 increased anyway for 1990, from 1760 to 1780)
+Fixed bug in grun.pl (2 emisdirs), My_Derived
+Changed source of sites.rep03 to $DataDir in grun.pl
+
+==============================================================================
 =================== Dave, 11th June, rv1.6.9  =================================
 ==============================================================================
 My_WetDep_ml, increased scavenging ratios

@@ -91,7 +91,6 @@ module BoundaryConditions_ml
           ,NOPROC&
 !hf BC
           ,ISMBEG,JSMBEG
-  !u3 use UiO_ml,                only: &
   use GlobalBCs_ml,                only: &
           NGLOB_BC                 &  ! Number of species from global-model
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.
@@ -216,7 +215,8 @@ contains
   if ( my_first_call ) then
 
     write(*,*) "FIRST CALL TO BOUNDARY CONDITIONS, me :", me
-    call My_bcmap()      ! assigns bc2xn_adv and bc2xn_bgn mappings
+    !ds rv1.6.10 call My_bcmap()      ! assigns bc2xn_adv and bc2xn_bgn mappings
+    call My_bcmap(year)      ! assigns bc2xn_adv and bc2xn_bgn mappings
     call Set_bcmap()     ! assigns xn2adv_changed, etc.
 
     num_changed = num_adv_changed + num_bgn_changed   !u1
@@ -267,7 +267,6 @@ contains
   do ibc = 1, NGLOB_BC
 
                    !=================================================
-      !u3 if(me == 0) call GetGlobalData(month,bc_used(ibc) &
       if(me == 0) call GetGlobalData(year,month,ibc,bc_used(ibc) &
                  ,iglobact,jglobact,bc_data,io_num,errcode)
                    !=================================================
