@@ -408,6 +408,10 @@ subroutine ReadLanduse()
 
              hveg = hveg_max(lu)   ! default
 
+      !ds SAIadd code moved from here to DryDep_ml to fix bug spotted by Peter,
+      !   19/8/2003
+      !SAIadd for other vegetation still defined in UK_ml
+
              if (  crops(lu) ) then
 
                 if ( daynumber < landuse_SGS(i,j,ilu) .or. &
@@ -417,13 +421,12 @@ subroutine ReadLanduse()
                           (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
                      hveg=  hveg_max(lu) * landuse_LAI(i,j,ilu)/LAImax(lu)
                   !ICP - crude....
-                     SAIadd(lu) = ( 5.0/3.5 - 1.0) * landuse_LAI(i,j,ilu)
+                  !ds   SAIadd(lu) = ( 5.0/3.5 - 1.0) * landuse_LAI(i,j,ilu)
                 else if ( daynumber < landuse_EGS(i,j,lu) ) then
                      hveg = hveg_max(lu)                  ! not needed?
-                     SAIadd(lu) = 1.5   ! Sensescent
+                   !ds  SAIadd(lu) = 1.5   ! Sensescent
                 end if
              end if ! crops
-             !rv1.2 end if ! bulk
 
              landuse_hveg(i,j,ilu) =  hveg
 

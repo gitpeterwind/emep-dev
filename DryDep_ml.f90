@@ -34,10 +34,12 @@ module DryDep_ml
  use Dates_ml,       only : daynumber
  use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
                             forest, water, g_pot, g_temp,g_vpd, &
+                            crops,         & !rv1_7_4 for SAIadd
                             luflux_wanted, & ! true if fluxes wanted for landuse lu
                             g_light,g_swp, &
                             STUBBLE,       & ! Small ht., 1 cm
                             SAIadd,        &
+                            SLAIlen,       & !rv1_7_4 for SAIadd
                             leaf_flux,   &! = flag-leaf sto. flux per m2
                             unit_flux,   &! = sto. flux per m2
                             lai_flux      ! = lai * unit_flux
@@ -444,6 +446,22 @@ if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
                hveg  = hveg *  lat_factor
             end if
         end if ! forest
+
+      !ds code moved here from UK_ml to fix bug spotted by Peter, 19/8/2003
+      !SAIadd for other vegetation still defined in UK_ml
+       if (  crops(lu) ) then
+
+            if ( daynumber < landuse_SGS(i,j,ilu) .or. &
+                   daynumber > landuse_EGS(i,j,ilu)  ) then
+                     SAIadd(lu) = 0.0
+                else if ( daynumber < &
+                          (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
+                     SAIadd(lu) = ( 5.0/3.5 - 1.0) * lai
+                else if ( daynumber < landuse_EGS(i,j,lu) ) then
+                     SAIadd(lu) = 1.5   ! Sensescent
+            end if
+        end if ! crops
+
 
 
 
