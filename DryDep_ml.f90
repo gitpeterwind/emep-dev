@@ -10,24 +10,29 @@ module DryDep_ml
 
  !-- model specific dry dep values are set in My_UKDep_ml:
  !   (in file My_DryDep_ml)
+ !ds jan-03 STO_FLUX stuff re-introduced
  !hf dec-02 Structure changed so that DryDep can go inside loop in Runchem
 
  use My_UKDep_ml, only : Init_DepMap,  &   ! Maps indices between Vg-calculated (CDEP..
                                        &   !and advected  (IXADV_..)
                           NDRYDEP_CALC, &  ! No. Vd values calculated 
                           NDRYDEP_ADV, &   ! No. advected species affected
+                          STO_FLUXES,  &   ! true if fluxes wanted.  !got
                           CDEP_SET,    &   ! for so4
-                          FLUX_CDEP,   &   ! for stom. fluxes if wanted
+                          FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
+                          FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
                           Dep        ! Mapping (type = depmap)
 
 
  use My_Derived_ml                ! -> d_2d, IOU_INST, D2_VG etc...
 
- use Dates_ml,       only : daynumber !u7.lu
- use DepVariables_ml,only : NLANDUSE,  LU_WATER, &
-                            forest, g_pot, g_temp,g_vpd, &
-                            g_light,g_swp
+ use Dates_ml,       only : daynumber
+ use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
+                            forest, water, g_pot, g_temp,g_vpd, &
+                            g_light,g_swp, &
+                            unit_flux,   &! = sto. flux per m2
+                            lai_flux      ! = lai * unit_flux
  use Chemfields_ml , only : cfac!,xn_adv
  use GenSpec_adv_ml, only : NSPEC_ADV
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
@@ -74,7 +79,8 @@ module DryDep_ml
   logical, private, save :: my_first_call = .true.
   logical, private, parameter :: DEBUG_VG = .false.
   logical, private, parameter :: DEBUG_UK = .false.
-  logical, private, parameter :: DEBUG_WET = .true.
+  logical, private, parameter :: DEBUG_WET = .false.
+  logical, private, parameter :: DEBUG_FLUX = .false.
 
 
  contains
@@ -167,6 +173,7 @@ module DryDep_ml
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
    real ::  LE   ! Latent Heat flux, into surface (opp. sign to fh!)
    logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
+   !real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG   ! Converts from mol/cm3 to nmole/m3
    real :: nmole_o3    ! O3 in nmole/m3
    real :: lat_factor   ! latitide-based correction for lai, hveg
 
@@ -301,6 +308,15 @@ module DryDep_ml
     Sumland  = 0.0
     fluxfrac_adv (:,:) = 0.0
 
+
+    if ( STO_FLUXES ) then
+       unit_flux(:) = 0.0
+       !lai_flux(:) = 0.0
+       !nmole_o3 = xn_2d(NSPEC_SHL+FLUX_ADV,i,j,KMAX_MID) * NMOLE_O3
+    end if
+   !OLD nmole_o3 = xn_adv(FLUX_ADV,i,j,KMAX_MID) * 40.0 * PPBINV
+
+
     !/ And start the sub-grid stuff over different landuse (lu)
 
     nlu = landuse_ncodes(i,j)
@@ -316,7 +332,8 @@ module DryDep_ml
         hveg    = landuse_hveg(i,j,ilu)
         g_pot   = landuse_gpot(i,j,ilu)
 
-        if ( DEBUG_UK .and. lu == LU_WATER .and. hveg > 0.0 ) then
+        !ds if ( DEBUG_UK .and. lu == LU_WATER .and. hveg > 0.0 ) then
+        if ( DEBUG_UK .and. water(lu) .and. hveg > 0.0 ) then
             print *, "HIGHW!!! h,lai,cov", i,j,ilu, hveg, lai,cover
             call gc_abort(me,NPROC,"WATER!")
         end if
@@ -400,11 +417,9 @@ module DryDep_ml
 
          do n = 1, NDRYDEP_CALC
 
-          !ds Vg_ref(n) = 1.0 / ( Ra_ref + Rb(n) + Rsur(n) )
            Vg_ref(n) = (1.0-wetarea) / ( Ra_ref + Rb(n) + Rsur(n) ) &
                      +      wetarea  / ( Ra_ref + Rb(n) + Rsur_wet(n) )
 
-          !ds Vg_1m(n)  = 1.0 / ( Ra_1m  + Rb(n) + Rsur(n) )
            Vg_1m (n) = (1.0-wetarea) / ( Ra_1m + Rb(n) + Rsur(n) ) &
                      +      wetarea  / ( Ra_1m + Rb(n) + Rsur_wet(n) )
 
@@ -412,47 +427,52 @@ module DryDep_ml
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + cover * Vg_ref(n)
            Grid_Vg_1m(n)  = Grid_Vg_1m(n)  + cover * Vg_1m(n)
 
-           ! if ( Vg_ref(n) < 0.0 .or. Vg_ref(n) > 0.1 .or. Vg_1m(n)<Vg_ref(n) ) then
-           if ( Vg_ref(n) < 0.0 .or. Vg_1m(n)<Vg_ref(n) ) then
-               print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", Ra_ref, Rb(n), Rsur(n)
+           if ( DEBUG_VG .and.  Vg_ref(n) < 0.0 .or. Vg_1m(n)<Vg_ref(n) ) then
+               print *, "VGREF ERROR", me, n, Vg_ref(n), " Ras ", &
+                  Ra_ref, Rb(n), Rsur(n)
                print *, "VGREF ERROR stab", z0, d, ustar_loc, invL, g_sto
                call gc_abort(me, NPROC, "VGREF ERROR")
            end if
 
          end do
 
-         !if ( FLUX_CDEP > 0 .and. Vg_ref(1) > 0.04 ) then !CRUDE FIX WITH (1)
-         !      print *, "VGREFO3 ERROR", me, n, Vg_ref(n)
-         !      print *, "VGREFO3 ERROR Ras", Ra_ref, Rb(n), Rsur(n)
-         !      print *, "VGREFO3 ERROR stab", z0, d, ustar_loc, invL, g_sto
-         !      call gc_abort(me, NPROC, "VGREFO3 ERROR")
-         !end if
 
          Sumcover = Sumcover + cover
 
 
         !/-- only grab gradients over land-areas
+        !ds - Using water() is better than LU_WATER
 
-         if ( lu /= LU_WATER ) then
-            Sumland = Sumland + cover
-            do n = 1, NDRYDEP_CALC 
-                Vg_ratio(n) =  Vg_ratio(n) + cover * Vg_ref(n)/Vg_1m(n)
+         if ( water(lu) ) then
+            do n = 1, NDRYDEP_CALC
+               sea_ratio(n) =  Vg_ref(n)/Vg_1m(n)
             end do
          else
-            do n = 1, NDRYDEP_CALC 
-               sea_ratio(n) =  Vg_ref(n)/Vg_1m(n)
+            Sumland = Sumland + cover
+            do n = 1, NDRYDEP_CALC
+                Vg_ratio(n) =  Vg_ratio(n) + cover * Vg_ref(n)/Vg_1m(n)
             end do
          end if
 
+
         if ( DEBUG_UK .and. debug_flag ) then
-            print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP RATVG", ilu, lu, cover, &
-                100.0*Vg_1m(4), 100.0*Vg_ref(4), Sumland, Sumcover, Vg_ratio(4)   !helcom, 4=NH3
+            print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP RATVG",ilu,lu,cover,&
+                100.0*Vg_1m(4), 100.0*Vg_ref(4), Sumland, Sumcover, &
+                   Vg_ratio(4)   !helcom, 4=NH3
             print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP FINVG", ilu, lu, cover, &
                    lai,100.0*g_sto, &  ! tmp, in cm/s 
                    Ra_ref, Rb(4), Rsur(4), 100.0/(Ra_ref + Rb(4) + Rsur(4) )
         end if
          
        !=======================
+       ! The fraction going to the stomata = g_sto/g_sur = g_sto * R_sur.
+       ! Vg*nmole_o3 is the total deposition flux of ozone, but
+       ! we calculate the actual flux later (once we know DepLoss(O3)).
+       ! For now we just calculate the g_sto*R_sur bit:
+       ! (Caution - g_sto is for O3 only)
+
+        if ( STO_FLUXES ) unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
+
        !=======================
         end do LULOOP
        !=======================
@@ -487,35 +507,33 @@ module DryDep_ml
 
     end do ! n
 
+      !hf - replaced xn_adv by xn_2d below, since we are now working within
+      !     an i,j loop
+
       do n = 1, NDRYDEP_ADV 
          nadv    = Dep(n)%adv
-         nadv2d    = NSPEC_SHL + Dep(n)%adv
+         nadv2d  = NSPEC_SHL + Dep(n)%adv
 
          ncalc   = Dep(n)%calc
 
          if ( vg_set(n) ) then
 
              DepLoss(nadv) =   & ! Use directly set Vg
-!hf                 ( 1.0 - exp ( -Dep(n)%vg * dtz ) ) * xn_adv( nadv,i,j,KMAX_MID)
                  ( 1.0 - exp ( -Dep(n)%vg * dtz ) ) * xn_2d( nadv2d,KMAX_MID)
              cfac(nadv, i,j) = 1.0   ! Crude, for now.
   
          else
-!hf             DepLoss(nadv) =   vg_fac( ncalc )  * xn_adv( nadv,i,j,KMAX_MID)
              DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( nadv2d,KMAX_MID)
              cfac(nadv, i,j) = gradient_fac( ncalc )
          end if
 
          if ( DepLoss(nadv) < 0.0 .or. &
-!hf              DepLoss(nadv)>xn_adv(nadv,i,j,KMAX_MID) ) then
               DepLoss(nadv)>xn_2d(nadv2d,KMAX_MID) ) then
-!hf           print *,"NEG XN DEPLOSS!!! ", nadv,DepLoss(nadv), xn_adv(nadv,i,j,KMAX_MID)
-           print *,"NEG XN DEPLOSS!!! ", nadv,DepLoss(nadv), xn_2d(nadv2d,KMAX_MID)
+           !ds print *,"NEG XN DEPLOSS!!! ", nadv,DepLoss(nadv), &
+           !ds      xn_2d(nadv2d,KMAX_MID)
            call gc_abort(me,NPROC,"NEG XN DEPLOSS")
          end if
 
-!hf         xn_adv( nadv,i,j,KMAX_MID) = &
-!hf             xn_adv( nadv,i,j,KMAX_MID) - DepLoss(nadv)
         xn_2d( nadv2d,KMAX_MID) = &
              xn_2d( nadv2d,KMAX_MID) - DepLoss(nadv)
 
@@ -529,6 +547,28 @@ module DryDep_ml
             else
                fluxfrac_adv(nadv,lu) = lu_cover(ilu)*Vg_ref_lu(ncalc,ilu)/ Grid_Vg_ref(ncalc)
             end if
+
+
+          !=======================
+          ! The fraction going to the stomata = g_sto/g_sur = g_sto * R_sur.
+          ! Vg*nmole_o3 is the instantaneous deposition flux of ozone, and
+          ! the actual amount "deposited" is obtained from DepLoss(O3) using
+          ! fluxfrac as obtained above.
+          ! Units ??? Still to be done...!!
+
+          if ( STO_FLUXES .and. nadv == FLUX_ADV ) then
+
+             unit_flux(lu) = unit_flux(lu) * fluxfrac_adv(nadv,lu) * &
+                                        DepLoss(FLUX_ADV)
+
+             lai_flux (lu) = lai * unit_flux(lu)
+
+             if ( DEBUG_FLUX .and. debug_flag ) then
+                 print "(a14,2i4,3i4,2i4,f8.3,2es12.4)", "UKDEP STOFLX", &
+                        ilu, lu, imm, idd, ihh, &
+                        n, FLUX_ADV, lai, unit_flux(lu), lai_flux(lu)
+             end if
+           end if
 
             if ( DEBUG_UK .and. debug_flag ) then
 
@@ -560,23 +600,21 @@ module DryDep_ml
               print "(a30,3i4,f12.5)", &
                   "DEBUG DryDep n, adv, calc, fac ",  n,nadv, ncalc, gradient_fac( ncalc)
               print "(a20,2e12.4)", &
-!hf                "DEBUG xn, DepLoss ", xn_adv(nadv, i,j,KMAX_MID), DepLoss(nadv)
                 "DEBUG xn, DepLoss ", xn_2d(nadv2d,KMAX_MID), DepLoss(nadv)
               print "(a20,2f8.4)", "DEBUG gv_fac( ncalc)", &
                  vg_fac(ncalc), 1.0-vg_fac(ncalc)
           end if
         end if
 
-!        if (i==2 .and. j==2 .and. nadv==50)then
-!        write(*,*)'nadv, Deploss',nadv,DepLoss(nadv)
-!        endif
-
        end do ! n
 
 !hf Not needed inside IXADV_ loop
+!ds - Could use DEBUG_i, DEBUG_j here also. I added DEBUG_VG
+!     since the compiler will ignor tis if-test and hence be faster
+!     unless DEBUG_VG is set.
 
-        if (i==2 .and. j==2 .and. nadv==49)then
-        write(*,*)'nadv, Deploss',49,DepLoss(nadv)
+        if (DEBUG_VG .and. i==2 .and. j==2 .and. nadv==49)then
+            write(*,*)'nadv, Deploss',49,DepLoss(nadv)
         endif
         call DryDep_Budget(i,j,Deploss,convfac)
 
@@ -600,7 +638,3 @@ module DryDep_ml
  end subroutine drydep
 
 end module DryDep_ml
-
-
-
-

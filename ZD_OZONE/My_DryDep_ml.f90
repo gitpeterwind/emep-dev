@@ -8,6 +8,7 @@ module My_UKDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
+ use DepVariables_ml, only : unit_flux, lai_flux
  use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN, &
                              DDEP_JRK, DDEP_FOR, &  ! ecosystem specific
                              IOU_INST    &!updates inst. dep. fields
@@ -51,8 +52,11 @@ module My_UKDep_ml    ! DryDep_ml
   integer, public, parameter :: CDEP_SET = -99    
 
 
- ! WE NEED A FLUX_CDEP, FLUX_ADV FOR OZONE; 
 
+ ! WE NEED A FLUX_CDEP, FLUX_ADV FOR OZONE;
+ ! (set to one for non-ozone models)
+
+  logical, public, parameter :: STO_FLUXES = .true.
   integer, public, parameter :: FLUX_CDEP  = CDEP_O3
   integer, public, parameter :: FLUX_ADV   = IXADV_O3
 
@@ -88,8 +92,8 @@ module My_UKDep_ml    ! DryDep_ml
 
    type, public :: depmap
       integer :: adv   ! Index of species in IXADV_ arrays
-      integer :: calc ! Index of species in  calculated dep arrays
-      real    :: vg   ! if CDEP_SET, give vg in m/s
+      integer :: calc  ! Index of species in  calculated dep arrays
+      real    :: vg    ! if CDEP_SET, give vg in m/s
    end type depmap
 
    type(depmap), public, dimension(NDRYDEP_ADV):: Dep

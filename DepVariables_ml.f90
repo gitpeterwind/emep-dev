@@ -69,6 +69,10 @@ real, public, save :: &
       forest,             & ! Assumed when hveg_max > 5 m
       conif_forest          ! Assumed when hveg_max > 5 m and SGS<=1
 
+!rv1.2_got
+  real, public,  dimension(NLANDUSE), save :: &
+      lai_flux,    & ! Fluxes to total LAI
+      unit_flux      ! Fluxes per m2 of leaf area
 
 
 !.. commen variables read from ukdep_biomass.dat   ...........................

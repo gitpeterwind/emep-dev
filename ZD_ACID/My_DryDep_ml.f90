@@ -8,6 +8,7 @@ module My_UKDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
+ !OZONE use DepVariables_ml, only : unit_flux, lai_flux
  use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN,DDEP_SEAX, DDEP_SEAR, DDEP_FOR, &
                              IOU_INST    &!updates inst. dep. fields
                            , ddep         ! 2d fields
@@ -48,10 +49,14 @@ module My_UKDep_ml    ! DryDep_ml
 
   integer, public, parameter :: CDEP_SET = -99    
 
- ! WE NEED A FAKE FLUX_CDEP, FLUX_ADV FOR ACID; SET HERE TO -99
 
-  integer, public, parameter :: FLUX_CDEP  = -99   
-  integer, public, parameter :: FLUX_ADV   = -99   
+ ! WE NEED A FLUX_CDEP, FLUX_ADV FOR OZONE;
+ ! (set to one for non-ozone models)
+
+  logical, public, parameter :: STO_FLUXES = .false.
+  integer, public, parameter :: FLUX_CDEP  = 1
+  integer, public, parameter :: FLUX_ADV   = 1
+
 
 !also have CDEP_H2O2=, CDEP_ALD, CDEP_HCHO, CDEP
  

@@ -2,7 +2,7 @@ module Rsurface_ml
 
 !================== Now under CVS control =================
 ! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.7 2003-01-27 13:03:10 mifads Exp $
+! $Id: Rsurface_ml.f90,v 1.8 2003-02-06 14:57:44 mifads Exp $
 ! $Name: not supported by cvs2svn $
 ! =========================================================
 
@@ -33,6 +33,7 @@ use SoilWater_ml, only : SWP
 use Wesely_ml, only  : Wesely_tab2, & ! Wesely Table 2 for 14 gases
                        WES_HNO3, & ! indices to identify HNO3
                        WES_NH3,  & ! indices to identify NH3  
+                       WES_NO2 , & ! indices to identify NO2 
                        Rb_cor,  &! correction factor used in evaluating Rb
                        DRx       !  Ratio of diffusivities to ozone
 implicit none
@@ -368,7 +369,7 @@ contains
              Gns_dry = 1.0/r_water
              Gns_wet =  Gns_dry
 !hf
-           else  ! Not NH3:
+           else  ! Not NH3 or NO2:
 
                Gns_dry = 1.0e-5*Hstar*GnsS_dry + f0 * GnsO 
                Gns_wet = 1.0e-5*Hstar*GnsS_wet + f0 * GnsO 
@@ -404,6 +405,16 @@ contains
            ! Ggs = 1.0/ Rgs
 
        end if  ! end of canopy tests 
+
+       !/ --- for NO2 we increase Rsur with a factor of 2. This is a crude
+       ! acknowledgement of the fact that NO2 should really be dealt with
+       ! as a compensation-point problem, and measured fluxes are often
+       ! from the ground (-ve Vg).
+
+       if ( DRYDEP_CALC(icmp) == WES_NO2 ) then
+           Rsur(icmp)     = Rsur(icmp) * 2.0
+           Rsur_wet(icmp) = Rsur_wet(icmp) * 2.0
+       end if
 
 
   end do GASLOOP2
