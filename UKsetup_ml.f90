@@ -51,7 +51,7 @@ contains
  ! read in biomass-associated data (LAI, etc.)
  ! **sc: NH4_pl also read in at this stage
   
-      call open_file(IO_TMP,"r","ukdep_biomass.dat",needed=.true.,skip=3)
+      call open_file(IO_TMP,"r","tf2_biomass.dat",needed=.true.,skip=3)
 
       do lu = 1, NLANDUSE
          read(unit=IO_TMP,fmt=*) luname(lu), hveg_max(lu), b_inc(lu),  &
@@ -66,7 +66,7 @@ contains
 
    ! read in Gpot modifiers, light and temperature factors
 
-     call open_file(IO_TMP,"r","ukdep_gfac1.dat",needed=.true.,skip=3)
+     call open_file(IO_TMP,"r","tf2_gfac1.dat",needed=.true.,skip=3)
 
      do lu = 1, NLANDUSE
        txt = luname(lu)
@@ -84,7 +84,7 @@ contains
 
    ! read in ground surface resistance, VPD and SWP modifiers
 
-     call open_file(IO_TMP,"r","ukdep_gfac2.dat",needed=.true.,skip=3)
+     call open_file(IO_TMP,"r","tf2_gfac2.dat",needed=.true.,skip=3)
 
      do lu = 1, NLANDUSE
        txt = luname(lu)

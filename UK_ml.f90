@@ -6,6 +6,7 @@ use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
                       ,crops, bulk, water  & ! logical variables
                       ,forest,conif_forest & !    "      "
                       ,vegetation, urban   & !
+                      ,luflux_wanted       & ! 
                       ,STUBBLE             & ! Ht. of stubble (m)
                       ,SAIadd              & ! surface-area index, rv1.4.6
                       ,hveg_max, b_inc, albedo, NH4_pl, SGS50, DSGS   &
@@ -20,7 +21,7 @@ use Functions_ml,   only: GridAllocate, Polygon
 use GridValues_ml,  only: &!u7.4vg GlobalPosition, &
                            gb_glob, gb, i_glob, j_glob  ! latitude
 use Io_ml,          only: open_file, ios, IO_FORES
-use ModelConstants_ml,  only : current_date, debug_i, debug_j
+use ModelConstants_ml,  only : current_date, debug_i, debug_j, NNLANDUSE
 use UKsetup_ml,     only: ukdep_init, get_growing_season
 use Par_ml,         only: GIMAX, GJMAX, ISMBEG, JSMBEG, &
                           li0, lj0, IILARDOM, JJLARDOM, &
@@ -37,7 +38,7 @@ private
   public :: SetLanduse
   private :: Conif_Gpot
 
- integer, public, parameter :: NLUMAX = 7  ! max no. landuse per grid
+ integer, public, parameter :: NLUMAX = 15 ! max no. landuse per grid
 
  ! Keep crops and bulk variables here until I figure our
  ! how to use logicals in gc_send
@@ -68,7 +69,7 @@ private
          ,landuse_hveg  &    ! Max. height of veg.
          ,landuse_gpot        ! Potential (age) factor for Jarvis-calc
 
- logical, private, parameter :: DEBUG_DEP = .false.
+ logical, private, parameter :: DEBUG_DEP = .true.
  character(len=30), private :: errmsg
 
 
@@ -137,7 +138,7 @@ subroutine ReadLanduse()
 
    integer :: i,j,n,lu, index_lu, maxlufound
    integer :: err1, err2, err3
-   integer,parameter :: NNLANDUSE = 10  !temp.
+!TFMM   integer,parameter :: NNLANDUSE = 17  !temp.
    integer,parameter :: BIG = IILARDOM*JJLARDOM*NNLANDUSE
    real, dimension(NNLANDUSE) :: tmp
 
@@ -163,7 +164,8 @@ subroutine ReadLanduse()
        g_ncodes(:,:)   = 0       !/**  initialise  **/
        g_data  (:,:,:) = 0.0     !/**  initialise  **/
 
-      call open_file(IO_FORES,"r","landuse.170",needed=.true.)
+      !TFMM call open_file(IO_FORES,"r","landuse.170",needed=.true.)
+      call open_file(IO_FORES,"r","landuse.tf2",needed=.true.,skip=1)
       if ( ios /= 0 ) call gc_abort(me,NPROC,"ios error: landuse") 
 
 !c   rivm2uk
@@ -182,20 +184,25 @@ subroutine ReadLanduse()
 !c       10= ice
 !c
 
-   !u7.4vg call GlobalPosition()  ! get gl_glob, only for me==0 for now.
-
       do n = 1, BIG
          read(IO_FORES,*,iostat=ios) i,j, ( tmp(lu), lu=1,NNLANDUSE)
          if ( ios /= 0 ) exit   ! likely end of file
          if ( DEBUG_DEP ) debug_flag = ( i == debug_i .and. j == debug_j )
 
-         if ( gb_glob(i,j) > 60.0 ) then   ! use Tundra for 8, 9
-              rivm2uk = (/ 10, 5, 5, 1, 2, 15, 17,13, 13, 16 /)
-         else if ( gb_glob(i,j) > 45.0 ) then   !use moorland for 8
-              rivm2uk = (/ 10, 5, 5, 1, 2, 15, 17, 8, 14, 16 /)
-         else  ! Mediterranean 
-              rivm2uk = (/ 10, 6, 6, 3, 4, 15, 17,11, 14, 16 /)
-         end if
+       !TFIAM changes: treat permanent crops as grass. Assign all
+       ! arable crops to TC - wheat etc.
+       !TFMM  if ( gb_glob(i,j) > 60.0 ) then   ! use Tundra for 8, 9
+       !TFMM       !TFIAM rivm2uk = (/ 10, 5, 5, 1, 2, 15, 17,13, 13, 16 /)
+       !TFMM       rivm2uk = (/ 10, 5, 10, 1, 2, 15, 17,13, 13, 16 /)
+       !TFMM  else if ( gb_glob(i,j) > 45.0 ) then   !use moorland for 8
+       !TFMM       !TFIAM rivm2uk = (/ 10, 5, 5, 1, 2, 15, 17, 8, 14, 16 /)
+       !TFMM       rivm2uk = (/ 10, 5, 10, 1, 2, 15, 17, 8, 14, 16 /)
+       !TFMM  else  ! Mediterranean 
+       !TFMM       !TFIAM rivm2uk = (/ 10, 6, 6, 3, 4, 15, 17,11, 14, 16 /)
+       !TFMM       !TFMM rivm2uk = (/ 10, 5, 10, 3, 4, 15, 17,11, 14, 16 /)
+       !TFMM       !TFMM - use temp forests overall
+       !TFMM       rivm2uk = (/ 10, 5, 10, 1, 2, 15, 17,11, 14, 16 /)
+       !TFMM  end if
          i_in   = i ! for debug
          j_in   = j
 
@@ -210,7 +217,8 @@ subroutine ReadLanduse()
              do lu = 1, NNLANDUSE
                  if ( tmp(lu) > 0.0 ) then
 
-                    uklu = rivm2uk(lu)  ! uk code
+                    !TFMMuklu = rivm2uk(lu)  ! uk code
+                    uklu = lu
 
                     call GridAllocate("LANDUSE",i,j,uklu,NLUMAX, &
                       index_lu, maxlufound, g_codes, g_ncodes,errmsg)
@@ -229,7 +237,18 @@ subroutine ReadLanduse()
                     g_data(i,j,index_lu) = &
                        g_data(i,j,index_lu) + 0.01 * tmp(lu)
                  end if
-             end do
+             end do ! lu
+             !============ WHEAT FIX ===============================!
+             !TFMM if( tmp(2) > 0.001 ) then
+             !TFMM    uklu = 9  ! Wheat in dummy files - add 1% of arable here
+             !TFMM       call GridAllocate("LANDUSE",i,j,uklu,NLUMAX, &
+             !TFMM         index_lu, maxlufound, g_codes, g_ncodes,errmsg)
+             !TFMM       if (errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+             !TFMM       g_data(i,j,index_lu) = &
+             !TFMM          g_data(i,j,index_lu) + 0.0001 * tmp(lu)
+             !TFMM end if
+             !============ WHEAT FIX ===============================!
+
          end if
       end do
 
@@ -297,7 +316,6 @@ subroutine ReadLanduse()
          hveg_max(lu) = max( hveg_max(lu), 0.0)
          LAImax(lu)   = max( LAImax(lu),   0.0)
 
-
 !Tried 4l3, but ....
            if ( DEBUG_DEP .and. me == 0 ) print *, "UKDEP_VEG", lu, &
                            crops(lu), bulk(lu), forest(lu), conif_forest(lu)
@@ -310,6 +328,15 @@ subroutine ReadLanduse()
         SAIadd = 1.0     ! Addition to LAI to get surface area
       end where
 
+     ! ICP - define whuich landuse we might be interested in stomtal
+     ! fluxes for:   (inly used if STO_FLUXES set in My_DryDep)
+
+      luflux_wanted = .false.
+      where ( forest .or. crops )
+        luflux_wanted = .true.
+      end where
+    ! CRUDE AND TMP !!!!!
+      luflux_wanted(10) = .true.
 
       !/ 3./ -- Calculate growing seasons where needed
 
@@ -389,8 +416,11 @@ subroutine ReadLanduse()
                 else if ( daynumber < &
                           (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
                      hveg=  hveg_max(lu) * landuse_LAI(i,j,ilu)/LAImax(lu)
+                  !ICP - crude....
+                     SAIadd(lu) = ( 5.0/3.5 - 1.0) * landuse_LAI(i,j,ilu)
                 else if ( daynumber < landuse_EGS(i,j,lu) ) then
                      hveg = hveg_max(lu)                  ! not needed?
+                     SAIadd(lu) = 1.5   ! Sensescent
                 end if
              end if ! crops
              !rv1.2 end if ! bulk

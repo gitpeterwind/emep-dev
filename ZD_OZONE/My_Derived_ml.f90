@@ -93,6 +93,13 @@ private
        character(len=10) :: unit ! Unit (writen in netCDF output)
     end type Deriv
 
+   integer, public, parameter :: NOUTPUT_ABS_HEIGHTS = 6
+
+   real, public, parameter, dimension(NOUTPUT_ABS_HEIGHTS) :: &
+          OUTPUT_ABS_HEIGHTS = &
+             (/ 0.0, 1.0, 3.0, 5.0, 10.0, 20.0 /)  ! Above ground
+            ! Note - values below d+z0m will be set to d+z0m
+
    logical, private, parameter :: T = .true., F = .false. ! shorthands only
 
    !/** Depositions are stored in separate arrays for now - to keep size of
@@ -101,7 +108,7 @@ private
    !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
 
    integer, public, parameter ::  & 
-        NWDEP = 4       &   ! Number of 2D deposition fields
+        NWDEP = 5       &   ! Number of 2D deposition fields
        ,WDEP_PREC  = 1  &   ! sum rainfall, was IPRDEP
        ,WDEP_SOX   = 2  &   ! sum of sulphur        (was xwdep (IXWD_SOX)
        ,WDEP_OXN   = 3  &   ! sum oxidised nitrogen (was  xddep(IXWD_HNO3))
@@ -171,17 +178,16 @@ private
        ,D2_MAXO3  =19  &   ! for TROTREP
        ,D2_MAXOH  =20      ! for TROTREP
 
-!ds - uk flux and externally se
    integer, public, parameter ::  & 
-        D2_VG_REF = 21     &
-       ,D2_VG_1M  = 22     &!
-       ,D2_VG_STO = 23     &!
-       ,D2_FX_REF = 24     &
-       ,D2_FX_STO = 25      
+        D2_FSTCF0  =21&   ! CF 
+       ,D2_FSTDF0  =22&   ! ozone flux (ecosystems)
+       ,D2_FSTTC0  =23&   ! ozone flux (ecosystems)
+       ,D2_FSTMC0  =24&   ! ozone flux (ecosystems)
+       ,D2_FSTGR0  =25&   ! ozone flux (ecosystems)
+       ,D2_FSTWH0  =26    ! ozone flux (ecosystems)
 
    integer, public, parameter ::  & 
-        D2_NH3      = 26  &    ! 
-       ,D2_aNH4     = 27  &   ! was xnsurf(..)
+        D2_aNH4     = 27  &   ! was xnsurf(..)
        ,D2_tNO3     = 28  &  ! total particulate NO3=aNO3+pNO3
        ,D2_SIA      = 29  &  ! SO4+NO3+NH4 
        ,D2_PPM25    = 30  &  ! primary PM2.5
@@ -192,12 +198,16 @@ private
 !st.. fine and coarse NO3 if wanted
    integer, public, parameter ::  &
         D2_aNO3     = 35 &
-       ,D2_pNO3     = 36 
+       ,D2_pNO3     = 36 &
+       ,D2_NH3      = 37       ! 
 !hf hmix
    integer, public, parameter ::  & 
-        D2_HMIX   = 37     
+        D2_HMIX   = 38 &     
 !!       ,D2_HMIX00 = 38    &!mixing height at 00
-!!       ,D2_HMIX12 = 39     !mixing height at 12
+       ,D2_HMIX12 = 39     !mixing height at 12
+   integer, public, parameter ::  & 
+        D2_O3CF=40, D2_O3DF=41, D2_O3TC=42, D2_O3GR=43, D2_O3WH=44
+
    integer, public, parameter ::  & 
         NDERIV_3D = 10    & ! Number of 3D derived fields
        ,D3_O3     = 1    & ! was xnav(o3) array
@@ -299,7 +309,6 @@ private
  f_ddep(DDEP_STOMCL) = Deriv( 584, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOMCL","mg/m2")
  f_ddep(DDEP_STOGRL) = Deriv( 585, "DDEP ", T, -1, 1. , F  , F  ,T ,T ,T ,"DDEP_STOGRL","mg/m2")
 
-
 !-- 2-D fields - the complex ones
 
 ! Deriv type has fields:  code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
@@ -349,12 +358,23 @@ private
 !ds drydep
 !   set as "external" parameters - ie set outside Derived subroutine
 !   use index as lu, here 10=grass
+! Deriv type has fields:  code class avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
 
- f_2d(D2_VG_REF)=Deriv( 471, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_VG_REF","m/s")
- f_2d(D2_VG_1M )=Deriv( 472, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_VG_1M","m/s")
- f_2d(D2_VG_STO)=Deriv( 473, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_VG_STO","m/s")
- f_2d(D2_FX_REF)=Deriv( 474, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_FX_REF","nmol/m2/s")
- f_2d(D2_FX_STO)=Deriv( 475, "EXT   ",T, 10 ,       1.0, T  , F , T , T , F ,"D2_FX_STO","nmol/m2/s")
+! f_2d(D2_VG_REF)=Deriv( 471, "EXT   ",T, 10 ,1.0, T, F, T, T, F ,"D2_VG_REF","m/s")
+! f_2d(D2_VG_1M )=Deriv( 472, "EXT   ",T, 10 ,1.0, T, F, T, T, F ,"D2_VG_1M","m/s")
+! f_2d(D2_VG_STO)=Deriv( 473, "EXT   ",T, 10 ,1.0, T, F, T, T, F ,"D2_VG_STO","m/s")
+! f_2d(D2_FX_REF)=Deriv( 474, "EXT   ",T, 10 ,1.0, T, F, T, T, F ,"D2_FX_REF","nmol/m2/s")
+! f_2d(D2_FX_STO)=Deriv( 475, "EXT   ",T, 10 ,1.0, T, F, T, T, F ,"D2_FX_STO","nmol/m2/s")
+
+!ICP:
+!Havn't worried about rho so far... does it matter?
+ f_2d(D2_FSTCF0) = Deriv( 586, "EXT  ", T, -1, 1. , F, F,T ,T ,T ,"D2_FSTCF0","nmol/m2/s")
+ f_2d(D2_FSTDF0) = Deriv( 587, "EXT  ", T, -1, 1. , F, F,T ,T ,T ,"D2_FSTDF0","nmol/m2/s")
+ f_2d(D2_FSTTC0) = Deriv( 588, "EXT  ", T, -1, 1. , F, F,T ,T ,T ,"D2_FSTTC0","nmol/m2/s")
+ f_2d(D2_FSTMC0) = Deriv( 589, "EXT  ", T, -1, 1. , F, F,T ,T ,T ,"D2_FSTMC0","nmol/m2/s")
+ f_2d(D2_FSTGR0) = Deriv( 590, "EXT  ", T, -1, 1. , F, F,T ,T ,T ,"D2_FSTGR0","nmol/m2/s")
+ f_2d(D2_FSTWH0) = Deriv( 591, "EXT  ", T, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH0","nmol/m2/s")
+
 
 ! --  time-averages - here 8-16 , as used in MACHO
 

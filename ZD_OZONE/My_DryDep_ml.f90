@@ -8,7 +8,7 @@ module My_UKDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- use DepVariables_ml, only : unit_flux, lai_flux
+ use DepVariables_ml, only : unit_flux, lai_flux, leaf_flux
  use My_Derived_ml , only : DDEP_SOX,DDEP_OXN,DDEP_RDN, &
                           !!  ECOSYSTEM Specific
                             DDEP_OXSW, DDEP_OXSF, DDEP_OXSC, DDEP_OXSM, & 
@@ -20,7 +20,11 @@ module My_UKDep_ml    ! DryDep_ml
                             DDEP_STOMCU, DDEP_STOGRU,                   &
                             DDEP_STOCFL, DDEP_STODFL, DDEP_STOTCL,      &
                             DDEP_STOMCL, DDEP_STOGRL, &
-                            DDEP_PM, IOU_INST    &!updates inst. dep. fields
+        D2_FSTCF0, D2_FSTDF0, D2_FSTTC0, D2_FSTMC0, D2_FSTGR0, D2_FSTWH0, &
+        !D2_O3CF, D2_O3DF, D2_O3TC, D2_O3GR, D2_O3WH, &
+                             IOU_INST    &!updates inst. dep. fields
+                           , d_2d        &! 2d fields
+                           ,DDEP_PM, IOU_INST    &!updates inst. dep. fields
                            , ddep         ! 2d fields
  use GenSpec_adv_ml !, only: NSPEC_ADV &
                    !,IXADV_O3,IXADV_H2O2,
@@ -147,11 +151,12 @@ contains
 
   end subroutine Init_DepMap
 
-  subroutine Add_ddep(i,j,convfac,convfaco3,fluxfrac)
+  subroutine Add_ddep(i,j,convfac,convfaco3,fluxfrac,c_hvegppb)
      ! Adds deposition losses to ddep arrays
      integer, intent(in) :: i,j             ! coordinates
      real,    intent(in) ::  convfac, convfaco3   !
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
+     real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      integer :: n, nadv
 
      integer, parameter :: N_OXS = 2        ! Number in ox. sulphur family
@@ -303,6 +308,21 @@ contains
      ddep(DDEP_STOTCL,i,j,IOU_INST) =  lai_flux(5) !* to_nmole
      ddep(DDEP_STOMCL,i,j,IOU_INST) =  lai_flux(6) !* to_nmole
      ddep(DDEP_STOGRL,i,j,IOU_INST) =  lai_flux(10)! * to_nmole
+
+     d_2d(D2_FSTCF0,i,j,IOU_INST) =  leaf_flux(1) !* to_nmole
+     d_2d(D2_FSTDF0,i,j,IOU_INST) =  leaf_flux(2) !* to_nmole
+     d_2d(D2_FSTTC0,i,j,IOU_INST) =  leaf_flux(5) !* to_nmole
+     d_2d(D2_FSTMC0,i,j,IOU_INST) =  leaf_flux(6) !* to_nmole
+     d_2d(D2_FSTGR0,i,j,IOU_INST) =  leaf_flux(10)! * to_nmole
+     d_2d(D2_FSTWH0,i,j,IOU_INST) =  leaf_flux(9)! * to_nmole
+
+   !--- ecosystem specific concentrations..
+
+   !  d_2d(D2_O3CF,i,j,IOU_INST) =  c_hvegppb(1)! * to_nmole
+   !  d_2d(D2_O3DF,i,j,IOU_INST) =  c_hvegppb(2)! * to_nmole
+   !  d_2d(D2_O3TC,i,j,IOU_INST) =  c_hvegppb(5)! * to_nmole
+   !  d_2d(D2_O3WH,i,j,IOU_INST) =  c_hvegppb(9)! * to_nmole
+   !  d_2d(D2_O3GR,i,j,IOU_INST) =  c_hvegppb(10)! * to_nmole
 
    !---- end ecosystem specific ----------------------------------------------
 

@@ -12,7 +12,9 @@ module  My_Outputs_ml
   ! Hourly - ascii output of selected species, selcted domain
   ! Restri - Full 3-D output of all species, selected domain
 
-  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX   !u7.4vg
+  use My_Derived_ml, only : f_2d, d_2d, D2_HMIX , &  !u7.4vg
+        D2_FSTCF0, D2_FSTDF0, D2_FSTTC0, D2_FSTMC0, D2_FSTGR0, D2_FSTWH0,&
+        D2_O3CF, D2_O3DF, D2_O3TC, D2_O3GR, D2_O3WH
   use Dates_ml,       only : date  
   use GenSpec_adv_ml, only : NSPEC_ADV          &
         ,IXADV_O3 &
@@ -42,7 +44,7 @@ module  My_Outputs_ml
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    3 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
-    ,NXTRA_SITE =    7            ! No. Misc. met. params  ( now T2)
+    ,NXTRA_SITE =    11           ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
     SITE_ADV =  (/ (isite, isite=1,3) /)       ! Everything!!
@@ -56,8 +58,11 @@ module  My_Outputs_ml
 
    character(len=10), public, parameter, dimension(NXTRA_SITE) :: &
 !    SITE_XTRA=  (/ "hmix    ", "Vg_ref  ", "Vg_1m   " /) 
-    SITE_XTRA=  (/ "th      ", "hmix    ", "Vg_ref  ", "Vg_1m   ", &
-                   "Vg_sto  ", "Flux_ref", "Flux_sto" /)
+!    SITE_XTRA=  (/ "th      ", "hmix    ", "Vg_ref  ", "Vg_1m   ", &
+    SITE_XTRA=  (/ "FSTCF0  ", "FSTDF0  ", "FSTTC0  ", "FSTMC0  ", &
+                   "FSTGR0  ", "FSTWH0  ", &  
+                   "O3CF    ", "O3DF    ", "O3TC    ", "O3GR    ", &
+                   "O3WH    " /) 
 
 
 
@@ -106,8 +111,8 @@ module  My_Outputs_ml
    !     Or even met. data (only temp2m specified so far  - others
    !     need change in hourly_out.f also).
 
-    integer, public, parameter :: NHOURLY_OUT = 5  ! No. outputs
-    integer, public, parameter :: FREQ_HOURLY = 3  ! 1 hours between outputs
+    integer, public, parameter :: NHOURLY_OUT = 10 ! No. outputs
+    integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
     type, public:: Asc2D
          character(len=12):: name   ! Name (no spaces!)
@@ -168,8 +173,6 @@ module  My_Outputs_ml
 contains
 
  subroutine set_output_defs
-!   use GenSpec_adv_ml, only:  IXADV_O3  ! for Hourly outputs
-!   use GenSpec_shl_ml, only:  IXSHL_OH   ! for Hourly outputs
    implicit none
 
    character(len=44) :: errmsg  ! Local error message
@@ -181,11 +184,10 @@ contains
                          ,to_ugSIA  ! conversion to ug of N 
    real, save :: m_s = 100.0 ! From cm/s to m/s
 
-
   ! introduce some integers to make specification of domain simpler
   ! and less error-prone. Numbers can be changed as desired.
-
    integer, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
+   !integer, save :: ix1 = 110, ix2 = 115, iy1=60, iy2 = 60
 
 
 !jej - added 11/5/01 following Joffen's suggestion:
@@ -201,31 +203,31 @@ contains
 
  ! ** REMEMBER : ADV species are mixing ratio !!
  ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
+ ! ** REMEMBER : No spaces in name, except at end !!
 
   !**               name     type   
   !**                ofmt   ispec     ix1 ix2  iy1 iy2  unit conv    max
 
   hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
                   "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
-  hr_out(2)=  Asc2D("aNH4-air", "ADVugm3", &
-                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
-  hr_out(3)=  Asc2D("aNO3-air", "ADVugm3", &
-                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
-  hr_out(4)=  Asc2D("SO4-air", "ADVugm3", &
-                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
-  hr_out(5)=  Asc2D("pNO3-air", "ADVugm3", &
-                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,400.0)
+!  hr_out(2)=  Asc2D("aNH4-air", "ADVugm3", &
+!                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+!  hr_out(3)=  Asc2D("aNO3-air", "ADVugm3", &
+!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+!  hr_out(4)=  Asc2D("SO4-air", "ADVugm3", &
+!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+!  hr_out(5)=  Asc2D("pNO3-air", "ADVugm3", &
+!                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,400.0)
 
-!    Asc2D("ADV", "(f8.4)",IXADV_PAN, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
+!  hr_out(2)= &
+!   Asc2D("ADVugm3", "(f8.4)",IXADV_aNH4, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
+!  hr_out(3)= &
+!   Asc2D("ADVugm3", "(f8.4)",IXADV_aNO3, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
 !  hr_out(4)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_SO2, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
+!   Asc2D("ADVugm3", "(f8.4)",IXADV_SO4, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
 !  hr_out(5)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_SO4, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
-!  hr_out(6)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_NH3, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
-!  hr_out(7)= &
-!    Asc2D("ADV", "(f8.4)",IXADV_HNO3, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
-
+!   Asc2D("ADVugm3", "(f8.4)",IXADV_pNO3, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
+!
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)
  !ds u7.4vg - or from d_2d arrays.
@@ -233,6 +235,26 @@ contains
   !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
   !hr_out(3)= &
   !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
+
+!ICP
+   hr_out(2)= Asc2D("Fst_TConif  ", "D2D", "(f8.5)",&
+                  D2_FSTCF0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+   hr_out(3)= Asc2D("Fst_TBroad  ", "D2D", "(f8.5)",&
+                  D2_FSTDF0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+   hr_out(4)= Asc2D("Fst_MConif  ", "D2D", "(f8.5)",&
+                  D2_FSTTC0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+   hr_out(5)= Asc2D("Fst_MBroad  ", "D2D", "(f8.5)",&
+                  D2_FSTMC0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+   hr_out(6)= Asc2D("Fst_Grass   ", "D2D", "(f8.5)",&
+                  D2_FSTGR0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+   hr_out(7)= Asc2D("Fst_Wheat   ", "D2D", "(f8.5)",&
+                  D2_FSTWH0, ix1,ix2,iy1,iy2, "nmole/m3/s", 1.0  ,900.0)
+   hr_out(8)= Asc2D("O3__Wheat   ", "D2D", "(f7.3)",&
+                  D2_O3WH,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
+   hr_out(9)= Asc2D("O3__Beech   ", "D2D", "(f7.3)",&
+                  D2_O3DF,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
+   hr_out(10)= Asc2D("O3__Conif   ", "D2D", "(f7.3)",&
+                  D2_O3CF,   ix1,ix2,iy1,iy2, "ppb       ", 1.0  ,900.0)
 
  !/** theta is in deg.K
  !hr_out(1)=  Asc2D("T2_C",   "T2_C   ", &

@@ -100,7 +100,7 @@ if ( $OZONE ) {
      $OZONEDIR    = "$HILDE/BC_data/LOGAN_O3_DATA/50Data_900mbar"; 
     #$OZONEDIR    = "$HILDE/BC_data/Fortuin_data/50Data"; 
      @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-     $testv       = "rv1_6_4uk";
+     $testv       = "rv1_6_5";
 
 } elsif ( $ACID ) {
      $OZONEDIR    = "$HILDE/BC_data/EMEPO3_rv147";
@@ -502,13 +502,13 @@ foreach $s ( keys(%seasons) ) {
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
 
-    $old   = "$o3dir/landuse.170" ;
-    $new = sprintf "landuse.170";
+    $old   = "$DataDir/landuse.tf2" ;  #ds rv1_6_5 change
+    $new   = "landuse.tf2";            #ds rv1_6_5 change
     mylink( "Landuse ", $old,$new ) ;
 
  # TMP LOCATION for some datafiles : MyDataDir
-foreach $datafile ( qw ( Volcanoes.dat ukdep_gfac1.dat ukdep_gfac2.dat ukdep_biomass.dat ) ) {
-    #ds $old   = "$MyDataDir/$datafile" ;
+#dsforeach $datafile ( qw ( Volcanoes.dat ukdep_gfac1.dat ukdep_gfac2.dat ukdep_biomass.dat ) ) {
+foreach $datafile ( qw ( Volcanoes.dat tf2_gfac1.dat tf2_gfac2.dat tf2_biomass.dat ) ) {
     $old   = "$DataDir/$datafile" ;
     $new   = "$datafile" ;
     mylink( "$datafile", $old,$new ) ;

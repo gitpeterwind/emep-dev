@@ -61,6 +61,7 @@ real, public, save :: &
              ,water          &! true for  water, set with h < 0
              ,forest         &! Assumed when hveg_max > 5 m
              ,conif_forest   &! Assumed when hveg_max > 5 m and SGS<=1
+             ,luflux_wanted  &! Set true if stomatal flux calcs possible
              ,vegetation     &! Assumed when hveg > 5 m and not urban
              ,urban           ! Assumed when hveg > 5 m && LAI < 0.0
 
@@ -72,8 +73,9 @@ real, public, save :: &
 
 !rv1.2_got
   real, public,  dimension(NLANDUSE), save :: &
-      lai_flux,    & ! Fluxes to total LAI
-      unit_flux      ! Fluxes per m2 of leaf area
+      lai_flux,         & ! Fluxes to total LAI
+      unit_flux,        & ! Fluxes per m2 of leaf area
+      leaf_flux           ! Flag-leaf Fluxes per m2 of leaf area
 
 
 !.. commen variables read from ukdep_biomass.dat   ...........................

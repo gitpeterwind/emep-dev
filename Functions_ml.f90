@@ -34,6 +34,8 @@ module Functions_ml
 
   public :: AerRes
 
+  public :: AerResM
+
   public :: PsiH
 
   public :: PsiM
@@ -476,6 +478,34 @@ result (Poly)
     Ra = min(Ra,9999.9)
 
   end function AerRes
+
+  !--------------------------------------------------------------------
+  function AerResM(z1,z2,uStar,Linv,Karman) result (Ra)
+!...
+!   Ref: Garratt, 1994, pp.55-58
+!   In:
+    real, intent(in) ::   z1     ! lower height (m), equivalent to h-d+1 or h-d+3
+    real, intent(in) ::   z2     ! upper height (m), equivalent to z-d
+    real, intent(in) ::   uStar  ! friction velocity (m/s)
+    real, intent(in) ::   Linv   ! inverse of the Obukhov length (1/m)
+    
+    real, intent(in) ::   Karman ! von Karman's constant 
+!   For AerRes, the above dummy argument is replaced by the actual argument 
+!   KARMAN in the module GetMet_ml.
+
+!   Out:
+    real :: Ra     ! =  aerodynamic resistance to transfer of momentum
+                    !from z2 to z1 (s/m)
+
+!   uses functions:
+!   PsiM   = integral flux-gradient stability function for momentum
+!...
+
+    Ra = log(z2/z1) - PsiM(z2*Linv) + PsiM(z1*Linv)
+    Ra = Ra/(Karman*uStar)
+    Ra = min(Ra,9999.9)
+
+  end function AerResM
 
   !--------------------------------------------------------------------
   function PsiH(zL) result (stab_h)

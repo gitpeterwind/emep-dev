@@ -1,11 +1,6 @@
 module Rsurface_ml
 
 !================== Now under CVS control =================
-! $Author: mifads $
-! $Id: Rsurface_ml.f90,v 1.14 2003-05-28 14:43:24 mifads Exp $
-! $Name: not supported by cvs2svn $
-! =========================================================
-
 !Changes from Version 1.0
 !d1.1 - zenith angle range now to 89.9, not 85.0
 !d1.3 - sinB now set to coszen, not 1/coszen
@@ -56,7 +51,7 @@ contains
                       coszen, Idfuse, Idrctt, &       !u7.lu
                       snow, &                    !u7.lu
                       so2nh3ratio, &        !so2/nh3 ratio
-                        g_sto,Rsur,Rsur_wet,Rb)
+                        g_sto,gsun,Rsur,Rsur_wet,Rb)
 ! =======================================================================
 !
 !     Description
@@ -134,6 +129,7 @@ contains
 ! Output:
 
    real, intent(out)             :: g_sto !  Stomatal conducatance (s/m)
+   real, intent(out)             :: gsun  !  g_sto for upper-canopy sun leaves
    real,dimension(:),intent(out) :: Rsur ! bulk canopy surface resistance (s/m)
    real,dimension(:),intent(out) :: Rsur_wet !    " " for wet surfaces
    real,dimension(:),intent(out) :: Rb   ! quasi-laminar boundary layer
@@ -234,8 +230,9 @@ contains
    if( leafy_canopy  .and. coszen > 0.001 ) then  ! Daytime 
 
         call g_stomatal(debug_flag,lu,coszen,Idrctt,Idfuse, & 
-                         Ts_C,psurf,LAI,vpd,SWP,g_sto)
+                         Ts_C,psurf,LAI,vpd,SWP,g_sto,gsun)
    else
+        gsun  = 0.0    ! Dark, no stomatal conductance...
         g_sto = 0.0    ! Dark, no stomatal conductance...
 
    end if ! leafy canopy and daytime
@@ -439,7 +436,7 @@ contains
 !=======================================================================
 
     subroutine g_stomatal(debug_flag,lu, coszen,Idrctt,Idfuse, &
-                         Ts_C,pres,LAI,vpd,SWP,g_sto)
+                         Ts_C,pres,LAI,vpd,SWP,g_sto,gsun)
 !=======================================================================
 
 !    Calculates stomatal conductance g_sto based upon methodology from 
@@ -465,6 +462,9 @@ contains
 ! Outputs:
  
   real, intent(out) :: g_sto         ! stomatal conductance
+  real, intent(out) :: gsun          ! g_sto for upper-canopy sun-leaves
+
+  real :: f_env                      ! product of environmental f factors
 
 
         
@@ -479,8 +479,10 @@ contains
 !..2 ) Calculate g_light 
 !---------------------------------------
  ! (n.b. subroutine get_glight is defined below)
+ ! gsun is here the light factor. Used as g_sto(sun) later
 
-  call get_glight(coszen,Idrctt,Idfuse,g_lightfac(lu),LAI,albedo(lu),g_light)    
+  call get_glight(coszen,Idrctt,Idfuse,g_lightfac(lu),LAI,albedo(lu),&
+             gsun, g_light)    
   
 
 !..3) Calculate  g_temp
@@ -517,9 +519,11 @@ contains
 ! (using factor 41000 from mmol O3/m2/s to s/m given in Jones, App. 3
 !  for 20 deg.C )
 
-   g_sto = (g_light * g_temp * g_vpd * g_swp )
-   g_sto = max( g_sto,g_min(lu) )
-   g_sto = ( g_max(lu) * g_pot * g_sto )/41000.0
+   f_env = g_temp * g_vpd * g_swp
+   f_env = max( f_env,g_min(lu) )
+   f_env = g_max(lu) * g_pot * f_env /41000.0
+   gsun  = gsun    * f_env       ! g_sto for sunlit part
+   g_sto = g_light * f_env       ! g_sto for whole canopy 
 
   !if ( g_sto < 0 ) then
   !   print *, "GSTO NEG" , jday, g_sto, g_pot, g_light, g_temp, g_vpd
@@ -563,7 +567,8 @@ contains
 ! =====================================================================
 
 !===========================================================================
-    subroutine get_glight(coszen,Idrctt,Idfuse,g_lightfac,LAI,albedo,g_light)
+    subroutine get_glight(coszen,Idrctt,Idfuse,g_lightfac,LAI,albedo, &
+              g_sun,g_light)
 !===========================================================================
 !
 !    Calculates g_light, using methodology as described in Emberson et 
@@ -583,7 +588,8 @@ contains
 
 !     output arguments
   
-    real, intent(out) :: g_light    
+    real, intent(out) :: g_sun    ! sun-leaf g_light
+    real, intent(out) :: g_light  ! canopy average g_light    
 
 !   Some parameters
 
@@ -600,13 +606,12 @@ contains
     
     real :: sinB      ! B = solar elevation angle  = complement of zenith angle
     
-    real :: LAIsun    ! sun-fraction of LAI
-    real :: LAIshade  ! shade-fraction of LAI
-    real :: PARsun    ! sun-fraction of PAR
-    real :: PARshade  ! shade-fraction of PAR
+    real :: LAIsun    ! sunlit LAI
+    real :: sunfrac   ! sun-fraction of LAI
+    real :: PARsun    ! sun-leaf PAR
+    real :: PARshade  ! shade-leaf PAR
        
-    real :: g_sun    ! sun-fraction contribution to g_light
-    real :: g_shade  ! shade-fraction contribution to g_light
+    real :: g_shade  ! shade-leaf contribution to g_light
 
 
     !DEP1.2 error sinB = 1.0/coszen  ! = cos(zen)
@@ -614,8 +619,6 @@ contains
 
 
     LAIsun = (1.0 - exp(-0.5*LAI/sinB) ) * sinB/cosA
-    
-    LAIshade = LAI - LAIsun
 
 ! PAR flux densities evaluated using method of
 ! Norman (1982, p.79): 
@@ -633,10 +636,14 @@ contains
     PARsun   = PARsun   * PARfrac * Wm2_uE * ( 1.0 - albedo )
 
 
-    g_sun   = (1.0 - exp (-g_lightfac*PARsun  ) ) * (LAIsun  /LAI)
-    g_shade = (1.0 - exp (-g_lightfac*PARshade) ) * (LAIshade/LAI)
+   !TFMM  LAIshade = LAI - LAIsun
+    sunfrac = LAIsun/LAI
 
-    g_light = g_sun + g_shade
+    g_sun   = (1.0 - exp (-g_lightfac*PARsun  ) ) !TFMM* (LAIsun  /LAI)
+    g_shade = (1.0 - exp (-g_lightfac*PARshade) ) !TFMM* (LAIshade/LAI)
+
+    !g_light = g_sun + g_shade
+    g_light = sunfrac * g_sun + (1.0 - sunfrac) * g_shade
 
   end subroutine get_glight
 

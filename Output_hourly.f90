@@ -153,6 +153,7 @@
       name  = hr_out(ih)%name   !ds rv1.6.1 
       if ( debug_flag ) print *, "DEBUG OH ", me, ispec, name,  hr_out(ih)%type
 
+       if(DEBUG ) print *, "INTO HOUR TYPE ",hr_out(ih)%type
        OPTIONS: select case ( hr_out(ih)%type ) 
          case ( "ADVppbv" )
             itot = NSPEC_SHL + ispec 
@@ -199,10 +200,8 @@
             end forall
 
           case ( "D2D" )        ! No cfac for short-lived species
-            !ds name = "D_2D"       ! Default
 
             forall ( i=1:limax, j=1:ljmax)
-               ! hourly(i,j) = pzpbl(i,j)
                hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * hr_out(ih)%unitconv
             end forall
 

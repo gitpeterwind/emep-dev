@@ -20,7 +20,7 @@ module DryDep_ml
                           NDRYDEP_ADV, &   ! No. advected species affected
                           NDRYDEP_AER, &   !st No. Vd values for aerosol size modes
                           NDRYDEP_TOT, &   !st Total No. of  Vd values
-                          STO_FLUXES,  &   ! true if fluxes wanted.  !got
+                          STO_FLUXES,  &   ! true if fluxes wanted.
                           CDEP_SET,    &   ! for so4
                           CDEP_NO2,    &   ! for NO2 comp pt. approach
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
@@ -29,17 +29,22 @@ module DryDep_ml
                           Dep        ! Mapping (type = depmap)
 
 
- use My_Derived_ml                ! -> d_2d, IOU_INST, D2_VG etc...
+ use My_Derived_ml      ! -> OUTPUT_ABS_HEIGHTS, d_2d, IOU_INST, D2_VG etc...
 
  use Dates_ml,       only : daynumber
  use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
                             forest, water, g_pot, g_temp,g_vpd, &
+                            luflux_wanted, & ! true if fluxes wanted for landuse lu
                             g_light,g_swp, &
+                            STUBBLE,       & ! Small ht., 1 cm
+                            SAIadd,        &
+                            leaf_flux,   &! = flag-leaf sto. flux per m2
                             unit_flux,   &! = sto. flux per m2
                             lai_flux      ! = lai * unit_flux
  use Chemfields_ml , only : cfac!,xn_adv
- use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
+ use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_O3, IXADV_NO2, IXADV_SO2, IXADV_NH3
 
+ use Functions_ml,   only : AerRes,PsiM
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
                             i_glob, j_glob   ! for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
@@ -163,10 +168,12 @@ module DryDep_ml
  integer :: nadv2d !index of adv species in xn_2d array
  real ustar_sq, & ! u star squared
       abshd,    & ! abs value of surfae flux of sens. heat W/m^2
-      u_ref       ! horizontal vind   !ds - was uvhs
+      u_ref,    & ! horizontal vind   !ds - was uvhs
+      z_ref       !  reference level - middle of cell, ca. 45m
 
  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
  real :: RaVs    ! Ra_ref *Vs for particles
+ real, dimension(NOUTPUT_ABS_HEIGHTS) :: htz, Raz  ! Heights and Ra(z)
 
  real convfac,  & ! rescaling to different units
       convfac2, & ! rescaling to different units
@@ -174,6 +181,8 @@ module DryDep_ml
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
  logical :: is_wet  ! set true if surface_precip>0
+ logical :: hirlam_sea   !ds .. set true if iclass == 0
+
 !stDep
  integer :: nae
  real, dimension(NSIZE):: aeRb, aeRbw , Vs
@@ -195,9 +204,11 @@ module DryDep_ml
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
    real ::  LE   ! Latent Heat flux, into surface (opp. sign to fh!)
    logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
-!   real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG   ! Converts from mol/cm3 to nmole/m3
-   real :: nmole_o3    ! O3 in nmole/m3
+!ICP: re-instated:
+   real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG   ! Converts from mol/cm3 to nmole/m3
+   real :: nmole_o3, ppb_o3    ! O3 in nmole/m3, ppb
    real :: loss,sto_frac,Vg_scale
+   real :: gsun        ! g_sto for sunlit upper-canopy (flag) leaves
    real :: lat_factor   ! latitide-based correction for lai, hveg
    real :: so2nh3ratio  ! So2/NH3 ratio, for Rsur calc
 
@@ -209,6 +220,15 @@ module DryDep_ml
    integer :: lu_used(NLUMAX), nlu_used
    real    :: lu_cover(NLUMAX)
    real    :: lu_lai(NLUMAX)  ! TMP for debug
+!ICP:
+   real :: c_hveg, u_hveg ! Values at canopy top, for fluxes
+   real    :: c_hvegppb(NLANDUSE)
+   real ::  Ra_diff       ! Ra from z_ref to hveg
+   real :: gext_leaf, rc_leaf, rb_leaf, Fst
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!   real, save, dimension ::: leafw
+!if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 !     first calculate the 3m deposition velocity following the same
 !     procedure as in the lagmod. second the flux and the accumulated 
@@ -269,6 +289,9 @@ module DryDep_ml
 
 
       ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
+
+      hirlam_sea  = ( iclass(i,j) == 0 )   ! nb 0 = sea, 1= ice, 2=tundra
+
      ! -----------------------------------------------------------------!
      !.and conversion facrtor,  convfac (( ps-pt)/grav... )  ===> 
      !      pressure in kg m-1 s-2
@@ -307,6 +330,7 @@ module DryDep_ml
       u_ref = 0.5*sqrt( (u(i,j,KMAX_MID,1)+u(i-1,j,KMAX_MID,1))**2  &
                      + (v(i,j,KMAX_MID,1)+v(i,j-1,KMAX_MID,1))**2 )
 
+      z_ref = z_mid(i,j,KMAX_MID)
 
       dtz      = dt_advec/z_bnd(i,j,KMAX_BND-1)
 
@@ -372,6 +396,11 @@ module DryDep_ml
 
     if ( STO_FLUXES ) then
        unit_flux(:) = 0.0
+       leaf_flux(:) = 0.0
+
+    ! --- ICP -----
+       ppb_o3   =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * 4.0e-11  !Crude for now
+       nmole_o3 =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * NMOLE_M3
     end if
 
 
@@ -389,8 +418,10 @@ module DryDep_ml
         lai     = landuse_LAI(i,j,ilu)
         hveg    = landuse_hveg(i,j,ilu)
         g_pot   = landuse_gpot(i,j,ilu)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-        !ds if ( DEBUG_UK .and. lu == LU_WATER .and. hveg > 0.0 ) then
         if ( DEBUG_UK .and. water(lu) .and. hveg > 0.0 ) then
             print *, "HIGHW!!! h,lai,cov", i,j,ilu, hveg, lai,cover
             call gc_abort(me,NPROC,"WATER!")
@@ -400,9 +431,6 @@ module DryDep_ml
         if ( forest(lu) ) then  !! More realistic forests, test:
 
 
-           ! if ( gb(i,j) < 50.0 .and. gb(i,j) > 42.5  ) then
-           !    lai = 1.5 * lai
-           ! else if ( gb(i,j) >= 62.0 ) then
 
            ! Just used reduced LAI for high latitudes for now, because of tests
            ! which suggest that the big-leaf model as coded will overestimate
@@ -421,11 +449,23 @@ module DryDep_ml
         ustar_loc = ustar_nwp       ! First guess = NWP value
         invL      = invL_nwp        ! First guess = NWP value
 
+        !ds - rv1.6.xx coast
+        ! If HIRLAM thinks this is a sea-square, but we anyway have land,
+        ! the surface temps will be wrong and so will stability gradients.
+        ! As a simple subsistute, we assume neutral condiutions for these
+        ! situations.
+
+        !ds-tmp if( .not. water(lu) .and. hirlam_sea  ) then
+        !ds-tmp     invL = 0.0
+        !ds-tmp     Hd = 0.0
+        !ds-tmp end if
+
         call Get_Submet(hveg,t2(i,j),Hd,LE, psurf(i,j), &
-               z_mid(i,j,KMAX_MID), u_ref, q(i,j,KMAX_MID,1), & ! qw_ref
+               z_ref, u_ref, q(i,j,KMAX_MID,1), & ! qw_ref
                        debug_flag,                        &    ! in
                        ustar_loc, invL,                   &    ! in-out
                        z0,d, Ra_ref,Ra_3m,rh,vpd)                    ! out
+!ds            z_mid(i,j,KMAX_MID), u_ref, q(i,j,KMAX_MID,1), & ! qw_ref
 
              if ( DEBUG_UK .and. debug_flag ) then
                 write(6,"(a40,4i3,f6.1,2i4,3f7.3,2i4,2f6.2)") &
@@ -456,6 +496,7 @@ module DryDep_ml
                    snow(i,j),          &
                    so2nh3ratio,        & !SO2/NH3
                    g_sto,  &
+                   gsun,   &        ! sun-leaf g_sto, TFMM
                    Rsur, &
                    Rsur_wet, &
                    Rb)
@@ -598,10 +639,68 @@ module DryDep_ml
        ! For now we just calculate the g_sto*R_sur bit:
        ! (Caution - g_sto is for O3 only)
 
-        if ( STO_FLUXES ) then
+        if ( STO_FLUXES .and. luflux_wanted(lu) ) then
           unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
           lai_flux(lu)  = lai * unit_flux(lu)
-        end if        
+
+          ! ICP method for flag-leaf
+
+        !if ( hveg > 1.1 * z0 ) then
+        !if ( (hveg-d) > 1.1 * z0 ) then
+        !if ( (hveg-d) > STUBBLE ) then  !! Justa void non-zeros
+          !Ra_hveg = AerRes(z0,hveg-d,ustar_loc,invL,KARMAN)
+          Ra_diff = AerRes(max(hveg-d, STUBBLE) ,z_ref-d,ustar_loc,invL,KARMAN)
+          c_hveg         = nmole_o3 * ( 1.0 - Ra_diff * Vg_ref(FLUX_CDEP) )
+          c_hvegppb(lu)  = ppb_o3   * ( 1.0 - Ra_diff * Vg_ref(FLUX_CDEP) )
+          !if (  c_hvegppb(lu) > 200.0  ) then
+          !  write(6,*) "FLUX DIFF1ERROR ", lu, ppb_o3, c_hvegppb(lu),i,j, hveg, d,  z0, lai, invL, Ra_diff, Vg_ref(FLUX_CDEP)
+          !end if
+
+
+          if ( DEBUG_FLUX .and. c_hveg <= 1.0e-19 ) then
+            write(6,*) "FLUX ZERO ", lu, nmole_o3, FLUX_CDEP, Vg_ref(FLUX_CDEP)
+          end if
+
+          u_hveg  = u_ref *  &
+             ( log((hveg-d)/z0)  -PsiM((hveg-d)*invL) + PsiM(z0*invL)  )/ &
+             ( log((z_ref-d)/z0) -PsiM((z_ref-d)*invL) + PsiM(z0*invL))
+
+          if ( DEBUG_FLUX .and. u_hveg <= 1.0e-19 ) then
+            print *, "ERRROR UHVEG", u_ref, u_hveg, z_ref,d,z0,hveg
+            print *, "ERRROR UHVEG TERMS", &
+                             invL, &
+                             log((hveg-d)/z0), &  
+                             PsiM((hveg-d)*invL), &
+                             log((z_ref-d)/z0), &
+                             PsiM((z_ref-d)*invL), &
+                             PsiM(z0*invL) 
+            call gc_abort(me,NPROC,"UHVEG!")
+          end if
+
+          gext_leaf = 1.0/2500.0
+          rc_leaf = 1.0/(g_sto+ gext_leaf)
+
+          !McNaughton + van den Hurk:
+          ! 2cm leaf for wheat - too large for trees?
+
+	if ( forest(lu)) then  !BEECH
+          rb_leaf = 1.3 * 150.0 * sqrt(0.04/u_hveg)  ! 2cm leaves? 
+	else ! WHEAT
+          rb_leaf = 1.3 * 150.0 * sqrt(0.02/u_hveg)  ! 2cm leaves? 
+        endif
+
+         ! Flux in nmole/m2/s:
+          leaf_flux(lu) = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * gsun 
+
+          !if ( DEBUG_FLUX  .and. debug_flag ) then ! .and. debug_flag  ) then
+          if ( debug_flag ) then ! .and. debug_flag  ) then
+            write(6,"(a8,3i3,i4,2f6.2,2f8.1,2es10.2,f6.2,es12.3)") "FST ", lu, &
+               imm, idd, ihh, lai, SAIadd(lu), nmole_o3, c_hveg, g_sto, gsun, u_hveg,leaf_flux(lu)
+          end if
+        !else
+        !   c_hvegppb(lu) = ppb_o3 
+        !end if ! hveg check
+        end if ! STO_FLUXES
 
        !=======================
         end do LULOOP
@@ -704,17 +803,14 @@ module DryDep_ml
              lai_flux(lu)  = lai_flux(lu)  * loss
 
 
-             if ( DEBUG_FLUX .and. debug_flag) then
-                 write (6,"(a5,i4,3i4,f6.1,f8.4,es10.2,f7.2,3f8.4,2es10.2)") &
-                   "OSTAD", lu, imm, idd, ihh, &
-                        lu_lai(ilu), &
-                        Vg_scale, &
-                      DepLoss(FLUX_ADV), & 
-                      z_bnd(i,j,KMAX_BND-1), &
-                       sto_frac, &
+             if ( DEBUG_UK   .and. debug_flag) then
+                 write (6,"(a5,i4,3i4,f6.1,f8.4,es10.2,3f8.4,3es10.2)") &
+                   "OSTAD", lu, imm, idd, ihh, lu_lai(ilu), Vg_scale, &
+                      DepLoss(FLUX_ADV), sto_frac, &
                          4.0e-11*xn_2d(nadv2d,KMAX_MID),& ! O3 in ppb
                         cfac(nadv,i,j), &
-                        unit_flux(lu)/dt_advec, lai_flux(lu)/dt_advec
+                        unit_flux(lu)/dt_advec, lai_flux(lu)/dt_advec,&
+                        leaf_flux(lu)
              end if
            end if
 
@@ -780,7 +876,7 @@ module DryDep_ml
        !      fluxfrac_adv(9,15)
        !end if 
 
-       call Add_ddep(i,j,convfac2,convfaco3,fluxfrac_adv)
+       call Add_ddep(i,j,convfac2,convfaco3,fluxfrac_adv,c_hvegppb)
 
 !hf     enddo   !j
 !hf   enddo    !i
