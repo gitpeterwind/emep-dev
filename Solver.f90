@@ -114,6 +114,7 @@ contains
     real    ::  dt2    ,dt2save              ! For su2step, 2/3* dt
     real    ::  inv3                  ! For su2step, 1.0/3.0
     real    ::  P, L                ! Production, loss terms
+    real    :: psd_h2o2 ! Pseudo H2O2 concentration (lower when high so2)
     !ds rv1_9_28real    :: PHNO3               ! ds rv1_9_28 !NO3 prod.
     ! su's suggestion to help include My_Reactions only once:
     integer, dimension(KCHEMTOP:KMAX_MID) :: toiter

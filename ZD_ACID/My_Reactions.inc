@@ -77,10 +77,14 @@
      (1-0.05)*rcemis(QRCSO2,K) 
 
       L =  &
+!hf
+     psd_h2o2 = xn_2d_bgn(IXBGN_H2O2,k)*xn_2d_bgn(IXBGN_H2O2,k)/&
+               (xn_2d_bgn(IXBGN_H2O2,k)+ xnew(SO2))
 
 !       rcmisc(9,k)  ! Eliassen+Saltbones
       2e-12*aqrck(ICLOHSO2,K)* xn_2d_bgn(IXBGN_OH,k )  &
-       + aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k)  &
+!hf       + aqrck(ICLRC1,K)*xn_2d_bgn(IXBGN_H2O2,k)  &
+       + aqrck(ICLRC1,K)*psd_h2o2  &
        + aqrck(ICLRC2,K)*xn_2d_bgn(IXBGN_O3,k)  &
        + aqrck(ICLRC3,K)    ! Fe-catalysed reaction
 
