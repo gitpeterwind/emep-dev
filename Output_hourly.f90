@@ -15,7 +15,7 @@
 !
 !*************************************************************************
 !
-   use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST  !u7.4vg 
+   use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST,IOU_HOUR,Deriv  !u7.4vg 
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  NLEVELS_HOURLY, &  ! ds rv1_8_2 
                                  FREQ_HOURLY, &     ! No. hours between outputs
@@ -24,14 +24,16 @@
    use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
                                 ,li0,li1,lj0,lj1 &  ! u7.5vg FIX
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
-   use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j
+   use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j,identi
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
    use Met_ml,           only : t2,th, roa, surface_precip   !u7.4vg temp2m, th
-   use GenSpec_shl_ml , only : NSPEC_SHL  ! Maps indices
+   use GenSpec_shl_ml ,  only : NSPEC_SHL  ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
    use GridValues_ml,    only : i_glob, j_glob   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
    use Radiation_ml,     only : Idirectt, Idiffuse
+   use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF
+
    implicit none
 
    !*.. Components of  hr_out
@@ -60,10 +62,14 @@
    integer :: ik                       ! Index for vertical level
    integer ist,ien,jst,jen             ! start and end coords
    character(len=20) :: errmsg = "ok"  ! For  consistecny check
-   character(len=20) :: name           ! For output file, species names
+   character(len=20) :: name,netCDFName ! For output file, species names
    character(len=4)  :: suffix         ! For date "mmyy"
    integer, save :: prev_month = -99   ! Initialise with non-possible month
-   logical, parameter :: DEBUG = .true.
+   logical, parameter :: DEBUG = .false.
+   integer :: NLEVELS_HOURLYih
+   type(Deriv) :: def1 !for NetCDF
+   real :: scale !for NetCDF
+   integer ::nk,klevel,ist,jst,ien,jen !for NetCDF
 
     if ( my_first_call ) then
 
@@ -77,6 +83,7 @@
            hr_out(ih)%iy1 = max(JSMBEG,hr_out(ih)%iy1)
            hr_out(ih)%ix2 = min(GIMAX+ISMBEG-1,hr_out(ih)%ix2)
            hr_out(ih)%iy2 = min(GJMAX+JSMBEG-1,hr_out(ih)%iy2)
+           hr_out(ih)%nk = min(KMAX_MID,hr_out(ih)%nk)
 
         end do ! ih
         if ( DEBUG ) then
@@ -120,15 +127,18 @@
         open(file=name,unit=IO_HOURLY,action="write")
         prev_month = current_date%month
 
+        netCDFName ="out_hour" // "."// suffix // ".nc"
+        call Init_new_netCDF(netCDFName,IOU_HOUR)
+
        !ds rv1.6.2: Write summary of outputs to top of Hourly file
        !  - remember - with corrected domain limits here
 
         write(IO_HOURLY,*) NHOURLY_OUT, " Outputs"
         write(IO_HOURLY,*) FREQ_HOURLY, " Hours betwen outputs"
-        write(IO_HOURLY,*) NLEVELS_HOURLY, " Level(s)"    !ds rv1_8_2
+        write(IO_HOURLY,*) NLEVELS_HOURLY, "Max Level(s)"    !ds rv1_8_2
 
         do ih = 1, NHOURLY_OUT
-           write(IO_HOURLY,fmt="(a12,a8,a10,i4,4i4,a13,es12.5,es10.3)") hr_out(ih)
+           write(IO_HOURLY,fmt="(a12,a8,a10,i4,5i4,a13,es12.5,es10.3)") hr_out(ih)
         end do
 
    end if
@@ -147,7 +157,8 @@
 
 
    HLOOP: do ih = 1, NHOURLY_OUT
-   KVLOOP: do ik = KMAX_MID, KMAX_MID-NLEVELS_HOURLY+1, -1
+      NLEVELS_HOURLYih=hr_out(ih)%nk
+   KVLOOP: do ik = KMAX_MID, KMAX_MID-NLEVELS_HOURLYih+1, -1
 
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec 
@@ -281,6 +292,26 @@
             call gc_abort(me,NPROC,"hourly too big")
        endif
 
+!NetCDF hourly output
+       def1%name=hr_out(ih)%name
+       def1%unit=hr_out(ih)%unit
+       def1%class=hr_out(ih)%type 
+       ist = max(1,hr_out(ih)%ix1-ISMBEG+1)
+       jst = max(1,hr_out(ih)%iy1-JSMBEG+1)
+       ien = min(GIMAX,hr_out(ih)%ix2-ISMBEG+1)
+       jen = min(GJMAX,hr_out(ih)%iy2-JSMBEG+1)
+       nk = min(KMAX_MID,hr_out(ih)%nk)
+       scale=1.
+       if(nk==1)then !write as 2D
+       call Out_netCDF(IOU_HOUR,def1,2,identi &
+            ,1,1,hourly(:,:),1,scale,ist,jst,ien,jen)
+       elseif(nk>1)then   !write as 3D
+          klevel=KMAX_MID-ik+1
+       call Out_netCDF(IOU_HOUR,def1,3,identi &
+            ,1,1,hourly(:,:),1,scale,ist,jst,ien,jen,klevel)
+       else
+          !nk<1 : no output
+       endif
 
       !/ Send to ghourly
 

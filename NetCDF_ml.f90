@@ -19,20 +19,24 @@
 !http://www.unidata.ucar.edu/packages/netcdf/f90/Documentation/f90-html-docs/
 !
 !
+!To improve: When output is onto the same file, but with different positions for the 
+!lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
 
   use typeSizes
   use netcdf
   implicit none
 
-  character (len=*), parameter :: fileName_inst = 'out_inst.nc'
-  character (len=*), parameter :: fileName_day = 'out_day.nc'
-  character (len=*), parameter :: fileName_month = 'out_month.nc'
-  character (len=*), parameter :: fileName_year = 'out_year.nc'
-  character (len=15) :: fileName ,period_type
+  character (len=25), save :: fileName_inst = 'out_inst.nc'
+  character (len=25), save :: fileName_hour = 'out_hour.nc'
+  character (len=25), save :: fileName_day = 'out_day.nc'
+  character (len=25), save :: fileName_month = 'out_month.nc'
+  character (len=25), save :: fileName_year = 'out_year.nc'
+  character (len=25) :: fileName ,period_type
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
   integer,save :: ncFileID_inst=closedID  
+  integer,save :: ncFileID_hour=closedID  
   integer,save :: ncFileID_day=closedID  
   integer,save :: ncFileID_month=closedID
   integer,save :: ncFileID_year=closedID
@@ -40,6 +44,7 @@
   public :: InitnetCDF
   public :: Out_netCDF
   public :: CloseNetCDF
+  public :: Init_new_netCDF
 
   private :: CreatenetCDFfile
   private :: createnewvariable
@@ -51,34 +56,131 @@ contains
 
 subroutine InitnetCDF
 
+use Par_ml,           only : GIMAX,GJMAX,ISMBEG,JSMBEG
+use ModelConstants_ml,only : KMAX_MID   
+use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
+                             Asc2D, hr_out      ! Required outputs
+
+integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+integer :: ih
+
 write(*,*)'initnetcdf'
 fileName = fileName_year
 period_type = 'yearly'
-call CreatenetCDFfile
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
 fileName = fileName_month
 period_type = 'monthly'
-call CreatenetCDFfile
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
 fileName = fileName_day
 period_type = 'daily'
-call CreatenetCDFfile
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+
+fileName = fileName_hour
+period_type = 'hourly'
+ISMBEGcdf=GIMAX+ISMBEG-1; JSMBEGcdf=GJMAX+JSMBEG-1
+GIMAXcdf=0; GJMAXcdf=0
+KMAXcdf=1
+do ih=1,NHOURLY_OUT
+   ISMBEGcdf=min(ISMBEGcdf,hr_out(ih)%ix1)
+   JSMBEGcdf=min(JSMBEGcdf,hr_out(ih)%iy1)
+enddo
+do ih=1,NHOURLY_OUT
+   GIMAXcdf=max(GIMAXcdf,hr_out(ih)%ix2-ISMBEGcdf+1)
+   GJMAXcdf=max(GJMAXcdf,hr_out(ih)%iy2-JSMBEGcdf+1)
+   KMAXcdf =max(KMAXcdf,hr_out(ih)%nk)
+enddo
+!write(*,*)GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
+
 fileName = fileName_inst
 period_type = 'instant'
-call CreatenetCDFfile
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
 
 end subroutine InitnetCDF
 
-subroutine CreatenetCDFfile
+subroutine Init_new_netCDF(fileName,iotyp) 
+
+use Par_ml,           only : GIMAX,GJMAX,ISMBEG,JSMBEG
+use ModelConstants_ml,only : KMAX_MID   
+use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
+                             Asc2D, hr_out      ! Required outputs
+use My_Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
+
+integer,  intent(in) :: iotyp
+  character(len=*),  intent(in)  :: fileName 
+
+integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+integer :: ih
+
+!write(*,*)'Init_new_netCDF ',fileName,iotyp
+call CloseNetCDF
+
+if(iotyp==IOU_YEAR)then
+
+fileName_year = trim(fileName)
+period_type = 'yearly'
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+
+elseif(iotyp==IOU_MON)then
+
+fileName_month = trim(fileName)
+period_type = 'monthly'
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+
+elseif(iotyp==IOU_DAY)then
+
+fileName_day = trim(fileName)
+period_type = 'daily'
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+
+elseif(iotyp==IOU_HOUR)then
+
+fileName_hour = trim(fileName)
+period_type = 'hourly'
+ISMBEGcdf=GIMAX+ISMBEG-1; JSMBEGcdf=GJMAX+JSMBEG-1
+GIMAXcdf=0; GJMAXcdf=0
+KMAXcdf=1
+do ih=1,NHOURLY_OUT
+   ISMBEGcdf=min(ISMBEGcdf,hr_out(ih)%ix1)
+   JSMBEGcdf=min(JSMBEGcdf,hr_out(ih)%iy1)
+   GIMAXcdf=max(GIMAXcdf,hr_out(ih)%ix2-hr_out(ih)%ix1+1)
+   GJMAXcdf=max(GJMAXcdf,hr_out(ih)%iy2-hr_out(ih)%iy1+1)
+   KMAXcdf =max(KMAXcdf,hr_out(ih)%nk)
+enddo
+GIMAXcdf=min(GIMAXcdf,GIMAX)
+GJMAXcdf=min(GJMAXcdf,GJMAX)
+!write(*,*)'sizes CDF ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
+
+elseif(iotyp==IOU_INST)then
+
+fileName_inst = trim(fileName)
+period_type = 'instant'
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+
+else
+period_type = 'unknown'
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+endif
+
+end subroutine Init_new_netCDF
+
+subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
   ! Create the netCDF file
 
-use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp
-use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG
+use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
+                                  ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
+                                  ,GlobalPosition,gb_glob,gl_glob
+use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG,IILARDOM,JJLARDOM
 use ModelConstants_ml,     only : KMAX_MID   
 use GridValues_ml,         only : coordzero,sigma_mid
 use My_Derived_ml,         only : model
 use PhysicalConstants_ml,  only : PI       
    implicit none
+integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+character(len=*),  intent(in)  :: fileName 
 
-character (len=*), parameter :: version='Unimod rv1.6'       
+character (len=*), parameter :: version='Unimod rv1.8'       
 character (len=*), parameter :: author_of_run='Unimod group' 
 character (len=*), parameter :: projection='Stereographic'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
@@ -89,19 +191,21 @@ real (kind = FourByteReal) :: xcoord(GIMAX),ycoord(GJMAX),kcoord(KMAX_MID)
 character*8 ::created_date,lastmodified_date
 character*10 ::created_hour,lastmodified_hour
 integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
+integer :: iEMEPVarID,jEMEPVarID,latVarID,longVarID
 real :: izero,jzero
 
   ! fileName: Name of the new created file 
   ! nf90_clobber: protect existing datasets
   ! ncFileID: netcdf ID
 
-write(*,*)'start init',fileName
-  call check(nf90_create(path = fileName, cmode = nf90_clobber, ncid = ncFileID))
+write(*,*)'create ',trim(fileName)
+write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+  call check(nf90_create(path = trim(fileName), cmode = nf90_clobber, ncid = ncFileID))
 
   ! Define the dimensions
-  call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAX, dimid = iDimID))
-  call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAX, dimid = jDimID))
-  call check(nf90_def_dim(ncid = ncFileID, name = "k", len = KMAX_MID, dimid = kDimID))
+  call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
+  call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
+  call check(nf90_def_dim(ncid = ncFileID, name = "k", len = KMAXcdf, dimid = kDimID))
   call check(nf90_def_dim(ncid = ncFileID, name = "time", len = nf90_unlimited, dimid = timeDimID))
 
   call Date_And_Time(date=created_date,time=created_hour)
@@ -124,7 +228,7 @@ write(*,*)'start init',fileName
   write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,(1.+sin(PI/3.0))/2.
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
   call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
-  call check(nf90_put_att(ncFileID, nf90_global, "period_type", period_type))
+  call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))
 
 ! define coordinate variables
   call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
@@ -132,10 +236,27 @@ write(*,*)'start init',fileName
   call check(nf90_put_att(ncFileID, iVarID, "long_name", "EMEP grid x coordinate"))
   call check(nf90_put_att(ncFileID, iVarID, "units", "km"))
 
+  call check(nf90_def_var(ncFileID, "i_EMEP", nf90_float, dimids = iDimID, varID = iEMEPVarID) )
+  call check(nf90_put_att(ncFileID, iEMEPVarID, "long_name", "official EMEP grid coordinate i"))
+  call check(nf90_put_att(ncFileID, iEMEPVarID, "units", "gridcells"))
+
   call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
   call check(nf90_put_att(ncFileID, jVarID, "coord_axis", "y"))
   call check(nf90_put_att(ncFileID, jVarID, "long_name", "EMEP grid y coordinate"))
   call check(nf90_put_att(ncFileID, jVarID, "units", "km"))
+
+  call check(nf90_def_var(ncFileID, "j_EMEP", nf90_float, dimids = jDimID, varID = jEMEPVarID) )
+  call check(nf90_put_att(ncFileID, jEMEPVarID, "long_name", "official EMEP grid coordinate j"))
+  call check(nf90_put_att(ncFileID, jEMEPVarID, "units", "gridcells"))
+
+  call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
+  call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
+  call check(nf90_put_att(ncFileID, latVarID, "units", "degrees"))
+
+  call check(nf90_def_var(ncFileID, "long", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
+  call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
+  call check(nf90_put_att(ncFileID, longVarID, "units", "degrees"))
+
 
   call check(nf90_def_var(ncFileID, "k", nf90_float, dimids = kDimID, varID = kVarID) )
   call check(nf90_put_att(ncFileID, kVarID, "coord_alias", "level"))
@@ -148,30 +269,70 @@ write(*,*)'start init',fileName
   call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
 
 
-
   ! Leave define mode
   call check(nf90_enddef(ncFileID))
 
-  call check(nf90_open(path = fileName, mode = nf90_write, ncid = ncFileID))
+  call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
 
-!  call coordzero(izero,jzero)
-!  print *, 'izero,jzero ',izero,jzero
-!  xcoord(1)=(1.-izero)*GRIDWIDTH_M/1000.
-  xcoord(1)=(ISMBEG-xp)*GRIDWIDTH_M/1000.
-  do i=2,GIMAX
+! Define horizontal distances in GDV conventions
+
+  xcoord(1)=(ISMBEGcdf-xp)*GRIDWIDTH_M/1000.
+  do i=2,GIMAXcdf
      xcoord(i)=xcoord(i-1)+GRIDWIDTH_M/1000.
 !     print *, i,xcoord(i)
   enddo
-  call check(nf90_put_var(ncFileID, iVarID, xcoord) )
-  ycoord(1)=(JSMBEG-yp)*GRIDWIDTH_M/1000.
-  do j=2,GJMAX
+  call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
+
+  ycoord(1)=(JSMBEGcdf-yp)*GRIDWIDTH_M/1000.
+  do j=2,GJMAXcdf
      ycoord(j)=ycoord(j-1)+GRIDWIDTH_M/1000.
   enddo
-  call check(nf90_put_var(ncFileID, jVarID, ycoord) )
-  do k=1,KMAX_MID
-     kcoord(k)=sigma_mid(k)
+  call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
+
+! Define horizontal coordinates in the official EMEP grid
+!  xp_EMEP_official=8.
+!  yp_EMEP_official=110.
+!  GRIDWIDTH_M_EMEP=50000.
+!  fi_EMEP=-32.
+  if(fi==fi_EMEP)then
+! Implemented only if fi = fi_EMEP = -32 (Otherwise needs a 2-dimensional mapping)
+! uses (i-xp)*GRIDWIDTH_M = (i_EMEP-xp_EMEP)*GRIDWIDTH_M_EMEP
+  do i=1,GIMAXcdf
+     xcoord(i)=(i+ISMBEGcdf-1-xp)*GRIDWIDTH_M/GRIDWIDTH_M_EMEP + xp_EMEP_official
+!     print *, i,xcoord(i)
   enddo
-  call check(nf90_put_var(ncFileID, kVarID, kcoord) )
+  do j=1,GJMAXcdf
+     ycoord(j)=(j+JSMBEGcdf-1-yp)*GRIDWIDTH_M/GRIDWIDTH_M_EMEP + yp_EMEP_official
+!     print *, j,ycoord(j)
+  enddo
+  else
+  do i=1,GIMAXcdf
+     xcoord(i)=NF90_FILL_FLOAT
+  enddo
+  do j=1,GJMAXcdf
+     ycoord(j)=NF90_FILL_FLOAT
+  enddo
+  endif
+  call check(nf90_put_var(ncFileID, iEMEPVarID, xcoord(1:GIMAXcdf)) )
+  call check(nf90_put_var(ncFileID, jEMEPVarID, ycoord(1:GJMAXcdf)) )
+
+!Define longitude and latitude
+  call GlobalPosition
+  if(ISMBEGcdf+GIMAXcdf-1<=IILARDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJLARDOM)then
+  call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
+  call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
+  endif
+!Define vertical levels
+  if(KMAXcdf==KMAX_MID)then
+     do k=1,KMAX_MID
+        kcoord(k)=sigma_mid(k)
+     enddo
+  else
+     do k=1,KMAXcdf
+        kcoord(k)=sigma_mid(KMAX_MID-k+1) !REVERSE order of k !
+     enddo
+  endif
+  call check(nf90_put_var(ncFileID, kVarID, kcoord(1:KMAXcdf)) )
 
   call check(nf90_close(ncFileID))
 
@@ -179,12 +340,12 @@ end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale)
+subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale,ist,jst,ien,jen,ik)
 
 use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX
 use ModelConstants_ml,     only : KMAX_MID, current_date  
 use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D ,Deriv &
-                         ,IOU_INST, IOU_YEAR ,IOU_MON, IOU_DAY  
+                         ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
 
 
   implicit none
@@ -196,7 +357,7 @@ integer, dimension(:) ,intent(in) ::  ident
 real    ,intent(in) :: scale 
 !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
 real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
-
+integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
 
 character*18 :: varname
 character*8 ::lastmodified_date
@@ -204,9 +365,12 @@ character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
 integer :: varID,new,nrecords,ncFileID
 integer :: nyear,nmonth,nday,nhour,ndate(4)
 integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
+integer :: i1,i2,j1,j2
 !real*4 :: buff 
 real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID) 
 real (kind = FourByteReal), allocatable,dimension(:,:,:)  :: data3D
+integer, save ::SavedVar(KMAX_MID)=-999,SavedncFile(KMAX_MID)=-999
+
 
 !rv1.4.15 changed:
 !==================================================================
@@ -227,7 +391,7 @@ real (kind = FourByteReal), allocatable,dimension(:,:,:)  :: data3D
 !                         .and.varname.ne.'D2_PM10')return
 
 !do not write 3D fields (in order to shorten outputs)
-if(ndim==3)return
+!if(ndim==3)return
 
 if(iotyp==IOU_YEAR)then
    fileName = fileName_year
@@ -239,6 +403,9 @@ elseif(iotyp==IOU_DAY)then
    fileName = fileName_day
    ncFileID = ncFileID_day
 !   return
+elseif(iotyp==IOU_HOUR)then
+   fileName = fileName_hour
+   ncFileID = ncFileID_hour
 elseif(iotyp==IOU_INST)then
    fileName = fileName_inst
    ncFileID = ncFileID_inst
@@ -313,13 +480,15 @@ if(me==0)then
 !test if the file is already open
    if(ncFileID==closedID)then
 !open an existing netcdf dataset
-      call check(nf90_open(path = fileName, mode = nf90_write, ncid = ncFileID))
+      call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
       if(iotyp==IOU_YEAR)then
          ncFileID_year = ncFileID
       elseif(iotyp==IOU_MON)then
          ncFileID_month = ncFileID
       elseif(iotyp==IOU_DAY)then
          ncFileID_day = ncFileID
+      elseif(iotyp==IOU_HOUR)then
+         ncFileID_hour = ncFileID
       elseif(iotyp==IOU_INST)then
          ncFileID_inst = ncFileID
       endif
@@ -342,18 +511,41 @@ if(me==0)then
 
   !find the number of records already written
   call check(nf90_get_att(ncFileID, VarID, "numberofrecords",   nrecords))
-  !increase the last coordinate by one, to define position of new data
-  nrecords=nrecords+1
 !  print *,'number of dataset saved: ',nrecords
+  !increase the last coordinate by one, to define position of new data
+  !test if new record is needed
+  if(present(ik))then
+     if((SavedVar(ik)==VarID.and.SavedncFile(ik)==ncFileID).or.nrecords==0)then
+        nrecords=nrecords+1 !start a new record
+        SavedVar(:)=-999; SavedncFile(:)=-999 !reset 
+     endif
+     !write which variable, file and level is written
+     SavedVar(ik)=VarID;SavedncFile(ik)=ncFileID
+  else
+     nrecords=nrecords+1
+  endif
+!  print *,'writing on dataset: ',nrecords
 
-
+  i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
+  if(present(ist))i1=max(ist,i1)
+  if(present(ien))i2=min(ien,i2)
+  if(present(jst))j1=max(jst,j1)
+  if(present(jen))j2=min(jen,j2)
  !append new values
   if(ndim==3)then
-  do k=1,kmax
-  call check(nf90_put_var(ncFileID, VarID, data3D(:, :, k), start = (/ 1, 1, k,nrecords /)) )
-  enddo
+     if(present(ik))then
+!     print *, 'write: ',i1,i2, j1,j2,ik
+        call check(nf90_put_var(ncFileID, VarID, &
+        data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
+     else
+        do k=1,kmax
+           call check(nf90_put_var(ncFileID, VarID,&
+           data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
+        enddo
+     endif
   else 
-  call check(nf90_put_var(ncFileID, VarID, data3D(:, :, 1), start = (/ 1, 1, nrecords /)) )
+     call check(nf90_put_var(ncFileID, VarID,&
+     data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
   endif
 
 !  if(icmp == dim)then
@@ -486,6 +678,11 @@ integer :: ncFileID
        ncFileID = ncFileID_day
        call check(nf90_close(ncFileID))
        ncFileID_day=closedID
+    endif
+    if(ncFileID_hour/=closedID)then
+       ncFileID = ncFileID_hour
+       call check(nf90_close(ncFileID))
+       ncFileID_hour=closedID
     endif
     if(ncFileID_inst/=closedID)then
        ncFileID = ncFileID_inst

@@ -144,6 +144,7 @@ module  My_Outputs_ml
          integer          :: ix2    ! bottom-left y
          integer          :: iy1    ! upper-right x
          integer          :: iy2    ! upper-right y
+         integer          :: nk     ! pw 1.8.3 number of vertical levels
          character(len=12) :: unit   ! Unit used 
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
@@ -229,14 +230,14 @@ contains
  ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
 
   !**               name     type   
-  !**                ofmt   ispec     ix1 ix2  iy1 iy2  unit conv    max
+  !**                ofmt   ispec     ix1 ix2  iy1 iy2  nk unit conv    max
 
   hr_out(1)=  Asc2D("aNO3", "ADVugm3", &
-                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,600.0)
   hr_out(2)=  Asc2D("aNH4", "ADVugm3", &
-                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
+                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,600.0)
   hr_out(3)=  Asc2D("pNO3", "ADVugm3", &
-                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,400.0)
+                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, 1,"ug",to_ugSIA,400.0)
 
 !    Asc2D("ADV", "(f8.4)",IXADV_PAN, ix1,ix2,iy1,iy2, "ppb",PPBINV,9600.0)
 !  hr_out(4)= &
@@ -258,7 +259,7 @@ contains
 
  !/** theta is in deg.K
  hr_out(4)=  Asc2D("T2_C",   "T2_C   ", &
-                 "(f5.1)",     -99, ix1,ix2,iy1,iy2, "degC",1.0   ,100.0)
+                 "(f5.1)",     -99, ix1,ix2,iy1,iy2, 1,"degC",1.0   ,100.0)
 !hr_out(2)=  Asc2D("Precip", "PRECIP ", &
 !                "(f11.7)",    -99, ix1,ix2,iy1,iy2, "mm/hr",1.0,  200.0)
 !hr_out(3)=  Asc2D("Idir",   "Idirect", &

@@ -1,3 +1,18 @@
+=================== Peter, 14  Oct 2003, rv1_8_3 ==============================
+
+My_Outputs_ml: Defined number of vertical levels in Asc2d%nk
+
+Output_hourly: Allow hourly output in NetCDF format on a restricted 
+               domain and in a new file every month.
+
+NetCDF_ml:Sizes of restricted domain can be given (horizontal and vertical).
+          Create new files for example each month in Hourly output.
+          EMEP coordinates and long lat given in output.
+
+My_Derived_ml:defined IOU_HOUR=5
+
+GridValues_ml: Defined EMEP coordinate specifications (xp_EMEP etc.)
+               ij2ij: interpolate (used in nesting)
 
 =================== Dave, 25  Sep 2003, rv1_8_2 ==============================
 ds rv1_8_2: Added possibility of multi-layer output. Specify

@@ -80,6 +80,14 @@
 
   real, public, save :: gbacmax,gbacmin,glacmax,glacmin
 
+! EMEP grid definitions (old and official)
+  real, public, parameter :: xp_EMEP_official=8.&
+                            ,yp_EMEP_official=110.&
+                            ,fi_EMEP=-32.&
+                            ,GRIDWIDTH_M_EMEP=50000.&
+                            ,an_EMEP = 237.7316364 &! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
+                            ,xp_EMEP_old =  43.0&
+                            ,yp_EMEP_old = 121.0
 
   !/** Map factor stuff:
 
@@ -424,7 +432,12 @@ end subroutine GlobalPosition
         real, intent(out) :: out_field(imaxout,jmaxout)! Field to be transformed
 
         real, allocatable,dimension(:,:) :: x,y,gb,gl
-        integer alloc_err,i,j
+        integer alloc_err,i,j,i2,j2
+        logical :: interpolate
+        real :: f11,f12,f21,f22
+
+        interpolate = .true.
+!        interpolate = .false.
 
        allocate(x(imaxout,jmaxout), stat=alloc_err)
        allocate(y(imaxout,jmaxout), stat=alloc_err)
@@ -464,20 +477,28 @@ end subroutine GlobalPosition
     endif
 
 
-! At present the fileds are not interpolated.
+
+!  interpolate fields if required
 !
-!    if(interpolate)then
-!    call bilin_interpolate(x,y,ixp,iyp,wt_00,wt_01,wt_10,wt_11)
-!    do j = 1, ljmax
-!       do i = 1,limax
-!          out_field(i,j) =  &
-!               wt_00(i,j) * in_field(ixp(i,j), iyp(i,j)) +  & 
-!               wt_01(i,j) * in_field(ixp(i,j), iyp(i,j)+1) +  & 
-!               wt_10(i,j) * in_field(ixp(i,j)+1,iyp(i,j)) +  & 
-!               wt_11(i,j) * in_field(ixp(i,j)+1,iyp(i,j)+1)
-!       enddo
-!    enddo
-!    else
+    if(interpolate)then
+    do j = 1, jmaxout
+       do i = 1,imaxout
+          i2=int(x(i,j))
+          j2=int(y(i,j))
+          f11=(1.-(x(i,j)-i2))*(1.-(y(i,j)-j2))
+          f12=(1.-(x(i,j)-i2))*((y(i,j)-j2))
+          f21=((x(i,j)-i2))*(1.-(y(i,j)-j2))
+          f22=((x(i,j)-i2))*((y(i,j)-j2))
+
+          out_field(i,j) =  &
+               f11 * in_field(i2,j2) +  & 
+               f12 * in_field(i2,j2+1) +  & 
+               f21 * in_field(i2+1,j2) +  & 
+               f22 * in_field(i2+1,j2+1)
+
+       enddo
+    enddo
+    else
 
     do j = 1, jmaxout
        do i = 1,imaxout
@@ -485,7 +506,7 @@ end subroutine GlobalPosition
        enddo
     enddo
 
-!    endif
+    endif
 
        deallocate(x,stat=alloc_err)
        deallocate(y,stat=alloc_err)

@@ -58,7 +58,7 @@ private
   ! corresponding to instantaneous,year,month,day
 
    integer, public, parameter ::  & 
-        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4
+        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5
 
   ! 6c: Replace old NIOUTP with separate 2d and 3d dimensions:
   ! The 2-d and 3-d fields use the above as a time-dimension. We define

@@ -147,9 +147,10 @@ module  My_Outputs_ml
          integer          :: spec   ! Species number in xn_adv or xn_shl array
                                     !ds u7.4vg .. or other arrays
          integer          :: ix1    ! bottom-left x
-         integer          :: ix2    ! bottom-left y
-         integer          :: iy1    ! upper-right x
+         integer          :: ix2    ! upper-right x
+         integer          :: iy1    ! bottom-left y
          integer          :: iy2    ! upper-right y
+         integer          :: nk     ! pw 1.8.3 number of vertical levels
          character(len=12) :: unit   ! Unit used 
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
@@ -227,13 +228,13 @@ contains
  ! ** REMEMBER : No spaces in name, except at end !!
 
   !**               name     type   
-  !**                ofmt   ispec     ix1 ix2  iy1 iy2  unit conv    max
+  !**                ofmt   ispec     ix1 ix2  iy1 iy2  nk unit conv    max
 
  !   include 'merlin_ixadv'
  hr_out(1)=  Asc2D("o3_50m", "BCVppbv", &
-                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2, "ppbv",PPBINV,9000.0)
+                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,2, "ppbv",PPBINV,9000.0)
  hr_out(2)=  Asc2D("o3_3m", "ADVppbv", &
-                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2, "ppbv",PPBINV,9000.0)
+                  "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,9000.0)
 
 !  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
 !                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
