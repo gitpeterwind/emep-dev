@@ -88,7 +88,7 @@ if ( $year == 2000 ) {
 
 $DAVE        = "/home/u2/mifads";      
 $JOFFEN      = "/home/u2/mifajej";      
-$HILDE       = "/home/u5/mifahf";      
+$HILDE       = "/home/u6/mifahf";      
 $STEFFEN     = "/home/u2/mifaung";      
 $SVETLANA    = "/home/u2/mifast";      
 $PETER       = "/home/u4/mifapw";      
