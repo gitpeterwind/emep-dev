@@ -9,21 +9,19 @@
 #
 # Currently fix by using Makefile.insert2 and Makefile.tail
 #
-
 PROG =	Unimod
-
-SRCS =	Advection_ml.f90 AirEmis_ml.f90 Aqueous_ml.f90 Biogenics_ml.f90 \
+SRCS =	Aero_water_ml.f90 Ammonium_ml.f90 Advection_ml.f90 AirEmis_ml.f90 Aqueous_ml.f90 Biogenics_ml.f90 \
 	BoundaryConditions_ml.f90 Chem_ml.f90 Country_ml.f90 Dates_ml.f90 \
 	DefPhotolysis_ml.f90 DepVariables_ml.f90 Derived_ml.f90 DryDep_ml.f90 \
 	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 Functions_ml.f90 \
 	GlobalBCs_ml.f90 GridValues_ml.f90 Io_ml.f90 MassBudget_ml.f90 \
-	Met_ml.f90 ModelConstants_ml.f90 My_Aerosols_ml.f90 \
+	Met_ml.f90 EQSAM_ml.f90 MARS_ml.f90 ModelConstants_ml.f90 My_Aerosols_ml.f90 \
 	My_BoundConditions_ml.f90 My_Chem_ml.f90 My_Derived_ml.f90 \
 	My_DryDep_ml.f90 My_Emis_ml.f90 My_MassBudget_ml.f90 \
 	My_Outputs_ml.f90 My_WetDep_ml.f90 Nest_ml.f90 Out_restri_ml.f90 \
 	Output_binary.f90 Output_hourly.f90 Par_ml.f90 \
 	PhysicalConstants_ml.f90 Polinat_ml.f90 Radiation_ml.f90 \
-	ReadField_ml.f90 Rsurface_ml.f90 Runchem_ml.f90 Setup_1d_ml.f90 \
+	ReadField_ml.f90 Rsurface_ml.f90 Runchem_ml.f90 SOA_ml.f90 Setup_1d_ml.f90 \
 	Setup_1dfields_ml.f90 Sites_ml.f90 SoilWater_ml.f90 Solver.f90 \
 	SubMet_ml.f90 Tabulations_ml.f90 Timefactors_ml.f90 Timing_ml.f90 \
 	UK_ml.f90 UKsetup_ml.f90 Unimod.f90 Volcanos_ml.f90 Wesely_ml.f90 \
@@ -32,18 +30,18 @@ SRCS =	Advection_ml.f90 AirEmis_ml.f90 Aqueous_ml.f90 Biogenics_ml.f90 \
 	global2local.f local2global.f gc_com.F \
 	getflti2.F put_restri_i2.F putflti2.F
 
-OBJS =	Advection_ml.o AirEmis_ml.o Aqueous_ml.o Biogenics_ml.o \
+OBJS =	Aero_water_ml.o Advection_ml.o Ammonium_ml.o AirEmis_ml.o Aqueous_ml.o Biogenics_ml.o \
 	BoundaryConditions_ml.o Chem_ml.o Country_ml.o Dates_ml.o \
 	DefPhotolysis_ml.o DepVariables_ml.o Derived_ml.o DryDep_ml.o \
 	EmisDef_ml.o EmisGet_ml.o Emissions_ml.o Functions_ml.o \
-	GlobalBCs_ml.o GridValues_ml.o Io_ml.o MassBudget_ml.o Met_ml.o \
+	GlobalBCs_ml.o GridValues_ml.o Io_ml.o EQSAM_ml.o MARS_ml.o MassBudget_ml.o Met_ml.o \
 	ModelConstants_ml.o My_Aerosols_ml.o My_BoundConditions_ml.o \
 	My_Chem_ml.o My_Derived_ml.o My_DryDep_ml.o My_Emis_ml.o \
 	My_MassBudget_ml.o My_Outputs_ml.o My_WetDep_ml.o Nest_ml.o \
 	Out_restri_ml.o Output_binary.o Output_hourly.o Par_ml.o \
 	PhysicalConstants_ml.o Polinat_ml.o Radiation_ml.o ReadField_ml.o \
 	Rsurface_ml.o Runchem_ml.o Setup_1d_ml.o Setup_1dfields_ml.o \
-	Sites_ml.o SoilWater_ml.o Solver.o SubMet_ml.o Tabulations_ml.o \
+	Sites_ml.o SoilWater_ml.o Solver.o SOA_ml.o SubMet_ml.o Tabulations_ml.o \
 	Timefactors_ml.o Timing_ml.o UK_ml.o UKsetup_ml.o Unimod.o \
 	Volcanos_ml.o Wesely_ml.o Wrtchem.o \
 	global2local.o local2global.o outchem_restri.o phyche.o \
@@ -112,6 +110,8 @@ clean:
 	$(CC) -c $(CFLAGS) $<
 
 ###################################################
+Aero_water_ml.o: My_Chem_ml.o
+	$(F90) $(F90FLAGS) -c My_Chem_ml.o Aero_water_ml.f90
 Advection_ml.o: Chem_ml.o GridValues_ml.o MassBudget_ml.o Met_ml.o \
 	ModelConstants_ml.o My_Chem_ml.o Par_ml.o Timing_ml.o
 	$(F90) $(F90FLAGS) -c Chem_ml.o GridValues_ml.o \
@@ -122,6 +122,8 @@ AirEmis_ml.o: GridValues_ml.o Io_ml.o ModelConstants_ml.o Par_ml.o \
 	$(F90) $(F90FLAGS) -c GridValues_ml.o Io_ml.o \
 		ModelConstants_ml.o Par_ml.o PhysicalConstants_ml.o \
 		AirEmis_ml.f90
+Ammonium_ml.o: ModelConstants_ml.o Setup_1dfields_ml.o
+	$(F90) $(F90FLAGS) -c  ModelConstants_ml.o  Setup_1dfields_ml.o Ammonium_ml.f90
 Aqueous_ml.o: GridValues_ml.o Met_ml.o ModelConstants_ml.o My_Derived_ml.o \
 	My_WetDep_ml.o Par_ml.o Setup_1dfields_ml.o
 	$(F90) $(F90FLAGS) -c GridValues_ml.o Met_ml.o \
@@ -161,6 +163,8 @@ DryDep_ml.o: Chem_ml.o Dates_ml.o DepVariables_ml.o GridValues_ml.o \
 		Par_ml.o PhysicalConstants_ml.o Radiation_ml.o \
 		Rsurface_ml.o SoilWater_ml.o SubMet_ml.o UK_ml.o \
 		Wesely_ml.o DryDep_ml.f90
+EQSAM_ml.o:ModelConstants_ml.o 
+	$(F90) $(F90FLAGS) -c ModelConstants_ml.o EQSAM_ml.f90  
 EmisGet_ml.o: Country_ml.o EmisDef_ml.o Functions_ml.o Io_ml.o My_Emis_ml.o \
 	Par_ml.o Volcanos_ml.o
 	$(F90) $(F90FLAGS) -c Country_ml.o EmisDef_ml.o \
@@ -183,6 +187,8 @@ GlobalBCs_ml.o: Dates_ml.o GridValues_ml.o Io_ml.o ModelConstants_ml.o \
 GridValues_ml.o: Io_ml.o ModelConstants_ml.o Par_ml.o PhysicalConstants_ml.o
 	$(F90) $(F90FLAGS) -c Io_ml.o ModelConstants_ml.o Par_ml.o \
 		PhysicalConstants_ml.o GridValues_ml.f90
+MARS_ml.o: Aero_water_ml.o 
+	$(F90) $(F90FLAGS) -c Aero_water_ml.o MARS_ml.f90
 MassBudget_ml.o: Chem_ml.o GridValues_ml.o Io_ml.o Met_ml.o \
 	ModelConstants_ml.o My_Chem_ml.o My_Derived_ml.o My_MassBudget_ml.o \
 	Par_ml.o
@@ -198,9 +204,9 @@ Met_ml.o: Dates_ml.o GridValues_ml.o Io_ml.o ModelConstants_ml.o Par_ml.o \
 ModelConstants_ml.o: Dates_ml.o PhysicalConstants_ml.o
 	$(F90) $(F90FLAGS) -c Dates_ml.o PhysicalConstants_ml.o \
 		ModelConstants_ml.f90
-My_Aerosols_ml.o: ModelConstants_ml.o My_Chem_ml.o PhysicalConstants_ml.o \
-	Setup_1dfields_ml.o
-	$(F90) $(F90FLAGS) -c ModelConstants_ml.o My_Chem_ml.o \
+My_Aerosols_ml.o: ModelConstants_ml.o My_Chem_ml.o PhysicalConstants_ml.o MARS_ml.o\
+	Setup_1dfields_ml.o EQSAM_ml.o
+	$(F90) $(F90FLAGS) -c EQSAM_ml.o MARS_ml.o ModelConstants_ml.o My_Chem_ml.o \
 		PhysicalConstants_ml.o Setup_1dfields_ml.o \
 		My_Aerosols_ml.f90
 My_BoundConditions_ml.o: GlobalBCs_ml.o GridValues_ml.o Met_ml.o \
@@ -268,10 +274,10 @@ Rsurface_ml.o: Dates_ml.o DepVariables_ml.o Functions_ml.o Io_ml.o \
 		Functions_ml.o Io_ml.o My_DryDep_ml.o \
 		PhysicalConstants_ml.o Radiation_ml.o SoilWater_ml.o \
 		UKsetup_ml.o Wesely_ml.o Rsurface_ml.f90
-Runchem_ml.o: Aqueous_ml.o Chem_ml.o DefPhotolysis_ml.o ModelConstants_ml.o \
+Runchem_ml.o: Ammonium_ml.o Aqueous_ml.o Chem_ml.o DefPhotolysis_ml.o ModelConstants_ml.o \
 	My_Aerosols_ml.o My_Chem_ml.o Par_ml.o Setup_1d_ml.o \
-	Setup_1dfields_ml.o Solver.o Timing_ml.o
-	$(F90) $(F90FLAGS) -c Aqueous_ml.o Chem_ml.o \
+	Setup_1dfields_ml.o Solver.o Timing_ml.o 
+	$(F90) $(F90FLAGS) -c  Ammonium_ml.o Aqueous_ml.o Chem_ml.o \
 		DefPhotolysis_ml.o ModelConstants_ml.o My_Aerosols_ml.o \
 		My_Chem_ml.o Par_ml.o Setup_1d_ml.o \
 		Setup_1dfields_ml.o Solver.o Timing_ml.o Runchem_ml.f90
@@ -297,13 +303,13 @@ Sites_ml.o: Io_ml.o Met_ml.o ModelConstants_ml.o My_Chem_ml.o My_Derived_ml.o \
 	$(F90) $(F90FLAGS) -c Io_ml.o Met_ml.o ModelConstants_ml.o \
 		My_Chem_ml.o My_Derived_ml.o \
 		My_Outputs_ml.o Par_ml.o Sites_ml.f90
-Solver.o: Biogenics_ml.o DefPhotolysis_ml.o Emissions_ml.o ModelConstants_ml.o \
+Solver.o: Biogenics_ml.o DefPhotolysis_ml.o ModelConstants_ml.o \
 	My_Aerosols_ml.o My_Chem_ml.o My_Emis_ml.o Par_ml.o Radiation_ml.o \
-	Setup_1dfields_ml.o My_Reactions.inc
+	SOA_ml.o Setup_1dfields_ml.o My_Reactions.inc
 	$(F90) $(F90FLAGS) -c Biogenics_ml.o DefPhotolysis_ml.o \
-		Emissions_ml.o ModelConstants_ml.o My_Aerosols_ml.o My_Chem_ml.o \
+		ModelConstants_ml.o My_Aerosold_ml.o My_Chem_ml.o \
 		My_Emis_ml.o Par_ml.o Radiation_ml.o \
-		Setup_1dfields_ml.o Solver.f90
+		Setup_1dfields_ml.o SOA_ml.o Solver.f90
 SubMet_ml.o: Functions_ml.o Io_ml.o ModelConstants_ml.o \
 	PhysicalConstants_ml.o
 	$(F90) $(F90FLAGS) -c Functions_ml.o Io_ml.o \
