@@ -38,9 +38,9 @@ implicit none
    !   ------------------------------------------------------------------------
 
    integer, public, parameter :: &
-         NEMIS_PLAIN =  4   & ! No. emission files to be read for non-speciated
-       , NEMIS_SPLIT =  2   & ! No. emission files to be read for speciated
-       , NRCEMIS     = 17     ! No. chemical species with emissions 
+         NEMIS_PLAIN =  6   & ! No. emission files to be read for non-speciated
+       , NEMIS_SPLIT =  1   & ! No. emission files to be read for speciated
+       , NRCEMIS     = 16     ! No. chemical species with emissions 
 
    integer, public, parameter :: &   ! ** derived ** shouldn't need to change:
          NEMIS       =      & ! Sum of the above - all emissions
@@ -56,16 +56,19 @@ implicit none
 
     character(len=6), public, save, dimension(NEMIS) :: &
       EMIS_NAME  = &
-      (/ "sox   ", "nox   ", "co    ", "nh3   "   &   ! =non-split first
-           , "voc   ", "pm25  "  /)                   ! =to be split
+      (/ "sox   ", "nox   ", "co    "   &   ! =non-split first
+       , "nh3   ", "pm25  ", "pmco  "   &
+       , "voc   "  /)                       ! =to be split
 
     character(len=6), public, save, dimension(NEMIS_SPLIT) :: &
       SPLIT_NAME = &
-       (/ "voc   ", "pm25  "  /)
+       (/ "voc   "  /)
+ !! for SOA      (/ "voc   ", "pm25  "  /)
 
     integer, public, save, dimension(NEMIS_SPLIT) :: &
       EMIS_NSPLIT  = &
-       (/  10   ,      3  /)    !!!! (check - excluding bio?)
+       (/  10    /)    !!!! (check - excluding bio?)
+ !! for SOA       (/  10   ,      3  /)    !!!! (check - excluding bio?)
 
     !/-- and now  join the above name arrays  to make the complete list:
 
@@ -90,23 +93,26 @@ implicit none
          , QRCNO  =   2      & ! IQNOX   &   ! 2
          , QRCCO  =   3      & ! IQCO        ! 4
          , QRCNH3 =   4      & ! IQCO        ! 4
+         , QRCPM25=   5      & ! IQSO2   &   ! 1
+         , QRCPMCO=   6      &
       !/**now we deal with the emissions which are split,e.g.VOC
       !  ******************************************************
       !  **** must be in same order as EMIS_SPLIT array **** **
       !  ******************************************************
-         , QRCC2H4  = 5      & ! MACHDS 
-         , QRCC2H6  = 6      & ! MACHDS
-         , QRCC3H6  = 7      & ! MACHDS
-         , QRCNC4H10 = 8     &  ! MACHDS
-         , QRCOXYL   = 9     &  ! MACHDS
-         , QRCC2H5OH = 10    &  ! MACHDS
-         , QRCHCHO   = 11    &  ! MACHDS
-         , QRCCH3CHO  = 12    &  ! MACHDS
-         , QRCCH3OH   = 13    &  ! MACHDS
-         , QRCMEK     = 14    &  ! MACHDS
-         , QRCOC      = 15    &  ! MACHDS
-         , QRCEC      = 16    &  ! MACHDS
-         , QRCINORG   = 17       ! MACHDS
+         , QRCC2H4  = 7      & ! MACHDS 
+         , QRCC2H6  = 8      & ! MACHDS
+         , QRCC3H6  = 9      & ! MACHDS
+         , QRCNC4H10 = 10     &  ! MACHDS
+         , QRCOXYL   = 11    &  ! MACHDS
+         , QRCC2H5OH = 12    &  ! MACHDS
+         , QRCHCHO   = 13    &  ! MACHDS
+         , QRCCH3CHO  = 14    &  ! MACHDS
+         , QRCCH3OH   = 15    &  ! MACHDS
+         , QRCMEK     = 16      ! MACHDS
+
+ !! for SOA          , QRCOC      = 15    &  ! MACHDS
+ !! for SOA          , QRCEC      = 16    &  ! MACHDS
+ !! for SOA          , QRCINORG   = 17       ! MACHDS
 
   ! Biogenics
 
@@ -145,6 +151,8 @@ implicit none
         molwt(QRCSO2)   = 32.0  ! Emissions as S
         molwt(QRCNO)    = 14.0  ! Emissions as N
         molwt(QRCNH3)   = 14.0  ! Emissions as N
+        molwt(QRCPM25)  = 100.0  !  Fake for PM2.5
+        molwt(QRCPMCO)  = 100.0  !  Fake for PM2.5
   !..MACHO..
         molwt(QRCCO )    = 28.0  ! Emissions as N      MACHO
         molwt(QRCC2H4)   = 24.0 ! Emissions as C ???   MACHO
@@ -159,9 +167,9 @@ implicit none
         molwt(QRCCH3CHO) = 44.0 ! MACHDS
         molwt(QRCCH3OH)  = 32.0 ! MACHDS
         molwt(QRCMEK)    = 72.0 ! MACHDS
-        molwt(QRCOC)    = 150.0 ! MACHDS
-        molwt(QRCEC)    = 150.0 ! MACHDS
-        molwt(QRCINORG)  = 150.0 ! MACHDS
+!        molwt(QRCOC)    = 150.0 ! MACHDS
+!        molwt(QRCEC)    = 150.0 ! MACHDS
+!        molwt(QRCINORG)  = 150.0 ! MACHDS
   end subroutine set_molwts
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 end module My_Emis_ml

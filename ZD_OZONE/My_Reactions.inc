@@ -1315,6 +1315,21 @@
 
        xnew(NH3)=  amax1(0.0,  xold(NH3) + dt2 * P)
 
+!-> PM25
+
+      P =   &
+     rcemis(QRCPM25,K) 
+      ! L = 0.0
+       xnew(PM25)=  amax1(0.0,  xold(PM25) + dt2 * P)
+
+
+!-> PMCO
+
+      P =   &
+     rcemis(QRCPMCO,K) 
+      ! L = 0.0
+       xnew(PMCO)=  amax1(0.0,  xold(PMCO) + dt2 * P)
+
 
 !-> AMSU 
       ! P = 0.0

@@ -20,7 +20,7 @@ module My_UKDep_ml    ! DryDep_ml
                             DDEP_STOMCU, DDEP_STOGRU,                   &
                             DDEP_STOCFL, DDEP_STODFL, DDEP_STOTCL,      &
                             DDEP_STOMCL, DDEP_STOGRL, &
-                             IOU_INST    &!updates inst. dep. fields
+                            DDEP_PM, IOU_INST    &!updates inst. dep. fields
                            , ddep         ! 2d fields
  use GenSpec_adv_ml !, only: NSPEC_ADV &
                    !,IXADV_O3,IXADV_H2O2,
@@ -100,7 +100,7 @@ module My_UKDep_ml    ! DryDep_ml
   ! The actual species used and their relation to the CDEP_ indices
   ! above will be defined in Init_DepMap
 
-  integer, public, parameter ::  NDRYDEP_ADV  = 17
+  integer, public, parameter ::  NDRYDEP_ADV  = 19
 
   !/-- we define a type to map indices of species to be deposited
   !   to the lesser number of species where Vg is calculated
@@ -141,7 +141,9 @@ contains
    Dep(14) =  depmap( IXADV_MAL   ,CDEP_ALD , -1.)
    Dep(15) =  depmap( IXADV_CH3O2H,CDEP_OP  , -1.)
    Dep(16) =  depmap( IXADV_C2H5OOH,CDEP_OP  , -1.)
-   Dep(17) =  depmap( IXADV_pNO3,CDEP_COA, -1.)
+   Dep(17) =  depmap( IXADV_pNO3,  CDEP_COA, -1.)
+   Dep(18) =  depmap( IXADV_PM25,  CDEP_FIN, -1. )
+   Dep(19) =  depmap( IXADV_PMco,  CDEP_COA, -1. )
 
   end subroutine Init_DepMap
 

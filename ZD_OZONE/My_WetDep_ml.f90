@@ -1,6 +1,6 @@
 module My_WetDep_ml
   use MassBudget_ml,     only : totwdep
-  use ModelConstants_ml, only : atwS, atwN
+  use ModelConstants_ml, only : atwS, atwN, atwPM
   use My_Derived_ml    , only : NWDEP, WDEP_SOX, WDEP_OXN, WDEP_RDN &
                                 ,IOU_INST &   ! Index: instantaneous values
                                 ,wdep         ! Wet deposition fields
@@ -19,7 +19,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP = 9  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP = 11  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
 contains
@@ -28,12 +28,12 @@ contains
 
   !/ INCLOUDFAC is A/v where A is 5.2 m3 kg-1 s-1, !  and v is the fallspeed (5 m/s). 
     real, parameter ::  FALLSPEED = 5.0                            ! m/s 
-    real, parameter ::  INCLOUDFAC = 5.2 / FALLSPEED
+    real, parameter ::  SUBCLFAC = 5.2 / FALLSPEED
 
   !/ e is the scavenging efficiency (0.1 for fine particles, 0.4 for course)
 
-    real, parameter ::  EFF25 = 0.1*INCLOUDFAC  & 
-                      , EFFCO = 0.4*INCLOUDFAC  ! collection efficiency b/clouds - coarse
+    real, parameter ::  EFF25 = 0.1*SUBCLFAC  & 
+                      , EFFCO = 0.4*SUBCLFAC  ! collection efficiency b/clouds - coarse
 
    !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
    !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
@@ -50,6 +50,8 @@ contains
     WetDep(7)   = WScav(H2O2,   0.6,  0.3)   ! jej, maybe should be 0.6*0.7??
     WetDep(8)   = WScav(HCHO,   0.1,  0.05)  ! jej
     WetDep(9)   = WScav(pNO3,   0.7,  EFFCO) ! ds, from Svetlana's PMco stuff
+    WetDep(10)  = WScav(PM25,   0.7,  EFF25)
+    WetDep(11)  = WScav(PMCO,   0.7,  EFFCO)
 
   end subroutine Init_WetDep
 
@@ -57,7 +59,7 @@ contains
      integer,            intent(in) ::  i,j
      real, dimension(:), intent(in) :: sumloss
      real, intent(in)  :: invgridarea
-     real :: wdeps, wdepox, wdepred
+     real :: wdeps, wdepox, wdepred, wdeppm25, wdeppmco
 
 
       !wdeps = sumloss(SO2) + sumloss(SO4) + sumloss(AMSU)
@@ -70,10 +72,14 @@ contains
   
       !wdepox  = sumloss(HNO3) + sumloss(AMNI) + pNO3
        wdepox  = sumloss(6) + sumloss(5) + sumloss(9)
+      wdeppm25= sumloss(7) 
+      wdeppmco= sumloss(8) 
 
        totwdep(IXADV_SO4)  = totwdep(IXADV_SO4) + wdeps
        totwdep(IXADV_HNO3) = totwdep(IXADV_HNO3) + wdepox
        totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)  + wdepred
+       totwdep(IXADV_PM25)  = totwdep(IXADV_PM25)  + wdeppm25
+       totwdep(IXADV_PMco)  = totwdep(IXADV_PMco)  + wdeppmco
 
 
        wdep(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 
