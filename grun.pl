@@ -194,7 +194,7 @@ if ( $SR ) {
 @smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
 #@smalldomain = (  36, 130, 31, 123 ) ;      # (changeable)
 #@smalldomain = (  39, 120, 31, 123 ) ;      # (changeable)
-@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
+#@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
                                     # simply uncomment this 
 
 $RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
