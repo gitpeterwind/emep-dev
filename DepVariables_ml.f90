@@ -9,13 +9,14 @@ module DepVariables_ml
 ! Mediterranean orchard may be added later. 
 
 implicit none
-private
+!FDS private
 
-integer, public, parameter :: NLANDUSE = 17 !number of land-use classes
-integer, public, parameter :: LU_CONIF =  1 ! Conif. forest (temp.)
-integer, public, parameter :: LU_WATER =  15 !  Sea/lakes
+integer, public, parameter :: NLANDUSE =   17 !number of land-use classes
+integer, public, parameter :: LU_CONIF =    1 ! Conif. forest (temp.)
+integer, public, parameter :: LU_WATER =   15 !  Sea/lakes
+real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
 
-integer, public, save :: lu            !land-use class index
+!d1.4 integer, public, save :: lu            !land-use class index
 
 ! g_sto factors in UK dep method:
 
@@ -26,6 +27,11 @@ real, public, save :: &
        ,g_light    &                  ! stomatal conductance light factor
        ,g_swp                         ! stomatal conductance soil water factor
 
+ real, public, save  :: Rinc      ! in-canopy resistance (s/m)
+ real, public, save  :: Rgs       ! ground surface resistance, any gas
+ real, public, save  :: Gext      ! external surface (e.g. cuticular) conductance, any gas
+ real, public, save  :: g_sto     ! stomatal conductance
+
 
 ! In the Wesely method of dealing with many gases, the external resistance 
 ! equations for ozone and SO2 are used as reference points for the remaining
@@ -33,7 +39,8 @@ real, public, save :: &
 
     real, public, parameter :: &   ! external resistance for Ozone, Sulphur
           RextO =  2500.0   & ! prelim. value - gives Gext=0.2 cm/s for LAI=5
-         ,RextS = 10000.0     ! prelim. value - high
+         ,RextS = 10000.0     ! prelim. value - high - for dry conditions
+        !,RextS =   200.0     ! more approriate to wet....
 
 ! Here, "Gext=0.2cm/s" refers to the external conductance, G_ext, where 
 ! G_ext=LAI/R_ext. In many studies, it has been assumed 
@@ -48,6 +55,12 @@ real, public, save :: &
 
 !.. names
    character(len=20), public, dimension(NLANDUSE), save :: luname   
+
+   logical, public, dimension(NLANDUSE), save :: &
+              crops   &! true for veg which grows...
+             ,bulk    &! true for land-classes without LAI
+             ,water    ! true for  water, set with h < 0
+
 
 !.. common variables read from ukdep_biomass.dat   ...........................
 ! Note:
@@ -69,16 +82,20 @@ real, public, save :: &
        ,  EGS50       & ! end of growing season
        ,  DEGS        & ! d(EGS)/d(Lat)
        ,  LAImin      & ! min. value of LAI
-       ,  LAImax      & ! max. value LAI
-       ,  SLAIlen     & ! days from LAImin to LAImax at start of season
-       ,  ELAIlen       ! days from LAImax to LAImin at end of season
+       ,  LAImax        ! max. value LAI
 
 !.. common variables read from ukdep_gfac1.dat   ...........................
 
-   real, public, save, dimension(NLANDUSE) :: &
-          g_pot_min         & ! min. value of g_pot
+   integer, public, save, dimension(NLANDUSE) :: &
+          SGS              & ! Start of growing season (days)
+       ,  EGS              & ! End   of growing season (days)
        ,  Sg_potlen        & ! length in days from g_pot=g_min to g_pot=1
        ,  Eg_potlen        & ! length in days from g_pot=1 to g_pot=g_potmin
+       ,  SLAIlen          & ! days from LAImin to LAImax at start of season
+       ,  ELAIlen            ! days from LAImax to LAImin at end of season
+
+   real, public, save, dimension(NLANDUSE) :: &
+          g_pot_min         & ! min. value of g_pot
        ,  g_max            & ! max. value conductance g_s
        ,  g_min            & ! min. value Conductance g_s
        ,  g_lightfac       & ! light coefficient 
@@ -97,5 +114,6 @@ real, public, save :: &
        ,  PWP            & ! threshold SWP when relative g = g_min
                            ! and assumed equal to permanent wilting point
        ,  rootdepth        ! root depth (mm)
+
 !..............................................................................
 end module DepVariables_ml
