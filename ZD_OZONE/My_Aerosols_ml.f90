@@ -68,8 +68,8 @@ contains
       so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef
       hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef 
       nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef
-      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef  + &
-               xn_2d(NO3,k) * species(NO3)%molwt  *coef   !different for UNI-OZONE/ACID
+      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef ! + &
+!               xn_2d(NO3,k) * species(NO3)%molwt  *coef   !different for UNI-OZONE/ACID
       nh4in  = xn_2d(aNH4,k) * species(aNH4)%molwt  *coef
 
  !--------------------------------------------------------------------------                
@@ -78,7 +78,7 @@ contains
  !--------------------------------------------------------------------------
  ! SO4 is not changed so do not need to be reset
      
-      xn_2d(NO3,k)  = FLOOR !different for UNI-OZONE/ACID
+!      xn_2d(NO3,k)  = FLOOR !different for UNI-OZONE/ACID
 
       xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
       xn_2d(NH3,k)   = max (FLOOR, gNH3out / (species(NH3)%molwt  *coef) )
@@ -146,8 +146,8 @@ contains
       so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
       hno3in(KCHEMTOP:KMAX_MID) = xn_2d(HNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
       nh3in(KCHEMTOP:KMAX_MID)  = xn_2d(NH3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
-      no3in(KCHEMTOP:KMAX_MID)  = xn_2d(aNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG +&
-                                  xn_2d(NO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG !different for ACID/OZONE
+      no3in(KCHEMTOP:KMAX_MID)  = xn_2d(aNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG !+&
+!                                  xn_2d(NO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG !different for ACID/OZONE
       nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(aNH4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
 
  !--------------------------------------------------------------------------                
@@ -159,7 +159,7 @@ contains
      
 
 !//.... micromoles/m**3  -> molec/cm3 
-      xn_2d(NO3,KCHEMTOP:KMAX_MID)  = FLOOR !different for ACID/OZONE
+!      xn_2d(NO3,KCHEMTOP:KMAX_MID)  = FLOOR !different for ACID/OZONE
 
       xn_2d(HNO3,KCHEMTOP:KMAX_MID)  = max(FLOOR,gNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(NH3,KCHEMTOP:KMAX_MID)   = max(FLOOR,gNH3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
