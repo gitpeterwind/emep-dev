@@ -6,13 +6,13 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! DESCRIPTION 
 ! ........ to be added !!!
+! 29/10/02 - output formatting and descriptions improved, ds.
 ! 1/10/01 - code for derived fields removed. MY_MASS_PRINT ADDED, ds
 ! Oct, 2001 - ** new ** mass budget method by jej
 ! Nov.2001, ds, "use" statements moved to top, much code moved to REMOVED 
 ! section at end
 !_____________________________________________________________________________
 
-!hf u2 use My_Runmode_ml , only : DEBUG
 !ds rv1.2 use My_Derived_ml,  only : NWDEP, NDDEP & ! No. deposition fields
 !ds rv1.2                        ,f_wdep, f_ddep  & ! definitions of dep data fields
 !ds rv1.2                        , wdep, ddep       ! deposition data fields
@@ -30,7 +30,7 @@
  use ModelConstants_ml , &
                      only : KMAX_MID  &  ! Number of points (levels) in vertical
                            ,PT        &  ! Pressure at top
-                           ,ATWAIR, atwS, atwN
+                           ,ATWAIR       !rv1.2,ds , atwS, atwN
  use Par_ml,only:  & 
         MAXLIMAX,  & ! Maximum number of local points in longitude
         MAXLJMAX,  & ! Maximum number of local points in latitude
@@ -109,15 +109,18 @@ contains
 
 
   integer ::  i, j, k, n, nn, info    !6b, lpr1, lpr2
-  integer ispec
+  integer :: ispec, ifam
   real, dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
   character(len=12) :: spec_name
+  integer, parameter :: NFAMILIES = 3                       !rv1.2, ds 
+  character(len=8), dimension(NFAMILIES), save :: family_name = &
+           (/ "Sulphur ", "Nitrogen", "Carbon  " /)
   integer ispec_name
 
 !pw  real, dimension(NSPEC_ADV) ::  &
 !pw           amax, amin        ! max/min of conc. (long lived)
 
-  real, dimension(3)         :: family_int  & ! initial total mass of 
+  real, dimension(NFAMILIES) :: family_int  & ! initial total mass of 
                                               ! species family
                                ,family_mass & ! total family mass at the 
                                               ! end of the model run
@@ -141,7 +144,8 @@ contains
 				  gtotox      ! oxidation of SO2  ????????
 
 
-  real :: totdiv,helsum,ammfac, atw, natoms
+  !rv1.2, ds real :: totdiv,helsum,ammfac, atw, natoms
+  real :: totdiv,helsum,ammfac, natoms
 
     sum_mass(:)     = 0.
     frac_mass(:)    = 0.
@@ -230,71 +234,69 @@ contains
     family_wdep(:) = 0.
     family_em(:)   = 0.
 
-     do ispec = 1, 3
+    write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
 
-       write(6,*) 'family ', ispec 
+     do ifam = 1, 3
+
+       write(6,"(a8,i3,a12)") 'family ', ifam,  family_name(ifam) 
        do n = 1, NSPEC_ADV
 
          !u1 nn = MAP_ADV2TOT(n)
          nn = NSPEC_SHL + n
 
 
-           if ( ispec == 1 ) natoms = real(species(nn)%sulphurs)
-           if ( ispec == 1 ) atw = atwS
+           if ( ifam == 1 ) natoms = real(species(nn)%sulphurs)
+           !rv1.2, ds if ( ifam == 1 ) atw = atwS
 
-           if ( ispec == 2 ) natoms = real(species(nn)%nitrogens)
-           if ( ispec == 2 ) atw = atwN
+           if ( ifam == 2 ) natoms = real(species(nn)%nitrogens)
+           !rv1.2, ds if ( ifam == 2 ) atw = atwN
 
-           if ( ispec == 3 ) natoms = real(species(nn)%carbons)
-           if ( ispec == 3 ) atw = 16
+           if ( ifam == 3 ) natoms = real(species(nn)%carbons)
+           !rv1.2, ds if ( ifam == 3 ) atw = 16
          
            if (natoms > 0) then
-             family_int(ispec) = family_int(ispec) + sumint(n)*natoms
-             family_mass(ispec) = family_mass(ispec) + sum_mass(n)*natoms
-             family_in (ispec) = family_in (ispec) + gfluxin(n)*natoms
-             family_out(ispec) = family_out(ispec) + gfluxout(n)*natoms
-             family_ddep(ispec) = family_ddep(ispec) + gtotddep(n)*natoms
-             family_wdep(ispec) = family_wdep(ispec) + gtotwdep(n)*natoms
-             family_em(ispec) = family_em(ispec) + gtotem(n)*natoms
+             family_int(ifam) = family_int(ifam) + sumint(n)*natoms
+             family_mass(ifam) = family_mass(ifam) + sum_mass(n)*natoms
+             family_in (ifam) = family_in (ifam) + gfluxin(n)*natoms
+             family_out(ifam) = family_out(ifam) + gfluxout(n)*natoms
+             family_ddep(ifam) = family_ddep(ifam) + gtotddep(n)*natoms
+             family_wdep(ifam) = family_wdep(ifam) + gtotwdep(n)*natoms
+             family_em(ifam) = family_em(ifam) + gtotem(n)*natoms
            end if
        end do  ! NSPEC_ADV
 
-       family_div(ispec) = family_int(ispec) &
-                         + family_in (ispec) &
-                         + family_em(ispec)   !6b &
+       family_div(ifam) = family_int(ifam) &
+                         + family_in (ifam) &
+                         + family_em(ifam)   !6b &
 !!                        * ATWAIR/atw
 !                         * ATWAIR/species( MAP_ADV2TOT(n))%molwt
 
-       if (family_div(ispec) > 0.0 ) &
-              family_frac(ispec) = (family_mass(ispec) &
-                                 +  family_out(ispec)  &
-                                 +  family_ddep(ispec)*ATWAIR  & ! not /atw(n)
-                                 +  family_wdep(ispec)*ATWAIR) & ! not /atw(n)
-                                 / family_div(ispec)
+       if (family_div(ifam) > 0.0 ) &
+              family_frac(ifam) = (family_mass(ifam) &
+                                 +  family_out(ifam)  &
+                                 +  family_ddep(ifam)*ATWAIR  & ! not /atw(n)
+                                 +  family_wdep(ifam)*ATWAIR) & ! not /atw(n)
+                                 / family_div(ifam)
 
 
-      write(6,*)
       write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
       write(6,*)
 
-      !u4 write(6,951)
-      !u4 write(6,952) ispec,family_int(ispec), family_mass(ispec) &
-
-      write(6,"(6a12)") "parameter", "sumint", "summas", &
+      write(6,"(a9,5a12)") "family", "sumint", "summas", &
                                "fluxout","fluxin", "fracmass"
-      write(6,"(i9,5es12.4)") ispec,family_int(ispec), family_mass(ispec) &
-                        ,family_out(ispec), family_in (ispec)  &
-                        ,family_frac(ispec)
+      write(6,"(a9,5es12.4)") family_name(ifam), &
+             family_int(ifam), family_mass(ifam),family_out(ifam), &
+             family_in (ifam), family_frac(ifam)
 
       write(6,*)
-      write(6,958) 
-      write(6,957) ispec, family_ddep(ispec)*ATWAIR  &
-                        , family_wdep(ispec)*ATWAIR  &
-                        , family_em(ispec) 
+      write(6,"(a9,3a14)") "ifam", "totddep","totwdep","totem"
+      write(6,"(i9,3es14.3)") ifam, family_ddep(ifam)*ATWAIR  &
+                        , family_wdep(ifam)*ATWAIR  &
+                        , family_em(ifam) 
       write(6,*)
       write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
 
-    end do  ! ispec = 1,3
+    end do  ! ifam = 1,3
     
 
    end if
@@ -302,17 +304,19 @@ contains
   if (me == 0) then     ! printout from node 0
 
      !/.. now use species array which is set in My_MassBudget_ml
-    do k = 1,KMAX_MID
+    !rv1.2, ds do k = 1,KMAX_MID - ds - better to print out each species in turn?
+
+    do nn = 1,size ( MY_MASS_PRINT )
 
       write(6,*)
       write(IO_RES,*)
-
-      do nn = 1,size ( MY_MASS_PRINT )
-        n = MY_MASS_PRINT(nn)
-        write(6,950)      n,k,sumk(n,k)
-        write(IO_RES,950) n,k,sumk(n,k)
+      n = MY_MASS_PRINT(nn)
+      do k = 1,KMAX_MID
+        write(6,950)      n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
+        write(IO_RES,950) n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
       end do
     enddo
+ 950  format(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)
 
 
      do nn = 1,size ( MY_MASS_PRINT )
@@ -321,18 +325,17 @@ contains
         write(6,*)
         write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
         write(6,*)
-        !u4 write(6,951)
-        !u4 write(6,952) n,sumint(n),sum_mass(n),gfluxout(n),gfluxin(n), &
 
-        write(6,"(6a12)") "parameter", "sumint", "summas", &
+        write(6,"(a3,6a12)") " n ", "Spec", "sumint", "summas", &
                                "fluxout","fluxin", "fracmass"
-        write(6,"(i9,5es12.4)") n,sumint(n),sum_mass(n), &
-                      gfluxout(n),gfluxin(n), frac_mass(n)
+        write(6,"(i3,1x,a11,5es12.4)") n,species(n+NSPEC_SHL)%name, &
+                  sumint(n),sum_mass(n), gfluxout(n),gfluxin(n), frac_mass(n)
 
         write(6,*)
-        write(6,955) 
-        write(6,956) n, gtotox(n), gtotddep(n), gtotwdep(n),         &
-                   gtotem(n), gtotldep(n)
+        write(6,"(a3,6a12)")  " n ", "species", &
+                      "totox", "totddep", "totwdep", "totem", "totldep"
+        write(6,"(i3,1x,a11,5es12.4)") n, species(n+NSPEC_SHL)%name, &
+                 gtotox(n), gtotddep(n), gtotwdep(n), gtotem(n), gtotldep(n)
         write(6,*)
         write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
                  
@@ -345,17 +348,17 @@ contains
 
    end if  ! me = 0
 
- 950  format(1h,'parameter ',i2,5x,'level',i2,5x,es12.5)
+!rv1.2,ds 950  format(1h,'parameter ',i2,5x,'level',i2,5x,es12.5)
 !u4 951  format(1h,'parameter',7x,'sumint',8x,'summas',8x,'fluxout ',8x, &
 !u4                'fluxin  ',6x,'fracmas')
 !u4 952  format(1h ,6x,i2,7x,es12.5,4x,es12.5,4x,es12.5,4x,es12.5,4x,es12.5)
- 953  format(1h ,9x,'amax  ',8x,'amin  ',8x,'xmax  ',8x,'xmin  ')
- 954  format(1h ,i2,4x,e10.3,4x,e10.3,4x,e10.3,4x,e10.3)
- 955  format(1h ,9x,'totox',16x,'totddep',13x,                        &
-          'totwdep',13x,'totem',13x,'totldep')
- 956  format(1h ,i2,4x,es10.3,10x,es10.3,10x,es10.3,10x,es10.3,10x,es10.3)
- 957  format(1h ,i2,4x,es10.3,10x,es10.3,10x,es10.3)
- 958  format(1h ,9x,'totddep',13x,'totwdep',13x,'totem')
+ !rv1.2,ds 953  format(1h ,9x,'amax  ',8x,'amin  ',8x,'xmax  ',8x,'xmin  ')
+ !rv1.2,ds 954  format(1h ,i2,4x,e10.3,4x,e10.3,4x,e10.3,4x,e10.3)
+ !rv1.2,ds 955  format(1h ,9x,'totox',16x,'totddep',13x,                        &
+ !rv1.2,ds         'totwdep',13x,'totem',13x,'totldep')
+ !rv1.2,ds 956  format(1h ,i2,4x,es10.3,10x,es10.3,10x,es10.3,10x,es10.3,10x,es10.3)
+ !rv1.2,ds 957  format(1h ,i2,4x,es10.3,10x,es10.3,10x,es10.3)
+ !rv1.2,ds 958  format(1h ,9x,'totddep',13x,'totwdep',13x,'totem')
 
  end subroutine massbudget
 
