@@ -1119,7 +1119,9 @@
       L =  &
      rct(9,k)* xnew(OH )  &
       + 1.0e-5  &
-      + rcphot(IDH2O2,K) 
+      + rcphot(IDH2O2,K) &
+!hf Ox limitation
+      + aqrck(ICLRC1,K)*xnew(SO2 )
 
        xnew(H2O2)=  amax1(0.0, ( xold(H2O2) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
