@@ -2,7 +2,7 @@
 
  ! ds - MOD
     do iter = 1, toiter(k)
- 
+
 
 !-> OD 
 
@@ -128,7 +128,7 @@
       + rct(10,k) * xnew(OH ) * xnew(H2 )  &
       !u7.1   + 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
       + 2.0e-12* xnew(OH ) * xnew(SO2 )  &
-      !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
+      + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
       + rcmisc(7,k) * xnew(OH ) * xnew(CO )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -208,8 +208,8 @@
       + rcphot(IDCH3O2H,K) * xnew(CH3COO2H ) 
 
       L =  &
-        !ds 4.0e-17* xnew(SO2 )  &
-        rct(13,k)* xnew(NO )  &
+        4.0e-17* xnew(SO2 )  &
+      + rct(13,k)* xnew(NO )  &
       + rct(14,k)* xnew(CH3O2 )  &
       + rct(14,k)* xnew(CH3O2 )  &
       + rct(15,k)* xnew(CH3O2 )  &
@@ -353,21 +353,6 @@
                      /(1.0 + dt2*L ) 
 
 
-!-> MACRO2 
-
-      P =   &
-     0.5*rct(35,k) * xnew(MACR ) * xnew(OH )  &
-      + rct(36,k) * xnew(MPAN )  &
-      + 3.7e-11 * xnew(MARO2H ) * xnew(OH ) 
-
-      L =  &
-     1.0e-11* xnew(NO2 )  &
-      + 2.0e-11* xnew(NO )  &
-      + 1.0e-11* xnew(HO2 ) 
-
-       xnew(MACRO2)=  amax1(0.0, ( xold(MACRO2) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
 
 !-> O3 
 
@@ -391,6 +376,22 @@
        xnew(O3)=  amax1(0.0, ( xold(O3) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
 
+
+!->NOy
+
+!	P=rcemis(QRCNO,K)+ rcphot(IDHNO3,K) * xnew(HNO3 )  &
+!	+ rct(11,k) * xnew(OH ) * xnew(HNO3 ) 
+
+!	L=     0.14*rct(13,k) * xnew(ISRO2 ) * xnew(NO )  & !ISNI 
+!      + 0.05*rct(13,k) * xnew(MVKO2 ) * xnew(NO )  &        !ISNI 
+!      + 0.85*rct(13,k) * xnew(ISONO3 ) * xnew(NO ) &        !ISNI 
+!      + rcmisc(14,k) * xnew(NO2 ) * xnew(OH )  &         !HNO3
+!      + 5.8e-16 * xnew(NO3 ) * xnew(HCHO )  &            !HNO3
+!      + 2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) &          !HNO3
+!      + 1.0e-11 * xnew(ISONO3 ) * xnew(HO2 ) 		 !ISONO3H!
+!
+!	NOy=x(NO)+x(NO2)+x(PAN)+x(MPAN)+x(NO3)+2*x(N2O5)+x(ISONO3)
+!	NOy=NOy+ (P-L)*dti(ichem)
 
 !-> NO 
 
@@ -486,105 +487,12 @@
      !u1 rctroe(6,k) 
      rcmisc(16,k) 
 
-       xnew(PAN)=  amax1(0.0, ( xold(PAN) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
+!       xnew(PAN)=  amax1(0.0, ( xold(PAN) + dt2 * P))  &
+!                     /(1.0 + dt2*L ) 
 
-
-!-> MPAN 
-
-      P =   &
-     1.0e-11 * xnew(MACRO2 ) * xnew(NO2 ) 
-
-      L =  &
-     rct(36,k) 
-
-       xnew(MPAN)=  amax1(0.0, ( xold(MPAN) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
-
-!-> NO3 
-
-      P =   &
-     rct(2,k) * xnew(O3 ) * xnew(NO2 )  &
-      !u1 + rctroe(3,k) * xnew(N2O5 )  &
-      + rcmisc(13,k) * xnew(N2O5 )  &
-      + rct(11,k) * xnew(OH ) * xnew(HNO3 )  &
-      + rcphot(IDN2O5,K) * xnew(N2O5 ) 
-
-      L =  &
-     rct(5,k)* xnew(NO )  &
-      + rct(7,k)* xnew(NO2 )  &
-      !u1 + rctroe(2,k)* xnew(NO2 )  &
-      + rcmisc(12,k)* xnew(NO2 )  &
-      + 5.8e-16* xnew(HCHO )  &
-      + 7.8e-13* xnew(ISOP )  &
-      + rcphot(IDNO3,K) 
-
-       xnew(NO3)=  amax1(0.0, ( xold(NO3) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
-
-!-> N2O5 
-
-      P =   &
-     !u1 rctroe(2,k) * xnew(NO2 ) * xnew(NO3 ) 
-     rcmisc(12,k) * xnew(NO2 ) * xnew(NO3 ) 
-
-      L =  &
-     !u1 rctroe(3,k)  &
-     rcmisc(13,k)  &
-! N ch      + 1.0e-5  &
-      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
-      + rcphot(IDN2O5,K) 
-
-       xnew(N2O5)=  amax1(0.0, ( xold(N2O5) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
-
-!-> ISONO3 
-
-      P =   &
-     7.8e-13 * xnew(ISOP ) * xnew(NO3 )  &
-      + 2.0e-11 * xnew(ISONO3H ) * xnew(OH ) 
-
-      L =  &
-     rct(13,k)* xnew(NO )  &
-      + 1.0e-11* xnew(HO2 ) 
-
-       xnew(ISONO3)=  amax1(0.0, ( xold(ISONO3) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
-
-!-> HNO3 
-
-      P =   &
-     !u1 rctroe(4,k) * xnew(NO2 ) * xnew(OH )  &
-     rcmisc(14,k) * xnew(NO2 ) * xnew(OH )  &
-      + 5.8e-16 * xnew(NO3 ) * xnew(HCHO )  & 
-      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
-      L =  &
-     rct(11,k)* xnew(OH )  &
-! N ch     + 1.0e-5  &
-      + rcmisc(10,k) &   ! Coarse pNO3 formation
-      + rcphot(IDHNO3,K) 
-
-       xnew(HNO3)=  amax1(0.0, ( xold(HNO3) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
-
-!-> CH2CCH3 
-
-      P =   &
-     2.0e-11 * xnew(MACRO2 ) * xnew(NO )  &
-      + 3.2e-11 * xnew(CH2CO2HCH3 ) * xnew(OH ) 
-
-      L =  &
-     rct(13,k)* xnew(NO )  &
-      + 1.0e-11* xnew(HO2 ) 
-
-       xnew(CH2CCH3)=  amax1(0.0, ( xold(CH2CCH3) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
+	L1=1.+dt2*L
+	C1=rcmisc(15,k) *   xnew(NO2 ) *dt2
+	P1=P*dt2 - C1*xnew(CH3COO2 )
 
 !-> CH3COO2 
 
@@ -610,7 +518,180 @@
       + rct(26,k)* xnew(HO2 )  &
       + rct(27,k)* xnew(HO2 ) 
 
-       xnew(CH3COO2)=  amax1(0.0, ( xold(CH3COO2) + dt2 * P))  &
+!       xnew(CH3COO2)=  amax1(0.0, ( xold(CH3COO2) + dt2 * P))  &
+!                     /(1.0 + dt2*L ) 
+	L2=1.+dt2*L
+	C2=rcmisc(16,k) *dt2
+	P2=P*dt2 - C2* xnew(PAN )
+	DIVID=1./(L1*L2-C1*C2)
+
+       xnew(PAN)=amax1(0.0, ((xold(PAN)+P1)*L2+ &
+	C1*(xold(CH3COO2)+P2))*DIVID )
+
+       xnew(CH3COO2)=amax1(0.0, ((xold(CH3COO2)+P2)*L1+ &
+	C2*(xold(PAN)+P1))*DIVID )
+
+
+
+
+!-> MPAN 
+
+      P =   &
+     1.0e-11 * xnew(MACRO2 ) * xnew(NO2 ) 
+
+      L =  &
+     rct(36,k) 
+
+!       xnew(MPAN)=  amax1(0.0, ( xold(MPAN) + dt2 * P))  &
+!                     /(1.0 + dt2*L ) 
+	L1=1.+dt2*L
+	C1=1.0e-11 *   xnew(NO2 ) *dt2
+	P1=P*dt2 - C1*xnew(MACRO2 )
+
+
+!-> MACRO2 
+
+      P =   &
+     0.5*rct(35,k) * xnew(MACR ) * xnew(OH )  &
+      + rct(36,k) * xnew(MPAN )  &
+      + 3.7e-11 * xnew(MARO2H ) * xnew(OH ) 
+
+      L =  &
+     1.0e-11* xnew(NO2 )  &
+      + 2.0e-11* xnew(NO )  &
+      + 1.0e-11* xnew(HO2 ) 
+
+!       xnew(MACRO2)=  amax1(0.0, ( xold(MACRO2) + dt2 * P))  &
+!                     /(1.0 + dt2*L ) 
+	L2=1.+dt2*L
+	C2=rct(36,k)*dt2
+	P2=P*dt2 - C2* xnew(MPAN )
+	DIVID=1./(L1*L2-C1*C2)
+
+       xnew(MPAN)=amax1(0.0, ((xold(MPAN)+P1)*L2+ &
+	C1*(xold(MACRO2)+P2))*DIVID )
+
+       xnew(MACRO2)=amax1(0.0, ((xold(MACRO2)+P2)*L1+ &
+	C2*(xold(MPAN)+P1))*DIVID )
+
+
+!-> NO3 
+
+      P =   &
+     rct(2,k) * xnew(O3 ) * xnew(NO2 )  &
+      !u1 + rctroe(3,k) * xnew(N2O5 )  &
+      + rcmisc(13,k) * xnew(N2O5 )  &
+      + rct(11,k) * xnew(OH ) * xnew(HNO3 )  &
+      + rcphot(IDN2O5,K) * xnew(N2O5 ) 
+
+      L =  &
+     rct(5,k)* xnew(NO )  &
+      + rct(7,k)* xnew(NO2 )  &
+      !u1 + rctroe(2,k)* xnew(NO2 )  &
+      + rcmisc(12,k)* xnew(NO2 )  &
+      + 5.8e-16* xnew(HCHO )  &
+      + 7.8e-13* xnew(ISOP )  &
+      + rcphot(IDNO3,K) 
+
+!       xnew(NO3)=  amax1(0.0, ( xold(NO3) + dt2 * P))  &
+!                     /(1.0 + dt2*L ) 
+
+	L1=1.+dt2*L
+	C1=rcmisc(13,k)*dt2 
+	P1=P*dt2 - C1*xnew(N2O5 )  
+
+!-> N2O5 
+
+      P =   &
+     !u1 rctroe(2,k) * xnew(NO2 ) * xnew(NO3 ) 
+     rcmisc(12,k) * xnew(NO2 ) * xnew(NO3 ) 
+
+      L =  &
+     !u1 rctroe(3,k)  &
+     rcmisc(13,k)  &
+! N ch      + 1.0e-5  &
+      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
+      + rcphot(IDN2O5,K) 
+
+!       xnew(N2O5)=  amax1(0.0, ( xold(N2O5) + dt2 * P))  &
+!                     /(1.0 + dt2*L ) 
+
+	L2=1.+dt2*L
+	C2=rcmisc(12,k) * xnew(NO2 )*dt2
+	P2=P*dt2 - C2* xnew(NO3 )
+	DIVID=1./(L1*L2-C1*C2)
+
+       xnew(NO3)=amax1(0.0, ((xold(NO3)+P1)*L2+ &
+	C1*(xold(N2O5)+P2))*DIVID )
+
+       xnew(N2O5)=amax1(0.0, ((xold(N2O5)+P2)*L1+ &
+	C2*(xold(NO3)+P1))*DIVID )
+
+
+
+!-> ISONO3 
+
+      P =   &
+     7.8e-13 * xnew(ISOP ) * xnew(NO3 )  &
+      + 2.0e-11 * xnew(ISONO3H ) * xnew(OH ) 
+
+      L =  &
+     rct(13,k)* xnew(NO )  &
+      + 1.0e-11* xnew(HO2 ) 
+
+       xnew(ISONO3)=  amax1(0.0, ( xold(ISONO3) + dt2 * P))  &
+                     /(1.0 + dt2*L ) 
+
+
+
+!NOynew=xnew(NO)+xnew(NO2)+xnew(PAN)+xnew(MPAN)+xnew(NO3)+&
+!	2*xnew(N2O5)+xnew(ISONO3)
+!
+!
+!Ntotnew=xnew(NO)+xnew(NO2)+xnew(PAN)+xnew(MPAN)+xnew(NO3)+&
+!2*xnew(N2O5)+xnew(ISONO3)
+!
+!Nrel=Ntotold/Ntotnew
+!Nrel=NOy/NOynew
+!Nrelmin=min(Nrelmin,Nrel)
+!Nrelmax=max(Nrelmax,Nrel)
+!Nrel=1.
+!xnew(NO)=xnew(NO)*Nrel
+!xnew(NO2)=xnew(NO2)*Nrel
+!xnew(PAN)=xnew(PAN)*Nrel
+!xnew(MPAN)=xnew(MPAN)*Nrel
+!xnew(NO3)=xnew(NO3)*Nrel
+!xnew(N2O5)=xnew(N2O5)*Nrel
+!xnew(ISONO3)=xnew(ISONO3)*Nrel
+
+
+
+!-> HNO3 
+
+      P =   &
+     !u1 rctroe(4,k) * xnew(NO2 ) * xnew(OH )  &
+     rcmisc(14,k) * xnew(NO2 ) * xnew(OH )  &
+      + 5.8e-16 * xnew(NO3 ) * xnew(HCHO )  & 
+      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
+      L =  &
+     rct(11,k)* xnew(OH )  &
+! N ch     + 1.0e-5  &
+      + rcphot(IDHNO3,K) 
+
+       xnew(HNO3)=  amax1(0.0, ( xold(HNO3) + dt2 * P))  &
+                     /(1.0 + dt2*L ) 
+
+!-> CH2CCH3 
+
+      P =   &
+     2.0e-11 * xnew(MACRO2 ) * xnew(NO )  &
+      + 3.2e-11 * xnew(CH2CO2HCH3 ) * xnew(OH ) 
+
+      L =  &
+     rct(13,k)* xnew(NO )  &
+      + 1.0e-11* xnew(HO2 ) 
+
+       xnew(CH2CCH3)=  amax1(0.0, ( xold(CH2CCH3) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
 
 
@@ -738,8 +819,8 @@
 !-> HCHO 
 
       P =   &
-       !ds 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
-        rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
+       4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
+      + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
       + rct(15,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
       + rct(16,k) * xnew(OH ) * xnew(CH3OH )  &
@@ -1174,12 +1255,12 @@
      !u1 1*(1-0.05-0.15)*rcemis(QRCSO2,K) 
 
       L =  &
-     !ds  rcmisc(9,k) &   ! Eliassen+Saltbones rate
-       2e-12*aqrck(ICLOHSO2,K)* xnew(OH )  &
-      + aqrck(ICLRC1,K)*XNEW(H2O2)  &
-      + aqrck(ICLRC2,K)*XNEW(O3)  &
-      + aqrck(ICLRC3,K)  !ds  Fe-catalysed reaction  &
-      !ds + 4.0e-17* xnew(CH3O2 ) 
+     !u7.1  2e-12*aqrck(ICLOHSO2,K)* xnew(OH )  &
+      rcmisc(9,k) &   ! Eliassen+Saltbones rate
+     !u7.1 + 1*aqrck(ICLRC1,K)*XNEW(H2O2)  &
+     !u7.1 + 1*aqrck(ICLRC2,K)*XNEW(O3)  &
+     !u7.1 + aqrck(ICLRC3,K)  &
+      + 4.0e-17* xnew(CH3O2 ) 
 
        xnew(SO2)=  amax1(0.0, ( xold(SO2) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
@@ -1195,12 +1276,12 @@
 !-> SO4 
 
       P =   &
-      2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-       + aqrck(ICLRC1,K)*XNEW(H2O2) * xnew(SO2 )  &
-       + aqrck(ICLRC2,K)*XNEW(O3) * xnew(SO2 )  &
-       + aqrck(ICLRC3,K) * xnew(SO2 )  &
-     !ds  + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
-     !ds  + rcmisc(9,k) * xnew(SO2) &   ! Eliassen+Saltbones rate
+     !u7.1 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
+     !u7.1  + 1*aqrck(ICLRC1,K)*XNEW(H2O2) * xnew(SO2 )  &
+     !u7.1  + 1*aqrck(ICLRC2,K)*XNEW(O3) * xnew(SO2 )  &
+     !u7.1  + aqrck(ICLRC3,K) * xnew(SO2 )  &
+      + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
+      + rcmisc(9,k) * xnew(SO2) &   ! Eliassen+Saltbones rate
       + 0.05*rcemis(QRCSO2,K) 
       ! L = 0.0
  
@@ -1208,16 +1289,15 @@
        xnew(SO4)=  amax1(0.0,  xold(SO4) + dt2 * P)
 
 
-!-> pNO3 
+!-> NITRATE 
 
-      P =   &
-        rcmisc(10,k) * xnew(HNO3)
-  !  2.*1.0e-5 * xnew(N2O5 )  &
-  !   + 1.0e-5 * xnew(HNO3 ) 
-      L = 0.0
+! N ch      P =   &
+! N ch    2.*1.0e-5 * xnew(N2O5 )  &
+! N ch     + 1.0e-5 * xnew(HNO3 ) 
+      ! L = 0.0
  
 
-       xnew(pNO3)=  amax1(0.0,  xold(pNO3) + dt2 * P)
+! N ch       xnew(NITRATE)=  amax1(0.0,  xold(NITRATE) + dt2 * P)
 
 
 !-> NH3 

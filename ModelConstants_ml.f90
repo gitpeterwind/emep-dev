@@ -25,7 +25,7 @@ module ModelConstants_ml
 !       for days ending at 6am:
   integer, public, parameter :: END_OF_EMEPDAY  = 6  
 
-  real, public, save :: dt_advec  = 1200.0   ! time-step for advection (s)
+  real, public,  parameter :: dt_advec  = 1200.0   ! time-step for advection (s)
 
  !/-- choose temperature range: from 148 K (-125C) ro 333K (+60C).
 

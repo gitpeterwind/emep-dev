@@ -1,5 +1,16 @@
 
 ==============================================================================
+=========== Peter, March 21th 2003, rv1.4.18  ===============================
+==============================================================================
+
+Included variable timestep in Solver.f90
+"Decoupled" variables in ZD_OZONE/My_Reactions.inc:
+(PAN,CH3COO2) ,(MPAN,MACRO2), (NO3,N2O5)
+ModelConstants: declared dt_advec as a parameter
+Dchem is now rate of changes during last dt_advec, instead of absolute change during dt.
+Net_CDF: removed a "+" in units attributes
+
+==============================================================================
 =========== Dave, March 21th 2003, rv1.4.17  ===============================
 ==============================================================================
 
