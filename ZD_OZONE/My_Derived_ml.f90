@@ -209,17 +209,17 @@ private
         D2_O3CF=40, D2_O3DF=41, D2_O3TC=42, D2_O3GR=43, D2_O3WH=44
 
    integer, public, parameter ::  & 
-        NDERIV_3D = 10    & ! Number of 3D derived fields
+        NDERIV_3D = 2     & ! Number of 3D derived fields
        ,D3_O3     = 1    & ! was xnav(o3) array
-       ,D3_NO2    = 2    & ! was xnav(no2) array
-       ,D3_VOC    = 3    & ! was xnav(voc) array
-       ,D3_SO2    = 4    & ! was xnav(voc) array
-       ,D3_PAN    = 5    & ! was xnav(voc) array
-       ,D3_aNO3   = 6    & ! was xnav(voc) array
-       ,D3_HNO3   = 7    & ! was xnav(voc) array
-       ,D3_aNH4   = 8    & ! was xnav(voc) array
-       ,D3_SO4    = 9    &  ! was xnav(voc) array
-       ,D3_H2O2    = 10      ! was xnav(voc) array
+       !,D3_NO2    = 2    & ! was xnav(no2) array
+       !,D3_VOC    = 3    & ! was xnav(voc) array
+       !,D3_SO2    = 4    & ! was xnav(voc) array
+       !,D3_PAN    = 5    & ! was xnav(voc) array
+       !,D3_aNO3   = 6    & ! was xnav(voc) array
+       !,D3_HNO3   = 7    & ! was xnav(voc) array
+       !,D3_aNH4   = 8    & ! was xnav(voc) array
+       !,D3_SO4    = 9    &  ! was xnav(voc) array
+       ,D3_H2O2    = 2      ! was xnav(voc) array
 
    ! We put definitions in f_2d, f_3d, and  data into d_2d, d_3d:
 
