@@ -1,3 +1,19 @@
+
+==============================================================================
+=================== Dave, 27-28 May 2003, rv1.6.2  =============================
+==============================================================================
+
+Output_hourly, and My_Outputs_ml.f90 modified to add headers to outputs, 
+including number, names, etc. - should make it easier to write and use
+processing programs.
+
+Aqueous_ml .. small printout bug fixed
+
+Met_ml - added field surface_precip = rainfall direc from HIRLAM in mm/hr
+
+DryDep_ml, Rsurface_ml, uses surface_precip and logical is_wet instead 
+of pr_acc
+
 =================== Hilde 27th of May rv1.6.1 ==========================
 Aqueous_ml changed with consistent, tabulated lwc
 ==============================================================================

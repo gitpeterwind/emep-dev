@@ -144,7 +144,7 @@ private
        ,DDEP_PM    = 33
 
    integer, public, parameter ::  & 
-        NDERIV_2D = 34 &   ! Number of 2D derived fields
+        NDERIV_2D = 37 &   ! Number of 2D derived fields
        ,D2_AOT40  = 1  &   ! was IAOT_40
        ,D2_AOT60  = 2  &   ! was IAOT_60
        ,D2_ACCSU  = 3  &   ! was NUM_ACCSU 
