@@ -393,9 +393,10 @@ program myeul
        fileName=trim(runlabel1)//'_inst.nc'
        iotyp=IOU_INST
        call Init_new_netCDF(fileName,iotyp) 
-       fileName=trim(runlabel1)//'_hour.nc'
-       iotyp=IOU_HOUR
-       call Init_new_netCDF(fileName,iotyp) 
+!netCDF hourly is initiated in Output_hourly
+!       fileName=trim(runlabel1)//'_hour.nc'
+!       iotyp=IOU_HOUR
+!       call Init_new_netCDF(fileName,iotyp) 
        fileName=trim(runlabel1)//'_day.nc'
        iotyp=IOU_DAY
        call Init_new_netCDF(fileName,iotyp) 

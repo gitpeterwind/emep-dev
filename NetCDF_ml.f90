@@ -201,6 +201,15 @@ real :: izero,jzero
   ! nf90_clobber: protect existing datasets
   ! ncFileID: netcdf ID
 
+!Check that the dimensions are > 0
+if(GIMAXcdf<=0.or.GJMAXcdf<=0.or.KMAXcdf<=0)then
+write(*,*)'WARNING:'
+write(*,*)trim(fileName),' not created. Requested area too small (or outside domain) '
+write(*,*)'sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+return
+endif
+   
+
 write(*,*)'create ',trim(fileName)
 write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
   call check(nf90_create(path = trim(fileName), cmode = nf90_clobber, ncid = ncFileID))
@@ -351,7 +360,7 @@ use ModelConstants_ml,     only : KMAX_MID, current_date
 use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D ,Deriv &
                          ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
 use Dates_ml, only: nmdays,is_leap 
-
+use My_Outputs_ml, only :FREQ_HOURLY 
 
   implicit none
 
@@ -383,15 +392,18 @@ integer :: OUTtype !local version of CDFtype
 !==================================================================
 !  return     !TEMP - to avoid slowdown - suggested by pw, 26 Feb 2003.
 !==================================================================
+
+  i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
+  if(present(ist))i1=max(ist,i1)
+  if(present(ien))i2=min(ien,i2)
+  if(present(jst))j1=max(jst,j1)
+  if(present(jen))j2=min(jen,j2)
+
+!Check that that the area is larger than 0
+if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return 
+
 !make variable name
-  if(ndim==2)then
-!     write(varname,fmt='(A,''_2D'')')trim(def1%name)
      write(varname,fmt='(A)')trim(def1%name)
-  elseif(ndim==3)then
-     write(varname,fmt='(A,''_3D'')')trim(def1%name)
-  else
-     write(varname,fmt='(A,''_XX'')')trim(def1%name)
-  endif
 
 !to shorten the output we can save only the components explicitely named here
 !if(varname.ne.'D2_NO2'.and.varname.ne.'D2_O3' &
@@ -564,12 +576,7 @@ if(me==0)then
   endif
 !  print *,'writing on dataset: ',nrecords
 
-  i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
-  if(present(ist))i1=max(ist,i1)
-  if(present(ien))i2=min(ien,i2)
-  if(present(jst))j1=max(jst,j1)
-  if(present(jen))j2=min(jen,j2)
- !append new values
+!append new values
   if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
 
   if(ndim==3)then
@@ -644,7 +651,7 @@ if(me==0)then
       elseif(iotyp==IOU_DAY)then
          nseconds=nseconds-43200 !24*3600/2=43200
       elseif(iotyp==IOU_HOUR)then
-         nseconds=nseconds-1800  !1800=half hour
+         nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
       elseif(iotyp==IOU_INST)then
            nseconds=nseconds       
       endif

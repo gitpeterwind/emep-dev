@@ -19,8 +19,8 @@
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  NLEVELS_HOURLY, &  ! ds rv1_8_2 
                                  FREQ_HOURLY, &     ! No. hours between outputs
-                                 Asc2D, hr_out      ! Required outputs
-
+                                 Asc2D, hr_out, &   ! Required outputs
+                                 Hourly_ASCII       ! ASCII output or not
    use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
                                 ,li0,li1,lj0,lj1 &  ! u7.5vg FIX
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
@@ -63,7 +63,8 @@
    integer :: ik                       ! Index for vertical level
    integer ist,ien,jst,jen             ! start and end coords
    character(len=20) :: errmsg = "ok"  ! For  consistecny check
-   character(len=20) :: name,netCDFName ! For output file, species names
+   character(len=20) :: name           ! For output file, species names
+   character(len=120) :: netCDFName    ! For netCDF output filename
    character(len=4)  :: suffix         ! For date "mmyy"
    integer, save :: prev_month = -99   ! Initialise with non-possible month
    logical, parameter :: DEBUG = .false.
@@ -118,22 +119,25 @@
 
    if(me == 0 .and. current_date%month /= prev_month ) then
 
-        if ( prev_month > 0 ) close(IO_HOURLY)      ! Close last-months file
+        if ( prev_month > 0 .and. Hourly_ASCII) close(IO_HOURLY)      ! Close last-months file
 
        !/.. Open new file for write-out
 
         write(suffix,fmt="(2i2.2)") current_date%month, &
                            modulo ( current_date%year, 100 )
-        name = "Hourly" // "." // suffix
-        open(file=name,unit=IO_HOURLY,action="write")
+        if(Hourly_ASCII)then
+           name = "Hourly" // "." // suffix
+           open(file=name,unit=IO_HOURLY,action="write")
+        endif
+
         prev_month = current_date%month
 
         netCDFName =trim(runlabel1)//"_hour" // "."// suffix // ".nc"
         call Init_new_netCDF(netCDFName,IOU_HOUR)
 
+        if(Hourly_ASCII)then
        !ds rv1.6.2: Write summary of outputs to top of Hourly file
        !  - remember - with corrected domain limits here
-
         write(IO_HOURLY,*) NHOURLY_OUT, " Outputs"
         write(IO_HOURLY,*) FREQ_HOURLY, " Hours betwen outputs"
         write(IO_HOURLY,*) NLEVELS_HOURLY, "Max Level(s)"    !ds rv1_8_2
@@ -141,7 +145,7 @@
         do ih = 1, NHOURLY_OUT
            write(IO_HOURLY,fmt="(a12,a8,a10,i4,5i4,a13,es12.5,es10.3)") hr_out(ih)
         end do
-
+        endif !Hourly_ASCII
    end if
 
 
@@ -315,6 +319,8 @@
           !nk<1 : no output
        endif
 
+        if(Hourly_ASCII)then
+
       !/ Send to ghourly
 
        call local2global(hourly,ghourly,msnr)
@@ -366,6 +372,8 @@
             end do   ! i
 
        end if  ! me loop
+
+       endif !Hourly_ASCII
 
       end do KVLOOP
       end do HLOOP

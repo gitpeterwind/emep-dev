@@ -1,3 +1,22 @@
+================== Peter     16/12/2003, rv1_9_13 =============================
+
+NB: Default is no binary (felt) output!
+
+My_Outputs_ml: define Hourly_ASCII=.false. and out_binary=.false. in order
+	       		to have only NetCDF output.
+Output_hourly: ASCII Hourly files written only if Hourly_ASCII=true.
+	       netCDFName can be 120 characters
+Output_binary: binary output only if out_binary=true
+
+NetCDF_ml:do not attepmt to write or create files if dimensions are <=0
+	  do not write the _3D suffix in variable names
+          use FREQ_HOURLY to find middle of hourly period
+
+Unimod.f90 : Hourly netCDFfile not initiated here.
+
+grun.pl : removed double definition of femis.dat
+	  create a file RunLog.${runlabel1}.out
+ 
 ================== Dave     13/12/2003, rv1_9_12 =============================
 
 Bug-fix. Submet_ml:
