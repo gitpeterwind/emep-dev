@@ -1,3 +1,9 @@
+=================== Dave, 17  Oct 2003, rv1_8_5 ==============================
+
+Bug-fix:
+ZD_OZONE/My_Emis_ml: Order of QRC assigments should be same as in vocsplit files
+(Of course, I could have changed the vocsplit files, but this was easier!)
+
 =================== Peter, 17  Oct 2003, rv1_8_4 ==============================
 NetCDF_ml,Output_hourly:Allow choice of datatype
 
