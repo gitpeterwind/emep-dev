@@ -1,4 +1,11 @@
-module Nest_ml
+!TO DO:
+!gc_send only before writing to disc
+!interpolate bc (in time)
+!more structured!
+!could save only boundaries which really are outer boundaries
+!write dates on disc?
+
+   module Nest_ml
 !
 !This module performs the reading or writing of data for nested runs
 !
@@ -15,11 +22,16 @@ module Nest_ml
   !
   !
   !
+    use ModelConstants_ml,    only : KMAX_MID   ! vertical extent
     use GenSpec_adv_ml,  only: NSPEC_ADV         ! => No. species 
-    use GenSpec_shl_ml,  only: NSPEC_SHL         ! => No. species 
+!    use GenSpec_shl_ml,  only: NSPEC_SHL         ! => No. species 
+    use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,ISMBEG,JSMBEG &
+                               , me, NPROC,li0,li1,lj0,lj1,limax,ljmax&
+                               , tgi0, tgj0, tlimax, tljmax
 
   implicit none
 
+  integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read
 
   private
 
@@ -28,8 +40,10 @@ module Nest_ml
   public  :: readxn
   public  :: wrtxn
 
-  private  :: Nest3d
+  private  :: readxnfromdisc
+  private  :: updatebc
   private  :: GetGlobalData_Nest         ! Opens, reads bc_data, closes global data
+  private  :: Getdataparameters
   private  :: InterpolationFactors_Nest  ! Gets factors for interpolation
 
 
@@ -42,12 +56,57 @@ module Nest_ml
   real, save, private::xpg,ypg,fig,ang,gridwidth_mg
   integer, save, private::kmaxg, gimaxg,gjmaxg
 
+  integer, parameter :: NDATA=8     !how many data sets in each file
+  integer, parameter :: NHOURSAVE=3 !time between two saves. should be a fraction of 24
+  integer, parameter :: NHOURREAD=3 !time between two reads. should be a fraction of 24
+                                    !and NHOURREAD >= NHOURSAVE
+
+    real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,0:NDATA) :: xn_adv_bnds,xn_adv_bndn !north and south
+    real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,0:NDATA) :: xn_adv_bndw,xn_adv_bnde !west and east
 
 contains
 
   subroutine readxn(indate)
     use Dates_ml,       only : date     ! No. days per year, date-type 
     type(date), intent(in) :: indate           ! Gives year..seconds
+    integer,save  :: NDATAcount=0,first_data=0
+    character*30  :: filename
+
+
+    integer :: errcode,io_num,datafound
+
+    if(MODE /= 2)return
+     if(me==0)   print *,'call to READXN',me
+    if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
+    if(first_data==-1)then
+       first_data=0
+       return
+    endif
+    if(mod(indate%hour,NHOURSAVE)/=0)return
+    NDATAcount=NDATAcount+1
+    if(me==0)print *,'READXN:  NDATAcount=',NDATAcount
+    if(NDATAcount==1)then 
+       !fetch a new dataset from disc
+       write(filename,fmt='(''NestDATA_50km'',3i2.2)')indate%month,indate%day,indate%hour
+       if(me==0)print *,'READXN: will try to find data in ',filename
+       call readxnfromdisc(filename,datafound)
+       if(datafound==0)then
+          !no data was found. continue program without updating BC
+          if(me==0)then
+          print *,'WARNING: READXN: no datafile was found ',filename
+          endif
+          NDATAcount=0
+          return
+       endif
+    endif
+    
+    if(mod(indate%hour,NHOURREAD)==0)then
+    if(me==0)print *,'READXN: update boundaries ',NDATAcount,indate%hour
+    call updatebc(NDATAcount) !update boundary concentrations
+    endif
+
+    if(NDATAcount==NDATA)NDATAcount=0
+    
     return
   end subroutine readxn
 
@@ -55,12 +114,8 @@ contains
 
     !to be  "serialized"
 
-    use ModelConstants_ml,    only : KMAX_MID   ! vertical extent
     use GenSpec_adv_ml, only : NSPEC_ADV         ! => No. species 
-    use GenSpec_shl_ml, only : NSPEC_SHL         ! => No. species 
     use Chemfields_ml,  only : xn_adv, xn_shl    ! emep model concs.
-    use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,ISMBEG,JSMBEG &
-                               , me, NPROC, tgi0, tgj0, tlimax, tljmax
     use Io_ml   ,       only : IO_NEST
     use GridValues_ml,  only : xp,yp,fi,an,GRIDWIDTH_M
     use Dates_ml,       only : date     ! No. days per year, date-type 
@@ -68,16 +123,27 @@ contains
     implicit none
 
     type(date), intent(in) :: indate           ! Gives year..seconds
-    
+
+
+    integer,save  :: NDATAcount=0
     integer  :: n,i,j,k,i0,j0,i1,j1,i2,j2,d,imaxs,jmaxs,alloc_err
     integer  :: iminsgrid,imaxsgrid,jminsgrid,jmaxsgrid
     integer  :: info,msnr1,msnr2
     real, allocatable,dimension(:,:)  :: sl,sb,ir,jr
-    real, allocatable,dimension(:,:,:,:)  :: xn_adv_temp,xn_shl_temp
-    real, allocatable,dimension(:,:,:,:)  :: xn_adv_store,xn_shl_store
+    real, allocatable,dimension(:,:,:,:)  :: xn_adv_temp
+    real, save, allocatable,dimension(:,:,:,:,:)  :: xn_adv_store
     real  :: fis,ans,xps,yps
+    character*30, save  :: filename
+    integer, save  :: my_first_call=0
 
-    return
+    if(MODE /= 1)return
+
+!    print *,'Nest_ml',me,indate%day,indate%hour,indate%seconds
+    if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
+!    if(mod(indate%hour,NHOURSAVE)/=0)return
+
+!    print *,'save data',me,indate%day,indate%hour
+
 
     ! small grid parameters:
 
@@ -87,6 +153,27 @@ contains
     ans   = 11888.44824218750
     xps   = 41.006530761718750
     yps   = 3234.5815429687500
+
+    imaxs = 7
+    jmaxs = 7
+    fis   = -32
+    ans   = 237.73164421375
+    xps   = 43.-82.5
+    yps   = 121.-70.5
+
+    imaxs = 110
+    jmaxs = 110
+    fis   = -32
+    ans   = 5*237.73164421375
+    xps   = -165.+2.
+    yps   = 285.+2.
+
+!    imaxs = 115
+!    jmaxs = 115
+!    fis   = -32
+!    ans   = 10*237.73164421375
+!    xps   = -519.5+1.
+!    yps   = 620.5+1.
 
     allocate(sl(imaxs,jmaxs), stat=alloc_err)
     allocate(sb(imaxs,jmaxs), stat=alloc_err)
@@ -113,8 +200,14 @@ contains
     jminsgrid = int(minval(jr(1:imaxs,1:jmaxs)))
     jmaxsgrid = int(maxval(jr(1:imaxs,1:jmaxs)))+1
 
+    if(my_first_call==0.and.me==0)then
+    write(*,*)minval(ir(1:imaxs,1:jmaxs))
+    write(*,*)minval(ir(1:imaxs,1:jmaxs))
+    write(*,*)int(minval(ir(1:imaxs,1:jmaxs))-0.00001)
+    write(*,*)'small grid ',minval(ir(1:imaxs,1:jmaxs)),minval(jr(1:imaxs,1:jmaxs))
     write(*,*)'small grid ',iminsgrid,imaxsgrid,jminsgrid,jmaxsgrid
     write(*,*)'large grid ',ISMBEG,ISMBEG+GIMAX-1,JSMBEG,JSMBEG+GJMAX-1
+    endif
 
     deallocate(sl, stat=alloc_err)
     deallocate(sb, stat=alloc_err)
@@ -130,7 +223,10 @@ contains
     !     j2 = jmaxsgrid-JSMBEG+1
     j2 = jmaxsgrid-JSMBEG+1-j1+1 !number of cells in j direction
 
-    write(*,*)'i,j of small grid ',i1,i2,j1,j2
+    if(my_first_call==0.and.me==0)then
+       write(*,*)'i,j of small grid ',i1,i2,j1,j2
+       my_first_call=1
+    endif
 
     ! check if the small grid is inside the large grid
     if(i1<1 .or. i1+i2-1 > GIMAX .or. j1<1 .or. j1+j2-1 > GJMAX )then
@@ -144,15 +240,21 @@ contains
     ! 4) gather the data from other processors
     if(me.eq.0)then
        allocate(xn_adv_temp(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID), stat=alloc_err)
-       allocate(xn_shl_temp(NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID), stat=alloc_err)
-       allocate(xn_adv_store(NSPEC_ADV,i2,j2,KMAX_MID), stat=alloc_err)
-       allocate(xn_shl_store(NSPEC_SHL,i2,j2,KMAX_MID), stat=alloc_err)
+       if(NDATAcount==0)then
+          allocate(xn_adv_store(NSPEC_ADV,i2,j2,KMAX_MID,NDATA), stat=alloc_err)
+       endif
     if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in writeconcentrations 4")
 
     endif
 
+    if(me==0.and.NDATAcount==0)then 
+       write(filename,fmt='(''NestDATA_50km'',3i2.2)')indate%month,indate%day,indate%hour
+       print *,'DEFINING FILE ',filename
+    endif
+    if(me.eq.0)NDATAcount=NDATAcount+1
+       
     do d = 1,NPROC-1
-       if(me.eq.0)             write(*,*)d,tgi0(d),tlimax(d),tgj0(d),tljmax(d)
+!       if(me.eq.0)             write(*,*)d,tgi0(d),tlimax(d),tgj0(d),tljmax(d)
 
        if(tgi0(d) <= i1+i2-1 .and. tgi0(d) + tlimax(d)-1 >= i1 .and.&
             tgj0(d) <= j1+j2-1 .and. tgj0(d) + tljmax(d)-1 >= j1) then
@@ -164,27 +266,20 @@ contains
           if(me == d )then
              call gc_rsend(msnr1, NSPEC_ADV*MAXLIMAX*MAXLJMAX*KMAX_MID &
                            , 0, info, xn_adv_temp, xn_adv)	  
-             call gc_rsend(msnr2, NSPEC_SHL*MAXLIMAX*MAXLJMAX*KMAX_MID &
-                           , 0, info, xn_shl_temp, xn_shl)	  
           endif
           if(me == 0 )then
              call gc_rrecv(msnr1,NSPEC_ADV*MAXLIMAX*MAXLJMAX*KMAX_MID &
                               , d, info, xn_adv_temp, xn_adv)
-             call gc_rrecv(msnr2,NSPEC_ADV*MAXLIMAX*MAXLJMAX*KMAX_MID &
-                              , d, info, xn_shl_temp, xn_shl)
              do j = 1, tljmax(d)
                 j0 = tgj0(d)+j-j1
                 if( j0 >= 1 .and. j0 <= j2 ) then
                    do i = 1,tlimax(d)
                       i0 = tgi0(d)+i-i1
                       if( i0 >= 1 .and. i0 <= i2 ) then
-                         write(*,*)d,i,j,i0,j0,i+tgi0(d)-1,j+tgj0(d)-1
+!                         write(*,*)d,i,j,i0,j0,i+tgi0(d)-1,j+tgj0(d)-1
                          do k=1,KMAX_MID
                             do n=1,NSPEC_ADV
-                               xn_adv_store(n,i0,j0,k)=xn_adv_temp(n,i,j,k)
-                            enddo
-                            do n=1,NSPEC_SHL
-                               xn_shl_store(n,i0,j0,k)=xn_shl_temp(n,i,j,k)
+                               xn_adv_store(n,i0,j0,k,NDATAcount)=xn_adv_temp(n,i,j,k)
                             enddo
                          enddo
                       endif
@@ -197,7 +292,7 @@ contains
 
     if(me == 0 )then
     deallocate(xn_adv_temp, stat=alloc_err)
-    deallocate(xn_shl_temp, stat=alloc_err)
+
     if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in writeconcentrations")
     endif
 
@@ -220,10 +315,7 @@ contains
                       write(*,*)d,i,j,i0,j0
                       do k=1,KMAX_MID
                          do n=1,NSPEC_ADV
-                            xn_adv_store(n,i0,j0,k)=xn_adv(n,i,j,k)
-                         enddo
-                         do n=1,NSPEC_SHL
-                            xn_shl_store(n,i0,j0,k)=xn_shl(n,i,j,k)
+                            xn_adv_store(n,i0,j0,k,NDATAcount)=xn_adv(n,i,j,k)
                          enddo
                       enddo
                    endif
@@ -233,103 +325,87 @@ contains
        endif
     enddo
     endif
-    if(me == 0 )then
-       do j0=1,j2
-          do i0=1,i2
-       write(*,*)i0,j0,xn_adv_store(2,i0,j0,17)
-       write(*,*)i0,j0,xn_shl_store(2,i0,j0,17)
-          enddo
-       enddo
-    endif
+
     ! 5) write the relevant part of the concentrations onto disc
 
     if(me.eq.0)then
-       write(*,*)'dimensions: ',NSPEC_ADV, NSPEC_SHL, i2,j2,KMAX_MID
+!       print *,xn_adv_store(2,i0,j0,17,NDATAcount)
+       if(NDATAcount==NDATA)then
+
+       write(*,*)'write new NEST file: ',filename
+       write(*,*)'dimensions: ',NSPEC_ADV, i2,j2,KMAX_MID
        write(*,*)'coordinates: ',xp-ISMBEG-i1+2,yp-JSMBEG-j1+2,fi,an,GRIDWIDTH_M
+       open(unit=IO_NEST,file=filename,form='unformatted',action='write')
 
-       open(unit=IO_NEST,file='concfile',form='unformatted',action='write')
-
-       !       write(IO_NEST)NSPEC_ADV, NSPEC_SHL, GIMAX,GJMAX,KMAX_MID
-       !       write(IO_NEST)xp-ISMBEG+1,yp-JSMBEG+1,fi,an,GRIDWIDTH_M
-       write(IO_NEST)NSPEC_ADV, NSPEC_SHL, i2,j2,KMAX_MID
+       write(IO_NEST)NSPEC_ADV, i2,j2,KMAX_MID
        write(IO_NEST)xp-ISMBEG-i1+2,yp-JSMBEG-j1+2,fi,an,GRIDWIDTH_M
 
-!       write(IO_NEST)xn_adv(1:NSPEC_ADV,i1:i2,j1:j2,1:KMAX_MID)
-!       write(IO_NEST)xn_shl(1:NSPEC_SHL,i1:i2,j1:j2,1:KMAX_MID)
        write(IO_NEST)xn_adv_store
-       write(IO_NEST)xn_shl_store
 
        close(IO_NEST)
 
-       deallocate(xn_adv_store, stat=alloc_err)
-       deallocate(xn_shl_store, stat=alloc_err)
        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in writeconcentrations")
 
+       NDATAcount=0
+       deallocate(xn_adv_store, stat=alloc_err)
+       endif
     endif
     return
   end subroutine wrtxn
 
 
-  subroutine Nest3d(month)
+  subroutine readxnfromdisc(filename,datafound)
 
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     !** DESCRIPTION
     !   read in monthly-average global mixing ratios, and if found, collect the 
-    !   data in  bc_adv, bc_shl arrays for later interpolations
+    !   data in  bc_adv for later interpolations
     !   (NB!!  if mixing ratio by mass the scale by molcular weight)
     !   ds- comment - so far no scaling is done, but this could be done
     !   in Set_bcmap with atomic weights.... for the future..
     !
     ! On the first call, we also run the setup-subroutines
     !____________________________________________________________________________
-    use Chemfields_ml,         only: xn_adv, xn_shl  ! emep model concs.
+    use Chemfields_ml,         only: xn_adv  ! emep model concs.
     use GridValues_ml,         only: gl, gb    ! lat, long
     use Met_ml,                only:     mm5
-    use ModelConstants_ml ,    only: KMAX_MID  ! Number of levels in vertical
-    use Par_ml,                only : &
-         MAXLIMAX, MAXLJMAX, NPROC, limax, ljmax, me &
-         ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
-         ,NOPROC
 
     implicit none
 
-    integer, intent(in) :: month
+    integer, intent(inout) :: datafound
+    character*30, intent(in)  :: filename
+
     integer :: k,i,j     ! loop variables
     integer :: info              !  used in gc_rsend
     integer :: io_num            !  i/o number used for reading global data
 
-    !/ data arrays for boundary data (bcs) - quite large, so NOT saved
-    integer alloc_err1,alloc_err2,alloc_err3,alloc_err
+    integer alloc_err1,alloc_err2,alloc_err3,alloc_err,NDATAcount
 
-    real, allocatable,dimension(:,:,:,:) :: bc_adv
-    real, allocatable,dimension(:,:,:,:) :: bc_shl
+    real, allocatable,dimension(:,:,:,:,:) :: bc_adv
 
-    real, dimension(MAXLIMAX,MAXLJMAX) :: wt_00, wt_01, wt_10, wt_11
-    integer, dimension(MAXLIMAX,MAXLJMAX) :: &
+    real,save, dimension(MAXLIMAX,MAXLJMAX) :: wt_00, wt_01, wt_10, wt_11
+    integer,save, dimension(MAXLIMAX,MAXLJMAX) :: &
          ixp, iyp !  global model coordinates of point (i,j)
 
+
     integer  ::  errcode,n
-
+    integer,save  ::reset3d=0
     
-
-    print *, "CALL TO NEST3d, me, month :", me, month
 
 
     if(me == 0)then
-
-       call Getdataparameters(io_num,errcode)
-       if(errcode /= 0 ) call gc_abort(me,NPROC,"ERROR Nest: Getdataparameters")
+!       print *, "READXN: find dataparameters"
+       call Getdataparameters(filename,errcode)
 
        gridspecifications = &
             (/ xpg,ypg,fig,ang,gridwidth_mg,real(kmaxg),real(gimaxg),real(gjmaxg) /)
 
-       write(*,*)'gridspecifications ',me,xpg,ypg,fig,ang,gridwidth_mg,kmaxg,gimaxg,gjmaxg
-       write(*,*)'dimensions ',NSPEC_ADV ,gimaxg,gjmaxg,KMAX_MID
+!       write(*,*)'gridspecifications ',me,xpg,ypg,fig,ang,gridwidth_mg,kmaxg,gimaxg,gjmaxg
+!       write(*,*)'dimensions ',NSPEC_ADV ,gimaxg,gjmaxg,KMAX_MID
 
     endif
 
-    call gc_rbcast(416, NGRIDSPECI,0,  &
-         NPROC,info,gridspecifications)
+    call gc_rbcast(416, NGRIDSPECI,0,NPROC,info,gridspecifications)
 
     xpg = gridspecifications(1)
     ypg = gridspecifications(2)
@@ -340,26 +416,27 @@ contains
     gimaxg = nint(gridspecifications(7))
     gjmaxg = nint(gridspecifications(8))
 
-    allocate(bc_adv(NSPEC_ADV ,gimaxg,gjmaxg,KMAX_MID), stat=alloc_err)
+    if(gridwidth_mg==0)then
+       !the file was not found
+       datafound=0
+       return
+    endif
+    datafound=1
+
+    allocate(bc_adv(NSPEC_ADV ,gimaxg,gjmaxg,KMAX_MID,NDATA), stat=alloc_err)
     if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "bc_adv alloc failed")
 
-    allocate(bc_shl(NSPEC_SHL ,gimaxg,gjmaxg,KMAX_MID), stat=alloc_err)
-    if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "bc_shl alloc failed")
 
     if(me == 0)then
 
-       call GetGlobalData_Nest(bc_shl,bc_adv,io_num,errcode)
+       call GetGlobalData_Nest(bc_adv,errcode)
        if(errcode /= 0 ) call gc_abort(me,NPROC,"ERROR Nest: GetGlobalData")
-
-       if(me == 0) close(io_num)
 
     endif
 
 
-    call gc_rbcast(417, NSPEC_ADV*gimaxg*gjmaxg*KMAX_MID,0,  &
+    call gc_rbcast(417, NSPEC_ADV*gimaxg*gjmaxg*KMAX_MID*NDATA,0,  &
          NPROC,info,bc_adv)
-    call gc_rbcast(418, NSPEC_SHL*gimaxg*gjmaxg*KMAX_MID,0,  &
-         NPROC,info,bc_shl)
 
 
     call InterpolationFactors_Nest(gb,gl,ixp,iyp,wt_00,wt_01,wt_10,wt_11)
@@ -378,37 +455,95 @@ contains
         int(iyp(limax,ljmax)) < 1 .or. int(iyp(limax,ljmax))+1 > gjmaxg ) then
        write(*,*)'Did not find all the necessary concentrations in file'
        write(*,*)'values needed: '
-       write(*,*)ixp(1,1),iyp(1,1)
+       write(*,*)ixp(1,1),iyp(1,1),wt_00(1,1),wt_01(1,1),wt_10(1,1),wt_11(1,1)
        write(*,*)ixp(limax,1),iyp(limax,1)
        write(*,*)ixp(1,ljmax),iyp(1,ljmax)
        write(*,*)ixp(limax,ljmax),iyp(limax,ljmax)
        write(*,*)'max values found: ',gimaxg ,gjmaxg
-       call gc_abort(me,NPROC, "Nest3d: area to small")
+       call gc_abort(me,NPROC, "Nest3d: area too small")
     endif
 
-    print *, "RESET 3D ", me
     !===================================
-
+    NDATAcount=1
+    if(reset3d==0)then
+       !reset concentrations on the whole domain
+       print *, "NEST: RESET 3D ", me
     do k = 1, KMAX_MID
        do j = 1, ljmax
           do i = 1,limax
              do n=1,NSPEC_ADV
                 xn_adv(n,i,j,k) =  &
-                     wt_00(i,j) * bc_adv(n,ixp(i,j), iyp(i,j), k) +  & 
-                     wt_01(i,j) * bc_adv(n,ixp(i,j), iyp(i,j)+1,k) +  & 
-                     wt_10(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j), k) +  & 
-                     wt_11(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j)+1,k)
-             enddo
-             do n=1,NSPEC_SHL
-                xn_shl(n,i,j,k) =  &
-                     wt_00(i,j) * bc_shl(n,ixp(i,j), iyp(i,j), k) +  & 
-                     wt_01(i,j) * bc_shl(n,ixp(i,j), iyp(i,j)+1,k) +  & 
-                     wt_10(i,j) * bc_shl(n,ixp(i,j)+1,iyp(i,j), k) +  & 
-                     wt_11(i,j) * bc_shl(n,ixp(i,j)+1,iyp(i,j)+1,k)
+                     wt_00(i,j) * bc_adv(n,ixp(i,j), iyp(i,j), k,NDATAcount) +  & 
+                     wt_01(i,j) * bc_adv(n,ixp(i,j), iyp(i,j)+1,k,NDATAcount) +  & 
+                     wt_10(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j), k,NDATAcount) +  & 
+                     wt_11(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j)+1,k,NDATAcount)
              enddo
           enddo
        enddo
     enddo
+    reset3d=1
+    endif
+
+ !save concentrations at boundaries only
+    !save last "old" concentrations
+    xn_adv_bnds(:,:,:,0)=xn_adv_bnds(:,:,:,NDATA)
+    xn_adv_bndn(:,:,:,0)=xn_adv_bndn(:,:,:,NDATA)
+    xn_adv_bndw(:,:,:,0)=xn_adv_bndw(:,:,:,NDATA)
+    xn_adv_bnde(:,:,:,0)=xn_adv_bnde(:,:,:,NDATA)
+    !make and save new boundaries concentrations
+    do k = 1, KMAX_MID
+       do j = 1, lj0
+          do i = 1,limax
+             do n=1,NSPEC_ADV
+                xn_adv_bnds(n,i,k,1:NDATA) =  &
+                     wt_00(i,j) * bc_adv(n,ixp(i,j), iyp(i,j), k,:) +  & 
+                     wt_01(i,j) * bc_adv(n,ixp(i,j), iyp(i,j)+1,k,:) +  & 
+                     wt_10(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j), k,:) +  & 
+                     wt_11(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j)+1,k,:)
+             enddo
+          enddo
+       enddo
+    enddo
+    do k = 1, KMAX_MID
+       do j = lj1, ljmax
+          do i = 1,limax
+             do n=1,NSPEC_ADV
+                xn_adv_bndn(n,i,k,1:NDATA) =  &
+                     wt_00(i,j) * bc_adv(n,ixp(i,j), iyp(i,j), k,:) +  & 
+                     wt_01(i,j) * bc_adv(n,ixp(i,j), iyp(i,j)+1,k,:) +  & 
+                     wt_10(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j), k,:) +  & 
+                     wt_11(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j)+1,k,:)
+             enddo
+          enddo
+       enddo
+    enddo
+    do k = 1, KMAX_MID
+       do j = 1, ljmax
+          do i = 1,li0
+             do n=1,NSPEC_ADV
+                xn_adv_bndw(n,j,k,1:NDATA) =  &
+                     wt_00(i,j) * bc_adv(n,ixp(i,j), iyp(i,j), k,:) +  & 
+                     wt_01(i,j) * bc_adv(n,ixp(i,j), iyp(i,j)+1,k,:) +  & 
+                     wt_10(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j), k,:) +  & 
+                     wt_11(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j)+1,k,:)
+             enddo
+          enddo
+       enddo
+    enddo
+    do k = 1, KMAX_MID
+       do j = 1, ljmax
+          do i = li1,limax
+             do n=1,NSPEC_ADV
+                xn_adv_bnde(n,j,k,1:NDATA) =  &
+                     wt_00(i,j) * bc_adv(n,ixp(i,j), iyp(i,j), k,:) +  & 
+                     wt_01(i,j) * bc_adv(n,ixp(i,j), iyp(i,j)+1,k,:) +  & 
+                     wt_10(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j), k,:) +  & 
+                     wt_11(i,j) * bc_adv(n,ixp(i,j)+1,iyp(i,j)+1,k,:)
+             enddo
+          enddo
+       enddo
+    enddo
+
 
     !===================================
 
@@ -416,40 +551,30 @@ contains
     deallocate(bc_adv,stat=alloc_err2)
     if ( alloc_err2 /= 0 ) call gc_abort(me,NPROC,"de-alloc_err2")
 
-    deallocate(bc_shl,stat=alloc_err3)
-    if ( alloc_err3 /= 0 ) call gc_abort(me,NPROC,"de-alloc_err3")
 
 
-  end subroutine Nest3d
+  end subroutine readxnfromdisc
 
 
-  subroutine GetGlobalData_Nest(bc_shl,bc_adv,io_num,errcode)
+  subroutine GetGlobalData_Nest(bc_adv,errcode)
 
-    use Par_ml,                only : NPROC, me, limax, ljmax 
     use Io_ml,           only: IO_NEST, ios, open_file
-    use ModelConstants_ml, only:     &
-         KMAX_MID                     ! K-value at ground
 
 	implicit none
 
 
-    real, dimension(NSPEC_ADV,gimaxg,gjmaxg,KMAX_MID), &
+    real, dimension(NSPEC_ADV,gimaxg,gjmaxg,KMAX_MID,NDATA), &
          intent(out) :: bc_adv   
-    real, dimension(NSPEC_SHL,gimaxg,gjmaxg,KMAX_MID), &
-         intent(out) :: bc_shl   
-    integer,            intent(in ) :: io_num    !  i/o number
     integer,            intent(inout) :: errcode    !  i/o number
 
-    real, allocatable,dimension(:,:,:,:) :: bc_rawdata_adv   
-    real, allocatable,dimension(:,:,:,:) :: bc_rawdata_shl   
+    real, allocatable,dimension(:,:,:,:,:) :: bc_rawdata_adv   
 
     character(len=30) :: fname    ! input filename
     integer, save     :: oldmonth = -1  
     logical, save                    :: my_first_call = .true.
     integer :: i,j,alloc_err=0
-    integer :: nspec_advg, nspec_shlg
+    integer :: nspec_advg
 
-!    io_num = IO_NEST              ! for closure in BoundCOnditions_ml
 
     errcode = 0
 
@@ -457,81 +582,77 @@ contains
 !       fname='concfile'
 !    open(unit=IO_NEST,file=fname,form='unformatted',action='read')
 
-      allocate(bc_rawdata_adv(NSPEC_ADV ,gimaxg,gjmaxg,kmaxg), &
+      allocate(bc_rawdata_adv(NSPEC_ADV ,gimaxg,gjmaxg,kmaxg,NDATA), &
          stat=alloc_err)
       if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "bc_raw_adv alloc failed")
-      allocate(bc_rawdata_shl(NSPEC_SHL ,gimaxg,gjmaxg,kmaxg), &
-         stat=alloc_err)
-      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "bc_raw_shl alloc failed")
 
     read(IO_NEST) bc_rawdata_adv
-!    read(IO_NEST) bc_rawdata_adv(1:NSPEC_ADV,1:gimaxg,1:gjmaxg,1:kmaxg)
     call vert_interpolation_Nest(NSPEC_ADV,bc_rawdata_adv,bc_adv)
-!    read(IO_NEST) bc_rawdata_shl(1:NSPEC_SHL,1:gimaxg,1:gjmaxg,1:kmaxg)
-    read(IO_NEST) bc_rawdata_shl
-    call vert_interpolation_Nest(NSPEC_SHL,bc_rawdata_shl,bc_shl)
 
-       deallocate(bc_rawdata_adv,stat=alloc_err)
-       if ( alloc_err /= 0 ) call gc_abort(me,NPROC,"adv de-alloc_err")
-       deallocate(bc_rawdata_shl,stat=alloc_err)
-       if ( alloc_err /= 0 ) call gc_abort(me,NPROC,"shl de-alloc_err")
+    close(IO_NEST)
+    
+    deallocate(bc_rawdata_adv,stat=alloc_err)
+    if ( alloc_err /= 0 ) call gc_abort(me,NPROC,"adv de-alloc_err")
+
 
   end subroutine GetGlobalData_Nest
 
 
-  subroutine Getdataparameters(io_num,errcode)
+  subroutine Getdataparameters(fname,errcode)
 
-    use Par_ml,                only : NPROC, me, limax, ljmax 
     use Io_ml,           only: IO_NEST, ios, open_file
-    use ModelConstants_ml, only:     &
-         KMAX_MID                     ! K-value at ground
 
 	implicit none
 
-    integer,            intent(out) :: io_num    !  i/o number
+    integer :: io_num    !  i/o number
     integer,            intent(inout) :: errcode    !  i/o number
 
     character(len=30) :: fname    ! input filename
 
     logical, save                    :: my_first_call = .true.
     integer :: i,j,alloc_err=0
-    integer :: nspec_advg, nspec_shlg
+    integer :: nspec_advg
 
     io_num = IO_NEST              ! for closure in BoundCOnditions_ml
 
     errcode = 0
 
 !       write(unit=fname,fmt="(a6,i2.2,a4)") "gl_ass",month,".dat"
-       fname='concfile'
-    open(unit=IO_NEST,file=fname,form='unformatted',action='read')
+!       fname='concfile'
+       write(*,*)'opening ', fname
+       open(unit=IO_NEST,file=fname,form='unformatted',action='read',status='old',err=90)
+       write(*,*)'opening file succesful: ', fname
 
-!       call open_file(IO_NEST,"r",fname,needed=.true.) 
+       read(IO_NEST,err=90)nspec_advg, gimaxg,gjmaxg,kmaxg
 
+       read(IO_NEST,err=90)xpg,ypg,fig,ang,gridwidth_mg
 
-       read(IO_NEST)nspec_advg, nspec_shlg, gimaxg,gjmaxg,kmaxg
-
-       read(IO_NEST)xpg,ypg,fig,ang,gridwidth_mg
-
-       if(nspec_advg.ne.NSPEC_ADV.or.nspec_shlg.ne.NSPEC_SHL)then
-          write(*,*)'wrong number of species! ',nspec_advg, nspec_shlg
-          write(*,*)'should be ',NSPEC_ADV, NSPEC_SHL
+       if(nspec_advg.ne.NSPEC_ADV)then
+          write(*,*)'wrong number of species! ',nspec_advg
+          write(*,*)'should be ',NSPEC_ADV
           call gc_abort(me,NPROC, "wrong nspec")
        endif
        if(kmaxg.ne.20)then
           write(*,*)'20 levels hardcoded ',kmaxg
           call gc_abort(me,NPROC, "wrong kmaxg")
        endif
+       return
+90 continue
+       errcode = 1
 
+       xpg=0
+       ypg=0
+       fig=0
+       ang=0
+       gridwidth_mg=0
+      write(*,*)'file does not exist ',fname
   end subroutine Getdataparameters
 
 
   subroutine vert_interpolation_Nest(nspec,bc_rawdata,bc_data)
 
-    use ModelConstants_ml, only:     &
-         KMAX_MID                   &  ! K-value at ground
-         ,PT                         ! Top of EMEP model (=1.0e4 Pa)
+    use ModelConstants_ml, only: PT                         ! Top of EMEP model (=1.0e4 Pa)
     use GridValues_ml, only: sigma_mid    ! EMEP sigma values
-    use Par_ml,                only : NPROC, me
 
     !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     !+
@@ -548,8 +669,8 @@ contains
 	implicit none
 
     integer , intent(in)  :: nspec
-    real,  dimension(nspec,gimaxg,gjmaxg,kmaxg), intent(in)  :: bc_rawdata !  data 
-    real,  dimension(nspec,gimaxg,gjmaxg,KMAX_MID), intent(out) :: bc_data    !  data 
+    real,  dimension(nspec,gimaxg,gjmaxg,kmaxg,NDATA), intent(in)  :: bc_rawdata !  data 
+    real,  dimension(nspec,gimaxg,gjmaxg,KMAX_MID,NDATA), intent(out) :: bc_data    !  data 
 
     logical, save                    :: my_first_call = .true.
     integer, dimension(KMAX_MID), save  :: kglob1, kglob2    !  k-levels from global model
@@ -629,8 +750,8 @@ contains
           i1 = 1
           do i = iglbegw,iglendw
 
-             bc_data(:,i1,j1,k) =  c(k) * bc_rawdata(:,i,j,kg+1) +  & 
-                  (1.0-c(k))* bc_rawdata(:,i,j,kg)
+             bc_data(:,i1,j1,k,:) =  c(k) * bc_rawdata(:,i,j,kg+1,:) +  & 
+                  (1.0-c(k))* bc_rawdata(:,i,j,kg,:)
              i1 = i1+1
           enddo
           j1 = j1+1
@@ -644,13 +765,12 @@ contains
   subroutine InterpolationFactors_Nest(gb,gl,ixp,iyp,wt_00, wt_01, wt_10, wt_11)
 
     use GridValues_ml , only : GRIDWIDTH_M
-    use Par_ml,   only : MAXLIMAX, MAXLJMAX
     use Functions_ml, only: bilin_interpolate  ! bilinear interpolation
 
 	implicit none
 
 	real, dimension(MAXLIMAX, MAXLJMAX), intent(in)::gb,gl
-	integer, dimension(MAXLIMAX, MAXLJMAX), intent(in)::ixp,iyp
+	integer, dimension(MAXLIMAX, MAXLJMAX), intent(inout)::ixp,iyp
 	real, dimension(MAXLIMAX, MAXLJMAX), intent(out)::wt_00, wt_01, wt_10, wt_11
         real, dimension(MAXLIMAX, MAXLJMAX) ::x,y
         real ::ismbegg,jsmbegg
@@ -696,7 +816,6 @@ contains
     !              j2(i1,j1): j coordinates in grid2 
     !-------------------------------------------------------------------! 
 
-!    use Par_ml,   only : MAXLIMAX, MAXLJMAX
 
     implicit none
 
@@ -786,6 +905,53 @@ contains
 
    return
   end subroutine ij2lb
+
+  subroutine updatebc(NDATAcount) !update boundary concentrations
+
+    use Chemfields_ml,  only : xn_adv    ! emep model concs.
+
+    implicit none
+
+    integer :: i,j,k,n,NDATAcount
+
+    do k = 1, KMAX_MID
+       do j = 1, lj0
+          do i = 1,limax
+             do n=1,NSPEC_ADV
+                xn_adv(n,i,j,k) =  xn_adv_bnds(n,i,k,NDATAcount)
+             enddo
+          enddo
+       enddo
+    enddo
+    do k = 1, KMAX_MID
+       do j = lj1, ljmax
+          do i = 1,limax
+             do n=1,NSPEC_ADV
+                xn_adv(n,i,j,k) =  xn_adv_bndn(n,i,k,NDATAcount)
+             enddo
+          enddo
+       enddo
+    enddo
+    do k = 1, KMAX_MID
+       do j = 1, ljmax
+          do i = 1,li0
+             do n=1,NSPEC_ADV
+                xn_adv(n,i,j,k) =  xn_adv_bndw(n,j,k,NDATAcount)
+             enddo
+          enddo
+       enddo
+    enddo
+    do k = 1, KMAX_MID
+       do j = 1, ljmax
+          do i = li1,limax
+             do n=1,NSPEC_ADV
+                xn_adv(n,i,j,k) =  xn_adv_bnde(n,j,k,NDATAcount)
+             enddo
+          enddo
+       enddo
+    enddo
+!    print *,'BC updated ',me
+  end subroutine updatebc
 
 end module Nest_ml
 

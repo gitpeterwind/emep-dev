@@ -482,7 +482,7 @@ private
 	use Par_ml , only : limax,ljmax,li0,li1,lj0,lj1,me		&
 			,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC		&
 			,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-        use GridValues_ml , only : xm,xmd, sigma_bnd,sigma_mid
+        use GridValues_ml , only : xm,xm2,xmd, sigma_bnd,sigma_mid,GRIDWIDTH_M
 	use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP,&
                          V_RAIN  !rv1.2
 	use PhysicalConstants_ml, only : KARMAN, XKAP, R, CP, GRAV      &

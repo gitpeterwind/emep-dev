@@ -345,6 +345,23 @@ dt(3)=20.
 dt(4)=20.
 dt(5)=20.
 
+if(dt_advec<520.)then
+   nchem=5+int((dt_advec-100.)/60.)
+   dt=(dt_advec-100.)/(nchem-5)
+   dt(1)=20.
+   dt(2)=20.
+   dt(3)=20.
+   dt(4)=20.
+   dt(5)=20.
+endif
+if(dt_advec<=100.)then
+   nchem=int(dt_advec/20.)+1
+   dt=(dt_advec)/(nchem)
+endif
+if(dt_advec<20.)then
+call gc_abort(me,NPROC, "makedt: dt_advec too small ")
+endif
+
 
 if(nchem > nchemMAX)print *,'WARNING: nchemMAX too small'
 nchem=min(nchemMAX,nchem)

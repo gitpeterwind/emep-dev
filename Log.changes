@@ -1,3 +1,28 @@
+=================== Peter, 23 Sep 2003, 1.8.1 =================================
+
+Several changes for nesting purposes and netcdf. 
+	If you do only "usual" calculations: use EMEP grid
+	and H50 meteo and you will not nest or use NetCDF output etc..
+	then these changes do not affect the results. 
+
+Output_binary: bug for instantaneous output. Should not divide scale by nav 
+               if inst output
+
+NetCDF_ml: write NetCDF output files
+	   new definition of projection_params
+	   Instantaneous concentration file
+	   
+Many changes in Nest_ml
+
+Met_ml: Test ident(17) for defining xp,yp
+        (not used yet but available: calculate sigmadot from a mass 
+                                     conserving principle)
+
+Read_Field: In case of non-EMEP grid transform fields to grid (bug corrected)
+
+Solver: do fewer iterations when dt_advec<520 seconds
+
+
 ===================Dave, 23  Sep 2003  1_8       ===================
 
 Rtagged as rv1.8. The "official" version.
