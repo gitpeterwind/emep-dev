@@ -32,7 +32,8 @@
    use GridValues_ml,    only : i_glob, j_glob   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
    use Radiation_ml,     only : Idirectt, Idiffuse
-   use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF
+   use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF &
+                                ,Int1,Int2,Int4,Real4,Real8 !Output data type to choose
 
    implicit none
 
@@ -69,7 +70,7 @@
    integer :: NLEVELS_HOURLYih
    type(Deriv) :: def1 !for NetCDF
    real :: scale !for NetCDF
-   integer ::nk,klevel,ist,jst,ien,jen !for NetCDF
+   integer ::CDFtype,nk,klevel,ist,jst,ien,jen !for NetCDF
 
     if ( my_first_call ) then
 
@@ -301,14 +302,15 @@
        ien = min(GIMAX,hr_out(ih)%ix2-ISMBEG+1)
        jen = min(GJMAX,hr_out(ih)%iy2-JSMBEG+1)
        nk = min(KMAX_MID,hr_out(ih)%nk)
+       CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
        scale=1.
        if(nk==1)then !write as 2D
        call Out_netCDF(IOU_HOUR,def1,2,identi &
-            ,1,1,hourly(:,:),1,scale,ist,jst,ien,jen)
+            ,1,1,hourly(:,:),1,scale,CDFtype,ist,jst,ien,jen)
        elseif(nk>1)then   !write as 3D
           klevel=KMAX_MID-ik+1
        call Out_netCDF(IOU_HOUR,def1,3,identi &
-            ,1,1,hourly(:,:),1,scale,ist,jst,ien,jen,klevel)
+            ,1,1,hourly(:,:),1,scale,CDFtype,ist,jst,ien,jen,klevel)
        else
           !nk<1 : no output
        endif

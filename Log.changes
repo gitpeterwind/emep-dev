@@ -1,3 +1,6 @@
+=================== Peter, 17  Oct 2003, rv1_8_3 ==============================
+NetCDF_ml,Output_hourly:Allow choice of datatype
+
 =================== Peter, 14  Oct 2003, rv1_8_3 ==============================
 
 My_Outputs_ml: Defined number of vertical levels in Asc2d%nk

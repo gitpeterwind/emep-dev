@@ -40,6 +40,8 @@
   integer,save :: ncFileID_day=closedID  
   integer,save :: ncFileID_month=closedID
   integer,save :: ncFileID_year=closedID
+  integer, public, parameter :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 !CDF typr for output
+
 
   public :: InitnetCDF
   public :: Out_netCDF
@@ -340,7 +342,7 @@ end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale,ist,jst,ien,jen,ik)
+subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale,CDFtype,ist,jst,ien,jen,ik)
 
 use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX
 use ModelConstants_ml,     only : KMAX_MID, current_date  
@@ -358,6 +360,7 @@ real    ,intent(in) :: scale
 !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
 real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
 integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
+integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4) 
 
 character*18 :: varname
 character*8 ::lastmodified_date
@@ -368,9 +371,10 @@ integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
 integer :: i1,i2,j1,j2
 !real*4 :: buff 
 real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID) 
-real (kind = FourByteReal), allocatable,dimension(:,:,:)  :: data3D
+real*8 , allocatable,dimension(:,:,:)  :: Rdata3D
+integer*4, allocatable,dimension(:,:,:)  :: Idata3D
 integer, save ::SavedVar(KMAX_MID)=-999,SavedncFile(KMAX_MID)=-999
-
+integer :: OUTtype !local version of CDFtype
 
 !rv1.4.15 changed:
 !==================================================================
@@ -419,6 +423,8 @@ if(ndim /= 2 .and. ndim /= 3 )then
    call gc_abort(me,NPROC,"error in NetCDF_ml")
 endif
 
+OUTtype=Real4  !default value
+if(present(CDFtype))OUTtype=CDFtype
 
 !buffer the wanted part of data
 ijk=0
@@ -436,34 +442,64 @@ itag=icmp
 if(me.eq.0)then
    
    !allocate a large array (only on one processor)
-   allocate(data3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-   if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
-   
+   if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
+      allocate(Idata3D(GIMAX,GJMAX,kmax), stat=alloc_err)
+      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+   elseif(OUTtype==Real4 .or. OUTtype==Real8)then
+      allocate(Rdata3D(GIMAX,GJMAX,kmax), stat=alloc_err)
+      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+   else
+      WRITE(*,*)'WARNING NetCDF:Data type not supported'
+   endif
+
    !write own data in global array
+   if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
    ijk=0
    do k=1,kmax
       do j = tgj0(me),tgj0(me)+tljmax(me)-1
          do i = tgi0(me),tgi0(me)+tlimax(me)-1
             ijk=ijk+1
-            data3D(i,j,k)=buff(ijk)
+            Idata3D(i,j,k)=buff(ijk)
          enddo
       enddo
    enddo
+   else
+   ijk=0
+   do k=1,kmax
+      do j = tgj0(me),tgj0(me)+tljmax(me)-1
+         do i = tgi0(me),tgi0(me)+tlimax(me)-1
+            ijk=ijk+1
+            Rdata3D(i,j,k)=buff(ijk)
+         enddo
+      enddo
+   enddo
+   endif
 
    do d = 1, NPROC-1
       call gc_rrecv(itag,tlimax(d)*tljmax(d)*kmax, d, info,buff, buff)
 
       !copy data to global buffer
+      if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
       ijk=0
       do k=1,kmax
          do j = tgj0(d),tgj0(d)+tljmax(d)-1
             do i = tgi0(d),tgi0(d)+tlimax(d)-1
                ijk=ijk+1
-               data3D(i,j,k)=buff(ijk)
+               Idata3D(i,j,k)=buff(ijk)
             enddo
          enddo
       enddo
-      
+      else
+      ijk=0
+      do k=1,kmax
+         do j = tgj0(d),tgj0(d)+tljmax(d)-1
+            do i = tgi0(d),tgi0(d)+tlimax(d)-1
+               ijk=ijk+1
+               Rdata3D(i,j,k)=buff(ijk)
+            enddo
+         enddo
+      enddo
+      endif
    enddo
 else
    call gc_rsend(itag,tlimax(me)*tljmax(me)*kmax, 0, info, buff, buff)
@@ -501,7 +537,7 @@ if(me==0)then
 !     print *, 'variable exists: ',varname
   else
      print *, 'creating variable: ',varname!,nf90_strerror(status)
-     call  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1)
+     call  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1,OUTtype)
   endif
 
 
@@ -532,27 +568,53 @@ if(me==0)then
   if(present(jst))j1=max(jst,j1)
   if(present(jen))j2=min(jen,j2)
  !append new values
+  if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
+
   if(ndim==3)then
      if(present(ik))then
 !     print *, 'write: ',i1,i2, j1,j2,ik
         call check(nf90_put_var(ncFileID, VarID, &
-        data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
+        Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
      else
         do k=1,kmax
            call check(nf90_put_var(ncFileID, VarID,&
-           data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
+           Idata3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
         enddo
      endif
   else 
      call check(nf90_put_var(ncFileID, VarID,&
-     data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
+     Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
   endif
 
 !  if(icmp == dim)then
-     deallocate(data3D, stat=alloc_err)
+     deallocate(Idata3D, stat=alloc_err)
      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
 !  endif
 
+  else  
+     !type Real
+  if(ndim==3)then
+     if(present(ik))then
+!     print *, 'write: ',i1,i2, j1,j2,ik
+        call check(nf90_put_var(ncFileID, VarID, &
+        Rdata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
+     else
+        do k=1,kmax
+           call check(nf90_put_var(ncFileID, VarID,&
+           Rdata3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
+        enddo
+     endif
+  else 
+     call check(nf90_put_var(ncFileID, VarID,&
+     Rdata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
+  endif
+
+!  if(icmp == dim)then
+     deallocate(Rdata3D, stat=alloc_err)
+     if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
+!  endif
+
+  endif !type Real
 
 
   call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour0  ))
@@ -585,23 +647,38 @@ end subroutine Out_netCDF
 !_______________________________________________________________________
 
 
-subroutine  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1)
+subroutine  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1,OUTtype)
 
   !create new netCDF variable
 
+use Par_ml,                only : NPROC,me
 use My_Derived_ml, only : Deriv 
 
   implicit none
 
   type(Deriv),     intent(in) :: def1 ! definition of fields
   character (len = *),intent(in) ::varname
-  integer ,intent(in) ::ndim,ncFileID
+  integer ,intent(in) ::ndim,ncFileID,OUTtype
   integer, dimension(:) ,intent(in) ::  ident,ndate
 
   integer :: iDimID,jDimID,kDimID,timeDimID
   integer :: varID,nrecords
-  real (kind = FourByteReal) :: FillValue,scale
+  real :: scale
+  integer :: OUTtypeCDF !NetCDF code for type
 
+  if(OUTtype==Int1)then
+     OUTtypeCDF=nf90_byte
+  elseif(OUTtype==Int2)then
+     OUTtypeCDF=nf90_short
+  elseif(OUTtype==Int4)then
+     OUTtypeCDF=nf90_int
+  elseif(OUTtype==Real4)then
+     OUTtypeCDF=nf90_float
+  elseif(OUTtype==Real8)then
+     OUTtypeCDF=nf90_double
+  else
+     call gc_abort(me,NPROC,"NetCDF_ml: undefined datatype")
+  endif
 
      call check(nf90_redef(ncid = ncFileID))
 
@@ -613,15 +690,15 @@ use My_Derived_ml, only : Deriv
 
      !define new variable
      if(ndim==3)then
-        call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = nf90_float,     &
+        call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,     &
              dimids = (/ iDimID, jDimID, kDimID , timeDimID/), varID=varID ) )
      elseif(ndim==2)then
-        call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = nf90_float,     &
+        call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,     &
              dimids = (/ iDimID, jDimID , timeDimID/), varID=varID ) )
      else
          print *, 'createnewvariable: unexpected ndim ',ndim   
      endif
-     FillValue=0.
+!     FillValue=0.
      scale=1.
      !define attributes of new variable
      call check(nf90_put_att(ncFileID, varID, "long_name",  def1%name ))
@@ -631,8 +708,18 @@ use My_Derived_ml, only : Deriv
      call check(nf90_put_att(ncFileID, varID, "units",   def1%unit))
      call check(nf90_put_att(ncFileID, varID, "class",   def1%class))
      call check(nf90_put_att(ncFileID, varID, "scale_factor",  scale ))
-     call check(nf90_put_att(ncFileID, varID, "_FillValue", FillValue  ))
 
+  if(OUTtype==Int1)then
+     call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_byte  ))
+  elseif(OUTtype==Int2)then
+     call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_short  ))
+  elseif(OUTtype==Int4)then
+     call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_int   ))
+  elseif(OUTtype==Real4)then
+     call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_float  ))
+  elseif(OUTtype==Real8)then
+     call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_double  ))
+  endif
 !     call check(nf90_put_att(ncFileID, varID, "periodlength",   "yearly"))
 
      call check(nf90_put_att(ncFileID, varID, "xfelt_ident",ident ))
