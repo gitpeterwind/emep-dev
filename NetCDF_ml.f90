@@ -27,12 +27,12 @@
   use netcdf
   implicit none
 
-  character (len=25), save :: fileName_inst = 'out_inst.nc'
-  character (len=25), save :: fileName_hour = 'out_hour.nc'
-  character (len=25), save :: fileName_day = 'out_day.nc'
-  character (len=25), save :: fileName_month = 'out_month.nc'
-  character (len=25), save :: fileName_year = 'out_year.nc'
-  character (len=25) :: fileName ,period_type
+  character (len=125), save :: fileName_inst = 'out_inst.nc'
+  character (len=125), save :: fileName_hour = 'out_hour.nc'
+  character (len=125), save :: fileName_day = 'out_day.nc'
+  character (len=125), save :: fileName_month = 'out_month.nc'
+  character (len=125), save :: fileName_year = 'out_year.nc'
+  character (len=125) :: fileName ,period_type
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
   integer,save :: ncFileID_inst=closedID  

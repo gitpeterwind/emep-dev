@@ -1,3 +1,7 @@
+=================== Peter  23/11/2003, rv1_9_9 ==============================
+
+Increased max sizes for Netcdf filenames to 125
+
 =================== Peter  23/11/2003, rv1_9_8 ==============================
 
 Corrected Output_hourly.f90 such that runlabel1 is also written
