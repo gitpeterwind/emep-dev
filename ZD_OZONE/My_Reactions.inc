@@ -74,7 +74,7 @@
       + rct(11,k)* xnew(HNO3 )  &
       !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K)* xnew(SO2 )  &
-        + 2e-12* xnew(SO2 )  &
+      !ds bug  + 2e-12* xnew(SO2 )  &
       + rct(12,k)* xnew(CH4 )  &
       + rcmisc(7,k)* xnew(CO )  &
       + rct(16,k)* xnew(CH3OH )  &
@@ -129,7 +129,7 @@
       + rct(10,k) * xnew(OH ) * xnew(H2 )  &
       !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-      + 2.0e-12* xnew(OH ) * xnew(SO2 )  &
+      !ds bug+ 2.0e-12* xnew(OH ) * xnew(SO2 )  &
   !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
       + rcmisc(7,k) * xnew(OH ) * xnew(CO )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
