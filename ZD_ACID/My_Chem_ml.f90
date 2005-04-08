@@ -360,16 +360,15 @@ end module  GenRates_rct_ml
 
   module  MyChem_ml
 !-----------------------------------------------------------
-!+u2-u3
+!
 ! Module containijng initial setup routine calls (Init_mychem)
 ! and intended to allow the user to specify miscelanneaous
 ! bits of extra code as needed. Here we have so far included
 ! Set_2dBgnd in orer to get xn_2d:bgnd for MADE.
-! u3 - NEW ********
+! 
 ! We have a new subroutine Init_mychem for all model versions
 ! which now does tabulations previously done in Tabulations_ml
 
-!u3 - NEW
   use Functions_ml,   only : Daily_sine  ! to specify so2ox
   use GenSpec_bgn_ml,        only : NSPEC_COL, xn_2d_bgn, &  
                                     IXBGN_OH, IXBGN_CH3COO2  !u7.1  & !u3
@@ -382,12 +381,8 @@ end module  GenRates_rct_ml
 
  use GenRates_rcmisc_ml, only : tab_so2ox    ! u7.1
 
-!hf h2o2
-!u3   use My_BoundConditions_ml, only : set_daily, h2o2conc
-!u3   use Setup_1dfields_ml, only        : amk
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP, KCLOUDTOP &
                                      ,CHEMTMIN, CHEMTMAX  !u3 temp. range
-                                     !u7.4 ,daynumber  !u3
   use Dates_ml,              only : daynumber  !u3
   use PhysicalConstants_ml,  only : PI, DEG2RAD
   implicit none
@@ -397,8 +392,6 @@ end module  GenRates_rct_ml
   public :: Init_mychem          ! Calls model-specific routines
   public :: Set_2dBgnd   ! Sets model-specific background concs.
 
-  !u7.1 real, public, dimension(366), save :: &
-  !u7.1     tab_h2o2   ! Tabulated h2o2 (ppb) for 366 days (leap-year safe!)
 
 
   contains
@@ -439,7 +432,6 @@ end module  GenRates_rct_ml
     end subroutine  Init_mychem
     !------------------------------------------------------------------
 
-    !u3 - added m as argument:
     subroutine Set_2dBgnd(izen,cloud,m)
       integer, intent(in) :: izen
       real,dimension(KMAX_MID), intent(in) :: cloud ! cloud-cover fraction

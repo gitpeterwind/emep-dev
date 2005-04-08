@@ -45,7 +45,6 @@ module My_BoundConditions_ml
   use Met_ml         , only : z_mid        ! height of half layers
   use ModelConstants_ml, only: KMAX_MID    !hf Number of levels in vertical
   use Par_ml, only: NPROC,me
-  !u3 use UiO_ml , only:   NGLOB_BC  & !  - indices from UiO model
   use GlobalBCs_ml , only:   NGLOB_BC  & !  - indices from global model
                       ,IBC_O3          & ! u3 - tmp
                       ,IBC_HNO3,IBC_PAN   &
@@ -60,11 +59,7 @@ module My_BoundConditions_ml
  !/-- subroutines
 !hf h2o2
  public :: My_bcmap            ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
-           !u3 set_daily           !set daily bgn conc of h2o2
  
- !/-- model-type 
- !    for consistency checks, possibly to match label in My_model_ml??
-   character(len=12), public :: MY_MODEL = "uni-made"
 
    logical, public, parameter  :: BGN_2D = .true. !2d bgn species
    logical, private, parameter :: DEBUG_MYBC = .false.
@@ -77,7 +72,6 @@ module My_BoundConditions_ml
 !hf integer, public, parameter ::  NMISC_BC  =  1                  ! H2, OC
  integer, public, parameter ::  NMISC_BC  =  0
 !hf integer, public, parameter :: IBC_H2  = NGLOB_BC + 1   !6s &
-                              !6s ,IBC_OC  = NGLOB_BC + 2
 
  integer, public, parameter ::  NTOT_BC  = NGLOB_BC + NMISC_BC
 
@@ -102,7 +96,6 @@ module My_BoundConditions_ml
 
     real, public, save, dimension(NTOT_BC,NSPEC_ADV) :: bc2xn_adv  ! see above
     real, public, save, dimension(NTOT_BC,NSPEC_BGN) :: bc2xn_bgn ! see above
-!u3 real, public, save ::  h2o2conc
  !-------
  contains
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -122,7 +115,6 @@ module My_BoundConditions_ml
                                       ! divided by length from midpoint of 
                                       ! layer 1 to layer KMAX_MID
 
-!hf MADE    misc_bc            = 0.0  ! Initialise
     bc2xn_adv          = 0.0  ! Initialise
     bc2xn_bgn          = 0.0  ! Initialise
 
@@ -183,7 +175,6 @@ module My_BoundConditions_ml
         do i = NGLOB_BC+1 , NTOT_BC
            if ( sum(bc2xn_adv(i,:))  + &
                 sum(bc2xn_bgn(i,:))      /= 1.0 )          &
-                !u2 call stop_test(.true.,me,NPROC,99,"BC problem - my")
                 call gc_abort(me,NPROC,"BC problem - my")
         end do
 
@@ -217,22 +208,6 @@ module My_BoundConditions_ml
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  end subroutine My_bcmap
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- !u3 set_daily replaced by Daily_halfsine function in Tabulations and
- !u3 Init_mychem in My_Chem_ml.
- !u3 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- !u3 subroutine set_daily
- !u3 !hf Set daily bgn conc. of h2o2
- !u3
- !u3 use ModelConstants_ml,    only : current_date
- !u3 use PhysicalConstants_ml, only : PI
- !u3
- !u3
- !u3 real dd 
- !u3
- !u3 dd = current_date%day
- !u3 h2o2conc = 0.35e-9 + 0.3e-9 * sin (PI * ((365. - dd)/365.))
- !u3 end subroutine set_daily
- !u3 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 end module My_BoundConditions_ml
 !_____________________________________________________________________________
 
