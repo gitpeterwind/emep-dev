@@ -39,7 +39,8 @@ module My_BoundConditions_ml
   use GenSpec_bgn_ml, only: NSPEC_BGN,IXBGN_O3,IXBGN_H2O2,IXBGN_OH,IXBGN_CH3COO2  !hfOH 
   use GenSpec_adv_ml, only: NSPEC_ADV   & ! No. advected species
                            ,IXADV_HNO3,IXADV_SO4,IXADV_PAN  &
-                           ,IXADV_NO,IXADV_NO2, IXADV_SO2
+                           ,IXADV_NO,IXADV_NO2, IXADV_SO2 &
+                           ,IXADV_aNO3, IXADV_pNO3, IXADV_aNH4
   use GridValues_ml,   only : sigma_mid    !sigma layer midpoint
   use Met_ml         , only : z_mid        ! height of half layers
   use ModelConstants_ml, only: KMAX_MID    !hf Number of levels in vertical
@@ -49,7 +50,8 @@ module My_BoundConditions_ml
                       ,IBC_O3          & ! u3 - tmp
                       ,IBC_HNO3,IBC_PAN   &
                       ,IBC_SO2, IBC_SO4   &
-                      ,IBC_NO,IBC_NO2,IBC_H2O2,IBC_OH,IBC_CH3COO2    !u3  hfOH
+                      ,IBC_NO,IBC_NO2,IBC_H2O2,IBC_OH,IBC_CH3COO2 &
+                      ,IBC_aNO3, IBC_pNO3, IBC_aNH4 !u3  hfOH
 
 
  implicit none
