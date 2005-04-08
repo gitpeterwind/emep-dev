@@ -97,7 +97,7 @@ module  My_Outputs_ml
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =    1                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species (fake for ACID)
-    ,NXTRA_SONDE =    3                    ! No. Misc. met. params  (now th)
+    ,NXTRA_SONDE =    3                &   ! No. Misc. met. params  (now th)
     ,N_NOy       =    1                    ! # of N species in NOy NOT USED in ACID?
 
 !dsXNSHL_TEST
