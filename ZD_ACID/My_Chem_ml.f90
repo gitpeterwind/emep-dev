@@ -297,7 +297,9 @@ end module  GenRates_rcmisc_ml
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP &
                                    ,CHEMTMIN, CHEMTMAX  ! u3
 !hf u2:
-  use Radiation_ml,           only : zen
+  !ds apr2005 use Radiation_ml,           only : zen
+  use Met_ml,           only : zen
+  use PHysicalConstants_ml,     only : DAY_ZEN
   implicit none
   private
 !/ ...... ..   ( from GenChem )
@@ -340,8 +342,10 @@ end module  GenRates_rcmisc_ml
   !    8 lowest layers and if rh>0.5
   ! rct(2,13:KMAX_MID) already defined
 
-    if ( zen(i,j)<90. ) rct(2,:)=0. !Day 
-    if ( zen(i,j)>90. ) then !Night
+    if ( zen(i,j)< DAY_ZEN ) then
+       rct(2,:)=0. !Day 
+    !ds apr2005 if ( zen(i,j)>90. ) then !Night
+    else 
        rct(2,KCHEMTOP:12) =0.!Too high up
        do k=KCHEMTOP,KMAX_MID
           if ( rh(k)<0.5 ) rct(2,k)= 0.!Too low rel. hum.
@@ -441,9 +445,8 @@ end module  GenRates_rct_ml
       real,dimension(KMAX_MID), intent(in) :: cloud ! cloud-cover fraction
       real, intent(in), dimension(KCHEMTOP:KMAX_MID) :: m ! air density
 
-!hf MADE
   real    :: diur       ! zenith angle dependency of bgn conc.
-  real    :: radzen     ! zenith angle in radians
+  !ds apr2005 real    :: radzen     ! zenith angle in radians
   real, dimension(KCHEMTOP:KMAX_MID) &
           :: reduce_fac ! Factor to reduce oh and ch3coo
      
@@ -458,9 +461,9 @@ end module  GenRates_rct_ml
      reduce_fac(KCHEMTOP:KCLOUDTOP)   = 1.0
      reduce_fac(KCLOUDTOP+1:KMAX_MID) = 1.0-0.5*cloud(KCLOUDTOP+1:KMAX_MID)
 
-     radzen= izen * DEG2RAD        !convert to radians
+     !ds apr2005 radzen= izen * DEG2RAD        !convert to radians
 
-!     if( izen < 90  ) then !daytime
+!     if( izen < DAY_ZEN  ) then !daytime
 !        diur=exp( -0.25/cos(radzen) )
 !       xn_2d_bgn(IXBGN_OH,:)      = ( 1.e4 + 4.e6*diur)*reduce_fac
 !       xn_2d_bgn(IXBGN_CH3COO2,:) = ( 0.5*(1.e6 + 5.e6*diur) )*reduce_fac

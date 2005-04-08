@@ -1,6 +1,5 @@
 !_____________________________________________________________________________!
  module SeaSalt_ml
-!SeaS
 
   !-----------------------------------------------------------------------! 
   ! Gets Inorganic Aerosols (amN, amS, SO4, ?NO3?) from MADE gas-phase
@@ -8,10 +7,20 @@
   ! based on the SO4 fraction. Particles number is unchanged.
   !st ? Split to SO4, NO3 and NH4? calculates new diameters  ??
   !-----------------------------------------------------------------------!
+  !Created by Svetlana
+  !ds apr2005 - moved "use" stuff to start of module.
  use My_Emis_ml,           only : NSS, QSSFI, QSSCO
- use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
- use PhysicalConstants_ml, only : PI, AVOG
- use Par_ml,               only : me   ! for testing
+
+ use DepVariables_ml,      only:  water                                         !st sept,2004
+ use GenSpec_tot_ml,       only : SSFI, SSCO
+ use GenChemicals_ml,      only : species
+ use Par_ml,               only : MAXLIMAX,MAXLJMAX  & ! => x, y dimensions
+                                 ,me   ! for testing
+ use PhysicalConstants_ml, only : CHARNOCK,GRAV,KARMAN, AVOG  &
+                                 ,PI, AVOG
+ use Met_ml,               only : ustar_nwp, roa, z_bnd, iclass
+ use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
+ use UKdep_ml,             only : landuse_ncodes, landuse_codes, landuse_data   !st sept,2004
 
   implicit none
   private
@@ -41,13 +50,6 @@
 !!.. calculates generation of sea salt based on Maartinsson et al.(2003) 
 !!.. for smaller particles and Monahan et al. for larger ones
 
- use Met_ml,               only : fm, roa, z_bnd, iclass
- use UKdep_ml,             only : landuse_ncodes, landuse_codes, landuse_data   !st sept,2004
- use DepVariables_ml,      only:  water                                         !st sept,2004
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
- use GenSpec_tot_ml,       only : SSFI, SSCO
- use GenChemicals_ml,      only : species
- use PhysicalConstants_ml, only : CHARNOCK,GRAV,KARMAN, AVOG
 
  implicit none
 
@@ -83,11 +85,13 @@
 !st sept,2004..  Obs!  All water is assumed here to be salt water
 !                double checking with the old rough.170 data 
 
-        !ds if ( water(lu) .and. iclass(i,j) == 0) then
         if ( water(lu) ) then
             water_frac = landuse_data (i,j,ilu)  ! grid fraction with water
 
-          ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
+          !ds apr2005 ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
+          ustar = ustar_nwp(i,j)
+
+   !ds QUERY - why no stability correction ??
 
           z0 = CHARNOCK * ustar * ustar/GRAV
           z0 = max(z0,0.01)  ! u7.5vgc 

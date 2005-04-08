@@ -13,6 +13,7 @@
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
   use Dates_ml,              only : date, dayno
   use Emissions_ml,          only :  gridrcemis, KEMISTOP    !hf VOL
+  use Functions_ml,          only :  Tpot_2_T                !ds apr2005
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
   use GenSpec_adv_ml,        only :  NSPEC_ADV
   use GenSpec_shl_ml,        only :  NSPEC_SHL
@@ -24,7 +25,7 @@
   use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, carea, i_glob, j_glob
   use MassBudget_ml,         only :  totem    ! sum of emissions
-  use Met_ml,                only :  roa, th, ps, q, t2, cc3dmax &
+  use Met_ml,                only :  roa, th, ps, q, t2_nwp, cc3dmax &
                                     ,zen, Idirect, Idiffuse
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
@@ -43,7 +44,7 @@
   use Par_ml,                only :  me& !!(me for tests)
 !hf VOL
                              ,gi0,gi1,gj0,gj1,ISMBEG,JSMBEG
-  use PhysicalConstants_ml,  only :  AVOG, XKAP, PI
+  use PhysicalConstants_ml,  only :  AVOG, PI
   use Radiation_ml,          only : & !ds mar2005 zen, Idirectt, Idiffuse, 
                               PARfrac, Wm2_uE  ! ds rv1_6_x for bio
   use Setup_1dfields_ml,     only : &
@@ -114,7 +115,8 @@ contains
 
        pp(k) = PT + sigma_mid(k)*(ps(i,j,1) - PT)
 
-       temp(k) = th(i,j,k,1)*exp(XKAP*log(pp(k)*1.e-5))
+       !ds apr2005 temp(k) = th(i,j,k,1)*exp(XKAP*log(pp(k)*1.e-5))
+       temp(k) = th(i,j,k,1)* Tpot_2_T( pp(k) )
 
        itemp(k) = nint( temp(k) -1.E-9)
 !pw the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
@@ -316,7 +318,7 @@ contains
 
 
 
-  it2m = nint(t2(i,j)-273.15-1.E-9)
+  it2m = nint(t2_nwp(i,j,1)-273.15-1.E-9)
 !pw the "-1.E-9" is put in order to avoid possible different roundings on different machines.
   it2m = max(it2m,1)
   it2m = min(it2m,40)

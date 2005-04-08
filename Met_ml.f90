@@ -10,15 +10,18 @@
 ! October 2001 hf added call to ReadField:::: WITH TKE scheme (Octobar 2004)
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
-use GridValues_ml,     only : xm,xmd, sigma_bnd,sigma_mid
+use Functions_ml,      only : Exner_tab, Exner_nd    ! ds apr2005
+use GridValues_ml,     only : xm,xmd, sigma_bnd,sigma_mid, &
+                               i_glob, j_glob
 use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP, &
-                              KMAX_BND,KMAX_MID,NMET
+                              KMAX_BND,KMAX_MID,NMET, &
+                              DEBUG_i, DEBUG_j
 use Par_ml           , only : MAXLIMAX,MAXLJMAX,NPROC,me  &
                                ,limax,ljmax,li0,li1,lj0,lj1  &
                                ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
                                ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-use PhysicalConstants_ml, only : KARMAN, XKAP, R, CP, GRAV, ROWATER
-use Tabulations_ml , only : TPI,PBAS,PINC
+use PhysicalConstants_ml, only : KARMAN, KAPPA, R, RGAS_KG, CP, GRAV, ROWATER
+!ds apr2005 use Tabulations_ml , only : TPI,PBAS,PINC
 implicit none
 private
 
@@ -81,11 +84,13 @@ private
 ! surface fields
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,NMET) :: &
                      ps      & ! Surface pressure hPa (or Pa- CHECK!)
-                    ,th2m    & ! Temp 2 m   deg. K
+                    !ds apr2005 ,th2m    & ! Temp 2 m   deg. K
+                    ,t2_nwp    & ! Temp 2 m   deg. K
                     ,fh      & ! surf.flux.sens.heat W/m^2   ! ds u7.4vg added
                     ,fl      & ! latent heat flux W/m^2
-                    ,fm      & ! surf. stress  N/m^2
-                    ,ustar     ! pw u3 friction velocity m/s ustar^2 = fm/roa
+                    ,tau       ! surf. stress  N/m^2
+                               ! (ds - was fm - renamed with apr2005 system)
+
 
 
 
@@ -96,8 +101,17 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
                   psurf & !u7.4lu psa  Surface pressure hPa
                  ,surface_precip    & ! Surface precip mm/hr   ! ds rv1.6.2
-                 ,t2&      !u7.4vg temp2m  Temp 2 m   deg. K
+                 !ds apr2005 ,t2&      !u7.4vg temp2m  Temp 2 m   deg. K
                  ,u_ref !wind speed
+
+!ds apr2005 - now calculated in met_derived:
+
+  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
+                  rho_surf    & ! Surface density
+                 ,invL_nwp    & ! inverse Obukhov length
+                 ,Tpot2m      & ! Potential temp at 2m
+                 ,ustar_nwp     ! friction velocity m/s ustar^2 = tau/roa
+
   real,public, save, &
       dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: z_bnd ! height of full layers
   real,public, save, &
@@ -108,8 +122,11 @@ private
        snow,    &  ! monthly snow (1=true), read in MetModel_LandUse
        iclass      ! roughness class ,         "       "       "
 
+  logical, private, parameter ::  MY_DEBUG = .true.
+  logical, private, save      ::  debug_proc = .false.
+  integer, private, save      :: debug_iloc, debug_jloc  ! local coords
 
-  logical, public, save :: foundustar !pw u3
+  logical, public, save :: foundustar !pw Used for MM5-type, where u* but not tau
   logical, public, save :: sdot_at_mid !pw rv1_9_24 . set false if sdot 
                !is defined (when read) at level  boundaries and therefore 
                !do not need to be interpolated.
@@ -133,13 +150,8 @@ private
        ,Idiffuse     &  ! diffuse solar radiation (W/m^2)
        ,Idirect         ! total direct solar radiation (W/m^2)
 
-
-!ds  real, dimension(MAXLIMAX,MAXLJMAX) :: ven !ventilation coefficient, m3
-!hf end tiphys
-
  public :: infield,Meteoread_CDF
  public :: MetModel_LandUse    ! rv1.2 combines old in_isnowc and inpar
- !ds rv1.2 public :: in_isnowc
  public :: metvar
  public :: metint
  public :: tiphys           !hf NEW
@@ -278,7 +290,7 @@ private
              period_of_validity, ps(:,:,nr))
         namefield='temperature_2m'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, th2m(:,:,nr))
+             period_of_validity, t2_nwp(:,:,nr))
         namefield='surface_flux_sensible_heat'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
              period_of_validity, fh(:,:,nr))
@@ -289,8 +301,8 @@ private
         if(period_of_validity=='averaged')fl(:,:,1)=fl(:,:,nr)
         namefield='surface_stress'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, fm(:,:,nr))
-         if(period_of_validity=='averaged')fm(:,:,1)=fm(:,:,nr)
+             period_of_validity, tau(:,:,nr))
+         if(period_of_validity=='averaged')tau(:,:,1)=tau(:,:,nr)
       
 
       end subroutine Meteoread_CDF
@@ -332,7 +344,7 @@ private
 
 !ds u7.4vg fl added
 !	u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
-!	ps(8),th2m(31),fh(36),fl(37),fm(38),ustar(53),trw(845), sst(103)
+!	ps(8),t2_nwp(31),fh(36),fl(37),tau(38),ustar(53),trw(845), sst(103)
 
 !	scaling factor to be read from field file.
 
@@ -343,6 +355,8 @@ private
 	  nr = 1     
 	  u  = 0.0
 	  v  = 0.0
+
+
 	endif
 
 !***********************
@@ -558,7 +572,7 @@ private
 
 	  case (31)
 
-	      call getmetfield(ident(20),itmp,th2m(1,1,nr))
+	      call getmetfield(ident(20),itmp,t2_nwp(1,1,nr))
 
 	  case (36)
 
@@ -570,12 +584,13 @@ private
 
 	  case (38)
 
-	      call getmetfield(ident(20),itmp,fm(1,1,nr))
+	      call getmetfield(ident(20),itmp,tau(1,1,nr)) ! ds was fm
 
 	  case (53) !pw u3
 
               foundustar = .true.
-	      call getmetfield(ident(20),itmp,ustar(1,1,nr))
+	      !ds apr2005 call getmetfield(ident(20),itmp,ustar_nwp(1,1,nr))
+	      call getmetfield(ident(20),itmp,ustar_nwp(1,1))
 
 	  case (103) ! SST
 
@@ -624,9 +639,9 @@ private
         use GridValues_ml , only : xm,xm2,xmd, sigma_bnd,sigma_mid,GRIDWIDTH_M
 	use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP,&
                          V_RAIN  !rv1.2
-	use PhysicalConstants_ml, only : KARMAN, XKAP, R, CP, GRAV      &
+	use PhysicalConstants_ml, only : KARMAN, KAPPA, R, CP, GRAV      &
 			,ROWATER
-	use Tabulations_ml , only : TPI,PBAS,PINC
+	!ds apr2005 use Tabulations_ml , only : TPI,PBAS,PINC
 	implicit none
 
 	integer, intent(in):: numt
@@ -648,7 +663,32 @@ private
         real :: inv_METSTEP     ! ds
 
 	nr = 2
-	if (numt.eq.1) nr = 1
+	if (numt.eq.1) then
+
+          nr = 1
+
+          !-------------------------------------------------------------------
+          !ds apr2005  Initialisations:
+
+          call Exner_tab()
+
+          ! Look for processor containing debug coordinates
+          debug_iloc    = -999
+          debug_jloc    = -999
+
+          do i = 1, limax
+          do j = 1, ljmax
+               if (i_glob(i) == DEBUG_I .and. j_glob(j) == DEBUG_J ) then
+                       debug_proc = .true.
+                       debug_iloc    = i
+                       debug_jloc    = j
+               end if
+          end do
+          end do
+           if( debug_proc ) print *, "DEBUG EXNER me", me, Exner_nd(99500.0)
+          !-------------------------------------------------------------------
+          
+        end if
 
 
         divt = 1./(3600.0*METSTEP)
@@ -736,9 +776,20 @@ private
 
 !     surface temperature to potential temperature 
 
-	    t2(i,j) = th2m(i,j,nr)  !u7.4vg not -273.15
-!su	    th2m(i,j,nr) = th2m(i,j,nr)*(1.e+5/ps(i,j,nr))**(XKAP)
-	    th2m(i,j,nr) = th2m(i,j,nr)*exp(-XKAP*log(ps(i,j,nr)*1.e-5))
+	    !ds apr2005 t2(i,j) = th2m(i,j,nr)  !u7.4vg not -273.15
+!su	    th2m(i,j,nr) = th2m(i,j,nr)*(1.e+5/ps(i,j,nr))**(KAPPA)
+	   !ds apr2005  th2m(i,j,nr) = th2m(i,j,nr)*exp(-KAPPA*log(ps(i,j,nr)*1.e-5))
+
+            rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,nr) ) 
+
+!ds apr2005: For MM5 we get u*, not tau. Since it seems better to
+!             interpolate tau than u*  between time-steps we convert
+
+            if ( foundustar) then
+               tau(i,j,nr)    = ustar_nwp(i,j)*ustar_nwp(i,j)* rho_surf(i,j) 
+            end if
+
+
 	    prhelp_sum = 0.0
 	    prhelp(1) = max(pr(i,j,1),0.)
 
@@ -832,11 +883,16 @@ private
 	do j = 1,ljmax
 	  do i = 1,limax
           p1 = sigma_bnd(KMAX_BND)*(ps(i,j,nr) - PT) + PT
-	    x1 = (p1 - PBAS)/PINC
-	    lx1 = x1
-          exf1(KMAX_BND) = tpi(lx1)                  &
-			+ (x1-lx1)*(tpi(lx1+1) - tpi(lx1))
+
+          !ds apr2005 remove:
+	  ! x1 = (p1 - PBAS)/PINC
+	  ! lx1 = x1
+          ! exf1(KMAX_BND) = tpi(lx1) + (x1-lx1)*(tpi(lx1+1) - tpi(lx1))
+
+          exf1(KMAX_BND) = CP * Exner_nd(p1)   !ds apr2005tpi(lx1)                  &
+
           z_bnd(i,j,KMAX_BND) = 0.0
+
           do k = KMAX_MID,1,-1
 
 !     eddy diffusivity in the surface-layer follows the formulation used 
@@ -848,21 +904,30 @@ private
 !     exner-function of the half-layers
 
             p1 = sigma_bnd(k)*(ps(i,j,nr) - PT) + PT
-	      x1 = (p1 - PBAS)/PINC
-	      lx1 = x1
-	      exf1(k) = tpi(lx1) + (x1-lx1)*(tpi(lx1+1) - tpi(lx1))
+
+             !ds apr2005 remove:
+	     !x1 = (p1 - PBAS)/PINC
+	     !lx1 = x1
+	     !exf1(k) = tpi(lx1) + (x1-lx1)*(tpi(lx1+1) - tpi(lx1))
+
+	      exf1(k) = CP * Exner_nd( p1 ) !ds apr2005
+
             p2 = sigma_mid(k)*(ps(i,j,nr) - PT) + PT
-	      x2 = (p2 - PBAS)/PINC
-	      lx2 = x2
+
+             !ds apr2005 remove:
+	     !x2 = (p2 - PBAS)/PINC
+	     !lx2 = x2
+	     !exf2(k) = tpi(lx2) + (x2-lx2)*(tpi(lx2+1) - tpi(lx2))
 
 !     exner-function of the full-levels
 
-	      exf2(k) = tpi(lx2) + (x2-lx2)*(tpi(lx2+1) - tpi(lx2))
+	      exf2(k) = CP * Exner_nd(p2)  !ds apr2005
 
 !     height of the half-layers ! full layers ???
 
             z_bnd(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
 			(exf1(k+1) - exf1(k)))/GRAV
+
 
 !     height of the full levels. !half layers??
 
@@ -872,7 +937,7 @@ private
             roa(i,j,k,nr) = CP*((ps(i,j,nr) - PT)*sigma_mid(k) + PT)/      &
 			(R*th(i,j,k,nr)*exf2(k))
 
-	    enddo
+          enddo  ! k
 
 !-----------------------------------------------------------------------
 
@@ -980,6 +1045,13 @@ private
 	  enddo
 	enddo
 
+        if( MY_DEBUG .and. debug_proc ) then
+           print *, "DEBUG meIJ" , me, limax, ljmax
+           do k = 1, KMAX_MID
+              print "(a12,2i3,2f12.4)", "DEBUG Z",me, k, &
+                  z_bnd(debug_iloc,debug_jloc,k), z_mid(debug_iloc,debug_jloc,k)
+           end do
+        end if
 
 !     Horizontal velocity divided by map-factor.
      
@@ -997,10 +1069,9 @@ private
        enddo
        
        call met_derived !compute derived meteo fields
+
        call tiphys(numt) 
 
-       return
-       
      end subroutine metvar
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1042,10 +1113,10 @@ private
 
 	  ps(:,:,1) = ps(:,:,1) 				&
 			+ (ps(:,:,2) - ps(:,:,1))*div
-	  th2m(:,:,1) = th2m(:,:,1) 				&
-			+ (th2m(:,:,2) - th2m(:,:,1))*div
+	  t2_nwp(:,:,1) = t2_nwp(:,:,1) 				&
+			+ (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
 !u7.4vg - note we need pressure first
-          t2(:,:)    =   th2m(:,:,1) * exp(XKAP*log(psurf(:,:)*1.e-5))
+!ds apr2005 t2(:,:)    =   th2m(:,:,1) * exp(KAPPA*log(psurf(:,:)*1.e-5))
 
 	  fh(:,:,1) = fh(:,:,1) 				&
 			+ (fh(:,:,2) - fh(:,:,1))*div
@@ -1053,8 +1124,8 @@ private
 	  fl(:,:,1) = fl(:,:,1) 				&
 			+ (fl(:,:,2) - fl(:,:,1))*div
 
-	  fm(:,:,1) = fm(:,:,1) 				&
-			+ (fm(:,:,2) - fm(:,:,1))*div
+	  tau(:,:,1) = tau(:,:,1) 				&
+			+ (tau(:,:,2) - tau(:,:,1))*div
 
 !SST
 	  sst(:,:,1)   = sst(:,:,1) 				&
@@ -1082,13 +1153,13 @@ private
 
 	  ps(:,:,1) = ps(:,:,2)
 	  psurf(:,:) = ps(:,:,1)   ! u7.4vg
-	  th2m(:,:,1) = th2m(:,:,2)
+	  t2_nwp(:,:,1) = t2_nwp(:,:,2)
 
 !u7.4vg - note we need pressure first
-          t2(:,:)    =   th2m(:,:,1) * exp(XKAP*log(psurf(:,:)*1.e-5))
+!ds apr2005 t2(:,:)    =   th2m(:,:,1) * exp(KAPPA*log(psurf(:,:)*1.e-5))
 
 	  fh(:,:,1) = fh(:,:,2)
-	  fm(:,:,1) = fm(:,:,2)
+	  tau(:,:,1) = tau(:,:,2)
 !ds u7.4vg fl added
 	  fl(:,:,1) = fl(:,:,2)
 
@@ -1117,6 +1188,7 @@ private
 
      implicit none
      integer ::i,j
+     logical :: DEBUG_DERIV = .true.
 
      do j = 1,ljmax
         do i = 1,limax
@@ -1136,6 +1208,48 @@ private
            
         enddo  
      enddo
+
+   !ds apr2005
+   ! Tmp ustar solution. May need re-consideration for MM5 etc., but
+   ! basic principal should be that fm is interpolated with time, and
+   ! ustar derived from this.
+
+     !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
+      forall( i=1:limax, j=1:ljmax ) 
+           rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,1) ) 
+      end forall
+
+      if(.not. foundustar)then
+         forall( i=1:limax, j=1:ljmax ) 
+            ustar_nwp(i,j)   = sqrt( tau(i,j,1)/rho_surf(i,j) )
+         end forall
+      endif
+
+
+      forall( i=1:limax, j=1:ljmax ) 
+
+
+          ustar_nwp(i,j) = max( ustar_nwp(i,j), 1.0e-5 )
+
+          invL_nwp(i,j)  = KARMAN * GRAV * fh(i,j,1)/ &
+             (CP*rho_surf(i,j)* ustar_nwp(i,j)*ustar_nwp(i,j)*ustar_nwp(i,j) * t2_nwp(i,j,1))
+
+      !.. we limit the range of 1/L to prevent numerical and printout problems
+      !.. and because I don't trust HIRLAM enough.
+      !   This range is very wide anyway.
+
+         invL_nwp(i,j)  = max( -1.0, invL_nwp(i,j) ) !! limit very unstable
+         invL_nwp(i,j)  = min(  1.0, invL_nwp(i,j) ) !! limit very stable
+
+      end forall
+      if ( DEBUG_DERIV .and. debug_proc ) then
+          i = debug_iloc
+          j = debug_jloc
+          print *, "MET_DERIV DONE ", me, ustar_nwp(i,j), invl_nwp(i,j), rho_surf(i,j)
+      end if
+     !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+
 
    end subroutine met_derived
 
@@ -1248,7 +1362,7 @@ private
         use ModelConstants_ml, only : KMAX_MID ,KMAX_BND,PT
         use GridValues_ml , only : sigma_bnd,sigma_mid
         use Par_ml, only :limax,ljmax,MAXLIMAX,MAXLJMAX
-        use PhysicalConstants_ml, only :CP,PI,KARMAN,GRAV,XKAP,R
+        use PhysicalConstants_ml, only :CP,PI,KARMAN,GRAV,KAPPA,R
 !z_mid, z_bnd Met_ml
 !c
 !c	file: met.eulmet-mnd.f
@@ -1352,7 +1466,7 @@ private
 !c	sigma_mid	: height of the full-sigma layers
 !c	sm	: height of the surface layer in s-coordinates (4% of H(ABL), m
 !c	th	: potensial temperature (theta), K
-!c	th2m	: potensial temperature at 2m height, K
+!c	t2_nwp	: potensial temperature at 2m height, K
 !c	thadj	: adjustable surface temperature, K
 !c	thsrf	: potensial temperature at the surface, K
 !c	trc	: helping variable telling whether or not unstable ABL exists
@@ -1376,7 +1490,7 @@ private
 !c	x12	: mixing length squared, m2
 !c	xfac	: helping variable for reducing concentrations to 1m values
 !c	xfrco	: parameter in the Kz model
-!c	XKAP	: r/CP (-)
+!c	KAPPA	: r/CP (-)
 !c	KARMAN	: von Karmans constant
 !c	xkdz	: the vertical derivative of xkhs at hs, m/s
 !!              : i.e. vertical gradient of xkhs
@@ -1445,7 +1559,7 @@ private
 !!                                    this level is assumed to be
 !!                                    the top of Prandtl-layer (LAM50E)
 !c
-!c sigma_bnd(KMAX_BND) = 1- - - - s - - - - - sdot(KMAX_BND) = 0, ps, th2m, fh, 
+!c sigma_bnd(KMAX_BND) = 1- - - - s - - - - - sdot(KMAX_BND) = 0, ps, t2_nwp, fh, 
 !!                ///////////////////        fm, mslp, xksig(KMAX_MID)=0, 
 !!                                           exns(KMAX_BND), zs_bnd(KMAX_BND), 
 !!                                           pr(KMAX_BND),xksm(KMAX_BND)=0.
@@ -1461,8 +1575,6 @@ private
  logical, parameter :: DEBUG_KZ = .false.
  logical, parameter :: PIELKE_KZ = .true.    ! Default
  logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP STILL!!!!
- logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
-
 
 
 !definer alle dimensjoner med MAXLIMAX,MAXLJMAX
@@ -1472,7 +1584,8 @@ private
  real, dimension(MAXLIMAX,KMAX_BND)::risig,xksm,pz
  real, dimension(MAXLIMAX)::zis,delq,thsrf,trc,pidth,dpidth,xkhs,xkdz,xkzi,&
                             hs,xkh100
- real, dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,roas,uabs,vdfac
+ !ds apr2005 real, dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,roas,uabs,vdfac
+ real, dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,uabs,vdfac
  real ::lim,xdthdz,zmmin,zimin,zlimax,kzmin,kzmax,sm,pref,xtime,umax,eps,ric,&
         ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,dvdz,xl2,uvhs,zimhs,&
         zimz,zmhs,ux0,fac,fac2,dex12,ro
@@ -1532,7 +1645,8 @@ private
 !c..pressure (pa)
         p = PT + sigma_mid(k)*(ps(i,j,nr) - PT)
 !c..exner (j/k kg)
-        exnm(i,j,k)=CP*(p/pref)**XKAP
+        !ds apr2005   exnm(i,j,k)=CP*(p/pref)**KAPPA
+        exnm(i,j,k)= CP * Exner_nd(p)
       end do
     end do
   end do
@@ -1555,7 +1669,8 @@ private
        do i=1,limax
           p = PT + sigma_bnd(k)*(ps(i,j,nr) - PT)
           pz(i,k) = p
-          exns(i,j,k)=CP*(p/pref)**XKAP  
+          !ds apr2005 exns(i,j,k)=CP*(p/pref)**KAPPA  
+          exns(i,j,k)= CP * Exner_nd(p)
        end do
      end do
 !c
@@ -2204,7 +2319,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
                    pblht ,            &! PBL (Holstag, 1990) (m)    
                    h_flux,            &! Sensible heat flux  (W/m2)
                    ust_r ,            &! Friction velocity (m/s) 
-                   ro_sur,            &! Air density (kg/m3)
+                   !ds apr2005 ro_sur,            &! Air density (kg/m3)
                    mol   ,            &! Monin-obukhov length (m)
                    wstar               ! Convective velocity (m/s)
                                                        
@@ -2287,24 +2402,27 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
       do i=1,limax
        do j=1,ljmax
-         ro_sur(i,j)=ps(i,j,nr)/(XKAP*th2m(i,j,nr)*                     &
-                     CP*(ps(i,j,nr)/REFPR)**XKAP)      ! Surface density
-           if(foundustar) then
-             ust_r(i,j)=ustar(i,j,1)
-           else
-             ust_r(i,j)=SQRT(fm(i,j,nr)/ro_sur(i,j))
-             ust_r(i,j)=AMAX1(ust_r(i,j),0.00001)
-           endif
-         u_s=ust_r(i,j)
+         !ds apr2005 BUG anyway? for ro_sur ?
+         !ds apr2005 ro_sur(i,j)=ps(i,j,nr)/(KAPPA*t2_nwp(i,j,nr)*                     &
+                     !ds apr2005 CP*(ps(i,j,nr)/REFPR)**KAPPA)      ! Surface density
+           !ds apr2005 if(foundustar) then
+           !ds apr2005   ust_r(i,j)=ustar(i,j,1)
+           !ds apr2005 else
+           !ds apr2005   ust_r(i,j)=SQRT(fm(i,j,nr)/ro_sur(i,j))
+           !ds apr2005   ust_r(i,j)=AMAX1(ust_r(i,j),0.00001)
+           !ds apr2005 endif
+         !ds apr2005 u_s=ust_r(i,j)
+         u_s=ustar_nwp(i,j)
          mol(i,j)=-(ps(i,j,nr)*u_s*u_s*u_s)/                        &
-                   (KARMAN*GRAV*h_flux(i,j)*XKAP)
+                   (KARMAN*GRAV*h_flux(i,j)*KAPPA)
        enddo
       enddo
 
 !     Calculate the convective velocity (wstar)
       do i=1,limax
        do j=1,ljmax
-        wstar(i,j)=GRAV*h_flux(i,j)*pzpbl(i,j)/ro_sur(i,j)/CP/th(i,j,KMAX_MID,nr)
+        !ds apr2005 wstar(i,j)=GRAV*h_flux(i,j)*pzpbl(i,j)/ro_sur(i,j)/CP/th(i,j,KMAX_MID,nr)
+        wstar(i,j)=GRAV*h_flux(i,j)*pzpbl(i,j)/rho_surf(i,j)/CP/th(i,j,KMAX_MID,nr)
            if(wstar(i,j) < 0.) then
             wstar(i,j)=-ABS(wstar(i,j))**(0.3333)
            else
@@ -2330,7 +2448,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
        if (h_flux(i,j) < 0.0) then
         tconv=0.0                                   ! Holstlag et al. (1990)
        else
-        tconv=8.5*h_flux(i,j)/ro_sur(i,j)/CP/wss    !Conversion to kinematic flux
+        !ds apr2005 tconv=8.5*h_flux(i,j)/ro_sur(i,j)/CP/wss    !Conversion to kinematic flux
+        tconv=8.5*h_flux(i,j)/rho_surf(i,j)/CP/wss    !Conversion to kinematic flux
       endif
 
       do k=KMAX_MID,1,-1
@@ -2536,7 +2655,6 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
  integer, intent(in) :: nr
 
-
  real, intent(in) :: zimin        &
                     ,KZ_MINIMUM   &
                     ,KZ_MAXIMUM
@@ -2553,7 +2671,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
          ,xfrco  &
          ,exfrco &
          ,sm     &
-         ,ux0    &
+         ,ux0    &   ! local ustar
+         ,ux3    &   ! ustar**3, ds apr2005
          ,hsl    &
          ,hsurfl &
          ,zimhs  &
@@ -2575,8 +2694,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
                                 ,hs      
 
 
-  real, dimension(MAXLIMAX,MAXLJMAX) ::roas   &
-                                      ,help
+  real, dimension(MAXLIMAX,MAXLJMAX) :: & !ds apr2005 roas   &
+                                       help
 
       sm = 0.04
 
@@ -2600,10 +2719,13 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !c...................................................................
 !c..air density at ground level is always calculated diagnostically:
 !c
-         roas(i,j)=ps(i,j,nr)/(XKAP*th2m(i,j,nr)*exns(i,j,KMAX_BND))
+         !ds apr2005 roas(i,j)=ps(i,j,nr)/(KAPPA*th2m(i,j,nr)*exns(i,j,KMAX_BND))
+
+         ux0 = ustar_nwp(i,j)   !ds apr2005
+         ux3 = ux0*ux0*ux0      !ds apr2005
 
 
-         if(ziu(i,j).ge.zimin) then
+         if(ziu(i,j) >= zimin) then
 !c
 !c..........................
 !c..unstable surface-layer.:
@@ -2612,17 +2734,16 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
             hs(i)=sm*ziu(i,j)
 !c..u*
 !c
-            if(foundustar)then                      
-               ux0 = ustar(i,j,1)
-            else
-               ux0 = sqrt(fm(i,j,nr)/roas(i,j))
-            endif
-
-            ux0=amax1(ux0,0.00001)
+            !ds apr2005 if(foundustar)then                      
+            !ds apr2005    ux0 = ustar(i,j,1)
+            !ds apr2005 else
+            !ds apr2005    ux0 = sqrt(fm(i,j,nr)/roas(i,j))
+            !ds apr2005 endif
+            !ds apr2005 ux0=amax1(ux0,0.00001)
 
 !c..hsl=hs/l where l is the monin-obhukov length
-            hsl=KARMAN*GRAV*hs(i)*fh(i,j,nr)*XKAP &
-             /(ps(i,j,nr)*ux0*ux0*ux0)
+            hsl=KARMAN*GRAV*hs(i)*fh(i,j,nr)*KAPPA &
+             /(ps(i,j,nr)*ux3)
 
 
            !ds rv1_7_2 changes: use simple Garratt \Phi function
@@ -2632,11 +2753,12 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
                xkdz(i)=xkhs(i)*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs(i)        
 
 !Hilde&Anton
-!pw & hf            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
+!pw & hf            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
 !pw & hf                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
-            !ds hsurfl=KARMAN*GRAV*100.*fh(i,j,nr)*XKAP&
-            hsurfl=KARMAN*GRAV*h100*fh(i,j,nr)*XKAP&
-                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
+            !ds hsurfl=KARMAN*GRAV*100.*fh(i,j,nr)*KAPPA&
+            hsurfl=KARMAN*GRAV*h100*fh(i,j,nr)*KAPPA&
+                 &             /(ps(i,j,nr)*ux3)
+                 !ds apr2005 &             /(ps(i,j,nr)*ux0*ux0*ux0)
 
                !ds xkh100(i)=ux0*KARMAN*100.*sqrt(1.-16.*hsurfl) !/Pr=1.00
                xkh100(i)=ux0*KARMAN*h100*sqrt(1.-16.*hsurfl)
@@ -2652,12 +2774,13 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !c..height of surface layer
             hs(i)=sm*zixx(i,j)
 !c..u*
-            ux0=sqrt(fm(i,j,nr)/roas(i,j))
-            ux0=amax1(ux0,0.00001)
+            !ds apr2005 ux0=sqrt(fm(i,j,nr)/roas(i,j))
+            !ds apr2005 ux0=amax1(ux0,0.00001)
 !c
 !c..hsl=hs/l where l is the monin-obhukov length
-            hsl=KARMAN*GRAV*hs(i)*amax1(0.001,fh(i,j,nr))*XKAP&
-             /(ps(i,j,nr)*ux0*ux0*ux0)
+            hsl=KARMAN*GRAV*hs(i)*amax1(0.001,fh(i,j,nr))*KAPPA&
+              /(ps(i,j,nr)*ux3)
+             !ds apr2005 /(ps(i,j,nr)*ux0*ux0*ux0)
 
 
             !xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(0.74+4.7*hsl)   
@@ -2667,7 +2790,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
     ! Should apply PhiM for all layers below:
     !       if (hs(i) > zs_bnd(i,j,KMAX_MID) ) then
     !         do k = KMAX_MID, nh1(i), -1
-    !            hsl=KARMAN*GRAV*zs_bnd(i,j,k)*amax1(0.001,fh(i,j,nr))*XKAP&
+    !            hsl=KARMAN*GRAV*zs_bnd(i,j,k)*amax1(0.001,fh(i,j,nr))*KAPPA&
     !             /(ps(i,j,nr)*ux0*ux0*ux0)
     !            xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)   
     !         end do
@@ -2676,8 +2799,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
          endif
 !hf Hilde&Anton
-            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*XKAP&
-                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
+            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
+                 &             /(ps(i,j,nr)*ux3)   !ds apr2005 - ux3
             !Kz_min(i,j)=1.35*ux0*KARMAN*100./(0.74+4.7*hsurfl)
             !ds Kz_min(i,j)=ux0*KARMAN*100./(1.00+5.0*hsurfl)
             Kz_min(i,j)=ux0*KARMAN*h100/(1.00+5.0*hsurfl)

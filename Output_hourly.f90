@@ -30,7 +30,7 @@
                                 ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
    use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   use Met_ml,           only : t2,th, roa, surface_precip, &
+   use Met_ml,           only : t2_nwp,th, roa, surface_precip, &
                                    Idirect, Idiffuse ! ds mar2005
    use GenSpec_shl_ml ,  only : NSPEC_SHL  ! Maps indices
    use GenChemicals_ml , only : species                    ! Gives names
@@ -234,7 +234,7 @@
 
           case ( "T2_C   " )        ! No cfac for short-lived species
             forall ( i=1:limax, j=1:ljmax)
-               hourly(i,j) = t2(i,j) - 273.15     ! Skip Units conv.
+               hourly(i,j) = t2_nwp(i,j,1) - 273.15     ! Skip Units conv.
             end forall
 
           case ( "theta  " )        ! No cfac for short-lived species

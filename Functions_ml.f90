@@ -15,6 +15,7 @@ module Functions_ml
 !   History:
 !   ds - 2000-Jan. 2001
 !____________________________________________________________________
+  use PhysicalConstants_ml, only : KAPPA, PI
   implicit none
   private
 
@@ -30,7 +31,25 @@ module Functions_ml
 
   public :: StandardAtmos_kPa_2_km   ! US Standard Atmosphere conversion
 
- !/-- Micromet (Aerodynamic) routines
+
+ !/- Exner subroutines: ------------------------------------------------------
+
+ public :: Exner_nd        ! (p/P0)**KAPPA
+ public :: Tpot_2_T        ! Same as Exner_nd - but easier to remember
+ public :: T_2_Tpot        ! Inverse as Exner_nd
+ public :: Exner_tab       ! Tabulation. Must be called first
+
+
+ !/- Interpolation constants
+
+ real, private, parameter  ::    &
+       PINC=1000.0              &  
+      ,P0  =1.0e5               &    ! Standard pressure
+      ,PBAS=-PINC
+
+ real, save, private, dimension(131) ::  tab_exf  ! Tabulated Exner
+
+ !/-- Micromet (Aerodynamic) routines ----------------------------------------
 
   public :: rh2vpd
 
@@ -62,12 +81,6 @@ module Functions_ml
      module procedure bilin_interp_elem
   end interface
 
-
-  !/-- define PI here rather than use PhysicalCOnstants_ml, to
-  !    preserve self-sufficiency
-
-  real, public, parameter  ::    &
-       PI      = 3.14159265358979312000   ! pi, from 4.0*atan(1.) on cray
 
 
   !========================================
@@ -605,4 +618,126 @@ result (Poly)
   end function PhiH
 !--------------------------------------------------------------------
 
+ !+
+ !  Exner functions
+ !
+ !  Defined here as (p/P0)**KAPPA
+
+ ! Where KAPPA = R/CP = 0.286
+ ! P0 = 1.0e5 Pa
+
+ ! CAREFUL:  The term Exner function  can also be used for CP * (p/P0)**KAPPA
+ ! Hence notation Exner_nd  - non dimensional version
+ !
+ ! Tabulate  :
+    ! defines the exner-function for every 1000 pa from zero to 1.3e+5 pa
+    ! in a table for efficient interpolation (same procedure as used in
+    ! the nwp-model, see mb1e.f)
+ !
+ ! Exner_nd returns the non-dimesnional excner function (p/p0)**R/CP
+ !
+ ! Added 7/4/2005, Dave, based upon tpi code from tiphys
+ ! Test prog at end along with results.
+ !----------------------------------------------------------------------------
+
+
+
+  !-------------------------------------------------------------------
+  subroutine Exner_tab()
+  !
+    real    :: p
+    integer :: i
+
+	do i = 1,131
+	  p = PBAS + i*PINC
+	  ! tpi(i) = CP*(p/1.0e+5)**KAPPA ! With CP!!!!
+	  tab_exf(i) = (p/1.0e+5)**KAPPA  ! Without CP
+	enddo
+
+  end subroutine Exner_tab
+  !-------------------------------------------------------------------
+
+  elemental function Exner_nd(p) result(exf)
+
+     real, intent(in) :: p    ! Pressure, p
+     real :: exf, x1
+     integer :: ix1
+
+        x1 = (p-PBAS)/PINC
+        ix1 = x1
+        exf =  tab_exf(ix1) + (x1-ix1)*(tab_exf(ix1+1) - tab_exf(ix1))
+
+  end function Exner_nd
+  !-------------------------------------------------------------------
+
+  elemental function Tpot_2_T(p) result(fTpot)
+     ! Identical to Exner_nd
+     ! Usage:   T = Tpot * Tpot_2_T(p)
+
+     real, intent(in) :: p    ! Pressure, p
+     real :: fTpot, x1
+     integer :: ix1
+
+        x1 = (p-PBAS)/PINC
+        ix1 = x1
+        fTpot =  tab_exf(ix1) + (x1-ix1)*(tab_exf(ix1+1) - tab_exf(ix1))
+
+  end function Tpot_2_T
+  !-------------------------------------------------------------------
+  elemental function T_2_Tpot(p) result(fT)
+     ! Iinvese of Exner_nd
+     ! Usage:   Tpot = T * T_2_Tpot(p)
+
+     real, intent(in) :: p    ! Pressure, p
+     real :: fT, exf, x1
+     integer :: ix1
+
+        x1 = (p-PBAS)/PINC
+        ix1 = x1
+        exf =  tab_exf(ix1) + (x1-ix1)*(tab_exf(ix1+1) - tab_exf(ix1))
+        fT = 1.0/exf
+
+  end function T_2_Tpot
+  !-------------------------------------------------------------------
+
+!program Test_exn
+!  use Exner_ml
+!  use PhysicalConstants_ml, only : KAPPA
+!  implicit none
+!
+!  real :: p, exf1, exf2
+!  integer :: i
+!
+!  call Exner_tab()
+!
+!   do i = 1, 20
+!     p = 0.05 * i * 1.0e5
+!     exf1 = Exner_nd(p)
+!     exf2 = (p*1.0e-5)**KAPPA
+!     print "(f8.3,4f12.5)", 1.0e-2*p, exf1, exf2, Tpot_2_T(p), T_2_Tpot(p)
+!  end do
+!end program Test_exn
+    
+! Results:
+! p(mb)        exf1         exf2      Tpot_2_T    T_2_Tpot
+!  50.000     0.42471     0.42471     0.42471     2.35455
+! 100.000     0.51778     0.51778     0.51778     1.93133
+! 150.000     0.58141     0.58141     0.58141     1.71997
+! 200.000     0.63124     0.63124     0.63124     1.58418
+! 250.000     0.67282     0.67282     0.67282     1.48629
+! 300.000     0.70881     0.70881     0.70881     1.41081
+! 350.000     0.74075     0.74075     0.74075     1.34999
+! 400.000     0.76957     0.76957     0.76957     1.29943
+! 450.000     0.79592     0.79592     0.79592     1.25641
+! 500.000     0.82025     0.82025     0.82025     1.21913
+! 550.000     0.84291     0.84291     0.84291     1.18637
+! 600.000     0.86414     0.86414     0.86414     1.15722
+! 650.000     0.88414     0.88414     0.88414     1.13105
+! 700.000     0.90307     0.90307     0.90307     1.10734
+! 750.000     0.92105     0.92105     0.92105     1.08571
+! 800.000     0.93820     0.93820     0.93820     1.06587
+! 850.000     0.95461     0.95461     0.95461     1.04755
+! 900.000     0.97033     0.97033     0.97033     1.03058
+! 950.000     0.98544     0.98544     0.98544     1.01477
+!1000.000     1.00000     1.00000     1.00000     1.00000
 end module Functions_ml

@@ -51,12 +51,13 @@ module DryDep_ml
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
                             i_glob, j_glob   ! for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
- use Met_ml,         only : roa,fm,fh,z_bnd,th2m,th,ps,u,v,z_mid&
-                            ,snow, pr, psurf, cc3dmax, t2, q &
+ use Met_ml,         only : roa,tau,fh,z_bnd,th,ps,u,v,z_mid&
+                            ,snow, pr, psurf, cc3dmax, t2_nwp, q &
                             ,surface_precip & ! ds rv1.6.2 
                             ,zen,coszen,Idirect,Idiffuse & !ds mar2005
+                            ,ustar_nwp, invL_nwp &  !ds apr2005
                             ,iclass   &
-                            ,ustar,foundustar, fl &
+                            ,fl &
                             ,pzpbl&  !stDep
                             ,u_ref !horizontal wind 
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
@@ -65,7 +66,7 @@ module DryDep_ml
                                   ATWAIR, atwS, atwN, PPBINV,&
                                   KUPPER     !hf ddep
  use Par_ml,               only : me,NPROC,li0,li1,lj0,lj1
- use PhysicalConstants_ml, only : XKAP, PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
+ use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
 !ds mar2005 use Radiation_ml,         only : zen         &! zenith angle (degrees)
 !ds mar2005                                 ,SolBio      &!u7.lu extras
 !ds mar2005                                 ,coszen
@@ -164,7 +165,6 @@ module DryDep_ml
  integer :: nadv2d !index of adv species in xn_2d array
  real ustar_sq, & ! u star squared
       abshd,    & ! abs value of surfae flux of sens. heat W/m^2
-!      u_ref,    & ! horizontal vind   !ds - was uvhs
       z_ref       !  reference level - middle of cell, ca. 45m
 
  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
@@ -195,7 +195,8 @@ module DryDep_ml
          ,Ra_3m          ! Ra from 3m over veg. to z0
          !ds ,Idrctt, Idfuse   ! Direct-total and diffuse radiation
    real :: wetarea         ! Fraction of grid square assumed wet 
-   real :: ustar_nwp, ustar_loc, vpd, invL, rho_surf, invL_nwp, d, rh, Ts_C
+   real :: ustar_loc, vpd, invL, d, rh, Ts_C
+   !ds apr2005 real :: ustar_loc, vpd, invL, rho_surf, d, rh, Ts_C
    real :: lai, hveg        ! For convenience  
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
    real ::  LE   ! Latent Heat flux, into surface (opp. sign to fh!)
@@ -239,7 +240,6 @@ module DryDep_ml
 !hf    do i = li0,li1
 
 !hf FOR DEBUGGING s
-  ustar_sq = -99.99                           ! for debugging
   imm      =    current_date%month            ! for debugging
   idd      =    current_date%day              ! for debugging
   ihh      =    current_date%hour             ! for debugging
@@ -294,14 +294,14 @@ module DryDep_ml
       LE = -fl(i,j,1)       ! Heat flux, *away from* surface
 
 
-      if(foundustar)then                      !pw u3
-         ustar_sq = ustar(i,j,1)*ustar(i,j,1)
-      else
-         ustar_sq = fm(i,j,1)/roa(i,j,KMAX_MID,1)
-         ustar(i,j,1) = sqrt(ustar_sq)
-         ustar(i,j,1) = max( ustar(i,j,1), 1.0e-5 )
-      endif
-      ustar_sq = max(ustar_sq, 1.e-10)
+!ds apr2005      if(foundustar)then                      !pw u3
+!ds apr2005         ustar_sq = ustar(i,j,1)*ustar(i,j,1)
+!ds apr2005      else
+!ds apr2005         ustar_sq = fm(i,j,1)/roa(i,j,KMAX_MID,1)
+!ds apr2005         ustar(i,j,1) = sqrt(ustar_sq)
+!ds apr2005         ustar(i,j,1) = max( ustar(i,j,1), 1.0e-5 )
+!ds apr2005      endif
+!ds apr2005      ustar_sq = max(ustar_sq, 1.e-10)
 
      ! wind-speed at reference height, which we take as centre of
      ! lowest layer:
@@ -331,19 +331,15 @@ module DryDep_ml
     !   we must use L (the Monin-Obukhov length) to calculate deposition,
     !   therefore we calculate u*, t* from NWP-model data. 
 
-      rho_surf       = psurf(i,j)/(RGAS_KG * t2(i,j) )   ! at surface
+      !ds apr2005 rho_surf       = psurf(i,j)/(RGAS_KG * t2_nwp(i,j) )   ! at surface
 
-      ustar_nwp = ustar(i,j,1)    ! First guess = NWP value
+      !ds apr2005 ustar_nwp = ustar(i,j,1)    ! First guess = NWP value
       !tstar_nwp = -fh(i,j,1)/ ( CP*rho_surf*ustar_nwp )
-      invL_nwp  = -KARMAN * GRAV * Hd/ &
-         (CP*rho_surf* ustar_nwp*ustar_nwp*ustar_nwp * th2m(i,j,1))
 
-      !.. we limit the range of 1/L to prevent numerical and printout problems
-      !.. and because I don't trust HIRLAM enough.
-      !   This range is very wide anyway.
-
-      invL_nwp  = max( -1.0, invL_nwp ) !! limit very unstable
-      invL_nwp  = min(  1.0, invL_nwp ) !! limit very stable
+      !ds apr2005 invL_nwp  = -KARMAN * GRAV * Hd/ &
+      !ds apr2005    (CP*rho_surf* ustar_nwp*ustar_nwp*ustar_nwp * th2m(i,j,1))
+      !ds apr2005 invL_nwp  = max( -1.0, invL_nwp ) !! limit very unstable
+      !ds apr2005 invL_nwp  = min(  1.0, invL_nwp ) !! limit very stable
 
     if ( DEBUG_UK .and. debug_flag ) then
           print "(a26,4i4)", "UKDEP DryDep me, i,j, ind ", me, i,j, ind
@@ -353,7 +349,7 @@ module DryDep_ml
                      1.0e-5*psurf(i,j), Idfuse, Idrctt
           print "(a10,i4,3i3,2f8.3,es12.4,f8.4)", "UKDEP NWP", &
                   daynumber, imm, idd, ihh,  &
-                  Hd, LE, invL_nwp, ustar_nwp
+                  Hd, LE, invL_nwp(i,j), ustar_nwp(i,j)
     end if
                  
 
@@ -404,7 +400,7 @@ module DryDep_ml
         lu_used (ilu) = lu    ! for eco dep
         lu_cover(ilu) = cover
 
-        Ts_C    = t2(i,j)-273.15
+        Ts_C    = t2_nwp(i,j,1)-273.15
         lai     = landuse_LAI(i,j,ilu)
         hveg    = landuse_hveg(i,j,ilu)
         g_pot   = landuse_gpot(i,j,ilu)
@@ -456,8 +452,8 @@ module DryDep_ml
 
 
         lu_lai(ilu) = lai  ! tmp for debug
-        ustar_loc = ustar_nwp       ! First guess = NWP value
-        invL      = invL_nwp        ! First guess = NWP value
+        ustar_loc = ustar_nwp(i,j)       ! First guess = NWP value
+        invL      = invL_nwp(i,j)        ! First guess = NWP value
 
         !ds - rv1.6.xx coast
         ! If HIRLAM thinks this is a sea-square, but we anyway have land,
@@ -470,7 +466,7 @@ module DryDep_ml
              Hd = 0.0
         end if
 
-        call Get_Submet(hveg,t2(i,j),Hd,LE, psurf(i,j), &
+        call Get_Submet(hveg,t2_nwp(i,j,1),Hd,LE, psurf(i,j), &
                z_ref, u_ref(i,j), q(i,j,KMAX_MID,1), & ! qw_ref
                        debug_flag,                        &    ! in
                        ustar_loc, invL,                   &    ! in-out
@@ -484,7 +480,7 @@ module DryDep_ml
                    cover, lai, hveg,daynumber, snow(i,j), SWP(daynumber),Ts_C
 
                 write(6,"(a10,2i4,2f7.2,2es12.3,3f8.3)") "UKDEP SUB", me, &
-                  lu, ustar_nwp, ustar_loc, invL_nwp, invL, Ra_ref, Ra_3m,rh
+                  lu, ustar_nwp(i,j), ustar_loc, invL_nwp(i,j), invL, Ra_ref, Ra_3m,rh
 
              end if
 
@@ -520,7 +516,7 @@ module DryDep_ml
          convec = wstar*wstar/(ustar_loc*ustar_loc)     ! Convection velocity scale  
 
         call Aero_Rb ( ustar_loc, convec, roa(i,j,KMAX_MID,1)     &
-                     , u_ref(i,j), lu, snow(i,j), wetarea, t2(i,j)      &   
+                     , u_ref(i,j), lu, snow(i,j), wetarea, t2_nwp(i,j,1)      &   
                      , Vs, aeRb, aeRbw )
        !===================
 

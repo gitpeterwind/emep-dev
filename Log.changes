@@ -1,3 +1,53 @@
+============== Dave,  rv2_2_6 , xx/4/2005 ======================================
+
+
+New (simpler?) arrangements for calculations of ustar, Obukhov length, Exner
+Less confusing use and conversions between temperature (t2_nwp) and 
+potential temperature (TPot2m). 
+
+
+Some new notations:
+
+       tau     - was fm
+       t2_nwp  - was t2
+       TPot2m  - was th2m
+       ustar_nwp - was ustar
+       invL_nwp  - was invL
+
+   The _nwp is used where variables are appropriate to the whole grid. When
+   sub-grid procedurs are applied then different values of e.g. ustar may
+   be different for different landuses.
+
+Functions_ml
+     - Exner function subroutines, and conversion functions between T and Tpot
+         - causes changes in Met_ml, Sites_ml, DryDep, .....
+       Note that sometimes we need Exner_nd(p) and sometimes CP*Exner_nd(p)
+      
+Met_ml 
+     - tau (was fm) - now created for MM5-type inputs from ustar, on assumption
+       that it is better to linearly interpolate tau in metint than ustar.
+       (Since tau ~ ustar**2 is proportional to energy.)
+
+     - Surface temp is now t2_nwp. Multiple conversions to old th2m now
+       removed. Tpot2m (was th2m)  now done in met_deriv
+
+     - Exner_ml used
+
+SeaSalt 
+     - use of new ustar_nwp. Moved "use" statements to start of module (should
+       be done for all modules)
+
+Tabulations_ml
+       Exner stuff removed. Only tab_esat remains!
+
+Also - ZD_ACID/My_Chem changes for new Radiation_ml treatment: zen, radzen
+       ZD_ACID/My_Outputs corrected for N_NOy.
+
+DOCS:
+    - Corrected figure of Arakaw u,v grid locations, based upon plot from Peter
+    - Added new rule in Progrules.tex, suggested by Peter
+
+
 ============== Dave,  rv2_2_5 , 5/4/2005 ======================================
 
 Re-write of Radiation_ml and associated handling

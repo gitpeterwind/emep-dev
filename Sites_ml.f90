@@ -24,17 +24,22 @@ use My_Outputs_ml, only : &   ! for sitesout
           NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, N_NOy,  &
           SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
           FREQ_SONDE, NOy_SPEC
-!ds rv1_9_16 21/12/2003 use My_Derived_ml !ICP , only : d_2d, IOU_INST !, &
 
 use Derived_ml, only : d_2d, d_3d, IOU_INST     !ds New deriv system
 
-use Par_ml , only : ISMBEG,JSMBEG,GIMAX,GJMAX,  &
-              GI0,GI1,GJ0,GJ1,me,NPROC,MAXLIMAX,MAXLJMAX
+use Functions_ml,      only : Tpot_2_T        !ds apr2005  Conversion function
+use GridValues_ml,         only : sigma_bnd,sigma_mid
 use Io_ml  , only : check_file,open_file,ios,fexist,IO_SITES,IO_SONDES
 use GenSpec_adv_ml   , only : NSPEC_ADV
 use GenSpec_shl_ml   , only : NSPEC_SHL
 use GenChemicals_ml  , only : species                    ! for species names
-use ModelConstants_ml, only : NMET,PPBINV,PPTINV,KMAX_MID, current_date,KMAX_BND
+use Met_ml,            only : t2_nwp, th, pzpbl  &! Output with concentrations
+                             ,z_bnd,z_mid,roa,xksig,u,v, ps, q 
+use ModelConstants_ml, only : NMET,PPBINV,PPTINV,KMAX_MID, current_date,&
+                                 KMAX_BND,PT
+use Par_ml , only : ISMBEG,JSMBEG,GIMAX,GJMAX,  &
+              GI0,GI1,GJ0,GJ1,me,NPROC,MAXLIMAX,MAXLJMAX
+use Tabulations_ml,       only :  tab_esat_Pa
 implicit none
 private                             ! stops variables being accessed outside
 
@@ -349,7 +354,6 @@ end subroutine Init_sites
   ! will be improved later to allow choice of output parameter
   ! should look at chemint also - seems similar for somethings
   ! ---------------------------------------------------------------------
-   use Met_ml, only : t2, th, pzpbl   ! Output with concentrations
 
   ! -- arguments
   real, dimension(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID), intent(in) :: xn_adv
@@ -413,7 +417,7 @@ end subroutine Init_sites
        nn = NADV_SITE + NSHL_SITE + ispec
        select case ( SITE_XTRA(ispec) )
        case ( "T2" ) 
-          out(nn,i)   = t2(ix,iy) - 273.15 
+          out(nn,i)   = t2_nwp(ix,iy,1) - 273.15 
        case ( "th" ) 
           !ds rv1.6.9 out(nn,i)   = th(ix,iy,KMAX_MID,1)
           out(nn,i)   = th(ix,iy,iz,1)
@@ -443,11 +447,7 @@ end subroutine siteswrt_surf
 !==================================================================== >
 
   subroutine siteswrt_sondes(xn_adv,xn_shl)
- use Met_ml,               only : z_bnd,z_mid,roa,th,xksig,u,v, ps, q 
- use Tabulations_ml,       only :  tab_esat_Pa
-use PhysicalConstants_ml,  only : XKAP
-use ModelConstants_ml,     only : PT
-use GridValues_ml,         only : sigma_bnd,sigma_mid
+!ds apr2005 use PhysicalConstants_ml,  only : XKAP
   ! -------------------------------------------------------------------
   !  Writes vertical concentration  data to files.
   !  IO_SONDES is set in io_ml to be 30
@@ -531,7 +531,8 @@ use GridValues_ml,         only : sigma_bnd,sigma_mid
           case ( "RH   " ) 
              do k = 1,KMAX_MID
                pp(k) = PT + sigma_mid(k)*(ps(ix,iy,1) - PT)
-               temp(k) = th(ix,iy,k,1)*exp(XKAP*log(pp(k)*1.e-5))
+               !ds apr2005 temp(k) = th(ix,iy,k,1)*exp(XKAP*log(pp(k)*1.e-5))
+               temp(k) = th(ix,iy,k,1)* Tpot_2_T( pp(k) )
 
                itemp(k) = nint( temp(k) )
 

@@ -147,12 +147,21 @@ the code clean and easy I hope:
     Use spaces rather than tabs, also for simple formatting reasons.
     Tabs don't print out the same on all computers/printers.
 \item
+    Try to code `module-oriented'. The modules should be individual
+entities; Your routines should still behave properly after any
+modification of other parts of the code.  Conversely: it should be
+possible to modify your routine without having to change also other
+parts of the code.
+
+However this rule is much more difficult to apply than the other rules :-(
+
+
+\item
     Do not use ``l'' or ``ll'' as variable names - they are too easily
     confused with 1 and 11 in print-outs. 
 \item
     Do you still remember rule 1?
 \end{enumerate}
-
 
 
 

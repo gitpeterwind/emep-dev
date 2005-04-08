@@ -10,7 +10,7 @@ module Tabulations_ml
  ! are tabulated here.
  !
  !----------------------------------------------------------------------------
-  use PhysicalConstants_ml, only : RGAS_J, CP, XKAP, T0
+  use PhysicalConstants_ml, only : RGAS_J, CP, T0, KAPPA
   use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX  ! temperature range
   !u3 use GenRates_rct_ml, only : &  ! From GenOut_ml 
   !u3                NRCT, &         ! No. temperature dependant coefficients
@@ -28,11 +28,11 @@ module Tabulations_ml
 
  !/- Outputs:
 
- real, public, parameter  ::    &
-       PINC=1000.0              &  
-    ,  PBAS=-PINC
+  real, public, parameter  ::    &
+        PINC=1000.0              &  
+     ,  PBAS=-PINC
 
- real, save, public, dimension(131) ::  tpi   ! Exner function of pressure?
+  real, save, public, dimension(131) ::  tpi   ! Exner function of pressure?
 
  real, save, public, dimension(CHEMTMIN:CHEMTMAX) :: &
                    tab_esat_Pa !&  ! saturated vapour pressure (Pa)
@@ -67,7 +67,7 @@ module Tabulations_ml
 
 	do i = 1,131
 	  p = PBAS + i*PINC
-	  tpi(i) = CP*(p/1.0e+5)**XKAP
+	  tpi(i) = CP*(p/1.0e+5)**KAPPA
 	enddo
 
     ! Temperature-dependant rates
