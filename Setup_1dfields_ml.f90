@@ -13,8 +13,6 @@
   use Biogenics_ml,          only :  NBIO     ! Not used yet...
   use GenSpec_tot_ml,        only :  NSPEC_TOT
   use GenSpec_bgn_ml,        only :  NSPEC_COL
-!u2 !hf MADE
-!u2   use GenSpec_bgn_ml,             only :  NSPEC_BGN
   use GenRates_rct_ml,       only :  NRCT
   use GenRates_rcmisc_ml,    only :  NRCMISC
   implicit none
@@ -33,16 +31,12 @@
    real, public, dimension(NSPEC_TOT,KCHEMTOP:KMAX_MID), save :: &
                    xn_2d            ! Concentrations [molecules/cm3]  
 
-!u2 !hf MADE
-!u2    real, public, dimension(NSPEC_BGN,KCHEMTOP:KMAX_MID), save :: &
-!u2                    xn_2d_bgn            ! Concentrations [molecules/cm3] 
-
    real, public, dimension(NRCEMIS,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
    real, public, dimension(NRCT   ,KCHEMTOP:KMAX_MID), save :: rct    ! T-dependant
    real, public, dimension(NRCMISC,KCHEMTOP:KMAX_MID), save :: rcmisc ! T,M,H2O-dependant
-!fix   real, public, dimension(NRCBIO ,KCHEMTOP:KMAX_MID), save :: rcbio  !  Biogenic emissions
    real, public, dimension(NBIO ,KCHEMTOP:KMAX_MID), save   :: rcbio  !  Biogenic emissions
-   real, public, dimension(NSS,KCHEMTOP:KMAX_MID),     save :: rcss   !emissions    !SeaS
+   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222  ! 210Pb emissions, ds Pb210
+   real, public, dimension(NSS,KCHEMTOP:KMAX_MID),     save :: rcss   ! Sea salt emissions
 
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)

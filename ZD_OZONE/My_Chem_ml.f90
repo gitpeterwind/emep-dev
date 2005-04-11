@@ -48,7 +48,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 58 !SeaS
+   integer, public, parameter ::  NSPEC_ADV = 60 !+Rn,Pb210
  
  ! Aerosols:
 
@@ -132,7 +132,9 @@
   ,  IXADV_PM25        =   55  &
   ,  IXADV_PMco        =   56  &
   ,  IXADV_SSfi        =   57  &  !SeaS 
-  ,  IXADV_SSco        =   58    
+  ,  IXADV_SSco        =   58  & 
+  ,  IXADV_RnR222      =   59  &  !ds apr2005
+  ,  IXADV_Pb210       =   60     !ds apr2005
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
 !>_________________________________________________________<
@@ -192,7 +194,7 @@
 
    logical, public, parameter ::  ORG_AEROSOLS = .false. 
 
-   integer, public, parameter ::  NSPEC_TOT = 74   !SeaS 
+   integer, public, parameter ::  NSPEC_TOT = 76   !Pb210
 
  
  ! Aerosols:
@@ -291,7 +293,9 @@
   ,  PM25        =   71  &
   ,  PMco        =   72  &
   ,  SSFI        =   73  &    !SeaS
-  ,  SSCO        =   74   
+  ,  SSco        =   74  &    !SeaS
+  ,  Rn222       =   75  &
+  ,  Pb210       =   76       !ds apr2005
 
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
@@ -406,6 +410,9 @@
        species( 72) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
        species( 73) = Chemical("SSfi        ", 58,   0,  0,   0,  0 )  !SeaS
        species( 74) = Chemical("SSco        ", 58,   0,  0,   0,  0 )
+!ds apr2005 Pb210
+       species( 75) = Chemical("Rn222       ", 222,   0,  0,   0,  0 )
+       species( 76) = Chemical("Pb210       ", 210,   0,  0,   0,  0 )
 
    end subroutine define_chemicals
  end module GenChemicals_ml

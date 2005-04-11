@@ -35,14 +35,13 @@ module UKsetup_ml
 contains
 
 !=======================================================================
-  subroutine ukdep_init(errmsg)
+  subroutine ukdep_init(errmsg,me)
 !=======================================================================
 !   Reads in data associated with UK deposition modules, e.g. land-use
 !   names, characteristics.
 
-  !u7.lu real, intent(out) :: lat, long   ! co-ordinates from ukdep_z0_snow
-
   character(len=*), intent(inout) ::  errmsg
+  integer, intent(in) ::  me     ! processor number
   integer :: lu      ! landuse category index
   character(len=20) ::  txt
 
@@ -58,7 +57,7 @@ contains
            albedo(lu), NH4_pl(lu), & 
            SGS50(lu), DSGS(lu), EGS50(lu),DEGS(lu),  &
            LAImin(lu), LAImax(lu), SLAIlen(lu), ELAIlen(lu)
-         print *, "UK biomass data ", lu, NLANDUSE, luname(lu)
+         if(me==0) write(*,*) "UK biomass data ", lu, NLANDUSE, luname(lu)
       end do 
       close(unit=IO_TMP)
 
@@ -111,11 +110,13 @@ contains
 
    ! write out land-use names and numbers to help interactive start
 
+     if( me==0) then
      print *, "Available land-use classes are: "
      do lu = 1, NLANDUSE
        print "(i4,4x,a20)", lu, luname(lu)
      end do
      print *, " "
+     end if
 
   ! read in site-specific data: snow cover, lat, long, and z0 from NWP model
 

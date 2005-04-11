@@ -40,7 +40,7 @@ module Radiation_ml
   real, private, save :: rdecl,sinrdecl,cosrdecl
   real, private, save :: eqtime, eqt_h, tan_decl
 
-logical, private, parameter :: DEBUG = .true.
+logical, private, parameter :: DEBUG = .false.
 
 
   !================== Ashrae/Iqbal stuff  -- see ClearSkyRad subroutine
@@ -366,7 +366,7 @@ contains
       real, intent(inout) :: Idrctt, Idfuse
 
       real :: Scale
-      logical :: MY_DEBUG = .true.
+      logical :: MY_DEBUG = .false.
               
    !-----  
    ! Observation frequently don't have PAR, but instead have global radiation.

@@ -521,10 +521,10 @@ def_3d = (/ &
           print *, "ERROR: Find_one_index for:", used,  "Matches ", n_match
           call gc_abort(me,NPROC,"Find_one_index - no match!!")
     else
-          if ( me == 0 ) then
+          if ( MY_DEBUG .and.  me == 0 ) then
              write(6,*) "FOUND_ONE_INDEX ", used, " => NF ", find_one_index
           end if
-    end if ! ERROR check
+    end if
 
   end function find_one_index
 
@@ -932,8 +932,6 @@ def_3d = (/ &
         wdep(n,:,:,IOU_MON )  = wdep(n,:,:,IOU_MON )  + wdep(n,:,:,IOU_INST) 
         wdep(n,:,:,IOU_YEAR ) = wdep(n,:,:,IOU_YEAR ) + wdep(n,:,:,IOU_INST) 
 
-        !ds if ( MY_DEBUG .and. me == 0 ) print *, "wet dep: ",wdep(n,3,3,IOU_DAY)
-
      end do  ! WET DEP.
      !/***** WET DEPOSITION **************************
 
@@ -942,8 +940,6 @@ def_3d = (/ &
         ddep(n,:,:,IOU_DAY )  = ddep(n,:,:,IOU_DAY )  + ddep(n,:,:,IOU_INST) 
         ddep(n,:,:,IOU_MON )  = ddep(n,:,:,IOU_MON )  + ddep(n,:,:,IOU_INST) 
         ddep(n,:,:,IOU_YEAR ) = ddep(n,:,:,IOU_YEAR ) + ddep(n,:,:,IOU_INST) 
-
-        !ds if ( MY_DEBUG .and. me == 0 ) print *, "dry dep: ",ddep(n,3,3,IOU_DAY)
 
      end do  ! DRY DEP.
 
@@ -968,7 +964,6 @@ def_3d = (/ &
                 inv_air_density3D(i,j,k) = 1.0/( roa(i,j,k,1) * MFAC )
             end forall
         else
-            !ds BUG air_density3D(i,j,k) = 1.0
             inv_air_density3D(:,:,:) = 1.0
         end if
 
@@ -998,9 +993,6 @@ def_3d = (/ &
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
               d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)
             end forall
-
-
-     ! ds rv1_9_28 changes -----------------------------------
 
          case ( "PHNO3" )   !ds-hf  rv1_9_28
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -1039,7 +1031,6 @@ def_3d = (/ &
             end forall
 
 
-
           case ( "VOC" )
 
             call voc_3dcalc()
@@ -1054,8 +1045,6 @@ def_3d = (/ &
 
         end select
      
-       !ds v1_9_28:
-
 
       !/** add to monthly and yearly average, and increment counters
        !    ( no daily averaging done for 3-D fields so far).
@@ -1130,8 +1119,8 @@ def_3d = (/ &
 
       if (.not. any( f_3d%class == "PROD" ) ) return
 
-      !bug: timefrac = 3600.0/dt
       timefrac = dt/3600.0
+
      !/***** 3-D fields **************************
 
      do n = 1, NDERIV_3D

@@ -44,15 +44,15 @@ module  My_Outputs_ml
    integer, public, parameter :: &
      NSITES_MAX =    99          & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
-    ,NADV_SITE  =    10 &!NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+    ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
     ,NXTRA_SITE =    2            ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
-    !SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
-    SITE_ADV =  (/ (isite, isite=1,3), IXADV_SO4, IXADV_PAN, &
-                   IXADV_aNO3, IXADV_pNO3, IXADV_HNO3, IXADV_aNH4, &
-                   IXADV_CH3COO2  /)
+    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
+    !SITE_ADV =  (/ (isite, isite=1,3), IXADV_SO4, IXADV_PAN, &
+    !               IXADV_aNO3, IXADV_pNO3, IXADV_HNO3, IXADV_aNH4, &
+    !               IXADV_CH3COO2  /)
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
     SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!

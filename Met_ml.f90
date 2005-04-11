@@ -122,7 +122,7 @@ private
        snow,    &  ! monthly snow (1=true), read in MetModel_LandUse
        iclass      ! roughness class ,         "       "       "
 
-  logical, private, parameter ::  MY_DEBUG = .true.
+  logical, private, parameter ::  MY_DEBUG = .false.
   logical, private, save      ::  debug_proc = .false.
   integer, private, save      :: debug_iloc, debug_jloc  ! local coords
 
@@ -678,14 +678,15 @@ private
 
           do i = 1, limax
           do j = 1, ljmax
-               if (i_glob(i) == DEBUG_I .and. j_glob(j) == DEBUG_J ) then
+               if (MY_DEBUG .and. &
+                   i_glob(i) == DEBUG_I .and. j_glob(j) == DEBUG_J ) then
                        debug_proc = .true.
                        debug_iloc    = i
                        debug_jloc    = j
                end if
           end do
           end do
-           if( debug_proc ) print *, "DEBUG EXNER me", me, Exner_nd(99500.0)
+           if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
           !-------------------------------------------------------------------
           
         end if
@@ -804,8 +805,6 @@ private
 
           do k = 2,KMAX_MID
 
-	      !u4 prhelp(k) = max(pr(i,j,k) - pr(i,j,k-1),0.)
-              !u4 - finally fix error reported by hf:
 	      prhelp(k) = pr(i,j,k) - pr(i,j,k-1)
 !               prhelp(i,j,k) = max(prhelp(i,j,k), 0.)
 !ko
@@ -821,38 +820,27 @@ private
 !ko   evaporation has been set to zero as it is not accounted for in the
 !ko   wet deposition
 
-    !u1 - error reported by jej, Feb 2002
-    !u1 - jej err    if(prhelp_sum.gt.0.0001)then
-    !u1 - jej err       pr_factor = pr(i,j,KMAX_MID)/prhelp_sum
-    !u1 - jej err    else
-    !u1 - jej err      pr_factor = 1.0
-    !u1 - jej err    endif
-
-    !u1 - jej err    prhelp(:) = prhelp(:) * pr_factor
 
 !hf I add up in WetDeposition, to have the prec used in the model
 
 	    pr(i,j,:) = prhelp(:)*divt
 
-          if(sdot_at_mid)then !pw rv1_9_24
-!ko  interpolation of sigma dot for half layers
-          do k = KMAX_MID,2,-1
+         ! interpolation of sigma dot for half layers
 
-!ko	  if(me.eq.0.and.numt.eq.1)write(6,*)' k i j sdot(k) sdot(k-1'
-!ko     &       ,i,j,k,sdot(i,j,k,1),sdot(i,j,k-1,1)
+          if(sdot_at_mid)then !pw rv1_9_24
+             do k = KMAX_MID,2,-1
 
 	      sdot(i,j,k,nr) = sdot(i,j,k-1,nr) 		&
 		+ (sdot(i,j,k,nr)-sdot(i,j,k-1,nr))		&
             *(sigma_bnd(k)-sigma_mid(k-1)) / (sigma_mid(k)-sigma_mid(k-1))
 
-!ko	  if(me.eq.0.and.numt.eq.1)write(6,*)' k i j sdot(k) sdot(k-1'
-!ko     &       ,i,j,k,sdot(i,j,k,1),sdot(i,j,k-1,1)
-
-  	    enddo
+  	      enddo
             endif
 	  
-!  set sdot equal to zero at the top and bottom of atmosphere. 
-            sdot(:,:,KMAX_BND,nr)=0.0
+           ! set sdot equal to zero at the top and bottom of atmosphere. 
+           !ds pw correction here
+
+            sdot(i,j,KMAX_BND,nr)=0.0
             sdot(i,j,1,nr)=0.0
 
 !ko	conversion from % to fractions (<0,1>) for cloud cover
@@ -1046,9 +1034,9 @@ private
 	enddo
 
         if( MY_DEBUG .and. debug_proc ) then
-           print *, "DEBUG meIJ" , me, limax, ljmax
+           write(*,*) "DEBUG meIJ" , me, limax, ljmax
            do k = 1, KMAX_MID
-              print "(a12,2i3,2f12.4)", "DEBUG Z",me, k, &
+              write(6,"(a12,2i3,2f12.4)") "DEBUG Z",me, k, &
                   z_bnd(debug_iloc,debug_jloc,k), z_mid(debug_iloc,debug_jloc,k)
            end do
         end if
@@ -1188,7 +1176,7 @@ private
 
      implicit none
      integer ::i,j
-     logical :: DEBUG_DERIV = .true.
+     logical :: DEBUG_DERIV = .false.
 
      do j = 1,ljmax
         do i = 1,limax
@@ -1246,7 +1234,7 @@ private
       if ( DEBUG_DERIV .and. debug_proc ) then
           i = debug_iloc
           j = debug_jloc
-          print *, "MET_DERIV DONE ", me, ustar_nwp(i,j), invl_nwp(i,j), rho_surf(i,j)
+          write(*,*) "MET_DERIV DONE ", me, ustar_nwp(i,j), invl_nwp(i,j), rho_surf(i,j)
       end if
      !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 

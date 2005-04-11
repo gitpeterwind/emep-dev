@@ -1,3 +1,23 @@
+============== Dave,  rv2_2_8  , 11/4/2005 ======================================
+
+Rn222 and Pb210 added (for CARBOSOL, but a useful general tracer)
+Quite crude addition. Should probably be harmonised with
+other surface emissions  such as BVOC or Sea-Salt. ToDo.
+
+My_Chem_ml            - Pb210 added
+DepVariables_ml       - LU_ICE added
+Setup_1d_ml.f90       - rc_Pb210 added
+Setup_1dfields_ml.f90 - rc_Pb210 added
+(Changes labelled with Pb210)
+
+
+Met_ml  - small correction from Peter
+
+UK_ml   -   water_fraction  and ice_fraction added
+
+
+Some general tidy-ups
+
 ============== Hilde,  rv2_2_7 , 08/4/2005 ======================================
 Small errors in ZD_ACIDs My_BoundCondition and My_Outputs corrected
 

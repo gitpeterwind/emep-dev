@@ -13,6 +13,7 @@ implicit none
 
 integer, public, parameter :: NLANDUSE =   17 !number of land-use classes
 integer, public, parameter :: LU_WATER =   15 !  Sea/lakes
+integer, public, parameter :: LU_ICE   =   16 !  Ice  ! Pb210 - temporary
 real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
 
 !/-- assign UK 17 to categories - used in dry deposition outputs.

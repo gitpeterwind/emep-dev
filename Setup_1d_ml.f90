@@ -20,36 +20,36 @@
   use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN &
     ,xn_2d_bgn         !u2 concentration terms, specified species
   use MyChem_ml,             only :  Set_2dBgnd
-  use GenRates_rct_ml,       only :  NRCT & 
-                                      ,rcit !u3 Tabulated rate coeffs
+  use GenRates_rct_ml,       only :  NRCT, rcit !u3 Tabulated rate coeffs
   use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, carea, i_glob, j_glob
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use Met_ml,                only :  roa, th, ps, q, t2_nwp, cc3dmax &
-                                    ,zen, Idirect, Idiffuse
+                                    ,zen, Idirect, Idiffuse &
+                                    ,z_bnd     !ds Pb210
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
     ,dt_advec                        & ! time-step
     ,current_date                    & ! 
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
-    ,KMAX_MID ,KCHEMTOP                ! Start and upper k for 1d fields
+    ,KMAX_MID ,KMAX_BND, KCHEMTOP                ! Start and upper k for 1d fields
+  use My_Aerosols_ml,    only : SEASALT        !SeaS
   use My_Emis_ml,           only : NRCEMIS , AIRNOX, QRCAIR &
                                   ,NFORESTVOC&
                                   ,QRCVOL,VOLCANOES &  ! hf -extended VOL
                                   ,NSS  !SeaS
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
-!hf u2
-  use My_BoundConditions_ml, only : BGN_2D
+  use My_BoundConditions_ml, only : BGN_2D     !hf u2
   use Par_ml,                only :  me& !!(me for tests)
-!hf VOL
-                             ,gi0,gi1,gj0,gj1,ISMBEG,JSMBEG
+                             ,gi0,gi1,gj0,gj1,ISMBEG,JSMBEG !hf VOL
   use PhysicalConstants_ml,  only :  AVOG, PI
   use Radiation_ml,          only : & !ds mar2005 zen, Idirectt, Idiffuse, 
                               PARfrac, Wm2_uE  ! ds rv1_6_x for bio
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
+    ,rc_Rn222             &  ! ds Pb210
     ,rct, rcmisc          &  ! emission terms
     ,rcss                 &  !SeaS - sea salt
     ,rh, temp, itemp,pp      &  ! 
@@ -57,9 +57,9 @@
     ,izen &
     ,f_Riemer  !weighting factor for N2O5 hydrolysis    
                      ! integer of zenith angle
-   use My_Aerosols_ml,    only : SEASALT        !SeaS
    use SeaSalt_ml,        only : SS_prod   !SeaS
-   use Tabulations_ml,        only :  tab_esat_Pa
+   use Tabulations_ml,    only :  tab_esat_Pa
+   use UKdep_ml,          only : water_fraction, ice_fraction  !dsPb210
   implicit none
   private
   !-----------------------------------------------------------------------!
@@ -85,7 +85,6 @@ contains
    !/* local
 
     integer           :: k, n, ispec, irc    ! loop variables
-!1_9    real              :: pp   ! pressure
     real              :: qsat ! saturation water content
 
 
@@ -132,13 +131,13 @@ contains
 
         ! 1)/ Short-lived species - no need to scale with M
         !  13/9/2002 - reintroduced reset of xn_2d
+
          do n = 1, NSPEC_SHL
                xn_2d(n,k) = max(0.0,xn_shl(n,i,j,k))
          end do ! ispec
 
         ! 2)/ Advected species
         do n = 1, NSPEC_ADV
-              !u1 ispec = MAP_ADV2TOT(n)
               ispec = NSPEC_SHL + n
               xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*amk(k))
         end do ! ispec
@@ -191,6 +190,7 @@ contains
    !  local
      integer ::  iqrc,k,n
      real    :: scaling, scaling_k
+     real    :: eland   !ds Pb210  - emissions from land
 
 !hf VOL
     integer ::  i_help,j_help,i_l,j_l
@@ -283,6 +283,15 @@ contains
        end do
 
    end do ! k loop 
+
+  ! Soil Rn222 emissions from non-ice covered land, + water
+  ! at rate of 1 atom/cm2/s
+
+     eland = 1.0 - water_fraction(i,j) - ice_fraction(i,j)
+
+     rc_Rn222(KMAX_MID) = &
+            ( 0.00182 * water_fraction(i,j)  + eland ) / &
+            (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
 
   end subroutine setup_rcemis
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

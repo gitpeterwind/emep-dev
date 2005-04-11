@@ -5,6 +5,7 @@ use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
                       ,WHEAT               & ! Index of wheat, hard-coded :-(
                       ,luname              &
                       ,crops, bulk, water  & ! logical variables
+                      ,LU_WATER, LU_ICE    & ! Pb210
                       ,forest,conif_forest & !    "      "
                       ,vegetation, urban   & !
                       ,luflux_wanted       & ! 
@@ -53,6 +54,9 @@ private
          ,landuse_hveg  &    ! Max. height of veg.
          ,landuse_gpot        ! Potential (age) factor for Jarvis-calc
 
+ !ds Pb210: Emissions from water (v.small) and from ice zero.
+ real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
+
  logical, private, parameter :: DEBUG_DEP = .false.
  character(len=30), private :: errmsg
 
@@ -68,15 +72,13 @@ contains
 
   !/ 1./ -- Read in basic data for UK model
 
-    !ds rv2_2_3   if ( me == 0 ) then 
        !=====================================
-        call ukdep_init(errmsg)
+        call ukdep_init(errmsg,me)
        !=====================================
         if ( errmsg /= "ok" ) then
            errmsg = "ukdep_init: " // errmsg
            call gc_abort(me,NPROC,errmsg)
         end if
-    !ds rv2_2_3   end if
 
 !ds rv2_2_3    call gc_rbcast(101,NLANDUSE,0,NPROC,gc_info,hveg_max)
 !ds rv2_2_3    call gc_rbcast(102,NLANDUSE,0,NPROC,gc_info,b_inc)
@@ -133,10 +135,11 @@ subroutine ReadLanduse()
    integer :: ncodes, kk ! debug
    logical :: debug_flag
 
-   if ( DEBUG_DEP ) print *, "UKDEP Starting ReadLandUse, me ", me
+   if ( DEBUG_DEP ) write(*,*) "UKDEP Starting ReadLandUse, me ",me
 
    maxlufound = 0   
    if ( me == 0 ) then
+
 
        allocate(g_ncodes(GIMAX,GJMAX),stat=err1)
        allocate(g_codes (GIMAX,GJMAX,NLUMAX),stat=err2)
@@ -160,7 +163,7 @@ subroutine ReadLanduse()
          j_in   = j
 
          if ( DEBUG_DEP .and. debug_flag ) then
-             print *, "UKDEP-ukluS", gb_glob(i,j), rivm2uk(2)
+             write(*,*) "UKDEP-ukluS", gb_glob(i,j), rivm2uk(2)
          endif
       
          i = i - ISMBEG + 1
@@ -175,15 +178,6 @@ subroutine ReadLanduse()
                     call GridAllocate("LANDUSE",i,j,uklu,NLUMAX, &
                       index_lu, maxlufound, g_codes, g_ncodes,errmsg)
 
-                    if ( DEBUG_DEP .and. debug_flag ) then
-                       print "(a12,2i3,2i4,4i3,f12.2)", "UKDEP-Grid", lu, uklu, i_in,j_in,i,j,&
-                              index_lu,g_ncodes(i,j), tmp(lu)
-                       ncodes = g_ncodes(i,j)
-                       do kk = 1, ncodes
-                         print *, "g_codes ", kk, g_codes(i,j,kk)
-                       end do
-                    end if ! DEBUG
-
                     if (errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
    
                     g_data(i,j,index_lu) = &
@@ -196,7 +190,7 @@ subroutine ReadLanduse()
 
       close(IO_FORES)
       write(6,*) "UK_ml: maxlufound = ", maxlufound
-      if ( DEBUG_DEP ) print *,  "DEBUG_DEP FILE CLOSED nrecords=", n
+      if ( DEBUG_DEP ) write(*,*)  "DEBUG_DEP FILE CLOSED nrecords=", n
        
    end if  !  ( me == 0 )
 
@@ -226,10 +220,10 @@ subroutine ReadLanduse()
     logical, save :: my_first_call = .true.
     real :: hveg
 
-    if ( DEBUG_DEP ) print *, "UKDEP SetLandUse, me, day ", me, daynumber
+    if ( DEBUG_DEP ) write(*,*) "UKDEP SetLandUse, me, day ", me, daynumber
 
     if ( my_first_call ) then
-        if ( DEBUG_DEP ) print *, "UKDEP FIrst Start SetLandUse, me ", me
+        if ( DEBUG_DEP ) write(*,*) "UKDEP FIrst Start SetLandUse, me ", me
 
 
        !u7.4vf crops are distinguished since their height varies
@@ -251,7 +245,7 @@ subroutine ReadLanduse()
          hveg_max(lu) = max( hveg_max(lu), 0.0)
          LAImax(lu)   = max( LAImax(lu),   0.0)
 
-           if ( DEBUG_DEP .and. me == 0 ) print *, "UKDEP_VEG", lu, &
+           if ( DEBUG_DEP .and. me == 0 ) write(*,*) "UKDEP_VEG", lu, &
                            crops(lu), bulk(lu), forest(lu), conif_forest(lu)
         end do
 
@@ -273,6 +267,10 @@ subroutine ReadLanduse()
       luflux_wanted(WHEAT) = .true.
 
       !/ 3./ -- Calculate growing seasons where needed
+      !           and water_fraction
+
+        water_fraction(:,:) = 0.0         !ds Pb210 
+        ice_fraction(:,:)   = 0.0         !ds Pb210 
 
         do i = li0, li1
           do j = lj0, lj1
@@ -299,6 +297,16 @@ subroutine ReadLanduse()
                     landuse_gpot(i,j,ilu) =  0.0          
                  end if
 
+               !ds Pb210 : water fraction
+
+                if ( lu == LU_WATER ) water_fraction(i,j) = landuse_data(i,j,ilu)
+                if ( lu == LU_ICE   )   ice_fraction(i,j) = landuse_data(i,j,ilu)
+
+                if ( DEBUG_DEP .and. &
+                    i_glob(i) == DEBUG_i .and. j_glob(j) == DEBUG_J ) &
+                      write(*,*) "DEBUG WATER ", ilu, lu, &
+                          water_fraction(i,j), ice_fraction(i,j)
+
             end do ! ilu
           end do ! j
         end do ! i
@@ -313,10 +321,6 @@ subroutine ReadLanduse()
              lu      = landuse_codes(i,j,ilu)
              if ( lu <= 0 ) call gc_abort(me,NPROC,"SetLandUse lu<0")
 
-             !rv1.2 if ( bulk(lu) ) then
-             !rv1.2    landuse_LAI(i,j,ilu) =  -99.99
-             !rv1.2    landuse_hveg(i,j,ilu) =  hveg_max(lu)
-             !rv1.2    hveg =  hveg_max(lu)
 
              if ( bulk(lu) ) cycle 
                 !rv1.2 else ! Growing veg present
@@ -367,7 +371,7 @@ subroutine ReadLanduse()
          end do ! lu
        end do ! j
     end do ! i
-    if ( DEBUG_DEP ) print *, "UKDEP Finishing SetLandUse, me ", me
+    if ( DEBUG_DEP .and. me==0 ) write(*,*)"UKDEP Finishing SetLandUse "
 
   end subroutine  SetLandUse
   !-------------------------------------------------------------------------

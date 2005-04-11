@@ -28,9 +28,9 @@ contains
     use Setup_1dfields_ml,   only : &
          rcemis,izen           & ! photolysis, emissions
          ,rcbio                & ! biogenic emis
+         ,rc_Rn222             & !ds Pb210
     ,rct, rcmisc, & ! rate-coeffients
          xn_2d,&               ! rename xn_2d to use simply x inside chemistry
-         !hf u2
     rh, f_Riemer  & ! to weight the hydrolysis of N2O5 with NO3,SO4 mass
    ,rcss,amk            !SeaS ,ACID bgn
 
@@ -152,7 +152,6 @@ contains
     ! su's suggetsion to help include My_Reactions only once:
     !  toiter gives the number of iterations used in TWOSTEP. Use
     !  more iterations near ground:
-    !rv1.2.1 - changed to KEMISTOP
 
     toiter(KCHEMTOP:5)    = 1    ! Upper levels - slow chemistry
     toiter(6:KEMISTOP-1)     = 2    ! Medium and cloud levels 

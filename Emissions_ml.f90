@@ -694,9 +694,6 @@ contains
 
                    !..   Assign to height levels 1-4
 
-                   !u4 do k=1,4
-                   !u4 - rewrite with k ranging over range defined in ModelConstants_ml
-
                    do k=KEMISTOP,KMAX_MID
                       do iqrc =1, NRCEMIS
                          gridrcemis0(iqrc,k,i,j) =   &

@@ -1,11 +1,6 @@
 module My_WetDep_ml
-  use MassBudget_ml,     only : totwdep
-  use ModelConstants_ml, only : atwS, atwN, atwPM
-!ds  use My_Derived_ml    , only : NWDEP, WDEP_SOX, WDEP_OXN, WDEP_RDN &
-!ds                                ,IOU_INST &   ! Index: instantaneous values
-!ds                                ,wdep         ! Wet deposition fields
-
- !ds use My_Derived_ml, only : WDEP_USED,D2_USED   !ds NEW system 16/12/2003
+ use MassBudget_ml,     only : totwdep
+ use ModelConstants_ml, only : atwS, atwN, atwPM
  use Derived_ml,    only : f_wdep, wdep,  &   !ds NEW system 16/12/2003
                            f_2d,   d_2d,  &
                            find_one_index, IOU_INST
@@ -26,7 +21,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP =  13  !SeaS 11  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP =  14  !SeaS 11  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
  !ds NEW 16/12/2003:
@@ -66,6 +61,7 @@ contains
     WetDep(11)  = WScav(PMCO,   1.0,  EFFCO)
     WetDep(12)  = WScav(SSFI,   1.0,  EFF25)   !SeaS
     WetDep(13)  = WScav(SSCO,   1.0,  EFFCO)   !SeaS
+    WetDep(14)  = WScav(Pb210,  1.0,  EFF25)   !ds Pb210
 
    !####################### ds NEW define indices here ##########
 

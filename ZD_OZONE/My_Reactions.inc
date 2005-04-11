@@ -1366,6 +1366,20 @@
       ! L = 0.0
        xnew(PMCO)=  amax1(0.0,  xold(PMCO) + dt2 * P)
 
+!-> Rn222
+
+      P =  rc_Rn222(k)
+      L = 1.0/(3.8235*24.0*3600.0)    ! Dietmar, 11/4/2005
+       xnew(Rn222)=  amax1(0.0, ( xold(Rn222) + dt2 * P))  &
+                     /(1.0 + dt2*L ) 
+       xnew(Rn222)=  max(0.0,  xold(Rn222) + dt2 * P)
+
+!-> Pb210
+
+      P = 1.0/(3.8235*24.0*3600.0) * xnew(Rn222)    ! Dietmar, 11/4/2005
+      ! L = 0.0
+       xnew(Pb210)=  max(0.0,  xold(Pb210) + dt2 * P)
+
 !SeaS
    if (SEASALT) then
 

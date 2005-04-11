@@ -428,8 +428,6 @@ program myeul
 
     call metvar(1)
 
-!put into metvar     call tiphys(1)  !hf NEW
-
     call adv_var(1)
 
     call Add_2timing(4,tim_after,tim_before,"After tabs, defs, adv_var")
@@ -464,8 +462,7 @@ program myeul
         newseason = 4
       end if
 
-    !u7.2 - daynumber needed  for BCs, so call here to be safe
-     ! ds- check later 
+    ! - daynumber needed  for BCs, so call here to be safe
 
       call dayno(current_date%month,current_date%day,daynumber) !u3
 
@@ -503,7 +500,6 @@ program myeul
       end if    ! mm_old.ne.mm
 
 !m9 - we add a monthly call to BoundaryConditions. Can re-code later for
-
 !     possibly shorter call intervals
 
       call Code_timer(tim_before)
@@ -527,7 +523,6 @@ program myeul
 
       call Add_2timing(8,tim_after,tim_before,"BoundaryConditions")
 
-      !bcs      call pvbound
                if( DEBUG_UNI ) print *, "1st Infield" , me, " numu ", numt
 
       if(METEOfelt)then
@@ -551,7 +546,6 @@ program myeul
 
       call metvar(numt)
 
-!put into metvar      call tiphys(numt) 
       call adv_var(numt)
 
       call Add_2timing(11,tim_after,tim_before,"metvar")
