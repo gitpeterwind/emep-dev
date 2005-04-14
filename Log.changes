@@ -1,3 +1,10 @@
+============== Hilde,  rv2_2_x  , 14/4/2005 ======================================
+My_chem_ml: small bug
+My_Reactions.inc: production rate of Pb210 corrected
+Setup_1d_ml: rc_Rn222 should be initialized for all levels. z_bnd converted to cm (from m)
+
+Pb210 changes added to ACID as well (My_Chem, My_Reactions)
+
 ============== Dave,  rv2_2_8  , 11/4/2005 ======================================
 
 Rn222 and Pb210 added (for CARBOSOL, but a useful general tracer)
