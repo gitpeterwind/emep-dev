@@ -133,7 +133,7 @@
   ,  IXADV_PMco        =   56  &
   ,  IXADV_SSfi        =   57  &  !SeaS 
   ,  IXADV_SSco        =   58  & 
-  ,  IXADV_RnR222      =   59  &  !ds apr2005
+  ,  IXADV_Rn222       =   59  &  !ds apr2005
   ,  IXADV_Pb210       =   60     !ds apr2005
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
