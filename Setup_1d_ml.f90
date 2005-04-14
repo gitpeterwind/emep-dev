@@ -288,10 +288,15 @@ contains
   ! at rate of 1 atom/cm2/s
 
      eland = 1.0 - water_fraction(i,j) - ice_fraction(i,j)
-
+!hf initialize, needed in My_Reactions
+     rc_Rn222(:)=0.0     
+!     rc_Rn222(KMAX_MID) = &
+!            ( 0.00182 * water_fraction(i,j)  + eland ) / &
+!            (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
+!hf z_bnd is in m, not cm, so need to divide by 100.
      rc_Rn222(KMAX_MID) = &
             ( 0.00182 * water_fraction(i,j)  + eland ) / &
-            (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
+            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.) 
 
   end subroutine setup_rcemis
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
