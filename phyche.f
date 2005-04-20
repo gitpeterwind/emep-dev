@@ -15,7 +15,8 @@ c
      &                       DerivedProds,Derived
       use DryDep_ml,    only : drydep,init_drydep
       use Par_ml   ,    only : me, MAXLIMAX, MAXLJMAX
-      use Met_ml ,      only : roa,z_bnd,z_mid,metint, psurf, cc3dmax,
+      !dsps use Met_ml ,      only : roa,z_bnd,z_mid,metint, psurf, cc3dmax,
+      use Met_ml ,      only : roa,z_bnd,z_mid,metint, ps, cc3dmax,
      &                            zen,coszen,Idirect,Idiffuse
       use ModelConstants_ml , only : KMAX_MID
      &			, dt_advec    ! time-step for phyche/advection
@@ -115,7 +116,8 @@ c
         end if
         !ds mar2005 call SolBio2D(daynumber,cc3dmax(:,:,KMAX_MID),psurf)
 
-        call ClearSkyRadn(psurf,coszen,Idirect,Idiffuse)
+        call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
+        !dsps call ClearSkyRadn(psurf,coszen,Idirect,Idiffuse)
 
         call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
 

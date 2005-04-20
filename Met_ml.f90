@@ -99,8 +99,8 @@ private
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-                  psurf & !u7.4lu psa  Surface pressure hPa
-                 ,surface_precip    & ! Surface precip mm/hr   ! ds rv1.6.2
+                  !dsps psurf & !u7.4lu psa  Surface pressure hPa
+                 surface_precip    & ! Surface precip mm/hr   ! ds rv1.6.2
                  !ds apr2005 ,t2&      !u7.4vg temp2m  Temp 2 m   deg. K
                  ,u_ref !wind speed
 
@@ -768,7 +768,7 @@ private
 !     conversion of pressure from mb to Pascal.
 
 	    ps(i,j,nr) = ps(i,j,nr)*PASCAL
-	    psurf(i,j) = ps(i,j,nr) !u7.4vg - was psa
+	    !dsps psurf(i,j) = ps(i,j,nr) !u7.4vg - was psa
 
 !ds rv1.6.2
 ! surface precipitation, mm/hr
@@ -781,7 +781,8 @@ private
 !su	    th2m(i,j,nr) = th2m(i,j,nr)*(1.e+5/ps(i,j,nr))**(KAPPA)
 	   !ds apr2005  th2m(i,j,nr) = th2m(i,j,nr)*exp(-KAPPA*log(ps(i,j,nr)*1.e-5))
 
-            rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,nr) ) 
+            !dsps rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,nr) ) 
+            rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) ) 
 
 !ds apr2005: For MM5 we get u*, not tau. Since it seems better to
 !             interpolate tau than u*  between time-steps we convert
@@ -1097,7 +1098,7 @@ private
 	  roa(:,:,:,1) = roa(:,:,:,1) 				&
 			+ (roa(:,:,:,2) - roa(:,:,:,1))*div
 
-	  psurf(:,:) = ps(:,:,1)  !u7.4vg was psa
+	  !dsps psurf(:,:) = ps(:,:,1)  !u7.4vg was psa
 
 	  ps(:,:,1) = ps(:,:,1) 				&
 			+ (ps(:,:,2) - ps(:,:,1))*div
@@ -1140,7 +1141,7 @@ private
 	  !7.4vg, but put after ps update psa(:,:) = ps(:,:,1)
 
 	  ps(:,:,1) = ps(:,:,2)
-	  psurf(:,:) = ps(:,:,1)   ! u7.4vg
+	  !dsps psurf(:,:) = ps(:,:,1)   ! u7.4vg
 	  t2_nwp(:,:,1) = t2_nwp(:,:,2)
 
 !u7.4vg - note we need pressure first
@@ -1205,7 +1206,8 @@ private
      !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
       forall( i=1:limax, j=1:ljmax ) 
-           rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,1) ) 
+           !dsps rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,1) ) 
+           rho_surf(i,j)  = ps(i,j,1)/(RGAS_KG * t2_nwp(i,j,1) ) 
       end forall
 
       if(.not. foundustar)then
@@ -1244,13 +1246,11 @@ private
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    subroutine MetModel_LandUse(callnum)
 
-  !ds rv1.2 combines old subroutines in_isnowc and inpar
-  ! (and commented out SetZ0)
    !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
    !
    !     This subroutine reads parameterfields from file
    !     reading surface roughness classes from file: rough.170
-   !     reading snow                      from file: rough.170
+   !     reading snow                      from file: snowc.dat
    !
    !     ... fields as used in meteorological model
    !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

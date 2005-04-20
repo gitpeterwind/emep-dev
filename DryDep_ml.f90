@@ -52,7 +52,8 @@ module DryDep_ml
                             i_glob, j_glob   ! for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
  use Met_ml,         only : roa,tau,fh,z_bnd,th,ps,u,v,z_mid&
-                            ,snow, pr, psurf, cc3dmax, t2_nwp, q &
+                            !dsps ,snow, pr, psurf, cc3dmax, t2_nwp, q &
+                            ,snow, pr, ps, cc3dmax, t2_nwp, q &
                             ,surface_precip & ! ds rv1.6.2 
                             ,zen,coszen,Idirect,Idiffuse & !ds mar2005
                             ,ustar_nwp, invL_nwp &  !ds apr2005
@@ -346,7 +347,7 @@ module DryDep_ml
           print "(a10,i4,3i3,i6,f6.1,f8.3,4f7.2)", "UKDEP SOL", &
                   daynumber, imm, idd, ihh, current_date%seconds, &
                    zen(i,j), coszen(i,j), cc3dmax(i,j,KMAX_MID), &
-                     1.0e-5*psurf(i,j), Idfuse, Idrctt
+                     1.0e-5*ps(i,j,1), Idfuse, Idrctt
           print "(a10,i4,3i3,2f8.3,es12.4,f8.4)", "UKDEP NWP", &
                   daynumber, imm, idd, ihh,  &
                   Hd, LE, invL_nwp(i,j), ustar_nwp(i,j)
@@ -466,7 +467,8 @@ module DryDep_ml
              Hd = 0.0
         end if
 
-        call Get_Submet(hveg,t2_nwp(i,j,1),Hd,LE, psurf(i,j), &
+        !dsps call Get_Submet(hveg,t2_nwp(i,j,1),Hd,LE, pssurf(i,j), &
+        call Get_Submet(hveg,t2_nwp(i,j,1),Hd,LE, ps(i,j,1), &
                z_ref, u_ref(i,j), q(i,j,KMAX_MID,1), & ! qw_ref
                        debug_flag,                        &    ! in
                        ustar_loc, invL,                   &    ! in-out
@@ -492,9 +494,9 @@ module DryDep_ml
                    Ts_C,               & ! Ts_C
                    vpd,                & ! CHECK 
                    SWP(daynumber),     & ! NEEDS i,j later
-                   psurf(i,j),         &
-                   is_wet,             &  !ds rv1.6.2 true if wet
-                   !ds pr_acc(KMAX_MID),   &  ! Bug fixed by hf - was pr
+                   !dsps psurf(i,j),         &
+                   ps(i,j,1),         &
+                   is_wet,             &
                    coszen(i,j),        &  ! CHECK   
                    Idirect(i,j),       &  ! ds mar2005 
                    Idiffuse(i,j),      &  ! ds mar2005
