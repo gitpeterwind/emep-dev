@@ -1,7 +1,7 @@
-============== Dave,   rv2_2_xx , 20/4/2005 ======================================
+============== Dave,   rv2_2_10 , 22/4/2005 ======================================
 
-psurf replaced by ps throughout 
-
+psurf replaced by ps throughout. Small error in placement of psurf now hopefully
+avoided. 
 
 ============== Hilde,  rv2_2_9  , 14/4/2005 ======================================
 My_chem_ml: small bug
