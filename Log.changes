@@ -1,3 +1,12 @@
+============== Dave,   rv2_2_11 , 11/5/2005 ======================================
+
+Small changes in Met_ml and where iclass used:
+
+iclass array replaced by more descriptive nwp_sea logical - we only
+ever checked if iclass == 0 anyway.
+
+r_class  - declared simply, not with allocatable.
+
 ============== Dave,   rv2_2_10 , 22/4/2005 ======================================
 
 psurf replaced by ps throughout. Small error in placement of psurf now hopefully

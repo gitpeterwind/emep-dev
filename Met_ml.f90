@@ -5,6 +5,7 @@
                          module Met_ml
 
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+! ds may05 - use nwp_sea instead of iclass
 ! ds rv1.2 MetModel_LandUse added here for snow and iclass
 !  - combined from hf and pw Met_ml
 ! October 2001 hf added call to ReadField:::: WITH TKE scheme (Octobar 2004)
@@ -119,8 +120,12 @@ private
 
 !ds rv1.2  keep HIRLAM/xx met model landuse stuff in same routine
   integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: & 
-       snow,    &  ! monthly snow (1=true), read in MetModel_LandUse
-       iclass      ! roughness class ,         "       "       "
+       snow        ! monthly snow (1=true), read in MetModel_LandUse
+       !ds may05 iclass      ! roughness class ,         "       "       "
+
+!ds may05
+  logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: & 
+       nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
 
   logical, private, parameter ::  MY_DEBUG = .false.
   logical, private, save      ::  debug_proc = .false.
@@ -1262,7 +1267,8 @@ private
 
     integer, intent(in) :: callnum
     integer ::  i,j, err
-    real, allocatable, dimension(:,:) :: r_class  ! Roughness (real) 
+    !ds may05 real, allocatable, dimension(:,:) :: r_class  ! Roughness (real) 
+    real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real) 
     character*20 fname
 
     ios = 0
@@ -1274,20 +1280,24 @@ private
            write(6,*) 'filename for landuse ',fname
         end if
 
-        allocate(r_class(MAXLIMAX,MAXLJMAX),stat=err)
-        if ( err /= 0 ) call gc_abort(me,NPROC,"alloc err:rough")
+        !ds may05 allocate(r_class(MAXLIMAX,MAXLJMAX),stat=err)
+        !ds may05 if ( err /= 0 ) call gc_abort(me,NPROC,"alloc err:rough")
 
         call ReadField(IO_ROUGH,fname,r_class)
    
        ! And convert from real to integer field
       
+        nwp_sea(:,:) = .false.
         do j=1,ljmax
            do i=1,limax
-              iclass(i,j)=nint(r_class(i,j))              
+              !ds may05 iclass(i,j)=nint(r_class(i,j))              
+              if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.              
            enddo
         enddo
-        deallocate(r_class,stat=err)
-        if ( err /= 0 ) call gc_abort(me,NPROC,"dealloc err:rough")
+
+        !ds may05 deallocate(r_class,stat=err)
+        !ds may05 if ( err /= 0 ) call gc_abort(me,NPROC,"dealloc err:rough")
+
     else ! callnum == 2
         if (me == 0) then
            write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
@@ -1299,29 +1309,8 @@ private
 
     end if ! callnum == 1 
 
-  !ds rv1.2 commented out code put here for possible future use.
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-   !  subroutine SetZ0()
-   !
-   !    ! This routine is not used? (emep1.2beta)
-   !    !
-   !    !  Set the surface roughness equal to the lam50e values.
-   !    !  (ds comment - all this rougness stuff has to be reviewed/replaced 
-   !    !   with new  deposition modules, at least that from RIVM)
-   !
-   !    integer              :: i, j, icl
-   !    real, dimension(0:6) ::  class   ! Some surface roughnesses ??
-   !
-   !    class =  (/ 1.0e-4,1.0e-3,3.0e-1,3.0e-1,3.0e-1,3.0e-1,1.0e-3 /)
-   !
-   !    do j = 1,ljmax
-   !      do i = 1,limax
-   !         icl = iclass(i,j)
-   !         z0(i,j) = class(icl)
-   !      end do
-   !    end do
-   !
-   !  end subroutine SetZ0
+
  end subroutine MetModel_LandUse
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

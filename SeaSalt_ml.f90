@@ -18,7 +18,7 @@
                                  ,me   ! for testing
  use PhysicalConstants_ml, only : CHARNOCK,GRAV,KARMAN, AVOG  &
                                  ,PI, AVOG
- use Met_ml,               only : ustar_nwp, roa, z_bnd, iclass
+ use Met_ml,               only : ustar_nwp, roa, z_bnd, nwp_sea !ds may05 iclass
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
  use UKdep_ml,             only : landuse_ncodes, landuse_codes, landuse_data   !st sept,2004
 
@@ -73,7 +73,8 @@
     prodN_ss(:) = 0.
 
    !ds ================
-    if ( iclass(i,j) /= 0) return  !ds - faster to check here!
+    !ds may05 if ( iclass(i,j) /= 0) return  !ds - faster to check here!
+    if ( .not. nwp_sea(i,j) ) return  !ds - faster to check here!
    !ds ================
 
 !st sept,2004 - loop over the LU present in the grid

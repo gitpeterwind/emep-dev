@@ -57,7 +57,8 @@ module DryDep_ml
                             ,surface_precip & ! ds rv1.6.2 
                             ,zen,coszen,Idirect,Idiffuse & !ds mar2005
                             ,ustar_nwp, invL_nwp &  !ds apr2005
-                            ,iclass   &
+                            ,nwp_sea   & ! ds may05
+                            !ds may05 ,iclass   &
                             ,fl &
                             ,pzpbl&  !stDep
                             ,u_ref !horizontal wind 
@@ -179,7 +180,7 @@ module DryDep_ml
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
  logical :: is_wet  ! set true if surface_precip>0
- logical :: hirlam_sea   !ds .. set true if iclass == 0
+ !ds may05 logical :: hirlam_sea   !ds .. set true if iclass == 0
 
 !stDep
  integer :: nae
@@ -267,9 +268,9 @@ module DryDep_ml
       if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) debug_flag = .true.
 
 
-      ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
+      !ds may05 ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
 
-      hirlam_sea  = ( iclass(i,j) == 0 )   ! nb 0 = sea, 1= ice, 2=tundra
+      !ds may05 hirlam_sea  = ( iclass(i,j) == 0 )   ! nb 0 = sea, 1= ice, 2=tundra
 
      ! -----------------------------------------------------------------!
      !.and conversion facrtor,  convfac (( ps-pt)/grav... )  ===> 
@@ -462,7 +463,8 @@ module DryDep_ml
         ! As a simple subsistute, we assume neutral condiutions for these
         ! situations.
 
-        if( .not. water(lu) .and. hirlam_sea  ) then
+        !ds may05 if( .not. water(lu) .and. hirlam_sea  ) then
+        if( .not. water(lu) .and. nwp_sea(i,j)  ) then
              invL = 0.0
              Hd = 0.0
         end if

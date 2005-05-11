@@ -49,7 +49,7 @@ module Biogenics_ml
                        ,li0,li1,lj0,lj1
   use My_Emis_ml       , only : FORESTVOC
   use GridValues_ml    , only : xm2, gb
-  use Met_ml           , only : iclass   ! HIRLAM/xxx met model land classes
+  !ds may05 use Met_ml           , only : iclass   ! HIRLAM/xxx met model land classes
   use Io_ml            , only : IO_FORES, open_file, ios
 !    Read forest data for natural VOC emissions
 !-----------------------------------------------------------------------------
