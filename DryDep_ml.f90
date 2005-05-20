@@ -449,6 +449,10 @@ module DryDep_ml
                      SAIadd(lu) = 1.5   ! Sensescent
             end if
         end if ! crops
+      !--------------- bug fix 4/5/2005 ----------------
+        SAIadd(WHEAT) = 1.5
+
+
 
 
 
