@@ -1374,7 +1374,7 @@
       L = 1.0/(5.51614*24.0*3600.0)    ! Dietmar, 11/4/2005
        xnew(Rn222)=  amax1(0.0, ( xold(Rn222) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
-       xnew(Rn222)=  max(0.0,  xold(Rn222) + dt2 * P)
+!dsbug       xnew(Rn222)=  max(0.0,  xold(Rn222) + dt2 * P)
 
 !-> Pb210
 !hf 3.8235/ln2=5.51614
