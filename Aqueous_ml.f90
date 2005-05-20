@@ -500,7 +500,7 @@ end subroutine get_frac
   !  local
 
 
-    integer :: adv     ! index in IXADV_  arrays
+    integer :: itot    ! index in xn_2d arrays  !ds may05 - was adv
     integer :: spec    !  species index from WetDep array
     integer :: n,k
 
@@ -549,19 +549,20 @@ end subroutine get_frac
                    spec, WetDep(spec)%W_sca, WetDep(spec)%W_sub
          end if ! DEBUG
 
-         adv = WetDep(spec)%adv
+         !ds may05 adv = WetDep(spec)%adv
+         itot = WetDep(spec)%itot
 
          do k = kcloudtop, KMAX_MID
-              loss =  xn_2d(adv,k) * ( 1.0 - exp( -vw(k)*pr_acc(k)*dt ) )
-              xn_2d(adv,k) = xn_2d(adv,k) - loss
+              loss =  xn_2d(itot,k) * ( 1.0 - exp( -vw(k)*pr_acc(k)*dt ) )
+              xn_2d(itot,k) = xn_2d(itot,k) - loss
               sumloss(spec) = sumloss(spec) + loss * rho(k)
 
              if ( DEBUG_AQ .and. i == 3 .and. j == 3 ) then
-                print "(a30,4i4)", "DEBUG_WDEP me, k, adv, spec", me, k, adv, spec
+                print "(a30,4i4)", "DEBUG_WDEP me, k, itot, spec", me, k, itot, spec
                 print "(a30,i4, 2es12.4, f8.2)", "DEBUG_WDEP me, vw, pr, dt ", me,  &
                        vw(k), pr_acc(k), dt
                 print "(a30,3es12.4)", "DEBUG_WDEP loss, xn, sumloss", &
-                         loss, xn_2d(adv,k), sumloss(spec)
+                         loss, xn_2d(itot,k), sumloss(spec)
              end if ! DEBUG
          end do   ! k loop
      end do  ! spec loop

@@ -1,9 +1,7 @@
 module My_WetDep_ml
  use MassBudget_ml,     only : totwdep
  use ModelConstants_ml, only : atwS, atwN, atwPM
- use Derived_ml,    only : f_wdep, wdep,  &   !ds NEW system 16/12/2003
-                           f_2d,   d_2d,  &
-                           find_one_index, IOU_INST
+ use Derived_ml,  only : f_wdep, wdep, f_2d, d_2d, find_one_index, IOU_INST
 
 
   use GenSpec_tot_ml          ! SO2, SO4, etc.
@@ -15,7 +13,7 @@ module My_WetDep_ml
   public :: WetDep_Budget     ! Call from Aqueous_ml
 
   type, public :: WScav
-     integer  :: adv
+     integer  :: itot     !ds may05 - was adv - confusing
      real  :: W_sca       ! Scavenging ratio/z_Sca/rho = W_sca/1.0e6
      real  :: W_sub       ! same for subcloud
   end type WScav
@@ -24,8 +22,6 @@ module My_WetDep_ml
   integer, public, parameter :: NWETDEP =  14  !SeaS 11  ! Number of solublity classes
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
- !ds NEW 16/12/2003:
-
   integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
   integer, private, save :: WDEP_SOX, WDEP_OXN, WDEP_RDN
 
