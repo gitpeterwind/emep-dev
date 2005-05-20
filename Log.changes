@@ -1,3 +1,14 @@
+============== Dave,   rv2_2_12 , 20/5/2005 ======================================
+
+DryDep_ml.f90 - bug fix on SAIadd(WHEAT)
+
+My_Reactions - bug fix on Rn222
+
+My_WetDep    - renamed adv to itot since the index is for the xn_2d arrays, not ADV
+
+Aqueous_ml   - renamed adv to itot since the index is for the xn_2d arrays, not ADV
+
+
 ============== Dave,   rv2_2_11 , 11/5/2005 ======================================
 
 Small changes in Met_ml and where iclass used:
