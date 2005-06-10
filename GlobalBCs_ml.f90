@@ -377,7 +377,7 @@ endif
 elseif ( year == 2002 ) then
    macehead_O3 = (/  42.4 ,     44.4 ,     45.5 ,     45.0 ,     45.9 ,     39.8 &
                ,     32.5 ,     28.7 ,     37.7 ,     39.3 ,     40.5 ,     42.3 /)
-!hf 2003 updated 10/6-2005
+!hf 2003 updated 10/6-2005, using EMEP sector data.
 elseif ( year == 2003 ) then
 !   macehead_O3 = (/  40.5 ,     40.6 ,     45.0 ,     45.7 ,     46.5 ,     43.0 &
 !               ,     33.9 ,     34.2 ,     35.3,      39.3 ,     40.5 ,     42.3 /)
