@@ -1,0 +1,222 @@
+module PhyChem_ml
+!
+!     physical and chemical routine calls within one advection step
+!     driven from here
+!   
+!     Output of hourly data
+!
+!-----------------------------------------------------------------------------
+   use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
+   use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after  
+
+   use Advection_ml,   only: advecdiff,adv_int
+   use Chemfields_ml,  only : xn_adv,cfac,xn_shl
+   use Dates_ml,       only : date, add_dates,dayno, daynumber
+   use Derived_ml,     only : wdep, ddep,IOU_INST, DerivedProds, Derived
+   use DryDep_ml,      only : drydep,init_drydep
+   use Emissions_ml,   only : EmisSet  
+   use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
+                             gl, gb
+   use Met_ml ,        only : roa,z_bnd,z_mid,metint, ps, cc3dmax, &
+                               zen,coszen,Idirect,Idiffuse
+   use ModelConstants_ml, only : KMAX_MID, nmax, nstep, current_date &
+   			,dt_advec  &    ! time-step for phyche/advection
+                        ,END_OF_EMEPDAY          ! (usually 6am)
+   use Nest_ml,        only : readxn, wrtxn
+   use Par_ml,         only : me, MAXLIMAX, MAXLJMAX
+   use Polinat_ml,     only : polinat_out          ! 'Aircraft'-type  outputs
+   use Radiation_ml,   only : SolarSetup,       &!ds mar2005 - sets up radn params
+                             ZenithAngle,      &! gets zenith angle
+                             ClearSkyRadn,     &! Idirect, Idiffuse
+                             CloudAtten         ! 
+   use Runchem_ml,     only : runchem   ! Calls setup subs and runs chemistry
+   use Sites_ml,       only: siteswrt_surf, siteswrt_sondes    ! outputs
+   use Timefactors_ml, only : NewDayFactors  
+!-----------------------------------------------------------------------------
+implicit none
+private
+
+public :: phyche
+
+
+contains
+!++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ subroutine phyche(numt)
+   integer, intent(in) ::  numt
+
+   integer ::  i,j,k,n
+   logical, parameter :: DEBUG = .false.
+   logical, save :: End_of_Day = .false.
+
+   integer :: ndays
+   real :: thour
+
+
+    if ( DEBUG .and. debug_proc  ) then
+
+           write(6,*)"PhyChe debug:", me, debug_li, debug_lj, &
+                      " current_date: ", current_date
+     end if ! DEBUG
+    !------------------------------------------------------------------
+
+
+    !     start of inner time loop which calls the physical and
+    !     chemical routines.
+
+
+    DO_OUTER: do nstep = 1,nmax
+
+       !     Hours since midnight at any time-step
+       !	using current_date we have already nstep taken into account
+
+       thour = real(current_date%hour) + current_date%seconds/3600.0 & 
+     			+ 0.5*dt_advec/3600.0 
+
+       if ( DEBUG .and. debug_proc ) then
+           write(6,*) "me, thour-CURRENT_DATE CHECK: ", me, thour,  &
+                      current_date%hour, current_date%seconds
+
+           if ( current_date%hour == 12 ) then
+
+		call dayno(current_date%month,current_date%day,ndays)
+	        write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
+           endif
+
+        endif
+
+        if (me == 0) write(6,"(a15,i6,f8.3,2i5)") 'timestep nr.',nstep,thour
+
+        call readxn(current_date)
+
+!        ==================
+	call Code_timer(tim_before)
+
+    	call EmisSet(current_date)
+        call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
+
+        wdep(:,:,:,IOU_INST) = 0.0
+        ddep(:,:,:,IOU_INST) = 0.0
+!       ==================
+
+
+       !ds===================================
+
+        call SolarSetup(current_date%year,current_date%month, &
+                           current_date%day,thour)
+
+        call ZenithAngle(thour, gb, gl, zen, coszen )
+
+        if( DEBUG .and. debug_proc  ) then
+          write(*,*) "PhyChem ZenRad ", current_date%day, current_date%hour, &
+               thour, gl(debug_li,debug_lj),gb(debug_li,debug_lj), &
+                     zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
+        end if
+
+        call ClearSkyRadn(ps(:,:,1),coszen,Idirect,Idiffuse)
+
+        call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
+
+       !ds===================================
+        call Add_2timing(16,tim_after,tim_before,"phyche:ZenAng")
+
+
+        !================
+	call advecdiff
+        call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
+        !================
+
+        call Code_timer(tim_before)
+
+
+       !/ See if we are calculating any before-after chemistry productions:
+
+          !=============================
+          if ( nstep == nmax ) call DerivedProds("Before",dt_advec)
+          !=============================
+
+          call Add_2timing(26,tim_after,tim_before,"phyche:MACHO-prod")
+
+         !hf===================================
+           call init_drydep()
+         !===================================
+
+         !=========================================================
+
+          call runchem(numt)   !  calls setup subs and runs chemistry
+
+          call Add_2timing(28,tim_after,tim_before,"Runchem")
+
+          !=========================================================
+                           
+
+         !/ See if we are calculating any before-after chemistry productions:
+
+          !=============================
+          if ( nstep == nmax ) call DerivedProds("After",dt_advec)
+          !=============================
+
+	  call Code_timer(tim_before)
+          !=============================
+          call Add_2timing(34,tim_after,tim_before,"phyche:drydep")
+
+
+
+          !=============================
+          ! this output needs the 'old' current_date_hour
+
+           call polinat_out
+          !=============================
+
+!	the following partly relates to end of time step - hourly output
+!	partly not depends on current_date
+!	=> add dt_advec to current_date already here
+
+
+          !====================================
+          current_date = add_dates(current_date,nint(dt_advec))
+          !====================================
+
+
+          !ds rv1_9_28: to be consisten with reset of IOU_DAY
+
+          End_of_Day = (current_date%seconds == 0 .and. &
+                        current_date%hour    == END_OF_EMEPDAY)
+
+          if( End_of_Day .and. me == 0 ) then
+              write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY, Hour,seconds=", &
+                END_OF_EMEPDAY, current_date%hour,current_date%seconds
+          endif
+
+
+          call Derived(dt_advec,End_of_Day)
+
+         ! Hourly Outputs:
+	  if ( current_date%seconds == 0 ) then
+
+              if ( modulo(current_date%hour, FREQ_SITE) == 0 )  &
+                                 call siteswrt_surf(xn_adv,cfac,xn_shl)
+
+              if ( modulo(current_date%hour, FREQ_SONDE) == 0 ) &
+                  call siteswrt_sondes(xn_adv,xn_shl)
+
+              if ( NHOURLY_OUT > 0 .and.  &
+                     modulo(current_date%hour, FREQ_HOURLY) == 0 ) &
+                         call hourly_out()
+
+	  end if
+
+          call Add_2timing(35,tim_after,tim_before,"phyche:outs")
+
+
+	  call metint
+	  call adv_int
+
+          call wrtxn(current_date)
+
+          call Add_2timing(36,tim_after,tim_before,"phyche:ints")
+
+      enddo DO_OUTER
+
+   end subroutine phyche
+!-----------------------------------------------------------------------------
+end module PhyChem_ml
