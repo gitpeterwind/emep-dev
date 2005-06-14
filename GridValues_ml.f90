@@ -16,8 +16,8 @@
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
  use Io_ml,                only : IO_ROUGH
- use ModelConstants_ml,    only : KMAX_BND, KMAX_MID   ! vertical extent
-!pw emep1.2beta use ReadField_ml,         only : Readfield
+ use ModelConstants_ml,    only : KMAX_BND, KMAX_MID  &! vertical extent
+      ,DEBUG_i, DEBUG_j     ! global coordinate of debug-site !dsjun2005
  use Par_ml, only : &
         MAXLIMAX,MAXLJMAX   & ! max. possible i, j in this domain
       ,limax,ljmax          & ! actual max.   i, j in this domain
@@ -71,7 +71,6 @@
   real, public, save,  dimension(MAXLIMAX,MAXLJMAX) :: &
             gl   &               !longitude of EMEP grid center
            ,gb                  !latitude  of EMEP grid center
-!          , z0 !ds: From LAM50 - replace a.s.a.p. !removed by pw emep1.2beta 
 
     real, public, save,  dimension(IILARDOM,JJLARDOM) :: &    !hf BC
             gb_glob,   &               !longitude of EMEP grid center
@@ -102,9 +101,12 @@
                xm2ji  &
               ,xmdji
 
-  !/** internal parameters
+ ! ds jun2005:
+  integer, public, save :: &
+              debug_li, debug_lj         ! Local Coordinates of debug-site
+  logical, public, save :: debug_proc          ! Processor with debug-site
 
-!pw u3  real, private, parameter :: AN = 237.731644  !No. grids from pole to equator?
+  !/** internal parameters
 
   logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
   logical,public,parameter :: METEOfelt=.true. !.true. if uses "old" (not CDF) meteo input
@@ -125,6 +127,7 @@ contains
 
 
 ! NB! HIRLAM uses Earth radius = 6.371e6 m : 
+! AN = No. grids from pole to equator
 ! AN = 6.371e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M = 237.768957  
 
   !/ Define global coordinates of local i,j values. We need to account for
@@ -138,21 +141,36 @@ contains
     j_glob = (/ (n + gj0 + JSMBEG - 2, n=0,MAXLJMAX+1) /) 
 
     if ( DEBUG_GRID ) then
-        print *, "DefGrid: me,ISMBEG,JSMBEG,gi0,gj0",me,ISMBEG,JSMBEG,gi0,gj0
-        print *, "DefGrid: me,i_glob",  me, i_glob(1), i_glob(MAXLIMAX+1)
-        print *, "DefGrid: me,j_glob",  me, j_glob(1), j_glob(MAXLJMAX+1)
-        print *, "DefGrid: me,MAXLIMAX, limax",me,   MAXLIMAX, limax
-        print *, "DefGrid: me,MAXLJMAX, ljmax",me,   MAXLJMAX, ljmax
+        write(*,*) "DefGrid: me,ISMBEG,JSMBEG,gi0,gj0",me,ISMBEG,JSMBEG,gi0,gj0
+        write(*,*) "DefGrid: me,i_glob",  me, i_glob(1), i_glob(MAXLIMAX+1)
+        write(*,*) "DefGrid: me,j_glob",  me, j_glob(1), j_glob(MAXLJMAX+1)
+        write(*,*) "DefGrid: me,MAXLIMAX, limax",me,   MAXLIMAX, limax
+        write(*,*) "DefGrid: me,MAXLJMAX, ljmax",me,   MAXLJMAX, ljmax
     end if
 
+    !ds jun2005:
+    !ds -------------- Find debug coords  and processor ------------------
 
-  !  map factor, and map factor squared.  !ko proper EMEP grid definition
+    do i = 1, MAXLIMAX
+       do j = 1, MAXLJMAX
+          if( i_glob(i) == DEBUG_i .and. j_glob(j) == DEBUG_j ) then
+             debug_li = i
+             debug_lj = j
+             debug_proc = .true.
+          end if
+       end do
+    end do
+    if( debug_proc ) write(*,*) "GridValues debug:", me, debug_li, debug_lj
+    !------------------------------------------------------------------
+
+
+  !  map factor, and map factor squared.
 
  if( METEOfelt)then
 
     ref_latitude=60.
     AN = 6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km
-     an2 = AN*AN
+    an2 = AN*AN
 
     do j=0,MAXLJMAX+1           ! ds - changed from ljmax+1
           y = j_glob(j) - yp     ! ds - changed from gj0+JSMBEG-2+j
@@ -161,9 +179,8 @@ contains
               x = i_glob(i) - xp   ! ds - changed
               rpol2(i,j) = (x*x + y)/an2
 
-!ko           xm(i,j) = 0.933/an2*(an2 + rpol2(i,j))
               xm(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2(i,j))
-!ko
+
               xm2(i,j) = xm(i,j)*xm(i,j)
               xmd(i,j) = 1.0/xm2(i,j)
               xm2ji(j,i) = xm2(i,j)

@@ -51,21 +51,19 @@ program myeul
                               tim_before,tim_before0,tim_before1, &
                               tim_after,tim_after0
   use My_WetDep_ml,     only : Init_WetDep
-  use GenChemicals_ml,  only : define_chemicals
   use MyChem_ml,        only : Init_mychem   
 
   use Advection_ml,     only : vgrid,adv_var,MIN_ADVGRIDS
-!hf cum
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Forests_init
   use BoundaryConditions_ml, only : BoundaryConditions
-  use Dates_ml,         only : date, dayno,daynumber   ! u7.4vg
+  use Dates_ml,         only : date, dayno,daynumber
   use DefPhotolysis_ml, only : readdiss
-!ds New Deriv:
   use Derived_ml,    only :  Init_Derived &
                                ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
+  use GenChemicals_ml,  only : define_chemicals
   use GridValues_ml,    only : DefGrid&  ! sets gl, gb, xm, gridwidth_m, etc.
                               ,METEOfelt!.true. if uses "old" (not CDF) meteo input
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
@@ -73,14 +71,14 @@ program myeul
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse,&
                                tiphys,Meteoread_CDF
   use ModelConstants_ml,only : KMAX_MID, current_date  &
-                              ,METSTEP   &   !u2 - replaces metstep
-                              ,runlabel1  &   !rv1_9_5 - explanatory text
-                              ,runlabel2  &   !rv1_9_5 - explanatory text
+                              ,METSTEP    &   ! Hours between met input
+                              ,runlabel1  &   ! explanatory text
+                              ,runlabel2  &   ! explanatory text
                               ,nprint,nass,nterm,iyr_trend, assign_nmax
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
-!ds New Deriv use My_Derived_ml,    only : IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
   use out_restri_ml,    only : set_outrestri
   use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2, parinit
+  use PhyChem_ml,       only : phyche  ! Calls phys/chem routines each dt_advec
   use Polinat_ml,       only : polinat_init,polinat_in
 
   use Sites_ml,         only : sitesdef  ! to get output sites
@@ -382,7 +380,7 @@ program myeul
     if ( me == 0 ) write(6,*)"Calling emissions with year" ,current_date%year
     call Emissions(current_date%year)  !!!!! IS this the right/best year????
 
-    !u7.2 - daynumber needed  for BCs, so call here to get initial
+    ! daynumber needed  for BCs, so call here to get initial
       call dayno(current_date%month,current_date%day,daynumber) !u3
 
 

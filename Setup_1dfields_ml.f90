@@ -51,14 +51,6 @@
 
    integer, public, save :: izen           ! integer of zenith angle
                                            !ds rv1.6.3 added here....
-   real,    public, save :: Idrctt, Idfuse ! Direct-total and diffuse radiation
+   !ds may2005 real,    public, save :: Idrctt, Idfuse ! Direct-total and diffuse radiation
 
  end module Setup_1dfields_ml
-
-
-
-
-
-
-
-

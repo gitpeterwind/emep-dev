@@ -14,11 +14,7 @@ module  My_Outputs_ml
 
   use Derived_ml, only : f_2d, d_2d, find_one_index
   use Dates_ml,       only : date  
-  use GenSpec_adv_ml !merlin  , only : NSPEC_ADV          &
-                  !merlin,IXADV_O3 &
-                 !merlin ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
-                 !merlin ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
-                 !merlin ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
+  use GenSpec_adv_ml
   use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml , only: species

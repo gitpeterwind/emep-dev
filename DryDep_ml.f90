@@ -83,7 +83,7 @@ module DryDep_ml
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
- use Setup_1dfields_ml,    only : xn_2d,amk,Idrctt,Idfuse
+ use Setup_1dfields_ml,    only : xn_2d,amk   !ds may2005,Idrctt,Idfuse
  use GenSpec_shl_ml,        only :  NSPEC_SHL
 !stDep
  use Aero_DryDep_ml,        only : Aero_Rb
@@ -163,7 +163,7 @@ module DryDep_ml
 
  integer, intent(in):: i,j
  integer n, ilu, lu, nlu, ncalc, nadv, ind, err,k   ! help indexes
- integer :: imm, idd, ihh     ! date
+ integer :: imm, idd, ihh, iss     ! date
  integer :: nadv2d !index of adv species in xn_2d array
  real ustar_sq, & ! u star squared
       abshd,    & ! abs value of surfae flux of sens. heat W/m^2
@@ -213,7 +213,6 @@ module DryDep_ml
 
  ! Ecosystem specific deposition requires the fraction of dep in each landuse, lu:
 
-!stDep   real, dimension(NDRYDEP_CALC,NLUMAX):: Vg_ref_lu
    real, dimension(NDRYDEP_TOT,NLUMAX):: Vg_ref_lu
    real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
    integer :: lu_used(NLUMAX), nlu_used
@@ -224,10 +223,16 @@ module DryDep_ml
    real    :: c_hvegppb(NLANDUSE)
    real ::  Ra_diff       ! Ra from z_ref to hveg
    real :: gext_leaf, rc_leaf, rb_leaf, Fst
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!   real, save, dimension ::: leafw
-!if( lu ==  9 ) g_pot = 0.8  !!! TFMM FOR CLe wheat
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!! Extra outputs sometime used for Sweden/IVL/SEI/CEH. Important that this 
+!! line is kept at the end of the variable definitions and the start of real
+!!  code - allows both in .inc file
+!! Uncomment and make .inc file as required
+  ! include 'EXTRA_LU_Setup.inc'
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 
 !     first calculate the 3m deposition velocity following the same
 !     procedure as in the lagmod. second the flux and the accumulated 
@@ -238,13 +243,12 @@ module DryDep_ml
 !     Dry deposion rates are specified in subroutine readpar
 !
 
-!hf  do j = lj0,lj1
-!hf    do i = li0,li1
 
 !hf FOR DEBUGGING s
   imm      =    current_date%month            ! for debugging
   idd      =    current_date%day              ! for debugging
   ihh      =    current_date%hour             ! for debugging
+  iss      =    current_date%seconds          ! for debugging
 
      inv_gridarea = 1.0/(GRIDWIDTH_M*GRIDWIDTH_M) 
 
@@ -267,10 +271,6 @@ module DryDep_ml
       debug_flag = .false. 
       if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) debug_flag = .true.
 
-
-      !ds may05 ind = iclass(i,j)   ! nb 0 = sea, 1= ice, 2=tundra
-
-      !ds may05 hirlam_sea  = ( iclass(i,j) == 0 )   ! nb 0 = sea, 1= ice, 2=tundra
 
      ! -----------------------------------------------------------------!
      !.and conversion facrtor,  convfac (( ps-pt)/grav... )  ===> 
@@ -295,23 +295,6 @@ module DryDep_ml
       Hd = -fh(i,j,1)       ! Heat flux, *away from* surface
       LE = -fl(i,j,1)       ! Heat flux, *away from* surface
 
-
-!ds apr2005      if(foundustar)then                      !pw u3
-!ds apr2005         ustar_sq = ustar(i,j,1)*ustar(i,j,1)
-!ds apr2005      else
-!ds apr2005         ustar_sq = fm(i,j,1)/roa(i,j,KMAX_MID,1)
-!ds apr2005         ustar(i,j,1) = sqrt(ustar_sq)
-!ds apr2005         ustar(i,j,1) = max( ustar(i,j,1), 1.0e-5 )
-!ds apr2005      endif
-!ds apr2005      ustar_sq = max(ustar_sq, 1.e-10)
-
-     ! wind-speed at reference height, which we take as centre of
-     ! lowest layer:
-!pw rv2_2_2: defined in Met_ml with different definition:
-!         uses mapping factor, and averages over 4 edges
-!      u_ref = 0.5*sqrt( (u(i,j,KMAX_MID,1)+u(i-1,j,KMAX_MID,1))**2  &
-!                     + (v(i,j,KMAX_MID,1)+v(i,j-1,KMAX_MID,1))**2 )
-
       z_ref = z_mid(i,j,KMAX_MID)
 
       dtz      = dt_advec/z_bnd(i,j,KMAX_BND-1)
@@ -323,32 +306,15 @@ module DryDep_ml
         (roa(i,j,KMAX_MID,1)*CP*th(i,j,KMAX_MID,1))) ** (1./3.)
 
 
-    !ds mar2005 - now done in phyche.f
-    !ds mar2005 call SolBio(daynumber, coszen(i,j), &
-    !ds mar2005            cc3dmax(i,j,KMAX_MID)  & ! cloud cover above surface
-    !ds mar2005            ,psurf(i,j)            &
-    !ds mar2005            ,Idfuse, Idrctt)   ! output radiation
-      
-
     !   we must use L (the Monin-Obukhov length) to calculate deposition,
     !   therefore we calculate u*, t* from NWP-model data. 
-
-      !ds apr2005 rho_surf       = psurf(i,j)/(RGAS_KG * t2_nwp(i,j) )   ! at surface
-
-      !ds apr2005 ustar_nwp = ustar(i,j,1)    ! First guess = NWP value
-      !tstar_nwp = -fh(i,j,1)/ ( CP*rho_surf*ustar_nwp )
-
-      !ds apr2005 invL_nwp  = -KARMAN * GRAV * Hd/ &
-      !ds apr2005    (CP*rho_surf* ustar_nwp*ustar_nwp*ustar_nwp * th2m(i,j,1))
-      !ds apr2005 invL_nwp  = max( -1.0, invL_nwp ) !! limit very unstable
-      !ds apr2005 invL_nwp  = min(  1.0, invL_nwp ) !! limit very stable
 
     if ( DEBUG_UK .and. debug_flag ) then
           print "(a26,4i4)", "UKDEP DryDep me, i,j, ind ", me, i,j, ind
           print "(a10,i4,3i3,i6,f6.1,f8.3,4f7.2)", "UKDEP SOL", &
                   daynumber, imm, idd, ihh, current_date%seconds, &
                    zen(i,j), coszen(i,j), cc3dmax(i,j,KMAX_MID), &
-                     1.0e-5*ps(i,j,1), Idfuse, Idrctt
+                     1.0e-5*ps(i,j,1), Idiffuse(i,j), Idirect(i,j)
           print "(a10,i4,3i3,2f8.3,es12.4,f8.4)", "UKDEP NWP", &
                   daynumber, imm, idd, ihh,  &
                   Hd, LE, invL_nwp(i,j), ustar_nwp(i,j)
@@ -435,6 +401,7 @@ module DryDep_ml
 
       !ds code moved here from UK_ml to fix bug spotted by Peter, 19/8/2003
       !SAIadd for other vegetation still defined in UK_ml
+
        if (  crops(lu) ) then
 
             if ( daynumber < landuse_SGS(i,j,ilu) .or. &
@@ -443,13 +410,10 @@ module DryDep_ml
                 else if ( daynumber < &
                           (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
                      SAIadd(lu) = ( 5.0/3.5 - 1.0) * lai
-            !pw else if ( daynumber < landuse_EGS(i,j,lu) ) then
-!rv2_0_4pw      else if ( daynumber <= landuse_EGS(i,j,lu) ) then
                 else if ( daynumber <= landuse_EGS(i,j,ilu) ) then
                      SAIadd(lu) = 1.5   ! Sensescent
             end if
         end if ! crops
-      !--------------- bug fix 4/5/2005 ----------------
         SAIadd(WHEAT) = 1.5
 
 
@@ -467,13 +431,11 @@ module DryDep_ml
         ! As a simple subsistute, we assume neutral condiutions for these
         ! situations.
 
-        !ds may05 if( .not. water(lu) .and. hirlam_sea  ) then
         if( .not. water(lu) .and. nwp_sea(i,j)  ) then
              invL = 0.0
              Hd = 0.0
         end if
 
-        !dsps call Get_Submet(hveg,t2_nwp(i,j,1),Hd,LE, pssurf(i,j), &
         call Get_Submet(hveg,t2_nwp(i,j,1),Hd,LE, ps(i,j,1), &
                z_ref, u_ref(i,j), q(i,j,KMAX_MID,1), & ! qw_ref
                        debug_flag,                        &    ! in
@@ -518,10 +480,9 @@ module DryDep_ml
 
 
        !===================
-       !stDep
        !// calculate dry deposition velocities for fine/coarse particles
 
-         convec = wstar*wstar/(ustar_loc*ustar_loc)     ! Convection velocity scale  
+        convec = wstar*wstar/(ustar_loc*ustar_loc)     ! Convection velocity scale  
 
         call Aero_Rb ( ustar_loc, convec, roa(i,j,KMAX_MID,1)     &
                      , u_ref(i,j), lu, snow(i,j), wetarea, t2_nwp(i,j,1)      &   
@@ -631,12 +592,7 @@ module DryDep_ml
        ! (Caution - g_sto is for O3 only)
 
         if ( STO_FLUXES .and. luflux_wanted(lu) ) then
-          !dsDEC2003 - following stuff not needed any more. leaf_flux
-          !dsDEC2003   used instead
-          !dsDEC unit_flux(lu) = g_sto * Rsur(FLUX_CDEP)
-          !dsDEC lai_flux(lu)  = lai * unit_flux(lu)
 
-          !ds_sep27
           if ( hveg < 1.1 * z0 ) then   ! needed for temp crops, outside growing season
                 leaf_flux(lu) = 0.0
           else 
@@ -657,16 +613,6 @@ module DryDep_ml
              ( log((z_ref-d)/z0) -PsiM((z_ref-d)*invL) + PsiM(z0*invL))
 
           if ( DEBUG_FLUX .and. u_hveg <= 1.0e-19 ) then
-            print *, "ERRROR UHVEG", u_ref(i,j), u_hveg, z_ref,d,z0,hveg
-            print *, "ERRROR UHVEG DATE ",  imm, idd, ihh
-            print *, "ERRROR UHVEG HTS ", lu, hveg, d, z0
-            print *, "ERRROR UHVEG TERMS", &
-                             invL, &
-                             log((hveg-d)/z0), &  
-                             PsiM((hveg-d)*invL), &
-                             log((z_ref-d)/z0), &
-                             PsiM((z_ref-d)*invL), &
-                             PsiM(z0*invL) 
             call gc_abort(me,NPROC,"UHVEG!")
           end if
 
@@ -693,6 +639,13 @@ module DryDep_ml
 
           end if !ds_sep27-----------
         end if ! STO_FLUXES
+
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          !! Extra outputs sometime used for Sweden/IVL/SEI/CEH
+          !! Uncomment and make .inc file as required
+
+           ! include 'EXTRA_LU_Outputs.inc'
+
 
        !=======================
         end do LULOOP
@@ -798,37 +751,6 @@ module DryDep_ml
           ! find values over 1m2 of vegeation (regardless of how much veg
           ! is in grid, so we don't need lu_cover. Instead:
 
-          !dsDEC2003 - Most of the following stuff not needed any more. leaf_flux
-          !            used instead
-
-          !dsDEC2003 if ( STO_FLUXES .and. nadv == FLUX_ADV ) then
-!if(debug_flag) then
-!  print "(a15, 3i3,2es12.3,f8.4)","CHVEG ", i,j, lu, c_hveg, c_hvegppb(lu), lossfrac
-!end if
-
-             !dsDEC loss  = Vg_scale &
-             !dsDEC       * DepLoss(FLUX_ADV)/AVOG*1.e6  &  ! From mol/cm3 to mole/m3
-             !dsDEC       * z_bnd(i,j,KMAX_BND-1) * 1.e9     ! mole/m3 -> nmole/m2
-
-             ! dt_advec or dt_drydep ????? I guess ddep takes care of this
-             ! for accumulated?
-
-             !dsDEC unit_flux(lu) = unit_flux(lu) * loss
-
-             !dsDEC sto_frac      = lai_flux(lu)       ! eqv. to  LAI*gsto/Gsur
-             !dsDEC lai_flux(lu)  = lai_flux(lu)  * loss
-
-
-             !dsDEC if ( DEBUG_UK   .and. debug_flag) then
-             !dsDEC    write (6,"(a5,i4,3i4,f6.1,f8.4,es10.2,3f8.4,3es10.2)") &
-             !dsDEC      "OSTAD", lu, imm, idd, ihh, lu_lai(ilu), Vg_scale, &
-             !dsDEC         DepLoss(FLUX_ADV), sto_frac, &
-             !dsDEC            4.0e-11*xn_2d(nadv2d,KMAX_MID),& ! O3 in ppb
-             !dsDEC           cfac(nadv,i,j), &
-             !dsDEC           unit_flux(lu)/dt_advec, lai_flux(lu)/dt_advec,&
-             !dsDEC           leaf_flux(lu)
-             !dsDEC end if
-           !dsDEC2003 end if
 
             if ( DEBUG_UK .and. debug_flag ) then
 
@@ -880,16 +802,12 @@ module DryDep_ml
 
        ! inv_gridarea = xm2(i,j)/(GRIDWIDTH_M*GRIDWIDTH_M)
        convfac2 = convfac * xm2(i,j) * inv_gridarea/amk(KMAX_MID)
-       !ds convfaco3 = convfac / (amk(KMAX_MID)*dtz)
 
 
       !.. Add DepLoss to budgets if needed:
 
-       !ds call Add_ddep(i,j,convfac2,convfaco3,fluxfrac_adv,c_hvegppb)
        call Add_ddep(debug_flag,dt_advec,i,j,convfac2,lossfrac,fluxfrac_adv,c_hvegppb)
 
-!hf     enddo   !j
-!hf   enddo    !i
  end subroutine drydep
 
 end module DryDep_ml

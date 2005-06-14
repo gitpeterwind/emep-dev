@@ -1,3 +1,46 @@
+============== Dave/Hilde,   rv2_2_14 , 14/6/2005 ======================================
+
+.depend:      Removed from CVS. Not needed, as gmake depend generates it, and
+              it complicates cvs commit.
+
+DryDep_ml:    Tidy up (interim), plus some commented out code marker for 
+              EXTRA_LU outputs added - often used, but has no effect as coded 
+              now. Can be used to call user-generated include files if 
+              uncommented.
+
+GlobalBCs_ml: Small correction to Mace head correction 
+
+GridValues_ml:  New DEBUG system introduced. GridValues now works out immediately
+        which processor the DEBUG_i, DEBUG_j coordinates apply to (new logical
+        debug_proc set true), and then calculates the local coordinates
+       (debug_li, debug_lj). Other modules may now printout debug info with
+       a system such as :
+
+
+           if ( debug_proc )  then
+              write(*,*) "Debuuging ", some_data(debug_li,debug_lj,KMAX_MID)
+           end if
+
+         ... instead of having to test i_glob, j_glob against DEBUG_i, DEBUG_j
+          as before.  ( See the new PhyChem_ml for other examples)
+
+         Request: please switch modules you work on to this new system - it is
+         cleaner and faster. 
+
+
+PhyChem_ml.f90 - replaces phyche.f. Finally f90 !!!!!!!! ;-)
+
+           Code tidied up. Makes use of DEBUG_i, DEBUG_j
+
+phyche.f   ..... history !
+
+
+Setup_1d_fields_ml - removed unused Idrctt, Idffuse
+
+Unimod.f90         - uses PhyChem_ml, tidied up "use statements"
+ 
+
+
 ============== Hilde,   rv2_2_13 , 10/6/2005 ======================================
 Mace head correction for 2003 updated
 
