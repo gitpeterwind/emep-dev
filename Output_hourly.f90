@@ -320,11 +320,11 @@
        scale=1.
        if(nk==1)then !write as 2D
        call Out_netCDF(IOU_HOUR,def1,2,identi &
-            ,1,1,hourly(:,:),1,scale,CDFtype,ist,jst,ien,jen)
+            ,1,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen)
        elseif(nk>1)then   !write as 3D
           klevel=KMAX_MID-ik+1
        call Out_netCDF(IOU_HOUR,def1,3,identi &
-            ,1,1,hourly(:,:),1,scale,CDFtype,ist,jst,ien,jen,klevel)
+            ,1,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen,klevel)
        else
           !nk<1 : no output
        endif

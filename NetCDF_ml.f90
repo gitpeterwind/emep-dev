@@ -47,6 +47,9 @@
   public :: Out_netCDF
   public :: CloseNetCDF
   public :: Init_new_netCDF
+  public :: GetCDF
+  public :: WriteCDF
+  public :: ReadCDF
 
   private :: CreatenetCDFfile
   private :: createnewvariable
@@ -354,7 +357,7 @@ end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,dim,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
+subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
 
 !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
@@ -371,13 +374,13 @@ use My_Outputs_ml, only :FREQ_HOURLY
 
   implicit none
 
-integer ,intent(in) :: icmp,ndim,kmax,dim
+integer ,intent(in) :: icmp,ndim,kmax
 type(Deriv),     intent(in) :: def1 ! definition of fields
 integer,                         intent(in) :: iotyp
 integer, dimension(:) ,intent(in) ::  ident
 real    ,intent(in) :: scale 
 !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
-real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
+real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
 integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
 integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4) 
 character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
@@ -400,11 +403,6 @@ integer :: iotyp_new
   integer :: iDimID,jDimID,kDimID,timeDimID
 integer :: GIMAX_old,GJMAX_old,KMAX_old
 integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
-
-!rv1.4.15 changed:
-!==================================================================
-!  return     !TEMP - to avoid slowdown - suggested by pw, 26 Feb 2003.
-!==================================================================
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
   if(present(ist))i1=max(ist,i1)
@@ -441,6 +439,7 @@ if(present(fileName_given))then
          call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
          ncFileID=closedID
       else !test if the defined dimensions are compatible 
+!         write(6,*) 'exists: ',trim(fileName_given)
          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
          call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
@@ -501,13 +500,14 @@ do k=1,kmax
    do j = 1,tljmax(me)
       do i = 1,tlimax(me)
          ijk=ijk+1
-         buff(ijk)=dat(icmp,i,j,k)*scale
+         buff(ijk)=dat(i,j,k)*scale
       enddo
    enddo
 enddo
 
 !send all data to me=0
 itag=icmp
+
 if(me.eq.0)then
    
    !allocate a large array (only on one processor)
@@ -573,7 +573,7 @@ if(me.eq.0)then
 else
    call gc_rsend(itag,tlimax(me)*tljmax(me)*kmax, 0, info, buff, buff)
 endif
-
+!return
 
 if(me==0)then
 
@@ -653,10 +653,8 @@ if(me==0)then
      Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
   endif
 
-!  if(icmp == dim)then
      deallocate(Idata3D, stat=alloc_err)
      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
-!  endif
 
   else  
      !type Real
@@ -676,10 +674,8 @@ if(me==0)then
      Rdata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
   endif
 
-!  if(icmp == dim)then
      deallocate(Rdata3D, stat=alloc_err)
      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
-!  endif
 
   endif !type Real
 
@@ -886,5 +882,389 @@ integer :: ncFileID
     enddo
 
   end subroutine secondssince1970
+
+
+subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)
+  !
+  ! open and reads CDF file
+  !
+  ! The nf90 are functions which return 0 if no error occur.
+  ! check is only a subroutine which check wether the function returns zero
+  !
+  !
+  use netcdf
+  use Par_ml,           only : me,NPROC
+  implicit none
+
+  character (len=*),intent(in) :: fileName 
+
+  character (len = *),intent(in) ::varname
+  integer, intent(in) :: nstart,varGIMAX,varGJMAX,varKMAX
+  integer, intent(inout) ::  nfetch
+  real, dimension(*),intent(out) :: var
+  logical, optional,intent(in) :: needed
+!  real, dimension(varGIMAX*varGJMAX*varKMAX*NFETCH),intent(out) :: var
+!  real, dimension(132,111,Nrec),intent(out) :: var
+
+
+  logical :: fileneeded
+  integer :: GIMAX,GJMAX,KMAX_MID,nrecords,xfelt_ident(20),period
+  integer :: status,ndims,alloc_err
+  integer :: n,KMAX,Nrec,ijn,ijkn
+  integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
+  integer :: var_date(9000),ndate(4)
+  real , allocatable,dimension(:,:,:,:)  :: values
+  real ::depsum
+  character*20::attribute,attribute2
+
+!  Nrec=size(var,3)
+
+  print *,'  reading ',trim(fileName)
+  !open an existing netcdf dataset
+     fileneeded=.true.!default
+  if(present(needed))then
+     fileneeded=needed
+  endif
+     
+     if(fileneeded)then
+        call check(nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID))
+     else
+        status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+        if(status/= nf90_noerr)then
+           write(*,*)trim(fileName),' not found (but not needed)'
+           nfetch=0
+           return
+        endif
+     endif
+
+  !get global attributes
+
+  !example:
+!  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", attribute ))
+!  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_date", attribute2 ))
+!  print *,'file last modified (yyyymmdd hhmmss.sss) ',attribute2,' ',attribute
+
+  !test if the variable is defined and get varID:
+  status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
+
+  if(status == nf90_noerr) then     
+     print *, 'variable exists: ',trim(varname)
+  else
+     print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+     nfetch=0
+     if(fileneeded)then
+        call gc_abort(me,NPROC,"variable needed but not found")
+     endif
+     return
+  endif
+
+  !get dimensions id
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
+
+  !get dimensions length
+  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=idimID,  len=GIMAX))
+  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=jdimID,  len=GJMAX))
+  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=kdimID,  len=KMAX_MID))
+  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=timedimID,  len=nrecords))
+  Nrec=nrecords
+
+!  print *, 'dimensions ',GIMAX,GJMAX,KMAX_MID,nrecords
+  if(GIMAX>varGIMAX.or.GJMAX>varGJMAX)then
+     write(*,*)'buffer too small',GIMAX,varGIMAX,GJMAX,varGJMAX
+     stop
+  endif
+
+  ndims=4
+  if(KMAX_MID==1)ndims=3
+  !get variable info
+!  call check(nf90_inquire_variable(ncFileID, varID, ndims=ndims))
+!       print *, 'dimensions ',ndims
+  if(KMAX_MID>varKMAX)then
+     write(*,*)'Warning: not reading all levels ',KMAX_MID,varKMAX
+!     stop
+  endif
+
+  if(nstart+nfetch-1>nrecords)then
+     write(*,*)'WARNING: did not find all data'
+     nfetch=nrecords-nstart+1
+     if(nfetch<=0)stop
+  endif
+!  if(nfetch>Nrec)then
+!     write(*,*)'buffer too small. Increase last dimension',nfetch,Nrec
+!     stop
+!  endif
+  if(ndims==3)then
+     kmax=1
+     !allocate a 2D array 
+     allocate(values(GIMAX,GJMAX,nfetch,1), stat=alloc_err)
+     if ( alloc_err /= 0 ) then
+        print *, 'alloc failed in ReadCDF_ml: ',alloc_err,ndims
+        stop
+     endif
+  elseif(ndims==4)then
+     kmax=KMAX_MID
+     !allocate a 3D array 
+     allocate(values(GIMAX,GJMAX,KMAX_MID,nfetch), stat=alloc_err)
+     if ( alloc_err /= 0 ) then
+        print *, 'alloc failed in ReadCDF_ml: ',alloc_err,ndims
+        stop
+     endif
+
+  else
+     print *, 'unexpected number of dimensions: ',ndims
+     stop
+  endif
+
+  !get variable attributes
+  !example:
+  attribute=''
+!  call check(nf90_get_att(ncFileID, VarID, "long_name", attribute))
+!       print *,'long_name ',attribute
+
+!  call check(nf90_get_att(ncFileID, VarID, "xfelt_ident", xfelt_ident))
+
+  !get time variable
+  call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeDimID))
+  call check(nf90_get_var(ncFileID, timeDimID, var_date,start=(/ nstart /),count=(/ nfetch /)))
+
+  !get variable
+  if(ndims==3)then
+     !      call check(nf90_get_var(ncFileID, VarID, values,start=(/ 1, 1, nstart /),count=(/ 1, 1, nfetch /)))
+     call check(nf90_get_var(ncFileID, VarID, values,start=(/ 1, 1, nstart /),count=(/ GIMAX,GJMAX,nfetch /)))
+  elseif(ndims==4)then
+     call check(nf90_get_var(ncFileID, VarID, values,start=(/1,1,1,nstart/),count=(/GIMAX,GJMAX,KMAX_MID,nfetch /)))
+  endif
+  if(Nfetch<nrecords)then
+     write(*,*)'Reading record',nstart,' to ',nstart+nfetch-1
+  endif
+!  write(*,*)'date start '
+!  call datefromsecondssince1970(ndate,var_date(1))
+!  write(*,*)'date end '
+!  call datefromsecondssince1970(ndate,var_date(nfetch))
+!  period=(var_date(2)-var_date(1))/3600.
+
+  if(ndims==3)then
+     do n=1,nfetch
+        do j=1,GJMAX
+           do i=1,GIMAX
+              ijn=i+(j-1)*varGIMAX+(n-1)*varGJMAX*varGIMAX
+              var(ijn)=values(i,j,n,1)
+           enddo
+        enddo
+        !     if(n<10)write(*,*)n,values(1,1,n,1)
+     enddo
+  else
+     if(varKMAX==1)then
+     do n=1,nfetch
+        do k=KMAX_MID,KMAX_MID
+        do j=1,GJMAX
+           do i=1,GIMAX
+              ijkn=i+(j-1)*varGIMAX+(k-1)*varGJMAX*varGIMAX+(n-1)*varGJMAX*varGIMAX*varKMAX
+              var(ijkn)=values(i,j,k,n)
+           enddo
+        enddo
+        enddo
+     enddo
+     else
+     do n=1,nfetch
+        do k=1,min(KMAX_MID,varKMAX)
+        do j=1,GJMAX
+           do i=1,GIMAX
+              ijkn=i+(j-1)*varGIMAX+(k-1)*varGJMAX*varGIMAX+(n-1)*varGJMAX*varGIMAX*varKMAX
+              var(ijkn)=values(i,j,k,n)
+           enddo
+        enddo
+        enddo
+     enddo
+     endif
+!     stop
+  endif
+  deallocate(values)
+  call check(nf90_close(ncFileID))
+
+end subroutine GetCDF
+
+subroutine WriteCDF(varname,vardate,filename_given,newfile)
+
+  use Derived_ml, only :Deriv 
+  use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
+  use Dates_ml, only : date
+  use ModelConstants_ml, only : KMAX_MID
+  use Par_ml,                only : NPROC,me,MAXLIMAX, MAXLJMAX
+  use GenSpec_shl_ml , only :NSPEC_SHL
+  use GenSpec_adv_ml , only :NSPEC_ADV
+  use GenSpec_tot_ml , only :NSPEC_TOT
+  use GenChemicals_ml , only :species
+  use Chemfields_ml, only : xn_shl,xn_adv
+
+ character (len=*),intent(in)::varname!variable name, or group of variable name
+ type(date), intent(in)::vardate!variable name, or group of variable name
+ character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
+ logical,optional, intent(in) :: newfile
+
+ real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
+ character (len=100):: fileName
+ real ::scale
+ integer :: n,iotyp,ndim,ident(20),kmax,icmp,dim,ndate(4),nseconds
+ type(Deriv) :: def1 ! definition of fields
+
+ ndate(1)=vardate%year
+ ndate(2)=vardate%month
+ ndate(3)=vardate%day
+ ndate(4)=vardate%hour
+ call secondssince1970(ndate,nseconds)
+ nseconds=nseconds+vardate%seconds
+ write(*,*)nseconds
+
+ iotyp=IOU_INST
+
+ if(present(filename_given))then
+    filename=trim(fileName_given)
+ else
+    filename='EMEP_OUT.nc'    
+ endif
+
+ if(present(newfile))then
+    if(newfile)then
+    !make a new file (i.e. delete possible old one)
+    if ( me == 0 )then
+       write(*,*)'pwcreating',me
+       call Init_new_netCDF(fileName,iotyp) 
+       write(*,*)'pwcreated',me
+    endif
+    endif
+ else
+    !append if the file exist
+ endif
+
+ scale=1.0
+
+ def1%code=0           !not used
+ def1%class='Advected' !written
+ def1%avg=.false.      !not used
+ def1%index=0          !not used
+ def1%scale=scale      !not used
+ def1%rho=.false.      !not used
+ def1%inst=.true.      !not used
+ def1%year=.false.     !not used
+ def1%month=.false.    !not used
+ def1%day=.false.      !not used
+ def1%name='O3'        !written
+ def1%unit='PPB'       !written
+
+
+ if(trim(varname)=='ALL')then
+ ndim=3 !3-dimensional
+ kmax=KMAX_MID
+
+ if(NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT.and. me==0)then
+    write(*,*)'WARNING: NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT'
+    write(*,*) NSPEC_SHL,NSPEC_ADV, NSPEC_TOT
+    write(*,*)'WRITING ONLY SHL and ADV'
+    write(*,*)'Check species names'
+ endif
+
+ def1%class='Short_lived' !written
+ do n=1, NSPEC_SHL
+ def1%name= species(n)%name       !written
+ dat=xn_shl(n,:,:,:)
+ icmp=n
+ call Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,scale,CDFtype=Real8,fileName_given=fileName)
+ enddo
+
+ def1%class='Advected' !written
+ do n= 1, NSPEC_ADV
+ def1%name= species(NSPEC_SHL+n)%name       !written
+ dat=xn_adv(n,:,:,:)
+ icmp=NSPEC_SHL+n
+ call Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,scale,CDFtype=Real8,fileName_given=fileName)
+ enddo
+
+ else
+
+    if(me==0)write(*,*)'case not implemented'
+ endif
+
+
+end subroutine WriteCDF
+
+subroutine ReadCDF(varname,vardate,filename_given)
+
+  use Dates_ml, only : date
+  use ModelConstants_ml, only : KMAX_MID
+  use Par_ml,                only : NPROC,me,MAXLIMAX, MAXLJMAX,GIMAX,GJMAX
+  use GenSpec_shl_ml , only :NSPEC_SHL
+  use GenSpec_adv_ml , only :NSPEC_ADV
+  use GenSpec_tot_ml , only :NSPEC_TOT
+  use GenChemicals_ml , only :species
+  use Chemfields_ml, only : xn_shl,xn_adv
+
+ character (len=*),intent(in)::varname!variable name, or group of variable name
+ type(date), intent(in)::vardate!variable name, or group of variable name
+ character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
+
+ real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
+ real, allocatable,dimension(:,:,:) :: buf ! Data arrays
+ character (len=100):: fileName
+ integer :: n,ndim,kmax,ndate(4),nseconds,nstart,nfetch
+
+ ndate(1)=vardate%year
+ ndate(2)=vardate%month
+ ndate(3)=vardate%day
+ ndate(4)=vardate%hour
+ call secondssince1970(ndate,nseconds)
+ nseconds=nseconds+vardate%seconds
+ write(*,*)nseconds
+
+ filename=trim(fileName_given)
+
+ 
+ if(trim(varname)=='ALL')then
+ ndim=3 !3-dimensional
+ kmax=KMAX_MID
+
+ if(NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT.and. me==0)then
+    write(*,*)'WARNING: NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT'
+    write(*,*) NSPEC_SHL,NSPEC_ADV, NSPEC_TOT
+    write(*,*)'WRITING ONLY SHL and ADV'
+    write(*,*)'Check species names'
+ endif
+if(me==0)then
+   allocate(buf(GIMAX,GJMAX,KMAX))
+else
+   allocate(buf(1,1,1)) !just to have the array defined
+endif
+
+ do n=1, NSPEC_SHL
+    nstart=1
+    nfetch=1
+if(me==0)then
+   call  GetCDF(species(n)%name,fileName,buf,GIMAX,GJMAX,KMAX_MID,nstart,nfetch)
+endif
+ call global2local(buf,dat,77,1,GIMAX,GJMAX,KMAX_MID,1,1)
+
+   xn_shl(n,:,:,:)=dat
+ enddo
+
+ do n= 1, NSPEC_ADV
+    nstart=1
+    nfetch=1
+if(me==0)then
+    call  GetCDF(species(NSPEC_SHL+n)%name,fileName,buf,GIMAX,GJMAX,KMAX_MID,nstart,nfetch)
+endif
+ call global2local(buf,dat,78,1,GIMAX,GJMAX,KMAX_MID,1,1)
+    xn_adv(n,:,:,:)=dat
+ enddo
+
+ else
+
+    if(me==0)write(*,*)'case not implemented'
+ endif
+deallocate(buf)
+
+end subroutine ReadCDF
 
 end module NetCDF_ml

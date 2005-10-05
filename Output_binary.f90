@@ -246,7 +246,7 @@ contains
               endif
 
                  call Out_netCDF(iotyp,def(icmp),2,ident &
-                   ,1,icmp,dat(:,:,:,iotyp),dim,scale)
+                   ,1,icmp,dat(icmp,:,:,iotyp),scale)
 
           endif        ! wanted
        enddo        !icmp
@@ -306,7 +306,7 @@ contains
               endif !out_binary
 
                  call Out_netCDF(iotyp,def(icmp),3,ident &
-                   ,KMAX_MID,icmp,dat(:,:,:,:,iotyp),dim,scale)
+                   ,KMAX_MID,icmp,dat(icmp,:,:,:,iotyp),scale)
 
             endif        ! wanted
           enddo        !icmp
