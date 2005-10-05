@@ -91,7 +91,8 @@
   !/** Map factor stuff:
 
   real, public, save, dimension(0:MAXLIMAX+1,0:MAXLJMAX+1) ::  &
-                xm     &    ! map-factor
+                xm_i     &    ! map-factor
+               ,xm_j     &    ! map-factor
                ,xm2    &    ! xm*xm
                ,xmd    &    ! 1/(xm*xm)    ! ds 1/xm
                ,rpol2       ! square of (distance from pole to i,j
@@ -179,9 +180,10 @@ contains
               x = i_glob(i) - xp   ! ds - changed
               rpol2(i,j) = (x*x + y)/an2
 
-              xm(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2(i,j))
+              xm_i(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2(i,j))
+              xm_j(i,j) = xm_i(i,j)
 
-              xm2(i,j) = xm(i,j)*xm(i,j)
+              xm2(i,j) = xm_i(i,j)*xm_j(i,j)
               xmd(i,j) = 1.0/xm2(i,j)
               xm2ji(j,i) = xm2(i,j)
               xmdji(j,i) = xmd(i,j)
@@ -195,7 +197,7 @@ contains
 
     do j=0,MAXLJMAX+1        
        do i=0,MAXLIMAX+1     
-          xm2(i,j) = xm(i,j)*xm(i,j)
+          xm2(i,j) = xm_i(i,j)*xm_j(i,j)
           xmd(i,j) = 1.0/xm2(i,j)
           xm2ji(j,i) = xm2(i,j)
           xmdji(j,i) = xmd(i,j)

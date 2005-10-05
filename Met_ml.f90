@@ -12,7 +12,7 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
 use Functions_ml,      only : Exner_tab, Exner_nd    ! ds apr2005
-use GridValues_ml,     only : xm,xmd, sigma_bnd,sigma_mid, &
+use GridValues_ml,     only : xm_i,xm_j,xmd, sigma_bnd,sigma_mid, &
                                i_glob, j_glob
 use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP, &
                               KMAX_BND,KMAX_MID,NMET, &
@@ -173,7 +173,7 @@ private
 	use ModelConstants_ml , only : current_date & ! date-type
                                        , METSTEP      ! Meteo read timestep
         use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
-                            fi, GRIDWIDTH_M,xm,ref_latitude
+                            fi, GRIDWIDTH_M,xm_i,xm_j,ref_latitude
         use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
  
 	implicit none
@@ -212,7 +212,7 @@ private
           write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
           write(*,*)'reading meteo from ',trim(meteoname)
 
-          call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm,&
+          call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,&
                ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
           if(me==0)then
              write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
@@ -641,7 +641,8 @@ private
 	use Par_ml , only : limax,ljmax,li0,li1,lj0,lj1,me		&
 			,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC		&
 			,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-        use GridValues_ml , only : xm,xm2,xmd, sigma_bnd,sigma_mid,GRIDWIDTH_M
+        use GridValues_ml , only : xm_i,xm_j,xm2,xmd, &
+                                   sigma_bnd,sigma_mid,GRIDWIDTH_M
 	use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP,&
                          V_RAIN  !rv1.2
 	use PhysicalConstants_ml, only : KARMAN, KAPPA, R, CP, GRAV      &
@@ -1052,12 +1053,15 @@ private
       do k = 1,KMAX_MID
          do j = 1,ljmax
 	    do i = 0,limax               
-               u(i,j,k,nr) = 2.*u(i,j,k,nr)/(xm(i,j)+xm(i+1,j))
+               u(i,j,k,nr) = 2.*u(i,j,k,nr)/(xm_j(i,j)+xm_j(i+1,j))
+!divide by the scaling in the perpendicular direction to get effective u
+!(for conformal projections like Polar Stereo, xm_i and xm_j are equal)
 	    enddo
 	  enddo
 	  do j = 0,ljmax
 	    do i = 1,limax
-	      v(i,j,k,nr) = 2.*v(i,j,k,nr)/(xm(i,j)+xm(i,j+1))
+	      v(i,j,k,nr) = 2.*v(i,j,k,nr)/(xm_i(i,j)+xm_i(i,j+1))
+!divide by the scaling in the perpendicular direction to get effective v
 	    enddo
 	  enddo
        enddo
@@ -1187,18 +1191,18 @@ private
      do j = 1,ljmax
         do i = 1,limax
            u_ref(i,j)=0.125*(&
-                sqrt(0.25*( u(i,j,KMAX_MID,1)*(xm(i,j)+xm(i+1,j))&
-                +u(i-1,j,KMAX_MID,1)*(xm(i-1,j)+xm(i,j)) )**2&
-                +( v(i,j,KMAX_MID,1)*(xm(i,j)+xm(i,j+1) ))**2)&
-                +sqrt(0.25*( u(i,j,KMAX_MID,1)*(xm(i,j)+xm(i+1,j))&
-                +u(i-1,j,KMAX_MID,1)*(xm(i-1,j)+xm(i,j)) )**2&
-                +( v(i,j-1,KMAX_MID,1)*(xm(i,j-1)+xm(i,j)) )**2)&
-                +sqrt(( u(i,j,KMAX_MID,1)*(xm(i,j)+xm(i+1,j)) )**2&
-                +0.25*( v(i,j,KMAX_MID,1)*(xm(i,j)+xm(i,j+1))&
-                +v(i,j-1,KMAX_MID,1)*(xm(i,j-1)+xm(i,j)) )**2)&
-                +sqrt((u(i-1,j,KMAX_MID,1)*(xm(i-1,j)+xm(i,j)))**2&
-                +0.25*( v(i,j,KMAX_MID,1)*(xm(i,j)+xm(i,j+1))&
-                +v(i,j-1,KMAX_MID,1)*(xm(i,j-1)+xm(i,j)) )**2) )
+                sqrt(0.25*( u(i,j,KMAX_MID,1)*(xm_j(i,j)+xm_j(i+1,j))&
+                +u(i-1,j,KMAX_MID,1)*(xm_j(i-1,j)+xm_j(i,j)) )**2&
+                +( v(i,j,KMAX_MID,1)*(xm_i(i,j)+xm_i(i,j+1) ))**2)&
+                +sqrt(0.25*( u(i,j,KMAX_MID,1)*(xm_j(i,j)+xm_j(i+1,j))&
+                +u(i-1,j,KMAX_MID,1)*(xm_j(i-1,j)+xm_j(i,j)) )**2&
+                +( v(i,j-1,KMAX_MID,1)*(xm_i(i,j-1)+xm_i(i,j)) )**2)&
+                +sqrt(( u(i,j,KMAX_MID,1)*(xm_j(i,j)+xm_j(i+1,j)) )**2&
+                +0.25*( v(i,j,KMAX_MID,1)*(xm_i(i,j)+xm_i(i,j+1))&
+                +v(i,j-1,KMAX_MID,1)*(xm_i(i,j-1)+xm_i(i,j)) )**2)&
+                +sqrt((u(i-1,j,KMAX_MID,1)*(xm_j(i-1,j)+xm_j(i,j)))**2&
+                +0.25*( v(i,j,KMAX_MID,1)*(xm_i(i,j)+xm_i(i,j+1))&
+                +v(i,j-1,KMAX_MID,1)*(xm_i(i,j-1)+xm_i(i,j)) )**2) )
            
         enddo  
      enddo
@@ -3046,7 +3050,7 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
 
 end subroutine GetCDF_short
 
-   subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm,&
+   subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,&
          ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
 !
 ! Get grid and time parameters as defined in the meteo file
@@ -3066,14 +3070,15 @@ end subroutine GetCDF_short
      character (len = *), intent(in) ::meteoname
      integer, intent(in):: nyear,nmonth,nday,nhour
      real, intent(out) :: GRIDWIDTH_M,xp,yp,fi, ref_latitude,&
-                          xm(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
+                xm_i(0:MAXLIMAX+1,0:MAXLJMAX+1)&
+               ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
      integer, intent(out):: Nhh,nhour_first
 
      integer :: gc_info,nseconds(1),n1,i,j
      integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid
      integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
-     real ::xm_global(0:GIMAX+2,0:GJMAX+2)
-
+     real ::xm_global_j(0:GIMAX+2,0:GJMAX+2),xm_global_i(0:GIMAX+2,0:GJMAX+2)
+     integer :: status
 
   if(me==0)then
   print *,'  reading ',trim(meteoname)
@@ -3146,10 +3151,25 @@ end subroutine GetCDF_short
   call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
   
   !get variables
-  call check(nf90_inq_varid(ncid=ncFileID, name="map_factor", varID=varID))
+  status=nf90_inq_varid(ncid=ncFileID, name="map_factor", varID=varID)
 
-  call check(nf90_get_var(ncFileID, varID, xm_global(1:GIMAX,1:GJMAX) &
+  if(status/= nf90_noerr)then
+     call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
           ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
+     xm_global_j=xm_global_i
+  else
+     status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
+     if(status/= nf90_noerr)then
+        call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
+             ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
+        call check(nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID))
+        call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
+             ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
+     else
+        call gc_abort(me,NPROC,"error reading map factor")
+     endif
+  endif
+     
 
   call check(nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID))
   call check(nf90_get_var(ncFileID, varID, sigma_mid ))
@@ -3166,18 +3186,25 @@ end subroutine GetCDF_short
   call gc_rbcast(202,1,0,NPROC,gc_info,yp)
   call gc_rbcast(203,1,0,NPROC,gc_info,fi)
   call gc_rbcast(204,KMAX_MID,0,NPROC,gc_info,sigma_mid)
-  call gc_rbcast(205,GIMAX*GJMAX,0,NPROC,gc_info,xm_global(1:GIMAX,1:GJMAX))
+  call gc_rbcast(205,GIMAX*GJMAX,0,NPROC,gc_info,xm_global_i(1:GIMAX,1:GJMAX))
+  call gc_rbcast(205,GIMAX*GJMAX,0,NPROC,gc_info,xm_global_j(1:GIMAX,1:GJMAX))
 
 !complete along the four lateral sides
   do i=1,GIMAX
-     xm_global(i,0)=xm_global(i,1)
-     xm_global(i,GJMAX+1)=xm_global(i,GJMAX)
-     xm_global(i,GJMAX+2)=xm_global(i,GJMAX)
+     xm_global_j(i,0)=xm_global_j(i,1)
+     xm_global_j(i,GJMAX+1)=xm_global_j(i,GJMAX)
+     xm_global_j(i,GJMAX+2)=xm_global_j(i,GJMAX)
+     xm_global_i(i,0)=xm_global_i(i,1)
+     xm_global_i(i,GJMAX+1)=xm_global_i(i,GJMAX)
+     xm_global_i(i,GJMAX+2)=xm_global_i(i,GJMAX)
   enddo
   do j=0,GJMAX+2
-     xm_global(0,j)=xm_global(1,j)
-     xm_global(GIMAX+1,j)=xm_global(GIMAX,j)
-     xm_global(GIMAX+2,j)=xm_global(GIMAX,j)
+     xm_global_j(0,j)=xm_global_j(1,j)
+     xm_global_j(GIMAX+1,j)=xm_global_j(GIMAX,j)
+     xm_global_j(GIMAX+2,j)=xm_global_j(GIMAX,j)
+     xm_global_i(0,j)=xm_global_i(1,j)
+     xm_global_i(GIMAX+1,j)=xm_global_i(GIMAX,j)
+     xm_global_i(GIMAX+2,j)=xm_global_i(GIMAX,j)
   enddo
 
 
@@ -3188,7 +3215,8 @@ end subroutine GetCDF_short
   endif
   do j=0,MAXLJMAX+1
      do i=0,MAXLIMAX+1
-        xm(i,j)=xm_global(gi0+i-1,gj0+j-1)
+        xm_i(i,j)=xm_global_i(gi0+i-1,gj0+j-1)
+        xm_j(i,j)=xm_global_j(gi0+i-1,gj0+j-1)
      enddo
   enddo
 
