@@ -1,3 +1,22 @@
+============== Peter,   rv2_3_1, 5/10/2005 ================================================
+NetCDF input for BIC.
+
+Changed GlobalBCs_ml.f90 so that it can read the BIC from a netCDF file.
+The file should be named BIC.nc (for now).
+If the file or component is not found it looks for the "old" BIC files (D3_O3.01 etc).
+
+An example of BIC.nc file is given in /noserc2/emep/BIC/BIC.nc
+Using this file should give the same results as before.
+It contains also O3 data constructed from sattellite data. (This data needs to be more tested/ developed)
+
+In the future the BIC.nc file should be global and the fields are to be interpolated to the required grid.
+
+Some changes in NetCDF_ml and corresponding changes in Output_binary and Output_hourly.
+
+Included xm_i and xm_j: the directional map factors. These are equal for a Polar Stereographic projection. (not yet tested in another grid)
+(GridValues and Met_ml)
+
+
 ============== Dave,   rv2_3, 11/7/2005 ================================================
 
 
