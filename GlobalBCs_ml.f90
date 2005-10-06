@@ -786,7 +786,7 @@ contains
      character (len = 100)::filename
      nstart=month
      nfetch=1
-     fileName='BIC.nc'
+     fileName='Boundary_and_Initial_Conditions.nc'
      call GetCDF(varname,fileName,bc_rawdata,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed=.false.)
      notfound=.false.
      if(nfetch==0)notfound=.true.
