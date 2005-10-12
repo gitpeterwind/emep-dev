@@ -1,9 +1,17 @@
 module AirEmis_ml
-  ! Emissions from aircraft and lightning. Replaces eulcon_mach
-  !
-   use Par_ml,            only : MAXLIMAX, MAXLJMAX, NPROC, me
-   use ModelConstants_ml, only : KCHEMTOP, KMAX_MID, KMAX_BND
-!hf u2   use My_Runmode_ml,     only : stop_test
+  ! Emissions from aircraft and lightning.
+  ! Ancat emissions converted to flux as molecules cm-3 s-1 in ancat grid. 
+  ! Emissions on (finer) model grid then assigned from the acat grid that 
+  ! model grid falls within. Note that aircraft emissions is given on a t42 
+  ! and lightning on t21.
+  ! 
+   use Par_ml,            only : MAXLIMAX, MAXLJMAX, limax,ljmax, NPROC, me
+   use ModelConstants_ml, only : KCHEMTOP, KMAX_MID, KMAX_BND, current_date
+   use Io_ml  ,           only : IO_AIRN, IO_LIGHT, ios, open_file
+   use GridValues_ml        , only : gl,gb, GRIDWIDTH_M
+   use PhysicalConstants_ml , only : AVOG
+   use Met_ml,                only : z_bnd  
+
    implicit none
    private
 
@@ -11,10 +19,10 @@ module AirEmis_ml
                   airn                 & ! aircraft NOx emissions
                  ,airlig                 ! lightning NOx emissions
 
-   public :: aircraft_nox
+   public :: aircraft_nox !reads in the raw data
    public :: lightning
 
-   private :: air_inter
+   private :: air_inter !interpolate the data into required grid
 
    integer,private ,parameter :: ILEV=18
 
@@ -23,21 +31,26 @@ module AirEmis_ml
 
       subroutine aircraft_nox(newseason)
 
-	use Io_ml  ,           only : IO_AIRN, ios, open_file
 
 !	input
       integer,intent(in):: newseason
 
 !	local
-	integer ILON, IGL
-	parameter (ILON=128, IGL=32)
+   integer, parameter ::  ILON = 128, IGL = 32, GGL = 64
+   real,    parameter ::  DLON = 4.21875-1.40625,RLON0 = -1.40625
+
 	integer i, j, k, nlon, ngl, nlev, level,nlevb
-	integer intnox(ILON,64)
-	REAL  ygrdum(IGL), ygrida(IGL), flux(ILON,IGL,-1:ILEV)		&
-		,rlon(ILON+1), area(IGL)
-	real DLON,RLON0	
-	parameter (DLON = 4.21875-1.40625,RLON0 = -1.40625)
 	real zrmin, zfak, secmonth
+
+! Definition of the ancat grid   ~ t42 :
+! Data read in from N --> S  and from longitude 0  ( not from +-180 )  
+   real, dimension(ggl) ::     ygrida       ! grid mid. pt. N-S
+   real, dimension(igl) ::     ygrdum   &   ! grid mid. pt. N-S
+                               ,area        ! grid area N-S
+   real, dimension(ilon+1) ::   rlon        !  
+
+   integer, dimension(ILON,GGL) ::          intnox ! global emission flux  
+   real,    dimension(ILON,GGL,-1:ILEV) :: flux   ! emission flux converted to
 
         character*20 fname
 
@@ -66,67 +79,62 @@ module AirEmis_ml
 !               emissions are defined in this grid
 
 	secmonth = 3600.*24.*31.
-	flux = 0.
+	flux(:,:,:) = 0.
 
 	if(me == 0)then
 
-! --- LESER UTSLIPPS DATA FRA FILER HENTET FRA DLR
+! --- Open and read ancat data (originally from DLR, EU project POLINAT)
+! --- Commercial aircraft emissions every season
+! --- Military aircraft emission read in as annual data
+
 
           write(fname,fmt='(''ancat'',i2.2,''.dat'')') newseason
 
           call open_file(IO_AIRN,"r",fname,needed=.true.,skip=1)
-          !odin if (ios /= 0 ) call stop_all("ios error: ancat")
           if (ios /= 0) call gc_abort(me,NPROC,"ios error: ancat")
         end if ! me == 0
 
 
-!hf u2	call stop_test(.true.,me,NPROC,ios,"ios error: ancat")
 
 	if(me == 0)then
 	  read(IO_AIRN,'(3i4,2e22.13)') nlon,ngl,nlev,zrmin,zfak
 	  write(6,*) nlon,ngl,nlev,zrmin,zfak
-	  do 10 k=0,NLEV-1
+	  do k = 0,NLEV-1
 	    read(IO_AIRN,'(i2)') level
 	    read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
-	    do 10 i=1,IGL
-	      do 10 j=1,nlon
-	        flux(j,i,k)=(float(intnox(j,i))*zfak)+zrmin
-10	  continue
+	    do  i = 1,NGL
+	       do j = 1,nlon
+       	          flux(j,i,k)=(float(intnox(j,i))*zfak)+zrmin
+               end do
+            end do
+          end do
 
 	  close(IO_AIRN)
 
           call open_file(IO_AIRN,"r","ancatmil.dat",needed=.true.,skip=1)
-          !odin if (ios /= 0 ) call stop_all("ios error: ancatmil")
           if (ios /= 0) call gc_abort(me,NPROC,"ios error: ancatmil")
         end if ! me == 0
 
-!hf u2	call stop_test(.true.,me,NPROC,ios,"ios error: ancatmil")
 
 	if(me == 0)then
 	  read(IO_AIRN,'(3i4,2e22.13)') nlon,ngl,nlevb,zrmin,zfak
 	  write(6,*) nlon,ngl,nlevb,zrmin,zfak
-	  do 11 k=1,nlevb
+	  do  k = 1,nlevb
 	    read(IO_AIRN,'(i2)') level
 	    read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
-	    do 11 i=1,IGL
-	      do 11 j=1,nlon
+	    do  i = 1,NGL
+	      do  j = 1,nlon
 	        flux(j,i,k)=flux(j,i,k)+(float(intnox(j,i))*zfak)+zrmin
-11	  continue
+              end do
+            end do
+          end do
 
 	  close(IO_AIRN)
 
-!su	sumnox = 0.
-!su	do 20 k=0,nlev-1
-!su	  do 20 i=1,ngl
-!su	    do 20 j=1,nlon
-!su	      flux(j,i,k)=(float(intnox(j,i,k))*zfak)+zrmin
-!su	      sumnox = sumnox + flux(j,i,k)
-!su20	continue
-!su	  write(6,*) 'SUMNOX, ANCAT:',sumnox
 
 	endif
 
-	call air_inter(ILON,IGL,0			&
+	call air_inter(ILON,IGL,GGL,0			&
 		,flux,airn				&
 		,ygrdum, ygrida,DLON,RLON0		&
 		,rlon,area,secmonth)
@@ -137,22 +145,32 @@ module AirEmis_ml
 
     subroutine lightning()
 
-	use Io_ml,         only : IO_LIGHT, ios, open_file
-        use ModelConstants_ml ,    only : current_date
 	implicit none
 
-	integer ILON, IGL
-	parameter (ILON=64, IGL=16)
+   integer, parameter ::  ILON = 64, IGL = 16, GGL = 32
+   real,    parameter ::  DLON =  8.4375 - 2.8125, RLON0 = -2.8125
+
 
 	integer i, j, k, nlon, ngl, nlev ,level
 
-	integer intnox(ILON,32)
-	real flux(ILON,IGL,-1:ILEV)
-	real ygrdum(IGL), ygrida(IGL)		&
-		,rlon(ILON+1), area(IGL)
 	real  zrmin, zfak, secmonth, sumnox
-	real DLON,RLON0	
-	parameter (DLON = 8.4375 - 2.8125,RLON0 = -2.8125)
+
+
+
+! Definition of the ancat grid   ~ t21 :
+! Data read in from N --> S  and from longitude 0  ( not from +-180 )  
+! NB!!  note the difference between lightning and aircraft emission grid
+
+
+   real, dimension(ggl) ::     ygrida       ! grid mid. pt. N-S
+   real, dimension(igl) ::     ygrdum   &   ! grid mid. pt. N-S
+                               ,area        ! grid area N-S
+   real, dimension(ilon+1) ::   rlon        !  
+
+   integer, dimension(ILON,GGL) ::          intnox ! global emission flux  
+   real,    dimension(ILON,GGL,-1:ILEV) :: flux   ! emission flux converted to
+
+
 
         character*20 fname
 
@@ -171,12 +189,10 @@ module AirEmis_ml
 		,384550674664.23/
 
 ! ---- Defines the ANCAT grid ----------------------------------------------
-!   WARNING!!!  This is not the correct t21 grid, 
-!     Talk to Jostein about obtaining the original grid
 
 	secmonth = 1.
 
-        flux = 0.
+        flux(:,:,:) = 0.
 
 ! --- LESER UTSLIPPS DATA FRA FILER HENTET FRA DLR
 
@@ -189,22 +205,23 @@ module AirEmis_ml
 
           ! ds - open and read 1 line of header
           call open_file(IO_LIGHT,"r",fname,needed=.true.,skip=1)
-          !odin if (ios /= 0 ) call stop_all("ios error: lightning")
           if (ios /= 0 ) call gc_abort(me,NPROC,"ios error: lightning")
          end if
-!hf u2         call stop_test(.true.,me,NPROC,ios,"ios error: lightning")
 
 	if(me == 0)then
 	  read(IO_LIGHT,'(3i4,2e22.13)') nlon,ngl,nlev,zrmin,zfak
 	  write(6,*) nlon,ngl,nlev,zrmin,zfak
-	  do 10 k=1,nlev
+	  do  k = 1,nlev
 	    read(IO_LIGHT,'(i2)') level
 	    read(IO_LIGHT,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
-	    do 10 i=1,IGL
-	      do 10 j=1,nlon
+	    do  i = 1,NGL
+	      do  j = 1,nlon
 		flux(j,i,k)=(float(intnox(j,i))*zfak)+zrmin
-		sumnox = sumnox + flux(j,i,k)
-10	  continue
+      		sumnox = sumnox + flux(j,i,k)
+              end do
+            end do
+          end do
+
 
 	  close(IO_LIGHT)
 
@@ -212,7 +229,7 @@ module AirEmis_ml
 	endif
 
 
-	call air_inter(ILON,IGL,1			&
+	call air_inter(ILON,IGL,GGL,1			&
 		,flux,airlig				&
 		,ygrdum, ygrida,DLON,RLON0		&
 		,rlon,area,secmonth)
@@ -221,66 +238,70 @@ module AirEmis_ml
     end subroutine lightning
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	subroutine air_inter(ilon,igl,iktop		&
+	subroutine air_inter(ilon,igl,ggl,iktop		&
 		,flux,airem				&
 		,ygrdum, ygrida,dlon,rlon0		&
 		,rlon,area,secmonth)
 
-	use Par_ml   , only: NPROC,me,limax,ljmax
-	use GridValues_ml         , only : gl,gb
-        use PhysicalConstants_ml , only : AVOG
 
 	implicit none
 
-	integer, parameter :: KMAX_BND_AIR = 21 !pw u3
-	integer, intent(in) :: ilon,igl,iktop
-	real, intent(out) ::   ygrida(igl)
-	real, intent(inout) ::   flux(ilon,igl,-1:ILEV)
-      real, dimension(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), intent(out) :: airem
-	real, intent(out) :: rlon(ilon+1)
-	real, intent(in) :: area(igl), ygrdum(igl),dlon,rlon0,secmonth
+   integer, parameter :: KMAX_BND_AIR = 21 !pw u3
+
+   integer, intent(in) :: ilon,igl,ggl,iktop
+   real, intent(in) :: area(igl), ygrdum(igl),dlon,rlon0,secmonth
+
+
+   real, intent(inout) ::   flux(ilon,ggl,-1:ILEV)
+
+   real, dimension(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), intent(out) :: airem
+   real, intent(out) ::   ygrida(ggl)
+   real, intent(out) :: rlon(ilon+1)
 
 !	local
 	integer info
-	real height,atwno2
+	integer lon,lat,i,j,ig,jg,kg,k, i_sh
+        integer la_tst1, la_tst2, lo_tst1, lo_tst2   !  test area for sums
+	real height,     &  !  height of the emission levels
+             atwno2,     &  !  atomic weight of NO2
+             vol            !  volume of model grid boxes
+        real frac, above, below, glij
 	real sum,sumnox,volcm,sum2
-	integer ixn(MAXLIMAX,MAXLJMAX)			&
-		,jxn(MAXLIMAX,MAXLJMAX)			&
-            ,ilevel(KMAX_MID)
-	integer lon,lat,i,j,ig,jg,kg,k
-      real frac, fraca(KMAX_MID), fracb(KMAX_MID), above,below, vol(KMAX_MID)
-	real glij
+	integer, dimension(MAXLIMAX,MAXLJMAX) :: ixn  & !  mapping of emission 
+	                                        ,jxn    !  grid to model grid
+        integer, dimension(KMAX_MID)          :: ilevel
+        real  fraca(KMAX_MID), fracb(KMAX_MID)
 
-!pw u3      real, dimension(KMAX_BND):: zz1
-      real, dimension(KMAX_BND_AIR):: zz1
-
-
-   data zz1 /16175.41, 14138.79, 12562.57, 11274.08, 10058.51		&
-		,8710.764, 7294.476, 5944.395, 4806.321, 3880.146	&
-		,3106.688, 2456.548, 1909.316, 1450.109, 1068.357  	&
-		,755.2472, 505.0488, 313.8083, 178.2393, 88.75819	&
-		,0.0000000E+00/
-
-   if(KMAX_BND_AIR.ne.KMAX_BND)then
-      write(*,*)'AirEmis : KMAX_BND hardcoded!',KMAX_BND,KMAX_BND_AIR
-      call gc_abort(me,NPROC,'please, modify subroutine air_inter!')
-   endif
 
 	height = 1.e5
 	atwno2 = 46.
-	if(me.eq.0)then
 
+!  print out values on a sub-domain for comparison with dirrect model innput
+!  NB!  due to different resolution the subdomain will be different for 
+!       aircraft and lightning emissions
+
+        la_tst1 = 7
+        la_tst2 = 13
+        lo_tst1 = 1
+        lo_tst2 = 5
+      
+	if(me.eq.0)then
 	  sum = 0.
 	  sumnox = 0.
 	  do k = iktop,ILEV
-	    do lat = 7,13
-	      do lon = 1,5
-	        sum = sum + flux(lon,lat,k)
+	    do lat = la_tst1,la_tst2
+	      do lon = lo_tst1,lo_tst2
+	        sum = sum + flux(lon,lat,k)!test
 	      end do
 	    end do
 
-	    do lat=1,igl
-	      volcm = area(lat)*1.e4*height
+	    do lat=1,ggl
+               if(lat<=igl)then
+                  volcm = area(lat)*1.e4*height
+               else
+                  !area not defined for Southern Hemisphere
+                  volcm = area(ggl-lat+1)*1.e4*height
+               endif
 	      do lon=1,ilon
 	        sumnox = sumnox + flux(lon,lat,k)
 	        flux(lon,lat,k)=flux(lon,lat,k)*1.e3*AVOG	&
@@ -290,14 +311,19 @@ module AirEmis_ml
 	  end do
 	  write(6,*) 'SUMNOX, ANCAT:',sumnox
 
-	  call gc_rbcast(317, igl*ilon*(ILEV+1-iktop)	&
+	endif		!me=0
+
+
+	  call gc_rbcast(317, ggl*ilon*(ILEV+1-iktop)	&
 		,0, NPROC,info,flux(1,1,iktop))
 
-	endif		!me=0
 ! -- N/S
 	ygrida(1) = 90.
+	ygrida(GGL) = -90.
 	do i=2,igl
+          i_sh = GGL + 1 - i
 	  ygrida(i) = (ygrdum(i-1)+ygrdum(i))*0.5
+	  ygrida(i_sh) = - ygrida(i)
 	enddo
 
 ! -  E/V
@@ -307,9 +333,9 @@ module AirEmis_ml
 	end do
 	rlon(ilon+1) = rlon(1)+360.
 
-!    Assign Ines t42 gridpoints to the EMEP grid
+!    Assign gridpoints to the EMEP grid
 
-	jg = igl-1
+	jg = ggl-1
 
 	do j = 1,ljmax
 	  do i = 1,limax
@@ -333,35 +359,42 @@ module AirEmis_ml
 	  end do
 	end do
 
-	if(me.ne.0)then
-	  call gc_rbcast(317, igl*ilon*(ILEV+1-iktop)		&
-			,0, NPROC,info,flux(1,1,iktop))
-	endif
-
-	kg = 1
-	above = 1.e3
-	below = 0.
-      do k = KMAX_MID,KCHEMTOP,-1
-	  do while(zz1(k+1).gt.below+1.e3) 
-	    below = below+1.e3
-	  end do
-	  do while (zz1(k).gt.above) 
-	    kg = kg+1
-	    above = above+1.e3
-	  end do
-	  ilevel(k) = kg
-	  fraca(k) = 1.
-	  if(above-below.gt.1.1e3) 				&
-		fraca(k) = (zz1(k)-(above-1.e3))/(zz1(k) - zz1(k+1))
-	  fracb(k) = 0.
-	  if(above-below.gt.2.1e3)				&
-		fracb(k) = (below+1.e3 - zz1(k+1))/(zz1(k) - zz1(k+1))
-	end do
+!	if(me.eq.0)then
+!           write(*,*) 'ygrida  ', ggl
+!           do i = 1,ggl
+!           write(*,*) 'ygrida  ', i,ygrida(i)
+!           end do
+!	endif
 
 	do j = 1,ljmax
 	  do i = 1,limax
-	    lon = ixn(i,j)
-	    lat = jxn(i,j)
+
+ 	    kg = 1
+	    above = 1.e3
+	    below = 0.
+
+            do k = KMAX_MID,KCHEMTOP,-1
+	      do while(z_bnd(i,j,k+1).gt.below+1.e3) 
+	        below = below+1.e3
+	      end do
+	      do while (z_bnd(i,j,k).gt.above) 
+	      kg = kg+1
+	      above = above+1.e3
+	    end do
+	    ilevel(k) = kg
+	    fraca(k) = 1.
+	    if(above-below.gt.1.1e3) 				&
+		 fraca(k) = (z_bnd(i,j,k)-(above-1.e3))  &
+                           /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
+	    fracb(k) = 0.
+	    if(above-below.gt.2.1e3)				&
+		 fracb(k) = (below+1.e3 - z_bnd(i,j,k+1))           &
+                           /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
+	  end do
+
+	  lon = ixn(i,j)
+	  lat = jxn(i,j)
+
           do k = KCHEMTOP,KMAX_MID
 	      frac = 1. - fraca(k) - fracb(k)
 	      kg = ilevel(k)
@@ -377,21 +410,25 @@ module AirEmis_ml
 	  end do
 	end do
 
-	sum2 = 0.
-      do k=KCHEMTOP,KMAX_MID
-	  vol(k) = 5.e6*5.e6*(zz1(k)-zz1(k+1))*1.e2
-	end do
-	do j = 1,ljmax
-	  do i = 1,limax
-	    if(gl(i,j).gt.rlon(1) .and. gl(i,j).lt.rlon(6) .and.	&
-		gb(i,j).lt.ygrida(7) .and. gb(i,j).gt.ygrida(14)) then
+
+!! Print out on a limited part of the dommain both raw data ( flux ) and 
+!! the re-gridded emissions ( airem ).  Expect only an opproximate match! 
+!! Summation of aircraft emission and lightning are on different grids 
+!! and hence for different domains. 
+     sum2 = 0.
+     do j = 1,ljmax
+       do i = 1,limax
+	 if(gl(i,j).gt.rlon(lo_tst1) .and. gl(i,j).lt.rlon(lo_tst2+1) .and. &
+	    gb(i,j).lt.ygrida(la_tst1) .and. gb(i,j).gt.ygrida(la_tst2+1)) then
             do k=KCHEMTOP,KMAX_MID
+  	        vol = GRIDWIDTH_M*GRIDWIDTH_M   &
+                     *(z_bnd(i,j,k)-z_bnd(i,j,k+1))*1.e6
 		sum2 = sum2 + airem(k,i,j)*atwno2/AVOG*		&
-			vol(k)*secmonth*1.e-3
-	      end do
-	    end if
-	  end do
-	end do
+			vol*secmonth*1.e-3
+	    end do
+         end if
+       end do
+     end do
 
 	call gc_rsum(1,NPROC,info,sum2)
 	if(me.eq.0) write(6,*) 'ancat on limited area:',sum,sum2

@@ -304,6 +304,8 @@ $dom_x0 = $smalldomain[0];
 $dom_y0 = $smalldomain[2]; 
 $dom_wx = $smalldomain[1] - $smalldomain[0] + 1 ; 
 $dom_wy = $smalldomain[3] - $smalldomain[2] + 1 ; 
+$largdom_wx = $largedomain[1] - $largedomain[0] + 1 ; 
+$largdom_wy = $largedomain[3] - $largedomain[2] + 1 ; 
 
 
 #---  Data directories   (do not change so often.... )
@@ -363,12 +365,12 @@ chdir "$ProgDir";
 if ( $RESET ) { unlink ("Make.log") }  # Gone!
 
 open(MAKELOG,"<Make.log");
-($oldversion, $olddx , $olddy , $old_x0, $old_y0, $old_wx, $old_wy ) = split ' ', <MAKELOG> ;
+($oldversion, $olddx , $olddy , $old_x0, $old_y0, $old_wx, $old_wy, $old_lwx, $old_lwy) = split ' ', <MAKELOG> ;
 close(MAKELOG);
 
 print "From Make.log we had Subversion $subv
            Procs:  $olddx $olddy 
-           Domain: $old_x0, $old_y0, $old_wx, $old_wy \n";
+           Domain: $old_x0, $old_y0, $old_wx, $old_wy ,$old_lwx, $old_lwy \n";
 
 
 if ( $oldversion ne $subv ) {
@@ -380,11 +382,12 @@ if ( $oldversion ne $subv ) {
 
 if ( $NDX      != $olddx  || $NDY      != $olddy  ||
      $dom_x0   != $old_x0 || $dom_y0   != $old_y0 ||
-     $dom_wx   != $old_wx || $dom_wy   != $old_wy     ) {
+     $dom_wx   != $old_wx || $dom_wy   != $old_wy ||
+     $largdom_wx   != $old_lwx || $largdom_wy   != $old_lwy       ) {
 
    print "Need to re-compile for new processor or domain  setup: 
            Procs:  $NDX $NDY
-           Domain: $dom_x0, $dom_y0, $dom_wx, $dom_wy \n";
+           Domain: $dom_x0, $dom_y0, $dom_wx, $dom_wy, $largdom_wx, $largdom_wy \n";
    $RESET = 1 ;
 }
 
@@ -404,7 +407,9 @@ if ( $RESET == 1  ) { ########## Recompile everything!
           $line =~ s/domainy0/$dom_y0/ ;
           $line =~ s/domaindx/$dom_wx/ ;
           $line =~ s/domaindy/$dom_wy/ ;
-          print EULOUT $line ;
+	  $line =~ s/largedomdx/$largdom_wx/ ;
+	  $line =~ s/largedomdy/$largdom_wy/ ;
+           print EULOUT $line ;
       }
       close(EULOUT) ;
    }
@@ -421,7 +426,7 @@ system "gmake" ;
 
 die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
 open(MAKELOG,">Make.log");    # Over-write Make.log
-print MAKELOG "$subv $NDX  $NDY  $dom_x0  $dom_y0  $dom_wx  $dom_wy \n" ;
+print MAKELOG "$subv $NDX  $NDY  $dom_x0  $dom_y0  $dom_wx  $dom_wy $largdom_wx $largdom_wy \n" ;
 close(MAKELOG);
 
 if ( $COMPILE_ONLY) {     ## exit after make ##
@@ -571,9 +576,9 @@ foreach $poll  ( @emislist  ) {
    $old   = "$emisdir/2004_grid$gridmap{$poll}_$year" ;
 
    #
-   #if ( ! $SR  && $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
-   #    $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
-   #}
+   if ( ! $SR  && $poll =~ /pm/ ) {  # CRUDE FIX FOR NOW
+       $old   = "$SVETLANA/Unify/MyData/emission/em2000/grid$gridmap{$poll}" ;
+   }
 #
    $new   = "emislist.$poll";
    push @list_of_files, $new ;
@@ -713,22 +718,26 @@ foreach $datafile ( qw ( Volcanoes.dat  MM_gfac1.dat lde_gfac2.dat lde_biomass.d
  }
  close(RMF);
 
+${startyear}=$year;
+${startmonth}=$mm1;
+${startday}=1;
+
 # make file with input parameters (to be read by Unimod.f90)
-system("rm INPUT.PARA");
+unlink("INPUT.PARA");
 open(TMP,">INPUT.PARA");
-  print TMP "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n";
+  print TMP "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\n";
 close(TMP);
 
 foreach $exclu ( @exclus) {
     print "starting $PROGRAM with 
-        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2";
+        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\n startyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
 
 # die #"STOP HERE  \n";
 
 if ( $INTERACTIVE ) {
   die " -- INTERACTIVE: can now run for inputs: NTERM, NASS,  EXCLU, NDX, NDY 
   with mpirun -np 1 prog.exe << XXX
-  $NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\nXXX"; 
+  $NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\nXXX"; 
 }
 
     #open (PROG, "|mpirun -np $NPROC $PROGRAM") || 

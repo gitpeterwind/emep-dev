@@ -199,7 +199,7 @@ character*8 ::created_date,lastmodified_date
 character*10 ::created_hour,lastmodified_hour
 integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
 integer :: iEMEPVarID,jEMEPVarID,latVarID,longVarID
-real :: izero,jzero
+real :: izero,jzero,scale_at_projection_origin
 
   ! fileName: Name of the new created file 
   ! nf90_clobber: protect existing datasets
@@ -229,7 +229,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
      write(6,*) 'created_hour: ',created_hour
 
   ! Write global attributes
-  call check(nf90_put_att(ncFileID, nf90_global, "Conventions", "GDV" ))
+  call check(nf90_put_att(ncFileID, nf90_global, "Conventions", "CF-1.0" ))
 !  call check(nf90_put_att(ncFileID, nf90_global, "version", version ))
   call check(nf90_put_att(ncFileID, nf90_global, "model", model))
   call check(nf90_put_att(ncFileID, nf90_global, "author_of_run", author_of_run))
@@ -241,7 +241,8 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
 
   call check(nf90_put_att(ncFileID, nf90_global, "projection",projection))
-  write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,(1.+sin(ref_latitude*PI/180.))/2.
+  scale_at_projection_origin=(1.+sin(ref_latitude*PI/180.))/2.
+  write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,scale_at_projection_origin
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
   call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
   call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))
@@ -249,6 +250,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 
 ! define coordinate variables
   call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
+  call check(nf90_put_att(ncFileID, iVarID, "standard_name", "projection_x_coordinate"))
   call check(nf90_put_att(ncFileID, iVarID, "coord_axis", "x"))
   call check(nf90_put_att(ncFileID, iVarID, "long_name", "EMEP grid x coordinate"))
   call check(nf90_put_att(ncFileID, iVarID, "units", "km"))
@@ -258,6 +260,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, iEMEPVarID, "units", "gridcells"))
 
   call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
+   call check(nf90_put_att(ncFileID, jVarID, "standard_name", "projection_y_coordinate"))
   call check(nf90_put_att(ncFileID, jVarID, "coord_axis", "y"))
   call check(nf90_put_att(ncFileID, jVarID, "long_name", "EMEP grid y coordinate"))
   call check(nf90_put_att(ncFileID, jVarID, "units", "km"))
@@ -268,11 +271,13 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 
   call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
   call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
-  call check(nf90_put_att(ncFileID, latVarID, "units", "degrees"))
+  call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
+  call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
 
-  call check(nf90_def_var(ncFileID, "long", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
+  call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
   call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
-  call check(nf90_put_att(ncFileID, longVarID, "units", "degrees"))
+  call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
+  call check(nf90_put_att(ncFileID, latVarID, "standard_name", "longitude"))
 
 
   call check(nf90_def_var(ncFileID, "k", nf90_float, dimids = kDimID, varID = kVarID) )
@@ -285,6 +290,13 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
 
+!CF-1.0 definitions:
+  call check(nf90_def_var(ncid = ncFileID, name = "Polar_Stereographic", xtype = nf90_int, varID=varID ) )
+  call check(nf90_put_att(ncFileID, latVarID, "grid_mapping_name", "polar_stereographic"))
+  call check(nf90_put_att(ncFileID, latVarID, "straight_vertical_longitude_from_pole", Fi))
+  call check(nf90_put_att(ncFileID, latVarID, "latitude_of_projection_origin", 90.0))
+  call check(nf90_put_att(ncFileID, latVarID, "scale_factor_at_projection_origin", scale_at_projection_origin))
+! call check(nf90_put_att(ncFileID, latVarID, "false_easting", ))
 
   ! Leave define mode
   call check(nf90_enddef(ncFileID))
@@ -782,19 +794,23 @@ use Derived_ml, only : Deriv
      scale=1.
      !define attributes of new variable
      call check(nf90_put_att(ncFileID, varID, "long_name",  def1%name ))
+     call check(nf90_put_att(ncFileID, varID, "coordinates", "lat lon"))
+     call check(nf90_put_att(ncFileID, varID, "grid_mapping", "Polar_Stereographic"))
      nrecords=0
      call check(nf90_put_att(ncFileID, varID, "numberofrecords", nrecords))
 
      call check(nf90_put_att(ncFileID, varID, "units",   def1%unit))
      call check(nf90_put_att(ncFileID, varID, "class",   def1%class))
-     call check(nf90_put_att(ncFileID, varID, "scale_factor",  scale ))
 
   if(OUTtype==Int1)then
      call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_byte  ))
+     call check(nf90_put_att(ncFileID, varID, "scale_factor",  scale ))
   elseif(OUTtype==Int2)then
      call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_short  ))
+     call check(nf90_put_att(ncFileID, varID, "scale_factor",  scale ))
   elseif(OUTtype==Int4)then
      call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_int   ))
+     call check(nf90_put_att(ncFileID, varID, "scale_factor",  scale ))
   elseif(OUTtype==Real4)then
      call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_float  ))
   elseif(OUTtype==Real8)then

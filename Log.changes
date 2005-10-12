@@ -1,3 +1,42 @@
+============== Peter & Joffen   rv2_3_2, 6/10/2005 ================================================
+
+New AirEmis from Joffen. More general: can use any grid. Some differences 
+in results can be expected (due to different vertical interpolation).
+
+Changes in GlobalBC Macehead corrections.
+The macehead correction uses now lat lon coordinates instead of "i,j".
+This will however make a difference on the results, since the "Macehead sector" is now
+defined with lon lat borders. I choosed these rather arbitrarily.
+A small test for 2001 shows the following for the "O3fix" correction:
+jan: old O3fix=-6.903 ; newO3fix=-6.635
+aug: old O3fix=-4.871 ; newO3fix=-4.876
+
+In the future we should also introduce an option (as an input parameter) 
+to skip the Macehead correction
+
+
+Changed Par_ml.pat so that also the large domain is set by grun.pl
+Changed grun.pl sp that it sets the large domain in Par_ml.
+The date of start is now read in by the model.
+The program tries now first to find at NetCDF meteo input file, if it does 
+not find it it reads the old felt files.
+NB: You MUST update grun.pl
+
+ 
+Changed definition of xm_i and xm_j: now it is directly the mapping factor
+at the boundary of two gridcells.
+
+Changed slightly Timefactors: if just "fname" is declared the values of "an" (from GridValues)
+is overwritten(!!!). If instead fname2 and fname0  are declared (as done now) there seems to be
+no problems(!). Very strange. Most probably a compiler error. The strange behaviour don't appear
+when all the debugger options are on.
+
+NetCDF_ml: We go over to CF-1.0 convention.
+
+Modified: NetCDF_ml, AirEmis,Met_ml,Par_ml.pat,GlobalBC,Log.changes,GridValues,
+Unimod.f90,Timefactors_ml,grun.pl
+
+
 ============== Peter,   rv2_3_1, 5/10/2005 ================================================
 NetCDF input for BIC.
 

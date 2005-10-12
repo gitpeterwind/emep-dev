@@ -9,7 +9,7 @@
 ! eulpar.inc
 ! eulnx.inc
 !----------------------------------------------------------------------------
-!  $Id: Par_ml.pat,v 1.6 2003-06-12 09:32:02 mifads Exp $
+!  $Id: Par_ml.pat,v 1.7 2005-10-12 14:09:18 mifapw Exp $
 !  Erik Berge, DNMI    Roar Skaalin, SINTEF Industrial Mathematics
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
@@ -32,8 +32,8 @@ implicit none
 private
 
   integer, public, parameter ::  &
-    IILARDOM    =    170         &
-  , JJLARDOM    =    133         &
+    IILARDOM    =   largedomdx   &
+  , JJLARDOM    =   largedomdy   &
   , ISMBEG      =   domainx0     &
   , JSMBEG      =   domainy0     &
   , GIMAX       =   domaindx     & ! Number of global points in longitude

@@ -66,7 +66,9 @@
   logical, private, parameter :: DEBUG = .false.
 
   !/** used for general file calls and gc routines below **/
-  character(len=30), private :: fname   ! input filename
+
+  character(len=30), private :: fname2   ! input filename. do not change (pw+mvl)
+  character(len=30), private :: fname0   ! (pw+mvl)for compiler only. do not change
 
 contains
 
@@ -147,8 +149,8 @@ contains
 
    do iemis = 1, NEMIS
 
-       fname = "MonthlyFac." // trim ( EMIS_NAME(iemis) )
-       call open_file(IO_TIMEFACS,"r",fname,needed=.true.)
+       fname2 = "MonthlyFac." // trim ( EMIS_NAME(iemis) )
+       call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
        if ( ios /= 0 ) then
           print *,"ios error: Monthlyfac"
           return
@@ -166,7 +168,7 @@ contains
            n = n + 1
        enddo
        close(IO_TIMEFACS)
-       write(unit=6,fmt=*) "Read ", n, " records from ", fname 
+       write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
   enddo  ! iemis
 
 
@@ -178,8 +180,8 @@ contains
 
   do iemis = 1, NEMIS
 
-       fname = "DailyFac." // trim ( EMIS_NAME(iemis) )
-       call open_file(IO_TIMEFACS,"r",fname,needed=.true.)
+       fname2 = "DailyFac." // trim ( EMIS_NAME(iemis) )
+       call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
        if ( ios /= 0 ) then
 	  print *,"ios error: Dailyfac"
 	  return
@@ -206,7 +208,7 @@ contains
            endif
        enddo
        close(IO_TIMEFACS)
-       write(unit=6,fmt=*) "Read ", n, " records from ", fname
+       write(unit=6,fmt=*) "Read ", n, " records from ", fname2
   enddo  ! NEMIS
 
 	ios = 0

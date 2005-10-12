@@ -91,13 +91,11 @@
   !/** Map factor stuff:
 
   real, public, save, dimension(0:MAXLIMAX+1,0:MAXLJMAX+1) ::  &
-                xm_i     &    ! map-factor
-               ,xm_j     &    ! map-factor
-               ,xm2    &    ! xm*xm
-               ,xmd    &    ! 1/(xm*xm)    ! ds 1/xm
-               ,rpol2       ! square of (distance from pole to i,j
-                            ! divided by AN )
-
+                xm_i     & ! map-factor in i direction, between cell j and j+1
+               ,xm_j     & ! map-factor in j direction, between cell i and i+1
+               ,xm2    &    ! xm*xm: area factor in the middle of a cell (i,j)
+               ,xmd        ! 1/xm2  
+ 
   real, public, save, dimension(0:MAXLJMAX+1,0:MAXLIMAX+1) ::  &
                xm2ji  &
               ,xmdji
@@ -107,10 +105,13 @@
               debug_li, debug_lj         ! Local Coordinates of debug-site
   logical, public, save :: debug_proc          ! Processor with debug-site
 
+  integer, public, save :: METEOfelt=0 ! 1 if uses "old" (not CDF) meteo input
+
+
   !/** internal parameters
 
   logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
-  logical,public,parameter :: METEOfelt=.true. !.true. if uses "old" (not CDF) meteo input
+
 
 contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -120,7 +121,11 @@ contains
   !-------------------------------------------------------------------! 
 
     integer ::  i, j, k, n
-    real    ::  an2, x, y
+    real    ::  an2, x, y, x_j, y_i
+    real    ::  rpol2,rpol2_i,rpol2_j ! square of (distance from pole to i,j
+                            ! divided by AN )
+    real, dimension(0:MAXLIMAX+1,0:MAXLJMAX+1) ::  &
+                xm      ! map-factor 
 
   ! Earth radius = 6.37e6 m, gives gridwidth:
 
@@ -167,51 +172,55 @@ contains
 
   !  map factor, and map factor squared.
 
- if( METEOfelt)then
+ if( METEOfelt==1)then
+
+!mapping factor xm and ref_latitude have not been read from the meteo file
 
     ref_latitude=60.
     AN = 6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km
     an2 = AN*AN
-
+ 
     do j=0,MAXLJMAX+1           ! ds - changed from ljmax+1
           y = j_glob(j) - yp     ! ds - changed from gj0+JSMBEG-2+j
           y = y*y
-          do i=0,MAXLIMAX+1        ! ds - changed from limax+1
-              x = i_glob(i) - xp   ! ds - changed
-              rpol2(i,j) = (x*x + y)/an2
+          y_i = j_glob(j)+0.5 - yp  !in the staggered grid
+          y_i = y_i*y_i
+          do i=0,MAXLIMAX+1     
+              x = i_glob(i) - xp
+              x_j = i_glob(i)+0.5 - xp !in the staggered grid
 
-              xm_i(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2(i,j))
-              xm_j(i,j) = xm_i(i,j)
+              rpol2 = (x*x + y)/an2
+              rpol2_i = (x*x + y_i)/an2
+              rpol2_j = (x_j*x_j + y)/an2
 
-              xm2(i,j) = xm_i(i,j)*xm_j(i,j)
-              xmd(i,j) = 1.0/xm2(i,j)
-              xm2ji(j,i) = xm2(i,j)
-              xmdji(j,i) = xmd(i,j)
+!              rpol2 = (x*x + y)/an2
+              xm(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2)
+              xm_i(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2_i)
+              xm_j(i,j) = 0.5*(1.0+sin(PI/3.0))*(1.0 + rpol2_j)
+
+
+              xm2(i,j) = xm(i,j)*xm(i,j)
+
           end do
       end do 
-
-   else
-!mapping factor xm and ref_latitude are read from the meteo file
-
-    AN = 6.370e6*(1.0+sin( ref_latitude*PI/180.))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km and ref_latitude=60
-
-    do j=0,MAXLJMAX+1        
-       do i=0,MAXLIMAX+1     
-          xm2(i,j) = xm_i(i,j)*xm_j(i,j)
-          xmd(i,j) = 1.0/xm2(i,j)
-          xm2ji(j,i) = xm2(i,j)
-          xmdji(j,i) = xmd(i,j)
-       enddo
-    enddo
-
    endif
+   
+   AN = 6.370e6*(1.0+sin( ref_latitude*PI/180.))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km and ref_latitude=60
+   do j=0,MAXLJMAX+1
+      do i=0,MAXLIMAX+1
+         xmd(i,j) = 1.0/xm2(i,j)
+         xm2ji(j,i) = xm2(i,j)
+         xmdji(j,i) = xmd(i,j)
+      enddo
+   enddo
+   
 !     definition of the half-sigma levels (boundaries between layers) from the full levels. 
 
-          sigma_bnd(KMAX_BND) = 1.
-          do k = KMAX_MID,2,-1
-             sigma_bnd(k) = 2.*sigma_mid(k) - sigma_bnd(k+1)
-          enddo
-          sigma_bnd(1) = 0.
+   sigma_bnd(KMAX_BND) = 1.
+   do k = KMAX_MID,2,-1
+      sigma_bnd(k) = 2.*sigma_mid(k) - sigma_bnd(k+1)
+   enddo
+   sigma_bnd(1) = 0.
           
    !
    !     some conversion coefficients needed for budget calculations

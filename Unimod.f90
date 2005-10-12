@@ -64,12 +64,12 @@ program myeul
                                ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use GenChemicals_ml,  only : define_chemicals
-  use GridValues_ml,    only : DefGrid&  ! sets gl, gb, xm, gridwidth_m, etc.
-                              ,METEOfelt!.true. if uses "old" (not CDF) meteo input
+  use GridValues_ml,    only : DefGrid  ! sets gl, gb, xm, gridwidth_m, etc.
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse,&
-                               tiphys,Meteoread_CDF
+                               tiphys,Meteoread,&
+                               startdate
   use ModelConstants_ml,only : KMAX_MID, current_date  &
                               ,METSTEP    &   ! Hours between met input
                               ,runlabel1  &   ! explanatory text
@@ -303,6 +303,10 @@ program myeul
       read(IO_TMP,*) ntmp(3)  ! ds - iyr_ytrend
       read(IO_TMP,fmt="(a)") runlabel1 ! ds, rv1_9_5 - explanation text short
       read(IO_TMP,fmt="(a)") runlabel2 ! ds, rv1_9_5 - explanation text long
+      read(IO_TMP,fmt="(I)")startdate(1) !pw meteo year to start the run
+      read(IO_TMP,fmt="(I)")startdate(2) !pw meteo month to start the run
+      read(IO_TMP,fmt="(I)")startdate(3) ! pw meteo day to start the run
+      startdate(4)=0
 
 !      read(5,*) ntmp(1)
 !      read(5,*) ntmp(2)
@@ -312,7 +316,9 @@ program myeul
 
       write(unit=IO_LOG,fmt=*)trim(runlabel1)
       write(unit=IO_LOG,fmt=*)trim(runlabel2)
-
+      write(unit=IO_LOG,fmt=*)startdate(1)
+      write(unit=IO_LOG,fmt=*)startdate(2)
+      write(unit=IO_LOG,fmt=*)startdate(3)
     endif
 
     print *, "read standard input"
@@ -320,6 +326,8 @@ program myeul
     call gc_ibcast(MSG_MAIN1, 4, 0, NPROC, info, ntmp)
     call gc_bbcast(MSG_MAIN2, len(runlabel1), 0, NPROC, info, runlabel1)
     call gc_bbcast(MSG_MAIN2, len(runlabel2), 0, NPROC, info, runlabel2)
+    call gc_ibcast(MSG_MAIN1, 4, 0, NPROC, info, startdate)
+
 !    if( me == 0 ) then
     print *, "distributed standard input"
     print *, " ME ", me, " LABELS ", trim(runlabel1),' ', trim(runlabel2)
@@ -367,12 +375,9 @@ program myeul
 
     call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
 
-      if(METEOfelt)then
-         call infield(1)
-      else
-         call Meteoread_CDF(1)
-      endif
 
+    call Meteoread(1)
+ 
     call Add_2timing(3,tim_after,tim_before,"After infield")
 
     call DefGrid    ! => gl, gb, xm, gridwidth_m, etc.
@@ -521,22 +526,19 @@ program myeul
 
       call Add_2timing(8,tim_after,tim_before,"BoundaryConditions")
 
-               if( DEBUG_UNI ) print *, "1st Infield" , me, " numu ", numt
-
-      if(METEOfelt)then
-         call infield(numt)
-      else
-         call Meteoread_CDF(numt)
-      endif
+      if( DEBUG_UNI ) print *, "1st Infield" , me, " numu ", numt
+      
+      
+      call Meteoread(numt)
 
       call Add_2timing(10,tim_after,tim_before,"infield")
 
       call dayno(current_date%month,current_date%day,daynumber) !u3
 
-     if ( me == 0) then
-        write(6,*) 'TIME TEST ', 'current date ',current_date, &
-             "day number ", daynumber !u3
-     endif
+      if ( me == 0) then
+         write(6,*) 'TIME TEST ', 'current date ',current_date, &
+              "day number ", daynumber !u3
+      endif
 
 
 !++(5)
