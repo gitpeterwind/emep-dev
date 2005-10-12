@@ -217,7 +217,7 @@ contains
      logical :: wanted     ! Set true for required year, month, day or inst.
      integer :: icmp       ! component index
      real    :: scale      ! Scaling factor
-     character(len=size(f_2d%class)) :: typ  !  See defs of f_2d
+     character(len=len(f_2d%class)) :: typ  !  See defs of f_2d
      integer ::i,j
 
        ident(7)  =  1000 ! Set artificial surface value for all 2-D fields
