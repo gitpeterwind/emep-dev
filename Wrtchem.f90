@@ -1,8 +1,7 @@
  subroutine Wrtchem(numt)
    !-----------------------------------------------------------------------
    ! DESCRIPTION
-   ! Writes out data fields as NetCDF and (if out_binary defined)
-   ! as binary. The latter option will be removed soon (ds 18/3/2005).
+   ! Writes out data fields as NetCDF 
    !
    ! HISTORY
    ! Wrtchem.f90 version created by ds to make use of new Derived
@@ -24,23 +23,28 @@
    !      -- End_of_Run logical introduced to help readability.
    ! 21/3/2005 - ds changes
    !    AOT outputs removed.
+   ! 25/10/2005 pw changes
+   !    The binary outputs have ben removed and replaced by NetCDF only
+   !    Some parts which where earlier in output_binary_ml are now here 
    !-----------------------------------------------------------------------
 !ds New deriv system, 21/12/2003:
-   use My_Derived_ml, only: NDERIV_2D, & !dsAscii3D
+   use My_Derived_ml, only: NDDEP, NWDEP, NDERIV_2D, & !dsAscii3D
                             NDERIV_3D
 
    use Dates_ml,           only: nmdays             !ds-out
 !ds New Deriv:
    use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, f_2d, d_2d &
-                                ,f_3d, d_3d, nav_3d  & !dsAscii3D
-                                ,ResetDerived
+                                ,f_3d, d_3d, nav_3d, nav_2d  & !dsAscii3D
+                                ,nav_wdep, nav_ddep  & 
+                                ,wdep, ddep, f_wdep, f_ddep   & 
+                                ,ResetDerived, Deriv
    use Io_ml   ,           only: IO_WRTCHEM
    use ModelConstants_ml , only: nprint,current_date, END_OF_EMEPDAY , & !dsAscii3d
                                   KMAX_MID
    use My_Outputs_ml,      only: NBDATES, wanted_dates_bi, & !dsAcii3D
                                  Ascii3D_WANTED
    use out_restri_ml,      only: to_out_restri    ! su - allows 3-h output 
-   use Output_binary_ml,   only: Output_binary
+!   use Output_binary_ml,   only: Output_binary
    use Par_ml,             only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX ,limax,ljmax,me,&
                                   ISMBEG,JSMBEG   !dsOH
    implicit none
@@ -51,11 +55,13 @@
    real, dimension(GIMAX, GJMAX)        ::  glob_2d   ! array for whole domain
    !!real, allocatable, dimension(:,:,:)  ::  glob_3d   ! 3-D array for whole domain
    integer msnr1, msnr2
-   integer i,j,n,k
+   integer i,j,n,k,icmp
    character*30 outfilename
    integer nyear,nmonth,nday,nhour,nmonpr
    integer :: yy_out, mm_out, dd_out   !ds - after allowance for END_OF_EMEPDAY
    logical :: Jan_1st, End_of_Run
+   real :: scale
+
 
    nyear  = current_date%year
    nmonth = current_date%month
@@ -82,20 +88,20 @@
          end if
 
    end if
-!
-!   actualize identi:
-!   identi(12) = nyear
-!   identi(13) = nday + 100*nmonth
-!   identi(14) = 100 * nhour
-!
+
    !su - allow 3h output of all concentrations for restricted domain
 
     if ( to_out_restri ) then
 
-       write(outfilename,fmt &
-               ='(''outrestri'',i4.4,i2.2,i2.2,i2.2,''.dat'')') &
-               nyear,nmonth,nday,nhour
-       call outchem_restri(outfilename)
+
+!pw 25/10/2005: the output of a restricted area will be replaced by a
+! NetCDF restricted area output in the future
+!       write(outfilename,fmt &
+!               ='(''outrestri'',i4.4,i2.2,i2.2,i2.2,''.dat'')') &
+!               nyear,nmonth,nday,nhour
+!       call outchem_restri(outfilename)
+
+
      endif
 
 !su   possible actual array output for specified days and hours - outchem
@@ -106,10 +112,7 @@
               wanted_dates_bi(n)%day   == nday   .and. &
               wanted_dates_bi(n)%hour  == nhour ) then
 
-               write(outfilename,fmt &
-                  ='(''outchem'',i4.4,i2.2,i2.2,i2.2,''.dat'')') &
-                  nyear,nmonth,nday,nhour
-               call Output_binary(IOU_INST,outfilename)
+         call Output_fields(IOU_INST)
 
          end if
      end do
@@ -119,52 +122,36 @@
 
    !ds-out if (nhour ==  6) then
    if (nhour ==  END_OF_EMEPDAY ) then
+      
+      !ds write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') nmonth,nday
+      
+      if ( numt > 1 .and. .not. Jan_1st ) then   !ds don't write out jan 1st
+ 
+         call Output_fields(IOU_DAY)
 
-     !ds write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') nmonth,nday
-
-     if ( numt > 1 .and. .not. Jan_1st ) then   !ds don't write out
-       write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') mm_out, dd_out
-       if(me==0)write(6,"(a12,i5,4i4,i5,2x,a30)") "DAILY FILE ", numt, nmonth, &
-                   mm_out,nday,dd_out, nhour, outfilename
-
-       call Output_binary(IOU_DAY,outfilename)
-
-     end if
-
-     call ResetDerived(IOU_DAY)    ! ds reset even on 1st jan.
-
+      end if
+      
+      call ResetDerived(IOU_DAY)    ! ds reset even on 1st jan.
+      
    end if
 
-!su   end of run:
-
-   !ds if (mod(numt,nprint) == 0) then
 
    if ( End_of_Run ) then
 
-      !su   write the remaining part of outday for the hours 6-0 at end of run
+!Daily outputs:
+   call Output_fields(IOU_DAY)
 
-       !ds-out write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') nmonth,nday
+!Yearly outputs:
+   call Output_fields(IOU_YEAR)
 
-       write(outfilename,fmt='(''out_c'',i2.2,i2.2''.dat'')') mm_out,dd_out
-       call Output_binary(IOU_DAY,outfilename)
 
-       !ds if(nmonth == 1 .and.nday == 1 .and.nhour == 0)then
-
-       if( Jan_1st .and.nhour == 0)then  ! End of year !
-            write(outfilename,fmt='(''outyear'',i4.4,''.dat'')') nyear-1
-
-       else
-            write(outfilename,fmt='(''outterm'',i4.4,''.dat'')') numt
-       endif
-       call Output_binary(IOU_YEAR,outfilename)
-
-   end if    ! last numt check
+  end if    ! last numt check
 
 
 !su   move the monthly output from the nn.ne.nold to this place
-!caverage depositions and surface conc. calculated for each month. Hence, 
-!cmonthly values are printed out and
-!cnav and depositions are set to zero for a new month.
+!average depositions and surface conc. calculated for each month. Hence, 
+!monthly values are printed out and
+!nav and depositions are set to zero for a new month.
 
    if(nday == 1.and.nhour == 0)then
 
@@ -217,9 +204,132 @@
     !dsAcii3D =============================================================
 
      write(outfilename,fmt='(''outmonth'',i4.4,''.dat'')') nmonpr
-     call Output_binary(IOU_MON,outfilename)
+     call Output_fields(IOU_MON)
+!     call Output_binary(IOU_MON,outfilename)
      call ResetDerived(IOU_MON)
    endif
 
    end subroutine Wrtchem
 
+   subroutine Output_fields(iotyp)
+
+! pw 25/10/2005
+
+   use My_Derived_ml, only: NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
+   use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, f_2d, d_2d &
+                                ,f_3d, d_3d, nav_3d, nav_2d  & 
+                                ,nav_wdep, nav_ddep  & 
+                                ,wdep, ddep, f_wdep, f_ddep   & 
+                                , Deriv
+   use NetCDF_ml,          only: CloseNetCDF
+
+   implicit none
+
+    integer ,      intent(in) :: iotyp
+
+  !     
+  !   put the 2-d derived fields, e.g. aot, accsu, So2, SO4, etc.
+  !cccccccccccccccccccccccccc
+     if(NDERIV_2D > 0)call Output_f2d(iotyp,NDERIV_2D,nav_2d,f_2d,d_2d)
+
+  !  
+  !     
+  !***  Dry depositions
+  !cccccccccccccccccccccccccc
+
+     if(NDDEP > 0)call Output_f2d(iotyp,NDDEP,nav_ddep,f_ddep,ddep)
+
+
+  !***  Wet deposition
+  !cccccccccccccccccccccccccccc
+ 
+     if(NWDEP > 0)call Output_f2d(iotyp,NWDEP,nav_wdep,f_wdep,wdep)
+
+
+  !   put the 3-d derived fields, e.g. O3
+  !cccccccccccccccccccccccccccc
+
+     if(NDERIV_3D > 0)call Output_f3d(iotyp,NDERIV_3D,nav_3d,f_3d,d_3d)
+
+     call CloseNetCDF
+
+   end subroutine Output_fields
+
+   subroutine  Output_f2d(iotyp, dim, nav, def, dat)
+
+! pw 25/10/2005
+! Send fields to NetCDF output routines.
+! Old "ident" removed
+     
+   use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,Deriv,LENOUT2D
+   use ModelConstants_ml , only:  KMAX_MID
+   use NetCDF_ml,          only: Out_netCDF,CloseNetCDF
+   use Par_ml, only: MAXLIMAX, MAXLJMAX 
+
+     implicit none
+
+     integer,                         intent(in) :: iotyp
+     integer,                         intent(in) :: dim ! No. fields
+     integer, dimension(dim,LENOUT2D), intent(in) :: nav ! No. items averaged
+     type(Deriv), dimension(dim),     intent(in) :: def ! definition of fields
+     real, dimension(dim,MAXLIMAX,MAXLJMAX,LENOUT2D), intent(in) :: dat
+     logical :: wanted     ! Set true for required year, month, day or inst.
+     integer :: icmp       ! component index
+     real    :: scale      ! Scaling factor
+     integer ::i,j
+
+     do icmp = 1, dim
+        
+        wanted = .false.
+        if( iotyp == IOU_YEAR) wanted = def(icmp)%year
+        if( iotyp == IOU_MON ) wanted = def(icmp)%month
+        if( iotyp == IOU_DAY ) wanted = def(icmp)%day
+        if( iotyp == IOU_INST) wanted = def(icmp)%inst
+        
+        if ( wanted ) then 
+           
+           scale  = def(icmp)%scale
+           if (iotyp /= IOU_INST  )scale=scale/max(1,nav(icmp,iotyp))
+           call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,iotyp),scale)
+           
+        endif        ! wanted
+     enddo        !icmp
+     
+   end subroutine Output_f2d
+
+   subroutine  Output_f3d(iotyp, dim, nav, def, dat)
+     
+   use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,Deriv,LENOUT3D
+   use ModelConstants_ml , only:  KMAX_MID
+   use NetCDF_ml,          only: Out_netCDF,CloseNetCDF
+   use Par_ml, only: MAXLIMAX, MAXLJMAX 
+
+     implicit none
+
+     integer,                         intent(in) :: iotyp
+     integer,                         intent(in) :: dim ! No. fields
+     integer, dimension(dim,LENOUT3D), intent(in) :: nav ! No. items averaged
+     type(Deriv), dimension(dim),     intent(in) :: def ! definition of fields
+     real, dimension(dim,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D), intent(in) :: dat
+     logical :: wanted     ! Set true for required year, month, day or inst.
+     integer :: icmp       ! component index
+     real    :: scale      ! Scaling factor
+     integer ::i,j
+
+     do icmp = 1, dim
+        wanted = .false.
+        if( iotyp == IOU_YEAR) wanted = def(icmp)%year
+        if( iotyp == IOU_MON ) wanted = def(icmp)%month
+        if( iotyp == IOU_DAY ) wanted = def(icmp)%day
+        if( iotyp == IOU_INST) wanted = def(icmp)%inst
+        
+        if ( wanted ) then 
+           
+           scale  = def(icmp)%scale
+           if (iotyp /= IOU_INST)scale=scale/max(1,nav(icmp,iotyp))
+           call Out_netCDF(iotyp,def(icmp),3,KMAX_MID,dat(icmp,:,:,:,iotyp),scale)
+           
+        endif        ! wanted
+     enddo        !icmp
+     
+   end subroutine Output_f3d

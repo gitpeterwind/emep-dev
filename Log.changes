@@ -1,3 +1,19 @@
+============== Peter rv2_3_3, 26/10/2005 ================================================
+
+Major clean up of binary output and all the .F files. As a consequence several parts of
+the Makefile got also cleaner.
+
+Removed:
+Output_binary_ml,rmycop.c,getflti2.f,getflti2.F,putflti2.f,putflti2.F,outchem_restri.f,
+put_restri_i2.f,put_restri_i2.F, gc_com.F
+
+Modified: Met_ml, NetCDF_ml, Wrtchem.f90, Output_hourly.f90 Makefile
+
+Parts of Output_binary are moved into Wrtchem.
+Parts of getflti2.f are put into Met_ml in order to still be able to read the met files in binary.
+
+Results are not affected by these changes
+
 ============== Peter & Joffen (+Maarten+Dave)  rv2_3_2, 6/10/2005 ================================================
 
 New AirEmis from Joffen. More general: can use any grid. Some differences 

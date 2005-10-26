@@ -326,6 +326,8 @@ private
       end subroutine Meteoread
 
       subroutine infield(numt)
+!pw
+! NB: This routine may disapear in later versions 
 
 !	the subroutine reads meteorological fields and parameters every
 !	six-hour from fields-files, divide the fields into domains
@@ -348,7 +350,8 @@ private
 !	local
 
 	integer ierr,fid,nr, i, j, k, ij, ident(20)
-	integer*8 itmp(6+(MAXLIMAX*MAXLJMAX+3)/4)
+!	integer*8 itmp(6+(MAXLIMAX*MAXLJMAX+3)/4)
+	integer*2 itmp(21+MAXLIMAX*MAXLJMAX)
 	character*20 fname
 	integer nyear,nmonth,nday,nhour,nprognosis
 	type(date) addhours_to_input
@@ -400,7 +403,7 @@ private
         
 	do while(.true.)
 
-	  call getflti2(fid,ident,itmp,ierr)
+	  call getflti2Met(fid,ident,itmp,ierr)
 	  if(ierr == 2)goto 998
 
 	  k = ident(7)
@@ -517,7 +520,7 @@ private
 
           sigma_mid(k)=ident(19)/1.0e+4
 
-	    call getmetfield(ident(20),itmp,dumhel)
+	    call getmetfieldMet(ident(20),itmp,dumhel)
 
 	    do j = 1,ljmax
 	      do i = 1,limax
@@ -529,7 +532,7 @@ private
 
 	  case (3)
 
-	    call getmetfield(ident(20),itmp,dumhel)
+	    call getmetfieldMet(ident(20),itmp,dumhel)
 
 	    do j = 1,ljmax
 	      do i = 1,limax
@@ -541,25 +544,25 @@ private
 
 	  case (9)
 
-	      call getmetfield(ident(20),itmp,q(1,1,k,nr))
+	      call getmetfieldMet(ident(20),itmp,q(1,1,k,nr))
 
 	  case (11)
 
-	      call getmetfield(ident(20),itmp,sdot(1,1,k,nr))
+	      call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
 
 	  case (-11) !pw (not standard convention)
 
-	      call getmetfield(ident(20),itmp,sdot(1,1,k,nr))
+	      call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
 
               sdot_at_mid = .false.
 
  	  case (810) !pw u3 MM5 SIGMADOT
 
-	      call getmetfield(ident(20),itmp,sdot(1,1,k,nr))
+	      call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
 
 	  case (18)
 
-	      call getmetfield(ident(20),itmp,th(1,1,k,nr))
+	      call getmetfieldMet(ident(20),itmp,th(1,1,k,nr))
 
 !	  case (22)
 !
@@ -570,7 +573,7 @@ private
                
 	  case (23)
 
-              call getmetfield(ident(20),itmp,pr(1,1,k))
+              call getmetfieldMet(ident(20),itmp,pr(1,1,k))
 
 !	  case (845) ! pw u3 MM5 TOTALRW
 !
@@ -578,39 +581,39 @@ private
 
 	  case (39)
 
-	      call getmetfield(ident(20),itmp,cc3d(1,1,k))
+	      call getmetfieldMet(ident(20),itmp,cc3d(1,1,k))
 
 !..2D fields!
 
 	  case (8)
 
-	      call getmetfield(ident(20),itmp,ps(1,1,nr))
+	      call getmetfieldMet(ident(20),itmp,ps(1,1,nr))
 
 	  case (31)
 
-	      call getmetfield(ident(20),itmp,t2_nwp(1,1,nr))
+	      call getmetfieldMet(ident(20),itmp,t2_nwp(1,1,nr))
 
 	  case (36)
 
-	      call getmetfield(ident(20),itmp,fh(1,1,nr))
+	      call getmetfieldMet(ident(20),itmp,fh(1,1,nr))
 
 	  case (37)       !ds u7.4vg fl added
 
-              call getmetfield(ident(20),itmp,fl(1,1,nr))
+              call getmetfieldMet(ident(20),itmp,fl(1,1,nr))
 
 	  case (38)
 
-	      call getmetfield(ident(20),itmp,tau(1,1,nr)) ! ds was fm
+	      call getmetfieldMet(ident(20),itmp,tau(1,1,nr)) ! ds was fm
 
 	  case (53) !pw u3
 
               foundustar = .true.
 	      !ds apr2005 call getmetfield(ident(20),itmp,ustar_nwp(1,1,nr))
-	      call getmetfield(ident(20),itmp,ustar_nwp(1,1))
+	      call getmetfieldMet(ident(20),itmp,ustar_nwp(1,1))
 
 	  case (103) ! SST
 
-	      call getmetfield(ident(20),itmp,sst(1,1,nr))
+	      call getmetfieldMet(ident(20),itmp,sst(1,1,nr))
 
 
 	  end select
@@ -640,6 +643,277 @@ private
 !      sdot(:,:,KMAX_BND,nr)=0.
 
    end subroutine infield
+
+   subroutine getflti2Met(ifile,ident,itmp,ierr)
+!pw
+! NB: This routine may disapear in later versions 
+
+!fpp$ noconcur r
+!
+!  16 bit input and unpack
+!
+!  input:
+!     mode:   0 = read field	is now hardcoded
+!             1 = read field, skip fields until time > itime
+!             2 = read field if field time = itime
+!                 (otherwise next read starts at the same field)
+!           100 = read field identification
+!                 (next read starts at the same field)
+!           101 = read field identification, skip fields
+!                 until time > itime
+!                 (next read starts at the same (last) field)
+!           102 = read field identification, skip fields
+!                 until time >= itime
+!                 (next read starts at the same (last) field)
+!           200 = scan rest of the file and read field with
+!                 matching identification, specified identification
+!                 input in ident(1:20) where -32767 means any value
+!           201 = scan the whole file and read field with
+!                 matching identification, specified identification
+!                 input in ident(1:20) where -32767 means any value
+!            -1 = clean up after a file is closed, and the same
+!                 file unit no. is used for another file.
+!     ifile: file unit no.
+!     MFSIZEINPUT:  length of fdata (max field size)
+!
+!  output:
+!     ident(20): field identification
+!     fdata(..): field (unscaled, according to identification)
+!     ierr = 0:  read o.k.
+!            1:  read error
+!            2:  read error, end_of_file
+!
+!
+!  warning: using file unit no. (not file name) to identify
+!           files when storing field identification.
+!           if more than one file is opened with the same
+!           unit, use 'call getflt(-1,...)' after closing
+!           a file to avoid errors.
+!
+!  computer dependant i/o methodes for:
+!              1) computer='cray'     (integer*2 not available)
+!              2) computer='not.cray' (integer*2 used)
+!
+!  dnmi/fou  19.08.1993  anstein foss
+!
+!
+!  modified by Peter Wind 11.03.2002:
+!  uses nx=ident(10) (read from file) as first dimension of array, 
+!  instead of IILARDOM. (only modified for not _CRAY)
+!
+	use Par_ml  , only : MAXLIMAX,MAXLJMAX,IILARDOM,JJLARDOM &
+     			,MFSIZEINP,NPROC,ISMBEG,JSMBEG,tgi0,tgj0,me &
+     			,MSG_INIT3 &
+     			,tlimax,tljmax,limax,ljmax
+!hf u2	use My_Runmode_ml , only : stop_test
+	implicit none
+
+	integer NUMHOR4,MAXPK4
+	integer d,i,j,info
+!  MAXPK4: max record length in cray 64 bit integer words
+
+	parameter (NUMHOR4=MAXLIMAX*MAXLJMAX)
+	parameter (MAXPK4 = IILARDOM*JJLARDOM)
+	integer ida,itp
+	integer*2 idpack(20)
+	integer*2 ipack(21+MAXPK4)
+	integer*2 itmp(21+NUMHOR4)
+
+
+!  input/output
+	integer   ifile,ident(20),ierr,iteserr
+!
+!
+!  cray uses ipack as a standard length integer
+!
+!
+!
+	integer isave,nsave,ios,ierror
+	integer nxin,nyin,nword,npack
+
+	ierr = 0
+	iteserr = 0
+
+	if(me.eq.0)then
+
+	  ipack(1) = 0
+
+	  if(ifile.lt.1  .or. ifile.gt.99) then
+	    write(6,*) ' **getflt** error ** ifile: ',ifile
+	    ierr = 1
+!	    call stop_all('GETFLTI2')
+            call gc_abort(me,NPROC,"GETFLTI2")
+	  endif
+	endif
+
+!hf u2	call stop_test(.true.,me,NPROC,ierr,'GETFLTI2')
+!
+	if(me.eq.0)then
+!        a) read field identification (one record)
+!        b) read field data           (one record)
+!
+!
+
+	  read(ifile,iostat=ios,err=910,end=920) (idpack(i),i=1,20)
+	  do i=1,20
+	    ident(i)=idpack(i)
+	    ipack(i+1)=idpack(i)
+	  end do
+
+!
+!  not using extra geometry identification (after field data)
+          if(ident(9).gt.999) ident(9)=ident(9)/1000
+!
+!
+!
+!
+	  nxin=ident(10)
+	  nyin=ident(11)
+	  nword=nxin*nyin
+!
+	  if(nword.gt.MFSIZEINP) then
+	    write(6,*) ' **getflt** field length too big', &
+                             ' (input buffer MFSIZEINP too small)'
+	    write(6,*) ' **          MFSIZEINP = ',MFSIZEINP
+	    write(6,*) ' ** ident: ',(ident(i),i=1,11)
+	    write(6,*) ' **        ',(ident(i),i=12,20)
+	    write(6,*) ' ** nx,ny,nx*ny: ',nxin,nyin,nword
+	    ierr=1
+	    iteserr = 1
+	    goto 990
+	  endif
+!
+
+
+	  npack=nword
+	  read(ifile,iostat=ios,err=910,end=920) (ipack(i),i=22,npack+21)
+
+
+	  goto 990
+
+910	  ierr=1
+	  iteserr = 1
+	  write(6,*) ' **getflt** read error. file,iostat: ',ifile,ios
+	  goto 990
+920	  ierr=2
+	  goto 990
+
+990	  continue
+	endif
+!	  if(ierr.eq.1)call stop_all('getflti2ex')
+          if(ierr.eq.1)call gc_abort(me,NPROC,"getflti2ex")
+!hf u2	  call stop_test(.true.,me,NPROC,iteserr,'getflti2ex')
+
+	if(me.eq.0)then
+
+	if(ierr.eq.2)then
+	    ipack(1) = -999
+	    do d = 1, NPROC-1
+
+	      call gc_bsend(MSG_INIT3,2*(21+NUMHOR4),d, &
+                         info, itmp,ipack)
+
+	    enddo
+	    close(ifile)
+	    return
+	endif
+!
+!..hj.. scaling is done within the getflti2 subroutine!!!!!!!!
+!
+	  if (ident(1) .ne. 88) then
+	    write(6,*) 'ERROR IN INFIELD : produsent =',ident(1)
+	  endif
+!
+	  if (ident(2) .ne. 1841.and. ident(2) .ne. 1600) then
+	    write(6,*) 'ERROR IN INFIELD : grid =',ident(2)
+	  endif
+!
+
+
+	  do i=1,21
+	    itmp(i) = ipack(i)
+	  enddo
+	  do d = 1, NPROC-1
+	    ida = 21
+!pw	    itp = 21+(tgj0(d)+JSMBEG-2)*IILARDOM + tgi0(d)+ISMBEG-2
+	    itp = 21+(tgj0(d)+JSMBEG-2)*ipack(11) + tgi0(d)+ISMBEG-2
+	    do j = 1,tljmax(d)
+	      do i = 1,tlimax(d)
+	        itmp(ida+i) = ipack(itp+i)
+	      enddo
+	      ida = ida + MAXLIMAX
+!pw	      itp = itp + IILARDOM
+	      itp = itp + ipack(11)
+	    enddo
+	    call gc_bsend(MSG_INIT3,2*(21+NUMHOR4),d, &
+                         info, itmp,itmp)
+	  enddo
+	  ida = 21
+!pw	  itp = 21+(JSMBEG-1)*IILARDOM + ISMBEG-1
+	  itp = 21+(JSMBEG-1)*ipack(11) + ISMBEG-1
+	  do j = 1,ljmax
+	    do i = 1,limax
+	      itmp(ida+i) = ipack(itp+i)
+	    enddo
+	    ida = ida + MAXLIMAX
+!pw	    itp = itp + IILARDOM
+	    itp = itp + ipack(11)
+	  enddo
+
+!
+!
+	else		
+
+! me.ne.0, always receive to get itmp(1)
+
+
+	  call gc_brecv(MSG_INIT3,2*(21+NUMHOR4),0, &
+                      info, itmp, itmp)
+
+	  if(itmp(1).eq.-999)then
+	    ierr = 2
+	    return
+	  endif
+
+	  do i=1,20
+	    ident(i) = itmp(i+1)
+	  enddo
+
+	endif
+
+	return
+      end subroutine getflti2Met
+
+	subroutine getmetfieldMet(ident,itmp,array)
+
+!pw
+! NB: This routine may disapear in later versions 
+ 
+	use Par_ml  , only : MAXLIMAX,MAXLJMAX
+	implicit none
+
+	integer NUMHOR4
+	integer i
+	integer ident
+
+	parameter (NUMHOR4=MAXLIMAX*MAXLJMAX)
+	integer*2 itmp(21+NUMHOR4)
+
+	real scale
+	real array(MAXLIMAX*MAXLJMAX)
+
+	scale = 10.**ident
+
+
+	do i = 1,MAXLIMAX*MAXLJMAX
+	  array(i) = scale * itmp(i+21)
+	enddo
+
+
+	return
+      end subroutine getmetfieldMet
+
+
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 

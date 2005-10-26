@@ -319,12 +319,12 @@
        CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
        scale=1.
        if(nk==1)then !write as 2D
-       call Out_netCDF(IOU_HOUR,def1,2,identi &
-            ,1,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen)
+       call Out_netCDF(IOU_HOUR,def1,2 &
+            ,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen)
        elseif(nk>1)then   !write as 3D
           klevel=KMAX_MID-ik+1
-       call Out_netCDF(IOU_HOUR,def1,3,identi &
-            ,1,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen,klevel)
+       call Out_netCDF(IOU_HOUR,def1,3 &
+            ,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen,klevel)
        else
           !nk<1 : no output
        endif

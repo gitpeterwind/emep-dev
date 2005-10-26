@@ -40,6 +40,7 @@
   integer,save :: ncFileID_day=closedID  
   integer,save :: ncFileID_month=closedID
   integer,save :: ncFileID_year=closedID
+  integer,save :: outCDFtag=0
   integer, public, parameter :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 !CDF typr for output
 
 
@@ -369,7 +370,7 @@ end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
+subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
 
 !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
@@ -386,10 +387,9 @@ use My_Outputs_ml, only :FREQ_HOURLY
 
   implicit none
 
-integer ,intent(in) :: icmp,ndim,kmax
+integer ,intent(in) :: ndim,kmax
 type(Deriv),     intent(in) :: def1 ! definition of fields
 integer,                         intent(in) :: iotyp
-integer, dimension(:) ,intent(in) ::  ident
 real    ,intent(in) :: scale 
 !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
 real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
@@ -518,7 +518,7 @@ do k=1,kmax
 enddo
 
 !send all data to me=0
-itag=icmp
+outCDFtag=outCDFtag+1
 
 if(me.eq.0)then
    
@@ -557,7 +557,7 @@ if(me.eq.0)then
    endif
 
    do d = 1, NPROC-1
-      call gc_rrecv(itag,tlimax(d)*tljmax(d)*kmax, d, info,buff, buff)
+      call gc_rrecv(outCDFtag,tlimax(d)*tljmax(d)*kmax, d, info,buff, buff)
 
       !copy data to global buffer
       if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
@@ -583,7 +583,7 @@ if(me.eq.0)then
       endif
    enddo
 else
-   call gc_rsend(itag,tlimax(me)*tljmax(me)*kmax, 0, info, buff, buff)
+   call gc_rsend(outCDFtag,tlimax(me)*tljmax(me)*kmax, 0, info, buff, buff)
 endif
 !return
 
@@ -621,7 +621,7 @@ if(me==0)then
   else
      !ds print *, 'creating variable: ',varname!,nf90_strerror(status)
      write(6,*) 'creating variable: ',varname!,nf90_strerror(status)
-     call  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1,OUTtype)
+     call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   endif
 
 
@@ -738,7 +738,7 @@ end subroutine Out_netCDF
 !_______________________________________________________________________
 
 
-subroutine  createnewvariable(ncFileID,varname,ndim,ident,ndate,def1,OUTtype)
+subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
 
   !create new netCDF variable
 
@@ -751,7 +751,7 @@ use Derived_ml, only : Deriv
   type(Deriv),     intent(in) :: def1 ! definition of fields
   character (len = *),intent(in) ::varname
   integer ,intent(in) ::ndim,ncFileID,OUTtype
-  integer, dimension(:) ,intent(in) ::  ident,ndate
+  integer, dimension(:) ,intent(in) ::  ndate
 
   integer :: iDimID,jDimID,kDimID,timeDimID
   integer :: varID,nrecords
@@ -818,7 +818,7 @@ use Derived_ml, only : Deriv
   endif
 !     call check(nf90_put_att(ncFileID, varID, "periodlength",   "yearly"))
 
-     call check(nf90_put_att(ncFileID, varID, "xfelt_ident",ident ))
+!25/10/2005     call check(nf90_put_att(ncFileID, varID, "xfelt_ident",ident ))
      call check(nf90_put_att(ncFileID, varID, "current_date_first",ndate ))
      call check(nf90_put_att(ncFileID, varID, "current_date_last",ndate ))
    
@@ -845,7 +845,13 @@ end subroutine  createnewvariable
 !closed after end of program, and data may be lost if the files are not
 !closed explicitely.
 
+use Par_ml,           only : me
+
 integer :: ncFileID
+
+outCDFtag=0 !for avoiding too large integers
+
+if(me==0)then
 
     if(ncFileID_year/=closedID)then
        ncFileID = ncFileID_year
@@ -872,6 +878,8 @@ integer :: ncFileID
        call check(nf90_close(ncFileID))
        ncFileID_inst=closedID
     endif
+endif
+
 
   end subroutine CloseNetCDF
 
@@ -924,7 +932,7 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
 
 
   logical :: fileneeded
-  integer :: GIMAX,GJMAX,KMAX_MID,nrecords,xfelt_ident(20),period
+  integer :: GIMAX,GJMAX,KMAX_MID,nrecords,period
   integer :: status,ndims,alloc_err
   integer :: n,KMAX,Nrec,ijn,ijkn
   integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
@@ -1124,7 +1132,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
  character (len=100):: fileName
  real ::scale
- integer :: n,iotyp,ndim,ident(20),kmax,icmp,dim,ndate(4),nseconds
+ integer :: n,iotyp,ndim,kmax,icmp,dim,ndate(4),nseconds
  type(Deriv) :: def1 ! definition of fields
 
  ndate(1)=vardate%year
@@ -1188,7 +1196,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  def1%name= species(n)%name       !written
  dat=xn_shl(n,:,:,:)
  icmp=n
- call Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,scale,CDFtype=Real8,fileName_given=fileName)
+ call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real8,fileName_given=fileName)
  enddo
 
  def1%class='Advected' !written
@@ -1196,7 +1204,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  def1%name= species(NSPEC_SHL+n)%name       !written
  dat=xn_adv(n,:,:,:)
  icmp=NSPEC_SHL+n
- call Out_netCDF(iotyp,def1,ndim,ident,kmax,icmp,dat,scale,CDFtype=Real8,fileName_given=fileName)
+ call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real8,fileName_given=fileName)
  enddo
 
  else
