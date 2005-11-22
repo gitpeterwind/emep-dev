@@ -1,5 +1,42 @@
+
+============== Peter rv2_4_1, 22/11/2005 ================================================
+
+GLOBAL version of the model
+
+Lat lon grid possible (defined through mapping factors xm_i and xm_j)
+
+Cyclic grid in i direction
+
+Special treatment at poles: 
+	-.no "neighbors", but not an outer boundary
+	-.special treatment of advection
+
+Emission_ml includes an option to choose that the local time
+ (used for the day/night timefactor) is determined by the longitude
+instead of the timezone defined in "Countries_ml". This option is selected when timezone=-100.
+This should be better at least for countries which cover many 
+timezones (Russia, USA ...)
+ (This also avoids defining timezones for hundreds of countries :-) 
+
+splitted parinit into two subroutines, one for subdomain sizes and the 
+other for neighbors and BC definitions
+
+Removed the last optional argument from CloudAtten in Radiation_ml:
+it produced a compiler error in PhyChem_ml, even if I didn't change
+PhyChem nor Radiation !? 
+
+Modified: Unimod.f90, Model_Constants, GridValues_ml, Met_ml, 
+Boundary_Conditions, Par_ml.pat,NetCDF_ml, Advection_ml, 
+Emissions_ml, My_Output_ml, Radiation_ml
+
+Still the results are not affected by these changes (!)
+Yearly results compared to rv2_1 by Joffen.
+
+
+=======
 ============== Peter rv2_4, 2/11/2005 ================================================
 (These are same. dave changed number since the changes are substantial
+
 ============== Peter rv2_3_3, 26/10/2005 ================================================
 
 Major clean up of binary output and all the .F files. As a consequence several parts of
