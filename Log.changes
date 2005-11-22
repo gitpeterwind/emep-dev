@@ -1,4 +1,9 @@
 
+============== Peter rv2_4_2, 22/11/2005 ================================================
+
+EmisGet changed to include VOC sector 10 by default (perviously excluded).
+Now only sector 11 is exlcuded.
+
 ============== Peter rv2_4_1, 22/11/2005 ================================================
 
 GLOBAL version of the model
