@@ -19,11 +19,7 @@ module  My_Outputs_ml
                 IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml , only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
-  use Par_ml,            only: me, NPROC   ! for gc_abort
-  implicit none
-  private
-
-
+  use Par_ml,            only: me, NPROC,GIMAX,GJMAX,ISMBEG,JSMBEG
   logical, public, parameter :: out_binary = .false.
   logical, public, parameter :: Ascii3D_WANTED = .false.
 
@@ -246,6 +242,7 @@ contains
 
    !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  !EMEP
    integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  !restricted EMEP
+!   integer, save :: ix1 = ISMBEG, ix2 = ISMBEG+GIMAX-1, iy1=JSMBEG, iy2 =  JSMBEG+GJMAX-1  !all
 
   !ds New Deriv system:
    integer :: D2_O3WH, D2_O3DF, D2_FSTDF00, D2_FSTWH00

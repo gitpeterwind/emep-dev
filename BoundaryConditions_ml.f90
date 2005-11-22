@@ -91,7 +91,7 @@ module BoundaryConditions_ml
            MAXLIMAX, MAXLJMAX, NPROC, limax, ljmax, me &
           ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
           ,NOPROC&
-          ,ISMBEG,JSMBEG
+          ,ISMBEG,JSMBEG,li1,li0,lj0,lj1
   use GlobalBCs_ml,                only: &
           NGLOB_BC                 &  ! Number of species from global-model
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.
@@ -628,10 +628,15 @@ endif
 
 
 !chf Set edges (except on the top) 
-      if(neighbor(SOUTH) == NOPROC)   mask(:,1,2:KMAX_MID)     = .true.
-      if(neighbor(NORTH) == NOPROC)   mask(:,ljmax,2:KMAX_MID) = .true.
-      if(neighbor(EAST)  == NOPROC)   mask(limax,:,2:KMAX_MID) = .true.
-      if(neighbor(WEST)  == NOPROC)   mask(1,:,2:KMAX_MID)     = .true.
+!pw      if(neighbor(SOUTH) == NOPROC)   mask(:,1,2:KMAX_MID)     = .true.
+!pw      if(neighbor(NORTH) == NOPROC)   mask(:,ljmax,2:KMAX_MID) = .true.
+!pw      if(neighbor(EAST)  == NOPROC)   mask(limax,:,2:KMAX_MID) = .true.
+!pw      if(neighbor(WEST)  == NOPROC)   mask(1,:,2:KMAX_MID)     = .true.
+!pw there may be no neighbor, but no external boundary (Poles in lat lon)
+      if(neighbor(SOUTH) == NOPROC)   mask(:,1:(lj0-1),2:KMAX_MID)     = .true.
+      if(neighbor(NORTH) == NOPROC)   mask(:,(lj1+1):ljmax,2:KMAX_MID) = .true.
+      if(neighbor(EAST)  == NOPROC)   mask((li1+1):limax,:,2:KMAX_MID) = .true.
+      if(neighbor(WEST)  == NOPROC)   mask(1:(li0-1),:,2:KMAX_MID)     = .true.
 
       mask(:,:,1) = .true.        !hf Set top layer
    else

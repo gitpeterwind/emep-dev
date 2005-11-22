@@ -53,7 +53,7 @@ program myeul
   use My_WetDep_ml,     only : Init_WetDep
   use MyChem_ml,        only : Init_mychem   
 
-  use Advection_ml,     only : vgrid,adv_var,MIN_ADVGRIDS
+  use Advection_ml,     only : vgrid,adv_var
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Forests_init
@@ -64,11 +64,11 @@ program myeul
                                ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use GenChemicals_ml,  only : define_chemicals
-  use GridValues_ml,    only : DefGrid  ! sets gl, gb, xm, gridwidth_m, etc.
+  use GridValues_ml,    only : DefGrid,MIN_ADVGRIDS  ! sets gl, gb, xm, gridwidth_m, etc.
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse,&
-                               tiphys,Meteoread,&
+                               tiphys,Meteoread,MeteoGridRead,&
                                startdate
   use ModelConstants_ml,only : KMAX_MID, current_date  &
                               ,METSTEP    &   ! Hours between met input
@@ -77,7 +77,8 @@ program myeul
                               ,nprint,nass,nterm,iyr_trend, assign_nmax
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
   use out_restri_ml,    only : set_outrestri
-  use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2, parinit
+  use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
+                               ,Topology, parinit
   use PhyChem_ml,       only : phyche  ! Calls phys/chem routines each dt_advec
   use Polinat_ml,       only : polinat_init,polinat_in
 
@@ -272,7 +273,7 @@ program myeul
               ,newseason    !u2 , metstep
     integer iupw, i, j, ii, k, iotyp
     integer :: mm, mm_old   ! month and old-month  (was nn and nold)
-    integer :: nproc_gc
+    integer :: nproc_gc,cyclicgrid,poles(2)
     character (len=130) :: fileName
 
 !
@@ -344,7 +345,11 @@ program myeul
     call Code_Timer(tim_before0)
     tim_before = tim_before0
 
-    call parinit(MIN_ADVGRIDS)     !
+    call parinit(MIN_ADVGRIDS)     !define subdomains sizes and position
+    call MeteoGridRead(cyclicgrid,poles) !define grid projection and parameters
+    call Topology(cyclicgrid,poles)      !define GlobalBoundaries 
+                                   !and subdomains neighbors
+
     call set_outrestri  ! Steffen's routine for restricted area output
 
 
@@ -376,7 +381,7 @@ program myeul
     call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
 
 
-    call Meteoread(1)
+    call MeteoRead(1)
  
     call Add_2timing(3,tim_after,tim_before,"After infield")
 

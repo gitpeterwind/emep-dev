@@ -13,7 +13,9 @@
 !_____________________________________________________________________________
 use Functions_ml,      only : Exner_tab, Exner_nd    ! ds apr2005
 use GridValues_ml,     only : xm_i,xm_j,xm2,xmd, sigma_bnd,sigma_mid, &
-                               i_glob, j_glob,METEOfelt
+                               i_glob, j_glob,METEOfelt,projection &
+                               ,gl,gb, gb_glob, gl_glob,MIN_ADVGRIDS&
+                                  ,jmin_advec,jmax_advec
 use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP, &
                               KMAX_BND,KMAX_MID,NMET, &
                               DEBUG_i, DEBUG_j
@@ -132,6 +134,7 @@ private
   integer, private, save      :: debug_iloc, debug_jloc  ! local coords
 
   logical, public, save :: foundustar !pw Used for MM5-type, where u* but not tau
+  logical, public, save :: foundsdot !pw If not found: compute using divergence=0
   logical, public, save :: sdot_at_mid !pw rv1_9_24 . set false if sdot 
                !is defined (when read) at level  boundaries and therefore 
                !do not need to be interpolated.
@@ -156,8 +159,14 @@ private
        ,Idirect         ! total direct solar radiation (W/m^2)
 
     integer, public :: startdate(4)
+    integer,save :: Nhh &    !number of field stored per 24 hours
+         ,nhour_first& !time of the first meteo stored
+         ,nrec     !nrec=record in meteofile, for example 
+                   !(Nhh=8): 1=00:00 2=03:00 ... 8=21:00
+                   !if nhour_first=3 then 1=03:00 2=06:00...8=24:00
 
- public :: infield,Meteoread
+ public :: MeteoGridRead
+ public :: infield,MeteoRead
  public :: MetModel_LandUse    ! rv1.2 combines old in_isnowc and inpar
  public :: metvar
  public :: metint
@@ -166,7 +175,7 @@ private
  contains
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      subroutine Meteoread(numt)
+      subroutine MeteoRead(numt)
 
 !	the subroutine reads meteorological fields and parameters (every
 !	METSTEP-hours) from NetCDF fields-files, divide the fields into 
@@ -184,13 +193,8 @@ private
 
         character (len = 100),save ::meteoname !name of the meteofile
         character (len = 100) :: namefield & ! name of the requested field
-                   ,period_of_validity !field is either instaneous or averaged
+                   ,validity !field is either instaneous or averaged
         integer ::ndim,nyear,nmonth,nday,nhour,k
-        integer,save :: Nhh &    !number of field stored per 24 hours
-                   ,nhour_first& !time of the first meteo stored
-                   ,nrec     !nrec=record in meteofile, for example 
-                             !(Nhh=8): 1=00:00 2=03:00 ... 8=21:00
-                             !if nhour_first=3 then 1=03:00 2=06:00...8=24:00
 
         integer :: nr!Fields are interpolate in time: between nr=1 and nr=2
    	type(date) next_inptime,addhours_to_input
@@ -203,51 +207,22 @@ private
 	nr=2 !set to one only when the first time meteo is read
 	if(numt == 1)then !first time meteo is read
    
-          nyear=startdate(1)
-          nmonth=startdate(2)
-          nday=startdate(3)
-          nhour=0
-          current_date = date(nyear, nmonth, nday, nhour, 0 )
-          call Init_nmdays( current_date )
-          
-         !*********initialize grid parameters*********
-56        FORMAT(a5,i4.4,i2.2,i2.2,a3)
-          write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-          if(me==0)write(*,*)'looking for ',trim(meteoname)
-
-          call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
-               ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
-
-          if( METEOfelt==1 )then
-             call infield(numt)
-             return
-          endif
-          
  	  nr = 1  
-          sdot_at_mid = .true.
-          foundustar = .false.
-          
-           if(me==0)then
-             write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
-             write(*,*)'grid resolution:',GRIDWIDTH_M
-             write(*,*)'xcoordinate of North Pole, xp:',xp
-             write(*,*)'ycoordinate of North Pole, yp:',yp
-             write(*,*)'longitude rotation of grid, fi:',fi
-             write(*,*)'true distances latitude, ref_latitude:',ref_latitude
-          endif
+          sdot_at_mid = .false.
+          foundustar = .false.   
+          foundsdot = .false.
+
+           next_inptime = current_date
 
 ! If origin of meteodomain does not coincide with origin of large domain,
 ! xp and yp should be shifted here, and coordinates must be shifted when 
 ! meteofields are read (not yet implemented)
 
-	endif ! numt==1
-
-        if(numt==1)then
-           next_inptime = current_date
         else
            addhours_to_input = date(0, 0, 0, METSTEP, 0 )
            next_inptime = add_dates(current_date,addhours_to_input)
         endif
+
         nyear=next_inptime%year
         nmonth=next_inptime%month
         nday=next_inptime%day 
@@ -266,6 +241,7 @@ private
         if((numt-1)*METSTEP<=nhour_first)nrec=0 
         nrec=nrec+1
         if(nrec>Nhh.or.nrec==1)then! define a new meteo input file
+56        FORMAT(a5,i4.4,i2.2,i2.2,a3)
            write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
            if(me==0)write(*,*)'reading ',trim(meteoname)
            nrec = 1
@@ -279,51 +255,108 @@ private
 !note that u and v have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX  
 !u(i=0) and v(j=0) are set in metvar
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+             validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
         namefield='v_wind'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity,v(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+             validity,v(1:MAXLIMAX,1:MAXLJMAX,:,nr))
         namefield='specific_humidity'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, q(:,:,:,nr))
+             validity, q(:,:,:,nr))
         namefield='sigma_dot'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, sdot(:,:,:,nr))
-        namefield='potential_temperature'
+             validity, sdot(:,:,:,nr))
+          foundsdot = .true.
+
+       namefield='potential_temperature'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, th(:,:,:,nr))
+             validity, th(:,:,:,nr))
         namefield='precipitation'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, pr(:,:,:))
+             validity, pr(:,:,:))
         namefield='3D_cloudcover'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, cc3d(:,:,:))
-        if(trim(period_of_validity)/='averaged')then
+             validity, cc3d(:,:,:))
+        if(trim(validity)/='averaged')then
            if(me==0)write(*,*)'WARNING: 3D cloud cover is not averaged'
         endif
 ! 2D fields (surface) (i,j)
         ndim=2
         namefield='surface_pressure'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, ps(:,:,nr))
+             validity, ps(:,:,nr))
         namefield='temperature_2m'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, t2_nwp(:,:,nr))
+             validity, t2_nwp(:,:,nr))
         namefield='surface_flux_sensible_heat'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, fh(:,:,nr))
-        if(period_of_validity=='averaged')fh(:,:,1)=fh(:,:,nr)
+             validity, fh(:,:,nr))
+        if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
         namefield='surface_flux_latent_heat'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, fl(:,:,nr))
-        if(period_of_validity=='averaged')fl(:,:,1)=fl(:,:,nr)
+             validity, fl(:,:,nr))
+        if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
         namefield='surface_stress'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             period_of_validity, tau(:,:,nr))
-         if(period_of_validity=='averaged')tau(:,:,1)=tau(:,:,nr)
+             validity, tau(:,:,nr))
+         if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
       
 
       end subroutine Meteoread
+
+      subroutine MeteoGridRead(cyclicgrid,poles)
+
+!	the subroutine reads the grid parameters (projection, resolution etc.)
+!       defined by the meteorological fields
+!
+	use ModelConstants_ml , only : current_date  ! date-type
+        use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
+                            fi, GRIDWIDTH_M,ref_latitude
+        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
+ 
+	implicit none
+        integer, intent(out) ::cyclicgrid,poles(2)
+        character (len = 100),save ::meteoname !name of the meteofile
+        integer ::ndim,nyear,nmonth,nday,nhour,k
+
+        if( METEOfelt==1)then
+           cyclicgrid=0
+           poles=0
+           return
+        endif
+
+          nyear=startdate(1)
+          nmonth=startdate(2)
+          nday=startdate(3)
+          nhour=0
+          current_date = date(nyear, nmonth, nday, nhour, 0 )
+          call Init_nmdays( current_date )
+          
+         !*********initialize grid parameters*********
+56        FORMAT(a5,i4.4,i2.2,i2.2,a3)
+          write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+          if(me==0)write(*,*)'looking for ',trim(meteoname)
+
+          call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
+          ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
+          ,cyclicgrid,poles)
+
+        if( METEOfelt==1)then
+           cyclicgrid=0
+           poles=0
+           return
+        endif
+
+           if(me==0)then
+             write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
+             write(*,*)'grid resolution:',GRIDWIDTH_M
+             write(*,*)'xcoordinate of North Pole, xp:',xp
+             write(*,*)'ycoordinate of North Pole, yp:',yp
+             write(*,*)'longitude rotation of grid, fi:',fi
+             write(*,*)'true distances latitude, ref_latitude:',ref_latitude
+          endif
+
+
+        end subroutine Meteogridread
 
       subroutine infield(numt)
 !pw
@@ -371,6 +404,8 @@ private
 
 !	data  par/2, 3, 9, 11, 18, 22, 23, 39, 8, 31, 36, 38, 103/
 
+        projection='Stereographic'     
+
 	nr=2
 	if(numt == 1)then
 	  nr = 1     
@@ -400,7 +435,8 @@ private
 
         sdot_at_mid = .true.
         foundustar = .false.
-        
+         foundsdot = .true.
+       
 	do while(.true.)
 
 	  call getflti2Met(fid,ident,itmp,ierr)
@@ -1119,7 +1155,7 @@ private
 
          ! interpolation of sigma dot for half layers
 
-          if(sdot_at_mid)then !pw rv1_9_24
+          if(foundsdot.and.sdot_at_mid)then !pw rv1_9_24
              do k = KMAX_MID,2,-1
 
 	      sdot(i,j,k,nr) = sdot(i,j,k-1,nr) 		&
@@ -1130,7 +1166,6 @@ private
             endif
 	  
            ! set sdot equal to zero at the top and bottom of atmosphere. 
-           !ds pw correction here
 
             sdot(i,j,KMAX_BND,nr)=0.0
             sdot(i,j,1,nr)=0.0
@@ -1164,12 +1199,7 @@ private
 	  do i = 1,limax
           p1 = sigma_bnd(KMAX_BND)*(ps(i,j,nr) - PT) + PT
 
-          !ds apr2005 remove:
-	  ! x1 = (p1 - PBAS)/PINC
-	  ! lx1 = x1
-          ! exf1(KMAX_BND) = tpi(lx1) + (x1-lx1)*(tpi(lx1+1) - tpi(lx1))
-
-          exf1(KMAX_BND) = CP * Exner_nd(p1)   !ds apr2005tpi(lx1)                  &
+          exf1(KMAX_BND) = CP * Exner_nd(p1)   !ds apr2005tpi(lx1)    
 
           z_bnd(i,j,KMAX_BND) = 0.0
 
@@ -1185,19 +1215,10 @@ private
 
             p1 = sigma_bnd(k)*(ps(i,j,nr) - PT) + PT
 
-             !ds apr2005 remove:
-	     !x1 = (p1 - PBAS)/PINC
-	     !lx1 = x1
-	     !exf1(k) = tpi(lx1) + (x1-lx1)*(tpi(lx1+1) - tpi(lx1))
 
 	      exf1(k) = CP * Exner_nd( p1 ) !ds apr2005
 
             p2 = sigma_mid(k)*(ps(i,j,nr) - PT) + PT
-
-             !ds apr2005 remove:
-	     !x2 = (p2 - PBAS)/PINC
-	     !lx2 = x2
-	     !exf2(k) = tpi(lx2) + (x2-lx2)*(tpi(lx2+1) - tpi(lx2))
 
 !     exner-function of the full-levels
 
@@ -1219,111 +1240,10 @@ private
 
           enddo  ! k
 
+       enddo
+    enddo
 !-----------------------------------------------------------------------
-
-!     local k above the surface layer
-
-	    fac = GRAV/(ps(i,j,nr) - PT)
-	    fac2 = fac*fac
-
-          do k = 2,KMAX_MID
-
-            dz2k = z_mid(i,j,k-1)-z_mid(i,j,k)
-	      dex12 = th(i,j,k-1,nr)*(exf2(k) - exf1(k)) + 	&
-			th(i,j,k,nr)*(exf1(k) - exf2(k-1))
-
-	      dvdzm = 0.00001*dz2k*dz2k
-!	      dvdz = (u(i,j,k-1,nr)-u(i,j,k,nr))**2
-!     &		 + (v(i,j,k-1,nr) - v(i,j,k,nr))**2
-!su	use centred velocities, not yet divided by map factor
-
-	      dvdz = 0.25*((u(i,j,k-1,nr)+u(i-1,j,k-1,nr)	&
-			-u(i,j,k,nr)-u(i-1,j,k,nr))**2		&
-		+ (v(i,j,k-1,nr)+v(i,j-1,k-1,nr) 		&
-			- v(i,j,k,nr) - v(i,j-1,k,nr))**2)	
-!pw Error			*xmd(i,j)
-          
-	      dvdz=amax1(dvdz,dvdzm)
-     
-!     xlmix, the local mixing height is estimated.
-  
-            xlmix=KARMAN*z_bnd(i,j,k)
-     
-	      if(xlmix.gt.70.) xlmix=70.
-
-!     ri is local richardson number
-
-	      ri = GRAV*(th(i,j,k-1,nr)-th(i,j,k,nr))*(exf2(k) -	&
-			exf2(k-1))*dz2k/(dvdz*dex12)
-
-!    dvdz is local, vertical windshear
-
-	      dvdz=sqrt(dvdz)/dz2k
-  
-!     ric is critical richardson number (=1/4 in continuum)
-
-!su            ric=0.115*((z_mid(i,j,k-1) - z_mid(i,j,k))*100.)**0.175
-	      ric=0.115*exp(0.175*log(dz2k*100.))
-
-!     xkh is exchange-coeff. for air pollution
-
-	      arg = ri/ric
-	      xkh = xkmin
-	      sl2 = xlmix*xlmix*dvdz
-!hf add
-	      if(arg.le.0.)then
-!hf ested this .or.( (th(i,j,k-1,nr)-th(i,j,k,nr))<0.05 .and. ri<(1.1/87.) )) then
-		xkh=sl2*sqrt(1.1-87.*ri) + xkmin
-	      elseif(arg.le.0.5) then
-		xkh = sl2*(1.1-1.2*arg) + xkmin
-	      elseif(arg.le.1.0) then
-		xkh = sl2*(1.-arg) + xkmin
-!                write(*,*)'arg le 1',arg,xkh
-              endif
-
-!              if(( (th(i,j,k-1,nr)-th(i,j,k,nr))<=0.3).and.(arg.gt.0.0))then
-!                xkh=sl2*0.5 + xkmin
-!                write(*,*)'New xkh',i,j,k,me,xkh,th(i,j,k-1,nr)-th(i,j,k,nr)
-!              endif
-!Super adiabat: Theta ved bakken høyere enn Theta i lag k, der 
-!l agene k-1,..har lavere pot. T 
-!pass på lag 20. ok
-!    if ( th(i,j,k,nr)<th(i,j,KMAX_MID,nr).and. &
-!         th(i,j,k,nr)>th(i,j,k+1,nr))then
-!                xkh = sl2*5.
-!vil at alle lagene under også skal ha rask utveksling
-!Ri=-2 is large=>(Ri)=13
-!               endif
-
-!     exhange coefficient in sigma-coordinates.
-
-!su            ro = ((ps(i,j,1) - PT)*sigma_bnd(k) + PT)*CP*(exf2(k) -
-!commented out: pw 6/3-2005: ro not used!
-!            ro = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exf2(k) -      &
-!			exf2(k-1))/(R*exf1(k)*dex12)
-!      if(me == 0)then
-!      write(*,*)'Richardson',i,j,k,ri,th(i,j,k-1,nr)-th(i,j,k,nr),ric,xkh
-!      endif
-!su	      xkz(i,j,k-1) = xkh
-!hf TEST	      skh(i,j,k,nr) = xkh*ro*ro*fac2
-!Increase diffusivity by 50 percent
-!hf NEW SKH!!!	      skh(i,j,k,nr) = xkh*ro*ro*fac2
-
-!     stores the vertical diffusivities
-
-!	      skh(i,j,k,nr) = xkh
-
-!            if (i.eq.it.and.j.eq.jt) write(6,*)'metvar-free troposphere 
-!     1           layer:i,j,k,kh,dvdz,ro,ri',i,j,k,xkhw,dvdz,ro,ri
-!            if (i.eq.it.and.j.eq.jt) write(6,*)'th,u,v,dvdzm',
-!     1           th(i,j,k,nr),u(i,j,k,nr),v(i,j,k,nr),dvdzm
-
-
-	    enddo ! k
-
-
-	  enddo
-	enddo
+! jej/pw removed old skh calculation
 
         if( MY_DEBUG .and. debug_proc ) then
            write(*,*) "DEBUG meIJ" , me, limax, ljmax
@@ -1350,7 +1270,35 @@ private
 	    enddo
 	  enddo
        enddo
-       
+
+
+!	do j = 1,ljmax,20
+!	  do i = 1,limax,20
+!       sdot(i,j,KMAX_BND,nr)=0.0
+!       sdot(i,j,1,nr)=0.0
+!             do k=KMAX_MID,2,-1
+!         if(me==17)then
+!            write(*,*)i,j,k,sdot(i,j,k,nr),((u(i,j,k,nr)-u(i-1,j,k,nr))+(v(i,j,k,nr)-v(i,j-1,k,nr))&
+!               )*xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))/GRIDWIDTH_M+sdot(i,j,k+1,nr)
+!       endif
+!             enddo
+!          enddo
+!       enddo
+
+       if(.not.foundsdot)then
+!pw 07/11/2005 sdot derived from divergence=0 principle
+	do j = 1,ljmax
+	  do i = 1,limax
+       sdot(i,j,KMAX_BND,nr)=0.0
+       sdot(i,j,1,nr)=0.0
+             do k=KMAX_MID,2,-1
+          sdot(i,j,k,nr)=((u(i,j,k,nr)-u(i-1,j,k,nr))+(v(i,j,k,nr)-v(i,j-1,k,nr)))&
+               *xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))/GRIDWIDTH_M+sdot(i,j,k+1,nr)
+             enddo
+          enddo
+       enddo
+       endif
+
        call met_derived !compute derived meteo fields
 
        call tiphys(numt) 
@@ -3206,7 +3154,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
 
      subroutine Getmeteofield(meteoname,namefield,nrec,&
-                              ndim,period_of_validity,field)
+                              ndim,validity,field)
 !
 ! Read the meteofields and distribute to nodes
 !
@@ -3221,7 +3169,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      real, dimension(*),intent(out) :: field !dimensions: (MAXLIMAX,MAXLJMAX)
                                              ! or (MAXLIMAX,MAXLJMAX,KMAX)
      character (len = *),intent(in) ::meteoname,namefield
-     character (len = *),intent(out) ::period_of_validity
+     character (len = *),intent(out) ::validity
      integer,intent(in) :: nrec,ndim
 
      integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
@@ -3229,7 +3177,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      real :: scalefactors(2)
      integer :: gc_info,KMAX,ijk,i,k,j,nfetch
 
-     period_of_validity=''
+     validity=''
 
      if(ndim==3)KMAX=KMAX_MID
      if(ndim==2)KMAX=1
@@ -3237,7 +3185,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
         allocate(var_global(GIMAX,GJMAX,KMAX))
         nfetch=1
         call GetCDF_short(namefield,meteoname,var_global,GIMAX,ISMBEG,GJMAX, &
-        JSMBEG,KMAX,nrec,nfetch,scalefactors,period_of_validity)
+        JSMBEG,KMAX,nrec,nfetch,scalefactors,validity)
      else
         allocate(var_global(1,1,1)) !just to have the array defined
      endif
@@ -3246,7 +3194,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
                              KMAX,1,1)
      call gc_rbcast(200,2,0,NPROC,gc_info,scalefactors)
-     call gc_bbcast(201,20,0,NPROC,gc_info,period_of_validity)
+     call gc_bbcast(201,20,0,NPROC,gc_info,validity)
  
      deallocate(var_global)
  
@@ -3265,7 +3213,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
    end subroutine Getmeteofield
 
 subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
-     ,KMAX,nstart,nfetch,scalefactors,period_of_validity)
+     ,KMAX,nstart,nfetch,scalefactors,validity)
   !
   ! open and reads CDF file
   !
@@ -3280,7 +3228,7 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
   character (len=*),intent(in) :: fileName 
 
   character (len = *),intent(in) ::varname
-  character (len = *),intent(out) ::period_of_validity
+  character (len = *),intent(out) ::validity
   real,intent(out) :: scalefactors(2)
   integer, intent(in) :: nstart,GIMAX,ISMBEG,GJMAX,JSMBEG,KMAX
   integer, intent(inout) ::  nfetch
@@ -3308,14 +3256,17 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
   status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
   if(status == nf90_noerr) scalefactors(2) = offset
 
-  !find period_of_validity
-  period_of_validity='                                     ' !initialisation
+  !find validity
+  validity='                                     ' !initialisation
   period_read='                                     ' !initialisation
-  status = nf90_get_att(ncFileID, VarID, "period_of_validity", period_read  )
+  status = nf90_get_att(ncFileID, VarID, "validity", period_read  )
   if(status == nf90_noerr)then
-     period_of_validity  = trim(period_read)
+     validity  = trim(period_read)
   else
-     period_of_validity='instantaneous' !default
+     status = nf90_get_att(ncFileID, VarID, "period_of_validity", period_read  )
+     if(status /= nf90_noerr)then
+        validity='instantaneous' !default
+     endif
   endif
 
  ! if(Nfetch<nrecords)then
@@ -3336,7 +3287,8 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
 end subroutine GetCDF_short
 
    subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
-         ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first)
+        ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
+        ,cyclicgrid,poles)
 !
 ! Get grid and time parameters as defined in the meteo file
 ! Do some checks on sizes and dates
@@ -3347,8 +3299,9 @@ end subroutine GetCDF_short
      use netcdf
      use Par_ml,                only : me,NPROC,ISMBEG,JSMBEG&
                                        ,GIMAX,GJMAX,MAXLIMAX,MAXLJMAX&
-                                       ,gi0,gj0
-     use ModelConstants_ml,     only : KMAX_MID
+                                       ,gi0,gj0,IILARDOM,JJLARDOM&
+                                       ,parinit
+     use ModelConstants_ml,     only : KMAX_MID,XM_MAX_ADVEC
 
      implicit none
 
@@ -3358,13 +3311,14 @@ end subroutine GetCDF_short
                 xm2(0:MAXLIMAX+1,0:MAXLJMAX+1)&
                ,xm_i(0:MAXLIMAX+1,0:MAXLJMAX+1)&
                ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
-     integer, intent(out):: Nhh,nhour_first
+     integer, intent(out):: Nhh,nhour_first,cyclicgrid,poles(2)
 
      integer :: gc_info,nseconds(1),n1,i,j
      integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid
      integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
      real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
-     integer :: status,iglobal,jglobal
+     integer :: status,iglobal,jglobal,info,South_pole,North_pole
+     real :: xm_i_max
 
   if(me==0)then
   !open an existing netcdf dataset
@@ -3375,9 +3329,22 @@ end subroutine GetCDF_short
      METEOfelt=1
   else
      print *,'  reading ',trim(meteoname)
+  projection=''
+  call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
+  write(*,*)'projection: ',trim(projection)
+
   !get dimensions id
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+  if(trim(projection)=='Stereographic') then     
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+  elseif(trim(projection)==trim('lon lat')) then
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+  else
+     write(*,*)trim(projection)
+     call gc_abort(me,NPROC, "PROJECTION NOT RECOGNIZED")
+  endif
+
   call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
   call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
 
@@ -3388,6 +3355,12 @@ end subroutine GetCDF_short
   call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
 
   write(*,*)'dimensions meteo grid',GIMAX_file,GJMAX_file,KMAX_file,Nhh
+
+  if(GIMAX_file/=IILARDOM.or.GJMAX_file/=JJLARDOM)then
+   write(*,*)'IILARDOM,JJLARDOM ',IILARDOM,JJLARDOM
+   write(*,*)'WARNING: large domain and meteorology file have different sizes'
+   write(*,*)'WARNING: THIS CASE IS NOT TESTED. Please change large domain'
+  endif
 
   if(GIMAX+ISMBEG-1>GIMAX_file.or.GJMAX+JSMBEG-1>GJMAX_file)then
      write(*,*)'outside domain',GIMAX,GIMAX_file,GJMAX,GJMAX_file
@@ -3434,11 +3407,29 @@ end subroutine GetCDF_short
    
   !get global attributes
   call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
+  if(projection=='Stereographic')then
   call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
   call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole",xp ))
   call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole",yp ))
   call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
+  else
+     ref_latitude=60.
+     xp=0.0
+     yp=GJMAX
+     fi =0.0
+  call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+  call check(nf90_get_var(ncFileID, varID, gl_glob(1:IILARDOM,1) ))
+  do j=1,JJLARDOM
+      gl_glob(:,j)=gl_glob(:,1)
+   enddo
+  call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+  call check(nf90_get_var(ncFileID, varID, gb_glob(1,1:JJLARDOM) ))
+  do i=1,IILARDOM
+     gb_glob(i,:)=gb_glob(1,:)
+  enddo
 
+
+  endif
   !get variables
   status=nf90_inq_varid(ncid=ncFileID, name="map_factor", varID=varID)
 
@@ -3466,7 +3457,8 @@ end subroutine GetCDF_short
 
   else
      status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
-     if(status/= nf90_noerr)then
+
+     if(status== nf90_noerr)then
         call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
              ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
         call check(nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID))
@@ -3497,6 +3489,28 @@ end subroutine GetCDF_short
   call gc_rbcast(204,KMAX_MID,0,NPROC,gc_info,sigma_mid)
   call gc_rbcast(205,GIMAX*GJMAX,0,NPROC,gc_info,xm_global_i(1:GIMAX,1:GJMAX))
   call gc_rbcast(206,GIMAX*GJMAX,0,NPROC,gc_info,xm_global_j(1:GIMAX,1:GJMAX))
+  call gc_rbcast(207,IILARDOM*JJLARDOM,0,NPROC,gc_info,gb_glob(1:IILARDOM,1:JJLARDOM))
+  call gc_rbcast(208,IILARDOM*JJLARDOM,0,NPROC,gc_info,gl_glob(1:IILARDOM,1:JJLARDOM))
+
+
+  do j=1,MAXLJMAX
+  do i=1,MAXLIMAX
+     gl(i,j)=gl_glob(gi0+i+ISMBEG-2,gj0+j+JSMBEG-2)
+     gb(i,j)=gb_glob(gi0+i+ISMBEG-2,gj0+j+JSMBEG-2)
+  enddo
+  enddo
+
+!test if the grid is cyclicgrid:
+!The last cell + 1 cell = first cell
+  Cyclicgrid=1 !Cyclicgrid
+  do j=1,JJLARDOM
+     if(mod(nint(gl_glob(GIMAX,j)+360.0/GIMAX),360)/=&
+            nint(gl_glob(ISMBEG,j)))then
+        Cyclicgrid=0  !not cyclicgrid
+     endif
+  enddo
+
+  if(me==0)write(*,*)'CYCLICGRID:',Cyclicgrid
 
 !complete (extrapolate) along the four lateral sides
   do i=1,GIMAX
@@ -3532,12 +3546,102 @@ end subroutine GetCDF_short
         jglobal=gj0+j-1
         xm_i(i,j)=xm_global_i(iglobal,jglobal)
         xm_j(i,j)=xm_global_j(iglobal,jglobal)
-        xm2(i,j) = 0.25*(xm_global_i(iglobal,jglobal-1)+&
-                         xm_global_i(iglobal,jglobal))   *(&
-                         xm_global_j(iglobal-1,jglobal)+&
-                         xm_global_j(iglobal,jglobal)     )
+!Note that xm is inverse length: interpolate 1/xm rather than xm
+        xm2(i,j) = 4.0*( (xm_global_i(iglobal,jglobal-1)*&
+                           xm_global_i(iglobal,jglobal))/ &
+                          (xm_global_i(iglobal,jglobal-1)+&
+                           xm_global_i(iglobal,jglobal)    )   )   *(&
+                          xm_global_j(iglobal-1,jglobal)*&
+                          xm_global_j(iglobal,jglobal)     )/(&
+                          xm_global_j(iglobal-1,jglobal)+&
+                          xm_global_j(iglobal,jglobal)     )
     enddo
   enddo
+
+!pw
+!If some cells are to narrow (Poles in lat lon coordinates),
+!this will make give too small time steps in the Advection,
+!because of the constraint that the Courant number should be <1.
+! 
+!We can reduce the domain where the time step of adevection is 
+!adapted to the Courant number.
+!i.e. outside this defined domain, the Courant number is allowed
+!to be larger than 1. 
+!(In advection routines it will then be set to 1)
+!
+!small cell -> large xm 
+!we assume here that the problem is only in the northern and southern 
+!part of the domain (large and small j values)
+
+!1)find the smallest acceptable j
+
+  jmin_advec=1
+  xm_i_max=XM_MAX_ADVEC+1
+  j=0
+   do while (xm_i_max>XM_MAX_ADVEC)
+     xm_i_max=0.0
+     do i=0,MAXLIMAX+1
+        if(xm_i(i,j)>xm_i_max)then
+           xm_i_max=xm_i(i,j)
+        endif
+    enddo
+    j=j+1
+    jmin_advec=j
+  enddo
+  if(jmin_advec/=1)then
+  write(*,*)'WILL CONSIDER COURANT NUMBER ONLY ON LIMITED DOMAIN'
+  write(*,*)'me= ',me,' jmin_advec= ',jmin_advec
+  endif
+
+!2)find the largest acceptable j
+  jmax_advec=ljmax
+  xm_i_max=XM_MAX_ADVEC+1
+  j=ljmax+1
+   do while (xm_i_max>XM_MAX_ADVEC)
+     xm_i_max=0.0
+     do i=0,MAXLIMAX+1
+        if(xm_i(i,j)>xm_i_max)then
+           xm_i_max=xm_i(i,j)
+        endif
+    enddo
+    j=j-1
+    jmax_advec=j
+  enddo
+  if(jmax_advec/=ljmax)then
+  write(*,*)'WILL CONSIDER COURANT NUMBER ONLY ON LIMITED DOMAIN'
+  write(*,*)'me= ',me,' jmax_advec= ',jmax_advec,'ljmax= ',ljmax
+  endif
+
+!Look for poles
+!If the northernmost or southernmost lines are poles, they are not
+!considered as outer boundaries and will not be treat by "BoundaryConditions_ml".
+!Note that "Poles" is defined in subdomains
+
+North_pole=1
+  do i=1,limax
+     if(nint(gl(i,ljmax))/=90)then
+        North_pole=0  !not north pole
+     endif
+  enddo
+
+South_pole=1
+  do i=1,limax
+     if(nint(gl(i,1))/=-90)then
+        South_pole=0  !not south pole
+     endif
+  enddo
+
+Poles=0
+if(North_pole==1)then
+   Poles(1)=1
+  write(*,*)me,'Found North Pole'
+endif
+
+if(South_pole==1)then
+   Poles(2)=1
+  write(*,*)me,'Found South Pole'
+endif
+
 
 
   end subroutine Getgridparams

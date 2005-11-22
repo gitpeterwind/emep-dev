@@ -54,7 +54,6 @@
  implicit none
  private
 
- integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
 
  integer, private, parameter :: NADVS      =  3  
  
@@ -113,7 +112,8 @@
 	use GenSpec_adv_ml , only : NSPEC_ADV
         use ModelConstants_ml, only : nstep, nmax,dt_advec, 	&
 			PT,KCHEMTOP,current_date 
-        use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea 
+        use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea&
+                                  ,jmin_advec,jmax_advec
 	use Met_ml ,only : ps,sdot,skh,u,v
 	use Chemfields_ml, only : xn_adv
 	use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before, tim_after
@@ -220,8 +220,14 @@
 
         do k=1,KMAX_MID
 
-           xcmax(k) = maxval(amax1(u(1:limax,1:ljmax,k,1)*xm2(1:limax,1:ljmax), 1.e-30) &
-                          -amin1(u(0:limax-1,1:ljmax,k,1)*xm2(1:limax,1:ljmax), 0.0) )
+!           xcmax(k) = maxval(amax1(u(1:limax,1:ljmax,k,1)*xm2(1:limax,1:ljmax), 1.e-30) &
+!                          -amin1(u(0:limax-1,1:ljmax,k,1)*xm2(1:limax,1:ljmax), 0.0) )
+!           ycmax(k) = maxval(amax1(v(1:limax,1:ljmax,k,1)*xm2(1:limax,1:ljmax), 0.0) &
+!                          -amin1(v(1:limax,0:ljmax-1,k,1)*xm2(1:limax,1:ljmax), 0.0) )
+            xcmax(k) = maxval(amax1(u(1:limax,jmin_advec:jmax_advec,k,1)*&
+                                      xm2(1:limax,jmin_advec:jmax_advec), 1.e-30) &
+                          -amin1(u(0:limax-1,jmin_advec:jmax_advec,k,1)*&
+                                      xm2(1:limax,jmin_advec:jmax_advec), 0.0) )
            ycmax(k) = maxval(amax1(v(1:limax,1:ljmax,k,1)*xm2(1:limax,1:ljmax), 0.0) &
                           -amin1(v(1:limax,0:ljmax-1,k,1)*xm2(1:limax,1:ljmax), 0.0) )
            xcmax(k) = amax1(xcmax(k),ycmax(k))
@@ -1322,7 +1328,7 @@
 !     in such a way that a Courant number of one corresponds exactly to "empty" a cell. 
 !     (small effects on results: less than 1%)
 
-	use Par_ml   , only : li0,li1,limax
+	use Par_ml   , only : me,li0,li1,limax
 	use GenSpec_adv_ml , only : NSPEC_ADV
         use MassBudget_ml , only : fluxin,fluxout
 	implicit none
@@ -1369,6 +1375,8 @@
 	if (li0.eq.1) then
 	  if (vel(0) .gt. 0..and.velbeg.lt.0.) then
 	    fc(-1) = velbeg*dth
+            fc(-1)=min(1.0, fc(-1))
+            fc(-1)=max(-1.0, fc(-1))
 	    limtlow = -1
 
 	    y0 = fc(-1)
@@ -1390,6 +1398,8 @@
 
 	do 10 ij = li0-1,li1
 	  fc(ij) = vel(ij)*dth
+          fc(ij)=min(1.0, fc(ij))
+          fc(ij)=max(-1.0, fc(ij))
 
 	  ijn1 = sign(1.,fc(ij))
           ijn = ij + nint(0.5*(1-ijn1))
@@ -1414,6 +1424,10 @@
 	if (li1.eq.limax) then
 	  if (vel(li1).lt.0..and.velend.gt.0.)then
 	    fc(li1+1) = velend*dth
+            fc(li1+1)=min(1.0, fc(li1+1))
+            fc(li1+1)=max(-1.0, fc(li1+1))
+
+
 	    limthig = li1+1
 
 	    y0 = fc(li1+1)
@@ -1931,6 +1945,8 @@
 	if (lj0.eq.1) then
 	  if (vel(0) .gt. 0..and.velbeg.lt.0.) then
 	    fc(-1) = velbeg*dth
+            fc(-1)=min(1.0, fc(-1))
+            fc(-1)=max(-1.0, fc(-1))
 	    limtlow = -1
 
 	    y0 = fc(-1)
@@ -1952,6 +1968,8 @@
 
 	do 10 ij = lj0-1,lj1
 	  fc(ij) = vel(ij*MAXLIMAX)*dth
+          fc(ij)=min(1.0, fc(ij))
+          fc(ij)=max(-1.0, fc(ij))
 
 	  ijn1 = sign(1.,fc(ij))
           ijn = ij + nint(0.5*(1-ijn1))
@@ -1976,6 +1994,8 @@
 	if (lj1.eq.ljmax) then
 	  if (vel(lj1*MAXLIMAX).lt.0..and.velend.gt.0.)then
 	    fc(lj1+1) = velend*dth
+            fc(lj1+1)=min(1.0, fc(lj1+1))
+            fc(lj1+1)=max(-1.0, fc(lj1+1))
 	    limthig = lj1+1
 
 	    y0 = fc(lj1+1)

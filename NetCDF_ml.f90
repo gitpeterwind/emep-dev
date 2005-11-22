@@ -23,6 +23,7 @@
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
 
+  use GridValues_ml,only  : projection
   use netcdf
   implicit none
 
@@ -190,7 +191,7 @@ character(len=*),  intent(in)  :: fileName
 
 !character (len=*), parameter :: version='Unimod rv2.0'       
 character (len=*), parameter :: author_of_run='Unimod group' 
-character (len=*), parameter :: projection='Stereographic'
+!character (len=*), parameter :: projection='Stereographic'
 character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
 character (len=19) :: projection_params='90.0 -32.0 0.933013' !set later on
 
@@ -216,12 +217,31 @@ endif
    
 
 write(*,*)'create ',trim(fileName)
+write(*,*)'projection ',trim(projection)
 write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
   call check(nf90_create(path = trim(fileName), cmode = nf90_clobber, ncid = ncFileID))
 
   ! Define the dimensions
+  if(projection=='Stereographic')then
+
   call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
   call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
+
+  elseif(projection=='lon lat') then
+
+  call check(nf90_def_dim(ncid = ncFileID, name = "lon", len = GIMAXcdf, dimid = iDimID))
+  call check(nf90_def_var(ncFileID, "lon", nf90_double, dimids = iDimID, varID = iVarID) )
+  call check(nf90_put_att(ncFileID, iVarID, "standard_name", "longitude"))
+  call check(nf90_put_att(ncFileID, iVarID, "long_name", "longitude"))
+  call check(nf90_put_att(ncFileID, iVarID, "units", "degrees_east"))
+  call check(nf90_def_dim(ncid = ncFileID, name = "lat", len = GJMAXcdf, dimid = jDimID))
+  call check(nf90_def_var(ncFileID, "lat", nf90_double, dimids = jDimID, varID =jVarID) )
+  call check(nf90_put_att(ncFileID, jVarID, "standard_name", "latitude"))
+  call check(nf90_put_att(ncFileID, jVarID, "long_name", "latitude"))
+  call check(nf90_put_att(ncFileID, jVarID, "units", "degrees_north"))
+
+  endif
+
   call check(nf90_def_dim(ncid = ncFileID, name = "k", len = KMAXcdf, dimid = kDimID))
   call check(nf90_def_dim(ncid = ncFileID, name = "time", len = nf90_unlimited, dimid = timeDimID))
 
@@ -242,12 +262,11 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
 
   call check(nf90_put_att(ncFileID, nf90_global, "projection",projection))
+
+  if(projection=='Stereographic')then
   scale_at_projection_origin=(1.+sin(ref_latitude*PI/180.))/2.
   write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,scale_at_projection_origin
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
-  call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
-  call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))
-  call check(nf90_put_att(ncFileID, nf90_global, "run_label", trim(runlabel2)))
 
 ! define coordinate variables
   call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
@@ -278,8 +297,12 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
   call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
   call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
-  call check(nf90_put_att(ncFileID, latVarID, "standard_name", "longitude"))
+  call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
+  endif
 
+  call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
+  call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))
+  call check(nf90_put_att(ncFileID, nf90_global, "run_label", trim(runlabel2)))
 
   call check(nf90_def_var(ncFileID, "k", nf90_float, dimids = kDimID, varID = kVarID) )
   call check(nf90_put_att(ncFileID, kVarID, "coord_alias", "level"))
@@ -290,21 +313,26 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
+  write(*,*)'end writing k'
 
 !CF-1.0 definitions:
+  if(projection=='Stereographic')then
   call check(nf90_def_var(ncid = ncFileID, name = "Polar_Stereographic", xtype = nf90_int, varID=varID ) )
-  call check(nf90_put_att(ncFileID, latVarID, "grid_mapping_name", "polar_stereographic"))
-  call check(nf90_put_att(ncFileID, latVarID, "straight_vertical_longitude_from_pole", Fi))
-  call check(nf90_put_att(ncFileID, latVarID, "latitude_of_projection_origin", 90.0))
-  call check(nf90_put_att(ncFileID, latVarID, "scale_factor_at_projection_origin", scale_at_projection_origin))
-! call check(nf90_put_att(ncFileID, latVarID, "false_easting", ))
+  call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", "polar_stereographic"))
+  call check(nf90_put_att(ncFileID, VarID, "straight_vertical_longitude_from_pole", Fi))
+  call check(nf90_put_att(ncFileID, VarID, "latitude_of_projection_origin", 90.0))
+  call check(nf90_put_att(ncFileID, VarID, "scale_factor_at_projection_origin", scale_at_projection_origin))
+! call check(nf90_put_att(ncFileID, VarID, "false_easting", ))
+  endif
 
   ! Leave define mode
   call check(nf90_enddef(ncFileID))
 
   call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
 
-! Define horizontal distances in GDV conventions
+! Define horizontal distances
+
+  if(projection=='Stereographic')then
 
   xcoord(1)=(ISMBEGcdf-xp)*GRIDWIDTH_M/1000.
   do i=2,GIMAXcdf
@@ -349,9 +377,25 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 !Define longitude and latitude
   call GlobalPosition
   if(ISMBEGcdf+GIMAXcdf-1<=IILARDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJLARDOM)then
-  call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
-  call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
+  call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+       ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
+  call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+       ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
   endif
+
+
+  elseif(projection=='lon lat') then
+     do i=1,GIMAXcdf
+        xcoord(i)= gl_glob(i+ISMBEGcdf-1,1)
+     enddo
+     do j=1,GJMAXcdf
+        ycoord(j)= gb_glob(1,j+JSMBEGcdf-1)
+     enddo
+     call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
+     call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
+
+  endif
+
 !Define vertical levels
   if(KMAXcdf==KMAX_MID)then
      do k=1,KMAX_MID
@@ -365,6 +409,8 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_var(ncFileID, kVarID, kcoord(1:KMAXcdf)) )
 
   call check(nf90_close(ncFileID))
+
+  write(*,*)'file created'
 
 end subroutine CreatenetCDFfile
 
@@ -775,8 +821,13 @@ use Derived_ml, only : Deriv
      call check(nf90_redef(ncid = ncFileID))
 
      !get dimensions id
+  if(projection=='Stereographic')then
      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+  elseif(projection=='lon lat') then
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+  endif
      call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
 
@@ -983,8 +1034,16 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
   endif
 
   !get dimensions id
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+  status=nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
+  if(status /= nf90_noerr) then     
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
+  endif
+  status=nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID)
+  if(status /= nf90_noerr) then     
+  call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+  endif
+!  call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+!  call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
   call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
   call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
 
@@ -995,7 +1054,7 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
   call check(nf90_inquire_dimension(ncid=ncFileID, dimID=timedimID,  len=nrecords))
   Nrec=nrecords
 
-!  print *, 'dimensions ',GIMAX,GJMAX,KMAX_MID,nrecords
+  print *, 'dimensions ',GIMAX,GJMAX,KMAX_MID,nrecords
   if(GIMAX>varGIMAX.or.GJMAX>varGJMAX)then
      write(*,*)'buffer too small',GIMAX,varGIMAX,GJMAX,varGJMAX
      stop

@@ -111,7 +111,9 @@
   !/** internal parameters
 
   logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
-
+    character (len=100),public::projection
+ integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
+ integer, public :: jmin_advec,jmax_advec !limits for checking Courant number
 
 contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -289,6 +291,9 @@ contains
     om    = 180.0/PI      ! radians to degrees (om=Norwegian omvendt?)
     om2   = om * 2.0
 
+
+  if(trim(projection)=='Stereographic') then     
+    
     do j = 1, MAXLJMAX          ! ds - changed from ljmax
        dy  = yp - j_glob(j)     ! ds - changed from gj0+JSMBEG-2+j
        dy2 = dy*dy
@@ -305,6 +310,7 @@ contains
 
        end do ! i
     end do ! j
+    endif
 
     !su - added test to find global-min and max lat/long values
 
@@ -339,6 +345,8 @@ contains
     integer i,j
     real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin
 
+  if(trim(projection)=='Stereographic') then     
+
     glmin = -180.0
     glmax = glmin + 360.0
 
@@ -362,6 +370,7 @@ contains
 
        end do ! i
     end do ! j
+    endif
 
 end subroutine GlobalPosition
 

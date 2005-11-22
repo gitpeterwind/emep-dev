@@ -9,7 +9,7 @@
 ! eulpar.inc
 ! eulnx.inc
 !----------------------------------------------------------------------------
-!  $Id: Par_ml.pat,v 1.7 2005-10-12 14:09:18 mifapw Exp $
+!  $Id: Par_ml.pat,v 1.8 2005-11-22 14:16:03 mifapw Exp $
 !  Erik Berge, DNMI    Roar Skaalin, SINTEF Industrial Mathematics
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
@@ -164,11 +164,14 @@ private
 !-- end of eulnx.inc
 
  public :: parinit
+ public :: Topology
 
  contains
 
-	subroutine parinit(min_grids)   !u4 - argument added to avoid "use"
-
+	subroutine parinit(min_grids)   
+!
+!defines size and position of subdomains
+!
 
 	implicit none
         integer, intent(in) :: min_grids  ! u4
@@ -228,38 +231,9 @@ private
 	endif
 	gj1 = gj0 + ljmax - 1
 !
-!     Find the neighbors of this processor.
-!     NB! Assumes non-cyclic boundary conditions
+!    pw 8/11/2005: moved "neighbor" calculation into topology
 !
-	if (mey > 0) then
-	  neighbor(SOUTH) = me-NPROCX
-	  lj0 = 1
-	else
-	  neighbor(SOUTH) = NOPROC
-	  lj0 = 2
-	endif
-	if (mey < NPROCY-1) then
-	  neighbor(NORTH) = me+NPROCX
-	  lj1 = ljmax
-	else
-	  neighbor(NORTH) = NOPROC
-	  lj1 = ljmax - 1
-	endif
-	if (mex > 0) then
-	  neighbor(WEST) = me-1
-	  li0 = 1
-	else
-	  neighbor(WEST) = NOPROC
-	  li0 = 2
-	endif
-	if (mex < NPROCX-1) then
-	  neighbor(EAST) = me+1
-	  li1 = limax
-	else
-	  neighbor(EAST) = NOPROC
-	  li1 = limax - 1
-	endif
-!
+
 !
 !     Initialize the tables containing number of gridpoints and
 !     addresses of start and endpoint in all directions, for all
@@ -328,5 +302,75 @@ private
 
 	return
 	end subroutine parinit
+
+
+	subroutine Topology(cyclicgrid,poles)   
+
+!defines the neighbors and boundaries of (sub)domain
+!Boundaries are defined as having coordinates 
+! between 1 and li0 or between li1 and limax or
+! between 1 and lj0 or between lj1 and ljmax
+
+	implicit none
+        integer, intent(in) :: cyclicgrid  ! rv2_4_1 1 if cyclic grid
+       integer, intent(in) :: poles(2)  !  poles(1)=1 if North pole,
+                                        !  poles(2)=1 if South pole
+	integer i, j, ime, imex, imey, rest
+           
+!
+!
+!     Find the x-, y-, and z-addresses of the domain assigned to the
+!     processor
+!
+!     pw 09.01.2002: Check if the subdomain is large enough
+!     pw 26.03.2002: Bug in formula for tljmax, tgj0, tgj1  
+!
+	mey = me/NPROCX
+	mex = me - mey*NPROCX
+!
+!
+!     Find the neighbors of this processor.
+!pw 04/11-2005 allow cyclic map in i direction.
+!pw   Do not define north and south poles as outer Boundaries
+!
+        lj0 = 1
+        lj1 = ljmax
+	if (mey > 0) then
+	  neighbor(SOUTH) = me-NPROCX
+	else
+	  neighbor(SOUTH) = NOPROC
+	  if(poles(2)==0)lj0 = 2
+	endif
+	if (mey < NPROCY-1) then
+	  neighbor(NORTH) = me+NPROCX
+	else
+	  neighbor(NORTH) = NOPROC
+	  if(poles(1)==0)lj1 = ljmax - 1
+	endif
+	if (mex > 0) then
+	  neighbor(WEST) = me-1
+	  li0 = 1
+	else
+	  neighbor(WEST) = NOPROC
+	  li0 = 2
+          if(Cyclicgrid==1)then
+             neighbor(WEST) =  me+NPROCX-1
+             li0 = 1
+          endif
+	endif
+	if (mex < NPROCX-1) then
+	  neighbor(EAST) = me+1
+	  li1 = limax
+	else
+	  neighbor(EAST) = NOPROC
+	  li1 = limax - 1
+          if(Cyclicgrid==1)then
+             neighbor(EAST) = me-NPROCX+1
+             li1 = limax
+          endif
+	endif
+
+	return
+	end subroutine topology
 
 end module Par_ml

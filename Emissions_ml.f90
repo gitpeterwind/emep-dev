@@ -496,7 +496,7 @@ contains
   use Par_ml,                only : li0,lj0,li1,lj1
   use PhysicalConstants_ml,  only :  GRAV,  AVOG
   use ModelConstants_ml,     only :  KMAX_BND, PT ,dt_advec
-  use GridValues_ml  ,       only :  sigma_bnd, xmd,GRIDWIDTH_M
+  use GridValues_ml  ,       only :  sigma_bnd, xmd,GRIDWIDTH_M,gl
   use Met_ml,                only :  ps, roa   ! ps in Pa, roa in kg/m3
   !
   !***********************************************************************
@@ -538,6 +538,8 @@ contains
   !      25/3-2002, pw changed test for hour and day change (Now the first day
   !      does not need to start at 0 hours)
   !
+  !      11/2005,pw if timezone=-100 use timezone based on longitude
+  !
   !*************************************************************************
 
   implicit none
@@ -568,6 +570,9 @@ contains
   integer :: flat_iland    ! country codes (countries with flat emissions)
 
   integer, save :: oldday = -1, oldhour = -1
+
+!pw If timezone=-100, calculate daytime based on longitude rather than timezone
+  integer :: daytime_longitude,daytime_iland
  
 !hf initialize
     ehlpcom0(:)=0.0
@@ -611,6 +616,7 @@ contains
 
     !..........................................
     !  Look for day-night changes, after local time correction
+    !  (daytime(iland) not used if  LONGITUDE_TIME=true)
 
     do iland = 1, NLAND
 
@@ -636,6 +642,13 @@ contains
 
                ncc = nlandcode(i,j)            ! No. of countries in grid
 
+!pw find the approximate local time:
+                if(Country(iland)%timezone==-100)then
+                  hourloc= mod(nint(indate%hour+24*(1+gl(i,j)/360.0)),24)
+                  daytime_longitude=0
+                  if( hourloc>=7.and.hourloc<= 18) daytime_longitude=1
+                endif
+               
               !*************************************************
               ! First loop over non-flat(one sector) emissions
               !*************************************************
@@ -644,10 +657,18 @@ contains
               do icc = 1, ncc
                   iland = landcode(i,j,icc)     ! 1=Albania, etc.
 
+                if(Country(iland)%timezone==-100)then
+                   daytime_iland=daytime_longitude
+                else
+                   daytime_iland=daytime(iland)
+                endif
+
                  !  As each emission sector has a different diurnal profile
                  !  and possibly speciation, we loop over each sector, adding
                  !  the found emission rates to gridrcemis as we go.
                  !  ==================================================
+
+
                 do isec = 1, NSECTORS       ! Loop over snap codes
 
 
@@ -661,7 +682,7 @@ contains
                    do iem = 1, NEMIS_PLAIN
 
                       tfac = timefac(iland,isec,iem) * &
-                                 day_factor(isec,daytime(iland))
+                                 day_factor(isec,daytime_iland)
 
                       iqrc = iqrc + 1
                       emis(iqrc) = snapemis(isec,i,j,icc,iem) * tfac 
@@ -673,7 +694,7 @@ contains
                    do iem = 1, NEMIS_SPLIT
 
                       tfac = timefac(iland,isec,iem+NEMIS_PLAIN ) * &
-                                 day_factor(isec,daytime(iland))
+                                 day_factor(isec,daytime_iland)
 
                       s =  tfac * snapemis(isec,i,j,icc,iem+NEMIS_PLAIN)
 

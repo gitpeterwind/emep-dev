@@ -162,6 +162,11 @@ module ModelConstants_ml
   real, parameter, public  :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
 
 
+! max value of xm for "exact" advection treatment. 
+! If xm is always smaller than  XM_MAX_ADVEC, there is no effect.
+  real, parameter, public  :: XM_MAX_ADVEC=3.0
+
+
  contains
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

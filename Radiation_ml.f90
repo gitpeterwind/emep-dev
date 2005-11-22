@@ -291,7 +291,7 @@ contains
 
   end subroutine ClearSkyRadn
 !===========================================================================
-  elemental subroutine CloudAtten(cl,a,b,c)
+  elemental subroutine CloudAtten(cl,a,b)!,c)
     ! Routine applies a cloud-attenuation factor to arguments, which could
     ! be say, Idrctt,Idfuse,solar, or just solar: the last 2 arguments are
     ! optional
@@ -299,7 +299,7 @@ contains
     ! Agument
       real, intent(in)  :: cl               ! cloud fraction   (0-1)
       real, intent(inout)           :: a     
-      real, intent(inout), optional :: b,c
+      real, intent(inout), optional :: b!,c
 
       real :: f           ! cloud attenuation factor
 
@@ -308,7 +308,7 @@ contains
       a = a * f
 
       if( present(b) ) b = b * f
-      if( present(c) ) c = c * f
+!      if( present(c) ) c = c * f
 
   end subroutine CloudAtten
 
