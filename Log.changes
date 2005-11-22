@@ -25,12 +25,15 @@ Removed the last optional argument from CloudAtten in Radiation_ml:
 it produced a compiler error in PhyChem_ml, even if I didn't change
 PhyChem nor Radiation !? 
 
+EmisGet keep VOC from sector 10 (it was removed in earlier versions)
+
 Modified: Unimod.f90, Model_Constants, GridValues_ml, Met_ml, 
 Boundary_Conditions, Par_ml.pat,NetCDF_ml, Advection_ml, 
-Emissions_ml, My_Output_ml, Radiation_ml
+Emissions_ml, My_Output_ml, Radiation_ml, EmisGet_ml
 
 Still the results are not affected by these changes (!)
 Yearly results compared to rv2_1 by Joffen.
+
 
 
 =======

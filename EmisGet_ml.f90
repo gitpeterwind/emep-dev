@@ -199,7 +199,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
              !  For VOC natural and agricultur emissions (managed forests) 
              !  set to  zero
 
-              if ( trim ( emisname ) == "voc" ) tmpsec(10:11) = 0.0
+!rv2_4_1         if ( trim ( emisname ) == "voc" ) tmpsec(10:11) = 0.0
+             if ( trim ( emisname ) == "voc" ) tmpsec(11:11) = 0.0
 
              ! ..........................................................
              ! generate new land allocation in 50 km grid. First, we check if
