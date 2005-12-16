@@ -643,12 +643,11 @@ contains
                ncc = nlandcode(i,j)            ! No. of countries in grid
 
 !pw find the approximate local time:
-                if(Country(iland)%timezone==-100)then
                   hourloc= mod(nint(indate%hour+24*(1+gl(i,j)/360.0)),24)
                   daytime_longitude=0
                   if( hourloc>=7.and.hourloc<= 18) daytime_longitude=1
-                endif
-               
+    
+         
               !*************************************************
               ! First loop over non-flat(one sector) emissions
               !*************************************************

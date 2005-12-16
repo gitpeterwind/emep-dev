@@ -28,7 +28,7 @@ use My_Outputs_ml, only : &   ! for sitesout
 use Derived_ml, only : d_2d, d_3d, IOU_INST     !ds New deriv system
 
 use Functions_ml,      only : Tpot_2_T        !ds apr2005  Conversion function
-use GridValues_ml,         only : sigma_bnd,sigma_mid
+use GridValues_ml,         only : sigma_bnd,sigma_mid,lb2ij
 use Io_ml  , only : check_file,open_file,ios,fexist,IO_SITES,IO_SONDES
 use GenSpec_adv_ml   , only : NSPEC_ADV
 use GenSpec_shl_ml   , only : NSPEC_SHL
@@ -202,12 +202,26 @@ contains
    character(len=20) :: s        ! Name of site read in
    character(len=30) :: comment  ! comment on site location
    character(len=40) :: infile
+   logical           ::  LLfile  !true if the file is of lat/lon type
+   real              :: lat,lon,ir,jr
 
-    infile  = fname // ".dat"
 
+   LLfile=.false.
+
+    infile  = fname // "LL.dat"
     call check_file(infile,fexist,needed=.false.)
 
-     if ( .not. fexist ) return
+    if( .not. fexist)then
+       
+       infile  = fname // ".dat"
+       
+       call check_file(infile,fexist,needed=.false.)
+       
+       if ( .not. fexist ) return
+       
+    else
+       LLfile=.true.
+    endif
 
     !/** intialise RESTRI domain
      n       = 0                   ! No. sites found within domain
@@ -230,8 +244,15 @@ contains
    SITEREAD: if(me == 0) then   
      SITELOOP:  do nin = 1, NMAX
 
-         read (unit=io_num,fmt=*,iostat=ioerr) s, x, y,lev
-
+        if( LLfile)then
+           read (unit=io_num,fmt=*,iostat=ioerr) s, lat,lon
+           lev=KMAX_MID
+           call lb2ij(lon,lat,ir,jr)
+           x=nint(ir)
+           y=nint(jr)
+        else
+           read (unit=io_num,fmt=*,iostat=ioerr) s, x, y,lev
+        endif
            if ( ioerr < 0 ) then
              write(6,*) "sitesdef : end of file after ", nin-1,  infile
              exit SITELOOP

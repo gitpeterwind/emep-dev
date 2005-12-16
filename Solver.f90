@@ -24,7 +24,8 @@ contains
     use GenRates_rct_ml,    only : set_night_rct, ONLY_NIGHT
     use Par_ml,              only : me,MAXLIMAX,MAXLJMAX,li1,lj1,li0,lj0  ! me for TEST
     use Met_ml,              only :  zen ! zenith angle, degrees, ds mar 2005
-    use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4,VOLFACNO3,VOLFACNH4 ,PPB,PPBINV
+    use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4&
+                                 ,VOLFACNO3,VOLFACNH4 ,PPB,PPBINV,dt_advec_inv
     use Setup_1dfields_ml,   only : &
          rcemis,izen           & ! photolysis, emissions
          ,rcbio                & ! biogenic emis
@@ -104,7 +105,6 @@ contains
     logical, save ::  first_call = .true.
 
     real, parameter ::  CPINIT = 0.0 ! 1.0e-30  ! small value for init
-    real, parameter :: dt_advec_inv=1./dt_advec
 
     !  Local
     integer ::  k, ns, ichem, iter,n   ! Loop indices

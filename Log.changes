@@ -1,3 +1,59 @@
+============== Peter rv2_4_3, 16/12/2005 ================================================
+
+Better Global version. In case of lon-lat grid and poles, special advection 
+routines are used.
+
+grun.pl includes a parameter   $HEMIS which (when=1) makes the script link to 
+the hemispherical input data. (this script is however quite messy...)
+meteo year must be 2001 then.
+(put also READBVOC=.true. in Biogenics_ml for improved BVOC emissions)
+
+Meteorology for a whole year can be found at (met.no):
+/fou2/emep2/Meteorology/ERA-40/2001_HEMIS_PS/
+
+or (blizzard):
+/home/peterw/emep/work/metdata/ERA_2001_HEMIS/
+
+
+No changes of results in "normal" runs, except that in Country_ml, Russia (42)
+ is defined with timezone -100, which means that longitude time is used. 
+(can be changed in the file if wanted)
+
+
+ModelConstants_ml, Unimod.f90,Solver: dt_advec is set according to gridwidth
+
+EmisGet_ml: use country%index to interpret country mumbers in emis
+files and femis.dat
+
+Country_ml: 193 countries defined (country index semi-official: defined by Heiko)
+
+Met_ml: bug: should broadcast projection (concern only netcdf met input)
+
+AirEmis_ml: bug when longitude close to 360 degrees or when latitude=90
+
+Emissions_ml: bug in "daytime_longitude"
+
+Advection_ml: new subroutines for advection used in case of lat-lon
+grid. Less good treatment of the xy time splitting, but faster and 
+can cope with singularity at Poles. 
+Changed also adv_var, so that it can treat the
+case when a subdomain is its own neighbor (cyclic grid).
+For best efficiency of advection it is recommended to use NDY=2 (or
+NDY=1) in case lat-lon and poles are included in the domain. 
+
+
+PhyChem_ml: calls  advecdiff_poles instead of advecdiff when necessary
+
+GridValues_ml,Met_ml,Unimod.f90:: removed jmin_advec, jmax_advec, put Poles into GridValues
+
+GlobalBC_ml,GridValues_ml: redefined lb2ij
+
+Sites_ml: can read files in lon-lat coordinates. The file must be
+called sondesLL.dat or sitesLL.dat. Height is always set to KMAX_MID.
+
+Biogenics_ml: Includes an option to read BVOC.dat directly
+	(temporary solution)
+
 
 ============== Peter rv2_4_2, 22/11/2005 ================================================
 

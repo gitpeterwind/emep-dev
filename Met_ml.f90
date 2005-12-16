@@ -15,7 +15,7 @@ use Functions_ml,      only : Exner_tab, Exner_nd    ! ds apr2005
 use GridValues_ml,     only : xm_i,xm_j,xm2,xmd, sigma_bnd,sigma_mid, &
                                i_glob, j_glob,METEOfelt,projection &
                                ,gl,gb, gb_glob, gl_glob,MIN_ADVGRIDS&
-                                  ,jmin_advec,jmax_advec
+                               ,Poles
 use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP, &
                               KMAX_BND,KMAX_MID,NMET, &
                               DEBUG_i, DEBUG_j
@@ -298,12 +298,13 @@ private
         namefield='surface_stress'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, tau(:,:,nr))
+        tau=max(0.0,tau)
          if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
       
 
       end subroutine Meteoread
 
-      subroutine MeteoGridRead(cyclicgrid,poles)
+      subroutine MeteoGridRead(cyclicgrid)
 
 !	the subroutine reads the grid parameters (projection, resolution etc.)
 !       defined by the meteorological fields
@@ -314,13 +315,14 @@ private
         use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
  
 	implicit none
-        integer, intent(out) ::cyclicgrid,poles(2)
+        integer, intent(out) ::cyclicgrid
         character (len = 100),save ::meteoname !name of the meteofile
         integer ::ndim,nyear,nmonth,nday,nhour,k
 
         if( METEOfelt==1)then
            cyclicgrid=0
            poles=0
+           GRIDWIDTH_M=50000.0
            return
         endif
 
@@ -338,11 +340,12 @@ private
 
           call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
           ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
-          ,cyclicgrid,poles)
+          ,cyclicgrid)
 
         if( METEOfelt==1)then
            cyclicgrid=0
            poles=0
+           GRIDWIDTH_M=50000.0
            return
         endif
 
@@ -1057,11 +1060,12 @@ private
 
 	else
 
-        do k = 1,KMAX_MID
-	    do j = 1,ljmax
-	      u(0,j,k,nr) = u(1,j,k,nr)
-	    enddo
-	  enddo
+           do k = 1,KMAX_MID
+              do j = 1,ljmax
+                 u(0,j,k,nr) = u(1,j,k,nr)
+              enddo
+           enddo
+
 
 	endif
 
@@ -1079,13 +1083,30 @@ private
 
 	else
 
-        do k = 1,KMAX_MID
-	    do i = 1,limax
-	      v(i,0,k,nr) = v(i,1,k,nr)
-	    enddo
-	  enddo
+           if(Poles(2)/=1)then
+              do k = 1,KMAX_MID
+                 do i = 1,limax
+                    v(i,0,k,nr) = v(i,1,k,nr)
+                 enddo
+              enddo
+           else
+              !"close" the South pole
+              do k = 1,KMAX_MID
+                 do i = 1,limax
+                    v(i,0,k,nr) = 0.0
+                 enddo
+              enddo
+           endif
 
 	endif
+	if (neighbor(NORTH) == NOPROC.and.Poles(1)==1) then
+           !"close" the North pole
+           do k = 1,KMAX_MID
+              do i = 1,limax
+                 v(i,ljmax,k,nr) = 0.0
+              enddo
+           enddo
+        endif
 
         inv_METSTEP = 1.0/METSTEP   !ds
 
@@ -3288,7 +3309,7 @@ end subroutine GetCDF_short
 
    subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
         ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
-        ,cyclicgrid,poles)
+        ,cyclicgrid)
 !
 ! Get grid and time parameters as defined in the meteo file
 ! Do some checks on sizes and dates
@@ -3311,7 +3332,7 @@ end subroutine GetCDF_short
                 xm2(0:MAXLIMAX+1,0:MAXLJMAX+1)&
                ,xm_i(0:MAXLIMAX+1,0:MAXLJMAX+1)&
                ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
-     integer, intent(out):: Nhh,nhour_first,cyclicgrid,poles(2)
+     integer, intent(out):: Nhh,nhour_first,cyclicgrid
 
      integer :: gc_info,nseconds(1),n1,i,j
      integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid
@@ -3419,6 +3440,9 @@ end subroutine GetCDF_short
      fi =0.0
   call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
   call check(nf90_get_var(ncFileID, varID, gl_glob(1:IILARDOM,1) ))
+  do i=1,IILARDOM
+     if(gl_glob(i,1)>180.0)gl_glob(i,1)=gl_glob(i,1)-360.0
+  enddo
   do j=1,JJLARDOM
       gl_glob(:,j)=gl_glob(:,1)
    enddo
@@ -3491,6 +3515,7 @@ end subroutine GetCDF_short
   call gc_rbcast(206,GIMAX*GJMAX,0,NPROC,gc_info,xm_global_j(1:GIMAX,1:GJMAX))
   call gc_rbcast(207,IILARDOM*JJLARDOM,0,NPROC,gc_info,gb_glob(1:IILARDOM,1:JJLARDOM))
   call gc_rbcast(208,IILARDOM*JJLARDOM,0,NPROC,gc_info,gl_glob(1:IILARDOM,1:JJLARDOM))
+  call gc_ibcast(209,25,0,NPROC,gc_info,projection)
 
 
   do j=1,MAXLJMAX
@@ -3563,54 +3588,8 @@ end subroutine GetCDF_short
 !this will make give too small time steps in the Advection,
 !because of the constraint that the Courant number should be <1.
 ! 
-!We can reduce the domain where the time step of adevection is 
-!adapted to the Courant number.
-!i.e. outside this defined domain, the Courant number is allowed
-!to be larger than 1. 
-!(In advection routines it will then be set to 1)
-!
-!small cell -> large xm 
-!we assume here that the problem is only in the northern and southern 
-!part of the domain (large and small j values)
-
-!1)find the smallest acceptable j
-
-  jmin_advec=1
-  xm_i_max=XM_MAX_ADVEC+1
-  j=0
-   do while (xm_i_max>XM_MAX_ADVEC)
-     xm_i_max=0.0
-     do i=0,MAXLIMAX+1
-        if(xm_i(i,j)>xm_i_max)then
-           xm_i_max=xm_i(i,j)
-        endif
-    enddo
-    j=j+1
-    jmin_advec=j
-  enddo
-  if(jmin_advec/=1)then
-  write(*,*)'WILL CONSIDER COURANT NUMBER ONLY ON LIMITED DOMAIN'
-  write(*,*)'me= ',me,' jmin_advec= ',jmin_advec
-  endif
-
-!2)find the largest acceptable j
-  jmax_advec=ljmax
-  xm_i_max=XM_MAX_ADVEC+1
-  j=ljmax+1
-   do while (xm_i_max>XM_MAX_ADVEC)
-     xm_i_max=0.0
-     do i=0,MAXLIMAX+1
-        if(xm_i(i,j)>xm_i_max)then
-           xm_i_max=xm_i(i,j)
-        endif
-    enddo
-    j=j-1
-    jmax_advec=j
-  enddo
-  if(jmax_advec/=ljmax)then
-  write(*,*)'WILL CONSIDER COURANT NUMBER ONLY ON LIMITED DOMAIN'
-  write(*,*)'me= ',me,' jmax_advec= ',jmax_advec,'ljmax= ',ljmax
-  endif
+!If Poles are found and lon-lat coordinates are used the Advection scheme
+!will be modified to be able to cope with the singularity
 
 !Look for poles
 !If the northernmost or southernmost lines are poles, they are not
@@ -3619,14 +3598,14 @@ end subroutine GetCDF_short
 
 North_pole=1
   do i=1,limax
-     if(nint(gl(i,ljmax))/=90)then
+     if(nint(gb(i,ljmax))/=90)then
         North_pole=0  !not north pole
      endif
   enddo
 
 South_pole=1
   do i=1,limax
-     if(nint(gl(i,1))/=-90)then
+     if(nint(gb(i,1))/=-90)then
         South_pole=0  !not south pole
      endif
   enddo

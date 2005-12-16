@@ -33,9 +33,10 @@
  !-- contains subroutine:
 
  Public :: DefGrid     ! =>  GRIDWIDTH_M, map-factor stuff, calls other routines
- Public :: ij2lb       !pw grid to longitude latitude
- Public :: lb2ij       !pw longitude latitude to grid
- Public :: ij2ij       !pw grid1 to grid2
+ Public :: ij2lbm       !pw grid to longitude latitude
+ Public :: lb2ijm       !pw longitude latitude to grid
+ Public :: ij2ijm       !pw grid1 to grid2
+ Public :: lb2ij        !pw longitude latitude to grid
 
 !Hf BC
  Public :: GlobalPosition     ! => 
@@ -112,8 +113,8 @@
 
   logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
     character (len=100),public::projection
- integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
- integer, public :: jmin_advec,jmax_advec !limits for checking Courant number
+  integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
+  integer, public :: Poles(2) !Poles(1)=1 if North pole is found, Poles(2)=1:SP
 
 contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -375,7 +376,7 @@ contains
 end subroutine GlobalPosition
 
 
-  subroutine lb2ij(imax,jmax,gl,gb,ir2,jr2,fi2,an2,xp2,yp2)
+  subroutine lb2ijm(imax,jmax,gl,gb,ir2,jr2,fi2,an2,xp2,yp2)
     !-------------------------------------------------------------------! 
     !      calculates coordinates ir2, jr2 (real values) from gl(lat),gb(long) 
     !
@@ -418,9 +419,64 @@ end subroutine GlobalPosition
     end do ! j
 
     return
+  end subroutine lb2ijm
+
+ subroutine lb2ij(gl2,gb2,ir2,jr2,fi2,an2,xp2,yp2)
+
+!Note: this routine is not supposed to be CPU optimized
+    !-------------------------------------------------------------------! 
+    !      calculates coordinates ir2, jr2 (real values) from gl(lat),gb(long) 
+    !
+    !      input:  xp2,yp2:   coord. of the polar point in grid2
+    !              an2:   number of grid-distances from pole to equator in grid2.
+    !              fi2:      rotational angle for the grid2 (at i2=0).
+    !              i1max,j1max: number of points (grid1) in  x- og y- direction
+    !
+    !
+    !      output: i2(i1,j1): i coordinates in grid2 
+    !              j2(i1,j1): j coordinates in grid2 
+    !-------------------------------------------------------------------! 
+
+
+    implicit none
+
+
+    real, intent(in)    :: gl2,gb2 
+    real, intent(out)    :: ir2,jr2
+    real, intent(in), optional    :: fi2,an2,xp2,yp2
+
+    real  :: fi_loc,an_loc,xp_loc,yp_loc
+    real, parameter :: PI=3.14159265358979323
+    real    :: PId4,dr,dr2
+
+
+    PId4    = PI/4.      
+    dr2    = PI/180.0/2.      ! degrees to radians /2
+    dr    = PI/180.0      ! degrees to radians 
+
+  if(projection=='Stereographic')then
+     fi_loc=fi
+     an_loc=an
+     xp_loc=xp
+     yp_loc=yp
+
+    if(present(fi2))fi_loc=fi2
+    if(present(an2))an_loc=an2
+    if(present(xp2))xp_loc=xp2
+    if(present(yp2))yp_loc=yp2
+
+    ir2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
+    jr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
+  elseif(projection=='lon lat') then
+     ir2=(gl2-gl_glob(1,1))/(gl_glob(2,1)-gl_glob(1,1))+1
+     if(ir2<0.5)ir2=ir2+360.0/(gl_glob(2,1)-gl_glob(1,1))
+     jr2=(gb2-gb_glob(1,1))/(gb_glob(1,2)-gb_glob(1,1))+1
+  endif
+
+    return
   end subroutine lb2ij
 
-  subroutine ij2lb(imax,jmax,gl,gb,fi,an,xp,yp)
+  subroutine ij2lbm(imax,jmax,gl,gb,fi,an,xp,yp)
   !-------------------------------------------------------------------! 
   !      calculates l(lat),b(long) (geographical coord.) 
   !      in every grid point. 
@@ -478,9 +534,9 @@ end subroutine GlobalPosition
     end do ! j
 
    return
-  end subroutine ij2lb
+ end subroutine ij2lbm
 
-  subroutine ij2ij(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
+  subroutine ij2ijm(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
                    fiin,anin,xpin,ypin,fiout,anout,xpout,ypout)
 
 !   Converts data (in_field) stored in coordinates (fiin,anin,xpin,ypin) 
@@ -510,10 +566,10 @@ end subroutine GlobalPosition
        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "ij2ij alloc failed")
 
 ! find longitude, latitude of wanted area
-    call ij2lb(imaxout,jmaxout,gl,gb,fiout,anout,xpout,ypout)
+    call ij2lbm(imaxout,jmaxout,gl,gb,fiout,anout,xpout,ypout)
 
 ! find corresponding coordinates (i,j) in in_field coordinates 
-    call lb2ij(imaxout,jmaxout,gl,gb,x,y,fiin,anin,xpin,ypin)
+    call lb2ijm(imaxout,jmaxout,gl,gb,x,y,fiin,anin,xpin,ypin)
 
 
     ! check if the corners of the domain are inside the area covered by the 
@@ -578,7 +634,7 @@ end subroutine GlobalPosition
        deallocate(gl,stat=alloc_err)
        if ( alloc_err /= 0 ) call gc_abort(me,NPROC,"ij2ij de-alloc_err")
     
-    end subroutine ij2ij
+     end subroutine ij2ijm
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

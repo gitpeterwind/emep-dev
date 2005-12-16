@@ -64,7 +64,8 @@ program myeul
                                ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use GenChemicals_ml,  only : define_chemicals
-  use GridValues_ml,    only : DefGrid,MIN_ADVGRIDS  ! sets gl, gb, xm, gridwidth_m, etc.
+  use GridValues_ml,    only : DefGrid,MIN_ADVGRIDS&  ! sets gl, gb, xm, gridwidth_m, etc.
+                               ,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse,&
@@ -74,7 +75,8 @@ program myeul
                               ,METSTEP    &   ! Hours between met input
                               ,runlabel1  &   ! explanatory text
                               ,runlabel2  &   ! explanatory text
-                              ,nprint,nass,nterm,iyr_trend, assign_nmax
+                              ,nprint,nass,nterm,iyr_trend, assign_nmax&
+                              ,assign_dtadvec
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
   use out_restri_ml,    only : set_outrestri
   use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
@@ -273,7 +275,7 @@ program myeul
               ,newseason    !u2 , metstep
     integer iupw, i, j, ii, k, iotyp
     integer :: mm, mm_old   ! month and old-month  (was nn and nold)
-    integer :: nproc_gc,cyclicgrid,poles(2)
+    integer :: nproc_gc,cyclicgrid
     character (len=130) :: fileName
 
 !
@@ -346,9 +348,10 @@ program myeul
     tim_before = tim_before0
 
     call parinit(MIN_ADVGRIDS)     !define subdomains sizes and position
-    call MeteoGridRead(cyclicgrid,poles) !define grid projection and parameters
-    call Topology(cyclicgrid,poles)      !define GlobalBoundaries 
+    call MeteoGridRead(cyclicgrid) !define grid projection and parameters
+    call Topology(cyclicgrid,Poles)      !define GlobalBoundaries 
                                    !and subdomains neighbors
+    call assign_dtadvec(me,GRIDWIDTH_M)! set dt_advec
 
     call set_outrestri  ! Steffen's routine for restricted area output
 
@@ -389,6 +392,7 @@ program myeul
 
     if ( me == 0 ) write(6,*)"Calling emissions with year" ,current_date%year
     call Emissions(current_date%year)  !!!!! IS this the right/best year????
+    if ( me == 0 ) write(6,*)"emissions fifniseh" 
 
     ! daynumber needed  for BCs, so call here to get initial
       call dayno(current_date%month,current_date%day,daynumber) !u3
@@ -413,6 +417,7 @@ program myeul
 
 
     call vgrid    !  initialisation of constants used in vertical advection
+    if ( me == 0 ) write(6,*)"vgrid fifniseh" 
 
     if ( me == 0 ) then
        fileName=trim(runlabel1)//'_inst.nc'
@@ -490,6 +495,7 @@ program myeul
           call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
           call MetModel_LandUse(2)   !ds rv1.2 call (2) -> snow
+    if ( me == 0 ) write(6,*)"vnewmonth start" 
 
           call newmonth
 

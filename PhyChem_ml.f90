@@ -9,14 +9,14 @@ module PhyChem_ml
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
    use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after  
 
-   use Advection_ml,   only: advecdiff,adv_int
+   use Advection_ml,   only: advecdiff,advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
    use Dates_ml,       only : date, add_dates,dayno, daynumber
    use Derived_ml,     only : wdep, ddep,IOU_INST, DerivedProds, Derived
    use DryDep_ml,      only : drydep,init_drydep
    use Emissions_ml,   only : EmisSet  
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
-                             gl, gb
+                             gl, gb, projection, Poles
    use Met_ml ,        only : roa,z_bnd,z_mid,metint, ps, cc3dmax, &
                                zen,coszen,Idirect,Idiffuse
    use ModelConstants_ml, only : KMAX_MID, nmax, nstep, current_date &
@@ -121,7 +121,13 @@ contains
 
 
         !================
-	call advecdiff
+        if( (Poles(1)==1.or.Poles(2)==1).and. &
+                              trim(projection)==trim('lon lat'))then
+           call advecdiff_poles
+        else
+           call advecdiff
+        endif
+
         call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
         !================
 
@@ -186,7 +192,6 @@ contains
               write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY, Hour,seconds=", &
                 END_OF_EMEPDAY, current_date%hour,current_date%seconds
           endif
-
 
           call Derived(dt_advec,End_of_Day)
 

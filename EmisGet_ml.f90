@@ -77,7 +77,7 @@ contains
 !hf V
   integer :: flat_iland, flat_nc
   integer :: i, j, isec, iland, k, nc        ! loop variables
-  integer :: ic                          ! country code (read from file)
+  integer :: iic,ic                          ! country code (read from file)
   real    :: duml,dumh                   ! dummy variables, low/high emis.
   real, dimension(NSECTORS)  :: tmpsec   ! array for reading emission files
   integer, save :: ncmaxfound = 0        ! Max. no. countries found in grid
@@ -103,7 +103,7 @@ contains
 
 READEMIS: do   ! ************* Loop over emislist files **********************
 
-              read(unit=IO_EMIS,fmt=*,iostat=ios) ic,i,j, duml,dumh,  &
+              read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
                                  (tmpsec(isec),isec=1,NSECTORS)
 
               if ( ios <  0 ) exit READEMIS            ! End of file
@@ -111,6 +111,14 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                   errmsg = "GetEmis ios: error on " // fname
                   call gc_abort(me,NPROC,errmsg)
               end if
+
+!find country number (ic) corresponding to index as written in emisfile (iic)
+              do ic=1,NLAND
+                 if(Country(ic)%index==iic)goto 543
+              enddo 
+              if(me==0)write(*,*)'COUNTRY CODE NOT RECOGNIZED',iic
+              ic=0
+543           continue
 
               i = i-ISMBEG+1     ! for RESTRICTED domain
               j = j-JSMBEG+1     ! for RESTRICTED domain
@@ -381,8 +389,15 @@ READEMIS: do   ! ************* Loop over emislist files **********************
           iland1 = 1 
           iland2 = NLAND
       else                       ! one country: inland
-          iland1 = inland
-          iland2 = inland
+!find country number  corresponding to index as written in emisfile
+         do iland1=1,NLAND
+            if(Country(iland1)%index==inland)goto 544
+         enddo
+         if(me==0)write(*,*)'COUNTRY CODE NOT RECOGNIZED',inland
+         iland1 = 0
+         iland2 =-1
+544      continue
+         if(iland1/=0) iland2 = iland1
       end if
 
       if (isec == 0 ) then    ! All sectors

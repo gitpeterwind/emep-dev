@@ -64,18 +64,22 @@ module Biogenics_ml
 
 
     integer, parameter :: NVEG = 6   ! dsrv1_6_5s99
-    integer i, j, d, info, ii, jj, it, cat
+    integer i, j, n ,d, info, ii, jj, it, cat
     integer itmp, jtmp, i50, j50
     real tmp(NVEG)
     real sumland
 
     real, dimension(NVEG,GIMAX,GJMAX)       :: gforest  !Forest on global domain
     real, dimension(NVEG,MAXLIMAX,MAXLJMAX) :: forest   !Forest on local domain
+    real, dimension(NFORESTVOC,GIMAX,GJMAX) :: gemforest  !emForest on global domain
+    real, dimension(NFORESTVOC) :: embuf  !emForest on global domain
     real :: forsum(NVEG), isopsum, terpsum
     real agts, agr, agtm, agct1, agct2, agcl &
                , agct, oak, decid, conif, spruc, crops, sitka, snl &
                ,itk, fac
     integer :: inp_error
+    logical, parameter :: READBVOC=.false.
+
 
     do i = 1, NFORESTVOC
       if ( FORESTVOC(i) == "isoprene" ) then
@@ -231,12 +235,51 @@ module Biogenics_ml
 
       end do
     end do
+    call gc_rsum(1,NPROC,info,isopsum)
+    call gc_rsum(1,NPROC,info,terpsum)
+    if (me .eq. 0) then
+      write(6,*) 'isopsum1, terpsum1',isopsum, terpsum
+    end if
+
+if(READBVOC)then
+!rv2_4_3? Read directly iso and terpenes
+    if (me ==  0) then
+        gforest = 0.0
+        call open_file(IO_FORES,"r","BVOC.dat",needed=.true.,skip=1)
+        if (ios /= 0) call gc_abort(me,NPROC,"ios error: BVOC.dat")
+        do while (.true.)
+          read(IO_FORES,*,err=1002,end=1002) itmp,jtmp,(embuf(n),n=1,NFORESTVOC)
+          j50 = jtmp  - JSMBEG + 1
+          if(j50.ge.1.and.j50.le.GJMAX)then
+              i50 = itmp - ISMBEG + 1
+              if(i50.ge.1.and.i50.le.GIMAX)then
+                 gemforest(:,i50,j50)=embuf(:)
+              endif
+           endif
+        enddo            !do while
+
+1002  close(IO_FORES)
+        write(*,*)'BVOC read'
+    endif
+    call global2local(gemforest,emforest,MSG_READ1,NFORESTVOC,GIMAX,GJMAX,1,1,1) 
+        isopsum   = 0.0
+        terpsum   = 0.0
+   do j = lj0, lj1   
+      do i = li0,li1 
+        isopsum   = isopsum   + emforest(BIO_ISOP,i,j)
+        terpsum   = terpsum   + emforest(BIO_TERP,i,j)
+     enddo
+  enddo
+
 
     call gc_rsum(1,NPROC,info,isopsum)
     call gc_rsum(1,NPROC,info,terpsum)
     if (me .eq. 0) then
-      write(6,*) 'isopsum, terpsum',isopsum, terpsum
+      write(6,*) 'isopsum2, terpsum2',isopsum, terpsum
     end if
+
+endif
+
 
     !/-- Calculate canopy environmental correction factors
     !-----------------------------------------------------

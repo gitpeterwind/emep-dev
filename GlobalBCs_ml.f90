@@ -189,7 +189,7 @@ contains
    real, parameter :: macehead_lat = 53.3 !latitude of Macehead station
    real, parameter :: macehead_lon = -9.9 !longitude of Macehead station
    real, dimension(1,1) :: buf_lon,buf_lat,bufi,bufj
-
+   logical,parameter :: MACEHEADFIX=.true.
 
  !dsOH crude (hard-coded) conversion factor for OH, CH3COO2:
   !     Think of a more elegant solution anoter day......
@@ -599,12 +599,12 @@ elseif ( year == 2003 ) then
               !dsOHwrite(*,*) "dsOH READ OZONE2 ", fname, ": ", bc_rawdata(10, 5, 20)
               write(*,*) "dsOH READ OZONE3 ", fname, ": ", bc_rawdata(IGLOB/2,JGLOB/2,20)
 
-
        ! ds Mace Head adjustment: get mean ozone from Eastern sector
 
 !              O3fix = sum( bc_rawdata(1:73,1:80,20) )
               O3fix=0.0
               icount=0
+              if(MACEHEADFIX)then
               do j=1,JGLOB
                  do i=1,IGLOB
                     if(       gb_glob(i,j)<macehead_lat+20.0 &
@@ -619,20 +619,17 @@ elseif ( year == 2003 ) then
 
 ! grid coordinates of Mace Head
 
-              buf_lon(1,1)=macehead_lon; buf_lat(1,1)=macehead_lat
-              call lb2ij(1,1,buf_lon,buf_lat,bufi,bufj,fi,an,xp,yp)
-              iMH=bufi(1,1); jMH=bufj(1,1)
+              call lb2ij(macehead_lon,macehead_lat, iMH,jMH)
 
 !hfOH              O3fix = O3fix/(73.0*80.0)  - macehead_O3(month)
 !              O3fix = O3fix/(73.0*80.0)  - macehead_O3(month)*PPB
-
               if(icount>=1) O3fix = O3fix/(icount)  - macehead_O3(month)*PPB
               
-
               write(6,"(a10,2f7.2,i4,i6,3f8.3)") "O3FIXes ",iMH,jMH, &
 !                 month, bc_rawdata(73,48,20), macehead_O3(month), O3fix
                    month,icount,bc_rawdata(nint(iMH),nint(jMH),20)/PPB,&
                    macehead_O3(month),O3fix/PPB
+              endif
 
               if (model=='ZD_ACID') then
 

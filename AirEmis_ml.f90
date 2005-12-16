@@ -238,61 +238,61 @@ module AirEmis_ml
     end subroutine lightning
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-	subroutine air_inter(ilon,igl,ggl,iktop		&
-		,flux,airem				&
-		,ygrdum, ygrida,dlon,rlon0		&
-		,rlon,area,secmonth)
+    subroutine air_inter(ilon,igl,ggl,iktop		&
+         ,flux,airem				&
+         ,ygrdum, ygrida,dlon,rlon0		&
+         ,rlon,area,secmonth)
 
 
-	implicit none
+      implicit none
 
-   integer, parameter :: KMAX_BND_AIR = 21 !pw u3
+      integer, parameter :: KMAX_BND_AIR = 21 !pw u3
 
-   integer, intent(in) :: ilon,igl,ggl,iktop
-   real, intent(in) :: area(igl), ygrdum(igl),dlon,rlon0,secmonth
-
-
-   real, intent(inout) ::   flux(ilon,ggl,-1:ILEV)
-
-   real, dimension(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), intent(out) :: airem
-   real, intent(out) ::   ygrida(ggl)
-   real, intent(out) :: rlon(ilon+1)
-
-!	local
-	integer info
-	integer lon,lat,i,j,ig,jg,kg,k, i_sh
-        integer la_tst1, la_tst2, lo_tst1, lo_tst2   !  test area for sums
-	real height,     &  !  height of the emission levels
-             atwno2,     &  !  atomic weight of NO2
-             vol            !  volume of model grid boxes
-        real frac, above, below, glij
-	real sum,sumnox,volcm,sum2
-	integer, dimension(MAXLIMAX,MAXLJMAX) :: ixn  & !  mapping of emission 
-	                                        ,jxn    !  grid to model grid
-        integer, dimension(KMAX_MID)          :: ilevel
-        real  fraca(KMAX_MID), fracb(KMAX_MID)
+      integer, intent(in) :: ilon,igl,ggl,iktop
+      real, intent(in) :: area(igl), ygrdum(igl),dlon,rlon0,secmonth
 
 
-	height = 1.e5
-	atwno2 = 46.
+      real, intent(inout) ::   flux(ilon,ggl,-1:ILEV)
 
-!  print out values on a sub-domain for comparison with dirrect model innput
-!  NB!  due to different resolution the subdomain will be different for 
-!       aircraft and lightning emissions
+      real, dimension(KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), intent(out) :: airem
+      real, intent(out) ::   ygrida(ggl)
+      real, intent(out) :: rlon(ilon+1)
 
-        la_tst1 = 7
-        la_tst2 = 13
-        lo_tst1 = 1
-        lo_tst2 = 5
-      
-	if(me.eq.0)then
-	  sum = 0.
-	  sumnox = 0.
-	  do k = iktop,ILEV
+      !	local
+      integer info
+      integer lon,lat,i,j,ig,jg,kg,k, i_sh
+      integer la_tst1, la_tst2, lo_tst1, lo_tst2   !  test area for sums
+      real height,     &  !  height of the emission levels
+           atwno2,     &  !  atomic weight of NO2
+           vol            !  volume of model grid boxes
+      real frac, above, below, glij
+      real sum,sumnox,volcm,sum2
+      integer, dimension(MAXLIMAX,MAXLJMAX) :: ixn  & !  mapping of emission 
+           ,jxn    !  grid to model grid
+      integer, dimension(KMAX_MID)          :: ilevel
+      real  fraca(KMAX_MID), fracb(KMAX_MID)
+
+
+      height = 1.e5
+      atwno2 = 46.
+
+      !  print out values on a sub-domain for comparison with dirrect model innput
+      !  NB!  due to different resolution the subdomain will be different for 
+      !       aircraft and lightning emissions
+
+      la_tst1 = 7
+      la_tst2 = 13
+      lo_tst1 = 1
+      lo_tst2 = 5
+
+      if(me.eq.0)then
+         sum = 0.
+         sumnox = 0.
+         do k = iktop,ILEV
 	    do lat = la_tst1,la_tst2
-	      do lon = lo_tst1,lo_tst2
-	        sum = sum + flux(lon,lat,k)!test
-	      end do
+               do lon = lo_tst1,lo_tst2
+                  sum = sum + flux(lon,lat,k)!test
+               end do
 	    end do
 
 	    do lat=1,ggl
@@ -302,136 +302,139 @@ module AirEmis_ml
                   !area not defined for Southern Hemisphere
                   volcm = area(ggl-lat+1)*1.e4*height
                endif
-	      do lon=1,ilon
-	        sumnox = sumnox + flux(lon,lat,k)
-	        flux(lon,lat,k)=flux(lon,lat,k)*1.e3*AVOG	&
-			/volcm/secmonth/atwno2
-	      end do
+               do lon=1,ilon
+                  sumnox = sumnox + flux(lon,lat,k)
+                  flux(lon,lat,k)=flux(lon,lat,k)*1.e3*AVOG	&
+                       /volcm/secmonth/atwno2
+               end do
 	    end do
-	  end do
-	  write(6,*) 'SUMNOX, ANCAT:',sumnox
+         end do
+         write(6,*) 'SUMNOX, ANCAT:',sumnox
 
-	endif		!me=0
+      endif		!me=0
 
 
-	  call gc_rbcast(317, ggl*ilon*(ILEV+1-iktop)	&
-		,0, NPROC,info,flux(1,1,iktop))
+      call gc_rbcast(317, ggl*ilon*(ILEV+1-iktop)	&
+           ,0, NPROC,info,flux(1,1,iktop))
 
-! -- N/S
-	ygrida(1) = 90.
-	ygrida(GGL) = -90.
-	do i=2,igl
-          i_sh = GGL + 1 - i
-	  ygrida(i) = (ygrdum(i-1)+ygrdum(i))*0.5
-	  ygrida(i_sh) = - ygrida(i)
-	enddo
+      ! -- N/S
+      ygrida(1) = 90.
+      ygrida(GGL) = -90.
+      do i=2,igl
+         i_sh = GGL + 1 - i
+         ygrida(i) = (ygrdum(i-1)+ygrdum(i))*0.5
+         ygrida(i_sh) = - ygrida(i)
+      enddo
 
-! -  E/V
-	rlon(1) = rlon0
-	do i=2,ilon
-	  rlon(i) = rlon(i-1) + dlon
-	end do
-	rlon(ilon+1) = rlon(1)+360.
+      ! -  E/V
+      rlon(1) = rlon0
+      do i=2,ilon
+         rlon(i) = rlon(i-1) + dlon
+      end do
+      rlon(ilon+1) = rlon(1)+360.
 
-!    Assign gridpoints to the EMEP grid
+      !    Assign gridpoints to the EMEP grid
 
-	jg = ggl-1
+      jg = ggl-1
 
-	do j = 1,ljmax
-	  do i = 1,limax
-	    if(gb(i,j).eq.90. .and. gl(i,j).eq.0.0) then
-	      ixn(i,j) = 1
-	      jxn(i,j) = 1
+      do j = 1,ljmax
+         do i = 1,limax
+!pw	    if(gb(i,j).eq.90. .and. gl(i,j).eq.0.0) then
+	    if(abs(gb(i,j)-90.0)<0.001) then
+               ixn(i,j) = 1
+               jxn(i,j) = 1
 	    else
-	      do while(gb(i,j).lt.ygrida(jg+1))
-		jg = jg+1
-	      enddo
-	      do while(gb(i,j).ge.ygrida(jg))
-		jg = jg-1
-	      enddo
-	      jxn(i,j) = jg
-	      glij = gl(i,j)
-	      if(glij.le.rlon(1))glij = glij+360.
-	      ig = int((glij-rlon(1))/dlon)+1
-	      if(glij.eq.rlon(ig))ig=ig+1
-	      ixn(i,j) = ig
+               do while(gb(i,j).lt.ygrida(jg+1))
+                  jg = jg+1
+               enddo
+               do while(gb(i,j).ge.ygrida(jg))
+                  jg = jg-1
+               enddo
+               jxn(i,j) = jg
+               glij = gl(i,j)
+               if(glij.le.rlon(1))glij = glij+360.
+               ig = int((glij-rlon(1))/dlon)+1
+!pw            if(glij.eq.rlon(ig))ig=ig+1
+               if(ig>ilon)ig=ig-ilon !pw
+               ixn(i,j) = ig
+
 	    end if
-	  end do
-	end do
+         end do
+      end do
 
-!	if(me.eq.0)then
-!           write(*,*) 'ygrida  ', ggl
-!           do i = 1,ggl
-!           write(*,*) 'ygrida  ', i,ygrida(i)
-!           end do
-!	endif
+      !	if(me.eq.0)then
+      !           write(*,*) 'ygrida  ', ggl
+      !           do i = 1,ggl
+      !           write(*,*) 'ygrida  ', i,ygrida(i)
+      !           end do
+      !	endif
 
-	do j = 1,ljmax
-	  do i = 1,limax
+      do j = 1,ljmax
+         do i = 1,limax
 
  	    kg = 1
 	    above = 1.e3
 	    below = 0.
 
             do k = KMAX_MID,KCHEMTOP,-1
-	      do while(z_bnd(i,j,k+1).gt.below+1.e3) 
-	        below = below+1.e3
-	      end do
-	      do while (z_bnd(i,j,k).gt.above) 
-	      kg = kg+1
-	      above = above+1.e3
+               do while(z_bnd(i,j,k+1).gt.below+1.e3) 
+                  below = below+1.e3
+               end do
+               do while (z_bnd(i,j,k).gt.above) 
+                  kg = kg+1
+                  above = above+1.e3
+               end do
+               ilevel(k) = kg
+               fraca(k) = 1.
+               if(above-below.gt.1.1e3) 				&
+                    fraca(k) = (z_bnd(i,j,k)-(above-1.e3))  &
+                    /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
+               fracb(k) = 0.
+               if(above-below.gt.2.1e3)				&
+                    fracb(k) = (below+1.e3 - z_bnd(i,j,k+1))           &
+                    /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
+            end do
+
+            lon = ixn(i,j)
+            lat = jxn(i,j)
+if(lon>128)write(*,*)'longg',i,j,ixn(i,j)
+            do k = KCHEMTOP,KMAX_MID
+               frac = 1. - fraca(k) - fracb(k)
+               kg = ilevel(k)
+               airem(k,i,j) = flux(lon,lat,kg)*fraca(k) 		&
+                    + flux(lon,lat,kg-1)*frac		&
+                    + flux(lon,lat,kg-2)*fracb(k)
 	    end do
-	    ilevel(k) = kg
-	    fraca(k) = 1.
-	    if(above-below.gt.1.1e3) 				&
-		 fraca(k) = (z_bnd(i,j,k)-(above-1.e3))  &
-                           /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
-	    fracb(k) = 0.
-	    if(above-below.gt.2.1e3)				&
-		 fracb(k) = (below+1.e3 - z_bnd(i,j,k+1))           &
-                           /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
-	  end do
 
-	  lon = ixn(i,j)
-	  lat = jxn(i,j)
-
-          do k = KCHEMTOP,KMAX_MID
-	      frac = 1. - fraca(k) - fracb(k)
-	      kg = ilevel(k)
-	      airem(k,i,j) = flux(lon,lat,kg)*fraca(k) 		&
-			+ flux(lon,lat,kg-1)*frac		&
-			+ flux(lon,lat,kg-2)*fracb(k)
-	    end do
-
-!  surface emissions
+            !  surface emissions
 
 	    if(iktop.eq.0)		&
-            airem(KMAX_MID,i,j) = airem(KMAX_MID,i,j)+flux(lon,lat,0)
-	  end do
-	end do
+                 airem(KMAX_MID,i,j) = airem(KMAX_MID,i,j)+flux(lon,lat,0)
+         end do
+      end do
 
 
-!! Print out on a limited part of the dommain both raw data ( flux ) and 
-!! the re-gridded emissions ( airem ).  Expect only an opproximate match! 
-!! Summation of aircraft emission and lightning are on different grids 
-!! and hence for different domains. 
-     sum2 = 0.
-     do j = 1,ljmax
-       do i = 1,limax
-	 if(gl(i,j).gt.rlon(lo_tst1) .and. gl(i,j).lt.rlon(lo_tst2+1) .and. &
-	    gb(i,j).lt.ygrida(la_tst1) .and. gb(i,j).gt.ygrida(la_tst2+1)) then
-            do k=KCHEMTOP,KMAX_MID
-  	        vol = GRIDWIDTH_M*GRIDWIDTH_M   &
-                     *(z_bnd(i,j,k)-z_bnd(i,j,k+1))*1.e6
-		sum2 = sum2 + airem(k,i,j)*atwno2/AVOG*		&
-			vol*secmonth*1.e-3
-	    end do
-         end if
-       end do
-     end do
+      !! Print out on a limited part of the dommain both raw data ( flux ) and 
+      !! the re-gridded emissions ( airem ).  Expect only an opproximate match! 
+      !! Summation of aircraft emission and lightning are on different grids 
+      !! and hence for different domains. 
+      sum2 = 0.
+      do j = 1,ljmax
+         do i = 1,limax
+            if(gl(i,j).gt.rlon(lo_tst1) .and. gl(i,j).lt.rlon(lo_tst2+1) .and. &
+                 gb(i,j).lt.ygrida(la_tst1) .and. gb(i,j).gt.ygrida(la_tst2+1)) then
+               do k=KCHEMTOP,KMAX_MID
+                  vol = GRIDWIDTH_M*GRIDWIDTH_M   &
+                       *(z_bnd(i,j,k)-z_bnd(i,j,k+1))*1.e6
+                  sum2 = sum2 + airem(k,i,j)*atwno2/AVOG*		&
+                       vol*secmonth*1.e-3
+               end do
+            end if
+         end do
+      end do
 
-	call gc_rsum(1,NPROC,info,sum2)
-	if(me.eq.0) write(6,*) 'ancat on limited area:',sum,sum2
+      call gc_rsum(1,NPROC,info,sum2)
+      if(me.eq.0) write(6,*) 'ancat on limited area:',sum,sum2
 
     end subroutine air_inter
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

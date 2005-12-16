@@ -9,6 +9,7 @@ module ModelConstants_ml
  !----------------------------------------------------------------------------
   use Dates_ml, only : date   ! type giving yy, mm, dd, s
   use PhysicalConstants_ml, only : AVOG   
+
   implicit none
   private
 
@@ -16,6 +17,7 @@ module ModelConstants_ml
  !/-- subroutine:
 
   public :: assign_nmax
+  public :: assign_dtadvec
 
  !/-- constants
 
@@ -25,7 +27,8 @@ module ModelConstants_ml
 !       for days ending at 6am:
   integer, public, parameter :: END_OF_EMEPDAY  = 6  
 
-  real, public,  parameter :: dt_advec  = 1200.0   ! time-step for advection (s)
+  real, public :: dt_advec   ! time-step for advection (s)
+  real, public :: dt_advec_inv  ! =1/dt_advec
 
   !NTDAY:  Number of 2D O3 to be saved each day (for SOMO)       
   ! 24/NTDAY is the time integration step for SOMO
@@ -163,11 +166,38 @@ module ModelConstants_ml
 
 
 ! max value of xm for "exact" advection treatment. 
-! If xm is always smaller than  XM_MAX_ADVEC, there is no effect.
-  real, parameter, public  :: XM_MAX_ADVEC=3.0
+! If xm is always smaller than  XM_MAX_ADVEC, there is no effect
+  real, parameter, public  :: XM_MAX_ADVEC=15.0
 
 
  contains
+
+   subroutine assign_dtadvec(me,GRIDWIDTH_M)
+!
+! dt_advec is set according to the grid resolution
+! The choosed timestep should lead to a Courant number <1 for
+! "normal" wind speeds, but this is not a strict limitation.
+!
+! The values of dt_advec must be an integer fraction of 3600
+!
+! The values put here are only suggestions
+!
+
+	implicit none
+        real, intent(in) ::GRIDWIDTH_M
+        integer, intent(in) :: me
+
+        if(GRIDWIDTH_M>76000.0) dt_advec=1800.0
+        if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
+        if(GRIDWIDTH_M<21000.0) dt_advec=600.0
+        if(GRIDWIDTH_M<11000.0) dt_advec=300.0
+        if(GRIDWIDTH_M<6000.0) dt_advec=180.0
+
+        dt_advec_inv=1.0/dt_advec
+
+        if(me==0)write(*,*)'dt_advec set to: ',dt_advec
+
+   end subroutine assign_dtadvec
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	subroutine assign_nmax(me,metstep)
