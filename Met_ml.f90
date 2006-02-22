@@ -12,8 +12,8 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
 use Functions_ml,      only : Exner_tab, Exner_nd    ! ds apr2005
-use GridValues_ml,     only : xm_i,xm_j,xm2,xmd, sigma_bnd,sigma_mid, &
-                               i_glob, j_glob,METEOfelt,projection &
+!use GridValues_ml,     only : xm_i,xm_j,xm2, sigma_bnd,sigma_mid 
+use GridValues_ml,     only :  xmd,i_glob, j_glob,METEOfelt,projection &
                                ,gl,gb, gb_glob, gl_glob,MIN_ADVGRIDS&
                                ,Poles
 use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP, &
@@ -183,7 +183,8 @@ private
 
 	use ModelConstants_ml , only : current_date & ! date-type
                                        , METSTEP      ! Meteo read timestep
-        use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
+        use GridValues_ml , only : xm_i,xm_j,xm2,&
+                           sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
                             fi, GRIDWIDTH_M,ref_latitude
         use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
  
@@ -311,7 +312,7 @@ private
 !
 	use ModelConstants_ml , only : current_date  ! date-type
         use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
-                            fi, GRIDWIDTH_M,ref_latitude
+                            xm_i,xm_j,xm2,fi, GRIDWIDTH_M,ref_latitude
         use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
  
 	implicit none
@@ -370,13 +371,14 @@ private
 !	and sends subfields to the processors using nx calls
 
 	use ModelConstants_ml , only : identi	&
-                                       ,current_date & ! date-type
-                                       , METSTEP
+                                      ,current_date & ! date-type
+                                      , METSTEP
+                                    
 	use Par_ml ,  only :  limax,ljmax
         use Dates_ml, only : nmdays,nydays,date,Init_nmdays	&
                             ,add_dates       ! No. days per year
         use GridValues_ml , only : sigma_bnd,sigma_mid, xp, yp, &
-                            fi, GRIDWIDTH_M,ref_latitude
+                            fi, GRIDWIDTH_M,ref_latitude,xm_i,xm_j,xm2
 	use Io_ml ,only : IO_INFIELD, ios
 
 	implicit none
@@ -1437,6 +1439,8 @@ private
 !horizontal wind speed (averaged over the four edges)       
 !Note that u and v are wind velocities divided by xm
 !At present u_ref is defined at KMAX_MID
+
+     use GridValues_ml,     only : xm_i,xm_j,xm2, sigma_bnd,sigma_mid 
 
      implicit none
      integer ::i,j
@@ -2515,7 +2519,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !    EMEP polishing and comments: JE Jonson and P Wind                   !
 !************************************************************************!
 
-      implicit none
+     use GridValues_ml,     only : sigma_bnd,sigma_mid 
+     implicit none
       integer i, j, k, l, kcbl
 
 !     Local constants
@@ -2887,6 +2892,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !c
 !c..constants for free-convection limit:
 !c
+ use GridValues_ml,     only : sigma_bnd,sigma_mid 
 
  integer, intent(in) :: nr
 
@@ -3323,6 +3329,7 @@ end subroutine GetCDF_short
                                        ,gi0,gj0,IILARDOM,JJLARDOM&
                                        ,parinit
      use ModelConstants_ml,     only : KMAX_MID,XM_MAX_ADVEC
+     use GridValues_ml,     only : GlobalPosition
 
      implicit none
 
@@ -3335,7 +3342,7 @@ end subroutine GetCDF_short
      integer, intent(out):: Nhh,nhour_first,cyclicgrid
 
      integer :: gc_info,nseconds(1),n1,i,j
-     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid
+     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
      integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
      real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
      integer :: status,iglobal,jglobal,info,South_pole,North_pole
@@ -3362,12 +3369,15 @@ end subroutine GetCDF_short
      call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
   else
-     write(*,*)trim(projection)
-     call gc_abort(me,NPROC, "PROJECTION NOT RECOGNIZED")
+!     write(*,*)'GENERAL PROJECTION ',trim(projection)
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+!     call gc_abort(me,NPROC, "PROJECTION NOT RECOGNIZED")
   endif
 
   call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
   call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
+  call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
 
   !get dimensions length
   call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_file))
@@ -3404,8 +3414,9 @@ end subroutine GetCDF_short
   endif
   ihh=1
   n1=1
-  call check(nf90_get_var(ncFileID,timeDimID,nseconds,&
+  call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
              start=(/ihh/),count=(/n1 /)))
+
   call datefromsecondssince1970(ndate,nseconds(1),0)
   nhour_first=ndate(4)
 
@@ -3413,10 +3424,15 @@ end subroutine GetCDF_short
      write(*,*)'ERROR: wrong meteo date',ndate(1),nyear,ndate(2),&
           nmonth,ndate(3),nday
      call gc_abort(me,NPROC,"error in NetCDF_ml")
+     ndate(1)=nyear
+     ndate(2)=nmonth
+     ndate(3)=nday
+     write(*,*)'WARNING: overwritten dates now:',ndate(1),nyear,ndate(2),&
+          nmonth,ndate(3),nday
   endif
 
   do ihh=1,Nhh
-     call check(nf90_get_var(ncFileID, timeDimID, nseconds,&
+     call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
                 start=(/ ihh /),count=(/ n1 /)))   
      call datefromsecondssince1970(ndate,nseconds(1),0)
      if(mod((ihh-1)*METSTEP+nhour_first,24)/=ndate(4))then
@@ -3428,36 +3444,49 @@ end subroutine GetCDF_short
    
   !get global attributes
   call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
-  if(projection=='Stereographic')then
-  call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
-  call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole",xp ))
-  call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole",yp ))
-  call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
+  if(trim(projection)=='Stereographic')then
+     call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
+     call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole",xp ))
+     call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole",yp ))
+     call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
+
+     call GlobalPosition 
+  elseif(trim(projection)==trim('lon lat')) then
+     ref_latitude=60.
+     xp=0.0
+     yp=GJMAX
+     fi =0.0
+     call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+     call check(nf90_get_var(ncFileID, varID, gl_glob(1:IILARDOM,1) ))
+     do i=1,IILARDOM
+        if(gl_glob(i,1)>180.0)gl_glob(i,1)=gl_glob(i,1)-360.0
+     enddo
+     do j=1,JJLARDOM
+        gl_glob(:,j)=gl_glob(:,1)
+     enddo
+     call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+     call check(nf90_get_var(ncFileID, varID, gb_glob(1,1:JJLARDOM) ))
+     do i=1,IILARDOM
+        gb_glob(i,:)=gb_glob(1,:)
+     enddo
   else
      ref_latitude=60.
      xp=0.0
      yp=GJMAX
      fi =0.0
-  call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-  call check(nf90_get_var(ncFileID, varID, gl_glob(1:IILARDOM,1) ))
-  do i=1,IILARDOM
-     if(gl_glob(i,1)>180.0)gl_glob(i,1)=gl_glob(i,1)-360.0
-  enddo
-  do j=1,JJLARDOM
-      gl_glob(:,j)=gl_glob(:,1)
-   enddo
-  call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-  call check(nf90_get_var(ncFileID, varID, gb_glob(1,1:JJLARDOM) ))
-  do i=1,IILARDOM
-     gb_glob(i,:)=gb_glob(1,:)
-  enddo
-
-
+     call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+     call check(nf90_get_var(ncFileID, varID, gl_glob(1:IILARDOM,1:JJLARDOM) ))
+     
+     call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+     call check(nf90_get_var(ncFileID, varID, gb_glob(1:IILARDOM,1:JJLARDOM) ))
+     
   endif
   !get variables
   status=nf90_inq_varid(ncid=ncFileID, name="map_factor", varID=varID)
 
   if(status == nf90_noerr)then
+     !mapping factor at center of cells is defined
+     !make "staggered" map factors
      call check(nf90_get_var(ncFileID, varID, xm_global(1:GIMAX,1:GJMAX) &
           ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
      do j=1,GJMAX
@@ -3480,6 +3509,7 @@ end subroutine GetCDF_short
      enddo
 
   else
+     !map factor are already staggered
      status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
 
      if(status== nf90_noerr)then

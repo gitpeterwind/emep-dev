@@ -1,5 +1,16 @@
-============== Peter rv2_4_3, 16/12/2005 ================================================
+============== Peter rv2_4_4, 15/2/2006 ================================================
 
+Accept any projection in CF-1.0 convention.
+
+NetCDF accept "general projection"
+Met_ml  accept "general projection"
+moved some "use Gridvalues :sigma" (the SGI compiler didn't like variables 
+                        to be send as argument and defines with "use")
+GridValues AN calculated in GlobalPosition
+Derived_ml daily D3_TH=.False.
+Dates_ml: included 2004
+
+============== Peter rv2_4_3, 16/12/2005 ================================================
 Better Global version. In case of lon-lat grid and poles, special advection 
 routines are used.
 

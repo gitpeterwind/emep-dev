@@ -403,7 +403,7 @@ def_2d = (/&
 !-- 3-D fields
 
 def_3d = (/ &
- Deriv(  18, "TH  ",T,  0 ,       1.0, F , T, T, T, T ,"D3_TH","m")&
+ Deriv(  18, "TH  ",T,  0 ,       1.0, F , T, T, T, F ,"D3_TH","m")&
 
 , Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb")&
 ,Deriv( 402, "ADV  ", T, IXADV_SO2, PPBINV, F, T, T, T, F ,"D3_SO2","ppb")&

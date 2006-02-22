@@ -354,6 +354,7 @@ contains
     dr    = PI/180.0      ! degrees to radians
     om    = 180.0/PI      ! radians to degrees (om=Norwegian omvendt?)
     om2   = om * 2.0
+    AN = 6.370e6*(1.0+sin( ref_latitude*PI/180.))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km and ref_latitude=60
 
     do j = 1, JJLARDOM
        dy  = yp - j  
@@ -467,7 +468,7 @@ end subroutine GlobalPosition
 
     ir2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
     jr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
-  elseif(projection=='lon lat') then
+  else!ASSUMES lon-lat grid
      ir2=(gl2-gl_glob(1,1))/(gl_glob(2,1)-gl_glob(1,1))+1
      if(ir2<0.5)ir2=ir2+360.0/(gl_glob(2,1)-gl_glob(1,1))
      jr2=(gb2-gb_glob(1,1))/(gb_glob(1,2)-gb_glob(1,1))+1

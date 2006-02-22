@@ -43,7 +43,8 @@
   integer,save :: ncFileID_year=closedID
   integer,save :: outCDFtag=0
   integer, public, parameter :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 !CDF typr for output
-
+  character (len=18),  parameter :: Default_projection_name = 'General_Projection'
+ 
 
   public :: InitnetCDF
   public :: Out_netCDF
@@ -227,7 +228,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
   call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
 
-  elseif(projection=='lon lat') then
+  elseif(projection=='lon lat')then 
 
   call check(nf90_def_dim(ncid = ncFileID, name = "lon", len = GIMAXcdf, dimid = iDimID))
   call check(nf90_def_var(ncFileID, "lon", nf90_double, dimids = iDimID, varID = iVarID) )
@@ -239,6 +240,32 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, jVarID, "standard_name", "latitude"))
   call check(nf90_put_att(ncFileID, jVarID, "long_name", "latitude"))
   call check(nf90_put_att(ncFileID, jVarID, "units", "degrees_north"))
+
+  else !general projection
+
+  call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAX, dimid = iDimID))
+  call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAX, dimid = jDimID))
+  call check(nf90_def_var(ncFileID, "i", nf90_float, dimids = iDimID, varID = iVarID) )
+  call check(nf90_put_att(ncFileID, iVarID, "standard_name", "projection_x_coordinate"))
+  call check(nf90_put_att(ncFileID, iVarID, "coord_axis", "x"))
+  call check(nf90_put_att(ncFileID, iVarID, "long_name", "grid x coordinate"))
+  call check(nf90_put_att(ncFileID, iVarID, "units", "km"))
+  call check(nf90_def_var(ncFileID, "j", nf90_float, dimids = jDimID, varID = jVarID) )
+  call check(nf90_put_att(ncFileID, jVarID, "standard_name", "projection_y_coordinate"))
+  call check(nf90_put_att(ncFileID, jVarID, "coord_axis", "y"))
+  call check(nf90_put_att(ncFileID, jVarID, "long_name", "grid y coordinate"))
+  call check(nf90_put_att(ncFileID, jVarID, "units", "km"))
+
+
+  call check(nf90_def_var(ncFileID, "lat", nf90_float, dimids = (/ iDimID, jDimID/), varID = latVarID) )
+  call check(nf90_put_att(ncFileID, latVarID, "long_name", "latitude"))
+  call check(nf90_put_att(ncFileID, latVarID, "units", "degrees_north"))
+  call check(nf90_put_att(ncFileID, latVarID, "standard_name", "latitude"))
+
+  call check(nf90_def_var(ncFileID, "lon", nf90_float, dimids = (/ iDimID, jDimID/), varID = longVarID) )
+  call check(nf90_put_att(ncFileID, longVarID, "long_name", "longitude"))
+  call check(nf90_put_att(ncFileID, longVarID, "units", "degrees_east"))
+  call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
 
   endif
 
@@ -313,7 +340,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
-  write(*,*)'end writing k'
+ 
 
 !CF-1.0 definitions:
   if(projection=='Stereographic')then
@@ -323,6 +350,13 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, VarID, "latitude_of_projection_origin", 90.0))
   call check(nf90_put_att(ncFileID, VarID, "scale_factor_at_projection_origin", scale_at_projection_origin))
 ! call check(nf90_put_att(ncFileID, VarID, "false_easting", ))
+  elseif(projection=='lon lat')then 
+
+  else
+
+  call check(nf90_def_var(ncid = ncFileID, name = Default_projection_name, xtype = nf90_int, varID=varID ) )
+  call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", trim(projection)))
+
   endif
 
   ! Leave define mode
@@ -375,7 +409,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_var(ncFileID, jEMEPVarID, ycoord(1:GJMAXcdf)) )
 
 !Define longitude and latitude
-  call GlobalPosition
+  call GlobalPosition !because this may not yet be done if old version of meteo is used
   if(ISMBEGcdf+GIMAXcdf-1<=IILARDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJLARDOM)then
   call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
        ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
@@ -393,8 +427,33 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
      enddo
      call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
      call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
+  else
+  xcoord(1)=(ISMBEGcdf-0.5)*GRIDWIDTH_M/1000.
+  do i=2,GIMAXcdf
+     xcoord(i)=xcoord(i-1)+GRIDWIDTH_M/1000.
+!     print *, i,xcoord(i)
+  enddo
+  call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
+
+  ycoord(1)=(JSMBEGcdf-0.5)*GRIDWIDTH_M/1000.
+  do j=2,GJMAXcdf
+     ycoord(j)=ycoord(j-1)+GRIDWIDTH_M/1000.
+  enddo
+  call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
+  call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
+!  write(*,*)'coord written'
+
+!Define longitude and latitude
+
+  if(ISMBEGcdf+GIMAXcdf-1<=IILARDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJLARDOM)then
+  call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+       ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
+  call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+       ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
+  endif
 
   endif
+!  write(*,*)'lon lat written'
 
 !Define vertical levels
   if(KMAXcdf==KMAX_MID)then
@@ -821,12 +880,15 @@ use Derived_ml, only : Deriv
      call check(nf90_redef(ncid = ncFileID))
 
      !get dimensions id
-  if(projection=='Stereographic')then
+  if(trim(projection)=='Stereographic')then
      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
   elseif(projection=='lon lat') then
      call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+  else
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+     call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
   endif
      call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
@@ -846,7 +908,14 @@ use Derived_ml, only : Deriv
      !define attributes of new variable
      call check(nf90_put_att(ncFileID, varID, "long_name",  def1%name ))
      call check(nf90_put_att(ncFileID, varID, "coordinates", "lat lon"))
-     call check(nf90_put_att(ncFileID, varID, "grid_mapping", "Polar_Stereographic"))
+     if(trim(projection)=='Stereographic')then
+        call check(nf90_put_att(ncFileID, varID, "grid_mapping", "Polar_Stereographic"))
+     elseif(projection=='lon lat') then
+        
+     else
+        call check(nf90_put_att(ncFileID, varID, "grid_mapping",Default_projection_name ))
+     endif
+
      nrecords=0
      call check(nf90_put_att(ncFileID, varID, "numberofrecords", nrecords))
 
@@ -985,7 +1054,7 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
   logical :: fileneeded
   integer :: GIMAX,GJMAX,KMAX_MID,nrecords,period
   integer :: status,ndims,alloc_err
-  integer :: n,KMAX,Nrec,ijn,ijkn
+  integer :: n,KMAX,Nrec,ijn,ijkn,timeVarID
   integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
   integer :: var_date(9000),ndate(4)
   real , allocatable,dimension(:,:,:,:)  :: values
@@ -1110,8 +1179,8 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
 !  call check(nf90_get_att(ncFileID, VarID, "xfelt_ident", xfelt_ident))
 
   !get time variable
-  call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeDimID))
-  call check(nf90_get_var(ncFileID, timeDimID, var_date,start=(/ nstart /),count=(/ nfetch /)))
+  call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
+  call check(nf90_get_var(ncFileID, timeVarID, var_date,start=(/ nstart /),count=(/ nfetch /)))
 
   !get variable
   if(ndims==3)then
