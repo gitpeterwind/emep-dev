@@ -1,3 +1,8 @@
+============== Peter,Heiko rv2_4_5, 19/4/2006 ================================================
+
+Added gc_com.f into the CVS repository. Seems to be missing. It should have been added when Peter removed gc_com.F
+
+
 ============== Peter rv2_4_4, 15/2/2006 ================================================
 
 Accept any projection in CF-1.0 convention.
