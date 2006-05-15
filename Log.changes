@@ -1,3 +1,11 @@
+============== Peter rv2_4_5, 15/5/2006 ================================================
+
+Bug in grun.pl put in version 2_4_3. Wrong meteo link.
+Sometimes the first day of a month is linked to the 1/1/ of next year.
+The program will notice this and crash.
+
+
+
 ============== Peter,Heiko rv2_4_5, 19/4/2006 ================================================
 
 Added gc_com.f into the CVS repository. Seems to be missing. It should have been added when Peter removed gc_com.F

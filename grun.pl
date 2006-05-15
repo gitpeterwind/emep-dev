@@ -486,20 +486,6 @@ if($HEMIS == 1){
     $new = sprintf "meteo${year}%02d%02d.nc", $mm,$n;
     mylink( "Linking:", $old,$new ) ;
   }
-if ( $NTERM > 100 ) {		# Cruide check that we aren't testing with NTERM=5
-  if ( $mm2 == 12 ) {
-    print "NEED TO SET H00 FROM NEXT YEAR \n";
-    $old = sprintf "$MetDir/meteo{${year}+1}0101.nc";
-    $new = sprintf "meteo{${year}+1}0101.nc";
-    mylink( "Linking:", $old,$new ) ;
-
-  } else {			#  Need 1st record of next month:
-    $old = sprintf "$MetDir/meteo${year}%02d01.nc", $mm2+1;
-    $new = sprintf "meteo${year}%02d01.nc", $mm2+1;
-    mylink( "Linking:", $old,$new ) ;
-
-  }
-}#NTERM
 
 
     foreach $t ( 'natso2') {
@@ -522,23 +508,6 @@ if ( $NTERM > 100 ) {		# Cruide check that we aren't testing with NTERM=5
 	# printf "%04d $n\n", $nnn;
     }
 
-
-#BUG - FIX FOR 2000 NEEDED
-if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
-   if ( $mm2 == 12 ) {
-        print "NEED TO SET H00 FROM NEXT YEAR \n";
-	#97-fix $old = sprintf "$MetDir/f00.%04d0101", ($year+1)%100;
-	$old = sprintf "$MetDir/f00.%04d0101", $year+1;
-	$new = sprintf "fil%04d", $nnn;    #BUG_FIX : MISSING
-        mylink( "LAST RECORD, NEED TO SET H00 FROM NEXT YEAR", $old,$new ) ;
-   } else { #  Need 1st record of next month:
-        $hhlast = 0 ;   #
-        $ddlast = 1 ;
-	$old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hhlast, $year, $mm2+1, $ddlast;
-	$new = sprintf "fil%04d", $nnn;
-        mylink( "NEED TO SET H00 FROM NEXT MONTH", $old,$new ) ;
-   }
-}
 
 
     foreach $t ('snowc', 'natso2') {
@@ -575,11 +544,46 @@ if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
     $old = sprintf "$SRCINPUTDIR/lt21-nox.dat%02d", $mm;
     $new = sprintf "lightn%02d.dat", $mm;
     mylink( "Lightning : ", $old,$new ) ;
-}
+}#nnn
 
 
 #-- individual treatment of the last record 
 
+#BUG - FIX FOR 2000 NEEDED
+if($HEMIS == 1){
+    
+    if ( $NTERM > 100 ) {		# Cruide check that we aren't testing with NTERM=5
+	if ( $mm2 == 12 ) {
+	    print "NEED TO SET H00 FROM NEXT YEAR \n";
+	    $old = sprintf "$MetDir/meteo{${year}+1}0101.nc";
+	    $new = sprintf "meteo{${year}+1}0101.nc";
+	    mylink( "Linking:", $old,$new ) ;
+	    
+	} else {			#  Need 1st record of next month:
+	    $old = sprintf "$MetDir/meteo${year}%02d01.nc", $mm2+1;
+	    $new = sprintf "meteo${year}%02d01.nc", $mm2+1;
+	    mylink( "Linking:", $old,$new ) ;
+	    
+	}
+    }#NTERM
+	
+}else{ #NOT HEMIS
+	if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
+	if ( $mm2 == 12 ) {
+	    print "NEED TO SET H00 FROM NEXT YEAR \n";
+	    #97-fix $old = sprintf "$MetDir/f00.%04d0101", ($year+1)%100;
+	    $old = sprintf "$MetDir/f00.%04d0101", $year+1;
+	    $new = sprintf "fil%04d", $nnn;    #BUG_FIX : MISSING
+	    mylink( "LAST RECORD, NEED TO SET H00 FROM NEXT YEAR", $old,$new ) ;
+	} else { #  Need 1st record of next month:
+	    $hhlast = 0 ;   #
+	    $ddlast = 1 ;
+	    $old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hhlast, $year, $mm2+1, $ddlast;
+	    $new = sprintf "fil%04d", $nnn;
+	    mylink( "NEED TO SET H00 FROM NEXT MONTH", $old,$new ) ;
+	}
+    }
+}
 
 
 #--- byteswap and assign the f* files
