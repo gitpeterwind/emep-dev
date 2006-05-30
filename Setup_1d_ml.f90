@@ -35,8 +35,8 @@
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,KMAX_MID ,KMAX_BND, KCHEMTOP                ! Start and upper k for 1d fields
   use My_Aerosols_ml,    only : SEASALT        !SeaS
-  use My_Emis_ml,           only : NRCEMIS , AIRNOX, QRCAIR &
-                                  ,NFORESTVOC&
+  use My_Emis_ml,           only : NRCEMIS  , AIRNOX, QRCAIRNO &
+                                  ,QRCAIRNO2, NFORESTVOC&
                                   ,QRCVOL,VOLCANOES &  ! hf -extended VOL
                                   ,NSS  !SeaS
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
@@ -236,19 +236,24 @@ contains
 
      if ( AIRNOX  ) then
 
-       !QRCAIR is set to QRCNO if AIRNOX is true. Otherwise to a
+       !QRCAIRNO is set to QRCNO and QRCAIRNO2 is set to QRCNO2 if 
+       ! AIRNOX is true. Otherwise to a
        ! dummy value of 1. Avoids problems with
        !undefined QRCNO in non-NOx models.
 
         !rv1.2.1 do k=KCHEMTOP,KMAX_MID-4  ! bug, 2/12/2002
         do k=KCHEMTOP,KEMISTOP-1
-          rcemis(QRCAIR,k) = airn(k,i,j)+airlig(k,i,j)
+          rcemis(QRCAIRNO,k)  = 0.95 * (airn(k,i,j)+airlig(k,i,j))
+          rcemis(QRCAIRNO2,k) = 0.05 * (airn(k,i,j)+airlig(k,i,j))
 
         enddo
 
         !rv1.2.1 do k=KMAX_MID-3,KMAX_MID  ! bug, 2/12/2002
         do k=KEMISTOP,KMAX_MID
-          rcemis(QRCAIR,k) = rcemis(QRCAIR,k) + airn(k,i,j)+airlig(k,i,j)
+          rcemis(QRCAIRNO,k)  = rcemis(QRCAIRNO,k) &  
+                              + 0.95 * (airn(k,i,j)+airlig(k,i,j))
+          rcemis(QRCAIRNO2,k) = rcemis(QRCAIRNO2,k) &
+                              + 0.05 * (airn(k,i,j)+airlig(k,i,j))
 
         enddo
 

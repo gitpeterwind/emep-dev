@@ -1,3 +1,10 @@
+============== Joffen v2_4_6, 30/5/2006 ================================================
+
+noxsplit changes - splits NO and NO2 similar to VOC. Use "2000" files to get default
+9:95% split that we had before
+
+... and from Dave : srun.pl added to cvs, for UiT use.
+
 ============== Peter rv2_4_5, 15/5/2006 ================================================
 
 Bug in grun.pl put in version 2_4_3. Wrong meteo link.

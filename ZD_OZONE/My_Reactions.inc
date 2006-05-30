@@ -401,7 +401,8 @@
       P =   &
      rct(7,k) * xnew(NO2 ) * xnew(NO3 )  &
       + rcphot(IDNO2,K) * xnew(NO2 )  &
-      + 0.95*rcemis(QRCNO,K) 
+      + rcemis(QRCNO,K) 
+!!      + 0.95*rcemis(QRCNO,K) 
 
       L =  &
      !u1 rctroe(1,k)* xnew(OP )  &
@@ -462,7 +463,8 @@
       + rcphot(IDHNO3,K) * xnew(HNO3 )  &
       + rcphot(IDNO3,K) * xnew(NO3 )  &
       + rcphot(IDN2O5,K) * xnew(N2O5 )  &
-      + 0.05*rcemis(QRCNO,K) 
+      + rcemis(QRCNO2,K) 
+!!      + 0.05*rcemis(QRCNO,K) 
 
       L =  &
      rct(2,k)* xnew(O3 )  &

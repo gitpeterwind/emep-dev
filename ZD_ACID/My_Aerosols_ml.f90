@@ -23,9 +23,8 @@
                                 , ORGANIC_AEROSOLS   = .false.   
 !stDep
     integer, public, parameter :: NSIZE = 2    ! number of aerosol sizes (1-fine, 2-coarse)
- !SeaS
-     logical, public, parameter :: SEASALT = .true.
-
+!SeaS
+    logical, public, parameter :: SEASALT = .true. 
 contains
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -34,8 +33,7 @@ contains
 
     !..................................................................
     ! Different pre-processing (and for aerosol dynamisc: fractioning) 
-    ! is needed for UNI-ACID and UNI-AERO. UNI-OZONE and UNI-ACID can 
-    ! use the same.
+    ! is needed for UNI-ACID,UNI-OZONE and UNI-AERO. 
     !
     ! hf dec-2002
     ! changed eg aNH4->aNH4out in call to rpmares
@@ -44,7 +42,7 @@ contains
     !..................................................................
 
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4
+ use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4, NO3
  use Setup_1dfields_ml,  only :  temp, rh
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use GenChemicals_ml,    only :  species
@@ -73,7 +71,8 @@ contains
       so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef
       hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef 
       nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef
-      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef
+      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef ! + &
+!               xn_2d(NO3,k) * species(NO3)%molwt  *coef   !different for UNI-OZONE/ACID
       nh4in  = xn_2d(aNH4,k) * species(aNH4)%molwt  *coef
 
  !--------------------------------------------------------------------------                
@@ -82,7 +81,7 @@ contains
  !--------------------------------------------------------------------------
  ! SO4 is not changed so do not need to be reset
      
-
+!      xn_2d(NO3,k)  = FLOOR !different for UNI-OZONE/ACID
 
       xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
       xn_2d(NH3,k)   = max (FLOOR, gNH3out / (species(NH3)%molwt  *coef) )
@@ -106,12 +105,13 @@ contains
     !
     ! hf dec-2002
     ! Version aero_martijn included (same as in LOTUS)
-    ! hf nov-2003 New version of EQSAM(v03d) included 
-    ! (can be used for seasalt). Now used as default.
+    ! 
+    ! 
     !..................................................................
+
  use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4
+ use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4,NO3
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
@@ -121,6 +121,7 @@ contains
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
 
  logical, intent(in)  :: debug_cell
+
 
  !.. local
   real    :: so4in(KCHEMTOP:KMAX_MID), &
@@ -195,9 +196,14 @@ contains
   endif
 
  end subroutine My_EQSAM
+
 !.............................
 
- !PMwater 
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
+ !water 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
       subroutine Aero_water(i,j)
@@ -242,7 +248,7 @@ contains
 
              rh50(KCHEMTOP:KMAX_MID),t20(KCHEMTOP:KMAX_MID)
 
-  integer :: i,j,k, errmark
+  integer :: k, errmark
   logical :: debsub = .false.
  !-----------------------------------
 
@@ -288,9 +294,6 @@ contains
 
  end subroutine  Aero_water
 !.............................
-
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
 
  end module My_Aerosols_ml
 

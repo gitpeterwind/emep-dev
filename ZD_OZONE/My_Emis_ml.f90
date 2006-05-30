@@ -38,9 +38,9 @@ implicit none
    !   ------------------------------------------------------------------------
 
    integer, public, parameter :: &
-         NEMIS_PLAIN =  6   & ! No. emission files to be read for non-speciated
-       , NEMIS_SPLIT =  1   & ! No. emission files to be read for speciated
-       , NRCEMIS     = 16     ! No. chemical species with emissions 
+         NEMIS_PLAIN =  5   & ! No. emission files to be read for non-speciated
+       , NEMIS_SPLIT =  2   & ! No. emission files to be read for speciated
+       , NRCEMIS     = 17     ! No. chemical species with emissions 
 
    integer, public, parameter :: &   ! ** derived ** shouldn't need to change:
          NEMIS       =      & ! Sum of the above - all emissions
@@ -56,18 +56,18 @@ implicit none
 
     character(len=6), public, save, dimension(NEMIS) :: &
       EMIS_NAME  = &
-      (/ "sox   ", "nox   ", "co    "   &   ! =non-split first
+      (/ "sox   ", "co    "   &   ! =non-split first
        , "nh3   ", "pm25  ", "pmco  "   &
-       , "voc   "  /)                       ! =to be split
+       , "nox   ", "voc   "  /)                       ! =to be split
 
     character(len=6), public, save, dimension(NEMIS_SPLIT) :: &
       SPLIT_NAME = &
-       (/ "voc   "  /)
+       (/ "nox   ", "voc   "  /)
  !! for SOA      (/ "voc   ", "pm25  "  /)
 
     integer, public, save, dimension(NEMIS_SPLIT) :: &
       EMIS_NSPLIT  = &
-       (/  10    /)    !!!! (check - excluding bio?)
+       (/  2  ,   10    /)    !!!! (check - excluding bio?)
  !! for SOA       (/  10   ,      3  /)    !!!! (check - excluding bio?)
 
     !/-- and now  join the above name arrays  to make the complete list:
@@ -90,27 +90,28 @@ implicit none
 
    integer, public, parameter ::   &
            QRCSO2 =   1      & ! IQSO2   &   ! 1
-         , QRCNO  =   2      & ! IQNOX   &   ! 2
-         , QRCCO  =   3      & ! IQCO        ! 4
-         , QRCNH3 =   4      & ! IQCO        ! 4
-         , QRCPM25=   5      & ! IQSO2   &   ! 1
-         , QRCPMCO=   6      &
+         , QRCCO  =   2      & ! IQCO        ! 4
+         , QRCNH3 =   3      & ! IQCO        ! 4
+         , QRCPM25=   4      & ! IQSO2   &   ! 1
+         , QRCPMCO=   5      &
+         , QRCNO2 =   6      & ! IQNOX   &   ! 2
+         , QRCNO  =   7      & ! IQNOX   &   ! 2
       !/**now we deal with the emissions which are split,e.g.VOC
       !  ******************************************************
       !  **** must be in same order as EMIS_SPLIT array **** **
       !  **** ds rv1.8.4 bug-fix:
       !  **** AND vocsplit.defaults file !!!!!!!  ***** **** **
       !  ******************************************************
-         , QRCC2H6    = 7      & 
-         , QRCNC4H10 =  8    & 
-         , QRCC2H4    = 9      & 
-         , QRCC3H6    =10      & 
-         , QRCOXYL   = 11    & 
-         , QRCHCHO   = 12    & 
-         , QRCCH3CHO = 13   & 
-         , QRCMEK    = 14   & 
-         , QRCC2H5OH = 15    & 
-         , QRCCH3OH  = 16
+         , QRCC2H6    = 8      & 
+         , QRCNC4H10 =  9    & 
+         , QRCC2H4    =10      & 
+         , QRCC3H6    =11      & 
+         , QRCOXYL   = 12    & 
+         , QRCHCHO   = 13    & 
+         , QRCCH3CHO = 14   & 
+         , QRCMEK    = 15   & 
+         , QRCC2H5OH = 16    & 
+         , QRCCH3OH  = 17
 
       !ds CHanged from:
       !  , QRCC2H4  = 7      & ! MACHDS 
@@ -143,12 +144,14 @@ implicit none
 
     real, public, dimension(NRCEMIS), save  :: molwt ! Molecular weights                                                             
 
-   !/** Lightning and aircraft NOx. QRCAIR is set equal to QRCNO
+   !/** Lightning and aircraft NOx. QRCAIRNO is set equal to QRCNO
+   ! and QRCAIRNO2  is set equal to QRCNO2
    ! if AIRNOX is true, otherwise to one. Avoids problems with
    ! dimensions.
 
-    logical, public, parameter :: AIRNOX = .true.   ! Gives NOx emission
-    integer, public, parameter :: QRCAIR = QRCNO    ! 
+    logical, public, parameter :: AIRNOX   = .true.   ! Gives NOx emission
+    integer, public, parameter :: QRCAIRNO = QRCNO    ! 
+    integer, public, parameter :: QRCAIRNO2 = QRCNO2    ! 
  
    !hf u2
    !/** Volcanos. QRCVOL is set equal to QRCSO2
@@ -168,6 +171,7 @@ implicit none
   ! ACID and OZONE ..
         molwt(QRCSO2)   = 32.0  ! Emissions as S
         molwt(QRCNO)    = 14.0  ! Emissions as N
+        molwt(QRCNO2)   = 14.0  ! Emissions as N
         molwt(QRCNH3)   = 14.0  ! Emissions as N
         molwt(QRCPM25)  = 100.0  !  Fake for PM2.5
         molwt(QRCPMCO)  = 100.0  !  Fake for PM2.5

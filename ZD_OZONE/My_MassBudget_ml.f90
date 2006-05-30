@@ -3,7 +3,8 @@
 module My_MassBudget_ml
 !_____________________________________________________________________________
   use GenSpec_adv_ml      !! Can be many species
-  use My_Emis_ml,     only :    QRCSO2,  QRCNO,  QRCCO,  QRCNH3, QRCPM25, QRCPMCO
+  use My_Emis_ml,     only :    QRCSO2,  QRCNO,  QRCCO,  QRCNH3, QRCPM25 &
+                              , QRCPMCO, QRCNO2
 
   implicit none
   private
@@ -21,7 +22,7 @@ module My_MassBudget_ml
 
    ! Mass budget equivalency terms
 
-    integer, public, parameter :: N_MASS_EQVS = 6  
+    integer, public, parameter :: N_MASS_EQVS = 7  
     integer, public, save , dimension( N_MASS_EQVS ):: &
           ixadv_eqv  & !  IXADV_ no. of species
            ,qrc_eqv    !  QRC_   no. of equivalent species
@@ -46,18 +47,20 @@ module My_MassBudget_ml
      ! Should have dimsnions N_MASS_EQVS
 
        ixadv_eqv(1) = IXADV_SO2
-       ixadv_eqv(2) = IXADV_NO  
-       ixadv_eqv(3) = IXADV_CO 
-       ixadv_eqv(4) = IXADV_NH3
-       ixadv_eqv(5) = IXADV_PM25 
-       ixadv_eqv(6) = IXADV_PMco
+       ixadv_eqv(2) = IXADV_CO 
+       ixadv_eqv(3) = IXADV_NH3
+       ixadv_eqv(4) = IXADV_PM25 
+       ixadv_eqv(5) = IXADV_PMco
+       ixadv_eqv(6) = IXADV_NO2  
+       ixadv_eqv(7) = IXADV_NO  
 
        qrc_eqv(1) = QRCSO2
-       qrc_eqv(2) = QRCNO  
-       qrc_eqv(3) = QRCCO 
-       qrc_eqv(4) = QRCNH3 
-       qrc_eqv(5) = QRCPM25
-       qrc_eqv(6) = QRCPMco
+       qrc_eqv(2) = QRCCO 
+       qrc_eqv(3) = QRCNH3 
+       qrc_eqv(4) = QRCPM25
+       qrc_eqv(5) = QRCPMco
+       qrc_eqv(6) = QRCNO2  
+       qrc_eqv(7) = QRCNO  
 
   end subroutine set_mass_eqvs
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

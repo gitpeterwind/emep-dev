@@ -39,8 +39,8 @@ implicit none
 
    integer, public, parameter :: &
          NEMIS_PLAIN =  5   & ! No. emission files to be read for non-speciated
-       , NEMIS_SPLIT =  0   & ! No. emission files to be read for speciated
-       , NRCEMIS     =  5     ! No. chemical species with emissions 
+       , NEMIS_SPLIT =  2   & ! No. emission files to be read for speciated
+       , NRCEMIS     = 17     ! No. chemical species with emissions 
 
    integer, public, parameter :: &   ! ** derived ** shouldn't need to change:
          NEMIS       =      & ! Sum of the above - all emissions
@@ -56,16 +56,19 @@ implicit none
 
     character(len=6), public, save, dimension(NEMIS) :: &
       EMIS_NAME  = &
-      (/ "sox   ", "nox   ", "nh3   ", "pm25  ", "pmco  " /)   ! =non-split first
-
+      (/ "sox   ", "co    "   &   ! =non-split first
+       , "nh3   ", "pm25  ", "pmco  "   &
+       , "nox   ", "voc   "  /)                       ! =to be split
 
     character(len=6), public, save, dimension(NEMIS_SPLIT) :: &
-      SPLIT_NAME !=empty &
-!       (/ "voc   ", "pm25  "  /)
+      SPLIT_NAME = &
+       (/ "nox   ", "voc   "  /)
+ !! for SOA      (/ "voc   ", "pm25  "  /)
 
     integer, public, save, dimension(NEMIS_SPLIT) :: &
-      EMIS_NSPLIT  !=empty &
-!       (/  10   ,      3  /)    !!!! (check - excluding bio?)
+      EMIS_NSPLIT  = &
+       (/  2  ,   10    /)    !!!! (check - excluding bio?)
+ !! for SOA       (/  10   ,      3  /)    !!!! (check - excluding bio?)
 
     !/-- and now  join the above name arrays  to make the complete list:
 
@@ -87,45 +90,76 @@ implicit none
 
    integer, public, parameter ::   &
            QRCSO2 =   1      & ! IQSO2   &   ! 1
-         , QRCNO  =   2      & ! IQNOX   &   ! 2
+         , QRCCO  =   2      & ! IQCO        ! 4
          , QRCNH3 =   3      & ! IQCO        ! 4
          , QRCPM25=   4      & ! IQSO2   &   ! 1
-         , QRCPMCO=   5 
+         , QRCPMCO=   5      &
+         , QRCNO2 =   6      & ! IQNOX   &   ! 2
+         , QRCNO  =   7      & ! IQNOX   &   ! 2
+      !/**now we deal with the emissions which are split,e.g.VOC
+      !  ******************************************************
+      !  **** must be in same order as EMIS_SPLIT array **** **
+      !  **** ds rv1.8.4 bug-fix:
+      !  **** AND vocsplit.defaults file !!!!!!!  ***** **** **
+      !  ******************************************************
+         , QRCC2H6    = 8      & 
+         , QRCNC4H10 =  9    & 
+         , QRCC2H4    =10      & 
+         , QRCC3H6    =11      & 
+         , QRCOXYL   = 12    & 
+         , QRCHCHO   = 13    & 
+         , QRCCH3CHO = 14   & 
+         , QRCMEK    = 15   & 
+         , QRCC2H5OH = 16    & 
+         , QRCCH3OH  = 17
 
+      !ds CHanged from:
+      !  , QRCC2H4  = 7      & ! MACHDS 
+      !  , QRCC2H6  = 8      & ! MACHDS
+      !  , QRCC3H6  = 9      & ! MACHDS
+      !  , QRCNC4H10 = 10     &  ! MACHDS
+      !  , QRCOXYL   = 11    &  ! MACHDS
+      !  , QRCC2H5OH = 12    &  ! MACHDS
+      !  , QRCHCHO   = 13    &  ! MACHDS
+      !  , QRCCH3CHO  = 14    &  ! MACHDS
+      !  , QRCCH3OH   = 15    &  ! MACHDS
+      !  , QRCMEK     = 16      ! MACHDS
+
+ !! for SOA          , QRCOC      = 15    &  ! MACHDS
+ !! for SOA          , QRCEC      = 16    &  ! MACHDS
+ !! for SOA          , QRCINORG   = 17       ! MACHDS
+
+  ! Biogenics
+
+   integer, public, parameter ::   NFORESTVOC = 2   
+   character(len=8),public, save, dimension(NFORESTVOC) :: &
+                                   FORESTVOC = (/ "isoprene","terpene "/)   
+   integer, public, parameter ::   & 
+               QRCISOP    = 18     &
+              ,QRCTERP    = 19
 !SeaS
    integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
                                  ,QSSFI = 1 &   ! production of fine SS
                                  ,QSSCO = 2     ! production of coarse SS  
-       
-      !/**now we deal with the emissions which are split,e.g.VOC
-      !  ******************************************************
-      !  **** must be in same order as EMIS_SPLIT array **** **
-      !  ******************************************************
-  ! Biogenics
-
-   integer, public, parameter ::   NFORESTVOC = 0   
-   character(len=8),public, save, dimension(NFORESTVOC) :: &
-                                   FORESTVOC  !=empty(/ "isoprene","terpene "/)   
-!   integer, public, parameter ::   &   ! Not used???
-!               QRCISOP    = 18     & ! MACHDS
-!              ,QRCTERP    = 19       ! MACHDS
 
     real, public, dimension(NRCEMIS), save  :: molwt ! Molecular weights                                                             
 
-   !/** Lightning and aircraft NOx. QRCAIR is set equal to QRCNO
+   !/** Lightning and aircraft NOx. QRCAIRNO is set equal to QRCNO
+   ! and QRCAIRNO2  is set equal to QRCNO2
    ! if AIRNOX is true, otherwise to one. Avoids problems with
    ! dimensions.
 
-    logical, public, parameter :: AIRNOX = .true.   ! Gives NOx emission
-    integer, public, parameter :: QRCAIR = QRCNO    ! 
-
-    !hf u2
+    logical, public, parameter :: AIRNOX   = .true.   ! Gives NOx emission
+    integer, public, parameter :: QRCAIRNO = QRCNO    ! 
+    integer, public, parameter :: QRCAIRNO2 = QRCNO2    ! 
+ 
+   !hf u2
    !/** Volcanos. QRCVOL is set equal to QRCSO2
-   ! if VOL is true, otherwise to one. Avoids problems with 
+   ! if VOLCANOES is true, otherwise to one. Avoids problems with 
    ! dimensions
 
-    logical, public, parameter :: VOLCANOES    = .true.  ! Gives Volcanos
-    integer, public, parameter :: QRCVOL       = QRCSO2   
+    logical, public, parameter :: VOLCANOES  = .true.  ! Gives Volcanos
+    integer, public, parameter :: QRCVOL     = QRCSO2   
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -134,12 +168,28 @@ implicit none
   !---------------------------------------------------------------------  
 
   !  
-  ! MADE and MACHO....
+  ! ACID and OZONE ..
         molwt(QRCSO2)   = 32.0  ! Emissions as S
         molwt(QRCNO)    = 14.0  ! Emissions as N
+        molwt(QRCNO2)   = 14.0  ! Emissions as N
         molwt(QRCNH3)   = 14.0  ! Emissions as N
-        molwt(QRCPM25)   = 100.0  !  Fake for PM2.5
-        molwt(QRCPMCO)   = 100.0  !  Fake for PM2.5
+        molwt(QRCPM25)  = 100.0  !  Fake for PM2.5
+        molwt(QRCPMCO)  = 100.0  !  Fake for PM2.5
+
+        molwt(QRCCO )    = 28.0  ! Emissions as N      
+        molwt(QRCC2H4)   = 24.0 ! Emissions as C ???   
+        molwt(QRCC2H6)   = 24.0 ! Emissions as C ???   
+        molwt(QRCC3H6)   = 36.0 ! Emissions as C ???   
+        molwt(QRCNC4H10) = 48.0 ! Emissions as C ???   
+        molwt(QRCOXYL)   = 106.0 ! Emissions as C ???   
+        molwt(QRCC2H5OH) = 46.0 
+        molwt(QRCHCHO)   = 30.0 
+        molwt(QRCCH3CHO) = 44.0 
+        molwt(QRCCH3OH)  = 32.0 
+        molwt(QRCMEK)    = 72.0 
+!        molwt(QRCOC)    = 150.0 
+!        molwt(QRCEC)    = 150.0 
+!        molwt(QRCINORG)  = 150.0 
   end subroutine set_molwts
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 end module My_Emis_ml
