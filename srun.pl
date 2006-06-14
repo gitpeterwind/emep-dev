@@ -504,11 +504,11 @@ foreach $scenario ( @runs ) {
 
   #rv2_4_6  New, 30/5/2006, from Joffen
 
-    $old   = "$MyDataDir/noxsplit.default.$NOxSplit" ;
+    $old   = "$DataDir/noxsplit.default.$NOxSplit" ;
     $new   = "noxsplit.defaults";
     mylink( "Split nox", $old,$new ) ;
 
-    $old   = "$MyDataDir/noxsplit.special.$NOxSplit" ;
+    $old   = "$DataDir/noxsplit.special.$NOxSplit" ;
     $new   = "noxsplit.special";
     mylink( "Split nox", $old,$new ) ;
 
