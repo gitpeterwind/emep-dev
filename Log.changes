@@ -1,3 +1,8 @@
+============== Peter v2_4_6_1, 14/6/2006 ================================================
+
+Updated srun.pl: corrected bug (see rv2_4_5). Include "Africa"
+Added: Makefile_snow
+
 ============== Joffen v2_4_6, 30/5/2006 ================================================
 
 noxsplit changes - splits NO and NO2 similar to VOC. Use "2000" files to get default

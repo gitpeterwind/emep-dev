@@ -136,7 +136,7 @@ $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
 
 $Split       = "BASE_MAR2004" ;       
 $NOxSplit       = "2000" ;               # Have CLE2020, MFR2020, 2000       
-$Africa      = "$DataDir/Africa";        # Emissions for Africa, y=1..11
+$Africa      = "$DATA_LOCAL/Africa";        # Emissions for Africa, y=1..11
 
 $timeseries  = "$DataDir";
 
@@ -388,7 +388,7 @@ system "ls -lt | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-#system "gmake depend" ;
+system "gmake depend" ;
 system "gmake" ;
 
 die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
@@ -438,6 +438,20 @@ foreach $scenario ( @runs ) {
 		last;
 	    }
 	}
+	
+	foreach $t ('snowc', 'natso2') {
+	    $old = sprintf "$DATA_LOCAL/%s%02d.dat.170", $t, $mm;
+	    $new = sprintf "%s%02d.dat", $t, $mm;
+	    mylink( "Linking:", $old,$new ) ;
+	}
+	
+	
+	$old = sprintf "$DataDir/lt21-nox.dat%02d", $mm;
+	$new = sprintf "lightn%02d.dat", $mm;
+	mylink( "Lightning : ", $old,$new ) ;
+	
+    } #for ($nnn = 1
+    
 	    
 #BUG - FIX FOR 2000 NEEDED
 	if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
@@ -456,20 +470,8 @@ foreach $scenario ( @runs ) {
 	    }
 	} #NTERM
 	
-	
-	foreach $t ('snowc', 'natso2') {
-	    $old = sprintf "$DATA_LOCAL/%s%02d.dat.170", $t, $mm;
-	    $new = sprintf "%s%02d.dat", $t, $mm;
-	    mylink( "Linking:", $old,$new ) ;
-	}
-	
-	
-	$old = sprintf "$DataDir/lt21-nox.dat%02d", $mm;
-	$new = sprintf "lightn%02d.dat", $mm;
-	mylink( "Lightning : ", $old,$new ) ;
-	
-    } #for ($nnn = 1
-    
+
+
 # Emissions. This part is still a mixture, witk the old ko emission files
 # left in for now. However, in future the only difference between
 # MADE, MACHO and maade AERO-MADE should be in the numbre of pollutants
@@ -554,10 +556,10 @@ foreach $scenario ( @runs ) {
     }  # end of emissions poll loop
     
     if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
-	print "not yet available on snowstorm\n";
-	exit;
+
 	print "STARTING PM ADDITION\n";
-	system("$DAVE/Unify/D_emis/mkp.pmemis_from_nox");
+	system("$DATA_LOCAL/emissions/mkp.pmemis_from_nox");
+#	system("$DAVE/Unify/D_emis/mkp.pmemis_from_nox");
 	#system("cat emislist.pm25 > test_emislist.pm25");
 	#system("cat emislist.pmco > test_emislist.pmco");
     }
