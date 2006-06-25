@@ -9,19 +9,17 @@ module My_UKDep_ml    ! DryDep_ml
 !/**************************************************************************
 
  use DepVariables_ml, only : unit_flux, lai_flux, leaf_flux, & 
-            WHEAT, BEECH, & !ds rv1_9_15
-            ECO_WATER,ECO_CONIF_FOREST,ECO_DECID_FOREST, & !ds rv1.6.12
-            ECO_CROP,ECO_SEMINAT,ECO_WETLAND               !ds rv1.6.12
+            IAM_WHEAT, IAM_BEECH, IAM_MEDOAK, & !ds JUN06
+            ECO_WATER,ECO_CONIF_FOREST,ECO_DECID_FOREST, & 
+            ECO_CROP,ECO_SEMINAT,ECO_WETLAND
 
- use Derived_ml,    only : f_ddep, ddep,  &   !ds NEW system 16/12/2003
-                           f_2d,   d_2d,  &
+ use Derived_ml,    only : f_ddep, ddep, f_2d,   d_2d,  &
                            find_one_index, IOU_INST
 
  use GenSpec_adv_ml               !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use ModelConstants_ml , only : atwS, atwN &
-                              , current_date, AOT_HORIZON  !ds rv1_9_17
+                              , current_date, AOT_HORIZON
  use PhysicalConstants_ml, only : AVOG
- !ds mar2005 use Radiation_ml,  only :  zen               !ds rv1_9_17
  use Setup_1dfields_ml,     only : izen ! integer of zenith angle, ds mar2005
  use Wesely_ml
  implicit none
@@ -43,12 +41,12 @@ module My_UKDep_ml    ! DryDep_ml
     DDEP_OXSSW, DDEP_OXSCF, DDEP_OXSDF, DDEP_OXSCR, DDEP_OXSSN, DDEP_OXSWE, &
     DDEP_OXNSW, DDEP_OXNCF, DDEP_OXNDF, DDEP_OXNCR, DDEP_OXNSN, DDEP_OXNWE, &
     DDEP_RDNSW, DDEP_RDNCF, DDEP_RDNDF, DDEP_RDNCR, DDEP_RDNSN, DDEP_RDNWE, &
-    D2_FSTDF00, D2_FSTDF08, D2_FSTDF16, D2_FSTWH00, D2_FSTWH30, D2_FSTWH60,&
+    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
+    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
+    D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6,&
     D2_O3DF,    D2_O3WH, &
-    D2_EUAOT30WH, D2_EUAOT40WH, & !ds rv1_9_17
-    D2_EUAOT30DF, D2_EUAOT40DF, &
-    D2_UNAOT30WH, D2_UNAOT40WH, & !ds rv1_9_17
-    D2_UNAOT30DF, D2_UNAOT40DF
+    D2_EUAOT30WH, D2_EUAOT40WH, D2_EUAOT30DF, D2_EUAOT40DF, &
+    D2_UNAOT30WH, D2_UNAOT40WH, D2_UNAOT30DF, D2_UNAOT40DF
 
 
   ! Here we define the minimum set of species which has different
@@ -174,15 +172,21 @@ DDEP_RDNCR = find_one_index("DDEP_RDNCR",f_ddep(:)%name)
 DDEP_RDNSN = find_one_index("DDEP_RDNSN",f_ddep(:)%name)
 !ds DDEP_RDNWE = find_one_index("DDEP_RDNWE",f_ddep(:)%name)
 
-!ds rv1_9_15 changes:
-D2_FSTDF00 = find_one_index("D2_FSTDF00",f_2d(:)%name)
-!ds D2_FSTDF08 = find_one_index("D2_FSTDF08",f_2d(:)%name)
-D2_FSTDF16 = find_one_index("D2_FSTDF16",f_2d(:)%name)
+!ds JUN06 changes
+D2_AFSTDF0 = find_one_index("D2_AFSTDF0",f_2d(:)%name)
+D2_AFSTDF16 = find_one_index("D2_AFSTDF16",f_2d(:)%name)
 
-!ds 25/3/2004: FST30 used now:
-D2_FSTWH00 = find_one_index("D2_FSTWH00",f_2d(:)%name)
-D2_FSTWH30 = find_one_index("D2_FSTWH30",f_2d(:)%name)
-D2_FSTWH60 = find_one_index("D2_FSTWH60",f_2d(:)%name)
+D2_AFSTBF0 = find_one_index("D2_AFSTBF0",f_2d(:)%name)
+D2_AFSTBF16 = find_one_index("D2_AFSTBF16",f_2d(:)%name)
+
+!ds JUN06 changes
+D2_AFSTCR0 = find_one_index("D2_AFSTCR0",f_2d(:)%name)
+D2_AFSTCR3 = find_one_index("D2_AFSTCR3",f_2d(:)%name)
+D2_AFSTCR6 = find_one_index("D2_AFSTCR6",f_2d(:)%name)
+
+D2_AFSTCN0 = find_one_index("D2_AFSTCN0",f_2d(:)%name)
+D2_AFSTCN3 = find_one_index("D2_AFSTCN3",f_2d(:)%name)
+D2_AFSTCN6 = find_one_index("D2_AFSTCN6",f_2d(:)%name)
 
 D2_O3DF    = find_one_index("D2_O3DF   ",f_2d(:)%name)
 D2_O3WH    = find_one_index("D2_O3WH   ",f_2d(:)%name)
@@ -414,15 +418,15 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
 ! and again 25/3/2004: Use 1.6 for Beech and 3 for crops
 
 !Beech:
-     d_2d(D2_FSTDF00,i,j,IOU_INST) =  leaf_flux(BEECH)
-     !ds d_2d(D2_FSTDF08,i,j,IOU_INST) =  max(leaf_flux(BEECH)-0.8,0.0)
-     d_2d(D2_FSTDF16,i,j,IOU_INST) =  max(leaf_flux(BEECH)-1.6,0.0)
-!Wheat
-     d_2d(D2_FSTWH00,i,j,IOU_INST) =  leaf_flux(WHEAT)
-     !ds d_2d(D2_FSTWH20,i,j,IOU_INST) =  max(leaf_flux(WHEAT)-2.0,0.0)
-     !ds d_2d(D2_FSTWH40,i,j,IOU_INST) =  max(leaf_flux(WHEAT)-4.0,0.0)
-     d_2d(D2_FSTWH30,i,j,IOU_INST) =  max(leaf_flux(WHEAT)-3.0,0.0)
-     d_2d(D2_FSTWH60,i,j,IOU_INST) =  max(leaf_flux(WHEAT)-6.0,0.0)
+     d_2d(D2_AFSTDF0,i,j,IOU_INST) =  leaf_flux(IAM_BEECH)
+     d_2d(D2_AFSTDF16,i,j,IOU_INST) =  max(leaf_flux(IAM_BEECH)-1.6,0.0)
+!Med. Oak:
+     d_2d(D2_AFSTBF0,i,j,IOU_INST) =  leaf_flux(IAM_MEDOAK)
+     d_2d(D2_AFSTBF16,i,j,IOU_INST) =  max(leaf_flux(IAM_MEDOAK)-1.6,0.0)
+!Crops
+     d_2d(D2_AFSTCR0,i,j,IOU_INST) =  leaf_flux(IAM_WHEAT)
+     d_2d(D2_AFSTCR3,i,j,IOU_INST) =  max(leaf_flux(IAM_WHEAT)-3.0,0.0)
+     d_2d(D2_AFSTCR6,i,j,IOU_INST) =  max(leaf_flux(IAM_WHEAT)-6.0,0.0)
 
    !--- ecosystem specific concentrations..
    !ds - use Conif forest for forests - safer for growing seasons
@@ -431,8 +435,8 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
      ihh      =    current_date%hour             ! for debugging
 
 
-     o3WH = c_hvegppb(WHEAT)* lossfrac
-     o3DF = c_hvegppb(BEECH)* lossfrac
+     o3WH = c_hvegppb(IAM_WHEAT)* lossfrac
+     o3DF = c_hvegppb(IAM_BEECH)* lossfrac
 
      d_2d(D2_O3DF,i,j,IOU_INST) =   o3DF
      d_2d(D2_O3WH,i,j,IOU_INST) =   o3WH
@@ -443,7 +447,7 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
         d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
         d_2d(D2_EUAOT30DF,i,j,IOU_INST) =  max(o3DF-30.0,0.0) * timefrac
         d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
-     else ! rv1_9_19 bug fix!!!!
+     else
         d_2d(D2_EUAOT30WH,i,j,IOU_INST) =  0.0
         d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  0.0
         d_2d(D2_EUAOT30DF,i,j,IOU_INST) =  0.0
@@ -464,7 +468,7 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
              d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
 
              !Derivd had: d_2d(n, i,j,IOU_INST ) = o3 * timefrac  
-           else ! rv1_9_19 bug fix!!!!
+           else
              d_2d(D2_UNAOT30WH,i,j,IOU_INST) =  0.0
              d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  0.0
              d_2d(D2_UNAOT30DF,i,j,IOU_INST) =  0.0
@@ -472,8 +476,10 @@ D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
            end if
 
     if ( DEBUG_ECO .and. debug_flag ) then
-          write(6,"(a12,i5,f7.2,2es12.3)") "DEBUG_ECO ", ihh, o3DF, &
-             leaf_flux(BEECH), d_2d(D2_FSTDF00,i,j,IOU_INST)
+          write(6,"(a12,i5,f7.2,6es12.3)") "DEBUG_ECO ", ihh, o3DF, &
+             leaf_flux(IAM_BEECH), d_2d(D2_AFSTDF0,i,j,IOU_INST), &
+             leaf_flux(IAM_MEDOAK), d_2d(D2_AFSTBF0,i,j,IOU_INST), &
+             leaf_flux(IAM_WHEAT), d_2d(D2_AFSTCR0,i,j,IOU_INST)
     end if ! DEBUG
 
    !---- end ecosystem specific ----------------------------------------------

@@ -245,7 +245,10 @@ contains
 !   integer, save :: ix1 = ISMBEG, ix2 = ISMBEG+GIMAX-1, iy1=JSMBEG, iy2 =  JSMBEG+GJMAX-1  !all
 
   !ds New Deriv system:
-   integer :: D2_O3WH, D2_O3DF, D2_FSTDF00, D2_FSTWH00
+   integer :: D2_O3WH, D2_O3DF,  &
+    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
+    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
+    D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6
 
 !pw:WARNING: If the specification of the subdomain is different for
 !            different components (ix1=125 for ozone and ix1=98 for 
@@ -282,8 +285,8 @@ contains
  
  D2_O3WH = find_one_index("D2_O3WH",f_2d(:)%name)
  D2_O3DF = find_one_index("D2_O3DF",f_2d(:)%name)
- D2_FSTDF00 = find_one_index("D2_FSTDF00",f_2d(:)%name)
- D2_FSTWH00 = find_one_index("D2_FSTWH00",f_2d(:)%name)
+ D2_AFSTDF16 = find_one_index("D2_AFSTDF16",f_2d(:)%name)
+ D2_AFSTCR3 = find_one_index("D2_AFSTCR3",f_2d(:)%name)
 
 ! hr_out(2)= Asc2D("O3_Wheat", "D2D", &
 !                  "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)

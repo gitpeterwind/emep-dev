@@ -94,7 +94,7 @@ private
 
   ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
 
-    integer, public, parameter :: NSR_2D = 45
+    integer, public, parameter :: NSR_2D = 50  
 
     character(len=12), public, parameter, dimension(NSR_2D) :: &
   D2_SR = (/ &
@@ -119,9 +119,10 @@ private
       ,"D2_NO2      ","D2_OXN      ","D2_NOX      ","D2_NOZ      " &
       ,"D2_OX       "  &
 !
-!    Ecosystem - fluxes:
-      ,"D2_FSTDF00  ","D2_FSTDF16  ","D2_FSTWH00  ","D2_FSTWH30  " &
-      ,"D2_FSTWH60  ","D2_O3DF     ","D2_O3WH     " &
+!    Ecosystem - fluxes: ! JUN06
+      ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
+      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  ","D2_AFSTCN0  " &
+      ,"D2_AFSTCN3  ","D2_AFSTCN6  ","D2_O3DF     ","D2_O3WH     " &
 !
 !    JEJ Surface  pressure (for cross section):
       ,"D2_PS       " &
