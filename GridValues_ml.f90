@@ -111,7 +111,7 @@
 
   !/** internal parameters
 
-  logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
+  logical, private, parameter ::  DEBUG_GRID = .true.  ! for debugging
     character (len=100),public::projection
   integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
   integer, public :: Poles(2) !Poles(1)=1 if North pole is found, Poles(2)=1:SP
@@ -236,6 +236,7 @@ contains
 
    ! set latitude, longitude
 
+  !!! projection='Stereographic'  !JUN06 fix!!!!!
        call Position()
 
     if ( DEBUG_GRID ) then
@@ -244,6 +245,7 @@ contains
         print *, "DefGrid: i_glob",  i_glob(1), i_glob(MAXLIMAX+1)
         print *, "DefGrid:  min, max gl ",  minval(gl), maxval(gl)
         print *, "DefGrid:  min, max gb ",  minval(gb), maxval(gb)
+        print *, "DefGrid:  glob lat    ",  gb_glob(100,80)  ! ca. 60deg
         print *, "DefGrid:  gb - 1,1, MAXLIMAX, MAXLJMAX",  &
                               gb(1,1), gb(MAXLIMAX,MAXLJMAX)
     end if
@@ -308,6 +310,10 @@ contains
          if (rl >  glmax)   rl = rl - 360.0
          gl(i,j)=rl                     !     longitude
          gb(i,j)=rb                     !     latitude
+
+!JUN06 fix
+!!!          gb_glob( i_glob(i), j_glob(j) ) = gb(i,j)  ! FIX!!!!
+!----------------------------------------
 
        end do ! i
     end do ! j

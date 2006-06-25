@@ -336,6 +336,7 @@ endif
                      29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
    !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    if ( iyr_trend >= 2010   ) macehead_O3 = macehead_O3 + 3.0    !ds ASSUMPTION FOR IIASA SR runs
+   if ( iyr_trend >= 2010   ) macehead_O3 = macehead_O3 + 4.5    !ds ASSUMPTION FOR JUN06 SR runs
    !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
  else if( year == 1990) then 

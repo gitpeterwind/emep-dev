@@ -1,8 +1,7 @@
 
 module DryDep_ml
 
-  ! Module contains relevant parts of old readpar_mach and drydep.f
-  ! MACHO method. This is the drag-coefficient based approach of
+  ! Module started from ! the drag-coefficient based approach of
   ! BJ98:
   ! Berge, E. and  Jakobsen, H.A., A regional scale multi-layer model
   ! for the calculation of long-term transport and deposition of air
@@ -33,12 +32,11 @@ module DryDep_ml
 
  use Dates_ml,       only : daynumber
  use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
-                            forest, water, g_pot, g_temp,g_vpd, &
+                            forest, water, f_phen, &
                             crops,         & !rv1_7_4 for SAIadd
                             luflux_wanted, & ! true if fluxes wanted for landuse lu
-                            g_light,g_swp, &
                             STUBBLE,       & ! Small ht., 1 cm
-                            WHEAT,         & ! Used for Wheat Fst calculations, rv1_9_7
+                            IAM_BEECH, IAM_MEDOAK, IAM_WHEAT,  & ! JUN06
                             SAIadd,        &
                             SLAIlen,       & !rv1_7_4 for SAIadd
                             leaf_flux,   &! = flag-leaf sto. flux per m2
@@ -58,34 +56,28 @@ module DryDep_ml
                             ,zen,coszen,Idirect,Idiffuse & !ds mar2005
                             ,ustar_nwp, invL_nwp &  !ds apr2005
                             ,nwp_sea   & ! ds may05
-                            !ds may05 ,iclass   &
                             ,fl &
                             ,pzpbl&  !stDep
                             ,u_ref !horizontal wind 
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
-                                  current_date,     &  ! u7.lu
-                                  DEBUG_i, DEBUG_j, &
+                                  current_date, DEBUG_i, DEBUG_j, &
                                   ATWAIR, atwS, atwN, PPBINV,&
                                   KUPPER     !hf ddep
  use Par_ml,               only : me,NPROC,li0,li1,lj0,lj1
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
-!ds mar2005 use Radiation_ml,         only : zen         &! zenith angle (degrees)
-!ds mar2005                                 ,SolBio      &!u7.lu extras
-!ds mar2005                                 ,coszen
  
  use SubMet_ml,        only: Get_Submet
  use UKdep_ml,         only : Init_ukdep, ReadLanduse, SetLandUse  & 
                               ,NLUMAX &  ! Max. no countries per grid
                               ,landuse_ncodes, landuse_codes, landuse_data  &
                               ,landuse_SGS, landuse_EGS &
-                              ,landuse_LAI,    landuse_hveg , landuse_gpot
+                              ,landuse_LAI,    landuse_hveg , landuse_fphen
 
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
  use Setup_1dfields_ml,    only : xn_2d,amk   !ds may2005,Idrctt,Idfuse
  use GenSpec_shl_ml,        only :  NSPEC_SHL
-!stDep
  use Aero_DryDep_ml,        only : Aero_Rb
  use My_Aerosols_ml,        only : NSIZE
 
@@ -100,7 +92,7 @@ module DryDep_ml
   logical, private, parameter :: DEBUG_VG = .false.
   logical, private, parameter :: DEBUG_UK = .false.
   logical, private, parameter :: DEBUG_WET = .false.
-  logical, private, parameter :: DEBUG_FLUX = .false.
+  logical, private, parameter :: DEBUG_FLUX = .true.
   logical, private, parameter :: DEBUG_NO2 = .false.
   logical, private, parameter :: DEBUG_AERO = .false.
 
@@ -121,7 +113,6 @@ module DryDep_ml
 
      call Init_ukdep()                ! reads ukdep_biomass, etc.
      call Init_GasCoeff()             ! Sets Wesely coeffs.
-     !ds rv2_2_3 call ReadLanduse()
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  
@@ -150,7 +141,6 @@ module DryDep_ml
           Rb           & ! Quasi-boundary layer rsis.
          ,Rsur         & ! 
          ,Rsur_wet       ! rv1.4.8 - Rsur over wet surface
-!stDry
  real, dimension(NDRYDEP_TOT) :: &
           gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
          ,vg_fac       & ! Loss factor due to dry dep.
@@ -176,13 +166,10 @@ module DryDep_ml
  real convfac,  & ! rescaling to different units
       convfac2, & ! rescaling to different units
       lossfrac,  & !  If needed in My_DryDep - not used now.
-      !ds convfaco3,& ! rescaling to different units
       dtz         ! scaling factor for veff ( = dt/z, where dt=timestep and 
                   ! z = height of layer)
  logical :: is_wet  ! set true if surface_precip>0
- !ds may05 logical :: hirlam_sea   !ds .. set true if iclass == 0
 
-!stDep
  integer :: nae
  real, dimension(NSIZE):: aeRb, aeRbw , Vs
  real :: wstar, convec   
@@ -195,10 +182,8 @@ module DryDep_ml
    real :: z0, g_sto   &
          ,Ra_ref       & ! Ra from ref ht.  to z0
          ,Ra_3m          ! Ra from 3m over veg. to z0
-         !ds ,Idrctt, Idfuse   ! Direct-total and diffuse radiation
    real :: wetarea         ! Fraction of grid square assumed wet 
    real :: ustar_loc, vpd, invL, d, rh, Ts_C
-   !ds apr2005 real :: ustar_loc, vpd, invL, rho_surf, d, rh, Ts_C
    real :: lai, hveg        ! For convenience  
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
    real ::  LE   ! Latent Heat flux, into surface (opp. sign to fh!)
@@ -219,7 +204,7 @@ module DryDep_ml
    real    :: lu_cover(NLUMAX)
    real    :: lu_lai(NLUMAX)  ! TMP for debug
 !ICP:
-   real :: c_hveg, u_hveg ! Values at canopy top, for fluxes
+   real    :: c_hveg, u_hveg ! Values at canopy top, for fluxes
    real    :: c_hvegppb(NLANDUSE)
    real ::  Ra_diff       ! Ra from z_ref to hveg
    real :: gext_leaf, rc_leaf, rb_leaf, Fst
@@ -243,8 +228,7 @@ module DryDep_ml
 !     Dry deposion rates are specified in subroutine readpar
 !
 
-
-!hf FOR DEBUGGING s
+!hf FOR DEBUGGING
   imm      =    current_date%month            ! for debugging
   idd      =    current_date%day              ! for debugging
   ihh      =    current_date%hour             ! for debugging
@@ -342,13 +326,6 @@ module DryDep_ml
 
 
     if ( STO_FLUXES ) then
-       !dsDEC unit_flux(:) = 0.0
-       !dsDEC leaf_flux(:) = 0.0
-
-    ! --- ICP -----
-       !ppb_o3   =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * 4.0e-11  !Crude for now
-       !nmole_o3 =  xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID) * NMOLE_M3
-       !ds ppb_o3   =  xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID) * 4.0e-11  !Crude for now
 
     ! xn_2d is in #/cm3. x2_2d/amk gives mixing ratio, and 1.0e9*xn_2d/amk = ppb
 
@@ -371,12 +348,7 @@ module DryDep_ml
         Ts_C    = t2_nwp(i,j,1)-273.15
         lai     = landuse_LAI(i,j,ilu)
         hveg    = landuse_hveg(i,j,ilu)
-        g_pot   = landuse_gpot(i,j,ilu)
-
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        if( lu ==  WHEAT ) g_pot = 1.0  !!!ds New Mapping Manual IAM suggestion, March 2004
-        !ds rv1_9_28 if( lu ==  WHEAT ) g_pot = 0.8  !!! TFMM FOR CLe wheat
-        !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        f_phen   = landuse_fphen(i,j,ilu)
 
         if ( DEBUG_UK .and. water(lu) .and. hveg > 0.0 ) then
             print *, "HIGHW!!! h,lai,cov", i,j,ilu, hveg, lai,cover
@@ -414,10 +386,7 @@ module DryDep_ml
                      SAIadd(lu) = 1.5   ! Sensescent
             end if
         end if ! crops
-        SAIadd(WHEAT) = 1.5
-
-
-
+        SAIadd(IAM_WHEAT) = 1.5
 
 
 
@@ -425,7 +394,7 @@ module DryDep_ml
         ustar_loc = ustar_nwp(i,j)       ! First guess = NWP value
         invL      = invL_nwp(i,j)        ! First guess = NWP value
 
-        !ds - rv1.6.xx coast
+        !ds
         ! If HIRLAM thinks this is a sea-square, but we anyway have land,
         ! the surface temps will be wrong and so will stability gradients.
         ! As a simple subsistute, we assume neutral condiutions for these
@@ -462,14 +431,11 @@ module DryDep_ml
                    Ts_C,               & ! Ts_C
                    vpd,                & ! CHECK 
                    SWP(daynumber),     & ! NEEDS i,j later
-                   !dsps psurf(i,j),         &
                    ps(i,j,1),         &
                    is_wet,             &
                    coszen(i,j),        &  ! CHECK   
                    Idirect(i,j),       &  ! ds mar2005 
                    Idiffuse(i,j),      &  ! ds mar2005
-                   !ds mar2005Idfuse,             &  ! CHECK   
-                   !ds mar2005Idrctt,             &  ! CHECK   
                    snow(i,j),          &
                    so2nh3ratio,        & !SO2/NH3
                    g_sto,  &
@@ -604,17 +570,11 @@ module DryDep_ml
           c_hvegppb(lu)  = ppb_o3   * ( 1.0 - Ra_diff * Vg_ref(FLUX_CDEP) )
 
 
-          if ( DEBUG_FLUX .and. c_hveg <= 1.0e-19 ) then
-            write(6,*) "FLUX ZERO ", lu, nmole_o3, FLUX_CDEP, Vg_ref(FLUX_CDEP)
-          end if
-
           u_hveg  = u_ref(i,j) *  &
              ( log((hveg-d)/z0)  -PsiM((hveg-d)*invL) + PsiM(z0*invL)  )/ &
              ( log((z_ref-d)/z0) -PsiM((z_ref-d)*invL) + PsiM(z0*invL))
 
-          if ( DEBUG_FLUX .and. u_hveg <= 1.0e-19 ) then
-            call gc_abort(me,NPROC,"UHVEG!")
-          end if
+          if (DEBUG_FLUX.and.u_hveg <= 1.e-19)call gc_abort(me,NPROC,"UVEG!")
 
           gext_leaf = 1.0/2500.0
           rc_leaf = 1.0/(g_sto+ gext_leaf)
@@ -622,9 +582,11 @@ module DryDep_ml
           !McNaughton + van den Hurk:
           ! 2cm leaf for wheat - too large for trees?
 
-	if ( forest(lu)) then  !BEECH
-          rb_leaf = 1.3 * 150.0 * sqrt(0.04/u_hveg)  ! 2cm leaves? 
-	else ! WHEAT
+	if ( lu == IAM_BEECH ) then
+          rb_leaf = 1.3 * 150.0 * sqrt(0.07/u_hveg)  ! 10cm leaves? 
+	else if ( lu == IAM_MEDOAK ) then
+          rb_leaf = 1.3 * 150.0 * sqrt(0.035/u_hveg)  ! 5cm?? leaves? 
+	else if ( lu == IAM_WHEAT ) then
           rb_leaf = 1.3 * 150.0 * sqrt(0.02/u_hveg)  ! 2cm leaves? 
         endif
 
@@ -680,9 +642,6 @@ module DryDep_ml
         vg_fac (ncalc) = 1.0 - exp ( -Grid_Vg_ref(ncalc) * dtz ) 
 
     end do ! n
-
-      !hf - replaced xn_adv by xn_2d below, since we are now working within
-      !     an i,j loop
 
       do n = 1, NDRYDEP_ADV 
          nadv    = Dep(n)%adv
@@ -790,7 +749,6 @@ module DryDep_ml
 
        end do ! n
 
-!hf Not needed inside IXADV_ loop
 !ds - Could use DEBUG_i, DEBUG_j here also. I added DEBUG_VG
 !     since the compiler will ignor tis if-test and hence be faster
 !     unless DEBUG_VG is set.

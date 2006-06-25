@@ -1,10 +1,10 @@
 module UKdep_ml
 
 use Dates_ml,       only: daynumber, nydays
-use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
-                      ,WHEAT               & ! Index of wheat, hard-coded :-(
+use DepVariables_ml,only: NLANDUSE         &  ! No. UK land-classes
                       ,luname              &
                       ,crops, bulk, water  & ! logical variables
+                      ,IAM_MEDOAK          & !
                       ,LU_WATER, LU_ICE    & ! Pb210
                       ,forest,conif_forest & !    "      "
                       ,vegetation, urban   & !
@@ -13,17 +13,19 @@ use DepVariables_ml,only: NLANDUSE             &  ! No. UK land-classes
                       ,SAIadd              & ! surface-area index, rv1.4.6
                       ,hveg_max, b_inc, albedo, NH4_pl, SGS50, DSGS   &
                       ,EGS50, DEGS, LAImin, LAImax, SLAIlen, ELAIlen  &
-                      ,g_pot_min , Sg_potlen , Eg_potlen     &
-                      ,g_max     , g_min     , g_lightfac    &
-                      ,g_temp_min, g_temp_opt, g_temp_max  &
+                      ,f_phen_Slen , f_phen_Elen     &
+                      ,f_phen_a, f_phen_b, f_phen_c, f_phen_d &
+                      ,g_max     , f_min     , f_lightfac    &
+                      ,f_temp_min, f_temp_opt, f_temp_max  &
                       ,RgsS      , RgsO        &
                       ,VPD_max   , VPD_min     &
                       ,SWP_max   , PWP       , rootdepth 
 use Functions_ml,   only: GridAllocate, Polygon
-use GridValues_ml,  only: gb_glob, gb, i_glob, j_glob  ! latitude, coordinates
+use GridValues_ml,  only: gb_glob, gb, i_glob, j_glob, & ! latitude, coordinates
+                            debug_proc, debug_li, debug_lj   !JUN06 
 use Io_ml,          only: open_file, ios, IO_FORES
 use ModelConstants_ml,  only : current_date, DEBUG_i, DEBUG_j, NNLANDUSE
-use UKsetup_ml,     only: ukdep_init, get_growing_season
+use UKsetup_ml,     only: ukdep_init, get_growing_season, fPhenology
 use Par_ml,         only: GIMAX, GJMAX, ISMBEG, JSMBEG, &
                           li0, lj0, IILARDOM, JJLARDOM, &
                           li1, lj1, MAXLIMAX, MAXLJMAX, &
@@ -37,9 +39,9 @@ private
   public :: Init_ukdep
   public :: ReadLanduse
   public :: SetLanduse
-  private :: Conif_Gpot
+  private :: Conif_fphen
 
- integer, public, parameter :: NLUMAX = 15 ! max no. landuse per grid
+ integer, public, parameter :: NLUMAX = 17 ! max no. landuse per grid
 
  integer,public,save,dimension(MAXLIMAX,MAXLJMAX)        :: landuse_ncodes 
  integer,public,save,dimension(MAXLIMAX,MAXLJMAX,NLUMAX) :: landuse_codes  
@@ -49,15 +51,19 @@ private
           landuse_SGS   &    ! Start of growing season (days)
          ,landuse_EGS        ! End of growing season (days)
 
+ integer,private,save,dimension(MAXLIMAX,MAXLJMAX,NLUMAX) :: &
+          Astart        &    ! JUN06 
+         ,Aend               ! JUN06
+
  real,   public,save,dimension(MAXLIMAX,MAXLJMAX,NLUMAX) :: &
           landuse_LAI   &    ! Leaf-area-index (m2/m2)
          ,landuse_hveg  &    ! Max. height of veg.
-         ,landuse_gpot        ! Potential (age) factor for Jarvis-calc
+         ,landuse_fphen      ! Potential (age) factor for Jarvis-calc
 
  !ds Pb210: Emissions from water (v.small) and from ice zero.
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
 
- logical, private, parameter :: DEBUG_DEP = .false.
+ logical, private, parameter :: DEBUG_DEP = .true.
  character(len=30), private :: errmsg
 
 
@@ -80,38 +86,6 @@ contains
            call gc_abort(me,NPROC,errmsg)
         end if
 
-!ds rv2_2_3    call gc_rbcast(101,NLANDUSE,0,NPROC,gc_info,hveg_max)
-!ds rv2_2_3    call gc_rbcast(102,NLANDUSE,0,NPROC,gc_info,b_inc)
-!ds rv2_2_3    call gc_rbcast(103,NLANDUSE,0,NPROC,gc_info,albedo)
-!ds rv2_2_3    call gc_rbcast(104,NLANDUSE,0,NPROC,gc_info,NH4_pl)
-!ds rv2_2_3    call gc_rbcast(105,NLANDUSE,0,NPROC,gc_info,SGS50)
-!ds rv2_2_3    call gc_rbcast(106,NLANDUSE,0,NPROC,gc_info,DSGS)
-!ds rv2_2_3    call gc_rbcast(107,NLANDUSE,0,NPROC,gc_info,EGS50)
-!ds rv2_2_3    call gc_rbcast(108,NLANDUSE,0,NPROC,gc_info,DEGS)
-!ds rv2_2_3    call gc_rbcast(109,NLANDUSE,0,NPROC,gc_info,LAImin)
-!ds rv2_2_3    call gc_rbcast(110,NLANDUSE,0,NPROC,gc_info,LAImax)
-!ds rv2_2_3    call gc_rbcast(111,NLANDUSE,0,NPROC,gc_info,SLAIlen)
-!ds rv2_2_3    call gc_rbcast(112,NLANDUSE,0,NPROC,gc_info,ELAIlen)
-!ds rv2_2_3
-!ds rv2_2_3                      
-!ds rv2_2_3    call gc_rbcast(120,NLANDUSE,0,NPROC,gc_info,g_pot_min)
-!ds rv2_2_3    call gc_rbcast(121,NLANDUSE,0,NPROC,gc_info, Sg_potlen) 
-!ds rv2_2_3    call gc_rbcast(122,NLANDUSE,0,NPROC,gc_info, Eg_potlen)
-!ds rv2_2_3    call gc_rbcast(123,NLANDUSE,0,NPROC,gc_info,g_max)    
-!ds rv2_2_3    call gc_rbcast(124,NLANDUSE,0,NPROC,gc_info, g_min)    
-!ds rv2_2_3    call gc_rbcast(125,NLANDUSE,0,NPROC,gc_info, g_lightfac)
-!ds rv2_2_3    call gc_rbcast(126,NLANDUSE,0,NPROC,gc_info,g_temp_min)
-!ds rv2_2_3    call gc_rbcast(127,NLANDUSE,0,NPROC,gc_info, g_temp_opt)
-!ds rv2_2_3    call gc_rbcast(128,NLANDUSE,0,NPROC,gc_info, g_temp_max)
-!ds rv2_2_3                      
-!ds rv2_2_3    call gc_rbcast(131,NLANDUSE,0,NPROC,gc_info,RgsS)
-!ds rv2_2_3    call gc_rbcast(132,NLANDUSE,0,NPROC,gc_info, RgsO)
-!ds rv2_2_3    call gc_rbcast(133,NLANDUSE,0,NPROC,gc_info,VPD_max)
-!ds rv2_2_3    call gc_rbcast(134,NLANDUSE,0,NPROC,gc_info, VPD_min)
-!ds rv2_2_3    call gc_rbcast(135,NLANDUSE,0,NPROC,gc_info,SWP_max)   
-!ds rv2_2_3    call gc_rbcast(136,NLANDUSE,0,NPROC,gc_info, PWP)       
-!ds rv2_2_3    call gc_rbcast(137,NLANDUSE,0,NPROC,gc_info, rootdepth) 
-
 end subroutine Init_ukdep
  !--------------------------------------------------------------------------
 subroutine ReadLanduse()
@@ -127,8 +101,8 @@ subroutine ReadLanduse()
    integer,parameter :: BIG = IILARDOM*JJLARDOM*NNLANDUSE
    real, dimension(NNLANDUSE) :: tmp
 
-   integer, dimension(NNLANDUSE) :: rivm2uk  ! maps RIVM landuse to
-         ! uk. Need to set perm crops to arable, other to moorland, etc.
+   !JUN06 integer, dimension(NNLANDUSE) :: rivm2uk  ! maps RIVM landuse to
+   !JUN06       ! uk. Need to set perm crops to arable, other to moorland, etc.
    integer :: uklu    ! UK (SEI) landuse code
    integer :: i_in, j_in ! for debug
     
@@ -136,6 +110,7 @@ subroutine ReadLanduse()
    logical :: debug_flag
 
    if ( DEBUG_DEP ) write(*,*) "UKDEP Starting ReadLandUse, me ",me
+   if ( NLANDUSE /= NNLANDUSE ) call gc_abort(me,NPROC,"NNLANDuse error")  ! Why need both?
 
    maxlufound = 0   
    if ( me == 0 ) then
@@ -150,26 +125,29 @@ subroutine ReadLanduse()
        g_ncodes(:,:)   = 0       !/**  initialise  **/
        g_data  (:,:,:) = 0.0     !/**  initialise  **/
 
-      call open_file(IO_FORES,"r","landuse.dat",needed=.true.,skip=1)
+      call open_file(IO_FORES,"r","landuse.JUN06",needed=.true.,skip=1)
       if ( ios /= 0 ) call gc_abort(me,NPROC,"ios error: landuse") 
 
 
       do n = 1, BIG
          read(IO_FORES,*,iostat=ios) i,j, ( tmp(lu), lu=1,NNLANDUSE)
          if ( ios /= 0 ) exit   ! likely end of file
-         if ( DEBUG_DEP ) debug_flag = ( i == DEBUG_i .and. j == DEBUG_j )
+         if ( DEBUG_DEP ) debug_flag = ( i == DEBUG_i  .and. j == DEBUG_j  )
 
          i_in   = i ! for debug
          j_in   = j
 
-         if ( DEBUG_DEP .and. debug_flag ) then
-             write(*,*) "UKDEP-ukluS", gb_glob(i,j), rivm2uk(2)
-         endif
-      
          i = i - ISMBEG + 1
          j = j - JSMBEG + 1
          if ( i >= 1 .and. i <= GIMAX .and. &
               j >= 1 .and. j <= GJMAX  ) then
+          if ( debug_flag ) then
+            write(*,*) "MEDOAK", gb_glob(i,j), IAM_MEDOAK, tmp(IAM_MEDOAK) 
+          endif
+             if ( gb_glob(i,j) > 50.0 ) tmp(IAM_MEDOAK) = 0.0 !JUN06 
+          if ( debug_flag ) then
+            write(*,*) "MEDOAK", gb_glob(i,j), IAM_MEDOAK, tmp(IAM_MEDOAK) 
+          endif
              do lu = 1, NNLANDUSE
                  if ( tmp(lu) > 0.0 ) then
 
@@ -218,24 +196,27 @@ subroutine ReadLanduse()
   subroutine  SetLandUse()
     integer :: i,j,ilu,lu, nlu, n ! indices
     logical, save :: my_first_call = .true.
+    logical :: debug_flag = .true.
     real :: hveg
 
-    if ( DEBUG_DEP ) write(*,*) "UKDEP SetLandUse, me, day ", me, daynumber
+    if ( DEBUG_DEP .and. debug_proc ) write(*,*) "UKDEP SetLandUse, me, day ", me, daynumber
 
     if ( my_first_call ) then
-        if ( DEBUG_DEP ) write(*,*) "UKDEP FIrst Start SetLandUse, me ", me
+        if ( DEBUG_DEP .and. debug_proc ) write(*,*) "UKDEP FIrst Start SetLandUse, me ", me
 
 
-       !u7.4vf crops are distinguished since their height varies
-       !       over the growing season. Note changed rule below:
+       ! crops are distinguished since their height varies
+       ! over the growing season. Note changed rule below:
 
+        SAIadd = 0.0
+        luflux_wanted = .false.
         do lu = 1, NLANDUSE
          crops(lu) = ( hveg_max(lu) < 5 .and. SGS50(lu) > 1 )
          bulk (lu) = ( LAImax(lu)   < 0.0 )   ! Set neg. in ukdep_biomass.dat
          water(lu) = ( hveg_max(lu) < 0.0 )   ! Set neg. in ukdep_biomass.dat
          forest(lu) = ( hveg_max(lu) > 4.99 .and. LAImax(lu) > 0.1 )
-         conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 )  !Bug?
-                                                    ! Includes Med. broadleaf!
+         conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 .and. &
+              index(luname(lu),"broadleaf") == 0 )  !JUN06 fixed Bug?
          urban (lu) = ( hveg_max(lu) > 5.0 .and. LAImax(lu) < 0.0 )
          vegetation (lu) = ( hveg_max(lu) > 0.0 .and. .not.urban(lu) )
 
@@ -244,30 +225,22 @@ subroutine ReadLanduse()
 
          hveg_max(lu) = max( hveg_max(lu), 0.0)
          LAImax(lu)   = max( LAImax(lu),   0.0)
+         if( forest(lu) ) SAIadd(lu) = 1.0   ! Addition to LAI to get surface area
 
-           if ( DEBUG_DEP .and. me == 0 ) write(*,*) "UKDEP_VEG", lu, &
-                           crops(lu), bulk(lu), forest(lu), conif_forest(lu)
+         if( lu==IAM_MEDOAK)  conif_forest(lu) = .false.  !JUN06 
+         if ( index(luname(lu),"IAM_") > 0  ) luflux_wanted(lu)=.true.   ! JUN06
+         if ( DEBUG_DEP .and. debug_proc ) write(*,*) "UKDEP_VEG", lu, &
+           crops(lu), bulk(lu), forest(lu), conif_forest(lu), luflux_wanted(lu)
         end do
 
-      !/ 2./ -- Calculate additional surface area for trees
-
-      SAIadd = 0.0
-      where ( forest )
-        SAIadd = 1.0     ! Addition to LAI to get surface area
-      end where
 
      ! ICP - define whuich landuse we might be interested in stomtal
      ! fluxes for:   (inly used if STO_FLUXES set in My_DryDep)
+      !where ( forest .and. .not. conif_forest ) !ds_sep27  .or. crops )
+      !JUN06 luflux_wanted(WHEAT) = .true.
 
-      luflux_wanted = .false.
-      where ( forest .and. .not. conif_forest ) !ds_sep27  .or. crops )
-        luflux_wanted = .true.
-      end where
-
-      luflux_wanted(WHEAT) = .true.
-
-      !/ 3./ -- Calculate growing seasons where needed
-      !           and water_fraction
+      !/ 2./ -- Calculate growing seasons where needed and water_fraction
+      !          (for Rn emissions)
 
         water_fraction(:,:) = 0.0         !ds Pb210 
         ice_fraction(:,:)   = 0.0         !ds Pb210 
@@ -287,6 +260,18 @@ subroutine ReadLanduse()
                    landuse_EGS(i,j,ilu) =  EGS50(lu)
                 end if
 
+             !JUN06
+             if ( index(luname(lu),"IAM_MEDOAK") > 0 ) then
+                Astart(i,j,ilu) = 80
+                Aend(i,j,ilu)   = 320
+             else if ( forest(lu) .and. .not. conif_forest(lu) ) then
+                Astart(i,j,ilu) = landuse_SGS(i,j,ilu)
+                Aend(i,j,ilu)   = landuse_EGS(i,j,ilu) - 10.0   !! End of discolaration  
+             else ! conif_forest(lu)
+                Astart(i,j,ilu) = landuse_SGS(i,j,ilu)
+                Aend(i,j,ilu)   = landuse_EGS(i,j,ilu)  
+             end if
+
                !/ for landuse classes with bulk-resistances, we only
                !  need to specify height once. Dummy values are assigned
                !  to LAI and gpot:
@@ -294,7 +279,7 @@ subroutine ReadLanduse()
                 if ( bulk(lu) ) then
                     landuse_hveg(i,j,ilu) =  hveg_max(lu)
                     landuse_LAI(i,j,ilu)  =  0.0          
-                    landuse_gpot(i,j,ilu) =  0.0          
+                    landuse_fphen(i,j,ilu) =  0.0          
                  end if
 
                !ds Pb210 : water fraction
@@ -302,10 +287,11 @@ subroutine ReadLanduse()
                 if ( lu == LU_WATER ) water_fraction(i,j) = landuse_data(i,j,ilu)
                 if ( lu == LU_ICE   )   ice_fraction(i,j) = landuse_data(i,j,ilu)
 
-                if ( DEBUG_DEP .and. &
-                    i_glob(i) == DEBUG_i .and. j_glob(j) == DEBUG_J ) &
+                if ( DEBUG_DEP .and. debug_proc .and. &
+                    i == debug_li .and. j == debug_lj ) then
                       write(*,*) "DEBUG WATER ", ilu, lu, &
                           water_fraction(i,j), ice_fraction(i,j)
+                end if
 
             end do ! ilu
           end do ! j
@@ -317,30 +303,40 @@ subroutine ReadLanduse()
      do i = li0, li1
        do j = lj0, lj1
 
+          debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
+          if ( DEBUG_DEP .and. debug_flag ) then
+                 write(*,"(a12,i3,i4)") "LANDUSE N Day? ", landuse_ncodes(i,j), daynumber
+          end if
           do ilu= 1, landuse_ncodes(i,j)
              lu      = landuse_codes(i,j,ilu)
-             if ( lu <= 0 ) call gc_abort(me,NPROC,"SetLandUse lu<0")
+             if ( lu <= 0 .or. lu > NLANDUSE ) &
+                    call gc_abort(me,NPROC,"SetLandUse lu<0")
 
 
-             if ( bulk(lu) ) cycle 
-                !rv1.2 else ! Growing veg present
+             if ( bulk(lu) ) cycle    !else Growing veg present:
 
              landuse_LAI(i,j,ilu) = Polygon(daynumber, &
                                       0.0, LAImin(lu), LAImax(lu),&
                                       landuse_SGS(i,j,ilu), SLAIlen(lu), &
                                       landuse_EGS(i,j,ilu), ELAIlen(lu))
 
-             landuse_gpot(i,j,ilu) =  Polygon(daynumber,&
-                                       0.0,g_pot_min(lu),1.0,&
-                                       landuse_SGS(i,j,ilu), Sg_potlen(lu), &
-                                       landuse_EGS(i,j,ilu), Eg_potlen(lu))
+             landuse_fphen(i,j,ilu) = fPhenology( debug_flag, daynumber, &
+                          f_phen_a(lu), f_phen_b(lu), f_phen_c(lu),&
+                            f_phen_d(lu), f_phen_Slen(lu), f_phen_Elen(lu), &
+                              landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu) , Astart(i,j,ilu), Aend(i,j,ilu))
 
 
+            if ( DEBUG_DEP .and. debug_flag ) then
+                   write(*,"(a12,i3,i4,f7.2,2f8.3,4i4)") "LANDPhen0 ", lu,  &
+                     daynumber, -99.9,  &
+                      landuse_LAI(i,j,ilu), landuse_fphen(i,j,ilu), & 
+                      landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), Astart(i,j,ilu), Aend(i,j,ilu)
+             end if
 
           ! For coniferous forest we need to correct for old needles.
 
              if ( conif_forest(lu) )  &
-                   call Conif_gpot(current_date%month,landuse_gpot(i,j,ilu))
+                   call Conif_fphen(current_date%month,landuse_fphen(i,j,ilu))
 
 
 
@@ -358,15 +354,19 @@ subroutine ReadLanduse()
                 else if ( daynumber < &
                           (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
                      hveg=  hveg_max(lu) * landuse_LAI(i,j,ilu)/LAImax(lu)
-                  !ICP - crude....
-                  !ds   SAIadd(lu) = ( 5.0/3.5 - 1.0) * landuse_LAI(i,j,ilu)
                 else if ( daynumber < landuse_EGS(i,j,lu) ) then
                      hveg = hveg_max(lu)                  ! not needed?
-                   !ds  SAIadd(lu) = 1.5   ! Sensescent
                 end if
              end if ! crops
 
              landuse_hveg(i,j,ilu) =  hveg
+            if ( DEBUG_DEP .and. debug_flag ) then
+                   write(*,"(a12,i3,i4,f7.2,2f8.3,4i4)") "LANDPhen ", lu, daynumber, &
+                     hveg, landuse_LAI(i,j,ilu), landuse_fphen(i,j,ilu), &
+                     landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), &
+                     Astart(i,j,ilu), Aend(i,j,ilu)
+            end if
+                   
 
          end do ! lu
        end do ! j
@@ -376,7 +376,7 @@ subroutine ReadLanduse()
   end subroutine  SetLandUse
   !-------------------------------------------------------------------------
 ! =====================================================================
-    subroutine Conif_gpot(imm,g_pot)
+    subroutine Conif_fphen(imm,f_phen)
 ! =====================================================================
 !   modifies g_pot (g_age) for effect of older needles, with the simple
 !   assumption that g_age(old) = 0.5.
@@ -384,7 +384,7 @@ subroutine ReadLanduse()
    !/ arguments
 
     integer, intent(in) :: imm    ! month
-    real,   intent(inout) :: g_pot   ! Requires initial input of g_pot 
+    real,   intent(inout) :: f_phen  ! Requires initial input of f_phen 
                                      ! (once obtained as output from g_stomatal)
 
    !/ Some parameters:
@@ -393,19 +393,19 @@ subroutine ReadLanduse()
                    0.53, 0.535, 0.54, 0.545, 0.1, 0.15,  &
                    0.27,  0.36, 0.42,  0.48, 0.5,  0.5  /)
 
-    real, parameter :: G_POTOLD = 0.5  ! value of g_pot for old needles
+    real, parameter :: F_OLD = 0.5  ! value of f_phen for old needles
 
 
 
 !needles from current year assumed to have g_pot as evaluated above;
-!needles from previous years assumed to have g_pot of 0.5
-!The sum of the g_pot's for the current year is added to the sum of the
-!g_pot's for previous years to obtain the overall g_pot for the landuse 
+!needles from previous years assumed to have f_phen of 0.5
+!The sum of the f_phen's for the current year is added to the sum of the
+!f_phen's for previous years to obtain the overall f_phen for the landuse 
 !category temp. conif. forests.
 
-    g_pot = Pc(imm)*g_pot + (1.0-Pc(imm))*G_POTOLD
+    f_phen = Pc(imm)*f_phen + (1.0-Pc(imm))*F_OLD
 
-  end subroutine Conif_gpot
+  end subroutine Conif_fphen
 ! =====================================================================
 
                         

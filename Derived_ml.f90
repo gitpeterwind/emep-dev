@@ -114,7 +114,7 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 66  & ! Number of 2D derived fields defined
+      ,NDEF_DERIV_2D = 68  & ! Number of 2D derived fields defined
       ,NDEF_DERIV_3D = 17   ! Number of 3D derived fields defined
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
@@ -344,16 +344,23 @@ def_2d = (/&
 !      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
 !
 !Havn't worried about rho so far... does it matter?
-!ds rv1_6_15 redef:
-,Deriv( 850, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTDF00","nmol/m2/s")&
-,Deriv( 851, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTDF08","nmol/m2/s")&
-,Deriv( 852, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTDF16","nmol/m2/s")&
-,Deriv( 853, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH00","nmol/m2/s")&
-,Deriv( 854, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH20","nmol/m2/s")&
-,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH30","nmol/m2/s")& !New IAM version
-,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH40","nmol/m2/s")&
-,Deriv( 857, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_FSTWH60","nmol/m2/s")&
-
+,Deriv( 850, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","nmol/m2/s")&
+,Deriv( 851, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","nmol/m2/s")&
+,Deriv( 852, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","nmol/m2/s")&
+,Deriv( 853, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","nmol/m2/s")&
+!
+,Deriv( 854, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","nmol/m2/s")&
+,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","nmol/m2/s")&
+,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","nmol/m2/s")&
+!
+,Deriv( 857, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCN0","nmol/m2/s")&
+,Deriv( 858, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCN3","nmol/m2/s")&
+,Deriv( 859, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCN6","nmol/m2/s")&
+!
+!JUN06    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
+!JUN06    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
+!JUN06    D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6,&
+!
 !      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
 ,Deriv( 860, "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")&
 ,Deriv( 861, "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")&

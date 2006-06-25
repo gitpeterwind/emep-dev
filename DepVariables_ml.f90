@@ -5,43 +5,43 @@ module DepVariables_ml
 ! deposition module based upon Emberson et al. (EMEP Rep. 6/01) and
 ! Wesely et al. 
 
-! So far, 17 land-use classes are defined. The classes temperate orchard and 
+! So far, 19 land-use classes are defined. The classes temperate orchard and 
 ! Mediterranean orchard may be added later. 
 
 implicit none
 !FDS private
 
-integer, public, parameter :: NLANDUSE =   17 !number of land-use classes
-integer, public, parameter :: LU_WATER =   15 !  Sea/lakes
-integer, public, parameter :: LU_ICE   =   16 !  Ice  ! Pb210 - temporary
+integer, public, parameter :: NLANDUSE =   19 !number of land-use classes
+integer, public, parameter :: LU_WATER =   14 !  Sea/lakes
+integer, public, parameter :: LU_ICE   =   15 !  Ice  ! Pb210 - temporary
 real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
 
 !/-- assign UK 17 to categories - used in dry deposition outputs.
-! Note that wheat is a "fake" crop, so this is not added in.
+! Note that IAM_ stuff are "fakes", so not added in.
 ! See ~mifads/Unify/Data/Landuse.list for full list
 
 integer, public, parameter,dimension(2) :: ECO_CONIF_FOREST =  (/ 1, 3 /)
 integer, public, parameter,dimension(2) :: ECO_DECID_FOREST =  (/ 2, 4 /)
 integer, public, parameter,dimension(3) :: ECO_CROP =  (/ 5, 6,7 /) 
-!ds integer, public, parameter,dimension(4) :: ECO_SEMINAT =  (/ 8, 10, 11, 13 /)
 !ds After discussions with Max Posch (CCE), we define seminat as basically
 !   everything except awater, forest and crops
-!   8=moorland, grass=10, medscrub=11,wetlands=12,tundra=13
-integer, public, parameter,dimension(5) :: ECO_SEMINAT =  (/ 8, 10, 11, 12, 13 /)
-integer, public, parameter,dimension(1) :: ECO_WETLAND =  (/ 12 /)
-integer, public, parameter,dimension(1) :: ECO_WATER   =  (/ 15 /)
-integer, public, parameter  :: WHEAT =  9  !ds, rv1_9_3
-integer, public, parameter  :: BEECH =  2  !ds, rv1_9_15
+!   8=moorland, grass=9, medscrub=10,wetlands=11,tundra=12
+integer, public, parameter,dimension(5) :: ECO_SEMINAT =  (/ 8, 9, 10, 11, 12 /)
+integer, public, parameter,dimension(1) :: ECO_WETLAND =  (/ 11 /)
+integer, public, parameter,dimension(1) :: ECO_WATER   =  (/ LU_WATER /)
+integer, public, parameter  :: IAM_WHEAT =  17  !ds, JUN06
+integer, public, parameter  :: IAM_BEECH =  18  !ds, JUN06
+integer, public, parameter  :: IAM_MEDOAK =  19  !ds, JUN06
 
 
 ! g_sto factors in UK dep method:
 
 real, public, save :: &
-        g_pot      &                  ! stomatal conductance age factor 
-       ,g_temp     &                  ! stomatal conductance temperature factor
-       ,g_vpd      &                  ! stomatal conductance vpd factor
-       ,g_light    &                  ! stomatal conductance light factor
-       ,g_swp                         ! stomatal conductance soil water factor
+        f_phen     &                  ! stomatal conductance age factor 
+       ,f_temp     &                  ! stomatal conductance temperature factor
+       ,f_vpd      &                  ! stomatal conductance vpd factor
+       ,f_light    &                  ! stomatal conductance light factor
+       ,f_swp                         ! stomatal conductance soil water factor
 
  real, public, save  :: Rinc      ! in-canopy resistance (s/m)
  real, public, save  :: Rgs       ! ground surface resistance, any gas
@@ -62,8 +62,8 @@ real, public, save :: &
 ! G_ext=LAI/R_ext. In many studies, it has been assumed 
 ! that G_ext should be low, particularly relative to stomatal conductance g_s.
 ! Results from a variety of experiments, however, have made the above 
-! estimates  Rext0 and RextS plausible.  The above equation for G_ext has been
-! designed on the basis of these experimental results. 
+! estimates of Rext0 and RextS plausible.  The above equation for G_ext has 
+! been designed on the basis of these experimental results. 
 
 ! Notice also that given the equations for the canopy resistance R_sur and the 
 ! deposition velocity V_g, V_g>=LAI/R_ext. The value of G_ext can therefore be
@@ -82,13 +82,9 @@ real, public, save :: &
              ,vegetation     &! Assumed when hveg > 5 m and not urban
              ,urban           ! Assumed when hveg > 5 m && LAI < 0.0
 
-!dep1.5.2
-
   real, public,  dimension(NLANDUSE), save :: &
        SAIadd                  ! Additional surface area for bark, twigs
 
-
-!rv1.2_got
   real, public,  dimension(NLANDUSE), save :: &
       lai_flux,         & ! Fluxes to total LAI
       unit_flux,        & ! Fluxes per m2 of leaf area
@@ -108,7 +104,7 @@ real, public, save :: &
           hveg_max    & ! max height of vegetation
        ,  b_inc       & ! RIVM factor for Rinc. If b_inc =0 no canopy mod'ng
        ,  albedo      & ! Albedo, 0-1
-       ,  NH4_pl      & ! **sc: landuse dependent variable ranging over 
+       ,  NH4_pl      & ! landuse dependent variable ranging over 
                         ! intercellular ammonium concentrations
        ,  SGS50       & ! Start of growing season (days) at 50 deg. N 
        ,  DSGS        & ! d(SGS)/d(Lat). 
@@ -117,34 +113,37 @@ real, public, save :: &
        ,  LAImin      & ! min. value of LAI
        ,  LAImax        ! max. value LAI
 
-!.. common variables read from ukdep_gfac1.dat   ...........................
+!.. common variables read from JUN06_gfac1.dat   ...........................
 
    integer, public, save, dimension(NLANDUSE) :: &
-          SGS              & ! Start of growing season (days)
-       ,  EGS              & ! End   of growing season (days)
-       ,  Sg_potlen        & ! length in days from g_pot=g_min to g_pot=1
-       ,  Eg_potlen        & ! length in days from g_pot=1 to g_pot=g_potmin
-       ,  SLAIlen          & ! days from LAImin to LAImax at start of season
-       ,  ELAIlen            ! days from LAImax to LAImin at end of season
+     !JUN06     SGS              & ! Start of growing season (days)
+     !JUN06  ,  EGS              & ! End   of growing season (days)
+         SLAIlen          & ! days from LAImin to LAImax at start of season
+       , ELAIlen            ! days from LAImax to LAImin at end of season
 
    real, public, save, dimension(NLANDUSE) :: &
-          g_pot_min         & ! min. value of g_pot
+          f_phen_a         & ! min. value of f_phen
+         ,f_phen_b         & ! min. value of f_phen
+         ,f_phen_c         & ! min. value of f_phen
+         ,f_phen_d         & ! min. value of f_phen
+         ,f_phen_Slen      & ! Length of Startup  (days)
+         ,f_phen_Elen      & ! Length of End period (days)
        ,  g_max            & ! max. value conductance g_s
-       ,  g_min            & ! min. value Conductance g_s
-       ,  g_lightfac       & ! light coefficient 
-       ,  g_temp_min       & ! temperature when g_temp starts
-       ,  g_temp_opt       & ! temperature when g_temp max.   
-       ,  g_temp_max         ! temperature when g_temp stops  
+       ,  f_min            & ! min. value Conductance g_s
+       ,  f_lightfac       & ! light coefficient 
+       ,  f_temp_min       & ! temperature when g_temp starts
+       ,  f_temp_opt       & ! temperature when g_temp max.   
+       ,  f_temp_max         ! temperature when g_temp stops  
 
-!.. .......and from ukdep_gfac2.dat   ........................................
+!.. .......and from JUN06_gfac2.dat   ........................................
 
    real, public, save, dimension(NLANDUSE) :: &
           RgsS           & ! ground surface resistance, Sulphur
        ,  RgsO           & ! ground surface resistance, Ozone   
-       ,  VPD_max        & ! threshold VPD when relative g = g_min
-       ,  VPD_min        & ! threshold VPD when relative g = 1
-       ,  SWP_max        & ! threshold SWP when relative g = 1
-       ,  PWP            & ! threshold SWP when relative g = g_min
+       ,  VPD_max        & ! threshold VPD when relative f = f_min
+       ,  VPD_min        & ! threshold VPD when relative f = 1
+       ,  SWP_max        & ! threshold SWP when relative f = 1
+       ,  PWP            & ! threshold SWP when relative f = f_min
                            ! and assumed equal to permanent wilting point
        ,  rootdepth        ! root depth (mm)
 

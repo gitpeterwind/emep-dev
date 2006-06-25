@@ -2,13 +2,14 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=16
+#PBS -lnodes=90
 # wall time limit of run
-#PBS -lwalltime=0:10:00
+#PBS -lwalltime=7:10:00
 # lpmeme=memory to reserve per processor (max 4GB per node)
 #PBS -lpmem=200MB
 # account for billing
 #PBS -A nn2890k
+my $MAKE = "gmake --makefile=Makefile_snow";
 
 #Earlier Had P B S -lnodes=1:ppn=4 
 ######################################################################
@@ -109,7 +110,7 @@ die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
 
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_4_6";
+    $testv       = "IAM";
     # BC Logan for O3
     
 } elsif ( $ACID ) {
@@ -126,8 +127,9 @@ $DATA_LOCAL  = "/home/mifapw/emep_common/Data/EMEP";
 
 #User directories
 $ProgDir     = "/home/$USER/Unify/Unimod.$testv";   # input of source-code
-$WORKDIR     = "/home/$USER/work";    # working and result directory
+$WORKDIR     = "/home/$USER/work/FluxRuns/Unimod.$testv.$year";    # working and result directory
 $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
+$JunDataDir  = "/home/mifads/Unify/JUN06";
 
 #ds check: and change
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
@@ -136,7 +138,7 @@ $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
 
 $Split       = "BASE_MAR2004" ;       
 $NOxSplit       = "2000" ;               # Have CLE2020, MFR2020, 2000       
-$Africa      = "$DATA_LOCAL/Africa";        # Emissions for Africa, y=1..11
+$Africa      = "$DataDir/Africa";        # Emissions for Africa, y=1..11
 
 $timeseries  = "$DataDir";
 
@@ -177,8 +179,8 @@ $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
 # just before execution - so code can be run interactivel.
 
-$NDX   = 4;           # Processors in x-direction
-$NDY   = 4;           # Processors in y-direction
+$NDX   = 9;           # Processors in x-direction
+$NDY   = 10;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
 
@@ -186,12 +188,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  1;       # last month
+$mm2   =  12;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 2;       # for testing, simply reset here
+#$NTERM = 8;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -388,8 +390,9 @@ system "ls -lt | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-system "gmake depend" ;
-system "gmake" ;
+#system "gmake depend" ;
+#JUN06 system "gmake" ;
+system "$MAKE" ;
 
 die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
 open(MAKELOG,">Make.log");    # Over-write Make.log
@@ -438,6 +441,7 @@ foreach $scenario ( @runs ) {
 		last;
 	    }
 	}
+	    
 	
 	foreach $t ('snowc', 'natso2') {
 	    $old = sprintf "$DATA_LOCAL/%s%02d.dat.170", $t, $mm;
@@ -452,7 +456,8 @@ foreach $scenario ( @runs ) {
 	
     } #for ($nnn = 1
     
-	    
+
+#BUG FIXED MAY-JUNE 2006 - moved outside mm loop
 #BUG - FIX FOR 2000 NEEDED
 	if ( $NTERM > 100 ) {  # Cruide check that we aren't testing with NTERM=5
 	    if ( $mm2 == 12 ) {
@@ -470,7 +475,6 @@ foreach $scenario ( @runs ) {
 	    }
 	} #NTERM
 	
-
 
 # Emissions. This part is still a mixture, witk the old ko emission files
 # left in for now. However, in future the only difference between
@@ -504,11 +508,11 @@ foreach $scenario ( @runs ) {
 
   #rv2_4_6  New, 30/5/2006, from Joffen
 
-    $old   = "$DataDir/noxsplit.default.$NOxSplit" ;
+    $old   = "$MyDataDir/noxsplit.default.$NOxSplit" ;
     $new   = "noxsplit.defaults";
     mylink( "Split nox", $old,$new ) ;
 
-    $old   = "$DataDir/noxsplit.special.$NOxSplit" ;
+    $old   = "$MyDataDir/noxsplit.special.$NOxSplit" ;
     $new   = "noxsplit.special";
     mylink( "Split nox", $old,$new ) ;
 
@@ -556,10 +560,10 @@ foreach $scenario ( @runs ) {
     }  # end of emissions poll loop
     
     if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
-
+	print "not yet available on snowstorm\n";
+	exit;
 	print "STARTING PM ADDITION\n";
-	system("$DATA_LOCAL/emissions/mkp.pmemis_from_nox");
-#	system("$DAVE/Unify/D_emis/mkp.pmemis_from_nox");
+	system("$DAVE/Unify/D_emis/mkp.pmemis_from_nox");
 	#system("cat emislist.pm25 > test_emislist.pm25");
 	#system("cat emislist.pmco > test_emislist.pmco");
     }
@@ -578,7 +582,8 @@ foreach $scenario ( @runs ) {
     mylink( "Sondes", $old,$new ) ;
     
 # Surface measurement sites
-    $old   = "$DATA_LOCAL/sites.dat" ;
+    #JUN06 $old   = "$DATA_LOCAL/sites.dat" ;
+    $old   =  "$JunDataDir/sites.dec04";
     $new   =  "sites.dat";
     mylink("Sites ",  $old,$new ) ;
     
@@ -616,10 +621,9 @@ foreach $scenario ( @runs ) {
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
     
-    #ds$old   = "$DataDir/landuse.nov2003" ;  #ds rv1_9_4 change
-#MAR2004    $old   = "$DataDir/landuse.dec2003" ;  #ds rv1_9_4 change
-    $old   = "$DATA_LOCAL/landuse.mar2004" ;
-    $new   = "landuse.dat";                #ds rv1_9_4 change
+    #$old   = "$DATA_LOCAL/landuse.mar2004" ;
+    $old   = "$JunDataDir/landuse.JUN06" ;
+    $new   = "landuse.JUN06";                #ds rv1_9_4 change
     mylink( "Landuse ", $old,$new ) ;
     
     # TMP LOCATION for some datafiles : MyDataDir
@@ -630,8 +634,8 @@ foreach $scenario ( @runs ) {
 	mylink( "$datafile", $old,$new ) ;
     }
     
-    foreach $datafile ( qw ( MM_gfac1.dat lde_gfac2.dat lde_biomass.dat ) ) {
-	$old   = "$DataDir/$datafile" ;
+    foreach $datafile ( qw ( JUN06_gfac1.dat JUN06_gfac2.dat JUN06_biomass.dat ) ) {
+	$old   = "$JunDataDir/$datafile" ;
 	$new   = "$datafile" ;
 	mylink( "$datafile", $old,$new ) ;
     }

@@ -10,16 +10,15 @@ module UKsetup_ml
                       ,luname              &
                       ,hveg_max, b_inc, albedo, NH4_pl, SGS50, DSGS   &
                       ,EGS50, DEGS, LAImin, LAImax, SLAIlen, ELAIlen  &
-                      ,g_pot_min , Sg_potlen , Eg_potlen     &
-                      ,g_max     , g_min     , g_lightfac    &
-                      ,g_temp_min, g_temp_opt, g_temp_max  &
+                      ,f_phen_a, f_phen_b, f_phen_c, f_phen_d  &
+                      ,f_phen_Slen, f_phen_Elen &
+                      ,g_max     , f_min     , f_lightfac    &
+                      ,f_temp_min, f_temp_opt, f_temp_max  &
                       ,RgsS      , RgsO        &
                       ,VPD_max   , VPD_min     &
                       ,SWP_max   , PWP       , rootdepth 
 
-  use Met_ml,    only   : snow
-  use Io_ml,      only   : IO_TMP, IO_HOURLY, IO_SNOW, &
-                           open_file
+  use Io_ml,     only   : IO_TMP, IO_HOURLY, IO_SNOW, open_file
 
   implicit none
   private
@@ -28,9 +27,7 @@ module UKsetup_ml
   public ::  ukdep_init &    ! reads in data used in UK deposition modules
            , get_growing_season
 
-  !u7.lu    private :: ukdep_z0snow       ! reads in snow and z0 data
-  !u7.lu real, public, save :: z0_nwp  ! z0 from NWP for that grid-square
-  
+  public :: fPhenology
 
 contains
 
@@ -50,7 +47,8 @@ contains
  ! read in biomass-associated data (LAI, etc.)
  ! **sc: NH4_pl also read in at this stage
   
-      call open_file(IO_TMP,"r","lde_biomass.dat",needed=.true.,skip=3)
+      !JUN06 call open_file(IO_TMP,"r","lde_biomass.dat",needed=.true.,skip=3)
+      call open_file(IO_TMP,"r","JUN06_biomass.dat",needed=.true.,skip=3)
 
       do lu = 1, NLANDUSE
          read(unit=IO_TMP,fmt=*) luname(lu), hveg_max(lu), b_inc(lu),  &
@@ -65,15 +63,14 @@ contains
 
    ! read in Gpot modifiers, light and temperature factors
 
-!rv1_9_15: changde from lde_ to MM_ for Beech
-     call open_file(IO_TMP,"r","MM_gfac1.dat",needed=.true.,skip=3)
+     call open_file(IO_TMP,"r","JUN06_gfac1.dat",needed=.true.,skip=3)
 
      do lu = 1, NLANDUSE
        txt = luname(lu)
-       read(unit=IO_TMP,fmt=*) luname(lu), g_pot_min(lu), &
-          Sg_potlen(lu), Eg_potlen(lu), &
-          g_max(lu), g_min(lu) , &
-          g_lightfac(lu), g_temp_min(lu),g_temp_opt(lu),g_temp_max(lu)
+       read(unit=IO_TMP,fmt=*) luname(lu), f_phen_a(lu), f_phen_b(lu), &
+          f_phen_c(lu), f_phen_d(lu), f_phen_Slen(lu), f_phen_Elen(lu), &
+          g_max(lu), f_min(lu) , &
+          f_lightfac(lu), f_temp_min(lu),f_temp_opt(lu),f_temp_max(lu)
 
           if ( txt /= luname(lu) ) then
              errmsg = "gfac1 problem : " // txt // luname(lu)
@@ -84,7 +81,7 @@ contains
 
    ! read in ground surface resistance, VPD and SWP modifiers
 
-     call open_file(IO_TMP,"r","lde_gfac2.dat",needed=.true.,skip=3)
+     call open_file(IO_TMP,"r","JUN06_gfac2.dat",needed=.true.,skip=3)
 
      do lu = 1, NLANDUSE
        txt = luname(lu)
@@ -118,8 +115,6 @@ contains
      print *, " "
      end if
 
-  ! read in site-specific data: snow cover, lat, long, and z0 from NWP model
-
 
   end subroutine ukdep_init
 
@@ -140,12 +135,57 @@ contains
                                   ! through calling the sub-routine uk_dep_init
                                   ! from the current module) 
     integer, intent(out) :: SGS, EGS ! start and end of growing season
+    !real :: xlat
+
+    !xlat=max(40.0,lat)
+    !xlat=min(65.0,xlat)
+      
 
 
       SGS = int ( 0.5 +  SGS50(lu) + DSGS(lu) * (lat-50.0) )
       EGS = int ( 0.5 +  EGS50(lu) + DEGS(lu) * (lat-50.0) )
+      EGS = max(SGS+30,EGS)  ! Safety, Just to ensure EGS > SGS!
+
+     ! Some limits to reflect Zhang et al's (2004) figures
+
+      !if ( index(luname(lu),"IAM_DF") > 0 ) then
+!	   SGS = max(100,SGS) 
+!	   EGS = min(350,EGS) 
+!      end if
 
   end subroutine get_growing_season
 
 !=======================================================================
+ function fPhenology(debug_flag,jday,a,b,c,d,Slen,Elen,SGS,EGS,Astart,Aend) &
+ result (f)
+
+! Input
+  logical, intent(in) :: debug_flag
+  integer, intent(in) :: jday
+  real, intent(in) ::  a,b,c,d,Slen,Elen
+  integer, intent(in):: SGS, EGS, Astart, Aend
+
+! Output
+   real :: f
+
+        if ( jday <  SGS ) then
+                f = 0.0
+        else if ( jday <= Astart ) then
+                f = a
+        else if ( jday <= Astart+Slen ) then
+                f = b + (c-b) * ( jday-Astart)/real(Slen)
+        else if ( jday <= Aend-Elen ) then
+                f = c
+        else if ( jday < Aend ) then
+                f = d + (c-d) * ( Aend-jday)/real(Elen)
+        else if ( jday <= EGS ) then
+                f = d
+        else
+                f = 0.0
+        end if
+
+        !if( debug_flag ) &
+        !    write(*,"(a12,i4,2i6,f12.3)") "fPhenology",  jday, SGS, EGS, f
+
+end function fPhenology
 end module UKsetup_ml

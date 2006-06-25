@@ -88,8 +88,8 @@ module ModelConstants_ml
 
   type(date), public, save :: current_date
 
-  integer, public, parameter :: NNLANDUSE  = 17 ! Number of land use types 
-                                                ! for SEI landuse
+  integer, public, parameter :: NNLANDUSE  = 19 ! Number of land use types 
+                                                ! for SEI landuse, JUN06
       
   real, public, parameter  ::    &
        EPSIL=1.0e-30             &  ! small number

@@ -8,12 +8,12 @@ module Rsurface_ml
 !d1.7 - SO2 from CEH. Not LAI dependent, so a modified procedure
 !       is needed for other gases.
 
-use DepVariables_ml, only : forest, g_pot, g_temp,g_vpd,g_light,g_swp, &
+use DepVariables_ml, only : forest, f_phen, f_temp,f_vpd,f_light,f_swp, &
                               b_inc     , albedo    ,   &
                               SAIadd, &
                               water, &     !ds rv1.8
-                              g_max     , g_min     , g_lightfac,   &
-                              g_temp_min, g_temp_opt, g_temp_max, &
+                              g_max     , f_min     , f_lightfac,   &
+                              f_temp_min, f_temp_opt, f_temp_max, &
                               RgsS      , RgsO      , RextS, RextO, &
                               Rgs, Rinc, Gext, &
                               VPD_max   , VPD_min   , &
@@ -37,7 +37,7 @@ private
 public   ::  Rsurface
 !d1.7  public   ::  Conif_gpot
 private  ::  g_stomatal    
-private  ::  get_glight
+private  ::  get_f_light
 
 logical, private, parameter :: DEBUG_RSURF = .false.
  
@@ -443,7 +443,7 @@ contains
 !    Calculates stomatal conductance g_sto based upon methodology from 
 !    EMEP MSC-W Note 6/00:
 !
-!    Gsto = [g_max * g_pot * g_light * g_temp * g_vpd * g_smd ]/41000.0
+!    Gsto = [g_max * f_phen * f_light * f_temp * f_vpd * g_smd ]/41000.0
 !
 ! Inputs:
 
@@ -458,7 +458,6 @@ contains
   real, intent(in) :: LAI             ! leaf area index   (m2/m2)
   real, intent(in) :: vpd             ! vapour pressure deficit (kPa)
   real, intent(in) :: SWP             ! soil water potential (MPa)
-!d1.4  integer, intent(in) :: SGS, EGS     ! start, end of growing season (day no.)
 
 ! Outputs:
  
@@ -466,11 +465,11 @@ contains
   real, intent(out) :: gsun          ! g_sto for upper-canopy sun-leaves
 
   real :: f_env                      ! product of environmental f factors
-  real :: dg, dTs, bt   ! rv1_9_15 for temperate calculation
+  real :: dg, dTs, bt                ! for temperate calculation
 
 
         
-!..1 ) Calculate g_pot. Max value is 1.0.
+!..1 ) Calculate f_phen. Max value is 1.0.
 !---------------------------------------
 !u7.lu - these calculations only needed once per day - moved alongside
 !        LAI calculations
@@ -478,51 +477,50 @@ contains
 !... 
 
 
-!..2 ) Calculate g_light 
+!..2 ) Calculate f_light 
 !---------------------------------------
- ! (n.b. subroutine get_glight is defined below)
- ! gsun is here the light factor. Used as g_sto(sun) later
+ ! (n.b. subroutine get_f_light is defined below)
+ ! fsun is here the light factor. Used as g_sto(sun) later
 
-  call get_glight(coszen,Idrctt,Idfuse,g_lightfac(lu),LAI,albedo(lu),&
-             gsun, g_light)    
+  call get_f_light(coszen,Idrctt,Idfuse,f_lightfac(lu),LAI,albedo(lu),&
+             gsun, f_light)    
   
 
-!..3) Calculate  g_temp
+!..3) Calculate  f_temp
 !---------------------------------------
 !rv1_9_15:Allow asymmetric  function from Mapping Manual
 !NB _ much more efficient to tabulate this - do later!
   
-  dg  = ( g_temp_opt(lu) - g_temp_min(lu) )
-  bt  = ( g_temp_max(lu) - g_temp_opt(lu) ) / dg
-  dTs =   max( g_temp_max(lu) - Ts_C, 0.0 )
-  g_temp = dTs / ( g_temp_max(lu) - g_temp_opt(lu) )
-  g_temp = ( Ts_C - g_temp_min(lu) ) / dg *  g_temp**bt
+  dg  = ( f_temp_opt(lu) - f_temp_min(lu) )
+  bt  = ( f_temp_max(lu) - f_temp_opt(lu) ) / dg
+  dTs =   max( f_temp_max(lu) - Ts_C, 0.0 )
+  f_temp = dTs / ( f_temp_max(lu) - f_temp_opt(lu) )
+  f_temp = ( Ts_C - f_temp_min(lu) ) / dg *  f_temp**bt
 
-!rv1_9_15  g_temp = (Ts_C - g_temp_opt(lu)) / &
-!rv1_9_15             (g_temp_opt(lu) - g_temp_min(lu))
-!rv1_9_15    g_temp = 1.0 - (g_temp*g_temp)
+!rv1_9_15  f_temp = (Ts_C - f_temp_opt(lu)) / &
+!rv1_9_15             (f_temp_opt(lu) - f_temp_min(lu))
+!rv1_9_15    f_temp = 1.0 - (f_temp*f_temp)
 
-   g_temp = max(g_temp,g_min(lu) )
+   f_temp = max(f_temp,f_min(lu) )
 
 
-!..4) Calculate g_vpd
+!..4) Calculate f_vpd
 !---------------------------------------
 
- g_vpd = g_min(lu) + (1.0-g_min(lu)) * (VPD_min(lu)-vpd )/ &
+ f_vpd = f_min(lu) + (1.0-f_min(lu)) * (VPD_min(lu)-vpd )/ &
                                     (VPD_min(lu)-VPD_max(lu) )
- g_vpd = min(g_vpd, 1.0)
- g_vpd = max(g_vpd, g_min(lu))
+ f_vpd = min(f_vpd, 1.0)
+ f_vpd = max(f_vpd, f_min(lu))
 
 
-!..5) Calculate g_swp
+!..5) Calculate f_swp
 !---------------------------------------
 
-  !/  Use SWP_Mpa to get g_swp. We just need this updated
+  !/  Use SWP_Mpa to get f_swp. We just need this updated
   !   once per day, but for simplicity we do it every time-step.
 
-       g_swp = g_min(lu)+(1-g_min(lu))*(PWP(lu)-SWP)/(PWP(lu)-SWP_max(lu))
-       g_swp = min(1.0,g_swp)
-       !u7.lu g_swp = max(g_min(lu),g_swp)
+       f_swp = f_min(lu)+(1-f_min(lu))*(PWP(lu)-SWP)/(PWP(lu)-SWP_max(lu))
+       f_swp = min(1.0,f_swp)
 
 
 !.. And finally,
@@ -530,59 +528,23 @@ contains
 ! (using factor 41000 from mmol O3/m2/s to s/m given in Jones, App. 3
 !  for 20 deg.C )
 
-   f_env = g_temp * g_vpd * g_swp
-   f_env = max( f_env,g_min(lu) )
-   f_env = g_max(lu) * g_pot * f_env /41000.0
+   f_env = f_temp * f_vpd * f_swp
+   f_env = max( f_env,f_min(lu) )
+   f_env = g_max(lu) * f_phen * f_env /41000.0
    gsun  = gsun    * f_env       ! g_sto for sunlit part
-   g_sto = g_light * f_env       ! g_sto for whole canopy 
-
-  !if ( g_sto < 0 ) then
-  !   print *, "GSTO NEG" , jday, g_sto, g_pot, g_light, g_temp, g_vpd
-  ! end if
+   g_sto = f_light * f_env       ! g_sto for whole canopy 
 
 
   end subroutine g_stomatal
 
 
 ! =====================================================================
-!rv1.2     subroutine Conif_gpot(imm,g_pot)
-!rv1.2 ! =====================================================================
-!rv1.2 !   modifies g_pot (g_age) for effect of older needles, with the simple
-!rv1.2 !   assumption that g_age(old) = 0.5.
-!rv1.2 !
-!rv1.2    !/ arguments
-!rv1.2 
-!rv1.2     integer, intent(in) :: imm    ! month
-!rv1.2     real,   intent(inout) :: g_pot   ! Requires initial input of g_pot 
-!rv1.2                                      ! (once obtained as output from g_stomatal)
-!rv1.2 
-!rv1.2    !/ Some parameters:
-!rv1.2    !  Proportion of needles which are from current year:
-!rv1.2     real, parameter, dimension(12) :: Pc = (/  &
-!rv1.2                    0.53, 0.535, 0.54, 0.545, 0.1, 0.15,  &
-!rv1.2                    0.27,  0.36, 0.42,  0.48, 0.5,  0.5  /)
-!rv1.2 
-!rv1.2     real, parameter :: G_POTOLD = 0.5  ! value of g_pot for old needles
-!rv1.2 
-!rv1.2 
-!rv1.2 
-!rv1.2 !needles from current year assumed to have g_pot as evaluated above;
-!rv1.2 !needles from previous years assumed to have g_pot of 0.5
-!rv1.2 !The sum of the g_pot's for the current year is added to the sum of the
-!rv1.2 !g_pot's for previous years to obtain the overall g_pot for the landuse 
-!rv1.2 !category temp. conif. forests.
-!rv1.2 
-!rv1.2     g_pot = Pc(imm)*g_pot + (1.0-Pc(imm))*G_POTOLD
-!rv1.2 
-!rv1.2   end subroutine Conif_gpot
-! =====================================================================
-
 !===========================================================================
-    subroutine get_glight(coszen,Idrctt,Idfuse,g_lightfac,LAI,albedo, &
-              g_sun,g_light)
+    subroutine get_f_light(coszen,Idrctt,Idfuse,f_lightfac,LAI,albedo, &
+              f_sun,f_light)
 !===========================================================================
 !
-!    Calculates g_light, using methodology as described in Emberson et 
+!    Calculates f_light, using methodology as described in Emberson et 
 !    al. (1998), eqns. 31-35, based upon sun/shade method of  
 !    Norman (1979,1982)
 
@@ -591,7 +553,7 @@ contains
     real, intent(in) :: coszen    ! cos(zen), zen=zenith angle
     real, intent(in) :: Idrctt    ! total direct solar radiation (W/m^2)
     real, intent(in) :: Idfuse    ! diffuse solar radiation (W/m^2)
-    real, intent(in) :: g_lightfac ! land-use specific light factor
+    real, intent(in) :: f_lightfac ! land-use specific light factor
     real, intent(in) :: LAI       ! leaf area index (m^2/m^2), vegetation        
                                   ! specific
     
@@ -599,8 +561,8 @@ contains
 
 !     output arguments
   
-    real, intent(out) :: g_sun    ! sun-leaf g_light
-    real, intent(out) :: g_light  ! canopy average g_light    
+    real, intent(out) :: f_sun    ! sun-leaf f_light
+    real, intent(out) :: f_light  ! canopy average f_light    
 
 !   Some parameters
 
@@ -622,7 +584,7 @@ contains
     real :: PARsun    ! sun-leaf PAR
     real :: PARshade  ! shade-leaf PAR
        
-    real :: g_shade  ! shade-leaf contribution to g_light
+    real :: f_shade  ! shade-leaf contribution to f_light
 
 
     !DEP1.2 error sinB = 1.0/coszen  ! = cos(zen)
@@ -650,13 +612,13 @@ contains
    !TFMM  LAIshade = LAI - LAIsun
     sunfrac = LAIsun/LAI
 
-    g_sun   = (1.0 - exp (-g_lightfac*PARsun  ) ) !TFMM* (LAIsun  /LAI)
-    g_shade = (1.0 - exp (-g_lightfac*PARshade) ) !TFMM* (LAIshade/LAI)
+    f_sun   = (1.0 - exp (-f_lightfac*PARsun  ) ) !TFMM* (LAIsun  /LAI)
+    f_shade = (1.0 - exp (-f_lightfac*PARshade) ) !TFMM* (LAIshade/LAI)
 
-    !g_light = g_sun + g_shade
-    g_light = sunfrac * g_sun + (1.0 - sunfrac) * g_shade
+    !f_light = f_sun + f_shade
+    f_light = sunfrac * f_sun + (1.0 - sunfrac) * f_shade
 
-  end subroutine get_glight
+  end subroutine get_f_light
 
 !--------------------------------------------------------------------
 

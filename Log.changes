@@ -1,3 +1,21 @@
+============== Dave, rv2_4_7   22/6/2006 ================================================
+
+New flux parameters defined,  see JUN06 changes
+    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
+    D2_AFSTCR0, D2_AFSTWCR, D2_AFSTCR6,&
+    D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6,&
+
+New landuse setup files - in JUN06_biomass.dat etc.
+  - results in different growing seasons and depositions for forests
+    (e.g. reduced deposition in summer in Mediterranean)
+
+New landuse map - some small corrections, and 3 IAM categories.
+
+Used 4.5 ppb for iyr_trend >= 2010 - quick fix for JUN06 IAM runs.
+
+$MAKE added in srun.pl, to call Makefile_snow if needed. Check if it
+       works for others, and usage of .depend!!!
+
 ============== Peter v2_4_6_1, 14/6/2006 ================================================
 
 Updated srun.pl: corrected bug (see rv2_4_5). Include "Africa"
@@ -15,7 +33,6 @@ noxsplit changes - splits NO and NO2 similar to VOC. Use "2000" files to get def
 Bug in grun.pl put in version 2_4_3. Wrong meteo link.
 Sometimes the first day of a month is linked to the 1/1/ of next year.
 The program will notice this and crash.
-
 
 
 ============== Peter,Heiko rv2_4_5, 19/4/2006 ================================================
