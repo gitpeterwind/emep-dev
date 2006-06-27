@@ -189,7 +189,7 @@ private
              voc_index, &     ! Index of VOC in xn_adv
              voc_carbon       ! Number of C atoms
 
-   logical, private, parameter :: MY_DEBUG = .true.
+   logical, private, parameter :: MY_DEBUG = .false.
    logical, private, save :: debug_flag
    integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
                                                    ! reset if DEBUG 
@@ -739,7 +739,7 @@ def_3d = (/ &
               d_2d( n, i,j,IOU_INST) = pzpbl(i,j)  
             end forall
 
-            if ( debug_flag ) then
+            if ( MY_DEBUG .and. debug_flag ) then
              write(*,fmt="(a12,2i4,4f12.3)") "HMIX" , n , d_2d(n,i_debug,j_debug,IOU_INST)       
             end if
 
@@ -751,7 +751,7 @@ def_3d = (/ &
                                      * cfac(index,i,j) * density(i,j)  
             end forall
 
-            if ( debug_flag ) then
+            if ( MY_DEBUG .and. debug_flag ) then
              write(*,fmt="(a12,2i4,4f12.3)") "JUST ADV" , n, index  &
               ,d_2d(n,i_debug,j_debug,IOU_INST)*PPBINV &
               ,xn_adv(index,i_debug,j_debug,KMAX_MID)*PPBINV &
@@ -773,7 +773,7 @@ def_3d = (/ &
                                      * cfac(index,i,j) * density(i,j) )
             end forall
 
-            if ( debug_flag ) then
+            if ( MY_DEBUG .and. debug_flag ) then
              write(*,fmt="(a12,2i4,4f12.3)") "ADV MAX. ", n, index  &
                       , d_2d(n,i_debug,j_debug,IOU_DAY) * PPBINV      &
                       ,  xn_adv(index,i_debug,j_debug,KMAX_MID)* PPBINV  &
