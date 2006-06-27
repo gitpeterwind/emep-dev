@@ -94,7 +94,7 @@ private
 
   ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
 
-    integer, public, parameter :: NSR_2D = 50  
+    integer, public, parameter :: NSR_2D = 49  
 
     character(len=12), public, parameter, dimension(NSR_2D) :: &
   D2_SR = (/ &
@@ -113,6 +113,7 @@ private
       ,"D2_AOT30f   ","D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
       ,"D2_EUAOT30WH","D2_EUAOT30DF","D2_EUAOT40WH","D2_EUAOT40DF" &
       ,"D2_UNAOT30WH","D2_UNAOT30DF","D2_UNAOT40WH","D2_UNAOT40DF" &
+      ,"D2_MMAOT30WH","D2_MMAOT40WH" &  ! JUN06
       ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums 
@@ -121,8 +122,9 @@ private
 !
 !    Ecosystem - fluxes: ! JUN06
       ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
-      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  ","D2_AFSTCN0  " &
-      ,"D2_AFSTCN3  ","D2_AFSTCN6  ","D2_O3DF     ","D2_O3WH     " &
+      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
+!rv2_5 "D2_AFSTCN0  " ,"D2_AFSTCN3  ","D2_AFSTCN6  ",
+       ,"D2_O3DF     ","D2_O3WH     " &
 !
 !    JEJ Surface  pressure (for cross section):
       ,"D2_PS       " &

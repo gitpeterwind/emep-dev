@@ -70,6 +70,7 @@ module DryDep_ml
  use UKdep_ml,         only : Init_ukdep, ReadLanduse, SetLandUse  & 
                               ,NLUMAX &  ! Max. no countries per grid
                               ,landuse_ncodes, landuse_codes, landuse_data  &
+                              ,SumVPD, old_gsun & ! Critical VPD
                               ,landuse_SGS, landuse_EGS &
                               ,landuse_LAI,    landuse_hveg , landuse_fphen
 
@@ -129,6 +130,9 @@ module DryDep_ml
 
       call SetLandUse()         ! Sets landuse_LAI, landuse_hveg 
       old_daynumber = daynumber
+
+      SumVPD   = 0.0    ! For Critical VPD stuff
+      old_gsun = 0.0    ! For Critical VPD stuff
 
   end if
 
@@ -208,6 +212,7 @@ module DryDep_ml
    real    :: c_hvegppb(NLANDUSE)
    real ::  Ra_diff       ! Ra from z_ref to hveg
    real :: gext_leaf, rc_leaf, rb_leaf, Fst
+   real :: tmp_gsun       ! JUN06 Just for printouts
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -588,12 +593,24 @@ module DryDep_ml
           rb_leaf = 1.3 * 150.0 * sqrt(0.035/u_hveg)  ! 5cm?? leaves? 
 	else if ( lu == IAM_WHEAT ) then
           rb_leaf = 1.3 * 150.0 * sqrt(0.02/u_hveg)  ! 2cm leaves? 
+
+          !ds 25/6/2006: VPD limitation added for wheat
+
+              if( gsun > 0.0 ) SumVPD(i,j) = SumVPD(i,j) + vpd*dt_advec/3600.0
+              tmp_gsun = gsun
+              if ( SumVPD(i,j) > 8.0 ) gsun = min( gsun, old_gsun(i,j) )
+              if( DEBUG_FLUX .and. debug_flag ) write(6,"(a8,3i3,4f8.3,4es10.2)") "SUMVPD ",&
+                    imm, idd, ihh, rh, Ts_C,  vpd, SumVPD(i,j), old_gsun(i,j), tmp_gsun, gsun , g_sto
+
+              old_gsun(i,j) = gsun
+
         endif
+
 
          ! Flux in nmole/m2/s:
           leaf_flux(lu) = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * gsun 
 
-          if ( DEBUG_FLUX .and. STO_FLUXES .and. debug_flag ) then 
+          if ( DEBUG_FLUX .and. debug_flag ) then 
             write(6,"(a8,3i3,i4,2f6.2,2f8.1,2es10.2,f6.2,es12.3)") &
                 "FST ", lu, imm, idd, ihh, lai, SAIadd(lu), &
                  nmole_o3, c_hveg, g_sto, gsun, u_hveg,leaf_flux(lu)

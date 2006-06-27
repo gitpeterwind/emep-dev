@@ -1,3 +1,23 @@
+============== Dave, rv2_5beta   27/6/2006 ================================================
+
+New flux parameters slightly re-defined. MMAOT30 and MMAOT40 added - AOTs according to
+ new Mapping Manual approaches.
+ Now:
+    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
+    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
+    D2_MMAOT30, D2_MMAOT40
+
+Country_ml - updated from Heiko
+
+Derived_ml
+
+DryDep_ml - SumVPD limitations added for IAM_WHEAT
+ 
+
+UK_ml - safety checks added on SGS, EGS
+        InGrowingSeason array defined to simplify MMAOT calculation
+
+
 ============== Dave, rv2_4_8   25/6/2006 ================================================
 
 Ooops.... forgot to copy My files form main directory into ZD_OZONE before cvs commit.

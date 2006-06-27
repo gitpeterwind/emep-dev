@@ -9,19 +9,18 @@ module Derived_ml
   ! averages, depositions. These fields are all typically output as binary 
   ! fields.
   !
-  ! The definitions of the derived fields shoul have been specified in the
+  ! The definitions of the derived fields should have been specified in the
   ! user-defined My_Derived_ml.
   !
   ! These modules combine Steffen's rewriting of the output routines
-  ! (IOU notation), elements of chemint_mach, Bud_ml, etc.
+  ! (IOU notation).
   ! Re-coded to use only 2 types of data (d_2 and d_3)
   ! and F90 types for Deriv by ds, Sept. 2001. 
 
   ! User-defined routines and treatments are often needed here. So far I have 
   ! added stuff for VOC, AOTs, accsu, taken from the MACHO chemint code. In 
-  ! general
-  ! such code should be added in such a way that it isn't activated if not
-  ! needed. It then doesn't need to be commented out if not used.
+  ! general such code should be added in such a way that it isn't activated if
+  ! not needed. It then doesn't need to be commented out if not used.
   ! For "accsu" I haven't found a way to do this though.
   ! See the examples given.
   ! ds, 28/9/01
@@ -38,11 +37,13 @@ module Derived_ml
 !D2_EUAOTXXDF: accumulated into yearly_output from April to September
 !D2_UNAOTXXWH: accumulated into yearly_output from May to July
 !D2_UNAOTXXDF: accumulated into yearly_output from April to September
+!D2_MMAOTXXWH: accumulated into yearly_output over growing season
 !D2_O3 is now yearly accumulated (is this correct ?)
 !D2_FSTXXXX: unit correct? (accumulated but unit in /s)
 
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
+use Dates_ml, only : dayno, daynumber
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml
 use GenSpec_tot_ml
@@ -63,15 +64,13 @@ use ModelConstants_ml, &
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me, NPROC,         &   ! for gc_abort checks
                      gi0,gj0,ISMBEG,JSMBEG,&! rv1_9_28 for i_glob, j_glob
-                     limax, ljmax           ! => used x, y area 
+                     li0,lj0,limax, ljmax    ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
-!ds mar2005 use Radiation_ml,  only :  zen
 
 
 implicit none
 private
 
- !ds rv1_9_17  public  :: SumDerived           ! old chemint
  public  :: Init_Derived         !ds rv1_9_16 new deriv system 
  public  :: ResetDerived         ! Resets values to zero
  public  :: DerivedProds         ! Calculates any production terms
@@ -114,7 +113,7 @@ private
    integer, public, parameter ::  &
        NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
       ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 68  & ! Number of 2D derived fields defined
+      ,NDEF_DERIV_2D = 67  & ! Number of 2D derived fields defined
       ,NDEF_DERIV_3D = 17   ! Number of 3D derived fields defined
 
    integer, public, dimension(NWDEP),     save :: nused_wdep
@@ -190,7 +189,7 @@ private
              voc_index, &     ! Index of VOC in xn_adv
              voc_carbon       ! Number of C atoms
 
-   logical, private, parameter :: MY_DEBUG = .false.
+   logical, private, parameter :: MY_DEBUG = .true.
    logical, private, save :: debug_flag
    integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
                                                    ! reset if DEBUG 
@@ -202,18 +201,11 @@ private
 
     !=========================================================================
     subroutine Init_Derived()
-    !dssubroutine SumDerived(dt)
-      !ds logical, save :: my_first_call = .true.
-      !ds real, intent(in) :: dt  !  time-step used in intergrations
 
-      !ds if ( my_first_call ) then
           write(*,*) "INITIALISE My DERIVED STUFF"
-          !ds call Set_My_Derived()
           call Define_Derived()
           call Consistency_checks()  !ds - checks index numbers from My_Derived
           call Setups()
-          !ds my_first_call = .false. 
-      !ds end if
 
     end subroutine Init_Derived
 
@@ -236,7 +228,7 @@ private
    integer, dimension(MAXLJMAX) :: j_glob
 
 
-    !   same mol.wt=100 assumed for PPM25 and PPMco
+    !   same mol.wt assumed for PPM25 and PPMco
 
      ugPMad = species(PM25)%molwt * PPBINV /ATWAIR 
      ugPMde = PPBINV /ATWAIR
@@ -353,13 +345,8 @@ def_2d = (/&
 ,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","nmol/m2/s")&
 ,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","nmol/m2/s")&
 !
-,Deriv( 857, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCN0","nmol/m2/s")&
-,Deriv( 858, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCN3","nmol/m2/s")&
-,Deriv( 859, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCN6","nmol/m2/s")&
-!
 !JUN06    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
 !JUN06    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
-!JUN06    D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6,&
 !
 !      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
 ,Deriv( 860, "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")&
@@ -379,6 +366,9 @@ def_2d = (/&
 ,Deriv( 867, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40WH","ppb h")&
 ,Deriv( 868, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")&
 ,Deriv( 869, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40DF","ppb h")&
+!JUN06
+,Deriv( 857, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT30WH","ppb h")&
+,Deriv( 858, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")&
 !
 ! --  time-averages - here 8-16
 !
@@ -688,10 +678,11 @@ def_3d = (/ &
                 ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
       logical :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
 
-      !ds rv1_9_17 integer :: ndef 
-
       timefrac = dt/3600.0
       thour = current_date%hour+current_date%seconds/3600.0  !ds rv1_9_28 moved here for 3D3D
+
+      !NEWAOT
+        call dayno(current_date%month,current_date%day,daynumber)
 
 
      !/***** 2-D fields **************************
@@ -699,7 +690,6 @@ def_3d = (/ &
      do n = 1, NDERIV_2D
 
         accumulate_2dyear=.true.
-        !rv1_9_17 ndef = nused_2d(n)
         typ = f_2d(n)%class
 
 
@@ -733,7 +723,6 @@ def_3d = (/ &
              if(thour /= 12.0 ) cycle  ! Start next species
         end if
 
-        !rv1_9_17 index = f_2d(ndef)%index
         index = f_2d(n)%index
         select case ( typ )
 
@@ -769,8 +758,7 @@ def_3d = (/ &
               ,density(i_debug,j_debug), cfac(index,i_debug,j_debug)
             end if
 
-!water
-          case ( "H2O" )
+          case ( "H2O" )      !water
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = PM_water(i,j,KMAX_MID)  
@@ -844,6 +832,10 @@ def_3d = (/ &
 
             call aot_calc( n, timefrac )
 
+           if( debug_flag .and. i == i_debug .and. j == j_debug ) then
+              write(*,*) "GROWINDERIV? ", n, f_2d(n)%name
+           end if
+
             if(     current_date%month<startmonth_forest&
                  .or.current_date%month>endmonth_forest)then
                if( f_2d(n)%name=="D2_AOT30f".or.& 
@@ -862,6 +854,20 @@ def_3d = (/ &
                endif
             endif
 
+!         !ds 25/6/2006 - NEWAOT defs for UNECE crops, to follow growing seasons
+!         ! Allow, accumulate_2dyear to be true, but set d_2d zero
+!            if( f_2d(n)%name=="D2_MMAOT30WH".or.&
+!                f_2d(n)%name=="D2_MMAOT40WH"  ) then
+!                   do i=li0,limax
+!                     do  j=lj0,ljmax 
+!                         if( debug_flag .and. i == i_debug .and. j == j_debug ) then
+!                             write(*,*) "DERGROW ", CropGrowingSeason(i,j), n, d_2d(n, i,j,IOU_INST )
+!                         end if 
+!                         if( .not.CropGrowingSeason(i,j) ) d_2d(n, i,j,IOU_INST ) = 0.0
+!                         if( .not.CropGrowingSeason(i,j) ) d_2d(n, i,j,IOU_INST ) = 0.0
+!                     end do
+!                   end do
+!            end if
 
            case( "SOM" )
 
@@ -890,25 +896,21 @@ def_3d = (/ &
 
 
 
-          case ( "EXT" )
+          case ( "EXT" ) ! Set externally to this module, e.g. AOT40WH...
 
              call setaccumulate_2dyear(n,accumulate_2dyear)
           ! Externally set for IOU_INST (in other routines); so no new work needed
             if ( debug_flag ) then
-                 write(*,*) "EXTDer:Externally set d_2d should already have values"
-                 write(*,*) "EXTDer: d_2d(i_debug,j_debug) for", typ, " is ", &
-                           d_2d(n,i_debug,j_debug,IOU_INST)
+                 write(*,"(a18,i4,a12,a4,es12.3)") "EXTDer: d_2d for", n,  &
+                   f_2d(n)%name, " is ", d_2d(n,i_debug,j_debug,IOU_INST)
             end if
 
           case  default
 
             if ( debug_flag ) then
-                 write(*,*) "My_Deriv called for n=", n, "Type ",typ
-                 write(*,*) "My_Deriv index", index
-                 write(*,*) "My_Deriv avg? ", f_2d(n)%avg,  &
-                                   " for nav ", nav_2d(n,IOU_INST)
-                 write(*,*) "Deriv: Length of f_2d is ", len(f_2d%class)
-                 write(*,*) "Deriv: f_2d class is ", f_2d(n)%class
+                 write(*,*) "My_Deriv Defaults called for n=", n, "Type ",typ, "Name ", f_2d(n)%name
+                 write(*,*) "My_Deriv index?, avg?, nav? length?, class? ", index,&
+                    f_2d(n)%avg, nav_2d(n,IOU_INST), len(f_2d%class), f_2d(n)%class
              end if 
 
              call My_DerivFunc( d_2d(n,:,:,IOU_INST), n, typ, timefrac, density ) 
@@ -1194,7 +1196,6 @@ def_3d = (/ &
      !             was for NMHC, not VOC.
 
       do n = 1, NSPEC_ADV
-        !ds rv1_9_10 if ( species( NSPEC_SHL+n )%nmhc == 1 ) then
 
         if ( species( NSPEC_SHL+n )%carbons > 0 .and. &
              species( NSPEC_SHL+n )%name   /= "CO"  .and. &
@@ -1282,7 +1283,7 @@ def_3d = (/ &
 
               d_2d(n, i,j,IOU_INST ) = o3 * timefrac  
 
-           else ! rv1_9_19 bug-fix!!
+           else
                d_2d(n, i,j,IOU_INST ) = 0.0   
            end if
         end do
@@ -1293,9 +1294,8 @@ def_3d = (/ &
 
   subroutine som_calc( n )
 
-!pw rv2_1
 
-    !/-- Calculates SOM (8hours) values for input threshold.
+    !/-- Calculates SOM (8hours) values for input threshold.  !pw rv2_1
 
     implicit none
     integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
@@ -1344,7 +1344,8 @@ def_3d = (/ &
 
 ! We don't want the yearly output to accumulate over the whole year
      integer, intent(in) :: n
-      logical, intent(inout) :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
+      logical, intent(inout) :: accumulate_2dyear !flag to know when to 
+                                                  !accumulate d_2d (case "EXT")
 
       if( f_2d(n)%name=="D2_EUAOT30DF".or.&
           f_2d(n)%name=="D2_EUAOT40DF".or.&
@@ -1372,5 +1373,3 @@ def_3d = (/ &
     end subroutine setaccumulate_2dyear
 
 end module Derived_ml
-
-

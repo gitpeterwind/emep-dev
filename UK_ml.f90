@@ -4,7 +4,7 @@ use Dates_ml,       only: daynumber, nydays
 use DepVariables_ml,only: NLANDUSE         &  ! No. UK land-classes
                       ,luname              &
                       ,crops, bulk, water  & ! logical variables
-                      ,IAM_MEDOAK          & !
+                      ,IAM_MEDOAK,IAM_WHEAT& !
                       ,LU_WATER, LU_ICE    & ! Pb210
                       ,forest,conif_forest & !    "      "
                       ,vegetation, urban   & !
@@ -51,6 +51,9 @@ private
           landuse_SGS   &    ! Start of growing season (days)
          ,landuse_EGS        ! End of growing season (days)
 
+ integer,public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
+          InGrowingSeason   ! Growing season (days), IAM_WHEAT =1 for true
+ 
  integer,private,save,dimension(MAXLIMAX,MAXLJMAX,NLUMAX) :: &
           Astart        &    ! JUN06 
          ,Aend               ! JUN06
@@ -59,6 +62,12 @@ private
           landuse_LAI   &    ! Leaf-area-index (m2/m2)
          ,landuse_hveg  &    ! Max. height of veg.
          ,landuse_fphen      ! Potential (age) factor for Jarvis-calc
+
+ !ds 2006/06/25 - from Unimod.rv2_3_mmcV (2005/12/28)
+
+ real,   public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
+             SumVPD ,   &   ! For critical VPD calcs, reset each day
+             old_gsun       !
 
  !ds Pb210: Emissions from water (v.small) and from ice zero.
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
@@ -326,12 +335,12 @@ subroutine ReadLanduse()
                               landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu) , Astart(i,j,ilu), Aend(i,j,ilu))
 
 
-            if ( DEBUG_DEP .and. debug_flag ) then
-                   write(*,"(a12,i3,i4,f7.2,2f8.3,4i4)") "LANDPhen0 ", lu,  &
-                     daynumber, -99.9,  &
-                      landuse_LAI(i,j,ilu), landuse_fphen(i,j,ilu), & 
-                      landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), Astart(i,j,ilu), Aend(i,j,ilu)
-             end if
+            !if ( DEBUG_DEP .and. debug_flag ) then
+            !       write(*,"(a12,i3,i4,f7.2,2f8.3,4i4)") "LANDPhen0 ", lu,  &
+            !         daynumber, -99.9,  &
+            !          landuse_LAI(i,j,ilu), landuse_fphen(i,j,ilu), & 
+            !          landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), Astart(i,j,ilu), Aend(i,j,ilu)
+            ! end if
 
           ! For coniferous forest we need to correct for old needles.
 
@@ -348,6 +357,15 @@ subroutine ReadLanduse()
 
              if (  crops(lu) ) then
 
+                if ( lu == IAM_WHEAT ) then ! for NEWAOT
+                    if  ( daynumber >= landuse_SGS(i,j,ilu) .and. &
+                          daynumber <= landuse_EGS(i,j,ilu)  ) then
+                            InGrowingSeason(i,j) =  1
+                    else
+                            InGrowingSeason(i,j) =  0
+                    end if
+                end if
+
                 if ( daynumber < landuse_SGS(i,j,ilu) .or. &
                      daynumber > landuse_EGS(i,j,ilu)  ) then
                      hveg = STUBBLE
@@ -361,6 +379,7 @@ subroutine ReadLanduse()
 
              landuse_hveg(i,j,ilu) =  hveg
             if ( DEBUG_DEP .and. debug_flag ) then
+                   if(lu==IAM_WHEAT) write(*,*) "GROWSEASON ", daynumber, InGrowingSeason(i,j)
                    write(*,"(a12,i3,i4,f7.2,2f8.3,4i4)") "LANDPhen ", lu, daynumber, &
                      hveg, landuse_LAI(i,j,ilu), landuse_fphen(i,j,ilu), &
                      landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), &
@@ -372,6 +391,7 @@ subroutine ReadLanduse()
        end do ! j
     end do ! i
     if ( DEBUG_DEP .and. me==0 ) write(*,*)"UKDEP Finishing SetLandUse "
+    if(debug_proc ) write(*,*) "LAST GROWSEASON ", daynumber, InGrowingSeason(debug_li,debug_lj)
 
   end subroutine  SetLandUse
   !-------------------------------------------------------------------------

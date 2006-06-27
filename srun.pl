@@ -4,7 +4,7 @@
 # lnodes= number of nodes, ppn=processor per node (max4)
 #PBS -lnodes=90
 # wall time limit of run
-#PBS -lwalltime=7:10:00
+#PBS -lwalltime=3:44:00
 # lpmeme=memory to reserve per processor (max 4GB per node)
 #PBS -lpmem=200MB
 # account for billing
@@ -110,7 +110,7 @@ die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
 
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "IAM";
+    $testv       = "rv2_5beta";
     # BC Logan for O3
     
 } elsif ( $ACID ) {
@@ -159,6 +159,7 @@ my $scenario = "Base";     # Reset later if SR
 
 #EMISSIONS
 $emisdir = "$DATA_LOCAL/2004_emis2010_CLE_2000_V6";
+$emisdir = "$MyDataDir/EMIS_MAR2006"; 
 $femis       = "$DataDir/femis.dat";      # emission control file
 
 
@@ -193,7 +194,7 @@ $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-#$NTERM = 8;       # for testing, simply reset here
+#$NTERM = 16;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 

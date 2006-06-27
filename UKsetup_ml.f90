@@ -135,9 +135,9 @@ contains
                                   ! through calling the sub-routine uk_dep_init
                                   ! from the current module) 
     integer, intent(out) :: SGS, EGS ! start and end of growing season
-    !real :: xlat
 
-    !xlat=max(40.0,lat)
+    !xlat real :: xlat
+    !xlat=max(30.0,lat)  ! keep functions within range of obs. used
     !xlat=min(65.0,xlat)
       
 
@@ -145,6 +145,7 @@ contains
       SGS = int ( 0.5 +  SGS50(lu) + DSGS(lu) * (lat-50.0) )
       EGS = int ( 0.5 +  EGS50(lu) + DEGS(lu) * (lat-50.0) )
       EGS = max(SGS+30,EGS)  ! Safety, Just to ensure EGS > SGS!
+      EGS = min(365,EGS)     ! Safety - for ca. 21N and southwards!
 
      ! Some limits to reflect Zhang et al's (2004) figures
 
