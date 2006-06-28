@@ -3,6 +3,7 @@
 DEBUG options set to false in rv2_5beta
 
 SRrun.pl created to look after SR runs
+ATX defined as part of ATL and RUX as part of RU (in femis)
 
 iyr_trend added to RunLog output
 

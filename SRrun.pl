@@ -16,12 +16,13 @@ my $MAKE = "gmake --makefile=Makefile_snow";
 
 #Dave, 28/6 changes/bug
 #
-# Bug: Why does CLE_month.nc and CLE_Year.nc get copied to scenario directories
-#        e.g. to CLE_IT_NP_P15? These are identical
 #
 # Query: why need to uncomment:
 # "next if (-r "$RESDIR/${runlabel1}_year.nc" );  "
 # Should be always ok? And very safe?
+# Answer:
+# For testing or one single run this is often "too safe": 
+# You want the file to be overwritten
 #
 # Changes:
 # Updated to JUN06 data and rv2_5
@@ -112,7 +113,7 @@ $MAARTEN      = "mifamvl";
 $NICOLAS      = "mifanif";      
 
 
-$USER        =  $DAVE ;      
+$USER        =  $PETER ;      
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
@@ -666,8 +667,8 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
     
-    #TMP $old   = "$DATA_LOCAL/landuse.JUN06" ;
-    $old   = "$DataDir/landuse.JUN06" ;
+    $old   = "$DATA_LOCAL/landuse.JUN06" ;
+    ##$old   = "$DataDir/landuse.JUN06" ;
     $new   = "landuse.JUN06";
     mylink( "Landuse ", $old,$new ) ;
     
@@ -773,7 +774,7 @@ foreach my $pollut ( @polls ) {
     system("mkdir -p $RESDIR");
 #safety test:
 #next if ( -r "$RESDIR/${runlabel1}_year.nc" );  #DS ? Why not always have this?
-next if ( -r "$RESDIR/${runlabel1}_year.nc" );
+#next if ( -r "$RESDIR/${runlabel1}_year.nc" );
 
  
 	my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ; # Initialise to 1.0
@@ -840,10 +841,14 @@ next if ( -r "$RESDIR/${runlabel1}_year.nc" );
 		if ( $c eq "DE" ) {  # Add E. Germany too!
 			system("echo \" 9  $ss  $Xsox $Xnox $Xvoc $Xnh3 $Xtestp $Xco $Xpm25 $Xpmco\" >> femis.dat");
 		    }
+		if ( $c eq "ATL" ) {  # Add ATL outside EMEP
+			system("echo \" 70  $ss  $Xsox $Xnox $Xvoc $Xnh3 $Xtestp $Xco $Xpm25 $Xpmco\" >> femis.dat");
+		    }
 		if ( $c eq "RU" ) { # Add the other parts of Russia too! NB RU set to 42 (RUR)
 			system("echo \" 38  $ss  $Xsox $Xnox $Xvoc $Xnh3 $Xtestp $Xco $Xpm25 $Xpmco\" >> femis.dat");
 			system("echo \" 37  $ss  $Xsox $Xnox $Xvoc $Xnh3 $Xtestp $Xco $Xpm25 $Xpmco\" >> femis.dat");
 			system("echo \" 36  $ss  $Xsox $Xnox $Xvoc $Xnh3 $Xtestp $Xco $Xpm25 $Xpmco\" >> femis.dat");
+			system("echo \" 71  $ss  $Xsox $Xnox $Xvoc $Xnh3 $Xtestp $Xco $Xpm25 $Xpmco\" >> femis.dat");
 		}
 
         } # @antropogenic loop
@@ -933,14 +938,14 @@ $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
 #copy all other files to $READDIR
 #    system("   cp ./* $RESDIR");
 
-#NB: if the files are not unlinked (removed), they will accumulate for each scenario.
+#NB: if the files are removed, they will accumulate for each scenario.
      system("   cp ./*month.nc $RESDIR");
-	unlink("./*month.nc");
+	system("rm ./*month.nc");
      system("   cp ./*year.nc $RESDIR");
-	unlink("./*year.nc");
+	system("rm ./*year.nc");
 #     system("   cp ./*hour.nc $RESDIR");
      system("cp ./${runlabel1}_RunLog $RESDIR");
-	unlink("./*${runlabel1}_RunLog");
+	system("rm ./*${runlabel1}_RunLog");
 
     
 ################################## END OF SCENARIO RUNS ######################
