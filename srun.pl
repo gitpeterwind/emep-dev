@@ -129,7 +129,6 @@ $DATA_LOCAL  = "/home/mifapw/emep_common/Data/EMEP";
 $ProgDir     = "/home/$USER/Unify/Unimod.$testv";   # input of source-code
 $WORKDIR     = "/home/$USER/work/FluxRuns/Unimod.$testv.$year";    # working and result directory
 $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
-$JunDataDir  = "/home/mifads/Unify/JUN06";
 
 #ds check: and change
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
@@ -583,8 +582,7 @@ foreach $scenario ( @runs ) {
     mylink( "Sondes", $old,$new ) ;
     
 # Surface measurement sites
-    #JUN06 $old   = "$DATA_LOCAL/sites.dat" ;
-    $old   =  "$JunDataDir/sites.dec04";
+    $old   = "$DATA_LOCAL/sites.dat" ;
     $new   =  "sites.dat";
     mylink("Sites ",  $old,$new ) ;
     
@@ -622,8 +620,7 @@ foreach $scenario ( @runs ) {
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
     
-    #$old   = "$DATA_LOCAL/landuse.mar2004" ;
-    $old   = "$JunDataDir/landuse.JUN06" ;
+    $old   = "$DATA_LOCAL/landuse.JUN06" ;
     $new   = "landuse.JUN06";                #ds rv1_9_4 change
     mylink( "Landuse ", $old,$new ) ;
     
@@ -636,7 +633,7 @@ foreach $scenario ( @runs ) {
     }
     
     foreach $datafile ( qw ( JUN06_gfac1.dat JUN06_gfac2.dat JUN06_biomass.dat ) ) {
-	$old   = "$JunDataDir/$datafile" ;
+	$old   = "$DataDir/$datafile" ;
 	$new   = "$datafile" ;
 	mylink( "$datafile", $old,$new ) ;
     }

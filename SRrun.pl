@@ -2,15 +2,39 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=16
+#PBS -lnodes=32
 # wall time limit of run
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 4GB per node)
 #PBS -lpmem=200MB
 # account for billing
 #PBS -A nn2890k
+my $MAKE = "gmake --makefile=Makefile_snow";
+
 
 #Earlier Had P B S -lnodes=1:ppn=4 
+
+#Dave, 28/6 changes/bug
+#
+# Bug: Why does CLE_month.nc and CLE_Year.nc get copied to scenario directories
+#        e.g. to CLE_IT_NP_P15? These are identical
+#
+# Query: why need to uncomment:
+# "next if (-r "$RESDIR/${runlabel1}_year.nc" );  "
+# Should be always ok? And very safe?
+#
+# Changes:
+# Updated to JUN06 data and rv2_5
+# WORKDIR modified to be work/SR_RESULTS - each user can choose, but
+#  as the number of output directories gets huge it can be useful to
+#  keep them in one sub-directory of /home/$USER/work.
+#  (And best if each user doesn't choose - easier for scripts!)
+#
+# For $SR=1, use:
+# $iyr_trend = 2020
+# $NOxSplit    = "CLE2020_ver2";    # IER VOC splits
+#
+# To decide - do we need PM_ADDED. Need to see final emissions to decide
 ######################################################################
 # Features
 # 1. work directory now deduced from user-name
@@ -61,14 +85,14 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2002";
+$year = "2000";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
 # :can be set to meteorology year or arbitrary year, say 2050
 
 $iyr_trend = $year;  
-$iyr_trend = "2010" if $SR ;  # 2010 assumed for SR runs here
+$iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here #JUN06
 
 print "Year is $yy YEAR $year Trend year $ir_trend\n";
 
@@ -88,7 +112,7 @@ $MAARTEN      = "mifamvl";
 $NICOLAS      = "mifanif";      
 
 
-$USER        =  $PETER ;      
+$USER        =  $DAVE ;      
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
@@ -109,7 +133,7 @@ die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
 
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_4_6";
+    $testv       = "rv2_5";
     # BC Logan for O3
     
 } elsif ( $ACID ) {
@@ -126,11 +150,12 @@ $DATA_LOCAL  = "/home/mifapw/emep_common/Data/EMEP";
 
 #User directories
 $ProgDir     = "/home/$USER/Unify/Unimod.$testv";   # input of source-code
-$WORKDIR     = "/home/$USER/work";    # working and result directory
+$WORKDIR     = "/home/$USER/work/SR_RESULTS";    # working and result directory
 $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
 $TEMPDIR = "$WORKDIR/temp.$ENV{PBS_JOBID}";#NB: careful  system("rm -rf $TEMPDIR") below!
                                            #used to put all links and is then copied over to node(s)
 
+system("mkdir -p WORKDIR") unless -d $WORKDIR;
 #ds check: and change
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
 #  unless $ENV{PWD} =~ /Unimod.$testv.$year/;
@@ -179,7 +204,7 @@ $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
 # just before execution - so code can be run interactivel.
 
-$NDX   = 4;           # Processors in x-direction
+$NDX   = 8;           # Processors in x-direction
 $NDY   = 4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
@@ -246,6 +271,7 @@ print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 if ( $SR ) {
     $base        = "CLE";
     $Split       = "CLE_MAR2004";    # IER VOC splits
+    $NOxSplit    = "CLE2020_ver2";    # IER VOC splits
     $rednflag    = "P15";  # 10% reduction for label
     $redn        = "0.85";  # 10% reduction
     @polls       = qw ( BASE NP );  # NP, BASE already done
@@ -419,8 +445,9 @@ system "ls -lt | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-system "gmake depend" ;
-system "gmake" ;
+#JUN06 system "gmake" ;
+system "$MAKE depend" ;
+system "$MAKE" ;
 
 die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
 open(MAKELOG,">Make.log");    # Over-write Make.log
@@ -526,7 +553,8 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
 
   #rv2_4_6  New, 30/5/2006, from Joffen
 
-    $old   = "$DataDir/noxsplit.default.$NOxSplit" ;
+    #JUN06 tmp $old   = "$DataDir/noxsplit.default.$NOxSplit" ;
+    $old   = "$DataDir/noxsplit.default.2000" ;
     $new   = "noxsplit.defaults";
     mylink( "Split nox", $old,$new ) ;
 
@@ -638,10 +666,9 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
     $new = sprintf "rough.170";
     mylink( "Roughness length", $old,$new ) ;
     
-    #ds$old   = "$DataDir/landuse.nov2003" ;  #ds rv1_9_4 change
-#MAR2004    $old   = "$DataDir/landuse.dec2003" ;  #ds rv1_9_4 change
-    $old   = "$DATA_LOCAL/landuse.mar2004" ;
-    $new   = "landuse.dat";                #ds rv1_9_4 change
+    #TMP $old   = "$DATA_LOCAL/landuse.JUN06" ;
+    $old   = "$DataDir/landuse.JUN06" ;
+    $new   = "landuse.JUN06";
     mylink( "Landuse ", $old,$new ) ;
     
     foreach $datafile ( qw ( Volcanoes.dat   ) ) {
@@ -650,7 +677,7 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
 	mylink( "$datafile", $old,$new ) ;
     }
     
-    foreach $datafile ( qw ( MM_gfac1.dat lde_gfac2.dat lde_biomass.dat ) ) {
+    foreach $datafile ( qw ( JUN06_gfac1.dat JUN06_gfac2.dat JUN06_biomass.dat ) ) { #JUN06
 	$old   = "$DataDir/$datafile" ;
 	$new   = "$datafile" ;
 	mylink( "$datafile", $old,$new ) ;
@@ -745,7 +772,8 @@ foreach my $pollut ( @polls ) {
     my $RESDIR = "$WORKDIR/$scenario";
     system("mkdir -p $RESDIR");
 #safety test:
-#next if ( -r "$RESDIR/${runlabel1}_year.nc" );
+#next if ( -r "$RESDIR/${runlabel1}_year.nc" );  #DS ? Why not always have this?
+next if ( -r "$RESDIR/${runlabel1}_year.nc" );
 
  
 	my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ; # Initialise to 1.0
