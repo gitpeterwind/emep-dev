@@ -1,3 +1,13 @@
+============== Peter, Dave rv2_5   28/6/2006 ================================================
+
+DEBUG options set to false in rv2_5beta
+
+SRrun.pl created to look after SR runs
+
+iyr_trend added to RunLog output
+
+
+
 ============== Dave, rv2_5beta   27/6/2006 ================================================
 
 New flux parameters slightly re-defined. MMAOT30 and MMAOT40 added - AOTs according to
@@ -9,10 +19,9 @@ New flux parameters slightly re-defined. MMAOT30 and MMAOT40 added - AOTs accord
 
 Country_ml - updated from Heiko
 
-Derived_ml
+Derived_ml - new flux stuff added
 
 DryDep_ml - SumVPD limitations added for IAM_WHEAT
- 
 
 UK_ml - safety checks added on SGS, EGS
         InGrowingSeason array defined to simplify MMAOT calculation

@@ -332,18 +332,17 @@ def_2d = (/&
 !&
 !ds drydep
 !   set as "external" parameters - ie set outside Derived subroutine
-!   use index as lu, here 10=grass
 !      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
 !
 !Havn't worried about rho so far... does it matter?
-,Deriv( 850, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","nmol/m2/s")&
-,Deriv( 851, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","nmol/m2/s")&
-,Deriv( 852, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","nmol/m2/s")&
-,Deriv( 853, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","nmol/m2/s")&
+,Deriv( 850, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")&
+,Deriv( 851, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")&
+,Deriv( 852, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")&
+,Deriv( 853, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","mmol/m2")&
 !
-,Deriv( 854, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","nmol/m2/s")&
-,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","nmol/m2/s")&
-,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","nmol/m2/s")&
+,Deriv( 854, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","mmol/m2")&
+,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","mmol/m2")&
+,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","mmol/m2")&
 !
 !JUN06    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
 !JUN06    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&

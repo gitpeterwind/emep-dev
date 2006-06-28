@@ -311,17 +311,12 @@ program myeul
       read(IO_TMP,fmt="(I)")startdate(3) ! pw meteo day to start the run
       startdate(4)=0
 
-!      read(5,*) ntmp(1)
-!      read(5,*) ntmp(2)
-!      read(5,*) ntmp(3)  ! ds - iyr_ytrend
-!      read(5,fmt="(a)") runlabel1 ! ds, rv1_9_5 - explanation text short
-!      read(5,fmt="(a)") runlabel2 ! ds, rv1_9_5 - explanation text long
-
       write(unit=IO_LOG,fmt=*)trim(runlabel1)
       write(unit=IO_LOG,fmt=*)trim(runlabel2)
       write(unit=IO_LOG,fmt=*)startdate(1)
       write(unit=IO_LOG,fmt=*)startdate(2)
       write(unit=IO_LOG,fmt=*)startdate(3)
+      write(unit=IO_LOG,fmt=*)"iyr_trend= ", ntmp(3)
     endif
 
     print *, "read standard input"

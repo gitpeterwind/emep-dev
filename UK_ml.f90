@@ -72,7 +72,7 @@ private
  !ds Pb210: Emissions from water (v.small) and from ice zero.
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
 
- logical, private, parameter :: DEBUG_DEP = .true.
+ logical, private, parameter :: DEBUG_DEP = .false.
  character(len=30), private :: errmsg
 
 

@@ -114,7 +114,7 @@ module My_UKDep_ml    ! DryDep_ml
    real, public, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
 
 
-   logical, private, parameter :: MY_DEBUG = .true.
+   logical, private, parameter :: MY_DEBUG = .false.
 
 contains
   subroutine Init_DepMap
@@ -219,7 +219,7 @@ D2_MMAOT40WH    = find_one_index("D2_MMAOT40WH",f_2d(:)%name)
      integer :: n, nadv, ihh, idd, imm
      real :: o3WH, o3DF   ! O3 over wheat, decid forest
      !ds mar2005 integer :: izen                    ! integer of zenith angle
-     logical, parameter :: DEBUG_ECO = .true.
+     logical, parameter :: DEBUG_ECO = .false.
 
      integer, parameter :: N_OXS = 2        ! Number in ox. sulphur family
      real, parameter, dimension(N_OXS) :: OXS = &
