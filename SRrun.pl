@@ -862,10 +862,14 @@ foreach my $pollut ( @polls ) {
 		if ( $c eq "DE" ) {  # Add E. Germany too!
 			system("echo \" 9  $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\" >> femis.dat");
 		}
+		if ( $c eq "ATL" ) {  # Add ATL outside EMEP
+			system("echo \" 70  $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\" >> femis.dat");
+		}
 		if ( $c eq "RU" ) { # Add the other parts of Russia too! NB RU set to 42 (RUR)
 			system("echo \" 38  $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\" >> femis.dat");
 			system("echo \" 37  $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\" >> femis.dat");
 			system("echo \" 36  $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\" >> femis.dat");
+			system("echo \" 71  $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\" >> femis.dat");
 		}
 
 
