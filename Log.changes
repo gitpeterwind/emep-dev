@@ -1,4 +1,4 @@
-============== Peter, Dave rv2_5beta2   28-29/6/2006 ================================================
+==============  Anna, Peter, Dave rv2_5beta2   28-29/6/2006 ================================================
 
 SR version
 
@@ -6,8 +6,8 @@ My_Derived:
 SOURCE_RECEPTOR = .true.
 NDERIV_3D =  0
 
-Global_BC
-macehead for iyr_trend > 2010 set to +4.5 (was set +3+4.5=7.5 Thank you Anna!)
+Global_BC:
+macehead for iyr_trend > 2010 set to +4.5 (was set +3+4.5=7.5!)
 
 DEBUG options set to false in rv2_5beta
 

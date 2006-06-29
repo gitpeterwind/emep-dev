@@ -145,13 +145,13 @@ private
    ! Number of other 2D derived fields used:
 
    integer, public, parameter :: NDERIV_2D = &
-           !NSR_2D                   ! SOURCE_RECEPTOR = .true.
-           NSR_2D + NEXTRA_2D       ! SOURCE_RECEPTOR = .false.
+           NSR_2D                   ! SOURCE_RECEPTOR = .true.
+           !NSR_2D + NEXTRA_2D       ! SOURCE_RECEPTOR = .false.
 
    character(len=12), public, parameter, dimension(NDERIV_2D) :: &
       D2_USED = (/  D2_SR &
-                   ,D2_EXTRA /)   ! SOURCE_RECEPTOR = .false.
-                   !         /)   ! SOURCE_RECEPTOR = .true.
+                   !,D2_EXTRA /)   ! SOURCE_RECEPTOR = .false.
+                            /)   ! SOURCE_RECEPTOR = .true.
 
 
 !----------------------
@@ -170,7 +170,7 @@ private
         NWDEP     =  4   &  !
        ,NDDEP     = 15   &  ! wetlands and water now removed
 !dsNSR ,NDERIV_2D = 45   &  ! Number of other 2D derived fields used  !water&!SeaS
-       ,NDERIV_3D =  2      ! Number of 3D derived fields
+       ,NDERIV_3D =  0      ! Number of 3D derived fields
 
   ! then use character arrays to specify which are used.
 
@@ -189,10 +189,10 @@ private
      /)    !  "DDEP_PM   " not needed?
 
 
-!     character(len=13), public, parameter, dimension(0:NDERIV_3D) :: &
-     character(len=13), public, parameter, dimension(NDERIV_3D) :: &
-!       D3_USED = (/ "DUMMY" /) ! Dummy value if empty
-       D3_USED = (/ "D3_O3        ","D3_TH        " /) ! only ozone
+     character(len=13), public, parameter, dimension(0:NDERIV_3D) :: &
+!     character(len=13), public, parameter, dimension(NDERIV_3D) :: &
+       D3_USED = (/ "DUMMY" /) ! Dummy value if empty
+!       D3_USED = (/ "D3_O3        ","D3_TH        " /) ! only ozone
 
 !ds    D3_USED = (/"D3_O3        ","D3_OH        ", "D3_CH3COO2   ","D3_PHNO3     "&
 !ds               ,"D3_H2O2      "   &
