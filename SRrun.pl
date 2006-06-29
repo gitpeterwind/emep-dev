@@ -554,8 +554,7 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
 
   #rv2_4_6  New, 30/5/2006, from Joffen
 
-    #JUN06 tmp $old   = "$DataDir/noxsplit.default.$NOxSplit" ;
-    $old   = "$DataDir/noxsplit.default.2000" ;
+    $old   = "$DataDir/noxsplit.default.$NOxSplit" ;
     $new   = "noxsplit.defaults";
     mylink( "Split nox", $old,$new ) ;
 

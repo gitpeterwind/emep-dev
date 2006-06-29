@@ -89,7 +89,7 @@ private
   ! false if SOURCE_RECPTOR = .true.. We don't (generally) want daily outputs
   ! for SR runs.
 
-    logical, public, parameter :: SOURCE_RECEPTOR = .false.
+    logical, public, parameter :: SOURCE_RECEPTOR = .true.
 
 
   ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
