@@ -192,7 +192,7 @@ Country( IC_DUMMY1 ) &
                  = cc(  "N/A" , 67 ,F,  0  , "Not_defined                   " )
 Country( IC_KG ) = cc(  "KG " , 68 ,F,  6  , "Kyrgyzstan                    " )
 Country( IC_AZ ) = cc(  "AZ " , 69 ,F,  3  , "Azerbaijan                    " )
-Country( IC_ATX )= cc(  "ATX" , 70 ,F,  1  , "Atlantic outside emep        " )
+Country( IC_ATX )= cc(  "ATX" , 70 ,T,  1  , "Atlantic outside emep        " )
 Country( IC_RUX )= cc(  "RUX" , 71 ,F,  4  , "Russian Fed. outside emep     " )
 
 

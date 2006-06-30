@@ -86,14 +86,14 @@ require "flush.pl";
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2000";
+$year = "1997";
 ( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
 # :can be set to meteorology year or arbitrary year, say 2050
 
 $iyr_trend = $year;  
-$iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here #JUN06
+$iyr_trend = "2010" if $SR ;  # 2020 assumed for SR runs here #JUN06
 
 print "Year is $yy YEAR $year Trend year $ir_trend\n";
 
@@ -113,13 +113,13 @@ $MAARTEN      = "mifamvl";
 $NICOLAS      = "mifanif";      
 
 
-$USER        =  $PETER ;      
+$USER        =  $HILDE ;      
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
 my $SR = 1;   #Set to 1 for source-receptor stuff
-my $PM_ADDED     = 0;  # Adds in PM emissions from NOx inventory scaling
-my $AFRICA_ADDED = 0;  # Adds in African emissions for y=1..11
+my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
+my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 
 $OZONE = "1"; 
 $ACID = "0";     # Specify model type here
@@ -608,7 +608,8 @@ if ( $COMPILE_ONLY) {     ## exit after make ##
     if ( $PM_ADDED ) {  # Add PM emissions based upon NOx inventory
 
 	print "STARTING PM ADDITION\n";
-	system("$DATA_LOCAL/emissions/mkp.pmemis_from_nox");
+#	system("$DATA_LOCAL/emissions/mkp.pmemis_from_nox");
+	system("$DATA_LOCAL/emissions/mkp.pmemis_from_nox_ASI_NOA");
 #	system("$DAVE/Unify/D_emis/mkp.pmemis_from_nox");
 	#system("cat emislist.pm25 > test_emislist.pm25");
 	#system("cat emislist.pmco > test_emislist.pmco");
