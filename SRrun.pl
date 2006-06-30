@@ -2,7 +2,7 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=32
+#PBS -lnodes=8:ppn=4
 # wall time limit of run
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 4GB per node)
@@ -92,8 +92,10 @@ $year = "1997";
 # iyr_trend:
 # :can be set to meteorology year or arbitrary year, say 2050
 
+my $SR = 1;   #Set to 1 for source-receptor stuff
+
 $iyr_trend = $year;  
-$iyr_trend = "2010" if $SR ;  # 2020 assumed for SR runs here #JUN06
+$iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here #JUN06
 
 print "Year is $yy YEAR $year Trend year $ir_trend\n";
 
@@ -117,7 +119,6 @@ $USER        =  $HILDE ;
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
-my $SR = 1;   #Set to 1 for source-receptor stuff
 my $PM_ADDED     = 1;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 1;  # Adds in African emissions for y=1..11
 
@@ -163,7 +164,7 @@ system("mkdir -p WORKDIR") unless -d $WORKDIR;
 
 
 $Split       = "BASE_MAR2004" ;       
-$NOxSplit       = "2000" ;               # Have CLE2020, MFR2020, 2000       
+$NOxSplit       = "CLE2020_ver2" ;               # Have CLE2020, MFR2020, 2000       
 $Africa      = "$DATA_LOCAL/Africa";        # Emissions for Africa, y=1..11
 
 $timeseries  = "$DataDir";
@@ -184,7 +185,7 @@ my $scenario = "Base";     # Reset later if SR
 
 
 #EMISSIONS
-$emisdir = "$DATA_LOCAL/2004_emis2010_CLE_2000_V6";
+$emisdir = "$DATA_LOCAL/2006_emis2020_SRlow_V7";
 $femis       = "$DataDir/femis.dat";      # emission control file
 
 

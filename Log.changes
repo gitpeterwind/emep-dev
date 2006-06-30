@@ -1,4 +1,10 @@
-==============  Peter, Hilde rv2_5beta2   30/6/2006 ================================================
+
+
+==============  Anna, Peter, Hilde rv2_5beta2   30/6/2006 ================================================
+
+SR=1 moved higher up in SRrun.pl (was bug: $iyr_trend was never set to 2010)
+$iyr_trend = "2020" if $SR  in SRrun.pl
+$NOxSplit       = "CLE2020_ver2" in SRrun.pl
 
 SRrun.pl changed to include PM_ADDED. mkp.pmemis_from_nox changed (and new name), do not include Azerbaijan anymore - we have those PM emissions.
 Country_ml.f90: ATX now sea=1
