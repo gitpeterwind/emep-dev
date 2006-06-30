@@ -2,6 +2,9 @@
 
 SRrun.pl changed to include PM_ADDED. mkp.pmemis_from_nox changed (and new name), do not include Azerbaijan anymore - we have those PM emissions.
 Country_ml.f90: ATX now sea=1
+
+noxsplit.special.2000 should not have been there, the default split should be used for all years before 2010. File removed from datadirectory.
+
 ==============  Anna, Peter, Dave rv2_5beta2   28-29/6/2006 ================================================
 
 SR version
