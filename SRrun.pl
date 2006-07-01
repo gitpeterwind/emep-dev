@@ -97,7 +97,7 @@ my $SR = 1;   #Set to 1 for source-receptor stuff
 $iyr_trend = $year;  
 $iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here #JUN06
 
-print "Year is $yy YEAR $year Trend year $ir_trend\n";
+print "Year is $yy YEAR $year Trend year $iyr_trend\n";
 
 $MetDir = "/home/mifapw/emep_common/Data/EMEP/metdata/$year" ; 
 
@@ -164,7 +164,7 @@ system("mkdir -p WORKDIR") unless -d $WORKDIR;
 
 
 $Split       = "BASE_MAR2004" ;       
-$NOxSplit       = "CLE2020_ver2" ;               # Have CLE2020, MFR2020, 2000       
+$NOxSplit       = "2000" ;               # Have CLE2020, MFR2020, 2000       
 $Africa      = "$DATA_LOCAL/Africa";        # Emissions for Africa, y=1..11
 
 $timeseries  = "$DataDir";
@@ -267,8 +267,11 @@ print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 @emep = qw ( CS BY BA HR TR RU UA KZ MD MK GE AM AL AZ KG NOA ASI REM) ; 
 @new =qw ( RUX   ATX ); 
 
-@countries = qw ( IT NO ) ;  # List of wanted countries this run
-# EU25 is "special"
+@countries = qw ( IT ) ;  # List of wanted countries this run (at least 1)
+
+@polls       = qw ( BASE );  # A, NP, V or S (at least 1)
+$rednflag    = "P15";  # 10% reduction for label
+$base        = "CLE";
 
 if ( $SR ) {
     $base        = "CLE";
@@ -761,13 +764,14 @@ foreach my $pollut ( @polls ) {
     foreach my $cc ( @countries ) {
 	print "STARTING CC $cc\n";
 #foreach $scenario ( @runs ) {
-    print "STARTING RUN $scenario \n";
 
 	my $ss = 100;#anthropogenic
 
         $scenario = "${base}_${cc}_${pollut}_${rednflag}" if $SR;
         $scenario = "${base}" if $pollut eq "BASE" ;
     
+    print "STARTING RUN $scenario \n";
+
     $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
     $runlabel2    = "${testv}_${scenario}_$year";   # NO SPACES! LONG (written into CDF files)
     
