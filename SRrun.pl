@@ -157,7 +157,7 @@ $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
 $TEMPDIR = "$WORKDIR/temp.$ENV{PBS_JOBID}";#NB: careful  system("rm -rf $TEMPDIR") below!
                                            #used to put all links and is then copied over to node(s)
 
-system("mkdir -p WORKDIR") unless -d $WORKDIR;
+system("mkdir -p $WORKDIR") unless -d $WORKDIR;
 #ds check: and change
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
 #  unless $ENV{PWD} =~ /Unimod.$testv.$year/;
