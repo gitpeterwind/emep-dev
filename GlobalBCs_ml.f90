@@ -396,9 +396,16 @@ elseif ( year == 2003 ) then
 !               ,     33.9 ,     34.2 ,     35.3,      39.3 ,     40.5 ,     42.3 /)
   macehead_O3 = (/  39.8 ,     40.1 ,     44.7 ,     45.4 ,     45.7 ,     41.7 &
                ,     33.3 ,     31.0 ,     35.7,      37.9 ,     40.9 ,     38.1 /)
-
+!hf updated 11/7-06
+elseif( year == 2004) then 
+   macehead_O3 = (/    40.8,    42.0,    48.3,    46.6,    39.9,    31.9 & 
+        ,    32.4,    32.1,    33.9,    36.7,    40.2,    39.8/) 
 
 !---------------------------------------------------------------------------
+elseif ( year >= 2005 ) then
+          errmsg =  "No Mace Head correction for this year yet! "
+          print *, errmsg, i
+          if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
 
  else  ! Defaults, from 1990-2000 average !
    macehead_O3 = (/  37.6, 40.0, 42.9, 43.2, 41.9, 33.9, &
