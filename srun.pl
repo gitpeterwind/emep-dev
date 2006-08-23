@@ -2,11 +2,11 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=90
+#PBS -lnodes=32
 # wall time limit of run
-#PBS -lwalltime=3:44:00
+#PBS -lwalltime=1:30:00
 # lpmeme=memory to reserve per processor (max 4GB per node)
-#PBS -lpmem=200MB
+#PBS -lpmem=100MB
 # account for billing
 #PBS -A nn2890k
 my $MAKE = "gmake --makefile=Makefile_snow";
@@ -89,7 +89,7 @@ $MAARTEN      = "mifamvl";
 $NICOLAS      = "mifanif";      
 
 
-$USER        =  $DAVE ;      
+$USER        =  $PETER ;      
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
@@ -110,7 +110,7 @@ die "Must choose ACID or OZONE" if ( $OZONE+$ACID>1 or $OZONE+$ACID==0 );
 
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_5beta";
+    $testv       = "rv2_6";
     # BC Logan for O3
     
 } elsif ( $ACID ) {
@@ -126,9 +126,11 @@ $DataDir       = "/home/mifapw/emep_common/Data";
 $DATA_LOCAL  = "/home/mifapw/emep_common/Data/EMEP";
 
 #User directories
-$ProgDir     = "/home/$USER/Unify/Unimod.$testv";   # input of source-code
-$WORKDIR     = "/home/$USER/work/FluxRuns/Unimod.$testv.$year";    # working and result directory
+$ProgDir     = "/home/$USER/Unify/last";   # input of source-code
+$WORKDIR     = "/home/$USER/work/$testv.$year";    # working and result directory
 $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
+$TEMPDIR = "$WORKDIR/temp.$ENV{PBS_JOBID}";#NB: careful  system("rm -rf $TEMPDIR") below!
+                                           #used to put all links and is then copied over to node(s)
 
 #ds check: and change
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
@@ -158,7 +160,7 @@ my $scenario = "Base";     # Reset later if SR
 
 #EMISSIONS
 $emisdir = "$DATA_LOCAL/2004_emis2010_CLE_2000_V6";
-$emisdir = "$MyDataDir/EMIS_MAR2006"; 
+#$emisdir = "$MyDataDir/EMIS_MAR2006"; 
 $femis       = "$DataDir/femis.dat";      # emission control file
 
 
@@ -179,8 +181,8 @@ $COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
 $INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
 # just before execution - so code can be run interactivel.
 
-$NDX   = 9;           # Processors in x-direction
-$NDY   = 10;           # Processors in y-direction
+$NDX   = 8;           # Processors in x-direction
+$NDY   = 4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
 
@@ -188,12 +190,12 @@ if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 $month_days[2] += leap_year($year);
 
 $mm1   =  1;       # first month
-$mm2   =  12;       # last month
+$mm2   =  2;       # last month
 $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-#$NTERM = 16;       # for testing, simply reset here
+$NTERM = 260;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -416,9 +418,13 @@ foreach $scenario ( @runs ) {
     #--- Change to RESDIR
     
     my $RESDIR = "$WORKDIR/$scenario";
+
+    system("mkdir -p $TEMPDIR");    
+    chdir "$TEMPDIR"; 
+
     system("mkdir -p $RESDIR");
-    
-    chdir "$RESDIR"; 
+#    
+#    chdir "$RESDIR"; 
     
     # Erase any .nc files to avoid confusion:
 #	@nc_files = ( glob("$RESDIR/*.nc"),  glob("$RESDIR/*.nc.bz2") );
@@ -508,11 +514,11 @@ foreach $scenario ( @runs ) {
 
   #rv2_4_6  New, 30/5/2006, from Joffen
 
-    $old   = "$MyDataDir/noxsplit.default.$NOxSplit" ;
+    $old   = "$DataDir/noxsplit.default.$NOxSplit" ;
     $new   = "noxsplit.defaults";
     mylink( "Split nox", $old,$new ) ;
 
-    $old   = "$MyDataDir/noxsplit.special.$NOxSplit" ;
+    $old   = "$DataDir/noxsplit.special.$NOxSplit" ;
     $new   = "noxsplit.special";
     mylink( "Split nox", $old,$new ) ;
 
@@ -692,7 +698,7 @@ $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
 
 
 	my $tmpdir = $ENV{PWD};
-	$ENV{PWD} = $RESDIR;
+	$ENV{PWD} = $TEMPDIR;
 	
 	$tempworkdir="/work/${USER}/$ENV{PBS_JOBID}"; #workdir on each node
 	open (DATACP, "|mpiexec -comm none -pernode mkdir -p $tempworkdir ") || 
@@ -705,25 +711,26 @@ $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
 #    system("ls -l");
 	
 # all data is copied on node 0
-	system("cp  $RESDIR/* $tempworkdir "); 
+	system("cp  $TEMPDIR/* $tempworkdir "); 
+
 #    system("ls -l");
 	
 # some data is copied on all nodes (it is read by all nodes )
-	open (DATACP, "|mpiexec -comm none -pernode cp  $RESDIR/*gfac* $tempworkdir ") || 
+	open (DATACP, "|mpiexec -comm none -pernode cp  $TEMPDIR/*gfac* $tempworkdir ") || 
 	    die "Unable to copy data. Exiting.\\n" ;
 	close(DATACP);
-	open (DATACP, "|mpiexec -comm none -pernode cp  $RESDIR/*biomass* $tempworkdir ") || 
+	open (DATACP, "|mpiexec -comm none -pernode cp  $TEMPDIR/*biomass* $tempworkdir ") || 
 	    die "Unable to copy data. Exiting.\\n" ;
 	close(DATACP);
-	open (DATACP, "|mpiexec -comm none -pernode cp  $RESDIR/*sonde* $tempworkdir ") || 
+	open (DATACP, "|mpiexec -comm none -pernode cp  $TEMPDIR/*sonde* $tempworkdir ") || 
 	    die "Unable to copy data. Exiting.\\n" ;
 	close(DATACP);
-	open (DATACP, "|mpiexec -comm none -pernode cp  $RESDIR/*site* $tempworkdir ") || 
+	open (DATACP, "|mpiexec -comm none -pernode cp  $TEMPDIR/*site* $tempworkdir ") || 
 	    die "Unable to copy data. Exiting.\\n" ;
 	close(DATACP);
 	
 	
-	open (DATACP, "|mpiexec -comm none -pernode cp  $RESDIR/$LPROG $tempworkdir ") || 
+	open (DATACP, "|mpiexec -comm none -pernode cp  $TEMPDIR/$LPROG $tempworkdir ") || 
 	    die "Unable to copy data. Exiting.\\n" ;
 	
 	close(DATACP);
@@ -786,11 +793,12 @@ $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
     
     close(DATACP);
     
-    chdir "$RESDIR"; 
-    foreach $f ( @list_of_files ) {
-        unlink($f);
-        #print "REMOVED $f \n";
-    }
+    system("rm -rf $TEMPDIR");
+#    chdir "$TEMPDIR"; 
+#    foreach $f ( @list_of_files ) {
+#        unlink($f);
+#        #print "REMOVED $f \n";
+#    }
     exit;
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
     my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;
