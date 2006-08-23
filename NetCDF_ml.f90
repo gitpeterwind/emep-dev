@@ -53,11 +53,11 @@
   public :: GetCDF
   public :: WriteCDF
   public :: ReadCDF
+  public :: secondssince1970
 
   private :: CreatenetCDFfile
   private :: createnewvariable
   private :: check
-  private :: secondssince1970
 
 contains
 !_______________________________________________________________________
@@ -338,7 +338,9 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, kVarID, "positive", "down"))
 
   call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
+  if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown')then
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
+  endif
   call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
  
 
@@ -1283,9 +1285,9 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
     if(newfile)then
     !make a new file (i.e. delete possible old one)
     if ( me == 0 )then
-       write(*,*)'pwcreating',me
+       write(*,*)'creating',me
        call Init_new_netCDF(fileName,iotyp) 
-       write(*,*)'pwcreated',me
+       write(*,*)'created',me
     endif
     endif
  else
@@ -1305,7 +1307,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  def1%month=.false.    !not used
  def1%day=.false.      !not used
  def1%name='O3'        !written
- def1%unit='PPB'       !written
+ def1%unit='mix_ratio'       !written
 
 
  if(trim(varname)=='ALL')then
@@ -1319,23 +1321,37 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
     write(*,*)'Check species names'
  endif
 
- def1%class='Short_lived' !written
- do n=1, NSPEC_SHL
- def1%name= species(n)%name       !written
- dat=xn_shl(n,:,:,:)
- icmp=n
- call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real8,fileName_given=fileName)
- enddo
+! def1%class='Short_lived' !written
+! do n=1, NSPEC_SHL
+! def1%name= species(n)%name       !written
+! dat=xn_shl(n,:,:,:)
+! icmp=n
+! call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real8,fileName_given=fileName)
+! enddo
 
  def1%class='Advected' !written
  do n= 1, NSPEC_ADV
  def1%name= species(NSPEC_SHL+n)%name       !written
  dat=xn_adv(n,:,:,:)
- icmp=NSPEC_SHL+n
- call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real8,fileName_given=fileName)
+ call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,ist=60,jst=11,ien=107,jen=58,fileName_given=fileName)
  enddo
 
- else
+  elseif(trim(varname)=='LIST')then
+     ndim=3 !3-dimensional
+     kmax=KMAX_MID
+
+
+     def1%class='Advected' !written
+     do n= 1, NSPEC_ADV
+        def1%name= species(NSPEC_SHL+n)%name       !written
+        if(trim(def1%name)=='O3'.or.trim(def1%name)=='NO2')then
+           dat=xn_adv(n,:,:,:)
+           icmp=NSPEC_SHL+n
+           call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,ist=10,jst=10,ien=20,jen=20,fileName_given=fileName)
+        endif
+     enddo
+
+else
 
     if(me==0)write(*,*)'case not implemented'
  endif

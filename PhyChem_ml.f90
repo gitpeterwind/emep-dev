@@ -86,8 +86,9 @@ contains
 
         if (me == 0) write(6,"(a15,i6,f8.3,2i5)") 'timestep nr.',nstep,thour
 
-        call readxn(current_date)
-
+        call wrtxn(current_date) !Write xn_adv for future nesting
+        call readxn(current_date) !Read xn_adv from earlier runs
+ 
 !        ==================
 	call Code_timer(tim_before)
 
@@ -195,6 +196,7 @@ contains
 
           call Derived(dt_advec,End_of_Day)
 
+
          ! Hourly Outputs:
 	  if ( current_date%seconds == 0 ) then
 
@@ -216,7 +218,6 @@ contains
 	  call metint
 	  call adv_int
 
-          call wrtxn(current_date)
 
           call Add_2timing(36,tim_after,tim_before,"phyche:ints")
 

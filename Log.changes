@@ -1,3 +1,17 @@
+============== Peter  rv2_6   23/8/2006 ================================================
+
+Included Nesting options. 
+Not enough tested but needed for ENEA delivery: 3D BC 3-hourly all components.
+For a nest run: Set MODE and istart,jstart,iend,jend
+
+Nest_ml: completely revised
+NetCDF_ml: secondssince1970 public, 
+           not time at middle of period for instant data (like BC).
+PhyChem_ml: moved wrtxn call.
+ZD_OZONE/My_Derived: SR = false "consistent"
+srun.pl :small changes
+
+
 ==============   rv2_5   11/7/2006 ================================================
 
 Also version used for Jul 2006 SR runs for IIASA
