@@ -229,7 +229,8 @@ contains
     def1%name=''        !written
     def1%unit='mix_ratio'       !written
 
-    do n= 1, NSPEC_ADV-4
+    do n= 1, NSPEC_ADV
+!    do n= 1, NSPEC_ADV-4  !ENEA
        def1%name= species(NSPEC_SHL+n)%name       !written
        dat=xn_adv(n,:,:,:)
        call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
