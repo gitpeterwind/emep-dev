@@ -126,7 +126,7 @@ $DataDir       = "/home/mifapw/emep_common/Data";
 $DATA_LOCAL  = "/home/mifapw/emep_common/Data/EMEP";
 
 #User directories
-$ProgDir     = "/home/$USER/Unify/last";   # input of source-code
+$ProgDir     = "/home/$USER/Unify/Unimod.$testv";   # input of source-code
 $WORKDIR     = "/home/$USER/work/$testv.$year";    # working and result directory
 $MyDataDir   = "/home/$USER/Unify/MyData";    # for each user's private input
 $TEMPDIR = "$WORKDIR/temp.$ENV{PBS_JOBID}";#NB: careful  system("rm -rf $TEMPDIR") below!
