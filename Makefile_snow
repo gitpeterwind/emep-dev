@@ -57,11 +57,12 @@ depend .depend:
 	-o $(PROG) \
 	-l "$(F90) $(LDFLAGS) $(LLIB) -o $(PROG) $(FOBJ) $(INCL) $(LIBS)" > .depend
 
-clean:
-	rm -f $(PROG) *.o *.mod ; \
+clean: diskclean touchdepend depend
+
+diskclean:
+	rm -f $(PROG) *.o *.mod
+
+touchdepend:
 	touch .depend
-	make depend
-
-
 ##########################################################
 
