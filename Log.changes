@@ -1,3 +1,16 @@
+============== Heiko  rv2_6_1  25/10/2006 ================================================
+
+ I just found a problem in the Makefile_snow, it included
+ 
+ clean:
+ 	rm ... \
+ 	touch ... \
+ 	make depend
+ 
+ 
+ The last one did thus run 'make depend' instead of 'make -f 
+ Makefile_snow depend'. This is fixed in the cvs'd file.
+
 ============== Peter  rv2_6   23/8/2006 ================================================
 
 Included Nesting options. 
