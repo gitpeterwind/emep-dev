@@ -6,7 +6,7 @@ SRCS =	Aero_Rb_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 	BoundaryConditions_ml.f90 Chem_ml.f90 Country_ml.f90 Dates_ml.f90 \
 	DefPhotolysis_ml.f90 DepVariables_ml.f90 Derived_ml.f90 DryDep_ml.f90 \
 	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 Functions_ml.f90 \
-	gc_com.f GlobalBCs_ml.f90 GridValues_ml.f90 Io_ml.f90 MassBudget_ml.f90 \
+	gc_com.f90 GlobalBCs_ml.f90 GridValues_ml.f90 Io_ml.f90 MassBudget_ml.f90 \
 	Met_ml.f90 EQSAM_ml.f90 MARS_ml.f90 ModelConstants_ml.f90 My_Aerosols_ml.f90 \
 	My_BoundConditions_ml.f90 My_Chem_ml.f90 My_Derived_ml.f90 \
 	My_DryDep_ml.f90 My_Emis_ml.f90 My_MassBudget_ml.f90 \
@@ -17,7 +17,7 @@ SRCS =	Aero_Rb_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 	Setup_1dfields_ml.f90 Sites_ml.f90 SoilWater_ml.f90 Solver.f90 SeaSalt_ml.f90 \
 	SubMet_ml.f90 Tabulations_ml.f90 TimeDate_ml.f90 Timefactors_ml.f90 Timing_ml.f90 \
 	UK_ml.f90 UKsetup_ml.f90 Unimod.f90 Volcanos_ml.f90 Wesely_ml.f90 \
-	Wrtchem.f90 global2local.f local2global.f PhyChem_ml.f90
+	Wrtchem.f90 global2local.f90 local2global.f90 PhyChem_ml.f90
 
 
 
@@ -37,12 +37,9 @@ LDFLAGS = -r8 -O3 -convert big_endian  -IPF_fp_relaxed
 LD = scampif90
 
 
-.SUFFIXES: $(SUFFIXES)  .f .f90
+.SUFFIXES: $(SUFFIXES)  .f90
 
 .f90.o:
-	$(F90) $(F90FLAGS) -c $<
-
-.f.o:	
 	$(F90) $(F90FLAGS) -c $<
 
 

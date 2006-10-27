@@ -1964,7 +1964,7 @@
 
 !	local
 
-	integer ij, ijn,ijll
+	integer ij, ijn,ijll,nn
 	integer limtlow,limthig
 	integer lijb,lije
 	real ijn1
@@ -2276,7 +2276,7 @@
 		hel1(:) = xnbeg(:,3)*xmdloc(0)
 		hel2(:) = flux(:,0) +  flux(:,-1)
 		where(hel1(:).lt.hel2(:))flux(:,0)		&
-			= flux(:,0)*hel1(:)/hel2(:)
+			= flux(:,0)*hel1(:)/(hel2(:)+1.0E-100)
 		hel1ps = psbeg(3)*xmdloc(0)
 		hel2ps = fluxps(0) +  fluxps(-1)
 		if(hel1ps.lt.hel2ps)fluxps(0) = fluxps(0)*hel1ps/hel2ps
@@ -2301,8 +2301,8 @@
 		hel1(:) = xn_adv(:,li0)*xmdloc(li0)
 		hel2(:) = flux(:,li0) + flux(:,li0-1)
 		where(hel1(:).lt.hel2(:))
-		  flux(:,li0-1) = -flux(:,li0-1)*hel1(:)/hel2(:)
-		  flux(:,li0) = flux(:,li0)*hel1(:)/hel2(:)
+		  flux(:,li0-1) = -flux(:,li0-1)*hel1(:)/(hel2(:)+1.0E-100)
+		  flux(:,li0) = flux(:,li0)*hel1(:)/(hel2(:)+1.0E-100)
 		  xn_adv(:,li0) = 0.
 		else where
 		  flux(:,li0-1) = -flux(:,li0-1)
@@ -2392,14 +2392,18 @@
 	  if(ij.lt.-3) goto 357
 	    hel1(:) = xn_adv(:,ij+1)*xmdloc(ij+1)
 	    hel2(:) = flux(:,ij+1) +  flux(:,ij)
+
 	    where(hel1(:).lt.hel2(:))
-	      flux(:,ij) = - flux(:,ij)*hel1(:)/hel2(:)
-	      flux(:,ij+1) = flux(:,ij+1)*hel1(:)/hel2(:)
+!On IBM machine the division can give overflow if hel2 is too small
+	      flux(:,ij) = - (flux(:,ij)*hel1(:))/(hel2(:)+1.0E-100)
+	      flux(:,ij+1) = (flux(:,ij+1)*hel1(:))/(hel2(:)+1.0E-100)
 	      xn_adv(:,ij+1) = 0.
 	    else where
 	      flux(:,ij) = -flux(:,ij)
 	      xn_adv(:,ij+1) = xm2loc(ij+1)*(hel1(:)-hel2(:))
 	    end where
+
+
 	    xn_adv(:,ij) =					&
 			amax1(0.,xn_adv(:,ij)			&
 			-xm2loc(ij)*(flux(:,ij) - flux(:,ij-1)))
@@ -2427,7 +2431,7 @@
 	    hel2(:) = flux(:,li1+1) + flux(:,li1)
 	    where(hel1(:).lt.hel2(:))
 	      flux(:,li1) = 					&
-			- flux(:,li1)*hel1(:)/hel2(:)
+			- flux(:,li1)*hel1(:)/(hel2(:)+1.0E-100)
 	    else where
 	      flux(:,li1) = -flux(:,li1)
 	    end where
@@ -2854,7 +2858,7 @@
 	  hel1(:) = xnbeg(:,3)*xmdloc(0)
 	  hel2(:) = flux(:,0) +  flux(:,-1)
 	  where(hel1(:).lt.hel2(:))flux(:,0) 	&
-			= flux(:,0)*hel1(:)/hel2(:)
+			= flux(:,0)*hel1(:)/(hel2(:)+1.0E-100)
 	  hel1ps = psbeg(3)*xmdloc(0)
 	  hel2ps = fluxps(0) +  fluxps(-1)
 	  if(hel1ps.lt.hel2ps)fluxps(0) 		&
@@ -2880,8 +2884,8 @@
 	      hel1(:) = xn_adv(:,lj0*MAXLIMAX)*xmdloc(lj0)
 	      hel2(:) = flux(:,lj0) +  flux(:,lj0-1)
 	      where(hel1(:).lt.hel2(:))
-	        flux(:,lj0-1) = - flux(:,lj0-1)*hel1(:)/hel2(:)
-	        flux(:,lj0) = flux(:,lj0)*hel1(:)/hel2(:)
+	        flux(:,lj0-1) = - flux(:,lj0-1)*hel1(:)/(hel2(:)+1.0E-100)
+	        flux(:,lj0) = flux(:,lj0)*hel1(:)/(hel2(:)+1.0E-100)
 	        xn_adv(:,lj0*MAXLIMAX) = 0.
 	      elsewhere
 	        flux(:,lj0-1) = -flux(:,lj0-1)
@@ -2973,8 +2977,9 @@
 	  hel1(:) = xn_adv(:,(ij+1)*MAXLIMAX)*xmdloc(ij+1)
 	  hel2(:) = flux(:,ij+1) +  flux(:,ij)
 	  where(hel1(:).lt.hel2(:))
-	    flux(:,ij) = - flux(:,ij)*hel1(:)/hel2(:)
-	    flux(:,ij+1) = flux(:,ij+1)*hel1(:)/hel2(:)
+!On IBM machine the division can give overflow if hel2 is too small
+	    flux(:,ij) = - flux(:,ij)*hel1(:)/(hel2(:)+1.0E-100)
+	    flux(:,ij+1) = flux(:,ij+1)*hel1(:)/(hel2(:)+1.0E-100)
 	    xn_adv(:,(ij+1)*MAXLIMAX) = 0.
 	  else where
 	    flux(:,ij) = -flux(:,ij)
@@ -3007,7 +3012,7 @@
 	    hel2(:) = flux(:,lj1+1) + flux(:,lj1)
 	    where(hel1(:).lt.hel2(:))
 	      flux(:,lj1) 					&
-			= -flux(:,lj1)*hel1(:)/hel2(:)
+			= -flux(:,lj1)*hel1(:)/(hel2(:)+1.0E-100)
 	    else where
 	      flux(:,lj1) = -flux(:,lj1)
 	    end where

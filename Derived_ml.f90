@@ -766,11 +766,11 @@ def_3d = (/ &
 
           case ( "MAXADV" )
 
-            forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_DAY) = max( d_2d( n, i,j,IOU_DAY), &
-                                xn_adv(index,i,j,KMAX_MID)  &
-                                     * cfac(index,i,j) * density(i,j) )
-            end forall
+
+              d_2d( n, 1:limax,1:ljmax,IOU_DAY) = max( d_2d( n, 1:limax,1:ljmax,IOU_DAY),  &
+             xn_adv(index,1:limax,1:ljmax,KMAX_MID)  &
+                                     * cfac(index,1:limax,1:ljmax) * density(1:limax,1:ljmax))
+
 
             if ( MY_DEBUG .and. debug_flag ) then
              write(*,fmt="(a12,2i4,4f12.3)") "ADV MAX. ", n, index  &

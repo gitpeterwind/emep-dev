@@ -1,3 +1,23 @@
+============== Peter  rv2_6_1   27/10/2006 ================================================
+
+Version compatible with "njord", IBM p575+ 16-way nodes, AIX , Load Leveler
+
+gc_com,local2global,global2local set to f90
+
+MARS_ml.f90 line 864 1.d0 changed to 1.0
+TimeDate_ml: line 53 reduced month length to 10
+Derived_ml.f90 : case ( "MAXADV" ) changed forall (program crashes with segmentation fault otherwise??)
+Advection_ml: changed hel1/hel2 into hel1/(hel2+1.0E-100) 
+	      because of overflow otherwise (compiler weakness, works without if only -O2 is used)
+removed all *.f files (gc_com.f,local2global.f,global2local.f)
+new nrun.pl and nSRrun.pl (n for njord)
+
+Makefile_njord created
+Makefile_snow updated (.f removed or replaced with .f90) 
+
+Put values in the "k" og the Boundary_and_Initial_Conditions.nc
+
+
 ============== Heiko  rv2_6_1  25/10/2006 ================================================
 
  I just found a problem in the Makefile_snow, it included

@@ -861,7 +861,7 @@ module MARS_ml
          part1=sqrt(rrsq-dum1)
          part2=abs(rr)
          part3=(part1+part2)**one3rd
-         crutes(1) = -sign(1.D0,rr) * ( part3 + (qq/part3) ) - a2/3. 
+         crutes(1) = -sign(1.0,rr) * ( part3 + (qq/part3) ) - a2/3. 
          crutes(2)=0.
          crutes(3)=0.
 !IAREV02...ADDITIONAL CHECK on NEGATIVE ROOTS

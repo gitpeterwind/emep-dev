@@ -51,10 +51,10 @@ MODULE TimeDate_ml
 		   "Jul","Aug","Sep","Oct","Nov","Dec"/)
  
 	CHARACTER(LEN=10),DIMENSION(12), public :: long_month = &
-		 (/"January     ", "February    ",  "March       ",  &  
-		   "April       ", "May	        ",  "June        ",  &  
-		   "July        ", "August      ",  "September   ",  &  
-		   "October     ", "November    ",  "December    "  /)  
+		 (/"January   ", "February  ",  "March     ",  &  
+		   "April     ", "May       ",  "June      ",  &  
+		   "July      ", "August    ",  "September ",  &  
+		   "October   ", "November  ",  "December  "  /)  
 
 	!DS:
 	CHARACTER(LEN=3),DIMENSION(0:6), public :: short_day =  &
