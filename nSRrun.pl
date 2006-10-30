@@ -416,7 +416,7 @@ system "ls -lt | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-#system "$MAKE depend" ;
+system "$MAKE depend" ;
 system "$MAKE" ;
 
 #die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
