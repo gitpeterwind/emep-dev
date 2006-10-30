@@ -43,7 +43,7 @@
 ######################################################################
 #
 # Script to prepare files before running Eulerian model on 
-# frigg. The main advantage of this script is that
+# njord. The main advantage of this script is that
 # the domain size  and input/output files and directories
 # can be easily changed. The script does this by modifying the
 # Par_ml.pat file to produce the corresponding
