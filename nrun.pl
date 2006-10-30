@@ -48,7 +48,7 @@
 # Par_ml.pat file to produce the corresponding
 # Par_ml.f90 file with appropriate set-up.  
 #
-#    submit on FRIGG from work directory with
+#    submit on njord from work directory with
 #    >llsubmit frun.pl
 #
 #    check queue status with
