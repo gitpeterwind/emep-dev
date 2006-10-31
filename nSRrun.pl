@@ -11,6 +11,7 @@
 # @ wall_clock_limit = 96:00:00
 # @ node = 2
 # @ tasks_per_node = 16
+# @ node_usage = not_shared
 # @ network.mpi = sn_all,shared,us
 ## @ total_tasks = 16
 ## @ max_processors =32
