@@ -1,3 +1,10 @@
+============== Peter   rv2_6_4    13/11/2006 ================================================
+
+Makefile_njord
+Use /home/ntnu/usrlocal/netcdf/netcdf-3.6.1 instead of mifapw's library
+Changed -O4 into -O3 -qarch=pwr5 -qtune=pwr5 , because of compiler error during IPA, when compiling the HEMIS grid.
+
+
 ============== Dave   rv2_6_3    3/11/2006 ================================================
 
 On request of Peter, removed *.f files (except gc_fcon_for_1proc.f)

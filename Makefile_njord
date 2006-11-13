@@ -24,12 +24,12 @@ SRCS =	Aero_Rb_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 ###################################################
 
 LIBS =  -lnetcdf
-INCL = -I/home/ntnu/mifapw/tools/netcdf-3.6.1/include
-LLIB = -L/home/ntnu/mifapw/tools/netcdf-3.6.1/lib -L/usr/lib
+INCL = -I/home/ntnu/usrlocal/netcdf/netcdf-3.6.1/include
+LLIB = -L/home/ntnu/usrlocal/netcdf/netcdf-3.6.1/lib -L/usr/lib
 
 F90 = mpxlf90_r 
-F90FLAGS = -q64 -qrealsize=8 -O4 $(INCL)
-LDFLAGS = -q64 -qrealsize=8 -O4
+F90FLAGS = -q64 -qrealsize=8 -O3 -qarch=pwr5 -qtune=pwr5 $(INCL)
+LDFLAGS = -q64 -qrealsize=8 -O3 -qarch=pwr5 -qtune=pwr5
 
 
 LD = $(F90)
