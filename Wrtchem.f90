@@ -158,6 +158,7 @@
      nmonpr = nmonth-1
      if(nmonpr.eq.0)nmonpr=12
 
+     if(Ascii3D_WANTED)then
     !dsAcii3D =============================================================
     if( NDERIV_3D > 0) then
           !!!if (me  ==  0) allocate(glob_3d(GIMAX, GJMAX,KMAX_MID), stat=msnr2)
@@ -202,6 +203,7 @@
         end do 
      end if
     !dsAcii3D =============================================================
+     endif
 
      write(outfilename,fmt='(''outmonth'',i4.4,''.dat'')') nmonpr
      call Output_fields(IOU_MON)

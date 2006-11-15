@@ -1,5 +1,8 @@
 ============== Peter   rv2_6_4    13-15/11/2006 ================================================
 
+15th Nov put  if(Ascii3D_WANTED)then around the 3d ascii output in Wrtchem.f90
+
+
 15th Nov Advection_ml "else where" replaced by  "elsewhere" to stop Njords f90 comlpaining
 
 Makefile_njord
