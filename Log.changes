@@ -1,4 +1,6 @@
-============== Peter   rv2_6_4    13/11/2006 ================================================
+============== Peter   rv2_6_4    13-15/11/2006 ================================================
+
+15th Nov Advection_ml "else where" replaced by  "elsewhere" to stop Njords f90 comlpaining
 
 Makefile_njord
 Use /home/ntnu/usrlocal/netcdf/netcdf-3.6.1 instead of mifapw's library
