@@ -548,7 +548,7 @@
               fluxout(:) = fluxout(:) + &
                    (xn_adv(:,i,j,1) - xntop(:,i,j)) &
                    *(ps(i,j,1)-PT)*carea(1)*xmd(i,j)
-           else where
+           elsewhere 
               fluxin(:) = fluxin(:) + &
                    (xntop(:,i,j) - xn_adv(:,i,j,1)) &
                    *(ps(i,j,1)-PT)*carea(1)*xmd(i,j)
@@ -1164,7 +1164,7 @@
               fluxout(:) = fluxout(:) + &
                    (xn_adv(:,i,j,1) - xntop(:,i,j)) &
                    *(ps(i,j,1)-PT)*carea(1)*xmd(i,j)
-           else where
+           elsewhere 
               fluxin(:) = fluxin(:) + &
                    (xntop(:,i,j) - xn_adv(:,i,j,1)) &
                    *(ps(i,j,1)-PT)*carea(1)*xmd(i,j)
@@ -2304,7 +2304,7 @@
 		  flux(:,li0-1) = -flux(:,li0-1)*hel1(:)/(hel2(:)+1.0E-100)
 		  flux(:,li0) = flux(:,li0)*hel1(:)/(hel2(:)+1.0E-100)
 		  xn_adv(:,li0) = 0.
-		else where
+		elsewhere 
 		  flux(:,li0-1) = -flux(:,li0-1)
 		  xn_adv(:,li0) =xm2loc(li0)*(hel1(:)-hel2(:))
 		end where
@@ -2398,7 +2398,7 @@
 	      flux(:,ij) = - (flux(:,ij)*hel1(:))/(hel2(:)+1.0E-100)
 	      flux(:,ij+1) = (flux(:,ij+1)*hel1(:))/(hel2(:)+1.0E-100)
 	      xn_adv(:,ij+1) = 0.
-	    else where
+	    elsewhere 
 	      flux(:,ij) = -flux(:,ij)
 	      xn_adv(:,ij+1) = xm2loc(ij+1)*(hel1(:)-hel2(:))
 	    end where
@@ -2432,7 +2432,7 @@
 	    where(hel1(:).lt.hel2(:))
 	      flux(:,li1) = 					&
 			- flux(:,li1)*hel1(:)/(hel2(:)+1.0E-100)
-	    else where
+	    elsewhere 
 	      flux(:,li1) = -flux(:,li1)
 	    end where
 	    xn_adv(:,li1) =amax1(0.				&
@@ -2981,7 +2981,7 @@
 	    flux(:,ij) = - flux(:,ij)*hel1(:)/(hel2(:)+1.0E-100)
 	    flux(:,ij+1) = flux(:,ij+1)*hel1(:)/(hel2(:)+1.0E-100)
 	    xn_adv(:,(ij+1)*MAXLIMAX) = 0.
-	  else where
+	  elsewhere 
 	    flux(:,ij) = -flux(:,ij)
 	    xn_adv(:,(ij+1)*MAXLIMAX) = xm2loc(ij+1)*(hel1(:)-hel2(:))
 	  end where
@@ -3013,7 +3013,7 @@
 	    where(hel1(:).lt.hel2(:))
 	      flux(:,lj1) 					&
 			= -flux(:,lj1)*hel1(:)/(hel2(:)+1.0E-100)
-	    else where
+	    elsewhere 
 	      flux(:,lj1) = -flux(:,lj1)
 	    end where
 	    xn_adv(:,lj1*MAXLIMAX) =amax1(0.		&
