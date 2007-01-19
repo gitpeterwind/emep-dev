@@ -3569,25 +3569,34 @@ end subroutine GetCDF_short
 
 !complete (extrapolate) along the four lateral sides
   do i=1,GIMAX
-     xm_global_j(i,0)=2*xm_global_j(i,1)-xm_global_j(i,2)
-     xm_global_j(i,-1)=2*xm_global_j(i,0)-xm_global_j(i,1)
-     xm_global_j(i,GJMAX+1)=2*xm_global_j(i,GJMAX)-xm_global_j(i,GJMAX-1)
-     xm_global_j(i,GJMAX+2)=2*xm_global_j(i,GJMAX+1)-xm_global_j(i,GJMAX)
-     xm_global_i(i,0)=2*xm_global_i(i,1)-xm_global_i(i,2)
-     xm_global_i(i,-1)=2*xm_global_i(i,0)-xm_global_i(i,1)
-     xm_global_i(i,GJMAX+1)=2*xm_global_i(i,GJMAX)-xm_global_i(i,GJMAX-1)
-     xm_global_i(i,GJMAX+2)=2*xm_global_i(i,GJMAX+1)-xm_global_i(i,GJMAX)
+     xm_global_j(i,0)=1.0/(2.0/(xm_global_j(i,1))-1.0/(xm_global_j(i,2)))
+     xm_global_j(i,-1)=1.0/(2.0/(xm_global_j(i,0))-1.0/(xm_global_j(i,1)))
+     xm_global_j(i,GJMAX+1)=1.0/(2.0/(xm_global_j(i,GJMAX))-1.0/(xm_global_j(i,GJMAX-1)))
+     xm_global_j(i,GJMAX+2)=1.0/(2.0/(xm_global_j(i,GJMAX+1))-1.0/(xm_global_j(i,GJMAX)))
+     xm_global_i(i,0)=1.0/(2.0/(xm_global_i(i,1))-1.0/(xm_global_i(i,2)))
+     xm_global_i(i,-1)=1.0/(2.0/(xm_global_i(i,0))-1.0/(xm_global_i(i,1)))
+     xm_global_i(i,GJMAX+1)=1.0/(2.0/(xm_global_i(i,GJMAX))-1.0/(xm_global_i(i,GJMAX-1)))
+     xm_global_i(i,GJMAX+2)=1.0/(2.0/(xm_global_i(i,GJMAX+1))-1.0/(xm_global_i(i,GJMAX)))
   enddo
   do j=-1,GJMAX+2
-     xm_global_j(0,j)=2*xm_global_j(1,j)-xm_global_j(2,j)
-     xm_global_j(-1,j)=2*xm_global_j(0,j)-xm_global_j(1,j)
-     xm_global_j(GIMAX+1,j)=2*xm_global_j(GIMAX,j)-xm_global_j(GIMAX-1,j)
-     xm_global_j(GIMAX+2,j)=2*xm_global_j(GIMAX+1,j)-xm_global_j(GIMAX,j)
-     xm_global_i(0,j)=2*xm_global_i(1,j)-xm_global_i(2,j)
-     xm_global_i(-1,j)=2*xm_global_i(0,j)-xm_global_i(1,j)
-     xm_global_i(GIMAX+1,j)=2*xm_global_i(GIMAX,j)-xm_global_i(GIMAX-1,j)
-     xm_global_i(GIMAX+2,j)=2*xm_global_i(GIMAX+1,j)-xm_global_i(GIMAX,j)
+     xm_global_j(0,j)=1.0/(2.0/(xm_global_j(1,j))-1.0/(xm_global_j(2,j)))
+     xm_global_j(-1,j)=1.0/(2.0/(xm_global_j(0,j))-1.0/(xm_global_j(1,j)))
+     xm_global_j(GIMAX+1,j)=1.0/(2.0/(xm_global_j(GIMAX,j))-1.0/(xm_global_j(GIMAX-1,j)))
+     xm_global_j(GIMAX+2,j)=1.0/(2.0/(xm_global_j(GIMAX+1,j))-1.0/(xm_global_j(GIMAX,j)))
+     xm_global_i(0,j)=1.0/(2.0/(xm_global_i(1,j))-1.0/(xm_global_i(2,j)))
+     xm_global_i(-1,j)=1.0/(2.0/(xm_global_i(0,j))-1.0/(xm_global_i(1,j)))
+     xm_global_i(GIMAX+1,j)=1.0/(2.0/(xm_global_i(GIMAX,j))-1.0/(xm_global_i(GIMAX-1,j)))
+     xm_global_i(GIMAX+2,j)=1.0/(1.0/(2*xm_global_i(GIMAX+1,j))-1.0/(xm_global_i(GIMAX,j)))
   enddo
+
+j=1
+i=1
+if(abs(1.5*gb_glob(gi0+i+ISMBEG-2,gj0+j+JSMBEG-2)-0.5*gb_glob(gi0+i+ISMBEG-2,gj0+j+1+JSMBEG-2))>89.5)then
+write(*,*)'south pole' !xm is infinity
+xm_global_i(:,0)=1.0E19
+xm_global_i(:,-1)=1.0E19
+endif
+ 
 
 
 !keep only part of xm relevant to the local domain
@@ -3628,14 +3637,14 @@ end subroutine GetCDF_short
 
 North_pole=1
   do i=1,limax
-     if(nint(gb(i,ljmax))/=90)then
+     if(nint(gb(i,ljmax))<=88)then
         North_pole=0  !not north pole
      endif
   enddo
 
 South_pole=1
   do i=1,limax
-     if(nint(gb(i,1))/=-90)then
+     if(nint(gb(i,1))>=-88)then
         South_pole=0  !not south pole
      endif
   enddo

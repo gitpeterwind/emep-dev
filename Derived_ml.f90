@@ -38,7 +38,7 @@ module Derived_ml
 !D2_UNAOTXXWH: accumulated into yearly_output from May to July
 !D2_UNAOTXXDF: accumulated into yearly_output from April to September
 !D2_MMAOTXXWH: accumulated into yearly_output over growing season
-!D2_O3 is now yearly accumulated (is this correct ?)
+!D2_O3 is now yearly accumulated
 !D2_FSTXXXX: unit correct? (accumulated but unit in /s)
 
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
@@ -244,9 +244,9 @@ private
 
 def_wdep = (/&
  Deriv( 561, "PREC ", F, -1, 1.0,   F  , F  ,T ,T ,T ,"WDEP_PREC","mm"),&
- Deriv( 541, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mg/m2"),&
- Deriv( 542, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mg/m2"),&
- Deriv( 543, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mg/m2")&
+ Deriv( 541, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mgS/m2"),&
+ Deriv( 542, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mgN/m2"),&
+ Deriv( 543, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mgN/m2")&
  /)
 
     ! Dry dep. !
@@ -257,29 +257,29 @@ def_wdep = (/&
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
 
 def_ddep = (/&
- Deriv( 521, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX","mg/m2")&
-,Deriv( 522, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN","mg/m2")&
-,Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mg/m2")&
-,Deriv( 824, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSW","mg/m2")&
-,Deriv( 825, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCF","mg/m2")&
-,Deriv( 826, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSDF","mg/m2")&
-,Deriv( 827, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCR","mg/m2")&
-,Deriv( 828, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSN","mg/m2")&
-,Deriv( 829, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSWE","mg/m2")&
+ Deriv( 521, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX","mgS/m2")&
+,Deriv( 522, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN","mgN/m2")&
+,Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mgN/m2")&
+,Deriv( 824, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSW","mgS/m2")&
+,Deriv( 825, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCF","mgS/m2")&
+,Deriv( 826, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSDF","mgS/m2")&
+,Deriv( 827, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCR","mgS/m2")&
+,Deriv( 828, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSN","mgS/m2")&
+,Deriv( 829, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSWE","mgS/m2")&
 !&
-,Deriv( 830, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSW","mg/m2")&
-,Deriv( 831, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCF","mg/m2")&
-,Deriv( 832, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNDF","mg/m2")&
-,Deriv( 833, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCR","mg/m2")&
-,Deriv( 834, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSN","mg/m2")&
-,Deriv( 835, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNWE","mg/m2")&
+,Deriv( 830, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSW","mgN/m2")&
+,Deriv( 831, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCF","mgN/m2")&
+,Deriv( 832, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNDF","mgN/m2")&
+,Deriv( 833, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCR","mgN/m2")&
+,Deriv( 834, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSN","mgN/m2")&
+,Deriv( 835, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNWE","mgN/m2")&
 !&
-,Deriv( 836, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSW","mg/m2")&
-,Deriv( 837, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCF","mg/m2")&
-,Deriv( 838, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNDF","mg/m2")&
-,Deriv( 839, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCR","mg/m2")&
-,Deriv( 840, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSN","mg/m2")&
-,Deriv( 841, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNWE","mg/m2")&
+,Deriv( 836, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSW","mgN/m2")&
+,Deriv( 837, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCF","mgN/m2")&
+,Deriv( 838, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNDF","mgN/m2")&
+,Deriv( 839, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCR","mgN/m2")&
+,Deriv( 840, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSN","mgN/m2")&
+,Deriv( 841, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNWE","mgN/m2")&
  /)
 
 !-- 2-D fields - the complex ones

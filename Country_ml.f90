@@ -189,7 +189,7 @@ Country( IC_EU ) = cc(  "EU " , 64 ,F,  1  , "European Community            " )
 Country( IC_US ) = cc(  "US " , 65 ,F,  1  , "USA                           " )
 Country( IC_CA ) = cc(  "CA " , 66 ,F,  1  , "Canada                        " )
 Country( IC_DUMMY1 ) &
-                 = cc(  "N/A" , 67 ,F,  0  , "Not_defined                   " )
+                 = cc(  "N/A" , 67 ,F,  -100  , "Not_defined                   " )
 Country( IC_KG ) = cc(  "KG " , 68 ,F,  6  , "Kyrgyzstan                    " )
 Country( IC_AZ ) = cc(  "AZ " , 69 ,F,  3  , "Azerbaijan                    " )
 Country( IC_ATX )= cc(  "ATX" , 70 ,T,  1  , "Atlantic outside emep        " )

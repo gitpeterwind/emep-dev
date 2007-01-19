@@ -3152,9 +3152,9 @@
                 buf_ps_e(3,i) = ps3d(i*MAXLIMAX+li1-1)
              enddo
              
-             call gc_rsend_nonblock(request_xn_e, msgnr,3*MAXLJMAX*NSPEC_ADV, &
+             call gc_rsend_nonblock(request_xn_e, msgnr+200,3*MAXLJMAX*NSPEC_ADV, &
                   neighbor(EAST), info, buf_xn_e, buf_xn_e)
-             call gc_rsend_nonblock(request_ps_e, msgnr+100,3*MAXLJMAX,     &
+             call gc_rsend_nonblock(request_ps_e, msgnr+300,3*MAXLJMAX,     &
                   neighbor(EAST), info, buf_ps_e, buf_ps_e)
              !	  call gc_rsend(msgnr,3*MAXLJMAX*NSPEC_ADV,		&
              !			neighbor(EAST), info, xnend, xnend)
@@ -3184,9 +3184,9 @@
                 endif
              enddo
           else 
-             call gc_rrecv(msgnr,MAXLJMAX*3*NSPEC_ADV,		&
+             call gc_rrecv(msgnr+200,MAXLJMAX*3*NSPEC_ADV,		&
                   neighbor(WEST), info, xnbeg, xnbeg)
-             call gc_rrecv(msgnr+100,MAXLJMAX*3,			&
+             call gc_rrecv(msgnr+300,MAXLJMAX*3,			&
                   neighbor(WEST), info, psbeg, psbeg)
           endif
 
@@ -3303,9 +3303,9 @@
                 buf_ps_e(3) = ps3d(i*MAXLIMAX+li1-1)
              enddo
              
-             call gc_rsend_nonblock(request_xn_e, msgnr,3*NSPEC_ADV, &
+             call gc_rsend_nonblock(request_xn_e, msgnr+200,3*NSPEC_ADV, &
                   neighbor(EAST), info, buf_xn_e, buf_xn_e)
-             call gc_rsend_nonblock(request_ps_e, msgnr+100,3,     &
+             call gc_rsend_nonblock(request_ps_e, msgnr+300,3,     &
                   neighbor(EAST), info, buf_ps_e, buf_ps_e)
              !	  call gc_rsend(msgnr,3*MAXLJMAX*NSPEC_ADV,		&
              !			neighbor(EAST), info, xnend, xnend)
@@ -3335,9 +3335,9 @@
                 endif
              enddo
           else 
-             call gc_rrecv(msgnr,3*NSPEC_ADV,		&
+             call gc_rrecv(msgnr+200,3*NSPEC_ADV,		&
                   neighbor(WEST), info, xnbeg, xnbeg)
-             call gc_rrecv(msgnr+100,3,			&
+             call gc_rrecv(msgnr+300,3,			&
                   neighbor(WEST), info, psbeg, psbeg)
           endif
 
@@ -3722,6 +3722,11 @@
 	real dhskmax,sdotmax,sdotmin
 	real sdotmaxk,sdotmink
 	real ulmin,ulmax,vlmin,vlmax
+        integer request_s,request_n,request_e,request_w
+        real buf_uw(MAXLJMAX,KMAX_MID)
+        real buf_ue(MAXLJMAX,KMAX_MID)
+        real buf_vn(MAXLIMAX,KMAX_MID)
+        real buf_vs(MAXLIMAX,KMAX_MID)
 
 	nr = 2
 	if (numt.eq.1) nr = 1
@@ -3732,11 +3737,13 @@
            if(neighbor(WEST) .ne. me)then
               do k = 1,KMAX_MID
                  do j = 1,ljmax
-                    uw(j,k,nr) = u(1,j,k,nr)
+                    buf_uw(j,k) = u(1,j,k,nr)
                  enddo
               enddo
-              call gc_rsend(MSG_EAST2, MAXLJMAX*KMAX_MID, neighbor(WEST),      &
-                   info, ue(1,1,nr), uw(1,1,nr))
+!              call gc_rsend(MSG_EAST2, MAXLJMAX*KMAX_MID, neighbor(WEST),      &
+!                   info, ue(1,1,nr), uw(1,1,nr))
+	  call gc_rsend_nonblock(request_w,MSG_EAST2,MAXLJMAX*KMAX_MID,&
+               neighbor(WEST), info,ue(1,1,nr), buf_uw(1,1) )
               
            else
               !cyclic grid: own neighbor 
@@ -3754,11 +3761,13 @@
            if (neighbor(EAST) .ne. me) then
               do k = 1,KMAX_MID
                  do j = 1,ljmax
-                    ue(j,k,nr) = u(limax-1,j,k,nr)
+                    buf_ue(j,k) = u(limax-1,j,k,nr)
                  enddo
               enddo
-              call gc_rsend(MSG_WEST2, MAXLJMAX*KMAX_MID, neighbor(EAST),      &
-                   info, uw(1,1,nr), ue(1,1,nr))
+!              call gc_rsend(MSG_WEST2, MAXLJMAX*KMAX_MID, neighbor(EAST),      &
+!                   info, uw(1,1,nr), ue(1,1,nr))
+	  call gc_rsend_nonblock(request_e,MSG_WEST2,MAXLJMAX*KMAX_MID,&
+               neighbor(EAST), info,uw(1,1,nr), buf_ue(1,1) )
            else
               !cyclic grid: own neighbor 
               do k = 1,KMAX_MID
@@ -3773,11 +3782,13 @@
 	if (neighbor(SOUTH) .ne. NOPROC) then
         do k = 1,KMAX_MID
 	    do i = 1,limax
-	      vs(i,k,nr) = v(i,1,k,nr)
+	      buf_vs(i,k) = v(i,1,k,nr)
 	    enddo
 	  enddo
-        call gc_rsend(MSG_NORTH2, MAXLIMAX*KMAX_MID, neighbor(SOUTH),      &
-		info, vn(1,1,nr), vs(1,1,nr))
+!        call gc_rsend(MSG_NORTH2, MAXLIMAX*KMAX_MID, neighbor(SOUTH),      &
+!		info, vn(1,1,nr), vs(1,1,nr))
+	  call gc_rsend_nonblock(request_s,MSG_NORTH2,MAXLIMAX*KMAX_MID,&
+               neighbor(SOUTH), info,vn(1,1,nr), buf_vs(1,1) )
 	endif
 
 !     send to NORTH neighbor if any
@@ -3785,11 +3796,13 @@
 	if (neighbor(NORTH) .ne. NOPROC) then
         do k = 1,KMAX_MID
 	    do i = 1,limax
-	      vn(i,k,nr) = v(i,ljmax-1,k,nr)
+	      buf_vn(i,k) = v(i,ljmax-1,k,nr)
 	    enddo
 	  enddo
-        call gc_rsend(MSG_SOUTH2, MAXLIMAX*KMAX_MID, neighbor(NORTH),      &
-		info, vs(1,1,nr), vn(1,1,nr))
+!        call gc_rsend(MSG_SOUTH2, MAXLIMAX*KMAX_MID, neighbor(NORTH),      &
+!		info, vs(1,1,nr), vn(1,1,nr))
+	  call gc_rsend_nonblock(request_n,MSG_SOUTH2,MAXLIMAX*KMAX_MID,&
+               neighbor(NORTH), info,vs(1,1,nr), buf_vn(1,1) )
 	endif
 
 !     receive from EAST neighbor if any
@@ -3797,6 +3810,7 @@
 	if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne.me ) then
         call gc_rrecv(MSG_EAST2, MAXLJMAX*KMAX_MID, neighbor(EAST),      &
 		info, ue(1,1,nr), uw(1,1,nr))
+        call GC_WAIT(request_e, info)
 	endif
 
 !     receive from WEST neighbor if any
@@ -3804,6 +3818,7 @@
 	if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
         call gc_rrecv(MSG_WEST2, MAXLJMAX*KMAX_MID, neighbor(WEST),      &
 		info, uw(1,1,nr), ue(1,1,nr))
+        call GC_WAIT(request_w, info)
 	endif
 
 !     receive from NORTH neighbor if any
@@ -3811,6 +3826,7 @@
 	if (neighbor(NORTH) .ne. NOPROC) then
         call gc_rrecv(MSG_NORTH2, MAXLIMAX*KMAX_MID, neighbor(NORTH),      &
 		info, vn(1,1,nr), vs(1,1,nr))
+        call GC_WAIT(request_n, info)
 	endif
 
 !     receive from SOUTH neighbor if any
@@ -3818,6 +3834,7 @@
 	if (neighbor(SOUTH) .ne. NOPROC) then
         call gc_rrecv(MSG_SOUTH2, MAXLIMAX*KMAX_MID, neighbor(SOUTH),      &
 		info, vs(1,1,nr), vn(1,1,nr))
+        call GC_WAIT(request_s, info)
 	endif
 
 	return
