@@ -1,8 +1,10 @@
 ============== Peter   rv2_6_5    19/1/2007 ================================================
 
-New common run.pl script for njord and snykov. Use this one as it will simplify maintenance to have 
+New common run.pl script for njord and snykov. NB: It also use /global/work on snykov.
+Use this one as it will simplify maintenance to have 
 fewer scripts. Not yet made for SR runs (should also be done with the same script).
 Choose  $NJORD=1 or $SNYKOV=1 in the script.
+
 
 Derived_ml:
 Changed units written in outputs for all depositions (ug/m2  was written instead of ugS/m2)
