@@ -3559,8 +3559,8 @@ end subroutine GetCDF_short
 !The last cell + 1 cell = first cell
   Cyclicgrid=1 !Cyclicgrid
   do j=1,JJLARDOM
-     if(mod(nint(gl_glob(GIMAX,j)+360.0/GIMAX),360)/=&
-            nint(gl_glob(ISMBEG,j)))then
+     if(mod(nint(gl_glob(GIMAX,j)+360+360.0/GIMAX),360)/=&
+            mod(nint(gl_glob(ISMBEG,j)+360.0),360))then
         Cyclicgrid=0  !not cyclicgrid
      endif
   enddo

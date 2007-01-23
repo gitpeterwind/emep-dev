@@ -1,3 +1,7 @@
+============== Peter   rv2_6_5_b    23/1/2007 ================================================
+Met_ml:
+small change in definition of "cyclicgrid"
+
 ============== Peter   rv2_6_5    19/1/2007 ================================================
 
 New common run.pl script for njord and snykov. NB: It also use /global/work on snykov.
