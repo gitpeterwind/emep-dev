@@ -98,7 +98,7 @@ require "flush.pl";
 
 #Choose one machine
 $NJORD=0; #1 if njord is used
-$SNYKOV=0; #1 if snykov (snowstorm) is used
+$SNYKOV=1; #1 if snykov (snowstorm) is used
 
 
 if ($SNYKOV==1){

@@ -1,4 +1,6 @@
-============== Peter   rv2_6_5_b    23/1/2007 ================================================
+============== Peter, Dave   rv2_6_5_b  (not CVS'd yet)  23..26/1/2007 ======================
+Dates_ml: extended to 2006, but not done for MaceHead in global yet.
+
 Met_ml:
 small change in definition of "cyclicgrid"
 
