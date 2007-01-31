@@ -1,4 +1,9 @@
-============== Peter, Dave   rv2_6_5_b  (not CVS'd yet)  23..26/1/2007 ======================
+============== Peter, Dave   rv2_6_5_b  (not CVS'd yet)  31..23..26/1/2007 ======================
+
+Included Tareq in run.pl USERS.
+
+XM_MAX_ADVEC removed from Met_ml and Model_constants (was not used)
+
 Dates_ml: extended to 2006, but not done for MaceHead in global yet.
 
 Met_ml:

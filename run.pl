@@ -154,6 +154,7 @@ $HEIKO      = "mifahik";
 $ANNA      = "mifaab";      
 $MICHAEL      = "mifaelg";      
 $SEMEENA     = "mifasv";      
+$TAREQ    = "mifatarh";      
 
 
 $USER        =  $PETER ;      

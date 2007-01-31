@@ -3328,7 +3328,7 @@ end subroutine GetCDF_short
                                        ,GIMAX,GJMAX,MAXLIMAX,MAXLJMAX&
                                        ,gi0,gj0,IILARDOM,JJLARDOM&
                                        ,parinit
-     use ModelConstants_ml,     only : KMAX_MID,XM_MAX_ADVEC
+     use ModelConstants_ml,     only : KMAX_MID
      use GridValues_ml,     only : GlobalPosition
 
      implicit none
