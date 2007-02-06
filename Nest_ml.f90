@@ -46,7 +46,7 @@ module Nest_ml
 
   implicit none
 
-  integer,parameter ::MODE=11   !0=donothing , 1=write , 2=read , 3=read and write
+  integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
   !10=write at end of run, 11=read at start (BIC)
 
   !coordinates of subdomain to write
