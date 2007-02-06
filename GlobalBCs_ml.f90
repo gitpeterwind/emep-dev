@@ -400,9 +400,12 @@ elseif ( year == 2003 ) then
 elseif( year == 2004) then 
    macehead_O3 = (/    40.8,    42.0,    48.3,    46.6,    39.9,    31.9 & 
         ,    32.4,    32.1,    33.9,    36.7,    40.2,    39.8/) 
-
+!ds 2005 updated 6/2-2007
+elseif( year == 2005) then
+   macehead_O3 = (/    40.9,    41.4,    44.1,    45.6,    42.7,    32.9 &
+        ,    26.7,    30.0,    33.2,    37.7,    39.5,    38.0/)
 !---------------------------------------------------------------------------
-elseif ( year >= 2005 ) then
+elseif ( year > 2005 ) then
           errmsg =  "No Mace Head correction for this year yet! "
           print *, errmsg, i
           if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)

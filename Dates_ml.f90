@@ -51,14 +51,14 @@ module Dates_ml
   integer, public, parameter :: MON=1, TUE=2, WED=3, THU=4,  &
                                 FRI=5, SAT=6, SUN=7
 
-  integer, public, parameter :: FIRST_SDYEAR = 1980, LAST_SDYEAR = 2004
+  integer, public, parameter :: FIRST_SDYEAR = 1980, LAST_SDYEAR = 2006
   integer, public, parameter, dimension(FIRST_SDYEAR:LAST_SDYEAR) ::  &
     STARTDAY= (/ TUE,THU,FRI,SAT,SUN,TUE,WED,THU,FRI,SUN, &
     !...          80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 
                  MON,TUE,WED,FRI,SAT,SUN,MON,WED,THU,FRI,&
     !...          90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 
-                  SAT,MON,TUE,WED,THU  /)
-    !...          00, 01, 02, 03, 04
+                  SAT,MON,TUE,WED,THU,SAT,SUN  /)
+    !...          00, 01, 02, 03, 04,  05, 06
 
 
   logical, private, save :: Init_done = .false.

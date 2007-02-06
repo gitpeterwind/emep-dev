@@ -3,6 +3,8 @@
 
 Advection_ml: renormalization between horizontal and vertical advections in  advecdiff_poles
 
+GlobalBCs_ml - updated to 2005
+
 Nest_ml (and Unimod.f90 ,PhyChem_ml): 
 Mode 10,11 for warm start option and corrected bug ("idimid") when writing in lat lon 
 
@@ -10,12 +12,11 @@ Mode 10,11 for warm start option and corrected bug ("idimid") when writing in la
 NetCDF_ml: 
 allocate a real*4 array instead of real*8. Avoids possible underflow errors and saves some memory.
 
-
 Included Tareq in run.pl USERS.
 
 XM_MAX_ADVEC removed from Met_ml and Model_constants (was not used)
 
-Dates_ml: extended to 2006, but not done for MaceHead in global yet.
+Dates_ml: extended to 2006, but only MaceHead to 2005 in global yet.
 
 Met_ml:
 small change in definition of "cyclicgrid"
