@@ -1,4 +1,15 @@
-============== Peter, Dave   rv2_6_5_b  (not CVS'd yet)  31..23..26/1/2007 ======================
+
+============== Peter, Dave   rv2_6_5_b  (not CVS'd yet)  6/2...31..23..26/1/2007 ======================
+
+Advection_ml: renormalization between horizontal and vertical advections in  advecdiff_poles
+
+Nest_ml (and Unimod.f90 ,PhyChem_ml): 
+Mode 10,11 for warm start option and corrected bug ("idimid") when writing in lat lon 
+
+
+NetCDF_ml: 
+allocate a real*4 array instead of real*8. Avoids possible underflow errors and saves some memory.
+
 
 Included Tareq in run.pl USERS.
 

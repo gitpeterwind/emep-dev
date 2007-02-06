@@ -46,11 +46,12 @@ module Nest_ml
 
   implicit none
 
-  integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
+  integer,parameter ::MODE=11   !0=donothing , 1=write , 2=read , 3=read and write
+  !10=write at end of run, 11=read at start (BIC)
 
   !coordinates of subdomain to write
   !coordinates relative to large domain (only used in write mode)
-  integer,parameter ::istart=60,jstart=11,iend=107,jend=58 !ENEA
+  integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA
 
   !/-- subroutines
 
@@ -97,20 +98,27 @@ contains
     !    real , dimension(48,48,20) ::data
 
     real :: W1,W2
+    logical, save :: first_call=.true.
 
-
-    if(MODE /= 2.and.MODE /= 3)return
-
-
-!    if(me==0)   print *,'call to READXN',indate%hour,indate%seconds
-    if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0)return
-    if(me==0)   print *,'NESTING'
+    if(MODE /= 2.and.MODE /= 3.and. MODE /= 11)return
 
     ndate(1)  = indate%year
     ndate(2)  = indate%month
     ndate(3)  = indate%day
     ndate(4)  = indate%hour
     call secondssince1970(ndate,nseconds_indate)
+
+    if(MODE == 11)then
+       if(.not. first_call)return
+       first_call=.false.
+       if(me==0)   print *,'RESET ALL XN 3D'
+       call init_nest(nseconds_indate)
+       call reset_3D(nseconds_indate)
+    else
+!    if(me==0)   print *,'call to READXN',indate%hour,indate%seconds
+       if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0)return
+    endif
+    if(me==0)   print *,'NESTING'
 
     if(first_data==-1)then
        call init_nest(nseconds_indate)
@@ -177,13 +185,14 @@ contains
 
   end subroutine readxn
 
-  subroutine wrtxn(indate)
+  subroutine wrtxn(indate,WriteNow)
 
     use Derived_ml, only :Deriv 
     use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
     implicit none
 
     type(date), intent(in) :: indate      
+    logical, intent(in) :: WriteNow !Do not check indate value 
     real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
 
     type(Deriv) :: def1 ! definition of fields
@@ -192,9 +201,18 @@ contains
     logical, save ::first_call=.true.
     character *40:: command
 
-    if(MODE /= 1.and.MODE /= 3)return
+    if(MODE /= 1.and.MODE /= 3.and.MODE /= 10)return
 
-    if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
+    if(MODE == 10)then
+       if(.not.WriteNow)return
+       istart=1
+       jstart=1
+       iend=GIMAX
+       jend=GJMAX
+    else
+       if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
+    endif
+
 
     222 FORMAT(A,I2.2,I4.4,A)
 !    write(fileName_write,222)'EMEP_BC_',indate%month,indate%year,'.nc'!for different names each month
@@ -325,6 +343,7 @@ contains
     real :: dist(0:4)
     integer :: gc_info,nseconds(1),n1,n,i,j,k,II,JJ
     real, allocatable, dimension(:,:) ::lon_ext,lat_ext
+    character*80 ::projection
 
     itime_saved = -999999 !initialization
 
@@ -338,9 +357,23 @@ contains
        else
           print *,'  reading ',trim(filename_read)
        endif
+       projection=''
+       call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
+       write(*,*)'projection: ',trim(projection)
+       !get dimensions id
+       if(trim(projection)=='Stereographic') then     
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+       elseif(trim(projection)==trim('lon lat')) then
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+       else
+          !     write(*,*)'GENERAL PROJECTION ',trim(projection)
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+          !     call gc_abort(me,NPROC, "PROJECTION NOT RECOGNIZED")
+       endif
 
-       call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-       call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
        call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
        call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
 
@@ -361,16 +394,29 @@ contains
 
     if(me==0)then
        !Read lon lat of the external grid (global)
-       call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-       call check(nf90_get_var(ncFileID, varID, lon_ext ))
-
-       call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-       call check(nf90_get_var(ncFileID, varID, lat_ext ))
-
+       if(trim(projection)==trim('lon lat')) then
+          call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+          call check(nf90_get_var(ncFileID, varID, lon_ext(:,1) ))
+          do i=1,GJMAX_ext
+             lon_ext(:,i)=lon_ext(:,1)
+          enddo
+          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+          call check(nf90_get_var(ncFileID, varID, lat_ext(1,:) ))
+          do i=1,GIMAX_ext
+             lon_ext(i,:)=lon_ext(1,:)
+          enddo
+       else
+          call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
+          call check(nf90_get_var(ncFileID, varID, lon_ext ))
+          
+          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
+          call check(nf90_get_var(ncFileID, varID, lat_ext ))
+       endif
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
-
+       
        !          do n=1,Next
        call check(nf90_get_var(ncFileID, varID, nseconds,start=(/ 1 /),count=(/ 1 /) ))
+       
        if(nseconds(1)>nseconds_indate)then
           write(*,*)'WARNING: did not find BIC for date:'
           call datefromsecondssince1970(ndate,nseconds_indate,1)
@@ -378,7 +424,7 @@ contains
           call datefromsecondssince1970(ndate,nseconds(1),1)
        endif
        !          enddo
-
+       
        call check(nf90_close(ncFileID))
 
     endif
@@ -467,13 +513,15 @@ contains
        do n=1,Next
           call check(nf90_get_var(ncFileID, varID, nseconds,start=(/ n /),count=(/ 1 /) ))
           if(nseconds(1)>=nseconds_indate)then
-             write(*,*)'found date '
+             write(*,*)'Using date '
              call datefromsecondssince1970(ndate,nseconds(1),1)
              goto 876
           endif
        enddo
        write(*,*)'WARNING: did not find correct date'
        itime=Next
+       write(*,*)'Using date '
+       call datefromsecondssince1970(ndate,nseconds(1),1)
 876    continue
        itime=n
        itime_saved(2)=nseconds(1)

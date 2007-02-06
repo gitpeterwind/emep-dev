@@ -86,7 +86,7 @@ contains
 
         if (me == 0) write(6,"(a15,i6,f8.3,2i5)") 'timestep nr.',nstep,thour
 
-        call wrtxn(current_date) !Write xn_adv for future nesting
+        call wrtxn(current_date,.false.) !Write xn_adv for future nesting
         call readxn(current_date) !Read xn_adv from earlier runs
  
 !        ==================

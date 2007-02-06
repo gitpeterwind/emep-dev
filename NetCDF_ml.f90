@@ -175,7 +175,7 @@ endif
 
 end subroutine Init_new_netCDF
 
-subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
+subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf,RequiredProjection)
   ! Create the netCDF file
 
 use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
@@ -189,7 +189,7 @@ use PhysicalConstants_ml,  only : PI
    implicit none
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 character(len=*),  intent(in)  :: fileName 
-
+character (len=*),optional, intent(in):: requiredprojection
 !character (len=*), parameter :: version='Unimod rv2.0'       
 character (len=*), parameter :: author_of_run='Unimod group' 
 !character (len=*), parameter :: projection='Stereographic'
@@ -203,6 +203,7 @@ character*10 ::created_hour,lastmodified_hour
 integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
 integer :: iEMEPVarID,jEMEPVarID,latVarID,longVarID
 real :: izero,jzero,scale_at_projection_origin
+character*80 ::UsedProjection
 
   ! fileName: Name of the new created file 
   ! nf90_clobber: protect existing datasets
@@ -216,19 +217,24 @@ write(*,*)'sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEG
 return
 endif
    
-
+if(present(RequiredProjection))then
+   UsedProjection=trim(RequiredProjection)
+else
+   UsedProjection=trim(projection)
+endif
+  
 write(*,*)'create ',trim(fileName)
-write(*,*)'projection ',trim(projection)
+write(*,*)'UsedProjection ',trim(UsedProjection)
 write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
   call check(nf90_create(path = trim(fileName), cmode = nf90_clobber, ncid = ncFileID))
 
   ! Define the dimensions
-  if(projection=='Stereographic')then
+  if(UsedProjection=='Stereographic')then
 
   call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
   call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
 
-  elseif(projection=='lon lat')then 
+  elseif(UsedProjection=='lon lat')then 
 
   call check(nf90_def_dim(ncid = ncFileID, name = "lon", len = GIMAXcdf, dimid = iDimID))
   call check(nf90_def_var(ncFileID, "lon", nf90_double, dimids = iDimID, varID = iVarID) )
@@ -288,9 +294,9 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_date", lastmodified_date))
   call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
 
-  call check(nf90_put_att(ncFileID, nf90_global, "projection",projection))
+  call check(nf90_put_att(ncFileID, nf90_global, "projection",UsedProjection))
 
-  if(projection=='Stereographic')then
+  if(UsedProjection=='Stereographic')then
   scale_at_projection_origin=(1.+sin(ref_latitude*PI/180.))/2.
   write(projection_params,fmt='(''90.0 '',F5.1,F9.6)')fi,scale_at_projection_origin
   call check(nf90_put_att(ncFileID, nf90_global, "projection_params",projection_params))
@@ -345,19 +351,19 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
  
 
 !CF-1.0 definitions:
-  if(projection=='Stereographic')then
+  if(UsedProjection=='Stereographic')then
   call check(nf90_def_var(ncid = ncFileID, name = "Polar_Stereographic", xtype = nf90_int, varID=varID ) )
   call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", "polar_stereographic"))
   call check(nf90_put_att(ncFileID, VarID, "straight_vertical_longitude_from_pole", Fi))
   call check(nf90_put_att(ncFileID, VarID, "latitude_of_projection_origin", 90.0))
   call check(nf90_put_att(ncFileID, VarID, "scale_factor_at_projection_origin", scale_at_projection_origin))
 ! call check(nf90_put_att(ncFileID, VarID, "false_easting", ))
-  elseif(projection=='lon lat')then 
+  elseif(UsedProjection=='lon lat')then 
 
   else
 
   call check(nf90_def_var(ncid = ncFileID, name = Default_projection_name, xtype = nf90_int, varID=varID ) )
-  call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", trim(projection)))
+  call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", trim(UsedProjection)))
 
   endif
 
@@ -368,7 +374,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 
 ! Define horizontal distances
 
-  if(projection=='Stereographic')then
+  if(UsedProjection=='Stereographic')then
 
   xcoord(1)=(ISMBEGcdf-xp)*GRIDWIDTH_M/1000.
   do i=2,GIMAXcdf
@@ -420,7 +426,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   endif
 
 
-  elseif(projection=='lon lat') then
+  elseif(UsedProjection=='lon lat') then
      do i=1,GIMAXcdf
         xcoord(i)= gl_glob(i+ISMBEGcdf-1,1)
      enddo
@@ -479,49 +485,50 @@ end subroutine CreatenetCDFfile
 
 subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
 
-!The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
+  !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
 
-use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX,ISMBEG,JSMBEG
+  use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX,ISMBEG,JSMBEG
 
-use ModelConstants_ml,     only : KMAX_MID, current_date  
-!ds 16/12/2003 Derived changes:
-use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
-use Derived_ml,    only : Deriv &
-                         ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
-use Dates_ml, only: nmdays,is_leap 
-use My_Outputs_ml, only :FREQ_HOURLY 
+  use ModelConstants_ml,     only : KMAX_MID, current_date  
+  !ds 16/12/2003 Derived changes:
+  use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
+  use Derived_ml,    only : Deriv &
+       ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
+  use Dates_ml, only: nmdays,is_leap 
+  use My_Outputs_ml, only :FREQ_HOURLY 
 
   implicit none
 
-integer ,intent(in) :: ndim,kmax
-type(Deriv),     intent(in) :: def1 ! definition of fields
-integer,                         intent(in) :: iotyp
-real    ,intent(in) :: scale 
-!real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
-real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
-integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
-integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4) 
-character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
-!NB if the file fileName_given exist (also from earlier runs) it will be appended
+  integer ,intent(in) :: ndim,kmax
+  type(Deriv),     intent(in) :: def1 ! definition of fields
+  integer,                         intent(in) :: iotyp
+  real    ,intent(in) :: scale 
+  !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
+  real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
+  integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
+  integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4) 
+  character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
+  !NB if the file fileName_given exist (also from earlier runs) it will be appended
 
-character*18 :: varname
-character*8 ::lastmodified_date
-character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
-integer :: varID,new,nrecords,ncFileID=closedID
-integer :: nyear,nmonth,nday,nhour,ndate(4)
-integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
-integer :: i1,i2,j1,j2
-!real*4 :: buff 
-real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID) 
-real*8 , allocatable,dimension(:,:,:)  :: Rdata3D
-integer*4, allocatable,dimension(:,:,:)  :: Idata3D
-integer, save ::SavedVar(KMAX_MID)=-999,SavedncFile(KMAX_MID)=-999
-integer :: OUTtype !local version of CDFtype
-integer :: iotyp_new
+  character*18 :: varname
+  character*8 ::lastmodified_date
+  character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
+  integer :: varID,new,nrecords,ncFileID=closedID
+  integer :: nyear,nmonth,nday,nhour,ndate(4)
+  integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
+  integer :: i1,i2,j1,j2
+  !real*4 :: buff 
+  real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID) 
+  real*8 , allocatable,dimension(:,:,:)  :: R8data3D
+  real*4 , allocatable,dimension(:,:,:)  :: R4data3D
+  integer*4, allocatable,dimension(:,:,:)  :: Idata3D
+  integer, save ::SavedVar(KMAX_MID)=-999,SavedncFile(KMAX_MID)=-999
+  integer :: OUTtype !local version of CDFtype
+  integer :: iotyp_new
   integer :: iDimID,jDimID,kDimID,timeDimID
-integer :: GIMAX_old,GJMAX_old,KMAX_old
-integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
+  integer :: GIMAX_old,GJMAX_old,KMAX_old
+  integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
   if(present(ist))i1=max(ist,i1)
@@ -529,317 +536,371 @@ integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
   if(present(jst))j1=max(jst,j1)
   if(present(jen))j2=min(jen,j2)
 
-!Check that that the area is larger than 0
-if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return 
+  !Check that that the area is larger than 0
+  if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return 
 
-!make variable name
-     write(varname,fmt='(A)')trim(def1%name)
+  !make variable name
+  write(varname,fmt='(A)')trim(def1%name)
 
-!to shorten the output we can save only the components explicitely named here
-!if(varname.ne.'D2_NO2'.and.varname.ne.'D2_O3' &
-!                         .and.varname.ne.'D2_PM10')return
+  !to shorten the output we can save only the components explicitely named here
+  !if(varname.ne.'D2_NO2'.and.varname.ne.'D2_O3' &
+  !                         .and.varname.ne.'D2_PM10')return
 
-!do not write 3D fields (in order to shorten outputs)
-!if(ndim==3)return
-     
-iotyp_new=0
-if(present(fileName_given))then
-!NB if the file already exist (also from earlier runs) it will be appended
-   if(me==0)then
-      !try to open the file
-      status=nf90_open(path = trim(fileName_given), mode = nf90_write, ncid = ncFileID)
-      ISMBEGcdf=ISMBEG+i1-1
-      JSMBEGcdf=JSMBEG+j1-1
-      GIMAXcdf=i2-i1+1
-      GJMAXcdf=j2-j1+1
-      if(status /= nf90_noerr) then !the file does not exist yet
-         write(6,*) 'creating file: ',trim(fileName_given)
-         period_type = 'unknown'
-         call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
-         ncFileID=closedID
-      else !test if the defined dimensions are compatible 
-!         write(6,*) 'exists: ',trim(fileName_given)
-         call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-         call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-         call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
-         call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_old))
-         call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_old))
-         call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_old))
+  !do not write 3D fields (in order to shorten outputs)
+  !if(ndim==3)return
 
-!         write(6,*)'existing file ', trim(fileName_given),' has dimensions'
-!         write(6,*)GIMAX_old,GJMAX_old,KMAX_old
-         if(GIMAX_old<GIMAXcdf .or. GJMAX_old<GJMAXcdf .or.  KMAX_old<KMAX)then
-            write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
-            write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
-            write(6,*)'WARNING! OLD ', trim(fileName_given),' IS DELETED'
-            write(6,*) 'creating new file: ',trim(fileName_given)
-            period_type = 'unknown'
-            call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
-            ncFileID=closedID
-         endif
-      endif
-   endif
-   iotyp_new=1
-   ncFileID_new=ncFileID
-endif
+  iotyp_new=0
+  if(present(fileName_given))then
+     !NB if the file already exist (also from earlier runs) it will be appended
+     if(me==0)then
+        !try to open the file
+        status=nf90_open(path = trim(fileName_given), mode = nf90_write, ncid = ncFileID)
+        ISMBEGcdf=ISMBEG+i1-1
+        JSMBEGcdf=JSMBEG+j1-1
+        GIMAXcdf=i2-i1+1
+        GJMAXcdf=j2-j1+1
+        if(status /= nf90_noerr) then !the file does not exist yet
+           write(6,*) 'creating file: ',trim(fileName_given)
+           period_type = 'unknown'
+           call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
+           ncFileID=closedID
+        else !test if the defined dimensions are compatible 
+           !         write(6,*) 'exists: ',trim(fileName_given)
+           if(trim(projection)=='Stereographic')then
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+           elseif(projection=='lon lat') then
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
+           else
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+              call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+           endif
+!           call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
+!           call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
+           call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
+           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_old))
+           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_old))
+           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_old))
 
-if(iotyp_new==1)then
-   fileName=trim(fileName_given)
-   ncFileID = ncFileID_new
-elseif(iotyp==IOU_YEAR)then
-   fileName = fileName_year
-   ncFileID = ncFileID_year
-elseif(iotyp==IOU_MON)then
-   fileName = fileName_month
-   ncFileID = ncFileID_month
-elseif(iotyp==IOU_DAY)then
-   fileName = fileName_day
-   ncFileID = ncFileID_day
-elseif(iotyp==IOU_HOUR)then
-   fileName = fileName_hour
-   ncFileID = ncFileID_hour
-elseif(iotyp==IOU_INST)then
-   fileName = fileName_inst
-   ncFileID = ncFileID_inst
-else
-   return
-endif 
-
-if(ndim /= 2 .and. ndim /= 3 )then
-   print *, 'error in NetCDF_ml ',ndim
-   call gc_abort(me,NPROC,"error in NetCDF_ml")
-endif
-
-OUTtype=Real4  !default value
-if(present(CDFtype))OUTtype=CDFtype
-
-!buffer the wanted part of data
-ijk=0
-do k=1,kmax
-   do j = 1,tljmax(me)
-      do i = 1,tlimax(me)
-         ijk=ijk+1
-         buff(ijk)=dat(i,j,k)*scale
-      enddo
-   enddo
-enddo
-
-!send all data to me=0
-outCDFtag=outCDFtag+1
-
-if(me.eq.0)then
-   
-   !allocate a large array (only on one processor)
-   if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
-      allocate(Idata3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
-   elseif(OUTtype==Real4 .or. OUTtype==Real8)then
-      allocate(Rdata3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-      if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
-   else
-      WRITE(*,*)'WARNING NetCDF:Data type not supported'
-   endif
-
-   !write own data in global array
-   if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
-   ijk=0
-   do k=1,kmax
-      do j = tgj0(me),tgj0(me)+tljmax(me)-1
-         do i = tgi0(me),tgi0(me)+tlimax(me)-1
-            ijk=ijk+1
-            Idata3D(i,j,k)=buff(ijk)
-         enddo
-      enddo
-   enddo
-   else
-   ijk=0
-   do k=1,kmax
-      do j = tgj0(me),tgj0(me)+tljmax(me)-1
-         do i = tgi0(me),tgi0(me)+tlimax(me)-1
-            ijk=ijk+1
-            Rdata3D(i,j,k)=buff(ijk)
-         enddo
-      enddo
-   enddo
-   endif
-
-   do d = 1, NPROC-1
-      call gc_rrecv(outCDFtag,tlimax(d)*tljmax(d)*kmax, d, info,buff, buff)
-
-      !copy data to global buffer
-      if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
-      ijk=0
-      do k=1,kmax
-         do j = tgj0(d),tgj0(d)+tljmax(d)-1
-            do i = tgi0(d),tgi0(d)+tlimax(d)-1
-               ijk=ijk+1
-               Idata3D(i,j,k)=buff(ijk)
-            enddo
-         enddo
-      enddo
-      else
-      ijk=0
-      do k=1,kmax
-         do j = tgj0(d),tgj0(d)+tljmax(d)-1
-            do i = tgi0(d),tgi0(d)+tlimax(d)-1
-               ijk=ijk+1
-               Rdata3D(i,j,k)=buff(ijk)
-            enddo
-         enddo
-      enddo
-      endif
-   enddo
-else
-   call gc_rsend(outCDFtag,tlimax(me)*tljmax(me)*kmax, 0, info, buff, buff)
-endif
-!return
-
-if(me==0)then
-
-   ndate(1)  = current_date%year
-   ndate(2)  = current_date%month
-   ndate(3)  = current_date%day
-   ndate(4)  = current_date%hour
-
-!test if the file is already open
-   if(ncFileID==closedID)then
-!open an existing netcdf dataset
-      call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
-      if(iotyp_new==1)then      !needed in case iotyp is defined
-         ncFileID_new = ncFileID!not really needed
-      elseif(iotyp==IOU_YEAR)then
-         ncFileID_year = ncFileID
-      elseif(iotyp==IOU_MON)then
-         ncFileID_month = ncFileID
-      elseif(iotyp==IOU_DAY)then
-         ncFileID_day = ncFileID
-      elseif(iotyp==IOU_HOUR)then
-         ncFileID_hour = ncFileID
-      elseif(iotyp==IOU_INST)then
-         ncFileID_inst = ncFileID
-      endif
-   endif
-
-  !test first if the variable is already defined:
-  status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
-  
-  if(status == nf90_noerr) then     
-!     print *, 'variable exists: ',varname
-  else
-     !ds print *, 'creating variable: ',varname!,nf90_strerror(status)
-     write(6,*) 'creating variable: ',varname!,nf90_strerror(status)
-     call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
-  endif
-
-
-  !get variable id
-  call check(nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID))
-
-
-  !find the number of records already written
-  call check(nf90_get_att(ncFileID, VarID, "numberofrecords",   nrecords))
-!  print *,'number of dataset saved: ',nrecords
-  !increase the last coordinate by one, to define position of new data
-  !test if new record is needed
-  if(present(ik))then
-     if((SavedVar(ik)==VarID.and.SavedncFile(ik)==ncFileID).or.nrecords==0)then
-        nrecords=nrecords+1 !start a new record
-        SavedVar(:)=-999; SavedncFile(:)=-999 !reset 
+           !         write(6,*)'existing file ', trim(fileName_given),' has dimensions'
+           !         write(6,*)GIMAX_old,GJMAX_old,KMAX_old
+           if(GIMAX_old<GIMAXcdf .or. GJMAX_old<GJMAXcdf .or.  KMAX_old<KMAX)then
+              write(6,*)'existing file ', trim(fileName_given),' has wrong dimensions'
+              write(6,*)GIMAX_old,GIMAXcdf,GJMAX_old,GJMAXcdf,KMAX_old,KMAX
+              write(6,*)'WARNING! OLD ', trim(fileName_given),' IS DELETED'
+              write(6,*) 'creating new file: ',trim(fileName_given)
+              period_type = 'unknown'
+              call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
+              ncFileID=closedID
+           endif
+        endif
      endif
-     !write which variable, file and level is written
-     SavedVar(ik)=VarID;SavedncFile(ik)=ncFileID
-  else
-     nrecords=nrecords+1
-  endif
-!  print *,'writing on dataset: ',nrecords
-
-!append new values
-  if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
-
-  if(ndim==3)then
-     if(present(ik))then
-!     print *, 'write: ',i1,i2, j1,j2,ik
-        call check(nf90_put_var(ncFileID, VarID, &
-        Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
-     else
-        do k=1,kmax
-           call check(nf90_put_var(ncFileID, VarID,&
-           Idata3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
-        enddo
-     endif
-  else 
-     call check(nf90_put_var(ncFileID, VarID,&
-     Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
+     iotyp_new=1
+     ncFileID_new=ncFileID
   endif
 
-     deallocate(Idata3D, stat=alloc_err)
-     if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
-
-  else  
-     !type Real
-  if(ndim==3)then
-     if(present(ik))then
-!     print *, 'write: ',i1,i2, j1,j2,ik
-        call check(nf90_put_var(ncFileID, VarID, &
-        Rdata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
-     else
-        do k=1,kmax
-           call check(nf90_put_var(ncFileID, VarID,&
-           Rdata3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
-        enddo
-     endif
-  else 
-     call check(nf90_put_var(ncFileID, VarID,&
-     Rdata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
-  endif
-
-     deallocate(Rdata3D, stat=alloc_err)
-     if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
-
-  endif !type Real
-
-
-  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour0  ))
-  call check(nf90_get_att(ncFileID, nf90_global, "created_hour", created_hour  ))
-  call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
-!    print *, 'date now: ',lastmodified_hour,' date before ',lastmodified_hour0,' date start ', created_hour
-
-!write or change attributes NB: strings must be of same length as originally
-
-  call check(nf90_put_att(ncFileID, VarID, "numberofrecords",   nrecords))
-
-!update dates
-  call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_date", lastmodified_date))
-  call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
-  call check(nf90_put_att(ncFileID, VarID, "current_date_last",ndate ))
-
-  !get variable id
-  call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
-  call secondssince1970(ndate,nseconds)
-  !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
-      if(iotyp==IOU_YEAR)then
-         nseconds=nseconds-43200*365-43200*is_leap(ndate(1)-1)
-      elseif(iotyp==IOU_MON)then
-         nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
-      elseif(iotyp==IOU_DAY)then
-         nseconds=nseconds-43200 !24*3600/2=43200
-      elseif(iotyp==IOU_HOUR)then
-         nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
-      elseif(iotyp==IOU_INST)then
-         nseconds=nseconds       
-      else
-         nseconds=nseconds       
-      endif
-
-  call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
-
-!close file if present(fileName_given)
   if(iotyp_new==1)then
-     call check(nf90_close(ncFileID))
+     fileName=trim(fileName_given)
+     ncFileID = ncFileID_new
+  elseif(iotyp==IOU_YEAR)then
+     fileName = fileName_year
+     ncFileID = ncFileID_year
+  elseif(iotyp==IOU_MON)then
+     fileName = fileName_month
+     ncFileID = ncFileID_month
+  elseif(iotyp==IOU_DAY)then
+     fileName = fileName_day
+     ncFileID = ncFileID_day
+  elseif(iotyp==IOU_HOUR)then
+     fileName = fileName_hour
+     ncFileID = ncFileID_hour
+  elseif(iotyp==IOU_INST)then
+     fileName = fileName_inst
+     ncFileID = ncFileID_inst
+  else
+     return
   endif
-endif !me=0
 
-return
+  if(ndim /= 2 .and. ndim /= 3 )then
+     print *, 'error in NetCDF_ml ',ndim
+     call gc_abort(me,NPROC,"error in NetCDF_ml")
+  endif
+
+  OUTtype=Real4  !default value
+  if(present(CDFtype))OUTtype=CDFtype
+
+  !buffer the wanted part of data
+  ijk=0
+  do k=1,kmax
+     do j = 1,tljmax(me)
+        do i = 1,tlimax(me)
+           ijk=ijk+1
+           buff(ijk)=dat(i,j,k)*scale
+        enddo
+     enddo
+  enddo
+
+  !send all data to me=0
+  outCDFtag=outCDFtag+1
+
+  if(me.eq.0)then
+
+     !allocate a large array (only on one processor)
+     if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
+        allocate(Idata3D(GIMAX,GJMAX,kmax), stat=alloc_err)
+        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+     elseif(OUTtype==Real4)then
+        allocate(R4data3D(GIMAX,GJMAX,kmax), stat=alloc_err)
+        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+     elseif(OUTtype==Real8)then
+        allocate(R8data3D(GIMAX,GJMAX,kmax), stat=alloc_err)
+        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+     else
+        WRITE(*,*)'WARNING NetCDF:Data type not supported'
+     endif
+
+     !write own data in global array
+     if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
+        ijk=0
+        do k=1,kmax
+           do j = tgj0(me),tgj0(me)+tljmax(me)-1
+              do i = tgi0(me),tgi0(me)+tlimax(me)-1
+                 ijk=ijk+1
+                 Idata3D(i,j,k)=buff(ijk)
+              enddo
+           enddo
+        enddo
+     elseif(OUTtype==Real4)then
+        ijk=0
+        do k=1,kmax
+           do j = tgj0(me),tgj0(me)+tljmax(me)-1
+              do i = tgi0(me),tgi0(me)+tlimax(me)-1
+                 ijk=ijk+1
+                 R4data3D(i,j,k)=buff(ijk)
+              enddo
+           enddo
+        enddo
+     else
+        ijk=0
+        do k=1,kmax
+           do j = tgj0(me),tgj0(me)+tljmax(me)-1
+              do i = tgi0(me),tgi0(me)+tlimax(me)-1
+                 ijk=ijk+1
+                 R8data3D(i,j,k)=buff(ijk)
+              enddo
+           enddo
+        enddo
+     endif
+
+     do d = 1, NPROC-1
+        call gc_rrecv(outCDFtag,tlimax(d)*tljmax(d)*kmax, d, info,buff, buff)
+
+        !copy data to global buffer
+        if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
+           ijk=0
+           do k=1,kmax
+              do j = tgj0(d),tgj0(d)+tljmax(d)-1
+                 do i = tgi0(d),tgi0(d)+tlimax(d)-1
+                    ijk=ijk+1
+                    Idata3D(i,j,k)=buff(ijk)
+                 enddo
+              enddo
+           enddo
+        elseif(OUTtype==Real4)then
+           ijk=0
+           do k=1,kmax
+              do j = tgj0(d),tgj0(d)+tljmax(d)-1
+                 do i = tgi0(d),tgi0(d)+tlimax(d)-1
+                    ijk=ijk+1
+                    R4data3D(i,j,k)=buff(ijk)
+                 enddo
+              enddo
+           enddo
+        else
+           ijk=0
+           do k=1,kmax
+              do j = tgj0(d),tgj0(d)+tljmax(d)-1
+                 do i = tgi0(d),tgi0(d)+tlimax(d)-1
+                    ijk=ijk+1
+                    R8data3D(i,j,k)=buff(ijk)
+                 enddo
+              enddo
+           enddo
+        endif
+     enddo
+  else
+     call gc_rsend(outCDFtag,tlimax(me)*tljmax(me)*kmax, 0, info, buff, buff)
+  endif
+  !return
+
+  if(me==0)then
+
+     ndate(1)  = current_date%year
+     ndate(2)  = current_date%month
+     ndate(3)  = current_date%day
+     ndate(4)  = current_date%hour
+
+     !test if the file is already open
+     if(ncFileID==closedID)then
+        !open an existing netcdf dataset
+        call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
+       if(iotyp_new==1)then      !needed in case iotyp is defined
+           ncFileID_new = ncFileID!not really needed
+        elseif(iotyp==IOU_YEAR)then
+           ncFileID_year = ncFileID
+        elseif(iotyp==IOU_MON)then
+           ncFileID_month = ncFileID
+        elseif(iotyp==IOU_DAY)then
+           ncFileID_day = ncFileID
+        elseif(iotyp==IOU_HOUR)then
+           ncFileID_hour = ncFileID
+        elseif(iotyp==IOU_INST)then
+           ncFileID_inst = ncFileID
+        endif
+     endif
+
+     !test first if the variable is already defined:
+     status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
+
+     if(status == nf90_noerr) then     
+!             print *, 'variable exists: ',varname
+     else
+        !ds print *, 'creating variable: ',varname!,nf90_strerror(status)
+        write(6,*) 'creating variable: ',varname!,nf90_strerror(status)
+        call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
+     endif
+
+
+     !get variable id
+     call check(nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID))
+
+
+     !find the number of records already written
+     call check(nf90_get_att(ncFileID, VarID, "numberofrecords",   nrecords))
+     !  print *,'number of dataset saved: ',nrecords
+     !increase the last coordinate by one, to define position of new data
+     !test if new record is needed
+     if(present(ik))then
+        if((SavedVar(ik)==VarID.and.SavedncFile(ik)==ncFileID).or.nrecords==0)then
+           nrecords=nrecords+1 !start a new record
+           SavedVar(:)=-999; SavedncFile(:)=-999 !reset 
+        endif
+        !write which variable, file and level is written
+        SavedVar(ik)=VarID;SavedncFile(ik)=ncFileID
+     else
+        nrecords=nrecords+1
+     endif
+     !  print *,'writing on dataset: ',nrecords
+
+     !append new values
+     if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
+        !type Integer
+        if(ndim==3)then
+           if(present(ik))then
+              !     print *, 'write: ',i1,i2, j1,j2,ik
+              call check(nf90_put_var(ncFileID, VarID, &
+                   Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
+           else
+              do k=1,kmax
+                 call check(nf90_put_var(ncFileID, VarID,&
+                      Idata3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
+              enddo
+           endif
+        else 
+           call check(nf90_put_var(ncFileID, VarID,&
+                Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
+        endif
+
+        deallocate(Idata3D, stat=alloc_err)
+        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
+
+     elseif(OUTtype==Real4)then  
+        !type Real4
+        if(ndim==3)then
+           if(present(ik))then
+              !     print *, 'write: ',i1,i2, j1,j2,ik
+              call check(nf90_put_var(ncFileID, VarID, &
+                   R4data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
+           else
+              do k=1,kmax
+                 call check(nf90_put_var(ncFileID, VarID,&
+                      R4data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
+              enddo
+           endif
+        else 
+           call check(nf90_put_var(ncFileID, VarID,&
+                R4data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
+        endif
+
+        deallocate(R4data3D, stat=alloc_err)
+        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
+
+     else
+        !type Real8
+        if(ndim==3)then
+           if(present(ik))then
+              !     print *, 'write: ',i1,i2, j1,j2,ik
+              call check(nf90_put_var(ncFileID, VarID, &
+                   R8data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, ik,nrecords /)) )
+           else
+              do k=1,kmax
+                 call check(nf90_put_var(ncFileID, VarID,&
+                      R8data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
+              enddo
+           endif
+        else 
+           call check(nf90_put_var(ncFileID, VarID,&
+                R8data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
+        endif
+
+        deallocate(R8data3D, stat=alloc_err)
+        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
+
+     endif !type 
+
+
+     call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour0  ))
+     call check(nf90_get_att(ncFileID, nf90_global, "created_hour", created_hour  ))
+     call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
+     !    print *, 'date now: ',lastmodified_hour,' date before ',lastmodified_hour0,' date start ', created_hour
+
+     !write or change attributes NB: strings must be of same length as originally
+
+     call check(nf90_put_att(ncFileID, VarID, "numberofrecords",   nrecords))
+
+     !update dates
+     call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_date", lastmodified_date))
+     call check(nf90_put_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour))
+     call check(nf90_put_att(ncFileID, VarID, "current_date_last",ndate ))
+
+     !get variable id
+     call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
+     call secondssince1970(ndate,nseconds)
+     !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
+     if(iotyp==IOU_YEAR)then
+        nseconds=nseconds-43200*365-43200*is_leap(ndate(1)-1)
+     elseif(iotyp==IOU_MON)then
+        nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
+     elseif(iotyp==IOU_DAY)then
+        nseconds=nseconds-43200 !24*3600/2=43200
+     elseif(iotyp==IOU_HOUR)then
+        nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
+     elseif(iotyp==IOU_INST)then
+        nseconds=nseconds       
+     else
+        nseconds=nseconds       
+     endif
+
+     call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
+
+     !close file if present(fileName_given)
+     if(iotyp_new==1)then
+        call check(nf90_close(ncFileID))
+     endif
+  endif !me=0
+
+  return
 end subroutine Out_netCDF
 
 !_______________________________________________________________________

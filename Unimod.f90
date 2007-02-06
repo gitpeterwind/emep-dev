@@ -87,6 +87,7 @@ program myeul
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
   use UKdep_ml,         only : ReadLandUse   !ds rv2_2_3
+  use Nest_ml,         only : wrtxn
 
 !           --------------------
 !
@@ -581,6 +582,8 @@ program myeul
 !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 !
 !
+    call wrtxn(current_date,.true.)
+
     call massbudget()
 
     if(me == 0)then
