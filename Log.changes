@@ -16,7 +16,6 @@ Mode 10,11 for warm start option and corrected bug ("idimid") when writing in la
 NetCDF_ml: 
 allocate a real*4 array instead of real*8. Avoids possible underflow errors and saves some memory.
 
-Included Tareq in run.pl USERS.
 
 XM_MAX_ADVEC removed from Met_ml and Model_constants (was not used)
 
@@ -25,6 +24,10 @@ small change in definition of "cyclicgrid"
 
 Rsurface_ml:
 Some minima criteria removed to prevent problems in extreme stable cases
+
+run.pl
+Simplified, especially for input files.
+Included Tareq in run.pl USERS.
 
 ============== Peter   rv2_6_5    19/1/2007 ================================================
 
