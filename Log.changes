@@ -29,6 +29,8 @@ run.pl
 Simplified, especially for input files.
 Included Tareq in run.pl USERS.
 
+Removed srun.pl, nrun.pl, local2global.f, global2local.f, gc_com.f from cvs
+
 ============== Peter   rv2_6_5    19/1/2007 ================================================
 
 New common run.pl script for njord and snykov. NB: It also use /global/work on snykov.
