@@ -213,7 +213,7 @@ contains
   !/**  Adjustment for low temperatures (Wesely, 1989, p.1296, left column)
 
     Rlow = 1000.0*exp(-Ts_C - 4.0)
-    Rlow = min(Rlow,9.9e4)    
+    !DSPW Rlow = min(Rlow,9.9e4)    
 
 
 
@@ -411,7 +411,7 @@ contains
 
            Rgs     = 1.0/(1.0e-5*Hstar/xRgsS + f0/xRgsO)      ! Eqn. (9)
            Rgs_wet = 1.0/(1.0e-5*Hstar/xRgsS_wet + f0/xRgsO)  ! Eqn. (9)
-           Rgs = min(Rgs,9999.9)  
+           !DSPW Rgs = min(Rgs,9999.9)  
 
            Rsur(icmp)     = Rgs
            Rsur_wet(icmp) = Rgs

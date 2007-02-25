@@ -520,7 +520,7 @@ result (Poly)
 
     Ra = log(z2/z1) - PsiH(z2*Linv) + PsiH(z1*Linv)
     Ra = Ra/(Karman*uStar)
-    Ra = min(Ra,9999.9)
+    !DSPW Ra = min(Ra,9999.9)
 
   end function AerRes
 
@@ -548,7 +548,7 @@ result (Poly)
 
     Ra = log(z2/z1) - PsiM(z2*Linv) + PsiM(z1*Linv)
     Ra = Ra/(Karman*uStar)
-    Ra = min(Ra,9999.9)
+    !DSPW Ra = min(Ra,9999.9)
 
   end function AerResM
 

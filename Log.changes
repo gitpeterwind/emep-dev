@@ -1,13 +1,17 @@
 
-============== Peter, Dave   rv2_6_5_b  (not CVS'd yet)  6/2...31..23..26/1/2007 ======================
+============== Peter, Dave   rv2_6_6  6/2...31..23..25/2/2007 ======================
 
 Advection_ml: renormalization between horizontal and vertical advections in  advecdiff_poles
+
+Dates_ml: extended to 2006, but only MaceHead to 2005 in global yet.
+
+Functions_ml:
+Some minima criteria in Ra removed to prevent problems in extreme stable cases
 
 GlobalBCs_ml - updated to 2005
 
 Nest_ml (and Unimod.f90 ,PhyChem_ml): 
 Mode 10,11 for warm start option and corrected bug ("idimid") when writing in lat lon 
-
 
 NetCDF_ml: 
 allocate a real*4 array instead of real*8. Avoids possible underflow errors and saves some memory.
@@ -16,10 +20,11 @@ Included Tareq in run.pl USERS.
 
 XM_MAX_ADVEC removed from Met_ml and Model_constants (was not used)
 
-Dates_ml: extended to 2006, but only MaceHead to 2005 in global yet.
-
 Met_ml:
 small change in definition of "cyclicgrid"
+
+Rsurface_ml:
+Some minima criteria removed to prevent problems in extreme stable cases
 
 ============== Peter   rv2_6_5    19/1/2007 ================================================
 
