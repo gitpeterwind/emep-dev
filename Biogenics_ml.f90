@@ -15,6 +15,11 @@ module Biogenics_ml
 
   !/-- subroutines
   public ::  Forests_Init      ! was rforest
+
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
+  integer, parameter :: NVEG = 6   ! dsrv1_6_5s99
+  real,private ::MPIbuff(1:NVEG)
   logical, private, parameter:: DEBUG = .false.
   integer, public, parameter :: NBIO = NFORESTVOC
   integer, public, save      :: BIO_ISOP, BIO_TERP
@@ -63,7 +68,6 @@ module Biogenics_ml
 !   Vol 104, D7, 8113-8152.
 
 
-    integer, parameter :: NVEG = 6   ! dsrv1_6_5s99
     integer i, j, n ,d, info, ii, jj, it, cat
     integer itmp, jtmp, i50, j50
     real tmp(NVEG)
@@ -87,7 +91,8 @@ module Biogenics_ml
       else if ( FORESTVOC(i) == "terpene " ) then
             BIO_TERP = i
       else
-          call gc_abort(me,NPROC,"BIO_ERROR")
+            WRITE(*,*) 'MPI_ABORT: ', "BIO_ERROR" 
+            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       end if
     end do
 
@@ -101,7 +106,8 @@ module Biogenics_ml
 
         !ds call open_file(IO_FORES,"r","forest.pcnt",needed=.true.)
         call open_file(IO_FORES,"r","forest.dat",needed=.true.,skip=1)
-        if (ios /= 0) call gc_abort(me,NPROC,"ios error: forest.dat")
+        if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: forest.dat" 
+          if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     endif
 
 
@@ -124,7 +130,8 @@ module Biogenics_ml
           if ( DEBUG .and. any( tmp<0 )  ) then
              print *, "Biogenics: negative data at ", itmp, jtmp
 	     inp_error = 999
-             call gc_abort(me,NPROC,"ERROR:Forest_Init")
+               WRITE(*,*) 'MPI_ABORT: ', "ERROR:Forest_Init" 
+               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
           end if 
 
 !          write(6,*) 'skogting',itmp,jtmp,sumland,(tmp(i),i=1,2)
@@ -166,7 +173,9 @@ module Biogenics_ml
             forsum(:)=forsum(:)+forest(:,i,j)
        end do
     end do
-    call gc_rsum(NVEG,NPROC,info,forsum)
+      MPIbuff(1:NVEG)=forsum(1:NVEG) 
+      CALL MPI_ALLREDUCE(MPIbuff,forsum, NVEG, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
     if (me == 0) write(unit=6,fmt="(a12,6f10.2)") "forest sum:", &
                                                   (forsum(cat),cat=1,NVEG)
 
@@ -235,8 +244,12 @@ module Biogenics_ml
 
       end do
     end do
-    call gc_rsum(1,NPROC,info,isopsum)
-    call gc_rsum(1,NPROC,info,terpsum)
+      MPIbuff(1:1)=isopsum
+      CALL MPI_ALLREDUCE(MPIbuff,isopsum, 1, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:1)=terpsum 
+      CALL MPI_ALLREDUCE(MPIbuff,terpsum, 1, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
     if (me .eq. 0) then
       write(6,*) 'isopsum1, terpsum1',isopsum, terpsum
     end if
@@ -246,7 +259,8 @@ if(READBVOC)then
     if (me ==  0) then
         gforest = 0.0
         call open_file(IO_FORES,"r","BVOC.dat",needed=.true.,skip=1)
-        if (ios /= 0) call gc_abort(me,NPROC,"ios error: BVOC.dat")
+        if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: BVOC.dat" 
+          if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         do while (.true.)
           read(IO_FORES,*,err=1002,end=1002) itmp,jtmp,(embuf(n),n=1,NFORESTVOC)
           j50 = jtmp  - JSMBEG + 1
@@ -272,8 +286,12 @@ if(READBVOC)then
   enddo
 
 
-    call gc_rsum(1,NPROC,info,isopsum)
-    call gc_rsum(1,NPROC,info,terpsum)
+      MPIbuff(1:1)=isopsum
+      CALL MPI_ALLREDUCE(MPIbuff,isopsum, 1, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:1)=terpsum 
+      CALL MPI_ALLREDUCE(MPIbuff,terpsum, 1, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
     if (me .eq. 0) then
       write(6,*) 'isopsum2, terpsum2',isopsum, terpsum
     end if

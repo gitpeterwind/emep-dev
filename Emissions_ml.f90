@@ -52,6 +52,9 @@
   !/*   The main code does not need to know about the following  */
   private :: consistency_check       ! Safety-checks
 
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
+
   logical, private, parameter :: DEBUG = .false.
 
  !** land-code information in each grid square - needed to know which country
@@ -184,7 +187,6 @@ contains
   integer :: ic        ! country codes 
   integer :: isec             ! loop variables: emission sectors
   integer :: iem              ! loop variable over pollutants (1..NEMIS)
-  integer :: info             ! Used in gc_rsend
 
 
   !/** emission sums (after e_fact adjustments):
@@ -221,7 +223,8 @@ contains
      call timefactors(year)               ! => fac_emm, fac_edd, day_factor
     !=========================
 
-      if ( ios /= 0) call gc_abort(me,NPROC,"ios error: timefactors")
+      if ( ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: timefactors" 
+        if ( ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
     !** 2) 
     !=========================
@@ -230,14 +233,15 @@ contains
 
 
   endif !(me=0)
-  if ( ios /= 0 ) call gc_abort(me,NPROC,"ios error: EmisSplit")
+  if ( ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: EmisSplit" 
+    if ( ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
   ! #################################
   !uni    *** Broadcast  monthly and Daily factors ****
-  call gc_rbcast(601, NRCSPLIT*NSECTORS*NLAND,  0, NPROC, info, emisfrac)
-  call gc_rbcast(701, NLAND*12*NSECTORS*NEMIS,  0, NPROC, info, fac_emm)
-  call gc_rbcast(702, NLAND*7*NSECTORS*NEMIS,   0, NPROC, info, fac_edd)
-  call gc_rbcast(703, 2*NSECTORS,               0, NPROC, info, day_factor)
+    CALL MPI_BCAST( emisfrac ,8*NRCSPLIT*NSECTORS*NLAND,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST( day_factor ,8*2*NSECTORS,MPI_BYTE,               0,MPI_COMM_WORLD,INFO) 
 
   !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   !c4b) Set up DMS factors here - to be used in newmonth
@@ -265,7 +269,8 @@ contains
        allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
        if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 .or. &
             err4 /= 0 .or. err5 /= 0 .or. err6 /= 0) then
-            call gc_abort(me,NPROC,"Alloc error - globland")
+              WRITE(*,*) 'MPI_ABORT: ', "Allocerror - globland" 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        end if
 
 
@@ -296,7 +301,8 @@ contains
            emsum(iem) = sum( globemis(:,:,:,:) ) + &
                         sum( globemis_flat(:,:,:) )    ! hf
       endif  ! me==0
-      if ( ios /= 0) call gc_abort(me,NPROC,"ios error: EmisGet")
+      if ( ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: EmisGet" 
+        if ( ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
       !CC**  Send data to processors ........
       !
@@ -345,10 +351,10 @@ contains
 
      !/**hf  broadcast volcanoe info derived in EmisGet 
 
-      call gc_ibcast(327,1,0,NPROC,info,nvolc)
-      call gc_ibcast(327,nvolc,0,NPROC,info,i_volc)
-      call gc_ibcast(327,nvolc,0,NPROC,info,j_volc)
-      call gc_rbcast(327,nvolc,0,NPROC,info,emis_volc)
+        CALL MPI_BCAST(nvolc,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+        CALL MPI_BCAST(i_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+        CALL MPI_BCAST(j_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+        CALL MPI_BCAST(emis_volc,8*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
 
 
@@ -414,7 +420,7 @@ contains
         endif
 
         !/** broadcast volcano heights
-        call gc_ibcast(327,NMAX_VOLC,0,NPROC,info,height_volc)
+          CALL MPI_BCAST(height_volc,4*NMAX_VOLC,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
      endif ! VOLCANOES
 
     err1 = 0
@@ -428,7 +434,8 @@ contains
        deallocate(globemis_flat,stat=err6)
        if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 .or. &
             err4 /= 0 .or. err5 /= 0 .or. err6 /= 0        ) then
-          call gc_abort(me,NPROC,"De-Alloc error - globland")
+            WRITE(*,*) 'MPI_ABORT: ', "De-Allocerror - globland" 
+            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        end if
     end if
 
@@ -462,7 +469,8 @@ contains
 
   if ( errormsg /= "ok" ) then
      write(6,*) "Failed consistency check:", errormsg
-     call gc_abort(me,NPROC,errormsg)
+       WRITE(*,*) 'MPI_ABORT: ', errormsg 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
 
  end subroutine consistency_check
@@ -1005,13 +1013,15 @@ contains
                           flat_ncmaxfound = n 
                           write(6,*)'DMS Increased flat_ncmaxfound to ',n 
                           if ( n > FNCMAX ) then
-		  	    call gc_abort(me,NPROC,'Increase FNCMAX for dms')
+		  	      WRITE(*,*) 'MPI_ABORT: ', 'IncreaseFNCMAX for dms' 
+  		  	    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 			  endif
                      endif 
                   else  ! We know that DMS lies last in the array, so:
                       n = flat_nlandcode(i,j) 
                       if ( flat_landcode(i,j,n) /= IQ_DMS )then
-                         call gc_abort(me,NPROC,'newmonth: DMS not last!')
+                           WRITE(*,*) 'MPI_ABORT: ', 'newmonth:DMS not last!' 
+                           call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 		      endif 
                   endif 
 

@@ -44,7 +44,7 @@ module BoundaryConditions_ml
 !ds Summer  2003: Added Mace Head corrections. Corrected bugs in twopi_year
 !                 and vertical scaling.
 !ds January 2002: modified for case with no BCs to be set (num_changed). 
-!                 Re-formatted, replaced stop_test by gc_abort
+!                 Re-formatted, replaced stop_test by mpi_abort   
 !hf september-01: 2-dim mask changed into a 3-dim mask, and new restrictions 
 !                 are made
 !                 All adv species are only reset in top and edges, bgn species 
@@ -110,6 +110,8 @@ module BoundaryConditions_ml
 
 
   !/-- Allow different behaviour on 1st call - full 3-D asimilation done
+   INCLUDE 'mpif.h'
+   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   logical, private, save :: my_first_call  = .true.  
 
@@ -189,7 +191,7 @@ contains
   integer, intent(in) :: iyr_trend   ! "trend" year              ds  rv1.6.11 
   integer, intent(in) :: month
   integer :: ibc, iem, k,iem1,i,j     ! loop variables
-  integer :: info              !  used in gc_rsend
+  integer :: info              !  used in rsend  
   integer :: io_num            !  i/o number used for reading global data
 
   !/ data arrays for boundary data (bcs) - quite large, so NOT saved
@@ -242,21 +244,24 @@ contains
   call setgl_actarray(iglobact,jglobact)
 
   allocate(bc_data(iglobact,jglobact,KMAX_MID),stat=alloc_err1)
-  if ( alloc_err1 /= 0 ) call gc_abort(me,NPROC, "BC alloc1 failed")
+  if ( alloc_err1 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "BC alloc1 failed" 
+    if ( alloc_err1 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
   ! - check if anything has changed before allocating:
 
   !pwhk if ( num_adv_changed > 0 ) then
       allocate(bc_adv(num_adv_changed,iglobact,jglobact,KMAX_MID), &
          stat=alloc_err2)
-      if ( alloc_err2 /= 0 ) call gc_abort(me,NPROC, "BC alloc1 failed")
+      if ( alloc_err2 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "BC alloc1 failed" 
+        if ( alloc_err2 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       bc_adv(:,:,:,:) = 0.0
    !pwhk  end if
 
   !pwhk  if ( num_bgn_changed > 0 ) then
       allocate(bc_bgn(num_bgn_changed,iglobact,jglobact,KMAX_MID), &
         stat=alloc_err3)
-      if ( alloc_err3 /= 0 ) call gc_abort(me,NPROC, "BC alloc3 failed")
+      if ( alloc_err3 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "BC alloc3 failed" 
+        if ( alloc_err3 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       bc_bgn(:,:,:,:) = 0.0
   !pwhk  end if
 
@@ -288,15 +293,15 @@ contains
                     year,iyr_trend,ibc,month,bc_used(ibc)
 
       end if
-      if(ibc == 1 .and. errcode /= 0 ) &
-           call gc_abort(me,NPROC,"ERROR BCs: GetGlobalData")
-
+      if(ibc == 1 .and. errcode /= 0 ) then
+         WRITE(*,*) 'MPI_ABORT: ', "ERRORBCs: GetGlobalData" 
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+      endif
     !-- If the read-in bcs are required, we broadcast and use:
 
       if ( bc_used(ibc) > 0 ) then
 
-          call gc_rbcast(417+ibc, iglobact*jglobact*KMAX_MID,0, NPROC,info, &
-                           bc_data)
+            CALL MPI_BCAST(                              bc_data  ,8*iglobact*jglobact*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
           
           ! - set bc_adv, - advected species
           do i = 1, bc_used_adv(ibc)
@@ -396,16 +401,19 @@ contains
     end if ! 
 
     deallocate(bc_data,stat=alloc_err1)
-    if ( alloc_err1 /= 0 ) call gc_abort(me,NPROC,"de-alloc_err1")
+    if ( alloc_err1 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "de-alloc_err1" 
+      if ( alloc_err1 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
     if ( num_adv_changed > 0 ) then
        deallocate(bc_adv,stat=alloc_err2)
-       if ( alloc_err2 /= 0 ) call gc_abort(me,NPROC,"de-alloc_err2")
+       if ( alloc_err2 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "de-alloc_err2" 
+         if ( alloc_err2 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     end if
 
     if ( num_bgn_changed > 0 ) then
        deallocate(bc_bgn,stat=alloc_err3)
-       if ( alloc_err3 /= 0 ) call gc_abort(me,NPROC,"de-alloc_err3")
+       if ( alloc_err3 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "de-alloc_err3" 
+         if ( alloc_err3 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     end if
 
  end subroutine BoundaryConditions
@@ -640,7 +648,8 @@ endif
 
       mask(:,:,1) = .true.        !hf Set top layer
    else
-      call gc_abort(me,NPROC,"BCs: Illegal option ")
+        WRITE(*,*) 'MPI_ABORT: ', "BCs:Illegal option " 
+        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
    endif
 
    !** Set concentrations (xn) from boundary conditions (bcs) 

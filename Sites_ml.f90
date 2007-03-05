@@ -56,6 +56,8 @@ private :: siteswrt_out          ! Collects output from all nodes and prints
 
 !/** some variables used in following subroutines **/
 
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 integer, private, save :: nglobal_sites, nlocal_sites
 integer, private, save :: nglobal_sondes, nlocal_sondes
 
@@ -92,7 +94,7 @@ character(len=40), private  :: errmsg   ! Message text
 integer, private,  save  :: &   !u3 - global versions added
        gibegpos,giendpos,gjbegpos,gjendpos &!/** domain for global coords **/ 
       ,ibegpos,iendpos,jbegpos,jendpos      !/** domain for local node    **/
-integer, private  :: d, info            ! processor index and gc_send info
+integer, private  :: d           ! processor index
 integer, private  :: i, n, nloc, ioerr  ! general integers
 
  !-- Debugging parameter:
@@ -236,7 +238,8 @@ contains
    if(me == 0) call open_file(io_num,"r",infile,needed=.true.)
 
    if ( NMAX /= size(s_name) ) then   !-- consistency check
-          call gc_abort(me,NPROC,"sitesdef NMAX problem")
+            WRITE(*,*) 'MPI_ABORT: ', "sitesdefNMAX problem" 
+            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
    end if
 
    
@@ -290,17 +293,18 @@ contains
     !/ NSITES/SONDES_MAX must be _greater_ than the number used, for safety
     !  (we could in fact dimesnion as NMAX-1 but I can't be bothered..)
 
-     if ( n >= NMAX ) call gc_abort(me,NPROC,"increase NGLOBAL_SITES_MAX")
+     if ( n >= NMAX )   WRITE(*,*) 'MPI_ABORT: ', "increaseNGLOBAL_SITES_MAX" 
+       if ( n >= NMAX ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
      close(unit=io_num)
    end if SITEREAD
 
 
    ! - send global coordinates to processors
-   call gc_ibcast(680,1,0,NPROC,info,nglobal)
-   call gc_ibcast(681,nglobal,0,NPROC,info,s_gx)
-   call gc_ibcast(682,nglobal,0,NPROC,info,s_gy)
-   call gc_ibcast(683,nglobal,0,NPROC,info,s_gz)  ! ds rv1.6.9
+     CALL MPI_BCAST(nglobal,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+     CALL MPI_BCAST(s_gx,4*nglobal,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+     CALL MPI_BCAST(s_gy,4*nglobal,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+     CALL MPI_BCAST(s_gz,4*nglobal,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
 !/**   define local coordinates of first and last element of the
 !      arrays with respect to the larger domain  **/
@@ -338,9 +342,9 @@ contains
 
     if ( me .ne. 0 ) then
        if(MY_DEBUG)  write(6,*) "sitesdef ", fname, " send gc NLOCAL_SITES", me, nlocal
-       call gc_isend(333,1,0,info,nloc,nlocal)
+         CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_WORLD, INFO) 
        if(nlocal > 0)   &
-         call gc_isend(334,nlocal,0,info,s_n_recv,s_n)
+           CALL MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, MPI_COMM_WORLD, INFO) 
 
     else
        if(MY_DEBUG)  write(6,*) "sitesdef for me =0 OCAL_SITES", me, nlocal
@@ -349,9 +353,11 @@ contains
        end do
          
        do d = 1, NPROC-1
-          call gc_irecv(333,1,d,info,nloc,nloc)
+            CALL MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
+            333, MPI_COMM_WORLD,STATUS, INFO) 
           if(nloc > 0)   &
-         call gc_irecv(334,nloc,d,info,s_n_recv,s_n)
+           CALL MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, &
+           334, MPI_COMM_WORLD,STATUS, INFO) 
           if (MY_DEBUG) write(6,*) "sitesdef: recv d ", fname, d,  &
                    " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
           do n = 1, nloc
@@ -505,7 +511,8 @@ end subroutine siteswrt_surf
                errmsg = "ok"
             case default
               errmsg = "ERROR: SONDE_XTRA:" // SONDE_XTRA(ispec) 
-              call gc_abort(me,NPROC,errmsg)
+                WRITE(*,*) 'MPI_ABORT: ', errmsg 
+                call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
             end select
       end do
 
@@ -663,8 +670,8 @@ end subroutine siteswrt_sondes
 
   if ( me /= 0 ) then   ! -- send data to me=0
 
-      call gc_isend(346,1,0,info,nloc,nlocal)
-      if( nlocal > 0) call gc_rsend(347,nout*nlocal,0,info,out,out)
+        CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO) 
+CALL MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO) 
 
   else ! me = 0
 
@@ -678,8 +685,9 @@ end subroutine siteswrt_sondes
 
       do d = 1, NPROC-1
 
-          call gc_irecv(346,1,d,info,nloc,nloc)
-          if( nloc > 0 ) call gc_rrecv(347,nout*nloc,d,info,out,out)
+            CALL MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
+            346, MPI_COMM_WORLD,STATUS, INFO) 
+CALL MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, STATUS, INFO) 
 
           do n = 1, nloc
              nglob = s_gindex(d,n)

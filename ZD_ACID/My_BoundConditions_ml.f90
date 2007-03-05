@@ -29,7 +29,7 @@ module My_BoundConditions_ml
 ! bcs  then usually these routines will have to be replaced by model-specific 
 ! routines. The important thing is that the inputs and outputs from the routine
 ! are independant of the global module used.
-!u2 - "use" statements moved to top, stop_test replaced by gc_abort
+!u2 - "use" statements moved to top, stop_test replaced by mpi_abort
 !hf MADE comment:
 ! **/ Background species prescribed from solar zenith angle
 ! are set in Setup_1d_ml since it has to be reset each ? timestep anyway
@@ -60,6 +60,8 @@ module My_BoundConditions_ml
 !hf h2o2
  public :: My_bcmap            ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
  
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
    logical, public, parameter  :: BGN_2D = .true. !2d bgn species
    logical, private, parameter :: DEBUG_MYBC = .false.
@@ -175,7 +177,8 @@ module My_BoundConditions_ml
         do i = NGLOB_BC+1 , NTOT_BC
            if ( sum(bc2xn_adv(i,:))  + &
                 sum(bc2xn_bgn(i,:))      /= 1.0 )          &
-                call gc_abort(me,NPROC,"BC problem - my")
+                WRITE(*,*) 'MPI_ABORT: ', "BC problem - my" 
+                call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end do
 
 

@@ -9,7 +9,7 @@
 ! eulpar.inc
 ! eulnx.inc
 !----------------------------------------------------------------------------
-!  $Id: Par_ml.pat,v 1.9 2007-03-05 10:01:13 mifapw Exp $
+!  $Id: Par_ml.f90,v 1.1 2007-03-05 10:01:13 mifapw Exp $
 !  Erik Berge, DNMI    Roar Skaalin, SINTEF Industrial Mathematics
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
@@ -35,14 +35,14 @@ private
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   integer, public, parameter ::  &
-    IILARDOM    =   largedomdx   &
-  , JJLARDOM    =   largedomdy   &
-  , ISMBEG      =   domainx0     &
-  , JSMBEG      =   domainy0     &
-  , GIMAX       =   domaindx     & ! Number of global points in longitude
-  , GJMAX       =   domaindy     & ! Number of global points in latitude
-  , NPROCX      =   nprocx       & ! Actual number of processors in longitude
-  , NPROCY      =   nprocy       & ! Actual number of processors in latitude
+    IILARDOM    =   170   &
+  , JJLARDOM    =   133   &
+  , ISMBEG      =   36     &
+  , JSMBEG      =   12     &
+  , GIMAX       =   132     & ! Number of global points in longitude
+  , GJMAX       =   111     & ! Number of global points in latitude
+  , NPROCX      =   8       & ! Actual number of processors in longitude
+  , NPROCY      =   4       & ! Actual number of processors in latitude
   , MAXLIMAX   = (GIMAX+NPROCX-1)/NPROCX   & ! Maximum number of local points in longitude
   , MAXLJMAX   = (GJMAX+NPROCY-1)/NPROCY   & ! Maximum number of local points in latitude
   , MFSIZEINP = IILARDOM*JJLARDOM   & ! Maximum field size for input

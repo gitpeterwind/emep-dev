@@ -12,8 +12,9 @@ module RunChem_ml
     public :: runchem
 
 
-!    logical, private, save :: my_first_call = .true.
-    logical, private, save :: MYDEBUG         = .false.
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
+  logical, private, save :: MYDEBUG         = .false.
 
 contains
 
@@ -68,15 +69,6 @@ subroutine runchem(numt)
 
 ! ========================= STARTS HERE ================================
       
-!      call check_dts(dt_advec,dt_chem)
- 
-	dt_chem = 60   !DAVETMP 60
-
-!pw u3 check dt_chem 
-        nchem = max(2, nint(dt_advec)/dt_chem )
-        dt_chem = nint(dt_advec)/nchem
-        if(dt_chem*nchem.ne.nint(dt_advec))&
-           write(*,*)'WARNING: using wrong dt_chem!', dt_chem
 
 	Niter = 2
 
@@ -138,7 +130,8 @@ subroutine runchem(numt)
 
                      call setup_phot(i,j,errcode)
 
-                    if(errcode /= 0)call gc_abort(me,NPROC,"setup_phot error")
+                    if(errcode /= 0)  WRITE(*,*) 'MPI_ABORT: ', "setup_photerror" 
+                      if(errcode /= 0)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
                      call Add_2timing(29,tim_after,tim_before,&
                                            "Runchem:1st setups")
 
@@ -154,7 +147,7 @@ subroutine runchem(numt)
 
 
                      !==================================================
-                     call chemistry(i,j,dt_chem,Niter,reset_chem)
+                     call chemistry(i,j)
                      !==================================================
 
                      call Add_2timing(31,tim_after,tim_before,&

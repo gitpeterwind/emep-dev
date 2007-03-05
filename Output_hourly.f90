@@ -54,10 +54,12 @@
    !*  real             :: max    ! max allowed value
 
    ! local variables
+   INCLUDE 'mpif.h'
+   INTEGER STATUS(MPI_STATUS_SIZE),INFO
    logical, save     :: my_first_call = .true. ! Set false after file opened
    logical, save     :: debug_flag = .false.
    integer, save     :: i_debug, j_debug       ! Coords matching i,j
-   integer msnr                        ! Message number for gc_rsend
+   integer msnr                        ! Message number for rsend  
    real hourly(MAXLIMAX,MAXLJMAX)      ! Local hourly value  (e.g. ppb)
    real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
    real :: arrmax                      ! Maximum value from array
@@ -269,7 +271,8 @@
 
           case DEFAULT 
              errmsg = "ERROR-DEF! Hourly_out: " // hr_out(ih)%type 
-             call gc_abort(me,NPROC,"ABORT! hourly type not found")
+               WRITE(*,*) 'MPI_ABORT: ', "ABORT!hourly type not found" 
+               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
        end select OPTIONS 
 
@@ -304,7 +307,8 @@
               write(6,*) "cfac   is ",   cfac(ispec,maxpos(1),maxpos(2))
             end if
 
-            call gc_abort(me,NPROC,"hourly too big")
+              WRITE(*,*) 'MPI_ABORT: ', "hourlytoo big" 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        endif
 
 !NetCDF hourly output

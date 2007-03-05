@@ -63,6 +63,8 @@ module My_BoundConditions_ml
  !/-- subroutines
  public :: My_bcmap          ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
 
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
  !/-- model-type
  !    for consistency checks, possibly to match label in My_model_ml??
   character(len=12), public :: MY_MODEL = "emepds"
@@ -208,8 +210,10 @@ module My_BoundConditions_ml
         end if ! DEBUG
 
         do i = NGLOB_BC+1 , NTOT_BC
-           if ( sum(bc2xn_adv(i,:)) + sum(bc2xn_bgn(i,:)) /= 1.0 ) &
-                call gc_abort(me,NPROC,"BC problem - my")
+           if ( sum(bc2xn_adv(i,:)) + sum(bc2xn_bgn(i,:)) /= 1.0 )then 
+              WRITE(*,*) 'MPI_ABORT: ', "BCproblem - my" 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           endif
         end do
 
 

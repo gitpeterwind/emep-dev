@@ -86,6 +86,9 @@ module DryDep_ml
  private
 
  public :: drydep, init_drydep
+ 
+ INCLUDE 'mpif.h'
+ INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
@@ -288,7 +291,7 @@ module DryDep_ml
 
       dtz      = dt_advec/z_bnd(i,j,KMAX_BND-1)
 
-     ! wstar for particle deposition
+    ! wstar for particle deposition
         wstar = 0.                   ! w* ......Based on Wesely
         if(Hd <  0.0 )   &          ! for unstable stratification
         wstar = (-GRAV * pzpbl(i,j) * Hd /      &
@@ -310,7 +313,6 @@ module DryDep_ml
     end if
                  
 
- 
     !/ Initialise Grid-avg Vg for this grid square:
 
     Grid_Vg_ref(:) = 0.0
@@ -322,7 +324,8 @@ module DryDep_ml
     fluxfrac_adv (:,:) = 0.0
     c_hvegppb(:) = 0.0   !ds rv1_9_16 needed for safety
     leaf_flux(:) = 0.0   !ds rv1_9_17 bug-fix - 26/12/2003
-
+ 
+ 
     !/ SO2/NH3 for Rsur calc
     so2nh3ratio = &
                xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID) / & !SO2/NH3
@@ -357,7 +360,8 @@ module DryDep_ml
 
         if ( DEBUG_UK .and. water(lu) .and. hveg > 0.0 ) then
             print *, "HIGHW!!! h,lai,cov", i,j,ilu, hveg, lai,cover
-            call gc_abort(me,NPROC,"WATER!")
+              WRITE(*,*) 'MPI_ABORT: ', "WATER!" 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if
 
 
@@ -579,7 +583,8 @@ module DryDep_ml
              ( log((hveg-d)/z0)  -PsiM((hveg-d)*invL) + PsiM(z0*invL)  )/ &
              ( log((z_ref-d)/z0) -PsiM((z_ref-d)*invL) + PsiM(z0*invL))
 
-          if (DEBUG_FLUX.and.u_hveg <= 1.e-19)call gc_abort(me,NPROC,"UVEG!")
+          if (DEBUG_FLUX.and.u_hveg <= 1.e-19)  WRITE(*,*) 'MPI_ABORT: ', "UVEG!" 
+            if (DEBUG_FLUX.and.u_hveg <= 1.e-19)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
           gext_leaf = 1.0/2500.0
           rc_leaf = 1.0/(g_sto+ gext_leaf)
@@ -633,7 +638,8 @@ module DryDep_ml
 
         if ( DEBUG_UK .and. Sumland > 1.011  ) then
             print *, "SUMLAND ", me, nlu, i,j,i_glob(i), j_glob(j), Sumland
-            call gc_abort(me,NPROC,"SUMLAND!")
+              WRITE(*,*) 'MPI_ABORT: ', "SUMLAND!" 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if
 
 
@@ -679,7 +685,8 @@ module DryDep_ml
 
          if ( DepLoss(nadv) < 0.0 .or. &
               DepLoss(nadv)>xn_2d(nadv2d,KMAX_MID) ) then
-           call gc_abort(me,NPROC,"NEG XN DEPLOSS")
+             WRITE(*,*) 'MPI_ABORT: ', "NEGXN DEPLOSS" 
+             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
          end if
 
 
@@ -698,7 +705,8 @@ module DryDep_ml
               end if
               if ( DEBUG_FLUX .and. lossfrac < 0.1 ) then
                   print *, "ERROR: LOSSFRAC ", lossfrac, nadv, nadv2d
-                  call gc_abort(me,NPROC,"LOSSFRAC!")
+                    WRITE(*,*) 'MPI_ABORT: ', "LOSSFRAC!" 
+                    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
               end if
         end if
 

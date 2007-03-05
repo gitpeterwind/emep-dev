@@ -268,29 +268,35 @@ program myeul
 !
     implicit none
 
+    INCLUDE 'mpif.h'
+    INTEGER STATUS(MPI_STATUS_SIZE),INFO
+
     integer d
 
 
     logical, parameter :: DEBUG_UNI = .false. 
-    integer n, numt, nadd, ntmp(4), info, oldseason &
+    integer n, numt, nadd, ntmp(4),  oldseason &
               ,newseason    !u2 , metstep
     integer iupw, i, j, ii, k, iotyp
     integer :: mm, mm_old   ! month and old-month  (was nn and nold)
-    integer :: nproc_gc,cyclicgrid
+    integer :: nproc_mpi,cyclicgrid
     character (len=130) :: fileName
 
 !
 !     initialize the parallel topology
 !
-    nproc_gc = NPROC
-    call gc_init(' ', me, nproc_gc)
+    nproc_mpi = NPROC
+    CALL MPI_INIT(INFO)
+    CALL MPI_COMM_RANK(MPI_COMM_WORLD, ME, INFO)
+    CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc_mpi, INFO)
 
-    if(nproc_gc /= NPROC)then
+    if(nproc_mpi /= NPROC)then
       if(me == 0)then
         print *,'program was compiled with NPROC = ',NPROC
-        print *,'program was linked with NPROC = ',nproc_gc
+        print *,'program was linked with NPROC = ',nproc_mpi
       endif
-      call gc_abort(me,NPROC,'wrong processor number')
+        WRITE(*,*) 'MPI_ABORT: ', 'wrongprocessor number' 
+        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     endif
 
 !su    some checks
@@ -322,10 +328,10 @@ program myeul
 
     print *, "read standard input"
     if( me == 0 ) print *, "RUNLABEL INPUT ", trim(runlabel1),' ',trim(runlabel2)
-    call gc_ibcast(MSG_MAIN1, 4, 0, NPROC, info, ntmp)
-    call gc_bbcast(MSG_MAIN2, len(runlabel1), 0, NPROC, info, runlabel1)
-    call gc_bbcast(MSG_MAIN2, len(runlabel2), 0, NPROC, info, runlabel2)
-    call gc_ibcast(MSG_MAIN1, 4, 0, NPROC, info, startdate)
+      CALL MPI_BCAST( ntmp ,4*4,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST( runlabel1  ,len(runlabel1),MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST( runlabel2  ,len(runlabel2),MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST( startdate ,4*4,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
 
 !    if( me == 0 ) then
     print *, "distributed standard input"
@@ -589,7 +595,8 @@ program myeul
     if(me == 0)then
        write(6,*) 'programmet er ferdig'
       if(NPROC-1 >  0)then
-           call gc_rrecv(765, 39, NPROC-1,info, lastptim, mytimm)
+         CALL MPI_RECV( lastptim, 8*39, MPI_BYTE,  NPROC-1 & 
+              ,765, MPI_COMM_WORLD, STATUS, INFO) 
       else
            lastptim(:) = mytimm(:)
       endif
@@ -597,12 +604,13 @@ program myeul
       call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
 
     else if(me == NPROC-1) then
-           call gc_rsend(765, 39, 0,info, lastptim, mytimm)
+       CALL MPI_SEND( mytimm, 8*39, MPI_BYTE,  0, 765, MPI_COMM_WORLD, INFO) 
     endif
 !cccccccccccccccccccccccccccccccccc
 
-    call gc_gsync(NPROC, info)
-    call gc_exit()
+    CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+    CALL MPI_FINALIZE(INFO)
+
     stop
     end
 !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

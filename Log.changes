@@ -1,3 +1,15 @@
+============== Peter 5/3 rv2_7 2007  ================================
+
+All gc_ routines removed! They are replaced by the standard MPI routines.
+You can find an overview of the MPI routines for example at:
+http://www.llnl.gov/computing/tutorials/mpi/
+
+My_Outputs_ml: Hourly_ASCII = .false. (slows down the program)
+UK_ml.f90: define "effectivdaynumber" for treating Growing Season in Southern Hemisphere
+Runchem_ml and Solver: removed dt,reset_chem and Niter, which were not used and may create confusion.
+
+Only numerical changes (<1.E-6) on results.
+
 
 ============== Peter, Dave   rv2_6_6  6/2...31..23..25/2/2007 ======================
 

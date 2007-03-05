@@ -46,6 +46,9 @@ module Nest_ml
 
   implicit none
 
+  INCLUDE 'mpif.h'
+  INTEGER INFO
+
   integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
   !10=write at end of run, 11=read at start (BIC)
 
@@ -267,7 +270,8 @@ contains
 
     if(status /= nf90_noerr) then 
        print *, trim(nf90_strerror(status))
-       call gc_abort(me,NPROC,"error in NetCDF_ml")
+         WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     end if
   end subroutine check
 
@@ -279,7 +283,8 @@ contains
     real :: dist
 
 
-    dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
+    dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
+         cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
 
   end function great_circle_distance
 
@@ -341,7 +346,7 @@ contains
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
     integer :: nseconds_indate,ndate(4)
     real :: dist(0:4)
-    integer :: gc_info,nseconds(1),n1,n,i,j,k,II,JJ
+    integer :: nseconds(1),n1,n,i,j,k,II,JJ  
     real, allocatable, dimension(:,:) ::lon_ext,lat_ext
     character*80 ::projection
 
@@ -371,7 +376,8 @@ contains
           !     write(*,*)'GENERAL PROJECTION ',trim(projection)
           call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-          !     call gc_abort(me,NPROC, "PROJECTION NOT RECOGNIZED")
+          !       WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED" 
+            !     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        endif
 
        call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
@@ -384,10 +390,10 @@ contains
 
        write(*,*)'dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,Next
     endif
-    call gc_ibcast(199,1,0,NPROC,gc_info,GIMAX_ext)
-    call gc_ibcast(200,1,0,NPROC,gc_info,GJMAX_ext)
-    call gc_ibcast(201,1,0,NPROC,gc_info,KMAX_ext)
-    call gc_ibcast(202,1,0,NPROC,gc_info,Next)
+      CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST(Next,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
     allocate(lon_ext(GIMAX_ext,GJMAX_ext))
     allocate(lat_ext(GIMAX_ext,GJMAX_ext))
@@ -429,8 +435,8 @@ contains
 
     endif
 
-    call gc_rbcast(203,GIMAX_ext*GJMAX_ext,0,NPROC,gc_info,lon_ext)
-    call gc_rbcast(204,GIMAX_ext*GJMAX_ext,0,NPROC,gc_info,lat_ext)
+      CALL MPI_BCAST(lon_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST(lat_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
     !find interpolation constants
     !note that i,j are local 
@@ -501,7 +507,7 @@ contains
     implicit none
     real, allocatable, dimension(:,:,:) ::data
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
-    integer :: gc_info,nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,nseconds_indate,nr
+    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,nseconds_indate,nr  
     integer :: nseconds_old
 
     nseconds_old=itime_saved(2)
@@ -527,7 +533,7 @@ contains
        itime_saved(2)=nseconds(1)
     endif
 
-    call gc_ibcast(197,2,0,NPROC,gc_info,itime_saved)
+      CALL MPI_BCAST(itime_saved,4*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
     do n= 1, NSPEC_ADV
        if(nr==2)then
@@ -565,7 +571,7 @@ contains
                ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
 
        endif
-       call gc_rbcast(205+n,GIMAX_ext*GJMAX_ext*KMAX_ext,0,NPROC,gc_info,data)
+         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
        !overwrite Global Boundaries (lateral faces)
 
@@ -618,7 +624,7 @@ contains
   subroutine reset_3D(nseconds_indate)
     implicit none
     real, allocatable, dimension(:,:,:) ::data
-    integer :: gc_info,nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,itime,status
+    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,itime,status  
     integer :: nseconds_indate
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
 
@@ -651,7 +657,7 @@ contains
                ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
 
        endif
-       call gc_rbcast(205+n,GIMAX_ext*GJMAX_ext*KMAX_ext,0,NPROC,gc_info,data)
+         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
        ! overwrite everything 3D (init)
        do k=1,KMAX_ext

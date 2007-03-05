@@ -51,7 +51,7 @@
                                                  ! calculated daily
 
   !/*   The main code should not need to know about the following, except
-  !     we need to do a gc_send  and I prefer to keep the parallel stuff
+  !     we need to do a mpi_send  and I prefer to keep the parallel stuff  
   !     out of this module ... ds */
 
   real, public, save,  &
@@ -65,7 +65,7 @@
 
   logical, private, parameter :: DEBUG = .false.
 
-  !/** used for general file calls and gc routines below **/
+  !/** used for general file calls and mpi routines below **/
 
   character(len=30), private :: fname2   ! input filename. do not change (pw+mvl)
   character(len=30), private :: fname0   ! (pw+mvl)for compiler only. do not change

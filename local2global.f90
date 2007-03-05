@@ -15,6 +15,9 @@
      		,me	 	! Address of processor, numbering starts at 0 in south-west corner of ground level
 !
 	implicit none
+
+        INCLUDE 'mpif.h'
+        INTEGER STATUS(MPI_STATUS_SIZE),INFO
 !
 !	input
 !
@@ -26,14 +29,14 @@
         real gloarr(GIMAX,GJMAX)	! Global array
 !
 !	local
-	integer info,i,j,d
+	integer i,j,d
 !
 	if (me .ne. 0) then
 !
 !	send to host
 !
-	  call gc_rsend(msnr, MAXLIMAX*MAXLJMAX, 0, info,& 
-                  locarr, locarr)	  
+           CALL MPI_SEND( locarr, 8*MAXLIMAX*MAXLJMAX, MPI_BYTE,&
+                0, msnr, MPI_COMM_WORLD, INFO) 
 !
 	else ! me = 0
 !
@@ -48,8 +51,8 @@
 !	now get from the others
 !
 	  do d = 1, NPROC-1
-	    call gc_rrecv(msnr,MAXLIMAX*MAXLJMAX, d, info, &
-                      locarr, locarr)
+             CALL MPI_RECV(locarr, 8*MAXLIMAX*MAXLJMAX, MPI_BYTE, &
+             d, msnr, MPI_COMM_WORLD, STATUS, INFO) 
 	    do j = 1, tljmax(d)
 	      do i = 1, tlimax(d)
 		gloarr(tgi0(d)-1+i,tgj0(d)-1+j)=locarr(i,j)

@@ -21,7 +21,9 @@
    private
 
 !hf u2 change
-   integer, public, parameter :: &
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
+  integer, public, parameter :: &
              NRCPHOT      = 17   ! Number of photolytic reactions
    
    real, public, dimension(NRCPHOT,KCHEMTOP:KMAX_MID), &
@@ -89,7 +91,8 @@
         if(me == 0)then
            write(fname1,fmt='(''jclear'',i2.2,''.dat'')') newseason
            call open_file(IO_DJ,"r",fname1,needed=.true.)
-           if (ios /= 0) call gc_abort(me,NPROC,"ios error: jclear")  
+           if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: jclear"   
+             if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         endif
 
 !hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jclear")
@@ -113,8 +116,7 @@
           close(IO_DJ)
         endif  ! me = 0
 
-      call gc_rbcast(517,NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON*NLAT            &
-            ,0, NPROC,info,dj)
+        CALL MPI_BCAST(dj  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON*NLAT,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
 
 
@@ -125,7 +127,8 @@
         if(me == 0)then
            write(fname2,fmt='(''jcl1km'',i2.2,''.dat'')') newseason
            call open_file(IO_DJ,"r",fname2,needed=.true.)
-           if (ios /= 0)call gc_abort(me,NPROC,"ios error: jcl1km")
+           if (ios /= 0)  WRITE(*,*) 'MPI_ABORT: ', "ioserror: jcl1km" 
+             if (ios /= 0)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         endif
 
 !hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl1km")
@@ -151,8 +154,7 @@
           close(IO_DJ)
         endif   ! me = 0
 
-      call gc_rbcast(518,NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON &
-           ,0, NPROC,info,djcl1)
+        CALL MPI_BCAST(djcl1  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
 
 
@@ -163,7 +165,8 @@
         if(me == 0)then
            write(fname3,fmt='(''jcl3km'',i2.2,''.dat'')') newseason
            call open_file(IO_DJ,"r",fname3,needed=.true.)
-           if (ios /= 0)call gc_abort(me,NPROC,"ios error: jcl3km")    
+           if (ios /= 0)  WRITE(*,*) 'MPI_ABORT: ', "ioserror: jcl3km"     
+             if (ios /= 0)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         endif
 
 !hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl3km")
@@ -188,8 +191,7 @@
           end do   ! izen
        endif      !  me = 0
 
-      call gc_rbcast(519,NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON &
-               ,0, NPROC,info,djcl3)
+        CALL MPI_BCAST(djcl3  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
 
 !       if(me == 0) then

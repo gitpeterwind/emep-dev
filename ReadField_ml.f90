@@ -59,7 +59,8 @@ contains
        call open_file(IO_INFILE,"r",fname,needed=.true.)
           if ( ios /= 0 )then
           print *, 'error in opening IO_INFILE ', fname, ios
-          call gc_abort(me,NPROC,"newmonth: error opening in_field")
+            WRITE(*,*) 'MPI_ABORT: ', "newmonth:error opening in_field" 
+            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
           endif
     endif !me==0
 
@@ -81,7 +82,8 @@ contains
        if ( errmsg /= "ok" ) then      
            print *, 'error in reading IO_INFILE', fname
            print *,  errmsg
-           call gc_abort(me,NPROC,"error reading IO_INFILE")
+             WRITE(*,*) 'MPI_ABORT: ', "errorreading IO_INFILE" 
+             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        endif
 
 
@@ -113,7 +115,8 @@ contains
       call open_file(IO_INFILE,"r",fname,needed=.true.)
       if ( ios /= 0 )then         
          print *, 'error in opening IO_INFILE', fname
-         call gc_abort(me,NPROC," error opening in_field")
+           WRITE(*,*) 'MPI_ABORT: ', "error opening in_field" 
+           call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       endif
     endif !me==0
 
@@ -137,7 +140,8 @@ contains
        !ds if ( ios /= 0 )then             
        if ( errmsg /= "ok" ) then      
            print *, 'error in reading IO_INFILE', fname
-           call gc_abort(me,NPROC,"error reading IO_INFILE")
+             WRITE(*,*) 'MPI_ABORT: ', "errorreading IO_INFILE" 
+             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         endif !ios
 
     endif !me==0

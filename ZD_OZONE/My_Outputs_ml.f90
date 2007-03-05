@@ -20,6 +20,10 @@ module  My_Outputs_ml
   use GenChemicals_ml , only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
   use Par_ml,            only: me, NPROC,GIMAX,GJMAX,ISMBEG,JSMBEG
+  implicit none
+
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
   logical, public, parameter :: out_binary = .false.
   logical, public, parameter :: Ascii3D_WANTED = .false.
 
@@ -161,7 +165,7 @@ module  My_Outputs_ml
    !      all layers.
    !----------------------------------------------------------------
 
-    logical, public, parameter :: Hourly_ASCII = .true.
+    logical, public, parameter :: Hourly_ASCII = .false.
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
      !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
@@ -364,7 +368,8 @@ contains
         if ( hr_out(i)%ix1 < 1 .or.  hr_out(i)%ix1 > 999 ) then
             errmsg = "Failed consistency check in set_output_defs"
             print *,  errmsg, "Hourly: ", i, "Nhourly: ", NHOURLY_OUT
-            call gc_abort(me,NPROC,errmsg)
+              WRITE(*,*) 'MPI_ABORT: ', errmsg 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if
    end do
 

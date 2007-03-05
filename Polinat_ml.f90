@@ -15,6 +15,8 @@ module Polinat_ml
  public polinat_in
  public polinat_out
 
+ INCLUDE 'mpif.h'
+ INTEGER STATUS(MPI_STATUS_SIZE),INFO
  integer, private, save :: iimax, iii
  integer, private, save ::  fapos(2,999)
  real, private, save ::  kfalc(999), rhour(999)
@@ -75,10 +77,10 @@ module Polinat_ml
 
 !su	now distribute
 
-		call gc_ibcast(760, 1, 0, NPROC, info, iimax)
-		call gc_rbcast(761, iimax+1, 0, NPROC, info, rhour)
-		call gc_rbcast(762, iimax, 0, NPROC, info, kfalc)
-		call gc_ibcast(763, 2*iimax, 0, NPROC, info, fapos)
+		  CALL MPI_BCAST( iimax ,4*1,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+		  CALL MPI_BCAST( rhour ,8*iimax+1,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+		  CALL MPI_BCAST( kfalc ,8*iimax,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+		  CALL MPI_BCAST( fapos ,4*2*iimax,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
 
 !su	all distributed
 	  endif
@@ -111,10 +113,10 @@ module Polinat_ml
 !csu	read on node 0
 !csu	now distribute
 
-!		call gc_ibcast(760, 1, 0, NPROC, info, iimax)
-!		call gc_rbcast(761, iimax+1, 0, NPROC, info, rhour)
-!		call gc_rbcast(762, iimax, 0, NPROC, info, kfalc)
-!		call gc_ibcast(763, 2*iimax, 0, NPROC, info, fapos)
+!		  CALL MPI_BCAST( iimax ,4*1,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+!		  CALL MPI_BCAST( rhour ,8*iimax+1,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+!		  CALL MPI_BCAST( kfalc ,8*iimax,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
+!		  CALL MPI_BCAST( fapos ,4*2*iimax,MPI_BYTE, 0,MPI_COMM_WORLD,INFO) 
 !csu	all distributed
 !	endif
 
@@ -147,7 +149,7 @@ module Polinat_ml
 !su	we have to synchronise the processors, since for next jjj(iii)
 !su	the aircraft can be on another processor !!!!
 
-	      call gc_gsync(NPROC,info)
+              CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
 	      if(me.eq.0) write(6,*) 'inne i tidsjekk2'	&
 			,fapos(1,iii),fapos(1,iii), ttt

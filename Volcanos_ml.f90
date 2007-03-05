@@ -35,6 +35,8 @@ module Volcanos_ml
 
 
 !u3 - some re-fomatting to get lines < 78 characters
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
    integer, public, parameter  :: NMAX_VOLC = 3 ! Max no. volcanos
    integer, public, save, &
@@ -77,9 +79,10 @@ contains
 
      !u3 call open_file(IO_VOLC,"r",fname,needed=.true.)
      call open_file(IO_VOLC,"r",fname,needed=.true.,skip=1)
-        if ( ios /= 0 )then
-          call gc_abort (me,NPROC," VOLCGET: STOP")
-        endif
+     if ( ios /= 0 )then
+        WRITE(*,*) 'MPI_ABORT:'," VOLCGET: STOP"
+        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+     endif
      height_volc(:)=0.0
      nvolc_read=0
 
@@ -108,7 +111,8 @@ contains
              &match volcanos on emislist.sox'
       write(6,*)nvolc,' volcanos found in emislist.sox'
       if (nvolc_read < nvolc)then
-          call gc_abort (me,NPROC,"Volc missing in Volcanos.dat")
+         WRITE(*,*) 'MPI_ABORT:',"Volc missing in Volcanos.dat"
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       endif   
       close(IO_VOLC)
       ios=0

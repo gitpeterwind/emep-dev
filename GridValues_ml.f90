@@ -47,6 +47,9 @@
 
 
   !** 1) Public (saved) Variables from module:
+ INCLUDE 'mpif.h'
+ INTEGER STATUS(MPI_STATUS_SIZE),INFO
+ real MPIbuff
 
   real, public, save :: &
           xp, yp  &  ! Coordinates of North pole (from infield)
@@ -325,11 +328,19 @@ contains
     gbacmin = minval(gb(:,:))
     glacmax = maxval(gl(:,:))
     glacmin = minval(gl(:,:))
-    call gc_rmax(1, NPROC, info, gbacmax)
-    call gc_rmin(1, NPROC, info, gbacmin)
-    call gc_rmax(1, NPROC, info, glacmax)
-    call gc_rmin(1, NPROC, info, glacmin)
-
+    MPIbuff= gbacmax 
+    CALL MPI_ALLREDUCE(MPIbuff, gbacmax, 1,MPI_DOUBLE_PRECISION, &
+         MPI_MAX, MPI_COMM_WORLD, INFO) 
+    MPIbuff= gbacmin
+    CALL MPI_ALLREDUCE(MPIbuff, gbacmin  , 1, &
+         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
+    MPIbuff= glacmax 
+    CALL MPI_ALLREDUCE(MPIbuff, glacmax, 1,MPI_DOUBLE_PRECISION, &
+         MPI_MAX, MPI_COMM_WORLD, INFO) 
+    MPIbuff= glacmin
+    CALL MPI_ALLREDUCE(MPIbuff, glacmin  , 1, &
+         MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
+    
     if(me==0) write(unit=6,fmt=*) "max/min for gb,gl", &
                      gbacmax,gbacmin,glacmax,glacmin
 
@@ -570,7 +581,8 @@ end subroutine GlobalPosition
        allocate(y(imaxout,jmaxout), stat=alloc_err)
        allocate(gb(imaxout,jmaxout), stat=alloc_err)
        allocate(gl(imaxout,jmaxout), stat=alloc_err)
-       if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "ij2ij alloc failed")
+       if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ij2ij alloc failed" 
+         if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
 ! find longitude, latitude of wanted area
     call ij2lbm(imaxout,jmaxout,gl,gb,fiout,anout,xpout,ypout)
@@ -600,7 +612,8 @@ end subroutine GlobalPosition
        write(*,*)x(1,jmaxout),y(1,jmaxout)
        write(*,*)x(imaxout,jmaxout),y(imaxout,jmaxout)
        write(*,*)'max values found: ',imaxin ,jmaxin
-       call gc_abort(me,NPROC, "ij2ij: area to small")
+         WRITE(*,*) 'MPI_ABORT: ', "ij2ij: area to small" 
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     endif
 
 
@@ -639,7 +652,8 @@ end subroutine GlobalPosition
        deallocate(y,stat=alloc_err)
        deallocate(gb,stat=alloc_err)
        deallocate(gl,stat=alloc_err)
-       if ( alloc_err /= 0 ) call gc_abort(me,NPROC,"ij2ij de-alloc_err")
+       if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ij2ijde-alloc_err" 
+         if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     
      end subroutine ij2ijm
 

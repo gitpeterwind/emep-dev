@@ -36,6 +36,9 @@ module GlobalBCs_ml
 !hf
   public :: GetGlobalData         ! Opens, reads bc_data, closes global data
   public :: setgl_actarray
+
+   INCLUDE 'mpif.h'
+   INTEGER STATUS(MPI_STATUS_SIZE),INFO
   
   logical, parameter, private :: DEBUG_Logan = .false.
   logical, parameter, private :: DEBUG_HZ    = .false.
@@ -292,7 +295,8 @@ else if( iyr_trend >= 2003) then
 else
    print *,"Unspecified trend BCs for this year:", ibc, year
    errmsg = "BC Error UNSPEC"
-   if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+   if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+     if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 endif
 
 
@@ -408,7 +412,8 @@ elseif( year == 2005) then
 elseif ( year > 2005 ) then
           errmsg =  "No Mace Head correction for this year yet! "
           print *, errmsg, i
-          if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+          if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+            if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
  else  ! Defaults, from 1990-2000 average !
    macehead_O3 = (/  37.6, 40.0, 42.9, 43.2, 41.9, 33.9, &
@@ -482,7 +487,8 @@ elseif ( year > 2005 ) then
      
           errmsg =  "PECBC: Error: No SpecBC set for a species "
           print *, errmsg, i
-          if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+          if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+            if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       end if
    end do
 
@@ -652,7 +658,8 @@ elseif ( year > 2005 ) then
               elseif (model=='ZD_OZONE') then
                  bc_rawdata=max(15.0*PPB,bc_rawdata-O3fix)
               else
-                 call gc_abort(me,NPROC,"Problem with Mace Head Correction")
+                   WRITE(*,*) 'MPI_ABORT: ', "Problemwith Mace Head Correction" 
+                   call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
               endif
 
               bc_rawdata=trend_o3 * bc_rawdata  !ds rv1.6.11
@@ -753,7 +760,8 @@ elseif ( year > 2005 ) then
           !================== end select ==================================
          write(*,*) "dsOH FACTOR ", ibc, fname
 
-   if( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+   if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+     if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
    if( DEBUG_Logan )then
 

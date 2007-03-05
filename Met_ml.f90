@@ -64,6 +64,8 @@ private
 !* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  surface \\\\\\\\\\\\\\\\
 !* 
 
+ INCLUDE 'mpif.h'
+ INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
 !
   real,public, save, dimension(0:MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u  ! m/s
@@ -432,7 +434,8 @@ private
 		,status='old',iostat=ios)
           if( ios /= 0 ) then
              write(6,*) "Error opening", fid, fname
-             call gc_abort(me,NPROC,"ERROR infield")
+               WRITE(*,*) 'MPI_ABORT: ', "ERRORinfield" 
+               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
           endif !ios
 	  ierr=0
 
@@ -535,7 +538,8 @@ private
                      print *,'next input time',next_inptime
                      print *,'meteo step',METSTEP
 
-                     call gc_abort(me,NPROC,"infield - time")
+                       WRITE(*,*) 'MPI_ABORT: ', "infield- time" 
+                       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
                endif
 
 !	now the last check, if we have reached a new year, i.e. current date
@@ -783,7 +787,8 @@ private
 	    write(6,*) ' **getflt** error ** ifile: ',ifile
 	    ierr = 1
 !	    call stop_all('GETFLTI2')
-            call gc_abort(me,NPROC,"GETFLTI2")
+              WRITE(*,*) 'MPI_ABORT: ', "GETFLTI2" 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 	  endif
 	endif
 
@@ -842,7 +847,8 @@ private
 990	  continue
 	endif
 !	  if(ierr.eq.1)call stop_all('getflti2ex')
-          if(ierr.eq.1)call gc_abort(me,NPROC,"getflti2ex")
+          if(ierr.eq.1)  WRITE(*,*) 'MPI_ABORT: ', "getflti2ex" 
+            if(ierr.eq.1)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 !hf u2	  call stop_test(.true.,me,NPROC,iteserr,'getflti2ex')
 
 	if(me.eq.0)then
@@ -851,8 +857,7 @@ private
 	    ipack(1) = -999
 	    do d = 1, NPROC-1
 
-	      call gc_bsend(MSG_INIT3,2*(21+NUMHOR4),d, &
-                         info, itmp,ipack)
+	        CALL MPI_SEND(ipack,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3,MPI_COMM_WORLD,INFO) 
 
 	    enddo
 	    close(ifile)
@@ -886,8 +891,7 @@ private
 !pw	      itp = itp + IILARDOM
 	      itp = itp + ipack(11)
 	    enddo
-	    call gc_bsend(MSG_INIT3,2*(21+NUMHOR4),d, &
-                         info, itmp,itmp)
+	      CALL MPI_SEND(itmp,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3,MPI_COMM_WORLD,INFO) 
 	  enddo
 	  ida = 21
 !pw	  itp = 21+(JSMBEG-1)*IILARDOM + ISMBEG-1
@@ -908,8 +912,8 @@ private
 ! me.ne.0, always receive to get itmp(1)
 
 
-	  call gc_brecv(MSG_INIT3,2*(21+NUMHOR4),0, &
-                      info, itmp, itmp)
+	    CALL MPI_RECV( itmp, 2*(21+NUMHOR4), MPI_BYTE, 0, &
+	    MSG_INIT3, MPI_COMM_WORLD,MPISTATUS, INFO) 
 
 	  if(itmp(1).eq.-999)then
 	    ierr = 2
@@ -1034,8 +1038,8 @@ private
 	      usnd(j,k) = u(limax,j,k,nr)
 	    enddo
 	  enddo
-        call gc_rsend(MSG_WEST2, MAXLJMAX*KMAX_MID, neighbor(EAST),      &
-			info, usnd, usnd)
+          CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
+               neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, INFO) 
 	endif
 
 	if (neighbor(NORTH) .ne. NOPROC) then
@@ -1044,16 +1048,16 @@ private
 	      vsnd(i,k) = v(i,ljmax,k,nr)
 	    enddo
 	  enddo
-        call gc_rsend(MSG_SOUTH2, MAXLIMAX*KMAX_MID, neighbor(NORTH),      &
-			info, vsnd, vsnd)
+          CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
+               neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, INFO) 
 	endif
 
 !     receive from WEST neighbor if any
 
 	if (neighbor(WEST) .ne. NOPROC) then
 
-        call gc_rrecv(MSG_WEST2, MAXLJMAX*KMAX_MID, neighbor(WEST),      &
-		info, usnd, usnd)
+           CALL MPI_RECV( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+                neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
         do k = 1,KMAX_MID
 	    do j = 1,ljmax
 	      u(0,j,k,nr) = usnd(j,k)
@@ -1075,8 +1079,8 @@ private
 
 	if (neighbor(SOUTH) .ne. NOPROC) then
 
-        call gc_rrecv(MSG_SOUTH2, MAXLIMAX*KMAX_MID, neighbor(SOUTH),      &
-			info, vsnd, vsnd)
+           CALL MPI_RECV( vsnd, 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
+                neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
         do k = 1,KMAX_MID
 	    do i = 1,limax
 	      v(i,0,k,nr) = vsnd(i,k)
@@ -1543,7 +1547,8 @@ private
         end if
 
         !ds may05 allocate(r_class(MAXLIMAX,MAXLJMAX),stat=err)
-        !ds may05 if ( err /= 0 ) call gc_abort(me,NPROC,"alloc err:rough")
+        !ds may05 if ( err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "allocerr:rough" 
+          !ds may05 if ( err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
         call ReadField(IO_ROUGH,fname,r_class)
    
@@ -1558,7 +1563,8 @@ private
         enddo
 
         !ds may05 deallocate(r_class,stat=err)
-        !ds may05 if ( err /= 0 ) call gc_abort(me,NPROC,"dealloc err:rough")
+        !ds may05 if ( err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "deallocerr:rough" 
+          !ds may05 if ( err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
     else ! callnum == 2
         if (me == 0) then
@@ -1843,8 +1849,10 @@ private
       real :: h100 ! Top of lowest layer - replaces 100.0 
 
 !ds Check:
-      if(  KZ_SBL_LIMIT < 1.01*KZ_MINIMUM ) &
-             call gc_abort(me,NPROC,"SBL limit too low!!")
+      if(  KZ_SBL_LIMIT < 1.01*KZ_MINIMUM ) then
+         WRITE(*,*) 'MPI_ABORT: ', "SBLlimit too low!!" 
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+      endif
 !hf new
       iip = limax+1
       jjp = ljmax+1
@@ -2400,7 +2408,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
  !check that limax and ljmax are large enough
      if(limax < thick .or. ljmax < thick)then
         print *,'me, limax, ljmax, thick ', me, limax, ljmax, thick
-        call gc_abort(me,NPROC,"ERROR readneighbors")
+          WRITE(*,*) 'MPI_ABORT: ', "ERRORreadneighbors" 
+          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      endif
      
      msgnr=1
@@ -2408,17 +2417,17 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      data_south(:,:)=data(:,1:thick)
      data_north(:,:)=data(:,ljmax-thick+1:ljmax)
      if(neighbor(SOUTH) >= 0 )then
-        call gc_rsend(msgnr,MAXLIMAX*thick,		&
-             neighbor(SOUTH), info, data_south, data_south)
+        CALL MPI_SEND( data_south , 8*MAXLIMAX*thick, MPI_BYTE,&
+             neighbor(SOUTH), msgnr, MPI_COMM_WORLD, INFO) 
      endif
      if(neighbor(NORTH) >= 0 )then
-        call gc_rsend(msgnr+9,MAXLIMAX*thick,		&
-             neighbor(NORTH), info, data_north, data_north)
+        CALL MPI_SEND( data_north , 8*MAXLIMAX*thick, MPI_BYTE,&
+             neighbor(NORTH), msgnr+9, MPI_COMM_WORLD, INFO) 
      endif
      
      if(neighbor(SOUTH) >= 0 )then
-        call gc_rrecv(msgnr+9,MAXLIMAX*thick,		&
-             neighbor(SOUTH), info, data_south, data_south)
+        CALL MPI_RECV( data_south, 8*MAXLIMAX*thick, MPI_BYTE,&
+             neighbor(SOUTH), msgnr+9, MPI_COMM_WORLD, MPISTATUS, INFO) 
      else
         do tj=1,thick
            data_south(:,tj)=data(:,1)
@@ -2426,8 +2435,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      endif
  44 format(I2,30F5.0)
      if(neighbor(NORTH) >= 0 )then
-        call gc_rrecv(msgnr,MAXLIMAX*thick,		&
-             neighbor(NORTH), info, data_north, data_north)
+        CALL MPI_RECV( data_north, 8*MAXLIMAX*thick, MPI_BYTE,&
+             neighbor(NORTH), msgnr, MPI_COMM_WORLD, MPISTATUS, INFO) 
      else
         do tj=1,thick
            data_north(:,tj)=data(:,ljmax)
@@ -2456,17 +2465,17 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      enddo
      
      if(neighbor(WEST) >= 0 )then
-        call gc_rsend(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(WEST), info, data_west, data_west)
+        CALL MPI_SEND( data_west , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
+             neighbor(WEST), msgnr+3, MPI_COMM_WORLD, INFO) 
      endif
      if(neighbor(EAST) >= 0 )then
-        call gc_rsend(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(EAST), info, data_east, data_east)
+        CALL MPI_SEND( data_east , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
+             neighbor(EAST), msgnr+7, MPI_COMM_WORLD, INFO) 
      endif
      
      if(neighbor(WEST) >= 0 )then
-       call gc_rrecv(msgnr+7,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(WEST), info, data_west, data_west)
+        CALL MPI_RECV( data_west, 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
+             neighbor(WEST), msgnr+7, MPI_COMM_WORLD, MPISTATUS, INFO) 
      else
         jj=0
         do jt=1,thick
@@ -2483,8 +2492,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
         enddo
      endif
      if(neighbor(EAST) >= 0 )then
-        call gc_rrecv(msgnr+3,(MAXLJMAX+2*thick)*thick,		&
-             neighbor(EAST), info, data_east, data_east)
+        CALL MPI_RECV( data_east, 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE, &
+             neighbor(EAST), msgnr+3, MPI_COMM_WORLD, MPISTATUS, INFO) 
      else
         jj=0
         do jt=1,thick
@@ -3202,7 +3211,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
      integer*2, allocatable ::var_global(:,:,:) !faster if defined with fixed dimensions for all nodes?
      real :: scalefactors(2)
-     integer :: gc_info,KMAX,ijk,i,k,j,nfetch
+     integer :: KMAX,ijk,i,k,j,nfetch   
 
      validity=''
 
@@ -3220,8 +3229,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !note: var_global is defined only for me=0
      call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
                              KMAX,1,1)
-     call gc_rbcast(200,2,0,NPROC,gc_info,scalefactors)
-     call gc_bbcast(201,20,0,NPROC,gc_info,validity)
+       CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+       CALL MPI_BCAST(validity,20,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
  
      deallocate(var_global)
  
@@ -3341,7 +3350,7 @@ end subroutine GetCDF_short
                ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
      integer, intent(out):: Nhh,nhour_first,cyclicgrid
 
-     integer :: gc_info,nseconds(1),n1,i,j
+     integer :: nseconds(1),n1,i,j   
      integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
      integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
      real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
@@ -3372,7 +3381,8 @@ end subroutine GetCDF_short
 !     write(*,*)'GENERAL PROJECTION ',trim(projection)
      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-!     call gc_abort(me,NPROC, "PROJECTION NOT RECOGNIZED")
+!       WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED" 
+  !     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
 
   call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
@@ -3395,22 +3405,26 @@ end subroutine GetCDF_short
 
   if(GIMAX+ISMBEG-1>GIMAX_file.or.GJMAX+JSMBEG-1>GJMAX_file)then
      write(*,*)'outside domain',GIMAX,GIMAX_file,GJMAX,GJMAX_file
-     call gc_abort(me,NPROC,"error in NetCDF_ml")
+       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
   if(KMAX_MID>KMAX_file)then
      write(*,*)'wrong vertical dimension',KMAX_MID,KMAX_file
-     call gc_abort(me,NPROC,"error in NetCDF_ml")
+       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
   if(24/Nhh/=METSTEP)then
      write(*,*)'ERROR: METSTEP and meteo step not equal',Nhh,METSTEP
-     call gc_abort(me,NPROC,"error in NetCDF_ml")
+       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
   
   
   if(nhour/=0.and.nhour/=3)then
      write(*,*)'WARNING: must start at hour=0 or 3'
      write(*,*)nhour,' not tested'
-     call gc_abort(me,NPROC,"error in NetCDF_ml")
+       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
   ihh=1
   n1=1
@@ -3423,7 +3437,8 @@ end subroutine GetCDF_short
   if(ndate(1)/=nyear.or.ndate(2)/=nmonth.or.ndate(3)/=nday)then
      write(*,*)'ERROR: wrong meteo date',ndate(1),nyear,ndate(2),&
           nmonth,ndate(3),nday
-     call gc_abort(me,NPROC,"error in NetCDF_ml")
+       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      ndate(1)=nyear
      ndate(2)=nmonth
      ndate(3)=nday
@@ -3437,7 +3452,8 @@ end subroutine GetCDF_short
      call datefromsecondssince1970(ndate,nseconds(1),0)
      if(mod((ihh-1)*METSTEP+nhour_first,24)/=ndate(4))then
         write(*,*)'ERROR: wrong meteo hour',ihh,Nhh,ndate(4),nhour_first
-        call gc_abort(me,NPROC,"error in NetCDF_ml")
+          WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      endif
   enddo
 
@@ -3519,7 +3535,8 @@ end subroutine GetCDF_short
         call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
              ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
      else
-        call gc_abort(me,NPROC,"error reading map factor")
+          WRITE(*,*) 'MPI_ABORT: ', "errorreading map factor" 
+          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      endif
   endif
      
@@ -3530,22 +3547,22 @@ end subroutine GetCDF_short
    endif !found meteo
  endif !me=0
 
-  call gc_ibcast(207,1,0,NPROC,gc_info, METEOfelt)
+    CALL MPI_BCAST(METEOfelt ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
   if( METEOfelt==1)return !do not use NetCDF meteo input
 
 
-  call gc_ibcast(199,1,0,NPROC,gc_info,Nhh)
-  call gc_rbcast(200,1,0,NPROC,gc_info,GRIDWIDTH_M)
-  call gc_rbcast(198,1,0,NPROC,gc_info,ref_latitude)
-  call gc_rbcast(201,1,0,NPROC,gc_info,xp)
-  call gc_rbcast(202,1,0,NPROC,gc_info,yp)
-  call gc_rbcast(203,1,0,NPROC,gc_info,fi)
-  call gc_rbcast(204,KMAX_MID,0,NPROC,gc_info,sigma_mid)
-  call gc_rbcast(205,GIMAX*GJMAX,0,NPROC,gc_info,xm_global_i(1:GIMAX,1:GJMAX))
-  call gc_rbcast(206,GIMAX*GJMAX,0,NPROC,gc_info,xm_global_j(1:GIMAX,1:GJMAX))
-  call gc_rbcast(207,IILARDOM*JJLARDOM,0,NPROC,gc_info,gb_glob(1:IILARDOM,1:JJLARDOM))
-  call gc_rbcast(208,IILARDOM*JJLARDOM,0,NPROC,gc_info,gl_glob(1:IILARDOM,1:JJLARDOM))
-  call gc_ibcast(209,25,0,NPROC,gc_info,projection)
+    CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(GRIDWIDTH_M,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(ref_latitude,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(xp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(yp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(fi,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(gb_glob(1:IILARDOM,1:JJLARDOM),IILARDOM*JJLARDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(gl_glob(1:IILARDOM,1:JJLARDOM),IILARDOM*JJLARDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(projection,4*25,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
 
   do j=1,MAXLJMAX
@@ -3602,7 +3619,8 @@ endif
 !keep only part of xm relevant to the local domain
 !note that xm has dimensions larger than local domain
   if(MAXLIMAX+1>limax+2.or.MAXLJMAX+1>ljmax+2)then
-     call gc_abort(me,NPROC,"error in Met_ml sizes definitions")
+       WRITE(*,*) 'MPI_ABORT: ', "errorin Met_ml sizes definitions" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
   do j=0,MAXLJMAX+1
      do i=0,MAXLIMAX+1
@@ -3672,7 +3690,8 @@ endif
     
     if(status /= nf90_noerr) then 
       print *, trim(nf90_strerror(status))
-      call gc_abort(me,NPROC,"error in NetCDF_ml")
+        WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     end if
   end subroutine check  
 !_______________________________________________________________________

@@ -27,6 +27,9 @@
   use netcdf
   implicit none
 
+  INCLUDE 'mpif.h'
+  INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
+
   character (len=125), save :: fileName_inst = 'out_inst.nc'
   character (len=125), save :: fileName_hour = 'out_hour.nc'
   character (len=125), save :: fileName_day = 'out_day.nc'
@@ -624,7 +627,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
   if(ndim /= 2 .and. ndim /= 3 )then
      print *, 'error in NetCDF_ml ',ndim
-     call gc_abort(me,NPROC,"error in NetCDF_ml")
+       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
 
   OUTtype=Real4  !default value
@@ -649,13 +653,16 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !allocate a large array (only on one processor)
      if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
         allocate(Idata3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "alloc failed in NetCDF_ml" 
+          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      elseif(OUTtype==Real4)then
         allocate(R4data3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "alloc failed in NetCDF_ml" 
+          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      elseif(OUTtype==Real8)then
         allocate(R8data3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "alloc failed in NetCDF_ml")
+        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "alloc failed in NetCDF_ml" 
+          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      else
         WRITE(*,*)'WARNING NetCDF:Data type not supported'
      endif
@@ -694,7 +701,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      endif
 
      do d = 1, NPROC-1
-        call gc_rrecv(outCDFtag,tlimax(d)*tljmax(d)*kmax, d, info,buff, buff)
+        CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax, MPI_BYTE, d, &
+             outCDFtag, MPI_COMM_WORLD, MPISTATUS, INFO) 
 
         !copy data to global buffer
         if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
@@ -730,7 +738,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         endif
      enddo
   else
-     call gc_rsend(outCDFtag,tlimax(me)*tljmax(me)*kmax, 0, info, buff, buff)
+     CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me)*kmax, MPI_BYTE, 0, &
+          outCDFtag, MPI_COMM_WORLD, INFO) 
   endif
   !return
 
@@ -813,7 +822,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         endif
 
         deallocate(Idata3D, stat=alloc_err)
-        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
+        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "dealloc failed in NetCDF_ml" 
+          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
      elseif(OUTtype==Real4)then  
         !type Real4
@@ -834,7 +844,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         endif
 
         deallocate(R4data3D, stat=alloc_err)
-        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
+        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "dealloc failed in NetCDF_ml" 
+          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
      else
         !type Real8
@@ -855,7 +866,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         endif
 
         deallocate(R8data3D, stat=alloc_err)
-        if ( alloc_err /= 0 ) call gc_abort(me,NPROC, "dealloc failed in NetCDF_ml")
+        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "dealloc failed in NetCDF_ml" 
+          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
      endif !type 
 
@@ -937,7 +949,8 @@ use Derived_ml, only : Deriv
   elseif(OUTtype==Real8)then
      OUTtypeCDF=nf90_double
   else
-     call gc_abort(me,NPROC,"NetCDF_ml: undefined datatype")
+       WRITE(*,*) 'MPI_ABORT: ', "NetCDF_ml:undefined datatype" 
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
 
      call check(nf90_redef(ncid = ncFileID))
@@ -1017,7 +1030,8 @@ end subroutine  createnewvariable
     
     if(status /= nf90_noerr) then 
       print *, trim(nf90_strerror(status))
-      call gc_abort(me,NPROC,"error in NetCDF_ml")
+        WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     end if
   end subroutine check  
 
@@ -1160,7 +1174,8 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
      nfetch=0
      if(fileneeded)then
-        call gc_abort(me,NPROC,"variable needed but not found")
+          WRITE(*,*) 'MPI_ABORT: ', "variableneeded but not found" 
+          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
      endif
      return
   endif

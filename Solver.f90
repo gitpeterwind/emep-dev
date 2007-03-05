@@ -12,12 +12,14 @@ module Chemsolver_ml
 
   public  :: chemistry        ! Runs chemical solver
 
-integer, parameter::nchemMAX=12
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
+  integer, parameter::nchemMAX=12
 
 contains
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 !
-  subroutine chemistry(i,j,dt,Niter,reset_chem)
+  subroutine chemistry(i,j)
     !ds mar2005 use Radiation_ml,          only :  zen ! zenith angle, degrees
     use GenSpec_tot_ml     ! => NSPEC_TOT, O3, NO2, etc.
     use GenSpec_bgn_ml      ! => IXBGN_  indices and xn_2d_bgn values
@@ -95,9 +97,6 @@ contains
     !
     !.. In
     integer, intent(in) ::  i,j       ! Coordinates (needed for Dchem)
-    integer, intent(in) ::  dt        ! Local timestep in chemistry (=dt_chem)
-    integer, intent(in) ::  Niter     !  No. iterations used in 2step
-    logical, intent(in) ::  reset_chem ! Increases iterations, e.g. at start
 
     !su
     real, dimension(NSPEC_TOT,KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), save :: Dchem=0.
@@ -147,7 +146,6 @@ contains
     endif
     !su2step
     inv3 = 1.0/3.0
-    dt2  = 2.0 * inv3 * dt
 
     ! su's suggetsion to help include My_Reactions only once:
     !  toiter gives the number of iterations used in TWOSTEP. Use
@@ -157,14 +155,6 @@ contains
     toiter(6:KEMISTOP-1)     = 2    ! Medium and cloud levels 
     toiter(KEMISTOP:KMAX_MID) = 3    !  Near-ground, emis levels
 
-    !...  if we run with dt_chem less than dt_advec sec., we start a loop here.
-
-    !pw    nchem = nint(dt_advec)/dt
-
-    !       Numiter = Niter 
-    !       if( reset_chem ) then
-    !           Numiter = max(3,Niter) 
-    !       end if
 
     !hf u2 
     !**/ Only NO2+O3->H+ +NO3- at night time and in the
@@ -186,20 +176,7 @@ contains
        x(:) = xn_2d(:,k) - Dchem(:,k,i,j)*dti(1)*1.5
        x(:) = max (x(:), 0.0)
 
-       !        if ( first_call .and. me == 0 ) then
-       !            print *, "TTTT SOLVER HEAD  ", first_call
-       !            print *, "TTTT SOLVER CHEMSIZE  ", CHEMSIZE
-       !            print *, "TTTT SOLVER HEAD H2, x  ", H2,  x(H2 ,10)
-       !            print *, "TTTT SOLVER HEAD H2 old ", H2,  xold(H2 ,10)
-       !            print *, "TTTT SOLVER HEAD H2 D_  ", H2,  Dchem_2d(H2 ,10)
-       !            print *, "TTTT SOLVER HEAD O3, x  ", O3,  x(O3 ,10)
-       !            print *, "TTTT SOLVER HEAD O3 old ", O3,  xold(O3 ,10)
-       !            print *, "TTTT SOLVER HEAD O3 D_  ", O3,  Dchem_2d(O3 ,10)
-       !            print *, "TTTT size 1,2 = ", size(x,1), size(x,2)
-       !        end if
-
-
-
+ 
        !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
        !     Start of integration loop      C
        !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
@@ -264,17 +241,6 @@ contains
 
  !--------------------------------------------------------------
 
-! function Cnew( dt, P, L, Cn_1, Cn ) result (C_new)
-! !--------------------------------------------------------------
-! !+   TWOSTEP Interation formula based on a Gauss-Seidel method
-! !--------------------------------------------------------------
-!      integer, intent(in) ::  dt
-!      real, dimension( : ),  intent(in) ::  P, L, Cn_1, Cn
-!      real, dimension( size(P) ) ::  C_new
-!      C_new = ( 4.0*Cn - Cn_1 + 2.0*dt*P )/ &
-!                ( 3.0 + 2.0*dt*L )
-!!      if (L.gt.(10./dt)) Cnew = P/L
-!      end function Cnew
 
 subroutine  makedt(dti,nchem,coeff1,coeff2,cc,dt_tot)
 !
@@ -363,11 +329,16 @@ if(dt_advec<=100.)then
    dt=(dt_advec)/(nchem)
 endif
 if(dt_advec<20.)then
-call gc_abort(me,NPROC, "makedt: dt_advec too small ")
+     WRITE(*,*) 'MPI_ABORT: ', "makedt: dt_advec too small " 
+     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 endif
 
 
-if(nchem > nchemMAX)print *,'WARNING: nchemMAX too small'
+if(nchem > nchemMAX)then
+   print *,'increase nchemMAX'
+     WRITE(*,*) 'MPI_ABORT: ', "makedt: nchemMAX  too small " 
+     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+endif
 nchem=min(nchemMAX,nchem)
 if(me == 0)then
 write(*,*)'Number of timesteps in Solver: ',nchem
@@ -381,7 +352,8 @@ enddo
 !check that we are using consistent timesteps
 if(abs(ttot-dt_advec)>1.E-5)then
 print *,'dt_advec and dt not compatible'
-call gc_abort(me,NPROC, "makedt: error ")
+  WRITE(*,*) 'MPI_ABORT: ', "makedt: error " 
+  call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 endif
 endif
 

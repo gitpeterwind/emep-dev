@@ -22,6 +22,8 @@ module EmisGet_ml
   private :: femis             ! Sets emissions control factors 
 
 
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
   logical, private, save :: my_first_call = .true.
 
   logical, private, parameter :: DEBUG = .false.
@@ -99,7 +101,8 @@ contains
         write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, emisname
         fname = "emislist." // emisname
         call open_file(IO_EMIS,"r",fname,needed=.true.)
-           if ( ios /= 0 ) call gc_abort(me,NPROC,"ios error: emislist") !u4
+           if ( ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: emislist" 
+           if ( ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
 READEMIS: do   ! ************* Loop over emislist files **********************
 
@@ -109,7 +112,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
               if ( ios <  0 ) exit READEMIS            ! End of file
               if ( ios >  0  ) then                     ! A different problem..
                   errmsg = "GetEmis ios: error on " // fname
-                  call gc_abort(me,NPROC,errmsg)
+                  WRITE(*,*) 'MPI_ABORT: ', errmsg  
+                  call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
               end if
 
 !find country number (ic) corresponding to index as written in emisfile (iic)
@@ -142,17 +146,20 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                 !/** Test that ship emissions are only in sector ISNAP_SHIP
                 do isec=1,(ISNAP_SHIP-1) 
                    if ( tmpsec(isec) /= 0.) &
-                      call gc_abort(me,NPROC,"EMISGET1, NOT FLAT EMISSION") 
+                          WRITE(*,*) 'MPI_ABORT: ',"EMISGET1, NOT FLAT EMISSION"
+                   if ( tmpsec(isec) /= 0.) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
                 enddo
                 do isec=ISNAP_SHIP+1,NSECTORS
                    if ( tmpsec(isec) /= 0. ) &
-                      call gc_abort(me,NPROC,"EMISGET2, NOT FLAT EMISSION") 
+                        WRITE(*,*) 'MPI_ABORT: ',"EMISGET2, NOT FLAT EMISSION"
+                   if ( tmpsec(isec) /= 0.) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
                 enddo
                 !/** end test
 
                 call GridAllocate("FLat",i,j,ic,FNCMAX, flat_iland, &
                     flat_ncmaxfound,flat_globland,flat_globnland,errmsg)
-                if ( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+                if ( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+                  if ( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
               ! ...................................................
               ! Assign e_fact corrected emissions to global FLAT 
@@ -188,7 +195,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                                          e_fact(ISNAP_NAT,IC_VUL,iemis)
                    nvolc=volc_no
                    if (nvolc>NMAX_VOLC)then
-                      call gc_abort (me,NPROC,"EMISGET, NMAX_VULC: STOP")
+                      WRITE(*,*) 'MPI_ABORT: ', "EMISGET, NMAX_VULC: STOP" 
+                      call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
                    endif
                    write(*,*)'Found ',nvolc,' volcanoes on sox file'
 
@@ -217,7 +225,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 
               call GridAllocate("SNAP",i,j,ic,NCMAX, &
                                  iland,ncmaxfound,globland,globnland,errmsg)
-                if ( errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+                if ( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+                  if ( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
               ! ...................................................
               ! ...................................................
@@ -278,7 +287,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 !u7.2                            (land(i,j,k),k=1,ncmaxfound)
 !u7.2            if ( ncmaxfound >  ncmax ) then
 !u7.2 		  print *,"LandAlloc ncmax ERROR ", label, "NCMAX"
-!u7.2                   call gc_abort (me,NPROC,"EMISGET, NCMAX")
+!u7.2                   call abort (me,NPROC,"EMISGET, NCMAX")   
 !u7.2            endif
 !u7.2         endif
 !u7.2  100    continue
@@ -328,7 +337,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
   endif
   if ( ios < 0  ) then
        errmsg = "GetEmis ios: femis.dat"
-       call gc_abort(me,NPROC,errmsg)
+         WRITE(*,*) 'MPI_ABORT: ', errmsg 
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
   !**************************
 
@@ -350,7 +360,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 
   ncols = ncols - 2
   if ( ncols > NCOLS_MAX .or. ncols < 1) then
-       call gc_abort(me,NPROC,"femis ncols")
+         WRITE(*,*) 'MPI_ABORT: ', "femisncols" 
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
 
   n = 0
@@ -368,7 +379,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
        if (oldn == n) write(unit=6,fmt=*) "femis: ",polltxt(ic+2)," NOT assigned"
   end do COLS   ! ic
 
-  if ( n < NEMIS ) call gc_abort(me,NPROC,"too few femis items")
+  if ( n < NEMIS )   WRITE(*,*) 'MPI_ABORT: ', "toofew femis items" 
+    if ( n < NEMIS ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   
   n = 0
 
@@ -379,7 +391,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
       if ( ios <  0 ) exit READFILE                   ! End of file
       if ( ios >  0 ) then                             ! A different problem..
           print *, "ios: ", ios, "n  : ", n
-          call gc_abort(me,NPROC,"Read error on femis")
+            WRITE(*,*) 'MPI_ABORT: ', "Readerror on femis" 
+            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       end if
 
       n = n + 1
@@ -498,9 +511,10 @@ READEMIS: do   ! ************* Loop over emislist files **********************
     if ( isp > 1 ) ifr0 = ifr0 + EMIS_NSPLIT(isp-1) !start index of next species
 
     !/ Just in case ....
-    if ( EMIS_NAME(ie) /= SPLIT_NAME(isp) )  &
-          call gc_abort(me,NPROC,"Mis-match SPLIT")
-
+    if ( EMIS_NAME(ie) /= SPLIT_NAME(isp) )then  
+       WRITE(*,*) 'MPI_ABORT: ', "Mis-matchSPLIT"  
+       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+    endif
     IDEF_LOOP: &
     do idef = 0, 1
 
@@ -510,8 +524,10 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 
           fname = trim( EMIS_NAME(ie) ) // "split.defaults"
           call open_file(IO_EMIS,"r",fname,needed=.true.)
-          if (ios /= 0 ) &
-             call gc_abort(me,NPROC,"ios error:split.defaults")
+          if (ios /= 0 ) then
+             WRITE(*,*) 'MPI_ABORT: ', "ioserror:split.defaults" 
+             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+          endif
 
        else  ! Specials - overwrite the defaults if they exist.
 
@@ -537,7 +553,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
  
        if ( ios /= 0 ) then
            print *, "ERROR ios: ", ios, "values  : ", idef, EMIS_NAME(ie)
-           call gc_abort(me,NPROC,"Read error on hearer, emis_split")
+           WRITE(*,*) 'MPI_ABORT: ', "Read error on hearer, emis_split"
+           call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        end if
 
        write(unit=6,fmt="(a25,i3,/,(12a7))") "SPLIT species for idef=", &
@@ -552,7 +569,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
            if ( ios <  0 ) exit READ_DATA     ! End of file
            if ( ios >  0 ) then               ! A different problem..
                print *, "ios: ", ios, "values  : ", idef, n,  EMIS_NAME(ie)
-               call gc_abort(me,NPROC,"Read error on emis_split")
+                 WRITE(*,*) 'MPI_ABORT: ', "Readerror on emis_split" 
+                 call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
            end if
            n = n + 1
 
@@ -565,20 +583,23 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 !                 any( intext(1,1:nsplit) /= intext(0,1:nsplit) ))      &
 !                                                                  ) then
 !               print *, "ERROR: emisfrac:", idef, iland, isec, sumtmp 
-!               call gc_abort(me,NPROC,"emfracisec")
+!                 WRITE(*,*) 'MPI_ABORT: ', "emfracisec" 
+  !               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 !           end if
           if ( ( sumtmp  >    100.01 .or. sumtmp   <   99.99   )  .or. &
                 ( defaults .and. iland /= 0                     )  .or. &
                 ( defaults .and. isec  /= n                     )  &
                                                                   ) then
                print *, "ERROR: emisfrac:", idef, iland, isec, sumtmp 
-               call gc_abort(me,NPROC,"emfracisec")
+                 WRITE(*,*) 'MPI_ABORT: ', "emfracisec" 
+                 call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
            end if
            if (  .not. defaults ) then
               do nn=1,nsplit
                  if(intext(1,nn) /= intext(0,nn))then
                     write(*,*)"ERROR: emisfrac:", intext(1,nn), intext(0,nn)
-                    call gc_abort(me,NPROC,"emfracisec")
+                      WRITE(*,*) 'MPI_ABORT: ', "emfracisec" 
+                      call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
                  endif
               enddo
            end if
@@ -609,9 +630,10 @@ READEMIS: do   ! ************* Loop over emislist files **********************
        enddo READ_DATA 
        close(IO_EMIS)
 
-       if ( defaults .and. n  /=  NSECTORS ) &
-               call gc_abort(me,NPROC,"emfracread1")
-
+       if ( defaults .and. n  /=  NSECTORS ) then
+          WRITE(*,*) 'MPI_ABORT: ', "emfracread1"  
+          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       endif
        write(unit=6,fmt=*) "Read ", n, " records from ",fname
 
      end do IDEF_LOOP 

@@ -24,10 +24,12 @@ module  My_Outputs_ml
 !  use GenSpec_maps_ml, only:    MAP_ADV2TOT
   use GenChemicals_ml , only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
-  use Par_ml,            only: me, NPROC   ! for gc_abort
+  use Par_ml,            only: me, NPROC   ! for abort
   implicit none
   private
 
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
   logical, public, parameter :: out_binary = .false. 
   logical, public, parameter :: Ascii3D_WANTED = .false.
   ! out_binary = .True. gives also binary files (for use in xfelt). 
@@ -300,7 +302,8 @@ contains
         if ( hr_out(i)%ix1 < 1 .or.  hr_out(i)%ix1 > 999 ) then
             errmsg = "Failed consistency check in set_output_defs"
             print *,  errmsg, "Hourly: ", i, "Nhourly: ", NHOURLY_OUT
-            call gc_abort(me,NPROC,errmsg)
+              WRITE(*,*) 'MPI_ABORT: ', errmsg 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if
    end do
 

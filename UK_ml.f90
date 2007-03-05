@@ -40,6 +40,8 @@ private
   public :: ReadLanduse
   public :: SetLanduse
   private :: Conif_fphen
+ INCLUDE 'mpif.h'
+ INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
  integer, public, parameter :: NLUMAX = 17 ! max no. landuse per grid
 
@@ -81,7 +83,6 @@ contains
  !--------------------------------------------------------------------------
   subroutine Init_ukdep()
     character(len=20) :: errmsg
-    integer :: gc_info   ! for error messages from gc
     integer :: i,j,lu    ! indices
 
 
@@ -92,7 +93,8 @@ contains
        !=====================================
         if ( errmsg /= "ok" ) then
            errmsg = "ukdep_init: " // errmsg
-           call gc_abort(me,NPROC,errmsg)
+             WRITE(*,*) 'MPI_ABORT: ', errmsg 
+             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if
 
 end subroutine Init_ukdep
@@ -119,7 +121,8 @@ subroutine ReadLanduse()
    logical :: debug_flag
 
    if ( DEBUG_DEP ) write(*,*) "UKDEP Starting ReadLandUse, me ",me
-   if ( NLANDUSE /= NNLANDUSE ) call gc_abort(me,NPROC,"NNLANDuse error")  ! Why need both?
+   if ( NLANDUSE /= NNLANDUSE )   WRITE(*,*) 'MPI_ABORT: ', "NNLANDuseerror"  ! Why need both? 
+   if ( NLANDUSE /= NNLANDUSE ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
    maxlufound = 0   
    if ( me == 0 ) then
@@ -128,14 +131,16 @@ subroutine ReadLanduse()
        allocate(g_ncodes(GIMAX,GJMAX),stat=err1)
        allocate(g_codes (GIMAX,GJMAX,NLUMAX),stat=err2)
        allocate(g_data  (GIMAX,GJMAX,NLUMAX),stat=err3)
-       if ( err1 /= 0 .or. err2/=0 .or. err3/=0 ) &
-            call gc_abort(me,NPROC,"ios error: landuse") 
-
+       if ( err1 /= 0 .or. err2/=0 .or. err3/=0 )then
+          WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"
+          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       endif
        g_ncodes(:,:)   = 0       !/**  initialise  **/
        g_data  (:,:,:) = 0.0     !/**  initialise  **/
 
       call open_file(IO_FORES,"r","landuse.JUN06",needed=.true.,skip=1)
-      if ( ios /= 0 ) call gc_abort(me,NPROC,"ios error: landuse") 
+      if ( ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"  
+      if ( ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
 
       do n = 1, BIG
@@ -165,7 +170,8 @@ subroutine ReadLanduse()
                     call GridAllocate("LANDUSE",i,j,uklu,NLUMAX, &
                       index_lu, maxlufound, g_codes, g_ncodes,errmsg)
 
-                    if (errmsg /= "ok" ) call gc_abort(me,NPROC,errmsg)
+                    if (errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+                      if (errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
    
                     g_data(i,j,index_lu) = &
                        g_data(i,j,index_lu) + 0.01 * tmp(lu)
@@ -195,7 +201,8 @@ subroutine ReadLanduse()
        deallocate(g_data  ,stat=err3)
 
        if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 ) then
-          call gc_abort(me,NPROC,"De-Alloc error - g_landuse")
+            WRITE(*,*) 'MPI_ABORT: ', "De-Allocerror - g_landuse" 
+            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        end if ! errors
    end if ! me==0
 
@@ -206,13 +213,21 @@ subroutine ReadLanduse()
     integer :: i,j,ilu,lu, nlu, n ! indices
     logical, save :: my_first_call = .true.
     logical :: debug_flag = .true.
-    real :: hveg
+    real :: hveg!
+    integer :: effectivdaynumber !6 monthes shift in Southern hemisphere.
+!pw Treatment of growing seasons in the southern hemisphere:
+!   all the static definitions (SGS,EGS...) refer to northern hemisphere, but the actual 
+!   simulation dates are shifted by 6 monthes in the southern hemisphere by using
+!   uses effectivdaynumber and mod(current_date%month+5,12)+1 in southern hemis
+
 
     if ( DEBUG_DEP .and. debug_proc ) write(*,*) "UKDEP SetLandUse, me, day ", me, daynumber
 
     if ( my_first_call ) then
         if ( DEBUG_DEP .and. debug_proc ) write(*,*) "UKDEP FIrst Start SetLandUse, me ", me
 
+!pw effectiv daynumber to shift 6 month when in southern hemisphere
+    effectivdaynumber=daynumber
 
        ! crops are distinguished since their height varies
        ! over the growing season. Note changed rule below:
@@ -262,7 +277,7 @@ subroutine ReadLanduse()
 
                 if ( SGS50(lu) > 0 ) then  ! need to set growing seasons 
 
-                    call get_growing_season( lu,gb(i,j),&
+                    call get_growing_season( lu,abs(gb(i,j)),&  
                             landuse_SGS(i,j,ilu),landuse_EGS(i,j,ilu) )
                 else
                    landuse_SGS(i,j,ilu) =  SGS50(lu)
@@ -312,24 +327,28 @@ subroutine ReadLanduse()
      do i = li0, li1
        do j = lj0, lj1
 
+          !pw effectiv daynumber to shift 6 month when in southern hemisphere
+          if(gb(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1 
+
           debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
           if ( DEBUG_DEP .and. debug_flag ) then
                  write(*,"(a12,i3,i4)") "LANDUSE N Day? ", landuse_ncodes(i,j), daynumber
           end if
           do ilu= 1, landuse_ncodes(i,j)
              lu      = landuse_codes(i,j,ilu)
-             if ( lu <= 0 .or. lu > NLANDUSE ) &
-                    call gc_abort(me,NPROC,"SetLandUse lu<0")
-
+             if ( lu <= 0 .or. lu > NLANDUSE ) then
+                WRITE(*,*) 'MPI_ABORT: ', "SetLandUselu<0" 
+                call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+             endif
 
              if ( bulk(lu) ) cycle    !else Growing veg present:
 
-             landuse_LAI(i,j,ilu) = Polygon(daynumber, &
+             landuse_LAI(i,j,ilu) = Polygon(effectivdaynumber, &
                                       0.0, LAImin(lu), LAImax(lu),&
                                       landuse_SGS(i,j,ilu), SLAIlen(lu), &
                                       landuse_EGS(i,j,ilu), ELAIlen(lu))
 
-             landuse_fphen(i,j,ilu) = fPhenology( debug_flag, daynumber, &
+             landuse_fphen(i,j,ilu) = fPhenology( debug_flag, effectivdaynumber, &
                           f_phen_a(lu), f_phen_b(lu), f_phen_c(lu),&
                             f_phen_d(lu), f_phen_Slen(lu), f_phen_Elen(lu), &
                               landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu) , Astart(i,j,ilu), Aend(i,j,ilu))
@@ -344,9 +363,14 @@ subroutine ReadLanduse()
 
           ! For coniferous forest we need to correct for old needles.
 
-             if ( conif_forest(lu) )  &
+             if ( conif_forest(lu) )then
+                if(gb(i,j)<0.0)then
+                   !southern hemisphere
+                   call Conif_fphen( mod(current_date%month+5,12)+1 ,landuse_fphen(i,j,ilu))
+                else
                    call Conif_fphen(current_date%month,landuse_fphen(i,j,ilu))
-
+                endif
+             endif
 
 
              hveg = hveg_max(lu)   ! default
@@ -358,28 +382,28 @@ subroutine ReadLanduse()
              if (  crops(lu) ) then
 
                 if ( lu == IAM_WHEAT ) then ! for NEWAOT
-                    if  ( daynumber >= landuse_SGS(i,j,ilu) .and. &
-                          daynumber <= landuse_EGS(i,j,ilu)  ) then
+                    if  ( effectivdaynumber >= landuse_SGS(i,j,ilu) .and. &
+                          effectivdaynumber <= landuse_EGS(i,j,ilu)  ) then
                             InGrowingSeason(i,j) =  1
                     else
                             InGrowingSeason(i,j) =  0
                     end if
                 end if
 
-                if ( daynumber < landuse_SGS(i,j,ilu) .or. &
-                     daynumber > landuse_EGS(i,j,ilu)  ) then
-                     hveg = STUBBLE
-                else if ( daynumber < &
-                          (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
-                     hveg=  hveg_max(lu) * landuse_LAI(i,j,ilu)/LAImax(lu)
-                else if ( daynumber < landuse_EGS(i,j,lu) ) then
-                     hveg = hveg_max(lu)                  ! not needed?
+                if ( effectivdaynumber < landuse_SGS(i,j,ilu) .or. &
+                     effectivdaynumber > landuse_EGS(i,j,ilu)  ) then
+                   hveg = STUBBLE
+                else if ( effectivdaynumber < &
+                     (landuse_SGS(i,j,ilu) + SLAIlen(lu)) ) then
+                   hveg=  hveg_max(lu) * landuse_LAI(i,j,ilu)/LAImax(lu)
+                else if ( effectivdaynumber < landuse_EGS(i,j,lu) ) then
+                   hveg = hveg_max(lu)                  ! not needed?
                 end if
              end if ! crops
 
              landuse_hveg(i,j,ilu) =  hveg
             if ( DEBUG_DEP .and. debug_flag ) then
-                   if(lu==IAM_WHEAT) write(*,*) "GROWSEASON ", daynumber, InGrowingSeason(i,j)
+                   if(lu==IAM_WHEAT) write(*,*) "GROWSEASON ", effectivdaynumber, InGrowingSeason(i,j)
                    write(*,"(a12,i3,i4,f7.2,2f8.3,4i4)") "LANDPhen ", lu, daynumber, &
                      hveg, landuse_LAI(i,j,ilu), landuse_fphen(i,j,ilu), &
                      landuse_SGS(i,j,ilu), landuse_EGS(i,j,ilu), &
@@ -391,7 +415,7 @@ subroutine ReadLanduse()
        end do ! j
     end do ! i
     if ( DEBUG_DEP .and. me==0 ) write(*,*)"UKDEP Finishing SetLandUse "
-    if(debug_proc ) write(*,*) "LAST GROWSEASON ", daynumber, InGrowingSeason(debug_li,debug_lj)
+    if(debug_proc ) write(*,*) "LAST GROWSEASON ", effectivdaynumber, InGrowingSeason(debug_li,debug_lj)
 
   end subroutine  SetLandUse
   !-------------------------------------------------------------------------

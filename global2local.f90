@@ -18,6 +18,9 @@
 !
 	implicit none
 !
+        INCLUDE 'mpif.h'
+        INTEGER STATUS(MPI_STATUS_SIZE),INFO
+
 !	input
 	integer msnr		! message number
 	integer dim0&		! first dimension, possibly = 1 (= NSECTORS for snapemis)&
@@ -32,14 +35,14 @@
         real locarr(dim0,MAXLIMAX,MAXLJMAX,diml)	! Local array
 !
 !	local
-	integer info,i,j,d,n0,nl
+	integer i,j,d,n0,nl
 !
 	if (me .ne. 0) then
 !
 !	receive from host
 !
-	  call gc_rrecv(msnr, dim0*MAXLIMAX*MAXLJMAX*diml, 0, info,&
-                   locarr, locarr)	  
+           CALL MPI_RECV( locarr, 8*dim0*MAXLIMAX*MAXLJMAX*diml, &
+                MPI_BYTE,  0, msnr, MPI_COMM_WORLD, STATUS, INFO) 
 
 !
 	else ! me = 0
@@ -57,8 +60,8 @@
 		enddo
 	      enddo
 	    enddo
-	    call gc_rsend(msnr,dim0*MAXLIMAX*MAXLJMAX*diml, d, info, &
-                      locarr, locarr)
+            CALL MPI_SEND(locarr,8*dim0*MAXLIMAX*MAXLJMAX*diml, MPI_BYTE, &
+                 d, msnr, MPI_COMM_WORLD, INFO) 
 	  enddo
 !
 !	now assign processor 0 itself
@@ -98,6 +101,9 @@
      		,me		! Address of processor, numbering starts at 0 in south-west corner of ground level
 !
 	implicit none
+
+        INCLUDE 'mpif.h'
+        INTEGER STATUS(MPI_STATUS_SIZE),INFO
 !
 !	input
 	integer msnr		! message number
@@ -112,14 +118,14 @@
         integer locarr(MAXLIMAX,MAXLJMAX,diml)	! Local array
 !
 !	local
-	integer info,i,j,d,nl
+	integer i,j,d,nl
 !
 	if (me .ne. 0) then
 !
 !	receive from host
 !
-	  call gc_irecv(msnr, MAXLIMAX*MAXLJMAX*diml, 0, info,&
-                   locarr, locarr)	  
+	    CALL MPI_RECV(locarr, 4*MAXLIMAX*MAXLJMAX*diml, MPI_BYTE,  0, &
+	    msnr, MPI_COMM_WORLD,STATUS, INFO) 
 !
 	else ! me = 0
 !
@@ -134,8 +140,8 @@
 		enddo
 	      enddo
 	    enddo
-	    call gc_isend(msnr,MAXLIMAX*MAXLJMAX*diml, d, info, &
-                      locarr, locarr)
+	      CALL MPI_SEND( locarr, 4*MAXLIMAX*MAXLJMAX*diml, &
+              MPI_BYTE, d, msnr, MPI_COMM_WORLD, INFO) 
 	  enddo
 !
 !	now assign processor 0 itself
@@ -175,7 +181,7 @@
 	implicit none
 
       INCLUDE 'mpif.h'
-      INTEGER STATUS(MPI_STATUS_SIZE)
+      INTEGER STATUS(MPI_STATUS_SIZE),INFO
 !
 !	input
 	integer msnr		! message number
@@ -190,15 +196,13 @@
         integer*2 locarr(MAXLIMAX,MAXLJMAX,diml)	! Local array
 !
 !	local
-	integer info,i,j,d,nl
+	integer i,j,d,nl
 !
 	if (me .ne. 0) then
 !
 !	receive from host
 !
-!	  call gc_irecv(msnr, MAXLIMAX*MAXLJMAX*diml, 0, info,
-!     &              locarr, locarr)	  
-!pw use directly MPI routine: gc should be removed anyway!
+
        CALL MPI_RECV(locarr, 2*MAXLIMAX*MAXLJMAX*diml, MPI_BYTE, 0,msnr,&
           MPI_COMM_WORLD, STATUS, INFO)
 !
@@ -215,12 +219,9 @@
 		enddo
 	      enddo
 	    enddo
-!	    call gc_isend(msnr,MAXLIMAX*MAXLJMAX*diml, d, info, 
-!     &                 locarr, locarr)
-!pw use directly MPI routine: gc should be removed anyway!
-	    
-      CALL MPI_SEND(locarr, MAXLIMAX*MAXLJMAX*diml*2, MPI_BYTE, d, msnr,&
-          MPI_COMM_WORLD, info)
+
+            CALL MPI_SEND(locarr, MAXLIMAX*MAXLJMAX*diml*2, MPI_BYTE, &
+                 d, msnr,MPI_COMM_WORLD, info)
 
 	  enddo
 !

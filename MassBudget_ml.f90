@@ -39,7 +39,9 @@
  
 implicit none
 private
-
+   INCLUDE 'mpif.h'
+   INTEGER STATUS(MPI_STATUS_SIZE),INFO
+   real MPIbuff(NSPEC_ADV*KMAX_MID)
 
 ! The following parameters are used to check the global mass budget:
 ! Initialise here also.
@@ -88,7 +90,9 @@ contains
       enddo
     enddo
 
-    call gc_rsum(NSPEC_ADV, NPROC, info, sumint)
+      MPIbuff(1:NSPEC_ADV)= sumint (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, sumint , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
     if(me == 0)then
          do n = 1,NSPEC_ADV
 	   if(sumint(n) >  0. ) then
@@ -179,16 +183,42 @@ contains
 
 
 
-    call gc_rmax(NSPEC_ADV, NPROC, info, xmax)
-    call gc_rmin(NSPEC_ADV, NPROC, info, xmin)
-    call gc_rsum(NSPEC_ADV, NPROC, info, gfluxin)
-    call gc_rsum(NSPEC_ADV, NPROC, info, gfluxout)
-    call gc_rsum(NSPEC_ADV, NPROC, info, gtotem)
-    call gc_rsum(NSPEC_ADV, NPROC, info, gtotddep)
-    call gc_rsum(NSPEC_ADV, NPROC, info, gtotwdep)
-    call gc_rsum(NSPEC_ADV, NPROC, info, gtotldep)
-    call gc_rsum(NSPEC_ADV, NPROC, info, gtotox)
-    call gc_rsum(NSPEC_ADV*KMAX_MID, NPROC, info, sumk)
+      MPIbuff(1:NSPEC_ADV)= xmax(1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, xmax, NSPEC_ADV,&
+      MPI_DOUBLE_PRECISION, MPI_MAX, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= xmin   (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, xmin   , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= gfluxin (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, gfluxin , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= gfluxout (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, gfluxout , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= gtotem (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, gtotem , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= gtotddep (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, gtotddep , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= gtotwdep (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, gtotwdep , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= gtotldep (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, gtotldep , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      MPIbuff(1:NSPEC_ADV)= gtotox (1:NSPEC_ADV) 
+      CALL MPI_ALLREDUCE(MPIbuff, gtotox , NSPEC_ADV, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+      j=0
+      do k=1,KMAX_MID
+         do i=1,NSPEC_ADV
+            j=j+1
+            MPIbuff(j)= sumk (i,k)
+         enddo
+      enddo
+      CALL MPI_ALLREDUCE(MPIbuff, sumk , NSPEC_ADV*KMAX_MID, &
+      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
 
 !     make some temporary variables used to hold the sum over all 
 !     domains. Remember that sumint already holds the sum over all

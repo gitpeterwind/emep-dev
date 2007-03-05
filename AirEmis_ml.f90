@@ -23,7 +23,10 @@ module AirEmis_ml
    public :: lightning
 
    private :: air_inter !interpolate the data into required grid
-
+ 
+ INCLUDE 'mpif.h'
+ INTEGER STATUS(MPI_STATUS_SIZE),INFO
+ real MPIbuff
    integer,private ,parameter :: ILEV=18
 
  contains
@@ -91,7 +94,8 @@ module AirEmis_ml
           write(fname,fmt='(''ancat'',i2.2,''.dat'')') newseason
 
           call open_file(IO_AIRN,"r",fname,needed=.true.,skip=1)
-          if (ios /= 0) call gc_abort(me,NPROC,"ios error: ancat")
+          if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: ancat" 
+            if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if ! me == 0
 
 
@@ -112,7 +116,8 @@ module AirEmis_ml
 	  close(IO_AIRN)
 
           call open_file(IO_AIRN,"r","ancatmil.dat",needed=.true.,skip=1)
-          if (ios /= 0) call gc_abort(me,NPROC,"ios error: ancatmil")
+          if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: ancatmil" 
+            if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if ! me == 0
 
 
@@ -205,7 +210,8 @@ module AirEmis_ml
 
           ! ds - open and read 1 line of header
           call open_file(IO_LIGHT,"r",fname,needed=.true.,skip=1)
-          if (ios /= 0 ) call gc_abort(me,NPROC,"ios error: lightning")
+          if (ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: lightning" 
+            if (ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
          end if
 
 	if(me == 0)then
@@ -314,8 +320,8 @@ module AirEmis_ml
       endif		!me=0
 
 
-      call gc_rbcast(317, ggl*ilon*(ILEV+1-iktop)	&
-           ,0, NPROC,info,flux(1,1,iktop))
+      CALL MPI_BCAST(flux(1,1,iktop), 8*ggl*ilon*(ILEV+1-iktop), MPI_BYTE, 0,&
+          MPI_COMM_WORLD, INFO)
 
       ! -- N/S
       ygrida(1) = 90.
@@ -433,7 +439,9 @@ if(lon>128)write(*,*)'longg',i,j,ixn(i,j)
          end do
       end do
 
-      call gc_rsum(1,NPROC,info,sum2)
+        MPIbuff=sum2
+        CALL MPI_ALLREDUCE(MPIbuff,sum2, 1, &
+        MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
       if(me.eq.0) write(6,*) 'ancat on limited area:',sum,sum2
 
     end subroutine air_inter
