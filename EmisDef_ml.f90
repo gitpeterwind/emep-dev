@@ -16,25 +16,50 @@ public :: EmisDef_Index   ! function to find index of given pollutant name
     !  between different  model versions - e.g. the size and characteristics!
     !  of emission files and sector splits.                                 !
     !-----------------------------------------------------------------------!
+    !  What is "Flat emissions":                                            !
+    !  Most emission sources will have a seasonal, weekly, daily cycle. For !
+    !  some sources there is no cycle, or the emission cycle is not known.  !
+    !  For these source emissions will be constant (or flat) throughout the !
+    !  year.                                                                !
+    !-----------------------------------------------------------------------!
+
+
+    ! Note on SNAP sectors:
+    ! ----------------------
+    ! SNAP1  =  public power stations,150m nat gas
+    ! SNAP2  =  Comm./inst. combustion 
+    ! SNAP3  =  Industrial combustion !60m nat gas
+    ! SNAP4  =  Production processes
+    ! SNAP5  =  Extracton fossil fuels
+    ! SNAP6  =  Solvents
+    ! SNAP7  =  Road traffic
+    ! SNAP8  =  Other mobile (trains+planes, ...)
+    ! SNAP9  =  Waste! .. ds + some ground level
+    ! SNAP10 =  Agriculture
+    ! SNAP11 =  Nature
+
 
 
   !/.. First, define here the characteristics of the EMEP/CORINAIR
   !    SNAP sector emissions data-bases: 
 
-   integer, public, parameter :: NCMAX  =  4   ! Max. No. countries per grid
+
+
+   integer, public, parameter :: NCMAX  =  11  ! Max. No. countries per grid
 !hf
-   integer, public, parameter :: FNCMAX  =  3   ! Max. No. countries (with 
-                                                ! flat emissions) per grid
+   integer, public, parameter :: FNCMAX  =  10 ! Max. No. countries (with 
+                                               ! flat emissions) per grid
 
 
    !/.. List of possible emissions, and their initial conversion factors:
 
    type, public :: emislist
       character(len=6) :: name
-      real             :: conv  ! factor from emis file units to required units
+      real             :: conv  ! conv. emis file units to required units
    end type emislist
 
-   integer, public, parameter :: NEMIS_DEF=8
+   integer, public, parameter :: NEMIS_DEF=8          ! No of emitted species
+                                                      ! ( before splitting )
    type(emislist), public, save, dimension(NEMIS_DEF) :: &
                        EmisDef  = emislist("notdef", -1.0)
 
@@ -61,29 +86,23 @@ public :: EmisDef_Index   ! function to find index of given pollutant name
    real, public, parameter, &
      dimension(NEMISLAYERS,NSECTORS) ::    &
 
-   VERTFAC =                     &  ! Vertical distribution of SNAP emissions
-             reshape (           &  ! Vertical distribution of SNAP emissions
+   VERTFAC =                    &  ! Vertical distribution of SNAP emissions
+             reshape (          &  ! Vertical distribution of SNAP emissions
 !       Ground , ...       High
-    (/  0.0    , 0.00, 0.08, 0.46,0.29,0.17,0.00, & ! SNAP1= public power stations,150m nat gas
-        0.5    , 0.5, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP2 = Comm./inst. combustion 
-        0.0    , 0.04, 0.19, 0.41,0.30,0.06,0.0,  & ! SNAP3 = Industrial combustion !60m nat gas
-        0.9    , 0.1, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP4 = Production processes
-        0.9    , 0.1, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP5 = Extracton fossil fuels
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP6 = Solvents
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP7 = Road traffic
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,       & ! SNAP8 = Other mobile (trains+planes, ...)
-        !0.001  , 0.178, 0.433, 0.388,0.0,0.0,0.0,     & ! SNAP9 = Waste!60m nat gas, waste incin
-        0.10  , 0.15, 0.40, 0.35,0.0,0.0,0.0,     & ! SNAP9 = Waste! .. ds + some ground level
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0,           & ! SNAP10= Agriculture
-        1.0    , 0.0, 0.0, 0.0,0.0,0.0,0.0            & ! SNAP11= Nature
+    (/  0.0    , 0.00, 0.08, 0.46, 0.29, 0.17, 0.00,  & ! SNAP1
+        0.5    , 0.50, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP2 
+        0.0    , 0.04, 0.19, 0.41, 0.30, 0.06, 0.0,   & ! SNAP3 
+        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP4
+        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP5
+        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP6
+        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP7
+        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP8
+        0.1    , 0.15, 0.40, 0.35, 0.00, 0.00, 0.0,   & ! SNAP9
+        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP10
+        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0    & ! SNAP11
         /), &
         (/NEMISLAYERS,NSECTORS /) )!hf stakheigth
 
-!!MADE data VERTFAC /    & ! MADE look-alike 
-!!MADE       KMAX_MID  ,........      
-!!MADE       Ground , ...       High
-!!MADE       1.0    , 0.0,  0.0, 0.0,  & ! low sources
-!!MADE       0.0    , 0.25, 0.5, 0.25    ! high sources, as MADE
 
 
 contains
