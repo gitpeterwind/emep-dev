@@ -26,6 +26,8 @@ Dave:
 
 Misc:
   Unimod.f90 - changed to accomodate above changes in routines/modules
+    (+ close(IO_TMP) added. Bug!)
+
 
 
 ============== Peter 5/3 rv2_7 2007  ================================ 

@@ -310,12 +310,13 @@ program myeul
 
       read(IO_TMP,*) ntmp(1)
       read(IO_TMP,*) ntmp(2)
-      read(IO_TMP,*) ntmp(3)  ! ds - iyr_ytrend
-      read(IO_TMP,fmt="(a)") runlabel1 ! ds, rv1_9_5 - explanation text short
-      read(IO_TMP,fmt="(a)") runlabel2 ! ds, rv1_9_5 - explanation text long
-      read(IO_TMP,fmt="(I)")startdate(1) !pw meteo year to start the run
-      read(IO_TMP,fmt="(I)")startdate(2) !pw meteo month to start the run
-      read(IO_TMP,fmt="(I)")startdate(3) ! pw meteo day to start the run
+      read(IO_TMP,*) ntmp(3)             ! iyr_ytrend
+      read(IO_TMP,fmt="(a)") runlabel1   ! explanation text short
+      read(IO_TMP,fmt="(a)") runlabel2   ! explanation text long
+      read(IO_TMP,fmt="(I)")startdate(1) ! meteo year to start the run
+      read(IO_TMP,fmt="(I)")startdate(2) ! meteo month to start the run
+      read(IO_TMP,fmt="(I)")startdate(3) ! meteo day to start the run
+      close(IO_TMP)
       startdate(4)=0
 
       write(unit=IO_LOG,fmt=*)trim(runlabel1)
