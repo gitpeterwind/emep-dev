@@ -663,7 +663,7 @@ contains
               emis(:)=0.
               do icc = 1, ncc
                   iland = landcode(i,j,icc)     ! 1=Albania, etc.
-                  iland_timefac = Country/iland)%timefac_index
+                  iland_timefac = Country(iland)%timefac_index
 
                 if(Country(iland)%timezone==-100)then
                    daytime_iland=daytime_longitude
