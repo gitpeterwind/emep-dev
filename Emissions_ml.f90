@@ -570,7 +570,7 @@ contains
   real ::  deploc,ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s               ! source term (emis) before splitting
-  integer :: iland        ! country codes 
+  integer :: iland, iland_timefac  ! country codes, and codes for timefac 
 
 !hf
   real ::  ftfac           ! time-factor for flat emissions
@@ -663,6 +663,7 @@ contains
               emis(:)=0.
               do icc = 1, ncc
                   iland = landcode(i,j,icc)     ! 1=Albania, etc.
+                  iland_timefac = Country/iland)%timefac_index
 
                 if(Country(iland)%timezone==-100)then
                    daytime_iland=daytime_longitude
@@ -688,7 +689,7 @@ contains
 		    !/.. First, the simple emissions
                    do iem = 1, NEMIS_PLAIN
 
-                      tfac = timefac(iland,isec,iem) * &
+                      tfac = timefac(iland_timefac,isec,iem) * &
                                  day_factor(isec,daytime_iland)
 
                       iqrc = iqrc + 1
@@ -700,7 +701,7 @@ contains
 
                    do iem = 1, NEMIS_SPLIT
 
-                      tfac = timefac(iland,isec,iem+NEMIS_PLAIN ) * &
+                      tfac = timefac(iland_timefac,isec,iem+NEMIS_PLAIN ) * &
                                  day_factor(isec,daytime_iland)
 
                       s =  tfac * snapemis(isec,i,j,icc,iem+NEMIS_PLAIN)

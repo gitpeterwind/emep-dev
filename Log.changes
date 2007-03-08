@@ -5,11 +5,13 @@ division of ship emissions into inside/outside the 12 mz, EU/ROW flags,
 Ferries/cargo ships as this is supposed to be the "strategy" for the 
 future. 
 
-EmisDef_ml.f90: Cleaned by Joffen, Match 6th 2007.
+EmisDef_ml.f90: Cleaned by Joffen, March 6th 2007.
    With the division of the ship emissions in Country_ml,
    lots of new "countries are defined in the same grid. thus the
    number of countries allowed in one grid has to be increased (to 10)
    in EmisDef_ml.f90
+
+Emissions_ml.f90: Modified for use of timefac_index from Country_ml
 
 
 ============== Peter 5/3 rv2_7 2007  ================================ 
