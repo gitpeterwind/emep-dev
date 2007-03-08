@@ -48,9 +48,18 @@
 ! exactly mass conservative (?). ndiff and ADVEC_TYPE=2 have not yet been tested.
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
- use Par_ml            , only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me
- use ModelConstants_ml , only : KMAX_BND,KMAX_MID,NMET
-!hf u2  use GenSpec_adv_ml, only: IXADV_O3,IXADV_H2 ,IXADV_NO2     ! DEBUG only
+ use Chemfields_ml, only : xn_adv
+ use Dates_ml,     only : date, add_dates,dayno
+ use GenSpec_adv_ml , only : NSPEC_ADV
+ use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i
+ use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
+                dt_advec, dt_advec_inv,  PT,KCHEMTOP,current_date 
+ use Met_ml ,only : ps,sdot,skh,u,v
+ use MassBudget_ml, only : fluxin,fluxout
+ use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
+ use Par_ml,        only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&
+          NPROCX,NPROCY, &
+          li0,li1,lj0,lj1 ,limax,ljmax, NPROC,gi0, ISMBEG,gj0, JSMBEG
  implicit none
  private
 
@@ -73,6 +82,8 @@
  integer, public, parameter :: ADVEC_TYPE = 1 ! Divides by advected p*
 ! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by advected p*
 
+ public :: assign_dtadvec
+ public :: assign_nmax
  public :: vgrid
  public :: advecdiff
  public :: advecdiff_poles
@@ -87,6 +98,78 @@
  private :: preadvy
 
  contains
+  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   subroutine assign_dtadvec(GRIDWIDTH_M)
+!
+! dt_advec is set according to the grid resolution
+! The choosed timestep should lead to a Courant number <1 for
+! "normal" wind speeds, but this is not a strict limitation.
+!
+! The values of dt_advec must be an integer fraction of 3600
+!
+! The values put here are only suggestions
+!
+
+	implicit none
+        real, intent(in) ::GRIDWIDTH_M
+
+        if(GRIDWIDTH_M>76000.0) dt_advec=1800.0
+        if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
+        if(GRIDWIDTH_M<21000.0) dt_advec=600.0
+        if(GRIDWIDTH_M<11000.0) dt_advec=300.0
+        if(GRIDWIDTH_M<6000.0) dt_advec=180.0
+
+        dt_advec_inv=1.0/dt_advec
+
+        if(me==0)write(*,*)'dt_advec set to: ',dt_advec
+
+   end subroutine assign_dtadvec
+
+  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+	subroutine assign_nmax(metstep)
+
+	implicit none
+	integer, intent(in) :: metstep
+
+!	local
+	integer nhelp
+     
+!     Assigne number of time-steps for the inner time-loop (over 6 hours)
+!     from dt_advec
+
+	nhelp = nint(dt_advec)
+	if(mod(nhelp,60).ne.0) then
+	  if (me .eq. 0) then
+	    write(6,*)
+	    write(6,*)'**********************************************'
+            write(6,*)&
+           'Impossible dt_advec, dt_advec = (dt_advec/60) must be an integer'
+	    write(6,*)
+	  endif
+	endif
+
+	nhelp = nhelp/60
+
+	if(mod(60,nhelp).ne.0) then
+	  if (me .eq. 0) then
+	    write(6,*)
+	    write(6,*)'**********************************************'
+	    write(6,*)'Impossible dt_advec,60/(dt_advec/60) must be an integer'
+	    write(6,*)
+	  endif
+	endif
+
+	nmax = 60/(nhelp)*metstep
+
+	if (me .eq. 0) then
+	  write(6,*)
+	  write(6,*)'**********************************************'
+	  write(6,*)'nmax and dt_advec : ',nmax,dt_advec
+	  write(6,*)'**********************************************'
+	  write(6,*)
+	endif
+
+	end subroutine assign_nmax
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 	subroutine advecdiff
@@ -108,18 +191,6 @@
 !
 ! dt_advec >= dt_xys >= max(dt_xy, dt_s)
 !
-      use Dates_ml,     only : date, add_dates,dayno
-	use Par_ml   , only : li0,li1,lj0,lj1	&
-			,limax,ljmax		&
-			,me,NPROC,gi0, ISMBEG,gj0, JSMBEG
-	use GenSpec_adv_ml , only : NSPEC_ADV
-        use ModelConstants_ml, only : nstep, nmax,dt_advec, 	&
-			PT,KCHEMTOP,current_date 
-        use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea
-	use Met_ml ,only : ps,sdot,skh,u,v
-	use Chemfields_ml, only : xn_adv
-	use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before, tim_after
-        use MassBudget_ml , only : fluxin,fluxout
 
 	implicit none
 
@@ -599,20 +670,6 @@
           !
           ! dt_advec >= dt_xys >= max(dt_xy, dt_s)
           !
-          use Dates_ml,     only : date, add_dates,dayno
-          use Par_ml   , only : li0,li1,lj0,lj1	&
-               ,limax,ljmax &
-               ,me,NPROC,gi0, ISMBEG,gj0, JSMBEG&
-               ,mex,mey,NPROCX,NPROCY
-          use GenSpec_adv_ml , only : NSPEC_ADV
-          use ModelConstants_ml, only : nstep, nmax,dt_advec, 	&
-               PT,KCHEMTOP,current_date 
-          use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea&
-               ,xm_i
-          use Met_ml ,only : ps,sdot,skh,u,v
-          use Chemfields_ml, only : xn_adv
-          use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before, tim_after
-          use MassBudget_ml , only : fluxin,fluxout
 
           implicit none
 
@@ -3698,7 +3755,6 @@
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	subroutine adv_var(numt)
-!hf u2 	use My_Runmode_ml, only : stop_test
 	use Par_ml , only : limax,ljmax,NPROC,me	&
 		,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC			&
 		,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
@@ -3827,8 +3883,6 @@
 	end subroutine adv_var
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	subroutine adv_int
-
-	use ModelConstants_ml , only : nmax,nstep
 	implicit none
 
 	real div

@@ -53,7 +53,7 @@ program myeul
   use My_WetDep_ml,     only : Init_WetDep
   use MyChem_ml,        only : Init_mychem   
 
-  use Advection_ml,     only : vgrid,adv_var
+  use Advection_ml,     only : vgrid,adv_var, assign_nmax,assign_dtadvec
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Forests_init
@@ -75,14 +75,14 @@ program myeul
                               ,METSTEP    &   ! Hours between met input
                               ,runlabel1  &   ! explanatory text
                               ,runlabel2  &   ! explanatory text
-                              ,nprint,nass,nterm,iyr_trend, assign_nmax&
-                              ,assign_dtadvec
+                              ,nprint,nass,nterm,iyr_trend
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
   use out_restri_ml,    only : set_outrestri
   use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
                                ,Topology, parinit
   use PhyChem_ml,       only : phyche  ! Calls phys/chem routines each dt_advec
-  use Polinat_ml,       only : polinat_init,polinat_in
+  use Trajectory_ml,    only : trajectory_init,trajectory_in ! For extraction of
+                                       ! data along 3-D trajectories
 
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
@@ -121,7 +121,7 @@ program myeul
 !
 !     assign_nmax       - Assign nr. of time-steps for the inner time-loop
 !
-!     polinat_init      - Should be replaced by a more generad 3D-trajectory
+!     trajectory_init      - Should be replaced by a more generad 3D-trajectory
 !                         (presently not used)
 !     Infield           - Reads in first set of meteorological data
 !
@@ -203,7 +203,7 @@ program myeul
 !
 !         Wrtchem    - Writes to output files (range:  3 hourly - annual)
 !
-!         polinat_in - See above
+!         trajectory_in - See above
 !
 !     end 3-hourly time loop
 !     -------------------------
@@ -353,7 +353,7 @@ program myeul
     call MeteoGridRead(cyclicgrid) !define grid projection and parameters
     call Topology(cyclicgrid,Poles)      !define GlobalBoundaries 
                                    !and subdomains neighbors
-    call assign_dtadvec(me,GRIDWIDTH_M)! set dt_advec
+    call assign_dtadvec(GRIDWIDTH_M)! set dt_advec
 
     call set_outrestri  ! Steffen's routine for restricted area output
 
@@ -379,9 +379,9 @@ program myeul
 
     call set_output_defs()     ! Initialises outputs
 
-    call assign_nmax(me,METSTEP)    !  nmax=????
+    call assign_nmax(METSTEP)    !  nmax=????
 
-    call polinat_init
+    call trajectory_init
 
     call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
 
@@ -573,10 +573,10 @@ program myeul
 
       call Wrtchem(numt)
 
-      call polinat_in
+      call trajectory_in
 
 
-        call Add_2timing(37,tim_after,tim_before,"massbud,wrtchem,polinat_in")
+        call Add_2timing(37,tim_after,tim_before,"massbud,wrtchem,trajectory_in")
 
 
     end do !   end 3-hourly time-loop.

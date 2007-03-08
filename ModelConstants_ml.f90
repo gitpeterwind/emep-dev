@@ -5,7 +5,6 @@ module ModelConstants_ml
  ! the module PhysicalConstants_ml.f90)
  !
  ! Dependancies - none.
- ! Subroutines - assign_nmax.
  !----------------------------------------------------------------------------
   use Dates_ml, only : date   ! type giving yy, mm, dd, s
   use PhysicalConstants_ml, only : AVOG   
@@ -13,11 +12,6 @@ module ModelConstants_ml
   implicit none
   private
 
-
- !/-- subroutine:
-
-  public :: assign_nmax
-  public :: assign_dtadvec
 
  !/-- constants
 
@@ -164,85 +158,6 @@ module ModelConstants_ml
   real, parameter, public  :: VOLFACSO4 = 96.0/(AVOG) * 0.90236 *0.02/0.034e-6 
   real, parameter, public  :: VOLFACNO3 = 62.0/(AVOG) * 0.90236 *0.02/0.034e-6 
   real, parameter, public  :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-
-
- contains
-
-   subroutine assign_dtadvec(me,GRIDWIDTH_M)
-!
-! dt_advec is set according to the grid resolution
-! The choosed timestep should lead to a Courant number <1 for
-! "normal" wind speeds, but this is not a strict limitation.
-!
-! The values of dt_advec must be an integer fraction of 3600
-!
-! The values put here are only suggestions
-!
-
-	implicit none
-        real, intent(in) ::GRIDWIDTH_M
-        integer, intent(in) :: me
-
-        if(GRIDWIDTH_M>76000.0) dt_advec=1800.0
-        if(GRIDWIDTH_M<61000.0) dt_advec=1200.0
-        if(GRIDWIDTH_M<21000.0) dt_advec=600.0
-        if(GRIDWIDTH_M<11000.0) dt_advec=300.0
-        if(GRIDWIDTH_M<6000.0) dt_advec=180.0
-
-        dt_advec_inv=1.0/dt_advec
-
-        if(me==0)write(*,*)'dt_advec set to: ',dt_advec
-
-   end subroutine assign_dtadvec
-
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-	subroutine assign_nmax(me,metstep)
-
-	implicit none
-
-!	input
-	integer me,metstep
-
-!	local
-	integer nhelp
-     
-!     Assigne number of time-steps for the inner time-loop (over 6 hours)
-!     from dt_advec
-
-	nhelp = nint(dt_advec)
-	if(mod(nhelp,60).ne.0) then
-	  if (me .eq. 0) then
-	    write(6,*)
-	    write(6,*)'**********************************************'
-            write(6,*)&
-           'Impossible dt_advec, dt_advec = (dt_advec/60) must be an integer'
-	    write(6,*)
-	  endif
-	endif
-
-	nhelp = nhelp/60
-
-	if(mod(60,nhelp).ne.0) then
-	  if (me .eq. 0) then
-	    write(6,*)
-	    write(6,*)'**********************************************'
-	    write(6,*)'Impossible dt_advec,60/(dt_advec/60) must be an integer'
-	    write(6,*)
-	  endif
-	endif
-
-	nmax = 60/(nhelp)*metstep
-
-	if (me .eq. 0) then
-	  write(6,*)
-	  write(6,*)'**********************************************'
-	  write(6,*)'nmax and dt_advec : ',nmax,dt_advec
-	  write(6,*)'**********************************************'
-	  write(6,*)
-	endif
-
-	end subroutine assign_nmax
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
 end module ModelConstants_ml

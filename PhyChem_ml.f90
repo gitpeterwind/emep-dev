@@ -24,7 +24,7 @@ module PhyChem_ml
                         ,END_OF_EMEPDAY          ! (usually 6am)
    use Nest_ml,        only : readxn, wrtxn
    use Par_ml,         only : me, MAXLIMAX, MAXLJMAX
-   use Polinat_ml,     only : polinat_out          ! 'Aircraft'-type  outputs
+   use Trajectory_ml,  only : trajectory_out          ! 'Aircraft'-type  outputs
    use Radiation_ml,   only : SolarSetup,       &!ds mar2005 - sets up radn params
                              ZenithAngle,      &! gets zenith angle
                              ClearSkyRadn,     &! Idirect, Idiffuse
@@ -171,7 +171,7 @@ contains
           !=============================
           ! this output needs the 'old' current_date_hour
 
-           call polinat_out
+           call trajectory_out
           !=============================
 
 !	the following partly relates to end of time step - hourly output
