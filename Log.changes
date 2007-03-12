@@ -1,5 +1,10 @@
 ============== Misc, rv2_7_xx  2007  ================================ 
 
+Peter:
+   Nest_ml - Mode=12, for read 3D at start of run and write at end
+	     and corrected bug in lat lon nesting.
+   Makefile_snow, Makefile_njord - replaced Polinat_ml with Trajectory_ml
+
 Joffen:
  Country_ml - cleaned, March 6 2007. This version includes the 
   division of ship emissions into inside/outside the 12 mz, EU/ROW flags, 
