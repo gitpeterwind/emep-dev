@@ -1,3 +1,9 @@
+============== Misc, rv2_7_  2007  ================================ 
+
+Peter: Added comment in Emissions_ml (newmonth):units are ktonnes PER YEAR
+       Comment:shouldn't we define emissions as ktonnes per 365 days? 
+       A leap year has more 1 day more DMS emissions than a 365 days year...
+
 ============== Misc, rv2_7_1  2007  ================================ 
 
 Peter:

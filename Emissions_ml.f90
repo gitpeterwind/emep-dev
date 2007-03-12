@@ -950,12 +950,15 @@ contains
 	integer errcode
 
 !*** Units:
-!	Input files seem to be in ktonne. We convert here to kg/m2/s
+!	Input files seem to be in ktonne PER YEAR. We convert here to kg/m2/s
 ! 	to save CPU in setemis.f.
 !      The conversion factor from 50*50km2
 !      annual emission values to surface flux (kg/m2/s) is found by division
 !      with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+6.
 !      the conversion factor (ktonne_to_kgm2s) then equals 1.27e-8 
+!      NB: a new file is read every month; this means that total emissions 
+!          are NOT the sum of the 12 files emissions (but about 12 times less than the sum). 
+!          More precisely: year_emis=sum_months(emis_month*nmdays/nydays)
 
         ktonne_to_kgm2s  = 1.0e6 / 				&
 		(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
