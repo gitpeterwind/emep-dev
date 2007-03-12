@@ -50,7 +50,7 @@ module Nest_ml
   INTEGER INFO
 
   integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
-  !10=write at end of run, 11=read at start (BIC)
+  !10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
 
   !coordinates of subdomain to write
   !coordinates relative to large domain (only used in write mode)
@@ -85,7 +85,7 @@ module Nest_ml
   integer,save :: Next,KMAX_ext,GJMAX_ext,GIMAX_ext
 
   integer,save :: itime_saved(2),itime
-  character*30,save  :: filename_read='EMEP_OUT.nc' 
+  character*30,save  :: filename_read='EMEP_IN.nc' 
   character*30,save  :: filename_write='EMEP_OUT.nc' 
 
 contains
@@ -103,7 +103,7 @@ contains
     real :: W1,W2
     logical, save :: first_call=.true.
 
-    if(MODE /= 2.and.MODE /= 3.and. MODE /= 11)return
+    if(MODE /= 2.and.MODE /= 3.and. MODE /= 11.and. MODE /= 12)return
 
     ndate(1)  = indate%year
     ndate(2)  = indate%month
@@ -111,12 +111,13 @@ contains
     ndate(4)  = indate%hour
     call secondssince1970(ndate,nseconds_indate)
 
-    if(MODE == 11)then
+    if(MODE == 11.or.MODE == 12)then
        if(.not. first_call)return
        first_call=.false.
        if(me==0)   print *,'RESET ALL XN 3D'
        call init_nest(nseconds_indate)
        call reset_3D(nseconds_indate)
+       return
     else
 !    if(me==0)   print *,'call to READXN',indate%hour,indate%seconds
        if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0)return
@@ -204,9 +205,9 @@ contains
     logical, save ::first_call=.true.
     character *40:: command
 
-    if(MODE /= 1.and.MODE /= 3.and.MODE /= 10)return
+    if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12)return
 
-    if(MODE == 10)then
+    if(MODE == 10.or.MODE == 12)then
        if(.not.WriteNow)return
        istart=1
        jstart=1
@@ -409,7 +410,7 @@ contains
           call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
           call check(nf90_get_var(ncFileID, varID, lat_ext(1,:) ))
           do i=1,GIMAX_ext
-             lon_ext(i,:)=lon_ext(1,:)
+             lat_ext(i,:)=lat_ext(1,:)
           enddo
        else
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
