@@ -12,11 +12,11 @@ SRCS =	Aero_Rb_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 	My_DryDep_ml.f90 My_Emis_ml.f90 My_MassBudget_ml.f90 \
 	My_Outputs_ml.f90 My_WetDep_ml.f90 NetCDF_ml.f90 Nest_ml.f90 Out_restri_ml.f90 \
 	Output_hourly.f90 Par_ml.f90 \
-	PhysicalConstants_ml.f90 Polinat_ml.f90 Radiation_ml.f90 \
+	PhysicalConstants_ml.f90 Radiation_ml.f90 \
 	ReadField_ml.f90 Rsurface_ml.f90 Runchem_ml.f90 SOA_ml.f90 Setup_1d_ml.f90 \
 	Setup_1dfields_ml.f90 Sites_ml.f90 SoilWater_ml.f90 Solver.f90 SeaSalt_ml.f90 \
 	SubMet_ml.f90 Tabulations_ml.f90 TimeDate_ml.f90 Timefactors_ml.f90 Timing_ml.f90 \
-	UK_ml.f90 UKsetup_ml.f90 Unimod.f90 Volcanos_ml.f90 Wesely_ml.f90 \
+	Trajectory_ml.f90 UK_ml.f90 UKsetup_ml.f90 Unimod.f90 Volcanos_ml.f90 Wesely_ml.f90 \
 	Wrtchem.f90 global2local.f90 local2global.f90 PhyChem_ml.f90
 
 
