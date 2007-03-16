@@ -327,6 +327,7 @@ subroutine ReadLanduse()
      do i = li0, li1
        do j = lj0, lj1
 
+          effectivdaynumber=daynumber
           !pw effectiv daynumber to shift 6 month when in southern hemisphere
           if(gb(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1 
 

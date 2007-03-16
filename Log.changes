@@ -1,6 +1,8 @@
 ============== Misc, rv2_7_  2007  ================================ 
 
-Peter: Met_ml: bug in my gc/MPI changes (rv2_7): gb,gl,gb_glob and gl_glob may be wrong 
+Peter: UK_ml: bug in effectivdaynumber=daynumber (no consequences in practice)
+
+       Met_ml: bug in my gc/MPI changes (rv2_7): gb,gl,gb_glob and gl_glob may be wrong 
                on nodes different from me==0.
 
        Added comment in Emissions_ml (newmonth):units are ktonnes PER YEAR
