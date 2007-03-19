@@ -296,7 +296,7 @@ contains
 
    !/ Ozone values....
 
-     xRgsO  = RgsO(lu) + Rlow  + snow *    0.0    !u7.lu QUERY???
+     xRgsO  = RgsO(lu) + Rlow  + snow * 2000.0    !u7.lu QUERY???
      GnsO   = SAI/RextO + 1.0/( xRgsO + Rinc ) ! (SAI=0 if no canopy)
 
 

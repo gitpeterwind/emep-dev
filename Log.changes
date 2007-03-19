@@ -1,4 +1,4 @@
-============== Misc, rv2_7_  2007  ================================ 
+============== Misc, rv2_7_2 2007  ================================ 
 
 Peter: UK_ml: bug in effectivdaynumber=daynumber (no consequences in practice)
 
@@ -9,6 +9,7 @@ Peter: UK_ml: bug in effectivdaynumber=daynumber (no consequences in practice)
        Comment:shouldn't we define emissions as ktonnes per 365 days? 
        A leap year has more 1 day more DMS emissions than a 365 days year...
 
+Dave: xRgsO corrected in Rsurface_ml for snow. Will change results slightly.
 	
 
 ============== Misc, rv2_7_1  2007  ================================ 
