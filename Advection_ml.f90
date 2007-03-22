@@ -938,6 +938,18 @@
                    enddo !j
 
                 enddo !k horizontal (x) advection
+                !renormalize with p*
+                do k=1,KMAX_MID
+                   do j = lj0,lj1
+                      do i = li0,li1
+
+                         psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
+                         xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
+                         ps3d(i,j,k) = ps(i,j,1) - PT
+
+                      enddo
+                   enddo
+                enddo
 
                 call Add_2timing(21,tim_after,tim_before,"advecdiff:advx")
 
@@ -1028,6 +1040,18 @@
 
                    enddo !i 
                 enddo !k horizontal (y) advection
+                !renormalize with p*
+                do k=1,KMAX_MID
+                   do j = lj0,lj1
+                      do i = li0,li1
+
+                         psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
+                         xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
+                         ps3d(i,j,k) = ps(i,j,1) - PT
+
+                      enddo
+                   enddo
+                enddo
                 call Add_2timing(23,tim_after,tim_before,"advecdiff:advy")
 
                 do k = 1,KMAX_MID
