@@ -144,7 +144,8 @@ contains
  use Io_ml,             only : IO_GLOBBC, ios, open_file
  use PhysicalConstants_ml, only: PI
  use ModelConstants_ml, only: KMAX_MID, PT
- use Dates_ml,   only : daynumber
+!hfTD use Dates_ml,   only : daynumber
+ use TimeDate_ml,   only : daynumber
  use Par_ml,     only : me,NPROC 
  use My_Derived_ml,only: model 
  use GridValues_ml, only: lb2ij, xp, yp, AN, fi, gb_glob, gl_glob

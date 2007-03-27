@@ -1,6 +1,7 @@
 module UKdep_ml
 
-use Dates_ml,       only: daynumber, nydays
+!hfTDuse Dates_ml,       only: daynumber, nydays
+use TimeDate_ml,       only: daynumber, nydays
 use DepVariables_ml,only: NLANDUSE         &  ! No. UK land-classes
                       ,luname              &
                       ,crops, bulk, water  & ! logical variables

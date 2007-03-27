@@ -10,8 +10,11 @@ MODULE TimeDate_ml
 !===================Routines =================================================
 
  !/ Functions ...............
+!hfTD
+  public :: make_current_date      ! convert timestamp to current_date 
+  public :: make_timestamp         ! convert current_date(yyyy,mon,day,hour,secs) to timestamp(jdate,secs) CHANGED
+  public  :: Init_nmdays   ! sets number of days per month, year
 
-  public :: make_timestamp         ! convert yyy,mon,dd,hh,mm,ss -> ts
   public :: tdif_secs              ! t2-t1 -> dif (s)
   public :: ts_earlier             ! gets first ts from ts1, ts2
   public :: ts_later               ! gets later ts from ts1, ts2
@@ -20,17 +23,35 @@ MODULE TimeDate_ml
   public :: day_of_week            ! yyyy, mm, dd -> day of week (0=SUN)
   public :: day_of_year            ! yyyy,mm,dd -> Day count in year  
   public :: max_day                ! month,year -> maxd, e.g. 31 for July
+!hfTD new
   public :: leapyear               ! year -> true, false
   public :: y2dig                  ! year -> 2-digit yy
   public :: y4dig                  ! year -> 4-digit yyyy
-
+  public :: get_ymd                ! jd -> yyyy, mm, dd
+  public :: get_hms                ! secs -> hour,minute,second
  !/ Subroutines...............
   public :: dup_timestamp        ! ts2=ts1
   public :: add_secs             ! ts+seconds -> new ts. fixit option
   public :: add_month            ! jdate+month, force_day option
-  public :: get_ymd              ! jd -> yyyy, mm, dd
-  public :: get_hms              ! secs -> hour,minute,second
+!hfTD  public :: get_ymd              ! jd -> yyyy, mm, dd
+!hfTD  public :: get_hms              ! secs -> hour,minute,second
 !===================TIMESTAMP TYPES & DEFINES=================================
+
+!hfTD=========================================================================
+integer, public,                save ::  daynumber    ! Day no. (1st jan=1).!kan gjøres lokalt?
+integer, public,                save ::  nydays       ! No. days per year
+integer, public, dimension(12), save ::  nmdays       ! No. days per month
+
+type, public :: date
+  integer :: year
+  integer :: month
+  integer :: day
+  integer :: hour
+  integer :: seconds
+ end type date
+
+!hfTD end==============================================================================
+
 
 	TYPE, public :: timestamp
 		!DS INTEGER(4) :: jdate
@@ -44,7 +65,7 @@ MODULE TimeDate_ml
 
 	TYPE(timestamp),private,PARAMETER  :: ts_null = timestamp(0, 0.0)
 	TYPE(timestamp),public, save       :: ts_now   ! current local time
-
+	TYPE(timestamp),public, save       :: ts_next   ! next inp
 
 	CHARACTER(LEN=3),DIMENSION(12), public :: short_month =  &
 		 (/"Jan","Feb","Mar","Apr","May","Jun",    &  
@@ -63,12 +84,44 @@ MODULE TimeDate_ml
 CONTAINS
 
 
-	FUNCTION make_timestamp (yyyy,mon,dd,hh,mm,ss) RESULT (ts)
+!hfTD	FUNCTION make_timestamp (yyyy,mon,dd,hh,mm,ss) RESULT (ts)
+!hfTD		TYPE(timestamp)              :: ts
+!hfTD		INTEGER,INTENT(IN)           :: yyyy, mon, dd, hh, mm, ss
+!hfTD		ts%jdate = julian_date (yyyy, mon, dd)
+!hfTD		ts%secs  = sph*REAL(hh) + spm*REAL(mm) + REAL(ss)
+!hfTD	END FUNCTION make_timestamp
+
+
+	FUNCTION make_timestamp (cd) RESULT (ts)
 		TYPE(timestamp)              :: ts
-		INTEGER,INTENT(IN)           :: yyyy, mon, dd, hh, mm, ss
+		TYPE(date),INTENT(IN)        :: cd
+		INTEGER                      :: yyyy, mon, dd, hh, ss
+                yyyy=cd%year
+                mon=cd%month
+                dd=cd%day
+                hh=cd%hour
+                ss=cd%seconds
 		ts%jdate = julian_date (yyyy, mon, dd)
-		ts%secs  = sph*REAL(hh) + spm*REAL(mm) + REAL(ss)
+		ts%secs  = sph*REAL(hh) + REAL(ss)
 	END FUNCTION make_timestamp
+
+!hfTD new function to convert from timestamp to current_date
+	FUNCTION make_current_date (ts) RESULT (cd)
+		TYPE(timestamp),INTENT(IN)    :: ts
+		TYPE(date)                    :: cd
+                INTEGER                       :: yy,mm,dd,hh,min,sc,jd
+                REAL                          :: ss
+                jd=ts%jdate
+                ss=ts%secs
+                call get_ymd(jd,yy,mm,dd)
+                call get_hms(ss,hh,min,sc)
+                cd%year=yy
+                cd%month=mm
+                cd%day=dd
+                cd%hour=hh
+                cd%seconds=min*60.0 + sc
+              END FUNCTION make_current_date
+
 
 
 	SUBROUTINE dup_timestamp (ts1,ts2)
@@ -133,8 +186,11 @@ CONTAINS
                         !DS - F doesn't accept "do while"
                         !CHECK LOGIC!
 			DO     !DSF WHILE (ts%secs >= spd)
-				ts%jdate = ts%jdate + 1
-				ts%secs  = ts%secs - spd
+!hfTD new if structure needed
+                                IF  (ts%secs >= spd) THEN
+				     ts%jdate = ts%jdate + 1
+				     ts%secs  = ts%secs - spd
+                                ENDIF
                                 if ( ts%secs < spd) exit  !DSF
 			END DO
 		ELSE
@@ -205,6 +261,7 @@ CONTAINS
 		mm		= mm + 2 - 12*l
 		yyyy	= 100*(n - 49) + yyyy + l
 	END SUBROUTINE get_ymd
+
 
   
 	FUNCTION day_of_week (yyyy,mm,dd) RESULT (dow)
@@ -293,6 +350,30 @@ CONTAINS
 		minute = INT((secs - sph*REAL(hour))/spm)
 		second = INT(secs - sph*REAL(hour) - spm*REAL(minute))
 	END SUBROUTINE get_hms
+
+	SUBROUTINE Init_nmdays (indate)
+		TYPE(date),INTENT(IN)              :: indate
+		INTEGER                            :: month,maxd,yy
+!hfTD		INTEGER,DIMENSION(12)              :: nmdays
+!hfTD           INTEGER                            :: nydays
+		INTEGER,DIMENSION(12),PARAMETER    :: daycount =  & 
+		(/31,28,31,30,31,30,31,31,30,31,30,31/)
+		!          table lookup for most months
+
+                yy = indate%year
+                nydays=0
+                do month=1,12
+                   maxd = daycount(month)
+                   !          correct February in a leap year
+                   IF (month == 2) THEN
+                      IF (leapyear(yy)) maxd = maxd + 1
+                   END IF
+                   nmdays(month)=maxd
+                   nydays=nydays+maxd
+                enddo
+        END SUBROUTINE Init_nmdays
+                 
+                
 
 
 END MODULE TimeDate_ml

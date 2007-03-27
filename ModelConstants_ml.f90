@@ -6,7 +6,8 @@ module ModelConstants_ml
  !
  ! Dependancies - none.
  !----------------------------------------------------------------------------
-  use Dates_ml, only : date   ! type giving yy, mm, dd, s
+!hfTD  use Dates_ml, only : date   ! type giving yy, mm, dd, s
+  use TimeDate_ml, only : date   ! type giving yy, mm, dd, s
   use PhysicalConstants_ml, only : AVOG   
 
   implicit none
@@ -115,8 +116,8 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
  !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
- integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
-
+! integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
+integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  test hfTD
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
  !integer, public, parameter :: DEBUG_i=37, DEBUG_j=39 !  Sea
  !integer, public, parameter :: DEBUG_i=134, DEBUG_j=120 ! pw error?

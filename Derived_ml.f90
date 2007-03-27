@@ -43,7 +43,9 @@ module Derived_ml
 
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
-use Dates_ml, only : dayno, daynumber
+!hfTD use Dates_ml, only : dayno, daynumber
+!hfTD
+use TimeDate_ml, only : day_of_year,daynumber
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml
 use GenSpec_tot_ml
@@ -689,8 +691,8 @@ def_3d = (/ &
       thour = current_date%hour+current_date%seconds/3600.0  !ds rv1_9_28 moved here for 3D3D
 
       !NEWAOT
-        call dayno(current_date%month,current_date%day,daynumber)
-
+!hfTD        call dayno(current_date%month,current_date%day,daynumber)
+        daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
 
      !/***** 2-D fields **************************
 

@@ -109,7 +109,8 @@ contains
           Forests_Init                  &
           , first_dms_read 
   use Country_ml,    only : NLAND,Country_Init,Country
-  use Dates_ml,      only : nydays     ! No. days per year, date-type 
+!hfTD  use Dates_ml,      only : nydays     ! No. days per year, date-type 
+  use TimeDate_ml,      only : nydays     ! No. days per year, date-type 
   use EmisDef_ml,    only : &  
                      EmisDef_Init    &! Sub to define conversion factors
                      ,EmisDef_Index   &! Sub to get index of emis name 
@@ -491,7 +492,8 @@ contains
           emnat,emforest ,&               ! Emission arrays
           IQ_DMS
   use Country_ml,    only : NLAND,Country
-  use Dates_ml,      only : date     ! No. days per year, date-type 
+!hfTD  use Dates_ml,      only : date     ! No. days per year, date-type 
+  use TimeDate_ml,      only : date     ! No. days per year, date-type 
   use EmisDef_ml,    only : &  
                      VERTFAC          ! vertical emission split
 
@@ -694,7 +696,6 @@ contains
 
                       iqrc = iqrc + 1
                       emis(iqrc) = snapemis(isec,i,j,icc,iem) * tfac 
-
                    end do ! iem=1,NEMIS_PLAIN
 
 		    !/.. Then , the split (speciated) emissions if NEMIS_SPLIT>0
@@ -920,9 +921,11 @@ contains
 	use Par_ml   , only : IILARDOM,JJLARDOM		&
 		,MSG_READ7,ISMBEG,JSMBEG	&
 		,limax,ljmax
-	use Dates_ml, only:		&
+!hfTD	use Dates_ml, only:		&
+!hfTD		nydays          ! = 365.0 or 366.0  (days per year)
+ 	use TimeDate_ml, only:		&
 		nydays          ! = 365.0 or 366.0  (days per year)
-        use ModelConstants_ml, only : current_date
+       use ModelConstants_ml, only : current_date
         use GridValues_ml, only:			&
 		GRIDWIDTH_M    & !  size of grid (m)
 		,xm2             ! map factor squared

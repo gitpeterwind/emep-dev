@@ -426,7 +426,8 @@
   use PhysicalConstants_ml,  only : PI, RGAS_J
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
 !                                      VOLFAC        ! for N2O5-> NO3-
-  use Dates_ml,              only : daynumber !u7.4vg  for so2ox
+!hfTD not needed anymore use Dates_ml,              only : daynumber !u7.4vg  for so2ox
+
   use Functions_ml,          only : troe
   implicit none
   private
@@ -623,7 +624,7 @@ end module GenRates_rct_ml
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP, KCLOUDTOP &
                                      ,CHEMTMIN, CHEMTMAX  !u3 temp. range
   !u7.4vg                                   ,daynumber  !u3
-  use Dates_ml,              only : daynumber !u7.4vg  for so2ox
+!hfTD not needed anymore  use Dates_ml,              only : daynumber !u7.4vg  for so2ox
   use PhysicalConstants_ml,  only : PI, DEG2RAD
   implicit none
   private

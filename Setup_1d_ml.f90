@@ -11,7 +11,8 @@
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
-  use Dates_ml,              only : date, dayno
+!hfTD  use Dates_ml,              only : date, dayno
+  use TimeDate_ml,              only : date
   use Emissions_ml,          only :  gridrcemis, KEMISTOP    !hf VOL
   use Functions_ml,          only :  Tpot_2_T                !ds apr2005
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3

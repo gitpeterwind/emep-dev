@@ -498,11 +498,13 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
   use Derived_ml,    only : Deriv &
        ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
-  use Dates_ml, only: nmdays,is_leap 
+!hfTD  use Dates_ml, only: nmdays,is_leap 
+  use TimeDate_ml, only: nmdays,leapyear
   use My_Outputs_ml, only :FREQ_HOURLY 
 
   implicit none
-
+!hfTD 
+  integer ::is_leap 
   integer ,intent(in) :: ndim,kmax
   type(Deriv),     intent(in) :: def1 ! definition of fields
   integer,                         intent(in) :: iotyp
@@ -891,7 +893,11 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      call secondssince1970(ndate,nseconds)
      !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
      if(iotyp==IOU_YEAR)then
-        nseconds=nseconds-43200*365-43200*is_leap(ndate(1)-1)
+
+!hfTD        nseconds=nseconds-43200*365-43200*is_leap(ndate(1)-1)
+        is_leap=0
+        if (leapyear( ndate(1) ) )is_leap=1
+        nseconds=nseconds-43200*365-43200*leapyear(ndate(1)-1)
      elseif(iotyp==IOU_MON)then
         nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
      elseif(iotyp==IOU_DAY)then
@@ -1083,9 +1089,11 @@ endif
   subroutine secondssince1970(ndate,nseconds)
     !calculate how many seconds have passed since the start of the year
 
-    use Dates_ml, only: nmdays,is_leap 
+!hfTD    use Dates_ml, only: nmdays,is_leap 
+    use TimeDate_ml, only: nmdays,leapyear 
     implicit none
-
+!hfTD
+    integer ::is_leap 
     integer, intent(in) :: ndate(4)
     integer, intent(out) :: nseconds
     integer :: n,nday
@@ -1099,7 +1107,9 @@ endif
 
 !add seconds from each year since 1970
     do n=1970,ndate(1)-1
-       nseconds=nseconds+24*3600*365+24*3600*is_leap(n)
+       is_leap=0
+       if (leapyear(n))is_leap=1
+       nseconds=nseconds+24*3600*365+24*3600*is_leap
     enddo
 
   end subroutine secondssince1970
@@ -1321,7 +1331,8 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
 
   use Derived_ml, only :Deriv 
   use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
-  use Dates_ml, only : date
+!hfTD  use Dates_ml, only : date
+  use TimeDate_ml, only : date
   use ModelConstants_ml, only : KMAX_MID
   use Par_ml,                only : NPROC,me,MAXLIMAX, MAXLJMAX
   use GenSpec_shl_ml , only :NSPEC_SHL
@@ -1437,7 +1448,8 @@ end subroutine WriteCDF
 
 subroutine ReadCDF(varname,vardate,filename_given)
 
-  use Dates_ml, only : date
+!hfTD  use Dates_ml, only : date
+  use TimeDate_ml, only : date
   use ModelConstants_ml, only : KMAX_MID
   use Par_ml,                only : NPROC,me,MAXLIMAX, MAXLJMAX,GIMAX,GJMAX
   use GenSpec_shl_ml , only :NSPEC_SHL

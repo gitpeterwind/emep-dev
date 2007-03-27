@@ -11,7 +11,11 @@ module PhyChem_ml
 
    use Advection_ml,   only: advecdiff,advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
-   use Dates_ml,       only : date, add_dates,dayno, daynumber
+!hfTD   use Dates_ml,       only : date, add_dates,dayno, daynumber
+   use TimeDate_ml,       only : date,daynumber,day_of_year, add_secs
+   use TimeDate_ml,       only : date,daynumber,day_of_year, timestamp
+   use TimeDate_ml,       only : make_timestamp, make_current_date
+
    use Derived_ml,     only : wdep, ddep,IOU_INST, DerivedProds, Derived
    use DryDep_ml,      only : drydep,init_drydep
    use Emissions_ml,   only : EmisSet  
@@ -45,12 +49,13 @@ contains
    integer, intent(in) ::  numt
 
    integer ::  i,j,k,n
-   logical, parameter :: DEBUG = .false.
+   logical, parameter :: DEBUG = .true.
    logical, save :: End_of_Day = .false.
 
    integer :: ndays
    real :: thour
-
+!hfTD 
+   type(timestamp) :: ts_now !date in timestamp format
 
     if ( DEBUG .and. debug_proc  ) then
 
@@ -78,7 +83,8 @@ contains
 
            if ( current_date%hour == 12 ) then
 
-		call dayno(current_date%month,current_date%day,ndays)
+!hfTD		call dayno(current_date%month,current_date%day,ndays)
+		ndays=day_of_year(current_date%year,current_date%month,current_date%day)
 	        write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
            endif
 
@@ -180,7 +186,12 @@ contains
 
 
           !====================================
-          current_date = add_dates(current_date,nint(dt_advec))
+!hfTD          current_date = add_dates(current_date,nint(dt_advec))
+!hfTD          current_date = add_dates(current_date,nint(dt_advec))
+          ts_now=make_timestamp(current_date)
+          call add_secs(ts_now,dt_advec)
+          current_date = make_current_date(ts_now)
+
           !====================================
 
 

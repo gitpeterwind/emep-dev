@@ -31,7 +31,8 @@
    use My_Derived_ml, only: NDDEP, NWDEP, NDERIV_2D, & !dsAscii3D
                             NDERIV_3D
 
-   use Dates_ml,           only: nmdays             !ds-out
+!hfTD   use Dates_ml,           only: nmdays             !ds-out
+   use TimeDate_ml,           only: max_day             !days in month
 !ds New Deriv:
    use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, f_2d, d_2d &
                                 ,f_3d, d_3d, nav_3d, nav_2d  & !dsAscii3D
@@ -83,7 +84,8 @@
          if ( dd_out == 0 ) then
              mm_out = nmonth - 1
              if ( nmonth == 1 ) mm_out = 12
-             dd_out = nmdays( mm_out )  !  Last day of month
+!hfTD             dd_out = nmdays( mm_out )  !  Last day of month
+             dd_out = max_day( mm_out,nyear )  !  Last day of month
              if(me==0)write(6,"(a12,i5,4i4)") "DAILY FIX ", numt, nmonth, mm_out, nday, dd_out 
          end if
 

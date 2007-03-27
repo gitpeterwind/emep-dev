@@ -188,7 +188,9 @@ private
         use GridValues_ml , only : xm_i,xm_j,xm2,&
                            sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
                             fi, GRIDWIDTH_M,ref_latitude
-        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
+!hfTD        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
+        use TimeDate_ml, only : date,Init_nmdays,nmdays,add_secs,timestamp,&
+                                make_timestamp, make_current_date
  
 	implicit none
 
@@ -200,8 +202,11 @@ private
         integer ::ndim,nyear,nmonth,nday,nhour,k
 
         integer :: nr!Fields are interpolate in time: between nr=1 and nr=2
-   	type(date) next_inptime,addhours_to_input
-    
+   	type(date) :: next_inptime !hfTD,addhours_to_input
+!hfTD new
+        type(timestamp)::ts_now! time in timestamp format    
+        real :: nsec !step in seconds
+
         if( METEOfelt==1)then
            call infield(numt)
            return
@@ -222,12 +227,19 @@ private
 ! meteofields are read (not yet implemented)
 
         else
-           addhours_to_input = date(0, 0, 0, METSTEP, 0 )
-           next_inptime = add_dates(current_date,addhours_to_input)
+!hfTD           addhours_to_input = date(0, 0, 0, METSTEP, 0 )
+!hfTD           next_inptime = add_dates(current_date,addhours_to_input)
+                nsec=METSTEP*3600.0 !from hr to sec
+                ts_now = make_timestamp(current_date)
+                call add_secs(ts_now,nsec)
+                next_inptime=make_current_date(ts_now)
+
+
         endif
 
         nyear=next_inptime%year
         nmonth=next_inptime%month
+
         nday=next_inptime%day 
         nhour=next_inptime%hour
         if(  current_date%month == 1 .and.         &
@@ -315,8 +327,9 @@ private
 	use ModelConstants_ml , only : current_date  ! date-type
         use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
                             xm_i,xm_j,xm2,fi, GRIDWIDTH_M,ref_latitude
-        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
- 
+!hfTD        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
+        use TimeDate_ml, only : date,Init_nmdays !hfTD
+
 	implicit none
         integer, intent(out) ::cyclicgrid
         character (len = 100),save ::meteoname !name of the meteofile
@@ -377,8 +390,11 @@ private
                                       , METSTEP
                                     
 	use Par_ml ,  only :  limax,ljmax
-        use Dates_ml, only : nmdays,nydays,date,Init_nmdays	&
-                            ,add_dates       ! No. days per year
+!hfTD        use Dates_ml, only : nmdays,nydays,date,Init_nmdays	&
+!hfTD                            ,add_dates       ! No. days per year
+        use TimeDate_ml, only : nmdays,nydays,date,Init_nmdays,timestamp	&
+                            ,add_secs,make_current_date, make_timestamp      ! 
+
         use GridValues_ml , only : sigma_bnd,sigma_mid, xp, yp, &
                             fi, GRIDWIDTH_M,ref_latitude,xm_i,xm_j,xm2
 	use Io_ml ,only : IO_INFIELD, ios
@@ -399,6 +415,10 @@ private
 
 	real dumhel(MAXLIMAX,MAXLJMAX)
         real ::xrand(20)
+
+!hfTD new
+        type(timestamp)::ts_now! time in timestamp format    
+        real :: nsec !step in seconds
 
 !	definition of the parameter number of the meteorological variables
 !	read from field-files:
@@ -498,10 +518,14 @@ private
           if(numt == 1) then   !!! initialise 
               current_date = date(nyear, nmonth, nday, nhour, 0 )
     	      call Init_nmdays( current_date )
-	      addhours_to_input = date(0, 0, 0, nprognosis, 0 )
+!hfTD	      addhours_to_input = date(0, 0, 0, nprognosis, 0 )
 !pw	      addhours_to_input = date(0, 0, 0, 12, 0 )
-	      current_date = add_dates(current_date,addhours_to_input)!
-
+!hfTD	      current_date = add_dates(current_date,addhours_to_input)!
+               nsec= nprognosis*3600.0
+               ts_now=make_timestamp(current_date)
+               call add_secs(ts_now,nsec)
+               current_date=make_current_date(ts_now)
+                      
               !  if we start 1. of January, then nyear is the year before
               !  so we have to rerun Init_nmdays!
 
@@ -510,22 +534,31 @@ private
 
               ! for printout assign current_date to next_inptime!
 
-	      next_inptime = add_dates(current_date,0)!
+!hfTD	      next_inptime = add_dates(current_date,0)!
+
+              next_inptime = current_date !hfTD ?? Can this be done? Why add_dates before??
 
 	  else
 
 !   find time for which meteorology is valid:
 
       next_inptime = date(nyear, nmonth, nday, nhour, 0 )
-              addhours_to_input = date(0, 0, 0, nprognosis, 0 )
-	      next_inptime = add_dates(next_inptime,addhours_to_input) 
+!hfTD              addhours_to_input = date(0, 0, 0, nprognosis, 0 )
+!hfTD	      next_inptime = add_dates(next_inptime,addhours_to_input) 
+               nsec= nprognosis*3600.0
+               ts_now=make_timestamp(next_inptime)
+               call add_secs(ts_now,nsec)
+               next_inptime=make_current_date(ts_now)
 
 !	compare the input time with current_date, it should be METSTEP hours later
 !	check if current_date+METSTEP = next_inptime
 
-               addhours_to_input = date(0, 0, 0, METSTEP, 0 )
-               buf_date = add_dates(current_date,addhours_to_input)
-
+!hfTD               addhours_to_input = date(0, 0, 0, METSTEP, 0 )
+!hfTD               buf_date = add_dates(current_date,addhours_to_input)
+               nsec= METSTEP*3600.0
+               ts_now=make_timestamp(current_date)
+               call add_secs(ts_now,nsec)
+               buf_date=make_current_date(ts_now)
 !	now check:
 
               if(buf_date%year    .ne. next_inptime%year   .or.        &

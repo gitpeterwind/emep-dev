@@ -58,7 +58,8 @@ program myeul
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Forests_init
   use BoundaryConditions_ml, only : BoundaryConditions
-  use Dates_ml,         only : date, dayno,daynumber
+!hfTD  use Dates_ml,         only : date, dayno,daynumber
+  use TimeDate_ml,         only : date, day_of_year,daynumber
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,    only :  Init_Derived &
                                ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
@@ -398,7 +399,8 @@ program myeul
     if ( me == 0 ) write(6,*)"emissions fifniseh" 
 
     ! daynumber needed  for BCs, so call here to get initial
-      call dayno(current_date%month,current_date%day,daynumber) !u3
+!hfTD      call dayno(current_date%month,current_date%day,daynumber) !u3
+    daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
 
 
     call MetModel_LandUse(1)   !ds rv1.2  call (1) -> iclass
@@ -480,7 +482,8 @@ program myeul
 
     ! - daynumber needed  for BCs, so call here to be safe
 
-      call dayno(current_date%month,current_date%day,daynumber) !u3
+!hfTD      call dayno(current_date%month,current_date%day,daynumber) !u3
+      daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
 
       if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
 
@@ -547,8 +550,8 @@ program myeul
 
       call Add_2timing(10,tim_after,tim_before,"infield")
 
-      call dayno(current_date%month,current_date%day,daynumber) !u3
-
+!hfTD      call dayno(current_date%month,current_date%day,daynumber) !u3
+      daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
       if ( me == 0) then
          write(6,*) 'TIME TEST ', 'current date ',current_date, &
               "day number ", daynumber !u3

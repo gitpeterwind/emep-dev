@@ -21,7 +21,7 @@ module DryDep_ml
                           NDRYDEP_TOT, &   !st Total No. of  Vd values
                           STO_FLUXES,  &   ! true if fluxes wanted.
                           CDEP_SET,    &   ! for so4
-                          CDEP_NO2,    &   ! for NO2 comp pt. approach
+                          CDEP_NO2,CDEP_O3,    &   ! for NO2 comp pt. approach
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
@@ -30,7 +30,8 @@ module DryDep_ml
 
  use My_Derived_ml      ! -> OUTPUT_ABS_HEIGHTS, d_2d, IOU_INST, D2_VG etc...
 
- use Dates_ml,       only : daynumber
+!hfTD use Dates_ml,       only : daynumber
+ use TimeDate_ml,       only : daynumber
  use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
                             forest, water, f_phen, &
                             crops,         & !rv1_7_4 for SAIadd
@@ -778,8 +779,9 @@ module DryDep_ml
 !     since the compiler will ignor tis if-test and hence be faster
 !     unless DEBUG_VG is set.
 
-        if (DEBUG_VG .and. i==2 .and. j==2 .and. nadv==49)then
-            write(*,*)'nadv, Deploss',49,DepLoss(nadv)
+!        if (DEBUG_VG .and. i==2 .and. j==2 .and. nadv==49)then
+        if (DEBUG_VG .and.  debug_flag  )then
+            write(*,*)'nadv, Deploss',nadv,DepLoss(nadv)
         endif
         call DryDep_Budget(i,j,Deploss,convfac)
 

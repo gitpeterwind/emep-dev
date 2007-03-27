@@ -1,6 +1,27 @@
 ============== Misc, rv2_7_x 2007  ================================ 
 
-Hilde .... to be added
+Hilde: Dates_ml replaced by TimeDate_ml (TimeDate corrected for bug). Changes in: 
+
+ (calc daynumber) Derived_ml.f90
+ (daynumber) DryDep_ml.f90
+ (nydays) Emissions_ml.f90
+ (daynumber)GlobalBCs_ml.f90
+ Met_ml.f90
+ (date type) Nest_ml.f90
+ NetCDF_ml.f90
+ Timefactors_ml.f90
+ (daynumber) Unimod.f90
+ Wrtchem.f90
+
+Minor changes in:
+ Advection_ml.f90
+ ModelConstants_ml.f90
+ PhyChem_ml.f90
+ My_Chem_ml.f90
+ My_Outputs_ml.f90
+ UK_ml.f90
+ Setup_1d_ml.f90
+
 
 Peter: Output_hourly: reversed/corrected order of k-levels in Output_hourly
        (for Semeena's work)

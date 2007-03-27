@@ -27,12 +27,17 @@
   use My_Emis_ml,   only : NEMIS, EMIS_NAME
   use EmisDef_ml,   only : NSECTORS
 
-  use Dates_ml, only:       & ! subroutine, sets:
+!hfTD  use Dates_ml, only:       & ! subroutine, sets:
+!hfTD                   date,           & ! date-type definition
+!hfTD                   nmdays, nydays, & ! days per month (12), days per year
+!hfTD                   FIRST_SDYEAR, LAST_SDYEAR, & ! Limits defined in Dates_ml
+!hfTD                   STARTDAY,       & ! specifies start day of year (MON, etc.)
+!hfTD                   SUN               ! =7, index for Sunday
+  use TimeDate_ml, only:       & ! subroutine, sets:
                    date,           & ! date-type definition
-                   nmdays, nydays, & ! days per month (12), days per year
-                   FIRST_SDYEAR, LAST_SDYEAR, & ! Limits defined in Dates_ml
-                   STARTDAY,       & ! specifies start day of year (MON, etc.)
-                   SUN               ! =7, index for Sunday
+                   nmdays, nydays,&  ! days per month (12), days per year
+                   day_of_week,&     !weekday, 0=sun, 1=thuesday...
+                   day_of_year       !day count in year
   use Io_ml, only : &
                    open_file       &   ! subroutine
                  , ios,  IO_TIMEFACS   ! i/o error number, i/o label
@@ -128,15 +133,15 @@ contains
   write(unit=6,fmt=*) "into timefactors.f "
 
   ios = 0
-  if ( year  <  FIRST_SDYEAR .or. year > LAST_SDYEAR  ) then
-	print *,"ERROR:fix year< FIRST_SDYEAR or > LAST_SDYEAR"
-	ios = 1
-  endif
+!hfTD  if ( year  <  FIRST_SDYEAR .or. year > LAST_SDYEAR  ) then
+!hfTD	print *,"ERROR:fix year< FIRST_SDYEAR or > LAST_SDYEAR"
+!hfTD	ios = 1
+!hfTD  endif
   if ( nydays < 365 )  then
 	print *,"ERR:Call set_nmdays before timefactors?"
 	ios = 1
   endif
-  if ( NSECTORS /= 11 ) then
+ if ( NSECTORS /= 11 ) then
 	print *,"Day-Night dimension wrong!"
 	ios = 1
   endif
@@ -233,10 +238,13 @@ contains
              do mm = 1, 12     ! Jan - Dec
                 do idd = 1, nmdays(mm)
 
-                   iday = iday + 1
-                   weekday = STARTDAY( year ) + iday -1
-                   weekday = modulo(weekday,7)      ! restores day to 1--6
-                   if ( weekday == 0 ) weekday = SUN  ! restores sunday
+!hfTD                   iday = iday + 1
+!hfTD                   weekday = STARTDAY( year ) + iday -1
+!hfTD                   weekday = modulo(weekday,7)      ! restores day to 1--6
+
+                   weekday=day_of_week (year,mm,idd)
+
+                   if ( weekday == 0 ) weekday = 7  ! restores sunday to 7, !hfTD 
 
                    mm2 = mm + 1 
                    if( mm2  > 12 ) mm2 = 1      ! December+1 => January
@@ -330,21 +338,26 @@ contains
   integer :: nmnd, nmnd2   ! this month, next month.
   integer :: weekday,nday,n       ! 1=monday, 2=
   real    :: xday          ! used in interpolation
+  integer :: yyyy,dd !hfTD new
+!hfTD  nmnd  = newdate%month              ! gv: nmonth(1)
+!hfTD  nday=0
+!hfTD  do n=1,nmnd-1
+!hfTD     nday=nday+nmdays(n)
+!hfTD  enddo
+!hfTD  nday=nday+newdate%day
 
-  nmnd  = newdate%month              ! gv: nmonth(1)
-  nday=0
-  do n=1,nmnd-1
-     nday=nday+nmdays(n)
-  enddo
-  nday=nday+newdate%day
+!hfTD  weekday = STARTDAY( newdate%year ) + nday - 1 
+!hfTD  weekday = modulo(weekday,7)        ! restores day to 1--6
+  yyyy=newdate%year
+  nmnd=newdate%month
+  dd=newdate%day
+!  nday    = day_of_year(yyyy,nmnd,dd) 
+  weekday = day_of_week(yyyy,nmnd,dd)
+  if ( weekday == 0 ) weekday = 7  ! restores sunday to 7
 
-  weekday = STARTDAY( newdate%year ) + nday - 1 
-  weekday = modulo(weekday,7)        ! restores day to 1--6
-  if ( weekday == 0 ) weekday = SUN  ! restores sunday 
-    
 !   Parameters for time interpolation
 
-  nmnd  = newdate%month              ! gv: nmonth(1)
+!hfTD  nmnd  = newdate%month              ! gv: nmonth(1)
   nmnd2 = nmnd + 1                   ! ds Next month
   if( nmnd2 > 12 ) nmnd2 = 1         ! December+1 => January
 
@@ -356,13 +369,12 @@ contains
     do iemis = 1, NEMIS
       do isec = 1, NSECTORS 
          do iland = 1, NLAND
- 
+
              timefac(iland,isec,iemis) =   &
                 ( fac_emm(iland,nmnd,isec,iemis) + xday &
                       * (fac_emm(iland,nmnd2,isec,iemis) &
                         -fac_emm(iland,nmnd,isec,iemis) ) ) &
                *    fac_edd(iland,weekday,isec,iemis) 
- 
          enddo ! iland  
       enddo ! isec   
    enddo ! iemis 
