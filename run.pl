@@ -227,9 +227,9 @@ $femis       = "$DataDir/femis.dat";      # emission control file
 ##smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
 ##smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
 @smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
-#@smalldomain = (  116, 167,  80, 122 ) ;      # (changeable)
-#@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
-		# simply uncomment this 
+##@smalldomain = (  116, 167,  80, 122 ) ;      # (changeable)
+##@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
+		# simply uncomment this  - REMEMBER NEED ##@, not just one #
 
 
 $RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
