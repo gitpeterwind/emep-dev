@@ -49,11 +49,11 @@
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
  use Chemfields_ml, only : xn_adv
- use Dates_ml,     only : date, add_dates,dayno
+!hfTD use Dates_ml,     only : date, add_dates,dayno
  use GenSpec_adv_ml , only : NSPEC_ADV
  use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i
  use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
-                dt_advec, dt_advec_inv,  PT,KCHEMTOP,current_date 
+                dt_advec, dt_advec_inv,  PT,KCHEMTOP !hfTD,current_date 
  use Met_ml ,only : ps,sdot,skh,u,v
  use MassBudget_ml, only : fluxin,fluxout
  use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
