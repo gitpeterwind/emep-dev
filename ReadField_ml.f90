@@ -41,6 +41,7 @@ contains
   character*20, intent(in) :: fname         ! File name
   real, intent(out) :: local_field(MAXLIMAX,MAXLJMAX)! Local field
   character*50 :: errmsg 
+  real :: tmpin   ! To allow more than one input line per i,j
 
   !/ rv2_1_6, ds 17/2/2005:
   !  Initialisation to zero added, so now we do not need to input an array which
@@ -58,8 +59,7 @@ contains
     if (me==0)then
        call open_file(IO_INFILE,"r",fname,needed=.true.)
           if ( ios /= 0 )then
-          print *, 'error in opening IO_INFILE ', fname, ios
-            WRITE(*,*) 'MPI_ABORT: ', "newmonth:error opening in_field" 
+            WRITE(*,*) 'MPI_ABORT: ', "ReadField_r: error opening" , fname, ios
             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
           endif
     endif !me==0
@@ -68,7 +68,8 @@ contains
     if (me == 0) then
 
           READFIELD : do n = 1, BIG
-             read(IO_INFILE,*,iostat=ios) i,j,in_field(i,j)
+             read(IO_INFILE,*,iostat=ios) i,j,tmp
+             in_field(i,j) = in_field(i,j) + tmpin
             if ( ios /= 0 ) exit READFIELD
              if (  i < 1 .or. i > IILARDOM  .or. &
                    j < 1 .or. j > JJLARDOM  ) then  
@@ -80,10 +81,8 @@ contains
 
        close(IO_INFILE)
        if ( errmsg /= "ok" ) then      
-           print *, 'error in reading IO_INFILE', fname
-           print *,  errmsg
-             WRITE(*,*) 'MPI_ABORT: ', "errorreading IO_INFILE" 
-             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           WRITE(*,*) 'MPI_ABORT: ', "ReadField_r: error reading" , fname, errmsg
+           call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        endif
 
 
@@ -101,6 +100,7 @@ contains
   character*20, intent(in) :: fname         ! File name
   integer, intent(out)     :: local_field(MAXLIMAX,MAXLJMAX)
   character*50 :: errmsg 
+  integer :: intmp   ! To allow more than one input line per i,j
 
   !/-- We need an array for the whole model domain
   !/-- We *do not* need an array for the whole model domain!
@@ -114,8 +114,7 @@ contains
    if (me==0)then
       call open_file(IO_INFILE,"r",fname,needed=.true.)
       if ( ios /= 0 )then         
-         print *, 'error in opening IO_INFILE', fname
-           WRITE(*,*) 'MPI_ABORT: ', "error opening in_field" 
+           WRITE(*,*) 'MPI_ABORT: ', "ReadField_i: error opening" , fname, ios
            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
       endif
     endif !me==0
@@ -124,7 +123,8 @@ contains
     if (me == 0) then
 
         READFIELD : do n = 1, BIG
-           read(IO_INFILE,*,iostat=ios) i,j,in_field(i,j)
+           read(IO_INFILE,*,iostat=ios) i,j, intmp
+           in_field(i,j) =  in_field(i,j) + intmp
            if ( ios /= 0 ) exit READFIELD
            if (  i < 1 .or. i > IILARDOM  .or. &
                  j < 1 .or. j > JJLARDOM  ) then  
@@ -139,8 +139,7 @@ contains
 
        !ds if ( ios /= 0 )then             
        if ( errmsg /= "ok" ) then      
-           print *, 'error in reading IO_INFILE', fname
-             WRITE(*,*) 'MPI_ABORT: ', "errorreading IO_INFILE" 
+             WRITE(*,*) 'MPI_ABORT: ', "ReadField_i: error reading" , fname, errmsg
              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         endif !ios
 
