@@ -7,6 +7,17 @@ April 10th, Dave:
   modified ReadField_ml, to allow more than one input line per i,j coord
                          + fewer write statements
 
+April 18th, Peter/Semeena:
+
+	Updated NetCDF_ml such that:
+	1) Output is CF-1.0 compilant for the vertical coordinates
+	2) Corrected a bug when 3D hourly output is required
+	
+	Derived_ml: renamed D2_PS as PS, to be more compatible with what other use 
+	            (PS is used in the definition of the vertical levels)
+
+	run.pl: put lpmem=200MB 
+
 
 ============== Misc, rv2_7_4, Mar 30 2007  ================================ 
 

@@ -185,7 +185,7 @@ use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                   ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                   ,GlobalPosition,gb_glob,gl_glob,ref_latitude
 use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG,IILARDOM,JJLARDOM
-use ModelConstants_ml,     only : KMAX_MID, runlabel1, runlabel2  
+use ModelConstants_ml,     only : KMAX_MID, runlabel1, runlabel2, PT 
 use GridValues_ml,         only : sigma_mid
 use My_Derived_ml,         only : model
 use PhysicalConstants_ml,  only : PI       
@@ -193,10 +193,8 @@ use PhysicalConstants_ml,  only : PI
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 character(len=*),  intent(in)  :: fileName 
 character (len=*),optional, intent(in):: requiredprojection
-!character (len=*), parameter :: version='Unimod rv2.0'       
 character (len=*), parameter :: author_of_run='Unimod group' 
-!character (len=*), parameter :: projection='Stereographic'
-character (len=*), parameter :: vert_coord='vertical coordinates = (p-p(top))/(p(surf)-p(top))'
+character(len=*), parameter :: vert_coord='sigma: k ps: PS ptop: PT'
 character (len=19) :: projection_params='90.0 -32.0 0.933013' !set later on
 
 real :: xcoord(GIMAX),ycoord(GJMAX),kcoord(KMAX_MID)
@@ -204,7 +202,7 @@ real :: xcoord(GIMAX),ycoord(GJMAX),kcoord(KMAX_MID)
 character*8 ::created_date,lastmodified_date
 character*10 ::created_hour,lastmodified_hour
 integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
-integer :: iEMEPVarID,jEMEPVarID,latVarID,longVarID
+integer :: iEMEPVarID,jEMEPVarID,latVarID,longVarID,PTVarID
 real :: izero,jzero,scale_at_projection_origin
 character*80 ::UsedProjection
 
@@ -336,15 +334,20 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, longVarID, "standard_name", "longitude"))
   endif
 
-  call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
+!  call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
   call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))
   call check(nf90_put_att(ncFileID, nf90_global, "run_label", trim(runlabel2)))
 
   call check(nf90_def_var(ncFileID, "k", nf90_float, dimids = kDimID, varID = kVarID) )
   call check(nf90_put_att(ncFileID, kVarID, "coord_alias", "level"))
-  call check(nf90_put_att(ncFileID, kVarID, "long_name", "vertical eta coordinates"))
-  call check(nf90_put_att(ncFileID, kVarID, "units", "eta_level"))
+!pwsvs for CF-1.0
+  call check(nf90_put_att(ncFileID, kVarID, "standard_name", "atmosphere_sigma_coordinate"))
+  call check(nf90_put_att(ncFileID, kVarID, "formula_terms", trim(vert_coord)))
+  call check(nf90_put_att(ncFileID, kVarID, "units", "sigma_level"))
   call check(nf90_put_att(ncFileID, kVarID, "positive", "down"))
+  call check(nf90_def_var(ncFileID, "PT", nf90_float,  varID = PTVarID) )
+  call check(nf90_put_att(ncFileID, PTVarID, "units", "Pa"))
+  call check(nf90_put_att(ncFileID, PTVarID, "long_name", "Pressure at top"))
 
   call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
   if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown')then
@@ -478,6 +481,8 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   endif
   call check(nf90_put_var(ncFileID, kVarID, kcoord(1:KMAXcdf)) )
 
+  call check(nf90_put_var(ncFileID, PTVarID, PT ))
+
   call check(nf90_close(ncFileID))
 
   write(*,*)'file created'
@@ -498,13 +503,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
   use Derived_ml,    only : Deriv &
        ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
-!hfTD  use Dates_ml, only: nmdays,is_leap 
-  use TimeDate_ml, only: nmdays,leapyear
-  use My_Outputs_ml, only :FREQ_HOURLY 
 
   implicit none
-!hfTD 
-  integer ::is_leap 
+
   integer ,intent(in) :: ndim,kmax
   type(Deriv),     intent(in) :: def1 ! definition of fields
   integer,                         intent(in) :: iotyp
@@ -528,12 +529,13 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   real*8 , allocatable,dimension(:,:,:)  :: R8data3D
   real*4 , allocatable,dimension(:,:,:)  :: R4data3D
   integer*4, allocatable,dimension(:,:,:)  :: Idata3D
-  integer, save ::SavedVar(KMAX_MID)=-999,SavedncFile(KMAX_MID)=-999
   integer :: OUTtype !local version of CDFtype
   integer :: iotyp_new
-  integer :: iDimID,jDimID,kDimID,timeDimID
+  integer :: iDimID,jDimID,kDimID,timeDimID,timeVarID
   integer :: GIMAX_old,GJMAX_old,KMAX_old
   integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
+  integer :: is_leap, nseconds_time(1)
+
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
   if(present(ist))i1=max(ist,i1)
@@ -790,16 +792,19 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !find the number of records already written
      call check(nf90_get_att(ncFileID, VarID, "numberofrecords",   nrecords))
      !  print *,'number of dataset saved: ',nrecords
-     !increase the last coordinate by one, to define position of new data
      !test if new record is needed
-     if(present(ik))then
-        if((SavedVar(ik)==VarID.and.SavedncFile(ik)==ncFileID).or.nrecords==0)then
+     if(present(ik).and.nrecords>0)then
+        !The new record may already exist 
+        !use time as record reference, (instead of "numberofrecords")
+        call secondssince1970(ndate,nseconds,iotyp)
+        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
+        call check(nf90_get_var(ncFileID, timeVarID, nseconds_time,start=(/ nrecords /)))   
+        !check if this is a newer time
+        if((nseconds/=nseconds_time(1)))then
            nrecords=nrecords+1 !start a new record
-           SavedVar(:)=-999; SavedncFile(:)=-999 !reset 
         endif
-        !write which variable, file and level is written
-        SavedVar(ik)=VarID;SavedncFile(ik)=ncFileID
      else
+        !increase nrecords, to define position of new data
         nrecords=nrecords+1
      endif
      !  print *,'writing on dataset: ',nrecords
@@ -890,25 +895,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      !get variable id
      call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
-     call secondssince1970(ndate,nseconds)
-     !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
-     if(iotyp==IOU_YEAR)then
+     call secondssince1970(ndate,nseconds,iotyp)!middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
+     
 
-!hfTD        nseconds=nseconds-43200*365-43200*is_leap(ndate(1)-1)
-        is_leap=0
-        if (leapyear( ndate(1) ) )is_leap=1
-        nseconds=nseconds-43200*365-43200*leapyear(ndate(1)-1)
-     elseif(iotyp==IOU_MON)then
-        nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
-     elseif(iotyp==IOU_DAY)then
-        nseconds=nseconds-43200 !24*3600/2=43200
-     elseif(iotyp==IOU_HOUR)then
-        nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
-     elseif(iotyp==IOU_INST)then
-        nseconds=nseconds       
-     else
-        nseconds=nseconds       
-     endif
 
      call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
 
@@ -1086,17 +1075,19 @@ endif
 
   end subroutine CloseNetCDF
 
-  subroutine secondssince1970(ndate,nseconds)
-    !calculate how many seconds have passed since the start of the year
+  subroutine secondssince1970(ndate,nseconds,iotyp)
+    !calculate how many seconds have passed since the start of the year 1970
 
-!hfTD    use Dates_ml, only: nmdays,is_leap 
     use TimeDate_ml, only: nmdays,leapyear 
+    use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
+    use My_Outputs_ml, only :FREQ_HOURLY 
     implicit none
-!hfTD
-    integer ::is_leap 
+
     integer, intent(in) :: ndate(4)
     integer, intent(out) :: nseconds
-    integer :: n,nday
+    integer, optional, intent(in):: iotyp
+    integer :: n,nday,is_leap 
+
     nday=0
     do n=1,ndate(2)-1
        nday=nday+nmdays(n)
@@ -1112,6 +1103,24 @@ endif
        nseconds=nseconds+24*3600*365+24*3600*is_leap
     enddo
 
+    if(present(iotyp))then
+       !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
+       is_leap=0
+       if (leapyear(ndate(1)-1))is_leap=1
+       if(iotyp==IOU_YEAR)then
+          nseconds=nseconds-43200*365-43200*is_leap
+       elseif(iotyp==IOU_MON)then
+          nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
+       elseif(iotyp==IOU_DAY)then
+          nseconds=nseconds-43200 !24*3600/2=43200
+       elseif(iotyp==IOU_HOUR)then
+          nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
+       elseif(iotyp==IOU_INST)then
+          nseconds=nseconds       
+       else
+          nseconds=nseconds       
+       endif
+    endif
   end subroutine secondssince1970
 
 
@@ -1123,7 +1132,6 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
   ! check is only a subroutine which check wether the function returns zero
   !
   !
-  use netcdf
   use Par_ml,           only : me,NPROC
   implicit none
 
