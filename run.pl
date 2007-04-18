@@ -8,11 +8,10 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
 #PBS -lnodes=32
-# wall time limit of run
-#PBS -lwalltime=00:08:00
-# lpmeme=memory to reserve per processor (max 4GB per node)
-#PBS -lpmem=1MB
-# P BS -lpmem=200MB
+# wall time limit of run 
+#PBS -lwalltime=01:00:00
+# lpmeme=memory to reserve per processor (max 4 or 16GB per node)
+#PBS -lpmem=200MB
 # account for billing
 #PBS -A nn2890k
 #___________________________________________________________________

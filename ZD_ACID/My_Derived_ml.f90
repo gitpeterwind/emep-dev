@@ -124,7 +124,7 @@ private
       ,"D2_FSTWH60  ","D2_O3DF     ","D2_O3WH     " &
 !
 !    JEJ Surface  pressure (for cross section):
-      ,"D2_PS       " &
+      ,"PS          " &
   /)
 
   !============ Extra parameters for model evaluation: ===================!

@@ -329,7 +329,7 @@ def_2d = (/&
 !SeaS
 ,Deriv( 659, "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")&
 ,Deriv( 660, "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")&
-,Deriv(   8, "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"D2_PS","hPa")&
+,Deriv(   8, "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"PS","hPa")&
 ,Deriv( 468, "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")&
 ,Deriv( 469, "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")&
 ,Deriv( 470, "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")&

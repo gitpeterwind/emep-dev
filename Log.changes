@@ -13,8 +13,8 @@ April 18th, Peter/Semeena:
 	1) Output is CF-1.0 compilant for the vertical coordinates
 	2) Corrected a bug when 3D hourly output is required
 	
-	Derived_ml: renamed D2_PS as PS, to be more compatible with what other use 
-	            (PS is used in the definition of the vertical levels)
+	Derived_mland My_Derived: renamed D2_PS as PS, to be more compatible 
+	with what other use (PS is used in the definition of the vertical levels)
 
 	run.pl: put lpmem=200MB 
 
