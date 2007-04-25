@@ -1,6 +1,6 @@
 module UKdep_ml
 
-!hfTDuse Dates_ml,       only: daynumber, nydays
+use CheckStop_ml,      only: CheckStop  ! NEW STOP
 use TimeDate_ml,       only: daynumber, nydays
 use DepVariables_ml,only: NLANDUSE         &  ! No. UK land-classes
                       ,luname              &
@@ -91,12 +91,14 @@ contains
 
        !=====================================
         call ukdep_init(errmsg,me)
+        call CheckStop(errmsg, "ukdep_init") ! NEW STOP !
        !=====================================
-        if ( errmsg /= "ok" ) then
-           errmsg = "ukdep_init: " // errmsg
-             WRITE(*,*) 'MPI_ABORT: ', errmsg 
-             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-        end if
+
+        !STOP if ( errmsg /= "ok" ) then
+        !STOP   errmsg = "ukdep_init: " // errmsg
+        !STOP     WRITE(*,*) 'MPI_ABORT: ', errmsg 
+        !STOP     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+        !STOP end if
 
 end subroutine Init_ukdep
  !--------------------------------------------------------------------------
@@ -122,8 +124,9 @@ subroutine ReadLanduse()
    logical :: debug_flag
 
    if ( DEBUG_DEP ) write(*,*) "UKDEP Starting ReadLandUse, me ",me
-   if ( NLANDUSE /= NNLANDUSE )   WRITE(*,*) 'MPI_ABORT: ', "NNLANDuseerror"  ! Why need both? 
-   if ( NLANDUSE /= NNLANDUSE ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+   !STOP if ( NLANDUSE /= NNLANDUSE )   WRITE(*,*) 'MPI_ABORT: ', "NNLANDuseerror"  ! Why need both? 
+   !STOP if ( NLANDUSE /= NNLANDUSE ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+   call CheckStop(NLANDUSE, NNLANDUSE, "ReadLandUse NLAND check")
 
    maxlufound = 0   
    if ( me == 0 ) then
@@ -132,16 +135,20 @@ subroutine ReadLanduse()
        allocate(g_ncodes(GIMAX,GJMAX),stat=err1)
        allocate(g_codes (GIMAX,GJMAX,NLUMAX),stat=err2)
        allocate(g_data  (GIMAX,GJMAX,NLUMAX),stat=err3)
-       if ( err1 /= 0 .or. err2/=0 .or. err3/=0 )then
-          WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"
-          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       endif
+       call CheckStop(err1,"UK_ml allocate err1 ")
+       call CheckStop(err2,"UK_ml allocate err2 ")
+       call CheckStop(err3,"UK_ml allocate err3 ")
+       !STOP if ( err1 /= 0 .or. err2/=0 .or. err3/=0 )then
+       !STOP    WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"
+       !STOP    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       !STOP endif
        g_ncodes(:,:)   = 0       !/**  initialise  **/
        g_data  (:,:,:) = 0.0     !/**  initialise  **/
 
       call open_file(IO_FORES,"r","landuse.JUN06",needed=.true.,skip=1)
-      if ( ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"  
-      if ( ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+      !STOP if ( ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"  
+      !STOP if ( ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       call CheckStop(ios,"UK_ml iso error on landuse.JUN06")
 
 
       do n = 1, BIG
@@ -171,8 +178,9 @@ subroutine ReadLanduse()
                     call GridAllocate("LANDUSE",i,j,uklu,NLUMAX, &
                       index_lu, maxlufound, g_codes, g_ncodes,errmsg)
 
-                    if (errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
-                      if (errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+                    !STOP if (errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
+                    !STOP if (errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+                    call CheckStop(errmsg,"UK_ml GridAllocate error")
    
                     g_data(i,j,index_lu) = &
                        g_data(i,j,index_lu) + 0.01 * tmp(lu)
@@ -200,11 +208,14 @@ subroutine ReadLanduse()
        deallocate(g_ncodes,stat=err1)
        deallocate(g_codes ,stat=err2)
        deallocate(g_data  ,stat=err3)
+       call CheckStop(err1,"UK_ml de-allocate err1 ")
+       call CheckStop(err2,"UK_ml de-allocate err2 ")
+       call CheckStop(err3,"UK_ml de-allocate err3 ")
 
-       if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 ) then
-            WRITE(*,*) 'MPI_ABORT: ', "De-Allocerror - g_landuse" 
-            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       end if ! errors
+       !STOP if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 ) then
+       !STOP      WRITE(*,*) 'MPI_ABORT: ', "De-Allocerror - g_landuse" 
+       !STOP      call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       !STOP end if ! errors
    end if ! me==0
 
   end subroutine  ReadLanduse
@@ -338,10 +349,12 @@ subroutine ReadLanduse()
           end if
           do ilu= 1, landuse_ncodes(i,j)
              lu      = landuse_codes(i,j,ilu)
-             if ( lu <= 0 .or. lu > NLANDUSE ) then
-                WRITE(*,*) 'MPI_ABORT: ', "SetLandUselu<0" 
-                call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-             endif
+             !STOP if ( lu <= 0 .or. lu > NLANDUSE ) then
+             !STOP    WRITE(*,*) 'MPI_ABORT: ', "SetLandUselu<0" 
+             !STOP    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+             !STOP endif
+             call CheckStop( lu < 0, "SetLandUselu<0" )
+             call CheckStop( lu > NLANDUSE , "SetLandUselu>NLANDUSE" )
 
              if ( bulk(lu) ) cycle    !else Growing veg present:
 
