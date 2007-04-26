@@ -24,6 +24,7 @@ module CheckStop_ml
 
   interface CheckStop
      module procedure CheckStop_ok
+     module procedure CheckStop_okinfo
      module procedure CheckStop_int1
      module procedure CheckStop_int2
      module procedure CheckStop_TF   
@@ -49,7 +50,16 @@ module CheckStop_ml
 
   !---- Four variations on CheckStop:
 
-  subroutine CheckStop_ok(errmsg,infomsg)    ! Test if errmsg /= "ok"
+  subroutine CheckStop_ok(errmsg)    ! Test if errmsg /= "ok"
+      character(len=*), intent(in) :: errmsg
+
+      if ( errmsg /= "ok" ) then
+        write(*,*) "CheckStop_ok Called with:  errmsg ", errmsg
+        call StopAll(errmsg)
+      end if
+  end subroutine CheckStop_ok
+
+  subroutine CheckStop_okinfo(errmsg,infomsg)    ! Test if errmsg /= "ok"
       character(len=*), intent(in) :: errmsg
       character(len=*), intent(in) :: infomsg
 
@@ -58,7 +68,7 @@ module CheckStop_ml
         write(*,*) "                          infomsg ", infomsg
         call StopAll(errmsg)
       end if
-  end subroutine CheckStop_ok
+  end subroutine CheckStop_okinfo
 
   subroutine CheckStop_int1(int1,infomsg)    ! Test if int1 /= 0
       integer, intent(in)          :: int1
