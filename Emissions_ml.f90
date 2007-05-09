@@ -17,12 +17,13 @@
 !  This routine interfaces the stand-alone emission-file reading routines
 !  with the 3D model.
 !_____________________________________________________________________________
+  use CheckStop_ml,only : CheckStop  ! NEW STOP
   use My_Emis_ml,  only : &
           NEMIS,        &   ! No. emission files
           NEMIS_PLAIN,  &   ! No. emission files for non-speciated emissions
           NEMIS_SPLIT,  &   ! No. emission files for speciated emissions
           NRCEMIS,&         ! Total No. emission species after speciation
-          VOLCANOES         ! u3 - changed from VOL
+          VOLCANOES         ! 
   use My_MassBudget_ml, only : set_mass_eqvs   ! Some equivalences bewteen 
                                                ! indices
 
@@ -224,8 +225,8 @@ contains
      call timefactors(year)               ! => fac_emm, fac_edd, day_factor
     !=========================
 
-      if ( ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: timefactors" 
-        if ( ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+      call CheckStop(ios, "ioserror: timefactors")
+
 
     !** 2) 
     !=========================
@@ -234,11 +235,12 @@ contains
 
 
   endif !(me=0)
-  if ( ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: EmisSplit" 
-    if ( ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+
+  call CheckStop(ios, "ioserror: EmisSplit")
+
 
   ! #################################
-  !uni    *** Broadcast  monthly and Daily factors ****
+  !    *** Broadcast  monthly and Daily factors ****
     CALL MPI_BCAST( emisfrac ,8*NRCSPLIT*NSECTORS*NLAND,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
@@ -268,11 +270,13 @@ contains
        allocate(flat_globnland(GIMAX,GJMAX),stat=err4)
        allocate(flat_globland(GIMAX,GJMAX,FNCMAX),stat=err5)
        allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
-       if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 .or. &
-            err4 /= 0 .or. err5 /= 0 .or. err6 /= 0) then
-              WRITE(*,*) 'MPI_ABORT: ', "Allocerror - globland" 
-              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       end if
+
+       call CheckStop(err1, "Allocation error 1 - globland")
+       call CheckStop(err2, "Allocation error 2 - globland")
+       call CheckStop(err3, "Allocation error 3 - globland")
+       call CheckStop(err4, "Allocation error 4 - globland")
+       call CheckStop(err5, "Allocation error 5 - globland")
+       call CheckStop(err6, "Allocation error 6 - globland")
 
 
        !/**  and  initialise  **/
@@ -302,8 +306,8 @@ contains
            emsum(iem) = sum( globemis(:,:,:,:) ) + &
                         sum( globemis_flat(:,:,:) )    ! hf
       endif  ! me==0
-      if ( ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: EmisGet" 
-        if ( ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+
+      call CheckStop(ios, "ios error: EmisGet")
 
       !CC**  Send data to processors ........
       !
@@ -429,15 +433,18 @@ contains
        deallocate(globnland,stat=err1)
        deallocate(globland ,stat=err2)
        deallocate(globemis ,stat=err3)
-!hf
+
        deallocate(flat_globnland,stat=err4)
        deallocate(flat_globland,stat=err5)
        deallocate(globemis_flat,stat=err6)
-       if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 .or. &
-            err4 /= 0 .or. err5 /= 0 .or. err6 /= 0        ) then
-            WRITE(*,*) 'MPI_ABORT: ', "De-Allocerror - globland" 
-            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       end if
+
+       call CheckStop(err1, "De-Allocation error 1 - globland") 
+       call CheckStop(err2, "De-Allocation error 2 - globland")
+       call CheckStop(err3, "De-Allocation error 3 - globland")
+       call CheckStop(err4, "De-Allocation error 4 - globland")
+       call CheckStop(err5, "De-Allocation error 5 - globland")
+       call CheckStop(err6, "De-Allocation error 6 - globland")
+
     end if
 
   end subroutine Emissions
@@ -468,11 +475,7 @@ contains
   if ( NEMIS_PLAIN+sum(EMIS_NSPLIT) /= NRCEMIS   ) errormsg = "sum ne NRCEMIS"
   if ( any( molwt < 1.0 )          ) errormsg = " Mol. wt not assigned "
 
-  if ( errormsg /= "ok" ) then
-     write(6,*) "Failed consistency check:", errormsg
-       WRITE(*,*) 'MPI_ABORT: ', errormsg 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-  endif
+  call CheckStop(errormsg,"Failed consistency check")
 
  end subroutine consistency_check
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -1019,17 +1022,11 @@ contains
                      if ( n > flat_ncmaxfound ) then
                           flat_ncmaxfound = n 
                           write(6,*)'DMS Increased flat_ncmaxfound to ',n 
-                          if ( n > FNCMAX ) then
-		  	      WRITE(*,*) 'MPI_ABORT: ', 'IncreaseFNCMAX for dms' 
-  		  	    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-			  endif
+                          call CheckStop( n > FNCMAX, "IncreaseFNCMAX for dms")
                      endif 
                   else  ! We know that DMS lies last in the array, so:
-                      n = flat_nlandcode(i,j) 
-                      if ( flat_landcode(i,j,n) /= IQ_DMS )then
-                           WRITE(*,*) 'MPI_ABORT: ', 'newmonth:DMS not last!' 
-                           call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-		      endif 
+                      n = flat_nlandcode(i,j)
+                      call CheckStop(flat_landcode(i,j,n), IQ_DMS, "Newmonth:DMS not last!")
                   endif 
 
                   snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s &

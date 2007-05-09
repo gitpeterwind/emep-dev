@@ -10,6 +10,7 @@ module Volcanos_ml
   !  Preprocesses SOx emissions from volcanoes 
   !-----------------------------------------------------------------------!
 
+ use CheckStop_ml,          only : CheckStop  ! NEW STOP
  use My_Emis_ml,            only : QRCVOL,molwt
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
  use GridValues_ml,         only : sigma_bnd, i_glob, j_glob
@@ -30,9 +31,6 @@ module Volcanos_ml
   public :: Set_Volc     
   public :: Scale_Volc   
 
-
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   integer, public, parameter  :: NMAX_VOLC = 3  ! Max number of volcanoes
   integer, public, save       :: nvolc = 0    & ! No. grids with volcano 
@@ -71,10 +69,8 @@ contains
 
      call open_file(IO_VOLC,"r",fname,needed=.true.,skip=1)
 
-     if ( ios /= 0 ) then   
-        WRITE(*,*) 'MPI_ABORT:'," VOLCGET: STOP"
-        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-     endif
+     call CheckStop(ios,"VolcGet: problems with Volcanoes.dat ")
+
 
      height_volc(:)=0.0
      nvolc_read=0
@@ -105,10 +101,12 @@ contains
              & match volcanos on emislist.sox'
      write(6,*) nvolc,' volcanos found in emislist.sox'
 
-     if (nvolc_read < nvolc)then
-         WRITE(*,*) 'MPI_ABORT:',"Volc missing in Volcanos.dat"
-         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-     endif 
+     !STOP if (nvolc_read < nvolc)then
+         !STOP WRITE(*,*) 'MPI_ABORT:',"Volc missing in Volcanos.dat"
+         !STOP call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+     !STOP endif 
+
+     call CheckStop(nvolc_read < nvolc, "Volc missing in Volcanos.dat")
   
      close(IO_VOLC)
 

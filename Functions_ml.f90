@@ -213,9 +213,7 @@ module Functions_ml
     !   If not, the array "nland" is incremented by one and the
     !   country (or landuse) index added to "land".
     !
-    !u7.2 
-    !ds - moved LandAllocate from EmisDef since the same subrotuine can
-    !     be used for landuse data also.
+    !   This routine is used for emissions and landuse 
  
      character(len=*), intent(in) :: label   ! Type of data
      integer, intent(in) :: i,j
@@ -520,7 +518,6 @@ result (Poly)
 
     Ra = log(z2/z1) - PsiH(z2*Linv) + PsiH(z1*Linv)
     Ra = Ra/(Karman*uStar)
-    !DSPW Ra = min(Ra,9999.9)
 
   end function AerRes
 
@@ -548,7 +545,6 @@ result (Poly)
 
     Ra = log(z2/z1) - PsiM(z2*Linv) + PsiM(z1*Linv)
     Ra = Ra/(Karman*uStar)
-    !DSPW Ra = min(Ra,9999.9)
 
   end function AerResM
 

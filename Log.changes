@@ -5,7 +5,15 @@ Dave: Added new module CheckStop,  to simplify error-testing and
        or call Check(errmsg,"Something fishy here...") - there are five
        possibilities.
 
+       Functions_ml - small cleanup
+
+       ReadField_ml, implicit none added! BUG fixed, CheckStop added,
+         + new subroutine to read 3D fields
+
 Peter: CheckStop in NetCDF_ml
+
+Svetlana: CheckStop in Emissions_ml, Met_ml, Volcanoes_ml and Par_ml
+
 
 
 ============== Misc, rv2_7_5, Apr 19 2007  ================================ 

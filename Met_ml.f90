@@ -11,6 +11,7 @@
 ! October 2001 hf added call to ReadField:::: WITH TKE scheme (Octobar 2004)
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
+use CheckStop_ml,      only : CheckStop  ! NEW STOP
 use Functions_ml,      only : Exner_tab, Exner_nd    ! ds apr2005
 !use GridValues_ml,     only : xm_i,xm_j,xm2, sigma_bnd,sigma_mid 
 use GridValues_ml,     only :  xmd,i_glob, j_glob,METEOfelt,projection &
@@ -452,11 +453,9 @@ private
 	  open (fid,file=fname				&
 		,form='unformatted',access='sequential'	&
 		,status='old',iostat=ios)
-          if( ios /= 0 ) then
-             write(6,*) "Error opening", fid, fname
-               WRITE(*,*) 'MPI_ABORT: ', "ERRORinfield" 
-               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-          endif !ios
+
+          call CheckStop(ios, "Error opening infield in Met_ml" // fname)
+
 	  ierr=0
 
 	endif ! me == 0
@@ -561,19 +560,12 @@ private
                buf_date=make_current_date(ts_now)
 !	now check:
 
-              if(buf_date%year    .ne. next_inptime%year   .or.        &
-                 buf_date%month   .ne. next_inptime%month  .or.        &
-                 buf_date%day     .ne. next_inptime%day    .or.        &
-                 buf_date%hour    .ne. next_inptime%hour   .or.        &
-                 buf_date%seconds .ne. next_inptime%seconds     ) then
-                     print *,'error in infield, wrong next input time'
-                     print *,'current time',current_date
-                     print *,'next input time',next_inptime
-                     print *,'meteo step',METSTEP
+   call CheckStop(buf_date%year,   next_inptime%year,   "In infield: wrong next input year")
+   call CheckStop(buf_date%month,  next_inptime%month,  "In infield: wrong next input month")
+   call CheckStop(buf_date%day,    next_inptime%day,    "In infield: wrong next input day")
+   call CheckStop(buf_date%hour,   next_inptime%hour,   "In infield: wrong next input hour")
+   call CheckStop(buf_date%seconds,next_inptime%seconds,"In infield: wrong next input seconds")
 
-                       WRITE(*,*) 'MPI_ABORT: ', "infield- time" 
-                       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-               endif
 
 !	now the last check, if we have reached a new year, i.e. current date
 !	is 1.1. midnight, then we have to rerun Init_nmdays
@@ -816,18 +808,12 @@ private
 
 	  ipack(1) = 0
 
-	  if(ifile.lt.1  .or. ifile.gt.99) then
-	    write(6,*) ' **getflt** error ** ifile: ',ifile
-	    ierr = 1
-!	    call stop_all('GETFLTI2')
-              WRITE(*,*) 'MPI_ABORT: ', "GETFLTI2" 
-              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-	  endif
+        call CheckStop(ifile < 1,  "ifile<1  in Met_ml") ! NEW STOP
+        call CheckStop(ifile > 99, "ifile>99 in Met_ml") ! NEW STOP
+
 	endif
 
-!hf u2	call stop_test(.true.,me,NPROC,ierr,'GETFLTI2')
-!
-	if(me.eq.0)then
+	if(me == 0)then
 !        a) read field identification (one record)
 !        b) read field data           (one record)
 !
@@ -879,10 +865,9 @@ private
 
 990	  continue
 	endif
-!	  if(ierr.eq.1)call stop_all('getflti2ex')
-          if(ierr.eq.1)  WRITE(*,*) 'MPI_ABORT: ', "getflti2ex" 
-            if(ierr.eq.1)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-!hf u2	  call stop_test(.true.,me,NPROC,iteserr,'getflti2ex')
+
+          call CheckStop(ierr, "getflti2ex in Met_ml") ! NEW STOP !
+
 
 	if(me.eq.0)then
 
@@ -1579,10 +1564,6 @@ private
            write(6,*) 'filename for landuse ',fname
         end if
 
-        !ds may05 allocate(r_class(MAXLIMAX,MAXLJMAX),stat=err)
-        !ds may05 if ( err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "allocerr:rough" 
-          !ds may05 if ( err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-
         call ReadField(IO_ROUGH,fname,r_class)
    
        ! And convert from real to integer field
@@ -1594,10 +1575,6 @@ private
               if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.              
            enddo
         enddo
-
-        !ds may05 deallocate(r_class,stat=err)
-        !ds may05 if ( err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "deallocerr:rough" 
-          !ds may05 if ( err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
     else ! callnum == 2
         if (me == 0) then
@@ -1882,11 +1859,9 @@ private
       real :: h100 ! Top of lowest layer - replaces 100.0 
 
 !ds Check:
-      if(  KZ_SBL_LIMIT < 1.01*KZ_MINIMUM ) then
-         WRITE(*,*) 'MPI_ABORT: ', "SBLlimit too low!!" 
-         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-      endif
-!hf new
+           call CheckStop( KZ_SBL_LIMIT < 1.01*KZ_MINIMUM,   &
+                            "SBLlimit too low! in Met_ml") ! NEW STOP !
+
       iip = limax+1
       jjp = ljmax+1
 
@@ -2439,11 +2414,9 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      integer :: i,j,tj,jj,jt
      
  !check that limax and ljmax are large enough
-     if(limax < thick .or. ljmax < thick)then
-        print *,'me, limax, ljmax, thick ', me, limax, ljmax, thick
-          WRITE(*,*) 'MPI_ABORT: ', "ERRORreadneighbors" 
-          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-     endif
+   call CheckStop(limax < thick, "ERROR readneighbors in Met_ml")
+   call CheckStop(ljmax < thick, "ERROR readneighbors in Met_ml")
+
      
      msgnr=1
 
@@ -3414,8 +3387,6 @@ end subroutine GetCDF_short
 !     write(*,*)'GENERAL PROJECTION ',trim(projection)
      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-!       WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED" 
-  !     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
   endif
 
   call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
@@ -3436,29 +3407,22 @@ end subroutine GetCDF_short
    write(*,*)'WARNING: THIS CASE IS NOT TESTED. Please change large domain'
   endif
 
-  if(GIMAX+ISMBEG-1>GIMAX_file.or.GJMAX+JSMBEG-1>GJMAX_file)then
-     write(*,*)'outside domain',GIMAX,GIMAX_file,GJMAX,GJMAX_file
-       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-  endif
-  if(KMAX_MID>KMAX_file)then
-     write(*,*)'wrong vertical dimension',KMAX_MID,KMAX_file
-       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-  endif
-  if(24/Nhh/=METSTEP)then
-     write(*,*)'ERROR: METSTEP and meteo step not equal',Nhh,METSTEP
-       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-  endif
-  
-  
-  if(nhour/=0.and.nhour/=3)then
-     write(*,*)'WARNING: must start at hour=0 or 3'
-     write(*,*)nhour,' not tested'
-       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-  endif
+  call CheckStop(GIMAX+ISMBEG-1 > GIMAX_file, "NetCDF_ml: I outside domain" )
+  call CheckStop(GJMAX+JSMBEG-1 > GJMAX_file, "NetCDF_ml: J outside domain" )
+  call CheckStop(KMAX_MID > KMAX_file,        "NetCDF_ml: wrong vertical dimension")
+  call CheckStop(24/Nhh, METSTEP,             "NetCDF_ml: METSTEP != meteo step" )
+  !CHECKBUG call CheckStop(nhour,0,                     "NetCDF_ml: must start at hour=0 " )
+  !CHECKBUG call CheckStop(nhour,3,                     "NetCDF_ml: must start at hour=3" )
+
+  call CheckStop(nhour==0 .or. nhour ==3,&
+           "Met_ml/GetCDF: must start at nhour=0 or 3")
+  !STOP if(nhour/=0.and.nhour/=3)then
+  !STOP    write(*,*)'WARNING: must start at hour=0 or 3'
+  !STOP    write(*,*)nhour,' not tested'
+  !STOP      WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+  !STOP      call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+  !STOP endif
+
   ihh=1
   n1=1
   call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
@@ -3467,27 +3431,18 @@ end subroutine GetCDF_short
   call datefromsecondssince1970(ndate,nseconds(1),0)
   nhour_first=ndate(4)
 
-  if(ndate(1)/=nyear.or.ndate(2)/=nmonth.or.ndate(3)/=nday)then
-     write(*,*)'ERROR: wrong meteo date',ndate(1),nyear,ndate(2),&
-          nmonth,ndate(3),nday
-       WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-     ndate(1)=nyear
-     ndate(2)=nmonth
-     ndate(3)=nday
-     write(*,*)'WARNING: overwritten dates now:',ndate(1),nyear,ndate(2),&
-          nmonth,ndate(3),nday
-  endif
+  call CheckStop(ndate(1), nyear,  "NetCDF_ml: wrong meteo year" )
+  call CheckStop(ndate(2), nmonth, "NetCDF_ml: wrong meteo month" )
+  call CheckStop(ndate(3), nday,   "NetCDF_ml: wrong meteo day" )
 
   do ihh=1,Nhh
      call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
                 start=(/ ihh /),count=(/ n1 /)))   
      call datefromsecondssince1970(ndate,nseconds(1),0)
-     if(mod((ihh-1)*METSTEP+nhour_first,24)/=ndate(4))then
-        write(*,*)'ERROR: wrong meteo hour',ihh,Nhh,ndate(4),nhour_first
-          WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-     endif
+
+     call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
+                      "NetCDF_ml: wrong meteo hour" )
+
   enddo
 
    
@@ -3561,16 +3516,14 @@ end subroutine GetCDF_short
      !map factor are already staggered
      status=nf90_inq_varid(ncid=ncFileID, name="map_factor_i", varID=varID)
 
-     if(status== nf90_noerr)then
-        call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
+    !BUGCHECK - moved here... (deleted if loop)
+     call CheckStop( status, nf90_noerr, "erro rreading map factor" )
+
+     call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
              ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
-        call check(nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID))
-        call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
+     call check(nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID))
+     call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
              ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
-     else
-          WRITE(*,*) 'MPI_ABORT: ', "errorreading map factor" 
-          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-     endif
   endif
      
   call check(nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID))
@@ -3651,10 +3604,10 @@ endif
 
 !keep only part of xm relevant to the local domain
 !note that xm has dimensions larger than local domain
-  if(MAXLIMAX+1>limax+2.or.MAXLJMAX+1>ljmax+2)then
-       WRITE(*,*) 'MPI_ABORT: ', "errorin Met_ml sizes definitions" 
-       call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-  endif
+
+  call CheckStop( MAXLIMAX+1 > limax+2, "Error in Met_ml X size definition" )
+  call CheckStop( MAXLJMAX+1 > ljmax+2, "Error in Met_ml J size definition" )
+
   do j=0,MAXLJMAX+1
      do i=0,MAXLIMAX+1
         iglobal=gi0+i-1
@@ -3720,12 +3673,17 @@ endif
     use netcdf
     implicit none
     integer, intent ( in) :: status
+
+  !BUGCHECK:
+
+   call CheckStop( status, nf90_noerr, "Error in Met_ml/NetCDF stuff" &
+                   //  trim(nf90_strerror(status) )
     
-    if(status /= nf90_noerr) then 
-      print *, trim(nf90_strerror(status))
-        WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-    end if
+    !STOP if(status /= nf90_noerr) then 
+    !STOP   print *, trim(nf90_strerror(status))
+    !STOP     WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
+    !STOP     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+    !STOP end if
   end subroutine check  
 !_______________________________________________________________________
 
