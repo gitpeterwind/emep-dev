@@ -1,4 +1,4 @@
-============== Misc, rv2_7_xx, Apr 25-26.2007  ================================ 
+============== Misc, rv2_7_6,  Apr 25- May 10 2007  =========================== 
 
 Dave: Added new module CheckStop,  to simplify error-testing and
        calls to MPI_ABORT. Can now do e.g. call CheckStop ( lu<0,"UKdep lu problem")
@@ -10,9 +10,14 @@ Dave: Added new module CheckStop,  to simplify error-testing and
        ReadField_ml, implicit none added! BUG fixed, CheckStop added,
          + new subroutine to read 3D fields
 
+       Unimod.f90 - check digits(1.0) - that compilation uses double precision
+
 Peter: CheckStop in NetCDF_ml
 
-Svetlana: CheckStop in Emissions_ml, Met_ml, Volcanoes_ml and Par_ml
+Svetlana: CheckStop in Emissions_ml
+                       Met_ml
+                       Volcanoes_ml
+                       Par_ml
 
 
 

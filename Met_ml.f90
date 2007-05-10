@@ -866,7 +866,7 @@ private
 990	  continue
 	endif
 
-          call CheckStop(ierr, "getflti2ex in Met_ml") ! NEW STOP !
+          call CheckStop(ierr==1, "getflti2ex in Met_ml")
 
 
 	if(me.eq.0)then
@@ -3411,17 +3411,9 @@ end subroutine GetCDF_short
   call CheckStop(GJMAX+JSMBEG-1 > GJMAX_file, "NetCDF_ml: J outside domain" )
   call CheckStop(KMAX_MID > KMAX_file,        "NetCDF_ml: wrong vertical dimension")
   call CheckStop(24/Nhh, METSTEP,             "NetCDF_ml: METSTEP != meteo step" )
-  !CHECKBUG call CheckStop(nhour,0,                     "NetCDF_ml: must start at hour=0 " )
-  !CHECKBUG call CheckStop(nhour,3,                     "NetCDF_ml: must start at hour=3" )
 
   call CheckStop(nhour==0 .or. nhour ==3,&
            "Met_ml/GetCDF: must start at nhour=0 or 3")
-  !STOP if(nhour/=0.and.nhour/=3)then
-  !STOP    write(*,*)'WARNING: must start at hour=0 or 3'
-  !STOP    write(*,*)nhour,' not tested'
-  !STOP      WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-  !STOP      call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-  !STOP endif
 
   ihh=1
   n1=1
@@ -3674,16 +3666,9 @@ endif
     implicit none
     integer, intent ( in) :: status
 
-  !BUGCHECK:
-
-   call CheckStop( status, nf90_noerr, "Error in Met_ml/NetCDF stuff" &
-                   //  trim(nf90_strerror(status) )
+    call CheckStop( status, nf90_noerr, "Error in Met_ml/NetCDF stuff" &
+                   //  trim( nf90_strerror(status) ) )
     
-    !STOP if(status /= nf90_noerr) then 
-    !STOP   print *, trim(nf90_strerror(status))
-    !STOP     WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-    !STOP     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-    !STOP end if
   end subroutine check  
 !_______________________________________________________________________
 

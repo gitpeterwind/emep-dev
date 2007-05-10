@@ -58,7 +58,7 @@ program myeul
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Forests_init
   use BoundaryConditions_ml, only : BoundaryConditions
-!hfTD  use Dates_ml,         only : date, dayno,daynumber
+  use CheckStop_ml,     only : CheckStop
   use TimeDate_ml,         only : date, day_of_year,daynumber
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,    only :  Init_Derived &
@@ -300,8 +300,11 @@ program myeul
         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     endif
 
-!su    some checks
+!  some checks
 !
+    call CheckStop( digits(1.0) < 50, &
+        "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
+
     if (me  ==  0) then
 
       open(IO_RES,file='eulmod.res')

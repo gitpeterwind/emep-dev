@@ -1,3 +1,4 @@
+! -*- f90 -*-
                          module Par_ml
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
@@ -9,7 +10,7 @@
 ! eulpar.inc
 ! eulnx.inc
 !----------------------------------------------------------------------------
-!  $Id: Par_ml.pat,v 1.9 2007-03-05 10:01:13 mifapw Exp $
+!  $Id: Par_ml.pat,v 1.10 2007-05-10 09:03:57 mifads Exp $
 !  Erik Berge, DNMI    Roar Skaalin, SINTEF Industrial Mathematics
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
@@ -28,11 +29,10 @@
 !  also we have now to distinguish mfsize for input and output: 
 !  mfsizeinp,mfsizeout!!!
 
+use CheckStop_ml,      only : CheckStop
 implicit none
 private
 
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   integer, public, parameter ::  &
     IILARDOM    =   largedomdx   &
@@ -275,7 +275,6 @@ private
 	    if (imey .eq. NPROCY-1) then
 	      tljmax(ime) = tljmax(ime) + 1
 	      tgj0(ime) = tgj0(ime) + rest-1
-! pw u3	    elseif (imey .le. rest-1) then
 	    elseif (imey < rest-1) then
 	      tljmax(ime) = tljmax(ime) + 1
 	      tgj0(ime) = tgj0(ime) + imey
@@ -286,25 +285,14 @@ private
 	  tgj1(ime) = tgj0(ime) + tljmax(ime) - 1
 !
 	enddo
-!
-!	write(6,111) me, mex, mey, neighbor, gi0, gj0, limax, ljmax        
-! 111	format(11i7)
 
-!       pw The size of the grid cannot be too small.       
+!      The size of the grid cannot be too small.       
 
-	!u4 if(limax < MIN_ADVGRIDS .or. ljmax < MIN_ADVGRIDS )then
-	if(limax < min_grids .or. ljmax < min_grids )then
+        call CheckStop( limax < min_grids,   &
+            "Subdomain too small! Limax must be at least min_grids")
+        call CheckStop( ljmax < min_grids,   &
+            "Subdomain too small! Ljmax must be at least min_grids")
 
-	   write(*,*)'subdomain too small!'
-	   write(*,*)'lXmax must be at least min_grids = ', &
-     	                                        min_grids
-	   write(*,*)'me,li0,li1,limax ',me,li0,li1,limax
-	   write(*,*)'me,lj0,lj1,ljmax ',me,lj0,lj1,ljmax
-           WRITE(*,*) 'MPI_ABORT: ', 'SUBDOMAIN TO SMALL!!!'
-           call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-	endif
-
-	return
 	end subroutine parinit
 
 
@@ -374,7 +362,6 @@ private
           endif
 	endif
 
-	return
 	end subroutine topology
 
 end module Par_ml

@@ -10,7 +10,7 @@ module Volcanos_ml
   !  Preprocesses SOx emissions from volcanoes 
   !-----------------------------------------------------------------------!
 
- use CheckStop_ml,          only : CheckStop  ! NEW STOP
+ use CheckStop_ml,          only : CheckStop
  use My_Emis_ml,            only : QRCVOL,molwt
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
  use GridValues_ml,         only : sigma_bnd, i_glob, j_glob
@@ -100,11 +100,6 @@ contains
      write(6,*) nvolc_read,' volcanos on volcanos.dat &
              & match volcanos on emislist.sox'
      write(6,*) nvolc,' volcanos found in emislist.sox'
-
-     !STOP if (nvolc_read < nvolc)then
-         !STOP WRITE(*,*) 'MPI_ABORT:',"Volc missing in Volcanos.dat"
-         !STOP call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-     !STOP endif 
 
      call CheckStop(nvolc_read < nvolc, "Volc missing in Volcanos.dat")
   
