@@ -8,6 +8,7 @@ module Biogenics_ml
   !   move fac from setup to here - apply to emforest. This keeps
   !   canopy_ecf O(1).
   !---------------------------------------------------------------------------
+  use CheckStop_ml,      only: CheckStop
   use Par_ml   , only : MAXLIMAX,MAXLJMAX
   use My_Emis_ml       , only : NFORESTVOC
   implicit none
@@ -81,7 +82,6 @@ module Biogenics_ml
     real agts, agr, agtm, agct1, agct2, agcl &
                , agct, oak, decid, conif, spruc, crops, sitka, snl &
                ,itk, fac
-    integer :: inp_error
     logical, parameter :: READBVOC=.false.
 
 
@@ -91,12 +91,10 @@ module Biogenics_ml
       else if ( FORESTVOC(i) == "terpene " ) then
             BIO_TERP = i
       else
-            WRITE(*,*) 'MPI_ABORT: ', "BIO_ERROR" 
-            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+            call CheckStop( " BIO ERROR " )
       end if
     end do
 
-    inp_error = 0
     if (me ==  0) then
 
         gforest(:,:,:) = 0.0
@@ -104,10 +102,8 @@ module Biogenics_ml
       !ds.......................start of new 1.................................
       !     Read in forest Land-use data in percent
 
-        !ds call open_file(IO_FORES,"r","forest.pcnt",needed=.true.)
         call open_file(IO_FORES,"r","forest.dat",needed=.true.,skip=1)
-        if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: forest.dat" 
-          if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+        call CheckStop(ios,"Biogenic  ios error forest.dat")
     endif
 
 
@@ -120,8 +116,6 @@ module Biogenics_ml
 !
         do while (.true.)
           read(IO_FORES,*,err=1000,end=1000) itmp,jtmp,(tmp(i),i=1,NVEG)
-          !dsitmp = 3*itmp + 34     ! Convert itmp from 150 to 50km grid
-          !dsjtmp = 3*jtmp + 10     ! Convert jtmp from 150 to 50km grid
 
           tmp(:) = 0.01 * tmp(:)
           sumland = sum( tmp )
@@ -129,9 +123,7 @@ module Biogenics_ml
           !ds if( sumland >  1.0 ) tmp(:) = tmp(:)/sumland
           if ( DEBUG .and. any( tmp<0 )  ) then
              print *, "Biogenics: negative data at ", itmp, jtmp
-	     inp_error = 999
-               WRITE(*,*) 'MPI_ABORT: ', "ERROR:Forest_Init" 
-               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+             call CheckStop("ERROR:Forest_Init")
           end if 
 
 !          write(6,*) 'skogting',itmp,jtmp,sumland,(tmp(i),i=1,2)
@@ -259,8 +251,7 @@ if(READBVOC)then
     if (me ==  0) then
         gforest = 0.0
         call open_file(IO_FORES,"r","BVOC.dat",needed=.true.,skip=1)
-        if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: BVOC.dat" 
-          if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+        call CheckStop(ios,"Biogenics: ios error BVOC.dat")
         do while (.true.)
           read(IO_FORES,*,err=1002,end=1002) itmp,jtmp,(embuf(n),n=1,NFORESTVOC)
           j50 = jtmp  - JSMBEG + 1

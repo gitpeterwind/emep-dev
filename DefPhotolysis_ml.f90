@@ -14,13 +14,11 @@
 !              added. NLAT and CLOUDTOP added.
 !-------------------------------------------------------------------------------
 
-!hf u2   use My_Runmode_ml, only: stop_test
+   use CheckStop_ml,      only: CheckStop
    use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP
-!hf u2   use My_Model_ml,          only: NRCPHOT    ! No. species needed in chemistry
    implicit none
    private
 
-!hf u2 change
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
   integer, public, parameter :: &
@@ -91,11 +89,9 @@
         if(me == 0)then
            write(fname1,fmt='(''jclear'',i2.2,''.dat'')') newseason
            call open_file(IO_DJ,"r",fname1,needed=.true.)
-           if (ios /= 0)   WRITE(*,*) 'MPI_ABORT: ', "ioserror: jclear"   
-             if (ios /= 0) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           call CheckStop(ios,"DefPhotolysis: ios error in jclear ")
         endif
 
-!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jclear")
 
 !       Format of input data from Phodis - careful with "17" and NPHODIS
 999     FORMAT(1x, f8.3, 17(1x, 1pe8.2))
@@ -127,11 +123,9 @@
         if(me == 0)then
            write(fname2,fmt='(''jcl1km'',i2.2,''.dat'')') newseason
            call open_file(IO_DJ,"r",fname2,needed=.true.)
-           if (ios /= 0)  WRITE(*,*) 'MPI_ABORT: ', "ioserror: jcl1km" 
-             if (ios /= 0)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           call CheckStop(ios,"DefPhotolysis: ios error in jcl1km ")
         endif
 
-!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl1km")
 
         if(me == 0)then
 
@@ -165,11 +159,9 @@
         if(me == 0)then
            write(fname3,fmt='(''jcl3km'',i2.2,''.dat'')') newseason
            call open_file(IO_DJ,"r",fname3,needed=.true.)
-           if (ios /= 0)  WRITE(*,*) 'MPI_ABORT: ', "ioserror: jcl3km"     
-             if (ios /= 0)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           call CheckStop(ios,"DefPhotolysis: ios error in jcl3km ")
         endif
 
-!hf u2        call stop_test(.true.,me,NPROC,ios,"ios error: jcl3km")
 
         if(me == 0)then
 

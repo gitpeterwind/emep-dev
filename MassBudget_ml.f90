@@ -5,7 +5,8 @@
 
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! DESCRIPTION 
-! ........ to be added !!!
+! Routine to cross check the mass balance of the model
+! Cleanup, May 2007, SV
 ! 29/10/02 - output formatting and descriptions improved, ds.
 ! 1/10/01 - code for derived fields removed. MY_MASS_PRINT ADDED, ds
 ! Oct, 2001 - ** new ** mass budget method by jej
@@ -13,35 +14,58 @@
 ! section at end
 !_____________________________________________________________________________
 
-!ds rv1.2 use My_Derived_ml,  only : NWDEP, NDDEP & ! No. deposition fields
-!ds rv1.2                        ,f_wdep, f_ddep  & ! definitions of dep data fields
-!ds rv1.2                        , wdep, ddep       ! deposition data fields
- use My_MassBudget_ml,only: MY_MASS_PRINT  ! Species to be printed
-                                           ! (old myprint array)
 
- use GenChemicals_ml, only: species
- use GenSpec_adv_ml, only : NSPEC_ADV      ! No. species (long-lived)
- use GenSpec_shl_ml, only : NSPEC_SHL      ! No. species (shorshort-lived)
- !u1 use GenSpec_maps_ml, only: MAP_ADV2TOT     ! Index mapping
- use Chemfields_ml , only : xn_adv
- use GridValues_ml , only : carea,xmd
- use Io_ml         , only : IO_RES
- use Met_ml        , only : ps  !dsps , psurf   !u7.4vg - was psa
- use ModelConstants_ml , &
-                     only : KMAX_MID  &  ! Number of points (levels) in vertical
-                           ,PT        &  ! Pressure at top
-                           ,ATWAIR       !rv1.2,ds , atwS, atwN
- use Par_ml,only:  & 
-        MAXLIMAX,  & ! Maximum number of local points in longitude
-        MAXLJMAX,  & ! Maximum number of local points in latitude
-        li0,li1,lj0,lj1,NPROC,me, limax, ljmax, &
-        gi0, gj0, GIMAX, GJMAX
+ use My_MassBudget_ml,only : MY_MASS_PRINT ! Species to be printed
+
+ use GenChemicals_ml, only : species       ! species identifier
+ use GenSpec_adv_ml,  only : NSPEC_ADV     ! No. species (long-lived)
+ use GenSpec_shl_ml,  only : NSPEC_SHL     ! No. species (shorshort-lived)
+ use Chemfields_ml ,  only : xn_adv        ! advective flag
+ use GridValues_ml ,  only : carea,xmd     ! cell area, 1/xm2 where xm2 is 
+                                           ! the area factor in the middle 
+                                           ! of the cell 
+ use Io_ml         ,  only : IO_RES        ! =25
+ use Met_ml        ,  only : ps            ! surface pressure  
+ use ModelConstants_ml,                 &
+                      only : KMAX_MID   &  ! Number of levels in vertical
+                            ,PT         &  ! Pressure at top
+                            ,ATWAIR        ! Mol. weight of air(Jones,1992)
+ use Par_ml,          only : MAXLIMAX   & 
+                            ,MAXLJMAX   &  
+                            ,li0,li1    &
+                            ,lj0,lj1    &
+                            ,NPROC,me   &
+                            ,limax,ljmax&
+                            ,gi0, gj0   &
+                            ,GIMAX,GJMAX
+
+!Variable listing
+!MAXLIMAX    ==> Maximum number of local points in longitude
+!MAXLJMAX    ==> Maximum number of local points in latitude
+!li0         ==> First local index in longitude when 
+!                outer boundary is excluded
+!li1         ==> Last local index in longitude when 
+!                outer boundary is excluded
+!lj0         ==> First local index in latitude when 
+!                outer boundary is excluded
+!lj1         ==> Last local index in latitude when 
+!                outer boundary is excluded
+!NPROC       ==> Total no. of processors for parallel computation
+!limax       ==> Actual number of local points in longitude
+!ljmax       ==> Actual number of local points in latitude
+!me          ==> Address of processer, host=0 (numbering starts at 0
+!                in south-west corner of ground level
+!gi0         ==> Global address of longitude start point
+!gj0         ==> Global address of latitute start point
+!GIMAX = 132 ==> Number of global points in longitude
+!GJMAX = 111 ==> Number of global points in latitude
+
  
 implicit none
 private
    INCLUDE 'mpif.h'
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
-   real MPIbuff(NSPEC_ADV*KMAX_MID)
+   real    MPIbuff(NSPEC_ADV*KMAX_MID)
 
 ! The following parameters are used to check the global mass budget:
 ! Initialise here also.
@@ -60,7 +84,6 @@ private
       amax = -2.0   &  ! maximum concentration in field -2
      ,amin =  2.0      ! minimum concentration in field  2
 
-!hf u2:
   logical, private, parameter :: DEBUG = .false.
 
   public :: Init_massbudget
@@ -69,16 +92,17 @@ private
 
 contains
 
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine Init_massbudget()
     ! Initialise mass-budget - calculate mass of concentrations fields
     ! within 3-D grid, after boundary conditions
     !
-    ! COnverted from old tsfld , ds, 14/5/01
-    !-------------------------------------------------------------------------
+    !----------------------------------------------------------------------
 
-    integer i, j, k, n, info
+    integer i, j, k, n, info    ! lon,lat,lev indexes
+                                ! n - No. of species
+                                ! info - printing info
     real rwork
 
     do k=2,KMAX_MID   
@@ -93,6 +117,7 @@ contains
       MPIbuff(1:NSPEC_ADV)= sumint (1:NSPEC_ADV) 
       CALL MPI_ALLREDUCE(MPIbuff, sumint , NSPEC_ADV, &
       MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+
     if(me == 0)then
          do n = 1,NSPEC_ADV
 	   if(sumint(n) >  0. ) then
@@ -105,36 +130,37 @@ contains
  end subroutine Init_massbudget
 
 
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  subroutine massbudget()
 
   ! Converted from old masbud.f by ds, March 2001
-  !   sums over all sulphur and nitrogen, so is model independant.
+  ! sums over all sulphur and nitrogen, so is model independant.
 
 
-  integer ::  i, j, k, n, nn, info    !6b, lpr1, lpr2
-  integer :: ispec, ifam
+  integer ::  i, j, k, n, nn, info               ! lon,lat,lev indexes
+                                                 ! n - No. of species
+                                                 ! nn - Total no. of short
+                                                 ! lived and advected species
+                                                 ! info - printing info
+  integer :: ispec, ifam                         ! Species and family index
   real, dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
-  character(len=12) :: spec_name
-  integer, parameter :: NFAMILIES = 3                       !rv1.2, ds 
+  character(len=12)  :: spec_name                ! Species name
+  integer, parameter :: NFAMILIES = 3            ! No. of families         
   character(len=8), dimension(NFAMILIES), save :: family_name = &
            (/ "Sulphur ", "Nitrogen", "Carbon  " /)
   integer ispec_name
 
-!pw  real, dimension(NSPEC_ADV) ::  &
-!pw           amax, amin        ! max/min of conc. (long lived)
-
-  real, dimension(NFAMILIES) :: family_int  & ! initial total mass of 
+  real, dimension(NFAMILIES) ::family_init  & ! initial total mass of 
                                               ! species family
-                               ,family_mass & ! total family mass at the 
+                              ,family_mass &  ! total family mass at the 
                                               ! end of the model run
-                               ,family_in  &  ! total family mass flowing in  
-                               ,family_out &  ! total family mass flowing out 
-                               ,family_ddep&  ! total family mass dry dep. 
-                               ,family_wdep&  ! total family mass wet dep. 
-                               ,family_em  &  ! total family mass emitted 
-                               ,family_div &  ! total family mass input
-                               ,family_frac   ! total family mass output 
+                              ,family_inflow &! total family mass flowing in  
+                              ,family_outflow&! total family mass flowing out 
+                              ,family_ddep&   ! total family mass dry dep. 
+                              ,family_wdep&   ! total family mass wet dep. 
+                              ,family_em  &   ! total family mass emitted 
+                              ,family_input & ! total family mass input
+                              ,family_fracmass  ! mass fraction (should be 1.0)
 
   real, dimension(NSPEC_ADV) :: xmax, xmin, & ! min and max value for the 
 					      ! individual species
@@ -145,32 +171,30 @@ contains
 				 gtotem,    & ! total emission
 			gtotddep, gtotwdep, & ! total dry and wet deposition
 				  gtotldep, & ! local dry deposition
-				  gtotox      ! oxidation of SO2  ????????
+				  gtotox      ! oxidation of SO2 
 
-
-  !rv1.2, ds real :: totdiv,helsum,ammfac, atw, natoms
   real :: totdiv,helsum,ammfac, natoms
 
     sum_mass(:)     = 0.
     frac_mass(:)    = 0.
     xmax(:)         = -2.
     xmin (:)        = 2.
-    gfluxin(:)   = fluxin(:)
-    gfluxout(:)  = fluxout(:)
-    gtotem(:)    = totem(:)
-    gtotddep(:)  = totddep(:)
-    gtotwdep(:)  = totwdep(:)
-    gtotldep(:)  = totldep(:)
-    gtotox(:)    = totox(:)
+    gfluxin(:)      = fluxin(:)
+    gfluxout(:)     = fluxout(:)
+    gtotem(:)       = totem(:)
+    gtotddep(:)     = totddep(:)
+    gtotwdep(:)     = totwdep(:)
+    gtotldep(:)     = totldep(:)
+    gtotox(:)       = totox(:)
+
 
     sumk(:,:) = 0.
 
     do k = 1,KMAX_MID
       do j = lj0,lj1
         do i = li0,li1
-!            helsum = carea(k)*xmd(i,j) * (ps(i,j,1) - PT)
-            !dsps helsum = carea(k)*xmd(i,j) * (psurf(i,j) - PT)
-            helsum = carea(k)*xmd(i,j) * (ps(i,j,1) - PT)
+
+            helsum  = carea(k)*xmd(i,j) * (ps(i,j,1) - PT)
 
             xmax(:) = amax1(xmax(:),xn_adv(:,i,j,k))
             xmin(:) = amin1(xmin(:),xn_adv(:,i,j,k))
@@ -233,15 +257,11 @@ contains
 
 
     do n = 1,NSPEC_ADV
-!      totdiv = sumint(n) + gtotem(n)* &
-!               ATWAIR/species( MAP_ADV2TOT(n))%molwt + gfluxin(n)
+
       totdiv = sumint(n) + gtotem(n) + gfluxin(n)
       frac_mass(n) = sum_mass(n)  + (gtotddep(n)+gtotwdep(n))*ATWAIR &
                    + gfluxout(n) 
 
-!    NO LOCAL DEPOSITION DEFINED
-!                   + (gtotldep(n))*ATWAIR/species( MAP_ADV2TOT(n))%molwt &
-!!  
       if(totdiv >  0.0 ) frac_mass(n) = frac_mass(n)/totdiv
 
 
@@ -255,12 +275,12 @@ contains
                            'tot. emission of species ',n,gtotem(n)
     end do
 
-    family_int(:)  = 0.
+    family_init(:)  = 0.
     family_mass(:) = 0.
-    family_in (:)  = 0.
-    family_out(:)  = 0.
-    family_div(:)  = 0.
-    family_frac(:) = 0.
+    family_inflow(:)  = 0.
+    family_outflow(:)  = 0.
+    family_input(:)  = 0.
+    family_fracmass(:) = 0.
     family_ddep(:) = 0.
     family_wdep(:) = 0.
     family_em(:)   = 0.
@@ -272,42 +292,36 @@ contains
        write(6,"(a8,i3,a12)") 'family ', ifam,  family_name(ifam) 
        do n = 1, NSPEC_ADV
 
-         !u1 nn = MAP_ADV2TOT(n)
          nn = NSPEC_SHL + n
 
 
            if ( ifam == 1 ) natoms = real(species(nn)%sulphurs)
-           !rv1.2, ds if ( ifam == 1 ) atw = atwS
 
            if ( ifam == 2 ) natoms = real(species(nn)%nitrogens)
-           !rv1.2, ds if ( ifam == 2 ) atw = atwN
 
            if ( ifam == 3 ) natoms = real(species(nn)%carbons)
-           !rv1.2, ds if ( ifam == 3 ) atw = 16
-         
+
            if (natoms > 0) then
-             family_int(ifam) = family_int(ifam) + sumint(n)*natoms
+             family_init(ifam) = family_init(ifam) + sumint(n)*natoms
              family_mass(ifam) = family_mass(ifam) + sum_mass(n)*natoms
-             family_in (ifam) = family_in (ifam) + gfluxin(n)*natoms
-             family_out(ifam) = family_out(ifam) + gfluxout(n)*natoms
+             family_inflow(ifam) = family_inflow(ifam) + gfluxin(n)*natoms
+             family_outflow(ifam) = family_outflow(ifam) + gfluxout(n)*natoms
              family_ddep(ifam) = family_ddep(ifam) + gtotddep(n)*natoms
              family_wdep(ifam) = family_wdep(ifam) + gtotwdep(n)*natoms
              family_em(ifam) = family_em(ifam) + gtotem(n)*natoms
            end if
        end do  ! NSPEC_ADV
 
-       family_div(ifam) = family_int(ifam) &
-                         + family_in (ifam) &
-                         + family_em(ifam)   !6b &
-!!                        * ATWAIR/atw
-!                         * ATWAIR/species( MAP_ADV2TOT(n))%molwt
+       family_input(ifam) = family_init(ifam) &
+                         + family_inflow(ifam) &
+                         + family_em(ifam)   
 
-       if (family_div(ifam) > 0.0 ) &
-              family_frac(ifam) = (family_mass(ifam) &
-                                 +  family_out(ifam)  &
-                                 +  family_ddep(ifam)*ATWAIR  & ! not /atw(n)
-                                 +  family_wdep(ifam)*ATWAIR) & ! not /atw(n)
-                                 / family_div(ifam)
+       if (family_input(ifam) > 0.0 ) &
+              family_fracmass(ifam) = (family_mass(ifam) &
+                                 +  family_outflow(ifam)  &
+                                 +  family_ddep(ifam)*ATWAIR  & 
+                                 +  family_wdep(ifam)*ATWAIR) & 
+                                 / family_input(ifam)
 
 
       write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
@@ -316,8 +330,8 @@ contains
       write(6,"(a9,5a12)") "family", "sumint", "summas", &
                                "fluxout","fluxin", "fracmass"
       write(6,"(a9,5es12.4)") family_name(ifam), &
-             family_int(ifam), family_mass(ifam),family_out(ifam), &
-             family_in (ifam), family_frac(ifam)
+             family_init(ifam), family_mass(ifam),family_outflow(ifam), &
+             family_inflow(ifam), family_fracmass(ifam)
 
       write(6,*)
       write(6,"(a9,3a14)") "ifam", "totddep","totwdep","totem"
@@ -335,7 +349,6 @@ contains
   if (me == 0) then     ! printout from node 0
 
      !/.. now use species array which is set in My_MassBudget_ml
-    !rv1.2, ds do k = 1,KMAX_MID - ds - better to print out each species in turn?
 
     do nn = 1,size ( MY_MASS_PRINT )
 
@@ -373,55 +386,34 @@ contains
     enddo
 !              
 
-
-
-
-
    end if  ! me = 0
-
-!rv1.2,ds 950  format(1h,'parameter ',i2,5x,'level',i2,5x,es12.5)
-!u4 951  format(1h,'parameter',7x,'sumint',8x,'summas',8x,'fluxout ',8x, &
-!u4                'fluxin  ',6x,'fracmas')
-!u4 952  format(1h ,6x,i2,7x,es12.5,4x,es12.5,4x,es12.5,4x,es12.5,4x,es12.5)
- !rv1.2,ds 953  format(1h ,9x,'amax  ',8x,'amin  ',8x,'xmax  ',8x,'xmin  ')
- !rv1.2,ds 954  format(1h ,i2,4x,e10.3,4x,e10.3,4x,e10.3,4x,e10.3)
- !rv1.2,ds 955  format(1h ,9x,'totox',16x,'totddep',13x,                        &
- !rv1.2,ds         'totwdep',13x,'totem',13x,'totldep')
- !rv1.2,ds 956  format(1h ,i2,4x,es10.3,10x,es10.3,10x,es10.3,10x,es10.3,10x,es10.3)
- !rv1.2,ds 957  format(1h ,i2,4x,es10.3,10x,es10.3,10x,es10.3)
- !rv1.2,ds 958  format(1h ,9x,'totddep',13x,'totwdep',13x,'totem')
 
  end subroutine massbudget
 
 
 
-!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine DryDep_Budget(i,j,Loss,convfac)
      use Setup_1dfields_ml, only : amk ! Air concentrations 
      use GenSpec_adv_ml
      use My_UKDep_ml, only : NDRYDEP_ADV, Dep 
-!     real, dimension(NDRYDEP_ADV), intent(in) :: Loss
-!     real, dimension(NDRYDEP_ADV) :: DryLoss
+
       real, dimension(NSPEC_ADV), intent(in) :: Loss
-      real, dimension(NSPEC_ADV) :: DryLoss
+      real, dimension(NSPEC_ADV)             :: DryLoss
  
      real, intent(in)  :: convfac
-     integer :: n,nadv,i,j  ! index in IXADV_  arrays
+     integer           :: n,nadv,i,j  ! index in IXADV_  arrays
 
-     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio ?
+     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio 
 
       do n = 1, NDRYDEP_ADV 
          nadv    = Dep(n)%adv
          totddep( nadv ) = totddep (nadv) + DryLoss(nadv) 
 
-!  if ((i==2 .and.j==2).and. nadv==IXADV_SO2)then
-!      write(*,*)'DRYDEP BUDGET nadv,DryLoss(nadv),totddep(nadv)', nadv,DryLoss(nadv),totddep(nadv)
-!  endif
       enddo
   end subroutine DryDep_Budget
 
-!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-!MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
-             end module MassBudget_ml
-!MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+ end module MassBudget_ml
+!--------------------------------------------------------------------------
