@@ -92,12 +92,12 @@ module CheckStop_ml
       end if
   end subroutine CheckStop_int2
 
-  subroutine CheckStop_TF(is_true, infomsg)   ! Test expression, e.g. lu<0
-      logical, intent(in)          :: is_true  
+  subroutine CheckStop_TF(is_error, infomsg)   ! Test expression, e.g. lu<0
+      logical, intent(in)          :: is_error  
       character(len=*), intent(in) :: infomsg
 
-      if ( is_true ) then
-        write(*,*) "CheckStopl_TF   Called with: logical ", is_true
+      if ( is_error ) then
+        write(*,*) "CheckStopl_TF   Called with: logical ", is_error
         write(*,*) "                             infomsg ", infomsg
         call StopAll(infomsg)
       end if

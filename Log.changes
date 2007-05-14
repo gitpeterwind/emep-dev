@@ -1,3 +1,8 @@
+============== Misc, rv2_7_x,  May xx 2007  =================================
+
+Dave: Changed confusing is_true to is_error in CheckStop_ml
+
+
 ============== Misc, rv2_7_6,  May 11 2007  =================================
 
 Dave: Added new module CheckStop,  to simplify error-testing and
