@@ -96,6 +96,8 @@ module BoundaryConditions_ml
           NGLOB_BC                 &  ! Number of species from global-model
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.
           ,setgl_actarray
+
+  use CheckStop_ml,      only: CheckStop
   implicit none
   private
 
@@ -244,24 +246,21 @@ contains
   call setgl_actarray(iglobact,jglobact)
 
   allocate(bc_data(iglobact,jglobact,KMAX_MID),stat=alloc_err1)
-  if ( alloc_err1 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "BC alloc1 failed" 
-    if ( alloc_err1 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+  call CheckStop(alloc_err1, "alloc1 failed in BoundaryConditions_ml") 
 
   ! - check if anything has changed before allocating:
 
   !pwhk if ( num_adv_changed > 0 ) then
       allocate(bc_adv(num_adv_changed,iglobact,jglobact,KMAX_MID), &
          stat=alloc_err2)
-      if ( alloc_err2 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "BC alloc1 failed" 
-        if ( alloc_err2 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-      bc_adv(:,:,:,:) = 0.0
+   call CheckStop(alloc_err2, "alloc2 failed in BoundaryConditions_ml") 
+     bc_adv(:,:,:,:) = 0.0
    !pwhk  end if
 
   !pwhk  if ( num_bgn_changed > 0 ) then
       allocate(bc_bgn(num_bgn_changed,iglobact,jglobact,KMAX_MID), &
         stat=alloc_err3)
-      if ( alloc_err3 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "BC alloc3 failed" 
-        if ( alloc_err3 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+   call CheckStop(alloc_err3, "alloc3 failed in BoundaryConditions_ml") 
       bc_bgn(:,:,:,:) = 0.0
   !pwhk  end if
 
@@ -293,10 +292,9 @@ contains
                     year,iyr_trend,ibc,month,bc_used(ibc)
 
       end if
-      if(ibc == 1 .and. errcode /= 0 ) then
-         WRITE(*,*) 'MPI_ABORT: ', "ERRORBCs: GetGlobalData" 
-         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-      endif
+      call CheckStop(ibc == 1 .and. errcode,&
+             "ERRORBCs: GetGlobalData, failed in BoundaryConditions_ml") 
+
     !-- If the read-in bcs are required, we broadcast and use:
 
       if ( bc_used(ibc) > 0 ) then
@@ -401,19 +399,16 @@ contains
     end if ! 
 
     deallocate(bc_data,stat=alloc_err1)
-    if ( alloc_err1 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "de-alloc_err1" 
-      if ( alloc_err1 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+    call CheckStop(alloc_err1,"de-alloc1 failed in BoundaryConditions_ml") 
 
     if ( num_adv_changed > 0 ) then
        deallocate(bc_adv,stat=alloc_err2)
-       if ( alloc_err2 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "de-alloc_err2" 
-         if ( alloc_err2 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       call CheckStop(alloc_err2,"de-alloc2 failed in BoundaryConditions_ml") 
     end if
 
     if ( num_bgn_changed > 0 ) then
        deallocate(bc_bgn,stat=alloc_err3)
-       if ( alloc_err3 /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "de-alloc_err3" 
-         if ( alloc_err3 /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       call CheckStop(alloc_err3,"de-alloc3 failed in BoundaryConditions_ml") 
     end if
 
  end subroutine BoundaryConditions
@@ -648,8 +643,7 @@ endif
 
       mask(:,:,1) = .true.        !hf Set top layer
    else
-        WRITE(*,*) 'MPI_ABORT: ', "BCs:Illegal option " 
-        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+      call CheckStop("BCs:Illegal option failed in BoundaryConditions_ml") 
    endif
 
    !** Set concentrations (xn) from boundary conditions (bcs) 

@@ -1,6 +1,25 @@
-============== Misc, rv2_7_x,  May xx 2007  =================================
+============== Misc, rv2_7_7,  May 16 2007  =================================
 
-Dave: Changed confusing is_true to is_error in CheckStop_ml
+Dave:  Makefile.SRCS added - list of .f90 files, included from all
+        other Makefiles.
+
+      CheckStop_ml : Changed name of confusing is_true to is_error 
+
+      Moved GridAllocate from Functions to GridAllocate_ml
+      - changes in EmisGet,  UK_ml
+
+      Added Self_Test routine in GridAllocate_ml
+
+      UK_ml - cleaned from CheckStop comments
+
+
+Hilde: CheckStop added in: BoundaryCOnditions_ml
+                           Derived_ml
+                           GlobalBCs_ml
+                           RunChem_ml
+
+
+Svetlana: Cleaned up Timefactors_ml
 
 
 ============== Misc, rv2_7_6,  May 11 2007  =================================

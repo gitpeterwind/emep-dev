@@ -12,8 +12,6 @@ module RunChem_ml
     public :: runchem
 
 
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
   logical, private, save :: MYDEBUG         = .false.
 
 contains
@@ -50,6 +48,7 @@ subroutine runchem(numt)
 !SeaS
    use SeaSalt_ml,        only : SeaSalt_flux   !SeaS
    use My_Aerosols_ml,    only : SEASALT        !SeaS
+   use CheckStop_ml,      only: CheckStop
 !/
    integer, intent(in) :: numt       !water
 
@@ -130,8 +129,7 @@ subroutine runchem(numt)
 
                      call setup_phot(i,j,errcode)
 
-                    if(errcode /= 0)  WRITE(*,*) 'MPI_ABORT: ', "setup_photerror" 
-                      if(errcode /= 0)call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+                     call CheckStop(errcode,"setup_photerror in Runchem") 
                      call Add_2timing(29,tim_after,tim_before,&
                                            "Runchem:1st setups")
 

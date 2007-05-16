@@ -28,6 +28,7 @@ module GlobalBCs_ml
   use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
   use ModelConstants_ml, only:  PPB, PPT,PPBINV   !dsOH added
   use Par_ml, only: IILARDOM,JJLARDOM
+  use CheckStop_ml,      only: CheckStop
 !
 
   implicit none
@@ -182,7 +183,7 @@ contains
    integer :: i, j , k,i1,j1,icount
    real ::val
    character(len=30) :: fname    ! input filename
-   character(len=30) :: errmsg   ! For error messages
+   character(len=99) :: errmsg   ! For error messages
    character(len=30) :: BCpoll   ! pollutant name
    integer, save     :: oldmonth = -1  
    real :: trend_o3, trend_co, trend_voc  !ds rv1.6.11
@@ -294,10 +295,9 @@ else if( iyr_trend >= 2003) then
    USnoxtrend=0.77
    USnh4trend=0.74
 else
-   print *,"Unspecified trend BCs for this year:", ibc, year
-   errmsg = "BC Error UNSPEC"
-   if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
-     if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+   write(unit=errmsg,fmt=*) "Unspecified trend BCs for this year:", ibc, year"
+   call CheckStop(errmsg)
+
 endif
 
 
@@ -411,11 +411,9 @@ elseif( year == 2005) then
         ,    26.7,    30.0,    33.2,    37.7,    39.5,    38.0/)
 !---------------------------------------------------------------------------
 elseif ( year > 2005 ) then
-          errmsg =  "No Mace Head correction for this year yet! "
-          print *, errmsg, i
-          if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
-            if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-
+   write(unit=errmsg,fmt=*) &
+       "ERROR: No Mace Head correction for this year yet! ", year
+   call CheckStop(errmsg)
  else  ! Defaults, from 1990-2000 average !
    macehead_O3 = (/  37.6, 40.0, 42.9, 43.2, 41.9, 33.9, &
                      29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
@@ -471,14 +469,13 @@ elseif ( year > 2005 ) then
   SpecBC(IBC_pNO3  )= sineconc( 0.07 , 15.0, 0.00, 1.6,  0.025 , 0.02,PPB) !ACE-2
   SpecBC(IBC_aNH4  ) = sineconc( 0.15 , 180.0, 0.00, 1.6,  0.05 , 0.03,PPB) !ACE-2(SO4/NH4=1)
 
- !dsOH  Consistency check:   
- !hfOH all BCs read in are in mix. ratio, thus hmin,vmin needs to be in mix. ratio for those                                 
-  SpecBC(IBC_O3   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0*PPB,1.) !N1  
-  SpecBC(IBC_H2O2 ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,0.01*PPB,1.) !HF
-  SpecBC(IBC_OH   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.) !dsOH
-  SpecBC(IBC_CH3COO2)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.) !dsOH
+ ! all BCs read in are in mix. ratio, thus hmin,vmin needs to be in mix. ratio for those                                 
+  SpecBC(IBC_O3   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0*PPB,1.)
+  SpecBC(IBC_H2O2 ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,0.01*PPB,1.)
+  SpecBC(IBC_OH   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.)
+  SpecBC(IBC_CH3COO2)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.)
 
- !dsOH  Consistency check:
+ ! Consistency check:
 
    print *, "SPECBC NGLB ", NGLOB_BC
    do i = 1, NGLOB_BC
@@ -486,10 +483,8 @@ elseif ( year > 2005 ) then
 
       if( SpecBC(i)%hmin*SpecBC(i)%conv_fac < 1.0e-17) then
      
-          errmsg =  "PECBC: Error: No SpecBC set for a species "
-          print *, errmsg, i
-          if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
-            if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+         write(unit=errmsg,fmt=*) "PECBC: Error: No SpecBC set for species", i
+         call CheckStop(errmsg)
       end if
    end do
 
@@ -659,8 +654,7 @@ elseif ( year > 2005 ) then
               elseif (model=='ZD_OZONE') then
                  bc_rawdata=max(15.0*PPB,bc_rawdata-O3fix)
               else
-                   WRITE(*,*) 'MPI_ABORT: ', "Problemwith Mace Head Correction" 
-                   call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+                 call CheckStop("Problem with Mace Head Correction in GlobalBCs_ml")
               endif
 
               bc_rawdata=trend_o3 * bc_rawdata  !ds rv1.6.11
@@ -761,9 +755,7 @@ elseif ( year > 2005 ) then
           !================== end select ==================================
          write(*,*) "dsOH FACTOR ", ibc, fname
 
-   if( errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
-     if( errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-
+         call CheckStop(errmsg)
    if( DEBUG_Logan )then
 
       write(*,"(a15,3i4,f8.3)") "DEBUG:LOGAN: ",ibc, used, month, cosfac

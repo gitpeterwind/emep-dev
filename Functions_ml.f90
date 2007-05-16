@@ -61,13 +61,7 @@ module Functions_ml
 
   public :: PsiM
 
-  public :: PhiH       !ds Added 8/12/2004
-
-  !/-- grid-handling subroutine
-
-   public :: GridAllocate   ! allocates e.g. emissions, landuse an their
-                            ! codes for each gridsquare
-   character(len=30) :: errmsg  
+  public :: PhiH
 
   !/-- interpolation stuff
   public  :: bilin_interpolate                         !  "Generic" subroutine
@@ -198,66 +192,6 @@ module Functions_ml
 
   end function Daily_halfsine
   
-
-  !___________________________________________________________________________
-  !+ subroutine which can be used with data such as emissions, landuse, where
-  !  several indices area llowed per grid square
-  !___________________________________________________________________________
-
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine GridAllocate(label,i,j,ic,ncmax,iland,&
-                           ncmaxfound,land,nland, errmsg)
-
-    !-- Checks if a country "ic" (or landuse type, lu) whose data has just 
-    !   been read in has already been found within the given grid square.
-    !   If not, the array "nland" is incremented by one and the
-    !   country (or landuse) index added to "land".
-    !
-    !   This routine is used for emissions and landuse 
- 
-     character(len=*), intent(in) :: label   ! Type of data
-     integer, intent(in) :: i,j
-     integer, intent(in) :: ic        ! Index of country (lu) just read in
-     integer, intent(in) :: ncmax     ! Max. no countries (lu) allowed
-
-     integer, intent(out)   :: iland         ! Index of country in that grid
-     integer, intent(inout) :: ncmaxfound    ! No. countries found so far
-     integer, dimension(:,:,:), intent(inout) :: land   ! Land-codes
-     integer, dimension(:,:),   intent(inout) ::nland   ! No. countries
-     character(len=*), intent(out) :: errmsg   !  "ok" or not
-
-     !ds integer :: nc, k, iland      ! local variables
-     integer :: nc, k             ! local variables
-
-       nc=nland(i,j)       ! nc = no. countries known so far
-       errmsg = "ok"
-
-       do k = 1,nc
-          if( land(i,j,k) == ic) then
-              iland = k        ! country is already in the list
-              goto 100
-          endif
-       enddo
-
-       nland(i,j) = nland(i,j) + 1    ! country is a new one
-       land(i,j,nc+1) = ic
-       iland=nc+1
-
-       if( iland >  ncmaxfound) then
-           ncmaxfound = iland
-           write(*,*) "GridAlloc ", label, "increased ncmaxfound:",i,j,iland
-           write(*,*) "GridAlloc ", label," now have:", &
-                           (land(i,j,k),k=1,ncmaxfound)
-           if ( ncmaxfound >  ncmax ) then
-               errmsg = "GridAlloc ncmax ERROR" // label
-               print *, errmsg
-           endif
-        endif
- 100    continue
-
-  end subroutine GridAllocate
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
   !___________________________________________________________________________
   !+ subroutines which can be used in 2-D interpolation
   !  - includes "generic" subroutine bilin_interpolate

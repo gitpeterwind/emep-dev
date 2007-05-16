@@ -68,7 +68,7 @@ use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      gi0,gj0,ISMBEG,JSMBEG,&! rv1_9_28 for i_glob, j_glob
                      li0,lj0,limax, ljmax    ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
-
+use CheckStop_ml,      only: CheckStop
 
 implicit none
 private
@@ -195,8 +195,10 @@ private
 
    logical, private, parameter :: MY_DEBUG = .false.
    logical, private, save :: debug_flag
+   character(len=100), private :: errmsg
    integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
                                                    ! reset if DEBUG 
+
    integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
    integer, public, parameter:: startmonth_forest=4,endmonth_forest=9&
                                 ,startmonth_crops=5,endmonth_crops=7
@@ -518,9 +520,9 @@ def_3d = (/ &
     end do ! nf
 
     if ( n_match /= 1 ) then
-          print *, "ERROR: Find_one_index for:", used,  "Matches ", n_match
-            WRITE(*,*) 'MPI_ABORT: ', "Find_one_index- no match!!" 
-            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+        write(unit=errmsg,fmt=*) "ERROR: Find_one_index for:", used, &
+              "Matches ", n_match
+        call CheckStop(errmsg) 
     else
           if ( MY_DEBUG .and.  me == 0 ) then
              write(6,*) "FOUND_ONE_INDEX ", used, " => NF ", find_one_index
@@ -562,10 +564,9 @@ def_3d = (/ &
       end do ! nf
 
       if ( n_match(nu) /= 1 ) then
-          print *, "ERROR: Find_index2 Size U ", size(used), " DEF ", size(defined)
-          print *, "ERROR: Find_index2 n", nu, " V ", used(nu), "Matches ", n_match(nu)
-            WRITE(*,*) 'MPI_ABORT: ', "Find_index2- no match!!" 
-            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+         write(unit=errmsg,fmt=*) "ERROR: Find_index2 Size U ", size(used),&
+             " DEF ", size(defined), " V ", used(nu), "Matches ", n_match(nu)
+       call CheckStop(errmsg) 
       else
           if ( me == 0 ) then
              write(6,*) "FOUND_INDEX ", nu, used(nu), " => NF ", nused(nu)
@@ -595,17 +596,16 @@ def_3d = (/ &
              if( index_used(i) > 1 ) print *,  &
                    "Derived code problem, index: ",i, index_used(i)
            end do
-             WRITE(*,*) 'MPI_ABORT: ', "Derivedcode problem!!" 
-             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           call CheckStop( "Derivedcode problem in Derived_ml")
        end if
 
      !ds 25/3/2004:
 
       if ((      SOURCE_RECEPTOR .and.  NDERIV_2D /= NSR_2D )   .or.  &
           ( .not.SOURCE_RECEPTOR .and.  NDERIV_2D == NSR_2D )) then
-           print *, "Error! Wrong number of 2D params ", NDERIV_2D, NSR_2D
-             WRITE(*,*) 'MPI_ABORT: ', "Derivedcode problem!!" 
-             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+             write(unit=errmsg,fmt=*) "Error! Wrong number of 2D params ", &
+                 NDERIV_2D, NSR_2D
+             call CheckStop( errmsg )
       end if
      end subroutine
 
@@ -623,17 +623,16 @@ def_3d = (/ &
 
         do i = 1, n
            code = data(i)%code
-           if ( code > max )   WRITE(*,*) 'MPI_ABORT: ', "My_Derivedcode >max!" 
-             if ( code > max ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           call CheckStop(code>max,"My_Derivedcode >max! in Derived_ml")
            index_used( code )  = index_used( code )  + 1
            !if( me == 0 ) print "(a6,i3,i4,2a15,i2)", "CODE ", i, code, 
            !     data(i)%name, data(i)%class, index_used(code)
 
            if( index_used(i) > 1 ) then
-                print *, "Derived code problem, Consistency checks: me ",  me, &
+              write(unit=errmsg,fmt=*) &
+               "Derived code problem, Consistency checks: me ",  me, &
                        " index: ",i, index_used(code)
-                  WRITE(*,*) 'MPI_ABORT: ', "Consistencycode problem!!" 
-                  call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+              call CheckStop( errmsg )
            end if
 
         end do
@@ -1055,11 +1054,9 @@ def_3d = (/ &
 
           case  default
 
-           print *, "Derived 3D class NOT FOUND", n, index, &
+           write(unit=errmsg,fmt=*) "Derived 3D class NOT FOUND", n, index, &
                          f_3d(n)%name,f_3d(n)%class
-             WRITE(*,*) 'MPI_ABORT: ', "3DFIELD - no match!!" 
-             call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-
+           call CheckStop( errmsg )
 
 
         end select

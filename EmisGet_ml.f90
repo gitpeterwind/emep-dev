@@ -4,15 +4,15 @@ module EmisGet_ml
                           , NRCSPLIT & 
                           , EMIS_NAME, SPLIT_NAME  &
                           , NEMIS_PLAIN, NEMIS_SPLIT, EMIS_NSPLIT
-  use Country_ml,   only : NLAND    & !u4 movde other stuff here
+  use Country_ml,   only : NLAND    &
                             ,IC_NAT,IC_VUL, Country
   use EmisDef_ml,   only : NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX & 
-                            ,ISNAP_SHIP, ISNAP_NAT  !u3 for NAT
-  use Functions_ml, only : GridAllocate       !ds u7.2
-  use Io_ml,        only : open_file,  wordsplit &      ! subs
-                          ,NO_FILE, ios, IO_EMIS         ! variables
+                            ,ISNAP_SHIP, ISNAP_NAT
+  use GridAllocate_ml, only : GridAllocate
+  use Io_ml,        only : open_file,  wordsplit &
+                          ,NO_FILE, ios, IO_EMIS
   use Par_ml,       only : me, NPROC
-  use Volcanos_ml                      !hf
+  use Volcanos_ml
 
   implicit none
   private
@@ -41,7 +41,6 @@ module EmisGet_ml
 
   !/ some common variables
   character(len=40), private :: fname             ! File name
-  character(len=40), private :: errmsg            ! Error message!
 
 contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -151,8 +150,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                 !/** end test
 
                 call GridAllocate("FLat",i,j,ic,FNCMAX, flat_iland, &
-                    flat_ncmaxfound,flat_globland,flat_globnland,errmsg)
-                call CheckStop( errmsg ,"EmisGet: errmsg from GridAllocate")
+                    flat_ncmaxfound,flat_globland,flat_globnland)
               ! ...................................................
               ! Assign e_fact corrected emissions to global FLAT 
               ! emission matrices.
@@ -213,8 +211,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
              ! then ic is added to landcode and nlandcode increased by one.
 
               call GridAllocate("SNAP",i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,globland,globnland,errmsg)
-              call CheckStop( errmsg,"UK_ml GridAllocate error")
+                                 iland,ncmaxfound,globland,globnland)
 
               ! ...................................................
               ! ...................................................
