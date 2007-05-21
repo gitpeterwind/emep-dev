@@ -1,6 +1,6 @@
 module UKdep_ml
 
-use CheckStop_ml,      only: CheckStop  ! NEW STOP
+use CheckStop_ml,      only: CheckStop
 use TimeDate_ml,       only: daynumber, nydays
 use DepVariables_ml,only: NLANDUSE         &  ! No. UK land-classes
                       ,luname              &
@@ -21,7 +21,8 @@ use DepVariables_ml,only: NLANDUSE         &  ! No. UK land-classes
                       ,RgsS      , RgsO        &
                       ,VPD_max   , VPD_min     &
                       ,SWP_max   , PWP       , rootdepth 
-use Functions_ml,   only: GridAllocate, Polygon
+use Functions_ml,   only: Polygon
+use GridAllocate_ml,only: GridAllocate
 use GridValues_ml,  only: gb_glob, gb, i_glob, j_glob, & ! latitude, coordinates
                             debug_proc, debug_li, debug_lj   !JUN06 
 use Io_ml,          only: open_file, ios, IO_FORES
@@ -91,14 +92,9 @@ contains
 
        !=====================================
         call ukdep_init(errmsg,me)
-        call CheckStop(errmsg, "ukdep_init") ! NEW STOP !
+        call CheckStop(errmsg, "ukdep_init")
        !=====================================
 
-        !STOP if ( errmsg /= "ok" ) then
-        !STOP   errmsg = "ukdep_init: " // errmsg
-        !STOP     WRITE(*,*) 'MPI_ABORT: ', errmsg 
-        !STOP     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-        !STOP end if
 
 end subroutine Init_ukdep
  !--------------------------------------------------------------------------
@@ -115,17 +111,12 @@ subroutine ReadLanduse()
    integer,parameter :: BIG = IILARDOM*JJLARDOM*NNLANDUSE
    real, dimension(NNLANDUSE) :: tmp
 
-   !JUN06 integer, dimension(NNLANDUSE) :: rivm2uk  ! maps RIVM landuse to
-   !JUN06       ! uk. Need to set perm crops to arable, other to moorland, etc.
-   integer :: uklu    ! UK (SEI) landuse code
    integer :: i_in, j_in ! for debug
-    
    integer :: ncodes, kk ! debug
+
    logical :: debug_flag
 
    if ( DEBUG_DEP ) write(*,*) "UKDEP Starting ReadLandUse, me ",me
-   !STOP if ( NLANDUSE /= NNLANDUSE )   WRITE(*,*) 'MPI_ABORT: ', "NNLANDuseerror"  ! Why need both? 
-   !STOP if ( NLANDUSE /= NNLANDUSE ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
    call CheckStop(NLANDUSE, NNLANDUSE, "ReadLandUse NLAND check")
 
    maxlufound = 0   
@@ -135,19 +126,14 @@ subroutine ReadLanduse()
        allocate(g_ncodes(GIMAX,GJMAX),stat=err1)
        allocate(g_codes (GIMAX,GJMAX,NLUMAX),stat=err2)
        allocate(g_data  (GIMAX,GJMAX,NLUMAX),stat=err3)
-       call CheckStop(err1,"UK_ml allocate err1 ")
-       call CheckStop(err2,"UK_ml allocate err2 ")
-       call CheckStop(err3,"UK_ml allocate err3 ")
-       !STOP if ( err1 /= 0 .or. err2/=0 .or. err3/=0 )then
-       !STOP    WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"
-       !STOP    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       !STOP endif
+        call CheckStop(err1,"UK_ml allocate err1 ")
+        call CheckStop(err2,"UK_ml allocate err2 ")
+        call CheckStop(err3,"UK_ml allocate err3 ")
+
        g_ncodes(:,:)   = 0       !/**  initialise  **/
        g_data  (:,:,:) = 0.0     !/**  initialise  **/
 
       call open_file(IO_FORES,"r","landuse.JUN06",needed=.true.,skip=1)
-      !STOP if ( ios /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ioserror: landuse"  
-      !STOP if ( ios /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
        call CheckStop(ios,"UK_ml iso error on landuse.JUN06")
 
 
@@ -173,14 +159,8 @@ subroutine ReadLanduse()
              do lu = 1, NNLANDUSE
                  if ( tmp(lu) > 0.0 ) then
 
-                    uklu = lu
-
-                    call GridAllocate("LANDUSE",i,j,uklu,NLUMAX, &
-                      index_lu, maxlufound, g_codes, g_ncodes,errmsg)
-
-                    !STOP if (errmsg /= "ok" )   WRITE(*,*) 'MPI_ABORT: ', errmsg 
-                    !STOP if (errmsg /= "ok" ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-                    call CheckStop(errmsg,"UK_ml GridAllocate error")
+                    call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &
+                      index_lu, maxlufound, g_codes, g_ncodes)
    
                     g_data(i,j,index_lu) = &
                        g_data(i,j,index_lu) + 0.01 * tmp(lu)
@@ -212,10 +192,6 @@ subroutine ReadLanduse()
        call CheckStop(err2,"UK_ml de-allocate err2 ")
        call CheckStop(err3,"UK_ml de-allocate err3 ")
 
-       !STOP if ( err1 /= 0 .or. err2 /= 0 .or. err3 /= 0 ) then
-       !STOP      WRITE(*,*) 'MPI_ABORT: ', "De-Allocerror - g_landuse" 
-       !STOP      call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       !STOP end if ! errors
    end if ! me==0
 
   end subroutine  ReadLanduse
@@ -349,12 +325,8 @@ subroutine ReadLanduse()
           end if
           do ilu= 1, landuse_ncodes(i,j)
              lu      = landuse_codes(i,j,ilu)
-             !STOP if ( lu <= 0 .or. lu > NLANDUSE ) then
-             !STOP    WRITE(*,*) 'MPI_ABORT: ', "SetLandUselu<0" 
-             !STOP    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-             !STOP endif
-             call CheckStop( lu < 0, "SetLandUselu<0" )
-             call CheckStop( lu > NLANDUSE , "SetLandUselu>NLANDUSE" )
+             call CheckStop( lu < 0 .or. lu > NLANDUSE , &
+                                "SetLandUse out of range" )
 
              if ( bulk(lu) ) cycle    !else Growing veg present:
 
@@ -390,8 +362,6 @@ subroutine ReadLanduse()
 
              hveg = hveg_max(lu)   ! default
 
-      !ds SAIadd code moved from here to DryDep_ml to fix bug spotted by Peter,
-      !   19/8/2003
       !SAIadd for other vegetation still defined in UK_ml
 
              if (  crops(lu) ) then

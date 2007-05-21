@@ -1,3 +1,14 @@
+============== Misc, rv2_7_8,  May 21 2007  =================================
+
+Fixed various problems with 2_7_7
+
+Plus, Cleanups and CheckStop from Michael:
+
+     Sites_ml
+     Solver_ml
+     Output_hourly
+     ZD_OZONE/My_Outputs
+
 ============== Misc, rv2_7_7,  May 16 2007  =================================
 
 Dave:  Makefile.SRCS added - list of .f90 files, included from all

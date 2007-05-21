@@ -225,7 +225,7 @@ contains
      call timefactors(year)               ! => fac_emm, fac_edd, day_factor
     !=========================
 
-      call CheckStop(ios, "ioserror: timefactors")
+      !STOP call CheckStop(ios, "ioserror: timefactors")
 
 
     !** 2) 

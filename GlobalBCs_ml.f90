@@ -295,7 +295,7 @@ else if( iyr_trend >= 2003) then
    USnoxtrend=0.77
    USnh4trend=0.74
 else
-   write(unit=errmsg,fmt=*) "Unspecified trend BCs for this year:", ibc, year"
+   write(unit=errmsg,fmt=*) "Unspecified trend BCs for this year:", ibc, year
    call CheckStop(errmsg)
 
 endif
@@ -470,7 +470,7 @@ elseif ( year > 2005 ) then
   SpecBC(IBC_aNH4  ) = sineconc( 0.15 , 180.0, 0.00, 1.6,  0.05 , 0.03,PPB) !ACE-2(SO4/NH4=1)
 
  ! all BCs read in are in mix. ratio, thus hmin,vmin needs to be in mix. ratio for those                                 
-  SpecBC(IBC_O3   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0*PPB,1.)
+  SpecBC(IBC_O3   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0*PPB,1.)!N1
   SpecBC(IBC_H2O2 ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,0.01*PPB,1.)
   SpecBC(IBC_OH   ) = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.)
   SpecBC(IBC_CH3COO2)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.)

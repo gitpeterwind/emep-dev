@@ -41,6 +41,7 @@ module EmisGet_ml
 
   !/ some common variables
   character(len=40), private :: fname             ! File name
+  character(len=80), private :: errmsg
 
 contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -471,7 +472,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
 
        read(unit=IO_EMIS,fmt=*,iostat=ios) iland, isec ,(intext(idef,i), i=1, nsplit)
  
-       call CheckStop( ios , "EmisGet: Read error on hearer, emis_split " )
+       call CheckStop( ios , "EmisGet: Read error on header, emis_split " )
 
        write(unit=6,fmt="(a25,i3,/,(12a7))") "SPLIT species for idef=", &
                       idef, (intext(idef,i), i=1, nsplit)
@@ -492,8 +493,9 @@ READEMIS: do   ! ************* Loop over emislist files **********************
                 ( defaults .and. iland /= 0                     )  .or. &
                 ( defaults .and. isec  /= n                     )  &
                                                                   ) then
-               print *, "ERROR: emisfrac:", idef, iland, isec, sumtmp 
-               call CheckStop( "EmisGet: not adding up correctly " )
+               write(unit=errmsg,fmt=*) "ERROR: emisfrac:", idef, &
+                                    iland, isec, sumtmp
+               call CheckStop( errmsg )
            end if
            if (  .not. defaults ) then
               do nn=1,nsplit

@@ -18,7 +18,7 @@
 !
 !  D. Simpson,    3/2/99
 !_____________________________________________________________________________
-  use CheckStop_ml, only : CheckStop  ! NEW STOP
+  use CheckStop_ml, only : CheckStop
   use Country_ml,   only : NLAND
   use My_Emis_ml,   only : NEMIS, EMIS_NAME
   use EmisDef_ml,   only : NSECTORS
@@ -110,7 +110,7 @@ contains
    call CheckStop( nydays < 365, &
       "Timefactors: ERR:Call set_nmdays before timefactors?")
 
-   call CheckStop(  NSECTORS == 11 , &
+   call CheckStop(  NSECTORS /= 11 , &
       "Timefactors: ERR:Day-Night dimension wrong!")
 
 

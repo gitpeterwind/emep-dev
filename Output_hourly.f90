@@ -17,6 +17,7 @@
 !
    !dsNew Derived:use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST,IOU_HOUR,Deriv  !u7.4vg 
 
+   use CheckStop_ml,     only : CheckStop
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  NLEVELS_HOURLY, &  ! ds rv1_8_2 
                                  FREQ_HOURLY, &     ! No. hours between outputs
@@ -69,7 +70,7 @@
    integer i,j,ih,ispec,itot           ! indices
    integer :: ik                       ! Index for vertical level
    integer ist,ien,jst,jen             ! start and end coords
-   character(len=20) :: errmsg = "ok"  ! For  consistecny check
+   character(len=50) :: errmsg = "ok"  ! For  consistecny check
    character(len=20) :: name           ! For output file, species names
    character(len=120) :: netCDFName    ! For netCDF output filename
    character(len=4)  :: suffix         ! For date "mmyy"
@@ -270,9 +271,8 @@
                  hr_out(ih)%unitconv, hourly(i_debug,j_debug)
 
           case DEFAULT 
-             errmsg = "ERROR-DEF! Hourly_out: " // hr_out(ih)%type 
-               WRITE(*,*) 'MPI_ABORT: ', "ABORT!hourly type not found" 
-               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+             errmsg = "ERROR-DEF! Hourly_out: " // hr_out(ih)%type
+             call CheckStop( errmsg  // "hourly type not found!")
 
        end select OPTIONS 
 
@@ -307,8 +307,8 @@
               write(6,*) "cfac   is ",   cfac(ispec,maxpos(1),maxpos(2))
             end if
 
-              WRITE(*,*) 'MPI_ABORT: ', "hourlytoo big" 
-              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+              call CheckStop("Error, Output_hourly/hourly_out: too big!")
+
        endif
 
 !NetCDF hourly output

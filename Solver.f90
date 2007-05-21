@@ -256,6 +256,7 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc,dt_tot)
 !Is this a sign that there is a bug in the coefficients?
 !
 
+    use CheckStop_ml,        only : CheckStop
     use Par_ml,              only : me,NPROC
     use ModelConstants_ml,   only : dt_advec
 
@@ -328,17 +329,10 @@ if(dt_advec<=100.)then
    nchem=int(dt_advec/20.)+1
    dt=(dt_advec)/(nchem)
 endif
-if(dt_advec<20.)then
-     WRITE(*,*) 'MPI_ABORT: ', "makedt: dt_advec too small " 
-     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-endif
+call CheckStop(dt_advec<20.,"Error in Solver/makedt: dt_advec too small!")
 
+call CheckStop(nchem > nchemMAX,"Error in Solver/makedt: nchemMAX too small!")
 
-if(nchem > nchemMAX)then
-   print *,'increase nchemMAX'
-     WRITE(*,*) 'MPI_ABORT: ', "makedt: nchemMAX  too small " 
-     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-endif
 nchem=min(nchemMAX,nchem)
 if(me == 0)then
 write(*,*)'Number of timesteps in Solver: ',nchem
@@ -350,11 +344,9 @@ do i=1,nchem
 enddo
 
 !check that we are using consistent timesteps
-if(abs(ttot-dt_advec)>1.E-5)then
-print *,'dt_advec and dt not compatible'
-  WRITE(*,*) 'MPI_ABORT: ', "makedt: error " 
-  call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-endif
+call CheckStop(abs(ttot-dt_advec)>1.E-5, &
+     "Error in Solver/makedt: dt_advec and dt not compatible")
+
 endif
 
 !dt(0)=dt(1)

@@ -1,61 +1,58 @@
-
 module  My_Outputs_ml
 
-  !/ Allows user to specify which species are output to various
-  !  ascii and binary output files.
-  !
-  ! From Steffen's Output_defs_ml, re-coded by ds to apply to site,
-  ! sonde and hourly ouytputs, and to use "type" arrays.
-  !
-  ! Sites  - surface sites,     to sites.out
-  ! Sondes - vertical profiles, to sondes.out
-  ! Hourly - ascii output of selected species, selcted domain
-  ! Restri - Full 3-D output of all species, selected domain
+! -----------------------------------------------------------------------
+! Allows user to specify which species are output to various
+!  ascii and binary output files.
+!
+! From Steffen's Output_defs_ml, re-coded by ds to apply to site,
+! sonde and hourly ouytputs, and to use "type" arrays.
+!
+! Sites  - surface sites,     to sites.out
+! Sondes - vertical profiles, to sondes.out
+! Hourly - ascii output of selected species, selcted domain
+! Restri - Full 3-D output of all species, selected domain
 
-  use Derived_ml, only : f_2d, d_2d, find_one_index
-!hfTD  use Dates_ml,       only : date  
-  use TimeDate_ml,       only : date  
-  use GenSpec_adv_ml
-  use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
+use Derived_ml, only : f_2d, d_2d, find_one_index
+use TimeDate_ml,   only : date  
+use GenSpec_adv_ml
+use GenSpec_shl_ml, only: & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
-  use GenChemicals_ml , only: species
-  use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
-  use Par_ml,            only: me, NPROC,GIMAX,GJMAX,ISMBEG,JSMBEG
-  implicit none
+use GenChemicals_ml ,  only: species
+use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
+use Par_ml,            only: me, NPROC,GIMAX,GJMAX,ISMBEG,JSMBEG
+implicit none
 
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
-  logical, public, parameter :: out_binary = .false.
-  logical, public, parameter :: Ascii3D_WANTED = .false.
+INCLUDE 'mpif.h'
+INTEGER STATUS(MPI_STATUS_SIZE),INFO
+logical, public, parameter :: out_binary = .false.
+logical, public, parameter :: Ascii3D_WANTED = .false.
 
-  ! out_binary = .True. gives also binary files (for use in xfelt).
-  !NB: This option is only for safety: only NetCDF output will be availble in the future.
+! out_binary = .True. gives also binary files (for use in xfelt).
+!NB: This option is only for safety:
+!    only NetCDF output will be availble in the future.
 
-   !/*** Site outputs   (used in Sites_ml)
-   !==============================================================
-   !     Specify the species to be output to the sites.out file
-   ! For met params we have no simple index, so we use characters.
-   ! These must be defined in Sites_ml.f90.
+! Site outputs   (used in Sites_ml)
+!==============================================================
+! Specify the species to be output to the sites.out file
+! For met params we have no simple index, so we use characters.
+! These must be defined in Sites_ml.f90.
 
-   integer, private :: isite              ! To assign arrays, if needed
-   integer, public, parameter :: &
-     NSITES_MAX =    99          & ! Max. no surface sites allowed
+integer, private :: isite              ! To assign arrays, if needed
+integer, public, parameter :: &
+     NSITES_MAX =    99         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
     ,NXTRA_SITE =    2            ! No. Misc. met. params  ( now T2)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
-    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)       ! Everything!!
-    !SITE_ADV =  (/ (isite, isite=1,3), IXADV_SO4, IXADV_PAN, &
-    !               IXADV_aNO3, IXADV_pNO3, IXADV_HNO3, IXADV_aNH4, &
-    !               IXADV_CH3COO2  /)
+    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
-    SITE_SHL =  (/ IXSHL_OH /)                          ! More limited!
+    SITE_SHL =  (/ IXSHL_OH /)                    ! More limited
 
-  ! Extra parameters - need to be coded in Sites_ml also. So far
-  ! we can choose from T2, or th (pot. temp.)
+! Extra parameters - need to be coded in Sites_ml also. So far
+! we can choose from T2, or th (pot. temp.)
 
    character(len=10), public, parameter, dimension(NXTRA_SITE) :: &
      SITE_XTRA=  (/ "hmix    ", "th      "/) 
@@ -66,13 +63,11 @@ module  My_Outputs_ml
 !                  "O3CF    ", "O3DF    ", "O3TC    ", "O3GR    ", &
 !                  "O3WH    " /) 
 
- !ds - rv1.6.12 - can access d_2d fields through index here, by
+ !    - can access d_2d fields through index here, by
  !     setting "D2D" above and say D2_FSTCF0 here:
 
    integer,           public, parameter, dimension(NXTRA_SITE) :: &
     SITE_XTRA_INDEX=  (/     0,        0 /)     ! Height at mid-cell
-
-
 
 
 
@@ -89,7 +84,6 @@ module  My_Outputs_ml
     FLIGHT_ADV =  (/ IXADV_O3 /)
 
 
-
    !/*** Sonde outputs   (used in Sites_ml)
    !==============================================================
    !     Specify the species to be output to the sondes.out file
@@ -99,34 +93,18 @@ module  My_Outputs_ml
    ! These must be defined in Sites_ml.f90.
 
    integer, public, parameter :: &
-!MERLIN USES...
- !   NSONDES_MAX =   340               &   ! Max. no sondes allowed
- !  ,NLEVELS_SONDE =  10               &   ! No. k-levels (9 => 0--2500 m)
- !  ,FREQ_SONDE  =     1               &   ! Interval (hrs) between outputs
- !  ,NADV_SONDE  =    30                &   ! No.  advected species
-!ELSE SR RUNS USE:::::
      NSONDES_MAX =    99               &   ! Max. no sondes allowed
     ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =     8                &   ! No.  advected species
-!END
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
     ,NXTRA_SONDE =    4                &   ! No. Misc. met. params  (now th)
     ,N_NOy       =   10                    ! # of N species in NOy
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
-!MERLIN USES...
- ! SONDE_ADV = (/ &
- !  IXADV_o3,  IXADV_no,  IXADV_no2,  IXADV_pan,  IXADV_hno3, &
- !  IXADV_macr,  IXADV_hcho,  IXADV_ch3cho,  IXADV_c2h6,  IXADV_nc4h10, &
- !  IXADV_c2h4,  IXADV_c3h6,  IXADV_oxyl,  IXADV_isop,  IXADV_h2o2, &
- !  IXADV_h2,  IXADV_co,  IXADV_so2,  IXADV_nh3,  IXADV_glyox, &
- !  IXADV_mglyox,  IXADV_mek,  IXADV_mvk,  IXADV_mal,  IXADV_aNO3, & 
- !  IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4,  IXADV_pm25,  IXADV_pmco /)
-!ELSE SR RUNS USE:::::
    SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_HNO3, IXADV_aNO3, & 
    IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
-!END
+
 
    integer, public, parameter, dimension(N_NOy) :: &
      NOy_SPEC =  (/ IXADV_HNO3, IXADV_NO,  IXADV_NO2,  IXADV_PAN,    &
@@ -136,14 +114,16 @@ module  My_Outputs_ml
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
+!    SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /) 
     SONDE_XTRA=  (/ "NOy  ", "z_mid", "p_mid", "th   " /)  ! Height at mid-cell
     !SONDE_XTRA=  (/ "z_mid", "p_mid", "th   ","RH   " /)  ! Height at mid-cell
 
- !ds - rv1.6.12 - can access d_3d fields through index here, by
- !     setting "D3D" above and say D3_XKSIG12 here:
+ !   can access d_3d fields through index here, by
+ !   setting "D3D" above and say D3_XKSIG12 here:
 
    integer,           public, parameter, dimension(NXTRA_SONDE) :: &
-    SONDE_XTRA_INDEX=  (/     0, 0, 0, 0 /)
+    !SONDE_XTRA_INDEX=  (/     0, 0, 0, 0, 0, 0 /)
+    SONDE_XTRA_INDEX=  (/      0, 0, 0, 0 /)
 
 
 
@@ -155,7 +135,7 @@ module  My_Outputs_ml
    !     need change in hourly_out.f also).
 
    !----------------------------------------------------------------
-   !ds rv1_8_2: Added possibility of multi-layer output. Specify
+   ! Possibility of multi-layer output. Specify
    ! NLEVELS_HOURLY here, and in hr_out defs use either:
    !
    !      ADVppbv to get surface concentrations (onyl relevant for 
@@ -179,7 +159,7 @@ module  My_Outputs_ml
          character(len=7) :: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3" 
          character(len=9) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
-                                    !ds u7.4vg .. or other arrays
+                                    !  .. or other arrays
          integer          :: ix1    ! bottom-left x
          integer          :: ix2    ! upper-right x
          integer          :: iy1    ! bottom-left y
@@ -249,7 +229,7 @@ contains
    integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  !restricted EMEP
 !   integer, save :: ix1 = ISMBEG, ix2 = ISMBEG+GIMAX-1, iy1=JSMBEG, iy2 =  JSMBEG+GJMAX-1  !all
 
-  !ds New Deriv system:
+  ! For Deriv system:
    integer :: D2_O3WH, D2_O3DF,  &
     D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
     D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
@@ -286,7 +266,7 @@ contains
  hr_out(1)= Asc2D("o3_3m", "ADVppbv", &
                   "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0)
 
-!ds New deriv system
+! For deriv system
  
  D2_O3WH = find_one_index("D2_O3WH",f_2d(:)%name)
  D2_O3DF = find_one_index("D2_O3DF",f_2d(:)%name)
@@ -324,7 +304,7 @@ contains
 !
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)
- !ds u7.4vg - or from d_2d arrays.
+ !  - or from d_2d arrays.
 
   !**           type   ofmt   ispec    ix1 ix2  iy1 iy2  unit conv    max
   !hr_out(3)= &
@@ -358,8 +338,6 @@ contains
 
 
 
-
-
   !/** Consistency checks
 
    do i = 1, NHOURLY_OUT
@@ -384,7 +362,4 @@ contains
 
  end subroutine set_output_defs
 end module My_Outputs_ml
-
-
-
 
