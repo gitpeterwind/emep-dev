@@ -80,7 +80,7 @@ module GridAllocate_ml
 
        do icc = 1,nc
           if( gridc(i,j,icc) == code ) then
-              write(unit=*,fmt=*) "Already listed for grid, ic", code , ic
+              !write(unit=*,fmt=*) "Already listed for grid, ic", code , ic
               ic = icc
               return
           endif
