@@ -14,13 +14,13 @@
  use DepVariables_ml,      only:  water                                         !st sept,2004
  use GenSpec_tot_ml,       only : SSFI, SSCO
  use GenChemicals_ml,      only : species
+ use Landuse_ml,        only : landuse_ncodes, landuse_codes, landuse_data 
  use Par_ml,               only : MAXLIMAX,MAXLJMAX  & ! => x, y dimensions
                                  ,me   ! for testing
  use PhysicalConstants_ml, only : CHARNOCK,GRAV,KARMAN, AVOG  &
                                  ,PI, AVOG
  use Met_ml,               only : ustar_nwp, roa, z_bnd, nwp_sea !ds may05 iclass
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
- use UKdep_ml,             only : landuse_ncodes, landuse_codes, landuse_data   !st sept,2004
 
   implicit none
   private

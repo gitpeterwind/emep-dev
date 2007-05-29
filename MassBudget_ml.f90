@@ -14,7 +14,7 @@
 ! section at end
 !_____________________________________________________________________________
 
-
+ use My_UKDep_ml, only : NDRYDEP_ADV, Dep 
  use My_MassBudget_ml,only : MY_MASS_PRINT ! Species to be printed
 
  use GenChemicals_ml, only : species       ! species identifier
@@ -38,6 +38,7 @@
                             ,limax,ljmax&
                             ,gi0, gj0   &
                             ,GIMAX,GJMAX
+ use Setup_1dfields_ml, only : amk ! Air concentrations 
 
 !Variable listing
 !MAXLIMAX    ==> Maximum number of local points in longitude
@@ -395,9 +396,7 @@ contains
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine DryDep_Budget(i,j,Loss,convfac)
-     use Setup_1dfields_ml, only : amk ! Air concentrations 
-     use GenSpec_adv_ml
-     use My_UKDep_ml, only : NDRYDEP_ADV, Dep 
+     !use GenSpec_adv_ml
 
       real, dimension(NSPEC_ADV), intent(in) :: Loss
       real, dimension(NSPEC_ADV)             :: DryLoss

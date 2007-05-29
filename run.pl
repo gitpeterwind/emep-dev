@@ -169,7 +169,7 @@ $ACID = "0";     # Specify model type here, and check:
 
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_6_6";
+    $testv       = "rv2_6_9";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -518,7 +518,7 @@ mylink( "LAST RECORD SET: ", $old,$new ) ;
     } 
     
     $ifile{"$DATA_LOCAL/rough.170"} = "rough.170"; # Roughness length;
-    $ifile{"$DATA_LOCAL/landuse.JUN06"} = "landuse.JUN06";
+    $ifile{"$DATA_LOCAL/Landuse.MAY07"} = "Inputs.landuse";
     $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat";
 
     $ifile{"$DataDir/JUN06_gfac1.dat"} = "JUN06_gfac1.dat";

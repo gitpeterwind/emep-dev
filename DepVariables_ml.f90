@@ -15,6 +15,8 @@ integer, public, parameter :: NLANDUSE =   19 !number of land-use classes
 integer, public, parameter :: LU_WATER =   14 !  Sea/lakes
 integer, public, parameter :: LU_ICE   =   15 !  Ice  ! Pb210 - temporary
 real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
+integer, public, save :: lc_water             !  Sea/lakes
+integer, public, save :: lc_ice               !  Sea/lakes
 
 !/-- assign UK 17 to categories - used in dry deposition outputs.
 ! Note that IAM_ stuff are "fakes", so not added in.

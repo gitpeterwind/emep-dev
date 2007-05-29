@@ -40,6 +40,8 @@ module GridAllocate_ml
 !   ds - 2000-Jan. 2001, some re-writing + Self_Test added, May 2007
 !____________________________________________________________________
   use CheckStop_ml, only : CheckStop
+  use Par_ml, only : me ! TESTS
+  use GridValues_ml, only : i_glob, j_glob
   implicit none
   private
 
@@ -75,21 +77,29 @@ module GridAllocate_ml
      integer, dimension(:,:),   intent(inout) ::ngridc   ! No. countries
 
      integer :: nc, icc            ! local variables
+     character(len=100) :: errmsg
 
        nc=ngridc(i,j)       ! nc = no. countries known so far
 
        do icc = 1,nc
           if( gridc(i,j,icc) == code ) then
-              !write(unit=*,fmt=*) "Already listed for grid, ic", code , ic
+              !write(unit=*,fmt="(a8,a20,i3,3i6,4i4)") trim(label),  &
+                ! " ::Already listed ", me, i,j, nc , icc, code
               ic = icc
               return
           endif
        enddo
 
        ic = nc + 1
-       !write(unit=*,fmt=*) "New country code , ic, nc", code , nc
+       if ( ic > ncmax ) then
+          do icc  = 1, ic 
+              write(unit=*,fmt=*) "XXX GridAlloc_ij:"//label , icc,ic, code
+          end do
+       
+          write(unit=errmsg,fmt=*) "me", me, " i ", i, " j ", j, " iglob ", i_glob(i), j_glob(j)
+          call CheckStop( "GridAlloc ncmax ERROR" // label // errmsg )
 
-       call CheckStop( ic > ncmax , "GridAlloc ncmax ERROR" // label )
+       end if
 
 
        ngridc(i,j) = ngridc(i,j) + 1    ! country is a new one
@@ -97,12 +107,8 @@ module GridAllocate_ml
 
        if( ic >  ncmaxfound) then
            ncmaxfound = ic
-           write(unit=*,fmt=*) "GridAlloc ", label, &
-                     "  increased ncmaxfound:", i,j,ic
-           write(unit=*,fmt=*) "GridAlloc gridc: ", &
-                        (gridc(i,j,icc),icc=1,ncmaxfound)
  
-        endif
+       end if
 
   end subroutine GridAllocate_ij
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

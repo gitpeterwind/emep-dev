@@ -21,10 +21,10 @@
  use Par_ml, only : &
         MAXLIMAX,MAXLJMAX   & ! max. possible i, j in this domain
       ,limax,ljmax          & ! actual max.   i, j in this domain
+      ,li0,li1,lj0,lj1      & ! for debugging TAB
       ,ISMBEG,JSMBEG        & ! start of user-specified domain
       ,gi0,gj0              & ! global coordinates of domain lower l.h. corner
       ,NPROC,me &               ! Number of processors, local processor
-!hf BC
       ,IILARDOM,JJLARDOM
  use PhysicalConstants_ml, only : GRAV, PI       ! gravity, pi
  implicit none
@@ -38,12 +38,8 @@
  Public :: ij2ijm       !pw grid1 to grid2
  Public :: lb2ij        !pw longitude latitude to grid
 
-!Hf BC
  Public :: GlobalPosition     ! => 
  private :: Position   ! => lat(gb), long (gl)
-!emep1.2beta private :: SetZ0      ! =>  z0 (from RIVM ???)
-!pw moved to DryDep_ml private :: inpar    ! input of iclass
-!ds moved instead to Met_ml
 
 
   !** 1) Public (saved) Variables from module:
@@ -62,12 +58,15 @@
 
   integer, public, save, dimension(0:MAXLIMAX+1) :: i_glob !global coordinates
   integer, public, save, dimension(0:MAXLJMAX+1) :: j_glob !of local i,j
+ ! and from global (Large Domain) to local:
+  integer, public, save, dimension(IILARDOM) :: i_local  !local coordinates
+  integer, public, save, dimension(JJLARDOM) :: j_local  !of global i,j
 
 
   real, public, save,  dimension(KMAX_BND) ::  &
            sigma_bnd ! sigma, layer boundary 
 
-  real, public, save,  dimension(KMAX_MID) ::  &     ! su corrected!
+  real, public, save,  dimension(KMAX_MID) ::  &
            sigma_mid   ! sigma layer midpoint
 
   real, public, save,  dimension(KMAX_MID) ::  carea    ! for budgets ???
@@ -76,7 +75,7 @@
             gl   &               !longitude of EMEP grid center
            ,gb                  !latitude  of EMEP grid center
 
-    real, public, save,  dimension(IILARDOM,JJLARDOM) :: &    !hf BC
+    real, public, save,  dimension(IILARDOM,JJLARDOM) :: &
             gb_glob,   &               !longitude of EMEP grid center
             gl_glob                    !longitude of EMEP grid center
 
@@ -104,7 +103,6 @@
                xm2ji  &
               ,xmdji
 
- ! ds jun2005:
   integer, public, save :: &
               debug_li, debug_lj         ! Local Coordinates of debug-site
   logical, public, save :: debug_proc          ! Processor with debug-site
@@ -114,7 +112,7 @@
 
   !/** internal parameters
 
-  logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
+  logical, private, parameter ::  DEBUG_GRID = .true.  ! for debugging
     character (len=100),public::projection
   integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
   integer, public :: Poles(2) !Poles(1)=1 if North pole is found, Poles(2)=1:SP
@@ -135,7 +133,7 @@ contains
 
   ! Earth radius = 6.37e6 m, gives gridwidth:
 
-!pw u3    GRIDWIDTH_M = 6.370e6*(1.0+0.5*sqrt(3.0))/AN    ! = 50000.0 m
+!   GRIDWIDTH_M = 6.370e6*(1.0+0.5*sqrt(3.0))/AN    ! = 50000.0 m
 
 
 ! NB! HIRLAM uses Earth radius = 6.371e6 m : 
@@ -152,16 +150,14 @@ contains
     i_glob = (/ (n + gi0 + ISMBEG - 2, n=0,MAXLIMAX+1) /) 
     j_glob = (/ (n + gj0 + JSMBEG - 2, n=0,MAXLJMAX+1) /) 
 
-    if ( DEBUG_GRID ) then
-        write(*,*) "DefGrid: me,ISMBEG,JSMBEG,gi0,gj0",me,ISMBEG,JSMBEG,gi0,gj0
-        write(*,*) "DefGrid: me,i_glob",  me, i_glob(1), i_glob(MAXLIMAX+1)
-        write(*,*) "DefGrid: me,j_glob",  me, j_glob(1), j_glob(MAXLJMAX+1)
-        write(*,*) "DefGrid: me,MAXLIMAX, limax",me,   MAXLIMAX, limax
-        write(*,*) "DefGrid: me,MAXLJMAX, ljmax",me,   MAXLJMAX, ljmax
-    end if
+  ! And the reverse, noting that we even define for area
+  ! outside local domain
 
-    !ds jun2005:
-    !ds -------------- Find debug coords  and processor ------------------
+    i_local = (/ (n - gi0 - ISMBEG + 2, n=1, IILARDOM) /)
+    j_local = (/ (n - gj0 - JSMBEG + 2, n=1, JJLARDOM) /)
+
+
+    ! -------------- Find debug coords  and processor ------------------
 
     do i = 1, MAXLIMAX
        do j = 1, MAXLJMAX
@@ -243,15 +239,25 @@ contains
        call Position()
 
     if ( DEBUG_GRID ) then
-        print *," After position" 
-        print *, "DefGrid: ", ISMBEG, gi0
-        print *, "DefGrid: i_glob",  i_glob(1), i_glob(MAXLIMAX+1)
-        print *, "DefGrid:  min, max gl ",  minval(gl), maxval(gl)
-        print *, "DefGrid:  min, max gb ",  minval(gb), maxval(gb)
-        print *, "DefGrid:  glob lat    ",  gb_glob(100,80)  ! ca. 60deg
-        print *, "DefGrid:  gb - 1,1, MAXLIMAX, MAXLJMAX",  &
-                              gb(1,1), gb(MAXLIMAX,MAXLJMAX)
+       if ( me == 0 ) then
+         write(*,800) "GRIDTAB","me","ISM","JSM","gi0","gj0",&
+              "li0","li1","lix","MXI",&
+              "lj0","lj1","ljx"," MXJ"," ig1"," igX","jg1","jgX"
+         write(*,802) "GRIDLL ","me", "mingl"," maxgl"," mingb"," maxgb",&
+              " gb(1,1)"," gb(MAX..)"
+       end if
+
+       write(*,804) "GRIDTAB",me,ISMBEG,JSMBEG,gi0,gj0,li0,li1,limax,MAXLIMAX,&
+            lj0,lj1,ljmax, MAXLJMAX, &
+              i_glob(1), i_glob(MAXLIMAX+1),j_glob(1), j_glob(MAXLJMAX+1)
+
+       write(*,806) "GRIDLL ",me, minval(gl), maxval(gl), minval(gb), &
+               maxval(gb), gb(1,1), gb(MAXLIMAX,MAXLJMAX)
     end if
+ 800 format(a10,20a4)
+ 802 format(a10,a4,10a12)
+ 804 format(a10,20i4)
+ 806 format(a10,i4,10f12.4)
 
   end subroutine DefGrid
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -322,7 +328,7 @@ contains
     end do ! j
     endif
 
-    !su - added test to find global-min and max lat/long values
+    ! test to find global-min and max lat/long values
 
     gbacmax = maxval(gb(:,:))
     gbacmin = minval(gb(:,:))
@@ -341,16 +347,16 @@ contains
     CALL MPI_ALLREDUCE(MPIbuff, glacmin  , 1, &
          MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
     
-    if(me==0) write(unit=6,fmt=*) "max/min for gb,gl", &
+    if(me==0) write(unit=6,fmt="(a30,4f9.4)") "GridValues: max/min for gb,gl", &
                      gbacmax,gbacmin,glacmax,glacmin
 
     if ( DEBUG_GRID ) then
        do j = 1, MAXLJMAX
          do i = 1, MAXLIMAX
-           if ( i_glob(i) == 91 .and. j_glob(j) == 71 ) then ! Rorvik
-             print "(a20,4i4,2f8.2,f7.3)", &
-              "Position: i,j,i_glob,j_glob,gl,gb,rp: ",  &
-              i,j, i_glob(i), j_glob(j), gl(i,j), gb(i,j),rp
+           if ( i_glob(i) == DEBUG_i .and. j_glob(j) == DEBUG_j ) then
+             write(*,"(a15,a30,5i4,2f8.2,f7.3)") "DEBUGPosition: ",  &
+                        " me,i,j,i_glob,j_glob,gl,gb,rp: ", &
+              me, i,j, i_glob(i), j_glob(j), gl(i,j), gb(i,j),rp
            end if
          end do
        end do

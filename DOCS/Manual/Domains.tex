@@ -1,15 +1,20 @@
-\chapter{Domains}
+\chapter{Domains and Coordinates}
+
+\section{Domains}
 
 Domains - a confusing word. In normal modelling terminology domains
 refer to the total area covered by the model simulation, and possibly
 to some output areas. In the unified model, and parallel-coding terminology,
 domains refer also to the area covered by each processor. To try to distinguish
-between these, we generally refer to the former type as global domains, 
-and the latter as local domains. (The word global is also confusing of course - here we 
-do not mean for the whole globe!)
+between these, we generally refer to the former type as `full' domains, 
+and the latter as local domains.  At present the `full' domain in the
+EMEP model is defined by the meteorology. Thus, for the traditional EMEP
+grid this full domain extends 170 grid squares in the x-direction, and
+133 grid squares in the y-direction.
 
-The model has a number of global-type domains:\\
-\\
+The model has a number of domains, illustrated in Fig.\ref{fig:Domains}
+
+\begin{figure}
 \begin{picture}(400,300)
 \put(2,2){\framebox(340,266)[br]{Meteorology}}
 \put(72,20){\framebox(260,240)[br]{EMEP area}}
@@ -17,82 +22,134 @@ The model has a number of global-type domains:\\
 \put(130,60){\dashbox{0.9}(180,180)[br]{Hourly output}}
 \put(200,90){\dashbox{0.6}(30,30)[br]{Restri output}}
 \end{picture}
+\caption{Illustrations of different domains in the EMEP
+model.}
+\label{fig:Domains}
+\end{figure}
 
 
-%TMP\section{Meteorology}
-%TMP
-%TMP\noindent
-%TMPSet in {\bf run.pl} : @largedomain = ( 1 , 171, 1 , 133 );\\
-%TMP\vspace{3mm}
-%TMP
-%TMPTranslated into \Par\ as:\\
-%TMP\begin{small}\begin{verbatim}
-%TMP  integer, public, parameter ::  &
-%TMP    IILARDOM    =    170         &
-%TMP  , JJLARDOM    =    133         &
-%TMP\end{verbatim}
-%TMP\end{small}
-%TMP
-%TMP
-%TMP\section{EMEP area} 
-%TMP
-%TMP\noindent
-%TMPSet in {\bf run.pl} : @smalldomain = ( 36, 160, 11, 123 ) ;
-%TMP\vspace{3mm}
-%TMP
-%TMPTranslated as for Run area (below)
-%TMP
-%TMP\section{ Run area  (and its shadow!) } 
-%TMP
-%TMP\noindent
-%TMPSet in {\bf run.pl} : @smalldomain = ( user-specified  );  \\
-%TMP\vspace{3mm}
-%TMP\\
-%TMPFor example, @smalldomain = ( 101, 140, 51, 90 ) 
-%TMPtranslates to the following in \Par:\\
-%TMP\begin{small}\begin{verbatim}
-%TMP  integer, public, parameter ::  &
-%TMP  , ISMBEG      =   101    & ! Starting x-coodinate
-%TMP  , JSMBEG      =   51     & ! Starting y-coodinate
-%TMP  , GIMAX       =   40     & ! Number of global points in longitude
-%TMP  , GJMAX       =   40     & ! Number of global points in latitude
-%TMP\end{verbatim}
-%TMP\end{small}
-%TMP
-%TMP
-%TMP
-%TMPThe area run by the model does not need to be the EMEP area, just
-%TMPany sub-domain of the meteorology domain. For standard EMEP runs
-%TMPthe two will be set equal, but for testing we could choose just to
-%TMPhave a tiny run-domain. For testing with 4 or 8 processors then
-%TMP\@smalldomain = ( 51, 160, 31, 120 ) works quite well.
-%TMP
-%TMP\subsection*{Shadow area}
-%TMP
-%TMPIMPORTANT - the grid cells on the boundaries of the run-area are
-%TMPexcluded from the chemical calculations, since the advection routines
-%TMPrequire one cell more than the chemistry. Thus, in \Par\ you will find:
-%TMP
-%TMP\begin{small}\begin{verbatim}
-%TMPFrom par_ml.f90
-%TMP     limax       & ! Actual number of local points in longitude
-%TMP   , ljmax         ! Actual number of local points in latitude
-%TMP
-%TMP     li0  & ! First local index in longitude when outer boundary is excluded
-%TMP   , li1  & ! Last local index in longitude when outer boundary is excluded
-%TMP   , lj0  & ! First local index in latitude when outer boundary is excluded
-%TMP   , lj1    ! Last local index in latitude when outer boundary is excluded
-%TMP\end{verbatim}
-%TMP\end{small}
-%TMP
-%TMP
-%TMPSo, if you loop over something that does not need
-%TMPinfo from neighboring boxes then it is ok to use li0:li1, lj0:lj1,
-%TMPbut if you need info from the "shadow area" (ie advection)  you must use
-%TMP1:limax,1:ljmax.
-%TMP\bigskip
-%TMP\bigskip
-%TMP
-%TMP
-%TMPThe domains used for the outputs are discussed more in section~\ref{OUTPUTS}.
-%TMP
+
+\subsection{Full (Meteorology) area} 
+
+Specifies the master coordinates to be used in the model. 
+(As noted above, at present the `full' domain and
+ meteorology domain are identical).
+
+
+\noindent
+Set in {\bf run.pl} : @largedomain = ( 1 , 171, 1 , 133 );\\
+\vspace{3mm}
+
+Translated into \Par\ as:\\
+\begin{small}\begin{verbatim}
+  integer, public, parameter ::  &
+    IILARDOM    =    170         &
+  , JJLARDOM    =    133         &
+\end{verbatim}
+\end{small}
+
+
+
+Translated as for Run area (below)
+
+\section{ Run area  (and its shadow!) } 
+
+\noindent
+Set in {\bf run.pl} : @smalldomain = ( user-specified  );  \\
+\vspace{3mm}
+\\
+For example, @smalldomain = ( 101, 140, 51, 90 ) 
+translates to the following in \Par:\\
+\begin{small}\begin{verbatim}
+  integer, public, parameter ::  &
+  , ISMBEG      =   101    & ! Starting x-coodinate
+  , JSMBEG      =   51     & ! Starting y-coodinate
+  , GIMAX       =   40     & ! Number of global points in longitude
+  , GJMAX       =   40     & ! Number of global points in latitude
+\end{verbatim}
+\end{small}
+
+The traditional EMEP run area corresponds to  @rundomain = ( 36, 160, 11, 123 ).
+
+
+The area run by the model does not need to be the EMEP area, just
+any sub-domain of the meteorology domain. For testing we could choose just to
+have a tiny run-domain. For testing with 4 or 8 processors then
+\@smalldomain = ( 51, 160, 31, 120 ) works quite well.
+
+
+
+\subsection*{Shadow area}
+
+COULD MOVE THE FOLLOWING TO A PART B, FOR CODING. ONLY REALLY RELEVENT
+FOR USERS WHO WANT TO DIG  INTO THE CODE - EXCEPT TO NOTE THAT THERE
+IS AN `EDGE' FOR WHICH CALULATIONS AREN'T DONE.
+
+IMPORTANT when coding - the grid cells on the boundaries of the run-area are
+excluded from the chemical calculations, since the advection routines
+require one cell more than the chemistry. Thus, in \Par\ you will find:
+
+\begin{small}\begin{verbatim}
+From par_ml.f90
+     limax       & ! Actual number of local points in longitude
+   , ljmax         ! Actual number of local points in latitude
+
+     li0  & ! First local index in longitude when outer boundary is excluded
+   , li1  & ! Last local index in longitude when outer boundary is excluded
+   , lj0  & ! First local index in latitude when outer boundary is excluded
+   , lj1    ! Last local index in latitude when outer boundary is excluded
+\end{verbatim}
+\end{small}
+
+
+So, if you loop over something that does not need
+info from neighboring boxes then it is ok to use li0:li1, lj0:lj1,
+but if you need info from the "shadow area" (ie advection)  you must use
+1:limax,1:ljmax.
+\bigskip
+\bigskip
+
+
+The domains used for the outputs are discussed more in section~\ref{OUTPUTS}.
+
+
+
+\subsection{Summary of coordinates}
+
+
+Table~\ref{Tab:COORDS}
+gives an example of the various coordinates and limits for the case of
+4 processors (me=0,1,2,3), and a run domain set with:
+
+\begin{verbatim}
+@rundomain = (  76, 117,  40, 102 ) ; 
+\end{verbatim}
+
+NEED TO EXPLAIN i\_glob, j\_glob, WHY MAXLIMAX+1.
+
+\begin{table}
+\caption{Example of coordinates derived for each processor with
+the case of 4 processors (me=0,1,2,3) and smalldomain:  76, 117,  40, 102}
+For example, processor me=0 covers ..... continue
+
+
+\label{Tab:COORDS}
+\begin{tabular}{lcccc}\\
+me& 0& 1& 2& 4\\
+ISMBEG& 76& 76& 76& 76\\
+JSMBEG& 40& 40& 40& 40\\
+gi0& 1& 22& 1& 22\\
+gj0& 1& 1& 32& 32\\
+li0& 2& 1& 2& 1\\
+li1& 21& 20& 21& 20\\
+limax& 21& 21& 21& 21\\
+MAXLIMAX& 21& 21& 21& 21\\
+lj0& 2& 2& 1& 1\\
+lj1& 31& 31& 31& 31\\
+MAXLJMAX& 32& 32& 32& 32\\
+i\_glob(1)& 76& 97& 76& 97\\
+i\_glob(MAXLIMAX+1)& 97& 118& 97& 118\\
+j\_glob(1)& 40& 40& 71& 71\\
+j\_glob(MAXLJMAX+1)& 72& 72& 103& 103\\
+\end{tabular}
+\end{table}

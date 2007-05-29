@@ -9,9 +9,10 @@ module CheckStop_ml
 !   (a)  errmsg  /= ok
 !   (b)  int     /= 0               (e.g. iostat index after read)
 !   (c)  int1    /= int2
-!   (d)  logical expression = true  (e.g. lu < 0 for landuse index)
+!   (d)  string1  /= string2
+!   (e)  logical expression = true  (e.g. lu < 0 for landuse index)
 
-! Dave Simpson, 25 April 2007
+! Dave Simpson, April-May 2007
 !
 
  implicit none
@@ -20,13 +21,15 @@ module CheckStop_ml
 
   public :: StopAll
   public :: CheckStop
-  private :: CheckStop_ok, CheckStop_int1, CheckStop_int2, CheckStop_TF
+  private :: CheckStop_ok, CheckStop_okinfo, CheckStop_int1, CheckStop_int2, &
+               CheckStop_str2, CheckStop_TF
 
   interface CheckStop
      module procedure CheckStop_ok
      module procedure CheckStop_okinfo
      module procedure CheckStop_int1
      module procedure CheckStop_int2
+     module procedure CheckStop_str2
      module procedure CheckStop_TF   
   end interface CheckStop
 
@@ -91,6 +94,16 @@ module CheckStop_ml
         call StopAll(infomsg)
       end if
   end subroutine CheckStop_int2
+
+  subroutine CheckStop_str2(str1,str2, infomsg)   ! Test if str1 /= str2
+      character(len=*), intent(in) :: str1, str2, infomsg
+
+      if ( trim(str1) /= trim(str2) ) then
+        write(*,*) "CheckStopl_str2 Called with: str1 ", str1, " str2 ", str2
+        write(*,*) "                             infomsg ", infomsg
+        call StopAll(infomsg)
+      end if
+  end subroutine CheckStop_str2
 
   subroutine CheckStop_TF(is_error, infomsg)   ! Test expression, e.g. lu<0
       logical, intent(in)          :: is_error  

@@ -207,18 +207,18 @@ contains
   integer           :: lev     ! vertical coordinate (20=ground)
   character(len=20) :: s       ! Name of site read in
   character(len=30) :: comment ! comment on site location
-  character(len=40) :: infile
+  character(len=40) :: infile, errmsg
   logical           :: LLfile  ! true if the file is of lat/lon type
   real              :: lat,lon,ir,jr
 
   LLfile=.false.
 
   infile = fname // "LL.dat"
-  call check_file(infile,fexist,needed=.false.)
+  call check_file(infile,fexist,needed=.false.,errmsg=errmsg)
 
   if ( .not. fexist) then
      infile  = fname // ".dat"
-     call check_file(infile,fexist,needed=.false.)
+     call check_file(infile,fexist,needed=.false.,errmsg=errmsg)
      if ( .not. fexist ) return
   else
      LLfile=.true.

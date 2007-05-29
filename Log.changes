@@ -1,3 +1,61 @@
+============== Misc, rv2_7_9,  May 29 2007  =================================
+
+Dave: 
+      
+    Major changes =======================================================
+
+      Io_Progs_ml added -  new system for reading input files. Simpler (I hope!)
+             syntax, requirement for descriptive headers and lines in input
+ 
+      Io_Nums_ml added - just integer values
+             file. See Manual for description.
+
+      Io_ml now just wrapper for Io_Nums_ml, Io_Progs_ml
+
+      KeyValue_ml - NEW - simple routines for dealing with a fortran equivalent
+         of a key-value pair - a crude attempt to redproduce
+         some of the nice features of perl's hashes or python's dictionary
+
+      Landuse_ml - recoded to use new inputs format, Read_Headers, read_line
+          and simpler syntax
+
+      SmallUtils_ml - NEW -  module for small utilities. find-index stuff and wordcount
+           moved here, and WriteArray added.
+
+      UK_ml, now renamed DepLanduse_ml and recoded as above
+
+      DOCS/Manual/Inputs.tex - started description of new input formats
+      DOCS/Manual/Domains.tex - added description of coordinate systems,
+           which have confused me for years!
+
+  NEW - Usage of Self_Test in some modules - highly encouraged!! 
+
+    Small changes =======================================================
+      CheckStop_ml - added test for CheckStop( string1, string2, info )
+
+      DepVariables_ml - lc_water, lc_ice added - no effect for now, but
+           start of recoding
+
+      DryDep_ml - just renaming, UK_ml to Landuse_ml, etc.
+      EmisGet - small changes
+      GridAllocate_ml -  small changes
+
+      GridValues_ml  -  some tidy up, and table created for various coordinates
+          (prints out li0,li1,limax, etc..... for each me ) 
+  
+          i_local, j_local arrays created (reverse of i_glob, j_glob)
+
+      Makefile.SRCS - updated
+      MassBudget_ml - small changes
+      Par_ml.pat - CheckStop
+      SeaSalt_ml -  just renaming UK_ml
+      Setup_1d_ml -  renaming UK_ml + small tidy up
+      Sites_ml    -  errmsg added
+      Unimod.f90 - smnall changes
+
++ Landuse.MAY07 created - essentially landuse.JUN06 but with new formatting
++ changed in run.pl
+
 ============== Misc, rv2_7_8,  May 21 2007  =================================
 
 Fixed various problems with 2_7_7

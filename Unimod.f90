@@ -68,6 +68,7 @@ program myeul
   use GridValues_ml,    only : DefGrid,MIN_ADVGRIDS&  ! sets gl, gb, xm, gridwidth_m, etc.
                                ,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
+  use Landuse_ml,       only : ReadLandUse
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse,&
                                tiphys,Meteoread,MeteoGridRead,&
@@ -87,7 +88,6 @@ program myeul
 
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
-  use UKdep_ml,         only : ReadLandUse   !ds rv2_2_3
   use Nest_ml,         only : wrtxn
 
 !           --------------------
@@ -281,7 +281,7 @@ program myeul
     integer iupw, i, j, ii, k, iotyp
     integer :: mm, mm_old   ! month and old-month  (was nn and nold)
     integer :: nproc_mpi,cyclicgrid
-    character (len=130) :: fileName
+    character (len=130) :: fileName, errmsg
 
 !
 !     initialize the parallel topology
@@ -291,17 +291,14 @@ program myeul
     CALL MPI_COMM_RANK(MPI_COMM_WORLD, ME, INFO)
     CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nproc_mpi, INFO)
 
-    if(nproc_mpi /= NPROC)then
-      if(me == 0)then
-        print *,'program was compiled with NPROC = ',NPROC
-        print *,'program was linked with NPROC = ',nproc_mpi
-      endif
-        WRITE(*,*) 'MPI_ABORT: ', 'wrongprocessor number' 
-        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-    endif
-
 !  some checks
 !
+    if(nproc_mpi /= NPROC)then
+        write(unit=errmsg,fmt=*)"Wrong processor number!", &
+                  "program was compiled with NPROC = ",NPROC, &
+                            " but linked with ", nproc_mpi 
+        call CheckStop( errmsg )
+    end if
     call CheckStop( digits(1.0) < 50, &
         "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
 
@@ -402,7 +399,7 @@ program myeul
     if ( me == 0 ) write(6,*)"emissions fifniseh" 
 
     ! daynumber needed  for BCs, so call here to get initial
-!hfTD      call dayno(current_date%month,current_date%day,daynumber) !u3
+
     daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
 
 
@@ -485,7 +482,6 @@ program myeul
 
     ! - daynumber needed  for BCs, so call here to be safe
 
-!hfTD      call dayno(current_date%month,current_date%day,daynumber) !u3
       daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
 
       if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
@@ -512,7 +508,6 @@ program myeul
 
           if ( AIRNOX ) call lightning()
 
-!hf aq         
           call init_aqueous()
 
           if(numt == 2) call tstfld
@@ -522,7 +517,7 @@ program myeul
 
       end if    ! mm_old.ne.mm
 
-!m9 - we add a monthly call to BoundaryConditions. Can re-code later for
+! - we add a monthly call to BoundaryConditions. Can re-code later for
 !     possibly shorter call intervals
 
       call Code_timer(tim_before)
@@ -553,7 +548,6 @@ program myeul
 
       call Add_2timing(10,tim_after,tim_before,"infield")
 
-!hfTD      call dayno(current_date%month,current_date%day,daynumber) !u3
       daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
       if ( me == 0) then
          write(6,*) 'TIME TEST ', 'current date ',current_date, &

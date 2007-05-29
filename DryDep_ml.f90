@@ -30,7 +30,6 @@ module DryDep_ml
 
  use My_Derived_ml      ! -> OUTPUT_ABS_HEIGHTS, d_2d, IOU_INST, D2_VG etc...
 
-!hfTD use Dates_ml,       only : daynumber
  use TimeDate_ml,       only : daynumber
  use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
                             forest, water, f_phen, &
@@ -68,7 +67,7 @@ module DryDep_ml
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
  
  use SubMet_ml,        only: Get_Submet
- use UKdep_ml,         only : Init_ukdep, ReadLanduse, SetLandUse  & 
+ use Landuse_ml,       only : Init_Landuse, ReadLanduse, SetLandUse  & 
                               ,NLUMAX &  ! Max. no countries per grid
                               ,landuse_ncodes, landuse_codes, landuse_data  &
                               ,SumVPD, old_gsun & ! Critical VPD
@@ -116,7 +115,7 @@ module DryDep_ml
      call Init_DepMap()               ! Maps CDEP to IXADV
 
 
-     call Init_ukdep()                ! reads ukdep_biomass, etc.
+     call Init_Landuse()              ! reads ukdep_biomass, etc.
      call Init_GasCoeff()             ! Sets Wesely coeffs.
 
      nadv = 0

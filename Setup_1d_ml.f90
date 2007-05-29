@@ -42,6 +42,7 @@
                                   ,NSS  !SeaS
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
   use My_BoundConditions_ml, only : BGN_2D     !hf u2
+  use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
                              ,gi0,gi1,gj0,gj1,ISMBEG,JSMBEG !hf VOL
   use PhysicalConstants_ml,  only :  AVOG, PI
@@ -60,7 +61,6 @@
                      ! integer of zenith angle
    use SeaSalt_ml,        only : SS_prod   !SeaS
    use Tabulations_ml,    only :  tab_esat_Pa
-   use UKdep_ml,          only : water_fraction, ice_fraction  !dsPb210
   implicit none
   private
   !-----------------------------------------------------------------------!
@@ -294,12 +294,11 @@ contains
   ! at rate of 1 atom/cm2/s
 
      eland = 1.0 - water_fraction(i,j) - ice_fraction(i,j)
-!hf initialize, needed in My_Reactions
+
+! initialize, needed in My_Reactions
      rc_Rn222(:)=0.0     
-!     rc_Rn222(KMAX_MID) = &
-!            ( 0.00182 * water_fraction(i,j)  + eland ) / &
-!            (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
-!hf z_bnd is in m, not cm, so need to divide by 100.
+
+! z_bnd is in m, not cm, so need to divide by 100.
      rc_Rn222(KMAX_MID) = &
             ( 0.00182 * water_fraction(i,j)  + eland ) / &
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.) 

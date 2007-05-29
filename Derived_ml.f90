@@ -39,19 +39,14 @@ module Derived_ml
 !D2_UNAOTXXDF: accumulated into yearly_output from April to September
 !D2_MMAOTXXWH: accumulated into yearly_output over growing season
 !D2_O3 is now yearly accumulated
-!D2_FSTXXXX: unit correct? (accumulated but unit in /s)
 
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
-!hfTD use Dates_ml, only : dayno, daynumber
-!hfTD
 use TimeDate_ml, only : day_of_year,daynumber
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml
 use GenSpec_tot_ml
 use GenChemicals_ml, only : species
-!ds rv1_9_28: big-fix, i_glob hasn't been defined yet.
-!ds use GridValues_ml,   only : i_glob, j_glob !ds  rv1_9_16 for debug
 use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen  !ds mar2005 zen added
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
@@ -79,7 +74,7 @@ private
  private :: Define_Derived        !ds ** NEW rv1_9_13
  private :: Setups 
 
-!ds 16/12/2003 - find indices of used derived stuff in total list:
+! - find indices of used derived stuff in total list:
 
    public :: find_one_index
    public :: find_index
@@ -92,7 +87,7 @@ private
  private :: voc_3dcalc           ! Calculates sum of VOC for 3d fields
 
 
-  !ds START OF NEW SYSTEM - added 16/12/2003 ========================
+  ! START OF NEW SYSTEM - added 16/12/2003 ========================
    INCLUDE 'mpif.h'
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
@@ -162,12 +157,12 @@ private
       d_2d( NDERIV_2D,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !other deriv
       d_3d( NDERIV_3D,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
 
-!pw to be used for SOMO35
+! to be used for SOMO35
     real, save,  public :: &   !save O3 every hour during one day to find running max
      D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0.
  
 
-  !ds END OF NEW SYSTEM - added 16/12/2003 ========================
+  ! END OF NEW SYSTEM - added 16/12/2003 ========================
 
 
   ! Counters to keep track of averaging  (old nav, nav8to16, nav_8to16, etc
@@ -229,7 +224,7 @@ private
     real, save    :: ugPMad, ugPMde, ugSS    !st advected and derived PM's & SeaS
 
 
-  !ds rv1_9_28  - for debug  - now not affecting ModelConstants version
+  ! - for debug  - now not affecting ModelConstants version
    integer, dimension(MAXLIMAX) :: i_glob
    integer, dimension(MAXLJMAX) :: j_glob
 
@@ -294,7 +289,7 @@ def_ddep = (/&
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
 
 def_2d = (/&
-!ds Added AOT20 - in case the health people decide on this!
+! Added AOT20 - in case the health people decide on this!
  Deriv( 870, "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")&
 ,Deriv( 630, "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")&
 ,Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")&
@@ -321,7 +316,7 @@ def_2d = (/&
 ,Deriv( 612, "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")&
 ,Deriv( 670, "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")&
 ,Deriv( 671, "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")&
-!ds 31/3/2004 new:
+!&
 ,Deriv( 672,"NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")&
 ,Deriv( 673,"NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")&
 ,Deriv( 674,"OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")&
@@ -418,7 +413,6 @@ def_3d = (/ &
 ,Deriv( 409, "ADV  ", T, IXADV_SO4, PPBINV, F, T, T, T, F ,"D3_SO4","ppb")&
 ,Deriv( 410, "ADV  ", T, IXADV_H2O2,PPBINV, F, T, T, T, F ,"D3_H2O2","ppb")&
 !&
-!& rv1_9_28:
 ! Set Year true to allow debug - change later
 ,Deriv( 411, "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?")& ! ds from 1.0E16
 ,Deriv( 412, "ADV",   T, IXADV_CH3COO2,&
@@ -430,7 +424,6 @@ def_3d = (/ &
 ,Deriv( 416, "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?")&
 /)
 
-   !ds new, 25/3/2004:
 
      if ( SOURCE_RECEPTOR ) then  ! We assume that no daily outputs are wanted.
         def_2d(:)%day = .false.
@@ -476,7 +469,7 @@ def_3d = (/ &
       debug_flag = .false.    !ds rv1_9_28
       if ( MY_DEBUG ) then
 
-          !ds rv1_9_28: Need tod efine here since gridValues not yet set.
+          ! Need to define here since gridValues not yet set.
 
           i_glob = (/ (n + gi0 + ISMBEG - 2, n=1,MAXLIMAX) /)
           j_glob = (/ (n + gj0 + JSMBEG - 2, n=1,MAXLJMAX) /)

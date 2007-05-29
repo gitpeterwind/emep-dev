@@ -1,7 +1,65 @@
 \chapter{Input files}
 
+This section describes some standard input files for the
+EMEP model. In general, the larger input files
+are in netCDF format, the smaller ones in an ASCII format.
+Table~\ref{Tab:Inputs} lists the files used.
+
+\section{ASCII file formats}
+
+
+\subsubsection*{An example file:}
+
+%\fbox{
+\begin{verbatim}
+# "Example of EMEP Input file"
+:  Key1 Value1
+:  year  2007
+:  version rv2_9_8
+ mm yy dd v1 v2  #HEADERS
+ -  -  - m/s m/s #SKIP 
+#DATA:
+ 02,07, 28,1.2 ,2.3
+ 02, 07, 29,2.4 ,1.2
+ 02,07, 30,12.2,6.7
+\end{verbatim}
+%} % fbox
+
+\bigskip
+
+ The input files are designed to read nicely in gnumeric and other spread-
+ sheets (excel, oocalc), and can be either space of comma separated.
+ Fortran is quite flexible in its reading of separated data, and
+would not distinguish between any of:
+\begin{verbatim}
+2001  7 23  1.2   2.3
+2001,7,23,1.2,2.3
+2001, 7, 23,   1.2,2.3
+2001, 7, 23,   1.2, 2.3
+\end{verbatim}
+
+Whereas some spreadsheets get confused if both spaces and commas
+are used. It is suggested that files are kept as 
+pure comma-seperated,
+pure space-seperated,
+or with separation with both comma and space (as in line 4 above).
+\bigskip
+
+Lines starting with `:' are for key-value pairs, e.g. : year 2002
+The line ending in `\#HEADERS' should contain the headings of each column.
+\bigskip
+
+{\bf IMPORTANT:} One line of column headers *must* be provided, and the
+ number of headers (excluding commented out ones)  must match the number of data items.
+(Any further header lines, e.g. for units, must be commented out, either with
+a starting \# or ending \#SKIP).
+
+ All lines starting `\# ' are ignored. The text will show up nicest in
+ spread sheets if enclosed in quotation marks, as in line 1 of the example.
+
 \begin{table}[h]
 \caption{Gridded Input Files. NNNN: number, MM: month, POLL: pollutant, AA: text}
+\label{Tab:GridInputs}
 \begin{tabular}{lcccc}\hline
 Data & name (in F90 code) & format& comment\\ \hline
 Meteorology&filNNNN&special/NetCDF& special treatment \\
@@ -24,6 +82,7 @@ Sites&sites.dat  & Name i j k AA& Output sites\\ \hline
 
 \begin{table}[h]
 \caption{Non-grid Input Files.}
+\label{Tab:Inputs}
 \begin{tabular}{lcccc}\hline
 Data & name   &format& comment\\ \hline
 Time series for emissions&MonthlyFac.POLL&EMEP&i j x1-x12&\\

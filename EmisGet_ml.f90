@@ -9,9 +9,9 @@ module EmisGet_ml
   use EmisDef_ml,   only : NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX & 
                             ,ISNAP_SHIP, ISNAP_NAT
   use GridAllocate_ml, only : GridAllocate
-  use Io_ml,        only : open_file,  wordsplit &
-                          ,NO_FILE, ios, IO_EMIS
+  use Io_ml,        only : open_file, NO_FILE, ios, IO_EMIS
   use Par_ml,       only : me, NPROC
+  use SmallUtils_ml, only : wordsplit
   use Volcanos_ml
 
   implicit none
@@ -55,7 +55,6 @@ contains
 !  in here are the global arrays (allocatable)
 !
 !**    REVISION HISTORY:
-!      1/5/02 u7.2 Code moved to Functions/GridAllocate, ds
 !      .../2002  Flat emissions added, hf
 !      25/1/01   Re-coded as separate module, and for F
 !      30/5/00   Created from earlier readem, ds
@@ -211,7 +210,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
              ! country "ic" has already  been found within that grid. If not,
              ! then ic is added to landcode and nlandcode increased by one.
 
-              call GridAllocate("SNAP",i,j,ic,NCMAX, &
+              call GridAllocate("SNAP"// trim ( emisname ),i,j,ic,NCMAX, &
                                  iland,ncmaxfound,globland,globnland)
 
               ! ...................................................
