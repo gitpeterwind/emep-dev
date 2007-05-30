@@ -1,0 +1,51 @@
+module Io_Nums_ml
+
+!_____________________________________________________________________________
+! The idea is to keep all unit numbers used for input and output
+! stored here. So that programmers can quickly see which numbers are
+! in use or not. (Warning - some of the routines mentioned are outdated)
+!
+! Assign unit number, e.g. io_xxx, here, and use read(io_xxx,*) in
+! main program.
+!
+! (c) - file opened AND closed in subroutine
+! (o) - file remains open in subroutine
+!_____________________________________________________________________________
+implicit none
+
+
+  integer, parameter, public  :: &
+    IO_LOG      = 7   &! General output log (o)
+   ,IO_SITES    = 8   &! sites module, first for input(c)
+   ,IO_MYTIM    = 20  &! Unimod.f90(c)-output mytim.out 
+   ,IO_RES      = 25  &! o3mod,massbud(o) - ! out eulmod.res
+   ,IO_TMP      = 27   ! General IO number (files *must* be type (c))
+
+
+  integer, parameter, public  :: &
+    IO_SONDES   = 30  &! siteswrt_ml(o)  for output of sonde data
+   ,IO_WRTCHEM  = 118 &! Used in Wrtchem (c) for AOT (buggy output) and BCs
+   ,IO_HOURLY   = 119  ! hourly_out(o)
+
+  integer, parameter, public  :: &
+    IO_FORES    = 49  &! rforest.f(c)-read land use %
+   ,IO_AIRN     = 49  &! airnox.f(c) - read aircr. em.
+   ,IO_LIGHT    = 49  &! lightning.f(c) - read lightning. emiss.
+   ,IO_JOST     = 49  &! newjostinit(c) - read  global mixing ratios
+   ,IO_GLOBBC   = 49  &! read  global mixing ratios e.g. Logan
+   ,IO_GLOBBC2  = 91  &! read  global mixing ratios e.g. h2o2
+   ,IO_INFIELD  = 50  &! infield.F(c) -reads fil000xx  
+   ,IO_ROUGH    = 52  &! inpar.f -reads roughn. class  
+   ,IO_SNOW     = 53  &! newmonth(c): for snow
+   ,IO_VOLC     = 54  &
+   ,IO_DJ       = 55  &! readdiss.f(c) - inp. solar r.
+   ,IO_AIRCR    = 66  &! phyche.f(c) - write aircraft conc.
+   ,IO_OUT      = 80  &! (c)write outday etc.
+   ,IO_UKDEP    = 81  &! (o)write fluxes, etc.
+   ,IO_STAB     = 82  &! (o)write fluxes, etc.
+   ,IO_EMIS     = 84  &! Used for femis , emis_split(c)
+   ,IO_TIMEFACS = 85  &! Used for monthly
+   ,IO_NEST     = 88  &!   
+   ,IO_DMS      = 90   !  Emissions(c): for DMS 
+
+end module Io_Nums_ml
