@@ -292,7 +292,7 @@ contains
                     year,iyr_trend,ibc,month,bc_used(ibc)
 
       end if
-      call CheckStop(ibc == 1 .and. errcode,&
+      call CheckStop(ibc == 1 .and. errcode /= 0 ,&
              "ERRORBCs: GetGlobalData, failed in BoundaryConditions_ml") 
 
     !-- If the read-in bcs are required, we broadcast and use:
