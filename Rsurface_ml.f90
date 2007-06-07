@@ -9,9 +9,8 @@ module Rsurface_ml
 !       is needed for other gases.
 
 use DepVariables_ml, only : forest, f_phen, f_temp,f_vpd,f_light,f_swp, &
-                              b_inc     , albedo    ,   &
-                              SAIadd, &
-                              water, &     !ds rv1.8
+                              b_inc     , SAIadd, &
+                              water, &
                               g_max     , f_min     , f_lightfac,   &
                               f_temp_min, f_temp_opt, f_temp_max, &
                               RgsS      , RgsO      , RextS, RextO, &
@@ -48,7 +47,7 @@ contains
   subroutine Rsurface(rh,lu,debug_flag, LAI,hveg,&
                       z0,ustar,Ts_C,vpd,SWP, &
                       psurf, is_wet, &                    !u7.lu
-                      coszen, Idfuse, Idrctt, &       !u7.lu
+                      coszen, Idrctt, Idfuse, & !BUG: Idrctt, &       !u7.lu
                       snow, &                    !u7.lu
                       so2nh3ratio, &        !so2/nh3 ratio
                         g_sto,gsun,Rsur,Rsur_wet,Rb)
@@ -482,7 +481,7 @@ contains
  ! (n.b. subroutine get_f_light is defined below)
  ! fsun is here the light factor. Used as g_sto(sun) later
 
-  call get_f_light(coszen,Idrctt,Idfuse,f_lightfac(lu),LAI,albedo(lu),&
+  call get_f_light(coszen,Idrctt,Idfuse,f_lightfac(lu),LAI,&
              gsun, f_light)    
   
 
@@ -540,7 +539,7 @@ contains
 
 ! =====================================================================
 !===========================================================================
-    subroutine get_f_light(coszen,Idrctt,Idfuse,f_lightfac,LAI,albedo, &
+    subroutine get_f_light(coszen,Idrctt,Idfuse,f_lightfac,LAI, &
               f_sun,f_light)
 !===========================================================================
 !
@@ -557,7 +556,6 @@ contains
     real, intent(in) :: LAI       ! leaf area index (m^2/m^2), vegetation        
                                   ! specific
     
-    real, intent(in) :: albedo    ! Fraction, 0-1
 
 !     output arguments
   
@@ -603,10 +601,9 @@ contains
     PARsun = Idrctt *cosA/sinB + PARshade
 
 !.. Convert units, and to PAR fraction
-!.. and multiply by albedo
 
-    PARshade = PARshade * PARfrac * Wm2_uE * ( 1.0 - albedo )
-    PARsun   = PARsun   * PARfrac * Wm2_uE * ( 1.0 - albedo )
+    PARshade = PARshade * PARfrac * Wm2_uE 
+    PARsun   = PARsun   * PARfrac * Wm2_uE 
 
 
    !TFMM  LAIshade = LAI - LAIsun

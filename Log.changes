@@ -1,7 +1,14 @@
 ============== Misc, rv2_7_xx,  Jun 7  2007  =================================
 
-Svetlana : found (non-fatal) bug in CheckStop in BoundaryConditions_ml
 
+Svetlana :
+      found (non-fatal) bug in CheckStop in BoundaryConditions_ml
+
+Dave: 
+      Rsurface_ml - Swapped Idir, Idiff, removed albedo
+
+Michael:
+      Aqueous_ml - cleaned
 
 ============== Misc, rv2_7_9,  May 30 2007  =================================
 
