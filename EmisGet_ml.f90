@@ -70,20 +70,17 @@ contains
   integer, intent(inout), dimension(:,:,:) :: globland  ! C'try-code -emitters
   integer, intent(inout), dimension(:,:)   :: globnland ! No. emit's in grid
   real,    intent(inout), dimension(:,:)   :: sumemis   ! Sums (after e_fact) 
-!hf V
   integer, intent(inout), dimension(:,:,:) :: flat_globland  ! C'try-code -emitters
   integer, intent(inout), dimension(:,:)   :: flat_globnland ! No. flat emit's in grid
   real,    intent(out), dimension(:,:,:)   ::globemis_flat !Flat emissions
 
   !--local
-!hf V
   integer :: flat_iland, flat_nc
   integer :: i, j, isec, iland, k, nc        ! loop variables
   integer :: iic,ic                          ! country code (read from file)
   real    :: duml,dumh                   ! dummy variables, low/high emis.
   real, dimension(NSECTORS)  :: tmpsec   ! array for reading emission files
   integer, save :: ncmaxfound = 0        ! Max. no. countries found in grid
-!hf V
   integer, save :: flat_ncmaxfound = 0    ! Max. no. countries(with flat emissions) found in grid
      !>============================
        if ( my_first_call ) then
@@ -96,7 +93,7 @@ contains
      !>============================
 
         globemis   (:,:,:,:) = 0.0
-        globemis_flat(:,:,:) = 0.0 !hf F
+        globemis_flat(:,:,:) = 0.0
 
         write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, emisname
         fname = "emislist." // emisname
@@ -111,11 +108,16 @@ READEMIS: do   ! ************* Loop over emislist files **********************
               if ( ios <  0 ) exit READEMIS            ! End of file
               call CheckStop(ios > 0,"EmisGet: ios error in emission file")
 
-!find country number (ic) corresponding to index as written in emisfile (iic)
+            ! find country number (ic) corresponding to index as written in 
+            ! emisfile (iic)
+
               do ic=1,NLAND
-                 if(Country(ic)%index==iic)goto 543
+                 if((Country(ic)%index==iic).and.(Country(ic)%code /= "N/A"))&
+                      goto 543
               enddo 
-              if(me==0)write(*,*)'COUNTRY CODE NOT RECOGNIZED',iic
+              write(unit=errmsg,fmt=*) &
+                   "COUNTRY CODE NOT RECOGNIZED OR UNDEFINED ", iic
+              call CheckStop(errmsg)
               ic=0
 543           continue
 
@@ -342,7 +344,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
       if (isec == 0 ) then    ! All sectors
           isec1 = 1
           isec2 = NSECTORS
-      elseif (isec==100) then    !hf scenario
+      elseif (isec==100) then    !Anthropgenic scenario
           isec1 = 1
           isec2 = ANTROP_SECTORS
       else                       ! one sector: isec

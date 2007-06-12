@@ -117,6 +117,8 @@ module Country_ml
   integer, parameter, public :: IC_AZ  =  69   ! Azerbaijan                 
   integer, parameter, public :: IC_ATX  =  70   ! ATL outside emep
   integer, parameter, public :: IC_RUX  =  71   ! RU outside emep
+  integer, parameter, public :: IC_RS  =  72   ! Serbia
+  integer, parameter, public :: IC_ME  =  73   ! Montenegro
 
 
   ! extra subdivisions:
@@ -263,6 +265,8 @@ Country( IC_KG ) = cc(  "KG " , 68 ,F,  68, 6  , "Kyrgyzstan                    
 Country( IC_AZ ) = cc(  "AZ " , 69 ,F,  69, 3  , "Azerbaijan                    " )
 Country( IC_ATX) = cc(  "ATX" , 70 ,T,  32, 1  , "Atlantic outside. EMEP        " )
 Country( IC_RUX) = cc(  "RUX" , 71 ,F,  42, 4  , "Russian Fed. outside emep     " )
+Country( IC_RS)  = cc(  "RS " , 72 ,F,  72, 1  , "Serbia                        " )
+Country( IC_ME)  = cc(  "ME " , 73 ,F,  73, 1  , "Montenegro                    " )
 
 
 ! Sea areas splitt according to innside/outside 12 nautical mile zone, 
