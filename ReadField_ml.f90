@@ -137,6 +137,8 @@ contains
 
   integer :: in_field(IILARDOM,JJLARDOM)! Field to be read
 
+  in_field(:,:)    = 0.0       ! Initialise - ds, 15/1/2005
+  local_field(:,:) = 0.0       ! Initialise - ds, 15/1/2005
   errmsg = "ok"
 
    if (me==0)then
