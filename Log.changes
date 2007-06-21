@@ -1,4 +1,4 @@
-============== Hilde, Dave, rv2_7_xx,  Jun 12-19  2007  =================================
+============== Hilde, Dave, Svetlana, rv2_7_xx,  Jun 12-21  2007  =================================
 
 Country_ml  - Serbia and Montenegro added properly
 
@@ -6,6 +6,7 @@ EmisGet_ml  - added safety check on country codes
 
 ReadField_ml  - corrected bug (not initialising integer fields, e.g. snow)
 
+Volcanos_ml  - corrected bug in coordinate systems. Started move to i_local 
 
 ============== Misc, rv2_7_10,  Jun 7  2007  =================================
 

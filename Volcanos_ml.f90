@@ -7,18 +7,29 @@ module Volcanos_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   !-----------------------------------------------------------------------!
-  !  Preprocesses SOx emissions from volcanoes 
+  ! Processes SOx emission heights from volcanoes 
+  ! In volcanos_ml, only the height of the volcanos are read from volcanos.dat,
+  ! the emissions themselves comes from gridSOx, so this is to ensure that if
+  ! suddenly e.g. Iceland starts to report volcano emissions and these are in
+  ! gridSOx, the program will discover this.
+  ! Note that nvolc is set according to the emission input from the gridSOx 
+  ! files.  It counts the number of grids with the "country code" for volcanoes
+  ! that are in the gridSOx file.
+  !
+  ! Note - EmisGet and other routines use "restricted" coords, which introduces
+  ! some complications here. Hopefully we can tidy up one day.
   !-----------------------------------------------------------------------!
 
  use CheckStop_ml,          only : CheckStop
  use My_Emis_ml,            only : QRCVOL,molwt
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
- use GridValues_ml,         only : sigma_bnd, i_glob, j_glob
+ use GridValues_ml,         only : sigma_bnd, i_glob, j_glob,i_local, j_local
  use Io_ml,                 only : ios, open_file, check_file, IO_VOLC
  use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT
  use Met_ml,                only : ps, roa
  use Par_ml,                only : ISMBEG, JSMBEG, me, NPROC, &
-                                   li0,lj0,limax,ljmax
+                                   li0,lj0,li1,lj1
+ use Par_ml,                only : gi0, gi1, gj0, gj1 !TEST
  use PhysicalConstants_ml,  only : GRAV, AVOG
 
  implicit none
@@ -45,7 +56,7 @@ module Volcanos_ml
                         rcemis_volc, & ! Emissions part varying every time-step 
                         emis_volc = 0.0 ! Volcanoes' emissions
 
-  logical, private, parameter :: DEBUG_VULC = .false.
+  logical, private, parameter :: DEBUG_VULC = .true.
 
 contains 
 
@@ -115,7 +126,7 @@ contains
  !-----------------------------------------------------------------------!
 
     !**Local variables
-    integer            :: k,i,j
+    integer            :: k,i,j, i1,i2,j1,j2
     real               :: unit_conv1  
 
     rcemis_volc0(:) = 0.0
@@ -124,17 +135,27 @@ contains
     !/** Set volcano
     do volc_no=1,nvolc
        k=height_volc(volc_no)
-       i=i_volc(volc_no)
-       j=j_volc(volc_no)
-       if ( (i >= i_glob(li0)) .and. (i <= i_glob(limax) ) .and.  &
-            (j >= j_glob(lj0)) .and. (j <= j_glob(ljmax)) ) then 
+       i=i_volc(volc_no) +ISMBEG-1   !NEW
+       j=j_volc(volc_no) +JSMBEG-1   !NEW
+
+       if ( DEBUG_VULC ) &
+       write(6,'(a20/4i6/6i6/4i6)')'Volcan: check1 ',  &
+       i,j, i_volc(volc_no),j_volc(volc_no),           &
+       i_local(i),j_local(j), li0, li1, lj0, lj1,      &
+       gi0,gi1,gj0,gj1
+
+       if ( (i_local(i) >= li0) .and. (i_local(i) <= li1 )  .and.  &
+            (j_local(j) >= lj0) .and. (j_local(j) <= lj1) ) then 
 
           unit_conv1 = GRAV* 0.001*AVOG/ &
                       (sigma_bnd(KMAX_BND-k+1) - sigma_bnd(KMAX_BND-k))
 
           rcemis_volc0(volc_no) = emis_volc(volc_no)  &
                                 * unit_conv1 / molwt(QRCVOL)
- 
+
+         if ( DEBUG_VULC ) &
+           write(*,*)'rc_emis_volc is ',rcemis_volc(volc_no)
+
        endif
     enddo ! volc_no
    end subroutine Set_Volc
@@ -148,21 +169,34 @@ contains
  ! (every advection timestep)
  !-----------------------------------------------------------------------!
 
-   integer i,j,k,i_l,j_l
+   integer i,j,k,i_l,j_l, i1,i2,j1,j2
    real unit_conv2 
 
 
   do volc_no=1,nvolc
 
      k=height_volc(volc_no)
-     i=i_volc(volc_no)
-     j=j_volc(volc_no)
+     i=i_volc(volc_no) +ISMBEG-1   !NEW
+     j=j_volc(volc_no) +JSMBEG-1   !NEW
+    ! i=i_volc(volc_no)
+    ! j=j_volc(volc_no)
 
-      if ( (i >= i_glob(li0)) .and. (i <= i_glob(limax) ) .and.  &
-           (j >= j_glob(lj0)) .and. (j <= j_glob(ljmax)) ) then 
+     if ( DEBUG_VULC ) &
+     write(6,'(a20/4i6/6i6/4i6)')'Volcan: check2 ', &
+     i,j, i_volc(volc_no),j_volc(volc_no),           &
+     i_local(i),j_local(j), li0, li1, lj0, lj1,      &
+     gi0,gi1,gj0,gj1
 
-        i_l = i - i_glob(li0) + 1 !local i
-        j_l = j - i_glob(lj0) + 1 !local j
+       if ( (i_local(i) >= li0) .and. (i_local(i) <= li1 )  .and.  &
+            (j_local(j) >= lj0) .and. (j_local(j) <= lj1) ) then 
+
+        i_l = i_local(i) !local i
+        j_l = j_local(j) !local j
+
+
+        if ( DEBUG_VULC ) &
+        write(6,'(a30,4i8)')'Volcan: check 3: ',   &
+        i_l, j_l, i_volc(volc_no)-gi0+1, j_volc(volc_no)-gj0+1
 
         unit_conv2 = roa(i_l,j_l,KMAX_BND-k,1) / (ps(i_l,j_l,1)-PT)
 
