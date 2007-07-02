@@ -49,7 +49,7 @@ contains
    integer, intent(in) ::  numt
 
    integer ::  i,j,k,n
-   logical, parameter :: DEBUG = .true.
+   logical, parameter :: DEBUG = .false.
    logical, save :: End_of_Day = .false.
 
    integer :: ndays

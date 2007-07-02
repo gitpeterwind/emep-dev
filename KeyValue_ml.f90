@@ -24,7 +24,7 @@ implicit none
     character(len=LENKEYVAL) :: value
   end type KeyVal
 
-  logical, private, parameter :: MY_DEBUG = .true.
+  logical, private, parameter :: MY_DEBUG = .false.
 
 
 contains

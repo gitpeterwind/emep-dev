@@ -79,7 +79,7 @@ private
 
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
 
- logical, private, parameter :: DEBUG_DEP = .true.
+ logical, private, parameter :: DEBUG_DEP = .false.
  character(len=50), private :: errmsg
 
 

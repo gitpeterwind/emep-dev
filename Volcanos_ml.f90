@@ -56,7 +56,7 @@ module Volcanos_ml
                         rcemis_volc, & ! Emissions part varying every time-step 
                         emis_volc = 0.0 ! Volcanoes' emissions
 
-  logical, private, parameter :: DEBUG_VULC = .true.
+  logical, private, parameter :: DEBUG_VULC = .false.
 
 contains 
 

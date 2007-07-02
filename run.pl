@@ -29,11 +29,12 @@
 # @ account_no       = nn2890k
 # @ class = express
 # @ wall_clock_limit = 0:30:00
-# @ node = 2
-# @ tasks_per_node = 16
+# @ node = 1
+# @ tasks_per_node = 32
 # @ node_usage = not_shared
 # @ network.mpi = sn_all,shared,us
 # @ resources        = ConsumableCpus(1) ConsumableMemory(300 mb)
+# @ Requirements = ( Feature == "SMT" )
 #
 # @ notification     = never
 # @ checkpoint       = no
@@ -94,31 +95,36 @@
 #
 ######################################################################
 
-require "flush.pl";
+use 5.6.0;
+use strict;
+use warnings;
+use File::Copy qw();
+
+$| = 1; # autoflush STDOUT
 
 #Choose one machine
-$NJORD=0; #1 if njord is used
-$SNYKOV=1; #1 if snykov (snowstorm) is used
+my $NJORD=0; #1 if njord is used
+my $SNYKOV=1; #1 if snykov (snowstorm) is used
 
-
-$MAKE = "gmake --makefile=Makefile_snow";
-  $MAKE = "make -f Makefile_njord" if $NJORD==1 ;
+# -j2 parallel make with 2 threads
+my @MAKE = ("gmake",  "-j2", "--makefile=Makefile_snow");
+  @MAKE = ("make", "-j2", "-f", "Makefile_njord") if $NJORD==1 ;
   die "Must choose SNYKOV **or** NJORD!\n" unless $NJORD+$SNYKOV==1;
 
-$SR=0;     # Set to 1 if source-receptor calculation
+my $SR=1;     # Set to 1 if source-receptor calculation
  
 # <---------- start of user-changeable section ----------------->
 
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-$year = "2003";
-( $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
+my $year = "2003";
+( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
 # :can be set to meteorology year or arbitrary year, say 2050
 
-$iyr_trend = $year;  
+my $iyr_trend = $year;
 $iyr_trend = "2020" if $SR ;  # 2020 assumed for SR runs here
 
 print "Year is $yy YEAR $year Trend year $iyr_trend\n";
@@ -126,19 +132,21 @@ print "Year is $yy YEAR $year Trend year $iyr_trend\n";
 
 #---  User-specific directories (changeable)
 
-$PETER       = "mifapw/emep";      
-$DAVE      = "mifads";      
-$JOFFEN      = "mifajej";
-$HILDE       = "mifahf";
-$SVETLANA    = "mifast";
-$HEIKO      = "mifahik";      
-$ANNA      = "mifaab";      
-$MICHAEL      = "mifaelg";      
-$SEMEENA     = "mifasv";      
-$TAREQ    = "mifatarh";      
+my $PETER       = "mifapw/emep";      
+my $DAVE      = "mifads";      
+my $JOFFEN      = "mifajej";
+my $HILDE       = "mifahf";
+my $SVETLANA    = "mifast";
+my $HEIKO      = "mifahik";      
+my $ANNA      = "mifaab";      
+my $MICHAEL      = "mifaelg";      
+my $SEMEENA     = "mifasv";      
+my $TAREQ    = "mifatarh";      
 
 
-$USER        =  $DAVE ;      
+my $USER        =  $HEIKO ;
+my ($HOMEROOT, $WORKROOT, $MetDir);
+our $DataDir;
 if ($SNYKOV){
     $HOMEROOT       = "/home";      
     $WORKROOT     = "/global/work";      
@@ -152,24 +160,25 @@ if ($SNYKOV){
 }
 # DataDir    = Main general Data directory
 
-$DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data
+my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
 my $PM_ADDED     = 0;  # Adds in PM emissions from NOx inventory scaling
 my $AFRICA_ADDED = 0;  # Adds in African emissions for y=1..11
 
-$OZONE = "1"; 
-$ACID = "0";     # Specify model type here, and check:
+my $OZONE = "1"; 
+my $ACID = "0";     # Specify model type here, and check:
   die "Must choose ACID or OZONE" unless $OZONE+$ACID==1;
 
 
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
 
+my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_6_9";
+    $testv       = "rv2_7_9";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -177,78 +186,75 @@ if ( $OZONE ) {
 
 
 #User directories
-$ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
-$WORKDIR     = "$WORKROOT/$USER/$testv.$year";    # working and result directory
-$MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
+my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
+my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";    # working and result directory
+my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
 
 #ds check: and change
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
 #  unless $ENV{PWD} =~ /Unimod.$testv.$year/;
 
 
-$Split       = "BASE_MAR2004" ;       
-$NOxSplit       = "2000" ;               # Have CLE2020, MFR2020, 2000       
+my $Split       = "BASE_MAR2004" ;       
+my $NOxSplit       = "2000" ;               # Have CLE2020, MFR2020, 2000       
 #$NOxSplit    = "CLE2020_ver2";    # NOx splits
-$Africa      = "$DATA_LOCAL/Africa";        # Emissions for Africa, y=1..11
+my $Africa      = "$DATA_LOCAL/Africa";        # Emissions for Africa, y=1..11
 
-$timeseries  = "$DataDir";
+my $timeseries  = "$DataDir";
 
-$version     = "Unimod" ;  
-$PROGRAM     = "$ProgDir/$version";         # programme
-$subv        = "$testv" ;                  # sub-version (to track changes)
-
-#ds new for SR version. One lement arrays if SR not specified:
-#$mk_SRfemis = "$DAVE/Unify/Progs/mkp.SRfemis";   #  Generates femis files
+my $version     = "Unimod" ;  
+my $PROGRAM     = "$ProgDir/$version";         # programme
+my $subv        = "$testv" ;                  # sub-version (to track changes)
 
 # New system. For "normal runs", we just put one run-name into the array @runs.
 # For SR runs we can add many scenarios - dealt with later. 
 # The effect is to choose the approproate femis file
 
 my $scenario = "Base";     # Reset later if SR
-@runs        = ( $scenario );
+my @runs        = ( $scenario );
 
 
 #EMISSIONS
-$EMIS_INP = "$HOMEROOT/$HEIKO/Emissions/ModelInputModruns/Modrun06";
-$emisdir = "$EMIS_INP/2006_emis2010_BL-E_V7";
-$emisdir = "$EMIS_INP/2006-Trend${year}-V7";
+my $EMIS_INP = "$HOMEROOT/$HEIKO/Emissions/ModelInputModruns/Modrun06";
+#my $emisdir = "$EMIS_INP/2006_emis2010_BL-E_V7";
+my $emisdir = "$EMIS_INP/2006-Trend${year}-V7";
 $emisdir = "$EMIS_INP/2006-Trend2004-V7" if $year > 2004;
-$pm_emisdir = $emisdir;
+my $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
-$femis       = "$DataDir/femis.dat";      # emission control file
-
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
 
-@largedomain = (   1, 170,  1, 133 ) ;
+my @largedomain = (   1, 170,  1, 133 ) ;
 ##smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
 ##smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
-@smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
+my @smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
 ##@smalldomain = (  116, 167,  80, 122 ) ;      # (changeable)
 ##@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
 		# simply uncomment this  - REMEMBER NEED ##@, not just one #
 
 
-$RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
-$COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
-$INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
+my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
+my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
+my $INTERACTIVE  = 0 ;  # usually 0 (false), but set to 1 to make program stop
+my $DRY_RUN      = 1 ;  # Test script without running model (but compiling)
+
 # just before execution - so code can be run interactivel.
 
-$NDX   = 8;           # Processors in x-direction
-$NDY   = 4;           # Processors in y-direction
+my $NDX   = 8;           # Processors in x-direction
+my $NDY   = 4;           # Processors in y-direction
 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
 
 
-@month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
+my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-$mm1   =  "07";       # first month, use 2-digits!
-$mm2   =  "07";       # last month, use 2-digits!
-$NTERM_CALC =  calc_nterm($mm1,$mm2);
+my $mm1   =  "07";       # first month, use 2-digits!
+my $mm2   =  "07";       # last month, use 2-digits!
+my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
-$NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
+my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
 $NTERM = 4;       # for testing, simply reset here
 
@@ -258,24 +264,70 @@ print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 # <---------- start of SR   use section ---------------------->
 
 #SR additions:
-# Define all countries and nums here: Heiko's lib might be faster:
-%country_nums = ( AT => 2, BE => 3, DK => 6, FI => 7, FR => 8,
-                  DE => 10, GR => 11, IE => 14, IT => 15,
-                  NL => 17 , PT => 20, ES => 22, SE => 23,UK => 27,
-                  HU => 12, PL => 19, CY => 55, CZ => 46, EE => 43,
-                  LT => 45, LV => 44, MA => 57, SK => 47, SI => 48 );
+# Define all countries and nums here:
+my %country_nums = (
+  AL =>   1,  AT =>   2,  BE =>   3,  BG =>   4, FCS =>   5,
+  DK =>   6,  FI =>   7,  FR =>   8,
+  GR =>  11,  HU =>  12,  IS =>  13,  IE =>  14,  IT =>  15,
+  LU =>  16,  NL =>  17,  NO =>  18,  PL =>  19,  PT =>  20,
+  RO =>  21,  ES =>  22,  SE =>  23,  CH =>  24,  TR =>  25,
+ FSU =>  26,  GB =>  27, REM =>  29, BAS =>  30,
+ NOS =>  31, ATL =>  32, MED =>  33, BLS =>  34, NAT =>  35,
+ RUO =>  36, RUP =>  37, RUA =>  38,  BY =>  39,  UA =>  40,
+  MD =>  41, RUR =>  42,  EE =>  43,  LV =>  44,  LT =>  45,
+  CZ =>  46,  SK =>  47,  SI =>  48,  HR =>  49,  BA =>  50,
+  RS => 72,   ME =>  73,  MK =>  52,  KZ =>  53,  GE =>  54,  CY =>  55,
+  AM =>  56,  MT =>  57, ASI =>  58,  LI =>  59,  DE =>  60, RU =>  61,
+  MC =>  62, NOA =>  63,  EU =>  64,  US =>  65,
+  CA =>  66, BIC =>  67,  KG =>  68,  AZ =>  69,
+  RUX =>  71,  ATX =>  70,
+ BA2 => 302, BA3 => 303, BA4 => 304, BA5 => 305, BA6 => 306, # Baltic sep.
+ BA7 => 307, BA8 => 308, BA9 => 309,
+ NS2 => 312, NS3 => 313, NS4 => 314, NS5 => 315, NS6 => 316, # N. Sea sep.
+ NS7 => 317, NS8 => 318, NS9 => 319,
+ AT2 => 322, AT3 => 323, AT4 => 324, AT5 => 325, AT6 => 326, # Atlant. sep.
+ AT7 => 327, AT8 => 328, AT9 => 329,
+ ME2 => 332, ME3 => 333, ME4 => 334, ME5 => 335, ME6 => 336, # Medit. sep.
+ ME7 => 337, ME8 => 338, ME9 => 339,
+ BL2 => 342, BL3 => 343, BL4 => 344, BL5 => 345, BL6 => 346, # Bl. Sea sep.
+ BL7 => 347, BL8 => 348, BL9 => 349
+);
+
 # EU countries:
-@eu = qw ( AT BE DK FI FR DE GR IE IT NL PT ES SE UK );
-@euaccess = qw ( HU PL CY CZ EE LT LV MA SK SI );
-@eu25 = ( @eu, @euaccess );
-@countries = qw ( IT ) ;  # List of wanted countries this run
-# EU25 is "special"
+my @eu15 = qw ( AT BE DK FI FR DE GR IE IT NL PT ES SE GB LU );
+my @euNew04 = qw ( HU PL CY CZ EE LT LV MT SK SI );
+my @eu25 = ( @eu15, @euNew04 );
+my @euNew06 = qw(BG RO);
+my @eu27 = (@eu25, @euNew06);
+my @sea = qw ( NOS ATL MED BAS BLS );
+my @noneu = qw ( NO CH IS );
+my @emep = qw ( RS ME BY BA HR TR RU UA KZ MD MK GE AM AL AZ KG NOA ASI REM) ; 
+my @external =qw ( RUX   ATX ); 
 
-$base        = "Base";
+my ($rednflag, $redn, $base, @countries, @polls);
+if ( $SR ) {
+    $base        = "CLE";
+    $Split       = "CLE_MAR2004";    # IER VOC splits
+    $NOxSplit    = "CLE2020_ver2";    # IER VOC splits
+    $rednflag    = "P15";  # 10% reduction for label
+    $redn        = "0.85";  # 10% reduction
 
-@polls       = qw ( BASE );  # NP, BASE 
-    
+    # modify those to fill up your queues for SR effectively!!!
+    @countries  = (@eu27, @sea, @noneu, @emep);
+    @polls       = qw ( BASE NP A V S );  # A, NP, V, S or BASE (at least 1)
 
+    # create the single runs run
+    @runs = ();
+    foreach my $cc (@countries) {
+	foreach my $poll (@polls) {
+	    push @runs, [$cc, $poll, $redn];
+	    if ($poll eq 'BASE') {
+		# run BASE only once!!!
+		@polls = grep {'BASE' ne $_} @polls;
+	    }
+	}
+    }
+}
 
 # <---------- end of user-changeable section ----------------->
 #               (normally, that is...)
@@ -283,7 +335,8 @@ $base        = "Base";
 
 
 #--- Verify data directories
-foreach $d (  $WORKDIR, $DATA_LOCAL, $DataDir,  $ProgDir) {
+mkdir_p($WORKDIR);
+foreach my $d (  $WORKDIR, $DATA_LOCAL, $DataDir,  $ProgDir) {
     unless ( -d "$d" &&  -x _ && -r _ ) {
 	die "*** ERROR *** directory $d not accessible. Exiting.\n";
     }
@@ -306,7 +359,7 @@ die " -- Domain error!!!" if (
 
 #--- calculate number of processors
 
-$NPROC =  $NDX * $NDY ;
+my $NPROC =  $NDX * $NDY ;
 
 # and check that we have the same from the bsub command, by
 # accessing the LSB_MCPU_HOSTS environment variable.
@@ -345,15 +398,15 @@ if ( $RESET ) { unlink ("Make.log") }  # Gone!
 # ---- calculate domain widths
 # (For the model, we need first x0, y0, then width (number of cells) in x and y)
 
-$dom_x0 = $smalldomain[0]; 
-$dom_y0 = $smalldomain[2]; 
-$dom_wx = $smalldomain[1] - $smalldomain[0] + 1 ; 
-$dom_wy = $smalldomain[3] - $smalldomain[2] + 1 ; 
-$largdom_wx = $largedomain[1] - $largedomain[0] + 1 ; 
-$largdom_wy = $largedomain[3] - $largedomain[2] + 1 ; 
+my $dom_x0 = $smalldomain[0]; 
+my $dom_y0 = $smalldomain[2]; 
+my $dom_wx = $smalldomain[1] - $smalldomain[0] + 1 ; 
+my $dom_wy = $smalldomain[3] - $smalldomain[2] + 1 ; 
+my $largdom_wx = $largedomain[1] - $largedomain[0] + 1 ; 
+my $largdom_wy = $largedomain[3] - $largedomain[2] + 1 ; 
 
 open(MAKELOG,"<Make.log");
-($oldversion, $olddx , $olddy , $old_x0, $old_y0, $old_wx, $old_wy, $old_lwx, $old_lwy) = split ' ', <MAKELOG> ;
+my ($oldversion, $olddx , $olddy , $old_x0, $old_y0, $old_wx, $old_wy, $old_lwx, $old_lwy) = split ' ', <MAKELOG> ;
 close(MAKELOG);
 
 print "From Make.log we had Subversion $subv
@@ -387,7 +440,7 @@ if ( $RESET ) { ########## Recompile everything!
 	open(EULPAR,"<Par_ml.pat") or die "No Par_ml.pat file!!\n";
 	open(EULOUT,">Par_ml.f90");
 	print "changing domain, nproc in Par_ml.pat to Par_ml.f90 \n";
-	while ($line=<EULPAR>) {
+	while (defined (my $line=<EULPAR>)) {
 	    $line =~ s/nprocx/$NDX/ ; 
 	    $line =~ s/nprocy/$NDY/ ;
 	    $line =~ s/domainx0/$dom_x0/ ;
@@ -401,8 +454,9 @@ if ( $RESET ) { ########## Recompile everything!
 	close(EULOUT) ;
 
     # For now, we simply recompile everything!
-    unlink($PROGRAM);
-    system "touch -c  *.f *.f90 *.F *.F90";
+    system(@MAKE, "clean");
+    system(@MAKE, "depend");
+    system(@MAKE, "all");
 }
 system "pwd";
 print "Check last files modified:\n";
@@ -411,8 +465,8 @@ system "ls -lt | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-system "$MAKE depend" ;
-system "$MAKE" ;
+system (@MAKE, "depend") ;
+system (@MAKE, "all");
 
 #die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
 open(MAKELOG,">Make.log");    # Over-write Make.log
@@ -422,7 +476,7 @@ close(MAKELOG);
 die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 
     
-@list_of_files = ();   # Keep list of data-files
+my @list_of_files = ();   # Keep list of data-files
 
 
 
@@ -431,35 +485,44 @@ die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 ########################### START OF SCENARIO RUNS  ##########################
 
 
-foreach $scenario ( @runs ) {
+foreach my $scenflag ( @runs ) {
+    if ($SR) {
+	my $cc = $scenflag->[0];
+	my $pollut = $scenflag->[1];
+	$scenario = "${base}_${cc}_${pollut}_${rednflag}";
+        $scenario = "${base}" if $pollut eq "BASE" ;
+    } else {
+	$scenario = $scenflag;
+    }
     print "STARTING RUN $scenario \n";
-    
-    $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
-    $runlabel2    = "${testv}_${scenario}_$year_$iyr_trend";   # NO SPACES! LONG (written into CDF files)
-    
-    my $RESDIR = "$WORKDIR/$scenario";
-    system("mkdir -p $RESDIR");
-    
-    chdir "$RESDIR";   ############ ------ Change to RESDIR
-    
 
-for ($nnn = 1, $mm = $mm1; $mm <= $mm2; $mm++) {
+    my $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
+    my $runlabel2    = "${testv}_${scenario}_$year\_$iyr_trend";   # NO SPACES! LONG (written into CDF files)
+
+    my $RESDIR = "$WORKDIR/$scenario";
+    mkdir_p($RESDIR);
+
+    chdir $RESDIR;   ############ ------ Change to RESDIR
+    print "Working in directory: $RESDIR\n";
+
+my $nnn = 1;
+for (my $mm = $mm1; $mm <= $mm2; $mm++) {
     
     # Assign met files to fil001...etc.
-    for ($n = 1; $n <= $month_days[$mm]; $n++) {
+    for (my $n = 1; $n <= $month_days[$mm]; $n++) {
 	$nnn = metlink($n, $nnn, $mm);
 	last if $nnn > $NTERM;
     }
 }
 
-$mmlast = $mm2 + 1;
-$yylast = $year;
+my $mmlast = $mm2 + 1;
+my $yylast = $year;
 if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
     $yylast = $yylast + 1;
     $mmlast = 1;
 }
-$old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
-$new = sprintf "fil%04d", $nnn;
+my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
+my $new = sprintf "fil%04d", $nnn;
 mylink( "LAST RECORD SET: ", $old,$new ) ;
 
 
@@ -467,16 +530,16 @@ mylink( "LAST RECORD SET: ", $old,$new ) ;
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
 #   AFRICA, PM_ADDED --- fix elsewhere.
 
-    %ifile   = ();   # List of input data-files
+    my %ifile   = ();   # List of input data-files
 
 # First, emission files are labelled e.g. gridSOx, whiuch we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
 # in the model.
 
-%gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
+my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 	 "nox" => "NOx" , "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco" ) ;
 
-    foreach $poll  ( @emislist  ) {
+    foreach my $poll  ( @emislist  ) {
         my $dir = $emisdir;
         $dir = $pm_emisdir if $poll =~ /pm/;   # FIX needed prior to 2000
         $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
@@ -500,17 +563,17 @@ mylink( "LAST RECORD SET: ", $old,$new ) ;
     $ifile{"$DataDir/noxsplit.special.$Split"} = "noxsplit.special";
     $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
                                    "Boundary_and_Initial_Conditions.nc";
-      $sondes="$DATA_LOCAL/sondes.dat";
-      $sondes="$DATA_LOCAL/sondes.SR" if $SR;
+    my $sondes="$DATA_LOCAL/sondes.dat";
+    $sondes="$DATA_LOCAL/sondes.SR" if $SR;
     $ifile{"$sondes"} = "sondes.dat";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$DATA_LOCAL/forests.mar2004b"} = "forest.dat";
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
     
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
-%seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct" => "04") ;
+    my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");
 
-    foreach $s ( keys(%seasons) ) {
+    foreach my $s ( keys(%seasons) ) {
 	$ifile{"$DataDir/a${s}t42-nox.dat"} = "ancat$seasons{$s}.dat";
 	$ifile{"$DataDir/jclear.$s"} = "jclear$seasons{$s}.dat";
 	$ifile{"$DataDir/jcl1.$s"} = "jcl1km$seasons{$s}.dat";
@@ -534,38 +597,43 @@ mylink( "LAST RECORD SET: ", $old,$new ) ;
 		die "ERROR: Missing OLD $old\n" unless $old =~ /special/;
 	}
     }
+
+    if ($SR) {
+	generate_updated_femis(@$scenflag);
+    }
+
 #=================== INPUT FILES =========================================
 
     
 # FIX later - was the only emission control thingy....
-    @exclus  = (9 ); #  NBOUND
+    my @exclus  = (9 ); #  NBOUND
     
     
 #------------      Run model ------------------------------------------
 #------------      Run model ------------------------------------------
 #------------      Run model ------------------------------------------
     
-    &flush(STDOUT);
+    print "\n";
     
 # Link execultable also, since gridur is funny about these
 # things....
     
-    $LPROG = "prog.exe";
+    my $LPROG = "prog.exe";
     #mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
-    system( "cp $PROGRAM $LPROG") ;
+    cp ($PROGRAM, $LPROG) or die "cannot copy $PROGRAM to $LPROG\n";
     
 # Write out list of linked files to a shell-script, useful in case the program
 # hangs or crashes:
     
     open(RMF,">Remove.sh");
-    foreach $f ( @list_of_files ) { print RMF "rm $f \n" };
+    foreach my $f ( @list_of_files ) {	print RMF "rm $f \n"; }
     close(RMF);
     
-    ${startyear}=$year;
-    ${startmonth}=$mm1;
-    ${startday}=1;
+    my $startyear = $year;
+    my $startmonth = $mm1;
+    my $startday = 1;
 
-$NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
+    my $NASS  =  0;   # Set to one if "dump" of all concentrations wanted at end
     
 # make file with input parameters (to be read by Unimod.f90)
     unlink("INPUT.PARA");
@@ -573,17 +641,20 @@ $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
     print TMP "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\n";
     close(TMP);
     
-    foreach $exclu ( @exclus) {
+    foreach my $exclu ( @exclus) {
 	print "starting $PROGRAM with 
         NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\n startyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
 	
 
 	my $PRERUN = "";
 	$PRERUN = "scampiexec " if $SNYKOV;
-        open (PROG, "| $PRERUN ./$LPROG") || 
+	if ($DRY_RUN) {
+	    print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";
+	} else {
+	    open (PROG, "| $PRERUN ./$LPROG") || 
 		die "Unable to execute $LPROG. Exiting.\\n" ;
-        close(PROG);
-	    
+	    close(PROG);
+	}
 	
     } #foreach $exclu
             system("pwd");
@@ -596,28 +667,34 @@ $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
     } elsif ( -r "Timing.out" ) { #-- Done  :-)
         print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
     } else {
-        print "\n  Unkown Problem!! \n";
+        print "\n  Unkown Problem!! \n" unless $DRY_RUN;
     }
 
 #move RunLog 
-    system("mv RunLog.out  ${runlabel1}_RunLog");
-    system("echo Emission units: Gg/year        >> ${runlabel1}_RunLog");
-    system("echo ------------------------------ >> ${runlabel1}_RunLog");
-    system("echo Emissions: $emisdir            >> ${runlabel1}_RunLog");
-    system("echo Version: $testv                >> ${runlabel1}_RunLog");
-    system("echo Domain x0 $dom_x0 y0 $dom_y0 wx $dom_wx wy $dom_wy  >> ${runlabel1}_RunLog");
-    system("echo Processors $NDX $NDY           >> ${runlabel1}_RunLog");
-    system("echo Added? PM $PM_ADDED  Africa $AFRICA_ADDED >> ${runlabel1}_RunLog");
-    system("echo SR?  $SR                       >> ${runlabel1}_RunLog");
-    system("echo iyr_trend: $iyr_trend                 >> ${runlabel1}_RunLog");
-    system("echo ------------------------------ >> ${runlabel1}_RunLog");
-    system("echo femis: femis.$scenario         >> ${runlabel1}_RunLog");
-    system("cat femis.dat >> ${runlabel1}_RunLog");
-    system("echo ------------------------------ >> ${runlabel1}_RunLog");
-    
-    
-#clean up work directories and links   
+    rename "RunLog.out",  "${runlabel1}_RunLog"
+	or warn "cannot mv RunLog.out ${runlabel1}_RunLog\n" unless $DRY_RUN;
+    open RUNLOG, ">> ${runlabel1}_RunLog"
+	or die "cannot append ${runlabel1}_RunLog: $!\n";
+    print RUNLOG <<"EOT";
+Emission units: Gg/year       
+------------------------------
+Emissions: $emisdir           
+Version: $testv               
+Domain x0 $dom_x0 y0 $dom_y0 wx $dom_wx wy $dom_wy
+Processors $NDX $NDY          	
+Added? PM $PM_ADDED  Africa $AFRICA_ADDED
+SR?  $SR                      
+iyr_trend: $iyr_trend         
+------------------------------
+femis: femis.$scenario        
+------------------------------
+EOT
+    close RUNLOG;
 
+#clean up work directories and links   
+    if ($DRY_RUN) { # keep femis.dat
+	@list_of_files = grep {$_ ne 'femis.dat'} @list_of_files;
+    }
     unlink ( @list_of_files );
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
@@ -626,83 +703,13 @@ $NASS  =  0;        # Set to one if "dump" of all concentrations wanted at end
     if ( -r $last_sondes ) {
 	print "FOUND LAST sondes $last_sondes\n";
 	system("tar cvf ${runlabel1}.sites sites.*");
-	system(	"tar cvf ${runlabel1}.sondes sondes.*");
+	system("tar cvf ${runlabel1}.sondes sondes.*");
     }
-    
-    
+
+
 ################################## END OF SCENARIO RUNS ######################
 }  ############################### END OF SCENARIO RUNS ######################
 ################################## END OF SCENARIO RUNS ######################
-
-
-exit 0;
-# And compress the big files
-$nproc_bsub = (split/\s+/,$ENV{'LSB_MCPU_HOSTS'})[1];
-
-$Nnc=@bigfile_list;
-$nleft = $Nnc % $nproc_bsub;
-
-$nloops = ($Nnc-$nleft)/$nproc_bsub;
-    print "number of files to be bunzip2:  $Nnc\n";
-#exit;
-#    print "number of processors: $nproc_bsub \n";
-#    print "number of entire loops to be run:  $nloops\n";
-#    print "number lefts: $nleft \n";
-
-for ($i=1; $i<=$nloops; $i++){
-    my $nkids=0;
-    for ($j=1; $j<=$nproc_bsub; $j++){
-	$nextfile=pop(@bigfile_list);
-	
-	if (my $pid = fork) {
-	    $nkids++;
-	    # parent, does nothing
-#	    print "I am parent $pid \n";	    
-	} else {
-	    die "fork failed: $!" unless defined $pid;
-	    # child, running compression
-	    print "processing $nextfile \n";	    
-	    system("bzip2", "-f", $nextfile);
-	    exit 0; # child exits here
-	}
-    }
-    if($nkids>0){
-# parent wait:
-    my $kid;
-    do {
-	# wait until all kids have finished
-	$kid = waitpid(-1, WNOHANG);
-    } until $kid > 0;
-    print "We have just processed $i x $nproc_bsub files \n";	    
-}
-}
-
-#prosess the files left
-die "accounting error, $nleft $nproc_bsub" unless $nleft<$nproc_bsub;
-    my $nkids=0;
-    for ($j=1; $j<=$nleft; $j++){
-	$nextfile=pop(@bigfile_list);
-	
-	if (my $pid = fork) {
-	    $nkids++;
-	    # parent, does nothing
-	} else {
-	    die "fork failed: $!" unless defined $pid;
-	    # child, running compression
-	    print "processing $nextfile \n";	    
-	    system("bzip2", "-f", $nextfile);
-	    exit 0; # child exits here
-	}
-    }
-    if($nkids>0){
-#parent is just waiting
-    my $kid;
-    do {
-	# wait until all kids have finished
-	$kid = waitpid(-1, WNOHANG);
-    } until $kid > 0;
-}
-
 
 
 exit 0;
@@ -711,7 +718,7 @@ exit 0;
 ### SUBPROGRAMS ################################################################
 
 sub leap_year {
-    local ($y) = ($_[0]);
+    my ($y) = ($_[0]);
 
     if ($y < 20) {
 	$y += 2000;
@@ -729,7 +736,7 @@ sub leap_year {
 }
 
 sub metlink {  #---- meteorological data
-    local ($dd,$nnn,$mm) = ($_[0], $_[1], $_[2]);
+    my ($dd,$nnn,$mm) = ($_[0], $_[1], $_[2]);
 
     for (my $hh = 0; $hh <= 21; $hh += 3) {
 	my $old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hh, $year, $mm, $dd;
@@ -754,20 +761,119 @@ sub mylink {
    push(@list_of_files , $new);    # For later deletion
 }
 
+sub touch {
+    # simple touch -c implementation
+    my (@fileGlobs) = @_;
+    my @files;
+    foreach my $fileGlob (@fileGlobs) {
+	push @files, glob($fileGlob);
+    }
+    utime undef, undef, @files;
+}
+
+sub cp {
+    # copy, preserving permissions (stupid File::Copy::cp does not)
+    my ($from, $to, @extraArgs) = @_;
+    my $retVal = File::Copy::cp($from, $to, @extraArgs);
+    my $perm = (stat $from)[2] & 07777;
+    chmod($perm, $to);
+    return $retVal;
+}
+
+sub mkdir_p {
+    # mkdir -p on unix platforms
+    # does NOT fail on existing directories!
+    my ($dir) = @_;
+    $dir =~ s:/$::; # remove final /
+    my $curdir = './';
+    if ($dir =~ s:^/::) {
+	$curdir = '/';
+    }
+    my @path = split ('/', $dir);
+    while (my $next = shift(@path)) {
+	$curdir .= $next . '/';
+	if (! -d $curdir) {
+	    mkdir $curdir or die "cannot mkdir $curdir: $!\n";
+	}
+    }
+    return 1;
+}
+
+sub slurp {
+    # read the complete content of a file
+    my ($file) = @_;
+    local $/ = undef;
+    open F, $file or die "Cannot read $file: $!\n";
+    my $data = <F>;
+    close F;
+    return $data;
+}
+
 sub calc_nterm {
   # Calculates the number of 3-hourly steps from month mm1 to
   #  mm2. Leap-years should already have been dealt with through
   #  the global month_days array which is used.
   #   $NTERM = 2921;    # works for non-leap year (365*8+1)
 
-  local ($mm1,$mm2) = ($_[0], $_[1]) ;
-  local($ndays=0,$i);
-
-  foreach $i ( $mm1..$mm2 ) {
+  my ($mm1,$mm2) = ($_[0], $_[1]) ;
+  my $ndays=0;
+  foreach my $i ( $mm1..$mm2 ) {
     $ndays += $month_days[$i] ;
   }
-  $nterm = 1 + 8*$ndays ;
+  my $nterm = 1 + 8*$ndays ;
   print "Calculated NTERM = $nterm\n";
   return $nterm;
 }
 
+
+sub generate_updated_femis {
+    my ($cc, $pollut, $redn) = @_;
+    my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ; # Initialise to 1.0
+    if( $pollut eq "AV" ) { $voc = $nh3 = $redn  };
+    if( $pollut eq "A" ) { $nh3 = $redn  };
+    if( $pollut eq "V" ) { $voc = $redn  };
+    if( $pollut eq "S" ) { $sox = $redn  };
+    if( $pollut eq "N" ) { $nox = $redn  };
+    if( $pollut eq "NP" ) { $nox = $pm25 = $pmco = $redn  };
+    if( $pollut eq "SNP" ) { $sox = $nox = $pm25 = $pmco =  $redn  };
+    if( $pollut eq "AN" ) { $nh3 = $nox =  $redn  };
+    if( $pollut eq "SNAV" ) { $sox = $nox = $nh3 = $voc =  $redn  };
+    #if( $pollut eq BASE ) then no change!
+
+    my $femisdat = slurp("$DataDir/femis.dat");
+
+    my $ccnum = $country_nums{$cc} || die "ERROR!! No country Num for $cc!\n";
+
+    # using 0 here as long as emissions are guaranteed to contain either
+    # only anthropogenic or only natural emissions perl 'country'
+    my $ss = 0; # 100 = antropogenic sectors (1..10)
+                # 0 = all sectors
+    $femisdat .= "$ccnum $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+    if ( $cc eq "DE" ) {  # Add splitted countries
+	foreach my $cx (9, 10) {
+	    $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+	}
+    }
+    if ( $cc eq "RU" ) { # Add splitted and external RU
+	foreach my $cx (36..38, 42, 71) {
+	    $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+	}
+    }
+    if ( $cc eq "ATL" ) {  # Add ATL outside EMEP
+	foreach my $cx (70) {
+	    $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+	}
+    }
+    if ( 30 <= $ccnum and $ccnum <= 34) { # add splitted sea areas
+	for (my $cx = 10 * $ccnum + 2; $cx <= 10 * $ccnum + 9; $cx++) {
+	    $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+	}
+    }
+    unlink "femis.dat" if -l "femis.dat";
+    open FEMIS, ">femis.dat" or die "Cannot write femis.dat: $!\n";
+    print FEMIS $femisdat;
+    close FEMIS;
+
+    # and to the logfile
+    print "NEW FEMIS\n", $femisdat;
+}
