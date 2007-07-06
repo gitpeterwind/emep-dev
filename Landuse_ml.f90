@@ -27,7 +27,7 @@ use GridAllocate_ml,only: GridAllocate
 use GridValues_ml,  only: gb_glob, gb, i_glob, j_glob, & ! latitude, coordinates
                           i_local, j_local, &
                          debug_proc, debug_li, debug_lj
-use Io_ml,          only: open_file, ios, IO_FORES,Read_Headers,read_line
+use Io_ml,          only: open_file, ios, IO_FORES,Read_Headers,read_line, Read2DN
 use ModelConstants_ml,  only : current_date, DEBUG_i, DEBUG_j, NNLANDUSE
 use Par_ml,         only: GIMAX, GJMAX, ISMBEG, JSMBEG, &
                           li0, lj0, IILARDOM, JJLARDOM, &
@@ -79,7 +79,7 @@ private
 
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
 
- logical, private, parameter :: DEBUG_DEP = .false.
+ logical, private, parameter :: DEBUG_DEP = .true.
  character(len=50), private :: errmsg
 
 
@@ -108,6 +108,7 @@ subroutine ReadLanduse()
    character(len=(NNLANDUSE+10)*20) :: txtinput  ! Big enough to contain one full input record
    type(KeyVal), dimension(10)      :: KeyValues ! Info on units, coords, etc.
    real, dimension(NNLANDUSE+1) :: tmpmay
+   real, dimension(MAXLIMAX,MAXLJMAX,NNLANDUSE):: landuse_in ! tmp, with all data
 
    integer :: ncodes, kk, i_water ! debug
    integer :: NHeaders, NKeys, Nlines
@@ -123,88 +124,41 @@ subroutine ReadLanduse()
    landuse_codes(:,:,:)  = 0       !/**  initialise  **/
    landuse_data  (:,:,:) = 0.0     !/**  initialise  **/
 
-   if ( me == 0 ) then
-      call open_file(IO_FORES,"r","Inputs.landuse",needed=.true.)
-      call CheckStop(ios,"ios error on Inputs.landuse")
-   end if
+   call Read2DN("Inputs.landuse",NNLANDUSE,landuse_in)
 
+   !call CheckStop( KeyValue(KeyValues,"Units"), "PercentGrid" , "Landuse: Units??")
+   !call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
 
-   call Read_Headers(IO_FORES,errmsg,NHeaders,NKeys,Headers,Keyvalues)
-
-   call CheckStop( errmsg , "Landuse: Read_Headers")
-   call CheckStop( Headers(1), "ix" , "Landuse: HeaderIX not found")
-   call CheckStop( Headers(2), "iy" , "Landuse: HeaderIY not found")
-   call CheckStop( KeyValue(KeyValues,"Units"), "PercentGrid" , "Landuse: Units??")
-   call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
-
-   ! The first two columns are assumed for now to be ix,iy, hence:
-
-   Headers(1:Nlanduse) = Headers(3:Nlanduse+2)
-   if ( DEBUG_DEP .and. me == 0 ) then
-        do i = 1, NHeaders
-          write(*,*) "Landuse Headers", i, Nheaders, Headers(i)
-        end do
-    write(*,*) "NOW TRY WriteArray:"
-       call WriteArray(Headers,NHeaders,"Landuse Headers")
-   end if
+   ! write(*,*) "NOW TRY WriteArray:"
+   !    call WriteArray(Headers,NHeaders,"Landuse Headers")
 
     lc_water = find_index("W",Headers)
     lc_ice   = find_index("ICE",Headers)
-    call CheckStop( lc_water == NOT_FOUND,  "Landuse: Water not found")
-    call CheckStop( lc_ice   /= LU_ICE,  "Landuse: ICE not found") ! TMP
-   
-   do
-         call read_line(IO_FORES,txtinput,ios)
-         if ( ios /= 0 ) exit   ! likely end of file
-         read(unit=txtinput,fmt=*,iostat=ios) i_fdom,j_fdom,&
-                 ( tmp(lu), lu=1,NNLANDUSE)
-         call CheckStop ( ios, "Landuse txt error:" // trim(txtinput) )
-!if( me == 0 ) then
-!   do lu = 1, NNLANDUSE
-!      write(*,*) lu, tmp(lu), tmpmay(lu)
-!   end do
-!   tmpmay(1:NLANDUSE) = tmp(1:NLANDUSE)
-!   tmpmay(NLANDUSE+1) = sum( tmp(1:NLANDUSE) )
-!   if( gb_glob(i_fdom,j_fdom) > 50.0) tmpmay(IAM_MEDOAK) = 0.0
-!    write(*,"(a3,2i4,20f8.3)") "MAY",i_fdom,j_fdom,(tmpmay(lu),lu=1,NNLANDUSE+1)
-!end if
-         Nlines = Nlines + 1
-
-         i   = i_local(i_fdom)   ! Convert to local coordinates
-         j   = j_local(j_fdom)
-
-         if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then  
-
-             if ( DEBUG_DEP ) debug_flag = ( i_fdom == DEBUG_i  &
-                                   .and. j_fdom == DEBUG_j  )
-
-              if ( debug_flag ) then
-                write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp(1)
-                write(*,*) "MEDOAK", gb(i,j), IAM_MEDOAK, tmp(IAM_MEDOAK) , tmp(1)
-              endif
-
-             if ( gb(i,j) > 50.0 ) tmp(IAM_MEDOAK) = 0.0
+    !call CheckStop( lc_water == NOT_FOUND,  "Landuse: Water not found")
+    !call CheckStop( lc_ice   /= LU_ICE,  "Landuse: ICE not found") ! TMP
 
              if ( debug_flag ) then
-                write(*,*) "MEDOAK", gb(i,j), IAM_MEDOAK, tmp(IAM_MEDOAK) 
+                write(*,*) "MEDOAK", gb(DEBUG_li,DEBUG_lj), IAM_MEDOAK, tmp(IAM_MEDOAK) 
              endif
+   
 
+           do i = li0, li1
+           do j = lj0, lj1
+           if( gb(i,j) > 50.0 ) landuse_in(i,j,IAM_MEDOAK ) = 0.0
+           do lu = 1, NNLANDUSE
+              if ( landuse_in(i,j,lu) > 0.0 ) then
 
-             do lu = 1, NNLANDUSE
-                if ( tmp(lu) > 0.0 ) then
-
-                    call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &
+                 call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &
                          index_lu, maxlufound, landuse_codes, landuse_ncodes)
    
                      landuse_data(i,j,index_lu) = &
-                       landuse_data(i,j,index_lu) + 0.01 * tmp(lu)
+                       landuse_data(i,j,index_lu) + 0.01 * landuse_in(i,j,lu)
                end if
              end do ! lu
 
-         end if ! i,j
-      end do
+           end do
+           end do
 
-      if ( me == 0 ) close(IO_FORES)
       write(6,*) "Landuse_ml: me, Nlines, maxlufound = ", me, Nlines, maxlufound
 
   end subroutine  ReadLanduse
@@ -240,8 +194,10 @@ subroutine ReadLanduse()
          bulk (lu) = ( LAImax(lu)   < 0.0 )   ! Set neg. in ukdep_biomass.dat
          water(lu) = ( hveg_max(lu) < 0.0 )   ! Set neg. in ukdep_biomass.dat
          forest(lu) = ( hveg_max(lu) > 4.99 .and. LAImax(lu) > 0.1 )
-         conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 .and. &
-              index(luname(lu),"broadleaf") == 0 )  !JUN06 fixed Bug?
+!JPNS         conif_forest(lu) = ( forest(lu) .and. SGS50(lu) <=1 .and. &
+!JPNS              index(luname(lu),"broadleaf") == 0 )  !JUN06 fixed Bug?
+         conif_forest(lu) = ( index(luname(lu),"temp_conif") > 0 .or. &
+                              index(luname(lu),"needle") > 0  )
          urban (lu) = ( hveg_max(lu) > 5.0 .and. LAImax(lu) < 0.0 )
          vegetation (lu) = ( hveg_max(lu) > 0.0 .and. .not.urban(lu) )
 
@@ -252,7 +208,8 @@ subroutine ReadLanduse()
          LAImax(lu)   = max( LAImax(lu),   0.0)
          if( forest(lu) ) SAIadd(lu) = 1.0   ! Addition to LAI to get surface area
 
-         if( lu==IAM_MEDOAK)  conif_forest(lu) = .false.  !JUN06 
+         !JPNS if( lu==IAM_MEDOAK)  conif_forest(lu) = .false.  !JUN06 
+         if ( conif_forest(lu) ) luflux_wanted(lu) = .true. !JPNS
          if ( index(luname(lu),"IAM_") > 0  ) luflux_wanted(lu)=.true.   ! JUN06
          if ( DEBUG_DEP .and. debug_proc ) write(*,*) "UKDEP_VEG", lu, &
            crops(lu), bulk(lu), forest(lu), conif_forest(lu), luflux_wanted(lu)
@@ -312,7 +269,7 @@ subroutine ReadLanduse()
 
                 if ( DEBUG_DEP .and. debug_proc .and. &
                     i == debug_li .and. j == debug_lj ) then
-                      write(*,*) "DEBUG WATER ", ilu, lu, &
+                      write(*,"(a,2i4,2f12.4)") "DEBUG WATER ", ilu, lu, &
                           water_fraction(i,j), ice_fraction(i,j)
                 end if
 

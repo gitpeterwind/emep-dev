@@ -1,10 +1,25 @@
 ==============  rv2_8_1,  July 2nd  2007  =================================
 
+Provisional - needs to be tested still!!!!!!!
+
+
 Met_ml:  Cleaned(Jan Eiof), also  some extra Met params made available
            (RH2m, Soil water --- but both seem to have problems!)
 
-DOCS/cookbook + other :  Cookbook added, Semeena. Now have both a cookbook
-     for new users, and a Manual for programmers. 
+DOCS/cookbook + other :  Cookbook  1st darft added, Semeena. Now have 
+     both a cookbook for new users, and a Manual for programmers.  
+     Do either of:
+
+         latex cookbook
+         latex Manual
+
+GridValues_ml: dependence on Io_ml removed (ds)
+
+Io_Progs_ml:   read2DN added (ds) - "fast"  read of New-style input data for
+       a file with x, y, z1..z2 type data.
+
+
+Landuse_ml:  Uses read2DN (ds). Saved 50 lines :-)
 
 
 ==============  rv2_8,  July 2nd  2007  =================================
