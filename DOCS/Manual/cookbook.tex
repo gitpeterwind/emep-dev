@@ -3,7 +3,6 @@
 \usepackage{lscape}
 \usepackage{color}
 \usepackage{url}
-\usepackage{rotating}
 %\usepackage[Sonny]{fncychap}
 %\usepackage[Bjarne]{fncychap}
 %\usepackage[Lenny]{fncychap}
@@ -24,37 +23,20 @@
 \begin{document}
 %\begin{landscape}
  
-\title{The Unified EMEP Model - Programmer's Guide}
-\date{(draft 6th July 2007)}
+\title{The Unified EMEP Model - User Guide\\
+ (draft 1.0)}
 \maketitle
 
-\input{Intro}
+\input{general}
 %\newpage
 \input{Domains}
-\input{Inputs}
-\input{Outputs}
-%
-% More coding comments .....
-\input{Structure}   %  - same as in cookbook
-\input{ProgStructure}
-%\newpage
-\input{Variable_names}
-%\newpage
-\input{Progrules}
-\input{CVS}
-%\newpage
+\input{Structure}
 \input{Chem}
 %\newpage
+\input{Inputs}
+\input{Outputs}
 %\newpage
-%\input{WetDep}
-%\newpage
-%\input{BCs}
-%\newpage
-%\input{Photolysis}
-%\newpage
-%\input{Advec}
-%\input{Numerics2}
-%\newpage
+\input{running}
 
 %\end{landscape}
 \end{document}

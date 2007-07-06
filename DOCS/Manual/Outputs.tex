@@ -14,28 +14,42 @@ The code relating to the binary outoputs will be deleted in future versions}
 
 \noindent
 Optional -  specify in \MyOutputs\, hourly\_out\%ix1, etc.\\
-Ascii
+Ascii and netCDF.  Only netCDF outputs will be available in future. 
+Put 'Hourly\_ASCII' switch defines whether the output has to be written
+into Ascci format or netCDF format.  Ascii may be easy to use, but
+produces very large output files.  
+
 \vspace{1cm}
 
 This output is intended to allow hourly (or any resolution) outputs of surface
-concentrations in
-variable precision for user-defined areas (see section~\ref{Output:ascii}). 
-Ascii format. Easy to use, but
-produces VERY LARGE output files. 
+as well as 3D concentrations in
+variable precision for user-defined areas.  
 
+Make sure that the labels 'NHOURLY\_OUT, NLEVELS\_HOURLY, and FREQ\_HOURLY' are updated with the number of
+variables, number of levels and frequency of output interval you want
+to output into hourly file.  It is explained clearly in the code as
+well.  
 
+ 
 In \MyOutputs\ we have for example:
 
 \begin{small}\begin{verbatim}
-  !**                    type   ofmt   ispec    ix1 ix2  iy1 iy2 conv    max
+  !**          name type ofmt ispec ix1 ix2  iy1 iy2 nk unit conv max
 
-  hr_out(1) = Hr_output("ADV", "(f8.4)",IXADV_O3, 87, 110, 51, 75, PPBINV,400.0)
-  hr_out(2) = Hr_output("SHL", "(f8.4)",IXSHL_OH, 87, 110, 51, 75, 1.0e-5,999.0)
-   !/** temp2m is in deg.C
-  hr_out(3) = Hr_output("T2 ", "(f5.1)",     -99, 87, 110, 51, 75, 1.0   ,100.0)
+  hr_out(1) = Hr_output("o3_3m","ADVppbv", 
+             "(f8.4)",IXADV_O3, 87, 110, 51, 75,1,"ppbv",PPBINV,600.0)
+  hr_out(3) = Hr_output("o3_50m","BCVppbv",
+             "(f8.4)",IXADV_O3, 87, 110, 51, 75,20,"ppbv", PPBINV,9000.0)
 \end{verbatim}
 \end{small}
 
+The above example gives both 3D as well as surface concentration of
+Ozone.  Here the type 'ADVppbv' gives surface concentration (note
+that nk=1) and 'BCVppbv' gives 3D concentration for all the 20 levels
+(nk=20). These are defined in {\bf 'Output\_hourly'}.  The area for which we want to write out the output is
+specified with 'ix1','ix2','iy1' and 'iy2'.  Unit is chosen as 'ppbv'
+and the conversion factor, 'PPBINV' is coming from
+{\bf 'ModelConstants\_ml}'.  
 
 
 \section{Restricted output}

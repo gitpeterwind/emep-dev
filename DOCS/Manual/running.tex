@@ -1,0 +1,176 @@
+\chapter{Submitting a Run}
+
+Once you have made necessary changes with the code and checked
+everything with the input files go to the 'run' directory. \\
+
+\textbf{cd run} \\
+\\
+
+
+Learn how to use ``run.pl'' (or grun.pl) - the perl scripts which generates
+the appropriate Makefile and fortran files. run.pl allows
+the user to change time-period, domain, inputs, etc., without
+having to change any fortran files by hand. The procedure for running
+this is somehwat different on the Linux cluster and  Origin (gridur)
+machines.
+
+Check once again all the meteorological and emission data are in place.  Change
+the user name to your corresponding username.  Set the output path
+properly. 
+
+
+An extract from run.pl  is given below.  Set the number of CPUs you
+want to use in the beginning of this script. 
+
+
+In the following example, you are using 32 CPUs which is specified
+with the command \\
+
+\textbf{PBS -lnodes=32} \\
+\\
+
+The script is very much self explanatory.  Set the length of the run
+using any of the following options.  If it is a specific number of months it
+is better to set this with \\
+
+\textbf{mm1} and \textbf{mm2}\\
+
+
+If it is a few days run, NTERM is calculated manually and write the
+number of timesteps in 'NTERM\_CALC'.  
+
+For example \textbf{NTERM\_CALC=25} means a run of three days. 
+
+ The example given here is for a run of 3 months.  
+
+\begin{verbatim}
+#!/usr/local/bin/perl
+#Queue system commands start with #PBS (these are not comments!)
+# lnodes= number of nodes, ppn=processor per node (max4)
+#PBS -lnodes=32
+# wall time limit of run
+#PBS -lwalltime=01:00:00
+# lpmeme=memory to reserve per processor (max 4 or 16GB per node)
+#PBS -lpmem=200MB
+# account for billing
+#PBS -A nn2890k
+#
+$year = "2000";        # Meteorology and emissions year
+
+my $SR = 0;            #NEW Set to 1 for source-receptor stuff
+
+# iyr_trend:
+# :can be set to meteorology year or arbitrary year, say 2050
+
+$iyr_trend = $year;  
+$iyr_trend = "2010" if $SR ;  # 2010 assumed for SR runs here
+
+print "Year is $yy YEAR $year Trend year $ir_trend\n";
+
+if ( $year == 2000 ) {
+  $MetDir = "/work/mifads/metdata/$year" ;
+...
+}
+#---  User-specific directories (changeable)
+
+$DAVE        = "/home/u2/mifads";      
+$PETER       = "/home/u4/mifapw";      
+
+$USER        =  $DAVE ;      
+
+#ds - simplified treatment of BCs and emissions:
+
+$OZONE = 1, $ACID = 0;     # Specify model type here
+
+$version     = "Unimod" ;  
+$Split       = "BASE_MAR2004" ;               #  -- Scenario label for MACH - DS
+$ProgDir     = "$USER/Unify/Unimod.$testv";   # input of source-code
+$MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
+$DaveDataDir = "$DAVE/Unify/MyData";          # for each user's femis, etc.
+$DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
+$PROGRAM     = "$ProgDir/$version";         # programme
+$WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
+
+......
+$emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis00_V2";
+
+# Specify small domain if required. 
+#                 x0   x1  y0   y1
+@largedomain = (   1, 170,  1, 133 ) ;
+@smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
+
+$RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
+$COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
+$INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
+                       # just before execution - so code can be run interactivel.
+
+$NDX   = 8;           # Processors in x-direction
+$NDY   = 4;           # Processors in y-direction
+if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
+
+$mm1   =  1;       # first month
+$mm2   =  3 ;      # last month
+
+$NTERM_CALC =  calc_nterm($mm1,$mm2);
+
+$NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
+  # -- or --
+# $NTERM = 2;       # for testing, simply reset here
+
+  print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
+
+# <---------- end of normal use section ---------------------->
+\end{verbatim}
+
+
+Once you have verified all these and set everything properly, submit
+the run using the command \\
+
+\textbf{qsub run.pl}\\
+\\
+
+\textbf{That's it!!!  You have already submitted a run.}  This script
+does the compilation of the code and submission of the run as well.    
+
+Check the status of the run by typing the command\\
+
+\textbf{qstat -a}\\
+
+This will give you a list of jobs that have been submitted on the
+machine. An example is given below.  In this, the machine is called
+'snowstorm.uit.no'.  The columns are explained in the first line.   
+
+\begin{verbatim}
+
+snowstorm.uit.no:
+                                                      Req'd  Req'd   Elap
+Job ID  Username Queue    Jobname    SessID NDS   TSK Memory Time  S Time
+------- -------- -------- ---------- ------ ----- --- ------ ----- - -----
+63277   conradj  itanium  PdO_OH_Cla  31936    24  --    --  300:0 R 189:2
+65922   bour     itanium  go_Abase     7589     1  --    --  100:5 R 78:36
+
+\end{verbatim}
+
+
+If you want to cancel a run use the command \\
+
+\textbf{qdel jobid}\\
+
+
+
+Once the run is finished you will have the following files in your
+'run' directory. 
+
+\textbf{run.pl.e$<$jobid$>$}\\
+\textbf{run.pl.o$<$jobid$>$}\\
+
+The first file with '.e' extension is the error file and a successful
+completion of the run will result an empty error file.  The second
+file with '.o' extension is the object file and this file gives all the
+details about the run including how many CPU hours it has taken etc.  
+
+If the run crashed due to any reason, check the error file which will
+lead you to the reason for the crash.  Fix the bug and submit the run
+again.  That's it!!!  
+
+

@@ -1,3 +1,12 @@
+==============  rv2_8_1,  July 2nd  2007  =================================
+
+Met_ml:  Cleaned(Jan Eiof), also  some extra Met params made available
+           (RH2m, Soil water --- but both seem to have problems!)
+
+DOCS/cookbook + other :  Cookbook added, Semeena. Now have both a cookbook
+     for new users, and a Manual for programmers. 
+
+
 ==============  rv2_8,  July 2nd  2007  =================================
 
 As used in year 2007 EMEP report work, for SR etc,.

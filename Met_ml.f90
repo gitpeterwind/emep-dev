@@ -5,48 +5,57 @@
                          module Met_ml
 
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! ds may05 - use nwp_sea instead of iclass
-! ds rv1.2 MetModel_LandUse added here for snow and iclass
-!  - combined from hf and pw Met_ml
-! October 2001 hf added call to ReadField:::: WITH TKE scheme (Octobar 2004)
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
-use CheckStop_ml,      only : CheckStop  ! NEW STOP
-use Functions_ml,      only : Exner_tab, Exner_nd    ! ds apr2005
-!use GridValues_ml,     only : xm_i,xm_j,xm2, sigma_bnd,sigma_mid 
-use GridValues_ml,     only :  xmd,i_glob, j_glob,METEOfelt,projection &
-                               ,gl,gb, gb_glob, gl_glob,MIN_ADVGRIDS&
-                               ,Poles
-use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP, &
-                              KMAX_BND,KMAX_MID,NMET, &
-                              DEBUG_i, DEBUG_j
-use Par_ml           , only : MAXLIMAX,MAXLJMAX,NPROC,me  &
-                               ,limax,ljmax,li0,li1,lj0,lj1  &
-                               ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
-                               ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-use PhysicalConstants_ml, only : KARMAN, KAPPA, R, RGAS_KG, CP, GRAV, ROWATER
-!ds apr2005 use Tabulations_ml , only : TPI,PBAS,PINC
+
+
+
+use CheckStop_ml,         only : CheckStop
+use Functions_ml,         only : Exner_tab, Exner_nd
+use GridValues_ml,        only : xmd, i_glob, j_glob, METEOfelt, projection &
+                                ,gl,gb, gb_glob, gl_glob, MIN_ADVGRIDS   &
+                                ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
+                                ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
+                                ,GlobalPosition
+use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP, &
+                                 KMAX_BND,KMAX_MID,NMET,current_date, &
+                                 DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
+                                ,nstep
+use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,NPROC,GIMAX,GJMAX, me  &
+                                ,limax,ljmax,li0,li1,lj0,lj1  &
+                                ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
+                                ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
+                                ,IILARDOM, JJLARDOM, MFSIZEINP, ISMBEG    &
+                                ,JSMBEG, tgi0, tgj0,gi0,gj0, MSG_INIT3  &
+                                ,MSG_READ4, tlimax, tljmax, parinit
+use PhysicalConstants_ml, only : KARMAN, KAPPA, R, RGAS_KG, CP, GRAV    &
+                                ,ROWATER, PI
+use TimeDate_ml,          only : date,Init_nmdays,nmdays,add_secs,timestamp,&
+                                 make_timestamp, make_current_date, nydays
+use Io_ml ,               only : IO_INFIELD, ios, IO_SNOW, IO_ROUGH, open_file
+use ReadField_ml,         only : ReadField ! reads ascii fields
+use netcdf
+
+
+
 implicit none
 private
+
+
+
 
     !----------------- basic met fields ----------------------------------!
     !  Here we declare the metoeorlogical fields used in the model        !
     !  From old eulmc.inc=eulmet.inc
     !---------------------------------------------------------------------!
 !
+!
 ! Vertical levels: z_mid,  z_bnd, sigma_mid, sigma_bnd
 !=============================================================================
-!  In the original MADE/MACHO setup the notation k1, k2, scor1, scor2 was
-!*  used for heights and sigma coordinates.
-!*  In this sytstem the "1" index is for the half layers, the "2" index is for 
-!*  the full layers. Half layers (as they used to be defined in NORLAM) would
-!*  then also represent the fixed upper and lower boundaries. The same index
-!*  is used for height z. 
-!*  According to this   - - - - -    is the full levels and   -------- the 1/2
-!*  levels in the sketch below.
-!* 
-!*   In order to avoid confusion, this notation has now been changed, so 
-!*   that "mid" and "bnd" are used as suffixes on z and sigma. 
+!*   "mid" and "bnd" are used as suffixes on z and sigma as shown in 
+!*   the sketch below. "bnd" is the boundary between two layers and 
+!*   "mid" the midddle of the layer. The numbering of layers starts 
+!*   from 1 at the surface.
 !* 
 !* 
 !* 
@@ -65,13 +74,19 @@ private
 !* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  surface \\\\\\\\\\\\\\\\
 !* 
 
+
+
  INCLUDE 'mpif.h'
  INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
+
+!   Two sets of Met. fields are read in, and a linear interpolation is made 
+!   between these two points in time. NMET  == 2 (two points in time)
 !
   real,public, save, dimension(0:MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u  ! m/s
   real,public, save, dimension(MAXLIMAX,0:MAXLJMAX,KMAX_MID,NMET) :: v  ! m/s
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! dp/dt
+
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
                            th      &  ! Potential teperature  ( deg. k )
                            ,q         ! Specific humidity
@@ -90,27 +105,28 @@ private
 ! surface fields
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,NMET) :: &
                      ps      & ! Surface pressure hPa (or Pa- CHECK!)
-                    !ds apr2005 ,th2m    & ! Temp 2 m   deg. K
                     ,t2_nwp    & ! Temp 2 m   deg. K
-                    ,fh      & ! surf.flux.sens.heat W/m^2   ! ds u7.4vg added
+                    ,fh      & ! surf.flux.sens.heat W/m^2
                     ,fl      & ! latent heat flux W/m^2
-                    ,tau       ! surf. stress  N/m^2
-                               ! (ds - was fm - renamed with apr2005 system)
+                    ,tau     & ! surf. stress  N/m^2
+   ! These fields only available for EMEP from 2002 on
+                    ,rh2m    & !  RH at 2m
+                    ,SoilWater&!  Upper 7.2cm
+                    ,SoilWater_deep !   Next 6x7cm
 
 
 
 
 
-! Derived met
+
+! Fields below are derived/calculated from the input meteorological fields 
+
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-                  !dsps psurf & !u7.4lu psa  Surface pressure hPa
-                 surface_precip    & ! Surface precip mm/hr   ! ds rv1.6.2
-                 !ds apr2005 ,t2&      !u7.4vg temp2m  Temp 2 m   deg. K
+                  surface_precip    & ! Surface precip mm/hr
                  ,u_ref !wind speed
 
-!ds apr2005 - now calculated in met_derived:
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
                   rho_surf    & ! Surface density
@@ -123,26 +139,27 @@ private
   real,public, save, &
       dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: z_mid ! height of half layers
 
-!ds rv1.2  keep HIRLAM/xx met model landuse stuff in same routine
   integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: & 
        snow        ! monthly snow (1=true), read in MetModel_LandUse
-       !ds may05 iclass      ! roughness class ,         "       "       "
 
-!ds may05
+
   logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: & 
        nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
 
   logical, private, parameter ::  MY_DEBUG = .false.
   logical, private, save      ::  debug_proc = .false.
-  integer, private, save      :: debug_iloc, debug_jloc  ! local coords
+  integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
 
-  logical, public, save :: foundustar !pw Used for MM5-type, where u* but not tau
-  logical, public, save :: foundsdot !pw If not found: compute using divergence=0
-  logical, public, save :: sdot_at_mid !pw rv1_9_24 . set false if sdot 
-               !is defined (when read) at level  boundaries and therefore 
-               !do not need to be interpolated.
+  logical, public, save :: foundustar  ! Used for MM5-type, where u* but 
+                                       ! not tau
+  logical, public, save :: foundsdot   ! If not found: compute using 
+                                       ! divergence=0
+  logical, public, save :: sdot_at_mid ! set false if sdot is defined 
+                                       ! (when read) at level  boundaries 
+                                       ! and therefore do not need to be 
+                                       ! interpolated.
 
-!hf tiphys
+! for tiphys
 !check dimension
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
                 xksig ! estimated exchange coefficient, Kz, in intermediate 
@@ -153,7 +170,9 @@ private
        Kz_min      ! Min Kz below hmix  !hf Hilde&Anton
 
 
- !ds apr2005 - temnporary placement of solar radiation variations
+
+
+ !   temnporary placement of solar radiation variations
 
     real, public, dimension(MAXLIMAX, MAXLJMAX), save:: &
         zen          &  ! Zenith angle (degrees)
@@ -162,321 +181,397 @@ private
        ,Idirect         ! total direct solar radiation (W/m^2)
 
     integer, public :: startdate(4)
-    integer,save :: Nhh &    !number of field stored per 24 hours
-         ,nhour_first& !time of the first meteo stored
-         ,nrec     !nrec=record in meteofile, for example 
-                   !(Nhh=8): 1=00:00 2=03:00 ... 8=21:00
-                   !if nhour_first=3 then 1=03:00 2=06:00...8=24:00
+    integer, save   :: Nhh &         ! number of field stored per 24 hours
+                      ,nhour_first&  ! time of the first meteo stored
+                      ,nrec          ! nrec=record in meteofile, for example 
+                                     ! (Nhh=8): 1=00:00 2=03:00 ... 8=21:00
+                                     ! if nhour_first=3 then 
+                                     ! 1=03:00 2=06:00...8=24:00
+
+
+
+
+
+
 
  public :: MeteoGridRead
  public :: infield,MeteoRead
- public :: MetModel_LandUse    ! rv1.2 combines old in_isnowc and inpar
+ public :: MetModel_LandUse    
  public :: metvar
  public :: metint
- public :: tiphys           !hf NEW
+ public :: tiphys         
+
+
 
  contains
 
+
+
+
+
+
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-      subroutine MeteoRead(numt)
+   subroutine MeteoRead(numt)
 
 !	the subroutine reads meteorological fields and parameters (every
 !	METSTEP-hours) from NetCDF fields-files, divide the fields into 
 !       domains	and sends subfields to the processors
 
-	use ModelConstants_ml , only : current_date & ! date-type
-                                       , METSTEP      ! Meteo read timestep
-        use GridValues_ml , only : xm_i,xm_j,xm2,&
-                           sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
-                            fi, GRIDWIDTH_M,ref_latitude
-!hfTD        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
-        use TimeDate_ml, only : date,Init_nmdays,nmdays,add_secs,timestamp,&
-                                make_timestamp, make_current_date
  
-	implicit none
+   implicit none
 
-	integer, intent(in):: numt
+   integer, intent(in):: numt
 
-        character (len = 100),save ::meteoname !name of the meteofile
-        character (len = 100) :: namefield & ! name of the requested field
-                   ,validity !field is either instaneous or averaged
-        integer ::ndim,nyear,nmonth,nday,nhour,k
+   character (len = 100), save  ::  meteoname   ! name of the meteofile
+   character (len = 100)        ::  namefield & ! name of the requested field
+                                   ,validity    ! field is either instaneous 
+                                                ! or averaged
+   integer ::   ndim,nyear,nmonth,nday,nhour,k
+   integer ::   nr                              ! Fields are interpolate in 
+                                                ! time (NMET = 2): between 
+                                                ! nr=1 and nr=2
 
-        integer :: nr!Fields are interpolate in time: between nr=1 and nr=2
-   	type(date) :: next_inptime !hfTD,addhours_to_input
-!hfTD new
-        type(timestamp)::ts_now! time in timestamp format    
-        real :: nsec !step in seconds
 
-        if( METEOfelt==1)then
-           call infield(numt)
-           return
-        endif
+   type(date)      ::  next_inptime             ! hfTD,addhours_to_input
+   type(timestamp) ::  ts_now                   ! time in timestamp format
 
-	nr=2 !set to one only when the first time meteo is read
-	if(numt == 1)then !first time meteo is read
-   
- 	  nr = 1  
-          sdot_at_mid = .false.
-          foundustar = .false.   
-          foundsdot = .false.
 
-           next_inptime = current_date
+   real :: nsec                                 ! step in seconds
+
+
+
+
+
+  if( METEOfelt==1)then
+     call infield(numt)
+     return
+  endif
+
+  nr=2 !set to one only when the first time meteo is read
+
+
+
+  if(numt == 1)then !first time meteo is read
+       nr = 1  
+       sdot_at_mid = .false.
+       foundustar = .false.   
+       foundsdot = .false.
+
+       next_inptime = current_date
 
 ! If origin of meteodomain does not coincide with origin of large domain,
 ! xp and yp should be shifted here, and coordinates must be shifted when 
 ! meteofields are read (not yet implemented)
 
-        else
-!hfTD           addhours_to_input = date(0, 0, 0, METSTEP, 0 )
-!hfTD           next_inptime = add_dates(current_date,addhours_to_input)
-                nsec=METSTEP*3600.0 !from hr to sec
-                ts_now = make_timestamp(current_date)
-                call add_secs(ts_now,nsec)
-                next_inptime=make_current_date(ts_now)
 
 
-        endif
+  else
 
-        nyear=next_inptime%year
-        nmonth=next_inptime%month
+      nsec=METSTEP*3600.0 !from hr to sec
+      ts_now = make_timestamp(current_date)
+      call add_secs(ts_now,nsec)
+      next_inptime=make_current_date(ts_now)
 
-        nday=next_inptime%day 
-        nhour=next_inptime%hour
-        if(  current_date%month == 1 .and.         &
-             current_date%day   == 1 .and.         &
-             current_date%hour  == 0 )	          &
-             call Init_nmdays( current_date )
-        
-        if(me == 0) write(6,*) 					&
-             '*** nyear,nmonth,nday,nhour,numt,nmdays2'	&
+
+  endif
+
+
+
+
+  nyear=next_inptime%year
+  nmonth=next_inptime%month
+
+  nday=next_inptime%day 
+  nhour=next_inptime%hour
+
+  if(  current_date%month == 1 .and.         &
+       current_date%day   == 1 .and.         &
+       current_date%hour  == 0 )	     &
+                            call Init_nmdays( current_date )
+  
+
+      
+  if(me == 0) write(6,*) 					&
+              '*** nyear,nmonth,nday,nhour,numt,nmdays2'	&
              ,next_inptime%year,next_inptime%month,next_inptime%day	&
              ,next_inptime%hour,numt,nmdays(2)
-        
-!Read rec=1 in case 00:00 from 1st January is missing
-        if((numt-1)*METSTEP<=nhour_first)nrec=0 
-        nrec=nrec+1
-        if(nrec>Nhh.or.nrec==1)then! define a new meteo input file
-56        FORMAT(a5,i4.4,i2.2,i2.2,a3)
-           write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-           if(me==0)write(*,*)'reading ',trim(meteoname)
-           nrec = 1
+       
+ 
+!  Read rec=1 in case 00:00 from 1st January is missing
+  if((numt-1)*METSTEP<=nhour_first)nrec=0 
+  nrec=nrec+1
+
+
+
+
+
+   if(nrec>Nhh.or.nrec==1) then              ! define a new meteo input file
+56       FORMAT(a5,i4.4,i2.2,i2.2,a3)
+         write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+         if(me==0)write(*,*)'reading ',trim(meteoname)
+         nrec = 1
            !could open and close file here instead of in Getmeteofield
-        endif
-        if(me==0)write(*,*)'nrec,nhour=',nrec,nhour
+   endif
+
+
+   if(me==0) write(*,*)'nrec,nhour=',nrec,nhour
+
+
 
 ! 3D fields (i,j,k)
-        ndim=3
-        namefield='u_wind'
+   ndim=3
+
 !note that u and v have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX  
 !u(i=0) and v(j=0) are set in metvar
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
-        namefield='v_wind'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             validity,v(1:MAXLIMAX,1:MAXLJMAX,:,nr))
-        namefield='specific_humidity'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             validity, q(:,:,:,nr))
-        namefield='sigma_dot'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             validity, sdot(:,:,:,nr))
-          foundsdot = .true.
 
-       namefield='potential_temperature'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+   namefield='u_wind'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,     &
+             validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+
+   namefield='v_wind'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             validity,v(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+
+   namefield='specific_humidity'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             validity, q(:,:,:,nr))
+
+   namefield='sigma_dot'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             validity, sdot(:,:,:,nr))
+   foundsdot = .true.
+
+   namefield='potential_temperature'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, th(:,:,:,nr))
-        namefield='precipitation'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+
+   namefield='precipitation'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, pr(:,:,:))
-        namefield='3D_cloudcover'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+
+   namefield='3D_cloudcover'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, cc3d(:,:,:))
-        if(trim(validity)/='averaged')then
-           if(me==0)write(*,*)'WARNING: 3D cloud cover is not averaged'
-        endif
+
+   if(trim(validity)/='averaged')then
+        if(me==0)write(*,*)'WARNING: 3D cloud cover is not averaged'
+   endif
+
+
+
+
 ! 2D fields (surface) (i,j)
-        ndim=2
-        namefield='surface_pressure'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+   ndim=2
+
+   namefield='surface_pressure'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, ps(:,:,nr))
-        namefield='temperature_2m'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+
+   namefield='temperature_2m'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, t2_nwp(:,:,nr))
-        namefield='surface_flux_sensible_heat'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+
+   namefield='surface_flux_sensible_heat'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, fh(:,:,nr))
-        if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
-        namefield='surface_flux_latent_heat'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+   if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
+
+   namefield='surface_flux_latent_heat'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, fl(:,:,nr))
-        if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
-        namefield='surface_stress'
-        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+   if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
+
+   namefield='surface_stress'
+   call Getmeteofield(meteoname,namefield,nrec,ndim,&
              validity, tau(:,:,nr))
-        tau=max(0.0,tau)
-         if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
+   tau=max(0.0,tau)
+   if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
       
 
-      end subroutine Meteoread
+   end subroutine Meteoread
 
-      subroutine MeteoGridRead(cyclicgrid)
 
-!	the subroutine reads the grid parameters (projection, resolution etc.)
-!       defined by the meteorological fields
+
+
+
+
+
+
+
+
+  subroutine MeteoGridRead(cyclicgrid)
+
+!   the subroutine reads the grid parameters (projection, resolution etc.)
+!   defined by the meteorological fields
 !
-	use ModelConstants_ml , only : current_date  ! date-type
-        use GridValues_ml , only : sigma_bnd,sigma_mid, sigma_mid, xp, yp, &
-                            xm_i,xm_j,xm2,fi, GRIDWIDTH_M,ref_latitude
-!hfTD        use Dates_ml, only : date,Init_nmdays,add_dates,nmdays
-        use TimeDate_ml, only : date,Init_nmdays !hfTD
 
-	implicit none
-        integer, intent(out) ::cyclicgrid
-        character (len = 100),save ::meteoname !name of the meteofile
-        integer ::ndim,nyear,nmonth,nday,nhour,k
+   implicit none
 
-        if( METEOfelt==1)then
-           cyclicgrid=0
-           poles=0
-           GRIDWIDTH_M=50000.0
-           return
-        endif
+   integer,  intent(out)      :: cyclicgrid
+   integer                    :: ndim,nyear,nmonth,nday,nhour,k
 
-          nyear=startdate(1)
-          nmonth=startdate(2)
-          nday=startdate(3)
-          nhour=0
-          current_date = date(nyear, nmonth, nday, nhour, 0 )
-          call Init_nmdays( current_date )
+   character (len = 100),save :: meteoname !name of the meteofile
+
+
+
+
+   if( METEOfelt==1)then
+      cyclicgrid=0
+      poles=0
+      GRIDWIDTH_M=50000.0
+      return
+   endif
+
+   nyear=startdate(1)
+   nmonth=startdate(2)
+   nday=startdate(3)
+   nhour=0
+   current_date = date(nyear, nmonth, nday, nhour, 0 )
+   call Init_nmdays( current_date )
+
+
           
          !*********initialize grid parameters*********
-56        FORMAT(a5,i4.4,i2.2,i2.2,a3)
-          write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-          if(me==0)write(*,*)'looking for ',trim(meteoname)
+56 FORMAT(a5,i4.4,i2.2,i2.2,a3)
+   write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
+   if(me==0)write(*,*)'looking for ',trim(meteoname)
 
-          call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
-          ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
+
+   call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
+   ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
           ,cyclicgrid)
 
-        if( METEOfelt==1)then
-           cyclicgrid=0
-           poles=0
-           GRIDWIDTH_M=50000.0
-           return
-        endif
-
-           if(me==0)then
-             write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
-             write(*,*)'grid resolution:',GRIDWIDTH_M
-             write(*,*)'xcoordinate of North Pole, xp:',xp
-             write(*,*)'ycoordinate of North Pole, yp:',yp
-             write(*,*)'longitude rotation of grid, fi:',fi
-             write(*,*)'true distances latitude, ref_latitude:',ref_latitude
-          endif
 
 
-        end subroutine Meteogridread
+  if( METEOfelt==1)  then
+        cyclicgrid=0
+        poles=0
+        GRIDWIDTH_M=50000.0
+        return
+  endif
 
-      subroutine infield(numt)
+  if(me==0)then
+       write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
+       write(*,*)'grid resolution:',GRIDWIDTH_M
+       write(*,*)'xcoordinate of North Pole, xp:',xp
+       write(*,*)'ycoordinate of North Pole, yp:',yp
+       write(*,*)'longitude rotation of grid, fi:',fi
+       write(*,*)'true distances latitude, ref_latitude:',ref_latitude
+  endif
+
+
+  end subroutine Meteogridread
+
+
+   subroutine infield(numt)
+
+
 !pw
 ! NB: This routine may disapear in later versions 
-
+!
 !	the subroutine reads meteorological fields and parameters every
 !	six-hour from fields-files, divide the fields into domains
 !	and sends subfields to the processors using nx calls
 
-	use ModelConstants_ml , only : identi	&
-                                      ,current_date & ! date-type
-                                      , METSTEP
-                                    
-	use Par_ml ,  only :  limax,ljmax
-!hfTD        use Dates_ml, only : nmdays,nydays,date,Init_nmdays	&
-!hfTD                            ,add_dates       ! No. days per year
-        use TimeDate_ml, only : nmdays,nydays,date,Init_nmdays,timestamp	&
-                            ,add_secs,make_current_date, make_timestamp      ! 
 
-        use GridValues_ml , only : sigma_bnd,sigma_mid, xp, yp, &
-                            fi, GRIDWIDTH_M,ref_latitude,xm_i,xm_j,xm2
-	use Io_ml ,only : IO_INFIELD, ios
+   implicit none
 
-	implicit none
+   integer, intent(in):: numt
 
-	integer, intent(in):: numt
+
 
 !	local
 
-	integer ierr,fid,nr, i, j, k, ij, ident(20)
-!	integer*8 itmp(6+(MAXLIMAX*MAXLJMAX+3)/4)
-	integer*2 itmp(21+MAXLIMAX*MAXLJMAX)
-	character*20 fname
-	integer nyear,nmonth,nday,nhour,nprognosis
-	type(date) addhours_to_input
-	type(date) next_inptime, buf_date
+   integer   ierr, fid, nr, i, j, k, ij
+   integer   nyear, nmonth, nday, nhour, nprognosis
 
-	real dumhel(MAXLIMAX,MAXLJMAX)
-        real ::xrand(20)
+   integer,    dimension(20)                   ::  ident
+   integer*2,  dimension(21+MAXLIMAX*MAXLJMAX) ::  itmp
 
-!hfTD new
-        type(timestamp)::ts_now! time in timestamp format    
-        real :: nsec !step in seconds
+   character*20 fname
+
+   type(date) addhours_to_input
+   type(date) next_inptime, buf_date
+   
+   type(timestamp)::ts_now        ! time in timestamp format    
+
+   real,   dimension(MAXLIMAX,MAXLJMAX)   ::  dumhel
+   real,   dimension(20)                  ::  xrand
+
+   real :: nsec                    !  step in seconds
+
+
+
 
 !	definition of the parameter number of the meteorological variables
 !	read from field-files:
 
-!ds u7.4vg fl added
+!
 !	u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
 !	ps(8),t2_nwp(31),fh(36),fl(37),tau(38),ustar(53),trw(845), sst(103)
+!  Meteorology available from year 2002 in EMEP files:
+!       rh2m(32), SWC(85, first 7.2cm), 
+!          SWCdeep(86, in the following 6x7.2cm = 43.2 cm))
 
-!	scaling factor to be read from field file.
 
-!	data  par/2, 3, 9, 11, 18, 22, 23, 39, 8, 31, 36, 38, 103/
 
-        projection='Stereographic'     
 
-	nr=2
-	if(numt == 1)then
-	  nr = 1     
-	  u  = 0.0
-	  v  = 0.0
-	endif
+   projection='Stereographic'     
+
+   nr=2
+   if(numt == 1)then
+      nr = 1     
+      u  = 0.0
+      v  = 0.0
+   endif
+
+
+
+
 
 !***********************
-	if(me.eq.0) then
+   if(me.eq.0) then
 !***********************
 
-	  fid=IO_INFIELD
-	  fname='filxxxx'
+      fid=IO_INFIELD
+      fname='filxxxx'
 
-	  write(fname,fmt='(''fil'',i4.4)') numt
+      write(fname,fmt='(''fil'',i4.4)') numt
 
-	  open (fid,file=fname				&
+      open (fid,file=fname				&
 		,form='unformatted',access='sequential'	&
 		,status='old',iostat=ios)
 
-          call CheckStop(ios, "Error opening infield in Met_ml" // fname)
+      call CheckStop(ios, "Error opening infield in Met_ml" // fname)
 
-	  ierr=0
+      ierr=0
 
-	endif ! me == 0
+   endif ! me == 0
 
-        sdot_at_mid = .true.
-        foundustar = .false.
-         foundsdot = .true.
-       
-	do while(.true.)
 
-	  call getflti2Met(fid,ident,itmp,ierr)
-	  if(ierr == 2)goto 998
 
-	  k = ident(7)
 
-	  if (ident(6) .eq. 2.and.k.eq.1)then
+   sdot_at_mid = .true.
+   foundustar = .false.
+   foundsdot = .true.
+
+
+
+   do while(.true.)
+!!   do while(ierr /= 2)
+
+       call getflti2Met(fid,ident,itmp,ierr)
+       if(ierr == 2)goto 998
+
+       k = ident(7)
+
+       if (ident(6) .eq. 2.and.k.eq.1)then
 
 	    nyear=ident(12)
 	    nmonth=ident(13)/100
 	    nday=ident(13)-(ident(13)/100)*100
 	    nhour=ident(14)/100
+
             if(ident(17)>0.0)then
                xp = ident(15)/100.
                yp = ident(16)/100.
@@ -484,23 +579,26 @@ private
                xp = ident(15)/1.
                yp = ident(16)/1.
             endif
+
             fi = ident(18)
             if(ident(2).eq.1841)then
                GRIDWIDTH_M = 50000.0 ! =~ 1000.*abs(ident(17))/10.
-            else
-               GRIDWIDTH_M = 1000.*abs(ident(17))/10.
-               if(me==0)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
+       else
+            GRIDWIDTH_M = 1000.*abs(ident(17))/10.
+            if(me==0)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
                     'AN= ',6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M
-            endif
-            if(ident(2).eq.1600)then
-               xp = 41.006530761718750 !=~ ident(15)
-               yp = 3234.5815429687500 !=~ ident(16)
-               fi = 10.50000 ! =~ ident(18)
-               if(me==0)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
-            endif
-            nprognosis = ident(4)
+       endif
 
-	    identi(:)=ident(:)
+
+       if(ident(2).eq.1600)then
+           xp = 41.006530761718750 !=~ ident(15)
+           yp = 3234.5815429687500 !=~ ident(16)
+           fi = 10.50000 ! =~ ident(18)
+           if(me==0)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
+       endif
+       nprognosis = ident(4)
+
+       identi(:)=ident(:)
 
 !vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
 !
@@ -514,125 +612,132 @@ private
 !pw use nprognosis=ident(4) for determining the date of the prognosis
 
 
-          if(numt == 1) then   !!! initialise 
-              current_date = date(nyear, nmonth, nday, nhour, 0 )
-    	      call Init_nmdays( current_date )
-!hfTD	      addhours_to_input = date(0, 0, 0, nprognosis, 0 )
-!pw	      addhours_to_input = date(0, 0, 0, 12, 0 )
-!hfTD	      current_date = add_dates(current_date,addhours_to_input)!
-               nsec= nprognosis*3600.0
-               ts_now=make_timestamp(current_date)
-               call add_secs(ts_now,nsec)
-               current_date=make_current_date(ts_now)
+      if(numt == 1) then   !!! initialise 
+          current_date = date(nyear, nmonth, nday, nhour, 0 )
+          call Init_nmdays( current_date )
+          nsec= nprognosis*3600.0
+          ts_now=make_timestamp(current_date)
+          call add_secs(ts_now,nsec)
+          current_date=make_current_date(ts_now)
                       
               !  if we start 1. of January, then nyear is the year before
               !  so we have to rerun Init_nmdays!
 
-	      if(current_date%year.ne.nyear)	&
+         if(current_date%year.ne.nyear)	&
 			call Init_nmdays( current_date )
 
               ! for printout assign current_date to next_inptime!
 
-!hfTD	      next_inptime = add_dates(current_date,0)!
 
-              next_inptime = current_date !hfTD ?? Can this be done? Why add_dates before??
+          next_inptime = current_date    !hfTD ?? Can this be done? 
+                                         !Why add_dates before??
 
 	  else
 
 !   find time for which meteorology is valid:
 
-      next_inptime = date(nyear, nmonth, nday, nhour, 0 )
-!hfTD              addhours_to_input = date(0, 0, 0, nprognosis, 0 )
-!hfTD	      next_inptime = add_dates(next_inptime,addhours_to_input) 
-               nsec= nprognosis*3600.0
-               ts_now=make_timestamp(next_inptime)
-               call add_secs(ts_now,nsec)
-               next_inptime=make_current_date(ts_now)
+          next_inptime = date(nyear, nmonth, nday, nhour, 0 )
+          nsec= nprognosis*3600.0
+          ts_now=make_timestamp(next_inptime)
+          call add_secs(ts_now,nsec)
+          next_inptime=make_current_date(ts_now)
 
-!	compare the input time with current_date, it should be METSTEP hours later
+!	compare the input time with current_date, 
+!       it should be METSTEP hours later
 !	check if current_date+METSTEP = next_inptime
 
-!hfTD               addhours_to_input = date(0, 0, 0, METSTEP, 0 )
-!hfTD               buf_date = add_dates(current_date,addhours_to_input)
-               nsec= METSTEP*3600.0
-               ts_now=make_timestamp(current_date)
-               call add_secs(ts_now,nsec)
-               buf_date=make_current_date(ts_now)
+          nsec= METSTEP*3600.0
+          ts_now=make_timestamp(current_date)
+          call add_secs(ts_now,nsec)
+          buf_date=make_current_date(ts_now)
+
+
 !	now check:
 
-   call CheckStop(buf_date%year,   next_inptime%year,   "In infield: wrong next input year")
-   call CheckStop(buf_date%month,  next_inptime%month,  "In infield: wrong next input month")
-   call CheckStop(buf_date%day,    next_inptime%day,    "In infield: wrong next input day")
-   call CheckStop(buf_date%hour,   next_inptime%hour,   "In infield: wrong next input hour")
-   call CheckStop(buf_date%seconds,next_inptime%seconds,"In infield: wrong next input seconds")
+         call CheckStop(buf_date%year,   next_inptime%year,   &
+               "In infield: wrong next input year")
+         call CheckStop(buf_date%month,  next_inptime%month,  &
+               "In infield: wrong next input month")
+         call CheckStop(buf_date%day,    next_inptime%day,    &
+               "In infield: wrong next input day")
+         call CheckStop(buf_date%hour,   next_inptime%hour,   &
+               "In infield: wrong next input hour")
+         call CheckStop(buf_date%seconds,next_inptime%seconds,&
+               "In infield: wrong next input seconds")
 
 
 !	now the last check, if we have reached a new year, i.e. current date
 !	is 1.1. midnight, then we have to rerun Init_nmdays
 
-               if(  current_date%month == 1 .and.         &
-                    current_date%day   == 1 .and.         &
-                    current_date%hour  == 0 )	          &
-         		call Init_nmdays( current_date )
+         if(  current_date%month == 1 .and.         &
+              current_date%day   == 1 .and.         &
+              current_date%hour  == 0 )	          &
+              call Init_nmdays( current_date )
 
-          end if  ! numt
+       end if  ! numt
 
-          if(me == 0) write(6,*) 					&
+       if(me == 0) write(6,*) 					&
                 '*** nyear,nmonth,nday,nhour,numt,nmdays2,nydays'	&
                 ,next_inptime%year,next_inptime%month,next_inptime%day	&
       	        ,next_inptime%hour,numt,nmdays(2),nydays
 
-          endif
+   endif
+ 
 
-	  select case (ident(6))
 
-	  case (2)
+   select case (ident(6))
 
-          sigma_mid(k)=ident(19)/1.0e+4
+      case (2)
 
-	    call getmetfieldMet(ident(20),itmp,dumhel)
+      sigma_mid(k)=ident(19)/1.0e+4
 
-	    do j = 1,ljmax
-	      do i = 1,limax
-		u(i,j,k,nr) = dumhel(i,j)-1.E-9
-!pw the "-1.E-9" is put in order to avoid possible different 
-!roundings on different machines. 
-	      enddo
+      call getmetfieldMet(ident(20),itmp,dumhel)
+
+      do j = 1,ljmax
+         do i = 1,limax
+           u(i,j,k,nr) = dumhel(i,j)-1.E-9    ! the "-1.E-9" is included 
+                                              ! in order to avoid possible 
+                                              ! different roundings on 
+                                              ! different machines. 
+	  enddo
+      enddo
+
+
+
+      case (3)
+
+	  call getmetfieldMet(ident(20),itmp,dumhel)
+
+	 do j = 1,ljmax
+            do i = 1,limax
+               v(i,j,k,nr) = dumhel(i,j)-1.E-9   ! the "-1.E-9" is included 
+                                                 ! in order to avoid possible 
+                                                 ! different roundings on 
+                                                 ! different machines.  
 	    enddo
+	 enddo
 
-	  case (3)
+	 case (9)
 
-	    call getmetfieldMet(ident(20),itmp,dumhel)
+	    call getmetfieldMet(ident(20),itmp,q(1,1,k,nr))
 
-	    do j = 1,ljmax
-	      do i = 1,limax
-		v(i,j,k,nr) = dumhel(i,j)-1.E-9
-!pw the "-1.E-9" is put in order to avoid possible different 
-!roundings on different machines. 
-	      enddo
-	    enddo
+	 case (11)
 
-	  case (9)
+            call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
 
-	      call getmetfieldMet(ident(20),itmp,q(1,1,k,nr))
-
-	  case (11)
+         case (-11) !pw (not standard convention)
 
 	      call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
 
-	  case (-11) !pw (not standard convention)
+             sdot_at_mid = .false.
 
-	      call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
+ 	 case (810) !pw u3 MM5 SIGMADOT
 
-              sdot_at_mid = .false.
+	     call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
 
- 	  case (810) !pw u3 MM5 SIGMADOT
+          case (18)
 
-	      call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
-
-	  case (18)
-
-	      call getmetfieldMet(ident(20),itmp,th(1,1,k,nr))
+	     call getmetfieldMet(ident(20),itmp,th(1,1,k,nr))
 
 !	  case (22)
 !
@@ -643,15 +748,15 @@ private
                
 	  case (23)
 
-              call getmetfieldMet(ident(20),itmp,pr(1,1,k))
+             call getmetfieldMet(ident(20),itmp,pr(1,1,k))
 
 !	  case (845) ! pw u3 MM5 TOTALRW
 !
 !              call getmetfield(ident(20),itmp,trw(1,1,k))
 
-	  case (39)
+          case (39)
 
-	      call getmetfieldMet(ident(20),itmp,cc3d(1,1,k))
+	     call getmetfieldMet(ident(20),itmp,cc3d(1,1,k))
 
 !..2D fields!
 
@@ -662,23 +767,35 @@ private
 	  case (31)
 
 	      call getmetfieldMet(ident(20),itmp,t2_nwp(1,1,nr))
+! NEWMET:
+!   rh2m(32), SWC(85, first 7.2cm), SWCdeep(86, in the following 
+!     6x7.2cm = 43.2 cm))
+          case (32)
+              rh2m(:,:,nr) = 0.0
+              call getmetfieldMet(ident(20),itmp,rh2m(1,1,nr))
+          case (85)
+               SoilWater(:,:,nr) = 0.0
+              call getmetfieldMet(ident(20),itmp,SoilWater(1,1,nr))
+          case (86)
+               SoilWater_deep(:,:,nr) = 0.0
+              call getmetfieldMet(ident(20),itmp,SoilWater_deep(1,1,nr))
+
 
 	  case (36)
 
 	      call getmetfieldMet(ident(20),itmp,fh(1,1,nr))
 
-	  case (37)       !ds u7.4vg fl added
+	  case (37)
 
               call getmetfieldMet(ident(20),itmp,fl(1,1,nr))
 
 	  case (38)
 
-	      call getmetfieldMet(ident(20),itmp,tau(1,1,nr)) ! ds was fm
+	      call getmetfieldMet(ident(20),itmp,tau(1,1,nr))
 
-	  case (53) !pw u3
+	  case (53)
 
               foundustar = .true.
-	      !ds apr2005 call getmetfield(ident(20),itmp,ustar_nwp(1,1,nr))
 	      call getmetfieldMet(ident(20),itmp,ustar_nwp(1,1))
 
 	  case (103) ! SST
@@ -688,34 +805,29 @@ private
 
 	  end select
 
-	enddo
+       enddo
 
 998	continue
 
 !     definition of the half-sigma levels from the full levels.
 
-!pw rv2_1_10: moved into DegGrid
-!      sigma_bnd(KMAX_BND) = 1.!
-!
-!      do k = KMAX_MID,2,-1
-!        sigma_bnd(k) = 2.*sigma_mid(k) - sigma_bnd(k+1)
-!	enddo
-!
-!      sigma_bnd(1) = 0.
 
-!              set sdot equal to zero at the boundaries.
+  end subroutine infield
 
-!ko    sdot is interpolated to get values at half levels; see metvar.f
-!ko	    sdot(:,:,1,nr)=0.
-!ko
 
-!pw rv2_1_9: moved into metvar
-!      sdot(:,:,KMAX_BND,nr)=0.
 
-   end subroutine infield
+
+
+
+  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+
+
 
    subroutine getflti2Met(ifile,ident,itmp,ierr)
-!pw
+
 ! NB: This routine may disapear in later versions 
 
 !fpp$ noconcur r
@@ -771,72 +883,69 @@ private
 !  uses nx=ident(10) (read from file) as first dimension of array, 
 !  instead of IILARDOM. (only modified for not _CRAY)
 !
-	use Par_ml  , only : MAXLIMAX,MAXLJMAX,IILARDOM,JJLARDOM &
-     			,MFSIZEINP,NPROC,ISMBEG,JSMBEG,tgi0,tgj0,me &
-     			,MSG_INIT3 &
-     			,tlimax,tljmax,limax,ljmax
-!hf u2	use My_Runmode_ml , only : stop_test
-	implicit none
 
-	integer NUMHOR4,MAXPK4
-	integer d,i,j,info
+   implicit none
+
+   integer d,i,j,info
+
 !  MAXPK4: max record length in cray 64 bit integer words
 
-	parameter (NUMHOR4=MAXLIMAX*MAXLJMAX)
-	parameter (MAXPK4 = IILARDOM*JJLARDOM)
-	integer ida,itp
-	integer*2 idpack(20)
-	integer*2 ipack(21+MAXPK4)
-	integer*2 itmp(21+NUMHOR4)
+  integer, parameter :: NUMHOR4 = MAXLIMAX*MAXLJMAX
+  integer, parameter :: MAXPK4  = IILARDOM*JJLARDOM
+
+   integer ida,itp
+   integer*2 idpack(20)
+   integer*2 ipack(21+MAXPK4)
+   integer*2 itmp(21+NUMHOR4)
 
 
 !  input/output
-	integer   ifile,ident(20),ierr,iteserr
+   integer   ifile,ident(20),ierr,iteserr
 !
 !
 !  cray uses ipack as a standard length integer
 !
 !
 !
-	integer isave,nsave,ios,ierror
-	integer nxin,nyin,nword,npack
+   integer isave,nsave,ios,ierror
+   integer nxin,nyin,nword,npack
 
-	ierr = 0
-	iteserr = 0
+   ierr = 0
+   iteserr = 0
 
-	if(me.eq.0)then
+   if(me.eq.0)then
 
-	  ipack(1) = 0
+      ipack(1) = 0
 
-        call CheckStop(ifile < 1,  "ifile<1  in Met_ml") ! NEW STOP
-        call CheckStop(ifile > 99, "ifile>99 in Met_ml") ! NEW STOP
+      call CheckStop(ifile < 1,  "ifile<1  in Met_ml")
+      call CheckStop(ifile > 99, "ifile>99 in Met_ml")
 
-	endif
+   endif
 
-	if(me == 0)then
+   if(me == 0)then
 !        a) read field identification (one record)
 !        b) read field data           (one record)
 !
 !
 
-	  read(ifile,iostat=ios,err=910,end=920) (idpack(i),i=1,20)
-	  do i=1,20
-	    ident(i)=idpack(i)
-	    ipack(i+1)=idpack(i)
-	  end do
+	read(ifile,iostat=ios) (idpack(i),i=1,20)
+        if ( ios <  0 ) ierr = 2    ! End of file
+        call CheckStop( ios > 0 , "**getflt** read error 1 " )
+
+        do i=1,20
+	  ident(i)=idpack(i)
+	  ipack(i+1)=idpack(i)
+	end do
 
 !
 !  not using extra geometry identification (after field data)
-          if(ident(9).gt.999) ident(9)=ident(9)/1000
-!
-!
-!
-!
-	  nxin=ident(10)
-	  nyin=ident(11)
-	  nword=nxin*nyin
-!
-	  if(nword.gt.MFSIZEINP) then
+        if(ident(9).gt.999) ident(9)=ident(9)/1000
+
+	nxin=ident(10)
+        nyin=ident(11)
+        nword=nxin*nyin
+
+        if(nword.gt.MFSIZEINP) then
 	    write(6,*) ' **getflt** field length too big', &
                              ' (input buffer MFSIZEINP too small)'
 	    write(6,*) ' **          MFSIZEINP = ',MFSIZEINP
@@ -845,44 +954,40 @@ private
 	    write(6,*) ' ** nx,ny,nx*ny: ',nxin,nyin,nword
 	    ierr=1
 	    iteserr = 1
-	    goto 990
-	  endif
-!
+
+          else
+              npack=nword
+	      read(ifile,iostat=ios) (ipack(i),i=22,npack+21)
+
+              if ( ios <  0 ) ierr = 2    ! End of file is allowed. Therefore 
+                                          ! check ios > 0 in Checkstop 
+              call CheckStop( ios > 0 , "**getflt** read error 2 " )
+
+       endif
+   endif
+
+   call CheckStop(ierr==1, "getflti2ex in Met_ml")
 
 
-	  npack=nword
-	  read(ifile,iostat=ios,err=910,end=920) (ipack(i),i=22,npack+21)
 
+   if(me.eq.0)then
 
-	  goto 990
-
-910	  ierr=1
-	  iteserr = 1
-	  write(6,*) ' **getflt** read error. file,iostat: ',ifile,ios
-	  goto 990
-920	  ierr=2
-	  goto 990
-
-990	  continue
-	endif
-
-          call CheckStop(ierr==1, "getflti2ex in Met_ml")
-
-
-	if(me.eq.0)then
-
-	if(ierr.eq.2)then
+        if(ierr.eq.2)then    ! end of file
 	    ipack(1) = -999
 	    do d = 1, NPROC-1
 
-	        CALL MPI_SEND(ipack,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3,MPI_COMM_WORLD,INFO) 
+	        CALL MPI_SEND(ipack,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3  &
+                             ,MPI_COMM_WORLD,INFO) 
 
 	    enddo
 	    close(ifile)
 	    return
 	endif
-!
-!..hj.. scaling is done within the getflti2 subroutine!!!!!!!!
+
+
+
+
+!.... scaling is done within the getflti2 subroutine!!!!!!!!
 !
 	  if (ident(1) .ne. 88) then
 	    write(6,*) 'ERROR IN INFIELD : produsent =',ident(1)
@@ -899,60 +1004,66 @@ private
 	  enddo
 	  do d = 1, NPROC-1
 	    ida = 21
-!pw	    itp = 21+(tgj0(d)+JSMBEG-2)*IILARDOM + tgi0(d)+ISMBEG-2
 	    itp = 21+(tgj0(d)+JSMBEG-2)*ipack(11) + tgi0(d)+ISMBEG-2
 	    do j = 1,tljmax(d)
 	      do i = 1,tlimax(d)
 	        itmp(ida+i) = ipack(itp+i)
 	      enddo
 	      ida = ida + MAXLIMAX
-!pw	      itp = itp + IILARDOM
 	      itp = itp + ipack(11)
 	    enddo
-	      CALL MPI_SEND(itmp,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3,MPI_COMM_WORLD,INFO) 
+	    CALL MPI_SEND(itmp,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3  &
+                         ,MPI_COMM_WORLD,INFO) 
 	  enddo
 	  ida = 21
-!pw	  itp = 21+(JSMBEG-1)*IILARDOM + ISMBEG-1
 	  itp = 21+(JSMBEG-1)*ipack(11) + ISMBEG-1
 	  do j = 1,ljmax
 	    do i = 1,limax
 	      itmp(ida+i) = ipack(itp+i)
 	    enddo
 	    ida = ida + MAXLIMAX
-!pw	    itp = itp + IILARDOM
 	    itp = itp + ipack(11)
 	  enddo
 
-!
-!
-	else		
+
+
+   else		
 
 ! me.ne.0, always receive to get itmp(1)
 
 
-	    CALL MPI_RECV( itmp, 2*(21+NUMHOR4), MPI_BYTE, 0, &
-	    MSG_INIT3, MPI_COMM_WORLD,MPISTATUS, INFO) 
+	CALL MPI_RECV( itmp, 2*(21+NUMHOR4), MPI_BYTE, 0, &
+	MSG_INIT3, MPI_COMM_WORLD,MPISTATUS, INFO) 
 
-	  if(itmp(1).eq.-999)then
+        if(itmp(1).eq.-999)then
 	    ierr = 2
 	    return
-	  endif
-
-	  do i=1,20
-	    ident(i) = itmp(i+1)
-	  enddo
-
 	endif
 
-	return
-      end subroutine getflti2Met
+	do i=1,20
+           ident(i) = itmp(i+1)
+        enddo
+
+   endif
+
+  end subroutine getflti2Met
+
+
+
+
+
+
+
+  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
 
 	subroutine getmetfieldMet(ident,itmp,array)
 
-!pw
+
 ! NB: This routine may disapear in later versions 
  
-	use Par_ml  , only : MAXLIMAX,MAXLJMAX
 	implicit none
 
 	integer NUMHOR4
@@ -978,6 +1089,10 @@ private
 
 
 
+
+
+
+
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
    subroutine metvar(numt)
@@ -986,166 +1101,176 @@ private
 ! Unit changes, special definitions etc...
 
 
-	use Par_ml , only : limax,ljmax,li0,li1,lj0,lj1,me		&
-			,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC		&
-			,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-        use GridValues_ml , only : xm_i,xm_j,xm2,xmd, &
-                                   sigma_bnd,sigma_mid,GRIDWIDTH_M
-	use ModelConstants_ml, only : PASCAL, PT, CLOUDTHRES, METSTEP,&
-                         V_RAIN  !rv1.2
-	use PhysicalConstants_ml, only : KARMAN, KAPPA, R, CP, GRAV      &
-			,ROWATER
-	!ds apr2005 use Tabulations_ml , only : TPI,PBAS,PINC
-	implicit none
+   implicit none
 
-	integer, intent(in):: numt
+   integer, intent(in):: numt
 
 !	local
 
-      real prhelp(KMAX_MID)
-      real exf1(KMAX_BND), exf2(KMAX_MID) 
- 	real bm, cm, dm, divt, x1,x2, xkmin, p1, p2, uvh2, uvhs
-	real ri, z00, a2, cdh, fac, fac2, ro, xkh, dvdz, dvdzm, xlmix
-	real ric, arg, sl2,dz2k,dex12
-	integer i, j, k, lx1,lx2, nr,info
-!su	send in x-direction
-      real usnd(MAXLJMAX,KMAX_MID)      
-!su	send in y-direction
-      real vsnd(MAXLIMAX,KMAX_MID)      
-!ko
-	real prhelp_sum         !u1 - jej ,pr_factor
-        real :: inv_METSTEP     ! ds
+   real,   dimension(KMAX_MID)          ::  prhelp    &
+                                           ,exf2
+   real,   dimension(KMAX_BND)          ::  exf1
 
-	nr = 2
-	if (numt.eq.1) then
+   real,   dimension(MAXLJMAX,KMAX_MID) :: usnd   ! send in x 
+   real,   dimension(MAXLIMAX,KMAX_MID) :: vsnd   ! and in y direction
 
-          nr = 1
+   real   bm, cm, dm, divt, x1,x2, xkmin, p1, p2, uvh2, uvhs
+   real   ri, z00, a2, cdh, fac, fac2, ro, xkh, dvdz, dvdzm, xlmix
+   real   ric, arg, sl2,dz2k,dex12
+   real   prhelp_sum      
+   real   inv_METSTEP   
 
-          !-------------------------------------------------------------------
-          !ds apr2005  Initialisations:
+   integer :: i, j, k, lx1,lx2, nr,info
 
-          call Exner_tab()
 
-          ! Look for processor containing debug coordinates
-          debug_iloc    = -999
-          debug_jloc    = -999
 
-          do i = 1, limax
-          do j = 1, ljmax
-               if (MY_DEBUG .and. &
-                   i_glob(i) == DEBUG_I .and. j_glob(j) == DEBUG_J ) then
-                       debug_proc = .true.
-                       debug_iloc    = i
-                       debug_jloc    = j
-               end if
+
+   nr = 2
+   if (numt.eq.1) then
+
+       nr = 1
+
+    !-------------------------------------------------------------------
+    !  Initialisations:
+
+       call Exner_tab()
+
+    ! Look for processor containing debug coordinates
+       debug_iloc    = -999
+       debug_jloc    = -999
+
+       do i = 1, limax
+         do j = 1, ljmax
+            if (MY_DEBUG .and. &
+              i_glob(i) == DEBUG_I .and. j_glob(j) == DEBUG_J ) then
+              debug_proc = .true.
+              debug_iloc    = i
+              debug_jloc    = j
+             end if
           end do
-          end do
-           if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
+       end do
+       if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
           !-------------------------------------------------------------------
           
-        end if
+   end if
 
 
-        divt = 1./(3600.0*METSTEP)
-!su
-!	define u(i=0,v(j=0)
+   divt = 1./(3600.0*METSTEP)
 
-	if (neighbor(EAST) .ne. NOPROC) then
-        do k = 1,KMAX_MID
-	    do j = 1,ljmax
-	      usnd(j,k) = u(limax,j,k,nr)
-	    enddo
-	  enddo
-          CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
+
+   if (neighbor(EAST) .ne. NOPROC) then
+      do k = 1,KMAX_MID
+	do j = 1,ljmax
+	   usnd(j,k) = u(limax,j,k,nr)
+        enddo
+      enddo
+      CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
                neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, INFO) 
-	endif
+   endif
 
-	if (neighbor(NORTH) .ne. NOPROC) then
-        do k = 1,KMAX_MID
-	    do i = 1,limax
-	      vsnd(i,k) = v(i,ljmax,k,nr)
-	    enddo
-	  enddo
-          CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
+
+
+
+   if (neighbor(NORTH) .ne. NOPROC) then
+      do k = 1,KMAX_MID
+         do i = 1,limax
+	    vsnd(i,k) = v(i,ljmax,k,nr)
+	 enddo
+      enddo
+      CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
                neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, INFO) 
-	endif
+   endif
+
+
+
+
 
 !     receive from WEST neighbor if any
 
-	if (neighbor(WEST) .ne. NOPROC) then
+   if (neighbor(WEST) .ne. NOPROC) then
 
-           CALL MPI_RECV( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
-                neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
-        do k = 1,KMAX_MID
-	    do j = 1,ljmax
+       CALL MPI_RECV( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+             neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+       do k = 1,KMAX_MID
+	  do j = 1,ljmax
 	      u(0,j,k,nr) = usnd(j,k)
-	    enddo
-	  enddo
+          enddo
+       enddo
 
-	else
+   else
 
-           do k = 1,KMAX_MID
-              do j = 1,ljmax
-                 u(0,j,k,nr) = u(1,j,k,nr)
-              enddo
+       do k = 1,KMAX_MID
+           do j = 1,ljmax
+              u(0,j,k,nr) = u(1,j,k,nr)
            enddo
+       enddo
 
 
-	endif
+   endif
 
 !     receive from SOUTH neighbor if any
 
-	if (neighbor(SOUTH) .ne. NOPROC) then
+   if (neighbor(SOUTH) .ne. NOPROC) then
 
-           CALL MPI_RECV( vsnd, 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
+       CALL MPI_RECV( vsnd, 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
                 neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
-        do k = 1,KMAX_MID
-	    do i = 1,limax
-	      v(i,0,k,nr) = vsnd(i,k)
-	    enddo
-	  enddo
+       do k = 1,KMAX_MID
+          do i = 1,limax
+              v(i,0,k,nr) = vsnd(i,k)
+          enddo
+       enddo
 
-	else
+   else
 
-           if(Poles(2)/=1)then
-              do k = 1,KMAX_MID
-                 do i = 1,limax
-                    v(i,0,k,nr) = v(i,1,k,nr)
-                 enddo
-              enddo
-           else
-              !"close" the South pole
-              do k = 1,KMAX_MID
-                 do i = 1,limax
-                    v(i,0,k,nr) = 0.0
-                 enddo
-              enddo
-           endif
-
-	endif
-	if (neighbor(NORTH) == NOPROC.and.Poles(1)==1) then
-           !"close" the North pole
+       if(Poles(2)/=1)  then
+          do k = 1,KMAX_MID
+             do i = 1,limax
+                 v(i,0,k,nr) = v(i,1,k,nr)
+             enddo
+           enddo
+       else
+    !"close" the South pole
            do k = 1,KMAX_MID
               do i = 1,limax
-                 v(i,ljmax,k,nr) = 0.0
+                 v(i,0,k,nr) = 0.0
               enddo
            enddo
         endif
 
-        inv_METSTEP = 1.0/METSTEP   !ds
+   endif
 
-	do j = 1,ljmax
-	  do i = 1,limax
+
+
+
+
+
+   if (neighbor(NORTH) == NOPROC.and.Poles(1)==1) then
+!"close" the North pole
+      do k = 1,KMAX_MID
+         do i = 1,limax
+             v(i,ljmax,k,nr) = 0.0
+         enddo
+      enddo
+   endif
+
+   inv_METSTEP = 1.0/METSTEP
+
+   do j = 1,ljmax
+      do i = 1,limax
 
 !     conversion of pressure from mb to Pascal.
 
-	    ps(i,j,nr) = ps(i,j,nr)*PASCAL
-	    !dsps psurf(i,j) = ps(i,j,nr) !u7.4vg - was psa
+         ps(i,j,nr) = ps(i,j,nr)*PASCAL
 
-!ds rv1.6.2
+
+
+
 ! surface precipitation, mm/hr
 
-	    surface_precip(i,j) = pr(i,j,KMAX_MID) * inv_METSTEP
+         surface_precip(i,j) = pr(i,j,KMAX_MID) * inv_METSTEP
+
+
+
 
 !     surface temperature to potential temperature 
 
@@ -1153,100 +1278,106 @@ private
 !su	    th2m(i,j,nr) = th2m(i,j,nr)*(1.e+5/ps(i,j,nr))**(KAPPA)
 	   !ds apr2005  th2m(i,j,nr) = th2m(i,j,nr)*exp(-KAPPA*log(ps(i,j,nr)*1.e-5))
 
-            !dsps rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,nr) ) 
-            rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) ) 
-
-!ds apr2005: For MM5 we get u*, not tau. Since it seems better to
-!             interpolate tau than u*  between time-steps we convert
-
-            if ( foundustar) then
-               tau(i,j,nr)    = ustar_nwp(i,j)*ustar_nwp(i,j)* rho_surf(i,j) 
-            end if
 
 
-	    prhelp_sum = 0.0
-	    prhelp(1) = max(pr(i,j,1),0.)
 
-	    prhelp_sum = prhelp_sum + prhelp(1)
-!ko	    if(numt.ge.2)deriv_2d(i,j,IPRDEP) = deriv_2d(i,j,IPRDEP)
-!ko     &			 + prhelp(1)
-!ko
+
+         rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) ) 
+
+!     For MM5 we get u*, not tau. Since it seems better to
+!     interpolate tau than u*  between time-steps we convert
+
+         if ( foundustar) then
+             tau(i,j,nr)    = ustar_nwp(i,j)*ustar_nwp(i,j)* rho_surf(i,j) 
+         end if
+
+
+	 prhelp_sum = 0.0
+         prhelp(1) = max(pr(i,j,1),0.)
+
+         prhelp_sum = prhelp_sum + prhelp(1)
 
 !     pr is 3 hours accumulated precipitation in mm in each
 !     layer summed from above. This is first converted to precipitation
 !     release in each layer.
 
-          do k = 2,KMAX_MID
+         do k = 2,KMAX_MID
 
-	      prhelp(k) = pr(i,j,k) - pr(i,j,k-1)
-!               prhelp(i,j,k) = max(prhelp(i,j,k), 0.)
-!ko
-	      prhelp_sum = prhelp_sum + prhelp(k)
-!ko                if(numt.ge.2)deriv_2d(i,j,IPRDEP) = 
-!ko     &			deriv_2d(i,j,IPRDEP) + prhelp(k)
-!ko
+	    prhelp(k) = pr(i,j,k) - pr(i,j,k-1)
 
-	    enddo
+	 enddo
 
-!ko   accumulated deposition over 3 hour interval 
-!ko   k=KMAX_MID now includes accumulated precipitation over all layers
-!ko   evaporation has been set to zero as it is not accounted for in the
-!ko   wet deposition
+!   accumulated deposition over 3 hour interval 
+!   k=KMAX_MID now includes accumulated precipitation over all layers
+!   evaporation has been set to zero as it is not accounted for in the
+!   wet deposition
 
 
-!hf I add up in WetDeposition, to have the prec used in the model
+!   Add up in WetDeposition, to have the prec used in the model
 
-	    pr(i,j,:) = prhelp(:)*divt
+	 pr(i,j,:) = prhelp(:)*divt
 
-         ! interpolation of sigma dot for half layers
 
-          if(foundsdot.and.sdot_at_mid)then !pw rv1_9_24
-             do k = KMAX_MID,2,-1
 
-	      sdot(i,j,k,nr) = sdot(i,j,k-1,nr) 		&
-		+ (sdot(i,j,k,nr)-sdot(i,j,k-1,nr))		&
-            *(sigma_bnd(k)-sigma_mid(k-1)) / (sigma_mid(k)-sigma_mid(k-1))
 
-  	      enddo
-            endif
+!   interpolation of sigma dot for half layers
+
+        if(foundsdot.and.sdot_at_mid)then !pw rv1_9_24
+           do k = KMAX_MID,2,-1
+
+	      sdot(i,j,k,nr) = sdot(i,j,k-1,nr) 		   &
+		             + (sdot(i,j,k,nr)-sdot(i,j,k-1,nr))   &
+                             * (sigma_bnd(k)-sigma_mid(k-1))       &
+                             / (sigma_mid(k)-sigma_mid(k-1))
+
+  	    enddo
+        endif
 	  
-           ! set sdot equal to zero at the top and bottom of atmosphere. 
+!    set sdot equal to zero at the top and bottom of atmosphere. 
 
-            sdot(i,j,KMAX_BND,nr)=0.0
-            sdot(i,j,1,nr)=0.0
+        sdot(i,j,KMAX_BND,nr)=0.0
+        sdot(i,j,1,nr)=0.0
 
-!ko	conversion from % to fractions (<0,1>) for cloud cover
-!ko	calculation of cc3dmax (see eulmc.inc) - 
-!ko	maximum of cloud fractions for layers above a given layer
+!	conversion from % to fractions (<0,1>) for cloud cover
+!	calculation of cc3dmax (see eulmc.inc) - 
+!	maximum of cloud fractions for layers above a given layer
 
-	    cc3d(i,j,1) = 0.01 * cc3d(i,j,1)
-	    cc3dmax(i,j,1) = cc3d(i,j,1)
-!hf
-            lwc(i,j,:)=0.
-            do k=2,KMAX_MID
-	      cc3d(i,j,k) = 0.01 * cc3d(i,j,k)
-	      cc3dmax(i,j,k) = amax1(cc3dmax(i,j,k-1),cc3d(i,j,k-1))
-              lwc(i,j,k)=0.6e-6*cc3d(i,j,k)
-	    enddo
+	cc3d(i,j,1) = 0.01 * cc3d(i,j,1)
+        cc3dmax(i,j,1) = cc3d(i,j,1)
 
-	  enddo
-	enddo
 
-!ko 	lines associated with computation of surface diffusion 
-!ko	coefficient are commented
+        lwc(i,j,:)=0.
+        do k=2,KMAX_MID
+	   cc3d(i,j,k) = 0.01 * cc3d(i,j,k)
+	   cc3dmax(i,j,k) = amax1(cc3dmax(i,j,k-1),cc3d(i,j,k-1))
+           lwc(i,j,k)=0.6e-6*cc3d(i,j,k)
+        enddo
+
+      enddo
+   enddo
+
+
+
+
+
+
+! 	lines associated with computation of surface diffusion 
+!	coefficient are commented
  
-	xkmin = 1.e-3
+   xkmin = 1.e-3
 
 !     derive the meteorological parameters from the basic parameters
 !     read from field-files.
 
-	do j = 1,ljmax
-	  do i = 1,limax
+   do j = 1,ljmax
+      do i = 1,limax
           p1 = sigma_bnd(KMAX_BND)*(ps(i,j,nr) - PT) + PT
 
           exf1(KMAX_BND) = CP * Exner_nd(p1)   !ds apr2005tpi(lx1)    
 
           z_bnd(i,j,KMAX_BND) = 0.0
+
+
 
           do k = KMAX_MID,1,-1
 
@@ -1258,24 +1389,24 @@ private
 
 !     exner-function of the half-layers
 
-            p1 = sigma_bnd(k)*(ps(i,j,nr) - PT) + PT
+             p1 = sigma_bnd(k)*(ps(i,j,nr) - PT) + PT
 
 
-	      exf1(k) = CP * Exner_nd( p1 ) !ds apr2005
+	     exf1(k) = CP * Exner_nd( p1 ) !ds apr2005
 
-            p2 = sigma_mid(k)*(ps(i,j,nr) - PT) + PT
+             p2 = sigma_mid(k)*(ps(i,j,nr) - PT) + PT
 
 !     exner-function of the full-levels
 
-	      exf2(k) = CP * Exner_nd(p2)  !ds apr2005
+	     exf2(k) = CP * Exner_nd(p2)  
 
-!     height of the half-layers ! full layers ???
+!     height of the half-layers 
 
             z_bnd(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
 			(exf1(k+1) - exf1(k)))/GRAV
 
 
-!     height of the full levels. !half layers??
+!     height of the full levels.
 
             z_mid(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
 			(exf1(k+1) - exf2(k)))/GRAV
@@ -1286,168 +1417,176 @@ private
           enddo  ! k
 
        enddo
-    enddo
+   enddo
 !-----------------------------------------------------------------------
-! jej/pw removed old skh calculation
 
-        if( MY_DEBUG .and. debug_proc ) then
-           write(*,*) "DEBUG meIJ" , me, limax, ljmax
-           do k = 1, KMAX_MID
-              write(6,"(a12,2i3,2f12.4)") "DEBUG Z",me, k, &
-                  z_bnd(debug_iloc,debug_jloc,k), z_mid(debug_iloc,debug_jloc,k)
-           end do
-        end if
+   if( MY_DEBUG .and. debug_proc ) then
+       write(*,*) "DEBUG meIJ" , me, limax, ljmax
+       do k = 1, KMAX_MID
+          write(6,"(a12,2i3,2f12.4)") "DEBUG Z",me, k, &
+                z_bnd(debug_iloc,debug_jloc,k), z_mid(debug_iloc,debug_jloc,k)
+       end do
+   end if
+
+
+
 
 !     Horizontal velocity divided by map-factor.
      
-      do k = 1,KMAX_MID
-         do j = 1,ljmax
-	    do i = 0,limax               
-               u(i,j,k,nr) = u(i,j,k,nr)/xm_j(i,j)
+   do k = 1,KMAX_MID
+       do j = 1,ljmax
+          do i = 0,limax               
+              u(i,j,k,nr) = u(i,j,k,nr)/xm_j(i,j)
+
 !divide by the scaling in the perpendicular direction to get effective u
 !(for conformal projections like Polar Stereo, xm_i and xm_j are equal)
-	    enddo
+
 	  enddo
-	  do j = 0,ljmax
-	    do i = 1,limax
+        enddo
+	do j = 0,ljmax
+	   do i = 1,limax
 	      v(i,j,k,nr) = v(i,j,k,nr)/xm_i(i,j)
-!divide by the scaling in the perpendicular direction to get effective v
-	    enddo
-	  enddo
-       enddo
+
+!  divide by the scaling in the perpendicular direction to get effective v
+	   enddo
+        enddo
+   enddo
 
 
-!	do j = 1,ljmax,20
-!	  do i = 1,limax,20
-!       sdot(i,j,KMAX_BND,nr)=0.0
-!       sdot(i,j,1,nr)=0.0
-!             do k=KMAX_MID,2,-1
-!         if(me==17)then
-!            write(*,*)i,j,k,sdot(i,j,k,nr),((u(i,j,k,nr)-u(i-1,j,k,nr))+(v(i,j,k,nr)-v(i,j-1,k,nr))&
-!               )*xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))/GRIDWIDTH_M+sdot(i,j,k+1,nr)
-!       endif
-!             enddo
-!          enddo
-!       enddo
 
-       if(.not.foundsdot)then
-!pw 07/11/2005 sdot derived from divergence=0 principle
-	do j = 1,ljmax
-	  do i = 1,limax
-       sdot(i,j,KMAX_BND,nr)=0.0
-       sdot(i,j,1,nr)=0.0
+
+
+
+
+
+
+
+   if(.not.foundsdot)then
+! sdot derived from divergence=0 principle
+       do j = 1,ljmax
+          do i = 1,limax
+             sdot(i,j,KMAX_BND,nr)=0.0
+             sdot(i,j,1,nr)=0.0
              do k=KMAX_MID,2,-1
-          sdot(i,j,k,nr)=((u(i,j,k,nr)-u(i-1,j,k,nr))+(v(i,j,k,nr)-v(i,j-1,k,nr)))&
-               *xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))/GRIDWIDTH_M+sdot(i,j,k+1,nr)
+                 sdot(i,j,k,nr) = ((u(i,j,k,nr)-u(i-1,j,k,nr))            &
+                                + (v(i,j,k,nr)-v(i,j-1,k,nr)))            &
+                                * xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))  &
+                                / GRIDWIDTH_M+sdot(i,j,k+1,nr)
              enddo
           enddo
        enddo
-       endif
+    endif
 
-       call met_derived !compute derived meteo fields
+    call met_derived !compute derived meteo fields
 
-       call tiphys(numt) 
+    call tiphys(numt) 
 
-     end subroutine metvar
+    end subroutine metvar
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+
+
 
      subroutine metint
 
 !     this routine does the forward linear stepping of the meteorological
 !     fields read or derived every 3 hours.
 
-	use ModelConstants_ml , only : nmax,nstep
 
-	implicit none
+   implicit none
 
-        integer :: i,j
-	real :: div,ii
+   integer :: i,j
+   real :: div,ii
      
-	if (nstep.lt.nmax) then
+   if (nstep.lt.nmax) then
  
-	  div = 1./real(nmax-(nstep-1))
+      div = 1./real(nmax-(nstep-1))
 
-	  u(:,:,:,1) = u(:,:,:,1) 				&
-			+ (u(:,:,:,2) - u(:,:,:,1))*div
-	  v(:,:,:,1) = v(:,:,:,1) 				&
-			+ (v(:,:,:,2) - v(:,:,:,1))*div
-	  sdot(:,:,:,1) = sdot(:,:,:,1) 			&
-			+ (sdot(:,:,:,2) - sdot(:,:,:,1))*div
-	  th(:,:,:,1) = th(:,:,:,1) 				&
-			+ (th(:,:,:,2) - th(:,:,:,1))*div
-	  q(:,:,:,1) = q(:,:,:,1) 				&
-			+ (q(:,:,:,2) - q(:,:,:,1))*div
-!          ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
-!                        + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
-	  skh(:,:,:,1) = skh(:,:,:,1) 				&
-			+ (skh(:,:,:,2) - skh(:,:,:,1))*div
-	  roa(:,:,:,1) = roa(:,:,:,1) 				&
-			+ (roa(:,:,:,2) - roa(:,:,:,1))*div
-
-	  !dsps psurf(:,:) = ps(:,:,1)  !u7.4vg was psa
-
-	  ps(:,:,1) = ps(:,:,1) 				&
-			+ (ps(:,:,2) - ps(:,:,1))*div
-	  t2_nwp(:,:,1) = t2_nwp(:,:,1) 				&
-			+ (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
-!u7.4vg - note we need pressure first
-!ds apr2005 t2(:,:)    =   th2m(:,:,1) * exp(KAPPA*log(psurf(:,:)*1.e-5))
-
-	  fh(:,:,1) = fh(:,:,1) 				&
-			+ (fh(:,:,2) - fh(:,:,1))*div
-!ds u7.4vg fl added
-	  fl(:,:,1) = fl(:,:,1) 				&
-			+ (fl(:,:,2) - fl(:,:,1))*div
-
-	  tau(:,:,1) = tau(:,:,1) 				&
-			+ (tau(:,:,2) - tau(:,:,1))*div
-
-!SST
-	  sst(:,:,1)   = sst(:,:,1) 				&
-			+ (sst(:,:,2)   - sst(:,:,1))*div
+      u(:,:,:,1)    = u(:,:,:,1) 				&
+		    + (u(:,:,:,2) - u(:,:,:,1))*div
+      v(:,:,:,1)    = v(:,:,:,1) 				&
+		    + (v(:,:,:,2) - v(:,:,:,1))*div
+      sdot(:,:,:,1) = sdot(:,:,:,1) 			&
+		    + (sdot(:,:,:,2) - sdot(:,:,:,1))*div
+      th(:,:,:,1)   = th(:,:,:,1) 				&
+		    + (th(:,:,:,2) - th(:,:,:,1))*div
+      q(:,:,:,1)    = q(:,:,:,1) 				&
+		    + (q(:,:,:,2) - q(:,:,:,1))*div
+!      ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
+!                   + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
+      skh(:,:,:,1)  = skh(:,:,:,1) 				&
+		    + (skh(:,:,:,2) - skh(:,:,:,1))*div
+      roa(:,:,:,1)  = roa(:,:,:,1) 				&
+		    + (roa(:,:,:,2) - roa(:,:,:,1))*div
+      ps(:,:,1)     = ps(:,:,1) 				&
+	            + (ps(:,:,2) - ps(:,:,1))*div
+      t2_nwp(:,:,1) = t2_nwp(:,:,1) 				&
+		    + (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
+      rh2m(:,:,1) = rh2m(:,:,1)  &
+                     + (rh2m(:,:,2) - rh2m(:,:,1))*div
+      SoilWater(:,:,1) = SoilWater(:,:,1)   &
+                     + (SoilWater(:,:,2) - SoilWater(:,:,1))*div
+      SoilWater_deep(:,:,1) = SoilWater_deep(:,:,1)    &
+                        + (SoilWater_deep(:,:,2) - SoilWater_deep(:,:,1))*div
 
 
-!ko  precipitation and cloud cover are no longer interpolated
+      fh(:,:,1)     = fh(:,:,1) 				&
+		    + (fh(:,:,2) - fh(:,:,1))*div
+      fl(:,:,1)     = fl(:,:,1) 				&
+		    + (fl(:,:,2) - fl(:,:,1))*div
+      tau(:,:,1)    = tau(:,:,1) 				&
+		    + (tau(:,:,2) - tau(:,:,1))*div
+      sst(:,:,1)    = sst(:,:,1) 				&
+		    + (sst(:,:,2)   - sst(:,:,1))*div
 
-	else
+
+!  precipitation and cloud cover are no longer interpolated
+
+   else
 
 !     assign the the meteorological data at time-level 2 to level 1 for
 !     the next 6 hours integration period before leaving the inner loop.
 
-	  u(:,:,:,1) = u(:,:,:,2)
-	  v(:,:,:,1) = v(:,:,:,2)
-	  sdot(:,:,:,1) = sdot(:,:,:,2)
-	  th(:,:,:,1) = th(:,:,:,2)
-	  q(:,:,:,1) = q(:,:,:,2)
-!          ccc(:,:,:,1) = ccc(:,:,:,2)   !ASSYCON
-	  skh(:,:,:,1) = skh(:,:,:,2)
-	  roa(:,:,:,1) = roa(:,:,:,2)
+       u(:,:,:,1)    = u(:,:,:,2)
+       v(:,:,:,1)    = v(:,:,:,2)
+       sdot(:,:,:,1) = sdot(:,:,:,2)
+       th(:,:,:,1)   = th(:,:,:,2)
+       q(:,:,:,1)    = q(:,:,:,2)
+!       ccc(:,:,:,1) = ccc(:,:,:,2)   !ASSYCON
+       skh(:,:,:,1)  = skh(:,:,:,2)
+       roa(:,:,:,1)  = roa(:,:,:,2)
+!  - note we need pressure first before surface_pressure
+       ps(:,:,1)     = ps(:,:,2)
+       t2_nwp(:,:,1) = t2_nwp(:,:,2)
+       rh2m(:,:,1) = rh2m(:,:,2)
+       SoilWater(:,:,1) = SoilWater(:,:,2)
+       SoilWater_deep(:,:,1) = SoilWater_deep(:,:,2)
 
-!su	don't forget psa !!!!
-	  !7.4vg, but put after ps update psa(:,:) = ps(:,:,1)
 
-	  ps(:,:,1) = ps(:,:,2)
-	  !dsps psurf(:,:) = ps(:,:,1)   ! u7.4vg
-	  t2_nwp(:,:,1) = t2_nwp(:,:,2)
+       fh(:,:,1)     = fh(:,:,2)
+       tau(:,:,1)    = tau(:,:,2)
+       fl(:,:,1)     = fl(:,:,2)
 
-!u7.4vg - note we need pressure first
-!ds apr2005 t2(:,:)    =   th2m(:,:,1) * exp(KAPPA*log(psurf(:,:)*1.e-5))
+       sst(:,:,1)    = sst(:,:,2)  
 
-	  fh(:,:,1) = fh(:,:,2)
-	  tau(:,:,1) = tau(:,:,2)
-!ds u7.4vg fl added
-	  fl(:,:,1) = fl(:,:,2)
+    endif
 
-	  sst(:,:,1) = sst(:,:,2)          !SST
+    call met_derived !update derived meteo fields
 
-	endif
-
-        call met_derived !update derived meteo fields
-
-      end subroutine metint
+    end subroutine metint
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+
+
+
+
+
    subroutine met_derived
 
 ! This routine calculates fields derived from meteofields.
@@ -1462,7 +1601,6 @@ private
 !Note that u and v are wind velocities divided by xm
 !At present u_ref is defined at KMAX_MID
 
-     use GridValues_ml,     only : xm_i,xm_j,xm2, sigma_bnd,sigma_mid 
 
      implicit none
      integer ::i,j
@@ -1487,7 +1625,6 @@ private
         enddo  
      enddo
 
-   !ds apr2005
    ! Tmp ustar solution. May need re-consideration for MM5 etc., but
    ! basic principal should be that fm is interpolated with time, and
    ! ustar derived from this.
@@ -1495,7 +1632,6 @@ private
      !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
       forall( i=1:limax, j=1:ljmax ) 
-           !dsps rho_surf(i,j)  = psurf(i,j)/(RGAS_KG * t2_nwp(i,j,1) ) 
            rho_surf(i,j)  = ps(i,j,1)/(RGAS_KG * t2_nwp(i,j,1) ) 
       end forall
 
@@ -1507,25 +1643,24 @@ private
 
 
       forall( i=1:limax, j=1:ljmax ) 
-
-
           ustar_nwp(i,j) = max( ustar_nwp(i,j), 1.0e-5 )
-
-          invL_nwp(i,j)  = KARMAN * GRAV * fh(i,j,1)/ &
-             (CP*rho_surf(i,j)* ustar_nwp(i,j)*ustar_nwp(i,j)*ustar_nwp(i,j) * t2_nwp(i,j,1))
+          invL_nwp(i,j)  = KARMAN * GRAV * fh(i,j,1)                &
+                         / (CP*rho_surf(i,j)* ustar_nwp(i,j)        &
+                         * ustar_nwp(i,j)*ustar_nwp(i,j) * t2_nwp(i,j,1))
 
       !.. we limit the range of 1/L to prevent numerical and printout problems
-      !.. and because I don't trust HIRLAM enough.
+      !.. and because we don't trust HIRLAM enough.
       !   This range is very wide anyway.
 
          invL_nwp(i,j)  = max( -1.0, invL_nwp(i,j) ) !! limit very unstable
          invL_nwp(i,j)  = min(  1.0, invL_nwp(i,j) ) !! limit very stable
 
-      end forall
-      if ( DEBUG_DERIV .and. debug_proc ) then
+     end forall
+     if ( DEBUG_DERIV .and. debug_proc ) then
           i = debug_iloc
           j = debug_jloc
-          write(*,*) "MET_DERIV DONE ", me, ustar_nwp(i,j), invl_nwp(i,j), rho_surf(i,j)
+          write(*,*) "MET_DERIV DONE ", me, ustar_nwp(i,j), invl_nwp(i,j)  &
+                    , rho_surf(i,j)
       end if
      !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
@@ -1533,6 +1668,15 @@ private
    end subroutine met_derived
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
+
+
+
+
+
+
    subroutine MetModel_LandUse(callnum)
 
    !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1544,15 +1688,13 @@ private
    !     ... fields as used in meteorological model
    !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-    use ModelConstants_ml, only : current_date
-    use Io_ml, only :   IO_SNOW, IO_ROUGH,  ios, open_file  
-    use ReadField_ml, only : ReadField ! reads ascii fields
     implicit none
 
     integer, intent(in) :: callnum
     integer ::  i,j, err
-    !ds may05 real, allocatable, dimension(:,:) :: r_class  ! Roughness (real) 
+
     real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real) 
+
     character*20 fname
 
     ios = 0
@@ -1571,8 +1713,7 @@ private
         nwp_sea(:,:) = .false.
         do j=1,ljmax
            do i=1,limax
-              !ds may05 iclass(i,j)=nint(r_class(i,j))              
-              if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.              
+              if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.
            enddo
         enddo
 
@@ -1592,35 +1733,24 @@ private
  end subroutine MetModel_LandUse
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+
+
+
+
+
+
+
+
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-!Variable names now more intuitive. This is a list with some new and ols 
-!variable names
-!Originally tiphys.f in hmix.f
-!imax=>limax(sums) ,MAXLIMAX(dimensions)
-!ljmax=>lljmax,MAXLJMAX
-!z2    =>z_mid
-!z1    =>z_bnd
-!kmax2 =>KMAX_MID
-!kmax1 =>KMAX_BND
-!scor1 =>sigma_bnd
-!scor2 =>sigma_mid
-!pt=>PT
-!g=>GRAV
-!xkar=>KARMAN
-!sm(1)=>sm
-!cp=>CP
-!pi=>PI
-!xkar=>KARMAN
 
-      subroutine tiphys(numt)
-        use ModelConstants_ml, only : KMAX_MID ,KMAX_BND,PT
-        use GridValues_ml , only : sigma_bnd,sigma_mid
-        use Par_ml, only :limax,ljmax,MAXLIMAX,MAXLJMAX
-        use PhysicalConstants_ml, only :CP,PI,KARMAN,GRAV,KAPPA,R
-!z_mid, z_bnd Met_ml
+
+
+
+
+
+   subroutine tiphys(numt)
 !c
-!c	file: met.eulmet-mnd.f
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
 !c
 !c	written by Trond Iversen,  modified by Hugo Jakobsen, 060994
@@ -1639,13 +1769,6 @@ private
 !c	if nroa = 1 also roa is calculated.
 !c	if nfirst=1 for the initial timelevel
 !c
-!c
-!c-----------------------------------------------------------------
-!c	files included:
-!c
-!c	metpar.inc	: parameters for LAM50E-meteorology
-!c	metvar.inc	: dependent meteorological variables
-!c	metcon.inc	: model constants 
 !c
 !c-----------------------------------------------------------------
 !c	routines called:
@@ -1806,15 +1929,15 @@ private
 !!                        :
 !!                        :
 !c
-!c  sigma_bnd(KMAX_BND-1) - - - - s - - - - - sdot(KMAX_BND-1), xksig(KMAX_MID), 
+!  sigma_bnd(KMAX_BND-1) - - - - s - - -  - sdot(KMAX_BND-1), xksig(KMAX_MID), 
 !!                                    exns(KMAX_BND-1),zs_bnd(KMAX_BND-1), 
 !!                                    pr(KMAX_BND-1),xksm(KMAX_MID)
 !c
-!c    sigma_mid(KMAX_MID) --------m---------- u, v, th, q, cw, exnm (KMAX_MID); 
+!c    sigma_mid(KMAX_MID) --------m-------- u, v, th, q, cw, exnm (KMAX_MID); 
 !!                                    this level is assumed to be
 !!                                    the top of Prandtl-layer (LAM50E)
 !c
-!c sigma_bnd(KMAX_BND) = 1- - - - s - - - - - sdot(KMAX_BND) = 0, ps, t2_nwp, fh, 
+! sigma_bnd(KMAX_BND) = 1- -  - s - - - - sdot(KMAX_BND) = 0, ps, t2_nwp, fh, 
 !!                ///////////////////        fm, mslp, xksig(KMAX_MID)=0, 
 !!                                           exns(KMAX_BND), zs_bnd(KMAX_BND), 
 !!                                           pr(KMAX_BND),xksm(KMAX_BND)=0.
@@ -1829,62 +1952,59 @@ private
 !ds rv1_6_x
  logical, parameter :: DEBUG_KZ = .false.
  logical, parameter :: PIELKE_KZ = .true.    ! Default
- logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP STILL!!!!
+ logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP 
+                                             ! STILL!!!!
+!  Kz-tests
+ real, parameter :: KZ_MINIMUM = 0.001   ! m2/s
+ real, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
+ real, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
 
-
-!definer alle dimensjoner med MAXLIMAX,MAXLJMAX
  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID)::exnm
  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND)::exns,zs_bnd
  real, dimension(MAXLIMAX,KMAX_MID)::zm,dthdz,deltaz,thc
  real, dimension(MAXLIMAX,KMAX_BND)::risig,xksm,pz
  real, dimension(MAXLIMAX)::zis,delq,thsrf,trc,pidth,dpidth,xkhs,xkdz,xkzi,&
                             hs,xkh100
- !ds apr2005 real, dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,roas,uabs,vdfac
- real, dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,uabs,vdfac
+ real,  dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,uabs,vdfac
  real ::lim,xdthdz,zmmin,zimin,zlimax,kzmin,kzmax,sm,pref,xtime,umax,eps,ric,&
         ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,dvdz,xl2,uvhs,zimhs,&
         zimz,zmhs,ux0,fac,fac2,dex12,ro
+ real ::h100 ! Top of lowest layer - replaces 100.0 
+ real ::hsurfl
+
+ integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp, nr
 
 
-!hf Hilde&ANton
-      real hsurfl
-!hf new
-      integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp
-!ds Kz-tests
-      real, parameter :: KZ_MINIMUM = 0.001   ! m2/s
-      real, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
-      real, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
+ integer, dimension(MAXLIMAX) ::  nh1, nh2
 
-      integer nh1(MAXLIMAX),nh2(MAXLIMAX),nr
-      real :: h100 ! Top of lowest layer - replaces 100.0 
+!  Check:
+   call CheckStop( KZ_SBL_LIMIT < 1.01*KZ_MINIMUM,   &
+                            "SBLlimit too low! in Met_ml")
 
-!ds Check:
-           call CheckStop( KZ_SBL_LIMIT < 1.01*KZ_MINIMUM,   &
-                            "SBLlimit too low! in Met_ml") ! NEW STOP !
-
-      iip = limax+1
-      jjp = ljmax+1
+   iip = limax+1
+   jjp = ljmax+1
 
 !
 !     Preliminary definitions
 !
-      nr = 2
-      if (numt.eq.1) nr = 1
-      pref = 1.e+5
+   nr = 2
+   if (numt.eq.1) nr = 1
+   pref = 1.e+5
+
 !from ModelC      pi = 4.*atan(1.)
 
-      xtime = 6.*3600.
-      umax=+70.
-      zlimax = 3000.
-      zimin = 100.
-      zmmin = 200.
+   xtime = 6.*3600.
+   umax=+70.
+   zlimax = 3000.
+   zimin = 100.
+   zmmin = 200.
 
-      eps = 0.01
-      dtz = 3600.
-      sm = 0.04
-!c
-!c
-!c..preset=zero:
+   eps = 0.01
+   dtz = 3600.
+   sm = 0.04
+!
+!
+!..preset=zero:
    xksm(:,:)   = 0
    risig(:,:)  = 0.
    xksig(:,:,:)= 0.
@@ -1896,11 +2016,10 @@ private
   do  k=1,KMAX_MID
     do j=1,ljmax
      do i=1,limax
-!c
+
 !c..pressure (pa)
         p = PT + sigma_mid(k)*(ps(i,j,nr) - PT)
 !c..exner (j/k kg)
-        !ds apr2005   exnm(i,j,k)=CP*(p/pref)**KAPPA
         exnm(i,j,k)= CP * Exner_nd(p)
       end do
     end do
@@ -1913,30 +2032,27 @@ private
 !c
 !c     Start j-slice here.
 !c
-!ds-Kz      lim = 0.1
-!c..hj..test lim=1.
 
 
-   do 40 j=1,ljmax
+   do j=1,ljmax
 
 !c..exner in half-sigma levels:
      do  k=1,KMAX_BND
        do i=1,limax
           p = PT + sigma_bnd(k)*(ps(i,j,nr) - PT)
           pz(i,k) = p
-          !ds apr2005 exns(i,j,k)=CP*(p/pref)**KAPPA  
           exns(i,j,k)= CP * Exner_nd(p)
        end do
      end do
-!c
-!c
-!c.. exns(KMAX_BND), th(KMAX_BND) and height of sigmas:
+!
+!
+!.. exns(KMAX_BND), th(KMAX_BND) and height of sigmas:
      do  i=1,limax
        zs_bnd(i,j,KMAX_BND)=0.
      end do
-!c
-!c     Height of the half levels
-!c
+!
+!     Height of the half levels
+!
      do  k=KMAX_BND-1,1,-1 
        do i=1,limax
             zs_bnd(i,j,k)=zs_bnd(i,j,k+1)+th(i,j,k,nr)*&
@@ -1944,8 +2060,8 @@ private
 
        end do
      end do
-!c
-!c..height of sigma:
+!
+!..height of sigma:
      do  k=1,KMAX_MID
        do i=1,limax
           zm(i,k) = ((exnm(i,j,k)-exns(i,j,k))*zs_bnd(i,j,k+1)&
@@ -1955,53 +2071,52 @@ private
      end do
 
 
-!c----------------------------------------------------------------------
-!c...........................................
-!c..the following variables in sigmas-levels:
-!c
+!----------------------------------------------------------------------
+!...........................................
+!..the following variables in sigmas-levels:
+!
      do  k=2,KMAX_MID
        km=k-1
        do i=1,limax
-!c
-!c.........................
-!c..wind sheare
-!c
-!HF Slightly different formulation of dvdz than in metvar
+!
+!.........................
+!..wind sheare
+!
+! Slightly different formulation of dvdz than in metvar
         dvdz = ( (u(i,j,km,nr)-u(i,j,k,nr))**2 &
               + (v(i,j,km,nr)-v(i,j,k,nr))**2 + eps)
-!c
-            risig(i,k)=(2.*GRAV/(th(i,j,km,nr)+th(i,j,k,nr)))*&
-               (th(i,j,km,nr)-th(i,j,k,nr))*(zm(i,km)-zm(i,k))&
-               /dvdz
-!c........................
-!c..mixing length squared:
-!c
-            xl2=(KARMAN*amin1(zs_bnd(i,j,k),zmmin))**2
+!
+        risig(i,k)=(2.*GRAV/(th(i,j,km,nr)+th(i,j,k,nr)))*&
+                   (th(i,j,km,nr)-th(i,j,k,nr))*(zm(i,km)-zm(i,k))&
+                  /dvdz
+!........................
+!..mixing length squared:
+!
+        xl2=(KARMAN*amin1(zs_bnd(i,j,k),zmmin))**2
 
-!c
-!c..............................
-!c..critical richardsons number:
-!c
-            ric0=0.115*((zm(i,km)-zm(i,k))*100.)**0.175
-            ric=amax1(0.25,ric0)
-!c
+!
+!..............................
+!..critical richardsons number:
+!
+        ric0=0.115*((zm(i,km)-zm(i,k))*100.)**0.175
+        ric=amax1(0.25,ric0)
 
-!c
-            dvdz = sqrt(dvdz)/(zm(i,km)-zm(i,k))
 
-!c..................................................................
-!c..exchange coefficient (Pielke,...)
- !ds alternative
-       if ( PIELKE_KZ  ) then
-          if (risig(i,k) > ric ) then
-              xksig(i,j,k) = KZ_MINIMUM
-          else
-              xksig(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
-          end if
-       else
 
-!c..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
-!c
+        dvdz = sqrt(dvdz)/(zm(i,km)-zm(i,k))
+
+!..................................................................
+!..exchange coefficient (Pielke,...)
+        if ( PIELKE_KZ  ) then
+           if (risig(i,k) > ric ) then
+               xksig(i,j,k) = KZ_MINIMUM
+           else
+               xksig(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
+           end if
+        else
+
+!..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
+!
             if(risig(i,k).le.0.) then
                xksig(i,j,k)=xl2*dvdz*sqrt(1.1-87.*risig(i,k))
             elseif(risig(i,k).le.0.5*ric) then
@@ -2011,20 +2126,20 @@ private
             else
                xksig(i,j,k)=0.001
             endif
-    end if ! Pielke or Blackadar
-!c
-      end do
-    end do
-!c
-!ctttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
-!c
-!c---------------------------------------------------------------------
-!c..................................
-!c..height of stable boundary layer:
-!c
-!c.........................................................
-!c..vertical smoothing of xksig over three adjacent layers:
-!c
+        end if ! Pielke or Blackadar
+!
+       end do
+     end do
+!
+!tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
+!
+!---------------------------------------------------------------------
+!..................................
+!..height of stable boundary layer:
+!
+!.........................................................
+!..vertical smoothing of xksig over three adjacent layers:
+!
             k=2 
             km=1
             kp=3
@@ -2097,121 +2212,118 @@ private
            endif
 
 	endif
-!c
+!
     end do
-!c
+!
 !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-!c
-!c---------------------------------------------------------------------
-!c....................................
-!c..height of unstable boundary layer:
-!c
-!c
-!c..assuring that th is increasing with height.
-!c..adjusted th-sounding is assigned to thc-array.
-!c..This adjusted th is not meant to be used in
-!c..other parts of the model program
-!c
-	dthdzm = 1.e-4 
-	do i =1,limax
-	   thc(i,KMAX_MID)=th(i,j,KMAX_MID,nr)
-		do k=KMAX_MID-1,1,-1
-!c
-		   dthc=(th(i,j,k,nr)-th(i,j,k+1,nr))&
-     			/(zm(i,k)-zm(i,k+1))
-!c
-		   dthdz(i,k)=amax1(dthc,dthdzm)
-!c
-	   thc(i,k)=thc(i,k+1)+dthdz(i,k)*(zm(i,k)-zm(i,k+1))
-!c
-		enddo
-	enddo
+!
+!---------------------------------------------------------------------
+!....................................
+!..height of unstable boundary layer:
+!
+!
+!..assuring that th is increasing with height.
+!..adjusted th-sounding is assigned to thc-array.
+!..This adjusted th is not meant to be used in
+!..other parts of the model program
+!
+     dthdzm = 1.e-4
+     do i =1,limax
+	thc(i,KMAX_MID)=th(i,j,KMAX_MID,nr)
+	do k=KMAX_MID-1,1,-1
 
-!c
-!c
-!c..estimated as the height to which an hour's input
-!c..of heat from the ground is vertically distributed,
-!c..assuming dry adiabatic adjustment.
-!c
-!c
-         do 260 i=1,limax
-!c
-            delq(i)=-amin1((fh(i,j,nr)),0.)*dtz
-!c
-            thsrf(i)=0.
-            ziu(i,j)=0.
-!c
-!c.................................
-!c..trc=1 for unstable BL (delq>0):
-!c..   =0 for stable BL (delq=0):
-!c
-            if(delq(i).gt.0.00001) then
-               trc(i)=1.
-            else
-               trc(i)=0.
-            endif
-!c
-!c------------------------------------------------------------
-!c calculating the height of unstable ABL
-!c
-	if(trc(i).eq.1.) then
-!c
-	kabl = KMAX_MID
-!c	
- 28		if(trc(i).eq.1.) then
-!c
-		kabl = kabl-1
-		pidth(i)=0.
-!c
-!c	endres til 29 etter at algoritmene er sammenlignet?
-!c
-      do k=KMAX_MID,kabl,-1
-	 xdth = thc(i,kabl)-thc(i,k)
-	 dpidth(i) = exnm(i,j,k)*xdth*(pz(i,k+1)-pz(i,k))/GRAV
-	 pidth(i) = pidth(i) + dpidth(i)
-      end do
-!c
-!c
-	  		if(pidth(i).ge.delq(i).and.trc(i).eq.1.) then
+	   dthc = (th(i,j,k,nr)-th(i,j,k+1,nr))&
+     		/ (zm(i,k)-zm(i,k+1))
+
+	   dthdz(i,k)=amax1(dthc,dthdzm)
+
+	   thc(i,k)=thc(i,k+1)+dthdz(i,k)*(zm(i,k)-zm(i,k+1))
+
+	enddo
+     enddo
+
+!
+!
+!..estimated as the height to which an hour's input
+!..of heat from the ground is vertically distributed,
+!..assuming dry adiabatic adjustment.
+!
+!
+    do  i=1,limax
+
+       delq(i)=-amin1((fh(i,j,nr)),0.)*dtz
+       thsrf(i)=0.
+       ziu(i,j)=0.
+!
+!.................................
+!..trc=1 for unstable BL (delq>0):
+!..   =0 for stable BL (delq=0):
+!
+       if(delq(i).gt.0.00001) then
+          trc(i)=1.
+       else
+          trc(i)=0.
+       endif
+!
+!------------------------------------------------------------
+! calculating the height of unstable ABL
+!
+!!      if(trc(i).eq.1.) then
+	  kabl = KMAX_MID	
+        do while( trc(i).eq.1) 
+!! 28	 if(trc(i).eq.1.) then
+             kabl = kabl-1
+	     pidth(i)=0.
+
+
+             do k=KMAX_MID,kabl,-1
+	       xdth = thc(i,kabl)-thc(i,k)
+	       dpidth(i) = exnm(i,j,k)*xdth*(pz(i,k+1)-pz(i,k))/GRAV
+	       pidth(i) = pidth(i) + dpidth(i)
+             end do
+
+
+	     if(pidth(i).ge.delq(i).and.trc(i).eq.1.) then
 
 !c	at level kabl or below level kabl and above level kabl+1
 
 
-			  	thsrf(i) = thc(i,kabl)-&
-     				         (thc(i,kabl)-thc(i,KMAX_MID))*&
-     				         (pidth(i)-delq(i))/pidth(i)
+	         thsrf(i) = thc(i,kabl)     &
+     		          - (thc(i,kabl)-thc(i,KMAX_MID))    &
+     		          * (pidth(i)-delq(i))/pidth(i)
 
-                    	  	xdthdz=(thc(i,kabl)-thc(i,kabl+1))/&
-                                      (zm(i,kabl)-zm(i,kabl+1))
+                 xdthdz = (thc(i,kabl)-thc(i,kabl+1))        &
+                        / (zm(i,kabl)-zm(i,kabl+1))
 
-                          	ziu(i,j) = zm(i,kabl+1) +  &
-                                    (thsrf(i)-thc(i,kabl+1))/xdthdz
+                 ziu(i,j) = zm(i,kabl+1)                     &
+                          + (thsrf(i)-thc(i,kabl+1))/xdthdz
 
-			trc(i)=0.
+	         trc(i)=0.
 
-			endif
-
-
-			if(kabl.le.4 .and. trc(i).eq.1.) then
-
-				write(6,*)'ziu calculations failed!'
-
-				ziu(i,j)=zlimax
-
-				trc(i)=0.
-			endif
+	      endif
 
 
-		go to 28			  
+	      if(kabl.le.4 .and. trc(i).eq.1.) then
 
-		endif
+		  write(6,*)'ziu calculations failed!'
 
-	endif
+		  ziu(i,j)=zlimax
 
- 260      continue
+		  trc(i)=0.
+	       endif
 
-!c..iteration finished
-!c.....................................................................
+
+           end do ! while
+!!	       go to 28			  
+
+!!		endif
+
+!!	  endif
+
+       end do  
+
+!..iteration, finding height of unstable BL  finished
+!.....................................................................
 
 
     do i=1,limax
@@ -2220,24 +2332,25 @@ private
       zixx(i,j)=amin1(zlimax,zixx(i,j))
     end do
 
- 35      continue
+ 
 
 
-!     End j-slice
+
+  end do !     End j-slice
+!!-------------------------------------------
 
 
-40   continue
+
             
 !..spatial smoothing of new zi:
 
-44 format(I2,30F5.0)
-      call smoosp(zixx,zimin,zlimax)
+  call smoosp(zixx,zimin,zlimax)
 
-      do j=1,ljmax
-         do i=1,limax
-            pzpbl(i,j) = zixx(i,j)
-         enddo
-      enddo
+  do j=1,ljmax
+     do i=1,limax
+        pzpbl(i,j) = zixx(i,j)
+     enddo
+  enddo
 
 
 !cttttttttttttttttttttttttttttttttttttttttttttttttttttttt
@@ -2259,8 +2372,13 @@ private
       end subroutine tiphys
 
 !c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-!c
-!c
+!
+!
+
+
+
+
+
       subroutine smoosp(f,rmin,rmax)      
 
 !c	file: eulmet-mnd.f
@@ -2289,41 +2407,43 @@ private
 !c	rmin	: min allowed
 !c	rmax	: max allowed
 !c
-implicit none
-!       real f(MAXLIMAX,MAXLJMAX),h1(0:MAXLIMAX+1,0:MAXLJMAX+1),rmin,rmax
-       real, intent(inout):: f(MAXLIMAX,MAXLJMAX)
-       real, intent(in):: rmin,rmax
-       real, dimension(MAXLIMAX+4,MAXLJMAX+4):: h1, h2
+  implicit none
 
-    integer iif,jjf,is,i,j,ii,jj,iifl,jjfl
-    real s
-    real, dimension(MAXLIMAX,2) ::f_south,f_north
-    real, dimension(MAXLJMAX+2*2,2) ::f_west,f_east
-    integer  thick
+  real, intent(inout) :: f(MAXLIMAX,MAXLJMAX)
+  real, intent(in)    :: rmin,rmax
 
-    iif=limax
-    jjf=ljmax
+  real, dimension(MAXLIMAX+4,MAXLJMAX+4) :: h1, h2
+  real, dimension(MAXLIMAX,2)            :: f_south,f_north
+  real, dimension(MAXLJMAX+2*2,2)        :: f_west,f_east
+  real s
 
-    thick=2  !we fetch 2 neighbors at once, so that we don't need to call
-             ! readneighbours twice
-    iifl=iif+2*thick
-    jjfl=jjf+2*thick
+  integer  thick
+  integer iif,jjf,is,i,j,ii,jj,iifl,jjfl
+  
+  iif=limax
+  jjf=ljmax
 
-    call readneighbors(f,f_south,f_north,f_west,f_east,thick)
+  thick=2  !we fetch 2 neighbors at once, so that we don't need to call
+           ! readneighbours twice
+  iifl=iif+2*thick
+  jjfl=jjf+2*thick
 
-    do j=1,jjf
-       jj=j+thick
-       do i=1,iif
-          ii=i+thick
-          h1(ii,jj) = f(i,j)
-       enddo
+  call readneighbors(f,f_south,f_north,f_west,f_east,thick)
+
+  do j=1,jjf
+     jj=j+thick
+     do i=1,iif
+        ii=i+thick
+        h1(ii,jj) = f(i,j)
+     enddo
+   enddo
+   do j=1,thick
+      do i=1,iif
+         ii=i+thick
+         h1(ii,j) = f_south(i,j)
+      enddo
     enddo
-    do j=1,thick
-       do i=1,iif
-          ii=i+thick
-          h1(ii,j) = f_south(i,j)
-       enddo
-    enddo
+
     do j=1,thick
        jj=j+jjf+thick
        do i=1,iif
@@ -2331,11 +2451,13 @@ implicit none
           h1(ii,jj) = f_north(i,j)
        enddo
     enddo
+
     do j=1,jjfl
        do i=1,thick
           h1(i,j) = f_west(j,i)
        enddo
     enddo
+
     do j=1,jjfl
        do i=1,thick
           ii=i+iif+thick
@@ -2347,41 +2469,46 @@ implicit none
        h2(1,j) = 0.
        h2(iifl,j) = 0.
     enddo
+
     do i=1,iifl
        h2(i,1) = 0.
        h2(i,jjfl) = 0.
     enddo
- 44 format(I2,30F5.0)
+!! 44 format(I2,30F5.0)
 
-     do 30 is=2,1,-1                                          
+    do  is=2,1,-1                                          
 
-         s=is-1.5  !s=0,5 s=-0.5
-         if(is /= 2)h1=h2
+      s=is-1.5  !s=0,5 s=-0.5
+      if(is /= 2)h1=h2
                                            
 !..the smoothing
 
-         do 20 j=2,jjfl-1
-            do 20 i=2,iifl-1
-               h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
-                    +0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))  &
-                    +s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
-               h2(i,j) = amax1(h2(i,j),rmin)
-               h2(i,j) = amin1(h2(i,j),rmax)
-         20 continue                                        
-               
-30  continue                                      
+      do  j=2,jjfl-1
+         do  i=2,iifl-1
+            h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
+                   + 0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))  &
+                   + s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
+            h2(i,j) = amax1(h2(i,j),rmin)
+            h2(i,j) = amin1(h2(i,j),rmax)
+         end do
+      end do
 
-    do j=1,jjf
-       jj=j+thick
-       do i=1,iif
+   end do                
+                                      
+
+   do j=1,jjf
+      jj=j+thick
+      do i=1,iif
           ii=i+thick
           f(i,j)=h2(ii,jj) 
        enddo
     enddo
                           
-      return  
-      end subroutine smoosp                                                             
+    end subroutine smoosp                                                             
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+
 
 subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
      
@@ -2400,8 +2527,6 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !be =data(-thick+1:0,j), but since this data does not exist, we 
 !put it =data(1,j).
 
-!     use Par_ml , only : me,NPROC,limax,ljmax,MAXLIMAX,MAXLJMAX &
-!          ,neighbor,SOUTH,NORTH,WEST,EAST,NOPROC
 
      implicit none
 
@@ -2518,6 +2643,11 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
    end subroutine readneighbors
 
+
+
+
+
+
 !************************************************************************!
      subroutine tkediff (nr)                                             !
 !************************************************************************!
@@ -2534,85 +2664,95 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !    EMEP polishing and comments: JE Jonson and P Wind                   !
 !************************************************************************!
 
-     use GridValues_ml,     only : sigma_bnd,sigma_mid 
-     implicit none
-      integer i, j, k, l, kcbl
+  implicit none
 
 !     Local constants
-      real   , parameter :: SZKM=1600.     &    ! Constant (Blackadar, 1976)
-             ,              CKZ=0.001      &    ! Constant (Zhang and Athens, 1982)
-             ,              REFPR=1.0E+05  &    ! Referent pressure
-             ,              KZ0LT=1.0E-04  &    ! Constant (Alapaty et al., 1997)
-             ,              RIC=0.10       &    ! Critical Richardson number (Holstlag et al., 1993)
-             ,              ROVG=R/GRAV         ! Used in Calculation of R-number
-      integer, parameter :: KLM =KMAX_MID-1   
+  real   , parameter :: SZKM=1600.     &   ! Constant (Blackadar, 1976)
+                       ,CKZ=0.001      &   ! Constant (Zhang and Athens, 1982)
+                       ,REFPR=1.0E+05  &   ! Referent pressure
+                       ,KZ0LT=1.0E-04  &   ! Constant (Alapaty et al., 1997)
+                       ,RIC=0.10       &   ! Critical Richardson number 
+                                           ! (Holstlag et al., 1993)
+                       ,ROVG=R/GRAV        ! Used in Calculation of R-number
+  integer, parameter :: KLM =KMAX_MID-1   
+
+
 
 !     INPUT      
-      integer                              nr              ! Number of meteorological stored
+  integer, intent(in) :: nr  ! Number of meteorological stored 
                                                            ! in arrays (1 or 2)
      
 !     OUTPUT
 !     skh(i,j,k,nr) array    
-!     Values of the Kz coefficients (eddyz (i,j,k)) are transformed nto sigma system and
-!     then they stored in this array which is later used in ADVECTION module     
+!     Values of the Kz coefficients (eddyz (i,j,k)) are transformed nto 
+!     sigma system and then they stored in this array which is later used 
+!     in ADVECTION module     
 
 
 !     Local arrays 
    
-      integer, dimension(MAXLIMAX,MAXLJMAX)      ::iblht      ! Level of the PBL top
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND):: eddyz     ! Eddy coefficients (m2/s)
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: &
+  integer, dimension(MAXLIMAX,MAXLJMAX)      :: iblht   ! Level of the PBL top
+  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND):: eddyz   ! Eddy coefficients 
+                                                        ! (m2/s)
+  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: &
                     t_virt    &! Potential temperature (K)
                    ,e         &! Kinetic energy with respect to height (m2/s2)
                    ,dzq       &! Thickness of sigma interface layers (m)
                    ,u_mid     &! Wind speed in x-direction (m/s)  
                    ,v_mid      ! Wind speed in y-direction (m/s)       
-      real, dimension(MAXLIMAX,MAXLJMAX,KLM):: &
-                   dza       ! Thickness of half sigma layers (m)
 
-      real, dimension(MAXLIMAX,MAXLJMAX):: &
-                   pblht ,            &! PBL (Holstag, 1990) (m)    
-                   h_flux,            &! Sensible heat flux  (W/m2)
-                   ust_r ,            &! Friction velocity (m/s) 
-                   !ds apr2005 ro_sur,            &! Air density (kg/m3)
-                   mol   ,            &! Monin-obukhov length (m)
-                   wstar               ! Convective velocity (m/s)
+  real, dimension(MAXLIMAX,MAXLJMAX,KLM):: &
+                   dza         ! Thickness of half sigma layers (m)
+
+  real, dimension(MAXLIMAX,MAXLJMAX):: &
+                   pblht ,    &! PBL (Holstag, 1990) (m)    
+                   h_flux,    &! Sensible heat flux  (W/m2)
+                   ust_r ,    &! Friction velocity (m/s) 
+                   mol   ,    &! Monin-obukhov length (m)
+                   wstar       ! Convective velocity (m/s)
                                                        
-      real, dimension(KMAX_BND) :: rib         ! Bulk Richardson number 
-      real, dimension(KMAX_MID) :: &
-                   rich,           &! Richardson number 
-                   psi_zi           ! Used in the vertical integration
-      real, dimension (10) :: psi_z, zovh  ! Used for calculating the TKE
+  real, dimension(KMAX_BND) :: rib         ! Bulk Richardson number 
+
+  real, dimension(KMAX_MID) :: &
+                   rich,       &! Richardson number 
+                   psi_zi       ! Used in the vertical integration
+
+  real, dimension (10) ::      & 
+                   psi_z       & ! Used for calculating
+                 , zovh          ! TKE
 
 !     Local variables
-      real dtmp, tog, wssq1, wssq2, wssq, tconv, wss, wst, PSI_TKE,    &
-           dusq, dvsq, ri, ss, dthdz, busfc, zvh,                      &
-           part1, part2, fract1, fract2, apbl, fac0, fac02, kz0,       &
+   real dtmp, tog, wssq1, wssq2, wssq, tconv, wss, wst, PSI_TKE,    &
+           dusq, dvsq, ri, ss, dthdz, busfc, zvh,                   &
+           part1, part2, fract1, fract2, apbl, fac0, fac02, kz0,    &
            cell, dum1, rpsb, press, teta_h, u_s, goth, pressure
+
+   integer i, j, k, l, kcbl
+
 
 !     Functions for averaging the vertical turbulent kinetic energy 
 !      (Alapaty, 2003)
-      data psi_z /0.00,2.00,1.85,1.51,1.48,1.52,1.43,1.10,1.20,0.25/
-      data zovh  /0.00,0.05,0.10,0.20,0.40,0.60,0.80,1.00,1.10,1.20/
+   data psi_z /0.00,2.00,1.85,1.51,1.48,1.52,1.43,1.10,1.20,0.25/
+   data zovh  /0.00,0.05,0.10,0.20,0.40,0.60,0.80,1.00,1.10,1.20/
 
 !     Store the NMW meteorology and variables derived from its
    
 !     Change the sign
-      h_flux(1:limax,1:ljmax)=-fh(1:limax,1:ljmax,nr)
+   h_flux(1:limax,1:ljmax)=-fh(1:limax,1:ljmax,nr)
 
 !     Avoid devision by zero later in the code
      
-      where (ABS(h_flux(1:limax,1:ljmax))<0.0001) h_flux(1:limax,1:ljmax)=0.0001 
+   where (ABS(h_flux(1:limax,1:ljmax))<0.0001) h_flux(1:limax,1:ljmax)=0.0001 
 
-!     Check PBL height   !ds - strange tests! Negative pzpbl check? From 1 to 100m
+!     Check PBL height   ! strange tests! Negative pzpbl check? From 1 to 100m
                          !   - odd!
-      do i=1,limax
-       do j=1,ljmax
-            if(ABS(pzpbl(i,j)) < 1.) then
-              pzpbl(i,j)=100. 
-            endif
-        enddo 
-       enddo
+   do i=1,limax
+     do j=1,ljmax
+        if(ABS(pzpbl(i,j)) < 1.) then
+          pzpbl(i,j)=100. 
+        endif
+      enddo 
+   enddo
 
 !     Calculate velocity components in the (h) poits (Arakawa notation)
       do k=1,KMAX_MID
@@ -2629,70 +2769,58 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
       enddo
 
 !     Avoid small values
-      where (ABS(u_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) &
+   where (ABS(u_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) &
                                 u_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
-      where (ABS(v_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) &
+   where (ABS(v_mid(1:limax,1:ljmax,1:KMAX_MID))<0.001) &
                                 v_mid(1:limax,1:ljmax,1:KMAX_MID)=0.001
 
 !     Initialize eddy difussivity arrays
-      eddyz(1:limax,1:ljmax,1:KMAX_MID)=0.
+   eddyz(1:limax,1:ljmax,1:KMAX_MID)=0.
 
-!     Calculate tickness of the layers
-      dzq(1:limax,1:ljmax,1:KMAX_MID)= &
-            z_bnd(1:limax,1:ljmax,1:KMAX_MID)-  &
-            z_bnd(1:limax,1:ljmax,2:KMAX_BND)     ! Full levels
+!     Calculate tickness of the full layers
+   dzq(1:limax,1:ljmax,1:KMAX_MID) = z_bnd(1:limax,1:ljmax,1:KMAX_MID)  &
+                                   - z_bnd(1:limax,1:ljmax,2:KMAX_BND)   
 
-      dza(1:limax,1:ljmax,1:KLM)= &
-            z_mid(1:limax,1:ljmax,1:KLM)-          &
-            z_mid(1:limax,1:ljmax,2:KMAX_MID)          ! Half-sigma lavels
+!     ... and the half sigma layers
+   dza(1:limax,1:ljmax,1:KLM) = z_mid(1:limax,1:ljmax,1:KLM)          &
+                              - z_mid(1:limax,1:ljmax,2:KMAX_MID)  
 
 !     Calculate virtual temperature
 
-      t_virt(1:limax,1:ljmax,1:KMAX_MID)=&
-             th(1:limax,1:ljmax,1:KMAX_MID,nr)* &
-                    (1.0+0.622*q(1:limax,1:ljmax,1:KMAX_MID,nr))
+   t_virt(1:limax,1:ljmax,1:KMAX_MID) = th(1:limax,1:ljmax,1:KMAX_MID,nr)  &
+                               * (1.0+0.622*q(1:limax,1:ljmax,1:KMAX_MID,nr))
 
 
 !     Calculate Monin-Obuhkov length   (Garratt, 1994)
 
-      do i=1,limax
+    do i=1,limax
        do j=1,ljmax
-         !ds apr2005 BUG anyway? for ro_sur ?
-         !ds apr2005 ro_sur(i,j)=ps(i,j,nr)/(KAPPA*t2_nwp(i,j,nr)*                     &
-                     !ds apr2005 CP*(ps(i,j,nr)/REFPR)**KAPPA)      ! Surface density
-           !ds apr2005 if(foundustar) then
-           !ds apr2005   ust_r(i,j)=ustar(i,j,1)
-           !ds apr2005 else
-           !ds apr2005   ust_r(i,j)=SQRT(fm(i,j,nr)/ro_sur(i,j))
-           !ds apr2005   ust_r(i,j)=AMAX1(ust_r(i,j),0.00001)
-           !ds apr2005 endif
-         !ds apr2005 u_s=ust_r(i,j)
-         u_s=ustar_nwp(i,j)
-         mol(i,j)=-(ps(i,j,nr)*u_s*u_s*u_s)/                        &
+         u_s = ustar_nwp(i,j)
+         mol(i,j) = -(ps(i,j,nr)*u_s*u_s*u_s)/                        &
                    (KARMAN*GRAV*h_flux(i,j)*KAPPA)
        enddo
-      enddo
+    enddo
 
 !     Calculate the convective velocity (wstar)
-      do i=1,limax
-       do j=1,ljmax
-        !ds apr2005 wstar(i,j)=GRAV*h_flux(i,j)*pzpbl(i,j)/ro_sur(i,j)/CP/th(i,j,KMAX_MID,nr)
-        wstar(i,j)=GRAV*h_flux(i,j)*pzpbl(i,j)/rho_surf(i,j)/CP/th(i,j,KMAX_MID,nr)
-           if(wstar(i,j) < 0.) then
-            wstar(i,j)=-ABS(wstar(i,j))**(0.3333)
-           else
+  do i=1,limax
+      do j=1,ljmax
+          wstar(i,j) = GRAV*h_flux(i,j)*pzpbl(i,j)/rho_surf(i,j)    &
+                      /CP/th(i,j,KMAX_MID,nr)
+          if(wstar(i,j) < 0.) then
+              wstar(i,j)=-ABS(wstar(i,j))**(0.3333)
+          else
             wstar(i,j)=(wstar(i,j))**(0.3333)
-           endif
+          endif
        enddo
-      enddo
+  enddo
 
 !                            ------------------------------------------>
 !     Start with a long loop ------------------------------------------>
 !                            ------------------------------------------>
-      DO  i=1,limax
-      DO  j=1,ljmax
+  DO  i=1,limax
+    DO  j=1,ljmax
 
-       rib(1:KMAX_MID) = 0.0                        ! Initialize bulk Richardson number
+       rib(1:KMAX_MID) = 0.0        ! Initialize bulk Richardson number
 
        part1=ust_r(i,j)*ust_r(i,j)*ust_r(i,j)
        wst=AMAX1(wstar(i,j),1.0E-20)
@@ -2701,10 +2829,10 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
        wss=EXP(0.333333*ALOG(wss))
 
        if (h_flux(i,j) < 0.0) then
-        tconv=0.0                                   ! Holstlag et al. (1990)
+           tconv=0.0                                   ! Holstlag et al. (1990)
        else
-        !ds apr2005 tconv=8.5*h_flux(i,j)/ro_sur(i,j)/CP/wss    !Conversion to kinematic flux
-        tconv=8.5*h_flux(i,j)/rho_surf(i,j)/CP/wss    !Conversion to kinematic flux
+          tconv=8.5*h_flux(i,j)/rho_surf(i,j)/CP/wss   ! Conversion to 
+                                                       ! kinematic flux
       endif
 
       do k=KMAX_MID,1,-1
@@ -2721,17 +2849,17 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
 !     Calculate PBL height according to Holtslag et al. (1993)
       pblht(i,j)=0.
-          if(k.ne.KMAX_MID) then
+      if(k.ne.KMAX_MID) then
             fract1=(RIC-rib(k+1))/(rib(k)-rib(k+1))
             fract2=1.-fract1
             apbl=z_mid(i,j,k)*fract1
             pblht(i,j)=apbl+z_mid(i,j,k+1)*fract2
-                if(pblht(i,j) > z_bnd(i,j,k+1)) then
+            if(pblht(i,j) > z_bnd(i,j,k+1)) then
                    kcbl=k
-                else
+            else
                    kcbl=k+1
-                endif
-           endif
+            endif
+      endif
       iblht(i,j)=kcbl
 
       if(pblht(i,j)<z_bnd(i,j,KMAX_MID)) then
@@ -2746,32 +2874,32 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
             
 !     Find the critical Richardson number (Shir and Borestein, 1976)
       do k=2,iblht(i,j)-1
-       rich(k)=0.257*dza(i,j,k)**0.175
+         rich(k)=0.257*dza(i,j,k)**0.175
       enddo
 
 !     Free troposphere and cloudy case Kz values estimation
-      do k=2,iblht(i,j)-1
-        dusq=(u_mid(i,j,k-1)-u_mid(i,j,k))*(u_mid(i,j,k-1)-u_mid(i,j,k))
-        dvsq=(v_mid(i,j,k-1)-v_mid(i,j,k))*(v_mid(i,j,k-1)-v_mid(i,j,k))
-        ss=(dusq+dvsq)/(dza(i,j,k-1)*dza(i,j,k-1))+1.E-9
-        goth=2.*GRAV/(t_virt(i,j,k-1)+t_virt(i,j,k))
-        dthdz=(t_virt(i,j,k-1)-t_virt(i,j,k))/dza(i,j,k-1)
-        ri=goth*dthdz/ss
+      do k = 2,iblht(i,j)-1
+        dusq = (u_mid(i,j,k-1)-u_mid(i,j,k))*(u_mid(i,j,k-1)-u_mid(i,j,k))
+        dvsq = (v_mid(i,j,k-1)-v_mid(i,j,k))*(v_mid(i,j,k-1)-v_mid(i,j,k))
+        ss = (dusq+dvsq)/(dza(i,j,k-1)*dza(i,j,k-1))+1.E-9
+        goth = 2.*GRAV/(t_virt(i,j,k-1)+t_virt(i,j,k))
+        dthdz = (t_virt(i,j,k-1)-t_virt(i,j,k))/dza(i,j,k-1)
+        ri = goth*dthdz/ss
 
 !     (Duran and Clemp, 1982)
 
-      kz0=CKZ*dzq(i,j,k)
-       if (ri-rich(k) > 0.) then
-         eddyz(i,j,k)=kz0
-       else
-         eddyz(i,j,k)=kz0+SZKM*SQRT(ss)*(rich(k)-ri)/rich(k)
-       endif
-          eddyz(i,j,k)=AMIN1(eddyz(i,j,k),100.)
-      enddo
+        kz0 = CKZ*dzq(i,j,k)
+        if (ri-rich(k) > 0.) then
+           eddyz(i,j,k)=kz0
+        else
+          eddyz(i,j,k)=kz0+SZKM*SQRT(ss)*(rich(k)-ri)/rich(k)
+        endif
+        eddyz(i,j,k)=AMIN1(eddyz(i,j,k),100.)
+     enddo
 
 !     Eddy diffusivity coefficients for all regimes in the mixed layer
 
-      do  k=iblht(i,j),KMAX_MID
+     do  k=iblht(i,j),KMAX_MID
           if (mol(i,j) < 0.0) then                 !Unstable conditions
              ri=(1.0-15.*z_mid(i,j,k)/mol(i,j))**(-0.25)
              ri=ri/KARMAN/z_mid(i,j,k)
@@ -2793,32 +2921,34 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !     Calculate Ksi function using interpolation in the vertical
 !     Alapaty (2001, 2003)
 
-      zvh=z_mid(i,j,k)/pblht(i,j)
+          zvh=z_mid(i,j,k)/pblht(i,j)
           do l=1,9
-             if (zvh > zovh(l).and.                                    &
-                 zvh < zovh(l+1)) then
-               psi_zi(k)=(psi_z(l+1)-psi_z(l))/(zovh(l+1)-zovh(l))
-               psi_zi(k)=psi_zi(k)*(zvh-zovh(l))
-               psi_zi(k)=psi_zi(k)+psi_z(l)
-               psi_zi(k)=psi_zi(k)/2.0               !Normalized the value
+             if (zvh > zovh(l).and. zvh < zovh(l+1)) then
+                 psi_zi(k)=(psi_z(l+1)-psi_z(l))/(zovh(l+1)-zovh(l))
+                 psi_zi(k)=psi_zi(k)*(zvh-zovh(l))
+                 psi_zi(k)=psi_zi(k)+psi_z(l)
+                 psi_zi(k)=psi_zi(k)/2.0               !Normalized the value
              endif
           enddo
        enddo
 
 !      Calculate integral for Ksi
        psi_tke=0.
-        do k=KMAX_MID,iblht(i,j),-1
+       do k=KMAX_MID,iblht(i,j),-1
           psi_tke=psi_tke+psi_zi(k)*dzq(i,j,k)*sqrt(e(i,j,k))
-        enddo
+       enddo
+
        psi_tke=psi_tke/pblht(i,j)
 
-       do k=iblht(i,j),KMAX_MID                           !Calculate coefficients
+
+
+      do k=iblht(i,j),KMAX_MID          !Calculate coefficients
         goth=psi_tke
         goth=goth*KARMAN*z_mid(i,j,k)
         dthdz=z_mid(i,j,k)/pblht(i,j)
         dthdz=1.0-dthdz
         dthdz=AMAX1(1.0E-2,dthdz)
-          if(mol(i,j) > 0.0) then                         !Stable
+        if(mol(i,j) > 0.0) then                         !Stable
              goth=sqrt(e(i,j,iblht(i,j)))                 ! Mihailovic (2004)
              goth=goth*KARMAN*z_mid(i,j,k)                 ! -----------------
              dthdz=z_mid(i,j,k)/pzpbl(i,j)                 ! -----------------
@@ -2826,9 +2956,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
              dthdz=AMAX1(1.0E-2,dthdz)
              busfc=0.74+4.7*z_mid(i,j,KMAX_MID)/mol(i,j)     
              busfc=AMAX1(busfc,1.0)
-!             dthdz=dthdz*dthdz
-              dthdz=dthdz**1.50                                  !test (2004)
-              eddyz(i,j,k)=goth*dthdz/busfc
+             dthdz=dthdz**1.50                                  !test (2004)
+             eddyz(i,j,k)=goth*dthdz/busfc
           else
              dthdz=dthdz*dthdz
              busfc=1.0
@@ -2868,47 +2997,48 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 !     Transform values of the eddy coeficients into the the sigma coordinate
     
       do k=2,KMAX_MID
-       eddyz(i,j,k)=eddyz(i,j,k)*((sigma_mid(k)-sigma_mid(    k-1))/   &
+         eddyz(i,j,k)=eddyz(i,j,k)*((sigma_mid(k)-sigma_mid(    k-1))/   &
                                  (    z_mid(i,j,k)-z_mid(i,j,k-1)))**2.
 
       enddo
 
-      ENDDO                  !---------------------------------------->
-      ENDDO                  !---------------------------------------->
+    ENDDO                  !---------------------------------------->
+  ENDDO                  !---------------------------------------->
                              !---------------------------------------->
 
 !     Store diffusivity coefficients into skh(i,j,k,nr) array
-      do k=2,KMAX_MID
-       do i=1,limax
+   do k=2,KMAX_MID
+     do i=1,limax
         do j=1,ljmax
             skh(i,j,k,nr)=eddyz(i,j,k)
-         enddo
         enddo
-       enddo
+     enddo
+   enddo
 
    ! For plotting set pblht  =  pzpbl
      
-   pzpbl(:,:) = pblht(:,:)
+  pzpbl(:,:) = pblht(:,:)
                      
-       RETURN 
        end subroutine tkediff
 !---------------------------------------------------------------
 
 
+
+
+
 !************************************************************************!
-     subroutine O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
+  subroutine O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
                       , exns, exnm, zixx )                            !
 !************************************************************************!
 
-!c......................................................
-!c..exchange coefficients for convective boundary layer:
-!c..o'brien's profile formula:
-!c..and the air density at ground level:
-!c
-!c..constants for free-convection limit:
-!c
- use GridValues_ml,     only : sigma_bnd,sigma_mid 
-
+!......................................................
+!..exchange coefficients for convective boundary layer:
+!..o'brien's profile formula:
+!..and the air density at ground level:
+!
+!..constants for free-convection limit:
+!
+ 
  integer, intent(in) :: nr
 
  real, intent(in) :: zimin        &
@@ -2950,309 +3080,244 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
                                 ,hs      
 
 
-  real, dimension(MAXLIMAX,MAXLJMAX) :: & !ds apr2005 roas   &
-                                       help
-
-      sm = 0.04
+  real, dimension(MAXLIMAX,MAXLJMAX) :: help
 
 
-      xfrco=0.5*(sqrt(6859.)-1)
-      exfrco=1./3.
 
-      do 70 j=1,ljmax
+   sm = 0.04
+
+
+   xfrco=0.5*(sqrt(6859.)-1)
+   exfrco=1./3.
+
+
+
 
 !c..exchange parameter and its vertical derivative at z = hs
 
-      do 60 i=1,limax
+   do j=1,ljmax
+      do i=1,limax
 
-         xkh100(i)=0.  !Hilde&Anton
+         xkh100(i)=0.  
          xkhs(i)=0.                                            
          xkdz(i)=0.
          xkzi(i)=0.
          h100 = zs_bnd(i,j,KMAX_MID)
-!c
-!c
-!c...................................................................
-!c..air density at ground level is always calculated diagnostically:
-!c
-         !ds apr2005 roas(i,j)=ps(i,j,nr)/(KAPPA*th2m(i,j,nr)*exns(i,j,KMAX_BND))
+!
+!
+!...................................................................
+!..air density at ground level is always calculated diagnostically:
+!
 
-         ux0 = ustar_nwp(i,j)   !ds apr2005
-         ux3 = ux0*ux0*ux0      !ds apr2005
+         ux0 = ustar_nwp(i,j)  
+         ux3 = ux0*ux0*ux0     
 
 
-         if(ziu(i,j) >= zimin) then
-!c
-!c..........................
-!c..unstable surface-layer.:
-!co
-!c..height of surface layer
+        if(ziu(i,j) >= zimin) then
+!
+!..........................
+!..unstable surface-layer.:
+!
+!..height of surface layer
             hs(i)=sm*ziu(i,j)
-!c..u*
-!c
-            !ds apr2005 if(foundustar)then                      
-            !ds apr2005    ux0 = ustar(i,j,1)
-            !ds apr2005 else
-            !ds apr2005    ux0 = sqrt(fm(i,j,nr)/roas(i,j))
-            !ds apr2005 endif
-            !ds apr2005 ux0=amax1(ux0,0.00001)
 
 !c..hsl=hs/l where l is the monin-obhukov length
-            hsl=KARMAN*GRAV*hs(i)*fh(i,j,nr)*KAPPA &
-             /(ps(i,j,nr)*ux3)
+            hsl = KARMAN*GRAV*hs(i)*fh(i,j,nr)*KAPPA &
+                 /(ps(i,j,nr)*ux3)
 
 
-           !ds rv1_7_2 changes: use simple Garratt \Phi function
+           !changes: use simple Garratt \Phi function
            !   instead of "older" Businge and Iversen/Nordeng stuff:
 
-               xkhs(i)=ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)  ! /Pr=1.00   
-               xkdz(i)=xkhs(i)*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs(i)        
+             xkhs(i) = ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)  ! /Pr=1.00   
+             xkdz(i) = xkhs(i)*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs(i)        
+ 
+             hsurfl = KARMAN*GRAV*h100*fh(i,j,nr)*KAPPA           &
+                     /(ps(i,j,nr)*ux3)
+             xkh100(i) = ux0*KARMAN*h100*sqrt(1.-16.*hsurfl)
 
-!Hilde&Anton
-!pw & hf            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
-!pw & hf                 &             /(ps(i,j,nr)*ux0*ux0*ux0)
-            !ds hsurfl=KARMAN*GRAV*100.*fh(i,j,nr)*KAPPA&
-            hsurfl=KARMAN*GRAV*h100*fh(i,j,nr)*KAPPA&
-                 &             /(ps(i,j,nr)*ux3)
-                 !ds apr2005 &             /(ps(i,j,nr)*ux0*ux0*ux0)
-
-               !ds xkh100(i)=ux0*KARMAN*100.*sqrt(1.-16.*hsurfl) !/Pr=1.00
-               xkh100(i)=ux0*KARMAN*h100*sqrt(1.-16.*hsurfl)
-
-            Kz_min(i,j)=xkh100(i)
-            xksig(i,j,KMAX_MID)=xkhs(i)
+             Kz_min(i,j)=xkh100(i)
+             xksig(i,j,KMAX_MID)=xkhs(i)
 
          else
-!c
-!c..........................
-!c..stable surface-layer...:
-!c
-!c..height of surface layer
+!
+!..........................
+!..stable surface-layer...:
+!----------------------------------
+!
+!..height of surface layer
             hs(i)=sm*zixx(i,j)
-!c..u*
-            !ds apr2005 ux0=sqrt(fm(i,j,nr)/roas(i,j))
-            !ds apr2005 ux0=amax1(ux0,0.00001)
-!c
-!c..hsl=hs/l where l is the monin-obhukov length
-            hsl=KARMAN*GRAV*hs(i)*amax1(0.001,fh(i,j,nr))*KAPPA&
-              /(ps(i,j,nr)*ux3)
-             !ds apr2005 /(ps(i,j,nr)*ux0*ux0*ux0)
+!
+!..hsl=hs/l where l is the monin-obhukov length
+            hsl = KARMAN*GRAV*hs(i)*amax1(0.001,fh(i,j,nr))*KAPPA&
+                 /(ps(i,j,nr)*ux3)
 
 
-            !xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(0.74+4.7*hsl)   
             xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)   
 
-   !ds TEST:
-    ! Should apply PhiM for all layers below:
-    !       if (hs(i) > zs_bnd(i,j,KMAX_MID) ) then
-    !         do k = KMAX_MID, nh1(i), -1
-    !            hsl=KARMAN*GRAV*zs_bnd(i,j,k)*amax1(0.001,fh(i,j,nr))*KAPPA&
-    !             /(ps(i,j,nr)*ux0*ux0*ux0)
-    !            xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)   
-    !         end do
-    !       end if
            
 
-         endif
-!hf Hilde&Anton
-            hsurfl=KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
-                 &             /(ps(i,j,nr)*ux3)   !ds apr2005 - ux3
-            !Kz_min(i,j)=1.35*ux0*KARMAN*100./(0.74+4.7*hsurfl)
-            !ds Kz_min(i,j)=ux0*KARMAN*100./(1.00+5.0*hsurfl)
-            Kz_min(i,j)=ux0*KARMAN*h100/(1.00+5.0*hsurfl)
-!c
-!c...............................................................
+        endif
+ 
+        hsurfl = KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
+                /(ps(i,j,nr)*ux3)   !ds apr2005 - ux3
+        Kz_min(i,j)=ux0*KARMAN*h100/(1.00+5.0*hsurfl)
+!
+!...............................................................
 
- 60   continue
-!c
-!c
-!c..exchange parameter at z = ziu
-!c
-      do 65 k=1,KMAX_MID
-      do 65 i=1,limax
+      end do
+!
+!
+!..exchange parameter at z = ziu
+!
+      do  k=1,KMAX_MID
+        do  i=1,limax
 
-         if(ziu(i,j).gt.zimin .and. zs_bnd(i,j,k).ge.ziu(i,j)) then
-            xkzi(i)=xksig(i,j,k)
-         elseif (ziu(i,j).gt.zimin) then
-!c
-!c.....................................................   
-!c..the obrien-profile for z<ziu                      . 
-!c.....................................................                  
-!c
-            if(zs_bnd(i,j,k).le.hs(i)) then   
-               xksig(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)          
-            else                                                      
-               zimhs=ziu(i,j)-hs(i)   
-               zimz=ziu(i,j)-zs_bnd(i,j,k)                     
-               zmhs=zs_bnd(i,j,k)-hs(i)                  
-               xksig(i,j,k)=xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &  
-                 *(xkhs(i)-xkzi(i)+zmhs*(xkdz(i)+&
-                 2.*(xkhs(i)-xkzi(i))/zimhs))
-            endif  
-         endif
+           if(ziu(i,j).gt.zimin .and. zs_bnd(i,j,k).ge.ziu(i,j)) then
+              xkzi(i)=xksig(i,j,k)
+           elseif (ziu(i,j).gt.zimin) then
+!
+!.....................................................   
+!..the obrien-profile for z<ziu                      . 
+!.....................................................                  
+!
+              if(zs_bnd(i,j,k).le.hs(i)) then   
+                  xksig(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)          
+              else                                                      
+                zimhs = ziu(i,j)-hs(i)   
+                zimz  =ziu(i,j)-zs_bnd(i,j,k)                     
+                zmhs  =zs_bnd(i,j,k)-hs(i)                  
+                xksig(i,j,k) = xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &  
+                            *(xkhs(i)-xkzi(i)+zmhs*(xkdz(i)     &
+                           + 2.*(xkhs(i)-xkzi(i))/zimhs))
+              endif  
 
- 65   continue
+            endif
 
- 70   continue
-!c
-!c..spatial smoothing of xksig:
-!c
-!c
+         end do
+       end do
 
-!pw emep1.2      do 80 k=1,KMAX_MID
-      do 80 k=2,KMAX_MID
+    end do
+!
+!..spatial smoothing of xksig:
+!
+!
+
+    do  k=2,KMAX_MID
 
          do i=1,limax
             do j=1,ljmax
-!hf Anton&Hilde
-!pw emep1.2               if ( (pzpbl(i,j)>z_mid(i,j,k+1)) .and. k>1 )then
-!hf new               if ( (pzpbl(i,j)>z_mid(i,j,k-1)) )then
-!ds DaveTest         if ( (pzpbl(i,j)>z_mid(i,j,k)) )then
-!ds Restored:
                if ( (pzpbl(i,j)>z_mid(i,j,k)) )then
-                  xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
+                   xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
                endif 
-               help(i,j) = xksig(i,j,k)
+ 
+              help(i,j) = xksig(i,j,k)
             enddo
          enddo
 
-       !ds-Kz call smoosp(help,kzmin,kzmax)
-       call smoosp(help,KZ_MINIMUM ,KZ_MAXIMUM )
+         call smoosp(help,KZ_MINIMUM ,KZ_MAXIMUM )
 
          do i=1,limax
             do j=1,ljmax
                xksig(i,j,k) = help(i,j)
-!hf I need to convert to sigma coordinates
-! Kz(sigma)=Kz*ro^2*(GRAV/p*)
-! I have exns=exf1,exnm=exf2,
-! and use the formulation from original Unified model
-!Ikke saerlig effektivt, men enkelt....
 
-	    fac = GRAV/(ps(i,j,nr) - PT)
-	    fac2 = fac*fac
-            dex12 = th(i,j,k-1,nr)*(exnm(i,j,k) - exns(i,j,k)) + 	&
-			th(i,j,k,nr)*(exns(i,j,k) - exnm(i,j,k-1))
-            ro = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) -      &
-			exnm(i,j,k-1))/(R*exns(i,j,k)*dex12)
-!hf NEW
+	       fac   = GRAV/(ps(i,j,nr) - PT)
+	       fac2  = fac*fac
+               dex12 = th(i,j,k-1,nr)*(exnm(i,j,k) - exns(i,j,k))   	&
+	             + th(i,j,k,nr)*(exns(i,j,k) - exnm(i,j,k-1))
+               ro    = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) & 
+                     - exnm(i,j,k-1))/(R*exns(i,j,k)*dex12)
                skh(i,j,k,nr) = xksig(i,j,k)*ro*ro*fac2
             enddo
          enddo
 
- 80   continue
+   end do
 
 
-!c
-!c...............................................................
-!c..mixing-layer parameterization finished.......................
-!c...............................................................
-!c
-!c
-!c..calculating the ventilation coefficient, ven(i,j)
-!hf NOT NEEDED
-!      do i=1,limax
-!         do j=1,ljmax
 !
-!            a(i,j) = 2.0*h/sqrt(PI)
+!...............................................................
+!..mixing-layer parameterization finished.......................
+!...............................................................
 !
-!            uabs(i,j)=0.
-!
-!            do k=KMAX_MID,2,-1
-!               if(zixx(i,j).ge.zs_bnd(i,j,k)) then
-!
-!                  dz = zs_bnd(i,j,k)-zs_bnd(i,j,k+1)
-!
-!                  u2 = ( u(i,j,k,nr)**2 + v(i,j,k,nr)**2 )
-!
-!                  uabs(i,j)=uabs(i,j)+sqrt(u2)*dz
-!
-!               elseif (zs_bnd(i,j,k).gt.zixx(i,j) &
-!                     .and. zs_bnd(i,j,k+1).lt.zixx(i,j)) then
-!
-!                    dz = zixx(i,j)-zs_bnd(i,j,k+1)
-!
-!                    u2 = ( u(i,j,k,nr)**2 + v(i,j,k,nr)**2 )
-!
-!                    uabs(i,j)=uabs(i,j)+sqrt(u2)*dz
-!
-!                endif
-!
-!            enddo
-!
-!            ven(i,j) = uabs(i,j)*xtime*a(i,j)
-!
-!         enddo
-!      enddo
-!c
-!c..spatial smoothing of ven:
-!c
-!hf not needed      call smoosp(ven,limax,ljmax,iip,jjp,venmin,venmax)
+
+  end subroutine O_Brian
 
 
-!c++++++++++++++++
-                     
-       RETURN 
-       end subroutine O_Brian
 
 
-     subroutine Getmeteofield(meteoname,namefield,nrec,&
+
+
+
+
+
+
+
+  subroutine Getmeteofield(meteoname,namefield,nrec,&
                               ndim,validity,field)
 !
 ! Read the meteofields and distribute to nodes
 !
 
-     use netcdf
-      use Par_ml,                only : me,NPROC,MSG_READ4,ISMBEG,JSMBEG&
-                                       ,GIMAX,GJMAX,MAXLIMAX,MAXLJMAX
-     use ModelConstants_ml,     only : KMAX_MID
 
-     implicit none
+  implicit none
 
-     real, dimension(*),intent(out) :: field !dimensions: (MAXLIMAX,MAXLJMAX)
-                                             ! or (MAXLIMAX,MAXLJMAX,KMAX)
-     character (len = *),intent(in) ::meteoname,namefield
-     character (len = *),intent(out) ::validity
-     integer,intent(in) :: nrec,ndim
+  real, dimension(*),intent(out)  :: field ! dimensions: (MAXLIMAX,MAXLJMAX)
+                                          ! or     (MAXLIMAX,MAXLJMAX,KMAX)
 
-     integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
-     integer*2, allocatable ::var_global(:,:,:) !faster if defined with fixed dimensions for all nodes?
-     real :: scalefactors(2)
-     integer :: KMAX,ijk,i,k,j,nfetch   
+  character (len = *),intent(in)  ::meteoname,namefield
+  character (len = *),intent(out) ::validity
 
-     validity=''
+  integer,intent(in)              :: nrec,ndim
 
-     if(ndim==3)KMAX=KMAX_MID
-     if(ndim==2)KMAX=1
-     if(me==0)then
-        allocate(var_global(GIMAX,GJMAX,KMAX))
-        nfetch=1
-        call GetCDF_short(namefield,meteoname,var_global,GIMAX,ISMBEG,GJMAX, &
+
+
+  integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
+  integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with 
+                                               ! fixed dimensions for all 
+                                               ! nodes?
+  real :: scalefactors(2)
+  integer :: KMAX,ijk,i,k,j,nfetch   
+
+  validity=''
+
+  if(ndim==3)KMAX=KMAX_MID
+  if(ndim==2)KMAX=1
+  if(me==0)then
+      allocate(var_global(GIMAX,GJMAX,KMAX))
+      nfetch=1
+      call GetCDF_short(namefield,meteoname,var_global,GIMAX,ISMBEG,GJMAX, &
         JSMBEG,KMAX,nrec,nfetch,scalefactors,validity)
-     else
-        allocate(var_global(1,1,1)) !just to have the array defined
-     endif
+  else
+      allocate(var_global(1,1,1)) !just to have the array defined
+  endif
 
 !note: var_global is defined only for me=0
-     call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
+  call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
                              KMAX,1,1)
-       CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-       CALL MPI_BCAST(validity,20,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
- 
-     deallocate(var_global)
+  CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+  CALL MPI_BCAST(validity,20,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
  
 
-     ijk=0
-     do k=1,KMAX ! KMAX is =1 for 2D arrays
-        do j=1,MAXLJMAX
-           do i=1,MAXLIMAX
+  deallocate(var_global)
+ 
+
+  ijk=0
+  do k=1,KMAX ! KMAX is =1 for 2D arrays
+     do j=1,MAXLJMAX
+        do i=1,MAXLIMAX
               ijk=ijk+1
               field(ijk)=var_local(i,j,k)*scalefactors(1)+scalefactors(2)
-           enddo
         enddo
      enddo
+  enddo
      
-     return
-   end subroutine Getmeteofield
+  end subroutine Getmeteofield
+
+
+
+
+
+
 
 subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
      ,KMAX,nstart,nfetch,scalefactors,validity)
@@ -3263,8 +3328,6 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
   ! check is only a subroutine which check wether the function returns zero
   !
   !
-  use netcdf
-  use Par_ml,                only : me,NPROC
   implicit none
 
   character (len=*),intent(in) :: fileName 
@@ -3282,7 +3345,6 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
 
   ndims=3
   if(KMAX==1)ndims=2
-!  print *,'  reading ',trim(varname),'from',trim(fileName)
   !open an existing netcdf dataset
   call check(nf90_open(path=trim(fileName),mode=nf90_nowrite,ncid=ncFileID))
 
@@ -3305,7 +3367,8 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
   if(status == nf90_noerr)then
      validity  = trim(period_read)
   else
-     status = nf90_get_att(ncFileID, VarID, "period_of_validity", period_read  )
+     status = nf90_get_att(ncFileID, VarID, "period_of_validity", &
+              period_read  )
      if(status /= nf90_noerr)then
         validity='instantaneous' !default
      endif
@@ -3328,6 +3391,10 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
 
 end subroutine GetCDF_short
 
+
+
+
+
    subroutine Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
         ref_latitude,sigma_mid,Nhh,nyear,nmonth,nday,nhour,nhour_first&
         ,cyclicgrid)
@@ -3338,30 +3405,22 @@ end subroutine GetCDF_short
 ! This routine is called only once (and is therefore not optimized for speed)
 !
 
-     use netcdf
-     use Par_ml,                only : me,NPROC,ISMBEG,JSMBEG&
-                                       ,GIMAX,GJMAX,MAXLIMAX,MAXLJMAX&
-                                       ,gi0,gj0,IILARDOM,JJLARDOM&
-                                       ,parinit
-     use ModelConstants_ml,     only : KMAX_MID
-     use GridValues_ml,     only : GlobalPosition
+  implicit none
 
-     implicit none
+  character (len = *), intent(in) ::meteoname
+  integer, intent(in):: nyear,nmonth,nday,nhour
+  real, intent(out) :: GRIDWIDTH_M,xp,yp,fi, ref_latitude,&
+                       xm2(0:MAXLIMAX+1,0:MAXLJMAX+1)&
+                      ,xm_i(0:MAXLIMAX+1,0:MAXLJMAX+1)&
+                      ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
+  integer, intent(out):: Nhh,nhour_first,cyclicgrid
 
-     character (len = *), intent(in) ::meteoname
-     integer, intent(in):: nyear,nmonth,nday,nhour
-     real, intent(out) :: GRIDWIDTH_M,xp,yp,fi, ref_latitude,&
-                xm2(0:MAXLIMAX+1,0:MAXLJMAX+1)&
-               ,xm_i(0:MAXLIMAX+1,0:MAXLJMAX+1)&
-               ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
-     integer, intent(out):: Nhh,nhour_first,cyclicgrid
-
-     integer :: nseconds(1),n1,i,j   
-     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
-     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
-     real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
-     integer :: status,iglobal,jglobal,info,South_pole,North_pole
-     real :: xm_i_max
+  integer :: nseconds(1),n1,i,j   
+  integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
+  integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
+  real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
+  integer :: status,iglobal,jglobal,info,South_pole,North_pole
+  real :: xm_i_max
 
   if(me==0)then
   !open an existing netcdf dataset
@@ -3409,8 +3468,9 @@ end subroutine GetCDF_short
 
   call CheckStop(GIMAX+ISMBEG-1 > GIMAX_file, "NetCDF_ml: I outside domain" )
   call CheckStop(GJMAX+JSMBEG-1 > GJMAX_file, "NetCDF_ml: J outside domain" )
-  call CheckStop(KMAX_MID > KMAX_file,        "NetCDF_ml: wrong vertical dimension")
-  call CheckStop(24/Nhh, METSTEP,             "NetCDF_ml: METSTEP != meteo step" )
+  call CheckStop(KMAX_MID > KMAX_file,        "NetCDF_ml: wrong vertical   &
+                                                          dimension")
+  call CheckStop(24/Nhh, METSTEP,           "NetCDF_ml: METSTEP != meteostep" )
 
   call CheckStop(nhour==0 .or. nhour ==3,&
            "Met_ml/GetCDF: must start at nhour=0 or 3")
@@ -3442,8 +3502,10 @@ end subroutine GetCDF_short
   call check(nf90_get_att(ncFileID,nf90_global,"Grid_resolution",GRIDWIDTH_M))
   if(trim(projection)=='Stereographic')then
      call check(nf90_get_att(ncFileID,nf90_global,"ref_latitude",ref_latitude))
-     call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole",xp ))
-     call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole",yp ))
+     call check(nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole" &
+                                                   ,xp ))
+     call check(nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole" &
+                                                   ,yp ))
      call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
 
      call GlobalPosition 
@@ -3628,7 +3690,8 @@ endif
 
 !Look for poles
 !If the northernmost or southernmost lines are poles, they are not
-!considered as outer boundaries and will not be treat by "BoundaryConditions_ml".
+!considered as outer boundaries and will not be treat 
+!by "BoundaryConditions_ml".
 !Note that "Poles" is defined in subdomains
 
 North_pole=1
@@ -3660,9 +3723,11 @@ endif
 
   end subroutine Getgridparams
 
+
+
+
+
   subroutine check(status)
-    use Par_ml,                only : me,NPROC
-    use netcdf
     implicit none
     integer, intent ( in) :: status
 
@@ -3673,9 +3738,9 @@ endif
 !_______________________________________________________________________
 
 subroutine datefromsecondssince1970(ndate,nseconds,printdate)
-  !calculate date from seconds that have passed since the start of the year 1970
+  ! calculate date from seconds that have passed since the start of 
+  ! the year 1970
 
-!  use Dates_ml, only : nmdays
   implicit none
 
   integer, intent(out) :: ndate(4)

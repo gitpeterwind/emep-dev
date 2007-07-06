@@ -1,0 +1,95 @@
+\chapter{Welcome to EMEP World}
+
+This guide gives a brief documentation of the EMEP unified model.
+It is intended primarily as a guide as to how to run the model, and
+to help users wishing to understand or change 
+the model in terms of domains, outputs, chemistry, etc.
+This guide is also intended to guide new programming with a few
+simple ideas and rules.
+
+The main documentation for the model is given in:
+
+\begin{itemize}
+\item
+D.~Simpson, H.~Fagerli, J.E. Jonson, S.~Tsyro, P.~Wind, and J.-P. Tuovinen.
+{The EMEP Unified Eulerian Model. Model Description}.
+EMEP MSC-W Report 1/2003, The Norwegian
+Meteorological Institute, Oslo, Norway, 2003.
+\item
+Fagerli, H., Simpson, D., and Tsyro, S., {Unified EMEP model: Updates}, in {\em
+  EMEP Report 1/2004, Transboundary acidification, eutrophication and ground
+  level ozone in Europe. Status Report 1/2004\/}, pp. 11--18, The Norwegian
+  Meteorological Institute, Oslo, Norway, 2004.
+\end{itemize}
+
+Copies of both reports can be obtained from \url{www.emep.int}. An HTML
+copy of EMEP report 1/2003 is available at \url{www.emep.int/UniDoc/index.html}.
+
+
+\section{Computer Information}
+
+EMEP requires Fortran 77 and Fortran 90 compilers.  
+
+The default compiler options are provided for .....
+
+The model is tested on different platforms.  These are HP rx4640 Linux
+cluster with 100 nodes, each with four Itanium2(64-bit) processors and
+4GB memory; a shared memory system which consists of IBM p575+ nodes
+and has a total of 62 nodes partitioned into 56 compute nodes. The
+latter is well suited for large scale parallel MPI and OpenMP
+applications as well as applications that combine these two
+communication paradigms.   
+
+\section{Getting Started}
+
+Once the model is downloaded, untar the file using  the command \\
+
+\textbf{tar -xzvf emep.tar.gz} \\
+
+This will give you a directory called 'Unimod'.  Go to this directory
+by typing 'cd Unimod' and do a listing and you will see the following
+\\
+
+\textbf{cd Unimod} \\
+ \textbf{ls -lt}
+
+
+\begin{verbatim}
+-rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  Makefile \\
+-rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  Changes \\
+-rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  README \\
+drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  src \\
+                - Makefile   \\
+                - ZD\_OZONE - ....f90 \\
+                - ZD\_ACID  - ....f90 \\
+                - makedepf90 - ....cpp \\
+drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  doc  \\
+                - Makefile \\
+                - ....tex \\
+                - ....eps \\
+drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  run \\
+                - ....pl  \\
+
+\end{verbatim}
+
+Read the 'README' first.  This has a brief note about the directory
+contents.  
+
+The src directory contains all the main .f90 files of the model and two
+subdirectories called 'ZD\_OZONE' and 'ZD\_ACID' which has the
+respective .f90 files of the OZONE or ACID version of the model.
+Depending on which version you like to use, copy all the .f90 files
+from the corresponding subdirectory into the main Unimod directory. \\
+
+\textbf{Unimode/src$>$ cp ZD\_ACID/*.f90} .  for ACID version \\
+
+or \\
+
+\textbf{Unimod/src$>$ cp ZD\_OZONE/*.f90} .  for OZONE version of the model. 
+
+
+The main documentation for each subroutine should be contained within
+each subroutine (and updated regularly!).
+
+
+
