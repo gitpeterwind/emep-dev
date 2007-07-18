@@ -3,15 +3,12 @@
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
-!  Define all parameters and variables used in domain definition and
+!  Define parameters and variables specific to each node and
 !  the parallel data decomposition.  
 !
-! uni - now includes
-! eulpar.inc
-! eulnx.inc
 !----------------------------------------------------------------------------
-!  $Id: Par_ml.f90,v 1.2 2007-07-18 12:21:02 mifads Exp $
 !  Erik Berge, DNMI    Roar Skaalin, SINTEF Industrial Mathematics
+!  Modified to use ModelConstants_ml for domain, July 2007, ds
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
 !
