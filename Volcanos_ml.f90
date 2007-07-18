@@ -25,11 +25,10 @@ module Volcanos_ml
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
  use GridValues_ml,         only : sigma_bnd, i_glob, j_glob,i_local, j_local
  use Io_ml,                 only : ios, open_file, check_file, IO_VOLC
- use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT
+ use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC
  use Met_ml,                only : ps, roa
- use Par_ml,                only : ISMBEG, JSMBEG, me, NPROC, &
-                                   li0,lj0,li1,lj1
- use Par_ml,                only : gi0, gi1, gj0, gj1 !TEST
+ use Par_ml,                only : IRUNBEG, JRUNBEG, me, li0,lj0,li1,lj1  &
+                                  ,gi0, gi1, gj0, gj1 !TEST
  use PhysicalConstants_ml,  only : GRAV, AVOG
 
  implicit none
@@ -94,8 +93,8 @@ contains
 
   !/** Read (i,j) are given for the full EMEP polar-stereographic domain
   !    Convert them to actual run domain
-           i = i -ISMBEG+1    
-           j = j -JSMBEG+1    
+           i = i -IRUNBEG+1    
+           j = j -JRUNBEG+1    
 
   !/** Set the volcano number to be the same as in emission data (gridSOx)
 
@@ -135,8 +134,8 @@ contains
     !/** Set volcano
     do volc_no=1,nvolc
        k=height_volc(volc_no)
-       i=i_volc(volc_no) +ISMBEG-1   !NEW
-       j=j_volc(volc_no) +JSMBEG-1   !NEW
+       i=i_volc(volc_no) +IRUNBEG-1   !NEW
+       j=j_volc(volc_no) +JRUNBEG-1   !NEW
 
        if ( DEBUG_VULC ) &
        write(6,'(a20/4i6/6i6/4i6)')'Volcan: check1 ',  &
@@ -176,8 +175,8 @@ contains
   do volc_no=1,nvolc
 
      k=height_volc(volc_no)
-     i=i_volc(volc_no) +ISMBEG-1   !NEW
-     j=j_volc(volc_no) +JSMBEG-1   !NEW
+     i=i_volc(volc_no) +IRUNBEG-1   !NEW
+     j=j_volc(volc_no) +JRUNBEG-1   !NEW
     ! i=i_volc(volc_no)
     ! j=j_volc(volc_no)
 

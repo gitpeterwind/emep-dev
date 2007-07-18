@@ -49,17 +49,18 @@
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
  use Chemfields_ml, only : xn_adv
-!hfTD use Dates_ml,     only : date, add_dates,dayno
  use GenSpec_adv_ml , only : NSPEC_ADV
  use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i
  use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
-                dt_advec, dt_advec_inv,  PT,KCHEMTOP !hfTD,current_date 
+                dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY, NPROC
  use Met_ml ,only : ps,sdot,skh,u,v
  use MassBudget_ml, only : fluxin,fluxout
  use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
  use Par_ml,        only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&
-          NPROCX,NPROCY, &
-          li0,li1,lj0,lj1 ,limax,ljmax, NPROC,gi0, ISMBEG,gj0, JSMBEG
+          li0,li1,lj0,lj1 ,limax,ljmax, gi0, IRUNBEG,gj0, JRUNBEG &
+         ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
+        ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
+
  implicit none
  private
 
@@ -222,21 +223,6 @@
            pwdebug=0
            idebug=0
            jdebug=0
-!        if(current_date%month == 6 .and. current_date%day == 6)then
-!           pwdebug=1
-!           do i=1,limax
-!           i_glob  = i + gi0 + ISMBEG - 2
-!           if(i_glob.eq.86)then
-!              idebug=i
-!           endif
-!           enddo
-!           do j=1,ljmax
-!           j_glob  = j + gj0 + JSMBEG - 2
-!           if(j_glob.eq.74)then
-!              jdebug=j
-!           endif
-!           enddo
-!        endif
 
 13 format(10E16.7)
 
@@ -3779,13 +3765,6 @@
 
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 	subroutine adv_var(numt)
-	use Par_ml , only : limax,ljmax,NPROC,me	&
-		,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC			&
-		,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
-	use GridValues_ml , only : GRIDWIDTH_M
-	use Met_ml  , only : u,v,sdot
-	use ModelConstants_ml, only : dt_advec
-
 	integer,intent(in)::  numt
 
 !	local

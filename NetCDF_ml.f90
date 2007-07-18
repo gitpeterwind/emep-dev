@@ -22,12 +22,32 @@
 !To improve: When output is onto the same file, but with different positions for the 
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
+  use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D, model
+  use My_Outputs_ml, only :FREQ_HOURLY 
 
-  use GridValues_ml,only  : projection
-  use CheckStop_ml,      only: CheckStop
+  use Chemfields_ml,   only : xn_shl,xn_adv
+  use CheckStop_ml,    only: CheckStop
+  use Derived_ml,    only : Deriv,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY
+  use GenSpec_shl_ml , only :NSPEC_SHL
+  use GenSpec_adv_ml , only :NSPEC_ADV
+  use GenSpec_tot_ml , only :NSPEC_TOT
+  use GenChemicals_ml, only :species
+  use GridValues_ml,   only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
+                                  ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
+                                  ,GlobalPosition,gb_glob,gl_glob,ref_latitude&
+                                  ,projection, sigma_mid
+  use ModelConstants_ml, only : KMAX_MID, runlabel1, runlabel2 &
+                                ,NPROC, IIFULLDOM,JJFULLDOM &
+                                ,PT, current_date  
   use netcdf
+  use Par_ml, only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &
+                        MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG
+  use PhysicalConstants_ml,  only : PI       
+  use TimeDate_ml, only: nmdays,leapyear ,current_date, date
+
 
   implicit none
+
 
   INCLUDE 'mpif.h'
   INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
@@ -69,7 +89,7 @@ contains
 
 subroutine InitnetCDF
 
-use Par_ml,           only : GIMAX,GJMAX,ISMBEG,JSMBEG
+use Par_ml,           only : GIMAX,GJMAX,IRUNBEG,JRUNBEG
 use ModelConstants_ml,only : KMAX_MID   
 use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                              Asc2D, hr_out      ! Required outputs
@@ -80,17 +100,17 @@ integer :: ih
 write(*,*)'initnetcdf'
 fileName = fileName_year
 period_type = 'yearly'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 fileName = fileName_month
 period_type = 'monthly'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 fileName = fileName_day
 period_type = 'daily'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 
 fileName = fileName_hour
 period_type = 'hourly'
-ISMBEGcdf=GIMAX+ISMBEG-1; JSMBEGcdf=GJMAX+JSMBEG-1
+ISMBEGcdf=GIMAX+IRUNBEG-1; JSMBEGcdf=GJMAX+JRUNBEG-1
 GIMAXcdf=0; GJMAXcdf=0
 KMAXcdf=1
 do ih=1,NHOURLY_OUT
@@ -108,13 +128,13 @@ call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
 
 fileName = fileName_inst
 period_type = 'instant'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 
 end subroutine InitnetCDF
 
 subroutine Init_new_netCDF(fileName,iotyp) 
 
-use Par_ml,           only : GIMAX,GJMAX,ISMBEG,JSMBEG
+use Par_ml,           only : GIMAX,GJMAX,IRUNBEG,JRUNBEG
 use ModelConstants_ml,only : KMAX_MID   
 use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                              Asc2D, hr_out      ! Required outputs
@@ -134,25 +154,25 @@ if(iotyp==IOU_YEAR)then
 
 fileName_year = trim(fileName)
 period_type = 'yearly'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 
 elseif(iotyp==IOU_MON)then
 
 fileName_month = trim(fileName)
 period_type = 'monthly'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 
 elseif(iotyp==IOU_DAY)then
 
 fileName_day = trim(fileName)
 period_type = 'daily'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 
 elseif(iotyp==IOU_HOUR)then
 
 fileName_hour = trim(fileName)
 period_type = 'hourly'
-ISMBEGcdf=GIMAX+ISMBEG-1; JSMBEGcdf=GJMAX+JSMBEG-1 !initialisations
+ISMBEGcdf=GIMAX+IRUNBEG-1; JSMBEGcdf=GJMAX+JRUNBEG-1 !initialisations
 GIMAXcdf=0; GJMAXcdf=0!initialisations
 KMAXcdf=1
 do ih=1,NHOURLY_OUT
@@ -171,11 +191,11 @@ elseif(iotyp==IOU_INST)then
 
 fileName_inst = trim(fileName)
 period_type = 'instant'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 
 else
 period_type = 'unknown'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,ISMBEG,JSMBEG,KMAX_MID)
+call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 endif
 
 end subroutine Init_new_netCDF
@@ -183,15 +203,6 @@ end subroutine Init_new_netCDF
 subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf,RequiredProjection)
   ! Create the netCDF file
 
-use GridValues_ml,         only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
-                                  ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
-                                  ,GlobalPosition,gb_glob,gl_glob,ref_latitude
-use Par_ml,                only : GIMAX,GJMAX,ISMBEG,JSMBEG,IILARDOM,JJLARDOM
-use ModelConstants_ml,     only : KMAX_MID, runlabel1, runlabel2, PT 
-use GridValues_ml,         only : sigma_mid
-use My_Derived_ml,         only : model
-use PhysicalConstants_ml,  only : PI       
-   implicit none
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 character(len=*),  intent(in)  :: fileName 
 character (len=*),optional, intent(in):: requiredprojection
@@ -426,7 +437,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 
 !Define longitude and latitude
   call GlobalPosition !because this may not yet be done if old version of meteo is used
-  if(ISMBEGcdf+GIMAXcdf-1<=IILARDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJLARDOM)then
+  if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
   call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
        ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
   call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
@@ -461,7 +472,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 
 !Define longitude and latitude
 
-  if(ISMBEGcdf+GIMAXcdf-1<=IILARDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJLARDOM)then
+  if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
   call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
        ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
   call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
@@ -497,16 +508,6 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
   !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
-
-  use Par_ml,                only : NPROC,me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax,MAXLIMAX, MAXLJMAX,ISMBEG,JSMBEG
-
-  use ModelConstants_ml,     only : KMAX_MID, current_date  
-  !ds 16/12/2003 Derived changes:
-  use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
-  use Derived_ml,    only : Deriv &
-       ,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY  
-
-  implicit none
 
   integer ,intent(in) :: ndim,kmax
   type(Deriv),     intent(in) :: def1 ! definition of fields
@@ -564,8 +565,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      if(me==0)then
         !try to open the file
         status=nf90_open(path = trim(fileName_given), mode = nf90_write, ncid = ncFileID)
-        ISMBEGcdf=ISMBEG+i1-1
-        JSMBEGcdf=JSMBEG+j1-1
+        ISMBEGcdf=IRUNBEG+i1-1
+        JSMBEGcdf=JRUNBEG+j1-1
         GIMAXcdf=i2-i1+1
         GJMAXcdf=j2-j1+1
         if(status /= nf90_noerr) then !the file does not exist yet
@@ -909,10 +910,6 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
 
   !create new netCDF variable
 
-use Par_ml,                only : NPROC,me
-!ds 16/12/2003 use My_Derived_ml, only : Deriv 
-use Derived_ml, only : Deriv 
-
   implicit none
 
   type(Deriv),     intent(in) :: def1 ! definition of fields
@@ -1011,7 +1008,6 @@ end subroutine  createnewvariable
 !_______________________________________________________________________
 
   subroutine check(status)
-    use Par_ml,                only : me,NPROC
     implicit none
     integer, intent ( in) :: status
     
@@ -1069,10 +1065,6 @@ endif
   subroutine secondssince1970(ndate,nseconds,iotyp)
     !calculate how many seconds have passed since the start of the year 1970
 
-    use TimeDate_ml, only: nmdays,leapyear 
-    use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
-    use My_Outputs_ml, only :FREQ_HOURLY 
-    implicit none
 
     integer, intent(in) :: ndate(4)
     integer, intent(out) :: nseconds
@@ -1123,8 +1115,6 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
   ! check is only a subroutine which check wether the function returns zero
   !
   !
-  use Par_ml,           only : me,NPROC
-  implicit none
 
   character (len=*),intent(in) :: fileName 
 
@@ -1325,17 +1315,6 @@ end subroutine GetCDF
 
 subroutine WriteCDF(varname,vardate,filename_given,newfile)
 
-  use Derived_ml, only :Deriv 
-  use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
-!hfTD  use Dates_ml, only : date
-  use TimeDate_ml, only : date
-  use ModelConstants_ml, only : KMAX_MID
-  use Par_ml,                only : NPROC,me,MAXLIMAX, MAXLJMAX
-  use GenSpec_shl_ml , only :NSPEC_SHL
-  use GenSpec_adv_ml , only :NSPEC_ADV
-  use GenSpec_tot_ml , only :NSPEC_TOT
-  use GenChemicals_ml , only :species
-  use Chemfields_ml, only : xn_shl,xn_adv
 
  character (len=*),intent(in)::varname!variable name, or group of variable name
  type(date), intent(in)::vardate!variable name, or group of variable name
@@ -1444,15 +1423,6 @@ end subroutine WriteCDF
 
 subroutine ReadCDF(varname,vardate,filename_given)
 
-!hfTD  use Dates_ml, only : date
-  use TimeDate_ml, only : date
-  use ModelConstants_ml, only : KMAX_MID
-  use Par_ml,                only : NPROC,me,MAXLIMAX, MAXLJMAX,GIMAX,GJMAX
-  use GenSpec_shl_ml , only :NSPEC_SHL
-  use GenSpec_adv_ml , only :NSPEC_ADV
-  use GenSpec_tot_ml , only :NSPEC_TOT
-  use GenChemicals_ml , only :species
-  use Chemfields_ml, only : xn_shl,xn_adv
 
  character (len=*),intent(in)::varname!variable name, or group of variable name
  type(date), intent(in)::vardate!variable name, or group of variable name

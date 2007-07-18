@@ -15,12 +15,11 @@
 ! Cleaned, 3-D possibility added, JEJ and DS, April-May 2007
 !------------------------------------------------------------
   use CheckStop_ml,  only: CheckStop
-  use Par_ml,        only : IILARDOM,JJLARDOM      &
-                      ,ISMBEG,JSMBEG               &
+  use ModelConstants_ml, only : NPROC,  IIFULLDOM,JJFULLDOM
+  use Par_ml,        only : IRUNBEG,JRUNBEG               &
                       ,MAXLIMAX,MAXLJMAX           &
                       ,MSG_READ7,MSG_READ5         &
-                      ,me,NPROC                    &
-                      ,GIMAX,GJMAX
+                      ,me,GIMAX,GJMAX
   use Io_ml,         only : ios, open_file
   implicit none
 
@@ -48,7 +47,7 @@ contains
   !  Initialisation to zero added, so now we do not need to input an array which
   !  covers the whole domain. 
 
-  real :: in_field(IILARDOM,JJLARDOM)! Field to be read
+  real :: in_field(IIFULLDOM,JJFULLDOM)! Field to be read
 
   in_field(:,:)    = 0.0
   local_field(:,:) = 0.0
@@ -61,8 +60,8 @@ contains
         READFIELD : do
             read(IO_INFILE,*,iostat=ios) i,j,tmpin
             if ( ios /= 0 ) exit READFIELD
-            if (  i < 1 .or. i > IILARDOM  .or. &
-                  j < 1 .or. j > JJLARDOM  ) then  
+            if (  i < 1 .or. i > IIFULLDOM  .or. &
+                  j < 1 .or. j > JJFULLDOM  ) then  
                   errmsg = "error in i,j index in IO_INFILE="!!! ,fname, i,j
                   exit READFIELD
             endif
@@ -75,7 +74,7 @@ contains
     endif !me==0
             
     call global2local(in_field,local_field,MSG_READ7                 &
-                       ,1,IILARDOM,JJLARDOM,1,ISMBEG,JSMBEG)
+                       ,1,IIFULLDOM,JJFULLDOM,1,IRUNBEG,JRUNBEG)
 
   end subroutine ReadField_r
 
@@ -89,7 +88,7 @@ contains
 
   logical, intent(in),optional :: opened
 
-  real :: in_field(IILARDOM,JJLARDOM,DIM3)! Field to be read
+  real :: in_field(IIFULLDOM,JJFULLDOM,DIM3)! Field to be read
   character*50 :: errmsg
   real, dimension(DIM3) :: tmpin
 
@@ -108,8 +107,8 @@ contains
       READFIELD : do
              read(IO_INFILE,*,iostat=ios) i,j,tmpin(:)
              if ( ios /= 0 ) exit READFIELD
-             if (  i < 1 .or. i > IILARDOM  .or. &
-                   j < 1 .or. j > JJLARDOM  ) then
+             if (  i < 1 .or. i > IIFULLDOM  .or. &
+                   j < 1 .or. j > JJFULLDOM  ) then
                   errmsg = "error in i,j index in IO_INFILE="!!! ,fname, i,j
                   exit READFIELD
              endif
@@ -121,7 +120,7 @@ contains
     endif !me==0
 
     call global2local(in_field,local_field,MSG_READ7                 &
-                       ,1,IILARDOM,JJLARDOM,DIM3,ISMBEG,JSMBEG)
+                       ,1,IIFULLDOM,JJFULLDOM,DIM3,IRUNBEG,JRUNBEG)
 
   end subroutine ReadField_3dr
 
@@ -135,7 +134,7 @@ contains
   character*50 :: errmsg 
   integer :: intmp
 
-  integer :: in_field(IILARDOM,JJLARDOM)! Field to be read
+  integer :: in_field(IIFULLDOM,JJFULLDOM)! Field to be read
 
   in_field(:,:)    = 0.0       ! Initialise - ds, 15/1/2005
   local_field(:,:) = 0.0       ! Initialise - ds, 15/1/2005
@@ -151,8 +150,8 @@ contains
         READFIELD : do
            read(IO_INFILE,*,iostat=ios) i,j, intmp
            if ( ios /= 0 ) exit READFIELD
-           if (  i < 1 .or. i > IILARDOM  .or. &
-                 j < 1 .or. j > JJLARDOM  ) then  
+           if (  i < 1 .or. i > IIFULLDOM  .or. &
+                 j < 1 .or. j > JJFULLDOM  ) then  
               errmsg = "error in i,j index in IO_INFILE=" // fname
               exit READFIELD
            endif
@@ -164,7 +163,7 @@ contains
     endif !me==0
 
     call global2local_int(in_field,local_field,MSG_READ5               &
-               ,IILARDOM,JJLARDOM,1,ISMBEG,JSMBEG)
+               ,IIFULLDOM,JJFULLDOM,1,IRUNBEG,JRUNBEG)
  
   end subroutine ReadField_i
  !>=========================================================================<
@@ -178,7 +177,7 @@ contains
   character*50 :: errmsg
   integer, dimension(DIM3) :: intmp
 
-  integer :: in_field(IILARDOM,JJLARDOM,DIM3)! Field to be read
+  integer :: in_field(IIFULLDOM,JJFULLDOM,DIM3)! Field to be read
 
   errmsg = "ok"
 
@@ -189,8 +188,8 @@ contains
       READFIELD : do
            read(IO_INFILE,*,iostat=ios) i,j, intmp(:)
            if ( ios /= 0 ) exit READFIELD
-           if (  i < 1 .or. i > IILARDOM  .or. &
-                 j < 1 .or. j > JJLARDOM  ) then
+           if (  i < 1 .or. i > IIFULLDOM  .or. &
+                 j < 1 .or. j > JJFULLDOM  ) then
               errmsg = "error in i,j index in IO_INFILE=" // fname
               exit READFIELD
            endif
@@ -202,7 +201,7 @@ contains
     endif !me==0
 
     call global2local_int(in_field,local_field,MSG_READ5               &
-               ,IILARDOM,JJLARDOM,DIM3,ISMBEG,JSMBEG)
+               ,IIFULLDOM,JJFULLDOM,DIM3,IRUNBEG,JRUNBEG)
 
   end subroutine ReadField_3di
 

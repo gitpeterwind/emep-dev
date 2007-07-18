@@ -1,3 +1,4 @@
+! -*- f90 -*-
                          module Par_ml
 
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
@@ -9,7 +10,7 @@
 ! eulpar.inc
 ! eulnx.inc
 !----------------------------------------------------------------------------
-!  $Id: Par_ml.f90,v 1.1 2007-03-05 10:01:13 mifapw Exp $
+!  $Id: Par_ml.f90,v 1.2 2007-07-18 12:21:02 mifads Exp $
 !  Erik Berge, DNMI    Roar Skaalin, SINTEF Industrial Mathematics
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 !
@@ -28,30 +29,22 @@
 !  also we have now to distinguish mfsize for input and output: 
 !  mfsizeinp,mfsizeout!!!
 
+use CheckStop_ml,      only : CheckStop
+use ModelConstants_ml, only : RUNDOMAIN, IIFULLDOM, JJFULLDOM, NPROCX, NPROCY, NPROC
 implicit none
 private
 
-  INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   integer, public, parameter ::  &
-    IILARDOM    =   170   &
-  , JJLARDOM    =   133   &
-  , ISMBEG      =   36     &
-  , JSMBEG      =   12     &
-  , GIMAX       =   132     & ! Number of global points in longitude
-  , GJMAX       =   111     & ! Number of global points in latitude
-  , NPROCX      =   8       & ! Actual number of processors in longitude
-  , NPROCY      =   4       & ! Actual number of processors in latitude
+    IRUNBEG      =   RUNDOMAIN(1)  &
+  , JRUNBEG      =   RUNDOMAIN(3)  &
+  , GIMAX       =   RUNDOMAIN(2)-RUNDOMAIN(1) + 1   & ! Number of global points in longitude
+  , GJMAX       =   RUNDOMAIN(4)-RUNDOMAIN(3) + 1   & ! Number of global points in longitude
   , MAXLIMAX   = (GIMAX+NPROCX-1)/NPROCX   & ! Maximum number of local points in longitude
   , MAXLJMAX   = (GJMAX+NPROCY-1)/NPROCY   & ! Maximum number of local points in latitude
-  , MFSIZEINP = IILARDOM*JJLARDOM   & ! Maximum field size for input
-  , MFSIZEOUT = GIMAX*GJMAX           ! Maximum field size for output
+  , MFSIZEINP = IIFULLDOM*JJFULLDOM      & ! Maximum field size for input
+  , MFSIZEOUT = GIMAX*GJMAX                  ! Maximum field size for output
 !
- integer , public, parameter :: &
-      NPROC = NPROCX*NPROCY     ! Actual total number of processors
-!
-
 !
 !     Parameter statements for the parameters used to access the tabell 
 !     of neighbor processors (neighbor)
@@ -114,7 +107,7 @@ private
       tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
 !
 !
-!--- eulnx.inc follows:
+ logical, private, parameter :: DEBUG_PAR = .true.
 
 !------------------------------------------------------------------------------
 ! Define parameters used in the communication
@@ -185,8 +178,7 @@ private
 !     Find the x-, y-, and z-addresses of the domain assigned to the
 !     processor
 !
-!     pw 09.01.2002: Check if the subdomain is large enough
-!     pw 26.03.2002: Bug in formula for tljmax, tgj0, tgj1  
+!     Check if the subdomain is large enough
 !
 	mey = me/NPROCX
 	mex = me - mey*NPROCX
@@ -233,10 +225,12 @@ private
 	  endif
 	endif
 	gj1 = gj0 + ljmax - 1
-!
-!    pw 8/11/2005: moved "neighbor" calculation into topology
-!
 
+          if ( DEBUG_PAR ) then
+             write(*,"(a12,10i6)") "DEBUG_PAR ", me, IRUNBEG, JRUNBEG, &
+                  GIMAX, GJMAX, gi0, gi1, limax, ljmax
+          end if
+!
 !
 !     Initialize the tables containing number of gridpoints and
 !     addresses of start and endpoint in all directions, for all
@@ -275,7 +269,6 @@ private
 	    if (imey .eq. NPROCY-1) then
 	      tljmax(ime) = tljmax(ime) + 1
 	      tgj0(ime) = tgj0(ime) + rest-1
-! pw u3	    elseif (imey .le. rest-1) then
 	    elseif (imey < rest-1) then
 	      tljmax(ime) = tljmax(ime) + 1
 	      tgj0(ime) = tgj0(ime) + imey
@@ -286,25 +279,14 @@ private
 	  tgj1(ime) = tgj0(ime) + tljmax(ime) - 1
 !
 	enddo
-!
-!	write(6,111) me, mex, mey, neighbor, gi0, gj0, limax, ljmax        
-! 111	format(11i7)
 
-!       pw The size of the grid cannot be too small.       
+!      The size of the grid cannot be too small.       
 
-	!u4 if(limax < MIN_ADVGRIDS .or. ljmax < MIN_ADVGRIDS )then
-	if(limax < min_grids .or. ljmax < min_grids )then
+        call CheckStop( limax < min_grids,   &
+            "Subdomain too small! Limax must be at least min_grids")
+        call CheckStop( ljmax < min_grids,   &
+            "Subdomain too small! Ljmax must be at least min_grids")
 
-	   write(*,*)'subdomain too small!'
-	   write(*,*)'lXmax must be at least min_grids = ', &
-     	                                        min_grids
-	   write(*,*)'me,li0,li1,limax ',me,li0,li1,limax
-	   write(*,*)'me,lj0,lj1,ljmax ',me,lj0,lj1,ljmax
-           WRITE(*,*) 'MPI_ABORT: ', 'SUBDOMAIN TO SMALL!!!'
-           call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-	endif
-
-	return
 	end subroutine parinit
 
 
@@ -374,7 +356,6 @@ private
           endif
 	endif
 
-	return
 	end subroutine topology
 
 end module Par_ml

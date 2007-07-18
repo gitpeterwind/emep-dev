@@ -8,9 +8,15 @@ module Biogenics_ml
   !   move fac from setup to here - apply to emforest. This keeps
   !   canopy_ecf O(1).
   !---------------------------------------------------------------------------
+  use My_Emis_ml       , only : NFORESTVOC, FORESTVOC
+
   use CheckStop_ml,      only: CheckStop
-  use Par_ml   , only : MAXLIMAX,MAXLJMAX
-  use My_Emis_ml       , only : NFORESTVOC
+  use GridValues_ml    , only : xm2, gb
+  use Io_ml            , only : IO_FORES, open_file, ios
+  use ModelConstants_ml, only : NPROC
+  use Par_ml   , only : me, GIMAX,GJMAX,MAXLIMAX,MAXLJMAX &
+                       ,IRUNBEG,JRUNBEG &
+                       ,MSG_READ1,li0,li1,lj0,lj1
   implicit none
   private
 
@@ -49,14 +55,6 @@ module Biogenics_ml
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     subroutine Forests_Init()
 
-  use Par_ml   , only : GIMAX,GJMAX &
-                       ,ISMBEG,JSMBEG &
-                       ,NPROC,me,MSG_READ1 &
-                       ,li0,li1,lj0,lj1
-  use My_Emis_ml       , only : FORESTVOC
-  use GridValues_ml    , only : xm2, gb
-  !ds may05 use Met_ml           , only : iclass   ! HIRLAM/xxx met model land classes
-  use Io_ml            , only : IO_FORES, open_file, ios
 !    Read forest data for natural VOC emissions
 !-----------------------------------------------------------------------------
 !ds 001011 - slightly modified to use free-format, some F90, and
@@ -129,12 +127,12 @@ module Biogenics_ml
 !          write(6,*) 'skogting',itmp,jtmp,sumland,(tmp(i),i=1,2)
 !          Distribute percentage cover over 9 50km grids:
           !ds do j = -1,1
-              !ds j50 = jtmp + j - JSMBEG + 1
-          j50 = jtmp  - JSMBEG + 1
+              !ds j50 = jtmp + j - JRUNBEG + 1
+          j50 = jtmp  - JRUNBEG + 1
           if(j50.ge.1.and.j50.le.GJMAX)then
            !dsdo i = -1,1
-              !dsi50 = itmp + i - ISMBEG + 1
-              i50 = itmp - ISMBEG + 1
+              !dsi50 = itmp + i - IRUNBEG + 1
+              i50 = itmp - IRUNBEG + 1
               if(i50.ge.1.and.i50.le.GIMAX)then
 !ds2.... add Grid area:   PLEASE CHECK MAP FACTOR USAGE !
 !su            gridarea_m2 = 50000. * 50000. * xmd(i50,j50)
@@ -254,9 +252,9 @@ if(READBVOC)then
         call CheckStop(ios,"Biogenics: ios error BVOC.dat")
         do while (.true.)
           read(IO_FORES,*,err=1002,end=1002) itmp,jtmp,(embuf(n),n=1,NFORESTVOC)
-          j50 = jtmp  - JSMBEG + 1
+          j50 = jtmp  - JRUNBEG + 1
           if(j50.ge.1.and.j50.le.GJMAX)then
-              i50 = itmp - ISMBEG + 1
+              i50 = itmp - IRUNBEG + 1
               if(i50.ge.1.and.i50.le.GIMAX)then
                  gemforest(:,i50,j50)=embuf(:)
               endif

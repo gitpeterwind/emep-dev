@@ -10,7 +10,8 @@ module EmisGet_ml
                             ,ISNAP_SHIP, ISNAP_NAT
   use GridAllocate_ml, only : GridAllocate
   use Io_ml,        only : open_file, NO_FILE, ios, IO_EMIS
-  use Par_ml,       only : me, NPROC
+  use ModelConstants_ml, only: NPROC
+  use Par_ml,       only : me
   use SmallUtils_ml, only : wordsplit
   use Volcanos_ml
 
@@ -45,7 +46,7 @@ module EmisGet_ml
 
 contains
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine EmisGet(iemis,emisname,ISMBEG,JSMBEG,GIMAX,GJMAX, &
+  subroutine EmisGet(iemis,emisname,IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                       globemis,globnland,globland,sumemis,     &
                       globemis_flat,flat_globnland,flat_globland)
 
@@ -65,7 +66,7 @@ contains
   !--arguments
   integer, intent(in)                      :: iemis     ! emis index 
   character(len=*), intent(in)             :: emisname  ! emission name
-  integer, intent(in) :: ISMBEG,JSMBEG,GIMAX,GJMAX        ! domain limits
+  integer, intent(in) :: IRUNBEG,JRUNBEG,GIMAX,GJMAX        ! domain limits
   real,    intent(out), dimension(:,:,:,:) :: globemis  ! emission values
   integer, intent(inout), dimension(:,:,:) :: globland  ! C'try-code -emitters
   integer, intent(inout), dimension(:,:)   :: globnland ! No. emit's in grid
@@ -121,8 +122,8 @@ READEMIS: do   ! ************* Loop over emislist files **********************
               ic=0
 543           continue
 
-              i = i-ISMBEG+1     ! for RESTRICTED domain
-              j = j-JSMBEG+1     ! for RESTRICTED domain
+              i = i-IRUNBEG+1     ! for RESTRICTED domain
+              j = j-JRUNBEG+1     ! for RESTRICTED domain
 
               if ( i  <=  0 .or. i  >  GIMAX .or.   & 
                    j  <=  0 .or. j  >  GJMAX .or.   &

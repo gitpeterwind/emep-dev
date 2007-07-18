@@ -17,20 +17,21 @@ use GridValues_ml,        only : xmd, i_glob, j_glob, METEOfelt, projection &
                                 ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
                                 ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
                                 ,GlobalPosition
-use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP, &
-                                 KMAX_BND,KMAX_MID,NMET,current_date, &
-                                 DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
+use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
+                                ,KMAX_BND,KMAX_MID,NMET &
+                                ,IIFULLDOM, JJFULLDOM, NPROC  &
+                                ,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
                                 ,nstep
-use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,NPROC,GIMAX,GJMAX, me  &
+use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
                                 ,limax,ljmax,li0,li1,lj0,lj1  &
                                 ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
                                 ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
-                                ,IILARDOM, JJLARDOM, MFSIZEINP, ISMBEG    &
-                                ,JSMBEG, tgi0, tgj0,gi0,gj0, MSG_INIT3  &
-                                ,MSG_READ4, tlimax, tljmax, parinit
+                                ,MFSIZEINP, IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
+                                ,MSG_INIT3,MSG_READ4, tlimax, tljmax, parinit
 use PhysicalConstants_ml, only : KARMAN, KAPPA, R, RGAS_KG, CP, GRAV    &
                                 ,ROWATER, PI
-use TimeDate_ml,          only : date,Init_nmdays,nmdays,add_secs,timestamp,&
+use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
+                                 add_secs,timestamp,&
                                  make_timestamp, make_current_date, nydays
 use Io_ml ,               only : IO_INFIELD, ios, IO_SNOW, IO_ROUGH, open_file
 use ReadField_ml,         only : ReadField ! reads ascii fields
@@ -881,7 +882,7 @@ private
 !
 !  modified by Peter Wind 11.03.2002:
 !  uses nx=ident(10) (read from file) as first dimension of array, 
-!  instead of IILARDOM. (only modified for not _CRAY)
+!  instead of IIFULLDOM. (only modified for not _CRAY)
 !
 
    implicit none
@@ -891,7 +892,7 @@ private
 !  MAXPK4: max record length in cray 64 bit integer words
 
   integer, parameter :: NUMHOR4 = MAXLIMAX*MAXLJMAX
-  integer, parameter :: MAXPK4  = IILARDOM*JJLARDOM
+  integer, parameter :: MAXPK4  = IIFULLDOM*JJFULLDOM
 
    integer ida,itp
    integer*2 idpack(20)
@@ -1004,7 +1005,7 @@ private
 	  enddo
 	  do d = 1, NPROC-1
 	    ida = 21
-	    itp = 21+(tgj0(d)+JSMBEG-2)*ipack(11) + tgi0(d)+ISMBEG-2
+	    itp = 21+(tgj0(d)+JRUNBEG-2)*ipack(11) + tgi0(d)+IRUNBEG-2
 	    do j = 1,tljmax(d)
 	      do i = 1,tlimax(d)
 	        itmp(ida+i) = ipack(itp+i)
@@ -1016,7 +1017,7 @@ private
                          ,MPI_COMM_WORLD,INFO) 
 	  enddo
 	  ida = 21
-	  itp = 21+(JSMBEG-1)*ipack(11) + ISMBEG-1
+	  itp = 21+(JRUNBEG-1)*ipack(11) + IRUNBEG-1
 	  do j = 1,ljmax
 	    do i = 1,limax
 	      itmp(ida+i) = ipack(itp+i)
@@ -3285,8 +3286,8 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
   if(me==0)then
       allocate(var_global(GIMAX,GJMAX,KMAX))
       nfetch=1
-      call GetCDF_short(namefield,meteoname,var_global,GIMAX,ISMBEG,GJMAX, &
-        JSMBEG,KMAX,nrec,nfetch,scalefactors,validity)
+      call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
+        JRUNBEG,KMAX,nrec,nfetch,scalefactors,validity)
   else
       allocate(var_global(1,1,1)) !just to have the array defined
   endif
@@ -3319,7 +3320,7 @@ subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
 
 
-subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
+subroutine GetCDF_short(varname,fileName,var,GIMAX,IRUNBEG,GJMAX,JRUNBEG &
      ,KMAX,nstart,nfetch,scalefactors,validity)
   !
   ! open and reads CDF file
@@ -3335,7 +3336,7 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
   character (len = *),intent(in) ::varname
   character (len = *),intent(out) ::validity
   real,intent(out) :: scalefactors(2)
-  integer, intent(in) :: nstart,GIMAX,ISMBEG,GJMAX,JSMBEG,KMAX
+  integer, intent(in) :: nstart,GIMAX,IRUNBEG,GJMAX,JRUNBEG,KMAX
   integer, intent(inout) ::  nfetch
   integer*2, dimension(GIMAX*GJMAX*KMAX*NFETCH),intent(out) :: var
   integer :: varID,ndims
@@ -3381,10 +3382,10 @@ subroutine GetCDF_short(varname,fileName,var,GIMAX,ISMBEG,GJMAX,JSMBEG &
   !get variable
   if(ndims==2)then
      call check(nf90_get_var(ncFileID, VarID, var,&
-          start=(/ISMBEG,JSMBEG,nstart/),count=(/ GIMAX,GJMAX,nfetch /)))
+          start=(/IRUNBEG,JRUNBEG,nstart/),count=(/ GIMAX,GJMAX,nfetch /)))
   elseif(ndims==3)then
      call check(nf90_get_var(ncFileID, VarID, var,&
-        start=(/ISMBEG,JSMBEG,1,nstart/),count=(/GIMAX,GJMAX,KMAX,nfetch /)))
+        start=(/IRUNBEG,JRUNBEG,1,nstart/),count=(/GIMAX,GJMAX,KMAX,nfetch /)))
   endif
 
  call check(nf90_close(ncFileID))
@@ -3460,14 +3461,14 @@ end subroutine GetCDF_short
 
   write(*,*)'dimensions meteo grid',GIMAX_file,GJMAX_file,KMAX_file,Nhh
 
-  if(GIMAX_file/=IILARDOM.or.GJMAX_file/=JJLARDOM)then
-   write(*,*)'IILARDOM,JJLARDOM ',IILARDOM,JJLARDOM
+  if(GIMAX_file/=IIFULLDOM.or.GJMAX_file/=JJFULLDOM)then
+   write(*,*)'IIFULLDOM,JJFULLDOM ',IIFULLDOM,JJFULLDOM
    write(*,*)'WARNING: large domain and meteorology file have different sizes'
    write(*,*)'WARNING: THIS CASE IS NOT TESTED. Please change large domain'
   endif
 
-  call CheckStop(GIMAX+ISMBEG-1 > GIMAX_file, "NetCDF_ml: I outside domain" )
-  call CheckStop(GJMAX+JSMBEG-1 > GJMAX_file, "NetCDF_ml: J outside domain" )
+  call CheckStop(GIMAX+IRUNBEG-1 > GIMAX_file, "NetCDF_ml: I outside domain" )
+  call CheckStop(GJMAX+JRUNBEG-1 > GJMAX_file, "NetCDF_ml: J outside domain" )
   call CheckStop(KMAX_MID > KMAX_file,        "NetCDF_ml: wrong vertical   &
                                                           dimension")
   call CheckStop(24/Nhh, METSTEP,           "NetCDF_ml: METSTEP != meteostep" )
@@ -3515,16 +3516,16 @@ end subroutine GetCDF_short
      yp=GJMAX
      fi =0.0
      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-     call check(nf90_get_var(ncFileID, varID, gl_glob(1:IILARDOM,1) ))
-     do i=1,IILARDOM
+     call check(nf90_get_var(ncFileID, varID, gl_glob(1:IIFULLDOM,1) ))
+     do i=1,IIFULLDOM
         if(gl_glob(i,1)>180.0)gl_glob(i,1)=gl_glob(i,1)-360.0
      enddo
-     do j=1,JJLARDOM
+     do j=1,JJFULLDOM
         gl_glob(:,j)=gl_glob(:,1)
      enddo
      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-     call check(nf90_get_var(ncFileID, varID, gb_glob(1,1:JJLARDOM) ))
-     do i=1,IILARDOM
+     call check(nf90_get_var(ncFileID, varID, gb_glob(1,1:JJFULLDOM) ))
+     do i=1,IIFULLDOM
         gb_glob(i,:)=gb_glob(1,:)
      enddo
   else
@@ -3533,10 +3534,10 @@ end subroutine GetCDF_short
      yp=GJMAX
      fi =0.0
      call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-     call check(nf90_get_var(ncFileID, varID, gl_glob(1:IILARDOM,1:JJLARDOM) ))
+     call check(nf90_get_var(ncFileID, varID, gl_glob(1:IIFULLDOM,1:JJFULLDOM) ))
      
      call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-     call check(nf90_get_var(ncFileID, varID, gb_glob(1:IILARDOM,1:JJLARDOM) ))
+     call check(nf90_get_var(ncFileID, varID, gb_glob(1:IIFULLDOM,1:JJFULLDOM) ))
      
   endif
   !get variables
@@ -3546,7 +3547,7 @@ end subroutine GetCDF_short
      !mapping factor at center of cells is defined
      !make "staggered" map factors
      call check(nf90_get_var(ncFileID, varID, xm_global(1:GIMAX,1:GJMAX) &
-          ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
+          ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
      do j=1,GJMAX
         do i=1,GIMAX-1
            xm_global_j(i,j)=0.5*(xm_global(i,j)+xm_global(i+1,j))
@@ -3574,10 +3575,10 @@ end subroutine GetCDF_short
      call CheckStop( status, nf90_noerr, "erro rreading map factor" )
 
      call check(nf90_get_var(ncFileID, varID, xm_global_i(1:GIMAX,1:GJMAX) &
-             ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
+             ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
      call check(nf90_inq_varid(ncid=ncFileID, name="map_factor_j", varID=varID))
      call check(nf90_get_var(ncFileID, varID, xm_global_j(1:GIMAX,1:GJMAX) &
-             ,start=(/ ISMBEG,JSMBEG /),count=(/ GIMAX,GJMAX /)))
+             ,start=(/ IRUNBEG,JRUNBEG /),count=(/ GIMAX,GJMAX /)))
   endif
      
   call check(nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID))
@@ -3600,24 +3601,24 @@ end subroutine GetCDF_short
     CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(gb_glob(1:IILARDOM,1:JJLARDOM),8*IILARDOM*JJLARDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(gl_glob(1:IILARDOM,1:JJLARDOM),8*IILARDOM*JJLARDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(gb_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(gl_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST(projection,4*25,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
 
 
   do j=1,MAXLJMAX
   do i=1,MAXLIMAX
-     gl(i,j)=gl_glob(gi0+i+ISMBEG-2,gj0+j+JSMBEG-2)
-     gb(i,j)=gb_glob(gi0+i+ISMBEG-2,gj0+j+JSMBEG-2)
+     gl(i,j)=gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+     gb(i,j)=gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
   enddo
   enddo
 
 !test if the grid is cyclicgrid:
 !The last cell + 1 cell = first cell
   Cyclicgrid=1 !Cyclicgrid
-  do j=1,JJLARDOM
+  do j=1,JJFULLDOM
      if(mod(nint(gl_glob(GIMAX,j)+360+360.0/GIMAX),360)/=&
-            mod(nint(gl_glob(ISMBEG,j)+360.0),360))then
+            mod(nint(gl_glob(IRUNBEG,j)+360.0),360))then
         Cyclicgrid=0  !not cyclicgrid
      endif
   enddo
@@ -3648,7 +3649,7 @@ end subroutine GetCDF_short
 
 j=1
 i=1
-if(abs(1.5*gb_glob(gi0+i+ISMBEG-2,gj0+j+JSMBEG-2)-0.5*gb_glob(gi0+i+ISMBEG-2,gj0+j+1+JSMBEG-2))>89.5)then
+if(abs(1.5*gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)-0.5*gb_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2))>89.5)then
 write(*,*)'south pole' !xm is infinity
 xm_global_i(:,0)=1.0E19
 xm_global_i(:,-1)=1.0E19

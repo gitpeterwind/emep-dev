@@ -18,8 +18,8 @@ use GenSpec_adv_ml
 use GenSpec_shl_ml, only: & ! =>> IXSHL_xx
                 IXSHL_OH,IXSHL_HO2
 use GenChemicals_ml ,  only: species
-use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
-use Par_ml,            only: me, NPROC,GIMAX,GJMAX,ISMBEG,JSMBEG
+use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
+use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
 implicit none
 
 INCLUDE 'mpif.h'
@@ -190,10 +190,10 @@ integer, public, parameter :: &
 !    set upper bound (END) smaller than lower bound (BEG)
 
 !  integer, public, parameter ::  &
-!       ISPEC_OUTBEG = ISMBEG  &
-!       ,JSPEC_OUTBEG = JSMBEG  &
-!       ,ISPEC_OUTEND = ISMBEG+GIMAX-1  &
-!       ,JSPEC_OUTEND = JSMBEG+GJMAX-1
+!       ISPEC_OUTBEG = IRUNBEG  &
+!       ,JSPEC_OUTBEG = JRUNBEG  &
+!       ,ISPEC_OUTEND = IRUNBEG+GIMAX-1  &
+!       ,JSPEC_OUTEND = JRUNBEG+GJMAX-1
   integer, public, parameter ::  &
         ISPEC_OUTBEG = 101  &
         ,JSPEC_OUTBEG = 51  &
@@ -227,7 +227,7 @@ contains
 
    !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  !EMEP
    integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  !restricted EMEP
-!   integer, save :: ix1 = ISMBEG, ix2 = ISMBEG+GIMAX-1, iy1=JSMBEG, iy2 =  JSMBEG+GJMAX-1  !all
+!   integer, save :: ix1 = IRUNBEG, ix2 = IRUNBEG+GIMAX-1, iy1=JRUNBEG, iy2 =  JRUNBEG+GJMAX-1  !all
 
   ! For Deriv system:
    integer :: D2_O3WH, D2_O3DF,  &

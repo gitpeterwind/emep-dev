@@ -59,12 +59,13 @@ program myeul
   use Biogenics_ml,     only : Forests_init
   use BoundaryConditions_ml, only : BoundaryConditions
   use CheckStop_ml,     only : CheckStop
-  use TimeDate_ml,         only : date, day_of_year,daynumber
+  use Chemfields_ml  , only : xn_adv
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,    only :  Init_Derived &
                                ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use GenChemicals_ml,  only : define_chemicals
+  use GenSpec_adv_ml  , only : NSPEC_ADV
   use GridValues_ml,    only : DefGrid,MIN_ADVGRIDS&  ! sets gl, gb, xm, gridwidth_m, etc.
                                ,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
@@ -73,22 +74,27 @@ program myeul
   use Met_ml  ,         only : infield,metvar,MetModel_LandUse,&
                                tiphys,Meteoread,MeteoGridRead,&
                                startdate
-  use ModelConstants_ml,only : KMAX_MID, current_date  &
+  use ModelConstants_ml,only : KMAX_MID   &   ! No. vertical layers
+                              ,NPROC      &   ! No. processors
                               ,METSTEP    &   ! Hours between met input
                               ,runlabel1  &   ! explanatory text
                               ,runlabel2  &   ! explanatory text
-                              ,nprint,nass,nterm,iyr_trend
+                              ,nprint,nass,nterm,iyr_trend, PT
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
   use out_restri_ml,    only : set_outrestri
-  use Par_ml,           only : NPROC,me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
-                               ,Topology, parinit
+  use Par_ml,           only : me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
+                               ,Topology, parinit & 
+            ,li0,li1,lj0,lj1,tgi0,tgj0  &   ! FOR TESTING
+            ,limax, ljmax, MAXLIMAX, MAXLJMAX, gi0, gj0
   use PhyChem_ml,       only : phyche  ! Calls phys/chem routines each dt_advec
+  use TimeDate_ml,      only : date, current_date, day_of_year,daynumber
   use Trajectory_ml,    only : trajectory_init,trajectory_in ! For extraction of
                                        ! data along 3-D trajectories
 
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
   use Nest_ml,         only : wrtxn
+
 
 !           --------------------
 !
@@ -629,14 +635,6 @@ program myeul
 !     - assignes an initial test-distribution to a
 !       chemical component. Not currently used except as print-out
 !
-    use Par_ml   , only : li0,li1,lj0,lj1,NPROC,me,  &
-             tgi0,tgj0, &   ! FOR TESTING
-             limax, ljmax, MAXLIMAX, MAXLJMAX, gi0, gj0, GIMAX, GJMAX
-    use GenSpec_adv_ml  , only : NSPEC_ADV
-    use ModelConstants_ml , only : KMAX_MID, PT
-    use Chemfields_ml  , only : xn_adv
-    implicit none
-
     integer i, j, k, n, info
     real rwork
     logical, parameter :: DEBUG_TEST = .false. 

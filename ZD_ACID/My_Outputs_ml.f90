@@ -18,13 +18,9 @@ module  My_Outputs_ml
         ,IXADV_PAN , IXADV_NO , IXADV_NO2  &
         ,IXADV_SO4,IXADV_SO2,IXADV_HNO3,IXADV_NH3                &
         ,IXADV_aNH4, IXADV_aNO3,IXADV_pNO3    !6s                &
-!6s         ,IXADV_SOA, IXADV_ASOA, IXADV_BSOA
-!  use GenSpec_shl_ml, only:   & ! =>> IXSHL_xx
-!                IXSHL_OH,IXSHL_HO2
-!  use GenSpec_maps_ml, only:    MAP_ADV2TOT
   use GenChemicals_ml , only: species
-  use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN
-  use Par_ml,            only: me, NPROC   ! for abort
+  use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
+  use Par_ml,            only: me   ! for abort
   implicit none
   private
 

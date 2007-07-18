@@ -37,8 +37,9 @@ MODULE TimeDate_ml
 !hfTD  public :: get_hms              ! secs -> hour,minute,second
 !===================TIMESTAMP TYPES & DEFINES=================================
 
-!hfTD=========================================================================
-integer, public,                save ::  daynumber    ! Day no. (1st jan=1).!kan gjøres lokalt?
+!=========================================================================
+integer, public,                save ::  daynumber    ! Day no. (1st jan=1).
+  ! (Could be done locally?)
 integer, public,                save ::  nydays       ! No. days per year
 integer, public, dimension(12), save ::  nmdays       ! No. days per month
 
@@ -50,11 +51,13 @@ type, public :: date
   integer :: seconds
  end type date
 
-!hfTD end==============================================================================
+
+ type(date), public, save :: current_date
+
+!==============================================================================
 
 
 	TYPE, public :: timestamp
-		!DS INTEGER(4) :: jdate
 		INTEGER    :: jdate
 		REAL       :: secs
 	END TYPE timestamp
@@ -76,8 +79,6 @@ type, public :: date
 		   "April     ", "May       ",  "June      ",  &  
 		   "July      ", "August    ",  "September ",  &  
 		   "October   ", "November  ",  "December  "  /)  
-
-	!DS:
 	CHARACTER(LEN=3),DIMENSION(0:6), public :: short_day =  &
                  (/"Sun","Mon","Tue","Wed","Thu","Fri","Sat" /)
 

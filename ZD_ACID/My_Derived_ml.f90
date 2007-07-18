@@ -32,16 +32,16 @@ use GenSpec_tot_ml,  only : SO4, HCHO, CH3CHO  &   !  For mol. wts.
                            ,SSfi, SSco  !SeaS
 use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
-                        , KMAX_MID &  ! =>  z dimension
-                        , PPBINV  &   !   1.0e9
-                        , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
-                        , current_date
+                        , KMAX_MID & ! =>  z dimension
+                        , PPBINV  &  !   1.0e9
+                        , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
 
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area 
+use TimeDate_ml,   only : current_date
 !ds use PhysicalConstants_ml,  only : PI
 !ds use Radiation_ml,  only :  zen
 implicit none

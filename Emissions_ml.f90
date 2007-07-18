@@ -17,28 +17,59 @@
 !  This routine interfaces the stand-alone emission-file reading routines
 !  with the 3D model.
 !_____________________________________________________________________________
-  use CheckStop_ml,only : CheckStop  ! NEW STOP
   use My_Emis_ml,  only : &
           NEMIS,        &   ! No. emission files
+          EMIS_NAME,    &   ! Names of species ("sox  ",...)
           NEMIS_PLAIN,  &   ! No. emission files for non-speciated emissions
+          EMIS_NSPLIT,  &   ! No. emission files to be speciated
           NEMIS_SPLIT,  &   ! No. emission files for speciated emissions
-          NRCEMIS,&         ! Total No. emission species after speciation
+          NRCSPLIT,     &   ! No. emis species from split emissions species
+          NRCEMIS,      &   ! Total No. emission species after speciation
+          set_molwts,   &   ! subroutine to set molwt
+          molwt,        &   ! Mol. wts
+          NFORESTVOC,   &   ! > 0 if forest voc wanted
+          QRCVOL,       &   ! For volcanoes
           VOLCANOES         ! 
   use My_MassBudget_ml, only : set_mass_eqvs   ! Some equivalences bewteen 
                                                ! indices
 
+  use Biogenics_ml, only: Forests_Init, first_dms_read,IQ_DMS,emnat,emforest
+  use CheckStop_ml,only : CheckStop
+  use Country_ml,    only : NLAND,Country_Init,Country
   use EmisDef_ml, only : NSECTORS,  &  ! No. sectors
                          NEMISLAYERS,& !rv1.3b No. vertical layers for emission
                          NCMAX,&       ! Max. No. countries per grid
                          FNCMAX,&      ! Max. No. countries (with flat 
                                        ! emissions) per grid
-                         ISNAP_SHIP,&  ! snap index for ship emissions
-                         ISNAP_NAT     ! snap index for nat. (dms) emissions
-  use Io_ml,      only : IO_LOG
-  use Par_ml,     only : MAXLIMAX,MAXLJMAX,NPROC,me,gi0,gi1,gj0,gj1
+                     EmisDef_Init    &! Sub to define conversion factors
+                     ,EmisDef_Index   &! Sub to get index of emis name 
+                     ,EmisDef    &  ! Superset of names/factors
+                     ,ISNAP_SHIP &  ! snap index for ship emissions
+                     ,ISNAP_NAT  &  ! snap index for nat. (dms) emissions
+                     ,VERTFAC          ! vertical emission split
+  use EmisGet_ml, only : EmisGet, EmisSplit, emisfrac  ! speciation routines and array
+  use GridValues_ml, only:  GRIDWIDTH_M    & !  size of grid (m)
+                           ,xm2            & ! map factor squared
+                           ,sigma_bnd, xmd, gl
+  use Io_Nums_ml,      only : IO_LOG, IO_DMS
+  use Io_Progs_ml,     only : ios, open_file
+  use Met_ml,          only :  ps, roa   ! ps in Pa, roa in kg/m3
+  use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
+                              NPROC, IIFULLDOM,JJFULLDOM 
+  use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
+                             GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
+                             limax,ljmax,li0,lj0,li1,lj1, &
+                             MSG_READ1,MSG_READ7
+  use PhysicalConstants_ml,  only :  GRAV,  AVOG
+  use ReadField_ml, only : ReadField    ! Reads ascii fields
+  use TimeDate_ml,only : nydays, date, current_date   ! No. days per year, date-type 
+  use Timefactors_ml, only : &
+               NewDayFactors   &         ! subroutines
+              ,timefac, day_factor  ! time-factors
+  use Timefactors_ml, only : timefactors   &                 ! subroutine
+                              ,fac_emm, fac_edd, day_factor  ! time-factors
+  use Volcanos_ml
 
-  use ModelConstants_ml,     only :   KMAX_MID
-  use Volcanos_ml                   !hf
 
   implicit none
   private
@@ -74,7 +105,6 @@
   real, private, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS) &
             , save ::  snapemis !/* main emission arrays, in kg/m2/s
 
-!hf
   real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS) &
             , save ::  snapemis_flat !/* main emission arrays, in kg/m2/s  
 
@@ -95,36 +125,9 @@
 
 
 contains
-
-
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  subroutine Emissions(year)
 
-  use My_Emis_ml,  only : &
-          EMIS_NAME,    &   ! Names of species ("sox  ",...)
-          NEMIS_SPLIT,  &   ! No. emission files to be speciated
-          NRCSPLIT,     &   ! No. emis species from split emissions species
-          QRCVOL,       &   ! For volcanoes
-          set_molwts      ! subroutine to set molwt
-  use Biogenics_ml, only:               &
-          Forests_Init                  &
-          , first_dms_read 
-  use Country_ml,    only : NLAND,Country_Init,Country
-!hfTD  use Dates_ml,      only : nydays     ! No. days per year, date-type 
-  use TimeDate_ml,      only : nydays     ! No. days per year, date-type 
-  use EmisDef_ml,    only : &  
-                     EmisDef_Init    &! Sub to define conversion factors
-                     ,EmisDef_Index   &! Sub to get index of emis name 
-                     , EmisDef        ! Superset of names/factors
-  use EmisGet_ml, only : EmisGet, EmisSplit, emisfrac  ! speciation routines and array
-
-  use Timefactors_ml, only : timefactors   &                 ! subroutine
-                              ,fac_emm, fac_edd, day_factor  ! time-factors
-
-  use Par_ml,         only : GIMAX, GJMAX, ISMBEG, JSMBEG,  &   
-                              li0,lj0,li1,lj1, MSG_READ1
-  use GridValues_ml,  only : xm2,GRIDWIDTH_M
-  use Io_ml,          only : ios  
 
  !+ calls main emission reading routines
  ! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -225,8 +228,6 @@ contains
      call timefactors(year)               ! => fac_emm, fac_edd, day_factor
     !=========================
 
-      !STOP call CheckStop(ios, "ioserror: timefactors")
-
 
     !** 2) 
     !=========================
@@ -295,9 +296,9 @@ contains
 
            ! read in global emissions for one pollutant
            ! *****************
-!hf             call EmisGet(iem,EMIS_NAME(iem),ISMBEG,JSMBEG,GIMAX,GJMAX, &
+!hf             call EmisGet(iem,EMIS_NAME(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
 !hf                          globemis,globnland,globland,sumemis)
-             call EmisGet(iem,EMIS_NAME(iem),ISMBEG,JSMBEG,GIMAX,GJMAX, &
+             call EmisGet(iem,EMIS_NAME(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                           globemis,globnland,globland,sumemis,&
                           globemis_flat,flat_globnland,flat_globland)
            ! *****************
@@ -451,11 +452,6 @@ contains
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  subroutine consistency_check(eindex)
-  use My_Emis_ml,  only : &
-          EMIS_NAME,    &   ! Names of species ("sox  ",...)
-          NEMIS_PLAIN,  &   ! No. emission files which are not speciated
-          EMIS_NSPLIT,  &   ! No. emission files to be speciated
-          molwt             ! Mol. wts
   !------------------------------------------------------------------!
   !    checks that all the values given so far are consistent        !
   !------------------------------------------------------------------!
@@ -486,31 +482,6 @@ contains
 
   subroutine EmisSet(indate)   !  emission re-set every time-step/hour
 
-  use My_Emis_ml,  only : &
-          NEMIS_PLAIN,  &   ! No. emission files which are not speciated
-          EMIS_NSPLIT,  &   ! No. emission files to be speciated
-          NFORESTVOC,   &   ! > 0 if forest voc wanted
-          molwt             ! Mol. wts
-  use Biogenics_ml, only:               &
-          emnat,emforest ,&               ! Emission arrays
-          IQ_DMS
-  use Country_ml,    only : NLAND,Country
-!hfTD  use Dates_ml,      only : date     ! No. days per year, date-type 
-  use TimeDate_ml,      only : date     ! No. days per year, date-type 
-  use EmisDef_ml,    only : &  
-                     VERTFAC          ! vertical emission split
-
-  use EmisGet_ml, only : emisfrac  ! speciation routines and array
-
-  use Timefactors_ml, only : &
-               NewDayFactors   &         ! subroutines
-              ,timefac, day_factor  ! time-factors
-
-  use Par_ml,                only : li0,lj0,li1,lj1
-  use PhysicalConstants_ml,  only :  GRAV,  AVOG
-  use ModelConstants_ml,     only :  KMAX_BND, PT ,dt_advec
-  use GridValues_ml  ,       only :  sigma_bnd, xmd,GRIDWIDTH_M,gl
-  use Met_ml,                only :  ps, roa   ! ps in Pa, roa in kg/m3
   !
   !***********************************************************************
   !**    DESCRIPTION:
@@ -921,33 +892,9 @@ contains
 
 !ds...........................................................................
 
-	use Par_ml   , only : IILARDOM,JJLARDOM		&
-		,MSG_READ7,ISMBEG,JSMBEG	&
-		,limax,ljmax
-!hfTD	use Dates_ml, only:		&
-!hfTD		nydays          ! = 365.0 or 366.0  (days per year)
- 	use TimeDate_ml, only:		&
-		nydays          ! = 365.0 or 366.0  (days per year)
-       use ModelConstants_ml, only : current_date
-        use GridValues_ml, only:			&
-		GRIDWIDTH_M    & !  size of grid (m)
-		,xm2             ! map factor squared
-
-	use Io_ml, only :   IO_DMS,ios, open_file
-
-	use My_Emis_ml,    only : EMIS_NAME
-
-        use Biogenics_ml, only:		&
-		IQ_DMS              & ! 
-		!u4 ,dms_fact            & !  ... document/remove ...??
-		,first_dms_read       !  ... document/remove ...??
-
-        use ReadField_ml, only : ReadField    ! Reads ascii fields
-	implicit none
 
 	integer i, j
 	integer ijin(2) 
-!hf	integer n, ncmaxfound		! Max. no. countries found in grid
         integer n, flat_ncmaxfound      ! Max. no. countries w/flat emissions
 	real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
 	character*20 fname
@@ -969,10 +916,9 @@ contains
         ktonne_to_kgm2s  = 1.0e6 / 				&
 		(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-	if ( me .eq. 0 ) then
-	  write(6,*) '    Newmonth           me ', me
-	  write(6,*) 'Enters newmonth, ktonne_to_kgm2s = '	&
-			,ktonne_to_kgm2s
+	if ( me == 0 ) then
+	  write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',	&
+	      current_date%month,ktonne_to_kgm2s
 	  write(6,*) ' first_dms_read = ', first_dms_read
 	end if ! me 
 !ds...........................................................................
@@ -991,7 +937,6 @@ contains
           if ( IQSO2 < 1 ) then
               write(*,*) " No SO2 emissions - need to skip DMS also"
               return    ! No need to read DMS fields ...
-              !u1 call stop_test(.true.,me,NPROC,99 ,"IQ_SO2  not assigned")
 
           else    
             !/--- we have so2 emission so need DMS also

@@ -85,13 +85,14 @@ module BoundaryConditions_ml
   use GenSpec_bgn_ml,        only :NSPEC_BGN
   use GridValues_ml,         only: gl, gb    &! lat, long
                                   ,i_glob, j_glob  !u1 for testing
-  use ModelConstants_ml ,    only: KMAX_MID, &  ! Number of levels in vertical
-                                   DEBUG_i, DEBUG_j
+  use ModelConstants_ml ,    only: KMAX_MID  &  ! Number of levels in vertical
+                                  ,NPROC   &    ! Number of processors
+                                  ,DEBUG_i, DEBUG_j
   use Par_ml,                only : &
-           MAXLIMAX, MAXLJMAX, NPROC, limax, ljmax, me &
+           MAXLIMAX, MAXLJMAX, limax, ljmax, me &
           ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
           ,NOPROC&
-          ,ISMBEG,JSMBEG,li1,li0,lj0,lj1
+          ,IRUNBEG,JRUNBEG,li1,li0,lj0,lj1
   use GlobalBCs_ml,                only: &
           NGLOB_BC                 &  ! Number of species from global-model
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.
@@ -657,10 +658,10 @@ endif
 !hf BC Global 150*150 emep point of local emep 50*50
 !
 !   do i=1,MAXLIMAX
-!       i150(i)=nint((i_glob(i) -ISMBEG+2.0 )/3.0)
+!       i150(i)=nint((i_glob(i) -IRUNBEG+2.0 )/3.0)
 !   enddo
 !   do j=1,MAXLJMAX
-!      j150(j)=nint((j_glob(j) -JSMBEG+2.0 )/3.0)
+!      j150(j)=nint((j_glob(j) -JRUNBEG+2.0 )/3.0)
 !   enddo
 
 
@@ -677,7 +678,7 @@ endif
                do n = 1, num_adv_changed
                   !       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,i150(i),j150(j), k)
                   xn_adv(spc_changed2adv(n),i,j,k) =   &
-                       bc_adv(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
+                       bc_adv(n,(i_glob(i)-IRUNBEG+1),(j_glob(j)-JRUNBEG+1),k)
                end do
             endif
          end do
@@ -693,7 +694,7 @@ endif
 
 !          xn_bgn(spc_changed2bgn(n),i,j,k) =  bc_bgn(n,i150(i),j150(j), k)
           xn_bgn(spc_changed2bgn(n),i,j,k) = & 
-             bc_bgn(n,(i_glob(i)-ISMBEG+1),(j_glob(j)-JSMBEG+1),k)
+             bc_bgn(n,(i_glob(i)-IRUNBEG+1),(j_glob(j)-JRUNBEG+1),k)
 
    end forall    
 

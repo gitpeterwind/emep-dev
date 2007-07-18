@@ -13,8 +13,8 @@
 !    IS CREATED!
 !    
 !
-      use Par_ml  , only : ISMBEG,JSMBEG &
-                          ,NPROC, me
+      use ModelConstants_ml, only: NPROC
+      use Par_ml  , only : IRUNBEG,JRUNBEG, me
       use My_Outputs_ml, only: ISPEC_OUTBEG,JSPEC_OUTBEG  &
                               ,ISPEC_OUTEND ,JSPEC_OUTEND
 
@@ -28,10 +28,10 @@ public :: set_outrestri
 !       grid as the meteorological fields read in from infield )
 
   integer, public, parameter ::  &
-         ISPEC_OUTBEG_ACT = ISPEC_OUTBEG - ISMBEG + 1 &
-        ,JSPEC_OUTBEG_ACT = JSPEC_OUTBEG - JSMBEG + 1 &
-        ,ISPEC_OUTEND_ACT = ISPEC_OUTEND - ISMBEG + 1  &
-        ,JSPEC_OUTEND_ACT = JSPEC_OUTEND - JSMBEG + 1
+         ISPEC_OUTBEG_ACT = ISPEC_OUTBEG - IRUNBEG + 1 &
+        ,JSPEC_OUTBEG_ACT = JSPEC_OUTBEG - JRUNBEG + 1 &
+        ,ISPEC_OUTEND_ACT = ISPEC_OUTEND - IRUNBEG + 1  &
+        ,JSPEC_OUTEND_ACT = JSPEC_OUTEND - JRUNBEG + 1
 
 !	output requested/possible, will be checked here
 
@@ -77,8 +77,8 @@ subroutine set_outrestri()
         .or. (JSPEC_OUTEND_ACT.gt.GJMAX)) then
           print *,'out_restri will not be done'
           print *,'restricted domain not inside computational domain'
-          print *,'computational domain in E/W is',ISMBEG,ISMBEG+GIMAX-1
-          print *,'computational domain in S/N is',JSMBEG,JSMBEG+GJMAX-1
+          print *,'computational domain in E/W is',IRUNBEG,IRUNBEG+GIMAX-1
+          print *,'computational domain in S/N is',JRUNBEG,JRUNBEG+GJMAX-1
           print *,'out-restri domain in E/W is',ISPEC_OUTBEG,ISPEC_OUTEND
           print *,'out-restri domain in S/N is',JSPEC_OUTBEG,JSPEC_OUTEND
           to_out_restri = .false.

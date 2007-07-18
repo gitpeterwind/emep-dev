@@ -15,7 +15,12 @@
 !-------------------------------------------------------------------------------
 
    use CheckStop_ml,      only: CheckStop
-   use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP
+   use GridValues_ml    , only : gb
+   use Io_ml,           only : IO_DJ, open_file, ios
+   use Met_ml           , only : cc3d,cc3dmax,z_bnd
+   use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, NPROC
+   use Par_ml      ,    only : me,MAXLIMAX,MAXLJMAX
+   use Setup_1dfields_ml, only : izen
    implicit none
    private
 
@@ -64,10 +69,6 @@
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     subroutine readdiss(newseason)
-
-      use Par_ml      ,    only : NPROC,me,MAXLIMAX,MAXLJMAX
-      use Io_ml,           only : IO_DJ, open_file, ios
-      implicit none
 
       integer ::  newseason
 
@@ -200,10 +201,6 @@
         end subroutine readdiss
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         subroutine setup_phot(i,j,errcode)
-        use GridValues_ml    , only : gb
-        use Met_ml           , only : cc3d,cc3dmax,z_bnd
-        use Setup_1dfields_ml, only : izen
-        implicit none
 
 !       input
         integer :: i,j

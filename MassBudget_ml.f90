@@ -28,13 +28,14 @@
  use Met_ml        ,  only : ps            ! surface pressure  
  use ModelConstants_ml,                 &
                       only : KMAX_MID   &  ! Number of levels in vertical
+                            ,NPROC      &  ! No. processors
                             ,PT         &  ! Pressure at top
                             ,ATWAIR        ! Mol. weight of air(Jones,1992)
  use Par_ml,          only : MAXLIMAX   & 
                             ,MAXLJMAX   &  
                             ,li0,li1    &
                             ,lj0,lj1    &
-                            ,NPROC,me   &
+                            ,me   &
                             ,limax,ljmax&
                             ,gi0, gj0   &
                             ,GIMAX,GJMAX

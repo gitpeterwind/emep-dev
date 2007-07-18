@@ -37,26 +37,17 @@ module My_BoundConditions_ml
                 ,IXADV_C2H6,IXADV_NC4H10,IXADV_HCHO,IXADV_CH3CHO   &
                 ,IXADV_H2O2,IXADV_CH3O2H,IXADV_ISOP,IXADV_NO,IXADV_NO2  &
                 ,IXADV_CH4,IXADV_aNH4,IXADV_pNO3,IXADV_aNO3 &
-!hfOH
                 ,IXADV_CH3COO2
   use GenSpec_shl_ml, only: IXSHL_OH
   use GridValues_ml,  only: sigma_mid    !sigma layer midpoint
   use Met_ml         ,only : z_mid       ! height of half layers
-  use ModelConstants_ml , only: KMAX_MID !hf Number of levels in vertical
-  use Par_ml,         only: NPROC,me
-  !u3 use UiO_ml,         only:  NGLOB_BC  &!  indices from UiO model
+  use ModelConstants_ml , only: KMAX_MID, NPROC ! No. levels in vertical, processors
+  use Par_ml,         only: me
   use GlobalBCs_ml,  only:  NGLOB_BC  &!  indices from UiO model
                 ,IBC_SO2, IBC_SO4, IBC_HCHO, IBC_CH3CHO &
                 ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
                 ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_aNH4,IBC_aNO3,IBC_pNO3&
-!hfOH   
-!hf err               ,IBC_H2O2,IBC_OH,IBC_CH3COO2
                ,IBC_H2O2,IBC_CH3COO2
-                !u3 ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H4,IBC_C2H6   &
-                !u3 ,IBC_C3H6,IBC_C4H10,IBC_C6H14,IBC_CH2O,IBC_CH3CHO    &
-                !u3 ,IBC_H2O2,IBC_CH3O2H,IBC_ISOPRENE,IBC_RCOHCO,IBC_NO  &
-                !u3 ,IBC_NO2,IBC_CH4,IBC_C3H8
-  !u2 use My_Runmode_ml  , only : DEBUG, stop_test     ! => stop_all, DEBUG
   implicit none
   private
 

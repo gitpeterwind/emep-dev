@@ -11,8 +11,6 @@
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
-!hfTD  use Dates_ml,              only : date, dayno
-  use TimeDate_ml,              only : date
   use Emissions_ml,          only :  gridrcemis, KEMISTOP    !hf VOL
   use Functions_ml,          only :  Tpot_2_T                !ds apr2005
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
@@ -31,11 +29,10 @@
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
     ,dt_advec                        & ! time-step
-    ,current_date                    & ! 
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
-    ,KMAX_MID ,KMAX_BND, KCHEMTOP                ! Start and upper k for 1d fields
-  use My_Aerosols_ml,    only : SEASALT        !SeaS
+    ,KMAX_MID ,KMAX_BND, KCHEMTOP     ! Start and upper k for 1d fields
+  use My_Aerosols_ml,       only : SEASALT
   use My_Emis_ml,           only : NRCEMIS  , AIRNOX, QRCAIRNO &
                                   ,QRCAIRNO2, NFORESTVOC&
                                   ,QRCVOL,VOLCANOES &  ! hf -extended VOL
@@ -44,7 +41,7 @@
   use My_BoundConditions_ml, only : BGN_2D     !hf u2
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
-                             ,gi0,gi1,gj0,gj1,ISMBEG,JSMBEG !hf VOL
+                             ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
   use PhysicalConstants_ml,  only :  AVOG, PI
   use Radiation_ml,          only : & !ds mar2005 zen, Idirectt, Idiffuse, 
                               PARfrac, Wm2_uE  ! ds rv1_6_x for bio
@@ -59,8 +56,9 @@
     ,izen &
     ,f_Riemer  !weighting factor for N2O5 hydrolysis    
                      ! integer of zenith angle
-   use SeaSalt_ml,        only : SS_prod   !SeaS
-   use Tabulations_ml,    only :  tab_esat_Pa
+  use SeaSalt_ml,        only : SS_prod   !SeaS
+  use Tabulations_ml,    only :  tab_esat_Pa
+  use TimeDate_ml,           only :  current_date, date
   implicit none
   private
   !-----------------------------------------------------------------------!

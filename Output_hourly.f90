@@ -10,36 +10,33 @@
 !      stop_test used instead of stop_all, su, 05/01
 !      Extended for variable format, met, xn_adv or xn_shl, ds, and to use
 !       Asc2D type 19/4/01
-!      Corrected for ISMBEG, etc., su, 4/01
+!      Corrected for IRUNBEG, etc., su, 4/01
 !      New, ds, 5/3/99
 !
 !*************************************************************************
 !
-   !dsNew Derived:use My_Derived_ml,    only : d_2d, D2_HMIX, IOU_INST,IOU_HOUR,Deriv  !u7.4vg 
-
-   use CheckStop_ml,     only : CheckStop
    use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                                  NLEVELS_HOURLY, &  ! ds rv1_8_2 
                                  FREQ_HOURLY, &     ! No. hours between outputs
                                  Asc2D, hr_out, &   ! Required outputs
                                  Hourly_ASCII       ! ASCII output or not
-!ds - New Derived system:
-   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR,Deriv, find_one_index
 
-   use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
-                                ,li0,li1,lj0,lj1 &  ! u7.5vg FIX
-                                ,me,ISMBEG,JSMBEG,limax,ljmax,NPROC
-   use ModelConstants_ml,only : current_date,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
+   use CheckStop_ml,     only : CheckStop
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   use Met_ml,           only : t2_nwp,th, roa, surface_precip, &
-                                   Idirect, Idiffuse ! ds mar2005
-   use GenSpec_shl_ml ,  only : NSPEC_SHL  ! Maps indices
-   use GenChemicals_ml , only : species                    ! Gives names
+   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR,Deriv, find_one_index
+   use GenSpec_shl_ml ,  only : NSPEC_SHL        ! Maps indices
+   use GenChemicals_ml , only : species          ! Gives names
    use GridValues_ml,    only : i_glob, j_glob   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
-  !ds mar2005  use Radiation_ml,     only : Idirectt, Idiffuse
+   use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
+   use Met_ml,           only : t2_nwp,th, roa, surface_precip, &
+                                   Idirect, Idiffuse
    use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF &
                                 ,Int1,Int2,Int4,Real4,Real8 !Output data type to choose
+   use Par_ml ,          only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
+                                ,li0,li1,lj0,lj1 & 
+                                ,me,IRUNBEG,JRUNBEG,limax,ljmax
+   use TimeDate_ml      ,only : current_date
 
    implicit none
 
@@ -83,16 +80,15 @@
 
     if ( my_first_call ) then
 
-      !/ds rv1.6.2
       !/ Ensure that domain limits specified in My_Outputs lie within
       !  model domain. In emep coordinates we have:
 
         do ih = 1, NHOURLY_OUT
 
-           hr_out(ih)%ix1 = max(ISMBEG,hr_out(ih)%ix1)
-           hr_out(ih)%iy1 = max(JSMBEG,hr_out(ih)%iy1)
-           hr_out(ih)%ix2 = min(GIMAX+ISMBEG-1,hr_out(ih)%ix2)
-           hr_out(ih)%iy2 = min(GJMAX+JSMBEG-1,hr_out(ih)%iy2)
+           hr_out(ih)%ix1 = max(IRUNBEG,hr_out(ih)%ix1)
+           hr_out(ih)%iy1 = max(JRUNBEG,hr_out(ih)%iy1)
+           hr_out(ih)%ix2 = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
+           hr_out(ih)%iy2 = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
            hr_out(ih)%nk = min(KMAX_MID,hr_out(ih)%nk)
 
         end do ! ih
@@ -182,13 +178,13 @@
        if(DEBUG .and. debug_flag ) print *, "INTO HOUR TYPE ",hr_out(ih)%type
 
    !----------------------------------------------------------------
-   !ds rv1_8_2: Added possibility of multi-layer output. Specify
-   ! NLEVELS_HOURLY here, and in hr_out defs use either:
+   ! Multi-layer output. 
+   !  Specify NLEVELS_HOURLY here, and in hr_out defs use either:
    !
    !      ADVppbv to get surface concentrations (onyl relevant for
    !              layer k=20 of course - gives meaningless  number f
    !               or higher levels.
-   !Or,
+   ! Or,
    !      BCVppbv to get grid-centre concentrations (relevant for
    !      all layers.
    !----------------------------------------------------------------
@@ -205,7 +201,7 @@
                                  * unit_conv            ! Units conv.
             end forall
 
-         case ( "BCVppbv" )            !ds rv1_8_2 
+         case ( "BCVppbv" )
             itot = NSPEC_SHL + ispec 
             name = species(itot)%name
             unit_conv =  hr_out(ih)%unitconv
@@ -315,10 +311,10 @@
        def1%name=hr_out(ih)%name
        def1%unit=hr_out(ih)%unit
        def1%class=hr_out(ih)%type 
-       ist = max(1,hr_out(ih)%ix1-ISMBEG+1)
-       jst = max(1,hr_out(ih)%iy1-JSMBEG+1)
-       ien = min(GIMAX,hr_out(ih)%ix2-ISMBEG+1)
-       jen = min(GJMAX,hr_out(ih)%iy2-JSMBEG+1)
+       ist = max(1,hr_out(ih)%ix1-IRUNBEG+1)
+       jst = max(1,hr_out(ih)%iy1-JRUNBEG+1)
+       ien = min(GIMAX,hr_out(ih)%ix2-IRUNBEG+1)
+       jen = min(GJMAX,hr_out(ih)%iy2-JRUNBEG+1)
        nk = min(KMAX_MID,hr_out(ih)%nk)
        CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
        scale=1.
@@ -351,10 +347,10 @@
 
             !ds!/ In emep coordinates we have:
 
-            !dsist = max(ISMBEG,hr_out(ih)%ix1)
-            !dsjst = max(JSMBEG,hr_out(ih)%iy1)
-            !dsien = min(GIMAX+ISMBEG-1,hr_out(ih)%ix2)
-            !dsjen = min(GJMAX+JSMBEG-1,hr_out(ih)%iy2)
+            !dsist = max(IRUNBEG,hr_out(ih)%ix1)
+            !dsjst = max(JRUNBEG,hr_out(ih)%iy1)
+            !dsien = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
+            !dsjen = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
 
             !ds rv1_8_2 Extra info:
             write(IO_HOURLY,"('Spec ',i3,' Var ',i2,' = ',2a12,'Lev: ',i2,' Date:',i5,3i3)")  &
@@ -369,10 +365,10 @@
 
             !/ In model coordinates we have:
 
-            ist = max(1,hr_out(ih)%ix1-ISMBEG+1)
-            jst = max(1,hr_out(ih)%iy1-JSMBEG+1)
-            ien = min(GIMAX,hr_out(ih)%ix2-ISMBEG+1)
-            jen = min(GJMAX,hr_out(ih)%iy2-JSMBEG+1)
+            ist = max(1,hr_out(ih)%ix1-IRUNBEG+1)
+            jst = max(1,hr_out(ih)%iy1-JRUNBEG+1)
+            ien = min(GIMAX,hr_out(ih)%ix2-IRUNBEG+1)
+            jen = min(GJMAX,hr_out(ih)%iy2-JRUNBEG+1)
 
             do i = ist,ien
               do j = jst,jen
@@ -393,6 +389,5 @@
 
       end do KVLOOP
       end do HLOOP
-
 
   end subroutine hourly_out

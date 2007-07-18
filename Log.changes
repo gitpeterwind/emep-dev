@@ -1,3 +1,55 @@
+============== Dave,  rv2_9, July 19th 2007  =================================
+
+Major change:
+
+ Par_ml.pat   -- deleted! -- now set RUNDOMAIN, and NPROC stuff in ModelConstants
+ Par_ml.f90   --  now a normal file, not changed between runs
+
+ ModelConstants - now has:
+
+    RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+    NPROCX      =   4       & ! Actual number of processors in longitude
+  , NPROCY      =   4       & ! Actual number of processors in latitude
+  , NPROC       = NPROCX * NPROCY
+
+    DomainName = "EMEP-50kmEurope"
+
+  i.e. run.pl does *not* set the model domains any longer, only the year, NTERM, etc.
+  Note also --   need to set lnodes correcly in run.pl - but now check values from
+  ModelConstants_ml. In future may be able to make this automatic, but not so far.
+
+
+  Some renaming:
+
+      Instead of using the terms global domain and small domain, I am trying to
+      move to full domain (170x133 or global if it really is a global model!)
+      and "run" domain.
+
+        ISMBEG ->    IRUNBEG
+        JSMBEG ->    IRUNBEG
+        IILARDOM  -> IIFULLDOM
+        JJLARDOM  -> JJFULLDOM
+
+
+   Some re-arrangements:
+
+    All "use" statements moved to top of some modules
+    Started putting "use" statements  in alphabetical order - much
+     easier to find now. Except --  Start lists with My_ modules.
+    Thus,
+
+       use My_Chem_ml
+
+       use CheckStop_ml
+       use ModelConstants_ml
+
+
+ Emissions_ml   - very small tidfy up
+ 
+ Io_Progs_ml      Read2D added
+
+ + probably some other small tidy-ups.
+
 ==============  rv2_8_1,  July 2nd  2007  =================================
 
 Provisional - needs to be tested still!!!!!!!

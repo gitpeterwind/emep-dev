@@ -11,11 +11,6 @@ module PhyChem_ml
 
    use Advection_ml,   only: advecdiff,advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
-!hfTD   use Dates_ml,       only : date, add_dates,dayno, daynumber
-   use TimeDate_ml,       only : date,daynumber,day_of_year, add_secs
-   use TimeDate_ml,       only : date,daynumber,day_of_year, timestamp
-   use TimeDate_ml,       only : make_timestamp, make_current_date
-
    use Derived_ml,     only : wdep, ddep,IOU_INST, DerivedProds, Derived
    use DryDep_ml,      only : drydep,init_drydep
    use Emissions_ml,   only : EmisSet  
@@ -23,13 +18,16 @@ module PhyChem_ml
                              gl, gb, projection, Poles
    use Met_ml ,        only : roa,z_bnd,z_mid,metint, ps, cc3dmax, &
                                zen,coszen,Idirect,Idiffuse
-   use ModelConstants_ml, only : KMAX_MID, nmax, nstep, current_date &
-   			,dt_advec  &    ! time-step for phyche/advection
-                        ,END_OF_EMEPDAY          ! (usually 6am)
+   use ModelConstants_ml, only : KMAX_MID, nmax, nstep &
+                        ,dt_advec  &    ! time-step for phyche/advection
+                        ,END_OF_EMEPDAY ! (usually 6am)
    use Nest_ml,        only : readxn, wrtxn
    use Par_ml,         only : me, MAXLIMAX, MAXLJMAX
-   use Trajectory_ml,  only : trajectory_out          ! 'Aircraft'-type  outputs
-   use Radiation_ml,   only : SolarSetup,       &!ds mar2005 - sets up radn params
+   use TimeDate_ml,       only : date,daynumber,day_of_year, add_secs, &
+                                 current_date, timestamp,  &
+                                 make_timestamp, make_current_date
+   use Trajectory_ml,  only : trajectory_out     ! 'Aircraft'-type  outputs
+   use Radiation_ml,   only : SolarSetup,       &! sets up radn params
                              ZenithAngle,      &! gets zenith angle
                              ClearSkyRadn,     &! Idirect, Idiffuse
                              CloudAtten         ! 

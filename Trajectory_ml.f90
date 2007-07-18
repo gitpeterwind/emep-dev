@@ -18,8 +18,9 @@ module Trajectory_ml
  use GridValues_ml ,     only : gl, gb
  use Io_ml,              only : IO_AIRCR
  use Met_ml,             only : z_bnd,z_mid
- use ModelConstants_ml , only : dt_advec,current_date,PPBINV,KMAX_BND
- use Par_ml   ,          only : gi0,gi1,gj0,gj1,ISMBEG,JSMBEG,me,NPROC
+ use ModelConstants_ml , only : dt_advec,PPBINV,KMAX_BND,NPROC
+ use Par_ml   ,          only : gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG,me
+ use TimeDate_ml,        only : current_date
  implicit none
  private
 
@@ -133,13 +134,13 @@ module Trajectory_ml
 
 	      if(me == 0) write(6,*) 'inne i tidsjekk2'	&
 			,fapos(1,iii),fapos(1,iii), ttt
-	      if(gi0+ISMBEG-1 <= fapos(1,iii) .and. 	&
-			gi1+ISMBEG-1 >= fapos(1,iii) .and.	&
-			gj0+JSMBEG-1 <= fapos(2,iii) .and. 	&
-			gj1+JSMBEG-1 >= fapos(2,iii)) then
+	      if(gi0+IRUNBEG-1 <= fapos(1,iii) .and. 	&
+			gi1+IRUNBEG-1 >= fapos(1,iii) .and.	&
+			gj0+JRUNBEG-1 <= fapos(2,iii) .and. 	&
+			gj1+JRUNBEG-1 >= fapos(2,iii)) then
 		write(6,*) 'inne i tidsjekk3',me,kfalc(iii)
-		ii = fapos(1,iii) - gi0-ISMBEG+2
-		jj = fapos(2,iii) - gj0-JSMBEG+2
+		ii = fapos(1,iii) - gi0-IRUNBEG+2
+		jj = fapos(2,iii) - gj0-JRUNBEG+2
             do k = 1,KMAX_BND-1
               if(z_bnd(ii,jj,k) > kfalc(iii) .and.       &
                   z_bnd(ii,jj,k+1) < kfalc(iii)) then

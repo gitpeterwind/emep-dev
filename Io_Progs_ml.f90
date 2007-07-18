@@ -31,8 +31,8 @@
   public :: check_file   !  checks that file exists and stops if required
   public :: open_file    !  checks that file exists and opens if required
   public :: Read_Headers !  Reads header information from input files
-  public :: Read2DN      !  Reads x,y,z1...z2 data for simple case 
-!TMPR2N  public :: Read2D       !  Reads x,y,z data for simple case - not finished
+  public :: Read2D       !  Reads x,y,z data for simple case
+  public :: Read2DN      !  Reads x,y,z1...z2 data for simple case
   public :: Self_Test
 
   logical, public :: fexist                      ! true if file exists
@@ -203,7 +203,7 @@ contains
       character(len=5)  :: marker   ! e.g. !> or !#
       character(len=MAXLINELEN)  :: inputline
 
-      integer :: ios, i, NxHeaders
+      integer :: i, NxHeaders
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -220,7 +220,7 @@ contains
 
          inputline=""
          call read_line(io_num,inputline,ios)
-         if (MY_DEBUG .and. me == 0 ) write(*,*) "IN ", me, ios, &
+         if (MY_DEBUG .and. me == 0 ) write(*,*) "IN ", io_num, me, ios, &
                len_trim(inputline) ,trim(inputline)
          if ( ios /= 0 ) then  ! End of file
               exit
@@ -234,7 +234,7 @@ contains
               KeyValues(NKeys)%key = key
               KeyValues(NKeys)%value = value
               if ( me == 0 ) then
-                 write(unit=*,fmt=*) "KEYS LINE NKeys=", NKeys
+                 write(unit=*,fmt=*) "KEYS LINE NKeys=", NKeys, trim(key), trim(value)
               end if
               cycle
 
@@ -264,7 +264,9 @@ contains
 
          else if ( inputline(1:5) == "#DATA" ) then ! End of headers. 
                                                     ! Data follows.
+              if ( me == 0 ) then
                write(unit=*,fmt=*) "DATA LINE" // trim(inputline)
+              end if
 
               return
 
@@ -286,90 +288,80 @@ contains
 
   end subroutine Read_Headers
   !=======================================================================
-!TMPR2N  subroutine Read2D(fname,Ndata,data2d)
-!TMPR2N
-!TMPR2N   character(len=*), intent(in) :: fname
-!TMPR2N   integer, intent(in) :: Ndata     ! Number of data columns
-!TMPR2N   real, dimension(:,:), intent(out) :: data2d
-!TMPR2N
-!TMPR2N   integer, parameter  :: NCOORDS = 2   ! for ix, iy - "simple"
-!TMPR2N
-!TMPR2N   integer :: i_fdom, j_fdom, i,j,kk, ios
-!TMPR2N   real, dimension(Ndata+NCOORDS) :: tmp
-!TMPR2N   character(len=20), dimension(Ndata+10) :: Headers
-!TMPR2N   character(len=(Ndata+10)*20) :: txtinput  ! Big enough to contain one full input record
-!TMPR2N   type(KeyVal), dimension(20)      :: KeyValues ! Info on units, coords, etc.
-!TMPR2N   character(len=50) :: errmsg
-!TMPR2N
-!TMPR2N   integer :: NHeaders, NKeys, Nlines
-!TMPR2N   logical :: debug_flag
-!TMPR2N
-!TMPR2N   if ( MY_DEBUG ) write(*,*) " Starting Read2D, me ",me
-!TMPR2N
-!TMPR2N   Nlines = 0
-!TMPR2N
-!TMPR2N   data2d  (:,:) = 0.0     !/**  initialise  **/
-!TMPR2N
-!TMPR2N   if ( me == 0 ) then
-!TMPR2N      call open_file(IO_TMP,"r",fname,needed=.true.)
-!TMPR2Nwrite(*,*) "LEFT OPEN FIKLE IOS ", ios
-!TMPR2Nprint *, "LEFT OPEN FIKLE IOS ", ios
-!TMPR2N      call CheckStop(ios,"ios error on Inputs.landuse")
-!TMPR2N   end if
-!TMPR2N
-!TMPR2N
-!TMPR2N   call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues)
-!TMPR2Nwrite(*,*) "AAGOT TO HERE ME ", me, "NH ", NHeaders, NKeys
-!TMPR2Nprint *, "AAGOT TO HERE ME ", me
-!TMPR2Ncall CheckStop("FINIT")
-!TMPR2N
-!TMPR2N   call CheckStop( errmsg , "Read2D: Read_Headers" // fname )
-!TMPR2N   call CheckStop( Headers(1), "ix" , "HeaderIX not found" // fname)
-!TMPR2N   call CheckStop( Headers(2), "iy" , "HeaderIY not found" // fname)
-!TMPR2N   call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
-!TMPR2N
-!TMPR2N   ! The first two columns are assumed for now to be ix,iy, hence:
-!TMPR2N
-!TMPR2N   Headers(1:Ndata) = Headers(3:Ndata+2)
-!TMPR2N   if ( MY_DEBUG .and. me == 0 ) then
-!TMPR2N        do i = 1, NHeaders
-!TMPR2N          write(*,*) "Read2D Headers" // fname, i, Nheaders, Headers(i)
-!TMPR2N        end do
-!TMPR2N!       call WriteArray(Headers,NHeaders,"Read2D Headers")
-!TMPR2N   end if
-!TMPR2Nwrite(*,*) "GOT TO HERE ME ", me
-!TMPR2Nprint *, "GOT TO HERE ME ", me
-!TMPR2Ncall CheckStop("FINIT")
-!TMPR2N
-!TMPR2N   do
-!TMPR2Nprint *, "STARTING NLINES ", Nlines
-!TMPR2Nwrite(*,*) "STARTING NLINES ", Nlines
-!TMPR2N         call read_line(IO_TMP,txtinput,ios)
-!TMPR2N         if ( ios /= 0 ) exit   ! likely end of file
-!TMPR2N         read(unit=txtinput,fmt=*,iostat=ios) i_fdom,j_fdom,&
-!TMPR2N                 ( tmp(kk), kk=1,Ndata)
-!TMPR2N         call CheckStop ( ios, "Read2D txt error:" // trim(txtinput) )
-!TMPR2N         Nlines = Nlines + 1
-!TMPR2N
-!TMPR2N         i   = i_local(i_fdom)   ! Convert to local coordinates
-!TMPR2N         j   = j_local(j_fdom)
-!TMPR2N
-!TMPR2N         if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then  
-!TMPR2N
-!TMPR2N             if ( MY_DEBUG ) debug_flag = ( i_fdom == DEBUG_i  &
-!TMPR2N                                   .and. j_fdom == DEBUG_j  )
-!TMPR2N
-!TMPR2N              if ( debug_flag ) then
-!TMPR2N                write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp(1)
-!TMPR2N              endif
-!TMPR2N
-!TMPR2N         end if ! i,j
-!TMPR2N      end do
-!TMPR2N
-!TMPR2N      if ( me == 0 ) close(IO_TMP)
-!TMPR2N      write(6,*) fname // "Read2D: me, Nlines = ", me, Nlines
-!TMPR2N
-!TMPR2N  end subroutine Read2D
+  subroutine Read2D(fname,data2d,idata2d)
+
+   character(len=*), intent(in) :: fname
+   real, dimension(:,:), intent(out), optional :: data2d
+   integer, dimension(:,:), intent(out), optional :: idata2d
+
+   integer :: i_fdom, j_fdom, i,j
+   real :: tmp
+   character(len=20), dimension(3) :: Headers
+   character(len=200) :: txtinput  ! Big enough to contain one full input record
+   type(KeyVal), dimension(20)      :: KeyValues ! Info on units, coords, etc.
+   character(len=50) :: errmsg
+
+   integer :: NHeaders, NKeys, Nlines
+   logical :: debug_flag
+
+
+   Nlines = 0
+
+   if (present(idata2d) ) idata2d  (:,:) = 0    !/**  initialise  **/
+   if (present(data2d)  ) data2d  (:,:) = 0.0     !/**  initialise  **/
+
+   if ( me == 0 ) then
+      call open_file(IO_TMP,"r",fname,needed=.true.)
+      call CheckStop(ios,"open_file error on " // fname )
+   end if
+
+
+   call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues)
+
+   call CheckStop( errmsg , "Read2D: Read_Headers" // fname )
+   call CheckStop( Headers(1), "ix" , "HeaderIX not found" // fname)
+   call CheckStop( Headers(2), "iy" , "HeaderIY not found" // fname)
+   call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
+
+   ! The first two columns are assumed for now to be ix,iy, hence:
+
+   Headers(1) = Headers(3)
+   if ( MY_DEBUG .and. me == 0 ) then
+        write(*,*) "Read2D Headers" // fname, Nheaders, Headers(1)
+!       call WriteArray(Headers,NHeaders,"Read2D Headers")
+   end if
+
+   do
+         call read_line(IO_TMP,txtinput,ios)
+         if ( ios /= 0 ) exit   ! likely end of file
+         read(unit=txtinput,fmt=*,iostat=ios) i_fdom,j_fdom,tmp
+         call CheckStop ( ios, "Read2D txt error:" // trim(txtinput) )
+         Nlines = Nlines + 1
+
+         i   = i_local(i_fdom)   ! Convert to local coordinates
+         j   = j_local(j_fdom)
+
+         if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then  
+
+             if ( MY_DEBUG ) debug_flag = ( i_fdom == DEBUG_i  &
+                                   .and. j_fdom == DEBUG_j  )
+
+              if ( debug_flag ) then
+                write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp
+              endif
+              if (present(idata2d)) then 
+                 idata2d(i,j) = nint(tmp)
+              else
+                 data2d(i,j) = tmp
+              end if
+
+         end if ! i,j
+      end do
+
+      if ( me == 0 ) close(IO_TMP)
+      if ( me == 0 ) write(6,*) fname // "Read2D: me, Nlines = ", me, Nlines
+
+  end subroutine Read2D
  
   !-------------------------------------------------------------------------
 
@@ -381,7 +373,7 @@ contains
 
    integer, parameter  :: NCOORDS = 2   ! for ix, iy - "simple"
 
-   integer :: i_fdom, j_fdom, i,j,kk, ios
+   integer :: i_fdom, j_fdom, i,j,kk
    real, dimension(Ndata+NCOORDS) :: tmp
    character(len=20), dimension(Ndata+10) :: Headers
    character(len=(Ndata+10)*20) :: txtinput  ! Big enough to contain one full input record
@@ -425,6 +417,11 @@ contains
          if ( ios /= 0 ) exit   ! likely end of file
          read(unit=txtinput,fmt=*,iostat=ios) i_fdom,j_fdom,&
                  ( tmp(kk), kk=1,Ndata)
+if( ios /= 0 ) then
+   write(*,*) "TTTTTTTTTTT ", txtinput
+   print *,   "TTTTTTTTTTT ", txtinput
+end if
+
          call CheckStop ( ios, "Read2D txt error:" // trim(txtinput) )
          Nlines = Nlines + 1
 
@@ -446,13 +443,14 @@ contains
       end do
 
       if ( me == 0 ) close(IO_TMP)
-      write(6,*) fname // "Read2DN: me, Nlines = ", me, Nlines
+      if ( me == 0 ) write(6,*) fname // "Read2DN: me, Nlines = ", me, Nlines
 
   end subroutine Read2DN
  
   !-------------------------------------------------------------------------
   subroutine Self_Test()
-   use Par_ml, only: me, nproc
+   use ModelConstants_ml, only: NPROC
+   use Par_ml, only: me
     integer :: NHeaders, NKeyValues, i, ios
     character(len=10), dimension(10) :: Headers
     character(len=10) :: msg = "ok"
@@ -481,7 +479,7 @@ contains
       print "(/,a)", "Self-test - Io_Progs_ml ==========================="
 
       print *, "PROCESSOR ", me, "CREATES FILE for TEST READS "
-      print *, "NPROC ", nproc
+      print *, "NPROC ", NPROC
       call open_file(IO_IN,"w","Self_Test_INPUT.csv")
 
       write(unit=IO_IN,fmt="((a))") &
@@ -506,7 +504,7 @@ contains
 
      call Read_Headers(IO_IN,msg,Nheaders,NKeyValues, Headers, KeyValues)
 
-     if ( me == nproc-1 ) then
+     if ( me == NPROC-1 ) then
         print *, "Checking data on processor me = ", me
         do i = 1, NKeyValues
             print *, "me ", me, "Keys ", i, &
@@ -533,7 +531,7 @@ contains
           end if
           read(unit=inputline,fmt=*,iostat=ios) yy,mm,dd,test_data(1:2)
           if ( ios == 0 ) then
-             if ( me == nproc-1 )  then 
+             if ( me == NPROC-1 )  then 
                  print *, "TEST DATA SPLIT INTO: ", yy, mm, dd, &
                   test_data(1), test_data(2)
              end if

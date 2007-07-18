@@ -37,11 +37,12 @@ use GenSpec_tot_ml,    only : SO4, HCHO, CH3CHO  &  !  For mol. wts.
                               ,SSfi, SSco  !SeaS
 use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
                               , z_bnd, z_mid, roa, xksig, u, v, ps, q
-use ModelConstants_ml, only : NMET,PPBINV,PPTINV,KMAX_MID, current_date &
-                              ,KMAX_BND,PT,ATWAIR
+use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
+                              ,KMAX_BND,PT,ATWAIR, NPROC
 use Par_ml,            only : GIMAX,GJMAX &
-                              ,GI0,GI1,GJ0,GJ1,me,NPROC,MAXLIMAX,MAXLJMAX
+                              ,GI0,GI1,GJ0,GJ1,me,MAXLIMAX,MAXLJMAX
 use Tabulations_ml,    only : tab_esat_Pa
+use TimeDate_ml,       only : current_date
 
 implicit none
 private                     ! stops variables being accessed outside

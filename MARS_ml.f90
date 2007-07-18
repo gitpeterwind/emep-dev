@@ -1,5 +1,9 @@
 module MARS_ml
 
+ use Io_ml,           only : ios
+ use Aero_water_ml,   only:  Awater
+ use ModelConstants_ml, only : NPROC
+ use Par_ml,          only : me
  implicit none
  private
 
@@ -147,9 +151,6 @@ module MARS_ml
 !C
 !C-----------------------------------------------------------------------
 
-  use Aero_water_ml,   only:  Awater
-
-      IMPLICIT NONE
 
 !...........ARGUMENTS and their descriptions
 
@@ -940,12 +941,8 @@ module MARS_ml
 !C
 !-----------------------------------------------------------------------
 
-!emep1.2  use My_Runmode_ml,   only : stop_test
-  use Par_ml,          only : NPROC,me
-  use Io_ml,           only : ios
 
 
-      IMPLICIT NONE
 
 !...........INCLUDES and their descriptions
 

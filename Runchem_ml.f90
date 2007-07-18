@@ -4,6 +4,35 @@ module RunChem_ml
 !----------------------------------------------------------------------
 !
 !----------------------------------------------------------------------
+   use DryDep_ml, only : drydep
+   use My_Aerosols_ml, only: My_MARS,My_EQSAM,AERO_DYNAMICS,INORGANIC_AEROSOLS&
+                            ,RUN_MARS,RUN_EQSAM,ORGANIC_AEROSOLS, Aero_water
+   use Par_ml,           only : lj0,lj1,li0,li1  &
+                        ,gi0, gj0, me & !! for testing
+                        ,IRUNBEG, JRUNBEG    !! for testing
+   use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
+                                  nprint, END_OF_EMEPDAY, &
+                            DEBUG_i, DEBUG_j,nstep, NPROC
+
+   use Setup_1d_ml,       only: setup_1d, &
+                                setup_bio, setup_rcemis, reset_3d
+
+   use Setup_1dfields_ml, only: first_call  &
+      ,amk , rcemis, rcbio, xn_2d  ! DEBUG for testing
+   use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
+   use Ammonium_ml,       only: Ammonium!hf, INORGANIC_AEROSOLS
+   use OrganicAerosol_ml, only: OrganicAerosol!hf, ORGANIC_AEROSOLS
+   use Chemsolver_ml,     only: chemistry
+   use My_Timing_ml,      only: Code_timer, Add_2timing, tim_before, tim_after
+   use DefPhotolysis_ml,  only: setup_phot
+   use TimeDate_ml,       only: current_date
+!DEBUG ONLY:
+   use GenSpec_tot_ml
+   use GenSpec_adv_ml
+   use Chemfields_ml,     only: xn_adv  ! DEBUG XXXXX
+   use SeaSalt_ml,        only : SeaSalt_flux
+   use My_Aerosols_ml,    only : SEASALT
+   use CheckStop_ml,      only: CheckStop
 
 !
    implicit none
@@ -19,36 +48,6 @@ contains
 subroutine runchem(numt)
 
 !/ Definitions 
-!hf
-   use DryDep_ml, only : drydep
-   use My_Aerosols_ml, only: My_MARS,My_EQSAM,AERO_DYNAMICS,INORGANIC_AEROSOLS&
-                            ,RUN_MARS,RUN_EQSAM,ORGANIC_AEROSOLS, Aero_water    !water 
-   use Par_ml,           only : lj0,lj1,li0,li1  &
-                        ,gi0, gj0, me,NPROC & !! for testing
-                        ,ISMBEG, JSMBEG    !! for testing
-   use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
-                                  nprint,current_date, END_OF_EMEPDAY, & !water
-                            DEBUG_i, DEBUG_j,nstep    ! rv1.2
-
-   use Setup_1d_ml,       only: setup_1d, &
-                                setup_bio, setup_rcemis, reset_3d
-
-   use Setup_1dfields_ml, only: first_call  &  !DEBUG, ncalls & ! IS here best?
-      ,amk , rcemis, rcbio, xn_2d  ! DEBUG for testing
-   use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Ammonium_ml,       only: Ammonium!hf, INORGANIC_AEROSOLS
-   use OrganicAerosol_ml, only: OrganicAerosol!hf, ORGANIC_AEROSOLS
-   use Chemsolver_ml,     only: chemistry
-   use My_Timing_ml,      only: Code_timer, Add_2timing, tim_before, tim_after
-   use DefPhotolysis_ml,  only: setup_phot
-!DEBUG ONLY:
-   use GenSpec_tot_ml
-   use GenSpec_adv_ml
-  use Chemfields_ml,     only: xn_adv  ! DEBUG XXXXX
-!SeaS
-   use SeaSalt_ml,        only : SeaSalt_flux   !SeaS
-   use My_Aerosols_ml,    only : SEASALT        !SeaS
-   use CheckStop_ml,      only: CheckStop
 !/
    integer, intent(in) :: numt       !water
 
@@ -108,8 +107,8 @@ subroutine runchem(numt)
                      debug_flag =  .false.   !ds rv1_9_23 for safety
                      if ( MYDEBUG ) then
 
-                       i_emep = i + ISMBEG + gi0 - 2  ! EMEP coordinates
-                       j_emep = j + JSMBEG + gj0 - 2  ! EMEP coordinates
+                       i_emep = i + IRUNBEG + gi0 - 2  ! EMEP coordinates
+                       j_emep = j + JRUNBEG + gj0 - 2  ! EMEP coordinates
 
                        debug_flag = ( i_emep == DEBUG_i .and. j_emep == DEBUG_j )
                      end if

@@ -7,9 +7,9 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=32
+#PBS -lnodes=16
 # wall time limit of run 
-#PBS -lwalltime=01:00:00
+#PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 4 or 16GB per node)
 #PBS -lpmem=200MB
 # account for billing
@@ -111,14 +111,14 @@ my @MAKE = ("gmake",  "-j2", "--makefile=Makefile_snow");
   @MAKE = ("make", "-j2", "-f", "Makefile_njord") if $NJORD==1 ;
   die "Must choose SNYKOV **or** NJORD!\n" unless $NJORD+$SNYKOV==1;
 
-my $SR=1;     # Set to 1 if source-receptor calculation
+my $SR=0;     # Set to 1 if source-receptor calculation
  
 # <---------- start of user-changeable section ----------------->
 
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "2003";
+my $year = "2002";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -144,7 +144,7 @@ my $SEMEENA     = "mifasv";
 my $TAREQ    = "mifatarh";      
 
 
-my $USER        =  $HEIKO ;
+my $USER        =  $DAVE;
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($SNYKOV){
@@ -178,7 +178,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_7_9";
+    $testv       = "rv2_9beta";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -223,28 +223,32 @@ my $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
 
-# Specify small domain if required. 
-#                 x0   x1  y0   y1
-
-my @largedomain = (   1, 170,  1, 133 ) ;
-##smalldomain = (  20, 167,  1, 122 ) ;    # OSPAR/HELCOM domain
-##smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
-my @smalldomain = (  36, 167, 12, 122 ) ;    # EMEP domain
-##@smalldomain = (  116, 167,  80, 122 ) ;      # (changeable)
-##@smalldomain = @largedomain ;     # If you want to run for the whole domain, 
-		# simply uncomment this  - REMEMBER NEED ##@, not just one #
-
-
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
 my $INTERACTIVE  = 0 ;  # usually 0 (false), but set to 1 to make program stop
-my $DRY_RUN      = 1 ;  # Test script without running model (but compiling)
+my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
 
 # just before execution - so code can be run interactivel.
 
-my $NDX   = 8;           # Processors in x-direction
-my $NDY   = 4;           # Processors in y-direction
-if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
+# NDX, NDY  now set in ModelConstants_ml - may do more work here
+
+open(IN,"<$ProgDir/ModelConstants_ml.f90");
+my ( $NDX, $NDY ); # Processors in x-, y-, direction
+while(my $line = <IN>){
+    $NDX = $1 if $line =~ /\W+ NPROCX \W+ (\d+) /x ;
+    $NDY = $1 if $line =~ /\W+ NPROCY \W+ (\d+) /x ;
+}
+close(IN);
+my $NPROC =  $NDX * $NDY ;
+#rv2_9 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
+#my $TESTN = $ENV{PBS_NODEFILE};
+#print "NDX = $NDX NDY = $NDY  NPROC = $NPROC  TEST $TESTN\n";
+##NCPUS=`wc -l $PBS_NODEFILE | awk {print $1}'`;
+#system(" echo $PBS_NODEFILE");
+#print " PBS PBS PBS $PBS_NODEFILE  $NCPUS \n";
+#
+#PBS -lnodes=$NPROC
+
 
 
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
@@ -349,17 +353,6 @@ foreach my $d (  $WORKDIR, $DATA_LOCAL, $DataDir,  $ProgDir) {
 # Check that we have an existing prog dir:
 die "Wrong ProgDir: $ProgDir \n" unless -d $ProgDir;
 
-# quick check that the small domain
-# is within the current 170, 133 large domain
-
-die " -- Domain error!!!" if ( 
-    $smalldomain[0] < $largedomain[0] ||  $smalldomain[1] > $largedomain[1] || 
-    $smalldomain[2] < $largedomain[2] ||  $smalldomain[3] > $largedomain[3] );
-
-
-#--- calculate number of processors
-
-my $NPROC =  $NDX * $NDY ;
 
 # and check that we have the same from the bsub command, by
 # accessing the LSB_MCPU_HOSTS environment variable.
@@ -394,65 +387,9 @@ chdir "$ProgDir";
 
 #-- generate Makefile each time, to avoid forgetting changed "pat" file!
 
-if ( $RESET ) { unlink ("Make.log") }  # Gone!
-# ---- calculate domain widths
-# (For the model, we need first x0, y0, then width (number of cells) in x and y)
-
-my $dom_x0 = $smalldomain[0]; 
-my $dom_y0 = $smalldomain[2]; 
-my $dom_wx = $smalldomain[1] - $smalldomain[0] + 1 ; 
-my $dom_wy = $smalldomain[3] - $smalldomain[2] + 1 ; 
-my $largdom_wx = $largedomain[1] - $largedomain[0] + 1 ; 
-my $largdom_wy = $largedomain[3] - $largedomain[2] + 1 ; 
-
-open(MAKELOG,"<Make.log");
-my ($oldversion, $olddx , $olddy , $old_x0, $old_y0, $old_wx, $old_wy, $old_lwx, $old_lwy) = split ' ', <MAKELOG> ;
-close(MAKELOG);
-
-print "From Make.log we had Subversion $subv
-           Procs:  $olddx $olddy 
-           Domain: $old_x0, $old_y0, $old_wx, $old_wy ,$old_lwx, $old_lwy \n";
-
-
-if ( $oldversion ne $subv ) {
-    
-    print " We are changing version!!!!!............. 
-            from $oldversion to $subv \n " ;
-    $RESET = 1 ;
-}
-
-if ( $NDX      != $olddx  || $NDY      != $olddy  ||
-     $dom_x0   != $old_x0 || $dom_y0   != $old_y0 ||
-     $dom_wx   != $old_wx || $dom_wy   != $old_wy ||
-     $largdom_wx   != $old_lwx || $largdom_wy   != $old_lwy       ) {
-    
-    print "Need to re-compile for new processor or domain  setup: 
-           Procs:  $NDX $NDY
-           Domain: $dom_x0, $dom_y0, $dom_wx, $dom_wy, $largdom_wx, $largdom_wy \n";
-    $RESET = 1 ;
-}
-
 
 if ( $RESET ) { ########## Recompile everything!
     
-    
-    # Set values for domain size in Par_ml.f90 : 
-	open(EULPAR,"<Par_ml.pat") or die "No Par_ml.pat file!!\n";
-	open(EULOUT,">Par_ml.f90");
-	print "changing domain, nproc in Par_ml.pat to Par_ml.f90 \n";
-	while (defined (my $line=<EULPAR>)) {
-	    $line =~ s/nprocx/$NDX/ ; 
-	    $line =~ s/nprocy/$NDY/ ;
-	    $line =~ s/domainx0/$dom_x0/ ;
-	    $line =~ s/domainy0/$dom_y0/ ;
-	    $line =~ s/domaindx/$dom_wx/ ;
-	    $line =~ s/domaindy/$dom_wy/ ;
-	    $line =~ s/largedomdx/$largdom_wx/ ;
-	    $line =~ s/largedomdy/$largdom_wy/ ;
-	    print EULOUT $line ;
-	}
-	close(EULOUT) ;
-
     # For now, we simply recompile everything!
     system(@MAKE, "clean");
     system(@MAKE, "depend");
@@ -467,11 +404,6 @@ system "ls -lt | head -6 ";
 
 system (@MAKE, "depend") ;
 system (@MAKE, "all");
-
-#die "*** Compile failed!!! *** " unless ( -x $PROGRAM ) ;
-open(MAKELOG,">Make.log");    # Over-write Make.log
-print MAKELOG "$subv $NDX  $NDY  $dom_x0  $dom_y0  $dom_wx  $dom_wy $largdom_wx $largdom_wy \n" ;
-close(MAKELOG);
 
 die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 
@@ -643,7 +575,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     
     foreach my $exclu ( @exclus) {
 	print "starting $PROGRAM with 
-        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nNDX $NDX\nNDY $NDY\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\n startyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
+        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\n startyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
 	
 
 	my $PRERUN = "";
@@ -680,7 +612,6 @@ Emission units: Gg/year
 ------------------------------
 Emissions: $emisdir           
 Version: $testv               
-Domain x0 $dom_x0 y0 $dom_y0 wx $dom_wx wy $dom_wy
 Processors $NDX $NDY          	
 Added? PM $PM_ADDED  Africa $AFRICA_ADDED
 SR?  $SR                      
@@ -690,6 +621,7 @@ femis: femis.$scenario
 ------------------------------
 EOT
     close RUNLOG;
+#rv2_9 Domain x0 $dom_x0 y0 $dom_y0 wx $dom_wx wy $dom_wy
 
 #clean up work directories and links   
     if ($DRY_RUN) { # keep femis.dat

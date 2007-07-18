@@ -16,15 +16,15 @@
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
  use ModelConstants_ml,    only : KMAX_BND, KMAX_MID  &! vertical extent
-      ,DEBUG_i, DEBUG_j     ! global coordinate of debug-site !dsjun2005
+      ,DEBUG_i, DEBUG_j  &  ! global coordinate of debug-site !dsjun2005
+      ,NPROC, IIFULLDOM,JJFULLDOM
  use Par_ml, only : &
         MAXLIMAX,MAXLJMAX   & ! max. possible i, j in this domain
       ,limax,ljmax          & ! actual max.   i, j in this domain
       ,li0,li1,lj0,lj1      & ! for debugging TAB
-      ,ISMBEG,JSMBEG        & ! start of user-specified domain
+      ,IRUNBEG,JRUNBEG        & ! start of user-specified domain
       ,gi0,gj0              & ! global coordinates of domain lower l.h. corner
-      ,NPROC,me &               ! Number of processors, local processor
-      ,IILARDOM,JJLARDOM
+      ,me                ! local processor
  use PhysicalConstants_ml, only : GRAV, PI       ! gravity, pi
  implicit none
  private
@@ -58,8 +58,8 @@
   integer, public, save, dimension(0:MAXLIMAX+1) :: i_glob !global coordinates
   integer, public, save, dimension(0:MAXLJMAX+1) :: j_glob !of local i,j
  ! and from global (Large Domain) to local:
-  integer, public, save, dimension(IILARDOM) :: i_local  !local coordinates
-  integer, public, save, dimension(JJLARDOM) :: j_local  !of global i,j
+  integer, public, save, dimension(IIFULLDOM) :: i_local  !local coordinates
+  integer, public, save, dimension(JJFULLDOM) :: j_local  !of global i,j
 
 
   real, public, save,  dimension(KMAX_BND) ::  &
@@ -74,7 +74,7 @@
             gl   &               !longitude of EMEP grid center
            ,gb                  !latitude  of EMEP grid center
 
-    real, public, save,  dimension(IILARDOM,JJLARDOM) :: &
+    real, public, save,  dimension(IIFULLDOM,JJFULLDOM) :: &
             gb_glob,   &               !longitude of EMEP grid center
             gl_glob                    !longitude of EMEP grid center
 
@@ -142,18 +142,18 @@ contains
   !/ Define global coordinates of local i,j values. We need to account for
   !  the fact that each parallel domain has its starting cordinate
   !  gi0, gj0, and the user may specify a set of lower-left starting
-  !  coordinates for running the model, ISMBEG, JSMBEG
-  !       i_glob(i)  = i + gi0 + ISMBEG - 2
-  !       j_glob(j)  = j + gj0 + JSMBEG - 2
+  !  coordinates for running the model, IRUNBEG, JRUNBEG
+  !       i_glob(i)  = i + gi0 + IRUNBEG - 2
+  !       j_glob(j)  = j + gj0 + JRUNBEG - 2
 
-    i_glob = (/ (n + gi0 + ISMBEG - 2, n=0,MAXLIMAX+1) /) 
-    j_glob = (/ (n + gj0 + JSMBEG - 2, n=0,MAXLJMAX+1) /) 
+    i_glob = (/ (n + gi0 + IRUNBEG - 2, n=0,MAXLIMAX+1) /) 
+    j_glob = (/ (n + gj0 + JRUNBEG - 2, n=0,MAXLJMAX+1) /) 
 
   ! And the reverse, noting that we even define for area
   ! outside local domain
 
-    i_local = (/ (n - gi0 - ISMBEG + 2, n=1, IILARDOM) /)
-    j_local = (/ (n - gj0 - JSMBEG + 2, n=1, JJLARDOM) /)
+    i_local = (/ (n - gi0 - IRUNBEG + 2, n=1, IIFULLDOM) /)
+    j_local = (/ (n - gj0 - JRUNBEG + 2, n=1, JJFULLDOM) /)
 
 
     ! -------------- Find debug coords  and processor ------------------
@@ -182,7 +182,7 @@ contains
     an2 = AN*AN
  
     do j=0,MAXLJMAX+1           ! ds - changed from ljmax+1
-          y = j_glob(j) - yp     ! ds - changed from gj0+JSMBEG-2+j
+          y = j_glob(j) - yp     ! ds - changed from gj0+JRUNBEG-2+j
           y = y*y
           y_i = j_glob(j)+0.5 - yp  !in the staggered grid
           y_i = y_i*y_i
@@ -246,7 +246,7 @@ contains
               " gb(1,1)"," gb(MAX..)"
        end if
 
-       write(*,804) "GRIDTAB",me,ISMBEG,JSMBEG,gi0,gj0,li0,li1,limax,MAXLIMAX,&
+       write(*,804) "GRIDTAB",me,IRUNBEG,JRUNBEG,gi0,gj0,li0,li1,limax,MAXLIMAX,&
             lj0,lj1,ljmax, MAXLJMAX, &
               i_glob(1), i_glob(MAXLIMAX+1),j_glob(1), j_glob(MAXLJMAX+1)
 
@@ -306,7 +306,7 @@ contains
   if(trim(projection)=='Stereographic') then     
     
     do j = 1, MAXLJMAX          ! ds - changed from ljmax
-       dy  = yp - j_glob(j)     ! ds - changed from gj0+JSMBEG-2+j
+       dy  = yp - j_glob(j)     ! ds - changed from gj0+JRUNBEG-2+j
        dy2 = dy*dy
        do i = 1, MAXLIMAX       ! ds - changed from limax
          dx = i_glob(i) - xp    ! ds - changed
@@ -378,10 +378,10 @@ contains
     om2   = om * 2.0
     AN = 6.370e6*(1.0+sin( ref_latitude*PI/180.))/GRIDWIDTH_M    ! = 237.7316364 for GRIDWIDTH_M=50 km and ref_latitude=60
 
-    do j = 1, JJLARDOM
+    do j = 1, JJFULLDOM
        dy  = yp - j  
        dy2 = dy*dy
-       do i = 1, IILARDOM
+       do i = 1, IIFULLDOM
          dx = i - xp    
          rp = sqrt(dx*dx+dy2)           ! => distance to pole
          rb = 90.0 - om2 * atan(rp/AN)  ! => latitude
@@ -413,10 +413,6 @@ end subroutine GlobalPosition
     !              j2(i1,j1): j coordinates in grid2 
     !-------------------------------------------------------------------! 
 
-!    use Par_ml,   only : MAXLIMAX, MAXLJMAX
-
-    implicit none
-
 
     integer :: imax,jmax,i1, j1
     real    :: fi2,an2,xp2,yp2
@@ -436,12 +432,10 @@ end subroutine GlobalPosition
 
           ir2(i1,j1)=xp2+an2*tan(PId4-gb(i1,j1)*dr2)*sin(dr*(gl(i1,j1)-fi2))
           jr2(i1,j1)=yp2-an2*tan(PId4-gb(i1,j1)*dr2)*cos(dr*(gl(i1,j1)-fi2))
-!          write(*,*)i1,j1,ir2(i1,j1),jr2(i1,j1),gl(i1,j1),gb(i1,j1)
 
        end do ! i
     end do ! j
 
-    return
   end subroutine lb2ijm
 
  subroutine lb2ij(gl2,gb2,ir2,jr2,fi2,an2,xp2,yp2)
@@ -459,10 +453,6 @@ end subroutine GlobalPosition
     !      output: i2(i1,j1): i coordinates in grid2 
     !              j2(i1,j1): j coordinates in grid2 
     !-------------------------------------------------------------------! 
-
-
-    implicit none
-
 
     real, intent(in)    :: gl2,gb2 
     real, intent(out)    :: ir2,jr2
@@ -518,11 +508,6 @@ end subroutine GlobalPosition
   !              gb(ii,jj): latitude  -90. <= b <= +90. 
   !-------------------------------------------------------------------! 
 
-
-
-    implicit none
-
-
     integer :: i, j, imax, jmax
     real    :: gl(imax,jmax),gb(imax,jmax)
     real    :: fi, an, xp, yp 
@@ -566,9 +551,7 @@ end subroutine GlobalPosition
 !   into data (out_field) in coordinates (fiout,anout,xpout,ypout)
 !   pw august 2002
 
-    use Par_ml   ,      only :  me, NPROC
 
-	implicit none
         integer, intent(in) :: imaxin,jmaxin,imaxout,jmaxout
         real, intent(in) :: fiin,anin,xpin,ypin,fiout,anout,xpout,ypout
         real, intent(in) :: in_field(imaxin,jmaxin)! Field to be transformed

@@ -9,7 +9,7 @@ module My_UKDep_ml    ! DryDep_ml
 !/**************************************************************************
 
  use DepVariables_ml, only : unit_flux, lai_flux, leaf_flux, & 
-            IAM_WHEAT, IAM_BEECH, IAM_MEDOAK, & !ds JUN06
+            IAM_WHEAT, IAM_BEECH, IAM_MEDOAK, & 
             ECO_WATER,ECO_CONIF_FOREST,ECO_DECID_FOREST, & 
             ECO_CROP,ECO_SEMINAT,ECO_WETLAND
 
@@ -18,10 +18,10 @@ module My_UKDep_ml    ! DryDep_ml
 
  use GenSpec_adv_ml               !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use Landuse_ml,         only : InGrowingSeason
- use ModelConstants_ml , only : atwS, atwN &
-                              , current_date, AOT_HORIZON
+ use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON
  use PhysicalConstants_ml, only : AVOG
- use Setup_1dfields_ml,     only : izen ! integer of zenith angle, ds mar2005
+ use Setup_1dfields_ml,     only : izen ! integer of zenith angle
+ use TimeDate_ml,           only : current_date
  use Wesely_ml
  implicit none
  private

@@ -5,7 +5,31 @@ module Chemsolver_ml
 ! decoupling of (NO3,N2O5), (PAN,CH3COO2), (MPAN,MACRO2)
 ! removed xold=... when(xnew>CPINIT)
 !
+    use My_Emis_ml                        ! => QRCNO, etc.
+    use My_Aerosols_ml,    only : SEASALT
 
+    use Aqueous_ml,        only : &
+         aqrck, ICLOHSO2,ICLRC1   ,ICLRC2   ,ICLRC3   
+    use Biogenics_ml, only: BIO_ISOP, BIO_TERP
+    use CheckStop_ml,        only : CheckStop
+    use DefPhotolysis_ml                  ! => IDHNO3, etc.
+    use GenSpec_tot_ml     ! => NSPEC_TOT, O3, NO2, etc.
+    use GenSpec_bgn_ml      ! => IXBGN_  indices and xn_2d_bgn values
+    use GenRates_rct_ml,    only : set_night_rct, ONLY_NIGHT
+    use Emissions_ml, only : KEMISTOP     !rv1.2.1 change
+    use Met_ml,              only :  zen ! zenith angle, degrees, ds mar 2005
+    use ModelConstants_ml,   only : NPROC,KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4&
+                                 ,VOLFACNO3,VOLFACNH4 ,PPB,PPBINV,dt_advec_inv
+    use OrganicAerosol_ml, only : Fgas
+    use Par_ml,              only : me,MAXLIMAX,MAXLJMAX,li1,lj1,li0,lj0  ! me for TEST
+    use Setup_1dfields_ml,   only : &
+         rcemis,izen           & ! photolysis, emissions
+         ,rcbio                & ! biogenic emis
+         ,rc_Rn222             & !ds Pb210
+    ,rct, rcmisc, & ! rate-coeffients
+         xn_2d,&               ! rename xn_2d to use simply x inside chemistry
+    rh, f_Riemer  & ! to weight the hydrolysis of N2O5 with NO3,SO4 mass
+   ,rcss,amk            !SeaS ,ACID bgn
 
   implicit none
   private
@@ -20,35 +44,6 @@ contains
 !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 !
   subroutine chemistry(i,j)
-    !ds mar2005 use Radiation_ml,          only :  zen ! zenith angle, degrees
-    use GenSpec_tot_ml     ! => NSPEC_TOT, O3, NO2, etc.
-    use GenSpec_bgn_ml      ! => IXBGN_  indices and xn_2d_bgn values
-    use GenRates_rct_ml,    only : set_night_rct, ONLY_NIGHT
-    use Par_ml,              only : me,MAXLIMAX,MAXLJMAX,li1,lj1,li0,lj0  ! me for TEST
-    use Met_ml,              only :  zen ! zenith angle, degrees, ds mar 2005
-    use ModelConstants_ml,   only : KMAX_MID, KCHEMTOP ,dt_advec,VOLFACSO4&
-                                 ,VOLFACNO3,VOLFACNH4 ,PPB,PPBINV,dt_advec_inv
-    use Setup_1dfields_ml,   only : &
-         rcemis,izen           & ! photolysis, emissions
-         ,rcbio                & ! biogenic emis
-         ,rc_Rn222             & !ds Pb210
-    ,rct, rcmisc, & ! rate-coeffients
-         xn_2d,&               ! rename xn_2d to use simply x inside chemistry
-    rh, f_Riemer  & ! to weight the hydrolysis of N2O5 with NO3,SO4 mass
-   ,rcss,amk            !SeaS ,ACID bgn
-
-    use Aqueous_ml,        only : &
-         aqrck,                    &
-         ICLOHSO2  &
-         ,ICLRC1   ,ICLRC2   ,ICLRC3   
-    use Biogenics_ml, only: BIO_ISOP, BIO_TERP
-
-    use My_Emis_ml                        ! => QRCNO, etc.
-    use DefPhotolysis_ml                  ! => IDHNO3, etc.
-    use Emissions_ml, only : KEMISTOP     !rv1.2.1 change
-    use OrganicAerosol_ml, only : Fgas
-    use My_Aerosols_ml,    only : SEASALT        !SeaS
-
     !
     !**********************************************************************
     ! The following solver is a simplified version of that suggested by
@@ -255,10 +250,6 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc,dt_tot)
 !larger steps, than to increase the timestep gradually.
 !Is this a sign that there is a bug in the coefficients?
 !
-
-    use CheckStop_ml,        only : CheckStop
-    use Par_ml,              only : me,NPROC
-    use ModelConstants_ml,   only : dt_advec
 
 implicit none
 

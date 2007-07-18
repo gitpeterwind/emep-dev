@@ -28,13 +28,13 @@ use GridValues_ml,  only: gb_glob, gb, i_glob, j_glob, & ! latitude, coordinates
                           i_local, j_local, &
                          debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, IO_FORES,Read_Headers,read_line, Read2DN
-use ModelConstants_ml,  only : current_date, DEBUG_i, DEBUG_j, NNLANDUSE
-use Par_ml,         only: GIMAX, GJMAX, ISMBEG, JSMBEG, &
-                          li0, lj0, IILARDOM, JJLARDOM, &
-                          li1, lj1, MAXLIMAX, MAXLJMAX, &
-                          limax, ljmax, me, NPROC
+use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NNLANDUSE, &
+                          NPROC, IIFULLDOM, JJFULLDOM
+use Par_ml,         only: GIMAX, GJMAX, IRUNBEG, JRUNBEG, &
+                          li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
+                          limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
-use TimeDate_ml,    only: daynumber, nydays
+use TimeDate_ml,    only: daynumber, nydays, current_date
 use UKsetup_ml,     only: ukdep_init, get_growing_season, fPhenology
 implicit none
 private

@@ -7,15 +7,13 @@ module SubMet_ml
 !  some extent modules from the full EMEP model, but is not fully compatible.
 !  The sub-grid part of this module is also undergoing constant change!!
 !=============================================================================
-! **sc: OUT OF DATE comment about "use Io_ml" removed.
 
-!Done: replace Ra3 by invL in argument list of Get_Submet
 !ToDo: do something with ios
 
 use Functions_ml, only :  PsiH, PsiM, AerRes    !functions
 use Io_ml, only : IO_STAB, open_file
-use ModelConstants_ml, only: current_date
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
+use TimeDate_ml, only: current_date
 
 implicit none
 private

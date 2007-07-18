@@ -28,26 +28,21 @@
    !    Some parts which where earlier in output_binary_ml are now here 
    !-----------------------------------------------------------------------
 !ds New deriv system, 21/12/2003:
-   use My_Derived_ml, only: NDDEP, NWDEP, NDERIV_2D, & !dsAscii3D
-                            NDERIV_3D
+   use My_Derived_ml, only: NDDEP, NWDEP, NDERIV_2D, NDERIV_3D
 
-!hfTD   use Dates_ml,           only: nmdays             !ds-out
-   use TimeDate_ml,           only: max_day             !days in month
-!ds New Deriv:
    use Derived_ml, only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, f_2d, d_2d &
-                                ,f_3d, d_3d, nav_3d, nav_2d  & !dsAscii3D
+                                ,f_3d, d_3d, nav_3d, nav_2d  &
                                 ,nav_wdep, nav_ddep  & 
                                 ,wdep, ddep, f_wdep, f_ddep   & 
                                 ,ResetDerived, Deriv
    use Io_ml   ,           only: IO_WRTCHEM
-   use ModelConstants_ml , only: nprint,current_date, END_OF_EMEPDAY , & !dsAscii3d
-                                  KMAX_MID
-   use My_Outputs_ml,      only: NBDATES, wanted_dates_bi, & !dsAcii3D
+   use ModelConstants_ml , only: nprint, END_OF_EMEPDAY, KMAX_MID
+   use My_Outputs_ml,      only: NBDATES, wanted_dates_bi, &
                                  Ascii3D_WANTED
    use out_restri_ml,      only: to_out_restri    ! su - allows 3-h output 
-!   use Output_binary_ml,   only: Output_binary
    use Par_ml,             only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX ,limax,ljmax,me,&
-                                  ISMBEG,JSMBEG   !dsOH
+                                  IRUNBEG,JRUNBEG   !dsOH
+   use TimeDate_ml,   only: current_date, max_day  !max_day=days in month
    implicit none
 
    integer, intent(in) ::  numt
@@ -174,8 +169,8 @@
 !hf               write(outfilename,fmt='(a,a1,i2.2)')  trim( f_3d(n)%name ), ".",  nmonpr
                write(outfilename,fmt='(a,a5,i2.2)')  trim( f_3d(n)%name ), ".out.",  nmonpr
                open(IO_WRTCHEM,file=outfilename)
-               write(IO_WRTCHEM,fmt="(4i4)")  ISMBEG, GIMAX+ISMBEG-1,&
-                                              JSMBEG, GJMAX+JSMBEG-1 ! domain
+               write(IO_WRTCHEM,fmt="(4i4)")  IRUNBEG, GIMAX+IRUNBEG-1,&
+                                              JRUNBEG, GJMAX+JRUNBEG-1 ! domain
             end if
 
             if( nav_3d(n,IOU_MON) == 0 ) then

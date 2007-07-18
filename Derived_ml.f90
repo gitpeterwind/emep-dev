@@ -41,8 +41,8 @@ module Derived_ml
 !D2_O3 is now yearly accumulated
 
 use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
+use CheckStop_ml,      only: CheckStop
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
-use TimeDate_ml, only : day_of_year,daynumber
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml
 use GenSpec_tot_ml
@@ -50,20 +50,20 @@ use GenChemicals_ml, only : species
 use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen  !ds mar2005 zen added
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
+                        , NPROC   &   ! No. processors
                         , atwS, atwN, ATWAIR  &
                         , PPBINV  &   !   1.0e9, for conversion of units 
                         , PPTINV  &   !   1.0e12, for conversion of units 
                         , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
                         , AOT_HORIZON&! limit of daylight for AOT calcs
                         ,DEBUG_i, DEBUG_j & !ds rv_9_16
-                        , current_date&
                         , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
-                     me, NPROC,         &   ! for abort checks
-                     gi0,gj0,ISMBEG,JSMBEG,&! rv1_9_28 for i_glob, j_glob
+                     me,                &   ! for abort checks
+                     gi0,gj0,IRUNBEG,JRUNBEG,&! rv1_9_28 for i_glob, j_glob
                      li0,lj0,limax, ljmax    ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
-use CheckStop_ml,      only: CheckStop
+use TimeDate_ml, only : day_of_year,daynumber,current_date
 
 implicit none
 private
@@ -471,8 +471,8 @@ def_3d = (/ &
 
           ! Need to define here since gridValues not yet set.
 
-          i_glob = (/ (n + gi0 + ISMBEG - 2, n=1,MAXLIMAX) /)
-          j_glob = (/ (n + gj0 + JSMBEG - 2, n=1,MAXLJMAX) /)
+          i_glob = (/ (n + gi0 + IRUNBEG - 2, n=1,MAXLIMAX) /)
+          j_glob = (/ (n + gj0 + JRUNBEG - 2, n=1,MAXLJMAX) /)
 
            do j = 1, ljmax
               do i = 1, limax

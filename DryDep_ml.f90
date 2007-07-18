@@ -30,7 +30,6 @@ module DryDep_ml
 
  use My_Derived_ml      ! -> OUTPUT_ABS_HEIGHTS, d_2d, IOU_INST, D2_VG etc...
 
- use TimeDate_ml,       only : daynumber
  use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
                             forest, water, f_phen, &
                             crops,         & !rv1_7_4 for SAIadd
@@ -60,10 +59,10 @@ module DryDep_ml
                             ,pzpbl&  !stDep
                             ,u_ref !horizontal wind 
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
-                                  current_date, DEBUG_i, DEBUG_j, &
+                                  DEBUG_i, DEBUG_j, NPROC,  &
                                   ATWAIR, atwS, atwN, PPBINV,&
-                                  KUPPER     !hf ddep
- use Par_ml,               only : me,NPROC,li0,li1,lj0,lj1
+                                  KUPPER
+ use Par_ml,               only : me,li0,li1,lj0,lj1
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
  
  use SubMet_ml,        only: Get_Submet
@@ -81,6 +80,7 @@ module DryDep_ml
  use GenSpec_shl_ml,        only :  NSPEC_SHL
  use Aero_DryDep_ml,        only : Aero_Rb
  use My_Aerosols_ml,        only : NSIZE
+ use TimeDate_ml,       only : daynumber, current_date
 
  implicit none
  private

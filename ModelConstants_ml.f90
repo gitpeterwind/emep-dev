@@ -4,22 +4,64 @@ module ModelConstants_ml
  ! physical constants (e.g. gravity, Cp, etc ( are specified in 
  ! the module PhysicalConstants_ml.f90)
  !
- ! Dependancies - none.
+ ! Dependancies - none. _ IN FUTURE I HOPE!!!
  !----------------------------------------------------------------------------
-!hfTD  use Dates_ml, only : date   ! type giving yy, mm, dd, s
-  use TimeDate_ml, only : date   ! type giving yy, mm, dd, s
   use PhysicalConstants_ml, only : AVOG   
 
   implicit none
   private
 
+!=============================================================================
+!+ 1) Define first dimensions that might change quite often -  for different
+!     run domains or debug points:
 
- !/-- constants
+  integer, public, parameter, dimension(4) ::  &
+ !                    x0   x1  y0   y1
+      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+ !TESTER     RUNDOMAIN = (/  86, 107,  70, 102 /)     ! (changeable)
+    !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
+    !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
-  integer, public, parameter :: METSTEP   = 3  !u2 time-step of met. (h)
+  integer, public, parameter ::  &
+    NPROCX      =   4       & ! Actual number of processors in longitude
+  , NPROCY      =   4       & ! Actual number of processors in latitude
+  , NPROC       = NPROCX * NPROCY
 
-!ds-out EMEP measurements end at 6am, hence we print out daily averages
-!       for days ending at 6am:
+  ! For debugging, we often want to print out for  a specific location
+  ! Set here:
+
+ !integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
+ !integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
+ !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
+ !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
+ !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
+ ! integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
+integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  test hfTD
+ !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
+
+!=============================================================================
+!+ 2)  Define main model dimensions and domain-name,  things that will
+!       generally only change when switching Met-driver or large domain
+
+
+  character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+  integer, public, parameter ::  &
+    IIFULLDOM   = 170   &    ! x-Dimensions of full domain
+  , JJFULLDOM   = 133   &    ! y-Dimensions of full domain
+  , NNLANDUSE    = 19    &    ! Number of land use types  (SEI, JUN06)
+!
+  , METSTEP      = 3     &    ! time-step of met. (h)
+  , KMAX_MID     = 20    &    ! Number of points (levels) in vertical
+  , KMAX_BND     = KMAX_MID+1 & ! Number of points (levels) in vertical + 1
+  , KTOP         = 1     &    ! K-value at top of domain
+  , NMET         = 2     &    ! No. met fields in memory
+  , KCHEMTOP     = 2     &    ! chemistry not done for k=1
+  , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??) 
+  , KUPPER       = 6     &    ! limit of clouds (for wet dep.)
+  , AOT_HORIZON  = 89         ! Limit of daylight zenith angle for AOTs
+      
+
+! EMEP measurements end at 6am, used in  daily averages
   integer, public, parameter :: END_OF_EMEPDAY  = 6  
 
   real, public :: dt_advec   ! time-step for advection (s)
@@ -34,58 +76,25 @@ module ModelConstants_ml
 
  !/-- choose temperature range: from 148 K (-125C) ro 333K (+60C).
 
- integer, parameter, public :: &
-                 CHEMTMIN=148,CHEMTMAX=333    ! Min and max temp for rates, 
-
-!
-!  additional parameters, formerly set in par_ml, eulcon.inc
-!
-  integer, public, parameter :: &
-    KMAX_MID   = 20           & ! Number of points (levels) in vertical
-  , KMAX_BND   = KMAX_MID+1   & ! Number of points (levels) in vertical + 1
-  , KTOP    = 1            & ! K-value at top of domain
-  , NMET    = 2              ! No. met fields in memory
-
-  integer, public, parameter :: &
-    KCHEMTOP = 2           &  ! chemistry not done for k=1
-  , KCLOUDTOP= 8           &  ! limit of clouds (for MADE dj ??) 
-  , KUPPER   = 6           &  ! limit of clouds (for wet dep.)
-  , AOT_HORIZON = 89          ! Limit of daylight zenith angle for AOTs
+ integer, parameter, public :: CHEMTMIN=148,CHEMTMAX=333
 
   real, public, parameter  ::    &
       V_RAIN   = 5.              &  ! pw approximate vertical speed of rain m/
      ,CLOUDTHRES =  1.0e-5         !pw when cloudwater is larger than 
                                    !CLOUDTHRES, there are clouds. 
                                    !THIS VALUE MUST BE CHECKED BEFORE USE! 
- 
 !
-!  additional parameters, formerly set in defcon, eulcon.inc
+!  additional parameters
 !
-
   integer, public, save   :: nterm, nmax, nstep, nprint,  nass, nbound
 
-!rv1.6.10 change
-  integer, public, save   :: iyr_trend !ds Year specified for say BC changes
-
-  ! was set in readpar_mach_ml, but not used!
-  !real,    public, parameter   :: 
-    ! alfa  = 1.5e-01   ! -> DRY DEP. FACTOR FOR SO2,SO4
-    ! betaS = 5.0e-02   !  -> SO4 FACTOR OF SO2 EMISSIONS
-    ! betaN = 1.0e-01   ! -> NO2 FACTOR OF NO  EMISSIONS
+  integer, public, save   :: iyr_trend ! Year specified for say BC changes
 
   integer, public, save , dimension(20)   :: identi   !! ????
 
-!rv1_9_5:
   character(len=120), public, save :: runlabel1& !SHORT Allows explanatory text
                                      ,runlabel2 !LONG  Read in from grun.pl
-                                               ! 
 
-
-  type(date), public, save :: current_date
-
-  integer, public, parameter :: NNLANDUSE  = 19 ! Number of land use types 
-                                                ! for SEI landuse, JUN06
-      
   real, public, parameter  ::    &
        EPSIL=1.0e-30             &  ! small number
     ,  PASCAL=100.0              &  ! Conv. from hPa to Pa
@@ -107,20 +116,6 @@ module ModelConstants_ml
 
     real, public, parameter   :: MFAC = 0.001*AVOG/ATWAIR
 
-
-  ! For debugging, we often want to print out for  a specific location
-  ! Set here:
-
-!!integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
- !integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
- !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
- !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
- !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
-! integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
-integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  test hfTD
- !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
- !integer, public, parameter :: DEBUG_i=37, DEBUG_j=39 !  Sea
- !integer, public, parameter :: DEBUG_i=134, DEBUG_j=120 ! pw error?
 
 !===========================================================================
 ! N2O5 -> nitrate calculation. Some constants for
