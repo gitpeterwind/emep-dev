@@ -1,7 +1,8 @@
 module My_WetDep_ml
  use MassBudget_ml,     only : totwdep
  use ModelConstants_ml, only : atwS, atwN, atwPM
- use Derived_ml,  only : f_wdep, wdep, f_2d, d_2d, find_one_index, IOU_INST
+ use Derived_ml,  only : f_2d, d_2d, IOU_INST
+ use SmallUtils_ml,  only : find_index
 
 
   use GenSpec_tot_ml          ! SO2, SO4, etc.
@@ -61,10 +62,10 @@ contains
 
    !####################### ds NEW define indices here ##########
 
-     WDEP_PREC= find_one_index("WDEP_PREC",f_wdep(:)%name)
-     WDEP_SOX = find_one_index("WDEP_SOX",f_wdep(:)%name)
-     WDEP_OXN = find_one_index("WDEP_OXN",f_wdep(:)%name)
-     WDEP_RDN = find_one_index("WDEP_RDN",f_wdep(:)%name)
+     WDEP_PREC= find_index("WDEP_PREC",f_2d(:)%name)
+     WDEP_SOX = find_index("WDEP_SOX",f_2d(:)%name)
+     WDEP_OXN = find_index("WDEP_OXN",f_2d(:)%name)
+     WDEP_RDN = find_index("WDEP_RDN",f_2d(:)%name)
    !####################### ds END define indices here ##########
 
   end subroutine Init_WetDep
@@ -96,9 +97,9 @@ contains
        totwdep(IXADV_PMco)  = totwdep(IXADV_PMco)  + wdeppmco
 
 
-       wdep(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 
-       wdep(WDEP_OXN,i,j,IOU_INST) = wdepox * atwN * invgridarea 
-       wdep(WDEP_RDN,i,j,IOU_INST) = wdepred * atwN * invgridarea 
+       d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 
+       d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * atwN * invgridarea 
+       d_2d(WDEP_RDN,i,j,IOU_INST) = wdepred * atwN * invgridarea 
 
 
   end subroutine WetDep_Budget

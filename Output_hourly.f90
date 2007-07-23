@@ -23,7 +23,7 @@
 
    use CheckStop_ml,     only : CheckStop
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR,Deriv, find_one_index
+   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR,Deriv
    use GenSpec_shl_ml ,  only : NSPEC_SHL        ! Maps indices
    use GenChemicals_ml , only : species          ! Gives names
    use GridValues_ml,    only : i_glob, j_glob   ! Gives emep coordinates

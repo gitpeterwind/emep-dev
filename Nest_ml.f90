@@ -238,7 +238,6 @@ contains
     ndim=3 !3-dimensional
     kmax=KMAX_MID
     scale=1.0
-    def1%code=0           !not used
     def1%class='Advected' !written
     def1%avg=.false.      !not used
     def1%index=0          !not used

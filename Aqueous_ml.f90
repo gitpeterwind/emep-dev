@@ -32,9 +32,8 @@ module Aqueous_ml
 !-----------------------------------------------------------------------
 
   use My_WetDep_ml,  only : WetDep, NWETDEP, WetDep_Budget, WDEP_PREC
-  use My_Derived_ml, only : NWDEP      
   use Derived_ml,    only : IOU_INST & ! Index: instantaneous values
-                            ,wdep      ! Wet deposition fields
+                            ,d_2d      ! Contains Wet deposition fields
   use GridValues_ml, only : gridwidth_m,xm2,xmd,carea
   use ModelConstants_ml, only: &
       CHEMTMIN, CHEMTMAX       &       ! -> range of temperature 
@@ -521,7 +520,7 @@ subroutine WetDeposition(i,j)
      end do ! k loop
   end do ! spec loop
 
-  wdep(WDEP_PREC,i,j,IOU_INST) = sum ( pr(i,j,:) ) * dt
+  d_2d(WDEP_PREC,i,j,IOU_INST) = sum ( pr(i,j,:) ) * dt
                                               ! Same for all models
 
 ! add other losses into twetdep and wdep arrays:

@@ -82,6 +82,7 @@ program myeul
                               ,nprint,nass,nterm,iyr_trend, PT
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
   use out_restri_ml,    only : set_outrestri
+  use OutputChem_ml,    only : WrtChem
   use Par_ml,           only : me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
                                ,Topology, parinit & 
             ,li0,li1,lj0,lj1,tgi0,tgj0  &   ! FOR TESTING
@@ -488,7 +489,8 @@ program myeul
 
     ! - daynumber needed  for BCs, so call here to be safe
 
-      daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
+      daynumber=day_of_year(current_date%year,current_date%month,&
+              current_date%day)
 
       if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
 
@@ -505,7 +507,7 @@ program myeul
 
           call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
-          call MetModel_LandUse(2)   !ds rv1.2 call (2) -> snow
+          call MetModel_LandUse(2)   ! e.g.  gets snow
     if ( me == 0 ) write(6,*)"vnewmonth start" 
 
           call newmonth
@@ -516,7 +518,7 @@ program myeul
 
           call init_aqueous()
 
-          if(numt == 2) call tstfld
+          if(numt == 2) call tstfld  !test output
 
 
           call Add_2timing(9,tim_after,tim_before,"init_aqueous")
@@ -531,8 +533,7 @@ program myeul
       if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
                if( DEBUG_UNI ) print *, "Into BCs" , me
 
-               !ds call BoundaryConditions(current_date%year,mm)
-               !ds rv1.6.10 We set BCs using the specified iyr_trend
+               ! We set BCs using the specified iyr_trend
                !   which may or may not equal the meteorology year
 
                call BoundaryConditions(current_date%year,iyr_trend,mm)
@@ -554,10 +555,11 @@ program myeul
 
       call Add_2timing(10,tim_after,tim_before,"infield")
 
-      daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
+      daynumber=day_of_year(current_date%year,current_date%month,&
+            current_date%day)
       if ( me == 0) then
          write(6,*) 'TIME TEST ', 'current date ',current_date, &
-              "day number ", daynumber !u3
+              "day number ", daynumber
       endif
 
 
@@ -571,14 +573,12 @@ program myeul
       call Add_2timing(11,tim_after,tim_before,"metvar")
 
       call Code_timer(tim_before)
-               if( DEBUG_UNI ) print *, "Before phyche" 
 
       call phyche(numt)
 
       call Add_2timing(18,tim_after,tim_before,"phyche")
-               if( DEBUG_UNI ) print *, "After phyche" 
 
-      call Wrtchem(numt)
+      call WrtChem(numt)
 
       call trajectory_in
 

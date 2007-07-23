@@ -9,7 +9,7 @@
 # lnodes= number of nodes, ppn=processor per node (max4)
 #PBS -lnodes=16
 # wall time limit of run 
-#PBS -lwalltime=00:10:00
+#PBS -lwalltime=05:10:00
 # lpmeme=memory to reserve per processor (max 4 or 16GB per node)
 #PBS -lpmem=200MB
 # account for billing
@@ -178,7 +178,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_9beta";
+    $testv       = "rv2_9_1";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -230,7 +230,8 @@ my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
 
 # just before execution - so code can be run interactivel.
 
-# NDX, NDY  now set in ModelConstants_ml - may do more work here
+# NDX, NDY  now set in ModelConstants_ml - use perl to extract these
+# values and check against submission:
 
 open(IN,"<$ProgDir/ModelConstants_ml.f90");
 my ( $NDX, $NDY ); # Processors in x-, y-, direction
@@ -240,27 +241,33 @@ while(my $line = <IN>){
 }
 close(IN);
 my $NPROC =  $NDX * $NDY ;
-#rv2_9 if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
-#my $TESTN = $ENV{PBS_NODEFILE};
-#print "NDX = $NDX NDY = $NDY  NPROC = $NPROC  TEST $TESTN\n";
-##NCPUS=`wc -l $PBS_NODEFILE | awk {print $1}'`;
-#system(" echo $PBS_NODEFILE");
-#print " PBS PBS PBS $PBS_NODEFILE  $NCPUS \n";
-#
-#PBS -lnodes=$NPROC
+print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
+
+if ( $ENV{PBS_NODEFILE} ) {
+   $_ =  `wc -l $ENV{PBS_NODEFILE}`;
+   my $RUN_NPROC;
+   ( $RUN_NPROC, undef ) = split;
+   print "Qsub has: lnodes $RUN_NPROC\n";
+   die "Error: Wrong number of lnodes!\n" unless $NPROC == $RUN_NPROC;
+} else {
+   print "skip nodefile check on interactive runs\n";
+}
+
+# P B S -lnodes=$NPROC
+#(Didn't work: my $NCPUS=`wc -l $ENV{PBS_NODEFILE} | awk '{print $1}'`;)
 
 
 
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "07";       # first month, use 2-digits!
-my $mm2   =  "07";       # last month, use 2-digits!
+my $mm1   =  "04";       # first month, use 2-digits!
+my $mm2   =  "05";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 4;       # for testing, simply reset here
+#$NTERM = 2;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -559,6 +566,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     
     open(RMF,">Remove.sh");
     foreach my $f ( @list_of_files ) {	print RMF "rm $f \n"; }
+    print RMF "rm $LPROG\n";   # Delete executable also
     close(RMF);
     
     my $startyear = $year;
@@ -621,7 +629,6 @@ femis: femis.$scenario
 ------------------------------
 EOT
     close RUNLOG;
-#rv2_9 Domain x0 $dom_x0 y0 $dom_y0 wx $dom_wx wy $dom_wy
 
 #clean up work directories and links   
     if ($DRY_RUN) { # keep femis.dat

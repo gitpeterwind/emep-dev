@@ -28,7 +28,7 @@ module DryDep_ml
                           Dep        ! Mapping (type = depmap)
 
 
- use My_Derived_ml      ! -> OUTPUT_ABS_HEIGHTS, d_2d, IOU_INST, D2_VG etc...
+ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use DepVariables_ml,only : NLANDUSE,  & !ds jan2003 LU_WATER, &
                             forest, water, f_phen, &
@@ -168,7 +168,6 @@ module DryDep_ml
 
  real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
  real :: RaVs    ! Ra_ref *Vs for particles
- real, dimension(NOUTPUT_ABS_HEIGHTS) :: htz, Raz  ! Heights and Ra(z)
 
  real convfac,  & ! rescaling to different units
       convfac2, & ! rescaling to different units

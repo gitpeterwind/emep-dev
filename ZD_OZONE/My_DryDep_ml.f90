@@ -13,14 +13,14 @@ module My_UKDep_ml    ! DryDep_ml
             ECO_WATER,ECO_CONIF_FOREST,ECO_DECID_FOREST, & 
             ECO_CROP,ECO_SEMINAT,ECO_WETLAND
 
- use Derived_ml,    only : f_ddep, ddep, f_2d,   d_2d,  &
-                           find_one_index, IOU_INST
+ use Derived_ml,    only : f_2d,   d_2d, IOU_INST
 
  use GenSpec_adv_ml               !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use Landuse_ml,         only : InGrowingSeason
  use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON
  use PhysicalConstants_ml, only : AVOG
  use Setup_1dfields_ml,     only : izen ! integer of zenith angle
+ use SmallUtils_ml,  only: find_index
  use TimeDate_ml,           only : current_date
  use Wesely_ml
  implicit none
@@ -148,58 +148,58 @@ contains
 
 !####################### ds NEW define indices here #######################
 
-DDEP_SOX   = find_one_index("DDEP_SOX",f_ddep(:)%name)
-DDEP_OXN   = find_one_index("DDEP_OXN",f_ddep(:)%name)
-DDEP_RDN   = find_one_index("DDEP_RDN",f_ddep(:)%name)
+DDEP_SOX   = find_index("DDEP_SOX",f_2d(:)%name)
+DDEP_OXN   = find_index("DDEP_OXN",f_2d(:)%name)
+DDEP_RDN   = find_index("DDEP_RDN",f_2d(:)%name)
 
-!ds DDEP_OXSSW = find_one_index("DDEP_OXSSW",f_ddep(:)%name)
-DDEP_OXSCF = find_one_index("DDEP_OXSCF",f_ddep(:)%name)
-DDEP_OXSDF = find_one_index("DDEP_OXSDF",f_ddep(:)%name)
-DDEP_OXSCR = find_one_index("DDEP_OXSCR",f_ddep(:)%name)
-DDEP_OXSSN = find_one_index("DDEP_OXSSN",f_ddep(:)%name)
-!ds DDEP_OXSWE = find_one_index("DDEP_OXSWE",f_ddep(:)%name)
+!ds DDEP_OXSSW = find_index("DDEP_OXSSW",f_2d(:)%name)
+DDEP_OXSCF = find_index("DDEP_OXSCF",f_2d(:)%name)
+DDEP_OXSDF = find_index("DDEP_OXSDF",f_2d(:)%name)
+DDEP_OXSCR = find_index("DDEP_OXSCR",f_2d(:)%name)
+DDEP_OXSSN = find_index("DDEP_OXSSN",f_2d(:)%name)
+!ds DDEP_OXSWE = find_index("DDEP_OXSWE",f_2d(:)%name)
 
-!ds DDEP_OXNSW = find_one_index("DDEP_OXNSW",f_ddep(:)%name)
-DDEP_OXNCF = find_one_index("DDEP_OXNCF",f_ddep(:)%name)
-DDEP_OXNDF = find_one_index("DDEP_OXNDF",f_ddep(:)%name)
-DDEP_OXNCR = find_one_index("DDEP_OXNCR",f_ddep(:)%name)
-DDEP_OXNSN = find_one_index("DDEP_OXNSN",f_ddep(:)%name)
-!ds DDEP_OXNWE = find_one_index("DDEP_OXNWE",f_ddep(:)%name)
+!ds DDEP_OXNSW = find_index("DDEP_OXNSW",f_2d(:)%name)
+DDEP_OXNCF = find_index("DDEP_OXNCF",f_2d(:)%name)
+DDEP_OXNDF = find_index("DDEP_OXNDF",f_2d(:)%name)
+DDEP_OXNCR = find_index("DDEP_OXNCR",f_2d(:)%name)
+DDEP_OXNSN = find_index("DDEP_OXNSN",f_2d(:)%name)
+!ds DDEP_OXNWE = find_index("DDEP_OXNWE",f_2d(:)%name)
 
-!ds DDEP_RDNSW = find_one_index("DDEP_RDNSW",f_ddep(:)%name)
-DDEP_RDNCF = find_one_index("DDEP_RDNCF",f_ddep(:)%name)
-DDEP_RDNDF = find_one_index("DDEP_RDNDF",f_ddep(:)%name)
-DDEP_RDNCR = find_one_index("DDEP_RDNCR",f_ddep(:)%name)
-DDEP_RDNSN = find_one_index("DDEP_RDNSN",f_ddep(:)%name)
-!ds DDEP_RDNWE = find_one_index("DDEP_RDNWE",f_ddep(:)%name)
-
-!ds JUN06 changes
-D2_AFSTDF0 = find_one_index("D2_AFSTDF0",f_2d(:)%name)
-D2_AFSTDF16 = find_one_index("D2_AFSTDF16",f_2d(:)%name)
-
-D2_AFSTBF0 = find_one_index("D2_AFSTBF0",f_2d(:)%name)
-D2_AFSTBF16 = find_one_index("D2_AFSTBF16",f_2d(:)%name)
+!ds DDEP_RDNSW = find_index("DDEP_RDNSW",f_2d(:)%name)
+DDEP_RDNCF = find_index("DDEP_RDNCF",f_2d(:)%name)
+DDEP_RDNDF = find_index("DDEP_RDNDF",f_2d(:)%name)
+DDEP_RDNCR = find_index("DDEP_RDNCR",f_2d(:)%name)
+DDEP_RDNSN = find_index("DDEP_RDNSN",f_2d(:)%name)
+!ds DDEP_RDNWE = find_index("DDEP_RDNWE",f_2d(:)%name)
 
 !ds JUN06 changes
-D2_AFSTCR0 = find_one_index("D2_AFSTCR0",f_2d(:)%name)
-D2_AFSTCR3 = find_one_index("D2_AFSTCR3",f_2d(:)%name)
-D2_AFSTCR6 = find_one_index("D2_AFSTCR6",f_2d(:)%name)
+D2_AFSTDF0 = find_index("D2_AFSTDF0",f_2d(:)%name)
+D2_AFSTDF16 = find_index("D2_AFSTDF16",f_2d(:)%name)
 
-D2_O3DF    = find_one_index("D2_O3DF   ",f_2d(:)%name)
-D2_O3WH    = find_one_index("D2_O3WH   ",f_2d(:)%name)
+D2_AFSTBF0 = find_index("D2_AFSTBF0",f_2d(:)%name)
+D2_AFSTBF16 = find_index("D2_AFSTBF16",f_2d(:)%name)
 
-D2_EUAOT30WH    = find_one_index("D2_EUAOT30WH",f_2d(:)%name)
-D2_EUAOT40WH    = find_one_index("D2_EUAOT40WH",f_2d(:)%name)
-D2_EUAOT30DF    = find_one_index("D2_EUAOT30DF",f_2d(:)%name)
-D2_EUAOT40DF    = find_one_index("D2_EUAOT40DF",f_2d(:)%name)
+!ds JUN06 changes
+D2_AFSTCR0 = find_index("D2_AFSTCR0",f_2d(:)%name)
+D2_AFSTCR3 = find_index("D2_AFSTCR3",f_2d(:)%name)
+D2_AFSTCR6 = find_index("D2_AFSTCR6",f_2d(:)%name)
 
-D2_UNAOT30WH    = find_one_index("D2_UNAOT30WH",f_2d(:)%name)
-D2_UNAOT40WH    = find_one_index("D2_UNAOT40WH",f_2d(:)%name)
-D2_UNAOT30DF    = find_one_index("D2_UNAOT30DF",f_2d(:)%name)
-D2_UNAOT40DF    = find_one_index("D2_UNAOT40DF",f_2d(:)%name)
+D2_O3DF    = find_index("D2_O3DF   ",f_2d(:)%name)
+D2_O3WH    = find_index("D2_O3WH   ",f_2d(:)%name)
 
-D2_MMAOT30WH    = find_one_index("D2_MMAOT30WH",f_2d(:)%name)
-D2_MMAOT40WH    = find_one_index("D2_MMAOT40WH",f_2d(:)%name)
+D2_EUAOT30WH    = find_index("D2_EUAOT30WH",f_2d(:)%name)
+D2_EUAOT40WH    = find_index("D2_EUAOT40WH",f_2d(:)%name)
+D2_EUAOT30DF    = find_index("D2_EUAOT30DF",f_2d(:)%name)
+D2_EUAOT40DF    = find_index("D2_EUAOT40DF",f_2d(:)%name)
+
+D2_UNAOT30WH    = find_index("D2_UNAOT30WH",f_2d(:)%name)
+D2_UNAOT40WH    = find_index("D2_UNAOT40WH",f_2d(:)%name)
+D2_UNAOT30DF    = find_index("D2_UNAOT30DF",f_2d(:)%name)
+D2_UNAOT40DF    = find_index("D2_UNAOT40DF",f_2d(:)%name)
+
+D2_MMAOT30WH    = find_index("D2_MMAOT30WH",f_2d(:)%name)
+D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
 !####################### ds END of define indices #######################
 
   end subroutine Init_DepMap
@@ -246,16 +246,16 @@ D2_MMAOT40WH    = find_one_index("D2_MMAOT40WH",f_2d(:)%name)
 !! OXIDIZED SULPHUR
 !!-----------------------
 
-     ddep(DDEP_SOX,i,j,IOU_INST) = (  &
+     d_2d(DDEP_SOX,i,j,IOU_INST) = (  &
           DepLoss(IXADV_SO2) + DepLoss(IXADV_SO4) ) * convfac * atwS
 
    !BUG FIX!!!!??? 16/1/2004!!!!
 
-     !ds ddep(DDEP_OXSSW,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXSCF,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXSDF,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXSCR,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXSSN,i,j,IOU_INST) = 0.0
+     !ds d_2d(DDEP_OXSSW,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXSCF,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXSDF,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXSCR,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXSSN,i,j,IOU_INST) = 0.0
      !ds ddep(DDEP_OXSWE,i,j,IOU_INST) = 0.0
 
 
@@ -268,33 +268,33 @@ D2_MMAOT40WH    = find_one_index("D2_MMAOT40WH",f_2d(:)%name)
        !ds ddep(DDEP_OXSSW,i,j,IOU_INST) = ddep(DDEP_OXSSW,i,j,IOU_INST) +  &
        !ds      sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXSCF,i,j,IOU_INST) = ddep(DDEP_OXSCF,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXSCF,i,j,IOU_INST) = d_2d(DDEP_OXSCF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
 
 
-       ddep(DDEP_OXSDF,i,j,IOU_INST) = ddep(DDEP_OXSDF,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXSDF,i,j,IOU_INST) = d_2d(DDEP_OXSDF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_DECID_FOREST) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXSCR,i,j,IOU_INST) = ddep(DDEP_OXSCR,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXSCR,i,j,IOU_INST) = d_2d(DDEP_OXSCR,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CROP) ) * DepLoss(nadv)
 
 
-       ddep(DDEP_OXSSN,i,j,IOU_INST) = ddep(DDEP_OXSSN,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXSSN,i,j,IOU_INST) = d_2d(DDEP_OXSSN,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_SEMINAT) ) * DepLoss(nadv)
 
       !ds 25/3/2004:
-      ! ddep(DDEP_OXSWE,i,j,IOU_INST) = ddep(DDEP_OXSWE,i,j,IOU_INST) +  &
+      ! d_2d(DDEP_OXSWE,i,j,IOU_INST) = d_2d(DDEP_OXSWE,i,j,IOU_INST) +  &
       !      sum( fluxfrac(nadv,ECO_WETLAND) ) * DepLoss(nadv)
       ! ==                                                            ==== !
 
      end do
 
-     !ds ddep(DDEP_OXSSW,i,j,IOU_INST) = ddep(DDEP_OXSSW,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSCF,i,j,IOU_INST) = ddep(DDEP_OXSCF,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSDF,i,j,IOU_INST) = ddep(DDEP_OXSDF,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSCR,i,j,IOU_INST) = ddep(DDEP_OXSCR,i,j,IOU_INST)*convfac*atwS
-     ddep(DDEP_OXSSN,i,j,IOU_INST) = ddep(DDEP_OXSSN,i,j,IOU_INST)*convfac*atwS
-     !ds ddep(DDEP_OXSWE,i,j,IOU_INST) = ddep(DDEP_OXSWE,i,j,IOU_INST)*convfac*atwS
+     !ds d_2d(DDEP_OXSSW,i,j,IOU_INST) = d_2d(DDEP_OXSSW,i,j,IOU_INST)*convfac*atwS
+     d_2d(DDEP_OXSCF,i,j,IOU_INST) = d_2d(DDEP_OXSCF,i,j,IOU_INST)*convfac*atwS
+     d_2d(DDEP_OXSDF,i,j,IOU_INST) = d_2d(DDEP_OXSDF,i,j,IOU_INST)*convfac*atwS
+     d_2d(DDEP_OXSCR,i,j,IOU_INST) = d_2d(DDEP_OXSCR,i,j,IOU_INST)*convfac*atwS
+     d_2d(DDEP_OXSSN,i,j,IOU_INST) = d_2d(DDEP_OXSSN,i,j,IOU_INST)*convfac*atwS
+     !ds d_2d(DDEP_OXSWE,i,j,IOU_INST) = d_2d(DDEP_OXSWE,i,j,IOU_INST)*convfac*atwS
 
 
 
@@ -302,18 +302,18 @@ D2_MMAOT40WH    = find_one_index("D2_MMAOT40WH",f_2d(:)%name)
 !!-----------------------
 
 
-     ddep(DDEP_OXN,i,j,IOU_INST) = ( &
+     d_2d(DDEP_OXN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_HNO3) +  DepLoss(IXADV_PAN) +  DepLoss(IXADV_NO2) + &
           DepLoss(IXADV_aNO3)+  DepLoss(IXADV_pNO3)  ) * convfac * atwN
 
    !BUG FIX!!!!??? 17/1/2004!!!!
 
-     !ds ddep(DDEP_OXNSW,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXNCF,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXNDF,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXNCR,i,j,IOU_INST) = 0.0
-     ddep(DDEP_OXNSN,i,j,IOU_INST) = 0.0
-     !ds ddep(DDEP_OXNWE,i,j,IOU_INST) = 0.0
+     !ds d_2d(DDEP_OXNSW,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXNCF,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXNDF,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXNCR,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_OXNSN,i,j,IOU_INST) = 0.0
+     !ds d_2d(DDEP_OXNWE,i,j,IOU_INST) = 0.0
 
      do n = 1, N_OXN
        nadv = OXN(n)
@@ -321,54 +321,54 @@ D2_MMAOT40WH    = find_one_index("D2_MMAOT40WH",f_2d(:)%name)
       ! == ds make use of ECO_ arrays from DepVariables - specifies   ==== !
       !    which landuse is in which category                         ==== !
 
-       !ds ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST) +  &
+       !ds d_2d(DDEP_OXNSW,i,j,IOU_INST) = d_2d(DDEP_OXNSW,i,j,IOU_INST) +  &
        !ds      sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXNCF,i,j,IOU_INST) = ddep(DDEP_OXNCF,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXNCF,i,j,IOU_INST) = d_2d(DDEP_OXNCF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
 
 
-       ddep(DDEP_OXNDF,i,j,IOU_INST) = ddep(DDEP_OXNDF,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXNDF,i,j,IOU_INST) = d_2d(DDEP_OXNDF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_DECID_FOREST) ) * DepLoss(nadv)
 
-       ddep(DDEP_OXNCR,i,j,IOU_INST) = ddep(DDEP_OXNCR,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXNCR,i,j,IOU_INST) = d_2d(DDEP_OXNCR,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CROP) ) * DepLoss(nadv)
 
 
-       ddep(DDEP_OXNSN,i,j,IOU_INST) = ddep(DDEP_OXNSN,i,j,IOU_INST) +  &
+       d_2d(DDEP_OXNSN,i,j,IOU_INST) = d_2d(DDEP_OXNSN,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_SEMINAT) ) * DepLoss(nadv)
 
-      !ds  ddep(DDEP_OXNWE,i,j,IOU_INST) = ddep(DDEP_OXNWE,i,j,IOU_INST) +  &
+      !ds  d_2d(DDEP_OXNWE,i,j,IOU_INST) = d_2d(DDEP_OXNWE,i,j,IOU_INST) +  &
       !ds       sum( fluxfrac(nadv,ECO_WETLAND) ) * DepLoss(nadv)
       ! ==                                                            ==== !
 
 
      end do
 
-    !ds  ddep(DDEP_OXNSW,i,j,IOU_INST) = ddep(DDEP_OXNSW,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNCF,i,j,IOU_INST) = ddep(DDEP_OXNCF,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNDF,i,j,IOU_INST) = ddep(DDEP_OXNDF,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNCR,i,j,IOU_INST) = ddep(DDEP_OXNCR,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_OXNSN,i,j,IOU_INST) = ddep(DDEP_OXNSN,i,j,IOU_INST)*convfac*atwN
-    !ds  ddep(DDEP_OXNWE,i,j,IOU_INST) = ddep(DDEP_OXNWE,i,j,IOU_INST)*convfac*atwN
+    !ds  d_2d(DDEP_OXNSW,i,j,IOU_INST) = d_2d(DDEP_OXNSW,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_OXNCF,i,j,IOU_INST) = d_2d(DDEP_OXNCF,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_OXNDF,i,j,IOU_INST) = d_2d(DDEP_OXNDF,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_OXNCR,i,j,IOU_INST) = d_2d(DDEP_OXNCR,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_OXNSN,i,j,IOU_INST) = d_2d(DDEP_OXNSN,i,j,IOU_INST)*convfac*atwN
+    !ds  d_2d(DDEP_OXNWE,i,j,IOU_INST) = d_2d(DDEP_OXNWE,i,j,IOU_INST)*convfac*atwN
 
 
 
 !! REDUCED NITROGEN
 !!-----------------------
 
-     ddep(DDEP_RDN,i,j,IOU_INST) = ( &
+     d_2d(DDEP_RDN,i,j,IOU_INST) = ( &
           DepLoss(IXADV_NH3) +  DepLoss(IXADV_aNH4)  ) * convfac * atwN
 
 
    !BUG FIX!!!!??? 17/1/2004!!!!
 
-    !ds  ddep(DDEP_RDNSW,i,j,IOU_INST) = 0.0
-     ddep(DDEP_RDNCF,i,j,IOU_INST) = 0.0
-     ddep(DDEP_RDNDF,i,j,IOU_INST) = 0.0
-     ddep(DDEP_RDNCR,i,j,IOU_INST) = 0.0
-     ddep(DDEP_RDNSN,i,j,IOU_INST) = 0.0
-    !ds  ddep(DDEP_RDNWE,i,j,IOU_INST) = 0.0
+    !ds  d_2d(DDEP_RDNSW,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_RDNCF,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_RDNDF,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_RDNCR,i,j,IOU_INST) = 0.0
+     d_2d(DDEP_RDNSN,i,j,IOU_INST) = 0.0
+    !ds  d_2d(DDEP_RDNWE,i,j,IOU_INST) = 0.0
 
      do n = 1, N_RDN
        nadv = RDN(n)
@@ -376,35 +376,35 @@ D2_MMAOT40WH    = find_one_index("D2_MMAOT40WH",f_2d(:)%name)
       ! == ds make use of ECO_ arrays from DepVariables - specifies   ==== !
       !    which landuse is in which category                         ==== !
 
-      !ds  ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST) +  &
+      !ds  d_2d(DDEP_RDNSW,i,j,IOU_INST) = d_2d(DDEP_RDNSW,i,j,IOU_INST) +  &
       !ds       sum( fluxfrac(nadv,ECO_WATER) ) * DepLoss(nadv)
 
-       ddep(DDEP_RDNCF,i,j,IOU_INST) = ddep(DDEP_RDNCF,i,j,IOU_INST) +  &
+       d_2d(DDEP_RDNCF,i,j,IOU_INST) = d_2d(DDEP_RDNCF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CONIF_FOREST) ) * DepLoss(nadv)
 
 
-       ddep(DDEP_RDNDF,i,j,IOU_INST) = ddep(DDEP_RDNDF,i,j,IOU_INST) +  &
+       d_2d(DDEP_RDNDF,i,j,IOU_INST) = d_2d(DDEP_RDNDF,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_DECID_FOREST) ) * DepLoss(nadv)
 
-       ddep(DDEP_RDNCR,i,j,IOU_INST) = ddep(DDEP_RDNCR,i,j,IOU_INST) +  &
+       d_2d(DDEP_RDNCR,i,j,IOU_INST) = d_2d(DDEP_RDNCR,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_CROP) ) * DepLoss(nadv)
 
 
-       ddep(DDEP_RDNSN,i,j,IOU_INST) = ddep(DDEP_RDNSN,i,j,IOU_INST) +  &
+       d_2d(DDEP_RDNSN,i,j,IOU_INST) = d_2d(DDEP_RDNSN,i,j,IOU_INST) +  &
             sum( fluxfrac(nadv,ECO_SEMINAT) ) * DepLoss(nadv)
 
-      !ds  ddep(DDEP_RDNWE,i,j,IOU_INST) = ddep(DDEP_RDNWE,i,j,IOU_INST) +  &
+      !ds  d_2d(DDEP_RDNWE,i,j,IOU_INST) = d_2d(DDEP_RDNWE,i,j,IOU_INST) +  &
       !ds       sum( fluxfrac(nadv,ECO_WETLAND) ) * DepLoss(nadv)
       ! ==                                                            ==== !
 
      end do
 
-     !ds ddep(DDEP_RDNSW,i,j,IOU_INST) = ddep(DDEP_RDNSW,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNCF,i,j,IOU_INST) = ddep(DDEP_RDNCF,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNDF,i,j,IOU_INST) = ddep(DDEP_RDNDF,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNCR,i,j,IOU_INST) = ddep(DDEP_RDNCR,i,j,IOU_INST)*convfac*atwN
-     ddep(DDEP_RDNSN,i,j,IOU_INST) = ddep(DDEP_RDNSN,i,j,IOU_INST)*convfac*atwN
-    !ds  ddep(DDEP_RDNWE,i,j,IOU_INST) = ddep(DDEP_RDNWE,i,j,IOU_INST)*convfac*atwN
+     !ds d_2d(DDEP_RDNSW,i,j,IOU_INST) = d_2d(DDEP_RDNSW,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_RDNCF,i,j,IOU_INST) = d_2d(DDEP_RDNCF,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_RDNDF,i,j,IOU_INST) = d_2d(DDEP_RDNDF,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_RDNCR,i,j,IOU_INST) = d_2d(DDEP_RDNCR,i,j,IOU_INST)*convfac*atwN
+     d_2d(DDEP_RDNSN,i,j,IOU_INST) = d_2d(DDEP_RDNSN,i,j,IOU_INST)*convfac*atwN
+    !ds  d_2d(DDEP_RDNWE,i,j,IOU_INST) = d_2d(DDEP_RDNWE,i,j,IOU_INST)*convfac*atwN
 
    !ds  d_2d(D2_FSTCF0,i,j,IOU_INST) =  leaf_flux(1) !* to_nmole
    !ds  d_2d(D2_FSTDF0,i,j,IOU_INST) =  leaf_flux(2) !* to_nmole

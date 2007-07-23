@@ -4,7 +4,8 @@ module My_Derived_ml
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION
-  ! This module specifies the "derived" fields, such as accumulated precipitation 
+  ! This module specifies the "derived" fields, such as accumulated 
+  ! precipitation 
   ! or sulphate, daily, monthly or yearly averages, depositions. These fields
   ! are all typically output as netCDF fields.
   !
@@ -16,8 +17,7 @@ module My_Derived_ml
   ! in the Derived_ml.f90, but users can define their own here, since
   ! we do not use "use only" in Derived_ml. 
   !  
-  ! ds, modified 16/12/2003:
-  !   Major changes. Only text strings used here to define wanted data
+  !   Only text strings used here to define wanted data
   !   All data field characteristics should be defined in Derived_ml, e.g.
   !   in f_2d arrays. 
   !   Derived fields such as d_2d only exist in Derived_ml, so are
@@ -32,6 +32,7 @@ use GenSpec_tot_ml,  only : SO4, HCHO, CH3CHO  &   !  For mol. wts.
                            ,SSfi, SSco  !SeaS
 use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
+                        , SOURCE_RECEPTOR  &  
                         , KMAX_MID & ! =>  z dimension
                         , PPBINV  &  !   1.0e9
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
@@ -39,38 +40,29 @@ use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
-use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
+use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area 
+use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray
 use TimeDate_ml,   only : current_date
 implicit none
 private
 
+ public  :: Init_My_Deriv
  public  :: My_DerivFunc 
 
- !BUGGY? private :: acc_sulphate         ! Sums sulphate column
- !ds moved private :: aot_calc             ! Calculates daylight AOTs
  private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
            ,pm_calc              ! Miscelleaneous PM's
 
 
    character(len=8),  public ,parameter :: model='ZD_OZONE'
 
-   integer, public, parameter :: NOUTPUT_ABS_HEIGHTS = 6
-
-   real, public, parameter, dimension(NOUTPUT_ABS_HEIGHTS) :: &
-          OUTPUT_ABS_HEIGHTS = &
-             (/ 0.0, 1.0, 3.0, 5.0, 10.0, 20.0 /)  ! Above ground
-            ! Note - values below d+z0m will be set to d+z0m
-
-   logical, private, parameter :: T = .true., F = .false. ! shorthands only
 
    !/** Depositions are stored in separate arrays for now - to keep size of
    !    derived arrays smaller and to allow possible move to a Deposition
    !    module at a later stage.
    !  Factor 1.0e6 converts from kg/m2/a to mg/m2/a
 
-  !ds 24/3/2004:
-  !dsNSR - new system for distinguishing source-receptor (SR) stuff from model
+  !        We normally distinguish source-receptor (SR) stuff from model
   !        evaluation.  The SR runs should use as few as possible outputs
   !        to keep CPU and disc-requirements down. We define first then the
   !        minimum list of outputs for use in SR, then define an extra list
@@ -78,22 +70,21 @@ private
   !        of SR runs.
 
 
-
   !============ parameters for source-receptor modelling: ===================!
 
-  !ds 24/3/2004:
-  ! This logical variable is not used here, but in Derived_ml, we set all IOU_DAY
-  ! false if SOURCE_RECPTOR = .true.. We don't (generally) want daily outputs
-  ! for SR runs.
+    integer, public, parameter :: MAX_NUM_DERIV2D = 200
+    integer, public, parameter :: MAX_NUM_DERIV3D =   5
+    character(len=12), public, save, &
+         dimension(MAX_NUM_DERIV2D) :: wanted_deriv2d = NOT_SET_STRING
+    character(len=12), public, save, &
+         dimension(MAX_NUM_DERIV3D) ::  wanted_deriv3d = NOT_SET_STRING
 
-    logical, public, parameter :: SOURCE_RECEPTOR = .true.
+    integer, private, save :: mynum_deriv2d
+    integer, private, save :: mynum_deriv3d
 
+ 
 
-  ! Then we have some standard SR outputs.. ( a bit longer than necessary right now)
-
-    integer, public, parameter :: NSR_2D = 49  
-
-    character(len=12), public, parameter, dimension(NSR_2D) :: &
+    character(len=12), public, parameter, dimension(49) :: &
   D2_SR = (/ &
 !
 !    Particles: components
@@ -110,17 +101,16 @@ private
       ,"D2_AOT30f   ","D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
       ,"D2_EUAOT30WH","D2_EUAOT30DF","D2_EUAOT40WH","D2_EUAOT40DF" &
       ,"D2_UNAOT30WH","D2_UNAOT30DF","D2_UNAOT40WH","D2_UNAOT40DF" &
-      ,"D2_MMAOT30WH","D2_MMAOT40WH" &  ! JUN06
+      ,"D2_MMAOT30WH","D2_MMAOT40WH" &
       ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums 
       ,"D2_NO2      ","D2_OXN      ","D2_NOX      ","D2_NOZ      " &
       ,"D2_OX       "  &
 !
-!    Ecosystem - fluxes: ! JUN06
+!    Ecosystem - fluxes: 
       ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
       ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
-!rv2_5 "D2_AFSTCN0  " ,"D2_AFSTCN3  ","D2_AFSTCN6  ",
        ,"D2_O3DF     ","D2_O3WH     " &
 !
 !    JEJ Surface  pressure (for cross section):
@@ -129,26 +119,11 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    integer, private, parameter :: NEXTRA_2D =  7
-    character(len=12), public, parameter, dimension(NEXTRA_2D) :: &
+    character(len=12), public, parameter, dimension(7) :: &
   D2_EXTRA = (/ &
-       !ds_sep27 "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_NO       "&
        "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
       ,"D2_REDN     ","D2_SSfi     ","D2_SSco     " &
   /)
-
-
-   !============ Choose here (Comment out EXTRA stuff for SR runs ============!
-   ! Number of other 2D derived fields used:
-
-   integer, public, parameter :: NDERIV_2D = &
-           NSR_2D                   ! SOURCE_RECEPTOR = .true.
-           !NSR_2D + NEXTRA_2D       ! SOURCE_RECEPTOR = .false.
-
-   character(len=12), public, parameter, dimension(NDERIV_2D) :: &
-      D2_USED = (/  D2_SR &
-                   !,D2_EXTRA /)   ! SOURCE_RECEPTOR = .false.
-                            /)   ! SOURCE_RECEPTOR = .true.
 
 
 !----------------------
@@ -158,50 +133,63 @@ private
  !"D2_FRNIT  ","D2_MAXOH  ","D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 " &
  !exc  "D2_PAN    ","D2_AOT20    " /)
 
-   !=== NEW MY_DERIVED SYSTEM ======================================
-   !ds 16/12/2003
+   !======= MY_DERIVED SYSTEM ======================================
 
-   ! Define number of fields for each type:
+  ! use character arrays to specify which outputs are wanted
 
-  integer, public, parameter :: &
-        NWDEP     =  4   &  !
-       ,NDDEP     = 15   &  ! wetlands and water now removed
-!dsNSR ,NDERIV_2D = 45   &  ! Number of other 2D derived fields used  !water&!SeaS
-       ,NDERIV_3D =  0      ! Number of 3D derived fields
-
-  ! then use character arrays to specify which are used.
-
-   character(len=9), public, parameter, dimension(NWDEP) :: &
-       WDEP_USED = (/ "WDEP_PREC", "WDEP_SOX ", "WDEP_OXN ", &
+   character(len=9), public, parameter, dimension(4) :: &
+       WDEP_WANTED = (/ "WDEP_PREC", "WDEP_SOX ", "WDEP_OXN ", &
                       "WDEP_RDN " /)   ! WDEP_PM not used
 
-  !ds waters and wetlands removed:
+  !( waters and wetlands removed:)
 
-   character(len=10), public, parameter, dimension(NDDEP) :: &
-     DDEP_USED = (/  &
+   character(len=10), public, parameter, dimension(15) :: &
+     DDEP_WANTED = (/  &
         "DDEP_SOX  ","DDEP_OXN  ","DDEP_RDN  "  &
        ,"DDEP_OXSCF","DDEP_OXSDF","DDEP_OXSCR","DDEP_OXSSN"  &
        ,"DDEP_OXNCF","DDEP_OXNDF","DDEP_OXNCR","DDEP_OXNSN"  &
        ,"DDEP_RDNCF","DDEP_RDNDF","DDEP_RDNCR","DDEP_RDNSN"  &
-     /)    !  "DDEP_PM   " not needed?
+     /)
 
+     character(len=13), public, parameter, dimension(2) :: &
+       D3_WANTED = (/ "D3_O3        ","D3_TH        " /)
 
-     character(len=13), public, parameter, dimension(0:NDERIV_3D) :: &
-!     character(len=13), public, parameter, dimension(NDERIV_3D) :: &
-       D3_USED = (/ "DUMMY" /) ! Dummy value if empty
-!       D3_USED = (/ "D3_O3        ","D3_TH        " /) ! only ozone
-
-!ds    D3_USED = (/"D3_O3        ","D3_OH        ", "D3_CH3COO2   ","D3_PHNO3     "&
-!ds               ,"D3_H2O2      "   &
-!ds               ,"D3_MAXOH     ", "D3_MAXCH3COO2" /) ! Dummy value if empty
-
-    !ds - lines defining ddep, wdep, etc. moved to Derived_ml
-!====
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
    contains
 
+ !=========================================================================
+  subroutine Init_My_Deriv()
+
+   ! Build up the array wanted_deriv2d with the required field names
+
+     call AddArray(WDEP_WANTED, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray(DDEP_WANTED, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING)
+
+     if ( .not. SOURCE_RECEPTOR ) then !may want extra?
+        call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING)
+     end if
+     mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
+
+   ! ditto wanted_deriv3d....
+
+     !if ( .not. SOURCE_RECEPTOR ) then
+     !   call AddArray( D3_WANTED,  wanted_deriv3d, NOT_SET_STRING)
+     !end if
+     mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
+
+
+     if ( me == 0 ) then
+       write(*,*) "Init_My_Deriv, mynum_deriv2d = ", mynum_deriv2d
+       call WriteArray(wanted_deriv2d,mynum_deriv2d," Wanted 2d array is")
+       write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
+       call WriteArray(wanted_deriv3d,mynum_deriv3d," Wanted 3d array is")
+     
+     end if
+
+  end subroutine Init_My_Deriv
  !=========================================================================
   subroutine My_DerivFunc( e_2d, n, class , timefrac, density )
 
@@ -225,15 +213,8 @@ private
 
       !BUGGY?     call acc_sulphate(n)
 
-      !ds MOVED to Derived_ml
-      !MOVED case ( "AOT" )  ! ds added AFSTy
-      !MOVED      call aot_calc( e_2d, n, ndef, timefrac )
-
-      !ds rv1_9_17 case ( "TSO4", "TOXN", "TRDN", "FRNIT", "tNO3 "    )
-      !ds rv1_9_32 case ( "TOXN", "TRDN", "FRNIT", "tNO3 " , "SSalt"   )
       case ( "OX", "NOX", "NOZ", "TOXN", "TRDN", "FRNIT", "tNO3 ", "SSalt" )
 
-!!print *, "Calling misc_xn for ", class
            call misc_xn( e_2d, n, class, density )
 
       case ( "SIA", "PM10", "PM25", "PMco" )
@@ -269,10 +250,6 @@ private
 !BUGGY?                 roa(i,j,k,1)*1.0e9
 !BUGGY?    end forall
 !BUGGY?  end subroutine acc_sulphate
- !=========================================================================
-   !MOVED: ds
-   !subroutine aot_calc MOVED to Derived_ml
- !=========================================================================
  !=========================================================================
 
   subroutine pm_calc( pm_2d, n, class, density )
@@ -354,14 +331,6 @@ private
 
     select case ( class )
 
-    !case ( "TSO4" )  !ds rv1_9_17 - relic of old system - remove!
-    !  forall ( i=1:limax, j=1:ljmax )
-    !      !ds d_2d( n, i,j,IOU_INST) = &
-    !      e_2d( i,j ) = xn_adv(IXADV_SO4,i,j,KMAX_MID) * cfac(IXADV_SO4,i,j)  &
-    !                   * density(i,j)
-    !  end forall
-
-
     case ( "TOXN" )
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
@@ -372,7 +341,7 @@ private
       end forall
 
 
-! JEJ 17/12/04  added OX for O3 and NO2 trend studies
+! OX for O3 and NO2 trend studies
 
     case ( "OX" )
       forall ( i=1:limax, j=1:ljmax )
@@ -380,10 +349,6 @@ private
                 xn_adv(IXADV_O3,i,j,KMAX_MID)  * cfac(IXADV_O3,i,j)   &
               + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j) 
       end forall
-
-
-!ds 31/3/04 .. added new groupngs for SR: NOX, NOZ
-! Shoudl allow calculation of NOy = NOx + NOz
 
     case ( "NOX" )
       forall ( i=1:limax, j=1:ljmax )
@@ -410,7 +375,6 @@ private
 
     case ( "TRDN" )
       forall ( i=1:limax, j=1:ljmax )
-          !ds d_2d( n, i,j,IOU_INST) = &
           e_2d( i,j ) = &
                ( xn_adv(IXADV_NH3,i,j,KMAX_MID) * cfac(IXADV_NH3,i,j)    &
               +  xn_adv(IXADV_aNH4,i,j,KMAX_MID) * cfac(IXADV_aNH4,i,j))  &
@@ -423,7 +387,7 @@ private
           e_2d( i,j ) = &
              ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
             +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j)) &
-            /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))   &
+       /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))&
             +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)    &
             +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j))
       end forall
@@ -436,7 +400,6 @@ private
               * density(i,j)
       end forall
 
-!SeaS
     case ( "SSalt" )
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
@@ -449,5 +412,3 @@ private
   end subroutine misc_xn
  !=========================================================================
 end module My_Derived_ml
-
-

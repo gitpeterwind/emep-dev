@@ -11,7 +11,8 @@ module PhyChem_ml
 
    use Advection_ml,   only: advecdiff,advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
-   use Derived_ml,     only : wdep, ddep,IOU_INST, DerivedProds, Derived
+   use Derived_ml,     only : IOU_INST, DerivedProds, Derived, &
+                               num_deriv2d,d_2d, f_2d
    use DryDep_ml,      only : drydep,init_drydep
    use Emissions_ml,   only : EmisSet  
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
@@ -99,12 +100,18 @@ contains
     	call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
 
-        wdep(:,:,:,IOU_INST) = 0.0
-        ddep(:,:,:,IOU_INST) = 0.0
+        !QUERY - why does wet/dry need special treatment here?
+        do i = 1, num_deriv2d
+          if ( f_2d(i)%class == "WDEP" ) then
+            d_2d(i,:,:,IOU_INST) = 0.0
+          else if ( f_2d(i)%class == "DDEP" ) then
+            d_2d(i,:,:,IOU_INST) = 0.0
+          end if
+        end do
 !       ==================
 
 
-       !ds===================================
+       !===================================
 
         call SolarSetup(current_date%year,current_date%month, &
                            current_date%day,thour)
@@ -121,7 +128,7 @@ contains
 
         call CloudAtten(cc3dmax(:,:,KMAX_MID),Idirect,Idiffuse)
 
-       !ds===================================
+       !===================================
         call Add_2timing(16,tim_after,tim_before,"phyche:ZenAng")
 
 

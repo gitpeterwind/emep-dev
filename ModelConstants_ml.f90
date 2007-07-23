@@ -17,8 +17,9 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
- !TESTER     RUNDOMAIN = (/  86, 107,  70, 102 /)     ! (changeable)
+       RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+ !TESTER 
+ !  RUNDOMAIN = (/  86, 107,  70, 102 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
@@ -40,11 +41,22 @@ integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  test hfTD
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
 
 !=============================================================================
-!+ 2)  Define main model dimensions and domain-name,  things that will
+  ! Source-receptor runs?
+  ! We don't (generally) want daily outputs for SR runs, so in
+  ! Derived_ml, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
+
+    logical, public, parameter :: SOURCE_RECEPTOR = .false.
+
+
+!=============================================================================
+!+ 2)  Define domain-name,  something that will
 !       generally only change when switching Met-driver or large domain
 
-
   character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+
+!=============================================================================
+!+ 3)  Define main model dimensions,  things that will
+!       generally only change when switching Met-driver or large domain
   integer, public, parameter ::  &
     IIFULLDOM   = 170   &    ! x-Dimensions of full domain
   , JJFULLDOM   = 133   &    ! y-Dimensions of full domain

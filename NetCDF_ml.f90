@@ -22,7 +22,7 @@
 !To improve: When output is onto the same file, but with different positions for the 
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
-  use My_Derived_ml, only : NDDEP, NWDEP, NDERIV_2D, NDERIV_3D, model
+  use My_Derived_ml, only : model
   use My_Outputs_ml, only :FREQ_HOURLY 
 
   use Chemfields_ml,   only : xn_shl,xn_adv
@@ -1358,7 +1358,6 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
 
  scale=1.0
 
- def1%code=0           !not used
  def1%class='Advected' !written
  def1%avg=.false.      !not used
  def1%index=0          !not used

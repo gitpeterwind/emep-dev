@@ -14,7 +14,9 @@ module SmallUtils_ml
   ! -- subroutines in this module:
 
   public :: wordsplit    !  Splits input text into words
-  public :: WriteArray    ! Writes out char array, one element per line
+  public :: LenArray     ! count No. set strings in array
+  public :: AddArray     ! Adds new char array to old
+  public :: WriteArray   ! Writes out char array, one element per line
   public :: find_index   ! Finds index of item in list 
   public :: find_indices ! Finds indices of arrays of items in list 
   public :: Self_Test    ! For testing
@@ -22,6 +24,7 @@ module SmallUtils_ml
   private :: find_index_c, find_index_i
 
   integer, public, parameter :: NOT_FOUND = -999
+  character(len=*), public, parameter :: NOT_SET_STRING = "NOT_SET"
 
   interface find_index
      module procedure find_index_c   ! For character arrays
@@ -81,6 +84,37 @@ contains
   endif
 
  end subroutine wordsplit
+
+ !============================================================================
+  function LenArray(a,notset) result (N)
+    !+ Counts number of elements in a which are not equal to notset string
+    character(len=*), dimension(:), intent(in) :: a
+    character(len=*), intent(in) :: notset
+    integer :: N, i
+
+    N=0
+    do i = 1,  size(a)
+       if ( index(a(i),notset) > 0  ) then
+           exit
+       end if
+       N=N+1
+    end do
+  end function LenArray
+ !============================================================================
+  subroutine AddArray(new,old,notset)
+    !+ Adds elements from new array to old array
+    character(len=*), dimension(:), intent(in) :: new
+    character(len=*), dimension(:), intent(inout) :: old
+    character(len=*), intent(in) :: notset
+    integer :: N, i
+
+    N = LenArray(old,notset) ! Find last set element
+    do i = 1,  size(new)
+       N = N + 1
+       !print *, "ADDING A ", i, N, new(i)
+       old(N) = new(i)
+    end do
+  end subroutine AddArray
  !============================================================================
   subroutine WriteArray(list,NList,txt,io_num)
     character(len=*), dimension(:), intent(in) :: list
@@ -104,9 +138,8 @@ contains
      end do 
   end subroutine WriteArray
  !============================================================================
-
- ! A series of find_index routines, for character arrays (c), integer arrays(i)
-
+ ! A series of find_index routines, for character (c) and integer (i) arrays:
+ !============================================================================
  function find_index_c(wanted, list)  result(Index)
     character(len=*), intent(in) :: wanted
     character(len=*), dimension(:), intent(in) :: list
@@ -190,6 +223,7 @@ contains
     character(len=5), dimension(3) :: wanted1 = (/ "yy", "x1", "zz" /)
     character(len=6), dimension(2) :: wanted2 = (/ " yy", "x1 " /)
     character(len=6), dimension(2) :: wanted3 = (/ "zz  ", "yy  " /)
+    character(len=16), dimension(6) :: wantedx  = NOT_SET_STRING
     integer, parameter :: NWORD_MAX = 99
     character(len=20), dimension(NWORD_MAX) :: words
     integer :: nwords, errcode
@@ -216,6 +250,15 @@ contains
     call WriteArray(wanted1,size(wanted1),"Testing wanted1 array")
    print "(a)", "  (Should write headers array (first 4 elements) to fort.77) "
     call WriteArray(headers,4,"Testing headers array",77)
+
+   print "(/,a)", "4) Self-test - AddArray   ================================="
+    
+    !call AddArray(wanted1,wanted2)
+    wantedx(1) =  "first  "
+    wantedx(2) =  "second  "
+    call AddArray(wanted1,wantedx,NOT_SET_STRING)
+    call WriteArray(wantedx,size(wantedx),"Testing AddArray")
+
 
   end subroutine Self_test
 end module SmallUtils_ml

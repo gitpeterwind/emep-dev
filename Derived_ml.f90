@@ -6,24 +6,18 @@ module Derived_ml
   ! DESCRIPTION
   ! This module performs the calculations associated with "derived" 2D and 3D,
   ! such as accumulated precipitation or sulphate, daily, monthly or yearly 
-  ! averages, depositions. These fields are all typically output as binary 
+  ! averages, depositions. These fields are all typically output as netCDF 
   ! fields.
   !
-  ! The definitions of the derived fields should have been specified in the
-  ! user-defined My_Derived_ml.
+  ! This routine defines many possible derived  outputs. 
+  ! The names of the derived fields actualy required should have been specified
+  !  in the user-defined My_Derived_ml.
   !
-  ! These modules combine Steffen's rewriting of the output routines
-  ! (IOU notation).
-  ! Re-coded to use only 2 types of data (d_2 and d_3)
-  ! and F90 types for Deriv by ds, Sept. 2001. 
 
-  ! User-defined routines and treatments are often needed here. So far I have 
-  ! added stuff for VOC, AOTs, accsu, taken from the MACHO chemint code. In 
+  ! User-defined routines and treatments are often needed here. Here there is 
+  ! added stuff for VOC, AOTs, accsu. In 
   ! general such code should be added in such a way that it isn't activated if
   ! not needed. It then doesn't need to be commented out if not used.
-  ! For "accsu" I haven't found a way to do this though.
-  ! See the examples given.
-  ! ds, 28/9/01
   !---------------------------------------------------------------------------
 
 !current definitions:
@@ -40,7 +34,10 @@ module Derived_ml
 !D2_MMAOTXXWH: accumulated into yearly_output over growing season
 !D2_O3 is now yearly accumulated
 
-use My_Derived_ml  ! Definitions of derived fields, NWDEP, etc., f_wdep, etc.
+use My_Derived_ml, only : &
+            wanted_deriv2d, wanted_deriv3d  &! names of wanted derived fields
+           ,Init_My_Deriv, My_DerivFunc
+
 use CheckStop_ml,      only: CheckStop
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
@@ -56,43 +53,37 @@ use ModelConstants_ml, &
                         , PPTINV  &   !   1.0e12, for conversion of units 
                         , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
                         , AOT_HORIZON&! limit of daylight for AOT calcs
-                        ,DEBUG_i, DEBUG_j & !ds rv_9_16
+                        ,DEBUG_i, DEBUG_j & 
+                        , SOURCE_RECEPTOR &
                         , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
-                     me,                &   ! for abort checks
-                     gi0,gj0,IRUNBEG,JRUNBEG,&! rv1_9_28 for i_glob, j_glob
+                     me,                &   ! for print outs
+                     gi0,gj0,IRUNBEG,JRUNBEG,&! for i_glob, j_glob
                      li0,lj0,limax, ljmax    ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
+use SmallUtils_ml, only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml, only : day_of_year,daynumber,current_date
 
 implicit none
 private
 
- public  :: Init_Derived         !ds rv1_9_16 new deriv system 
+ public  :: Init_Derived         !
  public  :: ResetDerived         ! Resets values to zero
  public  :: DerivedProds         ! Calculates any production terms
- private :: Define_Derived        !ds ** NEW rv1_9_13
+ private :: AddDef 
+ private :: Define_Derived       !
  private :: Setups 
 
-! - find indices of used derived stuff in total list:
-
-   public :: find_one_index
-   public :: find_index
-
- private :: Consistency_checks   !ds  - checks index numbers from My_Derived
- private :: Consistency_count    !ds  - checks index numbers from My_Derived
- private :: Setup_VOC            ! Defines VOC group
  public :: Derived              ! Calculations of sums, avgs etc.
+ private :: Setup_VOC            ! Defines VOC group
  private :: voc_2dcalc           ! Calculates sum of VOC for 2d fields
  private :: voc_3dcalc           ! Calculates sum of VOC for 3d fields
 
 
-  ! START OF NEW SYSTEM - added 16/12/2003 ========================
    INCLUDE 'mpif.h'
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
     type, public:: Deriv
-       integer  :: code     ! Identifier for DNMI/xfelt
        character(len=9) :: class ! Type of data, e.g. ADV or VOC
        logical  :: avg      ! True => average data (divide by nav at end),
                             !     else accumulate over run period
@@ -109,36 +100,26 @@ private
 
    logical, private, parameter :: T = .true., F = .false. ! shorthands only
 
-   integer, public, parameter ::  &
-       NDEF_WDEP = 4       & ! Number of 2D Wet deposition fields defined
-      ,NDEF_DDEP = 21      & ! Number of 2D dry deposition fields defined
-      ,NDEF_DERIV_2D = 67  & ! Number of 2D derived fields defined
-      ,NDEF_DERIV_3D = 17   ! Number of 3D derived fields defined
+  ! Tip. For unix users, do "grep AddDef | grep -v Is3D | wc" or similar
+  ! to help get the number of these:
+   integer, private, parameter ::  &
+       MAXDEF_DERIV2D =100 & ! Max. No. 2D derived fields to be defined
+      ,MAXDEF_DERIV3D = 17   ! Max. No. 3D derived fields to be defined
 
-   integer, public, dimension(NWDEP),     save :: nused_wdep
-   integer, public, dimension(NDDEP),     save :: nused_ddep
-   integer, public, dimension(NDERIV_2D), save :: nused_2d
-   integer, public, dimension(NDERIV_3D), save :: nused_3d
+   integer, public, save :: num_deriv2d, num_deriv3d
+   integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived 
 
-  ! We put definitions of all possible variables in def_xx (def_ddep, etc.)
-  ! and copy the needed ones into f_xx. The data will go into d_xx
-  ! (d_2d, d_3d, etc.)
+  ! We put definitions of **all** possible variables in def_2d, def_3d
+  ! and copy the needed ones into f_xx. The data will go into d_2d, d_3d
 
-    type(Deriv),private, dimension(NDEF_WDEP),     save :: def_wdep !wet dep
-    type(Deriv),private, dimension(NDEF_DDEP),     save :: def_ddep !dry dep
-    type(Deriv),private, dimension(NDEF_DERIV_2D), save :: def_2d   !other 2D 
-    type(Deriv),private, dimension(NDEF_DERIV_3D), save :: def_3d   !other 3D
+    type(Deriv),private, dimension(MAXDEF_DERIV2D), save :: def_2d
+    type(Deriv),private, dimension(MAXDEF_DERIV3D), save :: def_3d
 
-    type(Deriv),public, dimension(NWDEP),     save :: f_wdep
-    type(Deriv),public, dimension(NDDEP),     save :: f_ddep
-    type(Deriv),public, dimension(NDERIV_2D), save :: f_2d
-    type(Deriv),public, dimension(NDERIV_3D), save :: f_3d
+    type(Deriv),public, allocatable, dimension(:), save :: f_2d
+    type(Deriv),public, allocatable, dimension(:), save :: f_3d
 
 
-  ! And we move our definitionms of actual fields used here (was My_Derived):
-
-  ! Define first the 4 possible former output types
-  ! corresponding to instantaneous,year,month,day
+  ! Define 4 output types corresponding to instantaneous,year,month,day
 
    integer, public, parameter ::  &
         IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5
@@ -151,27 +132,22 @@ private
    integer, public, parameter ::  LENOUT2D = 4  ! Allows INST..DAY for 2d fields
    integer, public, parameter ::  LENOUT3D = 4  ! Allows INST..MON for 3d fields
 
-    real, save,  public :: &
-      wdep( NWDEP    ,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !wet dep
-      ddep( NDDEP    ,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !dry dep
-      d_2d( NDERIV_2D,MAXLIMAX, MAXLJMAX, LENOUT2D), &  !other deriv
-      d_3d( NDERIV_3D,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
-
-! to be used for SOMO35
-    real, save,  public :: &   !save O3 every hour during one day to find running max
-     D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0.
- 
-
-  ! END OF NEW SYSTEM - added 16/12/2003 ========================
+  !e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
+  ! &   d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
+   real, save, public, allocatable, dimension(:,:,:,:) :: d_2d
+   real, save, public, allocatable, dimension(:,:,:,:,:) :: d_3d
 
 
-  ! Counters to keep track of averaging  (old nav, nav8to16, nav_8to16, etc
-  ! Initialise here to zero.
+   ! save O3 every hour during one day to find running max
+    real, save,  public :: &     ! to be used for SOMO35
+     D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0. 
 
-    integer, public, dimension(NWDEP,LENOUT2D),     save :: nav_wdep = 0
-    integer, public, dimension(NDDEP,LENOUT2D),     save :: nav_ddep = 0
-    integer, public, dimension(NDERIV_2D,LENOUT2D), save :: nav_2d   = 0
-    integer, public, dimension(NDERIV_3D,LENOUT3D), save :: nav_3d   = 0
+
+  ! Counters to keep track of averaging
+  ! Initialise to zero in Init.
+
+    integer, public, allocatable, dimension(:,:), save :: nav_2d
+    integer, public, allocatable, dimension(:,:), save :: nav_3d
 
    ! Note - previous versions did not have the LENOUT2D dimension
    ! for wet and dry deposition. Why not?  Are annual or daily
@@ -189,7 +165,7 @@ private
              voc_carbon       ! Number of C atoms
 
    logical, private, parameter :: MY_DEBUG = .false.
-   logical, private, save :: debug_flag
+   logical, private, save :: debug_flag, Is3D
    character(len=100), private :: errmsg
    integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
                                                    ! reset if DEBUG 
@@ -203,13 +179,78 @@ private
     !=========================================================================
     subroutine Init_Derived()
 
-          write(*,*) "INITIALISE My DERIVED STUFF"
+        integer :: alloc_err
+          if(me==0) write(*,*) "INITIALISE My DERIVED STUFF"
+          call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
+
+         ! get lengths of wanted arrays (excludes notset values)
+          num_deriv2d = LenArray(wanted_deriv2d,NOT_SET_STRING)
+          num_deriv3d = LenArray(wanted_deriv3d,NOT_SET_STRING)
+ 
+     if ( num_deriv2d > 0 ) then
+          if(me==0) write(*,*) "Allocate arrays for 2d: ", num_deriv2d
+          allocate(f_2d(num_deriv2d),stat=alloc_err)
+          call CheckStop(alloc_err,"Allocation of f_2d")
+          allocate(d_2d(num_deriv2d,MAXLIMAX,MAXLJMAX,LENOUT2D),stat=alloc_err)
+          call CheckStop(alloc_err,"Allocation of d_2d")
+          call CheckStop(alloc_err,"Allocation of d_3d")
+          allocate(nav_2d(num_deriv2d,LENOUT2D),stat=alloc_err)
+          call CheckStop(alloc_err,"Allocation of nav_2d")
+          nav_2d = 0
+     end if
+     if ( num_deriv3d > 0 ) then
+          if(me==0) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
+          allocate(f_3d(num_deriv3d),stat=alloc_err)
+          call CheckStop(alloc_err,"Allocation of f_3d")
+          allocate(d_3d(num_deriv3d,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D),&
+                 stat=alloc_err)
+          allocate(nav_3d(num_deriv3d,LENOUT3D),stat=alloc_err)
+          call CheckStop(alloc_err,"Allocation of nav_3d")
+          nav_3d = 0
+     end if
+
           call Define_Derived()
-          call Consistency_checks()  !ds - checks index numbers from My_Derived
           call Setups()
 
     end subroutine Init_Derived
 
+   !=========================================================================
+    subroutine AddDef(class,avg,index,scale,rho,inst,year,month,day,&
+           name,unit,Is3D)
+
+       character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
+       logical, intent(in)  :: avg      ! True => average data (divide by 
+                                        ! nav at end), else accumulate over 
+                                        ! run period
+       integer, intent(in)  :: index    ! index in e.g. concentration array
+       real, intent(in)     :: scale    ! Scaling factor
+       logical, intent(in)  :: rho      ! True when scale is ug (N or S)
+       logical, intent(in)  :: inst     ! True when instantaneous values needed
+       logical, intent(in)  :: year     ! True when yearly averages wanted
+       logical, intent(in)  :: month    ! True when monthly averages wanted
+       logical, intent(in)  :: day      ! True when daily averages wanted
+       character(len=*), intent(in):: name ! Name of the variable 
+                                           ! (used in  netCDF output)
+       character(len=*), intent(in) :: unit ! Unit (writen in netCDF output)
+       logical, intent(in), optional :: Is3D
+
+       if ( present(Is3D) .and. Is3D ) then
+         Nadded3d = Nadded3d + 1
+         N = Nadded3d
+         if ( me == 0 ) write(*,*) "Define 3d deriv ", N, name
+         call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
+         def_3d(N) = Deriv(class,avg,index,scale,rho,inst,year,month,day,&
+                              name,unit)
+       else
+         Nadded2d = Nadded2d + 1
+         N = Nadded2d
+         if ( me == 0 ) write(*,*) "Define 2d deriv ", N, name
+         call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
+         def_2d(N) = Deriv(class,avg,index,scale,rho,inst,year,month,day,&
+                              name,unit)
+       end if
+
+    end subroutine AddDef
    !=========================================================================
     subroutine Define_Derived()
 
@@ -221,12 +262,13 @@ private
     real, save    :: ugS = atwS*PPBINV/ATWAIR
     real, save    :: ugN = atwN*PPBINV/ATWAIR
     real, save    :: ugSO4, ugHCHO, ugCH3CHO
-    real, save    :: ugPMad, ugPMde, ugSS    !st advected and derived PM's & SeaS
+    real, save    :: ugPMad, ugPMde, ugSS  !advected and derived PM's & SeaS
 
 
   ! - for debug  - now not affecting ModelConstants version
    integer, dimension(MAXLIMAX) :: i_glob
    integer, dimension(MAXLJMAX) :: j_glob
+   integer :: ind
 
 
     !   same mol.wt assumed for PPM25 and PPMco
@@ -243,230 +285,197 @@ private
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
 
-def_wdep = (/&
- Deriv( 561, "PREC ", F, -1, 1.0,   F  , F  ,T ,T ,T ,"WDEP_PREC","mm"),&
- Deriv( 541, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mgS/m2"),&
- Deriv( 542, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mgN/m2"),&
- Deriv( 543, "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mgN/m2")&
- /)
+Is3D = .false.
+call AddDef( "PREC ", F, -1, 1.0,   F  , F  ,T ,T ,T ,"WDEP_PREC","mm") 
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mgS/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mgN/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mgN/m2")
 
-    ! Dry dep. !
-    !--includes fields for ecosystem specific--- use index numbers 800+ 
+    ! Dry dep. --includes fields for ecosystem specific--- 
     ! ecosystem codes: SW = sea/water, CF = conif forest, DF = decid forest, 
     !                SN = seminatural (grass/moorlande/tundra)
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
 
-def_ddep = (/&
- Deriv( 521, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX","mgS/m2")&
-,Deriv( 522, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN","mgN/m2")&
-,Deriv( 523, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mgN/m2")&
-,Deriv( 824, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSW","mgS/m2")&
-,Deriv( 825, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCF","mgS/m2")&
-,Deriv( 826, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSDF","mgS/m2")&
-,Deriv( 827, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCR","mgS/m2")&
-,Deriv( 828, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSN","mgS/m2")&
-,Deriv( 829, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSWE","mgS/m2")&
-!&
-,Deriv( 830, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSW","mgN/m2")&
-,Deriv( 831, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCF","mgN/m2")&
-,Deriv( 832, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNDF","mgN/m2")&
-,Deriv( 833, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCR","mgN/m2")&
-,Deriv( 834, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSN","mgN/m2")&
-,Deriv( 835, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNWE","mgN/m2")&
-!&
-,Deriv( 836, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSW","mgN/m2")&
-,Deriv( 837, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCF","mgN/m2")&
-,Deriv( 838, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNDF","mgN/m2")&
-,Deriv( 839, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCR","mgN/m2")&
-,Deriv( 840, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSN","mgN/m2")&
-,Deriv( 841, "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNWE","mgN/m2")&
- /)
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSW","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCF","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSDF","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCR","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSN","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSWE","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSW","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNDF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCR","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSN","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNWE","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSW","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNDF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCR","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSN","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNWE","mgN/m2")
 
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
 
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
 
-def_2d = (/&
-! Added AOT20 - in case the health people decide on this!
- Deriv( 870, "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")&
-,Deriv( 630, "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")&
-,Deriv( 608, "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")&
-,Deriv( 609, "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")&
-,Deriv( 680, "AOT  ", F, 30, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT30f","ppb h")&
-,Deriv( 681, "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")&
-,Deriv( 682, "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")&
-,Deriv( 683, "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")&
-!BUGGY ,Deriv( 611, "ACCSU", T, -1, ugSO4,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")&
-!&
+call AddDef( "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")
+call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")
+call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
+call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
+call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT30f","ppb h")
+call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
+call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")
+call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
+!BUGGY ,Deriv( 611, "ACCSU", T, -1, ugSO4,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")
+!
 ! -- simple advected species. Note that some indices need to be set as dummys
 !    in ACID, e.g. IXADV_O3
-!&
-,Deriv( 601, "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")&
-,Deriv( 620, "ADV  ", T, IXADV_SO4, ugS, T, F , T , T , T ,"D2_SO4","ugS/m3")&
-,Deriv( 621, "ADV  ", T, IXADV_HNO3,ugN, T, F , T , T , T ,"D2_HNO3","ugN/m3")&
-,Deriv( 604, "ADV  ", T, IXADV_PAN, ugN, T, F , T , T , T ,"D2_PAN","ugN/m3")&
-,Deriv( 622, "ADV  ", T, IXADV_NH3, ugN, T, F , T , T , T ,"D2_NH3","ugN/m3")&
-,Deriv( 623, "ADV  ", T, IXADV_NO , ugN, T, F , T , T , T ,"D2_NO","ugN/m3")&
-,Deriv( 606, "ADV  ", T, IXADV_NO2, ugN, T, F , T , T , T ,"D2_NO2","ugN/m3")&
-,Deriv( 600, "ADV  ", T,IXADV_aNH4, ugN, T, F , T , T , T ,"D2_aNH4","ugN/m3")&
-!&
-,Deriv( 607, "ADV  ",T,IXADV_O3 ,PPBINV, F, F , T, T , T ,"D2_O3","ppb")&
-,Deriv( 612, "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")&
-,Deriv( 670, "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")&
-,Deriv( 671, "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")&
-!&
-,Deriv( 672,"NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")&
-,Deriv( 673,"NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")&
-,Deriv( 674,"OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")&
-!&
-,Deriv( 615, "ADV  ",T,IXADV_PM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")&
-,Deriv( 616, "ADV  ",T,IXADV_PMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")&
-!SeaS
-,Deriv( 659, "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")&
-,Deriv( 660, "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")&
-,Deriv(   8, "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"PS","hPa")&
-,Deriv( 468, "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")&
-,Deriv( 469, "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")&
-,Deriv( 470, "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")&
-!&
+!
+call AddDef( "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")
+call AddDef( "ADV  ", T, IXADV_SO4, ugS, T, F , T , T , T ,"D2_SO4","ugS/m3")
+call AddDef( "ADV  ", T, IXADV_HNO3,ugN, T, F , T , T , T ,"D2_HNO3","ugN/m3")
+call AddDef( "ADV  ", T, IXADV_PAN, ugN, T, F , T , T , T ,"D2_PAN","ugN/m3")
+call AddDef( "ADV  ", T, IXADV_NH3, ugN, T, F , T , T , T ,"D2_NH3","ugN/m3")
+call AddDef( "ADV  ", T, IXADV_NO , ugN, T, F , T , T , T ,"D2_NO","ugN/m3")
+call AddDef( "ADV  ", T, IXADV_NO2, ugN, T, F , T , T , T ,"D2_NO2","ugN/m3")
+call AddDef( "ADV  ", T,IXADV_aNH4, ugN, T, F , T , T , T ,"D2_aNH4","ugN/m3")
+call AddDef( "ADV  ",T,IXADV_O3 ,PPBINV, F, F , T, T , T ,"D2_O3","ppb")
+call AddDef( "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")
+call AddDef( "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")
+call AddDef( "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")
+call AddDef( "NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")
+call AddDef( "NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")
+call AddDef( "OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")
+call AddDef( "ADV  ",T,IXADV_PM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")
+call AddDef( "ADV  ",T,IXADV_PMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")
+!Sea salt
+call AddDef( "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")
+call AddDef( "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")
+call AddDef( "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"PS","hPa")
+call AddDef( "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")
+call AddDef( "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")
+call AddDef( "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")
+!
 !ds drydep
 !   set as "external" parameters - ie set outside Derived subroutine
 !      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
 !
 !Havn't worried about rho so far... does it matter?
-,Deriv( 850, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")&
-,Deriv( 851, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")&
-,Deriv( 852, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")&
-,Deriv( 853, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","mmol/m2")&
+call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")
+call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")
+call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")
+call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","mmol/m2")
 !
-,Deriv( 854, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","mmol/m2")&
-,Deriv( 855, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","mmol/m2")&
-,Deriv( 856, "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","mmol/m2")&
-!
-!JUN06    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
-!JUN06    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
+call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","mmol/m2")
+call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","mmol/m2")
+call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","mmol/m2")
 !
 !      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
-,Deriv( 860, "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")&
-,Deriv( 861, "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")&
+call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")
+call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")
 !
-! AOT30 and AOT40 for Wheart and Beech. May need daily here.
+! AOT30 and AOT40 for Wheat and Beech. May need daily here.
 ! Also, use field for EU definition (8-20 CET) and Mapping Manual/UNECE
 ! (daylight hours). 
 ! All of these use O3 at crop height, in contrast to the older AOT30, AOT40
 ! as defined above, and all allow daily output.
-,Deriv( 862, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30WH","ppb h")&
-,Deriv( 863, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")&
-,Deriv( 864, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30DF","ppb h")&
-,Deriv( 865, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40DF","ppb h")&
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30WH","ppb h")
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30DF","ppb h")
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40DF","ppb h")
 ! UNECE:
-,Deriv( 866, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30WH","ppb h")&
-,Deriv( 867, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40WH","ppb h")&
-,Deriv( 868, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")&
-,Deriv( 869, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40DF","ppb h")&
-!JUN06
-,Deriv( 857, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT30WH","ppb h")&
-,Deriv( 858, "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")&
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30WH","ppb h")
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40WH","ppb h")
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40DF","ppb h")
+!Mapping-Manual
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT30WH","ppb h")
+call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")
 !
 ! --  time-averages - here 8-16
 !
-,Deriv( 613,"TADV ", T,IXADV_HCHO  ,ugHCHO,  T, F, T, T, T,"D2T_HCHO","ug/m3")&
-,Deriv( 614,"TADV ", T,IXADV_CH3CHO,ugCH3CHO,T, F, T, T,T,"D2T_CH3CHO","ug/m3")&
-,Deriv( 610,"VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")&
+call AddDef( "TADV ", T,IXADV_HCHO  ,ugHCHO,  T, F, T, T, T,"D2T_HCHO","ug/m3")
+call AddDef( "TADV ", T,IXADV_CH3CHO,ugCH3CHO,T, F, T, T,T,"D2T_CH3CHO","ug/m3")
+call AddDef( "VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")
 !
 ! -- miscellaneous user-defined functions
 !
 !      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
-!ds ,Deriv( 602,"TSO4 ", T,   -1  ,ugS ,    T , F,T,T,T,"D2_SOX","ugS/m3")&
-,Deriv( 603,"TOXN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_OXN","ugN/m3")&
-,Deriv( 605,"TRDN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_REDN","ugN/m3")&
-,Deriv( 624,"FRNIT", T,   -1  ,1.0 ,    F , F,T,T,T,"D2_FRNIT","(1)")&
-,Deriv( 625,"MAXADV", F,IXADV_O3,PPBINV, F, F,T,T,T,"D2_MAXO3","ppb")&
-,Deriv( 626,"MAXSHL", F,IXSHL_OH,1.0e13,F , F,T,F,T,"D2_MAXOH","?")&
+!! ,Deriv( "TSO4 ", T,   -1  ,ugS ,    T , F,T,T,T,"D2_SOX","ugS/m3")
+call AddDef( "TOXN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_OXN","ugN/m3")
+call AddDef( "TRDN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_REDN","ugN/m3")
+call AddDef( "FRNIT", T,   -1  ,1.0 ,    F , F,T,T,T,"D2_FRNIT","(1)")
+call AddDef( "MAXADV", F,IXADV_O3,PPBINV, F, F,T,T,T,"D2_MAXO3","ppb")
+call AddDef( "MAXSHL", F,IXSHL_OH,1.0e13,F , F,T,F,T,"D2_MAXOH","?")
 !
-,Deriv( 617, "tNO3 ", T, -1, ugN,    T, F, T, T, T,"D2_tNO3", "ugN/m3")&
-,Deriv( 618, "SIA  ", T, -1, ugPMde, T, F, T, T, T,"D2_SIA" , "ug/m3")&
-,Deriv( 619, "PMco ", T, -1, ugPMde, T, F, T, T, T,"D2_PMco", "ug/m3")&
-,Deriv( 648, "PM25 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM25", "ug/m3")&
-,Deriv( 649, "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")&
-,Deriv( 662, "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O ", "ug/m3")&   !water
-,Deriv( 646, "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3")& 
-,Deriv( 627, "SOM", F, 35, 1.,   F, F, T, T, F,"D2_SOMO35", "ppb day")& 
-,Deriv( 628, "SOM", F,  0, 1.,   F, F, T, T, F,"D2_SOMO0", "ppb day")& 
- /)
+call AddDef( "tNO3 ", T, -1, ugN,    T, F, T, T, T,"D2_tNO3", "ugN/m3")
+call AddDef( "SIA  ", T, -1, ugPMde, T, F, T, T, T,"D2_SIA" , "ug/m3")
+call AddDef( "PMco ", T, -1, ugPMde, T, F, T, T, T,"D2_PMco", "ug/m3")
+call AddDef( "PM25 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM25", "ug/m3")
+call AddDef( "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")
+call AddDef( "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O ", "ug/m3")
+call AddDef( "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3") 
+call AddDef( "SOM", F, 35, 1.,   F, F, T, T, F,"D2_SOMO35", "ppb day") 
+call AddDef( "SOM", F,  0, 1.,   F, F, T, T, F,"D2_SOMO0", "ppb day") 
 
 !-- 3-D fields
 
-def_3d = (/ &
- Deriv(  18, "TH  ",T,  0 ,       1.0, F , T, T, T, F ,"D3_TH","m")&
-
-, Deriv( 401, "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb")&
-,Deriv( 402, "ADV  ", T, IXADV_SO2, PPBINV, F, T, T, T, F ,"D3_SO2","ppb")&
-,Deriv( 403, "ADV  ", T, IXADV_PAN, PPBINV, F, T, T, T, F ,"D3_PAN","ppb")&
-,Deriv( 404, "ADV  ", T, IXADV_HNO3,PPBINV, F, T, T, T, F ,"D3_HNO3","ppb")&
-,Deriv( 405, "ADV  ", T, IXADV_aNO3,PPBINV, F, T, T, T, F ,"D3_aNO3","ppb")&
-,Deriv( 406, "ADV  ", T, IXADV_NO2, PPBINV, F, T, T, T, F ,"D3_NO2","ppb")&
-,Deriv( 407, "VOC  ", T,       -1 , PPBINV, F, T, T, T, F ,"D3_VOC","ppb")&
-,Deriv( 408, "ADV  ", T, IXADV_aNH4,PPBINV, F, T, T, T, F ,"D3_aNH4","ppb")&
-,Deriv( 409, "ADV  ", T, IXADV_SO4, PPBINV, F, T, T, T, F ,"D3_SO4","ppb")&
-,Deriv( 410, "ADV  ", T, IXADV_H2O2,PPBINV, F, T, T, T, F ,"D3_H2O2","ppb")&
-!&
+Is3D = .true.
+call AddDef( "TH  ",T,  0 ,       1.0, F , T, T, T, F ,"D3_TH","m",Is3D)
+call AddDef( "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_SO2, PPBINV, F, T, T, T, F ,"D3_SO2","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_PAN, PPBINV, F, T, T, T, F ,"D3_PAN","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_HNO3,PPBINV, F, T, T, T, F ,"D3_HNO3","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_aNO3,PPBINV, F, T, T, T, F ,"D3_aNO3","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_NO2, PPBINV, F, T, T, T, F ,"D3_NO2","ppb",Is3D)
+call AddDef( "VOC  ", T,       -1 , PPBINV, F, T, T, T, F ,"D3_VOC","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_aNH4,PPBINV, F, T, T, T, F ,"D3_aNH4","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_SO4, PPBINV, F, T, T, T, F ,"D3_SO4","ppb",Is3D)
+call AddDef( "ADV  ", T, IXADV_H2O2,PPBINV, F, T, T, T, F ,"D3_H2O2","ppb",Is3D)
+!
 ! Set Year true to allow debug - change later
-,Deriv( 411, "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?")& ! ds from 1.0E16
-,Deriv( 412, "ADV",   T, IXADV_CH3COO2,&
-                                    PPTINV, F, F, T, T, F ,"D3_CH3COO2","?")&
-,Deriv( 413, "MAX3DSHL", T,IXSHL_OH,PPTINV, T, F, T, T, F ,"D3_MAXOH","?")&   ! rho true for shl
-,Deriv( 414, "MAX3DADV", T, IXADV_CH3COO2,&
-                                    PPTINV, F, F, T, T, F ,"D3_MAXCH3COO2","?")&
-,Deriv( 415, "PHNO3   ", T, IXSHL_PHNO3,1.0e8, F, F, T, T, F ,"D3_PHNO3","?")&
-,Deriv( 416, "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?")&
-/)
+call AddDef( "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?",Is3D)
+call AddDef( "ADV",   T, IXADV_CH3COO2, &
+                                    PPTINV, F, F, T, T, F ,"D3_CH3COO2","?",Is3D)
+call AddDef( "MAX3DSHL", T,IXSHL_OH,PPTINV, T, F, T, T, F ,"D3_MAXOH","?",Is3D)   ! rho true for shl
+call AddDef( "MAX3DADV", T, IXADV_CH3COO2,&
+                                    PPTINV, F, F, T, T, F ,"D3_MAXCH3COO2","?",Is3D)
+call AddDef( "PHNO3   ", T, IXSHL_PHNO3,1.0e8, F, F, T, T, F ,"D3_PHNO3","?",Is3D)
+call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
-     if ( SOURCE_RECEPTOR ) then  ! We assume that no daily outputs are wanted.
+     if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
+                                              ! daily outputs are wanted.
         def_2d(:)%day = .false.
-        def_ddep(:)%day = .false.
-        def_wdep(:)%day = .false.
      end if
-
-   !Initialise to zero
-   ! was previously in subroutine Set_My_Derived()
-
-      wdep( :,:,:,:) = 0.0
-      ddep( :,:,:,:) = 0.0
-      d_2d( :,:,:,:) = 0.0
-      d_3d( :,:,:,:,:) = 0.0
 
 
      ! Get indices of wanted fields in larger def_xx arrays:
 
-      call find_index( DDEP_USED(:), def_ddep(:)%name, nused_ddep  ) 
-      call find_index( WDEP_USED(:), def_wdep(:)%name, nused_wdep  ) 
-      call find_index( D2_USED(:),   def_2d(:)%name, nused_2d  ) 
-
-      if ( NDERIV_3D > 0 ) then  ! Special because of DUMMY possibility
-
-         call find_index( D3_USED(1:NDERIV_3D),   def_3d(:)%name, nused_3d  ) 
-
-        !ds was some strange bevaious for another array here!
-         !do i = 1, 3
-         ! print *, "AFTERNUSED ", i, nused_ddep(i), size(nused_ddep)
-         !end do
-      end if
-
-     ! And set f_xx fields  from these indices and the fuller def_xx fields:
-
-      f_wdep(:) = def_wdep( nused_wdep(:) )
-      f_ddep(:) = def_ddep( nused_ddep(:) )
-      f_2d(:)   = def_2d( nused_2d(:) )
-
-      do n = 1, NDERIV_3D ! Special because of DUMMY possibility
-         if( nused_3d(n) > 0) f_3d(n)   = def_3d( nused_3d(n) )
+      do i = 1, num_deriv2d
+          ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
+          f_2d(i) = def_2d(ind)
+          if ( me == 0 ) write(*,*) "Index f_2d ", i, " = def ", ind
       end do
 
-      debug_flag = .false.    !ds rv1_9_28
+      do i = 1, num_deriv3d
+          ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
+          f_3d(i) = def_3d(ind)
+          if ( me == 0 ) write(*,*) "Index f_3d ", i, " = def ", ind
+      end do
+
+   !Initialise to zero
+
+      if ( num_deriv2d > 0  ) d_2d( :,:,:,:) = 0.0
+      if ( num_deriv3d > 0  ) d_3d( :,:,:,:,:) = 0.0
+
+      debug_flag = .false.
       if ( MY_DEBUG ) then
 
           ! Need to define here since gridValues not yet set.
@@ -488,150 +497,6 @@ def_3d = (/ &
 
   end subroutine Define_Derived
  !=========================================================================
-
-  function find_one_index(used, defined ) 
-    character(len=*), intent(in) :: used
-    character(len=*), dimension(:), intent(in) :: defined
-    integer :: find_one_index
-    integer :: n_match ! Count for safety
-    integer :: nu, nf
-
-    n_match  = 0
-
-    if( used == "DUMMY") then
-        write(6,*) "Dummy index found"
-        find_one_index = -1
-        return
-    end if
-
-    do nf = 1, size(defined)
-
-         if ( used == defined(nf)  ) then
-            find_one_index = nf
-            n_match = n_match + 1
-         end if
-    end do ! nf
-
-    if ( n_match /= 1 ) then
-        write(unit=errmsg,fmt=*) "ERROR: Find_one_index for:", used, &
-              "Matches ", n_match
-        call CheckStop(errmsg) 
-    else
-          if ( MY_DEBUG .and.  me == 0 ) then
-             write(6,*) "FOUND_ONE_INDEX ", used, " => NF ", find_one_index
-          end if
-    end if
-
-  end function find_one_index
-
- !=========================================================================
-  subroutine find_index(used, defined, nused) 
-
-    !+
-    ! Searches for the "used" characters in the list of defined species
-    ! e.g. for contents of DDEP_USED in f_ddep%name
-    ! Returns an integer array of these indices
-    !+
-    ! ds, 16/12/2003
-
-    character(len=*), dimension(:), intent(in) :: used
-    character(len=*), dimension(:), intent(in) :: defined
-    integer, dimension(size(used)), intent(out) :: nused
-    integer, dimension(size(used)) :: n_match ! Count for safety
-    integer :: nu, nf
-
-    n_match  = 0
-    do nu = 1, size(used)
-
-      if( used(nu) == "DUMMY") then
-          write(6,*) "Dummy index found for nu", nu
-          nused(nu) = -1
-          n_match(nu) = n_match(nu) + 1
-      end if
-
-      do nf = 1, size(defined)
-         if ( used(nu) == defined(nf) ) then
-            nused(nu) = nf
-            n_match(nu) = n_match(nu) + 1
-         end if
-      end do ! nf
-
-      if ( n_match(nu) /= 1 ) then
-         write(unit=errmsg,fmt=*) "ERROR: Find_index2 Size U ", size(used),&
-             " DEF ", size(defined), " V ", used(nu), "Matches ", n_match(nu)
-       call CheckStop(errmsg) 
-      else
-          if ( me == 0 ) then
-             write(6,*) "FOUND_INDEX ", nu, used(nu), " => NF ", nused(nu)
-          end if
-      end if ! ERROR check
-    end do ! nu
-
-  end subroutine find_index
-
- !=========================================================================
-  subroutine Consistency_checks()  
-
-    !/** ds - checks index numbers from My_Derived to look for duplicates
-
-       integer, parameter :: MAX_INDEX = 2000
-       integer, dimension(MAX_INDEX) :: index_used
-       integer :: i
-
-       index_used = 0
-       call  Consistency_count(MAX_INDEX, index_used, NWDEP, f_wdep) 
-       call  Consistency_count(MAX_INDEX, index_used, NDDEP, f_ddep)
-       call  Consistency_count(MAX_INDEX, index_used, NDERIV_2D, f_2d) 
-       call  Consistency_count(MAX_INDEX, index_used, NDERIV_3D, f_3d) 
-
-       if ( any( index_used > 1 ) ) then
-           do i = 1, MAX_INDEX
-             if( index_used(i) > 1 ) print *,  &
-                   "Derived code problem, index: ",i, index_used(i)
-           end do
-           call CheckStop( "Derivedcode problem in Derived_ml")
-       end if
-
-     !ds 25/3/2004:
-
-      if ((      SOURCE_RECEPTOR .and.  NDERIV_2D /= NSR_2D )   .or.  &
-          ( .not.SOURCE_RECEPTOR .and.  NDERIV_2D == NSR_2D )) then
-             write(unit=errmsg,fmt=*) "Error! Wrong number of 2D params ", &
-                 NDERIV_2D, NSR_2D
-             call CheckStop( errmsg )
-      end if
-     end subroutine
-
-    !=========================================================================
-     subroutine Consistency_count(max,index_used, n,data)
-
-    !/** ds adds up number of times each code from derived data array
-    !    is used.
-
-      integer, intent(in) :: max, n
-      integer, dimension(:), intent(inout)  :: index_used
-      type(Deriv), dimension(n), intent(in) :: data
-
-      integer :: code, i
-
-        do i = 1, n
-           code = data(i)%code
-           call CheckStop(code>max,"My_Derivedcode >max! in Derived_ml")
-           index_used( code )  = index_used( code )  + 1
-           !if( me == 0 ) print "(a6,i3,i4,2a15,i2)", "CODE ", i, code, 
-           !     data(i)%name, data(i)%class, index_used(code)
-
-           if( index_used(i) > 1 ) then
-              write(unit=errmsg,fmt=*) &
-               "Derived code problem, Consistency checks: me ",  me, &
-                       " index: ",i, index_used(code)
-              call CheckStop( errmsg )
-           end if
-
-        end do
-     end subroutine Consistency_count
-    
-    !=========================================================================
      subroutine Setups()
 
     !/** flexibility note. By making use of character-based tests such
@@ -668,27 +533,27 @@ def_3d = (/ &
       character(len=len(f_2d%class)) :: typ  !  See defs of f_2d
       real :: thour                          ! Time of day (GMT)
       real :: timefrac                       ! dt as fraction of hour (3600/dt)
-      real :: dayfrac                        ! fraction of day elapsed (in middle of dt)
+      real :: dayfrac              ! fraction of day elapsed (in middle of dt)
       integer :: ntime                       ! 1...NTDAYS
       integer :: nhour                       ! hours of day (GMT) 
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
 
-      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D !ds rv1_9_28 
+      real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
                 ! Inverse of No. air mols/cm3 = 1/M 
                 ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
-      logical :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
+      logical :: accumulate_2dyear !flag to know when to accumulate d_2d
+                                   ! (case "EXT")
 
       timefrac = dt/3600.0
-      thour = current_date%hour+current_date%seconds/3600.0  !ds rv1_9_28 moved here for 3D3D
+      thour = current_date%hour+current_date%seconds/3600.0
 
-      !NEWAOT
-!hfTD        call dayno(current_date%month,current_date%day,daynumber)
-        daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
+      daynumber=day_of_year(current_date%year,current_date%month,&
+                             current_date%day)
 
      !/***** 2-D fields **************************
 
-     do n = 1, NDERIV_2D
+     do n = 1, num_deriv2d
 
         accumulate_2dyear=.true.
         typ = f_2d(n)%class
@@ -708,19 +573,16 @@ def_3d = (/ &
         !    f_2d as TADV or TVOC
 
         if ( typ == "TADV" .or. typ == "TVOC" ) then
-             !ds thour = current_date%hour+current_date%seconds/3600.0
              if(thour <= 8.0 .or. thour > 16.0 ) cycle  ! Start next species
         end if
 
        !hf hmix average at 00 and 12:
 
         if ( typ == "HMIX00" .or. typ == "XKSIG00" ) then
-             !ds thour = current_date%hour+current_date%seconds/3600.0
              if(thour /= 0.0 ) cycle  ! Start next species
         end if
 
         if ( typ == "HMIX12" .or. typ == "XKSIG12" ) then
-             !ds thour = current_date%hour+current_date%seconds/3600.0
              if(thour /= 12.0 ) cycle  ! Start next species
         end if
 
@@ -782,7 +644,6 @@ def_3d = (/ &
 
             end if
 
-            !pw rv2_1
             !Monthly and yearly ARE averaged over days
             if(End_of_Day)then
               d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
@@ -813,7 +674,6 @@ def_3d = (/ &
                       ,  density(i_debug,j_debug), MFAC
             end if
 
-            !pw rv2_1
             !Monthly and yearly ARE averaged over days
             if(End_of_Day)then
               d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
@@ -855,21 +715,6 @@ def_3d = (/ &
                endif
             endif
 
-!         !ds 25/6/2006 - NEWAOT defs for UNECE crops, to follow growing seasons
-!         ! Allow, accumulate_2dyear to be true, but set d_2d zero
-!            if( f_2d(n)%name=="D2_MMAOT30WH".or.&
-!                f_2d(n)%name=="D2_MMAOT40WH"  ) then
-!                   do i=li0,limax
-!                     do  j=lj0,ljmax 
-!                         if( debug_flag .and. i == i_debug .and. j == j_debug ) then
-!                             write(*,*) "DERGROW ", CropGrowingSeason(i,j), n, d_2d(n, i,j,IOU_INST )
-!                         end if 
-!                         if( .not.CropGrowingSeason(i,j) ) d_2d(n, i,j,IOU_INST ) = 0.0
-!                         if( .not.CropGrowingSeason(i,j) ) d_2d(n, i,j,IOU_INST ) = 0.0
-!                     end do
-!                   end do
-!            end if
-
            case( "SOM" )
 
 
@@ -879,20 +724,19 @@ def_3d = (/ &
               ntime=int(dayfrac*NTDAY )+1 !must be >=1 and <= NTDAY
               if(dayfrac<0)ntime=NTDAY !midnight
 
-!last value  (not averaged): 
+        !last value  (not averaged): 
           D2_O3_DAY( : , : , ntime) =&
            xn_adv(IXADV_O3,:,:,KMAX_MID)*cfac(IXADV_O3,:,:)*PPBINV
 
               if(dayfrac<0)then !only at midnight: write on d_2d
 
                  
-                 call som_calc( n )
-!accumulate
+                 call som_calc( n ) !  accumulate
                  d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY) 
- !                if(current_date%month>=4.and.current_date%month<=9)then
+
+                ! if(current_date%month>=4.and.current_date%month<=9)then
                  d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY) 
- !                endif
-!overwritten anyway D2_O3_DAY = 0.
+                !NB overwritten anyway D2_O3_DAY = 0.
               endif
 
 
@@ -920,7 +764,7 @@ def_3d = (/ &
 
 
         !/** add to daily, monthly and yearly average, and increment counters
-        !    /wdep, ddep not done here ???)
+!DDV        !    /wdep, ddep not done here ???) !!! YESY!!!
         !  Note that the MAXADV and MAXSHL and SOM needn't be summed here, but
         !  since the INST values are zero it doesn't harm, and the code is 
         !  shorter. These d_2d ( MAXADV, MAXSHL, SOM) are set elsewhere
@@ -934,38 +778,21 @@ def_3d = (/ &
            if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
         endif
  
-     end do   ! NDERIV_2D
-     !/***** WET DEPOSITION **************************
-
-       do n = 1, NWDEP  ! includes precip from Met_ml
-        wdep(n,:,:,IOU_DAY )  = wdep(n,:,:,IOU_DAY )  + wdep(n,:,:,IOU_INST) 
-        wdep(n,:,:,IOU_MON )  = wdep(n,:,:,IOU_MON )  + wdep(n,:,:,IOU_INST) 
-        wdep(n,:,:,IOU_YEAR ) = wdep(n,:,:,IOU_YEAR ) + wdep(n,:,:,IOU_INST) 
-
-     end do  ! WET DEP.
-     !/***** WET DEPOSITION **************************
-
-     do n = 1, NDDEP
-
-        ddep(n,:,:,IOU_DAY )  = ddep(n,:,:,IOU_DAY )  + ddep(n,:,:,IOU_INST) 
-        ddep(n,:,:,IOU_MON )  = ddep(n,:,:,IOU_MON )  + ddep(n,:,:,IOU_INST) 
-        ddep(n,:,:,IOU_YEAR ) = ddep(n,:,:,IOU_YEAR ) + ddep(n,:,:,IOU_INST) 
-
-     end do  ! DRY DEP.
+     end do   ! num_deriv2d
 
      !/***** 3-D fields **************************
 
        if(debug_flag) then ! RUN through indices etc.
-            write(*, "(a12,2i4,f12.3)") "3D3D TIME ",  me, NDERIV_3D, &
+            write(*, "(a12,2i4,f12.3)") "3D3D TIME ",  me, num_deriv3d, &
                      (current_date%hour+current_date%seconds/3600.0)
-            !do n = 1, NDERIV_3D
+            !do n = 1, num_deriv3d
             ! write(6,*) "3D3D CHECKING me, n,name,index,class ", me, &
             !        n, f_3d(n)%name,f_3d(n)%index, f_3d(n)%class
             !end do
         end if
 
 
-     do n = 1, NDERIV_3D
+     do n = 1, num_deriv3d
 
         index = f_3d(n)%index
 
@@ -1083,7 +910,7 @@ def_3d = (/ &
                       n, (nav_3d(n,i), i=1,LENOUT3D)
               end if
 
-              d_3d(n,:,:,:,IOU_INST ) = 0.0  !! Reset d_3d  ! Was bug in Unimod.debug
+              d_3d(n,:,:,:,IOU_INST ) = 0.0  !! Reset d_3d
 
            endif ! End_of_Day
         else
@@ -1132,7 +959,7 @@ def_3d = (/ &
 
      !/***** 3-D fields **************************
 
-     do n = 1, NDERIV_3D
+     do n = 1, num_deriv3d
 
         if ( f_3d(n)%class  == "PROD " ) then
            index = f_3d(n)%index
@@ -1163,12 +990,7 @@ def_3d = (/ &
       integer, intent(in) :: period   ! Either IOU_DAY or IOU_MON
 
        if ( period <= LENOUT2D ) then
-           nav_wdep(:,period) = 0.0
-           nav_ddep(:,period) = 0.0
            nav_2d  (:,period) = 0.0
-
-           wdep(:,:,:,period) = 0.0
-           ddep(:,:,:,period) = 0.0
            d_2d(:,:,:,period) = 0.0
        end if 
 
@@ -1184,17 +1006,12 @@ def_3d = (/ &
   subroutine Setup_VOC()
       !--------------------------------------------------------
       ! Searches through the advected species and colects the
-      ! index and carbon content of nmhc species, as they were
+      ! index and carbon content of nmhc/voc species, as they were
       ! defined in GenOut_ml
       !
-      ! Works for jej and ds chem
       !--------------------------------------------------------
        integer :: n
    
-
-     !ds rv1_9_10: VOC now properly defined. Previous definition
-     !             was for NMHC, not VOC.
-
       do n = 1, NSPEC_ADV
 
         if ( species( NSPEC_SHL+n )%carbons > 0 .and. &
@@ -1274,8 +1091,6 @@ def_3d = (/ &
            if ( izen < AOT_HORIZON ) then
                 o3 = xn_adv(IXADV_O3,i,j,KMAX_MID) &
                      * cfac(IXADV_O3,i,j) * PPBINV 
-
-               !! jej 26/8/2002 already in mixing ratio
 
                 o3 = max( o3 - threshold , 0.0 )   ! Definition of AOTs
 

@@ -1,3 +1,29 @@
+============== Dave,  rv2_9_1, July 20th 2007  =================================
+
+Major change - rewrite of Derived and My_Derived
+
+      - should now be much easier to add or remove params from list to be
+        included -- just give names (e.g. "DDEP_OXN"). No need to count :-)
+        Also, now there is just 2d and 3d  stuff, no more ddep_ and wdep_.
+        No need of DUMMY either in 3d output.
+        Arrays are allocated as needed.
+
+ 
+SmallUtils - added AddArray and LenArray to add arrays, and to count number of
+    allocated elements (not allocated define with NOT_SET_STRING
+      
+Included Svetlana's OutputChem_ml, a wrapper containing Wrtchem.f90 and other
+   subroutines
+
+Deleted: Wrtchem.f90 - now in OutputChem_ml
+ 
+run.pl - check now added that the number of processors in run.pl matches
+   the number in ModelConstants_ml.f90
+
+TO-BE-DONE
+
+ Changes need to be transferred to ACID version
+
 ============== Dave,  rv2_9, July 19th 2007  =================================
 
 Major change:

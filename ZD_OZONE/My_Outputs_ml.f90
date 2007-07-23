@@ -12,7 +12,7 @@ module  My_Outputs_ml
 ! Hourly - ascii output of selected species, selcted domain
 ! Restri - Full 3-D output of all species, selected domain
 
-use Derived_ml, only : f_2d, d_2d, find_one_index
+use Derived_ml, only : f_2d, d_2d
 use TimeDate_ml,   only : date  
 use GenSpec_adv_ml
 use GenSpec_shl_ml, only: & ! =>> IXSHL_xx
@@ -20,6 +20,7 @@ use GenSpec_shl_ml, only: & ! =>> IXSHL_xx
 use GenChemicals_ml ,  only: species
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
 use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
+use SmallUtils_ml, only: find_index
 implicit none
 
 INCLUDE 'mpif.h'
@@ -268,10 +269,10 @@ contains
 
 ! For deriv system
  
- D2_O3WH = find_one_index("D2_O3WH",f_2d(:)%name)
- D2_O3DF = find_one_index("D2_O3DF",f_2d(:)%name)
- D2_AFSTDF16 = find_one_index("D2_AFSTDF16",f_2d(:)%name)
- D2_AFSTCR3 = find_one_index("D2_AFSTCR3",f_2d(:)%name)
+ D2_O3WH = find_index("D2_O3WH",f_2d(:)%name)
+ D2_O3DF = find_index("D2_O3DF",f_2d(:)%name)
+ D2_AFSTDF16 = find_index("D2_AFSTDF16",f_2d(:)%name)
+ D2_AFSTCR3 = find_index("D2_AFSTCR3",f_2d(:)%name)
 
 ! hr_out(2)= Asc2D("O3_Wheat", "D2D", &
 !                  "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)
