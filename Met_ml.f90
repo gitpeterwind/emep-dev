@@ -12,7 +12,7 @@
 
 use CheckStop_ml,         only : CheckStop
 use Functions_ml,         only : Exner_tab, Exner_nd
-use GridValues_ml,        only : xmd, i_glob, j_glob, METEOfelt, projection &
+use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
                                 ,gl,gb, gb_glob, gl_glob, MIN_ADVGRIDS   &
                                 ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
                                 ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
@@ -1143,7 +1143,7 @@ private
        do i = 1, limax
          do j = 1, ljmax
             if (MY_DEBUG .and. &
-              i_glob(i) == DEBUG_I .and. j_glob(j) == DEBUG_J ) then
+              i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J ) then
               debug_proc = .true.
               debug_iloc    = i
               debug_jloc    = j

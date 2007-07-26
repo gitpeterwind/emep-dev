@@ -26,7 +26,7 @@ use My_Outputs_ml, only : &  ! for sitesout
 
 use Derived_ml,        only : d_2d, d_3d, IOU_INST  !ds New deriv system
 use Functions_ml,      only : Tpot_2_T              !ds Conversion function
-use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_glob, j_glob
+use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom
 use Io_ml,             only : check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES
 use GenSpec_adv_ml
@@ -227,10 +227,10 @@ contains
 
   ! initialise RESTRI domain
   n = 0                     ! No. sites found within domain
-  gibegpos = i_glob(0)-gi0+2
-  giendpos = i_glob(0)-gi0+1+GIMAX
-  gjbegpos = j_glob(0)-gj0+2
-  gjendpos = j_glob(0)-gj0+1+GJMAX
+  gibegpos = i_fdom(0)-gi0+2
+  giendpos = i_fdom(0)-gi0+1+GIMAX
+  gjbegpos = j_fdom(0)-gj0+2
+  gjendpos = j_fdom(0)-gj0+1+GJMAX
 
   ios = 0                   ! zero indicates no errors
   errmsg = "ios error" // infile
@@ -298,10 +298,10 @@ contains
   ! define local coordinates of first and last element
   ! of the arrays with respect to the larger domain
 
-  ibegpos = i_glob(0)+1
-  iendpos = i_glob(0)+1+gi1-gi0
-  jbegpos = j_glob(0)+1
-  jendpos = j_glob(0)+1+gj1-gj0
+  ibegpos = i_fdom(0)+1
+  iendpos = i_fdom(0)+1+gi1-gi0
+  jbegpos = j_fdom(0)+1
+  jendpos = j_fdom(0)+1+gj1-gj0
 
   nlocal  = 0
 

@@ -16,14 +16,14 @@
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
  use ModelConstants_ml,    only : KMAX_BND, KMAX_MID  &! vertical extent
-      ,DEBUG_i, DEBUG_j  &  ! global coordinate of debug-site !dsjun2005
+      ,DEBUG_i, DEBUG_j  &  ! full-domain coordinate of debug-site
       ,NPROC, IIFULLDOM,JJFULLDOM
  use Par_ml, only : &
         MAXLIMAX,MAXLJMAX   & ! max. possible i, j in this domain
       ,limax,ljmax          & ! actual max.   i, j in this domain
       ,li0,li1,lj0,lj1      & ! for debugging TAB
-      ,IRUNBEG,JRUNBEG        & ! start of user-specified domain
-      ,gi0,gj0              & ! global coordinates of domain lower l.h. corner
+      ,IRUNBEG,JRUNBEG      & ! start of user-specified domain
+      ,gi0,gj0         & ! full-dom coordinates of domain lower l.h. corner
       ,me                ! local processor
  use PhysicalConstants_ml, only : GRAV, PI       ! gravity, pi
  implicit none
@@ -53,13 +53,14 @@
         ,GRIDWIDTH_M &! width of grid at 60N, in meters (old "h")(from infield)
         ,ref_latitude ! latitude at which projection is true (degrees)
 
-  !/ Variables to define global coordinates of local i,j values. 
+  !/ Variables to define full-domain (fdom) coordinates of local i,j values. 
 
-  integer, public, save, dimension(0:MAXLIMAX+1) :: i_glob !global coordinates
-  integer, public, save, dimension(0:MAXLJMAX+1) :: j_glob !of local i,j
- ! and from global (Large Domain) to local:
+  integer, public, save, dimension(0:MAXLIMAX+1) :: i_fdom !fdom coordinates
+  integer, public, save, dimension(0:MAXLJMAX+1) :: j_fdom !of local i,j
+
+ ! and reverse:
   integer, public, save, dimension(IIFULLDOM) :: i_local  !local coordinates
-  integer, public, save, dimension(JJFULLDOM) :: j_local  !of global i,j
+  integer, public, save, dimension(JJFULLDOM) :: j_local  !of full-domain i,j
 
 
   real, public, save,  dimension(KMAX_BND) ::  &
@@ -139,15 +140,15 @@ contains
 ! AN = No. grids from pole to equator
 ! AN = 6.371e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M = 237.768957  
 
-  !/ Define global coordinates of local i,j values. We need to account for
+  !/ Define full-domain coordinates of local i,j values. We need to account for
   !  the fact that each parallel domain has its starting cordinate
   !  gi0, gj0, and the user may specify a set of lower-left starting
   !  coordinates for running the model, IRUNBEG, JRUNBEG
-  !       i_glob(i)  = i + gi0 + IRUNBEG - 2
-  !       j_glob(j)  = j + gj0 + JRUNBEG - 2
+  !       i_fdom(i)  = i + gi0 + IRUNBEG - 2
+  !       j_fdom(j)  = j + gj0 + JRUNBEG - 2
 
-    i_glob = (/ (n + gi0 + IRUNBEG - 2, n=0,MAXLIMAX+1) /) 
-    j_glob = (/ (n + gj0 + JRUNBEG - 2, n=0,MAXLJMAX+1) /) 
+    i_fdom = (/ (n + gi0 + IRUNBEG - 2, n=0,MAXLIMAX+1) /) 
+    j_fdom = (/ (n + gj0 + JRUNBEG - 2, n=0,MAXLJMAX+1) /) 
 
   ! And the reverse, noting that we even define for area
   ! outside local domain
@@ -160,7 +161,7 @@ contains
 
     do i = 1, MAXLIMAX
        do j = 1, MAXLJMAX
-          if( i_glob(i) == DEBUG_i .and. j_glob(j) == DEBUG_j ) then
+          if( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
              debug_li = i
              debug_lj = j
              debug_proc = .true.
@@ -182,13 +183,13 @@ contains
     an2 = AN*AN
  
     do j=0,MAXLJMAX+1           ! ds - changed from ljmax+1
-          y = j_glob(j) - yp     ! ds - changed from gj0+JRUNBEG-2+j
+          y = j_fdom(j) - yp     ! ds - changed from gj0+JRUNBEG-2+j
           y = y*y
-          y_i = j_glob(j)+0.5 - yp  !in the staggered grid
+          y_i = j_fdom(j)+0.5 - yp  !in the staggered grid
           y_i = y_i*y_i
           do i=0,MAXLIMAX+1     
-              x = i_glob(i) - xp
-              x_j = i_glob(i)+0.5 - xp !in the staggered grid
+              x = i_fdom(i) - xp
+              x_j = i_fdom(i)+0.5 - xp !in the staggered grid
 
               rpol2 = (x*x + y)/an2
               rpol2_i = (x*x + y_i)/an2
@@ -248,7 +249,7 @@ contains
 
        write(*,804) "GRIDTAB",me,IRUNBEG,JRUNBEG,gi0,gj0,li0,li1,limax,MAXLIMAX,&
             lj0,lj1,ljmax, MAXLJMAX, &
-              i_glob(1), i_glob(MAXLIMAX+1),j_glob(1), j_glob(MAXLJMAX+1)
+              i_fdom(1), i_fdom(MAXLIMAX+1),j_fdom(1), j_fdom(MAXLJMAX+1)
 
        write(*,806) "GRIDLL ",me, minval(gl), maxval(gl), minval(gb), &
                maxval(gb), gb(1,1), gb(MAXLIMAX,MAXLJMAX)
@@ -264,7 +265,7 @@ contains
   subroutine Position()
   !-------------------------------------------------------------------! 
   !      calculates l(lat),b(long) (geographical coord.) 
-  !      in every grid point defined by the i_glob, j_glob arrays. 
+  !      in every grid point defined by the i_fdom, j_fdom arrays. 
   !
   !      input:  xp,yp:   coord. of the polar point.
   !              AN:      number of grid-distances from pole to equator.
@@ -279,17 +280,14 @@ contains
   !      output: gl(ii,jj): latitude glmin <= l <= glmin+360. 
   !              gb(ii,jj): longitude  -90. <= b <= +90. 
   !-------------------------------------------------------------------! 
-  ! ds  - replaced pi by PI, glx by glmax, removed gln
-  ! ds  - evaluate gl, gb over whole domain given by MAXLIMAX, MAXLJMAX
+  !   - evaluate gl, gb over whole domain given by MAXLIMAX, MAXLJMAX
   !       to safeguard against possible use of non-defined gl,bb squares. 
-  ! ds  - note, we could use rpol2(i,j) to save some computations here, 
+  !   - note, we could use rpol2(i,j) to save some computations here, 
   !       but for now we leave it. This stuff is only done once anyway
 
     real    :: glmin, glmax, om, om2, dy, dy2,rp,rb, rl, dx, dr !,fi read in Met_ml pw u3 
     integer :: i, j, info
-      !                                                    
-      !      call xylbf(43.,121.,237.,-32.,gl,gb,imax,jmax,-180.)
-      !      subroutine xylbf(xp,yp,AN,fi,gl,gb,ii,jj,glmin)
+
       !su    xp,yp read in infield                
       !su    xp = 43.
       !su    yp = 121.
@@ -306,10 +304,10 @@ contains
   if(trim(projection)=='Stereographic') then     
     
     do j = 1, MAXLJMAX          ! ds - changed from ljmax
-       dy  = yp - j_glob(j)     ! ds - changed from gj0+JRUNBEG-2+j
+       dy  = yp - j_fdom(j)     ! ds - changed from gj0+JRUNBEG-2+j
        dy2 = dy*dy
        do i = 1, MAXLIMAX       ! ds - changed from limax
-         dx = i_glob(i) - xp    ! ds - changed
+         dx = i_fdom(i) - xp    ! ds - changed
          rp = sqrt(dx*dx+dy2)           ! => distance to pole
          rb = 90.0 - om2 * atan(rp/AN)  ! => latitude
          rl = 0.0
@@ -320,14 +318,14 @@ contains
          gb(i,j)=rb                     !     latitude
 
 !JUN06 fix
-!!!          gb_glob( i_glob(i), j_glob(j) ) = gb(i,j)  ! FIX!!!!
+!!!          gb_glob( i_fdom(i), j_fdom(j) ) = gb(i,j)  ! FIX!!!!
 !----------------------------------------
 
        end do ! i
     end do ! j
     endif
 
-    ! test to find global-min and max lat/long values
+    ! test to find full-domain min and max lat/long values
 
     gbacmax = maxval(gb(:,:))
     gbacmin = minval(gb(:,:))
@@ -352,10 +350,10 @@ contains
     if ( DEBUG_GRID ) then
        do j = 1, MAXLJMAX
          do i = 1, MAXLIMAX
-           if ( i_glob(i) == DEBUG_i .and. j_glob(j) == DEBUG_j ) then
+           if ( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
              write(*,"(a15,a30,5i4,2f8.2,f7.3)") "DEBUGPosition: ",  &
-                        " me,i,j,i_glob,j_glob,gl,gb,rp: ", &
-              me, i,j, i_glob(i), j_glob(j), gl(i,j), gb(i,j),rp
+                        " me,i,j,i_fdom,j_fdom,gl,gb,rp: ", &
+              me, i,j, i_fdom(i), j_fdom(j), gl(i,j), gb(i,j),rp
            end if
          end do
        end do
@@ -541,8 +539,7 @@ end subroutine GlobalPosition
        end do ! i
     end do ! j
 
-   return
- end subroutine ij2lbm
+  end subroutine ij2lbm
 
   subroutine ij2ijm(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
                    fiin,anin,xpin,ypin,fiout,anout,xpout,ypout)

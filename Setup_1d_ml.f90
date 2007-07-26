@@ -21,7 +21,7 @@
   use MyChem_ml,             only :  Set_2dBgnd
   use GenRates_rct_ml,       only :  NRCT, rcit !u3 Tabulated rate coeffs
   use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
-  use GridValues_ml,         only :  sigma_mid, xmd, carea, i_glob, j_glob
+  use GridValues_ml,         only :  sigma_mid, xmd, carea, i_fdom, j_fdom
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use Met_ml,                only :  roa, th, ps, q, t2_nwp, cc3dmax &
                                     ,zen, Idirect, Idiffuse &

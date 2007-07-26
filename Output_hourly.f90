@@ -26,7 +26,7 @@
    use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR,Deriv
    use GenSpec_shl_ml ,  only : NSPEC_SHL        ! Maps indices
    use GenChemicals_ml , only : species          ! Gives names
-   use GridValues_ml,    only : i_glob, j_glob   ! Gives emep coordinates
+   use GridValues_ml,    only : i_fdom, j_fdom   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
    use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
    use Met_ml,           only : t2_nwp,th, roa, surface_precip, &
@@ -95,7 +95,7 @@
         if ( DEBUG ) then
            do j = 1, ljmax
               do i = 1, limax
-                  if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) then
+                  if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j) then
                        debug_flag = .true.
                        i_debug = i
                        j_debug = j
@@ -296,7 +296,7 @@
                              limax, ljmax ,MAXLIMAX,MAXLJMAX
             maxpos = maxloc(hourly)
             write(6,*) "Location is i=", maxpos(1), " j=", maxpos(2)
-            write(6,*) "EMEP coords ix=", i_glob(maxpos(1)), " iy=", j_glob(maxpos(2))
+            write(6,*) "EMEP coords ix=", i_fdom(maxpos(1)), " iy=", j_fdom(maxpos(2))
             write(6,*) "hourly is ", hourly(maxpos(1),maxpos(2))
             if ( hr_out(ih)%type == "ADV" ) then
               write(6,*) "xn_ADV is ", xn_adv(ispec,maxpos(1),maxpos(2),KMAX_MID)

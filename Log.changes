@@ -1,3 +1,28 @@
+============== Dave,  rv2_9_2, July 26th 2007  =================================
+
+More variable name changes, for i_glob, j_glob. Full list of recent
+changes is:
+
+    ISMBEG => "IRUNBEG"
+   ,JSMBEG => "JRUNBEG"
+   ,IILARDOM => "IILARGEDOM"
+   ,JJLARDOM => "JJLARGEDOM"
+    IILARGEDOM  => "IIFULLDOM",
+   ,JJLARGEDOM  => "JJFULLDOM"
+   ,i_glob  => "i_fdom"
+   ,j_glob  => "j_fdom"
+
+ The idea is to prevent confusion between global as in for the
+World and the computer-concept of global for the full domain.
+In future I think global should refer to the World-scale.
+
+
+DOCS/Manual.tex - changed with suggestion of Part A, Part B
+     Outputs.tex - new description of derived outputs
+     Input.tex -  small change for input files (DO3SEinputs.csv
+            will be introduced soon in place of old MM_biomass, gfac etc.)
+
+
 ============== Dave,  rv2_9_1, July 20th 2007  =================================
 
 Major change - rewrite of Derived and My_Derived

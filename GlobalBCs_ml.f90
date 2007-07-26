@@ -27,7 +27,7 @@ module GlobalBCs_ml
   use CheckStop_ml,      only: CheckStop
   use GridValues_ml, only: gbacmax,gbacmin,glacmax,glacmin&
                           ,gl,gb_glob,GlobalPosition &
-                          ,i_glob,j_glob &
+                          ,i_fdom,j_fdom &
                           ,sigma_mid             ! for use in Hz scaling
   use Functions_ml, only: StandardAtmos_kPa_2_km ! for use in Hz scaling
   use GridValues_ml, only: lb2ij, xp, yp, AN, fi, gb_glob, gl_glob

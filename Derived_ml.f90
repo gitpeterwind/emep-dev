@@ -58,7 +58,7 @@ use ModelConstants_ml, &
                         , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me,                &   ! for print outs
-                     gi0,gj0,IRUNBEG,JRUNBEG,&! for i_glob, j_glob
+                     gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
                      li0,lj0,limax, ljmax    ! => used x, y area 
 use PhysicalConstants_ml,  only : PI
 use SmallUtils_ml, only: find_index, LenArray, NOT_SET_STRING
@@ -266,8 +266,8 @@ private
 
 
   ! - for debug  - now not affecting ModelConstants version
-   integer, dimension(MAXLIMAX) :: i_glob
-   integer, dimension(MAXLJMAX) :: j_glob
+   integer, dimension(MAXLIMAX) :: i_fdom
+   integer, dimension(MAXLJMAX) :: j_fdom
    integer :: ind
 
 
@@ -480,12 +480,12 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
           ! Need to define here since gridValues not yet set.
 
-          i_glob = (/ (n + gi0 + IRUNBEG - 2, n=1,MAXLIMAX) /)
-          j_glob = (/ (n + gj0 + JRUNBEG - 2, n=1,MAXLJMAX) /)
+          i_fdom = (/ (n + gi0 + IRUNBEG - 2, n=1,MAXLIMAX) /)
+          j_fdom = (/ (n + gj0 + JRUNBEG - 2, n=1,MAXLJMAX) /)
 
            do j = 1, ljmax
               do i = 1, limax
-                  if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) then
+                  if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j) then
                        debug_flag = .true.
                        i_debug = i
                        j_debug = j

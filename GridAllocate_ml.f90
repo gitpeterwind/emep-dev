@@ -41,7 +41,7 @@ module GridAllocate_ml
 !____________________________________________________________________
   use CheckStop_ml, only : CheckStop
   use Par_ml, only : me ! TESTS
-  use GridValues_ml, only : i_glob, j_glob
+  use GridValues_ml, only : i_fdom, j_fdom
   implicit none
   private
 
@@ -96,7 +96,7 @@ module GridAllocate_ml
               write(unit=*,fmt=*) "XXX GridAlloc_ij:"//label , icc,ic, code
           end do
        
-          write(unit=errmsg,fmt=*) "me", me, " i ", i, " j ", j, " iglob ", i_glob(i), j_glob(j)
+          write(unit=errmsg,fmt=*) "me", me, " i ", i, " j ", j, " iglob ", i_fdom(i), j_fdom(j)
           call CheckStop( "GridAlloc ncmax ERROR" // label // errmsg )
 
        end if

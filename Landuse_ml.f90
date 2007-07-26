@@ -24,14 +24,14 @@ use DepVariables_ml,only: NLANDUSE         &  ! No. land-classes
                       ,SWP_max   , PWP       , rootdepth 
 use Functions_ml,   only: Polygon
 use GridAllocate_ml,only: GridAllocate
-use GridValues_ml,  only: gb_glob, gb, i_glob, j_glob, & ! latitude, coordinates
+use GridValues_ml,  only: gb_glob, gb, i_fdom, j_fdom, & ! latitude, coordinates
                           i_local, j_local, &
                          debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, IO_FORES,Read_Headers,read_line, Read2DN
 use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NNLANDUSE, &
-                          NPROC, IIFULLDOM, JJFULLDOM
-use Par_ml,         only: GIMAX, GJMAX, IRUNBEG, JRUNBEG, &
-                          li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
+                          NPROC, IIFULLDOM, JJFULLDOM, &
+                          DomainName
+use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
 use TimeDate_ml,    only: daynumber, nydays, current_date
@@ -98,7 +98,7 @@ contains
        !=====================================
 
 
-end subroutine Init_Landuse !XXXXXXXXXX
+end subroutine Init_Landuse
  !--------------------------------------------------------------------------
 subroutine ReadLanduse()
 

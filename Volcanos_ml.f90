@@ -23,7 +23,7 @@ module Volcanos_ml
  use CheckStop_ml,          only : CheckStop
  use My_Emis_ml,            only : QRCVOL,molwt
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
- use GridValues_ml,         only : sigma_bnd, i_glob, j_glob,i_local, j_local
+ use GridValues_ml,         only : sigma_bnd, i_fdom, j_fdom,i_local, j_local
  use Io_ml,                 only : ios, open_file, check_file, IO_VOLC
  use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC
  use Met_ml,                only : ps, roa

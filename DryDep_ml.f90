@@ -46,7 +46,7 @@ module DryDep_ml
 
  use Functions_ml,   only : AerRes,PsiM
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
-                            i_glob, j_glob   ! for testing
+                            i_fdom, j_fdom   ! for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
  use Met_ml,         only : roa,tau,fh,z_bnd,th,ps,u,v,z_mid&
                             !dsps ,snow, pr, psurf, cc3dmax, t2_nwp, q &
@@ -260,7 +260,7 @@ module DryDep_ml
      ! to Rsurface_ml
 
       debug_flag = .false. 
-      if ( i_glob(i)==DEBUG_i .and. j_glob(j)==DEBUG_j) debug_flag = .true.
+      if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j) debug_flag = .true.
 
 
      ! -----------------------------------------------------------------!
@@ -541,7 +541,7 @@ module DryDep_ml
         if( DEBUG_AERO .and. debug_flag ) then
            write(6,*) 
            write(6,*) ' >=>=>=>=>=>=>  Dry deposition velocity at :', &
-              i_glob(i), j_glob(j)
+              i_fdom(i), j_fdom(j)
            write(6,'(7(i3,f8.3))') &
               (n, 100.*Grid_Vg_3m(n), n = 1,NDRYDEP_TOT)
            write(6,'(7(i3,f8.3))') &
@@ -636,7 +636,7 @@ module DryDep_ml
        !=======================
 
         if ( DEBUG_UK .and. Sumland > 1.011  ) then
-            print *, "SUMLAND ", me, nlu, i,j,i_glob(i), j_glob(j), Sumland
+            print *, "SUMLAND ", me, nlu, i,j,i_fdom(i), j_fdom(j), Sumland
               WRITE(*,*) 'MPI_ABORT: ', "SUMLAND!" 
               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
         end if

@@ -219,7 +219,7 @@
         integer niterxys,niterxy(KMAX_MID),niters,nxy,ndiff
         integer iterxys,iterxy,iters
 	logical,save :: firstcall = .true.
-        integer numt,pwdebug,idebug,jdebug,i_glob,j_glob
+        integer numt,pwdebug,idebug,jdebug,i_fdom,j_fdom
            pwdebug=0
            idebug=0
            jdebug=0
@@ -687,7 +687,7 @@
           integer niterxys,niterxy(KMAX_MID),niters,nxy,ndiff
           integer iterxys,iterxy,iters,iterx,itery,nxx,nxxmin,nyy
           logical,save :: firstcall = .true.
-          integer numt,pwdebug,idebug,jdebug,i_glob,j_glob
+          integer numt,pwdebug,idebug,jdebug,i_fdom,j_fdom
 
           real ::hours,houre,houra,date_ad
           integer ::isum,isumtot,iproc
