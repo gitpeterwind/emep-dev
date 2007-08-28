@@ -280,8 +280,7 @@ program myeul
 
 
   logical, parameter :: DEBUG_UNI = .false. 
-  integer n, numt, nadd, ntmp(4),  oldseason &
-       ,newseason    !u2 , metstep
+  integer n, numt, nadd, oldseason,newseason
   integer iupw, i, j, ii, k, iotyp
   integer :: mm, mm_old   ! month and old-month  (was nn and nold)
   integer :: nproc_mpi,cyclicgrid
@@ -311,10 +310,14 @@ program myeul
      open(IO_LOG,file='RunLog.out')
      open(IO_TMP,file='INPUT.PARA')
   endif
-  do i=1,3
-     call read_line(IO_TMP,txt,status(1))
-     read(txt,*)ntmp(i)
-  enddo
+
+  call read_line(IO_TMP,txt,status(1))
+  read(txt,*) nterm
+  call read_line(IO_TMP,txt,status(1))
+  read(txt,*) nass
+  call read_line(IO_TMP,txt,status(1))
+  read(txt,*) iyr_trend
+ 
   call read_line(IO_TMP,runlabel1,status(1))! explanation text short
   call read_line(IO_TMP,runlabel2,status(1))! explanation text long
   do i=1,3
@@ -330,20 +333,12 @@ program myeul
      write(unit=IO_LOG,fmt=*)startdate(1)
      write(unit=IO_LOG,fmt=*)startdate(2)
      write(unit=IO_LOG,fmt=*)startdate(3)
-     write(unit=IO_LOG,fmt=*)"iyr_trend= ", ntmp(3)
+     write(unit=IO_LOG,fmt=*)"iyr_trend= ", iyr_trend
   endif
 
   print *, "read standard input"
   if( me == 0 ) print *, "RUNLABEL INPUT ", trim(runlabel1),' ',trim(runlabel2)
-
-  !    if( me == 0 ) then
-  print *, "distributed standard input"
-  print *, " ME ", me, " LABELS ", trim(runlabel1),' ', trim(runlabel2)
-  !    endif
-  nterm = ntmp(1)
-  nass = ntmp(2)
-  iyr_trend = ntmp(3)   !ds rv1.6.10
-  print *, " Trend Year is ", iyr_trend
+  if( me == 0 ) print *, " Trend Year is ", iyr_trend
 
 
   !*** Timing ********

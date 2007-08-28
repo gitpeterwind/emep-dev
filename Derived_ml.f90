@@ -164,7 +164,7 @@ private
              voc_index, &     ! Index of VOC in xn_adv
              voc_carbon       ! Number of C atoms
 
-   logical, private, parameter :: MY_DEBUG = .false.
+   logical, private, parameter :: MY_DEBUG = .true.
    logical, private, save :: debug_flag, Is3D
    character(len=100), private :: errmsg
    integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
@@ -587,6 +587,10 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         end if
 
         index = f_2d(n)%index
+        if ( My_DEBUG ) then
+           write(*,*) "DEBUG Derived 2d", n, f_2d(n)%name, index, typ
+        end if
+
         select case ( typ )
 
           case ( "PS" )
@@ -740,15 +744,18 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               endif
 
 
+          case ( "PREC", "WDEP", "DDEP" )
+            if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"PR/DEP d_2d",&
+                   n, f_2d(n)%name, " is ", d_2d(n,i_debug,j_debug,IOU_INST)
 
-          case ( "EXT" ) ! Set externally to this module, e.g. AOT40WH...
+          case ( "EXT" )
 
+          ! Externally set for IOU_INST (in other routines); so no new work 
+          ! needed except decision to accumalate to yearly or not.
+          ! Used for e.g. AOT40s
              call setaccumulate_2dyear(n,accumulate_2dyear)
-          ! Externally set for IOU_INST (in other routines); so no new work needed
-            if ( debug_flag ) then
-                 write(*,"(a18,i4,a12,a4,es12.3)") "EXTDer: d_2d for", n,  &
-                   f_2d(n)%name, " is ", d_2d(n,i_debug,j_debug,IOU_INST)
-            end if
+            if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
+                   n, f_2d(n)%name, " is ", d_2d(n,i_debug,j_debug,IOU_INST)
 
           case  default
 
