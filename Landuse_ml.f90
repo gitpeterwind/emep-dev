@@ -79,7 +79,7 @@ private
 
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
 
- logical, private, parameter :: DEBUG_DEP = .true.
+ logical, private, parameter :: DEBUG_DEP = .false.
  character(len=50), private :: errmsg
 
 
@@ -124,7 +124,7 @@ subroutine ReadLanduse()
    landuse_codes(:,:,:)  = 0       !/**  initialise  **/
    landuse_data  (:,:,:) = 0.0     !/**  initialise  **/
 
-   call Read2DN("Inputs.landuse",NNLANDUSE,landuse_in)
+   call Read2DN("Inputs.Landuse",NNLANDUSE,landuse_in)
 
    !call CheckStop( KeyValue(KeyValues,"Units"), "PercentGrid" , "Landuse: Units??")
    !call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")

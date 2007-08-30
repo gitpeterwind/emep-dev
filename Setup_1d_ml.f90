@@ -11,21 +11,20 @@
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
-  use Emissions_ml,          only :  gridrcemis, KEMISTOP    !hf VOL
-  use Functions_ml,          only :  Tpot_2_T                !ds apr2005
+  use Emissions_ml,          only :  gridrcemis, KEMISTOP
+  use Functions_ml,          only :  Tpot_2_T
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
   use GenSpec_adv_ml,        only :  NSPEC_ADV
   use GenSpec_shl_ml,        only :  NSPEC_SHL
-  use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN &
-    ,xn_2d_bgn         !u2 concentration terms, specified species
+  use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use MyChem_ml,             only :  Set_2dBgnd
-  use GenRates_rct_ml,       only :  NRCT, rcit !u3 Tabulated rate coeffs
+  use GenRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
   use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
-  use GridValues_ml,         only :  sigma_mid, xmd, carea, i_fdom, j_fdom
+  use GridValues_ml,         only :  sigma_mid, xmd, carea, &
+                                     debug_proc, debug_li, debug_lj
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use Met_ml,                only :  roa, th, ps, q, t2_nwp, cc3dmax &
-                                    ,zen, Idirect, Idiffuse &
-                                    ,z_bnd     !ds Pb210
+                                    ,zen, Idirect, Idiffuse,z_bnd
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
     ,dt_advec                        & ! time-step
@@ -34,21 +33,21 @@
     ,KMAX_MID ,KMAX_BND, KCHEMTOP     ! Start and upper k for 1d fields
   use My_Aerosols_ml,       only : SEASALT
   use My_Emis_ml,           only : NRCEMIS  , AIRNOX, QRCAIRNO &
-                                  ,QRCAIRNO2, NFORESTVOC&
-                                  ,QRCVOL,VOLCANOES &  ! hf -extended VOL
+                                  ,QRCAIRNO2, NBVOC&
+                                  ,QRCVOL,VOLCANOES &
                                   ,NSS  !SeaS
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
-  use My_BoundConditions_ml, only : BGN_2D     !hf u2
+  use My_BoundConditions_ml, only : BGN_2D
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
   use PhysicalConstants_ml,  only :  AVOG, PI
   use Radiation_ml,          only : & !ds mar2005 zen, Idirectt, Idiffuse, 
-                              PARfrac, Wm2_uE  ! ds rv1_6_x for bio
+                              PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
-    ,rc_Rn222             &  ! ds Pb210
+    ,rc_Rn222             &  ! for Pb210
     ,rct, rcmisc          &  ! emission terms
     ,rcss                 &  !SeaS - sea salt
     ,rh, temp, itemp,pp      &  ! 
@@ -56,7 +55,7 @@
     ,izen &
     ,f_Riemer  !weighting factor for N2O5 hydrolysis    
                      ! integer of zenith angle
-  use SeaSalt_ml,        only : SS_prod   !SeaS
+  use SeaSalt_ml,        only : SS_prod 
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,           only :  current_date, date
   implicit none
@@ -141,13 +140,12 @@ contains
               xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*amk(k))
         end do ! ispec
  
-        ! 3)/ Background species
-        !** CTM2 with units in mix. ratio
+        ! 3)/ Background species ( * CTM2 with units in mix. ratio)
         do n = 1, NSPEC_BGN
               xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
         end do ! ispec   
 
-!hf setup weighting factor for hydrolysis  
+! setup weighting factor for hydrolysis  
              f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(aNO3,k)) )
 
    end do ! k
@@ -156,17 +154,12 @@ contains
    o2k(:) = 0.21*amk(:)
    tinv(:) = 1./temp(:)
 
-  !u2 - NEW ****
-  !u3 - amk added to arguments
-
-!hf   if (BGN_2D) &
-!hf     call Set_2dBgnd(izen,cc3dmax(i,j,:),amk)  ! Sets remaining xn_2d_bgn
 
   ! 5 ) Rates 
 
    rct(:,:)    = rcit(:,itemp(:))
 
-   !u1 call set_rctroe_rates(tinv,amk,rctroe)
+   !old: call set_rctroe_rates(tinv,amk,rctroe)
 
    call set_rcmisc_rates(itemp,tinv,amk,o2k,h2o,rh,rcmisc)
 
@@ -189,16 +182,14 @@ contains
    !  local
      integer ::  iqrc,k,n
      real    :: scaling, scaling_k
-     real    :: eland   !ds Pb210  - emissions from land
+     real    :: eland   ! for Pb210  - emissions from land
 
-!hf VOL
     integer ::  i_help,j_help,i_l,j_l
 
-!hf VOL initilize
+! initilize
     rcemis(:,:)=0.    
     rcss(:,:) = 0.  !SeaS 
    
-     !rv1.2.1 do k=KMAX_MID-3,KMAX_MID -- bug spotted by st, 2/12/2002
      do k=KEMISTOP,KMAX_MID
 
         do iqrc = 1, NRCEMIS
@@ -240,14 +231,12 @@ contains
        ! dummy value of 1. Avoids problems with
        !undefined QRCNO in non-NOx models.
 
-        !rv1.2.1 do k=KCHEMTOP,KMAX_MID-4  ! bug, 2/12/2002
         do k=KCHEMTOP,KEMISTOP-1
           rcemis(QRCAIRNO,k)  = 0.95 * (airn(k,i,j)+airlig(k,i,j))
           rcemis(QRCAIRNO2,k) = 0.05 * (airn(k,i,j)+airlig(k,i,j))
 
         enddo
 
-        !rv1.2.1 do k=KMAX_MID-3,KMAX_MID  ! bug, 2/12/2002
         do k=KEMISTOP,KMAX_MID
           rcemis(QRCAIRNO,k)  = rcemis(QRCAIRNO,k) &  
                               + 0.95 * (airn(k,i,j)+airlig(k,i,j))
@@ -258,7 +247,6 @@ contains
 
      end if ! AIRNOX
 
-!SeaS......
      !/** Add sea salt production
     
      if ( SEASALT  ) then
@@ -268,11 +256,10 @@ contains
           enddo
 
      endif
-!SeaS......
 
-!6b Mass Budget calculations
-!  jej Adding up the emissions in each timestep
-!  ds  use ixadv_eqv, qrc_eqv from My_Emis_ml, e.g. ixadv_eqv(1) = IXADV_SO2,
+!Mass Budget calculations
+!   Adding up the emissions in each timestep
+!   use ixadv_eqv, qrc_eqv from My_Emis_ml, e.g. ixadv_eqv(1) = IXADV_SO2,
 !      qrc_eqv(1) = QRCSO2
 
    scaling = dt_advec * xmd(i,j) * (ps(i,j,1) - PT)
@@ -320,18 +307,19 @@ contains
   integer, intent(in) ::  i,j
 
 !  local
+  logical, parameter :: DEBUG_BIO = .false.
   integer la,it2m,n,k,base,top,iclcat
   real clear
 
- !ds rv1_6_x  - light effects added for isoprene emissions
+ ! Light effects added for isoprene emissions
 
-  real            :: par   !ds Photosynthetically active radiation
-  real            :: cL    !ds Factor for light effects
+  real            :: par   ! Photosynthetically active radiation
+  real            :: cL    ! Factor for light effects
   real, parameter :: &
-      CL1 = 1.066  , &    !ds Alex Guenther's params
-      ALPHA = 0.0027      !ds Alex Guenther's params
+      CL1 = 1.066  , &    ! Guenther et al's params
+      ALPHA = 0.0027      ! Guenther et al's params
 
-  if ( NFORESTVOC == 0  ) return   ! e.g. for MADE
+  if ( NBVOC == 0  ) return   ! e.g. for ACID only
 
 
 
@@ -340,18 +328,23 @@ contains
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
-  rcbio(BIO_TERP,KMAX_MID) = emnat(BIO_TERP,i,j)*canopy_ecf(BIO_TERP,it2m)
+  rcbio(BIO_TERP,KMAX_MID) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
 
   ! Isoprene has emissions in daytime only:
   rcbio(BIO_ISOP,:) = 0.0
   if (izen <= 90) then
 
-     ! ds light effects from Guenther G93
+     ! Light effects from Guenther G93
       par = (Idirect(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
 
-      rcbio(BIO_ISOP,KMAX_MID) = emnat(BIO_ISOP,i,j)*canopy_ecf(BIO_ISOP,it2m) * cL
+      rcbio(BIO_ISOP,KMAX_MID) = emnat(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL
   endif
+  if ( DEBUG_BIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
+         current_date%seconds == 0 ) then
+     write(*,"(a5,2i4,4es12.3)") "DBIO ", current_date%day, current_date%hour, &
+             par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP,KMAX_MID)
+  end if
 
   end subroutine setup_bio
 

@@ -402,10 +402,9 @@ module DryDep_ml
         ustar_loc = ustar_nwp(i,j)       ! First guess = NWP value
         invL      = invL_nwp(i,j)        ! First guess = NWP value
 
-        !ds
         ! If HIRLAM thinks this is a sea-square, but we anyway have land,
         ! the surface temps will be wrong and so will stability gradients.
-        ! As a simple subsistute, we assume neutral condiutions for these
+        ! As a simple substitute, we assume neutral condiutions for these
         ! situations.
 
         if( .not. water(lu) .and. nwp_sea(i,j)  ) then

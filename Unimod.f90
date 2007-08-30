@@ -44,7 +44,7 @@ program myeul
   !
   !           --------------------
   !           end inner time loop.
-  use My_Emis_ml,       only : NFORESTVOC, AIRNOX
+  use My_Emis_ml,       only : NBVOC, AIRNOX
   use My_Outputs_ml,    only : set_output_defs
   use My_Timing_ml,     only : lastptim,mytimm,Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
@@ -56,7 +56,7 @@ program myeul
   use Advection_ml,     only : vgrid,adv_var, assign_nmax,assign_dtadvec
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
-  use Biogenics_ml,     only : Forests_init
+  use Biogenics_ml,     only : Init_BVOC
   use BoundaryConditions_ml, only : BoundaryConditions
   use CheckStop_ml,     only : CheckStop
   use Chemfields_ml  , only : xn_adv
@@ -397,17 +397,17 @@ program myeul
   daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
 
 
-  call MetModel_LandUse(1)   !ds rv1.2  call (1) -> iclass
+  call MetModel_LandUse(1)   !
 
-  call ReadLandUse()         !ds rv2_2_3 
+  call ReadLandUse()
 
-  if ( NFORESTVOC > 0  ) call Forests_init()
+  if ( NBVOC > 0  ) call Init_BVOC()
 
   call tabulate()    ! =>  sets up tab_esat, etc.
 
-  call Init_mychem()   !u3 tabulates rct to rctit
+  call Init_mychem()   ! tabulates rct to rctit
 
-  call Init_WetDep()   !u7.2 ** NEW **** , sets up scavenging ratios
+  call Init_WetDep()   ! sets up scavenging ratios
 
 
 

@@ -20,11 +20,6 @@ implicit none
 
       public :: set_molwts     ! Called from Emissions_ml
 
-   !/-- model-type
-   !    for consistency checks, possibly to match label in My_model_ml??
-
-       character(len=12), public :: MY_MODEL = "emepds"
-
    !/** emissions. 
    !
    !   NEMIS_PLAIN  gives the number of emission file used for compounds which
@@ -131,9 +126,9 @@ implicit none
 
   ! Biogenics
 
-   integer, public, parameter ::   NFORESTVOC = 2   
-   character(len=8),public, save, dimension(NFORESTVOC) :: &
-                                   FORESTVOC = (/ "isoprene","terpene "/)   
+   integer, public, parameter ::   NBVOC = 2   
+   character(len=8),public, save, dimension(NBVOC) :: &
+                                   BVOC_USED = (/ "isoprene","terpene "/)   
    integer, public, parameter ::   & 
                QRCISOP    = 18     &
               ,QRCTERP    = 19
@@ -153,7 +148,6 @@ implicit none
     integer, public, parameter :: QRCAIRNO = QRCNO    ! 
     integer, public, parameter :: QRCAIRNO2 = QRCNO2    ! 
  
-   !hf u2
    !/** Volcanos. QRCVOL is set equal to QRCSO2
    ! if VOLCANOES is true, otherwise to one. Avoids problems with 
    ! dimensions

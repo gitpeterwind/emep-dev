@@ -44,7 +44,8 @@ use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use GenSpec_shl_ml
 use GenSpec_tot_ml
 use GenChemicals_ml, only : species
-use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen  !ds mar2005 zen added
+use GridValues_ml, only : debug_li, debug_lj, debug_proc
+use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
                         , NPROC   &   ! No. processors
@@ -164,11 +165,9 @@ private
              voc_index, &     ! Index of VOC in xn_adv
              voc_carbon       ! Number of C atoms
 
-   logical, private, parameter :: MY_DEBUG = .true.
+   logical, private, parameter :: MY_DEBUG = .false.
    logical, private, save :: debug_flag, Is3D
    character(len=100), private :: errmsg
-   integer, private, save :: i_debug=1, j_debug=1  !ds rv1_9_28 Initialised, 
-                                                   ! reset if DEBUG 
 
    integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
    integer, public, parameter:: startmonth_forest=4,endmonth_forest=9&
@@ -475,25 +474,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       if ( num_deriv2d > 0  ) d_2d( :,:,:,:) = 0.0
       if ( num_deriv3d > 0  ) d_3d( :,:,:,:,:) = 0.0
 
-      debug_flag = .false.
-      if ( MY_DEBUG ) then
-
-          ! Need to define here since gridValues not yet set.
-
-          i_fdom = (/ (n + gi0 + IRUNBEG - 2, n=1,MAXLIMAX) /)
-          j_fdom = (/ (n + gj0 + JRUNBEG - 2, n=1,MAXLJMAX) /)
-
-           do j = 1, ljmax
-              do i = 1, limax
-                  if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j) then
-                       debug_flag = .true.
-                       i_debug = i
-                       j_debug = j
-                       write(*,*) "Derived DEBUG COORDS ", me, i_debug, j_debug
-                  end if
-              end do
-            end do
-      end if ! DEBUG
+      debug_flag = ( MY_DEBUG .and. debug_proc ) 
 
   end subroutine Define_Derived
  !=========================================================================
@@ -576,7 +557,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
              if(thour <= 8.0 .or. thour > 16.0 ) cycle  ! Start next species
         end if
 
-       !hf hmix average at 00 and 12:
+       ! hmix average at 00 and 12:
 
         if ( typ == "HMIX00" .or. typ == "XKSIG00" ) then
              if(thour /= 0.0 ) cycle  ! Start next species
@@ -587,9 +568,9 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         end if
 
         index = f_2d(n)%index
-        if ( My_DEBUG ) then
-           write(*,*) "DEBUG Derived 2d", n, f_2d(n)%name, index, typ
-        end if
+        !if ( My_DEBUG ) then
+        !   write(*,*) "DEBUG Derived 2d", n, f_2d(n)%name, index, typ
+        !end if
 
         select case ( typ )
 
@@ -606,8 +587,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               d_2d( n, i,j,IOU_INST) = pzpbl(i,j)  
             end forall
 
-            if ( MY_DEBUG .and. debug_flag ) then
-             write(*,fmt="(a12,2i4,4f12.3)") "HMIX" , n , d_2d(n,i_debug,j_debug,IOU_INST)       
+            if ( debug_flag ) then
+             write(*,fmt="(a12,2i4,4f12.3)") "HMIX" , n , d_2d(n,debug_li,debug_lj,IOU_INST)       
             end if
 
          ! Simple advected species:
@@ -618,11 +599,11 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                                      * cfac(index,i,j) * density(i,j)  
             end forall
 
-            if ( MY_DEBUG .and. debug_flag ) then
+            if ( debug_flag ) then
              write(*,fmt="(a12,2i4,4f12.3)") "JUST ADV" , n, index  &
-              ,d_2d(n,i_debug,j_debug,IOU_INST)*PPBINV &
-              ,xn_adv(index,i_debug,j_debug,KMAX_MID)*PPBINV &
-              ,density(i_debug,j_debug), cfac(index,i_debug,j_debug)
+              ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
+              ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
+              ,density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
             end if
 
           case ( "H2O" )      !water
@@ -640,11 +621,11 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                                      * cfac(index,1:limax,1:ljmax) * density(1:limax,1:ljmax))
 
 
-            if ( MY_DEBUG .and. debug_flag ) then
+            if ( debug_flag ) then
              write(*,fmt="(a12,2i4,4f12.3)") "ADV MAX. ", n, index  &
-                      , d_2d(n,i_debug,j_debug,IOU_DAY) * PPBINV      &
-                      ,  xn_adv(index,i_debug,j_debug,KMAX_MID)* PPBINV  &
-                      ,  density(i_debug,j_debug), cfac(index,i_debug,j_debug)
+                      , d_2d(n,debug_li,debug_lj,IOU_DAY) * PPBINV      &
+                      ,  xn_adv(index,debug_li,debug_lj,KMAX_MID)* PPBINV  &
+                      ,  density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
 
             end if
 
@@ -673,9 +654,9 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             if ( debug_flag ) then
                write(*, *) "SHL:MAX.,MFAC ", n, index  , MFAC
                write(*,fmt="(a12,2i4,4es12.3)") "SHL MAX. ", n, index  &
-                      , d_2d(n,i_debug,j_debug,IOU_DAY) &
-                      ,  xn_shl(index,i_debug,j_debug,KMAX_MID)  &
-                      ,  density(i_debug,j_debug), MFAC
+                      , d_2d(n,debug_li,debug_lj,IOU_DAY) &
+                      ,  xn_shl(index,debug_li,debug_lj,KMAX_MID)  &
+                      ,  density(debug_li,debug_lj), MFAC
             end if
 
             !Monthly and yearly ARE averaged over days
@@ -697,7 +678,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
             call aot_calc( n, timefrac )
 
-           if( debug_flag .and. i == i_debug .and. j == j_debug ) then
+           if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
               write(*,*) "GROWINDERIV? ", n, f_2d(n)%name
            end if
 
@@ -746,7 +727,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
           case ( "PREC", "WDEP", "DDEP" )
             if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"PR/DEP d_2d",&
-                   n, f_2d(n)%name, " is ", d_2d(n,i_debug,j_debug,IOU_INST)
+                   n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case ( "EXT" )
 
@@ -755,7 +736,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           ! Used for e.g. AOT40s
              call setaccumulate_2dyear(n,accumulate_2dyear)
             if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
-                   n, f_2d(n)%name, " is ", d_2d(n,i_debug,j_debug,IOU_INST)
+                   n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case  default
 
@@ -771,7 +752,6 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
         !/** add to daily, monthly and yearly average, and increment counters
-!DDV        !    /wdep, ddep not done here ???) !!! YESY!!!
         !  Note that the MAXADV and MAXSHL and SOM needn't be summed here, but
         !  since the INST values are zero it doesn't harm, and the code is 
         !  shorter. These d_2d ( MAXADV, MAXSHL, SOM) are set elsewhere
@@ -792,10 +772,6 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
        if(debug_flag) then ! RUN through indices etc.
             write(*, "(a12,2i4,f12.3)") "3D3D TIME ",  me, num_deriv3d, &
                      (current_date%hour+current_date%seconds/3600.0)
-            !do n = 1, num_deriv3d
-            ! write(6,*) "3D3D CHECKING me, n,name,index,class ", me, &
-            !        n, f_3d(n)%name,f_3d(n)%index, f_3d(n)%class
-            !end do
         end if
 
 
@@ -844,8 +820,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             end forall
 
              if(debug_flag) write(*,"(a12,i4,2es12.3)") "3D3D PHNO3", n, &
-                  xn_shl(index,i_debug,j_debug,KMAX_MID), &
-                  d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST)
+                  xn_shl(index,debug_li,debug_lj,KMAX_MID), &
+                  d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
 
          case ( "MAX3DSHL" )
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )! Daily maxima - short-lived
@@ -855,9 +831,9 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             end forall
 
             if(debug_flag) write(*,"(a13,i4,f8.3,3es12.3)") "3D3D MAX3DSHL", n, thour, &
-              xn_shl(index,i_debug,j_debug,KMAX_MID), &
-              1.0/inv_air_density3D(i_debug,j_debug,KMAX_MID), &
-              d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST)
+              xn_shl(index,debug_li,debug_lj,KMAX_MID), &
+              1.0/inv_air_density3D(debug_li,debug_lj,KMAX_MID), &
+              d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
 
           case ( "MAX3DADV" )
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -866,8 +842,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             end forall
 
              if(debug_flag) write(*,"(a12,i4,f8.3,4es12.3)") "SET MAX3DADV", n, thour, &
-                      xn_adv(index,i_debug,j_debug,KMAX_MID), &
-                      d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST)
+                      xn_adv(index,debug_li,debug_lj,KMAX_MID), &
+                      d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
 
           case ( "SHL" )
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -911,8 +887,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               if( debug_flag ) then
                     write(*,fmt="(a20,a9,i4,f8.3,2es12.3)") "END_OF_DAY MAX3D", &
                       f_3d(n)%class, n, thour,  &
-                      d_3d(n,i_debug,j_debug,KMAX_MID,IOU_MON ),&
-                      d_3d(n,i_debug,j_debug,KMAX_MID,IOU_INST )
+                      d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_MON ),&
+                      d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST )
                     write(*,"(a20,i4,2x,6i6)") "END_OF_DAY NAV ", &
                       n, (nav_3d(n,i), i=1,LENOUT3D)
               end if

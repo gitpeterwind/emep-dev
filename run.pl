@@ -7,9 +7,9 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=16
+#PBS -lnodes=6
 # wall time limit of run 
-#PBS -lwalltime=05:10:00
+#PBS -lwalltime=0:10:00
 # lpmeme=memory to reserve per processor (max 4 or 16GB per node)
 #PBS -lpmem=200MB
 # account for billing
@@ -161,6 +161,7 @@ if ($SNYKOV){
 # DataDir    = Main general Data directory
 
 my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data
+my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
@@ -178,7 +179,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_9_1";
+    $testv       = "rv2_9_4";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -261,13 +262,13 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "04";       # first month, use 2-digits!
-my $mm2   =  "05";       # last month, use 2-digits!
+my $mm1   =  "06";       # first month, use 2-digits!
+my $mm2   =  "06";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-#$NTERM = 2;       # for testing, simply reset here
+$NTERM = 8;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -506,8 +507,11 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $sondes="$DATA_LOCAL/sondes.SR" if $SR;
     $ifile{"$sondes"} = "sondes.dat";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
-    $ifile{"$DATA_LOCAL/forests.mar2004b"} = "forest.dat";
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
+
+  # new inputs style (Aug 2007)  with compulsory headers:
+    $ifile{"$NDATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
+    $ifile{"$NDATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
     
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
     my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");
@@ -520,7 +524,6 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     } 
     
     $ifile{"$DATA_LOCAL/rough.170"} = "rough.170"; # Roughness length;
-    $ifile{"$DATA_LOCAL/Landuse.MAY07"} = "Inputs.landuse";
     $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat";
 
     $ifile{"$DataDir/JUN06_gfac1.dat"} = "JUN06_gfac1.dat";
@@ -560,6 +563,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     my $LPROG = "prog.exe";
     #mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
     cp ($PROGRAM, $LPROG) or die "cannot copy $PROGRAM to $LPROG\n";
+    push(@list_of_files , $LPROG);    # For later deletion
     
 # Write out list of linked files to a shell-script, useful in case the program
 # hangs or crashes:

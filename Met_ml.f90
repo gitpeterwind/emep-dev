@@ -1265,18 +1265,6 @@ contains
           surface_precip(i,j) = pr(i,j,KMAX_MID) * inv_METSTEP
 
 
-
-
-          !     surface temperature to potential temperature 
-
-          !ds apr2005 t2(i,j) = th2m(i,j,nr)  !u7.4vg not -273.15
-          !su	    th2m(i,j,nr) = th2m(i,j,nr)*(1.e+5/ps(i,j,nr))**(KAPPA)
-          !ds apr2005  th2m(i,j,nr) = th2m(i,j,nr)*exp(-KAPPA*log(ps(i,j,nr)*1.e-5))
-
-
-
-
-
           rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) ) 
 
           !     For MM5 we get u*, not tau. Since it seems better to
@@ -1368,7 +1356,7 @@ contains
        do i = 1,limax
           p1 = sigma_bnd(KMAX_BND)*(ps(i,j,nr) - PT) + PT
 
-          exf1(KMAX_BND) = CP * Exner_nd(p1)   !ds apr2005tpi(lx1)    
+          exf1(KMAX_BND) = CP * Exner_nd(p1)
 
           z_bnd(i,j,KMAX_BND) = 0.0
 
@@ -1387,7 +1375,7 @@ contains
              p1 = sigma_bnd(k)*(ps(i,j,nr) - PT) + PT
 
 
-	     exf1(k) = CP * Exner_nd( p1 ) !ds apr2005
+	     exf1(k) = CP * Exner_nd( p1 )
 
              p2 = sigma_mid(k)*(ps(i,j,nr) - PT) + PT
 
@@ -1944,7 +1932,6 @@ contains
     !!                     kkinm = kkin-1 = KMAX_MID-1                
     !c
     !c**********************************************************************
-    !ds rv1_6_x
     logical, parameter :: DEBUG_KZ = .false.
     logical, parameter :: PIELKE_KZ = .true.    ! Default
     logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP 
@@ -2180,7 +2167,6 @@ contains
        do k=KMAX_MID,2,-1
           do i=1,limax
 
-             !ds-Kz if(xksm(i,k).ge.lim .and. nh2(i).eq.1) then
              if(xksm(i,k) >= KZ_SBL_LIMIT .and. nh2(i) == 1) then
                 nh1(i)=k   ! Still unstable
              else
@@ -2572,20 +2558,16 @@ contains
     jj=0
     do jt=1,thick
        jj=jj+1
-       !ds bug ? data_west(jj,:)=data_south(:,jt)
-       ! may be wrong! Check also assignments below.
        data_west(jj,:)=data_south(1:thick,jt)
        data_east(jj,:)=data_south(limax-thick+1:limax,jt)
     enddo
     do j=1,ljmax
        jj=jj+1
-       !ds bug ? data_west(jj,:)=data(:,j)
        data_west(jj,:)=data(1:thick,j)
        data_east(jj,:)=data(limax-thick+1:limax,j)
     enddo
     do jt=1,thick
        jj=jj+1
-       !ds bug data_west(jj,:)=data_north(:,jt)
        data_west(jj,:)=data_north(1:thick,jt)
        data_east(jj,:)=data_north(limax-thick+1:limax,jt)
     enddo
@@ -3155,7 +3137,7 @@ contains
           endif
 
           hsurfl = KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
-               /(ps(i,j,nr)*ux3)   !ds apr2005 - ux3
+               /(ps(i,j,nr)*ux3)
           Kz_min(i,j)=ux0*KARMAN*h100/(1.00+5.0*hsurfl)
           !
           !...............................................................

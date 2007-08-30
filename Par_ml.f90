@@ -104,7 +104,7 @@ private
       tlimax, tgi0, tgi1, tljmax, tgj0, tgj1
 !
 !
- logical, private, parameter :: DEBUG_PAR = .true.
+ logical, private, parameter :: DEBUG_PAR = .false.
 
 !------------------------------------------------------------------------------
 ! Define parameters used in the communication

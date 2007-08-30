@@ -10,9 +10,9 @@ MODULE TimeDate_ml
 !===================Routines =================================================
 
  !/ Functions ...............
-!hfTD
   public :: make_current_date      ! convert timestamp to current_date 
-  public :: make_timestamp         ! convert current_date(yyyy,mon,day,hour,secs) to timestamp(jdate,secs) CHANGED
+  public :: make_timestamp         ! convert current_date(yyyy,mon,day,hour,
+                                   ! secs) to timestamp(jdate,secs)
   public  :: Init_nmdays   ! sets number of days per month, year
 
   public :: tdif_secs              ! t2-t1 -> dif (s)
@@ -23,7 +23,6 @@ MODULE TimeDate_ml
   public :: day_of_week            ! yyyy, mm, dd -> day of week (0=SUN)
   public :: day_of_year            ! yyyy,mm,dd -> Day count in year  
   public :: max_day                ! month,year -> maxd, e.g. 31 for July
-!hfTD new
   public :: leapyear               ! year -> true, false
   public :: y2dig                  ! year -> 2-digit yy
   public :: y4dig                  ! year -> 4-digit yyyy
@@ -33,8 +32,6 @@ MODULE TimeDate_ml
   public :: dup_timestamp        ! ts2=ts1
   public :: add_secs             ! ts+seconds -> new ts. fixit option
   public :: add_month            ! jdate+month, force_day option
-!hfTD  public :: get_ymd              ! jd -> yyyy, mm, dd
-!hfTD  public :: get_hms              ! secs -> hour,minute,second
 !===================TIMESTAMP TYPES & DEFINES=================================
 
 !=========================================================================
@@ -373,8 +370,5 @@ CONTAINS
                    nydays=nydays+maxd
                 enddo
         END SUBROUTINE Init_nmdays
-                 
-                
-
 
 END MODULE TimeDate_ml

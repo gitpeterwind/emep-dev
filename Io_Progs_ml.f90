@@ -15,7 +15,7 @@
   use CheckStop_ml, only: CheckStop
   use GridValues_ml, only : i_local, j_local
   use Io_Nums_ml,   only: IO_TMP
-  use ModelConstants_ml, only : DEBUG_i, DEBUG_j
+  use ModelConstants_ml, only : DEBUG_i, DEBUG_j, DomainName
   use KeyValue_ml,  only: KeyVal, KeyValue, LENKEYVAL
   use Par_ml, only: me, li0, li1, lj0, lj1
   use SmallUtils_ml, only : wordsplit, WriteArray
@@ -202,7 +202,6 @@ contains
       character(len=LENKEYVAL)  :: key, value
       character(len=5)  :: marker   ! e.g. !> or !#
       character(len=MAXLINELEN)  :: inputline
-
       integer :: i, NxHeaders
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
@@ -234,7 +233,9 @@ contains
               KeyValues(NKeys)%key = key
               KeyValues(NKeys)%value = value
               if ( me == 0 ) then
-                 write(unit=*,fmt=*) "KEYS LINE NKeys=", NKeys, trim(key), trim(value)
+                 write(unit=*,fmt=*) "KEYS FULL =", trim(inputline)
+                 write(unit=*,fmt=*) "KEYS LINE NKeys=", &
+                    NKeys, trim(key), " : ", trim(value)
               end if
               cycle
 
@@ -322,6 +323,8 @@ contains
    call CheckStop( Headers(1), "ix" , "HeaderIX not found" // fname)
    call CheckStop( Headers(2), "iy" , "HeaderIY not found" // fname)
    call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
+   call CheckStop( KeyValue(KeyValues,"Domain"),DomainName ,&
+           "Domain Name - matched to ModelConstants")
 
    ! The first two columns are assumed for now to be ix,iy, hence:
 
@@ -365,11 +368,13 @@ contains
  
   !-------------------------------------------------------------------------
 
-  subroutine Read2DN(fname,Ndata,data2d)
+  subroutine Read2DN(fname,Ndata,data2d,CheckValues)
 
    character(len=*), intent(in) :: fname
    integer, intent(in) :: Ndata     ! Number of data columns
    real, dimension(:,:,:), intent(out) :: data2d
+   type(KeyVal), dimension(:), intent(in), optional  :: &
+     CheckValues !   Sets of key-values which must be present.
 
    integer, parameter  :: NCOORDS = 2   ! for ix, iy - "simple"
 
@@ -380,7 +385,7 @@ contains
    type(KeyVal), dimension(20)      :: KeyValues ! Info on units, coords, etc.
    character(len=50) :: errmsg
 
-   integer :: NHeaders, NKeys, Nlines
+   integer :: NHeaders, NKeys, Nlines, ncheck
    logical :: debug_flag
 
    if ( MY_DEBUG ) write(*,*) " Starting Read2DN, me ",me
@@ -402,6 +407,16 @@ contains
    call CheckStop( Headers(2), "iy" , "HeaderIY not found" // fname)
    call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
 
+    if ( present(CheckValues) ) then
+      !Check that the values specified in CheckValues are the same as those
+      !found in input file's KeyValues:
+       ncheck = size(CheckValues)
+       do i = 1, ncheck
+          call CheckStop( KeyValue(KeyValues,CheckValues(i)%key),&
+             CheckValues(i)%value ,"Comparing Values: " // CheckValues(i)%key )
+        end do
+    end if
+
    ! The first two columns are assumed for now to be ix,iy, hence:
 
    Headers(1:Ndata) = Headers(3:Ndata+2)
@@ -417,10 +432,6 @@ contains
          if ( ios /= 0 ) exit   ! likely end of file
          read(unit=txtinput,fmt=*,iostat=ios) i_fdom,j_fdom,&
                  ( tmp(kk), kk=1,Ndata)
-if( ios /= 0 ) then
-   write(*,*) "TTTTTTTTTTT ", txtinput
-   print *,   "TTTTTTTTTTT ", txtinput
-end if
 
          call CheckStop ( ios, "Read2D txt error:" // trim(txtinput) )
          Nlines = Nlines + 1

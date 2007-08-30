@@ -1,3 +1,30 @@
+============== Dave, rv2_9_4, August 30th 2007  =================================
+
+Biogenics_ml re-written to simply read in BVOC emission potentials, rather than
+   calculate them. Now same procedure for EMEP domain, GLOBAL and HEMIS.
+
+  Associated changes and small tidy-ups in Emissions_ml,  Setup_1d_ml, 
+     Setup_1dfields_ml, Unimod.f90
+
+Derived_ml --- debugging now uses debug_proc etc. from GridValues. Small bug-fix
+    which caused WARNINGS for PR/DEP.
+
+Io_Progs_ml, optional argument CheckValues added to ReadSDN, to let user specify
+   key-value pairs that must be included in input file.
+
+Landuse_ml   - slight rename of Inputs.Landuse
+My_Emis_ml   - removed MY_MODEL
+Met_ml       - small tidy-up
+TimeDate_ml  - small tidy-up
+
+run.pl --  $NDATA points to new Inputs directory.
+           prog.exe now added into Remove.sh
+
+Inputs: new inputs directory, ~mifads/Data/EMEP (GLOBAL + HEMIS) created while 
+  new style data being created (with headers and key-values)
+
+cvs DELETED::  UiO_ml  Wrtchem_ml
+
 ============== Peter, rv2_9_3, August 28th 2007  =================================
 
 Unimod.f90: Removed call to DefGrid (moved into Met_ml)
@@ -6,7 +33,6 @@ Unimod.f90: Removed call to DefGrid (moved into Met_ml)
 Met_ml.f90: call to infield(1) and DefGrid in the MeteoGridRead routine, 
             for the case where felt files are used.
 
-Derived_ml, small (non-important) bug-fix to remve WARNIGS for DEP/PREC
 
 ============== Dave,  rv2_9_2, July 26th 2007  =================================
 

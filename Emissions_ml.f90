@@ -9,9 +9,7 @@
 ! October 2001 hf added call to ReadField
 ! 6b: Nov. 2001 - dead code removed, some renaming (rsnd -> rdemis), ds
 ! Modified for Joffen's new mass budget method - Bud_ml removed here.
-! HF Mars-02 Flat emission traetment and volcanos added
-! ToDo: remove DMS treatment, add point sources, volcanoes
-! 6d: correction to tfac spotted by hf, 29/11/01
+! HF Mars-02 Flat emission treatment and volcanos added
 !_____________________________________________________________________________
 !+ Calls up emission read/set routines
 !  This routine interfaces the stand-alone emission-file reading routines
@@ -27,13 +25,13 @@
           NRCEMIS,      &   ! Total No. emission species after speciation
           set_molwts,   &   ! subroutine to set molwt
           molwt,        &   ! Mol. wts
-          NFORESTVOC,   &   ! > 0 if forest voc wanted
+          NBVOC,   &   ! > 0 if forest voc wanted
           QRCVOL,       &   ! For volcanoes
           VOLCANOES         ! 
   use My_MassBudget_ml, only : set_mass_eqvs   ! Some equivalences bewteen 
                                                ! indices
 
-  use Biogenics_ml, only: Forests_Init, first_dms_read,IQ_DMS,emnat,emforest
+  use Biogenics_ml, only: first_dms_read,IQ_DMS,emnat,emforest
   use CheckStop_ml,only : CheckStop
   use Country_ml,    only : NLAND,Country_Init,Country
   use EmisDef_ml, only : NSECTORS,  &  ! No. sectors
@@ -50,6 +48,7 @@
   use EmisGet_ml, only : EmisGet, EmisSplit, emisfrac  ! speciation routines and array
   use GridValues_ml, only:  GRIDWIDTH_M    & !  size of grid (m)
                            ,xm2            & ! map factor squared
+                           ,debug_proc,debug_li,debug_lj & 
                            ,sigma_bnd, xmd, gl
   use Io_Nums_ml,      only : IO_LOG, IO_DMS
   use Io_Progs_ml,     only : ios, open_file
@@ -253,7 +252,6 @@ contains
   !    first_dms_read is true until first call to newmonth finished.
 
 
-  !u4 dms_fact = 1.0            !! ** ds - temporary solution !!!!!
   first_dms_read = .true. 
     
   !** 4) Read emission files ***************
@@ -399,10 +397,9 @@ contains
        end forall
     enddo !iem
 
-!hf Volc
-    if ( VOLCANOES ) then    !u3
+    if ( VOLCANOES ) then
 
-       conv = tonne_to_kgm2s * EmisDef( eindex(QRCVOL) )%conv   !st - bug found
+       conv = tonne_to_kgm2s * EmisDef( eindex(QRCVOL) )%conv
 
        do volc_no=1,nvolc 
           i=i_volc(volc_no)
@@ -548,20 +545,19 @@ contains
   real ::  s               ! source term (emis) before splitting
   integer :: iland, iland_timefac  ! country codes, and codes for timefac 
 
-!hf
   real ::  ftfac           ! time-factor for flat emissions
   real ::  sf              ! source term (emis) before splitting (for flat emissions)
   integer :: flat_iland    ! country codes (countries with flat emissions)
 
   integer, save :: oldday = -1, oldhour = -1
 
-!pw If timezone=-100, calculate daytime based on longitude rather than timezone
+! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude,daytime_iland
  
-!hf initialize
+! Initialize
     ehlpcom0(:)=0.0
 
-   do k=KEMISTOP,KMAX_MID !due to volcanos
+   do k=KEMISTOP,KMAX_MID
       ehlpcom0(k) = GRAV* 0.001*AVOG/ (sigma_bnd(k+1) - sigma_bnd(k))
    enddo
 
@@ -721,7 +717,7 @@ contains
        do ficc = 1, fncc
           flat_iland = flat_landcode(i,j,ficc) ! 30=BAS etc.
 
-          if ( Country(flat_iland)%is_sea ) then   ! u4 - saves if statements below
+          if ( Country(flat_iland)%is_sea ) then   ! - saves if statements below
                isec = ISNAP_SHIP 
           else
                isec = ISNAP_NAT
@@ -744,22 +740,7 @@ contains
              do iem = 1, NEMIS_PLAIN
                 iqrc = iqrc + 1
 
-                !u4 - ds we don't have time-factors for ships, just for
-                !u4 "other mobile sources", which is likely based upon
-                !u4 tractors and other land-based vehicles. Therefore
-                !u4 for now we can just skip the time-factors.
-
-                !u4 if ( Country(flat_iland)%is_sea ) then ! add ship emissions
-                !u4    ftfac = timefac(flat_iland,ISNAP_SHIP,iem) * &
-                !u4          day_factor(ISNAP_SHIP,daytime(flat_iland))
-                !u4    emis(iqrc) = snapemis_flat(i,j,ficc,iem) * ftfac
-                !u4elseif (flat_iland == IQ_DMS)then ! DMS
-                !No timevariation for DMS
-!Bor man teste paa sox?                          
-
                     emis(iqrc) =  snapemis_flat(i,j,ficc,iem) 
-
-                !u4 endif !ship emissions
 
              end do ! iem=1,NEMIS_PLAIN
 
@@ -767,27 +748,12 @@ contains
 
              do iem = 1, NEMIS_SPLIT
 
-                !u4 ftfac = timefac(flat_iland,ISNAP_SHIP,iem+NEMIS_PLAIN) * &
-                !u4              day_factor(ISNAP_SHIP,daytime(flat_iland))
-                !u4 sf =  ftfac * snapemis_flat(i,j,ficc,iem+NEMIS_PLAIN)    
-
                 sf =  snapemis_flat(i,j,ficc,iem+NEMIS_PLAIN)    
 
 
                 do f = 1, EMIS_NSPLIT( iem )
                    ifrac = ifrac + 1
                    iqrc  = iqrc  + 1
-
-                   !u4 if ( Country(flat_iland)%is_sea )then ! ship emissions
-                   !u4      emis(iqrc) = sf * emisfrac(ifrac,ISNAP_SHIP,flat_iland)
-                   !u4 else ! other flat emissions than ships, &
-                   !u4      ! does not have split emissions
-                   !u4      emis(iqrc) = 0.
-                   !u4 endif
-!kunne satt alle=sf*emisfrac siden snapemis 0 for alle andre
-!u4
-!u4 - ds - yes, and since EMIS_NSPLIT would be zero there is no need for an 
-!     extra if-test within the loop. It is enough to say simply:
 
                      emis(iqrc) = sf * emisfrac(ifrac,isec,flat_iland)
 
@@ -807,12 +773,7 @@ contains
          !..   Assign flat emissions to height levels 1-4
          !..   Note, no VERTFAC
 
-
              do iqrc =1, NRCEMIS
-                !u4 gridrcemis0(iqrc,KMAX_BND-1,i,j) =   &
-                !u4 gridrcemis0(iqrc,KMAX_BND-1,i,j) + emis(iqrc)*&
-                !u4 ehlpcom0(1)/molwt(iqrc)
-                !u4 - simpler use of KMAX_MId and new ehlpcom0:
 
                 gridrcemis0(iqrc,KMAX_MID,i,j) =   &
                   gridrcemis0(iqrc,KMAX_MID,i,j) + emis(iqrc)*&
@@ -824,7 +785,6 @@ contains
    end do ! i
  end do ! j
 
-!hf
     if ( VOLCANOES ) call Set_Volc !set hourly volcano emission(rcemis_volc0)
 
   end if ! hourchange 
@@ -845,52 +805,47 @@ contains
       end do ! j
    end do ! k
 
-!hf u2
  !/** Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
    if ( VOLCANOES ) call Scale_Volc
 
- if( NFORESTVOC > 0  )then
+ if( NBVOC > 0  )then
 
     do j = lj0,lj1
       do i = li0,li1
 
         ehlpcom = ehlpcom0(KMAX_MID) * roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
 
-        emnat(1:NFORESTVOC,i,j) = emforest(1:NFORESTVOC,i,j)*ehlpcom
+        emnat(i,j,1:NBVOC) = emforest(i,j,1:NBVOC)*ehlpcom
 
       end do ! i
     end do ! j
-!   if ( DEBUG ) then 
-!       print "(a12,2i4,/,(g12.3))",  "bio-setemis",li0,lj0, &
-!          (gridrcemis(i,KMAX_MID,2,2),i=1, NRCEMIS), emnat(1,2,2),emnat(2,2,2)
-!   end if
 
-  endif ! NFORESTVOC 
+    if ( DEBUG .and. debug_proc ) then 
+       !print "(a12,2i4,/,(g12.3))",  "bio-setemis",li0,lj0, &
+        !  (gridrcemis(i,KMAX_MID,2,2),i=1, NRCEMIS), 
+       write(*,"(a12,2g12.3,3x,2g12.3)")  "bio-setemis", &
+         ( emforest(debug_li,debug_li,i), i = 1, NBVOC),&
+         ( emnat(debug_li,debug_li,i), i = 1, NBVOC) 
+    end if
+
+  endif ! NBVOC 
 
  end subroutine EmisSet
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-	subroutine newmonth              ! (exclu)
+	subroutine newmonth
 
-!ds.....................................................................
+!.....................................................................
 !**    DESCRIPTION:
 !     Reads in natural DMS emissions at start of each month. Update
 !     landcode and nlandcode arrays as needed.
 
-!     Reads in snow cover at start of each month. (not yet used in
-!	MACHO, but read-in code implemented here).
+!     Reads in snow cover at start of each month. 
 
 !**    REVISION HISTORY:
 !     Original from MADE
 
-!     ds, Feb 99:
-!     Previous code to adjust the time-series factors has been removed
-!     this work is now done in setemis.f. Thus newmonth has substantially
-!     fewer jobs than in previous code.
-!      ds Feb 01
-!      MADE/MACHO differences removed. Snow and DMS read-in for both.
-
-!ds...........................................................................
+!...........................................................................
 
 
 	integer i, j
