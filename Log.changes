@@ -1,3 +1,15 @@
+============== Dave, rv2_9_5, Sept.  15th 2007  =================================
+
+CheckStop added into find_index - to catch cases where the index isn't
+   found (was used to track down D2_indices which were not set in
+   My_Derived).
+
+My_Derived changed to force use of the hard-coded D2_ values (e.g. D2_AFSTDF16).
+  (Should modify rest of code to be more flexible).
+
+Landuse_ml -- commented out lc_water, lc_ice to remove problems.  Will be
+  fixed in forthcoming version.
+
 ============== Dave, rv2_9_4, August 30th 2007  =================================
 
 Biogenics_ml re-written to simply read in BVOC emission potentials, rather than

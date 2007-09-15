@@ -1,4 +1,5 @@
 module SmallUtils_ml
+  use CheckStop_ml, only:  CheckStop
 
 !_____________________________________________________________________________
 ! -- small utility provides routines to process text strings,
@@ -154,7 +155,7 @@ contains
 
     do n = 1, size(list)
 
-         if ( wanted == list(n)  ) then
+         if ( trim( wanted ) == trim( list(n))  ) then
             Index = n
             n_match = n_match + 1
          end if
@@ -163,6 +164,12 @@ contains
     if ( n_match >  1 ) then !! Too many!
             n_match = -1 * n_match
     end if
+    if ( n_match  == 0  ) then 
+       write(*,*) "FIND_INDEX_C PROB for ", wanted,  " In ", list(1:size(list))
+       call CheckStop("FIND_INDEX_C")
+    end if
+       
+
   end function find_index_c
 
  !============================================================================
@@ -188,6 +195,10 @@ contains
 
     if ( n_match >  1 ) then !! Too many!
             n_match = -1 * n_match
+    end if
+    if ( n_match  == 0  ) then 
+       write(*,*) "FIND_INDEX_L PROB for ", wanted,  " In ", list(1:size(list))
+       call CheckStop("FIND_INDEX_I")
     end if
 
   end function find_index_i

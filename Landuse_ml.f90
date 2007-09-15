@@ -132,8 +132,8 @@ subroutine ReadLanduse()
    ! write(*,*) "NOW TRY WriteArray:"
    !    call WriteArray(Headers,NHeaders,"Landuse Headers")
 
-    lc_water = find_index("W",Headers)
-    lc_ice   = find_index("ICE",Headers)
+    !lc_water = find_index("W",Headers)
+    !lc_ice   = find_index("ICE",Headers)
     !call CheckStop( lc_water == NOT_FOUND,  "Landuse: Water not found")
     !call CheckStop( lc_ice   /= LU_ICE,  "Landuse: ICE not found") ! TMP
 
