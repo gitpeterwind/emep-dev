@@ -7,7 +7,7 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=6
+#PBS -lnodes=16
 # wall time limit of run 
 #PBS -lwalltime=0:10:00
 # lpmeme=memory to reserve per processor (max 4 or 16GB per node)
@@ -445,26 +445,48 @@ foreach my $scenflag ( @runs ) {
     chdir $RESDIR;   ############ ------ Change to RESDIR
     print "Working in directory: $RESDIR\n";
 
-my $nnn = 1;
-for (my $mm = $mm1; $mm <= $mm2; $mm++) {
-    
-    # Assign met files to fil001...etc.
-    for (my $n = 1; $n <= $month_days[$mm]; $n++) {
-	$nnn = metlink($n, $nnn, $mm);
-	last if $nnn > $NTERM;
+    my $METformat="felt";
+    if ($METformat eq "felt") {
+	my $nnn = 1;
+	for (my $mm = $mm1; $mm <= $mm2; $mm++) {
+	    
+	    # Assign met files to fil001...etc.
+	    for (my $n = 1; $n <= $month_days[$mm]; $n++) {
+		$nnn = metlink($n, $nnn, $mm);
+		last if $nnn > $NTERM;
+	    }
+	}
+	
+	my $mmlast = $mm2 + 1;
+	my $yylast = $year;
+	if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+	    $yylast = $yylast + 1;
+	    $mmlast = 1;
+	}
+	my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
+	my $new = sprintf "fil%04d", $nnn;
+	mylink( "LAST RECORD SET: ", $old,$new ) ;
+
+    }else{
+
+#meteorology in NetCDF	
+	for (my $mm = $mm1; $mm <= $mm2; $mm++) {
+	    for (my $n = 1; $n <= $month_days[$mm]; $n++) {
+		my  $old = sprintf "$MetDir/meteo${year}%02d%02d.nc", $mm,$n;
+		my  $new = sprintf "meteo${year}%02d%02d.nc", $mm,$n;
+		mylink( "Linking:", $old,$new ) ;
+	    }   
+	}
+	my $mmlast = $mm2 + 1;
+	my $yylast = $year;
+	if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+	    $yylast = $yylast + 1;
+	    $mmlast = 1;
+	}
+	my   $old = sprintf "$MetDir/meteo%02d%02d01.nc", $yylast, $mmlast;
+	my   $new = sprintf "meteo%02d%02d01.nc", $yylast, $mmlast;
+	mylink( "LAST RECORD SET: ", $old,$new ) ;
     }
-}
-
-my $mmlast = $mm2 + 1;
-my $yylast = $year;
-if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
-    $yylast = $yylast + 1;
-    $mmlast = 1;
-}
-my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
-my $new = sprintf "fil%04d", $nnn;
-mylink( "LAST RECORD SET: ", $old,$new ) ;
-
 
 #=================== INPUT FILES =========================================
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
@@ -532,7 +554,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 
     foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
 	if ( -r $old ) {
-		$new =  $ifile{$old};
+		my $new =  $ifile{$old};
        		mylink( "Inputs: ", $old,$new ) ;
 	} else {
         	print "Missing Input $old !!!\n";
@@ -611,7 +633,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     } elsif ( -r "Timing.out" ) { #-- Done  :-)
         print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
     } else {
-        print "\n  Unkown Problem!! \n" unless $DRY_RUN;
+        print "\n  The program stopped abnormally!! \n" unless $DRY_RUN;
     }
 
 #move RunLog 
