@@ -10,14 +10,14 @@
   use Volcanos_ml
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
+  use CheckStop_ml,          only :  CheckStop
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use Functions_ml,          only :  Tpot_2_T
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
-  use GenSpec_adv_ml,        only :  NSPEC_ADV
+  use GenSpec_adv_ml,        only :  NSPEC_ADV,IXADV_NO2
   use GenSpec_shl_ml,        only :  NSPEC_SHL
   use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-  use MyChem_ml,             only :  Set_2dBgnd
   use GenRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
   use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, carea, &
@@ -150,6 +150,11 @@ contains
 
    end do ! k
 
+! Check that concentrations are not "contaminated" with NaN
+   call CheckStop( .not.xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)+1>&
+                        xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)   &
+                  ,"Detected non numerical concentrations (NaN)")
+
 
    o2k(:) = 0.21*amk(:)
    tinv(:) = 1./temp(:)
@@ -162,7 +167,6 @@ contains
    !old: call set_rctroe_rates(tinv,amk,rctroe)
 
    call set_rcmisc_rates(itemp,tinv,amk,o2k,h2o,rh,rcmisc)
-
 
 
 
