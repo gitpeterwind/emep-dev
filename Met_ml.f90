@@ -3445,11 +3445,10 @@ contains
 
           call CheckStop(GIMAX+IRUNBEG-1 > GIMAX_file, "NetCDF_ml: I outside domain" )
           call CheckStop(GJMAX+JRUNBEG-1 > GJMAX_file, "NetCDF_ml: J outside domain" )
-          call CheckStop(KMAX_MID > KMAX_file,        "NetCDF_ml: wrong vertical   &
-               dimension")
-          call CheckStop(24/Nhh, METSTEP,           "NetCDF_ml: METSTEP != meteostep" )
+          call CheckStop(KMAX_MID > KMAX_file,  "NetCDF_ml: wrong vertical dimension")
+          call CheckStop(24/Nhh, METSTEP,          "NetCDF_ml: METSTEP != meteostep" )
 
-          call CheckStop(nhour==0 .or. nhour ==3,&
+          call CheckStop(nhour/=0 .and. nhour /=3,&
                "Met_ml/GetCDF: must start at nhour=0 or 3")
 
           ihh=1

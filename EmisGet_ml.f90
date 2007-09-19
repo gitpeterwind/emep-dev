@@ -113,7 +113,7 @@ READEMIS: do   ! ************* Loop over emislist files **********************
             ! emisfile (iic)
 
               do ic=1,NLAND
-                 if((Country(ic)%index==iic).and.(Country(ic)%code /= "N/A"))&
+                 if((Country(ic)%index==iic))&
                       goto 543
               enddo 
               write(unit=errmsg,fmt=*) &
