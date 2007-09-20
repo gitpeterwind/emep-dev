@@ -182,7 +182,7 @@ contains
 
   !=======================================================================
   subroutine Read_Headers(io_num,io_msg,NHeaders,NKeys,Headers,Keyvalues,&
-      required_fields, alternate_fields )
+      CheckValues, required_fields, alternate_fields )  !<= Optional
   !=======================================================================
     ! Reads the header lines of an EMEP format input file, and extracts
     ! any key-value pairs, as well as the column headers. See Self_Test
@@ -194,6 +194,8 @@ contains
       integer, intent(out)                  :: NHeaders, NKeys
       character(len=*),dimension(:), intent(out) :: Headers 
       type(KeyVal), dimension(:), intent(out) :: KeyValues
+      type(KeyVal), dimension(:), intent(in), optional  :: &
+         CheckValues !   Sets of key-values which must be present.
 
       character(len=*),dimension(:), intent(in), optional :: required_fields 
       character(len=*),dimension(:), intent(in), optional :: alternate_fields 
@@ -202,7 +204,7 @@ contains
       character(len=LENKEYVAL)  :: key, value
       character(len=5)  :: marker   ! e.g. !> or !#
       character(len=MAXLINELEN)  :: inputline
-      integer :: i, NxHeaders
+      integer :: i, NxHeaders, ncheck
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -265,6 +267,18 @@ contains
 
          else if ( inputline(1:5) == "#DATA" ) then ! End of headers. 
                                                     ! Data follows.
+   
+              if ( present(CheckValues) ) then
+                 !Check that the values specified in CheckValues are the same 
+                 !as those found in input file's KeyValues:
+                  ncheck = size(CheckValues)
+                  do i = 1, ncheck
+                     call CheckStop( KeyValue(KeyValues,CheckValues(i)%key),&
+                        CheckValues(i)%value ,&
+                              "Comparing Values: " // CheckValues(i)%key )
+                   end do
+              end if
+
               if ( me == 0 ) then
                write(unit=*,fmt=*) "DATA LINE" // trim(inputline)
               end if
@@ -368,13 +382,14 @@ contains
  
   !-------------------------------------------------------------------------
 
-  subroutine Read2DN(fname,Ndata,data2d,CheckValues)
+  subroutine Read2DN(fname,Ndata,data2d,CheckValues,HeadersRead)
 
    character(len=*), intent(in) :: fname
    integer, intent(in) :: Ndata     ! Number of data columns
    real, dimension(:,:,:), intent(out) :: data2d
    type(KeyVal), dimension(:), intent(in), optional  :: &
      CheckValues !   Sets of key-values which must be present.
+   logical, intent(in), optional :: HeadersRead
 
    integer, parameter  :: NCOORDS = 2   ! for ix, iy - "simple"
 
@@ -386,14 +401,22 @@ contains
    character(len=50) :: errmsg
 
    integer :: NHeaders, NKeys, Nlines, ncheck
-   logical :: debug_flag
+   logical :: debug_flag, Start_Needed
 
-   if ( MY_DEBUG ) write(*,*) " Starting Read2DN, me ",me
+   if ( MY_DEBUG .and. me == 0  ) write(*,*) " Starting Read2DN, me ",me
 
    Nlines = 0
 
    data2d  (:,:,:) = 0.0     !/**  initialise  **/
 
+   Start_Needed = .true.
+   if ( present(HeadersRead) ) then   ! Headers have already been read
+       Start_Needed  = .false.
+   end if
+
+  !======================================================================
+   if ( Start_Needed ) then 
+  !======================================================================
    if ( me == 0 ) then
       call open_file(IO_TMP,"r",fname,needed=.true.)
       call CheckStop(ios,"ios error on Inputs.landuse")
@@ -420,11 +443,16 @@ contains
    ! The first two columns are assumed for now to be ix,iy, hence:
 
    Headers(1:Ndata) = Headers(3:Ndata+2)
+   NHeaders = NHeaders -2
+
+   end if ! Start_Needed
+  !======================================================================
    if ( MY_DEBUG .and. me == 0 ) then
+        write(*,*) "Read2DN for ", fname, "Start_Needed ", Start_Needed
         do i = 1, NHeaders
           write(*,*) "Read2D Headers" // fname, i, Nheaders, Headers(i)
         end do
-       call WriteArray(Headers,NHeaders,"Read2D Headers")
+       !call WriteArray(Headers,NHeaders,"Read2D Headers")
    end if
 
    do

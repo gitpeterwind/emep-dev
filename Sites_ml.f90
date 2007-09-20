@@ -2,16 +2,9 @@ module Sites_ml
 
 ! -----------------------------------------------------------------------
 ! Contains subroutines to read in list of measurement stations and/or 
-! radiosonde locations. 
+! radiosonde locations. Locations should be specified in the input 
+! files "sites.dat" and "sondes.dat"
 !
-! Developed from sitesout.f. Converted to  F90, and written so that sites
-! are now specified in the input file "sites.dat" and "sondes.dat"
-!
-! Feb-Mar/2001 Cleaning up, removal of stop_test,MAP_ADV,  hf/ds
-! 4-5/2001 Substantial changes to harmonise treatment of sites and sondes
-! and to enable flexible choice of outputs in connection with My_Outputs_ml
-! 26/4/01 - Sonde read-in added to sitesdef.
-! 24/4/01 - explicit description data written to sites.out
 ! -----------------------------------------------------------------------
 
 use CheckStop_ml,  only : CheckStop
@@ -24,25 +17,30 @@ use My_Outputs_ml, only : &  ! for sitesout
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
       FREQ_SONDE, NOy_SPEC
 
-use Derived_ml,        only : d_2d, d_3d, IOU_INST  !ds New deriv system
-use Functions_ml,      only : Tpot_2_T              !ds Conversion function
-use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom
+use Derived_ml,        only : d_2d, d_3d, IOU_INST  ! for deriv system
+use Functions_ml,      only : Tpot_2_T              ! Conversion function
+use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom &
+                              , i_local, j_local
 use Io_ml,             only : check_file,open_file,ios &
-                              , fexist, IO_SITES, IO_SONDES
+                              , fexist, IO_SITES, IO_SONDES &
+                              , Read_Headers,read_line
 use GenSpec_adv_ml
 use GenSpec_shl_ml,    only : NSPEC_SHL
 use GenChemicals_ml,   only : species               ! for species names
-use GenSpec_tot_ml,    only : SO4, HCHO, CH3CHO  &  !  For mol. wts.
+use GenSpec_tot_ml,    only : SO4, HCHO, CH3CHO  &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PM25, PMCO &
                               ,SSfi, SSco  !SeaS
 use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
                               , z_bnd, z_mid, roa, xksig, u, v, ps, q
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
-                              ,KMAX_BND,PT,ATWAIR, NPROC
-use Par_ml,            only : GIMAX,GJMAX &
+                              ,KMAX_BND,PT,ATWAIR, NPROC &
+                              ,DomainName, RUNDOMAIN
+use Par_ml,            only : li0,lj0,li1,lj1 &
+                              ,GIMAX,GJMAX &
                               ,GI0,GI1,GJ0,GJ1,me,MAXLIMAX,MAXLJMAX
 use Tabulations_ml,    only : tab_esat_Pa
 use TimeDate_ml,       only : current_date
+use KeyValue_ml,       only : KeyVal, KeyValue, LENKEYVAL
 
 implicit none
 private                     ! stops variables being accessed outside
@@ -94,9 +92,6 @@ character(len=20), private, save, &
            dimension (NADV_SONDE+NSHL_SONDE+NXTRA_SONDE) :: sonde_species
 
 character(len=40), private :: errmsg ! Message text
-integer, private, save :: & !u3 - global versions added
-       gibegpos,giendpos,gjbegpos,gjendpos & ! domain for global coords
-      ,ibegpos,iendpos,jbegpos,jendpos       ! domain for local node
 integer, private :: d                 ! processor index
 integer, private :: i, n, nloc, ioerr ! general integers
 
@@ -128,8 +123,8 @@ contains
 
   call Init_sites("sondes",IO_SONDES,NSONDES_MAX, &
         nglobal_sondes,nlocal_sondes, &
-        sonde_gindex, sonde_gx, sonde_gy, sonde_gz, & ! Pass sonde_gy twice as dummy
-        sonde_x, sonde_y, sonde_z, sonde_n, &     ! Pass sonde_y twice as dummy
+        sonde_gindex, sonde_gx, sonde_gy, sonde_gz, &
+        sonde_x, sonde_y, sonde_z, sonde_n, &
         sonde_name)
 
   call set_species(SITE_ADV,SITE_SHL,SITE_XTRA,site_species)
@@ -181,18 +176,17 @@ contains
   ! surface measurement stations or locations where vertical profiles
   ! or extra output are required. (These files may be empty, but this is
   ! not recommended - the sites data provide good diagnostics).
-  !RESTRI
+  !
   !  define whether a certain output site belongs to the given processor
   !  and assign the local coordinates
-  !RESTRI
   ! ----------------------------------------------------------------------
-  ! NB. global below refers to all nodes
+  ! NB. global below refers to all nodes (full-domain)
   !     local  below refers to the local node
 
   character(len=*), intent(in) :: fname
   integer,          intent(in) :: io_num
-  integer,          intent(in) :: NMAX       ! Max no. sites
-  integer, intent(out)  :: nglobal, nlocal   ! No. sites 
+  integer,          intent(in) :: NMAX     ! Max no. sites
+  integer, intent(out) :: nglobal, nlocal  ! No. sites 
   integer, intent(out), dimension (0:,:) :: s_gindex  ! index, starts at me=0
   integer, intent(out), dimension (:) ::  &   
                              s_gx, s_gy, s_gz   & ! global coordinates
@@ -204,115 +198,100 @@ contains
   integer,  dimension (NMAX) :: s_n_recv  ! number in global
 
   integer           :: nin     ! loop index
-  integer           :: x, y    ! coordinates read in
+  integer           :: ix, iy  ! coordinates read in
   integer           :: lev     ! vertical coordinate (20=ground)
   character(len=20) :: s       ! Name of site read in
   character(len=30) :: comment ! comment on site location
   character(len=40) :: infile, errmsg
-  logical           :: LLfile  ! true if the file is of lat/lon type
-  real              :: lat,lon,ir,jr
+  real              :: lat,lon,x,y
 
-  LLfile=.false.
+  character(len=20), dimension(4) :: Headers
+  type(KeyVal), dimension(20)     :: KeyValues ! Info on units, coords, etc.
+  integer                         :: NHeaders, NKeys, Nlines
+  character(len=80)               :: txtinput  ! Big enough to contain
+                                               ! one full input record
 
-  infile = fname // "LL.dat"
-  call check_file(infile,fexist,needed=.false.,errmsg=errmsg)
-
-  if ( .not. fexist) then
-     infile  = fname // ".dat"
-     call check_file(infile,fexist,needed=.false.,errmsg=errmsg)
-     if ( .not. fexist ) return
-  else
-     LLfile=.true.
-  endif
-
-  ! initialise RESTRI domain
-  n = 0                     ! No. sites found within domain
-  gibegpos = i_fdom(0)-gi0+2
-  giendpos = i_fdom(0)-gi0+1+GIMAX
-  gjbegpos = j_fdom(0)-gj0+2
-  gjendpos = j_fdom(0)-gj0+1+GJMAX
-
-  ios = 0                   ! zero indicates no errors
+  ios = 0                      ! zero indicates no errors
   errmsg = "ios error" // infile
 
-  if (me == 0) call open_file(io_num,"r",infile,needed=.true.)
+  if (me == 0) then
+    infile  = fname // ".dat"
+    call check_file(infile,fexist,needed=.false.,errmsg=errmsg)
+    if ( .not. fexist ) return
+    call open_file(io_num,"r",infile,needed=.true.)
+    call CheckStop(ios,"ios error on "//trim(infile))
+  end if
 
-  call CheckStop(NMAX,size(s_name),"Error in Sites_ml/Init_sites: sitesdefNMAX problem")
+  call CheckStop(NMAX,size(s_name), &
+     "Error in Sites_ml/Init_sites: sitesdefNMAX problem")
 
-  SITEREAD: if (me == 0) then   
-     SITELOOP: do nin = 1, NMAX
+  call Read_Headers(io_num,errmsg,NHeaders,NKeys,Headers,Keyvalues)
 
-        if (LLfile) then
-           read (unit=io_num,fmt=*,iostat=ioerr) s, lat, lon
-           lev=KMAX_MID
-           call lb2ij(lon,lat,ir,jr)
-           x=nint(ir)
-           y=nint(jr)
+
+  ! First, see which sites are within full domain:
+
+  n = 0          ! Number of sites found within domain
+  SITELOOP: do nin = 1, NMAX
+
+     if (trim(KeyValue(KeyValues,"Coords"))=='LatLong') then
+        call read_line(io_num,txtinput,ios)
+        if ( ios /= 0 ) exit  ! End of file
+        read(unit=txtinput,fmt=*) s, lat, lon, lev
+        call lb2ij(lon,lat,x,y)
+        ix=nint(x)
+        iy=nint(y)
+     else
+        call read_line(io_num,txtinput,ios)
+        if ( ios /= 0 ) exit  ! End of file
+        read(unit=txtinput,fmt=*) s,  ix,  iy, lev
+     endif
+
+     if (ioerr < 0) then
+        write(6,*) "sitesdef : end of file after ", nin-1, infile
+        exit SITELOOP
+     end if ! ioerr
+
+
+     if ( ix < RUNDOMAIN(1) .or. ix > RUNDOMAIN(2) .or. & 
+          iy < RUNDOMAIN(3) .or. iy > RUNDOMAIN(4) ) then
+        write(6,*) "sitesdef: ", s, ix, iy, " outside computational domain"
+     else
+        n = n + 1
+        s_gx(n)   = ix  
+        s_gy(n)   = iy  
+        s_gz(n)   = lev
+        if (i_local(ix) == li0 .or. i_local(ix) == li1 .or. &
+            j_local(iy) == lj0 .or. j_local(iy) == lj1) then
+           comment = " WARNING - domain boundary!!"
         else
-           read (unit=io_num,fmt=*,iostat=ioerr) s, x, y, lev
-        endif
-        if (ioerr < 0) then
-           write(6,*) "sitesdef : end of file after ", nin-1, infile
-           exit SITELOOP
-        end if ! ioerr
-        print *, infile, "site: ", nin,   s, x,y
+           comment = " ok - inside domain         "
+        end if
 
-  ! RESTRI: check if the output site belongs to the restricted
-  !         domain at all, if not print a warning message
+        s_name(n)  = s // comment
 
-        if (gibegpos > x .or. giendpos < x .or. & 
-            gjbegpos > y .or. gjendpos < y ) then
-           write(6,*) "sitesdef: ", s, x, y, " outside computational domain"
-        else
-           n = n + 1
-           s_gx(n)   = x  
-           s_gy(n)   = y  
-           s_gz(n)   = lev
-           if (x == gibegpos .or. x == giendpos .or. &
-               y == gjbegpos .or. y == gjendpos) then
-             comment = " WARNING - domain boundary!!"
-           else
-              comment = " ok - inside domain         "
-           end if
-           s_name(n)  = s // comment           
-        endif
+     endif
 
-     end do SITELOOP 
+  end do SITELOOP 
 
-     nglobal       = n 
+  nglobal = n 
 
   ! NSITES/SONDES_MAX must be _greater_ than the number used, for safety
 
-     call CheckStop(n >= NMAX, &
-         "Error in Sites_ml/Init_sites: increaseNGLOBAL_SITES_MAX!")
+  call CheckStop(n >= NMAX, &
+      "Error in Sites_ml/Init_sites: increaseNGLOBAL_SITES_MAX!")
 
-     close(unit=io_num)
-  end if SITEREAD
-
-  ! - send global coordinates to processors
-  CALL MPI_BCAST(nglobal,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(s_gx,4*nglobal,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(s_gy,4*nglobal,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-  CALL MPI_BCAST(s_gz,4*nglobal,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-
-  ! define local coordinates of first and last element
-  ! of the arrays with respect to the larger domain
-
-  ibegpos = i_fdom(0)+1
-  iendpos = i_fdom(0)+1+gi1-gi0
-  jbegpos = j_fdom(0)+1
-  jendpos = j_fdom(0)+1+gj1-gj0
+  if(me==0) close(unit=io_num)
 
   nlocal  = 0
 
   do n = 1, nglobal
 
-     if (ibegpos <= s_gx(n) .and.  iendpos >= s_gx(n) .and. &
-         jbegpos <= s_gy(n) .and.  jendpos >= s_gy(n) ) then
+     if ( i_local(ix) >= li0 .and. i_local(ix) <= li1 .and. &
+          j_local(iy) >= lj0 .and. j_local(iy) <= lj1 ) then
 
         nlocal      = nlocal + 1
-        s_x(nlocal) = s_gx(n)-ibegpos+1
-        s_y(nlocal) = s_gy(n)-jbegpos+1
+        s_x(nlocal) = i_local(ix)
+        s_y(nlocal) = j_local(iy)
         s_z(nlocal) = s_gz(n)
         s_n(nlocal) = n
 
@@ -330,7 +309,7 @@ contains
   if (MY_DEBUG) write(6,*) "sitesdef ", fname, " before gc NLOCAL_SITES", &
                            me, nlocal
 
-  if ( me .ne. 0 ) then
+  if ( me /= 0 ) then
      if (MY_DEBUG) write(6,*) "sitesdef ", fname, " send gc NLOCAL_SITES", &
                               me, nlocal
      CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_WORLD, INFO)
@@ -357,7 +336,7 @@ contains
      end do ! d
   end if ! me
 
-  if ( MY_DEBUG ) write(6,*) 'sitesdef DS on me', me, ' = ', nlocal
+  if ( MY_DEBUG ) write(6,*) 'sitesdef on me', me, ' = ', nlocal
 
 end subroutine Init_sites
 
@@ -385,19 +364,19 @@ end subroutine Init_sites
   real,dimension(NOUT_SITE,NSITES_MAX) :: out ! for output, local node
 
   if ( MY_DEBUG ) then 
-     print *, "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me 
+     write(6,*) "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me 
      do i = 1, nlocal_sites
-        print *, "sitesdef Into surf  x,y ",site_x(i),site_y(i),&
+        write(6,*) "sitesdef Into surf  x,y ",site_x(i),site_y(i),&
                     site_z(i)," me ", me
      end do
  
      if ( me == 0 ) then
-        print *,  "======= site_gindex ======== sitesdef ============"
+        write(6,*)  "======= site_gindex ======== sitesdef ============"
         do n = 1, nglobal_sites 
-           print "(a12,i4, 2x, 8i4)", "sitesdef ", n, &
+           write(6,'(a12,i4, 2x, 8i4)') "sitesdef ", n, &
                     (site_gindex(d,n),d=0, NPROC-1)  
         end do
-        print *,  "======= site_end    ======== sitesdef ============"
+        write(6,*) "======= site_end    ======== sitesdef ============"
      end if ! me = 0
   end if ! MY_DEBUG
 
@@ -658,7 +637,7 @@ end subroutine siteswrt_sondes
      prev_month(type) = current_date%month
 
      write(io_num,"(i3,2x,a,a, 4i4)") nglobal, fname, " in domain",  &
-                                 gibegpos, giendpos, gjbegpos, gjendpos
+                                 li0,li1,lj0,li1
      write(io_num,"(i3,a)") f, " Hours between outputs"
 
      do n = 1, nglobal

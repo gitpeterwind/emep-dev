@@ -139,7 +139,7 @@ my $HILDE       = "mifahf";
 my $SVETLANA    = "mifast";
 my $HEIKO      = "mifahik";      
 my $ANNA      = "mifaab";      
-my $MICHAEL      = "mifaelg";      
+my $MICHAEL      = "michaelg";      
 my $SEMEENA     = "mifasv";      
 my $TAREQ    = "mifatarh";      
 
@@ -179,7 +179,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_9_4";
+    $testv       = "rv2_9_7";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -525,15 +525,16 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/noxsplit.special.$Split"} = "noxsplit.special";
     $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
                                    "Boundary_and_Initial_Conditions.nc";
-    my $sondes="$DATA_LOCAL/sondes.dat";
-    $sondes="$DATA_LOCAL/sondes.SR" if $SR;
-    $ifile{"$sondes"} = "sondes.dat";
-    $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
+    #OLD my $sondes="$DATA_LOCAL/sondes.dat";
+    #OLD $sondes="$DATA_LOCAL/sondes.SR" if $SR;
+    #OLD $ifile{"$sondes"} = "sondes.dat";
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
 
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$NDATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$NDATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
+    $ifile{"$NDATA_LOCAL/sites.dat"} = "sites.dat";
+    $ifile{"$NDATA_LOCAL/sondes.dat"} = "sondes.dat";
     
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
     my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");

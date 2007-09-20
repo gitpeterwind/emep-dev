@@ -1,3 +1,14 @@
+============== Dave, Michael,  rv2_9_7, Sept.  20th 2007  =================================
+
+Io_Progs - extra options added to check that required key-value pairs exist.
+
+run.pl   -  Michael's user corrected, and location of sites/sondes redefined.
+
+Sites_ml.f90   --- now expects sites.dat and sondes.dat to have formatted headers.
+                   + cleanup
+
+SmallUtils - small update (trim used)
+
 ============== Peter, rv2_9_6, Sept.  19th 2007  =================================
 
 Setup_1d_ml: checkstop when a NaN is detected 
