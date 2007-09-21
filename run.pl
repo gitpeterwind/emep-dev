@@ -237,6 +237,7 @@ my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
 open(IN,"<$ProgDir/ModelConstants_ml.f90");
 my ( $NDX, $NDY ); # Processors in x-, y-, direction
 while(my $line = <IN>){
+    $line=~ s/!.*//;
     $NDX = $1 if $line =~ /\W+ NPROCX \W+ (\d+) /x ;
     $NDY = $1 if $line =~ /\W+ NPROCY \W+ (\d+) /x ;
 }
