@@ -1,4 +1,4 @@
-\chapter{Welcome to EMEP World}
+\chapter{Welcome to EMEP }
 
 This guide gives a brief documentation of the EMEP unified model.
 It is intended primarily as a guide as to how to run the model, and
@@ -42,7 +42,8 @@ communication paradigms.
 
 \section{Getting Started}
 
-Once the model is downloaded, untar the file using  the command \\
+A tar file of the model source code can be downloaded from the web
+page under the section 'Download'.   Once the model is downloaded, untar the file using  the command \\
 
 \textbf{tar -xzvf emep.tar.gz} \\
 
@@ -56,15 +57,11 @@ by typing 'cd Unimod' and do a listing and you will see the following
 
 \begin{verbatim}
 -rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  Makefile \\
--rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  Changes \\
+-rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  Log.Changes \\
 -rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  README \\
 drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  src \\
-                - Makefile   \\
-                - ZD\_OZONE - ....f90 \\
-                - ZD\_ACID  - ....f90 \\
-                - makedepf90 - ....cpp \\
+                - ....f90
 drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  doc  \\
-                - Makefile \\
                 - ....tex \\
                 - ....eps \\
 drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  run \\
@@ -73,23 +70,19 @@ drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  run \\
 \end{verbatim}
 
 Read the 'README' first.  This has a brief note about the directory
-contents.  
+contents.  Makefile is the main Makefile for the model.  Each time
+when the model code is updated or changed due to any reason, it is
+documented in a Log file while committing the changes to CVS and this
+file is stored in 'Log.Changes' file.  The src directory contains all
+the main .f90 files of the model. 'doc' contains the latex code of the
+'cookbook'.  Finally, the run scripts are stored under 'run'.  These
+are perl scripts and a detailed description about how to handle them
+is given in Chapter 4, 'Submitting a Run'.  
 
-The src directory contains all the main .f90 files of the model and two
-subdirectories called 'ZD\_OZONE' and 'ZD\_ACID' which has the
-respective .f90 files of the OZONE or ACID version of the model.
-Depending on which version you like to use, copy all the .f90 files
-from the corresponding subdirectory into the main Unimod directory. \\
+Each module and subroutine begins with a small documentation of the
+same (and are updated regularly). Next chapter will give a detailed
+insight into the necessary input files and their structure.    
 
-\textbf{Unimode/src$>$ cp ZD\_ACID/*.f90} .  for ACID version \\
-
-or \\
-
-\textbf{Unimod/src$>$ cp ZD\_OZONE/*.f90} .  for OZONE version of the model. 
-
-
-The main documentation for each subroutine should be contained within
-each subroutine (and updated regularly!).
 
 
 

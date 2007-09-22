@@ -6,6 +6,18 @@
 
 
 %%%%%%%%%%%%%% Hourly %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Output files are written out in NetCDF format.  
+Model will write the output files into your working directory (see the
+runscript 'run.pl' where you have set the working directory
+path. Chapter 4, 'Submitting a Run' explains all the paths).  For a
+base run, all the outputs will be stored into a subdirectory called
+'Base' under your working directory, and the files will be named
+'Base\_day.nc', 'Base\_hour.nc' etc., for a daily output and hourly
+output respectively.  You can also provide a better self descriptive
+name for the experiments and then the outputs will be written out with
+this experiment name as the base name. This is done in the run
+script (ref. Chapter 4).  
+
 \section{Hourly out}
 
 \noindent
@@ -29,7 +41,8 @@ well.
  
 In \MyOutputs\ we have for example:
 
-\begin{small}\begin{verbatim}
+\begin{small}
+\begin{verbatim}
   !**          name type ofmt ispec ix1 ix2  iy1 iy2 nk unit conv max
 
   hr_out(1) = Hr_output("o3_3m","ADVppbv", 
@@ -64,7 +77,8 @@ coordinates of the required boundary in the sites.dat file)
 
 In \MyOutputs\ we have for example:
 
-\begin{small}\begin{verbatim}
+\begin{small}
+\begin{verbatim}
   integer, public, parameter ::  &
 	 ISPEC_OUTBEG  = 121  &
 	,JSPEC_OUTBEG  =  61  &
@@ -168,7 +182,8 @@ time markers to be true or false. More details are supplied below.
   sulphur oxides, we use:
 
 
-  \begin{small}\begin{verbatim}
+  \begin{small}
+\begin{verbatim}
     call AddDef("WDEP ", F, -1, 1.0e6, F  ,  T , T ,  T, "WDEP_SOX","mgS/m2")
   \end{verbatim}
   \end{small}
@@ -198,7 +213,7 @@ time markers to be true or false. More details are supplied below.
    \begin{tabular}{|lllp{6cm}|}\hline
      No. fields    &  Definition array & Data array  & Comments  \\
                    &               &                 &           \\
-     NWDEP         &    f\_wdep    &    wdep   & Wet deposition and accumalated precipitation  \\
+     NWDEP         &    f\_wdep    &    wdep   & Wet deposition and accumulated precipitation  \\
      NDDEP         &    d\_wdep    &    ddep   & Dry deposition   \\
      NDERIV\_2D     &    f\_2d      &    d\_2d   & Derived 2-D fields, surface concs., etc.  \\
      NDERIV\_3D     &    f\_3d      &    d\_3d   & Derived 3-D fields  \\ \hline

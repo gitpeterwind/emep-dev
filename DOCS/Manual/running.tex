@@ -1,7 +1,16 @@
 \chapter{Submitting a Run}
 
-Once you have made necessary changes with the code and checked
-everything with the input files go to the 'run' directory. \\
+EMEP model is tested for differenct case runs.  The default set  up is
+called a 'Base run', and a run with reduced emission from a particular
+country or all countries is called a 'Scenario run', and there are
+tracer transport simulations also tested with EMEP.  They are
+explained in detail below.  We suggest that you test the 'Base run'
+first, which is by keeping the code as it is.  You can also use the
+outputs of such a run in future as a reference run.  
+
+As explained in the previous chapters, once the model .tar file is
+untarred and you have located all the directories and subdirectories
+under 'Unimod',  go to the 'run' directory. \\
 
 \textbf{cd run} \\
 \\
@@ -14,14 +23,11 @@ having to change any fortran files by hand. The procedure for running
 this is somehwat different on the Linux cluster and  Origin (gridur)
 machines.
 
-Check once again all the meteorological and emission data are in place.  Change
-the user name to your corresponding username.  Set the output path
-properly. 
+An extract from run.pl  is given below.  This is a 'Base run' for the year
+2000. See \textbf{\$year} and \textbf{my \$scenario}. 
 
-
-An extract from run.pl  is given below.  Set the number of CPUs you
+ Set the number of CPUs you
 want to use in the beginning of this script. 
-
 
 In the following example, you are using 32 CPUs which is specified
 with the command \\
@@ -42,6 +48,23 @@ number of timesteps in 'NTERM\_CALC'.
 For example \textbf{NTERM\_CALC=25} means a run of three days. 
 
  The example given here is for a run of 3 months.  
+
+ Change
+the user name to your corresponding username. 
+
+\textbf{\$USER}=YOURNAME \\
+
+Check once again all the meteorological and emission data are in
+place. In the following example, the meteorological input is stored
+under \textbf{\$MetDir} and emission files are stored under
+\textbf{\$EmisDir}.  
+
+ Set the working directory and output path properly.
+
+\textbf{\$WORKDIR}=YOUR Working directory path.\\
+
+
+
 
 \begin{verbatim}
 #!/usr/local/bin/perl
@@ -85,18 +108,16 @@ $OZONE = 1, $ACID = 0;     # Specify model type here
 $version     = "Unimod" ;  
 $Split       = "BASE_MAR2004" ;               #  -- Scenario label for MACH - DS
 $ProgDir     = "$USER/Unify/Unimod.$testv";   # input of source-code
-$MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
-$DaveDataDir = "$DAVE/Unify/MyData";          # for each user's femis, etc.
-$DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
+$EmisDir     = "$DAVE/Unify/Data";      #Emission files 
 $PROGRAM     = "$ProgDir/$version";         # programme
 $WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
 
-......
-$emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis00_V2";
+my $scenario = "Base";       #Change the name of the Scenario here
+my @runs     = ( $scenario );
 
 # Specify small domain if required. 
 #                 x0   x1  y0   y1
-@largedomain = (   1, 170,  1, 133 ) ;
+@largedomain = (   1, 171,  1, 133 ) ;
 @smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
 
 $RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
@@ -176,7 +197,7 @@ again.  That's it!!!
 
 \section{Scenario runs}
 
-One can also submit a run to test the impact of reduced emission of
+Scenario runs in the case of EMEP means a run to test the impact of reduced emission of
 one or more pollutants from a particular country.  Emission factors
 are applied to specified country and/or emission sector.  This is done by
 changing the 'femis.dat' file. You can download this file from the Input
