@@ -1,3 +1,11 @@
+============== Semeena, Heiko, rv2_9_9, Sept.  23rd 2007  =================================
+
+Updates to documentation
+
+New run.pl with SR stuff placed near end of file.
+  (SR functionality not yet tested though!)
+
+
 ============== Peter, Svetlana, rv2_9_8, Sept.  21th 2007  =================================
 
 run.pl $line=~ s/!.*//;

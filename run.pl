@@ -7,7 +7,7 @@
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=16
+#PBS -lnodes=6
 # wall time limit of run 
 #PBS -lwalltime=0:10:00
 # lpmeme=memory to reserve per processor (max 4 or 16GB per node)
@@ -112,6 +112,7 @@ my @MAKE = ("gmake",  "-j2", "--makefile=Makefile_snow");
   die "Must choose SNYKOV **or** NJORD!\n" unless $NJORD+$SNYKOV==1;
 
 my $SR=0;     # Set to 1 if source-receptor calculation
+              # check also variables in package EMEP::Sr below!!
  
 # <---------- start of user-changeable section ----------------->
 
@@ -132,16 +133,15 @@ print "Year is $yy YEAR $year Trend year $iyr_trend\n";
 
 #---  User-specific directories (changeable)
 
-my $PETER       = "mifapw/emep";      
-my $DAVE      = "mifads";      
-my $JOFFEN      = "mifajej";
-my $HILDE       = "mifahf";
-my $SVETLANA    = "mifast";
+my $PETER      = "mifapw/emep";      
+my $DAVE       = "mifads";      
+my $JOFFEN     = "mifajej";
+my $HILDE      = "mifahf";
+my $SVETLANA   = "mifast";
 my $HEIKO      = "mifahik";      
-my $ANNA      = "mifaab";      
-my $MICHAEL      = "michaelg";      
-my $SEMEENA     = "mifasv";      
-my $TAREQ    = "mifatarh";      
+my $ANNA       = "mifaab";      
+my $MICHAEL    = "michaelg";      
+my $SEMEENA    = "mifasv";      
 
 
 my $USER        =  $DAVE;
@@ -179,7 +179,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_9_7";
+    $testv       = "rv2_9_9";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -237,7 +237,7 @@ my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
 open(IN,"<$ProgDir/ModelConstants_ml.f90");
 my ( $NDX, $NDY ); # Processors in x-, y-, direction
 while(my $line = <IN>){
-    $line=~ s/!.*//;
+    $line=~ s/!.*//; # Get rid of comment lines
     $NDX = $1 if $line =~ /\W+ NPROCX \W+ (\d+) /x ;
     $NDY = $1 if $line =~ /\W+ NPROCY \W+ (\d+) /x ;
 }
@@ -269,83 +269,17 @@ my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 8;       # for testing, simply reset here
+$NTERM = 4;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
 # <---------- end of normal use section ---------------------->
-# <---------- start of SR   use section ---------------------->
-
-#SR additions:
-# Define all countries and nums here:
-my %country_nums = (
-  AL =>   1,  AT =>   2,  BE =>   3,  BG =>   4, FCS =>   5,
-  DK =>   6,  FI =>   7,  FR =>   8,
-  GR =>  11,  HU =>  12,  IS =>  13,  IE =>  14,  IT =>  15,
-  LU =>  16,  NL =>  17,  NO =>  18,  PL =>  19,  PT =>  20,
-  RO =>  21,  ES =>  22,  SE =>  23,  CH =>  24,  TR =>  25,
- FSU =>  26,  GB =>  27, REM =>  29, BAS =>  30,
- NOS =>  31, ATL =>  32, MED =>  33, BLS =>  34, NAT =>  35,
- RUO =>  36, RUP =>  37, RUA =>  38,  BY =>  39,  UA =>  40,
-  MD =>  41, RUR =>  42,  EE =>  43,  LV =>  44,  LT =>  45,
-  CZ =>  46,  SK =>  47,  SI =>  48,  HR =>  49,  BA =>  50,
-  RS => 72,   ME =>  73,  MK =>  52,  KZ =>  53,  GE =>  54,  CY =>  55,
-  AM =>  56,  MT =>  57, ASI =>  58,  LI =>  59,  DE =>  60, RU =>  61,
-  MC =>  62, NOA =>  63,  EU =>  64,  US =>  65,
-  CA =>  66, BIC =>  67,  KG =>  68,  AZ =>  69,
-  RUX =>  71,  ATX =>  70,
- BA2 => 302, BA3 => 303, BA4 => 304, BA5 => 305, BA6 => 306, # Baltic sep.
- BA7 => 307, BA8 => 308, BA9 => 309,
- NS2 => 312, NS3 => 313, NS4 => 314, NS5 => 315, NS6 => 316, # N. Sea sep.
- NS7 => 317, NS8 => 318, NS9 => 319,
- AT2 => 322, AT3 => 323, AT4 => 324, AT5 => 325, AT6 => 326, # Atlant. sep.
- AT7 => 327, AT8 => 328, AT9 => 329,
- ME2 => 332, ME3 => 333, ME4 => 334, ME5 => 335, ME6 => 336, # Medit. sep.
- ME7 => 337, ME8 => 338, ME9 => 339,
- BL2 => 342, BL3 => 343, BL4 => 344, BL5 => 345, BL6 => 346, # Bl. Sea sep.
- BL7 => 347, BL8 => 348, BL9 => 349
-);
-
-# EU countries:
-my @eu15 = qw ( AT BE DK FI FR DE GR IE IT NL PT ES SE GB LU );
-my @euNew04 = qw ( HU PL CY CZ EE LT LV MT SK SI );
-my @eu25 = ( @eu15, @euNew04 );
-my @euNew06 = qw(BG RO);
-my @eu27 = (@eu25, @euNew06);
-my @sea = qw ( NOS ATL MED BAS BLS );
-my @noneu = qw ( NO CH IS );
-my @emep = qw ( RS ME BY BA HR TR RU UA KZ MD MK GE AM AL AZ KG NOA ASI REM) ; 
-my @external =qw ( RUX   ATX ); 
-
-my ($rednflag, $redn, $base, @countries, @polls);
-if ( $SR ) {
-    $base        = "CLE";
-    $Split       = "CLE_MAR2004";    # IER VOC splits
-    $NOxSplit    = "CLE2020_ver2";    # IER VOC splits
-    $rednflag    = "P15";  # 10% reduction for label
-    $redn        = "0.85";  # 10% reduction
-
-    # modify those to fill up your queues for SR effectively!!!
-    @countries  = (@eu27, @sea, @noneu, @emep);
-    @polls       = qw ( BASE NP A V S );  # A, NP, V, S or BASE (at least 1)
-
-    # create the single runs run
-    @runs = ();
-    foreach my $cc (@countries) {
-	foreach my $poll (@polls) {
-	    push @runs, [$cc, $poll, $redn];
-	    if ($poll eq 'BASE') {
-		# run BASE only once!!!
-		@polls = grep {'BASE' ne $_} @polls;
-	    }
-	}
-    }
-}
-
 # <---------- end of user-changeable section ----------------->
 #               (normally, that is...)
 
-
+if ($SR) {
+    @runs = EMEP::Sr::initRuns();
+}
 
 #--- Verify data directories
 mkdir_p($WORKDIR);
@@ -421,17 +355,14 @@ my @list_of_files = ();   # Keep list of data-files
 
 
 
-########################### START OF SCENARIO RUNS  ##########################
-########################### START OF SCENARIO RUNS  ##########################
-########################### START OF SCENARIO RUNS  ##########################
+########################### START OF RUNS  ##########################
+########################### START OF RUNS  ##########################
+########################### START OF RUNS  ##########################
 
 
 foreach my $scenflag ( @runs ) {
     if ($SR) {
-	my $cc = $scenflag->[0];
-	my $pollut = $scenflag->[1];
-	$scenario = "${base}_${cc}_${pollut}_${rednflag}";
-        $scenario = "${base}" if $pollut eq "BASE" ;
+	$scenario = EMEP::Sr::getScenarioName($scenflag);
     } else {
 	$scenario = $scenflag;
     }
@@ -526,9 +457,6 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/noxsplit.special.$Split"} = "noxsplit.special";
     $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
                                    "Boundary_and_Initial_Conditions.nc";
-    #OLD my $sondes="$DATA_LOCAL/sondes.dat";
-    #OLD $sondes="$DATA_LOCAL/sondes.SR" if $SR;
-    #OLD $ifile{"$sondes"} = "sondes.dat";
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
 
   # new inputs style (Aug 2007)  with compulsory headers:
@@ -536,6 +464,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$NDATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
     $ifile{"$NDATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$NDATA_LOCAL/sondes.dat"} = "sondes.dat";
+  
     
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
     my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");
@@ -565,7 +494,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     }
 
     if ($SR) {
-	generate_updated_femis(@$scenflag);
+	EMEP::Sr::generate_updated_femis(@$scenflag);
     }
 
 #=================== INPUT FILES =========================================
@@ -674,9 +603,9 @@ EOT
     }
 
 
-################################## END OF SCENARIO RUNS ######################
-}  ############################### END OF SCENARIO RUNS ######################
-################################## END OF SCENARIO RUNS ######################
+################################## END OF RUNS ######################
+}  ############################### END OF RUNS ######################
+################################## END OF RUNS ######################
 
 
 exit 0;
@@ -766,16 +695,6 @@ sub mkdir_p {
     return 1;
 }
 
-sub slurp {
-    # read the complete content of a file
-    my ($file) = @_;
-    local $/ = undef;
-    open F, $file or die "Cannot read $file: $!\n";
-    my $data = <F>;
-    close F;
-    return $data;
-}
-
 sub calc_nterm {
   # Calculates the number of 3-hourly steps from month mm1 to
   #  mm2. Leap-years should already have been dealt with through
@@ -793,9 +712,103 @@ sub calc_nterm {
 }
 
 
+##############################################################
+##### Stuff for Source receptor matrisses             ########
+##############################################################
+package EMEP::Sr;
+
+########################################
+# Define all countries and nums here: ##
+########################################
+my %country_nums = (
+  AL =>   1,  AT =>   2,  BE =>   3,  BG =>   4, FCS =>   5,
+  DK =>   6,  FI =>   7,  FR =>   8,
+  GR =>  11,  HU =>  12,  IS =>  13,  IE =>  14,  IT =>  15,
+  LU =>  16,  NL =>  17,  NO =>  18,  PL =>  19,  PT =>  20,
+  RO =>  21,  ES =>  22,  SE =>  23,  CH =>  24,  TR =>  25,
+ FSU =>  26,  GB =>  27, REM =>  29, BAS =>  30,
+ NOS =>  31, ATL =>  32, MED =>  33, BLS =>  34, NAT =>  35,
+ RUO =>  36, RUP =>  37, RUA =>  38,  BY =>  39,  UA =>  40,
+  MD =>  41, RUR =>  42,  EE =>  43,  LV =>  44,  LT =>  45,
+  CZ =>  46,  SK =>  47,  SI =>  48,  HR =>  49,  BA =>  50,
+  RS => 72,   ME =>  73,  MK =>  52,  KZ =>  53,  GE =>  54,  CY =>  55,
+  AM =>  56,  MT =>  57, ASI =>  58,  LI =>  59,  DE =>  60, RU =>  61,
+  MC =>  62, NOA =>  63,  EU =>  64,  US =>  65,
+  CA =>  66, BIC =>  67,  KG =>  68,  AZ =>  69,
+  RUX =>  71,  ATX =>  70,
+ BA2 => 302, BA3 => 303, BA4 => 304, BA5 => 305, BA6 => 306, # Baltic sep.
+ BA7 => 307, BA8 => 308, BA9 => 309,
+ NS2 => 312, NS3 => 313, NS4 => 314, NS5 => 315, NS6 => 316, # N. Sea sep.
+ NS7 => 317, NS8 => 318, NS9 => 319,
+ AT2 => 322, AT3 => 323, AT4 => 324, AT5 => 325, AT6 => 326, # Atlant. sep.
+ AT7 => 327, AT8 => 328, AT9 => 329,
+ ME2 => 332, ME3 => 333, ME4 => 334, ME5 => 335, ME6 => 336, # Medit. sep.
+ ME7 => 337, ME8 => 338, ME9 => 339,
+ BL2 => 342, BL3 => 343, BL4 => 344, BL5 => 345, BL6 => 346, # Bl. Sea sep.
+ BL7 => 347, BL8 => 348, BL9 => 349
+);
+
+# EU countries:
+my @eu15 = qw ( AT BE DK FI FR DE GR IE IT NL PT ES SE GB LU );
+my @euNew04 = qw ( HU PL CY CZ EE LT LV MT SK SI );
+my @eu25 = ( @eu15, @euNew04 );
+my @euNew06 = qw(BG RO);
+my @eu27 = (@eu25, @euNew06);
+my @sea = qw ( NOS ATL MED BAS BLS );
+my @noneu = qw ( NO CH IS );
+my @emep = qw ( RS ME BY BA HR TR RU UA KZ MD MK GE AM AL AZ KG NOA ASI REM) ; 
+my @external =qw ( RUX   ATX ); 
+
+########################################
+# End of country definitions          ##
+########################################
+
+
+################################
+#### start of SR parameters ####
+################################
+our $base        = "CLE";
+our $Split       = "CLE_MAR2004";     # Defualt (IER-based) VOC splits
+our $NOxSplit    = "CLE2020_ver2";    # Default scenario (IER-based) VOC splits
+our $rednflag    = "P15";  # 15% reduction label
+our $redn        = "0.85"; # 15% reduction
+
+# modify those to fill up your queues for SR effectively!!!
+our @countries  = (@eu27, @sea, @noneu, @emep);
+our @polls       = qw ( BASE NP A V S );  #  (any, all, at least 1)
+################################
+#### end of SR parameters   ####
+################################
+
+
+
+sub initRuns {
+    foreach my $cc (@countries) {
+	foreach my $poll (@polls) {
+	    push @runs, [$cc, $poll, $redn];
+	    if ($poll eq 'BASE') {
+		# run BASE only once!!!
+		@polls = grep {'BASE' ne $_} @polls;
+	    }
+	}
+    }
+    return @runs;
+}
+
+
+sub getScenario {
+    my ($scenflag) = @_;
+    my $cc = $scenflag->[0];
+    my $pollut = $scenflag->[1];
+    my $scenario = "${base}_${cc}_${pollut}_${rednflag}";
+    $scenario = "${base}" if $pollut eq "BASE" ;
+    return $scenario;
+}
+
 sub generate_updated_femis {
     my ($cc, $pollut, $redn) = @_;
-    my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ; # Initialise to 1.0
+   # Initialise to 1.0:
+    my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ; 
     if( $pollut eq "AV" ) { $voc = $nh3 = $redn  };
     if( $pollut eq "A" ) { $nh3 = $redn  };
     if( $pollut eq "V" ) { $voc = $redn  };
@@ -843,4 +856,14 @@ sub generate_updated_femis {
 
     # and to the logfile
     print "NEW FEMIS\n", $femisdat;
+}
+
+sub slurp {
+    # read the complete content of a file
+    my ($file) = @_;
+    local $/ = undef;
+    open F, $file or die "Cannot read $file: $!\n";
+    my $data = <F>;
+    close F;
+    return $data;
 }
