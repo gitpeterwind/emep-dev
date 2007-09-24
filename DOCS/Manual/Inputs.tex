@@ -5,25 +5,46 @@ EMEP model. In general, the larger input files
 are in netCDF format, and the smaller ones in ASCII.
 Table~\ref{Tab:Inputs} lists the files used.
 
+\section{NetCDF file formats}
+
+The Meteorology and Boundary and Initial conditions files are provided
+in NetCDF format.  3 hr meteorological outputs of the 
+operational model HIRLAM for the year *2000* is used as the input
+meteorology for EMEP.  These are daily files. \\
+
+The boundary and Initial conditions file contain the boundary
+conditions for the chemical species.  This monthly file contains the
+3-D concentration and background concentrations  of the advected
+species.  See 'BoundaryConditions\_ml.f90' routine of the model source
+code for more details about this data set.  
+
 \section{ASCII file formats}
 
+All other files including the emissions, landuse, snowcover etc., are
+in ascii format.  All ascii input files contain a few lines header
+information of the corresponding file.   \\
 
-\subsubsection*{An example file:}
+Gridded emission files contain 16 columns where the first column
+represents the country code, the second and third are the 'i' and 'j'
+indexes of the model grid, the fourth and fifth are the low and high,
+and the rest 11 columns represents the emission sectors. An arbitrary
+example file would look like  
 
-%\fbox{
+\textbf{An example file:}
+
 \begin{verbatim}
-# "Example of EMEP Input file"
-:  Key1 Value1
-:  year  2007
-:  version rv2_9_8
- mm yy dd v1 v2  #HEADERS
- -  -  - m/s m/s #SKIP 
-#DATA:
- 02,07, 28,1.2 ,2.3
- 02, 07, 29,2.4 ,1.2
- 02,07, 30,12.2,6.7
+
+#countrycode i j low high sectors1 2 3 4 5 6 7 8 9 10 11 
+1 1 4 20.8 1.0 0.0 7.9 0.6 0.0 0.0 0.0 6.4 4.1 0.8 0.0 0.0
+1 1 5 24.0 0.0 2.5 5.7 0.8 0.0 3.0 5.0 4.4 2.1 0.5 0.0 0.0
+1 1 7 29.7 0.0 5.5 8.9 0.6 0.0 0.0 0.0 8.4 5.1 1.2 0.0 0.0
+..................
+etc..........
+
 \end{verbatim}
-%} % fbox
+
+
+
 
 \bigskip
 
@@ -63,7 +84,7 @@ a starting \# or ending \#SKIP).
 \begin{tabular}{lcccc}\hline
 Data & name (in F90 code) & format& comment\\ \hline
 Meteorology&filNNNN&special/NetCDF& special treatment \\
-Boundary Conditions&POLL.MM&list&\\
+Boundary Conditions&Boundary\_and\_Initial\_Conditions.nc&NetCDF&\\
 %LOGAN BC&&&&not used?\\
 Land use&landuse.dat&i j x1-x18& Deposition \\ %dsskip first line\\
 Snow cover&snowcMM.dat&i j x& Deposition\\
@@ -71,7 +92,7 @@ Emissions&gridPOLL&i j x1-x13&\\
 Natural SO2&natso2MM.dat&i j x&\\
 Forest&forest.dat&i j x1-x6&for BVOC \\ %ds skip first line\\
 Volcanoes&Volcanoes.dat&i j k&   \\ %ds comment lines\\
-Lightning&lightnMM.dat&??& \\
+Lightning&lt21\_nox.datMM&??& \\
 Sondes&sondes.dat& Name i j k AA& Output sites\\
 Sites&sites.dat  & Name i j k AA& Output sites\\ \hline
 \end{tabular}
@@ -89,7 +110,7 @@ Time series for emissions&MonthlyFac.POLL&EMEP&i j x1-x12&\\
 Time series for emissions&DailyFac.POLL&EMEP&i j x1-x7&\\
 PM Splits                   &pm25split.defaults&& \\
 VOC Splits&vocsplit.defaults&& \\
-femis.dat           &             & & Modified emissions \\
+femis.dat           & femis.dat    & & Modified emissions \\
 Landcover parameters& DO3SE\_inputs.csv && Dep. module \\
 %Landcover parameters&MM\_gfac1.dat&& Dep. module \\
 %Landcover parameters&lde\_gfac2.dat&& Dep. module \\
