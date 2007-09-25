@@ -41,7 +41,7 @@
           rh                  & ! RH (fraction, 0-1)
          ,amk                 & ! M - atmospheric conc.
          ,temp                & ! temperature
-         ,f_Riemer            &  ! weighting factor for N2O5 hydrolysis
+!hf         ,f_Riemer            &  ! weighting factor for N2O5 hydrolysis
          ,pp                     !pressure
    integer, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           itemp                  ! int of temperature

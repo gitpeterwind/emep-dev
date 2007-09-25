@@ -52,9 +52,8 @@
     ,rcss                 &  !SeaS - sea salt
     ,rh, temp, itemp,pp      &  ! 
     ,amk                  &  ! Air concentrations 
-    ,izen &
-    ,f_Riemer  !weighting factor for N2O5 hydrolysis    
-                     ! integer of zenith angle
+    ,izen                    ! integer of zenith angle
+  use N2O5_hydrolysis_ml, only : f_Riemer  !weighting factor for N2O5 hydrolysis    
   use SeaSalt_ml,        only : SS_prod 
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,           only :  current_date, date
