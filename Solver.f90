@@ -28,8 +28,7 @@
     use GenSpec_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
     use GenSpec_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
     use GenRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
-    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
-                                 VOLFACSO4, VOLFACNO3, VOLFACNH4
+    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv
     use My_Aerosols_ml,    only: SEASALT
     use My_Emis_ml                        ! => QRCNO, etc.
     use OrganicAerosol_ml, only: Fgas
@@ -39,11 +38,10 @@
                                  rc_Rn222,      & ! Pb210
                                  rct, rcmisc,   & ! reaction rate coeffients
                                  xn_2d,         & 
-                                 rh, f_Riemer,  & ! weighting N2O5 hydrolysis 
-                                                  ! with NO3,SO4 mass
+                                 rh,            & 
                                  rcss,amk         ! Sea salt emission rate
-!________________________________________________
-
+    use N2O5_hydrolysis_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4,&
+                                 f_Riemer! to weight the hydrolysis of N2O5 with NO3,SO4 mass
   implicit none
 
   private
