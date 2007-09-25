@@ -102,7 +102,7 @@ contains
 
         !QUERY - why does wet/dry need special treatment here?
         do i = 1, num_deriv2d
-          if ( f_2d(i)%class == "WDEP" ) then
+          if ( (f_2d(i)%class == "WDEP") .or. ( f_2d(i)%class == "PREC" )  ) then
             d_2d(i,:,:,IOU_INST) = 0.0
           else if ( f_2d(i)%class == "DDEP" ) then
             d_2d(i,:,:,IOU_INST) = 0.0
