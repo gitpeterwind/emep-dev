@@ -24,7 +24,7 @@ module ModelConstants_ml
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   4       & ! Actual number of processors in longitude
+    NPROCX      =   8       & ! Actual number of processors in longitude
   , NPROCY      =   4       & ! Actual number of processors in latitude
   , NPROC       = NPROCX * NPROCY
 
@@ -127,45 +127,6 @@ integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  test hfTD
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
 
     real, public, parameter   :: MFAC = 0.001*AVOG/ATWAIR
-
-
-!===========================================================================
-! N2O5 -> nitrate calculation. Some constants for
-! calculation of volume fraction of sulphate aerosol, and rate of uptake
-! From EMEP Status Report 2/98
-!
-!     volume fraction of sulphate:
-!     V = (so4 + ammonium sulphate - in moleculescm-3) x atw sulphate
-!         ---------------------------------------------------------
-!                 A0 X specific density of aerosols (assumed 4 OR 2 ??? )
-!
-!    Or, shorter, V = S x M0/(AVOG*rho)
-!
-!    where S is conc. sulphate (molecule/cm3), M0 is molwt. (96)
-!
-!    We do not want to include  concentrations  yet, so:
-!
-!     Let V0 =  M0/(AVOG*rho) = 96.0/(AVOG*2.0)
-!   
-!        
-!  Rate coefficient, simplified form of Dentener and Crutzen
-!    k =  V * 3/4*alpha * vav /raero
-!        alpha is sticking coeff. for N2O5   (=0.1)
-!        raero is mean aerosol radius in accumulation mode (0.034 x 10^-6 m)
-!
-!    Collect constants in VOLFAC:
-!    VOLFAC =  V0* 3/4*alpha/raero
-!===========================================================================
-!  real, parameter, public  :: VOLFAC = 96.0/(AVOG*2.0) * 0.75 *0.1/0.034e-6
-!HF 3/r REPLACED BY surface/volume calculated using Whitby particle distribution
-!with number mean radius 0.034  and standars deviation (Sigma)=2. 
-! Then surface/volume=3/r *  exp( -5/2 *(lnSigma)^2)=26.54 
-! 3* exp( -5/2 *(lnSigma)^2)=0.90236
-! Before: monodisperse aerosols; 3/r=88.2
-
-  real, parameter, public  :: VOLFACSO4 = 96.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-  real, parameter, public  :: VOLFACNO3 = 62.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-  real, parameter, public  :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
 
 
 end module ModelConstants_ml
