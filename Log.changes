@@ -1,3 +1,19 @@
+============== rv2_9_11, Sept.  25th 2007  ==============================================
+
+Dave:
+MicroMet_ml introduced - has MM functions from Functions_ml
+DryDep  - now use MicroMet_ml
+
+chmod a-x *.f90 etc. applied..
+
+NLANDUSE now only from ModelConstants_ml, (old NNLANDUSE dropped)
+DepVariables now "uses" ModelConstants_ml
+
+gc_com_for_1proc deleted
+
+Semeena:
+DOC updates
+
 ============== rv2_9_10, Sept.  25th 2007  ==============================================
 Hilde:
 PhyChem:

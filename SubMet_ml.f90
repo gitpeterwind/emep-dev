@@ -10,7 +10,7 @@ module SubMet_ml
 
 !ToDo: do something with ios
 
-use Functions_ml, only :  PsiH, PsiM, AerRes    !functions
+use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
 use Io_ml, only : IO_STAB, open_file
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 use TimeDate_ml, only: current_date

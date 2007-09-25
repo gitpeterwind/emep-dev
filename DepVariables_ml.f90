@@ -1,4 +1,5 @@
 module DepVariables_ml
+  use ModelConstants_ml, only : NLANDUSE
 
 !DESCRIPTION
 ! Module containing main variables and parameters associated with the
@@ -9,9 +10,8 @@ module DepVariables_ml
 ! Mediterranean orchard may be added later. 
 
 implicit none
-!FDS private
 
-integer, public, parameter :: NLANDUSE =   19 !number of land-use classes
+!DOSE integer, public, parameter :: NLANDUSE =   19 !number of land-use classes
 integer, public, parameter :: LU_WATER =   14 !  Sea/lakes
 integer, public, parameter :: LU_ICE   =   15 !  Ice  ! Pb210 - temporary
 real,    public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
@@ -25,7 +25,7 @@ integer, public, save :: lc_ice               !  Sea/lakes
 integer, public, parameter,dimension(2) :: ECO_CONIF_FOREST =  (/ 1, 3 /)
 integer, public, parameter,dimension(2) :: ECO_DECID_FOREST =  (/ 2, 4 /)
 integer, public, parameter,dimension(3) :: ECO_CROP =  (/ 5, 6,7 /) 
-!ds After discussions with Max Posch (CCE), we define seminat as basically
+! After discussions with Max Posch (CCE), we define seminat as basically
 !   everything except awater, forest and crops
 !   8=moorland, grass=9, medscrub=10,wetlands=11,tundra=12
 integer, public, parameter,dimension(5) :: ECO_SEMINAT =  (/ 8, 9, 10, 11, 12 /)

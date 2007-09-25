@@ -2,8 +2,7 @@ module Landuse_ml
 
 use CheckStop_ml,      only: CheckStop
 use KeyValue_ml,       only: KeyVal,KeyValue, LENKEYVAL
-use DepVariables_ml,only: NLANDUSE         &  ! No. land-classes
-                      ,luname              &
+use DepVariables_ml,only: luname              &
                       ,crops, bulk, water  & ! logical variables
                       ,IAM_MEDOAK,IAM_WHEAT& !
                       ,LU_WATER, LU_ICE    & ! Pb210
@@ -28,7 +27,7 @@ use GridValues_ml,  only: gb_glob, gb, i_fdom, j_fdom, & ! latitude, coordinates
                           i_local, j_local, &
                          debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, IO_FORES,Read_Headers,read_line, Read2DN
-use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NNLANDUSE, &
+use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSE, &
                           NPROC, IIFULLDOM, JJFULLDOM, &
                           DomainName
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
@@ -103,19 +102,18 @@ end subroutine Init_Landuse
 subroutine ReadLanduse()
 
    integer :: i_fdom, j_fdom, i,j,lu, index_lu, maxlufound
-   real, dimension(NNLANDUSE) :: tmp
-   character(len=20), dimension(NNLANDUSE+10) :: Headers
-   character(len=(NNLANDUSE+10)*20) :: txtinput  ! Big enough to contain one full input record
+   real, dimension(NLANDUSE) :: tmp
+   character(len=20), dimension(NLANDUSE+10) :: Headers
+   character(len=(NLANDUSE+10)*20) :: txtinput  ! Big enough to contain one full input record
    type(KeyVal), dimension(10)      :: KeyValues ! Info on units, coords, etc.
-   real, dimension(NNLANDUSE+1) :: tmpmay
-   real, dimension(MAXLIMAX,MAXLJMAX,NNLANDUSE):: landuse_in ! tmp, with all data
+   real, dimension(NLANDUSE+1) :: tmpmay
+   real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSE):: landuse_in ! tmp, with all data
 
    integer :: ncodes, kk, i_water ! debug
    integer :: NHeaders, NKeys, Nlines
    logical :: debug_flag
 
    if ( DEBUG_DEP ) write(*,*) "LANDUSE: Starting ReadLandUse, me ",me
-   call CheckStop(NLANDUSE, NNLANDUSE, "ReadLandUse NLAND check")
 
    maxlufound = 0   
    Nlines = 0
@@ -124,7 +122,7 @@ subroutine ReadLanduse()
    landuse_codes(:,:,:)  = 0       !/**  initialise  **/
    landuse_data  (:,:,:) = 0.0     !/**  initialise  **/
 
-   call Read2DN("Inputs.Landuse",NNLANDUSE,landuse_in)
+   call Read2DN("Inputs.Landuse",NLANDUSE,landuse_in)
 
    !call CheckStop( KeyValue(KeyValues,"Units"), "PercentGrid" , "Landuse: Units??")
    !call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
@@ -145,7 +143,7 @@ subroutine ReadLanduse()
            do i = li0, li1
            do j = lj0, lj1
            if( gb(i,j) > 50.0 ) landuse_in(i,j,IAM_MEDOAK ) = 0.0
-           do lu = 1, NNLANDUSE
+           do lu = 1, NLANDUSE
               if ( landuse_in(i,j,lu) > 0.0 ) then
 
                  call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &

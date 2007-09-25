@@ -17,15 +17,15 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-       RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+ !      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
  !TESTER 
- !  RUNDOMAIN = (/  86, 107,  70, 102 /)     ! (changeable)
+   RUNDOMAIN = (/  86, 107,  70, 102 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   8       & ! Actual number of processors in longitude
-  , NPROCY      =   4       & ! Actual number of processors in latitude
+    NPROCX      =   3       & ! Actual number of processors in longitude
+  , NPROCY      =   2       & ! Actual number of processors in latitude
   , NPROC       = NPROCX * NPROCY
 
   ! For debugging, we often want to print out for  a specific location
@@ -37,7 +37,7 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
  ! integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
-integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  test hfTD
+integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  Mid-Europe
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
 
 !=============================================================================
@@ -60,7 +60,7 @@ integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  test hfTD
   integer, public, parameter ::  &
     IIFULLDOM   = 170   &    ! x-Dimensions of full domain
   , JJFULLDOM   = 133   &    ! y-Dimensions of full domain
-  , NNLANDUSE    = 19    &    ! Number of land use types  (SEI, JUN06)
+  , NLANDUSE    = 19    &    ! Number of land use types in Inputs.Landuse file
 !
   , METSTEP      = 3     &    ! time-step of met. (h)
   , KMAX_MID     = 20    &    ! Number of points (levels) in vertical

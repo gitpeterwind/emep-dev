@@ -44,7 +44,7 @@ module DryDep_ml
  use Chemfields_ml , only : cfac!,xn_adv
  use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
 
- use Functions_ml,   only : AerRes,PsiM
+ use MicroMet_ml,    only : AerRes,PsiM
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
                             i_fdom, j_fdom   ! for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
