@@ -471,9 +471,12 @@
 !6sj     !       rcmisc(8,k) = VOLFAC * tab_vav_n2o5( itemp(k) ) * rh(k)
 !            rcmisc(8,k) = VOLFAC * rh(k) &
 !                * sqrt(3.0 * RGAS_J * itemp(k) / 0.108)  ! m/s !
-            rcmisc(8,k) = (2.5 - rh(k)*1.25) & !density, corrected for rh (moderate approx.)
-                                               !VOLFAC now in My_Reactions
-                * sqrt(3.0 * RGAS_J * itemp(k) / 0.108)  ! m/s !
+!hf bug           rcmisc(8,k) = (2.5 - rh(k)*1.25)/&
+!hf bug                sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean molecular speed,m/s !
+            rcmisc(8,k) = &
+                sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean molecular speed,m/s !
+            /(4*(2.5 - rh(k)*1.25))!density, corrected for rh (moderate approx.)
+                                   !VOLFAC now in My_Reactions
           else
             rcmisc(8,k) = 0.0
           endif
