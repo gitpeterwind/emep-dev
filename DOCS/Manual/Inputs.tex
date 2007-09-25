@@ -5,12 +5,12 @@ EMEP model. In general, the larger input files
 are in netCDF format, and the smaller ones in ASCII.
 Table~\ref{Tab:Inputs} lists the files used.
 
-\section{NetCDF file formats}
+\section{NetCDF files}
 
 The Meteorology and Boundary and Initial conditions files are provided
 in NetCDF format.  3 hr meteorological outputs of the 
-operational model HIRLAM for the year *2000* is used as the input
-meteorology for EMEP.  These are daily files. \\
+operational model HIRLAM is used as the input
+meteorology for EMEP.  These are available as daily files. \\
 
 The boundary and Initial conditions file contain the boundary
 conditions for the chemical species.  This monthly file contains the
@@ -18,7 +18,7 @@ conditions for the chemical species.  This monthly file contains the
 species.  See 'BoundaryConditions\_ml.f90' routine of the model source
 code for more details about this data set.  
 
-\section{ASCII file formats}
+\section{ASCII files}
 
 All other files including the emissions, landuse, snowcover etc., are
 in ascii format.  All ascii input files contain a few lines header
@@ -26,11 +26,17 @@ information of the corresponding file.   \\
 
 Gridded emission files contain 16 columns where the first column
 represents the country code, the second and third are the 'i' and 'j'
-indexes of the model grid, the fourth and fifth are the low and high,
-and the rest 11 columns represents the emission sectors. An arbitrary
-example file would look like  
+indexes of the model grid, the fourth and fifth are the total emissions from
+lowest (below 100 m of the model level, mainly from traffic,
+agricultural emissions etc.,) and highest sources (above 100 m of the
+model level, which are from industry, power plants etc.),
+and the rest 11 columns represents the emission sectors. Sector means
+the source type of emissions from each country and there are 11
+sectors defined in EMEP.  A listing of all type
+of sectors are given in 'Def\_ml.f90' of the mode source code.   An arbitrary
+example file would look like  \\
 
-\textbf{An example file:}
+\textbf{An example emission file:}
 
 \begin{verbatim}
 
@@ -43,9 +49,71 @@ etc..........
 
 \end{verbatim}
 
+Landuse data are required in the model, primarily for dry
+depositon modelling and for estimation of biogenic emissions.  EMEP
+model can accept landuse data from any dataset covering the whole of
+the domain and providing reasonable resolution of vegetation
+categores.  Gridded data-sets providing these landuse categories
+across the EMEP domain have been created based on the data from the
+Stockholm Environment Institute ar York (SEI-Y) and form the
+Coordinating Centre for Effects (CCE).\\
 
+ 16 basic landuse classes have
+been identified for the use of deposition module in the model and they
+are Temperate/boreal coniferous forests (CF), Temperate/boreal
+deciduous forests (DF), Mediterranean needleleaf forests (NF),
+Mediterranean broadleaf forests (BF), Temperate Crops (TC),
+Mediterranean Crops (MC), Root Crops (RC), Seminatural/Moorland (SNL),
+Grassland (GR), Mediterranean Scrub (MS), Wetlands (WE), Tundra (TU),
+Desert (DE), Water (W), Ice (I), and Urban (U).  They are listed in
+columns followed by the 'i' and 'j' indexes of the
+grids. Input file header explains in detail about all the
+columns. \\
 
+Snowcover and Natural SO2 emissions are provided as monthly gridded
+files and they are stored in columns of 'i', 'j', and the
+'values'. 'Inputs.BVOC' file provide the biogenic VOC emissions.  They
+are provided in 4 columns being the first and second as usual
+represent the 'i' and 'j' indexes of the model grid and the third and
+fourth columns represent the isoprene and terpene emissions in unit of
+``$ug/m^{2}/h$''.\\
+ 
 
+To consider the volcanic emissions, we need to feed the location and
+height of volcanoes into the model.  This is provided with the
+'Volcanoes.dat' file and the columns in this file represent the 'i'
+and j' indexes of the model grid and the third column represent the
+model level where the mouth of the volcanoe stands, based on their
+height.  The input file contains only two volcanoes which are the only
+active volcanoes in Europe.  You might notice that 'Etna, Italy'
+appears twice in the input file, which is due to its large base area
+it shares two grids in the model.  \\
+     
+
+NO$_{x}$ emissions from Aircraft and lightning are also included in the
+model. Seasonal commercial aircraft emissions and annual military
+aircraft emissions are read in as gridded data from the same file.
+The lightning emissions are provided as monthly files for the whole
+year.      \\
+
+Time factors for emission depending on the chemical compound, sector,
+and country for day of the week or month of the year are provided with
+the 'DailyFac.pollutnat' and 'MonthlyFac.pollutant' files.  Data are
+stored in columns of 'i','j', factors corresponding to each day of the
+week in 7 consecutive columns in case of DailyFac file and factors
+corresponding to each month of the year in 12 consecutive columns in
+case of MonthlyFac file.\\  
+
+The model also need a split file for some of the emission files.  For
+egs., only one emission file is provided for NO$_{x}$.  The amount of
+NO$_{2}$ compared to other NO is determined by the split file.  It is
+land and sector dependent.  The same is true for PM25 and VOC, but
+there are more PM25 and much more VOC types present. \\ 
+
+Finally the 'femis.dat' file is provided for setting up a 'scenario run'.  See
+chapter 4, 'Submitting a run' for the details about this file.  
+
+ 
 \bigskip
 
  The input files are designed to read nicely in gnumeric and other spread-
@@ -80,41 +148,26 @@ a starting \# or ending \#SKIP).
 
 \begin{table}[h]
 \caption{Gridded Input Files. NNNN: number, MM: month, POLL: pollutant, AA: text}
-\label{Tab:GridInputs}
-\begin{tabular}{lcccc}\hline
-Data & name (in F90 code) & format& comment\\ \hline
-Meteorology&filNNNN&special/NetCDF& special treatment \\
-Boundary Conditions&Boundary\_and\_Initial\_Conditions.nc&NetCDF&\\
-%LOGAN BC&&&&not used?\\
-Land use&landuse.dat&i j x1-x18& Deposition \\ %dsskip first line\\
-Snow cover&snowcMM.dat&i j x& Deposition\\
-Emissions&gridPOLL&i j x1-x13&\\
-Natural SO2&natso2MM.dat&i j x&\\
-Forest&forest.dat&i j x1-x6&for BVOC \\ %ds skip first line\\
-Volcanoes&Volcanoes.dat&i j k&   \\ %ds comment lines\\
-Lightning&lt21\_nox.datMM&??& \\
-Sondes&sondes.dat& Name i j k AA& Output sites\\
-Sites&sites.dat  & Name i j k AA& Output sites\\ \hline
-\end{tabular}
-\end{table}
-%In addition aircraft NOx emissions are hardcoded in the Fortran code (AirEmis\_ml.f90).
- 
-%\section{List of non-gridded input files}
-
-\begin{table}[h]
-\caption{Non-grid Input Files.}
 \label{Tab:Inputs}
-\begin{tabular}{lcccc}\hline
-Data & name   &format& comment\\ \hline
-Time series for emissions&MonthlyFac.POLL&EMEP&i j x1-x12&\\
-Time series for emissions&DailyFac.POLL&EMEP&i j x1-x7&\\
-PM Splits                   &pm25split.defaults&& \\
-VOC Splits&vocsplit.defaults&& \\
-femis.dat           & femis.dat    & & Modified emissions \\
-Landcover parameters& DO3SE\_inputs.csv && Dep. module \\
-%Landcover parameters&MM\_gfac1.dat&& Dep. module \\
-%Landcover parameters&lde\_gfac2.dat&& Dep. module \\
-%Landcover parameters&lde\_biomass.dat&&Dep. module  \\\hline
+\begin{tabular}{lccc}\hline
+Data & name (in F90 code) & format\\ \hline
+Meteorology&filNNNN&NetCDF\\
+Boundary Conditions&Boundary\_and\_Initial\_Conditions.nc&NetCDF\\
+%LOGAN BC&&&&not used?\\
+Land use&landuse.dat&i j x1-x18 \\ %ds skip first line\\
+Snow cover&snowcMM.dat&i j x\\
+Emissions&gridPOLL&i j x1-x13\\
+Natural SO$_{2}$&natso2MM.dat&i j x\\
+BVOC&Inputs.BVOC&i j x1-x6 \\ %ds skip first line\\
+Volcanoes&Volcanoes.dat&i j k   \\ %ds comment lines\\
+Time series for emissions&MonthlyFac.POLL&EMEP\\
+Time series for emissions&DailyFac.POLL&EMEP\\
+Lightning&lt21\_nox.datMM&??& \\
+PM Splits  &pm25split.defaults&ascii \\
+VOC Splits&vocsplit.defaults&ascii \\
+NO$_{x}$ Splits& nixsplit.defaults&ascii\\
+femis.dat & femis.dat    & ascii  \\
 \hline
 \end{tabular}
 \end{table}
+

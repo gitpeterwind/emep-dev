@@ -1,11 +1,6 @@
 \chapter{Outputs}
-\label{OUTPUTS}
+\label{Output:ascii}
 
-%%%%%%%%%%%%%% Sites and Sondes %%%%%%%%%%%%%%%%%%
-\input{Sites}
-
-
-%%%%%%%%%%%%%% Hourly %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Output files are written out in NetCDF format.  
 Model will write the output files into your working directory (see the
 runscript 'run.pl' where you have set the working directory
@@ -17,6 +12,122 @@ output respectively.  You can also provide a better self descriptive
 name for the experiments and then the outputs will be written out with
 this experiment name as the base name. This is done in the run
 script (ref. Chapter 4).  
+
+
+\section{sites and sondes}
+
+
+Two main options are available for the output of ascii files for comparison
+with measurements or detailed model analysis. These are
+
+\begin{description}
+\item[sites]  
+
+      output of surface concentrations for a set of specified
+      measurement site locations.
+\item[sondes] 
+
+      output of concentrations for the vertical column above
+     a set of specified locations.
+\end{description}
+
+Both sites and sondes are specified and handled in similar ways, in
+the module {\bf Sites\_ml}, so we treat them both together below.
+
+Locations are specified in input files ('sites.dat' and 'sondes.dat')
+whose directory-locations should be specified in {\bf run.pl}.
+sites.dat and sondes.dat start with a description of the file contents
+followed by a list of the stations. For example, a sondes.dat file
+may look like this:
+
+
+\begin{small}
+\begin{verbatim}
+# "Sondes: names, locations, elevations"
+# "Area: EMEP-Europe"
+# "ix: x coordinate"
+# "iy: y coordinate"
+# "lev: vertical coordinate (20=ground)"
+: Units index
+: Coords ModelCoords
+: VertCoords EMEPsigma
+: DomainName EMEP-50kmEurope
+#
+name ix iy lev #HEADERS
+-    index index level #SKIP
+#DATA:
+Col_Dome          104   45  20  ! comment
+Sonnblick         109   55  20  ! comment
+Colle_Gnifetti    105   47  20  ! comment
+Schauinsland      101   51  20  ! comment
+Mt._Zeppelin       59  104  20  ! comment
+\end{verbatim}
+\end{small}
+
+Or, in cases where latitudes and longitudes are used rather than grid
+indices to specify the locations of the stations:
+
+\begin{small}
+\begin{verbatim}
+# "Sondes: names, locations, elevations"
+# "Area: Northern Hemisphere"
+# "latitude in degrees (positive north)"
+# "longitude in degrees (positive east of Greenwich)"
+: Units deg
+: Coords LatLong
+: VertCoords EMEPsigma
+: DomainName Hemis
+#
+name lat long lev #HEADERS
+-    deg deg level #SKIP
+#DATA:
+Uccle             50.80    4.35  20  ! comment
+Lerwick           60.13   -1.18  20  ! comment
+Sodankyla         67.39   26.65  20  ! comment
+Ny_Alesund        78.93   11.88  20  ! comment
+Hohenpeissenberg  47.80   11.02  20  ! comment
+\end{verbatim}
+\end{small}
+
+The first line in each file is a header telling what is in the file.
+Then, the contents are described in more detail. Text strings after
+\# are just clarifying comments. 'Area', e.g., is the domain to which
+the stations belong, e.g. 'Northern Hemisphere'.
+
+Text after ':' is read in by the model:\newline
+- Units: either 'deg' (degrees) or 'index' (model grid indices)\newline
+- Coords: either 'LatLong' (latitudes/longitudes) or 'ModelCoords'
+(indices of the grid box in which the station is located)\newline
+- VertCoords: vertical coordinate system that is used in the model (usually
+'EMEPsigma')\newline
+- DomainName: domain, for which the model is run (e.g. 'Global\_1x1' or 'Hemis')\newline
+
+Subsequently, the headers of the table columns are specified, e.g.
+name (of the station), lat (latitude), long (longitude), and lev
+(number of model level corresponding to station elevation),
+followed by a line giving the units.
+Finally the stations are listed. After the exclamation mark comments
+can be added where needed.
+\newline
+\newline
+Plans for the near future:\newline
+- use the same file for all domains (GLOBAL, HEMIS, EMEP)\newline
+- use latitudes/longitudes only instead of grid indices\newline
+- specify the station level in meters asl\newline
+\newline
+These changes would eliminate the need to specify 'Units',
+'Coords' and 'DomainName', and also simplify the path in run.pl
+\newline
+
+Both sites.dat and sondes.dat files are optional.
+\newline
+The species and meteorological data required are specified in {\bf My\_Outputs}
+through the use of arrays. Only a few met fields are defined so far but
+more can be added into {\bf Sites\_ml} as required. The outputs consist
+of a header giving the number of sites used, species/met data used, and
+then actual values specified with a 5es10.3 format. For the sonde data
+values are given for all 20 levels, starting with the ground-level values.
+
 
 \section{Hourly out}
 
