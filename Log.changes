@@ -1,3 +1,13 @@
+Hilde:
+Updates related to N2O5 hydrolysis:
+
+N2O5_hydrolysis_ml : added
+Setup_1dfields_ml.f90: f_Riemer moved to N2O5_hydrolysis_ml
+Setup_1d_ml.f90:  f_Riemer  from N2O5_hydrolysis_ml
+Solver.f90: f_Riemer,VOLFAC from N2O5_hydrolysis_ml
+ModelConstants_ml.f90: VOLFAC moved to N2O5_hydrolysis_ml
+My_Chem_ml: bug in rcmisc(8,k). This bug makes the new reaction rate (for the N2O5 hydrolysis) 4-8 times smaller
+
 ============== Semeena, Heiko, rv2_9_9, Sept.  23rd 2007  =================================
 
 Updates to documentation
