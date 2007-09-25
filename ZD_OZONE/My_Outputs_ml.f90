@@ -1,36 +1,38 @@
-module  My_Outputs_ml
+!_____________________________________________________________________________
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+
+                          module  My_Outputs_ml
+
+! MOD OD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 ! -----------------------------------------------------------------------
 ! Allows user to specify which species are output to various
 !  ascii and binary output files.
 !
-! From Steffen's Output_defs_ml, re-coded by ds to apply to site,
-! sonde and hourly ouytputs, and to use "type" arrays.
-!
 ! Sites  - surface sites,     to sites.out
 ! Sondes - vertical profiles, to sondes.out
 ! Hourly - ascii output of selected species, selcted domain
-! Restri - Full 3-D output of all species, selected domain
+! -----------------------------------------------------------------------
 
-use Derived_ml, only : f_2d, d_2d
-use TimeDate_ml,   only : date  
-use GenSpec_adv_ml
-use GenSpec_shl_ml, only: & ! =>> IXSHL_xx
-                IXSHL_OH,IXSHL_HO2
-use GenChemicals_ml ,  only: species
-use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
-use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
-use SmallUtils_ml, only: find_index
-implicit none
+  use CheckStop_ml,     only: CheckStop
+  use Derived_ml,       only: f_2d, d_2d
+  use GenSpec_adv_ml
+  use GenSpec_shl_ml,    only: IXSHL_OH,IXSHL_HO2
+  use GenChemicals_ml ,  only: species
+  use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
+  use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
+  use SmallUtils_ml,     only: find_index
+  use TimeDate_ml,       only: date 
+ 
+  implicit none
 
 INCLUDE 'mpif.h'
 INTEGER STATUS(MPI_STATUS_SIZE),INFO
 logical, public, parameter :: out_binary = .false.
 logical, public, parameter :: Ascii3D_WANTED = .false.
 
-! out_binary = .True. gives also binary files (for use in xfelt).
-!NB: This option is only for safety:
-!    only NetCDF output will be availble in the future.
 
 ! Site outputs   (used in Sites_ml)
 !==============================================================
@@ -58,11 +60,6 @@ integer, public, parameter :: &
    character(len=10), public, parameter, dimension(NXTRA_SITE) :: &
      SITE_XTRA=  (/ "hmix    ", "th      "/) 
 !    SITE_XTRA=  (/ "hmix    ", "Vg_ref  ", "Vg_1m   " /) 
-!    SITE_XTRA=  (/ "th      ", "hmix    ", "Vg_ref  ", "Vg_1m   ", &
-!   SITE_XTRA=  (/ "FSTCF0  ", "FSTDF0  ", "FSTTC0  ", "FSTMC0  ", &
-!                  "FSTGR0  ", "FSTWH0  ", &  
-!                  "O3CF    ", "O3DF    ", "O3TC    ", "O3GR    ", &
-!                  "O3WH    " /) 
 
  !    - can access d_2d fields through index here, by
  !     setting "D2D" above and say D2_FSTCF0 here:
@@ -74,7 +71,7 @@ integer, public, parameter :: &
 
    !/*** Aircraft outputs   (used in Polinat_ml)
    !==============================================================
-   !     Specify the species to be output by Polinat for aircraft flight tracks
+   !   Specify the species to be output by Polinat for aircraft flight tracks
 
    integer, public, parameter :: &
      NFLIGHT_MAX =    10               &   ! Max. no sondes allowed
@@ -116,40 +113,35 @@ integer, public, parameter :: &
     SONDE_SHL =  (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 !    SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /) 
-    SONDE_XTRA=  (/ "NOy  ", "z_mid", "p_mid", "th   " /)  ! Height at mid-cell
-    !SONDE_XTRA=  (/ "z_mid", "p_mid", "th   ","RH   " /)  ! Height at mid-cell
+    SONDE_XTRA=  (/ "NOy  ", "z_mid", "p_mid", "th   " /) !Height at mid-cell
 
  !   can access d_3d fields through index here, by
  !   setting "D3D" above and say D3_XKSIG12 here:
 
    integer,           public, parameter, dimension(NXTRA_SONDE) :: &
-    !SONDE_XTRA_INDEX=  (/     0, 0, 0, 0, 0, 0 /)
-    SONDE_XTRA_INDEX=  (/      0, 0, 0, 0 /)
+                    SONDE_XTRA_INDEX=  (/      0, 0, 0, 0 /)
 
 
 
-   !==============================================================
+   !====================================================================
    !/*** Hourly outputs   (from hourly_out routine) to print out
-   !     concentrations every hour (or multiple: HOURLY_FREQ) for specified 
-   !     sub-grid.
-   !     Or even met. data (only temp2m specified so far  - others
-   !     need change in hourly_out.f also).
+   !     concentrations  or even met. parameters every hour 
+   !     (or multiple: HOURLY_FREQ) for specified sub-grid.
+   !     Note: as to met. parameters, only temp2m Th arespecified   
+   !           so far- others need change in hourly_out.f also).
 
-   !----------------------------------------------------------------
-   ! Possibility of multi-layer output. Specify
-   ! NLEVELS_HOURLY here, and in hr_out defs use either:
+   !-------------------------------------------------------------------
+   !  Possibility of multi-layer output. Specify NLEVELS_HOURLY here
+   !  and in hr_out defs use either:
    !
-   !      ADVppbv to get surface concentrations (onyl relevant for 
-   !              layer k=20 of course - gives meaningless  number f
-   !               or higher levels.
-   !Or,
-   !      BCVppbv to get grid-centre concentrations (relevant for 
-   !      all layers.
+   !  ADVppbv to get surface concentrations (only relevant for layer k=20 
+   !  while gives meaningless  number for higher levels.
+   !
+   !  Or BCVppbv to get grid-centre concentrations (relevant for all layers)
    !----------------------------------------------------------------
 
     logical, public, parameter :: Hourly_ASCII = .false.
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
-     !NB: This option is only for safety: only NetCDF output will be availble in the future.
 
     integer, public, parameter :: NHOURLY_OUT =  1 ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
@@ -165,7 +157,7 @@ integer, public, parameter :: &
          integer          :: ix2    ! upper-right x
          integer          :: iy1    ! bottom-left y
          integer          :: iy2    ! upper-right y
-         integer          :: nk     ! pw 1.8.3 number of vertical levels
+         integer          :: nk     ! number of vertical levels
          character(len=12) :: unit   ! Unit used 
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
@@ -179,33 +171,15 @@ integer, public, parameter :: &
   !    in wrtchem:
 
      integer, public, parameter :: NBDATES = 3  
-     type(date), public, save, dimension(NBDATES) :: wanted_dates_bi 
+     type(date), public, save, dimension(NBDATES) :: wanted_dates_inst 
 
-
-
-!/*** Restricted outputs   (calls restri_out outine) 
-!==============================================================
-!  Output of all species, all levels, for restricted domain.
-!  parameters for the domain, which should be written - specify!!!!
-!    if you do not want to print on restricted domain:
-!    set upper bound (END) smaller than lower bound (BEG)
-
-!  integer, public, parameter ::  &
-!       ISPEC_OUTBEG = IRUNBEG  &
-!       ,JSPEC_OUTBEG = JRUNBEG  &
-!       ,ISPEC_OUTEND = IRUNBEG+GIMAX-1  &
-!       ,JSPEC_OUTEND = JRUNBEG+GJMAX-1
-  integer, public, parameter ::  &
-        ISPEC_OUTBEG = 101  &
-        ,JSPEC_OUTBEG = 51  &
-        ,ISPEC_OUTEND = -100  &     ! Set negative here to exclude
-        ,JSPEC_OUTEND = -50         ! Set negative here to exclude
-
+ !================================================================
 
    public :: set_output_defs
 
-contains
+   contains
 
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  subroutine set_output_defs
    implicit none
 
@@ -220,15 +194,11 @@ contains
 
   ! introduce some integers to make specification of domain simpler
   ! and less error-prone. Numbers can be changed as desired.
-   !merlininteger, save :: ix1 = 45, ix2 = 170, iy1=1, iy2 = 133 
-   !merlin:
-   !integer, save :: ix1 = 75, ix2 = 150, iy1=12, iy2 = 102 
-   !integer, save :: ix1 = 110, ix2 = 115, iy1=60, iy2 = 60
-   ! integer, save :: ix1 = 125, ix2 = 150, iy1=45, iy2 =  65  !! Athens/Thess. 
 
    !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  !EMEP
    integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  !restricted EMEP
-!   integer, save :: ix1 = IRUNBEG, ix2 = IRUNBEG+GIMAX-1, iy1=JRUNBEG, iy2 =  JRUNBEG+GJMAX-1  !all
+!   integer, save :: ix1 = IRUNBEG, ix2 = IRUNBEG+GIMAX-1,  &
+!                    iy1=JRUNBEG,   iy2 =  JRUNBEG+GJMAX-1   ! all
 
   ! For Deriv system:
    integer :: D2_O3WH, D2_O3DF,  &
@@ -236,33 +206,27 @@ contains
     D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
     D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6
 
-!pw:WARNING: If the specification of the subdomain is different for
+! WARNING: If the specification of the subdomain is different for
 !            different components (ix1=125 for ozone and ix1=98 for 
 !            NH4 for example) , the variables i_EMEP, j_EMEP
 !            latitude and longitude in NetCDF output will be
 !            wrong. 
 
-!jej - added 11/5/01 following Joffen's suggestion:
-
-  to_ug_S = atwS*PPBINV/ATWAIR ! in output only accounting for Sulphur
-  to_ug_N = atwN*PPBINV/ATWAIR ! in output only accounting for Nitrogen
-  to_mgSIA= PPBINV/ATWAIR*1000.
+  to_ug_S = atwS*PPBINV/ATWAIR    ! for output in ug(S)/m3
+  to_ug_N = atwN*PPBINV/ATWAIR    ! for output in ug(N)/m3
+  to_mgSIA= PPBINV/ATWAIR*1000.0
   to_ugSIA= PPBINV/ATWAIR
 
  !/** Hourly outputs
  !    Note that the hourly output uses **lots** of disc space, so specify
  !    as few as you need and with as small format as possible (cf max value).
 
- ! ** REMEMBER : ADV species are mixing ratio !!
+ ! ** REMEMBER : ADV species are mixing ratioes !!
  ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
  ! ** REMEMBER : No spaces in name, except at end !!
 
   !**               name     type   
-  !**                ofmt   ispec     ix1 ix2  iy1 iy2  nk unit conv    max
-
- !   include 'merlin_ixadv'
- !hr_out(1)=  Asc2D("o3_50m", "BCVppbv", &
- !                 "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,2, "ppbv",PPBINV,9000.0)
+  !**                ofmt   ispec     ix1 ix2  iy1 iy2  nk unit conv  max
 
  hr_out(1)= Asc2D("o3_3m", "ADVppbv", &
                   "(f9.4)",IXADV_o3, ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0)
@@ -311,15 +275,11 @@ contains
   !hr_out(3)= &
   !   Asc2D("D2D", "(f6.1)",   D2_HMIX, ix1,ix2,iy1,iy2, "m",1.0   ,10000.0)
 
-!ICP
+!Flux stuff
 !   hr_out(2)= Asc2D("Fst_TConif  ", "D2D", "(f8.5)",&
 !                  D2_FSTCF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !   hr_out(3)= Asc2D("Fst_TBroad  ", "D2D", "(f8.5)",&
 !                  D2_FSTDF0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
-!IZ    hr_out(4)= Asc2D("Fst_MConif  ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTTC0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
-!IZ    hr_out(5)= Asc2D("Fst_MBroad  ", "D2D", "(f8.5)",&
-!IZ                   D2_FSTMC0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !   hr_out(4)= Asc2D("Fst_Grass   ", "D2D", "(f8.5)",&
 !                  D2_FSTGR0, ix1,ix2,iy1,iy2, "nmole/m2/s", 1.0  ,900.0)
 !   hr_out(5)= Asc2D("Fst_Wheat   ", "D2D", "(f8.5)",&
@@ -346,21 +306,25 @@ contains
        ! We use ix1 to see if the array has been set.
 
         if ( hr_out(i)%ix1 < 1 .or.  hr_out(i)%ix1 > 999 ) then
-            errmsg = "Failed consistency check in set_output_defs"
-            print *,  errmsg, "Hourly: ", i, "Nhourly: ", NHOURLY_OUT
-              WRITE(*,*) 'MPI_ABORT: ', errmsg 
-              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+
+          write(unit=errmsg,fmt=*) "Failed consistency check in  &
+               set_output_defs: Hourly is ",i, "Nhourly is ",NHOURLY_OUT
+
+          call CheckStop(errmsg)
         end if
+
+
    end do
 
-  !/** wanted binary dates... specify days for which full binary
-  !    output is wanted. Replaces the hard-coding which was
-  !    in wrtchem:
+  !/** Wanted dates for instantaneous values output: 
+  !    specify months,days,hours for which full output is wanted.
 
-     wanted_dates_bi(1) = date(-1,1,1,0,0)
-     wanted_dates_bi(2) = date(-1,1,1,3,0)
-     wanted_dates_bi(3) = date(-1,1,1,6,0)
+     wanted_dates_inst(1) = date(-1,1,1,0,0)
+     wanted_dates_inst(2) = date(-1,1,1,3,0)
+     wanted_dates_inst(3) = date(-1,1,1,6,0)
 
  end subroutine set_output_defs
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
 end module My_Outputs_ml
 

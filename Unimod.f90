@@ -81,7 +81,6 @@ program myeul
        ,runlabel2  &   ! explanatory text
        ,nprint,nass,nterm,iyr_trend, PT
   use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
-  use out_restri_ml,    only : set_outrestri
   use OutputChem_ml,    only : WrtChem
   use Par_ml,           only : me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
        ,Topology, parinit & 
@@ -121,8 +120,6 @@ program myeul
   !
   !     parinit           - Find the x-, y-, and z-addresses of the domain 
   !                         assigned to the processor.
-  !     set_outrestri     - (in Out_restri_ml), Defines and checks the
-  !                         restricted output dommain
   !     define_chemicals  - sets up species details
   !
   !     set_output_defs   - Initialises outputs
@@ -353,7 +350,6 @@ program myeul
   !and subdomains neighbors
   call assign_dtadvec(GRIDWIDTH_M)! set dt_advec
 
-  call set_outrestri  ! Steffen's routine for restricted area output
 
 
   !     Decide the frequency of print-out

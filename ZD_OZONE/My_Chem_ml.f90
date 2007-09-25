@@ -17,21 +17,9 @@
 
    integer, public, parameter ::  NSPEC_BGN = 0 ! No. 3D bgn species
    integer, public, parameter ::  NSPEC_COL = 0 ! total no. prescribed specs
-!hf err   integer, public, parameter ::  NSPEC_BGN = 4 ! No. 3D bgn species
-!hf err   integer, public, parameter ::  NSPEC_COL = 4 ! total no. prescribed specs
 
-  !/ u2 define xn_2d_bgn here.
-   !u3 real, public, save, dimension(NSPEC_COL,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-   !u3 assign dimesnion 1 for compilation only
+  !/ define xn_2d_bgn here.
    real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-
-!hfOH BCS for species in ACID also in OZONE
-!**/ All species from previous version of OZONE, large domain
-!hf ERR   integer, public, parameter ::   & 
-!hf ERR     IXBGN_O3            =   1     &
-!hf ERR    ,IXBGN_H2O2          =   2     &
-!hf ERR    ,IXBGN_OH            =   3     &      
-!hf ERR   ,IXBGN_CH3COO2       =   4       
 
 !-----------------------------------------------------------
   end module GenSpec_bgn_ml
@@ -124,17 +112,14 @@
      IXADV_SO4         =  50   &
   ,  IXADV_pNO3        =  51   &
   ,  IXADV_NH3         =  52   &
-!hf  ,  IXADV_AMSU        =  53   &
-!hf  ,  IXADV_AMNI        =  54
   ,  IXADV_aNH4        =   53   & !total NH4
   ,  IXADV_aNO3        =   54   & !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
-!st
   ,  IXADV_PM25        =   55  &
   ,  IXADV_PMco        =   56  &
   ,  IXADV_SSfi        =   57  &  !SeaS 
   ,  IXADV_SSco        =   58  & 
-  ,  IXADV_Rn222       =   59  &  !ds apr2005
-  ,  IXADV_Pb210       =   60     !ds apr2005
+  ,  IXADV_Rn222       =   59  &  !
+  ,  IXADV_Pb210       =   60     !
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
 !>_________________________________________________________<
@@ -286,8 +271,6 @@
   ,  SO4         =  66   &
   ,  pNO3        =  67   &
   ,  NH3         =  68   &
-!hf  ,  AMSU        =  68   &
-!hf  ,  AMNI        =  69
   ,  aNH4        =   69   &
   ,  aNO3        =   70  &
   ,  PM25        =   71  &
@@ -391,8 +374,8 @@
        species( 55) = Chemical("H2O2        ",  34,  0,  0,   0,  0 ) 
        species( 56) = Chemical("CH3COO2H    ",  76,  0,  2,   0,  0 ) 
        species( 57) = Chemical("CH2CO2HCH3  ",  74,  0,  3,   0,  0 ) 
-       species( 58) = Chemical("ISONO3H     ",   1,  0,  5,   0,  0 ) !ds1
-       species( 59) = Chemical("ISNIRH      ",   1,  0,  5,   0,  0 ) !ds1
+       species( 58) = Chemical("ISONO3H     ",   1,  0,  5,   0,  0 ) 
+       species( 59) = Chemical("ISNIRH      ",   1,  0,  5,   0,  0 )
        species( 60) = Chemical("CH3OH       ",  32,  0,  1,   0,  0 ) 
        species( 61) = Chemical("C2H5OH      ",  46,  0,  2,   0,  0 ) 
        species( 62) = Chemical("H2          ",   2,  0,  0,   0,  0 ) 
@@ -402,15 +385,12 @@
        species( 66) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
        species( 67) = Chemical("pNO3        ",  62,  0,  0,   1,  0 ) 
        species( 68) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
-!hf       species( 68) = Chemical("AMSU        ", 114,  0,  0,   1,  1 ) 
-!hf       species( 69) = Chemical("AMNI        ",  80,  0,  0,   2,  0 ) 
        species( 69) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
        species( 70) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
        species( 71) = Chemical("PM25        ", 100,  0,  0,   0,  0 ) 
        species( 72) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
        species( 73) = Chemical("SSfi        ", 58,   0,  0,   0,  0 )  !SeaS
        species( 74) = Chemical("SSco        ", 58,   0,  0,   0,  0 )
-!ds apr2005 Pb210
        species( 75) = Chemical("Rn222       ", 222,   0,  0,   0,  0 )
        species( 76) = Chemical("Pb210       ", 210,   0,  0,   0,  0 )
 
@@ -426,7 +406,6 @@
   use PhysicalConstants_ml,  only : PI, RGAS_J
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
 !                                      VOLFAC        ! for N2O5-> NO3-
-!hfTD not needed anymore use Dates_ml,              only : daynumber !u7.4vg  for so2ox
 
   use Functions_ml,          only : troe
   implicit none
@@ -438,7 +417,6 @@
 
     public :: set_rcmisc_rates
 
-    !u1 integer, parameter, public :: NRCMISC = 7   !! No. coefficients
     integer, parameter, public :: NRCMISC = 18   !! No. coefficients
 
     real, save, public, dimension(NRCMISC) :: rcvmisc 
@@ -453,7 +431,7 @@
   real, intent(out),dimension(NRCMISC,KCHEMTOP:KMAX_MID) :: rcmisc
   integer :: k ! local   
   real,  dimension(KCHEMTOP:KMAX_MID) ::  n2   ! nitrogen
-  real :: lt3(KCHEMTOP:KMAX_MID)   ! u1 - for Troe
+  real :: lt3(KCHEMTOP:KMAX_MID)   !  - for Troe
   n2 = m - o2
  
        rcmisc(1,:) = 6.0e-34*m*o2*(300.0*tinv)**2.3 
@@ -464,15 +442,9 @@
        rcmisc(6,:) = (1.0+1.4e-21*h2o*exp(2200.0*tinv))*1.7e-33*exp(1000.0*tinv)*m 
        rcmisc(7,:) = 1.3e-13*(1+0.6*m/2.55e19) 
 
-!v1 from odin.x3
 
        do k = KCHEMTOP, KMAX_MID
           if ( rh(k) > 0.4) then
-!6sj     !       rcmisc(8,k) = VOLFAC * tab_vav_n2o5( itemp(k) ) * rh(k)
-!            rcmisc(8,k) = VOLFAC * rh(k) &
-!                * sqrt(3.0 * RGAS_J * itemp(k) / 0.108)  ! m/s !
-!hf bug           rcmisc(8,k) = (2.5 - rh(k)*1.25)/&
-!hf bug                sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean molecular speed,m/s !
             rcmisc(8,k) = &
                 sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean molecular speed,m/s !
             /(4*(2.5 - rh(k)*1.25))!density, corrected for rh (moderate approx.)
@@ -488,12 +460,10 @@
      end if
        end do ! k
 
-    !ux - new SO2 -> SO4 method from old MADE/hf code
-
-    !ds rcmisc(9,:) = tab_so2ox(daynumber)
+    ! - new SO2 -> SO4 method from old ACID code
 
 
-    !u1 - troe stuff put here to simplify .....
+    ! - troe stuff put here to simplify .....
 
   lt3(:) = log(300.0*tinv(:))
 
@@ -522,21 +492,20 @@ end module  GenRates_rcmisc_ml
 
   !+ Tabulates Rate-coefficients - temperature dependant 
 
-!u3    public :: set_rct_rates
     public :: set_rct_rates, set_night_rct
 
     integer, parameter, public :: NRCT = 37   !! No. coefficients
 
     real, save, public, dimension(NRCT) :: rcvt 
 
-!u3
-!/ Output gas-phase chemical rates:   !u3 - from Tabulations
+!/ Output gas-phase chemical rates:   ! - from Tabulations
 
   real, save, public, &
          dimension(NRCT,CHEMTMIN:CHEMTMAX) :: rcit  ! rate-coefficients
 
-!hf u2!u3 - added for ozone model also
-   logical, public, parameter ::  ONLY_NIGHT = .false. ! Only nighttime NO2->NO3
+!- added for ozone model also (consistency with ACID)
+! Only nighttime NO2->NO3
+   logical, public, parameter ::  ONLY_NIGHT = .false. 
        
 
   contains
@@ -595,39 +564,32 @@ end module  GenRates_rcmisc_ml
   !------------------------------------------------------
 end module GenRates_rct_ml
 
-!u3 - MOVED HERE  ********
 !>_________________________________________________________<
 
   module  MyChem_ml
 !-----------------------------------------------------------
-!+u2-u3
 ! Module containijng initial setup routine calls (Init_mychem)
 ! and intended to allow the user to specify miscelanneaous
 ! bits of extra code as needed. Here we have so far included
 ! Set_2dBgnd in orer to get xn_2d:bgnd for MADE.
-! u3 - NEW ********
+! 
 ! We have a new subroutine Init_mychem for all model versions
 ! which now does tabulations previously done in Tabulations_ml
 
-!u4 - NEW
   use Functions_ml,   only : Daily_sine  ! to specify so2ox
-  use GenSpec_bgn_ml,        only : NSPEC_COL ! u3 - nothing more needed
+  use GenSpec_bgn_ml,        only : NSPEC_COL ! - nothing more needed
                                    ! for OZONE , xn_2d_bgn, IXBGN_OH, 
 
- use GenRates_rct_ml, only : &  ! u3
+ use GenRates_rct_ml, only : &  !
                  NRCT, &         ! No. temperature dependant coefficients
                  rcvt, &         ! Temperature dependant coefficients
                  rcit, &         ! Rate coeffs as rc(n, temp(k) )
                  set_rct_rates   ! Gives RCT as function of temp t
 
- use GenRates_rcmisc_ml, only : tab_so2ox   !u7.1
+ use GenRates_rcmisc_ml, only : tab_so2ox
 
-!u3   use My_BoundConditions_ml, only : set_daily, h2o2conc
-!u3   use Setup_1dfields_ml, only        : amk
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP, KCLOUDTOP &
                                      ,CHEMTMIN, CHEMTMAX  !u3 temp. range
-  !u7.4vg                                   ,daynumber  !u3
-!hfTD not needed anymore  use Dates_ml,              only : daynumber !u7.4vg  for so2ox
   use PhysicalConstants_ml,  only : PI, DEG2RAD
   implicit none
   private
@@ -643,7 +605,6 @@ end module GenRates_rct_ml
 
     subroutine  Init_mychem()
 
-    !u3 - moved from Tabulations_ml....
     !+1) Temperature-dependant rates (rct). Only needs to be called once
     !    at beginning of simulations to set up table
 
@@ -656,30 +617,17 @@ end module GenRates_rct_ml
         rcit(:,it) = rcvt(:)
       end do
 
-     !ACID !+2)
-     !ACID ! Tabulate H2O2 values for the full year, with
-     !ACID ! a safe 366 value for ndays
-     !ACID
-     !ACID  tab_h2o2 = Daily_halfsine(0.35e-9,0.3e-9,366)
-
-     !u7.1
      !+2) 
      ! Tabulate SO2 oxidation rates with a safe 366 value for ndays
      ! Coefficients taken from Eliassen+Saltbones (1983) (also in
      ! Berge and Jakobsen, 1998
 
-        !ds tab_so2ox = Daily_sine(3.0e-6,2.0e-6,80,366)
-        !ds Changed to use real dmax instead of day of mean in argument
-
-       !rv1.2.1 reset
-        !rv1.4.1: tab_so2ox = Daily_sine(3.0e-6,2.5e-6,80+91,366)
         tab_so2ox = Daily_sine(4.0e-6,2.5e-6,80+91,366)
       
 
     end subroutine  Init_mychem
     !------------------------------------------------------------------
 
-    !u3 - added m as argument:
     subroutine Set_2dBgnd(izen,cloud,m)
       integer, intent(in) :: izen
       real,dimension(KMAX_MID), intent(in) :: cloud ! cloud-cover fraction

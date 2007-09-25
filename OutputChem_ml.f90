@@ -12,7 +12,7 @@
                               ,f_3d, d_3d, nav_3d, nav_2d, LENOUT3D   & 
                               , num_deriv2d, num_deriv3d &
                               ,ResetDerived, Deriv
-  use My_Outputs_ml,     only: NBDATES, wanted_dates_bi,              & 
+  use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            & 
                                Ascii3D_WANTED
   use Io_ml,             only: IO_WRTCHEM
   use ModelConstants_ml, only: nprint, END_OF_EMEPDAY, KMAX_MID
@@ -33,9 +33,11 @@
 
   contains 
 
-   subroutine Wrtchem(numt)
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-     !-----------------------------------------------------------------------
+  subroutine Wrtchem(numt)
+
+     !---------------------------------------------------------------------
      ! DESCRIPTION:
      !   Writes out data fields as NetCDF 
      !
@@ -46,16 +48,16 @@
      !   Thus, the first output should occur just as Jan 2nd starts (e.g.
      !   at 6am on 2nd Jan); logical Jan_1st helps dealing with this and 
      !   it also marks end of a year run.
-     !    (For runs starting in other months, one partial write-out will
-     !    occur at 6am of the 1st day, but this should be over-written
-     !    as soon as a full day of data is available).
-     !---------------------------------------------------------------------------
+     !   (For runs starting in other months, one partial write-out will
+     !   occur at 6am of the 1st day, but this should be over-written
+     !   as soon as a full day of data is available).
+     !----------------------------------------------------------------------
 
 
      integer, intent(in) ::  numt
 
-     real, dimension(MAXLIMAX, MAXLJMAX) ::  local_2d  ! local 2D array
-     real, dimension(GIMAX, GJMAX)       ::  glob_2d   ! array for whole domain
+     real, dimension(MAXLIMAX, MAXLJMAX) :: local_2d  !local 2D array
+     real, dimension(GIMAX, GJMAX)       :: glob_2d   !array for whole domain
      integer :: i,j,n,k,icmp,msnr1
      integer :: nyear,nmonth,nday,nhour,nmonpr
      integer :: mm_out, dd_out  
@@ -101,14 +103,14 @@
      end if      ! for END_OF_EMEPDAY <= 7
 
 
-     !== Instantaneous results output
-     !  Possible actual array output for specified days and hours 
-     !  is defined in wanted_dates_bi array in My_Outputs
+     !== Instantaneous results output ====
+     !   Possible actual array output for specified days and hours 
+     !   is defined in wanted_dates_bi array in My_Outputs
 
      do n = 1, NBDATES
-        if ( wanted_dates_bi(n)%month == nmonth .and. &
-             wanted_dates_bi(n)%day   == nday   .and. &
-             wanted_dates_bi(n)%hour  == nhour ) then
+        if ( wanted_dates_inst(n)%month == nmonth .and. &
+             wanted_dates_inst(n)%day   == nday   .and. &
+             wanted_dates_inst(n)%hour  == nhour ) then
 
            call Output_fields(IOU_INST)
 
@@ -116,7 +118,7 @@
      end do
 
 
-     !== Daily output
+     !== Daily output ====
 
      if (nhour ==  END_OF_EMEPDAY ) then
 
@@ -147,11 +149,11 @@
 
         if (nmonpr.eq.0) nmonpr=12
 
-        !== Monthly output
+        !== Monthly output ====
 
         call Output_fields(IOU_MON)  
 
-        !== Output og 3D field for a restricted area (if wanted)
+        !== ASCII output of 3D fields (if wanted)
 
         if(Ascii3D_WANTED) then
 
@@ -165,8 +167,8 @@
                     write(outfilename,fmt='(a,a5,i2.2)')   &
                          trim( f_3d(n)%name ), ".out.",  nmonpr
                     open (IO_WRTCHEM,file=outfilename)
-                    write(IO_WRTCHEM,fmt="(4i4)")  IRUNBEG, GIMAX+IRUNBEG-1,  &
-                         JRUNBEG, GJMAX+JRUNBEG-1 ! domain
+                    write(IO_WRTCHEM,fmt="(4i4)") IRUNBEG, GIMAX+IRUNBEG-1, &
+                          JRUNBEG, GJMAX+JRUNBEG-1 ! domain
                  end if
 
                  if (nav_3d(n,IOU_MON) == 0 ) then
@@ -175,7 +177,7 @@
 
                     do k = 1, KMAX_MID
 
-                      local_2d(:,:) = d_3d(n,:,:,k,IOU_MON)/nav_3d(n,IOU_MON)  
+                      local_2d(:,:) = d_3d(n,:,:,k,IOU_MON)/nav_3d(n,IOU_MON) 
                       call local2global(local_2d,glob_2d,msnr1)
 
                        if (me  ==  0) then
@@ -200,13 +202,13 @@
 
      endif              ! End of NEW MONTH
 
-   end subroutine Wrtchem
+  end subroutine Wrtchem
 
-! =====================================================================
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-! =====================================================================
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-   subroutine Output_fields(iotyp)
+  subroutine Output_fields(iotyp)
 
     integer, intent(in) :: iotyp
 
@@ -225,13 +227,13 @@
 
      call CloseNetCDF
 
-   end subroutine Output_fields
+  end subroutine Output_fields
 
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-! =====================================================================
-! =====================================================================
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-   subroutine Output_f2d (iotyp, dim, nav, def, dat)
+  subroutine Output_f2d (iotyp, dim, nav, def, dat)
 
   !=========================================
   ! Sends fields to NetCDF output routines
@@ -258,31 +260,32 @@
         
         if ( wanted ) then 
            
-           scale  = def(icmp)%scale
-            if (iotyp /= IOU_INST )    &
-                    scale = scale / max(1,nav(icmp,iotyp))
+          scale  = def(icmp)%scale
+           if (iotyp /= IOU_INST )    &
+             scale = scale / max(1,nav(icmp,iotyp))
 
-           call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,iotyp),scale)
+             call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,iotyp),scale)
            
         endif     ! wanted
      enddo        ! component loop
      
    end subroutine Output_f2d
 
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-! =====================================================================
-! =====================================================================
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-   subroutine  Output_f3d (iotyp, dim, nav, def, dat)
+  subroutine  Output_f3d (iotyp, dim, nav, def, dat)
 
   !=========================================
   ! Sends fields to NetCDF output routines
   !=========================================
      
-   use Derived_ml,         only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY,Deriv,LENOUT3D
-   use ModelConstants_ml,  only: KMAX_MID
-   use NetCDF_ml,          only: Out_netCDF
-   use Par_ml,             only: MAXLIMAX, MAXLJMAX 
+   use Derived_ml,        only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, &
+                                Deriv,LENOUT3D
+   use ModelConstants_ml, only: KMAX_MID
+   use NetCDF_ml,         only: Out_netCDF
+   use Par_ml,            only: MAXLIMAX, MAXLJMAX 
 
 
     implicit none
@@ -296,6 +299,7 @@
     logical :: wanted     ! Set true for required year, month, day or inst.
     integer :: icmp       ! component index
     real    :: scale      ! Scaling factor
+ !------------------------------------------------
 
      do icmp = 1, dim
 
@@ -311,8 +315,8 @@
            if (iotyp /= IOU_INST)   &
                scale = scale /max(1,nav(icmp,iotyp))
 
-                 call Out_netCDF(iotyp, def(icmp), 3, KMAX_MID,   &
-                                 dat(icmp,:,:,:,iotyp), scale)
+                call Out_netCDF(iotyp, def(icmp), 3, KMAX_MID,   &
+                                dat(icmp,:,:,:,iotyp), scale)
            
            endif     ! wanted
         enddo        ! component loop

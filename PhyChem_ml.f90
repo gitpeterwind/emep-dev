@@ -53,7 +53,6 @@ contains
 
    integer :: ndays
    real :: thour
-!hfTD 
    type(timestamp) :: ts_now !date in timestamp format
 
     if ( DEBUG .and. debug_proc  ) then
@@ -82,7 +81,6 @@ contains
 
            if ( current_date%hour == 12 ) then
 
-!hfTD		call dayno(current_date%month,current_date%day,ndays)
 		ndays=day_of_year(current_date%year,current_date%month,current_date%day)
 	        write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
            endif
@@ -100,7 +98,8 @@ contains
     	call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
 
-        !QUERY - why does wet/dry need special treatment here?
+        !QUERY - does wet need special treatment here?
+        ! (Dry does - see My_DryDep)
         do i = 1, num_deriv2d
           if ( (f_2d(i)%class == "WDEP") .or. ( f_2d(i)%class == "PREC" )  ) then
             d_2d(i,:,:,IOU_INST) = 0.0
@@ -154,7 +153,7 @@ contains
 
           call Add_2timing(26,tim_after,tim_before,"phyche:MACHO-prod")
 
-         !hf===================================
+         !===================================
            call init_drydep()
          !===================================
 
@@ -191,8 +190,6 @@ contains
 
 
           !====================================
-!hfTD          current_date = add_dates(current_date,nint(dt_advec))
-!hfTD          current_date = add_dates(current_date,nint(dt_advec))
           ts_now=make_timestamp(current_date)
           call add_secs(ts_now,dt_advec)
           current_date = make_current_date(ts_now)
@@ -200,7 +197,7 @@ contains
           !====================================
 
 
-          !ds rv1_9_28: to be consisten with reset of IOU_DAY
+          ! to be consistent with reset of IOU_DAY
 
           End_of_Day = (current_date%seconds == 0 .and. &
                         current_date%hour    == END_OF_EMEPDAY)

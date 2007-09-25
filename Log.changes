@@ -1,3 +1,4 @@
+============== rv2_9_10, Sept.  25th 2007  ==============================================
 Hilde:
 PhyChem:
 Precipitation initialized(bug corrected)
@@ -11,6 +12,15 @@ Setup_1d_ml.f90:  f_Riemer  from N2O5_hydrolysis_ml
 Solver.f90: f_Riemer,VOLFAC from N2O5_hydrolysis_ml
 ModelConstants_ml.f90: VOLFAC moved to N2O5_hydrolysis_ml
 My_Chem_ml: bug in rcmisc(8,k). This bug makes the new reaction rate (for the N2O5 hydrolysis) 4-8 times smaller
+
+Svetlana:
+Out_restri_ml removed, also in Unimod, Makefile.SRCS., My_Outputs_ml, OutChem_ml.f90
+Some cleanups in those modules.
+EmisGet_ml - cleanup
+
+Dave:
+Cleanup in My_Chem_ml, PhyChem
+
 
 ============== Semeena, Heiko, rv2_9_9, Sept.  23rd 2007  =================================
 
