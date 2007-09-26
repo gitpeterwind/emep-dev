@@ -260,8 +260,10 @@ contains
         s_gx(n)   = ix  
         s_gy(n)   = iy  
         s_gz(n)   = lev
-        if (i_local(ix) == li0 .or. i_local(ix) == li1 .or. &
-            j_local(iy) == lj0 .or. j_local(iy) == lj1) then
+        !DS if (i_local(ix) == li0 .or. i_local(ix) == li1 .or. &
+        !DS j_local(iy) == lj0 .or. j_local(iy) == lj1) then
+        if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
+             iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
            comment = " WARNING - domain boundary!!"
         else
            comment = " ok - inside domain         "
@@ -285,6 +287,9 @@ contains
   nlocal  = 0
 
   do n = 1, nglobal
+
+     ix = s_gx(n) !DS
+     iy = s_gy(n) !DS
 
      if ( i_local(ix) >= li0 .and. i_local(ix) <= li1 .and. &
           j_local(iy) >= lj0 .and. j_local(iy) <= lj1 ) then
@@ -637,7 +642,7 @@ end subroutine siteswrt_sondes
      prev_month(type) = current_date%month
 
      write(io_num,"(i3,2x,a,a, 4i4)") nglobal, fname, " in domain",  &
-                                 li0,li1,lj0,li1
+                                 RUNDOMAIN
      write(io_num,"(i3,a)") f, " Hours between outputs"
 
      do n = 1, nglobal
