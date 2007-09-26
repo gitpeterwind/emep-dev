@@ -255,19 +255,17 @@ contains
      if ( ix < RUNDOMAIN(1) .or. ix > RUNDOMAIN(2) .or. & 
           iy < RUNDOMAIN(3) .or. iy > RUNDOMAIN(4) ) then
         write(6,*) "sitesdef: ", s, ix, iy, " outside computational domain"
+     else if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
+              iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
+        write(6,*) "sitesdef: ", s, ix, iy, " on computational domain"
      else
+        comment = " ok - inside domain         "
         n = n + 1
         s_gx(n)   = ix  
         s_gy(n)   = iy  
         s_gz(n)   = lev
         !DS if (i_local(ix) == li0 .or. i_local(ix) == li1 .or. &
         !DS j_local(iy) == lj0 .or. j_local(iy) == lj1) then
-        if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
-             iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
-           comment = " WARNING - domain boundary!!"
-        else
-           comment = " ok - inside domain         "
-        end if
 
         s_name(n)  = s // comment
 
@@ -425,6 +423,7 @@ end subroutine Init_sites
             d2index     = SITE_XTRA_INDEX(ispec)
             out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
         end select 
+        call CheckStop( abs( out(nn,i) )  > 1.0e99, "ABS(SITES OUT) TOO BIG" )
      end do
   end do
 
