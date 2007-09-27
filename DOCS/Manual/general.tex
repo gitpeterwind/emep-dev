@@ -28,22 +28,28 @@ copy of EMEP report 1/2003 is available at \url{www.emep.int/UniDoc/index.html}.
 
 \section{Computer Information}
 
-EMEP requires Fortran 77 and Fortran 90 compilers.  
+To compile the EMEP model you need:
 
-The default compiler options are provided for .....
+\textbf{Fortran 90 compiler}
+\textbf{NetCDF Library}
+\textbf{MPI Library}
 
-The model is tested on different platforms.  These are HP rx4640 Linux
-cluster with 100 nodes, each with four Itanium2(64-bit) processors and
-4GB memory; a shared memory system which consists of IBM p575+ nodes
-and has a total of 62 nodes partitioned into 56 compute nodes. The
-latter is well suited for large scale parallel MPI and OpenMP
-applications as well as applications that combine these two
-communication paradigms.   
+It is necessary to compile with double precision reals (8 bytes
+reals).  The program has been tested with Intel compiler on an
+Itanium2 cluster, and XL compiler on power5+ cluster; example of
+Makefiles are provided. Running on different systems or with different
+compilers is not expected to lead to any problem.
+
+The code has been tested with from 1 to 128 CPU, and scales well.  If
+only one CPU is used 1-2 GB memory is required and if more than one
+for example 32 CPU are used, 200 MB of memory per CPU is enough (in
+the case of a 170X133 grid size).
 
 \section{Getting Started}
 
 A tar file of the model source code can be downloaded from the web
-page under the section 'Download'.   Once the model is downloaded, untar the file using  the command \\
+page under the section 'Download'.   Once the model is downloaded,
+untar the zipped tar file using  the command \\
 
 \textbf{tar -xzvf emep.tar.gz} \\
 
