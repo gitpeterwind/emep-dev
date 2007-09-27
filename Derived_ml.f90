@@ -236,14 +236,14 @@ private
        if ( present(Is3D) .and. Is3D ) then
          Nadded3d = Nadded3d + 1
          N = Nadded3d
-         if ( me == 0 ) write(*,*) "Define 3d deriv ", N, name
+         if ( me == 0 .and. MY_DEBUG  ) write(*,*) "Define 3d deriv ", N, name
          call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
          def_3d(N) = Deriv(class,avg,index,scale,rho,inst,year,month,day,&
                               name,unit)
        else
          Nadded2d = Nadded2d + 1
          N = Nadded2d
-         if ( me == 0 ) write(*,*) "Define 2d deriv ", N, name
+         if ( me == 0 .and. MY_DEBUG ) write(*,*) "Define 2d deriv ", N, name
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
          def_2d(N) = Deriv(class,avg,index,scale,rho,inst,year,month,day,&
                               name,unit)
