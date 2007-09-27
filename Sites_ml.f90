@@ -254,10 +254,12 @@ contains
 
      if ( ix < RUNDOMAIN(1) .or. ix > RUNDOMAIN(2) .or. & 
           iy < RUNDOMAIN(3) .or. iy > RUNDOMAIN(4) ) then
-        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, " outside computational domain"
+        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, &
+                " outside computational domain"
      else if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
               iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
-        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, " on computational domain"
+        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, &
+                " on computational domain"
      else
         comment = " ok - inside domain         "
         n = n + 1
@@ -311,8 +313,6 @@ contains
                            me, nlocal
 
   if ( me /= 0 ) then
-     !if (MY_DEBUG) write(6,*) "sitesdef ", fname, " send gc NLOCAL_SITES", &
-     !                         me, nlocal
      CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_WORLD, INFO)
      if (nlocal > 0) &
         CALL MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, MPI_COMM_WORLD, INFO)

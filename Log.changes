@@ -1,12 +1,14 @@
+
+============== rv2_9_13, Sept.  27th 2007  =============================
+
+Dave
+Sites_ml.   2nd Bug-fix for sondes --- for now excluding values from domain boundary.
+   Was giving e+254 type values ..... 
+
+
 Hilde+Heiko
 run.pl corrected so that SR runs works
 TimeDate_ml.f90,GlobalBCs_ml.f90,BoundaryConditions_ml.f90 cleaned 
-
-
-============== Dave, rv2_9_13, Sept.  27th 2007  ==============================================
-
-Sites_ml.   2nd Bug-fix for sondes --- for now excluding values from domain boundary.
-   Was giving e+254 type values ..... 
 
 ============== Dave, rv2_9_12, Sept.  26th 2007  ==============================================
 
