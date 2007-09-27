@@ -254,18 +254,16 @@ contains
 
      if ( ix < RUNDOMAIN(1) .or. ix > RUNDOMAIN(2) .or. & 
           iy < RUNDOMAIN(3) .or. iy > RUNDOMAIN(4) ) then
-        write(6,*) "sitesdef: ", s, ix, iy, " outside computational domain"
+        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, " outside computational domain"
      else if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
               iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
-        write(6,*) "sitesdef: ", s, ix, iy, " on computational domain"
+        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, " on computational domain"
      else
         comment = " ok - inside domain         "
         n = n + 1
         s_gx(n)   = ix  
         s_gy(n)   = iy  
         s_gz(n)   = lev
-        !DS if (i_local(ix) == li0 .or. i_local(ix) == li1 .or. &
-        !DS j_local(iy) == lj0 .or. j_local(iy) == lj1) then
 
         s_name(n)  = s // comment
 
@@ -286,8 +284,8 @@ contains
 
   do n = 1, nglobal
 
-     ix = s_gx(n) !DS
-     iy = s_gy(n) !DS
+     ix = s_gx(n) ! global-domain coords
+     iy = s_gy(n)
 
      if ( i_local(ix) >= li0 .and. i_local(ix) <= li1 .and. &
           j_local(iy) >= lj0 .and. j_local(iy) <= lj1 ) then
@@ -313,8 +311,8 @@ contains
                            me, nlocal
 
   if ( me /= 0 ) then
-     if (MY_DEBUG) write(6,*) "sitesdef ", fname, " send gc NLOCAL_SITES", &
-                              me, nlocal
+     !if (MY_DEBUG) write(6,*) "sitesdef ", fname, " send gc NLOCAL_SITES", &
+     !                         me, nlocal
      CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_WORLD, INFO)
      if (nlocal > 0) &
         CALL MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, MPI_COMM_WORLD, INFO)
