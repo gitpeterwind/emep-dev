@@ -4,7 +4,7 @@
 ! xn_Adv_changed doesn't include msic. Does this matter?
 ! Is 2nd call to Set_Misc... needed???
 ! Answer:
-!hf Since bc_bgn and bc_adv are initiated each month,
+! Since bc_bgn and bc_adv are initiated each month,
 ! the second call to Set_Misc is needed. This can be re written
 ! but it is safer as it is....and do not cost too much
 !____________________________________________________________________________
@@ -209,10 +209,6 @@ contains
 !          NSPEC_ADV,IGLOB,JGLOB,KMAX_MID  :: bc_adv
 !          NSPEC_BGN,IGLOB,JGLOB,KMAX_MID  :: bc_bgn   )
 
-!hf BC  real, dimension(MAXLIMAX,MAXLJMAX) :: wt_00, wt_01, wt_10, wt_11
-!hf BC  integer, dimension(MAXLIMAX,MAXLJMAX) :: &
-!hf BC     ixp, iyp !  global (UiO) model coordinates of emep point (i,j)
-                    !  (comes from InterpolationFactors subroutine)
   integer  :: iglobact,jglobact
   integer  ::  errcode
   integer, save :: idebug = 0, itest=1, i_test=0, j_test=0
@@ -242,7 +238,7 @@ contains
   end if
 
 !MUST CONTAIN DECIDED DIMENSION FOR READ-IN DATA
-!hf iglobac and jglobac are no the actual domains (the chosen domain)
+! iglobac and jglobac are no the actual domains (the chosen domain)
 ! given in the same coord as the data we read - now 50*50
   call setgl_actarray(iglobact,jglobact)
 
@@ -251,19 +247,15 @@ contains
 
   ! - check if anything has changed before allocating:
 
-  !pwhk if ( num_adv_changed > 0 ) then
       allocate(bc_adv(num_adv_changed,iglobact,jglobact,KMAX_MID), &
          stat=alloc_err2)
    call CheckStop(alloc_err2, "alloc2 failed in BoundaryConditions_ml") 
      bc_adv(:,:,:,:) = 0.0
-   !pwhk  end if
 
-  !pwhk  if ( num_bgn_changed > 0 ) then
       allocate(bc_bgn(num_bgn_changed,iglobact,jglobact,KMAX_MID), &
         stat=alloc_err3)
    call CheckStop(alloc_err3, "alloc3 failed in BoundaryConditions_ml") 
       bc_bgn(:,:,:,:) = 0.0
-  !pwhk  end if
 
 
   errcode = 0
@@ -370,15 +362,6 @@ contains
 
        write(6,*) "BoundaryConditions: No CALLS TO BOUND Cs", &
                                         my_first_call, idebug
-       !ds do i=1,limax
-       !ds do j=1,ljmax
-       !ds do k=1,KMAX_MID
-       !ds write(6,*) "BCs: After Set_3d BOUND: me, O3, H2: " , me, i,j,&
-       !ds        xn_bgn(spc_bgn2changed(itest),i,j,k)/ppb
-       !ds enddo
-       !ds enddo
-       !ds enddo
-
         !/** the following uses hard-coded  IXADV_ values for testing. 
         !    Remove later **/
       info = 1   ! index for ozone in bcs
@@ -540,7 +523,6 @@ contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  subroutine MiscBoundaryConditions(iglobact,jglobact,bc_adv,bc_bgn) 
 
-  !u3 use UiO_ml, only: &
   use GlobalBCs_ml, only: NGLOB_BC    ! Number of species from global-model
 
   use My_BoundConditions_ml, only: & 
@@ -557,7 +539,6 @@ contains
  ! the module My_BoundaryConditions, but then we wouldn't have the
  ! bc_adv, bc_bgn arrays available   :-(
 
-!u3 - tidy up . intent added and arguments grouped together
 
   integer, intent(in) ::   iglobact,jglobact 
   real, intent(inout), &
@@ -568,7 +549,7 @@ contains
   integer ::     itest  ! Used to specify species index
   integer :: ibc, iem,i,iem1,k   ! local loop variables
 
-!hf
+
   if (NTOT_BC > NGLOB_BC) then
   do k=1,KMAX_MID
      do ibc = NGLOB_BC+1, NTOT_BC
@@ -642,7 +623,7 @@ endif
       if(neighbor(EAST)  == NOPROC)   mask((li1+1):limax,:,2:KMAX_MID) = .true.
       if(neighbor(WEST)  == NOPROC)   mask(1:(li0-1),:,2:KMAX_MID)     = .true.
 
-      mask(:,:,1) = .true.        !hf Set top layer
+      mask(:,:,1) = .true.        !Set top layer
    else
       call CheckStop("BCs:Illegal option failed in BoundaryConditions_ml") 
    endif
@@ -655,28 +636,14 @@ endif
    ! limax, ljmax.
 
 
-!hf BC Global 150*150 emep point of local emep 50*50
-!
-!   do i=1,MAXLIMAX
-!       i150(i)=nint((i_fdom(i) -IRUNBEG+2.0 )/3.0)
-!   enddo
-!   do j=1,MAXLJMAX
-!      j150(j)=nint((j_fdom(j) -JRUNBEG+2.0 )/3.0)
-!   enddo
-
-
    !a) Advected species
 
-!hk intel compiler doesn't understand mask(i,j,k) in forall
-!   forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_adv_changed, &
-!        mask(i,j,k)  )
 
    do k = 1, KMAX_MID
       do j = 1, ljmax
          do i = 1,limax
             if (mask(i,j,k)) then                 
                do n = 1, num_adv_changed
-                  !       xn_adv(spc_changed2adv(n),i,j,k) =   bc_adv(n,i150(i),j150(j), k)
                   xn_adv(spc_changed2adv(n),i,j,k) =   &
                        bc_adv(n,(i_fdom(i)-IRUNBEG+1),(j_fdom(j)-JRUNBEG+1),k)
                end do
@@ -692,22 +659,11 @@ endif
 
    forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_bgn_changed)
 
-!          xn_bgn(spc_changed2bgn(n),i,j,k) =  bc_bgn(n,i150(i),j150(j), k)
           xn_bgn(spc_changed2bgn(n),i,j,k) = & 
              bc_bgn(n,(i_fdom(i)-IRUNBEG+1),(j_fdom(j)-JRUNBEG+1),k)
 
    end forall    
 
-
-
-
-!TMP   if ( DEBUG_BCS ) then
-!TMP       itest = 1
-!TMP       write(6,*) "SetBCADVs: for xn top-bottom:", &
-!TMP              (xn_adv(itest,2,2,k)/ppb,k=1,20)
-!TMP       write(6,*) "SetBCBGNs: for xn top-bottom:", &
-!TMP              (xn_bgn(itest,2,2,k)/ppb,k=1,20)
-!TMP   end if
 
  end subroutine Set_BoundaryConditions    ! call every 3-hours
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

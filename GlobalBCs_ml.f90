@@ -2,7 +2,7 @@ module GlobalBCs_ml
 !
 !+ DATA/SUBROUTINES FOR USING Logan climatology for BOUNDARY
 !  CONDITIONS  (bcs)
-! From Hilde's uni.2_Logan_O3 but:
+!  From Hilde's uni.2_Logan_O3 but:
 !  module name changed to GlobalBCs_ml, so that both UiO_ml and
 !  public subroutine names changed back:
 !        GelLoganData -> GetGlobalData   : UiO and Logan modules
@@ -64,7 +64,7 @@ module GlobalBCs_ml
         !JGLOB = 45        ! number of emep 150*150 grids, latitude
         ! IGLOB = 170, &     ! number of emep 50*50 grids, longitude
         ! JGLOB = 133        ! number of emep 50*50 grids, latitude
-!pw 15/3-2005 We assume BC defined in large domain:
+  ! 15/3-2005 We assume BC defined in large domain:
          IGLOB = IIFULLDOM, &     ! number of large domain grids cells, longitude
          JGLOB = JJFULLDOM        ! number of large domain grids cells, latitude
 
@@ -89,9 +89,9 @@ module GlobalBCs_ml
    ,IBC_H2O2     = 13   &
    ,IBC_aNH4     = 14   &
    ,IBC_aNO3     = 15   &
-   ,IBC_pNO3     = 16   &!dsOH&
-   ,IBC_CH3COO2  = 17   &  !dsOH
-   ,IBC_OH       = 18      !only for ACID
+   ,IBC_pNO3     = 16   &
+   ,IBC_CH3COO2  = 17   &
+   ,IBC_OH       = 18    
 
 
   ! we define some concentrations in terms of sine curves and other
@@ -124,7 +124,6 @@ contains
   integer i1
   real hel1,hel2
   integer,intent(out)   :: iglobact,jglobact
-!hf iglbeg and jglbeg is changed!!
     hel1 = IRUNBEG
     hel2 = IRUNBEG+GIMAX-1
     iglbeg = nint(hel1)  ! global i emep coord of start of domain
@@ -137,9 +136,6 @@ contains
     jglend = nint(hel2)
     jglobact = GJMAX
 
-    !print *,'iglbeg,iglend,iglobact',iglbeg,iglend,iglobact
-    !print *,'jglbeg,jglend,jglobact',jglbeg,jglend,jglobact
-
 
  end subroutine setgl_actarray
  !-------
@@ -151,8 +147,8 @@ contains
    !== HANDLES READ_IN OF GLOBAL DATA. We read in the raw data from the
    !   global model, and do the vertical interpolation to EMEP k values
    !   here if the species is to be used.
-   integer,             intent(in) :: year   ! ds for Mace Head correction
-   integer,             intent(in) :: iyr_trend !ds Allows future/past years
+   integer,             intent(in) :: year   !for Mace Head correction
+   integer,             intent(in) :: iyr_trend !Allows future/past years
    integer,             intent(in) :: month
    integer,             intent(in) :: ibc    ! Index of BC, u3
    integer,             intent(in) :: used   ! set to 1 if species wanted
@@ -167,7 +163,6 @@ contains
 
 
 ! Now we want fake data on EMEP 50*50 grid....
-!hf BC trend changes
    real:: USso2trend,USnoxtrend,USnh4trend
 
    integer, dimension(IGLOB,JGLOB), save :: lat5     !u3  for latfunc below
@@ -182,8 +177,8 @@ contains
    character(len=99) :: errmsg   ! For error messages
    character(len=30) :: BCpoll   ! pollutant name
    integer, save     :: oldmonth = -1  
-   real :: trend_o3, trend_co, trend_voc  !ds rv1.6.11
-  !ds Use of standard atmosphere 
+   real :: trend_o3, trend_co, trend_voc  
+  !Use of standard atmosphere 
    real, dimension(KMAX_MID), save :: p_kPa, h_km
    real :: scale_old, scale_new,iMH,jMH
    logical :: notfound !set true if NetCDF BIC are not found
@@ -192,15 +187,12 @@ contains
    real, dimension(1,1) :: buf_lon,buf_lat,bufi,bufj
    logical,parameter :: MACEHEADFIX=.true.
 
- !dsOH crude (hard-coded) conversion factor for OH, CH3COO2:
-  !     Think of a more elegant solution anoter day......
-!hfOH   real :: conv_factor
    io_num = IO_GLOBBC          ! for closure in BoundCOnditions_ml
 
 !==================================================================
 !Trends 1980-2003 derived from EPA emissions of so2,nox. nh4 derived from
 !2/3so3+1/3nox
-!hf 2/2-05 1920-1970 BCs derived from:
+!1920-1970 BCs derived from:
 !NH4: nh3 emissions
 !SOx: winter ice cores, Col du dome
 !NOx: winter ice cores
@@ -299,7 +291,7 @@ endif
 
 !==================================================================
 ! Trends - derived from EMEP report 3/97
-!ds rv1.6.10 - adjustment for years outside the range 1990-2000.
+! adjustment for years outside the range 1990-2000.
 
 
   if ( iyr_trend >=  1990 ) then
@@ -313,23 +305,17 @@ endif
   end if
   write(6,"(a20,i5)") "GLOBAL TREND YEAR ",  iyr_trend
   write(6,"(a20,3f8.3)") "TRENDS O3,CO,VOC ", trend_o3, trend_co, trend_voc
-  !trend_CH4 set in My_BoundaryConditions
-  !trend_ch4= exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
-  !FMI if ( iyr_trend == 2050 ) trend_o3 = 1.46
-  !FMI if ( iyr_trend == 2051 ) trend_o3 = 1.26
-  !FMI if ( iyr_trend == 2050 ) trend_ch4 = 1.5
-  !FMI if ( iyr_trend == 2051 ) trend_ch4 = 1.4061
 
 !==================================================================
 !=========== BCs Generated from Mace Head Data =======================
 !
-!ds - rv1.6.x   Mace Head ozone concentrations for backgroudn sectors
+! Mace Head ozone concentrations for backgroudn sectors
 ! from Fig 5.,  Derwent et al., 1998, AE Vol. 32, No. 2, pp 145-157
 !
-!ds - here we use the meteorology year to get a reaslistic O3.
+! Here we use the meteorology year to get a reaslistic O3.
 !      Later we use iyr_trend to adjust for otyer years, say for 2050.
 
-!ds *** NEW *** for 2010, 2020 "trend" runs  - use 10 yr average as base-O3
+! For 2010, 2020 "trend" runs  - use 10 yr average as base-O3
 !   then later scale by trend_o3:
 
  if ( iyr_trend /= year  ) then   ! For trends, use  defaults from 1990-2000 average
@@ -337,9 +323,9 @@ endif
                      29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
    !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    if ( iyr_trend == 2010   ) then
-      macehead_O3 = macehead_O3 + 3.0    !ds ASSUMPTION FOR IIASA SR runs
+      macehead_O3 = macehead_O3 + 3.0    !ASSUMPTION FOR IIASA SR runs
    elseif ( iyr_trend > 2010   )then
-      macehead_O3 = macehead_O3 + 4.5    !ds ASSUMPTION FOR JUN06 SR runs
+      macehead_O3 = macehead_O3 + 4.5    !ASSUMPTION FOR JUN06 SR runs
    endif
    !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
@@ -380,7 +366,6 @@ endif
    macehead_O3 = (/    37.3,    38.0,    42.2,    44.8,    42.6,    34.9 &
         ,    28.9,    29.4,    29.9,    35.3,    37.3,    37.5/)
 !---------------------------------------------------------------------------
-! ds, 7/6/2004
 ! Preliminary BCs generated using Mace Head CFC and other greenhouse gases
 ! data to define clean air masses. Data cover all of 2002 and 9 months
 ! of 2003. What to do for Oct-Dec 2003?
@@ -391,17 +376,15 @@ endif
 elseif ( year == 2002 ) then
    macehead_O3 = (/  42.4 ,     44.4 ,     45.5 ,     45.0 ,     45.9 ,     39.8 &
                ,     32.5 ,     28.7 ,     37.7 ,     39.3 ,     40.5 ,     42.3 /)
-!hf 2003 updated 10/6-2005
+
 elseif ( year == 2003 ) then
-!   macehead_O3 = (/  40.5 ,     40.6 ,     45.0 ,     45.7 ,     46.5 ,     43.0 &
-!               ,     33.9 ,     34.2 ,     35.3,      39.3 ,     40.5 ,     42.3 /)
   macehead_O3 = (/  39.8 ,     40.1 ,     44.7 ,     45.4 ,     45.7 ,     41.7 &
                ,     33.3 ,     31.0 ,     35.7,      37.9 ,     40.9 ,     38.1 /)
-!hf updated 11/7-06
+
 elseif( year == 2004) then 
    macehead_O3 = (/    40.8,    42.0,    48.3,    46.6,    39.9,    31.9 & 
         ,    32.4,    32.1,    33.9,    36.7,    40.2,    39.8/) 
-!ds 2005 updated 6/2-2007
+
 elseif( year == 2005) then
    macehead_O3 = (/    40.9,    41.4,    44.1,    45.6,    42.7,    32.9 &
         ,    26.7,    30.0,    33.2,    37.7,    39.5,    38.0/)
@@ -426,8 +409,6 @@ elseif ( year > 2005 ) then
       ! Set up arrays to contain Logan's grid as lat/long
       !/ COnversions derived from emeplat2Logan etc.:
 
-     !ds BUG 28/7/03 twopi_yr = 4.0 * atan(1.0)  / 365.25  ! 2pi/365
-     !ds twopi_yr = 8.0 * atan(1.0)  / 365.25  ! 2pi/365
      twopi_yr = 2.0 * PI / 365.25
 
    call GlobalPosition  !get gb for global domaib
@@ -444,9 +425,6 @@ elseif ( year > 2005 ) then
    ! etc. will be given
    !                           surf   dmax   amp   hz    vmin  hmin conv_fac!ref
    !                            ppb          ppb   km   hmin,vmin:same units as input data=conv_fac  
-
-   ! ds 29/7/2003 - replaced 100.0 km by 999.9 km to ensure more uniform
-   ! vertical scaling. 
 
   SpecBC(IBC_SO2  ) = sineconc( 0.15 , 15.0, 0.05, 999.9, 0.03 , 0.03,PPB) !W99, bcKz vmin
   SpecBC(IBC_SO4  ) = sineconc( 0.15 ,180.0, 0.00, 1.6,  0.05 , 0.03,PPB) !W99
@@ -491,7 +469,7 @@ elseif ( year > 2005 ) then
  !      Europe as presumably any such min values are in the S. hemisphere.
  !      Still, giving O3 such a value let's us use the same code for
  !      all species.
- !W99: Warneck, Chemistry of the Natural Atmosphere, 2nd edition, 1999
+ ! W99: Warneck, Chemistry of the Natural Atmosphere, 2nd edition, 1999
  !    Academic Press. Fig 10-6 for SO2, SO4.
  ! JEJ - Joffen's suggestions from Mace/Head, UiO and other data..
  !      with scale height estimated large from W99, Isaksen+Hov (1987)
@@ -503,7 +481,6 @@ elseif ( year > 2005 ) then
  ! pNO3 is assumed to act like seasalt, with decreasing conc with height, with
  ! approx same conc. as fine nitrate. 
  ! The seasonal var of HNO3 is now assumed to be opposite of aNO3.
- ! Should latfunc for aNO3=HNO3?
 
    ! Latitude functions taken from Lagrangian model, see Simpson (1992)
    latfunc(:,6:14) = 1.0   ! default
@@ -520,11 +497,11 @@ elseif ( year > 2005 ) then
    latfunc(IBC_CH3CHO,:) = latfunc(IBC_HNO3,:)
    latfunc(IBC_aNH4,:) = latfunc(IBC_SO2,:)
    latfunc(IBC_aNO3,:) = latfunc(IBC_SO2,:)
-   latfunc(IBC_pNO3,:) = latfunc(IBC_SO2,:) !maybe no latfunc ??
+   latfunc(IBC_pNO3,:) = latfunc(IBC_SO2,:) 
 
 
 
-  !ds 27/7/2003 - Use Standard Atmosphere to get average heights of layers
+  !Use Standard Atmosphere to get average heights of layers
 
     p_kPa(:) = 0.001*( PT + sigma_mid(:)*(101325.0-PT) ) ! Pressure in kPa
     h_km     = StandardAtmos_kPa_2_km(p_kPa)
@@ -535,15 +512,12 @@ elseif ( year > 2005 ) then
  ! ========= end of first call ===================================
 
 
-  !u3 - NEW - Read ozone for IBC_O3, set for others:
    !+
    !  Specifies concentrations for a fake set of Logan data.
    
    !/-- tmp and crude - we associate 1 km of scaleht with 1 Logan level
    !    - okayish for 1st 5-6 km in any case......
 
-    !dsOH
-!hfOH      conv_factor = PPB       ! factor for most pollutants(all those not read in)
       fname = "none"           ! dummy for printout
 
 
@@ -558,7 +532,6 @@ elseif ( year > 2005 ) then
                call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1)
                if ( ios /= 0 ) errmsg = "BC Error H2O2"
                read(IO_GLOBBC,*) bc_rawdata
-               !hfOH              conv_factor=1.0
                close(IO_GLOBBC)
              endif
 
@@ -571,7 +544,6 @@ elseif ( year > 2005 ) then
                 call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1)
                 if ( ios /= 0 ) errmsg = "BC Error H2O2"
                 read(IO_GLOBBC,*) bc_rawdata
-                !hfOH               conv_factor=1.
                 close(IO_GLOBBC)
              endif
 
@@ -586,9 +558,7 @@ elseif ( year > 2005 ) then
                 call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1) 
                 if ( ios /= 0 ) errmsg = "BC Error H2O2"
                 read(IO_GLOBBC,*) bc_rawdata
-                !hfOH               conv_factor=1.
-                close(IO_GLOBBC)!ds rv1_9_22
-                !              write(*,*) "dsOH READ H2O2 ", fname, ": ", bc_rawdata(IGLOB/2,JGLOB/2,20)
+                close(IO_GLOBBC)
              endif
 
 
@@ -603,17 +573,13 @@ elseif ( year > 2005 ) then
                 call open_file(IO_GLOBBC,"r",fname,needed=.true.,skip=1) 
                 if ( ios /= 0 ) errmsg = "BC Error O3"
                 read(IO_GLOBBC,*) bc_rawdata
-                !hfOH               conv_factor=1.
-                close(IO_GLOBBC)!ds rv1_9_22
+                close(IO_GLOBBC)
              endif
 
-              !dsOHwrite(*,*) "dsOH READ OZONE1 ", fname, ": ", bc_rawdata(100, 50, 20)
-              !dsOHwrite(*,*) "dsOH READ OZONE2 ", fname, ": ", bc_rawdata(10, 5, 20)
               write(*,*) "dsOH READ OZONE3 ", fname, ": ", bc_rawdata(IGLOB/2,JGLOB/2,20)
 
-       ! ds Mace Head adjustment: get mean ozone from Eastern sector
+       ! Mace Head adjustment: get mean ozone from Eastern sector
 
-!              O3fix = sum( bc_rawdata(1:73,1:80,20) )
               O3fix=0.0
               icount=0
               if(MACEHEADFIX)then
@@ -633,12 +599,9 @@ elseif ( year > 2005 ) then
 
               call lb2ij(macehead_lon,macehead_lat, iMH,jMH)
 
-!hfOH              O3fix = O3fix/(73.0*80.0)  - macehead_O3(month)
-!              O3fix = O3fix/(73.0*80.0)  - macehead_O3(month)*PPB
               if(icount>=1) O3fix = O3fix/(icount)  - macehead_O3(month)*PPB
               
               write(6,"(a10,2f7.2,i4,i6,3f8.3)") "O3FIXes ",iMH,jMH, &
-!                 month, bc_rawdata(73,48,20), macehead_O3(month), O3fix
                    month,icount,bc_rawdata(nint(iMH),nint(jMH),20)/PPB,&
                    macehead_O3(month),O3fix/PPB
               endif
@@ -653,17 +616,7 @@ elseif ( year > 2005 ) then
                  call CheckStop("Problem with Mace Head Correction in GlobalBCs_ml")
               endif
 
-              bc_rawdata=trend_o3 * bc_rawdata  !ds rv1.6.11
-
-
-!            case   ( IBC_SO2 )
-!              write(*,*)'I READ SO2'
-!              write(unit=fname,fmt="(a4,i2.2)") "so2.",month
-!              call open_file(IO_GLOBBC,"r",fname,needed=.true.) ,skip=1?
-!              if ( ios /= 0 ) errmsg = "BC Error SO2"
-!
-!              read(IO_GLOBBC,*) bc_rawdata
-!             close(IO_GLOBBC) !ds rv1_9_22
+              bc_rawdata=trend_o3 * bc_rawdata 
 
 
             case ( IBC_NO, IBC_NO2, IBC_HNO3, IBC_CO, &
@@ -693,12 +646,11 @@ elseif ( year > 2005 ) then
 		  end if ! DEBUG_HZ
                end do
 
-!hfOH               bc_rawdata = max( bc_rawdata, SpecBC(ibc)%vmin ) 
                bc_rawdata = max( bc_rawdata, SpecBC(ibc)%vmin ) 
 
                      
              !/ - correct for latitude functions --------------------------
-!hf BC
+
                do i = 1, IGLOB
                   do j = 1, JGLOB
                      bc_rawdata(i,j,:) = bc_rawdata(i,j,:) * latfunc(ibc,lat5(i,j))
@@ -706,7 +658,7 @@ elseif ( year > 2005 ) then
                end do
              !/ - end of correction for latitude functions ---------------
 
-             !/ ds trend adjustments:
+             !/ trend adjustments:
                if( ibc == IBC_C4H10 .or. ibc == IBC_C2H6 )then
                  bc_rawdata = trend_voc * bc_rawdata
                else if( ibc == IBC_CO )then
@@ -729,7 +681,6 @@ elseif ( year > 2005 ) then
              !/ - correct for latitude functions --------------------------
                if ( DEBUG_Logan ) write(*,*) "LOGAN HORIZ", &
                        ibc, SpecBC(ibc)%surf, cosfac
-!hf BC
                do i = 1, IGLOB
                  do j = 1, JGLOB
 
@@ -764,12 +715,11 @@ elseif ( year > 2005 ) then
 
                      
   !/ - correction for latitude functions -----------------------
-!hfOH hmin is in ppb, bc_rawdata in varying
    bc_rawdata = max( bc_rawdata, SpecBC(ibc)%hmin ) 
 
    
 !  =========================================
-   !HF trend data
+   !trend data
    select case ( ibc )
    case(IBC_SO2, IBC_SO4)
       bc_rawdata=bc_rawdata*USso2trend
@@ -786,11 +736,7 @@ elseif ( year > 2005 ) then
 
    if ( used == 1 ) then
  
-       !dsOH bc_rawdata(:,:,:)=bc_rawdata(:,:,:)*1.0e-9     !Convert to mixing ratio
        bc_rawdata(:,:,:)=bc_rawdata(:,:,:) * SpecBC(ibc)%conv_fac !Convert to mixing ratio
-
-!hf not needed  call vert_interpolation(iglobact,jglobact,bc_rawdata,bc_data)
-!put data only on actual domain
 
         j1 = 1
         do j = jglbeg,jglend

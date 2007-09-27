@@ -1,7 +1,5 @@
 MODULE TimeDate_ml
         IMPLICIT NONE
-	!DS SAVE
-	!DS PUBLIC
 
 ! Originally timedate.f90 from Paul Curtis, found on web
 ! Dave, 31/8/04: Remove some Windows-specific or un-needed routines removed, 
@@ -82,14 +80,6 @@ type, public :: date
 CONTAINS
 
 
-!hfTD	FUNCTION make_timestamp (yyyy,mon,dd,hh,mm,ss) RESULT (ts)
-!hfTD		TYPE(timestamp)              :: ts
-!hfTD		INTEGER,INTENT(IN)           :: yyyy, mon, dd, hh, mm, ss
-!hfTD		ts%jdate = julian_date (yyyy, mon, dd)
-!hfTD		ts%secs  = sph*REAL(hh) + spm*REAL(mm) + REAL(ss)
-!hfTD	END FUNCTION make_timestamp
-
-
 	FUNCTION make_timestamp (cd) RESULT (ts)
 		TYPE(timestamp)              :: ts
 		TYPE(date),INTENT(IN)        :: cd
@@ -103,7 +93,7 @@ CONTAINS
 		ts%secs  = sph*REAL(hh) + REAL(ss)
 	END FUNCTION make_timestamp
 
-!hfTD new function to convert from timestamp to current_date
+
 	FUNCTION make_current_date (ts) RESULT (cd)
 		TYPE(timestamp),INTENT(IN)    :: ts
 		TYPE(date)                    :: cd
@@ -181,22 +171,18 @@ CONTAINS
 
 		ts%secs  = ts%secs + seconds
 		IF (seconds >= 0) THEN
-                        !DS - F doesn't accept "do while"
-                        !CHECK LOGIC!
-			DO     !DSF WHILE (ts%secs >= spd)
-!hfTD new if structure needed
+			DO     
                                 IF  (ts%secs >= spd) THEN
 				     ts%jdate = ts%jdate + 1
 				     ts%secs  = ts%secs - spd
                                 ENDIF
-                                if ( ts%secs < spd) exit  !DSF
+                                if ( ts%secs < spd) exit  
 			END DO
 		ELSE
-                        !DS - F doesn't accept "do while"
-			DO     !DSF WHILE (ts%secs <= 0)
+			DO     
 				ts%jdate = ts%jdate - 1
 				ts%secs  = ts%secs + spd
-                                if ( ts%secs > 0) exit    !DSF
+                                if ( ts%secs > 0) exit    
 			END DO
 		END IF
 
@@ -268,20 +254,18 @@ CONTAINS
                 !          renamed dow->day_of_week, keep dow as internal,  DSF
 		INTEGER,INTENT(IN)           :: yyyy,mm,dd
                 INTEGER :: dow
-		!DSF dow = MOD((13*(mm+10-(mm+10)/13*12)-1)/5+dd+77           &
 		dow = MODULO((13*(mm+10-(mm+10)/13*12)-1)/5+dd+77           &
 			  +5*(yyyy+(mm-14)/12-(yyyy+(mm-14)/12)/100*100)/4   &
 			  +(yyyy+(mm-14)/12)/400-(yyyy+(mm-14)/12)/100*2,7)
 	END FUNCTION day_of_week
 
               
-!CHECK
 	FUNCTION day_of_year (yyyy,mm,dd) result (ndiy)
 		!          day count in year
 		!          cf J.D.Robertson, CACM 15(10):918
                 !          renamed ndiy->day_of_year, keep ndiy as internal,  DSF
 		INTEGER,INTENT(IN)           :: yyyy,mm,dd
-                INTEGER :: ndiy   !DSF
+                INTEGER :: ndiy   
 		ndiy = 3055*(mm+2)/100-(mm+10)/13*2-91               &
 			   +(1-(MODULO(yyyy,4)+3)/4+(MODULO(yyyy,100)+99)/100  &
 			   -(MODULO(yyyy,400)+399)/400)*(mm+10)/13+dd 
@@ -302,9 +286,9 @@ CONTAINS
 	END FUNCTION max_day
       
 
-	FUNCTION leapyear (year) result (leap)   !DSF
+	FUNCTION leapyear (year) result (leap)   
 		INTEGER,INTENT(IN)		:: year
-                logical                         :: leap   !DSF
+                logical                         :: leap   
 		IF (day_of_year(year, 12, 31) > 365) THEN
 			leap = .TRUE.
 		ELSE
@@ -315,7 +299,7 @@ CONTAINS
 
 	FUNCTION y2dig (year) result(y2)
 		INTEGER,INTENT(IN)     :: year
-                integer                :: y2  !DSF
+                integer                :: y2  
 		SELECT CASE (year)
 		CASE (1900:1999) 
 			y2 = year - 1900
@@ -329,7 +313,7 @@ CONTAINS
    
 	FUNCTION y4dig (year) result(y4)
 		INTEGER,INTENT(IN)     :: year
-                integer                :: y4  !DSF
+                integer                :: y4  
 		SELECT CASE (year)
 		CASE (:90)
 			y4 = year + 2000
@@ -352,8 +336,6 @@ CONTAINS
 	SUBROUTINE Init_nmdays (indate)
 		TYPE(date),INTENT(IN)              :: indate
 		INTEGER                            :: month,maxd,yy
-!hfTD		INTEGER,DIMENSION(12)              :: nmdays
-!hfTD           INTEGER                            :: nydays
 		INTEGER,DIMENSION(12),PARAMETER    :: daycount =  & 
 		(/31,28,31,30,31,30,31,31,30,31,30,31/)
 		!          table lookup for most months
