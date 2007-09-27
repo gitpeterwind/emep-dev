@@ -9,7 +9,7 @@
 # lnodes= number of nodes, ppn=processor per node (max4)
 #PBS -lnodes=6
 # wall time limit of run 
-#PBS -lwalltime=0:10:00
+#PBS -lwalltime=0:30:00
 # lpmeme=memory to reserve per processor (max 4 or 16GB per node)
 #PBS -lpmem=200MB
 # account for billing
@@ -111,7 +111,7 @@ my @MAKE = ("gmake",  "-j2", "--makefile=Makefile_snow");
   @MAKE = ("make", "-j2", "-f", "Makefile_njord") if $NJORD==1 ;
   die "Must choose SNYKOV **or** NJORD!\n" unless $NJORD+$SNYKOV==1;
 
-my $SR=0;     # Set to 1 if source-receptor calculation
+my $SR= 0;     # Set to 1 if source-receptor calculation
               # check also variables in package EMEP::Sr below!!
  
 # <---------- start of user-changeable section ----------------->
@@ -179,7 +179,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_9_9";
+    $testv       = "rv2_9_12";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -269,7 +269,7 @@ my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 4;       # for testing, simply reset here
+$NTERM = 2;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -278,8 +278,10 @@ print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 #               (normally, that is...)
 
 if ($SR) {
+    print "SR is true\n";
     @runs = EMEP::Sr::initRuns();
 }
+
 
 #--- Verify data directories
 mkdir_p($WORKDIR);
@@ -362,7 +364,7 @@ my @list_of_files = ();   # Keep list of data-files
 
 foreach my $scenflag ( @runs ) {
     if ($SR) {
-	$scenario = EMEP::Sr::getScenarioName($scenflag);
+	$scenario = EMEP::Sr::getScenario($scenflag);
     } else {
 	$scenario = $scenflag;
     }
@@ -707,6 +709,7 @@ sub calc_nterm {
     $ndays += $month_days[$i] ;
   }
   my $nterm = 1 + 8*$ndays ;
+
   print "Calculated NTERM = $nterm\n";
   return $nterm;
 }
@@ -717,10 +720,14 @@ sub calc_nterm {
 ##############################################################
 package EMEP::Sr;
 
+my (%country_nums, @eu15, @euNew04, @eu25, @euNew06, @eu27, @sea, @noneu, @emep, @external);
+our ($base, $Split, $NOxSplit, $rednflag, $redn, @countries, @polls);
+
+INIT {
 ########################################
 # Define all countries and nums here: ##
 ########################################
-my %country_nums = (
+%country_nums = (
   AL =>   1,  AT =>   2,  BE =>   3,  BG =>   4, FCS =>   5,
   DK =>   6,  FI =>   7,  FR =>   8,
   GR =>  11,  HU =>  12,  IS =>  13,  IE =>  14,  IT =>  15,
@@ -749,15 +756,15 @@ my %country_nums = (
 );
 
 # EU countries:
-my @eu15 = qw ( AT BE DK FI FR DE GR IE IT NL PT ES SE GB LU );
-my @euNew04 = qw ( HU PL CY CZ EE LT LV MT SK SI );
-my @eu25 = ( @eu15, @euNew04 );
-my @euNew06 = qw(BG RO);
-my @eu27 = (@eu25, @euNew06);
-my @sea = qw ( NOS ATL MED BAS BLS );
-my @noneu = qw ( NO CH IS );
-my @emep = qw ( RS ME BY BA HR TR RU UA KZ MD MK GE AM AL AZ KG NOA ASI REM) ; 
-my @external =qw ( RUX   ATX ); 
+@eu15 = qw ( AT BE DK FI FR DE GR IE IT NL PT ES SE GB LU );
+@euNew04 = qw ( HU PL CY CZ EE LT LV MT SK SI );
+@eu25 = ( @eu15, @euNew04 );
+@euNew06 = qw(BG RO);
+@eu27 = (@eu25, @euNew06);
+@sea = qw ( NOS ATL MED BAS BLS );
+@noneu = qw ( NO CH IS );
+@emep = qw ( RS ME BY BA HR TR RU UA KZ MD MK GE AM AL AZ KG NOA ASI REM) ; 
+@external =qw ( RUX   ATX ); 
 
 ########################################
 # End of country definitions          ##
@@ -767,27 +774,28 @@ my @external =qw ( RUX   ATX );
 ################################
 #### start of SR parameters ####
 ################################
-our $base        = "CLE";
-our $Split       = "CLE_MAR2004";     # Defualt (IER-based) VOC splits
-our $NOxSplit    = "CLE2020_ver2";    # Default scenario (IER-based) VOC splits
-our $rednflag    = "P15";  # 15% reduction label
-our $redn        = "0.85"; # 15% reduction
+$base        = "CLE";
+$Split       = "CLE_MAR2004";     # Defualt (IER-based) VOC splits
+$NOxSplit    = "CLE2020_ver2";    # Default scenario (IER-based) VOC splits
+$rednflag    = "P15";  # 15% reduction label
+$redn        = "0.85"; # 15% reduction
 
 # modify those to fill up your queues for SR effectively!!!
-our @countries  = (@eu27, @sea, @noneu, @emep);
-our @polls       = qw ( BASE NP A V S );  #  (any, all, at least 1)
+@countries  = (@eu27, @sea, @noneu, @emep);
+@polls       = qw (BASE NP A V S );  #  (any, all, at least 1)
 ################################
 #### end of SR parameters   ####
 ################################
-
+}
 
 
 sub initRuns {
+    my @runs;
     foreach my $cc (@countries) {
 	foreach my $poll (@polls) {
 	    push @runs, [$cc, $poll, $redn];
 	    if ($poll eq 'BASE') {
-		# run BASE only once!!!
+		# run BASE only once (for exactly one cc)!!!
 		@polls = grep {'BASE' ne $_} @polls;
 	    }
 	}
