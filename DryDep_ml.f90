@@ -1,17 +1,13 @@
 
 module DryDep_ml
 
-  ! Module started from ! the drag-coefficient based approach of
-  ! BJ98:
+  ! Module started from ! the drag-coefficient based approach of BJ98:
   ! Berge, E. and  Jakobsen, H.A., A regional scale multi-layer model
   ! for the calculation of long-term transport and deposition of air
   ! pollution in Europe, Tellus B (1998), 50, 105-223.
 
  !-- model specific dry dep values are set in My_UKDep_ml:
  !   (in file My_DryDep_ml)
- !st mar-03 Particle stuff introduced
- !ds jan-03 STO_FLUX stuff re-introduced
- !hf dec-02 Structure changed so that DryDep can go inside loop in Runchem
 
  use My_UKDep_ml, only : Init_DepMap,  &   ! Maps indices between Vg-calculated (CDEP..
                                        !&   !and advected  (IXADV_..)
@@ -49,7 +45,6 @@ module DryDep_ml
                             i_fdom, j_fdom   ! for testing
  use MassBudget_ml,  only : totddep,DryDep_Budget !hf
  use Met_ml,         only : roa,tau,fh,z_bnd,th,ps,u,v,z_mid&
-                            !dsps ,snow, pr, psurf, cc3dmax, t2_nwp, q &
                             ,snow, pr, ps, cc3dmax, t2_nwp, q &
                             ,surface_precip & ! ds rv1.6.2 
                             ,zen,coszen,Idirect,Idiffuse & !ds mar2005
@@ -194,7 +189,7 @@ module DryDep_ml
    real ::  Hd   ! Heat flux, into surface (opp. sign to fh!)
    real ::  LE   ! Latent Heat flux, into surface (opp. sign to fh!)
    logical :: debug_flag   ! set true when i,j match DEBUG_i, DEBUG_j
-!ICP: re-instated:
+!
    real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG   ! Converts from mol/cm3 to nmole/m3
    real :: nmole_o3, ppb_o3    ! O3 in nmole/m3, ppb
    real :: loss,sto_frac,Vg_scale
@@ -209,7 +204,7 @@ module DryDep_ml
    integer :: lu_used(NLUMAX), nlu_used
    real    :: lu_cover(NLUMAX)
    real    :: lu_lai(NLUMAX)  ! TMP for debug
-!ICP:
+!
    real    :: c_hveg, u_hveg ! Values at canopy top, for fluxes
    real    :: c_hvegppb(NLANDUSE)
    real ::  Ra_diff       ! Ra from z_ref to hveg
@@ -243,7 +238,7 @@ module DryDep_ml
 
      inv_gridarea = 1.0/(GRIDWIDTH_M*GRIDWIDTH_M) 
 
-  !ds   We assume that the area of grid which is wet is
+  !   We assume that the area of grid which is wet is
   !     proportional to cloud-cover:
 
      is_wet = ( surface_precip(i,j) > 0.0 )
@@ -270,8 +265,6 @@ module DryDep_ml
       convfac = (ps(i,j,1) - PT)*carea(KMAX_MID)*xmd(i,j)/ATWAIR
      ! -----------------------------------------------------------------!
 
-!JEJ  to be implemented
-!
 !     !.and factor,  kg_air_ij (( ps-pt)/grav... )  ===> 
 !     !      pressure in kg m-1 s
 !     !      used for converting from mixing ratio to kg
@@ -281,7 +274,7 @@ module DryDep_ml
 !
       lossfrac = 1.0 !  Ratio of xn before and after deposition
 
-     !ds - I prefer micromet terminology here:
+     ! - I prefer micromet terminology here:
 
       Hd = -fh(i,j,1)       ! Heat flux, *away from* surface
       LE = -fl(i,j,1)       ! Heat flux, *away from* surface
@@ -379,7 +372,6 @@ module DryDep_ml
             end if
         end if ! forest
 
-      !ds code moved here from UK_ml to fix bug spotted by Peter, 19/8/2003
       !SAIadd for other vegetation still defined in UK_ml
 
        if (  crops(lu) ) then
@@ -414,7 +406,7 @@ module DryDep_ml
 
         call Get_Submet(hveg,t2_nwp(i,j,1),Hd,LE, ps(i,j,1), &
                z_ref, u_ref(i,j), q(i,j,KMAX_MID,1), & ! qw_ref
-                       debug_flag,                        &    ! in
+                       debug_flag, water(lu),             &    ! in
                        ustar_loc, invL,                   &    ! in-out
                        z0,d, Ra_ref,Ra_3m,rh,vpd)                    ! out
 
@@ -524,7 +516,6 @@ module DryDep_ml
 
 
         !/-- only grab gradients over land-areas
-        !ds - Using water() is better than LU_WATER
 
          if ( water(lu) ) then
             do n = 1, NDRYDEP_TOT  !stDep NDRYDEP_CALC
@@ -712,7 +703,7 @@ module DryDep_ml
       !.. ecosystem specific deposition - translate from calc to adv and normalise
 
          do ilu = 1, nlu
-            lu      = lu_used(ilu)    ! faster than using landuse_codes(i,j,ilu)????
+            lu      = lu_used(ilu)
 
             if ( vg_set(n) )  then
                fluxfrac_adv(nadv,lu) = lu_cover(ilu)  ! Since all vg_set equal
@@ -772,11 +763,6 @@ module DryDep_ml
 
        end do ! n
 
-!ds - Could use DEBUG_i, DEBUG_j here also. I added DEBUG_VG
-!     since the compiler will ignor tis if-test and hence be faster
-!     unless DEBUG_VG is set.
-
-!        if (DEBUG_VG .and. i==2 .and. j==2 .and. nadv==49)then
         if (DEBUG_VG .and.  debug_flag  )then
             write(*,*)'nadv, Deploss',nadv,DepLoss(nadv)
         endif

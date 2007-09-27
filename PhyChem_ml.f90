@@ -98,15 +98,10 @@ contains
     	call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
 
-        !QUERY - does wet need special treatment here?
-        ! (Dry does - see My_DryDep)
-        do i = 1, num_deriv2d
-          if ( (f_2d(i)%class == "WDEP") .or. ( f_2d(i)%class == "PREC" )  ) then
-            d_2d(i,:,:,IOU_INST) = 0.0
-          else if ( f_2d(i)%class == "DDEP" ) then
-            d_2d(i,:,:,IOU_INST) = 0.0
-          end if
-        end do
+!       For safety we initialise add instant. values here to zero.
+!       Usually not needed, but sometimes
+!       ==================
+            d_2d(:,:,:,IOU_INST) = 0.0
 !       ==================
 
 
