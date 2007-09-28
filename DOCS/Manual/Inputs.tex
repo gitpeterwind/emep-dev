@@ -8,7 +8,8 @@ Table~\ref{Tab:Inputs} lists the files used.
 \section{NetCDF files}
 
 The Meteorology and Boundary and Initial conditions files are provided
-in NetCDF format.  3 hr meteorological outputs of the 
+in NetCDF format.  3 hourly meteorological outputs of PARLAM-PS, the
+specially dedicated version of the 
 operational model HIRLAM is used as the input
 meteorology for EMEP.  These are available as daily files. \\
 
@@ -25,15 +26,15 @@ in ascii format.  All ascii input files contain a few lines header
 information of the corresponding file.   \\
 
 Gridded emission files contain 16 columns where the first column
-represents the country code, the second and third are the 'i' and 'j'
-indexes of the model grid, the fourth and fifth are the total emissions from
-lowest (below 100 m of the model level, mainly from traffic,
-agricultural emissions etc.,) and highest sources (above 100 m of the
+represents the country code, the second and third are the 'i' and 'j'coordinates of the model grid, the fourth and fifth are the total emissions from
+low (below 100 m of the model level, mainly from traffic,
+agricultural emissions etc.,) and high sources (above 100 m of the
 model level, which are from industry, power plants etc.),
-and the rest 11 columns represents the emission sectors. Sector means
+and the rest 11 columns contain anthropogenic emissions from 10 SNAP1
+emission sectors (Source-Nomenclature for Air Pollution) and natural emissions. Sector means
 the source type of emissions from each country and there are 11
 sectors defined in EMEP.  A listing of all type
-of sectors are given in 'Def\_ml.f90' of the mode source code.   An arbitrary
+of sectors are given in 'EmisDef\_ml.f90' of the mode source code.   An arbitrary
 example file would look like  \\
 
 \textbf{An example emission file:}
@@ -66,14 +67,14 @@ Mediterranean broadleaf forests (BF), Temperate Crops (TC),
 Mediterranean Crops (MC), Root Crops (RC), Seminatural/Moorland (SNL),
 Grassland (GR), Mediterranean Scrub (MS), Wetlands (WE), Tundra (TU),
 Desert (DE), Water (W), Ice (I), and Urban (U).  They are listed in
-columns followed by the 'i' and 'j' indexes of the
+columns following the 'i' and 'j' indexes of the
 grids. Input file header explains in detail about all the
 columns. \\
 
 Snowcover and Natural SO2 emissions are provided as monthly gridded
 files and they are stored in columns of 'i', 'j', and the
 'values'. 'Inputs.BVOC' file provide the biogenic VOC emissions.  They
-are provided in 4 columns being the first and second as usual
+are provided in 4 columns, being the first and second columns as usual
 represent the 'i' and 'j' indexes of the model grid and the third and
 fourth columns represent the isoprene and terpene emissions in unit of
 ``$ug/m^{2}/h$''.\\
@@ -96,8 +97,8 @@ aircraft emissions are read in as gridded data from the same file.
 The lightning emissions are provided as monthly files for the whole
 year.      \\
 
-Time factors for emission depending on the chemical compound, sector,
-and country for day of the week or month of the year are provided with
+Time factors for emissions depending on the chemical compound, sector,
+and country for day of the week and month of the year are provided with
 the 'DailyFac.pollutnat' and 'MonthlyFac.pollutant' files.  Data are
 stored in columns of 'i','j', factors corresponding to each day of the
 week in 7 consecutive columns in case of DailyFac file and factors
@@ -107,8 +108,8 @@ case of MonthlyFac file.\\
 The model also need a split file for some of the emission files.  For
 egs., only one emission file is provided for NO$_{x}$.  The amount of
 NO$_{2}$ compared to other NO is determined by the split file.  It is
-land and sector dependent.  The same is true for PM25 and VOC, but
-there are more PM25 and much more VOC types present. \\ 
+land and sector dependent.  The same is true for VOC, but
+there are more VOC types present. \\ 
 
 Finally the 'femis.dat' file is provided for setting up a 'scenario run'.  See
 chapter 4, 'Submitting a run' for the details about this file.  
@@ -129,8 +130,8 @@ would not distinguish between any of:
 
 Whereas some spreadsheets get confused if both spaces and commas
 are used. It is suggested that files are kept as 
-pure comma-seperated,
-pure space-seperated,
+pure comma-separated,
+pure space-separated,
 or with separation with both comma and space (as in line 4 above).
 \bigskip
 
@@ -163,7 +164,7 @@ Volcanoes&Volcanoes.dat&i j k   \\ %ds comment lines\\
 Time series for emissions&MonthlyFac.POLL&EMEP\\
 Time series for emissions&DailyFac.POLL&EMEP\\
 Lightning&lt21\_nox.datMM&??& \\
-PM Splits  &pm25split.defaults&ascii \\
+Aircraft&amilt42-nox.dat&??&\\
 VOC Splits&vocsplit.defaults&ascii \\
 NO$_{x}$ Splits& nixsplit.defaults&ascii\\
 femis.dat & femis.dat    & ascii  \\
