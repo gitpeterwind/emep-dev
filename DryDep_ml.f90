@@ -129,8 +129,8 @@ module DryDep_ml
       call SetLandUse()         ! Sets landuse_LAI, landuse_hveg 
       old_daynumber = daynumber
 
-      SumVPD   = 0.0    ! For Critical VPD stuff
-      old_gsun = 0.0    ! For Critical VPD stuff
+      SumVPD   = 0.0    ! For Critical VPD stuff, for wheat
+      old_gsun = 1.0e99 ! For Critical VPD stuff
 
   end if
 

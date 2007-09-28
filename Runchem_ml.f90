@@ -1,15 +1,22 @@
+!_____________________________________________________________________________
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 
-!MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
-module RunChem_ml
+                          module RunChem_ml
+
+! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
 !----------------------------------------------------------------------
 !
 !----------------------------------------------------------------------
    use DryDep_ml, only : drydep
-   use My_Aerosols_ml, only: My_MARS,My_EQSAM,AERO_DYNAMICS,INORGANIC_AEROSOLS&
-                            ,RUN_MARS,RUN_EQSAM,ORGANIC_AEROSOLS, Aero_water
-   use Par_ml,           only : lj0,lj1,li0,li1  &
-                        ,gi0, gj0, me & !! for testing
-                        ,IRUNBEG, JRUNBEG    !! for testing
+   use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,           &
+                                EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
+                                ORGANIC_AEROSOLS, Aero_water
+   use Par_ml,            only : lj0,lj1,li0,li1  &
+                                ,gi0, gj0, me & !! for testing
+                                ,IRUNBEG, JRUNBEG    !! for testing
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
                                   nprint, END_OF_EMEPDAY, &
                             DEBUG_i, DEBUG_j,nstep, NPROC
@@ -20,7 +27,7 @@ module RunChem_ml
    use Setup_1dfields_ml, only: first_call  &
       ,amk , rcemis, rcbio, xn_2d  ! DEBUG for testing
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Ammonium_ml,       only: Ammonium!hf, INORGANIC_AEROSOLS
+   use Ammonium_ml,       only: Ammonium
    use OrganicAerosol_ml, only: OrganicAerosol!hf, ORGANIC_AEROSOLS
    use Chemsolver_ml,     only: chemistry
    use My_Timing_ml,      only: Code_timer, Add_2timing, tim_before, tim_after
@@ -155,17 +162,17 @@ subroutine runchem(numt)
 !hf dec-2002 Add check that one and only one eq is chosen
                      if(mod(nstep,2) /= 0 )then !do eq first, then drydep
 
-                        if ( INORGANIC_AEROSOLS ) call ammonium() 
-                        if ( RUN_MARS )           call My_MARS(debug_flag)
-                        if ( RUN_EQSAM )          call My_EQSAM(debug_flag) 
+                        if ( EQUILIB_EMEP )        call ammonium() 
+                        if ( EQUILIB_MARS )        call My_MARS(debug_flag)
+                        if ( EQUILIB_EQSAM )       call My_EQSAM(debug_flag) 
 
                         call DryDep(i,j)
                      else !do drydep first, then eq
 
                         call DryDep(i,j)
-                        if ( INORGANIC_AEROSOLS ) call ammonium() 
-                        if ( RUN_MARS )           call My_MARS(debug_flag)
-                        if ( RUN_EQSAM )          call My_EQSAM(debug_flag) 
+                        if ( EQUILIB_EMEP )        call ammonium() 
+                        if ( EQUILIB_MARS )        call My_MARS(debug_flag)
+                        if ( EQUILIB_EQSAM )       call My_EQSAM(debug_flag) 
                      endif
                     !????????????????????????????????????????????????????
 

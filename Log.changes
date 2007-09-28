@@ -1,4 +1,11 @@
-============== Dave, rv2_9_15, Sept.  27th 2007  =============================
+============== rv2_9_16, Sept.  28th 2007  =============================
+
+Dave:
+Bug-fix for old_gsun in DryDep_ml
+
+Svetlana:
+Cleanup of Runchem_ml, My_Aerosol
+y============= Dave, rv2_9_15, Sept.  27th 2007  =============================
 
 d_2d initialised to zero in PhyChem for all components
 (check by Svetlana)

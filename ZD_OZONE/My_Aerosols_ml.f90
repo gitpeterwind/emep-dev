@@ -1,45 +1,46 @@
- module My_Aerosols_ml
+!_____________________________________________________________________________
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 
-   !----------------------------------------------------------------------
-   ! Allows to select aerosol types for the model run:
-   ! 1. AERO_DYNAMICS - for running UNI-AERO 
-   ! 2. INORGANIC_AEROSOLS - for run old Ammonium routine
-   ! 3. RUN_MARS - run MARS eq model
-   ! 4. RUN_EQSAM - run EQSAM eq model ! One of 2.,3. or 4. must be true
-   ! 5. ORGANIC_AEROSOLS - for including Secondary Organic Aerosol
-   !----------------------------------------------------------------------
+                           module My_Aerosols_ml
 
-!st.. Made from the previous My_Aerosols, where Ammonium module is moved to
-!st.. Ammonium_ml.f90, and OrganicAerosol module is moved to SOA_ml.f90
+! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+!----------------------------------------------------------------------
+! Allows to select aerosol types for the model run:
+! 1. AERO_DYNAMICS - for running UNI-AERO (presently not included)
+! Options for aeroso-gas equilibrium partitioning:
+! 2. EQUILIB_EMEP - old EMEP scheme
+! 3. EQUILIB_MARS - run MARS equilibrium model
+! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
+! 5. ORGANIC_AEROSOLS - for including Secondary Organic Aerosol (not active)
+!----------------------------------------------------------------------
 
    implicit none
 
    !/-- public           !!  true if wanted
                     
-    logical, public, parameter :: AERO_DYNAMICS      = .false.   &  
-                                , INORGANIC_AEROSOLS = .false.  & !old Ammonium stuff
-                                , RUN_MARS           = .false. & !MARS
-                                , RUN_EQSAM          = .true. & !EQSAM
-                                , ORGANIC_AEROSOLS   = .false.   
-!stDep
-    integer, public, parameter :: NSIZE = 2    ! number of aerosol sizes (1-fine, 2-coarse)
-!SeaS
-    logical, public, parameter :: SEASALT = .false. 
+    logical, public, parameter :: AERO_DYNAMICS     = .false.   &  
+                                , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
+                                , EQUILIB_MARS      = .false. & !MARS
+                                , EQUILIB_EQSAM     = .true. & !EQSAM
+                                , ORGANIC_AEROSOLS  = .false.   
+   ! Number of aerosol sizes (1-fine, 2-coarse)
+    integer, public, parameter :: NSIZE = 2    
+
+    logical, public, parameter :: SEASALT = .true. 
+
 contains
 
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
       subroutine My_MARS(deb)
 
-    !..................................................................
-    ! Different pre-processing (and for aerosol dynamisc: fractioning) 
-    ! is needed for UNI-ACID,UNI-OZONE and UNI-AERO. 
-    !
-    ! hf dec-2002
-    ! changed eg aNH4->aNH4out in call to rpmares
-    ! Should put k-loop into rpmares
-    ! Should change name rpmares to MARS
-    !..................................................................
+ !..................................................................
+ ! Pretty old F. Binkowski code from EPA CMAQ-Models3
+ ! JGR, 108, D6, 4183
+ !..................................................................
 
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
  use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4, NO3
@@ -71,17 +72,14 @@ contains
       so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef
       hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef 
       nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef
-      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef ! + &
-!               xn_2d(NO3,k) * species(NO3)%molwt  *coef   !different for UNI-OZONE/ACID
+      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef
       nh4in  = xn_2d(aNH4,k) * species(aNH4)%molwt  *coef
 
  !--------------------------------------------------------------------------                
-    call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
-                  aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, ERRMARK,debsub) 
+      call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
+                    aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+                    ERRMARK,debsub) 
  !--------------------------------------------------------------------------
- ! SO4 is not changed so do not need to be reset
-     
-!      xn_2d(NO3,k)  = FLOOR !different for UNI-OZONE/ACID
 
       xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
       xn_2d(NH3,k)   = max (FLOOR, gNH3out / (species(NH3)%molwt  *coef) )
@@ -92,21 +90,18 @@ contains
 
  end subroutine My_MARS
 
-!.............................
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
- !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
       subroutine My_EQSAM(debug_cell)
 
     !..................................................................
-    ! Different pre-processing (and for aerosol dynamisc: fractioning) 
-    ! is needed for UNI-ACID and UNI-AERO. UNI-OZONE and UNI-ACID can 
-    ! use the same.
-    !
-    ! hf dec-2002
-    ! Version aero_martijn included (same as in LOTUS)
-    ! 
-    ! 
+    !EQSAM - Equlibrium Simplified Aerosol Model by Swen Metzger
+    !        version v03d is implemented here
+    ! Metzger, S., Dentener, F., Pandis, S., and Lelieveld, J. (a): 
+    !       Gas/Aerosol Partitioning 1: A computationally efficient model. 
+    !       JGR, 107(D16), 10.1029/2001JD001102, 2002.
     !..................................................................
 
  use EQSAM_v03d_ml,      only :  eqsam_v03d
@@ -115,32 +110,33 @@ contains
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
-! use EQSAM_ml, only: aero
 
  implicit none
+
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
 
  logical, intent(in)  :: debug_cell
 
 
  !.. local
-  real    :: so4in(KCHEMTOP:KMAX_MID), &
-             no3in(KCHEMTOP:KMAX_MID), &
-             nh4in(KCHEMTOP:KMAX_MID), &
-             hno3in(KCHEMTOP:KMAX_MID), &
+  real    :: so4in(KCHEMTOP:KMAX_MID),   &
+             no3in(KCHEMTOP:KMAX_MID),   &
+             nh4in(KCHEMTOP:KMAX_MID),   &
+             hno3in(KCHEMTOP:KMAX_MID),  &
              nh3in(KCHEMTOP:KMAX_MID),   &
+! The following input is not in use
+             NAin(KCHEMTOP:KMAX_MID),    &
+             CLin(KCHEMTOP:KMAX_MID),    &
+
              aSO4out(KCHEMTOP:KMAX_MID), &
              aNO3out(KCHEMTOP:KMAX_MID), &
              aH2Oout(KCHEMTOP:KMAX_MID), &
              aNH4out(KCHEMTOP:KMAX_MID), & 
              gNH3out(KCHEMTOP:KMAX_MID), &
              gNO3out(KCHEMTOP:KMAX_MID), &
-!HF tmp fix
-             NAin(KCHEMTOP:KMAX_MID)  , &
-             CLin(KCHEMTOP:KMAX_MID) , &
-             aNAout(KCHEMTOP:KMAX_MID),&
-             aCLout(KCHEMTOP:KMAX_MID),&
-             gCLout(KCHEMTOP:KMAX_MID),&
+             aNAout(KCHEMTOP:KMAX_MID),  &
+             aCLout(KCHEMTOP:KMAX_MID),  &
+             gCLout(KCHEMTOP:KMAX_MID),  &
              gSO4out(KCHEMTOP:KMAX_MID)
 
   integer :: i,j,k, errmark
@@ -154,32 +150,22 @@ contains
   endif
 
 !//.... molec/cm3 -> micromoles/m**3
-      so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
-      hno3in(KCHEMTOP:KMAX_MID) = xn_2d(HNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
-      nh3in(KCHEMTOP:KMAX_MID)  = xn_2d(NH3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
-      no3in(KCHEMTOP:KMAX_MID)  = xn_2d(aNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG !+&
-!                                  xn_2d(NO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG !different for ACID/OZONE
-      nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(aNH4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+    so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+    hno3in(KCHEMTOP:KMAX_MID) = xn_2d(HNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+    nh3in(KCHEMTOP:KMAX_MID)  = xn_2d(NH3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
+    no3in(KCHEMTOP:KMAX_MID)  = xn_2d(aNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
+    nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(aNH4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
 
-      NAin(KCHEMTOP:KMAX_MID)  = 0.
-      CLin(KCHEMTOP:KMAX_MID)  = 0.
+    NAin(KCHEMTOP:KMAX_MID)  = 0.0
+    CLin(KCHEMTOP:KMAX_MID)  = 0.0
 
- !--------------------------------------------------------------------------                
- !   call aero (so4in, hno3in,no3in ,nh3in, nh4in , rh, temp,   &
- !                 aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, ERRMARK,debsub) 
- !--------------------------------------------------------------------------
  !--------------------------------------------------------------------------                
   
-   call eqsam_v03d (so4in, hno3in,no3in,nh3in,nh4in,NAin,CLin, rh,temp,pp,   &
-                    aSO4out, aNO3out, aNH4out, aNAout, aCLout,               &
-                    gSO4out, gNH3out, gNO3out, gClout, aH2Oout)
+    call eqsam_v03d (so4in, hno3in,no3in,nh3in,nh4in,NAin,CLin, rh,temp,pp, &
+                     aSO4out, aNO3out, aNH4out, aNAout, aCLout,             &
+                     gSO4out, gNH3out, gNO3out, gClout, aH2Oout)
  
  !--------------------------------------------------------------------------
- ! SO4 is not changed so do not need to be reset 
-
-!      if (so4in .ne. aSO4out) then
-!      write(*,*) 'STARNGE EQSAM RESULTS'
-!      endif
 
 !//.... micromoles/m**3  -> molec/cm3 
 !      xn_2d(NO3,KCHEMTOP:KMAX_MID)  = FLOOR !different for ACID/OZONE
@@ -188,7 +174,7 @@ contains
       xn_2d(NH3,KCHEMTOP:KMAX_MID)   = max(FLOOR,gNH3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(aNO3,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 ) 
       xn_2d(aNH4,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNH4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
-      xn_2d(SO4,KCHEMTOP:KMAX_MID)  = max(FLOOR,aSO4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
+      xn_2d(SO4,KCHEMTOP:KMAX_MID)   = max(FLOOR,aSO4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
 
  if ( debsub .and. debug_cell ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
@@ -197,7 +183,6 @@ contains
 
  end subroutine My_EQSAM
 
-!.............................
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -208,10 +193,15 @@ contains
 
       subroutine Aero_water(i,j)
 
-    !..................................................................
-    !EQSAM is called just before writing out to calculate aerosol water
-    !simulating "PM samples equilibration" at T=20C and Rh = 50%
-    !..................................................................
+  !.....................................................................
+  ! EQSAM is called before every daily output to calculate aerosol water 
+  ! at T=20C and Rh = 50%. This should model the particle water content 
+  ! for gravitationally determined PM mass
+  ! Tsyro, S. (2005). To what extent can aerosol water explain the 
+  ! discrepancy between model calculated and gravimetric PM10 and PM2.5?. 
+  ! Atmos. Chem.. Phys., 5, 602, 1-8, 2005.
+  !.....................................................................
+
  use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d      ! SIA concentration 
  use Chemfields_ml,      only :  PM_water               !PMwater  
@@ -219,7 +209,6 @@ contains
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
-! use EQSAM_ml, only: aero
 
  implicit none
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
@@ -227,23 +216,23 @@ contains
  integer, intent(in)  :: i, j
 
  !.. local
-  real    :: so4in(KCHEMTOP:KMAX_MID), &
-             no3in(KCHEMTOP:KMAX_MID), &
-             nh4in(KCHEMTOP:KMAX_MID), &
-             hno3in(KCHEMTOP:KMAX_MID), &
+  real    :: so4in(KCHEMTOP:KMAX_MID),   &
+             no3in(KCHEMTOP:KMAX_MID),   &
+             nh4in(KCHEMTOP:KMAX_MID),   &
+             hno3in(KCHEMTOP:KMAX_MID),  &
              nh3in(KCHEMTOP:KMAX_MID),   &
+! fix
+             NAin(KCHEMTOP:KMAX_MID)  ,  &
+             CLin(KCHEMTOP:KMAX_MID) ,   &
              aSO4out(KCHEMTOP:KMAX_MID), &
              aNO3out(KCHEMTOP:KMAX_MID), &
              aH2Oout(KCHEMTOP:KMAX_MID), &
              aNH4out(KCHEMTOP:KMAX_MID), & 
              gNH3out(KCHEMTOP:KMAX_MID), &
              gNO3out(KCHEMTOP:KMAX_MID), &
-!HF tmp fix
-             NAin(KCHEMTOP:KMAX_MID)  , &
-             CLin(KCHEMTOP:KMAX_MID) , &
-             aNAout(KCHEMTOP:KMAX_MID),&
-             aCLout(KCHEMTOP:KMAX_MID),&
-             gCLout(KCHEMTOP:KMAX_MID),&
+             aNAout(KCHEMTOP:KMAX_MID),  &
+             aCLout(KCHEMTOP:KMAX_MID),  &
+             gCLout(KCHEMTOP:KMAX_MID),  &
              gSO4out(KCHEMTOP:KMAX_MID), &
 
              rh50(KCHEMTOP:KMAX_MID),t20(KCHEMTOP:KMAX_MID)
@@ -272,12 +261,8 @@ contains
       t20(:)  = 293.
 
  !--------------------------------------------------------------------------                
- !   call aero (so4in, hno3in,no3in ,nh3in, nh4in , rh50, temp20,   &
- !                 aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, ERRMARK,debsub) 
- !--------------------------------------------------------------------------
- !--------------------------------------------------------------------------                
   
-   call eqsam_v03d (so4in, hno3in,no3in,nh3in,nh4in,NAin,CLin, rh50,t20,pp,   &
+   call eqsam_v03d (so4in, hno3in,no3in,nh3in,nh4in,NAin,CLin, rh50,t20,pp,  &
                     aSO4out, aNO3out, aNH4out, aNAout, aCLout,               &
                     gSO4out, gNH3out, gNO3out, gClout, aH2Oout)
  
@@ -293,7 +278,7 @@ contains
 !  endif
 
  end subroutine  Aero_water
-!.............................
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
  end module My_Aerosols_ml
 
