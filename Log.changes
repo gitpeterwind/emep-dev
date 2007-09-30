@@ -1,3 +1,64 @@
+============== Dave, rv_Beta30 30 Sep  2007  =============================
+
+
+New modules:
+============
+CellMet_ml - sets met params for lower grid cell, call SubMet
+LandDefs_ml - 
+StoFlux_ml
+
+
+Some changes:
+Deleted               Replacement
+=========             ===============
+UKsetup_ml            LandDefs_ml.f90
+JUN06_gfac1.dat       Inputs_DO3SE.csv
+JUN06_gfac2.dat          "      "       
+JUN06_biomass.dat     Inputs.LandDefs
+
+
+Changes due to new system:
+===========================
+Aero_Rb_ml uses LandType
+DefPhotolysis_ml - uses Grid%izen
+DryDep - *** major re-write ***
+Functions_ml - MicroMet stuff removed
+Landuse_ml - *** major rewrite ***
+Makefile.SRCS - new files, some deletions
+Met_ml - invL calc moved to CellMet
+Radiation_ml (albedo removed from PAR calc.)
+Rsurface_ml
+Runchem_ml
+SubMet_ml - *** major rewrite ***
+My_DryDep_ml
+
+SeaSalt - JUST A FAKE FOR NOW!
+
+Cleanups:
+==========
+Chem_ml
+Derived_ml 
+Emissions_ml
+GridValues_ml
+Io_Nums_ml
+OrganicAerosol_ml
+PAR_ml
+PhyChe
+Setup_1d_ml
+Setup_1dfields_ml
+Unimod.f90   (now outputs Base_fullrun.nc, not Base_year.nc)
+My_Chem_ml
+My_Reactions_ml
+My_Derived_ml
+My_Emis_ml
+My_WetDep
+
+Minor (due to renamed modules)
+=========================
+MassBudget_ml
+ModelConstants_ml
+Solver_ml
+
 ============== rv2_9_16, Sept.  28th 2007  =============================
 
 Dave:
@@ -5,6 +66,7 @@ Bug-fix for old_gsun in DryDep_ml
 
 Svetlana:
 Cleanup of Runchem_ml, My_Aerosol
+
 y============= Dave, rv2_9_15, Sept.  27th 2007  =============================
 
 d_2d initialised to zero in PhyChem for all components
