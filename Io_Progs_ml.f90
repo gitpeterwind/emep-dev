@@ -467,16 +467,14 @@ contains
          i   = i_local(i_fdom)   ! Convert to local coordinates
          j   = j_local(j_fdom)
 
-         if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then  
+         !SAFER? if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then  
+         if ( i >= 1 .and. i <= li1 .and. j >=1 .and. j <= lj1  ) then  
 
-             if ( MY_DEBUG ) debug_flag = ( i_fdom == DEBUG_i  &
-                                   .and. j_fdom == DEBUG_j  )
-
-              if ( debug_flag ) then
+             if ( MY_DEBUG .and. &
+                  i_fdom == DEBUG_i  .and. j_fdom == DEBUG_j  ) &
                 write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp(1)
-              endif
 
-              data2d(i,j,1:Ndata) = tmp(1:Ndata)
+             data2d(i,j,1:Ndata) = tmp(1:Ndata)
 
          end if ! i,j
       end do

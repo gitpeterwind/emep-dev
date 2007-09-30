@@ -18,15 +18,16 @@ implicit none
     IO_LOG      = 7   &! General output log (o)
    ,IO_SITES    = 8   &! sites module, first for input(c)
    ,IO_MYTIM    = 20  &! Unimod.f90(c)-output mytim.out 
-   ,IO_RES      = 25  &! o3mod,massbud(o) - ! out eulmod.res
+   ,IO_RES      = 25  &! o3mod,massbud(o) 
    ,IO_TMP      = 27   ! General IO number (files *must* be type (c))
 
 
   integer, parameter, public  :: &
     IO_SONDES   = 30  &! siteswrt_ml(o)  for output of sonde data
-   ,IO_WRTCHEM  = 118 &! Used in Wrtchem (c) for AOT (buggy output) and BCs
+   ,IO_WRTCHEM  = 118 &! Used in Wrtchem (c) for AOT and BCs
    ,IO_HOURLY   = 119  ! hourly_out(o)
 
+  !(some subroutine names are a bit outdated:)
   integer, parameter, public  :: &
     IO_FORES    = 49  &! rforest.f(c)-read land use %
    ,IO_AIRN     = 49  &! airnox.f(c) - read aircr. em.
@@ -35,6 +36,7 @@ implicit none
    ,IO_GLOBBC   = 49  &! read  global mixing ratios e.g. Logan
    ,IO_GLOBBC2  = 91  &! read  global mixing ratios e.g. h2o2
    ,IO_INFIELD  = 50  &! infield.F(c) -reads fil000xx  
+   ,IO_DO3SE    = 51  &! for DO3SE inputs(c)
    ,IO_ROUGH    = 52  &! inpar.f -reads roughn. class  
    ,IO_SNOW     = 53  &! newmonth(c): for snow
    ,IO_VOLC     = 54  &

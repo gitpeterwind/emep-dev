@@ -1,9 +1,9 @@
 module Functions_ml
 !____________________________________________________________________
 ! Miscellaneous collection of "standard" (or guessed ) functions
-! Including Troe, sine and cosine curves, aerodynamics (PsiM, PsiH,
-! AerRes, bilinear-interpolation routines, and Polygon.
-! ds and Standard Atmosphere p -> H conversion
+! Including Troe, sine and cosine curves, 
+! bilinear-interpolation routines, 
+! and Standard Atmosphere p -> H conversion
 !____________________________________________________________________
 !
 !** includes
@@ -27,8 +27,6 @@ module Functions_ml
   public ::  Daily_halfsine ! Similar, but only half-sine curve (0..pi)
                             ! used. (E.g. for H2O2 in ACID versions)
 
-  public :: Polygon         ! Used in deposition work.
-
   public :: StandardAtmos_kPa_2_km   ! US Standard Atmosphere conversion
 
 
@@ -49,19 +47,6 @@ module Functions_ml
 
  real, save, private, dimension(131) ::  tab_exf  ! Tabulated Exner
 
- !/-- Micromet (Aerodynamic) routines ----------------------------------------
-
-  public :: rh2vpd
-
-  public :: AerRes
-
-  public :: AerResM
-
-  public :: PsiH
-
-  public :: PsiM
-
-  public :: PhiH
 
   !/-- interpolation stuff
   public  :: bilin_interpolate                         !  "Generic" subroutine
@@ -305,81 +290,6 @@ module Functions_ml
   end subroutine bilin_interp_elem
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-!d1.1    - checks for LenS, LenE = 0 introduced
-!d1.3    - simplified following Margaret's suggestion: removed 
-!          if-tests and possibility of EGS > 366
-!xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-!=======================================================================
-function Polygon(jdayin,Ymin,Ystart,Ymax,Sday,LenS,Eday,LenE) &
-result (Poly)
-!=======================================================================
-
-!     Calculates the value of a parameter Y with a polygon
-!     distribution - currently LAI and g_pot
-
-!            _____________       <- Ymax
-!           /             \
-!          /               \
-!         /                 \
-!        /                   \
-!       |                     |  <- Ystart
-!       |                     |
-!       |                     |
-!  ----------------------------- <- Ymin
-!       S  S1            E1   E
-!
-!1.4 The following has been simplified
-    
-
-!   Inputs
-    integer, intent(in) :: jdayin      !day of year
-!d1.4 integer, intent(in) :: yydays    !no. days in year (365 or 366)
-    real, intent(in) ::    Ymin        !minimum value of Y
-    real, intent(in) ::    Ystart      !value Y at start of growing season
-    real, intent(in) ::    Ymax        !maximum value of Y
-    integer, intent(in) ::    Sday        !start day (e.g. of growing season)
-    integer, intent(in) ::    LenS        !length of Start period (S..S1 above)
-    integer, intent(in) ::    Eday        !end day (e.g. of growing season)
-    integer, intent(in) ::    LenE        !length of end period (E..E1 above)
-
-!  Output:
-    real ::   Poly  ! value at day jday
-
-! Local
-    integer :: jday  ! day of year, after any co-ordinate change
-    integer ::    S   !  start day
-    integer ::    E   !  end day
-    
-
-    jday = jdayin
-    E = Eday
-    S = Sday
-
-  ! Here we removed a lot of code associated with the leaf-age
-  ! version of g_pot. 
-       
-    if ( jday  <  S .or. jday >  E ) then
-       Poly = Ymin
-       return
-    end if
-
-  !d1.3 - slightly re-written tests:
-
-    if (jday <=  S+LenS  .and. LenS > 0 ) then
-
-        Poly = (Ymax-Ystart) * (jday-S)/LenS  + Ystart 
-
-    else if ( jday >=  E-LenE .and. LenE > 0.0 ) then   !d1.1 test for LenE
-
-        Poly = (Ymax-Ystart) * (E-jday)/LenE + Ystart
-
-    else
-
-        Poly =Ymax
-    end if
-    
-
- end function Polygon
 
  !=======================================================================
  elemental function StandardAtmos_kPa_2_km(p_kPa) result (h_km)
@@ -408,145 +318,6 @@ result (Poly)
  end function StandardAtmos_kPa_2_km
 
  !=======================================================================
-
-
-  !--------------------------------------------------------------------
-  function rh2vpd(T,rh) result (vpd_res)
-  !This function is not currently in use.
-
-    real, intent(in) ::  T    ! Temperature (K)
-    real, intent(in) ::  rh   ! relative humidity (%)
-    real :: vpd_res     ! vpd   = water vapour pressure deficit (Pa)
-
-    !   Local:
-    real :: vpSat       ! vpSat = saturated water vapour pressure (Pa)
-    real :: arg
-
-    arg   = 17.67 * (T-273.15)/(T-29.65)
-    vpSat = 611.2 * exp(arg)
-    vpd_res   = (1.0 - rh/100.0) * vpSat
-
-  end function rh2vpd
-
-  !--------------------------------------------------------------------
-  function AerRes(z1,z2,uStar,Linv,Karman) result (Ra)
-!...
-!   Ref: Garratt, 1994, pp.55-58
-!   In:
-    real, intent(in) ::   z1     ! lower height (m), equivalent to h-d+1 or h-d+3
-    real, intent(in) ::   z2     ! upper height (m), equivalent to z-d
-    real, intent(in) ::   uStar  ! friction velocity (m/s)
-    real, intent(in) ::   Linv   ! inverse of the Obukhov length (1/m)
-    
-    real, intent(in) ::   Karman ! von Karman's constant 
-!   For AerRes, the above dummy argument is replaced by the actual argument 
-!   KARMAN in the module GetMet_ml.
-
-!   Out:
-    real :: Ra      ! =  aerodynamic resistance to transfer of sensible heat
-                    !from z2 to z1 (s/m)
-
-!   uses functions:
-!   PsiH   = integral flux-gradient stability function for heat 
-!...
-
-    Ra = log(z2/z1) - PsiH(z2*Linv) + PsiH(z1*Linv)
-    Ra = Ra/(Karman*uStar)
-
-  end function AerRes
-
-  !--------------------------------------------------------------------
-  function AerResM(z1,z2,uStar,Linv,Karman) result (Ra)
-!...
-!   Ref: Garratt, 1994, pp.55-58
-!   In:
-    real, intent(in) ::   z1     ! lower height (m), equivalent to h-d+1 or h-d+3
-    real, intent(in) ::   z2     ! upper height (m), equivalent to z-d
-    real, intent(in) ::   uStar  ! friction velocity (m/s)
-    real, intent(in) ::   Linv   ! inverse of the Obukhov length (1/m)
-    
-    real, intent(in) ::   Karman ! von Karman's constant 
-!   For AerRes, the above dummy argument is replaced by the actual argument 
-!   KARMAN in the module GetMet_ml.
-
-!   Out:
-    real :: Ra     ! =  aerodynamic resistance to transfer of momentum
-                    !from z2 to z1 (s/m)
-
-!   uses functions:
-!   PsiM   = integral flux-gradient stability function for momentum
-!...
-
-    Ra = log(z2/z1) - PsiM(z2*Linv) + PsiM(z1*Linv)
-    Ra = Ra/(Karman*uStar)
-
-  end function AerResM
-
-  !--------------------------------------------------------------------
-  function PsiH(zL) result (stab_h)
-    !  PsiH = integral flux-gradient stability function for heat 
-    !  Ref: Garratt, 1994, pp52-54
-
-    ! In:
-    real, intent(in) :: zL   ! surface layer stability parameter, (z-d)/L 
-    
-    ! Out:
-    real :: stab_h         !   PsiH(zL) 
-    
-   ! Local
-   real :: x
- 
-    if (zL <  0) then !unstable
-        x    = sqrt(1.0 - 16.0 * zL)
-        stab_h = 2.0 * log( (1.0 + x)/2.0 )
-    else             !stable
-        stab_h = -5.0 * zL
-    end if
-
-  end function PsiH
-
-  !--------------------------------------------------------------------
-  function PsiM(zL) result (stab_m)
-   !   Out:
-   !   PsiM = integral flux-gradient stability function for momentum 
-   !   Ref: Garratt, 1994, pp52-54
-
-    real, intent(in) ::  zL    ! = surface layer stability parameter, (z-d)/L 
-                               ! notation must be preserved         
-    real :: stab_m
-    real  :: x
- 
-    if( zL < 0) then !unstable
-       x    = sqrt(sqrt(1.0 - 16.0*zL))
-       stab_m = log( 0.125*(1.0+x)*(1.0+x)*(1.0+x*x) ) +  PI/2.0 - 2.0*atan(x)
-    else             !stable
-       stab_m = -5.0 * zL
-    end if
-
-  end function PsiM
-
-!--------------------------------------------------------------------
-  function PhiH(zL) result (phi_h)
-    !  PhiH = flux-gradient stability function for heat 
-    !  Ref: Garratt, 1994, pp52-54
-
-    ! In:
-    real, intent(in) :: zL   ! surface layer stability parameter, (z-d)/L 
-    
-    ! Out:
-    real :: phi_h         !   PhiH(zL) 
-    
-   ! Local
-   real :: x
- 
-    if (zL <  0) then !unstable
-        phi_h    = sqrt(1.0 - 16.0 * zL)
-    else             !stable
-        phi_h = 1 + 5.0 * zL
-    end if
-
-  end function PhiH
-!--------------------------------------------------------------------
 
  !+
  !  Exner functions

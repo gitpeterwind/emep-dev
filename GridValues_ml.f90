@@ -235,7 +235,7 @@ contains
 
    ! set latitude, longitude
 
-  !!! projection='Stereographic'  !JUN06 fix!!!!!
+  !!! projection='Stereographic'
        call Position()
 
     if ( DEBUG_GRID ) then
@@ -285,14 +285,14 @@ contains
   !   - note, we could use rpol2(i,j) to save some computations here, 
   !       but for now we leave it. This stuff is only done once anyway
 
-    real    :: glmin, glmax, om, om2, dy, dy2,rp,rb, rl, dx, dr !,fi read in Met_ml pw u3 
+    real    :: glmin, glmax, om, om2, dy, dy2,rp,rb, rl, dx, dr !,fi read in Met_ml
     integer :: i, j, info
 
       !su    xp,yp read in infield                
       !su    xp = 43.
       !su    yp = 121.
 
-!    fi = -32.0   !read in Met_ml pw u3
+!    fi = -32.0   !read in Met_ml
     glmin = -180.0
 
     glmax = glmin + 360.0
@@ -303,11 +303,11 @@ contains
 
   if(trim(projection)=='Stereographic') then     
     
-    do j = 1, MAXLJMAX          ! ds - changed from ljmax
-       dy  = yp - j_fdom(j)     ! ds - changed from gj0+JRUNBEG-2+j
+    do j = 1, MAXLJMAX          !  - changed from ljmax
+       dy  = yp - j_fdom(j)     !  - changed from gj0+JRUNBEG-2+j
        dy2 = dy*dy
-       do i = 1, MAXLIMAX       ! ds - changed from limax
-         dx = i_fdom(i) - xp    ! ds - changed
+       do i = 1, MAXLIMAX       !  - changed from limax
+         dx = i_fdom(i) - xp    !  - changed
          rp = sqrt(dx*dx+dy2)           ! => distance to pole
          rb = 90.0 - om2 * atan(rp/AN)  ! => latitude
          rl = 0.0
@@ -316,10 +316,6 @@ contains
          if (rl >  glmax)   rl = rl - 360.0
          gl(i,j)=rl                     !     longitude
          gb(i,j)=rb                     !     latitude
-
-!JUN06 fix
-!!!          gb_glob( i_fdom(i), j_fdom(j) ) = gb(i,j)  ! FIX!!!!
-!----------------------------------------
 
        end do ! i
     end do ! j

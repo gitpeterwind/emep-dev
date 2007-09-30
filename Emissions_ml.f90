@@ -6,11 +6,6 @@
 
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-! October 2001 hf added call to ReadField
-! 6b: Nov. 2001 - dead code removed, some renaming (rsnd -> rdemis), ds
-! Modified for Joffen's new mass budget method - Bud_ml removed here.
-! HF Mars-02 Flat emission treatment and volcanos added
-!_____________________________________________________________________________
 !+ Calls up emission read/set routines
 !  This routine interfaces the stand-alone emission-file reading routines
 !  with the 3D model.
@@ -35,7 +30,7 @@
   use CheckStop_ml,only : CheckStop
   use Country_ml,    only : NLAND,Country_Init,Country
   use EmisDef_ml, only : NSECTORS,  &  ! No. sectors
-                         NEMISLAYERS,& !rv1.3b No. vertical layers for emission
+                         NEMISLAYERS,& ! No. vertical layers for emission
                          NCMAX,&       ! Max. No. countries per grid
                          FNCMAX,&      ! Max. No. countries (with flat 
                                        ! emissions) per grid
@@ -94,7 +89,7 @@
  ! landcode  = Country codes for that grid square
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: nlandcode
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX,NCMAX) :: landcode
-!hf
+! for `flat emissions, i.e. no vertical extent:
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: flat_nlandcode
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX,FNCMAX):: flat_landcode
  !
@@ -169,20 +164,18 @@ contains
   real    :: conv              ! Conversion factor
   integer :: iqrc, k, kused    ! index over emitted species, QRCSO2.. 
   integer :: i, j, n           ! Loop variables
-!hf
   integer :: i_l,j_l           ! Local i,j
   real   :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
   real   :: ccsum             ! Sum of emissions for one country !ds, rv1_9_3
  
   ! arrays for whole EMEP area:
-  !su--    additional arrays on host only for landcode,nlandcode
-  !.. ds BIG arrays ... will be needed only on me=0. Make allocatable
+  !--    additional arrays on host only for landcode,nlandcode
+  !..  BIG arrays ... will be needed only on me=0. Make allocatable
   ! to reduce static memory requirements.
 
   real,    allocatable, dimension(:,:,:,:)  :: globemis 
   integer, allocatable, dimension(:,:)      :: globnland 
   integer, allocatable, dimension(:,:,:)    :: globland  
-!hf
   real,    allocatable, dimension(:,:,:)    :: globemis_flat
   integer, allocatable, dimension(:,:)      :: flat_globnland 
   integer, allocatable, dimension(:,:,:)    :: flat_globland 
@@ -265,7 +258,7 @@ contains
        allocate(globnland(GIMAX,GJMAX),stat=err1)
        allocate(globland(GIMAX,GJMAX,NCMAX),stat=err2)
        allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
-!hf
+!
        allocate(flat_globnland(GIMAX,GJMAX),stat=err4)
        allocate(flat_globland(GIMAX,GJMAX,FNCMAX),stat=err5)
        allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
@@ -289,13 +282,11 @@ contains
    end if
 
    do iem = 1, NEMIS
-      !su    now again test for me=0
+      ! now again test for me=0
       if ( me == 0 ) then
 
            ! read in global emissions for one pollutant
            ! *****************
-!hf             call EmisGet(iem,EMIS_NAME(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
-!hf                          globemis,globnland,globland,sumemis)
              call EmisGet(iem,EMIS_NAME(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                           globemis,globnland,globland,sumemis,&
                           globemis_flat,flat_globnland,flat_globland)
@@ -317,7 +308,7 @@ contains
 
        call global2local(globemis,snapemis(1,1,1,1,iem),MSG_READ1,   &
                NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
-!hf F
+!
        call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
                1,GIMAX,GJMAX,FNCMAX,1,1)
 
@@ -341,19 +332,19 @@ contains
         end do
     end if
 
-    !su    now all values are read, snapemis is distributed, globnland and 
-    !su    globland are ready for distribution
-    !gv    print *, "calling glob2local_int for iem", iem, " me ", me
+    !    now all values are read, snapemis is distributed, globnland and 
+    !    globland are ready for distribution
+    !    print *, "calling glob2local_int for iem", iem, " me ", me
 
       call global2local_int(globnland,nlandcode,326, GIMAX,GJMAX,1,1,1)
       call global2local_int(globland, landcode ,326, GIMAX,GJMAX,NCMAX,1,1)
-!hf
+!
       call global2local_int(flat_globnland,flat_nlandcode,326,&
                             GIMAX,GJMAX,1,1,1)!extra array
       call global2local_int(flat_globland,flat_landcode,326,&
                             GIMAX,GJMAX,FNCMAX,1,1)
 
-     !/**hf  broadcast volcanoe info derived in EmisGet 
+     !/**  broadcast volcanoe info derived in EmisGet 
 
         CALL MPI_BCAST(nvolc,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
         CALL MPI_BCAST(i_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
@@ -487,7 +478,7 @@ contains
   !       emis set once per hour to allow for day/night variation (and voc 
   !       speciation) (based on local time)  for each snap sector.
   !     gridrcemis0 calculated every time-step to allow for ps changes.
-  !uni inputs from Emissions in EMISSIONS_ML:
+  !     inputs from Emissions in EMISSIONS_ML:
   !      country and snap-specific array : 
   !          snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS) 
   !  
@@ -503,7 +494,7 @@ contains
   !       real timefac(NLAND,NSECTORS,NEMIS)
   !    And day-night factors are applied here:
   !       day_factor(11,0:1)                  ! 0=night, 1=day
-  !ds ..........................................................................
+  ! ..........................................................................
   !
   !**    REVISION HISTORY:
   !       Revised , 30/5/01, jej/st found problem on gridur - split NEMIS loop 
@@ -527,12 +518,12 @@ contains
   type(date), intent(in) :: indate           ! Gives year..seconds
   integer :: i, j, n, k, f                   ! cooridnates, loop variables
   integer :: icc, ncc                        ! No. of countries in grid.
-!hf F
+!
   integer :: ficc,fncc                       ! No. of countries with
   integer :: iqrc, ifrac                     ! emis indices 
   integer :: isec             ! loop variables: emission sectors
   integer :: iem              ! loop variable over pollutants (1..NEMIS)
-!hf
+!
   integer :: i_l,j_l           ! Local i,j
   !uni - save daytime value between calls, intiialise to zero
   integer, save, dimension(NLAND) ::  daytime = 0  !  0=night, 1=day
@@ -585,13 +576,6 @@ contains
                oldday = indate%day
            endif
      end if
-!pw u3    if ( indate%seconds == 0 ) then
-!
-!           hourchange = .true.
-!                                     !==========================
-!           if ( indate%hour == 0  )  call NewDayFactors(indate)
-!                                     !==========================
-!pw u3     end if
 
 
     !..........................................
@@ -622,7 +606,7 @@ contains
 
                ncc = nlandcode(i,j)            ! No. of countries in grid
 
-!pw find the approximate local time:
+! find the approximate local time:
                   hourloc= mod(nint(indate%hour+24*(1+gl(i,j)/360.0)),24)
                   daytime_longitude=0
                   if( hourloc>=7.and.hourloc<= 18) daytime_longitude=1
@@ -876,11 +860,11 @@ contains
 	      current_date%month,ktonne_to_kgm2s
 	  write(6,*) ' first_dms_read = ', first_dms_read
 	end if ! me 
-!ds...........................................................................
+!...........................................................................
 
-!ds...........................................................................
+!...........................................................................
 !		DMS Input - land 35 - SNAP sector 11
-!ds...........................................................................
+!...........................................................................
      flat_ncmaxfound = 0 ! Max. no. countries(w/flat emissions) per grid
 !    natural so2 emissions
 
@@ -909,11 +893,11 @@ contains
 	      do j=1,ljmax
 	          do i=1,limax
 
-!ds            Add DMS for country code IQ_DMS=35  to snap sector 11=Nature.
+!            Add DMS for country code IQ_DMS=35  to snap sector 11=Nature.
                 ! First time we read we must add DMS to the "countries" 
                 ! contributing within the grid square. 
  
-                  !hf - for flat emissions:
+                  ! - for flat emissions:
 
                   if ( first_dms_read ) then 
                      flat_nlandcode(i,j) = flat_nlandcode(i,j) + 1 
@@ -926,7 +910,8 @@ contains
                      endif 
                   else  ! We know that DMS lies last in the array, so:
                       n = flat_nlandcode(i,j)
-                      call CheckStop(flat_landcode(i,j,n), IQ_DMS, "Newmonth:DMS not last!")
+                      call CheckStop(flat_landcode(i,j,n), IQ_DMS, &
+                          "Newmonth:DMS not last!")
                   endif 
 
                   snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s &
