@@ -1,6 +1,4 @@
 !########### OZONE model ###################################
-!ToDo
-! Sort out where ORG_AEROSOLS etc should be!
 !>_________________________________________________________<
 
   module  GenSpec_bgn_ml
@@ -36,7 +34,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 60 !+Rn,Pb210
+   integer, public, parameter ::  NSPEC_ADV = 60
  
  ! Aerosols:
 
@@ -113,10 +111,10 @@
   ,  IXADV_pNO3        =  51   &
   ,  IXADV_NH3         =  52   &
   ,  IXADV_aNH4        =   53   & !total NH4
-  ,  IXADV_aNO3        =   54   & !total particulate nitrate (in UNI-OZONE: -NO3 unspecified)
+  ,  IXADV_aNO3        =   54   & !total fine particulate nitrate
   ,  IXADV_PM25        =   55  &
   ,  IXADV_PMco        =   56  &
-  ,  IXADV_SSfi        =   57  &  !SeaS 
+  ,  IXADV_SSfi        =   57  &  !SeaSalt 
   ,  IXADV_SSco        =   58  & 
   ,  IXADV_Rn222       =   59  &  !
   ,  IXADV_Pb210       =   60     !
@@ -179,7 +177,7 @@
 
    logical, public, parameter ::  ORG_AEROSOLS = .false. 
 
-   integer, public, parameter ::  NSPEC_TOT = 76   !Pb210
+   integer, public, parameter ::  NSPEC_TOT = 76 
 
  
  ! Aerosols:
@@ -315,7 +313,6 @@
     ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
     ! array, using indices from total list of species (advected + short-lived).
     !
-    ! ds1 - Carbon's added in 5/12/2003 - for VOC calculation
     !                                           MW NMHC  C    N   S
        species(  1) = Chemical("OD          ",  16,  0,  0,   0,  0 ) 
        species(  2) = Chemical("OP          ",  16,  0,  0,   0,  0 ) 
@@ -340,13 +337,13 @@
        species( 21) = Chemical("MPAN        ", 132,  0,  4,   1,  0 ) 
        species( 22) = Chemical("NO3         ",  62,  0,  0,   1,  0 ) 
        species( 23) = Chemical("N2O5        ", 108,  0,  0,   2,  0 ) 
-       species( 24) = Chemical("ISONO3      ", 110,  0,  5,   1,  1 ) !ds1
+       species( 24) = Chemical("ISONO3      ", 110,  0,  5,   1,  1 ) 
        species( 25) = Chemical("HNO3        ",  63,  0,  0,   1,  0 ) 
        species( 26) = Chemical("CH2CCH3     ",  73,  0,  3,   0,  0 ) 
        species( 27) = Chemical("CH3COO2     ",  75,  0,  2,   0,  0 ) 
        species( 28) = Chemical("MACR        ",  70,  0,  4,   0,  0 ) 
-       species( 29) = Chemical("ISNI        ",  46,  0,  4,   1,  1 ) !ds1
-       species( 30) = Chemical("ISNIR       ",  46,  0,  4,   1,  1 ) !ds1 
+       species( 29) = Chemical("ISNI        ",  46,  0,  4,   1,  1 ) 
+       species( 30) = Chemical("ISNIR       ",  46,  0,  4,   1,  1 )  
        species( 31) = Chemical("GLYOX       ",  58,  0,  2,   0,  0 ) 
        species( 32) = Chemical("MGLYOX      ",  72,  0,  3,   0,  0 ) 
        species( 33) = Chemical("MAL         ",  98,  0,  5,   0,  0 ) 
@@ -365,12 +362,12 @@
        species( 46) = Chemical("BURO2H      ",  90,  0,  4,   0,  0 ) 
        species( 47) = Chemical("ETRO2H      ",  78,  0,  2,   0,  0 ) 
        species( 48) = Chemical("PRRO2H      ",  92,  0,  3,   0,  0 ) 
-       species( 49) = Chemical("OXYO2H      ",   1,  0,  8,   0,  0 ) !ds1 
+       species( 49) = Chemical("OXYO2H      ",   1,  0,  8,   0,  0 ) 
        species( 50) = Chemical("MEKO2H      ", 104,  0,  4,   0,  0 ) 
        species( 51) = Chemical("MALO2H      ", 147,  0,  5,   0,  0 ) 
-       species( 52) = Chemical("MVKO2H      ",   1,  0,  4,   0,  0 ) !ds1
-       species( 53) = Chemical("MARO2H      ",   1,  0,  5,   0,  0 ) !ds1 
-       species( 54) = Chemical("ISRO2H      ",   1,  0,  5,   0,  0 ) !ds1
+       species( 52) = Chemical("MVKO2H      ",   1,  0,  4,   0,  0 )
+       species( 53) = Chemical("MARO2H      ",   1,  0,  5,   0,  0 ) 
+       species( 54) = Chemical("ISRO2H      ",   1,  0,  5,   0,  0 )
        species( 55) = Chemical("H2O2        ",  34,  0,  0,   0,  0 ) 
        species( 56) = Chemical("CH3COO2H    ",  76,  0,  2,   0,  0 ) 
        species( 57) = Chemical("CH2CO2HCH3  ",  74,  0,  3,   0,  0 ) 

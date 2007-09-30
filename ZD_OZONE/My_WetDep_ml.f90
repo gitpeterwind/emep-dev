@@ -46,19 +46,19 @@ contains
    !/..                        W_Sca  W_sub
   
     WetDep(1)   = WScav(SO2,    0.3,  0.15)   ! Berge+Jakobsen, issh
-    WetDep(2)   = WScav(SO4,    1.0,  EFF25)  ! Berge+Jokobsen, jej
+    WetDep(2)   = WScav(SO4,    1.0,  EFF25)  ! Berge+Jakobsen, jej
     WetDep(3)   = WScav(aNH4,   1.0,  EFF25)
-    WetDep(4)   = WScav(NH3,    1.4,  0.5 )  ! ds, subcloud = 1/3 of cloud for gases
+    WetDep(4)   = WScav(NH3,    1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
     WetDep(5)   = WScav(aNO3,   1.0,  EFF25)  
-    WetDep(6)   = WScav(HNO3,   1.4,  0.5)   ! ds
-    WetDep(7)   = WScav(H2O2,   1.4,  0.5)   ! jej, maybe should be 0.6*0.7??
-    WetDep(8)   = WScav(HCHO,   0.1,  0.03)  ! jej, plus ds 1/3 rule
-    WetDep(9)   = WScav(pNO3,   1.0,  EFFCO) !!dstest rv1_8b  ds, from Svetlana's PMco stuff
+    WetDep(6)   = WScav(HNO3,   1.4,  0.5)   ! 
+    WetDep(7)   = WScav(H2O2,   1.4,  0.5)   ! 
+    WetDep(8)   = WScav(HCHO,   0.1,  0.03)  ! 
+    WetDep(9)   = WScav(pNO3,   1.0,  EFFCO) !!
     WetDep(10)  = WScav(PM25,   1.0,  EFF25)
     WetDep(11)  = WScav(PMCO,   1.0,  EFFCO)
     WetDep(12)  = WScav(SSFI,   1.0,  EFF25)   !SeaS
     WetDep(13)  = WScav(SSCO,   1.0,  EFFCO)   !SeaS
-    WetDep(14)  = WScav(Pb210,  1.0,  EFF25)   !ds Pb210
+    WetDep(14)  = WScav(Pb210,  1.0,  EFF25)   !
 
    !####################### ds NEW define indices here ##########
 
@@ -77,15 +77,13 @@ contains
      real :: wdeps, wdepox, wdepred, wdeppm25, wdeppmco
 
 
-      !wdeps = sumloss(SO2) + sumloss(SO4) + sumloss(AMSU)
-       wdeps = sumloss(1) + sumloss(2) !hf+ sumloss(3)
+      !wdeps = sumloss(SO2) + sumloss(SO4)
+       wdeps = sumloss(1) + sumloss(2)
 
-      !wdepred = sumloss(NH3)  + sumloss(AMNI) & 
-      !                    +1.5 * sumloss(AMSU) !!! (NH4)1.5 SO4
-       wdepred = sumloss(4)  + sumloss(3) !hf& 
-                          !hf +1.5 * sumloss(3) !!! (NH4)1.5 SO4
+      !wdepred = sumloss(NH3)  + sumloss(NH4) & 
+       wdepred = sumloss(4)  + sumloss(3) !
   
-      !wdepox  = sumloss(HNO3) + sumloss(AMNI) + pNO3
+      !wdepox  = sumloss(HNO3) + sumloss(aNO3) + pNO3
        wdepox  = sumloss(6) + sumloss(5) + sumloss(9)
       wdeppm25= sumloss(7) 
       wdeppmco= sumloss(8) 

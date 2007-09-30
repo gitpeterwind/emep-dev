@@ -1,6 +1,5 @@
 
 
- ! ds - MOD
 !    do iter = 1, toiter(k)
 if(k>=KCHEMTOP)then
 
@@ -73,9 +72,7 @@ if(k>=KCHEMTOP)then
       + rct(9,k)* xnew(H2O2 )  &
       + rct(10,k)* xnew(H2 )  &
       + rct(11,k)* xnew(HNO3 )  &
-      !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K)* xnew(SO2 )  &
-      !ds bug  + 2e-12* xnew(SO2 )  &
       + rct(12,k)* xnew(CH4 )  &
       + rcmisc(7,k)* xnew(CO )  &
       + rct(16,k)* xnew(CH3OH )  &
@@ -93,11 +90,9 @@ if(k>=KCHEMTOP)then
       + 4.8e-12* xnew(MEKO2H )  &
       + rct(19,k)* xnew(BURO2H )  &
       + rct(23,k)* xnew(BURO2H )  &
-      !u1 + rctroe(7,k)* xnew(C2H4 )  &
       + rcmisc(17,k)* xnew(C2H4 )  &
       + rct(23,k)* xnew(ETRO2H )  &
       + rct(19,k)* xnew(ETRO2H )  &
-      !u1 + rctroe(8,k)* xnew(C3H6 )  &
       + rcmisc(18,k)* xnew(C3H6 )  &
       + rct(23,k)* xnew(PRRO2H )  &
       + rct(19,k)* xnew(PRRO2H )  &
@@ -128,10 +123,7 @@ if(k>=KCHEMTOP)then
      rct(3,k) * xnew(O3 ) * xnew(OH )  &
       + rct(9,k) * xnew(OH ) * xnew(H2O2 )  &
       + rct(10,k) * xnew(OH ) * xnew(H2 )  &
-      !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-      !ds bug+ 2.0e-12* xnew(OH ) * xnew(SO2 )  &
-  !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
       + rcmisc(7,k) * xnew(OH ) * xnew(CO )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -159,8 +151,7 @@ if(k>=KCHEMTOP)then
       + 2*rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
-      !ds rv1.7.4 bug-fix + rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
-      + 0.5 * rcphot(IDHCOHCO,K) * xnew(GLYOX )  & !dsrv1_8b5
+      + 0.5 * rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcphot(IDCH3O2H,K) * xnew(C2H5OOH )  &
       + rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
@@ -212,7 +203,6 @@ if(k>=KCHEMTOP)then
       + rcphot(IDCH3O2H,K) * xnew(CH3COO2H ) 
 
       L =  &
-   !ds   4.0e-17* xnew(SO2 )  &
         rct(13,k)* xnew(NO )  &
       + rct(14,k)* xnew(CH3O2 )  &
       + rct(14,k)* xnew(CH3O2 )  &
@@ -274,7 +264,6 @@ if(k>=KCHEMTOP)then
 !-> ETRO2 
 
       P =   &
-     !u1 rctroe(7,k) * xnew(C2H4 ) * xnew(OH )  &
      rcmisc(17,k) * xnew(C2H4 ) * xnew(OH )  &
       + rct(19,k) * xnew(ETRO2H ) * xnew(OH ) 
 
@@ -289,7 +278,6 @@ if(k>=KCHEMTOP)then
 !-> PRRO2 
 
       P =   &
-     !u1 rctroe(8,k) * xnew(OH ) * xnew(C3H6 )  &
      rcmisc(18,k) * xnew(OH ) * xnew(C3H6 )  &
       + rct(19,k) * xnew(PRRO2H ) * xnew(OH ) 
 
@@ -403,10 +391,8 @@ if(k>=KCHEMTOP)then
      rct(7,k) * xnew(NO2 ) * xnew(NO3 )  &
       + rcphot(IDNO2,K) * xnew(NO2 )  &
       + rcemis(QRCNO,K) 
-!!      + 0.95*rcemis(QRCNO,K) 
 
       L =  &
-     !u1 rctroe(1,k)* xnew(OP )  &
      rcmisc(11,k)* xnew(OP )  &
       + rct(1,k)* xnew(O3 )  &
       + rct(5,k)* xnew(NO3 )  &
@@ -434,18 +420,15 @@ if(k>=KCHEMTOP)then
 !-> NO2 
 
       P =   &
-     !u1 rctroe(1,k) * xnew(OP ) * xnew(NO )  &
      rcmisc(11,k) * xnew(OP ) * xnew(NO )  &
       + rct(1,k) * xnew(O3 ) * xnew(NO )  &
       + rct(5,k) * xnew(NO ) * xnew(NO3 )  &
       + rct(5,k) * xnew(NO ) * xnew(NO3 )  &
       + rct(6,k) * xnew(NO ) * xnew(HO2 )  &
       + rct(7,k) * xnew(NO2 ) * xnew(NO3 )  &
-      !u1 + rctroe(3,k) * xnew(N2O5 )  &
       + rcmisc(13,k) * xnew(N2O5 )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 8.7e-12 * xnew(C2H5O2 ) * xnew(NO )  &
-      !u1 + rctroe(6,k) * xnew(PAN )  &
       + rcmisc(16,k) * xnew(PAN )  &
       + 2.0e-11 * xnew(CH3COO2 ) * xnew(NO )  &
       + rct(13,k) * xnew(NO ) * xnew(SECC4H9O2 )  &
@@ -470,9 +453,6 @@ if(k>=KCHEMTOP)then
       L =  &
      rct(2,k)* xnew(O3 )  &
       + rct(7,k)* xnew(NO3 )  &
-      !u1 + rctroe(2,k)* xnew(NO3 )  &
-      !u1 + rctroe(4,k)* xnew(OH )  &
-      !u1 + rctroe(5,k)* xnew(CH3COO2 )  &
       + rcmisc(12,k)* xnew(NO3 )  &
       + rcmisc(14,k)* xnew(OH )  &
       + rcmisc(15,k)* xnew(CH3COO2 )  &
@@ -486,11 +466,9 @@ if(k>=KCHEMTOP)then
 !-> PAN 
 
       P =   &
-     !u1 rctroe(5,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
      rcmisc(15,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
 
       L =  &
-     !u1 rctroe(6,k) 
      rcmisc(16,k) 
 
 !       xnew(PAN)=  amax1(0.0, ( xold(PAN) + dt2 * P))  &
@@ -504,7 +482,6 @@ if(k>=KCHEMTOP)then
 
       P =   &
      rct(24,k) * xnew(OH ) * xnew(CH3CHO )  &
-      !u1 + rctroe(6,k) * xnew(PAN )  &
       + rcmisc(16,k) * xnew(PAN )  &
       + rct(19,k) * xnew(CH3COO2H ) * xnew(OH )  &
       + rct(13,k) * xnew(MEKO2 ) * xnew(NO )  &
@@ -515,7 +492,6 @@ if(k>=KCHEMTOP)then
       + rcphot(IDCH3COX,K) * xnew(MEK ) 
 
       L =  &
-     !u1 rctroe(5,k)* xnew(NO2 )  &
      rcmisc(15,k)* xnew(NO2 )  &
       + 2.0e-11* xnew(NO )  &
       + 1.1e-11* xnew(CH3O2 )  &
@@ -585,7 +561,6 @@ if(k>=KCHEMTOP)then
 
       P =   &
      rct(2,k) * xnew(O3 ) * xnew(NO2 )  &
-      !u1 + rctroe(3,k) * xnew(N2O5 )  &
       + rcmisc(13,k) * xnew(N2O5 )  &
       + rct(11,k) * xnew(OH ) * xnew(HNO3 )  &
       + rcphot(IDN2O5,K) * xnew(N2O5 ) 
@@ -593,7 +568,6 @@ if(k>=KCHEMTOP)then
       L =  &
      rct(5,k)* xnew(NO )  &
       + rct(7,k)* xnew(NO2 )  &
-      !u1 + rctroe(2,k)* xnew(NO2 )  &
       + rcmisc(12,k)* xnew(NO2 )  &
       + 5.8e-16* xnew(HCHO )  &
       + 7.8e-13* xnew(ISOP )  &
@@ -609,21 +583,10 @@ if(k>=KCHEMTOP)then
 !-> N2O5 
 
       P =   &
-     !u1 rctroe(2,k) * xnew(NO2 ) * xnew(NO3 ) 
      rcmisc(12,k) * xnew(NO2 ) * xnew(NO3 ) 
 
       L =  &
-     !u1 rctroe(3,k)  &
      rcmisc(13,k)  &
-! N ch      + 1.0e-5  &
-!      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
-!
-      !eff+ f_Riemer(k)**rcmisc(8,k)*(xnew(SO4)) & !
-      !eff+  (1-f_Riemer(k))*0.1*rcmisc(8,k)*(xnew(SO4)) &  !0.1 smaller for gamma(nitrate)
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)  & !Total sulphateaerosol surface
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3) & !Total nitrate aerosol surface
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4) & !Total ammonium aerosol surface
-!
       + (0.9*f_Riemer(k)+0.1) * rcmisc(8,k)* &
                   ( VOLFACSO4*xnew(SO4)      & !Total sulpate aerosol surface
                   + VOLFACNO3*xnew(aNO3)     & !Total sulpate aerosol surface
@@ -692,28 +655,18 @@ if(k>=KCHEMTOP)then
 !      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
 ! New based on Riemer 2003
 !f=xnew(SO4)*96/(xnew(SO4)*96+xnew(aNO3)*62)
-!
-!eff+ f_Riemer(k)*0.2*2.*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) & !0.2 smalller than dentener
-!eff+  (1-f_Riemer(k))*0.02*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)  !0.02 smalller than dentener
-!hf      + (0.18*f_Riemer(k)+0.02)*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)
-!dseff+ 2.*(0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)*xnew(N2O5)  & !Total sulphateaerosol surface
-!dseff + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3)*xnew(N2O5) & !Total nitrate aerosol surface
-!dseff + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4)*xnew(N2O5)   !Total ammonium aerosol surface
-!dseff:
       + 2.*(0.9*f_Riemer(k)+0.1) * rcmisc(8,k) * xnew(N2O5) * &
                      ( VOLFACSO4 * xnew(SO4)  +     & !Total sulphateaerosol surface
                        VOLFACNO3 * xnew(aNO3) +     & !Total sulphateaerosol surface
                        VOLFACNH4 * xnew(aNH4) )       !Total sulphateaerosol surface
 
 
-!ds rv1_9_28:
 !Production rate of hno3 from no2 to be saved
       xnew(PHNO3) = P/max( xnew(NO2),1.0 )      !reaction rate in s-1
 
 
       L =  &
      rct(11,k)* xnew(OH )  &
-! N ch     + 1.0e-5  &
       + rcmisc(10,k) &   ! Coarse pNO3 formation
       + rcphot(IDHNO3,K) 
 
@@ -858,7 +811,6 @@ if(k>=KCHEMTOP)then
 !-> HCHO 
 
       P =   &
-   !ds 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
         rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
       + rct(15,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -878,7 +830,6 @@ if(k>=KCHEMTOP)then
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
       + 1.56*rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
       + rcphot(IDCH3O2H,K) * xnew(PRRO2H )  &
-!ds rv1_8b5
       + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcemis(QRCHCHO,K) 
 
@@ -951,7 +902,6 @@ if(k>=KCHEMTOP)then
      rcemis(QRCC2H4,K) 
 
       L =  &
-     !u1 rctroe(7,k)* xnew(OH )  &
      rcmisc(17,k)* xnew(OH )  &
       + rct(30,k)* xnew(O3 ) 
 
@@ -967,7 +917,6 @@ if(k>=KCHEMTOP)then
 
       L =  &
      rct(31,k)* xnew(O3 )  &
-      !u1 + rctroe(8,k)* xnew(OH ) 
       + rcmisc(18,k)* xnew(OH ) 
 
        xnew(C3H6)=  amax1(0.0, ( xold(C3H6) + dt2 * P))  &
@@ -1158,7 +1107,7 @@ if(k>=KCHEMTOP)then
      rct(9,k)* xnew(OH )  &
       + 1.0e-5  &
       + rcphot(IDH2O2,K) &
-!hf Ox limitation
+! Ox limitation
       + aqrck(ICLRC1,K)*xnew(SO2 )
 
        xnew(H2O2)=  amax1(0.0, ( xold(H2O2) + dt2 * P))  &
@@ -1268,7 +1217,6 @@ if(k>=KCHEMTOP)then
       + rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDBCH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
-      !ds rv1.7.4 bug-fix
       + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcemis(QRCCO,K) 
@@ -1296,15 +1244,12 @@ if(k>=KCHEMTOP)then
 
       P =   &
       (1-0.05)*rcemis(QRCSO2,K) 
-     !u1 1*(1-0.05-0.15)*rcemis(QRCSO2,K) 
 
       L =  &
        2e-12*aqrck(ICLOHSO2,K)* xnew(OH )  &
-     !ds  rcmisc(9,k) &   ! Eliassen+Saltbones rate
       + aqrck(ICLRC1,K)*XNEW(H2O2)  &
       + aqrck(ICLRC2,K)*XNEW(O3)  &
-      + aqrck(ICLRC3,K) !ds  Fe-catalysed reaction   &
-     !ds + 4.0e-17* xnew(CH3O2 ) 
+      + aqrck(ICLRC3,K) !  Fe-catalysed reaction   &
 
        xnew(SO2)=  amax1(0.0, ( xold(SO2) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
@@ -1343,7 +1288,6 @@ if(k>=6)then
 
       L =  &
      rcmisc(1,k)  &
-      !u1 + rctroe(1,k)* xnew(NO ) 
       + rcmisc(11,k)* xnew(NO ) 
 
        xnew(OP)=  amax1(0.0, ( xold(OP) + dt2 * P))  &
@@ -1378,15 +1322,12 @@ if(k>=6)then
 
       L =  &
      rct(3,k)* xnew(O3 )  &
-      !u1 + rctroe(4,k)* xnew(NO2 )  &
       + rcmisc(14,k)* xnew(NO2 )  &
       + rct(8,k)* xnew(HO2 )  &
       + rct(9,k)* xnew(H2O2 )  &
       + rct(10,k)* xnew(H2 )  &
       + rct(11,k)* xnew(HNO3 )  &
-      !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K)* xnew(SO2 )  &
-      !ds bug  + 2e-12* xnew(SO2 )  &
       + rct(12,k)* xnew(CH4 )  &
       + rcmisc(7,k)* xnew(CO )  &
       + rct(16,k)* xnew(CH3OH )  &
@@ -1404,11 +1345,9 @@ if(k>=6)then
       + 4.8e-12* xnew(MEKO2H )  &
       + rct(19,k)* xnew(BURO2H )  &
       + rct(23,k)* xnew(BURO2H )  &
-      !u1 + rctroe(7,k)* xnew(C2H4 )  &
       + rcmisc(17,k)* xnew(C2H4 )  &
       + rct(23,k)* xnew(ETRO2H )  &
       + rct(19,k)* xnew(ETRO2H )  &
-      !u1 + rctroe(8,k)* xnew(C3H6 )  &
       + rcmisc(18,k)* xnew(C3H6 )  &
       + rct(23,k)* xnew(PRRO2H )  &
       + rct(19,k)* xnew(PRRO2H )  &
@@ -1439,10 +1378,7 @@ if(k>=6)then
      rct(3,k) * xnew(O3 ) * xnew(OH )  &
       + rct(9,k) * xnew(OH ) * xnew(H2O2 )  &
       + rct(10,k) * xnew(OH ) * xnew(H2 )  &
-      !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-      !ds bug+ 2.0e-12* xnew(OH ) * xnew(SO2 )  &
-  !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
       + rcmisc(7,k) * xnew(OH ) * xnew(CO )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -1470,8 +1406,7 @@ if(k>=6)then
       + 2*rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
-      !ds rv1.7.4 bug-fix + rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
-      + 0.5 * rcphot(IDHCOHCO,K) * xnew(GLYOX )  & !dsrv1_8b5
+      + 0.5 * rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcphot(IDCH3O2H,K) * xnew(C2H5OOH )  &
       + rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
@@ -1523,7 +1458,6 @@ if(k>=6)then
       + rcphot(IDCH3O2H,K) * xnew(CH3COO2H ) 
 
       L =  &
-   !ds   4.0e-17* xnew(SO2 )  &
         rct(13,k)* xnew(NO )  &
       + rct(14,k)* xnew(CH3O2 )  &
       + rct(14,k)* xnew(CH3O2 )  &
@@ -1585,7 +1519,6 @@ if(k>=6)then
 !-> ETRO2 
 
       P =   &
-     !u1 rctroe(7,k) * xnew(C2H4 ) * xnew(OH )  &
      rcmisc(17,k) * xnew(C2H4 ) * xnew(OH )  &
       + rct(19,k) * xnew(ETRO2H ) * xnew(OH ) 
 
@@ -1600,7 +1533,6 @@ if(k>=6)then
 !-> PRRO2 
 
       P =   &
-     !u1 rctroe(8,k) * xnew(OH ) * xnew(C3H6 )  &
      rcmisc(18,k) * xnew(OH ) * xnew(C3H6 )  &
       + rct(19,k) * xnew(PRRO2H ) * xnew(OH ) 
 
@@ -1714,10 +1646,8 @@ if(k>=6)then
      rct(7,k) * xnew(NO2 ) * xnew(NO3 )  &
       + rcphot(IDNO2,K) * xnew(NO2 )  &
       + rcemis(QRCNO,K) 
-!!      + 0.95*rcemis(QRCNO,K) 
 
       L =  &
-     !u1 rctroe(1,k)* xnew(OP )  &
      rcmisc(11,k)* xnew(OP )  &
       + rct(1,k)* xnew(O3 )  &
       + rct(5,k)* xnew(NO3 )  &
@@ -1745,18 +1675,15 @@ if(k>=6)then
 !-> NO2 
 
       P =   &
-     !u1 rctroe(1,k) * xnew(OP ) * xnew(NO )  &
      rcmisc(11,k) * xnew(OP ) * xnew(NO )  &
       + rct(1,k) * xnew(O3 ) * xnew(NO )  &
       + rct(5,k) * xnew(NO ) * xnew(NO3 )  &
       + rct(5,k) * xnew(NO ) * xnew(NO3 )  &
       + rct(6,k) * xnew(NO ) * xnew(HO2 )  &
       + rct(7,k) * xnew(NO2 ) * xnew(NO3 )  &
-      !u1 + rctroe(3,k) * xnew(N2O5 )  &
       + rcmisc(13,k) * xnew(N2O5 )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 8.7e-12 * xnew(C2H5O2 ) * xnew(NO )  &
-      !u1 + rctroe(6,k) * xnew(PAN )  &
       + rcmisc(16,k) * xnew(PAN )  &
       + 2.0e-11 * xnew(CH3COO2 ) * xnew(NO )  &
       + rct(13,k) * xnew(NO ) * xnew(SECC4H9O2 )  &
@@ -1776,14 +1703,10 @@ if(k>=6)then
       + rcphot(IDNO3,K) * xnew(NO3 )  &
       + rcphot(IDN2O5,K) * xnew(N2O5 )  &
       + rcemis(QRCNO2,K) 
-!!      + 0.05*rcemis(QRCNO,K) 
 
       L =  &
      rct(2,k)* xnew(O3 )  &
       + rct(7,k)* xnew(NO3 )  &
-      !u1 + rctroe(2,k)* xnew(NO3 )  &
-      !u1 + rctroe(4,k)* xnew(OH )  &
-      !u1 + rctroe(5,k)* xnew(CH3COO2 )  &
       + rcmisc(12,k)* xnew(NO3 )  &
       + rcmisc(14,k)* xnew(OH )  &
       + rcmisc(15,k)* xnew(CH3COO2 )  &
@@ -1797,11 +1720,9 @@ if(k>=6)then
 !-> PAN 
 
       P =   &
-     !u1 rctroe(5,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
      rcmisc(15,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
 
       L =  &
-     !u1 rctroe(6,k) 
      rcmisc(16,k) 
 
 !       xnew(PAN)=  amax1(0.0, ( xold(PAN) + dt2 * P))  &
@@ -1815,7 +1736,6 @@ if(k>=6)then
 
       P =   &
      rct(24,k) * xnew(OH ) * xnew(CH3CHO )  &
-      !u1 + rctroe(6,k) * xnew(PAN )  &
       + rcmisc(16,k) * xnew(PAN )  &
       + rct(19,k) * xnew(CH3COO2H ) * xnew(OH )  &
       + rct(13,k) * xnew(MEKO2 ) * xnew(NO )  &
@@ -1826,7 +1746,6 @@ if(k>=6)then
       + rcphot(IDCH3COX,K) * xnew(MEK ) 
 
       L =  &
-     !u1 rctroe(5,k)* xnew(NO2 )  &
      rcmisc(15,k)* xnew(NO2 )  &
       + 2.0e-11* xnew(NO )  &
       + 1.1e-11* xnew(CH3O2 )  &
@@ -1896,7 +1815,6 @@ if(k>=6)then
 
       P =   &
      rct(2,k) * xnew(O3 ) * xnew(NO2 )  &
-      !u1 + rctroe(3,k) * xnew(N2O5 )  &
       + rcmisc(13,k) * xnew(N2O5 )  &
       + rct(11,k) * xnew(OH ) * xnew(HNO3 )  &
       + rcphot(IDN2O5,K) * xnew(N2O5 ) 
@@ -1904,7 +1822,6 @@ if(k>=6)then
       L =  &
      rct(5,k)* xnew(NO )  &
       + rct(7,k)* xnew(NO2 )  &
-      !u1 + rctroe(2,k)* xnew(NO2 )  &
       + rcmisc(12,k)* xnew(NO2 )  &
       + 5.8e-16* xnew(HCHO )  &
       + 7.8e-13* xnew(ISOP )  &
@@ -1920,21 +1837,10 @@ if(k>=6)then
 !-> N2O5 
 
       P =   &
-     !u1 rctroe(2,k) * xnew(NO2 ) * xnew(NO3 ) 
      rcmisc(12,k) * xnew(NO2 ) * xnew(NO3 ) 
 
       L =  &
-     !u1 rctroe(3,k)  &
      rcmisc(13,k)  &
-! N ch      + 1.0e-5  &
-!      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
-!
-      !eff+ f_Riemer(k)**rcmisc(8,k)*(xnew(SO4)) & !
-      !eff+  (1-f_Riemer(k))*0.1*rcmisc(8,k)*(xnew(SO4)) &  !0.1 smaller for gamma(nitrate)
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)  & !Total sulphateaerosol surface
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3) & !Total nitrate aerosol surface
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4) & !Total ammonium aerosol surface
-!
       + (0.9*f_Riemer(k)+0.1) * rcmisc(8,k)* &
                   ( VOLFACSO4*xnew(SO4)      & !Total sulpate aerosol surface
                   + VOLFACNO3*xnew(aNO3)     & !Total sulpate aerosol surface
@@ -2003,28 +1909,18 @@ if(k>=6)then
 !      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
 ! New based on Riemer 2003
 !f=xnew(SO4)*96/(xnew(SO4)*96+xnew(aNO3)*62)
-!
-!eff+ f_Riemer(k)*0.2*2.*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) & !0.2 smalller than dentener
-!eff+  (1-f_Riemer(k))*0.02*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)  !0.02 smalller than dentener
-!hf      + (0.18*f_Riemer(k)+0.02)*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)
-!dseff+ 2.*(0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)*xnew(N2O5)  & !Total sulphateaerosol surface
-!dseff + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3)*xnew(N2O5) & !Total nitrate aerosol surface
-!dseff + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4)*xnew(N2O5)   !Total ammonium aerosol surface
-!dseff:
       + 2.*(0.9*f_Riemer(k)+0.1) * rcmisc(8,k) * xnew(N2O5) * &
                      ( VOLFACSO4 * xnew(SO4)  +     & !Total sulphateaerosol surface
                        VOLFACNO3 * xnew(aNO3) +     & !Total sulphateaerosol surface
                        VOLFACNH4 * xnew(aNH4) )       !Total sulphateaerosol surface
 
 
-!ds rv1_9_28:
 !Production rate of hno3 from no2 to be saved
       xnew(PHNO3) = P/max( xnew(NO2),1.0 )      !reaction rate in s-1
 
 
       L =  &
      rct(11,k)* xnew(OH )  &
-! N ch     + 1.0e-5  &
       + rcmisc(10,k) &   ! Coarse pNO3 formation
       + rcphot(IDHNO3,K) 
 
@@ -2169,7 +2065,6 @@ if(k>=6)then
 !-> HCHO 
 
       P =   &
-   !ds 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
         rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
       + rct(15,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -2189,7 +2084,6 @@ if(k>=6)then
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
       + 1.56*rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
       + rcphot(IDCH3O2H,K) * xnew(PRRO2H )  &
-!ds rv1_8b5
       + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcemis(QRCHCHO,K) 
 
@@ -2262,7 +2156,6 @@ if(k>=6)then
      rcemis(QRCC2H4,K) 
 
       L =  &
-     !u1 rctroe(7,k)* xnew(OH )  &
      rcmisc(17,k)* xnew(OH )  &
       + rct(30,k)* xnew(O3 ) 
 
@@ -2278,7 +2171,6 @@ if(k>=6)then
 
       L =  &
      rct(31,k)* xnew(O3 )  &
-      !u1 + rctroe(8,k)* xnew(OH ) 
       + rcmisc(18,k)* xnew(OH ) 
 
        xnew(C3H6)=  amax1(0.0, ( xold(C3H6) + dt2 * P))  &
@@ -2469,7 +2361,7 @@ if(k>=6)then
      rct(9,k)* xnew(OH )  &
       + 1.0e-5  &
       + rcphot(IDH2O2,K) &
-!hf Ox limitation
+! Ox limitation
       + aqrck(ICLRC1,K)*xnew(SO2 )
 
        xnew(H2O2)=  amax1(0.0, ( xold(H2O2) + dt2 * P))  &
@@ -2579,7 +2471,6 @@ if(k>=6)then
       + rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDBCH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
-      !ds rv1.7.4 bug-fix
       + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcemis(QRCCO,K) 
@@ -2607,15 +2498,12 @@ if(k>=6)then
 
       P =   &
       (1-0.05)*rcemis(QRCSO2,K) 
-     !u1 1*(1-0.05-0.15)*rcemis(QRCSO2,K) 
 
       L =  &
        2e-12*aqrck(ICLOHSO2,K)* xnew(OH )  &
-     !ds  rcmisc(9,k) &   ! Eliassen+Saltbones rate
       + aqrck(ICLRC1,K)*XNEW(H2O2)  &
       + aqrck(ICLRC2,K)*XNEW(O3)  &
-      + aqrck(ICLRC3,K) !ds  Fe-catalysed reaction   &
-     !ds + 4.0e-17* xnew(CH3O2 ) 
+      + aqrck(ICLRC3,K) !  Fe-catalysed reaction   &
 
        xnew(SO2)=  amax1(0.0, ( xold(SO2) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
@@ -2654,7 +2542,6 @@ if(k>=KEMISTOP)then
 
       L =  &
      rcmisc(1,k)  &
-      !u1 + rctroe(1,k)* xnew(NO ) 
       + rcmisc(11,k)* xnew(NO ) 
 
        xnew(OP)=  amax1(0.0, ( xold(OP) + dt2 * P))  &
@@ -2689,15 +2576,12 @@ if(k>=KEMISTOP)then
 
       L =  &
      rct(3,k)* xnew(O3 )  &
-      !u1 + rctroe(4,k)* xnew(NO2 )  &
       + rcmisc(14,k)* xnew(NO2 )  &
       + rct(8,k)* xnew(HO2 )  &
       + rct(9,k)* xnew(H2O2 )  &
       + rct(10,k)* xnew(H2 )  &
       + rct(11,k)* xnew(HNO3 )  &
-      !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K)* xnew(SO2 )  &
-      !ds bug  + 2e-12* xnew(SO2 )  &
       + rct(12,k)* xnew(CH4 )  &
       + rcmisc(7,k)* xnew(CO )  &
       + rct(16,k)* xnew(CH3OH )  &
@@ -2715,11 +2599,9 @@ if(k>=KEMISTOP)then
       + 4.8e-12* xnew(MEKO2H )  &
       + rct(19,k)* xnew(BURO2H )  &
       + rct(23,k)* xnew(BURO2H )  &
-      !u1 + rctroe(7,k)* xnew(C2H4 )  &
       + rcmisc(17,k)* xnew(C2H4 )  &
       + rct(23,k)* xnew(ETRO2H )  &
       + rct(19,k)* xnew(ETRO2H )  &
-      !u1 + rctroe(8,k)* xnew(C3H6 )  &
       + rcmisc(18,k)* xnew(C3H6 )  &
       + rct(23,k)* xnew(PRRO2H )  &
       + rct(19,k)* xnew(PRRO2H )  &
@@ -2750,10 +2632,7 @@ if(k>=KEMISTOP)then
      rct(3,k) * xnew(O3 ) * xnew(OH )  &
       + rct(9,k) * xnew(OH ) * xnew(H2O2 )  &
       + rct(10,k) * xnew(OH ) * xnew(H2 )  &
-      !u7.1  - was removed: is it needed?
       + 2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-      !ds bug+ 2.0e-12* xnew(OH ) * xnew(SO2 )  &
-  !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
       + rcmisc(7,k) * xnew(OH ) * xnew(CO )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -2781,8 +2660,7 @@ if(k>=KEMISTOP)then
       + 2*rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
-      !ds rv1.7.4 bug-fix + rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
-      + 0.5 * rcphot(IDHCOHCO,K) * xnew(GLYOX )  & !dsrv1_8b5
+      + 0.5 * rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcphot(IDCH3O2H,K) * xnew(C2H5OOH )  &
       + rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
@@ -2834,7 +2712,6 @@ if(k>=KEMISTOP)then
       + rcphot(IDCH3O2H,K) * xnew(CH3COO2H ) 
 
       L =  &
-   !ds   4.0e-17* xnew(SO2 )  &
         rct(13,k)* xnew(NO )  &
       + rct(14,k)* xnew(CH3O2 )  &
       + rct(14,k)* xnew(CH3O2 )  &
@@ -2896,7 +2773,6 @@ if(k>=KEMISTOP)then
 !-> ETRO2 
 
       P =   &
-     !u1 rctroe(7,k) * xnew(C2H4 ) * xnew(OH )  &
      rcmisc(17,k) * xnew(C2H4 ) * xnew(OH )  &
       + rct(19,k) * xnew(ETRO2H ) * xnew(OH ) 
 
@@ -2911,7 +2787,6 @@ if(k>=KEMISTOP)then
 !-> PRRO2 
 
       P =   &
-     !u1 rctroe(8,k) * xnew(OH ) * xnew(C3H6 )  &
      rcmisc(18,k) * xnew(OH ) * xnew(C3H6 )  &
       + rct(19,k) * xnew(PRRO2H ) * xnew(OH ) 
 
@@ -3025,10 +2900,8 @@ if(k>=KEMISTOP)then
      rct(7,k) * xnew(NO2 ) * xnew(NO3 )  &
       + rcphot(IDNO2,K) * xnew(NO2 )  &
       + rcemis(QRCNO,K) 
-!!      + 0.95*rcemis(QRCNO,K) 
 
       L =  &
-     !u1 rctroe(1,k)* xnew(OP )  &
      rcmisc(11,k)* xnew(OP )  &
       + rct(1,k)* xnew(O3 )  &
       + rct(5,k)* xnew(NO3 )  &
@@ -3056,18 +2929,15 @@ if(k>=KEMISTOP)then
 !-> NO2 
 
       P =   &
-     !u1 rctroe(1,k) * xnew(OP ) * xnew(NO )  &
      rcmisc(11,k) * xnew(OP ) * xnew(NO )  &
       + rct(1,k) * xnew(O3 ) * xnew(NO )  &
       + rct(5,k) * xnew(NO ) * xnew(NO3 )  &
       + rct(5,k) * xnew(NO ) * xnew(NO3 )  &
       + rct(6,k) * xnew(NO ) * xnew(HO2 )  &
       + rct(7,k) * xnew(NO2 ) * xnew(NO3 )  &
-      !u1 + rctroe(3,k) * xnew(N2O5 )  &
       + rcmisc(13,k) * xnew(N2O5 )  &
       + rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 8.7e-12 * xnew(C2H5O2 ) * xnew(NO )  &
-      !u1 + rctroe(6,k) * xnew(PAN )  &
       + rcmisc(16,k) * xnew(PAN )  &
       + 2.0e-11 * xnew(CH3COO2 ) * xnew(NO )  &
       + rct(13,k) * xnew(NO ) * xnew(SECC4H9O2 )  &
@@ -3087,14 +2957,10 @@ if(k>=KEMISTOP)then
       + rcphot(IDNO3,K) * xnew(NO3 )  &
       + rcphot(IDN2O5,K) * xnew(N2O5 )  &
       + rcemis(QRCNO2,K) 
-!!      + 0.05*rcemis(QRCNO,K) 
 
       L =  &
      rct(2,k)* xnew(O3 )  &
       + rct(7,k)* xnew(NO3 )  &
-      !u1 + rctroe(2,k)* xnew(NO3 )  &
-      !u1 + rctroe(4,k)* xnew(OH )  &
-      !u1 + rctroe(5,k)* xnew(CH3COO2 )  &
       + rcmisc(12,k)* xnew(NO3 )  &
       + rcmisc(14,k)* xnew(OH )  &
       + rcmisc(15,k)* xnew(CH3COO2 )  &
@@ -3108,11 +2974,9 @@ if(k>=KEMISTOP)then
 !-> PAN 
 
       P =   &
-     !u1 rctroe(5,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
      rcmisc(15,k) * xnew(CH3COO2 ) * xnew(NO2 ) 
 
       L =  &
-     !u1 rctroe(6,k) 
      rcmisc(16,k) 
 
 !       xnew(PAN)=  amax1(0.0, ( xold(PAN) + dt2 * P))  &
@@ -3126,7 +2990,6 @@ if(k>=KEMISTOP)then
 
       P =   &
      rct(24,k) * xnew(OH ) * xnew(CH3CHO )  &
-      !u1 + rctroe(6,k) * xnew(PAN )  &
       + rcmisc(16,k) * xnew(PAN )  &
       + rct(19,k) * xnew(CH3COO2H ) * xnew(OH )  &
       + rct(13,k) * xnew(MEKO2 ) * xnew(NO )  &
@@ -3137,7 +3000,6 @@ if(k>=KEMISTOP)then
       + rcphot(IDCH3COX,K) * xnew(MEK ) 
 
       L =  &
-     !u1 rctroe(5,k)* xnew(NO2 )  &
      rcmisc(15,k)* xnew(NO2 )  &
       + 2.0e-11* xnew(NO )  &
       + 1.1e-11* xnew(CH3O2 )  &
@@ -3207,7 +3069,6 @@ if(k>=KEMISTOP)then
 
       P =   &
      rct(2,k) * xnew(O3 ) * xnew(NO2 )  &
-      !u1 + rctroe(3,k) * xnew(N2O5 )  &
       + rcmisc(13,k) * xnew(N2O5 )  &
       + rct(11,k) * xnew(OH ) * xnew(HNO3 )  &
       + rcphot(IDN2O5,K) * xnew(N2O5 ) 
@@ -3215,7 +3076,6 @@ if(k>=KEMISTOP)then
       L =  &
      rct(5,k)* xnew(NO )  &
       + rct(7,k)* xnew(NO2 )  &
-      !u1 + rctroe(2,k)* xnew(NO2 )  &
       + rcmisc(12,k)* xnew(NO2 )  &
       + 5.8e-16* xnew(HCHO )  &
       + 7.8e-13* xnew(ISOP )  &
@@ -3231,21 +3091,10 @@ if(k>=KEMISTOP)then
 !-> N2O5 
 
       P =   &
-     !u1 rctroe(2,k) * xnew(NO2 ) * xnew(NO3 ) 
      rcmisc(12,k) * xnew(NO2 ) * xnew(NO3 ) 
 
       L =  &
-     !u1 rctroe(3,k)  &
      rcmisc(13,k)  &
-! N ch      + 1.0e-5  &
-!      + rcmisc(8,k)*(xnew(SO4))  & ! N ch
-!
-      !eff+ f_Riemer(k)**rcmisc(8,k)*(xnew(SO4)) & !
-      !eff+  (1-f_Riemer(k))*0.1*rcmisc(8,k)*(xnew(SO4)) &  !0.1 smaller for gamma(nitrate)
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)  & !Total sulphateaerosol surface
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3) & !Total nitrate aerosol surface
-      !dseff+ (0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4) & !Total ammonium aerosol surface
-!
       + (0.9*f_Riemer(k)+0.1) * rcmisc(8,k)* &
                   ( VOLFACSO4*xnew(SO4)      & !Total sulpate aerosol surface
                   + VOLFACNO3*xnew(aNO3)     & !Total sulpate aerosol surface
@@ -3308,34 +3157,22 @@ if(k>=KEMISTOP)then
 !-> HNO3 
 
       P =   &
-     !u1 rctroe(4,k) * xnew(NO2 ) * xnew(OH )  &
      rcmisc(14,k) * xnew(NO2 ) * xnew(OH )  &
       + 5.8e-16 * xnew(NO3 ) * xnew(HCHO )  & 
-!      +2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) !N ch
 ! New based on Riemer 2003
 !f=xnew(SO4)*96/(xnew(SO4)*96+xnew(aNO3)*62)
-!
-!eff+ f_Riemer(k)*0.2*2.*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5) & !0.2 smalller than dentener
-!eff+  (1-f_Riemer(k))*0.02*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)  !0.02 smalller than dentener
-!hf      + (0.18*f_Riemer(k)+0.02)*2.0*rcmisc(8,k)*(xnew(SO4))*xnew(N2O5)
-!dseff+ 2.*(0.9*f_Riemer(k)+0.1) *VOLFACSO4* rcmisc(8,k)*xnew(SO4)*xnew(N2O5)  & !Total sulphateaerosol surface
-!dseff + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNO3* rcmisc(8,k)*xnew(aNO3)*xnew(N2O5) & !Total nitrate aerosol surface
-!dseff + 2.*(0.9*f_Riemer(k)+0.1) *VOLFACNH4* rcmisc(8,k)*xnew(aNH4)*xnew(N2O5)   !Total ammonium aerosol surface
-!dseff:
       + 2.*(0.9*f_Riemer(k)+0.1) * rcmisc(8,k) * xnew(N2O5) * &
                      ( VOLFACSO4 * xnew(SO4)  +     & !Total sulphateaerosol surface
                        VOLFACNO3 * xnew(aNO3) +     & !Total sulphateaerosol surface
                        VOLFACNH4 * xnew(aNH4) )       !Total sulphateaerosol surface
 
 
-!ds rv1_9_28:
 !Production rate of hno3 from no2 to be saved
       xnew(PHNO3) = P/max( xnew(NO2),1.0 )      !reaction rate in s-1
 
 
       L =  &
      rct(11,k)* xnew(OH )  &
-! N ch     + 1.0e-5  &
       + rcmisc(10,k) &   ! Coarse pNO3 formation
       + rcphot(IDHNO3,K) 
 
@@ -3480,7 +3317,6 @@ if(k>=KEMISTOP)then
 !-> HCHO 
 
       P =   &
-   !ds 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
         rct(13,k) * xnew(CH3O2 ) * xnew(NO )  &
       + 2.*rct(14,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
       + rct(15,k) * xnew(CH3O2 ) * xnew(CH3O2 )  &
@@ -3500,7 +3336,6 @@ if(k>=KEMISTOP)then
       + rcphot(IDCH3O2H,K) * xnew(CH3O2H )  &
       + 1.56*rcphot(IDCH3O2H,K) * xnew(ETRO2H )  &
       + rcphot(IDCH3O2H,K) * xnew(PRRO2H )  &
-!ds rv1_8b5
       + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcemis(QRCHCHO,K) 
 
@@ -3573,7 +3408,6 @@ if(k>=KEMISTOP)then
      rcemis(QRCC2H4,K) 
 
       L =  &
-     !u1 rctroe(7,k)* xnew(OH )  &
      rcmisc(17,k)* xnew(OH )  &
       + rct(30,k)* xnew(O3 ) 
 
@@ -3589,7 +3423,6 @@ if(k>=KEMISTOP)then
 
       L =  &
      rct(31,k)* xnew(O3 )  &
-      !u1 + rctroe(8,k)* xnew(OH ) 
       + rcmisc(18,k)* xnew(OH ) 
 
        xnew(C3H6)=  amax1(0.0, ( xold(C3H6) + dt2 * P))  &
@@ -3780,7 +3613,7 @@ if(k>=KEMISTOP)then
      rct(9,k)* xnew(OH )  &
       + 1.0e-5  &
       + rcphot(IDH2O2,K) &
-!hf Ox limitation
+! Ox limitation
       + aqrck(ICLRC1,K)*xnew(SO2 )
 
        xnew(H2O2)=  amax1(0.0, ( xold(H2O2) + dt2 * P))  &
@@ -3890,7 +3723,6 @@ if(k>=KEMISTOP)then
       + rcphot(IDACH2O,K) * xnew(HCHO )  &
       + rcphot(IDBCH2O,K) * xnew(HCHO )  &
       + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
-      !ds rv1.7.4 bug-fix
       + 1.9*rcphot(IDHCOHCO,K) * xnew(GLYOX )  &
       + rcphot(IDRCOHCO,K) * xnew(MGLYOX )  &
       + rcemis(QRCCO,K) 
@@ -3922,11 +3754,9 @@ if(k>=KEMISTOP)then
 
       L =  &
        2e-12*aqrck(ICLOHSO2,K)* xnew(OH )  &
-     !ds  rcmisc(9,k) &   ! Eliassen+Saltbones rate
       + aqrck(ICLRC1,K)*XNEW(H2O2)  &
       + aqrck(ICLRC2,K)*XNEW(O3)  &
-      + aqrck(ICLRC3,K) !ds  Fe-catalysed reaction   &
-     !ds + 4.0e-17* xnew(CH3O2 ) 
+      + aqrck(ICLRC3,K) !  Fe-catalysed reaction   &
 
        xnew(SO2)=  amax1(0.0, ( xold(SO2) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
@@ -3946,8 +3776,6 @@ endif
        + aqrck(ICLRC1,K)*XNEW(H2O2) * xnew(SO2 )  &
        + aqrck(ICLRC2,K)*XNEW(O3) * xnew(SO2 )  &
        + aqrck(ICLRC3,K) * xnew(SO2 )  &
-    !ds + 4.0e-17 * xnew(CH3O2 ) * xnew(SO2 )  &
-    !ds + rcmisc(9,k) * xnew(SO2) &   ! Eliassen+Saltbones rate
       + 0.05*rcemis(QRCSO2,K) 
       ! L = 0.0
  
@@ -3959,8 +3787,6 @@ endif
 
       P =   &
         rcmisc(10,k) * xnew(HNO3)
-  !  2.*1.0e-5 * xnew(N2O5 )  &
-  !   + 1.0e-5 * xnew(HNO3 )
       L = 0.0
 
 
@@ -3994,17 +3820,12 @@ endif
 !-> Rn222
 
       P =  rc_Rn222(k)
-!hf 3.8235/ln2=5.51614
-!hf      L = 1.0/(3.8235*24.0*3600.0)    ! Dietmar, 11/4/2005
-      L = 1.0/(5.51614*24.0*3600.0)    ! Dietmar, 11/4/2005
+      L = 1.0/(5.51614*24.0*3600.0)
        xnew(Rn222)=  amax1(0.0, ( xold(Rn222) + dt2 * P))  &
                      /(1.0 + dt2*L ) 
-!dsbug       xnew(Rn222)=  max(0.0,  xold(Rn222) + dt2 * P)
 
 !-> Pb210
-!hf 3.8235/ln2=5.51614
-!      P = 1.0/(3.8235*24.0*3600.0) * xnew(Rn222)    ! Dietmar, 11/4/2005
-      P = 1.0/(5.51614*24.0*3600.0) * xnew(Rn222)    ! Dietmar, 11/4/2005
+      P = 1.0/(5.51614*24.0*3600.0) * xnew(Rn222)
       ! L = 0.0
        xnew(Pb210)=  max(0.0,  xold(Pb210) + dt2 * P)
 
@@ -4032,7 +3853,7 @@ endif
       ! L = 0.0
  
 
-!ds       xnew(AMSU)=  amax1(0.0, xold(AMSU))
+!       xnew(AMSU)=  amax1(0.0, xold(AMSU))
 
 
 !-> AMNI 
@@ -4041,5 +3862,5 @@ endif
       ! L = 0.0
  
 
-!ds       xnew(AMNI)=  amax1(0.0, xold(AMNI))
+!       xnew(AMNI)=  amax1(0.0, xold(AMNI))
 

@@ -7,7 +7,7 @@ program myeul
   !     runs through the physical time-step.
   !
   !
-  !     the structur of the model is the following:
+  !     the structure of the model is the following:
   !
   !------------------------------------------------------------------------
 
@@ -69,12 +69,13 @@ program myeul
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use Io_Progs_ml  ,    only : read_line
-  use Landuse_ml,       only : ReadLandUse
+  use Landuse_ml,       only : InitLandUse
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml  ,         only : metvar,MetModel_LandUse,&
        tiphys,Meteoread,MeteoGridRead,&
        startdate
   use ModelConstants_ml,only : KMAX_MID   &   ! No. vertical layers
+       ,RUNDOMAIN  &   ! 
        ,NPROC      &   ! No. processors
        ,METSTEP    &   ! Hours between met input
        ,runlabel1  &   ! explanatory text
@@ -164,8 +165,6 @@ program myeul
   !
   !             init_aqueous - set up of aqueous rates (moved before loop?? )
   !
-  !             tstfld       - now only for debugging (see below)
-  !
   !         end if ( new month )
   !
   !         if ( new month) then
@@ -217,39 +216,26 @@ program myeul
   !
   !--------------------------------------------------------------------
   !
-  !
-  !++(2) explanation of model parameters/arrays in alphabetic order. help
-  !      variables of minor importance are not explained here.
-  !
-  !
-  !     an             - number og grid-distances from equator to pole
-  !     xp             - x coordinate of the pole
-  !     yp             - y coordinate of the pole
-  !     cp             - heat capacity of air at constant pressure
-  !     dt_advec       - length of advection (phyche) time-step
-  !     efac           - conversion factor for emission totals
-  !                      (see subroutine emis)
-  !     epsil          - epsilon (a very small value)
+  !  Variables. There are too many to list here. Still, here are a 
+  !  few key variables that 
+  !  Variables. There are too many to list here. Still, here are a 
+  !  few key variables that 
+
+  !     dt_advec       - length of advection (phyche) time-step 
   !     GRIDWIDTH_M    - grid-distance
-  !     i              - x directed index
-  !     j              - y directed index
-  !     k              - vertical coordinate index
+  !     gb             - latitude (sorry, still Norwegian influenced..)
+  !     NPROC          - number of processors used
+  !     me             - number of local processor, e.g. me=0 is host
+  !                       processor where many read/writes are done
   !     NSPEC_ADV      - number of chemical components transport in the model
   !     NSPEC_SHL      - number of chemical components not-transport in the model
   !     NSPEC_BGN      - number of specified chemical components
-  !     r              - gas constant
-  !     t1             - start real-time of model calculation
-  !     t2             - end real-time of calculation
   !     ndays          - number of days since 1 january (max 365 or 366)
   !     thour          - utc-time in hours every time-step
   !     xm(i,j)        - map factor
   !     xm2(i,j)       - xm**2
   !     xmd(i,j)       - 1./xm2
   !     xn_adv(NSPEC_ADV,i,j,k) - chemical component (1 = so2, 2 = so4)
-  !     .
-  !     .
-  !     .
-  !     .
   !     .
   !     .
   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -331,6 +317,7 @@ program myeul
      write(unit=IO_LOG,fmt=*)startdate(2)
      write(unit=IO_LOG,fmt=*)startdate(3)
      write(unit=IO_LOG,fmt=*)"iyr_trend= ", iyr_trend
+     write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
   endif
 
   print *, "read standard input"
@@ -369,7 +356,7 @@ program myeul
 
   call define_chemicals()    ! sets up species details
 
-  call Init_Derived()        ! Derived field defs., rv1_9_16
+  call Init_Derived()        ! Derived field defs.
 
   call set_output_defs()     ! Initialises outputs
 
@@ -385,8 +372,9 @@ program myeul
   call Add_2timing(3,tim_after,tim_before,"After infield")
 
   if ( me == 0 ) write(6,*)"Calling emissions with year" ,current_date%year
-  call Emissions(current_date%year)  !!!!! IS this the right/best year????
-  if ( me == 0 ) write(6,*)"emissions fifniseh" 
+
+  call Emissions(current_date%year)
+
 
   ! daynumber needed  for BCs, so call here to get initial
 
@@ -395,7 +383,8 @@ program myeul
 
   call MetModel_LandUse(1)   !
 
-  call ReadLandUse()
+  call InitLandUse()  !  Reads Inputs.Landuse, Inputs.LandPhen
+
 
   if ( NBVOC > 0  ) call Init_BVOC()
 
@@ -405,11 +394,8 @@ program myeul
 
   call Init_WetDep()   ! sets up scavenging ratios
 
-
-
   call sitesdef()      !--- see if any output for specific sites is wanted
   !   (read input files "sites.dat" and "sondes.dat" )
-
 
   call vgrid    !  initialisation of constants used in vertical advection
   if ( me == 0 ) write(6,*)"vgrid fifniseh" 
@@ -427,8 +413,13 @@ program myeul
      call Init_new_netCDF(fileName,iotyp) 
      fileName=trim(runlabel1)//'_month.nc'
      iotyp=IOU_MON
+
+   ! The fullrun file contains the accumulated or average results
+   ! over the full run period, often a year, but even just for
+   ! a few timesteps if that is all that is run:
+
      call Init_new_netCDF(fileName,iotyp) 
-     fileName=trim(runlabel1)//'_year.nc'
+     fileName=trim(runlabel1)//'_fullrun.nc'
      iotyp=IOU_YEAR
      call Init_new_netCDF(fileName,iotyp) 
 
@@ -500,8 +491,6 @@ program myeul
         if ( AIRNOX ) call lightning()
 
         call init_aqueous()
-
-        if(numt == 2) call tstfld  !test output
 
 
         call Add_2timing(9,tim_after,tim_before,"init_aqueous")
@@ -583,7 +572,8 @@ program myeul
   call massbudget()
 
   if(me == 0)then
-     write(6,*) 'programmet er ferdig'
+     write(6,*) 'programme is finished'
+    ! Gather timing info:
      if(NPROC-1 >  0)then
         CALL MPI_RECV( lastptim, 8*39, MPI_BYTE,  NPROC-1 & 
              ,765, MPI_COMM_WORLD, STATUS, INFO) 
@@ -601,46 +591,4 @@ program myeul
   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
   CALL MPI_FINALIZE(INFO)
 
-  stop
 end program myeul
-!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-!
-!
-!     +------------------------------------------------------------+
-!     +                                                            +
-!     +                  end main program                          +
-!     +                                                            +
-!     +------------------------------------------------------------+
-!XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-
-subroutine tstfld
-  !     - assignes an initial test-distribution to a
-  !       chemical component. Not currently used except as print-out
-  !
-  integer i, j, k, n, info
-  real rwork
-  logical, parameter :: DEBUG_TEST = .false. 
-
-  if ( DEBUG_TEST ) then
-     write(6,*) "TSTFIELD OUTPUTS: me ", me
-     write(6,*) "MAXS:", me, MAXLIMAX, MAXLJMAX
-     write(6,*) "GMAXS:", me, GIMAX, GJMAX
-     write(6,*) "limaxs:", me, limax, ljmax
-     write(6,*) "li0:", me, li0, lj0
-     write(6,*) "li0:", me, li1, lj1
-     write(6,*) "gi0:", me, gi0, gj0
-     write(6,*) "tgi0:", me, tgi0(me), tgj0(me)
-     write(6,*) "DONE WITH TESTFIELD FOR ME ", me
-  end if
-
-  ! Not used now. Kept for future tests.
-  !    do k=1,KMAX_MID
-  !      do j=lj0,lj1
-  !        do i=li0,li1
-  !            xn_adv(IXADV_TEST,i,j,k) = ??????
-  !        enddo
-  !      enddo
-  !    enddo
-
-end subroutine tstfld

@@ -62,8 +62,8 @@ implicit none
 
     integer, public, save, dimension(NEMIS_SPLIT) :: &
       EMIS_NSPLIT  = &
-       (/  2  ,   10    /)    !!!! (check - excluding bio?)
- !! for SOA       (/  10   ,      3  /)    !!!! (check - excluding bio?)
+       (/  2  ,   10    /)
+ !! for SOA       (/  10   ,      3  /)
 
     !/-- and now  join the above name arrays  to make the complete list:
 
@@ -94,7 +94,6 @@ implicit none
       !/**now we deal with the emissions which are split,e.g.VOC
       !  ******************************************************
       !  **** must be in same order as EMIS_SPLIT array **** **
-      !  **** ds rv1.8.4 bug-fix:
       !  **** AND vocsplit.defaults file !!!!!!!  ***** **** **
       !  ******************************************************
          , QRCC2H6    = 8      & 
@@ -107,22 +106,6 @@ implicit none
          , QRCMEK    = 15   & 
          , QRCC2H5OH = 16    & 
          , QRCCH3OH  = 17
-
-      !ds CHanged from:
-      !  , QRCC2H4  = 7      & ! MACHDS 
-      !  , QRCC2H6  = 8      & ! MACHDS
-      !  , QRCC3H6  = 9      & ! MACHDS
-      !  , QRCNC4H10 = 10     &  ! MACHDS
-      !  , QRCOXYL   = 11    &  ! MACHDS
-      !  , QRCC2H5OH = 12    &  ! MACHDS
-      !  , QRCHCHO   = 13    &  ! MACHDS
-      !  , QRCCH3CHO  = 14    &  ! MACHDS
-      !  , QRCCH3OH   = 15    &  ! MACHDS
-      !  , QRCMEK     = 16      ! MACHDS
-
- !! for SOA          , QRCOC      = 15    &  ! MACHDS
- !! for SOA          , QRCEC      = 16    &  ! MACHDS
- !! for SOA          , QRCINORG   = 17       ! MACHDS
 
   ! Biogenics
 
@@ -171,19 +154,16 @@ implicit none
         molwt(QRCPMCO)  = 100.0  !  Fake for PM2.5
 
         molwt(QRCCO )    = 28.0  ! Emissions as N      
-        molwt(QRCC2H4)   = 24.0 ! Emissions as C ???   
-        molwt(QRCC2H6)   = 24.0 ! Emissions as C ???   
-        molwt(QRCC3H6)   = 36.0 ! Emissions as C ???   
-        molwt(QRCNC4H10) = 48.0 ! Emissions as C ???   
-        molwt(QRCOXYL)   = 106.0 ! Emissions as C ???   
+        molwt(QRCC2H4)   = 24.0  ! Emissions as C 
+        molwt(QRCC2H6)   = 24.0  ! 
+        molwt(QRCC3H6)   = 36.0 ! 
+        molwt(QRCNC4H10) = 48.0 ! 
+        molwt(QRCOXYL)   = 106.0 ! 
         molwt(QRCC2H5OH) = 46.0 
         molwt(QRCHCHO)   = 30.0 
         molwt(QRCCH3CHO) = 44.0 
         molwt(QRCCH3OH)  = 32.0 
         molwt(QRCMEK)    = 72.0 
-!        molwt(QRCOC)    = 150.0 
-!        molwt(QRCEC)    = 150.0 
-!        molwt(QRCINORG)  = 150.0 
   end subroutine set_molwts
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 end module My_Emis_ml

@@ -113,7 +113,7 @@ private
       ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
        ,"D2_O3DF     ","D2_O3WH     " &
 !
-!    JEJ Surface  pressure (for cross section):
+!    Surface  pressure (for cross section):
       ,"PS          " &
   /)
 
@@ -209,10 +209,6 @@ private
 
   select case ( class )
 
-      !BUGGY? case ( "ACCSU" )
-
-      !BUGGY?     call acc_sulphate(n)
-
       case ( "OX", "NOX", "NOZ", "TOXN", "TRDN", "FRNIT", "tNO3 ", "SSalt" )
 
            call misc_xn( e_2d, n, class, density )
@@ -229,27 +225,6 @@ private
 
 
   end subroutine My_DerivFunc
- !=========================================================================
-!BUGGY?
-!BUGGY?  subroutine acc_sulphate( acc_2d )
-!BUGGY?
-!BUGGY?   !/--  adds up sulphate column 
-!BUGGY?
-!BUGGY?   !ds BUGGY - started to change this, then noticed that "k" wasn't set
-!BUGGY?   !           and KMAX_MID used in xn_adv. Just comment out for now.
-!BUGGY?   !ds NEW***
-!BUGGY?   !ds - now pass in i,j part of d_2d array with 
-!BUGGY?   !     say call acc_sulphate(d_2d(n,:,:,IOU_INST)
-!BUGGY?
-!BUGGY?   real, dimension(:,:), intent(inout) :: acc_2d   ! Extract of 2d field
-!BUGGY?
-!BUGGY?    forall ( i=1:limax, j=1:ljmax )
-!BUGGY?        acc_2d( i,j) = acc_2d( i,j) +  &
-!BUGGY?              xn_adv(IXADV_SO4,i,j,KMAX_MID)*     &
-!BUGGY?              (z_bnd(i,j,k) - z_bnd(i,j,k+1)) *   &
-!BUGGY?                 roa(i,j,k,1)*1.0e9
-!BUGGY?    end forall
-!BUGGY?  end subroutine acc_sulphate
  !=========================================================================
 
   subroutine pm_calc( pm_2d, n, class, density )

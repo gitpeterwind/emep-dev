@@ -33,7 +33,7 @@
     use My_Emis_ml                        ! => QRCNO, etc.
     use OrganicAerosol_ml, only: Fgas
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX  ! me for TEST
-    use Setup_1dfields_ml, only: rcemis,izen,   & ! photolysis, emissions
+    use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
                                  rcbio,         & ! biogenic emis
                                  rc_Rn222,      & ! Pb210
                                  rct, rcmisc,   & ! reaction rate coeffients

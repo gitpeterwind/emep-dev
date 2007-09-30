@@ -2,7 +2,7 @@
  module Setup_1d_ml
 
   ! DESCRIPTION
-  ! Generates arrays for 1-D column , for inpout to chemical solver. The output
+  ! Generates arrays for 1-D column , for input to chemical solver. The output
   ! fields are stored in the Setup_1dfields_ml module.
 
 
@@ -10,18 +10,20 @@
   use Volcanos_ml
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
-  use CheckStop_ml,          only :  CheckStop
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
+  use CheckStop_ml,          only :  CheckStop
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use Functions_ml,          only :  Tpot_2_T
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
-  use GenSpec_adv_ml,        only :  NSPEC_ADV,IXADV_NO2
+  use GenSpec_adv_ml,        only :  NSPEC_ADV, IXADV_NO2
   use GenSpec_shl_ml,        only :  NSPEC_SHL
   use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
+  use MyChem_ml,             only :  Set_2dBgnd
   use GenRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
   use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, carea, &
                                      debug_proc, debug_li, debug_lj
+  use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use Met_ml,                only :  roa, th, ps, q, t2_nwp, cc3dmax &
                                     ,zen, Idirect, Idiffuse,z_bnd
@@ -39,11 +41,11 @@
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
   use My_BoundConditions_ml, only : BGN_2D
   use Landuse_ml,            only : water_fraction, ice_fraction
+  use N2O5_hydrolysis_ml, only : f_Riemer  !weighting factor for N2O5 hydrolysis
   use Par_ml,                only :  me& !!(me for tests)
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
   use PhysicalConstants_ml,  only :  AVOG, PI
-  use Radiation_ml,          only : & !ds mar2005 zen, Idirectt, Idiffuse, 
-                              PARfrac, Wm2_uE
+  use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
@@ -51,9 +53,7 @@
     ,rct, rcmisc          &  ! emission terms
     ,rcss                 &  !SeaS - sea salt
     ,rh, temp, itemp,pp      &  ! 
-    ,amk                  &  ! Air concentrations 
-    ,izen                    ! integer of zenith angle
-  use N2O5_hydrolysis_ml, only : f_Riemer  !weighting factor for N2O5 hydrolysis    
+    ,amk                     ! Air concentrations 
   use SeaSalt_ml,        only : SS_prod 
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,           only :  current_date, date
@@ -88,15 +88,9 @@ contains
     real ,dimension(KCHEMTOP:KMAX_MID) :: tinv, & ! Inverse of temp.
         h2o, o2k     ! water, O2
 
-    ! - calculate integer of local zenith angle here
-
-     izen = int ( zen(i,j) + 0.5 )
-     izen = max(1, izen)    ! Just to avoid zero in indices.
-
     do k = KCHEMTOP, KMAX_MID
  
-  !- MFAC replaces earlier use of CHEFAC and ATWAIR - to scale from
-  !  density (roa, kg/m3) to  molecules/cm3
+  !- MFAC - to scale from  density (roa, kg/m3) to  molecules/cm3
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
 
        amk(k) = roa(i,j,k,1) * MFAC  ! molecules air/cm3
@@ -111,23 +105,15 @@ contains
 
        pp(k) = PT + sigma_mid(k)*(ps(i,j,1) - PT)
 
-       !ds apr2005 temp(k) = th(i,j,k,1)*exp(XKAP*log(pp(k)*1.e-5))
        temp(k) = th(i,j,k,1)* Tpot_2_T( pp(k) )
 
        itemp(k) = nint( temp(k) -1.E-9)
-!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
-
-       ! relative humidity - moved here from setup_miscrc. Note that the
-       ! MADE/MACHO codes used sigma_bnd instead of sigma_mid for this pp, but
-       ! sigma_mid seems better.
-
-       !old pp   = PT + sigma_bnd(k)*(ps(i,j,1) - PT)
+! the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
 
        qsat  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
        rh(k) = min( q(i,j,k,1)/qsat , 1.0) 
 
         ! 1)/ Short-lived species - no need to scale with M
-        !  13/9/2002 - reintroduced reset of xn_2d
 
          do n = 1, NSPEC_SHL
                xn_2d(n,k) = max(0.0,xn_shl(n,i,j,k))
@@ -155,6 +141,7 @@ contains
                   ,"Detected non numerical concentrations (NaN)")
 
 
+
    o2k(:) = 0.21*amk(:)
    tinv(:) = 1./temp(:)
 
@@ -166,6 +153,7 @@ contains
    !old: call set_rctroe_rates(tinv,amk,rctroe)
 
    call set_rcmisc_rates(itemp,tinv,amk,o2k,h2o,rh,rcmisc)
+
 
 
 
@@ -327,7 +315,7 @@ contains
 
 
   it2m = nint(t2_nwp(i,j,1)-273.15-1.E-9)
-!pw the "-1.E-9" is put in order to avoid possible different roundings on different machines.
+! the "-1.E-9" is put in order to avoid possible different roundings on different machines.
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
@@ -335,18 +323,19 @@ contains
 
   ! Isoprene has emissions in daytime only:
   rcbio(BIO_ISOP,:) = 0.0
-  if (izen <= 90) then
+  if ( Grid%izen <= 90) then
 
      ! Light effects from Guenther G93
       par = (Idirect(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
 
-      rcbio(BIO_ISOP,KMAX_MID) = emnat(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL
+      rcbio(BIO_ISOP,KMAX_MID) = emnat(i,j,BIO_ISOP) &
+             * canopy_ecf(BIO_ISOP,it2m) * cL
   endif
   if ( DEBUG_BIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
-     write(*,"(a5,2i4,4es12.3)") "DBIO ", current_date%day, current_date%hour, &
-             par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP,KMAX_MID)
+     write(*,"(a5,2i4,4es12.3)") "DBIO ", current_date%day, &
+      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP,KMAX_MID)
   end if
 
   end subroutine setup_bio
@@ -362,7 +351,6 @@ contains
  
 
            ! 1)/ Short-lived species - no need to scale with M
-           !  13/9/2002 - reintroduced reset of xn_2d
 
             do n = 1, NSPEC_SHL
                xn_shl(n,i,j,k) = xn_2d(n,k)
@@ -372,7 +360,6 @@ contains
 
            do n = 1, NSPEC_ADV
               ispec = NSPEC_SHL + n
-!              xn_adv(n,i,j,k) = max(0.0, xn_2d(ispec,k)/amk(k))
               xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
            end do ! ispec
   
@@ -383,16 +370,3 @@ contains
 
 end module Setup_1d_ml
 !_____________________________________________________________________________!
-
-
-
-
-
-
-
-
-
-
-
-
-

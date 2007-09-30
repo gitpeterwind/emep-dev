@@ -2,34 +2,32 @@ module SubMet_ml
 !=============================================================================
 !+
 ! Description
-!  Module for reading NWP data from file, and for calculating sub-grid
-!  meteorology for each land-use. This module is designed to mimic to
-!  some extent modules from the full EMEP model, but is not fully compatible.
+!  Module for setting some local grid-cell data (mainly from NWP)
+!  and for calculating sub-grid  meteorology for each land-use. 
 !  The sub-grid part of this module is also undergoing constant change!!
 !=============================================================================
 
 
-use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
-use Io_ml, only : IO_STAB, open_file
+use CheckStop_ml, only : CheckStop
+use LandDefs_ml,   only: LandType
+use Landuse_ml,    only: LandCover
+use LocalVariables_ml, only: Grid, Sub
+use MicroMet_ml, only :  PsiM, AerRes    !functions
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
-use TimeDate_ml, only: current_date
 
 implicit none
 private
 
-!Subroutines
 
-public :: Get_Submet    ! calculates met. data for sub-grid areas
+  public :: Get_Submet    ! calculates met. data for sub-grid areas
 
 
-logical, private, parameter ::  DEBUG_SUB = .false.  ! for extra tests/printouts
+  logical, private, parameter ::  DEBUG_SUB = .false.  ! for extra tests/printouts
 
 contains
 !=======================================================================
-  subroutine Get_Submet(h,t2,Hd,LE,psurf, z_ref, u_ref, qw_ref, & ! in-
-                        debug_flag, is_water,                   &    ! in
-                        ustar, invL,                       &    ! in-out
-                        z0,d, Ra_ref,Ra_3m,rh,vpd)                    ! out
+
+  subroutine Get_Submet(iL, debug_flag )
 
 !---------------------------------------------------------------
 !  Sub-grid calculations of  stability, Ra and ustar for this landuse
@@ -49,50 +47,24 @@ contains
 !..new T*'s, L's for each landuse type and finally Ra's and ustars for each
 !..subgrid area.
 !
-!.. For further details, see EMEP report 3/95 ...
+!.. For further details, see EMEP report 1/2003 (and before that 3/95 ...)
 !
-! **sc: The subroutine Get_Submet also generates output for 
+! The subroutine Get_Submet also generates output for 
 ! two terms utilized in Rsurface, namely rh (the relative humidity
 ! term required for the evaluation of the stomatal compensation point 
 ! point for NH_3) and vpd (the vapour pressure deficit term required
 ! for the evaluation of stomatal conductance).
 
-!   Abbreviation in documentation: "tmp" abbreviates "temporary"
 !----------------------------------------------------------------- 
 !..In
 
-   real, intent(in) :: h           ! height of vegetation (m)
-                                   ! (set negative for sea areas)
-   real, intent(in) :: t2          ! Surface (2m) temp in deg.K
-   real, intent(in) :: Hd          ! Sensible Heat flux   ! Check SIGN!!!
-   real, intent(in) :: LE          ! Latent   Heat flux   ! Check SIGN!!!
-   real, intent(in) :: psurf       ! Pascal
-   real, intent(in) :: z_ref       ! Height of mid-cell used as ref ht, ca. 45m
-   real, intent(in) :: u_ref       ! Wind speed at ref ht 
-   real, intent(in) :: qw_ref      ! Spec. humidity at ref. ht
+   integer, intent(in) :: iL      ! lu index
    logical, intent(in) :: debug_flag   ! set true for wanted grid square
-   logical, intent(in) :: is_water 
 
-! In-Out
-    real, intent(inout) :: ustar            ! u* for sub-grid   (m/s)
-    real, intent(inout) :: invL             ! inverse of Monin-Obukhov length
-
-! Out
- 
-    real, intent(out) :: z0               ! roughness length (m)
-    real, intent(out) :: d                ! zero-plane displacament height (m)
-    real, intent(out) :: Ra_ref           ! resistances for SEI  landuse
-    real, intent(out) :: Ra_3m            ! resistances for SEI  landuse
-    real, intent(out) :: rh               ! relative humidity
-    real, intent(out) :: vpd              ! vapour pressure deficit in leaf    
+   ! IMPORTANT - ASSUMES INITIAL VALUES SET FOR USTAR, INVL, ....
 
 !.. Local
-    real :: z_refd                 ! z_ref - d   (m)
     real :: rho_surf               ! Density at surface (2 m), kg/m3
-    real :: tstar                  ! T* for sub-grid,  pot. temp for 2 m
-    real :: ustar_Nwp, invL_nwp    !  Store NWP values for testing
-    real :: Psi_h0, Psi_h2         ! stability functions, heat
-    real :: tmpinvL, tmpinvL_nwp   ! 1/L values for printout
     real :: z_1m                   !  1m above vegetation
     real :: z_3m                   !  3m above ground, or top of trees
     real :: z_3md                  !  minus displacemt ht.
@@ -101,9 +73,7 @@ contains
     logical, save ::  my_first_call = .true.
     integer, parameter ::  NITER = 1           ! no. iterations to be performed
 
-    integer :: iter,ios                 ! iteration variable and iostat variable                     
-
-
+    integer :: iter                ! iteration variable
 
    ! For vapour pressure calculations
 
@@ -114,15 +84,31 @@ contains
                                      ! down to z_0+d metres above the ground 
     real :: esat    ! saturation vapour pressure  (Pa)
     real :: e       ! vapour pressure at surface
-    real :: olde, oldvpd !.. tmp for printout
     real :: Ra_2m   ! to get 2m qw
 
+
     ! initial guesses for u*, t*, 1/L
+        Sub(iL)%ustar  = Grid%ustar      ! First guess = NWP value
+        Sub(iL)%invL   = Grid%invL       ! First guess = NWP value
+        Sub(iL)%Hd     = Grid%Hd         ! First guess = NWP value
+        Sub(iL)%LE     = Grid%LE         ! First guess = NWP value
+        Sub(iL)%t2     = Grid%t2         ! First guess = NWP value
+        Sub(iL)%t2C    = Grid%t2C        ! First guess = NWP value
 
-    ustar_nwp = ustar   ! Save first values
-    invL_nwp  = invL    ! Save first values
+        Sub(iL)%is_water  = LandType(iL)%is_water
+        Sub(iL)%is_forest = LandType(iL)%is_forest
 
-! .. the zero-plane displacement (d) is the height that
+     ! If NWP thinks this is a sea-square, but we anyway have land,
+     ! the surface temps will be wrong and so will stability gradients.
+     ! As a simple substitute, we assume neutral conditions for these
+     ! situations.
+        if( Grid%is_NWPsea  .and. (.not. Sub(iL)%is_water) ) then
+             Sub(iL)%invL = 0.0
+             Sub(iL)%Hd   = 0.0
+        end if
+
+
+!    The zero-plane displacement (d) is the height that
 !     needs to be added in order to make the profile theories
 !     work over a tall vegetation (see e.g. Stull (1988), p.381). 
 !     This corresponds to moving our co-ordinate system upwards 
@@ -132,36 +118,40 @@ contains
 !
 !     it has been observed that d is approximately 0.7 times
 !     the mean height of the vegetation (h) and z0=h/10
-!     (see e.g. Sutton (1990), Ph.D. thesis, p.46).
+!     (see e.g. Stull, 1998, Garratt, 1992.).
 !     The reference height for u* transformation is then
 !     taken arbitrarily at about 45m, the height of the
 !     centre of the EMEP grid cell.
           
 
-!.. for the landuse type water (has h=-99), we introduce a new zero plane 
+!.. For water, we introduce a new zero plane 
 !   displacement and use the Charnock relation to calculate the z0-values
-! Also - addded max 1cm limit for z0 over sea, because of problems
+! nb - addded max 1cm limit for z0 over sea, because of problems
 ! caused by z0>1m. Garratt (section 4.1, Fig 4.2) suggested that Charnock's
 ! relation is only valid for  u* < 1 m/s, which gives z0 < 1 cm/s.
 
 
-        if ( is_water  ) then
-             d  = 0.0
-             z0 = CHARNOCK * ustar * ustar/GRAV
-             z0 = max(z0,0.01)  !
+        if ( Sub(iL)%is_water ) then ! water
+             Sub(iL)%d  = 0.0
+             Sub(iL)%z0 = CHARNOCK * Sub(iL)%ustar * Sub(iL)%ustar/GRAV
+             Sub(iL)%z0 = max( Sub(iL)%z0 ,0.01)
              z_1m   = 1.0       ! 1m above sea surface
              z_3m   = 3.0       ! 3m above sea surface
         else
-             d  =  0.7 * h
-             z0 =  0.1 * h
-             z0 = max(z0,0.001) !  Fix for deserts, ice, snow (where, if the 
-                                !  ground is bare, h=0 and hence z0=0)
-             z_1m   = (h + 1.0) - d !  1m above vegetation, rel to displace ht.
-             z_3m   = max(3.0,h)    !  3m above ground, or top of trees 
+             Sub(iL)%d  =  0.7 * Sub(iL)%hveg
+             Sub(iL)%z0 = max( 0.1 * Sub(iL)%hveg, 0.001) !  Fix for deserts, 
+               ! ice, snow (where, for bare ground, h=0 and hence z0=0)
+
+           !Heights relative to displacement height, d:
+
+             z_1m   = (Sub(iL)%hveg + 1.0) - Sub(iL)%d
+             z_3m   = max(3.0,Sub(iL)%hveg)
+!CHECK!!!! z_3m z_3md....
+
         end if
           
-        z_refd = z_ref - d          !  minus displacement height
-        z_3md  = z_3m  - d          !  minus displacement height
+        Sub(iL)%z_refd = Grid%z_ref - Sub(iL)%d  !  minus displacement height
+        z_3md  = z_3m  - Sub(iL)%d               !  minus displacement height
 
 
     do iter = 1, NITER 
@@ -177,57 +167,61 @@ contains
 
         if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
             write(6,"(a12,i2,5f8.3,f12.3)") "UKDEP SUBI", iter, &
-                       h, z0, d, z_refd, z_3md, invL
+                       Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
+                         Sub(iL)%z_refd, z_3md, Sub(iL)%invL
         end if
 
-       ustar = u_ref * KARMAN/ &
-         (log( z_refd/z0 )-  PsiM( z_refd*invL ) + PsiM( z0*invL ) )
+       Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
+        (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
+          + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
 
-       ustar = max(ustar,1.0e-2)
+       Sub(iL)%ustar = max( Sub(iL)%ustar, 1.0e-2)
 
     !  We must use L (the Monin-Obukhov length) to calculate deposition,
     ! Thus, we calculate T* and then L, based on sub-grid data. 
 
 
-        rho_surf = psurf/(RGAS_KG * t2 )
+        rho_surf = Grid%psurf/(RGAS_KG * Sub(iL)%t2 )
 
 
     ! New 1/L value ....
 
 
-        invL =  -KARMAN * GRAV * Hd / ( CP*rho_surf*ustar*ustar*ustar * t2)
+        Sub(iL)%invL =  -KARMAN * GRAV * Sub(iL)%Hd / &
+      ( CP*rho_surf*Sub(iL)%ustar*Sub(iL)%ustar*Sub(iL)%ustar * Sub(iL)%t2)
 
       !.. we limit the range of 1/L to prevent numerical and printout problems
       !   This range is very wide anyway.
 
-        invL  = max( -1.0, invL ) !! limit very unstable
-        invL  = min(  1.0, invL ) !! limit very stable
+        Sub(iL)%invL  = max( -1.0, Sub(iL)%invL ) !! limit very unstable
+        Sub(iL)%invL  = min(  1.0, Sub(iL)%invL ) !! limit very stable
 
     end do ! iter
 
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        write(6,"(a12,4f8.3)") "UKDEP SUBL", z0, d, z_refd, invL
+        write(6,"(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
+          Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
+              Sub(iL)%ustar, Sub(iL)%t2, Sub(iL)%invL
     end if
 
-    if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
+    if ( DEBUG_SUB .and. debug_flag ) then 
          if ( my_first_call ) then ! title line
 
-                call open_file(IO_STAB,"w","Stab.out",needed=.true.)
-
-                write(unit=IO_STAB, fmt="(3a3, a6, 3a8,2a7, 2a6)") &
-                 "mm", "dd", "hh", "t2_C", "Hd", &
+                write(unit=*, fmt="(a6,3a3, a6, 3a8,2a7, 2a6)") &
+                 "STAB ", "mm", "dd", "hh", "t2_C", "Hd", &
                  "L_nwp", "L  ", "z/L_nwp", "z/L ", "u*_nwp", "u*"
                 my_first_call = .false.
          end if
 
-            write(unit=IO_STAB, &
-              fmt="(3i3, f6.1, 3f8.2, 2f7.2, 2f6.2)") &
-              current_date%month, &
-              current_date%day, &
-              current_date%hour, &
-              t2-273.15, Hd, invL_nwp, invL, &
-              z_refd*invL_nwp, z_refd*invL, ustar_nwp, ustar
+            write(unit=*, &
+              fmt="(a6,4i3, f6.1, 3f8.2, 2f7.2, 2f6.2)") "SUBB", iL, &
+              999, & !SUBcurrent_date%month, &
+              999, & !SUBcurrent_date%day, &
+              999, & !SUBcurrent_date%hour, &
+              Sub(iL)%t2C, Sub(iL)%Hd, Grid%invL, Sub(iL)%invL, &
+              Sub(iL)%z_refd*Grid%invL, Sub(iL)%z_refd*Sub(iL)%invL, &
+                 Grid%ustar, Sub(iL)%ustar
     end if
 
 
@@ -236,20 +230,18 @@ contains
 !      Ra_ref is used to estimate the aerodynamic resistance to latent
 !      heat transfer from height z_ref to z0+d and from height  h+3 to 
 !      z0+d, respectively.
-!      Only Ra_ref is used in the present subroutine.  
+!      Only Ra_ref and Ra_3m are used in main code.
       
-        Ra_ref = AerRes(z0,z_refd,ustar,invL,KARMAN)
-        Ra_3m  = AerRes(z0,z_3md,ustar,invL,KARMAN)
-        Ra_2m  = AerRes(z0,1.0+z_1m,ustar,invL,KARMAN)
+        Sub(iL)%Ra_ref = AerRes(Sub(iL)%z0,Sub(iL)%z_refd,Sub(iL)%ustar,&
+            Sub(iL)%invL,KARMAN)
+        Sub(iL)%Ra_3m  = AerRes(Sub(iL)%z0,z_3md,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)
+        Ra_2m  = AerRes(Sub(iL)%z0,1.0+z_1m,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)
 
-    if ( Ra_ref < 0 .or. Ra_3m < 0 .or. Ra_2m < 0  ) then
-      print *, "RAREF NEG ", z0, z_refd, ustar, invL, KARMAN
-    end if
-    if ( DEBUG_SUB .and.  Ra_3m > Ra_ref ) then
-        print "(a22,f12.3)", "ERROR!!! Ra_ref<Ra_3",  Ra_ref, Ra_3m
-    end if
-    if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        write(6,"(a22,f12.3)") "UKDEP SUB5 Ra_ref",  Ra_ref
+    if ( DEBUG_SUB ) then
+       if ( Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
+           .or. Ra_2m < 0  ) call CheckStop("RAREF NEG ")
+      if ( Sub(iL)%Ra_3m > Sub(iL)%Ra_ref ) &
+           call CheckStop("ERROR!!! Ra_ref<Ra_3")
     end if
 
 
@@ -266,13 +258,13 @@ contains
 !    formula Q = Hl/2.5e6
 
                        
-        qw = qw_ref  + LE/2.5e6 * ( Ra_ref - Ra_2m)  ! 2m qw
-
+! 2m qw:
+        qw = Grid%qw_ref  + Sub(iL)%LE/2.5e6 * ( Sub(iL)%Ra_ref - Ra_2m)  
 
       !..   qw is in kg/kg  so  e = qw*psurf/epsilon
       !..   to get e in Pascal.
 
-       e = qw * psurf/0.622
+       e = qw * Grid%psurf/0.622
 
 !The equation below relies on the following assumptions: epsilon=0.622
 !and L=2.5x10^6 Joules/Kg, where "epsilon" and "L" denote the ratio of 
@@ -280,30 +272,31 @@ contains
 !heat of vaporization, respectively.
 
 
-     esat = ESAT0 * exp(0.622*2.5e6*((1.0/T0) - (1.0/t2))/RGAS_KG )
+     esat = ESAT0 * exp(0.622*2.5e6*((1.0/T0) - (1.0/Sub(iL)%t2))/RGAS_KG )
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        print "(a15,2f12.6,2f12.3)", "UKDEP SUB water", qw_ref, qw, LE, 100.0*e/esat
+        print "(a15,2f12.6,2f12.3)", "UKDEP SUB water", Grid%qw_ref, qw, &
+              Sub(iL)%LE, 100.0*e/esat
     end if
 
    ! Straighforward calculation sometimes gives rh<0 or rh>1.0 -
-   ! probbaly due to mismatches between the assumptions used for the stability
+   ! probably due to mismatches between the assumptions used for the stability
    ! profile here and in HIRLAM. Here we set crude limits on e to prevent
    ! impossible rh values at least:
 
 
      e = max(0.001*esat,e)    ! keeps rh >= 0.1%
      e = min(esat,e)          ! keeps rh <= 1
-     rh = e/esat
+     Sub(iL)%rh = e/esat
 
 !  ****  leaf sat. vapour pressure
 
-      vpd    =  0.001*(esat-e)     ! gives vpd in kPa !
-      vpd    =  max(vpd,0.0) 
+      Sub(iL)%vpd    =  0.001*(esat-e)     ! gives vpd in kPa !
+      Sub(iL)%vpd    =  max(Sub(iL)%vpd,0.0) 
 
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        write(6,"(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, rh
+        write(6,"(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, Sub(iL)%rh
     end if
 
   end subroutine Get_Submet

@@ -4,9 +4,9 @@
   ! Arrays of meteorology and concentration for 1-D column , for input to 
   ! chemical solver ........
   ! The k-dimension spans the ground (KMAX_MID) to the K-values
-  ! specified by KCHEMTOP - 2 in MACHO.  
+  ! specified by KCHEMTOP - here 2
   !
-  !u2 - new aray added to keep o2, m, and for MADE oh, etc
+  ! - new aray added to keep o2, m, and for MADE oh, etc
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
   use My_Emis_ml,            only :  NRCEMIS, NSS, NBVOC   !NSS=SeaS
@@ -41,15 +41,8 @@
           rh                  & ! RH (fraction, 0-1)
          ,amk                 & ! M - atmospheric conc.
          ,temp                & ! temperature
-!hf         ,f_Riemer            &  ! weighting factor for N2O5 hydrolysis
          ,pp                     !pressure
    integer, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           itemp                  ! int of temperature
-
-
-
-   integer, public, save :: izen           ! integer of zenith angle
-                                           !ds rv1.6.3 added here....
-   !ds may2005 real,    public, save :: Idrctt, Idfuse ! Direct-total and diffuse radiation
 
  end module Setup_1dfields_ml
