@@ -11,10 +11,10 @@
   !ds apr2005 - moved "use" stuff to start of module.
  use My_Emis_ml,           only : NSS, QSSFI, QSSCO
 
- use DepVariables_ml,      only:  water                                         !st sept,2004
  use GenSpec_tot_ml,       only : SSFI, SSCO
  use GenChemicals_ml,      only : species
- use Landuse_ml,        only : landuse_ncodes, landuse_codes, landuse_data 
+ use LandDefs_ml,        only : LandDefs
+ use Landuse_ml! SUB,        only : landuse_ncodes, landuse_codes, landuse_data 
  use Par_ml,               only : MAXLIMAX,MAXLJMAX  & ! => x, y dimensions
                                  ,me   ! for testing
  use PhysicalConstants_ml, only : CHARNOCK,GRAV,KARMAN, AVOG  &
@@ -62,107 +62,107 @@
 
     if ( my_first_call ) then 
 
-        call init_seasalt
+!SUB         call init_seasalt
     
         my_first_call = .false.
 
     end if !  my_first_call
 
-    SS_prod(:,i,j) = 0.
-    prodM_ss(:) = 0.
-    prodN_ss(:) = 0.
-
-   !ds ================
-    !ds may05 if ( iclass(i,j) /= 0) return  !ds - faster to check here!
-    if ( .not. nwp_sea(i,j) ) return  !ds - faster to check here!
-   !ds ================
-
-!st sept,2004 - loop over the LU present in the grid
-    nlu = landuse_ncodes(i,j)
-      do ilu= 1, nlu
-        lu      = landuse_codes(i,j,ilu)
-
-!// only over water
-!st sept,2004..  Obs!  All water is assumed here to be salt water
-!                double checking with the old rough.170 data 
-
-        if ( water(lu) ) then
-            water_frac = landuse_data (i,j,ilu)  ! grid fraction with water
-
-          !ds apr2005 ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
-          ustar = ustar_nwp(i,j)
-
-   !ds QUERY - why no stability correction ??
-
-          z0 = CHARNOCK * ustar * ustar/GRAV
-          z0 = max(z0,0.01)  ! u7.5vgc 
-          vind10 = ustar/KARMAN * log(10./z0)
-
-          delz = (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
-          zcoef = 1.e-6 / delz
-          n2m = n_to_mSS * zcoef *AVOG / species(SSFI)%molwt *1.e-15
-!pw         vind10341=vind10 ** (3.41)
-          vind10_341=exp(log(vind10) * (3.41))
-
-   do ii = 1, ss_mod1
-
-!// sea salt flux [part/m2/s]
-
-        ss_flux(ii) = flux_help(ii) * ( log_dp2(ii) - log_dp1(ii) )    &
-!pw                                   * vind10 ** (3.41) 
-                                   * vind10_341
-
-        d3(ii) = dp3(ii)
-
-   enddo
-
-   do ii = 1, ss_mod2
-
-!// sea salt flux [part/m2/s]
-
-      jj = ii + ss_mod1
-
-!pw        ss_flux(jj) = param_SS (ii)* vind10 **(3.41)
-        ss_flux(jj) = param_SS (ii)*  vind10_341
-
-!   if(bug) write(6,'(a15,i5,e13.4)') 'Flux Monah ->',jj, ss_flux(jj)
-
-        d3(jj) = dSS3(ii)
-
-   enddo
- 
-!// Sea salt particles Number production [ part/cm3/s]
-!//.. ss_mod1= 12 (Martinsson et al.), ss_mod2= 3 (Monahan)
-
-!..FINE ..
-
-   do ii = 1 , nfin
-      prodN_ss(QSSFI) = prodN_ss(QSSFI) + ss_flux(ii) *zcoef
-      prodM_ss(QSSFI) = prodM_ss(QSSFI) + ss_flux(ii)* d3(ii) *zcoef
-
-      SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
-                         + ss_flux(ii) * d3(ii) * n2m   &
-                         * water_frac                     !st sept,2004 
-   enddo
-
-!..COARSE .. 
-   do ii = nfin+1, ncoa
-      prodN_ss(QSSCO) = prodN_ss(QSSCO) + ss_flux(ii) *zcoef
-      prodM_ss(QSSCO) = prodM_ss(QSSCO) + ss_flux(ii)* d3(ii) *zcoef
-
-      SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
-                         + ss_flux(ii) * d3(ii) * n2m   &
-                         * water_frac                     !st sept,2004 
-   enddo
-
-! if(bug)  &
-!  write(6,'(a20,2e15.4)') '>>Mass SS  >>', SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
-! if(bug)  then
-!  write(6,'(a20,2e15.4)') '>>N-SS prod >>', prodN_ss(QSSFI), prodN_ss(QSSCO)
-!  write(6,'(a20,2e15.4)') '>>M-SS prod >>', prodM_ss(QSSFI), prodM_ss(QSSCO)
-! endif                           
-    endif  ! water_area > 0.
-   enddo  ! LU classes
+!SUB     SS_prod(:,i,j) = 0.
+!SUB     prodM_ss(:) = 0.
+!SUB     prodN_ss(:) = 0.
+!SUB 
+!SUB    !ds ================
+!SUB     !ds may05 if ( iclass(i,j) /= 0) return  !ds - faster to check here!
+!SUB     if ( .not. nwp_sea(i,j) ) return  !ds - faster to check here!
+!SUB    !ds ================
+!SUB 
+!SUB !st sept,2004 - loop over the LU present in the grid
+!SUB     nlu = landuse_ncodes(i,j)
+!SUB       do ilu= 1, nlu
+!SUB         lu      = landuse_codes(i,j,ilu)
+!SUB 
+!SUB !// only over water
+!SUB !st sept,2004..  Obs!  All water is assumed here to be salt water
+!SUB !                double checking with the old rough.170 data 
+!SUB 
+!SUB         if ( water(lu) ) then
+!SUB             water_frac = landuse_data (i,j,ilu)  ! grid fraction with water
+!SUB 
+!SUB           !ds apr2005 ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
+!SUB           ustar = ustar_nwp(i,j)
+!SUB 
+!SUB    !ds QUERY - why no stability correction ??
+!SUB 
+!SUB           z0 = CHARNOCK * ustar * ustar/GRAV
+!SUB           z0 = max(z0,0.01)  ! u7.5vgc 
+!SUB           vind10 = ustar/KARMAN * log(10./z0)
+!SUB 
+!SUB           delz = (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
+!SUB           zcoef = 1.e-6 / delz
+!SUB           n2m = n_to_mSS * zcoef *AVOG / species(SSFI)%molwt *1.e-15
+!SUB !pw         vind10341=vind10 ** (3.41)
+!SUB           vind10_341=exp(log(vind10) * (3.41))
+!SUB 
+!SUB    do ii = 1, ss_mod1
+!SUB 
+!SUB !// sea salt flux [part/m2/s]
+!SUB 
+!SUB         ss_flux(ii) = flux_help(ii) * ( log_dp2(ii) - log_dp1(ii) )    &
+!SUB !pw                                   * vind10 ** (3.41) 
+!SUB                                    * vind10_341
+!SUB 
+!SUB         d3(ii) = dp3(ii)
+!SUB 
+!SUB    enddo
+!SUB 
+!SUB    do ii = 1, ss_mod2
+!SUB 
+!SUB !// sea salt flux [part/m2/s]
+!SUB 
+!SUB       jj = ii + ss_mod1
+!SUB 
+!SUB !pw        ss_flux(jj) = param_SS (ii)* vind10 **(3.41)
+!SUB         ss_flux(jj) = param_SS (ii)*  vind10_341
+!SUB 
+!SUB !   if(bug) write(6,'(a15,i5,e13.4)') 'Flux Monah ->',jj, ss_flux(jj)
+!SUB 
+!SUB         d3(jj) = dSS3(ii)
+!SUB 
+!SUB    enddo
+!SUB  
+!SUB !// Sea salt particles Number production [ part/cm3/s]
+!SUB !//.. ss_mod1= 12 (Martinsson et al.), ss_mod2= 3 (Monahan)
+!SUB 
+!SUB !..FINE ..
+!SUB 
+!SUB    do ii = 1 , nfin
+!SUB       prodN_ss(QSSFI) = prodN_ss(QSSFI) + ss_flux(ii) *zcoef
+!SUB       prodM_ss(QSSFI) = prodM_ss(QSSFI) + ss_flux(ii)* d3(ii) *zcoef
+!SUB 
+!SUB       SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
+!SUB                          + ss_flux(ii) * d3(ii) * n2m   &
+!SUB                          * water_frac                     !st sept,2004 
+!SUB    enddo
+!SUB 
+!SUB !..COARSE .. 
+!SUB    do ii = nfin+1, ncoa
+!SUB       prodN_ss(QSSCO) = prodN_ss(QSSCO) + ss_flux(ii) *zcoef
+!SUB       prodM_ss(QSSCO) = prodM_ss(QSSCO) + ss_flux(ii)* d3(ii) *zcoef
+!SUB 
+!SUB       SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
+!SUB                          + ss_flux(ii) * d3(ii) * n2m   &
+!SUB                          * water_frac                     !st sept,2004 
+!SUB    enddo
+!SUB 
+!SUB ! if(bug)  &
+!SUB !  write(6,'(a20,2e15.4)') '>>Mass SS  >>', SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
+!SUB ! if(bug)  then
+!SUB !  write(6,'(a20,2e15.4)') '>>N-SS prod >>', prodN_ss(QSSFI), prodN_ss(QSSCO)
+!SUB !  write(6,'(a20,2e15.4)') '>>M-SS prod >>', prodM_ss(QSSFI), prodM_ss(QSSCO)
+!SUB ! endif                           
+!SUB     endif  ! water_area > 0.
+!SUB    enddo  ! LU classes
 
    end subroutine SeaSalt_flux
 
@@ -205,78 +205,78 @@
 
         log_dp1(:) = log10(dp_1(:))
         log_dp2(:) = log10(dp_2(:))
-
-        dp2(:) = dp(:)  * dp(:)
-        dp3(:) = dp2(:) * dp(:)
-        dp4(:) = dp3(:) * dp(:)
-
-!//..  for Monahan parameterisation
-
-       ! radSS (1)= 6.3 /2.
-       ! radSS (2)= 8.5 /2.
-        radSS (1)= 6.0 /2.
-        radSS (2)= 7.2 /2. 
-        radSS (3)= 9.0 /2. 
-!// cubic DRY diameter for SS particles (assumed SS_Dd=0.55*SS_Dw at Rh~90%)
-        dSS3(1) =  ( 1.1*radSS(1)) **3
-        dSS3(2) =  ( 1.1*radSS(2)) **3
-        dSS3(3) =  ( 1.1*radSS(3)) **3
-
-       ! range(1)= 1.4/2.    ! Monahan     5.6 - 7.0 wet diam
-       ! range(2)= 3.0/2.    ! Monahan     7.0 - 10.0
-        range(1)= 1.0/2.    ! Monahan     5.6 - 6.6 wet diam
-        range(2)= 1.4/2.    ! Monahan     6.6 - 8.0
-        range(3)= 2.0/2.    !             8.0 - 10.0
-
-!//=====  Maartinsson, Nilsson .. parameterisation =======
-   k = ss_mod1
-
-  a(1:4) = c1(1)*dp4(1:4)*mkm4  + c1(2)*dp3(1:4)*mkm3  + c1(3)*dp2(1:4)*mkm2  &
-         + c1(4)*dp(1:4)*mkm    + c1(5)
-  a(5:7) = c2(1)*dp4(5:7)*mkm4  + c2(2)*dp3(5:7)*mkm3  + c2(3)*dp2(5:7)*mkm2  &
-         + c2(4)*dp(5:7)*mkm    + c2(5)
-  a(8:k) = c3(1)*dp4(8:k)*mkm4  + c3(2)*dp3(8:k)*mkm3  + c3(3)*dp2(8:k)*mkm2 &
-         + c3(4)*dp(8:k)*mkm    + c3(5)
-
-  b(1:4) = d1(1)*dp4(1:4)*mkm4  + d1(2)*dp3(1:4)*mkm3  + d1(3)*dp2(1:4)*mkm2  &
-         + d1(4)*dp(1:4)*mkm    + d1(5)
-  b(5:7) = d2(1)*dp4(5:7)*mkm4  + d2(2)*dp3(5:7)*mkm3  + d2(3)*dp2(5:7)*mkm2  &
-         + d2(4)*dp(5:7)*mkm    + d2(5)
-  b(8:k)= d3(1)*dp4(8:k)*mkm4   + d3(2)*dp3(8:k)*mkm3  + d3(3)*dp2(8:k)*mkm2 &
-         + d3(4)*dp(8:k)*mkm    + d3(5)
-
-  flux_help (:) = a(:) * Twater + b(:)
-
- if (me == 0) then
-  write (6,*) '---   new SS -----'
-  write (6,*)'     ====   A  ===='
-  write (6,'(2(6e10.2/))')  (a (i), i=1,ss_mod1)
-  write (6,*)'     ====   B  ===='
-  write (6,'(2(6e10.2/))')  (b (i), i=1,ss_mod1)
-  write (6,*)'     ====   F  ===='
-  write (6,'(2(6e10.2/))')  (flux_help (i), i=1,ss_mod1)
- endif
-
-  flux_help (:) =   flux_help (:) * 3.84e-6
-
-!//======    Monahan   ===========================
-
-   do i= 1, ss_mod2
-         a1 = ( 0.380 - log10(radSS(i)) ) / 0.650
-         a2 = 1.19 * exp(-a1*a1)
-
-    param_SS(i) = 1.373 * radSS(i)**(-3) * range(i) *     &
-                         (1.+ 0.057 * radSS(i)**1.05) * 10. **a2
-
-
- if (me == 0) then
-  write(6,*)
-  write(6,*) ' >> Sea Salt for <<', i,a1,a2,param_SS(i)
-  write(6,*) '  TEST PARAMETERS *******', nfin, ncoa
- endif
-   enddo
-
-     n_to_mSS = PI * SSdens / 6.   ! SeaS
+!SUB
+!SUB        dp2(:) = dp(:)  * dp(:)
+!SUB        dp3(:) = dp2(:) * dp(:)
+!SUB        dp4(:) = dp3(:) * dp(:)
+!SUB
+!SUB!//..  for Monahan parameterisation
+!SUB
+!SUB       ! radSS (1)= 6.3 /2.
+!SUB       ! radSS (2)= 8.5 /2.
+!SUB        radSS (1)= 6.0 /2.
+!SUB        radSS (2)= 7.2 /2. 
+!SUB        radSS (3)= 9.0 /2. 
+!SUB!// cubic DRY diameter for SS particles (assumed SS_Dd=0.55*SS_Dw at Rh~90%)
+!SUB        dSS3(1) =  ( 1.1*radSS(1)) **3
+!SUB        dSS3(2) =  ( 1.1*radSS(2)) **3
+!SUB        dSS3(3) =  ( 1.1*radSS(3)) **3
+!SUB
+!SUB       ! range(1)= 1.4/2.    ! Monahan     5.6 - 7.0 wet diam
+!SUB       ! range(2)= 3.0/2.    ! Monahan     7.0 - 10.0
+!SUB        range(1)= 1.0/2.    ! Monahan     5.6 - 6.6 wet diam
+!SUB        range(2)= 1.4/2.    ! Monahan     6.6 - 8.0
+!SUB        range(3)= 2.0/2.    !             8.0 - 10.0
+!SUB
+!SUB!//=====  Maartinsson, Nilsson .. parameterisation =======
+!SUB   k = ss_mod1
+!SUB
+!SUB  a(1:4) = c1(1)*dp4(1:4)*mkm4  + c1(2)*dp3(1:4)*mkm3  + c1(3)*dp2(1:4)*mkm2  &
+!SUB         + c1(4)*dp(1:4)*mkm    + c1(5)
+!SUB  a(5:7) = c2(1)*dp4(5:7)*mkm4  + c2(2)*dp3(5:7)*mkm3  + c2(3)*dp2(5:7)*mkm2  &
+!SUB         + c2(4)*dp(5:7)*mkm    + c2(5)
+!SUB  a(8:k) = c3(1)*dp4(8:k)*mkm4  + c3(2)*dp3(8:k)*mkm3  + c3(3)*dp2(8:k)*mkm2 &
+!SUB         + c3(4)*dp(8:k)*mkm    + c3(5)
+!SUB
+!SUB  b(1:4) = d1(1)*dp4(1:4)*mkm4  + d1(2)*dp3(1:4)*mkm3  + d1(3)*dp2(1:4)*mkm2  &
+!SUB         + d1(4)*dp(1:4)*mkm    + d1(5)
+!SUB  b(5:7) = d2(1)*dp4(5:7)*mkm4  + d2(2)*dp3(5:7)*mkm3  + d2(3)*dp2(5:7)*mkm2  &
+!SUB         + d2(4)*dp(5:7)*mkm    + d2(5)
+!SUB  b(8:k)= d3(1)*dp4(8:k)*mkm4   + d3(2)*dp3(8:k)*mkm3  + d3(3)*dp2(8:k)*mkm2 &
+!SUB         + d3(4)*dp(8:k)*mkm    + d3(5)
+!SUB
+!SUB  flux_help (:) = a(:) * Twater + b(:)
+!SUB
+!SUB if (me == 0) then
+!SUB  write (6,*) '---   new SS -----'
+!SUB  write (6,*)'     ====   A  ===='
+!SUB  write (6,'(2(6e10.2/))')  (a (i), i=1,ss_mod1)
+!SUB  write (6,*)'     ====   B  ===='
+!SUB  write (6,'(2(6e10.2/))')  (b (i), i=1,ss_mod1)
+!SUB  write (6,*)'     ====   F  ===='
+!SUB  write (6,'(2(6e10.2/))')  (flux_help (i), i=1,ss_mod1)
+!SUB endif
+!SUB
+!SUB  flux_help (:) =   flux_help (:) * 3.84e-6
+!SUB
+!SUB!//======    Monahan   ===========================
+!SUB
+!SUB   do i= 1, ss_mod2
+!SUB         a1 = ( 0.380 - log10(radSS(i)) ) / 0.650
+!SUB         a2 = 1.19 * exp(-a1*a1)
+!SUB
+!SUB    param_SS(i) = 1.373 * radSS(i)**(-3) * range(i) *     &
+!SUB                         (1.+ 0.057 * radSS(i)**1.05) * 10. **a2
+!SUB
+!SUB
+!SUB if (me == 0) then
+!SUB  write(6,*)
+!SUB  write(6,*) ' >> Sea Salt for <<', i,a1,a2,param_SS(i)
+!SUB  write(6,*) '  TEST PARAMETERS *******', nfin, ncoa
+!SUB endif
+!SUB   enddo
+!SUB
+!SUB     n_to_mSS = PI * SSdens / 6.   ! SeaS
  
    end subroutine init_seasalt
 
