@@ -51,13 +51,13 @@ etc..........
 \end{verbatim}
 
 Landuse data are required in the model, primarily for dry
-depositon modelling and for estimation of biogenic emissions.  EMEP
+depositon modelling.  EMEP
 model can accept landuse data from any dataset covering the whole of
 the domain and providing reasonable resolution of vegetation
-categores.  Gridded data-sets providing these landuse categories
+categories.  Gridded data-sets providing these landuse categories
 across the EMEP domain have been created based on the data from the
 Stockholm Environment Institute ar York (SEI-Y) and form the
-Coordinating Centre for Effects (CCE).\\
+Coordinating Centre for Effects (CCE).These data are contained in the file Inputs.Landuse. The headers of this file contain short abbreviations for the different landcover types, e.g. CF for temperate/boreal coniferous forest.  \\
 
  16 basic landuse classes have
 been identified for the use of deposition module in the model and they
@@ -68,8 +68,10 @@ Mediterranean Crops (MC), Root Crops (RC), Seminatural/Moorland (SNL),
 Grassland (GR), Mediterranean Scrub (MS), Wetlands (WE), Tundra (TU),
 Desert (DE), Water (W), Ice (I), and Urban (U).  They are listed in
 columns following the 'i' and 'j' indexes of the
-grids. Input file header explains in detail about all the
+grids. Three additonal "fake" land-use classes are used for providing results for integrated assessment modelling and effects work . Input file header explains in detail about all the
 columns. \\
+
+For the vegetative landuse categories for which stomatal modelling is undertaken, the start and end of the growing season (SGS, EGS), as well as other biomass characteristics, and parameters for the stomatal conductance model must be specified. This is done in the files Inputs.LandDefs and Inputs_DO3SE.csv. 
 
 Snowcover and Natural SO2 emissions are provided as monthly gridded
 files and they are stored in columns of 'i', 'j', and the
