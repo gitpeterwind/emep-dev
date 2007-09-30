@@ -179,7 +179,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv2_9_12";
+    $testv       = "rv3beta30";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -464,6 +464,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$NDATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$NDATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
+    $ifile{"$NDATA_LOCAL/Inputs.LandDefs"} = "Inputs.LandDefs";
+    $ifile{"$NDATA_LOCAL/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
     $ifile{"$NDATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$NDATA_LOCAL/sondes.dat"} = "sondes.dat";
   
@@ -481,9 +483,6 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DATA_LOCAL/rough.170"} = "rough.170"; # Roughness length;
     $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat";
 
-    $ifile{"$DataDir/JUN06_gfac1.dat"} = "JUN06_gfac1.dat";
-    $ifile{"$DataDir/JUN06_gfac2.dat"} = "JUN06_gfac2.dat";
-    $ifile{"$DataDir/JUN06_biomass.dat"} = "JUN06_biomass.dat";
 
     foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
 	if ( -r $old ) {
