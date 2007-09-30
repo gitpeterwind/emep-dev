@@ -1,11 +1,6 @@
 !==============================================================================
   module Aero_DryDep_ml
 !==============================================================================
-!ds - changes: see "ds" comments. Also, I've indented code to make the
-! if-statements clearer 
-! code restricted to 80 columns wide - this keeps printouts from wrapping text
-! and hence makes code easier to read.
-! ST,st -> stoke, SC,sc -> schmidt
 
   ! DESCRIPTION
   ! Calculates laminar sub-layer resistance (rb) and gravitational settling 
@@ -15,9 +10,8 @@
   ! ra - aerodynamic resistance, rb - viscous sub-layer resistance,
   ! rc - surface resistance (assumed zero for particles)
   !---------------------------------------------------------------------------
-!stDep
  use My_Aerosols_ml,        only : NSIZE
- use DepVariables_ml,       only:  water, conif_forest,vegetation 
+ use LandDefs_ml,       only:  LandType
  use PhysicalConstants_ml , only : PI, GRAV, KARMAN, VISCO, BOLTZMANN, FREEPATH     
 
  implicit none
@@ -29,7 +23,7 @@ contains
 
  !  ===========================================================
     subroutine Aero_Rb (ustar, conv, roa, v50, lu,     &  ! IN
-                        snow, wetarea, tsK,            &  ! IN, ds wetarea
+                        snow, wetarea, tsK,            &  ! IN
                         vs, rb, rbw)                      ! OUT
  
   !-------------------------------------------------------------------
@@ -60,8 +54,6 @@ contains
                   stoke, schmidt, &  ! Stoke's and Schmidt numbers
                   vsmo, vs1,      &  ! Settling velocity
                    coleff, reb, convfac
-    !ds REM slipmo, Dimo,
-    !ds REM          ,STmo, SCmo, 
 
   real,    save :: log10
   logical, save :: my_first_call = .true.
@@ -119,17 +111,17 @@ contains
 
 
 
-      if( water(lu) )    then !//===  WATER surface  ( Slinn & Slinn, 1980 ) =
+      if( LandType(lu)%is_water )    then !//===  WATER surface  ( Slinn & Slinn, 1980 ) =
 
       	   coleff= ustar / (KARMAN * vind) *      &          ! polydisperse
                   (exp(-0.5*log(schmidt)) + exp(-3./stoke*log10) )   
 
-      elseif ( conif_forest(lu) )  then !//===  CONIFEROUS ==============
+      elseif ( LandType(lu)%is_conif )  then !//===  CONIFEROUS ==============
 
            stoke = vs(imod)*ustar/(AHAT*GRAV)   ! vegetation (Slinn, 1982)
            coleff= exp(-2./3.*log(schmidt)) + stoke/(1.+ stoke*stoke)  !  Slinn 
 
-      elseif ( vegetation(lu) ) then !//===  other VEGETATIVE surfaces ======
+      elseif ( LandType(lu)%is_veg ) then !//===  other VEGETATIVE surfaces ======
 
           if ( snow > 0 .or. tsK <= 273.)   then   !... covered with snow or frozen 
 
@@ -161,7 +153,7 @@ contains
 
       if(imod == NSIZE )  then
 
-        if( .not. (water(lu) .and. wetarea == 0.0))  & ! not on water/wet surface
+        if( .not. (LandType(lu)%is_water .and. wetarea == 0.0))  & ! not on water/wet surface
 
             reb = max (1.e-7, exp(-2. * sqrt(stoke)))           
       endif
@@ -172,7 +164,7 @@ contains
      
 !  only for (low) vegetation 
 
-      if (vegetation(lu) .and. snow == 0)  convfac = conv  
+      if (LandType(lu)%is_veg .and. snow == 0)  convfac = conv  
 
 !// == sub-laminar layer resistance ====================
 
@@ -187,6 +179,5 @@ contains
    end subroutine Aero_Rb
 ! =================================================================
 
-end module Aero_DryDep_ml	
+end module Aero_DryDep_ml
 
-	

@@ -11,17 +11,13 @@ use Par_ml               , only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
 use ModelConstants_ml    , only: KMAX_MID     ! =>  z dimension
 use GenSpec_adv_ml,  only: NSPEC_ADV         ! => No. species 
 use GenSpec_shl_ml,  only: NSPEC_SHL         ! => No. species 
-!u2 !hf
-!u2 use GenSpec_bgn_ml,  only: NSPEC_BGN,NSPEC_UIO         ! => No. species 
 use GenSpec_bgn_ml,  only: NSPEC_BGN         ! => No. species 
 implicit none
 private
 
     !----------------- basic chemical fields ----------------------------------!
     !  Here we declare and initialise to zero the chemical fields used in the  !
-    !  model                                                                   !
-    !  and cfac which is ....
-    !  From eulmc.inc                     
+    !  model, as well as cfac (converts from 50m to 1m/3m output)         ! 
     !---------------------------------------------------------------------!
 
   real, save, public :: &
@@ -29,7 +25,6 @@ private
     ,xn_shl (NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
     ,xn_bgn (NSPEC_BGN,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
     ,PM_water (MAXLIMAX,MAXLJMAX,KMAX_MID)           = 0.0        !water
-!u2    ,xn_bgn (NSPEC_UIO,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0   
 
   real, save, public :: &
      cfac   (NSPEC_ADV,MAXLIMAX,MAXLJMAX) = 1.0    

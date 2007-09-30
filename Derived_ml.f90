@@ -331,7 +331,6 @@ call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT30f","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
 call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
-!BUGGY ,Deriv( 611, "ACCSU", T, -1, ugSO4,   F  , F  ,  T , T ,  F,"D2_ACCSU","ug/m2")
 !
 ! -- simple advected species. Note that some indices need to be set as dummys
 !    in ACID, e.g. IXADV_O3
@@ -361,11 +360,9 @@ call AddDef( "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")
 call AddDef( "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")
 call AddDef( "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")
 !
-!ds drydep
+! drydep
 !   set as "external" parameters - ie set outside Derived subroutine
 !      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
-!
-!Havn't worried about rho so far... does it matter?
 call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")
 call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")
 call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")
@@ -481,8 +478,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
      subroutine Setups()
 
     !/** flexibility note. By making use of character-based tests such
-    !    as for "VOC" below, we achieve code which can stay for both MADE and
-    !    MACHO without having to define non-used indices. 
+    !    as for "VOC" below, we achieve code which can stay for both ACID and
+    !    OZONE without having to define non-used indices. 
     !    Similarly, we avoid the previous "if NUM_ACCSU eq 1" type test,
     !    since the appropriate code will now only activate 
 
@@ -501,7 +498,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
     end subroutine Setups
     !=========================================================================
 
-    subroutine Derived(dt,End_of_Day)   !ds rv1_9_28: End_of_Day added
+    subroutine Derived(dt,End_of_Day)
 
     !/** DESCRIPTION
     !  Integration and averaging of chemical fields. Intended to be
@@ -509,7 +506,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
     !  Includes AOT40, AOT60 if present
 
       real, intent(in)    :: dt           !  time-step used in intergrations
-      logical, intent(in) :: End_of_Day   !ds rv1_9_28: End_of_Day added
+      logical, intent(in) :: End_of_Day   !  e.g. 6am for EMEP sites
 
       character(len=len(f_2d%class)) :: typ  !  See defs of f_2d
       real :: thour                          ! Time of day (GMT)
@@ -869,7 +866,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
        !    ( no daily averaging done for 3-D fields so far).
 
 
-       !ds for the MAX3D possibilities, we store maximum value of the
+       ! For the MAX3D possibilities, we store maximum value of the
        !   current day in the IOU_INST variables.
        !   These are then added into IOU_MON **only** at the end of each day.
        ! (NB there is an error made on 1st day used, since only 1st 6 hours
@@ -881,7 +878,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               d_3d(n,:,:,:,IOU_MON ) = d_3d(n,:,:,:,IOU_MON ) &
                                      + d_3d(n,:,:,:,IOU_INST)
               d_3d(n,:,:,:,IOU_YEAR) = d_3d(n,:,:,:,IOU_YEAR) &
-                                     + d_3d(n,:,:,:,IOU_INST) !men er d_3d reset paa samme tidspunkt?
+                                     + d_3d(n,:,:,:,IOU_INST)
               if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1 !only collected for end_of_day
 
               if( debug_flag ) then

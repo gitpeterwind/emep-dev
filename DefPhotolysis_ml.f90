@@ -20,7 +20,7 @@
    use Met_ml           , only : cc3d,cc3dmax,z_bnd
    use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, NPROC
    use Par_ml      ,    only : me,MAXLIMAX,MAXLJMAX
-   use Setup_1dfields_ml, only : izen
+   use LocalVariables_ml, only : Grid  ! => izen
    implicit none
    private
 
@@ -73,7 +73,7 @@
       integer ::  newseason
 
       integer ::  k     &  ! help index
-                 ,izen  &  ! integer zenith angle
+                 ,izn   &  ! integer zenith angle
                  ,info  &  ! used for broadcast
                  ,nr    &  ! numbering of photolytic reactions
                  ,la       ! counting every 10 deg. latitude
@@ -101,14 +101,14 @@
         if(me == 0)then
 
           do la = 1,NLAT
-            do izen = 1,HORIZON
+            do izn = 1,HORIZON
               do k = 1,KCHEMTOP
-                read(IO_DJ,999) myz,(dj(nr,KCHEMTOP,izen,la),nr=1,NPHODIS)
+                read(IO_DJ,999) myz,(dj(nr,KCHEMTOP,izn,la),nr=1,NPHODIS)
               end do
               do k = KCHEMTOP+1,KMAX_MID
-                read(IO_DJ,999) myz,(dj(nr,k,izen,la),nr=1,NPHODIS)
+                read(IO_DJ,999) myz,(dj(nr,k,izn,la),nr=1,NPHODIS)
               end do   ! k
-            end do    ! izen
+            end do    ! izn
           end do     ! la
           close(IO_DJ)
         endif  ! me = 0
@@ -130,22 +130,22 @@
 
         if(me == 0)then
 
-          do izen = 1,HORIZON
+          do izn = 1,HORIZON
             do k = 1,KCHEMTOP
-              read(IO_DJ,999) myz,(djcl1(nr,KCHEMTOP,izen),nr=1,NPHODIS)
+              read(IO_DJ,999) myz,(djcl1(nr,KCHEMTOP,izn),nr=1,NPHODIS)
             end do
             do k = KCHEMTOP+1,KMAX_MID
-              read(IO_DJ,999) myz,(djcl1(nr,k,izen),nr=1,NPHODIS)
+              read(IO_DJ,999) myz,(djcl1(nr,k,izn),nr=1,NPHODIS)
             end do
-          end do  ! izen
+          end do  ! izn
 
-          do izen = 1,HORIZON
+          do izn = 1,HORIZON
             do k = KCHEMTOP,KMAX_MID
               do nr=1,NPHODIS
-                djcl1(nr,k,izen)=djcl1(nr,k,izen)/dj(nr,k,izen,3)-1.0
+                djcl1(nr,k,izn)=djcl1(nr,k,izn)/dj(nr,k,izn,3)-1.0
               enddo ! nr
             end do ! k
-          end do  ! izen
+          end do  ! izn
           close(IO_DJ)
         endif   ! me = 0
 
@@ -166,22 +166,22 @@
 
         if(me == 0)then
 
-          do izen = 1,HORIZON
+          do izn = 1,HORIZON
             do k = 1,KCHEMTOP
-              read(IO_DJ,999) myz,(djcl3(nr,KCHEMTOP,izen),nr=1,NPHODIS)
+              read(IO_DJ,999) myz,(djcl3(nr,KCHEMTOP,izn),nr=1,NPHODIS)
             end do
             do k = KCHEMTOP+1,KMAX_MID
-              read(IO_DJ,999) myz,(djcl3(nr,k,izen),nr=1,NPHODIS)
+              read(IO_DJ,999) myz,(djcl3(nr,k,izn),nr=1,NPHODIS)
             end do  ! k
-          end do   ! izen
+          end do   ! izn
           close(IO_DJ)
-          do izen = 1,HORIZON
+          do izn = 1,HORIZON
             do k = KCHEMTOP,KMAX_MID
               do nr=1,NPHODIS
-                djcl3(nr,k,izen)=djcl3(nr,k,izen)/dj(nr,k,izen,3)-1.
+                djcl3(nr,k,izn)=djcl3(nr,k,izn)/dj(nr,k,izn,3)-1.
               enddo  ! nr
             end do  ! k
-          end do   ! izen
+          end do   ! izn
        endif      !  me = 0
 
         CALL MPI_BCAST(djcl3  ,8*NPHODIS*(KMAX_MID-KCHEMTOP+1)*HORIZON,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
@@ -222,7 +222,7 @@
         errcode = 0
 
 
-        if ( izen > 90 ) then     ! Photolysis rates zero when the sun is
+        if ( Grid%izen > 90 ) then     ! Photolysis rates zero when the sun is
                                   ! below the horizon
              rcphot(:,:) = 0.0 
 
@@ -240,12 +240,11 @@
               end do
               base = k+1
 
-             !csu   if all cc3d so far are <1.e-4 we are done
+             ! if all cc3d so far are <1.e-4 we are done
 
-             !ODIN6 if(base == 6) goto 4732
               if( base < CLOUDTOP ) then 
 
-                !csu   we have found a k>=CLOUDTOP with cc3d>=1.e-4, now search for top
+                !  we have found a k>=CLOUDTOP with cc3d>=1.e-4, now search for top
 
                  k = CLOUDTOP
                  do while(cc3d(i,j,k) < 1.0e-4)
@@ -274,7 +273,7 @@
             if(iclcat == 0)then
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
-                  rcphot(n,k)  = dj(n,k,izen,la)
+                  rcphot(n,k)  = dj(n,k,Grid%izen,la)
                 enddo
               enddo
             else if(iclcat == 1)then
@@ -282,7 +281,7 @@
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
                   rcphot(n,k)  = (1. +          &
-                               clear*djcl1(n,k,izen)) * dj(n,k,izen,la)
+                               clear*djcl1(n,k,Grid%izen)) * dj(n,k,Grid%izen,la)
                 enddo  !  n
               enddo   !  k
 
@@ -292,7 +291,7 @@
               do k = KCHEMTOP,KMAX_MID
                 do n=1,NRCPHOT
                   rcphot(n,k)  = (1. +            &
-                               clear*djcl3(n,k,izen))*dj(n,k,izen,la)
+                               clear*djcl3(n,k,Grid%izen))*dj(n,k,Grid%izen,la)
                  enddo
               enddo
             endif
