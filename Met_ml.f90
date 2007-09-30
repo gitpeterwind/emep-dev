@@ -131,7 +131,6 @@ module Met_ml
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        rho_surf    & ! Surface density
-       ,invL_nwp    & ! inverse Obukhov length
        ,Tpot2m      & ! Potential temp at 2m
        ,ustar_nwp     ! friction velocity m/s ustar^2 = tau/roa
 
@@ -1627,23 +1626,12 @@ contains
 
     forall( i=1:limax, j=1:ljmax ) 
        ustar_nwp(i,j) = max( ustar_nwp(i,j), 1.0e-5 )
-       invL_nwp(i,j)  = KARMAN * GRAV * fh(i,j,1)                &
-            / (CP*rho_surf(i,j)* ustar_nwp(i,j)        &
-            * ustar_nwp(i,j)*ustar_nwp(i,j) * t2_nwp(i,j,1))
-
-       !.. we limit the range of 1/L to prevent numerical and printout problems
-       !.. and because we don't trust HIRLAM enough.
-       !   This range is very wide anyway.
-
-       invL_nwp(i,j)  = max( -1.0, invL_nwp(i,j) ) !! limit very unstable
-       invL_nwp(i,j)  = min(  1.0, invL_nwp(i,j) ) !! limit very stable
-
     end forall
+
     if ( DEBUG_DERIV .and. debug_proc ) then
        i = debug_iloc
        j = debug_jloc
-       write(*,*) "MET_DERIV DONE ", me, ustar_nwp(i,j), invl_nwp(i,j)  &
-            , rho_surf(i,j)
+       write(*,*) "MET_DERIV DONE ", me, ustar_nwp(i,j), rho_surf(i,j)
     end if
     !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
@@ -2502,8 +2490,9 @@ contains
     !
     ! Written by Peter February 2003
     !
-    !Comment from Peter after ds bug-fix:
-    !The data_west(jj,:)=data(1,j) is not a bug: when there is no west neighbour, 
+    !Note, 
+    !The data_west(jj,:)=data(1,j) is not a bug: when there is no west 
+    !neighbour, 
     !the data is simply copied from the nearest points: data_west(jj,:) should 
     !be =data(-thick+1:0,j), but since this data does not exist, we 
     !put it =data(1,j).

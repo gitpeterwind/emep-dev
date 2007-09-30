@@ -17,9 +17,9 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
- !      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+        RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
  !TESTER 
-   RUNDOMAIN = (/  86, 107,  70, 102 /)     ! (changeable)
+   !  RUNDOMAIN = (/  80, 107,  40,  75 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
@@ -34,10 +34,10 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
  !integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
  !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
- !integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
+ integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
  ! integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
-integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  Mid-Europe
+ !integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  Mid-Europe
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
 
 !=============================================================================

@@ -1,10 +1,18 @@
 module OrganicAerosol_ml
-! From BOX3D on 9/8/01
-   ! Calculates the amount of condesible species in the gas and aerosol
+   !
+   ! DUMMY module for now, as the SOA part of the EMEP model is still
+   ! in research phase, and changes quite frequently. The 
+   ! Calculates the amount of condensible species in the gas and aerosol
    ! phases. 
-   ! Methodology from Andersson-Sk\"old and Simpson, 2000, Secondary Organic
-   ! Aerosol Formation in Northern Europe: a Model Study, to be published
-   ! in JGR.
+   !
+   ! When implemented, we use the 
+   ! methodology from Andersson-Sk\"old and Simpson, 2000, Secondary Organic
+   ! Aerosol Formation in Northern Europe: a Model Study, J. Geophys. Res
+   ! 106(D7), 7357-7374, and
+   ! Simpson,D., Yttri, K.E.,Klimont, Z. ,Kupiainen, K.,Caseiro, A.,
+   !  Gelencser, A.,Pio,  C.,Legrand, M. ,Yttri, K.E., Modeling Carbonaceous 
+   !  Aerosol over Europe. Analysis of the CARBOSOL and EMEP EC/OC campaigns,
+   !  J. Geophys. Res., 112, D23S14, doi:10.1029/2006JD008158.
    !
    ! Usage: call OrganicAerosol from Runchem, after setup of 1d-fields
    ! finished.  The subroutine initialises itself on the first call
@@ -12,12 +20,7 @@ module OrganicAerosol_ml
    !   xn(SOA,k) : the concentrations of SOA 
    !   Fgas(X,k) : The fraction of X which is gas and not aeorosl
    !
-   ! Dave Simpson, August 2001 
-   !--------------------------------------------------------------------------
-   ! nb - we use all of GenSpec_tot_ml since different model versions
-   !  will have different species names. This module is intended to
-   !  insensitive to the actual names one day, so this should be
-   !  revised .. one day   - ds.
+   ! Dave Simpson, August 2001  - 2007
    !--------------------------------------------------------------------------
    use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
                                     K2 => KMAX_MID, K1 => KCHEMTOP
