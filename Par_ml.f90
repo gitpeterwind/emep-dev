@@ -305,16 +305,14 @@ private
 !     Find the x-, y-, and z-addresses of the domain assigned to the
 !     processor
 !
-!     pw 09.01.2002: Check if the subdomain is large enough
-!     pw 26.03.2002: Bug in formula for tljmax, tgj0, tgj1  
 !
 	mey = me/NPROCX
 	mex = me - mey*NPROCX
 !
 !
 !     Find the neighbors of this processor.
-!pw 04/11-2005 allow cyclic map in i direction.
-!pw   Do not define north and south poles as outer Boundaries
+!   Allow cyclic map in i direction.
+!   Do not define north and south poles as outer Boundaries
 !
         lj0 = 1
         lj1 = ljmax

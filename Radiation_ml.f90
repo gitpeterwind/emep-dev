@@ -3,7 +3,7 @@ module Radiation_ml
   !+ Collection of routines to calculate radiation terms, also for
   !  canopies. IMPORTANT - Most routines expect SolarSetup to 
   !  have been called first.
-  !ds mar2005:
+  !
   !  F-compliant.  Module usable by stand-alone deposition code.
 
   use PhysicalConstants_ml  , only: PI, DEG2RAD, RAD2DEG, DAY_ZEN, DAY_COSZEN
@@ -171,9 +171,12 @@ contains
       else
         dayinc = real( d-ASHRAE_REV(i-1)%nday ) / &
                  real( ASHRAE_REV(i)%nday-ASHRAE_REV(i-1)%nday )
-        Ashrae%a = ASHRAE_REV(i-1)%a + ( ASHRAE_REV(i)%a - ASHRAE_REV(i-1)%a )*dayinc
-        Ashrae%b = ASHRAE_REV(i-1)%b + ( ASHRAE_REV(i)%b - ASHRAE_REV(i-1)%b )*dayinc
-        Ashrae%c = ASHRAE_REV(i-1)%c + ( ASHRAE_REV(i)%c - ASHRAE_REV(i-1)%c )*dayinc
+        Ashrae%a = ASHRAE_REV(i-1)%a + &
+             ( ASHRAE_REV(i)%a - ASHRAE_REV(i-1)%a )*dayinc
+        Ashrae%b = ASHRAE_REV(i-1)%b + &
+             ( ASHRAE_REV(i)%b - ASHRAE_REV(i-1)%b )*dayinc
+        Ashrae%c = ASHRAE_REV(i-1)%c + &
+             ( ASHRAE_REV(i)%c - ASHRAE_REV(i-1)%c )*dayinc
       end if
 
  end subroutine SolarSetup
@@ -313,7 +316,7 @@ contains
   end subroutine CloudAtten
 
 !===========================================================================
-    subroutine CanopyPAR(LAI,albedo,sinB,Idrctt,Idfuse,&
+    subroutine CanopyPAR(LAI,sinB,Idrctt,Idfuse,&
                             PARsun,PARshade,LAIsunfrac)
 !===========================================================================
 !
@@ -323,7 +326,6 @@ contains
 !     input arguments:
 
     real, intent(in)  :: LAI       ! leaf area index (m^2/m^2), one-sided
-    real, intent(in)  :: albedo    ! Fraction, 0-1
     real, intent(in)  :: sinB      ! B = solar elevation angle; sinB = CosZen
     real, intent(in)  :: Idrctt, Idfuse
     real, intent(out) :: PARsun, PARshade
@@ -352,10 +354,9 @@ contains
     PARsun = Idrctt *cosA/sinB + PARshade
 
 !.. Convert units, and to PAR fraction
-!.. and multiply by albedo
 
-    PARshade = PARshade * Wm2_2uEPAR * ( 1.0 - albedo )
-    PARsun   = PARsun   * Wm2_2uEPAR * ( 1.0 - albedo )
+    PARshade = PARshade * Wm2_2uEPAR 
+    PARsun   = PARsun   * Wm2_2uEPAR 
 
   end subroutine CanopyPAR
 
@@ -404,7 +405,7 @@ contains
   end function daytime
 
   !-----------------------------------------------------------------
-  !ds Caculate length of day, following Jones, Appendix 7:
+  ! Calculate length of day, following Jones, Appendix 7:
   !   IMPORTANT - Call SolarSetup before use to get tan_decl
 
   elemental function daylength(lat) result (len)
@@ -424,7 +425,7 @@ contains
         end if
   end function daylength
   !-----------------------------------------------------------------
-  !ds Caculate solar noon, following Jones, Appendix 7:
+  ! Calculate solar noon, following Jones, Appendix 7:
   !   IMPORTANT - Call SolarSetup before use to get eqt_t
 
   elemental function solarnoon(long) result (noon)

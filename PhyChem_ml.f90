@@ -53,16 +53,11 @@ contains
 
    integer :: ndays
    real :: thour
+
+
    type(timestamp) :: ts_now !date in timestamp format
 
-    if ( DEBUG .and. debug_proc  ) then
-
-           write(6,*)"PhyChe debug:", me, debug_li, debug_lj, &
-                      " current_date: ", current_date
-     end if ! DEBUG
     !------------------------------------------------------------------
-
-
     !     start of inner time loop which calls the physical and
     !     chemical routines.
 
@@ -73,35 +68,36 @@ contains
        !	using current_date we have already nstep taken into account
 
        thour = real(current_date%hour) + current_date%seconds/3600.0 & 
-     			+ 0.5*dt_advec/3600.0 
+                   + 0.5*dt_advec/3600.0 
 
        if ( DEBUG .and. debug_proc ) then
-           write(6,*) "me, thour-CURRENT_DATE CHECK: ", me, thour,  &
+           write(6,*) "PhyChe debug ", me, thour,  &
                       current_date%hour, current_date%seconds
 
            if ( current_date%hour == 12 ) then
 
-		ndays=day_of_year(current_date%year,current_date%month,current_date%day)
-	        write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
+               ndays = day_of_year(current_date%year,current_date%month, &
+                                    current_date%day)
+               write(6,*) 'thour,ndays,nstep,dt', thour,ndays,nstep,dt_advec
            endif
 
         endif
 
-        if (me == 0) write(6,"(a15,i6,f8.3,2i5)") 'timestep nr.',nstep,thour
+        if (me == 0) write(6,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
 
         call wrtxn(current_date,.false.) !Write xn_adv for future nesting
         call readxn(current_date) !Read xn_adv from earlier runs
  
 !        ==================
-	call Code_timer(tim_before)
+         call Code_timer(tim_before)
 
-    	call EmisSet(current_date)
+        call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
 
 !       For safety we initialise add instant. values here to zero.
 !       Usually not needed, but sometimes
 !       ==================
-            d_2d(:,:,:,IOU_INST) = 0.0
+         d_2d(:,:,:,IOU_INST) = 0.0
 !       ==================
 
 
@@ -167,7 +163,7 @@ contains
           if ( nstep == nmax ) call DerivedProds("After",dt_advec)
           !=============================
 
-	  call Code_timer(tim_before)
+          call Code_timer(tim_before)
           !=============================
           call Add_2timing(34,tim_after,tim_before,"phyche:drydep")
 
@@ -185,14 +181,15 @@ contains
 
 
           !====================================
-          ts_now=make_timestamp(current_date)
+          ts_now = make_timestamp(current_date)
+
           call add_secs(ts_now,dt_advec)
+
           current_date = make_current_date(ts_now)
 
           !====================================
 
 
-          ! to be consistent with reset of IOU_DAY
 
           End_of_Day = (current_date%seconds == 0 .and. &
                         current_date%hour    == END_OF_EMEPDAY)
@@ -206,7 +203,7 @@ contains
 
 
          ! Hourly Outputs:
-	  if ( current_date%seconds == 0 ) then
+          if ( current_date%seconds == 0 ) then
 
               if ( modulo(current_date%hour, FREQ_SITE) == 0 )  &
                                  call siteswrt_surf(xn_adv,cfac,xn_shl)
@@ -218,13 +215,15 @@ contains
                      modulo(current_date%hour, FREQ_HOURLY) == 0 ) &
                          call hourly_out()
 
-	  end if
+          end if
 
           call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
 
-	  call metint
-	  call adv_int
+          call metint
+
+
+          call adv_int
 
 
           call Add_2timing(36,tim_after,tim_before,"phyche:ints")
