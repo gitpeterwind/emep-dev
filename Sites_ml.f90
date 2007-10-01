@@ -688,7 +688,7 @@ end subroutine siteswrt_sondes
      do n = 1, nglobal
         write(unit=io_num, fmt="(a20,i5,3i3,i5)" ) &
               s_name(n), current_date
-        write(unit=io_num, fmt="(5es10.3)" ) g_out(:,n)
+        write(unit=io_num, fmt="(5es11.3)" ) g_out(:,n)
      end do ! n
 
   end if ! me
