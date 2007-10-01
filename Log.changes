@@ -74,7 +74,6 @@ Svetlana:
 Cleanup of Runchem_ml, My_Aerosol
 
 y============= Dave, rv2_9_15, Sept.  27th 2007  =============================
->>>>>>> 1.297
 
 d_2d initialised to zero in PhyChem for all components
 (check by Svetlana)
