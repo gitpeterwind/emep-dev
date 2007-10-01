@@ -1,49 +1,13 @@
 program myeul
   !
-  !     this is the main program for the off-line regional scale multilayer
+  !     This is the main program for the off-line regional scale multilayer
   !     eulerian model at emep/msc-w. the main program contains the outer
   !     time-loop which runs through all time-levels a new meteorological
   !     data-set is read into the model from file. the inner time-loop
   !     runs through the physical time-step.
   !
-  !
-  !     the structure of the model is the following:
-  !
   !------------------------------------------------------------------------
 
-  !
-  !
-  !              (1)  a short description of each subroutine. a more
-  !                   detailed description is found in each subroutine.
-  !
-  !              (2)  declaration and explanation of all model parameters are
-  !                   given in the include-files: eulpar.inc, eulcon.inc,
-  !                   eulbud.inc, eulmc.inc
-  !
-  !              (3)  the first meteorological data- and parameterset is read
-  !                   from file. other initial parameters and model fields are
-  !                   also defined under this paragraph.
-  !
-  !
-  !     ----------------------
-  !     begin outer time-loop:
-  !     ----------------------
-  !
-  !
-  !              (4)  new meteorological fields are derived and all the
-  !                   necessary interpolation in space and time is performed
-  !                   here.
-  !
-  !           ----------------------
-  !           begin inner time-loop:
-  !           ----------------------
-  !
-  !
-  !              (5)  the chemical and physical calculations are performed 
-  !                   in this paragraph.
-  !
-  !           --------------------
-  !           end inner time loop.
   use My_Emis_ml,       only : NBVOC, AIRNOX
   use My_Outputs_ml,    only : set_output_defs
   use My_Timing_ml,     only : lastptim,mytimm,Output_timing, &
@@ -88,138 +52,16 @@ program myeul
        ,li0,li1,lj0,lj1,tgi0,tgj0  &   ! FOR TESTING
        ,limax, ljmax, MAXLIMAX, MAXLJMAX, gi0, gj0
   use PhyChem_ml,       only : phyche  ! Calls phys/chem routines each dt_advec
-  use TimeDate_ml,      only : date, current_date, day_of_year,daynumber
-  use Trajectory_ml,    only : trajectory_init,trajectory_in ! For extraction of
-  ! data along 3-D trajectories
-
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
+  use TimeDate_ml,      only : date, current_date, day_of_year,daynumber
+  use Trajectory_ml,    only : trajectory_init,trajectory_in
   use Nest_ml,         only : wrtxn
 
-
-  !           --------------------
-  !
-  !
-  !              (6)  output of chemical and meteorological fields, averaging,
-  !                   accumumlation and massbudgets.
-  !
-  !
-  !     --------------------
-  !     end outer time-loop.
-  !     --------------------
-  !
-  !
-  !---------------------------------------------------------------------------
-
-  !
-  !
-  ! ++(1)   the subroutines are:
-  !
-  !
-  !      Before the time loops the model topography is set, initial fields 
-  !      are read etc.
-  !
-  !     parinit           - Find the x-, y-, and z-addresses of the domain 
-  !                         assigned to the processor.
-  !     define_chemicals  - sets up species details
-  !
-  !     set_output_defs   - Initialises outputs
-  !
-  !     assign_nmax       - Assign nr. of time-steps for the inner time-loop
-  !
-  !     trajectory_init      - Should be replaced by a more generad 3D-trajectory
-  !                         (presently not used)
-  !     Meteoread         - Reads in first set of meteorological data
-  !
-  !     Emissions         - reads the emission totals in each grid-square
-  !
-  !     metvar            - derive new meteorological quantities from the
-  !                         met. data read from the field-files.
-  !     tabulate          - tabulates rct to rctit, sets up tab_esat, etc.  
-  !
-  !     sitesdef          - see if any output for specific sites is wanted 
-  !                        (read input files "sites.dat" and "sondes.dat")
-  !     vgrid             - Inclusion of the variable grid spacing
-  !
-  !     metvar            - Derived meteorological fields calculated from basic fields
-  !
-  !     adv_var           - Exchange u,v info for shadow area on nodes etc??
-  !
-  !
-  !     3-hourly time loop
-  !     --------------------
-  !
-  !         if ( new month) then
-  !
-  !             readdiss     - Read in new sets of j-values every month
-  !
-  !             aircraft_nox - (optional) seasonal aircraft emissions
-  !
-  !             MetModel_LandUse  - Reads monthly snow cover and yearly roughness data
-  !                                 as used in HIRLAM/xx met model.
-  !
-  !             newmonth     - Reads natural so2 emissions (Should the name be
-  !                             changed to ie monthly_DMS ??? )
-  !
-  !             lightning    - (optional) reads lightning emissions.
-  !
-  !             init_aqueous - set up of aqueous rates (moved before loop?? )
-  !
-  !         end if ( new month )
-  !
-  !         if ( new month) then
-  !
-  !             BoundaryConditions  - Update boundary concentrations (and
-  !                                   possible background fields)
-  !             if ( first time in loop )
-  !                init_massbudget  - Preset to zero and calc. total
-  !                                   initial mass
-  !             end if ( first time in loop )
-  !
-  !         end (new month )
-  !
-  !         remaining routines are called for every nterm
-  !
-  !         Meteoread - Reads in a new set of meteorological data
-  !
-  !         metvar    - Derived fields calculated from basic fields
-  !                     (from infield)
-  !
-  !         adv_var   - Exchange u,v info for shadow area on nodes etc??
-  !
-  !         phyche:   - performes the physical and chemical calculations,
-  !                     an explanation is found in each routine.
-  !
-  !                     subroutines: - for setting daynumber, emissions,
-  !                                    zenith angle
-  !
-  !                                  - Advection rutines ( advecdiff )
-  !
-  !                                  - runchem calls setup subs and runs
-  !                                                            chemistry
-  !                                  - drydep
-  !
-  !                                  - ++ ( see phyche )
-  !
-  !
-  !         Wrtchem    - Writes to output files (range:  3 hourly - annual)
-  !
-  !         trajectory_in - See above
-  !
-  !     end 3-hourly time loop
-  !     -------------------------
-  !
-  !     massbud:       - calculates and print out budget quantities
-  !
-  !     output_timing  - writes the CPU spent in various parts of the code 
-  !
-  !
   !--------------------------------------------------------------------
   !
   !  Variables. There are too many to list here. Still, here are a 
-  !  few key variables that 
-  !  Variables. There are too many to list here. Still, here are a 
-  !  few key variables that 
+  !  few key variables that  might help:
 
   !     dt_advec       - length of advection (phyche) time-step 
   !     GRIDWIDTH_M    - grid-distance
@@ -259,13 +101,10 @@ program myeul
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
-  integer d
-
-
   logical, parameter :: DEBUG_UNI = .false. 
   integer n, numt, nadd, oldseason,newseason
-  integer iupw, i, j, ii, k, iotyp
-  integer :: mm, mm_old   ! month and old-month  (was nn and nold)
+  integer iupw, i, j, ii, k, iotyp, d
+  integer :: mm, mm_old   ! month and old-month
   integer :: nproc_mpi,cyclicgrid
   character (len=130) :: fileName, errmsg,txt
 
@@ -349,7 +188,7 @@ program myeul
 
   !-------------------------------------------------------------------
   !
-  !++(3)  parameters and initial fields.
+  !++  parameters and initial fields.
   !
 
   call Add_2timing(1,tim_after,tim_before,"Before define_Chemicals")
@@ -360,7 +199,7 @@ program myeul
 
   call set_output_defs()     ! Initialises outputs
 
-  call assign_nmax(METSTEP)    !  nmax=????
+  call assign_nmax(METSTEP)   ! No. timesteps in inner loop
 
   call trajectory_init
 
@@ -529,13 +368,10 @@ program myeul
 
      daynumber=day_of_year(current_date%year,current_date%month,&
           current_date%day)
-     if ( me == 0) then
-        write(6,*) 'TIME TEST ', 'current date ',current_date, &
+     if ( me == 0) write(6,*) 'TIME TEST ', 'current date ',current_date, &
              "day number ", daynumber
-     endif
 
 
-     !++(5)
      call Code_timer(tim_before)
 
      call metvar(numt)
