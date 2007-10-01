@@ -22,8 +22,14 @@ code for more details about this data set.
 \section{ASCII files}
 
 All other files including the emissions, landuse, snowcover etc., are
-in ascii format.  All ascii input files contain a few lines header
-information of the corresponding file.   \\
+in ascii format.  
+We have started recoding the model  and inputs
+to allow more header information in Ascii files (section~\ref{sec:NewInputs}), 
+but so far only 6 files have
+this new-style. For other files it may be necessary to read the
+appropriate Fortran module in order to understand the formats and usage.
+
+\subsection{`Standard-style' inputs}
 
 Gridded emission files contain 16 columns where the first column
 represents the country code, the second and third are the 'i' and 'j'coordinates of the model grid, the fourth and fifth are the total emissions from
@@ -31,24 +37,147 @@ low (below 100 m of the model level, mainly from traffic,
 agricultural emissions etc.,) and high sources (above 100 m of the
 model level, which are from industry, power plants etc.),
 and the rest 11 columns contain anthropogenic emissions from 10 SNAP1
-emission sectors (Source-Nomenclature for Air Pollution) and natural emissions. Sector means
+emission sectors (Source-Nomenclature for Air Pollution) and natural emissions. 
+(Note that natural emissions for BVOC should \emph{not} be included
+in these files, but are calculated from the Inputs.BVOC information).
+Sector means
 the source type of emissions from each country and there are 11
 sectors defined in EMEP.  A listing of all type
-of sectors are given in 'EmisDef\_ml.f90' of the mode source code.   An arbitrary
+of sectors are given in 'EmisDef\_ml.f90' of the model source code.   An arbitrary
 example file would look like  \\
 
 \textbf{An example emission file:}
-
 \begin{verbatim}
 
 #countrycode i j low high sectors1 2 3 4 5 6 7 8 9 10 11 
 1 1 4 20.8 1.0 0.0 7.9 0.6 0.0 0.0 0.0 6.4 4.1 0.8 0.0 0.0
 1 1 5 24.0 0.0 2.5 5.7 0.8 0.0 3.0 5.0 4.4 2.1 0.5 0.0 0.0
 1 1 7 29.7 0.0 5.5 8.9 0.6 0.0 0.0 0.0 8.4 5.1 1.2 0.0 0.0
-..................
+...................
 etc..........
 
 \end{verbatim}
+Climatalogical snowcover (simply zero for absent  or 1 for present) 
+ and Natural SO2 emissions are provided as monthly gridded
+files and they are stored in columns of 'i', 'j', and the 12 monthly
+'values'. 
+
+The file rough.170 contains some roughness lengths from the NWP model
+supplying meteorolgoical data to EMEP. We use this to assign a land/sea
+mask within the EMEP model, since we modify stability information
+for coastal grid cells (which contain land, but where this isn't
+resolved by the NWP model).
+ 
+
+To consider the volcanic emissions, we need to feed the location and
+height of volcanoes into the model.  This is provided with the
+'Volcanoes.dat' file and the columns in this file represent the 'i'
+and j' indexes of the model grid and the third column represent the
+model level where the mouth of the volcanoe stands, based on their
+height.  The input file contains only two volcanoes which are the only
+active volcanoes in Europe.  You might notice that 'Etna, Italy'
+appears twice in the input file, which is due to its large base area
+it shares two grids in the model.  \\
+     
+
+
+NO$_{x}$ emissions from Aircraft and lightning are also included in the
+model. Seasonal commercial aircraft emissions and annual military
+aircraft emissions are read in as gridded data from the same file.  Aircraft emissions are tabulated on a 128x64 longitude latitude grid with 16 vertical levels. The grid has global coverage and the values are interpolated to the actual grid.
+ The lightning emission are defined on a 64x32 grid with 17 vertical
+ levels, with global coverage and are provided as monthly files for the whole
+year.      \\
+
+Time factors for emissions depending on the chemical compound, sector,
+and country for day of the week and month of the year are provided with
+the 'DailyFac.pollutnat' and 'MonthlyFac.pollutant' files.  Data are
+stored in columns of 'i','j', factors corresponding to each day of the
+week in 7 consecutive columns in case of DailyFac file and factors
+corresponding to each month of the year in 12 consecutive columns in
+case of MonthlyFac file.\\  
+
+The model also need a split file for some of the emission files.  For
+example, only one emission file is provided for NO$_{x}$.  The amount of
+NO$_{2}$ compared to other NO is determined by the split file.  It is
+land and sector dependent.  The same is true for VOC, but
+there are more VOC types present. \\ 
+
+Finally the 'femis.dat' file is provided for setting up a 'scenario run'.  See
+chapter 4, 'Submitting a run' for the details about this file.  
+
+ 
+\bigskip
+\subsubsection{New-style  Ascii inputs}
+\label{sec:NewInputs}
+
+ The new-style of  input files (which we started to introduce during summer-autumn 2007)
+are designed to read nicely in gnumeric and other spread-
+sheets (excel, oocalc), and can be either space or comma separated.
+Fortran is quite flexible in its reading of separated data, and
+would not distinguish between any of:
+\begin{verbatim}
+2001  7 23  1.2   2.3
+2001,7,23,1.2,2.3
+2001, 7, 23,   1.2,2.3
+2001, 7, 23,   1.2, 2.3
+\end{verbatim}
+
+Whereas some spreadsheets get confused if both spaces and commas
+are used. It is suggested that files are kept as 
+pure comma-separated,
+pure space-separated,
+or with separation with both comma and space (as in line 4 above).
+\bigskip
+
+Lines starting with `:' are for key-value pairs, e.g. : year 2002
+The line ending in `\#HEADERS' should contain the headings of each column.
+\bigskip
+
+{\bf IMPORTANT:} One line of column headers *must* be provided with this
+new-style inputs, and the
+ number of headers (excluding commented out ones)  must match the number of data items.
+(Any further header lines, e.g. for units, must be commented out, either with
+a starting \# or ending \#SKIP).
+ All lines starting `\# ' are ignored. The text will show up nicest in
+ spread sheets if enclosed in quotation marks, as in line 1 of the example.
+
+\begin{table}[h]
+\caption{Input Files}
+\label{Tab:Inputs}
+\begin{tabular}{p{6cm}ccc}\hline
+Data & name (in F90 code) & format\\ \hline
+   & & \\
+\multicolumn{3}{l}{\bf Netcdf} \\
+Meteorology&filNNNN&NetCDF\\
+Boundary/Initial Values&Boundary\_and\_Initial\_Conditions.nc&NetCDF\\
+   & & \\
+\multicolumn{3}{l}{\bf Standard-style Ascii} \\
+%LOGAN BC&&&&not used?\\
+Snow cover&snowcMM.dat&i j x\\
+NWP roughness (for land/sea mask) &  rough.170 & i j x\\
+Emissions&gridPOLL&i j x1-x13\\
+Natural SO$_{2}$&natso2MM.dat&i j x\\
+Volcanoes&Volcanoes.dat&i j k   \\
+Time series for emissions&MonthlyFac.POLL&EMEP\\
+Time series for emissions&DailyFac.POLL&EMEP\\
+Lightning&lt21\_nox.datMM&??& \\
+Aircraft&amilt42-nox.dat&??&\\
+VOC Splits&vocsplit.defaults&ascii \\
+NO$_{x}$ Splits& noxsplit.defaults&ascii\\
+femis.dat & femis.dat    & ascii  \\
+   & & \\
+\multicolumn{3}{l}{\bf New-style Ascii} \\
+Land cover(\%) & Inputs.LandData& See headers \\ 
+Landcover defs& Inputs.LandDefs& See headers \\ 
+Stomatal conductance inputs& Inputs\_DO3SE.csv & See headers \\ 
+Biogenic VOC Potentials&Inputs.BVOC& See headers \\
+Site locations for ascii output& sites.dat& See headers \\
+Sonde locations for ascii output& sondes.dat& See headers \\
+\hline
+\end{tabular}
+Note: Gridded Input Files. NNNN: number, MM: month, POLL: pollutant, AA: text\\
+\end{table}
+
 
 Landuse data are required in the model, primarily for dry
 depositon modelling.  EMEP
@@ -71,106 +200,21 @@ columns following the 'i' and 'j' indexes of the
 grids. Three additonal "fake" land-use classes are used for providing results for integrated assessment modelling and effects work . Input file header explains in detail about all the
 columns. \\
 
-For the vegetative landuse categories for which stomatal modelling is undertaken, the start and end of the growing season (SGS, EGS), as well as other biomass characteristics, and parameters for the stomatal conductance model must be specified. This is done in the files Inputs.LandDefs and Inputs_DO3SE.csv. 
+{\bf IMPORTANT:} The landcover codes found in Inputs.Landuse are taken as 
+the definition of landcover. The files Inputs.LandDefs and Inputs\_DO3SE.csv
+must have exactly the same codes.\\
 
-Snowcover and Natural SO2 emissions are provided as monthly gridded
-files and they are stored in columns of 'i', 'j', and the
-'values'. 'Inputs.BVOC' file provide the biogenic VOC emissions.  They
+For the vegetative landuse categories for which stomatal modelling is
+undertaken, the start and end of the growing season (SGS, EGS), as well as
+other biomass characteristics, and parameters for the stomatal conductance
+model must be specified. This is done in the files Inputs.LandDefs and
+Inputs\_DO3SE.csv, and using some functions, e.g. Growing\_season from
+LandDefs\_ml.f90.
+
+'Inputs.BVOC' file provide the biogenic VOC emission potentials (i.e.
+rates at 30 deg C and full sunlight, see headers for more information).  They
 are provided in 4 columns, being the first and second columns as usual
 represent the 'i' and 'j' indexes of the model grid and the third and
-fourth columns represent the isoprene and terpene emissions in unit of
+fourth columns represent the isoprene and terpene emission potentials in unit of
 ``$ug/m^{2}/h$''.\\
- 
-
-To consider the volcanic emissions, we need to feed the location and
-height of volcanoes into the model.  This is provided with the
-'Volcanoes.dat' file and the columns in this file represent the 'i'
-and j' indexes of the model grid and the third column represent the
-model level where the mouth of the volcanoe stands, based on their
-height.  The input file contains only two volcanoes which are the only
-active volcanoes in Europe.  You might notice that 'Etna, Italy'
-appears twice in the input file, which is due to its large base area
-it shares two grids in the model.  \\
-     
-
-NO$_{x}$ emissions from Aircraft and lightning are also included in the
-model. Seasonal commercial aircraft emissions and annual military
-aircraft emissions are read in as gridded data from the same file.
-The lightning emissions are provided as monthly files for the whole
-year.      \\
-
-Time factors for emissions depending on the chemical compound, sector,
-and country for day of the week and month of the year are provided with
-the 'DailyFac.pollutnat' and 'MonthlyFac.pollutant' files.  Data are
-stored in columns of 'i','j', factors corresponding to each day of the
-week in 7 consecutive columns in case of DailyFac file and factors
-corresponding to each month of the year in 12 consecutive columns in
-case of MonthlyFac file.\\  
-
-The model also need a split file for some of the emission files.  For
-egs., only one emission file is provided for NO$_{x}$.  The amount of
-NO$_{2}$ compared to other NO is determined by the split file.  It is
-land and sector dependent.  The same is true for VOC, but
-there are more VOC types present. \\ 
-
-Finally the 'femis.dat' file is provided for setting up a 'scenario run'.  See
-chapter 4, 'Submitting a run' for the details about this file.  
-
- 
-\bigskip
-
- The input files are designed to read nicely in gnumeric and other spread-
- sheets (excel, oocalc), and can be either space or comma separated.
- Fortran is quite flexible in its reading of separated data, and
-would not distinguish between any of:
-\begin{verbatim}
-2001  7 23  1.2   2.3
-2001,7,23,1.2,2.3
-2001, 7, 23,   1.2,2.3
-2001, 7, 23,   1.2, 2.3
-\end{verbatim}
-
-Whereas some spreadsheets get confused if both spaces and commas
-are used. It is suggested that files are kept as 
-pure comma-separated,
-pure space-separated,
-or with separation with both comma and space (as in line 4 above).
-\bigskip
-
-Lines starting with `:' are for key-value pairs, e.g. : year 2002
-The line ending in `\#HEADERS' should contain the headings of each column.
-\bigskip
-
-{\bf IMPORTANT:} One line of column headers *must* be provided, and the
- number of headers (excluding commented out ones)  must match the number of data items.
-(Any further header lines, e.g. for units, must be commented out, either with
-a starting \# or ending \#SKIP).
-
- All lines starting `\# ' are ignored. The text will show up nicest in
- spread sheets if enclosed in quotation marks, as in line 1 of the example.
-
-\begin{table}[h]
-\caption{Gridded Input Files. NNNN: number, MM: month, POLL: pollutant, AA: text}
-\label{Tab:Inputs}
-\begin{tabular}{lccc}\hline
-Data & name (in F90 code) & format\\ \hline
-Meteorology&filNNNN&NetCDF\\
-Boundary Conditions&Boundary\_and\_Initial\_Conditions.nc&NetCDF\\
-%LOGAN BC&&&&not used?\\
-Land use&landuse.dat&i j x1-x18 \\ %ds skip first line\\
-Snow cover&snowcMM.dat&i j x\\
-Emissions&gridPOLL&i j x1-x13\\
-Natural SO$_{2}$&natso2MM.dat&i j x\\
-BVOC&Inputs.BVOC&i j x1-x6 \\ %ds skip first line\\
-Volcanoes&Volcanoes.dat&i j k   \\ %ds comment lines\\
-Time series for emissions&MonthlyFac.POLL&EMEP\\
-Time series for emissions&DailyFac.POLL&EMEP\\
-Lightning&lt21\_nox.datMM&??& \\
-Aircraft&amilt42-nox.dat&??&\\
-VOC Splits&vocsplit.defaults&ascii \\
-NO$_{x}$ Splits& nixsplit.defaults&ascii\\
-femis.dat & femis.dat    & ascii  \\
-\hline
-\end{tabular}
-\end{table}
 

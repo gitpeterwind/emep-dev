@@ -1,7 +1,8 @@
 \chapter{Outputs}
 \label{Output:ascii}
 
-Output files are written out in NetCDF format.  
+Output files are written out as either Ascii, or
+(for most outputs) in NetCDF format.  
 Model will write the output files into your working directory (see the
 runscript 'run.pl' where you have set the working directory
 path. Chapter 4, 'Submitting a Run' explains all the paths).  For a
@@ -14,7 +15,7 @@ this experiment name as the base name. This is done in the run
 script (ref. Chapter 4).  
 
 
-\section{sites and sondes}
+\section{Ascii outputs: sites and sondes}
 
 
 Two main options are available for the output of ascii files for comparison
@@ -115,11 +116,11 @@ Plans for the near future:\newline
 - use latitudes/longitudes only instead of grid indices\newline
 - specify the station level in meters asl\newline
 \newline
-These changes would eliminate the need to specify 'Units',
-'Coords' and 'DomainName', and also simplify the path in run.pl
-\newline
+%OMIT These changes would eliminate the need to specify 'Units',
+%OMIT 'Coords' and 'DomainName', and also simplify the path in run.pl
+%OMIT \newline
 
-Both sites.dat and sondes.dat files are optional.
+Both sites.dat and sondes.dat files are optional, but recommended.
 \newline
 The species and meteorological data required are specified in {\bf My\_Outputs}
 through the use of arrays. Only a few met fields are defined so far but
@@ -131,75 +132,56 @@ values are given for all 20 levels, starting with the ground-level values.
 
 \section{Hourly out}
 
-\noindent
-Optional -  specify in \MyOutputs\, hourly\_out\%ix1, etc.\\
-Ascii and netCDF.  Only netCDF outputs will be available in future. 
-Put 'Hourly\_ASCII' switch defines whether the output has to be written
-into Ascci format or netCDF format.  Ascii may be easy to use, but
-produces very large output files.  
-
-\vspace{1cm}
-
-This output is intended to allow hourly (or any resolution) outputs of surface
-as well as 3D concentrations in
-variable precision for user-defined areas.  
-
-Make sure that the labels 'NHOURLY\_OUT, NLEVELS\_HOURLY, and FREQ\_HOURLY' are updated with the number of
-variables, number of levels and frequency of output interval you want
-to output into hourly file.  It is explained clearly in the code as
-well.  
-
- 
-In \MyOutputs\ we have for example:
-
-\begin{small}
-\begin{verbatim}
-  !**          name type ofmt ispec ix1 ix2  iy1 iy2 nk unit conv max
-
-  hr_out(1) = Hr_output("o3_3m","ADVppbv", 
-             "(f8.4)",IXADV_O3, 87, 110, 51, 75,1,"ppbv",PPBINV,600.0)
-  hr_out(3) = Hr_output("o3_50m","BCVppbv",
-             "(f8.4)",IXADV_O3, 87, 110, 51, 75,20,"ppbv", PPBINV,9000.0)
-\end{verbatim}
-\end{small}
-
-The above example gives both 3D as well as surface concentration of
-Ozone.  Here the type 'ADVppbv' gives surface concentration (note
-that nk=1) and 'BCVppbv' gives 3D concentration for all the 20 levels
-(nk=20). These are defined in {\bf 'Output\_hourly'}.  The area for which we want to write out the output is
-specified with 'ix1','ix2','iy1' and 'iy2'.  Unit is chosen as 'ppbv'
-and the conversion factor, 'PPBINV' is coming from
-{\bf 'ModelConstants\_ml}'.  
+It is possible to output ascii fields of hourly data, but these
+outputs are no longer recommended, and so not documented here.
+Interested users are referred to the examples in My\_Outputs\_ml
+and Output\_hourly\_ml.f90 in the source code.
 
 
-\section{Restricted output}
-(TO BE REMOVED! Same functionality available with either use of
-sondes files or use of Derived.)
+%OMOT\noindent
+%OMOTOptional -  specify in \MyOutputs\, hourly\_out\%ix1, etc.\\
+%OMOTAscii and netCDF.  Only netCDF outputs will be available in future. 
+%OMOTPut 'Hourly\_ASCII' switch defines whether the output has to be written
+%OMOTinto Ascci format or netCDF format.  Ascii may be easy to use, but
+%OMOTproduces very large output files.  
+%OMOT
+%OMOT\vspace{1cm}
+%OMOT
+%OMOTThis output is intended to allow hourly (or any resolution) outputs of surface
+%OMOTas well as 3D concentrations in
+%OMOTvariable precision for user-defined areas.  
+%OMOT
+%OMOTMake sure that the labels 'NHOURLY\_OUT, NLEVELS\_HOURLY, and FREQ\_HOURLY' are updated with the number of
+%OMOTvariables, number of levels and frequency of output interval you want
+%OMOTto output into hourly file.  It is explained clearly in the code as
+%OMOTwell.  
+%OMOT
+%OMOT 
+%OMOTIn \MyOutputs\ we have for example:
+%OMOT
+%OMOT\begin{small}
+%OMOT\begin{verbatim}
+%OMOT  !**          name type ofmt ispec ix1 ix2  iy1 iy2 nk unit conv max
+%OMOT
+%OMOT  hr_out(1) = Hr_output("o3_3m","ADVppbv", 
+%OMOT             "(f8.4)",IXADV_O3, 87, 110, 51, 75,1,"ppbv",PPBINV,600.0)
+%OMOT  hr_out(3) = Hr_output("o3_50m","BCVppbv",
+%OMOT             "(f8.4)",IXADV_O3, 87, 110, 51, 75,20,"ppbv", PPBINV,9000.0)
+%OMOT\end{verbatim}
+%OMOT\end{small}
+%OMOT
+%OMOTThe above example gives both 3D as well as surface concentration of
+%OMOTOzone.  Here the type 'ADVppbv' gives surface concentration (note
+%OMOTthat nk=1) and 'BCVppbv' gives 3D concentration for all the 20 levels
+%OMOT(nk=20). These are defined in {\bf 'Output\_hourly'}.  The area for which we want to write out the output is
+%OMOTspecified with 'ix1','ix2','iy1' and 'iy2'.  Unit is chosen as 'ppbv'
+%OMOTand the conversion factor, 'PPBINV' is coming from
+%OMOT{\bf 'ModelConstants\_ml}'.  
+%OMOT
 
-\noindent
-Optional -  specify in \MyOutputs\, hourly\_out\%ix1, etc.\\
-Binary
-\vspace{1cm}
-
-This output is intended to allow 3-hourly (??) outputs of the 3-D concentration
-fields for a limited area, for example Milan. Can thus provide boundary-values
-for input to other models. (These could also be provided by specifying the
-coordinates of the required boundary in the sites.dat file)
-
-In \MyOutputs\ we have for example:
-
-\begin{small}
-\begin{verbatim}
-  integer, public, parameter ::  &
-	 ISPEC_OUTBEG  = 121  &
-	,JSPEC_OUTBEG  =  61  &
-	,ISPEC_OUTEND  = -130 &     ! Set negative here to exclude
-	,JSPEC_OUTEND  = -80        ! Set negative here to exclude
-\end{verbatim}
-\end{small}
 
 
-\section{Derived fields and binary outputs}
+\section{Netcdf outputs, Derived fields}
 
 {\bf modules My\_Derived\_ml, Derived\_ml}\\
 
@@ -222,7 +204,7 @@ Derived\_ml:\\
 The fields which are output as netCDF data from model runs consist
 of either 2-D or 3-D  arrays, with some identfiers. 
 Some data-fields will contain concentration, others depositions, still
-others user-defined fields such as column sulphate or AOT40.
+others user-defined fields such as AOT40.
 Some data will be averaged and printed out daily, other data will
 be accumulated to monthly or yearl average totals.
 The unified model 
@@ -318,15 +300,16 @@ time markers to be true or false. More details are supplied below.
    not averaged. The time fields show that we want daily, monthly and yearly
    output, but not output of instantaneous fields.
 
-   \begin{table}[h]
-   \caption{Summary of parameters, definition and data arrays for derived types}
-   \label{TABDRV}
-   \begin{tabular}{|lllp{6cm}|}\hline
-     No. fields    &  Definition array & Data array  & Comments  \\
-                   &               &                 &           \\
-     NWDEP         &    f\_wdep    &    wdep   & Wet deposition and accumulated precipitation  \\
-     NDDEP         &    d\_wdep    &    ddep   & Dry deposition   \\
-     NDERIV\_2D     &    f\_2d      &    d\_2d   & Derived 2-D fields, surface concs., etc.  \\
-     NDERIV\_3D     &    f\_3d      &    d\_3d   & Derived 3-D fields  \\ \hline
-   \end{tabular}
-   \end{table}
+%OMIT    \begin{table}[h]
+%OMIT    \caption{Summary of parameters, definition and data arrays for derived types}
+%OMIT    \label{TABDRV}
+%OMIT    \begin{tabular}{|lllp{6cm}|}\hline
+%OMIT      No. fields    &  Definition array & Data array  & Comments  \\
+%OMIT                    &               &                 &           \\
+%OMIT      NWDEP         &    f\_wdep    &    wdep   & Wet deposition and accumulated precipitation  \\
+%OMIT      NDDEP         &    d\_wdep    &    ddep   & Dry deposition   \\
+%OMIT      NDERIV\_2D     &    f\_2d      &    d\_2d   & Derived 2-D fields, surface concs., etc.  \\
+%OMIT      NDERIV\_3D     &    f\_3d      &    d\_3d   & Derived 3-D fields  \\ \hline
+%OMIT    \end{tabular}
+%OMIT    \end{table}
+
