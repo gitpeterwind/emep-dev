@@ -119,7 +119,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "2002";
+my $year = "2005";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -165,8 +165,6 @@ my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
-my $PM_ADDED     = 0;  # Adds in PM emissions from NOx inventory scaling
-my $AFRICA_ADDED = 0;  # Adds in African emissions for y=1..11
 
 my $OZONE = "1"; 
 my $ACID = "0";     # Specify model type here, and check:
@@ -179,7 +177,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3beta30";
+    $testv       = "rv3";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -379,7 +377,9 @@ foreach my $scenflag ( @runs ) {
     chdir $RESDIR;   ############ ------ Change to RESDIR
     print "Working in directory: $RESDIR\n";
 
-    my $METformat="felt";
+    #my $METformat="felt";
+    my $METformat="cdf";
+    $MetDir = "/global/work/mifapw/emep/meteo2005"  if $METformat eq "cdf";
     if ($METformat eq "felt") {
 	my $nnn = 1;
 	for (my $mm = $mm1; $mm <= $mm2; $mm++) {
@@ -424,7 +424,6 @@ foreach my $scenflag ( @runs ) {
 
 #=================== INPUT FILES =========================================
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
-#   AFRICA, PM_ADDED --- fix elsewhere.
 
     my %ifile   = ();   # List of input data-files
 
@@ -579,7 +578,6 @@ Emission units: Gg/year
 Emissions: $emisdir           
 Version: $testv               
 Processors $NDX $NDY          	
-Added? PM $PM_ADDED  Africa $AFRICA_ADDED
 SR?  $SR                      
 iyr_trend: $iyr_trend         
 ------------------------------
