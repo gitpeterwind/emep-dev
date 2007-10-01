@@ -1,286 +1,269 @@
-!_____________________________________________________________________________!
- module SeaSalt_ml
+!_____________________________________________________________________________
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 
-  !-----------------------------------------------------------------------! 
-  ! Gets Inorganic Aerosols (amN, amS, SO4, ?NO3?) from MADE gas-phase
-  ! chemistry, fraction additional masses to Aitken and accumulation modes
-  ! based on the SO4 fraction. Particles number is unchanged.
-  !st ? Split to SO4, NO3 and NH4? calculates new diameters  ??
-  !-----------------------------------------------------------------------!
-  !Created by Svetlana
-  !ds apr2005 - moved "use" stuff to start of module.
- use My_Emis_ml,           only : NSS, QSSFI, QSSCO
+                          module SeaSalt_ml
 
+! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
+! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+!-----------------------------------------------------------------------------
+! Calculates production of sea salt based on: 
+! Maartinsson et al.(2003) JGR,100,D8      for particles smaller than 1um  
+! Monahan et al.(1986) J.Phys.Oceanogr,10  for particles 1-10um (and larger)
+!  Programmed by Svetlana Tsyro
+!-----------------------------------------------------------------------------
+
+
+! use DepVariables_ml,      only : water                                      
  use GenSpec_tot_ml,       only : SSFI, SSCO
  use GenChemicals_ml,      only : species
- use LandDefs_ml,        only : LandDefs
- use Landuse_ml! SUB,        only : landuse_ncodes, landuse_codes, landuse_data 
- use Par_ml,               only : MAXLIMAX,MAXLJMAX  & ! => x, y dimensions
-                                 ,me   ! for testing
- use PhysicalConstants_ml, only : CHARNOCK,GRAV,KARMAN, AVOG  &
-                                 ,PI, AVOG
- use Met_ml,               only : ustar_nwp, roa, z_bnd, nwp_sea !ds may05 iclass
+ use Landuse_ml,           only : LandCover, water_fraction
+ use LocalVariables_ml,    only : Sub, Grid
+ use Met_ml,               only : z_bnd, z_mid, sst, snow,   &
+                                  nwp_sea, u_ref
+ use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
+ use My_Emis_ml,           only : NSS, QSSFI, QSSCO
+ use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
+ use PhysicalConstants_ml, only : CHARNOCK, GRAV, AVOG ,PI
+ use TimeDate_ml,          only : current_date
+
+ !-------------------------------------
 
   implicit none
   private
 
-  public ::  SeaSalt_flux       
+  public ::  SeaSalt_flux   ! subroutine
 
-!  real, public, dimension(NSS,MAXLIMAX,MAXLJMAX) :: SS_prod
-  real, public             :: SS_prod (NSS,MAXLIMAX,MAXLJMAX) = 0.
-  real, public, save       :: n_to_mSS
+  integer, parameter :: SS_MAAR= 4, SS_MONA= 6, & !Number size ranges for
+                                                  !Maartinsson's and Monahan's 
+                        NFIN= 4, NCOA= 3,       & !Number fine&coarse size ranges      
+                        SSdens = 2200.0           ! sea salt density [kg/m3]
 
-  integer, parameter       :: ss_mod1 = 12, ss_mod2 = 3,   &  
-                              nfin = 10, ncoa = 15,        &
-                              SSdens = 2200.
-  real, save                     :: param_SS(ss_mod2) = 0.  
-  real, save, dimension(ss_mod2) :: radSS, dSS3
-  real, save, dimension(ss_mod1) :: log_dp1, log_dp2 ,flux_help, dp3
-
+  real, save, dimension(SS_MAAR) :: log_dp1, log_dp2, dp3, a, b
+  real, save, dimension(SS_MONA) :: temp_Monah, radSS, dSS3
+  real, save                     :: n_to_mSS
+  real, public, dimension(NSS,MAXLIMAX,MAXLJMAX) :: SS_prod !Sea salt flux
 
   logical, private, save :: my_first_call = .true.
 
   contains
 
-! <-------------------------------------------------------------------------------->
+! <------------------------------------------------------------------------->
 
-    subroutine SeaSalt_flux (i,j)
+   subroutine SeaSalt_flux (i,j)
 
-!!.. calculates generation of sea salt based on Maartinsson et al.(2003) 
-!!.. for smaller particles and Monahan et al. for larger ones
+  !-----------------------------------------------------------------------
+  ! Input: Tw        - sea surface temperature - # -
+  !        u10       - wind speed at 10m height 
+  ! Output: SS_prod - fluxes of fine and coarse sea salt aerosols [molec/cm3/s]
+  !-----------------------------------------------------------------------
 
-
- implicit none
+   implicit none
 
    integer, intent(in) :: i,j    ! coordinates of column
+
+   real, parameter :: Z10 = 10.0  ! 10m height
    integer :: k, ii, jj, nlu, ilu, lu
-   real    :: ustar, z0, z00, vind10, delz, zcoef, n2m, vind10_341,     &
-              ss_flux(ss_mod1+ss_mod2), d3(ss_mod1+ss_mod2)  &
-              ,prodM_ss(2),prodN_ss(2), water_frac
+   real    :: invdz, n2m, u10, u10_341, Tw, flux_help
+   real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA)  
 !//---------------------------------------------------
+ 
+  if ( my_first_call ) then 
 
-    if ( my_first_call ) then 
-
-!SUB         call init_seasalt
+    call init_seasalt
     
-        my_first_call = .false.
+   my_first_call = .false.
 
-    end if !  my_first_call
+  end if !  my_first_call
+ !....................................
 
-!SUB     SS_prod(:,i,j) = 0.
-!SUB     prodM_ss(:) = 0.
-!SUB     prodN_ss(:) = 0.
-!SUB 
-!SUB    !ds ================
-!SUB     !ds may05 if ( iclass(i,j) /= 0) return  !ds - faster to check here!
-!SUB     if ( .not. nwp_sea(i,j) ) return  !ds - faster to check here!
-!SUB    !ds ================
-!SUB 
-!SUB !st sept,2004 - loop over the LU present in the grid
-!SUB     nlu = landuse_ncodes(i,j)
-!SUB       do ilu= 1, nlu
-!SUB         lu      = landuse_codes(i,j,ilu)
-!SUB 
-!SUB !// only over water
-!SUB !st sept,2004..  Obs!  All water is assumed here to be salt water
-!SUB !                double checking with the old rough.170 data 
-!SUB 
-!SUB         if ( water(lu) ) then
-!SUB             water_frac = landuse_data (i,j,ilu)  ! grid fraction with water
-!SUB 
-!SUB           !ds apr2005 ustar = max(sqrt(fm(i,j,1)/roa(i,j,KMAX_MID,1)) , 1.e-5)
-!SUB           ustar = ustar_nwp(i,j)
-!SUB 
-!SUB    !ds QUERY - why no stability correction ??
-!SUB 
-!SUB           z0 = CHARNOCK * ustar * ustar/GRAV
-!SUB           z0 = max(z0,0.01)  ! u7.5vgc 
-!SUB           vind10 = ustar/KARMAN * log(10./z0)
-!SUB 
-!SUB           delz = (z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND)) 
-!SUB           zcoef = 1.e-6 / delz
-!SUB           n2m = n_to_mSS * zcoef *AVOG / species(SSFI)%molwt *1.e-15
-!SUB !pw         vind10341=vind10 ** (3.41)
-!SUB           vind10_341=exp(log(vind10) * (3.41))
-!SUB 
-!SUB    do ii = 1, ss_mod1
-!SUB 
-!SUB !// sea salt flux [part/m2/s]
-!SUB 
-!SUB         ss_flux(ii) = flux_help(ii) * ( log_dp2(ii) - log_dp1(ii) )    &
-!SUB !pw                                   * vind10 ** (3.41) 
-!SUB                                    * vind10_341
-!SUB 
-!SUB         d3(ii) = dp3(ii)
-!SUB 
-!SUB    enddo
-!SUB 
-!SUB    do ii = 1, ss_mod2
-!SUB 
-!SUB !// sea salt flux [part/m2/s]
-!SUB 
-!SUB       jj = ii + ss_mod1
-!SUB 
-!SUB !pw        ss_flux(jj) = param_SS (ii)* vind10 **(3.41)
-!SUB         ss_flux(jj) = param_SS (ii)*  vind10_341
-!SUB 
-!SUB !   if(bug) write(6,'(a15,i5,e13.4)') 'Flux Monah ->',jj, ss_flux(jj)
-!SUB 
-!SUB         d3(jj) = dSS3(ii)
-!SUB 
-!SUB    enddo
-!SUB  
-!SUB !// Sea salt particles Number production [ part/cm3/s]
-!SUB !//.. ss_mod1= 12 (Martinsson et al.), ss_mod2= 3 (Monahan)
-!SUB 
-!SUB !..FINE ..
-!SUB 
-!SUB    do ii = 1 , nfin
-!SUB       prodN_ss(QSSFI) = prodN_ss(QSSFI) + ss_flux(ii) *zcoef
-!SUB       prodM_ss(QSSFI) = prodM_ss(QSSFI) + ss_flux(ii)* d3(ii) *zcoef
-!SUB 
-!SUB       SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
-!SUB                          + ss_flux(ii) * d3(ii) * n2m   &
-!SUB                          * water_frac                     !st sept,2004 
-!SUB    enddo
-!SUB 
-!SUB !..COARSE .. 
-!SUB    do ii = nfin+1, ncoa
-!SUB       prodN_ss(QSSCO) = prodN_ss(QSSCO) + ss_flux(ii) *zcoef
-!SUB       prodM_ss(QSSCO) = prodM_ss(QSSCO) + ss_flux(ii)* d3(ii) *zcoef
-!SUB 
-!SUB       SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
-!SUB                          + ss_flux(ii) * d3(ii) * n2m   &
-!SUB                          * water_frac                     !st sept,2004 
-!SUB    enddo
-!SUB 
-!SUB ! if(bug)  &
-!SUB !  write(6,'(a20,2e15.4)') '>>Mass SS  >>', SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
-!SUB ! if(bug)  then
-!SUB !  write(6,'(a20,2e15.4)') '>>N-SS prod >>', prodN_ss(QSSFI), prodN_ss(QSSCO)
-!SUB !  write(6,'(a20,2e15.4)') '>>M-SS prod >>', prodM_ss(QSSFI), prodM_ss(QSSCO)
-!SUB ! endif                           
-!SUB     endif  ! water_area > 0.
-!SUB    enddo  ! LU classes
+    SS_prod(:,i,j) = 0.0
 
-   end subroutine SeaSalt_flux
+    if ( .not. Grid%is_NWPsea .or. Grid%snow == 1) return ! quick check
 
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-   subroutine init_seasalt
+!// Loop over the land-use types present in the grid
+
+     nlu = LandCover(i,j)%ncodes
+     do ilu= 1, nlu
+       lu =  LandCover(i,j)%codes(ilu)
+
+!// only over water
+! Obs!  All water is assumed here to be salt water for now 
+!      (as fresh water is not distinguished in the input)
+
+       if ( Sub(lu)%is_water ) then
+
+!.. Calculate wind velocity over water at Z10=10m 
+
+          u10 = Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
+                           Sub(lu)%z0,  Sub(lu)%invL)
+
+         if (u10 <= 0.0) u10 = 1.0e-5    ! to make sure u10!=0 because of LOG(u10)
+            u10_341=exp(log(u10) * (3.41))
+
+!.. Sea surface temperature is only available in metfiles from 2001
+          if (current_date%year > 2001) then
+            Tw = sst(i,j,1)
+          else
+            Tw = 283.0
+          endif
+
+
+! ====    Calculate sea salt fluxes in size bins  [part/m2/s] ========
+
+!... Fluxes of small aerosols for each size bin (Mårtensson etal,2004)
+          do ii = 1, SS_MAAR
+
+               flux_help  = a(ii) * Tw + b(ii)
+  
+               ss_flux(ii) = flux_help * ( log_dp2(ii) - log_dp1(ii) )    &
+                                   * u10_341 * 3.84e-6 
+               d3(ii) = dp3(ii)  ! diameter cubed
+          enddo
+
+!... Fluxes of larger aerosols for each size bin (Monahan etal,1986)
+          do ii = 1, SS_MONA
+             jj = ii + SS_MAAR
+
+               ss_flux(jj) = temp_Monah (ii) * u10_341
+
+               d3(jj) = dSS3(ii)  ! diameter cubed
+          enddo
+
+ 
+!.. conversion factor from [part/m2/s] to [molec/cm3/s]
+
+          invdz  = 1.0e-6 / Grid%DeltaZ       ! 1/dZ [1/cm3]
+          n2m = n_to_mSS * invdz *AVOG / species(SSFI)%molwt *1.0e-15
+
+!.. Fine particles emission [molec/cm3/s]
+          do ii = 1, NFIN
+               SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
+                                  + ss_flux(ii) * d3(ii) * n2m   &
+                                  * water_fraction(i,j)              
+          enddo
+
+!..Coarse particles emission [molec/cm3/s]
+          do ii = NFIN+1, NFIN+NCOA
+               SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
+                                  + ss_flux(ii) * d3(ii) * n2m   &
+                                  * water_fraction(i,j)             
+          enddo
+                         
+       endif  ! water
+     enddo  ! LU classes
+
+  end subroutine SeaSalt_flux
+
+
+!<<---------------------------------------------------------------------------<<
+
+  subroutine init_seasalt
+
+  !------------------------------------------------------------
+  ! Assignments and calculations of some help-parameters
+  !------------------------------------------------------------
 
   implicit none
 
   integer :: i, k
   real    :: a1, a2
-  real, dimension(ss_mod2) :: range
+  real, dimension(SS_MONA) :: Rrange, rdry
 
-!//=====
+!//===== Polynomial coeficients from Maartinsson et al. (2004)
   real, parameter, dimension(5) ::    &
-        c1 = (/-2.576e35,  5.932e28, -2.867e21, -3.003e13, -2.881e6 /),  &
-        c2 = (/-2.452e33,  2.404e27, -8.148e20,  1.183e14, -6.743e6 /),  &
-        c3 = (/ 1.085e29, -9.841e23,  3.132e18, -4.165e12,  2.181e6 /),  &
+        C1 = (/-2.576e35,  5.932e28, -2.867e21, -3.003e13, -2.881e6 /),  &
+        C2 = (/-2.452e33,  2.404e27, -8.148e20,  1.183e14, -6.743e6 /),  &
+        C3 = (/ 1.085e29, -9.841e23,  3.132e18, -4.165e12,  2.181e6 /),  &
 
-        d1 = (/ 7.188e37, -1.616e31,  6.791e23,  1.829e16,  7.609e8 /),  &
-        d2 = (/ 7.368e35, -7.310e29,  2.528e23, -3.787e16,  2.279e9 /),  &
-        d3 = (/-2.859e31,  2.601e26, -8.297e20,  1.105e15, -5.800e8 /)
+        D1 = (/ 7.188e37, -1.616e31,  6.791e23,  1.829e16,  7.609e8 /),  &
+        D2 = (/ 7.368e35, -7.310e29,  2.528e23, -3.787e16,  2.279e9 /),  &
+        D3 = (/-2.859e31,  2.601e26, -8.297e20,  1.105e15, -5.800e8 /)
 
-!=== mikrometer
-  real, parameter :: mkm  = 1.e-6,  mkm2 = 1.e-12 ,  &  
-                     mkm3 = 1.e-18, mkm4 = 1.e-24  
-!//.. for  Maartinsson, Nilsson .. parameterisation 
-  real, parameter, dimension(ss_mod1) ::    &
-
-  dp   = (/0.025,0.04, 0.075, 0.12,  0.17,  0.25, 0.36,  0.55,  0.7, 1.0,  1.6,  2.4  /), & ! dry diameter
-  dp_1 = (/0.02, 0.03, 0.05,  0.10,  0.145, 0.20, 0.30,  0.419, 0.6, 0.8,  1.25, 2.0  /), & ! lower boundary
-  dp_2 = (/0.03, 0.05, 0.10,  0.145, 0.20,  0.30, 0.419, 0.60,  0.8, 1.25, 2.0,  2.8  /)    ! upper boundary
-!!dp_2 = (/0.06, 0.10, 0.20,  0.29 , 0.40,  0.60, 0.828, 1.20,  1.6, 2.5,  4.0,  5.6  /)    ! wet upper boundary
-
-
-  real, dimension(ss_mod1) ::  dp2, dp4, a, b
-
-!//... sea water temperature ... preliminary constant
-  real, save :: Twater = 280.   
-
-        log_dp1(:) = log10(dp_1(:))
-        log_dp2(:) = log10(dp_2(:))
-!SUB
-!SUB        dp2(:) = dp(:)  * dp(:)
-!SUB        dp3(:) = dp2(:) * dp(:)
-!SUB        dp4(:) = dp3(:) * dp(:)
-!SUB
-!SUB!//..  for Monahan parameterisation
-!SUB
-!SUB       ! radSS (1)= 6.3 /2.
-!SUB       ! radSS (2)= 8.5 /2.
-!SUB        radSS (1)= 6.0 /2.
-!SUB        radSS (2)= 7.2 /2. 
-!SUB        radSS (3)= 9.0 /2. 
-!SUB!// cubic DRY diameter for SS particles (assumed SS_Dd=0.55*SS_Dw at Rh~90%)
-!SUB        dSS3(1) =  ( 1.1*radSS(1)) **3
-!SUB        dSS3(2) =  ( 1.1*radSS(2)) **3
-!SUB        dSS3(3) =  ( 1.1*radSS(3)) **3
-!SUB
-!SUB       ! range(1)= 1.4/2.    ! Monahan     5.6 - 7.0 wet diam
-!SUB       ! range(2)= 3.0/2.    ! Monahan     7.0 - 10.0
-!SUB        range(1)= 1.0/2.    ! Monahan     5.6 - 6.6 wet diam
-!SUB        range(2)= 1.4/2.    ! Monahan     6.6 - 8.0
-!SUB        range(3)= 2.0/2.    !             8.0 - 10.0
-!SUB
-!SUB!//=====  Maartinsson, Nilsson .. parameterisation =======
-!SUB   k = ss_mod1
-!SUB
-!SUB  a(1:4) = c1(1)*dp4(1:4)*mkm4  + c1(2)*dp3(1:4)*mkm3  + c1(3)*dp2(1:4)*mkm2  &
-!SUB         + c1(4)*dp(1:4)*mkm    + c1(5)
-!SUB  a(5:7) = c2(1)*dp4(5:7)*mkm4  + c2(2)*dp3(5:7)*mkm3  + c2(3)*dp2(5:7)*mkm2  &
-!SUB         + c2(4)*dp(5:7)*mkm    + c2(5)
-!SUB  a(8:k) = c3(1)*dp4(8:k)*mkm4  + c3(2)*dp3(8:k)*mkm3  + c3(3)*dp2(8:k)*mkm2 &
-!SUB         + c3(4)*dp(8:k)*mkm    + c3(5)
-!SUB
-!SUB  b(1:4) = d1(1)*dp4(1:4)*mkm4  + d1(2)*dp3(1:4)*mkm3  + d1(3)*dp2(1:4)*mkm2  &
-!SUB         + d1(4)*dp(1:4)*mkm    + d1(5)
-!SUB  b(5:7) = d2(1)*dp4(5:7)*mkm4  + d2(2)*dp3(5:7)*mkm3  + d2(3)*dp2(5:7)*mkm2  &
-!SUB         + d2(4)*dp(5:7)*mkm    + d2(5)
-!SUB  b(8:k)= d3(1)*dp4(8:k)*mkm4   + d3(2)*dp3(8:k)*mkm3  + d3(3)*dp2(8:k)*mkm2 &
-!SUB         + d3(4)*dp(8:k)*mkm    + d3(5)
-!SUB
-!SUB  flux_help (:) = a(:) * Twater + b(:)
-!SUB
-!SUB if (me == 0) then
-!SUB  write (6,*) '---   new SS -----'
-!SUB  write (6,*)'     ====   A  ===='
-!SUB  write (6,'(2(6e10.2/))')  (a (i), i=1,ss_mod1)
-!SUB  write (6,*)'     ====   B  ===='
-!SUB  write (6,'(2(6e10.2/))')  (b (i), i=1,ss_mod1)
-!SUB  write (6,*)'     ====   F  ===='
-!SUB  write (6,'(2(6e10.2/))')  (flux_help (i), i=1,ss_mod1)
-!SUB endif
-!SUB
-!SUB  flux_help (:) =   flux_help (:) * 3.84e-6
-!SUB
-!SUB!//======    Monahan   ===========================
-!SUB
-!SUB   do i= 1, ss_mod2
-!SUB         a1 = ( 0.380 - log10(radSS(i)) ) / 0.650
-!SUB         a2 = 1.19 * exp(-a1*a1)
-!SUB
-!SUB    param_SS(i) = 1.373 * radSS(i)**(-3) * range(i) *     &
-!SUB                         (1.+ 0.057 * radSS(i)**1.05) * 10. **a2
-!SUB
-!SUB
-!SUB if (me == 0) then
-!SUB  write(6,*)
-!SUB  write(6,*) ' >> Sea Salt for <<', i,a1,a2,param_SS(i)
-!SUB  write(6,*) '  TEST PARAMETERS *******', nfin, ncoa
-!SUB endif
-!SUB   enddo
-!SUB
-!SUB     n_to_mSS = PI * SSdens / 6.   ! SeaS
+!=== mikrometer in powers
+  real, parameter :: MKM  = 1.e-6,  MKM2 = 1.e-12 ,  &  
+                     MKM3 = 1.e-18, MKM4 = 1.e-24 
  
+!//.. Size bins for Maartinsson's parameterisation (dry diameters):
+  real, parameter, dimension(SS_MAAR) ::    &
+        DP   = (/0.08, 0.18, 0.36, 0.70 /), & ! centre diameter
+        DP_1 = (/0.06, 0.12, 0.26, 0.50 /), & ! lower boundary
+        DP_2 = (/0.12, 0.26, 0.50, 1.0  /)    ! upper boundary
+
+!// Limits of size bins (for dry R) for Monahan parameterisation
+  real, parameter, dimension(SS_MONA+1) ::    &
+        RLIM   = (/0.5, 1.0, 2.0, 5.0, 7.0, 10.0, 20.0 /)  
+  real, parameter :: K1 = 0.7674, K2 = 3.079, K3 = 2.573e-11, K4 = -1.424
+  real, parameter :: third = 1.0/3.0
+  real :: lim1, lim2
+  real, dimension(SS_MAAR) ::  dp2, dp4  
+ !---------------------------------------------------- 
+
+    n_to_mSS = PI * SSdens / 6.0  ! number to mass convertion
+ 
+    log_DP1(:) = log10(DP_1(:))
+    log_dp2(:) = log10(DP_2(:))
+!.. powers of diameter
+     dp2(:) = DP(:)  * DP(:)
+     dp3(:) = dp2(:) * DP(:)
+     dp4(:) = dp3(:) * DP(:)
+
+!//====== For  Monahan et al. (1986) parameterisation  =====
+
+     rdry(1) = 0.71    ! wet diameter ca. 2.8
+     rdry(2) = 1.41    ! wet diameter ca. 5.6
+     rdry(3) = 3.16    ! wet diameter ca. 12.6
+ ! Up to here is used........
+     rdry(4) = 5.60
+     rdry(5) = 8.00
+     rdry(6) = 16.0    
+
+! Equilibrium wet radius (Gong&Barrie [1997], JGR,102,D3)
+
+     do i = 1, SS_MONA
+        radSS(i) = ( K1*rdry(i)**K2 /(K3 *rdry(i)**K4 -     &
+                     log10(0.8))+rdry(i)**3) ** third
+        lim1 = ( K1*RLIM(i+1)**K2 /(K3 *RLIM(i+1)**K4 -     &
+                 log10(0.8))+RLIM(i+1)**3) ** third
+        lim2 = ( K1*RLIM(i)**K2 /(K3 *RLIM(i)**K4 -         &
+                 log10(0.8))+RLIM(i)**3) ** third
+        Rrange(i) = lim1 - lim2       ! bin size intervals 
+     enddo
+
+!.. Help parameter
+     do i = 1, SS_MONA
+          a1 = ( 0.380 - log10(radSS(i)) ) / 0.650
+          a2 = 1.19 * exp(-a1*a1)
+
+          temp_Monah(i) = 1.373 * radSS(i)**(-3) * Rrange(i) *      &
+                          ( 1.0 + 0.057 * radSS(i)**1.05 )* 10.0**a2
+     enddo
+
+!// D_dry^3 -  for production of dry SS mass
+     dSS3(:) =  ( 2.0 * rdry(:) )**3
+
+!//===== For Maartinsson et al.(2004) parameterisation =======
+
+     a(1) =   C1(1)*dp4(1)*MKM4   + C1(2)*dp3(1)  *MKM3        &
+            + C1(3)*dp2(1)*MKM2   + C1(4)*DP(1)   *MKM + C1(5)
+     a(2:3) = C2(1)*dp4(2:3)*MKM4 + C2(2)*dp3(2:3)*MKM3        &
+            + C2(3)*dp2(2:3)*MKM2 + C2(4)*DP(2:3) *MKM + C2(5)
+     a(4) =   C3(1)*dp4(4)*MKM4   + C3(2)*dp3(4)  *MKM3        &
+            + C3(3)*dp2(4)*MKM2   + C3(4)*DP(4)   *MKM + C3(5)
+
+     b(1) =   D1(1)*dp4(1)*MKM4   + D1(2)*dp3(1)  *MKM3        &
+            + D1(3)*dp2(1)*MKM2   + D1(4)*DP(1)   *MKM + D1(5)
+     b(2:3) = D2(1)*dp4(2:3)*MKM4 + D2(2)*dp3(2:3)*MKM3        &
+            + D2(3)*dp2(2:3)*MKM2 + D2(4)*DP(2:3) *MKM + D2(5)
+     b(4)=    D3(1)*dp4(4)*MKM4   + D3(2)*dp3(4)  *MKM3        &
+            + D3(3)*dp2(4)*MKM2   + D3(4)*DP(4)   *MKM + D3(5)
+
+
    end subroutine init_seasalt
-
-
+!>>--------------------------------------------------------------------------->>
 
  end module SeaSalt_ml
 
