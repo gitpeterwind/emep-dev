@@ -163,6 +163,10 @@ if ($SNYKOV){
 my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data
 my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
 
+#my $METformat="felt";
+my $METformat="cdf";
+$MetDir = "/global/work/mifapw/emep/meteo$year"  if $METformat eq "cdf";
+
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
 
@@ -377,9 +381,6 @@ foreach my $scenflag ( @runs ) {
     chdir $RESDIR;   ############ ------ Change to RESDIR
     print "Working in directory: $RESDIR\n";
 
-    #my $METformat="felt";
-    my $METformat="cdf";
-    $MetDir = "/global/work/mifapw/emep/meteo2005"  if $METformat eq "cdf";
     if ($METformat eq "felt") {
 	my $nnn = 1;
 	for (my $mm = $mm1; $mm <= $mm2; $mm++) {
