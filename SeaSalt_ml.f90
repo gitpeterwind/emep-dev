@@ -15,7 +15,6 @@
 !-----------------------------------------------------------------------------
 
 
-! use DepVariables_ml,      only : water                                      
  use GenSpec_tot_ml,       only : SSFI, SSCO
  use GenChemicals_ml,      only : species
  use Landuse_ml,           only : LandCover, water_fraction
