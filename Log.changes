@@ -1,4 +1,8 @@
-============== rv3, Oct 24  2007  =============================
+============== rvxxx, Oct 25  2007  =============================
+
+Bug-fix: 2nd open of IO_TMP removed in  LandDefs_ml
+
+============== DELETED TAG: rv3, Oct 24  2007  =============================
 
 Just one commented-out line removed from SeaSalt_ml
 
