@@ -28,9 +28,7 @@ module LandDefs_ml
   !/*************************************************************************
 
  public  :: Init_LandDefs         ! Sets table for LAI, SAI, hveg
- !public  :: Set_Phenology         ! Sets daily LAI, SAI, hveg
  public  :: Growing_season 
- !private :: Polygon               ! Sets shape of phenology variation
 
  real, public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
 
@@ -128,10 +126,6 @@ contains
 
       call CheckStop( errmsg , "Read LandDefs Headers" )
  
-      open(unit=IO_TMP,file=fname,status="old",&
-                      action="read",position="rewind",iostat=ios)
-      call CheckStop( ios, "ERROR : Opening " // fname )
-
 
       !------ Read in file. Lines beginning with "!" are taken as
       !       comments and skipped
