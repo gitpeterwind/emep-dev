@@ -2,6 +2,9 @@
 
 GPL added
 
+modrun.pl added - simpler (snykov only) version of run.pl for distribution
+  with Web model
+
 Bug-fix: 2nd open of IO_TMP removed in  LandDefs_ml
 
 ============== DELETED TAG: rv3, Oct 24  2007  =============================
