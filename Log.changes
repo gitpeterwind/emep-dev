@@ -1,5 +1,7 @@
 ============== rvxxx, Oct 25  2007  =============================
 
+GPL added
+
 Bug-fix: 2nd open of IO_TMP removed in  LandDefs_ml
 
 ============== DELETED TAG: rv3, Oct 24  2007  =============================
