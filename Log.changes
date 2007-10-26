@@ -1,4 +1,5 @@
-============== rvxxx, Oct 25  2007  =============================
+============== rv3beta3, Oct 26  2007  =============================
+Dave, Svetlana
 
 GPL added
 
@@ -6,6 +7,11 @@ modrun.pl added - simpler (snykov only) version of run.pl for distribution
   with Web model
 
 Bug-fix: 2nd open of IO_TMP removed in  LandDefs_ml
+
+SeaSalt_ml :  default Tw changed to T2 (not 283) for cases where no SST
+               (involves bug-fix for SSfi with netcdf).
+Met_ml:       foundSST added  to say if SST available. (** not ** available in
+                netcdf files!)
 
 ============== DELETED TAG: rv3, Oct 24  2007  =============================
 

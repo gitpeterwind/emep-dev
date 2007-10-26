@@ -77,7 +77,7 @@
 
    public :: runchem
 
-   logical, private, save :: MYDEBUG = .false.
+   logical, private, save :: MYDEBUG = .true.
 
 contains
 
@@ -145,7 +145,7 @@ subroutine runchem(numt)
              call setup_rcemis(i,j)
 
              if ( SEASALT )  &
-             call SeaSalt_flux(i,j)
+             call SeaSalt_flux(i,j,debug_flag)
 
              if ( ORGANIC_AEROSOLS )  &
              call OrganicAerosol(debug_flag)

@@ -41,15 +41,14 @@
 !  Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
-
  use GenSpec_tot_ml,       only : SSFI, SSCO
  use GenChemicals_ml,      only : species
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
  use Met_ml,               only : z_bnd, z_mid, sst, snow,   &
-                                  nwp_sea, u_ref
+                                  nwp_sea, u_ref, foundSST  
  use MicroMet_ml,          only : Wind_at_h
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
+ use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, DEBUG_i,DEBUG_j
  use My_Emis_ml,           only : NSS, QSSFI, QSSCO
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, GRAV, AVOG ,PI
@@ -73,12 +72,13 @@
   real, public, dimension(NSS,MAXLIMAX,MAXLJMAX) :: SS_prod !Sea salt flux
 
   logical, private, save :: my_first_call = .true.
+  logical, private, parameter :: MY_DEBUG = .false.
 
   contains
 
 ! <------------------------------------------------------------------------->
 
-   subroutine SeaSalt_flux (i,j)
+   subroutine SeaSalt_flux (i,j, debug_flag)
 
   !-----------------------------------------------------------------------
   ! Input: Tw        - sea surface temperature - # -
@@ -89,6 +89,7 @@
    implicit none
 
    integer, intent(in) :: i,j    ! coordinates of column
+   logical, intent(in) :: debug_flag
 
    real, parameter :: Z10 = 10.0  ! 10m height
    integer :: k, ii, jj, nlu, ilu, lu
@@ -100,7 +101,7 @@
 
     call init_seasalt
     
-   my_first_call = .false.
+    my_first_call = .false.
 
   end if !  my_first_call
  !....................................
@@ -122,21 +123,34 @@
 
        if ( Sub(lu)%is_water ) then
 
-!.. Calculate wind velocity over water at Z10=10m 
+          if(MY_DEBUG .and. debug_flag) then
+              write(6,'(a20,2i5)') ' Sea-Salt Check ',DEBUG_i,DEBUG_j
+              write(6,'(a30,3f12.4,f8.2)') '** ustar_nwp, d, Z0, SST ** ',&
+                   Grid%ustar, Sub(lu)%d,Sub(lu)%z0, sst(i,j,1)
+          end if
+
+         !.. Calculate wind velocity over water at Z10=10m 
 
           u10 = Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
                            Sub(lu)%z0,  Sub(lu)%invL)
 
          if (u10 <= 0.0) u10 = 1.0e-5    ! to make sure u10!=0 because of LOG(u10)
-            u10_341=exp(log(u10) * (3.41))
+         u10_341=exp(log(u10) * (3.41))
 
-!.. Sea surface temperature is only available in metfiles from 2001
-          if (current_date%year > 2001) then
+         if(MY_DEBUG .and. debug_flag) &
+             write(6,'(a30,2f12.4,es14.4)')'** U*, U10, invL ** ', &
+                Sub(lu)%ustar, u10,Sub(lu)%invL
+
+         !.. Sea surface temperature is not always available (e.g. pre-2001 at
+         ! MET.NO), so we need an alternative. As emissions are most
+         ! sensitive to u* and not T, we ignore differences between Tw and T2 for
+         ! the default case if SST isn't avialable.
+
+          if ( foundSST ) then
             Tw = sst(i,j,1)
           else
-            Tw = 283.0
+            Tw = Grid%t2
           endif
-
 
 ! ====    Calculate sea salt fluxes in size bins  [part/m2/s] ========
 
@@ -148,6 +162,8 @@
                ss_flux(ii) = flux_help * ( log_dp2(ii) - log_dp1(ii) )    &
                                    * u10_341 * 3.84e-6 
                d3(ii) = dp3(ii)  ! diameter cubed
+               if(MY_DEBUG .and. debug_flag) write(6,'(a20,i5,es13.4)') &
+                  'Flux Maarten ->  ',ii, ss_flux(jj)
           enddo
 
 !... Fluxes of larger aerosols for each size bin (Monahan etal,1986)
@@ -157,6 +173,8 @@
                ss_flux(jj) = temp_Monah (ii) * u10_341
 
                d3(jj) = dSS3(ii)  ! diameter cubed
+               if(MY_DEBUG .and. debug_flag) &
+                   write(6,'(a20,i5,es13.4)') 'Flux Monah ->  ',ii, ss_flux(jj)
           enddo
 
  
@@ -178,7 +196,11 @@
                                   + ss_flux(ii) * d3(ii) * n2m   &
                                   * water_fraction(i,j)             
           enddo
-                         
+
+          if(MY_DEBUG .and. debug_flag) write(6,'(a35,2es15.4)')  &
+             '>> SS production fine/coarse  >>', &
+                SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
+                          
        endif  ! water
      enddo  ! LU classes
 

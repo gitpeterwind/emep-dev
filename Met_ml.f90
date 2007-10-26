@@ -182,6 +182,8 @@ module Met_ml
   logical, public, save :: foundsdot   ! If not found: compute using 
   ! divergence=0
   logical, public, save :: sdot_at_mid ! set false if sdot is defined 
+  logical, public, save :: foundSST    ! false if no SeaSurfaceT in metdata
+
   ! (when read) at level  boundaries 
   ! and therefore do not need to be 
   ! interpolated.
@@ -279,6 +281,7 @@ contains
        sdot_at_mid = .false.
        foundustar = .false.   
        foundsdot = .false.
+       foundSST  = .false. 
 
        next_inptime = current_date
 
@@ -821,6 +824,7 @@ contains
 
        case (103) ! SST
 
+          foundSST = .true. 
           call getmetfieldMet(ident(20),itmp,sst(1,1,nr))
 
 
