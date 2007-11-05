@@ -176,7 +176,7 @@ module My_BoundConditions_ml
                      !exp(-0.01*0.6633*(1975-iyr_trend)) !Zander,1951-1975, check
         end if
         trend_ch4 = top_misc_bc(IBC_CH4)/1780.0  ! Crude for now.
-        write(6,"(a20,i5,2f12.3)") "TREND CH4", iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)
+        if (me== 0) write(6,"(a20,i5,2f12.3)") "TREND CH4", iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)
 
         top_misc_bc(IBC_CH4)  =  top_misc_bc(IBC_CH4) * ppb
 
@@ -205,7 +205,7 @@ module My_BoundConditions_ml
               misc_bc(ii,k) = top_misc_bc(ii) - &
                   top_misc_bc(ii)*decrease_factor(ii)*sigma_mid(k) 
               if (me == 0) then
-                 write(*,"(a20,2es12.4,i4)")"height,misc_vert,k", &
+                 if (DEBUG_MYBC) write(*,"(a20,2es12.4,i4)")"height,misc_vert,k", &
                                                sigma_mid(k),misc_bc(ii,k),k
               endif
            enddo

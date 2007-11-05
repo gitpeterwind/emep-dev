@@ -243,21 +243,21 @@ contains
 
   if ( my_first_call ) then
 
-    write(*,*) "FIRST CALL TO BOUNDARY CONDITIONS, me :", me
-    write(*,*) "TREND YR, me ", iyr_trend, me
+    if (DEBUG_BCS) write(*,*) "FIRST CALL TO BOUNDARY CONDITIONS, me :", me
+    if (DEBUG_BCS) write(*,*) "TREND YR, me ", iyr_trend, me
 
     call My_bcmap(iyr_trend)      ! assigns bc2xn_adv and bc2xn_bgn mappings
     call Set_bcmap()              ! assigns xn2adv_changed, etc.
 
     num_changed = num_adv_changed + num_bgn_changed   !u1
 
-    write(*,*) "BCs: num_adv_changed: ", num_adv_changed
-    write(*,*) "BCs: num_bgn_changed: ", num_bgn_changed
-    write(*,*) "BCs: num     changed: ", num_changed
+    if (DEBUG_BCS) write(*,*) "BCs: num_adv_changed: ", num_adv_changed
+    if (DEBUG_BCS) write(*,*) "BCs: num_bgn_changed: ", num_bgn_changed
+    if (DEBUG_BCS) write(*,*) "BCs: num     changed: ", num_changed
 
   end if ! first call
-  write(*,*) "CALL TO BOUNDARY CONDITIONS, me, month :", me, month
-  write(*,*) "TREND2 YR, me ", iyr_trend, me
+   if (DEBUG_BCS) write(*,*) "CALL TO BOUNDARY CONDITIONS, me, month :", me, month
+   if (DEBUG_BCS) write(*,*) "TREND2 YR, me ", iyr_trend, me
   
   if ( num_changed == 0 ) then
       write(*,*) "BCs: No species requested"
@@ -345,7 +345,7 @@ contains
    if ( my_first_call ) then
 
       idebug = 1
-      print *, "RESET 3D BOUNDARY CONDITIONS", me
+      if (DEBUG_BCS) print *, "RESET 3D BOUNDARY CONDITIONS", me
       !===================================
       !  -> 3-D arrays of new BCs
       call MiscBoundaryConditions(iglobact,jglobact,bc_adv,bc_bgn) 
@@ -490,7 +490,7 @@ contains
        write(6,*) "TEST SET_BCMAP bc_used: "
        write(6,"(10i5)")  (bc_used(ibc),ibc=1, NTOT_BC)
     end if
-    write(unit=6,fmt=*) "Finished Set_bcmap: Nbcused is ", sum(bc_used)
+    if (me==0) write(unit=6,fmt=*) "Finished Set_bcmap: Nbcused is ", sum(bc_used)
 
     allocate(spc_changed2adv(num_adv_changed))
     allocate(spc_changed2bgn(num_bgn_changed))
@@ -595,7 +595,7 @@ contains
 endif
 
   itest = 1
-  write(6,"(a50,i4,/,(5es12.4))") &
+  if (DEBUG_BCS) write(6,"(a50,i4,/,(5es12.4))") &
       "From MiscBoundaryConditions: ITEST (ppb): ",&
           itest, ((bc_adv(spc_adv2changed(itest),1,1,k)/1.0e-9),k=1,20) 
 

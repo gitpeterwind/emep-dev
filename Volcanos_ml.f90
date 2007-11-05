@@ -115,7 +115,7 @@ contains
      READVOLC: do
            read(IO_VOLC,*,iostat=ios) i,j,height
 
-           write(*,*)'found i,j,heigh',i,j,height
+           if (DEBUG_VULC) write(*,*)'found i,j,heigh',i,j,height
            if ( ios /= 0 ) exit READVOLC
 
   !/** Read (i,j) are given for the full EMEP polar-stereographic domain
@@ -129,7 +129,7 @@ contains
                if ((i_volc(volc_no)==i) .and. (j_volc(volc_no)==j)) then
                   height_volc(volc_no)=height
                   nvolc_read=nvolc_read+1
-                  write(*,*)'Found volcano with height k=',height
+                  if (DEBUG_VULC) write(*,*)'Found volcano with height k=',height
                endif
            enddo
      enddo READVOLC

@@ -109,6 +109,7 @@
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   logical, private, parameter :: DEBUG = .false.
+  logical, private, parameter :: MY_DEBUG = .false.
 
  !** land-code information in each grid square - needed to know which country
  !   is emitting.                        
@@ -217,7 +218,7 @@ contains
   real, dimension(NEMIS)       :: emsum    ! Sum emis over all countries
   real, dimension(NLAND,NEMIS) :: sumemis  ! Sum of emissions per country
 
-  write(6,*) "Emissions called with me, year", me, year
+  if (me ==0) write(6,*) "Emissions called with me, year", me, year
 
   ! ** 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
   !      emission indices (IQSO2=.., )
@@ -281,7 +282,7 @@ contains
    err1 = 0
    if ( me == 0 ) then
 
-       write(unit=6,fmt=*) "TTT me ", me , "pre-allocate" 
+       if (DEBUG) write(unit=6,fmt=*) "TTT me ", me , "pre-allocate" 
        allocate(globnland(GIMAX,GJMAX),stat=err1)
        allocate(globland(GIMAX,GJMAX,NCMAX),stat=err2)
        allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
@@ -425,11 +426,11 @@ contains
           !Find global<->local coordinates for xm2
              if ((i >= gi0).and.(i<=gi1).and.(j>= gj0).and.&
                  (j<= gj1))then !on the correct processor
-                write(*,*)'i,j for volcanoe is',i,j
-                write(*,*)'EMIS_VOLC is',emis_volc(volc_no)
+                if ( DEBUG ) write(*,*)'i,j for volcanoe is',i,j
+                if ( DEBUG ) write(*,*)'EMIS_VOLC is',emis_volc(volc_no)
                 i_l = i -gi0 +1
                 j_l = j- gj0 +1
-                write(*,*)'Local coord is',i_l,j_l,gi0,gj0
+                 if ( MY_DEBUG ) write(*,*)'Local coord is',i_l,j_l,gi0,gj0
                 emis_volc(volc_no) = emis_volc(volc_no)* conv * xm2(i_l,j_l)
             endif
         enddo !volc_no
@@ -437,7 +438,7 @@ contains
         !/** Read  Volcano.dat to get volcano height
         if (me==0)then
             call VolcGet(height_volc)
-            write(*,*)'Volcano heights',height_volc
+             if (MY_DEBUG) write(*,*)'Volcano heights',height_volc
         endif
 
         !/** broadcast volcano heights
@@ -882,7 +883,7 @@ contains
         ktonne_to_kgm2s  = 1.0e6 / 				&
 		(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-	if ( me == 0 ) then
+	if ( me == 0 .and. MY_DEBUG) then
 	  write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',	&
 	      current_date%month,ktonne_to_kgm2s
 	  write(6,*) ' first_dms_read = ', first_dms_read
@@ -932,7 +933,7 @@ contains
                      flat_landcode(i,j,n) = IQ_DMS   ! country code 35 
                      if ( n > flat_ncmaxfound ) then
                           flat_ncmaxfound = n 
-                          write(6,*)'DMS Increased flat_ncmaxfound to ',n 
+                          if (DEBUG) write(6,*)'DMS Increased flat_ncmaxfound to ',n 
                           call CheckStop( n > FNCMAX, "IncreaseFNCMAX for dms")
                      endif 
                   else  ! We know that DMS lies last in the array, so:
@@ -948,7 +949,7 @@ contains
 
 
               if ( first_dms_read ) then
-   	          write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
+   	          if (DEBUG) write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
 			,flat_ncmaxfound 
 	          first_dms_read = .false.
 	      end if

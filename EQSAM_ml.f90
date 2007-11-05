@@ -499,7 +499,8 @@ w1=0.;w2=0.        ! init/reset
       HPLUS = 0.
       ZIONIC= 0.
 
-      IF(WH2O.GT.0.) THEN            
+!hf&pw      IF(WH2O.GT.0.) THEN            
+      IF(WH2O.GT.1.0e-2) THEN            
 
          ! CALCULATE AUTODISSOCIATION CONSTANT (KW) FOR WATER
 

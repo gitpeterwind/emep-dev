@@ -206,7 +206,7 @@ private
     subroutine Init_Derived()
 
         integer :: alloc_err
-          if(me==0) write(*,*) "INITIALISE My DERIVED STUFF"
+          if(me==0 .and. MY_DEBUG) write(*,*) "INITIALISE My DERIVED STUFF"
           call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
          ! get lengths of wanted arrays (excludes notset values)
@@ -214,7 +214,7 @@ private
           num_deriv3d = LenArray(wanted_deriv3d,NOT_SET_STRING)
  
      if ( num_deriv2d > 0 ) then
-          if(me==0) write(*,*) "Allocate arrays for 2d: ", num_deriv2d
+          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 2d: ", num_deriv2d
           allocate(f_2d(num_deriv2d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_2d")
           allocate(d_2d(num_deriv2d,MAXLIMAX,MAXLJMAX,LENOUT2D),stat=alloc_err)
@@ -225,7 +225,7 @@ private
           nav_2d = 0
      end if
      if ( num_deriv3d > 0 ) then
-          if(me==0) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
+          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
           allocate(f_3d(num_deriv3d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_3d")
           allocate(d_3d(num_deriv3d,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D),&
@@ -484,13 +484,13 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       do i = 1, num_deriv2d
           ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
           f_2d(i) = def_2d(ind)
-          if ( me == 0 ) write(*,*) "Index f_2d ", i, " = def ", ind
+          if ( me == 0 .and. MY_DEBUG) write(*,*) "Index f_2d ", i, " = def ", ind
       end do
 
       do i = 1, num_deriv3d
           ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
           f_3d(i) = def_3d(ind)
-          if ( me == 0 ) write(*,*) "Index f_3d ", i, " = def ", ind
+          if ( me == 0 .and. MY_DEBUG) write(*,*) "Index f_3d ", i, " = def ", ind
       end do
 
    !Initialise to zero
@@ -516,9 +516,11 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       if ( any(  f_2d(:)%class == "VOC" ) .or. &
            any(  f_3d(:)%class == "VOC" )  ) then
             call Setup_VOC()
-            write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
-            write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
-            write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
+            if (MY_DEBUG)then
+               write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
+               write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
+               write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
+            endif
       end if
 
 

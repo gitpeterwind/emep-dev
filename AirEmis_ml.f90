@@ -65,6 +65,7 @@ module AirEmis_ml
    integer STATUS(MPI_STATUS_SIZE),INFO
    real MPIbuff
    integer,private ,parameter :: ILEV=18
+   logical, parameter :: MY_DEBUG = .false.
 
  contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -175,7 +176,7 @@ module AirEmis_ml
       if(me == 0)then
 
          read(IO_AIRN,'(3i4,2e22.13)') nlon,ngl,nlev,zrmin,zfak
- 	 write(6,*) nlon,ngl,nlev,zrmin,zfak
+ 	 if (MY_DEBUG)write(6,*) nlon,ngl,nlev,zrmin,zfak
               do k = 0,NLEV-1
                  read(IO_AIRN,'(i2)') level
 	         read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
@@ -197,7 +198,7 @@ module AirEmis_ml
 
       if(me == 0)then
  	 read(IO_AIRN,'(3i4,2e22.13)') nlon,ngl,nlevb,zrmin,zfak
-	 write(6,*) nlon,ngl,nlevb,zrmin,zfak
+	 if (MY_DEBUG) write(6,*) nlon,ngl,nlevb,zrmin,zfak
               do k = 1,nlevb
  	         read(IO_AIRN,'(i2)') level
 	         read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
@@ -285,7 +286,7 @@ module AirEmis_ml
 
       if(me == 0)then
 	 read(IO_LIGHT,'(3i4,2e22.13)') nlon,ngl,nlev,zrmin,zfak
-	 write(6,*) nlon,ngl,nlev,zrmin,zfak
+	 if (MY_DEBUG) write(6,*) nlon,ngl,nlev,zrmin,zfak
          do k = 1,nlev
 	     read(IO_LIGHT,'(i2)') level
 	     read(IO_LIGHT,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
@@ -299,7 +300,7 @@ module AirEmis_ml
 
          close(IO_LIGHT)
 
-         write(6,*) 'lightningumnox',sumnox
+         write(6,*) 'lightning sum nox in AirEmis',sumnox
 
       endif
 

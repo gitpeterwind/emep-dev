@@ -134,7 +134,7 @@
       globemis   (:,:,:,:) = 0.0
       globemis_flat(:,:,:) = 0.0
 
-      write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, emisname
+      if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, emisname
       fname = "emislist." // emisname
       call open_file(IO_EMIS,"r",fname,needed=.true.)
       call CheckStop(ios,"EmisGet: ios error in emission file")
@@ -218,7 +218,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               if ( trim ( emisname ) == "sox" ) then
                 if (ic == IC_VUL) then
                   volc_no=volc_no+1
-                  write(*,*)'Volcano no. ',volc_no
+                  if (DEBUG) write(*,*)'Volcano no. ',volc_no
                   i_volc(volc_no)=i
                   j_volc(volc_no)=j
 

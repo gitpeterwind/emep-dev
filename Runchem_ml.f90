@@ -77,7 +77,7 @@
 
    public :: runchem
 
-   logical, private, save :: MYDEBUG = .true.
+   logical, private, save :: MYDEBUG = .false.
 
 contains
 

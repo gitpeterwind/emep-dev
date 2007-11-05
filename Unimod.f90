@@ -186,7 +186,7 @@ program myeul
      write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
   endif
 
-  print *, "read standard input"
+  if( me == 0 ) print *, "read standard input"
   if( me == 0 ) print *, "RUNLABEL INPUT ", trim(runlabel1),' ',trim(runlabel2)
   if( me == 0 ) print *, " Trend Year is ", iyr_trend
 
@@ -237,7 +237,7 @@ program myeul
 
   call Add_2timing(3,tim_after,tim_before,"After infield")
 
-  if ( me == 0 ) write(6,*)"Calling emissions with year" ,current_date%year
+  if ( me == 0 .and. DEBUG_UNI) write(6,*)"Calling emissions with year" ,current_date%year
 
   call Emissions(current_date%year)
 
@@ -264,7 +264,7 @@ program myeul
   !   (read input files "sites.dat" and "sondes.dat" )
 
   call vgrid    !  initialisation of constants used in vertical advection
-  if ( me == 0 ) write(6,*)"vgrid fifniseh" 
+  if ( me == 0 .and. DEBUG_UNI) write(6,*)"vgrid fifniseh" 
 
   if ( me == 0 ) then
      fileName=trim(runlabel1)//'_inst.nc'
@@ -342,13 +342,13 @@ program myeul
 
         if ( AIRNOX ) call aircraft_nox(newseason)
 
-        if (me == 0) write(6,*) 'maaned og sesong', &
+        if (me == 0 .and. DEBUG_UNI ) write(6,*) 'maaned og sesong', &
              numt,mm,mm_old,newseason,oldseason
 
         call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
         call MetModel_LandUse(2)   ! e.g.  gets snow
-        if ( me == 0 ) write(6,*)"vnewmonth start" 
+        if ( me == 0 .and. DEBUG_UNI) write(6,*)"vnewmonth start" 
 
         call newmonth
 

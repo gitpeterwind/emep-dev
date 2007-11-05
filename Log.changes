@@ -1,3 +1,30 @@
+============== rv?????, Nov 5  2007  =============================
+Hilde, Svetlana
+Files cleaned for unnecessary output. Changed files are:
+
+Unimod.f90
+Emissions_ml.f90
+Landuse_ml.f90
+Met_ml.f90 (also with Svetlanas reading of SST)
+Derived_ml.f90
+Timefactors_ml.f90
+EmisGet_ml.f90
+My_BoundConditions_ml.f90
+BoundaryConditions_ml.f90
+GlobalBCs_ml.f90
+Runchem_ml.f90
+Advection_ml.f90
+PhyChem_ml.f90
+Biogenics_ml.f90
+Volcanos_ml.f90
+Io_Progs_ml.f90
+NetCDF_ml.f90
+AirEmis_ml.f90
+EQSAM_ml.f90
+DryDep_ml.f90
+OutputChem_ml.f90
+
+
 ============== rv3beta3, Oct 26  2007  =============================
 Dave, Svetlana
 

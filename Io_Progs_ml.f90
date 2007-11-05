@@ -262,8 +262,8 @@ contains
               KeyValues(NKeys)%key = key
               KeyValues(NKeys)%value = value
               if ( me == 0 ) then
-                 write(unit=*,fmt=*) "KEYS FULL =", trim(inputline)
-                 write(unit=*,fmt=*) "KEYS LINE NKeys=", &
+                 if (MY_DEBUG) write(unit=*,fmt=*) "KEYS FULL =", trim(inputline)
+                 if (MY_DEBUG) write(unit=*,fmt=*) "KEYS LINE NKeys=", &
                     NKeys, trim(key), " : ", trim(value)
               end if
               cycle
@@ -306,7 +306,7 @@ contains
                    end do
               end if
 
-              if ( me == 0 ) then
+              if ( me == 0 .and. MY_DEBUG ) then
                write(unit=*,fmt=*) "DATA LINE" // trim(inputline)
               end if
 

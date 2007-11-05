@@ -78,6 +78,7 @@ module GlobalBCs_ml
    INCLUDE 'mpif.h'
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
   
+  logical, parameter, private :: DEBUG_GLOBBC= .false. 
   logical, parameter, private :: DEBUG_Logan = .false.
   logical, parameter, private :: DEBUG_HZ    = .false.
 
@@ -330,8 +331,8 @@ endif
          trend_co = exp(-0.01*0.85*(1990-iyr_trend)) ! Zander:CO
          trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
   end if
-  write(6,"(a20,i5)") "GLOBAL TREND YEAR ",  iyr_trend
-  write(6,"(a20,3f8.3)") "TRENDS O3,CO,VOC ", trend_o3, trend_co, trend_voc
+  if (me == 0 .and. my_first_call) write(6,"(a20,i5)") "GLOBAL TREND YEAR ",  iyr_trend
+  if (me == 0 .and. my_first_call) write(6,"(a20,3f8.3)") "TRENDS O3,CO,VOC ", trend_o3, trend_co, trend_voc
 
 !==================================================================
 !=========== BCs Generated from Mace Head Data =======================
@@ -478,9 +479,9 @@ elseif ( year > 2005 ) then
 
  ! Consistency check:
 
-   print *, "SPECBC NGLB ", NGLOB_BC
+   if (DEBUG_GLOBBC) print *, "SPECBC NGLB ", NGLOB_BC
    do i = 1, NGLOB_BC
-      print *, "SPECBC i, hmin ",  i, SpecBC(i)%surf, SpecBC(i)%hmin
+      if (DEBUG_GLOBBC) print *, "SPECBC i, hmin ",  i, SpecBC(i)%surf, SpecBC(i)%hmin
 
       if( SpecBC(i)%hmin*SpecBC(i)%conv_fac < 1.0e-17) then
      
@@ -727,7 +728,7 @@ elseif ( year > 2005 ) then
              errmsg = "BC Error UNSPEC"
           end select
           !================== end select ==================================
-         write(*,*) "dsOH FACTOR ", ibc, fname
+         if (DEBUG_GLOBBC) write(*,*) "dsOH FACTOR ", ibc, fname
 
          call CheckStop(errmsg)
    if( DEBUG_Logan )then

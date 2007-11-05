@@ -57,6 +57,7 @@
   public :: Output_f2d      ! (iotyp, dim, nav, def, dat)
   public :: Output_f3d      ! (iotyp, dim, nav, def, dat)
 
+  logical, private, parameter :: MY_DEBUG = .false.
 
   contains 
 
@@ -103,7 +104,7 @@
      Jan_1st    = ( nmonth == 1 .and. nday == 1 )
      End_of_Run = ( mod(numt,nprint) == 0       )
 
-     if(me==0) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",          &
+     if(me==0 .and. MY_DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",          &
           numt, nmonth, mm_out, nday, dd_out, nhour
 
 
@@ -114,7 +115,7 @@
 
         dd_out = nday - 1     ! only used for daily outputs
 
-        if(me==0) write(6,"(a12,i5,5i4)") "DAILY SET ",         &
+        if(me==0 .and. MY_DEBUG) write(6,"(a12,i5,5i4)") "DAILY SET ",         &
                   numt, nmonth, mm_out, nday, dd_out, nhour 
 
         if(dd_out == 0) then
@@ -124,7 +125,7 @@
 
              dd_out = max_day(mm_out, nyear)  !  Last day of month
 
-              if(me==0) write(6,"(a12,i5,4i4)") "DAILY FIX ",     &
+              if(me==0 .and. MY_DEBUG) write(6,"(a12,i5,4i4)") "DAILY FIX ",     &
                              numt, nmonth, mm_out, nday, dd_out 
         end if
      end if      ! for END_OF_EMEPDAY <= 7

@@ -132,7 +132,7 @@ contains
                      , 1.0  &! 11. Nature
                      /)
 
-  write(unit=6,fmt=*) "into timefactors.f "
+  if (DEBUG) write(unit=6,fmt=*) "into timefactors.f "
 
    call CheckStop( nydays < 365, &
       "Timefactors: ERR:Call set_nmdays before timefactors?")
@@ -167,7 +167,7 @@ contains
 
        close(IO_TIMEFACS)
 
-       write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
+       if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
    enddo  ! iemis
 
 
@@ -203,7 +203,7 @@ contains
        enddo
 
        close(IO_TIMEFACS)
-       write(unit=6,fmt=*) "Read ", n, " records from ", fname2
+       if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
 
   enddo  ! NEMIS
 
@@ -284,7 +284,7 @@ contains
 
 !     #################################
 
-    write(unit=6,fmt=*) "End of subroutine timefactors"
+    if (DEBUG) write(unit=6,fmt=*) "End of subroutine timefactors"
 
     if (DEBUG ) then 
        print *, " test of time factors, UK: "

@@ -317,7 +317,7 @@ contains
 
 
 
-    if(me == 0) write(6,*) 					&
+    if(me == 0 .and. MY_DEBUG) write(6,*) 					&
          '*** nyear,nmonth,nday,nhour,numt,nmdays2'	&
          ,next_inptime%year,next_inptime%month,next_inptime%day	&
          ,next_inptime%hour,numt,nmdays(2)
@@ -340,7 +340,7 @@ contains
     endif
 
 
-    if(me==0) write(*,*)'nrec,nhour=',nrec,nhour
+    if(me==0 .and. MY_DEBUG) write(*,*)'nrec,nhour=',nrec,nhour
 
 
 
@@ -413,6 +413,9 @@ contains
     tau=max(0.0,tau)
     if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
 
+    namefield='sea_surface_temperature'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+        validity, sst(:,:,nr))
 
   end subroutine Meteoread
 
@@ -472,7 +475,7 @@ contains
        return
     endif
 
-    if(me==0)then
+    if(me==0 .and. MY_DEBUG)then
        write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
        write(*,*)'grid resolution:',GRIDWIDTH_M
        write(*,*)'xcoordinate of North Pole, xp:',xp
@@ -609,7 +612,7 @@ contains
              GRIDWIDTH_M = 50000.0 ! =~ 1000.*abs(ident(17))/10.
           else
              GRIDWIDTH_M = 1000.*abs(ident(17))/10.
-             if(me==0)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
+             if(me==0 .and. MY_DEBUG)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
                   'AN= ',6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M
           endif
 
@@ -618,7 +621,7 @@ contains
              xp = 41.006530761718750 !=~ ident(15)
              yp = 3234.5815429687500 !=~ ident(16)
              fi = 10.50000 ! =~ ident(18)
-             if(me==0)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
+             if(me==0 .and. MY_DEBUG)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
           endif
           nprognosis = ident(4)
 
@@ -700,7 +703,7 @@ contains
 
           end if  ! numt
 
-          if(me == 0) write(6,*) 					&
+          if(me == 0 .and. MY_DEBUG) write(6,*) 					&
                '*** nyear,nmonth,nday,nhour,numt,nmdays2,nydays'	&
                ,next_inptime%year,next_inptime%month,next_inptime%day	&
                ,next_inptime%hour,numt,nmdays(2),nydays
@@ -3618,7 +3621,7 @@ contains
        endif
     enddo
 
-    if(me==0)write(*,*)'CYCLICGRID:',Cyclicgrid
+    if(me==0 .and. MY_DEBUG)write(*,*)'CYCLICGRID:',Cyclicgrid
 
     !complete (extrapolate) along the four lateral sides
     do i=1,GIMAX

@@ -247,6 +247,7 @@
         integer iterxys,iterxy,iters
 	logical,save :: firstcall = .true.
         integer numt,pwdebug,idebug,jdebug,i_fdom,j_fdom
+        logical, parameter :: DEBUG_ADV = .false.
            pwdebug=0
            idebug=0
            jdebug=0
@@ -370,7 +371,7 @@
         enddo
         if(me.eq.0)then
            c_max=maxval(xcmax(1:KMAX_MID)*dt_xy(1:KMAX_MID)/GRIDWIDTH_M)
-           write(*,47)niterxys-1,nxy-KMAX_MID,niters-1,       &
+           if (DEBUG_ADV) write(*,47)niterxys-1,nxy-KMAX_MID,niters-1,       &
                       c_max,xcmax(KMAX_MID)*dt_xy(KMAX_MID)/GRIDWIDTH_M
         endif
 !        if(me.eq.0)then

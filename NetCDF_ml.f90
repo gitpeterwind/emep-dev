@@ -96,7 +96,7 @@
   integer,save :: outCDFtag=0
   integer, public, parameter :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 !CDF typr for output
   character (len=18),  parameter :: Default_projection_name = 'General_Projection'
- 
+  logical, parameter :: MY_DEBUG = .false.
 
   public :: InitnetCDF
   public :: Out_netCDF
@@ -803,7 +803,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 !             print *, 'variable exists: ',varname
      else
         !ds print *, 'creating variable: ',varname!,nf90_strerror(status)
-        write(6,*) 'creating variable: ',varname!,nf90_strerror(status)
+        if (MY_DEBUG) write(6,*) 'creating variable: ',varname!,nf90_strerror(status)
         call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      endif
 

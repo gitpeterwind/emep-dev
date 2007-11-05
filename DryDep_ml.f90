@@ -148,13 +148,13 @@ module DryDep_ml
      end do
 
      my_first_call = .false.
-     if(me==0) write(*,*) "INIT_DRYDEP day ", daynumber, old_daynumber
+     if(me==0 .and. MY_DEBUG) write(*,*) "INIT_DRYDEP day ", daynumber, old_daynumber
 
   end if !  my_first_call
 
   if ( old_daynumber /= daynumber ) then
 
-       if(me==0) write(*,*) "INIT_DRYDEP set ", daynumber, old_daynumber
+       if(me==0.and. MY_DEBUG) write(*,*) "INIT_DRYDEP set ", daynumber, old_daynumber
       call SetLandUse()         ! Sets LandCover()%LAI, %hveg , etc
       old_daynumber = daynumber
 

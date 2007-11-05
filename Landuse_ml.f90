@@ -182,7 +182,7 @@ contains
 !------------------------------------------------------------------------------
 
 
-    if ( me == 0 ) then
+    if ( DEBUG_LU .and. me == 0 ) then
         write(*,*) "NOW LAND_CODES ARE ", NHeaders
        call WriteArray(Land_codes,NLANDUSE,"Land_Codes")
     end if
@@ -221,7 +221,7 @@ contains
       end do  !j
    end do  !i
 
-   write(6,*) "Landuse_ml: me, Nlines, maxlufound = ", me, Nlines, maxlufound
+   if (DEBUG_LU) write(6,*) "Landuse_ml: me, Nlines, maxlufound = ", me, Nlines, maxlufound
 
   end subroutine  ReadLanduse
  
@@ -229,7 +229,7 @@ contains
   subroutine  SetLandUse()
     integer :: i,j,ilu,lu, nlu, n ! indices
     logical, save :: my_first_call = .true.
-    logical :: debug_flag = .true.
+    logical :: debug_flag = .false.
     real :: hveg, lat_factor
     integer :: effectivdaynumber !6 months shift in Southern hemisphere.
     real :: xSAIadd
@@ -241,7 +241,7 @@ contains
 !   uses effectivdaynumber and mod(current_date%month+5,12)+1 in southern hemis
 
 
-    write(*,*) "UKDEP SetLandUse, me, day ", me, daynumber, debug_proc
+    if ( DEBUG_LU .and. debug_proc ) write(*,*) "UKDEP SetLandUse, me, day ", me, daynumber, debug_proc
     if ( DEBUG_LU .and. debug_proc ) write(*,*) "DEBUG_LU SetLandUse, me, day ", me, daynumber
 
     if ( my_first_call ) then
@@ -408,7 +408,7 @@ contains
        end do ! j
     end do ! i
     if ( DEBUG_LU .and. me==0 ) write(*,*)"UKDEP Finishing SetLandUse "
-    if(debug_proc ) write(*,*) "LAST GROWSEASON ", effectivdaynumber, WheatGrowingSeason(debug_li,debug_lj)
+    if(debug_proc .and. DEBUG_LU) write(*,*) "LAST GROWSEASON ", effectivdaynumber, WheatGrowingSeason(debug_li,debug_lj)
 
   end subroutine  SetLandUse
 ! =====================================================================

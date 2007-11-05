@@ -115,7 +115,7 @@ module Biogenics_ml
    !========================================================================!
 
 
-      if( debug_proc ) then
+      if( debug_proc .and. DEBUG) then
           write(*,"(a8,i3,2i4,4f18.4)") "BIONEW ", NBVOC, &
               i_fdom(debug_li), j_fdom(debug_lj), &
              ( emforest(debug_li,debug_lj,i), i=1,NBVOC)
@@ -127,7 +127,7 @@ module Biogenics_ml
          CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
            MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
 
-         if (me == 0) then
+         if (me == 0 .and. DEBUG) then
             write(6,"(a20,i4,2es12.4)") 'Biogenics_ml, ibio, sum1',&
               me, bvocsum, bvocsum1
          end if
