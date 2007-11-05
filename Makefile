@@ -19,11 +19,13 @@ LLIB = -L/home/u4/mifahik/netcdf/lib64
 
 F90 = f90
 
-F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
+F90FLAGS = -64 -r8 -O2 -mieee-fp -ftz -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
+#F90FLAGS = -64 -r8 -O3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV $(INCL)
 #F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV $(INCL)
 #F90FLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -DEBUG:conform_check=ON -DEBUG:subscript_check:verbose_runtime=ON -DEBUG:fullwarn=ON -TARG:exc_min=0ZV $(INCL)
 
-LDFLAGS = -64 -r8 -O 3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
+LDFLAGS = -64 -r8 -O2 -mieee-fp -ftz  -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
+#LDFLAGS = -64 -r8 -O 3 -OPT:IEEE_arithm=3:roundoff=3 -TARG:exc_min=0ZV
 #LDFLAGS = -64 -r8 -C -g -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -TARG:exc_min=0ZV
 #LDFLAGS = -64 -r8 -g -C -DEBUG:trap_uninitialized=ON:verbose_runtime=ON -DEBUG:conform_check=ON -DEBUG:subscript_check:verbose_runtime=ON -DEBUG:fullwarn=ON -TARG:exc_min=0ZV
 LD = f90

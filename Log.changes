@@ -25,6 +25,11 @@ DryDep_ml.f90
 OutputChem_ml.f90
 
 
+
+Makefile and Makefile_snow:
+replaced the -O3 compiler option with:
+-O2 -mieee-fp -ftz 
+
 ============== rv3beta3, Oct 26  2007  =============================
 Dave, Svetlana
 
