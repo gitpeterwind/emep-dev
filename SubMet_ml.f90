@@ -313,8 +313,9 @@ contains
 
 
      e = max(0.001*esat,e)    ! keeps rh >= 0.1%
-     e = min(esat,e)          ! keeps rh <= 1
+     !e = min(esat,e)          ! keeps rh <= 1
      Sub(iL)%rh = e/esat
+     Sub(iL)%rh = min(1.0,Sub(iL)%rh)! keeps rh <= 1
 
 !  ****  leaf sat. vapour pressure
 

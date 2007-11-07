@@ -1141,6 +1141,8 @@ contains
 
     real,   dimension(MAXLJMAX,KMAX_MID) :: usnd   ! send in x 
     real,   dimension(MAXLIMAX,KMAX_MID) :: vsnd   ! and in y direction
+    real,   dimension(MAXLJMAX,KMAX_MID) :: urcv   ! rcv in x 
+    real,   dimension(MAXLIMAX,KMAX_MID) :: vrcv   ! and in y direction
 
     real   bm, cm, dm, divt, x1,x2, xkmin, p1, p2, uvh2, uvhs
     real   ri, z00, a2, cdh, fac, fac2, ro, xkh, dvdz, dvdzm, xlmix
@@ -1149,6 +1151,7 @@ contains
     real   inv_METSTEP   
 
     integer :: i, j, k, lx1,lx2, nr,info
+    integer request_s,request_n,request_e,request_w
 
 
 
@@ -1192,8 +1195,10 @@ contains
              usnd(j,k) = u(limax,j,k,nr)
           enddo
        enddo
-       CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, INFO) 
+!       CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
+!            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, INFO) 
+       CALL MPI_ISEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO) 
     endif
 
 
@@ -1205,8 +1210,10 @@ contains
              vsnd(i,k) = v(i,ljmax,k,nr)
           enddo
        enddo
-       CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, INFO) 
+!       CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
+!            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, INFO) 
+       CALL MPI_ISEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO) 
     endif
 
 
@@ -1217,11 +1224,11 @@ contains
 
     if (neighbor(WEST) .ne. NOPROC) then
 
-       CALL MPI_RECV( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
+       CALL MPI_RECV( urcv, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
             neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
        do k = 1,KMAX_MID
 	  do j = 1,ljmax
-             u(0,j,k,nr) = usnd(j,k)
+             u(0,j,k,nr) = urcv(j,k)
           enddo
        enddo
 
@@ -1240,11 +1247,11 @@ contains
 
     if (neighbor(SOUTH) .ne. NOPROC) then
 
-       CALL MPI_RECV( vsnd, 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
+       CALL MPI_RECV( vrcv, 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
             neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
        do k = 1,KMAX_MID
           do i = 1,limax
-             v(i,0,k,nr) = vsnd(i,k)
+             v(i,0,k,nr) = vrcv(i,k)
           enddo
        enddo
 
@@ -1270,8 +1277,6 @@ contains
 
 
 
-
-
     if (neighbor(NORTH) == NOPROC.and.Poles(1)==1) then
        !"close" the North pole
        do k = 1,KMAX_MID
@@ -1280,6 +1285,15 @@ contains
           enddo
        enddo
     endif
+    
+    if (neighbor(EAST) .ne. NOPROC) then
+       CALL MPI_WAIT(request_e, MPISTATUS, INFO) 
+    endif
+    
+    if (neighbor(NORTH) .ne. NOPROC) then
+       CALL MPI_WAIT(request_n, MPISTATUS, INFO) 
+    endif
+
 
     inv_METSTEP = 1.0/METSTEP
 
