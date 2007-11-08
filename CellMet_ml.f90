@@ -66,16 +66,24 @@ contains
 
 !---------------------------------------------------------------
 
-  !   We assume that the area of grid which is wet is
-  !     proportional to cloud-cover:
 
-     if ( surface_precip(i,j) > 0.0 ) then
+  !   We assume that the area of grid which is wet is proportional to 
+  !   cloud-cover. To avoid some compiler/numerical issues when
+  !   prec almost equal to zero, we allow a small build-up phase, with
+  !   linear increase from wetarea=0 to wetarea = cc3dmax for values of
+  !   prec between 1.0e-8 (near-zero!) to 0.01.
+
+     if ( surface_precip(i,j) > 1.0d-2 ) then
           Grid%is_wet = .true.
           Grid%wetarea = cc3dmax(i,j,KMAX_MID) 
+     else if ( surface_precip(i,j) > 1.0d-8 ) then
+          Grid%is_wet = .true.
+          Grid%wetarea =  surface_precip(i,j)/1.0d-2 * cc3dmax(i,j,KMAX_MID) 
      else 
           Grid%is_wet = .false.
           Grid%wetarea = 0.0
      end if
+
 
      Grid%i        = i
      Grid%j        = j
