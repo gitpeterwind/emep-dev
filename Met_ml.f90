@@ -416,6 +416,9 @@ contains
     namefield='sea_surface_temperature'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, sst(:,:,nr))
+    foundSST = .true.
+!.. Note: this foudSST test doesn't work for NetCDF meteorology yet
+!.. The model will crash if SST is not in the met.file
 
   end subroutine Meteoread
 
@@ -581,6 +584,7 @@ contains
     sdot_at_mid = .true.
     foundustar = .false.
     foundsdot = .true.
+    foundSST = .false.
 
 
 
