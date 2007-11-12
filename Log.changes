@@ -1,3 +1,10 @@
+============== rv3beta6  Nov 12  2007  =============================
+Dave
+
+My_FastReactions.inc added, and included in My_Reactions.inc
+-- saves having identical code 3 times in My_Reactions
+
+
 ============== rv3beta5  Nov 7-8  2007  =============================
 Peter
 Met_ml: non-blocking MPI_ISEND for wind speeds in metvar. 
