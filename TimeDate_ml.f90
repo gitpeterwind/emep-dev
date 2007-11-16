@@ -1,9 +1,37 @@
+! <TimeDate_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
+!          Chemical transport Model>
+!*****************************************************************************! 
+!* 
+!*  Copyright (C) 2007 met.no
+!* 
+!*  Contact information:
+!*  Norwegian Meteorological Institute
+!*  Box 43 Blindern
+!*  0313 OSLO
+!*  NORWAY
+!*  email: emep.mscw@met.no
+!*  http://www.emep.int
+!*  
+!*    This program is free software: you can redistribute it and/or modify
+!*    it under the terms of the GNU General Public License as published by
+!*    the Free Software Foundation, either version 3 of the License, or
+!*    (at your option) any later version.
+!* 
+!*    This program is distributed in the hope that it will be useful,
+!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
+!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!*    GNU General Public License for more details.
+!* 
+!*    You should have received a copy of the GNU General Public License
+!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!*****************************************************************************! 
+!_____________________________________________________________________________
 MODULE TimeDate_ml
         IMPLICIT NONE
 
-! Originally timedate.f90 from Paul Curtis, found on web
-! Dave, 31/8/04: Remove some Windows-specific or un-needed routines removed, 
-! and convert to F. Some routines given longer names, eg. dow -> day_in_week,
+! Originally timedate.f90 from Paul Curtis, found on web, 31/8/04: 
+! Removed some Windows-specific or un-needed routines, 
+! and converted to F. Some routines given longer names, eg. dow -> day_in_week,
 ! ndiy -> day_of_year. Change IFIX to INT, FLOAT to REAL, MAX0 to MAX, etc.
 !===================Routines =================================================
 
