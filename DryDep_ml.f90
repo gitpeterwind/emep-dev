@@ -67,7 +67,7 @@ module DryDep_ml
  use Aero_DryDep_ml,    only : Aero_Rb
  use CheckStop_ml, only: CheckStop
  use Chemfields_ml , only : cfac!,xn_adv
- use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
+ use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen, veg_month
  use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
  use GenSpec_tot_ml, only : NSPEC_TOT
 
@@ -266,18 +266,24 @@ module DryDep_ml
 
       dtz      = dt_advec/Grid%DeltaZ
 
-    if ( MY_DEBUG .and. debug_flag ) then
-          write(*,"(a26,4i4)") "UKDEP DryDep me, i,j ", me, i,j
-          write(*,"(a10,i4,3i3,i6,10f10.3)") "UKDEP SOL", &
-                  daynumber, imm, idd, ihh, current_date%seconds, &
-                   Grid%zen, Grid%coszen, Grid%wetarea, &
-                     1.0e-5*Grid%psurf, Grid%Idiffuse, Grid%Idirect
-          write(*,"(a10,i4,3i3,2f8.3,es12.4,f8.4)") "UKDEP NWP", &
-                  daynumber, imm, idd, ihh,  &
-                  Grid%Hd, Grid%LE, Grid%invL, Grid%ustar
-    end if
-                 
-
+      if ( MY_DEBUG .and. debug_flag ) then
+         write(*,"(a26,4i4)") "UKDEP DryDep me, i,j ", me, i,j
+         write(*,"(a10,i4,3i3,i6,10f10.3)") "UKDEP SOL", &
+              daynumber, imm, idd, ihh, current_date%seconds, &
+              Grid%zen, Grid%coszen, Grid%wetarea, &
+              1.0e-5*Grid%psurf, Grid%Idiffuse, Grid%Idirect
+         write(*,"(a10,i4,3i3,2f8.3,es12.4,f8.4)") "UKDEP NWP", &
+              daynumber, imm, idd, ihh,  &
+              Grid%Hd, Grid%LE, Grid%invL, Grid%ustar
+      end if
+      
+      if(gb(i,j)>0.0)then
+         veg_month=current_date%month
+      else
+         !southern hemisphere
+         veg_month=mod(current_date%month+5,12)+1
+      endif
+      
     !/ Initialise Grid-avg Vg for this grid square:
 
     Grid_Vg_ref(:) = 0.0

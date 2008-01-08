@@ -1,3 +1,12 @@
+============== rv3beta8  Jan 8  2008  =============================
+Peter
+
+End of run dates for "fullrun" in NetCDF_ml.
+Removed "initnetcdf" routine from Unimod and NetCDF_ml (was never used).
+
+Defined veg_month in DryDep. Seemed not to be defined before?
+
+
 ============== rv3beta7  Nov 16  2007  =============================
 Dave
 
