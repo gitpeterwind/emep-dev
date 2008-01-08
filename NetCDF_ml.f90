@@ -98,7 +98,6 @@
   character (len=18),  parameter :: Default_projection_name = 'General_Projection'
   logical, parameter :: MY_DEBUG = .false.
 
-  public :: InitnetCDF
   public :: Out_netCDF
   public :: CloseNetCDF
   public :: Init_new_netCDF
@@ -114,50 +113,6 @@
 contains
 !_______________________________________________________________________
 
-subroutine InitnetCDF
-
-use Par_ml,           only : GIMAX,GJMAX,IRUNBEG,JRUNBEG
-use ModelConstants_ml,only : KMAX_MID   
-use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
-                             Asc2D, hr_out      ! Required outputs
-
-integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-integer :: ih
-
-write(*,*)'initnetcdf'
-fileName = fileName_year
-period_type = 'yearly'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
-fileName = fileName_month
-period_type = 'monthly'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
-fileName = fileName_day
-period_type = 'daily'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
-
-fileName = fileName_hour
-period_type = 'hourly'
-ISMBEGcdf=GIMAX+IRUNBEG-1; JSMBEGcdf=GJMAX+JRUNBEG-1
-GIMAXcdf=0; GJMAXcdf=0
-KMAXcdf=1
-do ih=1,NHOURLY_OUT
-   ISMBEGcdf=min(ISMBEGcdf,hr_out(ih)%ix1)
-   JSMBEGcdf=min(JSMBEGcdf,hr_out(ih)%iy1)
-   GIMAXcdf=max(GIMAXcdf,hr_out(ih)%ix2-hr_out(ih)%ix1+1)
-   GJMAXcdf=max(GJMAXcdf,hr_out(ih)%iy2-hr_out(ih)%iy1+1)
-   KMAXcdf =max(KMAXcdf,hr_out(ih)%nk)
-enddo
-GIMAXcdf=min(GIMAXcdf,GIMAX)
-GJMAXcdf=min(GJMAXcdf,GJMAX)
-
-!write(*,*)GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
-
-fileName = fileName_inst
-period_type = 'instant'
-call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
-
-end subroutine InitnetCDF
 
 subroutine Init_new_netCDF(fileName,iotyp) 
 
@@ -180,7 +135,7 @@ call CloseNetCDF
 if(iotyp==IOU_YEAR)then
 
 fileName_year = trim(fileName)
-period_type = 'yearly'
+period_type = 'fullrun'
 call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 
 elseif(iotyp==IOU_MON)then
@@ -390,8 +345,10 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_att(ncFileID, PTVarID, "long_name", "Pressure at top"))
 
   call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
-  if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown')then
+  if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown'.and.trim(period_type) /= 'fullrun')then
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
+  else
+  call check(nf90_put_att(ncFileID, VarID, "long_name", "time at end of period"))
   endif
   call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
  
@@ -1118,7 +1075,9 @@ endif
        is_leap=0
        if (leapyear(ndate(1)-1))is_leap=1
        if(iotyp==IOU_YEAR)then
-          nseconds=nseconds-43200*365-43200*is_leap
+          !take end of run date
+          nseconds=nseconds       
+!          nseconds=nseconds-43200*365-43200*is_leap
        elseif(iotyp==IOU_MON)then
           nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
        elseif(iotyp==IOU_DAY)then
