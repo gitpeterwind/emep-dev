@@ -72,7 +72,7 @@ program myeul
        ,runlabel1  &   ! explanatory text
        ,runlabel2  &   ! explanatory text
        ,nprint,nass,nterm,iyr_trend, PT
-  use NetCDF_ml,        only : InitnetCDF,Init_new_netCDF
+  use NetCDF_ml,        only : Init_new_netCDF
   use OutputChem_ml,    only : WrtChem
   use Par_ml,           only : me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
        ,Topology, parinit & 
