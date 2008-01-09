@@ -161,11 +161,11 @@ if ($SNYKOV){
 # DataDir    = Main general Data directory
 
 my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data
-my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
+#my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
 
 #my $METformat="felt";
 my $METformat="cdf";
-$MetDir = "/global/work/mifapw/emep/meteo$year"  if $METformat eq "cdf";
+$MetDir = "/global/work/mifaab/${year}_par_met_nc"  if $METformat eq "cdf";
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
@@ -462,12 +462,12 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
 
   # new inputs style (Aug 2007)  with compulsory headers:
-    $ifile{"$NDATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
-    $ifile{"$NDATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
-    $ifile{"$NDATA_LOCAL/Inputs.LandDefs"} = "Inputs.LandDefs";
-    $ifile{"$NDATA_LOCAL/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-    $ifile{"$NDATA_LOCAL/sites.dat"} = "sites.dat";
-    $ifile{"$NDATA_LOCAL/sondes.dat"} = "sondes.dat";
+    $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
+    $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
+    $ifile{"$DataDir/Inputs.LandDefs"} = "Inputs.LandDefs";
+    $ifile{"$DataDir/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+    $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
+    $ifile{"$DATA_LOCAL/sondes.dat"} = "sondes.dat";
   
     
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
