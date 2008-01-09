@@ -183,11 +183,11 @@ contains
             LandType(n)%is_forest =  &
                 ( LandInput%type == "ECF" .or. LandInput%type == "EDF" )
             LandType(n)%is_conif = ( LandInput%type == "ECF"  )
-            LandType(n)%is_decid = ( LandInput%type == "ECD"  )
+            LandType(n)%is_decid = ( LandInput%type == "EDF"  )
             LandType(n)%is_crop  = ( LandInput%type == "ECR"  )
             LandType(n)%is_seminat  = ( LandInput%type == "SNL"  )
             LandType(n)%is_water  =  LandInput%type == "W" 
-            LandType(n)%is_ice    =  LandInput%type == "ICE" 
+            LandType(n)%is_ice    =  LandInput%code == "ICE" 
             LandType(n)%is_bulk   =  LandInput%type == "BLK" 
             LandType(n)%is_iam    =  LandInput%code(1:4) == "IAM_" 
             LandType(n)%is_veg    =  LandInput%type /= "U" .and. &
