@@ -255,9 +255,9 @@ contains
     iotyp=IOU_INST
     if(first_call)then
        if(me==0)then
-          write(*,*)'cleaning possible old ',trim(fileName_write)
-          write(command,*)'rm ',trim(fileName_write)
-          call system(command)       
+          write(*,*)'Writing BC on ',trim(fileName_write)
+!          write(command,*)'rm ',trim(fileName_write)
+!          call system(command)       
        endif
        first_call=.false.
     endif

@@ -28,6 +28,8 @@ Copied also the other input files from ~mifads/Unify/Data/EMEP/ over to /home/mi
 /home/mifapw/emep_common/Data/EMEP
 Changed run.pl to take into account these changes
 
+Uncommented a system call in Nest_ml: can cause problems in combination with OpenMPI (problems appeared on Stallo).
+
 ============== rv3beta7  Nov 16  2007  =============================
 Dave
 
