@@ -1,10 +1,11 @@
-============== rv3beta8  Jan 8-9  2008  =============================
+============== rv3beta8  Jan 8-9..11  2008  =============================
 Peter, Svetlana
 
 End of run dates for "fullrun" in NetCDF_ml.
 Removed "initnetcdf" routine from Unimod and NetCDF_ml (was never used).
 
-Defined veg_month in DryDep. Seemed not to be defined before?
+Defined veg_month in DryDep. Seemed not to be defined before? Does it work now??
+Initialized veg_month=1 in DO3SE_ml
 
 Changed definition of LandType in LandDefs_ml:
             LandType(n)%is_water  =  LandInput%code == "W" 

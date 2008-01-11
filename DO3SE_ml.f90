@@ -52,7 +52,7 @@ module DO3SE_ml
   real, public, save  :: f_light, f_temp, f_vpd, f_swp, f_env         
   real, public, save  :: f_phen = 888 ! But set elsewhere
 
-  integer, public, save  :: veg_month   ! Fake, for old needles
+  integer, public, save  :: veg_month = 1   ! Fake, for old needles
 
 !-----------------------------------------------------------------------------
 ! Notes: Basis is Emberson et al, EMEP Report 6/2000
