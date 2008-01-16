@@ -1,7 +1,8 @@
 ============== rv3beta9  Jan 16  2008  =============================
 
 Stallo version of run.pl and Makefile_stallo.
-Just set STALLO=1. Choose USER, ProgDir,WorkDir, Emissions etc. as usual
+Just set STALLO=1. Choose USER, ProgDir,WorkDir, Emissions etc. as usual.
+32 procs choosen in ModelConstants_ml.
 
 ============== rv3beta8  Jan 8-9..11  2008  =============================
 Peter, Svetlana
