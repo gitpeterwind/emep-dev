@@ -1,16 +1,17 @@
 #!/usr/bin/perl
 
-#Common script for Njord and Snykov. Choose $NJORD=1 or $SNYKOV=1
+#Common script for Njord and Snykov. Choose $NJORD=1 or $SNYKOV=1 or $STALLO=1
 
 #___________________________________________________________________
-#Snykov queue commands
+#Snykov or Stallo queue commands
 
 #Queue system commands start with #PBS (these are not comments!)
-# lnodes= number of nodes, ppn=processor per node (max4)
-#PBS -lnodes=6
+# lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
+# ib for infiniband (fast interconnect).
+#PBS -lnodes=32:ib
 # wall time limit of run 
-#PBS -lwalltime=0:30:00
-# lpmeme=memory to reserve per processor (max 4 or 16GB per node)
+#PBS -lwalltime=10:00:00
+# lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=200MB
 # account for billing
 #PBS -A nn2890k
@@ -79,7 +80,7 @@
 #
 #___________________________________________________________________
 #
-#    submit on SNOWSTORM from work directory with
+#    submit on SNOWSTORM or STALLO from work directory with
 #    >qsub srun.pl
 #
 #    check queue status with
@@ -104,12 +105,14 @@ $| = 1; # autoflush STDOUT
 
 #Choose one machine
 my $NJORD=0; #1 if njord is used
-my $SNYKOV=1; #1 if snykov (snowstorm) is used
+my $SNYKOV=0; #1 if snykov (snowstorm) is used
+my $STALLO=1; #1 if stallo is used
 
-# -j2 parallel make with 2 threads
-my @MAKE = ("gmake",  "-j2", "--makefile=Makefile_snow");
-  @MAKE = ("make", "-j2", "-f", "Makefile_njord") if $NJORD==1 ;
-  die "Must choose SNYKOV **or** NJORD!\n" unless $NJORD+$SNYKOV==1;
+# -j4 parallel make with 4 threads
+my @MAKE = ("gmake",  "-j4", "--makefile=Makefile_snow");
+  @MAKE = ("make", "-j4", "-f", "Makefile_njord") if $NJORD==1 ;
+  @MAKE = ("make", "-j4", "-f", "Makefile_stallo") if $STALLO==1 ;
+  die "Must choose SNYKOV **or** NJORD **or** STALLO!\n" unless $STALLO+$NJORD+$SNYKOV==1;
 
 my $SR= 0;     # Set to 1 if source-receptor calculation
               # check also variables in package EMEP::Sr below!!
@@ -119,7 +122,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "2005";
+my $year = "1999";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -142,16 +145,22 @@ my $HEIKO      = "mifahik";
 my $ANNA       = "mifaab";      
 my $MICHAEL    = "michaelg";      
 my $SEMEENA    = "mifasv";      
+my $AGNES      = "nyiri";      
+my $ALVARO      = "alvarov";
 
-
-my $USER        =  $DAVE;
+my $USER        =  $PETER;
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
-if ($SNYKOV){
+if ($STALLO){
     $HOMEROOT       = "/home";      
     $WORKROOT     = "/global/work";      
-    $DataDir       = "/home/mifapw/emep_common/Data";
+    $DataDir       = "/global/work/mifapw/emep/Data";
     $MetDir        = "$DataDir/EMEP/metdata/$year" ;
+} elsif($SNYKOV) {
+    $HOMEROOT       = "/home/ntnu";      
+    $WORKROOT     = "/work";      
+    $MetDir        = "/work/emep/metdata/$year" ;
+    $DataDir       = "/home/ntnu/mifapw/emep/Data";
 } else {
     $HOMEROOT       = "/home/ntnu";      
     $WORKROOT     = "/work";      
@@ -159,13 +168,13 @@ if ($SNYKOV){
     $DataDir       = "/home/ntnu/mifapw/emep/Data";
 }
 # DataDir    = Main general Data directory
-
+ 
 my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data
 #my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
 
-#my $METformat="felt";
-my $METformat="cdf";
-$MetDir = "/global/work/mifaab/${year}_par_met_nc"  if $METformat eq "cdf";
+my $METformat="felt";
+#my $METformat="cdf";
+$MetDir = "/global/work/mifapw/emep/meteo$year"  if $METformat eq "cdf";
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
@@ -219,7 +228,7 @@ my @runs        = ( $scenario );
 
 #EMISSIONS
 my $EMIS_INP = "$HOMEROOT/$HEIKO/Emissions/ModelInputModruns/Modrun06";
-#my $emisdir = "$EMIS_INP/2006_emis2010_BL-E_V7";
+$EMIS_INP = "$DATA_LOCAL/Modrun06" if $STALLO;
 my $emisdir = "$EMIS_INP/2006-Trend${year}-V7";
 $emisdir = "$EMIS_INP/2006-Trend2004-V7" if $year > 2004;
 my $pm_emisdir = $emisdir;
@@ -265,8 +274,8 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "06";       # first month, use 2-digits!
-my $mm2   =  "06";       # last month, use 2-digits!
+my $mm1   =  "01";       # first month, use 2-digits!
+my $mm2   =  "01";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
@@ -546,6 +555,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 
 	my $PRERUN = "";
 	$PRERUN = "scampiexec " if $SNYKOV;
+	$PRERUN = "mpiexec " if $STALLO;
 	if ($DRY_RUN) {
 	    print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";
 	} else {
