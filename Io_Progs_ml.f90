@@ -121,6 +121,7 @@ contains
         write(unit=errmsg,fmt=*) "me ", me, " BCAST_LINE:" // trim(txt)
         write(unit=*,fmt=*) trim(errmsg)
      end if
+     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
   end subroutine read_line
 
