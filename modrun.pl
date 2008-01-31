@@ -312,7 +312,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$COMMON/amilt42-nox.dat"} = "ancatmil.dat"; # Aircraft
 
   # new inputs style with compulsory headers:
-    $ifile{"$COMMON/Inputs.LandDefs"} = "Inputs.LandDefs";
+    $ifile{"$COMMON/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
     $ifile{"$COMMON/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
 
     $ifile{"$GRID_DATA/Inputs.BVOC"} = "Inputs.BVOC";
