@@ -157,10 +157,10 @@ if ($STALLO){
     $DataDir       = "/global/work/mifapw/emep/Data";
     $MetDir        = "$DataDir/EMEP/metdata/$year" ;
 } elsif($SNYKOV) {
-    $HOMEROOT       = "/home/ntnu";      
-    $WORKROOT     = "/work";      
-    $MetDir        = "/work/emep/metdata/$year" ;
-    $DataDir       = "/home/ntnu/mifapw/emep/Data";
+    $HOMEROOT       = "/home";      
+    $WORKROOT     = "/global/work";      
+    $DataDir       = "/home/mifapw/emep_common/Data";
+    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
 } else {
     $HOMEROOT       = "/home/ntnu";      
     $WORKROOT     = "/work";      

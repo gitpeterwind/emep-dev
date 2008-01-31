@@ -1,5 +1,8 @@
 ============== rv3beta11  Jan 31  2008  =============================
 
+copied the new Inputs_LandDefs.csv into DataDir and corrected a bug 
+introduced in run.pl from rv3beta9 when runnning on snykov.
+
 run.pl, modrun.pl - modified to use renamed Inputs_LandDefs.csv
 
 
