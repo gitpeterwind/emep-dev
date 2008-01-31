@@ -16,10 +16,13 @@ D.~Simpson, H.~Fagerli, J.E. Jonson, S.~Tsyro, P.~Wind, and J.-P. Tuovinen.
 EMEP MSC-W Report 1/2003, The Norwegian
 Meteorological Institute, Oslo, Norway, 2003.
 \item
-Fagerli, H., Simpson, D., and Tsyro, S., {Unified EMEP model: Updates}, in {\em
-  EMEP Report 1/2004, Transboundary acidification, eutrophication and ground
-  level ozone in Europe. Status Report 1/2004\/}, pp. 11--18, The Norwegian
-  Meteorological Institute, Oslo, Norway, 2004.
+L.Tarrason, H. Fagerli, J.E. Jonson, H. Klein, M van Loon, D. Simpson,
+        S. Tsyro, V. Vestreng, P. Wind, M. Posch, S. Solberg, T. Spranger,
+        K. Cuvelier, P. Thunis and L. White., Unified EMEP model: Updates,
+        in EMEP Report 1/2004, Transboundary acidification, eutrophication
+        and ground level ozone in Europe, Status Report 1/2004, pp11-18, The
+        Norwegian Meteorological Institute, Oslo, Norway, 2004. 
+
 \end{itemize}
 
 Copies of both reports can be obtained from \url{www.emep.int}. An HTML
@@ -28,10 +31,12 @@ copy of EMEP report 1/2003 is available at \url{www.emep.int/UniDoc/index.html}.
 
 \section{Computer Information}
 
-To compile the EMEP model you need:
+To compile the EMEP model you need:\\
 
 \textbf{Fortran 90 compiler}
+
 \textbf{NetCDF Library}
+
 \textbf{MPI Library}
 
 It is necessary to compile with double precision reals (8 bytes
@@ -48,41 +53,22 @@ the case of a 170X133 grid size).
 \section{Getting Started}
 
 A tar file of the model source code can be downloaded from the web
-page under the section 'Download'.   Once the model is downloaded,
-untar the zipped tar file using  the command \\
+page \url{http://www.emep.int/EMEPWebPage/EMEP_Home_Page.htm}, under the section 'Download'.   Once the model is downloaded,
+untar the tar file using  the command \\
 
-\textbf{tar -xzvf emep.tar.gz} \\
+\textbf{tar -xvf Unified\_EMEP.tar} \\
 
-This will give you a directory called 'Unimod'.  Go to this directory
-by typing 'cd Unimod' and do a listing and you will see the following
-\\
+This will give you a directory called 'Unify'.  Go to this directory
+by typing 'cd Unify' which contains another subdirectory 'src'.  The
+model source code, makefiles and runscripts are stored under this
+directory.  
 
-\textbf{cd Unimod} \\
-          \textbf{ls -lt}
-
-
-\begin{verbatim}
--rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  Makefile \\
--rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  Log.Changes \\
--rwxr-xr-x  2 usr emep   4096 May 11 13:23 work  README \\
-drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  src \\
-                - ....f90
-drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  doc  \\
-                - ....tex \\
-                - ....eps \\
-drwxr-xr-x  2 usr emep   4096 May 11 13:23 work  run \\
-                - ....pl  \\
-
-\end{verbatim}
-
-Read the 'README' first.  This has a brief note about the directory
-contents.  Makefile is the main Makefile for the model.  Each time
-when the model code is updated or changed due to any reason, it is
-documented in a Log file while committing the changes to CVS and this
-file is stored in 'Log.Changes' file.  The src directory contains all
-the main .f90 files of the model. 'doc' contains the latex code of the
-'cookbook'.  Finally, the run scripts are stored under 'run'.  These
-are perl scripts and a detailed description about how to handle them
+There are three makefiles provided.  'Makefile' is for SGI Origin 3800
+computer, 'Makefile\_snow' is for an Itanium2 cluster, and the
+Makefile\_njord is for an IBM power5+ cluster. The run script written
+in perl, provided
+herewith is called 'modrun.pl' and it is meant for an Itanium2
+cluster.  A detailed description about how to handle this script
 is given in Chapter 4, 'Submitting a Run'.  
 
 Each module and subroutine begins with a small documentation of the

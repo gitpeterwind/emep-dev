@@ -1,3 +1,22 @@
+============== rv3beta10  Jan 31  2008  =============================
+Dave
+
+DO3SE system simplified to remove various special features. Effect of
+old needles removed, and replaced by simply setting lower fphen in
+Inputs_DO3SE.csv.
+
+Treatment of Astart, Aend now automatic also - special code removed
+
+Inputs.LandDefs now renamed Inputs_LandDefs.csv, and values changed
+
+Inputs_DO3SE.csv values changed
+   - both to reflect revisions to mapping manual, and  recent work
+
+Wesely_ml - tidied up some comments about NH3
+
+
+SHOULD USE NEW INPUT FILES ALSO!
+
 ============== rv3beta9  Jan 16-17  2008  =============================
 
 Stallo version of run.pl and Makefile_stallo.

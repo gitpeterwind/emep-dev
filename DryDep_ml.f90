@@ -67,7 +67,7 @@ module DryDep_ml
  use Aero_DryDep_ml,    only : Aero_Rb
  use CheckStop_ml, only: CheckStop
  use Chemfields_ml , only : cfac!,xn_adv
- use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen, veg_month
+ use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
  use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
  use GenSpec_tot_ml, only : NSPEC_TOT
 
@@ -277,12 +277,6 @@ module DryDep_ml
               Grid%Hd, Grid%LE, Grid%invL, Grid%ustar
       end if
       
-      if(gb(i,j)>0.0)then
-         veg_month=current_date%month
-      else
-         !southern hemisphere
-         veg_month=mod(current_date%month+5,12)+1
-      endif
       
     !/ Initialise Grid-avg Vg for this grid square:
 
@@ -336,8 +330,6 @@ module DryDep_ml
 
 
          call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_CALC,Rb)
-         !if( MY_DEBUG .and. debug_flag ) write(*,*) "From Rb", &
-         !    DRYDEP_CALC,Rb
 
          call Rsurface(DRYDEP_CALC,Rsur_dry,Rsur_wet,errmsg,debug_flag)
 
@@ -433,13 +425,6 @@ module DryDep_ml
                   " Vg: ", 100.0*Vg_3m(n), 100.0*Vg_ref(n), Vg_ratio(n)
             end do
 
-!TMP
-!            print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP RATVG",iiL,iL,L%coverage,&
-!                100.0*Vg_3m(4), 100.0*Vg_ref(4), Sumland, Sumcover, &
-!                   Vg_ratio(4)   !helcom, 4=NH3
-!            print "(a14,2i4,f8.3,5f7.2,f12.3)", "UKDEP FINVG", iiL, iL, L%coverage, &
-!                   L%LAI,100.0*L%g_sto, &  ! tmp, in cm/s 
-!                   L%Ra_ref, Rb(4), Rsur_dry(4), 100.0/(L%Ra_ref + Rb(4) + Rsur_dry(4) )
         end if
 
        !

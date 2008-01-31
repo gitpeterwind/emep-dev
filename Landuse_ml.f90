@@ -53,7 +53,6 @@ private
   public :: InitLanduse
   public :: ReadLanduse
   public :: SetLanduse
-  private :: Conif_fphen
   private :: Polygon         ! Used for LAI
  INCLUDE 'mpif.h'
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -333,18 +332,6 @@ contains
 
 
 
-          ! For coniferous forest we need to correct for old needles.
-
-             if ( LandType(lu)%is_conif )then
-                if(gb(i,j)<0.0)then
-                   !southern hemisphere
-                   call Conif_fphen( mod(current_date%month+5,12)+1 ,LandCover(i,j)%fphen(ilu))
-                else
-                   call Conif_fphen(current_date%month,LandCover(i,j)%fphen(ilu))
-                endif
-             endif
-
-
              hveg = LandDefs(lu)%hveg_max   ! defaults
              xSAIadd = 0.0
 
@@ -398,7 +385,7 @@ contains
              LandCover(i,j)%hveg(ilu) =  hveg
 
             if ( DEBUG_LU .and. debug_flag ) then
-                   write(*,"(a12,i3,a12,i4,f7.2,2f8.3,4i4)") "LANDPhen ", lu, trim(LandDefs(lu)%name), daynumber, &
+                   write(*,"(a12,i3,a16,i4,f7.2,2f8.3,4i4)") "LANDPhen ", lu, trim(LandDefs(lu)%name), daynumber, &
                      LandCover(i,j)%hveg(ilu), LandCover(i,j)%LAI(ilu), LandCover(i,j)%fphen(ilu), &
                      LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)
             end if
@@ -412,38 +399,6 @@ contains
 
   end subroutine  SetLandUse
 ! =====================================================================
-    subroutine Conif_fphen(imm,f_phen)
-! =====================================================================
-!   modifies g_pot (g_age) for effect of older needles, with the simple
-!   assumption that g_age(old) = 0.5.
-!
-   !/ arguments
-
-    integer, intent(in) :: imm    ! month
-    real,   intent(inout) :: f_phen  ! Requires initial input of f_phen 
-                                     ! (once obtained as output from g_stomatal)
-
-   !/ Some parameters:
-   !  Proportion of needles which are from current year:
-    real, parameter, dimension(12) :: Pc = (/  &
-                   0.53, 0.535, 0.54, 0.545, 0.1, 0.15,  &
-                   0.27,  0.36, 0.42,  0.48, 0.5,  0.5  /)
-
-    real, parameter :: F_OLD = 0.5  ! value of f_phen for old needles
-
-
-
-!needles from current year assumed to have g_pot as evaluated above;
-!needles from previous years assumed to have f_phen of 0.5
-!The sum of the f_phen's for the current year is added to the sum of the
-!f_phen's for previous years to obtain the overall f_phen for the landuse 
-!category temp. conif. forests.
-
-    f_phen = Pc(imm)*f_phen + (1.0-Pc(imm))*F_OLD
-
-  end subroutine Conif_fphen
-! =====================================================================
-
 
 !=======================================================================
 function Polygon(jdayin,Ymin,Ystart,Ymax,Sday,LenS,Eday,LenE) &

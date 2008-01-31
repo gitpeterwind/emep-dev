@@ -52,8 +52,6 @@ module DO3SE_ml
   real, public, save  :: f_light, f_temp, f_vpd, f_swp, f_env         
   real, public, save  :: f_phen = 888 ! But set elsewhere
 
-  integer, public, save  :: veg_month = 1   ! Fake, for old needles
-
 !-----------------------------------------------------------------------------
 ! Notes: Basis is Emberson et al, EMEP Report 6/2000
 ! Numbers updated to Mapping Manual, 2004 and changes recommended
@@ -135,7 +133,6 @@ contains
 
             read(unit=inputline,fmt=*) do3se(lu)
             call CheckStop( wanted_codes(lu), do3se(lu)%code, "DO3SE MATCHING")
-    !      print *, lu,  do3se(lu)%name
             lu = lu + 1
        end do
        close(unit=io_num)
@@ -148,7 +145,9 @@ contains
 !=======================================================================
 
 !    Calculates stomatal conductance g_sto based upon methodology from 
-!    EMEP MSC-W Note 6/00 and Mapping Manual (2004):
+!    EMEP MSC-W Note 6/00 and Mapping Manual (2004), and revisions (Simpson
+!    and Emberson, Chapter 5, EMEP Rep 1/2006, Mapping Manual revisions, 2007,
+!    and l. Emberson Notes from Forest group, Dec. 2007):
 !
 !    g_sto = [g_max * f_pot * f_light * f_temp * f_vpd * f_swp ]/41000.0
 !
@@ -199,7 +198,7 @@ contains
   f_temp = dTs / ( do3se(lu)%T_max - do3se(lu)%T_opt )
   f_temp = ( L%t2C - do3se(lu)%T_min ) / dg *  f_temp**bt
 
-  f_temp = max( f_temp, do3se(lu)%f_min )
+  f_temp = max( f_temp, 0.01 )  ! Revised usage of min value during 2007
 
 
 !..4) Calculate f_vpd
@@ -226,9 +225,11 @@ contains
 
 !.. And finally,
 !---------------------------------------
+!  ( with revised usage of min value for f_temp during 2007)
 
-   f_env = f_temp * f_vpd * f_swp
+   f_env = f_vpd * f_swp
    f_env = max( f_env, do3se(lu)%f_min )
+   f_env = max( f_temp, 0.01) * f_env
 
    f_env = f_phen * f_env * f_light  ! Canopy average
 
@@ -270,15 +271,6 @@ contains
   logical, intent(in) :: debug_flag
   real  :: a,b,c,d,Slen,Elen,Astart, Aend
 
-   !/ Some parameters:
-   !  Proportion of needles which are from current year:
-    real, parameter, dimension(12) :: Pc = (/  &
-                   0.53, 0.535, 0.54, 0.545, 0.1, 0.15,  &
-                   0.27,  0.36, 0.42,  0.48, 0.5,  0.5  /)
-
-    real, parameter :: F_POTOLD = 0.5  ! value of f_phen for old needles
-
-
         a =  do3se(lu)%f_phen_a
         b =  do3se(lu)%f_phen_b
         c =  do3se(lu)%f_phen_c
@@ -289,12 +281,6 @@ contains
         Astart   = SGS  + do3se(lu)%Astart_rel
         Aend   = EGS  - do3se(lu)%Aend_rel
 
-
-       ! Special for IAM Med. Forest
-        if ( code(1:6) == "IAM_MF" ) then
-             Astart = 80
-             Aend  = 320
-        end if
 
         if ( jday <  SGS ) then
                 fphen = 0.0
@@ -311,25 +297,6 @@ contains
         else
                 fphen = 0.0
         end if
-
-        if ( lu == 1 ) then ! CRUDELY PUT HERE FOR NOW, to save complications
-                            ! with yet another  subroutine
-    ! =====================================================================
-    !   modifies f_phen for effect of older needles
-    !
-    !needles from current year assumed to have f_phen as evaluated above;
-    !needles from previous years assumed to have f_phen of 0.5
-    !The sum of the f_phen's for the current year is added to the sum of the
-    !f_phen's for previous years to obtain the overall f_phen for the landuse 
-    !category temp. conif. forests.
-
-           fphen = Pc(veg_month)*fphen + (1.0-Pc(veg_month))*F_POTOLD
-
-        end if
-
-        !if( debug_flag ) then
-        !    print "(a12,i4,2i6,f12.3)", "fPhenology",  jday, SGS, EGS, fphen
-        !end if
 
 end function fPhenology
 

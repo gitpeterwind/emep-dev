@@ -143,7 +143,7 @@ contains
       ! Read data
 
 
-      fname = "Inputs.LandDefs"
+      fname = "Inputs_LandDefs.csv"
       if ( me == 0 ) then
          call open_file(IO_TMP,"r",fname,needed=.true.)
          call CheckStop(ios,"open_file error on " // fname )
