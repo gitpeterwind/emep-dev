@@ -3881,7 +3881,6 @@
 	if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne.me ) then
            CALL MPI_RECV(ue(1,1,nr), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, neighbor(EAST), MSG_EAST2,&
                 MPI_COMM_WORLD, STATUS, INFO)
-           CALL MPI_WAIT(request_e, STATUS, INFO) 
 	endif
 
 !     receive from WEST neighbor if any
@@ -3889,7 +3888,6 @@
 	if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
            CALL MPI_RECV(uw(1,1,nr), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, neighbor(WEST), MSG_WEST2,&
                 MPI_COMM_WORLD, STATUS, INFO)
-           CALL MPI_WAIT(request_w, STATUS, INFO) 
 	endif
 
 !     receive from NORTH neighbor if any
@@ -3897,7 +3895,6 @@
 	if (neighbor(NORTH) .ne. NOPROC) then
            CALL MPI_RECV(vn(1,1,nr), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, neighbor(NORTH), MSG_NORTH2,&
                 MPI_COMM_WORLD, STATUS, INFO)
-           CALL MPI_WAIT(request_n, STATUS, INFO) 
 	endif
 
 !     receive from SOUTH neighbor if any
@@ -3905,8 +3902,23 @@
 	if (neighbor(SOUTH) .ne. NOPROC) then
            CALL MPI_RECV(vs(1,1,nr), 8*MAXLIMAX*KMAX_MID, MPI_BYTE, neighbor(SOUTH), MSG_SOUTH2,&
                 MPI_COMM_WORLD, STATUS, INFO)
-           CALL MPI_WAIT(request_s, STATUS, INFO) 
+ 	endif
+	if (neighbor(EAST) .ne. NOPROC .and. neighbor(EAST) .ne.me ) then
+           CALL MPI_WAIT(request_e, STATUS, INFO) 
 	endif
+
+	if (neighbor(WEST) .ne. NOPROC .and. neighbor(WEST) .ne. me) then
+           CALL MPI_WAIT(request_w, STATUS, INFO) 
+	endif
+
+	if (neighbor(NORTH) .ne. NOPROC) then
+          CALL MPI_WAIT(request_n, STATUS, INFO) 
+	endif
+
+	if (neighbor(SOUTH) .ne. NOPROC) then
+          CALL MPI_WAIT(request_s, STATUS, INFO) 
+	endif
+
 
 	return
 

@@ -1,3 +1,7 @@
+============== rv3beta12  feb 2  2008  =============================
+Peter
+New update of adv_var: the previous version seemed to hang on stallo in some situations (global model)
+
 ============== rv3beta11  Jan 31  2008  =============================
 
 copied the new Inputs_LandDefs.csv into DataDir and corrected a bug 
