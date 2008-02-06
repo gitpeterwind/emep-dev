@@ -1,3 +1,8 @@
+============== rv3beta13  feb 6  2008  =============================
+Peter
+Small bug: current_date declared twice in NetCDF_ml (does not influence 
+output, but pgi compiler complains).
+
 ============== rv3beta12  feb 2  2008  =============================
 Peter
 New update of adv_var: the previous version seemed to hang on stallo in some situations (global model)
