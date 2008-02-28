@@ -65,7 +65,7 @@
                                   ,projection, sigma_mid
   use ModelConstants_ml, only : KMAX_MID, runlabel1, runlabel2 &
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
-                                ,PT
+                                ,PT, current_date  
   use netcdf
   use Par_ml, only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG

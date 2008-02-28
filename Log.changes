@@ -1,3 +1,16 @@
+==============================================================================
+================================= rv3      2008  =============================
+==============================================================================
+1st OPEN SOURCE CODE ON WEB!!!
+
+End of rv3 series. Almost identical to rv3 as given on web, but
+
+(Had to reset Nest_ml and NetCDF_ml to slightly older code. Will
+update again as 3.1. 
+
+** modrun.pl is still different in rv3 and on web-version. Too many
+differences to bother about here.)
+
 ============== rv3beta13  feb 6  2008  =============================
 Peter
 Small bug: current_date declared twice in NetCDF_ml (does not influence 
