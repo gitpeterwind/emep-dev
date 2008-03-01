@@ -138,7 +138,8 @@ contains
    integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
 
 
-   if ( DEBUG_LU .and. me == 0 ) write(*,*) "LANDUSE: Starting ReadLandUse, me ",me
+   if ( DEBUG_LU .and. me == 0 ) &
+        write(*,*) "LANDUSE: Starting ReadLandUse, me ",me
 
    maxlufound = 0   
    Nlines = 0
@@ -166,7 +167,8 @@ contains
       ! The first two columns are assumed for now to be ix,iy, hence:
 
         NHeaders = NHeaders -2
-        call CheckStop( NHeaders /= NLANDUSE, "Inputs.Landuse not consisternt with NLANDUSE")
+        call CheckStop( NHeaders /= NLANDUSE, &
+                         "Inputs.Landuse not consisternt with NLANDUSE")
 
       ! **** HERE we set the Landuse_codes *****************
 

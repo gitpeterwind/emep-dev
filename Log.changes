@@ -1,4 +1,12 @@
+================================= rv3.0.1, Dave,  Mar 1st 2008  ==============
+
+Io_Progs_ml  -  bug fix to remove text trailing # in HEADER line  (doesn't 
+     matter to results though)
+
+Landuse_ml - small formatting change
+
 NetCDF_ml and Nest_ml reset to rv3beta13 status
+
 
 ==============================================================================
 ================================= rv3      2008  =============================

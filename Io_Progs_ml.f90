@@ -178,7 +178,8 @@ contains
 
         if ( .not. fexist ) then
 
-               call CheckStop( needed, "OPEN_FILE ::: missing file is :: "// fname )
+               call CheckStop( needed, &
+                       "OPEN_FILE ::: missing file is :: "// fname )
                ios = NO_FILE
          else
            open(unit=io_num,file=fname,status="old",action="read",iostat=ios)
@@ -271,6 +272,8 @@ contains
 
          else if ( index(inputline,"#HEADER") > 0 ) then ! Header lines
 
+              i =  index(inputline,"#")  ! Finds e.g. #Total as well as #HEADER")
+              inputline(i:) = " "        ! and gets rid of this stuff.
 
               call wordsplit(inputline,MAXHEADERS,xHeaders,NxHeaders,ios)
 
@@ -287,6 +290,10 @@ contains
               do i = Nheaders+1, size(Headers)
                   Headers(i) = ""   ! Remove trailing txt
               end do
+              if ( MY_DEBUG ) then
+                  write(*,*) "Read_Headers sizes: ", size(xHeaders) , NHeaders
+                  write(*,*) "New  inputline ", trim( inputline )
+              end if
 
               cycle
 
