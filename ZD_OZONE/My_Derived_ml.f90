@@ -126,9 +126,9 @@ private
       ,"D2_O3       ","D2_MAXO3    " &
       ,"D2_AOT30    ","D2_AOT40    ","D2_AOT60    " &
       ,"D2_AOT30f   ","D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
-      ,"D2_EUAOT30WH","D2_EUAOT30DF","D2_EUAOT40WH","D2_EUAOT40DF" &
-      ,"D2_UNAOT30WH","D2_UNAOT30DF","D2_UNAOT40WH","D2_UNAOT40DF" &
-      ,"D2_MMAOT30WH","D2_MMAOT40WH" &
+      ,"D2_EUAOT30WH","D2_EUAOT30DF","D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
+      ,"D2_UNAOT30WH","D2_UNAOT30DF","D2_UNAOT40WH","D2_UNAOT40DF" &! NB: do not remove without removing from My_DryDep too
+      ,"D2_MMAOT30WH","D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
       ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums 
@@ -136,6 +136,7 @@ private
       ,"D2_OX       "  &
 !
 !    Ecosystem - fluxes: 
+ ! NB: do not remove without removing from My_DryDep too 
       ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
       ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
        ,"D2_O3DF     ","D2_O3WH     " &
@@ -171,7 +172,7 @@ private
   !( waters and wetlands removed:)
 
    character(len=10), public, parameter, dimension(15) :: &
-     DDEP_WANTED = (/  &
+     DDEP_WANTED = (/  &  ! NB: do not remove without removing from My_DryDep too 
         "DDEP_SOX  ","DDEP_OXN  ","DDEP_RDN  "  &
        ,"DDEP_OXSCF","DDEP_OXSDF","DDEP_OXSCR","DDEP_OXSSN"  &
        ,"DDEP_OXNCF","DDEP_OXNDF","DDEP_OXNCR","DDEP_OXNSN"  &

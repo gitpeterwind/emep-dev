@@ -140,7 +140,7 @@ module ModelConstants_ml
     ,  PPBINV = 1.0e+9           &
     ,  PPT = 1.0e-12		 &  ! parts per trillion (mixing ratio)
     ,  PPTINV = 1.0e+12		 &
-    ,  PT = 1.0e+4                  ! Top of model region = 100 hPa
+    ,  PT = 1.0e+4                  ! Top of model region = 10000 Pa = 100 hPa
 
    real, public, parameter ::  &
     ATWAIR = 28.964                   & ! Mol. weight of air (Jones, 1992)

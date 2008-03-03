@@ -1,3 +1,10 @@
+================================= rv3.0.2, Peter,  Mar 3rd 2008  ==============
+
+Just additional comments in the code.
+In ZD_OZONE/MyDerived_ml "NB: do not remove without removing from My_DryDep too"
+In ModelConstants_ml PT = 1.0e+4    ! Top of model region = 10000 Pa = 100 hPa
+
+
 ================================= rv3.0.1, Dave,  Mar 1st 2008  ==============
 
 Io_Progs_ml  -  bug fix to remove text trailing # in HEADER line  (doesn't 
