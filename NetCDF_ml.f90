@@ -54,7 +54,7 @@
 
   use Chemfields_ml,   only : xn_shl,xn_adv
   use CheckStop_ml,    only: CheckStop
-  use Derived_ml,    only : Deriv,IOU_INST,IOU_HOUR, IOU_YEAR ,IOU_MON, IOU_DAY
+  use Derived_ml,    only : Deriv,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR ,IOU_MON, IOU_DAY
   use GenSpec_shl_ml , only :NSPEC_SHL
   use GenSpec_adv_ml , only :NSPEC_ADV
   use GenSpec_tot_ml , only :NSPEC_TOT
@@ -525,10 +525,10 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
-  if(present(ist))i1=max(ist,i1)
-  if(present(ien))i2=min(ien,i2)
-  if(present(jst))j1=max(jst,j1)
-  if(present(jen))j2=min(jen,j2)
+  if(present(ist))i1=max(ist-IRUNBEG+1,i1)
+  if(present(ien))i2=min(ien-IRUNBEG+1,i2)
+  if(present(jst))j1=max(jst-JRUNBEG+1,j1)
+  if(present(jen))j2=min(jen-JRUNBEG+1,j2)
 
   !Check that that the area is larger than 0
   if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return 
@@ -1083,6 +1083,8 @@ endif
        elseif(iotyp==IOU_DAY)then
           nseconds=nseconds-43200 !24*3600/2=43200
        elseif(iotyp==IOU_HOUR)then
+          nseconds=nseconds  !hourly is instantaneous
+       elseif(iotyp==IOU_HOUR_MEAN)then !not implemented yet
           nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
        elseif(iotyp==IOU_INST)then
           nseconds=nseconds       

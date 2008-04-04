@@ -122,9 +122,11 @@
   subroutine Code_timer(call_time)
 !SYS integer, intent(inout) :: call_time      !SYS
 !SYS call system_clock(call_time)             !SYS
+  include 'mpif.h'
 
     real, intent(inout) :: call_time          !CPU
-    call cpu_time(call_time)                  !CPU
+!    call cpu_time(call_time)                  !CPU
+   call_time=MPI_WTIME()
 
   end subroutine Code_timer
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

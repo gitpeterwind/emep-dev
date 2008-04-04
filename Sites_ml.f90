@@ -283,10 +283,10 @@ contains
           iy < RUNDOMAIN(3) .or. iy > RUNDOMAIN(4) ) then
         if(me==0) write(6,*) "sitesdef: ", s, ix, iy, &
                 " outside computational domain"
-     else if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
-              iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
-        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, &
-                " on computational domain"
+!     else if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
+!              iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
+!        if(me==0) write(6,*) "sitesdef: ", s, ix, iy, &
+!                " on computational domain"
      else
         comment = " ok - inside domain         "
         n = n + 1

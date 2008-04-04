@@ -1,3 +1,14 @@
+================================= rv3.0.4, Peter,  Apr 4th 2008  ==============
+
+Hourly cdf output: put timestamp at end of period
+Nesting: istart etc coordinates relative to large domain instead of small domain.
+LandDefs_ml: dimension of Header put to 15
+Advection_ml: improved the ADVEC_TYPE=2 option (not the default value) for exact mass conservation 
+Sites_ml: allow sites/sondes on model boundaries (needed for poles in global runs)
+Timing_ml: use MPI_WTIME to measure walltime
+
+None of these changes should affect the results of "standard" runs.
+
 ================================= rv3.0.3, Dave,  Mar 18th 2008  ==============
 
 GlobalBCs_ml 

@@ -133,7 +133,7 @@ contains
   !=======================================================================
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       character(len=*), dimension(:) :: wanted_codes   ! From Inputs-Landuse
-      character(len=20), dimension(14) :: Headers
+      character(len=20), dimension(15) :: Headers
       character(len=200) :: txtinput  ! Big enough to contain one input record
       type(KeyVal), dimension(2) :: KeyValues ! Info on units, coords, etc.
       character(len=50) :: errmsg, fname

@@ -150,7 +150,7 @@ private
   ! Define 4 output types corresponding to instantaneous,year,month,day
 
    integer, public, parameter ::  &
-        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5
+        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_MEAN=6
 
   ! The 2-d and 3-d fields use the above as a time-dimension. We define
   ! LENOUTxD according to how fine resolution we want on output. For 2d

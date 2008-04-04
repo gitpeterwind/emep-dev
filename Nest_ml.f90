@@ -80,8 +80,8 @@ module Nest_ml
   !10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
 
   !coordinates of subdomain to write
-  !coordinates relative to small domain (only used in write mode)
-  integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA
+  !coordinates relative to LARGE domain (only used in write mode)
+  integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA NB: version has changed, these numbers where for small domain!!!
 
   !/-- subroutines
 

@@ -108,7 +108,7 @@
  real, private,save, dimension(MAXLIMAX,KMAX_MID,NMET) :: vs,vn
 
  integer, public, parameter :: ADVEC_TYPE = 1 ! Divides by advected p*
-! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by advected p*
+! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by "meteorologically" advected p* -> mass consistent (in kg)
 
  public :: assign_dtadvec
  public :: assign_nmax
@@ -534,21 +534,18 @@
 
 
 ! division by p*, to transform back into mixing ratios units
- 	if(ADVEC_TYPE==2)then !this option is "mass conservative"
-	    div = 1./real(nmax-(nstep-1))
-!            do k=1,KMAX_MID	
-!	         ps3d(:,:,k) = (ps(:,:,1) 				&
-!			+ (ps(:,:,2) - ps(:,:,1))*div-PT)
-!            enddo
-            do j = lj0,lj1
-               do i = li0,li1
-                  psi = 1./(ps(i,j,1)+(ps(i,j,2) - ps(i,j,1))*div-PT)
-                  do k=1,KMAX_MID	
+ 	if(ADVEC_TYPE==2)then !this option is "mass conservative" (uses metadvected p*)
+           div = 1./real(nmax-(nstep-1))
+           do j = lj0,lj1
+              do i = li0,li1
+                 psi = 1./(ps(i,j,1)+(ps(i,j,2) - ps(i,j,1))*div-PT)
+                 do k=1,KMAX_MID	
                     xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                  enddo
-               enddo
-            enddo
- 	elseif(ADVEC_TYPE==1)then !this option is recommended (?). 
+                 enddo
+              enddo
+           enddo
+
+        elseif(ADVEC_TYPE==1)then !this option is recommended (?). 
                                   !It is "mixing ratio  conservative" (uses advected p*)
            do k=1,KMAX_MID
               do j = lj0,lj1
@@ -953,18 +950,19 @@
 
                 enddo !k horizontal (x) advection
                 !renormalize with p*
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
-
-                         psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                         xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                         ps3d(i,j,k) = ps(i,j,1) - PT
-
+                if(ADVEC_TYPE==1)then 
+                   do k=1,KMAX_MID
+                      do j = lj0,lj1
+                         do i = li0,li1
+                            
+                            psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
+                            xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
+                            ps3d(i,j,k) = ps(i,j,1) - PT
+                            
+                         enddo
                       enddo
                    enddo
-                enddo
-
+                endif
                 call Add_2timing(21,tim_after,tim_before,"advecdiff:advx")
 
                 !	y-direction
@@ -992,19 +990,20 @@
                 enddo !k horizontal (y) advection
                 call Add_2timing(23,tim_after,tim_before,"advecdiff:advy")
 
-                !renormalize with p*
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
-
-                         psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                         xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                         ps3d(i,j,k) = ps(i,j,1) - PT
-
+                if(ADVEC_TYPE==1)then 
+                   !renormalize with p*
+                   do k=1,KMAX_MID
+                      do j = lj0,lj1
+                         do i = li0,li1
+                            
+                            psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
+                            xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
+                            ps3d(i,j,k) = ps(i,j,1) - PT
+                            
+                         enddo
                       enddo
                    enddo
-                enddo
-
+                endif
 
                 do iters=1,niters
 
@@ -1054,18 +1053,21 @@
 
                    enddo !i 
                 enddo !k horizontal (y) advection
-                !renormalize with p*
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
-
-                         psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                         xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                         ps3d(i,j,k) = ps(i,j,1) - PT
-
+                
+                if(ADVEC_TYPE==1)then 
+                   !renormalize with p*
+                   do k=1,KMAX_MID
+                      do j = lj0,lj1
+                         do i = li0,li1
+                            
+                            psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
+                            xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
+                            ps3d(i,j,k) = ps(i,j,1) - PT
+                            
+                         enddo
                       enddo
                    enddo
-                enddo
+                endif
                 call Add_2timing(23,tim_after,tim_before,"advecdiff:advy")
 
                 do k = 1,KMAX_MID
@@ -1097,18 +1099,20 @@
                 enddo !k horizontal (x) advection
                 call Add_2timing(21,tim_after,tim_before,"advecdiff:advx")
 
-                !renormalize with p*
-                do k=1,KMAX_MID
-                   do j = lj0,lj1
-                      do i = li0,li1
-
-                         psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                         xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                         ps3d(i,j,k) = ps(i,j,1) - PT
-
+                if(ADVEC_TYPE==1)then 
+                   !renormalize with p*
+                   do k=1,KMAX_MID
+                      do j = lj0,lj1
+                         do i = li0,li1
+                            
+                            psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
+                            xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
+                            ps3d(i,j,k) = ps(i,j,1) - PT
+                            
+                         enddo
                       enddo
                    enddo
-                enddo
+                endif
 
                 do iters=1,niters
 
