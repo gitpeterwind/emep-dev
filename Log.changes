@@ -1,3 +1,13 @@
+================================= rv3.0.5, Peter,  Apr 15th 2008  ==============
+
+Output_hourly: put the vertical coordinate for hourly output right.
+	       If 20 level are requested the lowest level has k=20 (as usual)
+	       If less than 20 levels are requested the lowest level has k=1
+	       Also corrected ist etc. to be compatible with the nesting changes 
+	       made in rv3.0.4
+
+Makefile is now Makefile_stallo
+
 ================================= rv3.0.4, Peter,  Apr 4th 2008  ==============
 
 Hourly cdf output: put timestamp at end of period

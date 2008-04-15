@@ -338,10 +338,10 @@
        def1%name=hr_out(ih)%name
        def1%unit=hr_out(ih)%unit
        def1%class=hr_out(ih)%type 
-       ist = max(1,hr_out(ih)%ix1-IRUNBEG+1)
-       jst = max(1,hr_out(ih)%iy1-JRUNBEG+1)
-       ien = min(GIMAX,hr_out(ih)%ix2-IRUNBEG+1)
-       jen = min(GJMAX,hr_out(ih)%iy2-JRUNBEG+1)
+       ist = max(IRUNBEG,hr_out(ih)%ix1)
+       jst = max(JRUNBEG,hr_out(ih)%iy1)
+       ien = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
+       jen = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
        nk = min(KMAX_MID,hr_out(ih)%nk)
        CDFtype=Real4 ! can be choosen as Int1,Int2,Int4,Real4 or Real8
        scale=1.
@@ -351,8 +351,8 @@
             ,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen)
 
        else if( nk > 1 ) then   !write as 3D
-          !CHANGED 23 Mar 2007  klevel=KMAX_MID-ik+1
           klevel=ik
+          if(nk<KMAX_MID)  klevel=KMAX_MID-ik+1 !count from ground and up
           call Out_netCDF(IOU_HOUR,def1,3 &
             ,1,hourly(:,:),scale,CDFtype,ist,jst,ien,jen,klevel)
           !else nk<1 : no output
