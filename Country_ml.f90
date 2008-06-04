@@ -199,9 +199,35 @@ module Country_ml
   integer, parameter, public :: IC_BL8 = 348
   integer, parameter, public :: IC_BL9 = 349
 
+  !New codes defined by Agnes for Reporting 2008, extended area
 
 
+!  integer, parameter, public :: IC_KG = 68 ! Kyrgyzstan (in the extended EMEP domain) Already defined
+  integer, parameter, public :: IC_RFE = 74 !Rest of extended Russian Federation (in the extended EMEP domain)
+  integer, parameter, public :: IC_KZE = 75 !Rest of Kazakhstan (in the extended EMEP domain)
+  integer, parameter, public :: IC_UZ = 76  !Uzbekistan (in the original EMEP domain)
+  integer, parameter, public :: IC_TM = 77  !Turkmenistan (in the original EMEP domain)
+  integer, parameter, public :: IC_UZE = 78 !Rest of  Uzbekistan (in the extended EMEP domain)
+  integer, parameter, public :: IC_TME = 79 !Rest of Turkmenistan (in the extended EMEP domain)
+  integer, parameter, public :: IC_CAS = 80 !Caspian Sea (in the original EMEP domain)
+  integer, parameter, public :: IC_TJ = 81  !Tajikistan (in the extended EMEP domain)
+  integer, parameter, public :: IC_ARL = 82 !Aral Lake (in the original EMEP domain)
+  integer, parameter, public :: IC_ARE = 83 !Rest of Aral Lake (in the extended EMEP domain)
+  integer, parameter, public :: IC_ASM = 84 !Modified remaining Asian areas (in the original EMEP domain)
+  integer, parameter, public :: IC_ASE = 85 !Remaining extended Asian areas (in the extended EMEP domain)
+  integer, parameter, public :: IC_AOE = 86 !Arctic Ocean (in the extended EMEP domain)
 
+ !New external areas (only in modelling domain):
+ !a) Domains: x = 160-170 y = 1-132 and x =  -16-0  y = 123-170
+
+  integer, parameter, public :: IC_RFX = 87  !Extended EMEP-external part of Russian Federation
+  integer, parameter, public :: IC_ASX = 88  !Extended EMEP-external part of Asia
+  integer, parameter, public :: IC_PAX = 89  !Extended EMEP-external part of Pacific Ocean
+  integer, parameter, public :: IC_AOX = 90  !Extended EMEP-external part of Arctic Ocean
+
+ !b) Domain x = -16-132 y = -11-0
+
+  integer, parameter, public :: IC_NAX = 91  !EMEP-external part of North Africa
 
   contains
   !
@@ -342,6 +368,32 @@ Country( IC_BL6 ) = cc(  "BL6" ,346 ,T,  34, 1  , "B. Sea EU ferries outs.12    
 Country( IC_BL7 ) = cc(  "BL7" ,347 ,T,  34, 1  , "B. Sea ROW ferries outs. 12  " )
 Country( IC_BL8 ) = cc(  "BL8" ,348 ,T,  34, 1  , "B. Sea EU ferries ins. 12    " )
 Country( IC_BL9 ) = cc(  "BL9" ,349 ,T,  34, 1  , "B. Sea ROW ferries ins. 12   " )
+
+! New codes by Agnes
+Country( IC_RFE ) = cc(  "RFE" , 74 ,F, 74, 7  , "Rest of extended Russian Federation (in the extended EMEP domain)" )
+Country( IC_KZE ) = cc(  "KZE" , 75 ,F, 75, 5  , "Rest of Kazakhstan (in the extended EMEP domain)                 " )
+Country( IC_UZ  ) = cc(  "UZ"  , 76 ,F, 76, 4  , "Uzbekistan (in the original EMEP domain)                         " )
+Country( IC_TM  ) = cc(  "TM"  , 77 ,F, 77, 4  , "Turkmenistan (in the original EMEP domain)                       " )
+Country( IC_UZE ) = cc(  "UZE" , 78 ,F, 78, 4  , "Rest of  Uzbekistan (in the extended EMEP domain)                " )
+Country( IC_TME ) = cc(  "TME" , 79 ,F, 79, 4  , "Rest of Turkmenistan (in the extended EMEP domain)               " )
+Country( IC_CAS ) = cc(  "CAS" , 80 ,F, 80, 3  , "Caspian Sea (in the original EMEP domain)                        " )
+Country( IC_TJ  ) = cc(  "TJ"  , 81 ,F, 81, 4   ,"Tajikistan (in the extended EMEP domain)                         " )
+Country( IC_ARL ) = cc(  "ARL" , 82 ,F, 82, 4  , "Aral Lake (in the original EMEP domain)                          " )
+Country( IC_ARE ) = cc(  "ARE" , 83 ,F, 83, 4  , "Rest of Aral Lake (in the extended EMEP domain)                  " )
+Country( IC_ASM ) = cc(  "ASM" , 84 ,F, 84, 3  , "Modified remaining Asian areas (in the original EMEP domain)     " )
+Country( IC_ASE ) = cc(  "ASE" , 85 ,F, 85, 6  , "Remaining extended Asian areas (in the extended EMEP domain)     " )
+Country( IC_AOE ) = cc(  "AOE" , 86 ,F, 86, 8  , "Arctic Ocean (in the extended EMEP domain)                       " )
+
+ !New external areas (only in modelling domain):
+ !a) Domains: x = 160-170 y = 1-132 and x =  -16-0  y = 123-170
+Country( IC_RFX ) = cc(  "RFX" , 87 ,F,  87, 12  ,"Extended EMEP-external part of Russian Federation" )
+Country( IC_ASX ) = cc(  "ASX" , 88 ,F,  88, 7   ,"Extended EMEP-external part of Asia              " )
+Country( IC_PAX ) = cc(  "PAX" , 89 ,F,  89, 12  ,"Extended EMEP-external part of Pacific Ocean     " )
+Country( IC_AOX ) = cc(  "AOX" , 90 ,F,  90, 12  ,"Extended EMEP-external part of Arctic Ocean      " )
+
+
+ !b) Domain x = -16-132 y = -11-0
+Country( IC_NAX ) = cc(  "NAX" , 91 ,F,  91, 1  ,"EMEP-external part of North Africa               " )
 
 
   end subroutine Country_Init
