@@ -1,3 +1,6 @@
+================================= rv3_0_6 4th june, Hilde ==============
+Country_ml.f90 updated with the new country codes from Agnes (EECCA countries)
+
 ================================= rv3.0.5, Peter,  Apr 15th 2008  ==============
 
 Output_hourly: put the vertical coordinate for hourly output right.
