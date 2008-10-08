@@ -124,8 +124,8 @@ contains
 
 
     ! wstar for particle deposition, based on Wesely
-    if(Grid%Hd <  0.0 ) then          ! unstable stratification
-        Grid%wstar = (-GRAV * pzpbl(i,j) * Grid%Hd /      &
+    if(Grid%Hd >  0.0 ) then          ! unstable stratification
+        Grid%wstar = ( GRAV * pzpbl(i,j) * Grid%Hd /      &
         (Grid%rho_ref * CP * th(i,j,KMAX_MID,1))) ** (1./3.)
     else
          Grid%wstar = 0.

@@ -1,3 +1,14 @@
+================================= rv3_1_2  Svetlana,  8th Oct 2008======
+
+My_outputs_ml, Sites_ml changed to allow outputs of d_2d variables.
+
+================================= rv3_1_1 ==============================
+
+First bug fixes:
+  sign of Hd test and GRAV changed for wstar calculation - bug spotted
+  by Massimo
+
+  
 ================================= rv3_1 ================================
 
 

@@ -39,12 +39,12 @@ use My_Outputs_ml, only : &  ! for sitesout
       NSITES_MAX, &
       NADV_SITE, NSHL_SITE, NXTRA_SITE, &
       SITE_ADV, SITE_SHL, SITE_XTRA, SITE_XTRA_INDEX, &
-      FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
+      SITE_XTRA_CODE, FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
       NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, N_NOy,  &
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
       FREQ_SONDE, NOy_SPEC
 
-use Derived_ml,        only : d_2d, d_3d, IOU_INST  ! for deriv system
+use Derived_ml,        only : d_2d, d_3d, f_2d, IOU_INST  ! for deriv system
 use Functions_ml,      only : Tpot_2_T              ! Conversion function
 use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom &
                               , i_local, j_local
@@ -65,6 +65,7 @@ use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
 use Par_ml,            only : li0,lj0,li1,lj1 &
                               ,GIMAX,GJMAX &
                               ,GI0,GI1,GJ0,GJ1,me,MAXLIMAX,MAXLJMAX
+use SmallUtils_ml,     only : find_index
 use Tabulations_ml,    only : tab_esat_Pa
 use TimeDate_ml,       only : current_date
 use KeyValue_ml,       only : KeyVal, KeyValue, LENKEYVAL
@@ -154,7 +155,7 @@ contains
         sonde_x, sonde_y, sonde_z, sonde_n, &
         sonde_name)
 
-  call set_species(SITE_ADV,SITE_SHL,SITE_XTRA,site_species)
+  call set_species(SITE_ADV,SITE_SHL,SITE_XTRA_CODE,site_species)
   call set_species(SONDE_ADV,SONDE_SHL,SONDE_XTRA,sonde_species)
 
   if ( MY_DEBUG ) then
@@ -387,7 +388,8 @@ end subroutine Init_sites
   integer :: nglob, nloc, ix, iy,iz, ispec    ! Site indices
   integer :: nn                               ! species index
   logical, save :: my_first_call = .true.     ! for debugging
-  integer :: d2index                          ! index for d_2d field access
+  integer           :: d2index                ! index for d_2d field access
+  character(len=15) :: d2code                 ! parameter code -- # --
 
   real,dimension(NOUT_SITE,NSITES_MAX) :: out ! for output, local node
 
@@ -444,9 +446,11 @@ end subroutine Init_sites
           case ( "hmix" ) 
             out(nn,i)   = pzpbl(ix,iy)
 
-          case ( "D2D" )    
-            d2index     = SITE_XTRA_INDEX(ispec)
+          case ( "D2D" )
+            d2code       = SITE_XTRA_CODE (ispec)
+            d2index      = find_index(d2code, f_2d(:)%name)
             out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
+   
         end select 
         call CheckStop( abs( out(nn,i) )  > 1.0e99, "ABS(SITES OUT) TOO BIG" )
      end do
@@ -715,7 +719,7 @@ end subroutine siteswrt_sondes
      do n = 1, nglobal
         write(unit=io_num, fmt="(a20,i5,3i3,i5)" ) &
               s_name(n), current_date
-        write(unit=io_num, fmt="(5es11.3)" ) g_out(:,n)
+        write(unit=io_num, fmt="(8es11.3)" ) g_out(:,n)
      end do ! n
 
   end if ! me

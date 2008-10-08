@@ -71,28 +71,34 @@ integer, private :: isite              ! To assign arrays, if needed
 integer, public, parameter :: &
      NSITES_MAX =    99         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
-    ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+    ,NADV_SITE  =    2 &  !NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
-    ,NXTRA_SITE =    2            ! No. Misc. met. params  ( now T2)
+    ,NXTRA_SITE =    5            ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
-    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
+    SITE_ADV =  (/ IXADV_NO, IXADV_NO2/) 
+!    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
     SITE_SHL =  (/ IXSHL_OH /)                    ! More limited
 
 ! Extra parameters - need to be coded in Sites_ml also. So far
-! we can choose from T2, or th (pot. temp.)
+! we can choose from hmix, T2, or th (pot. temp.) or d_2d fields.
+!  d_2d fields can be accessed from Derived_ml by setting common index 
+!  "D2D" in SITE_XTRA and the actual field name (as defined in Derived_ml) 
+!  in SITE_XTRA_CODE (e.g. "D2_PM25 " or "D2_SIA") :
 
-   character(len=10), public, parameter, dimension(NXTRA_SITE) :: &
-     SITE_XTRA=  (/ "hmix    ", "th      "/) 
-!    SITE_XTRA=  (/ "hmix    ", "Vg_ref  ", "Vg_1m   " /) 
+!** IMPORTANT!! Make sure the correspondence between selected for output 
+!** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
- !    - can access d_2d fields through index here, by
- !     setting "D2D" above and say D2_FSTCF0 here:
+   character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
+    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        ", "D2D    ", "D2D   "/) 
 
+   character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
+    SITE_XTRA_CODE= (/ "hmix ", "th  ", "D2_PM25_H2O", "D2_PM25", "D2_SIA"/)  
+   
    integer,           public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA_INDEX=  (/     0,        0 /)     ! Height at mid-cell
+    SITE_XTRA_INDEX=  (/  0,    0,   0,  0,  0 /)
 
 
 
