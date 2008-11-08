@@ -1,3 +1,21 @@
+================================= rv3_1_3  Dave,  8th Nov 2008======
+
+ecosystem dry deps changed, to be per m2 of ecosystem
+
+*Note change of output names: 
+   DDEP_SOX   is now  DDEP_SOX_m2Grid
+   DDEP_OXSCF is now  DDEP_SOX_m2CF
+ etc.
+
+My_DryDep - use of AreaCF, AreaDF, etc., plus new names
+My_Derived_ml  - Use of new names
+Derived_ml     - Use of new names
+
+DryDep_ml  - added arguments to call to Add_ddep
+Cellmet_ml - set %coverage, LAI etc to zero before assigning .. safety measure
+to allow use of full array from 1..NLANDUSE.
+
+
 ================================= rv3_1_2  Svetlana,  8th Oct 2008======
 
 My_outputs_ml, Sites_ml changed to allow outputs of d_2d variables.

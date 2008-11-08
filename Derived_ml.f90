@@ -213,6 +213,8 @@ private
           num_deriv2d = LenArray(wanted_deriv2d,NOT_SET_STRING)
           num_deriv3d = LenArray(wanted_deriv3d,NOT_SET_STRING)
  
+          call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
+
      if ( num_deriv2d > 0 ) then
           if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 2d: ", num_deriv2d
           allocate(f_2d(num_deriv2d),stat=alloc_err)
@@ -224,6 +226,7 @@ private
           call CheckStop(alloc_err,"Allocation of nav_2d")
           nav_2d = 0
      end if
+     if(MY_DEBUG) write(*,*) "ALLOCATE pre D3D", me, num_deriv2d
      if ( num_deriv3d > 0 ) then
           if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
           allocate(f_3d(num_deriv3d),stat=alloc_err)
@@ -323,27 +326,27 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mgN/m2")
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
 
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSW","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCF","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSDF","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSCR","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSSN","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXSWE","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSW","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNDF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNCR","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNSN","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXNWE","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSW","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNDF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNCR","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNSN","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDNWE","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX_m2Grid","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN_m2Grid","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN_m2Grid","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2SW","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2CF","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2DF","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2CR","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2SN","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2WE","mgS/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2SW","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2CF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2DF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2CR","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2SN","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2WE","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2SW","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2CF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2DF","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2CR","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2SN","mgN/m2")
+call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2WE","mgN/m2")
 
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
@@ -484,7 +487,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       do i = 1, num_deriv2d
           ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
           f_2d(i) = def_2d(ind)
-          if ( me == 0 .and. MY_DEBUG) write(*,*) "Index f_2d ", i, " = def ", ind
+          if ( me == 0 .and. MY_DEBUG) &
+               write(*,*) "Index f_2d ", i, " = def ", ind,  def_2d(ind)%name
       end do
 
       do i = 1, num_deriv3d
@@ -752,7 +756,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
           case ( "PREC", "WDEP", "DDEP" )
-            if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"PR/DEP d_2d",&
+            if ( debug_flag ) write(*,"(a18,i4,a,a4,es12.3)")"PR/DEP d_2d",&
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case ( "EXT" )

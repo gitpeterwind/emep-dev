@@ -101,9 +101,10 @@ private
 
     integer, public, parameter :: MAX_NUM_DERIV2D = 200
     integer, public, parameter :: MAX_NUM_DERIV3D =   5
-    character(len=12), public, save, &
+    integer, public, parameter :: TXTLEN_DERIV =   15
+    character(len=TXTLEN_DERIV), public, save, &
          dimension(MAX_NUM_DERIV2D) :: wanted_deriv2d = NOT_SET_STRING
-    character(len=12), public, save, &
+    character(len=TXTLEN_DERIV), public, save, &
          dimension(MAX_NUM_DERIV3D) ::  wanted_deriv3d = NOT_SET_STRING
 
     integer, private, save :: mynum_deriv2d
@@ -111,7 +112,7 @@ private
 
  
 
-    character(len=12), public, parameter, dimension(49) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(49) :: &
   D2_SR = (/ &
 !
 !    Particles: components
@@ -147,7 +148,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=12), public, parameter, dimension(7) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
   D2_EXTRA = (/ &
        "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
       ,"D2_REDN     ","D2_SSfi     ","D2_SSco     " &
@@ -165,30 +166,32 @@ private
 
   ! use character arrays to specify which outputs are wanted
 
-   character(len=9), public, parameter, dimension(4) :: &
+   character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
        WDEP_WANTED = (/ "WDEP_PREC", "WDEP_SOX ", "WDEP_OXN ", &
                       "WDEP_RDN " /)   ! WDEP_PM not used
 
   !( waters and wetlands removed:)
 
-   character(len=10), public, parameter, dimension(15) :: &
+   character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
      DDEP_WANTED = (/  &  ! NB: do not remove without removing from My_DryDep too 
-        "DDEP_SOX  ","DDEP_OXN  ","DDEP_RDN  "  &
-       ,"DDEP_OXSCF","DDEP_OXSDF","DDEP_OXSCR","DDEP_OXSSN"  &
-       ,"DDEP_OXNCF","DDEP_OXNDF","DDEP_OXNCR","DDEP_OXNSN"  &
-       ,"DDEP_RDNCF","DDEP_RDNDF","DDEP_RDNCR","DDEP_RDNSN"  &
+        "DDEP_SOX_m2Grid","DDEP_OXN_m2Grid","DDEP_RDN_m2Grid"  &
+       ,"DDEP_SOX_m2CF","DDEP_SOX_m2DF","DDEP_SOX_m2CR","DDEP_SOX_m2SN"  &
+       ,"DDEP_OXN_m2CF","DDEP_OXN_m2DF","DDEP_OXN_m2CR","DDEP_OXN_m2SN"  &
+       ,"DDEP_RDN_m2CF","DDEP_RDN_m2DF","DDEP_RDN_m2CR","DDEP_RDN_m2SN"  &
      /)
 
-     character(len=13), public, parameter, dimension(2) :: &
+     character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
        D3_WANTED = (/ "D3_O3        ","D3_TH        " /)
 
 
+    logical, private, parameter :: MY_DEBUG = .false.
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
    contains
 
  !=========================================================================
   subroutine Init_My_Deriv()
+    integer :: i
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -211,6 +214,11 @@ private
 
      if ( me == 0 ) then
        write(*,*) "Init_My_Deriv, mynum_deriv2d = ", mynum_deriv2d
+       if( MY_DEBUG ) then
+           do i = 1, mynum_deriv2d
+               write(*,*) "DEBUG DERIV2D ", i, mynum_deriv2d, wanted_deriv2d(i)
+           end do
+       end if
        call WriteArray(wanted_deriv2d,mynum_deriv2d," Wanted 2d array is")
        write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
        call WriteArray(wanted_deriv3d,mynum_deriv3d," Wanted 3d array is")

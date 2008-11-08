@@ -596,7 +596,7 @@ module DryDep_ml
       !.. Add DepLoss to budgets if needed:
 
        call Add_ddep(debug_flag,dt_advec,i,j,convfac2,lossfrac,&
-           fluxfrac_adv,c_hvegppb)
+           fluxfrac_adv,c_hvegppb,Sub(:)%coverage)
 
  end subroutine drydep
 

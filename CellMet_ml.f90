@@ -132,6 +132,12 @@ contains
     end if
 
   nlu = LandCover(i,j)%ncodes
+  !ECO08: Added for safety
+  Sub(:)%coverage = 0.0
+  Sub(:)%LAI      = 0.0
+  Sub(:)%SAI      = 0.0
+  Sub(:)%hveg     = 0.0
+
     LULOOP: do ilu= 1, nlu
         lu      = LandCover(i,j)%codes(ilu)
 
