@@ -1,6 +1,10 @@
 ================================= rv3_1_3  Dave,  8th Nov 2008======
 
-ecosystem dry deps changed, to be per m2 of ecosystem
+Ecosystem dry deps changed, to be per m2 of ecosystem
+
+** Note - this changes the values, since before they were per m2 of Grid,
+          not of ecosystem!  No need now to scale anything with landuse
+          data.
 
 *Note change of output names: 
    DDEP_SOX   is now  DDEP_SOX_m2Grid
