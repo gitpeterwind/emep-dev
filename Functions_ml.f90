@@ -392,7 +392,7 @@ module Functions_ml
      integer :: ix1
 
         x1 = (p-PBAS)/PINC
-        ix1 = x1
+        ix1 = floor(x1)
         exf =  tab_exf(ix1) + (x1-ix1)*(tab_exf(ix1+1) - tab_exf(ix1))
 
   end function Exner_nd

@@ -119,7 +119,7 @@ contains
 !======================================================
 
     if ( first_call ) then
-       call makedt(dti,nchem,coeff1,coeff2,cc,dt_advec)
+       call makedt(dti,nchem,coeff1,coeff2,cc)
        first_call = .false.
     endif
 
@@ -200,7 +200,7 @@ contains
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-subroutine  makedt(dti,nchem,coeff1,coeff2,cc,dt_tot)
+subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
 
 !=====================================================================
 ! Makes coefficients for two-step (written by Peter Wind, Febr. 2003)
@@ -214,7 +214,6 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc,dt_tot)
 
  implicit none
 
- real, intent(in) :: dt_tot
  real, dimension(nchemMAX),intent(out) :: dti,coeff1,coeff2,cc
  integer,                  intent(out) :: nchem
 

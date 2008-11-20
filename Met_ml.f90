@@ -217,6 +217,9 @@ module Met_ml
   ! if nhour_first=3 then 
   ! 1=03:00 2=06:00...8=24:00
 
+      character (len = 100)        ::  field_not_found='field_not_found'
+
+
 
 
   public :: MeteoGridRead
@@ -353,31 +356,39 @@ contains
     namefield='u_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,     &
          validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+    
 
     namefield='v_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity,v(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='specific_humidity'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, q(:,:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='sigma_dot'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, sdot(:,:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
     foundsdot = .true.
 
     namefield='potential_temperature'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, th(:,:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='precipitation'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, pr(:,:,:))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='3D_cloudcover'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, cc3d(:,:,:))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     if(trim(validity)/='averaged')then
        if(me==0)write(*,*)'WARNING: 3D cloud cover is not averaged'
@@ -392,33 +403,41 @@ contains
     namefield='surface_pressure'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, ps(:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='temperature_2m'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, t2_nwp(:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='surface_flux_sensible_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, fh(:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
     if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
 
     namefield='surface_flux_latent_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, fl(:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
     if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
 
     namefield='surface_stress'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, tau(:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
     tau=max(0.0,tau)
     if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
 
     namefield='sea_surface_temperature'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, sst(:,:,nr))
-    foundSST = .true.
-!.. Note: this foudSST test doesn't work for NetCDF meteorology yet
-!.. The model will crash if SST is not in the met.file
+    if(validity==field_not_found)then
+       if(me==0)write(*,*)'WARNING: sea_surface_temperature not found '
+       foundSST = .false.
+    else          
+       foundSST = .true.
+    endif
 
   end subroutine Meteoread
 
@@ -3361,17 +3380,26 @@ contains
     real :: scale,offset
     character *100 :: period_read
 
+    validity='                                     ' !initialisation
+    period_read='                                     ' !initialisation
+    scalefactors(1) = 1.0 !default
+    scalefactors(2) = 0.  !default
+
     ndims=3
     if(KMAX==1)ndims=2
     !open an existing netcdf dataset
     call check(nf90_open(path=trim(fileName),mode=nf90_nowrite,ncid=ncFileID))
 
     !get varID:
-    call check(nf90_inq_varid(ncid=ncFileID,name=trim(varname),varID=VarID))
+    status = nf90_inq_varid(ncid=ncFileID,name=trim(varname),varID=VarID)
+    if(status /= nf90_noerr)then
+       validity=field_not_found
+       var=0
+       return
+    endif
+
 
     !get scale factors
-    scalefactors(1) = 1.0 !default
-    scalefactors(2) = 0.  !default
 
     status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
     if(status == nf90_noerr) scalefactors(1) = scale
@@ -3379,8 +3407,6 @@ contains
     if(status == nf90_noerr) scalefactors(2) = offset
 
     !find validity
-    validity='                                     ' !initialisation
-    period_read='                                     ' !initialisation
     status = nf90_get_att(ncFileID, VarID, "validity", period_read  )
     if(status == nf90_noerr)then
        validity  = trim(period_read)

@@ -1,3 +1,19 @@
+================================= rv3_1_4  Peter,  20th Nov 2008======
+
+Only minor changes:
+
+Met_ml: "validity" returned from Getmeteofield gets the value "field_not_found" if the field is not found.
+This can be used to set foundSST=.false. for example, or to stop cleanly.
+
+Solver: removed dt_tot, which was not used anyway.(requested by Martin Schultz)
+
+Functions_ml.f90:  in Exner_nd replaced "ix1 = x1" with "ix1 = floor(x1)"
+It is somewhat clearer, and works also for negative pressure :-)
+
+run.pl: "#PBS -lpmem=2000MB" , gives higher queue priority on stallo.
+
+My_DryDep: Switched off debug flag
+
 ================================= rv3_1_3  Dave,  8th Nov 2008======
 
 Ecosystem dry deps changed, to be per m2 of ecosystem
