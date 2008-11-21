@@ -12,7 +12,7 @@
 # wall time limit of run 
 #PBS -lwalltime=10:00:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
-#PBS -lpmem=200MB
+#PBS -lpmem=2000MB
 # account for billing
 #PBS -A nn2890k
 #___________________________________________________________________
@@ -169,12 +169,12 @@ if ($STALLO){
 }
 # DataDir    = Main general Data directory
  
-my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data
+my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data 
 #my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
 
 my $METformat="felt";
 #my $METformat="cdf";
-$MetDir = "/global/work/mifapw/emep/meteo$year"  if $METformat eq "cdf";
+$MetDir = "/global/work/mifaab/emep/Data/Parlam-PS/metcdf/$year"  if $METformat eq "cdf";
 
 
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
