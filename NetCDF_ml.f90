@@ -120,7 +120,6 @@ use Par_ml,           only : GIMAX,GJMAX,IRUNBEG,JRUNBEG
 use ModelConstants_ml,only : KMAX_MID   
 use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
                              Asc2D, hr_out      ! Required outputs
-!ds 16/12/2003use My_Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
 use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
 
 integer,  intent(in) :: iotyp
@@ -129,7 +128,7 @@ integer,  intent(in) :: iotyp
 integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 integer :: ih
 
-!write(*,*)'Init_new_netCDF ',fileName,iotyp
+if( MY_DEBUG ) write(*,*)'Init_new_netCDF ',fileName,iotyp
 call CloseNetCDF
 
 if(iotyp==IOU_YEAR)then
@@ -179,7 +178,7 @@ else
 period_type = 'unknown'
 call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 endif
-
+if( MY_DEBUG ) write(*,*) "Finished Init_new_netCDF", fileName
 end subroutine Init_new_netCDF
 
 subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf,RequiredProjection)
@@ -419,6 +418,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   call check(nf90_put_var(ncFileID, iEMEPVarID, xcoord(1:GIMAXcdf)) )
   call check(nf90_put_var(ncFileID, jEMEPVarID, ycoord(1:GJMAXcdf)) )
 
+if(MY_DEBUG) write(*,*) "NetCDF: Starting long/lat defs"
 !Define longitude and latitude
   call GlobalPosition !because this may not yet be done if old version of meteo is used
   if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
@@ -464,7 +464,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
   endif
 
   endif
-!  write(*,*)'lon lat written'
+if(MY_DEBUG) write(*,*) "NetCDF: lon lat written"
 
 !Define vertical levels
   if(KMAXcdf==KMAX_MID)then
@@ -482,7 +482,7 @@ write(*,*)'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,J
 
   call check(nf90_close(ncFileID))
 
-  write(*,*)'file created'
+  write(*,*)'NetCDF: file created, end of CreatenetCDFfile'
 
 end subroutine CreatenetCDFfile
 
@@ -504,7 +504,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
   !NB if the file fileName_given exist (also from earlier runs) it will be appended
 
-  character*18 :: varname
+  !dsDec08 character*18 :: varname
+  character(len=len(def1%name)) :: varname
   character*8 ::lastmodified_date
   character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
   integer :: varID,new,nrecords,ncFileID=closedID
@@ -615,6 +616,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   else
      return
   endif
+  if(MY_DEBUG) write(*,*)'Out_NetCDF: filename ', fileName
 
   call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3") 
   
@@ -758,9 +760,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      if(status == nf90_noerr) then     
 !             print *, 'variable exists: ',varname
+        if (MY_DEBUG) write(6,*) 'Out_NetCDF: variable exists: ',varname!,nf90_strerror(status)
      else
-        !ds print *, 'creating variable: ',varname!,nf90_strerror(status)
-        if (MY_DEBUG) write(6,*) 'creating variable: ',varname!,nf90_strerror(status)
+        if (MY_DEBUG) write(6,*) 'Out_NetCDF: creating variable: ',varname!,nf90_strerror(status)
         call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      endif
 
@@ -884,6 +886,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      endif
   endif !me=0
 
+  if(MY_DEBUG) write(*,*)'Out_NetCDF: FINISHED '
   return
 end subroutine Out_netCDF
 
