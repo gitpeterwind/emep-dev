@@ -1,3 +1,12 @@
+================================= rv3_1_5  Dave,  1st Dec 2008======
+
+NetCDF_ml, small change to allow longer variable names, e.g.
+DDEP_aNO3_m2Conif:
+
+   !dsDec08 character*18 :: varname
+   character(len=len(def1%name)) :: varname
+
++ some extra use of MYDEBUG
 ================================= rv3_1_4  Peter,  20th Nov 2008======
 
 Only minor changes:
