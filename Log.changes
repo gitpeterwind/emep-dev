@@ -1,3 +1,7 @@
+================================= rv3_1_6  Hilde,  2nd Dec 2008======
+Set New meteorology directories (Parlam-PS with snowdepths and ice fraction) in run.pl.
+Bug in LandDefs (is_veg) fixed.Mostly affects dry dep velocities of coarse particles over urban areas.
+
 ================================= rv3_1_5  Dave,  1st Dec 2008======
 
 NetCDF_ml, small change to allow longer variable names, e.g.
