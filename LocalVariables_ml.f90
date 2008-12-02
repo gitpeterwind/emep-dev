@@ -60,6 +60,9 @@ module LocalVariables_ml
     real    :: wetarea     ! Fraction of grid which is wet
     real    :: cloud       ! Cloud-cover (fraction)
     integer :: snow        ! 1=snow present, 0 = no snow
+!hf snow
+    real     :: sdepth        ! snowdepth (m)
+    real     :: ice        ! ice (%)
     real    :: psurf       ! Surface pressure (Pa)
     real    :: z_ref       !  Height of grid centre (m)
     real    :: DeltaZ      !  Depth of grid centre (m)
@@ -83,6 +86,8 @@ module LocalVariables_ml
     real :: Ra_2m             !
     real :: Ra_3m             !
     real :: so2nh3ratio       !  for CEH deposition scheme
+!hf CoDep
+    real :: so2nh3ratio24hr       !  for new CEH SO2 deposition scheme
     real :: &    !Not quite sure how many of these we need. 
       solar     = NOT_SET   &  ! => irradiance (W/m^2)
      ,Idirectn  = NOT_SET   &  ! => irradiance (W/m^2), normal to beam
@@ -111,8 +116,9 @@ module LocalVariables_ml
        ,SGS  =  INOT_SET  & ! Start, growing seasons (day num)
        ,EGS  =  INOT_SET    ! End, growing seasons (day num)
    !*
+!hf XX added is_veg,is _ice
     logical :: &
-        is_forest, is_water 
+        is_forest, is_water , is_veg, is_ice 
    !*
     real :: &
      t2C       = NOT_SET &! Surface (2m) temperature in degrees C
