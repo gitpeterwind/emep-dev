@@ -190,7 +190,9 @@ contains
             LandType(n)%is_crop  = ( LandInput%type == "ECR"  )
             LandType(n)%is_seminat  = ( LandInput%type == "SNL"  )
             LandType(n)%is_bulk   =  LandInput%type == "BLK" 
-            LandType(n)%is_veg    =  LandInput%type /= "U" .and. &
+!hf bugfix            LandType(n)%is_veg    =  LandInput%type /= "U" .and. &
+!hf bugfix                  LandInput%hveg_max > 0.01   
+           LandType(n)%is_veg    =  LandInput%code /= "U" .and. &
                   LandInput%hveg_max > 0.01   ! Excludes water, ice, desert 
        end do
        if ( me == 0 ) close(unit=IO_TMP)
