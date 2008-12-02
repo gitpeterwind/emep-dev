@@ -1,3 +1,7 @@
+================================= rv3_1_7  Hilde,  2nd Dec 2008======
+LocalVariables: Added is_veg,is_ice, sdepth, ice so2nh3ratio24hr
+SubMet_ml: is_veg and is_ice set
+
 ================================= rv3_1_6  Hilde,  2nd Dec 2008======
 Set New meteorology directories (Parlam-PS with snowdepths and ice fraction) in run.pl.
 Bug in LandDefs (is_veg) fixed.Mostly affects dry dep velocities of coarse particles over urban areas.
