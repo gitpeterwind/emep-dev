@@ -121,6 +121,9 @@ contains
         Sub(iL)%LE     = Grid%LE         ! First guess = NWP value
         Sub(iL)%t2     = Grid%t2         ! First guess = NWP value
         Sub(iL)%t2C    = Grid%t2C        ! First guess = NWP value
+!hf is_veg and is_ice added
+        Sub(iL)%is_veg = LandType(iL)%is_veg
+        Sub(iL)%is_ice = LandType(iL)%is_ice
 
         Sub(iL)%is_water  = LandType(iL)%is_water
         Sub(iL)%is_forest = LandType(iL)%is_forest
