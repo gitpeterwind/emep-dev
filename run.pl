@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-
 #Common script for Njord and Snykov. Choose $NJORD=1 or $SNYKOV=1 or $STALLO=1
 
 #___________________________________________________________________
@@ -122,7 +121,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "1999";
+my $year = "2006";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -148,19 +147,21 @@ my $SEMEENA    = "mifasv";
 my $AGNES      = "nyiri";      
 my $ALVARO      = "alvarov";
 
-my $USER        =  $PETER;
+my $USER        =  $HILDE;
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($STALLO){
     $HOMEROOT       = "/home";      
     $WORKROOT     = "/global/work";      
     $DataDir       = "/global/work/mifapw/emep/Data";
-    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
+#    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
+    $MetDir        = "/global/work/mifaab/emep/Data/Parlam-PS/metdata/$year" ;
 } elsif($SNYKOV) {
     $HOMEROOT       = "/home";      
     $WORKROOT     = "/global/work";      
     $DataDir       = "/home/mifapw/emep_common/Data";
     $MetDir        = "$DataDir/EMEP/metdata/$year" ;
+
 } else {
     $HOMEROOT       = "/home/ntnu";      
     $WORKROOT     = "/work";      
@@ -190,7 +191,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3";
+    $testv       = "rv3_1_6";
     
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
@@ -227,10 +228,11 @@ my @runs        = ( $scenario );
 
 
 #EMISSIONS
-my $EMIS_INP = "$HOMEROOT/$HEIKO/Emissions/ModelInputModruns/Modrun06";
-$EMIS_INP = "$DATA_LOCAL/Modrun06" if $STALLO;
-my $emisdir = "$EMIS_INP/2006-Trend${year}-V7";
-$emisdir = "$EMIS_INP/2006-Trend2004-V7" if $year > 2004;
+$EMIS_INP = "$DATA_LOCAL/Modrun06" if $year < 2005;
+$EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
+my $emisd ir = "$EMIS_INP/2006-Trend${year}-V7";
+#$emisdir = "$EMIS_INP/2006-Trend2004-V7" if $year < 2005;
+my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2" if $year > 2005;
 my $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
@@ -274,13 +276,13 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "01";       # first month, use 2-digits!
-my $mm2   =  "01";       # last month, use 2-digits!
+my $mm1   =  "07";       # first month, use 2-digits!
+my $mm2   =  "07";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 2;       # for testing, simply reset here
+#$NTERM = 2;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -474,7 +476,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
     $ifile{"$DataDir/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-    $ifile{"$DataDir/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+#    $ifile{"$DataDir/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+    $ifile{"/home/mifahf/Unify/Unimod.rv3_1_2.CoDep.snow/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$DATA_LOCAL/sondes.dat"} = "sondes.dat";
   
