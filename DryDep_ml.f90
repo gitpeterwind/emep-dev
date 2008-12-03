@@ -59,6 +59,7 @@ module DryDep_ml
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
+                          Add_Vg, &  ! ECO08, for Landuse_Vg3m
                           Dep        ! Mapping (type = depmap)
 
 
@@ -208,6 +209,7 @@ module DryDep_ml
  !  landuse, iL:
 
       real, dimension(NDRYDEP_TOT,NLUMAX):: Vg_ref_iL
+      real, dimension(NDRYDEP_TOT,NLANDUSE):: Landuse_Vg3m  ! Vg for output, LC specific
       real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
       integer :: iL_used(NLUMAX), nlu_used
       real :: wet, dry    ! Fractions
@@ -283,6 +285,7 @@ module DryDep_ml
     Grid_Vg_ref(:) = 0.0
     Grid_Vg_3m(:) = 0.0
     Vg_ref_iL(:,:) = 0.0
+    Landuse_Vg3m(:,:) = 0.0
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
     Sumland  = 0.0
@@ -393,6 +396,7 @@ module DryDep_ml
           end if ! CDEP_NO2
 
            Vg_ref_iL(n,iiL) = Vg_ref(n)
+           Landuse_Vg3m(n,iL) = Vg_3m(n)  ! Note iL, not iiL 
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + L%coverage * Vg_ref(n)
            Grid_Vg_3m(n)  = Grid_Vg_3m(n)  + L%coverage * Vg_3m(n)
 
@@ -597,6 +601,7 @@ module DryDep_ml
 
        call Add_ddep(debug_flag,dt_advec,i,j,convfac2,lossfrac,&
            fluxfrac_adv,c_hvegppb,Sub(:)%coverage)
+       call Add_Vg(debug_flag,i,j,Grid_Vg_3m,Landuse_Vg3m)
 
  end subroutine drydep
 

@@ -63,7 +63,12 @@ module Derived_ml
 
 use My_Derived_ml, only : &
             wanted_deriv2d, wanted_deriv3d  &! names of wanted derived fields
+           ,TXTLEN_DERIV    & ! length of names
            ,Init_My_Deriv, My_DerivFunc
+use My_Derived_ml,  only : & !EcoDep
+      nOutDDEP, OutDDep, nOutVg, OutVg
+
+
 
 use CheckStop_ml,      only: CheckStop
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
@@ -112,7 +117,7 @@ private
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
     type, public:: Deriv
-       character(len=9) :: class ! Type of data, e.g. ADV or VOC
+       character(len=10) :: class ! Type of data, e.g. ADV or VOC
        logical  :: avg      ! True => average data (divide by nav at end),
                             !     else accumulate over run period
        integer  :: index    ! index in concentation array, or other
@@ -122,7 +127,7 @@ private
        logical  :: year     ! True when yearly averages wanted
        logical  :: month    ! True when monthly averages wanted
        logical  :: day      ! True when daily averages wanted
-       character(len=15) :: name ! Name of the variable (for netCDF output)
+       character(len=TXTLEN_DERIV) :: name ! Name of the variable (for netCDF output)
        character(len=10) :: unit ! Unit (writen in netCDF output)
     end type Deriv
 
@@ -131,7 +136,7 @@ private
   ! Tip. For unix users, do "grep AddDef | grep -v Is3D | wc" or similar
   ! to help get the number of these:
    integer, private, parameter ::  &
-       MAXDEF_DERIV2D =100 & ! Max. No. 2D derived fields to be defined
+       MAXDEF_DERIV2D =150 & ! Max. No. 2D derived fields to be defined
       ,MAXDEF_DERIV3D = 17   ! Max. No. 3D derived fields to be defined
 
    integer, public, save :: num_deriv2d, num_deriv3d
@@ -206,7 +211,7 @@ private
     subroutine Init_Derived()
 
         integer :: alloc_err
-          if(me==0 .and. MY_DEBUG) write(*,*) "INITIALISE My DERIVED STUFF"
+          if(me==0 .and. MY_DEBUG) write(*,*) "INIT My DERIVED STUFF"
           call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
          ! get lengths of wanted arrays (excludes notset values)
@@ -216,7 +221,8 @@ private
           call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
 
      if ( num_deriv2d > 0 ) then
-          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 2d: ", num_deriv2d
+          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 2d:",&
+                                                  num_deriv2d
           allocate(f_2d(num_deriv2d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_2d")
           allocate(d_2d(num_deriv2d,MAXLIMAX,MAXLJMAX,LENOUT2D),stat=alloc_err)
@@ -228,7 +234,8 @@ private
      end if
      if(MY_DEBUG) write(*,*) "ALLOCATE pre D3D", me, num_deriv2d
      if ( num_deriv3d > 0 ) then
-          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 3d: ", num_deriv3d
+          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 3d: ",&
+                                                 num_deriv3d
           allocate(f_3d(num_deriv3d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_3d")
           allocate(d_3d(num_deriv3d,MAXLIMAX,MAXLJMAX,KMAX_MID,LENOUT3D),&
@@ -292,12 +299,15 @@ private
     real, save    :: ugN = atwN*PPBINV/ATWAIR
     real, save    :: ugSO4, ugHCHO, ugCH3CHO
     real, save    :: ugPMad, ugPMde, ugSS  !advected and derived PM's & SeaS
+    real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
+
+    integer :: ndep, nVg  ! ECO08
 
 
   ! - for debug  - now not affecting ModelConstants version
    integer, dimension(MAXLIMAX) :: i_fdom
    integer, dimension(MAXLJMAX) :: j_fdom
-   integer :: ind
+   integer :: ind, idebug
 
 
     !   same mol.wt assumed for PPM25 and PPMco
@@ -319,34 +329,40 @@ call AddDef( "PREC ", F, -1, 1.0,   F  , F  ,T ,T ,T ,"WDEP_PREC","mm")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mgS/m2")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mgN/m2")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mgN/m2")
-
-    ! Dry dep. --includes fields for ecosystem specific--- 
-    ! ecosystem codes: SW = sea/water, CF = conif forest, DF = decid forest, 
-    !                SN = seminatural (grass/moorlande/tundra)
+! Hard-coded for ECO08 - will rewrite later as with DDEP
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SO2","mgS/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SO4","mgS/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_HNO3","mgN/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNO3","mgN/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_pNO3","mgN/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_NH3","mgN/m2")
+call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
 
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_SOX_m2Grid","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_OXN_m2Grid","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"DDEP_RDN_m2Grid","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2SW","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2CF","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2DF","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2CR","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2SN","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_SOX_m2WE","mgS/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2SW","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2CF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2DF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2CR","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2SN","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_OXN_m2WE","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2SW","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2CF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2DF","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2CR","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2SN","mgN/m2")
-call AddDef( "DDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,F ,"DDEP_RDN_m2WE","mgN/m2")
+!ECO08:
+! Compound-specific depositions:
+  
+! We process the various combinations of gas-species and ecosystem:
+! (e.g. for D2_SO2_m2SN)
+
+  do ndep = 1, nOutDDep
+                 !code avg? ind scale rho Inst Yr Mn Day
+    call AddDef( "DDEP", F, -1, 1.0e6, F  , F  ,T ,T ,F , &
+           OutDDep(ndep)%name,OutDDep(ndep)%units)
+    if(MY_DEBUG .and. me==0) write(6,*) "OutDDep ADDED ", &
+          ndep, OutDDep(ndep)%name
+  end do
+     
+
+  do nVg = 1, nOutVg
+                 !code avg?            ind scale rho Inst Yr Mn Day
+    call AddDef( "VG", T, OutVg(nVg)%Adv, cm_s, F  , F  ,T ,T ,T , &
+           OutVg(nVg)%name,OutVg(nVg)%units)
+    if(MY_DEBUG .and. me==0) write(6,*) "OutVg ADDED ", &
+          nVg, OutVg(nVg)%name
+  end do
+     
 
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
@@ -393,6 +409,7 @@ call AddDef( "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")
 ! drydep
 !   set as "external" parameters - ie set outside Derived subroutine
 !      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
+
 call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")
 call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")
 call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")
@@ -483,12 +500,23 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
      ! Get indices of wanted fields in larger def_xx arrays:
-
       do i = 1, num_deriv2d
           ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
+     if ( ind>0) then
           f_2d(i) = def_2d(ind)
+     else
+         write(*,*) "OOOPS", wanted_deriv2d(i)
+         if( me == 0 ) then
+             do idebug = 1, Nadded2d
+                write (*,*) "XXX ", num_deriv2d, Nadded2d, &
+                   size(def_2d(:)%name ),idebug, def_2d(idebug)%name 
+             end do
+        end if
+        call CheckStop("OOPS STOPPED")
+     end if
           if ( me == 0 .and. MY_DEBUG) &
-               write(*,*) "Index f_2d ", i, " = def ", ind,  def_2d(ind)%name
+               write(*,*) "Index f_2d ", i, " = def ", ind,  def_2d(ind)%name,&
+                def_2d(ind)%unit
       end do
 
       do i = 1, num_deriv3d
@@ -496,6 +524,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           f_3d(i) = def_3d(ind)
           if ( me == 0 .and. MY_DEBUG) write(*,*) "Index f_3d ", i, " = def ", ind
       end do
+
 
    !Initialise to zero
 
@@ -755,8 +784,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               endif
 
 
-          case ( "PREC", "WDEP", "DDEP" )
-            if ( debug_flag ) write(*,"(a18,i4,a,a4,es12.3)")"PR/DEP d_2d",&
+          case ( "PREC", "WDEP", "DDEP", "VG" )
+            if ( debug_flag ) write(*,"(a,i4,a,a4,es12.3)")"PR/DEP/VG d_2d ",&
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case ( "EXT" )

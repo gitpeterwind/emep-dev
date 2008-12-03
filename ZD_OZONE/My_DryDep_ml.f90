@@ -35,16 +35,24 @@ module My_DryDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- use CheckStop_ml,  only : CheckStop
+ use GenChemicals_ml, only : species
+ use CheckStop_ml,  only : CheckStop, StopAll
  use Derived_ml,    only : f_2d,   d_2d, IOU_INST
+ use My_Derived_ml,  only : &
+   nOutDDep, DDEP_LCS , OutDDep, nOutVg, OutVg   &
+  ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
+  ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
+ use GenChemicals_ml,    only : species 
  use GenSpec_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
+ use GenSpec_shl_ml,     only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
  use LandDefs_ml,        only : LandDefs, LandType
  use Landuse_ml,         only : WheatGrowingSeason
  use LocalVariables_ml,  only : Grid  !=> izen  integer of zenith angle
  use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON
+use Par_ml, only: me ! Vds Ndep
  use PhysicalConstants_ml, only : AVOG
- use SmallUtils_ml,      only: find_index
+ use SmallUtils_ml,      only: find_index, NOT_FOUND
  use StoFlux_ml,         only : unit_flux, lai_flux, leaf_flux
  use TimeDate_ml,        only : current_date
  use Wesely_ml
@@ -53,6 +61,7 @@ module My_DryDep_ml    ! DryDep_ml
 
   public :: Init_DepMap
   public :: Add_ddep
+  public :: Add_Vg
 
 
   !/** Variables used in deposition calculations
@@ -60,12 +69,9 @@ module My_DryDep_ml    ! DryDep_ml
   ! DDEP_xx gives the index that will be used in the EMEP model
   ! WES_xx gives the index of the Wesely gas to which this corresponds
 
-
   integer, private, save :: &
-    DDEP_SOX,   DDEP_OXN,   DDEP_RDN,  &
-    DDEP_SOXCF, DDEP_SOXDF, DDEP_SOXCR, DDEP_SOXSN,  &
-    DDEP_OXNCF, DDEP_OXNDF, DDEP_OXNCR, DDEP_OXNSN,  &
-    DDEP_RDNCF, DDEP_RDNDF, DDEP_RDNCR, DDEP_RDNSN,  &
+!    DDEP_SOX,   DDEP_OXN,   DDEP_RDN,  &
+!    D2_VddACC, D2_VddCOA, & !ECO08 addition
     D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
     D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
     iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes
@@ -137,6 +143,16 @@ module My_DryDep_ml    ! DryDep_ml
 
    real, public, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
 
+  ! Maps from adv index to one of calc indices
+   real, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc ! ECO08
+
+  ! depositions are calculated to the following landuse classes, where
+  ! e.g. conif may include both temperate and Medit.
+   character(len=7), private, dimension(5), parameter :: &
+    DEP_RECEIVERS = (/ "Grid", "Conif", "Decid", "Crops", "Seminat" /)
+   integer, private, parameter :: &
+    FULLGRID=1, CONIF=2, DECID=3, CROP=4, SEMINAT=5
+   integer, public, parameter :: GRID_LC=888 ! Land-code to mark full grid
 
    logical, private, parameter :: MY_DEBUG = .false.
    logical, private, parameter :: DEBUG_ECO = .false.
@@ -145,8 +161,8 @@ module My_DryDep_ml    ! DryDep_ml
 contains
   subroutine Init_DepMap
    real :: cms = 0.01     ! Convert to m/s
-   integer, dimension(37) :: check_vals  ! Tmp safety check array
-   integer :: icheck
+   integer, dimension(22) :: check_vals  ! Tmp safety check array
+   integer :: icheck, iadv, i, i2, n, ndep
 
  ! .... Define the mapping between the advected species and
  !      the specied for which the calculation needs to be done.
@@ -174,29 +190,47 @@ contains
    Dep(21) =  depmap( IXADV_SSco,  CDEP_COA, -1. )
    Dep(22) =  depmap( IXADV_Pb210,  CDEP_FIN, -1. )
 
+
+!#######################  ECO08 new mappng  #######################
+  do i = 1, NDRYDEP_ADV  ! 22
+      iadv = Dep(i)%adv
+      DepAdv2Calc(iadv) = Dep(i)%calc
+ end do
+  
+! We process the various combinations of gas-species and ecosystem:
+! starting with DryDep, e.g. DDEP_SO2_m2CF
+
+  do ndep = 1, nOutDDep
+
+    OutDdep(ndep)%f2d  = find_index(OutDdep(ndep)%name ,f_2d(:)%name)
+    OutDdep(ndep)%LC   = find_index(OutDdep(ndep)%txt ,DEP_RECEIVERS)
+
+    if(MY_DEBUG .and. me==0) write(6,*) "OUTDdep ", ndep, &
+       OutDdep(ndep)%name,OutDdep(ndep)%txt,"=>"&
+          ,OutDdep(ndep)%LC, OutDdep(ndep)%f2d
+    call CheckStop( OutDDep(ndep)%f2d < 1, &
+        "OutDDep-f2d Error " // OutDDep(ndep)%name)
+    call CheckStop( OutDDep(ndep)%LC < 1, &
+        "OutDDep-LC Error " // OutDDep(ndep)%name)
+  end do
+     
+  do ndep = 1, nOutVg
+
+     OutVg(ndep)%LC = find_index( OutVg(ndep)%txt, LandDefs(:)%code )
+     if( OutVg(ndep)%txt == "Grid") OutVg(ndep)%LC = GRID_LC
+     OutVg(ndep)%f2d = find_index( OutVg(ndep)%name, f_2d(:)%name )
+
+     if(MY_DEBUG .and. me==0) write(6,*) "OUTVG ", ndep, &
+         OutVg(ndep)%name,OutVg(ndep)%txt,"=>",&
+           OutVg(ndep)%LC, OutVg(ndep)%f2d
+
+     call CheckStop( OutVg(ndep)%LC < 1, &
+          "OutVg-LC Error " // OutVg(ndep)%name)
+     call CheckStop( OutVg(ndep)%f2d < 1, &
+          "OutVg-f2d Error " // OutVg(ndep)%name)
+  end do
+
 !#######################  NEW define indices here #######################
-
-print *, "DDEP_FNAMES CHECKLEN = ", size(f_2d(:)%scale)
-print *, "DDEP_FNAMES CHECK = ", f_2d
-DDEP_SOX   = find_index("DDEP_SOX_m2Grid",f_2d(:)%name)
-print *, "DDEP_SOX CHECK = ", DDEP_SOX
-DDEP_OXN   = find_index("DDEP_OXN_m2Grid",f_2d(:)%name)
-DDEP_RDN   = find_index("DDEP_RDN_m2Grid",f_2d(:)%name)
-
-DDEP_SOXCF = find_index("DDEP_SOX_m2CF",f_2d(:)%name)
-DDEP_SOXDF = find_index("DDEP_SOX_m2DF",f_2d(:)%name)
-DDEP_SOXCR = find_index("DDEP_SOX_m2CR",f_2d(:)%name)
-DDEP_SOXSN = find_index("DDEP_SOX_m2SN",f_2d(:)%name)
-
-DDEP_OXNCF = find_index("DDEP_OXN_m2CF",f_2d(:)%name)
-DDEP_OXNDF = find_index("DDEP_OXN_m2DF",f_2d(:)%name)
-DDEP_OXNCR = find_index("DDEP_OXN_m2CR",f_2d(:)%name)
-DDEP_OXNSN = find_index("DDEP_OXN_m2SN",f_2d(:)%name)
-
-DDEP_RDNCF = find_index("DDEP_RDN_m2CF",f_2d(:)%name)
-DDEP_RDNDF = find_index("DDEP_RDN_m2DF",f_2d(:)%name)
-DDEP_RDNCR = find_index("DDEP_RDN_m2CR",f_2d(:)%name)
-DDEP_RDNSN = find_index("DDEP_RDN_m2SN",f_2d(:)%name)
 
 D2_AFSTDF0 = find_index("D2_AFSTDF0",f_2d(:)%name)
 D2_AFSTDF16 = find_index("D2_AFSTDF16",f_2d(:)%name)
@@ -229,10 +263,6 @@ iam_beech   = find_index("IAM_DF",LandDefs(:)%code)
 iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
 !####################### ds END of define indices #######################
   check_vals = (/  &
-    DDEP_SOX,   DDEP_OXN,   DDEP_RDN,  &   !3
-    DDEP_SOXCF, DDEP_SOXDF, DDEP_SOXCR, DDEP_SOXSN,  & !4
-    DDEP_OXNCF, DDEP_OXNDF, DDEP_OXNCR, DDEP_OXNSN,  & !4
-    DDEP_RDNCF, DDEP_RDNDF, DDEP_RDNCR, DDEP_RDNSN,  & !4
     D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & !4
     D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,& !3
     iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes !3
@@ -240,20 +270,22 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
     D2_EUAOT30WH, D2_EUAOT40WH, D2_EUAOT30DF, D2_EUAOT40DF, & !4
     D2_UNAOT30WH, D2_UNAOT40WH, D2_UNAOT30DF, D2_UNAOT40DF, & !4
     D2_MMAOT40WH, D2_MMAOT30WH & !2
-  /) ! => 37
+  /) ! => 37 - 12 -> 25
     ! Will re-write whole subroutine later to avoid individual indices, but  
     ! for now, do:
-     do icheck = 1, 37
-        print *, "CHECKING ", icheck, check_vals(icheck), "DDEP_SOX ", DDEP_SOX
+     do icheck = 1, 22
         call CheckStop( check_vals(icheck) < 1 , "D2D CHECKVAL! " )
      end do
      call CheckStop( any(check_vals < 1) , "D2D CHECKVAL! " )
  
+     if(me==0) write(6,*) "Init_DepMap D2D FINISHED"
+     call CheckStop( icheck < 0 , "D2D STOPPER! " )
 
   end subroutine Init_DepMap
 
   !<==========================================================================
-  subroutine Add_ddep(debug_flag,dt,i,j,convfac,lossfrac,fluxfrac,c_hvegppb,coverage)
+  subroutine Add_ddep(debug_flag,dt,i,j,convfac,lossfrac,fluxfrac,&
+           c_hvegppb,coverage)
 
   !<==========================================================================
      ! Adds deposition losses to ddep arrays
@@ -264,25 +296,17 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
      real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      real, dimension(:), intent(in) ::  coverage    ! dim (NLANDUSE), =fraction
-     integer :: n, nadv, ihh, idd, imm
+     integer :: n, nadv, nadv2, ihh, idd, imm
      real :: o3WH, o3DF   ! O3 over wheat, decid forest
 
-     integer, parameter :: N_SOX = 2        ! Number in ox. sulphur family
-     real, parameter, dimension(N_SOX) :: SOX = &
-             (/ IXADV_SO2, IXADV_SO4 /)
-     integer, parameter :: N_OXN = 5        ! Number in ox. nitrogen family
-     real, parameter, dimension(N_OXN) :: OXN = &
-             (/ IXADV_HNO3, IXADV_PAN, IXADV_NO2, IXADV_aNO3, IXADV_pNO3 /)
-     integer, parameter :: N_RDN = 2        ! Number in red. nitrogen family
-     real, parameter, dimension(N_RDN) :: RDN = &
-             (/ IXADV_NH3, IXADV_aNH4 /)
 
      real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG  ! Converts from 
                                                       ! mol/cm3 to nmole/m3
 
-  !ECO08:  6/10/2008 - Variables added for new ecosystem dep
-     real :: invAreaCF, invAreaDF, invAreaCR, invAreaSN
-     real :: AreaCF, AreaDF, AreaCR, AreaSN
+  !ECO08:  Variables added for new ecosystem dep
+     real, dimension(size(DEP_RECEIVERS)) :: invArea, Area
+     integer :: ndep, RLC   ! RLC = receiver land-cover
+     real :: Fflux
 
      real ::  to_nmole, timefrac, fstfrac 
 
@@ -291,170 +315,102 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
      fstfrac  = dt*1.0e-6     ! Converts also nmole to mmole
 
 
-  !ECO08, Ecosystem areas:
-     AreaCF = sum( coverage(:), LandType(:)%is_conif )
-     AreaDF = sum( coverage(:), LandType(:)%is_decid )
-     AreaCR = sum( coverage(:), LandType(:)%is_crop  )
-     AreaSN = sum( coverage(:), LandType(:)%is_seminat )
+  ! Must match areas given above, e.g. DDEP_CONIF -> Conif
 
-     invAreaCF = 0.0
-     invAreaDF = 0.0
-     invAreaCR = 0.0
-     invAreaSN = 0.0
-     if ( AreaCF > 1.0e-39 ) invAreaCF = 1.0/AreaCF
-     if ( AreaDF > 1.0e-39 ) invAreaDF = 1.0/AreaDF
-     if ( AreaCR > 1.0e-39 ) invAreaCR = 1.0/AreaCR
-     if ( AreaSN > 1.0e-39 ) invAreaSN = 1.0/AreaSN
+  !ECO08, Ecosystem areas:
+     Area(CONIF)   = sum( coverage(:), LandType(:)%is_conif )
+     Area(DECID)   = sum( coverage(:), LandType(:)%is_decid )
+     Area(CROP)    = sum( coverage(:), LandType(:)%is_crop  )
+     Area(SEMINAT) = sum( coverage(:), LandType(:)%is_seminat )
+     Area(FULLGRID)    = 1.0
+
+     invArea(:) = 0.0
+
+     do n = 1, size(DEP_RECEIVERS)
+        if ( Area(n) > 1.0e-39 ) invArea(n) = 1.0/Area(n)
+     end do 
 
 
    !  Query - crops, outisde g.s. ????
-     if ( DEBUG_ECO .and. first_call .and. debug_flag ) then
-       write(*,*)  "ECOAREAS ", i,j, AreaCF, AreaDF, AreaCR, AreaSN
+     !if ( DEBUG_ECO .and. first_call .and. debug_flag ) then
+     if ( DEBUG_ECO .and. debug_flag ) then
+       write(*,*)  "ECOAREAS ", i,j, Area(:)
          do n = 1, 19
            write(*,*)  "ECOCHECK ", n, i,j, LandType(n)%is_conif, coverage(n)
          end do
+       write(*,*) "ECOCHECK ========================"
         
      end if
      first_call = .false.
 
-! waters and wetland categories removed after discussions with CCE/IIASA
 
-!! OXIDIZED SULPHUR
-!!-----------------------
+    ! Traditional depositions to whole grid::
 
+!     d_2d(DDEP_SOX,i,j,IOU_INST) = (  &
+!          DepLoss(IXADV_SO2) + DepLoss(IXADV_SO4) ) * convfac * atwS
+!
+!       d_2d(D2_VddCOA,i,j,IOU_INST) =  100.0* Vg3m(CDEP_COA)
 
-     d_2d(DDEP_SOX,i,j,IOU_INST) = (  &
-          DepLoss(IXADV_SO2) + DepLoss(IXADV_SO4) ) * convfac * atwS
+    ! Ecosystem depositions, for grouped or individual species:
 
+     do ndep = 1, nOutDDep
+        nadv  = OutDDep(ndep)%Adv
+        RLC   = OutDDep(ndep)%LC
+        if ( nadv > 0 ) then  ! normal advectde species
+           nadv2 = 1
+           DDEP_GROUP(1) = nadv
+        else if ( nadv == SOX_INDEX ) then
+           nadv2 = size( DDEP_SOXGROUP )
+           DDEP_GROUP(1:nadv2) = DDEP_SOXGROUP - NSPEC_SHL
+        else if ( nadv == OXN_INDEX ) then
+           nadv2 = size( DDEP_OXNGROUP )
+           DDEP_GROUP(1:nadv2) = DDEP_OXNGROUP - NSPEC_SHL
+        else  !if ( nadv == RDN_INDEX ) then
+           nadv2 = size( DDEP_RDNGROUP )
+           DDEP_GROUP(1:nadv2) = DDEP_RDNGROUP - NSPEC_SHL
+        end if
+   
+      Fflux = 0.0
+      do n = 1, nadv2
+         nadv = DDEP_GROUP(n)
+        if ( RLC == FULLGRID ) then 
+            Fflux = Fflux + Deploss(nadv) * sum( fluxfrac(nadv,:) )
+        else if ( RLC == CONIF ) then 
+            Fflux = Fflux + Deploss(nadv) * &
+               sum( fluxfrac(nadv,:), LandType(:)%is_conif )
+        else if ( RLC == DECID ) then 
+            Fflux = Fflux + Deploss(nadv) * &
+               sum( fluxfrac(nadv,:), LandType(:)%is_decid )
+        else if ( RLC == CROP ) then 
+            Fflux = Fflux + Deploss(nadv) * &
+               sum( fluxfrac(nadv,:), LandType(:)%is_crop )
+        else if ( RLC == SEMINAT ) then 
+            Fflux = Fflux + Deploss(nadv) * &
+               sum( fluxfrac(nadv,:), LandType(:)%is_seminat )
+        else 
+            Fflux = -1.0
+        end if
+      end do ! n
+        if ( OutDDep(ndep)%f2d < 1 .or. Fflux < 0.0 ) then
+             write(6,*) "CATASTR ", ndep, OutDDep(ndep)%f2d,OutDDep(ndep)%name
+             call CheckStop("CATASTROPHE: "//OutDDep(ndep)%name)
+        end if
 
-     d_2d(DDEP_SOXCF,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_SOXDF,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_SOXCR,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_SOXSN,i,j,IOU_INST) = 0.0
-
-
-     do n = 1,N_SOX
-       nadv = SOX(n)
-
-      ! ==    make use of ECO_ arrays from DepVariables - specifies   ==== !
-      !    which landuse is in which category                         ==== !
-
-
-       d_2d(DDEP_SOXCF,i,j,IOU_INST) = d_2d(DDEP_SOXCF,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_conif ) * DepLoss(nadv)
-
-
-       d_2d(DDEP_SOXDF,i,j,IOU_INST) = d_2d(DDEP_SOXDF,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_decid ) * DepLoss(nadv)
-
-       d_2d(DDEP_SOXCR,i,j,IOU_INST) = d_2d(DDEP_SOXCR,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_crop ) * DepLoss(nadv)
-
-
-       d_2d(DDEP_SOXSN,i,j,IOU_INST) = d_2d(DDEP_SOXSN,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_seminat ) * DepLoss(nadv)
-
-     end do
-
-  !ECO08 - invAreaCF added - divies the flux per grid by the landarea of eac
+  !ECO08 - invAreaCF divides the flux per grid by the landarea of eac
   ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
 
-     d_2d(DDEP_SOXCF,i,j,IOU_INST) = d_2d(DDEP_SOXCF,i,j,IOU_INST)*convfac*atwS*invAreaCF
-     d_2d(DDEP_SOXDF,i,j,IOU_INST) = d_2d(DDEP_SOXDF,i,j,IOU_INST)*convfac*atwS*invAreaDF
-     d_2d(DDEP_SOXCR,i,j,IOU_INST) = d_2d(DDEP_SOXCR,i,j,IOU_INST)*convfac*atwS*invAreaCR
-     d_2d(DDEP_SOXSN,i,j,IOU_INST) = d_2d(DDEP_SOXSN,i,j,IOU_INST)*convfac*atwS*invAreaSN
+        d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST) =  &
+            Fflux * convfac * OutDDep(ndep)%atw * invArea(RLC)
+
+        if ( DEBUG_ECO .and. debug_flag ) then
+           write(6,*) "DEBUG_ECO Fflux ", ndep, nadv, RLC, Fflux, &
+            d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST), DDEP_SOXGROUP
+        end if ! DEBUG_ECO 
+     end do ! ndep
 
 
 
-!! OXIDIZED NITROGEN
-!!-----------------------
 
-
-     d_2d(DDEP_OXN,i,j,IOU_INST) = ( &
-          DepLoss(IXADV_HNO3) +  DepLoss(IXADV_PAN) +  DepLoss(IXADV_NO2) + &
-          DepLoss(IXADV_aNO3)+  DepLoss(IXADV_pNO3)  ) * convfac * atwN
-
-
-     d_2d(DDEP_OXNCF,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_OXNDF,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_OXNCR,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_OXNSN,i,j,IOU_INST) = 0.0
-
-     do n = 1, N_OXN
-       nadv = OXN(n)
-         
-      ! ==    make use of ECO_ arrays from DepVariables - specifies   ==== !
-      !    which landuse is in which category                         ==== !
-
-
-       d_2d(DDEP_OXNCF,i,j,IOU_INST) = d_2d(DDEP_OXNCF,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_conif ) * DepLoss(nadv)
-
-
-       d_2d(DDEP_OXNDF,i,j,IOU_INST) = d_2d(DDEP_OXNDF,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_decid ) * DepLoss(nadv)
-
-       d_2d(DDEP_OXNCR,i,j,IOU_INST) = d_2d(DDEP_OXNCR,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_crop ) * DepLoss(nadv)
-
-
-       d_2d(DDEP_OXNSN,i,j,IOU_INST) = d_2d(DDEP_OXNSN,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_seminat ) * DepLoss(nadv)
-
-      ! ==                                                            ==== !
-
-
-     end do
-
-     d_2d(DDEP_OXNCF,i,j,IOU_INST) = d_2d(DDEP_OXNCF,i,j,IOU_INST)*convfac*atwN*invAreaCF
-     d_2d(DDEP_OXNDF,i,j,IOU_INST) = d_2d(DDEP_OXNDF,i,j,IOU_INST)*convfac*atwN*invAreaDF
-     d_2d(DDEP_OXNCR,i,j,IOU_INST) = d_2d(DDEP_OXNCR,i,j,IOU_INST)*convfac*atwN*invAreaCR
-     d_2d(DDEP_OXNSN,i,j,IOU_INST) = d_2d(DDEP_OXNSN,i,j,IOU_INST)*convfac*atwN*invAreaSN
-
-
-
-!! REDUCED NITROGEN
-!!-----------------------
-
-     d_2d(DDEP_RDN,i,j,IOU_INST) = ( &
-          DepLoss(IXADV_NH3) +  DepLoss(IXADV_aNH4)  ) * convfac * atwN
-
-
-
-     d_2d(DDEP_RDNCF,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_RDNDF,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_RDNCR,i,j,IOU_INST) = 0.0
-     d_2d(DDEP_RDNSN,i,j,IOU_INST) = 0.0
-
-     do n = 1, N_RDN
-       nadv = RDN(n)
-         
-      ! ==    make use of ECO_ arrays from DepVariables - specifies   ==== !
-      !    which landuse is in which category                         ==== !
-
-
-       d_2d(DDEP_RDNCF,i,j,IOU_INST) = d_2d(DDEP_RDNCF,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_conif ) * DepLoss(nadv)
-
-
-       d_2d(DDEP_RDNDF,i,j,IOU_INST) = d_2d(DDEP_RDNDF,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_decid ) * DepLoss(nadv)
-
-       d_2d(DDEP_RDNCR,i,j,IOU_INST) = d_2d(DDEP_RDNCR,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_crop ) * DepLoss(nadv)
-
-
-       d_2d(DDEP_RDNSN,i,j,IOU_INST) = d_2d(DDEP_RDNSN,i,j,IOU_INST) +  &
-            sum( fluxfrac(nadv,:), LandType(:)%is_seminat ) * DepLoss(nadv)
-
-      ! ==                                                            ==== !
-
-     end do
-
-     d_2d(DDEP_RDNCF,i,j,IOU_INST) = d_2d(DDEP_RDNCF,i,j,IOU_INST)*convfac*atwN*invAreaCF
-     d_2d(DDEP_RDNDF,i,j,IOU_INST) = d_2d(DDEP_RDNDF,i,j,IOU_INST)*convfac*atwN*invAreaDF
-     d_2d(DDEP_RDNCR,i,j,IOU_INST) = d_2d(DDEP_RDNCR,i,j,IOU_INST)*convfac*atwN*invAreaCR
-     d_2d(DDEP_RDNSN,i,j,IOU_INST) = d_2d(DDEP_RDNSN,i,j,IOU_INST)*convfac*atwN*invAreaSN
 
 !MAPPING_MANUAL CHANGES:
 !  Use 1.6 for Beech and 3 for crops
@@ -534,6 +490,29 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
    !---- end ecosystem specific ----------------------------------------------
 
   end subroutine  Add_ddep
+  !<==========================================================================
+  subroutine Add_Vg(debug_flag,i,j,VgGrid,VgLU)
+     logical, intent(in) :: debug_flag
+     integer, intent(in) :: i,j             ! coordinates
+     real, intent(in),dimension(:) :: VgGrid! dim (NLANDUSE), Grid Vg
+     real, dimension(:,:), intent(in) :: VgLU  ! dim (NLANDUSE*nlu)
+     integer :: n, nVg, cdep
 
+       do nVg = 1, nOutVg
+         cdep  =  DepAdv2Calc( OutVg(nVg)%Adv ) ! Convert e.g. IXADV_O3
+                                                  ! to CDEP_O3
+         if ( OutVg(nVg)%LC  == GRID_LC ) then
+           d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) =  VgGrid(cdep)
+         else
+           d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) = VgLU( cdep, OutVg(nVg)%LC ) 
+         end if
+         if( MY_DEBUG .and. debug_flag ) then
+              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutVg(nVg)%name, cdep,  &
+                 OutVg(nVg)%LC,  100.0*d_2d( OutVg(nVg)%f2d,i,j,IOU_INST)
+         end if
+       end do
+
+  end subroutine Add_Vg
+  !<==========================================================================
 end module My_DryDep_ml
 

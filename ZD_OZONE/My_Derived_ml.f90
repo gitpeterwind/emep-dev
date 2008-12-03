@@ -52,11 +52,12 @@ module My_Derived_ml
   !   of the bigger d_2d arrays
   !---------------------------------------------------------------------------
  
+use CheckStop_ml,  only: CheckStop, StopAll
 use GenSpec_adv_ml        ! Use IXADV_ indices...
 use GenSpec_shl_ml        ! Use IXSHL_ indices...
-use GenSpec_tot_ml,  only : SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                           ,aNO3, pNO3, aNH4, PM25, PMCO &
-                           ,SSfi, SSco  !SeaS
+use GenSpec_tot_ml,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
+                           ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PM25, PMCO &
+                           ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
 use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , SOURCE_RECEPTOR  &  
@@ -69,7 +70,8 @@ use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area 
-use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray
+use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
+                            find_index
 use TimeDate_ml,   only : current_date
 implicit none
 private
@@ -101,7 +103,7 @@ private
 
     integer, public, parameter :: MAX_NUM_DERIV2D = 200
     integer, public, parameter :: MAX_NUM_DERIV3D =   5
-    integer, public, parameter :: TXTLEN_DERIV =   15
+    integer, public, parameter :: TXTLEN_DERIV =   20
     character(len=TXTLEN_DERIV), public, save, &
          dimension(MAX_NUM_DERIV2D) :: wanted_deriv2d = NOT_SET_STRING
     character(len=TXTLEN_DERIV), public, save, &
@@ -109,6 +111,8 @@ private
 
     integer, private, save :: mynum_deriv2d
     integer, private, save :: mynum_deriv3d
+
+
 
  
 
@@ -148,19 +152,79 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(14) :: &
   D2_EXTRA = (/ &
        "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
+      ,"WDEP_SO2","WDEP_SO4","WDEP_HNO3","WDEP_aNO3", "WDEP_pNO3" & 
+      ,"WDEP_NH3", "WDEP_aNH4" & 
       ,"D2_REDN     ","D2_SSfi     ","D2_SSco     " &
   /)
+!      ,"D2_VddACC", "D2_VddCOA" & ! ECO08
 
+
+ ! ECO08:
+  integer, public, parameter :: &   ! Groups for DDEP and WDEP
+    SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
+  integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
+  integer, public, dimension(2) ::  DDEP_RDNGROUP = (/ NH3, aNH4 /)
+  integer, public, dimension(6) ::  DDEP_OXNGROUP =  &
+                         (/ NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
+  integer, public, dimension(6) ::  DDEP_GROUP ! Working array, set
+      ! size as max of SOX, OXN, RDN
+
+ ! Ecosystem dep output uses receiver land-cover classes (LCs)
+ ! which might include several landuse types, e.g. Conif in 
+!  D2_SO2_m2Conif. 
+
+  integer, public, save :: nOutDDep, nOutVg ! ECO08
+
+ ! Store indices of ecossytem-species depositions
+  type, public :: Dep_type
+     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
+     integer :: LC            ! Index of Receiver land-cover (one 
+                              ! of Dep_Receivers)
+     integer :: Adv           ! index in xn_adv arrays
+     integer :: f2d           ! index in f_2d arrays
+     character(len=10) :: txt ! text where needed, e.g. "Conif"
+     integer :: atw           ! atomic weight where needed
+     character(len=10) :: units ! e.g.  mgN/m2
+  end type Dep_type
+
+   !ECO08 - specify some species and land-covers we want to output
+   ! depositions for in netcdf files. DDEP_LCS must match one of
+   ! the DEP_RECEIVERS  in My_DryDep_ml.
+   !
+    integer, public, parameter, dimension(13) :: &
+      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, &
+           SO2,  SO4, NH3, aNH4, NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
+
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+      DDEP_LCS  = (/ "Grid", "Conif", "Seminat" /)
+
+    integer, public, parameter, dimension(7) :: &
+      WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
+
+
+  ! Have many combinations: species x ecosystems
+  type(Dep_type), public, &
+     dimension( size(DDEP_SPECS)*size(DDEP_LCS) ), save :: OutDDep
+
+   !ECO08 - specify some species and land-covers we want to output
+   ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
+
+    integer, public, parameter, dimension(6) :: &
+      VG_SPECS = (/ O3, NH3, SO2, PM25,  PMCO , HNO3/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+      VG_LCS  = (/ "Grid", "CF", "SNL", "GR" /)
+  type(Dep_type), public, &
+     dimension( size(VG_SPECS)*size(VG_LCS) ),    save :: OutVg
 
 !----------------------
 ! Less often needed:
- !exc  "D2_CO     ","D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ",
- !exc ,"D2_O3CF   ","D2_O3TC   ","D2_O3GR   ","D2_ACCSU  ",
- !"D2_FRNIT  ","D2_MAXOH  ","D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 " &
- !exc  "D2_PAN    ","D2_AOT20    " /)
+!exc  "D2_CO     ","D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ",
+!exc ,"D2_O3CF   ","D2_O3TC   ","D2_O3GR   ","D2_ACCSU  ",
+!"D2_FRNIT  ","D2_MAXOH  ","D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 " &
+!exc  "D2_PAN    ","D2_AOT20    " /)
 
    !======= MY_DERIVED SYSTEM ======================================
 
@@ -170,15 +234,6 @@ private
        WDEP_WANTED = (/ "WDEP_PREC", "WDEP_SOX ", "WDEP_OXN ", &
                       "WDEP_RDN " /)   ! WDEP_PM not used
 
-  !( waters and wetlands removed:)
-
-   character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
-     DDEP_WANTED = (/  &  ! NB: do not remove without removing from My_DryDep too 
-        "DDEP_SOX_m2Grid","DDEP_OXN_m2Grid","DDEP_RDN_m2Grid"  &
-       ,"DDEP_SOX_m2CF","DDEP_SOX_m2DF","DDEP_SOX_m2CR","DDEP_SOX_m2SN"  &
-       ,"DDEP_OXN_m2CF","DDEP_OXN_m2DF","DDEP_OXN_m2CR","DDEP_OXN_m2SN"  &
-       ,"DDEP_RDN_m2CF","DDEP_RDN_m2DF","DDEP_RDN_m2CR","DDEP_RDN_m2SN"  &
-     /)
 
      character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
        D3_WANTED = (/ "D3_O3        ","D3_TH        " /)
@@ -191,17 +246,113 @@ private
 
  !=========================================================================
   subroutine Init_My_Deriv()
-    integer :: i
+    integer :: i, nLC, nVg
 
    ! Build up the array wanted_deriv2d with the required field names
 
      call AddArray(WDEP_WANTED, wanted_deriv2d, NOT_SET_STRING)
-     call AddArray(DDEP_WANTED, wanted_deriv2d, NOT_SET_STRING)
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING)
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
         call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING)
      end if
+
+     !------------- Dry Depositions for d_2d -------------------------
+     !ECO08: Add species and ecosystem depositions if wanted:
+     ! We find the various combinations of gas-species and ecosystem, 
+     ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
+
+      nLC = 0
+      do i = 1, size(DDEP_SPECS)
+        do n = 1, size(DDEP_LCS) 
+
+          nLC = nLC + 1
+
+          !CLEAN OutDDep(nLC)%LC  = find_index(DDEP_LCS(n),DDEP_RECEIVERS)
+          OutDDep(nLC)%txt  = DDEP_LCS(n)
+
+          if ( DDEP_SPECS(i) > 0 ) then ! normal species, e.g. DDEP_SO2_m2CF
+             OutDDep(nLC)%name = "DDEP_"  // &
+                 trim( species(DDEP_SPECS(i))%name ) // &
+                    "_m2" // trim( DDEP_LCS(n) )
+
+            OutDDep(nLC)%Adv  = DDEP_SPECS(i) - NSPEC_SHL
+
+            if ( species(DDEP_SPECS(i))%sulphurs > 0 ) then
+               OutDDep(nLC)%atw  = species(DDEP_SPECS(i))%sulphurs * atwS
+               OutDDep(nLC)%units  =  "mgS/m2"
+
+            else if ( species(DDEP_SPECS(i))%nitrogens > 0 ) then
+               OutDDep(nLC)%atw  = species(DDEP_SPECS(i))%nitrogens * atwN
+               OutDDep(nLC)%units  =  "mgN/m2"
+               call CheckStop( species(DDEP_SPECS(i))%sulphurs>0 , &
+                " ERROR in DDEP_SPECS: BOTH S AND N!"// &
+                   species(DDEP_SPECS(i))%name)
+
+             else
+               call StopAll("ERROR: OutDDep atw failure "// &
+                   species(DDEP_SPECS(i))%name)
+             end if
+           else ! GROUP
+            OutDDep(nLC)%Adv  = DDEP_SPECS(i) ! e.g. -1 for SOX
+            if ( DDEP_SPECS(i) == SOX_INDEX ) then
+               OutDDep(nLC)%atw   = atwS
+               OutDDep(nLC)%units = "mgS/m2"
+               OutDDep(nLC)%name = "DDEP_SOX_m2"//trim(DDEP_LCS(n))
+            else if ( DDEP_SPECS(i) == OXN_INDEX ) then
+               OutDDep(nLC)%atw   = atwN
+               OutDDep(nLC)%units = "mgN/m2"
+               OutDDep(nLC)%name = "DDEP_OXN_m2"//trim(DDEP_LCS(n))
+            else if ( DDEP_SPECS(i) == RDN_INDEX ) then
+               OutDDep(nLC)%atw   = atwN
+               OutDDep(nLC)%units = "mgN/m2"
+               OutDDep(nLC)%name = "DDEP_RDN_m2"//trim(DDEP_LCS(n))
+            end if
+
+           end if
+
+
+           if(MY_DEBUG .and. me==0)  write(6,"(a,4(a,i4))") &
+            "DDEP NEW ", &
+             OutDDep(nLC)%name, nLC, "LC ", OutDDep(nLC)%LC, &
+            " Adv: ", OutDDep(nLC)%Adv, "ATW ",  OutDDep(nLC)%atw
+        end do ! DDEP_SPECS 
+      end do ! DDEP_LCS
+      nOutDDep = nLC
+
+!nEcoWDep = 0
+!do i = 1, size(WDEP_SPECS)
+!    EcoWDep(nEcoWDep)%name = "WDEP_"  // trim( species(WDEP_SPECS(i))%name ) )
+!end do
+
+    call AddArray( OutDDep(:)%name, wanted_deriv2d, NOT_SET_STRING)
+
+      !------------- Deposition velocities for d_2d -------------------------
+      !ECO08: Add species and ecosystem depositions if wanted:
+      ! We find the various combinations of gas-species and ecosystem, 
+      ! adding them to the derived-type array LCC_DDep (e.g. => VGO3_CF)
+
+      nVg = 0
+      do i = 1, size(VG_SPECS)
+        do n = 1, size(VG_LCS) 
+
+          nVg = nVg + 1
+
+          OutVg(nVg)%Adv  =   VG_SPECS(i) - NSPEC_SHL
+          OutVg(nVg)%txt  =   VG_LCS(n)
+          OutVg(nVg)%units  =   "cm/s"
+          OutVg(nVg)%name = "VG_"  // trim( species(VG_SPECS(i))%name ) &
+               // "_" // trim( VG_LCS(n) )
+          !Not yet known: OutVg(nVg)%LC
+          if(MY_DEBUG .and. me==0) write(6,*) "VGOUT ", i, n, &
+              OutVg(nVg)%name, &
+              OutVg(nVg)%Adv,OutVg(nVg)%txt, OutVg(nVg)%units
+        end do !n
+      end do ! i
+      nOutVg = nVg
+
+     call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING)
+
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
    ! ditto wanted_deriv3d....

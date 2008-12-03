@@ -52,6 +52,8 @@ module My_WetDep_ml
   
   integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
   integer, private, save :: WDEP_SOX, WDEP_OXN, WDEP_RDN
+  integer, private, save :: WDEP_SO2, WDEP_SO4, &
+    WDEP_HNO3, WDEP_aNO3, WDEP_pNO3, WDEP_NH3, WDEP_aNH4
 
 contains
 
@@ -93,6 +95,14 @@ contains
      WDEP_SOX = find_index("WDEP_SOX",f_2d(:)%name)
      WDEP_OXN = find_index("WDEP_OXN",f_2d(:)%name)
      WDEP_RDN = find_index("WDEP_RDN",f_2d(:)%name)
+
+     WDEP_SO2 = find_index("WDEP_SO2",f_2d(:)%name)
+     WDEP_SO4 = find_index("WDEP_SO4",f_2d(:)%name)
+     WDEP_HNO3 = find_index("WDEP_HNO3",f_2d(:)%name)
+     WDEP_aNO3 = find_index("WDEP_aNO3",f_2d(:)%name)
+     WDEP_pNO3 = find_index("WDEP_pNO3",f_2d(:)%name)
+     WDEP_NH3 = find_index("WDEP_NH3",f_2d(:)%name)
+     WDEP_aNH4 = find_index("WDEP_aNH4",f_2d(:)%name)
    !####################### ds END define indices here ##########
 
   end subroutine Init_WetDep
@@ -121,11 +131,17 @@ contains
        totwdep(IXADV_PM25)  = totwdep(IXADV_PM25)  + wdeppm25
        totwdep(IXADV_PMco)  = totwdep(IXADV_PMco)  + wdeppmco
 
-
        d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 
        d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * atwN * invgridarea 
        d_2d(WDEP_RDN,i,j,IOU_INST) = wdepred * atwN * invgridarea 
 
+       d_2d(WDEP_SO2,i,j,IOU_INST) = sumloss(1) * atwS * invgridarea 
+       d_2d(WDEP_SO4,i,j,IOU_INST) = sumloss(2) * atwS * invgridarea 
+       d_2d(WDEP_NH3,i,j,IOU_INST) = sumloss(3) * atwN * invgridarea 
+       d_2d(WDEP_aNH4,i,j,IOU_INST) = sumloss(4) * atwN * invgridarea 
+       d_2d(WDEP_HNO3,i,j,IOU_INST) = sumloss(6) * atwN * invgridarea 
+       d_2d(WDEP_aNO3,i,j,IOU_INST) = sumloss(5) * atwN * invgridarea 
+       d_2d(WDEP_pNO3,i,j,IOU_INST) = sumloss(9) * atwN * invgridarea 
 
   end subroutine WetDep_Budget
 end module My_WetDep_ml

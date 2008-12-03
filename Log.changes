@@ -1,3 +1,16 @@
+================================= rv3_1_9  Dave,   3rd Dec 2008======
+
+New system started for Derived components, working for DDEP and
+VG outputs. Gets rid of need for hard-coded indices such as DDEP_SOX,
+etc., and makes it faster to specify landuse and species options.
+(
+Changes in:
+
+  My_Derived_ml
+  My_DryDep_ml
+  My_WetDep_ml   ! Still uses old-scheme, but now has SO2, SO4 etc.
+  Derived_ml
+
 ================================= rv3_1_8  Dave,   3rd Dec 2008======
 
 CoDep_ml - bug found! This will change results for depositions of
