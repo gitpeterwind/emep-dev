@@ -1,3 +1,8 @@
+================================= rv3_1_8  Dave,   3rd Dec 2008======
+
+CoDep_ml - bug found! This will change results for depositions of
+   all components!
+ModelConstants_ml - 2 extra DEBUG  sites added
 ================================= rv3_1_7  Hilde,  2nd Dec 2008======
 LocalVariables: Added is_veg,is_ice, sdepth, ice so2nh3ratio24hr
 SubMet_ml: is_veg and is_ice set

@@ -148,7 +148,10 @@ contains
 
        RgsS_dry    = acidity_fac * CEHd
        RgsS_wet    = acidity_fac * CEHw
-       call CheckStop ( RgsS_dry<0.0 .or. RgsS_wet<0.0  , "CoDep NEG ERROR")
+       if( MY_DEBUG .and. debug_flag ) write (*,*) "CODEP FACTORS ", &
+               IRH, Ts_C, itemp, ia_SN, a_SN, acidity_fac
+       call CheckStop ( RgsS_dry<0.01 .or. RgsS_wet<0.01  , &
+                         "ERROR? CoDep RgsS too low!")
 
   !/ 2) Humidity factor:  (F=forest, G=grass+other)
 
@@ -172,6 +175,7 @@ contains
            Rns_NH3 = BETA * F1 * F2
        if(MY_DEBUG .and. debug_flag) then
          write(*,*) "CODEP PRE ", IRH, frh, ia_SN, a_SN, F1, F2, Rns_NH3, BETA
+         write(*,*) "CODEP Rgs ", CEHd, CEHw, acidity_fac, RgsS_dry, RgsS_wet
        end if
            Rns_NH3 = min( 200.0, Rns_NH3)  ! After discussion with Ron
            Rns_NH3 = max(  10.0,Rns_NH3)
@@ -209,7 +213,8 @@ contains
     tab_humidity_fac(:,:) = 0.0
 
     ! Acidity factor
-     do ia_SN = 1, NTAB
+     !BUG do ia_SN = 1, NTAB
+     do ia_SN = 0, NTAB
        a_SN =  ia_SN/real(NTAB)
        tab_acidity_fac( ia_SN )  = exp( -(2.0- a_SN) )
        tab_F2 (ia_SN)            = 10.0**( (-1.1099 * a_SN)+1.6769 )

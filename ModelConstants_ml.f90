@@ -60,10 +60,12 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
  !integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
  !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
- integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
+ !!integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
+ integer, public, parameter :: DEBUG_i=110, DEBUG_j=48 !   High Vg!
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
  ! integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  Mid-Europe
+ !integer, public, parameter :: DEBUG_i=93, DEBUG_j=57 !  Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
 
 !=============================================================================
