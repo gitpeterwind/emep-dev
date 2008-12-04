@@ -140,9 +140,10 @@ module Met_ml
                                 ! These fields only available for EMEP from 2002 on
        ,rh2m    & !  RH at 2m
        ,SoilWater&!  Upper 7.2cm
-       ,SoilWater_deep !   Next 6x7cm
-
-
+       ,SoilWater_deep& !   Next 6x7cm
+!hf snow
+       ,sdepth &!snowdepth, m
+       ,ice
 
 
 
@@ -183,7 +184,9 @@ module Met_ml
   ! divergence=0
   logical, public, save :: sdot_at_mid ! set false if sdot is defined 
   logical, public, save :: foundSST    ! false if no SeaSurfaceT in metdata
-
+!hf snow
+  logical, public, save :: foundsdepth    ! false if no snow depth in metdata
+  logical, public, save :: foundice       ! false if no ice coverage (%) in metdata
   ! (when read) at level  boundaries 
   ! and therefore do not need to be 
   ! interpolated.
@@ -270,7 +273,7 @@ contains
 
 
 
-    if( METEOfelt==1)then
+    if( METEOfelt==1)then !felt format
        call infield(numt)
        return
     endif
@@ -390,6 +393,7 @@ contains
          validity, cc3d(:,:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
+
     if(trim(validity)/='averaged')then
        if(me==0)write(*,*)'WARNING: 3D cloud cover is not averaged'
     endif
@@ -437,6 +441,27 @@ contains
        foundSST = .false.
     else          
        foundSST = .true.
+    endif
+
+    namefield='snow_depth'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+        validity, sdepth(:,:,nr))
+    if(validity==field_not_found)then
+       if(me==0)write(*,*)'WARNING: snow depth not found '
+       foundsdepth = .false.
+    else          
+       foundsdepth = .true.
+    endif
+
+
+    namefield='fraction_of_ice' !is really percentage
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+        validity, ice(:,:,nr))
+    if(validity==field_not_found)then
+       if(me==0)write(*,*)'WARNING: ice coverage (%) not found '
+       foundice = .false.
+    else          
+       foundice = .true.
     endif
 
   end subroutine Meteoread
@@ -488,7 +513,7 @@ contains
 
 
 
-    if( METEOfelt==1)  then
+    if( METEOfelt==1)  then !felt format
        cyclicgrid=0
        poles=0
        GRIDWIDTH_M=50000.0
@@ -820,6 +845,15 @@ contains
           ! NEWMET:
           !   rh2m(32), SWC(85, first 7.2cm), SWCdeep(86, in the following 
           !     6x7.2cm = 43.2 cm))
+!hf XX
+       case (66)
+          foundsdepth = .true.
+          call getmetfieldMet(ident(20),itmp,sdepth(1,1,nr))
+
+       case (191)
+          foundice = .true.
+          call getmetfieldMet(ident(20),itmp,ice(1,1,nr))
+
        case (32)
           rh2m(:,:,nr) = 0.0
           call getmetfieldMet(ident(20),itmp,rh2m(1,1,nr))
@@ -829,7 +863,6 @@ contains
        case (86)
           SoilWater_deep(:,:,nr) = 0.0
           call getmetfieldMet(ident(20),itmp,SoilWater_deep(1,1,nr))
-
 
        case (36)
 
@@ -1594,7 +1627,11 @@ contains
             + (tau(:,:,2) - tau(:,:,1))*div
        sst(:,:,1)    = sst(:,:,1) 				&
             + (sst(:,:,2)   - sst(:,:,1))*div
-
+!hf XX
+       sdepth(:,:,1)    = sdepth(:,:,1) 				&
+            + (sdepth(:,:,2)   - sdepth(:,:,1))*div
+       ice(:,:,1)    = ice(:,:,1) 				&
+            + (ice(:,:,2)   - ice(:,:,1))*div
 
        !  precipitation and cloud cover are no longer interpolated
 
@@ -1617,7 +1654,9 @@ contains
        rh2m(:,:,1) = rh2m(:,:,2)
        SoilWater(:,:,1) = SoilWater(:,:,2)
        SoilWater_deep(:,:,1) = SoilWater_deep(:,:,2)
-
+!hf XX
+       sdepth(:,:,1) = sdepth(:,:,2)
+       ice(:,:,1) = ice(:,:,2)
 
        fh(:,:,1)     = fh(:,:,2)
        tau(:,:,1)    = tau(:,:,2)
