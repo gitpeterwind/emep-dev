@@ -220,6 +220,10 @@ contains
 !==================================================================
 !Trends 1980-2003 derived from EPA emissions of so2,nox. nh4 derived from
 !2/3so3+1/3nox
+!Support for SO2 can be found in Hicks, Artz, Meyer and Hosker, 2002
+!Figure 7 (Eastern US) which show 'close' correspondance between national
+!emissions and concentration trend
+
 !1920-1970 BCs derived from:
 !NH4: nh3 emissions
 !SOx: winter ice cores, Col du dome
