@@ -47,6 +47,7 @@ module DryDep_ml
 
  !-- model specific dry dep values are set in My_DryDep_ml
 
+
  use My_DryDep_ml, only : Init_DepMap, &  ! Maps indices between 
                           ! Vg-calculated (CDEP..) and advected  (IXADV_..)
                           NDRYDEP_CALC, &  ! No. Vd values calculated 
@@ -56,6 +57,7 @@ module DryDep_ml
                           DRYDEP_CALC, &   ! Wesely Index Vd values calculated 
                           CDEP_SET,    &   ! for so4
                           CDEP_NO2,CDEP_O3,    &   ! for NO2 comp pt. approach
+                          CDEP_SO2,CDEP_NH3, & !hf CoDep extra
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
@@ -63,11 +65,14 @@ module DryDep_ml
                           Dep        ! Mapping (type = depmap)
 
 
- use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
+use  LandDefs_ml, only : LandDefs !hf CoDep extra
+use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use Aero_DryDep_ml,    only : Aero_Rb
  use CheckStop_ml, only: CheckStop
- use Chemfields_ml , only : cfac!,xn_adv
+ use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
+
+
  use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
  use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
  use GenSpec_tot_ml, only : NSPEC_TOT
@@ -169,8 +174,9 @@ module DryDep_ml
 
     real, dimension(NDRYDEP_CALC) :: &
           Rb           & ! Quasi-boundary layer rsis.
-         ,Rsur_dry     & ! Surface Resistance (s/m) over dry surface
-         ,Rsur_wet       ! Surface Resistance (s/m) over wet surface
+!hf XX         ,Rsur_dry     & ! Surface Resistance (s/m) over dry surface
+!hf XX         ,Rsur_wet       ! Surface Resistance (s/m) over wet surface
+         ,Rsur       ! Surface Resistance (s/m) over wet surface
     real, dimension(NDRYDEP_TOT) :: &
           gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
          ,vg_fac       & ! Loss factor due to dry dep.
@@ -213,7 +219,8 @@ module DryDep_ml
       real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
       integer :: iL_used(NLUMAX), nlu_used
       real :: wet, dry    ! Fractions
-
+!hf snow
+      real :: snow_iL !snow fraction for one landuse
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
@@ -290,13 +297,15 @@ module DryDep_ml
     Sumcover = 0.0
     Sumland  = 0.0
     fluxfrac_adv (:,:) = 0.0
- 
+!hf snow
+    Grid_snow(i,j)=0.0 
  
     !/ SO2/NH3 for Rsur calc
     Grid%so2nh3ratio = &
                xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID) / & 
                max(1.0,xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID))
-
+!hf CoDep
+    Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
 
     if ( STO_FLUXES ) call Setup_StoFlux(daynumber, &
          xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID),amk(KMAX_MID))
@@ -333,8 +342,13 @@ module DryDep_ml
 
 
          call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_CALC,Rb)
+!hf CoDep extra
+!hf XX         call Rsurface(i,j,DRYDEP_CALC,Rsur_dry,Rsur_wet,errmsg,debug_flag)
+         call Rsurface(i,j,DRYDEP_CALC,Rsur,errmsg,debug_flag,snow_iL)
 
-         call Rsurface(DRYDEP_CALC,Rsur_dry,Rsur_wet,errmsg,debug_flag)
+!hf XX
+         Grid_snow(i,j) = Grid_snow(i,j) +  L%coverage * snow_iL 
+!write(*,*)"Testing snow", i,j,snow_iL , Grid_snow(i,j)
 
 
        !===================
@@ -355,6 +369,7 @@ module DryDep_ml
          wet =   Grid%wetarea
          dry =   1.0 - wet
 
+
          do n = 1, NDRYDEP_TOT  !stDep  NDRYDEP_CALC
 
             if ( n > NDRYDEP_CALC)  then    ! particles
@@ -373,11 +388,13 @@ module DryDep_ml
                 + wet / (L%Ra_3m + aeRbw(nae) + RaVs  *aeRbw(nae) )
 
             else                           ! gases
-               Vg_ref(n) = dry / ( L%Ra_ref + Rb(n) + Rsur_dry(n) ) &
-                     +     wet / ( L%Ra_ref + Rb(n) + Rsur_wet(n) )
+!hf XX               Vg_ref(n) = dry / ( L%Ra_ref + Rb(n) + Rsur_dry(n) ) &
+!hf XX                     +     wet / ( L%Ra_ref + Rb(n) + Rsur_wet(n) )
+              Vg_ref(n) = 1. / ( L%Ra_ref + Rb(n) + Rsur(n) ) 
 
-               Vg_3m (n) = dry / ( L%Ra_3m + Rb(n) + Rsur_dry(n) ) &
-                     +     wet / ( L%Ra_3m + Rb(n) + Rsur_wet(n) )
+!hf XX               Vg_3m (n) = dry / ( L%Ra_3m + Rb(n) + Rsur_dry(n) ) &
+!hf XX                     +     wet / ( L%Ra_3m + Rb(n) + Rsur_wet(n) )
+               Vg_3m (n) = 1. / ( L%Ra_3m + Rb(n) + Rsur(n) ) 
 
             endif
 
@@ -402,7 +419,6 @@ module DryDep_ml
 
          end do
 
-
          Sumcover = Sumcover + L%coverage
 
 
@@ -425,7 +441,8 @@ module DryDep_ml
                write(*,"(a14,2i4,f7.3,i3,2f10.2,es12.2,2f8.2,a5,f8.3,2es18.6)") &
                   "UKDEP EXT: ", iiL, iL, L%coverage, n,&
                    L%LAI,100.0*L%g_sto, &  ! tmp, in cm/s 
-                   L%Ra_ref, Rb(n), min( 999.0,Rsur_dry(n) ),  &
+!hf XX                   L%Ra_ref, Rb(n), min( 999.0,Rsur_dry(n) ),  &
+                   L%Ra_ref, Rb(n), min( 999.0,Rsur(n) ),  &
                   " Vg: ", 100.0*Vg_3m(n), 100.0*Vg_ref(n), Vg_ratio(n)
             end do
 
@@ -444,12 +461,15 @@ module DryDep_ml
           !! Uncomment and make .inc file as required
 
            ! include 'EXTRA_LU_Outputs.inc'
+!hf CoDep extra
 
-
+!if  (debug_flag )write(6,*) "LANDCOVER ", iL, iiL,"!",LandDefs(iL)%code,"!"
        !=======================
         end do LULOOP
        !=======================
        !=======================
+  
+
 
         if ( MY_DEBUG .and. Sumland > 1.011  ) then
             print *, "SUMLAND ", me, nlu, i,j,i_fdom(i), j_fdom(j), Sumland
