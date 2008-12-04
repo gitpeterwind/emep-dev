@@ -1,3 +1,16 @@
+================================= rv3_1_10  Hilde,   4th Dec 2008======
+Met_ml: read snow,ice, foundsdepth, foundice
+CellMet_ml : use sdepth,ice snow from Met_ml
+Chem_ml: defined  so2nh3_24hr and Grid_snow
+DryDep_ml : define Grid%so2nh3ratio24hr, remove Rsur_dry/wet + change call
+CoDep_ml.f90: new method for Rns_SO2. Changes also for Rns_NH3. (Was also bug in Rlow here,
+it was added both here and in Rsurface_ml)
+Rsurface_ml.f90: Re-written so that Rdry and Rwet no longer needed (due to new method for Rns_SO2).
+Added new method for snow, for SO2 and O3 (affecting all).
+
+GlobalBCs_ml.f90: added reference to Hicks et al 2002
+
+
 ================================= rv3_1_9  Dave,   3rd Dec 2008======
 
 New system started for Derived components, working for DDEP and
