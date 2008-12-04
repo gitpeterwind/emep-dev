@@ -1,3 +1,6 @@
+================================= rv3_2beta Hilde,   4th Dec 2008======
+Change version number to reflect that this model version has new
+deposition scheme compared to rv3_1 series...
 ================================= rv3_1_10  Hilde,   4th Dec 2008======
 Met_ml: read snow,ice, foundsdepth, foundice
 CellMet_ml : use sdepth,ice snow from Met_ml
