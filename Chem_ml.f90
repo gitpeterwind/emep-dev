@@ -56,6 +56,12 @@ private
   real, save, public :: &
      cfac   (NSPEC_ADV,MAXLIMAX,MAXLJMAX) = 1.0    
 
+  real, save, public :: &
+     so2nh3_24hr(MAXLIMAX,MAXLJMAX) = 0.0 !hf CoDep
+
+  real, save, public :: &
+     Grid_snow(MAXLIMAX,MAXLJMAX) = 0.0 !snow fraction in grid
+
 !_____________________________________________________________________________
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
