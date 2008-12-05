@@ -11,7 +11,7 @@
 # wall time limit of run 
 #PBS -lwalltime=10:00:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
-#PBS -lpmem=2000MB
+#PBS -lpmem=4000MB
 # account for billing
 #PBS -A nn2890k
 #___________________________________________________________________
@@ -191,8 +191,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_1_9";
-    
+    $testv       = "rv3_1_10";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -228,11 +227,12 @@ my @runs        = ( $scenario );
 
 
 #EMISSIONS
-$EMIS_INP = "$DATA_LOCAL/Modrun06" if $year < 2005;
-$EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
-my $emisd ir = "$EMIS_INP/2006-Trend${year}-V7";
+
+my $EMIS_INP = "$DATA_LOCAL/Modrun06" if $year < 2005;
+#$EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
+my $emisdir = "$EMIS_INP/2006-Trend${year}-V7";
 #$emisdir = "$EMIS_INP/2006-Trend2004-V7" if $year < 2005;
-my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2" if $year > 2005;
+#my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2" if $year > 2005;
 my $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
@@ -276,8 +276,8 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "07";       # first month, use 2-digits!
-my $mm2   =  "07";       # last month, use 2-digits!
+my $mm1   =  "01";       # first month, use 2-digits!
+my $mm2   =  "12";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
