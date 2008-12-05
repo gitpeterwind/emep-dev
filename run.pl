@@ -476,8 +476,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
     $ifile{"$DataDir/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-#    $ifile{"$DataDir/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-    $ifile{"/home/mifahf/Unify/Unimod.rv3_1_2.CoDep.snow/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+    $ifile{"$DataDir/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+#    $ifile{"/home/mifahf/Unify/Unimod.rv3_1_2.CoDep.snow/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$DATA_LOCAL/sondes.dat"} = "sondes.dat";
   
