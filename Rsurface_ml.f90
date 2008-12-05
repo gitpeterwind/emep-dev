@@ -58,7 +58,7 @@ contains
 
 
 !hf XX  subroutine Rsurface(i,j,DRYDEP_CALC,Rsur_dry,Rsur_wet,errmsg,debug_flag) 
-  subroutine Rsurface(i,j,DRYDEP_CALC,Rsur,errmsg,debug_flag,fsnow) 
+  subroutine Rsurface(i,j,DRYDEP_CALC,Gns,Rsur,errmsg,debug_flag,fsnow) 
 ! =======================================================================
 !
 !     Description
@@ -125,7 +125,10 @@ contains
 
 ! Output:
 
-   real,dimension(:),intent(out) :: Rsur   !  Rs  for dry surfaces 
+   real,dimension(:),intent(out) :: Rsur   
+!hf Rs
+   real,dimension(:),intent(out) :: Gns   
+
    character(len=*), intent(out) :: errmsg
 ! Optional
     logical, intent(in), optional :: debug_flag
@@ -160,7 +163,7 @@ contains
     real :: RsnowS, RsnowO !surface resistance for snow, S and O3
     real :: lowTcorr !low temperature correction  
     real :: lowT     !low temperature correction for HNO3  
-    real ::  GnsS, Gns
+    real ::  GnsS
     real,  intent(out) :: fsnow ! the output is max(fsnow,fice)
     real :: fice !fraction ice cover
     real :: Sdmax  !max snowdepth (fsnow =1)
@@ -361,15 +364,15 @@ contains
 
            if ( DRYDEP_CALC(icmp) == WES_NH3 ) then
 
-               Gns = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
+               Gns(icmp) = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
            else  ! Not NH3
 
-               Gns = 1.0e-5*Hstar*GnsS + f0 * GnsO   ! OLD SO2!
+               Gns(icmp) = 1.0e-5*Hstar*GnsS + f0 * GnsO   ! OLD SO2!
 
            end if  ! NH3 test
 
 
-           Rsur(icmp) = 1.0/( L%LAI*DRx(iwes) *L%g_sto + Gns  )
+           Rsur(icmp) = 1.0/( L%LAI*DRx(iwes) *L%g_sto + Gns(icmp)  )
 
       ! write(*,"(a20,2i3,3g12.3)")  "RSURFACE Gs  (i): ", iL, icmp, GnsO, Gns_dry, Gns_wet
 
@@ -377,16 +380,16 @@ contains
 
            if ( DRYDEP_CALC(icmp) == WES_NH3 ) then
 
-               Gns = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
+               Gns(icmp) = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
            else  ! Not NH3
-               Gns = 1.0e-5*Hstar*GnsS + f0 * GnsO   ! OLD SO2!
+               Gns(icmp) = 1.0e-5*Hstar*GnsS + f0 * GnsO   ! OLD SO2!
            end if  ! NH3 test
 
-           Rsur(icmp) = 1.0/Gns  
+           Rsur(icmp) = 1.0/Gns(icmp)  
 
       else   ! Non-Canopy modelling:
-           Gns = 1.0e-5*Hstar*GnsS + f0*GnsO
-           Rgs = 1.0/Gns  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
+           Gns(icmp) = 1.0e-5*Hstar*GnsS + f0*GnsO
+           Rgs = 1.0/Gns(icmp)  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
            Rsur(icmp)   = Rgs
       ! write(*,"(a20,2i3,3g12.3)")  "RSURFACE Rgs (i): ", iL, icmp, Rgs_dry, Rgs_wet
 

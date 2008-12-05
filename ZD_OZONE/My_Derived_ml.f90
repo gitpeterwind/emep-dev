@@ -176,7 +176,11 @@ private
  ! which might include several landuse types, e.g. Conif in 
 !  D2_SO2_m2Conif. 
 
+
   integer, public, save :: nOutDDep, nOutVg ! ECO08
+!hf OutRs, OutRns
+  integer, public, save :: nOutRs, nOutRns, nOutGns 
+
 
  ! Store indices of ecossytem-species depositions
   type, public :: Dep_type
@@ -216,8 +220,30 @@ private
       VG_SPECS = (/ O3, NH3, SO2, PM25,  PMCO , HNO3/)
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
       VG_LCS  = (/ "Grid", "CF", "SNL", "GR" /)
-  type(Dep_type), public, &
+    type(Dep_type), public, &
      dimension( size(VG_SPECS)*size(VG_LCS) ),    save :: OutVg
+
+!hf OutRs
+    integer, public, parameter, dimension(2) :: &
+      Rs_SPECS = (/ NH3, SO2/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+      Rs_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
+    type(Dep_type), public, & !surface resistance
+     dimension( size(Rs_SPECS)*size(Rs_LCS) ),    save :: OutRs 
+
+    integer, public, parameter, dimension(2) :: &
+      Rns_SPECS = (/ NH3, SO2/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+      Rns_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
+    type(Dep_type), public, & !Non-stomatal resistance
+     dimension( size(Rns_SPECS)*size(Rns_LCS) ),    save :: OutRns
+
+    integer, public, parameter, dimension(2) :: &
+      Gns_SPECS = (/ NH3, SO2/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+      Gns_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
+    type(Dep_type), public, & !Non-stomatal conductance
+     dimension( size(Gns_SPECS)*size(Gns_LCS) ),    save :: OutGns
 
 !----------------------
 ! Less often needed:
@@ -246,7 +272,8 @@ private
 
  !=========================================================================
   subroutine Init_My_Deriv()
-    integer :: i, nLC, nVg
+!hf Rs
+    integer :: i, nLC, nVg, nRs, nRns, nGns
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -352,6 +379,89 @@ private
       nOutVg = nVg
 
      call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING)
+!hf Rs
+
+
+      !------------- Surface resistance for d_2d -------------------------
+      ! We find the various combinations of gas-species and ecosystem, 
+      ! adding them to the derived-type array LCC_DDep (e.g. => RsO3_CF)
+
+      nRs = 0
+      do i = 1, size(Rs_SPECS)
+        do n = 1, size(Rs_LCS) 
+
+          nRs = nRs + 1
+
+          OutRs(nRs)%Adv  =   Rs_SPECS(i) - NSPEC_SHL
+          OutRs(nRs)%txt  =   Rs_LCS(n)
+          OutRs(nRs)%units  =   "s/m"
+          OutRs(nRs)%name = "Rs_"  // trim( species(Rs_SPECS(i))%name ) &
+               // "_" // trim( Rs_LCS(n) )
+          !Not yet known: OutRs(nRs)%LC
+          if(MY_DEBUG .and. me==0) write(6,*) "RsOUT ", i, n, &
+              OutRs(nRs)%name, &
+              OutRs(nRs)%Adv,OutRs(nRs)%txt, OutRs(nRs)%units
+        end do !n
+      end do ! i
+      nOutRs = nRs
+
+     call AddArray( OutRs(:)%name, wanted_deriv2d, NOT_SET_STRING)
+
+
+      !------------- Non stomatal Surface resistance for d_2d ----------
+      ! We find the various combinations of gas-species and ecosystem, 
+      ! adding them to the derived-type array LCC_DDep (e.g. => RnsO3_CF)
+
+      nRns = 0
+      do i = 1, size(Rns_SPECS)
+        do n = 1, size(Rns_LCS) 
+
+          nRns = nRns + 1
+
+          OutRns(nRns)%Adv  =   Rns_SPECS(i) - NSPEC_SHL
+          OutRns(nRns)%txt  =   Rns_LCS(n)
+          OutRns(nRns)%units  =   "s/m"
+          OutRns(nRns)%name = "Rns_"  // trim( species(Rns_SPECS(i))%name ) &
+               // "_" // trim( Rns_LCS(n) )
+          !Not yet known: OutRns(nRns)%LC
+          if(MY_DEBUG .and. me==0) write(6,*) "RnsOUT ", i, n, &
+              OutRns(nRns)%name, &
+              OutRns(nRns)%Adv,OutRns(nRns)%txt, OutRns(nRns)%units
+        end do !n
+      end do ! i
+      nOutRns = nRns
+
+     call AddArray( OutRns(:)%name, wanted_deriv2d, NOT_SET_STRING)
+
+
+
+      !------------- Non stomatal Surface conductance for d_2d ----------
+      ! We find the various combinations of gas-species and ecosystem, 
+      ! adding them to the derived-type array LCC_DDep (e.g. => GnsO3_CF)
+
+      nGns = 0
+      do i = 1, size(Gns_SPECS)
+        do n = 1, size(Gns_LCS) 
+
+          nGns = nGns + 1
+
+          OutGns(nGns)%Adv  =   Gns_SPECS(i) - NSPEC_SHL
+          OutGns(nGns)%txt  =   Gns_LCS(n)
+          OutGns(nGns)%units  =   "cm/s"
+          OutGns(nGns)%name = "Gns_"  // trim( species(Gns_SPECS(i))%name ) &
+               // "_" // trim( Gns_LCS(n) )
+          !Not yet known: OutGns(nGns)%LC
+          if(MY_DEBUG .and. me==0) write(6,*) "GnsOUT ", i, n, &
+              OutGns(nGns)%name, &
+              OutGns(nGns)%Adv,OutGns(nGns)%txt, OutGns(nGns)%units
+        end do !n
+      end do ! i
+      nOutGns = nGns
+
+     call AddArray( OutGns(:)%name, wanted_deriv2d, NOT_SET_STRING)
+
+
+
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 

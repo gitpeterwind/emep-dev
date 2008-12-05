@@ -40,6 +40,8 @@ module My_DryDep_ml    ! DryDep_ml
  use Derived_ml,    only : f_2d,   d_2d, IOU_INST
  use My_Derived_ml,  only : &
    nOutDDep, DDEP_LCS , OutDDep, nOutVg, OutVg   &
+!hf Rs
+  ,nOutRs, OutRs,nOutRns, OutRns ,nOutGns, OutGns  &
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
@@ -62,8 +64,10 @@ use Par_ml, only: me ! Vds Ndep
   public :: Init_DepMap
   public :: Add_ddep
   public :: Add_Vg
-
-
+!hf Rs
+  public :: Add_Rs
+  public :: Add_Rns
+  public :: Add_Gns
   !/** Variables used in deposition calculations
  
   ! DDEP_xx gives the index that will be used in the EMEP model
@@ -229,6 +233,58 @@ contains
      call CheckStop( OutVg(ndep)%f2d < 1, &
           "OutVg-f2d Error " // OutVg(ndep)%name)
   end do
+
+!hf Rs
+ do ndep = 1, nOutRs
+
+     OutRs(ndep)%LC = find_index( OutRs(ndep)%txt, LandDefs(:)%code )
+     if( OutRs(ndep)%txt == "Grid") OutRs(ndep)%LC = GRID_LC !hf ??
+     OutRs(ndep)%f2d = find_index( OutRs(ndep)%name, f_2d(:)%name )
+
+     if(MY_DEBUG .and. me==0) write(6,*) "OUTRs ", ndep, &
+         OutRs(ndep)%name,OutRs(ndep)%txt,"=>",&
+           OutRs(ndep)%LC, OutRs(ndep)%f2d
+
+     call CheckStop( OutRs(ndep)%LC < 1, &
+          "OutRs-LC Error " // OutRs(ndep)%name)
+     call CheckStop( OutRs(ndep)%f2d < 1, &
+          "OutRs-f2d Error " // OutRs(ndep)%name)
+  end do
+
+ do ndep = 1, nOutRns
+
+     OutRns(ndep)%LC = find_index( OutRns(ndep)%txt, LandDefs(:)%code )
+     if( OutRns(ndep)%txt == "Grid") OutRns(ndep)%LC = GRID_LC !hf ??
+     OutRns(ndep)%f2d = find_index( OutRns(ndep)%name, f_2d(:)%name )
+
+     if(MY_DEBUG .and. me==0) write(6,*) "OUTRns ", ndep, &
+         OutRns(ndep)%name,OutRns(ndep)%txt,"=>",&
+           OutRns(ndep)%LC, OutRns(ndep)%f2d
+
+     call CheckStop( OutRns(ndep)%LC < 1, &
+          "OutRns-LC Error " // OutRns(ndep)%name)
+     call CheckStop( OutRns(ndep)%f2d < 1, &
+          "OutRns-f2d Error " // OutRns(ndep)%name)
+  end do
+
+  do ndep = 1, nOutGns
+
+     OutGns(ndep)%LC = find_index( OutGns(ndep)%txt, LandDefs(:)%code )
+     if( OutGns(ndep)%txt == "Grid") OutGns(ndep)%LC = GRID_LC !hf ??
+     OutGns(ndep)%f2d = find_index( OutGns(ndep)%name, f_2d(:)%name )
+
+     if(MY_DEBUG .and. me==0) write(6,*) "OUTGns ", ndep, &
+         OutGns(ndep)%name,OutGns(ndep)%txt,"=>",&
+           OutGns(ndep)%LC, OutGns(ndep)%f2d
+
+     call CheckStop( OutGns(ndep)%LC < 1, &
+          "OutGns-LC Error " // OutGns(ndep)%name)
+     call CheckStop( OutGns(ndep)%f2d < 1, &
+          "OutGns-f2d Error " // OutGns(ndep)%name)
+  end do
+
+
+
 
 !#######################  NEW define indices here #######################
 
@@ -514,5 +570,76 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
 
   end subroutine Add_Vg
   !<==========================================================================
+  subroutine Add_Rs(debug_flag,i,j,RsGrid,RsLU)
+     logical, intent(in) :: debug_flag
+     integer, intent(in) :: i,j             ! coordinates
+     real, intent(in),dimension(:) :: RsGrid! dim (NLANDUSE), Grid Rs
+     real, dimension(:,:), intent(in) :: RsLU  ! dim (NLANDUSE*nlu)
+     integer :: n, nRs, cdep
+
+       do nRs = 1, nOutRs
+         cdep  =  DepAdv2Calc( OutRs(nRs)%Adv ) ! Convert e.g. IXADV_O3
+                                                  ! to CDEP_O3
+         if ( OutRs(nRs)%LC  == GRID_LC ) then
+           d_2d( OutRs(nRs)%f2d,i,j,IOU_INST) =  RsGrid(cdep)
+         else
+           d_2d( OutRs(nRs)%f2d,i,j,IOU_INST) = RsLU( cdep, OutRs(nRs)%LC ) 
+         end if
+         if( MY_DEBUG .and. debug_flag ) then
+              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutRs(nRs)%name, cdep,  &
+                 OutRs(nRs)%LC,  100.0*d_2d( OutRs(nRs)%f2d,i,j,IOU_INST)
+         end if
+       end do
+
+  end subroutine Add_Rs
+  !<==========================================================================
+  subroutine Add_Rns(debug_flag,i,j,GnsGrid,GnsLU)
+     logical, intent(in) :: debug_flag
+     integer, intent(in) :: i,j             ! coordinates
+     real, intent(in),dimension(:) :: GnsGrid! dim (NLANDUSE), Grid Rns
+     real, dimension(:,:), intent(in) :: GnsLU  ! dim (NLANDUSE*nlu)
+     integer :: n, nRns, cdep
+
+       do nRns = 1, nOutRns
+         cdep  =  DepAdv2Calc( OutRns(nRns)%Adv ) ! Convert e.g. IXADV_O3
+                                                  ! to CDEP_O3
+         if ( OutRns(nRns)%LC  == GRID_LC ) then
+           d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) =  1./GnsGrid(cdep)
+         else
+           d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) = 1./GnsLU( cdep, OutRns(nRns)%LC ) 
+         end if
+         if( MY_DEBUG .and. debug_flag ) then
+              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutRns(nRns)%name, cdep,  &
+                 OutRns(nRns)%LC,  100.0*d_2d( OutRns(nRns)%f2d,i,j,IOU_INST)
+         end if
+       end do
+
+  end subroutine Add_Rns
+  !<==========================================================================
+ subroutine Add_Gns(debug_flag,i,j,GnsGrid,GnsLU)
+     logical, intent(in) :: debug_flag
+     integer, intent(in) :: i,j             ! coordinates
+     real, intent(in),dimension(:) :: GnsGrid! dim (NLANDUSE), Grid Gns
+     real, dimension(:,:), intent(in) :: GnsLU  ! dim (NLANDUSE*nlu)
+     integer :: n, nGns, cdep
+
+       do nGns = 1, nOutGns
+         cdep  =  DepAdv2Calc( OutGns(nGns)%Adv ) ! Convert e.g. IXADV_O3
+                                                  ! to CDEP_O3
+         if ( OutGns(nGns)%LC  == GRID_LC ) then
+           d_2d( OutGns(nGns)%f2d,i,j,IOU_INST) =  GnsGrid(cdep)
+         else
+           d_2d( OutGns(nGns)%f2d,i,j,IOU_INST) = GnsLU( cdep, OutGns(nGns)%LC ) 
+         end if
+         if( MY_DEBUG .and. debug_flag ) then
+              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutGns(nGns)%name, cdep,  &
+                 OutGns(nGns)%LC,  100.0*d_2d( OutGns(nGns)%f2d,i,j,IOU_INST)
+         end if
+       end do
+
+  end subroutine Add_Gns
+  !<==========================================================================
+
+
 end module My_DryDep_ml
 

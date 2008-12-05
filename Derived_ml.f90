@@ -66,7 +66,9 @@ use My_Derived_ml, only : &
            ,TXTLEN_DERIV    & ! length of names
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
-      nOutDDEP, OutDDep, nOutVg, OutVg
+      nOutDDEP, OutDDep, nOutVg, OutVg,&
+!hf Rs
+      nOutRs, OutRs,nOutRns, OutRns,nOutGns, OutGns
 
 
 
@@ -136,7 +138,7 @@ private
   ! Tip. For unix users, do "grep AddDef | grep -v Is3D | wc" or similar
   ! to help get the number of these:
    integer, private, parameter ::  &
-       MAXDEF_DERIV2D =150 & ! Max. No. 2D derived fields to be defined
+       MAXDEF_DERIV2D =250 & ! Max. No. 2D derived fields to be defined
       ,MAXDEF_DERIV3D = 17   ! Max. No. 3D derived fields to be defined
 
    integer, public, save :: num_deriv2d, num_deriv3d
@@ -302,6 +304,8 @@ private
     real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
 
     integer :: ndep, nVg  ! ECO08
+!hf Rs
+    integer :: nRs,nRns,nGns
 
 
   ! - for debug  - now not affecting ModelConstants version
@@ -361,6 +365,31 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
            OutVg(nVg)%name,OutVg(nVg)%units)
     if(MY_DEBUG .and. me==0) write(6,*) "OutVg ADDED ", &
           nVg, OutVg(nVg)%name
+  end do
+
+!hf Rs
+  do nRs = 1, nOutRs
+                 !code avg?            ind scale rho Inst Yr Mn Day
+    call AddDef( "Rs", T, OutRs(nRs)%Adv, 1.0, F  , F  ,T ,T ,T , &
+           OutRs(nRs)%name,OutRs(nRs)%units)
+    if(MY_DEBUG .and. me==0) write(6,*) "OutRs ADDED ", &
+          nRs, OutRs(nRs)%name
+  end do
+
+  do nRns = 1, nOutRns
+                 !code avg?            ind scale rho Inst Yr Mn Day
+    call AddDef( "Rns", T, OutRns(nRns)%Adv, 1.0, F  , F  ,T ,T ,T , &
+           OutRns(nRns)%name,OutRns(nRns)%units)
+    if(MY_DEBUG .and. me==0) write(6,*) "OutRns ADDED ", &
+          nRns, OutRns(nRns)%name
+  end do
+
+  do nGns = 1, nOutGns
+                 !code avg?            ind scale rho Inst Yr Mn Day
+    call AddDef( "Gns", T, OutGns(nGns)%Adv, cm_s, F  , F  ,T ,T ,T , &
+           OutGns(nGns)%name,OutGns(nGns)%units)
+    if(MY_DEBUG .and. me==0) write(6,*) "OutGns ADDED ", &
+          nGns, OutGns(nGns)%name
   end do
      
 

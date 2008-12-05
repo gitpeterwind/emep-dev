@@ -62,6 +62,8 @@ module DryDep_ml
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
                           Add_Vg, &  ! ECO08, for Landuse_Vg3m
+!hf Rs
+                          Add_Rs,Add_Rns,Add_Gns,&! for landuse resistances/cond.
                           Dep        ! Mapping (type = depmap)
 
 
@@ -176,7 +178,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
           Rb           & ! Quasi-boundary layer rsis.
 !hf XX         ,Rsur_dry     & ! Surface Resistance (s/m) over dry surface
 !hf XX         ,Rsur_wet       ! Surface Resistance (s/m) over wet surface
-         ,Rsur       ! Surface Resistance (s/m) over wet surface
+         ,Rsur    &   ! Surface Resistance (s/m) 
+!hf
+         ,Gns !Surface conductance
+         
     real, dimension(NDRYDEP_TOT) :: &
           gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
          ,vg_fac       & ! Loss factor due to dry dep.
@@ -185,7 +190,11 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
          ,Grid_Vg_ref  & ! Grid average of Vg at ref ht. (effective Vg for cell)
          ,Grid_Vg_3m   & ! Grid average Vg at  3m (or tree height)
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
-         ,sea_ratio      ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
+         ,sea_ratio     ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
+!hf
+    real, dimension(NDRYDEP_CALC) :: &
+          Grid_Rs      & ! Grid average of Rsurface
+         ,Grid_Gns       ! Grid average of Gns
 
     integer n, iiL, nlu, ncalc, nadv, ispec, err,k   ! help indexes
     integer :: imm, idd, ihh, iss     ! date
@@ -216,6 +225,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
       real, dimension(NDRYDEP_TOT,NLUMAX):: Vg_ref_iL
       real, dimension(NDRYDEP_TOT,NLANDUSE):: Landuse_Vg3m  ! Vg for output, LC specific
+!hf Rs
+      real, dimension(NDRYDEP_TOT,NLANDUSE):: Landuse_Rs  ! Rs for output, LC specific
+      real, dimension(NDRYDEP_TOT,NLANDUSE):: Landuse_Gns ! Gns for output, LC specific
+
       real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
       integer :: iL_used(NLUMAX), nlu_used
       real :: wet, dry    ! Fractions
@@ -293,12 +306,19 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
     Grid_Vg_3m(:) = 0.0
     Vg_ref_iL(:,:) = 0.0
     Landuse_Vg3m(:,:) = 0.0
+!hf Rs
+    Landuse_Rs(:,:) = 0.0
+    Landuse_Gns(:,:) = 0.0
+
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
     Sumland  = 0.0
     fluxfrac_adv (:,:) = 0.0
 !hf snow
     Grid_snow(i,j)=0.0 
+!hf Rs
+    Grid_Rs(:) = 0.0
+    Grid_Gns(:)  = 0.0
  
     !/ SO2/NH3 for Rsur calc
     Grid%so2nh3ratio = &
@@ -344,7 +364,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
          call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_CALC,Rb)
 !hf CoDep extra
 !hf XX         call Rsurface(i,j,DRYDEP_CALC,Rsur_dry,Rsur_wet,errmsg,debug_flag)
-         call Rsurface(i,j,DRYDEP_CALC,Rsur,errmsg,debug_flag,snow_iL)
+         call Rsurface(i,j,DRYDEP_CALC,Gns,Rsur,errmsg,debug_flag,snow_iL)
 
 !hf XX
          Grid_snow(i,j) = Grid_snow(i,j) +  L%coverage * snow_iL 
@@ -396,6 +416,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 !hf XX                     +     wet / ( L%Ra_3m + Rb(n) + Rsur_wet(n) )
                Vg_3m (n) = 1. / ( L%Ra_3m + Rb(n) + Rsur(n) ) 
 
+
             endif
 
          ! Surrogate for NO2 compensation point approach, 
@@ -417,7 +438,14 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
            Grid_Vg_ref(n) = Grid_Vg_ref(n) + L%coverage * Vg_ref(n)
            Grid_Vg_3m(n)  = Grid_Vg_3m(n)  + L%coverage * Vg_3m(n)
 
-         end do
+!hf rs
+         if ( n <= NDRYDEP_CALC)  then    ! gases
+            Grid_Rs(n) = Grid_Rs(n)+ L%coverage * Rsur(n)
+            Grid_Gns(n)= Grid_Gns(n)+ L%coverage * Gns(n)
+            Landuse_Rs(n,iL) = Rsur(n)  ! Note iL, not iiL 
+            Landuse_Gns(n,iL) = Gns(n)  ! Note iL, not iiL 
+         endif
+         end do !species loop
 
          Sumcover = Sumcover + L%coverage
 
@@ -622,7 +650,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
        call Add_ddep(debug_flag,dt_advec,i,j,convfac2,lossfrac,&
            fluxfrac_adv,c_hvegppb,Sub(:)%coverage)
        call Add_Vg(debug_flag,i,j,Grid_Vg_3m,Landuse_Vg3m)
-
+!hf Rs
+       call Add_Rs(debug_flag,i,j,Grid_Rs,Landuse_Rs)
+       call Add_Rns(debug_flag,i,j,Grid_Gns,Landuse_Gns)!not a bug!
+       call Add_Gns(debug_flag,i,j,Grid_Gns,Landuse_Gns)
  end subroutine drydep
 
 end module DryDep_ml
