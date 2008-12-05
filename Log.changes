@@ -1,3 +1,12 @@
+================================= rv3_2beta2 Hilde,   5th Dec 2008======
+Output system for  Rs, Rns and Gns added for ecosystems
+Changes in
+
+  My_Derived_ml
+  My_DryDep_ml
+  Derived_ml
+  Rsurface_ml
+  DryDep_ml
 ================================= rv3_2beta Hilde,   4th Dec 2008======
 Change version number to reflect that this model version has new
 deposition scheme compared to rv3_1 series...
