@@ -80,6 +80,8 @@ use GenSpec_tot_ml
 use GenChemicals_ml, only : species
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen
+!hf output
+use Chemfields_ml , only : so2nh3_24hr,Grid_snow
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
                         , NPROC   &   ! No. processors
@@ -434,6 +436,10 @@ call AddDef( "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"PS","hPa")
 call AddDef( "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")
 call AddDef( "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")
 call AddDef( "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")
+!hf output
+call AddDef( "SNOW",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNOW","frac")
+!surface 0.6*SO2/NH3 ratio where conc are 24 averaged 
+call AddDef( "SNratio",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNratio","ratio")
 !
 ! drydep
 !   set as "external" parameters - ie set outside Derived subroutine
@@ -661,6 +667,16 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         !end if
 
         select case ( typ )
+!hf output
+          case ( "SNOW" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = Grid_snow(i,j)
+            end forall
+
+          case ( "SNratio" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = so2nh3_24hr(i,j)
+            end forall
 
           case ( "PS" )
 

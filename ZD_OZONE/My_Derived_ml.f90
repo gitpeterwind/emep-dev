@@ -152,12 +152,12 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(14) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(16) :: &
   D2_EXTRA = (/ &
        "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
       ,"WDEP_SO2","WDEP_SO4","WDEP_HNO3","WDEP_aNO3", "WDEP_pNO3" & 
       ,"WDEP_NH3", "WDEP_aNH4" & 
-      ,"D2_REDN     ","D2_SSfi     ","D2_SSco     " &
+      ,"D2_REDN     ","D2_SSfi     ","D2_SSco     ","D2_SNOW","D2_SNratio" &
   /)
 !      ,"D2_VddACC", "D2_VddCOA" & ! ECO08
 
