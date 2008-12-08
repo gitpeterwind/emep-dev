@@ -606,7 +606,11 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
          if ( OutRns(nRns)%LC  == GRID_LC ) then
            d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) =  1./GnsGrid(cdep)
          else
-           d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) = 1./GnsLU( cdep, OutRns(nRns)%LC ) 
+           if  (GnsLU( cdep, OutRns(nRns)%LC ) >0.0) then
+              d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) = 1./GnsLU( cdep, OutRns(nRns)%LC ) 
+           else
+              d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) = 0.0 !Gns not defined(=0) for all landuse
+           endif
          end if
          if( MY_DEBUG .and. debug_flag ) then
               write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutRns(nRns)%name, cdep,  &
