@@ -327,8 +327,8 @@ contains
 
   nhour=hour
   if (hour == 0) nhour=24
-  so2nh3_hr(nhour,:,:)=so2conc*cfac_so2/min(1.,(nh3conc*cfac_nh3))
-  
+  so2nh3_hr(nhour,:,:)=so2conc*cfac_so2/max(1.0e-15,(nh3conc*cfac_nh3))
+ !so2conc in mixing ratio 
 
   so2nh3_24hr(:,:)=0.0 !initialize each time step (hour)
 
