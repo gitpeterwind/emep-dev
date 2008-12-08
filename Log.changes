@@ -1,4 +1,15 @@
-================================= rv3_2beta4 Hilde,   5th Dec 2008======
+================================ rv3_2beta5 Hilde,   8th Dec 2008======
+CoDep_ml: cap on minimum value on nh3conc (to avoid numerical problems
+when nh3 conc is zero - like it is in the beginning)
+
+Derived_ml: Outputted so2nh3_ratio capped at 3 to avoid unrealistic values in the average.
+Anyway so2nh3ratio_24hr is effectively capped at 3 in the Rns calculation, so this will show
+how it is used.
+
+DryDep_ml: changed dimensions
+My_DryDep_ml: small change in output for Rns since it is not defined for all landuses always
+
+================================= rv3_2beta4 Hilde,   8th Dec 2008======
 PhyChem_ml: call to make so2nh3_24hr! Was forgotten committed, so so2nh3 was 
 effectively set to 0 everywhere after new CoDep routine added...
 
