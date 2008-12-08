@@ -1,3 +1,8 @@
+================================= rv3_2beta4 Hilde,   5th Dec 2008======
+PhyChem_ml: call to make so2nh3_24hr! Was forgotten committed, so so2nh3 was 
+effectively set to 0 everywhere after new CoDep routine added...
+
+run.pl: New links Inputs_LandDefs.csv_05.12.2008 and Inputs_DO3SE.csv_05.12.2008
 ================================= rv3_2beta3 Hilde,   5th Dec 2008======
 added Snow and so2nh3_24hr to old output system and committed Derived and My_Derived again.
 ================================= rv3_2beta2 Hilde,   5th Dec 2008======
