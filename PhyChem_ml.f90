@@ -33,6 +33,9 @@ module PhyChem_ml
 !     Output of hourly data
 !
 !-----------------------------------------------------------------------------
+!hf CoDep 
+   use CoDep_ml, only : make_so2nh3_24hr
+   use GenSpec_adv_ml, only : IXADV_SO2, IXADV_NH3  
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
    use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after  
 
@@ -243,6 +246,13 @@ contains
                          call hourly_out()
 
           end if
+          !hf CoDep
+             if ( modulo(current_date%hour, 1) == 0 ) & !every hour
+                  call make_so2nh3_24hr(current_date%hour,&
+                  xn_adv(IXADV_SO2,:,:,KMAX_MID),&
+                  xn_adv(IXADV_NH3,:,:,KMAX_MID),&
+                  cfac(IXADV_SO2,:,:),&
+                  cfac(IXADV_NH3,:,:))
 
           call Add_2timing(35,tim_after,tim_before,"phyche:outs")
 
