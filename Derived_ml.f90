@@ -675,7 +675,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
           case ( "SNratio" )
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = so2nh3_24hr(i,j)
+              d_2d( n, i,j,IOU_INST) = min(3.0,so2nh3_24hr(i,j))
             end forall
 
           case ( "PS" )
