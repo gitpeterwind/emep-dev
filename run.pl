@@ -191,7 +191,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_1_10";
+    $testv       = "rv3_2beta4";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -228,11 +228,11 @@ my @runs        = ( $scenario );
 
 #EMISSIONS
 
-my $EMIS_INP = "$DATA_LOCAL/Modrun06" if $year < 2005;
-#$EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
-my $emisdir = "$EMIS_INP/2006-Trend${year}-V7";
+#my $EMIS_INP = "$DATA_LOCAL/Modrun06" if $year < 2005;
+my $EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
+#my $emisdir = "$EMIS_INP/2006-Trend${year}-V7";
 #$emisdir = "$EMIS_INP/2006-Trend2004-V7" if $year < 2005;
-#my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2" if $year > 2005;
+my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2" if $year > 2005;
 my $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
@@ -475,8 +475,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
-    $ifile{"$DataDir/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
-    $ifile{"$DataDir/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+    $ifile{"$DataDir/Inputs_LandDefs.csv_05.12.2008"} = "Inputs_LandDefs.csv";
+    $ifile{"$DataDir/Inputs_DO3SE.csv_05.12.2008"} = "Inputs_DO3SE.csv";
 #    $ifile{"/home/mifahf/Unify/Unimod.rv3_1_2.CoDep.snow/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$DATA_LOCAL/sondes.dat"} = "sondes.dat";
