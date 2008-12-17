@@ -829,7 +829,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               endif
 
 
-          case ( "PREC", "WDEP", "DDEP", "VG" )
+          case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns")
             if ( debug_flag ) write(*,"(a,i4,a,a4,es12.3)")"PR/DEP/VG d_2d ",&
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
