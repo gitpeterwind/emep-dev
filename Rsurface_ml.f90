@@ -171,7 +171,7 @@ contains
 ! START OF PROGRAMME: 
     errmsg = "ok"
     Sdmax = max( L%hveg/10.0, 0.01) !meters
-    fsnow = G%sdepth/Sdmax
+    fsnow = 2.0 *G%sdepth/Sdmax
 
 !Treat ice in the same way as snow
     fice=0.01*G%ice !from percent to fraction
