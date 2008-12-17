@@ -96,7 +96,7 @@ module CoDep_ml
 
    real, private, parameter :: CEHd = 180.0, CEHw = 100.0  !  dry, wet, m/s
 
-   logical, private, parameter :: MY_DEBUG = .true.
+   logical, private, parameter :: MY_DEBUG = .false.
 
 contains
 ! =======================================================================
@@ -156,13 +156,13 @@ contains
 
 
 !hf CoDep REVISE 0.6 factor WHY LIMIT a_SN to 2 for nh3???
-    a_SN  = min(2.0,0.6*so2nh3ratio)    ! NOTE: we multiply bu 0.6 to
+    a_SN  = min(3.0,so2nh3ratio)    ! NOTE: we multiply bu 0.6 to
                               ! correct for vertical grad error in local nh3
                               ! Unidoc, eqn (8.15) 
-   ia_SN = int( NTAB * a_SN/2.0 + 0.4999999 )   ! Spread values frm 0 to 2.0
+   ia_SN = int( NTAB * a_SN/3.0 + 0.4999999 )   ! Spread values frm 0 to 2.0
 
 !hf CoDep Cap a_SN_24hr at 3
-   a_SN_24hr  = min(3.0,0.6*so2nh3ratio24hr)    ! NOTE: we multiply bu 0.6 to
+   a_SN_24hr  = min(3.0,so2nh3ratio24hr)    ! NOTE: we multiply bu 0.6 to
                               ! correct for vertical grad error in local nh3
                               ! Unidoc, eqn (8.15) 
    ia_SN_24hr = int( NTAB * a_SN_24hr/3.0 + 0.4999999 )   ! Spread values frm 0 to 3.0
