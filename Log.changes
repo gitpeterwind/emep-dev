@@ -1,3 +1,13 @@
+================================ rv3_2beta7 Hilde,   17th Dec 2008======
+
+Derived_ml: small change (only effect is that less 'warnings' written out, there was a problem with undef values)
+CoDep_ml:a_SN_24hr=so2/nh3,a_SN=so2/nh3, both capped at so2/nh3=3.0, Switch off debug flag
+Rsurface_ml: fsnow =2.0 *G%sdepth/Sdmax (before G%sdepth/Sdmax)
+
+Changing a_SN_24hr from 0.6*so2/nh3 to so2/nh3 has only minor effect on so2/nh3 in 2006 
+(average increase from 0.8 to 0.81, 1% to 3% higher than obs)
+
+Changing fsnow from G%sdepth/Sdmax to 2.0*G%sdepth/Sdmax
 ================================ rv3_2beta5 Hilde,   8th Dec 2008======
 CoDep_ml: cap on minimum value on nh3conc (to avoid numerical problems
 when nh3 conc is zero - like it is in the beginning)
