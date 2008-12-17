@@ -1,4 +1,4 @@
-================================ rv3_2beta7 Hilde,   17th Dec 2008======
+================================ rv3_2beta6 Hilde,   17th Dec 2008======
 
 Derived_ml: small change (only effect is that less 'warnings' written out, there was a problem with undef values)
 CoDep_ml:a_SN_24hr=so2/nh3,a_SN=so2/nh3, both capped at so2/nh3=3.0, Switch off debug flag
