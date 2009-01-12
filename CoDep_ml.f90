@@ -284,7 +284,7 @@ contains
 
 !ds bug     do ia_SN = 1, NTAB
      do ia_SN = 0, NTAB
-       a_SN =  ia_SN/real(NTAB)
+       a_SN =  ia_SN * MAX_SN /real(NTAB)
        tab_acidity_fac( ia_SN )  = exp( -(2.0- a_SN) )
        tab_F2 (ia_SN)            = 10.0**( (-1.1099 * a_SN)+1.6769 )
 !hf CoDep       tab_F4 (ia_SN)            = 10.0**( (0.55 * a_SN)-1.0 ) 
@@ -294,8 +294,8 @@ contains
 
 !hf CoDep
      do ia_SN_24hr = 0, NTAB
-       a_SN_24hr =  ia_SN_24hr/real(NTAB)
-       tab_F3 (ia_SN_24hr)            = 11.84  * exp(1.1 * a_SN_24hr)
+       a_SN_24hr            = ia_SN_24hr * MAX_SN /real(NTAB)
+       tab_F3 (ia_SN_24hr)  = 11.84  * exp(1.1 * a_SN_24hr)
        if(MY_DEBUG.and.me==0) write(6,*) "TABIA24 ", ia_SN_24hr, &
             a_SN_24hr, tab_F3(ia_SN_24hr)
      enddo

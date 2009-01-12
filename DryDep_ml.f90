@@ -122,7 +122,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
   logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
   logical, private, save :: my_first_call = .true.
-  logical, private, parameter :: MY_DEBUG = .false.
+  logical, private, parameter :: MY_DEBUG = .true.
   character(len=30),private, save :: errmsg = "ok"
 
 
@@ -593,6 +593,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
             if ( MY_DEBUG .and. debug_flag ) then
+            if ( n == CDEP_SO2 .and. iL == 1 ) then ! SO2, CF
 
                if ( vg_set(n) )  then
                  write(6,"(a12,3i3,3f12.3)") "FLUXSET  ", iiL, iL, nadv, &
@@ -605,6 +606,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
                   100.0*Sub(iL)%coverage*Mosaic_VgRef(ncalc,iL), &
                    fluxfrac_adv(nadv,iL)
                end if
+            end if !SO2 CF
             end if
          end do
              
