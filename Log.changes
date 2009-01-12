@@ -5,7 +5,7 @@ fixed bug in CoDep, which I thought had been fixed in beta7 :-(
 ================================ rv3_2beta7 Dave,   12th Jan 2008======
 
 CoDep has a small bug-fix (for IRH=0, F4) and more debug options
-+ includes Hilde's bug-fix for MAX_SN
+ + includes Hilde's bug-fix for MAX_SN
 
 Derived_ml + My_Derived_ml 
   now has OutRG as merge of OutR and OutG terms
