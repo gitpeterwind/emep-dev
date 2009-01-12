@@ -66,9 +66,7 @@ use My_Derived_ml, only : &
            ,TXTLEN_DERIV    & ! length of names
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
-      nOutDDEP, OutDDep, nOutVg, OutVg,&
-!hf Rs
-      nOutRs, OutRs,nOutRns, OutRns,nOutGns, OutGns
+      nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG
 
 
 
@@ -305,9 +303,7 @@ private
     real, save    :: ugPMad, ugPMde, ugSS  !advected and derived PM's & SeaS
     real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
 
-    integer :: ndep, nVg  ! ECO08
-!hf Rs
-    integer :: nRs,nRns,nGns
+    integer :: ndep, nVg, nRG  ! ECO08
 
 
   ! - for debug  - now not affecting ModelConstants version
@@ -316,6 +312,7 @@ private
    integer :: ind, idebug
 
 
+    if(MY_DEBUG) write(6,*) " START DEFINE DERIVDE "
     !   same mol.wt assumed for PPM25 and PPMco
 
      ugPMad = species(PM25)%molwt * PPBINV /ATWAIR 
@@ -362,38 +359,21 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
      
 
   do nVg = 1, nOutVg
-                 !code avg?            ind scale rho Inst Yr Mn Day
-    call AddDef( "VG", T, OutVg(nVg)%Adv, cm_s, F  , F  ,T ,T ,T , &
-           OutVg(nVg)%name,OutVg(nVg)%units)
-    if(MY_DEBUG .and. me==0) write(6,*) "OutVg ADDED ", &
-          nVg, OutVg(nVg)%name
+                 !code            avg?       ind             scale 
+                 !    rho Inst Yr Mn Day
+    call AddDef( OutVg(nVg)%label, T, OutVg(nVg)%Adv, OutVg(nVg)%scale, &
+                       F  , F  ,T ,T ,T , OutVg(nVg)%name,OutVg(nVg)%units)
+    if(MY_DEBUG .and. me==0) write(6,*) "OutVg ADDED ", nVg, OutVg(nVg)%name
   end do
 
-!hf Rs
-  do nRs = 1, nOutRs
-                 !code avg?            ind scale rho Inst Yr Mn Day
-    call AddDef( "Rs", T, OutRs(nRs)%Adv, 1.0, F  , F  ,T ,T ,T , &
-           OutRs(nRs)%name,OutRs(nRs)%units)
-    if(MY_DEBUG .and. me==0) write(6,*) "OutRs ADDED ", &
-          nRs, OutRs(nRs)%name
+  do nRG = 1, nOutRG
+                 !code            avg?       ind             scale 
+                 !  rho Inst Yr Mn Day  Units
+    call AddDef( OutRG(nRG)%label, T, OutRG(nRG)%Adv, OutRG(nRG)%scale, &
+                    F  , F  ,T ,T ,T , OutRG(nRG)%name,OutRG(nRG)%units)
+    if(MY_DEBUG .and. me==0) write(6,*) "OutRG ADDED ", nRG, OutRG(nRG)%name
   end do
 
-  do nRns = 1, nOutRns
-                 !code avg?            ind scale rho Inst Yr Mn Day
-    call AddDef( "Rns", T, OutRns(nRns)%Adv, 1.0, F  , F  ,T ,T ,T , &
-           OutRns(nRns)%name,OutRns(nRns)%units)
-    if(MY_DEBUG .and. me==0) write(6,*) "OutRns ADDED ", &
-          nRns, OutRns(nRns)%name
-  end do
-
-  do nGns = 1, nOutGns
-                 !code avg?            ind scale rho Inst Yr Mn Day
-    call AddDef( "Gns", T, OutGns(nGns)%Adv, cm_s, F  , F  ,T ,T ,T , &
-           OutGns(nGns)%name,OutGns(nGns)%units)
-    if(MY_DEBUG .and. me==0) write(6,*) "OutGns ADDED ", &
-          nGns, OutGns(nGns)%name
-  end do
-     
 
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!

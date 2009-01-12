@@ -26,9 +26,10 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
 module CoDep_ml
-  use CheckStop_ml, only : CheckStop
-  use Par_ml,         only : MAXLIMAX, MAXLJMAX
-  use Chemfields_ml, only  : so2nh3_24hr
+  use CheckStop_ml,  only : CheckStop
+  use Chemfields_ml, only : so2nh3_24hr
+  use GridValues_ml, only : debug_proc, debug_li, debug_lj
+  use Par_ml,        only : MAXLIMAX, MAXLJMAX, me ! (me for DEBUG)
 
 
 
@@ -60,8 +61,8 @@ module CoDep_ml
   implicit none
 
   public   :: make_so2nh3_24hr ! make 24hr ratio
-  public   ::  CoDep_factors
-  private  ::  Tabulate        ! pre-calculate many values to save CPU
+  public   :: CoDep_factors
+  private  :: Tabulate        ! pre-calculate many values to save CPU
  
   !/** Some parameters for the so2nh3_24hr calculations
 
@@ -75,7 +76,7 @@ module CoDep_ml
   integer, private, parameter :: TMIN = -40, TMAX = 40 ! Allowed temp. range
   integer, private, parameter :: NTAB  = 100   ! No. intervals used for tabulation
 
-   real, private, save, dimension(0:100,2) :: tab_humidity_fac
+  !ds NOTUSED real, private, save, dimension(0:100,2) :: tab_humidity_fac
    real, private, save, dimension(0:100)   :: tab_exp_rh  ! For eqn (8.16)
    real, private, save, dimension(0:NTAB) :: &
            tab_acidity_fac,                &
@@ -97,6 +98,8 @@ module CoDep_ml
    real, private, parameter :: CEHd = 180.0, CEHw = 100.0  !  dry, wet, m/s
 
    logical, private, parameter :: MY_DEBUG = .false.
+   real, private, parameter  :: MAX_SN = 3.0 !max SO2/NH3 ratio
+
 
 contains
 ! =======================================================================
@@ -144,6 +147,7 @@ contains
  
    if ( my_first_call ) then
 
+     write(*,*) "Start First CoDep call, ",  so2nh3ratio24hr,so2nh3ratio, Ts_C, frh, forest
      call Tabulate()
      my_first_call = .false.
      write(*,*) "First CoDep call, ",  so2nh3ratio24hr,so2nh3ratio, Ts_C, frh, forest
@@ -156,16 +160,19 @@ contains
 
 
 !hf CoDep REVISE 0.6 factor WHY LIMIT a_SN to 2 for nh3???
-    a_SN  = min(3.0,so2nh3ratio)    ! NOTE: we multiply bu 0.6 to
+
+    a_SN  = min(MAX_SN,so2nh3ratio)  ! NOTE: we multiply bu 0.6 to
                               ! correct for vertical grad error in local nh3
                               ! Unidoc, eqn (8.15) 
-   ia_SN = int( NTAB * a_SN/3.0 + 0.4999999 )   ! Spread values frm 0 to 2.0
+!hf   ia_SN = int( NTAB * a_SN/3.0 + 0.4999999 )   ! Spread values frm 0 to 2.0
+   ia_SN = nint( NTAB * a_SN/MAX_SN )   ! Spread values from 0-3 to 0:100
+
 
 !hf CoDep Cap a_SN_24hr at 3
-   a_SN_24hr  = min(3.0,so2nh3ratio24hr)    ! NOTE: we multiply bu 0.6 to
+   a_SN_24hr  = min(MAX_SN,so2nh3ratio24hr)    ! NOTE: we multiply bu 0.6 to
                               ! correct for vertical grad error in local nh3
                               ! Unidoc, eqn (8.15) 
-   ia_SN_24hr = int( NTAB * a_SN_24hr/3.0 + 0.4999999 )   ! Spread values frm 0 to 3.0
+   ia_SN_24hr = nint( NTAB * a_SN_24hr/MAX_SN )
 
 
    IRH   = max( 1,  int( 100.0 * frh ) )
@@ -226,8 +233,9 @@ contains
 
 !Limit on So2/nh3 
 !hf CoDep
-          Rns_SO2 = min( 700.0, Rns_SO2)  ! Set because rh goes almost to zero occationally over the Alps, Greenland and Svalbard
-                                          ! 700 chosen sort of random
+          Rns_SO2 = min( 1000.0, Rns_SO2)  ! Set because rh goes almost 
+                 ! to zero occationally over the Alps, Greenland and Svalbard
+                 ! 1000 chosen sort of random
 
 
            Rns_SO2 = max(  10.0,Rns_SO2) !hf CoDep SHOULD WE LIMIT IT to 10??
@@ -238,7 +246,6 @@ contains
          write(*,*) "CODEP PRE NH3", ia_SN, a_SN, F1, F2, Rns_NH3
          write(*,*) "CODEP PRE SO2",ia_SN_24hr, a_SN_24hr, F3, F4, Rns_SO2
        end if
-
 
 
      else if (  Ts_C > -5 ) then
@@ -271,7 +278,7 @@ contains
      integer, parameter, dimension(2) :: &
           Rhlim = (/ 85,  75 /)   ! RH limits for F=forest, G=grass
 
-    tab_humidity_fac(:,:) = 0.0
+    !ds NOTUSEDtab_humidity_fac(:,:) = 0.0
 
     ! Acidity factor
 
@@ -281,29 +288,38 @@ contains
        tab_acidity_fac( ia_SN )  = exp( -(2.0- a_SN) )
        tab_F2 (ia_SN)            = 10.0**( (-1.1099 * a_SN)+1.6769 )
 !hf CoDep       tab_F4 (ia_SN)            = 10.0**( (0.55 * a_SN)-1.0 ) 
+       if(MY_DEBUG.and.me==0) write(6,*) "TABIA ", ia_SN, a_SN, &
+              tab_acidity_fac( ia_SN ), tab_F2(ia_SN)
      end do
 
 !hf CoDep
      do ia_SN_24hr = 0, NTAB
        a_SN_24hr =  ia_SN_24hr/real(NTAB)
        tab_F3 (ia_SN_24hr)            = 11.84  * exp(1.1 * a_SN_24hr)
+       if(MY_DEBUG.and.me==0) write(6,*) "TABIA24 ", ia_SN_24hr, &
+            a_SN_24hr, tab_F3(ia_SN_24hr)
      enddo
 
-     do veg = 1, 2
-       rh_lim = Rhlim(veg)
-       do IRH = rh_lim, 100
-         tab_humidity_fac(IRH,veg) = ( (IRH-rh_lim)/(100-rh_lim) )
-       end do
-     end do
+!ds NOTUSED  do veg = 1, 2
+!ds NOTUSED    rh_lim = Rhlim(veg)
+!ds NOTUSED    do IRH = rh_lim, 100
+!ds NOTUSED      !BUG tab_humidity_fac(IRH,veg) = ( (IRH-rh_lim)/(100-rh_lim) )
+!ds NOTUSED      tab_humidity_fac(IRH,veg) = ( (IRH-rh_lim)/(100.0-rh_lim) )
+!ds NOTUSED      if(MY_DEBUG.and.me==0) write(6,*) "TABVEGRH ", &
+!ds NOTUSED           veg, IRH, rh_lim,  tab_humidity_fac(IRH,veg)
+!ds NOTUSED    end do
+!ds NOTUSED  end do
 
-     do IRH = 0, 100
-
-     enddo
+!???     do IRH = 0, 100
+!???
+!???     enddo
 
      do IRH = 0, 100
           tab_exp_rh(IRH) = exp( (100.0-IRH)/7.0)
 !hf CoDep  
-          tab_F4(IRH)= (IRH/100.)**(-1.67)
+          tab_F4(IRH)= (max(1,IRH)/100.)**(-1.67)
+          if(MY_DEBUG.and.me==0) write(6,*) "TABRH ", me, IRH, &
+              tab_exp_rh(IRH), tab_F4(IRH)
      end do
 
    end subroutine Tabulate
@@ -324,6 +340,7 @@ contains
   real, dimension(MAXLIMAX,MAXLJMAX), intent(in) :: nh3conc
   real, dimension(MAXLIMAX,MAXLJMAX), intent(in) :: cfac_so2
   real, dimension(MAXLIMAX,MAXLJMAX), intent(in) :: cfac_nh3
+  logical :: debug_flag        ! set true when i,j match DEBUG_i, DEBUG_j
 
   nhour=hour
   if (hour == 0) nhour=24
@@ -334,9 +351,17 @@ contains
 
   do i=1, MAXLIMAX
      do j=1, MAXLJMAX
+        if( MY_DEBUG ) debug_flag =  &
+           ( debug_proc .and. i == debug_li .and. j == debug_lj)
         do nhour=1,24
            so2nh3_24hr(i,j)=so2nh3_24hr(i,j)+so2nh3_hr(nhour,i,j)/24. 
-        enddo
+           if( MY_DEBUG .and. debug_flag ) then
+              write(*,*) "so2nh3_hr(nhour,i,j)",nhour,&
+                so2nh3_hr(nhour,i,j),so2nh3_24hr(i,j)
+              write(*,*) "so2nh3_24hr output", so2nh3_24hr(i,j),&
+                so2conc(i,j),cfac_so2(i,j),nh3conc(i,j),cfac_nh3(i,j)
+          endif
+        enddo ! nhour
      enddo 
   enddo
 

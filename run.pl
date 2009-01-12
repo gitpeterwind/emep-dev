@@ -9,7 +9,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=32:ib
 # wall time limit of run 
-#PBS -lwalltime=10:00:00
+#PBS -lwalltime=09:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=4000MB
 # account for billing
@@ -191,7 +191,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2beta4";
+    $testv       = "rv3_2beta7";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }

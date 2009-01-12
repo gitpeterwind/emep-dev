@@ -42,14 +42,14 @@ logical, private, parameter :: MY_DEBUG = .false.
 contains
 ! =======================================================================
 
-  subroutine Rb_gas(water,ustar,z0,DRYDEP_CALC,Rb) 
+  subroutine Rb_gas(water,ustar,z0,DRYDEP_GAS,Rb) 
 ! =======================================================================
 ! Input:
 
     logical, intent(in) :: water
     real, intent(in)    :: ustar, z0
     integer, dimension(:), intent(in) :: &
-         DRYDEP_CALC   ! Array with Wesely indices of gases wanted
+         DRYDEP_GAS    ! Array with Wesely indices of gases wanted
 
 ! Output:
 
@@ -70,8 +70,8 @@ contains
 
 !.........  Loop over all required gases   ................................
 
-  GASLOOP: do icmp = 1, size( DRYDEP_CALC )
-      iwes = DRYDEP_CALC(icmp)
+  GASLOOP: do icmp = 1, size( DRYDEP_GAS )
+      iwes = DRYDEP_GAS(icmp)
 
      if   ( water ) then
 
@@ -95,7 +95,7 @@ contains
   end do GASLOOP
 
    if ( MY_DEBUG ) then
-      print *,   "RB DRYDEP_CALC", size(DRYDEP_CALC), DRYDEP_CALC(1)
+      print *,   "RB DRYDEP_GAS", size(DRYDEP_GAS), DRYDEP_GAS(1)
       print *,   "RB water",  water, "Rb(1) ", Rb(1)
    end if
  end subroutine Rb_gas

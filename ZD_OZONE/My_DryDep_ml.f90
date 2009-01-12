@@ -39,9 +39,7 @@ module My_DryDep_ml    ! DryDep_ml
  use CheckStop_ml,  only : CheckStop, StopAll
  use Derived_ml,    only : f_2d,   d_2d, IOU_INST
  use My_Derived_ml,  only : &
-   nOutDDep, DDEP_LCS , OutDDep, nOutVg, OutVg   &
-!hf Rs
-  ,nOutRs, OutRs,nOutRns, OutRns ,nOutGns, OutGns  &
+   nOutDDep, DDEP_LCS , OutDDep, nOutVg, OutVg, nOutRG, OutRG &
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
@@ -64,10 +62,8 @@ use Par_ml, only: me ! Vds Ndep
   public :: Init_DepMap
   public :: Add_ddep
   public :: Add_Vg
-!hf Rs
-  public :: Add_Rs
-  public :: Add_Rns
-  public :: Add_Gns
+  public :: Add_RG
+
   !/** Variables used in deposition calculations
  
   ! DDEP_xx gives the index that will be used in the EMEP model
@@ -93,9 +89,9 @@ use Par_ml, only: me ! Vds Ndep
   !/** IMPORTANT: the variables below must match up in the sense that, for 
   ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
-  integer, public, parameter :: NDRYDEP_CALC = 10  ! gases
+  integer, public, parameter :: NDRYDEP_GASES = 10  ! gases
   integer, public, parameter :: NDRYDEP_AER = 2    ! aerosols
-  integer, public, parameter :: NDRYDEP_TOT = NDRYDEP_CALC + NDRYDEP_AER
+  integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
 
 
   integer, public, parameter :: &
@@ -116,8 +112,8 @@ use Par_ml, only: me ! Vds Ndep
   integer, public, parameter :: FLUX_ADV   = IXADV_O3
 
  
-  integer, public, parameter, dimension(NDRYDEP_CALC) :: &
-    DRYDEP_CALC = (/ WES_HNO3, WES_O3,   WES_SO2, &
+  integer, public, parameter, dimension(NDRYDEP_GASES) :: &
+    DRYDEP_GASES = (/ WES_HNO3, WES_O3,   WES_SO2, &
                      WES_NH3,  WES_NO2 , WES_PAN, &
                      WES_H2O2, WES_ALD, WES_HCHO, WES_OP    /)
 
@@ -128,7 +124,7 @@ use Par_ml, only: me ! Vds Ndep
 
 
   ! We define also the number of species which will be deposited in
-  ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_CALC
+  ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
   ! The actual species used and their relation to the CDEP_ indices
   ! above will be defined in Init_DepMap
 
@@ -152,11 +148,10 @@ use Par_ml, only: me ! Vds Ndep
 
   ! depositions are calculated to the following landuse classes, where
   ! e.g. conif may include both temperate and Medit.
-   character(len=7), private, dimension(5), parameter :: &
+   character(len=7), private, dimension(0:4), parameter :: &
     DEP_RECEIVERS = (/ "Grid", "Conif", "Decid", "Crops", "Seminat" /)
    integer, private, parameter :: &
-    FULLGRID=1, CONIF=2, DECID=3, CROP=4, SEMINAT=5
-   integer, public, parameter :: GRID_LC=888 ! Land-code to mark full grid
+    GRID_LC=0, CONIF=1, DECID=2, CROP=3, SEMINAT=4
 
    logical, private, parameter :: MY_DEBUG = .false.
    logical, private, parameter :: DEBUG_ECO = .false.
@@ -164,9 +159,8 @@ use Par_ml, only: me ! Vds Ndep
 
 contains
   subroutine Init_DepMap
-   real :: cms = 0.01     ! Convert to m/s
    integer, dimension(22) :: check_vals  ! Tmp safety check array
-   integer :: icheck, iadv, i, i2, n, ndep
+   integer :: icheck, iadv, i, i2, n, ndep, nVg, nRG
 
  ! .... Define the mapping between the advected species and
  !      the specied for which the calculation needs to be done.
@@ -207,82 +201,55 @@ contains
   do ndep = 1, nOutDDep
 
     OutDdep(ndep)%f2d  = find_index(OutDdep(ndep)%name ,f_2d(:)%name)
-    OutDdep(ndep)%LC   = find_index(OutDdep(ndep)%txt ,DEP_RECEIVERS)
+   ! We start LC with Grid at zero, so need -1 offset
+    OutDdep(ndep)%LC   = find_index(OutDdep(ndep)%txt ,DEP_RECEIVERS) -1
 
     if(MY_DEBUG .and. me==0) write(6,*) "OUTDdep ", ndep, &
        OutDdep(ndep)%name,OutDdep(ndep)%txt,"=>"&
           ,OutDdep(ndep)%LC, OutDdep(ndep)%f2d
     call CheckStop( OutDDep(ndep)%f2d < 1, &
         "OutDDep-f2d Error " // OutDDep(ndep)%name)
-    call CheckStop( OutDDep(ndep)%LC < 1, &
+    call CheckStop( OutDDep(ndep)%LC < 0, & !0=GRID
         "OutDDep-LC Error " // OutDDep(ndep)%name)
   end do
      
-  do ndep = 1, nOutVg
+  do nVg = 1, nOutVg
 
-     OutVg(ndep)%LC = find_index( OutVg(ndep)%txt, LandDefs(:)%code )
-     if( OutVg(ndep)%txt == "Grid") OutVg(ndep)%LC = GRID_LC
-     OutVg(ndep)%f2d = find_index( OutVg(ndep)%name, f_2d(:)%name )
+     if( OutVg(nVg)%txt == "Grid") then
+        OutVg(nVg)%LC = GRID_LC   ! zero
+     else 
+        OutVg(nVg)%LC = find_index( OutVg(nVg)%txt, LandDefs(:)%code )
+     end if
+     OutVg(nVg)%f2d = find_index( OutVg(nVg)%name, f_2d(:)%name )
 
-     if(MY_DEBUG .and. me==0) write(6,*) "OUTVG ", ndep, &
-         OutVg(ndep)%name,OutVg(ndep)%txt,"=>",&
-           OutVg(ndep)%LC, OutVg(ndep)%f2d
+     if(MY_DEBUG .and. me==0) write(6,*) "OUTVG ", nVg, &
+         OutVg(nVg)%name,OutVg(nVg)%txt,"=>",&
+           OutVg(nVg)%LC, OutVg(nVg)%f2d
 
-     call CheckStop( OutVg(ndep)%LC < 1, &
-          "OutVg-LC Error " // OutVg(ndep)%name)
-     call CheckStop( OutVg(ndep)%f2d < 1, &
-          "OutVg-f2d Error " // OutVg(ndep)%name)
+     call CheckStop( OutVg(nVg)%LC < GRID_LC , & !ie zero
+          "OutVg-LC Error " // OutVg(nVg)%name)
+     call CheckStop( OutVg(nVg)%f2d < 1, &
+          "OutVg-f2d Error " // OutVg(nVg)%name)
   end do
 
-!hf Rs
- do ndep = 1, nOutRs
+ do nRG = 1, nOutRG
 
-     OutRs(ndep)%LC = find_index( OutRs(ndep)%txt, LandDefs(:)%code )
-     if( OutRs(ndep)%txt == "Grid") OutRs(ndep)%LC = GRID_LC !hf ??
-     OutRs(ndep)%f2d = find_index( OutRs(ndep)%name, f_2d(:)%name )
+     if( OutRG(nRG)%txt == "Grid") then
+        OutRG(nRG)%LC = GRID_LC    ! zero
+     else 
+        OutRG(nRG)%LC = find_index( OutRG(nRG)%txt, LandDefs(:)%code )
+     end if
+     OutRG(nRG)%f2d = find_index( OutRG(nRG)%name, f_2d(:)%name )
 
-     if(MY_DEBUG .and. me==0) write(6,*) "OUTRs ", ndep, &
-         OutRs(ndep)%name,OutRs(ndep)%txt,"=>",&
-           OutRs(ndep)%LC, OutRs(ndep)%f2d
+     if(MY_DEBUG .and. me==0) write(6,*) "OUTRG ", nRG, &
+         OutRG(nRG)%name,OutRG(nRG)%txt,"=>",&
+           OutRG(nRG)%LC, OutRG(nRG)%f2d
 
-     call CheckStop( OutRs(ndep)%LC < 1, &
-          "OutRs-LC Error " // OutRs(ndep)%name)
-     call CheckStop( OutRs(ndep)%f2d < 1, &
-          "OutRs-f2d Error " // OutRs(ndep)%name)
+     call CheckStop( OutRG(nRG)%LC < GRID_LC , & ! <zero
+          "OutRG-LC Error " // OutRG(nRG)%name)
+     call CheckStop( OutRG(nRG)%f2d < 1, &
+          "OutRG-f2d Error " // OutRG(nRG)%name)
   end do
-
- do ndep = 1, nOutRns
-
-     OutRns(ndep)%LC = find_index( OutRns(ndep)%txt, LandDefs(:)%code )
-     if( OutRns(ndep)%txt == "Grid") OutRns(ndep)%LC = GRID_LC !hf ??
-     OutRns(ndep)%f2d = find_index( OutRns(ndep)%name, f_2d(:)%name )
-
-     if(MY_DEBUG .and. me==0) write(6,*) "OUTRns ", ndep, &
-         OutRns(ndep)%name,OutRns(ndep)%txt,"=>",&
-           OutRns(ndep)%LC, OutRns(ndep)%f2d
-
-     call CheckStop( OutRns(ndep)%LC < 1, &
-          "OutRns-LC Error " // OutRns(ndep)%name)
-     call CheckStop( OutRns(ndep)%f2d < 1, &
-          "OutRns-f2d Error " // OutRns(ndep)%name)
-  end do
-
-  do ndep = 1, nOutGns
-
-     OutGns(ndep)%LC = find_index( OutGns(ndep)%txt, LandDefs(:)%code )
-     if( OutGns(ndep)%txt == "Grid") OutGns(ndep)%LC = GRID_LC !hf ??
-     OutGns(ndep)%f2d = find_index( OutGns(ndep)%name, f_2d(:)%name )
-
-     if(MY_DEBUG .and. me==0) write(6,*) "OUTGns ", ndep, &
-         OutGns(ndep)%name,OutGns(ndep)%txt,"=>",&
-           OutGns(ndep)%LC, OutGns(ndep)%f2d
-
-     call CheckStop( OutGns(ndep)%LC < 1, &
-          "OutGns-LC Error " // OutGns(ndep)%name)
-     call CheckStop( OutGns(ndep)%f2d < 1, &
-          "OutGns-f2d Error " // OutGns(ndep)%name)
-  end do
-
 
 
 
@@ -360,7 +327,7 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
                                                       ! mol/cm3 to nmole/m3
 
   !ECO08:  Variables added for new ecosystem dep
-     real, dimension(size(DEP_RECEIVERS)) :: invArea, Area
+     real, dimension(0:size(DEP_RECEIVERS)-1) :: invEcoArea, EcoArea
      integer :: ndep, RLC   ! RLC = receiver land-cover
      real :: Fflux
 
@@ -374,23 +341,23 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
   ! Must match areas given above, e.g. DDEP_CONIF -> Conif
 
   !ECO08, Ecosystem areas:
-     Area(CONIF)   = sum( coverage(:), LandType(:)%is_conif )
-     Area(DECID)   = sum( coverage(:), LandType(:)%is_decid )
-     Area(CROP)    = sum( coverage(:), LandType(:)%is_crop  )
-     Area(SEMINAT) = sum( coverage(:), LandType(:)%is_seminat )
-     Area(FULLGRID)    = 1.0
+     EcoArea(CONIF)   = sum( coverage(:), LandType(:)%is_conif )
+     EcoArea(DECID)   = sum( coverage(:), LandType(:)%is_decid )
+     EcoArea(CROP)    = sum( coverage(:), LandType(:)%is_crop  )
+     EcoArea(SEMINAT) = sum( coverage(:), LandType(:)%is_seminat )
+     EcoArea(GRID_LC)    = 1.0
 
-     invArea(:) = 0.0
+     invEcoArea(:) = 0.0
 
-     do n = 1, size(DEP_RECEIVERS)
-        if ( Area(n) > 1.0e-39 ) invArea(n) = 1.0/Area(n)
+     do n = 0, size(DEP_RECEIVERS)-1
+        if ( EcoArea(n) > 1.0e-39 ) invEcoArea(n) = 1.0/EcoArea(n)
      end do 
 
 
    !  Query - crops, outisde g.s. ????
      !if ( DEBUG_ECO .and. first_call .and. debug_flag ) then
      if ( DEBUG_ECO .and. debug_flag ) then
-       write(*,*)  "ECOAREAS ", i,j, Area(:)
+       write(*,*)  "ECOAREAS ", i,j, EcoArea(:)
          do n = 1, 19
            write(*,*)  "ECOCHECK ", n, i,j, LandType(n)%is_conif, coverage(n)
          end do
@@ -429,7 +396,7 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
       Fflux = 0.0
       do n = 1, nadv2
          nadv = DDEP_GROUP(n)
-        if ( RLC == FULLGRID ) then 
+        if ( RLC == GRID_LC ) then 
             Fflux = Fflux + Deploss(nadv) * sum( fluxfrac(nadv,:) )
         else if ( RLC == CONIF ) then 
             Fflux = Fflux + Deploss(nadv) * &
@@ -449,14 +416,16 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
       end do ! n
         if ( OutDDep(ndep)%f2d < 1 .or. Fflux < 0.0 ) then
              write(6,*) "CATASTR ", ndep, OutDDep(ndep)%f2d,OutDDep(ndep)%name
+             write(6,*) "CATASTR  RLC", RLC
              call CheckStop("CATASTROPHE: "//OutDDep(ndep)%name)
         end if
 
-  !ECO08 - invAreaCF divides the flux per grid by the landarea of eac
+  !ECO08 
+  ! - invEcoAreaCF divides the flux per grid by the landarea of each
   ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
 
         d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST) =  &
-            Fflux * convfac * OutDDep(ndep)%atw * invArea(RLC)
+            Fflux * convfac * OutDDep(ndep)%atw * invEcoArea(RLC)
 
         if ( DEBUG_ECO .and. debug_flag ) then
            write(6,*) "DEBUG_ECO Fflux ", ndep, nadv, RLC, Fflux, &
@@ -547,101 +516,67 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
 
   end subroutine  Add_ddep
   !<==========================================================================
-  subroutine Add_Vg(debug_flag,i,j,VgGrid,VgLU)
+  subroutine Add_Vg(debug_flag,i,j,VgLU)
      logical, intent(in) :: debug_flag
      integer, intent(in) :: i,j             ! coordinates
-     real, intent(in),dimension(:) :: VgGrid! dim (NLANDUSE), Grid Vg
-     real, dimension(:,:), intent(in) :: VgLU  ! dim (NLANDUSE*nlu)
+     real, dimension(:,0:), intent(in) :: VgLU  ! dim (NLANDUSE*nlu), 0=Grid
      integer :: n, nVg, cdep
 
        do nVg = 1, nOutVg
          cdep  =  DepAdv2Calc( OutVg(nVg)%Adv ) ! Convert e.g. IXADV_O3
                                                   ! to CDEP_O3
-         if ( OutVg(nVg)%LC  == GRID_LC ) then
-           d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) =  VgGrid(cdep)
-         else
-           d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) = VgLU( cdep, OutVg(nVg)%LC ) 
-         end if
+         d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) = VgLU( cdep, OutVg(nVg)%LC ) 
+
          if( MY_DEBUG .and. debug_flag ) then
-              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutVg(nVg)%name, cdep,  &
+              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG: ",  OutVg(nVg)%name, cdep,  &
                  OutVg(nVg)%LC,  100.0*d_2d( OutVg(nVg)%f2d,i,j,IOU_INST)
          end if
        end do
 
   end subroutine Add_Vg
   !<==========================================================================
-  subroutine Add_Rs(debug_flag,i,j,RsGrid,RsLU)
+  subroutine Add_RG(debug_flag,i,j, GsLU, GnsLU)
      logical, intent(in) :: debug_flag
      integer, intent(in) :: i,j             ! coordinates
-     real, intent(in),dimension(:) :: RsGrid! dim (NLANDUSE), Grid Rs
-     real, dimension(:,:), intent(in) :: RsLU  ! dim (NLANDUSE*nlu)
-     integer :: n, nRs, cdep
+     real, dimension(:,0:), intent(in) :: GsLU, GnsLU  ! dim (0:NLANDUSE*nlu)
+     integer :: n, nRG, cdep
+     real :: Gs, Gns, Rs, Rns
 
-       do nRs = 1, nOutRs
-         cdep  =  DepAdv2Calc( OutRs(nRs)%Adv ) ! Convert e.g. IXADV_O3
+       do nRG = 1, nOutRG
+         cdep  =  DepAdv2Calc( OutRG(nRG)%Adv ) ! Convert e.g. IXADV_O3
                                                   ! to CDEP_O3
-         if ( OutRs(nRs)%LC  == GRID_LC ) then
-           d_2d( OutRs(nRs)%f2d,i,j,IOU_INST) =  RsGrid(cdep)
+         Gs = GsLU( cdep, OutRG(nRG)%LC )
+         if( Gs < 1.0e-44 ) then
+            Rs = -999.0
          else
-           d_2d( OutRs(nRs)%f2d,i,j,IOU_INST) = RsLU( cdep, OutRs(nRs)%LC ) 
+            Rs = 1.0/Gs
          end if
+
+         Gns = GnsLU( cdep, OutRG(nRG)%LC )
+         if( Gns < 1.0e-44 ) then
+            Rns = -999.0
+         else
+            Rns = 1.0/Gns
+         end if
+
+         if( trim( OutRG(nRG)%label ) == "Rs" )  then
+           d_2d( OutRG(nRG)%f2d,i,j,IOU_INST) = Rs
+         else if( trim( OutRG(nRG)%label ) == "Rns" )  then
+           d_2d( OutRG(nRG)%f2d,i,j,IOU_INST) = Rns
+         else if( trim( OutRG(nRG)%label ) == "Gns" )  then
+           d_2d( OutRG(nRG)%f2d,i,j,IOU_INST) = Gns
+         else if( trim( OutRG(nRG)%label ) == "Gs" )  then
+           d_2d( OutRG(nRG)%f2d,i,j,IOU_INST) = Gs
+         end if
+
          if( MY_DEBUG .and. debug_flag ) then
-              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutRs(nRs)%name, cdep,  &
-                 OutRs(nRs)%LC,  100.0*d_2d( OutRs(nRs)%f2d,i,j,IOU_INST)
+              write(*,"(a,a,i3,2i4,es12.3)") "ADD_RG: ", OutRG(nRG)%name,&
+                cdep,  OutRG(nRG)%LC,  OutRG(nRG)%f2d, &
+                   d_2d( OutRG(nRG)%f2d,i,j,IOU_INST)
          end if
        end do
 
-  end subroutine Add_Rs
-  !<==========================================================================
-  subroutine Add_Rns(debug_flag,i,j,GnsGrid,GnsLU)
-     logical, intent(in) :: debug_flag
-     integer, intent(in) :: i,j             ! coordinates
-     real, intent(in),dimension(:) :: GnsGrid! dim (NLANDUSE), Grid Rns
-     real, dimension(:,:), intent(in) :: GnsLU  ! dim (NLANDUSE*nlu)
-     integer :: n, nRns, cdep
-
-       do nRns = 1, nOutRns
-         cdep  =  DepAdv2Calc( OutRns(nRns)%Adv ) ! Convert e.g. IXADV_O3
-                                                  ! to CDEP_O3
-         if ( OutRns(nRns)%LC  == GRID_LC ) then
-           d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) =  1./GnsGrid(cdep)
-         else
-           if  (GnsLU( cdep, OutRns(nRns)%LC ) >0.0) then
-              d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) = 1./GnsLU( cdep, OutRns(nRns)%LC ) 
-           else
-              d_2d( OutRns(nRns)%f2d,i,j,IOU_INST) = 0.0 !Gns not defined(=0) for all landuse
-           endif
-         end if
-         if( MY_DEBUG .and. debug_flag ) then
-              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutRns(nRns)%name, cdep,  &
-                 OutRns(nRns)%LC,  100.0*d_2d( OutRns(nRns)%f2d,i,j,IOU_INST)
-         end if
-       end do
-
-  end subroutine Add_Rns
-  !<==========================================================================
- subroutine Add_Gns(debug_flag,i,j,GnsGrid,GnsLU)
-     logical, intent(in) :: debug_flag
-     integer, intent(in) :: i,j             ! coordinates
-     real, intent(in),dimension(:) :: GnsGrid! dim (NLANDUSE), Grid Gns
-     real, dimension(:,:), intent(in) :: GnsLU  ! dim (NLANDUSE*nlu)
-     integer :: n, nGns, cdep
-
-       do nGns = 1, nOutGns
-         cdep  =  DepAdv2Calc( OutGns(nGns)%Adv ) ! Convert e.g. IXADV_O3
-                                                  ! to CDEP_O3
-         if ( OutGns(nGns)%LC  == GRID_LC ) then
-           d_2d( OutGns(nGns)%f2d,i,j,IOU_INST) =  GnsGrid(cdep)
-         else
-           d_2d( OutGns(nGns)%f2d,i,j,IOU_INST) = GnsLU( cdep, OutGns(nGns)%LC ) 
-         end if
-         if( MY_DEBUG .and. debug_flag ) then
-              write(*,"(a,a,i3,i4,f8.3)") "ADD_VG",  OutGns(nGns)%name, cdep,  &
-                 OutGns(nGns)%LC,  100.0*d_2d( OutGns(nGns)%f2d,i,j,IOU_INST)
-         end if
-       end do
-
-  end subroutine Add_Gns
+  end subroutine Add_RG
   !<==========================================================================
 
 

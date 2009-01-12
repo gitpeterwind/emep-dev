@@ -178,8 +178,7 @@ private
 
 
   integer, public, save :: nOutDDep, nOutVg ! ECO08
-!hf OutRs, OutRns
-  integer, public, save :: nOutRs, nOutRns, nOutGns 
+  integer, public, save :: nOutRG  ! RG = resistances and conductances
 
 
  ! Store indices of ecossytem-species depositions
@@ -189,7 +188,9 @@ private
                               ! of Dep_Receivers)
      integer :: Adv           ! index in xn_adv arrays
      integer :: f2d           ! index in f_2d arrays
+     character(len=10) :: label !  e.g. "VG", "Rns"
      character(len=10) :: txt ! text where needed, e.g. "Conif"
+     real    :: scale         !  e.g. use 100.0 to get cm/s
      integer :: atw           ! atomic weight where needed
      character(len=10) :: units ! e.g.  mgN/m2
   end type Dep_type
@@ -216,34 +217,28 @@ private
    !ECO08 - specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+      VG_LABELS = (/ "VG" /)
     integer, public, parameter, dimension(6) :: &
       VG_SPECS = (/ O3, NH3, SO2, PM25,  PMCO , HNO3/)
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
       VG_LCS  = (/ "Grid", "CF", "SNL", "GR" /)
+
     type(Dep_type), public, &
-     dimension( size(VG_SPECS)*size(VG_LCS) ),    save :: OutVg
+     dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
 
-!hf OutRs
-    integer, public, parameter, dimension(2) :: &
-      Rs_SPECS = (/ NH3, SO2/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-      Rs_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
-    type(Dep_type), public, & !surface resistance
-     dimension( size(Rs_SPECS)*size(Rs_LCS) ),    save :: OutRs 
+! For resistances and conductances we normally want the same landuse
+! outputs, so we use a combined variable:
 
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+      RG_LABELS = (/ "Rs", "Rns", "Gns" /)
     integer, public, parameter, dimension(2) :: &
-      Rns_SPECS = (/ NH3, SO2/)
+      RG_SPECS = (/ NH3, SO2/)
     character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-      Rns_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
-    type(Dep_type), public, & !Non-stomatal resistance
-     dimension( size(Rns_SPECS)*size(Rns_LCS) ),    save :: OutRns
+      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
 
-    integer, public, parameter, dimension(2) :: &
-      Gns_SPECS = (/ NH3, SO2/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-      Gns_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
     type(Dep_type), public, & !Non-stomatal conductance
-     dimension( size(Gns_SPECS)*size(Gns_LCS) ),    save :: OutGns
+     dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
 
 !----------------------
 ! Less often needed:
@@ -273,7 +268,7 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 !hf Rs
-    integer :: i, nLC, nVg, nRs, nRns, nGns
+    integer :: i, ilab, nLC, nVg, nRG
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -360,6 +355,7 @@ private
       ! adding them to the derived-type array LCC_DDep (e.g. => VGO3_CF)
 
       nVg = 0
+      do ilab = 1, size(VG_LABELS)
       do i = 1, size(VG_SPECS)
         do n = 1, size(VG_LCS) 
 
@@ -367,100 +363,56 @@ private
 
           OutVg(nVg)%Adv  =   VG_SPECS(i) - NSPEC_SHL
           OutVg(nVg)%txt  =   VG_LCS(n)
+          OutVg(nVg)%label  = VG_LABELS(ilab)
+          OutVg(nVg)%scale  =   100.0
           OutVg(nVg)%units  =   "cm/s"
-          OutVg(nVg)%name = "VG_"  // trim( species(VG_SPECS(i))%name ) &
-               // "_" // trim( VG_LCS(n) )
+          OutVg(nVg)%name = trim( VG_LABELS(ilab) ) // "_"  // &
+           trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
           !Not yet known: OutVg(nVg)%LC
-          if(MY_DEBUG .and. me==0) write(6,*) "VGOUT ", i, n, &
-              OutVg(nVg)%name, &
-              OutVg(nVg)%Adv,OutVg(nVg)%txt, OutVg(nVg)%units
+          if(MY_DEBUG .and. me==0) write(6,*) "VGOUT ", nVg, i, n, &
+              OutVg(nVg)%name, OutVg(nVg)%Adv,OutVg(nVg)%txt, &
+                OutVg(nVg)%scale, OutVg(nVg)%units
         end do !n
       end do ! i
+      end do ! ilab
       nOutVg = nVg
 
      call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING)
 !hf Rs
 
-
       !------------- Surface resistance for d_2d -------------------------
       ! We find the various combinations of gas-species and ecosystem, 
       ! adding them to the derived-type array LCC_DDep (e.g. => RsO3_CF)
 
-      nRs = 0
-      do i = 1, size(Rs_SPECS)
-        do n = 1, size(Rs_LCS) 
+      nRG = 0
+      do ilab = 1, size(RG_LABELS)
+      do i = 1, size(RG_SPECS)
+        do n = 1, size(RG_LCS) 
 
-          nRs = nRs + 1
+          nRG = nRG + 1
 
-          OutRs(nRs)%Adv  =   Rs_SPECS(i) - NSPEC_SHL
-          OutRs(nRs)%txt  =   Rs_LCS(n)
-          OutRs(nRs)%units  =   "s/m"
-          OutRs(nRs)%name = "Rs_"  // trim( species(Rs_SPECS(i))%name ) &
-               // "_" // trim( Rs_LCS(n) )
-          !Not yet known: OutRs(nRs)%LC
-          if(MY_DEBUG .and. me==0) write(6,*) "RsOUT ", i, n, &
-              OutRs(nRs)%name, &
-              OutRs(nRs)%Adv,OutRs(nRs)%txt, OutRs(nRs)%units
+          OutRG(nRG)%Adv  =   RG_SPECS(i) - NSPEC_SHL
+          OutRG(nRG)%label  = RG_LABELS(ilab)
+          OutRG(nRG)%txt  =   RG_LCS(n)
+          if( OutRG(nRG)%label(1:1) == "R" )  then
+              OutRG(nRG)%scale  =     1.0
+              OutRG(nRG)%units  =   "s/m"
+          else if( OutRG(nRG)%label(1:1) == "G" )  then
+              OutRG(nRG)%scale  =    100.0   
+              OutRG(nRG)%units  =   "cm/s"
+          end if
+          OutRG(nRG)%name = trim ( RG_LABELS(ilab) ) // "_"  // &
+           trim( species(RG_SPECS(i))%name ) // "_" // trim( RG_LCS(n) )
+          !Not yet known: OutRG(nRG)%LC
+          if(MY_DEBUG .and. me==0) write(6,*) "RGOUT ", nRG, i, n, &
+              OutRG(nRG)%name,  OutRG(nRG)%label(1:1), &
+              OutRG(nRG)%Adv,OutRG(nRG)%txt, OutRG(nRG)%scale, OutRG(nRG)%units
         end do !n
       end do ! i
-      nOutRs = nRs
+      end do ! ilab
+      nOutRG = nRG
 
-     call AddArray( OutRs(:)%name, wanted_deriv2d, NOT_SET_STRING)
-
-
-      !------------- Non stomatal Surface resistance for d_2d ----------
-      ! We find the various combinations of gas-species and ecosystem, 
-      ! adding them to the derived-type array LCC_DDep (e.g. => RnsO3_CF)
-
-      nRns = 0
-      do i = 1, size(Rns_SPECS)
-        do n = 1, size(Rns_LCS) 
-
-          nRns = nRns + 1
-
-          OutRns(nRns)%Adv  =   Rns_SPECS(i) - NSPEC_SHL
-          OutRns(nRns)%txt  =   Rns_LCS(n)
-          OutRns(nRns)%units  =   "s/m"
-          OutRns(nRns)%name = "Rns_"  // trim( species(Rns_SPECS(i))%name ) &
-               // "_" // trim( Rns_LCS(n) )
-          !Not yet known: OutRns(nRns)%LC
-          if(MY_DEBUG .and. me==0) write(6,*) "RnsOUT ", i, n, &
-              OutRns(nRns)%name, &
-              OutRns(nRns)%Adv,OutRns(nRns)%txt, OutRns(nRns)%units
-        end do !n
-      end do ! i
-      nOutRns = nRns
-
-     call AddArray( OutRns(:)%name, wanted_deriv2d, NOT_SET_STRING)
-
-
-
-      !------------- Non stomatal Surface conductance for d_2d ----------
-      ! We find the various combinations of gas-species and ecosystem, 
-      ! adding them to the derived-type array LCC_DDep (e.g. => GnsO3_CF)
-
-      nGns = 0
-      do i = 1, size(Gns_SPECS)
-        do n = 1, size(Gns_LCS) 
-
-          nGns = nGns + 1
-
-          OutGns(nGns)%Adv  =   Gns_SPECS(i) - NSPEC_SHL
-          OutGns(nGns)%txt  =   Gns_LCS(n)
-          OutGns(nGns)%units  =   "cm/s"
-          OutGns(nGns)%name = "Gns_"  // trim( species(Gns_SPECS(i))%name ) &
-               // "_" // trim( Gns_LCS(n) )
-          !Not yet known: OutGns(nGns)%LC
-          if(MY_DEBUG .and. me==0) write(6,*) "GnsOUT ", i, n, &
-              OutGns(nGns)%name, &
-              OutGns(nGns)%Adv,OutGns(nGns)%txt, OutGns(nGns)%units
-        end do !n
-      end do ! i
-      nOutGns = nGns
-
-     call AddArray( OutGns(:)%name, wanted_deriv2d, NOT_SET_STRING)
-
-
+     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING)
 
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )

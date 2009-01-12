@@ -1,4 +1,29 @@
-================================ rv3_2beta6 Hilde,   17th Dec 2008======
+================================ rv3_2beta7 Dave,   12th Jan 2008======
+
+CoDep has a small bug-fix (for IRH=0, F4) and more debug options
++ includes Hilde's bug-fix for MAX_SN
+
+Derived_ml + My_Derived_ml 
+  now has OutRG as merge of OutR and OutG terms
+
+DryDep + My_DryDep
+
+landuse-specific, *and* grid-average, deposition (Vg),  resistance (R)
+and conductance (G) variables now stored in "Mosaic_xx" arrays in
+DryDep. Using landcover index=0 gives grid average
+
+Deleted old arrays, Grid_Vg_ref, Vg_ref_iL etc.
+
+DRYDEP_CALC  renamed to DRYDEP_GASES
+NDRYDEP_CALC renamed to NDRYDEP_GASES
+NDRYDEP_TOT  renamed to NDRYDEP_CALC - ie back to original intention
+
+Area(:) renamed to EcoArea
+
+
+
+OutR, outG merged into outRG 
+================================ rv3_2beta6 Hilde,  17th Dec 2008======
 
 Derived_ml: small change (only effect is that less 'warnings' written out, there was a problem with undef values)
 CoDep_ml:a_SN_24hr=so2/nh3,a_SN=so2/nh3, both capped at so2/nh3=3.0, Switch off debug flag

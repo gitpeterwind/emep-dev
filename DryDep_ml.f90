@@ -50,24 +50,22 @@ module DryDep_ml
 
  use My_DryDep_ml, only : Init_DepMap, &  ! Maps indices between 
                           ! Vg-calculated (CDEP..) and advected  (IXADV_..)
-                          NDRYDEP_CALC, &  ! No. Vd values calculated 
+                          NDRYDEP_GASES , &  ! No. Vd values calculated 
                           NDRYDEP_ADV, &   ! No. advected species affected
                           NDRYDEP_AER, &   ! No. aerosol size modes for Vd
-                          NDRYDEP_TOT, &   ! Total No. of  Vd values
-                          DRYDEP_CALC, &   ! Wesely Index Vd values calculated 
+                          NDRYDEP_CALC, &  ! Total No. of  Vd values
+                          DRYDEP_GASES, &  ! Wesely Index Vd values calculated 
                           CDEP_SET,    &   ! for so4
                           CDEP_NO2,CDEP_O3,    &   ! for NO2 comp pt. approach
                           CDEP_SO2,CDEP_NH3, & !hf CoDep extra
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
-                          Add_Vg, &  ! ECO08, for Landuse_Vg3m
-!hf Rs
-                          Add_Rs,Add_Rns,Add_Gns,&! for landuse resistances/cond.
+                          Add_Vg, Add_RG,  &  ! ECO08, for  Mosaic_Vg3m
                           Dep        ! Mapping (type = depmap)
 
 
-use  LandDefs_ml, only : LandDefs !hf CoDep extra
+use LandDefs_ml, only : LandDefs !hf CoDep extra
 use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use Aero_DryDep_ml,    only : Aero_Rb
@@ -174,7 +172,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
   subroutine DryDep(i,j)
     integer, intent(in):: i,j
 
-    real, dimension(NDRYDEP_CALC) :: &
+    real, dimension(NDRYDEP_GASES ) :: &
           Rb           & ! Quasi-boundary layer rsis.
 !hf XX         ,Rsur_dry     & ! Surface Resistance (s/m) over dry surface
 !hf XX         ,Rsur_wet       ! Surface Resistance (s/m) over wet surface
@@ -182,17 +180,15 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 !hf
          ,Gns !Surface conductance
          
-    real, dimension(NDRYDEP_TOT) :: &
+    real, dimension(NDRYDEP_CALC) :: &
           gradient_fac & ! Ratio of conc. at zref (ca. 50m) and 3m
          ,vg_fac       & ! Loss factor due to dry dep.
          ,Vg_ref       & ! Vg at ref ht.
          ,Vg_3m        & ! Vg at  3m
-         ,Grid_Vg_ref  & ! Grid average of Vg at ref ht. (effective Vg for cell)
-         ,Grid_Vg_3m   & ! Grid average Vg at  3m (or tree height)
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
          ,sea_ratio     ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
 !hf
-    real, dimension(NDRYDEP_CALC) :: &
+    real, dimension(NDRYDEP_GASES ) :: &
           Grid_Rs      & ! Grid average of Rsurface
          ,Grid_Gns       ! Grid average of Gns
 
@@ -211,7 +207,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
     integer :: nae
     real, dimension(NSIZE):: aeRb, aeRbw , Vs
-    real :: convec   
+    real :: convec
 
 
      real, save :: inv_gridarea  ! inverse of grid area, m2
@@ -221,13 +217,13 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
       real :: Vg_scale
 
  ! Ecosystem specific deposition requires the fraction of dep in each 
- !  landuse, iL:
+ !  landuse mosaic, iL:
 
-      real, dimension(NDRYDEP_TOT,NLUMAX):: Vg_ref_iL
-      real, dimension(NDRYDEP_TOT,NLANDUSE):: Landuse_Vg3m  ! Vg for output, LC specific
-!hf Rs
-      real, dimension(NDRYDEP_TOT,NLANDUSE):: Landuse_Rs  ! Rs for output, LC specific
-      real, dimension(NDRYDEP_TOT,NLANDUSE):: Landuse_Gns ! Gns for output, LC specific
+      real, dimension(NDRYDEP_CALC,0:NLANDUSE):: &
+              Mosaic_Gsur  & ! Gsur for output, LC specific, 0=GRID
+            , Mosaic_Gns & ! Gns for output, LC specific
+            , Mosaic_VgRef & ! Vg at ref height, e.g. 45m
+            , Mosaic_Vg3m  ! Vg at 3m
 
       real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
       integer :: iL_used(NLUMAX), nlu_used
@@ -302,13 +298,11 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
       
     !/ Initialise Grid-avg Vg for this grid square:
 
-    Grid_Vg_ref(:) = 0.0
-    Grid_Vg_3m(:) = 0.0
-    Vg_ref_iL(:,:) = 0.0
-    Landuse_Vg3m(:,:) = 0.0
-!hf Rs
-    Landuse_Rs(:,:) = 0.0
-    Landuse_Gns(:,:) = 0.0
+
+    Mosaic_VgRef(:,:) = 0.0
+    Mosaic_Vg3m(:,:)  = 0.0
+    Mosaic_Gsur(:,:)  = 0.0
+    Mosaic_Gns(:,:)   = 0.0
 
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
@@ -361,10 +355,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
              end if
 
 
-         call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_CALC,Rb)
+         call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_GASES ,Rb)
 !hf CoDep extra
-!hf XX         call Rsurface(i,j,DRYDEP_CALC,Rsur_dry,Rsur_wet,errmsg,debug_flag)
-         call Rsurface(i,j,DRYDEP_CALC,Gns,Rsur,errmsg,debug_flag,snow_iL)
+!hf XX         call Rsurface(i,j,DRYDEP_GASES ,Rsur_dry,Rsur_wet,errmsg,debug_flag)
+         call Rsurface(i,j,DRYDEP_GASES ,Gns,Rsur,errmsg,debug_flag,snow_iL)
 
 !hf XX
          Grid_snow(i,j) = Grid_snow(i,j) +  L%coverage * snow_iL 
@@ -390,11 +384,11 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
          dry =   1.0 - wet
 
 
-         do n = 1, NDRYDEP_TOT  !stDep  NDRYDEP_CALC
+         do n = 1, NDRYDEP_CALC
 
-            if ( n > NDRYDEP_CALC)  then    ! particles
+            if ( n > NDRYDEP_GASES )  then    ! particles
 
-                nae = n - NDRYDEP_CALC
+                nae = n - NDRYDEP_GASES 
                 RaVs = L%Ra_ref * Vs(nae)
 
                 Vg_ref(n) = Vs(nae) +      &
@@ -433,17 +427,18 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
             Vg_3m (CDEP_NO2) = Vg_3m (CDEP_NO2) * no2fac
           end if ! CDEP_NO2
 
-           Vg_ref_iL(n,iiL) = Vg_ref(n)
-           Landuse_Vg3m(n,iL) = Vg_3m(n)  ! Note iL, not iiL 
-           Grid_Vg_ref(n) = Grid_Vg_ref(n) + L%coverage * Vg_ref(n)
-           Grid_Vg_3m(n)  = Grid_Vg_3m(n)  + L%coverage * Vg_3m(n)
+           Mosaic_VgRef(n,iL) = Vg_ref(n)  ! Note iL, not iiL 
+           Mosaic_Vg3m(n,iL) = Vg_3m(n)  ! Note iL, not iiL 
+           Mosaic_Vg3m(n,0)  = Mosaic_Vg3m(n,0)  + L%coverage * Vg_3m(n)
+           Mosaic_VgRef(n,0) = Mosaic_VgRef(n,0) + L%coverage * Vg_ref(n)
 
 !hf rs
-         if ( n <= NDRYDEP_CALC)  then    ! gases
-            Grid_Rs(n) = Grid_Rs(n)+ L%coverage * Rsur(n)
-            Grid_Gns(n)= Grid_Gns(n)+ L%coverage * Gns(n)
-            Landuse_Rs(n,iL) = Rsur(n)  ! Note iL, not iiL 
-            Landuse_Gns(n,iL) = Gns(n)  ! Note iL, not iiL 
+         if ( n <= NDRYDEP_GASES )  then    ! gases
+             Mosaic_Gsur(n,iL) = 1.0/Rsur(n) ! Note iL, not iiL 
+             Mosaic_Gns(n,iL) = Gns(n)  ! Note iL, not iiL 
+          ! Grid averages. Wait with Rs
+             Mosaic_Gsur (n,0) =  Mosaic_Gsur(n,0) + L%coverage / Rsur(n)
+             Mosaic_Gns(n,0) =  Mosaic_Gns(n,0)+ L%coverage * Gns(n)
          endif
          end do !species loop
 
@@ -453,19 +448,19 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
         !/-- only grab gradients over land-areas
 
          if ( L%is_water ) then
-            do n = 1, NDRYDEP_TOT  !stDep NDRYDEP_CALC
+            do n = 1, NDRYDEP_CALC
                sea_ratio(n) =  Vg_ref(n)/Vg_3m(n)
             end do
          else
             Sumland = Sumland + L%coverage
-            do n = 1, NDRYDEP_TOT  !stDep  NDRYDEP_CALC
+            do n = 1, NDRYDEP_CALC
                 Vg_ratio(n) =  Vg_ratio(n) + L%coverage * Vg_ref(n)/Vg_3m(n)
             end do
          end if
 
 
         if ( MY_DEBUG .and. debug_flag ) then
-            do n = 1 , NDRYDEP_TOT
+            do n = 1 , NDRYDEP_GASES 
                write(*,"(a14,2i4,f7.3,i3,2f10.2,es12.2,2f8.2,a5,f8.3,2es18.6)") &
                   "UKDEP EXT: ", iiL, iL, L%coverage, n,&
                    L%LAI,100.0*L%g_sto, &  ! tmp, in cm/s 
@@ -496,7 +491,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
         end do LULOOP
        !=======================
        !=======================
-  
+
 
 
         if ( MY_DEBUG .and. Sumland > 1.011  ) then
@@ -514,17 +509,17 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
         if ( MY_DEBUG .and. debug_flag ) then
             write(*, "(a14,i2,3i3,10f6.2)") "UKDEP VG_UKR", &
                    Grid%snow, imm, idd, ihh,  &
-                 (100.0*Grid_Vg_ref(n), n = 1, min(5,NDRYDEP_CALC)), &
-                 (100.0*Grid_Vg_3m(n), n = 1, min(5,NDRYDEP_CALC))
+                 (100.0*Mosaic_VgRef(n,0), n = 1, min(5,NDRYDEP_GASES )), &
+                 (100.0*Mosaic_Vg3m(n,0), n = 1, min(5,NDRYDEP_GASES ))
         end if
 
 
 !-- loop through all affected advected species to calculate changes in
 !   concentration (xn_adv), the conc. ratios (cfac), and deposition 
 
-    do ncalc = 1, NDRYDEP_TOT  !stDep NDRYDEP_CALC
+    do ncalc = 1, NDRYDEP_CALC
 
-        vg_fac (ncalc) = 1.0 - exp ( -Grid_Vg_ref(ncalc) * dtz ) 
+        vg_fac (ncalc) = 1.0 - exp ( -Mosaic_VgRef(ncalc,0) * dtz ) 
 
     end do ! n
 
@@ -580,7 +575,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
             if ( vg_set(n) )  then
                fluxfrac_adv(nadv,iL) = Sub(iL)%coverage  ! Since all vg_set equal
             else
-               Vg_scale = Vg_ref_iL(ncalc,iiL)/ Grid_Vg_ref(ncalc)
+               Vg_scale = Mosaic_VgRef(ncalc,iL)/ Mosaic_VgRef(ncalc,0)
                fluxfrac_adv(nadv,iL) = Sub(iL)%coverage*Vg_scale
             end if
 
@@ -603,10 +598,12 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
                  write(6,"(a12,3i3,3f12.3)") "FLUXSET  ", iiL, iL, nadv, &
                      100.0*Dep(n)%vg, Sub(iL)%coverage, fluxfrac_adv(nadv,iL)
                else
-                 write(6,"(a12,3i3,f6.3,4f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
-            Sub(iL)%coverage, &
-            100.0*Grid_Vg_ref(ncalc), 100.0*Vg_ref_iL(ncalc,iiL), &
-            100.0*Sub(iL)%coverage*Vg_ref_iL(ncalc,iiL), fluxfrac_adv(nadv,iL)
+                 write(6,"(a12,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
+                  Sub(iL)%coverage, &
+                  100.0*Mosaic_VgRef(ncalc,0), & ! GRID
+                  100.0*Mosaic_VgRef(ncalc,iL), &
+                  100.0*Sub(iL)%coverage*Mosaic_VgRef(ncalc,iL), &
+                   fluxfrac_adv(nadv,iL)
                end if
             end if
          end do
@@ -649,11 +646,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
        call Add_ddep(debug_flag,dt_advec,i,j,convfac2,lossfrac,&
            fluxfrac_adv,c_hvegppb,Sub(:)%coverage)
-       call Add_Vg(debug_flag,i,j,Grid_Vg_3m,Landuse_Vg3m)
-!hf Rs
-       call Add_Rs(debug_flag,i,j,Grid_Rs,Landuse_Rs)
-       call Add_Rns(debug_flag,i,j,Grid_Gns,Landuse_Gns)!not a bug!
-       call Add_Gns(debug_flag,i,j,Grid_Gns,Landuse_Gns)
+
+       call Add_Vg(debug_flag,i,j, Mosaic_Vg3m)
+       call Add_RG(debug_flag,i,j, Mosaic_Gsur, Mosaic_Gns)
+
  end subroutine drydep
 
 end module DryDep_ml

@@ -225,8 +225,8 @@ contains
   !/** get CEH humidity factor and RgsS_dry and RgsS_wet:
   !21.10.2008 Get Rns_SO2
 
-    call CoDep_factors(G%so2nh3ratio24hr,G%so2nh3ratio,L%t2C,L%rh,L%is_forest,&
-                      debug_flag)
+       call CoDep_factors(G%so2nh3ratio24hr,G%so2nh3ratio,&
+              L%t2C,L%rh,L%is_forest, debug_flag)
 
 
 !##############   1. Calculate In-Canopy Resistance, Rinc    ################
