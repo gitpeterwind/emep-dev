@@ -128,7 +128,7 @@ contains
                      , 0.5  &! 7.  Road transport
                      , 0.8  &! 8.  Other transport
                      , 1.0  &! 9.  Waste
-                     , 1.0  &! 10. Agriculture
+                     , 0.6  &! 10. Agriculture
                      , 1.0  &! 11. Nature
                      /)
 
