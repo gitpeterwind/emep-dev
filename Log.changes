@@ -1,12 +1,21 @@
-================================ rv3_2beta9 Hilde,   20th Jan 2008======
+================================ rv3_2beta10 Peter,   22nd Jan 2009======
+
+Bug in Met_ml introduced 20th Nov 2008: when a metfield was not found the routine GetCDF_short 
+returns without closing the file.
+If the number of open files exceeds 4096, the program will stop.
+No differences if you haven't noticed.
+
+Bug in Log.changes: Jan 2008 was Jan 2009 :-)
+
+================================ rv3_2beta9 Hilde,   20th Jan 2009======
 
 DAY_NIGHT=0.6 in Timefactors_ml for sector 10. This means that the agricultural emissions will be 1.4/0.6 times larger in day time than in night.
 
-================================ rv3_2beta8 Dave,   12th Jan 2008======
+================================ rv3_2beta8 Dave,   12th Jan 2009======
 
 fixed bug in CoDep, which I thought had been fixed in beta7 :-(
 
-================================ rv3_2beta7 Dave,   12th Jan 2008======
+================================ rv3_2beta7 Dave,   12th Jan 2009======
 
 CoDep has a small bug-fix (for IRH=0, F4) and more debug options
  + includes Hilde's bug-fix for MAX_SN
