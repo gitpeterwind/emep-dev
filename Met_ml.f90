@@ -3434,6 +3434,7 @@ contains
     if(status /= nf90_noerr)then
        validity=field_not_found
        var=0
+       call check(nf90_close(ncFileID))
        return
     endif
 
