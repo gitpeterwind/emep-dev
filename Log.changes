@@ -1,3 +1,7 @@
+================================ rv3_2beta11 Hilde,   29nd Jan 2009======
+Bug in Output_hourly.f90:
+Units wrong for case ( "ADVugm3" ).
+
 ================================ rv3_2beta10 Peter,   22nd Jan 2009======
 
 Bug in Met_ml introduced 20th Nov 2008: when a metfield was not found the routine GetCDF_short 

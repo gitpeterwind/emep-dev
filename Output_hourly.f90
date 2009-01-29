@@ -242,7 +242,7 @@
          case ( "ADVugm3" )
             itot = NSPEC_SHL + ispec 
             name = species(itot)%name
-            unit_conv =  hr_out(ih)%unitconv * species(itot)%molwt
+            unit_conv =  hr_out(ih)%unitconv !hf * species(itot)%molwt
             forall ( i=1:limax, j=1:ljmax)
                   hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
                                  * cfac(ispec,i,j) &     ! 50m->3m conversion
