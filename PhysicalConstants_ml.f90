@@ -49,9 +49,7 @@ implicit none
   real, public, parameter  ::    &
        GRAV    = 9.807           &   ! Gravity, m s-2
     ,  CP      = 1004.0          &   ! Specific heat at const. pressure
-    ,  R       = 287.0           &   ! Gas constants J K-1 kg-1 = RGAS_KG
-    ,  KAPPA   = R/CP            &   
-    !ds apr2005 ,  XKAP    = R/CP            &
+    ,  KAPPA   = RGAS_KG/CP      &   
     ,  KARMAN  = 0.41            &   ! Von Karman  (=0.35 elsehwere in code!)
     ,  PI      = 3.141592653589793238462643383279 & ! www.verbose.net/Pi.html
     ,  DEG2RAD = PI/180.0        &   ! COnverts degrees to radians

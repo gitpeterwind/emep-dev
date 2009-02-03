@@ -55,7 +55,7 @@ module Met_ml
        ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
        ,MFSIZEINP, IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
        ,MSG_INIT3,MSG_READ4, tlimax, tljmax, parinit
-  use PhysicalConstants_ml, only : KARMAN, KAPPA, R, RGAS_KG, CP, GRAV    &
+  use PhysicalConstants_ml, only : KARMAN, KAPPA, RGAS_KG, CP, GRAV    &
        ,ROWATER, PI
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
        add_secs,timestamp,&
@@ -1498,7 +1498,7 @@ contains
                   (exf1(k+1) - exf2(k)))/GRAV
 
              roa(i,j,k,nr) = CP*((ps(i,j,nr) - PT)*sigma_mid(k) + PT)/      &
-                  (R*th(i,j,k,nr)*exf2(k))
+                  (RGAS_KG*th(i,j,k,nr)*exf2(k))
 
           enddo  ! k
 
@@ -2749,7 +2749,7 @@ contains
          ,KZ0LT=1.0E-04  &   ! Constant (Alapaty et al., 1997)
          ,RIC=0.10       &   ! Critical Richardson number 
                                 ! (Holstlag et al., 1993)
-         ,ROVG=R/GRAV        ! Used in Calculation of R-number
+         ,ROVG=RGAS_KG/GRAV        ! Used in Calculation of R-number
     integer, parameter :: KLM =KMAX_MID-1   
 
 
@@ -3302,7 +3302,7 @@ contains
              dex12 = th(i,j,k-1,nr)*(exnm(i,j,k) - exns(i,j,k))   	&
                   + th(i,j,k,nr)*(exns(i,j,k) - exnm(i,j,k-1))
              ro    = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) & 
-                  - exnm(i,j,k-1))/(R*exns(i,j,k)*dex12)
+                  - exnm(i,j,k-1))/(RGAS_KG*exns(i,j,k)*dex12)
              skh(i,j,k,nr) = xksig(i,j,k)*ro*ro*fac2
           enddo
        enddo

@@ -54,6 +54,13 @@ module ModelConstants_ml
   , NPROCY      =   2       & ! Actual number of processors in latitude
   , NPROC       = NPROCX * NPROCY
 
+  ! ds Jan2009
+  ! We have one variable, to say if we are on master-processor
+  ! or not: (kept here to avoid too many dependencies for box-model
+  ! codes which don't need Par_ml
+
+  logical, public, save ::  MasterProc = .true.
+
   ! For debugging, we often want to print out for  a specific location
   ! Set here:
 

@@ -37,7 +37,7 @@ module SubMet_ml
 
 use CheckStop_ml, only : CheckStop
 use LandDefs_ml,   only: LandType
-use Landuse_ml,    only: LandCover
+!SUB2009 use Landuse_ml,    only: LandCover
 use LocalVariables_ml, only: Grid, Sub
 use MicroMet_ml, only :  PsiM, AerRes    !functions
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
@@ -196,7 +196,7 @@ contains
         !..z0-values ...
 
         if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-            write(6,"(a12,i2,5f8.3,f12.3)") "UKDEP SUBI", iter, &
+            write(unit=6,fmt="(a12,i2,5f8.3,f12.3)") "UKDEP SUBI", iter, &
                        Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                          Sub(iL)%z_refd, z_3md, Sub(iL)%invL
         end if
@@ -230,7 +230,7 @@ contains
 
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        write(6,"(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
+        write(unit=6,fmt="(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
           Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
               Sub(iL)%ustar, Sub(iL)%t2, Sub(iL)%invL
     end if
@@ -268,10 +268,12 @@ contains
         Ra_2m  = AerRes(Sub(iL)%z0,1.0+z_1m,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)
 
     if ( DEBUG_SUB ) then
-       if ( Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
-           .or. Ra_2m < 0  ) call CheckStop("RAREF NEG ")
-      if ( Sub(iL)%Ra_3m > Sub(iL)%Ra_ref ) &
-           call CheckStop("ERROR!!! Ra_ref<Ra_3")
+       !if ( Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
+       !    .or. Ra_2m < 0  ) 
+       call CheckStop(Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
+                      .or. Ra_2m < 0 , "RAREF NEG ")
+      !if ( Sub(iL)%Ra_3m > Sub(iL)%Ra_ref ) &
+       call CheckStop(Sub(iL)%Ra_3m > Sub(iL)%Ra_ref, "ERROR!!! Ra_ref<Ra_3")
     end if
 
 
@@ -327,7 +329,7 @@ contains
 
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        write(6,"(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, Sub(iL)%rh
+        write(unit=6,fmt="(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, Sub(iL)%rh
     end if
 
   end subroutine Get_Submet

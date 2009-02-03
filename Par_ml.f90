@@ -54,7 +54,9 @@
 !  mfsizeinp,mfsizeout!!!
 
 use CheckStop_ml,      only : CheckStop
-use ModelConstants_ml, only : RUNDOMAIN, IIFULLDOM, JJFULLDOM, NPROCX, NPROCY, NPROC
+use ModelConstants_ml, only : RUNDOMAIN, IIFULLDOM, JJFULLDOM, &
+            MasterProc, &  ! Set true for me=0 processor
+            NPROCX, NPROCY, NPROC
 implicit none
 private
 
@@ -310,6 +312,12 @@ private
             "Subdomain too small! Limax must be at least min_grids")
         call CheckStop( ljmax < min_grids,   &
             "Subdomain too small! Ljmax must be at least min_grids")
+
+
+!   Finally, we set a logical from ModelConstants, which can be used for
+!   specifying the master processor for print-outs and such
+
+        MasterProc = ( me == 0 )
 
 	end subroutine parinit
 

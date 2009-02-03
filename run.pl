@@ -7,9 +7,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=32:ib
+#PBS -lnodes=6:ib
 # wall time limit of run 
-#PBS -lwalltime=09:10:00
+#PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=4000MB
 # account for billing
@@ -147,7 +147,7 @@ my $SEMEENA    = "mifasv";
 my $AGNES      = "nyiri";      
 my $ALVARO      = "alvarov";
 
-my $USER        =  $HILDE;
+my $USER        =  $DAVE;
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($STALLO){
@@ -191,7 +191,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2beta7";
+    $testv       = "rv3_2beta12";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -276,13 +276,13 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "01";       # first month, use 2-digits!
-my $mm2   =  "12";       # last month, use 2-digits!
+my $mm1   =  "07";       # first month, use 2-digits!
+my $mm2   =  "07";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-#$NTERM = 2;       # for testing, simply reset here
+$NTERM = 4;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
