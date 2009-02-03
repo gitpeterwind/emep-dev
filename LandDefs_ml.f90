@@ -29,8 +29,7 @@ module LandDefs_ml
  use CheckStop_ml, only : CheckStop
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValue_ml, only :  KeyVal
- use ModelConstants_ml, only : NLANDUSE
- use Par_ml, only : me
+ use ModelConstants_ml, only : NLANDUSE, MasterProc
   implicit none
   private
 
@@ -46,6 +45,7 @@ module LandDefs_ml
 ! flux_wheat is an artificial species with constant LAI, SAI, h throughout year,
 ! to allow Fst calculations without knowing details of growing season.
 
+! Language: F-compliant
 
   ! 2 ) Phenology part
   !/*** DESCRIPTION**********************************************************
@@ -99,7 +99,7 @@ module LandDefs_ml
                                                !##############
      
 
-  logical, private, parameter :: MY_DEBUG = .false.    ! helps with extra printouts
+  logical, private, parameter :: MY_DEBUG = .true. 
 
 
 contains
@@ -132,7 +132,9 @@ contains
   subroutine Init_LandDefs(wanted_codes)
   !=======================================================================
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-      character(len=*), dimension(:) :: wanted_codes   ! From Inputs-Landuse
+      ! Reads file Inputs_LandDefs.csv and extracts land-defs. Checks that
+      ! codes match the "wanted_codes" which have been set in Inputs-Landuse
+      character(len=*), dimension(:), intent(in) :: wanted_codes
       character(len=20), dimension(15) :: Headers
       character(len=200) :: txtinput  ! Big enough to contain one input record
       type(KeyVal), dimension(2) :: KeyValues ! Info on units, coords, etc.
@@ -144,7 +146,7 @@ contains
 
 
       fname = "Inputs_LandDefs.csv"
-      if ( me == 0 ) then
+      if ( MasterProc ) then
          call open_file(IO_TMP,"r",fname,needed=.true.)
          call CheckStop(ios,"open_file error on " // fname )
       end if
@@ -160,14 +162,22 @@ contains
        n = 0     
        do
             call read_line(IO_TMP,txtinput,ios)
-            if ( ios /= 0 ) exit   ! likely end of file
-            if ( txtinput(1:1) == "#" ) cycle
+            if ( ios /= 0 ) then
+                 exit   ! likely end of file
+            end if
+            if ( txtinput(1:1) == "#" ) then
+                 cycle
+            end if
             read(unit=txtinput,fmt=*,iostat=ios) LandInput
             call CheckStop ( ios, fname // " txt error:" // trim(txtinput) )
             n = n + 1
            !############################
             LandDefs(n) = LandInput
            !############################
+            if ( MY_DEBUG .and. MasterProc ) then
+                 write(unit=*,fmt=*) "LANDDEFS N ", n, &
+                   LandInput%name, LandInput%code, LandDefs(n)%LAImax
+            end if
 
         !/ Set any input negative values to physical ones (some were set as -1)
 
@@ -175,8 +185,10 @@ contains
            LandDefs(n)%LAImax   = max( LandDefs(n)%LAImax,   0.0)
 
 
-            if ( MY_DEBUG .and. me == 0 ) write(*,*) "LANDPHEN match? ", n, &
+            if ( MY_DEBUG .and. MasterProc ) then
+                 write(unit=*,fmt=*) "LANDPHEN match? ", n, &
                    LandInput%name, LandInput%code, wanted_codes(n)
+            end if
             call CheckStop(  LandInput%code, wanted_codes(n), "MATCHING CODES in LandDefs")
 
             LandType(n)%is_water  =  LandInput%code == "W" 
@@ -190,12 +202,12 @@ contains
             LandType(n)%is_crop  = ( LandInput%type == "ECR"  )
             LandType(n)%is_seminat  = ( LandInput%type == "SNL"  )
             LandType(n)%is_bulk   =  LandInput%type == "BLK" 
-!hf bugfix            LandType(n)%is_veg    =  LandInput%type /= "U" .and. &
-!hf bugfix                  LandInput%hveg_max > 0.01   
-           LandType(n)%is_veg    =  LandInput%code /= "U" .and. &
+            LandType(n)%is_veg    =  LandInput%code /= "U" .and. &
                   LandInput%hveg_max > 0.01   ! Excludes water, ice, desert 
        end do
-       if ( me == 0 ) close(unit=IO_TMP)
+       if ( MasterProc ) then 
+             close(unit=IO_TMP)
+       end if
 
   end subroutine Init_LandDefs
 

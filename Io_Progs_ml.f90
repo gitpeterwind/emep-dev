@@ -42,7 +42,7 @@
   use CheckStop_ml, only: CheckStop
   use GridValues_ml, only : i_local, j_local
   use Io_Nums_ml,   only: IO_TMP
-  use ModelConstants_ml, only : DEBUG_i, DEBUG_j, DomainName
+  use ModelConstants_ml, only : DEBUG_i, DEBUG_j, DomainName, MasterProc
   use KeyValue_ml,  only: KeyVal, KeyValue, LENKEYVAL
   use Par_ml, only: me, li0, li1, lj0, lj1
   use SmallUtils_ml, only : wordsplit, WriteArray
@@ -80,7 +80,7 @@ contains
     !  This is done as text for flexibility, with the inten
     !
     !    Instead of e.g.
-    !                    if ( me == 0 ) then
+    !                    if ( MasterProc ) then
     !                        read(unit=IO,fmt=*)  i,j, data(:) on a serial code, or
     !                    end if
     !                    call MPI_BROADCAST(....)
@@ -98,7 +98,7 @@ contains
      integer, intent(out) :: status
      integer :: INFO
 
-     if ( me == 0 ) then
+     if ( MasterProc ) then
         txt = ""
         read(unit=io_in,fmt="(a)",iostat=status) txt
 
@@ -250,8 +250,10 @@ contains
 
          inputline=""
          call read_line(io_num,inputline,ios)
-         if (MY_DEBUG .and. me == 0 ) write(*,*) "IN ", io_num, me, ios, &
+         if ( MY_DEBUG .and. MasterProc ) then
+             write(*,*) "IN ", io_num, me, ios, &
                len_trim(inputline) ,trim(inputline)
+         end if
          if ( ios /= 0 ) then  ! End of file
               exit
          end if
@@ -263,7 +265,7 @@ contains
               NKeys = NKeys + 1
               KeyValues(NKeys)%key = key
               KeyValues(NKeys)%value = value
-              if ( me == 0 ) then
+              if ( MasterProc ) then 
                  if (MY_DEBUG) write(unit=*,fmt=*) "KEYS FULL =", trim(inputline)
                  if (MY_DEBUG) write(unit=*,fmt=*) "KEYS LINE NKeys=", &
                     NKeys, trim(key), " : ", trim(value)
@@ -314,7 +316,7 @@ contains
                    end do
               end if
 
-              if ( me == 0 .and. MY_DEBUG ) then
+              if ( MasterProc .and. MY_DEBUG ) then 
                write(unit=*,fmt=*) "DATA LINE" // trim(inputline)
               end if
 
@@ -360,7 +362,7 @@ contains
    if (present(idata2d) ) idata2d  (:,:) = 0    !/**  initialise  **/
    if (present(data2d)  ) data2d  (:,:) = 0.0     !/**  initialise  **/
 
-   if ( me == 0 ) then
+   if ( MasterProc ) then 
       call open_file(IO_TMP,"r",fname,needed=.true.)
       call CheckStop(ios,"open_file error on " // fname )
    end if
@@ -378,7 +380,7 @@ contains
    ! The first two columns are assumed for now to be ix,iy, hence:
 
    Headers(1) = Headers(3)
-   if ( MY_DEBUG .and. me == 0 ) then
+   if ( MY_DEBUG .and. MasterProc ) then
         write(*,*) "Read2D Headers" // fname, Nheaders, Headers(1)
 !       call WriteArray(Headers,NHeaders,"Read2D Headers")
    end if
@@ -410,8 +412,10 @@ contains
          end if ! i,j
       end do
 
-      if ( me == 0 ) close(IO_TMP)
-      if ( me == 0 ) write(6,*) fname // "Read2D: me, Nlines = ", me, Nlines
+   if ( MasterProc ) then 
+      close(IO_TMP)
+      write(6,*) fname // "Read2D: me, Nlines = ", me, Nlines
+   end if
 
   end subroutine Read2D
  
@@ -438,7 +442,9 @@ contains
    integer :: NHeaders, NKeys, Nlines, ncheck
    logical :: debug_flag, Start_Needed
 
-   if ( MY_DEBUG .and. me == 0  ) write(*,*) " Starting Read2DN, me ",me
+   if ( MY_DEBUG .and. MasterProc ) then
+         write(*,*) " Starting Read2DN, me ",me
+   end if
 
    Nlines = 0
 
@@ -452,7 +458,7 @@ contains
   !======================================================================
    if ( Start_Needed ) then 
   !======================================================================
-   if ( me == 0 ) then
+   if ( MasterProc ) then 
       call open_file(IO_TMP,"r",fname,needed=.true.)
       call CheckStop(ios,"ios error on Inputs.landuse")
    end if
@@ -482,7 +488,7 @@ contains
 
    end if ! Start_Needed
   !======================================================================
-   if ( MY_DEBUG .and. me == 0 ) then
+   if ( MY_DEBUG .and. MasterProc ) then
         write(*,*) "Read2DN for ", fname, "Start_Needed ", Start_Needed
         do i = 1, NHeaders
           write(*,*) "Read2D Headers" // fname, i, Nheaders, Headers(i)
@@ -514,8 +520,10 @@ contains
          end if ! i,j
       end do
 
-      if ( me == 0 ) close(IO_TMP)
-      if ( me == 0 ) write(6,*) fname // "Read2DN: me, Nlines = ", me, Nlines
+      if ( MasterProc ) then 
+         close(IO_TMP)
+         write(6,*) fname // "Read2DN: me, Nlines = ", me, Nlines
+      end if
 
   end subroutine Read2DN
  
@@ -546,7 +554,7 @@ contains
 ! All lines starting "# " are ignored, but text will show up nicest in
 ! spread sheets if enlcosed in quotation marks
 !
-    if ( me == 0 ) then
+    if ( MasterProc ) then 
     
       print "(/,a)", "Self-test - Io_Progs_ml ==========================="
 
@@ -577,6 +585,7 @@ contains
      call Read_Headers(IO_IN,msg,Nheaders,NKeyValues, Headers, KeyValues)
 
      if ( me == NPROC-1 ) then
+     !if ( MasterProc ) then 
         print *, "Checking data on processor me = ", me
         do i = 1, NKeyValues
             print *, "me ", me, "Keys ", i, &

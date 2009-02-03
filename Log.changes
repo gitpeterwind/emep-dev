@@ -1,3 +1,23 @@
+================================ rv3_2beta12 Dave,   3rd Feb 2009======
+
+MasterProc introduced in:
+  ModelConstants
+  Par_ml
+  LandDefs
+  Io_Progs_ml
+
+ Use "if (MasterProc)" instead of "if (me == 0)", which needs use ModelConstants
+instead of use Par_ml. Easier for box-model type codes.
+
+Also: 
+
+LandDefs_ml made F-complaint
+PhysicalConstants_ml: R removed, only use RGAS_KG
+ -> Met_ml: R replaced by RGAS_KG. 
+(I think single letter parameters are too hard to search for.)
+
+SubMet_ml   made F-complaint
+
 ================================ rv3_2beta11 Hilde,   29nd Jan 2009======
 Bug in Output_hourly.f90:
 Units wrong for case ( "ADVugm3" ).
