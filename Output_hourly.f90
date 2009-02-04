@@ -325,7 +325,7 @@
             write(6,*) "Location is i=", maxpos(1), " j=", maxpos(2)
             write(6,*) "EMEP coords ix=", i_fdom(maxpos(1)), " iy=", j_fdom(maxpos(2))
             write(6,*) "hourly is ", hourly(maxpos(1),maxpos(2))
-            if ( hr_out(ih)%type == "ADV" ) then
+            if ( hr_out(ih)%type(1:3) == "ADV" ) then
               write(6,*) "xn_ADV is ", xn_adv(ispec,maxpos(1),maxpos(2),KMAX_MID)
               write(6,*) "cfac   is ",   cfac(ispec,maxpos(1),maxpos(2))
             end if
