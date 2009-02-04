@@ -113,7 +113,7 @@ module Met_ml
   !
   real,public, save, dimension(0:MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u  ! m/s
   real,public, save, dimension(MAXLIMAX,0:MAXLJMAX,KMAX_MID,NMET) :: v  ! m/s
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! dp/dt
+  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! 1/s
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
        th      &  ! Potential teperature  ( deg. k )
@@ -375,8 +375,12 @@ contains
     namefield='sigma_dot'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, sdot(:,:,:,nr))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-    foundsdot = .true.
+    if(validity==field_not_found)then
+       foundsdot = .false.
+       if(me==0)write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
+    else
+       foundsdot = .true.
+    endif
 
     namefield='potential_temperature'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
@@ -1203,7 +1207,7 @@ contains
     real   bm, cm, dm, divt, x1,x2, xkmin, p1, p2, uvh2, uvhs
     real   ri, z00, a2, cdh, fac, fac2, ro, xkh, dvdz, dvdzm, xlmix
     real   ric, arg, sl2,dz2k,dex12
-    real   prhelp_sum      
+    real   prhelp_sum,divk(KMAX_MID),sumdiv      
     real   inv_METSTEP   
 
     integer :: i, j, k, lx1,lx2, nr,info
@@ -1540,28 +1544,29 @@ contains
 
 
 
-
-
-
-
-
-
-
     if(.not.foundsdot)then
        ! sdot derived from divergence=0 principle
        do j = 1,ljmax
           do i = 1,limax
              sdot(i,j,KMAX_BND,nr)=0.0
              sdot(i,j,1,nr)=0.0
-             do k=KMAX_MID,2,-1
-                sdot(i,j,k,nr) = ((u(i,j,k,nr)-u(i-1,j,k,nr))            &
+             sumdiv=0.0
+             do k=1,KMAX_MID
+                divk(k)=((u(i,j,k,nr)-u(i-1,j,k,nr))            &
                      + (v(i,j,k,nr)-v(i,j-1,k,nr)))            &
                      * xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))  &
-                     / GRIDWIDTH_M+sdot(i,j,k+1,nr)
+                     / GRIDWIDTH_M
+                sumdiv=sumdiv+divk(k)
+             enddo
+             sdot(i,j,KMAX_MID,nr)=-(sigma_bnd(KMAX_MID+1)-sigma_bnd(KMAX_MID))*sumdiv+divk(KMAX_MID)
+             do k=KMAX_MID-1,2,-1
+                sdot(i,j,k,nr)=sdot(i,j,k+1,nr)-(sigma_bnd(k+1)-sigma_bnd(k))*sumdiv+divk(k)
              enddo
           enddo
        enddo
     endif
+
+
 
     call met_derived !compute derived meteo fields
 

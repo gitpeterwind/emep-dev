@@ -1,3 +1,18 @@
+================================ rv3_2beta13 Peter,   4th Feb 2009======
+
+
+Met_ml:
+New method of deriving sigma_dot when it is missing.
+Hopefully this can be a usable alternative, which will avoid most of the prostprosessing 
+problems of the metdata (mass filtering etc).
+
+Will not changes results in case sigma_dot is found.
+
+Small change in Output_hourly (only debug printing).
+            if ( hr_out(ih)%type(1:3) == "ADV" ) then
+
+
+
 ================================ rv3_2beta12 Dave,   3rd Feb 2009======
 
 MasterProc introduced in:
