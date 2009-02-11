@@ -74,7 +74,8 @@ implicit none
    real, public, parameter  :: &
        PRANDTL = 0.71,            &   ! Prandtl number (see Garratt, 1992)
        Sc_H20  = 0.6,             &   ! Schmidt number for water
-    CHARNOCK = 0.032   ! Charnock's alpha:
+    CHARNOCK = 0.0144  !  From Garratt for k=0.41
+    !CHARNOCK = 0.032   ! Charnock's alpha:
                        ! see Nordeng (1986), p.31, 
                        ! Nordeng(1991), JGR, 96, no. C4, pp. 7167-7174.
                        ! In the second of these publications, Nordeng uses

@@ -1,3 +1,11 @@
+================================ rv3_2beta14 Dave/Svetlana, 11th Feb 2009======
+
+SubMet_ml - bug corrected on z0 for sea-areas (big effect?!)
+    new (still experimental) limit on forest z0 = 0.5m
+
+PhysicalConstants_ml - Charnock set to 0.0144 instead of 0.036
+
+
 ================================ rv3_2beta13 Peter,   4th Feb 2009======
 
 

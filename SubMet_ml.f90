@@ -37,7 +37,7 @@ module SubMet_ml
 
 use CheckStop_ml, only : CheckStop
 use LandDefs_ml,   only: LandType
-!SUB2009 use Landuse_ml,    only: LandCover
+use Landuse_ml,    only: LandCover
 use LocalVariables_ml, only: Grid, Sub
 use MicroMet_ml, only :  PsiM, AerRes    !functions
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
@@ -116,7 +116,8 @@ contains
 
     ! initial guesses for u*, t*, 1/L
         Sub(iL)%ustar  = Grid%ustar      ! First guess = NWP value
-        Sub(iL)%invL   = Grid%invL       ! First guess = NWP value
+        !FEB2009 Sub(iL)%invL   = Grid%invL       ! First guess = NWP value
+        Sub(iL)%invL   = 0.0       ! Start at neutral...
         Sub(iL)%Hd     = Grid%Hd         ! First guess = NWP value
         Sub(iL)%LE     = Grid%LE         ! First guess = NWP value
         Sub(iL)%t2     = Grid%t2         ! First guess = NWP value
@@ -164,9 +165,15 @@ contains
         if ( Sub(iL)%is_water ) then ! water
              Sub(iL)%d  = 0.0
              Sub(iL)%z0 = CHARNOCK * Sub(iL)%ustar * Sub(iL)%ustar/GRAV
-             Sub(iL)%z0 = max( Sub(iL)%z0 ,0.01)
+             !BUG Sub(iL)%z0 = max( Sub(iL)%z0 ,0.01)
+             Sub(iL)%z0 = max( Sub(iL)%z0 ,1.0e-5)
              z_1m   = 1.0       ! 1m above sea surface
              z_3m   = 3.0       ! 3m above sea surface
+        else if ( Sub(iL)%is_forest ) then ! forest
+             Sub(iL)%d  =  0.78 * Sub(iL)%hveg   ! Jarvis, 1976
+             Sub(iL)%z0 =  min( 0.07 * Sub(iL)%hveg, 0.5 )
+             z_1m   = (Sub(iL)%hveg + 1.0) - Sub(iL)%d
+             z_3m   = max(3.0,Sub(iL)%hveg)
         else
              Sub(iL)%d  =  0.7 * Sub(iL)%hveg
              Sub(iL)%z0 = max( 0.1 * Sub(iL)%hveg, 0.001) !  Fix for deserts, 
@@ -196,16 +203,16 @@ contains
         !..z0-values ...
 
         if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-            write(unit=6,fmt="(a12,i2,5f8.3,f12.3)") "UKDEP SUBI", iter, &
+            write(6,"(a12,i2,5f8.3,f12.3)") "UKDEP SUBI", iter, &
                        Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                          Sub(iL)%z_refd, z_3md, Sub(iL)%invL
         end if
 
-       Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
-        (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
-          + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
+       !FEB2009 Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
+       !FEB2009  (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
+       !FEB2009    + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
 
-       Sub(iL)%ustar = max( Sub(iL)%ustar, 1.0e-2)
+       !FEB2009 Sub(iL)%ustar = max( Sub(iL)%ustar, 1.0e-2)
 
     !  We must use L (the Monin-Obukhov length) to calculate deposition,
     ! Thus, we calculate T* and then L, based on sub-grid data. 
@@ -223,14 +230,20 @@ contains
       !.. we limit the range of 1/L to prevent numerical and printout problems
       !   This range is very wide anyway.
 
-        Sub(iL)%invL  = max( -1.0, Sub(iL)%invL ) !! limit very unstable
+        !FEB2009 Sub(iL)%invL  = max( -1.0, Sub(iL)%invL ) !! limit very unstable
         Sub(iL)%invL  = min(  1.0, Sub(iL)%invL ) !! limit very stable
+
+       !FEB2009 added:
+       Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
+        (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
+          + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
+       Sub(iL)%ustar = max( Sub(iL)%ustar, 1.0e-2)
 
     end do ! iter
 
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        write(unit=6,fmt="(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
+        write(6,"(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
           Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
               Sub(iL)%ustar, Sub(iL)%t2, Sub(iL)%invL
     end if
@@ -268,12 +281,10 @@ contains
         Ra_2m  = AerRes(Sub(iL)%z0,1.0+z_1m,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)
 
     if ( DEBUG_SUB ) then
-       !if ( Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
-       !    .or. Ra_2m < 0  ) 
-       call CheckStop(Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
-                      .or. Ra_2m < 0 , "RAREF NEG ")
-      !if ( Sub(iL)%Ra_3m > Sub(iL)%Ra_ref ) &
-       call CheckStop(Sub(iL)%Ra_3m > Sub(iL)%Ra_ref, "ERROR!!! Ra_ref<Ra_3")
+       if ( Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
+           .or. Ra_2m < 0  ) call CheckStop("RAREF NEG ")
+      if ( Sub(iL)%Ra_3m > Sub(iL)%Ra_ref ) &
+           call CheckStop("ERROR!!! Ra_ref<Ra_3")
     end if
 
 
@@ -329,7 +340,7 @@ contains
 
 
     if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-        write(unit=6,fmt="(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, Sub(iL)%rh
+        write(6,"(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, Sub(iL)%rh
     end if
 
   end subroutine Get_Submet
