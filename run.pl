@@ -7,11 +7,11 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=6:ib
+#PBS -lnodes=32:ib
 # wall time limit of run 
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
-#PBS -lpmem=4000MB
+#PBS -lpmem=1000MB
 # account for billing
 #PBS -A nn2890k
 #___________________________________________________________________
@@ -476,7 +476,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
     $ifile{"$DataDir/Inputs_LandDefs.csv_05.12.2008"} = "Inputs_LandDefs.csv";
-    $ifile{"$DataDir/Inputs_DO3SE.csv_05.12.2008"} = "Inputs_DO3SE.csv";
+    $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
 #    $ifile{"/home/mifahf/Unify/Unimod.rv3_1_2.CoDep.snow/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$DATA_LOCAL/sondes.dat"} = "sondes.dat";
