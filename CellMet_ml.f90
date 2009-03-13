@@ -111,10 +111,17 @@ contains
      Grid%rho_s = rho_surf(i,j)    ! Should replace Met_ml calc. in future
 
      Grid%is_NWPsea = nwp_sea(i,j)
+     Grid%is_allNWPsea = ( nwp_sea(i,j) .and. LandCover(i,j)%ncodes == 1)
      Grid%snow      = snow(i,j)
-     Grid%sdepth      = sdepth(i,j,1)
-     Grid%ice      = ice(i,j,1)
+     Grid%sdepth    = sdepth(i,j,1)
+     Grid%ice       = ice(i,j,1)
 
+
+    !ds 25/2/2009.. following Branko's comments, 
+    ! we limit u* to a physically plausible value
+    ! to prevent numerical problems
+
+     Grid%ustar = max( Grid%ustar, 0.1 )
 
      Grid%invL  = KARMAN * GRAV * -Grid%Hd &
             / (CP*Grid%rho_s * Grid%ustar*Grid%ustar*Grid%ustar * Grid%t2 )
@@ -123,8 +130,8 @@ contains
     !.. and because we don't trust HIRLAM or other NWPs enough.
     !   This range is very wide anyway.
 
-     Grid%invL  = max( -1.0, Grid%invL ) !! limit very unstable
-     Grid%invL  = min(  1.0, Grid%invL ) !! limit very stable
+    ! Grid%invL  = max( -1.0, Grid%invL ) !! limit very unstable
+    ! Grid%invL  = min(  1.0, Grid%invL ) !! limit very stable
 
 
     ! wstar for particle deposition, based on Wesely

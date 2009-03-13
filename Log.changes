@@ -1,6 +1,92 @@
+================================ rv3_2beta18 Dave, 28th Feb 2009======
+(Skipped 16,17 ...)
 
-================================ rv3_2betaxx Hilde, 25th Feb 2009======
-New run.pl with DO3SE_Inputs.csv_25.02.2009 (Surface resistance for RgsS for ice set to 1000). No effect on results
+Major change in aerosol deposition calculations, designed to simplify.
+Aero_Vds_ml replaces Aero_Rb_ml, and will serve as a collection point
+of alternative algorithms. For this version use a simple formula for forests
+derived from Petroff et al's papers, as function of ustar, SAI and invL.
+Use Wesely for all else. SubMet also changed to reflect findings of
+various ustar tests against CarboEurope data and offline testing.
+
+Also note new way of specifying DEBUG in ModelConstants - applied
+to just a few routines so far. (Intended to make if faster to
+switch debuggung on and off, and to save those occasions where
+MY_DEBUG in SubMet_ml didn't help as the poor user had forgotten
+that this one needed DEBUG in RUnChem_ml switched on too. (Otherwise
+debug_flag was never set true)
+
+Derived system modified again, to allow landuse-specif met
+params to be output, just invL and ustar so far. Still should
+be improved and made more efficient - a work in progress.
+
+Module changes:
+
+CellMet
+
+  Grid%is_allNWPsea added -  used to identify all-sea squares
+
+  Following Branko's comments, we limit u* to a physically plausible value,
+  0.1 m/s to prevent numerical problems in stable BLs
+
+CoDep_ml - just write "First CoDep" for MasterProc
+
+Derived_ml - makes use of  DEBUG_DERIVED, and OutMET added. Also
+            USTAR_NWP.
+
+DryDep_ml
+ Large changes!
+ replace Aero_Rb with Aero_Vds, and use new formula for forests,
+ Wesely for all else. Settling velocity calc moved in Aero_vds_ml
+ also.  Limit settling velocity (Vs) to 2 cm/s
+
+LocalVariables_ml.f90
+  logical :: is_allNWPsea   !  Only sea in grid-square
+
+ModelConstants_ml
+  new DEBUG_RUNCHEM etc.
+
+Rsurface_ml -  max 10 s/m for HNO3 re-introduced
+
+Runchem_ml - uses DEBUG_RUNCHEM
+
+SubMet_ml
+   Many changes - Increased iterations for neutral, unstable,
+   just one for stable.
+
+   We restrict z0 to max 0.5m, since comparison with CarboEurope
+   results shows that this provides the best u* values for forests.
+
+    ! We use the same restriction on z0 as in Berge, 1990 (Tellus,42B,389-407)
+        Sub(iL)%z0 = max( Sub(iL)%z0 ,1.5e-5)
+
+    Uses DEBUG_SUBMET
+
+Rsurface_ml
+ - reimplement Vg limitation for HNO3. 10 cm/s max is enough anyway!
+
+run.pl
+  New input files, shorter veg in general
+ $ifile{"$DataDir/Inputs_LandDefs.csv_05.12.2008"} = "Inputs_LandDefs.csv";
+ $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
+
+ZD_OZONE/My_Derived
+  changes for new met outputs
+  tidy up for OutVg, OutRG
+
+ZD_OZONE/My_DryDep
+    Uses DEBUG_MY_DRYDEP
+    OutMET added
+
+
+================================ rv3_2beta15 Hilde, 25th Feb 2009======
+New run.pl with:
+   Inputs_DO3SE.csv_25.02.2009 (Surface resistance for RgsS for ice set to 1000). No effect on results
+   Inputs_LandDefs.csv_25.02.2009  - reduced height for forests and med. Scrub. Will change results
+
+   SubMet_ml:
+      revised ustar, invL, with more iterations for unstable
+      z0 limit changed slightly, to match Berge 1990 value
+      CellMet-ml -in troduced 0.1 m/s limit on ustar for Grid%ustar
 
 ================================ rv3_2beta14 Dave/Svetlana, 11th Feb 2009======
 

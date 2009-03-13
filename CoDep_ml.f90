@@ -29,7 +29,8 @@ module CoDep_ml
   use CheckStop_ml,  only : CheckStop
   use Chemfields_ml, only : so2nh3_24hr
   use GridValues_ml, only : debug_proc, debug_li, debug_lj
-  use Par_ml,        only : MAXLIMAX, MAXLJMAX, me ! (me for DEBUG)
+  use ModelConstants_ml, only : MasterProc  ! for DEBUG
+  use Par_ml,        only : MAXLIMAX, MAXLJMAX
 
 
 
@@ -147,10 +148,10 @@ contains
  
    if ( my_first_call ) then
 
-     write(*,*) "Start First CoDep call, ",  so2nh3ratio24hr,so2nh3ratio, Ts_C, frh, forest
      call Tabulate()
      my_first_call = .false.
-     write(*,*) "First CoDep call, ",  so2nh3ratio24hr,so2nh3ratio, Ts_C, frh, forest
+     if( MasterProc ) write(*,*) "First CoDep call, ",  &
+           so2nh3ratio24hr,so2nh3ratio, Ts_C, frh, forest
 
    end if
        
@@ -288,7 +289,7 @@ contains
        tab_acidity_fac( ia_SN )  = exp( -(2.0- a_SN) )
        tab_F2 (ia_SN)            = 10.0**( (-1.1099 * a_SN)+1.6769 )
 !hf CoDep       tab_F4 (ia_SN)            = 10.0**( (0.55 * a_SN)-1.0 ) 
-       if(MY_DEBUG.and.me==0) write(6,*) "TABIA ", ia_SN, a_SN, &
+       if(MY_DEBUG.and. MasterProc ) write(6,*) "TABIA ", ia_SN, a_SN, &
               tab_acidity_fac( ia_SN ), tab_F2(ia_SN)
      end do
 
@@ -296,7 +297,7 @@ contains
      do ia_SN_24hr = 0, NTAB
        a_SN_24hr            = ia_SN_24hr * MAX_SN /real(NTAB)
        tab_F3 (ia_SN_24hr)  = 11.84  * exp(1.1 * a_SN_24hr)
-       if(MY_DEBUG.and.me==0) write(6,*) "TABIA24 ", ia_SN_24hr, &
+       if(MY_DEBUG.and. MasterProc ) write(6,*) "TABIA24 ", ia_SN_24hr, &
             a_SN_24hr, tab_F3(ia_SN_24hr)
      enddo
 
@@ -318,7 +319,7 @@ contains
           tab_exp_rh(IRH) = exp( (100.0-IRH)/7.0)
 !hf CoDep  
           tab_F4(IRH)= (max(1,IRH)/100.)**(-1.67)
-          if(MY_DEBUG.and.me==0) write(6,*) "TABRH ", me, IRH, &
+          if(MY_DEBUG.and. MasterProc ) write(6,*) "TABRH ", IRH, &
               tab_exp_rh(IRH), tab_F4(IRH)
      end do
 

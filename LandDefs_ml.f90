@@ -29,7 +29,7 @@ module LandDefs_ml
  use CheckStop_ml, only : CheckStop
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValue_ml, only :  KeyVal
- use ModelConstants_ml, only : NLANDUSE, MasterProc
+ use ModelConstants_ml, only : NLANDUSE, MasterProc, DEBUG_LANDDEFS
   implicit none
   private
 
@@ -98,9 +98,6 @@ module LandDefs_ml
   type(land_type), public,  dimension(NLANDUSE) :: LandType
                                                !##############
      
-
-  logical, private, parameter :: MY_DEBUG = .true. 
-
 
 contains
 !=======================================================================
@@ -174,7 +171,7 @@ contains
            !############################
             LandDefs(n) = LandInput
            !############################
-            if ( MY_DEBUG .and. MasterProc ) then
+            if ( DEBUG_LANDDEFS .and. MasterProc ) then
                  write(unit=*,fmt=*) "LANDDEFS N ", n, &
                    LandInput%name, LandInput%code, LandDefs(n)%LAImax
             end if
@@ -185,7 +182,7 @@ contains
            LandDefs(n)%LAImax   = max( LandDefs(n)%LAImax,   0.0)
 
 
-            if ( MY_DEBUG .and. MasterProc ) then
+            if ( DEBUG_LANDDEFS .and. MasterProc ) then
                  write(unit=*,fmt=*) "LANDPHEN match? ", n, &
                    LandInput%name, LandInput%code, wanted_codes(n)
             end if

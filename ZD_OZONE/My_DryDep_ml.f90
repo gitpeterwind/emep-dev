@@ -40,6 +40,7 @@ module My_DryDep_ml    ! DryDep_ml
  use Derived_ml,    only : f_2d,   d_2d, IOU_INST
  use My_Derived_ml,  only : &
    nOutDDep, DDEP_LCS , OutDDep, nOutVg, OutVg, nOutRG, OutRG &
+  ,nOutMET, OutMET & !MAR2009
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
@@ -49,7 +50,7 @@ module My_DryDep_ml    ! DryDep_ml
  use LandDefs_ml,        only : LandDefs, LandType
  use Landuse_ml,         only : WheatGrowingSeason
  use LocalVariables_ml,  only : Grid  !=> izen  integer of zenith angle
- use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON
+ use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON, DEBUG_MY_DRYDEP
 use Par_ml, only: me ! Vds Ndep
  use PhysicalConstants_ml, only : AVOG
  use SmallUtils_ml,      only: find_index, NOT_FOUND
@@ -63,6 +64,7 @@ use Par_ml, only: me ! Vds Ndep
   public :: Add_ddep
   public :: Add_Vg
   public :: Add_RG
+  public :: Add_LCC_Met
 
   !/** Variables used in deposition calculations
  
@@ -153,14 +155,12 @@ use Par_ml, only: me ! Vds Ndep
    integer, private, parameter :: &
     GRID_LC=0, CONIF=1, DECID=2, CROP=3, SEMINAT=4
 
-   logical, private, parameter :: MY_DEBUG = .false.
-   logical, private, parameter :: DEBUG_ECO = .false.
    logical, private, save :: first_call = .true.
 
 contains
   subroutine Init_DepMap
    integer, dimension(22) :: check_vals  ! Tmp safety check array
-   integer :: icheck, iadv, i, i2, n, ndep, nVg, nRG
+   integer :: icheck, iadv, i, i2, n, ndep, nVg, nRG, nMET
 
  ! .... Define the mapping between the advected species and
  !      the specied for which the calculation needs to be done.
@@ -204,7 +204,7 @@ contains
    ! We start LC with Grid at zero, so need -1 offset
     OutDdep(ndep)%LC   = find_index(OutDdep(ndep)%txt ,DEP_RECEIVERS) -1
 
-    if(MY_DEBUG .and. me==0) write(6,*) "OUTDdep ", ndep, &
+    if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTDdep ", ndep, &
        OutDdep(ndep)%name,OutDdep(ndep)%txt,"=>"&
           ,OutDdep(ndep)%LC, OutDdep(ndep)%f2d
     call CheckStop( OutDDep(ndep)%f2d < 1, &
@@ -222,7 +222,7 @@ contains
      end if
      OutVg(nVg)%f2d = find_index( OutVg(nVg)%name, f_2d(:)%name )
 
-     if(MY_DEBUG .and. me==0) write(6,*) "OUTVG ", nVg, &
+     if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTVG ", nVg, &
          OutVg(nVg)%name,OutVg(nVg)%txt,"=>",&
            OutVg(nVg)%LC, OutVg(nVg)%f2d
 
@@ -241,7 +241,7 @@ contains
      end if
      OutRG(nRG)%f2d = find_index( OutRG(nRG)%name, f_2d(:)%name )
 
-     if(MY_DEBUG .and. me==0) write(6,*) "OUTRG ", nRG, &
+     if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTRG ", nRG, &
          OutRG(nRG)%name,OutRG(nRG)%txt,"=>",&
            OutRG(nRG)%LC, OutRG(nRG)%f2d
 
@@ -249,6 +249,26 @@ contains
           "OutRG-LC Error " // OutRG(nRG)%name)
      call CheckStop( OutRG(nRG)%f2d < 1, &
           "OutRG-f2d Error " // OutRG(nRG)%name)
+  end do
+
+
+ do nMET = 1, nOutMET
+
+     if( OutMET(nMET)%txt == "Grid") then
+        OutMET(nMET)%LC = GRID_LC    ! zero
+     else 
+        OutMET(nMET)%LC = find_index( OutMET(nMET)%txt, LandDefs(:)%code )
+     end if
+     OutMET(nMET)%f2d = find_index( OutMET(nMET)%name, f_2d(:)%name )
+
+     if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTMET ", nMET, &
+         OutMET(nMET)%name,OutMET(nMET)%txt,"=>",&
+           OutMET(nMET)%LC, OutMET(nMET)%f2d
+
+     call CheckStop( OutMET(nMET)%LC < GRID_LC , & ! <zero
+          "OutMET-LC Error " // OutMET(nMET)%name)
+     call CheckStop( OutMET(nMET)%f2d < 1, &
+          "OutMET-f2d Error " // OutMET(nMET)%name)
   end do
 
 
@@ -355,8 +375,8 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
 
 
    !  Query - crops, outisde g.s. ????
-     !if ( DEBUG_ECO .and. first_call .and. debug_flag ) then
-     if ( DEBUG_ECO .and. debug_flag ) then
+     !if ( DEBUG_MY_DRYDEP .and. first_call .and. debug_flag ) then
+     if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
        write(*,*)  "ECOAREAS ", i,j, EcoArea(:)
          do n = 1, 19
            write(*,*)  "ECOCHECK ", n, i,j, LandType(n)%is_conif, coverage(n)
@@ -377,7 +397,7 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
     ! Ecosystem depositions, for grouped or individual species:
 
      do ndep = 1, nOutDDep
-        nadv  = OutDDep(ndep)%Adv
+        nadv  = OutDDep(ndep)%Index
         RLC   = OutDDep(ndep)%LC
         if ( nadv > 0 ) then  ! normal advectde species
            nadv2 = 1
@@ -427,7 +447,7 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
         d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST) =  &
             Fflux * convfac * OutDDep(ndep)%atw * invEcoArea(RLC)
 
-        if ( DEBUG_ECO .and. debug_flag ) then
+        if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
            write(6,*) "DEBUG_ECO Fflux ", ndep, nadv, RLC, Fflux, &
             d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST), DDEP_SOXGROUP
         end if ! DEBUG_ECO 
@@ -503,7 +523,7 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
              d_2d(D2_MMAOT40WH,i,j,IOU_INST) = d_2d(D2_UNAOT40WH,i,j,IOU_INST)&
                      * WheatGrowingSeason(i,j)
 
-    if ( DEBUG_ECO .and. debug_flag ) then
+    if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
           write(6,"(a12,3i5,f7.2,5es12.3,i3,es12.3)") "DEBUG_ECO ", &
           imm, idd, ihh, o3WH, &
              leaf_flux(iam_beech), d_2d(D2_AFSTDF0,i,j,IOU_INST), &
@@ -523,11 +543,11 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
      integer :: n, nVg, cdep
 
        do nVg = 1, nOutVg
-         cdep  =  DepAdv2Calc( OutVg(nVg)%Adv ) ! Convert e.g. IXADV_O3
+         cdep  =  DepAdv2Calc( OutVg(nVg)%Index ) ! Convert e.g. IXADV_O3
                                                   ! to CDEP_O3
          d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) = VgLU( cdep, OutVg(nVg)%LC ) 
 
-         if( MY_DEBUG .and. debug_flag ) then
+         if( DEBUG_MY_DRYDEP .and. debug_flag ) then
               write(*,"(a,a,i3,i4,f8.3)") "ADD_VG: ",  OutVg(nVg)%name, cdep,  &
                  OutVg(nVg)%LC,  100.0*d_2d( OutVg(nVg)%f2d,i,j,IOU_INST)
          end if
@@ -543,7 +563,7 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
      real :: Gs, Gns, Rs, Rns
 
        do nRG = 1, nOutRG
-         cdep  =  DepAdv2Calc( OutRG(nRG)%Adv ) ! Convert e.g. IXADV_O3
+         cdep  =  DepAdv2Calc( OutRG(nRG)%Index ) ! Convert e.g. IXADV_O3
                                                   ! to CDEP_O3
          Gs = GsLU( cdep, OutRG(nRG)%LC )
          if( Gs < 1.0e-44 ) then
@@ -569,7 +589,7 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
            d_2d( OutRG(nRG)%f2d,i,j,IOU_INST) = Gs
          end if
 
-         if( MY_DEBUG .and. debug_flag ) then
+         if( DEBUG_MY_DRYDEP .and. debug_flag ) then
               write(*,"(a,a,i3,2i4,es12.3)") "ADD_RG: ", OutRG(nRG)%name,&
                 cdep,  OutRG(nRG)%LC,  OutRG(nRG)%f2d, &
                    d_2d( OutRG(nRG)%f2d,i,j,IOU_INST)
@@ -577,6 +597,29 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
        end do
 
   end subroutine Add_RG
+  !<==========================================================================
+  !<==========================================================================
+  subroutine Add_LCC_Met(debug_flag,i,j, LCC_Met )
+     logical, intent(in) :: debug_flag
+     integer, intent(in) :: i,j             ! coordinates
+     real, dimension(:,:), intent(in) :: LCC_Met ! dim (nMET, NLANDUSE*nlu)
+     integer :: n, nMET
+     real :: met
+
+       do nMET = 1, nOutMET
+         n    =  OutMET(nMET)%Index  !ind = ustar or ..
+         met  =  LCC_Met( n, OutMET(nMET)%LC )
+
+         d_2d( OutMET(nMET)%f2d,i,j,IOU_INST) = met
+
+         if( DEBUG_MY_DRYDEP .and. debug_flag ) then
+              write(*,"(a,a,i3,2i4,es12.3)") "ADD_MET: ", OutMET(nMET)%name,&
+                n,  OutMET(nMET)%LC,  OutMET(nMET)%f2d, &
+                   d_2d( OutMET(nMET)%f2d,i,j,IOU_INST)
+         end if
+       end do
+
+  end subroutine Add_LCC_Met
   !<==========================================================================
 
 

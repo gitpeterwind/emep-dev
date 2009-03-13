@@ -152,12 +152,13 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(16) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(20) :: &
   D2_EXTRA = (/ &
        "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
       ,"WDEP_SO2","WDEP_SO4","WDEP_HNO3","WDEP_aNO3", "WDEP_pNO3" & 
       ,"WDEP_NH3", "WDEP_aNH4" & 
       ,"D2_REDN     ","D2_SSfi     ","D2_SSco     ","D2_SNOW","D2_SNratio" &
+      ,"D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 ","USTAR_NWP" & !DSFEB09
   /)
 !      ,"D2_VddACC", "D2_VddCOA" & ! ECO08
 
@@ -179,21 +180,25 @@ private
 
   integer, public, save :: nOutDDep, nOutVg ! ECO08
   integer, public, save :: nOutRG  ! RG = resistances and conductances
+  integer, public, save :: nOutMET ! RG = resistances and conductances
 
 
  ! Store indices of ecossytem-species depositions
+ ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
+ !            x     d      d    d   a10    a10   a10     f    i    a10
   type, public :: Dep_type
      character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
      integer :: LC            ! Index of Receiver land-cover (one 
                               ! of Dep_Receivers)
-     integer :: Adv           ! index in xn_adv arrays
+     integer :: Index         ! e.g. index in xn_adv arrays
      integer :: f2d           ! index in f_2d arrays
+     character(len=10) :: class !  "Mosaic"
      character(len=10) :: label !  e.g. "VG", "Rns"
      character(len=10) :: txt ! text where needed, e.g. "Conif"
      real    :: scale         !  e.g. use 100.0 to get cm/s
      integer :: atw           ! atomic weight where needed
      character(len=10) :: units ! e.g.  mgN/m2
-  end type Dep_type
+  end type 
 
    !ECO08 - specify some species and land-covers we want to output
    ! depositions for in netcdf files. DDEP_LCS must match one of
@@ -240,6 +245,17 @@ private
     type(Dep_type), public, & !Non-stomatal conductance
      dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
 
+! For met-data ...
+
+    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
+      MET_PARAMS = (/ "USTAR", "INVL" /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+      MET_LCS  = (/ "CF", "SNL", "GR" ,"TC"/)
+
+   ! We use Dep_type anyway since we can use the LCC elements
+    type(Dep_type), public, & !Non-stomatal conductance
+     dimension( size(MET_PARAMS)*size( MET_LCS) ),  save :: OutMET
+
 !----------------------
 ! Less often needed:
 !exc  "D2_CO     ","D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ",
@@ -268,7 +284,8 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 !hf Rs
-    integer :: i, ilab, nLC, nVg, nRG
+    integer :: i, ilab, nLC, nVg, nRG, nMET, iadv
+    character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -298,7 +315,7 @@ private
                  trim( species(DDEP_SPECS(i))%name ) // &
                     "_m2" // trim( DDEP_LCS(n) )
 
-            OutDDep(nLC)%Adv  = DDEP_SPECS(i) - NSPEC_SHL
+            OutDDep(nLC)%Index  = DDEP_SPECS(i) - NSPEC_SHL
 
             if ( species(DDEP_SPECS(i))%sulphurs > 0 ) then
                OutDDep(nLC)%atw  = species(DDEP_SPECS(i))%sulphurs * atwS
@@ -316,7 +333,7 @@ private
                    species(DDEP_SPECS(i))%name)
              end if
            else ! GROUP
-            OutDDep(nLC)%Adv  = DDEP_SPECS(i) ! e.g. -1 for SOX
+            OutDDep(nLC)%Index  = DDEP_SPECS(i) ! e.g. -1 for SOX
             if ( DDEP_SPECS(i) == SOX_INDEX ) then
                OutDDep(nLC)%atw   = atwS
                OutDDep(nLC)%units = "mgS/m2"
@@ -337,7 +354,7 @@ private
            if(MY_DEBUG .and. me==0)  write(6,"(a,4(a,i4))") &
             "DDEP NEW ", &
              OutDDep(nLC)%name, nLC, "LC ", OutDDep(nLC)%LC, &
-            " Adv: ", OutDDep(nLC)%Adv, "ATW ",  OutDDep(nLC)%atw
+            " Index: ", OutDDep(nLC)%Index, "ATW ",  OutDDep(nLC)%atw
         end do ! DDEP_SPECS 
       end do ! DDEP_LCS
       nOutDDep = nLC
@@ -361,17 +378,20 @@ private
 
           nVg = nVg + 1
 
-          OutVg(nVg)%Adv  =   VG_SPECS(i) - NSPEC_SHL
-          OutVg(nVg)%txt  =   VG_LCS(n)
-          OutVg(nVg)%label  = VG_LABELS(ilab)
-          OutVg(nVg)%scale  =   100.0
-          OutVg(nVg)%units  =   "cm/s"
-          OutVg(nVg)%name = trim( VG_LABELS(ilab) ) // "_"  // &
-           trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
+          name = trim( VG_LABELS(ilab) ) // "_"  // &
+             trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
+          iadv = VG_SPECS(i) - NSPEC_SHL
+
           !Not yet known: OutVg(nVg)%LC
-          if(MY_DEBUG .and. me==0) write(6,*) "VGOUT ", nVg, i, n, &
-              OutVg(nVg)%name, OutVg(nVg)%Adv,OutVg(nVg)%txt, &
-                OutVg(nVg)%scale, OutVg(nVg)%units
+
+ ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
+ !            x     d      d    d   a10    a10   a10     f    i    a10
+           OutVg(nVg) = Dep_type(  &
+             name, -99, iadv, -99,"Mosaic", VG_LABELS(ilab), VG_LCS(n),&
+                                             100.0, -99,  "cm/s") 
+
+          if(MY_DEBUG .and. me==0) &
+              write(6,*) "VGOUT ", nVg, i, n, OutVg(nVg)
         end do !n
       end do ! i
       end do ! ilab
@@ -390,23 +410,24 @@ private
         do n = 1, size(RG_LCS) 
 
           nRG = nRG + 1
+          name = trim ( RG_LABELS(ilab) ) // "_"  // &
+           trim( species(RG_SPECS(i))%name ) // "_" // trim( RG_LCS(n) )
 
-          OutRG(nRG)%Adv  =   RG_SPECS(i) - NSPEC_SHL
+          iadv  =   RG_SPECS(i) - NSPEC_SHL
           OutRG(nRG)%label  = RG_LABELS(ilab)
           OutRG(nRG)%txt  =   RG_LCS(n)
+          OutRG(nRG) = Dep_type(  &
+             name, -99, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
+                                             1.0, -99,  "-") 
           if( OutRG(nRG)%label(1:1) == "R" )  then
-              OutRG(nRG)%scale  =     1.0
               OutRG(nRG)%units  =   "s/m"
           else if( OutRG(nRG)%label(1:1) == "G" )  then
               OutRG(nRG)%scale  =    100.0   
               OutRG(nRG)%units  =   "cm/s"
           end if
-          OutRG(nRG)%name = trim ( RG_LABELS(ilab) ) // "_"  // &
-           trim( species(RG_SPECS(i))%name ) // "_" // trim( RG_LCS(n) )
           !Not yet known: OutRG(nRG)%LC
-          if(MY_DEBUG .and. me==0) write(6,*) "RGOUT ", nRG, i, n, &
-              OutRG(nRG)%name,  OutRG(nRG)%label(1:1), &
-              OutRG(nRG)%Adv,OutRG(nRG)%txt, OutRG(nRG)%scale, OutRG(nRG)%units
+          if(MY_DEBUG .and. me==0) &
+              write(6,*) "RGOUT ", nRG, i, n, OutRG(nRG)
         end do !n
       end do ! i
       end do ! ilab
@@ -414,6 +435,37 @@ private
 
      call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING)
 
+      !------------- Met data for d_2d -------------------------
+      ! We find the various combinations of met and ecosystem, 
+      ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
+
+      nMET = 0
+      do ilab = 1, size(MET_PARAMS)
+        do n = 1, size(MET_LCS) 
+
+          nMET = nMET + 1
+          name = trim ( MET_PARAMS(ilab) ) // "_"  // trim( MET_LCS(n) )
+
+          OutMET(nMET) = Dep_type( &
+           name, -99, ilab, -99, "Mosaic", MET_PARAMS(ilab),  &
+                                              MET_LCS(n), 1.0, -99, "-")
+
+          if( OutMET(nMET)%label(1:5) == "USTAR" )  then
+              OutMET(nMET)%units  =   "m/s"
+          else if( OutMET(nMET)%label(1:4) == "INVL" )  then
+              OutMET(nMET)%units  =   "m"
+          end if
+
+          if(MY_DEBUG .and. me==0) &
+               write(6,*) "METOUT ", nMET, i, n, OutMET(nMET)
+        end do !n
+      end do ! ilab
+      nOutMET = nMET
+
+     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING)
+
+      !------------- end LCC data for d_2d -------------------------
+      
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 

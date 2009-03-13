@@ -66,7 +66,7 @@ use My_Derived_ml, only : &
            ,TXTLEN_DERIV    & ! length of names
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
-      nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG
+      nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG, nOutMET, OutMET
 
 
 
@@ -77,7 +77,7 @@ use GenSpec_shl_ml
 use GenSpec_tot_ml
 use GenChemicals_ml, only : species
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
-use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen
+use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp
 !hf output
 use Chemfields_ml , only : so2nh3_24hr,Grid_snow
 use ModelConstants_ml, &
@@ -89,6 +89,7 @@ use ModelConstants_ml, &
                         , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
                         , AOT_HORIZON&! limit of daylight for AOT calcs
                         ,DEBUG_i, DEBUG_j & 
+                        ,DEBUG_DERIVED    & 
                         , SOURCE_RECEPTOR &
                         , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
@@ -157,7 +158,8 @@ private
   ! Define 4 output types corresponding to instantaneous,year,month,day
 
    integer, public, parameter ::  &
-        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_MEAN=6
+        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, &
+        IOU_HOUR=5, IOU_HOUR_MEAN=6
 
   ! The 2-d and 3-d fields use the above as a time-dimension. We define
   ! LENOUTxD according to how fine resolution we want on output. For 2d
@@ -199,7 +201,6 @@ private
              voc_index, &     ! Index of VOC in xn_adv
              voc_carbon       ! Number of C atoms
 
-   logical, private, parameter :: MY_DEBUG = .false.
    logical, private, save :: debug_flag, Is3D
    character(len=100), private :: errmsg
 
@@ -213,7 +214,7 @@ private
     subroutine Init_Derived()
 
         integer :: alloc_err
-          if(me==0 .and. MY_DEBUG) write(*,*) "INIT My DERIVED STUFF"
+          if(me==0 .and. DEBUG_DERIVED ) write(*,*) "INIT My DERIVED STUFF"
           call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
          ! get lengths of wanted arrays (excludes notset values)
@@ -223,7 +224,7 @@ private
           call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
 
      if ( num_deriv2d > 0 ) then
-          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 2d:",&
+          if(me==0 .and. DEBUG_DERIVED ) write(*,*) "Allocate arrays for 2d:",&
                                                   num_deriv2d
           allocate(f_2d(num_deriv2d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_2d")
@@ -234,9 +235,9 @@ private
           call CheckStop(alloc_err,"Allocation of nav_2d")
           nav_2d = 0
      end if
-     if(MY_DEBUG) write(*,*) "ALLOCATE pre D3D", me, num_deriv2d
+     if ( DEBUG_DERIVED ) write(*,*) "ALLOCATE pre D3D", me, num_deriv2d
      if ( num_deriv3d > 0 ) then
-          if(me==0 .and. MY_DEBUG) write(*,*) "Allocate arrays for 3d: ",&
+          if(me==0 .and. DEBUG_DERIVED ) write(*,*) "Allocate arrays for 3d: ",&
                                                  num_deriv3d
           allocate(f_3d(num_deriv3d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_3d")
@@ -275,17 +276,19 @@ private
        if ( present(Is3D) .and. Is3D ) then
          Nadded3d = Nadded3d + 1
          N = Nadded3d
-         if ( me == 0 .and. MY_DEBUG  ) write(*,*) "Define 3d deriv ", N, name
+         if ( me == 0 .and. DEBUG_DERIVED   ) &
+                  write(*,*) "Define 3d deriv ", N, name
          call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
          def_3d(N) = Deriv(class,avg,index,scale,rho,inst,year,month,day,&
                               name,unit)
        else
          Nadded2d = Nadded2d + 1
          N = Nadded2d
-         if ( me == 0 .and. MY_DEBUG ) write(*,*) "Define 2d deriv ", N, name
+         if ( me == 0 .and. DEBUG_DERIVED  )&
+                   write(*,*) "Define 2d deriv ", N, name
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
-         def_2d(N) = Deriv(class,avg,index,scale,rho,inst,year,month,day,&
-                              name,unit)
+         def_2d(N) = Deriv(class,avg,index,scale,rho,inst,year,&
+                                  month,day, name,unit)
        end if
 
     end subroutine AddDef
@@ -303,7 +306,7 @@ private
     real, save    :: ugPMad, ugPMde, ugSS  !advected and derived PM's & SeaS
     real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
 
-    integer :: ndep, nVg, nRG  ! ECO08
+    integer :: ndep, nVg, nRG, nMET  ! ECO08
 
 
   ! - for debug  - now not affecting ModelConstants version
@@ -312,7 +315,7 @@ private
    integer :: ind, idebug
 
 
-    if(MY_DEBUG) write(6,*) " START DEFINE DERIVDE "
+    if(DEBUG_DERIVED .and. me ==0) write(6,*) " START DEFINE DERIVED "
     !   same mol.wt assumed for PPM25 and PPMco
 
      ugPMad = species(PM25)%molwt * PPBINV /ATWAIR 
@@ -353,25 +356,33 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
                  !code avg? ind scale rho Inst Yr Mn Day
     call AddDef( "DDEP", F, -1, 1.0e6, F  , F  ,T ,T ,F , &
            OutDDep(ndep)%name,OutDDep(ndep)%units)
-    if(MY_DEBUG .and. me==0) write(6,*) "OutDDep ADDED ", &
+    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutDDep ADDED ", &
           ndep, OutDDep(ndep)%name
   end do
      
 
-  do nVg = 1, nOutVg
+  do nVg = 1, nOutVg ! Index is adv
                  !code            avg?       ind             scale 
                  !    rho Inst Yr Mn Day
-    call AddDef( OutVg(nVg)%label, T, OutVg(nVg)%Adv, OutVg(nVg)%scale, &
+    call AddDef( OutVg(nVg)%label, T, OutVg(nVg)%Index, OutVg(nVg)%scale, &
                        F  , F  ,T ,T ,T , OutVg(nVg)%name,OutVg(nVg)%units)
-    if(MY_DEBUG .and. me==0) write(6,*) "OutVg ADDED ", nVg, OutVg(nVg)%name
+    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutVg ADDED ", nVg, OutVg(nVg)%name
   end do
 
-  do nRG = 1, nOutRG
+  do nRG = 1, nOutRG ! Index is adv
                  !code            avg?       ind             scale 
                  !  rho Inst Yr Mn Day  Units
-    call AddDef( OutRG(nRG)%label, T, OutRG(nRG)%Adv, OutRG(nRG)%scale, &
+    call AddDef( OutRG(nRG)%label, T, OutRG(nRG)%Index, OutRG(nRG)%scale, &
                     F  , F  ,T ,T ,T , OutRG(nRG)%name,OutRG(nRG)%units)
-    if(MY_DEBUG .and. me==0) write(6,*) "OutRG ADDED ", nRG, OutRG(nRG)%name
+    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutRG ADDED ", nRG, OutRG(nRG)%name
+  end do
+
+  do nMET = 1, nOutMET ! NB Adv not used
+                 !code            avg?       ind             scale 
+                 !  rho Inst Yr Mn Day  Units
+    call AddDef( OutMET(nMET)%class, T, OutMET(nMET)%Index, OutMET(nMET)%scale, &
+                    F  , F  ,T ,T ,T , OutMET(nMET)%name,OutMET(nMET)%units)
+    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutMET ADDED ", nMET, OutMET(nMET)%name
   end do
 
 
@@ -416,6 +427,7 @@ call AddDef( "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"PS","hPa")
 call AddDef( "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")
 call AddDef( "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")
 call AddDef( "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")
+call AddDef( "USTAR_NWP",T,  0 ,       1.0, T , F, T, T, T ,"USTAR_NWP","m/s")
 !hf output
 call AddDef( "SNOW",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNOW","frac")
 !surface 0.6*SO2/NH3 ratio where conc are 24 averaged 
@@ -529,7 +541,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         end if
         call CheckStop("OOPS STOPPED")
      end if
-          if ( me == 0 .and. MY_DEBUG) &
+          if ( me == 0 .and. DEBUG_DERIVED ) &
                write(*,*) "Index f_2d ", i, " = def ", ind,  def_2d(ind)%name,&
                 def_2d(ind)%unit
       end do
@@ -537,7 +549,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       do i = 1, num_deriv3d
           ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
           f_3d(i) = def_3d(ind)
-          if ( me == 0 .and. MY_DEBUG) write(*,*) "Index f_3d ", i, " = def ", ind
+          if ( me == 0 .and. DEBUG_DERIVED ) write(*,*) "Index f_3d ", i, " = def ", ind
       end do
 
 
@@ -546,7 +558,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       if ( num_deriv2d > 0  ) d_2d( :,:,:,:) = 0.0
       if ( num_deriv3d > 0  ) d_3d( :,:,:,:,:) = 0.0
 
-      debug_flag = ( MY_DEBUG .and. debug_proc ) 
+      debug_flag = ( DEBUG_DERIVED  .and. debug_proc ) 
 
   end subroutine Define_Derived
  !=========================================================================
@@ -564,7 +576,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       if ( any(  f_2d(:)%class == "VOC" ) .or. &
            any(  f_3d(:)%class == "VOC" )  ) then
             call Setup_VOC()
-            if (MY_DEBUG)then
+            if (DEBUG_DERIVED )then
                write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
                write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
                write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
@@ -647,6 +659,11 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         !end if
 
         select case ( typ )
+          case ( "USTAR_NWP" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
+          end forall
+
 !hf output
           case ( "SNOW" )
             forall ( i=1:limax, j=1:ljmax )
@@ -672,7 +689,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             end forall
 
             if ( debug_flag ) then
-             write(*,fmt="(a12,2i4,4f12.3)") "HMIX" , n , d_2d(n,debug_li,debug_lj,IOU_INST)       
+             write(*,fmt="(a12,i4,f12.3)") "HMIX" , n , d_2d(n,debug_li,debug_lj,IOU_INST)       
             end if
 
          ! Simple advected species:
@@ -809,7 +826,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               endif
 
 
-          case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns")
+          case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic" )
             if ( debug_flag ) write(*,"(a,i4,a,a4,es12.3)")"PR/DEP/VG d_2d ",&
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 

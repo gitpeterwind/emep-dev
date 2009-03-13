@@ -56,6 +56,7 @@ module LocalVariables_ml
     integer :: j           ! index
     logical :: is_wet      !  true if precip > 0
     logical :: is_NWPsea      ! NWP model defines this square as sea
+    logical :: is_allNWPsea   !  Only sea in grid-square
     real    :: precip      ! Precip at surface
     real    :: wetarea     ! Fraction of grid which is wet
     real    :: cloud       ! Cloud-cover (fraction)

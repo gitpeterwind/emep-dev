@@ -58,17 +58,20 @@ module DryDep_ml
                           CDEP_SET,    &   ! for so4
                           CDEP_NO2,CDEP_O3,    &   ! for NO2 comp pt. approach
                           CDEP_SO2,CDEP_NH3, & !hf CoDep extra
+                          CDEP_FIN, CDEP_NH3,   &   ! FEB2009 Vds
+ 
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_ddep, &
-                          Add_Vg, Add_RG,  &  ! ECO08, for  Mosaic_Vg3m
+                          Add_Vg, Add_RG, Add_LCC_Met,  &  ! ECO08, for  Mosaic_Vg3m
                           Dep        ! Mapping (type = depmap)
 
 
 use LandDefs_ml, only : LandDefs !hf CoDep extra
 use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
- use Aero_DryDep_ml,    only : Aero_Rb
+ !dsVDS use Aero_DryDep_ml,    only : Aero_Rb
+ use Aero_Vds_ml,  only : SettlingVelocity, PetroffFit, Wesely300  !dsVDS FEB2009
  use CheckStop_ml, only: CheckStop
  use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
 
@@ -81,6 +84,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
           debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
  use Io_Nums_ml,     only: IO_DO3SE
  use Landuse_ml,     only: Land_codes
+ use LandDefs_ml,    only : LandType  !Vds FEB2009
  use LocalVariables_ml, only : Grid, Sub, L, iL ! Grid and sub-scale Met/Veg data
  use MassBudget_ml,  only : totddep,DryDep_Budget
  use MicroMet_ml,   only : AerRes, Wind_at_h
@@ -111,6 +115,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
  use My_Aerosols_ml,    only : NSIZE
  use TimeDate_ml,       only : daynumber, current_date
 
+!FEB2009 - Met_ml needed for temp 
+ use Met_ml, only: tau, sdepth, SoilWater, SoilWater_deep, rh2m,u_ref, th,pzpbl
+! use Sites_ml,         only : nlocal_sites,site_x,site_y,site_n,site_name  ! JP-DEPSITES
+
  implicit none
  private
 
@@ -122,7 +130,8 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
   logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
   logical, private, save :: my_first_call = .true.
-  logical, private, parameter :: MY_DEBUG = .true.
+  logical, private, parameter :: MY_DEBUG = .false.
+  logical, private, parameter :: DEBUG_VDS = .true.
   character(len=30),private, save :: errmsg = "ok"
 
 
@@ -154,13 +163,15 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
      end do
 
      my_first_call = .false.
-     if(me==0 .and. MY_DEBUG) write(*,*) "INIT_DRYDEP day ", daynumber, old_daynumber
+     if(me==0 .and. MY_DEBUG) write(*,*) "INIT_DRYDEP day ", &
+           daynumber, old_daynumber
 
   end if !  my_first_call
 
   if ( old_daynumber /= daynumber ) then
 
-       if(me==0.and. MY_DEBUG) write(*,*) "INIT_DRYDEP set ", daynumber, old_daynumber
+       if(me==0.and. MY_DEBUG) write(*,*) "INIT_DRYDEP set ", &
+           daynumber, old_daynumber
       call SetLandUse()         ! Sets LandCover()%LAI, %hveg , etc
       old_daynumber = daynumber
 
@@ -225,18 +236,22 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
             , Mosaic_VgRef & ! Vg at ref height, e.g. 45m
             , Mosaic_Vg3m  ! Vg at 3m
 
+      real, dimension(size(MET_PARAMS),NLANDUSE):: &
+            Mosaic_Met  ! met, just 
+
       real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
       integer :: iL_used(NLUMAX), nlu_used
       real :: wet, dry    ! Fractions
 !hf snow
       real :: snow_iL !snow fraction for one landuse
+      real :: Vds, tmpref, tmp3m, u_hveg   ! FEB2009 Vds
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
 !! line is kept at the end of the variable definitions and the start of real
 !!  code - allows both in .inc file
 !! Uncomment and make .inc file as required
-  ! include 'EXTRA_LU_Setup.inc'
+!   include 'EXTRA_LU_Setup.inc'
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -303,6 +318,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
     Mosaic_Vg3m(:,:)  = 0.0
     Mosaic_Gsur(:,:)  = 0.0
     Mosaic_Gns(:,:)   = 0.0
+    Mosaic_Met(:,:)   = 0.0
 
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
@@ -324,6 +340,13 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
     if ( STO_FLUXES ) call Setup_StoFlux(daynumber, &
          xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID),amk(KMAX_MID))
 
+!dsVDS - can set settling velcoty here since not landuse dependent
+
+        Vs = SettlingVelocity( Grid%t2, Grid%rho_ref )
+        ! Restrict settling velocity to 2cm/s. Seems
+        ! very high otherwise,  e.g. see Fig. 4, Petroff..
+
+         Vs(:) = min( Vs(:), 0.02) 
 
     !/ And start the sub-grid stuff over different landuse (iL)
 
@@ -364,16 +387,29 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
          Grid_snow(i,j) = Grid_snow(i,j) +  L%coverage * snow_iL 
 !write(*,*)"Testing snow", i,j,snow_iL , Grid_snow(i,j)
 
+         Mosaic_Met(1,iL) = L%ustar
+         Mosaic_Met(2,iL) = L%invL
+
 
        !===================
        !// calculate dry deposition velocities for fine/coarse particles
 
-        convec = Grid%wstar/L%ustar     ! Convection velocity scale  
-        convec = convec * convec
+        !dsVDS - set Vs earlier
+        !dsVDS convec = Grid%wstar/L%ustar     ! Convection velocity scale  
+        !dsVDS convec = convec * convec
+        !dsVDS
+        !dsVDS call Aero_Rb ( L%ustar, convec, Grid%rho_ref &
+        !dsVDS              , Grid%u_ref, iL, Grid%snow, Grid%wetarea, L%t2   &   
+        !dsVDS              , Vs, aeRb, aeRbw )
+       !===================
+       !Vds changes
+       !Could be coded faster with Ra....
+       ! u_hveg  = Wind_at_h( Grid%u_ref, Grid%z_ref, L%hveg, &
+       !              L%d, L%z0, L%invL )
+       !dsVDS   u_hveg = 1.0 ! FAKE for Wesely
 
-        call Aero_Rb ( L%ustar, convec, Grid%rho_ref &
-                     , Grid%u_ref, iL, Grid%snow, Grid%wetarea, L%t2   &   
-                     , Vs, aeRb, aeRbw )
+       !dsVds call Aero_Vds( L%ustar,  L%invL, u_hveg, pzpbl(i,j), Vds )
+
        !===================
 
 
@@ -389,26 +425,72 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
             if ( n > NDRYDEP_GASES )  then    ! particles
 
                 nae = n - NDRYDEP_GASES 
-                RaVs = L%Ra_ref * Vs(nae)
 
-                Vg_ref(n) = Vs(nae) +      &
-                  dry / (L%Ra_ref + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
-                + wet / (L%Ra_ref + aeRbw(nae) + RaVs  *aeRbw(nae) )
-                    
-                RaVs = L%Ra_3m  * Vs(nae)
+!dsVDS                RaVs = L%Ra_ref * Vs(nae)
+!dsVDS
+!dsVDS                Vg_ref(n) = Vs(nae) +      &
+!dsVDS                  dry / (L%Ra_ref + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
+!dsVDS                + wet / (L%Ra_ref + aeRbw(nae) + RaVs  *aeRbw(nae) )
+!dsVDS                    
+!dsVDS                RaVs = L%Ra_3m  * Vs(nae)
+!dsVDS
+!dsVDS                Vg_3m(n)  = Vs(nae) +       &
+!dsVDS                  dry / (L%Ra_3m + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
+!dsVDS                + wet / (L%Ra_3m + aeRbw(nae) + RaVs  *aeRbw(nae) )
+!dsVDS
+!dsVDS
+!dsVDS                tmpref = Vg_ref(n) ! Store old values for comparison
+!dsVDS                tmp3m  = Vg_3m (n)
 
-                Vg_3m(n)  = Vs(nae) +       &
-                  dry / (L%Ra_3m + aeRb(nae)  + RaVs  *aeRb(nae)  ) &
-                + wet / (L%Ra_3m + aeRbw(nae) + RaVs  *aeRbw(nae) )
+!dsVDS        !FEB2009 Vds ================================================
+
+              if ( LandType(iL)%is_forest  ) then ! Vds NOV08
+
+                 !/ Use Gallagher, for 0.5 um particles over forests
+
+                  !Vds = Gallagher1997( 0.5,L%ustar,L%invL )
+                  !Vds = GallagherWT( 0.5,L%ustar,L%invL, pzpbl(i,j) )
+                  Vds = PetroffFit(L%ustar,L%invL, L%SAI )
+
+              else !!!  Vds NOV08
+
+                !/  Use Wesely for other veg & sea
+
+                 Vds = Wesely300( L%ustar, L%invL )
+
+              end if
+
+                !Vg_ref(n) = Vs(nae) + 1.0/ ( L%Ra_ref + 1.0/Vds  )
+                !Vg_3m (n) = Vs(nae) + 1.0/ ( L%Ra_3m  + 1.0/Vds  )
+                ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
+    Vg_ref(n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* Vs(nae)))
+    Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
+
+
+        !if ( DEBUG_VDS .and. debug_flag .and. n == CDEP_FIN .and. iss == 0  ) then
+        !    write(6,"(a,5i3,3f7.3,f8.2,12f7.2)") "AEROVDS ", imm, idd, ihh, &
+        !      n, iL, L%ustar,  L%invL, u_hveg, pzpbl(i,j), 100.0*Vds
+        !end if
+        !if ( DEBUG_VDS .and.  &
+        if ( Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ) then
+            print "(a,5i3,2i4,2f7.3,f8.2,20f7.2)", "AEROSTOP", imm, idd, ihh, &
+              n, iL, i_fdom(i), j_fdom(j), L%ustar,  L%invL, pzpbl(i,j), &
+                Grid%ustar, Grid%Hd,  100.0*Vds, &
+              100.0*Vs(nae), 100.0*Vg_ref(n),  100.0*Vg_3m (n) &
+             , Grid%t2, Grid%rho_ref 
+            call CheckStop("AEROSTOP")
+        end if
+
+        !FEB2009 Vds ================================================
+
 
             else                           ! gases
-!hf XX               Vg_ref(n) = dry / ( L%Ra_ref + Rb(n) + Rsur_dry(n) ) &
-!hf XX                     +     wet / ( L%Ra_ref + Rb(n) + Rsur_wet(n) )
+
+           ! After's Hilde's changes, no wet-dry needed
+
               Vg_ref(n) = 1. / ( L%Ra_ref + Rb(n) + Rsur(n) ) 
 
-!hf XX               Vg_3m (n) = dry / ( L%Ra_3m + Rb(n) + Rsur_dry(n) ) &
-!hf XX                     +     wet / ( L%Ra_3m + Rb(n) + Rsur_wet(n) )
-               Vg_3m (n) = 1. / ( L%Ra_3m + Rb(n) + Rsur(n) ) 
+              Vg_3m (n) = 1. / ( L%Ra_3m + Rb(n) + Rsur(n) ) 
 
 
             endif
@@ -483,7 +565,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
           !! Extra outputs sometime used for Sweden/IVL/SEI/CEH
           !! Uncomment and make .inc file as required
 
-           ! include 'EXTRA_LU_Outputs.inc'
+!            include 'EXTRA_LU_Outputs.inc'
 !hf CoDep extra
 
 !if  (debug_flag )write(6,*) "LANDCOVER ", iL, iiL,"!",LandDefs(iL)%code,"!"
@@ -651,6 +733,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
        call Add_Vg(debug_flag,i,j, Mosaic_Vg3m)
        call Add_RG(debug_flag,i,j, Mosaic_Gsur, Mosaic_Gns)
+       call Add_LCC_Met(debug_flag,i,j, Mosaic_Met)
 
  end subroutine drydep
 

@@ -328,6 +328,9 @@ contains
 
         if ( iwes == WES_HNO3 ) then
             lowT= -L%t2C *2.0
+            Rsur(icmp)  = max(10.0,lowT) !not so affected by snow, e.g. Erisman 1994,table 6,
+!FEB2009 - reimplement Vg limitation for HNO3. 10 cm/s max is enoug
+! anyway!
             Rsur(icmp)  = max(1.0,lowT) !not so affected by snow, e.g. Erisman 1994,table 6,
                                         !Cadle,1985
         !lowT based on: Rc=10scm-1 for -5, Rc=50scm-1 at -18 in Johanson&Granat, 1986

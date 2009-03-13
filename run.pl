@@ -191,7 +191,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2beta14";
+    $testv       = "rv3_2beta18";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -475,9 +475,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
-    $ifile{"$DataDir/Inputs_LandDefs.csv_05.12.2008"} = "Inputs_LandDefs.csv";
+    $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
     $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
-#    $ifile{"/home/mifahf/Unify/Unimod.rv3_1_2.CoDep.snow/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
     $ifile{"$DATA_LOCAL/sondes.dat"} = "sondes.dat";
   

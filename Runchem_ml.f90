@@ -58,7 +58,7 @@
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
                                   nprint, END_OF_EMEPDAY, &
-                            DEBUG_i, DEBUG_j,nstep, NPROC
+                            DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
 
    use OrganicAerosol_ml, only: OrganicAerosol ! not yet implemented 
    use Par_ml,            only : lj0,lj1,li0,li1  &
@@ -76,8 +76,6 @@
    private
 
    public :: runchem
-
-   logical, private, save :: MYDEBUG = .false.
 
 contains
 
@@ -114,7 +112,7 @@ subroutine runchem(numt)
 
          !****** debug cell set here *******
           debug_flag =  .false.  
-          if ( MYDEBUG .and. debug_proc ) then
+          if ( DEBUG_RUNCHEM .and. debug_proc ) then
 
              debug_flag = ( debug_li == i .and. debug_lj == j ) 
 
@@ -183,9 +181,9 @@ subroutine runchem(numt)
                    call Add_2timing(32,tim_after,tim_before, &
                                                  "Runchem:ammonium+Drydep")
 
-                     if ( MYDEBUG .and. debug_flag  ) then
-                       write(6,*) "DEBUG_RUN me pre WetDep", me, prclouds_present
-                       write(6,"(a20,2i3,i5,3es12.3)") "DEBUG_RUN me OH", &
+                     if ( DEBUG_RUNCHEM .and. debug_flag  ) then
+                       write(6,*) "DEBUG_RUNCHEM me pre WetDep", me, prclouds_present
+                       write(6,"(a20,2i3,i5,3es12.3)") "DEBUG_RUNCHEM me OH", &
                              current_date%day, current_date%hour,&
                              current_date%seconds, &
                              xn_2d(OH,20), xn_2d(PHNO3,20), xn_2d(HNO3,20)

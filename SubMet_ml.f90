@@ -40,6 +40,7 @@ use LandDefs_ml,   only: LandType
 use Landuse_ml,    only: LandCover
 use LocalVariables_ml, only: Grid, Sub
 use MicroMet_ml, only :  PsiM, AerRes    !functions
+use ModelConstants_ml, only :  DEBUG_SUBMET  ! Needs DEBUG_RUNCHEM to get debug_flag
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
 implicit none
@@ -47,9 +48,6 @@ private
 
 
   public :: Get_Submet    ! calculates met. data for sub-grid areas
-
-
-  logical, private, parameter ::  DEBUG_SUB = .false.  ! for extra tests/printouts
 
 contains
 !=======================================================================
@@ -98,7 +96,8 @@ contains
     
     
     logical, save ::  my_first_call = .true.
-    integer, parameter ::  NITER = 1           ! no. iterations to be performed
+!FEB2009    integer, parameter ::  NITER = 1           ! no. iterations to be performed
+    integer ::  NITER     ! no. iterations to be performed
 
     integer :: iter                ! iteration variable
 
@@ -165,11 +164,16 @@ contains
         if ( Sub(iL)%is_water ) then ! water
              Sub(iL)%d  = 0.0
              Sub(iL)%z0 = CHARNOCK * Sub(iL)%ustar * Sub(iL)%ustar/GRAV
-             !BUG Sub(iL)%z0 = max( Sub(iL)%z0 ,0.01)
-             Sub(iL)%z0 = max( Sub(iL)%z0 ,1.0e-5)
+           ! We use the same restriction on z0 as in Berge, 1990 
+           ! (Tellus,42B,389-407)
+             Sub(iL)%z0 = max( Sub(iL)%z0 ,1.5e-5)
              z_1m   = 1.0       ! 1m above sea surface
              z_3m   = 3.0       ! 3m above sea surface
+
         else if ( Sub(iL)%is_forest ) then ! forest
+           ! We restrict z0 to 0.5m, since comparison with CarboEurope
+           ! results shows that this provides the best u* values for
+           ! forests.
              Sub(iL)%d  =  0.78 * Sub(iL)%hveg   ! Jarvis, 1976
              Sub(iL)%z0 =  min( 0.07 * Sub(iL)%hveg, 0.5 )
              z_1m   = (Sub(iL)%hveg + 1.0) - Sub(iL)%d
@@ -191,6 +195,17 @@ contains
         z_3md  = z_3m  - Sub(iL)%d               !  minus displacement height
 
 
+        rho_surf = Grid%psurf/(RGAS_KG * Sub(iL)%t2 )
+
+        if( Grid%is_allNWPsea ) then
+          Sub(iL)%ustar = Grid%ustar
+          Sub(iL)%invL  = Grid%invL  
+        else  ! Calculate ustar, invL for each landcover
+
+    NITER = 1
+    if ( Grid%Hd > -1 ) NITER = 2  ! Almost neutral to unstable
+    if ( Grid%Hd > 1  ) NITER = 4  ! more unstable
+
     do iter = 1, NITER 
 
         ! ****
@@ -202,10 +217,10 @@ contains
         !..L=F(u*), since we do not know the EMEP subgrid averaged 
         !..z0-values ...
 
-        if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
-            write(6,"(a12,i2,5f8.3,f12.3)") "UKDEP SUBI", iter, &
-                       Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
-                         Sub(iL)%z_refd, z_3md, Sub(iL)%invL
+        if ( DEBUG_SUBMET .and. debug_flag ) then
+            write(6,"(a12,i2,5f8.3,10f12.3)") "UKDEP SUBI", iter, &
+                Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
+                  Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
         end if
 
        !FEB2009 Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
@@ -217,47 +232,49 @@ contains
     !  We must use L (the Monin-Obukhov length) to calculate deposition,
     ! Thus, we calculate T* and then L, based on sub-grid data. 
 
-
-        rho_surf = Grid%psurf/(RGAS_KG * Sub(iL)%t2 )
-
-
     ! New 1/L value ....
 
-
         Sub(iL)%invL =  -KARMAN * GRAV * Sub(iL)%Hd / &
-      ( CP*rho_surf*Sub(iL)%ustar*Sub(iL)%ustar*Sub(iL)%ustar * Sub(iL)%t2)
+           ( CP * rho_surf * Sub(iL)%ustar**3 * Sub(iL)%t2)
 
       !.. we limit the range of 1/L to prevent numerical and printout problems
       !   This range is very wide anyway.
 
         !FEB2009 Sub(iL)%invL  = max( -1.0, Sub(iL)%invL ) !! limit very unstable
-        Sub(iL)%invL  = min(  1.0, Sub(iL)%invL ) !! limit very stable
+        ! Sub(iL)%invL  = min(  1.0, Sub(iL)%invL ) !! limit very stable
 
-       !FEB2009 added:
+      !FEB2009 added: To a good approx we can omit the PsiM(z0/L) term
        Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
-        (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
-          + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
-       Sub(iL)%ustar = max( Sub(iL)%ustar, 1.0e-2)
+        (log( Sub(iL)%z_refd/Sub(iL)%z0 ) &
+           - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)  &
+           + PsiM( Sub(iL)%z0*Sub(iL)%invL    ))  ! SMALL BUT NEEDED AT ca. invL->-1
 
+    if (  DEBUG_SUBMET .and. debug_flag ) then
+        write(6,"(a12,20f9.3)") "UKDEP SUBA", Sub(iL)%z0, Sub(iL)%d, &
+          Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
+              Sub(iL)%ustar, Sub(iL)%invL
+   ! , & log( Sub(iL)%z_refd/Sub(iL)%z0 ), & PsiM( Sub(iL)%z_refd*Sub(iL)%invL )
+    end if
+       Sub(iL)%ustar = max( Sub(iL)%ustar, 0.1 )
     end do ! iter
+    end if ! allNWPsea
 
 
-    if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
+    if (  DEBUG_SUBMET .and. debug_flag ) then
         write(6,"(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
           Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
               Sub(iL)%ustar, Sub(iL)%t2, Sub(iL)%invL
-    end if
 
-    if ( DEBUG_SUB .and. debug_flag ) then 
-         if ( my_first_call ) then ! title line
+
+        if ( my_first_call ) then ! title line
 
                 write(unit=*, fmt="(a6,3a3, a6, 3a8,2a7, 2a6)") &
                  "STAB ", "mm", "dd", "hh", "t2_C", "Hd", &
                  "L_nwp", "L  ", "z/L_nwp", "z/L ", "u*_nwp", "u*"
                 my_first_call = .false.
-         end if
+        end if
 
-            write(unit=*, &
+        write(unit=*, &
               fmt="(a6,4i3, f6.1, 3f8.2, 2f7.2, 2f6.2)") "SUBB", iL, &
               999, & !SUBcurrent_date%month, &
               999, & !SUBcurrent_date%day, &
@@ -280,7 +297,7 @@ contains
         Sub(iL)%Ra_3m  = AerRes(Sub(iL)%z0,z_3md,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)
         Ra_2m  = AerRes(Sub(iL)%z0,1.0+z_1m,Sub(iL)%ustar,Sub(iL)%invL,KARMAN)
 
-    if ( DEBUG_SUB ) then
+    if (  DEBUG_SUBMET .and. debug_flag ) then
        if ( Sub(iL)%Ra_ref < 0 .or. Sub(iL)%Ra_3m < 0 &
            .or. Ra_2m < 0  ) call CheckStop("RAREF NEG ")
       if ( Sub(iL)%Ra_3m > Sub(iL)%Ra_ref ) &
@@ -317,7 +334,7 @@ contains
 
      esat = ESAT0 * exp(0.622*2.5e6*((1.0/T0) - (1.0/Sub(iL)%t2))/RGAS_KG )
 
-    if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
+    if (  DEBUG_SUBMET .and. debug_flag ) then
         print "(a15,2f12.6,2f12.3)", "UKDEP SUB water", Grid%qw_ref, qw, &
               Sub(iL)%LE, 100.0*e/esat
     end if
@@ -339,7 +356,7 @@ contains
       Sub(iL)%vpd    =  max(Sub(iL)%vpd,0.0) 
 
 
-    if ( DEBUG_SUB .and. debug_flag ) then !!  .and. &
+    if (  DEBUG_SUBMET .and. debug_flag ) then
         write(6,"(a22,2f12.4)") "UKDEP SUB7 e/esat, rh", e/esat, Sub(iL)%rh
     end if
 
