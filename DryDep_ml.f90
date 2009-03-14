@@ -462,7 +462,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
                  Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
 
 
-        !if ( DEBUG_VDS .and.  Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ) then
+        if ( DEBUG_VDS .and.  Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ) then
             print "(a,5i3,2i4,2f7.3,f8.2,20f7.2)", "AEROSTOP", imm, idd, ihh, &
               n, iL, i_fdom(i), j_fdom(j), L%ustar,  L%invL, pzpbl(i,j), &
                 Grid%ustar, Grid%Hd,  100.0*Vds, &
