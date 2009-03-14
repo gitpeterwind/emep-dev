@@ -30,6 +30,7 @@
 
   public  :: SettlingVelocity
   public  :: PetroffFit
+  public  :: GPF_Vds    ! General, loosely based on fits to Petroff...
   public  :: WeselyWT
   public  :: Wesely300
   public  :: Gallagher1997
@@ -119,6 +120,26 @@ contains
        end if
    end function PetroffFit
    !------------------------------------------------------------------------
+   function GPF_Vds(ustar,invL,SAI) result(Vds)
+     ! "Simple" fitting of Petroff et al., whcich roughly captures the
+     ! the differences between Speulderbos-type and typical Euro
+     ! forests, because of LAI. 
+     ! Fig12b suggests  Vd ~ 0.3 cm/s for u* = 0.45, LAI=22
+     ! ->  Vds = 0.006 * u*
+     ! Fig.15 suggests that vds is approx prop to LAI for Dp~0.4um
+     ! We use SAI to keep some winter dep in decid forests
+     ! As Petroff started with a total LAI of 22, which is ca.
+     ! 1-sided LAI=10, SAI=11, so we scale with SAI/11 = 0.09
+     real, intent(in) :: ustar, invL,SAI
+     real :: Vds
+
+        Vds   = max( 0.001, 0.006 * ustar * 0.09 * SAI )
+
+       if ( invL <  0.0 ) then
+         Vds = Vds * (1.0+(-300.0 * max(-0.04,invL))**0.6667)
+       end if
+   end function GPF_Vds
+   !------------------------------------------------------------------------
    function Wesely1985(ustar,invL, zi) result(Vds)
      real, intent(in) :: ustar, invL, zi
      real :: Vds
@@ -186,7 +207,8 @@ contains
         if ( invL < 0.0 ) then
            Vds = Vds *( 1+( -(960*Dp-88.0)*invL )**0.6667)
         end if
-   end function Nemitz2004 !------------------------------------------------------------------------
+   end function Nemitz2004 
+   !------------------------------------------------------------------------
    function Gallagher1997(Dp,ustar,invL) result(Vds)
      real, intent(in) :: Dp, ustar, invL
      real :: Vds
@@ -226,6 +248,7 @@ contains
           Vds = Vds * (1.0+(-0.3*zi*max(-0.04,invL))**0.6667)
         end if
    end function GallagherWT
+   !-- ----------------------------------------------------------------------
 !TMP   function McDonaldForest(DpMed,ustar) result(Vds)
 !TMP     real, intent(in) :: DpMed, ustar
 !TMP     real :: Vds

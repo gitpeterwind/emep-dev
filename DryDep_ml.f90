@@ -379,13 +379,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
          call Rb_gas(L%is_water, L%ustar, L%z0, DRYDEP_GASES ,Rb)
-!hf CoDep extra
-!hf XX         call Rsurface(i,j,DRYDEP_GASES ,Rsur_dry,Rsur_wet,errmsg,debug_flag)
+
          call Rsurface(i,j,DRYDEP_GASES ,Gns,Rsur,errmsg,debug_flag,snow_iL)
 
-!hf XX
          Grid_snow(i,j) = Grid_snow(i,j) +  L%coverage * snow_iL 
-!write(*,*)"Testing snow", i,j,snow_iL , Grid_snow(i,j)
 
          Mosaic_Met(1,iL) = L%ustar
          Mosaic_Met(2,iL) = L%invL
@@ -407,7 +404,6 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
        ! u_hveg  = Wind_at_h( Grid%u_ref, Grid%z_ref, L%hveg, &
        !              L%d, L%z0, L%invL )
        !dsVDS   u_hveg = 1.0 ! FAKE for Wesely
-
        !dsVds call Aero_Vds( L%ustar,  L%invL, u_hveg, pzpbl(i,j), Vds )
 
        !===================
@@ -446,15 +442,13 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
               if ( LandType(iL)%is_forest  ) then ! Vds NOV08
 
-                 !/ Use Gallagher, for 0.5 um particles over forests
+                 !/ Use eqn *loosely* derived from Petroff results
 
-                  !Vds = Gallagher1997( 0.5,L%ustar,L%invL )
-                  !Vds = GallagherWT( 0.5,L%ustar,L%invL, pzpbl(i,j) )
                   Vds = GPF_Vds(L%ustar,L%invL, L%SAI )
 
               else !!!  Vds NOV08
 
-                !/  Use Wesely for other veg & sea
+                !/  Use Nemitz et al  for other veg & sea
 
                  Vds = Nemitz2004( 0.4, L%ustar, L%invL )
 
@@ -462,17 +456,13 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
                 !Vg_ref(n) = Vs(nae) + 1.0/ ( L%Ra_ref + 1.0/Vds  )
                 !Vg_3m (n) = Vs(nae) + 1.0/ ( L%Ra_3m  + 1.0/Vds  )
+
                 ! Use non-electrical-analogy version of Venkatram+Pleim (AE,1999)
-    Vg_ref(n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* Vs(nae)))
-    Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
+                 Vg_ref(n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_ref + 1.0/Vds)* Vs(nae)))
+                 Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
 
 
-        !if ( DEBUG_VDS .and. debug_flag .and. n == CDEP_FIN .and. iss == 0  ) then
-        !    write(6,"(a,5i3,3f7.3,f8.2,12f7.2)") "AEROVDS ", imm, idd, ihh, &
-        !      n, iL, L%ustar,  L%invL, u_hveg, pzpbl(i,j), 100.0*Vds
-        !end if
-        !if ( DEBUG_VDS .and.  &
-        if ( Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ) then
+        !if ( DEBUG_VDS .and.  Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ) then
             print "(a,5i3,2i4,2f7.3,f8.2,20f7.2)", "AEROSTOP", imm, idd, ihh, &
               n, iL, i_fdom(i), j_fdom(j), L%ustar,  L%invL, pzpbl(i,j), &
                 Grid%ustar, Grid%Hd,  100.0*Vds, &
