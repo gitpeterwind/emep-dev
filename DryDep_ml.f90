@@ -71,7 +71,7 @@ use LandDefs_ml, only : LandDefs !hf CoDep extra
 use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  !dsVDS use Aero_DryDep_ml,    only : Aero_Rb
- use Aero_Vds_ml,  only : SettlingVelocity, PetroffFit, Wesely300  !dsVDS FEB2009
+ use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds, Nemitz2004  !dsVDS FEB2009
  use CheckStop_ml, only: CheckStop
  use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
 
@@ -450,13 +450,13 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
                   !Vds = Gallagher1997( 0.5,L%ustar,L%invL )
                   !Vds = GallagherWT( 0.5,L%ustar,L%invL, pzpbl(i,j) )
-                  Vds = PetroffFit(L%ustar,L%invL, L%SAI )
+                  Vds = GPF_Vds(L%ustar,L%invL, L%SAI )
 
               else !!!  Vds NOV08
 
                 !/  Use Wesely for other veg & sea
 
-                 Vds = Wesely300( L%ustar, L%invL )
+                 Vds = Nemitz2004( 0.4, L%ustar, L%invL )
 
               end if
 

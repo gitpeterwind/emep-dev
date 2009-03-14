@@ -5,7 +5,7 @@ Major change in aerosol deposition calculations, designed to simplify.
 Aero_Vds_ml replaces Aero_Rb_ml, and will serve as a collection point
 of alternative algorithms. For this version use a simple formula for forests
 derived from Petroff et al's papers, as function of ustar, SAI and invL.
-Use Wesely for all else. SubMet also changed to reflect findings of
+Use Nemitz(2004) for all else. SubMet also changed to reflect findings of
 various ustar tests against CarboEurope data and offline testing.
 
 Also note new way of specifying DEBUG in ModelConstants - applied
