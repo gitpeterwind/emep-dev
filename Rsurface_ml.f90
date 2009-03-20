@@ -37,6 +37,7 @@ use LocalVariables_ml, only : iL, L, G => Grid
   !      PARsun,PARshade,LAIsunfrac, RgsO, RgsS, is_water, is_forest
   ! G (Grid)  provides snow, sdepth so2nh3ratio, 
 
+use ModelConstants_ml, only: DEBUG_RSUR
 use Radiation_ml, only : CanopyPAR
 use Wesely_ml,    only : Wesely_tab2 &  ! Wesely Table 2 for 14 gases
    ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
@@ -49,7 +50,6 @@ public   :: Rsurface
 
 
 real, public, save :: Rinc, RigsO, GnsO, RgsS  !hf CoDep 
-logical, private, parameter :: MY_DEBUG = .false.
 
  
     
@@ -189,9 +189,9 @@ contains
                             !and not Ggs from table
    
 
-    if ( MY_DEBUG .and. present(debug_flag) ) then
+    if ( DEBUG_RSUR .and. present(debug_flag) ) then
       if ( debug_flag )  then
-        write(*,*) "IN RSUR snowdepth ", Sdmax,G%sdepth, fsnow
+        write(*,"(a,3f8.4)") "IN RSUR snowdepth ", Sdmax,G%sdepth, fsnow
       end if
     end if
 
@@ -252,9 +252,10 @@ contains
 
    end if ! leafy canopy and daytime
 
-   if ( MY_DEBUG .and. present(debug_flag) ) then
+   if ( DEBUG_RSUR .and. present(debug_flag) ) then
      if ( debug_flag )  then
-       write(*,*) "IN RSUR gsto ", leafy_canopy,  G%Idirect,  L%g_sto
+       write(*,*) "IN RSUR gsto ", leafy_canopy, &
+             G%Idirect,  L%g_sto
      end if
    end if
 
@@ -267,7 +268,8 @@ contains
 
          Rinc = 14.0 * L%SAI * L%hveg  / L%ustar    ! Erisman's b.LAI.h/u*
 
-        ! for now, use CEH stuff for canopies,and soils (canopies ouside growing season)
+        ! for now, use CEH stuff for canopies,and soils (canopies ouside 
+        ! growing season)
         ! keep Ggs for non-canopy
 
         GnsS = (1.-fsnow)/(Rns_SO2 * lowTcorr) + fsnow/RsnowS 
@@ -405,7 +407,7 @@ contains
   end do GASLOOP
 
 
-   if ( MY_DEBUG ) then
+   if ( DEBUG_RSUR ) then
      if ( present(debug_flag) ) then
        if ( debug_flag ) then 
       write(*,*)  "RSURFACE DRYDEP_CALC", size(DRYDEP_CALC), DRYDEP_CALC(1)

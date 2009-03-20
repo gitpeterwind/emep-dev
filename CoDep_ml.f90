@@ -150,7 +150,7 @@ contains
 
      call Tabulate()
      my_first_call = .false.
-     if( MasterProc ) write(*,*) "First CoDep call, ",  &
+     if( debug_proc ) write(*,*) "First CoDep call, ",  &
            so2nh3ratio24hr,so2nh3ratio, Ts_C, frh, forest
 
    end if

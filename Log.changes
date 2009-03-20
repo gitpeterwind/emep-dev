@@ -1,4 +1,15 @@
+================================ rv3_2_1 20th Mar 2009======
+
+Various DEBUG variables changed, See new logicals in ModelConstants_ml
+
+Sites_ml  - ascii output set to 10 columns rather than 8 (easier to
+count!). Also, outputs excluded when site is on domain boundary
+
+
+======================================================================
 ================================ rv3_2 Hilde/Dave  19th Mar 2009======
+======================================================================
+MAJOR CHANGES SINCE RV3_1
 
 Done - rv3_2 now has new co-dep routine, new aerosol deposition, and
  more land-cover output possibilities in Derived. See various beta

@@ -391,7 +391,7 @@ private
                                              100.0, -99,  "cm/s") 
 
           if(MY_DEBUG .and. me==0) &
-              write(6,*) "VGOUT ", nVg, i, n, OutVg(nVg)
+              write(6,*) "VGOUT ", nVg, i, n, iadv, OutVg(nVg)
         end do !n
       end do ! i
       end do ! ilab

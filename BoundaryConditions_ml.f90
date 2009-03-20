@@ -111,10 +111,11 @@ module BoundaryConditions_ml
   use GenSpec_adv_ml         ! Lots, including NSPEC_ADV and IXADV_
   use GenSpec_bgn_ml,        only :NSPEC_BGN
   use GridValues_ml,         only: gl, gb    &! lat, long
+                                  ,debug_proc & !DSGC
                                   ,i_fdom, j_fdom  !u1 for testing
   use ModelConstants_ml ,    only: KMAX_MID  &  ! Number of levels in vertical
-                                  ,NPROC   &    ! Number of processors
-                                  ,DEBUG_i, DEBUG_j
+                    ,NPROC   &    ! Number of processors
+                    ,DEBUG_BCS, DEBUG_i, DEBUG_j, debug_proc, MasterProc
   use Par_ml,                only : &
            MAXLIMAX, MAXLJMAX, limax, ljmax, me &
           ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
@@ -147,7 +148,6 @@ module BoundaryConditions_ml
 
   !/ - for debugging
   real    :: ppb = 1.0e-9
-  logical, parameter, private :: DEBUG_BCS = .false.
 
 
   ! Arrays for mapping from global bc to emep xn concentrations:
@@ -286,7 +286,7 @@ contains
 
 
   errcode = 0
-  if ( DEBUG_BCS ) then
+  if ( DEBUG_BCS .and. debug_proc ) then
        do i = 1, limax
             do j = 1, ljmax
                 if ( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
@@ -304,10 +304,10 @@ contains
   do ibc = 1, NGLOB_BC
 
                    !=================================================
-      if(me == 0) call GetGlobalData(year,iyr_trend,month,ibc,bc_used(ibc) &
+      if( MasterProc ) call GetGlobalData(year,iyr_trend,month,ibc,bc_used(ibc) &
                  ,iglobact,jglobact,bc_data,io_num,errcode)
                    !=================================================
-      if ( DEBUG_BCS .and. me == 0  ) then
+      if ( DEBUG_BCS .and. MasterProc ) then
           write(*,*)'Calls GetGlobalData: year,iyr_trend,ibc,month,bc_used=', &
                     year,iyr_trend,ibc,month,bc_used(ibc)
 
@@ -340,7 +340,7 @@ contains
         endif    ! bc_used
    end do  ! ibc
 
-   if(me == 0) close(io_num)
+   if( MasterProc ) close(io_num)
 
    if ( my_first_call ) then
 
@@ -361,7 +361,7 @@ contains
       idebug = idebug + 1
       !===================================
 
-      !ds - call to set misc conditions added here on 7/08/01. This uses
+      ! Call to set misc conditions added here on 7/08/01. This uses
       !     more CPU than needed since bc_adv is reset for the whole
       !     domain, so in future a "3d"/"lateral" mask could be used
       !     as for the normal boun. conds. 
@@ -374,17 +374,17 @@ contains
    endif
 
 
-   if ( DEBUG_BCS .and. i_test > 0  ) then
+   if ( DEBUG_BCS .and. debug_proc .and. i_test > 0  ) then
          write(6,"(a20,3i4,2f8.2)") "DEBUG BCS Rorvik", me, i,j,gl(i,j),gb(i,j)
          write(6,"(a20,3i4)")       "DEBUG BCS Rorvik DIMS", & 
                     num_adv_changed,iglobact,jglobact
          do k = 1, KMAX_MID
-              write(6,"(a20,i4,f8.2)") "DEBUG CO  Rorvik", k, &
-                          xn_adv(IXADV_CO,i_test,j_test,k)/ppb
+              write(6,"(a20,i4,f8.2)") "DEBUG O3  Debug-site ", k, &
+                          xn_adv(IXADV_O3,i_test,j_test,k)/ppb
          end do
     end if ! DEBUG
 
-   if ( DEBUG_BCS .and.  me == 0 ) then
+   if ( DEBUG_BCS .and.  debug_proc ) then
        itest  = 1
 
        write(6,*) "BoundaryConditions: No CALLS TO BOUND Cs", &
@@ -393,21 +393,26 @@ contains
         !    Remove later **/
       info = 1   ! index for ozone in bcs
        write(6,*) "BCs: bc2xn(info,itest) : ", bc2xn_adv(info,itest)
-       write(6,*) "BCs: After Set_3d BOUND: me, itest: " , me, itest, &
-              bc_adv(spc_adv2changed(itest),1,1,1)/ppb
+       do k = KMAX_MID, 1, -1
+         write(6,"(a,2i3,f12.4)") "BCs: After Set_3d BOUND: me, itest: " , &
+           me, itest, bc_adv(spc_adv2changed(itest),i_test,i_test,k)/ppb
+       end do
 
       info = 43   ! index for NO in bcs
        write(6,*) "BCs: NSPECS: BC, ADV, BG, ", NTOT_BC, NSPEC_ADV, NSPEC_BGN
        write(6,*) "BCs: Number  of bc_used: ", sum(bc_used)
        write(6,*) "BCs: limax, ljmax",  limax, ljmax
 
+       if ( NSPEC_BGN > 0 ) then
  
-       ! Choose a point at mid-latitudes (j=24), around 0 long
-       do k = KMAX_MID, 1, -1
-           write(6,"(a23,i3,e14.4)") "BCs at mid-lat (1,24):",   k  & 
-                 ,xn_bgn(itest,2,2,k)/PPB 
-       end do
-    end if ! 
+          do k = KMAX_MID, 1, -1
+             write(6,"(a23,i3,e14.4)") "BCs NO :",   k  & 
+                 ,xn_bgn(itest,i_test,j_test,k)/PPB 
+          end do
+       else 
+             write(6,"(a)") "No SET BACKGROUND BCs"
+      end if
+    end if !  DEBUG
 
     deallocate(bc_data,stat=alloc_err1)
     call CheckStop(alloc_err1,"de-alloc1 failed in BoundaryConditions_ml") 
@@ -595,7 +600,7 @@ contains
 endif
 
   itest = 1
-  if (DEBUG_BCS) write(6,"(a50,i4,/,(5es12.4))") &
+  if (DEBUG_BCS .and. debug_proc) write(6,"(a50,i4,/,(5es12.4))") &
       "From MiscBoundaryConditions: ITEST (ppb): ",&
           itest, ((bc_adv(spc_adv2changed(itest),1,1,k)/1.0e-9),k=1,20) 
 

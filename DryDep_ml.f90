@@ -89,10 +89,11 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
  use MassBudget_ml,  only : totddep,DryDep_Budget
  use MicroMet_ml,   only : AerRes, Wind_at_h
  use ModelConstants_ml,    only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
-                                  DEBUG_i, DEBUG_j, NPROC,  &
+                                  DEBUG_i, DEBUG_j, NPROC, &
+                                  DEBUG_DRYDEP, DEBUG_VDS, MasterProc, &
                                   ATWAIR, atwS, atwN, PPBINV,&
                                   KUPPER, NLANDUSE
- use Par_ml,               only : me,li0,li1,lj0,lj1
+ use Par_ml,               only : li0,li1,lj0,lj1, me
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
  
  use Landuse_ml,       only : SetLandUse  & 
@@ -130,8 +131,6 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
   logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
   logical, private, save :: my_first_call = .true.
-  logical, private, parameter :: MY_DEBUG = .false.
-  logical, private, parameter :: DEBUG_VDS = .true.
   character(len=30),private, save :: errmsg = "ok"
 
 
@@ -159,18 +158,18 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
      do n = 1, NDRYDEP_ADV  
          nadv       = max( Dep(n)%adv, nadv )  ! Looking for highest IXADV
          vg_set(n)  = ( Dep(n)%calc == CDEP_SET ) ! for set vg
-         !if ( MY_DEBUG .and. me == 0 ) write(*,*) "VGSET ", n, nadv, vg_set(n)
+         !if ( DEBUG_DRYDEP .and. MasterProc ) write(*,*) "VGSET ", n, nadv, vg_set(n)
      end do
 
      my_first_call = .false.
-     if(me==0 .and. MY_DEBUG) write(*,*) "INIT_DRYDEP day ", &
+     if( MasterProc  .and. DEBUG_DRYDEP) write(*,*) "INIT_DRYDEP day ", &
            daynumber, old_daynumber
 
   end if !  my_first_call
 
   if ( old_daynumber /= daynumber ) then
 
-       if(me==0.and. MY_DEBUG) write(*,*) "INIT_DRYDEP set ", &
+      if( MasterProc .and. DEBUG_DRYDEP) write(*,*) "INIT_DRYDEP set ", &
            daynumber, old_daynumber
       call SetLandUse()         ! Sets LandCover()%LAI, %hveg , etc
       old_daynumber = daynumber
@@ -299,7 +298,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
       dtz      = dt_advec/Grid%DeltaZ
 
-      if ( MY_DEBUG .and. debug_flag ) then
+      if ( DEBUG_DRYDEP .and. debug_flag ) then
          write(*,"(a26,4i4)") "UKDEP DryDep me, i,j ", me, i,j
          write(*,"(a10,i4,3i3,i6,10f10.3)") "UKDEP SOL", &
               daynumber, imm, idd, ihh, current_date%seconds, &
@@ -337,6 +336,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 !hf CoDep
     Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
 
+if ( DEBUG_DRYDEP .and. debug_flag ) then
+         write(*,"(a,2i4,2es15.4)") "DRYDEP CONCS ", i,j, &
+          xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID), xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID)
+end if
     if ( STO_FLUXES ) call Setup_StoFlux(daynumber, &
          xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID),amk(KMAX_MID))
 
@@ -364,7 +367,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
         L%EGS = LandCover(i,j)%EGS(iiL)
 
 
-             if ( MY_DEBUG .and. debug_flag ) then
+             if ( DEBUG_DRYDEP .and. debug_flag ) then
                 write(6,"(a40,4i3,f6.1,2i4,3f7.3,2i4,2f6.2)") &
                     "DEBUG_veg: me,nlu,iiL,iL, lat, SGS, EGS ", &
                     me,nlu,iiL, iL, gb(i,j), L%SGS, L%EGS, &
@@ -531,7 +534,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
          end if
 
 
-        if ( MY_DEBUG .and. debug_flag ) then
+        if ( DEBUG_DRYDEP .and. debug_flag ) then
             do n = 1 , NDRYDEP_GASES 
                write(*,"(a14,2i4,f7.3,i3,2f10.2,es12.2,2f8.2,a5,f8.3,2es18.6)") &
                   "UKDEP EXT: ", iiL, iL, L%coverage, n,&
@@ -566,7 +569,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
 
-        if ( MY_DEBUG .and. Sumland > 1.011  ) then
+        if ( DEBUG_DRYDEP .and. Sumland > 1.011  ) then
             print *, "SUMLAND ", me, nlu, i,j,i_fdom(i), j_fdom(j), Sumland
             call CheckStop( "SUMLAND TOO BUG")
         end if
@@ -578,7 +581,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
             gradient_fac(:) = sea_ratio(:)
         end if
 
-        if ( MY_DEBUG .and. debug_flag ) then
+        if ( DEBUG_DRYDEP .and. debug_flag ) then
             write(*, "(a14,i2,3i3,10f6.2)") "UKDEP VG_UKR", &
                    Grid%snow, imm, idd, ihh,  &
                  (100.0*Mosaic_VgRef(n,0), n = 1, min(5,NDRYDEP_GASES )), &
@@ -631,7 +634,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
                   lossfrac = ( 1.0 - DepLoss(nadv)/ &
                                 (DepLoss(nadv)+xn_2d( nadv2d,KMAX_MID)))
               end if
-              if ( MY_DEBUG .and. lossfrac < 0.1 ) then
+              if ( DEBUG_DRYDEP .and. lossfrac < 0.1 ) then
                   call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
                   !print *, "ERROR: LOSSFRAC ", lossfrac, nadv, nadv2d
               end if
@@ -664,7 +667,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
           ! is in grid, so we don't need cover. Instead:
 
 
-            if ( MY_DEBUG .and. debug_flag ) then
+            if ( DEBUG_DRYDEP .and. debug_flag ) then
             if ( n == CDEP_SO2 .and. iL == 1 ) then ! SO2, CF
 
                if ( vg_set(n) )  then
@@ -691,7 +694,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 !         totddep( nadv ) = totddep (nadv) + Deploss(nadv) * convfac
 
 
-        if ( MY_DEBUG .and. debug_flag ) then
+        if ( DEBUG_DRYDEP .and. debug_flag ) then
           if ( vg_set(n) ) then
               write(*, "(a30,2i4,f8.3)") "DEBUG DryDep SET ",  n,nadv, Dep(n)%vg
           else
