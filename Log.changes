@@ -1,3 +1,17 @@
+================================ rv3_2_2, Dave 27th Mar 2009======
+
+Some small tidy-ups, and extensions:
+
+Country_ml:  IC_INTSHIPS = 350 added for TNO emissions
+
+EmisDef_ml: extended to deal with TNO EC/OC emissions
+
+EmisGet_ml: extended to allow for more emission entries
+
+Emissions_ml: tidy up of DEBUG stuff.
+
+ModelConstants_ml: more DEBUG added
+
 ================================ rv3_2_1 20th Mar 2009======
 
 Various DEBUG variables changed, See new logicals in ModelConstants_ml

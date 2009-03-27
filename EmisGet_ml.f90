@@ -40,7 +40,7 @@
                                ISNAP_SHIP, ISNAP_NAT
   use GridAllocate_ml,   only: GridAllocate
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS
-  use ModelConstants_ml, only: NPROC
+  use ModelConstants_ml, only: NPROC, DEBUG => DEBUG_GETEMIS
   use My_Emis_ml,        only: NEMIS, NRCSPLIT, EMIS_NAME, SPLIT_NAME,  &
                                NEMIS_PLAIN, NEMIS_SPLIT, EMIS_NSPLIT
   use Par_ml,            only: me
@@ -60,8 +60,6 @@
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
   logical, private, save :: my_first_call = .true.
-
-  logical, private, parameter :: DEBUG = .false.
 
 
   ! e_fact is the emission control factor (increase/decrease/switch-off)
@@ -300,11 +298,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                        ,inland                     & ! Country read from femis
                        ,isec, isec1 , isec2        & ! loop vars: emis sectors
                        ,ncols, n, oldn               ! No. cols. in "femis" 
-  integer, parameter        :: NCOLS_MAX = 12      ! Max. no. cols. in "femis"
+  integer, parameter        :: NCOLS_MAX = 20      ! Max. no. cols. in "femis"
   integer, dimension(NEMIS) :: qc           ! index for sorting femis columns
   real, dimension(NCOLS_MAX):: e_f                 ! factors read from femis
-  character(len=80) :: txt                         ! For read-in 
-  character(len=5), dimension(NCOLS_MAX)::  polltxt! to read line 1
+  character(len=200) :: txt                         ! For read-in 
+  character(len=20), dimension(NCOLS_MAX)::  polltxt! to read line 1
  !--------------------------------------------------------
 
 
@@ -315,6 +313,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   if ( ios == NO_FILE ) then
         ios = 0
+        print *, "ERROR: NO FEMIS FILE"
         return !/** if no femis file, e_fact=1 as default **/ 
   endif
   call CheckStop( ios < 0 ,"EmisGet:ios error in femis.dat")
@@ -323,12 +322,14 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   !/** Reads in the header line, e.g. name sec sox nox voc. 
   !    Pollutant names wil be checked against those defined in My_Emis_ml **/
 
-  read(unit=IO_EMIS,fmt="(a80)") txt
+  read(unit=IO_EMIS,fmt="(a200)") txt
+  write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
 
   call wordsplit(txt,NCOLS_MAX,polltxt,ncols,ios)
-   if(ios>0)return
   write(unit=6,fmt=*) "In femis, header is: ",  txt
   write(unit=6,fmt=*) "In femis, file has ", ncols, " columns (-2)"
+  call CheckStop( ncols > NCOLS_MAX , "EmisGet:femisncols ncols > NCOLS_MAX" )
+   if(ios>0)return
 
   !/** we allow the femis file to give factors in any order, and
   !    for pollutants not needed, so we need to work out the indices
@@ -421,10 +422,10 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   write(unit=6,fmt=*) "In femis, read ", n, "records from femis."
   if ( DEBUG ) then    ! Extra checks
-     write(unit=6,fmt=*) " For UK this gives: "
-     write(unit=6,fmt="(6x, 10a12)") (EMIS_NAME(ie), ie=1,NEMIS)
+     write(unit=6,fmt=*) "DEBUG_EMISGET: For UK this gives: "
+     write(unit=6,fmt="(6x, 30a10)") (EMIS_NAME(ie), ie=1,NEMIS)
      do isec = 1, 11
-      write(unit=6,fmt="(i6, 10f12.6)") isec,(e_fact(isec,27,ie),ie=1,NEMIS)
+      write(unit=6,fmt="(i6, 30f10.4)") isec,(e_fact(isec,27,ie),ie=1,NEMIS)
      end do
   end if ! DEBUG
   ios = 0
@@ -511,7 +512,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
           endif
        end if
 
-       if (DEBUG) write(unit=6,fmt=*) "TTT split defaults=", defaults, fname
+       if (DEBUG) write(unit=6,fmt=*) "DEBUG_EMISGET split defaults=",&
+              defaults, fname
  
        !/ Read text line and speciation:
        !  the following lines expect one line of a header text with the
@@ -553,7 +555,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
            if (  .not. defaults ) then
               do nn=1,nsplit
                   call CheckStop( intext(1,nn) /= intext(0,nn), &
-                             "EmisGet: ERROR intext(1,nn) /= intext(0,nn) ")
+                       "EmisGet: ERROR intext(1,nn) /= intext(0,nn) ")
               enddo
            end if
 
@@ -575,8 +577,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
                 ! just a check
                 if ( DEBUG .and. iland == 27 ) then 
-                    write(*,"(a15,3i3,f10.4)") "TTT splitdef UK", isec, &
-                                   ifr0, ifr, emisfrac(ifr,isec,iland)
+                    write(*,"(a15,3i3,f10.4)") &
+                      "DEBUG_EMISGET splitdef UK", isec, &
+                             ifr0, ifr, emisfrac(ifr,isec,iland)
                 endif
              enddo ! i
            enddo ! iland

@@ -55,7 +55,7 @@ module Country_ml
 
   public :: Country_Init     ! sets country details
 
-  integer, parameter, public :: NLAND = 349
+  integer, parameter, public :: NLAND = 350 !!! DSGC TNO 349
   logical, parameter, private :: T = .true.   ! shorthand
   logical, parameter, private :: F = .false.  ! shorthand
 
@@ -198,6 +198,7 @@ module Country_ml
   integer, parameter, public :: IC_BL7 = 347
   integer, parameter, public :: IC_BL8 = 348
   integer, parameter, public :: IC_BL9 = 349
+  integer, parameter, public :: IC_INTSHIPS = 350  ! Agnes, 25th March 2009 for TNO
 
   !New codes defined by Agnes for Reporting 2008, extended area
 

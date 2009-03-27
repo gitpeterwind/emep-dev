@@ -81,11 +81,11 @@ public :: EmisDef_Index   ! function to find index of given pollutant name
    !/.. List of possible emissions, and their initial conversion factors:
 
    type, public :: emislist
-      character(len=6) :: name
+      character(len=16) :: name
       real             :: conv  ! conv. emis file units to required units
    end type emislist
 
-   integer, public, parameter :: NEMIS_DEF=8          ! No of emitted species
+   integer, public, parameter :: NEMIS_DEF=15         ! No of emitted species
                                                       ! ( before splitting )
    type(emislist), public, save, dimension(NEMIS_DEF) :: &
                        EmisDef  = emislist("notdef", -1.0)
@@ -140,6 +140,12 @@ subroutine EmisDef_Init()
   ! factors. Any emissions used must be in this list, but not all  of
   ! the following are required. E.g. MADE might just use sox, nox and nh3.
   ! This will be checked in the Emissions_ml
+      !EMIS_NAME  = &
+      !(/ "sox   ", "co    "   &   ! =non-split first
+      ! , "nh3   ", "pm25  ", "pmco  "   &
+      ! , "poc_f_wood", "poc_f_ffuel", "poc_c_ffuel"  &
+      ! , "ec_f_wood",  "ec_c_wood", "ec_f_ffuel", "ec_c_ffuel"  &
+      ! , "nox   ", "voc   "  /)                       ! =to be split
 
   EmisDef(1) = emislist( "sox   ",  0.5       )   !  tonne SO2 -> tonne S 
   EmisDef(2) = emislist( "nox   ", 14.0/46.0  )   !  tonne NO2 -> tonne N
@@ -149,6 +155,13 @@ subroutine EmisDef_Init()
   EmisDef(6) = emislist( "pm25  ",  1.0       )   !  tonne pm  -> tonne pm 
   EmisDef(7) = emislist( "pm10  ",  1.0       )   !  tonne pm  -> tonne pm 
   EmisDef(8) = emislist( "pmco  ",  1.0       )   !  tonne pm  -> tonne pm 
+  EmisDef(9) = emislist( "poc_f_wood",  1.0   )   !  tonne pm  -> tonne pm 
+  EmisDef(10) = emislist( "poc_f_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
+  EmisDef(11) = emislist( "poc_c_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
+  EmisDef(12) = emislist( "ec_f_wood",  1.0   )   !  tonne pm  -> tonne pm 
+  EmisDef(13) = emislist( "ec_c_wood",  1.0   )   !  tonne pm  -> tonne pm 
+  EmisDef(14) = emislist( "ec_f_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
+  EmisDef(15) = emislist( "ec_c_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
 
 end subroutine EmisDef_Init
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

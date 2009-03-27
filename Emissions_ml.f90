@@ -76,6 +76,7 @@
   use Io_Progs_ml,     only : ios, open_file
   use Met_ml,          only :  ps, roa   ! ps in Pa, roa in kg/m3
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
+                              DEBUG => DEBUG_EMISSIONS, & 
                               NPROC, IIFULLDOM,JJFULLDOM 
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -108,8 +109,6 @@
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
-  logical, private, parameter :: DEBUG = .false.
-  logical, private, parameter :: MY_DEBUG = .false.
 
  !** land-code information in each grid square - needed to know which country
  !   is emitting.                        
@@ -346,15 +345,15 @@ contains
     if ( me == 0 ) then
         write(unit=6,fmt=*) "Country totals"
         write(unit=IO_LOG,fmt=*) "Country totals"
-        write(unit=6,fmt="(2a4,3x,10a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
-        write(unit=IO_LOG,fmt="(2a4,3x,10a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+        write(unit=6,fmt="(2a4,3x,30a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+        write(unit=IO_LOG,fmt="(2a4,3x,30a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
 
         do ic = 1, NLAND
            ccsum = sum( sumemis(ic,:) )
            if ( ccsum > 0.0 ) then
-                    write(unit=6,fmt="(i3,1x,a4,3x,8f12.2)") &
+                    write(unit=6,fmt="(i3,1x,a4,3x,30f12.2)") &
                         ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS)
-                    write(unit=IO_LOG,fmt="(i3,1x,a4,3x,8f12.2)")& 
+                    write(unit=IO_LOG,fmt="(i3,1x,a4,3x,30f12.2)")& 
                         ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS)
            end if
         end do
@@ -397,8 +396,9 @@ contains
         write(unit=6,fmt=*) "No. days in Emissions: ", nydays
         write(unit=6,fmt=*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
         write(unit=6,fmt=*) "Emissions sums:"
-        write(unit=6,fmt=*) (EMIS_NAME(iem),iem=1,NEMIS)
-        write(unit=6,fmt=*) (emsum(iem),iem=1,NEMIS)
+        do iem = 1, NEMIS
+           write(unit=6,fmt="(a15,f12.2)") EMIS_NAME(iem),emsum(iem)
+        end do
     endif
 
 
@@ -430,7 +430,7 @@ contains
                 if ( DEBUG ) write(*,*)'EMIS_VOLC is',emis_volc(volc_no)
                 i_l = i -gi0 +1
                 j_l = j- gj0 +1
-                 if ( MY_DEBUG ) write(*,*)'Local coord is',i_l,j_l,gi0,gj0
+                 if ( DEBUG ) write(*,*)'Local coord is',i_l,j_l,gi0,gj0
                 emis_volc(volc_no) = emis_volc(volc_no)* conv * xm2(i_l,j_l)
             endif
         enddo !volc_no
@@ -438,7 +438,7 @@ contains
         !/** Read  Volcano.dat to get volcano height
         if (me==0)then
             call VolcGet(height_volc)
-             if (MY_DEBUG) write(*,*)'Volcano heights',height_volc
+             if (DEBUG) write(*,*)'Volcano heights',height_volc
         endif
 
         !/** broadcast volcano heights
@@ -883,7 +883,7 @@ contains
         ktonne_to_kgm2s  = 1.0e6 / 				&
 		(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-	if ( me == 0 .and. MY_DEBUG) then
+	if ( me == 0 .and. DEBUG) then
 	  write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',	&
 	      current_date%month,ktonne_to_kgm2s
 	  write(6,*) ' first_dms_read = ', first_dms_read

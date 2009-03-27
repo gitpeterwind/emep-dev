@@ -43,9 +43,9 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-       RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
  !TESTER 
-!     RUNDOMAIN = (/  80, 120,  50,  70 /)     ! (changeable)
+   ! RUNDOMAIN = (/  80, 120,  50,  70 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
@@ -70,18 +70,23 @@ module ModelConstants_ml
  !!integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !!!!integer, public, parameter :: DEBUG_i=110, DEBUG_j=48 !   High Vg!
  !integer, public, parameter :: DEBUG_i=96, DEBUG_j=40 !   High VG_SO2_CF!
- integer, public, parameter :: DEBUG_i=111, DEBUG_j=54 !  High VG_PMCO_CF!
+ !integer, public, parameter :: DEBUG_i=111, DEBUG_j=54 !  High VG_PMCO_CF!
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j=51 !  Schauinsland
  ! integer, public, parameter :: DEBUG_i=87, DEBUG_j=20 !  Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  Mid-Europe
  !integer, public, parameter :: DEBUG_i=93, DEBUG_j=57 !  Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
+ integer, public, parameter :: DEBUG_i=116, DEBUG_j=63 !  K-Puszta
 
 !=============================================================================
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::      &
      DEBUG_BCS            = .false.  & ! 
-    ,DEBUG_RUNCHEM        = .false.  & ! SPECIAL.. needed for indented debugs
+    ,DEBUG_EMISSIONS      = .false.   &
+    ,DEBUG_GETEMIS        = .false.   &
+ !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
+    ,DEBUG_RUNCHEM        = .false.   &
+        ,DEBUG_SOA        = .false.   & !
         ,DEBUG_SUBMET     = .false.  &
     ,DEBUG_DERIVED        = .false. &  !
     ,DEBUG_DRYDEP         = .false. &  !
@@ -89,10 +94,9 @@ module ModelConstants_ml
     ,DEBUG_LANDDEFS       = .false. &  !
     ,DEBUG_MY_DRYDEP      = .false. &  !
     ,DEBUG_RSUR           = .false. &  !
-    ,DEBUG_SETUP_1DCHEM   = .false.  &  !
+    ,DEBUG_SETUP_1DCHEM   = .false. &  !
     ,DEBUG_SETUP_1DBIO    = .false.    !
 
-  real, public, save :: tmpOut1, tmpOut2 ! not cvs, debug only!
 !=============================================================================
   ! Source-receptor runs?
   ! We don't (generally) want daily outputs for SR runs, so in
