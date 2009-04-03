@@ -1212,6 +1212,7 @@ contains
 
     integer :: i, j, k, lx1,lx2, nr,info
     integer request_s,request_n,request_e,request_w
+    real ::Ps_extended(0:MAXLIMAX+1,0:MAXLJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
 
 
 
@@ -1546,16 +1547,128 @@ contains
 
     if(.not.foundsdot)then
        ! sdot derived from divergence=0 principle
+
        do j = 1,ljmax
           do i = 1,limax
+             Ps_extended(i,j) = Ps(i,j,nr)
+          enddo
+       enddo
+!Get Ps at edges from neighbors
+!we reuse usnd, vsnd etc
+    if (neighbor(EAST) .ne. NOPROC) then
+          do j = 1,ljmax
+             usnd(j,1) = ps(limax,j,nr)
+          enddo
+       CALL MPI_ISEND( usnd, 8*MAXLJMAX, MPI_BYTE,  &
+            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO) 
+    endif
+    if (neighbor(NORTH) .ne. NOPROC) then
+          do i = 1,limax
+             vsnd(i,1) = ps(i,ljmax,nr)
+          enddo
+       CALL MPI_ISEND( vsnd , 8*MAXLIMAX, MPI_BYTE,  &
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO) 
+    endif
+
+    !     receive from WEST neighbor if any
+    if (neighbor(WEST) .ne. NOPROC) then
+       CALL MPI_RECV( urcv, 8*MAXLJMAX, MPI_BYTE, &
+            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+	  do j = 1,ljmax
+             Ps_extended(0,j) = urcv(j,1)
+          enddo
+    else
+          do j = 1,ljmax
+             Ps_extended(0,j) = Ps_extended(1,j)
+          enddo
+    endif
+    !     receive from SOUTH neighbor if any
+    if (neighbor(SOUTH) .ne. NOPROC) then
+       CALL MPI_RECV( vrcv, 8*MAXLIMAX, MPI_BYTE,  &
+            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+          do i = 1,limax
+             Ps_extended(i,0) = vrcv(i,1)
+          enddo
+    else
+          do i = 1,limax
+             Ps_extended(i,0) = Ps_extended(i,1) 
+          enddo
+    endif
+    if (neighbor(WEST) .ne. NOPROC) then
+          do j = 1,ljmax
+             usnd(j,2) = ps(1,j,nr)
+          enddo
+       CALL MPI_ISEND( usnd(1,2), 8*MAXLJMAX, MPI_BYTE,  &
+            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, request_w, INFO) 
+    endif
+    if (neighbor(SOUTH) .ne. NOPROC) then
+          do i = 1,limax
+             vsnd(i,2) = ps(i,1,nr)
+          enddo
+       CALL MPI_ISEND( vsnd(1,2) , 8*MAXLIMAX, MPI_BYTE,  &
+            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, request_s, INFO) 
+    endif
+
+
+
+    !     receive from EAST neighbor if any
+    if (neighbor(EAST) .ne. NOPROC) then
+       CALL MPI_RECV( urcv, 8*MAXLJMAX, MPI_BYTE, &
+            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+	  do j = 1,ljmax
+             Ps_extended(limax+1,j) = urcv(j,1)
+          enddo
+    else
+          do j = 1,ljmax
+             Ps_extended(limax+1,j) = Ps_extended(limax,j)
+          enddo
+    endif
+    !     receive from NORTH neighbor if any
+    if (neighbor(NORTH) .ne. NOPROC) then
+       CALL MPI_RECV( vrcv, 8*MAXLIMAX, MPI_BYTE,  &
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+          do i = 1,limax
+             Ps_extended(i,ljmax+1) = vrcv(i,1)
+          enddo
+    else
+          do i = 1,limax
+             Ps_extended(i,ljmax+1) = Ps_extended(i,ljmax) 
+          enddo
+    endif
+
+    if (neighbor(EAST) .ne. NOPROC) then
+       CALL MPI_WAIT(request_e, MPISTATUS, INFO) 
+    endif
+    
+    if (neighbor(NORTH) .ne. NOPROC) then
+       CALL MPI_WAIT(request_n, MPISTATUS, INFO) 
+    endif
+    if (neighbor(WEST) .ne. NOPROC) then
+       CALL MPI_WAIT(request_w, MPISTATUS, INFO) 
+    endif
+    
+    if (neighbor(SOUTH) .ne. NOPROC) then
+       CALL MPI_WAIT(request_s, MPISTATUS, INFO) 
+    endif
+
+
+!note that u and v have already been divided by xm here
+       do j = 1,ljmax
+          do i = 1,limax
+             Pmid=Ps_extended(i,j)-PT
+             Pu1=0.5*(Ps_extended(i-1,j)+Ps_extended(i,j))-PT
+             Pu2=0.5*(Ps_extended(i+1,j)+Ps_extended(i,j))-PT
+             Pv1=0.5*(Ps_extended(i,j-1)+Ps_extended(i,j))-PT
+             Pv2=0.5*(Ps_extended(i,j+1)+Ps_extended(i,j))-PT
+
              sdot(i,j,KMAX_BND,nr)=0.0
              sdot(i,j,1,nr)=0.0
              sumdiv=0.0
              do k=1,KMAX_MID
-                divk(k)=((u(i,j,k,nr)-u(i-1,j,k,nr))            &
-                     + (v(i,j,k,nr)-v(i,j-1,k,nr)))            &
+                divk(k)=((u(i,j,k,nr)*Pu2-u(i-1,j,k,nr)*Pu1)            &
+                     + (v(i,j,k,nr)*Pv2-v(i,j-1,k,nr)*Pv1))            &
                      * xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))  &
-                     / GRIDWIDTH_M
+                     / GRIDWIDTH_M/Pmid
                 sumdiv=sumdiv+divk(k)
              enddo
              sdot(i,j,KMAX_MID,nr)=-(sigma_bnd(KMAX_MID+1)-sigma_bnd(KMAX_MID))*sumdiv+divk(KMAX_MID)
