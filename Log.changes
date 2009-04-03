@@ -1,3 +1,23 @@
+================================ rv3_2_3, Peter 3rd April 2009======
+
+Updates for the Global model
+
+Solver.f90
+nchem=15 for gridwidth larger than 60km.
+Still this value should be tested.
+
+Met_ml:
+Improved default value for sdot.
+
+Emissions_ml:
+Introduced a "MONTHLY_GRIDEMIS" parameter for easier use in global runs.
+
+My_Chem_ml:
+species%sulphur=0 for ISONO3,ISNI and ISNIR (bug)
+
+Landuse_ml:
+NLUMAX = 19 
+
 ================================ rv3_2_2, Dave 27th Mar 2009======
 
 Some small tidy-ups, and extensions:
