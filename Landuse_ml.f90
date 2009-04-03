@@ -57,7 +57,7 @@ private
  INCLUDE 'mpif.h'
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
- integer, public, parameter :: NLUMAX = 17 ! max no. landuse per grid
+ integer, public, parameter :: NLUMAX = 19 ! max no. landuse per grid
 
 ! The headers read from Inputs.Landuse define the "master-list" of
 ! codes for landuse. Each code must be present in the subsequent
