@@ -55,7 +55,7 @@
 
   use Biogenics_ml, only: first_dms_read,IQ_DMS,emnat,emforest
   use CheckStop_ml,only : CheckStop
-  use Country_ml,    only : NLAND,Country_Init,Country
+  use Country_ml,    only : NLAND,Country_Init,Country, IC_NAT
   use EmisDef_ml, only : NSECTORS,  &  ! No. sectors
                          NEMISLAYERS,& ! No. vertical layers for emission
                          NCMAX,&       ! Max. No. countries per grid
@@ -72,7 +72,7 @@
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
                            ,sigma_bnd, xmd, gl
-  use Io_Nums_ml,      only : IO_LOG, IO_DMS
+  use Io_Nums_ml,      only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,     only : ios, open_file
   use Met_ml,          only :  ps, roa   ! ps in Pa, roa in kg/m3
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
@@ -84,7 +84,7 @@
                              MSG_READ1,MSG_READ7
   use PhysicalConstants_ml,  only :  GRAV,  AVOG
   use ReadField_ml, only : ReadField    ! Reads ascii fields
-  use TimeDate_ml,only : nydays, date, current_date   ! No. days per year, date-type 
+  use TimeDate_ml,only : nydays, nmdays, date, current_date   ! No. days per year, date-type 
   use Timefactors_ml, only : &
                NewDayFactors   &         ! subroutines
               ,timefac, day_factor  ! time-factors
@@ -865,9 +865,17 @@ contains
         integer n, flat_ncmaxfound      ! Max. no. countries w/flat emissions
 	real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
 	character*20 fname
-	real ktonne_to_kgm2s         ! Units conversion
+	real ktonne_to_kgm2s, tonnemonth_to_kgm2s          ! Units conversion
         integer :: IQSO2             ! Index of sox in  EMIS_NAME
 	integer errcode
+        real,    allocatable, dimension(:,:,:,:)  :: globemis 
+    integer, dimension(NEMIS) :: eindex   ! Index of emissions in EmisDef
+    integer:: month,iem,ic,iic,isec, err3,ic1,icc
+    real ::duml,dumh,tmpsec(NSECTORS),conv
+        logical ,save ::first_call=.true.
+    real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS) &
+            ::  snapemis_month !/*monthly emissions tonne/month
+        logical, parameter ::MONTHLY_GRIDEMIS=.false.
 
 !*** Units:
 !	Input files seem to be in ktonne PER YEAR. We convert here to kg/m2/s
@@ -955,6 +963,116 @@ contains
 	      end if
 
            end if  ! IQSO2>0
+
+
+           if(MONTHLY_GRIDEMIS)then
+
+   !Read monthly emission files
+
+   if(first_call)then
+      do j=lj0,lj1
+         do i=li0,li1
+            nlandcode(i,j)=nlandcode(i,j)+1
+            icc=nlandcode(i,j)
+            landcode(i,j,icc)=67 
+         enddo
+      enddo
+      first_call=.false.
+   endif
+    month = current_date%month
+    tonnemonth_to_kgm2s= 1.0e3 / 				&
+         (nmdays(month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
+
+    if ( me == 0 ) then
+       allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
+       if ( err3 /= 0 ) then
+          WRITE(*,*) 'MPI_ABORT: ', "Alloc error - globland"
+          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       end if
+    end if
+    do i = 1, NEMIS
+       eindex(i) = EmisDef_Index( EMIS_NAME(i) )
+    end do
+    do iem = 1, NEMIS
+!      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
+!           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
+!           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
+!      snapemis (:,:,:,:,iem) = 0.0 !NB all previous (snap)emis set to 0
+      if ( me == 0 ) then
+
+         globemis = 0.0
+
+         write(fname,fmt='(''grid'',A,i2.2)') 	&
+              trim(EMIS_NAME(iem))//'.',month
+         write(6,*) 'filename for GLOBAL emission',fname
+         call open_file(IO_EMIS,"r",fname,needed=.true.)
+         if ( ios /= 0 )then
+            WRITE(*,*) 'MPI_ABORT: ', "ios error: emislist"
+            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+         endif
+         READEMIS: do   ! ************* Loop over emislist files **********************
+
+            read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
+                 (tmpsec(isec),isec=1,NSECTORS)
+            if ( ios <  0 ) exit READEMIS            ! End of file
+            if ( ios >  0  ) then                     ! A different problem..
+               WRITE(*,*) 'MPI_ABORT: ', "GetEmis ios: error on " // fname
+               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+            end if
+
+!      if (trim(EMIS_NAME(iem)).eq.'voc')then
+!         tmpsec(11)=0.0
+!      endif
+
+            ic=1 !NBNB default country
+
+
+
+            i = i-IRUNBEG+1     ! for RESTRICTED domain
+            j = j-JRUNBEG+1     ! for RESTRICTED domain
+
+            if ( i  <=  0 .or. i  >  GIMAX .or.   & 
+                 j  <=  0 .or. j  >  GJMAX .or.   &
+                 ic <=  0 .or. ic >  NLAND .or.   &
+                 ic == IC_NAT )                   &  ! Excludes DMS
+                 cycle READEMIS
+            globemis(:,i,j,ic) = globemis(:,i,j,ic) & !NB: put everything in land "1"
+                 !NB no femis                  + e_fact(:,ic,iemis) *  tmpsec(:)!e_fact=femis
+                 + tmpsec(:)
+
+         end do READEMIS
+         !
+         close(IO_EMIS)
+         ios = 0
+!         globemis(:,i,j,ic1) = 0.0
+
+     endif  ! me==0
+      call global2local(globemis,snapemis_month(1,1,1,1,iem),MSG_READ1,   &
+           NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
+   end do ! iem = 1, NEMIS-loop
+!   nlandcode=1
+!   landcode=67 !default land
+   ic=1 !BUG corrected in this directory 3/11-2008 (ic=1 only for ME=0 otherwise)
+   do iem = 1, NEMIS
+!         write(*,*)'iem=',iem
+!      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
+!           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
+!           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
+      conv = tonnemonth_to_kgm2s * EmisDef( eindex(iem) )%conv
+      do j=lj0,lj1
+         do i=li0,li1
+            icc=nlandcode(i,j)!67
+           do isec=1,NSECTORS
+              snapemis (isec,i,j,icc,iem) = &
+                    snapemis_month (isec,i,j,ic,iem) * conv * xm2(i,j)
+            enddo
+         enddo
+     enddo
+   enddo !iem
+   if ( me == 0 ) then
+      deallocate(globemis)
+   end if
+   endif
 
 	end subroutine newmonth
 
