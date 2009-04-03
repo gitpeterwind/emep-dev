@@ -55,6 +55,7 @@
     use GenSpec_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
     use GenSpec_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
     use GenRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
+    use GridValues_ml,     only : GRIDWIDTH_M
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv
     use My_Aerosols_ml,    only: SEASALT
     use My_Emis_ml                        ! => QRCNO, etc.
@@ -77,7 +78,7 @@
   INCLUDE 'mpif.h'
 
   integer::  STATUS(MPI_STATUS_SIZE),INFO
-  integer, parameter:: nchemMAX=12
+  integer, parameter:: nchemMAX=15
 
 contains
 
@@ -223,8 +224,11 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
 
   nchem=12 !number of chemical timesteps inside dt_advec
 
-!/ Used only for 50km resolution and dt_advec=1200 seconds:
-!.. timesteps from 6 to 12
+  if(GRIDWIDTH_M>60000.0)nchem=15
+
+
+!/ Used for >21km resolution and dt_advec>520 seconds:
+!.. timesteps from 6 to nchem
   dt=(dt_advec-100.0)/(nchem-5)
 !.. first five timesteps 
   dt(1)=20.0
