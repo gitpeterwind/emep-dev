@@ -1,3 +1,17 @@
+================================ rv3_2_4, Peter 22nd April 2009======
+
+Flexible BIC:
+If the "Boundary_and_Initial_Conditions.nc" file is not found, it will interpolate the data from
+"GLOBAL_Boundary_and_Initial_Conditions.nc".
+"GLOBAL_Boundary_and_Initial_Conditions.nc" should be written with global run results (not yet done).
+
+NetCDF_ml:
+ GetCDF is now very general, it does not assume anything about the dimensions. You can use this to read any Netcdf file.
+new routine "Read_Inter_CDF". It reads data from a lon lat grid and interpolates to the model grid. (not in parallel, should be called by me=0 only)
+
+run.pl: link to "GLOBAL_Boundary_and_Initial_Conditions.nc"
+
+
 ================================ rv3_2_3, Peter 3rd April 2009======
 
 Updates for the Global model
