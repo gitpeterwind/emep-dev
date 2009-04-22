@@ -62,7 +62,7 @@ module GlobalBCs_ml
   use ModelConstants_ml, only:  PPB, PPT,PPBINV &
                                ,KMAX_MID, PT &
                                ,IIFULLDOM,JJFULLDOM
-  use NetCDF_ml,only :GetCDF
+  use NetCDF_ml,only :GetCDF,Read_Inter_CDF
   use Par_ml, only:GIMAX,GJMAX,IRUNBEG,JRUNBEG, me
   use PhysicalConstants_ml, only: PI
   use TimeDate_ml,   only : daynumber
@@ -797,7 +797,6 @@ elseif ( year > 2006 ) then
      integer, intent(in) :: varGIMAX,varGJMAX,varKMAX!dimensions of bc_rawdata
      real, dimension(*), intent(inout) :: bc_rawdata !NB written as one-dimensional
      character (len = *),intent(in) ::varname
-     
 
      integer :: nstart,nfetch
      character (len = 100)::filename
@@ -807,8 +806,15 @@ elseif ( year > 2006 ) then
      call GetCDF(varname,fileName,bc_rawdata,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed=.false.)
      notfound=.false.
      if(nfetch==0)notfound=.true.
-
-
+     if(notfound)then
+        !interpolate from global file
+        nstart=month
+        nfetch=1
+        fileName='GLOBAL_Boundary_and_Initial_Conditions.nc'
+        call Read_Inter_CDF(fileName,varname,bc_rawdata,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,interpol='bilinear',needed=.false.)
+        notfound=.false.
+        if(nfetch==0)notfound=.true.
+     endif
    end subroutine ReadBC_CDF
 end module GlobalBCs_ml
 

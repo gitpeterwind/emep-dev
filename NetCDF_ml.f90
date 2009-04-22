@@ -103,8 +103,8 @@
   public :: Init_new_netCDF
   public :: GetCDF
   public :: WriteCDF
-  public :: ReadCDF
   public :: secondssince1970
+  public :: Read_Inter_CDF
 
   private :: CreatenetCDFfile
   private :: createnewvariable
@@ -1098,7 +1098,7 @@ endif
   end subroutine secondssince1970
 
 
-subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)
+subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)
   !
   ! open and reads CDF file
   !
@@ -1106,50 +1106,46 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
   ! check is only a subroutine which check wether the function returns zero
   !
   !
-
+  use netcdf
+  implicit none
   character (len=*),intent(in) :: fileName 
 
   character (len = *),intent(in) ::varname
   integer, intent(in) :: nstart,varGIMAX,varGJMAX,varKMAX
   integer, intent(inout) ::  nfetch
-  real, dimension(*),intent(out) :: var
+  real, intent(out) :: Rvar(varGIMAX*varGJMAX*varKMAX*nfetch)
   logical, optional,intent(in) :: needed
-!  real, dimension(varGIMAX*varGJMAX*varKMAX*NFETCH),intent(out) :: var
-!  real, dimension(132,111,Nrec),intent(out) :: var
-
 
   logical :: fileneeded
-  integer :: GIMAX,GJMAX,KMAX_MID,nrecords,period
   integer :: status,ndims,alloc_err
-  integer :: n,KMAX,Nrec,ijn,ijkn,timeVarID
-  integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
-  integer :: var_date(9000),ndate(4)
-  real , allocatable,dimension(:,:,:,:)  :: values
-  real ::depsum
-  character*20::attribute,attribute2
+  integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
+  integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
+  integer :: ncFileID,VarID,i,j,k
+  character*100::name
+  real :: scale,offset,scalefactors(2)
+  integer, allocatable:: Ivalues(:)
 
 !  Nrec=size(var,3)
 
   print *,'  reading ',trim(fileName)
   !open an existing netcdf dataset
-     fileneeded=.true.!default
+  fileneeded=.true.!default
   if(present(needed))then
      fileneeded=needed
   endif
      
-     if(fileneeded)then
-        call check(nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID))
-     else
-        status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
-        if(status/= nf90_noerr)then
-           write(*,*)trim(fileName),' not found (but not needed)'
-           nfetch=0
-           return
-        endif
+  if(fileneeded)then
+     call check(nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID))
+  else
+     status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+     if(status/= nf90_noerr)then
+        write(*,*)trim(fileName),' not found (but not needed)'
+        nfetch=0
+        return
      endif
+  endif
 
   !get global attributes
-
   !example:
 !  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", attribute ))
 !  call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_date", attribute2 ))
@@ -1167,139 +1163,62 @@ subroutine GetCDF(varname,fileName,var,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,n
      return
   endif
 
-  !get dimensions id
-  status=nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID)
-  if(status /= nf90_noerr) then     
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-  endif
-  status=nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID)
-  if(status /= nf90_noerr) then     
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
-  endif
-!  call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-!  call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
-  call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
+  !get dimensions
+  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+  dims=0
+  totsize=1
+  do i=1,ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
+     totsize=totsize*dims(i)
+      !write(*,*)'size variable ',i,dims(i)
+  enddo
 
-  !get dimensions length
-  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=idimID,  len=GIMAX))
-  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=jdimID,  len=GJMAX))
-  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=kdimID,  len=KMAX_MID))
-  call check(nf90_inquire_dimension(ncid=ncFileID, dimID=timedimID,  len=nrecords))
-  Nrec=nrecords
-
-  print *, 'dimensions ',GIMAX,GJMAX,KMAX_MID,nrecords
-  if(GIMAX>varGIMAX.or.GJMAX>varGJMAX)then
-     write(*,*)'buffer too small',GIMAX,varGIMAX,GJMAX,varGJMAX
+  write(*,*)'dimensions ',(dims(i),i=1,ndims)
+  if(dims(1)>varGIMAX.or.dims(2)>varGJMAX)then
+     write(*,*)'buffer too small',dims(1),varGIMAX,dims(2),varGJMAX
      stop
   endif
 
-  ndims=4
-  if(KMAX_MID==1)ndims=3
-  !get variable info
-!  call check(nf90_inquire_variable(ncFileID, varID, ndims=ndims))
-!       print *, 'dimensions ',ndims
-  if(KMAX_MID>varKMAX)then
-     write(*,*)'Warning: not reading all levels ',KMAX_MID,varKMAX
+  startvec=1
+  startvec(ndims)=nstart
+  totsize=totsize/dims(ndims)
+  if(nfetch<dims(ndims))write(*,*)'fetching only',totsize*nfetch,'of ', totsize*dims(ndims),'elements'
+  dims(ndims)=nfetch
+  totsize=totsize*dims(ndims)
+
+  if(xtype==NF90_SHORT.or.xtype==NF90_INT)then
+     allocate(Ivalues(totsize), stat=alloc_err)    
+     call check(nf90_get_var(ncFileID, VarID, Ivalues,start=startvec,count=dims))
+     
+    scalefactors(1) = 1.0 !default
+    scalefactors(2) = 0.  !default
+    status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+    if(status == nf90_noerr) scalefactors(1) = scale
+    status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+    if(status == nf90_noerr) scalefactors(2) = offset
+    
+    do i=1,totsize
+       Rvar(i)=Ivalues(i)*scalefactors(1)+scalefactors(2)
+    enddo
+
+     deallocate(Ivalues)
+  elseif(xtype==NF90_FLOAT .or. xtype==NF90_DOUBLE)then
+     call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
+  else
+     write(*,*)'datatype not yet supported, contact Peter'!Byte or Char
+     stop
+  endif
+
+  if(ndims>3.and.dims(3)>varKMAX)then
+     write(*,*)'Warning: not reading all levels ',dims(3),varKMAX
 !     stop
   endif
 
-  if(nstart+nfetch-1>nrecords)then
+  if(nstart+nfetch-1>dims(ndims))then
      write(*,*)'WARNING: did not find all data'
-     nfetch=nrecords-nstart+1
+     nfetch=dims(ndims)-nstart+1
      if(nfetch<=0)stop
   endif
-!  if(nfetch>Nrec)then
-!     write(*,*)'buffer too small. Increase last dimension',nfetch,Nrec
-!     stop
-!  endif
-  if(ndims==3)then
-     kmax=1
-     !allocate a 2D array 
-     allocate(values(GIMAX,GJMAX,nfetch,1), stat=alloc_err)
-     if ( alloc_err /= 0 ) then
-        print *, 'alloc failed in ReadCDF_ml: ',alloc_err,ndims
-        stop
-     endif
-  elseif(ndims==4)then
-     kmax=KMAX_MID
-     !allocate a 3D array 
-     allocate(values(GIMAX,GJMAX,KMAX_MID,nfetch), stat=alloc_err)
-     if ( alloc_err /= 0 ) then
-        print *, 'alloc failed in ReadCDF_ml: ',alloc_err,ndims
-        stop
-     endif
-
-  else
-     print *, 'unexpected number of dimensions: ',ndims
-     stop
-  endif
-
-  !get variable attributes
-  !example:
-  attribute=''
-!  call check(nf90_get_att(ncFileID, VarID, "long_name", attribute))
-!       print *,'long_name ',attribute
-
-!  call check(nf90_get_att(ncFileID, VarID, "xfelt_ident", xfelt_ident))
-
-  !get time variable
-  call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
-  call check(nf90_get_var(ncFileID, timeVarID, var_date,start=(/ nstart /),count=(/ nfetch /)))
-
-  !get variable
-  if(ndims==3)then
-     !      call check(nf90_get_var(ncFileID, VarID, values,start=(/ 1, 1, nstart /),count=(/ 1, 1, nfetch /)))
-     call check(nf90_get_var(ncFileID, VarID, values,start=(/ 1, 1, nstart /),count=(/ GIMAX,GJMAX,nfetch /)))
-  elseif(ndims==4)then
-     call check(nf90_get_var(ncFileID, VarID, values,start=(/1,1,1,nstart/),count=(/GIMAX,GJMAX,KMAX_MID,nfetch /)))
-  endif
-  if(Nfetch<nrecords)then
-     write(*,*)'Reading record',nstart,' to ',nstart+nfetch-1
-  endif
-!  write(*,*)'date start '
-!  call datefromsecondssince1970(ndate,var_date(1))
-!  write(*,*)'date end '
-!  call datefromsecondssince1970(ndate,var_date(nfetch))
-!  period=(var_date(2)-var_date(1))/3600.
-
-  if(ndims==3)then
-     do n=1,nfetch
-        do j=1,GJMAX
-           do i=1,GIMAX
-              ijn=i+(j-1)*varGIMAX+(n-1)*varGJMAX*varGIMAX
-              var(ijn)=values(i,j,n,1)
-           enddo
-        enddo
-        !     if(n<10)write(*,*)n,values(1,1,n,1)
-     enddo
-  else
-     if(varKMAX==1)then
-     do n=1,nfetch
-        do k=KMAX_MID,KMAX_MID
-        do j=1,GJMAX
-           do i=1,GIMAX
-              ijkn=i+(j-1)*varGIMAX+(k-1)*varGJMAX*varGIMAX+(n-1)*varGJMAX*varGIMAX*varKMAX
-              var(ijkn)=values(i,j,k,n)
-           enddo
-        enddo
-        enddo
-     enddo
-     else
-     do n=1,nfetch
-        do k=1,min(KMAX_MID,varKMAX)
-        do j=1,GJMAX
-           do i=1,GIMAX
-              ijkn=i+(j-1)*varGIMAX+(k-1)*varGJMAX*varGIMAX+(n-1)*varGJMAX*varGIMAX*varKMAX
-              var(ijkn)=values(i,j,k,n)
-           enddo
-        enddo
-        enddo
-     enddo
-     endif
-!     stop
-  endif
-  deallocate(values)
   call check(nf90_close(ncFileID))
 
 end subroutine GetCDF
@@ -1411,72 +1330,219 @@ else
 
 end subroutine WriteCDF
 
-subroutine ReadCDF(varname,vardate,filename_given)
+subroutine Read_Inter_CDF(fileName,varname,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,interpol,needed)
+!reads data from file and interpolates data into local grid
+
+  use netcdf
+implicit none
+character(len = *),intent(in) ::fileName,varname
+real,intent(out) :: Rvar(*)
+integer,intent(in) :: varGIMAX,varGJMAX,varKMAX,nstart
+integer,intent(inout) :: nfetch
+character(len = *), optional,intent(in) :: interpol
+logical, optional, intent(in) :: needed
+integer :: ncFileID,VarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
+integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
+integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
+integer ::alloc_err
+character*100 ::name
+real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
+integer ::ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361
+
+integer, allocatable:: Ivalues(:)
+real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
+logical ::fileneeded
+character(len = 20) :: interpol_used
+
+fileneeded=.true.!default
+if(present(needed))then
+   fileneeded=needed
+endif
+
+!1)Read data 
+  !open an existing netcdf dataset
+  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+  if(status == nf90_noerr) then     
+     print *, 'reading ',trim(filename)
+  else
+     nfetch=0
+     if(fileneeded)then
+     print *, 'file does not exist: ',trim(varname),nf90_strerror(status)
+     call CheckStop(fileneeded, "Read_Inter_CDF : file needed but not found") 
+     else
+     print *, 'file does not exist (but not needed): ',trim(varname),nf90_strerror(status)
+        print *, 'file not needed '
+     return
+     endif
+  endif
 
 
- character (len=*),intent(in)::varname!variable name, or group of variable name
- type(date), intent(in)::vardate!variable name, or group of variable name
- character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
+  !test if the variable is defined and get varID:
+  status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
+  if(status == nf90_noerr) then     
+     print *, 'variable exists: ',trim(varname)
+  else
+     nfetch=0
+     if(fileneeded)then
+        print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+        call CheckStop(fileneeded, "Read_Inter_CDF : variable needed but not found") 
+     else
+        print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
+        return
+     endif
+  endif
 
- real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
- real, allocatable,dimension(:,:,:) :: buf ! Data arrays
- character (len=100):: fileName
- integer :: n,ndim,kmax,ndate(4),nseconds,nstart,nfetch
+  !get dimensions id
+  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+  !get dimensions
+  totsize=1
+  startvec=1
+  dims=0
+  do i=1,ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
+     !write(*,*)'size variable ',i,dims(i)
+  enddo
+  startvec(ndims)=nstart
+  dims(ndims)=nfetch
+  do i=1,ndims
+     totsize=totsize*dims(i)
+  enddo
+!  write(*,*)'total size variable ',totsize
+  allocate(Rvalues(totsize), stat=alloc_err)    
 
- ndate(1)=vardate%year
- ndate(2)=vardate%month
- ndate(3)=vardate%day
- ndate(4)=vardate%hour
- call secondssince1970(ndate,nseconds)
- nseconds=nseconds+vardate%seconds
- write(*,*)nseconds
+  if(xtype==NF90_SHORT.or.xtype==NF90_INT)then
+     allocate(Ivalues(totsize), stat=alloc_err)    
+     call check(nf90_get_var(ncFileID, VarID, Ivalues,start=startvec,count=dims))
+     
+    scalefactors(1) = 1.0 !default
+    scalefactors(2) = 0.  !default
+    status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+    if(status == nf90_noerr) scalefactors(1) = scale
+    status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+    if(status == nf90_noerr) scalefactors(2) = offset
+    
+    do i=1,totsize
+       Rvalues(i)=Ivalues(i)*scalefactors(1)+scalefactors(2)
+    enddo
 
- filename=trim(fileName_given)
+     deallocate(Ivalues)
+  elseif(xtype==NF90_FLOAT .or. xtype==NF90_DOUBLE)then
+     call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims))
+  else
+     write(*,*)'datatype not yet supported, contact Peter'!Byte or Char
+     stop
+  endif
 
- 
- if(trim(varname)=='ALL')then
- ndim=3 !3-dimensional
- kmax=KMAX_MID
+!2) Interpolate to proper grid
+!we assume first that data is originally in lon lat grid
+!check that there are dimensions called lon and lat
 
- if(NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT.and. me==0)then
-    write(*,*)'WARNING: NSPEC_SHL+ NSPEC_ADV /=  NSPEC_TOT'
-    write(*,*) NSPEC_SHL,NSPEC_ADV, NSPEC_TOT
-    write(*,*)'WRITING ONLY SHL and ADV'
-    write(*,*)'Check species names'
- endif
-if(me==0)then
-   allocate(buf(GIMAX,GJMAX,KMAX))
+  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ))
+  if(trim(name)/='lon')goto 444
+  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
+  if(trim(name)/='lat')goto 444
+
+  allocate(Rlon(dims(1)), stat=alloc_err)    
+  allocate(Rlat(dims(2)), stat=alloc_err)    
+  status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = VarID)
+  if(status /= nf90_noerr) then     
+     status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = VarID)
+     if(status /= nf90_noerr) then  
+        write(*,*)'did not find longitude variable'
+        stop
+     endif
+  endif
+  call check(nf90_get_var(ncFileID, VarID, Rlon))
+
+  status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = VarID)
+  if(status /= nf90_noerr) then     
+     status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = VarID)
+     if(status /= nf90_noerr) then  
+        write(*,*)'did not find latitude variable'
+        stop
+     endif
+  endif
+  call check(nf90_get_var(ncFileID, VarID, Rlat))
+
+!NB: we assume regular grid
+!inverse of resolution
+  dloni=1.0/(Rlon(2)-Rlon(1))
+  dlati=1.0/(Rlat(2)-Rlat(1))
+interpol_used='zero_order'!default
+if(present(interpol))interpol_used=interpol
+
+if(interpol_used=='zero_order')then
+!interpolation 1:
+!nearest gridcell
+  ijk=0
+  do k=1,varKMAX
+     do j=1,varGJMAX
+        do i=1,varGIMAX
+           ijk=ijk+1
+           ig=mod(nint((gl_glob(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
+           jg=max(1,min(dims(2),nint((gb_glob(i,j)-Rlat(1))*dlati)+1))
+           igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+           Rvar(ijk)=Rvalues(igjgk)
+        enddo
+     enddo
+  enddo
+elseif(interpol_used=='bilinear')then
+write(*,*)'bilinear interpolation'
+!interpolation 2:
+!bilinear
+ijk=0
+i361=dims(1)
+if(nint(Rlon(dims(1))-Rlon(1)+1.0/dloni)==360)i361=1!cyclic grid
+  do k=1,varKMAX
+     do j=1,varGJMAX
+        do i=1,varGIMAX
+           ijk=ijk+1
+           ig=mod(floor((gl_glob(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
+           jg=max(1,min(dims(2),floor((gb_glob(i,j)-Rlat(1))*dlati)+1))
+           ig1=ig+1
+           jg1=min(jg+1,dims(2))
+
+           if(ig1>dims(1))ig1=i361
+           jg1=jg+1
+           if(gl_glob(i,j)<Rlon(ig).or.gl_glob(i,j)>Rlon(ig1))then
+              if(ig1>1)then
+                 write(*,*)'error',gl_glob(i,j),Rlon(ig),Rlon(ig1),i,j,ig1
+                 stop
+              endif
+           endif
+           if(gb_glob(i,j)<Rlat(jg).or.gb_glob(i,j)>Rlat(jg1))then
+              if(ig1>1)then
+                 write(*,*)'error',gb_glob(i,j),Rlat(ig),Rlat(jg1),i,j,jg1
+                 stop
+              endif
+           endif
+           di=(gl_glob(i,j)-Rlon(ig))*dloni
+           dj=(gb_glob(i,j)-Rlat(jg))*dlati
+           igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+           ig1jgk=ig1+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+           igjg1k=ig+(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
+           ig1jg1k=ig1+(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
+           Rvar(ijk)=Rvalues(igjgk)*(1-di)*(1-dj)+Rvalues(igjg1k)*(1-di)*dj+Rvalues(ig1jgk)*di*(1-dj)+Rvalues(ig1jg1k)*di*dj
+        enddo
+     enddo
+  enddo
 else
-   allocate(buf(1,1,1)) !just to have the array defined
+   write(*,*)'interpolation method not recognized'
+   stop
 endif
 
- do n=1, NSPEC_SHL
-    nstart=1
-    nfetch=1
-if(me==0)then
-   call  GetCDF(species(n)%name,fileName,buf,GIMAX,GJMAX,KMAX_MID,nstart,nfetch)
-endif
- call global2local(buf,dat,77,1,GIMAX,GJMAX,KMAX_MID,1,1)
 
-   xn_shl(n,:,:,:)=dat
- enddo
+deallocate(Rlon)
+deallocate(Rlat)
+deallocate(Rvalues)
 
- do n= 1, NSPEC_ADV
-    nstart=1
-    nfetch=1
-if(me==0)then
-    call  GetCDF(species(NSPEC_SHL+n)%name,fileName,buf,GIMAX,GJMAX,KMAX_MID,nstart,nfetch)
-endif
- call global2local(buf,dat,78,1,GIMAX,GJMAX,KMAX_MID,1,1)
-    xn_adv(n,:,:,:)=dat
- enddo
+  return
+444 continue
+  write(*,*)'NOT a longitude-latitude grid!',trim(fileName)
+  write(*,*)'case not yet implemented'
+  stop
 
- else
 
-    if(me==0)write(*,*)'case not implemented'
- endif
-deallocate(buf)
-
-end subroutine ReadCDF
+end subroutine Read_Inter_CDF
 
 end module NetCDF_ml
