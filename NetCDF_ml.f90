@@ -1214,11 +1214,11 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
 !     stop
   endif
 
-  if(nstart+nfetch-1>dims(ndims))then
-     write(*,*)'WARNING: did not find all data'
-     nfetch=dims(ndims)-nstart+1
-     if(nfetch<=0)stop
-  endif
+!  if(nstart+nfetch-1>dims(ndims))then
+!     write(*,*)'WARNING: did not find all data'
+!     nfetch=dims(ndims)-nstart+1
+!     if(nfetch<=0)stop
+!  endif
   call check(nf90_close(ncFileID))
 
 end subroutine GetCDF
