@@ -764,7 +764,7 @@ INIT {
  ME2 => 332, ME3 => 333, ME4 => 334, ME5 => 335, ME6 => 336, # Medit. sep.
  ME7 => 337, ME8 => 338, ME9 => 339,
  BL2 => 342, BL3 => 343, BL4 => 344, BL5 => 345, BL6 => 346, # Bl. Sea sep.
- BL7 => 347, BL8 => 348, BL9 => 349
+ BL7 => 347, BL8 => 348, BL9 => 349, ALL => 0
 );
 
 # EU countries:
@@ -842,7 +842,7 @@ sub generate_updated_femis {
 
     my $femisdat = slurp("$DataDir/femis.dat");
 
-    my $ccnum = $country_nums{$cc} || die "ERROR!! No country Num for $cc!\n";
+    my $ccnum = defined($country_nums{$cc}) || die "ERROR!! No country Num for $cc!\n";
 
     # using 0 here as long as emissions are guaranteed to contain either
     # only anthropogenic or only natural emissions perl 'country'
