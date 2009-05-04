@@ -1,3 +1,14 @@
+================================ rv3_2_6, Dave  4th May 2009======
+Emissions_ml
+Replacement of if(me==0) with  if(MasterProc)
+
+Replaced the calls to MPI_ABORT with CheckStop calls. I hope these do the
+same thing, and they help to keep the code shorter. Look for "!dsx" bits
+to check this. (We can delete these lines once we are sure all is okay).
+
+ModelConstants_ml
+-- added extra DEBUG constants
+
 ================================ rv3_2_5, Peter 4th May 2009======
 NetCDF_ml:
 Bug: Removed a test which stops the code.

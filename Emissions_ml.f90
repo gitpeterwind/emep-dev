@@ -76,7 +76,7 @@
   use Io_Progs_ml,     only : ios, open_file
   use Met_ml,          only :  ps, roa   ! ps in Pa, roa in kg/m3
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
-                              DEBUG => DEBUG_EMISSIONS, & 
+                              DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               NPROC, IIFULLDOM,JJFULLDOM 
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -217,7 +217,7 @@ contains
   real, dimension(NEMIS)       :: emsum    ! Sum emis over all countries
   real, dimension(NLAND,NEMIS) :: sumemis  ! Sum of emissions per country
 
-  if (me ==0) write(6,*) "Emissions called with me, year", me, year
+  if (MasterProc) write(6,*) "Emissions called with me, year", me, year
 
   ! ** 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
   !      emission indices (IQSO2=.., )
@@ -240,7 +240,7 @@ contains
   !=========================
   ios = 0
 
-  if( me ==  0) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
+  if( MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
 
     ! ** 1)
     !=========================
@@ -279,7 +279,7 @@ contains
 
    !uni allocate for me=0 only:
    err1 = 0
-   if ( me == 0 ) then
+   if ( MasterProc ) then
 
        if (DEBUG) write(unit=6,fmt=*) "TTT me ", me , "pre-allocate" 
        allocate(globnland(GIMAX,GJMAX),stat=err1)
@@ -310,7 +310,7 @@ contains
 
    do iem = 1, NEMIS
       ! now again test for me=0
-      if ( me == 0 ) then
+      if ( MasterProc ) then
 
            ! read in global emissions for one pollutant
            ! *****************
@@ -322,7 +322,7 @@ contains
 
            emsum(iem) = sum( globemis(:,:,:,:) ) + &
                         sum( globemis_flat(:,:,:) )    ! hf
-      endif  ! me==0
+      endif  ! MasterProc
 
       call CheckStop(ios, "ios error: EmisGet")
 
@@ -342,7 +342,7 @@ contains
     end do ! iem = 1, NEMIS-loop
 
 
-    if ( me == 0 ) then
+    if ( MasterProc ) then
         write(unit=6,fmt=*) "Country totals"
         write(unit=IO_LOG,fmt=*) "Country totals"
         write(unit=6,fmt="(2a4,3x,30a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
@@ -388,11 +388,11 @@ contains
 !     with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+3.
 !     the conversion factor then equals 1.27e-14
 !
-    if ( DEBUG) print *,  "CONV:me, nydays, gridwidth = ",me,nydays,GRIDWIDTH_M
 
     tonne_to_kgm2s  = 1.0e3 / (nydays * 24.0 * 3600.0 * GRIDWIDTH_M * GRIDWIDTH_M)
 
-    if ( DEBUG .and.  me ==  0 ) then
+    if ( DEBUG .and.  MasterProc ) then
+        write(unit=6,fmt=*) "CONV:me, nydays, gridwidth = ",me,nydays,GRIDWIDTH_M
         write(unit=6,fmt=*) "No. days in Emissions: ", nydays
         write(unit=6,fmt=*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
         write(unit=6,fmt=*) "Emissions sums:"
@@ -436,7 +436,7 @@ contains
         enddo !volc_no
 
         !/** Read  Volcano.dat to get volcano height
-        if (me==0)then
+        if (MasterProc)then
             call VolcGet(height_volc)
              if (DEBUG) write(*,*)'Volcano heights',height_volc
         endif
@@ -446,7 +446,7 @@ contains
      endif ! VOLCANOES
 
     err1 = 0
-    if ( me == 0 ) then
+    if ( MasterProc ) then
        deallocate(globnland,stat=err1)
        deallocate(globland ,stat=err2)
        deallocate(globemis ,stat=err3)
@@ -891,7 +891,7 @@ contains
         ktonne_to_kgm2s  = 1.0e6 / 				&
 		(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-	if ( me == 0 .and. DEBUG) then
+	if ( MasterProc .and. DEBUG) then
 	  write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',	&
 	      current_date%month,ktonne_to_kgm2s
 	  write(6,*) ' first_dms_read = ', first_dms_read
@@ -916,7 +916,7 @@ contains
           else    
             !/--- we have so2 emission so need DMS also
 
-             if ( me == 0 ) then
+             if ( MasterProc ) then
 
 	          write(fname,fmt='(''natso2'',i2.2,''.dat'')') 	&
 			current_date%month
@@ -983,12 +983,13 @@ contains
     tonnemonth_to_kgm2s= 1.0e3 / 				&
          (nmdays(month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-    if ( me == 0 ) then
+    if ( MasterProc ) then
        allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
-       if ( err3 /= 0 ) then
-          WRITE(*,*) 'MPI_ABORT: ', "Alloc error - globland"
-          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       end if
+       call CheckStop(err3, "Allocation error err3 - globland")
+       !dsx if ( err3 /= 0 ) then
+       !dsx    WRITE(*,*) 'MPI_ABORT: ', "Alloc error - globland"
+       !dsx    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+       !dsx end if
     end if
     do i = 1, NEMIS
        eindex(i) = EmisDef_Index( EMIS_NAME(i) )
@@ -998,7 +999,7 @@ contains
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
 !           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
 !      snapemis (:,:,:,:,iem) = 0.0 !NB all previous (snap)emis set to 0
-      if ( me == 0 ) then
+      if ( MasterProc ) then
 
          globemis = 0.0
 
@@ -1006,23 +1007,21 @@ contains
               trim(EMIS_NAME(iem))//'.',month
          write(6,*) 'filename for GLOBAL emission',fname
          call open_file(IO_EMIS,"r",fname,needed=.true.)
-         if ( ios /= 0 )then
-            WRITE(*,*) 'MPI_ABORT: ', "ios error: emislist"
-            call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-         endif
+         call CheckStop( ios , "ios error: emislist" // fname )
+         !dsx if ( ios /= 0 )then
+         !dsx    WRITE(*,*) 'MPI_ABORT: ', "ios error: emislist"
+         !dsx    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+         !dsx endif
          READEMIS: do   ! ************* Loop over emislist files **********************
 
             read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
                  (tmpsec(isec),isec=1,NSECTORS)
             if ( ios <  0 ) exit READEMIS            ! End of file
-            if ( ios >  0  ) then                     ! A different problem..
-               WRITE(*,*) 'MPI_ABORT: ', "GetEmis ios: error on " // fname
-               call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-            end if
-
-!      if (trim(EMIS_NAME(iem)).eq.'voc')then
-!         tmpsec(11)=0.0
-!      endif
+            call CheckStop( ios , "GetEmis ios: error on " // fname ) ! exits if ios>0
+            !dsx if ( ios >  0  ) then                     ! A different problem..
+            !dsx    WRITE(*,*) 'MPI_ABORT: ', "GetEmis ios: error on " // fname
+            !dsx    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+            !dsx end if
 
             ic=1 !NBNB default country
 
@@ -1046,7 +1045,7 @@ contains
          ios = 0
 !         globemis(:,i,j,ic1) = 0.0
 
-     endif  ! me==0
+     endif  ! MasterProc
       call global2local(globemis,snapemis_month(1,1,1,1,iem),MSG_READ1,   &
            NSECTORS,GIMAX,GJMAX,NCMAX,1,1)
    end do ! iem = 1, NEMIS-loop
@@ -1069,7 +1068,7 @@ contains
          enddo
      enddo
    enddo !iem
-   if ( me == 0 ) then
+   if ( MasterProc ) then
       deallocate(globemis)
    end if
    endif

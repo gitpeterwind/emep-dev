@@ -43,15 +43,17 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
- !TESTER 
-   ! RUNDOMAIN = (/  80, 120,  50,  70 /)     ! (changeable)
+!      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+  !    RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
+
+    RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
+  !  RUNDOMAIN = (/  110, 120,  60,  70 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   8       & ! Actual number of processors in longitude
-  , NPROCY      =   8       & ! Actual number of processors in latitude
+    NPROCX      =   3       & ! Actual number of processors in longitude
+  , NPROCY      =   2       & ! Actual number of processors in latitude
   , NPROC       = NPROCX * NPROCY
 
   ! ds Jan2009
@@ -60,6 +62,7 @@ module ModelConstants_ml
   ! codes which don't need Par_ml
 
   logical, public, save ::  MasterProc = .true.
+  logical, public, save ::  DebugCell  = .false.
 
   ! For debugging, we often want to print out for  a specific location
   ! Set here:
@@ -81,18 +84,20 @@ module ModelConstants_ml
 !=============================================================================
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::      &
-     DEBUG_BCS            = .false.  & ! 
+     DEBUG_AQUEOUS        = .false.  & ! 
+    ,DEBUG_BCS            = .false.  & ! 
+    ,DEBUG_DERIVED        = .false. &  !
+    ,DEBUG_MY_DERIVED     = .false. &  !
+    ,DEBUG_DRYDEP         = .false. &  !
+      ,DEBUG_VDS          = .false. &  !
+    ,DEBUG_MY_DRYDEP      = .false. &  !
     ,DEBUG_EMISSIONS      = .false.   &
     ,DEBUG_GETEMIS        = .false.   &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
-    ,DEBUG_RUNCHEM        = .false.   &
-        ,DEBUG_SOA        = .false.   & !
+    ,DEBUG_RUNCHEM        = .true.   &
+        ,DEBUG_SOA        = .true.   & !
         ,DEBUG_SUBMET     = .false.  &
-    ,DEBUG_DERIVED        = .false. &  !
-    ,DEBUG_DRYDEP         = .false. &  !
-      ,DEBUG_VDS          = .false. &  !
     ,DEBUG_LANDDEFS       = .false. &  !
-    ,DEBUG_MY_DRYDEP      = .false. &  !
     ,DEBUG_RSUR           = .false. &  !
     ,DEBUG_SETUP_1DCHEM   = .false. &  !
     ,DEBUG_SETUP_1DBIO    = .false.    !
