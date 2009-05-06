@@ -55,10 +55,13 @@
    use DryDep_ml, only : drydep
    use GenSpec_tot_ml                   ! DEBUG ONLY
    use GenSpec_adv_ml                   ! DEBUG ONLY
+!EGU   use GenRates_rcmisc_ml, only : rcmisc! DEBUG ONLY
+
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
                                   nprint, END_OF_EMEPDAY, &
-                            DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
+                  DebugCell, & ! DEBUG only
+                  DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
 
    use OrganicAerosol_ml, only: OrganicAerosol ! not yet implemented 
    use Par_ml,            only : lj0,lj1,li0,li1  &
@@ -112,11 +115,16 @@ subroutine runchem(numt)
 
          !****** debug cell set here *******
           debug_flag =  .false.  
-          if ( DEBUG_RUNCHEM .and. debug_proc ) then
+          debug_flag =  .false.  
+          if ( DEBUG .and. debug_proc ) then
 
              debug_flag = ( debug_li == i .and. debug_lj == j ) 
+             DebugCell = debug_flag
+             if( debug_flag ) write(*,*) "RUNCHEM DEBUG START!"
 
           end if
+         !write(*,"(a,4i4)") "RUNCHEM DEBUG IJTESTS", debug_li, debug_lj, i,j
+         !write(*,*) "RUNCHEM DEBUG LLTESTS", me,debug_proc,debug_flag
 
  ! Prepare some near-surface grid and sub-scale meteorology
  ! for MicroMet
@@ -127,7 +135,7 @@ subroutine runchem(numt)
              call Add_2timing(27,tim_after,tim_before,&
                                               "Runchem:setup_1d")
 
-             call Setup_Clouds(i,j)
+             call Setup_Clouds(i,j,debug_flag)
 
              call setup_bio(i,j)    
 
@@ -145,14 +153,51 @@ subroutine runchem(numt)
              if ( SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
 
+!if ( DEBUG .and. debug_flag  ) then
+!    write(6,"(a,2i3,i5,9es10.2)") "DEBUG_RUNCHEM RCEMIS ", &
+!          current_date%day, current_date%hour, current_date%seconds, &
+!          rcemis(2,20), rcemis(12,20), rcemis(4,20), rcemis(23,20)
+!          !rcemis(QRCCO,20), AROM, rcemis(QRCPM25,20), rcemis(QRCEC_f_FFUEL,20)
+!
+!    write(6,"(a16,9es10.2)") "RUNCHEM PRE_OC ", &
+!          xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20), &
+!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
+!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
+!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
+!         
+!          
+!end if
              if ( ORGANIC_AEROSOLS )  &
-             call OrganicAerosol(debug_flag)
+               call OrganicAerosol(i,j,debug_flag)
 
              call Add_2timing(30,tim_after,tim_before,  &
                                           "Runchem:2nd setups")
 
-           !-------------------------------------------------
+!if ( DEBUG .and. debug_flag  ) then
+!    write(6,"(a16,9es10.2)") "RUNCHEM POST_OC ", &
+!          xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20), &
+!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
+!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
+!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
+!end if
+!
+!
+!           !-------------------------------------------------
+!if ( DEBUG .and. debug_flag  ) then
+!    write(6,"(a16,9es10.2)") "RUNCHEM PRE-CHEM ", &
+!          xn_2d(PPM25,20), xn_2d(AER_BGNDOC,20), &
+!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
+!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
+!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
+!end if
              call chemistry(i,j)
+!if ( DEBUG .and. debug_flag  ) then
+!    write(6,"(a16,10es10.2)") "RUNCHEM POST-CHEM ", &
+!          xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20), &
+!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
+!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
+!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
+!end if
            !_________________________________________________
 
              call Add_2timing(31,tim_after,tim_before, &
@@ -181,17 +226,19 @@ subroutine runchem(numt)
                    call Add_2timing(32,tim_after,tim_before, &
                                                  "Runchem:ammonium+Drydep")
 
-                     if ( DEBUG_RUNCHEM .and. debug_flag  ) then
-                       write(6,*) "DEBUG_RUNCHEM me pre WetDep", me, prclouds_present
-                       write(6,"(a20,2i3,i5,3es12.3)") "DEBUG_RUNCHEM me OH", &
-                             current_date%day, current_date%hour,&
-                             current_date%seconds, &
-                             xn_2d(OH,20), xn_2d(PHNO3,20), xn_2d(HNO3,20)
-
-                      end if
+!                     if ( DEBUG .and. debug_flag  ) then
+!                       write(6,"(a,10es12.3)") "DEBUG_RUNCHEM me RIEMER, aero", &
+!                         xn_2d(SO4,20), xn_2d(aNO3,20), xn_2d(aNH4,20),tmpOut1, tmpOut2
+!                       !write(6,*) "DEBUG_RUNCHEM me pre WetDep", me, prclouds_present
+!                       write(6,"(a20,2i3,i5,3es12.3)") "DEBUG_RUNCHEM me OH", &
+!                             current_date%day, current_date%hour,&
+!                             current_date%seconds, &
+!                             xn_2d(OH,20), xn_2d(O3,20), xn_2d(HNO3,20)
+!
+!                      end if
 
                      if ( prclouds_present)  &
-                        call WetDeposition(i,j)
+                        call WetDeposition(i,j,debug_flag)
 
                    !** Modelling PM water at filter equlibration conditions:
                    !** T=20C and Rh=50% for comparability with gravimetric PM

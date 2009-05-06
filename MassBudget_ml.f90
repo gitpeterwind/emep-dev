@@ -45,6 +45,7 @@
  use My_MassBudget_ml,only : MY_MASS_PRINT ! Species to be printed
 
  use GenChemicals_ml, only : species       ! species identifier
+ use GenSpec_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
  use GenSpec_adv_ml,  only : NSPEC_ADV     ! No. species (long-lived)
  use GenSpec_shl_ml,  only : NSPEC_SHL     ! No. species (shorshort-lived)
  use Chemfields_ml ,  only : xn_adv        ! advective flag
@@ -95,6 +96,12 @@ private
    INCLUDE 'mpif.h'
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
    real    MPIbuff(NSPEC_ADV*KMAX_MID)
+
+! Some work arrays used in Aqueous_ml and (in future) DryDry
+! Use tot index for convenience
+  real, public, save, dimension(NSPEC_TOT) ::   &
+      wdeploss, & 
+      ddeploss
 
 ! The following parameters are used to check the global mass budget:
 ! Initialise here also.

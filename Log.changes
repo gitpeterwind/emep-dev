@@ -1,3 +1,33 @@
+================================ rv3_2_7, Dave  5th May 2009======
+
+** Bugs found and fixed **
+-  bugs were in old  My_WetDep_ml code, but luckily not for 
+anything we have reported. wepdeppm25 and wdeppmco were wrong.
+WDEP_NH3 and WDEP_aNH4 were mixed up, but WDEP_RDN was okay.
+
+
+Aqueous_ml - loop over SO4LIKE once wet dep loss rate for SO4
+  calculated. 
+  uses wdeploss frm MassBudget instead of old sumloss
+  now sets wdeploss using indices, e.g. wdeploss(SO2)
+
+Io_ml - added IO_DEBUG to allow printout to separate file (just fort.26 for now)
+
+My_WetDep_ml:
+  use array SO4LIKE to contain other fine particles
+  now sets wdeploss using indices, e.g. wdeploss(SO2)
+  (slower I guess, but clearer and safer!)
+
+Runchem_ml:
+  modified to use new WetDeposition, SOA_ml
+  - pretty messy with DEVUG statements. Will tidy up another day
+
+SOA_ml:
+  debug_flag added
+
+(These changes are a step towards SOA, where many species will need
+to be handled by the dep routines, but all as SO4-like.)
+
 ================================ rv3_2_6, Dave  4th May 2009======
 Emissions_ml
 Replacement of if(me==0) with  if(MasterProc)

@@ -46,8 +46,9 @@ module ModelConstants_ml
 !      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
   !    RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
 
-    RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
-  !  RUNDOMAIN = (/  110, 120,  60,  70 /)     ! (changeable)
+      RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
+ !TMP integer, public, parameter :: DEBUG_i=116, DEBUG_j=63 !  K-Puszta
+ !TMP  RUNDOMAIN = (/  112, 120,  60,  66 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
@@ -94,7 +95,7 @@ module ModelConstants_ml
     ,DEBUG_EMISSIONS      = .false.   &
     ,DEBUG_GETEMIS        = .false.   &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
-    ,DEBUG_RUNCHEM        = .true.   &
+    ,DEBUG_RUNCHEM        = .false.   &
         ,DEBUG_SOA        = .true.   & !
         ,DEBUG_SUBMET     = .false.  &
     ,DEBUG_LANDDEFS       = .false. &  !

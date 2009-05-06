@@ -66,8 +66,9 @@ module OrganicAerosol_ml
    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
    !+ Driver routine for Secondary Organic Aerosol  module
 
-   subroutine OrganicAerosol(debug_flag)
-   logical, intent(in) :: debug_flag  ! for debugging purposes only
+   subroutine OrganicAerosol(i,j,debug_flag)
+     integer, intent(in) :: i,j
+     logical, intent(in) :: debug_flag  ! for debugging purposes only
 
      ! empty 
 

@@ -26,7 +26,8 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
 module My_WetDep_ml
- use MassBudget_ml,     only : totwdep
+ use Io_ml,             only : IO_DEBUG
+ use MassBudget_ml,     only : totwdep, wdeploss
  use ModelConstants_ml, only : atwS, atwN, atwPM
  use Derived_ml,  only : f_2d, d_2d, IOU_INST
  use SmallUtils_ml,  only : find_index
@@ -47,7 +48,20 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP =  14  !SeaS 11  ! Number of solublity classes
+  !dsx integer, public, parameter :: NWETDEP =  14  !SeaS 11  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP =  9  ! Number of solublity classes
+
+!EGU - find indices of SO4-like particles (PMc included for now - tmp!)
+! for SOA we need a separate array, since Fgas will be needed
+  integer, public, parameter, dimension(5) :: & !EGU:NUM_NONVOLOC+NUM_NONVOLEC) ::&
+   WETDEP_SO4LIKE = (/ aNH4, aNO3, PM25, SSFI, Pb210 /)
+!EGU  NONVOLOC, NONVOLEC /)
+!    integer, public, parameter, dimension(NUM_NONVOLOC) ::&
+!   WETDEP_SO4LIKE = (/ NONVOLOC /)
+!  integer, public, parameter, dimension(NUM_VOL) ::&
+!   WETDEP_SOALIKE = (/ VOL /)   
+
+
   type(WScav), public, dimension(NWETDEP), save  :: WetDep
   
   integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
@@ -76,18 +90,15 @@ contains
   
     WetDep(1)   = WScav(SO2,    0.3,  0.15)   ! Berge+Jakobsen, issh
     WetDep(2)   = WScav(SO4,    1.0,  EFF25)  ! Berge+Jakobsen, jej
-    WetDep(3)   = WScav(aNH4,   1.0,  EFF25)
-    WetDep(4)   = WScav(NH3,    1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
-    WetDep(5)   = WScav(aNO3,   1.0,  EFF25)  
-    WetDep(6)   = WScav(HNO3,   1.4,  0.5)   ! 
-    WetDep(7)   = WScav(H2O2,   1.4,  0.5)   ! 
-    WetDep(8)   = WScav(HCHO,   0.1,  0.03)  ! 
-    WetDep(9)   = WScav(pNO3,   1.0,  EFFCO) !!
-    WetDep(10)  = WScav(PM25,   1.0,  EFF25)
-    WetDep(11)  = WScav(PMCO,   1.0,  EFFCO)
-    WetDep(12)  = WScav(SSFI,   1.0,  EFF25)   !SeaS
-    WetDep(13)  = WScav(SSCO,   1.0,  EFFCO)   !SeaS
-    WetDep(14)  = WScav(Pb210,  1.0,  EFF25)   !
+    WetDep(3)   = WScav(NH3,    1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
+    WetDep(4)   = WScav(HNO3,   1.4,  0.5)   ! 
+    WetDep(5)   = WScav(H2O2,   1.4,  0.5)   ! 
+    WetDep(6)   = WScav(HCHO,   0.1,  0.03)  ! 
+    WetDep(7)   = WScav(pNO3,   1.0,  EFFCO) !!
+    WetDep(8)   = WScav(PMCO,   1.0,  EFFCO)
+    WetDep(9)   = WScav(SSCO,   1.0,  EFFCO)   !SeaS
+
+  ! Other PM compounds treated with SO4LIKE array defined above
 
    !####################### ds NEW define indices here ##########
 
@@ -107,23 +118,23 @@ contains
 
   end subroutine Init_WetDep
 
-  subroutine WetDep_Budget(i,j,sumloss,invgridarea)
+  subroutine WetDep_Budget(i,j,invgridarea)
      integer,            intent(in) ::  i,j
-     real, dimension(:), intent(in) :: sumloss
      real, intent(in)  :: invgridarea
      real :: wdeps, wdepox, wdepred, wdeppm25, wdeppmco
+     real :: fS, fN
+     fS = atwS * invgridarea
+     fN = atwN * invgridarea
 
 
-      !wdeps = sumloss(SO2) + sumloss(SO4)
-       wdeps = sumloss(1) + sumloss(2)
+      wdeps = wdeploss(SO2) + wdeploss(SO4)
 
-      !wdepred = sumloss(NH3)  + sumloss(NH4) & 
-       wdepred = sumloss(4)  + sumloss(3) !
+      wdepred = wdeploss(NH3)  + wdeploss(aNH4) 
   
-      !wdepox  = sumloss(HNO3) + sumloss(aNO3) + pNO3
-       wdepox  = sumloss(6) + sumloss(5) + sumloss(9)
-      wdeppm25= sumloss(7) 
-      wdeppmco= sumloss(8) 
+      wdepox  = wdeploss(HNO3) + wdeploss(aNO3) + wdeploss(pNO3)
+
+      wdeppm25= wdeploss(PM25) 
+      wdeppmco= wdeploss(PMCO) 
 
        totwdep(IXADV_SO4)  = totwdep(IXADV_SO4) + wdeps
        totwdep(IXADV_HNO3) = totwdep(IXADV_HNO3) + wdepox
@@ -131,17 +142,23 @@ contains
        totwdep(IXADV_PM25)  = totwdep(IXADV_PM25)  + wdeppm25
        totwdep(IXADV_PMco)  = totwdep(IXADV_PMco)  + wdeppmco
 
-       d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * atwS * invgridarea 
-       d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * atwN * invgridarea 
-       d_2d(WDEP_RDN,i,j,IOU_INST) = wdepred * atwN * invgridarea 
+       d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * fS 
+       d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * fN 
+       d_2d(WDEP_RDN,i,j,IOU_INST) = wdepred * fN 
 
-       d_2d(WDEP_SO2,i,j,IOU_INST) = sumloss(1) * atwS * invgridarea 
-       d_2d(WDEP_SO4,i,j,IOU_INST) = sumloss(2) * atwS * invgridarea 
-       d_2d(WDEP_NH3,i,j,IOU_INST) = sumloss(3) * atwN * invgridarea 
-       d_2d(WDEP_aNH4,i,j,IOU_INST) = sumloss(4) * atwN * invgridarea 
-       d_2d(WDEP_HNO3,i,j,IOU_INST) = sumloss(6) * atwN * invgridarea 
-       d_2d(WDEP_aNO3,i,j,IOU_INST) = sumloss(5) * atwN * invgridarea 
-       d_2d(WDEP_pNO3,i,j,IOU_INST) = sumloss(9) * atwN * invgridarea 
+       d_2d(WDEP_SO2,i,j,IOU_INST) = wdeploss(SO2) * fS 
+       d_2d(WDEP_SO4,i,j,IOU_INST) = wdeploss(SO4) * fS 
+       d_2d(WDEP_NH3,i,j,IOU_INST) = wdeploss(NH3) * fN 
+       d_2d(WDEP_aNH4,i,j,IOU_INST) = wdeploss(aNH4) * fN 
+       d_2d(WDEP_HNO3,i,j,IOU_INST) = wdeploss(HNO3) * fN 
+       d_2d(WDEP_aNO3,i,j,IOU_INST) = wdeploss(aNO3) * fN 
+       d_2d(WDEP_pNO3,i,j,IOU_INST) = wdeploss(pNO3) * fN 
+
+!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdeps     ",i,j,wdeps,wdepred,wdepox!EX,wdeppm25,wdeppmco
+!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_nh3  ",i,j,d_2d(WDEP_NH3,i,j,IOU_INST), wdeploss(NH3)
+!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_aNO3 ",i,j,d_2d(WDEP_aNO3,i,j,IOU_INST), wdeploss(aNO3)
+!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_pNO3 ",i,j,d_2d(WDEP_pNO3,i,j,IOU_INST), wdeploss(pNO3)
+
 
   end subroutine WetDep_Budget
 end module My_WetDep_ml
