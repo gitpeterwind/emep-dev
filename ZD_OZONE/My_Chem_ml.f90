@@ -139,8 +139,8 @@
   ,  IXADV_NH3         =  52   &
   ,  IXADV_aNH4        =   53   & !total NH4
   ,  IXADV_aNO3        =   54   & !total fine particulate nitrate
-  ,  IXADV_PM25        =   55  &
-  ,  IXADV_PMco        =   56  &
+  ,  IXADV_PPM25        =   55  &
+  ,  IXADV_PPMco        =   56  &
   ,  IXADV_SSfi        =   57  &  !SeaSalt 
   ,  IXADV_SSco        =   58  & 
   ,  IXADV_Rn222       =   59  &  !
@@ -298,8 +298,8 @@
   ,  NH3         =  68   &
   ,  aNH4        =   69   &
   ,  aNO3        =   70  &
-  ,  PM25        =   71  &
-  ,  PMco        =   72  &
+  ,  PPM25        =   71  &
+  ,  PPMco        =   72  &
   ,  SSFI        =   73  &    !SeaS
   ,  SSco        =   74  &    !SeaS
   ,  Rn222       =   75  &
@@ -411,7 +411,7 @@
        species( 68) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
        species( 69) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
        species( 70) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
-       species( 71) = Chemical("PM25        ", 100,  0,  0,   0,  0 ) 
+       species( 71) = Chemical("PPM25        ", 100,  0,  0,   0,  0 ) 
        species( 72) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
        species( 73) = Chemical("SSfi        ", 58,   0,  0,   0,  0 )  !SeaS
        species( 74) = Chemical("SSco        ", 58,   0,  0,   0,  0 )

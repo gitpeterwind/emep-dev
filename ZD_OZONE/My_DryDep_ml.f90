@@ -78,9 +78,9 @@ use Par_ml, only: me ! Vds Ndep
     D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
     iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes
     D2_O3DF,    D2_O3WH, &
-    D2_EUAOT30WH, D2_EUAOT40WH, D2_EUAOT30DF, D2_EUAOT40DF, &
-    D2_UNAOT30WH, D2_UNAOT40WH, D2_UNAOT30DF, D2_UNAOT40DF, &
-    D2_MMAOT40WH, D2_MMAOT30WH
+    D2_EUAOT40WH, D2_EUAOT40DF, &
+    D2_UNAOT40WH, D2_UNAOT40DF, &
+    D2_MMAOT40WH
 
 
   ! Here we define the minimum set of species which has different
@@ -159,7 +159,7 @@ use Par_ml, only: me ! Vds Ndep
 
 contains
   subroutine Init_DepMap
-   integer, dimension(22) :: check_vals  ! Tmp safety check array
+   integer, dimension(17) :: check_vals  ! Tmp safety check array
    integer :: icheck, iadv, i, i2, n, ndep, nVg, nRG, nMET
 
  ! .... Define the mapping between the advected species and
@@ -182,8 +182,8 @@ contains
    Dep(15) =  depmap( IXADV_CH3O2H,CDEP_OP  , -1.)
    Dep(16) =  depmap( IXADV_C2H5OOH,CDEP_OP  , -1.)
    Dep(17) =  depmap( IXADV_pNO3,  CDEP_COA, -1.)
-   Dep(18) =  depmap( IXADV_PM25,  CDEP_FIN, -1. )
-   Dep(19) =  depmap( IXADV_PMco,  CDEP_COA, -1. )
+   Dep(18) =  depmap( IXADV_PPM25,  CDEP_FIN, -1. )
+   Dep(19) =  depmap( IXADV_PPMco,  CDEP_COA, -1. )
    Dep(20) =  depmap( IXADV_SSfi,  CDEP_FIN, -1. )
    Dep(21) =  depmap( IXADV_SSco,  CDEP_COA, -1. )
    Dep(22) =  depmap( IXADV_Pb210,  CDEP_FIN, -1. )
@@ -288,17 +288,12 @@ D2_AFSTCR6 = find_index("D2_AFSTCR6",f_2d(:)%name)
 D2_O3DF    = find_index("D2_O3DF   ",f_2d(:)%name)
 D2_O3WH    = find_index("D2_O3WH   ",f_2d(:)%name)
 
-D2_EUAOT30WH    = find_index("D2_EUAOT30WH",f_2d(:)%name)
 D2_EUAOT40WH    = find_index("D2_EUAOT40WH",f_2d(:)%name)
-D2_EUAOT30DF    = find_index("D2_EUAOT30DF",f_2d(:)%name)
 D2_EUAOT40DF    = find_index("D2_EUAOT40DF",f_2d(:)%name)
 
-D2_UNAOT30WH    = find_index("D2_UNAOT30WH",f_2d(:)%name)
 D2_UNAOT40WH    = find_index("D2_UNAOT40WH",f_2d(:)%name)
-D2_UNAOT30DF    = find_index("D2_UNAOT30DF",f_2d(:)%name)
 D2_UNAOT40DF    = find_index("D2_UNAOT40DF",f_2d(:)%name)
 
-D2_MMAOT30WH    = find_index("D2_MMAOT30WH",f_2d(:)%name)
 D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
 
 iam_wheat   = find_index("IAM_CR",LandDefs(:)%code)
@@ -310,13 +305,13 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
     D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,& !3
     iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes !3
     D2_O3DF,    D2_O3WH, & !2
-    D2_EUAOT30WH, D2_EUAOT40WH, D2_EUAOT30DF, D2_EUAOT40DF, & !4
-    D2_UNAOT30WH, D2_UNAOT40WH, D2_UNAOT30DF, D2_UNAOT40DF, & !4
-    D2_MMAOT40WH, D2_MMAOT30WH & !2
+    D2_EUAOT40WH, D2_EUAOT40DF, & !4
+    D2_UNAOT40WH, D2_UNAOT40DF, & !4
+    D2_MMAOT40WH & !2
   /) ! => 37 - 12 -> 25
     ! Will re-write whole subroutine later to avoid individual indices, but  
     ! for now, do:
-     do icheck = 1, 22
+     do icheck = 1, 17
         call CheckStop( check_vals(icheck) < 1 , "D2D CHECKVAL! " )
      end do
      call CheckStop( any(check_vals < 1) , "D2D CHECKVAL! " )
@@ -487,14 +482,10 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
 
      if ( ihh >= 9 .and. ihh <= 21 ) then ! 8-20 CET, assuming summertime
 
-        d_2d(D2_EUAOT30WH,i,j,IOU_INST) =  max(o3WH-30.0,0.0) * timefrac
         d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
-        d_2d(D2_EUAOT30DF,i,j,IOU_INST) =  max(o3DF-30.0,0.0) * timefrac
         d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
      else
-        d_2d(D2_EUAOT30WH,i,j,IOU_INST) =  0.0
         d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  0.0
-        d_2d(D2_EUAOT30DF,i,j,IOU_INST) =  0.0
         d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  0.0
      end if
 
@@ -505,21 +496,15 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
 
            if ( Grid%izen < AOT_HORIZON ) then
 
-             d_2d(D2_UNAOT30WH,i,j,IOU_INST) =  max(o3WH-30.0,0.0) * timefrac
              d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
-             d_2d(D2_UNAOT30DF,i,j,IOU_INST) =  max(o3DF-30.0,0.0) * timefrac
              d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
 
            else
-             d_2d(D2_UNAOT30WH,i,j,IOU_INST) =  0.0
              d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  0.0
-             d_2d(D2_UNAOT30DF,i,j,IOU_INST) =  0.0
              d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  0.0
            end if
 
        ! MM AOT added (same as UNECE, but different growing season)
-             d_2d(D2_MMAOT30WH,i,j,IOU_INST) = d_2d(D2_UNAOT30WH,i,j,IOU_INST)&
-                     * WheatGrowingSeason(i,j)
              d_2d(D2_MMAOT40WH,i,j,IOU_INST) = d_2d(D2_UNAOT40WH,i,j,IOU_INST)&
                      * WheatGrowingSeason(i,j)
 

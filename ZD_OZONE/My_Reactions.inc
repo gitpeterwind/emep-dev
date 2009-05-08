@@ -88,20 +88,20 @@ endif
 
        xnew(NH3)=  amax1(0.0,  xold(NH3) + dt2 * P)
 
-!-> PM25
+!-> PPM25
 
       P =   &
      rcemis(QRCPM25,K) 
       ! L = 0.0
-       xnew(PM25)=  amax1(0.0,  xold(PM25) + dt2 * P)
+       xnew(PPM25)=  amax1(0.0,  xold(PPM25) + dt2 * P)
 
 
-!-> PMCO
+!-> PPMCO
 
       P =   &
      rcemis(QRCPMCO,K) 
       ! L = 0.0
-       xnew(PMCO)=  amax1(0.0,  xold(PMCO) + dt2 * P)
+       xnew(PPMCO)=  amax1(0.0,  xold(PPMCO) + dt2 * P)
 
 !-> Rn222
 

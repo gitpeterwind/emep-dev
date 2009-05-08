@@ -66,7 +66,9 @@ use My_Derived_ml, only : &
            ,TXTLEN_DERIV    & ! length of names
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
-      nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG, nOutMET, OutMET
+      nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG, nOutMET, OutMET, &
+      SURF_UG_S, &  !ds added May 2009
+      SURF_UG_N     !ds added May 2009
 
 
 
@@ -89,7 +91,7 @@ use ModelConstants_ml, &
                         , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
                         , AOT_HORIZON&! limit of daylight for AOT calcs
                         ,DEBUG_i, DEBUG_j & 
-                        ,DEBUG_DERIVED    & 
+                        ,DEBUG => DEBUG_DERIVED, MasterProc    & 
                         , SOURCE_RECEPTOR &
                         , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
@@ -214,7 +216,7 @@ private
     subroutine Init_Derived()
 
         integer :: alloc_err
-          if(me==0 .and. DEBUG_DERIVED ) write(*,*) "INIT My DERIVED STUFF"
+          if(MasterProc .and. DEBUG ) write(*,*) "INIT My DERIVED STUFF"
           call Init_My_Deriv()  !-> wanted_deriv2d, wanted_deriv3d
 
          ! get lengths of wanted arrays (excludes notset values)
@@ -224,7 +226,7 @@ private
           call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
 
      if ( num_deriv2d > 0 ) then
-          if(me==0 .and. DEBUG_DERIVED ) write(*,*) "Allocate arrays for 2d:",&
+          if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 2d:",&
                                                   num_deriv2d
           allocate(f_2d(num_deriv2d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_2d")
@@ -235,9 +237,8 @@ private
           call CheckStop(alloc_err,"Allocation of nav_2d")
           nav_2d = 0
      end if
-     if ( DEBUG_DERIVED ) write(*,*) "ALLOCATE pre D3D", me, num_deriv2d
      if ( num_deriv3d > 0 ) then
-          if(me==0 .and. DEBUG_DERIVED ) write(*,*) "Allocate arrays for 3d: ",&
+          if(DEBUG .and. MasterProc ) write(*,*) "Allocate arrays for 3d: ",&
                                                  num_deriv3d
           allocate(f_3d(num_deriv3d),stat=alloc_err)
           call CheckStop(alloc_err,"Allocation of f_3d")
@@ -276,7 +277,7 @@ private
        if ( present(Is3D) .and. Is3D ) then
          Nadded3d = Nadded3d + 1
          N = Nadded3d
-         if ( me == 0 .and. DEBUG_DERIVED   ) &
+         if ( DEBUG .and. MasterProc   ) &
                   write(*,*) "Define 3d deriv ", N, name
          call CheckStop(N>MAXDEF_DERIV3D,"Nadded3d too big!")
          def_3d(N) = Deriv(class,avg,index,scale,rho,inst,year,month,day,&
@@ -284,11 +285,11 @@ private
        else
          Nadded2d = Nadded2d + 1
          N = Nadded2d
-         if ( me == 0 .and. DEBUG_DERIVED  )&
-                   write(*,*) "Define 2d deriv ", N, name
+         if (  DEBUG .and. MasterProc ) write(*,*) "Define 2d deriv ",&
+               N, trim(name), " Class:", class, " Ind:", index
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
-         def_2d(N) = Deriv(class,avg,index,scale,rho,inst,year,&
-                                  month,day, name,unit)
+         def_2d(N) = Deriv(trim(class),avg,index,scale,rho,inst,year,&
+                                  month,day, trim(name),trim(unit))
        end if
 
     end subroutine AddDef
@@ -304,21 +305,25 @@ private
     real, save    :: ugN = atwN*PPBINV/ATWAIR
     real, save    :: ugSO4, ugHCHO, ugCH3CHO
     real, save    :: ugPMad, ugPMde, ugSS  !advected and derived PM's & SeaS
+    real, save    :: ugSm3 = atwS*PPBINV/ATWAIR
+    real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
+    real, save    :: ugCm3 = 12*PPBINV/ATWAIR
     real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
 
+    character(len=20) :: dname
     integer :: ndep, nVg, nRG, nMET  ! ECO08
 
 
   ! - for debug  - now not affecting ModelConstants version
    integer, dimension(MAXLIMAX) :: i_fdom
    integer, dimension(MAXLJMAX) :: j_fdom
-   integer :: ind, idebug
+   integer :: ind, ind2, ixadv, idebug
 
 
-    if(DEBUG_DERIVED .and. me ==0) write(6,*) " START DEFINE DERIVED "
+    if(DEBUG .and. MasterProc ) write(6,*) " START DEFINE DERIVED "
     !   same mol.wt assumed for PPM25 and PPMco
 
-     ugPMad = species(PM25)%molwt * PPBINV /ATWAIR 
+     ugPMad = species(PPM25)%molwt * PPBINV /ATWAIR 
      ugPMde = PPBINV /ATWAIR
      ugSS  = species( SSfi )%molwt * PPBINV /ATWAIR  !SeaS
 
@@ -356,17 +361,13 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
                  !code avg? ind scale rho Inst Yr Mn Day
     call AddDef( "DDEP", F, -1, 1.0e6, F  , F  ,T ,T ,F , &
            OutDDep(ndep)%name,OutDDep(ndep)%units)
-    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutDDep ADDED ", &
-          ndep, OutDDep(ndep)%name
   end do
-     
 
   do nVg = 1, nOutVg ! Index is adv
                  !code            avg?       ind             scale 
                  !    rho Inst Yr Mn Day
     call AddDef( OutVg(nVg)%label, T, OutVg(nVg)%Index, OutVg(nVg)%scale, &
                        F  , F  ,T ,T ,T , OutVg(nVg)%name,OutVg(nVg)%units)
-    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutVg ADDED ", nVg, OutVg(nVg)%name
   end do
 
   do nRG = 1, nOutRG ! Index is adv
@@ -374,15 +375,13 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
                  !  rho Inst Yr Mn Day  Units
     call AddDef( OutRG(nRG)%label, T, OutRG(nRG)%Index, OutRG(nRG)%scale, &
                     F  , F  ,T ,T ,T , OutRG(nRG)%name,OutRG(nRG)%units)
-    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutRG ADDED ", nRG, OutRG(nRG)%name
   end do
 
   do nMET = 1, nOutMET ! NB Adv not used
                  !code            avg?       ind             scale 
                  !  rho Inst Yr Mn Day  Units
-    call AddDef( OutMET(nMET)%class, T, OutMET(nMET)%Index, OutMET(nMET)%scale, &
+    call AddDef(OutMET(nMET)%class, T,OutMET(nMET)%Index,OutMET(nMET)%scale,&
                     F  , F  ,T ,T ,T , OutMET(nMET)%name,OutMET(nMET)%units)
-    if(DEBUG_DERIVED  .and. me==0) write(6,*) "OutMET ADDED ", nMET, OutMET(nMET)%name
   end do
 
 
@@ -392,10 +391,10 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
 
 call AddDef( "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")
-call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")
+!call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
 call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
-call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT30f","ppb h")
+!call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT30f","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
 call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
@@ -403,6 +402,7 @@ call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
 ! -- simple advected species. Note that some indices need to be set as dummys
 !    in ACID, e.g. IXADV_O3
 !
+!       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
 call AddDef( "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")
 call AddDef( "ADV  ", T, IXADV_SO4, ugS, T, F , T , T , T ,"D2_SO4","ugS/m3")
 call AddDef( "ADV  ", T, IXADV_HNO3,ugN, T, F , T , T , T ,"D2_HNO3","ugN/m3")
@@ -418,8 +418,9 @@ call AddDef( "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")
 call AddDef( "NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")
 call AddDef( "NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")
 call AddDef( "OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")
-call AddDef( "ADV  ",T,IXADV_PM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")
-call AddDef( "ADV  ",T,IXADV_PMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")
+!call AddDef( "ADV  ",T,IXADV_XPM25, ugPMad, T, F , T, T, T,"D2_XPM25","ug/m3")
+call AddDef( "ADV  ",T,IXADV_PPM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")
+call AddDef( "ADV  ",T,IXADV_PPMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")
 !Sea salt
 call AddDef( "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")
 call AddDef( "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")
@@ -428,6 +429,24 @@ call AddDef( "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")
 call AddDef( "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")
 call AddDef( "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")
 call AddDef( "USTAR_NWP",T,  0 ,       1.0, T , F, T, T, T ,"USTAR_NWP","m/s")
+
+!Mass-based outputs
+do ind = 1, size(SURF_UG_S)
+  ind2 = SURF_UG_S(ind)
+  ixadv = ind2 - NSPEC_SHL
+  dname = "SURF_ugS_" //species( ind2 )%name
+   !    code class      avg? ind    scale rho  Inst  Yr  Mn   Day  name      unit 
+  call AddDef( "SURF_UG",T,  ixadv ,ugSm3, T , F, T, T, T ,dname,"ugS/m3")
+end do
+
+do ind = 1, size(SURF_UG_N)
+  ind2 = SURF_UG_N(ind)
+  ixadv = ind2 - NSPEC_SHL
+  dname = "SURF_ugN_" //species( ind2 )%name
+   !    code class      avg? ind    scale rho  Inst  Yr  Mn   Day  name      unit 
+  call AddDef( "SURF_UG",T,  ixadv ,ugNm3, T , F, T, T, T ,dname,"ugN/m3")
+end do
+
 !hf output
 call AddDef( "SNOW",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNOW","frac")
 !surface 0.6*SO2/NH3 ratio where conc are 24 averaged 
@@ -455,17 +474,17 @@ call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")
 ! (daylight hours). 
 ! All of these use O3 at crop height, in contrast to the older AOT30, AOT40
 ! as defined above, and all allow daily output.
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30WH","ppb h")
+!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30DF","ppb h")
+!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30DF","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40DF","ppb h")
 ! UNECE:
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30WH","ppb h")
+!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40WH","ppb h")
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")
+!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40DF","ppb h")
 !Mapping-Manual
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT30WH","ppb h")
+!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT30WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")
 !
 ! --  time-averages - here 8-16
@@ -529,27 +548,29 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
      ! Get indices of wanted fields in larger def_xx arrays:
       do i = 1, num_deriv2d
           ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
-     if ( ind>0) then
-          f_2d(i) = def_2d(ind)
-     else
-         write(*,*) "OOOPS", wanted_deriv2d(i)
-         if( me == 0 ) then
-             do idebug = 1, Nadded2d
-                write (*,*) "XXX ", num_deriv2d, Nadded2d, &
-                   size(def_2d(:)%name ),idebug, def_2d(idebug)%name 
-             end do
-        end if
-        call CheckStop("OOPS STOPPED")
-     end if
-          if ( me == 0 .and. DEBUG_DERIVED ) &
-               write(*,*) "Index f_2d ", i, " = def ", ind,  def_2d(ind)%name,&
-                def_2d(ind)%unit
+          if ( ind>0) then
+               f_2d(i) = def_2d(ind)
+          else
+            write(*,*) "OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
+            write(*,*) "OOOPS N,N :", num_deriv2d, Nadded2d
+            if(  MasterProc  ) then
+               do idebug = 1, Nadded2d
+                write (*,"(a,i4,a)") "Had def_2d: ", idebug, def_2d(idebug)%name 
+               end do
+            end if
+            call CheckStop("OOPS STOPPED")
+          end if
+          if (  DEBUG .and. MasterProc  ) then
+               write(*,*) "Index f_2d ", i, " = def ", ind, def_2d(ind)%name,&
+                def_2d(ind)%unit, def_2d(ind)%class
+          end if
       end do
 
       do i = 1, num_deriv3d
           ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
           f_3d(i) = def_3d(ind)
-          if ( me == 0 .and. DEBUG_DERIVED ) write(*,*) "Index f_3d ", i, " = def ", ind
+          if ( DEBUG .and. MasterProc ) write(*,*) "Index f_3d ", i,&
+                " = def ", ind
       end do
 
 
@@ -558,7 +579,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       if ( num_deriv2d > 0  ) d_2d( :,:,:,:) = 0.0
       if ( num_deriv3d > 0  ) d_3d( :,:,:,:,:) = 0.0
 
-      debug_flag = ( DEBUG_DERIVED  .and. debug_proc ) 
+      debug_flag = ( DEBUG  .and. debug_proc ) 
 
   end subroutine Define_Derived
  !=========================================================================
@@ -576,7 +597,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       if ( any(  f_2d(:)%class == "VOC" ) .or. &
            any(  f_3d(:)%class == "VOC" )  ) then
             call Setup_VOC()
-            if (DEBUG_DERIVED )then
+            if (DEBUG  .and. MasterProc )then
                write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
                write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
                write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
@@ -624,6 +645,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
         accumulate_2dyear=.true.
         typ = f_2d(n)%class
+        if( DEBUG .and. debug_flag ) write(*,"(a,i3,7a)") "Derive2d-typ",&
+            n, "T:", typ, "N:", f_2d(n)%name, "C:", f_2d(n)%class,"END"
 
 
         if ( f_2d(n)%rho ) then
@@ -654,9 +677,9 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         end if
 
         index = f_2d(n)%index
-        !if ( My_DEBUG ) then
-        !   write(*,*) "DEBUG Derived 2d", n, f_2d(n)%name, index, typ
-        !end if
+        if ( DEBUG .and. MasterProc ) then
+           write(*,*) "DEBUG Derived 2d", n, f_2d(n)%name, index, trim(typ)
+        end if
 
         select case ( typ )
           case ( "USTAR_NWP" )
@@ -664,7 +687,6 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
           end forall
 
-!hf output
           case ( "SNOW" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = Grid_snow(i,j)
@@ -689,7 +711,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             end forall
 
             if ( debug_flag ) then
-             write(*,fmt="(a12,i4,f12.3)") "HMIX" , n , d_2d(n,debug_li,debug_lj,IOU_INST)       
+             write(*,fmt="(a12,i4,f12.3)") "HMIX" , n , &
+                     d_2d(n,debug_li,debug_lj,IOU_INST)       
             end if
 
          ! Simple advected species:
@@ -701,7 +724,24 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             end forall
 
             if ( debug_flag ) then
-             write(*,fmt="(a12,2i4,4f12.3)") "JUST ADV" , n, index  &
+             !if ( index == IXADV_PPM25 ) then
+             write(*,fmt="(a,2i4,a,4f12.3)") "PROCESS ADV" , n, index  &
+              ,trim(f_2d(n)%name)  &
+              ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
+              ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
+              ,density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
+            !end if !PM
+            end if
+
+          case ( "SURF_UG" )
+
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
+                                     * cfac(index,i,j) * density(i,j)  
+            end forall
+            if ( debug_flag ) then
+             write(*,fmt="(a,2i4,a,4f12.3)") "PROCESS SURF_UG" , n, index  &
+              ,trim(f_2d(n)%name)  &
               ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
               ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
               ,density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
@@ -717,18 +757,19 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           case ( "MAXADV" )
 
 
-              d_2d( n, 1:limax,1:ljmax,IOU_DAY) = max( d_2d( n, 1:limax,1:ljmax,IOU_DAY),  &
-             xn_adv(index,1:limax,1:ljmax,KMAX_MID)  &
-                                     * cfac(index,1:limax,1:ljmax) * density(1:limax,1:ljmax))
+              d_2d( n, 1:limax,1:ljmax,IOU_DAY) = &
+                 max( d_2d( n, 1:limax,1:ljmax,IOU_DAY),  &
+                      xn_adv(index,1:limax,1:ljmax,KMAX_MID)  &
+                     * cfac(index,1:limax,1:ljmax) * density(1:limax,1:ljmax))
 
 
-            if ( debug_flag ) then
-             write(*,fmt="(a12,2i4,4f12.3)") "ADV MAX. ", n, index  &
-                      , d_2d(n,debug_li,debug_lj,IOU_DAY) * PPBINV      &
-                      ,  xn_adv(index,debug_li,debug_lj,KMAX_MID)* PPBINV  &
-                      ,  density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
-
-            end if
+            !if ( debug_flag ) then
+            ! write(*,fmt="(a12,2i4,4f12.3)") "ADV MAX. ", n, index  &
+            !          , d_2d(n,debug_li,debug_lj,IOU_DAY) * PPBINV      &
+            !          ,  xn_adv(index,debug_li,debug_lj,KMAX_MID)* PPBINV  &
+            !          ,  density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
+!
+!            end if
 
             !Monthly and yearly ARE averaged over days
             if(End_of_Day)then
@@ -827,8 +868,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
           case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic" )
-            if ( debug_flag ) write(*,"(a,i4,a,a4,es12.3)")"PR/DEP/VG d_2d ",&
-                   n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
+!            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(typ),&
+!                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case ( "EXT" )
 
@@ -836,15 +877,19 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           ! needed except decision to accumalate to yearly or not.
           ! Used for e.g. AOT40s
              call setaccumulate_2dyear(n,accumulate_2dyear)
-            if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
-                   n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
+            !if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
+            !       n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case  default
 
             if ( debug_flag ) then
-                 write(*,*) "My_Deriv Defaults called for n=", n, "Type ",typ, "Name ", f_2d(n)%name
-                 write(*,*) "My_Deriv index?, avg?, nav? length?, class? ", index,&
-                    f_2d(n)%avg, nav_2d(n,IOU_INST), len(f_2d%class), f_2d(n)%class
+                 write(*,"(a,i3,4a)") "My_Deriv Defaults called n=",&
+                    n, " Type ",trim(typ), " Name ", trim( f_2d(n)%name )
+
+                 write(*,"(a,i3,i8,i4,a)") &
+                    "My_Deriv index?, nav? length?, class? ", index,&
+                    nav_2d(n,IOU_INST), len(f_2d%class), trim(f_2d(n)%class)
+                 write(*,*) "My_Deriv index?, avg ", f_2d(n)%avg
              end if 
 
              call My_DerivFunc( d_2d(n,:,:,IOU_INST), n, typ, timefrac, density ) 

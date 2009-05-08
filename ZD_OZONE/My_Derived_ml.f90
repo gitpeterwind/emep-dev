@@ -56,10 +56,11 @@ use CheckStop_ml,  only: CheckStop, StopAll
 use GenSpec_adv_ml        ! Use IXADV_ indices...
 use GenSpec_shl_ml        ! Use IXSHL_ indices...
 use GenSpec_tot_ml,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                           ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PM25, PMCO &
+                           ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
                            ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
 use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
+                        , MasterProc  & 
                         , SOURCE_RECEPTOR  &  
                         , KMAX_MID & ! =>  z dimension
                         , PPBINV  &  !   1.0e9
@@ -103,7 +104,7 @@ private
 
     integer, public, parameter :: MAX_NUM_DERIV2D = 200
     integer, public, parameter :: MAX_NUM_DERIV3D =   5
-    integer, public, parameter :: TXTLEN_DERIV =   20
+    integer, public, parameter :: TXTLEN_DERIV =   24
     character(len=TXTLEN_DERIV), public, save, &
          dimension(MAX_NUM_DERIV2D) :: wanted_deriv2d = NOT_SET_STRING
     character(len=TXTLEN_DERIV), public, save, &
@@ -114,14 +115,24 @@ private
 
 
 
+!Mass-outputs of advected species, will be added to Derived
+!Divide into those used for SR, and then the extras (XSURF)
+   integer, public, parameter, dimension(1) :: SRSURF_UG_S = (/ SO4 /)
+   integer, public, parameter, dimension(1) ::  XSURF_UG_S = (/ SO2 /)
+   integer, public, parameter, dimension(2) ::   SURF_UG_S = (/ SO2, SO4 /)
+
+   integer, public, parameter, dimension(4) :: SRSURF_UG_N = (/ aNO3, pNO3, aNH4, NO2 /)
+   integer, public, parameter, dimension(2) ::  XSURF_UG_N = (/ NH3, HNO3 /)
+   integer, public, parameter, dimension(6) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
  
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(49) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(37) :: &
   D2_SR = (/ &
 !
 !    Particles: components
-       "D2_SO4      ","D2_aNO3     ","D2_pNO3     ","D2_aNH4     " &
-      ,"D2_PPM25    ","D2_PPMco    ","D2_PM25_H2O " &
+!dsx = stuff moved into SURF arrays, May 2009 (will clean up later)
+!dsx      "D2_SO4      ","D2_aNO3     ","D2_pNO3     ","D2_aNH4     " &
+      "D2_PPM25    ","D2_PPMco    ", "D2_PM25_H2O " &
 !
 !    Particles: sums
       ,"D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
@@ -129,16 +140,16 @@ private
 !
 !    Ozone and AOTs
       ,"D2_O3       ","D2_MAXO3    " &
-      ,"D2_AOT30    ","D2_AOT40    ","D2_AOT60    " &
-      ,"D2_AOT30f   ","D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
-      ,"D2_EUAOT30WH","D2_EUAOT30DF","D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
-      ,"D2_UNAOT30WH","D2_UNAOT30DF","D2_UNAOT40WH","D2_UNAOT40DF" &! NB: do not remove without removing from My_DryDep too
-      ,"D2_MMAOT30WH","D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
+      ,"D2_AOT40    ","D2_AOT60    " &  ! Exc AOT30 ( 7 versions)
+      ,"D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
+      ,"D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
+      ,"D2_UNAOT40WH","D2_UNAOT40DF" &! NB: do not remove without removing from My_DryDep too
+      ,"D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
       ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums 
-      ,"D2_NO2      ","D2_OXN      ","D2_NOX      ","D2_NOZ      " &
-      ,"D2_OX       "  &
+!dsx      ,"D2_NO2      "
+      ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
 !
 !    Ecosystem - fluxes: 
  ! NB: do not remove without removing from My_DryDep too 
@@ -152,9 +163,10 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(20) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(17) :: &
   D2_EXTRA = (/ &
-       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
+!dsx       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
+       "D2_VOC      "&
       ,"WDEP_SO2","WDEP_SO4","WDEP_HNO3","WDEP_aNO3", "WDEP_pNO3" & 
       ,"WDEP_NH3", "WDEP_aNH4" & 
       ,"D2_REDN     ","D2_SSfi     ","D2_SSco     ","D2_SNOW","D2_SNratio" &
@@ -225,7 +237,7 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
       VG_LABELS = (/ "VG" /)
     integer, public, parameter, dimension(6) :: &
-      VG_SPECS = (/ O3, NH3, SO2, PM25,  PMCO , HNO3/)
+      VG_SPECS = (/ O3, NH3, SO2, PPM25,  PPMCO , HNO3/)
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
       VG_LCS  = (/ "Grid", "CF", "SNL", "GR" /)
 
@@ -292,6 +304,10 @@ private
      call AddArray(WDEP_WANTED, wanted_deriv2d, NOT_SET_STRING)
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING)
 
+!ds May 2009, added surf concs in ugS/m3:
+     call AddArray( "SURF_ugS_"//species(SURF_UG_S)%name ,  wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( "SURF_ugN_"//species(SURF_UG_N)%name ,  wanted_deriv2d, NOT_SET_STRING)
+
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
         call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING)
      end if
@@ -351,10 +367,11 @@ private
            end if
 
 
-           if(MY_DEBUG .and. me==0)  write(6,"(a,4(a,i4))") &
-            "DDEP NEW ", &
+           if(MY_DEBUG .and. MasterProc ) then
+             write(6,"(a,4(a,i4))") "DDEP NEW ", &
              OutDDep(nLC)%name, nLC, "LC ", OutDDep(nLC)%LC, &
             " Index: ", OutDDep(nLC)%Index, "ATW ",  OutDDep(nLC)%atw
+           end if
         end do ! DDEP_SPECS 
       end do ! DDEP_LCS
       nOutDDep = nLC
@@ -390,7 +407,7 @@ private
              name, -99, iadv, -99,"Mosaic", VG_LABELS(ilab), VG_LCS(n),&
                                              100.0, -99,  "cm/s") 
 
-          if(MY_DEBUG .and. me==0) &
+          if(MY_DEBUG .and. MasterProc ) &
               write(6,*) "VGOUT ", nVg, i, n, iadv, OutVg(nVg)
         end do !n
       end do ! i
@@ -426,7 +443,7 @@ private
               OutRG(nRG)%units  =   "cm/s"
           end if
           !Not yet known: OutRG(nRG)%LC
-          if(MY_DEBUG .and. me==0) &
+          if(MY_DEBUG .and. MasterProc) &
               write(6,*) "RGOUT ", nRG, i, n, OutRG(nRG)
         end do !n
       end do ! i
@@ -456,7 +473,7 @@ private
               OutMET(nMET)%units  =   "m"
           end if
 
-          if(MY_DEBUG .and. me==0) &
+          if(MY_DEBUG .and. MasterProc ) &
                write(6,*) "METOUT ", nMET, i, n, OutMET(nMET)
         end do !n
       end do ! ilab
@@ -477,12 +494,12 @@ private
      mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
 
 
-     if ( me == 0 ) then
+     if ( MasterProc ) then
        write(*,*) "Init_My_Deriv, mynum_deriv2d = ", mynum_deriv2d
        if( MY_DEBUG ) then
-           do i = 1, mynum_deriv2d
-               write(*,*) "DEBUG DERIV2D ", i, mynum_deriv2d, wanted_deriv2d(i)
-           end do
+         do i = 1, mynum_deriv2d
+           write(*,*) "DEBUG DERIV2D ", i, mynum_deriv2d, wanted_deriv2d(i)
+         end do
        end if
        call WriteArray(wanted_deriv2d,mynum_deriv2d," Wanted 2d array is")
        write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
@@ -520,7 +537,7 @@ private
 
       case  default
 
-            print *, "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
+            write(*,*) "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
      end select
   
 
@@ -558,7 +575,7 @@ private
          ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
          + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
          + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-         + xn_adv(IXADV_PM25,i,j,KMAX_MID)*species(PM25)%molwt*cfac(IXADV_PM25,i,j) & 
+         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) & 
          + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt *cfac(IXADV_SSfi,i,j))&  !SeaS
          * density(i,j)
       end forall
@@ -568,7 +585,7 @@ private
       forall ( i=1:limax, j=1:ljmax )
         pm_2d( i,j ) = &
          ( xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
-         + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt*cfac(IXADV_PMco,i,j) & 
+         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) & 
          + xn_adv(IXADV_SSco,i,j,KMAX_MID) *species(SSco)%molwt *cfac(IXADV_SSco,i,j))&  !SeaS
           * density(i,j)
       end forall
@@ -581,8 +598,8 @@ private
          + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
          + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
          + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-         + xn_adv(IXADV_PM25,i,j,KMAX_MID)*species(PM25)%molwt*cfac(IXADV_PM25,i,j) &
-         + xn_adv(IXADV_PMco,i,j,KMAX_MID)*species(PMCO)%molwt*cfac(IXADV_PMco,i,j) & 
+         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
+         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) & 
          + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt*cfac(IXADV_SSfi,i,j) & !SeaS
          + xn_adv(IXADV_SSco,i,j,KMAX_MID)*species(SSco)%molwt*cfac(IXADV_SSco,i,j))& !SeaS
          * density(i,j)

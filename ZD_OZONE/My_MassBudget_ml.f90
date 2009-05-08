@@ -62,7 +62,7 @@ module My_MassBudget_ml
    integer, public, parameter, dimension(16) :: MY_MASS_PRINT = &    !SeaS
      (/  IXADV_O3, IXADV_HNO3, IXADV_PAN, IXADV_NO3, IXADV_N2O5 ,IXADV_NO, &
          IXADV_NO2,  IXADV_SO2, IXADV_SO4, IXADV_NH3, IXADV_aNH4, IXADV_aNO3 &
-        ,IXADV_PM25, IXADV_PMco, IXADV_SSfi, IXADV_SSco /)  !SeaS
+        ,IXADV_PPM25, IXADV_PPMco, IXADV_SSfi, IXADV_SSco /)  !SeaS
 
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -76,8 +76,8 @@ module My_MassBudget_ml
        ixadv_eqv(1) = IXADV_SO2
        ixadv_eqv(2) = IXADV_CO 
        ixadv_eqv(3) = IXADV_NH3
-       ixadv_eqv(4) = IXADV_PM25 
-       ixadv_eqv(5) = IXADV_PMco
+       ixadv_eqv(4) = IXADV_PPM25 
+       ixadv_eqv(5) = IXADV_PPMco
        ixadv_eqv(6) = IXADV_NO2  
        ixadv_eqv(7) = IXADV_NO  
 

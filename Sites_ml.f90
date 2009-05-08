@@ -55,7 +55,7 @@ use GenSpec_adv_ml
 use GenSpec_shl_ml,    only : NSPEC_SHL
 use GenChemicals_ml,   only : species               ! for species names
 use GenSpec_tot_ml,    only : SO4, HCHO, CH3CHO  &  ! for mol. wts.
-                              ,aNO3, pNO3, aNH4, PM25, PMCO &
+                              ,aNO3, pNO3, aNH4, PPM25, PPMCO &
                               ,SSfi, SSco  !SeaS
 use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
                               , z_bnd, z_mid, roa, xksig, u, v, ps, q
@@ -537,7 +537,7 @@ end subroutine siteswrt_surf
                ( xn_adv(IXADV_SO4,ix,iy,k) *species(SO4)%molwt    &
                + xn_adv(IXADV_aNO3,ix,iy,k)*species(aNO3)%molwt   &
                + xn_adv(IXADV_aNH4,ix,iy,k)*species(aNH4)%molwt   &
-               + xn_adv(IXADV_PM25,ix,iy,k)*species(PM25)%molwt   & 
+               + xn_adv(IXADV_PPM25,ix,iy,k)*species(PPM25)%molwt   & 
                + xn_adv(IXADV_SSfi,ix,iy,k)*species(SSfi)%molwt  ) & !SeaS
                * roa(ix,iy,k,1) /ATWAIR
             end do 
@@ -549,7 +549,7 @@ end subroutine siteswrt_surf
             do k = 1, KMAX_MID
               sum_PMco(k) =   &
                ( xn_adv(IXADV_pNO3,ix,iy,k) * species(pNO3)%molwt &
-               + xn_adv(IXADV_PMco,ix,iy,k) * species(PMCO)%molwt & 
+               + xn_adv(IXADV_PPMco,ix,iy,k) * species(PPMCO)%molwt & 
                + xn_adv(IXADV_SSco,ix,iy,k) * species(SSco)%molwt ) & !SeaS
                * roa(ix,iy,k,1) /ATWAIR
             end do

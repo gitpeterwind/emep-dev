@@ -1,3 +1,28 @@
+================================ rv3_2_8, Dave  8th May 2009======
+
+Derived_ml, My_Derived_ml
+
+Start of move to simpler system, where wanted surface concentrations
+can be specified with their index, e.g to get ug(N)/m3 NO2
+use SURF_UG_N = (/ ...., NO2, .... /)
+ - removes need for character "D2_NO2" and index D2_NO2 and allows
+Derived to be specified with simple loop over SURF_UG_N. Similar
+system in place for SURF_UG_S, and will later implement SURF_PPB
+
+
+Derived, My_DryDep 
+AOT30 outputs removed. (Whole AOT system should also be replaced. Usage
+of e.g. D2_AOT30 in My_DryDep caused hard-to-find bug in d_2d when AOT30 removed
+from Derived system)
+
+My_Chem_ml   - use PPM25 instead of PM25 for primary  PM25. Ditto for PMco
+My_WetDep_ml -  ditto
+Sites_ml     -  ditto
+
+My_DryDep_ml
+   AOT30 stuff removed. (Hard-coded D2_AOT30 variables caused hard-to-find
+    problem in d_2d index. Hard-coding of numbers proved bad once again....)
+
 ================================ rv3_2_7, Dave  5th May 2009======
 
 ** Bugs found and fixed **

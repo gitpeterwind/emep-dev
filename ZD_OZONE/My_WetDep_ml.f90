@@ -54,7 +54,7 @@ module My_WetDep_ml
 !EGU - find indices of SO4-like particles (PMc included for now - tmp!)
 ! for SOA we need a separate array, since Fgas will be needed
   integer, public, parameter, dimension(5) :: & !EGU:NUM_NONVOLOC+NUM_NONVOLEC) ::&
-   WETDEP_SO4LIKE = (/ aNH4, aNO3, PM25, SSFI, Pb210 /)
+   WETDEP_SO4LIKE = (/ aNH4, aNO3, PPM25, SSFI, Pb210 /)
 !EGU  NONVOLOC, NONVOLEC /)
 !    integer, public, parameter, dimension(NUM_NONVOLOC) ::&
 !   WETDEP_SO4LIKE = (/ NONVOLOC /)
@@ -95,7 +95,7 @@ contains
     WetDep(5)   = WScav(H2O2,   1.4,  0.5)   ! 
     WetDep(6)   = WScav(HCHO,   0.1,  0.03)  ! 
     WetDep(7)   = WScav(pNO3,   1.0,  EFFCO) !!
-    WetDep(8)   = WScav(PMCO,   1.0,  EFFCO)
+    WetDep(8)   = WScav(PPMCO,  1.0,  EFFCO)
     WetDep(9)   = WScav(SSCO,   1.0,  EFFCO)   !SeaS
 
   ! Other PM compounds treated with SO4LIKE array defined above
@@ -133,14 +133,14 @@ contains
   
       wdepox  = wdeploss(HNO3) + wdeploss(aNO3) + wdeploss(pNO3)
 
-      wdeppm25= wdeploss(PM25) 
-      wdeppmco= wdeploss(PMCO) 
+      wdeppm25= wdeploss(PPM25) 
+      wdeppmco= wdeploss(PPMco) 
 
        totwdep(IXADV_SO4)  = totwdep(IXADV_SO4) + wdeps
        totwdep(IXADV_HNO3) = totwdep(IXADV_HNO3) + wdepox
        totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)  + wdepred
-       totwdep(IXADV_PM25)  = totwdep(IXADV_PM25)  + wdeppm25
-       totwdep(IXADV_PMco)  = totwdep(IXADV_PMco)  + wdeppmco
+       totwdep(IXADV_PPM25)  = totwdep(IXADV_PPM25)  + wdeppm25
+       totwdep(IXADV_PPMco)  = totwdep(IXADV_PPMco)  + wdeppmco
 
        d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * fS 
        d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * fN 
