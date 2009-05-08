@@ -68,7 +68,10 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : & !EcoDep
       nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG, nOutMET, OutMET, &
       SURF_UG_S, &  !ds added May 2009
-      SURF_UG_N     !ds added May 2009
+      SURF_UG_N, &  !ds added May 2009
+      SURF_UG_C, &  !ds added May 2009
+      SURF_UG  , &  !ds added May 2009
+      SURF_PPB      !ds added May 2009
 
 
 
@@ -111,6 +114,7 @@ private
  private :: AddDef 
  private :: Define_Derived       !
  private :: Setups 
+ private :: write_debug 
 
  public :: Derived              ! Calculations of sums, avgs etc.
  private :: Setup_VOC            ! Defines VOC group
@@ -308,6 +312,7 @@ private
     real, save    :: ugSm3 = atwS*PPBINV/ATWAIR
     real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
     real, save    :: ugCm3 = 12*PPBINV/ATWAIR
+    real, save    :: ugXm3 = PPBINV/ATWAIR
     real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
 
     character(len=20) :: dname
@@ -404,26 +409,26 @@ call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
 !
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
 call AddDef( "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")
-call AddDef( "ADV  ", T, IXADV_SO4, ugS, T, F , T , T , T ,"D2_SO4","ugS/m3")
-call AddDef( "ADV  ", T, IXADV_HNO3,ugN, T, F , T , T , T ,"D2_HNO3","ugN/m3")
-call AddDef( "ADV  ", T, IXADV_PAN, ugN, T, F , T , T , T ,"D2_PAN","ugN/m3")
-call AddDef( "ADV  ", T, IXADV_NH3, ugN, T, F , T , T , T ,"D2_NH3","ugN/m3")
-call AddDef( "ADV  ", T, IXADV_NO , ugN, T, F , T , T , T ,"D2_NO","ugN/m3")
-call AddDef( "ADV  ", T, IXADV_NO2, ugN, T, F , T , T , T ,"D2_NO2","ugN/m3")
-call AddDef( "ADV  ", T,IXADV_aNH4, ugN, T, F , T , T , T ,"D2_aNH4","ugN/m3")
-call AddDef( "ADV  ",T,IXADV_O3 ,PPBINV, F, F , T, T , T ,"D2_O3","ppb")
-call AddDef( "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")
-call AddDef( "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")
-call AddDef( "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")
+!dsxcall AddDef( "ADV  ", T, IXADV_SO4, ugS, T, F , T , T , T ,"D2_SO4","ugS/m3")
+!dsxcall AddDef( "ADV  ", T, IXADV_HNO3,ugN, T, F , T , T , T ,"D2_HNO3","ugN/m3")
+!dsxcall AddDef( "ADV  ", T, IXADV_PAN, ugN, T, F , T , T , T ,"D2_PAN","ugN/m3")
+!dsxcall AddDef( "ADV  ", T, IXADV_NH3, ugN, T, F , T , T , T ,"D2_NH3","ugN/m3")
+!dsxcall AddDef( "ADV  ", T, IXADV_NO , ugN, T, F , T , T , T ,"D2_NO","ugN/m3")
+!dsxcall AddDef( "ADV  ", T, IXADV_NO2, ugN, T, F , T , T , T ,"D2_NO2","ugN/m3")
+!dsxcall AddDef( "ADV  ", T,IXADV_aNH4, ugN, T, F , T , T , T ,"D2_aNH4","ugN/m3")
+!dsxcall AddDef( "ADV  ",T,IXADV_O3 ,PPBINV, F, F , T, T , T ,"D2_O3","ppb")
+!dsxcall AddDef( "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")
+!dsxcall AddDef( "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")
+!dsxcall AddDef( "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")
 call AddDef( "NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")
 call AddDef( "NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")
 call AddDef( "OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")
 !call AddDef( "ADV  ",T,IXADV_XPM25, ugPMad, T, F , T, T, T,"D2_XPM25","ug/m3")
-call AddDef( "ADV  ",T,IXADV_PPM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")
-call AddDef( "ADV  ",T,IXADV_PPMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")
+!dsxcall AddDef( "ADV  ",T,IXADV_PPM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")
+!dsxcall AddDef( "ADV  ",T,IXADV_PPMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")
 !Sea salt
-call AddDef( "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")
-call AddDef( "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")
+!dsxcall AddDef( "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")
+!dsxcall AddDef( "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")
 call AddDef( "PS    ",T,  0 ,       1.0, F , T, T, T, T ,"PS","hPa")
 call AddDef( "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")
 call AddDef( "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")
@@ -443,9 +448,30 @@ do ind = 1, size(SURF_UG_N)
   ind2 = SURF_UG_N(ind)
   ixadv = ind2 - NSPEC_SHL
   dname = "SURF_ugN_" //species( ind2 )%name
-   !    code class      avg? ind    scale rho  Inst  Yr  Mn   Day  name      unit 
   call AddDef( "SURF_UG",T,  ixadv ,ugNm3, T , F, T, T, T ,dname,"ugN/m3")
 end do
+
+do ind = 1, size(SURF_UG_C)
+  ind2 = SURF_UG_C(ind)
+  ixadv = ind2 - NSPEC_SHL
+  dname = "SURF_ugC_" //species( ind2 )%name
+  call AddDef( "SURF_UG",T,  ixadv ,ugCm3, T , F, T, T, T ,dname,"ugC/m3")
+end do
+
+do ind = 1, size(SURF_UG)
+  ind2 = SURF_UG(ind)
+  ixadv = ind2 - NSPEC_SHL
+  dname = "SURF_ug_" //species( ind2 )%name
+  call AddDef( "SURF_UG",T,  ixadv ,ugXm3*species(ind2)%molwt, T , F, T, T, T ,dname,"ug/m3")
+end do
+
+do ind = 1, size(SURF_PPB)   ! ppb has rho flag set false
+  ind2 = SURF_PPB(ind)
+  ixadv = ind2 - NSPEC_SHL
+  dname = "SURF_ppb_" //species( ind2 )%name
+  call AddDef( "SURF_PPB",T,  ixadv ,PPBINV, F , F, T, T, T ,dname,"ppb")
+end do
+
 
 !hf output
 call AddDef( "SNOW",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNOW","frac")
@@ -476,15 +502,12 @@ call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")
 ! as defined above, and all allow daily output.
 !call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")
-!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30DF","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40DF","ppb h")
 ! UNECE:
-!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40WH","ppb h")
 !call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40DF","ppb h")
 !Mapping-Manual
-!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT30WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")
 !
 ! --  time-averages - here 8-16
@@ -723,15 +746,15 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                                      * cfac(index,i,j) * density(i,j)  
             end forall
 
-            if ( debug_flag ) then
-             !if ( index == IXADV_PPM25 ) then
-             write(*,fmt="(a,2i4,a,4f12.3)") "PROCESS ADV" , n, index  &
-              ,trim(f_2d(n)%name)  &
-              ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
-              ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
-              ,density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
-            !end if !PM
-            end if
+            if ( debug_flag ) call write_debug(n,index, &
+                                     density(debug_li,debug_lj), "ADV or TADV")
+
+          case ( "SURF_PPB" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
+                                     * cfac(index,i,j)
+            end forall
+            if ( debug_flag ) call write_debug(n,index, 1.0, "PPB OUTS")
 
           case ( "SURF_UG" )
 
@@ -739,13 +762,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                      * cfac(index,i,j) * density(i,j)  
             end forall
-            if ( debug_flag ) then
-             write(*,fmt="(a,2i4,a,4f12.3)") "PROCESS SURF_UG" , n, index  &
-              ,trim(f_2d(n)%name)  &
-              ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
-              ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
-              ,density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
-            end if
+            if ( debug_flag ) call write_debug(n,index, &
+                                     density(debug_li,debug_lj), "SURF_UG")
 
           case ( "H2O" )      !water
 
@@ -757,19 +775,13 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           case ( "MAXADV" )
 
 
-              d_2d( n, 1:limax,1:ljmax,IOU_DAY) = &
+            d_2d( n, 1:limax,1:ljmax,IOU_DAY) = &
                  max( d_2d( n, 1:limax,1:ljmax,IOU_DAY),  &
                       xn_adv(index,1:limax,1:ljmax,KMAX_MID)  &
                      * cfac(index,1:limax,1:ljmax) * density(1:limax,1:ljmax))
+            if ( debug_flag ) call write_debug(n,index, &
+                                     density(debug_li,debug_lj), "MAXADV")
 
-
-            !if ( debug_flag ) then
-            ! write(*,fmt="(a12,2i4,4f12.3)") "ADV MAX. ", n, index  &
-            !          , d_2d(n,debug_li,debug_lj,IOU_DAY) * PPBINV      &
-            !          ,  xn_adv(index,debug_li,debug_lj,KMAX_MID)* PPBINV  &
-            !          ,  density(debug_li,debug_lj), cfac(index,debug_li,debug_lj)
-!
-!            end if
 
             !Monthly and yearly ARE averaged over days
             if(End_of_Day)then
@@ -789,7 +801,6 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               d_2d( n, i,j,IOU_DAY) = max( d_2d( n, i,j,IOU_DAY), &
                                 xn_shl(index,i,j,KMAX_MID)  &
                                     / (density(i,j)*MFAC) )
-                                   !u4  / (roa(:,:,KMAX_MID,1)*MFAC) )
             end forall
 
 
@@ -1316,4 +1327,15 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
     end subroutine setaccumulate_2dyear
 
+    subroutine write_debug(n,index,rho,txt)
+       integer, intent(in) :: n, index
+       real, intent(in) :: rho
+       character(len=*) :: txt
+    
+       write(*,fmt="(2a,2i4,a,4f12.3)") "PROCESS " , txt , n, index  &
+                  ,trim(f_2d(n)%name)  &
+                  ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
+                  ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
+                  ,rho, cfac(index,debug_li,debug_lj)
+    end subroutine write_debug
 end module Derived_ml

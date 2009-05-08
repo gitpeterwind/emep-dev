@@ -124,22 +124,30 @@ private
    integer, public, parameter, dimension(4) :: SRSURF_UG_N = (/ aNO3, pNO3, aNH4, NO2 /)
    integer, public, parameter, dimension(2) ::  XSURF_UG_N = (/ NH3, HNO3 /)
    integer, public, parameter, dimension(6) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
+
+ !  integer, public, parameter, dimension(1) :: SRSURF_UG_C = (/ HCHO /) # Just testing. Also have ppb
+   integer, public, parameter, dimension(1) ::  XSURF_UG_C = (/ HCHO /)
+   integer, public, parameter, dimension(1) ::   SURF_UG_C = (/ XSURF_UG_C /)
+
+   integer, public, parameter, dimension(2) :: SRSURF_UG = (/ PPM25, PPMco /)
+   integer, public, parameter, dimension(2) ::  XSURF_UG = (/ SSfi,SSco /)
+   integer, public, parameter, dimension(4) ::   SURF_UG = (/ SRSURF_UG, XSURF_UG /)
+
+   integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
+   integer, public, parameter, dimension(1) ::  XSURF_PPB = (/ HCHO /)
+   integer, public, parameter, dimension(2) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
  
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(37) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(34) :: &
   D2_SR = (/ &
 !
-!    Particles: components
-!dsx = stuff moved into SURF arrays, May 2009 (will clean up later)
-!dsx      "D2_SO4      ","D2_aNO3     ","D2_pNO3     ","D2_aNH4     " &
-      "D2_PPM25    ","D2_PPMco    ", "D2_PM25_H2O " &
-!
 !    Particles: sums
-      ,"D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
-      ,"D2_SS       ","D2_tNO3     " &
+       "D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
+      ,"D2_SS       ","D2_tNO3     ","D2_PM25_H2O " &
 !
 !    Ozone and AOTs
-      ,"D2_O3       ","D2_MAXO3    " &
+!dsx  ,"D2_O3       ","D2_MAXO3    " &
+      ,"D2_MAXO3    " &
       ,"D2_AOT40    ","D2_AOT60    " &  ! Exc AOT30 ( 7 versions)
       ,"D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
       ,"D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
@@ -163,13 +171,14 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(17) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
   D2_EXTRA = (/ &
 !dsx       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
        "D2_VOC      "&
       ,"WDEP_SO2","WDEP_SO4","WDEP_HNO3","WDEP_aNO3", "WDEP_pNO3" & 
       ,"WDEP_NH3", "WDEP_aNH4" & 
-      ,"D2_REDN     ","D2_SSfi     ","D2_SSco     ","D2_SNOW","D2_SNratio" &
+!dsx  ,"D2_REDN     ","D2_SSfi     ","D2_SSco     ","D2_SNOW","D2_SNratio" &
+      ,"D2_REDN     ","D2_SNOW","D2_SNratio" &
       ,"D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 ","USTAR_NWP" & !DSFEB09
   /)
 !      ,"D2_VddACC", "D2_VddCOA" & ! ECO08
@@ -304,9 +313,12 @@ private
      call AddArray(WDEP_WANTED, wanted_deriv2d, NOT_SET_STRING)
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING)
 
-!ds May 2009, added surf concs in ugS/m3:
+!ds May 2009, added surf concs in various units (e.g. ugS/m3 or ppb):
      call AddArray( "SURF_ugS_"//species(SURF_UG_S)%name ,  wanted_deriv2d, NOT_SET_STRING)
      call AddArray( "SURF_ugN_"//species(SURF_UG_N)%name ,  wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( "SURF_ugC_"//species(SURF_UG_C)%name ,  wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( "SURF_ug_"//species(SURF_UG)%name ,  wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( "SURF_ppb_"//species(SURF_PPB)%name ,  wanted_deriv2d, NOT_SET_STRING)
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
         call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING)
