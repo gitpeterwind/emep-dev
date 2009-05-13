@@ -27,10 +27,10 @@
 !*****************************************************************************! 
 module StoFlux_ml
   use DO3SE_ml, only : do3se
-  use LandDefs_ml, only : LandType, STUBBLE
+  use LandDefs_ml, only : LandType, STUBBLE,NLanduse_DEF
   use LocalVariables_ml, only : L, Grid
   use MicroMet_ml, only : AerRes, Wind_at_h
-  use ModelConstants_ml, only : NLANDUSE, dt_advec
+  use ModelConstants_ml, only : NLANDUSEMAX, dt_advec
   use Par_ml, only : MAXLIMAX, MAXLJMAX
   use PhysicalConstants_ml, only : AVOG, KARMAN
   use TimeDate_ml, only : current_date
@@ -43,10 +43,10 @@ module StoFlux_ml
 
   logical, public, parameter  :: STO_FLUXES = .true.
   logical, private, parameter :: DEBUG_FLUX = .false.
-  logical, public,  dimension(NLANDUSE), save :: luflux_wanted
+  logical, public,  dimension(NLANDUSEMAX), save :: luflux_wanted
 
   real, private :: c_hveg, u_hveg ! Values at canopy top, for fluxes
-  real, public,  dimension(NLANDUSE), save :: &
+  real, public,  dimension(NLANDUSEMAX), save :: &
       lai_flux,         & ! Fluxes to total LAI
       unit_flux,        & ! Fluxes per m2 of leaf area
       leaf_flux,        & ! Flag-leaf Fluxes per m2 of leaf area
@@ -72,7 +72,7 @@ contains
     integer :: iL
 
      luflux_wanted(:) = .false.
-     do iL = 1, NLANDUSE
+     do iL = 1, NLanduse_DEF
         if ( LandType(iL)%is_iam ) luflux_wanted(iL)  = .true.
      end do
 

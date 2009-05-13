@@ -477,6 +477,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
+    $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
     $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
     $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
     $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";

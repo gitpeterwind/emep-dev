@@ -29,7 +29,7 @@ module LandDefs_ml
  use CheckStop_ml, only : CheckStop
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValue_ml, only :  KeyVal
- use ModelConstants_ml, only : NLANDUSE, MasterProc, DEBUG_LANDDEFS
+ use ModelConstants_ml, only : NLANDUSEMAX, MasterProc, DEBUG_LANDDEFS
   implicit none
   private
 
@@ -58,6 +58,8 @@ module LandDefs_ml
  public  :: Growing_season 
 
  real, public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
+ integer, public :: NLanduse_DEF ! number of landuse categories actually defined
+ integer, public, parameter :: NLANDUSE_EMEP=19 !Number of categories defined in EMEP grid (per April 2009)
 
  !/*****   Data to be read from Phenology_inputs.dat:
 
@@ -78,7 +80,7 @@ module LandDefs_ml
      integer ::  ELAIlen      ! Length of LAI decline periods
   end type land_input
                                                !##############
-  type(land_input), public, dimension(NLANDUSE) :: LandDefs
+  type(land_input), public, dimension(NLANDUSEMAX) :: LandDefs
                                                !##############
   type(land_input), private :: LandInput
 
@@ -95,7 +97,7 @@ module LandDefs_ml
      logical :: is_iam   ! Fake species for IAM outputs 
   end type land_type
                                                !##############
-  type(land_type), public,  dimension(NLANDUSE) :: LandType
+  type(land_type), public,  dimension(NLANDUSEMAX) :: LandType
                                                !##############
      
 

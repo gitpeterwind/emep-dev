@@ -43,16 +43,16 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-!      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+      RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
   !    RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
 
-      RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
+!      RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   3       & ! Actual number of processors in longitude
-  , NPROCY      =   2       & ! Actual number of processors in latitude
+    NPROCX      =   8       & ! Actual number of processors in longitude
+  , NPROCY      =   4       & ! Actual number of processors in latitude
   , NPROC       = NPROCX * NPROCY
 
   ! ds Jan2009
@@ -121,7 +121,7 @@ module ModelConstants_ml
   integer, public, parameter ::  &
     IIFULLDOM   = 170   &    ! x-Dimensions of full domain
   , JJFULLDOM   = 133   &    ! y-Dimensions of full domain
-  , NLANDUSE    = 19    &    ! Number of land use types in Inputs.Landuse file
+  , NLANDUSEMAX = 23    &    ! Number of land use types in Inputs.Landuse file
 !
   , METSTEP      = 3     &    ! time-step of met. (h)
   , KMAX_MID     = 20    &    ! Number of points (levels) in vertical

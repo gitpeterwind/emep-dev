@@ -1,3 +1,34 @@
+================================ rv3_2_10, Peter  13th May 2009======
+
+First version of a grid flexible Landuse input
+
+GridValues and Met_ml: defined gb_stagg and gl_stagg (staggered lon and lat)
+
+NetCDF:
+ Read_Local_Inter_CDF, to read and interpoalte landuse from raw data.
+Under construction!
+
+Landuse_ml: call to Read_Local_Inter_CDF when Input.Landuse is not found
+
+Replaced all NLANDUSE with NLANDUSEMAX: NLANDUSEMAX is used for array declaration and is the max allowed and
+NLanduse_DEF is the actual number of landuse defined.
+DO3SE_ml,DryDep,LandDef,StoFlux_ml,NetCDF,LocalVariables_ml
+
+LandDefs_ml: NLanduse_DEF number of landuse defined
+NLANDUSE_EMEP=19. To check data from Input.Landuse.
+StoFlux_ml: use NLanduse_DEF instead of NLANDUSE.
+DryDep_ml: InitDO3SE called only if not already read by Read_Local_Inter_CDF
+
+ModelConstants:NLANDUSE    = 23 ! MAXIMUM Number of land use types
+
+SmallUtils_ml: NB: provisory!!
+!    Index =  NOT_FOUND
+    Index =  1
+
+run.pl: link to landuseGLC2000_INT1.nc
+
+NB: The new landuses system is still under developement.
+
 ================================ rv3_2_9, Dave  8th May 2009======
 
 Derived_ml, My_Derived_ml:

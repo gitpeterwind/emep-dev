@@ -32,7 +32,7 @@
 !! PARsun, shade is set by Rsurace
 
 module LocalVariables_ml
- use ModelConstants_ml, only : NLANDUSE
+ use ModelConstants_ml, only : NLANDUSEMAX
  implicit none
  private
 
@@ -164,7 +164,7 @@ module LocalVariables_ml
  !
   end type SubDat
 
-  type(SubDat), public, dimension(NLANDUSE), save :: Sub
+  type(SubDat), public, dimension(NLANDUSEMAX), save :: Sub
   type(SubDat), public, save :: L    ! For just one land-class
 
 

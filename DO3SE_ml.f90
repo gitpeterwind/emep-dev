@@ -36,7 +36,7 @@ module DO3SE_ml
 !        ,PARshade => L%PARshade       &!  " " for shade leaves
 !        ,LAIsunfrac => L%LAIsunfrac      ! fraction of LAI in sun
 
-  use ModelConstants_ml, only : NLANDUSE
+  use ModelConstants_ml, only : NLANDUSEMAX
 
   implicit none
   private
@@ -90,7 +90,7 @@ module DO3SE_ml
      real:: Lw               ! cros-wind leaf dimension (ony used for IAM)
   end type do3se_type
 
-  type(do3se_type), public, dimension(NLANDUSE) :: do3se
+  type(do3se_type), public, dimension(NLANDUSEMAX) :: do3se
 
   logical, private, parameter :: MY_DEBUG = .false.
   real, private, dimension(7) ::  needed      ! For debugging

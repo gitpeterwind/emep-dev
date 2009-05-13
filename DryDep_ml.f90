@@ -83,7 +83,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
           debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
  use Io_Nums_ml,     only: IO_DO3SE
- use Landuse_ml,     only: Land_codes
+ use Landuse_ml,     only: Land_codes,LU_cdf
  use LandDefs_ml,    only : LandType  !Vds FEB2009
  use LocalVariables_ml, only : Grid, Sub, L, iL ! Grid and sub-scale Met/Veg data
  use MassBudget_ml,  only : totddep,DryDep_Budget
@@ -92,7 +92,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
                                   DEBUG_i, DEBUG_j, NPROC, &
                                   DEBUG_DRYDEP, DEBUG_VDS, MasterProc, &
                                   ATWAIR, atwS, atwN, PPBINV,&
-                                  KUPPER, NLANDUSE
+                                  KUPPER, NLANDUSEMAX
  use Par_ml,               only : li0,li1,lj0,lj1, me
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG
  
@@ -150,8 +150,10 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
 ! Read data for DO3SE (deposition O3 and  stomatal exchange) module
 ! (also used for other gases!)
-     call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
-     call CheckStop(errmsg, "Reading DO3SE ")
+     if(.not.LU_cdf)then
+        call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
+        call CheckStop(errmsg, "Reading DO3SE ")
+     endif
      call Init_StoFlux()              
 
      nadv = 0
@@ -229,16 +231,16 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
  ! Ecosystem specific deposition requires the fraction of dep in each 
  !  landuse mosaic, iL:
 
-      real, dimension(NDRYDEP_CALC,0:NLANDUSE):: &
+      real, dimension(NDRYDEP_CALC,0:NLANDUSEMAX):: &
               Mosaic_Gsur  & ! Gsur for output, LC specific, 0=GRID
             , Mosaic_Gns & ! Gns for output, LC specific
             , Mosaic_VgRef & ! Vg at ref height, e.g. 45m
             , Mosaic_Vg3m  ! Vg at 3m
 
-      real, dimension(size(MET_PARAMS),NLANDUSE):: &
+      real, dimension(size(MET_PARAMS),NLANDUSEMAX):: &
             Mosaic_Met  ! met, just 
 
-      real, dimension(NSPEC_ADV ,NLANDUSE):: fluxfrac_adv
+      real, dimension(NSPEC_ADV ,NLANDUSEMAX):: fluxfrac_adv
       integer :: iL_used(NLUMAX), nlu_used
       real :: wet, dry    ! Fractions
 !hf snow

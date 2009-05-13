@@ -177,7 +177,8 @@ contains
     integer :: n
 
     n_match  = 0
-    Index =  NOT_FOUND
+!    Index =  NOT_FOUND
+    Index =  1
 
     do n = 1, size(list)
 

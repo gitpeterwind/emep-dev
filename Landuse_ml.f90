@@ -36,14 +36,16 @@ use GridValues_ml,  only: gb_glob, gb, i_fdom, j_fdom, & ! latitude, coordinates
                          debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP
 use KeyValue_ml,    only: KeyVal,KeyValue
-use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, STUBBLE, Growing_Season
-use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSE, &
+use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, STUBBLE, Growing_Season,&
+                          NLanduse_DEF,NLANDUSE_EMEP
+use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSEMAX, &
                           NPROC, IIFULLDOM, JJFULLDOM, &
                           DomainName
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
 use TimeDate_ml,    only: daynumber, nydays, current_date
+use NetCDF_ml, only:Read_Local_Inter_CDF
 implicit none
 private
 
@@ -58,12 +60,13 @@ private
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
  integer, public, parameter :: NLUMAX = 19 ! max no. landuse per grid
+ logical, public :: LU_cdf
 
 ! The headers read from Inputs.Landuse define the "master-list" of
 ! codes for landuse. Each code must be present in the subsequent
 ! data files for phenology and DO3SE.
 
- character(len=6), dimension(NLANDUSE), public, save :: Land_codes ! As used
+ character(len=6), dimension(NLANDUSEMAX), public, save :: Land_codes ! As used
 
  !=============================================
  type, public :: LandCov
@@ -103,40 +106,45 @@ contains
 
  !==========================================================================
   subroutine InitLanduse()
+   logical :: filefound
 
        !=====================================
-        call ReadLandUse()     ! => Land_codes,  Percentage cover per grid
+        call ReadLandUse(filefound)     ! => Land_codes,  Percentage cover per grid
 
-        call Init_LandDefs(Land_codes)   ! => LandType, LandDefs
+        if(filefound)then
+           call Init_LandDefs(Land_codes)   ! => LandType, LandDefs
+           LU_cdf=.false.
        !=====================================
-
-
+        else
+           LU_cdf=.true.
+           !land codes already fetched
+        endif
   end subroutine InitLanduse
  !==========================================================================
-  subroutine ReadLanduse()
+  subroutine ReadLanduse(filefound)
 
+   logical :: filefound
    integer :: i,j,lu, index_lu, maxlufound
-   real, dimension(NLANDUSE) :: tmp
-   character(len=20), dimension(NLANDUSE+10) :: Headers
-   character(len=(NLANDUSE+10)*20) :: txtinput  ! Big enough to contain one full input record
+   real, dimension(NLANDUSEMAX) :: tmp
+   character(len=20), dimension(NLANDUSEMAX+10) :: Headers
+   character(len=(NLANDUSEMAX+10)*20) :: txtinput  ! Big enough to contain one full input record
    type(KeyVal), dimension(10)      :: KeyValues ! Info on units, coords, etc.
-   real, dimension(NLANDUSE+1) :: tmpmay
+   real, dimension(NLANDUSEMAX+1) :: tmpmay
    character(len=50) :: fname
    integer :: iL, n, NHeaders, NKeys, Nlines
    logical :: debug_flag
    real :: sumfrac
-
+   
   ! Specify the assumed coords and units - Read2DN will check that the data
   ! conform to these.
     type(keyval), dimension(2) :: CheckValues = (/ keyval("Units","PercentGrid"), &
                                                   keyval("Coords","ModelCoords") /)
 
  ! temporary arrays used.  Will re-write one day....
-   real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSE):: landuse_in ! tmp, with all data
+   real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
    real, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_data ! tmp, with all data
    integer, dimension(MAXLIMAX,MAXLJMAX):: landuse_ncodes ! tmp, with all data
    integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
-
 
    if ( DEBUG_LU .and. me == 0 ) &
         write(*,*) "LANDUSE: Starting ReadLandUse, me ",me
@@ -154,44 +162,60 @@ contains
 
       fname = "Inputs.Landuse"
       if ( me == 0 ) then
-         call open_file(IO_TMP,"r",fname,needed=.true.)
-         call CheckStop(ios,"open_file error on " // fname )
+!         call open_file(IO_TMP,"r",fname,needed=.true.)
+!         call CheckStop(ios,"open_file error on " // fname )
+         call open_file(IO_TMP,"r",fname,needed=.false.)
       end if
+      call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+      if(ios==0)then
+         filefound=.true.
 
+         call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues,CheckValues)
+         
+         call CheckStop( errmsg , "Read Headers" // fname )
+         
+         
+         ! The first two columns are assumed for now to be ix,iy, hence:
+         
+         NHeaders = NHeaders -2
+         call CheckStop( NHeaders /= NLANDUSE_EMEP, &
+              "Inputs.Landuse not consistent with NLANDUSE_EMEP")
 
-      call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues,CheckValues)
+          NLanduse_DEF=NHeaders        
+        
+         ! **** HERE we set the Landuse_codes *****************
+         do i = 1,  NLanduse_DEF
+            Land_codes(i) = trim ( Headers(i+2) )
+         end do
+         
+         ! Then data:
+         
+         call Read2DN("Inputs.Landuse",NLanduse_DEF,landuse_in,HeadersRead=.true.)
+         
+         !------------------------------------------------------------------------------
+         
+         
+         if ( DEBUG_LU .and. me == 0 ) then
+            write(*,*) "NOW LAND_CODES ARE ", NHeaders
+            call WriteArray(Land_codes,NLanduse_DEF,"Land_Codes")
+         end if
+         
+      else
+         filefound=.false.
+         !Read and interpolate from global data
+         call Read_Local_Inter_CDF('GLOBAL_landuse.nc',&
+              'category',landuse_in,MAXLIMAX,MAXLJMAX,NLanduse_DEF)
+         CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+!         CALL MPI_FINALIZE(INFO)
 
-      call CheckStop( errmsg , "Read Headers" // fname )
+      endif
+
  
-
-      ! The first two columns are assumed for now to be ix,iy, hence:
-
-        NHeaders = NHeaders -2
-        call CheckStop( NHeaders /= NLANDUSE, &
-                         "Inputs.Landuse not consisternt with NLANDUSE")
-
-      ! **** HERE we set the Landuse_codes *****************
-
-        do i = 1, NLANDUSE
-           Land_codes(i) = trim ( Headers(i+2) )
-        end do
-
-      ! Then data:
-
-      call Read2DN("Inputs.Landuse",NLANDUSE,landuse_in,HeadersRead=.true.)
-
-!------------------------------------------------------------------------------
-
-
-    if ( DEBUG_LU .and. me == 0 ) then
-        write(*,*) "NOW LAND_CODES ARE ", NHeaders
-       call WriteArray(Land_codes,NLANDUSE,"Land_Codes")
-    end if
 
     do i = li0, li1
        do j = lj0, lj1
            debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
-           do lu = 1, NLANDUSE
+           do lu = 1, NLanduse_DEF
               if ( landuse_in(i,j,lu) > 0.0 ) then
 
                  call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &
@@ -264,7 +288,7 @@ contains
              debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
              do ilu= 1, LandCover(i,j)%ncodes
                 lu      = LandCover(i,j)%codes(ilu)
-                call CheckStop( lu < 0 .or. lu > NLANDUSE , &
+                call CheckStop( lu < 0 .or. lu > NLANDUSEMAX , &
                                 "SetLandUse out of range" )
 
                 if ( LandDefs(lu)%SGS50 > 0 ) then  ! need to set growing seasons 
