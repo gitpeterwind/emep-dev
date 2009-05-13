@@ -99,12 +99,17 @@
   real, public, save,  dimension(KMAX_MID) ::  carea    ! for budgets ???
 
   real, public, save,  dimension(MAXLIMAX,MAXLJMAX) :: &
-            gl   &               !longitude of EMEP grid center
-           ,gb                  !latitude  of EMEP grid center
+            gl   &               !longitude of gridcell centers
+           ,gb                   !latitude  of gridcell centers
+  real, public, save,  dimension(0:MAXLIMAX,0:MAXLJMAX) :: &
+            gl_stagg   &               !longitude of gridcell corners 
+           ,gb_stagg                   !latitude  of gridcell corners
+!NB: gl_stagg, gb_stagg are here defined as the average of the four surrounding gl gb.
+! These differ slightly from the staggered points in the (i,j) grid. 
 
     real, public, save,  dimension(IIFULLDOM,JJFULLDOM) :: &
-            gb_glob,   &               !longitude of EMEP grid center
-            gl_glob                    !longitude of EMEP grid center
+            gb_glob,   &               !latitude of gridcell centers
+            gl_glob                    !longitude of gridcell centers
 
 
   real, public, save :: gbacmax,gbacmin,glacmax,glacmin
@@ -387,7 +392,7 @@ contains
   subroutine GlobalPosition
 
     integer i,j
-    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin
+    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin,im,jm,i0,j0,i1,j1
 
   if(trim(projection)=='Stereographic') then     
 
@@ -415,6 +420,53 @@ contains
 
        end do ! i
     end do ! j
+
+    i0=0
+    im=MAXLIMAX
+    j0=0
+    jm=MAXLJMAX
+    if(gi0+MAXLIMAX+1+IRUNBEG-2>IIFULLDOM)im=MAXLIMAX-1!outside fulldomain
+    if(gi0+0+IRUNBEG-2<1)i0=1!outside fulldomain
+    if(gj0+MAXLJMAX+1+JRUNBEG-2>JJFULLDOM)jm=MAXLJMAX-1!outside fulldomain
+    if(gj0+0+JRUNBEG-2<1)j0=1!outside fulldomain
+    do j=j0,jm
+       do i=i0,im
+          gl_stagg(i,j)=0.25*(gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gl_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gb_stagg(i,j)=0.25*(gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+       enddo
+    enddo
+    do j=0,j0
+       do i=i0,im
+          gl_stagg(i,j)=2*gl_stagg(i,j+1)-gl_stagg(i,j+2)
+          gb_stagg(i,j)=2*gb_stagg(i,j+1)-gb_stagg(i,j+2)
+       enddo
+    enddo
+    do j=jm,MAXLJMAX
+       do i=i0,im
+          gl_stagg(i,j)=2*gl_stagg(i,j-1)-gl_stagg(i,j-2)
+          gb_stagg(i,j)=2*gb_stagg(i,j-1)-gb_stagg(i,j-2)
+       enddo
+    enddo
+    do j=0,MAXLJMAX
+       do i=0,i0
+          gl_stagg(i,j)=2*gl_stagg(i+1,j)-gl_stagg(i+2,j)
+          gb_stagg(i,j)=2*gb_stagg(i+1,j)-gb_stagg(i+2,j)
+       enddo
+    enddo
+    do j=0,MAXLJMAX
+       do i=im,MAXLIMAX
+          gl_stagg(i,j)=2*gl_stagg(i-1,j)-gl_stagg(i-2,j)
+          gb_stagg(i,j)=2*gb_stagg(i-1,j)-gb_stagg(i-2,j)
+       enddo
+    enddo
+
+ 
     endif
 
 end subroutine GlobalPosition

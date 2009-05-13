@@ -43,7 +43,7 @@ module Met_ml
        ,gl,gb, gb_glob, gl_glob, MIN_ADVGRIDS   &
        ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
-       ,GlobalPosition,DefGrid
+       ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET &
        ,IIFULLDOM, JJFULLDOM, NPROC  &
@@ -493,6 +493,7 @@ contains
        GRIDWIDTH_M=50000.0
        call infield(1)!to get sigma_mid etc
        call DefGrid()
+       call GlobalPosition !for gl_stagg       
        return
     endif
 
@@ -523,6 +524,7 @@ contains
        GRIDWIDTH_M=50000.0
        call infield(1)
        call DefGrid()
+       call GlobalPosition !for gl_stagg
        return
     endif
 
@@ -3617,7 +3619,7 @@ contains
          ,xm_j(0:MAXLIMAX+1,0:MAXLJMAX+1),sigma_mid(KMAX_MID)
     integer, intent(out):: Nhh,nhour_first,cyclicgrid
 
-    integer :: nseconds(1),n1,i,j   
+    integer :: nseconds(1),n1,i,j,im,jm,i0,j0
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
     real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
@@ -3812,6 +3814,52 @@ contains
           gb(i,j)=gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
        enddo
     enddo
+    i0=0
+    im=MAXLIMAX
+    j0=0
+    jm=MAXLJMAX
+    if(gi0+MAXLIMAX+1+IRUNBEG-2>IIFULLDOM)im=MAXLIMAX-1!outside fulldomain
+    if(gi0+0+IRUNBEG-2<1)i0=1!outside fulldomain
+    if(gj0+MAXLJMAX+1+JRUNBEG-2>JJFULLDOM)jm=MAXLJMAX-1!outside fulldomain
+    if(gj0+0+JRUNBEG-2<1)j0=1!outside fulldomain
+
+    do j=j0,jm
+       do i=i0,im
+          gl_stagg(i,j)=0.25*(gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gl_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gb_stagg(i,j)=0.25*(gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+       enddo
+    enddo
+    do j=0,j0
+       do i=i0,im
+          gl_stagg(i,j)=2*gl_stagg(i,j+1)-gl_stagg(i,j+2)
+          gb_stagg(i,j)=2*gb_stagg(i,j+1)-gb_stagg(i,j+2)
+       enddo
+    enddo
+    do j=jm,MAXLJMAX
+       do i=i0,im
+          gl_stagg(i,j)=2*gl_stagg(i,j-1)-gl_stagg(i,j-2)
+          gb_stagg(i,j)=2*gb_stagg(i,j-1)-gb_stagg(i,j-2)
+       enddo
+    enddo
+    do j=0,MAXLJMAX
+       do i=0,i0
+          gl_stagg(i,j)=2*gl_stagg(i+1,j)-gl_stagg(i+2,j)
+          gb_stagg(i,j)=2*gb_stagg(i+1,j)-gb_stagg(i+2,j)
+       enddo
+    enddo
+    do j=0,MAXLJMAX
+       do i=im,MAXLIMAX
+          gl_stagg(i,j)=2*gl_stagg(i-1,j)-gl_stagg(i-2,j)
+          gb_stagg(i,j)=2*gb_stagg(i-1,j)-gb_stagg(i-2,j)
+       enddo
+    enddo
+
 
     !test if the grid is cyclicgrid:
     !The last cell + 1 cell = first cell
