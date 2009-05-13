@@ -10,7 +10,7 @@ Under construction!
 
 Landuse_ml: call to Read_Local_Inter_CDF when Input.Landuse is not found
 
-Replaced all NLANDUSE with NLANDUSEMAX: NLANDUSEMAX is used for array declaration and is the max allowed and
+Replaced all NLANDUSE with NLANDUSEMAX: used for array declaration and is the max allowed,
 NLanduse_DEF is the actual number of landuse defined.
 DO3SE_ml,DryDep,LandDef,StoFlux_ml,NetCDF,LocalVariables_ml
 
