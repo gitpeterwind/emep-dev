@@ -51,8 +51,8 @@ module ModelConstants_ml
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   8       & ! Actual number of processors in longitude
-  , NPROCY      =   4       & ! Actual number of processors in latitude
+    NPROCX      =   3       & ! Actual number of processors in longitude
+  , NPROCY      =   2       & ! Actual number of processors in latitude
   , NPROC       = NPROCX * NPROCY
 
   ! ds Jan2009

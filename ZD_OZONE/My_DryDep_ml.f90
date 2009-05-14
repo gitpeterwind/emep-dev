@@ -39,7 +39,7 @@ module My_DryDep_ml    ! DryDep_ml
  use CheckStop_ml,  only : CheckStop, StopAll
  use Derived_ml,    only : f_2d,   d_2d, IOU_INST
  use My_Derived_ml,  only : &
-   nOutDDep, DDEP_LCS , OutDDep, nOutVg, OutVg, nOutRG, OutRG &
+   nOutDDep, OutDDep, nOutVg, OutVg, nOutRG, OutRG &
   ,nOutMET, OutMET & !MAR2009
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP

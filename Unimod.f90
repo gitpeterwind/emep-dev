@@ -222,7 +222,7 @@ program myeul
 
   call define_chemicals()    ! sets up species details
 
-  call Init_Derived()        ! Derived field defs.
+!dsx  call Init_Derived()        ! Derived field defs.
 
   call set_output_defs()     ! Initialises outputs
 
@@ -250,6 +250,8 @@ program myeul
   call MetModel_LandUse(1)   !
 
   call InitLandUse()  !  Reads Inputs.Landuse, Inputs.LandPhen
+!dsx:
+  call Init_Derived()        ! Derived field defs.
 
 
   if ( NBVOC > 0  ) call Init_BVOC()

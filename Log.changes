@@ -1,3 +1,23 @@
+================================ rv3_2_11, Dave,  14th May 2009======
+
+Changes to allow for possibility of new landuse codes, or of
+old landuse codes (e.g. "CF" not being recognied with new
+systems)
+
+Unimod.f90 - Init_Derived now moved after Init_landuse, so that
+  the My_derived code knows about the available Land_codes
+
+My_Derived_ml - check added for MET_LCS to see if the LC actually
+  exists. If not, nOutMET will be zero. Note that for other
+  outputs the code will crash if a non-existant land-code is given.
+  The user can keep it working by only havinbg "Grid" in the arrays,
+  e.g. for RG_LCS = (/ "Grid" /)
+
+  Also, some slight tidy-up to reduce clutter
+
+SmallUtils:  find_index again returns NOT_FOUND (-999) instead of 1
+    also, trim() added to txt strings
+
 ================================ rv3_2_10, Peter  13th May 2009======
 
 First version of a grid flexible Landuse input

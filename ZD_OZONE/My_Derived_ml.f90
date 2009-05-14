@@ -62,12 +62,15 @@ use GenChemicals_ml, only : species               !  For mol. wts.
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , MasterProc  & 
                         , SOURCE_RECEPTOR  &  
+                        , DEBUG => DEBUG_MY_DERIVED &
                         , KMAX_MID & ! =>  z dimension
                         , PPBINV  &  !   1.0e9
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
 
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+!use Landuse_ml,    only : Land_codes   ! e.g. "CF"
+use LandDefs_ml,   only : LandDefs     ! e.g. "CF"
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area 
@@ -81,6 +84,8 @@ private
  public  :: My_DerivFunc 
 
  private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
+           ,Check_LandCoverPresent & 
+           ,print_dep_type &     ! Prins contents
            ,pm_calc              ! Miscelleaneous PM's
 
 
@@ -116,18 +121,15 @@ private
 
 
 !Mass-outputs of advected species, will be added to Derived
-!Divide into those used for SR, and then the extras (XSURF)
+!Modify for SR
    integer, public, parameter, dimension(1) :: SRSURF_UG_S = (/ SO4 /)
-   integer, public, parameter, dimension(1) ::  XSURF_UG_S = (/ SO2 /)
    integer, public, parameter, dimension(2) ::   SURF_UG_S = (/ SO2, SO4 /)
 
    integer, public, parameter, dimension(4) :: SRSURF_UG_N = (/ aNO3, pNO3, aNH4, NO2 /)
    integer, public, parameter, dimension(2) ::  XSURF_UG_N = (/ NH3, HNO3 /)
    integer, public, parameter, dimension(6) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
 
- !  integer, public, parameter, dimension(1) :: SRSURF_UG_C = (/ HCHO /) # Just testing. Also have ppb
-   integer, public, parameter, dimension(1) ::  XSURF_UG_C = (/ HCHO /)
-   integer, public, parameter, dimension(1) ::   SURF_UG_C = (/ XSURF_UG_C /)
+   integer, public, parameter, dimension(1) ::  SURF_UG_C = (/ HCHO /)
 
    integer, public, parameter, dimension(2) :: SRSURF_UG = (/ PPM25, PPMco /)
    integer, public, parameter, dimension(2) ::  XSURF_UG = (/ SSfi,SSco /)
@@ -222,7 +224,7 @@ private
   end type 
 
    !ECO08 - specify some species and land-covers we want to output
-   ! depositions for in netcdf files. DDEP_LCS must match one of
+   ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  in My_DryDep_ml.
    !
     integer, public, parameter, dimension(13) :: &
@@ -230,7 +232,7 @@ private
            SO2,  SO4, NH3, aNH4, NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      DDEP_LCS  = (/ "Grid", "Conif", "Seminat" /)
+      DDEP_ECOS  = (/ "Grid", "Conif", "Seminat" /)
 
     integer, public, parameter, dimension(7) :: &
       WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
@@ -238,7 +240,7 @@ private
 
   ! Have many combinations: species x ecosystems
   type(Dep_type), public, &
-     dimension( size(DDEP_SPECS)*size(DDEP_LCS) ), save :: OutDDep
+     dimension( size(DDEP_SPECS)*size(DDEP_ECOS) ), save :: OutDDep
 
    !ECO08 - specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
@@ -260,8 +262,8 @@ private
       RG_LABELS = (/ "Rs", "Rns", "Gns" /)
     integer, public, parameter, dimension(2) :: &
       RG_SPECS = (/ NH3, SO2/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" ,"TC"/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" , "TESTRG","TC"/)
 
     type(Dep_type), public, & !Non-stomatal conductance
      dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
@@ -270,8 +272,9 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
       MET_PARAMS = (/ "USTAR", "INVL" /)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-      MET_LCS  = (/ "CF", "SNL", "GR" ,"TC"/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+    !character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
+      MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
 
    ! We use Dep_type anyway since we can use the LCC elements
     type(Dep_type), public, & !Non-stomatal conductance
@@ -297,7 +300,6 @@ private
        D3_WANTED = (/ "D3_O3        ","D3_TH        " /)
 
 
-    logical, private, parameter :: MY_DEBUG = .false.
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
    contains
@@ -305,8 +307,9 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 !hf Rs
-    integer :: i, ilab, nLC, nVg, nRG, nMET, iadv
+    integer :: i, ilab, nDD, nVg, nRG, nMET, iadv, ispec, ind, atw
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
+    character(len=TXTLEN_DERIV) :: txt, units
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -329,64 +332,59 @@ private
      ! We find the various combinations of gas-species and ecosystem, 
      ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
 
-      nLC = 0
+      nDD = 0
       do i = 1, size(DDEP_SPECS)
-        do n = 1, size(DDEP_LCS) 
+        do n = 1, size(DDEP_ECOS) 
 
-          nLC = nLC + 1
+          nDD = nDD + 1
+          ispec  = DDEP_SPECS(i)  ! Index in ix_tot arrays
 
-          !CLEAN OutDDep(nLC)%LC  = find_index(DDEP_LCS(n),DDEP_RECEIVERS)
-          OutDDep(nLC)%txt  = DDEP_LCS(n)
+          if ( ispec > 0 ) then ! normal species, e.g. DDEP_SO2_m2CF
+             name = "DDEP_"  // trim( species(ispec)%name ) // &
+                    "_m2" // trim( DDEP_ECOS(n) )
 
-          if ( DDEP_SPECS(i) > 0 ) then ! normal species, e.g. DDEP_SO2_m2CF
-             OutDDep(nLC)%name = "DDEP_"  // &
-                 trim( species(DDEP_SPECS(i))%name ) // &
-                    "_m2" // trim( DDEP_LCS(n) )
+             iadv  = ispec - NSPEC_SHL ! adv for use in Derived
 
-            OutDDep(nLC)%Index  = DDEP_SPECS(i) - NSPEC_SHL
+             if ( species(ispec)%sulphurs > 0 ) then
+               atw  = species(ispec)%sulphurs * atwS
+               units  =  "mgS/m2"
 
-            if ( species(DDEP_SPECS(i))%sulphurs > 0 ) then
-               OutDDep(nLC)%atw  = species(DDEP_SPECS(i))%sulphurs * atwS
-               OutDDep(nLC)%units  =  "mgS/m2"
-
-            else if ( species(DDEP_SPECS(i))%nitrogens > 0 ) then
-               OutDDep(nLC)%atw  = species(DDEP_SPECS(i))%nitrogens * atwN
-               OutDDep(nLC)%units  =  "mgN/m2"
-               call CheckStop( species(DDEP_SPECS(i))%sulphurs>0 , &
-                " ERROR in DDEP_SPECS: BOTH S AND N!"// &
+                call CheckStop( species( ispec )%nitrogens > 0 , &
+                 " ERROR in DDEP_SPECS: BOTH S AND N!"// & 
                    species(DDEP_SPECS(i))%name)
+
+             else if ( species( ispec )%nitrogens > 0 ) then
+               atw  = species( ispec )%nitrogens * atwN
+               units  =  "mgN/m2"
 
              else
                call StopAll("ERROR: OutDDep atw failure "// &
-                   species(DDEP_SPECS(i))%name)
+                   species( ispec )%name)
              end if
-           else ! GROUP
-            OutDDep(nLC)%Index  = DDEP_SPECS(i) ! e.g. -1 for SOX
-            if ( DDEP_SPECS(i) == SOX_INDEX ) then
-               OutDDep(nLC)%atw   = atwS
-               OutDDep(nLC)%units = "mgS/m2"
-               OutDDep(nLC)%name = "DDEP_SOX_m2"//trim(DDEP_LCS(n))
-            else if ( DDEP_SPECS(i) == OXN_INDEX ) then
-               OutDDep(nLC)%atw   = atwN
-               OutDDep(nLC)%units = "mgN/m2"
-               OutDDep(nLC)%name = "DDEP_OXN_m2"//trim(DDEP_LCS(n))
-            else if ( DDEP_SPECS(i) == RDN_INDEX ) then
-               OutDDep(nLC)%atw   = atwN
-               OutDDep(nLC)%units = "mgN/m2"
-               OutDDep(nLC)%name = "DDEP_RDN_m2"//trim(DDEP_LCS(n))
-            end if
+          else ! GROUP
+             iadv   = ispec  ! e.g. -1 for SOX
+             atw   = atwN   ! first guess
+             units = "mgN/m2"
+            if ( ispec == SOX_INDEX ) then
+                atw   = atwS
+                units = "mgS/m2"
+                name = "DDEP_SOX_m2"//trim(DDEP_ECOS(n))
+             else if ( ispec == OXN_INDEX ) then
+                name = "DDEP_OXN_m2"//trim(DDEP_ECOS(n))
+             else if ( ispec == RDN_INDEX ) then
+                name = "DDEP_RDN_m2"//trim(DDEP_ECOS(n))
+             end if
+          end if
 
-           end if
-
-
-           if(MY_DEBUG .and. MasterProc ) then
-             write(6,"(a,4(a,i4))") "DDEP NEW ", &
-             OutDDep(nLC)%name, nLC, "LC ", OutDDep(nLC)%LC, &
-            " Index: ", OutDDep(nLC)%Index, "ATW ",  OutDDep(nLC)%atw
-           end if
-        end do ! DDEP_SPECS 
-      end do ! DDEP_LCS
-      nOutDDep = nLC
+        ! Set defaults
+        ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
+        !            x     d      d    d   a10    a10   a10     f    i    a10
+             OutDDep(nDD) = Dep_type(  &
+              name, -99, ind, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
+           if(DEBUG .and. MasterProc) call print_dep_type( OutDDep(nDD) )
+        end do ! DDEP_SPECS
+     end do ! DDEP_ECOS
+     nOutDDep = nDD
 
 !nEcoWDep = 0
 !do i = 1, size(WDEP_SPECS)
@@ -403,8 +401,12 @@ private
       nVg = 0
       do ilab = 1, size(VG_LABELS)
       do i = 1, size(VG_SPECS)
-        do n = 1, size(VG_LCS) 
+        VG_LC: do n = 1, size(VG_LCS) 
 
+          !------------------- Check if LC present in this array ------!
+          index = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, (i==1 .and. ilab == 1))
+          if ( index < 1 ) cycle  VG_LC
+          !-------------End of Check if LC present in this array ------!
           nVg = nVg + 1
 
           name = trim( VG_LABELS(ilab) ) // "_"  // &
@@ -419,9 +421,8 @@ private
              name, -99, iadv, -99,"Mosaic", VG_LABELS(ilab), VG_LCS(n),&
                                              100.0, -99,  "cm/s") 
 
-          if(MY_DEBUG .and. MasterProc ) &
-              write(6,*) "VGOUT ", nVg, i, n, iadv, OutVg(nVg)
-        end do !n
+          if(DEBUG .and. MasterProc) call print_dep_type(OutVg(nVg))
+        end do VG_LC !n
       end do ! i
       end do ! ilab
       nOutVg = nVg
@@ -436,7 +437,12 @@ private
       nRG = 0
       do ilab = 1, size(RG_LABELS)
       do i = 1, size(RG_SPECS)
-        do n = 1, size(RG_LCS) 
+        RG_LC: do n = 1, size(RG_LCS) 
+
+          !------------------- Check if LC present in this array ------!
+          index = Check_LandCoverPresent( "RG_LCS", n, RG_LCS, (i==1 .and. ilab == 1))
+          if ( index < 1 ) cycle  RG_LC
+          !-------------End of Check if LC present in this array ------!
 
           nRG = nRG + 1
           name = trim ( RG_LABELS(ilab) ) // "_"  // &
@@ -455,9 +461,9 @@ private
               OutRG(nRG)%units  =   "cm/s"
           end if
           !Not yet known: OutRG(nRG)%LC
-          if(MY_DEBUG .and. MasterProc) &
+          if( DEBUG .and. MasterProc) &
               write(6,*) "RGOUT ", nRG, i, n, OutRG(nRG)
-        end do !n
+        end do RG_LC !n
       end do ! i
       end do ! ilab
       nOutRG = nRG
@@ -470,7 +476,12 @@ private
 
       nMET = 0
       do ilab = 1, size(MET_PARAMS)
-        do n = 1, size(MET_LCS) 
+        MET_LC: do n = 1, size(MET_LCS) 
+
+          !------------------- Check if LC present in this array ------!
+          index = Check_LandCoverPresent( "MET_LCS", n, MET_LCS, (ilab == 1))
+          if ( index < 1 ) cycle  MET_LC
+          !-------------End of Check if LC present in this array ------!
 
           nMET = nMET + 1
           name = trim ( MET_PARAMS(ilab) ) // "_"  // trim( MET_LCS(n) )
@@ -485,9 +496,9 @@ private
               OutMET(nMET)%units  =   "m"
           end if
 
-          if(MY_DEBUG .and. MasterProc ) &
+          if( DEBUG .and. MasterProc ) &
                write(6,*) "METOUT ", nMET, i, n, OutMET(nMET)
-        end do !n
+        end do MET_LC !n
       end do ! ilab
       nOutMET = nMET
 
@@ -508,18 +519,51 @@ private
 
      if ( MasterProc ) then
        write(*,*) "Init_My_Deriv, mynum_deriv2d = ", mynum_deriv2d
-       if( MY_DEBUG ) then
+       write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
+       if(  DEBUG ) then
          do i = 1, mynum_deriv2d
            write(*,*) "DEBUG DERIV2D ", i, mynum_deriv2d, wanted_deriv2d(i)
          end do
        end if
        call WriteArray(wanted_deriv2d,mynum_deriv2d," Wanted 2d array is")
-       write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
        call WriteArray(wanted_deriv3d,mynum_deriv3d," Wanted 3d array is")
      
      end if
 
   end subroutine Init_My_Deriv
+ !=========================================================================
+
+  function Check_LandCoverPresent( descrip, n, array, write_condition) result(ind)
+    character(len=*),intent(in) :: descrip
+    integer, intent(in) :: n
+    character(len=*),dimension(:),intent(in) :: array
+    logical, intent(in) :: write_condition
+    integer :: ind
+
+          ind = 1
+          if( trim(array(n)) /= "Grid") &  ! Grid is a specia case
+             ind = find_index(  array(n), LandDefs(:)%code )
+          if( DEBUG ) print *, "LC-CHECKING", descrip, n, array(n), ind
+          if( ind < 1 .and.  write_condition .and. MasterProc ) write(*,*) &
+                descrip // "NOT FOUND!! Skipping : " //  array(n)
+  end function Check_LandCoverPresent
+ !=========================================================================
+subroutine print_dep_type(w)
+  type(dep_type), intent(in) :: w  ! wanted
+
+  write(6,*) "Prints dep_type ========================="
+  write(6,"(a,a)")      "Name   :", w%name
+  write(6,"(a,i3)")     "LC     :", w%LC
+  write(6,"(a,i3)")     "index  :", w%index
+  write(6,"(a,i3)")     "f2d    :", w%f2d
+  write(6,"(a,a10)")    "class  :", w%class
+  write(6,"(a,a10)")    "label  :", w%label
+  write(6,"(a,a10)")    "txt    :", w%txt
+  write(6,"(a,es10.3)") "scale  :", w%scale
+  write(6,"(a,i3)")     "atw    :", w%atw
+  write(6,"(a,a10)")    "units  :", w%units
+end subroutine print_dep_type
+
  !=========================================================================
   subroutine My_DerivFunc( e_2d, n, class , timefrac, density )
 

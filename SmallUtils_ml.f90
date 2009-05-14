@@ -177,12 +177,11 @@ contains
     integer :: n
 
     n_match  = 0
-!    Index =  NOT_FOUND
-    Index =  1
+    Index =  NOT_FOUND
 
     do n = 1, size(list)
 
-         if ( wanted == list(n)  ) then
+         if ( trim(wanted) == trim(list(n))  ) then
             Index = n
             n_match = n_match + 1
          end if
