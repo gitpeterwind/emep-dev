@@ -1873,11 +1873,6 @@ contains
 
 
 
-
-
-
-
-
   subroutine MetModel_LandUse(callnum)
 
     !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1897,6 +1892,7 @@ contains
     real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real) 
 
     character*20 fname
+    logical :: needed_found
 
     ios = 0
 
@@ -1906,18 +1902,19 @@ contains
           write(fname,fmt='(''rough.170'')') 
           write(6,*) 'filename for landuse ',fname
        end if
-
-       call ReadField(IO_ROUGH,fname,r_class)
+       needed_found=.false.
+       call ReadField(IO_ROUGH,fname,r_class,needed_found)
 
        ! And convert from real to integer field
 
        nwp_sea(:,:) = .false.
-       do j=1,ljmax
-          do i=1,limax
-             if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.
+       if(needed_found)then
+          do j=1,ljmax
+             do i=1,limax
+                if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.
+             enddo
           enddo
-       enddo
-
+       endif
     else ! callnum == 2
        if (me == 0) then
           write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
@@ -1925,8 +1922,13 @@ contains
 
        endif !me==0
 
-       call ReadField(IO_SNOW,fname,snow)
+       needed_found=.not.foundsdepth !needed if not defined through metdata
 
+       call ReadField(IO_SNOW,fname,snow,needed_found)
+
+       if(.not. needed_found)then
+             snow=0!should be defined through snowsepth from metdata
+       endif
     end if ! callnum == 1 
 
     ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

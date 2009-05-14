@@ -50,7 +50,8 @@
   use Io_ml,         only : ios, open_file
   implicit none
 
-  integer,private  :: i, j, n         ! Local variables
+  INCLUDE 'mpif.h' !MPI needed
+  integer,private  :: i, j, n,  INFO       ! Local variables
 
   interface ReadField 
      module procedure ReadField_r
@@ -63,11 +64,13 @@ contains
 
  
  !>=========================================================================<
-  subroutine ReadField_r(IO_INFILE,fname,local_field)
+  subroutine ReadField_r(IO_INFILE,fname,local_field,needed_found)
 
   integer,      intent(in) :: IO_INFILE     ! File no.
   character*20, intent(in) :: fname         ! File name
   real, intent(out) :: local_field(MAXLIMAX,MAXLJMAX)! Local field
+  logical, optional, intent(inout):: needed_found! input: needed, output:found
+  logical :: needed
   character*50 :: errmsg 
   real :: tmpin   ! To allow more than one input line per i,j
 
@@ -76,13 +79,19 @@ contains
 
   real :: in_field(IIFULLDOM,JJFULLDOM)! Field to be read
 
+  needed=.true.
+  if(present(needed_found))needed=needed_found
   in_field(:,:)    = 0.0
   local_field(:,:) = 0.0
   errmsg = "ok"
 
     if (me==0)then
-       call open_file(IO_INFILE,"r",fname,needed=.true.)
-       call CheckStop(ios,"ReadField: ios error in r" // fname )
+       call open_file(IO_INFILE,"r",fname,needed=needed)
+       if(.not.needed .and. ios/=0)then
+          write(*,*)trim(fname),' not found (but not needed)'
+       else
+
+        call CheckStop(ios,"ReadField: ios error in r" // fname )
 
         READFIELD : do
             read(IO_INFILE,*,iostat=ios) i,j,tmpin
@@ -97,12 +106,18 @@ contains
 
        close(IO_INFILE)
        call CheckStop( errmsg ,"ReadField_r: errmsg in ReadField")
-
+       endif
     endif !me==0
-            
-    call global2local(in_field,local_field,MSG_READ7                 &
-                       ,1,IIFULLDOM,JJFULLDOM,1,IRUNBEG,JRUNBEG)
 
+    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+
+    if(ios/=0)then
+       if(present(needed_found))needed_found=.false.
+    else
+       if(present(needed_found))needed_found=.true.
+       call global2local(in_field,local_field,MSG_READ7                 &
+                       ,1,IIFULLDOM,JJFULLDOM,1,IRUNBEG,JRUNBEG)
+    endif
   end subroutine ReadField_r
 
  !>=========================================================================<
@@ -153,26 +168,31 @@ contains
 
  !>=========================================================================<
 
-   subroutine ReadField_i(IO_INFILE,fname,local_field)
+   subroutine ReadField_i(IO_INFILE,fname,local_field,needed_found)
 
   integer,      intent(in) :: IO_INFILE     ! File no.
   character*20, intent(in) :: fname         ! File name
   integer, intent(out)     :: local_field(MAXLIMAX,MAXLJMAX)
+  logical, optional, intent(inout):: needed_found! input: needed, output:found
+  logical :: needed
   character*50 :: errmsg 
   integer :: intmp
 
   integer :: in_field(IIFULLDOM,JJFULLDOM)! Field to be read
 
+  needed=.true.
+  if(present(needed_found))needed=needed_found
   in_field(:,:)    = 0.0       ! Initialise - ds, 15/1/2005
   local_field(:,:) = 0.0       ! Initialise - ds, 15/1/2005
   errmsg = "ok"
 
    if (me==0)then
-      call open_file(IO_INFILE,"r",fname,needed=.true.)
-      call CheckStop(ios,"ReadField: ios error " // fname )
-    endif !me==0
+       call open_file(IO_INFILE,"r",fname,needed=needed)
+       if(.not.needed .and. ios/=0)then
+          write(*,*)trim(fname),' not found (but not needed)'
+       else
 
-    if (me == 0) then
+        call CheckStop(ios,"ReadField: ios error " // fname )
 
         READFIELD : do
            read(IO_INFILE,*,iostat=ios) i,j, intmp
@@ -186,11 +206,19 @@ contains
         enddo READFIELD
         close(IO_INFILE)
         call CheckStop( errmsg ,"ReadField: errmsg in ReadField")
+       endif
 
     endif !me==0
 
-    call global2local_int(in_field,local_field,MSG_READ5               &
+    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+
+    if(ios/=0)then
+       if(present(needed_found))needed_found=.false.
+    else
+       if(present(needed_found))needed_found=.true.
+       call global2local_int(in_field,local_field,MSG_READ5               &
                ,IIFULLDOM,JJFULLDOM,1,IRUNBEG,JRUNBEG)
+    endif
  
   end subroutine ReadField_i
  !>=========================================================================<

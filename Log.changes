@@ -1,3 +1,21 @@
+================================ rv3_2_12, Peter  14th May 2009======
+
+ReadField_ml:
+Optional parameter when the field is not needed
+
+Met_ml:
+rough is set to 0 if not needed
+snow is not required when read from metdata
+
+Sites:
+sites.dat and sondes.dat are not required.
+(the code was hanging when this happened)
+
+Rsurface_ml: if ice is missing, but sdepth is present, take sdepth instead of snow.(IS THIS OK?)
+    if ( .not. foundsdepth)then
+       fsnow=G%snow !snow from climatology files, 1 or 0
+    endif
+
 ================================ rv3_2_11, Dave,  14th May 2009======
 
 Changes to allow for possibility of new landuse codes, or of

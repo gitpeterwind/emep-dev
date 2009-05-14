@@ -179,7 +179,7 @@ contains
                             !but it might be ice without snow..
     fsnow = min(fsnow,1.0)  
     fsnow = max(fsnow,0.0)
-    if ( (.not. foundsdepth).or.(.not. foundice))then
+    if ( .not. foundsdepth)then
        fsnow=G%snow !snow from climatology files, 1 or 0
     endif
 

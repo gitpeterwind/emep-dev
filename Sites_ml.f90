@@ -245,10 +245,16 @@ contains
   if (me == 0) then
     infile  = fname // ".dat"
     call check_file(infile,fexist,needed=.false.,errmsg=errmsg)
-    if ( .not. fexist ) return
-    call open_file(io_num,"r",infile,needed=.true.)
-    call CheckStop(ios,"ios error on "//trim(infile))
+    if ( .not. fexist )then
+       ios=1
+    else
+       call open_file(io_num,"r",infile,needed=.true.)
+       call CheckStop(ios,"ios error on "//trim(infile))
+    endif
   end if
+
+  call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+  if(ios/=0)return
 
   call CheckStop(NMAX,size(s_name), &
      "Error in Sites_ml/Init_sites: sitesdefNMAX problem")
