@@ -106,6 +106,7 @@ contains
 
        close(IO_INFILE)
        call CheckStop( errmsg ,"ReadField_r: errmsg in ReadField")
+       ios=0
        endif
     endif !me==0
 
@@ -206,6 +207,7 @@ contains
         enddo READFIELD
         close(IO_INFILE)
         call CheckStop( errmsg ,"ReadField: errmsg in ReadField")
+        ios=0
        endif
 
     endif !me==0

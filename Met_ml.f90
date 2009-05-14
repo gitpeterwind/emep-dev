@@ -187,6 +187,7 @@ module Met_ml
 !hf snow
   logical, public, save :: foundsdepth    ! false if no snow depth in metdata
   logical, public, save :: foundice       ! false if no ice coverage (%) in metdata
+  logical, public, save :: foundnwp_sea   !false if no rough file is found
   ! (when read) at level  boundaries 
   ! and therefore do not need to be 
   ! interpolated.
@@ -1908,6 +1909,7 @@ contains
        ! And convert from real to integer field
 
        nwp_sea(:,:) = .false.
+
        if(needed_found)then
           do j=1,ljmax
              do i=1,limax

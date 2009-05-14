@@ -46,6 +46,8 @@ use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
 use TimeDate_ml,    only: daynumber, nydays, current_date
 use NetCDF_ml, only:Read_Local_Inter_CDF
+use Met_ml, only :nwp_sea ,foundnwp_sea
+
 implicit none
 private
 
@@ -78,7 +80,7 @@ private
          ,Astart    &! Start photosyntgetic activity, for DO3SE
          ,Aend       ! 
    real,   dimension(NLUMAX) :: &
-          fraction  &!  (coverage) 
+          fraction  &!  (coverage) ! 
          ,LAI       &! Leaf-area-index (m2/m2)
          ,SAI       &! Surface-area-index (m2/m2)   (leaves+bark, etc.)
          ,hveg      &! Max. height of veg.
@@ -259,6 +261,7 @@ contains
     integer :: effectivdaynumber !6 months shift in Southern hemisphere.
     real :: xSAIadd
     logical :: iam_wheat
+    real, parameter ::water_fraction_THRESHOLD=0.5
 
 ! Treatment of growing seasons in the southern hemisphere:
 !   all the static definitions (SGS,EGS...) refer to northern hemisphere, but the actual 
@@ -316,12 +319,16 @@ contains
              if ( LandType(lu)%is_water ) water_fraction(i,j) = LandCover(i,j)%fraction(ilu)
              if ( LandType(lu)%is_ice   )   ice_fraction(i,j) = LandCover(i,j)%fraction(ilu)
 
+             
                 if ( DEBUG_LU .and. debug_flag ) then
                       write(*,"(a,2i4,2f12.4)") "DEBUG_LU WATER ", ilu, lu, &
                           water_fraction(i,j), ice_fraction(i,j)
                 end if
 
             end do ! ilu
+            if(.not. foundnwp_sea)then
+               if(water_fraction(i,j)>water_fraction_THRESHOLD)nwp_sea(i,j) = .true.
+            endif
           end do ! j
         end do ! i
 

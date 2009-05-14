@@ -1,4 +1,15 @@
+
+
+
+================================ rv3_2_12b, Peter  14th May 2009======
+
+ReadField, Landuse, Met_ml:
+Use landuse to define nwp_sea when rough file is missing
+
+
 ================================ rv3_2_12, Peter  14th May 2009======
+
+
 
 ReadField_ml:
 Optional parameter when the field is not needed
