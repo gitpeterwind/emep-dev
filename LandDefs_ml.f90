@@ -30,6 +30,7 @@ module LandDefs_ml
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValue_ml, only :  KeyVal
  use ModelConstants_ml, only : NLANDUSEMAX, MasterProc, DEBUG_LANDDEFS
+ use SmallUtils_ml, only : find_index
   implicit none
   private
 
@@ -56,6 +57,12 @@ module LandDefs_ml
 
  public  :: Init_LandDefs         ! Sets table for LAI, SAI, hveg
  public  :: Growing_season 
+ public  :: Check_LandCoverPresent 
+
+interface Check_LandCoverPresent
+  module procedure Check_LandCoverPresent_Item
+  module procedure Check_LandCoverPresent_Array
+end interface Check_LandCoverPresent
 
  real, public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
  integer, public :: NLanduse_DEF ! number of landuse categories actually defined
@@ -209,5 +216,39 @@ contains
        end if
 
   end subroutine Init_LandDefs
+ !=========================================================================
+  function Check_LandCoverPresent_Item( descrip, txt, write_condition) result(ind)
+    character(len=*),intent(in) :: descrip
+    character(len=*),intent(in) :: txt
+    logical, intent(in) :: write_condition
+    integer :: ind
+
+          if( trim(txt) == "Grid") then  ! Grid is a special case
+             ind = 0
+          else
+             ind = find_index(  txt, LandDefs(:)%code )
+          !if( DEBUG ) print *, "LC-CHECKING", descrip, txt, ind
+          end if
+          if( ind < 0 .and.  write_condition .and. MasterProc ) write(*,*) &
+                descrip // "NOT FOUND!! Skipping : " //  txt
+  end function Check_LandCoverPresent_Item
+ !=========================================================================
+  function Check_LandCoverPresent_Array( descrip, n, txt, write_condition) result(ind)
+    character(len=*),intent(in) :: descrip
+    integer, intent(in) :: n
+    character(len=*),dimension(:),intent(in) :: txt
+    logical, intent(in) :: write_condition
+    integer :: ind
+
+          if( trim(txt(n)) == "Grid") then  ! Grid is a special case
+             ind = 0
+          else
+             ind = find_index(  txt(n), LandDefs(:)%code )
+          end if
+          !if( DEBUG ) print *, "LC-CHECKING", descrip, n, txt(n), ind
+          if( ind < 0 .and.  write_condition .and. MasterProc ) write(*,*) &
+                descrip // "NOT FOUND!! Skipping : " //  txt(n)
+  end function Check_LandCoverPresent_Array
+ !=========================================================================
 
 end module LandDefs_ml

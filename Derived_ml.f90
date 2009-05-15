@@ -67,6 +67,7 @@ use My_Derived_ml, only : &
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
       nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG, nOutMET, OutMET, &
+      nOutFLUX, OutFLUX, &
       SURF_UG_S, &  !ds added May 2009
       SURF_UG_N, &  !ds added May 2009
       SURF_UG_C, &  !ds added May 2009
@@ -316,13 +317,12 @@ private
     real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
 
     character(len=20) :: dname
-    integer :: ndep, nVg, nRG, nMET  ! ECO08
 
 
   ! - for debug  - now not affecting ModelConstants version
    integer, dimension(MAXLIMAX) :: i_fdom
    integer, dimension(MAXLJMAX) :: j_fdom
-   integer :: ind, ind2, ixadv, idebug
+   integer :: ind, ind2, ixadv, idebug, n
 
 
     if(DEBUG .and. MasterProc ) write(6,*) " START DEFINE DERIVED "
@@ -361,35 +361,41 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
   
 ! We process the various combinations of gas-species and ecosystem:
 ! (e.g. for D2_SO2_m2SN)
-
-  do ndep = 1, nOutDDep
+!-------------------------------------------------------------------------------
+  do n = 1, nOutDDep
                  !code avg? ind scale rho Inst Yr Mn Day
     call AddDef( "DDEP", F, -1, 1.0e6, F  , F  ,T ,T ,F , &
-           OutDDep(ndep)%name,OutDDep(ndep)%units)
+           OutDDep(n)%name,OutDDep(n)%units)
   end do
-
-  do nVg = 1, nOutVg ! Index is adv
+!-------------------------------------------------------------------------------
+  do n = 1, nOutVg ! Index is adv
                  !code            avg?       ind             scale 
                  !    rho Inst Yr Mn Day
-    call AddDef( OutVg(nVg)%label, T, OutVg(nVg)%Index, OutVg(nVg)%scale, &
-                       F  , F  ,T ,T ,T , OutVg(nVg)%name,OutVg(nVg)%units)
+    call AddDef( OutVg(n)%label, T, OutVg(n)%Index, OutVg(n)%scale, &
+                       F  , F  ,T ,T ,T , OutVg(n)%name,OutVg(n)%units)
   end do
-
-  do nRG = 1, nOutRG ! Index is adv
+!-------------------------------------------------------------------------------
+  do n = 1, nOutRG ! Index is adv
                  !code            avg?       ind             scale 
                  !  rho Inst Yr Mn Day  Units
-    call AddDef( OutRG(nRG)%label, T, OutRG(nRG)%Index, OutRG(nRG)%scale, &
-                    F  , F  ,T ,T ,T , OutRG(nRG)%name,OutRG(nRG)%units)
+    call AddDef( OutRG(n)%label, T, OutRG(n)%Index, OutRG(n)%scale, &
+                    F  , F  ,T ,T ,T , OutRG(n)%name,OutRG(n)%units)
   end do
-
-  do nMET = 1, nOutMET ! NB Adv not used
+!-------------------------------------------------------------------------------
+  do n = 1, nOutMET ! NB Adv not used
                  !code            avg?       ind             scale 
                  !  rho Inst Yr Mn Day  Units
-    call AddDef(OutMET(nMET)%class, T,OutMET(nMET)%Index,OutMET(nMET)%scale,&
-                    F  , F  ,T ,T ,T , OutMET(nMET)%name,OutMET(nMET)%units)
+    call AddDef(OutMET(n)%class, T,OutMET(n)%Index,OutMET(n)%scale,&
+                    F  , F  ,T ,T ,T , OutMET(n)%name,OutMET(n)%units)
   end do
-
-
+!-------------------------------------------------------------------------------
+  do n = 1, nOutFLUX ! NB Adv not used
+                 !code            avg?       ind             scale 
+                 !  rho Inst Yr Mn Day  Units
+    call AddDef(OutFLUX(n)%class, F,OutFLUX(n)%Index,OutFLUX(n)%scale,&
+                    F  , F  ,T ,T ,T , OutFLUX(n)%name,OutFLUX(n)%units)
+  end do
+!-------------------------------------------------------------------------------
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
 
@@ -482,15 +488,15 @@ call AddDef( "SNratio",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNratio","ratio")
 !   set as "external" parameters - ie set outside Derived subroutine
 !      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
 
-call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")
-call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")
-call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")
-call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","mmol/m2")
-!
-call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","mmol/m2")
-call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","mmol/m2")
-call AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","mmol/m2")
-!
+!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")
+!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")
+!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")
+!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","mmol/m2")
+!dsf!
+!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","mmol/m2")
+!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","mmol/m2")
+!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","mmol/m2")
+!dsf!
 !      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
 call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")
 call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")

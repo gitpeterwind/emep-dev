@@ -1,5 +1,21 @@
+================================ rv3_2_13, Dave,  15th May 2009======
 
+Working changes::: AOT outputs have been commented out. Will re-appear
+soon!
 
+LandDefs_ml
+New functions for Check_LandCoverPresent added.
+
+My_Derived_ml
+  AFST now dealt with using "OutXX" system, as for VG, RG
+
+My_Derived_ml
+  AFST now dealt with using "OutXX" system, as for VG, RG
+  Gets rid of iam_wheat, D2_AFST... etc. type indices
+  check_vals now not needed.:wq
+
+Derived_ml
+  -- more changes to cope with AFST and Out variables
 
 ================================ rv3_2_12b, Peter  14th May 2009======
 

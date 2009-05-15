@@ -70,7 +70,7 @@ use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 !use Landuse_ml,    only : Land_codes   ! e.g. "CF"
-use LandDefs_ml,   only : LandDefs     ! e.g. "CF"
+use LandDefs_ml,   only : LandDefs, Check_LandCoverPresent     ! e.g. "CF"
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area 
@@ -84,7 +84,6 @@ private
  public  :: My_DerivFunc 
 
  private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
-           ,Check_LandCoverPresent & 
            ,print_dep_type &     ! Prins contents
            ,pm_calc              ! Miscelleaneous PM's
 
@@ -139,8 +138,16 @@ private
    integer, public, parameter, dimension(1) ::  XSURF_PPB = (/ HCHO /)
    integer, public, parameter, dimension(2) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
  
+   integer, public, parameter :: NALL_SURF_UG = &
+     size(SURF_UG_S) + size(SURF_UG_N) + size(SURF_UG_C) + size(SURF_UG)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(34) :: &
+   integer, public, parameter, dimension( NALL_SURF_UG ) :: &
+      ALL_SURF_UGX = (/ SURF_UG_S, SURF_UG_N, SURF_UG_C, SURF_UG /)
+   character(len=3), public, save, dimension( NALL_SURF_UG ) :: &
+      ALL_SURF_UGTXT 
+   real, public, save, dimension( NALL_SURF_UG ) :: ALL_SURF_ATW   
+
+    character(len=TXTLEN_DERIV), public, parameter, dimension(27) :: &
   D2_SR = (/ &
 !
 !    Particles: sums
@@ -163,8 +170,8 @@ private
 !
 !    Ecosystem - fluxes: 
  ! NB: do not remove without removing from My_DryDep too 
-      ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
-      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
+!      ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
+!      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
        ,"D2_O3DF     ","D2_O3WH     " &
 !
 !    Surface  pressure (for cross section):
@@ -201,7 +208,7 @@ private
 !  D2_SO2_m2Conif. 
 
 
-  integer, public, save :: nOutDDep, nOutVg ! ECO08
+  integer, public, save :: nOutDDep, nOutVg, nOutFLUX 
   integer, public, save :: nOutRG  ! RG = resistances and conductances
   integer, public, save :: nOutMET ! RG = resistances and conductances
 
@@ -213,7 +220,7 @@ private
      character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
      integer :: LC            ! Index of Receiver land-cover (one 
                               ! of Dep_Receivers)
-     integer :: Index         ! e.g. index in xn_adv arrays
+     integer :: Index         ! e.g. index in e.g. xn_adv arrays, or Y for AFstY
      integer :: f2d           ! index in f_2d arrays
      character(len=10) :: class !  "Mosaic"
      character(len=10) :: label !  e.g. "VG", "Rns"
@@ -255,6 +262,19 @@ private
     type(Dep_type), public, &
      dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
 
+!FLUX outputs for AFstY
+!To avoid many unwanted combinations of land and Y values we just give
+! the name here and let the code interpret it later. 
+! *** to use format f3.1 for the Y value! ***
+
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+     FLUX_OUTPUTS = (/ "AFST_1.6_IAM_DF", "AFST_1.6_BF", &
+                      "AFST_0.0_IAM_CR",  &
+                      "AFST_3.0_IAM_CR", "AFST_6.0_IAM_CR" /)
+
+    type(Dep_type), public, &
+     dimension( size(FLUX_OUTPUTS) ),  save :: OutFLUX
+
 ! For resistances and conductances we normally want the same landuse
 ! outputs, so we use a combined variable:
 
@@ -262,8 +282,10 @@ private
       RG_LABELS = (/ "Rs", "Rns", "Gns" /)
     integer, public, parameter, dimension(2) :: &
       RG_SPECS = (/ NH3, SO2/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
-      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" , "TESTRG","TC"/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" /)
+!    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+!      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" , "TESTRG","TC"/)
 
     type(Dep_type), public, & !Non-stomatal conductance
      dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
@@ -272,9 +294,11 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
       MET_PARAMS = (/ "USTAR", "INVL" /)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-    !character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-      MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
+    character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
+      MET_LCS  = (/ "CF", "SNL", "GR" ,"TC"/)
+    !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+      !MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
+      ! Can also set dim 4:1 to exclude all - gives zero size MET_LCS
 
    ! We use Dep_type anyway since we can use the LCC elements
     type(Dep_type), public, & !Non-stomatal conductance
@@ -306,10 +330,12 @@ private
 
  !=========================================================================
   subroutine Init_My_Deriv()
-!hf Rs
-    integer :: i, ilab, nDD, nVg, nRG, nMET, iadv, ispec, ind, atw
+
+    integer :: i, ilab, nDD, nVg, nRG, nMET, nFLUX, iLC, i10Y, &
+      iadv, ispec, ind, atw
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
-    character(len=TXTLEN_DERIV) :: txt, units
+    character(len=TXTLEN_DERIV) :: txt, units, txtnum
+    real :: Y    ! threshold for AFSTY
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -317,6 +343,9 @@ private
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING)
 
 !ds May 2009, added surf concs in various units (e.g. ugS/m3 or ppb):
+!ALL_SURF_UGTXT ALL_SURF_ATW
+!ALL_SURF_UG( SURF_UG_S ) = "SURF_UG_
+    
      call AddArray( "SURF_ugS_"//species(SURF_UG_S)%name ,  wanted_deriv2d, NOT_SET_STRING)
      call AddArray( "SURF_ugN_"//species(SURF_UG_N)%name ,  wanted_deriv2d, NOT_SET_STRING)
      call AddArray( "SURF_ugC_"//species(SURF_UG_C)%name ,  wanted_deriv2d, NOT_SET_STRING)
@@ -404,8 +433,8 @@ private
         VG_LC: do n = 1, size(VG_LCS) 
 
           !------------------- Check if LC present in this array ------!
-          index = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, (i==1 .and. ilab == 1))
-          if ( index < 1 ) cycle  VG_LC
+          iLC = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, (i==1 .and. ilab == 1))
+          if ( iLC < 0 ) cycle  VG_LC
           !-------------End of Check if LC present in this array ------!
           nVg = nVg + 1
 
@@ -413,12 +442,10 @@ private
              trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
           iadv = VG_SPECS(i) - NSPEC_SHL
 
-          !Not yet known: OutVg(nVg)%LC
-
  ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
  !            x     d      d    d   a10    a10   a10     f    i    a10
            OutVg(nVg) = Dep_type(  &
-             name, -99, iadv, -99,"Mosaic", VG_LABELS(ilab), VG_LCS(n),&
+             name, iLC, iadv, -99,"Mosaic", VG_LABELS(ilab), VG_LCS(n),&
                                              100.0, -99,  "cm/s") 
 
           if(DEBUG .and. MasterProc) call print_dep_type(OutVg(nVg))
@@ -428,7 +455,45 @@ private
       nOutVg = nVg
 
      call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING)
-!hf Rs
+
+      !------------- FLUX stuff ----------------------------------------------
+      ! For fluxes we start with a formatted name, eg. AFST_3.0_CF and
+      !untangle it to get threshold Y (=3.0) and landcover type
+
+      nFLUX = 0
+      FLUX_LC: do n = 1, size(FLUX_OUTPUTS) 
+  
+         name = FLUX_OUTPUTS(n)
+         write(unit=txt,fmt="(a4)") name(1:4)    ! Should be AFST
+         write(unit=txtnum,fmt="(a3)") name(6:8)
+         read(txtnum,fmt="(f3.1)") Y
+         write(unit=txt,fmt="(a)") name(10:) ! Gets LC, e.g. CF or IAM_CR
+  
+
+          !------------------- Check if LC present in this array ------!
+          iLC = Check_LandCoverPresent( "FLUX_LCS", txt, .true. )
+          if(DEBUG .and. MasterProc)  write(*,*) "FLUX ", trim(name), &
+               "=> Y", trim(txtnum), " iLC, LC ", iLC, trim(txt)
+          if ( iLC < 0 ) cycle  FLUX_LC
+          !-------------End of Check if LC present in this array ------!
+          nFLUX = nFLUX + 1
+
+          if(txtnum(2:3)==".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
+          write(unit=name,fmt="(a,a,a,a)") "AFST", trim(txtnum),"_",trim(txt)
+          i10Y = nint( 10*Y)
+
+ ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
+ !            x     d      d    d   a10    a10   a10     f    i    a10
+           OutFLUX(nFLUX) = Dep_type(  &
+             name, iLC, i10Y, -99,"Mosaic", "AFST" , txt,&
+                                             1.0, -99,  "mmole/m2") 
+
+          if(DEBUG .and. MasterProc) call print_dep_type(OutFLUX(nFLUX))
+      end do FLUX_LC !n
+      nOutFLUX = nFLUX
+
+     call AddArray( OutFLUX(:)%name, wanted_deriv2d, NOT_SET_STRING)
+
 
       !------------- Surface resistance for d_2d -------------------------
       ! We find the various combinations of gas-species and ecosystem, 
@@ -440,8 +505,8 @@ private
         RG_LC: do n = 1, size(RG_LCS) 
 
           !------------------- Check if LC present in this array ------!
-          index = Check_LandCoverPresent( "RG_LCS", n, RG_LCS, (i==1 .and. ilab == 1))
-          if ( index < 1 ) cycle  RG_LC
+          iLC = Check_LandCoverPresent( "RG_LCS", n, RG_LCS, (i==1 .and. ilab == 1))
+          if ( iLC < 0 ) cycle  RG_LC
           !-------------End of Check if LC present in this array ------!
 
           nRG = nRG + 1
@@ -449,10 +514,12 @@ private
            trim( species(RG_SPECS(i))%name ) // "_" // trim( RG_LCS(n) )
 
           iadv  =   RG_SPECS(i) - NSPEC_SHL
-          OutRG(nRG)%label  = RG_LABELS(ilab)
-          OutRG(nRG)%txt  =   RG_LCS(n)
+
+          !OutRG(nRG)%label  = RG_LABELS(ilab)
+          !OutRG(nRG)%txt  =   RG_LCS(n)
+
           OutRG(nRG) = Dep_type(  &
-             name, -99, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
+             name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
                                              1.0, -99,  "-") 
           if( OutRG(nRG)%label(1:1) == "R" )  then
               OutRG(nRG)%units  =   "s/m"
@@ -460,9 +527,7 @@ private
               OutRG(nRG)%scale  =    100.0   
               OutRG(nRG)%units  =   "cm/s"
           end if
-          !Not yet known: OutRG(nRG)%LC
-          if( DEBUG .and. MasterProc) &
-              write(6,*) "RGOUT ", nRG, i, n, OutRG(nRG)
+          if(DEBUG .and. MasterProc) call print_dep_type(OutRG(nRG))
         end do RG_LC !n
       end do ! i
       end do ! ilab
@@ -479,15 +544,15 @@ private
         MET_LC: do n = 1, size(MET_LCS) 
 
           !------------------- Check if LC present in this array ------!
-          index = Check_LandCoverPresent( "MET_LCS", n, MET_LCS, (ilab == 1))
-          if ( index < 1 ) cycle  MET_LC
+          iLC = Check_LandCoverPresent( "MET_LCS", n, MET_LCS, (ilab == 1))
+          if ( iLC < 0 ) cycle  MET_LC
           !-------------End of Check if LC present in this array ------!
 
           nMET = nMET + 1
           name = trim ( MET_PARAMS(ilab) ) // "_"  // trim( MET_LCS(n) )
 
           OutMET(nMET) = Dep_type( &
-           name, -99, ilab, -99, "Mosaic", MET_PARAMS(ilab),  &
+           name, iLC, ilab, -99, "Mosaic", MET_PARAMS(ilab),  &
                                               MET_LCS(n), 1.0, -99, "-")
 
           if( OutMET(nMET)%label(1:5) == "USTAR" )  then
@@ -496,8 +561,7 @@ private
               OutMET(nMET)%units  =   "m"
           end if
 
-          if( DEBUG .and. MasterProc ) &
-               write(6,*) "METOUT ", nMET, i, n, OutMET(nMET)
+          if(DEBUG .and. MasterProc) call print_dep_type(OutMET(nMET))
         end do MET_LC !n
       end do ! ilab
       nOutMET = nMET
@@ -532,21 +596,21 @@ private
 
   end subroutine Init_My_Deriv
  !=========================================================================
-
-  function Check_LandCoverPresent( descrip, n, array, write_condition) result(ind)
-    character(len=*),intent(in) :: descrip
-    integer, intent(in) :: n
-    character(len=*),dimension(:),intent(in) :: array
-    logical, intent(in) :: write_condition
-    integer :: ind
-
-          ind = 1
-          if( trim(array(n)) /= "Grid") &  ! Grid is a specia case
-             ind = find_index(  array(n), LandDefs(:)%code )
-          if( DEBUG ) print *, "LC-CHECKING", descrip, n, array(n), ind
-          if( ind < 1 .and.  write_condition .and. MasterProc ) write(*,*) &
-                descrip // "NOT FOUND!! Skipping : " //  array(n)
-  end function Check_LandCoverPresent
+!
+!  function Check_LandCoverPresent( descrip, n, array, write_condition) result(ind)
+!    character(len=*),intent(in) :: descrip
+!    integer, intent(in) :: n
+!    character(len=*),dimension(:),intent(in) :: array
+!    logical, intent(in) :: write_condition
+!    integer :: ind
+!
+!          ind = 1
+!          if( trim(array(n)) /= "Grid") &  ! Grid is a specia case
+!             ind = find_index(  array(n), LandDefs(:)%code )
+!          !if( DEBUG ) print *, "LC-CHECKING", descrip, n, array(n), ind
+!          if( ind < 1 .and.  write_condition .and. MasterProc ) write(*,*) &
+!                descrip // "NOT FOUND!! Skipping : " //  array(n)
+!  end function Check_LandCoverPresent
  !=========================================================================
 subroutine print_dep_type(w)
   type(dep_type), intent(in) :: w  ! wanted

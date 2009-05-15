@@ -40,7 +40,7 @@ module My_DryDep_ml    ! DryDep_ml
  use Derived_ml,    only : f_2d,   d_2d, IOU_INST
  use My_Derived_ml,  only : &
    nOutDDep, OutDDep, nOutVg, OutVg, nOutRG, OutRG &
-  ,nOutMET, OutMET & !MAR2009
+  ,nOutMET, OutMET, nOutFLUX, OutFLUX & !MAR2009
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
@@ -50,8 +50,7 @@ module My_DryDep_ml    ! DryDep_ml
  use LandDefs_ml,        only : LandDefs, LandType
  use Landuse_ml,         only : WheatGrowingSeason
  use LocalVariables_ml,  only : Grid  !=> izen  integer of zenith angle
- use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON, DEBUG_MY_DRYDEP
-use Par_ml, only: me ! Vds Ndep
+ use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON, DEBUG_MY_DRYDEP,MasterProc
  use PhysicalConstants_ml, only : AVOG
  use SmallUtils_ml,      only: find_index, NOT_FOUND
  use StoFlux_ml,         only : unit_flux, lai_flux, leaf_flux
@@ -74,9 +73,9 @@ use Par_ml, only: me ! Vds Ndep
   integer, private, save :: &
 !    DDEP_SOX,   DDEP_OXN,   DDEP_RDN,  &
 !    D2_VddACC, D2_VddCOA, & !ECO08 addition
-    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
-    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
-    iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes
+!    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
+!    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
+!    iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes
     D2_O3DF,    D2_O3WH, &
     D2_EUAOT40WH, D2_EUAOT40DF, &
     D2_UNAOT40WH, D2_UNAOT40DF, &
@@ -159,7 +158,6 @@ use Par_ml, only: me ! Vds Ndep
 
 contains
   subroutine Init_DepMap
-   integer, dimension(17) :: check_vals  ! Tmp safety check array
    integer :: icheck, iadv, i, i2, n, ndep, nVg, nRG, nMET
 
  ! .... Define the mapping between the advected species and
@@ -204,8 +202,8 @@ contains
    ! We start LC with Grid at zero, so need -1 offset
     OutDdep(ndep)%LC   = find_index(OutDdep(ndep)%txt ,DEP_RECEIVERS) -1
 
-    if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTDdep ", ndep, &
-       OutDdep(ndep)%name,OutDdep(ndep)%txt,"=>"&
+    if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTDdep ", ndep, &
+       trim (OutDdep(ndep)%name),trim(OutDdep(ndep)%txt),"=>"&
           ,OutDdep(ndep)%LC, OutDdep(ndep)%f2d
     call CheckStop( OutDDep(ndep)%f2d < 1, &
         "OutDDep-f2d Error " // OutDDep(ndep)%name)
@@ -215,6 +213,7 @@ contains
      
   do nVg = 1, nOutVg
 
+     icheck = OutVg(nVg)%LC  ! TMP DEBUG
      if( OutVg(nVg)%txt == "Grid") then
         OutVg(nVg)%LC = GRID_LC   ! zero
      else 
@@ -222,8 +221,8 @@ contains
      end if
      OutVg(nVg)%f2d = find_index( OutVg(nVg)%name, f_2d(:)%name )
 
-     if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTVG ", nVg, &
-         OutVg(nVg)%name,OutVg(nVg)%txt,"=>",&
+     if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTVG ", nVg, &
+         trim( OutVg(nVg)%name ),trim( OutVg(nVg)%txt ),"=>",&
            OutVg(nVg)%LC, OutVg(nVg)%f2d
 
      call CheckStop( OutVg(nVg)%LC < GRID_LC , & !ie zero
@@ -241,7 +240,7 @@ contains
      end if
      OutRG(nRG)%f2d = find_index( OutRG(nRG)%name, f_2d(:)%name )
 
-     if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTRG ", nRG, &
+     if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTRG ", nRG, &
          OutRG(nRG)%name,OutRG(nRG)%txt,"=>",&
            OutRG(nRG)%LC, OutRG(nRG)%f2d
 
@@ -254,15 +253,15 @@ contains
 
  do nMET = 1, nOutMET
 
-     if( OutMET(nMET)%txt == "Grid") then
-        OutMET(nMET)%LC = GRID_LC    ! zero
-     else 
-        OutMET(nMET)%LC = find_index( OutMET(nMET)%txt, LandDefs(:)%code )
-     end if
+     !if( OutMET(nMET)%txt == "Grid") then
+     !   OutMET(nMET)%LC = GRID_LC    ! zero
+     !else 
+     !   OutMET(nMET)%LC = find_index( OutMET(nMET)%txt, LandDefs(:)%code )
+     !end if
      OutMET(nMET)%f2d = find_index( OutMET(nMET)%name, f_2d(:)%name )
 
-     if(DEBUG_MY_DRYDEP .and. me==0) write(6,*) "OUTMET ", nMET, &
-         OutMET(nMET)%name,OutMET(nMET)%txt,"=>",&
+     if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTMET ", nMET, &
+         trim( OutMET(nMET)%name),trim( OutMET(nMET)%txt),"=>",&
            OutMET(nMET)%LC, OutMET(nMET)%f2d
 
      call CheckStop( OutMET(nMET)%LC < GRID_LC , & ! <zero
@@ -272,18 +271,31 @@ contains
   end do
 
 
+  do n = 1, nOutFLUX
+
+    OutFLUX(n)%f2d  = find_index(OutFLUX(n)%name ,f_2d(:)%name)
+
+    if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTFLUX ", n, &
+       trim( OutFLUX(n)%name)," ",trim( OutFLUX(n)%txt),"=>"&
+          ,OutFLUX(n)%LC, OutFLUX(n)%f2d
+    call CheckStop( OutFLUX(n)%f2d < 1, &
+        "OutFLUX-f2d Error " // OutFLUX(n)%name)
+    call CheckStop( OutFLUX(n)%LC < 0, & !0=GRID
+        "OutFLUX-LC Error " // OutFLUX(n)%name)
+  end do
+
 
 !#######################  NEW define indices here #######################
 
-D2_AFSTDF0 = find_index("D2_AFSTDF0",f_2d(:)%name)
-D2_AFSTDF16 = find_index("D2_AFSTDF16",f_2d(:)%name)
-
-D2_AFSTBF0 = find_index("D2_AFSTBF0",f_2d(:)%name)
-D2_AFSTBF16 = find_index("D2_AFSTBF16",f_2d(:)%name)
-
-D2_AFSTCR0 = find_index("D2_AFSTCR0",f_2d(:)%name)
-D2_AFSTCR3 = find_index("D2_AFSTCR3",f_2d(:)%name)
-D2_AFSTCR6 = find_index("D2_AFSTCR6",f_2d(:)%name)
+!D2_AFSTDF0 = find_index("D2_AFSTDF0",f_2d(:)%name)
+!D2_AFSTDF16 = find_index("D2_AFSTDF16",f_2d(:)%name)
+!
+!D2_AFSTBF0 = find_index("D2_AFSTBF0",f_2d(:)%name)
+!D2_AFSTBF16 = find_index("D2_AFSTBF16",f_2d(:)%name)
+!
+!D2_AFSTCR0 = find_index("D2_AFSTCR0",f_2d(:)%name)
+!D2_AFSTCR3 = find_index("D2_AFSTCR3",f_2d(:)%name)
+!D2_AFSTCR6 = find_index("D2_AFSTCR6",f_2d(:)%name)
 
 D2_O3DF    = find_index("D2_O3DF   ",f_2d(:)%name)
 D2_O3WH    = find_index("D2_O3WH   ",f_2d(:)%name)
@@ -296,28 +308,36 @@ D2_UNAOT40DF    = find_index("D2_UNAOT40DF",f_2d(:)%name)
 
 D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
 
-iam_wheat   = find_index("IAM_CR",LandDefs(:)%code)
-iam_beech   = find_index("IAM_DF",LandDefs(:)%code)
-iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
+!iam_wheat   = find_index("IAM_CR",LandDefs(:)%code)
+!iam_beech   = find_index("IAM_DF",LandDefs(:)%code)
+!iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
 !####################### ds END of define indices #######################
-  check_vals = (/  &
-    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & !4
-    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,& !3
-    iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes !3
-    D2_O3DF,    D2_O3WH, & !2
-    D2_EUAOT40WH, D2_EUAOT40DF, & !4
-    D2_UNAOT40WH, D2_UNAOT40DF, & !4
-    D2_MMAOT40WH & !2
-  /) ! => 37 - 12 -> 25
-    ! Will re-write whole subroutine later to avoid individual indices, but  
-    ! for now, do:
-     do icheck = 1, 17
-        call CheckStop( check_vals(icheck) < 1 , "D2D CHECKVAL! " )
-     end do
-     call CheckStop( any(check_vals < 1) , "D2D CHECKVAL! " )
+!  check_vals = (/  &
+!    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & !4
+!    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,& !3
+!    iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes !3
+!    D2_O3DF,    D2_O3WH, & !2
+!    D2_EUAOT40WH, D2_EUAOT40DF, & !4
+!    D2_UNAOT40WH, D2_UNAOT40DF, & !4
+!    D2_MMAOT40WH & !2
+!  /) ! => 37 - 12 -> 25
+!    ! Will re-write whole subroutine later to avoid individual indices, but  
+!    ! for now, do:
+!     do icheck = 1, 17
+!        call CheckStop( check_vals(icheck) < 1 , "D2D CHECKVAL! " )
+!     end do
+!     call CheckStop( any(check_vals < 1) , "D2D CHECKVAL! " )
+!May 2009, only 7 hard-coded left:
+     call CheckStop( D2_O3DF < 1 , "D2_O3DF CHECKVAL! " )
+     call CheckStop( D2_O3WH < 1 , "D2_O3WH CHECKVAL! " )
+     call CheckStop( D2_EUAOT40WH < 1 , "D2_EUAOT40WH CHECKVAL! " )
+     call CheckStop( D2_EUAOT40DF < 1 , "D2_EUAOT40DF CHECKVAL! " )
+     call CheckStop( D2_UNAOT40WH < 1 , "D2_UNAOT40WH CHECKVAL! " )
+     call CheckStop( D2_UNAOT40DF < 1 , "D2_UNAOT40DF CHECKVAL! " )
+     call CheckStop( D2_MMAOT40WH < 1 , "D2_MMAOT40WH CHECKVAL! " )
  
-     if(me==0) write(6,*) "Init_DepMap D2D FINISHED"
-     call CheckStop( icheck < 0 , "D2D STOPPER! " )
+     if(MasterProc) write(6,*) "Init_DepMap D2D FINISHED"
+!     call CheckStop( icheck < 0 , "D2D STOPPER! " )
 
   end subroutine Init_DepMap
 
@@ -334,8 +354,9 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
      real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      real, dimension(:), intent(in) ::  coverage    ! dim (NLANDUSE), =fraction
-     integer :: n, nadv, nadv2, ihh, idd, imm
+     integer :: n, nadv, nadv2, ihh, idd, imm, iLC
      real :: o3WH, o3DF   ! O3 over wheat, decid forest
+     real :: Y            ! Threshold for flux
 
 
      real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG  ! Converts from 
@@ -448,24 +469,29 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
         end if ! DEBUG_ECO 
      end do ! ndep
 
+! Fluxes, AFstY 
 
-
-
-
-!MAPPING_MANUAL CHANGES:
-!  Use 1.6 for Beech and 3 for crops
+do n = 1, nOutFLUX
+     iLC = OutFLUX(n)%LC
+     Y = 0.1 * OutFLUX(n)%index    ! Index stores threshold Y x 10
+        if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
+           write(6,"(a,2i3,f4.1,es12.3)") "DEBUG_YYY Fflux ", n, iLC, Y, leaf_flux(iLC)
+        end if
+     d_2d( OutFLUX(n)%f2d ,i,j,IOU_INST) = fstfrac* max(leaf_flux(iLC)-Y,0.0)
+     
+end do ! FLUX
 
 !Beech:
-     d_2d(D2_AFSTDF0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_beech)
-     d_2d(D2_AFSTDF16,i,j,IOU_INST) = fstfrac* max(leaf_flux(iam_beech)-1.6,0.0)
-!Med. Oak:
-     d_2d(D2_AFSTBF0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_medoak)
-     d_2d(D2_AFSTBF16,i,j,IOU_INST) = fstfrac* max(leaf_flux(iam_medoak)-1.6,0.0)
-!Crops
-     d_2d(D2_AFSTCR0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_wheat)
-     d_2d(D2_AFSTCR3,i,j,IOU_INST) =  fstfrac*max(leaf_flux(iam_wheat)-3.0,0.0)
-     d_2d(D2_AFSTCR6,i,j,IOU_INST) =  fstfrac*max(leaf_flux(iam_wheat)-6.0,0.0)
-
+!     d_2d(D2_AFSTDF0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_beech)
+!     d_2d(D2_AFSTDF16,i,j,IOU_INST) = fstfrac* max(leaf_flux(iam_beech)-1.6,0.0)
+!!Med. Oak:
+!     d_2d(D2_AFSTBF0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_medoak)
+!     d_2d(D2_AFSTBF16,i,j,IOU_INST) = fstfrac* max(leaf_flux(iam_medoak)-1.6,0.0)
+!!Crops
+!     d_2d(D2_AFSTCR0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_wheat)
+!     d_2d(D2_AFSTCR3,i,j,IOU_INST) =  fstfrac*max(leaf_flux(iam_wheat)-3.0,0.0)
+!     d_2d(D2_AFSTCR6,i,j,IOU_INST) =  fstfrac*max(leaf_flux(iam_wheat)-6.0,0.0)
+!
    !--- ecosystem specific concentrations..
    ! - use Conif forest for forests - safer for growing seasons
 
@@ -474,48 +500,50 @@ iam_medoak  = find_index("IAM_MF",LandDefs(:)%code)
      ihh      =    current_date%hour             ! for debugging
 
 
-     o3WH = c_hvegppb(iam_wheat)* lossfrac
-     o3DF = c_hvegppb(iam_beech)* lossfrac
-
-     d_2d(D2_O3DF,i,j,IOU_INST) =   o3DF
-     d_2d(D2_O3WH,i,j,IOU_INST) =   o3WH
-
-     if ( ihh >= 9 .and. ihh <= 21 ) then ! 8-20 CET, assuming summertime
-
-        d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
-        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
-     else
-        d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  0.0
-        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  0.0
-     end if
-
-
-    !/-- Calcuates AOT values for specific veg. Daylight values calculated
-    !    only, for zenith < AOT_HORIZON ( e.g. 89 )
-
-
-           if ( Grid%izen < AOT_HORIZON ) then
-
-             d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
-             d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
-
-           else
-             d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  0.0
-             d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  0.0
-           end if
-
-       ! MM AOT added (same as UNECE, but different growing season)
-             d_2d(D2_MMAOT40WH,i,j,IOU_INST) = d_2d(D2_UNAOT40WH,i,j,IOU_INST)&
-                     * WheatGrowingSeason(i,j)
-
-    if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-          write(6,"(a12,3i5,f7.2,5es12.3,i3,es12.3)") "DEBUG_ECO ", &
-          imm, idd, ihh, o3WH, &
-             leaf_flux(iam_beech), d_2d(D2_AFSTDF0,i,j,IOU_INST), &
-             leaf_flux(iam_wheat), d_2d(D2_AFSTCR0,i,j,IOU_INST), &
-             d_2d(D2_UNAOT40WH,i,j,IOU_INST), &
-             WheatGrowingSeason(i,j), d_2d(D2_MMAOT40WH,i,j,IOU_INST)
-    end if ! DEBUG
+! EXCLUDED THE REST PENDING RE_WRITE OF AOTx system - will be similar to
+! the other "Out" variables, e.g OutFLUX
+!TMPDS     o3WH = c_hvegppb(iam_wheat)* lossfrac
+!TMPDS     o3DF = c_hvegppb(iam_beech)* lossfrac
+!TMPDS
+!TMPDS     d_2d(D2_O3DF,i,j,IOU_INST) =   o3DF
+!TMPDS     d_2d(D2_O3WH,i,j,IOU_INST) =   o3WH
+!TMPDS
+!TMPDS     if ( ihh >= 9 .and. ihh <= 21 ) then ! 8-20 CET, assuming summertime
+!TMPDS
+!TMPDS        d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
+!TMPDS        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
+!TMPDS     else
+!TMPDS        d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  0.0
+!TMPDS        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  0.0
+!TMPDS     end if
+!TMPDS
+!TMPDS
+!TMPDS    !/-- Calcuates AOT values for specific veg. Daylight values calculated
+!TMPDS    !    only, for zenith < AOT_HORIZON ( e.g. 89 )
+!TMPDS
+!TMPDS
+!TMPDS           if ( Grid%izen < AOT_HORIZON ) then
+!TMPDS
+!TMPDS             d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
+!TMPDS             d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
+!TMPDS
+!TMPDS           else
+!TMPDS             d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  0.0
+!TMPDS             d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  0.0
+!TMPDS           end if
+!TMPDS
+!TMPDS       ! MM AOT added (same as UNECE, but different growing season)
+!TMPDS             d_2d(D2_MMAOT40WH,i,j,IOU_INST) = d_2d(D2_UNAOT40WH,i,j,IOU_INST)&
+!TMPDS                     * WheatGrowingSeason(i,j)
+!TMPDS
+!TMPDS    if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
+!TMPDS          write(6,"(a12,3i5,f7.2,5es12.3,i3,es12.3)") "DEBUG_ECO ", &
+!TMPDS          imm, idd, ihh, o3WH, &
+!TMPDS             leaf_flux(iam_beech), d_2d(D2_AFSTDF0,i,j,IOU_INST), &
+!TMPDS             leaf_flux(iam_wheat), d_2d(D2_AFSTCR0,i,j,IOU_INST), &
+!TMPDS             d_2d(D2_UNAOT40WH,i,j,IOU_INST), &
+!TMPDS             WheatGrowingSeason(i,j), d_2d(D2_MMAOT40WH,i,j,IOU_INST)
+!TMPDS    end if ! DEBUG
 
    !---- end ecosystem specific ----------------------------------------------
 

@@ -51,8 +51,8 @@ module ModelConstants_ml
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   3       & ! Actual number of processors in longitude
-  , NPROCY      =   2       & ! Actual number of processors in latitude
+    NPROCX      =   8       & ! Actual number of processors in longitude
+  , NPROCY      =   4       & ! Actual number of processors in latitude
   , NPROC       = NPROCX * NPROCY
 
   ! ds Jan2009
@@ -94,7 +94,7 @@ module ModelConstants_ml
     ,DEBUG_GETEMIS        = .false.   &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
     ,DEBUG_RUNCHEM        = .false.   &
-        ,DEBUG_SOA        = .true.   & !
+        ,DEBUG_SOA        = .false.   & !
         ,DEBUG_SUBMET     = .false.  &
     ,DEBUG_LANDDEFS       = .false. &  !
     ,DEBUG_RSUR           = .false. &  !
