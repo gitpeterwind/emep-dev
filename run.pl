@@ -7,7 +7,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=32:ib
+#PBS -lnodes=6:ib
 # wall time limit of run 
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -148,6 +148,10 @@ my $AGNES      = "nyiri";
 my $ALVARO      = "alvarov";
 
 my $USER        =  $DAVE;
+
+my $GLOBAL = 0;
+my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
+
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($STALLO){
@@ -156,6 +160,7 @@ if ($STALLO){
     $DataDir       = "/global/work/mifapw/emep/Data";
 #    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
     $MetDir        = "/global/work/mifaab/emep/Data/Parlam-PS/metdata/$year" ;
+    $MetDir        = "/global/work/mifapw/emep/metdata/GLOBAL/metdata/$year" if $GLOBAL ;
 } elsif($SNYKOV) {
     $HOMEROOT       = "/home";      
     $WORKROOT     = "/global/work";      
@@ -171,14 +176,13 @@ if ($STALLO){
 # DataDir    = Main general Data directory
  
 my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data 
-#my $NDATA_LOCAL   = "/home/mifads/Unify/Data/EMEP";  #  TMP! New Input style
+$DATA_LOCAL    = "$DataDir/GLOBAL" if $GLOBAL;    # Grid specific data 
 
-my $METformat="felt";
-#my $METformat="cdf";
+#my $METformat="felt";
+my $METformat="cdf";
 $MetDir = "/global/work/mifaab/emep/Data/Parlam-PS/metcdf/$year"  if $METformat eq "cdf";
 
 
-my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
 
 my $OZONE = "1"; 
 my $ACID = "0";     # Specify model type here, and check:
@@ -191,7 +195,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2_8";
+    $testv       = "rv3_2_14";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -203,8 +207,10 @@ my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";    # working and result direct
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
 
 #ds check: and change
+#chdir "$ProgDir";
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
 #  unless $ENV{PWD} =~ /Unimod.$testv.$year/;
+print "TESTING ENV:", @ENV, "\n";
 
 
 my $Split       = "BASE_MAR2004" ;       
@@ -229,12 +235,13 @@ my @runs        = ( $scenario );
 #EMISSIONS
 
 #my $EMIS_INP = "$DATA_LOCAL/Modrun06" if $year < 2005;
-my $EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
-#my $emisdir = "$EMIS_INP/2006-Trend${year}-V7";
-#$emisdir = "$EMIS_INP/2006-Trend2004-V7" if $year < 2005;
-my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2" if $year > 2005;
+#my $EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
+my $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
+$EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis" if $GLOBAL ;
+my $emisdir = "$EMIS_INP/$year";
+$emisdir = $EMIS_INP if $GLOBAL; 
 my $pm_emisdir = $emisdir;
-$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
+$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000; # CHECK!
  
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
@@ -276,8 +283,8 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "07";       # first month, use 2-digits!
-my $mm2   =  "07";       # last month, use 2-digits!
+my $mm1   =  "01";       # first month, use 2-digits!
+my $mm2   =  "01";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
@@ -480,8 +487,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
     $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
     $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
-    $ifile{"$DATA_LOCAL/sites.dat"} = "sites.dat";
-    $ifile{"$DATA_LOCAL/sondes.dat"} = "sondes.dat";
+    $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
+    $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
   
     
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?

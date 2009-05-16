@@ -1,3 +1,20 @@
+================================ rv3_2_14, Dave,  16th May 2009======
+
+Changes to make switch to global model easier, plus some tidy-ups
+
+IS_GLOBAL added to ModelConstants_ml
+
+Emissions_ml : sets MonthlyEmis = IS_GLOBAL
+  (keeps all Global - EMEP changes in ModelConstants)
+   Tidy-up
+
+run.pl: My $GLOBAL added as switch
+   sitesLL.dat, sondesLL.dat added as defaults in $DataDir - suggest
+    only use long/lat files in future.
+
+My_Outputs_ml
+   removed D2_AFST... etc., and dependency on Derived
+
 ================================ rv3_2_13, Dave,  15th May 2009======
 
 Working changes::: AOT outputs have been commented out. Will re-appear

@@ -44,7 +44,7 @@
 ! -----------------------------------------------------------------------
 
   use CheckStop_ml,     only: CheckStop
-  use Derived_ml,       only: f_2d, d_2d
+!dsx use Derived_ml,       only: f_2d, d_2d
   use GenSpec_adv_ml
   use GenSpec_shl_ml,    only: IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml ,  only: species
@@ -126,7 +126,7 @@ integer, public, parameter :: &
    integer, public, parameter :: &
      NSONDES_MAX =    99               &   ! Max. no sondes allowed
     ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
-    ,FREQ_SONDE  =     1               &   ! Interval (hrs) between outputs
+    ,FREQ_SONDE  =    12               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =     7                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
     ,NXTRA_SONDE =    4                &   ! No. Misc. met. params  (now th)
@@ -234,10 +234,10 @@ integer, public, parameter :: &
 !                    iy1=JRUNBEG,   iy2 =  JRUNBEG+GJMAX-1   ! all
 
   ! For Deriv system:
-   integer :: D2_O3WH, D2_O3DF,  &
-    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
-    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
-    D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6
+!dsx   integer :: D2_O3WH, D2_O3DF,  &
+!dsx    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &    ! JUN06
+!dsx    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
+!dsx    D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6
 
 ! WARNING: If the specification of the subdomain is different for
 !            different components (ix1=125 for ozone and ix1=98 for 
@@ -266,10 +266,10 @@ integer, public, parameter :: &
 
 ! For deriv system
  
- D2_O3WH = find_index("D2_O3WH",f_2d(:)%name)
- D2_O3DF = find_index("D2_O3DF",f_2d(:)%name)
- D2_AFSTDF16 = find_index("D2_AFSTDF16",f_2d(:)%name)
- D2_AFSTCR3 = find_index("D2_AFSTCR3",f_2d(:)%name)
+!dsx D2_O3WH = find_index("D2_O3WH",f_2d(:)%name)
+!dsx D2_O3DF = find_index("D2_O3DF",f_2d(:)%name)
+!dsx D2_AFSTDF16 = find_index("D2_AFSTDF16",f_2d(:)%name)
+!dsx D2_AFSTCR3 = find_index("D2_AFSTCR3",f_2d(:)%name)
 
 ! hr_out(2)= Asc2D("O3_Wheat", "D2D", &
 !                  "(f7.3)", D2_O3WH, ix1,ix2,iy1,iy2,1, "ppbv", 1.0  ,600.0)

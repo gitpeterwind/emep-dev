@@ -76,6 +76,7 @@
   use Io_Progs_ml,     only : ios, open_file
   use Met_ml,          only :  ps, roa   ! ps in Pa, roa in kg/m3
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
+                              IS_GLOBAL, & 
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               NPROC, IIFULLDOM,JJFULLDOM 
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
@@ -169,18 +170,6 @@ contains
  !
  !       real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS)
  !  
- !**    REVISION HISTORY:
- !         Original from MADE, adapted to MACHO j.e.jonson
- !         Call to femis added, j.e. jonson
- !         1-2/99 Rearranged d. simpson, for 11-sector input. Condensed. 
- !         Monthly and daily input read in in subroutine timefactors:
- !         efac_mm (monthly) and efac_dd (daily)
- !         added . Note  that emissions are no longer multiplied by
- !         monthly factors here - this is done in subroutine emission where
- !         also daily and hourly factors are applied.
- !         4/2/99 - checked/corrected and re-arranged by s. unger.
- !         8/2/99 - timezone and eulxxxx.inc method added by ds
- !
  !**********************************************************************
 
   !--arguments
@@ -254,7 +243,7 @@ contains
     !=========================
 
 
-  endif !(me=0)
+  endif
 
   call CheckStop(ios, "ioserror: EmisSplit")
 
@@ -277,7 +266,7 @@ contains
   !** 4) Read emission files ***************
   ! ******************************************************************
 
-   !uni allocate for me=0 only:
+   ! allocate for me=0 only:
    err1 = 0
    if ( MasterProc ) then
 
@@ -326,7 +315,7 @@ contains
 
       call CheckStop(ios, "ios error: EmisGet")
 
-      !CC**  Send data to processors ........
+      !**  Send data to processors ........
       !
       !     as  e.g. snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,iem)
       !
@@ -533,7 +522,6 @@ contains
   !       between 3-D models, and to avoid hard-coded emissions
   !       !uni - revised to F90 and for more flexible handling of emissions
   !       fraction through NEMIS_FRAC
-  !       Originally emission.f from MADE and MACHO.
   !
   !      25/3-2002, pw changed test for hour and day change (Now the first day
   !      does not need to start at 0 hours)
@@ -597,9 +585,9 @@ contains
 
            if ( indate%day /= oldday  )then
 
-                                     !==========================
-                                     call NewDayFactors(indate)
-                                     !==========================
+              !==========================
+               call NewDayFactors(indate)
+              !==========================
 
                oldday = indate%day
            endif
@@ -634,7 +622,7 @@ contains
 
                ncc = nlandcode(i,j)            ! No. of countries in grid
 
-! find the approximate local time:
+                ! find the approximate local time:
                   hourloc= mod(nint(indate%hour+24*(1+gl(i,j)/360.0)),24)
                   daytime_longitude=0
                   if( hourloc>=7.and.hourloc<= 18) daytime_longitude=1
@@ -853,29 +841,29 @@ contains
 !     landcode and nlandcode arrays as needed.
 
 !     Reads in snow cover at start of each month. 
-
-!**    REVISION HISTORY:
-!     Original from MADE
-
 !...........................................................................
 
-
-	integer i, j
-	integer ijin(2) 
-        integer n, flat_ncmaxfound      ! Max. no. countries w/flat emissions
-	real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
-	character*20 fname
-	real ktonne_to_kgm2s, tonnemonth_to_kgm2s          ! Units conversion
-        integer :: IQSO2             ! Index of sox in  EMIS_NAME
-	integer errcode
-        real,    allocatable, dimension(:,:,:,:)  :: globemis 
+    integer i, j
+    integer ijin(2) 
+    integer n, flat_ncmaxfound      ! Max. no. countries w/flat emissions
+    real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
+    character*20 fname
+    real ktonne_to_kgm2s, tonnemonth_to_kgm2s          ! Units conversion
+    integer :: IQSO2             ! Index of sox in  EMIS_NAME
+    integer errcode
+    real,    allocatable, dimension(:,:,:,:)  :: globemis 
     integer, dimension(NEMIS) :: eindex   ! Index of emissions in EmisDef
     integer:: month,iem,ic,iic,isec, err3,ic1,icc
     real ::duml,dumh,tmpsec(NSECTORS),conv
         logical ,save ::first_call=.true.
     real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS) &
             ::  snapemis_month !/*monthly emissions tonne/month
-        logical, parameter ::MONTHLY_GRIDEMIS=.false.
+
+   !dsx For now, only the global runs use the Monthly files.
+   !   Will need to reconsider later.
+  !dsx logical, parameter ::MONTHLY_GRIDEMIS=.true. ! GLOBAL
+
+        logical, parameter ::MONTHLY_GRIDEMIS= IS_GLOBAL      
 
 !*** Units:
 !	Input files seem to be in ktonne PER YEAR. We convert here to kg/m2/s
@@ -986,10 +974,6 @@ contains
     if ( MasterProc ) then
        allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
        call CheckStop(err3, "Allocation error err3 - globland")
-       !dsx if ( err3 /= 0 ) then
-       !dsx    WRITE(*,*) 'MPI_ABORT: ', "Alloc error - globland"
-       !dsx    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-       !dsx end if
     end if
     do i = 1, NEMIS
        eindex(i) = EmisDef_Index( EMIS_NAME(i) )
@@ -1008,20 +992,13 @@ contains
          write(6,*) 'filename for GLOBAL emission',fname
          call open_file(IO_EMIS,"r",fname,needed=.true.)
          call CheckStop( ios , "ios error: emislist" // fname )
-         !dsx if ( ios /= 0 )then
-         !dsx    WRITE(*,*) 'MPI_ABORT: ', "ios error: emislist"
-         !dsx    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-         !dsx endif
+
          READEMIS: do   ! ************* Loop over emislist files **********************
 
             read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
                  (tmpsec(isec),isec=1,NSECTORS)
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop( ios , "GetEmis ios: error on " // fname ) ! exits if ios>0
-            !dsx if ( ios >  0  ) then                     ! A different problem..
-            !dsx    WRITE(*,*) 'MPI_ABORT: ', "GetEmis ios: error on " // fname
-            !dsx    call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
-            !dsx end if
 
             ic=1 !NBNB default country
 
