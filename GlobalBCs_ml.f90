@@ -423,8 +423,11 @@ elseif( year == 2005) then
  elseif ( year == 2006 )  then ! Derwent et al., (2007)
    macehead_O3 = (/  42.1, 44.6, 48.7, 49.9, 44.5, 39.3, &
                      32.9, 31.2, 36.7, 39.9, 42.8, 43.1 /)
+ elseif ( year == 2007 )  then 
+    macehead_O3 = (/  40.7, 38.2, 46.1, 45.3, 40.9, 33.5, &
+                      30.9, 28.8, 33.2, 36.1, 40.0, 41.6 /)
 !---------------------------------------------------------------------------
-elseif ( year > 2006 ) then
+ elseif ( year > 2007 ) then
    write(unit=errmsg,fmt=*) &
        "ERROR: No Mace Head correction for this year yet! ", year
    call CheckStop(errmsg)
