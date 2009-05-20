@@ -37,10 +37,10 @@
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
   use My_Emis_ml,            only :  NRCEMIS, NSS, NBVOC   !NSS=SeaS
-  use GenSpec_tot_ml,        only :  NSPEC_TOT
+  use GenSpec_tot_ml,        only :  NSPEC_TOT, FIRST_SOA, LAST_SOA
   use GenSpec_bgn_ml,        only :  NSPEC_COL
-  use GenRates_rct_ml,       only :  NRCT
-  use GenRates_rcmisc_ml,    only :  NRCMISC
+!DSGC  use GenRates_rct_ml,       only :  NRCT
+!DSGC  use GenRates_rcmisc_ml,    only :  NRCMISC
   implicit none
   private
 
@@ -57,9 +57,17 @@
    real, public, dimension(NSPEC_TOT,KCHEMTOP:KMAX_MID), save :: &
                    xn_2d            ! Concentrations [molecules/cm3]  
 
+!DSGC - used for SOA
+! We use NSPEC_TOT to allow us to write Fpart for FFUEL and WOOD also -
+! these may be semivol one day.
+   !real, public, dimension(FIRST_SOA:LAST_SOA,KCHEMTOP:KMAX_MID), save :: &
+   real, public, dimension(NSPEC_TOT,KCHEMTOP:KMAX_MID), save :: &
+                   Fgas  = 1.0     &! Fraction as gas-phase
+                  ,Fpart = 0.0      ! Fraction as gas-phase
+
    real, public, dimension(NRCEMIS,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
-   real, public, dimension(NRCT   ,KCHEMTOP:KMAX_MID), save :: rct    ! T-dependant
-   real, public, dimension(NRCMISC,KCHEMTOP:KMAX_MID), save :: rcmisc ! T,M,H2O-dependant
+!DSGC   real, public, dimension(NRCT   ,KCHEMTOP:KMAX_MID), save :: rct    ! T-dependant
+!DSGC   real, public, dimension(NRCMISC,KCHEMTOP:KMAX_MID), save :: rcmisc ! T,M,H2O-dependant
    real, public, dimension(NBVOC ,KCHEMTOP:KMAX_MID), save   :: rcbio  !  Biogenic emissions
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222  ! 210Pb emissions, ds Pb210
    real, public, dimension(NSS,KCHEMTOP:KMAX_MID),     save :: rcss   ! Sea salt emissions
@@ -67,8 +75,12 @@
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)
          ,amk                 & ! M - atmospheric conc.
+         ,o2, n2              & ! oxygen, nitrogen
+         ,h2o                 & ! water
          ,temp                & ! temperature
+         ,tinv                & ! inverse temp
          ,pp                     !pressure
+
    integer, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           itemp                  ! int of temperature
 

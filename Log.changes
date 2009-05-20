@@ -1,3 +1,31 @@
+================================ rv3_2_15, Dave,  20th May 2009======
+
+Functions_ml : troe removed, and moved (as troeInlog) to:
+
+New module: ChemFunctions_ml - with troe, RiemerN2O5, kaero functions
+
+Added modules: My_ChemSpecs_ml My_ChemRates_ml
+
+  - split from old My_Chem_ml, to make use of GenChem easier
+  - RiemerN2O5, kaero now done in ChemFunctions
+  - tabulation of rate constants switched off for now. 
+    ( Surprisingly, ** No CPU cost **. Time for chemistry almost
+      identical )
+
+Removed modules: My_Chem_ml,  OrganicAerosol_ml
+
+    (the latter not needed, as we have SOA_ml)
+
+Setup_1d_ml, Setup_1dfields_ml
+   - removed Rimer stuff, some re-organisation because of My_Chem changes
+
+Solver_ml - has EXTRA_ITER to allow 
+            ONLY_NIGHT code removed
+
+Unimod.f90 - no need for Init_mychem
+
+
+
 ================================ rv3_2_14, Dave,  16th May 2009======
 
 Changes to make switch to global model easier, plus some tidy-ups

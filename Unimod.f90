@@ -42,7 +42,7 @@ program myeul
        tim_before,tim_before0,tim_before1, &
        tim_after,tim_after0
   use My_WetDep_ml,     only : Init_WetDep
-  use MyChem_ml,        only : Init_mychem   
+!DSGC  use MyChem_ml,        only : Init_mychem   
 
   use Advection_ml,     only : vgrid,adv_var, assign_nmax,assign_dtadvec
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
@@ -258,7 +258,7 @@ program myeul
 
   call tabulate()    ! =>  sets up tab_esat, etc.
 
-  call Init_mychem()   ! tabulates rct to rctit
+!DSGC  call Init_mychem()   ! tabulates rct to rctit
 
   call Init_WetDep()   ! sets up scavenging ratios
 

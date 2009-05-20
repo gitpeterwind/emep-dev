@@ -38,16 +38,18 @@
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
+!DSGC use ChemFunctions_ml,      only : f_Riemer  !weighting factor for N2O5 hydrolysis
   use CheckStop_ml,          only :  CheckStop
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use Functions_ml,          only :  Tpot_2_T
   use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
-  use GenSpec_adv_ml,        only :  NSPEC_ADV, IXADV_NO2
+  use GenSpec_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
   use GenSpec_shl_ml,        only :  NSPEC_SHL
   use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-  use MyChem_ml,             only :  Set_2dBgnd
-  use GenRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
-  use GenRates_rcmisc_ml,    only :  NRCMISC, set_rcmisc_rates
+!DSGC  use MyChem_ml,             only :  Set_2dBgnd
+!DSGC  use GenRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
+  use GenRates_rct_ml,       only :  set_rct_rates, rct
+  use GenRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, carea, &
                                      debug_proc, debug_li, debug_lj
   use LocalVariables_ml,     only :  Grid
@@ -56,6 +58,8 @@
                                     ,zen, Idirect, Idiffuse,z_bnd
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
+    ,DEBUG_SETUP_1DCHEM              & !DSGC
+    ,DEBUG_SETUP_1DBIO               & !DSGC
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
@@ -68,7 +72,6 @@
   use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
   use My_BoundConditions_ml, only : BGN_2D
   use Landuse_ml,            only : water_fraction, ice_fraction
-  use N2O5_hydrolysis_ml, only : f_Riemer  !weighting factor for N2O5 hydrolysis
   use Par_ml,                only :  me& !!(me for tests)
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
   use PhysicalConstants_ml,  only :  AVOG, PI
@@ -77,10 +80,10 @@
      xn_2d                &  ! concentration terms
     ,rcemis, rcbio        &  ! emission terms
     ,rc_Rn222             &  ! for Pb210
-    ,rct, rcmisc          &  ! emission terms
+!DSGC    ,rct, rcmisc          &  ! emission terms
     ,rcss                 &  !SeaS - sea salt
-    ,rh, temp, itemp,pp      &  ! 
-    ,amk                     ! Air concentrations 
+    ,rh, temp, tinv, itemp,pp      &  ! 
+    ,amk, o2, n2, h2o           ! Air concentrations 
   use SeaSalt_ml,        only : SS_prod 
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,           only :  current_date, date
@@ -102,7 +105,7 @@ contains
  !..   extracts data along one vertical column for input to chemical
  !     solver concentrations for chemistry......
  !
- ! Outputs, amk, o2k, rcairlig, ...
+!DSGC ! Outputs, amk, o2k, rcairlig, ...
 
     integer, intent(in) :: i,j    ! coordinates of column
 
@@ -112,8 +115,8 @@ contains
     real              :: qsat ! saturation water content
 
 
-    real ,dimension(KCHEMTOP:KMAX_MID) :: tinv, & ! Inverse of temp.
-        h2o, o2k     ! water, O2
+!DSGC    real ,dimension(KCHEMTOP:KMAX_MID) :: tinv, & ! Inverse of temp.
+!DSGC        h2o, o2k     ! water, O2
 
     do k = KCHEMTOP, KMAX_MID
  
@@ -121,7 +124,6 @@ contains
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
 
        amk(k) = roa(i,j,k,1) * MFAC  ! molecules air/cm3
-
 
        h2o(k) = max( 1.e-5*amk(k), &
                      q(i,j,k,1)*amk(k)*ATWAIR/18.0)
@@ -157,8 +159,8 @@ contains
               xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
         end do ! ispec   
 
-! setup weighting factor for hydrolysis  
-             f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(aNO3,k)) )
+!DSGC ! setup weighting factor for hydrolysis  
+!DSGC              f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(aNO3,k)) )
 
    end do ! k
 
@@ -167,20 +169,39 @@ contains
                         xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)   &
                   ,"Detected non numerical concentrations (NaN)")
 
-
-
-   o2k(:) = 0.21*amk(:)
+!DSGC o2k(:) = 0.21*amk(:)
+   o2(:) = 0.21 *amk(:)
+   n2(:) = amk(:) - o2(:)
+!FAKE   o2(:) = 0.2095 *amk(:)
+!FAKE   n2(:) = 0.7808 *amk(:)
    tinv(:) = 1./temp(:)
 
 
-  ! 5 ) Rates 
+  ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
-   rct(:,:)    = rcit(:,itemp(:))
+!DSGC   rct(:,:)    = rcit(:,itemp(:))
+
+   call set_rct_rates()
 
    !old: call set_rctroe_rates(tinv,amk,rctroe)
 
-   call set_rcmisc_rates(itemp,tinv,amk,o2k,h2o,rh,rcmisc)
+   call set_rcmisc_rates()
+   !DSGC call set_rcmisc_rates(itemp,tinv,amk,o2k,h2o,rh,rcmisc)
 
+  if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+            i==debug_li .and. j==debug_lj .and. &
+            current_date%seconds == 0 ) then
+      write(*,"(a,f7.2,10es10.3)") " DEBUG_SETUP_1DCHEM ", &
+            1.0/tinv(KMAX_MID), o2(KMAX_MID), &
+            rcmisc(3,KMAX_MID), rcmisc(4,KMAX_MID), &
+            rcmisc(10,KMAX_MID), rcmisc(11,KMAX_MID), &
+            rcmisc(8,KMAX_MID), rcmisc(10,KMAX_MID)
+      write(*,"(a,10es10.3)") " DEBUG_SETUP_1DCHEM RCT ", &
+            rct(3,KMAX_MID), rct(4,KMAX_MID)
+      write(*,"(a,10es10.3)") " DEBUG_SETUP_1DCHEM XN  ", &
+        amk(KMAX_MID),  xn_2d(IXADV_O3+NSPEC_SHL,KMAX_MID), &
+          xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)
+  end if
 
 
 
@@ -325,7 +346,6 @@ contains
   integer, intent(in) ::  i,j
 
 !  local
-  logical, parameter :: DEBUG_BIO = .false.
   integer la,it2m,n,k,base,top,iclcat
   real clear
 
@@ -359,7 +379,7 @@ contains
       rcbio(BIO_ISOP,KMAX_MID) = emnat(i,j,BIO_ISOP) &
              * canopy_ecf(BIO_ISOP,it2m) * cL
   endif
-  if ( DEBUG_BIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
+  if ( DEBUG_SETUP_1DBIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
      write(*,"(a5,2i4,4es12.3)") "DBIO ", current_date%day, &
       current_date%hour, par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP,KMAX_MID)
@@ -376,6 +396,14 @@ contains
  
          do k = KCHEMTOP, KMAX_MID
  
+
+!EGU - just testing units
+!         xn2molem3 = 1.0/AVOG * 1.0e6
+!         xn2ugC   = xn2molem3 * 12.0 * 1.0e6
+!         xn2ugS   = xn2molem3 * 32.0 * 1.0e6
+!         ugS2xn   = 1/xn2ugS = AVOG/(32.0*1.0e12)
+!           xn_2d(SO4,k) =  0.5 * AVOG/(32.0*1.0e12)
+
 
            ! 1)/ Short-lived species - no need to scale with M
 

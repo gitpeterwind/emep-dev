@@ -54,9 +54,11 @@
     use Emissions_ml,      only: KEMISTOP    
     use GenSpec_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
     use GenSpec_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
-    use GenRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
+!dsx    use GenRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
+    use GenRates_rct_ml,   only: rct
+    use GenRates_rcmisc_ml,only: rcmisc  ! DSGC new
     use GridValues_ml,     only : GRIDWIDTH_M
-    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv
+    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, DebugCell
     use My_Aerosols_ml,    only: SEASALT
     use My_Emis_ml                        ! => QRCNO, etc.
     use OrganicAerosol_ml, only: Fgas
@@ -79,6 +81,8 @@
 
   integer::  STATUS(MPI_STATUS_SIZE),INFO
   integer, parameter:: nchemMAX=15
+  integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
+
 
 contains
 
@@ -134,12 +138,14 @@ contains
     toiter(6:KEMISTOP-1)      = 2    ! Medium and cloud levels 
     toiter(KEMISTOP:KMAX_MID) = 3    ! Near-ground, emis levels
 
+   ! to get better accuracy if wanted (at CPU cost)
+    toiter = toiter * EXTRA_ITER     ! DSGC , 
 
 
     !** Comments: Only NO2+O3->H+ +NO3- at night time 
     !   and in the8 lowest layers and if rh>0.5
 
-    if (ONLY_NIGHT) call set_night_rct(rct,rh,i,j)  ! Only for ACID version
+!DSGC    if (ONLY_NIGHT) call set_night_rct(rct,rh,i,j)  ! Only for ACID version
 
 
     !** Establishment of initial conditions:

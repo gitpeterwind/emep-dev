@@ -34,7 +34,6 @@ module Functions_ml
 !____________________________________________________________________
 !
 !** includes
-!   troe - standrad chemical function
 !   bilin_interpolate - generic, elemental - guessed bilinera method
 !
 !   Depends on: none - self-contained.
@@ -46,7 +45,6 @@ module Functions_ml
   implicit none
   private
 
-  public ::  troe
   public ::  Daily_cosine   ! Generates daily values of a variable
                             ! specified as a cosine curve over the year.
   public ::  Daily_sine     ! Generates daily values of a variable
@@ -93,46 +91,6 @@ module Functions_ml
   contains
   !========================================
 
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  elemental function troe(k0,kinf,Fc,M) result (rctroe)
-
-  !+ Calculates Troe expression
-  ! -----------------------------------------------------------
-  ! ds note - this isn't checked or optimised yet. Taken from
-  ! Seinfeld+Pandis, 1998, pp 283, eqn. 5.98. 
-
-  ! Input arguments are intended to represent:
-  !   M may be O2+N2 or just N2 or just O2.
-
-     real, intent(in)  :: k0,kinf,Fc,M
-     real              :: rctroe
-
-     !-- local
-     real :: x,y, K0M               ! temp variable
-
-     k0M = k0 * M
-     
-
-     !- use the power function replacament, m**n == exp(n*log m) 
-     !-k0M   = a*(T/300.0)**(-2.3) * M
-     !-kinf = p*(T/300.0)**(-1.4)
-
-     ! k0M   = a * exp( b*log(t/300.0) ) * M
-     ! kinf = p * exp( q*log(t/300.0) )
-
-     ! factors for Fc:
-     y    = k0M/kinf	! used also below
-     x    = log10(y)
-     x    = 1.0/( 1.0 + x*x )
-
-     !- F**x == exp(x*logF)
-
-!	give Fc already as log(Fc)
-
-!     rctroe = k0M / ( 1.0 + k0M/kinf) * exp(x*log(Fc))
-     rctroe = k0M / ( 1.0 + y) * exp(x*Fc)
-
-  end function troe
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   function Daily_cosine(mean, amp, dmax, ndays) result (daily)

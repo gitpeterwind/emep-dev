@@ -7,9 +7,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=6:ib
+#PBS -lnodes=64:ib
 # wall time limit of run 
-#PBS -lwalltime=00:10:00
+#PBS -lwalltime=00:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -152,15 +152,19 @@ my $USER        =  $DAVE;
 my $GLOBAL = 0;
 my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
 
+#my $METformat="felt";
+my $METformat="cdf";
+
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($STALLO){
-    $HOMEROOT       = "/home";      
-    $WORKROOT     = "/global/work";      
+    $HOMEROOT      = "/home";      
+    $WORKROOT      = "/global/work";      
     $DataDir       = "/global/work/mifapw/emep/Data";
 #    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
     $MetDir        = "/global/work/mifaab/emep/Data/Parlam-PS/metdata/$year" ;
-    $MetDir        = "/global/work/mifapw/emep/metdata/GLOBAL/metdata/$year" if $GLOBAL ;
+    $MetDir = "/global/work/mifaab/emep/Data/Parlam-PS/metcdf/$year"  if $METformat eq "cdf";
+    $MetDir        = "$DataDir/GLOBAL/metdata/$year" if $GLOBAL ;
 } elsif($SNYKOV) {
     $HOMEROOT       = "/home";      
     $WORKROOT     = "/global/work";      
@@ -178,10 +182,6 @@ if ($STALLO){
 my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data 
 $DATA_LOCAL    = "$DataDir/GLOBAL" if $GLOBAL;    # Grid specific data 
 
-#my $METformat="felt";
-my $METformat="cdf";
-$MetDir = "/global/work/mifaab/emep/Data/Parlam-PS/metcdf/$year"  if $METformat eq "cdf";
-
 
 
 my $OZONE = "1"; 
@@ -195,7 +195,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2_14";
+    $testv       = "rv3_2_15";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -207,10 +207,10 @@ my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";    # working and result direct
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
 
 #ds check: and change
-#chdir "$ProgDir";
+chdir "$ProgDir";
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"  
 #  unless $ENV{PWD} =~ /Unimod.$testv.$year/;
-print "TESTING ENV:", @ENV, "\n";
+print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
 my $Split       = "BASE_MAR2004" ;       
@@ -234,14 +234,12 @@ my @runs        = ( $scenario );
 
 #EMISSIONS
 
-#my $EMIS_INP = "$DATA_LOCAL/Modrun06" if $year < 2005;
-#my $EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 2004;
 my $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
 $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis" if $GLOBAL ;
 my $emisdir = "$EMIS_INP/$year";
 $emisdir = $EMIS_INP if $GLOBAL; 
 my $pm_emisdir = $emisdir;
-$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000; # CHECK!
+$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
@@ -264,6 +262,7 @@ while(my $line = <IN>){
 close(IN);
 my $NPROC =  $NDX * $NDY ;
 print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
+die "Global model requires NDY <= 2\n" if ( $GLOBAL && $NDY > 2);
 
 if ( $ENV{PBS_NODEFILE} ) {
    $_ =  `wc -l $ENV{PBS_NODEFILE}`;
@@ -283,13 +282,13 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "01";       # first month, use 2-digits!
-my $mm2   =  "01";       # last month, use 2-digits!
+my $mm1   =  "07";       # first month, use 2-digits!
+my $mm2   =  "07";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 4;       # for testing, simply reset here
+$NTERM = 2;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -570,6 +569,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 	$PRERUN = "mpiexec " if $STALLO;
 	if ($DRY_RUN) {
 	    print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";
+            system("ls -lt *")
 	} else {
 	    open (PROG, "| $PRERUN ./$LPROG") || 
 		die "Unable to execute $LPROG. Exiting.\\n" ;
