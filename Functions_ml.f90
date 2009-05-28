@@ -54,6 +54,7 @@ module Functions_ml
 
   public :: StandardAtmos_kPa_2_km   ! US Standard Atmosphere conversion
 
+  public :: inside_1234 !test wether a point is inside the quadrilateral 1234 
 
  !/- Exner subroutines: ------------------------------------------------------
 
@@ -385,6 +386,27 @@ module Functions_ml
 
   end function T_2_Tpot
   !-------------------------------------------------------------------
+
+
+
+function  inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,x,y) result(inside)
+!test wether the point (x,y) is inside the quadrilateral 1234 
+!Note: 1234 = 1432, but not= 1324
+
+implicit none
+
+logical ::inside
+real:: x1,x2,x3,x4,y1,y2,y3,y4,x,y
+
+inside=.false.
+
+if(((x1-x2)*(y-y2)-(x-x2)*(y1-y2))*((x3-x4)*(y-y4)-(x-x4)*(y3-y4))>0 &
+     .and.((x2-x3)*(y-y3)-(x-x3)*(y2-y3))*((x4-x1)*(y-y1)-(x-x1)*(y4-y1))>0)then
+   inside=.true.
+endif
+
+end function inside_1234
+
 
 !program Test_exn
 !  use Exner_ml

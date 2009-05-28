@@ -244,7 +244,7 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
   dt(5)=20.0
 
 !/ ** For smaller scales, but not tested
-   if(dt_advec<520.0)then
+   if(dt_advec<620.0)then
       nchem=5+int((dt_advec-100.0)/60.0)
       dt=(dt_advec-100.0)/(nchem-5)
       dt(1)=20.0

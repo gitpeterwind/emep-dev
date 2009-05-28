@@ -1553,6 +1553,8 @@ subroutine Read_Local_Inter_CDF(fileName,varname,Rvar,varGIMAX,varGJMAX,NLanduse
   use netcdf
 use LandDefs_ml,    only: LandDefs
 use DO3SE_ml,   only: do3se
+use Functions_ml, only: inside_1234
+
 implicit none
 character(len = *),intent(in) ::fileName,varname
 real,intent(out) :: Rvar(*)
@@ -1577,7 +1579,6 @@ character(len = 20) :: interpol_used
   integer, parameter ::NLU_EMEP=20,NLU_TERRAIN=25
   real :: convT_E(NLU_TERRAIN,NLU_EMEP),tot
 type(Deriv) :: def1 ! definition of fields
-logical ::inside_1234
 
 integer :: npft,name_size,NLANDUSE_grid
 integer, parameter ::NLANDUSE_PFT=20, NLANDUSE_GLC=23
@@ -2006,21 +2007,4 @@ stop
 
 end subroutine Read_Local_Inter_CDF
 
-function  inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,x,y) result(inside)
-!test wether the point (x,y) is inside 1234 
-!Note: 1234 = 1432, but not= 1324
-
-implicit none
-
-logical ::inside
-real:: x1,x2,x3,x4,y1,y2,y3,y4,x,y
-
-inside=.false.
-
-if(((x1-x2)*(y-y2)-(x-x2)*(y1-y2))*((x3-x4)*(y-y4)-(x-x4)*(y3-y4))>0 &
-     .and.((x2-x3)*(y-y3)-(x-x3)*(y2-y3))*((x4-x1)*(y-y1)-(x-x1)*(y4-y1))>0)then
-   inside=.true.
-endif
-
-end function inside_1234
 end module NetCDF_ml

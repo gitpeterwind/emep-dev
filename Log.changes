@@ -1,3 +1,19 @@
+================================ rv3_2_17, Peter, 28th May 2009======
+
+Solver.f90:
+nchem is now set to 10 when dt_advec=600
+
+Advection_ml:
+Larger dt_advec for fine resolution
+
+Functions_ml, NetCDF_ml:
+Move "inside_1234" into Functions_ml
+
+My_Reactions.inc:
+We go back to the "toiter(k)" loop; with the new compiler this is the fastest (though only a few %)
+and it is neater too.
+
+
 ================================ rv3_2_16, Agnes, 20th May 2009======
 
 MaceHead correction for 2007 added.

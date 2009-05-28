@@ -27,30 +27,30 @@
 !*****************************************************************************! 
 
 
-!    do iter = 1, toiter(k)
+    do iter = 1, toiter(k)
 !
 ! The chemistry is iterated several times, more close to the ground
 ! than aloft.
-! For some reason, it proved faster to include files as given below
-! than to use loops. 
-if(k>=KCHEMTOP)then
+! For some reason, it proved faster for some compilers to include files as given below
+! with the if statements, than to use loops.
+!if(k>=KCHEMTOP)then
 
    include 'My_FastReactions.inc'
 
-endif
-if(k>=6)then
-
-   include 'My_FastReactions.inc'
-
-endif
-
-if(k>=KEMISTOP)then
-
-   include 'My_FastReactions.inc'
-
-endif
+!endif
+!if(k>=6)then
+!
+!   include 'My_FastReactions.inc'
+!
+!endif
+!
+!if(k>=KEMISTOP)then
+!
+!   include 'My_FastReactions.inc'
+!
+!endif
  !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-!   end do !! End iterations
+   end do !! End iterations
  ! Just before SO4
  !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
