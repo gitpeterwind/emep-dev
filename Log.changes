@@ -1,3 +1,14 @@
+================================ rv3_2_18, Agnes, 1st June 2009======
+
+GlobalBCs_ml:
+
+update of Mace-Head ozone values, now with average from 1998-2007. Also
+recalculated the 2006 and 2007 Mace Head values with the new 10-year
+average.
+
+Commented out the +3 (4.5) ppb scaling for future years (2010 and later),
+so the 1998-2007 10-year average will be used for these years.
+
 ================================ rv3_2_17, Peter, 28th May 2009======
 
 Solver.f90:
