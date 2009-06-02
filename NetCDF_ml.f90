@@ -1455,7 +1455,11 @@ endif
      endif
   endif
   call check(nf90_get_var(ncFileID, VarID, Rlon))
-
+!normalize such that  -180 < Rlon < 180
+  do i=1,dims(1)
+     if(Rlon(i)<-180.0)Rlon(i)=Rlon(i)+360.0
+     if(Rlon(i)>180.0)Rlon(i)=Rlon(i)-360.0
+  enddo
   status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = VarID)
   if(status /= nf90_noerr) then     
      status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = VarID)
@@ -1468,8 +1472,17 @@ endif
 
 !NB: we assume regular grid
 !inverse of resolution
-  dloni=1.0/(Rlon(2)-Rlon(1))
-  dlati=1.0/(Rlat(2)-Rlat(1))
+  dloni=1.0/abs(Rlon(2)-Rlon(1))
+  dlati=1.0/abs(Rlat(2)-Rlat(1))
+
+i361=dims(1)
+if(nint(Rlon(dims(1))-Rlon(1)+1.0/dloni)==360)then
+   i361=1!cyclic grid
+else
+   write(*,*)'Read_Inter_CDF: only cyclic grid implemented'
+   call StopAll('STOP')
+endif
+
 interpol_used='zero_order'!default
 if(present(interpol))interpol_used=interpol
 
@@ -1489,29 +1502,23 @@ if(interpol_used=='zero_order')then
      enddo
   enddo
 elseif(interpol_used=='bilinear')then
-write(*,*)'bilinear interpolation'
+write(*,*)'bilinear interpolation',dims(1)
 !interpolation 2:
 !bilinear
 ijk=0
-i361=dims(1)
-if(nint(Rlon(dims(1))-Rlon(1)+1.0/dloni)==360)i361=1!cyclic grid
+
   do k=1,varKMAX
      do j=1,varGJMAX
         do i=1,varGIMAX
            ijk=ijk+1
-           ig=mod(floor((gl_glob(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
+           ig=mod(floor(abs(gl_glob(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
            jg=max(1,min(dims(2),floor((gb_glob(i,j)-Rlat(1))*dlati)+1))
            ig1=ig+1
            jg1=min(jg+1,dims(2))
 
            if(ig1>dims(1))ig1=i361
            jg1=jg+1
-           if(gl_glob(i,j)<Rlon(ig).or.gl_glob(i,j)>Rlon(ig1))then
-              if(ig1>1)then
-                 write(*,*)'error',gl_glob(i,j),Rlon(ig),Rlon(ig1),i,j,ig1
-                 stop
-              endif
-           endif
+ 
 !           if(gb_glob(i,j)<Rlat(jg).or.gb_glob(i,j)>Rlat(jg1))then
 !              if(ig1>1)then
 !                 write(*,*)'error',gb_glob(i,j),Rlat(ig),Rlat(jg1),i,j,jg1

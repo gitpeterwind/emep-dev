@@ -3744,6 +3744,12 @@ contains
 
              call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
              call check(nf90_get_var(ncFileID, varID, gb_glob(1:IIFULLDOM,1:JJFULLDOM) ))
+             do j=1,JJFULLDOM
+             do i=1,IIFULLDOM
+                if(gl_glob(i,j)>180.0)gl_glob(i,j)=gl_glob(i,j)-360.0
+                if(gl_glob(i,j)<-180.0)gl_glob(i,j)=gl_glob(i,j)+360.0
+             enddo
+             enddo
 
           endif
           !get variables
