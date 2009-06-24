@@ -64,6 +64,7 @@ module Nest_ml
   use netcdf
   use netcdf_ml,      only : GetCDF,Out_netCDF,Init_new_netCDF,&
        secondssince1970,Int1,Int2,Int4,Real4,Real8
+  use Functions_ml,    only : great_circle_distance
   use ModelConstants_ml,    only : KMAX_MID, NPROC
   use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
        , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
@@ -301,20 +302,6 @@ contains
          call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     end if
   end subroutine check
-
-  function great_circle_distance(fi1,lambda1,fi2,lambda2) result(dist)
-
-    !compute the great circle distance between to points given in 
-    !spherical coordinates. Sphere has radius 1.
-    real, intent(in) ::fi1,lambda1,fi2,lambda2 !NB: in DEGREES here
-    real :: dist
-
-
-    dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
-         cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
-
-  end function great_circle_distance
-
 
   subroutine datefromsecondssince1970(ndate,nseconds,printdate)
     !calculate date from seconds that have passed since the start of the year 1970

@@ -56,6 +56,8 @@ module Functions_ml
 
   public :: inside_1234 !test wether a point is inside the quadrilateral 1234 
 
+  public :: great_circle_distance!distance between two points following the surface on a unit sphere
+
  !/- Exner subroutines: ------------------------------------------------------
 
  public :: Exner_nd        ! (p/P0)**KAPPA
@@ -406,6 +408,20 @@ if(((x1-x2)*(y-y2)-(x-x2)*(y1-y2))*((x3-x4)*(y-y4)-(x-x4)*(y3-y4))>0 &
 endif
 
 end function inside_1234
+
+
+  function great_circle_distance(fi1,lambda1,fi2,lambda2) result(dist)
+
+    !compute the great circle distance between to points given in 
+    !spherical coordinates. Sphere has radius 1.
+    real, intent(in) ::fi1,lambda1,fi2,lambda2 !NB: in DEGREES here
+    real :: dist
+
+
+    dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
+         cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
+
+  end function great_circle_distance
 
 
 !program Test_exn

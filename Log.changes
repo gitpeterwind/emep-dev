@@ -1,3 +1,19 @@
+================================ rv3_2_20, Peter, 24th June 2009======
+
+GridValues_ml:
+Added the general case in lb2ij, which gives (i,j) values (as real numbers) given
+longitude and latitude for any grid projection.
+Used for sites/sondes given as lonlat.
+
+Function_ml, Nest_ml:
+Moved great_circle_distance into Functions_ml.
+
+
+Note: The new default compiler on stallo (ifort 11.0), gives an segmentation fault 
+on line 711, when compiled with debug options. After closer look, this is most probably due to
+a bug in the compiler...
+
+
 ================================ rv3_2_19, Peter, 2nd June 2009======
 
 Small change for compatibility with rotated spherical projection (H20)

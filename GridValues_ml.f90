@@ -42,6 +42,8 @@
 ! Nov. 2001 - tidied up a bit (ds). Use statements moved to top of module
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
+ use Functions_ml,    only : great_circle_distance
+                            
  use ModelConstants_ml,    only : KMAX_BND, KMAX_MID  &! vertical extent
       ,DEBUG_i, DEBUG_j  &  ! full-domain coordinate of debug-site
       ,NPROC, IIFULLDOM,JJFULLDOM
@@ -59,10 +61,10 @@
  !-- contains subroutine:
 
  Public :: DefGrid     ! =>  GRIDWIDTH_M, map-factor stuff, calls other routines
- Public :: ij2lbm       !pw grid to longitude latitude
- Public :: lb2ijm       !pw longitude latitude to grid
- Public :: ij2ijm       !pw grid1 to grid2
- Public :: lb2ij        !pw longitude latitude to grid
+ Public :: ij2lbm       !polar stereo grid to longitude latitude
+ Public :: lb2ijm       !longitude latitude to grid in polar stereo
+ Public :: ij2ijm       !polar grid1 to polar grid2
+ Public :: lb2ij        !longitude latitude to (i,j) in any grid projection
 
  Public :: GlobalPosition     ! => 
  private :: Position   ! => lat(gb), long (gl)
@@ -533,14 +535,14 @@ end subroutine GlobalPosition
 
     real  :: fi_loc,an_loc,xp_loc,yp_loc
     real, parameter :: PI=3.14159265358979323
-    real    :: PId4,dr,dr2
+    real    :: PId4,dr,dr2,dist,dist2,dist3
+    integer ::i,j,ip1,jp1
 
-
-    PId4    = PI/4.      
-    dr2    = PI/180.0/2.      ! degrees to radians /2
-    dr    = PI/180.0      ! degrees to radians 
 
   if(projection=='Stereographic')then
+     PId4    = PI/4.      
+     dr2    = PI/180.0/2.      ! degrees to radians /2
+     dr    = PI/180.0      ! degrees to radians 
      fi_loc=fi
      an_loc=an
      xp_loc=xp
@@ -553,10 +555,50 @@ end subroutine GlobalPosition
 
     ir2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
     jr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
-  else!ASSUMES lon-lat grid
+  else  if(projection=='lon lat')then! lon-lat grid
      ir2=(gl2-gl_glob(1,1))/(gl_glob(2,1)-gl_glob(1,1))+1
      if(ir2<0.5)ir2=ir2+360.0/(gl_glob(2,1)-gl_glob(1,1))
      jr2=(gb2-gb_glob(1,1))/(gb_glob(1,2)-gb_glob(1,1))+1
+  else!general projection, Use only info from gl_glob and gb_glob
+     !first find closest by testing all gridcells. 
+     dist=10.0!max distance is PI
+     do j=1,JJFULLDOM
+        do i=1,IIFULLDOM
+           if(dist>great_circle_distance(gl2,gb2,gl_glob(i,j),gb_glob(i,j)))then
+              dist=great_circle_distance(gl2,gb2,gl_glob(i,j),gb_glob(i,j))
+              ir2=i
+              jr2=j
+           endif
+        enddo
+     enddo
+!find the real part of i and j by comparing distances to neighbouring cells
+!
+!     C
+!    /|\
+!   / | \
+!  /  |  \
+! A---D---B
+!
+!A=(i,j) ,B=(i+1,j), C=(gl2,gb2)
+!dist=AC, dist2=BC, dist3=AB
+!AD=(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3)
+!
+     ip1=nint(ir2)+1
+     if(ip1>IIFULLDOM)ip1=ip1-2
+     dist2=great_circle_distance(gl2,gb2,gl_glob(ip1,nint(jr2)),gb_glob(ip1,nint(jr2)))
+     dist3=great_circle_distance(gl_glob(nint(ir2),nint(jr2)),gb_glob(nint(ir2),nint(jr2)),gl_glob(ip1,nint(jr2)),gb_glob(ip1,nint(jr2)))
+
+     ir2=ir2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
+
+
+     jp1=nint(jr2)+1
+     if(jp1>JJFULLDOM)jp1=jp1-2
+
+     dist2=great_circle_distance(gl2,gb2,gl_glob(nint(ir2),jp1),gb_glob(nint(ir2),jp1))
+     dist3=great_circle_distance(gl_glob(nint(ir2),nint(jr2)),gb_glob(nint(ir2),nint(jr2)),gl_glob(nint(ir2),jp1),gb_glob(nint(ir2),jp1))
+
+     jr2=jr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
+
   endif
 
     return
