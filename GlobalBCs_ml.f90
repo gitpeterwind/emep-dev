@@ -61,7 +61,7 @@ module GlobalBCs_ml
   use Io_ml,             only : IO_GLOBBC, ios, open_file
   use ModelConstants_ml, only:  PPB, PPT,PPBINV &
                                ,KMAX_MID, PT &
-                               ,MasterProc, &
+                               ,MasterProc  &
                                ,IIFULLDOM,JJFULLDOM
   use NetCDF_ml,only :GetCDF,Read_Inter_CDF
   use Par_ml, only:GIMAX,GJMAX,IRUNBEG,JRUNBEG, me
