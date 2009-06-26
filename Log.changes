@@ -1,5 +1,9 @@
+================================ rv3_2_21, Dave, 24-26th June 2009======
 
-Dave: Comma removed in GLobal_ml, needed to compile
+found_ind2d, found_ind3d added to Derived_ml to esnure that we 
+don't try to define the same variable twice.
+
+Comma removed in GLobal_ml, needed to compile
 
 ================================ rv3_2_20, Peter, 24th June 2009======
 

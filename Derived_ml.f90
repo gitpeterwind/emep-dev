@@ -324,6 +324,10 @@ private
    integer, dimension(MAXLJMAX) :: j_fdom
    integer :: ind, ind2, ixadv, idebug, n
 
+  ! - And to check if a wanted field has been previously defined.
+        integer, dimension(MAXDEF_DERIV2D) :: found_ind2d = 0
+        integer, dimension(MAXDEF_DERIV3D) :: found_ind3d = 0
+
 
     if(DEBUG .and. MasterProc ) write(6,*) " START DEFINE DERIVED "
     !   same mol.wt assumed for PPM25 and PPMco
@@ -579,6 +583,11 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
           if ( ind>0) then
                f_2d(i) = def_2d(ind)
+               call CheckStop ( found_ind2d(ind) > 0,  &
+                  "REQUESTED 2D DERIVED ALREADY DEFINED: "// &
+                      def_2d(ind)%name  ) 
+               found_ind2d(ind)  = 1
+
           else
             write(*,*) "OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
             write(*,*) "OOOPS N,N :", num_deriv2d, Nadded2d
@@ -597,6 +606,10 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
       do i = 1, num_deriv3d
           ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
+          call CheckStop ( found_ind3d(ind) > 0,  &
+                  "REQUESTED 3D DERIVED ALREADY DEFINED: "// &
+                      def_3d(ind)%name  ) 
+          found_ind3d(ind)  = 1
           f_3d(i) = def_3d(ind)
           if ( DEBUG .and. MasterProc ) write(*,*) "Index f_3d ", i,&
                 " = def ", ind
