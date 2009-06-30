@@ -1,4 +1,9 @@
-================================ rv3_2_21, Dave, 24-26th June 2009======
+
+================================ rv3_2_21, Dave, 24-26th Peter 30th June 2009======
+
+GridValues_ml, NetCDF_ml, et_ml:
+Defined "rotated_latitude_longitude" projection following CF-1.0 convention.
+
 
 found_ind2d, found_ind3d added to Derived_ml to esnure that we 
 don't try to define the same variable twice.

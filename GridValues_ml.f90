@@ -82,6 +82,9 @@
         ,GRIDWIDTH_M &! width of grid at 60N, in meters (old "h")(from infield)
         ,ref_latitude ! latitude at which projection is true (degrees)
 
+!Rotated_Spherical grid prarameters
+  real, public, save :: grid_north_pole_latitude,grid_north_pole_longitude
+
   !/ Variables to define full-domain (fdom) coordinates of local i,j values. 
 
   integer, public, save, dimension(0:MAXLIMAX+1) :: i_fdom !fdom coordinates
@@ -124,6 +127,7 @@
                             ,an_EMEP = 237.7316364 &! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
                             ,xp_EMEP_old =  43.0&
                             ,yp_EMEP_old = 121.0
+
 
   !/** Map factor stuff:
 

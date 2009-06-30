@@ -43,6 +43,7 @@ module Met_ml
        ,gl,gb, gb_glob, gl_glob, MIN_ADVGRIDS   &
        ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
+       ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET &
@@ -3739,6 +3740,11 @@ contains
              xp=0.0
              yp=GJMAX
              fi =0.0
+             if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
+                  .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then 
+                call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude))
+                call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
+             endif
              call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
              call check(nf90_get_var(ncFileID, varID, gl_glob(1:IIFULLDOM,1:JJFULLDOM) ))
 
