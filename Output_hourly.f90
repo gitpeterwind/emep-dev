@@ -55,6 +55,7 @@
    use GenChemicals_ml , only : species          ! Gives names
    use GridValues_ml,    only : i_fdom, j_fdom   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
+
    use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
    use Met_ml,           only : t2_nwp,th, roa, surface_precip, &
                                    Idirect, Idiffuse
@@ -239,10 +240,16 @@
             end forall
             if ( DEBUG .and. debug_flag ) print *, "K-level", ik, name, itot
 
-         case ( "ADVugm3" )
+!AMVB 2009-07-06
+!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
+!    For ugX/m3 output use in combination with to_ug_X.
+         case ( "ADVugXX" )
+!        case ( "ADVugm3" )
             itot = NSPEC_SHL + ispec 
             name = species(itot)%name
-            unit_conv =  hr_out(ih)%unitconv !hf * species(itot)%molwt
+            unit_conv =  hr_out(ih)%unitconv
+!           unit_conv =  hr_out(ih)%unitconv !hf * species(itot)%molwt
             forall ( i=1:limax, j=1:ljmax)
                   hourly(i,j) = xn_adv(ispec,i,j,KMAX_MID) &
                                  * cfac(ispec,i,j) &     ! 50m->3m conversion

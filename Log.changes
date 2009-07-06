@@ -1,3 +1,9 @@
+================================ rv3_2_23, Alvaro, Haldis 6 July 2009======
+
+
+Changes to My_Outputs_ml.f90 and Output_hourly.f90 to solve bug with units
+(ugSm3 etc.). General ADVugXX used for all mass-based outputs in Outputs_ml,
+with units to be chosen in My_Outputs_ml.
 
 ================================ rv3_2_22, Peter 30th June 2009======
 

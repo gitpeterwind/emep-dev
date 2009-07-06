@@ -46,13 +46,18 @@
   use CheckStop_ml,     only: CheckStop
 !dsx use Derived_ml,       only: f_2d, d_2d
   use GenSpec_adv_ml
-  use GenSpec_shl_ml,    only: IXSHL_OH,IXSHL_HO2
+!AMVB 2009-07-06
+!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
+!    For ugX/m3 output use in combination with to_ug_X.
+  use GenSpec_shl_ml,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
+! use GenSpec_shl_ml,    only: IXSHL_OH,IXSHL_HO2
   use GenChemicals_ml ,  only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
   use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
   use SmallUtils_ml,     only: find_index
   use TimeDate_ml,       only: date 
- 
+
   implicit none
 
 INCLUDE 'mpif.h'
@@ -219,10 +224,15 @@ integer, public, parameter :: &
    character(len=44) :: errmsg  ! Local error message
    integer           :: i       ! Loop index
 
-   real                :: to_ug_S & ! conversion to ug of S
-                         ,to_ug_N & ! conversion to ug of N
-                         ,to_mgSIA& ! conversion to mg of N
-                         ,to_ugSIA  ! conversion to ug of N 
+!AMVB 2009-07-06
+!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
+!    For ugX/m3 output use in combination with to_ug_X.
+  real                :: to_ug_ADV(NSPEC_ADV)& ! conversion to ug
+                        ,to_ug_S &  ! conversion to ug of S
+                        ,to_ug_N &  ! conversion to ug of N
+                        ,to_mgSIA&  ! conversion to mg
+                        ,to_ugSIA   ! conversion to ug
    real, save :: m_s = 100.0 ! From cm/s to m/s
 
   ! introduce some integers to make specification of domain simpler
@@ -245,6 +255,11 @@ integer, public, parameter :: &
 !            latitude and longitude in NetCDF output will be
 !            wrong. 
 
+!AMVB 2009-07-06
+!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
+!    For ugX/m3 output use in combination with to_ug_X.
+  to_ug_ADV=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%molwt*PPBINV/ATWAIR
   to_ug_S = atwS*PPBINV/ATWAIR    ! for output in ug(S)/m3
   to_ug_N = atwN*PPBINV/ATWAIR    ! for output in ug(N)/m3
   to_mgSIA= PPBINV/ATWAIR*1000.0
@@ -280,25 +295,33 @@ integer, public, parameter :: &
 ! hr_out(5)= Asc2D("FST_WH00", "D2D", &
 !                  "(f7.3)", D2_FSTWH00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
 
+!AMVB 2009-07-06
+!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
+!    For ugX/m3 output use in combination with to_ug_X.
 !  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
-!                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2, "ppb",PPBINV,600.0)
-!  hr_out(2)=  Asc2D("aNH4-air", "ADVugm3", &
-!                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
-!  hr_out(3)=  Asc2D("aNO3-air", "ADVugm3", &
-!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
-!  hr_out(4)=  Asc2D("SO4-air", "ADVugm3", &
-!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,600.0)
-!  hr_out(5)=  Asc2D("pNO3-air", "ADVugm3", &
-!                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2, "ug",to_ugSIA,400.0)
+!                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2,1, "ppb",PPBINV,600.0)
+!  hr_out(2)=  Asc2D("aNH4-air", "ADVugXX", &
+!                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_aNH4),600.0)
+!  hr_out(3)=  Asc2D("aNO3-air", "ADVugXX", &
+!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_aNO3),600.0)
+!  hr_out(4)=  Asc2D("SO4-air", "ADVugXX", &
+!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_aNO3),600.0)
+!  hr_out(5)=  Asc2D("pNO3-air","ADVugXX", &
+!                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_pNO3),400.0)
 
-!  hr_out(2)= &
-!   Asc2D("ADVugm3", "(f8.4)",IXADV_aNH4, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
-!  hr_out(3)= &
-!   Asc2D("ADVugm3", "(f8.4)",IXADV_aNO3, 45, 170, 1, 133, "ug",to_ugSIA,600.0)
-!  hr_out(4)= &
-!   Asc2D("ADVugm3", "(f8.4)",IXADV_SO4, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
-!  hr_out(5)= &
-!   Asc2D("ADVugm3", "(f8.4)",IXADV_pNO3, 45, 170, 1, 133, "ug",to_ugSIA,400.0)
+!AMVB 2009-07-06
+!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
+!    For ugX/m3 output use in combination with to_ug_X.
+!  hr_out(2)=  Asc2D("aNH4-air","ADVugXX",&
+!                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
+!  hr_out(3)= Asc2D("aNO3-air", "ADVugXX",&
+!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
+!  hr_out(4)=  Asc2D("SO4-air", "ADVugXX",&
+!                  "(f8.4)",IXADV_SO4,  ix1,ix2,iy1,iy2,1, "ugS",to_ug_S,400.0)
+!  hr_out(5)=  Asc2D("pNO3-air","ADVugXX",&
+!                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,400.0)
 !
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)
