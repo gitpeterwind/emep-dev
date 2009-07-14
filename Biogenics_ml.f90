@@ -38,7 +38,7 @@ module Biogenics_ml
           i_fdom,j_fdom,debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, Read2DN
   use KeyValue_ml,       only : KeyVal,KeyValue
-  use ModelConstants_ml, only : NPROC
+  use ModelConstants_ml, only : NPROC, MasterProc, DEBUG_BIO
   use Par_ml   , only : me, MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1
   implicit none
   private
@@ -48,7 +48,6 @@ module Biogenics_ml
 
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
-  logical, private, parameter:: DEBUG = .false.
   integer, public, save :: BIO_ISOP, BIO_TERP
 
   real, public, save, dimension(MAXLIMAX,MAXLJMAX,NBVOC) :: &
@@ -115,11 +114,12 @@ module Biogenics_ml
    !========================================================================!
 
 
-      if( debug_proc .and. DEBUG) then
+      if( debug_proc .and. DEBUG_BIO ) then
           write(*,"(a8,i3,2i4,4f18.4)") "BIONEW ", NBVOC, &
               i_fdom(debug_li), j_fdom(debug_lj), &
              ( emforest(debug_li,debug_lj,i), i=1,NBVOC)
       end if
+      call CheckStop( minval(emforest) < 0.0, "Negative BVOC emis!")
 
      !output sums. Remember that "shadow" area not included here.
       do i = 1, NBVOC 
@@ -127,7 +127,7 @@ module Biogenics_ml
          CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
            MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
 
-         if (me == 0 .and. DEBUG) then
+         if ( MasterProc .and. DEBUG_BIO ) then
             write(6,"(a20,i4,2es12.4)") 'Biogenics_ml, ibio, sum1',&
               me, bvocsum, bvocsum1
          end if
@@ -164,7 +164,7 @@ module Biogenics_ml
 
       canopy_ecf(BIO_TERP,it) = agct
 
-      if(DEBUG .and. me == 0) &
+      if(DEBUG_BIO  .and.  MasterProc ) &
              write(6,"(A12,i4,5g12.3)") 'Biogenic ecfs: ', &
                   it, ( canopy_ecf(i,it), i=1, NBVOC)
     end do

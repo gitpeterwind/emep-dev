@@ -157,8 +157,8 @@ contains
     if(me == 0)then
          do n = 1,NSPEC_ADV
 	   if(sumint(n) >  0. ) then
-             write(IO_RES,"(a15,i2,4x,e10.3)") "Initial mass",n,sumint(n) 
-             write(6,"(a15,i2,4x,e10.3)") "Initial mass",n,sumint(n) 
+             write(IO_RES,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 
+             write(6,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 
            end if
          enddo
     end if

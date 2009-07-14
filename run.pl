@@ -7,9 +7,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=64:ib
+#PBS -lnodes=32:ib
 # wall time limit of run 
-#PBS -lwalltime=00:30:00
+#PBS -lwalltime=00:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -121,7 +121,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "2006";
+my $year = "2007";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -149,22 +149,21 @@ my $ALVARO      = "alvarov";
 
 my $USER        =  $DAVE;
 
-my $GLOBAL = 0;
-my $HEMIS = 0;   #Set to 1 for Hemispheric run. Not possible yet
-
 #my $METformat="felt";
 my $METformat="cdf";
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
+my $GRID = "EECCA"; # or EMEP or GLOBAL
 our $DataDir;
 if ($STALLO){
     $HOMEROOT      = "/home";      
     $WORKROOT      = "/global/work";      
     $DataDir       = "/global/work/mifapw/emep/Data";
 #    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
+# Still crude switching:
     $MetDir        = "/global/work/mifaab/emep/Data/Parlam-PS/metdata/$year" ;
-    $MetDir = "/global/work/mifaab/emep/Data/Parlam-PS/metcdf/$year"  if $METformat eq "cdf";
-    $MetDir        = "$DataDir/GLOBAL/metdata/$year" if $GLOBAL ;
+    $MetDir = "/global/work/mifapw/emep/Data/EECCA/metdata_H20/$year"  if $METformat eq "cdf";
+    $MetDir        = "$DataDir/GLOBAL/metdata/$year" if $GRID eq "GLOBAL" ;
 } elsif($SNYKOV) {
     $HOMEROOT       = "/home";      
     $WORKROOT     = "/global/work";      
@@ -179,8 +178,7 @@ if ($STALLO){
 }
 # DataDir    = Main general Data directory
  
-my $DATA_LOCAL    = "$DataDir/EMEP";    # Grid specific data 
-$DATA_LOCAL    = "$DataDir/GLOBAL" if $GLOBAL;    # Grid specific data 
+my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 
 
 
@@ -195,7 +193,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2_15";
+    $testv       = "rv3_2_24";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -235,9 +233,10 @@ my @runs        = ( $scenario );
 #EMISSIONS
 
 my $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
-$EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis" if $GLOBAL ;
-my $emisdir = "$EMIS_INP/$year";
-$emisdir = $EMIS_INP if $GLOBAL; 
+$EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis" if $GRID eq "GLOBAL";
+$EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 0 ;# EGU2005 2004;
+my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2"; # 2006 only?
+$emisdir = $EMIS_INP if $GRID eq "GLOBAL"; 
 my $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
@@ -262,7 +261,7 @@ while(my $line = <IN>){
 close(IN);
 my $NPROC =  $NDX * $NDY ;
 print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
-die "Global model requires NDY <= 2\n" if ( $GLOBAL && $NDY > 2);
+die "Global model requires NDY <= 2\n" if ( $$GRID eq "GLOBAL" && $NDY > 2);
 
 if ( $ENV{PBS_NODEFILE} ) {
    $_ =  `wc -l $ENV{PBS_NODEFILE}`;
@@ -462,8 +461,10 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     
     foreach my $mmm ( $mm1  .. $mm2 ) {
 	my $mm = sprintf "%2.2d", $mmm ; # WHY DO WE NEED THIS?????
-	$ifile{"$DATA_LOCAL/snowc$mm.dat.170"} =  "snowc$mm.dat";
-	$ifile{"$DATA_LOCAL/natso2$mm.dat.170"} =  "natso2$mm.dat";
+	#GRID $ifile{"$DATA_LOCAL/snowc$mm.dat.170"} =  "snowc$mm.dat";
+	#GRID $ifile{"$DATA_LOCAL/natso2$mm.dat.170"} =  "natso2$mm.dat";
+	$ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
+	$ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
 	$ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
     }
 
@@ -481,7 +482,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
 
   # new inputs style (Aug 2007)  with compulsory headers:
-    $ifile{"$DATA_LOCAL/Inputs.BVOC"} = "Inputs.BVOC";
+    $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
     $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
     $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
@@ -500,7 +501,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 	$ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
     } 
     
-    $ifile{"$DATA_LOCAL/rough.170"} = "rough.170"; # Roughness length;
+    #GRID $ifile{"$DATA_LOCAL/rough.170"} = "rough.dat"; # Roughness length;
+    $ifile{"$DATA_LOCAL/rough.dat"} = "rough.dat"; # Roughness length;
     $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat";
 
 

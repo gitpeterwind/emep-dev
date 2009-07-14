@@ -42,7 +42,8 @@
   use CheckStop_ml, only: CheckStop
   use GridValues_ml, only : i_local, j_local
   use Io_Nums_ml,   only: IO_TMP
-  use ModelConstants_ml, only : DEBUG_i, DEBUG_j, DomainName, MasterProc
+  use ModelConstants_ml, only : DEBUG_IOPROG, DEBUG_i, DEBUG_j, &
+          DomainName, MasterProc, IIFULLDOM, JJFULLDOM
   use KeyValue_ml,  only: KeyVal, KeyValue, LENKEYVAL
   use Par_ml, only: me, li0, li1, lj0, lj1
   use SmallUtils_ml, only : wordsplit, WriteArray
@@ -68,15 +69,14 @@
 
   integer, private, parameter :: MAXLINELEN = 9000 ! Max length of ascii inputs
   integer, private, parameter :: MAXHEADERS = 900  ! Max  No. headers
-  logical, private, parameter :: MY_DEBUG = .false.
 
 
 contains
 
   !=======================================================================
-  subroutine read_line(io_in,txt,status)
+  subroutine read_line(io_in,txt,status,label,printif)
   !=======================================================================
-    !  Reads one line of input on host (me==0), broadcasts to other processors
+    !  Reads one line of input on host (MasterProc), broadcasts to other processors
     !  This is done as text for flexibility, with the inten
     !
     !    Instead of e.g.
@@ -97,6 +97,15 @@ contains
      character(len=len(txt)+30) :: errmsg
      integer, intent(out) :: status
      integer :: INFO
+     character(len=*), intent(in), optional :: label
+     logical, intent(in), optional :: printif   ! Can switch debug printouts
+     logical :: ok2print
+     character(len=40) :: label2
+     label2 = " No-label"
+     ok2print = .true.
+     if( present(label)   ) label2    = label
+     if( present(printif)) ok2print = printif
+     
 
      if ( MasterProc ) then
         txt = ""
@@ -108,17 +117,17 @@ contains
            call CheckStop ( errmsg // txt )
         end if
 
-        if ( MY_DEBUG ) then
-           write(unit=*,fmt=*) "READTXT" //  trim(txt)
-           write(unit=*,fmt=*) "READLEN", len_trim(txt), MAXLINELEN
-           write(unit=*,fmt=*) "READ_LINE ", " STATUS ", status , trim(txt)
+        if ( DEBUG_IOPROG ) then ! nb already MasterProc
+           if( ok2print ) write(unit=*,fmt="(a,i3,2a,i5,a,a,i4)") &
+               "IOREADLINE ", io_in, label2, " Len ", len_trim(txt), &
+               "TXT:" //  trim(txt), " Stat ", status
         end if
      end if
-
+   
      call MPI_BCAST( txt, len(txt), MPI_CHARACTER, 0, MPI_COMM_WORLD,INFO)
      call MPI_BCAST( status, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
-     if ( MY_DEBUG ) then
-        write(unit=errmsg,fmt=*) "me ", me, " BCAST_LINE:" // trim(txt)
+     if ( DEBUG_IOPROG .and. me==1 ) then
+        write(unit=errmsg,fmt=*) "proc(me) ", me, " BCAST_LINE:" // trim(txt)
         write(unit=*,fmt=*) trim(errmsg)
      end if
      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
@@ -249,8 +258,8 @@ contains
        do
 
          inputline=""
-         call read_line(io_num,inputline,ios)
-         if ( MY_DEBUG .and. MasterProc ) then
+         call read_line(io_num,inputline,ios,"From ReadHeaders")
+         if ( DEBUG_IOPROG .and. MasterProc ) then
              write(*,*) "IN ", io_num, me, ios, &
                len_trim(inputline) ,trim(inputline)
          end if
@@ -265,10 +274,10 @@ contains
               NKeys = NKeys + 1
               KeyValues(NKeys)%key = key
               KeyValues(NKeys)%value = value
-              if ( MasterProc ) then 
-                 if (MY_DEBUG) write(unit=*,fmt=*) "KEYS FULL =", trim(inputline)
-                 if (MY_DEBUG) write(unit=*,fmt=*) "KEYS LINE NKeys=", &
-                    NKeys, trim(key), " : ", trim(value)
+              if ( MasterProc .and.  DEBUG_IOPROG) then
+                 write(unit=*,fmt=*) "KEYS FULL =", trim(inputline)
+                 write(unit=*,fmt=*) "KEYS LINE NKeys=", NKeys, &
+                     trim(key), " : ", trim(value)
               end if
               cycle
 
@@ -284,18 +293,19 @@ contains
               do i = 1, NxHeaders
                 if ( xHeaders(i)(1:1) /= "#" .and. &
                      len_trim(xHeaders(i)) > 0 ) then
-                   Nheaders = Nheaders + 1
+                   NHeaders = NHeaders + 1
                    Headers(i) = xHeaders(i)
                 end if
 
               end do
-              do i = Nheaders+1, size(Headers)
+              do i = NHeaders+1, size(Headers)
                   Headers(i) = ""   ! Remove trailing txt
               end do
-              if ( MY_DEBUG ) then
+              if ( DEBUG_IOPROG .and. MasterProc ) then
                   write(*,*) "Read_Headers sizes: ", size(xHeaders) , NHeaders
-                  write(*,*) "New  inputline ", trim( inputline )
+                  write(*,*) "New inputline ", trim( inputline )
               end if
+
 
               cycle
 
@@ -316,8 +326,11 @@ contains
                    end do
               end if
 
-              if ( MasterProc .and. MY_DEBUG ) then 
+              if ( MasterProc .and. DEBUG_IOPROG ) then 
                write(unit=*,fmt=*) "DATA LINE" // trim(inputline)
+do i = 1, NHeaders
+   write(*,*) "HEADER CHECK ", i, Headers(i)
+end do
               end if
 
               return
@@ -328,7 +341,7 @@ contains
 
          else if ( inputline(1:1) == "#" ) then ! Comments
 
-              if ( MY_DEBUG )  write(unit=*,fmt=*) &
+              if ( MasterProc .and. DEBUG_IOPROG )  write(unit=*,fmt=*) &
                       "COMMENTS LINE" // trim(inputline)
               cycle
 
@@ -353,11 +366,12 @@ contains
    type(KeyVal), dimension(20)      :: KeyValues ! Info on units, coords, etc.
    character(len=50) :: errmsg
 
-   integer :: NHeaders, NKeys, Nlines
+   integer :: NHeaders, NKeys, Nlines, Nused
    logical :: debug_flag
 
 
    Nlines = 0
+   Nused = 0
 
    if (present(idata2d) ) idata2d  (:,:) = 0    !/**  initialise  **/
    if (present(data2d)  ) data2d  (:,:) = 0.0     !/**  initialise  **/
@@ -380,28 +394,35 @@ contains
    ! The first two columns are assumed for now to be ix,iy, hence:
 
    Headers(1) = Headers(3)
-   if ( MY_DEBUG .and. MasterProc ) then
-        write(*,*) "Read2D Headers" // fname, Nheaders, Headers(1)
+   if ( DEBUG_IOPROG .and. MasterProc ) then
+        write(*,*) "Read2D Headers" // fname, NHeaders, Headers(1)
 !       call WriteArray(Headers,NHeaders,"Read2D Headers")
    end if
 
-   do
-         call read_line(IO_TMP,txtinput,ios)
+   READLOOP: do
+         call read_line(IO_TMP,txtinput,ios,"ReadLine for "//trim(fname))
          if ( ios /= 0 ) exit   ! likely end of file
          read(unit=txtinput,fmt=*,iostat=ios) i_fdom,j_fdom,tmp
          call CheckStop ( ios, "Read2D txt error:" // trim(txtinput) )
          Nlines = Nlines + 1
 
+         if ( i_fdom > IIFULLDOM .or. j_fdom > JJFULLDOM ) then
+            if( MasterProc ) write(*,*) "WARNING: Input Data in ",&
+               trim(fname)," coords outside fulldomain: ", i_fdom, j_fdom
+            cycle READLOOP
+         end if
          i   = i_local(i_fdom)   ! Convert to local coordinates
          j   = j_local(j_fdom)
 
          if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then  
 
-             if ( MY_DEBUG ) debug_flag = ( i_fdom == DEBUG_i  &
+             if ( DEBUG_IOPROG ) debug_flag = ( i_fdom == DEBUG_i  &
                                    .and. j_fdom == DEBUG_j  )
 
+              Nused = Nused + 1
               if ( debug_flag ) then
-                write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp
+                write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom," => ",&
+                     i,j,tmp, Nlines, Nused
               endif
               if (present(idata2d)) then 
                  idata2d(i,j) = nint(tmp)
@@ -410,11 +431,11 @@ contains
               end if
 
          end if ! i,j
-      end do
+      end do READLOOP
 
    if ( MasterProc ) then 
       close(IO_TMP)
-      write(6,*) fname // "Read2D: me, Nlines = ", me, Nlines
+      write(6,*) fname // "Read2D: me, Nlines, Nused = ", me, Nlines, Nused
    end if
 
   end subroutine Read2D
@@ -442,8 +463,8 @@ contains
    integer :: NHeaders, NKeys, Nlines, ncheck
    logical :: debug_flag, Start_Needed
 
-   if ( MY_DEBUG .and. MasterProc ) then
-         write(*,*) " Starting Read2DN, me ",me
+   if ( DEBUG_IOPROG .and. MasterProc ) then
+         write(*,*) " Starting Read2DN, me ",me, " Ndata ", Ndata
    end if
 
    Nlines = 0
@@ -453,51 +474,54 @@ contains
    Start_Needed = .true.
    if ( present(HeadersRead) ) then   ! Headers have already been read
        Start_Needed  = .false.
+       NHeaders = -1       ! not set in this case
    end if
 
   !======================================================================
    if ( Start_Needed ) then 
   !======================================================================
-   if ( MasterProc ) then 
-      call open_file(IO_TMP,"r",fname,needed=.true.)
-      call CheckStop(ios,"ios error on Inputs.landuse")
-   end if
+      if ( MasterProc ) then 
+         call open_file(IO_TMP,"r",fname,needed=.true.)
+         call CheckStop(ios,"ios error on Inputs.landuse")
+      end if
 
 
-   call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues)
+      call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues)
 
-   call CheckStop( errmsg , "Read2D: Read_Headers" // fname )
-   call CheckStop( Headers(1), "ix" , "HeaderIX not found" // fname)
-   call CheckStop( Headers(2), "iy" , "HeaderIY not found" // fname)
-   call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
+      call CheckStop( errmsg , "Read2D: Read_Headers" // fname )
+      call CheckStop( Headers(1), "ix" , "HeaderIX not found" // fname)
+      call CheckStop( Headers(2), "iy" , "HeaderIY not found" // fname)
+      call CheckStop( KeyValue(KeyValues,"Coords"),"ModelCoords" ,"Landuse: Coords??")
 
-    if ( present(CheckValues) ) then
-      !Check that the values specified in CheckValues are the same as those
-      !found in input file's KeyValues:
-       ncheck = size(CheckValues)
-       do i = 1, ncheck
-          call CheckStop( KeyValue(KeyValues,CheckValues(i)%key),&
-             CheckValues(i)%value ,"Comparing Values: " // CheckValues(i)%key )
-        end do
-    end if
+       if ( present(CheckValues) ) then
+         !Check that the values specified in CheckValues are the same as those
+         !found in input file's KeyValues:
+          ncheck = size(CheckValues)
+          do i = 1, ncheck
+             call CheckStop( KeyValue(KeyValues,CheckValues(i)%key),&
+                CheckValues(i)%value ,"Comparing Values: " // CheckValues(i)%key )
+           end do
+       end if
 
-   ! The first two columns are assumed for now to be ix,iy, hence:
+      ! The first two columns are assumed for now to be ix,iy, hence:
 
-   Headers(1:Ndata) = Headers(3:Ndata+2)
-   NHeaders = NHeaders -2
+      Headers(1:Ndata) = Headers(3:Ndata+2)
+      NHeaders = NHeaders -2
 
    end if ! Start_Needed
   !======================================================================
-   if ( MY_DEBUG .and. MasterProc ) then
-        write(*,*) "Read2DN for ", fname, "Start_Needed ", Start_Needed
+   if ( DEBUG_IOPROG .and. MasterProc ) then
+        write(*,*) "Read2DN for ", fname, "Start_Needed ", Start_Needed, " NHeader", NHeaders
         do i = 1, NHeaders
-          write(*,*) "Read2D Headers" // fname, i, Nheaders, Headers(i)
+          write(*,*) "Read2D Headers" // fname, i, " Len ", &
+               len_trim(Headers(i)), " H: ", trim(Headers(i))
         end do
        !call WriteArray(Headers,NHeaders,"Read2D Headers")
    end if
 
    do
-         call read_line(IO_TMP,txtinput,ios)
+         call read_line(IO_TMP,txtinput,ios,"ReadLine for "//fname, &
+             printif=(Nlines<5) )
          if ( ios /= 0 ) exit   ! likely end of file
          read(unit=txtinput,fmt=*,iostat=ios) i_fdom,j_fdom,&
                  ( tmp(kk), kk=1,Ndata)
@@ -505,19 +529,25 @@ contains
          call CheckStop ( ios, "Read2D txt error:" // trim(txtinput) )
          Nlines = Nlines + 1
 
+         if ( i_fdom > IIFULLDOM .or. j_fdom > JJFULLDOM ) then
+            if( MasterProc ) write(*,*) "WARNING: Input Data in ",&
+               trim(fname)," coords outside fulldomain: ", i_fdom, j_fdom
+            cycle 
+         end if
+
          i   = i_local(i_fdom)   ! Convert to local coordinates
          j   = j_local(j_fdom)
-
          !SAFER? if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then  
          if ( i >= 1 .and. i <= li1 .and. j >=1 .and. j <= lj1  ) then  
 
-             if ( MY_DEBUG .and. &
-                  i_fdom == DEBUG_i  .and. j_fdom == DEBUG_j  ) &
-                write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp(1)
+             if ( DEBUG_IOPROG ) then
+                if(i_fdom == DEBUG_i .and. j_fdom == DEBUG_j) write(*,*)&
+                     "READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp(1)
+             end if
 
              data2d(i,j,1:Ndata) = tmp(1:Ndata)
 
-         end if ! i,j
+          end if ! i,j
       end do
 
       if ( MasterProc ) then 
@@ -556,7 +586,7 @@ contains
 !
     if ( MasterProc ) then 
     
-      print "(/,a)", "Self-test - Io_Progs_ml ==========================="
+      print "(/,a)", "Self-test - Io_Progs_ml ========================="
 
       print *, "PROCESSOR ", me, "CREATES FILE for TEST READS "
       print *, "NPROC ", NPROC
@@ -580,9 +610,9 @@ contains
         call open_file(IO_IN,"r","Self_Test_INPUT.csv",needed=.true.)
      end if ! me = 0
   
-     print "(/,a)", "Self-test - Read_Headers =========================="
+     print "(/,a)", "Self-test - Read_Headers ========================"
 
-     call Read_Headers(IO_IN,msg,Nheaders,NKeyValues, Headers, KeyValues)
+     call Read_Headers(IO_IN,msg,NHeaders,NKeyValues, Headers, KeyValues)
 
      if ( me == NPROC-1 ) then
      !if ( MasterProc ) then 
@@ -603,11 +633,11 @@ contains
           " REMINDER - WAS: mm yy dd v1 v2  #Total #HEADERS"
 
         do 
-          call read_line(IO_IN,inputline,ios)
+          call read_line(IO_IN,inputline,ios,"ReadLine for SelfTest")
           if ( ios /= 0 ) then
             exit
           end if
-          if(me==0) then
+          if( MasterProc ) then
                print *, "DATA: read_line -> ", trim(inputline)
           end if
           read(unit=inputline,fmt=*,iostat=ios) yy,mm,dd,test_data(1:2)

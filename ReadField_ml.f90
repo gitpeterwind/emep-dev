@@ -64,12 +64,14 @@ contains
 
  
  !>=========================================================================<
-  subroutine ReadField_r(IO_INFILE,fname,local_field,needed_found)
+  subroutine ReadField_r(IO_INFILE,fname,local_field,needed_found,fill_needed)
 
   integer,      intent(in) :: IO_INFILE     ! File no.
   character*20, intent(in) :: fname         ! File name
   real, intent(out) :: local_field(MAXLIMAX,MAXLJMAX)! Local field
   logical, optional, intent(inout):: needed_found! input: needed, output:found
+  logical, optional, intent(in) :: fill_needed  ! If field has to fill whole domain
+  logical, dimension(IIFULLDOM,JJFULLDOM) :: cell_set = .false.
   logical :: needed
   character*50 :: errmsg 
   real :: tmpin   ! To allow more than one input line per i,j
@@ -102,10 +104,16 @@ contains
                   exit READFIELD
             endif
             in_field(i,j) = in_field(i,j) + tmpin
+            cell_set(i,j) = .true.
          enddo READFIELD
 
        close(IO_INFILE)
        call CheckStop( errmsg ,"ReadField_r: errmsg in ReadField")
+       if( present(fill_needed) ) then
+           call CheckStop( any( cell_set == .false. ) ,&
+                   "ERROR: ReadField_r: cell_not_set "//trim(fname))
+       end if
+
        ios=0
        endif
     endif !me==0
@@ -121,6 +129,69 @@ contains
     endif
   end subroutine ReadField_r
 
+ !>=========================================================================<
+
+   subroutine ReadField_i(IO_INFILE,fname,local_field,needed_found,fill_needed)
+
+  integer,      intent(in) :: IO_INFILE     ! File no.
+  character*20, intent(in) :: fname         ! File name
+  integer, intent(out)     :: local_field(MAXLIMAX,MAXLJMAX)
+  logical, optional, intent(inout):: needed_found! input: needed, output:found
+  logical, optional, intent(in) :: fill_needed  ! If field has to fill whole domain
+  logical, dimension(IIFULLDOM,JJFULLDOM) :: cell_set = .false.
+  logical :: needed
+  character*50 :: errmsg 
+  integer :: intmp
+
+  integer :: in_field(IIFULLDOM,JJFULLDOM)! Field to be read
+
+  needed=.true.
+  if(present(needed_found))needed=needed_found
+  in_field(:,:)    = 0.0       ! Initialise - ds, 15/1/2005
+  local_field(:,:) = 0.0       ! Initialise - ds, 15/1/2005
+  errmsg = "ok"
+
+   if (me==0)then
+       call open_file(IO_INFILE,"r",fname,needed=needed)
+       if(.not.needed .and. ios/=0)then
+          write(*,*)trim(fname),' not found (but not needed)'
+       else
+
+        call CheckStop(ios,"ReadField: ios error " // fname )
+
+        READFIELD : do
+           read(IO_INFILE,*,iostat=ios) i,j, intmp
+           if ( ios /= 0 ) exit READFIELD
+           if (  i < 1 .or. i > IIFULLDOM  .or. &
+                 j < 1 .or. j > JJFULLDOM  ) then  
+              errmsg = "error in i,j index in IO_INFILE=" // fname
+              exit READFIELD
+           endif
+           in_field(i,j) =  in_field(i,j) + intmp
+           cell_set(i,j) = .true.
+        enddo READFIELD
+        close(IO_INFILE)
+        call CheckStop( errmsg ,"ReadField: errmsg in ReadField")
+        ios=0
+        if( present(fill_needed) ) then
+           call CheckStop( any( cell_set == .false. ) ,&
+                   "ERROR: ReadField_i: cell_not_set "//trim(fname))
+        end if
+       endif
+
+    endif !me==0
+
+    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
+
+    if(ios/=0)then
+       if(present(needed_found))needed_found=.false.
+    else
+       if(present(needed_found))needed_found=.true.
+       call global2local_int(in_field,local_field,MSG_READ5               &
+               ,IIFULLDOM,JJFULLDOM,1,IRUNBEG,JRUNBEG)
+    endif
+ 
+  end subroutine ReadField_i
  !>=========================================================================<
  subroutine ReadField_3dr(IO_INFILE,fname,DIM3,local_field,opened)
 
@@ -167,62 +238,6 @@ contains
 
   end subroutine ReadField_3dr
 
- !>=========================================================================<
-
-   subroutine ReadField_i(IO_INFILE,fname,local_field,needed_found)
-
-  integer,      intent(in) :: IO_INFILE     ! File no.
-  character*20, intent(in) :: fname         ! File name
-  integer, intent(out)     :: local_field(MAXLIMAX,MAXLJMAX)
-  logical, optional, intent(inout):: needed_found! input: needed, output:found
-  logical :: needed
-  character*50 :: errmsg 
-  integer :: intmp
-
-  integer :: in_field(IIFULLDOM,JJFULLDOM)! Field to be read
-
-  needed=.true.
-  if(present(needed_found))needed=needed_found
-  in_field(:,:)    = 0.0       ! Initialise - ds, 15/1/2005
-  local_field(:,:) = 0.0       ! Initialise - ds, 15/1/2005
-  errmsg = "ok"
-
-   if (me==0)then
-       call open_file(IO_INFILE,"r",fname,needed=needed)
-       if(.not.needed .and. ios/=0)then
-          write(*,*)trim(fname),' not found (but not needed)'
-       else
-
-        call CheckStop(ios,"ReadField: ios error " // fname )
-
-        READFIELD : do
-           read(IO_INFILE,*,iostat=ios) i,j, intmp
-           if ( ios /= 0 ) exit READFIELD
-           if (  i < 1 .or. i > IIFULLDOM  .or. &
-                 j < 1 .or. j > JJFULLDOM  ) then  
-              errmsg = "error in i,j index in IO_INFILE=" // fname
-              exit READFIELD
-           endif
-           in_field(i,j) =  in_field(i,j) + intmp
-        enddo READFIELD
-        close(IO_INFILE)
-        call CheckStop( errmsg ,"ReadField: errmsg in ReadField")
-        ios=0
-       endif
-
-    endif !me==0
-
-    call MPI_BCAST( ios, 1, MPI_INTEGER, 0, MPI_COMM_WORLD,INFO)
-
-    if(ios/=0)then
-       if(present(needed_found))needed_found=.false.
-    else
-       if(present(needed_found))needed_found=.true.
-       call global2local_int(in_field,local_field,MSG_READ5               &
-               ,IIFULLDOM,JJFULLDOM,1,IRUNBEG,JRUNBEG)
-    endif
- 
-  end subroutine ReadField_i
  !>=========================================================================<
 
   subroutine ReadField_3di(IO_INFILE,fname,DIM3,local_field)

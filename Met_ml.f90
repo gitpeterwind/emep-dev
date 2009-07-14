@@ -1880,7 +1880,7 @@ contains
     !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     !
     !     This subroutine reads parameterfields from file
-    !     reading surface roughness classes from file: rough.170
+    !     reading surface roughness classes from file: rough.dat
     !     reading snow                      from file: snowc.dat
     !
     !     ... fields as used in meteorological model
@@ -1901,11 +1901,11 @@ contains
     if ( callnum == 1  ) then 
 
        if ( me == 0  ) then
-          write(fname,fmt='(''rough.170'')') 
+          write(fname,fmt='(''rough.dat'')') 
           write(6,*) 'filename for landuse ',fname
        end if
        needed_found=.false.
-       call ReadField(IO_ROUGH,fname,r_class,needed_found)
+       call ReadField(IO_ROUGH,fname,r_class,needed_found,fill_needed=.true.)
 
        ! And convert from real to integer field
 

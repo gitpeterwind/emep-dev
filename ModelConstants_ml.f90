@@ -43,9 +43,10 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-     RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+  !   RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
   !    RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
   !    RUNDOMAIN = (/  1, 360, 1, 180 /)     ! FULL GLOBAL
+     RUNDOMAIN = (/  1, 132, 1, 111 /)       ! EECCA, rep09
 
 !      RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
@@ -67,8 +68,9 @@ module ModelConstants_ml
   ! For debugging, we often want to print out for  a specific location
   ! Set here:
 
+ ! The coordinates given here only apply for the standard EMEP domain
  !integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
- !integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
+ integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
  !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
  !!integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !!!!integer, public, parameter :: DEBUG_i=110, DEBUG_j=48 !   High Vg!
@@ -79,13 +81,14 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  Mid-Europe
  !integer, public, parameter :: DEBUG_i=93, DEBUG_j=57 !  Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
- integer, public, parameter :: DEBUG_i=116, DEBUG_j=63 !  K-Puszta
+ !integer, public, parameter :: DEBUG_i=116, DEBUG_j=63 !  K-Puszta
 
 !=============================================================================
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::      &
      DEBUG_AQUEOUS        = .false.  & ! 
     ,DEBUG_BCS            = .false.  & ! 
+    ,DEBUG_BIO            = .false.  & !
     ,DEBUG_DERIVED        = .false. &  !
     ,DEBUG_MY_DERIVED     = .false. &  !
     ,DEBUG_DRYDEP         = .false. &  !
@@ -93,6 +96,7 @@ module ModelConstants_ml
     ,DEBUG_MY_DRYDEP      = .false. &  !
     ,DEBUG_EMISSIONS      = .false.   &
     ,DEBUG_GETEMIS        = .false.   &
+    ,DEBUG_IOPROG         = .false.   &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
     ,DEBUG_RUNCHEM        = .false.   &
         ,DEBUG_SOA        = .false.   & !
@@ -114,7 +118,8 @@ module ModelConstants_ml
 !+ 2)  Define domain-name,  something that will
 !       generally only change when switching Met-driver or large domain
 
-  character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+  !character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+  character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
 
   logical, parameter, public :: IS_GLOBAL = .false.
 
@@ -122,10 +127,12 @@ module ModelConstants_ml
 !+ 3)  Define main model dimensions,  things that will
 !       generally only change when switching Met-driver or large domain
   integer, public, parameter ::  &
-!EMEP:
-   IIFULLDOM   = 170   &    ! x-Dimensions of full domain
-!EMEP:
- , JJFULLDOM   = 133   &    ! y-Dimensions of full domain
+!EMEP: IIFULLDOM   = 170   &    ! x-Dimensions of full domain
+!EMEP: , JJFULLDOM   = 133   &    ! y-Dimensions of full domain
+!EECA:   
+    IIFULLDOM   = 132   &    ! x-Dimensions of full domain
+!EECA: 
+   ,JJFULLDOM   = 159   &    ! y-Dimensions of full domain
 !GLOBAL:   IIFULLDOM   = 360   &    ! x-Dimensions of full domain
 !GLOBAL: , JJFULLDOM   = 180   &    ! y-Dimensions of full domain
   , NLANDUSEMAX = 23    &    ! Number of land use types in Inputs.Landuse file

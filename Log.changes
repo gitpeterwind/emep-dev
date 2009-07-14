@@ -1,3 +1,29 @@
+================================ rv3_2_24, Dave, 11 July 2009======
+
+Some changes to make the code "safer" I hope, after being caught out by
+unexpected input files when changing domain
+
+Io_Progs_ml - extra debug stuff
+
+Met_ml now requires rough.dat, not rough.170. The new "fill_needed" 
+parameter is used to ensure that this data fills the grid. Unlike
+the zero sized rough.170 in the EECCA data-directory ;-)
+
+ModelConstants_ml - extra lines for EECCA domains, and more debug options
+
+ReadField_ml  - optional "fill_needed" parameter added to
+readfield_r and readfield_i routines.  CheckStop will stop the run if
+fill_needed is true, if the domain isn't filled.
+
+New Inputs.2BVOC file created for EECCA
+
+run.pl - now has $GRID which can be EMEP, GLOBAL, EECCA etc.
+
+Biogenics_ml - checks that terpene emission factor is positive, 
+at least if NBVOC > 1
+
+MassBudget_ml: small format change
+
 ================================ rv3_2_23, Alvaro, Haldis 6 July 2009======
 
 
