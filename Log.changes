@@ -1,13 +1,23 @@
 ================================ rv3_2_24, Dave, 11 July 2009======
 
 Some changes to make the code "safer" I hope, after being caught out by
-unexpected input files when changing domain
+unexpected input files when changing domain.
 
-Io_Progs_ml - extra debug stuff
+Input files expected:  Now expect rough.dat and Inputs.2BVOC
+====================
 
 Met_ml now requires rough.dat, not rough.170. The new "fill_needed" 
 parameter is used to ensure that this data fills the grid. Unlike
 the zero sized rough.170 in the EECCA data-directory ;-)
+
+Biogenics_ml -  now looks for Inputs.2BVOC, not Inputs.BVOC. the
+reason is tat the terpene emission factors were all -999.999 in
+the EECCA directory. No problem for standard runs, but a major
+problem for SOA runs.
+Now checks that terpene emission factor is positive, at least if NBVOC > 1
+
+
+Io_Progs_ml - extra debug stuff
 
 ModelConstants_ml - extra lines for EECCA domains, and more debug options
 
@@ -18,9 +28,6 @@ fill_needed is true, if the domain isn't filled.
 New Inputs.2BVOC file created for EECCA
 
 run.pl - now has $GRID which can be EMEP, GLOBAL, EECCA etc.
-
-Biogenics_ml - checks that terpene emission factor is positive, 
-at least if NBVOC > 1
 
 MassBudget_ml: small format change
 
