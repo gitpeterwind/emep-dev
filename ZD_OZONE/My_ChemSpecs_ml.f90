@@ -1,77 +1,16 @@
-! <My_Chem_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
-!          Chemical transport Model>
-!*****************************************************************************! 
-!* 
-!*  Copyright (C) 2007 met.no
-!* 
-!*  Contact information:
-!*  Norwegian Meteorological Institute
-!*  Box 43 Blindern
-!*  0313 OSLO
-!*  NORWAY
-!*  email: emep.mscw@met.no
-!*  http://www.emep.int
-!*  
-!*    This program is free software: you can redistribute it and/or modify
-!*    it under the terms of the GNU General Public License as published by
-!*    the Free Software Foundation, either version 3 of the License, or
-!*    (at your option) any later version.
-!* 
-!*    This program is distributed in the hope that it will be useful,
-!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
-!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!*    GNU General Public License for more details.
-!* 
-!*    You should have received a copy of the GNU General Public License
-!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
-!########### OZONE model ###################################
-!>_________________________________________________________<
-
-  module  GenSpec_bgn_ml
-!-----------------------------------------------------------
-  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
-  implicit none
-  private
-
-!+ Defines indices and NSPEC for bgn : Background species
-
- ! Species which can be specified simply for each column, e.g.
- ! as function of local meteorology or zenith angle
- !   o2, m,  and for MADE-like, oh, ch3coo2
-
-   integer, public, parameter ::  NSPEC_BGN = 0 ! No. 3D bgn species
-   integer, public, parameter ::  NSPEC_COL = 0 ! total no. prescribed specs
-
-  !/ define xn_2d_bgn here.
-   real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-
-!-----------------------------------------------------------
-  end module GenSpec_bgn_ml
-
-
 !>_________________________________________________________<
 
   module  GenSpec_adv_ml
 !-----------------------------------------------------------
-  implicit none
-!/ ...... ..   ( from GenChem )
 
+  
+  implicit none
 !+ Defines indices and NSPEC for adv : Advected species
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 60
+   integer, public, parameter ::  NSPEC_ADV = 60 
  
- ! Aerosols:
-
-   logical, public, parameter ::  ORG_AEROSOLS = .false. 
-
-   integer, public, parameter :: &
-                NAEROSOL  = 0,         &!   Number of aerosol species
-                FIRST_SOA = -99,       &!   First aerosol species
-                LAST_SOA  = -99         !   Last  aerosol species  
-
 
 
    integer, public, parameter ::   & 
@@ -135,37 +74,34 @@
 
    integer, public, parameter ::   & 
      IXADV_SO4         =  50   &
-  ,  IXADV_pNO3        =  51   &
+  ,  IXADV_PNO3        =  51   &
   ,  IXADV_NH3         =  52   &
-  ,  IXADV_aNH4        =   53   & !total NH4
-  ,  IXADV_aNO3        =   54   & !total fine particulate nitrate
-  ,  IXADV_PPM25        =   55  &
-  ,  IXADV_PPMco        =   56  &
-  ,  IXADV_SSfi        =   57  &  !SeaSalt 
-  ,  IXADV_SSco        =   58  & 
-  ,  IXADV_Rn222       =   59  &  !
-  ,  IXADV_Pb210       =   60     !
+  ,  IXADV_ANH4        =  53   &
+  ,  IXADV_ANO3        =  54   &
+  ,  IXADV_PPM25       =  55   &
+  ,  IXADV_PPMCO       =  56   &
+  ,  IXADV_SSFI        =  57   &
+  ,  IXADV_SSCO        =  58   &
+  ,  IXADV_RN222       =  59
+
+   integer, public, parameter ::   & 
+     IXADV_PB210       =  60
+
  !-----------------------------------------------------------
   end module GenSpec_adv_ml
 !>_________________________________________________________<
 
   module  GenSpec_shl_ml
 !-----------------------------------------------------------
-  implicit none
-!/ ...... ..   ( from GenChem )
 
+  
+  implicit none
 !+ Defines indices and NSPEC for shl : Short-lived (non-advected) species 
 
 !   ( Output from GenChem, sub print_species ) 
 
    integer, public, parameter ::  NSPEC_SHL = 16 
  
- ! Aerosols:
-           integer, public, parameter :: &
-                NAEROSOL  = 0,         &!   Number of aerosol species
-                FIRST_SOA = -99,       &!   First aerosol species
-                LAST_SOA  = -99         !   Last  aerosol species  
-
 
 
    integer, public, parameter ::   & 
@@ -185,8 +121,9 @@
   ,  IXSHL_MEKO2       =  12   &
   ,  IXSHL_MALO2       =  13   &
   ,  IXSHL_MVKO2       =  14   &
-  ,  IXSHL_MACRO2      =  15 &
-  ,  IXSHL_PHNO3       =  16 
+  ,  IXSHL_MACRO2      =  15   &
+  ,  IXSHL_PHNO3       =  16
+
  !-----------------------------------------------------------
   end module GenSpec_shl_ml
 !>_________________________________________________________<
@@ -196,22 +133,17 @@
 
   
   implicit none
-!/ ...... ..   ( from GenChem )
-
 !+ Defines indices and NSPEC for tot : All reacting species 
 
 !   ( Output from GenChem, sub print_species ) 
 
-   logical, public, parameter ::  ORG_AEROSOLS = .false. 
-
    integer, public, parameter ::  NSPEC_TOT = 76 
-
  
- ! Aerosols:
+  ! Aerosols:
            integer, public, parameter :: &
-                NAEROSOL  = 0,         &!   Number of aerosol species
-                FIRST_SOA = -99,       &!   First aerosol species
-                LAST_SOA  = -99         !   Last  aerosol species  
+                NAEROSOL=0,   &!   Number of aerosol species
+                FIRST_SOA=-999, &!   First aerosol species
+                LAST_SOA=-999     !   Last  aerosol species  
 
 
 
@@ -236,11 +168,11 @@
   ,  PHNO3       =  16   &
   ,  O3          =  17   &
   ,  NO          =  18   &
-  ,  NO2         =  19   &
-  ,  PAN         =  20
+  ,  NO2         =  19
 
    integer, public, parameter ::   & 
-     MPAN        =  21   &
+     PAN         =  20   &
+  ,  MPAN        =  21   &
   ,  NO3         =  22   &
   ,  N2O5        =  23   &
   ,  ISONO3      =  24   &
@@ -248,11 +180,11 @@
   ,  CH2CCH3     =  26   &
   ,  CH3COO2     =  27   &
   ,  MACR        =  28   &
-  ,  ISNI        =  29   &
-  ,  ISNIR       =  30
+  ,  ISNI        =  29
 
    integer, public, parameter ::   & 
-     GLYOX       =  31   &
+     ISNIR       =  30   &
+  ,  GLYOX       =  31   &
   ,  MGLYOX      =  32   &
   ,  MAL         =  33   &
   ,  MEK         =  34   &
@@ -260,11 +192,11 @@
   ,  HCHO        =  36   &
   ,  CH3CHO      =  37   &
   ,  C2H6        =  38   &
-  ,  NC4H10      =  39   &
-  ,  C2H4        =  40
+  ,  NC4H10      =  39
 
    integer, public, parameter ::   & 
-     C3H6        =  41   &
+     C2H4        =  40   &
+  ,  C3H6        =  41   &
   ,  OXYL        =  42   &
   ,  ISOP        =  43   &
   ,  CH3O2H      =  44   &
@@ -272,11 +204,11 @@
   ,  BURO2H      =  46   &
   ,  ETRO2H      =  47   &
   ,  PRRO2H      =  48   &
-  ,  OXYO2H      =  49   &
-  ,  MEKO2H      =  50
+  ,  OXYO2H      =  49
 
    integer, public, parameter ::   & 
-     MALO2H      =  51   &
+     MEKO2H      =  50   &
+  ,  MALO2H      =  51   &
   ,  MVKO2H      =  52   &
   ,  MARO2H      =  53   &
   ,  ISRO2H      =  54   &
@@ -284,40 +216,39 @@
   ,  CH3COO2H    =  56   &
   ,  CH2CO2HCH3  =  57   &
   ,  ISONO3H     =  58   &
-  ,  ISNIRH      =  59   &
-  ,  CH3OH       =  60
+  ,  ISNIRH      =  59
 
    integer, public, parameter ::   & 
-     C2H5OH      =  61   &
+     CH3OH       =  60   &
+  ,  C2H5OH      =  61   &
   ,  H2          =  62   &
   ,  CO          =  63   &
   ,  CH4         =  64   &
   ,  SO2         =  65   &
   ,  SO4         =  66   &
-  ,  pNO3        =  67   &
+  ,  PNO3        =  67   &
   ,  NH3         =  68   &
-  ,  aNH4        =   69   &
-  ,  aNO3        =   70  &
-  ,  PPM25        =   71  &
-  ,  PPMco        =   72  &
-  ,  SSFI        =   73  &    !SeaS
-  ,  SSco        =   74  &    !SeaS
-  ,  Rn222       =   75  &
-  ,  Pb210       =   76       !ds apr2005
+  ,  ANH4        =  69
+
+   integer, public, parameter ::   & 
+     ANO3        =  70   &
+  ,  PPM25       =  71   &
+  ,  PPMCO       =  72   &
+  ,  SSFI        =  73   &
+  ,  SSCO        =  74   &
+  ,  RN222       =  75   &
+  ,  PB210       =  76
 
  !-----------------------------------------------------------
   end module GenSpec_tot_ml
-!>_________________________________________________________<
 !>_________________________________________________________<
 
   module  GenChemicals_ml
 !-----------------------------------------------------------
 
-   use GenSpec_tot_ml, only: NSPEC_TOT    ! Total number of species for chemistry
+   use GenSpec_tot_ml  ! => NSPEC_TOT, species indices
   implicit none
   private
-!/ ...... ..   ( from GenChem )
-
 
   !/--   Characteristics of species: 
   !/--   Number, name, molwt, carbon num, nmhc (1) or not(0)
@@ -326,7 +257,7 @@
 
   type, public :: Chemical 
        character(len=12) :: name
-       real              :: molwt       
+       integer           :: molwt
        integer           :: nmhc      ! nmhc (1) or not(0)
        integer           :: carbons   ! Carbon-number
        real              :: nitrogens ! Nitrogen-number
@@ -339,86 +270,106 @@
     !+
     ! Assigns names, mol wts, carbon numbers, advec,  nmhc to user-defined Chemical
     ! array, using indices from total list of species (advected + short-lived).
-    !
-    !                                           MW NMHC  C    N   S
-       species(  1) = Chemical("OD          ",  16,  0,  0,   0,  0 ) 
-       species(  2) = Chemical("OP          ",  16,  0,  0,   0,  0 ) 
-       species(  3) = Chemical("OH          ",  17,  0,  0,   0,  0 ) 
-       species(  4) = Chemical("HO2         ",  33,  0,  0,   0,  0 ) 
-       species(  5) = Chemical("CH3O2       ",  47,  0,  1,   0,  0 ) 
-       species(  6) = Chemical("C2H5O2      ",  61,  0,  2,   0,  0 ) 
-       species(  7) = Chemical("SECC4H9O2   ",  89,  0,  4,   0,  0 ) 
-       species(  8) = Chemical("ISRO2       ", 101,  0,  5,   0,  0 ) 
-       species(  9) = Chemical("ETRO2       ",  77,  0,  2,   0,  0 ) 
-       species( 10) = Chemical("PRRO2       ",  91,  0,  3,   0,  0 ) 
-       species( 11) = Chemical("OXYO2       ",   1,  0,  8,   0,  0 ) !ds1
-       species( 12) = Chemical("MEKO2       ", 103,  0,  4,   0,  0 ) 
-       species( 13) = Chemical("MALO2       ", 147,  0,  5,   0,  0 ) 
-       species( 14) = Chemical("MVKO2       ", 119,  0,  4,   0,  0 ) 
-       species( 15) = Chemical("MACRO2      ", 102,  0,  4,   0,  0 ) 
-       species( 16) = Chemical("PHNO3       ",   0,  0,  0,   0,  0 ) 
-       species( 17) = Chemical("O3          ",  48,  0,  0,   0,  0 ) 
-       species( 18) = Chemical("NO          ",  30,  0,  0,   1,  0 ) 
-       species( 19) = Chemical("NO2         ",  46,  0,  0,   1,  0 ) 
-       species( 20) = Chemical("PAN         ", 121,  0,  2,   1,  0 ) 
-       species( 21) = Chemical("MPAN        ", 132,  0,  4,   1,  0 ) 
-       species( 22) = Chemical("NO3         ",  62,  0,  0,   1,  0 ) 
-       species( 23) = Chemical("N2O5        ", 108,  0,  0,   2,  0 ) 
-       species( 24) = Chemical("ISONO3      ", 110,  0,  5,   1,  0 ) 
-       species( 25) = Chemical("HNO3        ",  63,  0,  0,   1,  0 ) 
-       species( 26) = Chemical("CH2CCH3     ",  73,  0,  3,   0,  0 ) 
-       species( 27) = Chemical("CH3COO2     ",  75,  0,  2,   0,  0 ) 
-       species( 28) = Chemical("MACR        ",  70,  0,  4,   0,  0 ) 
-       species( 29) = Chemical("ISNI        ",  46,  0,  4,   1,  0 ) 
-       species( 30) = Chemical("ISNIR       ",  46,  0,  4,   1,  0 )  
-       species( 31) = Chemical("GLYOX       ",  58,  0,  2,   0,  0 ) 
-       species( 32) = Chemical("MGLYOX      ",  72,  0,  3,   0,  0 ) 
-       species( 33) = Chemical("MAL         ",  98,  0,  5,   0,  0 ) 
-       species( 34) = Chemical("MEK         ",  72,  0,  4,   0,  0 ) 
-       species( 35) = Chemical("MVK         ",  70,  0,  4,   0,  0 ) 
-       species( 36) = Chemical("HCHO        ",  30,  0,  1,   0,  0 ) 
-       species( 37) = Chemical("CH3CHO      ",  44,  0,  2,   0,  0 ) 
-       species( 38) = Chemical("C2H6        ",  30,  1,  2,   0,  0 ) 
-       species( 39) = Chemical("NC4H10      ",  58,  1,  4,   0,  0 ) 
-       species( 40) = Chemical("C2H4        ",  28,  1,  2,   0,  0 ) 
-       species( 41) = Chemical("C3H6        ",  42,  1,  3,   0,  0 ) 
-       species( 42) = Chemical("OXYL        ", 106,  1,  8,   0,  0 ) 
-       species( 43) = Chemical("ISOP        ",  68,  1,  5,   0,  0 ) 
-       species( 44) = Chemical("CH3O2H      ",  48,  0,  1,   0,  0 ) 
-       species( 45) = Chemical("C2H5OOH     ",  62,  0,  2,   0,  0 ) 
-       species( 46) = Chemical("BURO2H      ",  90,  0,  4,   0,  0 ) 
-       species( 47) = Chemical("ETRO2H      ",  78,  0,  2,   0,  0 ) 
-       species( 48) = Chemical("PRRO2H      ",  92,  0,  3,   0,  0 ) 
-       species( 49) = Chemical("OXYO2H      ",   1,  0,  8,   0,  0 ) 
-       species( 50) = Chemical("MEKO2H      ", 104,  0,  4,   0,  0 ) 
-       species( 51) = Chemical("MALO2H      ", 147,  0,  5,   0,  0 ) 
-       species( 52) = Chemical("MVKO2H      ",   1,  0,  4,   0,  0 )
-       species( 53) = Chemical("MARO2H      ",   1,  0,  5,   0,  0 ) 
-       species( 54) = Chemical("ISRO2H      ",   1,  0,  5,   0,  0 )
-       species( 55) = Chemical("H2O2        ",  34,  0,  0,   0,  0 ) 
-       species( 56) = Chemical("CH3COO2H    ",  76,  0,  2,   0,  0 ) 
-       species( 57) = Chemical("CH2CO2HCH3  ",  74,  0,  3,   0,  0 ) 
-       species( 58) = Chemical("ISONO3H     ",   1,  0,  5,   0,  0 ) 
-       species( 59) = Chemical("ISNIRH      ",   1,  0,  5,   0,  0 )
-       species( 60) = Chemical("CH3OH       ",  32,  0,  1,   0,  0 ) 
-       species( 61) = Chemical("C2H5OH      ",  46,  0,  2,   0,  0 ) 
-       species( 62) = Chemical("H2          ",   2,  0,  0,   0,  0 ) 
-       species( 63) = Chemical("CO          ",  28,  0,  1,   0,  0 ) 
-       species( 64) = Chemical("CH4         ",  16,  0,  1,   0,  0 ) 
-       species( 65) = Chemical("SO2         ",  64,  0,  0,   0,  1 ) 
-       species( 66) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
-       species( 67) = Chemical("pNO3        ",  62,  0,  0,   1,  0 ) 
-       species( 68) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
-       species( 69) = Chemical("aNH4        ", 18,   0,  0,   1,  0 ) 
-       species( 70) = Chemical("aNO3        ", 62,   0,  0,   1,  0 ) 
-       species( 71) = Chemical("PPM25        ", 100,  0,  0,   0,  0 ) 
-       species( 72) = Chemical("PMCO        ", 100,  0,  0,   0,  0 ) 
-       species( 73) = Chemical("SSfi        ", 58,   0,  0,   0,  0 )  !SeaS
-       species( 74) = Chemical("SSco        ", 58,   0,  0,   0,  0 )
-       species( 75) = Chemical("Rn222       ", 222,   0,  0,   0,  0 )
-       species( 76) = Chemical("Pb210       ", 210,   0,  0,   0,  0 )
-
+    !                                           MW  NM   C    N   S
+       species(OD) = Chemical("OD          ",  16,  0,  0,   0,  0 ) 
+       species(OP) = Chemical("OP          ",  16,  0,  0,   0,  0 ) 
+       species(OH) = Chemical("OH          ",  17,  0,  0,   0,  0 ) 
+       species(HO2) = Chemical("HO2         ",  33,  0,  0,   0,  0 ) 
+       species(CH3O2) = Chemical("CH3O2       ",  47,  0,  1,   0,  0 ) 
+       species(C2H5O2) = Chemical("C2H5O2      ",  61,  0,  2,   0,  0 ) 
+       species(SECC4H9O2) = Chemical("SECC4H9O2   ",  89,  0,  4,   0,  0 ) 
+       species(ISRO2) = Chemical("ISRO2       ", 101,  0,  5,   0,  0 ) 
+       species(ETRO2) = Chemical("ETRO2       ",  77,  0,  2,   0,  0 ) 
+       species(PRRO2) = Chemical("PRRO2       ",  91,  0,  3,   0,  0 ) 
+       species(OXYO2) = Chemical("OXYO2       ",   1,  0,  0,   0,  0 ) 
+       species(MEKO2) = Chemical("MEKO2       ", 103,  0,  4,   0,  0 ) 
+       species(MALO2) = Chemical("MALO2       ", 147,  0,  5,   0,  0 ) 
+       species(MVKO2) = Chemical("MVKO2       ", 119,  0,  4,   0,  0 ) 
+       species(MACRO2) = Chemical("MACRO2      ", 102,  0,  4,   0,  0 ) 
+       species(PHNO3) = Chemical("PHNO3       ",  63,  0,  0,   1,  0 ) 
+       species(O3) = Chemical("O3          ",  48,  0,  0,   0,  0 ) 
+       species(NO) = Chemical("NO          ",  30,  0,  0,   1,  0 ) 
+       species(NO2) = Chemical("NO2         ",  46,  0,  0,   1,  0 ) 
+       species(PAN) = Chemical("PAN         ", 121,  0,  2,   1,  0 ) 
+       species(MPAN) = Chemical("MPAN        ", 132,  0,  4,   1,  0 ) 
+       species(NO3) = Chemical("NO3         ",  62,  0,  0,   1,  0 ) 
+       species(N2O5) = Chemical("N2O5        ", 108,  0,  0,   2,  0 ) 
+       species(ISONO3) = Chemical("ISONO3      ",   1,  0,  0,   0,  0 ) 
+       species(HNO3) = Chemical("HNO3        ",  63,  0,  0,   1,  0 ) 
+       species(CH2CCH3) = Chemical("CH2CCH3     ",  73,  0,  3,   0,  0 ) 
+       species(CH3COO2) = Chemical("CH3COO2     ",  75,  0,  2,   0,  0 ) 
+       species(MACR) = Chemical("MACR        ",  70,  0,  4,   0,  0 ) 
+       species(ISNI) = Chemical("ISNI        ",   1,  0,  0,   0,  0 ) 
+       species(ISNIR) = Chemical("ISNIR       ",   1,  0,  0,   0,  0 ) 
+       species(GLYOX) = Chemical("GLYOX       ",  58,  0,  2,   0,  0 ) 
+       species(MGLYOX) = Chemical("MGLYOX      ",  72,  0,  3,   0,  0 ) 
+       species(MAL) = Chemical("MAL         ",  98,  0,  5,   0,  0 ) 
+       species(MEK) = Chemical("MEK         ",  72,  0,  4,   0,  0 ) 
+       species(MVK) = Chemical("MVK         ",  70,  0,  4,   0,  0 ) 
+       species(HCHO) = Chemical("HCHO        ",  30,  0,  1,   0,  0 ) 
+       species(CH3CHO) = Chemical("CH3CHO      ",  44,  0,  2,   0,  0 ) 
+       species(C2H6) = Chemical("C2H6        ",  30,  1,  2,   0,  0 ) 
+       species(NC4H10) = Chemical("NC4H10      ",  58,  1,  4,   0,  0 ) 
+       species(C2H4) = Chemical("C2H4        ",  28,  1,  2,   0,  0 ) 
+       species(C3H6) = Chemical("C3H6        ",  42,  1,  3,   0,  0 ) 
+       species(OXYL) = Chemical("OXYL        ", 106,  1,  8,   0,  0 ) 
+       species(ISOP) = Chemical("ISOP        ",  68,  1,  5,   0,  0 ) 
+       species(CH3O2H) = Chemical("CH3O2H      ",  48,  0,  1,   0,  0 ) 
+       species(C2H5OOH) = Chemical("C2H5OOH     ",  62,  0,  2,   0,  0 ) 
+       species(BURO2H) = Chemical("BURO2H      ",  90,  0,  4,   0,  0 ) 
+       species(ETRO2H) = Chemical("ETRO2H      ",  78,  0,  2,   0,  0 ) 
+       species(PRRO2H) = Chemical("PRRO2H      ",  92,  0,  3,   0,  0 ) 
+       species(OXYO2H) = Chemical("OXYO2H      ",   1,  0,  0,   0,  0 ) 
+       species(MEKO2H) = Chemical("MEKO2H      ", 104,  0,  4,   0,  0 ) 
+       species(MALO2H) = Chemical("MALO2H      ", 147,  0,  5,   0,  0 ) 
+       species(MVKO2H) = Chemical("MVKO2H      ",   1,  0,  0,   0,  0 ) 
+       species(MARO2H) = Chemical("MARO2H      ",   1,  0,  0,   0,  0 ) 
+       species(ISRO2H) = Chemical("ISRO2H      ",   1,  0,  0,   0,  0 ) 
+       species(H2O2) = Chemical("H2O2        ",  34,  0,  0,   0,  0 ) 
+       species(CH3COO2H) = Chemical("CH3COO2H    ",  76,  0,  2,   0,  0 ) 
+       species(CH2CO2HCH3) = Chemical("CH2CO2HCH3  ",  74,  0,  3,   0,  0 ) 
+       species(ISONO3H) = Chemical("ISONO3H     ",   1,  0,  0,   0,  0 ) 
+       species(ISNIRH) = Chemical("ISNIRH      ",   1,  0,  0,   0,  0 ) 
+       species(CH3OH) = Chemical("CH3OH       ",  32,  0,  1,   0,  0 ) 
+       species(C2H5OH) = Chemical("C2H5OH      ",  46,  0,  2,   0,  0 ) 
+       species(H2) = Chemical("H2          ",   2,  0,  0,   0,  0 ) 
+       species(CO) = Chemical("CO          ",  28,  0,  1,   0,  0 ) 
+       species(CH4) = Chemical("CH4         ",  16,  0,  1,   0,  0 ) 
+       species(SO2) = Chemical("SO2         ",  64,  0,  0,   0,  1 ) 
+       species(SO4) = Chemical("SO4         ",  96,  0,  0,   0,  1 ) 
+       species(PNO3) = Chemical("PNO3        ",  62,  0,  0,   1,  0 ) 
+       species(NH3) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
+       species(ANH4) = Chemical("ANH4        ",  18,  0,  0,   1,  0 ) 
+       species(ANO3) = Chemical("ANO3        ",  62,  0,  0,   1,  0 ) 
+       species(PPM25) = Chemical("PPM25       ",  12,  0,  0,   0,  0 ) 
+       species(PPMCO) = Chemical("PPMCO       ",   1,  0,  0,   0,  0 ) 
+       species(SSFI) = Chemical("SSFI        ",  58,  0,  0,   0,  0 ) 
+       species(SSCO) = Chemical("SSCO        ",  58,  0,  0,   0,  0 ) 
+       species(RN222) = Chemical("RN222       ", 222,  0,  0,   0,  0 ) 
+       species(PB210) = Chemical("PB210       ", 210,  0,  0,   0,  0 ) 
    end subroutine define_chemicals
  end module GenChemicals_ml
  !-----------------------------------------------------------
-!>_________________________________________________________<
+ module GenSpec_bgn_ml
+!-----------------------------------------------------------
+! PRETTY MUCH FAKED FOR NOW. CAN BE DELETED SOON IN HOPE!
+  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
+  implicit none
+  private
+
+!+ Defines indices and NSPEC for bgn : Background species
+
+ ! Species which can be specified simply for each column, e.g.
+ ! as function of local meteorology or zenith angle
+ !   o2, m,  and for MADE-like, oh, ch3coo2
+
+   integer, public, parameter ::  NSPEC_BGN = 0 ! No. 3D bgn species
+   integer, public, parameter ::  NSPEC_COL = 0 ! total no. prescribed specs
+
+  !/ define xn_2d_bgn here.
+   real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
+
+!-----------------------------------------------------------
+  end module GenSpec_bgn_ml
+
+

@@ -1,3 +1,28 @@
+================================ rv3_2_26, Dave,  4 Sep. 2009======
+
+INTERIM version - the concentrations look fine, but for some
+reason WDEP, DDEP is different to older (rv3_1) results. Needs
+investigating!
+(Differences *not* due to changes here, likely those from
+some revisions ago)
+
+Main change: My_Chem files all come  *directly* from GenChem output
+Some small change in reactions introduced here, but doesn't affect
+air concentrations very much.
+
+My_ChemSpecs_ml
+My_FastReactions
+
+*** note, since these files are from GenChem, we have lost some of
+the optimisations which Peter introduced. This can one day be
+coded into GenChem, or done by hand again. 
+   On the oter hand, GenChem got rid of some of the bugs introduced
+by hand-coding ;-)
+
+Solver_ml:  use NUM_INITCHEM, DT_INITCHEM etc., to try to make
+  timestep values easier to change. Values printed out to IO_LOG
+
+
 ================================ rv3_2_25, Dave, 11 July 2009======
 
 Some changes to make the code "safer" I hope, after being caught out by

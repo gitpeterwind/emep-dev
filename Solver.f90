@@ -58,7 +58,8 @@
     use GenRates_rct_ml,   only: rct
     use GenRates_rcmisc_ml,only: rcmisc  ! DSGC new
     use GridValues_ml,     only : GRIDWIDTH_M
-    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, DebugCell
+    use Io_ml,             only : IO_LOG
+    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, DebugCell, MasterProc
     use My_Aerosols_ml,    only: SEASALT
     use My_Emis_ml                        ! => QRCNO, etc.
     use OrganicAerosol_ml, only: Fgas
@@ -80,7 +81,10 @@
   INCLUDE 'mpif.h'
 
   integer::  STATUS(MPI_STATUS_SIZE),INFO
+!DSGC  integer, parameter:: nchemMAX=15
   integer, parameter:: nchemMAX=15
+  integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
+  real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for 
   integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
 
 
@@ -126,6 +130,13 @@ contains
     if ( first_call ) then
        call makedt(dti,nchem,coeff1,coeff2,cc)
        first_call = .false.
+       if ( MasterProc ) then
+           write(IO_LOG,"(a,i4)") 'Chem dts: nchemMAX: ', nchemMAX
+           write(IO_LOG,"(a,i4)") 'Chem dts: nchem: ', nchem
+           write(IO_LOG,"(a,i4)") 'Chem dts: NUM_INITCHEM: ', NUM_INITCHEM
+           write(IO_LOG,"(a,f7.2)") 'Chem dts: DT_INITCHEM: ', DT_INITCHEM
+           write(IO_LOG,"(a,i4)") 'Chem dts: EXTRA_ITER: ', EXTRA_ITER
+       end if
     endif
 
 !======================================================
@@ -225,47 +236,42 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
  integer,                  intent(out) :: nchem
 
  real    :: ttot,dt_first,dt_max,dtleft,tleft,step,dt(nchemMAX)
+ real :: dt_init   ! DSGC time (seconds) with initially short time-steps
  integer :: i,j
 !_________________________
 
-  nchem=12 !number of chemical timesteps inside dt_advec
+  !DSGC nchem=12 !number of chemical timesteps inside dt_advec
 
-  if(GRIDWIDTH_M>60000.0)nchem=15
+  nchem=nchemMax !number of chemical timesteps inside dt_advec
 
+   dt_init = NUM_INITCHEM*DT_INITCHEM
+
+ ! DSGC - puit special cases here:
+  !NOT NEEDED? if(GRIDWIDTH_M>60000.0)nchem=15
+
+!/ ** For smaller scales, but not tested
+  if(dt_advec<620.0) nchem = NUM_INITCHEM +int((dt_advec- dt_init) / dt_init )
 
 !/ Used for >21km resolution and dt_advec>520 seconds:
 !.. timesteps from 6 to nchem
-  dt=(dt_advec-100.0)/(nchem-5)
-!.. first five timesteps 
-  dt(1)=20.0
-  dt(2)=20.0
-  dt(3)=20.0
-  dt(4)=20.0
-  dt(5)=20.0
 
-!/ ** For smaller scales, but not tested
-   if(dt_advec<620.0)then
-      nchem=5+int((dt_advec-100.0)/100.0)
-      dt=(dt_advec-100.0)/(nchem-5)
-      dt(1)=20.0
-      dt(2)=20.0
-      dt(3)=20.0
-      dt(4)=20.0
-      dt(5)=20.0
-   endif
-   if(dt_advec<=100.)then
-      nchem=int(dt_advec/20.0)+1
+   dt=(dt_advec - dt_init )/(nchem-NUM_INITCHEM) 
+
+   dt(1:NUM_INITCHEM)=DT_INITCHEM     !.. first five timesteps 
+
+   if(dt_advec<= dt_init )then
+      nchem=int(dt_advec/DT_INITCHEM)+1
       dt=(dt_advec)/(nchem)
    endif
 !/ **
 
-   call CheckStop(dt_advec<20.0,"Error in Solver/makedt: dt_advec too small!")
+   call CheckStop(dt_advec<DT_INITCHEM, "Error in Solver/makedt: dt_advec too small!")
 
    call CheckStop(nchem>nchemMAX,"Error in Solver/makedt: nchemMAX too small!")
 
    nchem=min(nchemMAX,nchem)
 
-    if(me == 0) then
+    if( MasterProc ) then
 
       write(*,*)'Number of timesteps in Solver: ',nchem
       27 format('timestep ',I,F13.6,' total: ',F13.6)

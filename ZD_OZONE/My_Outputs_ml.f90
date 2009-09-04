@@ -76,13 +76,14 @@ integer, private :: isite              ! To assign arrays, if needed
 integer, public, parameter :: &
      NSITES_MAX =    99         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
-    ,NADV_SITE  =    6 &  !NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+!GCTEST    ,NADV_SITE  =    6 &  !NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+    ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
     ,NXTRA_SITE =    3            ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
-    SITE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO, IXADV_CH4, IXADV_C2H6 /) 
-!    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
+!GCDS    SITE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO, IXADV_CH4, IXADV_C2H6 /) 
+    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
     SITE_SHL =  (/ IXSHL_OH /)                    ! More limited
@@ -137,9 +138,13 @@ integer, public, parameter :: &
     ,NXTRA_SONDE =    4                &   ! No. Misc. met. params  (now th)
     ,N_NOy       =   10                    ! # of N species in NOy
 
+!SEP09
    integer, public, parameter, dimension(NADV_SONDE) :: &
-   SONDE_ADV =  (/ IXADV_O3, IXADV_CO, IXADV_HCHO, IXADV_NO2, IXADV_HNO3, & 
-                    IXADV_SO4, IXADV_CH4, IXADV_C2H6 /)
+   SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_CO, &
+   IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
+
+!ORIG   SONDE_ADV =  (/ IXADV_O3, IXADV_CO, IXADV_HCHO, IXADV_NO2, IXADV_HNO3, & 
+!ORIG                    IXADV_SO4, IXADV_CH4, IXADV_C2H6 /)
 
 
    integer, public, parameter, dimension(N_NOy) :: &

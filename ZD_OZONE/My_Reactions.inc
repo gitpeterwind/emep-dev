@@ -55,98 +55,100 @@
  !XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 
-!-> SO4 
+  include 'My_SlowReactions.inc'
 
-      P =   &
-      2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-       + aqrck(ICLRC1,K)*XNEW(H2O2) * xnew(SO2 )  &
-       + aqrck(ICLRC2,K)*XNEW(O3) * xnew(SO2 )  &
-       + aqrck(ICLRC3,K) * xnew(SO2 )  &
-      + 0.05*rcemis(QRCSO2,K) 
-      ! L = 0.0
- 
-
-       xnew(SO4)=  amax1(0.0,  xold(SO4) + dt2 * P)
-
-
-!-> pNO3
-
-      P =   &
-        rcmisc(10,k) * xnew(HNO3)
-      L = 0.0
-
-
-       xnew(pNO3)=  amax1(0.0,  xold(pNO3) + dt2 * P)
-
-
-!-> NH3 
-
-      P =   &
-     rcemis(QRCNH3,K) 
-      ! L = 0.0
- 
-
-       xnew(NH3)=  amax1(0.0,  xold(NH3) + dt2 * P)
-
-!-> PPM25
-
-      P =   &
-     rcemis(QRCPM25,K) 
-      ! L = 0.0
-       xnew(PPM25)=  amax1(0.0,  xold(PPM25) + dt2 * P)
-
-
-!-> PPMCO
-
-      P =   &
-     rcemis(QRCPMCO,K) 
-      ! L = 0.0
-       xnew(PPMCO)=  amax1(0.0,  xold(PPMCO) + dt2 * P)
-
-!-> Rn222
-
-      P =  rc_Rn222(k)
-      L = 1.0/(5.51614*24.0*3600.0)
-       xnew(Rn222)=  amax1(0.0, ( xold(Rn222) + dt2 * P))  &
-                     /(1.0 + dt2*L ) 
-
-!-> Pb210
-      P = 1.0/(5.51614*24.0*3600.0) * xnew(Rn222)
-      ! L = 0.0
-       xnew(Pb210)=  max(0.0,  xold(Pb210) + dt2 * P)
-
-!SeaS
-   if (SEASALT) then
-
-!-> Sea salt fine
-
-      P =   &
-     rcss(QSSFI,K) 
-      ! L = 0.0
-       xnew(SSfi)=  amax1(0.0,  xold(SSfi) + dt2 * P)
-
-!-> Sea salt coarse
-
-      P =   &
-     rcss(QSSCO,K) 
-      ! L = 0.0
-       xnew(SSco)=  amax1(0.0,  xold(SSco) + dt2 * P)
-   endif
-
-!-> AMSU 
-      ! P = 0.0
- 
-      ! L = 0.0
- 
-
-!       xnew(AMSU)=  amax1(0.0, xold(AMSU))
-
-
-!-> AMNI 
-      ! P = 0.0
- 
-      ! L = 0.0
- 
-
-!       xnew(AMNI)=  amax1(0.0, xold(AMNI))
-
+!ORIG!-> SO4 
+!ORIG
+!ORIG      P =   &
+!ORIG      2e-12*aqrck(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
+!ORIG       + aqrck(ICLRC1,K)*XNEW(H2O2) * xnew(SO2 )  &
+!ORIG       + aqrck(ICLRC2,K)*XNEW(O3) * xnew(SO2 )  &
+!ORIG       + aqrck(ICLRC3,K) * xnew(SO2 )  &
+!ORIG      + 0.05*rcemis(QRCSO2,K) 
+!ORIG      ! L = 0.0
+!ORIG 
+!ORIG
+!ORIG       xnew(SO4)=  max(0.0,  xold(SO4) + dt2 * P)
+!ORIG
+!ORIG
+!ORIG!-> pNO3
+!ORIG
+!ORIG      P =   &
+!ORIG        rcmisc(10,k) * xnew(HNO3)
+!ORIG      L = 0.0
+!ORIG
+!ORIG
+!ORIG       xnew(pNO3)=  max(0.0,  xold(pNO3) + dt2 * P)
+!ORIG
+!ORIG
+!ORIG!-> NH3 
+!ORIG
+!ORIG      P =   &
+!ORIG     rcemis(QRCNH3,K) 
+!ORIG      ! L = 0.0
+!ORIG 
+!ORIG
+!ORIG       xnew(NH3)=  max(0.0,  xold(NH3) + dt2 * P)
+!ORIG
+!ORIG!-> PPM25
+!ORIG
+!ORIG      P =   &
+!ORIG     rcemis(QRCPM25,K) 
+!ORIG      ! L = 0.0
+!ORIG       xnew(PPM25)=  max(0.0,  xold(PPM25) + dt2 * P)
+!ORIG
+!ORIG
+!ORIG!-> PPMCO
+!ORIG
+!ORIG      P =   &
+!ORIG     rcemis(QRCPMCO,K) 
+!ORIG      ! L = 0.0
+!ORIG       xnew(PPMCO)=  max(0.0,  xold(PPMCO) + dt2 * P)
+!ORIG
+!ORIG!-> Rn222
+!ORIG
+!ORIG      P =  rc_Rn222(k)
+!ORIG      L = 1.0/(5.51614*24.0*3600.0)
+!ORIG       xnew(Rn222)=  max(0.0, ( xold(Rn222) + dt2 * P))  &
+!ORIG                     /(1.0 + dt2*L ) 
+!ORIG
+!ORIG!-> Pb210
+!ORIG      P = 1.0/(5.51614*24.0*3600.0) * xnew(Rn222)
+!ORIG      ! L = 0.0
+!ORIG       xnew(Pb210)=  max(0.0,  xold(Pb210) + dt2 * P)
+!ORIG
+!ORIG!SeaS
+!ORIG   if (SEASALT) then
+!ORIG
+!ORIG!-> Sea salt fine
+!ORIG
+!ORIG      P =   &
+!ORIG     rcss(QSSFI,K) 
+!ORIG      ! L = 0.0
+!ORIG       xnew(SSfi)=  max(0.0,  xold(SSfi) + dt2 * P)
+!ORIG
+!ORIG!-> Sea salt coarse
+!ORIG
+!ORIG      P =   &
+!ORIG     rcss(QSSCO,K) 
+!ORIG      ! L = 0.0
+!ORIG       xnew(SSco)=  max(0.0,  xold(SSco) + dt2 * P)
+!ORIG   endif
+!ORIG
+!ORIG!-> AMSU 
+!ORIG      ! P = 0.0
+!ORIG 
+!ORIG      ! L = 0.0
+!ORIG 
+!ORIG
+!ORIG!       xnew(AMSU)=  max(0.0, xold(AMSU))
+!ORIG
+!ORIG
+!ORIG!-> AMNI 
+!ORIG      ! P = 0.0
+!ORIG 
+!ORIG      ! L = 0.0
+!ORIG 
+!ORIG
+!ORIG!       xnew(AMNI)=  max(0.0, xold(AMNI))
+!ORIG
