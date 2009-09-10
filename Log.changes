@@ -1,3 +1,14 @@
+================================ rv3_2_27, Peter,  10 Sep. 2009======
+
+Changes to comply with the rotated spherical projections and new definition/units for time:
+now in days since year 1900. The seconds used earlier do not run after 2037 or so and we 
+need to run later for climate studies.
+NBNB: if you have postprocesing scripts which make use of the date read from the netcdf 
+files, make sure to update these!
+
+NetCDF_ml and Met_ml are changed
+
+
 ================================ rv3_2_26, Dave,  4 Sep. 2009======
 
 INTERIM version - the concentrations look fine, but for some

@@ -3629,7 +3629,8 @@ contains
     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
     real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
     integer :: status,iglobal,jglobal,info,South_pole,North_pole
-    real :: xm_i_max
+    real :: xm_i_max,ndays(1)
+    character (len = 50) :: timeunit
 
     if(me==0)then
        !open an existing netcdf dataset
@@ -3641,7 +3642,11 @@ contains
        else
           print *,'  reading ',trim(meteoname)
           projection=''
-          call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
+         call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
+          if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
+               .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then 
+             projection='Rotated_Spherical'
+          endif
           write(*,*)'projection: ',trim(projection)
 
           !get dimensions id
@@ -3683,22 +3688,39 @@ contains
           call CheckStop(nhour/=0 .and. nhour /=3,&
                "Met_ml/GetCDF: must start at nhour=0 or 3")
 
+          call check(nf90_get_att(ncFileID,timeVarID,"units",timeunit))
+
           ihh=1
           n1=1
-          call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
-               start=(/ihh/),count=(/n1 /)))
+          if(trim(timeunit)==trim("days since 1900-1-1 0:0:0"))then
+             write(*,*)'Meteo date in days since 1900-1-1 0:0:0'
+             call check(nf90_get_var(ncFileID,timeVarID,ndays,&
+                  start=(/ihh/),count=(/n1 /)))
 
-          call datefromsecondssince1970(ndate,nseconds(1),0)
+             call datefromdayssince1900(ndate,ndays(1),0)
+          else
+             call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
+                  start=(/ihh/),count=(/n1 /)))
+             call datefromsecondssince1970(ndate,nseconds(1),0) !default
+          endif
           nhour_first=ndate(4)
+
 
           call CheckStop(ndate(1), nyear,  "NetCDF_ml: wrong meteo year" )
           call CheckStop(ndate(2), nmonth, "NetCDF_ml: wrong meteo month" )
           call CheckStop(ndate(3), nday,   "NetCDF_ml: wrong meteo day" )
 
           do ihh=1,Nhh
-             call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
+
+             if(trim(timeunit)==trim("days since 1900-1-1 0:0:0"))then
+                call check(nf90_get_var(ncFileID, timeVarID, ndays,&
+                     start=(/ ihh /),count=(/ n1 /)))   
+                call datefromdayssince1900(ndate,ndays(1),0)
+             else
+                call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
                   start=(/ ihh /),count=(/ n1 /)))   
-             call datefromsecondssince1970(ndate,nseconds(1),0)
+                call datefromsecondssince1970(ndate,nseconds(1),0)
+             endif
 
              call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
                   "NetCDF_ml: wrong meteo hour" )
@@ -3740,8 +3762,7 @@ contains
              xp=0.0
              yp=GJMAX
              fi =0.0
-             if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
-                  .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then 
+             if(trim(projection)=='Rotated_Spherical')then 
                 call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude))
                 call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
              endif
@@ -4051,6 +4072,65 @@ contains
             ndate(3),', hour: ',ndate(4),', seconds: ',nseconds-n
     endif
   end subroutine datefromsecondssince1970
+
+
+  subroutine datefromdayssince1900(ndate,ndays,printdate)
+    ! calculate date from days that have passed since the start of 
+    ! the year 1900 
+    ! NB: 1900 is not a leap year
+
+
+    implicit none
+
+    integer, intent(out) :: ndate(4)
+    real, intent(in) :: ndays
+    integer,  intent(in) :: printdate
+
+    integer :: n,nday,nmdays(12),nmdays2(13)
+    real*8 :: nr
+
+    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
+
+    nmdays2(1:12)=nmdays
+    nmdays2(13)=0
+    ndate(1)=1899
+    n=0
+    do while(n<=ndays)
+       n=n+365
+       ndate(1)=ndate(1)+1
+       if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n+1 !NB: 1900 is not a leap year
+    enddo
+    n=n-365
+    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n-1
+    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)nmdays2(2)=29
+    ndate(2)=0
+    do while(n<=ndays)
+       ndate(2)=ndate(2)+1
+       n=n+nmdays2(ndate(2))
+    enddo
+    n=n-nmdays2(ndate(2))
+    ndate(3)=0
+    do while(n<=ndays)
+       ndate(3)=ndate(3)+1
+       n=n+1
+    enddo
+    n=n-1
+    ndate(4)=-1
+    nr=n
+    do while(nr<=ndays+1.0d0/24.0d0/3600.0d0/2)
+       ndate(4)=ndate(4)+1
+       nr=nr+1.0d0/24.0d0
+    enddo
+    nr=nr-1.0d0/24.0d0
+    if(nint((ndays-nr)*3600.0*24.0)/=0)then
+       write(*,*)'WARNING: not integer number of hours'
+    endif
+    !    ndate(5)=nseconds-n
+    if(printdate>0)then
+       write(*,*)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
+            ndate(3),', hour: ',ndate(4),', seconds: ',nint((ndays-nr)*3600.0*24.0)
+    endif
+  end subroutine datefromdayssince1900
 
 end module met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD

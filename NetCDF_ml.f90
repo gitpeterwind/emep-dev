@@ -105,6 +105,7 @@
   public :: GetCDF
   public :: WriteCDF
   public :: secondssince1970
+  public :: dayssince1900
   public :: Read_Inter_CDF
   public :: Read_Local_Inter_CDF
 
@@ -345,13 +346,15 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
   call check(nf90_put_att(ncFileID, PTVarID, "units", "Pa"))
   call check(nf90_put_att(ncFileID, PTVarID, "long_name", "Pressure at top"))
 
-  call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
+!  call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
+  call check(nf90_def_var(ncFileID, "time", nf90_double, dimids = timeDimID, varID = VarID) )
   if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown'.and.trim(period_type) /= 'fullrun')then
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   else
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at end of period"))
   endif
-  call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
+!  call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
+  call check(nf90_put_att(ncFileID, VarID, "units", "days since 1900-1-1 0:0:0"))
  
 
 !CF-1.0 definitions:
@@ -529,6 +532,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer :: GIMAX_old,GJMAX_old,KMAX_old
   integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
   integer :: is_leap, nseconds_time(1)
+  real*8 :: rdays,rdays_time(1)
 
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
@@ -779,11 +783,18 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      if(present(ik).and.nrecords>0)then
         !The new record may already exist 
         !use time as record reference, (instead of "numberofrecords")
-        call secondssince1970(ndate,nseconds,iotyp)
+!        call secondssince1970(ndate,nseconds,iotyp)
+!       call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
+!        call check(nf90_get_var(ncFileID, timeVarID, nseconds_time,start=(/ nrecords /)))   
+!        !check if this is a newer time
+!        if((nseconds/=nseconds_time(1)))then
+!           nrecords=nrecords+1 !start a new record
+!        endif
+        call dayssince1900(ndate,rdays,iotyp)
         call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
-        call check(nf90_get_var(ncFileID, timeVarID, nseconds_time,start=(/ nrecords /)))   
+        call check(nf90_get_var(ncFileID, timeVarID, rdays_time,start=(/ nrecords /)))   
         !check if this is a newer time
-        if((nseconds/=nseconds_time(1)))then
+        if((abs(rdays-rdays_time(1))<0.00001))then!0.00001is about 1 second
            nrecords=nrecords+1 !start a new record
         endif
      else
@@ -875,11 +886,10 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      !get variable id
      call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
-     call secondssince1970(ndate,nseconds,iotyp)!middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
-     
-
-
-     call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
+!     call secondssince1970(ndate,nseconds,iotyp)!middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
+!     call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
+     call dayssince1900(ndate,rdays,iotyp)
+     call check(nf90_put_var(ncFileID, VarID, rdays, start = (/nrecords/) ) )
 
      !close file if present(fileName_given)
      if(iotyp_new==1)then
@@ -1098,6 +1108,61 @@ endif
     endif
   end subroutine secondssince1970
 
+
+  subroutine dayssince1900(ndate,ndays,iotyp)
+    !calculate how many days have passed since the start of the year 1900
+!NB: 1900 is not a leap year
+
+    implicit none
+
+    integer, intent(in) :: ndate(4)
+    real*8, intent(out) :: ndays
+    integer, optional, intent(in):: iotyp
+    integer :: n,nday,nmdays(12),is_leap
+    real*8 ::nseconds
+    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
+    n=ndate(1)
+       if(4*(n/4)==n.and.n/=1900)nmdays(2)=29!NB: 1900 is not a leap year
+      
+    ndays=0.0
+    do n=1,ndate(2)-1
+       ndays=ndays+nmdays(n)!entire months since start of last year
+    enddo
+    ndays=ndays+ndate(3)-1!entire days since start of last month
+
+    ndays=ndate(4)/24.0!hours since start of last day
+!     write(*,*)'days since year start ',ndays
+
+!add days from each entire year since 1900 
+     do n=1900,ndate(1)-1
+       ndays=ndays+365
+       if(4*(n/4)==n.and.n/=1900)ndays=ndays+1!NB: 1900 is not a leap year
+     enddo
+!     write(*,*)ndate(1),ndate(2),ndate(3),ndate(4),ndays
+
+    if(present(iotyp))then
+       !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
+       is_leap=0
+       if (leapyear(ndate(1)-1))is_leap=1
+       if(iotyp==IOU_YEAR)then
+          !take end of run date
+          ndays=ndays      
+       elseif(iotyp==IOU_MON)then
+          ndays=ndays-0.5*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
+       elseif(iotyp==IOU_DAY)then
+          ndays=ndays-0.5 !24*3600/2=43200
+       elseif(iotyp==IOU_HOUR)then
+           ndays=ndays  !hourly is instantaneous
+       elseif(iotyp==IOU_HOUR_MEAN)then !not implemented yet
+          ndays=ndays-1.0/48.0*FREQ_HOURLY  !1.0/48.0=half hour
+       elseif(iotyp==IOU_INST)then
+          ndays=ndays   
+       else
+          ndays=ndays
+       endif
+    endif
+
+  end subroutine dayssince1900
 
 subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)
   !
