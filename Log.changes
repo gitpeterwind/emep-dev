@@ -8,6 +8,9 @@ files, make sure to update these!
 
 NetCDF_ml and Met_ml are changed
 
+Dave changed Functions_ml also, to use sin instead of sind (for gfortran
+compliance), and removed 360 term.
+
 
 ================================ rv3_2_26, Dave,  4 Sep. 2009======
 

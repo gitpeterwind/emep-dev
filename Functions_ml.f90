@@ -41,7 +41,7 @@ module Functions_ml
 !   History:
 !   ds - 2000-Jan. 2001
 !____________________________________________________________________
-  use PhysicalConstants_ml, only : KAPPA, PI
+  use PhysicalConstants_ml, only : KAPPA, PI, DEG2RAD
   implicit none
   private
 
@@ -418,8 +418,13 @@ end function inside_1234
     real :: dist
 
 
-    dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
-         cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
+    !ds sind not allowed in gfortran, so replaced. Also, 360 removed
+    !dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
+    !     cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
+
+    dist=2*asin(sqrt(sin(DEG2RAD*0.5*(lambda1-lambda2))**2+&
+         cos(DEG2RAD*lambda1)*cos(DEG2RAD*lambda2)*&
+           sin(DEG2RAD*0.5*(fi1-fi2))**2))
 
   end function great_circle_distance
 
