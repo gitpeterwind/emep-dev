@@ -194,11 +194,41 @@ contains
              xnew(:) = CPINIT
           end where
 
-          !== Here comes all chemical reactions
+!== Here comes all chemical reactions
+!=============================================================================
+          do iter = 1, toiter(k)
+!
+! The chemistry is iterated several times, more close to the ground than aloft.
+! For some reason, it proved faster for some compilers to include files as given below
+! with the if statements, than to use loops.
+!Just add some comments:
+!At present the "difference" between My_FastReactions and My_SlowReactions
+!is that in My_Reactions the products do not reacts chemically at all,
+!and therefore do not need to be iterated.  We could have another class
+!"slowreactions", which is not iterated or fewer times. This needs some
+!work to draw a proper line ......
 
-            include 'My_Reactions.inc' 
+                !if(k>=KCHEMTOP)then
 
-       end do 
+                   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                   include 'My_FastReactions.inc'
+                   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+                !endif
+                !if(k>=6)then
+                !   include 'My_FastReactions.inc'
+                !endif
+                !if(k>=KEMISTOP)then
+                !   include 'My_FastReactions.inc'
+                !endif
+          end do !! End iterations
+          ! Just before SO4, look after slower? species
+
+          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+           include 'My_SlowReactions.inc'
+          !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+       end do ! ichem 
  
        !*************************************
        !     End of integration loop        *

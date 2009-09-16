@@ -1,3 +1,8 @@
+================================ rv3_2_28, Dave,   16 Sep. 2009======
+
+My_Reactions omitted - code moved into Solver_ml
+My_SlowReactions.inc added
+
 ================================ rv3_2_27, Peter,  10 Sep. 2009======
 
 Changes to comply with the rotated spherical projections and new definition/units for time:

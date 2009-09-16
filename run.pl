@@ -193,7 +193,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2_24";
+    $testv       = "rv3_2_28";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
