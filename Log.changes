@@ -1,3 +1,12 @@
+================================ rv3_2_29, Peter,   17 Sep. 2009======
+
+removed -mieee-fp from Makefile and Makefile_stallo
+This options made the floating point operations ieee compliant, but are now slowing down the computation 
+quite a lot, and even more (30% diff) with the next intel compiler version (11.1, to come on stallo in October)
+If one wish to compare results between diferent machines (stallo and njord for example it may be useful 
+to put the option back)
+
+
 ================================ rv3_2_28, Dave,   16 Sep. 2009======
 
 My_Reactions omitted - code moved into Solver_ml
