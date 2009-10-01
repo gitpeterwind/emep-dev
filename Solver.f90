@@ -67,7 +67,7 @@
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
                                  rcbio,         & ! biogenic emis
                                  rc_Rn222,      & ! Pb210
-                                 rct, rcmisc,   & ! reaction rate coeffients
+                                 !dsx rct, rcmisc,   & ! reaction rate coeffients
                                  xn_2d,         & 
                                  rh,            & 
                                  rcss,amk         ! Sea salt emission rate
@@ -82,7 +82,9 @@
 
   integer::  STATUS(MPI_STATUS_SIZE),INFO
 !DSGC  integer, parameter:: nchemMAX=15
-  integer, parameter:: nchemMAX=15
+  !DS TEST 
+     integer, parameter:: nchemMAX=15
+  !DS TEST integer, parameter:: nchemMAX=18
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for 
   integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
@@ -304,7 +306,7 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
     if( MasterProc ) then
 
       write(*,*)'Number of timesteps in Solver: ',nchem
-      27 format('timestep ',I,F13.6,' total: ',F13.6)
+      27 format('timestep ',I3,F13.6,' total: ',F13.6)
 
       ttot=0.0
       do i=1,nchem

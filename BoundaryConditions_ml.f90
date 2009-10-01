@@ -115,7 +115,7 @@ module BoundaryConditions_ml
                                   ,i_fdom, j_fdom  !u1 for testing
   use ModelConstants_ml ,    only: KMAX_MID  &  ! Number of levels in vertical
                     ,NPROC   &    ! Number of processors
-                    ,DEBUG_BCS, DEBUG_i, DEBUG_j, debug_proc, MasterProc
+                    ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc
   use Par_ml,                only : &
            MAXLIMAX, MAXLJMAX, limax, ljmax, me &
           ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours

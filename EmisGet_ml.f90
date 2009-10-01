@@ -553,9 +553,17 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                call CheckStop( errmsg )
            end if
            if (  .not. defaults ) then
-              do nn=1,nsplit
+              do nn=1,nsplit  ! Check that specials headers match defaults
+                  if (intext(1,nn) /= intext(0,nn) ) then
+                     print *, "VOCSPLIT ERROR DEF ", nn, "D:",trim(intext(0,nn))
+                     print *, "VOCSPLIT ERROR SPC ", nn, "S:", trim(intext(1,nn))
+                  end if
+                    
                   call CheckStop( intext(1,nn) /= intext(0,nn), &
-                       "EmisGet: ERROR intext(1,nn) /= intext(0,nn) ")
+                    "EmisGet: ERROR intext(1,nn) /= intext(0,nn) " // &
+                       trim(intext(0,nn)) // "S:" // trim(intext(1,nn)) )
+
+                   
               enddo
            end if
 

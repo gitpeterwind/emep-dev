@@ -110,7 +110,8 @@ contains
        close(IO_INFILE)
        call CheckStop( errmsg ,"ReadField_r: errmsg in ReadField")
        if( present(fill_needed) ) then
-           call CheckStop( any( cell_set == .false. ) ,&
+           !GFORTRAN call CheckStop( any( cell_set == .false. ) ,&
+           call CheckStop( any( cell_set .eqv. .false. ) ,&
                    "ERROR: ReadField_r: cell_not_set "//trim(fname))
        end if
 
@@ -174,7 +175,8 @@ contains
         call CheckStop( errmsg ,"ReadField: errmsg in ReadField")
         ios=0
         if( present(fill_needed) ) then
-           call CheckStop( any( cell_set == .false. ) ,&
+           !GFORTRAN call CheckStop( any( cell_set == .false. ) ,&
+           call CheckStop( any( cell_set .eqv. .false. ) ,&
                    "ERROR: ReadField_i: cell_not_set "//trim(fname))
         end if
        endif

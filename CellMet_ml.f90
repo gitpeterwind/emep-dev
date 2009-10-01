@@ -123,7 +123,7 @@ contains
 
      Grid%ustar = max( Grid%ustar, 0.1 )
 
-     Grid%invL  = KARMAN * GRAV * -Grid%Hd &
+     Grid%invL  = -1* KARMAN * GRAV * Grid%Hd & ! -Grid%Hd disliked by gfortran
             / (CP*Grid%rho_s * Grid%ustar*Grid%ustar*Grid%ustar * Grid%t2 )
 
     !.. we limit the range of 1/L to prevent numerical and printout problems

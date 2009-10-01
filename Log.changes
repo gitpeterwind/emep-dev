@@ -1,3 +1,32 @@
+================================ rv3_2_31, Dave,  1  Oct. 2009======
+
+Some changes to make it easier to swap chemistry (coming soon...) :
+
+  Derived_ml - hard-coding for CH3CHO, MAX3DADV of CH3COO2, PHNO3 removed
+
+  EmisGet_ml - extra safety printouts for  VOC speciation
+
+  OutputChem_ml - uses MasterProc and more debug output with My_DEBUG
+
+
+Plus....   Some changes to solve small problems spotted by gfortran:
+
+  BoundaryConditions_ml.f90 - debug_proc removed from ModelConstants use
+
+  CellMet_ml.f90: -1* instead of -Grid%Hd
+
+  GridValues_ml.f90: changes of real, integer defintions
+
+  NetCDF_ml.f90: small re-code
+
+  ReadField_ml.f90: Use .eqv., not == in any (cell_set .eqv. .false. )
+
+  Solver.f90: double-def of rct removed
+
+  My_ChemRates_ml.f90: rcmisc line split. Not sure why gfortgran complained, except
+    it doesn't seem to like long lines
+
+
 ================================ rv3_2_30, Dave,    1  Oct. 2009======
 
 Bug-fix!

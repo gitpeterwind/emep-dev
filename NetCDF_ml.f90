@@ -1807,13 +1807,12 @@ imin=mod(nint((minlon-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
 jmin=max(1,min(dims(2),nint((minlat-Rlat(1))*dlati)+1))
 imax=mod(nint((maxlon-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
 jmax=max(1,min(dims(2),nint((maxlat-Rlat(1))*dlati)+1))
-24format(A,4F8.2,6I8)
 
 !latitude is sometime counted from north pole, sometimes from southpole:
 jjmin=jmin
 jmin=min(jmin,jmax)
 jmax=max(jjmin,jmax)
-!  write(*,24)'minmax ',minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
+!  write(*,"(a,4f8.2,6i8)")'minmax ',minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
 if(imax<imin)then
 !crossing longitude border ... TO CHECK!
    write(*,*)'WARNING: crossing end of map: NOT TESTED'
@@ -2064,7 +2063,10 @@ deallocate(Rvalues)
 !NB: does not work together with other output routines. (bug)
  do n= 1,NLANDUSE_PFT
   write( def1%name,fmt='(i2.2)')n 
- call Out_netCDF(IOU_INST,def1,2,1,Rvar(1+(n-1)*varGIMAX*varGJMAX:(n)*varGIMAX*varGJMAX),1.0,CDFtype=Real4,fileName_given='landuse.nc')
+   ! Send 1-D array into 3-D:
+ call Out_netCDF(IOU_INST,def1,2,1, &
+    Rvar((1+(n-1)*varGIMAX*varGJMAX):(n*varGIMAX*varGJMAX)),&
+     1.0,CDFtype=Real4,fileName_given='landuse.nc')
 ! call Out_netCDF(IOU_INST,def1,2,1,Rvar,1.0,CDFtype=Real4,fileName_given='lu.nc')
 enddo
   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)

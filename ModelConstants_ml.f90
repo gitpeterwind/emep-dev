@@ -43,18 +43,18 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-  !   RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+     RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
   !    RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
   !    RUNDOMAIN = (/  1, 360, 1, 180 /)     ! FULL GLOBAL
-     RUNDOMAIN = (/  1, 132, 1, 111 /)       ! EECCA, rep09
+  !  RUNDOMAIN = (/  1, 132, 1, 111 /)       ! EECCA, rep09
 
 !      RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   8       & ! Actual number of processors in longitude
-  , NPROCY      =   4       & ! .. in latitude. Must be 2 for GLOBAL!!!
+    NPROCX      =   4       & ! Actual number of processors in longitude
+  , NPROCY      =   2       & ! .. in latitude. Must be 2 for GLOBAL!!!
   , NPROC       = NPROCX * NPROCY
 
   ! ds Jan2009
@@ -70,7 +70,7 @@ module ModelConstants_ml
 
  ! The coordinates given here only apply for the standard EMEP domain
  !integer, public, parameter :: DEBUG_i=79, DEBUG_j=56 ! Eskdalemuir
- integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
+ !integer, public, parameter :: DEBUG_i=73, DEBUG_j=48 ! Mace Head
  !integer, public, parameter :: DEBUG_i=91, DEBUG_j=71 ! Rorvik
  !!integer, public, parameter :: DEBUG_i=82, DEBUG_j=72 !  Voss, has some snow
  !!!!integer, public, parameter :: DEBUG_i=110, DEBUG_j=48 !   High Vg!
@@ -81,7 +81,7 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j=50 !  Mid-Europe
  !integer, public, parameter :: DEBUG_i=93, DEBUG_j=57 !  Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i=97, DEBUG_j=62 !  Waldhof
- !integer, public, parameter :: DEBUG_i=116, DEBUG_j=63 !  K-Puszta
+ integer, public, parameter :: DEBUG_i=116, DEBUG_j=63 !  K-Puszta
 
 !=============================================================================
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
@@ -127,12 +127,12 @@ module ModelConstants_ml
 !+ 3)  Define main model dimensions,  things that will
 !       generally only change when switching Met-driver or large domain
   integer, public, parameter ::  &
-!EMEP: IIFULLDOM   = 170   &    ! x-Dimensions of full domain
-!EMEP: , JJFULLDOM   = 133   &    ! y-Dimensions of full domain
-!EECA:   
-    IIFULLDOM   = 132   &    ! x-Dimensions of full domain
-!EECA: 
-   ,JJFULLDOM   = 159   &    ! y-Dimensions of full domain
+!EMEP:
+   IIFULLDOM   = 170   &    ! x-Dimensions of full domain
+!EMEP:
+   , JJFULLDOM   = 133   &    ! y-Dimensions of full domain
+!EECA:   IIFULLDOM   = 132   &    ! x-Dimensions of full domain
+!EECA: ,JJFULLDOM   = 159   &    ! y-Dimensions of full domain
 !GLOBAL:   IIFULLDOM   = 360   &    ! x-Dimensions of full domain
 !GLOBAL: , JJFULLDOM   = 180   &    ! y-Dimensions of full domain
   , NLANDUSEMAX = 23    &    ! Number of land use types in Inputs.Landuse file

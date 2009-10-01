@@ -308,7 +308,7 @@ private
    
     real, save    :: ugS = atwS*PPBINV/ATWAIR
     real, save    :: ugN = atwN*PPBINV/ATWAIR
-    real, save    :: ugSO4, ugHCHO, ugCH3CHO
+    real, save    :: ugSO4, ugHCHO!DSGC, ugCH3CHO
     real, save    :: ugPMad, ugPMde, ugSS  !advected and derived PM's & SeaS
     real, save    :: ugSm3 = atwS*PPBINV/ATWAIR
     real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
@@ -338,7 +338,7 @@ private
 
      ugSO4 = species( SO4 )%molwt * PPBINV /ATWAIR
      ugHCHO   = species ( HCHO )%molwt * PPBINV /ATWAIR
-     ugCH3CHO = species ( CH3CHO )%molwt * PPBINV /ATWAIR
+!DSGC     ugCH3CHO = species ( CH3CHO )%molwt * PPBINV /ATWAIR
 
 !-- Deposition fields. Define all possible fields and their xfelt codes here:
 
@@ -523,7 +523,7 @@ call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")
 ! --  time-averages - here 8-16
 !
 call AddDef( "TADV ", T,IXADV_HCHO  ,ugHCHO,  T, F, T, T, T,"D2T_HCHO","ug/m3")
-call AddDef( "TADV ", T,IXADV_CH3CHO,ugCH3CHO,T, F, T, T,T,"D2T_CH3CHO","ug/m3")
+!DSGCcall AddDef( "TADV ", T,IXADV_CH3CHO,ugCH3CHO,T, F, T, T,T,"D2T_CH3CHO","ug/m3")
 call AddDef( "VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")
 !
 ! -- miscellaneous user-defined functions
@@ -563,12 +563,12 @@ call AddDef( "ADV  ", T, IXADV_H2O2,PPBINV, F, T, T, T, F ,"D3_H2O2","ppb",Is3D)
 !
 ! Set Year true to allow debug - change later
 call AddDef( "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?",Is3D)
-call AddDef( "ADV",   T, IXADV_CH3COO2, &
-                                    PPTINV, F, F, T, T, F ,"D3_CH3COO2","?",Is3D)
+!DSGC call AddDef( "ADV",   T, IXADV_CH3COO2, &
+!DSGC                                     PPTINV, F, F, T, T, F ,"D3_CH3COO2","?",Is3D)
 call AddDef( "MAX3DSHL", T,IXSHL_OH,PPTINV, T, F, T, T, F ,"D3_MAXOH","?",Is3D)   ! rho true for shl
-call AddDef( "MAX3DADV", T, IXADV_CH3COO2,&
-                                    PPTINV, F, F, T, T, F ,"D3_MAXCH3COO2","?",Is3D)
-call AddDef( "PHNO3   ", T, IXSHL_PHNO3,1.0e8, F, F, T, T, F ,"D3_PHNO3","?",Is3D)
+!DSGC call AddDef( "MAX3DADV", T, IXADV_CH3COO2,&
+!DSGC                                     PPTINV, F, F, T, T, F ,"D3_MAXCH3COO2","?",Is3D)
+!DSGC call AddDef( "PHNO3   ", T, IXSHL_PHNO3,1.0e8, F, F, T, T, F ,"D3_PHNO3","?",Is3D)
 call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
@@ -672,8 +672,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
                 ! Inverse of No. air mols/cm3 = 1/M 
                 ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
-      logical :: accumulate_2dyear !flag to know when to accumulate d_2d
-                                   ! (case "EXT")
+      logical :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
+      logical :: first_call = .true.
 
       timefrac = dt/3600.0
       thour = current_date%hour+current_date%seconds/3600.0
@@ -687,7 +687,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
         accumulate_2dyear=.true.
         typ = f_2d(n)%class
-        if( DEBUG .and. debug_flag ) write(*,"(a,i3,7a)") "Derive2d-typ",&
+        if( DEBUG .and. debug_flag .and. first_call ) &
+           write(*,"(a,i3,7a)") "Derive2d-typ",&
             n, "T:", typ, "N:", f_2d(n)%name, "C:", f_2d(n)%class,"END"
 
 
@@ -719,7 +720,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         end if
 
         index = f_2d(n)%index
-        if ( DEBUG .and. MasterProc ) then
+        if ( DEBUG .and. MasterProc .and. first_call ) then
            write(*,*) "DEBUG Derived 2d", n, f_2d(n)%name, index, trim(typ)
         end if
 
@@ -1093,8 +1094,11 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 !                              + d_3d(n,:,:,:,IOU_INST)
 !
 !       if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1
- 
+  
       end do
+
+      first_call = .false.
+
     end subroutine Derived
     !=========================================================================
 

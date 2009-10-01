@@ -103,7 +103,8 @@
 
   rcmisc(11,:) = troeInLog(1.0e-31*exp(1.6*lt300(:)),3.0e-11*exp(-0.3*lt300(:)), -0.1625,m(:))
   rcmisc(12,:) = troeInLog(2.7e-30*exp(3.4*lt300(:)),2.0e-12*exp(-0.2*lt300(:)),  -1.109,m(:))
-  rcmisc(13,:) = troeInLog(1.0e-3*exp(3.5*lt300(:))*exp(-11000*tinv(:)),9.70e14*exp(-0.1*lt300(:))*exp(-11080*tinv(:)),  -1.109,m(:)) 
+  rcmisc(13,:) = troeInLog(1.0e-3*exp(3.5*lt300(:))*exp(-11000*tinv(:)),&
+        9.70e14*exp(-0.1*lt300(:))*exp(-11080*tinv(:)),  -1.109,m(:)) 
     rcmisc(14,:) = troeInLog(2.6e-30*exp(2.9*lt300(:)),6.7e-11*exp(0.6*lt300(:)), -0.844,m(:))
     rcmisc(15,:) = troeInLog(2.7e-28*exp(7.1*lt300(:)),1.2e-11*exp(0.1*lt300(:)), -1.204,m(:)) 
     rcmisc(16,:) = troeInLog(4.9e-3*exp(-12100*tinv(:)),5.4e16*exp(-13830*tinv(:)),  -1.204,m(:)) 

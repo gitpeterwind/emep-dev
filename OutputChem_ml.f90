@@ -42,9 +42,9 @@
   use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            & 
                                Ascii3D_WANTED
   use Io_ml,             only: IO_WRTCHEM
-  use ModelConstants_ml, only: nprint, END_OF_EMEPDAY, KMAX_MID
+  use ModelConstants_ml, only: nprint, END_OF_EMEPDAY, KMAX_MID, MasterProc
   use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
-  use Par_ml,            only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,me,      &
+  use Par_ml,            only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,     &
                                IRUNBEG,JRUNBEG
   use TimeDate_ml      , only: current_date, max_day  ! days in month
 
@@ -104,7 +104,7 @@
      Jan_1st    = ( nmonth == 1 .and. nday == 1 )
      End_of_Run = ( mod(numt,nprint) == 0       )
 
-     if(me==0 .and. MY_DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",          &
+     if(MasterProc .and. MY_DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",          &
           numt, nmonth, mm_out, nday, dd_out, nhour
 
 
@@ -115,8 +115,8 @@
 
         dd_out = nday - 1     ! only used for daily outputs
 
-        if(me==0 .and. MY_DEBUG) write(6,"(a12,i5,5i4)") "DAILY SET ",         &
-                  numt, nmonth, mm_out, nday, dd_out, nhour 
+        if( MasterProc .and. MY_DEBUG) write(6,"(a12,i5,5i4)")&
+          "DAILY SET ", numt, nmonth, mm_out, nday, dd_out, nhour 
 
         if(dd_out == 0) then
            mm_out = nmonth - 1
@@ -125,7 +125,7 @@
 
              dd_out = max_day(mm_out, nyear)  !  Last day of month
 
-              if(me==0 .and. MY_DEBUG) write(6,"(a12,i5,4i4)") "DAILY FIX ",     &
+              if( MasterProc .and. MY_DEBUG) write(6,"(a12,i5,4i4)") "DAILY FIX ",     &
                              numt, nmonth, mm_out, nday, dd_out 
         end if
      end if      ! for END_OF_EMEPDAY <= 7
@@ -190,7 +190,7 @@
 
               do n = 1, num_deriv3d
 
-                 if( me == 0 ) then
+                 if( MasterProc ) then
 
                     write(outfilename,fmt='(a,a5,i2.2)')   &
                          trim( f_3d(n)%name ), ".out.",  nmonpr
@@ -208,7 +208,7 @@
                       local_2d(:,:) = d_3d(n,:,:,k,IOU_MON)/nav_3d(n,IOU_MON) 
                       call local2global(local_2d,glob_2d,msnr1)
 
-                       if (me  ==  0) then
+                       if( MasterProc ) then
                           do j=1,GJMAX
                              do i=1,GIMAX
                                 write(IO_WRTCHEM,"(es10.3)") glob_2d(i,j)
@@ -219,7 +219,7 @@
                     end do ! k
                  end if ! nav == 0
 
-                 if( me == 0 ) close(IO_WRTCHEM)
+                 if( MasterProc ) close(IO_WRTCHEM)
 
               end do  ! 3D-variables loop num_deriv3d
            end if
@@ -291,6 +291,10 @@
           scale  = def(icmp)%scale
            if (iotyp /= IOU_INST )    &
              scale = scale / max(1,nav(icmp,iotyp))
+             if ( MasterProc .and. My_DEBUG ) then
+                print *, "DEBUG Output_f2d ", icmp, iotyp,  def(icmp)%name, def(icmp), scale
+                print *, "DEBUG Output_f2d x ", maxval(dat(icmp,:,:,iotyp)), minval(dat(icmp,:,:,iotyp))
+             end if
 
              call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,iotyp),scale)
            

@@ -398,7 +398,9 @@ contains
   subroutine GlobalPosition
 
     integer i,j
-    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin,im,jm,i0,j0,i1,j1
+!GFORTRAN    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin,im,jm,i0,j0,i1,j1
+    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin
+    integer :: im,jm,i0,j0,i1,j1
 
   if(trim(projection)=='Stereographic') then     
 
@@ -478,9 +480,9 @@ contains
 end subroutine GlobalPosition
 
 
-  subroutine lb2ijm(imax,jmax,gl,gb,ir2,jr2,fi2,an2,xp2,yp2)
+  subroutine lb2ijm(imax,jmax,gl,gb,xr2,yr2,fi2,an2,xp2,yp2)
     !-------------------------------------------------------------------! 
-    !      calculates coordinates ir2, jr2 (real values) from gl(lat),gb(long) 
+    !      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
     !
     !      input:  xp2,yp2:   coord. of the polar point in grid2
     !              an2:   number of grid-distances from pole to equator in grid2.
@@ -496,7 +498,7 @@ end subroutine GlobalPosition
     integer :: imax,jmax,i1, j1
     real    :: fi2,an2,xp2,yp2
     real    :: gl(imax,jmax),gb(imax,jmax)
-    real    :: ir2(imax,jmax),jr2(imax,jmax)
+    real    :: xr2(imax,jmax),yr2(imax,jmax)
 
     real, parameter :: PI=3.14159265358979323
     real    :: PId4,dr,dr2
@@ -509,19 +511,19 @@ end subroutine GlobalPosition
     do j1 = 1, jmax
        do i1 = 1, imax
 
-          ir2(i1,j1)=xp2+an2*tan(PId4-gb(i1,j1)*dr2)*sin(dr*(gl(i1,j1)-fi2))
-          jr2(i1,j1)=yp2-an2*tan(PId4-gb(i1,j1)*dr2)*cos(dr*(gl(i1,j1)-fi2))
+          xr2(i1,j1)=xp2+an2*tan(PId4-gb(i1,j1)*dr2)*sin(dr*(gl(i1,j1)-fi2))
+          yr2(i1,j1)=yp2-an2*tan(PId4-gb(i1,j1)*dr2)*cos(dr*(gl(i1,j1)-fi2))
 
        end do ! i
     end do ! j
 
   end subroutine lb2ijm
 
- subroutine lb2ij(gl2,gb2,ir2,jr2,fi2,an2,xp2,yp2)
+ subroutine lb2ij(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
 
 !Note: this routine is not supposed to be CPU optimized
     !-------------------------------------------------------------------! 
-    !      calculates coordinates ir2, jr2 (real values) from gl(lat),gb(long) 
+    !      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
     !
     !      input:  xp2,yp2:   coord. of the polar point in grid2
     !              an2:   number of grid-distances from pole to equator in grid2.
@@ -534,13 +536,13 @@ end subroutine GlobalPosition
     !-------------------------------------------------------------------! 
 
     real, intent(in)    :: gl2,gb2 
-    real, intent(out)    :: ir2,jr2
+    real, intent(out)    :: xr2,yr2
     real, intent(in), optional    :: fi2,an2,xp2,yp2
 
     real  :: fi_loc,an_loc,xp_loc,yp_loc
     real, parameter :: PI=3.14159265358979323
     real    :: PId4,dr,dr2,dist,dist2,dist3
-    integer ::i,j,ip1,jp1
+    integer ::i,j,ip1,jp1, ir2, jr2
 
 
   if(projection=='Stereographic')then
@@ -557,12 +559,12 @@ end subroutine GlobalPosition
     if(present(xp2))xp_loc=xp2
     if(present(yp2))yp_loc=yp2
 
-    ir2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
-    jr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
+    xr2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
+    yr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
   else  if(projection=='lon lat')then! lon-lat grid
-     ir2=(gl2-gl_glob(1,1))/(gl_glob(2,1)-gl_glob(1,1))+1
-     if(ir2<0.5)ir2=ir2+360.0/(gl_glob(2,1)-gl_glob(1,1))
-     jr2=(gb2-gb_glob(1,1))/(gb_glob(1,2)-gb_glob(1,1))+1
+     xr2=(gl2-gl_glob(1,1))/(gl_glob(2,1)-gl_glob(1,1))+1
+     if(xr2<0.5)xr2=xr2+360.0/(gl_glob(2,1)-gl_glob(1,1))
+     yr2=(gb2-gb_glob(1,1))/(gb_glob(1,2)-gb_glob(1,1))+1
   else!general projection, Use only info from gl_glob and gb_glob
      !first find closest by testing all gridcells. 
      dist=10.0!max distance is PI
@@ -570,8 +572,8 @@ end subroutine GlobalPosition
         do i=1,IIFULLDOM
            if(dist>great_circle_distance(gl2,gb2,gl_glob(i,j),gb_glob(i,j)))then
               dist=great_circle_distance(gl2,gb2,gl_glob(i,j),gb_glob(i,j))
-              ir2=i
-              jr2=j
+              xr2=i
+              yr2=j
            endif
         enddo
      enddo
@@ -587,21 +589,30 @@ end subroutine GlobalPosition
 !dist=AC, dist2=BC, dist3=AB
 !AD=(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3)
 !
-     ip1=nint(ir2)+1
+     ir2 = nint(xr2)
+     jr2 = nint(yr2)
+     ip1=ir2+1
      if(ip1>IIFULLDOM)ip1=ip1-2
-     dist2=great_circle_distance(gl2,gb2,gl_glob(ip1,nint(jr2)),gb_glob(ip1,nint(jr2)))
-     dist3=great_circle_distance(gl_glob(nint(ir2),nint(jr2)),gb_glob(nint(ir2),nint(jr2)),gl_glob(ip1,nint(jr2)),gb_glob(ip1,nint(jr2)))
+     dist2=great_circle_distance(gl2,gb2,gl_glob(ip1,jr2),gb_glob(ip1,jr2))
+     dist3=great_circle_distance( gl_glob(ir2,jr2), &
+                                  gb_glob(ir2,jr2), &
+                                  gl_glob(ip1,jr2), &
+                                  gb_glob(ip1,jr2))
 
-     ir2=ir2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
+     xr2=xr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 
 
-     jp1=nint(jr2)+1
+     jp1=jr2+1
      if(jp1>JJFULLDOM)jp1=jp1-2
 
-     dist2=great_circle_distance(gl2,gb2,gl_glob(nint(ir2),jp1),gb_glob(nint(ir2),jp1))
-     dist3=great_circle_distance(gl_glob(nint(ir2),nint(jr2)),gb_glob(nint(ir2),nint(jr2)),gl_glob(nint(ir2),jp1),gb_glob(nint(ir2),jp1))
+     dist2=great_circle_distance(gl2,gb2,gl_glob(ir2,jp1),gb_glob(ir2,jp1))
+!GFORTRAN CHANGE
+     dist3=great_circle_distance( gl_glob(ir2,jr2), &
+                                  gb_glob(ir2,jr2), &
+                                  gl_glob(ir2,jp1), & 
+                                  gb_glob(ir2,jp1) )
 
-     jr2=jr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
+     yr2=yr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 
   endif
 
