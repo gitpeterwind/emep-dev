@@ -332,7 +332,7 @@ private
   subroutine Init_My_Deriv()
 
     integer :: i, ilab, nDD, nVg, nRG, nMET, nFLUX, iLC, i10Y, &
-      iadv, ispec, ind, atw
+      iadv, ispec, atw
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: txt, units, txtnum
     real :: Y    ! threshold for AFSTY
@@ -409,7 +409,7 @@ private
         ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
         !            x     d      d    d   a10    a10   a10     f    i    a10
              OutDDep(nDD) = Dep_type(  &
-              name, -99, ind, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
+              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
            if(DEBUG .and. MasterProc) call print_dep_type( OutDDep(nDD) )
         end do ! DDEP_SPECS
      end do ! DDEP_ECOS

@@ -1,3 +1,10 @@
+================================ rv3_2_30, Dave,    1  Oct. 2009======
+
+Bug-fix!
+My_Derived_ml index problem fixed. This bug didn't affect the model runs,
+but caused the wrong output in DDEP_SOX etc. Introduced in
+rv3_2_11. New code seems to work fine, but more checks would be useful
+
 ================================ rv3_2_29, Peter,   17 Sep. 2009======
 
 removed -mieee-fp from Makefile and Makefile_stallo
