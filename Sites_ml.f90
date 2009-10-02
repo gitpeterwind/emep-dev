@@ -40,9 +40,9 @@ use My_Outputs_ml, only : &  ! for sitesout
       NADV_SITE, NSHL_SITE, NXTRA_SITE, &
       SITE_ADV, SITE_SHL, SITE_XTRA, SITE_XTRA_INDEX, &
       SITE_XTRA_CODE, FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
-      NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, N_NOy,  &
+      NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &  ! DSGCN_NOy,  &
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
-      FREQ_SONDE, NOy_SPEC
+      FREQ_SONDE  ! DSGC, NOy_SPEC
 
 use Derived_ml,        only : d_2d, d_3d, f_2d, IOU_INST  ! for deriv system
 use Functions_ml,      only : Tpot_2_T              ! Conversion function
@@ -53,8 +53,9 @@ use Io_ml,             only : check_file,open_file,ios &
                               , Read_Headers,read_line
 use GenSpec_adv_ml
 use GenSpec_shl_ml,    only : NSPEC_SHL
+use GenGroups_ml,      only : OXNGROUP
 use GenChemicals_ml,   only : species               ! for species names
-use GenSpec_tot_ml,    only : SO4, HCHO, CH3CHO  &  ! for mol. wts.
+use GenSpec_tot_ml,    only : SO4 &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PPM25, PPMCO &
                               ,SSfi, SSco  !SeaS
 use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
@@ -565,8 +566,8 @@ end subroutine siteswrt_surf
           case ( "NOy" )
             sum_NOy(:) = 0.
             do k = 1, KMAX_MID
-              do ii = 1, N_NOy
-                sum_NOy(k) = sum_NOy(k) + xn_adv(NOy_SPEC(ii),ix,iy,k)
+              do ii = 1, size(OXNGROUP)  !DSGC N_NOy
+                sum_NOy(k) = sum_NOy(k) + xn_adv(OXNGROUP(ii)-NSPEC_SHL,ix,iy,k)
               end do
             end do 
             out(nn+1:nn+KMAX_MID,i) = PPBINV &

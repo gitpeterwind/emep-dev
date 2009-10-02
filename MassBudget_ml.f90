@@ -42,7 +42,6 @@
 !_____________________________________________________________________________
 
  use My_DryDep_ml, only : NDRYDEP_ADV, Dep 
- use My_MassBudget_ml,only : MY_MASS_PRINT ! Species to be printed
 
  use GenChemicals_ml, only : species       ! species identifier
  use GenSpec_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
@@ -56,6 +55,7 @@
  use Met_ml        ,  only : ps            ! surface pressure  
  use ModelConstants_ml,                 &
                       only : KMAX_MID   &  ! Number of levels in vertical
+                            ,MasterProc &  ! Master processor
                             ,NPROC      &  ! No. processors
                             ,PT         &  ! Pressure at top
                             ,ATWAIR        ! Mol. weight of air(Jones,1992)
@@ -63,7 +63,6 @@
                             ,MAXLJMAX   &  
                             ,li0,li1    &
                             ,lj0,lj1    &
-                            ,me   &
                             ,limax,ljmax&
                             ,gi0, gj0   &
                             ,GIMAX,GJMAX
@@ -154,7 +153,7 @@ contains
       CALL MPI_ALLREDUCE(MPIbuff, sumint , NSPEC_ADV, &
       MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
 
-    if(me == 0)then
+    if(MasterProc)then
          do n = 1,NSPEC_ADV
 	   if(sumint(n) >  0. ) then
              write(IO_RES,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 
@@ -304,7 +303,7 @@ contains
     end do
 
 
-   if (me == 0 ) then
+   if ( MasterProc ) then
 
     do n = 1,NSPEC_ADV
       if (gtotem(n) > 0.0 ) write(6,*)          &
@@ -382,15 +381,14 @@ contains
 
    end if
 
-  if (me == 0) then     ! printout from node 0
+  if ( MasterProc ) then     ! printout from node 0
 
      !/.. now use species array which is set in My_MassBudget_ml
 
-    do nn = 1,size ( MY_MASS_PRINT )
+    do n = 1,NSPEC_ADV
 
       write(6,*)
       write(IO_RES,*)
-      n = MY_MASS_PRINT(nn)
       do k = 1,KMAX_MID
         write(6,950)      n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
         write(IO_RES,950) n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
@@ -399,8 +397,7 @@ contains
  950  format(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)
 
 
-     do nn = 1,size ( MY_MASS_PRINT )
-        n = MY_MASS_PRINT(nn)
+     do n = 1,NSPEC_ADV
 
         write(6,*)
         write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
@@ -422,7 +419,7 @@ contains
     enddo
 !              
 
-   end if  ! me = 0
+   end if  ! MasterProc
 
  end subroutine massbudget
 

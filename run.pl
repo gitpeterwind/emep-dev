@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-#Common script for Njord and Snykov. Choose $NJORD=1 or $SNYKOV=1 or $STALLO=1
+#Common script for Njord and Snykov. Choose $NJORD=1 or $STALLO=1
 
 #___________________________________________________________________
 #Snykov or Stallo queue commands
@@ -7,7 +7,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=32:ib
+#PBS -lnodes=8:ib
 # wall time limit of run 
 #PBS -lwalltime=00:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -104,14 +104,13 @@ $| = 1; # autoflush STDOUT
 
 #Choose one machine
 my $NJORD=0; #1 if njord is used
-my $SNYKOV=0; #1 if snykov (snowstorm) is used
 my $STALLO=1; #1 if stallo is used
 
 # -j4 parallel make with 4 threads
 my @MAKE = ("gmake",  "-j4", "--makefile=Makefile_snow");
   @MAKE = ("make", "-j4", "-f", "Makefile_njord") if $NJORD==1 ;
   @MAKE = ("make", "-j4", "-f", "Makefile_stallo") if $STALLO==1 ;
-  die "Must choose SNYKOV **or** NJORD **or** STALLO!\n" unless $STALLO+$NJORD+$SNYKOV==1;
+  die "Must choose STALLO **or** NJORD !\n" unless $STALLO+$NJORD==1;
 
 my $SR= 0;     # Set to 1 if source-receptor calculation
               # check also variables in package EMEP::Sr below!!
@@ -121,7 +120,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "2007";
+my $year = "2006";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -145,7 +144,8 @@ my $ANNA       = "mifaab";
 my $MICHAEL    = "michaelg";      
 my $SEMEENA    = "mifasv";      
 my $AGNES      = "nyiri";      
-my $ALVARO      = "alvarov";
+my $ALVARO     = "alvarov";
+my $ROBER      = "mifarb";      
 
 my $USER        =  $DAVE;
 
@@ -153,22 +153,23 @@ my $USER        =  $DAVE;
 my $METformat="cdf";
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
-my $GRID = "EECCA"; # or EMEP or GLOBAL
+my $GRID = "EMEP"; "EECCA"; # or EMEP or GLOBAL
 our $DataDir;
 if ($STALLO){
     $HOMEROOT      = "/home";      
     $WORKROOT      = "/global/work";      
     $DataDir       = "/global/work/mifapw/emep/Data";
+    my $AnnaDir       = "/global/work/mifaab/emep/Data";
 #    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
 # Still crude switching:
-    $MetDir        = "/global/work/mifaab/emep/Data/Parlam-PS/metdata/$year" ;
-    $MetDir = "/global/work/mifapw/emep/Data/EECCA/metdata_H20/$year"  if $METformat eq "cdf";
-    $MetDir        = "$DataDir/GLOBAL/metdata/$year" if $GRID eq "GLOBAL" ;
-} elsif($SNYKOV) {
-    $HOMEROOT       = "/home";      
-    $WORKROOT     = "/global/work";      
-    $DataDir       = "/home/mifapw/emep_common/Data";
-    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
+    if ( $GRID eq "EECA" ) {
+       $MetDir = "/global/work/mifapw/emep/Data/EECCA/metdata_H20/$year"; #assumes $METformat eq "cdf";
+    } elsif ( $GRID eq "EMEP" ) {
+      $MetDir  = "$AnnaDir/Parlam-PS/metdata/$year" ;
+      $MetDir  = "$AnnaDir/Parlam-PS/metcdf/$year" if $METformat eq "cdf"; ;
+    } else { #GLOBAL
+      $MetDir        = "$DataDir/GLOBAL/metdata/$year" ;
+    }
 
 } else {
     $HOMEROOT       = "/home/ntnu";      
@@ -193,7 +194,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_2_31";
+    $testv       = "rv3_3beta";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -203,6 +204,10 @@ if ( $OZONE ) {
 my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";    # working and result directory
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
+
+# Chemistry-specific files:
+my $Chem        = "EmChem03";   # Label for chemical scheme used
+my $ChemDir     = "$ProgDir/ZD_$Chem";   # for vocspec for this schem
 
 #ds check: and change
 chdir "$ProgDir";
@@ -261,7 +266,7 @@ while(my $line = <IN>){
 close(IN);
 my $NPROC =  $NDX * $NDY ;
 print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
-die "Global model requires NDY <= 2\n" if ( $$GRID eq "GLOBAL" && $NDY > 2);
+die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
 
 if ( $ENV{PBS_NODEFILE} ) {
    $_ =  `wc -l $ENV{PBS_NODEFILE}`;
@@ -281,13 +286,13 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "07";       # first month, use 2-digits!
-my $mm2   =  "07";       # last month, use 2-digits!
+my $mm1   =  "03";       # first month, use 2-digits!
+my $mm2   =  "03";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 2;       # for testing, simply reset here
+$NTERM = 32;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -471,8 +476,10 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 # Emissions setup:
     $ifile{"$DataDir/femis.dat"} =  "femis.dat";
     $ifile{"$DataDir/pm25split.defaults.$Split"} = "pm25split.defaults";
-    $ifile{"$DataDir/vocsplit.defaults.$Split"} = "vocsplit.defaults";
-    $ifile{"$DataDir/vocsplit.special.$Split"} = "vocsplit.special";
+    #GenChem $ifile{"$DataDir/vocsplit.defaults.$Split"} = "vocsplit.defaults";
+    #GenChem $ifile{"$DataDir/vocsplit.special.$Split"} = "vocsplit.special";
+    $ifile{"$ChemDir/vocsplit.defaults.$Chem"} = "vocsplit.defaults";
+    $ifile{"$ChemDir/vocsplit.special.$Chem"} = "vocsplit.special";
     $ifile{"$DataDir/noxsplit.default.$NOxSplit"} = "noxsplit.defaults"; # NB - no
     $ifile{"$DataDir/noxsplit.special.$Split"} = "noxsplit.special";
     $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
@@ -567,7 +574,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 	
 
 	my $PRERUN = "";
-	$PRERUN = "scampiexec " if $SNYKOV;
+	#$PRERUN = "scampiexec " if $SNYKOV;
 	$PRERUN = "mpiexec " if $STALLO;
 	if ($DRY_RUN) {
 	    print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";

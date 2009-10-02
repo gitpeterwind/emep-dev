@@ -350,6 +350,30 @@
    end subroutine define_chemicals
  end module GenChemicals_ml
  !-----------------------------------------------------------
+!>_________________________________________________________<
+
+  module  GenGroups_ml 
+!-----------------------------------------------------------   
+
+  use GenSpec_tot_ml  ! => species indices
+  implicit none
+  private
+! Automate assignment of OXN species:
+
+! ------- Gas/particle species ------------------  
+  integer, public, parameter :: SIZE_OXNGROUP = 9  
+  integer, public, parameter, dimension(9) :: &
+     OXNGROUP = (/ NO,NO2,PAN,MPAN,NO3,N2O5,HNO3,PNO3,ANO3 /)
+
+! ------- Dry dep      species ------------------   
+  integer, public, parameter :: SIZE_DDEP_OXNGROUP = 5  
+  integer, public, parameter, dimension(5) :: &
+     DDEP_OXNGROUP = (/ HNO3,NO2,PAN,MPAN,PNO3 /)
+
+
+ end module GenGroups_ml
+ !-----------------------------------------------------------
+
  module GenSpec_bgn_ml
 !-----------------------------------------------------------
 ! PRETTY MUCH FAKED FOR NOW. CAN BE DELETED SOON IN HOPE!

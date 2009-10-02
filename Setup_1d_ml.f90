@@ -37,6 +37,7 @@
   use Volcanos_ml
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
+  use BoundaryConditions_ml, only : BGN_2D
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
 !DSGC use ChemFunctions_ml,      only : f_Riemer  !weighting factor for N2O5 hydrolysis
   use CheckStop_ml,          only :  CheckStop
@@ -68,9 +69,9 @@
   use My_Emis_ml,           only : NRCEMIS  , AIRNOX, QRCAIRNO &
                                   ,QRCAIRNO2, NBVOC&
                                   ,QRCVOL,VOLCANOES &
+                                  ,N_QRC_MAPPED, qrc2ixadv & !DSGC
                                   ,NSS  !SeaS
-  use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
-  use My_BoundConditions_ml, only : BGN_2D
+!DSGC use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
@@ -298,8 +299,6 @@ contains
 
 !Mass Budget calculations
 !   Adding up the emissions in each timestep
-!   use ixadv_eqv, qrc_eqv from My_Emis_ml, e.g. ixadv_eqv(1) = IXADV_SO2,
-!      qrc_eqv(1) = QRCSO2
 
    scaling = dt_advec * xmd(i,j) * (ps(i,j,1) - PT)
 
@@ -307,9 +306,13 @@ contains
 
        scaling_k = scaling * carea(k)/amk(k)
 
-       do n = 1, N_MASS_EQVS  
-          totem( ixadv_eqv(n) ) = totem( ixadv_eqv(n) ) + &
-                rcemis( qrc_eqv(n),k) * scaling_k
+       do iqrc = 1, N_QRC_MAPPED 
+          totem( qrc2ixadv(iqrc) ) = totem( qrc2ixadv(iqrc) ) + &
+                rcemis( iqrc, k ) * scaling_k
+          !if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+          !    i==debug_li .and. j==debug_lj ) then
+          ! write(6,"(a,2i3,es10.3,2i4)") "MASSEQV:", iqrc, rcemis( iqrc,k), qrc2ixadv(iqrc)
+          !end if
        end do
 
    end do ! k loop 

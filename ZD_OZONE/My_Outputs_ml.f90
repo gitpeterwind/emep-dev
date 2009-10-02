@@ -369,7 +369,7 @@ integer, public, parameter :: &
         if ( hr_out(i)%ix1 < 1 .or.  hr_out(i)%ix1 > 999 ) then
 
           write(unit=errmsg,fmt=*) "Failed consistency check in  &
-               set_output_defs: Hourly is ",i, "Nhourly is ",NHOURLY_OUT
+              &set_output_defs: Hourly is ",i, "Nhourly is ",NHOURLY_OUT
 
           call CheckStop(errmsg)
         end if

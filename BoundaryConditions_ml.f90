@@ -102,17 +102,28 @@ module BoundaryConditions_ml
 ! domain, then monthly for the sides and top.
 ! Background species must be reset in 3-D each month.
 !_____________________________________________________________________________
-  use My_BoundConditions_ml, only: &
-           NTOT_BC                 & ! Total Number of species with bcs
-          ,My_bcmap                &! set-up subroutine
-          ,bc2xn_adv, bc2xn_bgn     ! mapping arrays
+!DSGC  use My_BoundConditions_ml, only: &
+!DSGC          NTOT_BC                 & ! Total Number of species with bcs
+!DSGC         ,My_bcmap                &! set-up subroutine
+!DSGC         ,bc2xn_adv, bc2xn_bgn     ! mapping arrays
 
+  use CheckStop_ml,      only: CheckStop
   use Chemfields_ml,         only: xn_adv, xn_bgn  ! emep model concs.
   use GenSpec_adv_ml         ! Lots, including NSPEC_ADV and IXADV_
   use GenSpec_bgn_ml,        only :NSPEC_BGN
+  use GlobalBCs_ml,                only: &
+          NGLOB_BC                 &  ! Number of species from global-model
+          ,GetGlobalData           &  ! Sub., reads global data+vert interp.
+          ,IBC_SO2, IBC_SO4, IBC_HCHO, IBC_CH3CHO &
+          ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
+          ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_aNH4,IBC_aNO3,IBC_pNO3&
+          ,IBC_H2O2,IBC_CH3COO2 &
+          ,setgl_actarray
   use GridValues_ml,         only: gl, gb    &! lat, long
+                                  ,sigma_mid &  !sigma layer midpoint
                                   ,debug_proc & !DSGC
                                   ,i_fdom, j_fdom  !u1 for testing
+  use Met_ml               ,only : z_mid       ! height of half layers
   use ModelConstants_ml ,    only: KMAX_MID  &  ! Number of levels in vertical
                     ,NPROC   &    ! Number of processors
                     ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc
@@ -121,12 +132,7 @@ module BoundaryConditions_ml
           ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
           ,NOPROC&
           ,IRUNBEG,JRUNBEG,li1,li0,lj0,lj1
-  use GlobalBCs_ml,                only: &
-          NGLOB_BC                 &  ! Number of species from global-model
-          ,GetGlobalData           &  ! Sub., reads global data+vert interp.
-          ,setgl_actarray
 
-  use CheckStop_ml,      only: CheckStop
   implicit none
   private
 
@@ -138,6 +144,7 @@ module BoundaryConditions_ml
   private :: Set_bcmap                  ! sets xn2adv_changed, etc.
   private :: MiscBoundaryConditions     ! misc bcs, not from global model.
   private :: Set_BoundaryConditions     ! assigns concentrations (xn) from bcs
+  private :: My_bcmap                   ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
 
 
   !/-- Allow different behaviour on 1st call - full 3-D asimilation done
@@ -145,9 +152,46 @@ module BoundaryConditions_ml
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   logical, private, save :: my_first_call  = .true.  
+  logical, public, parameter  :: BGN_2D = .false. !No 2d bgn species
+  logical, private, parameter :: DEBUG_MYBC = .false.
 
   !/ - for debugging
   real    :: ppb = 1.0e-9
+
+  !From Old My_BoundaryConditions_ml
+ ! A. Set indices
+ ! ===========================================================================
+ ! For species which have constant mixing ratios:
+
+ integer, public, parameter ::  NMISC_BC  =  2      ! H2, CH4   ! OC
+
+ integer, public, parameter :: IBC_H2  = NGLOB_BC + 1   &
+                              ,IBC_CH4 = NGLOB_BC + 2
+                              !6s ,IBC_OC  = NGLOB_BC + 2
+
+ integer, public, parameter ::  NTOT_BC  = NGLOB_BC + NMISC_BC
+
+ ! We also need the array misc_bc to specify concentrations of these species:
+
+ real, public, save, dimension(NGLOB_BC+1:NTOT_BC,KMAX_MID) :: misc_bc
+!real, public, save, dimension(NGLOB_BC+1:NTOT_BC) :: misc_bc 
+
+ ! B. Define mapping arrays
+ ! ===========================================================================
+ ! The mapping is done through the arrays bc2xn_adv and bc2xn_bgn, such that 
+ ! the emep species are given along the x-dimension and the bc species along 
+ ! the y.  e.g., the statement
+ !
+ !     bc2xn_adv(IBC_NOX,IXADV_NO2) = 0.55 
+ !
+ ! would assign the BC concentration of NOX  to the EMEP model concentration
+ ! of NO2 after multiplication with a factor 0.55.
+ !(The CTM2 concentration of NOx used as BC after a multilication 
+ ! with a factor 0.55.)
+ !_______________________________________________________________________
+
+    real, public, save, dimension(NTOT_BC,NSPEC_ADV) :: bc2xn_adv  ! see above
+    real, public, save, dimension(NTOT_BC,NSPEC_BGN) :: bc2xn_bgn ! see above
 
 
   ! Arrays for mapping from global bc to emep xn concentrations:
@@ -430,6 +474,129 @@ contains
  end subroutine BoundaryConditions
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+ ! From Old My_BoundaryConditions
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+ subroutine My_bcmap(iyr_trend)    ! sets bc2xn_adv, bc2xn_bc, and  misc_bc
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    integer, intent(in) :: iyr_trend !ds Year for which BCs are wanted 
+    real    :: ppb = 1.0e-9
+    real :: trend_ch4  !ds rv1.6.11
+    integer :: ii,i,j,k 
+    real :: decrease_factor(NGLOB_BC+1:NTOT_BC) ! Decrease factor for misc bc's
+                                      ! Gives the factor for how much of 
+                                      ! the top-layer conc. that is left 
+                                      ! at bottom layer
+
+    real :: top_misc_bc(NGLOB_BC+1:NTOT_BC) ! Conc. at top of misc bc
+!    real :: ratio_length(KMAX_MID)    ! Vertical length of the actual layer
+                                      ! divided by length from midpoint of 
+                                      ! layer 1 to layer KMAX_MID
+
+    misc_bc            = 0.0  ! Initialise
+    bc2xn_adv          = 0.0  ! Initialise
+    bc2xn_bgn          = 0.0  ! Initialise
+
+    ! Own (constant mixing ratio) boundary conditions **********
+
+    ! NOTE - these species have to have the bc2xn_ indices set to 1.0 for either
+    ! the advected or the background concentrations, in order that the 
+    ! concentrations specified in misc_bc are transferred correctly into the 
+    ! boundary conditions.
+    !
+    ! 18.09.01 -hf- misc bc'c as function of sigma possible 
+
+        !ds top_misc_bc(IBC_CH4) = 1760.0 * ppb
+
+        !ds set values of 1625 in 1980, 1780 in 1990, and 1820 in 2000. Interpolate
+        ! between these for other years. Values from EMEP Rep 3/97, Table 6.2 for
+        ! 1980, 1990, and from CDIAC (Mace Head) data for 2000.
+ 
+        if ( iyr_trend >= 1990 ) then
+
+            top_misc_bc(IBC_CH4) = 1780.0 + &
+                        (iyr_trend-1990) * 0.1*(1820-1780.0)
+
+        else 
+
+            top_misc_bc(IBC_CH4) = 1780.0 * &
+                        exp(-0.01*0.91*(1990-iyr_trend)) ! Zander,1975-1990
+                     !exp(-0.01*0.6633*(1975-iyr_trend)) !Zander,1951-1975, check
+        end if
+        trend_ch4 = top_misc_bc(IBC_CH4)/1780.0  ! Crude for now.
+        if (me== 0) write(6,"(a20,i5,2f12.3)") "TREND CH4", iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)
+
+        top_misc_bc(IBC_CH4)  =  top_misc_bc(IBC_CH4) * ppb
+
+        top_misc_bc(IBC_H2)  =  600.0 * ppb
+
+        !! top_misc_bc(IBC_OC) =   0.0 !!! 1.0 * ppb
+
+        decrease_factor(IBC_H2) =0.0 !No increase/decrease with height
+        decrease_factor(IBC_CH4)=0.0 !No increase/decrease with height
+
+
+!a) Function of height(not included yet!):
+!ratio_length(i,j,k)=(z_mid(i,j,1)-z_mid(i,j,k))/ &
+!                      (z_mid(i,j,1)-z_mid(i,j,KMAX_MID))
+!Replace sigma_mid with ratio_length and make misc_bc 4 dimentional
+!
+!b)Function of sigma_mid (I assume that top_misc_bc is given for
+!top(sigma_bnd(1)=0.), and that at ground (sigma_bnd(KMAX_BND)=1.) the conc.
+!is top_misc_bc -decrease_factor*top_misc_bc. Since I choose to set the 
+! concentration as a factor of sigma_mid, the concentration in the lowest 
+! grid cell will not be 
+! excactly  top_misc_bc -decrease_factor*top_misc_bc, but close.
+
+        do ii=NGLOB_BC+1,NTOT_BC
+           do k=1,KMAX_MID
+              misc_bc(ii,k) = top_misc_bc(ii) - &
+                  top_misc_bc(ii)*decrease_factor(ii)*sigma_mid(k) 
+              if (me == 0) then
+                 if (DEBUG_MYBC) write(*,"(a20,2es12.4,i4)")"height,misc_vert,k", &
+                                               sigma_mid(k),misc_bc(ii,k),k
+              endif
+           enddo
+        enddo
+
+!        misc_bc(IBC_H2)     = 600.0 * ppb
+!        misc_bc(IBC_OC)     =   1.0*ppb !!! 0.0
+
+        bc2xn_adv(IBC_H2,  IXADV_H2)    = 1.0
+        bc2xn_adv(IBC_CH4, IXADV_CH4)   = 1.0
+
+        !/-- check, just in case we forgot something...!
+
+        if ( DEBUG_MYBC  ) then
+             print *, "In My_bcmap, NGLOB_BC, NTOT_BC is", NGLOB_BC, NTOT_BC
+             do i = NGLOB_BC+1 , NTOT_BC
+                print *, "In My_bcmap, sum-adv", i, " is", sum(bc2xn_adv(i,:))
+                print *, "In My_bcmap, sum-bgn", i, " is", sum(bc2xn_bgn(i,:))
+             end do
+        end if ! DEBUG
+
+        do i = NGLOB_BC+1 , NTOT_BC
+           if ( sum(bc2xn_adv(i,:)) + sum(bc2xn_bgn(i,:)) /= 1.0 )then 
+              WRITE(*,*) 'MPI_ABORT: ', "BCproblem - my" 
+              call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+           endif
+        end do
+
+
+     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+      include 'My_BoundaryConditions.inc'
+     !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+!DSGC ! mappings for species from LOgan + obs model ***********
+!DSGC
+!DSGC  bc2xn_adv(IBC_O3      ,IXADV_O3      )   =   1.0
+!DSGC  bc2xn_adv(IBC_HNO3    ,IXADV_HNO3    )   =   1.0
+!.....
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ end subroutine My_bcmap
+ !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    subroutine Set_bcmap()
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -555,13 +722,6 @@ contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  subroutine MiscBoundaryConditions(iglobact,jglobact,bc_adv,bc_bgn) 
 
-  use GlobalBCs_ml, only: NGLOB_BC    ! Number of species from global-model
-
-  use My_BoundConditions_ml, only: & 
-           bc2xn_adv, bc2xn_bgn,   &  ! mapping arrays
-           misc_bc                    ! species defined by user
-  use GenSpec_adv_ml
-  use Par_ml,   only : me
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  ! - set bc_adv, bc_bgn,::::::::::::::::::::::::::::::::::::
  ! Note - this subroutine is a first draft and is only used for species
@@ -644,12 +804,8 @@ endif
       mask(:,:,:)  = .false.        ! Initial
 
 
-!chf Set edges (except on the top) 
-!pw      if(neighbor(SOUTH) == NOPROC)   mask(:,1,2:KMAX_MID)     = .true.
-!pw      if(neighbor(NORTH) == NOPROC)   mask(:,ljmax,2:KMAX_MID) = .true.
-!pw      if(neighbor(EAST)  == NOPROC)   mask(limax,:,2:KMAX_MID) = .true.
-!pw      if(neighbor(WEST)  == NOPROC)   mask(1,:,2:KMAX_MID)     = .true.
-!pw there may be no neighbor, but no external boundary (Poles in lat lon)
+! Set edges (except on the top) 
+! there may be no neighbor, but no external boundary (Poles in lat lon)
       if(neighbor(SOUTH) == NOPROC)   mask(:,1:(lj0-1),2:KMAX_MID)     = .true.
       if(neighbor(NORTH) == NOPROC)   mask(:,(lj1+1):ljmax,2:KMAX_MID) = .true.
       if(neighbor(EAST)  == NOPROC)   mask((li1+1):limax,:,2:KMAX_MID) = .true.

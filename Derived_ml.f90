@@ -991,14 +991,14 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)
             end forall
 
-         case ( "PHNO3" )   !ds-hf  rv1_9_28
-            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-              d_3d( n, i,j,k,IOU_INST) = xn_shl(index,i,j,k)
-            end forall
-
-             if(debug_flag) write(*,"(a12,i4,2es12.3)") "3D3D PHNO3", n, &
-                  xn_shl(index,debug_li,debug_lj,KMAX_MID), &
-                  d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
+!DSGC         case ( "PHNO3" )   !ds-hf  rv1_9_28
+!DSGC            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+!DSGC              d_3d( n, i,j,k,IOU_INST) = xn_shl(index,i,j,k)
+!DSGC            end forall
+!DSGC
+!DSGC             if(debug_flag) write(*,"(a12,i4,2es12.3)") "3D3D PHNO3", n, &
+!DSGC                  xn_shl(index,debug_li,debug_lj,KMAX_MID), &
+!DSGC                  d_3d(n,debug_li,debug_lj,KMAX_MID,IOU_INST)
 
          case ( "MAX3DSHL" )
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )! Daily maxima - short-lived

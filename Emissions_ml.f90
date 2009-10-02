@@ -50,8 +50,6 @@
           NBVOC,   &   ! > 0 if forest voc wanted
           QRCVOL,       &   ! For volcanoes
           VOLCANOES         ! 
-  use My_MassBudget_ml, only : set_mass_eqvs   ! Some equivalences bewteen 
-                                               ! indices
 
   use Biogenics_ml, only: first_dms_read,IQ_DMS,emnat,emforest
   use CheckStop_ml,only : CheckStop
@@ -214,7 +212,6 @@ contains
   !=========================
   call EmisDef_Init()                      ! In EmisDef_ml
   call set_molwts()                        ! In My_Emis_ml
-  call set_mass_eqvs()                     ! In My_MassBudget_ml
   call Country_Init()    ! In Country_ml, => NLAND, country codes and 
                          !                   names, timezone
   !=========================

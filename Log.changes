@@ -1,3 +1,37 @@
+================================ rv3_3beta, Dave,  1  Oct. 2009======
+
+ GenChem enabled EMEP chemistries
+ Caveat: New code seems to work fine, but the numerics  of all rv3_2.. are
+ slightly less optimised compared to rv3_1 versions (I removed Peter's
+ hard-coded linking of equations in My_FastReactions). The linking
+ could be re-introduced for a SR version, but for normal use I recommend
+ testing with different chemistry time-steps. (So far my tests show a
+ very stable system though)
+
+Introduced new directory, ZD_EmChem03 to keep EMEP 2003 chemistry outputs
+ from GenChem.
+
+More  changes to make it easier to swap chemistry (coming soon...) :
+
+  My_BoundaryConditions_ml.f90 **removed**. Some code moved to BoundaryConditions_ml
+
+  My_BoundaryConditions.inc **added**.  Will vary with chemical scheme.
+
+  My_MassBudget **removed**. Equivalent (simpler) lines added to My_Emis_ml
+     and Setup_1d_ml
+
+  My_ChemSpecs - module GenGroups_ml **added**, provides:
+
+     OXNGROUP = (/ NO,NO2,PAN,MPAN,NO3,N2O5,HNO3,PNO3,ANO3 /)
+
+     DDEP_OXNGROUP = (/ HNO3,NO2,PAN,MPAN,PNO3 /)
+
+   ... and avoids having to hard-code these in rest of code. Please use!
+
+  My_Outputs_ml  "&" added to please gfortran
+
+  Sites_ml - modifed to make use of OXNGROUP
+
 ================================ rv3_2_31, Dave,  1  Oct. 2009======
 
 Some changes to make it easier to swap chemistry (coming soon...) :

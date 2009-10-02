@@ -42,11 +42,13 @@
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,           &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
                                 ORGANIC_AEROSOLS, Aero_water, SEASALT
+   use My_Emis_ml       ! debug QRC
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
    use Ammonium_ml,       only: Ammonium
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
+   use Biogenics_ml      , only :  BIO_ISOP, BIO_TERP  ! debug only
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
    use Chemfields_ml,     only: xn_adv  ! For DEBUG 
@@ -55,8 +57,6 @@
    use DryDep_ml, only : drydep
    use GenSpec_tot_ml                   ! DEBUG ONLY
    use GenSpec_adv_ml                   ! DEBUG ONLY
-!EGU   use GenRates_rcmisc_ml, only : rcmisc! DEBUG ONLY
-
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
                                   nprint, END_OF_EMEPDAY, &
@@ -153,10 +153,11 @@ subroutine runchem(numt)
              if ( SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
 
-!if ( DEBUG .and. debug_flag  ) then
-!    write(6,"(a,2i3,i5,9es10.2)") "DEBUG_RUNCHEM RCEMIS ", &
-!          current_date%day, current_date%hour, current_date%seconds, &
-!          rcemis(2,20), rcemis(12,20), rcemis(4,20), rcemis(23,20)
+if ( DEBUG .and. debug_flag  ) then
+    write(6,"(a,2i3,i5,9es10.2)") "DEBUG_RUNCHEM RCEMIS ", &
+          current_date%day, current_date%hour, current_date%seconds, &
+          rcemis(QRCNO,20), rcemis(QRCHCHO,20), rcemis(QRCISOP,20), rcbio(BIO_ISOP,20)
+end if
 !          !rcemis(QRCCO,20), AROM, rcemis(QRCPM25,20), rcemis(QRCEC_f_FFUEL,20)
 !
 !    write(6,"(a16,9es10.2)") "RUNCHEM PRE_OC ", &
@@ -166,7 +167,6 @@ subroutine runchem(numt)
 !          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
 !         
 !          
-!end if
              if ( ORGANIC_AEROSOLS )  &
                call OrganicAerosol(i,j,debug_flag)
 
