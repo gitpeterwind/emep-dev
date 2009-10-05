@@ -36,9 +36,9 @@
 !_____________________________________________________________________________
 use Par_ml               , only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
 use ModelConstants_ml    , only: KMAX_MID     ! =>  z dimension
-use GenSpec_adv_ml,  only: NSPEC_ADV         ! => No. species 
-use GenSpec_shl_ml,  only: NSPEC_SHL         ! => No. species 
-use GenSpec_bgn_ml,  only: NSPEC_BGN         ! => No. species 
+use ChemSpecs_adv_ml,  only: NSPEC_ADV         ! => No. species 
+use ChemSpecs_shl_ml,  only: NSPEC_SHL         ! => No. species 
+use ChemSpecs_bgn_ml,  only: NSPEC_BGN         ! => No. species 
 implicit none
 private
 

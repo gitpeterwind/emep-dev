@@ -324,13 +324,6 @@
 
     xnew(MACRO2)=  max(0.0, ( xold(MACRO2) + dt2 * P)) /(1.0 + dt2*L )
 
-!-> PHNO3 
-      ! P = 0.0
- 
-      ! L = 0.0
- 
-!Nothing to do for PHNO3! xnew(PHNO3)=  max(0.0, xold(PHNO3))
-
 !-> O3 
 
       P =   &

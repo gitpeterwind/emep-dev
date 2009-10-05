@@ -35,7 +35,7 @@ module PhyChem_ml
 !-----------------------------------------------------------------------------
 !hf CoDep 
    use CoDep_ml, only : make_so2nh3_24hr
-   use GenSpec_adv_ml, only : IXADV_SO2, IXADV_NH3  
+   use ChemSpecs_adv_ml, only : IXADV_SO2, IXADV_NH3  
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
    use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after  
 

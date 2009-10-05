@@ -55,8 +55,8 @@
    use Chemsolver_ml,     only: chemistry
    use DefPhotolysis_ml,  only: setup_phot
    use DryDep_ml, only : drydep
-   use GenSpec_tot_ml                   ! DEBUG ONLY
-   use GenSpec_adv_ml                   ! DEBUG ONLY
+   use ChemSpecs_tot_ml                   ! DEBUG ONLY
+   use ChemSpecs_adv_ml                   ! DEBUG ONLY
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
                                   nprint, END_OF_EMEPDAY, &

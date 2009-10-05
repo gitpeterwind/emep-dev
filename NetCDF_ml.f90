@@ -50,15 +50,17 @@
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
   use My_Derived_ml, only : model
-  use My_Outputs_ml, only :FREQ_HOURLY 
+  use My_Outputs_ml,    only : FREQ_HOURLY, &
+                             NHOURLY_OUT, &      ! No. outputs
+                             Asc2D, hr_out      ! Required outputs
 
   use Chemfields_ml,   only : xn_shl,xn_adv
   use CheckStop_ml,    only: CheckStop,StopAll
-  use Derived_ml,    only : Deriv,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR ,IOU_MON, IOU_DAY
-  use GenSpec_shl_ml , only :NSPEC_SHL
-  use GenSpec_adv_ml , only :NSPEC_ADV
-  use GenSpec_tot_ml , only :NSPEC_TOT
-  use GenChemicals_ml, only :species
+  use Derived_ml,      only :IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR ,IOU_MON, IOU_DAY
+  use ChemSpecs_shl_ml , only :NSPEC_SHL
+  use ChemSpecs_adv_ml , only :NSPEC_ADV
+  use ChemSpecs_tot_ml , only :NSPEC_TOT
+  use ChemChemicals_ml, only :species
   use GridValues_ml,   only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
                                   ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                   ,grid_north_pole_latitude,grid_north_pole_longitude&
@@ -68,6 +70,7 @@
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
                                 ,PT,NLANDUSEMAX
   use netcdf
+  use OwnDataTypes_ml,  only : Deriv
   use Par_ml, only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax
   use PhysicalConstants_ml,  only : PI       
@@ -119,11 +122,6 @@ contains
 
 subroutine Init_new_netCDF(fileName,iotyp) 
 
-use Par_ml,           only : GIMAX,GJMAX,IRUNBEG,JRUNBEG
-use ModelConstants_ml,only : KMAX_MID   
-use My_Outputs_ml,    only : NHOURLY_OUT, &      ! No. outputs
-                             Asc2D, hr_out      ! Required outputs
-use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
 
 integer,  intent(in) :: iotyp
   character(len=*),  intent(in)  :: fileName 

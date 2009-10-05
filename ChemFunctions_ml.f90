@@ -44,7 +44,7 @@ module ChemFunctions_ml
  use ModelConstants_ml,     only : K1  => KCHEMTOP, K2 => KMAX_MID
  use PhysicalConstants_ml,  only : AVOG, RGAS_J
  use Setup_1dfields_ml,     only : itemp, rh, x=> xn_2d
- use GenSpec_tot_ml,        only : SO4,aNO3,aNH4
+ use ChemSpecs_tot_ml,        only : SO4,aNO3,aNH4
   implicit none
   private
 

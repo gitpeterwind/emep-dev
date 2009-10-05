@@ -100,7 +100,7 @@ implicit none
       !  ******************************************************
       !DSGC Sep2009 changes:
 
-         include 'GenVOC_QRC.inc'  ! From GenChem/mkp.vocspec/Garry system
+         include 'CM_VOC_QRC.inc'  ! From GenChem/mkp.vocspec/Garry system
 
       !  ******************************************************
 
@@ -198,8 +198,8 @@ implicit none
         molwt(QRCCO )    = 28.0  ! Emissions as N      
 
       !******************************************
-      !DSGC Sep2009 changes:
-        include 'GenVOC_MW.inc'
+      !DSGC Oct2009 changes:
+        include 'CM_VOC_MW.inc'
       !******************************************
 
 

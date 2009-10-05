@@ -55,8 +55,8 @@ program myeul
   use Derived_ml,    only :  Init_Derived &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
-  use GenChemicals_ml,  only : define_chemicals
-  use GenSpec_adv_ml  , only : NSPEC_ADV
+  use ChemChemicals_ml,  only : define_chemicals
+  use ChemSpecs_adv_ml  , only : NSPEC_ADV
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use Io_Progs_ml  ,    only : read_line

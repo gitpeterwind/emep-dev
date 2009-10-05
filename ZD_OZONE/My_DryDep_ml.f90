@@ -42,11 +42,13 @@ module My_DryDep_ml    ! DryDep_ml
    nOutDDep, OutDDep, nOutVg, OutVg, nOutRG, OutRG &
   ,nOutMET, OutMET, nOutFLUX, OutFLUX & !MAR2009
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
-  ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
+  ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
+!DSGC   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
  use GenChemicals_ml,    only : species 
  use GenSpec_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use GenSpec_shl_ml,     only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
+ use GenGroups_ml,       only : DDEP_OXNGROUP  !DSGC
  use LandDefs_ml,        only : LandDefs, LandType
  use Landuse_ml,         only : WheatGrowingSeason
  use LocalVariables_ml,  only : Grid  !=> izen  integer of zenith angle
@@ -123,14 +125,6 @@ module My_DryDep_ml    ! DryDep_ml
   logical, public, parameter :: COMPENSATION_PT = .false. 
 
 
-
-  ! We define also the number of species which will be deposited in
-  ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
-  ! The actual species used and their relation to the CDEP_ indices
-  ! above will be defined in Init_DepMap
-
-  integer, public, parameter ::  NDRYDEP_ADV  = 22
-
   !/-- we define a type to map indices of species to be deposited
   !   to the lesser number of species where Vg is calculated
 
@@ -139,8 +133,6 @@ module My_DryDep_ml    ! DryDep_ml
       integer :: calc  ! Index of species in  calculated dep arrays
       real    :: vg    ! if CDEP_SET, give vg in m/s
    end type depmap
-
-   type(depmap), public, dimension(NDRYDEP_ADV):: Dep
 
    real, public, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
 
@@ -156,40 +148,56 @@ module My_DryDep_ml    ! DryDep_ml
 
    logical, private, save :: first_call = .true.
 
+   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ! .... Define the mapping between the advected species and
+   !      the specied for which the calculation needs to be done.
+   !  We also define the number of species which will be deposited in
+   ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
+   ! The actual species used and their relation to the CDEP_ indices
+   ! above will be defined in Init_DepMap
+
+       include 'CM_DryDep.inc'
+
+   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 contains
   subroutine Init_DepMap
    integer :: icheck, iadv, i, i2, n, ndep, nVg, nRG, nMET
 
- ! .... Define the mapping between the advected species and
- !      the specied for which the calculation needs to be done.
 
-   Dep(1) =  depmap( IXADV_HNO3 , CDEP_HNO3, -1.)
-   Dep(2) =  depmap( IXADV_PAN,   CDEP_PAN, -1. ) 
-   Dep(3) =  depmap( IXADV_NO2,   CDEP_NO2, -1. )
-   Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
-   Dep(5) =  depmap( IXADV_SO4,   CDEP_FIN,  -1)
-   Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
-   Dep(7) =  depmap( IXADV_aNH4,  CDEP_FIN,  -1) 
-   Dep(8) =  depmap( IXADV_aNO3,  CDEP_FIN,  -1) 
-   Dep(9) =  depmap( IXADV_O3   , CDEP_O3  , -1.)
-   Dep(10) =  depmap( IXADV_H2O2 , CDEP_H2O2, -1.)
-   Dep(11) =  depmap( IXADV_MPAN , CDEP_PAN , -1.)
-   Dep(12) =  depmap( IXADV_HCHO , CDEP_HCHO, -1.)
-   Dep(13) =  depmap( IXADV_CH3CHO,CDEP_ALD , -1.)
-   Dep(14) =  depmap( IXADV_MAL   ,CDEP_ALD , -1.)
-   Dep(15) =  depmap( IXADV_CH3O2H,CDEP_OP  , -1.)
-   Dep(16) =  depmap( IXADV_C2H5OOH,CDEP_OP  , -1.)
-   Dep(17) =  depmap( IXADV_pNO3,  CDEP_COA, -1.)
-   Dep(18) =  depmap( IXADV_PPM25,  CDEP_FIN, -1. )
-   Dep(19) =  depmap( IXADV_PPMco,  CDEP_COA, -1. )
-   Dep(20) =  depmap( IXADV_SSfi,  CDEP_FIN, -1. )
-   Dep(21) =  depmap( IXADV_SSco,  CDEP_COA, -1. )
-   Dep(22) =  depmap( IXADV_Pb210,  CDEP_FIN, -1. )
-
+!DSGC   Dep(1) =  depmap( IXADV_HNO3 , CDEP_HNO3, -1.)
+!DSGC   Dep(2) =  depmap( IXADV_PAN,   CDEP_PAN, -1. ) 
+!DSGC   Dep(3) =  depmap( IXADV_NO2,   CDEP_NO2, -1. )
+!DSGC   Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
+!DSGC   Dep(5) =  depmap( IXADV_SO4,   CDEP_FIN,  -1)
+!DSGC   Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
+!DSGC   Dep(7) =  depmap( IXADV_aNH4,  CDEP_FIN,  -1) 
+!DSGC   Dep(8) =  depmap( IXADV_aNO3,  CDEP_FIN,  -1) 
+!DSGC   Dep(9) =  depmap( IXADV_O3   , CDEP_O3  , -1.)
+!DSGC   Dep(10) =  depmap( IXADV_H2O2 , CDEP_H2O2, -1.)
+!DSGC   Dep(11) =  depmap( IXADV_MPAN , CDEP_PAN , -1.)
+!DSGC   Dep(12) =  depmap( IXADV_HCHO , CDEP_HCHO, -1.)
+!DSGC   Dep(13) =  depmap( IXADV_CH3CHO,CDEP_ALD , -1.)
+!DSGC   Dep(14) =  depmap( IXADV_MAL   ,CDEP_ALD , -1.)
+!DSGC   Dep(15) =  depmap( IXADV_CH3O2H,CDEP_OP  , -1.)
+!DSGC   Dep(16) =  depmap( IXADV_C2H5OOH,CDEP_OP  , -1.)
+!DSGC   Dep(17) =  depmap( IXADV_pNO3,  CDEP_COA, -1.)
+!DSGC   Dep(18) =  depmap( IXADV_PPM25,  CDEP_FIN, -1. )
+!DSGC   Dep(19) =  depmap( IXADV_PPMco,  CDEP_COA, -1. )
+!DSGC   Dep(20) =  depmap( IXADV_SSfi,  CDEP_FIN, -1. )
+!DSGC   Dep(21) =  depmap( IXADV_SSco,  CDEP_COA, -1. )
+!DSGC   Dep(22) =  depmap( IXADV_Pb210,  CDEP_FIN, -1. )
+!DSGC
 
 !#######################  ECO08 new mappng  #######################
   do i = 1, NDRYDEP_ADV  ! 22
       iadv = Dep(i)%adv
+      if(DEBUG_MY_DRYDEP .and. MasterProc) &
+         write(6,*) "DEPMAP   ", Dep(i)%adv, Dep(i)%calc
+       if ( iadv < 1 ) then
+           print *, "DEPPROB  ",  i, Dep(i)%adv, Dep(i)%calc
+           call CheckStop( "ERROR: Negative iadv" )
+       end if
       DepAdv2Calc(iadv) = Dep(i)%calc
  end do
   
@@ -556,8 +564,13 @@ end do ! FLUX
      integer :: n, nVg, cdep
 
        do nVg = 1, nOutVg
+         if( OutVg(nVg)%Index < 1 ) then
+            print *, "ERROR: OutVg Index ", nVg, OutVg(nVg)%name
+            call CheckStop( "ERROR: Unallocated OutVg Index ")
+         end if
+
          cdep  =  DepAdv2Calc( OutVg(nVg)%Index ) ! Convert e.g. IXADV_O3
-                                                  ! to CDEP_O3
+         call CheckStop( cdep  < 1 , "ERROR: Negative OutVg cdep")
          d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) = VgLU( cdep, OutVg(nVg)%LC ) 
 
          if( DEBUG_MY_DRYDEP .and. debug_flag ) then
@@ -576,8 +589,13 @@ end do ! FLUX
      real :: Gs, Gns, Rs, Rns
 
        do nRG = 1, nOutRG
+         if( OutRG(nRG)%Index < 1 ) then
+            print *, "ERROR: OutRG Index ", nRG, OutRG(nRG)%name
+            call CheckStop( "ERROR: Unallocated OutRG Index ")
+         end if
          cdep  =  DepAdv2Calc( OutRG(nRG)%Index ) ! Convert e.g. IXADV_O3
                                                   ! to CDEP_O3
+         call CheckStop( cdep  < 1 , "ERROR: Negative OutRG cdep")
          Gs = GsLU( cdep, OutRG(nRG)%LC )
          if( Gs < 1.0e-44 ) then
             Rs = -999.0

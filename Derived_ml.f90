@@ -63,11 +63,11 @@ module Derived_ml
 
 use My_Derived_ml, only : &
             wanted_deriv2d, wanted_deriv3d  &! names of wanted derived fields
-           ,TXTLEN_DERIV    & ! length of names
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
       nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG, nOutMET, OutMET, &
       nOutFLUX, OutFLUX, &
+      COLUMN_MOLEC_CM2, &  !ds added May 2009
       SURF_UG_S, &  !ds added May 2009
       SURF_UG_N, &  !ds added May 2009
       SURF_UG_C, &  !ds added May 2009
@@ -78,12 +78,12 @@ use My_Derived_ml,  only : & !EcoDep
 
 use CheckStop_ml,      only: CheckStop
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
-use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
-use GenSpec_shl_ml
-use GenSpec_tot_ml
-use GenChemicals_ml, only : species
+use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+use ChemSpecs_shl_ml
+use ChemSpecs_tot_ml
+use ChemChemicals_ml, only : species
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
-use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp
+use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp, z_bnd
 !hf output
 use Chemfields_ml , only : so2nh3_24hr,Grid_snow
 use ModelConstants_ml, &
@@ -98,6 +98,7 @@ use ModelConstants_ml, &
                         ,DEBUG => DEBUG_DERIVED, MasterProc    & 
                         , SOURCE_RECEPTOR &
                         , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
+use OwnDataTypes_ml, only: Deriv,TXTLEN_DERIV   ! type & length of names
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me,                &   ! for print outs
                      gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
@@ -125,22 +126,6 @@ private
 
    INCLUDE 'mpif.h'
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
-    type, public:: Deriv
-       character(len=10) :: class ! Type of data, e.g. ADV or VOC
-       logical  :: avg      ! True => average data (divide by nav at end),
-                            !     else accumulate over run period
-       integer  :: index    ! index in concentation array, or other
-       real     :: scale    ! Scaling factor
-       logical  :: rho      ! True when scale is ug (N or S)
-       logical  :: inst     ! True when instantaneous values needed
-       logical  :: year     ! True when yearly averages wanted
-       logical  :: month    ! True when monthly averages wanted
-       logical  :: day      ! True when daily averages wanted
-       character(len=TXTLEN_DERIV) :: name ! Name of the variable (for netCDF output)
-       character(len=10) :: unit ! Unit (writen in netCDF output)
-    end type Deriv
-
    logical, private, parameter :: T = .true., F = .false. ! shorthands only
 
   ! Tip. For unix users, do "grep AddDef | grep -v Is3D | wc" or similar
@@ -406,33 +391,33 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
 
 call AddDef( "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")
-!call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT30","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
 call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
-!call AddDef( "AOT  ", F, 30, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT30f","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
 call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")
 call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
+!
+!-------------------------------------------------------------------------------
+!-- Tropospheric columns
+!
+  do n = 1, size(COLUMN_MOLEC_CM2)
+
+    call AddDef("COLUMN",T, COLUMN_MOLEC_CM2(n) - NSPEC_SHL, 1.0,  &
+             F  , F  ,  T , T ,  T,"COLUMN_"//trim(species(COLUMN_MOLEC_CM2(n))%name),"molec cm-2")
+  end do
+!-------------------------------------------------------------------------------
 !
 ! -- simple advected species. Note that some indices need to be set as dummys
 !    in ACID, e.g. IXADV_O3
 !
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
+
 call AddDef( "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")
-!dsxcall AddDef( "ADV  ", T, IXADV_SO4, ugS, T, F , T , T , T ,"D2_SO4","ugS/m3")
-!dsxcall AddDef( "ADV  ", T, IXADV_HNO3,ugN, T, F , T , T , T ,"D2_HNO3","ugN/m3")
-!dsxcall AddDef( "ADV  ", T, IXADV_PAN, ugN, T, F , T , T , T ,"D2_PAN","ugN/m3")
-!dsxcall AddDef( "ADV  ", T, IXADV_NH3, ugN, T, F , T , T , T ,"D2_NH3","ugN/m3")
-!dsxcall AddDef( "ADV  ", T, IXADV_NO , ugN, T, F , T , T , T ,"D2_NO","ugN/m3")
-!dsxcall AddDef( "ADV  ", T, IXADV_NO2, ugN, T, F , T , T , T ,"D2_NO2","ugN/m3")
-!dsxcall AddDef( "ADV  ", T,IXADV_aNH4, ugN, T, F , T , T , T ,"D2_aNH4","ugN/m3")
-!dsxcall AddDef( "ADV  ",T,IXADV_O3 ,PPBINV, F, F , T, T , T ,"D2_O3","ppb")
-!dsxcall AddDef( "ADV  ",T,IXADV_CO ,PPBINV, F, F , T, T , T ,"D2_CO","ppb")
-!dsxcall AddDef( "ADV  ",T,IXADV_aNO3, ugN,  T, F , T, T , T ,"D2_aNO3","ugN/m3")
-!dsxcall AddDef( "ADV ", T,IXADV_pNO3, ugN,  T, F , T, T , T ,"D2_pNO3", "ugN/m3")
+
 call AddDef( "NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")
 call AddDef( "NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")
 call AddDef( "OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")
+
 !call AddDef( "ADV  ",T,IXADV_XPM25, ugPMad, T, F , T, T, T,"D2_XPM25","ug/m3")
 !dsxcall AddDef( "ADV  ",T,IXADV_PPM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")
 !dsxcall AddDef( "ADV  ",T,IXADV_PPMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")
@@ -492,25 +477,14 @@ call AddDef( "SNratio",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNratio","ratio")
 !   set as "external" parameters - ie set outside Derived subroutine
 !      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
 
-!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF0","mmol/m2")
-!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTDF16","mmol/m2")
-!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF0","mmol/m2")
-!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTBF16","mmol/m2")
-!dsf!
-!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR0","mmol/m2")
-!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR3","mmol/m2")
-!dsfcall AddDef( "EXT  ", F, -1, 1. , F, F,T ,T ,T ,"D2_AFSTCR6","mmol/m2")
-!dsf!
 !      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
 call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")
 call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")
 !
-! AOT30 and AOT40 for Wheat and Beech. May need daily here.
 ! Also, use field for EU definition (8-20 CET) and Mapping Manual/UNECE
 ! (daylight hours). 
 ! All of these use O3 at crop height, in contrast to the older AOT30, AOT40
 ! as defined above, and all allow daily output.
-!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT30WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")
 call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40DF","ppb h")
 ! UNECE:
@@ -668,6 +642,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       integer :: nhour                       ! hours of day (GMT) 
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
+      real, dimension(MAXLIMAX,MAXLJMAX) :: tmpwork 
 
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
                 ! Inverse of No. air mols/cm3 = 1/M 
@@ -901,6 +876,32 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic" )
 !            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(typ),&
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
+
+          case ( "COLUMN" )   ! Dave May 2009, simplified from Joffen's COLUMN
+                            ! MFAC gives #/cm3, 100 is for m -> cm
+
+            do j = 1, ljmax
+            do i = 1, limax
+               k = 1
+               tmpwork( i,j ) =  &
+                    xn_adv(index,i,j,k)  * &
+                    roa(i,j,k,1)* (z_bnd(i,j,k)-z_bnd(i,j,k+1))
+
+               do k = 2, KMAX_MID
+                  tmpwork( i,j ) = tmpwork( i,j ) + &
+                    xn_adv(index,i,j,k)  * &
+                    roa(i,j,k,1) * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
+!            if ( debug_flag ) write(*,"(a12,3i4,a4,f8.3,f8.1,2es12.3)")&
+!                "COLUMN workk",&
+!                   n, index, k, " => ", roa(i,j,k,1), &
+!                   z_bnd(i,j,k)-z_bnd(i,j,k+1), xn_adv(index,i,j,k),tmpwork(i,j)
+               end do ! k
+               d_2d( n, i, j, IOU_INST) = MFAC * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
+            if ( debug_flag ) write(*,"(a18,es12.3)")&
+                "COLUMN d2_2d", d_2d( n, i, j, IOU_INST)
+            end do !i
+            end do !j
+
 
           case ( "EXT" )
 

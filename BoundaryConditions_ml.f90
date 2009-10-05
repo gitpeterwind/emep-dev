@@ -109,8 +109,8 @@ module BoundaryConditions_ml
 
   use CheckStop_ml,      only: CheckStop
   use Chemfields_ml,         only: xn_adv, xn_bgn  ! emep model concs.
-  use GenSpec_adv_ml         ! Lots, including NSPEC_ADV and IXADV_
-  use GenSpec_bgn_ml,        only :NSPEC_BGN
+  use ChemSpecs_adv_ml         ! Lots, including NSPEC_ADV and IXADV_
+  use ChemSpecs_bgn_ml,        only :NSPEC_BGN
   use GlobalBCs_ml,                only: &
           NGLOB_BC                 &  ! Number of species from global-model
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.
@@ -524,7 +524,8 @@ contains
                      !exp(-0.01*0.6633*(1975-iyr_trend)) !Zander,1951-1975, check
         end if
         trend_ch4 = top_misc_bc(IBC_CH4)/1780.0  ! Crude for now.
-        if (me== 0) write(6,"(a20,i5,2f12.3)") "TREND CH4", iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)
+        if ( MasterProc ) write(6,"(a20,i5,2f12.3)") "TREND CH4", &
+               iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)
 
         top_misc_bc(IBC_CH4)  =  top_misc_bc(IBC_CH4) * ppb
 
@@ -552,8 +553,8 @@ contains
            do k=1,KMAX_MID
               misc_bc(ii,k) = top_misc_bc(ii) - &
                   top_misc_bc(ii)*decrease_factor(ii)*sigma_mid(k) 
-              if (me == 0) then
-                 if (DEBUG_MYBC) write(*,"(a20,2es12.4,i4)")"height,misc_vert,k", &
+              if ( MasterProc .and. DEBUG_MYBC ) then
+                    write(*,"(a20,2es12.4,i4)")"height,misc_vert,k", &
                                                sigma_mid(k),misc_bc(ii,k),k
               endif
            enddo
@@ -584,7 +585,7 @@ contains
 
 
      !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-      include 'My_BoundaryConditions.inc'
+      include 'CM_BoundaryConditions.inc'
      !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 !DSGC ! mappings for species from LOgan + obs model ***********

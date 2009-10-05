@@ -7,7 +7,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=8:ib
+#PBS -lnodes=32:ib
 # wall time limit of run 
 #PBS -lwalltime=00:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -194,7 +194,7 @@ my $ACID = "0";     # Specify model type here, and check:
 my (@emislist, $testv);
 if ( $OZONE ) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_3beta";
+    $testv       = "rv3_3beta2";
 } elsif ( $ACID ) {
     die "ACID not yet tested \n";	    
 }
@@ -207,7 +207,7 @@ my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private i
 
 # Chemistry-specific files:
 my $Chem        = "EmChem03";   # Label for chemical scheme used
-my $ChemDir     = "$ProgDir/ZD_$Chem";   # for vocspec for this schem
+my $ChemDir     = "$ProgDir/ZCM_$Chem";   # for vocspec for this schem
 
 #ds check: and change
 chdir "$ProgDir";

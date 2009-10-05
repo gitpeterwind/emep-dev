@@ -77,8 +77,8 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
  use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
- use GenSpec_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
- use GenSpec_tot_ml, only : NSPEC_TOT
+ use ChemSpecs_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
+ use ChemSpecs_tot_ml, only : NSPEC_TOT
 
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
           debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
@@ -112,7 +112,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
                             luflux_wanted, & !  logical
                             c_hvegppb, & !  logical
                             Init_StoFlux, Setup_StoFlux, Calc_StoFlux  ! subs
- use GenSpec_shl_ml,    only :  NSPEC_SHL
+ use ChemSpecs_shl_ml,    only :  NSPEC_SHL
  use My_Aerosols_ml,    only : NSIZE
  use TimeDate_ml,       only : daynumber, current_date
 

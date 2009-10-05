@@ -38,12 +38,13 @@
                                f_2d, d_2d, LENOUT2D                   &
                               ,f_3d, d_3d, nav_3d, nav_2d, LENOUT3D   & 
                               , num_deriv2d, num_deriv3d &
-                              ,ResetDerived, Deriv
+                              ,ResetDerived
   use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            & 
                                Ascii3D_WANTED
   use Io_ml,             only: IO_WRTCHEM
   use ModelConstants_ml, only: nprint, END_OF_EMEPDAY, KMAX_MID, MasterProc
   use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
+  use OwnDataTypes_ml,   only: Deriv
   use Par_ml,            only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,     &
                                IRUNBEG,JRUNBEG
   use TimeDate_ml      , only: current_date, max_day  ! days in month
@@ -292,8 +293,9 @@
            if (iotyp /= IOU_INST )    &
              scale = scale / max(1,nav(icmp,iotyp))
              if ( MasterProc .and. My_DEBUG ) then
-                print *, "DEBUG Output_f2d ", icmp, iotyp,  def(icmp)%name, def(icmp), scale
-                print *, "DEBUG Output_f2d x ", maxval(dat(icmp,:,:,iotyp)), minval(dat(icmp,:,:,iotyp))
+                write(*,*) "DEBUG Output_f2d ", icmp, iotyp, def(icmp)%name, &
+                   def(icmp), scale, maxval(dat(icmp,:,:,iotyp)), &
+                       minval(dat(icmp,:,:,iotyp))
              end if
 
              call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,iotyp),scale)
@@ -313,11 +315,6 @@
   ! Sends fields to NetCDF output routines
   !=========================================
      
-   use Derived_ml,        only: IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, &
-                                Deriv,LENOUT3D
-   use ModelConstants_ml, only: KMAX_MID
-   use NetCDF_ml,         only: Out_netCDF
-   use Par_ml,            only: MAXLIMAX, MAXLJMAX 
 
 
     implicit none

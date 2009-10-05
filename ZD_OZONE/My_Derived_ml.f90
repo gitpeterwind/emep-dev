@@ -53,12 +53,17 @@ module My_Derived_ml
   !---------------------------------------------------------------------------
  
 use CheckStop_ml,  only: CheckStop, StopAll
+use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use GenSpec_adv_ml        ! Use IXADV_ indices...
 use GenSpec_shl_ml        ! Use IXSHL_ indices...
-use GenSpec_tot_ml,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                           ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
-                           ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
+use GenSpec_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
+                   !        ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
+                   !       ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
+use GenGroups_ml,  only :  OXNGROUP, DDEP_OXNGROUP
 use GenChemicals_ml, only : species               !  For mol. wts.
+use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+use LandDefs_ml,   only : LandDefs, Check_LandCoverPresent     ! e.g. "CF"
+use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , MasterProc  & 
                         , SOURCE_RECEPTOR  &  
@@ -67,11 +72,7 @@ use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , PPBINV  &  !   1.0e9
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
 
-use Chemfields_ml, only : xn_adv, xn_shl, cfac
-use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
-!use Landuse_ml,    only : Land_codes   ! e.g. "CF"
-use LandDefs_ml,   only : LandDefs, Check_LandCoverPresent     ! e.g. "CF"
-use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
+use OwnDataTypes_ml, only : dep_type, print_dep_type, TXTLEN_DERIV
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area 
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -84,7 +85,6 @@ private
  public  :: My_DerivFunc 
 
  private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
-           ,print_dep_type &     ! Prins contents
            ,pm_calc              ! Miscelleaneous PM's
 
 
@@ -108,7 +108,6 @@ private
 
     integer, public, parameter :: MAX_NUM_DERIV2D = 200
     integer, public, parameter :: MAX_NUM_DERIV3D =   5
-    integer, public, parameter :: TXTLEN_DERIV =   24
     character(len=TXTLEN_DERIV), public, save, &
          dimension(MAX_NUM_DERIV2D) :: wanted_deriv2d = NOT_SET_STRING
     character(len=TXTLEN_DERIV), public, save, &
@@ -147,6 +146,9 @@ private
       ALL_SURF_UGTXT 
    real, public, save, dimension( NALL_SURF_UG ) :: ALL_SURF_ATW   
 
+! Tropospheric columns
+   integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
+
     character(len=TXTLEN_DERIV), public, parameter, dimension(27) :: &
   D2_SR = (/ &
 !
@@ -155,7 +157,6 @@ private
       ,"D2_SS       ","D2_tNO3     ","D2_PM25_H2O " &
 !
 !    Ozone and AOTs
-!dsx  ,"D2_O3       ","D2_MAXO3    " &
       ,"D2_MAXO3    " &
       ,"D2_AOT40    ","D2_AOT60    " &  ! Exc AOT30 ( 7 versions)
       ,"D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
@@ -165,7 +166,6 @@ private
       ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums 
-!dsx      ,"D2_NO2      "
       ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
 !
 !    Ecosystem - fluxes: 
@@ -182,11 +182,9 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
   D2_EXTRA = (/ &
-!dsx       "D2_SO2      ","D2_HNO3     ","D2_NH3      ","D2_VOC      "&
        "D2_VOC      "&
       ,"WDEP_SO2","WDEP_SO4","WDEP_HNO3","WDEP_aNO3", "WDEP_pNO3" & 
       ,"WDEP_NH3", "WDEP_aNH4" & 
-!dsx  ,"D2_REDN     ","D2_SSfi     ","D2_SSco     ","D2_SNOW","D2_SNratio" &
       ,"D2_REDN     ","D2_SNOW","D2_SNratio" &
       ,"D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 ","USTAR_NWP" & !DSFEB09
   /)
@@ -198,10 +196,10 @@ private
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
   integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
   integer, public, dimension(2) ::  DDEP_RDNGROUP = (/ NH3, aNH4 /)
-  integer, public, dimension(6) ::  DDEP_OXNGROUP =  &
-                         (/ NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
-  integer, public, dimension(6) ::  DDEP_GROUP ! Working array, set
-      ! size as max of SOX, OXN, RDN
+!  integer, public, dimension(6) ::  DDEP_OXNGROUP =  &
+!                         (/ NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
+  integer, public, dimension(size(DDEP_OXNGROUP)) :: DDEP_GROUP ! Working array 
+   ! should be set as max of SOX, OXN, RDN, assume OXN biggest
 
  ! Ecosystem dep output uses receiver land-cover classes (LCs)
  ! which might include several landuse types, e.g. Conif in 
@@ -213,30 +211,15 @@ private
   integer, public, save :: nOutMET ! RG = resistances and conductances
 
 
- ! Store indices of ecossytem-species depositions
- ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
- !            x     d      d    d   a10    a10   a10     f    i    a10
-  type, public :: Dep_type
-     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
-     integer :: LC            ! Index of Receiver land-cover (one 
-                              ! of Dep_Receivers)
-     integer :: Index         ! e.g. index in e.g. xn_adv arrays, or Y for AFstY
-     integer :: f2d           ! index in f_2d arrays
-     character(len=10) :: class !  "Mosaic"
-     character(len=10) :: label !  e.g. "VG", "Rns"
-     character(len=10) :: txt ! text where needed, e.g. "Conif"
-     real    :: scale         !  e.g. use 100.0 to get cm/s
-     integer :: atw           ! atomic weight where needed
-     character(len=10) :: units ! e.g.  mgN/m2
-  end type 
 
    !ECO08 - specify some species and land-covers we want to output
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  in My_DryDep_ml.
    !
-    integer, public, parameter, dimension(13) :: &
+    integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, &
-           SO2,  SO4, NH3, aNH4, NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
+           SO2,  SO4, NH3, aNH4, DDEP_OXNGROUP /)
+!DSGC NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
       DDEP_ECOS  = (/ "Grid", "Conif", "Seminat" /)
@@ -332,10 +315,12 @@ private
   subroutine Init_My_Deriv()
 
     integer :: i, ilab, nDD, nVg, nRG, nMET, nFLUX, iLC, i10Y, &
-      iadv, ispec, atw
+      iadv, ispec, ind, atw
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: txt, units, txtnum
     real :: Y    ! threshold for AFSTY
+    character(len=TXTLEN_DERIV), &
+      dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -355,6 +340,16 @@ private
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
         call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING)
      end if
+
+     ! Column data:
+     do n = 1, size(COLUMN_MOLEC_CM2)
+       tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n))%name )
+     end do
+     call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING)
+     ! Didn't work:
+     !call AddArray( "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(:))%name ), &
+     !  wanted_deriv2d, NOT_SET_STRING)
+
 
      !------------- Dry Depositions for d_2d -------------------------
      !ECO08: Add species and ecosystem depositions if wanted:
@@ -409,7 +404,7 @@ private
         ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
         !            x     d      d    d   a10    a10   a10     f    i    a10
              OutDDep(nDD) = Dep_type(  &
-              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
+              name, -99, ind, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
            if(DEBUG .and. MasterProc) call print_dep_type( OutDDep(nDD) )
         end do ! DDEP_SPECS
      end do ! DDEP_ECOS
@@ -596,39 +591,6 @@ private
 
   end subroutine Init_My_Deriv
  !=========================================================================
-!
-!  function Check_LandCoverPresent( descrip, n, array, write_condition) result(ind)
-!    character(len=*),intent(in) :: descrip
-!    integer, intent(in) :: n
-!    character(len=*),dimension(:),intent(in) :: array
-!    logical, intent(in) :: write_condition
-!    integer :: ind
-!
-!          ind = 1
-!          if( trim(array(n)) /= "Grid") &  ! Grid is a specia case
-!             ind = find_index(  array(n), LandDefs(:)%code )
-!          !if( DEBUG ) print *, "LC-CHECKING", descrip, n, array(n), ind
-!          if( ind < 1 .and.  write_condition .and. MasterProc ) write(*,*) &
-!                descrip // "NOT FOUND!! Skipping : " //  array(n)
-!  end function Check_LandCoverPresent
- !=========================================================================
-subroutine print_dep_type(w)
-  type(dep_type), intent(in) :: w  ! wanted
-
-  write(6,*) "Prints dep_type ========================="
-  write(6,"(a,a)")      "Name   :", w%name
-  write(6,"(a,i3)")     "LC     :", w%LC
-  write(6,"(a,i3)")     "index  :", w%index
-  write(6,"(a,i3)")     "f2d    :", w%f2d
-  write(6,"(a,a10)")    "class  :", w%class
-  write(6,"(a,a10)")    "label  :", w%label
-  write(6,"(a,a10)")    "txt    :", w%txt
-  write(6,"(a,es10.3)") "scale  :", w%scale
-  write(6,"(a,i3)")     "atw    :", w%atw
-  write(6,"(a,a10)")    "units  :", w%units
-end subroutine print_dep_type
-
- !=========================================================================
   subroutine My_DerivFunc( e_2d, n, class , timefrac, density )
 
     ! We define here here any functions which cannot easily be defined
@@ -737,6 +699,7 @@ end subroutine print_dep_type
     integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
     character(len=*)    :: class   ! Type of data
     real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density  
+    integer :: itot, iadv, igrp
 ! density = 1 ( or = roa when unit ug)
 
 
@@ -772,18 +735,26 @@ end subroutine print_dep_type
       end forall
 
     case ( "NOZ" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d( i,j ) = &
-              ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
-              + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
-              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) &
-              + xn_adv(IXADV_PAN,i,j,KMAX_MID) * cfac(IXADV_PAN,i,j) &
-              + xn_adv(IXADV_MPAN,i,j,KMAX_MID) * cfac(IXADV_MPAN,i,j) &
-              + xn_adv(IXADV_NO3,i,j,KMAX_MID) &
-              + 2.0* xn_adv(IXADV_N2O5,i,j,KMAX_MID) &
-              + xn_adv(IXADV_ISNI,i,j,KMAX_MID) &
-              ) * density(i,j)
-      end forall
+      e_2d( :,: ) = 0.0
+      do i=1,limax
+        do j=1,ljmax
+          do igrp = 1, size(OXNGROUP)
+            itot = OXNGROUP(igrp) 
+            iadv = OXNGROUP(igrp) - NSPEC_SHL
+            e_2d( i,j ) = e_2d( i,j ) + & 
+              xn_adv(iadv,i,j,KMAX_MID) * &
+                cfac(iadv,i,j) * species(itot)%nitrogens
+          end do ! n
+          e_2d( i,j ) = e_2d( i,j ) * density(i,j)
+        end do ! j
+      end do ! i
+!DSGC              + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
+!DSGC              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) &
+!DSGC              + xn_adv(IXADV_PAN,i,j,KMAX_MID) * cfac(IXADV_PAN,i,j) &
+!DSGC              + xn_adv(IXADV_MPAN,i,j,KMAX_MID) * cfac(IXADV_MPAN,i,j) &
+!DSGC              + xn_adv(IXADV_NO3,i,j,KMAX_MID) &
+!DSGC              + 2.0* xn_adv(IXADV_N2O5,i,j,KMAX_MID) &
+!DSGC              + xn_adv(IXADV_ISNI,i,j,KMAX_MID) &
 
 
     case ( "TRDN" )

@@ -211,7 +211,7 @@ module Ammonium_ml
      !   in order to have same structure as with EQSAM and MARS 
      !-------------------------------------------------------------------------
 
- use GenSpec_tot_ml      , only : SO4, aNH4,aNO3, NH3, HNO3
+ use ChemSpecs_tot_ml      , only : SO4, aNH4,aNO3, NH3, HNO3
  use Setup_1dfields_ml   , only :  xn => xn_2d
 
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value

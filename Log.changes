@@ -1,3 +1,72 @@
+================================ rv3_3beta2, Dave,  5  Oct. 2009======
+
+GenChem enabled EMEP chemistries, almost done? 
+
+New file-labelling system and directories:
+
+ZCM_EmChem03 - contains chemical-mechanism (CM) files for EMEP 2003
+chemistry vocsplit files are also chemistry dependent, so for now we
+keep them with the code.
+
+ZCM_EmChem03 directory:
+----------------------
+CM_BoundaryConditions.inc  CM_Reactions1.inc  vocsplit.defaults.EmChem03
+CM_ChemRates_ml.f90        CM_Reactions2.inc  vocsplit.special.EmChem03
+CM_ChemSpecs_ml.f90        CM_VOC_MW.inc
+CM_DryDep.inc              CM_VOC_QRC.inc
+
+
+The above replaces many of the  My_ files. The latter are now mainly used
+to specify desired outputs, and the aerosol schemes. Thus, ZCM_EmChem03
+gives the chemistry, ZD_OZONE gives whatever else is needed, and
+ZD_ACID should be deleted in the near future. (ZD_ACID should be
+replaced by a ZCM_ directory for acid chemistry. Somebody would need
+to check over how O3 and stuff are handled though).
+
+Thus, from Unimod.rv3_3,do:
+   cp ZCM_EmChem03/CM* 
+   cp ZD_OZONE/My* .
+
+GenXXXX -> ChemXXXX
+
+In the code, "GenXXX" modules are replaced with ChemXXX modules, thus
+GenSpec_adv_tot now becomes ChemSpec_adv_tot. Seemed more logical.
+
+Note, CM_Reactions1 replaces My_FastReactions, CM_Reactions2 replaces
+My_SlowReactions since the distinction was really between chemicals that
+needed to be in the iteration scheme or not (as they reacted further),
+not just speed.
+
+
+Chemical schemes can be swapped with the mk.GenChem script, which will
+be added in CVS somewhere very soon. So far have one "working" sheme (EmChem03),
+and one almost-working, EmChem09. Will soon add carbon-bond, CRI, and others
+
+More  changes to make it easier to swap chemistry (coming soon...) :
+
+  My_Derived_ml - uses groups from ChemGroups_ml, removes hard-coded OXN etc.
+
+  My_DryDep_ml - now includes "CM_DryDep.inc" from GenChem's ZCM_EmChem03 directory
+  
+  CM_ .... files now from GenChem's ZCM_EmChem03 directory
+
+Plus:
+
+  COLUMN-data added to Derived and My_Derived_ml, simplified calculation
+
+  **New** OwnDataTypes_ml created to store user-defined types. Mainly
+  intended to make My_* files shorter. Used so for dep_type, Deriv, SOA-VBST
+
+  Causes modifications (and small tidy-ups) to:
+      Derived_ml, My_Derived_ml, NetCDF_ml, Nest_ml
+
+Status and ToDo
+-----------------
+I think that the GenChem-associated changes are basically done. The
+code still needs work to recover some outputs, notably AOT40, which were
+omitted during the changes to Derived and My_Derived (rv3_2_13 onwards).
+All gas-phase and deposition outputs look fine, afaics.
+
 ================================ rv3_3beta, Dave,  1  Oct. 2009======
 
  GenChem enabled EMEP chemistries
@@ -8,8 +77,9 @@
  testing with different chemistry time-steps. (So far my tests show a
  very stable system though)
 
-Introduced new directory, ZD_EmChem03 to keep EMEP 2003 chemistry outputs
- from GenChem.
+Introduced ** new directory :: :
+
+ ZD_EmChem03 -  to keep EMEP 2003 chemistry outputs from GenChem.
 
 More  changes to make it easier to swap chemistry (coming soon...) :
 

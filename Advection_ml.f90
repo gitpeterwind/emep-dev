@@ -76,7 +76,7 @@
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
  use Chemfields_ml, only : xn_adv
- use GenSpec_adv_ml , only : NSPEC_ADV
+ use ChemSpecs_adv_ml , only : NSPEC_ADV
  use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i
  use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                 dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY, NPROC
@@ -1463,7 +1463,7 @@
 !     using 2'nd order polynomial in the vertical.
 
 	use ModelConstants_ml   , only : EPSIL, dt_advec
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
 	implicit none
 
 !	input
@@ -1655,7 +1655,7 @@
 !     using 2'nd order polynomial in the vertical.
 
 	use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
 !hf u2      use My_Runmode_ml , only : ADVEC_TYPE
 	implicit none
 
@@ -1865,7 +1865,7 @@
           !     executes vertical diffusion
           
       use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-      use GenSpec_adv_ml , only : NSPEC_ADV
+      use ChemSpecs_adv_ml , only : NSPEC_ADV
           
           implicit none
 
@@ -1932,7 +1932,7 @@
 !            = skh(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
 
       use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-      use GenSpec_adv_ml , only : NSPEC_ADV
+      use ChemSpecs_adv_ml , only : NSPEC_ADV
           
           implicit none
 
@@ -1995,7 +1995,7 @@
           !     executes vertical diffusion ndiff times
           
       use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-      use GenSpec_adv_ml , only : NSPEC_ADV
+      use ChemSpecs_adv_ml , only : NSPEC_ADV
           
           implicit none
 
@@ -2068,7 +2068,7 @@
 !     (small effects on results: less than 1%)
 
 	use Par_ml   , only : me,li0,li1,limax
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
         use MassBudget_ml , only : fluxin,fluxout
 	implicit none
 
@@ -2642,7 +2642,7 @@
 !
 
 	use Par_ml   , only : lj0,lj1,ljmax
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
         use MassBudget_ml , only : fluxin,fluxout
 	implicit none
 
@@ -3215,7 +3215,7 @@
 
 	use Par_ml , only : lj0,lj1,li1		&
 			,neighbor,WEST,EAST
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
 	implicit none
 
 !	input
@@ -3356,7 +3356,7 @@
 
 	use Par_ml , only : lj0,lj1,li1		&
 			,neighbor,WEST,EAST
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
 	implicit none
 
 !	input
@@ -3497,7 +3497,7 @@
 
 	use Par_ml , only : li0,li1,lj0,lj1,ljmax		&
 			,neighbor,NORTH,SOUTH
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
 	implicit none
 
 !	input
@@ -3649,7 +3649,7 @@
 
 	use Par_ml , only : li0,li1,lj0,lj1,ljmax		&
 			,neighbor,NORTH,SOUTH
-	use GenSpec_adv_ml , only : NSPEC_ADV
+	use ChemSpecs_adv_ml , only : NSPEC_ADV
 	implicit none
 
 !	input

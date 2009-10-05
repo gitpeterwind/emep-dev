@@ -37,10 +37,10 @@
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
   use My_Emis_ml,            only :  NRCEMIS, NSS, NBVOC   !NSS=SeaS
-  use GenSpec_tot_ml,        only :  NSPEC_TOT, FIRST_SOA, LAST_SOA
-  use GenSpec_bgn_ml,        only :  NSPEC_COL
-!DSGC  use GenRates_rct_ml,       only :  NRCT
-!DSGC  use GenRates_rcmisc_ml,    only :  NRCMISC
+  use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SOA, LAST_SOA
+  use ChemSpecs_bgn_ml,        only :  NSPEC_COL
+!DSGC  use ChemRates_rct_ml,       only :  NRCT
+!DSGC  use ChemRates_rcmisc_ml,    only :  NRCMISC
   implicit none
   private
 

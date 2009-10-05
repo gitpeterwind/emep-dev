@@ -1,6 +1,6 @@
 !>_________________________________________________________<
 
-  module  GenSpec_adv_ml
+  module  ChemSpecs_adv_ml
 !-----------------------------------------------------------
 
   
@@ -88,10 +88,10 @@
      IXADV_PB210       =  60
 
  !-----------------------------------------------------------
-  end module GenSpec_adv_ml
+  end module ChemSpecs_adv_ml
 !>_________________________________________________________<
 
-  module  GenSpec_shl_ml
+  module  ChemSpecs_shl_ml
 !-----------------------------------------------------------
 
   
@@ -100,7 +100,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_SHL = 16 
+   integer, public, parameter ::  NSPEC_SHL = 15 
  
 
 
@@ -121,14 +121,13 @@
   ,  IXSHL_MEKO2       =  12   &
   ,  IXSHL_MALO2       =  13   &
   ,  IXSHL_MVKO2       =  14   &
-  ,  IXSHL_MACRO2      =  15   &
-  ,  IXSHL_PHNO3       =  16
+  ,  IXSHL_MACRO2      =  15
 
  !-----------------------------------------------------------
-  end module GenSpec_shl_ml
+  end module ChemSpecs_shl_ml
 !>_________________________________________________________<
 
-  module  GenSpec_tot_ml
+  module  ChemSpecs_tot_ml
 !-----------------------------------------------------------
 
   
@@ -137,7 +136,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_TOT = 76 
+   integer, public, parameter ::  NSPEC_TOT = 75 
  
   ! Aerosols:
            integer, public, parameter :: &
@@ -165,88 +164,87 @@
   ,  MALO2       =  13   &
   ,  MVKO2       =  14   &
   ,  MACRO2      =  15   &
-  ,  PHNO3       =  16   &
-  ,  O3          =  17   &
-  ,  NO          =  18   &
-  ,  NO2         =  19
+  ,  O3          =  16   &
+  ,  NO          =  17   &
+  ,  NO2         =  18   &
+  ,  PAN         =  19
 
    integer, public, parameter ::   & 
-     PAN         =  20   &
-  ,  MPAN        =  21   &
-  ,  NO3         =  22   &
-  ,  N2O5        =  23   &
-  ,  ISONO3      =  24   &
-  ,  HNO3        =  25   &
-  ,  CH2CCH3     =  26   &
-  ,  CH3COO2     =  27   &
-  ,  MACR        =  28   &
-  ,  ISNI        =  29
+     MPAN        =  20   &
+  ,  NO3         =  21   &
+  ,  N2O5        =  22   &
+  ,  ISONO3      =  23   &
+  ,  HNO3        =  24   &
+  ,  CH2CCH3     =  25   &
+  ,  CH3COO2     =  26   &
+  ,  MACR        =  27   &
+  ,  ISNI        =  28   &
+  ,  ISNIR       =  29
 
    integer, public, parameter ::   & 
-     ISNIR       =  30   &
-  ,  GLYOX       =  31   &
-  ,  MGLYOX      =  32   &
-  ,  MAL         =  33   &
-  ,  MEK         =  34   &
-  ,  MVK         =  35   &
-  ,  HCHO        =  36   &
-  ,  CH3CHO      =  37   &
-  ,  C2H6        =  38   &
-  ,  NC4H10      =  39
+     GLYOX       =  30   &
+  ,  MGLYOX      =  31   &
+  ,  MAL         =  32   &
+  ,  MEK         =  33   &
+  ,  MVK         =  34   &
+  ,  HCHO        =  35   &
+  ,  CH3CHO      =  36   &
+  ,  C2H6        =  37   &
+  ,  NC4H10      =  38   &
+  ,  C2H4        =  39
 
    integer, public, parameter ::   & 
-     C2H4        =  40   &
-  ,  C3H6        =  41   &
-  ,  OXYL        =  42   &
-  ,  ISOP        =  43   &
-  ,  CH3O2H      =  44   &
-  ,  C2H5OOH     =  45   &
-  ,  BURO2H      =  46   &
-  ,  ETRO2H      =  47   &
-  ,  PRRO2H      =  48   &
-  ,  OXYO2H      =  49
+     C3H6        =  40   &
+  ,  OXYL        =  41   &
+  ,  ISOP        =  42   &
+  ,  CH3O2H      =  43   &
+  ,  C2H5OOH     =  44   &
+  ,  BURO2H      =  45   &
+  ,  ETRO2H      =  46   &
+  ,  PRRO2H      =  47   &
+  ,  OXYO2H      =  48   &
+  ,  MEKO2H      =  49
 
    integer, public, parameter ::   & 
-     MEKO2H      =  50   &
-  ,  MALO2H      =  51   &
-  ,  MVKO2H      =  52   &
-  ,  MARO2H      =  53   &
-  ,  ISRO2H      =  54   &
-  ,  H2O2        =  55   &
-  ,  CH3COO2H    =  56   &
-  ,  CH2CO2HCH3  =  57   &
-  ,  ISONO3H     =  58   &
-  ,  ISNIRH      =  59
+     MALO2H      =  50   &
+  ,  MVKO2H      =  51   &
+  ,  MARO2H      =  52   &
+  ,  ISRO2H      =  53   &
+  ,  H2O2        =  54   &
+  ,  CH3COO2H    =  55   &
+  ,  CH2CO2HCH3  =  56   &
+  ,  ISONO3H     =  57   &
+  ,  ISNIRH      =  58   &
+  ,  CH3OH       =  59
 
    integer, public, parameter ::   & 
-     CH3OH       =  60   &
-  ,  C2H5OH      =  61   &
-  ,  H2          =  62   &
-  ,  CO          =  63   &
-  ,  CH4         =  64   &
-  ,  SO2         =  65   &
-  ,  SO4         =  66   &
-  ,  PNO3        =  67   &
-  ,  NH3         =  68   &
-  ,  ANH4        =  69
+     C2H5OH      =  60   &
+  ,  H2          =  61   &
+  ,  CO          =  62   &
+  ,  CH4         =  63   &
+  ,  SO2         =  64   &
+  ,  SO4         =  65   &
+  ,  PNO3        =  66   &
+  ,  NH3         =  67   &
+  ,  ANH4        =  68   &
+  ,  ANO3        =  69
 
    integer, public, parameter ::   & 
-     ANO3        =  70   &
-  ,  PPM25       =  71   &
-  ,  PPMCO       =  72   &
-  ,  SSFI        =  73   &
-  ,  SSCO        =  74   &
-  ,  RN222       =  75   &
-  ,  PB210       =  76
+     PPM25       =  70   &
+  ,  PPMCO       =  71   &
+  ,  SSFI        =  72   &
+  ,  SSCO        =  73   &
+  ,  RN222       =  74   &
+  ,  PB210       =  75
 
  !-----------------------------------------------------------
-  end module GenSpec_tot_ml
+  end module ChemSpecs_tot_ml
 !>_________________________________________________________<
 
-  module  GenChemicals_ml
+  module  ChemChemicals_ml
 !-----------------------------------------------------------
 
-   use GenSpec_tot_ml  ! => NSPEC_TOT, species indices
+   use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices
   implicit none
   private
 
@@ -286,7 +284,6 @@
        species(MALO2) = Chemical("MALO2       ", 147,  0,  5,   0,  0 ) 
        species(MVKO2) = Chemical("MVKO2       ", 119,  0,  4,   0,  0 ) 
        species(MACRO2) = Chemical("MACRO2      ", 102,  0,  4,   0,  0 ) 
-       species(PHNO3) = Chemical("PHNO3       ",  63,  0,  0,   1,  0 ) 
        species(O3) = Chemical("O3          ",  48,  0,  0,   0,  0 ) 
        species(NO) = Chemical("NO          ",  30,  0,  0,   1,  0 ) 
        species(NO2) = Chemical("NO2         ",  46,  0,  0,   1,  0 ) 
@@ -348,33 +345,32 @@
        species(RN222) = Chemical("RN222       ", 222,  0,  0,   0,  0 ) 
        species(PB210) = Chemical("PB210       ", 210,  0,  0,   0,  0 ) 
    end subroutine define_chemicals
- end module GenChemicals_ml
+ end module ChemChemicals_ml
  !-----------------------------------------------------------
 !>_________________________________________________________<
 
-  module  GenGroups_ml 
-!-----------------------------------------------------------   
+  module  ChemGroups_ml
+!-----------------------------------------------------------
 
-  use GenSpec_tot_ml  ! => species indices
+  use ChemSpecs_tot_ml  ! => species indices
   implicit none
   private
 ! Automate assignment of OXN species:
 
-! ------- Gas/particle species ------------------  
-  integer, public, parameter :: SIZE_OXNGROUP = 9  
+! ------- Gas/particle species ------------------
+  integer, public, parameter :: SIZE_OXNGROUP = 9
   integer, public, parameter, dimension(9) :: &
      OXNGROUP = (/ NO,NO2,PAN,MPAN,NO3,N2O5,HNO3,PNO3,ANO3 /)
 
-! ------- Dry dep      species ------------------   
-  integer, public, parameter :: SIZE_DDEP_OXNGROUP = 5  
-  integer, public, parameter, dimension(5) :: &
-     DDEP_OXNGROUP = (/ HNO3,NO2,PAN,MPAN,PNO3 /)
+! ------- Dry dep      species ------------------
+  integer, public, parameter :: SIZE_DDEP_OXNGROUP = 6
+  integer, public, parameter, dimension(6) :: &
+     DDEP_OXNGROUP = (/ HNO3,PAN,NO2,ANO3,MPAN,PNO3 /)
 
 
- end module GenGroups_ml
+ end module ChemGroups_ml
  !-----------------------------------------------------------
-
- module GenSpec_bgn_ml
+ module ChemSpecs_bgn_ml
 !-----------------------------------------------------------
 ! PRETTY MUCH FAKED FOR NOW. CAN BE DELETED SOON IN HOPE!
   use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
@@ -394,6 +390,4 @@
    real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
 
 !-----------------------------------------------------------
-  end module GenSpec_bgn_ml
-
-
+  end module ChemSpecs_bgn_ml

@@ -43,14 +43,14 @@
   use CheckStop_ml,          only :  CheckStop
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use Functions_ml,          only :  Tpot_2_T
-  use GenSpec_tot_ml,        only :  SO4,aNO3,pNO3
-  use GenSpec_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
-  use GenSpec_shl_ml,        only :  NSPEC_SHL
-  use GenSpec_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
+  use ChemSpecs_tot_ml,        only :  SO4,aNO3,pNO3
+  use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
+  use ChemSpecs_shl_ml,        only :  NSPEC_SHL
+  use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
 !DSGC  use MyChem_ml,             only :  Set_2dBgnd
-!DSGC  use GenRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
-  use GenRates_rct_ml,       only :  set_rct_rates, rct
-  use GenRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
+!DSGC  use ChemRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
+  use ChemRates_rct_ml,       only :  set_rct_rates, rct
+  use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, carea, &
                                      debug_proc, debug_li, debug_lj
   use LocalVariables_ml,     only :  Grid

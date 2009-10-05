@@ -43,10 +43,10 @@
 
  use My_DryDep_ml, only : NDRYDEP_ADV, Dep 
 
- use GenChemicals_ml, only : species       ! species identifier
- use GenSpec_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
- use GenSpec_adv_ml,  only : NSPEC_ADV     ! No. species (long-lived)
- use GenSpec_shl_ml,  only : NSPEC_SHL     ! No. species (shorshort-lived)
+ use ChemChemicals_ml, only : species       ! species identifier
+ use ChemSpecs_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
+ use ChemSpecs_adv_ml,  only : NSPEC_ADV     ! No. species (long-lived)
+ use ChemSpecs_shl_ml,  only : NSPEC_SHL     ! No. species (shorshort-lived)
  use Chemfields_ml ,  only : xn_adv        ! advective flag
  use GridValues_ml ,  only : carea,xmd     ! cell area, 1/xm2 where xm2 is 
                                            ! the area factor in the middle 
@@ -428,7 +428,7 @@ contains
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine DryDep_Budget(i,j,Loss,convfac)
-     !use GenSpec_adv_ml
+     !use ChemSpecs_adv_ml
 
       real, dimension(NSPEC_ADV), intent(in) :: Loss
       real, dimension(NSPEC_ADV)             :: DryLoss

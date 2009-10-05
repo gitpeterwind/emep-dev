@@ -52,11 +52,11 @@
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use Emissions_ml,      only: KEMISTOP    
-    use GenSpec_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
-    use GenSpec_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
-!dsx    use GenRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
-    use GenRates_rct_ml,   only: rct
-    use GenRates_rcmisc_ml,only: rcmisc  ! DSGC new
+    use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
+    use ChemSpecs_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
+!dsx    use ChemRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
+    use ChemRates_rct_ml,   only: rct
+    use ChemRates_rcmisc_ml,only: rcmisc  ! DSGC new
     use GridValues_ml,     only : GRIDWIDTH_M
     use Io_ml,             only : IO_LOG
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, DebugCell, MasterProc
@@ -213,7 +213,7 @@ contains
                 !if(k>=KCHEMTOP)then
 
                    !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-                   include 'My_FastReactions.inc'
+                   include 'CM_Reactions1.inc'
                    !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
                 !endif
@@ -227,7 +227,7 @@ contains
           ! Just before SO4, look after slower? species
 
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-           include 'My_SlowReactions.inc'
+           include 'CM_Reactions2.inc'
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
        end do ! ichem 

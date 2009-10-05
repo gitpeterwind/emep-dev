@@ -54,13 +54,14 @@ module Nest_ml
 
   !Peter May 2006
 
-!hfTD  use Dates_ml,       only : date   
+  use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
+  use OwnDataTypes_ml, only :Deriv 
   use TimeDate_ml,       only : date   
   use GridValues_ml,  only : gl,gb
-  use GenChemicals_ml , only :species
-  use GenSpec_shl_ml , only :NSPEC_SHL
-  use GenSpec_adv_ml , only :NSPEC_ADV
-  use GenSpec_tot_ml , only :NSPEC_TOT
+  use ChemChemicals_ml , only :species
+  use ChemSpecs_shl_ml , only :NSPEC_SHL
+  use ChemSpecs_adv_ml , only :NSPEC_ADV
+  use ChemSpecs_tot_ml , only :NSPEC_TOT
   use netcdf
   use netcdf_ml,      only : GetCDF,Out_netCDF,Init_new_netCDF,&
        secondssince1970,Int1,Int2,Int4,Real4,Real8
@@ -219,8 +220,6 @@ contains
 
   subroutine wrtxn(indate,WriteNow)
 
-    use Derived_ml, only :Deriv 
-    use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
     implicit none
 
     type(date), intent(in) :: indate      

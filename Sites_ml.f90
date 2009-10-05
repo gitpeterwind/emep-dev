@@ -51,11 +51,11 @@ use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom &
 use Io_ml,             only : check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
-use GenSpec_adv_ml
-use GenSpec_shl_ml,    only : NSPEC_SHL
-use GenGroups_ml,      only : OXNGROUP
-use GenChemicals_ml,   only : species               ! for species names
-use GenSpec_tot_ml,    only : SO4 &  ! for mol. wts.
+use ChemSpecs_adv_ml
+use ChemSpecs_shl_ml,    only : NSPEC_SHL
+use ChemGroups_ml,      only : OXNGROUP
+use ChemChemicals_ml,   only : species               ! for species names
+use ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PPM25, PPMCO &
                               ,SSfi, SSco  !SeaS
 use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations

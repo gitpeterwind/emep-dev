@@ -65,8 +65,8 @@ module Aqueous_ml
 
   use Derived_ml,    only : IOU_INST & ! Index: instantaneous values
                             ,d_2d      ! Contains Wet deposition fields
-  use GenChemicals_ml, only: species
-  use GenSpec_tot_ml, only: NSPEC_TOT, SO4
+  use ChemChemicals_ml, only: species
+  use ChemSpecs_tot_ml, only: NSPEC_TOT, SO4
   use GridValues_ml, only : gridwidth_m,xm2,xmd,carea
   use MassBudget_ml,     only : wdeploss
   use ModelConstants_ml, only: &

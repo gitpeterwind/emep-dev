@@ -41,7 +41,7 @@ module OrganicAerosol_ml
    !
    ! Dave Simpson, August 2001 
    !--------------------------------------------------------------------------
-   ! nb - we use all of GenSpec_tot_ml since different model versions
+   ! nb - we use all of ChemSpecs_tot_ml since different model versions
    !  will have different species names. This module is intended to
    !  insensitive to the actual names one day, so this should be
    !  revised .. one day   - ds.
@@ -50,8 +50,8 @@ module OrganicAerosol_ml
                                     K2 => KMAX_MID, K1 => KCHEMTOP
    use PhysicalConstants_ml, only : AVOG
    use Setup_1dfields_ml,    only : itemp, xn => xn_2d
-   use GenChemicals_ml,      only : species   ! for molwts
-   use GenSpec_tot_ml,  A1 => FIRST_SOA , A2 => LAST_SOA
+   use ChemChemicals_ml,      only : species   ! for molwts
+   use ChemSpecs_tot_ml,  A1 => FIRST_SOA , A2 => LAST_SOA
    implicit none
 
    !/-- subroutines

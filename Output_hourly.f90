@@ -50,9 +50,10 @@
 
    use CheckStop_ml,     only : CheckStop
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR,Deriv
-   use GenSpec_shl_ml ,  only : NSPEC_SHL        ! Maps indices
-   use GenChemicals_ml , only : species          ! Gives names
+   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR
+   use OwnDataTypes_ml,    only : Deriv
+   use ChemSpecs_shl_ml ,  only : NSPEC_SHL        ! Maps indices
+   use ChemChemicals_ml , only : species          ! Gives names
    use GridValues_ml,    only : i_fdom, j_fdom   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
 

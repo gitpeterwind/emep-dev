@@ -85,19 +85,17 @@
       P =   &
      RC_RN222(K) 
 
-     L = 1.0/(5.51614*24.0*3600.0)
+      L =  &
+     2.1e-6 
 
     xnew(RN222)=  max(0.0, ( xold(RN222) + dt2 * P)) /(1.0 + dt2*L )
 
 !-> PB210 
-!      P =   &
-!     2.1e-6 * xnew(RN222 ) 
-!
-!      L =  0.0 ! FAKE &
-!!     rcmisc(9,k) 
-!
-!    xnew(PB210)=  max(0.0, ( xold(PB210) + dt2 * P)) /(1.0 + dt2*L )
-!ORIG!-> Pb210
-      P = 1.0/(5.51614*24.0*3600.0) * xnew(Rn222)
-      ! L = 0.0
-      xnew(Pb210)=  max(0.0,  xold(Pb210) + dt2 * P)
+
+      P =   &
+     2.1e-6 * xnew(RN222 ) 
+
+      L =  &
+     rcmisc(9,k) 
+
+    xnew(PB210)=  max(0.0, ( xold(PB210) + dt2 * P)) /(1.0 + dt2*L )
