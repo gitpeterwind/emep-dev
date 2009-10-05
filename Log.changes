@@ -62,8 +62,10 @@ Plus:
 
 Status and ToDo
 -----------------
-I think that the GenChem-associated changes are basically done. The
-code still needs work to recover some outputs, notably AOT40, which were
+I think that the GenChem-associated changes are basically done (though of
+course I am sure changes will be needed!). 
+
+The code still needs work to recover some outputs, notably AOT40, which were
 omitted during the changes to Derived and My_Derived (rv3_2_13 onwards).
 All gas-phase and deposition outputs look fine, afaics.
 
