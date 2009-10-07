@@ -43,8 +43,8 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-  !   RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
-      RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
+     RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+  !    RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
   !    RUNDOMAIN = (/  1, 360, 1, 180 /)     ! FULL GLOBAL
   !  RUNDOMAIN = (/  1, 132, 1, 111 /)       ! EECCA, rep09
 
