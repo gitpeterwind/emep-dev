@@ -248,13 +248,13 @@ private
 ! VEGO3 outputs for AFstY and AOTX
 !To avoid many unwanted combinations of land and Y values we just give
 ! the name here and let the code interpret it later. 
-! *** to use format f3.1 or i3 for the Y  or X value for fluxes/AOT! ***
+! *** to use format f3.1 or i2 for the Y  or X value for fluxes/AOT! ***
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
      VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", "AFST_1.6_BF", &
                       "AFST_0.0_IAM_CR", "AFST_3.0_IAM_CR", "AFST_6.0_IAM_CR", &
-                      "AOT_30_DF", & ! Should not be allowed yet. No c_nveg defined
-                      "AOT_30_IAM_DF", & ! only iam allowed
+                      "AOT_30_IAM_DF", "AOT_40_IAM_DF",  & ! only iam allowed
+                      "AOT_30_IAM_CR",                  & ! only iam allowed
                       "AOT_40_IAM_CR", "AOT_40_IAM_WH" /) !NB -last not found. Could
                                                             !just be skipped, but kept
                                                             !to show behaviour
@@ -472,12 +472,12 @@ private
          txt2=name(isep2+1:)            ! IAM_CF or SNL
 
    
-         if(txt == "AFST" ) then
+         if( txt == "AFST" ) then
             read(txtnum,fmt="(f3.1)") Y
             if(txtnum == ".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
             Threshold = nint( 10*Y)   ! Store Y=1.6 as 16
             units = "mmole/m2"
-         else if(name(1:3) == "AOT" )  then
+         else if( txt == "AOT" )  then
             read(txtnum,fmt="(i2)") Threshold ! really X
             units = "ppb.h"
 !   if(DEBUG .and. MasterProc) then
