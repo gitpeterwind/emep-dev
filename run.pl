@@ -146,14 +146,13 @@ my $SEMEENA    = "mifasv";
 my $AGNES      = "nyiri";      
 my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";      
-
 my $USER        =  $DAVE;
 
 #my $METformat="felt";
 my $METformat="cdf";
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
-my $GRID = "EMEP"; "EECCA"; # or EMEP or GLOBAL
+my $GRID = "EMEP"; # "EECCA"; # or EMEP or GLOBAL
 our $DataDir;
 if ($STALLO){
     $HOMEROOT      = "/home";      
