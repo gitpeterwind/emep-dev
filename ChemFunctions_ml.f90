@@ -43,7 +43,7 @@ module ChemFunctions_ml
 !____________________________________________________________________
  use ModelConstants_ml,     only : K1  => KCHEMTOP, K2 => KMAX_MID
  use PhysicalConstants_ml,  only : AVOG, RGAS_J
- use Setup_1dfields_ml,     only : itemp, rh, x=> xn_2d
+ use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
  use ChemSpecs_tot_ml,        only : SO4,aNO3,aNH4
   implicit none
   private
@@ -52,6 +52,7 @@ module ChemFunctions_ml
   public :: troeInLog  ! When log(Fc) provided
   public ::  kaero
   public ::  RiemerN2O5
+  public ::  kmt3      ! For 3-body reactions, from Robert OCt 2009
 
 
 ! weighting factor for N2O5 hydrolysis
@@ -68,6 +69,19 @@ module ChemFunctions_ml
   !========================================
   contains
   !========================================
+
+  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  function kmt3(a1,c1,a3,c3,a4,c4,M) result (rckmt3)
+     real, intent(in)  :: a1,c1,a3,c3,a4,c4
+     real, dimension(size(tinv)), intent(in) :: m
+     real, dimension(size(tinv)) :: rckmt3
+     real, dimension(size(tinv)) :: k1, k3, k4
+       k1 = a1 * EXP(C1*TINV)
+       k3 = a3 * EXP(C3*TINV)
+       k4 = a4 * EXP(C4*TINV)
+       rckmt3 = k1 + (k3*amk)/(1.0+(k3*m)/k4)
+       !rckmt3 = k1 + (k3*M)/(1.0+(k3*M)/k4)
+  end function kmt3
 
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   elemental function troe(k0,kinf,Fc,M) result (rctroe)

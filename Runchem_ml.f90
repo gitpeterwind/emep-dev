@@ -156,7 +156,8 @@ subroutine runchem(numt)
 if ( DEBUG .and. debug_flag  ) then
     write(6,"(a,2i3,i5,9es10.2)") "DEBUG_RUNCHEM RCEMIS ", &
           current_date%day, current_date%hour, current_date%seconds, &
-          rcemis(QRCNO,20), rcemis(QRCHCHO,20), rcemis(QRCISOP,20), rcbio(BIO_ISOP,20)
+          rcemis(QRCNO,20), rcemis(QRCHCHO,20), rcbio(BIO_ISOP,20)
+!          rcemis(QRCNO,20), rcemis(QRCHCHO,20), rcemis(QRCISOP,20), rcbio(BIO_ISOP,20)
 end if
 !          !rcemis(QRCCO,20), AROM, rcemis(QRCPM25,20), rcemis(QRCEC_f_FFUEL,20)
 !

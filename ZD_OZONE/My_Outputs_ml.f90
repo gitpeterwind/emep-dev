@@ -45,14 +45,14 @@
 
   use CheckStop_ml,     only: CheckStop
 !dsx use Derived_ml,       only: f_2d, d_2d
-  use GenSpec_adv_ml
+  use ChemSpecs_adv_ml
 !AMVB 2009-07-06
 !  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
-  use GenSpec_shl_ml,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
-! use GenSpec_shl_ml,    only: IXSHL_OH,IXSHL_HO2
-  use GenChemicals_ml ,  only: species
+  use ChemSpecs_shl_ml,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
+! use ChemSpecs_shl_ml,    only: IXSHL_OH,IXSHL_HO2
+  use ChemChemicals_ml ,  only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
   use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
   use SmallUtils_ml,     only: find_index
@@ -79,7 +79,7 @@ integer, public, parameter :: &
 !GCTEST    ,NADV_SITE  =    6 &  !NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    1          & ! No. short-lived species
-    ,NXTRA_SITE =    3            ! No. Misc. met. params  ( e.g. T2, d_2d)
+    ,NXTRA_SITE =    8            ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
 !GCDS    SITE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO, IXADV_CH4, IXADV_C2H6 /) 
@@ -98,13 +98,17 @@ integer, public, parameter :: &
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        " /) 
+   SITE_XTRA=      (/ "hmix ", "th  ", "D2D ", "D2D", "D2D", "D2D", "D2D", "D2D"   /)
+!    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        " /) 
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA_CODE= (/ "hmix ", "th  ", "PS"/)  
+    SITE_XTRA_CODE= (/ "hmix ", "th  ", "PS", "COLUMN_CO", "COLUMN_C2H6", &
+              "COLUMN_HCHO", "COLUMN_CH4", "COLUMN_NO2" /)
+!    SITE_XTRA_CODE= (/ "hmix ", "th  ", "PS"/)  
    
    integer,           public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA_INDEX=  (/  0,    0,   0  /)
+   SITE_XTRA_INDEX=  (/  0,    0,   0,  0, 0, 0 , 0, 0 /)
+!    SITE_XTRA_INDEX=  (/  0,    0,   0  /)
 
 
 
@@ -135,8 +139,8 @@ integer, public, parameter :: &
     ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =     8                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
-    ,NXTRA_SONDE =    4                &   ! No. Misc. met. params  (now th)
-    ,N_NOy       =   10                    ! # of N species in NOy
+    ,NXTRA_SONDE =    4                    ! No. Misc. met. params  (now th)
+!Oct09    ,N_NOy       =   10                    ! # of N species in NOy
 
 !SEP09
    integer, public, parameter, dimension(NADV_SONDE) :: &
@@ -147,10 +151,10 @@ integer, public, parameter :: &
 !ORIG                    IXADV_SO4, IXADV_CH4, IXADV_C2H6 /)
 
 
-   integer, public, parameter, dimension(N_NOy) :: &
-     NOy_SPEC =  (/ IXADV_HNO3, IXADV_NO,  IXADV_NO2,  IXADV_PAN,    &
-                    IXADV_MPAN, IXADV_NO3, IXADV_N2O5, IXADV_ISONO3, &
-                    IXADV_ISNI, IXADV_ISNIR /)
+!GC   integer, public, parameter, dimension(N_NOy) :: &
+!GC     NOy_SPEC =  (/ IXADV_HNO3, IXADV_NO,  IXADV_NO2,  IXADV_PAN,    &
+!GC                    IXADV_MPAN, IXADV_NO3, IXADV_N2O5, IXADV_ISONO3, &
+!GC                    IXADV_ISNI, IXADV_ISNIR /)
 
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH /)

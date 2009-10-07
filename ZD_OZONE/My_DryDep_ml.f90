@@ -35,20 +35,20 @@ module My_DryDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- use GenChemicals_ml, only : species
+ use ChemChemicals_ml, only : species
  use CheckStop_ml,  only : CheckStop, StopAll
  use Derived_ml,    only : f_2d,   d_2d, IOU_INST
  use My_Derived_ml,  only : &
    nOutDDep, OutDDep, nOutVg, OutVg, nOutRG, OutRG &
-  ,nOutMET, OutMET, nOutFLUX, OutFLUX & !MAR2009
+  ,nOutMET, OutMET, nOutVEGO3, OutVEGO3 & !MAR2009
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
 !DSGC   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
- use GenChemicals_ml,    only : species 
- use GenSpec_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
- use GenSpec_shl_ml,     only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
- use GenGroups_ml,       only : DDEP_OXNGROUP  !DSGC
+ use ChemChemicals_ml,    only : species 
+ use ChemSpecs_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
+ use ChemSpecs_shl_ml,     only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
+ use ChemGroups_ml,       only : DDEP_OXNGROUP  !DSGC
  use LandDefs_ml,        only : LandDefs, LandType
  use Landuse_ml,         only : WheatGrowingSeason
  use LocalVariables_ml,  only : Grid  !=> izen  integer of zenith angle
@@ -72,16 +72,16 @@ module My_DryDep_ml    ! DryDep_ml
   ! DDEP_xx gives the index that will be used in the EMEP model
   ! WES_xx gives the index of the Wesely gas to which this corresponds
 
-  integer, private, save :: &
+!  integer, private, save :: &
 !    DDEP_SOX,   DDEP_OXN,   DDEP_RDN,  &
 !    D2_VddACC, D2_VddCOA, & !ECO08 addition
 !    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
 !    D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
 !    iam_medoak, iam_beech, iam_wheat, &   ! For Fluxes
-    D2_O3DF,    D2_O3WH, &
-    D2_EUAOT40WH, D2_EUAOT40DF, &
-    D2_UNAOT40WH, D2_UNAOT40DF, &
-    D2_MMAOT40WH
+!Oct09    D2_O3DF,    D2_O3WH, &
+!Oct09    D2_EUAOT40WH, D2_EUAOT40DF, &
+!Oct09    D2_UNAOT40WH, D2_UNAOT40DF, &
+!Oct09    D2_MMAOT40WH
 
 
   ! Here we define the minimum set of species which has different
@@ -141,10 +141,13 @@ module My_DryDep_ml    ! DryDep_ml
 
   ! depositions are calculated to the following landuse classes, where
   ! e.g. conif may include both temperate and Medit.
-   character(len=7), private, dimension(0:4), parameter :: &
-    DEP_RECEIVERS = (/ "Grid", "Conif", "Decid", "Crops", "Seminat" /)
+  ! *** Note *** Water_D is introduced for some NEU work, with direct deposition to
+  ! to the water surface. This is not to be used for IAM, since CCE want to have
+  ! deposition to the watershed, which means the grid in practice.
+   character(len=7), private, dimension(0:5), parameter :: &
+    DEP_RECEIVERS = (/ "Grid", "Conif", "Decid", "Crops", "Seminat", "Water_D" /)
    integer, private, parameter :: &
-    GRID_LC=0, CONIF=1, DECID=2, CROP=3, SEMINAT=4
+    GRID_LC=0, CONIF=1, DECID=2, CROP=3, SEMINAT=4, WATER_D=5
 
    logical, private, save :: first_call = .true.
 
@@ -164,31 +167,6 @@ contains
   subroutine Init_DepMap
    integer :: icheck, iadv, i, i2, n, ndep, nVg, nRG, nMET
 
-
-!DSGC   Dep(1) =  depmap( IXADV_HNO3 , CDEP_HNO3, -1.)
-!DSGC   Dep(2) =  depmap( IXADV_PAN,   CDEP_PAN, -1. ) 
-!DSGC   Dep(3) =  depmap( IXADV_NO2,   CDEP_NO2, -1. )
-!DSGC   Dep(4) =  depmap( IXADV_SO2,   CDEP_SO2, -1. )
-!DSGC   Dep(5) =  depmap( IXADV_SO4,   CDEP_FIN,  -1)
-!DSGC   Dep(6) =  depmap( IXADV_NH3,   CDEP_NH3, -1. )
-!DSGC   Dep(7) =  depmap( IXADV_aNH4,  CDEP_FIN,  -1) 
-!DSGC   Dep(8) =  depmap( IXADV_aNO3,  CDEP_FIN,  -1) 
-!DSGC   Dep(9) =  depmap( IXADV_O3   , CDEP_O3  , -1.)
-!DSGC   Dep(10) =  depmap( IXADV_H2O2 , CDEP_H2O2, -1.)
-!DSGC   Dep(11) =  depmap( IXADV_MPAN , CDEP_PAN , -1.)
-!DSGC   Dep(12) =  depmap( IXADV_HCHO , CDEP_HCHO, -1.)
-!DSGC   Dep(13) =  depmap( IXADV_CH3CHO,CDEP_ALD , -1.)
-!DSGC   Dep(14) =  depmap( IXADV_MAL   ,CDEP_ALD , -1.)
-!DSGC   Dep(15) =  depmap( IXADV_CH3O2H,CDEP_OP  , -1.)
-!DSGC   Dep(16) =  depmap( IXADV_C2H5OOH,CDEP_OP  , -1.)
-!DSGC   Dep(17) =  depmap( IXADV_pNO3,  CDEP_COA, -1.)
-!DSGC   Dep(18) =  depmap( IXADV_PPM25,  CDEP_FIN, -1. )
-!DSGC   Dep(19) =  depmap( IXADV_PPMco,  CDEP_COA, -1. )
-!DSGC   Dep(20) =  depmap( IXADV_SSfi,  CDEP_FIN, -1. )
-!DSGC   Dep(21) =  depmap( IXADV_SSco,  CDEP_COA, -1. )
-!DSGC   Dep(22) =  depmap( IXADV_Pb210,  CDEP_FIN, -1. )
-!DSGC
-
 !#######################  ECO08 new mappng  #######################
   do i = 1, NDRYDEP_ADV  ! 22
       iadv = Dep(i)%adv
@@ -201,6 +179,7 @@ contains
       DepAdv2Calc(iadv) = Dep(i)%calc
  end do
   
+!##################################################################
 ! We process the various combinations of gas-species and ecosystem:
 ! starting with DryDep, e.g. DDEP_SO2_m2CF
 
@@ -218,7 +197,8 @@ contains
     call CheckStop( OutDDep(ndep)%LC < 0, & !0=GRID
         "OutDDep-LC Error " // OutDDep(ndep)%name)
   end do
-     
+
+!##################################################################
   do nVg = 1, nOutVg
 
      icheck = OutVg(nVg)%LC  ! TMP DEBUG
@@ -239,6 +219,7 @@ contains
           "OutVg-f2d Error " // OutVg(nVg)%name)
   end do
 
+!##################################################################
  do nRG = 1, nOutRG
 
      if( OutRG(nRG)%txt == "Grid") then
@@ -258,14 +239,9 @@ contains
           "OutRG-f2d Error " // OutRG(nRG)%name)
   end do
 
-
+!##################################################################
  do nMET = 1, nOutMET
 
-     !if( OutMET(nMET)%txt == "Grid") then
-     !   OutMET(nMET)%LC = GRID_LC    ! zero
-     !else 
-     !   OutMET(nMET)%LC = find_index( OutMET(nMET)%txt, LandDefs(:)%code )
-     !end if
      OutMET(nMET)%f2d = find_index( OutMET(nMET)%name, f_2d(:)%name )
 
      if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTMET ", nMET, &
@@ -278,20 +254,19 @@ contains
           "OutMET-f2d Error " // OutMET(nMET)%name)
   end do
 
+!##################################################################
+  do n = 1, nOutVEGO3
 
-  do n = 1, nOutFLUX
+    OutVEGO3(n)%f2d  = find_index(OutVEGO3(n)%name ,f_2d(:)%name)
 
-    OutFLUX(n)%f2d  = find_index(OutFLUX(n)%name ,f_2d(:)%name)
-
-    if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTFLUX ", n, &
-       trim( OutFLUX(n)%name)," ",trim( OutFLUX(n)%txt),"=>"&
-          ,OutFLUX(n)%LC, OutFLUX(n)%f2d
-    call CheckStop( OutFLUX(n)%f2d < 1, &
-        "OutFLUX-f2d Error " // OutFLUX(n)%name)
-    call CheckStop( OutFLUX(n)%LC < 0, & !0=GRID
-        "OutFLUX-LC Error " // OutFLUX(n)%name)
+    if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTVEGO3 ", n, &
+       trim( OutVEGO3(n)%name)," ",trim( OutVEGO3(n)%txt),"=>"&
+          ,OutVEGO3(n)%LC, OutVEGO3(n)%f2d
+    call CheckStop( OutVEGO3(n)%f2d < 1, &
+        "OutVEGO3-f2d Error " // OutVEGO3(n)%name)
+    call CheckStop( OutVEGO3(n)%LC < 0, & !0=GRID
+        "OutVEGO3-LC Error " // OutVEGO3(n)%name)
   end do
-
 
 !#######################  NEW define indices here #######################
 
@@ -305,16 +280,16 @@ contains
 !D2_AFSTCR3 = find_index("D2_AFSTCR3",f_2d(:)%name)
 !D2_AFSTCR6 = find_index("D2_AFSTCR6",f_2d(:)%name)
 
-D2_O3DF    = find_index("D2_O3DF   ",f_2d(:)%name)
-D2_O3WH    = find_index("D2_O3WH   ",f_2d(:)%name)
+!Oct09D2_O3DF    = find_index("D2_O3DF   ",f_2d(:)%name)
+!Oct09D2_O3WH    = find_index("D2_O3WH   ",f_2d(:)%name)
 
-D2_EUAOT40WH    = find_index("D2_EUAOT40WH",f_2d(:)%name)
-D2_EUAOT40DF    = find_index("D2_EUAOT40DF",f_2d(:)%name)
+!Oct09D2_EUAOT40WH    = find_index("D2_EUAOT40WH",f_2d(:)%name)
+!Oct09D2_EUAOT40DF    = find_index("D2_EUAOT40DF",f_2d(:)%name)
 
-D2_UNAOT40WH    = find_index("D2_UNAOT40WH",f_2d(:)%name)
-D2_UNAOT40DF    = find_index("D2_UNAOT40DF",f_2d(:)%name)
+!Oct09D2_UNAOT40WH    = find_index("D2_UNAOT40WH",f_2d(:)%name)
+!Oct09D2_UNAOT40DF    = find_index("D2_UNAOT40DF",f_2d(:)%name)
 
-D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
+!Oct09D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
 
 !iam_wheat   = find_index("IAM_CR",LandDefs(:)%code)
 !iam_beech   = find_index("IAM_DF",LandDefs(:)%code)
@@ -336,13 +311,13 @@ D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
 !     end do
 !     call CheckStop( any(check_vals < 1) , "D2D CHECKVAL! " )
 !May 2009, only 7 hard-coded left:
-     call CheckStop( D2_O3DF < 1 , "D2_O3DF CHECKVAL! " )
-     call CheckStop( D2_O3WH < 1 , "D2_O3WH CHECKVAL! " )
-     call CheckStop( D2_EUAOT40WH < 1 , "D2_EUAOT40WH CHECKVAL! " )
-     call CheckStop( D2_EUAOT40DF < 1 , "D2_EUAOT40DF CHECKVAL! " )
-     call CheckStop( D2_UNAOT40WH < 1 , "D2_UNAOT40WH CHECKVAL! " )
-     call CheckStop( D2_UNAOT40DF < 1 , "D2_UNAOT40DF CHECKVAL! " )
-     call CheckStop( D2_MMAOT40WH < 1 , "D2_MMAOT40WH CHECKVAL! " )
+!Oct09     call CheckStop( D2_O3DF < 1 , "D2_O3DF CHECKVAL! " )
+!Oct09     call CheckStop( D2_O3WH < 1 , "D2_O3WH CHECKVAL! " )
+!Oct09     call CheckStop( D2_EUAOT40WH < 1 , "D2_EUAOT40WH CHECKVAL! " )
+!Oct09     call CheckStop( D2_EUAOT40DF < 1 , "D2_EUAOT40DF CHECKVAL! " )
+!Oct09     call CheckStop( D2_UNAOT40WH < 1 , "D2_UNAOT40WH CHECKVAL! " )
+!Oct09     call CheckStop( D2_UNAOT40DF < 1 , "D2_UNAOT40DF CHECKVAL! " )
+!Oct09     call CheckStop( D2_MMAOT40WH < 1 , "D2_MMAOT40WH CHECKVAL! " )
  
      if(MasterProc) write(6,*) "Init_DepMap D2D FINISHED"
 !     call CheckStop( icheck < 0 , "D2D STOPPER! " )
@@ -363,7 +338,8 @@ D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
      real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      real, dimension(:), intent(in) ::  coverage    ! dim (NLANDUSE), =fraction
      integer :: n, nadv, nadv2, ihh, idd, imm, iLC
-     real :: o3WH, o3DF   ! O3 over wheat, decid forest
+     !real :: o3WH, o3DF   ! O3 over wheat, decid forest
+     real :: veg_o3       ! O3 (ppb)  at canopy top, for  e.g. wheat, decid forest
      real :: Y            ! Threshold for flux
 
 
@@ -389,6 +365,7 @@ D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
      EcoArea(DECID)   = sum( coverage(:), LandType(:)%is_decid )
      EcoArea(CROP)    = sum( coverage(:), LandType(:)%is_crop  )
      EcoArea(SEMINAT) = sum( coverage(:), LandType(:)%is_seminat )
+     EcoArea(WATER_D) = sum( coverage(:), LandType(:)%is_water )
      EcoArea(GRID_LC)    = 1.0
 
      invEcoArea(:) = 0.0
@@ -454,6 +431,9 @@ D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
         else if ( RLC == SEMINAT ) then 
             Fflux = Fflux + Deploss(nadv) * &
                sum( fluxfrac(nadv,:), LandType(:)%is_seminat )
+        else if ( RLC == WATER_D ) then 
+            Fflux = Fflux + Deploss(nadv) * &
+               sum( fluxfrac(nadv,:), LandType(:)%is_water )
         else 
             Fflux = -1.0
         end if
@@ -478,27 +458,46 @@ D2_MMAOT40WH    = find_index("D2_MMAOT40WH",f_2d(:)%name)
      end do ! ndep
 
 ! Fluxes, AFstY 
+! o3WH = c_hvegppb(iam_wheat)* lossfrac
 
-do n = 1, nOutFLUX
-     iLC = OutFLUX(n)%LC
-     Y = 0.1 * OutFLUX(n)%index    ! Index stores threshold Y x 10
+do n = 1, nOutVEGO3
+     iLC = OutVEGO3(n)%LC
+     Y   = OutVEGO3(n)%index    ! Index stores threshold Y x 10, or X as X
+
+     if( OutVEGO3(n)%name(1:4) == "AFST")  then    !############### AFSTs ####
+        Y = 0.1 * Y ! Index stores threshold Y x 10
         if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-           write(6,"(a,2i3,f4.1,es12.3)") "DEBUG_YYY Fflux ", n, iLC, Y, leaf_flux(iLC)
+           write(6,"(a,2i3,f4.1,es12.3)") "DEBUG_YYY Fflux ", &
+                n, iLC, Y, leaf_flux(iLC)
         end if
-     d_2d( OutFLUX(n)%f2d ,i,j,IOU_INST) = fstfrac* max(leaf_flux(iLC)-Y,0.0)
-     
-end do ! FLUX
 
-!Beech:
-!     d_2d(D2_AFSTDF0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_beech)
-!     d_2d(D2_AFSTDF16,i,j,IOU_INST) = fstfrac* max(leaf_flux(iam_beech)-1.6,0.0)
-!!Med. Oak:
-!     d_2d(D2_AFSTBF0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_medoak)
-!     d_2d(D2_AFSTBF16,i,j,IOU_INST) = fstfrac* max(leaf_flux(iam_medoak)-1.6,0.0)
-!!Crops
-!     d_2d(D2_AFSTCR0,i,j,IOU_INST) =  fstfrac*leaf_flux(iam_wheat)
-!     d_2d(D2_AFSTCR3,i,j,IOU_INST) =  fstfrac*max(leaf_flux(iam_wheat)-3.0,0.0)
-!     d_2d(D2_AFSTCR6,i,j,IOU_INST) =  fstfrac*max(leaf_flux(iam_wheat)-6.0,0.0)
+       ! Add fluxes:
+        d_2d( OutVEGO3(n)%f2d ,i,j,IOU_INST) = fstfrac* max(leaf_flux(iLC)-Y,0.0)
+
+     else if( OutVEGO3(n)%name(1:3) == "AOT")  then !############## AOTs ####
+
+
+    !/-- Calcuates AOT values for specific veg. Daylight values calculated
+    !    only, for zenith < AOT_HORIZON ( e.g. 89 )
+
+        if ( Grid%izen < AOT_HORIZON ) then
+          veg_o3 = c_hvegppb(iLC)* lossfrac
+
+          d_2d( OutVEGO3(n)%f2d ,i,j,IOU_INST) = max(veg_o3-Y,0.0) * timefrac
+
+          if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
+            write(6,"(a,2i3,2f9.1,i4)") "DEBUG_AOT ", n, iLC, Y, veg_o3 &
+               ,WheatGrowingSeason(i,j)  ! NOT USED YET....!
+          end if
+        else
+          d_2d( OutVEGO3(n)%f2d ,i,j,IOU_INST) = 0.0
+        end if
+     else
+        call CheckStop("OUTVEG UNDEF")
+     end if
+     
+end do ! VEGO3
+
 !
    !--- ecosystem specific concentrations..
    ! - use Conif forest for forests - safer for growing seasons
@@ -509,37 +508,15 @@ end do ! FLUX
 
 
 ! EXCLUDED THE REST PENDING RE_WRITE OF AOTx system - will be similar to
-! the other "Out" variables, e.g OutFLUX
-!TMPDS     o3WH = c_hvegppb(iam_wheat)* lossfrac
-!TMPDS     o3DF = c_hvegppb(iam_beech)* lossfrac
-!TMPDS
-!TMPDS     d_2d(D2_O3DF,i,j,IOU_INST) =   o3DF
-!TMPDS     d_2d(D2_O3WH,i,j,IOU_INST) =   o3WH
+! the other "Out" variables, e.g OutVEGO3
 !TMPDS
 !TMPDS     if ( ihh >= 9 .and. ihh <= 21 ) then ! 8-20 CET, assuming summertime
-!TMPDS
-!TMPDS        d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
 !TMPDS        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
 !TMPDS     else
-!TMPDS        d_2d(D2_EUAOT40WH,i,j,IOU_INST) =  0.0
 !TMPDS        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  0.0
 !TMPDS     end if
 !TMPDS
-!TMPDS
-!TMPDS    !/-- Calcuates AOT values for specific veg. Daylight values calculated
-!TMPDS    !    only, for zenith < AOT_HORIZON ( e.g. 89 )
-!TMPDS
-!TMPDS
-!TMPDS           if ( Grid%izen < AOT_HORIZON ) then
-!TMPDS
-!TMPDS             d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  max(o3WH-40.0,0.0) * timefrac
-!TMPDS             d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
-!TMPDS
-!TMPDS           else
-!TMPDS             d_2d(D2_UNAOT40WH,i,j,IOU_INST) =  0.0
-!TMPDS             d_2d(D2_UNAOT40DF,i,j,IOU_INST) =  0.0
-!TMPDS           end if
-!TMPDS
+!????????????????????
 !TMPDS       ! MM AOT added (same as UNECE, but different growing season)
 !TMPDS             d_2d(D2_MMAOT40WH,i,j,IOU_INST) = d_2d(D2_UNAOT40WH,i,j,IOU_INST)&
 !TMPDS                     * WheatGrowingSeason(i,j)
@@ -562,15 +539,36 @@ end do ! FLUX
      integer, intent(in) :: i,j             ! coordinates
      real, dimension(:,0:), intent(in) :: VgLU  ! dim (NLANDUSE*nlu), 0=Grid
      integer :: n, nVg, cdep
+     logical :: my_first_call = .true.
+
+       if ( my_first_call ) then ! Some safety tests.
+         if( MasterProc ) then
+            do nVg = 1, nOutVg
+              if( OutVg(nVg)%Index < 1 ) then
+                call CheckStop( "ERROR: Unallocated OutVg Index "//OutVg(nVg)%name )
+              end if
+              cdep  =  DepAdv2Calc( OutVg(nVg)%Index ) ! Convert e.g. IXADV_O3
+  
+              if ( cdep < 1 ) then
+                print *, "ERROR: OutVg name", OutVg(nVg)%name
+                print *, "ERROR: Negative OutVg cdep", cdep, nVg, OutVg(nVg)%Index
+                print *, "ERROR: DEPADV2CALC had size", size(DepAdv2Calc)
+                do n = 1, size( DepAdv2Calc)
+                   print *, "DEPADVLIST ", n, DepAdv2Calc(n)
+                end do
+                do n = 1, size( OutVg(:)%Index )
+                   print *, "LIST ", n, OutVg(n)%Index
+                end do
+                call CheckStop( cdep  < 1 , "ERROR: Negative OutVg cdep")
+              end if
+            end do ! nVg
+         end if ! MasterProc
+         my_first_call = .false.
+       end if
 
        do nVg = 1, nOutVg
-         if( OutVg(nVg)%Index < 1 ) then
-            print *, "ERROR: OutVg Index ", nVg, OutVg(nVg)%name
-            call CheckStop( "ERROR: Unallocated OutVg Index ")
-         end if
-
          cdep  =  DepAdv2Calc( OutVg(nVg)%Index ) ! Convert e.g. IXADV_O3
-         call CheckStop( cdep  < 1 , "ERROR: Negative OutVg cdep")
+         !call CheckStop( cdep  < 1 , "ERROR: Negative OutVg cdep")
          d_2d( OutVg(nVg)%f2d,i,j,IOU_INST) = VgLU( cdep, OutVg(nVg)%LC ) 
 
          if( DEBUG_MY_DRYDEP .and. debug_flag ) then

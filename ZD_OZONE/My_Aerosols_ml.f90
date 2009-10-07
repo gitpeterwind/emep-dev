@@ -70,10 +70,10 @@ contains
  !..................................................................
 
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4, NO3
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4, NO3
  use Setup_1dfields_ml,  only :  temp, rh
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
- use GenChemicals_ml,    only :  species
+ use ChemChemicals_ml,    only :  species
  use PhysicalConstants_ml, only : AVOG
  use MARS_ml, only: rpmares
 
@@ -133,7 +133,7 @@ contains
 
  use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4,NO3
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4,NO3
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
@@ -232,7 +232,7 @@ contains
  use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d      ! SIA concentration 
  use Chemfields_ml,      only :  PM_water               !PMwater  
- use GenSpec_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG

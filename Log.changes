@@ -1,3 +1,24 @@
+================================ rv3_3beta3, Dave,  7  Oct. 2009======
+
+Derived_ml: AOTs restored, to some extent anyway.
+    AOTs and fluxes now treated in same VEGO3 methodology
+
+My_Derived_ml - lots of changes to get AOT, VEGO3 etc.
+
+My_DryDep_ml  - lots of changes to get AOT, VEGO3 etc.
+
+ChemFunctions_ml: kmt3 added 
+
+EmisGet - small extra debug output
+
+RunChem_ml - removed QRCISOP from printout line. Not is all CM versions now.
+
++fixed some forgotten commits from last-version (My_files weren't updated
+in ZD_OZONE)
+
+Many changes now marked with !Oct09 or !DSGC. The comments mess up the code
+and will be cleaned out in a revision ort two.
+
 ================================ rv3_3beta2, Dave,  5  Oct. 2009======
 
 GenChem enabled EMEP chemistries, almost done? 

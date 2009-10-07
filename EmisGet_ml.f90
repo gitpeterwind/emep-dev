@@ -548,8 +548,10 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                 ( defaults .and. iland /= 0                     )  .or.  &
                 ( defaults .and. isec  /= n                     )        &
                                                                 )   then
-               write(unit=errmsg,fmt=*) "ERROR: emisfrac:", idef, &
-                                    iland, isec, sumtmp
+               print * , "ERROR: emisfrac:" // trim(fname) // " "
+               print *, "ERROR: emisfrac:", idef,  iland, n, isec, sumtmp
+               write(unit=errmsg,fmt=*) &
+            "ERROR: emisfrac:"//trim(fname)//" ", idef, iland, n, isec, sumtmp
                call CheckStop( errmsg )
            end if
            if (  .not. defaults ) then

@@ -54,15 +54,15 @@ module My_Derived_ml
  
 use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
-use GenSpec_adv_ml        ! Use IXADV_ indices...
-use GenSpec_shl_ml        ! Use IXSHL_ indices...
-use GenSpec_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
+use ChemSpecs_adv_ml        ! Use IXADV_ indices...
+use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
+use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
                    !        ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
                    !       ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
-use GenGroups_ml,  only :  OXNGROUP, DDEP_OXNGROUP
-use GenChemicals_ml, only : species               !  For mol. wts.
-use GenSpec_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
-use LandDefs_ml,   only : LandDefs, Check_LandCoverPresent     ! e.g. "CF"
+use ChemGroups_ml,  only :  OXNGROUP, DDEP_OXNGROUP
+use ChemChemicals_ml, only : species               !  For mol. wts.
+use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+use LandDefs_ml,   only : LandDefs, LandType, Check_LandCoverPresent     ! e.g. "CF"
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , MasterProc  & 
@@ -149,7 +149,7 @@ private
 ! Tropospheric columns
    integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(27) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(17) :: &
   D2_SR = (/ &
 !
 !    Particles: sums
@@ -158,11 +158,11 @@ private
 !
 !    Ozone and AOTs
       ,"D2_MAXO3    " &
-      ,"D2_AOT40    ","D2_AOT60    " &  ! Exc AOT30 ( 7 versions)
-      ,"D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
-      ,"D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
-      ,"D2_UNAOT40WH","D2_UNAOT40DF" &! NB: do not remove without removing from My_DryDep too
-      ,"D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
+!Oct09      ,"D2_AOT40    ","D2_AOT60    " &  ! Exc AOT30 ( 7 versions)
+!Oct09      ,"D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
+!Oct09      ,"D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
+!Oct09      ,"D2_UNAOT40WH","D2_UNAOT40DF" &! NB: do not remove without removing from My_DryDep too
+!Oct09      ,"D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
       ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums 
@@ -206,7 +206,7 @@ private
 !  D2_SO2_m2Conif. 
 
 
-  integer, public, save :: nOutDDep, nOutVg, nOutFLUX 
+  integer, public, save :: nOutDDep, nOutVg, nOutVEGO3 
   integer, public, save :: nOutRG  ! RG = resistances and conductances
   integer, public, save :: nOutMET ! RG = resistances and conductances
 
@@ -221,8 +221,8 @@ private
            SO2,  SO4, NH3, aNH4, DDEP_OXNGROUP /)
 !DSGC NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      DDEP_ECOS  = (/ "Grid", "Conif", "Seminat" /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+      DDEP_ECOS  = (/ "Grid", "Conif", "Seminat", "Water_D" /)
 
     integer, public, parameter, dimension(7) :: &
       WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
@@ -245,18 +245,22 @@ private
     type(Dep_type), public, &
      dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
 
-!FLUX outputs for AFstY
+! VEGO3 outputs for AFstY and AOTX
 !To avoid many unwanted combinations of land and Y values we just give
 ! the name here and let the code interpret it later. 
-! *** to use format f3.1 for the Y value! ***
+! *** to use format f3.1 or i3 for the Y  or X value for fluxes/AOT! ***
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-     FLUX_OUTPUTS = (/ "AFST_1.6_IAM_DF", "AFST_1.6_BF", &
-                      "AFST_0.0_IAM_CR",  &
-                      "AFST_3.0_IAM_CR", "AFST_6.0_IAM_CR" /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
+     VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", "AFST_1.6_BF", &
+                      "AFST_0.0_IAM_CR", "AFST_3.0_IAM_CR", "AFST_6.0_IAM_CR", &
+                      "AOT_30_DF", & ! Should not be allowed yet. No c_nveg defined
+                      "AOT_30_IAM_DF", & ! only iam allowed
+                      "AOT_40_IAM_CR", "AOT_40_IAM_WH" /) !NB -last not found. Could
+                                                            !just be skipped, but kept
+                                                            !to show behaviour
 
     type(Dep_type), public, &
-     dimension( size(FLUX_OUTPUTS) ),  save :: OutFLUX
+     dimension( size(VEGO3_OUTPUTS) ),  save :: OutVEGO3
 
 ! For resistances and conductances we normally want the same landuse
 ! outputs, so we use a combined variable:
@@ -314,11 +318,14 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 
-    integer :: i, ilab, nDD, nVg, nRG, nMET, nFLUX, iLC, i10Y, &
-      iadv, ispec, ind, atw
+    integer :: i, ilab, nDD, nVg, nRG, nMET, nVEGO3, iLC, &
+      iadv, ispec, atw
+    integer :: isep1, isep2  ! location of seperators in sting
+    character(len=500) :: bigname ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
-    character(len=TXTLEN_DERIV) :: txt, units, txtnum
-    real :: Y    ! threshold for AFSTY
+    character(len=TXTLEN_DERIV) :: txt, txt2, units, txtnum
+    real    :: Y           ! threshold for AFSTY, also used as X in AOT40X
+    integer :: Threshold   ! threshold for AFSTY
     character(len=TXTLEN_DERIV), &
       dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
 
@@ -328,8 +335,6 @@ private
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING)
 
 !ds May 2009, added surf concs in various units (e.g. ugS/m3 or ppb):
-!ALL_SURF_UGTXT ALL_SURF_ATW
-!ALL_SURF_UG( SURF_UG_S ) = "SURF_UG_
     
      call AddArray( "SURF_ugS_"//species(SURF_UG_S)%name ,  wanted_deriv2d, NOT_SET_STRING)
      call AddArray( "SURF_ugN_"//species(SURF_UG_N)%name ,  wanted_deriv2d, NOT_SET_STRING)
@@ -404,7 +409,7 @@ private
         ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
         !            x     d      d    d   a10    a10   a10     f    i    a10
              OutDDep(nDD) = Dep_type(  &
-              name, -99, ind, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
+              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
            if(DEBUG .and. MasterProc) call print_dep_type( OutDDep(nDD) )
         end do ! DDEP_SPECS
      end do ! DDEP_ECOS
@@ -451,43 +456,65 @@ private
 
      call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING)
 
-      !------------- FLUX stuff ----------------------------------------------
-      ! For fluxes we start with a formatted name, eg. AFST_3.0_CF and
+      !------------- VEGO3 stuff ----------------------------------------------
+      ! For fluxes or AOTs we start with a formatted name, eg. AFST_3.0_CF and
       !untangle it to get threshold Y (=3.0) and landcover type
 
-      nFLUX = 0
-      FLUX_LC: do n = 1, size(FLUX_OUTPUTS) 
+      nVEGO3 = 0
+      VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS) 
   
-         name = FLUX_OUTPUTS(n)
-         write(unit=txt,fmt="(a4)") name(1:4)    ! Should be AFST
-         write(unit=txtnum,fmt="(a3)") name(6:8)
-         read(txtnum,fmt="(f3.1)") Y
-         write(unit=txt,fmt="(a)") name(10:) ! Gets LC, e.g. CF or IAM_CR
+         name = VEGO3_OUTPUTS(n)
+         isep1 = scan(name,"_")                       ! AFST or AOT
+         isep2 = isep1 + scan(name(isep1+1:),"_")   ! 1.6 or 40
+         !isep3 = isep2 + scan(name(isep2+1:),"_")   ! IAM_CF or SNL
+         txt =name(1:isep1-1)           ! AFST or AOT
+         txtnum=name(isep1+1:isep2-1)     ! 1.6 or 40
+         txt2=name(isep2+1:)            ! IAM_CF or SNL
+
+   
+         if(txt == "AFST" ) then
+            read(txtnum,fmt="(f3.1)") Y
+            if(txtnum == ".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
+            Threshold = nint( 10*Y)   ! Store Y=1.6 as 16
+            units = "mmole/m2"
+         else if(name(1:3) == "AOT" )  then
+            read(txtnum,fmt="(i2)") Threshold ! really X
+            units = "ppb.h"
+!   if(DEBUG .and. MasterProc) then
+!         print *, "txt:", trim(txt)
+!         print *, "txtnum:", trim(txtnum)
+!         print *, "txt2:", trim(txt2)
+!         print *, "Y:", Y, Threshold
+!         print *, "units:", trim(units)
+!   end if
+!call CheckStop("NAMED")
+         end if
   
 
           !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "FLUX_LCS", txt, .true. )
-          if(DEBUG .and. MasterProc)  write(*,*) "FLUX ", trim(name), &
-               "=> Y", trim(txtnum), " iLC, LC ", iLC, trim(txt)
-          if ( iLC < 0 ) cycle  FLUX_LC
+          iLC = Check_LandCoverPresent( "VEGO3_LCS", txt2, .true. )
+          if(DEBUG .and. MasterProc)  write(*,*) "VEGO3 ", trim(name), &
+               "=> Y", trim(txtnum), " iLC, LC ", iLC, trim(txt2)
+          if ( iLC < 0 ) cycle  VEGO3_LC
+          if ( iLC > 0 .and. .not. LandType(iLC)%is_iam ) cycle  VEGO3_LC
           !-------------End of Check if LC present in this array ------!
-          nFLUX = nFLUX + 1
+          nVEGO3 = nVEGO3 + 1
 
-          if(txtnum(2:3)==".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
-          write(unit=name,fmt="(a,a,a,a)") "AFST", trim(txtnum),"_",trim(txt)
-          i10Y = nint( 10*Y)
+          write(unit=bigname,fmt="(a,a,a,a)") trim(txt), trim(txtnum),"_",trim(txt2)
+          write(unit=name,fmt="(a)") trim(txt)// trim(txtnum)//"_"//trim(txt2)
 
  ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
  !            x     d      d    d   a10    a10   a10     f    i    a10
-           OutFLUX(nFLUX) = Dep_type(  &
-             name, iLC, i10Y, -99,"Mosaic", "AFST" , txt,&
-                                             1.0, -99,  "mmole/m2") 
+           OutVEGO3(nVEGO3) = Dep_type(  &
+             name, iLC, Threshold, -99,"Mosaic", txt , txt2,&
+                                             1.0, -99,  units ) 
 
-          if(DEBUG .and. MasterProc) call print_dep_type(OutFLUX(nFLUX))
-      end do FLUX_LC !n
-      nOutFLUX = nFLUX
+          if(DEBUG .and. MasterProc) call print_dep_type(OutVEGO3(nVEGO3))
+      end do VEGO3_LC !n
+      nOutVEGO3 = nVEGO3
+          if(DEBUG .and. MasterProc)  print *, "VEGO3 FINAL NUM ", nVEGO3
 
-     call AddArray( OutFLUX(:)%name, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( OutVEGO3(1:nVEGO3)%name, wanted_deriv2d, NOT_SET_STRING)
 
 
       !------------- Surface resistance for d_2d -------------------------

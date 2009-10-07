@@ -33,8 +33,8 @@ module My_WetDep_ml
  use SmallUtils_ml,  only : find_index
 
 
-  use GenSpec_tot_ml          ! SO2, SO4, etc.
-  use GenSpec_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
+  use ChemSpecs_tot_ml          ! SO2, SO4, etc.
+  use ChemSpecs_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
   implicit none
   private
 

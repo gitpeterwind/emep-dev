@@ -34,9 +34,9 @@
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
- use GenChemicals_ml, only : species
- use GenSpec_adv_ml    ! to get indices
- use GenSpec_tot_ml    ! to get indices
+ use ChemChemicals_ml, only : species
+ use ChemSpecs_adv_ml    ! to get indices
+ use ChemSpecs_tot_ml    ! to get indices
 implicit none
 
    !-----------------  "my" emissions choices    ---------------------------!

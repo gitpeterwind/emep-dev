@@ -66,7 +66,7 @@ use My_Derived_ml, only : &
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
       nOutDDEP, OutDDep, nOutVg, OutVg, nOutRG, OutRG, nOutMET, OutMET, &
-      nOutFLUX, OutFLUX, &
+      nOutVEGO3, OutVEGO3, &
       COLUMN_MOLEC_CM2, &  !ds added May 2009
       SURF_UG_S, &  !ds added May 2009
       SURF_UG_N, &  !ds added May 2009
@@ -378,11 +378,12 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
                     F  , F  ,T ,T ,T , OutMET(n)%name,OutMET(n)%units)
   end do
 !-------------------------------------------------------------------------------
-  do n = 1, nOutFLUX ! NB Adv not used
+!VEGO3 for AFstY and AOTX
+  do n = 1, nOutVEGO3 ! NB Adv not used
                  !code            avg?       ind             scale 
                  !  rho Inst Yr Mn Day  Units
-    call AddDef(OutFLUX(n)%class, F,OutFLUX(n)%Index,OutFLUX(n)%scale,&
-                    F  , F  ,T ,T ,T , OutFLUX(n)%name,OutFLUX(n)%units)
+    call AddDef(OutVEGO3(n)%class, F,OutVEGO3(n)%Index,OutVEGO3(n)%scale,&
+                    F  , F  ,T ,T ,T , OutVEGO3(n)%name,OutVEGO3(n)%units)
   end do
 !-------------------------------------------------------------------------------
 !-- 2-D fields - the complex ones
@@ -390,12 +391,13 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
 
-call AddDef( "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")
-call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
-call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
-call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
-call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")
-call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
+!Oct09
+!call AddDef( "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")
+!call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
+!call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
+!call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
+!call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")
+!call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40c","ppb h")
 !
 !-------------------------------------------------------------------------------
 !-- Tropospheric columns
@@ -483,16 +485,16 @@ call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")
 !
 ! Also, use field for EU definition (8-20 CET) and Mapping Manual/UNECE
 ! (daylight hours). 
-! All of these use O3 at crop height, in contrast to the older AOT30, AOT40
-! as defined above, and all allow daily output.
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40DF","ppb h")
-! UNECE:
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40WH","ppb h")
-!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40DF","ppb h")
-!Mapping-Manual
-call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")
+!Oct09! All of these use O3 at crop height, in contrast to the older AOT30, AOT40
+!Oct09! as defined above, and all allow daily output.
+!Oct09call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")
+!Oct09call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40DF","ppb h")
+!Oct09! UNECE:
+!Oct09call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40WH","ppb h")
+!Oct09!call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT30DF","ppb h")
+!Oct09call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_UNAOT40DF","ppb h")
+!Oct09!Mapping-Manual
+!Oct09call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_MMAOT40WH","ppb h")
 !
 ! --  time-averages - here 8-16
 !
@@ -826,27 +828,28 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
             call aot_calc( n, timefrac )
 
-           if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
+           !if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
+           if( debug_flag ) then
               write(*,*) "GROWINDERIV? ", n, f_2d(n)%name
            end if
 
-            if(     current_date%month<startmonth_forest&
-                 .or.current_date%month>endmonth_forest)then
-               if( f_2d(n)%name=="D2_AOT30f".or.& 
-                   f_2d(n)%name=="D2_AOT40f".or.&
-                   f_2d(n)%name=="D2_AOT60f")then
-                   accumulate_2dyear=.false.
-               endif
-
-            endif
-            if(     current_date%month<startmonth_crops&
-               .or.current_date%month>endmonth_crops)then
-               if( f_2d(n)%name=="D2_AOT30c".or.&
-                   f_2d(n)%name=="D2_AOT40c".or.&
-                   f_2d(n)%name=="D2_AOT60c")then
-                   accumulate_2dyear=.false.
-               endif
-            endif
+!Oct09            if(     current_date%month<startmonth_forest&
+!Oct09                 .or.current_date%month>endmonth_forest)then
+!Oct09               if( f_2d(n)%name=="D2_AOT30f".or.& 
+!Oct09                   f_2d(n)%name=="D2_AOT40f".or.&
+!Oct09                   f_2d(n)%name=="D2_AOT60f")then
+!Oct09                   accumulate_2dyear=.false.
+!Oct09               endif
+!Oct09
+!Oct09            endif
+!Oct09            if(     current_date%month<startmonth_crops&
+!Oct09               .or.current_date%month>endmonth_crops)then
+!Oct09               if( f_2d(n)%name=="D2_AOT30c".or.&
+!Oct09                   f_2d(n)%name=="D2_AOT40c".or.&
+!Oct09                   f_2d(n)%name=="D2_AOT60c")then
+!Oct09                   accumulate_2dyear=.false.
+!Oct09               endif
+!Oct09            endif
 
            case( "SOM" )
 
@@ -897,10 +900,12 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 !                   z_bnd(i,j,k)-z_bnd(i,j,k+1), xn_adv(index,i,j,k),tmpwork(i,j)
                end do ! k
                d_2d( n, i, j, IOU_INST) = MFAC * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
-            if ( debug_flag ) write(*,"(a18,es12.3)")&
-                "COLUMN d2_2d", d_2d( n, i, j, IOU_INST)
+
+        
             end do !i
             end do !j
+            if( debug_flag ) &
+                write(*,"(a18,es12.3)") "COLUMN d2_2d", d_2d( n, debug_li, debug_lj, IOU_INST)
 
 
           case ( "EXT" )
@@ -915,6 +920,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           case  default
 
             if ( debug_flag ) then
+               if( debug_flag .and. i == debug_li .and. j == debug_lj ) &
                  write(*,"(a,i3,4a)") "My_Deriv Defaults called n=",&
                     n, " Type ",trim(typ), " Name ", trim( f_2d(n)%name )
 
