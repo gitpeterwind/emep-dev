@@ -83,7 +83,6 @@ module Ammonium_ml
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  subroutine ammonium()
-    integer :: i,j ! for print-out only
 
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
                                                       !was :  miscrc(ICRCNH3,k)

@@ -1646,8 +1646,9 @@ real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
 real ::maxlon,minlon,maxlat,minlat
 logical ::fileneeded
 character(len = 20) :: interpol_used
-  integer, parameter ::NLU_EMEP=20,NLU_TERRAIN=25
-  real :: convT_E(NLU_TERRAIN,NLU_EMEP),tot
+!NOT_USED  integer, parameter ::NLU_EMEP=20,NLU_TERRAIN=25
+!NOT_USED  real :: convT_E(NLU_TERRAIN,NLU_EMEP)
+real :: tot
 type(Deriv) :: def1 ! definition of fields
 
 integer :: npft,name_size,NLANDUSE_grid

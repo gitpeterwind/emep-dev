@@ -77,7 +77,6 @@ contains
  subroutine phyche(numt)
    integer, intent(in) ::  numt
 
-   integer ::  i,j,k,n
    logical, parameter :: DEBUG = .false.
    logical, save :: End_of_Day = .false.
 

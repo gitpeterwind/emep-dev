@@ -42,7 +42,6 @@ program myeul
        tim_before,tim_before0,tim_before1, &
        tim_after,tim_after0
   use My_WetDep_ml,     only : Init_WetDep
-!DSGC  use MyChem_ml,        only : Init_mychem   
 
   use Advection_ml,     only : vgrid,adv_var, assign_nmax,assign_dtadvec
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
@@ -129,8 +128,8 @@ program myeul
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
   logical, parameter :: DEBUG_UNI = .false. 
-  integer n, numt, nadd, oldseason,newseason
-  integer iupw, i, j, ii, k, iotyp, d
+  integer numt, nadd, oldseason,newseason
+  integer i, iotyp
   integer :: mm, mm_old   ! month and old-month
   integer :: nproc_mpi,cyclicgrid
   character (len=130) :: fileName, errmsg,txt
@@ -237,7 +236,8 @@ program myeul
 
   call Add_2timing(3,tim_after,tim_before,"After infield")
 
-  if ( me == 0 .and. DEBUG_UNI) write(6,*)"Calling emissions with year" ,current_date%year
+  if ( me == 0 .and. DEBUG_UNI) write(6,*)"Calling emissions with year" ,&
+          current_date%year
 
   call Emissions(current_date%year)
 
@@ -266,7 +266,7 @@ program myeul
   !   (read input files "sites.dat" and "sondes.dat" )
 
   call vgrid    !  initialisation of constants used in vertical advection
-  if ( me == 0 .and. DEBUG_UNI) write(6,*)"vgrid fifniseh" 
+  if ( me == 0 .and. DEBUG_UNI) write(6,*)"vgrid finish" 
 
   if ( me == 0 ) then
      fileName=trim(runlabel1)//'_inst.nc'

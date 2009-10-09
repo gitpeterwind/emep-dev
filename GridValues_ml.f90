@@ -400,7 +400,7 @@ contains
     integer i,j
 !GFORTRAN    real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin,im,jm,i0,j0,i1,j1
     real :: dr,om,om2,rb,rl,rp,dx,dy,dy2,glmax,glmin
-    integer :: im,jm,i0,j0,i1,j1
+    integer :: im,jm,i0,j0
 
   if(trim(projection)=='Stereographic') then     
 

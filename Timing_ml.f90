@@ -69,8 +69,7 @@
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine Init_timing()
 
-      integer :: iclktck,iclksec,ierr
-
+!SYS      integer :: iclktck,iclksec,ierr
 !SYS  call system_clock(iclktck,iclksec)   ! SYS
 !SYS  rclksec = 1./float(iclksec)          ! SYS
 

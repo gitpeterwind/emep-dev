@@ -120,7 +120,7 @@ character(len=20), private, save, &
 character(len=20), private, save, &
            dimension (NADV_SONDE+NSHL_SONDE+NXTRA_SONDE) :: sonde_species
 
-character(len=40), private :: errmsg ! Message text
+character(len=70), private :: errmsg ! Message text
 integer, private :: d                 ! processor index
 integer, private :: i, n, nloc, ioerr ! general integers
 
@@ -236,7 +236,7 @@ contains
 
   character(len=20), dimension(4) :: Headers
   type(KeyVal), dimension(20)     :: KeyValues ! Info on units, coords, etc.
-  integer                         :: NHeaders, NKeys, Nlines
+  integer                         :: NHeaders, NKeys
   character(len=80)               :: txtinput  ! Big enough to contain
                                                ! one full input record
 
@@ -392,7 +392,7 @@ end subroutine Init_sites
   real, dimension(NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID), intent(in) :: xn_shl
 
   ! Local
-  integer :: nglob, nloc, ix, iy,iz, ispec    ! Site indices
+  integer :: ix, iy,iz, ispec                 ! Site indices
   integer :: nn                               ! species index
   logical, save :: my_first_call = .true.     ! for debugging
   integer           :: d2index                ! index for d_2d field access
@@ -465,7 +465,7 @@ end subroutine Init_sites
 
   ! collect data into gout on me=0 t
 
-  call siteswrt_out("sites",IO_SITES,NOUT_SITE,NSITES_MAX, FREQ_SITE, &
+  call siteswrt_out("sites",IO_SITES,NOUT_SITE, FREQ_SITE, &
                      nglobal_sites,nlocal_sites, &
                      site_gindex,site_name,site_gx,site_gy,site_gz,&
                      site_species,out)
@@ -620,7 +620,7 @@ end subroutine siteswrt_surf
 
   ! collect data into gout on me=0 t
 
-  call siteswrt_out("sondes",IO_SONDES,NOUT_SONDE,NSONDES_MAX, FREQ_SONDE, &
+  call siteswrt_out("sondes",IO_SONDES,NOUT_SONDE, FREQ_SONDE, &
                      nglobal_sondes,nlocal_sondes, &
                      sonde_gindex,sonde_name,sonde_gx,sonde_gy,sonde_gy, &
                      sonde_species,out)
@@ -629,7 +629,7 @@ end subroutine siteswrt_sondes
 
 
 !==================================================================== >
-  subroutine siteswrt_out(fname,io_num,nout,nsites,f,nglobal,nlocal, &
+  subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
                           s_gindex,s_name,s_gx,s_gy,s_gz,s_species,out)
 
   ! -------------------------------------------------------------------
@@ -637,7 +637,7 @@ end subroutine siteswrt_sondes
   ! -------------------------------------------------------------------
 
   character(len=*), intent(in) :: fname
-  integer, intent(in) :: io_num, nout, nsites
+  integer, intent(in) :: io_num, nout
   integer, intent(in) :: f               ! Frequency of write-out (hours)
   integer, intent(in) :: nglobal, nlocal
   integer, intent(in), dimension (0:,:) :: s_gindex  ! index, starts at me=0
@@ -648,7 +648,7 @@ end subroutine siteswrt_sondes
 
   ! Local
   real,dimension(nout,nglobal) :: g_out ! for output, collected
-  integer :: nglob, nloc, ix, iy        ! Site indices
+  integer :: nglob, nloc        ! Site indices
   character(len=40)  :: outfile
   character(len=4)   :: suffix
   integer, parameter :: NTYPES = 2      ! No. types, now 2 (sites, sondes)

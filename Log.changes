@@ -1,3 +1,21 @@
+================================ rv3_3beta4, Dave,  9  Oct. 2009======
+
+Changes to ease compilation with gfortran, and execution on PC.
+
+Derived_ml.f90 :  f_3d -associated code changed to make it easier to skip 
+                  this. Needed for PC runs (at least on my PC):
+
+                  Some unused arguments removed also from functions
+
+
+Also some unused variables (spotted by pedantic gfortran option) removed
+   Timing_ml, Unimod.f90, Ammonium_ml, GridValues_ml, NetCDF_ml, PhyChem_ml,
+   Sites_ml
+
+
+Note that in Solver_ml, EXTRA_ITER is set to 3, not 1. This is for safety while
+testing different chemical schemes, and can hopefully be reduced back to 1 soon.
+
 ================================ rv3_3beta3, Dave,  7  Oct. 2009======
 
 Derived_ml: AOTs restored, to some extent anyway.

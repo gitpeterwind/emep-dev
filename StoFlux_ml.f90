@@ -108,7 +108,7 @@ contains
     real, intent(in) :: Vg_ref
     logical, intent(in) :: debug_flag
 
-    real :: loss,sto_frac
+    real :: loss   !SKIP ,sto_frac
     real :: Ra_diff,tmp_gsun
     integer :: i,j
 

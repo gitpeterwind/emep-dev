@@ -299,14 +299,13 @@ private
     real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
     real, save    :: ugCm3 = 12*PPBINV/ATWAIR
     real, save    :: ugXm3 = PPBINV/ATWAIR
-    real, save    :: cm_s = 100.0   ! From m/s to cm/s, for Vg
 
-    character(len=20) :: dname
+    character(len=30) :: dname
 
 
   ! - for debug  - now not affecting ModelConstants version
-   integer, dimension(MAXLIMAX) :: i_fdom
-   integer, dimension(MAXLJMAX) :: j_fdom
+  ! integer, dimension(MAXLIMAX) :: i_fdom
+  ! integer, dimension(MAXLJMAX) :: j_fdom
    integer :: ind, ind2, ixadv, idebug, n
 
   ! - And to check if a wanted field has been previously defined.
@@ -612,8 +611,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
     !/ ** if voc wanted, set up voc_array. Works for all ozone chemistries
     !     (and code not called for MADE-type).
 
-      if ( any(  f_2d(:)%class == "VOC" ) .or. &
-           any(  f_3d(:)%class == "VOC" )  ) then
+      if ( any(  f_2d(:)%class == "VOC" ) ) then !TMP .or. &
+!TMP           any(  f_3d(:)%class == "VOC" )  ) then
             call Setup_VOC()
             if (DEBUG  .and. MasterProc )then
                write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
@@ -641,7 +640,6 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       real :: timefrac                       ! dt as fraction of hour (3600/dt)
       real :: dayfrac              ! fraction of day elapsed (in middle of dt)
       integer :: ntime                       ! 1...NTDAYS
-      integer :: nhour                       ! hours of day (GMT) 
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
       real, dimension(MAXLIMAX,MAXLJMAX) :: tmpwork 
@@ -930,7 +928,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                  write(*,*) "My_Deriv index?, avg ", f_2d(n)%avg
              end if 
 
-             call My_DerivFunc( d_2d(n,:,:,IOU_INST), n, typ, timefrac, density ) 
+             call My_DerivFunc( d_2d(n,:,:,IOU_INST), typ, density ) 
 
         end select
 
@@ -1123,6 +1121,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
 
+      if ( num_deriv3d < 1 ) print *, "DerivedProds "//text, num_deriv3d
+      if ( num_deriv3d < 1 ) return
       if (.not. any( f_3d%class == "PROD" ) ) return
 
       timefrac = dt/3600.0
@@ -1165,7 +1165,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
        end if 
 
 
-       if ( period <= LENOUT3D ) then
+       if ( num_deriv3d > 0 .and.  period <= LENOUT3D ) then
            nav_3d    (:,period) = 0.0
            d_3d(:,:,:,:,period) = 0.0
        end if

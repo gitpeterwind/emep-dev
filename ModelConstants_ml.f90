@@ -43,18 +43,18 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
  !                    x0   x1  y0   y1
-     RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
+    RUNDOMAIN = (/  36, 167, 12, 122 /)     ! EMEP domain
   !    RUNDOMAIN = (/  56, 147, 12, 102 /)     ! EGU
   !    RUNDOMAIN = (/  1, 360, 1, 180 /)     ! FULL GLOBAL
   !  RUNDOMAIN = (/  1, 132, 1, 111 /)       ! EECCA, rep09
 
-    ! RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
+   !  RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
   integer, public, parameter ::  &
-    NPROCX      =   3       & ! Actual number of processors in longitude
-  , NPROCY      =   2       & ! .. in latitude. Must be 2 for GLOBAL!!!
+    NPROCX      =   8       & ! Actual number of processors in longitude
+  , NPROCY      =   8       & ! .. in latitude. Must be 2 for GLOBAL!!!
   , NPROC       = NPROCX * NPROCY
 
   ! ds Jan2009
