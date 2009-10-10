@@ -1,3 +1,14 @@
+=========================== rv3_3beta5, Garry/Dave,  9  Oct. 2009======
+
+Changes from Garry to enable g95 compilation - mainly needing lengths
+of strings in initialisations to be the same.
+
+My_DryDep_ml
+My_Outputs_ml
+My_Derived_ml
+
+I also made some minor tidy-ups in My_Derived_ml
+
 ================================ rv3_3beta4, Dave,  9  Oct. 2009======
 
 Changes to ease compilation with gfortran, and execution on PC.

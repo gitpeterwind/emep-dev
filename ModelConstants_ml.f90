@@ -54,7 +54,7 @@ module ModelConstants_ml
 
   integer, public, parameter ::  &
     NPROCX      =   8       & ! Actual number of processors in longitude
-  , NPROCY      =   8       & ! .. in latitude. Must be 2 for GLOBAL!!!
+  , NPROCY      =   4       & ! .. in latitude. Must be 2 for GLOBAL!!!
   , NPROC       = NPROCX * NPROCY
 
   ! ds Jan2009

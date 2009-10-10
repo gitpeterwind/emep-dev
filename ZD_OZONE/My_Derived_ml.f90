@@ -183,12 +183,10 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
   D2_EXTRA = (/ &
        "D2_VOC      "&
-      ,"WDEP_SO2","WDEP_SO4","WDEP_HNO3","WDEP_aNO3", "WDEP_pNO3" & 
-      ,"WDEP_NH3", "WDEP_aNH4" & 
-      ,"D2_REDN     ","D2_SNOW","D2_SNratio" &
-      ,"D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 ","USTAR_NWP" & !DSFEB09
+      ,"WDEP_SO2    ","WDEP_SO4    ","WDEP_HNO3   ","WDEP_aNO3   ","WDEP_pNO3   " & 
+      ,"WDEP_NH3    ","WDEP_aNH4   ","D2_REDN     ","D2_SNOW     ","D2_SNratio  " &
+      ,"D2_HMIX     ","D2_HMIX00   ","D2_HMIX12   ","USTAR_NWP   " & !DSFEB09
   /)
-!      ,"D2_VddACC", "D2_VddCOA" & ! ECO08
 
 
  ! ECO08:
@@ -196,8 +194,6 @@ private
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
   integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
   integer, public, dimension(2) ::  DDEP_RDNGROUP = (/ NH3, aNH4 /)
-!  integer, public, dimension(6) ::  DDEP_OXNGROUP =  &
-!                         (/ NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
   integer, public, dimension(size(DDEP_OXNGROUP)) :: DDEP_GROUP ! Working array 
    ! should be set as max of SOX, OXN, RDN, assume OXN biggest
 
@@ -216,13 +212,15 @@ private
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  in My_DryDep_ml.
    !
-    integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
+    integer, public, parameter :: NNDRYDEP = 7+size(DDEP_OXNGROUP)
+   !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
+    integer, public, parameter, dimension(NNDRYDEP) :: &
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, &
            SO2,  SO4, NH3, aNH4, DDEP_OXNGROUP /)
-!DSGC NO2, HNO3, aNO3, pNO3, PAN, MPAN /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-      DDEP_ECOS  = (/ "Grid", "Conif", "Seminat", "Water_D" /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+      DDEP_ECOS  = (/ "Grid   ", "Conif  ", "Seminat", "Water_D" &
+                    , "Decid  ", "Crops  " /)
 
     integer, public, parameter, dimension(7) :: &
       WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
@@ -240,7 +238,7 @@ private
     integer, public, parameter, dimension(6) :: &
       VG_SPECS = (/ O3, NH3, SO2, PPM25,  PPMCO , HNO3/)
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-      VG_LCS  = (/ "Grid", "CF", "SNL", "GR" /)
+      VG_LCS  = (/ "Grid", "CF  ", "SNL ", "GR  " /)
 
     type(Dep_type), public, &
      dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
@@ -251,13 +249,18 @@ private
 ! *** to use format f3.1 or i2 for the Y  or X value for fluxes/AOT! ***
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
-     VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", "AFST_1.6_BF", &
-                      "AFST_0.0_IAM_CR", "AFST_3.0_IAM_CR", "AFST_6.0_IAM_CR", &
-                      "AOT_30_IAM_DF", "AOT_40_IAM_DF",  & ! only iam allowed
-                      "AOT_30_IAM_CR",                  & ! only iam allowed
-                      "AOT_40_IAM_CR", "AOT_40_IAM_WH" /) !NB -last not found. Could
-                                                            !just be skipped, but kept
-                                                            !to show behaviour
+     VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", &
+                        "AFST_1.6_BF    ", &
+                        "AFST_0.0_IAM_CR", &
+                        "AFST_3.0_IAM_CR", &
+                        "AFST_6.0_IAM_CR", &
+                        "AOT_30_IAM_DF  ", &
+                        "AOT_40_IAM_DF  ", & ! only iam allowed
+                        "AOT_30_IAM_CR  ", & ! only iam allowed
+                        "AOT_40_IAM_CR  ", &
+                        "AOT_40_IAM_WH  " /) !NB -last not found. Could
+                                             !just be skipped, but kept
+                                             !to show behaviour
 
     type(Dep_type), public, &
      dimension( size(VEGO3_OUTPUTS) ),  save :: OutVEGO3
@@ -266,11 +269,11 @@ private
 ! outputs, so we use a combined variable:
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      RG_LABELS = (/ "Rs", "Rns", "Gns" /)
+      RG_LABELS = (/ "Rs ", "Rns", "Gns" /)
     integer, public, parameter, dimension(2) :: &
       RG_SPECS = (/ NH3, SO2/)
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" /)
+      RG_LCS  = (/ "Grid", "CF  ", "SNL ", "GR  " /)
 !    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
 !      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" , "TESTRG","TC"/)
 
@@ -280,9 +283,9 @@ private
 ! For met-data ...
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
-      MET_PARAMS = (/ "USTAR", "INVL" /)
+      MET_PARAMS = (/ "USTAR", "INVL " /)
     character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
-      MET_LCS  = (/ "CF", "SNL", "GR" ,"TC"/)
+      MET_LCS  = (/ "CF ", "SNL", "GR " ,"TC "/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       !MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
       ! Can also set dim 4:1 to exclude all - gives zero size MET_LCS
@@ -307,8 +310,10 @@ private
                       "WDEP_RDN " /)   ! WDEP_PM not used
 
 
-     character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
-       D3_WANTED = (/ "D3_O3        ","D3_TH        " /)
+    ! For some reason having this as a parameter caused problems for
+    ! PC-gfortran runs.
+     character(len=TXTLEN_DERIV), public, save, dimension(4:2) :: &
+       d3_wanted != (/ "D3_O3        ","D3_TH        " /)
 
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -598,7 +603,7 @@ private
    ! ditto wanted_deriv3d....
 
      !if ( .not. SOURCE_RECEPTOR ) then
-     !   call AddArray( D3_WANTED,  wanted_deriv3d, NOT_SET_STRING)
+     !   call AddArray( d3_wanted,  wanted_deriv3d, NOT_SET_STRING)
      !end if
      mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
 
@@ -618,7 +623,7 @@ private
 
   end subroutine Init_My_Deriv
  !=========================================================================
-  subroutine My_DerivFunc( e_2d, n, class , timefrac, density )
+  subroutine My_DerivFunc( e_2d, class , density )
 
     ! We define here here any functions which cannot easily be defined
     ! in the more general Derived_ml. For example, we need the 
@@ -627,9 +632,7 @@ private
     ! this function here.
 
   real, dimension(:,:), intent(inout) :: e_2d  !  (i,j) 2-d extract of d_2d
-  integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
   character(len=*), intent(in)    :: class       ! Class of data
-  real, intent(in)    :: timefrac    ! Timestep as frationof hour, dt/3600
 
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density     
 ! density = 1 ( or = roa when unit ug)
@@ -638,11 +641,11 @@ private
 
       case ( "OX", "NOX", "NOZ", "TOXN", "TRDN", "FRNIT", "tNO3 ", "SSalt" )
 
-           call misc_xn( e_2d, n, class, density )
+           call misc_xn( e_2d, class, density )
 
       case ( "SIA", "PM10", "PM25", "PMco" )
 
-          call pm_calc(e_2d, n, class,  density)
+          call pm_calc(e_2d, class,  density)
 
       case  default
 
@@ -654,12 +657,11 @@ private
   end subroutine My_DerivFunc
  !=========================================================================
 
-  subroutine pm_calc( pm_2d, n, class, density )
+  subroutine pm_calc( pm_2d, class, density )
 
     !/--  calulates PM10 = SIA + PPM2.5 + PPMco
 
     real, dimension(:,:), intent(inout) :: pm_2d  ! i,j section of d_2d arrays
-    integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
     character(len=*)    :: class   ! Type of data
     real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density  
 
@@ -721,9 +723,8 @@ private
 
 !=========================================================================
 
-  subroutine misc_xn( e_2d, n, class, density)
+  subroutine misc_xn( e_2d, class, density)
     real, dimension(:,:), intent(inout) :: e_2d  ! i,j section of d_2d arrays
-    integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
     character(len=*)    :: class   ! Type of data
     real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density  
     integer :: itot, iadv, igrp

@@ -43,7 +43,6 @@ module My_DryDep_ml    ! DryDep_ml
   ,nOutMET, OutMET, nOutVEGO3, OutVEGO3 & !MAR2009
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
-!DSGC   ,DDEP_SOXGROUP, DDEP_OXNGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
  use ChemChemicals_ml,    only : species 
  use ChemSpecs_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
@@ -145,7 +144,7 @@ module My_DryDep_ml    ! DryDep_ml
   ! to the water surface. This is not to be used for IAM, since CCE want to have
   ! deposition to the watershed, which means the grid in practice.
    character(len=7), private, dimension(0:5), parameter :: &
-    DEP_RECEIVERS = (/ "Grid", "Conif", "Decid", "Crops", "Seminat", "Water_D" /)
+    DEP_RECEIVERS = (/ "Grid   ", "Conif  ", "Decid  ", "Crops  ", "Seminat", "Water_D" /)
    integer, private, parameter :: &
     GRID_LC=0, CONIF=1, DECID=2, CROP=3, SEMINAT=4, WATER_D=5
 

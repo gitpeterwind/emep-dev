@@ -98,12 +98,12 @@ integer, public, parameter :: &
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
-   SITE_XTRA=      (/ "hmix ", "th  ", "T2",  "D2D ", "D2D", "D2D", "D2D", "D2D", "D2D"   /)
+   SITE_XTRA=      (/ "hmix ","th   ","T2   ","D2D  ","D2D  ","D2D  ","D2D  ","D2D  ","D2D  "   /)
 !    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        " /) 
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA_CODE= (/ "hmix ", "th  ", "T2",  "PS", "COLUMN_CO", "COLUMN_C2H6", &
-              "COLUMN_HCHO", "COLUMN_CH4", "COLUMN_NO2" /)
+    SITE_XTRA_CODE= (/ "hmix       ","th         ","T2         ","PS         ", &
+                       "COLUMN_CO  ","COLUMN_C2H6","COLUMN_HCHO","COLUMN_CH4 ", "COLUMN_NO2 " /)
 !    SITE_XTRA_CODE= (/ "hmix ", "th  ", "T2",  "PS"/)  
    
    integer,           public, parameter, dimension(NXTRA_SITE) :: &
