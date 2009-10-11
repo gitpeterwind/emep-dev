@@ -371,37 +371,37 @@ endif
 
  else if( year == 1990) then 
    macehead_O3 = (/    35.3,    36.3,    38.4,    43.0,    41.2,    33.4 & 
-	,    35.1,    27.8,    33.7,    36.2,    28.4,    37.7/) 
+    ,    35.1,    27.8,    33.7,    36.2,    28.4,    37.7/) 
  else if( year == 1991) then 
    macehead_O3 = (/    36.1,    38.7,    37.7,    45.8,    38.8,    36.3 & 
-	,    29.6,    33.1,    33.4,    35.7,    37.3,    36.7/) 
+    ,    29.6,    33.1,    33.4,    35.7,    37.3,    36.7/) 
  else if( year == 1992) then 
    macehead_O3 = (/    36.1,    37.3,    41.8,    39.6,    41.2,    31.5 & 
-	,    28.3,    30.3,    31.3,    34.2,    36.1,    34.9/) 
+    ,    28.3,    30.3,    31.3,    34.2,    36.1,    34.9/) 
  else if( year == 1993) then 
    macehead_O3 = (/    37.6,    40.4,    44.4,    42.6,    43.4,    29.2 & 
-	,    28.5,    29.6,    32.2,     0.0,    37.3,    38.3/) 
+    ,    28.5,    29.6,    32.2,     0.0,    37.3,    38.3/) 
  else if( year == 1994) then 
    macehead_O3 = (/    38.6,    37.3,    45.7,    43.8,    42.9,    35.1 & 
-	,    30.8,    30.5,    33.8,    36.5,    34.0,    37.3/) 
+    ,    30.8,    30.5,    33.8,    36.5,    34.0,    37.3/) 
  else if( year == 1995) then 
    macehead_O3 = (/    37.5,    37.1,    41.6,    42.4,    41.1,    33.1 & 
-	,    29.1,    28.7,    33.7,    34.8,    35.0,    36.0/) 
+    ,    29.1,    28.7,    33.7,    34.8,    35.0,    36.0/) 
  else if( year == 1996) then 
    macehead_O3 = (/    37.0,    40.1,    42.9,    44.6,    41.3,    38.3 & 
-	,    29.3,    29.4,    35.6,    38.4,    37.8,    38.4/) 
+    ,    29.3,    29.4,    35.6,    38.4,    37.8,    38.4/) 
  else if( year == 1997) then 
    macehead_O3 = (/    36.2,    41.9,    41.8,    40.4,    40.6,    34.4 & 
-	,    26.2,    29.3,    31.3,    35.2,    25.7,    39.5/) 
+    ,    26.2,    29.3,    31.3,    35.2,    25.7,    39.5/) 
  else if( year == 1998) then 
    macehead_O3 = (/    38.6,    42.0,    44.6,    45.1,    44.2,    33.0 & 
-	,    29.7,    32.9,    35.7,    38.8,    39.7,    40.4/) 
+    ,    29.7,    32.9,    35.7,    38.8,    39.7,    40.4/) 
  else if( year == 1999) then 
    macehead_O3 = (/    39.9,    44.5,    49.4,    45.0,    42.8,    34.3 & 
-	,    29.0,    30.0,    31.8,    36.9,    39.6,    39.2/) 
+    ,    29.0,    30.0,    31.8,    36.9,    39.6,    39.2/) 
  else if( year == 2000) then 
    macehead_O3 = (/    39.5,    42.1,    41.8,    43.8,    43.4,    34.5 & 
-	,    28.0,    27.3,    33.6,    37.4,    35.6,    35.8/) 
+    ,    28.0,    27.3,    33.6,    37.4,    35.6,    35.8/) 
  else if( year == 2001) then
    macehead_O3 = (/    37.3,    38.0,    42.2,    44.8,    42.6,    34.9 &
         ,    28.9,    29.4,    29.9,    35.3,    37.3,    37.5/)
@@ -690,17 +690,17 @@ elseif( year == 2005) then
              !/ - correct for other heights
                do k = 1, KMAX_MID-1
 
-		  scale_new = exp( -h_km(k)/SpecBC(ibc)%hz )
+    	  scale_new = exp( -h_km(k)/SpecBC(ibc)%hz )
 
                   bc_rawdata(:,:,k) =   &
                      bc_rawdata(:,:,KMAX_MID)* scale_new
 
-  		  if (DEBUG_HZ) then
-		       scale_old = exp( -(KMAX_MID-k)/SpecBC(ibc)%hz )
-		       write(6,"(a8,2i3,2f8.3,i4,f8.2,f8.3,2f8.3)") "SCALE-HZ ", month, ibc, &
-				SpecBC(ibc)%surf, SpecBC(ibc)%hz, k, &
-				h_km(k), p_kPa(k), scale_old, scale_new
-		  end if ! DEBUG_HZ
+      	  if (DEBUG_HZ) then
+    	       scale_old = exp( -(KMAX_MID-k)/SpecBC(ibc)%hz )
+    	       write(6,"(a8,2i3,2f8.3,i4,f8.2,f8.3,2f8.3)") "SCALE-HZ ", month, ibc, &
+    			SpecBC(ibc)%surf, SpecBC(ibc)%hz, k, &
+    			h_km(k), p_kPa(k), scale_old, scale_new
+    	  end if ! DEBUG_HZ
                end do
 
                bc_rawdata = max( bc_rawdata, SpecBC(ibc)%vmin ) 

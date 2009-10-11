@@ -74,7 +74,7 @@ module Ammonium_ml
                   ,tab_MozP2   &  ! Mozurkewich P2 value for Kaq
                   ,tab_MozP3   ! &  ! Mozurkewich P3 value for Kaq
 !                 ,tab_vav_n2o5   ! avg. molecular speed N2O5 
-				! Might move elsewhere
+    			! Might move elsewhere
 
    logical, private, save :: my_first_call = .true.
 
@@ -89,7 +89,7 @@ module Ammonium_ml
 
      if ( my_first_call ) then
         call tabulate()
-     	my_first_call = .false.
+         my_first_call = .false.
      endif
 
      call setup_ammonium(rcnh4)

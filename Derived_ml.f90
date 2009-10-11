@@ -82,10 +82,11 @@ use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use ChemSpecs_shl_ml
 use ChemSpecs_tot_ml
 use ChemChemicals_ml, only : species
-use GridValues_ml, only : debug_li, debug_lj, debug_proc
-use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp, z_bnd
-!hf output
 use Chemfields_ml , only : so2nh3_24hr,Grid_snow
+use EcoSystem_ml,   only : DepEcoSystem, NDEF_ECOSYSTEMS, &
+                           EcoSystemFrac,FULL_GRID
+use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M
+use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp, z_bnd
 use ModelConstants_ml, &
                    only: KMAX_MID &   ! =>  z dimension
                         , NPROC   &   ! No. processors
@@ -113,7 +114,7 @@ private
  public  :: Init_Derived         !
  public  :: ResetDerived         ! Resets values to zero
  public  :: DerivedProds         ! Calculates any production terms
- private :: AddDef 
+ public  :: AddDef 
  private :: Define_Derived       !
  private :: Setups 
  private :: write_debug 
@@ -385,6 +386,14 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
                     F  , F  ,T ,T ,T , OutVEGO3(n)%name,OutVEGO3(n)%units)
   end do
 !-------------------------------------------------------------------------------
+! Areas of deposition-related ecosystems. Set externally
+  do n = 1, NDEF_ECOSYSTEMS
+
+    call AddDef("ECOAREA", F,DepEcoSystem(n)%Index,DepEcosystem(n)%scale,&
+                    F  , F  ,T ,F ,F , DepEcosystem(n)%name,&
+                                        DepEcosystem(n)%units)
+  end do
+!-------------------------------------------------------------------------------
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
 
@@ -564,14 +573,14 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                found_ind2d(ind)  = 1
 
           else
-            write(*,*) "OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
-            write(*,*) "OOOPS N,N :", num_deriv2d, Nadded2d
+            print *,   "OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
+            print *,   "OOOPS N,N :", num_deriv2d, Nadded2d
             if(  MasterProc  ) then
                do idebug = 1, Nadded2d
                 write (*,"(a,i4,a)") "Had def_2d: ", idebug, def_2d(idebug)%name 
                end do
+               call CheckStop("OOPS STOPPED")
             end if
-            call CheckStop("OOPS STOPPED")
           end if
           if (  DEBUG .and. MasterProc  ) then
                write(*,*) "Index f_2d ", i, " = def ", ind, def_2d(ind)%name,&
@@ -639,6 +648,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       real :: thour                          ! Time of day (GMT)
       real :: timefrac                       ! dt as fraction of hour (3600/dt)
       real :: dayfrac              ! fraction of day elapsed (in middle of dt)
+      real :: km2_grid
       integer :: ntime                       ! 1...NTDAYS
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
                                                     ! scale in ug,  else 1
@@ -906,6 +916,27 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                 write(*,"(a18,es12.3)") "COLUMN d2_2d", d_2d( n, debug_li, debug_lj, IOU_INST)
 
 
+          case ( "ECOAREA" )
+            
+            if( .not. first_call ) cycle ! Only need to do once
+            if( f_2d(n)%Index == FULL_GRID ) then
+              km2_grid = (GRIDWIDTH_M*GRIDWIDTH_M) * 1.0e-6 ! km2
+              forall ( i=1:limax, j=1:ljmax )
+                  d_2d(n,i,j,IOU_YEAR) =  EcoSystemFrac( f_2d(n)%Index ,i,j)&
+                        * km2_grid /xm2(i,j)
+              end forall
+            else
+              forall ( i=1:limax, j=1:ljmax )
+                  d_2d(n,i,j,IOU_YEAR) =  EcoSystemFrac( f_2d(n)%Index ,i,j)
+              end forall
+            end if
+            if( debug_flag ) &
+                write(*,"(a18,a,i4,a,2es12.3)") "ECOD2D ", &
+                 " f2d:", f_2d(n)%Index, &
+                 " Frac", EcoSystemFrac( f_2d(n)%Index, debug_li,debug_lj), &
+                 !!" Index: ", DepEcoSystem(n)%Index, &
+                    d_2d( n, debug_li, debug_lj, IOU_YEAR)
+
           case ( "EXT" )
 
           ! Externally set for IOU_INST (in other routines); so no new work 
@@ -1121,7 +1152,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
 
-      if ( num_deriv3d < 1 ) print *, "DerivedProds "//text, num_deriv3d
+!      if ( num_deriv3d < 1 ) print *, "DerivedProds "//text, num_deriv3d
       if ( num_deriv3d < 1 ) return
       if (.not. any( f_3d%class == "PROD" ) ) return
 

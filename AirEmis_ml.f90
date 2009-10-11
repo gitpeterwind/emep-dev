@@ -100,24 +100,24 @@ module AirEmis_ml
       data ygrdum / 87.86379884, 85.09652699, 82.31291295, 79.52560657, &
                     76.73689968, 73.94751515, 71.15775201, 68.36775611, & 
                     65.57760700, 62.78735180, 59.99702011, 57.20663153, &
-	            54.41619953, 51.62573360, 48.83524097, 46.04472663, &
-	            43.25419467, 40.46364818, 37.67308960, 34.88252099, &
-	            32.09194388, 29.30135962, 26.51076933, 23.72017390, &
-	            20.92957425, 18.13897099, 15.34836476, 12.55775612, &
-                     9.76714556,  6.97653355,  4.18592053,  1.39530/	 
-	
+                54.41619953, 51.62573360, 48.83524097, 46.04472663, &
+                43.25419467, 40.46364818, 37.67308960, 34.88252099, &
+                32.09194388, 29.30135962, 26.51076933, 23.72017390, &
+                20.92957425, 18.13897099, 15.34836476, 12.55775612, &
+                     9.76714556,  6.97653355,  4.18592053,  1.39530/     
+    
 
-      data area    / 3.4123374E+09,  8.2558925E+09,  1.2956985E+10, 	 &
-		     1.7624316E+10,  2.2249359E+10,  2.6821497E+10,      &
-		     3.1329966E+10,  3.5764105E+10,  4.0113402E+10,	 &
-		     4.4367553E+10,  4.8516461E+10,  5.2550296E+10, 	 &
-		     5.6459481E+10,  6.0234756E+10,  6.3867154E+10,	 &
-		     6.7348070E+10,  7.0669238E+10,  7.3822790E+10, 	 &
-		     7.6801245E+10,  7.9597535E+10,  8.2205024E+10, 	 &
-		     8.4617535E+10,  8.6829343E+10,  8.8835195E+10, 	 &
-		     9.0630349E+10,  9.2210528E+10,  9.3572006E+10, 	 &
-		     9.4711529E+10,  9.5626412E+10,  9.6314483E+10,	 &
-		     9.6774103E+10,  9.7004184E+10/
+      data area    / 3.4123374E+09,  8.2558925E+09,  1.2956985E+10,      &
+    	     1.7624316E+10,  2.2249359E+10,  2.6821497E+10,      &
+    	     3.1329966E+10,  3.5764105E+10,  4.0113402E+10,	 &
+    	     4.4367553E+10,  4.8516461E+10,  5.2550296E+10, 	 &
+    	     5.6459481E+10,  6.0234756E+10,  6.3867154E+10,	 &
+    	     6.7348070E+10,  7.0669238E+10,  7.3822790E+10, 	 &
+    	     7.6801245E+10,  7.9597535E+10,  8.2205024E+10, 	 &
+    	     8.4617535E+10,  8.6829343E+10,  8.8835195E+10, 	 &
+    	     9.0630349E+10,  9.2210528E+10,  9.3572006E+10, 	 &
+    	     9.4711529E+10,  9.5626412E+10,  9.6314483E+10,	 &
+    	     9.6774103E+10,  9.7004184E+10/
 
 
 ! ---- Defines the ANCAT grid ----------------------------------------------
@@ -154,8 +154,8 @@ module AirEmis_ml
 !
 
 
-	secmonth = 3600.*24.*31.
-	flux(:,:,:) = 0.
+    secmonth = 3600.*24.*31.
+    flux(:,:,:) = 0.
 
 
 
@@ -176,10 +176,10 @@ module AirEmis_ml
       if(me == 0)then
 
          read(IO_AIRN,'(3i4,2e22.13)') nlon,ngl,nlev,zrmin,zfak
- 	 if (MY_DEBUG)write(6,*) nlon,ngl,nlev,zrmin,zfak
+      if (MY_DEBUG)write(6,*) nlon,ngl,nlev,zrmin,zfak
               do k = 0,NLEV-1
                  read(IO_AIRN,'(i2)') level
-	         read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
+             read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
                  do i = 1,ngl
                     do j = 1,nlon
                        flux(j,i,k)=(float(intnox(j,i))*zfak)+zrmin
@@ -197,14 +197,14 @@ module AirEmis_ml
 
 
       if(me == 0)then
- 	 read(IO_AIRN,'(3i4,2e22.13)') nlon,ngl,nlevb,zrmin,zfak
-	 if (MY_DEBUG) write(6,*) nlon,ngl,nlevb,zrmin,zfak
+      read(IO_AIRN,'(3i4,2e22.13)') nlon,ngl,nlevb,zrmin,zfak
+     if (MY_DEBUG) write(6,*) nlon,ngl,nlevb,zrmin,zfak
               do k = 1,nlevb
- 	         read(IO_AIRN,'(i2)') level
-	         read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
+              read(IO_AIRN,'(i2)') level
+             read(IO_AIRN,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
                  do i = 1,ngl
                     do j = 1,nlon
-	               flux(j,i,k)=flux(j,i,k)+(float(intnox(j,i))*zfak)+zrmin
+                   flux(j,i,k)=flux(j,i,k)+(float(intnox(j,i))*zfak)+zrmin
                     end do
                  end do
               end do
@@ -215,7 +215,7 @@ module AirEmis_ml
 
       call air_inter(ILON   ,IGL    ,GGL  ,0     ,  &
                      flux   ,airn                ,  &
-		     ygrdum ,ygrida ,DLON ,RLON0 ,  &
+    	     ygrdum ,ygrida ,DLON ,RLON0 ,  &
                      rlon   ,area   ,secmonth )
   
   end subroutine aircraft_nox
@@ -250,18 +250,18 @@ module AirEmis_ml
       character*20 fname
 
       data ygrdum / 85.76058712, 80.26877907, 74.74454037,             &
-	            69.21297617, 63.67863556, 58.14295405,	       &
-		    52.60652603, 47.06964206, 41.53246125,	       &
-		    35.99507841, 30.45755396, 24.91992863,	       &
-		    19.38223135, 13.84448373,  8.30670286,	       & 
-		     2.76890301/
+                69.21297617, 63.67863556, 58.14295405,	       &
+    	    52.60652603, 47.06964206, 41.53246125,	       &
+    	    35.99507841, 30.45755396, 24.91992863,	       &
+    	    19.38223135, 13.84448373,  8.30670286,	       & 
+    	     2.76890301/
 
       data area  /  268516310010.37,  64778953547.94, 101133318591.76, &
- 		    136519495343.02, 170627187541.37, 203140714921.94, &
-		    233757180440.66, 262190945894.60, 288176619318.18, &
-	 	    311471618334.64, 331858463070.53, 349146817322.73, &
-		    363175270173.37, 373812845114.06, 380960223957.41, &
-		    384550674664.23/
+     	    136519495343.02, 170627187541.37, 203140714921.94, &
+    	    233757180440.66, 262190945894.60, 288176619318.18, &
+     	    311471618334.64, 331858463070.53, 349146817322.73, &
+    	    363175270173.37, 373812845114.06, 380960223957.41, &
+    	    384550674664.23/
 
 ! ---- Defines the ANCAT grid ----------------------------------------------
 
@@ -273,9 +273,9 @@ module AirEmis_ml
 ! --- Read Emission data received from DLR 
 
       if(me == 0)then
-	 sumnox = 0.
-	 write(fname,fmt='(''lightn'',i2.2,''.dat'')') 	&
-		current_date%month
+     sumnox = 0.
+     write(fname,fmt='(''lightn'',i2.2,''.dat'')') 	&
+    	current_date%month
 
 ! - open and read 1 line of header
   
@@ -285,15 +285,15 @@ module AirEmis_ml
              end if
 
       if(me == 0)then
-	 read(IO_LIGHT,'(3i4,2e22.13)') nlon,ngl,nlev,zrmin,zfak
-	 if (MY_DEBUG) write(6,*) nlon,ngl,nlev,zrmin,zfak
+     read(IO_LIGHT,'(3i4,2e22.13)') nlon,ngl,nlev,zrmin,zfak
+     if (MY_DEBUG) write(6,*) nlon,ngl,nlev,zrmin,zfak
          do k = 1,nlev
-	     read(IO_LIGHT,'(i2)') level
-	     read(IO_LIGHT,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
+         read(IO_LIGHT,'(i2)') level
+         read(IO_LIGHT,'(12i6)') ((intnox(j,i),j=1,nlon),i=1,ngl)
              do i = 1,ngl
                 do j = 1,nlon
-	           flux(j,i,k)=(float(intnox(j,i))*zfak)+zrmin
-      	           sumnox = sumnox + flux(j,i,k)
+               flux(j,i,k)=(float(intnox(j,i))*zfak)+zrmin
+                     sumnox = sumnox + flux(j,i,k)
                 end do
              end do
          end do
@@ -306,8 +306,8 @@ module AirEmis_ml
 
       call air_inter(ILON   ,IGL    ,GGL  ,1     ,      & 
                      flux   ,airlig              ,      &
-		     ygrdum ,ygrida ,DLON ,RLON0 ,      &
-		     rlon   ,area   ,secmonth)
+    	     ygrdum ,ygrida ,DLON ,RLON0 ,      &
+    	     rlon   ,area   ,secmonth)
 
 
   end subroutine lightning
@@ -330,7 +330,7 @@ module AirEmis_ml
       real, intent(out)   :: ygrida(GGL)
       real, intent(out)   :: rlon(ILON+1)
 
-      !	local
+      !    local
       integer info
       integer lon,lat,i,j,ig,jg,kg,k, i_sh
       integer la_tst1, la_tst2, lo_tst1, lo_tst2   !  test area for sums
@@ -385,7 +385,7 @@ module AirEmis_ml
          end do       !k
             
          write(6,*) 'SUMNOX, ANCAT:',sumnox
-      endif		!me=0
+      endif    	!me=0
 
 
       CALL MPI_BCAST(flux(1,1,iktop), 8*GGL*ILON*(ILEV+1-iktop), MPI_BYTE, 0,&
@@ -442,9 +442,9 @@ module AirEmis_ml
       do j = 1,ljmax
          do i = 1,limax
 
- 	    kg = 1
-	    above = 1.e3
-	    below = 0.
+         kg = 1
+        above = 1.e3
+        below = 0.
 
             do k = KMAX_MID,KCHEMTOP,-1
 
@@ -459,11 +459,11 @@ module AirEmis_ml
 
                ilevel(k) = kg
                fraca(k) = 1.
-               if(above-below>1.1e3) 			      &
+               if(above-below>1.1e3)     		      &
                   fraca(k) = (z_bnd(i,j,k)-(above-1.e3))        &
                                /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
                fracb(k) = 0.
-               if(above-below>2.1e3)			      &
+               if(above-below>2.1e3)    		      &
                    fracb(k) = (below+1.e3 - z_bnd(i,j,k+1))      &
                               /(z_bnd(i,j,k) - z_bnd(i,j,k+1))
             end do  ! k
@@ -475,13 +475,13 @@ module AirEmis_ml
                  frac = 1. - fraca(k) - fracb(k)
                  kg = ilevel(k)
                  airem(k,i,j) = flux(lon,lat,kg)*fraca(k)             &
-                              + flux(lon,lat,kg-1)*frac		      &
+                              + flux(lon,lat,kg-1)*frac    	      &
                               + flux(lon,lat,kg-2)*fracb(k)
             end do
 
            ! surface emissions
 
-             if(iktop == 0)		&
+             if(iktop == 0)    	&
                airem(KMAX_MID,i,j) = airem(KMAX_MID,i,j)+flux(lon,lat,0)
          end do
       end do
@@ -501,7 +501,7 @@ module AirEmis_ml
                 do k=KCHEMTOP,KMAX_MID
                    vol = GRIDWIDTH_M*GRIDWIDTH_M                             &
                         *(z_bnd(i,j,k)-z_bnd(i,j,k+1))*1.e6
-                   sum2 = sum2 + airem(k,i,j)*atwno2/AVOG*		     &
+                   sum2 = sum2 + airem(k,i,j)*atwno2/AVOG*    	     &
                           vol*secmonth*1.e-3
                 end do
             end if

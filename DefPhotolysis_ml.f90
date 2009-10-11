@@ -86,6 +86,7 @@
       IDCH3COY = 10 , IDHCOHCO = 11 , IDRCOHCO = 12 , &
       IDNO3    = 13 , IDN2O5   = 14 , IDCH3O2H = 15 , &
       IDHO2NO2 = 16 , IDACETON = 17
+    integer, public, parameter ::  IDRCOCHO  = IDRCOHCO ! Just tmp
 
  !/ subroutines: 
 

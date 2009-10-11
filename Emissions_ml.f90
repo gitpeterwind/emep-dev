@@ -655,7 +655,7 @@ contains
                    iqrc  = 0   ! index over emis
                    ifrac = 0   ! index over emisfrac
 
-		    !/.. First, the simple emissions
+    	    !/.. First, the simple emissions
                    do iem = 1, NEMIS_PLAIN
 
                       tfac = timefac(iland_timefac,isec,iem) * &
@@ -665,7 +665,7 @@ contains
                       emis(iqrc) = snapemis(isec,i,j,icc,iem) * tfac 
                    end do ! iem=1,NEMIS_PLAIN
 
-		    !/.. Then , the split (speciated) emissions if NEMIS_SPLIT>0
+    	    !/.. Then , the split (speciated) emissions if NEMIS_SPLIT>0
 
                    do iem = 1, NEMIS_SPLIT
 
@@ -830,7 +830,7 @@ contains
  end subroutine EmisSet
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-	subroutine newmonth
+    subroutine newmonth
 
 !.....................................................................
 !**    DESCRIPTION:
@@ -863,8 +863,8 @@ contains
         logical, parameter ::MONTHLY_GRIDEMIS= IS_GLOBAL      
 
 !*** Units:
-!	Input files seem to be in ktonne PER YEAR. We convert here to kg/m2/s
-! 	to save CPU in setemis.f.
+!    Input files seem to be in ktonne PER YEAR. We convert here to kg/m2/s
+!     to save CPU in setemis.f.
 !      The conversion factor from 50*50km2
 !      annual emission values to surface flux (kg/m2/s) is found by division
 !      with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+6.
@@ -873,18 +873,18 @@ contains
 !          are NOT the sum of the 12 files emissions (but about 12 times less than the sum). 
 !          More precisely: year_emis=sum_months(emis_month*nmdays/nydays)
 
-        ktonne_to_kgm2s  = 1.0e6 / 				&
-		(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
+        ktonne_to_kgm2s  = 1.0e6 /     			&
+    	(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
-	if ( MasterProc .and. DEBUG) then
-	  write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',	&
-	      current_date%month,ktonne_to_kgm2s
-	  write(6,*) ' first_dms_read = ', first_dms_read
-	end if ! me 
+    if ( MasterProc .and. DEBUG) then
+      write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',	&
+          current_date%month,ktonne_to_kgm2s
+      write(6,*) ' first_dms_read = ', first_dms_read
+    end if ! me 
 !...........................................................................
 
 !...........................................................................
-!		DMS Input - land 35 - SNAP sector 11
+!    	DMS Input - land 35 - SNAP sector 11
 !...........................................................................
      flat_ncmaxfound = 0 ! Max. no. countries(w/flat emissions) per grid
 !    natural so2 emissions
@@ -903,16 +903,16 @@ contains
 
              if ( MasterProc ) then
 
-	          write(fname,fmt='(''natso2'',i2.2,''.dat'')') 	&
-			current_date%month
-	          write(6,*) 'filename for nat-so2',fname
+              write(fname,fmt='(''natso2'',i2.2,''.dat'')') 	&
+    		current_date%month
+              write(6,*) 'filename for nat-so2',fname
               endif
 
               call ReadField(IO_DMS,fname,rdemis)
 
-	      errcode = 0
-	      do j=1,ljmax
-	          do i=1,limax
+          errcode = 0
+          do j=1,ljmax
+              do i=1,limax
 
 !            Add DMS for country code IQ_DMS=35  to snap sector 11=Nature.
                 ! First time we read we must add DMS to the "countries" 
@@ -936,16 +936,16 @@ contains
                   endif 
 
                   snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s &
-			* xm2(i,j)
-	        enddo ! i
-	      enddo ! j
+    		* xm2(i,j)
+            enddo ! i
+          enddo ! j
 
 
               if ( first_dms_read ) then
-   	          if (DEBUG) write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
-			,flat_ncmaxfound 
-	          first_dms_read = .false.
-	      end if
+                 if (DEBUG) write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
+    		,flat_ncmaxfound 
+              first_dms_read = .false.
+          end if
 
            end if  ! IQSO2>0
 
@@ -965,7 +965,7 @@ contains
       first_call=.false.
    endif
     month = current_date%month
-    tonnemonth_to_kgm2s= 1.0e3 / 				&
+    tonnemonth_to_kgm2s= 1.0e3 /     			&
          (nmdays(month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
     if ( MasterProc ) then
@@ -984,7 +984,7 @@ contains
 
          globemis = 0.0
 
-         write(fname,fmt='(''grid'',A,i2.2)') 	&
+         write(fname,fmt='(''grid'',A,i2.2)')     &
               trim(EMIS_NAME(iem))//'.',month
          write(6,*) 'filename for GLOBAL emission',fname
          call open_file(IO_EMIS,"r",fname,needed=.true.)
@@ -1047,7 +1047,7 @@ contains
    end if
    endif
 
-	end subroutine newmonth
+    end subroutine newmonth
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

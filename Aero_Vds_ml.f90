@@ -71,8 +71,8 @@ contains
 
     do imod = 1, NSIZE
 
-	stdlog = log(sigma(imod))
-	sig = stdlog * stdlog     ! (log(STD))^2
+    stdlog = log(sigma(imod))
+    sig = stdlog * stdlog     ! (log(STD))^2
 
        !... mass median diameter -> geometric diameter 
 
@@ -81,9 +81,9 @@ contains
         knut = 2.*FREEPATH/dg   ! Knut's number
 
 !... slip correction coefficient  
-!	slipmo= 1.+ knut*       &               ! for monodisperse
+!    slipmo= 1.+ knut*       &               ! for monodisperse
 !                (1.257+0.4*exp(-1.1* /knut))
-!NOT-USED?	slip =  1.+ 1.246*knut                  ! for polydisperse
+!NOT-USED?    slip =  1.+ 1.246*knut                  ! for polydisperse
 
 !== monodisperse aerosols =====
 !     Dimo =BOLTZMANN*tsK*slipmo/(3*PI*dg *VISCO*roa)        ! diffusion coefficient
@@ -284,11 +284,11 @@ end module Aero_Vds_ml
 !TMP!// Stokes and Schmidt numbers:
 !TMP
 !TMP   ! == monodisperse ======
-!TMP	! STmo=vsmo*ustar*ustar/VISCO/GRAV
-!TMP	! SCmo=VISCO/dimo
+!TMP    ! STmo=vsmo*ustar*ustar/VISCO/GRAV
+!TMP    ! SCmo=VISCO/dimo
 !TMP   ! == polydisperse ======
-!TMP	 schmidt = VISCO/Di              ! Schmidt number
-!TMP	 stoke = vs(imod)*ustar*ustar/VISCO/GRAV ! Stoke number(based on depth 
+!TMP     schmidt = VISCO/Di              ! Schmidt number
+!TMP     stoke = vs(imod)*ustar*ustar/VISCO/GRAV ! Stoke number(based on depth 
 !TMP                                              ! of laminar layer)
 !TMP
 !TMP !// collection efficiency  =======================
@@ -301,7 +301,7 @@ end module Aero_Vds_ml
 !TMP
 !TMP      if( LandType(lu)%is_water )    then !//===  WATER surface  ( Slinn & Slinn, 1980 ) =
 !TMP
-!TMP      	   coleff= ustar / (KARMAN * vind) *      &          ! polydisperse
+!TMP             coleff= ustar / (KARMAN * vind) *      &          ! polydisperse
 !TMP                  (exp(-0.5*log(schmidt)) + exp(-3./stoke*log10) )   
 !TMP
 !TMP      elseif ( LandType(lu)%is_conif )  then !//===  CONIFEROUS ==============

@@ -337,11 +337,11 @@ module Functions_ml
     real    :: p
     integer :: i
 
-	do i = 1,131
-	  p = PBAS + i*PINC
-	  ! tpi(i) = CP*(p/1.0e+5)**KAPPA ! With CP!!!!
-	  tab_exf(i) = (p/1.0e+5)**KAPPA  ! Without CP
-	enddo
+    do i = 1,131
+      p = PBAS + i*PINC
+      ! tpi(i) = CP*(p/1.0e+5)**KAPPA ! With CP!!!!
+      tab_exf(i) = (p/1.0e+5)**KAPPA  ! Without CP
+    enddo
 
   end subroutine Exner_tab
   !-------------------------------------------------------------------

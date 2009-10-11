@@ -76,15 +76,16 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
  use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
 
 
- use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
  use ChemSpecs_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
  use ChemSpecs_tot_ml, only : NSPEC_TOT
-
+ use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
+ use EcoSystem_ml,   only : EcoSystemFrac, Is_EcoSystem,  &
+                             NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
           debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
- use Io_Nums_ml,     only: IO_DO3SE
- use Landuse_ml,     only: Land_codes,LU_cdf
- use LandDefs_ml,    only : LandType  !Vds FEB2009
+ use Io_Nums_ml,     only : IO_DO3SE
+ use Landuse_ml,     only : Land_codes,LU_cdf, LandCover
+ use LandDefs_ml,    only : LandType
  use LocalVariables_ml, only : Grid, Sub, L, iL ! Grid and sub-scale Met/Veg data
  use MassBudget_ml,  only : totddep,DryDep_Budget
  use MicroMet_ml,   only : AerRes, Wind_at_h
@@ -142,6 +143,9 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
 
      integer, save ::  old_daynumber = -99
      integer ::nadv,n
+     integer :: i, j, lc, ilc, nlc, iEco   ! for EcoSystem stuff
+     logical :: debug_flag  ! for EcoSystem stuff
+     real    :: coverage    ! for EcoSystem stuff
 
   if ( my_first_call ) then 
 
@@ -167,6 +171,39 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
      if( MasterProc  .and. DEBUG_DRYDEP) write(*,*) "INIT_DRYDEP day ", &
            daynumber, old_daynumber
 
+!=============================================================================
+! From EcoSystems, but caused some circularity problem
+! use EcoSystem_ml, only :: EcoSystemFrac, Is_EcoSystem
+
+   EcoSystemFrac(:,:,:) = 0.0
+   do j = lj0, lj1
+     do i = li0, li1
+       debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj )
+
+       nlc = LandCover(i,j)%ncodes
+       LCLOOP: do ilc= 1, nlc
+           lc       = LandCover(i,j)%codes(ilc)
+           coverage = LandCover(i,j)%fraction(ilc)
+           ECOLOOP: do iEco= 1, NDEF_ECOSYSTEMS
+              if( Is_EcoSystem(iEco,lc) ) then
+                 EcoSystemFrac(iEco,i,j) = EcoSystemFrac(iEco,i,j) + coverage
+                if( debug_flag ) then
+                     write(6,"(a,2i4,a12,3f10.4)") "ECOSYS AREA ",&
+                     ilc, lc, "=> "//trim(DEF_ECOSYSTEMS(iEco)), &
+                         coverage, EcoSystemFrac(iEco,i,j)
+                end if
+             end if
+          end do ECOLOOP
+        end do LCLOOP
+      end do ! i
+    end do ! j
+
+!     invEcoFrac(:) = 0.0
+!
+!     do n = 0, size(DEF_ECOSYSTEMS)-1
+!        if ( EcoFrac(n) > 1.0e-39 ) invEcoFrac(n) = 1.0/EcoFrac(n)
+!     end do
+!=============================================================================
   end if !  my_first_call
 
   if ( old_daynumber /= daynumber ) then

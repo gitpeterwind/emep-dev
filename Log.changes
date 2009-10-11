@@ -1,3 +1,18 @@
+=========================== rv3_3 Dave, 11  Oct. 2009 ================
+
+New *EcoSystem_ml* introduced to include definitions for EcoDep
+  new netcdf outputs of e.g. Area_Grid_km2, Area_Conif_Frac
+
+-> CHanges in Derived_ml, My_Derived, Unimod.f90, My_DryDep, DryDep
+    (maybe others...)
+
+RO2POOL introduced in Solver to cope with CRI chemistry
+
+
+ !!!!****** ZD_ACID removed ****!!!! 
+ Functionality must be created through GenChem system now.
+
+
 =========================== rv3_3beta5, Garry/Dave,  9  Oct. 2009======
 
 Changes from Garry to enable g95 compilation - mainly needing lengths

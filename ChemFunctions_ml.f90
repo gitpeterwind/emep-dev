@@ -111,13 +111,13 @@ module ChemFunctions_ml
      ! kinf = p * exp( q*log(t/300.0) )
 
      ! factors for Fc:
-     y    = k0M/kinf	! used also below
+     y    = k0M/kinf    ! used also below
      x    = log10(y)
      x    = 1.0/( 1.0 + x*x )
 
      !- F**x == exp(x*logF)
 
-!	give Fc already as log(Fc)
+!    give Fc already as log(Fc)
 !DSGC - no! Keep as proper Fc. Slower but less confusing
 
 !     rctroe = k0M / ( 1.0 + k0M/kinf) * exp(x*log(Fc))
@@ -153,13 +153,13 @@ module ChemFunctions_ml
      ! kinf = p * exp( q*log(t/300.0) )
 
      ! factors for Fc:
-     y    = k0M/kinf	! used also below
+     y    = k0M/kinf    ! used also below
      x    = log10(y)
      x    = 1.0/( 1.0 + x*x )
 
      !- F**x == exp(x*logF)
 
-!	give Fc already as log(Fc)
+!    give Fc already as log(Fc)
 
 !     rctroe = k0M / ( 1.0 + k0M/kinf) * exp(x*log(Fc))
      rctroe = k0M / ( 1.0 + y) * exp(x*LogFc)
