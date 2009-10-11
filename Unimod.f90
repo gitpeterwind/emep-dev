@@ -53,6 +53,7 @@ program myeul
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,    only :  Init_Derived &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
+  use EcoSystem_ml,     only : Init_EcoSystems
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use ChemChemicals_ml,  only : define_chemicals
   use ChemSpecs_adv_ml  , only : NSPEC_ADV
@@ -250,6 +251,7 @@ program myeul
   call MetModel_LandUse(1)   !
 
   call InitLandUse()  !  Reads Inputs.Landuse, Inputs.LandPhen
+  call Init_EcoSystems()     !   Defines ecosystem-groups for dep output
 !dsx:
   call Init_Derived()        ! Derived field defs.
 

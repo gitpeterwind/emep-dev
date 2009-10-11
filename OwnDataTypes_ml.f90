@@ -3,6 +3,7 @@ module OwnDataTypes_ml
 
     public :: print_dep_type
     integer, public, parameter :: TXTLEN_DERIV = 24
+    integer, public, parameter :: TXTLEN_UNIT  = 10
 
   ! Contains some user-defined data-types, and routine associated
   ! with these. Collecting them here will
@@ -25,8 +26,8 @@ module OwnDataTypes_ml
        logical  :: year     ! True when yearly averages wanted
        logical  :: month    ! True when monthly averages wanted
        logical  :: day      ! True when daily averages wanted
-       character(len=TXTLEN_DERIV) :: name ! Name of the variable (for netCDF output)
-       character(len=10) :: unit ! Unit (writen in netCDF output)
+       character(len=TXTLEN_DERIV) :: name ! Variable name (for netCDF output)
+       character(len=TXTLEN_UNIT)  :: unit ! writen in netCDF output
     end type Deriv
 
  ! Store indices of ecossytem-species depositions

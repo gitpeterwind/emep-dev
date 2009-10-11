@@ -1,0 +1,66 @@
+#
+#
+PROG =	Unimod
+###################################################
+
+include Makefile.SRCS
+
+###################################################
+
+LIBS = -lnetcdf
+#INCL = -I/global/apps/netcdf/3.6.2/include
+#LLIB = -L/global/apps/netcdf/3.6.2/lib
+#RSS
+INCL = -I/usr/local/netcdf/include
+LLIB = -L/usr/local/netcdf/lib
+#EeePC
+INCL = -I/home/davids/WRF_2009/netcdf4/include
+LLIB = -L/home/davids/WRF_2009/netcdf4/lib
+#TP
+INCL = -I/home/davids/local/netcdf-4.0.1/include
+LLIB = -L/home/davids/local/netcdf-4.0.1/lib
+
+
+F90 = mpif90
+
+#LDFLAGS =  -shared-intel -CB -r8  -debug-parameters all -traceback  -ftrapuv -g -fpe0 -O0 -convert big_endian -IPF_fp_relaxed $(INCL)
+#GF LDFLAGS =  -shared-intel -r8 -O3 -ftz -convert big_endian  -IPF_fp_relaxed 
+LDFLAGS =  -fdefault-real-8  -O3 -ffixed-line-length-none -fconvert=big-endian
+LDFLAGS =  -fdefault-real-8  -O3 -ffixed-line-length-none -fconvert=big-endian -fbounds-check
+LDFLAGS =  -fdefault-real-8  -O2 -Wall -ffree-line-length-none -fbounds-check -fbacktrace
+LDFLAGS =  -fdefault-real-8  -O2 -ffree-line-length-none # -fbounds-check   # Garry?
+#PED:
+LDFLAGS =  -fdefault-real-8  -O3 -Wall -ffixed-line-length-none -fbounds-check -pedantic -fbacktrace -fimplicit-none
+F90FLAGS =  $(LDFLAGS) $(INCL)
+
+
+LD = mpif90
+LD = gfortran
+
+
+.SUFFIXES: $(SUFFIXES)  .f90
+
+.f90.o:
+	$(F90) $(F90FLAGS) -c $<
+
+
+# Include the dependency-list created by makedepf90 below
+all:  $(PROG)
+
+include .depend
+
+#
+depend .depend:
+	/home/davids/local/bin/makedepf90 $(SRCS) \
+	-o $(PROG) \
+	-l "$(F90) $(LDFLAGS) $(LLIB) -o $(PROG) $(FOBJ) $(INCL) $(LIBS)" > .depend
+
+clean: diskclean touchdepend depend
+
+diskclean:
+	rm -f $(PROG) *.o *.mod
+
+touchdepend:
+	touch .depend
+##########################################################
+

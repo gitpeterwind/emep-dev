@@ -297,7 +297,7 @@
                hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * hr_out(ih)%unitconv
             end forall
 
-    	    if( DEBUG  .and. debug_flag) &
+            if( DEBUG  .and. debug_flag) &
                write(6,"(a12,2i3,2es12.3)") "HHH DEBUG", ispec, ih, &
                  hr_out(ih)%unitconv, hourly(i_debug,j_debug)
 
@@ -307,7 +307,7 @@
 
        end select OPTIONS 
 
-	if(DEBUG .and. debug_flag ) then
+    if(DEBUG .and. debug_flag ) then
              i = i_debug
              j = j_debug
              print *,"DEBUG-HOURLY-TH ",me,ih,ispec,hourly(i,j),&

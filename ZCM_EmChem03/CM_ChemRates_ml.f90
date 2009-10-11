@@ -41,12 +41,30 @@
        rcmisc(8,:) = riemern2o5() 
        rcmisc(9,:) = 1e-12*h2o 
        rcmisc(10,:) = kaero() 
-       rcmisc(11,:) = troe(1.0e-31*exp(1.6*lt300),3.0e-11*exp(-0.3*lt300),0.85,m)!a97,j 
-       rcmisc(12,:) = troe(2.7e-30*exp(3.4*lt300),2.0e-12*exp(-0.2*lt300),0.33,m)!;a97,j 
-       rcmisc(13,:) = troe(1.0e-3*exp(3.5*lt300)*exp(-11000*tinv),9.70e14*exp(-0.1*lt300)*exp(-11080*tinv),0.33,m) 
-       rcmisc(14,:) = troe(2.6e-30*exp(2.9*lt300),6.7e-11*exp(0.6*lt300),0.43,m)!;a97,j 
-       rcmisc(15,:) = troe(2.7e-28*exp(7.1*lt300),1.2e-11*exp(0.1*lt300),0.3,m) 
-       rcmisc(16,:) = troe(4.9e-3*exp(-12100*tinv),5.4e16*exp(-13830*tinv),0.3,m) 
+       rcmisc(11,:) = troe(1.0e-31*exp(1.6*lt300)  &
+         ,3.0e-11*exp(-0.3*lt300)  &
+         ,0.85  &
+         ,m) 
+       rcmisc(12,:) = troe(2.7e-30*exp(3.4*lt300)  &
+         ,2.0e-12*exp(-0.2*lt300)  &
+         ,0.33  &
+         ,m) 
+       rcmisc(13,:) = troe(1.0e-3*exp(3.5*lt300)*exp(-11000*tinv)  &
+         ,9.70e14*exp(-0.1*lt300)*exp(-11080*tinv)  &
+         ,0.33  &
+         ,m) 
+       rcmisc(14,:) = troe(2.6e-30*exp(2.9*lt300)  &
+         ,6.7e-11*exp(0.6*lt300)  &
+         ,0.43  &
+         ,m) 
+       rcmisc(15,:) = troe(2.7e-28*exp(7.1*lt300)  &
+         ,1.2e-11*exp(0.1*lt300)  &
+         ,0.3  &
+         ,m) 
+       rcmisc(16,:) = troe(4.9e-3*exp(-12100*tinv)  &
+         ,5.4e16*exp(-13830*tinv)  &
+         ,0.3  &
+         ,m) 
        rcmisc(17,:) = troe(7.0e-29*exp(3.1*lt300),9.0e-12,0.7,m) 
        rcmisc(18,:) = troe(8.0e-17*exp(3.5*lt300),3.0e-11,0.5,m) 
 

@@ -166,7 +166,7 @@ module MARS_ml
 !c   F.Binkowski 8/1/97    Chenged minimum sulfate from 0.0 to 1.0e-6 i.e.
 !c                         1 picogram per cubic meter
 !C   I.Ackermann 2/23/98   modification for solving precision problems
-!C			  on workstations
+!C    		  on workstations
 !C   I.Ackermann 2/25/99   changed logic as follows:
 !c                         If iterations fail, initial values of nitrate
 !c                          are retained.
@@ -334,7 +334,7 @@ module MARS_ml
       real        MINSO4           ! Minimum value of sulfate laerosol concentration
        parameter( MINSO4 = 1.0E-6 / MWSO4 ) 
       real        MINNO3
-       parameter( MINNO3 = 1.0E-6 / MWNO3 )	!2/25/99 IJA
+       parameter( MINNO3 = 1.0E-6 / MWNO3 )    !2/25/99 IJA
 !st      real        FLOOR
 !st       parameter( FLOOR = 1.0E-30) ! minimum concentration       
 !2/25/99 IJA
@@ -441,9 +441,9 @@ module MARS_ml
 !...  ammonia than sulfate, otherwise send to low ammonia case.
 
        IF (TNH4 > TSO4) THEN
-         RATIO = 5.0		!this is a high ammonia case with low sulfur
+         RATIO = 5.0    	!this is a high ammonia case with low sulfur
        ELSE
-         RATIO = 1.		!this is a low ammonia case with low sulfur
+         RATIO = 1.    	!this is a low ammonia case with low sulfur
        END IF
  
       END IF 
@@ -846,9 +846,9 @@ module MARS_ml
       data sqrt3/1.732050808/, one3rd/0.333333333/
 !=======
 
-	  a2sq=a2*a2
-	  qq=(a2sq-3.*a1)/9.
-	  rr=( a2*(2.*a2sq - 9.*a1) + 27.*a0 )/54.
+      a2sq=a2*a2
+      qq=(a2sq-3.*a1)/9.
+      rr=( a2*(2.*a2sq - 9.*a1) + 27.*a0 )/54.
 ! CASE 1 THREE real ROOTS or  CASE 2 ONLY ONE real ROOT
       dum1=qq*qq*qq 
       rrsq=rr*rr
@@ -863,7 +863,7 @@ module MARS_ml
             crutes(2) = 0.0
             crutes(3) = 0.0
             nr = 0            
-		   stop 
+    	   stop 
          end if
          theta=acos(rr/phi)/3.0
          costh = cos(theta)
@@ -904,7 +904,7 @@ module MARS_ml
       end if
 
    end subroutine cubic
-	
+    
 !>-------------------------------------------------------------------------------<
 !<------------------------------------------------------------------------------->
 

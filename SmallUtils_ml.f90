@@ -105,7 +105,7 @@ contains
   enddo
   nwords = iw
   if (  nwords >= nword_max ) then
-	errcode = 2
+    errcode = 2
       print *, "ERROR in WORDSPLIT : Problem at ", text
       print *,"Too many words"
   endif

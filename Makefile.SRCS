@@ -4,7 +4,7 @@ SRCS =	Aero_Vds_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 	BoundaryConditions_ml.f90 CellMet_ml.f90 CheckStop_ml.f90 Chem_ml.f90 CoDep_ml.f90 Country_ml.f90 \
 	ChemFunctions_ml.f90 \
 	CM_ChemSpecs_ml.f90 CM_ChemRates_ml.f90 \
-	DefPhotolysis_ml.f90 Derived_ml.f90 DO3SE_ml.f90  DryDep_ml.f90 \
+	DefPhotolysis_ml.f90 Derived_ml.f90 DO3SE_ml.f90  DryDep_ml.f90 EcoSystem_ml.f90 \
 	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 Functions_ml.f90 \
 	GlobalBCs_ml.f90 GridAllocate_ml.f90 GridValues_ml.f90 \
 	Io_ml.f90 Io_Nums_ml.f90 Io_Progs_ml.f90 KeyValue_ml.f90  LandDefs_ml.f90 Landuse_ml.f90 \

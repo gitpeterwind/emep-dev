@@ -35,23 +35,27 @@ module My_DryDep_ml    ! DryDep_ml
 !  are required in the current air pollution model   
 !/**************************************************************************
 
- use ChemChemicals_ml, only : species
- use CheckStop_ml,  only : CheckStop, StopAll
- use Derived_ml,    only : f_2d,   d_2d, IOU_INST
  use My_Derived_ml,  only : &
    nOutDDep, OutDDep, nOutVg, OutVg, nOutRG, OutRG &
   ,nOutMET, OutMET, nOutVEGO3, OutVEGO3 & !MAR2009
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
+ use CheckStop_ml,  only : CheckStop, StopAll
  use ChemChemicals_ml,    only : species 
  use ChemSpecs_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use ChemSpecs_shl_ml,     only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
  use ChemGroups_ml,       only : DDEP_OXNGROUP  !DSGC
+ use Derived_ml,    only : f_2d, d_2d, IOU_INST, AddDef,IOU_YEAR
+ use EcoSystem_ml,      only : DEF_ECOSYSTEMS, NDEF_ECOSYSTEMS, &
+                               EcoSystemFrac, & 
+                                 FULL_GRID, Is_EcoSystem !DSOCT09
+ use GridValues_ml,  only: debug_proc, debug_li, debug_lj
  use LandDefs_ml,        only : LandDefs, LandType
- use Landuse_ml,         only : WheatGrowingSeason
+ use Landuse_ml,         only : WheatGrowingSeason, LandCover   ! DSOCT09
  use LocalVariables_ml,  only : Grid  !=> izen  integer of zenith angle
  use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON, DEBUG_MY_DRYDEP,MasterProc
+ use Par_ml,             only: li0, lj0, li1, lj1
  use PhysicalConstants_ml, only : AVOG
  use SmallUtils_ml,      only: find_index, NOT_FOUND
  use StoFlux_ml,         only : unit_flux, lai_flux, leaf_flux
@@ -136,17 +140,7 @@ module My_DryDep_ml    ! DryDep_ml
    real, public, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
 
   ! Maps from adv index to one of calc indices
-   real, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc ! ECO08
-
-  ! depositions are calculated to the following landuse classes, where
-  ! e.g. conif may include both temperate and Medit.
-  ! *** Note *** Water_D is introduced for some NEU work, with direct deposition to
-  ! to the water surface. This is not to be used for IAM, since CCE want to have
-  ! deposition to the watershed, which means the grid in practice.
-   character(len=7), private, dimension(0:5), parameter :: &
-    DEP_RECEIVERS = (/ "Grid   ", "Conif  ", "Decid  ", "Crops  ", "Seminat", "Water_D" /)
-   integer, private, parameter :: &
-    GRID_LC=0, CONIF=1, DECID=2, CROP=3, SEMINAT=4, WATER_D=5
+   integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc ! ECO08
 
    logical, private, save :: first_call = .true.
 
@@ -185,8 +179,7 @@ contains
   do ndep = 1, nOutDDep
 
     OutDdep(ndep)%f2d  = find_index(OutDdep(ndep)%name ,f_2d(:)%name)
-   ! We start LC with Grid at zero, so need -1 offset
-    OutDdep(ndep)%LC   = find_index(OutDdep(ndep)%txt ,DEP_RECEIVERS) -1
+    OutDdep(ndep)%LC   = find_index(OutDdep(ndep)%txt ,DEF_ECOSYSTEMS)
 
     if(DEBUG_MY_DRYDEP .and. MasterProc) write(6,*) "OUTDdep ", ndep, &
        trim (OutDdep(ndep)%name),trim(OutDdep(ndep)%txt),"=>"&
@@ -202,7 +195,7 @@ contains
 
      icheck = OutVg(nVg)%LC  ! TMP DEBUG
      if( OutVg(nVg)%txt == "Grid") then
-        OutVg(nVg)%LC = GRID_LC   ! zero
+        OutVg(nVg)%LC = FULL_GRID   ! zero
      else 
         OutVg(nVg)%LC = find_index( OutVg(nVg)%txt, LandDefs(:)%code )
      end if
@@ -212,7 +205,7 @@ contains
          trim( OutVg(nVg)%name ),trim( OutVg(nVg)%txt ),"=>",&
            OutVg(nVg)%LC, OutVg(nVg)%f2d
 
-     call CheckStop( OutVg(nVg)%LC < GRID_LC , & !ie zero
+     call CheckStop( OutVg(nVg)%LC < FULL_GRID , & !ie zero
           "OutVg-LC Error " // OutVg(nVg)%name)
      call CheckStop( OutVg(nVg)%f2d < 1, &
           "OutVg-f2d Error " // OutVg(nVg)%name)
@@ -222,7 +215,7 @@ contains
  do nRG = 1, nOutRG
 
      if( OutRG(nRG)%txt == "Grid") then
-        OutRG(nRG)%LC = GRID_LC    ! zero
+        OutRG(nRG)%LC = FULL_GRID    ! zero
      else 
         OutRG(nRG)%LC = find_index( OutRG(nRG)%txt, LandDefs(:)%code )
      end if
@@ -232,8 +225,8 @@ contains
          OutRG(nRG)%name,OutRG(nRG)%txt,"=>",&
            OutRG(nRG)%LC, OutRG(nRG)%f2d
 
-     call CheckStop( OutRG(nRG)%LC < GRID_LC , & ! <zero
-          "OutRG-LC Error " // OutRG(nRG)%name)
+!     call CheckStop( OutRG(nRG)%LC < FULL_GRID , & ! <zero
+!          "OutRG-LC Error " // OutRG(nRG)%name)
      call CheckStop( OutRG(nRG)%f2d < 1, &
           "OutRG-f2d Error " // OutRG(nRG)%name)
   end do
@@ -247,8 +240,8 @@ contains
          trim( OutMET(nMET)%name),trim( OutMET(nMET)%txt),"=>",&
            OutMET(nMET)%LC, OutMET(nMET)%f2d
 
-     call CheckStop( OutMET(nMET)%LC < GRID_LC , & ! <zero
-          "OutMET-LC Error " // OutMET(nMET)%name)
+!     call CheckStop( OutMET(nMET)%LC < FULL_GRID , & ! <zero
+!          "OutMET-LC Error " // OutMET(nMET)%name)
      call CheckStop( OutMET(nMET)%f2d < 1, &
           "OutMET-f2d Error " // OutMET(nMET)%name)
   end do
@@ -302,24 +295,8 @@ contains
 !    D2_EUAOT40WH, D2_EUAOT40DF, & !4
 !    D2_UNAOT40WH, D2_UNAOT40DF, & !4
 !    D2_MMAOT40WH & !2
-!  /) ! => 37 - 12 -> 25
-!    ! Will re-write whole subroutine later to avoid individual indices, but  
-!    ! for now, do:
-!     do icheck = 1, 17
-!        call CheckStop( check_vals(icheck) < 1 , "D2D CHECKVAL! " )
-!     end do
-!     call CheckStop( any(check_vals < 1) , "D2D CHECKVAL! " )
-!May 2009, only 7 hard-coded left:
-!Oct09     call CheckStop( D2_O3DF < 1 , "D2_O3DF CHECKVAL! " )
-!Oct09     call CheckStop( D2_O3WH < 1 , "D2_O3WH CHECKVAL! " )
-!Oct09     call CheckStop( D2_EUAOT40WH < 1 , "D2_EUAOT40WH CHECKVAL! " )
-!Oct09     call CheckStop( D2_EUAOT40DF < 1 , "D2_EUAOT40DF CHECKVAL! " )
-!Oct09     call CheckStop( D2_UNAOT40WH < 1 , "D2_UNAOT40WH CHECKVAL! " )
-!Oct09     call CheckStop( D2_UNAOT40DF < 1 , "D2_UNAOT40DF CHECKVAL! " )
-!Oct09     call CheckStop( D2_MMAOT40WH < 1 , "D2_MMAOT40WH CHECKVAL! " )
  
      if(MasterProc) write(6,*) "Init_DepMap D2D FINISHED"
-!     call CheckStop( icheck < 0 , "D2D STOPPER! " )
 
   end subroutine Init_DepMap
 
@@ -336,18 +313,17 @@ contains
      real, dimension(:,:), intent(in) ::  fluxfrac   ! dim (NADV, NLANDUSE)
      real, dimension(:), intent(in) ::  c_hvegppb   ! dim (NLANDUSE)
      real, dimension(:), intent(in) ::  coverage    ! dim (NLANDUSE), =fraction
-     integer :: n, nadv, nadv2, ihh, idd, imm, iLC
-     !real :: o3WH, o3DF   ! O3 over wheat, decid forest
-     real :: veg_o3       ! O3 (ppb)  at canopy top, for  e.g. wheat, decid forest
-     real :: Y            ! Threshold for flux
+     integer :: n, nadv, nadv2, ihh, idd, imm, iLC, iEco
+     real :: veg_o3  ! O3 (ppb)  at canopy top, for  e.g. wheat, decid forest
+     real :: Y       ! Threshold for flux
 
 
      real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG  ! Converts from 
                                                       ! mol/cm3 to nmole/m3
 
   !ECO08:  Variables added for new ecosystem dep
-     real, dimension(0:size(DEP_RECEIVERS)-1) :: invEcoArea, EcoArea
-     integer :: ndep, RLC   ! RLC = receiver land-cover
+     real, dimension(NDEF_ECOSYSTEMS) :: invEcoFrac, EcoFrac
+     integer :: ndep
      real :: Fflux
 
      real ::  to_nmole, timefrac, fstfrac 
@@ -356,32 +332,29 @@ contains
      timefrac = dt/3600.0
      fstfrac  = dt*1.0e-6     ! Converts also nmole to mmole
 
-
   ! Must match areas given above, e.g. DDEP_CONIF -> Conif
 
-  !ECO08, Ecosystem areas:
-     EcoArea(CONIF)   = sum( coverage(:), LandType(:)%is_conif )
-     EcoArea(DECID)   = sum( coverage(:), LandType(:)%is_decid )
-     EcoArea(CROP)    = sum( coverage(:), LandType(:)%is_crop  )
-     EcoArea(SEMINAT) = sum( coverage(:), LandType(:)%is_seminat )
-     EcoArea(WATER_D) = sum( coverage(:), LandType(:)%is_water )
-     EcoArea(GRID_LC)    = 1.0
+  !ECO08, Ecosystem areas, which were assigned in Init_DryDep:
+  !  EcoFrac(CONIF)   = sum( coverage(:), LandType(:)%is_conif )
+  !  EcoFrac(FULL_GRID)    = 1.0
 
-     invEcoArea(:) = 0.0
+     EcoFrac(:)    = EcoSystemFrac(:,i,j)
+     invEcoFrac(:) = 0.0
 
-     do n = 0, size(DEP_RECEIVERS)-1
-        if ( EcoArea(n) > 1.0e-39 ) invEcoArea(n) = 1.0/EcoArea(n)
+     do n = 1, NDEF_ECOSYSTEMS
+        if ( EcoFrac(n) > 1.0e-39 ) invEcoFrac(n) = 1.0/EcoFrac(n)
      end do 
 
 
    !  Query - crops, outisde g.s. ????
      !if ( DEBUG_MY_DRYDEP .and. first_call .and. debug_flag ) then
      if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-       write(*,*)  "ECOAREAS ", i,j, EcoArea(:)
-         do n = 1, 19
-           write(*,*)  "ECOCHECK ", n, i,j, LandType(n)%is_conif, coverage(n)
+       write(*,*)  "ECOAREAS ", i,j
+         do n = 1,  NDEF_ECOSYSTEMS
+           write(*,"(a,i3,a,f14.4,g12.3)")  "ECOCHECK ", n, &
+               DEF_ECOSYSTEMS(n), EcoFrac(n), invEcoFrac(n)
          end do
-       write(*,*) "ECOCHECK ========================"
+       write(*,*) "Done ECOCHECK ========================"
         
      end if
      first_call = .false.
@@ -398,7 +371,10 @@ contains
 
      do ndep = 1, nOutDDep
         nadv  = OutDDep(ndep)%Index
-        RLC   = OutDDep(ndep)%LC
+        iEco   = OutDDep(ndep)%LC
+     if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
+         call CheckStop(iEco<1, "IECO ERROR: "//OutDDep(ndep)%name)
+     end if
         if ( nadv > 0 ) then  ! normal advectde species
            nadv2 = 1
            DDEP_GROUP(1) = nadv
@@ -416,43 +392,31 @@ contains
       Fflux = 0.0
       do n = 1, nadv2
          nadv = DDEP_GROUP(n)
-        if ( RLC == GRID_LC ) then 
-            Fflux = Fflux + Deploss(nadv) * sum( fluxfrac(nadv,:) )
-        else if ( RLC == CONIF ) then 
-            Fflux = Fflux + Deploss(nadv) * &
-               sum( fluxfrac(nadv,:), LandType(:)%is_conif )
-        else if ( RLC == DECID ) then 
-            Fflux = Fflux + Deploss(nadv) * &
-               sum( fluxfrac(nadv,:), LandType(:)%is_decid )
-        else if ( RLC == CROP ) then 
-            Fflux = Fflux + Deploss(nadv) * &
-               sum( fluxfrac(nadv,:), LandType(:)%is_crop )
-        else if ( RLC == SEMINAT ) then 
-            Fflux = Fflux + Deploss(nadv) * &
-               sum( fluxfrac(nadv,:), LandType(:)%is_seminat )
-        else if ( RLC == WATER_D ) then 
-            Fflux = Fflux + Deploss(nadv) * &
-               sum( fluxfrac(nadv,:), LandType(:)%is_water )
-        else 
-            Fflux = -1.0
-        end if
+         Fflux = Fflux + Deploss(nadv) * &
+             sum( fluxfrac(nadv,:), Is_EcoSystem(iEco,:) )
+!OCT09        if ( RLC == FULL_GRID ) then 
+!OCT09            Fflux = Fflux + Deploss(nadv) * sum( fluxfrac(nadv,:) )
+!OCT09        else if ( RLC == CONIF ) then 
+!OCT09            Fflux = Fflux + Deploss(nadv) * &
+!OCT09               sum( fluxfrac(nadv,:), LandType(:)%is_conif )
+!OCT09      .........
       end do ! n
         if ( OutDDep(ndep)%f2d < 1 .or. Fflux < 0.0 ) then
              write(6,*) "CATASTR ", ndep, OutDDep(ndep)%f2d,OutDDep(ndep)%name
-             write(6,*) "CATASTR  RLC", RLC
+             write(6,*) "CATASTR  iEco", iEco
              call CheckStop("CATASTROPHE: "//OutDDep(ndep)%name)
         end if
 
   !ECO08 
-  ! - invEcoAreaCF divides the flux per grid by the landarea of each
+  ! - invEcoFracCF divides the flux per grid by the landarea of each
   ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
 
         d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST) =  &
-            Fflux * convfac * OutDDep(ndep)%atw * invEcoArea(RLC)
+            Fflux * convfac * OutDDep(ndep)%atw * invEcoFrac(iEco)
 
         if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-           write(6,*) "DEBUG_ECO Fflux ", ndep, nadv, RLC, Fflux, &
-            d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST), DDEP_SOXGROUP
+           write(6,"(a,3i4,3es12.3)") "DEBUG_ECO Fflux ", ndep, nadv, &
+              iEco, Fflux, d_2d( OutDDep(ndep)%f2d,i,j,IOU_INST)
         end if ! DEBUG_ECO 
      end do ! ndep
 
@@ -466,7 +430,7 @@ do n = 1, nOutVEGO3
      if( OutVEGO3(n)%name(1:4) == "AFST")  then    !############### AFSTs ####
         Y = 0.1 * Y ! Index stores threshold Y x 10
         if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-           write(6,"(a,2i3,f4.1,es12.3)") "DEBUG_YYY Fflux ", &
+           write(6,"(a,2i3,f4.1,es12.3)") "DEBUG_FST Fflux ", &
                 n, iLC, Y, leaf_flux(iLC)
         end if
 

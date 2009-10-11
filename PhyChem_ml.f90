@@ -94,7 +94,7 @@ contains
     DO_OUTER: do nstep = 1,nmax
 
        !     Hours since midnight at any time-step
-       !	using current_date we have already nstep taken into account
+       !    using current_date we have already nstep taken into account
 
        thour = real(current_date%hour) + current_date%seconds/3600.0 & 
                    + 0.5*dt_advec/3600.0 
@@ -204,9 +204,9 @@ contains
            call trajectory_out
           !=============================
 
-!	the following partly relates to end of time step - hourly output
-!	partly not depends on current_date
-!	=> add dt_advec to current_date already here
+!    the following partly relates to end of time step - hourly output
+!    partly not depends on current_date
+!    => add dt_advec to current_date already here
 
 
           !====================================

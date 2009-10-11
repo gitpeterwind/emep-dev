@@ -246,9 +246,9 @@ contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   subroutine MeteoRead(numt)
 
-    !	the subroutine reads meteorological fields and parameters (every
-    !	METSTEP-hours) from NetCDF fields-files, divide the fields into 
-    !       domains	and sends subfields to the processors
+    !    the subroutine reads meteorological fields and parameters (every
+    !    METSTEP-hours) from NetCDF fields-files, divide the fields into 
+    !       domains    and sends subfields to the processors
 
 
     implicit none
@@ -320,14 +320,14 @@ contains
 
     if(  current_date%month == 1 .and.         &
          current_date%day   == 1 .and.         &
-         current_date%hour  == 0 )	     &
+         current_date%hour  == 0 )         &
          call Init_nmdays( current_date )
 
 
 
-    if(me == 0 .and. MY_DEBUG) write(6,*) 					&
-         '*** nyear,nmonth,nday,nhour,numt,nmdays2'	&
-         ,next_inptime%year,next_inptime%month,next_inptime%day	&
+    if(me == 0 .and. MY_DEBUG) write(6,*)     				&
+         '*** nyear,nmonth,nday,nhour,numt,nmdays2'    &
+         ,next_inptime%year,next_inptime%month,next_inptime%day    &
          ,next_inptime%hour,numt,nmdays(2)
 
 
@@ -551,9 +551,9 @@ contains
     !pw
     ! NB: This routine may disapear in later versions 
     !
-    !	the subroutine reads meteorological fields and parameters every
-    !	six-hour from fields-files, divide the fields into domains
-    !	and sends subfields to the processors using nx calls
+    !    the subroutine reads meteorological fields and parameters every
+    !    six-hour from fields-files, divide the fields into domains
+    !    and sends subfields to the processors using nx calls
 
 
     implicit none
@@ -562,7 +562,7 @@ contains
 
 
 
-    !	local
+    !    local
 
     integer   ierr, fid, nr, i, j, k, ij
     integer   nyear, nmonth, nday, nhour, nprognosis
@@ -585,12 +585,12 @@ contains
 
 
 
-    !	definition of the parameter number of the meteorological variables
-    !	read from field-files:
+    !    definition of the parameter number of the meteorological variables
+    !    read from field-files:
 
     !
-    !	u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
-    !	ps(8),t2_nwp(31),fh(36),fl(37),tau(38),ustar(53),trw(845), sst(103)
+    !    u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
+    !    ps(8),t2_nwp(31),fh(36),fl(37),tau(38),ustar(53),trw(845), sst(103)
     !  Meteorology available from year 2002 in EMEP files:
     !       rh2m(32), SWC(85, first 7.2cm), 
     !          SWCdeep(86, in the following 6x7.2cm = 43.2 cm))
@@ -620,8 +620,8 @@ contains
 
        write(fname,fmt='(''fil'',i4.4)') numt
 
-       open (fid,file=fname				&
-            ,form='unformatted',access='sequential'	&
+       open (fid,file=fname    			&
+            ,form='unformatted',access='sequential'    &
             ,status='old',iostat=ios)
 
        call CheckStop(ios, "Error opening infield in Met_ml" // fname)
@@ -706,7 +706,7 @@ contains
              !  if we start 1. of January, then nyear is the year before
              !  so we have to rerun Init_nmdays!
 
-             if(current_date%year.ne.nyear)	&
+             if(current_date%year.ne.nyear)    &
                   call Init_nmdays( current_date )
 
              ! for printout assign current_date to next_inptime!
@@ -715,7 +715,7 @@ contains
              next_inptime = current_date    !hfTD ?? Can this be done? 
              !Why add_dates before??
 
-	  else
+      else
 
              !   find time for which meteorology is valid:
 
@@ -725,9 +725,9 @@ contains
              call add_secs(ts_now,nsec)
              next_inptime=make_current_date(ts_now)
 
-             !	compare the input time with current_date, 
+             !    compare the input time with current_date, 
              !       it should be METSTEP hours later
-             !	check if current_date+METSTEP = next_inptime
+             !    check if current_date+METSTEP = next_inptime
 
              nsec= METSTEP*3600.0
              ts_now=make_timestamp(current_date)
@@ -735,7 +735,7 @@ contains
              buf_date=make_current_date(ts_now)
 
 
-             !	now check:
+             !    now check:
 
              call CheckStop(buf_date%year,   next_inptime%year,   &
                   "In infield: wrong next input year")
@@ -749,19 +749,19 @@ contains
                   "In infield: wrong next input seconds")
 
 
-             !	now the last check, if we have reached a new year, i.e. current date
-             !	is 1.1. midnight, then we have to rerun Init_nmdays
+             !    now the last check, if we have reached a new year, i.e. current date
+             !    is 1.1. midnight, then we have to rerun Init_nmdays
 
              if(  current_date%month == 1 .and.         &
                   current_date%day   == 1 .and.         &
-                  current_date%hour  == 0 )	          &
+                  current_date%hour  == 0 )              &
                   call Init_nmdays( current_date )
 
           end if  ! numt
 
-          if(me == 0 .and. MY_DEBUG) write(6,*) 					&
-               '*** nyear,nmonth,nday,nhour,numt,nmdays2,nydays'	&
-               ,next_inptime%year,next_inptime%month,next_inptime%day	&
+          if(me == 0 .and. MY_DEBUG) write(6,*)     				&
+               '*** nyear,nmonth,nday,nhour,numt,nmdays2,nydays'    &
+               ,next_inptime%year,next_inptime%month,next_inptime%day    &
                ,next_inptime%hour,numt,nmdays(2),nydays
 
        endif
@@ -789,7 +789,7 @@ contains
 
        case (3)
 
-	  call getmetfieldMet(ident(20),itmp,dumhel)
+      call getmetfieldMet(ident(20),itmp,dumhel)
 
           do j = 1,ljmax
              do i = 1,limax
@@ -822,9 +822,9 @@ contains
 
           call getmetfieldMet(ident(20),itmp,th(1,1,k,nr))
 
-          !	  case (22)
+          !      case (22)
           !
-          !	      call getmetfield(ident(20),itmp,cw(1,1,k,nr))
+          !          call getmetfield(ident(20),itmp,cw(1,1,k,nr))
 
           !          case (26)                                          !ASSYCON
           !              call getmetfield(ident(20),itmp,ccc(1,1,k,nr)) !ASSYCON
@@ -833,7 +833,7 @@ contains
 
           call getmetfieldMet(ident(20),itmp,pr(1,1,k))
 
-          !	  case (845) ! pw u3 MM5 TOTALRW
+          !      case (845) ! pw u3 MM5 TOTALRW
           !
           !              call getmetfield(ident(20),itmp,trw(1,1,k))
 
@@ -927,7 +927,7 @@ contains
     !  16 bit input and unpack
     !
     !  input:
-    !     mode:   0 = read field	is now hardcoded
+    !     mode:   0 = read field    is now hardcoded
     !             1 = read field, skip fields until time > itime
     !             2 = read field if field time = itime
     !                 (otherwise next read starts at the same field)
@@ -1025,8 +1025,8 @@ contains
        call CheckStop( ios > 0 , "**getflt** read error 1 " )
 
        do i=1,20
-	  ident(i)=idpack(i)
-	  ipack(i+1)=idpack(i)
+      ident(i)=idpack(i)
+      ipack(i+1)=idpack(i)
        end do
 
        !
@@ -1099,7 +1099,7 @@ contains
           itp = 21+(tgj0(d)+JRUNBEG-2)*ipack(11) + tgi0(d)+IRUNBEG-2
           do j = 1,tljmax(d)
              do i = 1,tlimax(d)
-	        itmp(ida+i) = ipack(itp+i)
+            itmp(ida+i) = ipack(itp+i)
              enddo
              ida = ida + MAXLIMAX
              itp = itp + ipack(11)
@@ -1119,7 +1119,7 @@ contains
 
 
 
-    else		
+    else    	
 
        ! me.ne.0, always receive to get itmp(1)
 
@@ -1197,7 +1197,7 @@ contains
 
     integer, intent(in):: numt
 
-    !	local
+    !    local
 
     real,   dimension(KMAX_MID)          ::  prhelp    &
          ,exf2
@@ -1292,7 +1292,7 @@ contains
        CALL MPI_RECV( urcv, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
             neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
        do k = 1,KMAX_MID
-	  do j = 1,ljmax
+      do j = 1,ljmax
              u(0,j,k,nr) = urcv(j,k)
           enddo
        enddo
@@ -1420,7 +1420,7 @@ contains
           if(foundsdot.and.sdot_at_mid)then !pw rv1_9_24
              do k = KMAX_MID,2,-1
 
-                sdot(i,j,k,nr) = sdot(i,j,k-1,nr) 		   &
+                sdot(i,j,k,nr) = sdot(i,j,k-1,nr)     	   &
                      + (sdot(i,j,k,nr)-sdot(i,j,k-1,nr))   &
                      * (sigma_bnd(k)-sigma_mid(k-1))       &
                      / (sigma_mid(k)-sigma_mid(k-1))
@@ -1433,9 +1433,9 @@ contains
           sdot(i,j,KMAX_BND,nr)=0.0
           sdot(i,j,1,nr)=0.0
 
-          !	conversion from % to fractions (<0,1>) for cloud cover
-          !	calculation of cc3dmax (see eulmc.inc) - 
-          !	maximum of cloud fractions for layers above a given layer
+          !    conversion from % to fractions (<0,1>) for cloud cover
+          !    calculation of cc3dmax (see eulmc.inc) - 
+          !    maximum of cloud fractions for layers above a given layer
 
           cc3d(i,j,1) = 0.01 * cc3d(i,j,1)
           cc3dmax(i,j,1) = cc3d(i,j,1)
@@ -1456,8 +1456,8 @@ contains
 
 
 
-    ! 	lines associated with computation of surface diffusion 
-    !	coefficient are commented
+    !     lines associated with computation of surface diffusion 
+    !    coefficient are commented
 
     xkmin = 1.e-3
 
@@ -1487,13 +1487,13 @@ contains
              p1 = sigma_bnd(k)*(ps(i,j,nr) - PT) + PT
 
 
-	     exf1(k) = CP * Exner_nd( p1 )
+         exf1(k) = CP * Exner_nd( p1 )
 
              p2 = sigma_mid(k)*(ps(i,j,nr) - PT) + PT
 
              !     exner-function of the full-levels
 
-	     exf2(k) = CP * Exner_nd(p2)  
+         exf2(k) = CP * Exner_nd(p2)  
 
              !     height of the half-layers 
 
@@ -1536,7 +1536,7 @@ contains
              !divide by the scaling in the perpendicular direction to get effective u
              !(for conformal projections like Polar Stereo, xm_i and xm_j are equal)
 
-	  enddo
+      enddo
        enddo
        do j = 0,ljmax
           do i = 1,limax
@@ -1578,7 +1578,7 @@ contains
     if (neighbor(WEST) .ne. NOPROC) then
        CALL MPI_RECV( urcv, 8*MAXLJMAX, MPI_BYTE, &
             neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
-	  do j = 1,ljmax
+      do j = 1,ljmax
              Ps_extended(0,j) = urcv(j,1)
           enddo
     else
@@ -1619,7 +1619,7 @@ contains
     if (neighbor(EAST) .ne. NOPROC) then
        CALL MPI_RECV( urcv, 8*MAXLJMAX, MPI_BYTE, &
             neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
-	  do j = 1,ljmax
+      do j = 1,ljmax
              Ps_extended(limax+1,j) = urcv(j,1)
           enddo
     else
@@ -1713,25 +1713,25 @@ contains
 
        div = 1./real(nmax-(nstep-1))
 
-       u(:,:,:,1)    = u(:,:,:,1) 				&
+       u(:,:,:,1)    = u(:,:,:,1)     			&
             + (u(:,:,:,2) - u(:,:,:,1))*div
-       v(:,:,:,1)    = v(:,:,:,1) 				&
+       v(:,:,:,1)    = v(:,:,:,1)     			&
             + (v(:,:,:,2) - v(:,:,:,1))*div
-       sdot(:,:,:,1) = sdot(:,:,:,1) 			&
+       sdot(:,:,:,1) = sdot(:,:,:,1)     		&
             + (sdot(:,:,:,2) - sdot(:,:,:,1))*div
-       th(:,:,:,1)   = th(:,:,:,1) 				&
+       th(:,:,:,1)   = th(:,:,:,1)     			&
             + (th(:,:,:,2) - th(:,:,:,1))*div
-       q(:,:,:,1)    = q(:,:,:,1) 				&
+       q(:,:,:,1)    = q(:,:,:,1)     			&
             + (q(:,:,:,2) - q(:,:,:,1))*div
        !      ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
        !                   + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
-       skh(:,:,:,1)  = skh(:,:,:,1) 				&
+       skh(:,:,:,1)  = skh(:,:,:,1)     			&
             + (skh(:,:,:,2) - skh(:,:,:,1))*div
-       roa(:,:,:,1)  = roa(:,:,:,1) 				&
+       roa(:,:,:,1)  = roa(:,:,:,1)     			&
             + (roa(:,:,:,2) - roa(:,:,:,1))*div
-       ps(:,:,1)     = ps(:,:,1) 				&
+       ps(:,:,1)     = ps(:,:,1)     			&
             + (ps(:,:,2) - ps(:,:,1))*div
-       t2_nwp(:,:,1) = t2_nwp(:,:,1) 				&
+       t2_nwp(:,:,1) = t2_nwp(:,:,1)     			&
             + (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
        rh2m(:,:,1) = rh2m(:,:,1)  &
             + (rh2m(:,:,2) - rh2m(:,:,1))*div
@@ -1741,18 +1741,18 @@ contains
             + (SoilWater_deep(:,:,2) - SoilWater_deep(:,:,1))*div
 
 
-       fh(:,:,1)     = fh(:,:,1) 				&
+       fh(:,:,1)     = fh(:,:,1)     			&
             + (fh(:,:,2) - fh(:,:,1))*div
-       fl(:,:,1)     = fl(:,:,1) 				&
+       fl(:,:,1)     = fl(:,:,1)     			&
             + (fl(:,:,2) - fl(:,:,1))*div
-       tau(:,:,1)    = tau(:,:,1) 				&
+       tau(:,:,1)    = tau(:,:,1)     			&
             + (tau(:,:,2) - tau(:,:,1))*div
-       sst(:,:,1)    = sst(:,:,1) 				&
+       sst(:,:,1)    = sst(:,:,1)     			&
             + (sst(:,:,2)   - sst(:,:,1))*div
 !hf XX
-       sdepth(:,:,1)    = sdepth(:,:,1) 				&
+       sdepth(:,:,1)    = sdepth(:,:,1)     			&
             + (sdepth(:,:,2)   - sdepth(:,:,1))*div
-       ice(:,:,1)    = ice(:,:,1) 				&
+       ice(:,:,1)    = ice(:,:,1)     			&
             + (ice(:,:,2)   - ice(:,:,1))*div
 
        !  precipitation and cloud cover are no longer interpolated
@@ -1959,9 +1959,9 @@ contains
     !c
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !c
-    !c	written by Trond Iversen,  modified by Hugo Jakobsen, 060994
+    !c    written by Trond Iversen,  modified by Hugo Jakobsen, 060994
     !c
-    !c	Called from: eulmain.f
+    !c    Called from: eulmain.f
     !c
     !c-----------------------------------------------------------------
     !c
@@ -1972,14 +1972,14 @@ contains
     !!        is also calculated.
     !c
     !c
-    !c	if nroa = 1 also roa is calculated.
-    !c	if nfirst=1 for the initial timelevel
+    !c    if nroa = 1 also roa is calculated.
+    !c    if nfirst=1 for the initial timelevel
     !c
     !c
     !c-----------------------------------------------------------------
-    !c	routines called:
+    !c    routines called:
     !c
-    !c		smoosp
+    !c    	smoosp
     !c
     !c
     !c-----------------------------------------------------------------
@@ -1987,79 +1987,79 @@ contains
     !c    DescriPTion of the parameters/variables defined in this file:  
     !c
     !c
-    !c	absfac	: |xfac|
-    !c	abshd	: |fm|
-    !c	amax1	: fortran function, choosing largest value
-    !c	amin1	: fortran function, choosing smallest value
-    !c	CP	: heat capaciyt of air at constant pressure, J/(kg K)
-    !c	delq	: available heat flux for developing the unstable ABL, J/m2
+    !c    absfac	: |xfac|
+    !c    abshd	: |fm|
+    !c    amax1	: fortran function, choosing largest value
+    !c    amin1	: fortran function, choosing smallest value
+    !c    CP	: heat capaciyt of air at constant pressure, J/(kg K)
+    !c    delq	: available heat flux for developing the unstable ABL, J/m2
     !!              : heat-input per m2 from the ground during unstable BL
-    !c	deltaz	: zm(i,k) - zm(i,k+1), m
-    !c	dpidth	: heat increasement in accordance with temp. increasement, J/m2
-    !c	dth	: iterative increament in potential temperature
-    !c	dth0	: accumulated increament in iterative temperature
-    !c	dtz	: time interwall for integration of surface heat fluxes
-    !c		  in the ABL-height calculations, s
-    !c	dvdz	: Wind shear, 1/s
-    !c	eps	: small number avoiding ri to become infinitely large
-    !c	exfrco	: parameter in the Kz model
-    !c	exnm	: exner function in the full sigma-levels, J/(kg K)
-    !c	exns	: exner function in the half sigma-levels, J/(kg K)
-    !c	fh	: surface flux of sensible heat, W/m2
-    !c	fl	: surface flux of sensible heat, W/m2 ! ds u7.4vg
-    !c	fm	: surface stress (flux of momentum), N/m2
-    !c	g	: gravitational acceleration, m/s2
-    !c	hs	: height of surface layer (i.e. prandtl-layer), m
-    !c	hsl	: (= hs/l, where l is the monin-obhukov length)
-    !c	i	: grid index in x-direction
-    !c	iip	: limax + 1
-    !c	limax	: max number of grid points in x-direction
-    !c	iznew	: index for new value of the ABL-height, m
-    !c	izold	: index for previous value of the ABL-height, m
-    !c	j	: grid index in y-direction
-    !c	jjp	: ljmax + 1
-    !c	ljmax	: max number of grid points in y-direction
-    !c	k	: grid index in vertical-direction
-    !c	kkk	: helping index for the cycling of ABL-height
-    !c	kkm	: number of full s-levels, *** not used ***
-    !c	KMAX_BND	: max number of vertical half levels
-    !c		  in sigma coordinates
-    !c	KMAX_MID	: max number of vertical full levels
-    !c		  in sigma coordinates
+    !c    deltaz	: zm(i,k) - zm(i,k+1), m
+    !c    dpidth	: heat increasement in accordance with temp. increasement, J/m2
+    !c    dth	: iterative increament in potential temperature
+    !c    dth0	: accumulated increament in iterative temperature
+    !c    dtz	: time interwall for integration of surface heat fluxes
+    !c    	  in the ABL-height calculations, s
+    !c    dvdz	: Wind shear, 1/s
+    !c    eps	: small number avoiding ri to become infinitely large
+    !c    exfrco	: parameter in the Kz model
+    !c    exnm	: exner function in the full sigma-levels, J/(kg K)
+    !c    exns	: exner function in the half sigma-levels, J/(kg K)
+    !c    fh	: surface flux of sensible heat, W/m2
+    !c    fl	: surface flux of sensible heat, W/m2 ! ds u7.4vg
+    !c    fm	: surface stress (flux of momentum), N/m2
+    !c    g	: gravitational acceleration, m/s2
+    !c    hs	: height of surface layer (i.e. prandtl-layer), m
+    !c    hsl	: (= hs/l, where l is the monin-obhukov length)
+    !c    i	: grid index in x-direction
+    !c    iip	: limax + 1
+    !c    limax	: max number of grid points in x-direction
+    !c    iznew	: index for new value of the ABL-height, m
+    !c    izold	: index for previous value of the ABL-height, m
+    !c    j	: grid index in y-direction
+    !c    jjp	: ljmax + 1
+    !c    ljmax	: max number of grid points in y-direction
+    !c    k	: grid index in vertical-direction
+    !c    kkk	: helping index for the cycling of ABL-height
+    !c    kkm	: number of full s-levels, *** not used ***
+    !c    KMAX_BND	: max number of vertical half levels
+    !c    	  in sigma coordinates
+    !c    KMAX_MID	: max number of vertical full levels
+    !c    	  in sigma coordinates
     !c       kzmax   : maximum value of xksig, m2/s
     !c       kzmin   : minimum value of xksig, m2/s
-    !c	ndth	: do variable for convective ABL-height iteration loop
-    !c	nh1	: counts number of layers below zlimax
-    !c	nh2	: counts number of layers with Kz > ( Kz )limit
-    !c	nr	: number of met.fields stored in arrays (= 1 or 2)
-    !c	nt	: time counting variable of the outer time-loop
-    !c	p	: local pressure, hPa (mb)
+    !c    ndth	: do variable for convective ABL-height iteration loop
+    !c    nh1	: counts number of layers below zlimax
+    !c    nh2	: counts number of layers with Kz > ( Kz )limit
+    !c    nr	: number of met.fields stored in arrays (= 1 or 2)
+    !c    nt	: time counting variable of the outer time-loop
+    !c    p	: local pressure, hPa (mb)
     !c       pi      : pi = 4.*atan(1.) = 3.14 ...
-    !c	pidth	: heat used to adjust air temperature, J/m2
-    !c	pref	: refference pressure (at ground level), 1.e+5 Pa
-    !c	ps	: surface pressure, hPa
-    !c	PT	: pressure at the top of the model atmosphere, hPa (mb)
-    !c	pz	: local pressure in half sigma levels, hPa (mb),
-    !c		  helping array (j - slices) for pressure
-    !c	pzpbl	: stores H(ABL) for averaging and plotting purposes, m
-    !c	ri	: richardson`s number
-    !c	ri0	: critical richardson`s number
-    !c	risig	: richardson's number in sigmas-levels
-    !c	roas	: air density at surface, kg/m3
-    !c	sigma_bnd	: height of the half-sigma layers
-    !c	sigma_mid	: height of the full-sigma layers
-    !c	sm	: height of the surface layer in s-coordinates (4% of H(ABL), m
-    !c	th	: potensial temperature (theta), K
-    !c	t2_nwp	: potensial temperature at 2m height, K
-    !c	thadj	: adjustable surface temperature, K
-    !c	thsrf	: potensial temperature at the surface, K
-    !c	trc	: helping variable telling whether or not unstable ABL exists
+    !c    pidth	: heat used to adjust air temperature, J/m2
+    !c    pref	: refference pressure (at ground level), 1.e+5 Pa
+    !c    ps	: surface pressure, hPa
+    !c    PT	: pressure at the top of the model atmosphere, hPa (mb)
+    !c    pz	: local pressure in half sigma levels, hPa (mb),
+    !c    	  helping array (j - slices) for pressure
+    !c    pzpbl	: stores H(ABL) for averaging and plotting purposes, m
+    !c    ri	: richardson`s number
+    !c    ri0	: critical richardson`s number
+    !c    risig	: richardson's number in sigmas-levels
+    !c    roas	: air density at surface, kg/m3
+    !c    sigma_bnd	: height of the half-sigma layers
+    !c    sigma_mid	: height of the full-sigma layers
+    !c    sm	: height of the surface layer in s-coordinates (4% of H(ABL), m
+    !c    th	: potensial temperature (theta), K
+    !c    t2_nwp	: potensial temperature at 2m height, K
+    !c    thadj	: adjustable surface temperature, K
+    !c    thsrf	: potensial temperature at the surface, K
+    !c    trc	: helping variable telling whether or not unstable ABL exists
     !!              :       0 => no need for further calc. of ziu
     !!              :       1 => ziu not found yet. 
-    !c	u	: wind speed in the x-direction, m/s
+    !c    u	: wind speed in the x-direction, m/s
     !c       umax    : maximum value of u and v, m/s
-    !c	ustar	: friction velocity, m/s
-    !c	v	: wind speed in the y-direction, m/s
+    !c    ustar	: friction velocity, m/s
+    !c    v	: wind speed in the y-direction, m/s
     !c       ven     : ventilation coefficient, m3
     !c       venav   : time averaged ventilation coefficient, m3
     !c       venmax  : maximum value of ven, m3
@@ -2068,37 +2068,37 @@ contains
     !c       ven06   : averaged ventilation coefficient at 06 UTC, m3
     !c       ven12   : averaged ventilation coefficient at 12 UTC, m3
     !c       ven18   : averaged ventilation coefficient at 18 UTC, m3
-    !c	vdfac	: factor for reduction of vD(1m) to vD(hs)
+    !c    vdfac	: factor for reduction of vD(1m) to vD(hs)
     !!              : i.e. factor for aerodynamic resistance towards dry deposition
     !!              : vd(50m) = vd(1m)/(1 + vd(1m)*vdfac)
-    !c	x12	: mixing length squared, m2
-    !c	xfac	: helping variable for reducing concentrations to 1m values
-    !c	xfrco	: parameter in the Kz model
-    !c	KAPPA	: r/CP (-)
-    !c	KARMAN	: von Karmans constant
-    !c	xkdz	: the vertical derivative of xkhs at hs, m/s
+    !c    x12	: mixing length squared, m2
+    !c    xfac	: helping variable for reducing concentrations to 1m values
+    !c    xfrco	: parameter in the Kz model
+    !c    KAPPA	: r/CP (-)
+    !c    KARMAN	: von Karmans constant
+    !c    xkdz	: the vertical derivative of xkhs at hs, m/s
     !!              : i.e. vertical gradient of xkhs
-    !c	xkhs	: diffusivity at hs (in surface layer), m2/s
+    !c    xkhs	: diffusivity at hs (in surface layer), m2/s
     !!              : i.e. vertical exchange coeff. on top of prandtl-layer 
-    !c	xksig	: estimated exchange coefficient, Kz,  in intermediate 
-    !c		  sigma levels, m2/s
-    !c	xksm	: spacially smoothed Kz in z direction, m2/s.
+    !c    xksig	: estimated exchange coefficient, Kz,  in intermediate 
+    !c    	  sigma levels, m2/s
+    !c    xksm	: spacially smoothed Kz in z direction, m2/s.
     !!              : xksig smoothed over three adjacent layers
-    !c	xkzi	: local helping array for the vertical diffusivity, m2/s
+    !c    xkzi	: local helping array for the vertical diffusivity, m2/s
     !!              : i.e. vertical exchange coeff. on top of ABL for unstable BL
     !c       xtime   : 6.*3600. (seconds in one term, six hours)
-    !c	zi	: Height of ABL (final value), m
-    !c	zlimax	: maximum value of ABL-height, zi, (2000), m
-    !c	zimhs	: ziu - hs
-    !c	zimin	: minimum value of ABL-height, zi, (200), m
-    !c	zimz	: ziu - zs_bnd
-    !c	zis	: height of the stable ABL, m
-    !c	ziu	: height of the unstable ABL, m
-    !c	zixx	: Height og ABL (intermediate value), m
-    !c	zm	: geopotential height of full sigma levels above topography, m
-    !c	zmhs	: zs_bnd - hs
-    !c	zs_bnd	: geopotential height of  half sigma levels above topography, m
-    !c	ztop	: height of the uppermost layer in s-coordinates
+    !c    zi	: Height of ABL (final value), m
+    !c    zlimax	: maximum value of ABL-height, zi, (2000), m
+    !c    zimhs	: ziu - hs
+    !c    zimin	: minimum value of ABL-height, zi, (200), m
+    !c    zimz	: ziu - zs_bnd
+    !c    zis	: height of the stable ABL, m
+    !c    ziu	: height of the unstable ABL, m
+    !c    zixx	: Height og ABL (intermediate value), m
+    !c    zm	: geopotential height of full sigma levels above topography, m
+    !c    zmhs	: zs_bnd - hs
+    !c    zs_bnd	: geopotential height of  half sigma levels above topography, m
+    !c    ztop	: height of the uppermost layer in s-coordinates
     !c
     !c-------------------------------------------------------------------
     !c..the following sketches the sigma-surfaces:
@@ -2384,7 +2384,7 @@ contains
        do i = 1,limax
           zis(i)=zimin
           nh1(i) = KMAX_MID
-          nh2(i) = 1        	
+          nh2(i) = 1            
        enddo
        !c
        do k=KMAX_MID,2,-1
@@ -2473,11 +2473,11 @@ contains
           ! calculating the height of unstable ABL
           !
           !!      if(trc(i).eq.1.) then
-	  kabl = KMAX_MID	
+      kabl = KMAX_MID	
           do while( trc(i).eq.1) 
-             !! 28	 if(trc(i).eq.1.) then
+             !! 28     if(trc(i).eq.1.) then
              kabl = kabl-1
-	     pidth(i)=0.
+         pidth(i)=0.
 
 
              do k=KMAX_MID,kabl,-1
@@ -2487,9 +2487,9 @@ contains
              end do
 
 
-	     if(pidth(i).ge.delq(i).and.trc(i).eq.1.) then
+         if(pidth(i).ge.delq(i).and.trc(i).eq.1.) then
 
-                !c	at level kabl or below level kabl and above level kabl+1
+                !c    at level kabl or below level kabl and above level kabl+1
 
 
                 thsrf(i) = thc(i,kabl)     &
@@ -2518,11 +2518,11 @@ contains
 
 
           end do ! while
-          !!	       go to 28			  
+          !!           go to 28			  
 
-          !!		endif
+          !!    	endif
 
-          !!	  endif
+          !!      endif
 
        end do
 
@@ -2585,31 +2585,31 @@ contains
 
   subroutine smoosp(f,rmin,rmax)      
 
-    !c	file: eulmet-mnd.f
+    !c    file: eulmet-mnd.f
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !c
-    !c	written by Trond Iversen,  modified by Hugo Jakobsen, 080994
+    !c    written by Trond Iversen,  modified by Hugo Jakobsen, 080994
     !       parallellized and modified by Peter February 2003
     !
     !c
-    !c	Called from: tiphys.f
+    !c    Called from: tiphys.f
     !c
     !c----------------------------------------------------------------------
     !c
-    !c	This routine applies the shapiro filter with s=0.5 and s=-0.5         
-    !c	to the field f usinh h as a work space also the boundaries 
-    !c	are smoothed. f contains the smoothed field upon return.
+    !c    This routine applies the shapiro filter with s=0.5 and s=-0.5         
+    !c    to the field f usinh h as a work space also the boundaries 
+    !c    are smoothed. f contains the smoothed field upon return.
     !c
 
     !c    Definition of the variables:  
     !c
     !c
-    !c	f	: data to be smoothed
-    !c	iif	: =limax
-    !c	jjf	: =ljmax
-    !c	h1,h2	: = help variable
-    !c	rmin	: min allowed
-    !c	rmax	: max allowed
+    !c    f	: data to be smoothed
+    !c    iif	: =limax
+    !c    jjf	: =ljmax
+    !c    h1,h2	: = help variable
+    !c    rmin	: min allowed
+    !c    rmax	: max allowed
     !c
     implicit none
 
@@ -3424,7 +3424,7 @@ contains
 
              fac   = GRAV/(ps(i,j,nr) - PT)
              fac2  = fac*fac
-             dex12 = th(i,j,k-1,nr)*(exnm(i,j,k) - exns(i,j,k))   	&
+             dex12 = th(i,j,k-1,nr)*(exnm(i,j,k) - exns(i,j,k))       &
                   + th(i,j,k,nr)*(exns(i,j,k) - exnm(i,j,k-1))
              ro    = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) & 
                   - exnm(i,j,k-1))/(RGAS_KG*exns(i,j,k)*dex12)

@@ -190,14 +190,14 @@ private
 
  contains
 
-	subroutine parinit(min_grids)   
+    subroutine parinit(min_grids)   
 !
 !defines size and position of subdomains
 !
 
-	implicit none
+    implicit none
         integer, intent(in) :: min_grids  ! u4
-	integer i, j, ime, imex, imey, rest
+    integer i, j, ime, imex, imey, rest
            
 !
 !
@@ -206,8 +206,8 @@ private
 !
 !     Check if the subdomain is large enough
 !
-	mey = me/NPROCX
-	mex = me - mey*NPROCX
+    mey = me/NPROCX
+    mex = me - mey*NPROCX
 !
 !
 !     Find the number of grid points in each direction for this processor.
@@ -218,39 +218,39 @@ private
 !
 !     x-direction (longitude)
 !
-	limax = GIMAX/NPROCX
-	rest = GIMAX - limax*NPROCX
-	gi0 = mex*limax + 1
-	if(rest>0)then
-	  if(mex.eq.NPROCX-1)then
-	    limax = limax+1
-	    gi0 = gi0+rest-1
-	  elseif (mex < rest-1) then
-	    limax = limax + 1
-	    gi0 = gi0 + mex
-	  else
-	    gi0 = gi0 + rest-1
-	  endif
-	endif
-	gi1 = gi0 + limax - 1
+    limax = GIMAX/NPROCX
+    rest = GIMAX - limax*NPROCX
+    gi0 = mex*limax + 1
+    if(rest>0)then
+      if(mex.eq.NPROCX-1)then
+        limax = limax+1
+        gi0 = gi0+rest-1
+      elseif (mex < rest-1) then
+        limax = limax + 1
+        gi0 = gi0 + mex
+      else
+        gi0 = gi0 + rest-1
+      endif
+    endif
+    gi1 = gi0 + limax - 1
 !
 !     y-direction (latitude)
 !
-	ljmax = GJMAX/NPROCY
-	rest = GJMAX - ljmax*NPROCY
-	gj0 = mey*ljmax + 1
-	if(rest>0)then
-	  if(mey.eq.NPROCY-1)then
-	    ljmax = ljmax + 1
-	    gj0 = gj0 + rest-1
-	  elseif (mey < rest-1) then
-	    ljmax = ljmax + 1
-	    gj0 = gj0 + mey
-	  else
-	    gj0 = gj0 + rest-1
-	  endif
-	endif
-	gj1 = gj0 + ljmax - 1
+    ljmax = GJMAX/NPROCY
+    rest = GJMAX - ljmax*NPROCY
+    gj0 = mey*ljmax + 1
+    if(rest>0)then
+      if(mey.eq.NPROCY-1)then
+        ljmax = ljmax + 1
+        gj0 = gj0 + rest-1
+      elseif (mey < rest-1) then
+        ljmax = ljmax + 1
+        gj0 = gj0 + mey
+      else
+        gj0 = gj0 + rest-1
+      endif
+    endif
+    gj1 = gj0 + ljmax - 1
 
           if ( DEBUG_PAR ) then
              write(*,"(a12,10i6)") "DEBUG_PAR ", me, IRUNBEG, JRUNBEG, &
@@ -263,48 +263,48 @@ private
 !     processors. This is a repetition of the computations above,
 !     but now for all processors.
 !
-	do ime = 0, NPROC-1
+    do ime = 0, NPROC-1
 !
-	  imey = ime/NPROCX
-	  imex = ime - imey*NPROCX
+      imey = ime/NPROCX
+      imex = ime - imey*NPROCX
 !
 !     x-direction (longitude)
 !
-	  tlimax(ime) = GIMAX/NPROCX
-	  rest = GIMAX - tlimax(ime)*NPROCX
-	  tgi0(ime) = imex*tlimax(ime) + 1
-	  if(rest>0)then
-	    if (imex .eq. NPROCX-1) then
-	      tlimax(ime) = tlimax(ime) + 1
-	      tgi0(ime) = tgi0(ime) + rest-1
-	    elseif (imex < rest-1) then
-	      tlimax(ime) = tlimax(ime) + 1
-	      tgi0(ime) = tgi0(ime) + imex
-	    else
-	      tgi0(ime) = tgi0(ime) + rest-1
-	    endif
-	  endif
-	  tgi1(ime) = tgi0(ime) + tlimax(ime) - 1
+      tlimax(ime) = GIMAX/NPROCX
+      rest = GIMAX - tlimax(ime)*NPROCX
+      tgi0(ime) = imex*tlimax(ime) + 1
+      if(rest>0)then
+        if (imex .eq. NPROCX-1) then
+          tlimax(ime) = tlimax(ime) + 1
+          tgi0(ime) = tgi0(ime) + rest-1
+        elseif (imex < rest-1) then
+          tlimax(ime) = tlimax(ime) + 1
+          tgi0(ime) = tgi0(ime) + imex
+        else
+          tgi0(ime) = tgi0(ime) + rest-1
+        endif
+      endif
+      tgi1(ime) = tgi0(ime) + tlimax(ime) - 1
 !
 !     y-direction (latitude)
 !
-	  tljmax(ime) = GJMAX/NPROCY
-	  rest = GJMAX - tljmax(ime)*NPROCY
-	  tgj0(ime) = imey*tljmax(ime) + 1
-	  if(rest > 0)then
-	    if (imey .eq. NPROCY-1) then
-	      tljmax(ime) = tljmax(ime) + 1
-	      tgj0(ime) = tgj0(ime) + rest-1
-	    elseif (imey < rest-1) then
-	      tljmax(ime) = tljmax(ime) + 1
-	      tgj0(ime) = tgj0(ime) + imey
-	    else
-	      tgj0(ime) = tgj0(ime) + rest-1
-	    endif
-	  endif
-	  tgj1(ime) = tgj0(ime) + tljmax(ime) - 1
+      tljmax(ime) = GJMAX/NPROCY
+      rest = GJMAX - tljmax(ime)*NPROCY
+      tgj0(ime) = imey*tljmax(ime) + 1
+      if(rest > 0)then
+        if (imey .eq. NPROCY-1) then
+          tljmax(ime) = tljmax(ime) + 1
+          tgj0(ime) = tgj0(ime) + rest-1
+        elseif (imey < rest-1) then
+          tljmax(ime) = tljmax(ime) + 1
+          tgj0(ime) = tgj0(ime) + imey
+        else
+          tgj0(ime) = tgj0(ime) + rest-1
+        endif
+      endif
+      tgj1(ime) = tgj0(ime) + tljmax(ime) - 1
 !
-	enddo
+    enddo
 
 !      The size of the grid cannot be too small.       
 
@@ -319,21 +319,21 @@ private
 
         MasterProc = ( me == 0 )
 
-	end subroutine parinit
+    end subroutine parinit
 
 
-	subroutine Topology(cyclicgrid,poles)   
+    subroutine Topology(cyclicgrid,poles)   
 
 !defines the neighbors and boundaries of (sub)domain
 !Boundaries are defined as having coordinates 
 ! between 1 and li0 or between li1 and limax or
 ! between 1 and lj0 or between lj1 and ljmax
 
-	implicit none
+    implicit none
         integer, intent(in) :: cyclicgrid  ! rv2_4_1 1 if cyclic grid
        integer, intent(in) :: poles(2)  !  poles(1)=1 if North pole,
                                         !  poles(2)=1 if South pole
-	integer i, j, ime, imex, imey, rest
+    integer i, j, ime, imex, imey, rest
            
 !
 !
@@ -341,8 +341,8 @@ private
 !     processor
 !
 !
-	mey = me/NPROCX
-	mex = me - mey*NPROCX
+    mey = me/NPROCX
+    mex = me - mey*NPROCX
 !
 !
 !     Find the neighbors of this processor.
@@ -351,41 +351,41 @@ private
 !
         lj0 = 1
         lj1 = ljmax
-	if (mey > 0) then
-	  neighbor(SOUTH) = me-NPROCX
-	else
-	  neighbor(SOUTH) = NOPROC
-	  if(poles(2)==0)lj0 = 2
-	endif
-	if (mey < NPROCY-1) then
-	  neighbor(NORTH) = me+NPROCX
-	else
-	  neighbor(NORTH) = NOPROC
-	  if(poles(1)==0)lj1 = ljmax - 1
-	endif
-	if (mex > 0) then
-	  neighbor(WEST) = me-1
-	  li0 = 1
-	else
-	  neighbor(WEST) = NOPROC
-	  li0 = 2
+    if (mey > 0) then
+      neighbor(SOUTH) = me-NPROCX
+    else
+      neighbor(SOUTH) = NOPROC
+      if(poles(2)==0)lj0 = 2
+    endif
+    if (mey < NPROCY-1) then
+      neighbor(NORTH) = me+NPROCX
+    else
+      neighbor(NORTH) = NOPROC
+      if(poles(1)==0)lj1 = ljmax - 1
+    endif
+    if (mex > 0) then
+      neighbor(WEST) = me-1
+      li0 = 1
+    else
+      neighbor(WEST) = NOPROC
+      li0 = 2
           if(Cyclicgrid==1)then
              neighbor(WEST) =  me+NPROCX-1
              li0 = 1
           endif
-	endif
-	if (mex < NPROCX-1) then
-	  neighbor(EAST) = me+1
-	  li1 = limax
-	else
-	  neighbor(EAST) = NOPROC
-	  li1 = limax - 1
+    endif
+    if (mex < NPROCX-1) then
+      neighbor(EAST) = me+1
+      li1 = limax
+    else
+      neighbor(EAST) = NOPROC
+      li1 = limax - 1
           if(Cyclicgrid==1)then
              neighbor(EAST) = me-NPROCX+1
              li1 = limax
           endif
-	endif
+    endif
 
-	end subroutine topology
+    end subroutine topology
 
 end module Par_ml

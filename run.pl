@@ -9,7 +9,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=32:ib
 # wall time limit of run 
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=00:45:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -120,7 +120,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "2002";
+my $year = "2006";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -146,13 +146,14 @@ my $SEMEENA    = "mifasv";
 my $AGNES      = "nyiri";      
 my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";      
+
 my $USER        =  $DAVE;
 
 #my $METformat="felt";
 my $METformat="cdf";
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
-my $GRID = "EMEP"; # "EECCA"; # or EMEP or GLOBAL
+my $GRID = "EMEP"; #"EECCA"; # or EMEP or GLOBAL
 our $DataDir;
 if ($STALLO){
     $HOMEROOT      = "/home";      
@@ -181,32 +182,22 @@ if ($STALLO){
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 
 
-
-my $OZONE = "1"; 
-my $ACID = "0";     # Specify model type here, and check:
-  die "Must choose ACID or OZONE" unless $OZONE+$ACID==1;
-
-
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
 
 my (@emislist, $testv);
-if ( $OZONE ) {
-    @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-    $testv       = "rv3_3beta2";
-} elsif ( $ACID ) {
-    die "ACID not yet tested \n";	    
-}
-
+@emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
+$testv       = "rv3_3"; 
 
 #User directories
 my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
-my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";    # working and result directory
+# Chemistry-specific files:
+my $Chem        = "CRI_v2_R5";   # Label for chemical scheme used
+my $ChemDir     = "$ProgDir/ZCM_$Chem";   # for vocspec for this schem
+
+my $WORKDIR     = "$WORKROOT/$USER/${testv}_$Chem.$year";    # working and result directory
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
 
-# Chemistry-specific files:
-my $Chem        = "EmChem03";   # Label for chemical scheme used
-my $ChemDir     = "$ProgDir/ZCM_$Chem";   # for vocspec for this schem
 
 #ds check: and change
 chdir "$ProgDir";
@@ -285,8 +276,8 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "03";       # first month, use 2-digits!
-my $mm2   =  "03";       # last month, use 2-digits!
+my $mm1   =  "3";       # first month, use 2-digits!
+my $mm2   =  "3";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period

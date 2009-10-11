@@ -367,6 +367,11 @@
   integer, public, parameter, dimension(6) :: &
      DDEP_OXNGROUP = (/ HNO3,PAN,NO2,ANO3,MPAN,PNO3 /)
 
+! ------- RO2 Pool     species ------------------
+  integer, public, parameter :: SIZE_RO2_POOL      = 1
+  integer, public, parameter, dimension(1) :: &
+     RO2_POOL      = (/ -99 /)
+
 
  end module ChemGroups_ml
  !-----------------------------------------------------------

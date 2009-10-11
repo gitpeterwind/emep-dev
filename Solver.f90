@@ -52,6 +52,7 @@
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use Emissions_ml,      only: KEMISTOP    
+    use ChemGroups_ml,     only: RO2_POOL
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
     use ChemSpecs_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
 !dsx    use ChemRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
@@ -87,7 +88,7 @@
   !DS TEST integer, parameter:: nchemMAX=18
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for 
-  integer, parameter  :: EXTRA_ITER = 3    ! Set > 1 for even more iteration
+  integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
 
 
 contains

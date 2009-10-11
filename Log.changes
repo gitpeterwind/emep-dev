@@ -8,6 +8,8 @@ New *EcoSystem_ml* introduced to include definitions for EcoDep
 
 RO2POOL introduced in Solver to cope with CRI chemistry
 
+Makefile_gfortran added. Code compiles with stricted flags (although
+  with lots of warning!)
 
  !!!!****** ZD_ACID removed ****!!!! 
  Functionality must be created through GenChem system now.

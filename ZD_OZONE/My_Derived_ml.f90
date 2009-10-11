@@ -62,7 +62,7 @@ use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
 use ChemGroups_ml,  only :  OXNGROUP, DDEP_OXNGROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
-use LandDefs_ml,   only : LandDefs, LandType, Check_LandCoverPresent     ! e.g. "CF"
+use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , MasterProc  & 
@@ -180,16 +180,32 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
   D2_EXTRA = (/ &
-       "D2_VOC      "&
-      ,"WDEP_SO2    ","WDEP_SO4    ","WDEP_HNO3   ","WDEP_aNO3   ","WDEP_pNO3   " & 
-      ,"WDEP_NH3    ","WDEP_aNH4   ","D2_REDN     ","D2_SNOW     ","D2_SNratio  " &
-      ,"D2_HMIX     ","D2_HMIX00   ","D2_HMIX12   ","USTAR_NWP   " & !DSFEB09
+       "D2_VOC            " &
+      ,"WDEP_SO2          " &
+      ,"WDEP_SO4          " &
+      ,"WDEP_HNO3         " &
+      ,"WDEP_aNO3         " &
+      ,"WDEP_pNO3         " & 
+      ,"WDEP_NH3          " &
+      ,"WDEP_aNH4         " &
+      ,"D2_REDN           " &
+      ,"D2_SNOW           " &
+      ,"D2_SNratio        " &
+      ,"Area_Grid_km2     " & 
+      ,"Area_Conif_Frac   " & 
+      ,"Area_Decid_Frac   " & 
+      ,"Area_Seminat_Frac " & 
+      ,"Area_Crops_Frac   " & 
+      ,"Area_Water_D_Frac " & 
+      ,"D2_HMIX           " &
+!      ,"D2_HMIX00         " &
+!      ,"D2_HMIX12         " &
+      ,"USTAR_NWP         " & 
   /)
 
 
- ! ECO08:
   integer, public, parameter :: &   ! Groups for DDEP and WDEP
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
   integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
@@ -208,22 +224,23 @@ private
 
 
 
-   !ECO08 - specify some species and land-covers we want to output
+   ! Specify some species and land-covers we want to output
    ! depositions for in netcdf files. DDEP_ECOS must match one of
-   ! the DEP_RECEIVERS  in My_DryDep_ml.
+   ! the DEP_RECEIVERS  from EcoSystem_ml.
    !
-    integer, public, parameter :: NNDRYDEP = 7+size(DDEP_OXNGROUP)
+    integer, public, parameter :: NNDRYDEP = 7 ! +size(DDEP_OXNGROUP)
    !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
     integer, public, parameter, dimension(NNDRYDEP) :: &
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, &
-           SO2,  SO4, NH3, aNH4, DDEP_OXNGROUP /)
+           SO2,  SO4, NH3, aNH4 /) !, DDEP_OXNGROUP /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
       DDEP_ECOS  = (/ "Grid   ", "Conif  ", "Seminat", "Water_D" &
                     , "Decid  ", "Crops  " /)
 
-    integer, public, parameter, dimension(7) :: &
-      WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
+    integer, public, parameter, dimension(2) :: &
+      WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, aNO3, HNO3, pNO3 /)
+      !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
 
 
   ! Have many combinations: species x ecosystems
@@ -272,8 +289,8 @@ private
       RG_LABELS = (/ "Rs ", "Rns", "Gns" /)
     integer, public, parameter, dimension(2) :: &
       RG_SPECS = (/ NH3, SO2/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-      RG_LCS  = (/ "Grid", "CF  ", "SNL ", "GR  " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+      RG_LCS  = (/ "Grid" /) !, "CF  ", "SNL ", "GR  " /)
 !    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
 !      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" , "TESTRG","TC"/)
 
@@ -326,7 +343,6 @@ private
     integer :: i, ilab, nDD, nVg, nRG, nMET, nVEGO3, iLC, &
       iadv, ispec, atw
     integer :: isep1, isep2  ! location of seperators in sting
-    character(len=500) :: bigname ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: txt, txt2, units, txtnum
     real    :: Y           ! threshold for AFSTY, also used as X in AOT40X
@@ -362,7 +378,7 @@ private
 
 
      !------------- Dry Depositions for d_2d -------------------------
-     !ECO08: Add species and ecosystem depositions if wanted:
+     ! Add species and ecosystem depositions if wanted:
      ! We find the various combinations of gas-species and ecosystem, 
      ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
 
@@ -428,7 +444,7 @@ private
     call AddArray( OutDDep(:)%name, wanted_deriv2d, NOT_SET_STRING)
 
       !------------- Deposition velocities for d_2d -------------------------
-      !ECO08: Add species and ecosystem depositions if wanted:
+      ! Add species and ecosystem depositions if wanted:
       ! We find the various combinations of gas-species and ecosystem, 
       ! adding them to the derived-type array LCC_DDep (e.g. => VGO3_CF)
 
@@ -505,7 +521,6 @@ private
           !-------------End of Check if LC present in this array ------!
           nVEGO3 = nVEGO3 + 1
 
-          write(unit=bigname,fmt="(a,a,a,a)") trim(txt), trim(txtnum),"_",trim(txt2)
           write(unit=name,fmt="(a)") trim(txt)// trim(txtnum)//"_"//trim(txt2)
 
  ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )

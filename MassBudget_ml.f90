@@ -155,7 +155,7 @@ contains
 
     if(MasterProc)then
          do n = 1,NSPEC_ADV
-	   if(sumint(n) >  0. ) then
+       if(sumint(n) >  0. ) then
              write(IO_RES,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 
              write(6,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 
            end if
@@ -198,15 +198,15 @@ contains
                               ,family_fracmass  ! mass fraction (should be 1.0)
 
   real, dimension(NSPEC_ADV) :: xmax, xmin, & ! min and max value for the 
-					      ! individual species
+    				      ! individual species
                                 sum_mass,   & ! total mass of species
                                 frac_mass,  & ! mass budget fraction (should 
-					      ! be one) for groups of species
-     			gfluxin, gfluxout,  & ! flux in  and out
-				 gtotem,    & ! total emission
-			gtotddep, gtotwdep, & ! total dry and wet deposition
-				  gtotldep, & ! local dry deposition
-				  gtotox      ! oxidation of SO2 
+    				      ! be one) for groups of species
+         		gfluxin, gfluxout,  & ! flux in  and out
+    			 gtotem,    & ! total emission
+    		gtotddep, gtotwdep, & ! total dry and wet deposition
+    			  gtotldep, & ! local dry deposition
+    			  gtotox      ! oxidation of SO2 
 
   real :: totdiv,helsum,ammfac, natoms
 

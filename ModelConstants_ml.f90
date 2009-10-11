@@ -48,7 +48,7 @@ module ModelConstants_ml
   !    RUNDOMAIN = (/  1, 360, 1, 180 /)     ! FULL GLOBAL
   !  RUNDOMAIN = (/  1, 132, 1, 111 /)       ! EECCA, rep09
 
-   !  RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
+  !   RUNDOMAIN = (/  85, 120,  55,  70 /)     ! (changeable)
     !  RUNDOMAIN = (/  20, 167,  1, 122 /)     !  OSPAR/HELCOM domain
     !  RUNDOMAIN = (/  18, 169,  1, 124 /)     !  OSPAR/HELCOM domain+borders
 
@@ -90,6 +90,7 @@ module ModelConstants_ml
     ,DEBUG_BCS            = .false.  & ! 
     ,DEBUG_BIO            = .false.  & !
     ,DEBUG_DERIVED        = .false. &  !
+    ,DEBUG_ECOSYSTEMS     = .false. &  !
     ,DEBUG_MY_DERIVED     = .false. &  !
     ,DEBUG_DRYDEP         = .false. &  !
       ,DEBUG_VDS          = .false. &  !
@@ -187,8 +188,8 @@ module ModelConstants_ml
     ,  PASCAL=100.0              &  ! Conv. from hPa to Pa
     ,  PPB = 1.0e-9              &  ! parts per billion (mixing ratio)
     ,  PPBINV = 1.0e+9           &
-    ,  PPT = 1.0e-12		 &  ! parts per trillion (mixing ratio)
-    ,  PPTINV = 1.0e+12		 &
+    ,  PPT = 1.0e-12    	 &  ! parts per trillion (mixing ratio)
+    ,  PPTINV = 1.0e+12    	 &
     ,  PT = 1.0e+4                  ! Top of model region = 10000 Pa = 100 hPa
 
    real, public, parameter ::  &
