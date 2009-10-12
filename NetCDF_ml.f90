@@ -1128,7 +1128,7 @@ endif
     enddo
     ndays=ndays+ndate(3)-1!entire days since start of last month
 
-    ndays=ndate(4)/24.0!hours since start of last day
+    ndays=ndays+ndate(4)/24.0!hours since start of last day
 !     write(*,*)'days since year start ',ndays
 
 !add days from each entire year since 1900 
