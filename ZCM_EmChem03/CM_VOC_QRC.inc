@@ -3,7 +3,7 @@ integer, public, parameter ::   &
   , QRCNC4H10 = 9 &
   , QRCC2H4 = 10 &
   , QRCC3H6 = 11 &
-  , QRCISOP = 12 &
+  , QRCC5H8 = 12 &
   , QRCOXYL = 13 &
   , QRCCH3OH = 14 &
   , QRCC2H5OH = 15 &

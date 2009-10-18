@@ -1,3 +1,15 @@
+=========================== rv3_3_2 Dave,  18  Oct. 2009 ================
+
+QRCISOP replaced by QRCC5H8 for consistency across chemical schemes
+rcbio changed to simple 1-d array (rcbio(NBVOC), public from Setup_ml
+setup_rcemis now adds the biogenic rcbio() to the posisbly anthropogenic
+rcemis(QRCC5H8,:) arrays. CM_Reactions uses the latter.
+
+CM_ files changed to reflect C5H8
+
+Small formatting changes (numerous in CM files)
+
+
 =========================== rv3_3_1 Peter, 12  Oct. 2009 ================
 
 Bug in dayssince1900 (NetCDF_ml). Timestamps were wrong

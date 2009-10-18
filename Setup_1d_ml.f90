@@ -34,7 +34,6 @@
 
 
   !-----------------------------------------------------------------------!
-  use Volcanos_ml
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
   use BoundaryConditions_ml, only : BGN_2D
@@ -67,7 +66,7 @@
     ,KMAX_MID ,KMAX_BND, KCHEMTOP     ! Start and upper k for 1d fields
   use My_Aerosols_ml,       only : SEASALT
   use My_Emis_ml,           only : NRCEMIS  , AIRNOX, QRCAIRNO &
-                                  ,QRCAIRNO2, NBVOC&
+                                  ,QRCAIRNO2, NBVOC, QRCC5H8  &
                                   ,QRCVOL,VOLCANOES &
                                   ,N_QRC_MAPPED, qrc2ixadv & !DSGC
                                   ,NSS  !SeaS
@@ -79,15 +78,15 @@
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
-    ,rcemis, rcbio        &  ! emission terms
+    ,rcemis               &  ! emission terms
     ,rc_Rn222             &  ! for Pb210
-!DSGC    ,rct, rcmisc          &  ! emission terms
     ,rcss                 &  !SeaS - sea salt
     ,rh, temp, tinv, itemp,pp      &  ! 
     ,amk, o2, n2, h2o           ! Air concentrations 
   use SeaSalt_ml,        only : SS_prod 
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,           only :  current_date, date
+  use Volcanos_ml
   implicit none
   private
   !-----------------------------------------------------------------------!
@@ -98,6 +97,7 @@
   public :: setup_rcemis ! Emissions  (formerly "poll")
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
+  real, dimension(NBVOC), public, save :: rcbio  !ispop and terpene
 
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -267,14 +267,12 @@ contains
      if ( AIRNOX  ) then
 
        !QRCAIRNO is set to QRCNO and QRCAIRNO2 is set to QRCNO2 if 
-       ! AIRNOX is true. Otherwise to a
-       ! dummy value of 1. Avoids problems with
-       !undefined QRCNO in non-NOx models.
+       ! AIRNOX is true. Otherwise to a dummy value of 1. Avoids 
+       ! problems with undefined QRCNO in non-NOx models.
 
         do k=KCHEMTOP,KEMISTOP-1
           rcemis(QRCAIRNO,k)  = 0.95 * (airn(k,i,j)+airlig(k,i,j))
           rcemis(QRCAIRNO2,k) = 0.05 * (airn(k,i,j)+airlig(k,i,j))
-
         enddo
 
         do k=KEMISTOP,KMAX_MID
@@ -296,6 +294,10 @@ contains
           enddo
 
      endif
+
+! Biogenics:
+! Hard-coded for now, for isoprene only:
+     rcemis(QRCC5H8,KMAX_MID) =  rcemis(QRCC5H8,KMAX_MID) + rcbio(BIO_ISOP)
 
 !Mass Budget calculations
 !   Adding up the emissions in each timestep
@@ -340,7 +342,7 @@ contains
   !  So far, assigns isoprene using surface (2m) temperature, and for all
   !  zenith angles <90. Should include light dependance at some stage
   !
-  !  Output : rcbio - isoprene emissions for 1d column
+  !  Output : rcbio added to rcemis - isoprene emissions for 1d column
   !
   !  Called from setup_ml, every  advection step.
   !----------------------------------------------------------------------------
@@ -369,23 +371,23 @@ contains
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
-  rcbio(BIO_TERP,KMAX_MID) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+  rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
 
   ! Isoprene has emissions in daytime only:
-  rcbio(BIO_ISOP,:) = 0.0
+  rcbio(BIO_ISOP) = 0.0
   if ( Grid%izen <= 90) then
 
      ! Light effects from Guenther G93
       par = (Idirect(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
 
-      rcbio(BIO_ISOP,KMAX_MID) = emnat(i,j,BIO_ISOP) &
+      rcbio(BIO_ISOP) = emnat(i,j,BIO_ISOP) &
              * canopy_ecf(BIO_ISOP,it2m) * cL
   endif
   if ( DEBUG_SETUP_1DBIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
      write(*,"(a5,2i4,4es12.3)") "DBIO ", current_date%day, &
-      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP,KMAX_MID)
+      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP)
   end if
 
   end subroutine setup_bio

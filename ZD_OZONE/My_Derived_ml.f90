@@ -228,19 +228,19 @@ private
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  from EcoSystem_ml.
    !
-    integer, public, parameter :: NNDRYDEP = 7 ! +size(DDEP_OXNGROUP)
+    integer, public, parameter :: NNDRYDEP = 7 +size(DDEP_OXNGROUP)
    !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
     integer, public, parameter, dimension(NNDRYDEP) :: &
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, &
-           SO2,  SO4, NH3, aNH4 /) !, DDEP_OXNGROUP /)
+           SO2,  SO4, NH3, aNH4, DDEP_OXNGROUP /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
       DDEP_ECOS  = (/ "Grid   ", "Conif  ", "Seminat", "Water_D" &
                     , "Decid  ", "Crops  " /)
 
-    integer, public, parameter, dimension(2) :: &
-      WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, aNO3, HNO3, pNO3 /)
-      !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
+    integer, public, parameter, dimension(7) :: &
+      !WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, aNO3, HNO3, pNO3 /)
+      WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
 
 
   ! Have many combinations: species x ecosystems

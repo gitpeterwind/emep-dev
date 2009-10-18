@@ -2,7 +2,7 @@
   molwt(QRCNC4H10)  =  species(NC4H10)%molwt
   molwt(QRCC2H4)  =  species(C2H4)%molwt
   molwt(QRCC3H6)  =  species(C3H6)%molwt
-  molwt(QRCISOP)  =  species(ISOP)%molwt
+  molwt(QRCC5H8)  =  species(C5H8)%molwt
   molwt(QRCOXYL)  =  species(OXYL)%molwt
   molwt(QRCCH3OH)  =  species(CH3OH)%molwt
   molwt(QRCC2H5OH)  =  species(C2H5OH)%molwt

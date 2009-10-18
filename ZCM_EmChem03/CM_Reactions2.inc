@@ -2,33 +2,33 @@
 !-> SO4 
 
       P =   &
-     2e-12*AQRCK(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
-      + AQRCK(ICLRC1,K) * xnew(SO2 ) * xnew(H2O2 )  &
-      + AQRCK(ICLRC2,K) * xnew(SO2 ) * xnew(O3 )  &
-      + AQRCK(ICLRC3,K) * xnew(SO2 )  &
-      + 0.05*RCEMIS(QRCSO2,K) 
+          2e-12*AQRCK(ICLOHSO2,K) * xnew(OH ) * xnew(SO2 )  &
+        + AQRCK(ICLRC1,K) * xnew(SO2 ) * xnew(H2O2 )  &
+        + AQRCK(ICLRC2,K) * xnew(SO2 ) * xnew(O3 )  &
+        + AQRCK(ICLRC3,K) * xnew(SO2 )  &
+        + 0.05*RCEMIS(QRCSO2,K) 
       ! L = 0.0
  
 
-    xnew(SO4)=  max(0.0,  xold(SO4) + dt2 * P)
+      xnew(SO4)=  max(0.0,  xold(SO4) + dt2 * P)
 
 !-> PNO3 
 
       P =   &
-     rcmisc(10,k) * xnew(HNO3 ) 
+          rcmisc(10,k) * xnew(HNO3 ) 
       ! L = 0.0
  
 
-    xnew(PNO3)=  max(0.0,  xold(PNO3) + dt2 * P)
+      xnew(PNO3)=  max(0.0,  xold(PNO3) + dt2 * P)
 
 !-> NH3 
 
       P =   &
-     RCEMIS(QRCNH3,K) 
+          RCEMIS(QRCNH3,K) 
       ! L = 0.0
  
 
-    xnew(NH3)=  max(0.0,  xold(NH3) + dt2 * P)
+      xnew(NH3)=  max(0.0,  xold(NH3) + dt2 * P)
 
 !-> ANH4 
       ! P = 0.0
@@ -47,55 +47,55 @@
 !-> PPM25 
 
       P =   &
-     RCEMIS(QRCPM25,K) 
+          RCEMIS(QRCPM25,K) 
       ! L = 0.0
  
 
-    xnew(PPM25)=  max(0.0,  xold(PPM25) + dt2 * P)
+      xnew(PPM25)=  max(0.0,  xold(PPM25) + dt2 * P)
 
 !-> PPMCO 
 
       P =   &
-     RCEMIS(QRCPMCO,K) 
+          RCEMIS(QRCPMCO,K) 
       ! L = 0.0
  
 
-    xnew(PPMCO)=  max(0.0,  xold(PPMCO) + dt2 * P)
+      xnew(PPMCO)=  max(0.0,  xold(PPMCO) + dt2 * P)
 
 !-> SSFI 
 
       P =   &
-     RCSS(QSSFI,K) 
+          RCSS(QSSFI,K) 
       ! L = 0.0
  
 
-    xnew(SSFI)=  max(0.0,  xold(SSFI) + dt2 * P)
+      xnew(SSFI)=  max(0.0,  xold(SSFI) + dt2 * P)
 
 !-> SSCO 
 
       P =   &
-     RCSS(QSSCO,K) 
+          RCSS(QSSCO,K) 
       ! L = 0.0
  
 
-    xnew(SSCO)=  max(0.0,  xold(SSCO) + dt2 * P)
+      xnew(SSCO)=  max(0.0,  xold(SSCO) + dt2 * P)
 
 !-> RN222 
 
       P =   &
-     RC_RN222(K) 
+          RC_RN222(K) 
 
       L =  &
-     2.1e-6 
+          2.1e-6 
 
-    xnew(RN222)=  max(0.0, ( xold(RN222) + dt2 * P)) /(1.0 + dt2*L )
+      xnew(RN222)=  max(0.0, ( xold(RN222) + dt2 * P)) /(1.0 + dt2*L )
 
 !-> PB210 
 
       P =   &
-     2.1e-6 * xnew(RN222 ) 
+          2.1e-6 * xnew(RN222 ) 
 
       L =  &
-     rcmisc(9,k) 
+          rcmisc(9,k) 
 
-    xnew(PB210)=  max(0.0, ( xold(PB210) + dt2 * P)) /(1.0 + dt2*L )
+      xnew(PB210)=  max(0.0, ( xold(PB210) + dt2 * P)) /(1.0 + dt2*L )

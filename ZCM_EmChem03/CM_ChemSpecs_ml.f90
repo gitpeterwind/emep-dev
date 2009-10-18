@@ -44,7 +44,7 @@
   ,  IXADV_C2H4        =  24   &
   ,  IXADV_C3H6        =  25   &
   ,  IXADV_OXYL        =  26   &
-  ,  IXADV_ISOP        =  27   &
+  ,  IXADV_C5H8        =  27   &
   ,  IXADV_CH3O2H      =  28   &
   ,  IXADV_C2H5OOH     =  29
 
@@ -196,7 +196,7 @@
    integer, public, parameter ::   & 
      C3H6        =  40   &
   ,  OXYL        =  41   &
-  ,  ISOP        =  42   &
+  ,  C5H8        =  42   &
   ,  CH3O2H      =  43   &
   ,  C2H5OOH     =  44   &
   ,  BURO2H      =  45   &
@@ -310,7 +310,7 @@
        species(C2H4) = Chemical("C2H4        ",  28,  1,  2,   0,  0 ) 
        species(C3H6) = Chemical("C3H6        ",  42,  1,  3,   0,  0 ) 
        species(OXYL) = Chemical("OXYL        ", 106,  1,  8,   0,  0 ) 
-       species(ISOP) = Chemical("ISOP        ",  68,  1,  5,   0,  0 ) 
+       species(C5H8) = Chemical("C5H8        ",  68,  1,  5,   0,  0 ) 
        species(CH3O2H) = Chemical("CH3O2H      ",  48,  0,  1,   0,  0 ) 
        species(C2H5OOH) = Chemical("C2H5OOH     ",  62,  0,  2,   0,  0 ) 
        species(BURO2H) = Chemical("BURO2H      ",  90,  0,  4,   0,  0 ) 

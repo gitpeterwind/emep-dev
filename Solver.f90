@@ -66,9 +66,7 @@
     use OrganicAerosol_ml, only: Fgas
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX  ! me for TEST
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
-                                 rcbio,         & ! biogenic emis
                                  rc_Rn222,      & ! Pb210
-                                 !dsx rct, rcmisc,   & ! reaction rate coeffients
                                  xn_2d,         & 
                                  rh,            & 
                                  rcss,amk         ! Sea salt emission rate
@@ -88,7 +86,7 @@
   !DS TEST integer, parameter:: nchemMAX=18
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for 
-  integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
+  integer, parameter  :: EXTRA_ITER = 3    ! Set > 1 for even more iteration
 
 
 contains
