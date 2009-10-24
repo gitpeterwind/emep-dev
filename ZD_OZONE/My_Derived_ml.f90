@@ -465,7 +465,8 @@ private
         VG_LC: do n = 1, size(VG_LCS) 
 
           !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, (i==1 .and. ilab == 1))
+          iLC = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, &
+                   write_condition=(i==1 .and. ilab == 1))
           if ( iLC < 0 ) cycle  VG_LC
           !-------------End of Check if LC present in this array ------!
           nVg = nVg + 1
@@ -473,6 +474,8 @@ private
           name = trim( VG_LABELS(ilab) ) // "_"  // &
              trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
           iadv = VG_SPECS(i) - NSPEC_SHL
+          call CheckStop( iadv < 1 .or. iadv > NSPEC_ADV, &
+                 " ERR: DDEP_SPECS: VG_SPECS" )
 
  ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
  !            x     d      d    d   a10    a10   a10     f    i    a10

@@ -6,7 +6,8 @@ SmallUtils_ml - errmsg added to AddArray
 
 My_Derived - errmsg in AddArray, and CheckStop - prevents wanted_deriv2d
              exceeding MAX_NUM_DERIV2D (=200 which is a lot anyway!)
-    - also just use HNO3 by default in NNDRYDEP -
+         - also just use HNO3 by default in NNDRYDEP -
+         - explicit write_condition added
 
 =========================== rv3_3_2 Dave,  18  Oct. 2009 ================
 
