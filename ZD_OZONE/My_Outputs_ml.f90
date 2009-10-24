@@ -86,7 +86,7 @@ integer, public, parameter :: &
     SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
-    SITE_SHL =  (/ (isite, isite=1,NSHL_SITE) /)                    ! All short-lived species
+    SITE_SHL =  (/ (isite, isite=1,NSHL_SITE) /)  ! All short-lived species
 
 ! Extra parameters - need to be coded in Sites_ml also. So far
 ! we can choose from hmix, T2, or th (pot. temp.) or d_2d fields.

@@ -10,6 +10,8 @@ My_Derived - errmsg in AddArray, and CheckStop - prevents wanted_deriv2d
            - and SO2, SO4 in WETDEP -
            - explicit write_condition added
 
+My_Outputs - all SHL species by default for sites
+
 =========================== rv3_3_2 Dave,  18  Oct. 2009 ================
 
 QRCISOP replaced by QRCC5H8 for consistency across chemical schemes
