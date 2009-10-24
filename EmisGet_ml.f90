@@ -527,7 +527,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
  
        call CheckStop( ios , "EmisGet: Read error on header, emis_split " )
 
-       write(unit=6,fmt="(a25,i3,/,(12a7))") "SPLIT species for idef=", &
+       write(unit=6,fmt="(a25,i3,/,(5a12))") "SPLIT species for idef=", &
                       idef, (intext(idef,i), i=1, nsplit)
        write(unit=6,fmt=*) "Will try to split ", EMIS_NSPLIT(isp) , " times"
            

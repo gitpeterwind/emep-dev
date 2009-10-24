@@ -128,17 +128,22 @@ contains
     end do
   end function LenArray
  !============================================================================
-  subroutine AddArray(new,old,notset)
+  subroutine AddArray(new,old,notset,errmsg)
     !+ Adds elements from new array to old array
     character(len=*), dimension(:), intent(in) :: new
     character(len=*), dimension(:), intent(inout) :: old
     character(len=*), intent(in) :: notset
+    character(len=*), intent(inout) :: errmsg
     integer :: N, i
+    errmsg = "ok"
 
     N = LenArray(old,notset) ! Find last set element
     do i = 1,  size(new)
        N = N + 1
-       !print *, "ADDING A ", i, N, new(i)
+       if ( N > size(old) ) then
+           errmsg = "ERROR: Array Exceeded! "
+           return
+       end if
        old(N) = new(i)
     end do
   end subroutine AddArray
@@ -251,6 +256,7 @@ contains
     character(len=6), dimension(2) :: wanted2 = (/ " yy", "x1 " /)
     character(len=6), dimension(2) :: wanted3 = (/ "zz  ", "yy  " /)
     character(len=16), dimension(6) :: wantedx  = NOT_SET_STRING
+    character(len=100) :: errmsg
     integer, parameter :: NWORD_MAX = 99
     character(len=20), dimension(NWORD_MAX) :: words
     integer :: nwords, errcode
@@ -280,10 +286,10 @@ contains
 
    print "(/,a)", "4) Self-test - AddArray   ================================="
     
-    !call AddArray(wanted1,wanted2)
+    !call AddArray(wanted1,wanted2,errmsg)
     wantedx(1) =  "first  "
     wantedx(2) =  "second  "
-    call AddArray(wanted1,wantedx,NOT_SET_STRING)
+    call AddArray(wanted1,wantedx,NOT_SET_STRING,errmsg)
     call WriteArray(wantedx,size(wantedx),"Testing AddArray")
 
 

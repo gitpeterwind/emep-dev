@@ -228,11 +228,11 @@ private
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  from EcoSystem_ml.
    !
-    integer, public, parameter :: NNDRYDEP = 7 +size(DDEP_OXNGROUP)
+    integer, public, parameter :: NNDRYDEP = 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
    !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
     integer, public, parameter, dimension(NNDRYDEP) :: &
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, &
-           SO2,  SO4, NH3, aNH4, DDEP_OXNGROUP /)
+           SO2,  SO4, NH3, aNH4, HNO3 /) ! DDEP_OXNGROUP /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
       DDEP_ECOS  = (/ "Grid   ", "Conif  ", "Seminat", "Water_D" &
@@ -349,29 +349,39 @@ private
     integer :: Threshold   ! threshold for AFSTY
     character(len=TXTLEN_DERIV), &
       dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
+    character(len=100) :: errmsg 
 
    ! Build up the array wanted_deriv2d with the required field names
 
-     call AddArray(WDEP_WANTED, wanted_deriv2d, NOT_SET_STRING)
-     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING)
+     call AddArray(WDEP_WANTED, wanted_deriv2d, NOT_SET_STRING,errmsg)
+     call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
+     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "D2_SR too long" )
 
 !ds May 2009, added surf concs in various units (e.g. ugS/m3 or ppb):
     
-     call AddArray( "SURF_ugS_"//species(SURF_UG_S)%name ,  wanted_deriv2d, NOT_SET_STRING)
-     call AddArray( "SURF_ugN_"//species(SURF_UG_N)%name ,  wanted_deriv2d, NOT_SET_STRING)
-     call AddArray( "SURF_ugC_"//species(SURF_UG_C)%name ,  wanted_deriv2d, NOT_SET_STRING)
-     call AddArray( "SURF_ug_"//species(SURF_UG)%name ,  wanted_deriv2d, NOT_SET_STRING)
-     call AddArray( "SURF_ppb_"//species(SURF_PPB)%name ,  wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( "SURF_ugS_"//species(SURF_UG_S)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "SURF_ugS too long" )
+     call AddArray( "SURF_ugN_"//species(SURF_UG_N)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "SURF_ugN too long" )
+     call AddArray( "SURF_ugC_"//species(SURF_UG_C)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "SURF_ugC too long" )
+     call AddArray( "SURF_ug_"//species(SURF_UG)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "SURF_ug too long" )
+     call AddArray( "SURF_ppb_"//species(SURF_PPB)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "SURF_ppb too long" )
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
-        call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING)
+        call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING, errmsg)
+        call CheckStop( errmsg, errmsg // "D2_EXTRA too long" )
      end if
 
      ! Column data:
      do n = 1, size(COLUMN_MOLEC_CM2)
        tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n))%name )
      end do
-     call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "COLUMN too long" )
      ! Didn't work:
      !call AddArray( "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(:))%name ), &
      !  wanted_deriv2d, NOT_SET_STRING)
@@ -441,7 +451,8 @@ private
 !    EcoWDep(nEcoWDep)%name = "WDEP_"  // trim( species(WDEP_SPECS(i))%name ) )
 !end do
 
-    call AddArray( OutDDep(:)%name, wanted_deriv2d, NOT_SET_STRING)
+    call AddArray( OutDDep(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
+    call CheckStop( errmsg, errmsg // "OutDDep too long" )
 
       !------------- Deposition velocities for d_2d -------------------------
       ! Add species and ecosystem depositions if wanted:
@@ -475,7 +486,8 @@ private
       end do ! ilab
       nOutVg = nVg
 
-     call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "OutVg too long" )
 
       !------------- VEGO3 stuff ----------------------------------------------
       ! For fluxes or AOTs we start with a formatted name, eg. AFST_3.0_CF and
@@ -534,7 +546,8 @@ private
       nOutVEGO3 = nVEGO3
           if(DEBUG .and. MasterProc)  print *, "VEGO3 FINAL NUM ", nVEGO3
 
-     call AddArray( OutVEGO3(1:nVEGO3)%name, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( OutVEGO3(1:nVEGO3)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "OutVEG too long" )
 
 
       !------------- Surface resistance for d_2d -------------------------
@@ -575,7 +588,8 @@ private
       end do ! ilab
       nOutRG = nRG
 
-     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "OutRG  too long" )
 
       !------------- Met data for d_2d -------------------------
       ! We find the various combinations of met and ecosystem, 
@@ -608,7 +622,8 @@ private
       end do ! ilab
       nOutMET = nMET
 
-     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING)
+     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "OutMET too long" )
 
       !------------- end LCC data for d_2d -------------------------
       
@@ -618,7 +633,8 @@ private
    ! ditto wanted_deriv3d....
 
      !if ( .not. SOURCE_RECEPTOR ) then
-     !   call AddArray( d3_wanted,  wanted_deriv3d, NOT_SET_STRING)
+     !   call AddArray( d3_wanted,  wanted_deriv3d, NOT_SET_STRING, errmsg)
+     !   call CheckStop( errmsg, errmsg // "Outd3  too long" )
      !end if
      mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
 
