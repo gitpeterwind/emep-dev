@@ -238,9 +238,9 @@ private
       DDEP_ECOS  = (/ "Grid   ", "Conif  ", "Seminat", "Water_D" &
                     , "Decid  ", "Crops  " /)
 
-    integer, public, parameter, dimension(7) :: &
-      !WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, aNO3, HNO3, pNO3 /)
-      WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
+    integer, public, parameter, dimension(2) :: &
+      WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, aNO3, HNO3, pNO3 /)
+      !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
 
 
   ! Have many combinations: species x ecosystems
