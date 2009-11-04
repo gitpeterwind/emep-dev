@@ -50,6 +50,7 @@ module ChemFunctions_ml
 
   public :: troe
   public :: troeInLog  ! When log(Fc) provided
+  public :: IUPAC_troe ! Using the approximate expression for F from Atkinson et al., 2006 (ACP6, 3625)
   public ::  kaero
   public ::  RiemerN2O5
   public ::  kmt3      ! For 3-body reactions, from Robert OCt 2009
@@ -165,6 +166,46 @@ module ChemFunctions_ml
      rctroe = k0M / ( 1.0 + y) * exp(x*LogFc)
 
   end function troeInLog
+
+  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  elemental function IUPAC_troe(k0,kinf,Fc,M,N) result (rctroe)
+
+  !+ Calculates Troe expression 
+  ! -----------------------------------------------------------
+  ! rb note - this isn't checked or optimised yet. Taken from
+  ! Atkinson et al. ACP 2006, 6, 3625-4055. 
+
+  ! Input arguments are intended to represent:
+  !   M may be O2+N2 or just N2 or just O2.
+  ! NOTE that in the IUPAC nomenclature k0 already contains [M] so the k0(IUPAC)=k0*M here
+  !   N=[0.75-1.27*log10(Fc)]
+
+     real, intent(in)  :: k0,kinf,Fc,M,N
+     real              :: rctroe
+
+     !-- local
+     real :: x,y, K0M               ! temp variable
+
+     k0M = k0 * M
+     
+
+     !- use the power function replacement, m**n == exp(n*log m) 
+     !-k0M   = a*(T/300.0)**(-2.3) * M
+     !-kinf = p*(T/300.0)**(-1.4)
+
+     ! k0M   = a * exp( b*log(t/300.0) ) * M
+     ! kinf = p * exp( q*log(t/300.0) )
+
+     ! factors for Fc:
+     y    = k0M/kinf    ! used also below
+     x    = log10(y)/N
+     x    = 1.0/( 1.0 + x*x )
+
+     !- F**x == exp(x*logF)
+
+     rctroe = k0M / ( 1.0 + y) * exp(x*log(Fc))
+
+  end function IUPAC_troe
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
