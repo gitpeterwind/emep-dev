@@ -1,9 +1,9 @@
 ! <My_Derived_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,47 +11,47 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 
 !==============================================================================
 module My_Derived_ml
 
   !---------------------------------------------------------------------------
   ! DESCRIPTION
-  ! This module specifies the "derived" fields, such as accumulated 
-  ! precipitation 
+  ! This module specifies the "derived" fields, such as accumulated
+  ! precipitation
   ! or sulphate, daily, monthly or yearly averages, depositions. These fields
   ! are all typically output as netCDF fields.
   !
   ! This module provides the user-defined setups which are used in Derived_ml.
   ! Derived fields are identified by a "class", such as "ADV" of "VOC", and
   ! the Derived_ml should perform any integrations for this.
-  ! 
-  ! Several often-used routines (e.g. for AOTs, acc. sulphate, are defined 
+  !
+  ! Several often-used routines (e.g. for AOTs, acc. sulphate, are defined
   ! in the Derived_ml.f90, but users can define their own here, since
-  ! we do not use "use only" in Derived_ml. 
-  !  
+  ! we do not use "use only" in Derived_ml.
+  !
   !   Only text strings used here to define wanted data
   !   All data field characteristics should be defined in Derived_ml, e.g.
-  !   in f_2d arrays. 
+  !   in f_2d arrays.
   !   Derived fields such as d_2d only exist in Derived_ml, so are
   !   accessed here through subroutine calls - using just the (i,j) part
   !   of the bigger d_2d arrays
   !---------------------------------------------------------------------------
- 
+
 use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use ChemSpecs_adv_ml        ! Use IXADV_ indices...
@@ -65,8 +65,8 @@ use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
-                        , MasterProc  & 
-                        , SOURCE_RECEPTOR  &  
+                        , MasterProc  &
+                        , SOURCE_RECEPTOR  &
                         , DEBUG => DEBUG_MY_DERIVED &
                         , KMAX_MID & ! =>  z dimension
                         , PPBINV  &  !   1.0e9
@@ -74,7 +74,7 @@ use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
 
 use OwnDataTypes_ml, only : dep_type, print_dep_type, TXTLEN_DERIV
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
-                     limax, ljmax           ! => used x, y area 
+                     limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
                             find_index
 use TimeDate_ml,   only : current_date
@@ -82,7 +82,7 @@ implicit none
 private
 
  public  :: Init_My_Deriv
- public  :: My_DerivFunc 
+ public  :: My_DerivFunc
 
  private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
            ,pm_calc              ! Miscelleaneous PM's
@@ -136,15 +136,15 @@ private
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
    integer, public, parameter, dimension(1) ::  XSURF_PPB = (/ HCHO /)
    integer, public, parameter, dimension(2) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
- 
+
    integer, public, parameter :: NALL_SURF_UG = &
      size(SURF_UG_S) + size(SURF_UG_N) + size(SURF_UG_C) + size(SURF_UG)
 
    integer, public, parameter, dimension( NALL_SURF_UG ) :: &
       ALL_SURF_UGX = (/ SURF_UG_S, SURF_UG_N, SURF_UG_C, SURF_UG /)
    character(len=3), public, save, dimension( NALL_SURF_UG ) :: &
-      ALL_SURF_UGTXT 
-   real, public, save, dimension( NALL_SURF_UG ) :: ALL_SURF_ATW   
+      ALL_SURF_UGTXT
+   real, public, save, dimension( NALL_SURF_UG ) :: ALL_SURF_ATW
 
 ! Tropospheric columns
    integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
@@ -165,11 +165,11 @@ private
 !Oct09      ,"D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
       ,"D2_SOMO35   ","D2_SOMO0    " &
 !
-!    NOy-type sums 
+!    NOy-type sums
       ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
 !
-!    Ecosystem - fluxes: 
- ! NB: do not remove without removing from My_DryDep too 
+!    Ecosystem - fluxes:
+ ! NB: do not remove without removing from My_DryDep too
 !      ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
 !      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
        ,"D2_O3DF     ","D2_O3WH     " &
@@ -187,22 +187,22 @@ private
       ,"WDEP_SO4          " &
       ,"WDEP_HNO3         " &
       ,"WDEP_aNO3         " &
-      ,"WDEP_pNO3         " & 
+      ,"WDEP_pNO3         " &
       ,"WDEP_NH3          " &
       ,"WDEP_aNH4         " &
       ,"D2_REDN           " &
       ,"D2_SNOW           " &
       ,"D2_SNratio        " &
-      ,"Area_Grid_km2     " & 
-      ,"Area_Conif_Frac   " & 
-      ,"Area_Decid_Frac   " & 
-      ,"Area_Seminat_Frac " & 
-      ,"Area_Crops_Frac   " & 
-      ,"Area_Water_D_Frac " & 
+      ,"Area_Grid_km2     " &
+      ,"Area_Conif_Frac   " &
+      ,"Area_Decid_Frac   " &
+      ,"Area_Seminat_Frac " &
+      ,"Area_Crops_Frac   " &
+      ,"Area_Water_D_Frac " &
       ,"D2_HMIX           " &
 !      ,"D2_HMIX00         " &
 !      ,"D2_HMIX12         " &
-      ,"USTAR_NWP         " & 
+      ,"USTAR_NWP         " &
   /)
 
 
@@ -210,15 +210,15 @@ private
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
   integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
   integer, public, dimension(2) ::  DDEP_RDNGROUP = (/ NH3, aNH4 /)
-  integer, public, dimension(size(DDEP_OXNGROUP)) :: DDEP_GROUP ! Working array 
+  integer, public, dimension(size(DDEP_OXNGROUP)) :: DDEP_GROUP ! Working array
    ! should be set as max of SOX, OXN, RDN, assume OXN biggest
 
  ! Ecosystem dep output uses receiver land-cover classes (LCs)
- ! which might include several landuse types, e.g. Conif in 
-!  D2_SO2_m2Conif. 
+ ! which might include several landuse types, e.g. Conif in
+!  D2_SO2_m2Conif.
 
 
-  integer, public, save :: nOutDDep, nOutVg, nOutVEGO3 
+  integer, public, save :: nOutDDep, nOutVg, nOutVEGO3
   integer, public, save :: nOutRG  ! RG = resistances and conductances
   integer, public, save :: nOutMET ! RG = resistances and conductances
 
@@ -262,7 +262,7 @@ private
 
 ! VEGO3 outputs for AFstY and AOTX
 !To avoid many unwanted combinations of land and Y values we just give
-! the name here and let the code interpret it later. 
+! the name here and let the code interpret it later.
 ! *** to use format f3.1 or i2 for the Y  or X value for fluxes/AOT! ***
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
@@ -348,8 +348,11 @@ private
     real    :: Y           ! threshold for AFSTY, also used as X in AOT40X
     integer :: Threshold   ! threshold for AFSTY
     character(len=TXTLEN_DERIV), &
-      dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
-    character(len=100) :: errmsg 
+     dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
+    character(len=100) :: errmsg
+    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)) ::&
+          tag_name    ! Needed to concatanate some text in AddArray calls
+                      ! - older (gcc 4.1?) gfortran's had bug
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -359,16 +362,20 @@ private
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
 
 !ds May 2009, added surf concs in various units (e.g. ugS/m3 or ppb):
-    
-     call AddArray( "SURF_ugS_"//species(SURF_UG_S)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1:size(SURF_UG_S)) = "SURF_ugS_" // species(SURF_UG_S)%name
+     call AddArray(  tag_name(1:size(SURF_UG_S)) , wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "SURF_ugS too long" )
-     call AddArray( "SURF_ugN_"//species(SURF_UG_N)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1:size(SURF_UG_N)) = "SURF_ugN_"//species(SURF_UG_N)%name
+     call AddArray( tag_name(1:size(SURF_UG_N)) ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "SURF_ugN too long" )
-     call AddArray( "SURF_ugC_"//species(SURF_UG_C)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1:size(SURF_UG_C)) = "SURF_ugC_"//species(SURF_UG_C)%name
+     call AddArray( tag_name(1:size(SURF_UG_C)),  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "SURF_ugC too long" )
-     call AddArray( "SURF_ug_"//species(SURF_UG)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1:size(SURF_UG)) = "SURF_ug_"//species(SURF_UG)%name
+     call AddArray( tag_name(1:size(SURF_UG)) ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "SURF_ug too long" )
-     call AddArray( "SURF_ppb_"//species(SURF_PPB)%name ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     tag_name(1:size(SURF_PPB)) = "SURF_ppb_"//species(SURF_PPB)%name
+     call AddArray( tag_name(1:size(SURF_PPB)) ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "SURF_ppb too long" )
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
@@ -389,12 +396,12 @@ private
 
      !------------- Dry Depositions for d_2d -------------------------
      ! Add species and ecosystem depositions if wanted:
-     ! We find the various combinations of gas-species and ecosystem, 
+     ! We find the various combinations of gas-species and ecosystem,
      ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
 
       nDD = 0
       do i = 1, size(DDEP_SPECS)
-        do n = 1, size(DDEP_ECOS) 
+        do n = 1, size(DDEP_ECOS)
 
           nDD = nDD + 1
           ispec  = DDEP_SPECS(i)  ! Index in ix_tot arrays
@@ -410,7 +417,7 @@ private
                units  =  "mgS/m2"
 
                 call CheckStop( species( ispec )%nitrogens > 0 , &
-                 " ERROR in DDEP_SPECS: BOTH S AND N!"// & 
+                 " ERROR in DDEP_SPECS: BOTH S AND N!"// &
                    species(DDEP_SPECS(i))%name)
 
              else if ( species( ispec )%nitrogens > 0 ) then
@@ -440,7 +447,7 @@ private
         ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
         !            x     d      d    d   a10    a10   a10     f    i    a10
              OutDDep(nDD) = Dep_type(  &
-              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units) 
+              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units)
            if(DEBUG .and. MasterProc) call print_dep_type( OutDDep(nDD) )
         end do ! DDEP_SPECS
      end do ! DDEP_ECOS
@@ -456,13 +463,13 @@ private
 
       !------------- Deposition velocities for d_2d -------------------------
       ! Add species and ecosystem depositions if wanted:
-      ! We find the various combinations of gas-species and ecosystem, 
+      ! We find the various combinations of gas-species and ecosystem,
       ! adding them to the derived-type array LCC_DDep (e.g. => VGO3_CF)
 
       nVg = 0
       do ilab = 1, size(VG_LABELS)
       do i = 1, size(VG_SPECS)
-        VG_LC: do n = 1, size(VG_LCS) 
+        VG_LC: do n = 1, size(VG_LCS)
 
           !------------------- Check if LC present in this array ------!
           iLC = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, &
@@ -481,7 +488,7 @@ private
  !            x     d      d    d   a10    a10   a10     f    i    a10
            OutVg(nVg) = Dep_type(  &
              name, iLC, iadv, -99,"Mosaic", VG_LABELS(ilab), VG_LCS(n),&
-                                             100.0, -99,  "cm/s") 
+                                             100.0, -99,  "cm/s")
 
           if(DEBUG .and. MasterProc) call print_dep_type(OutVg(nVg))
         end do VG_LC !n
@@ -497,8 +504,8 @@ private
       !untangle it to get threshold Y (=3.0) and landcover type
 
       nVEGO3 = 0
-      VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS) 
-  
+      VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS)
+
          name = VEGO3_OUTPUTS(n)
          isep1 = scan(name,"_")                       ! AFST or AOT
          isep2 = isep1 + scan(name(isep1+1:),"_")   ! 1.6 or 40
@@ -507,7 +514,7 @@ private
          txtnum=name(isep1+1:isep2-1)     ! 1.6 or 40
          txt2=name(isep2+1:)            ! IAM_CF or SNL
 
-   
+
          if( txt == "AFST" ) then
             read(txtnum,fmt="(f3.1)") Y
             if(txtnum == ".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
@@ -525,7 +532,7 @@ private
 !   end if
 !call CheckStop("NAMED")
          end if
-  
+
 
           !------------------- Check if LC present in this array ------!
           iLC = Check_LandCoverPresent( "VEGO3_LCS", txt2, .true. )
@@ -542,7 +549,7 @@ private
  !            x     d      d    d   a10    a10   a10     f    i    a10
            OutVEGO3(nVEGO3) = Dep_type(  &
              name, iLC, Threshold, -99,"Mosaic", txt , txt2,&
-                                             1.0, -99,  units ) 
+                                             1.0, -99,  units )
 
           if(DEBUG .and. MasterProc) call print_dep_type(OutVEGO3(nVEGO3))
       end do VEGO3_LC !n
@@ -554,13 +561,13 @@ private
 
 
       !------------- Surface resistance for d_2d -------------------------
-      ! We find the various combinations of gas-species and ecosystem, 
+      ! We find the various combinations of gas-species and ecosystem,
       ! adding them to the derived-type array LCC_DDep (e.g. => RsO3_CF)
 
       nRG = 0
       do ilab = 1, size(RG_LABELS)
       do i = 1, size(RG_SPECS)
-        RG_LC: do n = 1, size(RG_LCS) 
+        RG_LC: do n = 1, size(RG_LCS)
 
           !------------------- Check if LC present in this array ------!
           iLC = Check_LandCoverPresent( "RG_LCS", n, RG_LCS, (i==1 .and. ilab == 1))
@@ -578,11 +585,11 @@ private
 
           OutRG(nRG) = Dep_type(  &
              name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
-                                             1.0, -99,  "-") 
+                                             1.0, -99,  "-")
           if( OutRG(nRG)%label(1:1) == "R" )  then
               OutRG(nRG)%units  =   "s/m"
           else if( OutRG(nRG)%label(1:1) == "G" )  then
-              OutRG(nRG)%scale  =    100.0   
+              OutRG(nRG)%scale  =    100.0
               OutRG(nRG)%units  =   "cm/s"
           end if
           if(DEBUG .and. MasterProc) call print_dep_type(OutRG(nRG))
@@ -595,12 +602,12 @@ private
      call CheckStop( errmsg, errmsg // "OutRG  too long" )
 
       !------------- Met data for d_2d -------------------------
-      ! We find the various combinations of met and ecosystem, 
+      ! We find the various combinations of met and ecosystem,
       ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
 
       nMET = 0
       do ilab = 1, size(MET_PARAMS)
-        MET_LC: do n = 1, size(MET_LCS) 
+        MET_LC: do n = 1, size(MET_LCS)
 
           !------------------- Check if LC present in this array ------!
           iLC = Check_LandCoverPresent( "MET_LCS", n, MET_LCS, (ilab == 1))
@@ -629,7 +636,7 @@ private
      call CheckStop( errmsg, errmsg // "OutMET too long" )
 
       !------------- end LCC data for d_2d -------------------------
-      
+
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
@@ -652,7 +659,7 @@ private
        end if
        call WriteArray(wanted_deriv2d,mynum_deriv2d," Wanted 2d array is")
        call WriteArray(wanted_deriv3d,mynum_deriv3d," Wanted 3d array is")
-     
+
      end if
 
   end subroutine Init_My_Deriv
@@ -660,15 +667,15 @@ private
   subroutine My_DerivFunc( e_2d, class , density )
 
     ! We define here here any functions which cannot easily be defined
-    ! in the more general Derived_ml. For example, we need the 
+    ! in the more general Derived_ml. For example, we need the
     ! index for IXADV_O3 for AOTs, and this might not be available in the model
-    ! we are running (a PM2.5 model for example), so it is better to define 
+    ! we are running (a PM2.5 model for example), so it is better to define
     ! this function here.
 
   real, dimension(:,:), intent(inout) :: e_2d  !  (i,j) 2-d extract of d_2d
   character(len=*), intent(in)    :: class       ! Class of data
 
-  real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density     
+  real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
 ! density = 1 ( or = roa when unit ug)
 
   select case ( class )
@@ -685,7 +692,7 @@ private
 
             write(*,*) "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
      end select
-  
+
 
 
   end subroutine My_DerivFunc
@@ -697,11 +704,11 @@ private
 
     real, dimension(:,:), intent(inout) :: pm_2d  ! i,j section of d_2d arrays
     character(len=*)    :: class   ! Type of data
-    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density  
+    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
 
     select case ( class )
 
-    case ( "SIA" ) 
+    case ( "SIA" )
 
       forall ( i=1:limax, j=1:ljmax )
         !ds d_2d( n, i,j,IOU_INST) = &
@@ -709,33 +716,33 @@ private
          ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
          + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
          + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
-         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j))& 
+         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j))&
          * density(i,j)
       end forall
 
-    case ( "PM25" ) 
+    case ( "PM25" )
 
       forall ( i=1:limax, j=1:ljmax )
         pm_2d( i,j ) = &
          ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
          + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
          + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) & 
+         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
          + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt *cfac(IXADV_SSfi,i,j))&  !SeaS
          * density(i,j)
       end forall
 
-    case ( "PMco" ) 
+    case ( "PMco" )
 
       forall ( i=1:limax, j=1:ljmax )
         pm_2d( i,j ) = &
          ( xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
-         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) & 
+         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) &
          + xn_adv(IXADV_SSco,i,j,KMAX_MID) *species(SSco)%molwt *cfac(IXADV_SSco,i,j))&  !SeaS
           * density(i,j)
       end forall
 
-    case ( "PM10" ) 
+    case ( "PM10" )
 
       forall ( i=1:limax, j=1:ljmax )
         pm_2d( i,j ) = &
@@ -744,7 +751,7 @@ private
          + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
          + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
          + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
-         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) & 
+         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) &
          + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt*cfac(IXADV_SSfi,i,j) & !SeaS
          + xn_adv(IXADV_SSco,i,j,KMAX_MID)*species(SSco)%molwt*cfac(IXADV_SSco,i,j))& !SeaS
          * density(i,j)
@@ -760,7 +767,7 @@ private
   subroutine misc_xn( e_2d, class, density)
     real, dimension(:,:), intent(inout) :: e_2d  ! i,j section of d_2d arrays
     character(len=*)    :: class   ! Type of data
-    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density  
+    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
     integer :: itot, iadv, igrp
 ! density = 1 ( or = roa when unit ug)
 
@@ -785,7 +792,7 @@ private
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
                 xn_adv(IXADV_O3,i,j,KMAX_MID)  * cfac(IXADV_O3,i,j)   &
-              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j) 
+              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j)
       end forall
 
     case ( "NOX" )
@@ -801,9 +808,9 @@ private
       do i=1,limax
         do j=1,ljmax
           do igrp = 1, size(OXNGROUP)
-            itot = OXNGROUP(igrp) 
+            itot = OXNGROUP(igrp)
             iadv = OXNGROUP(igrp) - NSPEC_SHL
-            e_2d( i,j ) = e_2d( i,j ) + & 
+            e_2d( i,j ) = e_2d( i,j ) + &
               xn_adv(iadv,i,j,KMAX_MID) * &
                 cfac(iadv,i,j) * species(itot)%nitrogens
           end do ! n
