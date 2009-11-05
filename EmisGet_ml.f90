@@ -35,16 +35,20 @@
 
 
   use CheckStop_ml,      only: CheckStop
+  use ChemSpecs_adv_ml,  only: NSPEC_ADV ! max possible number in split 
+  use ChemSpecs_tot_ml,  only: NSPEC_TOT 
+  use ChemChemicals_ml,  only: species
   use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country
   use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
+                               NEMIS_FILES, EMIS_NAME, &
                                ISNAP_SHIP, ISNAP_NAT
   use GridAllocate_ml,   only: GridAllocate
-  use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS
-  use ModelConstants_ml, only: NPROC, DEBUG => DEBUG_GETEMIS
-  use My_Emis_ml,        only: NEMIS, NRCSPLIT, EMIS_NAME, SPLIT_NAME,  &
-                               NEMIS_PLAIN, NEMIS_SPLIT, EMIS_NSPLIT
+  use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
+                             Read_Headers, read_line
+  use KeyValue_ml,    only: KeyVal
+  use ModelConstants_ml, only: NPROC, DEBUG => DEBUG_GETEMIS, MasterProc
   use Par_ml,            only: me
-  use SmallUtils_ml,     only: wordsplit
+  use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
 
   implicit none
@@ -65,12 +69,21 @@
   ! e_fact is the emission control factor (increase/decrease/switch-off)
   ! e_fact is read in from the femis file and applied within EmisGet
   real, private, save, &
-         dimension(NSECTORS,NLAND,NEMIS)  :: e_fact 
+         dimension(NSECTORS,NLAND,NEMIS_FILES)  :: e_fact 
 
   !/* emisfrac is used at each time-step of the model run to split
   !   emissions such as VOC; PM into species. 
 
-  real, public, dimension(NRCSPLIT,NSECTORS,NLAND), save :: emisfrac
+  integer, public, parameter :: NMAX=NSPEC_ADV ! good guess for max
+  integer, public, save :: nrcemis, nrcsplit
+  integer, public, dimension(NEMIS_FILES) , save :: emis_nsplit
+  !DSRC real, public, dimension(NRCSPLIT,NSECTORS,NLAND), save :: emisfrac
+  real, public,allocatable, dimension(:,:,:), save :: emisfrac
+  !DSRC: maps from iqrc, dimension nrcsplit
+  integer, public,allocatable, dimension(:), save :: iqrc2itot
+  integer, public, dimension(NSPEC_TOT), save :: itot2iqrc
+  integer, public, dimension(NEMIS_FILES), save :: Emis_MolWt
+  real, public,allocatable, dimension(:), save :: emis_masscorr
 
   !/ some common variables
   character(len=40), private :: fname             ! File name
@@ -299,7 +312,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                        ,isec, isec1 , isec2        & ! loop vars: emis sectors
                        ,ncols, n, oldn               ! No. cols. in "femis" 
   integer, parameter        :: NCOLS_MAX = 20      ! Max. no. cols. in "femis"
-  integer, dimension(NEMIS) :: qc           ! index for sorting femis columns
+  integer, dimension(NEMIS_FILES) :: qc           ! index for sorting femis columns
   real, dimension(NCOLS_MAX):: e_f                 ! factors read from femis
   character(len=200) :: txt                         ! For read-in 
   character(len=20), dimension(NCOLS_MAX)::  polltxt! to read line 1
@@ -343,7 +356,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   n = 0
   COLS: do ic=1,ncols
       oldn = n
-      EMLOOP: do ie=1, NEMIS
+      EMLOOP: do ie=1, NEMIS_FILES
                 if ( polltxt(ic+2) == trim ( EMIS_NAME(ie) ) ) then
                     qc(ie) = ic
                     n = n + 1
@@ -356,7 +369,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
            write(unit=6,fmt=*) "femis: ",polltxt(ic+2)," NOT assigned"
   end do COLS   ! ic
 
-  call CheckStop( n < NEMIS , "EmisGet: too few femis items" )
+  call CheckStop( n < NEMIS_FILES , "EmisGet: too few femis items" )
 
   
   n = 0
@@ -401,7 +414,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
       end if
 
 
-      do ie = 1,NEMIS
+      do ie = 1,NEMIS_FILES
 
           do iq = iland1, iland2
               do isec = isec1, isec2
@@ -410,7 +423,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
           end do !iq
 
           if (DEBUG ) then
-              write(unit=6,fmt=*) "IN NEMIS LOOP WE HAVE : ", ie, &
+              write(unit=6,fmt=*) "IN NEMIS_FILES LOOP WE HAVE : ", ie, &
                                        qc(ie), e_f( qc(ie) )
               write(unit=6,fmt=*) "loops over ", isec1, isec2, iland1, iland2
           end if ! DEBUG
@@ -421,11 +434,12 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   close(IO_EMIS)
 
   write(unit=6,fmt=*) "In femis, read ", n, "records from femis."
-  if ( DEBUG ) then    ! Extra checks
-     write(unit=6,fmt=*) "DEBUG_EMISGET: For UK this gives: "
-     write(unit=6,fmt="(6x, 30a10)") (EMIS_NAME(ie), ie=1,NEMIS)
+  if ( DEBUG.and.MasterProc ) then    ! Extra checks
+     write(unit=6,fmt=*) "DEBUG_EMISGET: UK femis gives: "
+     write(unit=6,fmt="(6x, 30a10)") (EMIS_NAME(ie), ie=1,NEMIS_FILES)
      do isec = 1, 11
-      write(unit=6,fmt="(i6, 30f10.4)") isec,(e_fact(isec,27,ie),ie=1,NEMIS)
+      write(unit=6,fmt="(i6, 30f10.4)") isec, &
+          (e_fact(isec,27,ie),ie=1,NEMIS_FILES)
      end do
   end if ! DEBUG
   ios = 0
@@ -453,48 +467,47 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 !------------------------------------------------------------------------- 
 
   !-- local
-  integer ::  ie                  ! emission index in EMIS_NAME   (1..NEMIS)
+  integer ::  ie                  ! emission index in EMIS_NAME (1..NEMIS_FILES)
   integer ::  isp                 ! emission index in 1..NEMIS_SPLIT
-  integer ::  ifr0, ifr           ! index of split compound in emisfrac   
+  integer ::  itot                !  Index in IX_ arrays
+  integer ::  iqrc           ! index of split compound in emisfrac   
 
   integer, parameter :: NONREACTIVE = 1   ! No.columns of non-reactive species
                                           ! enforced for read-ins.
 
   !-- for read-ins, dimension for max possible number of columns: 
-  character(len=12), dimension(0:1, NRCSPLIT + NONREACTIVE ) :: intext
-  real             , dimension     (NRCSPLIT + NONREACTIVE ) :: tmp 
+  !-- for CRI we have 100s of VOC, hence
+  character(len=10000) :: txtinput
+  character(len=12), dimension(0:1, NMAX ) :: intext
+  character(len=12), dimension(NMAX) :: Headers
+! Now we expect a  "key-value", e.g. 46 for NOx as NO2, or
+! zero to just use species()%molwt.:
+  type(KeyVal), dimension(1)  :: MassValue ! set for e.f. NOx as NO2, SOx as SO2
+  integer :: NKeys
+  real, dimension(NSPEC_ADV,NSECTORS,NLAND) :: tmp_emisfrac
+  real, dimension(NSPEC_ADV) :: tmp_emis_masscorr
+  integer, dimension(NSPEC_ADV) :: tmp_iqrc2itot !maps from iqrc 
+  real, dimension(NMAX ) :: tmp 
   real     :: sumtmp
-  integer  :: nsplit  &         ! No.columns data to be read
-             ,iland,isec,i,n,nn
+  integer  :: nsplit   &         ! No.columns data to be read
+             ,iland,isec,i,n,nn, allocerr
   integer  :: idef              ! Set to   0  for defaults, 1 for specials
   integer  :: iland1, iland2    ! loop variables over countries
   logical  :: defaults          ! Set to true for defaults, false for specials
 !-----------------------------------------------
 
-  if ( NEMIS_SPLIT == 0 ) return  !/** for safety **/
+  iqrc = 0               ! Starting index in emisfrac array
+  nrcsplit= 0                 !
 
-
-  ifr0 =    1                 ! Starting index in emisfrac array
-
-  do isp = 1, NEMIS_SPLIT
-    ie =   NEMIS_PLAIN + isp   ! Split species, index in 1..NEMIS
-
-    nsplit =    EMIS_NSPLIT(isp) + NONREACTIVE 
-
-    if (isp > 1) ifr0 = ifr0 + EMIS_NSPLIT(isp-1) !start index of next species
-
-    !/ Just in case ....
-    call CheckStop( EMIS_NAME(ie) /= SPLIT_NAME(isp) ,   &
-                   "EmisGet: Mis-matchSPLIT" )
+  do ie = 1, NEMIS_FILES 
 
     IDEF_LOOP: do idef = 0, 1
 
        defaults = (idef == 0)
 
-    !** Check if *.split.defaults file for the component exists
        if ( defaults ) then
 
-          fname = trim( EMIS_NAME(ie) ) // "split.defaults"
+          fname = trim( "emissplit.defaults." // EMIS_NAME(ie) )
           call open_file(IO_EMIS,"r",fname,needed=.true.)
 
           call CheckStop( ios, "EmisGet: ioserror:split.defaults " )
@@ -502,45 +515,86 @@ READEMIS: do   ! ************* Loop over emislist files *******************
        else 
     !** If specials exists, they will overwrite the defaults
 
-          fname = trim( EMIS_NAME(ie) ) // "split.special"
+          fname = trim( "emissplit.specials." // EMIS_NAME(ie) )
           call open_file(IO_EMIS,"r",fname,needed=.false.)
 
           if ( ios == NO_FILE ) then  
-            write(unit=6,fmt=*) "emis_split: no specials for",EMIS_NAME(ie)
               ios = 0
+              if(MasterProc) &
+                 write(*,fmt=*) "emis_split: no specials for:",EMIS_NAME(ie)
               exit IDEF_LOOP
           endif
        end if
 
-       if (DEBUG) write(unit=6,fmt=*) "DEBUG_EMISGET split defaults=",&
-              defaults, fname
+       if (DEBUG.and.MasterProc) write(unit=6,fmt=*) &
+             "DEBUG_EMISGET split defaults=", defaults, fname
  
        !/ Read text line and speciation:
        !  the following lines expect one line of a header text with the
        !  species names, followed by lines of the following format:
        !  iland, isec, tmp1, tmp2.... tmpN+1, where the N+1'th column
-       !  is for non-reactive species. These non-reactives are not used in  
-       !  the rest of the program, but are required to check mass-balance.
+       !  is  optional, and for non-reactive species. These non-reactives are not used in  
+       !  the rest of the program, but are sometimes needed (e.g. VOC)
+       !  to check mass-balance.
 
-       read (unit=IO_EMIS,fmt=*,iostat=ios)   &
-                            iland, isec ,(intext(idef,i), i=1, nsplit)
- 
-       call CheckStop( ios , "EmisGet: Read error on header, emis_split " )
+        call Read_Headers(IO_EMIS,errmsg,nsplit,NKeys,Headers, MassValue)
+        read(MassValue%value,fmt=*) Emis_MolWt(ie)
+        call CheckStop( errmsg , "Read Headers" // fname )
+        call CheckStop( nsplit < 3 , "nsplit problem " // fname )
 
-       write(unit=6,fmt="(a25,i3,/,(5a12))") "SPLIT species for idef=", &
-                      idef, (intext(idef,i), i=1, nsplit)
-       write(unit=6,fmt=*) "Will try to split ", EMIS_NSPLIT(isp) , " times"
+        nsplit = nsplit - 2
+
+        if ( MasterProc ) then
+          write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
+          write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
+        end if
+
+           do i = 1, nsplit      ! 1st 2 columns are cc, isec:
+              intext(idef,i) = Headers(i+2)
+              if(MasterProc) print *, "SPLITINFO iem ", i,idef, intext(idef,i)
+              itot = find_index(intext(idef,i), species(:)%name )
+              if ( defaults ) then
+                if ( Headers(i+2) /= "UNREAC" ) then 
+                  iqrc = iqrc + 1
+                  emis_nsplit(ie) = emis_nsplit(ie) + 1
+               
+                  call CheckStop( itot<1, &
+                   "EmisSplit FAILED "//trim(intext(idef,i)) )
+
+                  tmp_iqrc2itot(iqrc) = itot
+                  itot2iqrc(itot)     = iqrc
+
+                 !DSRC Now, get factor needed for scaling emissions to molec
+                  if ( Emis_MolWt(ie) == 0 ) then
+                      tmp_emis_masscorr(iqrc) = 1.0/species(itot)%molwt
+                  else
+                      tmp_emis_masscorr(iqrc) = 1.0/Emis_MolWt(ie)
+                  end if
+                end if ! defaults
+                if ( MasterProc .and. itot>0 )  write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
+                   "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
+                     trim(species(itot)%name ), " MW:", 1.0/tmp_emis_masscorr(iqrc)
+                 end if
+              !end if defaults
+           end do
+           if ( MasterProc )  write(6,"(a,i4,a,i4)") "Compare ns: used=", &
+                emis_nsplit(ie), "including any UNREAC:", nsplit
+!        end if
            
-       n = 0
+        n = 0
 
        READ_DATA: do 
-          read (unit=IO_EMIS,fmt=*,iostat=ios)   &
-                             iland, isec, (tmp(i),i=1, nsplit)
 
-           if ( ios <  0 ) exit READ_DATA     ! End of file
-           call CheckStop( ios > 0 , "EmisGet: Readerror on emis_split " )
+           call read_line(IO_EMIS,txtinput,ios)
+           if ( ios /=  0 ) exit READ_DATA     ! End of file
+           read(unit=txtinput,fmt=*)  iland, isec, (tmp(i),i=1, nsplit)
+           call CheckStop( ios ,"EmisGet: ios error on "//trim(fname) )
 
            n = n + 1
+           if ( MasterProc )  then
+               write(6,"(a,i3,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
+                  iland, isec, nsplit, tmp(1:nsplit)
+           end if
 
            !/... some checks:
            sumtmp = sum( tmp(1:nsplit) )
@@ -554,19 +608,20 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             "ERROR: emisfrac:"//trim(fname)//" ", idef, iland, n, isec, sumtmp
                call CheckStop( errmsg )
            end if
-           if (  .not. defaults ) then
-              do nn=1,nsplit  ! Check that specials headers match defaults
-                  if (intext(1,nn) /= intext(0,nn) ) then
-                     print *, "VOCSPLIT ERROR DEF ", nn, "D:",trim(intext(0,nn))
-                     print *, "VOCSPLIT ERROR SPC ", nn, "S:", trim(intext(1,nn))
-                  end if
+           if ( .not. defaults ) then
+             ! Check that specials headers match defaults
+              if ( DEBUG .and. MasterProc ) print *, "SPLIT CHECK SPECIES", idef
+              do nn=1,emis_nsplit(ie)  
+                  if ( MasterProc ) then
+                    if (intext(1,nn) /= intext(0,nn) ) then
+                       print *, "SPLIT ERROR DEF ", nn, "D:",trim(intext(0,nn))
+                       print *, "SPLIT ERROR SPC ", nn, "S:", trim(intext(1,nn))
+                    end if
+                  end if ! masterproc
                     
                   call CheckStop( intext(1,nn) /= intext(0,nn), &
-                    "EmisGet: ERROR intext(1,nn) /= intext(0,nn) " // &
-                       trim(intext(0,nn)) // "S:" // trim(intext(1,nn)) )
-
-                   
-              enddo
+                    "EmisGet: ERROR intext(1,nn) /= intext(0,nn) ")
+              end do !nn
            end if
 
            if ( defaults .or. iland == 0 ) then
@@ -578,18 +633,20 @@ READEMIS: do   ! ************* Loop over emislist files *******************
            end if
                
            do iland = iland1, iland2
-             do i = 1, EMIS_NSPLIT(isp)
-                ifr = ifr0 + i - 1    ! => index in emisfrac array
+             do i = 1, emis_nsplit(ie) !DSRC do i = 1, EMIS_NSPLIT(isp)
 
                 !/** assign and convert from percent to fractions: **/
 
-                emisfrac(ifr,isec,iland) = 0.01 * tmp(i)
+                iqrc = sum(emis_nsplit(1:ie-1)) + i
+                tmp_emisfrac(iqrc,isec,iland) = 0.01 * tmp(i)
 
                 ! just a check
-                if ( DEBUG .and. iland == 27 ) then 
-                    write(*,"(a15,3i3,f10.4)") &
-                      "DEBUG_EMISGET splitdef UK", isec, &
-                             ifr0, ifr, emisfrac(ifr,isec,iland)
+                if ( DEBUG .and. iland == 27.and.MasterProc ) then 
+                    itot = tmp_iqrc2itot(iqrc)
+                    write(*,"(a35,4i3,i4,a,f10.4)") &
+                      "DEBUG_EMISGET splitdef UK", isec, ie, i,  &
+                       iqrc, itot, trim(species(itot)%name), &
+                         tmp_emisfrac(iqrc,isec,iland)
                 endif
              enddo ! i
            enddo ! iland
@@ -599,12 +656,26 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
        call CheckStop(  defaults .and. n  /=  NSECTORS, &
                         "ERROR: EmisGet: defaults .and. n  /=  NSECTORS" )
-       write(unit=6,fmt=*) "Read ", n, " records from ",fname
+       if(MasterProc) write(unit=6,fmt=*) "Read ", n, " records from ",fname
 
     end do IDEF_LOOP 
   end do ! ie
   ios = 0
+  
+  !DSRC Now, we know how many split species we have, nrcsplit, so we allocate
+  !  and fill emisfrac:
+  nrcemis = sum( emis_nsplit(:) )
+  allocate(emisfrac(nrcemis,NSECTORS,NLAND),stat=allocerr)
+  call CheckStop(allocerr, "Allocation error for emisfrac")
+  allocate(iqrc2itot(nrcemis),stat=allocerr)
+  call CheckStop(allocerr, "Allocation error for iqrc2itot")
+  allocate(emis_masscorr(nrcemis),stat=allocerr)
+  call CheckStop(allocerr, "Allocation error for emis_masscorr")
+  emisfrac(:,:,:)     = tmp_emisfrac(1:nrcemis,:,:)
+  iqrc2itot(:)     = tmp_iqrc2itot(1:nrcemis)
+  emis_masscorr(:)    = tmp_emis_masscorr(1:nrcemis)
 
+   
  end subroutine EmisSplit
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

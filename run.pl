@@ -7,9 +7,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo) 
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=32:ib
+#PBS -lnodes=64:ib
 # wall time limit of run 
-#PBS -lwalltime=00:45:00
+#PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -114,13 +114,14 @@ my @MAKE = ("gmake",  "-j4", "--makefile=Makefile_snow");
 
 my $SR= 0;     # Set to 1 if source-receptor calculation
               # check also variables in package EMEP::Sr below!!
+die " TO DO: Need still to create SR split files\n" if $SR ;
  
 # <---------- start of user-changeable section ----------------->
 
 #  --- Here, the main changeable parameters are given. The variables 
 #      are explained below, and derived variables set later.-
 
-my $year = "2006";
+my $year = "2005";
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -187,15 +188,17 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 
 my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
-$testv       = "rv3_3"; 
+my $Chem     = "EmChem09";        # Label for chemical scheme used
+#$Chem     = "EmChem03c";        # Label for chemical scheme used
+$testv       = "rv3_4"; 
 
 #User directories
 my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 # Chemistry-specific files:
-my $Chem        = "CRI_v2_R5";   # Label for chemical scheme used
 my $ChemDir     = "$ProgDir/ZCM_$Chem";   # for vocspec for this schem
 
-my $WORKDIR     = "$WORKROOT/$USER/${testv}_$Chem.$year";    # working and result directory
+#my $WORKDIR     = "$WORKROOT/$USER/${testv}_$Chem.$year";    # working and result directory
+my $WORKDIR     = "$WORKROOT/$USER/${testv}.$year";    # working and result directory
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
 
 
@@ -206,9 +209,7 @@ chdir "$ProgDir";
 print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
-my $Split       = "BASE_MAR2004" ;       
-my $NOxSplit       = "2000" ;               # Have CLE2020, MFR2020, 2000       
-#$NOxSplit    = "CLE2020_ver2";    # NOx splits
+my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;       
 my $Africa      = "$DATA_LOCAL/Africa";        # Emissions for Africa, y=1..11
 
 my $timeseries  = "$DataDir";
@@ -226,14 +227,20 @@ my @runs        = ( $scenario );
 
 
 #EMISSIONS
+#Dave, reset to Emission_Trends for Chem project, Oct 18th
 
 my $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
-$EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis" if $GRID eq "GLOBAL";
-$EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 0 ;# EGU2005 2004;
-my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2"; # 2006 only?
-$emisdir = $EMIS_INP if $GRID eq "GLOBAL"; 
+my $emisdir = "$EMIS_INP/$year";
+
+if ( $GRID eq "GLOBAL" ) {
+   $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
+   $emisdir = $EMIS_INP; 
+}
+
+# $EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 0 ;# EGU2005 2004;
+# my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2"; # 2006 only?
 my $pm_emisdir = $emisdir;
-$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
+#$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
  
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
@@ -276,13 +283,13 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "3";       # first month, use 2-digits!
-my $mm2   =  "3";       # last month, use 2-digits!
+my $mm1   =  "07";       # first month, use 2-digits!
+my $mm2   =  "07";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-$NTERM = 32;       # for testing, simply reset here
+$NTERM = 2;       # for testing, simply reset here
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -452,12 +459,16 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
         $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
         $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
         $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+#DSRC
+        $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
+	# specials aren't required
+	if( -e "$SplitDir/emissplit.specials.$poll" ) {
+        	$ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll";
+	}
     }
     
     foreach my $mmm ( $mm1  .. $mm2 ) {
 	my $mm = sprintf "%2.2d", $mmm ; # WHY DO WE NEED THIS?????
-	#GRID $ifile{"$DATA_LOCAL/snowc$mm.dat.170"} =  "snowc$mm.dat";
-	#GRID $ifile{"$DATA_LOCAL/natso2$mm.dat.170"} =  "natso2$mm.dat";
 	$ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
 	$ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
 	$ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
@@ -465,13 +476,6 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 
 # Emissions setup:
     $ifile{"$DataDir/femis.dat"} =  "femis.dat";
-    $ifile{"$DataDir/pm25split.defaults.$Split"} = "pm25split.defaults";
-    #GenChem $ifile{"$DataDir/vocsplit.defaults.$Split"} = "vocsplit.defaults";
-    #GenChem $ifile{"$DataDir/vocsplit.special.$Split"} = "vocsplit.special";
-    $ifile{"$ChemDir/vocsplit.defaults.$Chem"} = "vocsplit.defaults";
-    $ifile{"$ChemDir/vocsplit.special.$Chem"} = "vocsplit.special";
-    $ifile{"$DataDir/noxsplit.default.$NOxSplit"} = "noxsplit.defaults"; # NB - no
-    $ifile{"$DataDir/noxsplit.special.$Split"} = "noxsplit.special";
     $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
                                    "Boundary_and_Initial_Conditions.nc";
     $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =

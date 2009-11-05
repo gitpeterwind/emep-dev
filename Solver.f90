@@ -47,28 +47,27 @@
   !=======================================================================!
  
 
+    use My_Aerosols_ml,    only: SEASALT
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3   
     use Biogenics_ml,      only: BIO_ISOP, BIO_TERP
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
+    use EmisDef_ml,        only: QSSFI, QSSCO
     use Emissions_ml,      only: KEMISTOP    
     use ChemGroups_ml,     only: RO2_POOL
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
     use ChemSpecs_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
-!dsx    use ChemRates_rct_ml,   only: set_night_rct, ONLY_NIGHT
     use ChemRates_rct_ml,   only: rct
     use ChemRates_rcmisc_ml,only: rcmisc  ! DSGC new
     use GridValues_ml,     only : GRIDWIDTH_M
     use Io_ml,             only : IO_LOG
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, DebugCell, MasterProc
-    use My_Aerosols_ml,    only: SEASALT
-    use My_Emis_ml                        ! => QRCNO, etc.
-    use OrganicAerosol_ml, only: Fgas
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX  ! me for TEST
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
                                  rc_Rn222,      & ! Pb210
                                  xn_2d,         & 
                                  rh,            & 
+                                 Fgas,          & ! fraction in gas-phase, for SOA
                                  rcss,amk         ! Sea salt emission rate
     use N2O5_hydrolysis_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4,&
                                  f_Riemer! to weight the hydrolysis of N2O5 with NO3,SO4 mass

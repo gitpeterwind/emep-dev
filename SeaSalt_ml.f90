@@ -43,13 +43,13 @@
 
  use ChemSpecs_tot_ml,       only : SSFI, SSCO
  use ChemChemicals_ml,      only : species
+ use EmisDef_ml,           only : NSS, QSSFI, QSSCO
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
  use Met_ml,               only : z_bnd, z_mid, sst, snow,   &
                                   nwp_sea, u_ref, foundSST  
  use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, DEBUG_i,DEBUG_j
- use My_Emis_ml,           only : NSS, QSSFI, QSSCO
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, GRAV, AVOG ,PI
  use TimeDate_ml,          only : current_date

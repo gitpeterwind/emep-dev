@@ -1,3 +1,53 @@
+xxxxxxxxxxxxxx rv3_4beta Dave, Robert  5 Nov 2009 xxxxxxxxxxxxxxxx
+
+Signficant change in handling of emissions.  New chemistry.
+-----------------------------------------------------------
+
+1) Emissions
+
+No need to specify in advance NEMIS_PLAIN, NEMIS_SPLIT etc. Instead,
+the code (EmisGet) figures out from the new emissplit.defaults.xxxx
+files how many species each emission consists of. Every pollutant now
+has to have an emissplit.defaults file, with headers.  Eliminates a lot
+of code and confusion (IMHO) :-)
+
+The emissplit files also contain a MASS_ASSUMED variable. Set to
+zero if the code can just figure out the emissions from the real
+species. For NOx as NO2, we set 46, for SOx as SO2, set 64.
+
+My_Emis_ml --- ** deleted **
+
+EmisDef - now simpler. Define your emission files here.
+
+EmisGet_ml now does more work, but doesn't need to worry about PLAIN
+versus SPLIT. 
+
+Setup_1d_ml
+Setup_1dfields_ml
+
+run.pl  - now uses $SplitDir = $DATA_LOCAL/SPLITS_NOV2009/BASE_MAR2004
+(CLE case not done yet)
+
+Io_Progs_ml - small improvements (for safety)
+RunChem_ml  - small changes
+Solver_ml - small change (Fgas moved)
+Timefactors - mainly use of NEMIS_FILES
+Volcanos_ml  --NOTE - used hard-coded MW=64 here. Ran out of energy..
+(and such info should be in Volcano input file)
+
+
+2) Chemistry
+ZCM_EmChem09 introduced. Uses rate-updates fro Robert/Conny (2008 work)
+plus other improvements arising from chemistry comparison with
+Garry Hayman. This '09 version is now the default chemistry.
+
+Plus (Alvaro)
+============
+My_Derived_ml - made compatable with older gfortran through use of
+tag_name (gfortran or gcc bug, solved for those with Ubuntu Jaunty
+of Karmic, affects Hardy, in which   "AAA" // "BBB" wasn't accepted for
+strings in AddArray.
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_3_3 Dave,  24  Oct. 2009 xxxxxxxxxxxxxxxx
 
 Log.changes : all equals signs changed to xxxx, as cvs seems to

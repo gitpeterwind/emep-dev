@@ -42,7 +42,7 @@
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,           &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
                                 ORGANIC_AEROSOLS, Aero_water, SEASALT
-   use My_Emis_ml       ! debug QRC
+!DSRC   use My_Emis_ml       ! debug QRC
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
@@ -156,8 +156,9 @@ subroutine runchem(numt)
 if ( DEBUG .and. debug_flag  ) then
     write(6,"(a,2i3,i5,9es10.2)") "DEBUG_RUNCHEM RCEMIS ", &
           current_date%day, current_date%hour, current_date%seconds, &
-          rcemis(QRCNO,20), rcemis(QRCHCHO,20), &
-          rcbio(BIO_ISOP), rcemis(QRCC5H8,KMAX_MID)
+          rcemis(NO,20), rcemis(NO2,20), rcemis(HCHO,20), &
+          rcemis(SO2,20), rcemis(NH3,20), &
+          rcbio(BIO_ISOP), rcemis(C5H8,KMAX_MID)
 end if
 !          !rcemis(QRCCO,20), AROM, rcemis(QRCPM25,20), rcemis(QRCEC_f_FFUEL,20)
 !

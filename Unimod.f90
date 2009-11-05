@@ -35,7 +35,6 @@ program myeul
   !
   !------------------------------------------------------------------------
 
-  use My_Emis_ml,       only : NBVOC, AIRNOX
   use My_Outputs_ml,    only : set_output_defs
   use My_Timing_ml,     only : lastptim,mytimm,Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
@@ -54,6 +53,7 @@ program myeul
   use Derived_ml,    only :  Init_Derived &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use EcoSystem_ml,     only : Init_EcoSystems
+  use EmisDef_ml,       only : NBVOC, AIRNOX
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use ChemChemicals_ml,  only : define_chemicals
   use ChemSpecs_adv_ml  , only : NSPEC_ADV

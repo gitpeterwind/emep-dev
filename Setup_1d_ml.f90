@@ -40,9 +40,12 @@
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
 !DSGC use ChemFunctions_ml,      only : f_Riemer  !weighting factor for N2O5 hydrolysis
   use CheckStop_ml,          only :  CheckStop
+  use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES &
+                                  ,NSS  !SeaS
+  use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use Functions_ml,          only :  Tpot_2_T
-  use ChemSpecs_tot_ml,        only :  SO4,aNO3,pNO3
+  use ChemSpecs_tot_ml,        only :  SO4,aNO3,pNO3,C5H8,NO,NO2,SO2
   use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
@@ -65,12 +68,6 @@
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,KMAX_MID ,KMAX_BND, KCHEMTOP     ! Start and upper k for 1d fields
   use My_Aerosols_ml,       only : SEASALT
-  use My_Emis_ml,           only : NRCEMIS  , AIRNOX, QRCAIRNO &
-                                  ,QRCAIRNO2, NBVOC, QRCC5H8  &
-                                  ,QRCVOL,VOLCANOES &
-                                  ,N_QRC_MAPPED, qrc2ixadv & !DSGC
-                                  ,NSS  !SeaS
-!DSGC use My_MassBudget_ml,      only : N_MASS_EQVS, ixadv_eqv, qrc_eqv
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
@@ -220,7 +217,7 @@ contains
      integer, intent(in) ::  i,j     ! coordinates of column
 
    !  local
-     integer ::  iqrc,k,n
+     integer ::  iqrc,k,n, itot
      real    :: scaling, scaling_k
      real    :: eland   ! for Pb210  - emissions from land
 
@@ -233,7 +230,8 @@ contains
      do k=KEMISTOP,KMAX_MID
 
         do iqrc = 1, NRCEMIS
-          rcemis(iqrc,k) = gridrcemis(iqrc,k,i,j)
+          itot = iqrc2itot( iqrc )
+          rcemis(itot,k) = gridrcemis( iqrc ,k,i,j)
         end do ! iqrc
      enddo
 
@@ -252,9 +250,10 @@ contains
            j_l=j_help - gj0  +1
            if((i_l==i).and.(j_l==j))then !i,j have a volcano
               k=height_volc(volc_no)
-              rcemis(QRCVOL,k)=rcemis(QRCVOL,k)+rcemis_volc(volc_no)
-              !write(*,*)'Adding volc. emissions ',rcemis_volc(volc_no),volc_no,&
-              !            'to height=',k,'i,j',i_help,j_help
+              !DSSRC rcemis(QRCVOL,k)=rcemis(QRCVOL,k)+rcemis_volc(volc_no)
+              rcemis(SO2,k)=rcemis(SO2,k)+rcemis_volc(volc_no)
+              write(*,*)'Adding volc. emissions ',rcemis_volc(volc_no),volc_no,&
+                          'to height=',k,'i,j',i_help,j_help
               !write(*,*)'TOT rcemis=',rcemis(QRCVOL,:)
            endif
         endif
@@ -266,22 +265,17 @@ contains
 
      if ( AIRNOX  ) then
 
-       !QRCAIRNO is set to QRCNO and QRCAIRNO2 is set to QRCNO2 if 
-       ! AIRNOX is true. Otherwise to a dummy value of 1. Avoids 
-       ! problems with undefined QRCNO in non-NOx models.
+        do k=KCHEMTOP, KEMISTOP,KMAX_MID
 
-        do k=KCHEMTOP,KEMISTOP-1
-          rcemis(QRCAIRNO,k)  = 0.95 * (airn(k,i,j)+airlig(k,i,j))
-          rcemis(QRCAIRNO2,k) = 0.05 * (airn(k,i,j)+airlig(k,i,j))
-        enddo
-
-        do k=KEMISTOP,KMAX_MID
-          rcemis(QRCAIRNO,k)  = rcemis(QRCAIRNO,k) &  
+          rcemis(NO,k)  = rcemis(NO,k) &  
                               + 0.95 * (airn(k,i,j)+airlig(k,i,j))
-          rcemis(QRCAIRNO2,k) = rcemis(QRCAIRNO2,k) &
+          rcemis(NO2,k) = rcemis(NO2,k) &
                               + 0.05 * (airn(k,i,j)+airlig(k,i,j))
 
         enddo
+        if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+               i==debug_li .and. j==debug_lj ) write(*,"(a,10es10.3)") &
+                 " DEBUG_SETUP_AIRNOX ", airn(KMAX_MID,i,j),airlig(KMAX_MID,i,j)
 
      end if ! AIRNOX
 
@@ -297,7 +291,7 @@ contains
 
 ! Biogenics:
 ! Hard-coded for now, for isoprene only:
-     rcemis(QRCC5H8,KMAX_MID) =  rcemis(QRCC5H8,KMAX_MID) + rcbio(BIO_ISOP)
+     rcemis(C5H8,KMAX_MID) =  rcemis(C5H8,KMAX_MID) + rcbio(BIO_ISOP)
 
 !Mass Budget calculations
 !   Adding up the emissions in each timestep
@@ -308,9 +302,11 @@ contains
 
        scaling_k = scaling * carea(k)/amk(k)
 
-       do iqrc = 1, N_QRC_MAPPED 
-          totem( qrc2ixadv(iqrc) ) = totem( qrc2ixadv(iqrc) ) + &
-                rcemis( iqrc, k ) * scaling_k
+       do iqrc = 1, NSPEC_ADV
+          
+          itot = iqrc + NSPEC_SHL
+          totem( iqrc ) = totem( iqrc ) + &
+                rcemis( itot, k ) * scaling_k
           !if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
           !    i==debug_li .and. j==debug_lj ) then
           ! write(6,"(a,2i3,es10.3,2i4)") "MASSEQV:", iqrc, rcemis( iqrc,k), qrc2ixadv(iqrc)

@@ -31,7 +31,7 @@ module Biogenics_ml
   !    The effects of temperature and light on the biogenic stuff is calculated
   !     in Setup_1d
   !---------------------------------------------------------------------------
-  use My_Emis_ml       , only : NBVOC, BVOC_USED
+  use EmisDef_ml       , only : NBVOC, BVOC_USED
 
   use CheckStop_ml,      only: CheckStop
   use GridValues_ml    , only : xm2, gb, &

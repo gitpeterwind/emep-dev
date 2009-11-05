@@ -37,35 +37,28 @@
 !  This routine interfaces the stand-alone emission-file reading routines
 !  with the 3D model.
 !_____________________________________________________________________________
-  use My_Emis_ml,  only : &
-          NEMIS,        &   ! No. emission files
-          EMIS_NAME,    &   ! Names of species ("sox  ",...)
-          NEMIS_PLAIN,  &   ! No. emission files for non-speciated emissions
-          EMIS_NSPLIT,  &   ! No. emission files to be speciated
-          NEMIS_SPLIT,  &   ! No. emission files for speciated emissions
-          NRCSPLIT,     &   ! No. emis species from split emissions species
-          NRCEMIS,      &   ! Total No. emission species after speciation
-          set_molwts,   &   ! subroutine to set molwt
-          molwt,        &   ! Mol. wts
-          NBVOC,   &   ! > 0 if forest voc wanted
-          QRCVOL,       &   ! For volcanoes
-          VOLCANOES         ! 
 
   use Biogenics_ml, only: first_dms_read,IQ_DMS,emnat,emforest
   use CheckStop_ml,only : CheckStop
+  use ChemSpecs_shl_ml, only: NSPEC_SHL
+  use ChemSpecs_tot_ml, only: NSPEC_TOT
   use Country_ml,    only : NLAND,Country_Init,Country, IC_NAT
-  use EmisDef_ml, only : NSECTORS,  &  ! No. sectors
-                         NEMISLAYERS,& ! No. vertical layers for emission
-                         NCMAX,&       ! Max. No. countries per grid
-                         FNCMAX,&      ! Max. No. countries (with flat 
-                                       ! emissions) per grid
-                     EmisDef_Init    &! Sub to define conversion factors
-                     ,EmisDef_Index   &! Sub to get index of emis name 
-                     ,EmisDef    &  ! Superset of names/factors
-                     ,ISNAP_SHIP &  ! snap index for ship emissions
-                     ,ISNAP_NAT  &  ! snap index for nat. (dms) emissions
-                     ,VERTFAC          ! vertical emission split
-  use EmisGet_ml, only : EmisGet, EmisSplit, emisfrac  ! speciation routines and array
+  use EmisDef_ml, only : NSECTORS & ! No. sectors
+                     ,NEMISLAYERS & ! No. vertical layers for emission
+                     ,NCMAX &       ! Max. No. countries per grid
+                     ,FNCMAX &      ! Max. No. countries (with flat ! emissions) per grid
+                     ,NEMIS_FILES & ! No. emission files
+                     ,EMIS_NAME   & ! Names of species ("sox  ",...)
+                     ,NBVOC       & ! > 0 if forest voc wanted
+                     ,VOLCANOES   & ! 
+                     ,ISNAP_SHIP  & ! snap index for ship emissions
+                     ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
+                     ,VERTFAC       ! vertical emission split
+  use EmisGet_ml, only : EmisGet, EmisSplit, &
+         nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
+        ,iqrc2itot                   &  !maps from split index to total index
+        ,emis_masscorr               &  ! 1/molwt for most species
+        ,emis_nsplit                    ! No. species per emis file
   use GridValues_ml, only:  GRIDWIDTH_M    & !  size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
@@ -122,10 +115,10 @@
  !  The output emission matrix for the 11-SNAP data is snapemis:
  !
 
-  real, private, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS) &
+  real, private, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES) &
             , save ::  snapemis !/* main emission arrays, in kg/m2/s
 
-  real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS) &
+  real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILES) &
             , save ::  snapemis_flat !/* main emission arrays, in kg/m2/s  
 
   !/-- emissions for input to chemistry routines
@@ -133,14 +126,17 @@
    ! KEMISTOP added to avoid hard-coded KMAX_MID-3:
 
    integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
-   real, public, save, dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) :: &
-         gridrcemis         ! varies every time-step (as ps changes)
-   real, private, save, dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) :: &
-          gridrcemis0       ! varies every hour
+   !DSRC dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) ::
+   !DSRC dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) ::
+   real, public, allocatable, save, dimension(:,:,:,:) :: &
+        gridrcemis      & ! varies every time-step (as ps changes)
+       ,gridrcemis0       ! varies every hour
 
+  !SEEE real,    allocatable, dimension(:,:,:,:)  :: globemis 
   !/-- and for budgets (not yet used - not changed dimension)
 
-   real, public,  save, dimension(NRCEMIS) ::  totemadd
+   !DSRC real, public,  save, dimension(NRCEMIS) ::  totemadd
+   real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
 
 
 
@@ -166,7 +162,7 @@ contains
  !
  !  The output emission matrix for the 11-SNAP data is snapemis:
  !
- !       real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS)
+ !       real    snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES)
  !  
  !**********************************************************************
 
@@ -174,7 +170,7 @@ contains
   integer, intent(in)   :: year        !  Year ( 4-digit)
 
   !-- local variables
-  integer, dimension(NEMIS) :: eindex   ! Index of emissions in EmisDef
+  !DSRC integer, dimension(NEMIS_FILES) :: eindex   ! Index of emissions in EmisDef
   real    :: conv              ! Conversion factor
   integer :: iqrc, k, kused    ! index over emitted species, QRCSO2.. 
   integer :: i, j, n           ! Loop variables
@@ -197,12 +193,13 @@ contains
   integer :: fic 
   integer :: ic        ! country codes 
   integer :: isec             ! loop variables: emission sectors
-  integer :: iem              ! loop variable over pollutants (1..NEMIS)
+  integer :: iem              ! loop variable over pollutants (1..NEMIS_FILES)
+  integer :: eindex_vol       ! for volcanos
 
 
   !/** emission sums (after e_fact adjustments):
-  real, dimension(NEMIS)       :: emsum    ! Sum emis over all countries
-  real, dimension(NLAND,NEMIS) :: sumemis  ! Sum of emissions per country
+  real, dimension(NEMIS_FILES)       :: emsum    ! Sum emis over all countries
+  real, dimension(NLAND,NEMIS_FILES) :: sumemis  ! Sum of emissions per country
 
   if (MasterProc) write(6,*) "Emissions called with me, year", me, year
 
@@ -210,19 +207,19 @@ contains
   !      emission indices (IQSO2=.., )
 
   !=========================
-  call EmisDef_Init()                      ! In EmisDef_ml
-  call set_molwts()                        ! In My_Emis_ml
+  !DSRC call EmisDef_Init()                      ! In EmisDef_ml
   call Country_Init()    ! In Country_ml, => NLAND, country codes and 
                          !                   names, timezone
   !=========================
 
-  do i = 1, NEMIS
-     eindex(i) = EmisDef_Index( EMIS_NAME(i) )
-  end do
+  !DSRC do i = 1, NEMIS_FILES
+  !DSRC    eindex(i) = EmisDef_Index( EMIS_NAME(i) )
+  !DSRC end do
 
   !=========================
   !  Check that all is well!
-    call consistency_check(eindex)               ! Below
+    call consistency_check()               ! Below
+    !DSRC call consistency_check(eindex)               ! Below
   !=========================
   ios = 0
 
@@ -236,20 +233,24 @@ contains
 
     !** 2) 
     !=========================
-     if ( NEMIS_SPLIT > 0 ) call EmisSplit()    ! In EmisGet_ml, => emisfrac
+    !DSRC call EmisSplit()    ! In EmisGet_ml, => emisfrac
     !=========================
 
 
   endif
 
+  !DSRC - do read ins of splits on all procs
+    !=========================
+     call EmisSplit()    ! In EmisGet_ml, => emisfrac
+    !=========================
   call CheckStop(ios, "ioserror: EmisSplit")
 
 
   ! #################################
   !    *** Broadcast  monthly and Daily factors ****
-    CALL MPI_BCAST( emisfrac ,8*NRCSPLIT*NSECTORS*NLAND,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
+!DSRC    CALL MPI_BCAST( emisfrac ,8*NRCSPLIT*NSECTORS*NLAND,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS_FILES,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS_FILES,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( day_factor ,8*2*NSECTORS,MPI_BYTE,               0,MPI_COMM_WORLD,INFO) 
 
   !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -294,7 +295,7 @@ contains
 
    end if
 
-   do iem = 1, NEMIS
+   do iem = 1, NEMIS_FILES
       ! now again test for me=0
       if ( MasterProc ) then
 
@@ -325,22 +326,22 @@ contains
        call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
                1,GIMAX,GJMAX,FNCMAX,1,1)
 
-    end do ! iem = 1, NEMIS-loop
+    end do ! iem = 1, NEMIS_FILES-loop
 
 
     if ( MasterProc ) then
         write(unit=6,fmt=*) "Country totals"
         write(unit=IO_LOG,fmt=*) "Country totals"
-        write(unit=6,fmt="(2a4,3x,30a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
-        write(unit=IO_LOG,fmt="(2a4,3x,30a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS)
+        write(unit=6,fmt="(2a4,3x,30a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
+        write(unit=IO_LOG,fmt="(2a4,3x,30a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
 
         do ic = 1, NLAND
            ccsum = sum( sumemis(ic,:) )
            if ( ccsum > 0.0 ) then
                     write(unit=6,fmt="(i3,1x,a4,3x,30f12.2)") &
-                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS)
+                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILES)
                     write(unit=IO_LOG,fmt="(i3,1x,a4,3x,30f12.2)")& 
-                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS)
+                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILES)
            end if
         end do
     end if
@@ -382,14 +383,14 @@ contains
         write(unit=6,fmt=*) "No. days in Emissions: ", nydays
         write(unit=6,fmt=*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
         write(unit=6,fmt=*) "Emissions sums:"
-        do iem = 1, NEMIS
+        do iem = 1, NEMIS_FILES
            write(unit=6,fmt="(a15,f12.2)") EMIS_NAME(iem),emsum(iem)
         end do
     endif
 
 
-    do iem = 1, NEMIS
-       conv = tonne_to_kgm2s * EmisDef( eindex(iem) )%conv
+    do iem = 1, NEMIS_FILES
+       conv = tonne_to_kgm2s !DSRC * EmisDef( eindex(iem) )%conv
  
        forall (ic=1:NCMAX, j=lj0:lj1, i=li0:li1, isec=1:NSECTORS)
           snapemis (isec,i,j,ic,iem) = &
@@ -404,7 +405,8 @@ contains
 
     if ( VOLCANOES ) then
 
-       conv = tonne_to_kgm2s * EmisDef( eindex(QRCVOL) )%conv
+       !DSRC eindex_vol = EmisDef_Index( "sox" )
+       conv = tonne_to_kgm2s !DSRC * EmisDef(eindex_vol)%conv
 
        do volc_no=1,nvolc 
           i=i_volc(volc_no)
@@ -450,28 +452,34 @@ contains
 
     end if
 
+    !DSRC now we now nrecmis and can allocate for gridrcemis:
+print *, "ALLOCATING GRIDRC", me, NRCEMIS
+   allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err1)
+   allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err2)
+   call CheckStop(err1, "Allocation error 1 - gridrcemis") 
+   call CheckStop(err2, "Allocation error 2 - gridrcemis0")
+
   end subroutine Emissions
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- subroutine consistency_check(eindex)
+ subroutine consistency_check() !DSRC eindex)
   !------------------------------------------------------------------!
   !    checks that all the values given so far are consistent        !
   !------------------------------------------------------------------!
-  integer, dimension(NEMIS), intent(in) :: eindex
+!DSRC  integer, dimension(NEMIS_FILES), intent(in) :: eindex
   character(len=30) :: errormsg
   integer :: i
 
   errormsg = "ok"
-  do i = 1, NEMIS
-     if ( eindex(i) < 0 ) then
-          print *, "EmisIndex: Mis-match for ", i, eindex(i)
-          errormsg = "EmisIndex: Mismatch"
-     end if
-  end do
-  if ( NRCEMIS < NEMIS             ) errormsg = " NRCEMIS < NEMIS"
-  if ( size(EMIS_NAME) /= NEMIS    ) errormsg = " size EMISNAME wrong "
-  if ( NEMIS_PLAIN+sum(EMIS_NSPLIT) /= NRCEMIS   ) errormsg = "sum ne NRCEMIS"
-  if ( any( molwt < 1.0 )          ) errormsg = " Mol. wt not assigned "
+!DSRC  do i = 1, NEMIS_FILES
+!DSRC     if ( eindex(i) < 0 ) then
+!DSRC          print *, "EmisIndex: Mis-match for ", i, eindex(i)
+!DSRC          errormsg = "EmisIndex: Mismatch"
+!DSRC     end if
+!DSRC  end do
+!DSRC  if ( nrcemis < NEMIS_FILES             ) errormsg = " NRCEMIS < NEMIS_FILES"
+  if ( size(EMIS_NAME) /= NEMIS_FILES    ) errormsg = " size EMISNAME wrong "
+!DSRC  if ( NEMIS_PLAIN+sum(EMIS_NSPLIT) /= NRCEMIS   ) errormsg = "sum ne NRCEMIS"
 
   call CheckStop(errormsg,"Failed consistency check")
 
@@ -494,7 +502,7 @@ contains
   !     gridrcemis0 calculated every time-step to allow for ps changes.
   !     inputs from Emissions in EMISSIONS_ML:
   !      country and snap-specific array : 
-  !          snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS) 
+  !          snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES) 
   !  
   !*** Units:
   !     snapemis has units of kg/m2/s, SO2 as S, NO2 as N, NH3 as N. 
@@ -505,13 +513,13 @@ contains
   !    landcode(MAXLIMAX,MAXLJMAX,NCMAX).
   !     
   !    Monthly and weekday factors are pre-multiplied and stored in:
-  !       real timefac(NLAND,NSECTORS,NEMIS)
+  !       real timefac(NLAND,NSECTORS,NEMIS_FILES)
   !    And day-night factors are applied here:
   !       day_factor(11,0:1)                  ! 0=night, 1=day
   ! ..........................................................................
   !
   !**    REVISION HISTORY:
-  !       Revised , 30/5/01, jej/st found problem on gridur - split NEMIS loop 
+  !       Revised , 30/5/01, jej/st found problem on gridur - split NEMIS_FILES loop 
   !       into separate NEMIS_PLAIN and NEMIS_SPLIT loops.
   !       Revised, ds,  Feb. 2001 for unified model. Use of date%seconds replaces
   !       thourloc.
@@ -533,16 +541,17 @@ contains
   integer :: icc, ncc                        ! No. of countries in grid.
 !
   integer :: ficc,fncc                       ! No. of countries with
-  integer :: iqrc, ifrac                     ! emis indices 
+  integer :: iqrc                            ! emis indices 
   integer :: isec             ! loop variables: emission sectors
-  integer :: iem              ! loop variable over pollutants (1..NEMIS)
+  integer :: iem              ! loop variable over 1..NEMIS_FILES
+  integer :: itot             ! index in xn()
 !
   integer :: i_l,j_l           ! Local i,j
   !uni - save daytime value between calls, intiialise to zero
   integer, save, dimension(NLAND) ::  daytime = 0  !  0=night, 1=day
   integer                         ::  hourloc      !  local hour 
   logical                         ::  hourchange   !      "     "           
-  real, dimension(NRCEMIS)        ::  emis         !  local array for emissions
+  real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
 
   real ::  deploc,ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
@@ -629,7 +638,7 @@ contains
               ! First loop over non-flat(one sector) emissions
               !*************************************************
 
-              emis(:)=0.
+              tmpemis(:)=0.
               do icc = 1, ncc
                   iland = landcode(i,j,icc)     ! 1=Albania, etc.
                   iland_timefac = Country(iland)%timefac_index
@@ -648,54 +657,37 @@ contains
 
                 do isec = 1, NSECTORS       ! Loop over snap codes
 
-
                    !--  Calculate emission rates from snapemis, time-factors, 
                    !    and if appropriate any speciation  fraction (NEMIS_FRAC)
+                   iqrc = 0   ! index over emisfrac
 
-                   iqrc  = 0   ! index over emis
-                   ifrac = 0   ! index over emisfrac
-
-    	    !/.. First, the simple emissions
-                   do iem = 1, NEMIS_PLAIN
+                   do iem = 1, NEMIS_FILES 
 
                       tfac = timefac(iland_timefac,isec,iem) * &
                                  day_factor(isec,daytime_iland)
 
-                      iqrc = iqrc + 1
-                      emis(iqrc) = snapemis(isec,i,j,icc,iem) * tfac 
-                   end do ! iem=1,NEMIS_PLAIN
+                      s =  tfac * snapemis(isec,i,j,icc,iem)
 
-    	    !/.. Then , the split (speciated) emissions if NEMIS_SPLIT>0
-
-                   do iem = 1, NEMIS_SPLIT
-
-                      tfac = timefac(iland_timefac,isec,iem+NEMIS_PLAIN ) * &
-                                 day_factor(isec,daytime_iland)
-
-                      s =  tfac * snapemis(isec,i,j,icc,iem+NEMIS_PLAIN)
-
-                      do f = 1, EMIS_NSPLIT( iem )
-                           ifrac = ifrac + 1
-                           iqrc  = iqrc  + 1
-                           emis(iqrc) = s * emisfrac(ifrac,isec,iland)
+                      do f = 1, emis_nsplit( iem )
+                           iqrc = iqrc + 1
+                           itot = iqrc2itot(iqrc)
+                           tmpemis(iqrc) = s * emisfrac(iqrc,isec,iland)
+                        !--  Add up emissions in ktonne ......
+                           totemadd(itot) = totemadd(itot) + &
+                                     tmpemis(iqrc) * dtgrid * xmd(i,j)
                       end do ! f
 
-                   end do ! iem=1,NEMIS_SPLIT
+                   end do ! iem
 
-                !--  Add up emissions in ktonne ......
 
-                   do iqrc = 1, NRCEMIS
-                      totemadd(iqrc) = totemadd(iqrc) + &
-                                          emis(iqrc) * dtgrid * xmd(i,j)
-                   end do
-
-                   !..   Assign to height levels 1-4
+                   !..   Assign to height levels 1-KEMISTOP
 
                    do k=KEMISTOP,KMAX_MID
-                      do iqrc =1, NRCEMIS
+                      do iqrc =1, nrcemis
                          gridrcemis0(iqrc,k,i,j) =   &
-                            gridrcemis0(iqrc,k,i,j) + emis(iqrc)*   &
-                            ehlpcom0(k)*VERTFAC(KMAX_BND-k,isec) /molwt(iqrc)  
+                            gridrcemis0(iqrc,k,i,j) + tmpemis(iqrc)*   &
+                            ehlpcom0(k)*VERTFAC(KMAX_BND-k,isec) &
+                            * emis_masscorr(iqrc)   !DSRC was /molwt
                       end do ! iem
                    end do   ! k
 
@@ -707,7 +699,7 @@ contains
        !************************************
        ! Then loop over flat emissions
        !************************************
-       emis(:)=0.
+       tmpemis(:)=0.
        fncc = flat_nlandcode(i,j) ! No. of countries with flat 
                                           ! emissions in grid
 
@@ -730,51 +722,32 @@ contains
           !    and if appropriate any speciation  fraction (NEMIS_FRAC)
 
             iqrc  = 0   ! index over emis
-            ifrac = 0   ! index over emisfrac
 
-          !/.. First, plain emissions
+            do iem = 1, NEMIS_FILES 
 
-             do iem = 1, NEMIS_PLAIN
-                iqrc = iqrc + 1
+                sf =  snapemis_flat(i,j,ficc,iem)    
 
-                    emis(iqrc) =  snapemis_flat(i,j,ficc,iem) 
+                do f = 1, emis_nsplit( iem )
+                   iqrc = iqrc + 1
+                   itot = iqrc2itot(iqrc)
+                   tmpemis(iqrc) = sf * emisfrac(iqrc,isec,flat_iland)
 
-             end do ! iem=1,NEMIS_PLAIN
-
-            !/.. Then , the split (speciated) emissions if NEMIS_SPLIT>0
-
-             do iem = 1, NEMIS_SPLIT
-
-                sf =  snapemis_flat(i,j,ficc,iem+NEMIS_PLAIN)    
-
-
-                do f = 1, EMIS_NSPLIT( iem )
-                   ifrac = ifrac + 1
-                   iqrc  = iqrc  + 1
-
-                     emis(iqrc) = sf * emisfrac(ifrac,isec,flat_iland)
+                  !--   Add flat emissions in ktonne ......
+                   totemadd(itot) = totemadd(itot) + &
+                             tmpemis(iqrc) * dtgrid * xmd(i,j)
 
                 end do ! f
 
-             end do ! iem=1,NEMIS_SPLIT
-
-         !--   Add flat emissions in ktonne  (to non-flat emissions)......
-
-             do iqrc = 1, NRCEMIS
-
-                totemadd(iqrc) = totemadd(iqrc) + &
-                                   emis(iqrc) * dtgrid * xmd(i,j)
-             end do
-
+            end do ! iem
 
          !..   Assign flat emissions to height levels 1-4
          !..   Note, no VERTFAC
 
-             do iqrc =1, NRCEMIS
+             do iqrc =1, nrcemis
 
                 gridrcemis0(iqrc,KMAX_MID,i,j) =   &
-                  gridrcemis0(iqrc,KMAX_MID,i,j) + emis(iqrc)*&
-                    ehlpcom0(KMAX_MID)/molwt(iqrc)
+                  gridrcemis0(iqrc,KMAX_MID,i,j) + tmpemis(iqrc)*&
+                    ehlpcom0(KMAX_MID) * emis_masscorr(iqrc)   !DSRC was /molwt
              end do ! iem
 
 !      ==================================================
@@ -849,11 +822,11 @@ contains
     integer :: IQSO2             ! Index of sox in  EMIS_NAME
     integer errcode
     real,    allocatable, dimension(:,:,:,:)  :: globemis 
-    integer, dimension(NEMIS) :: eindex   ! Index of emissions in EmisDef
+!DSRC    integer, dimension(NEMIS_FILES) :: eindex   ! Index of emissions in EmisDef
     integer:: month,iem,ic,iic,isec, err3,ic1,icc
     real ::duml,dumh,tmpsec(NSECTORS),conv
         logical ,save ::first_call=.true.
-    real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS) &
+    real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES) &
             ::  snapemis_month !/*monthly emissions tonne/month
 
    !dsx For now, only the global runs use the Monthly files.
@@ -890,7 +863,7 @@ contains
 !    natural so2 emissions
 
           IQSO2 = 0
-          do i = 1, NEMIS
+          do i = 1, NEMIS_FILES
             if ( trim( EMIS_NAME(i) ) == "sox" ) IQSO2 = i
           end do
 
@@ -972,10 +945,10 @@ contains
        allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
        call CheckStop(err3, "Allocation error err3 - globland")
     end if
-    do i = 1, NEMIS
-       eindex(i) = EmisDef_Index( EMIS_NAME(i) )
-    end do
-    do iem = 1, NEMIS
+!DSRC    do i = 1, NEMIS_FILES
+!DSRC       eindex(i) = EmisDef_Index( EMIS_NAME(i) )
+!DSRC    end do
+    do iem = 1, NEMIS_FILES
 !      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
 !           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
@@ -1026,12 +999,12 @@ contains
 !   nlandcode=1
 !   landcode=67 !default land
    ic=1 !BUG corrected in this directory 3/11-2008 (ic=1 only for ME=0 otherwise)
-   do iem = 1, NEMIS
+   do iem = 1, NEMIS_FILES
 !         write(*,*)'iem=',iem
 !      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
 !           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
-      conv = tonnemonth_to_kgm2s * EmisDef( eindex(iem) )%conv
+      conv = tonnemonth_to_kgm2s !DSRC * EmisDef( eindex(iem) )%conv
       do j=lj0,lj1
          do i=li0,li1
             icc=nlandcode(i,j)!67

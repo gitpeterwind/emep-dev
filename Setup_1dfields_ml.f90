@@ -36,11 +36,10 @@
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
-  use My_Emis_ml,            only :  NRCEMIS, NSS, NBVOC   !NSS=SeaS
+  use EmisDef_ml,            only :  NSS, NBVOC   !NSS=SeaS
   use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SOA, LAST_SOA
+  use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   use ChemSpecs_bgn_ml,        only :  NSPEC_COL
-!DSGC  use ChemRates_rct_ml,       only :  NRCT
-!DSGC  use ChemRates_rcmisc_ml,    only :  NRCMISC
   implicit none
   private
 
@@ -65,7 +64,9 @@
                    Fgas  = 1.0     &! Fraction as gas-phase
                   ,Fpart = 0.0      ! Fraction as gas-phase
 
-   real, public, dimension(NRCEMIS,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
+ !Emissions in column. We assume that these only involve advected species
+   real, public, dimension(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
+!DSRC  real, public, dimension(NRCEMIS,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
 !DSGC   real, public, dimension(NRCT   ,KCHEMTOP:KMAX_MID), save :: rct    ! T-dependant
 !DSGC   real, public, dimension(NRCMISC,KCHEMTOP:KMAX_MID), save :: rcmisc ! T,M,H2O-dependant
 !DSGC   real, public, dimension(NBVOC ,KCHEMTOP:KMAX_MID), save   :: rcbio  !  Biogenic emissions

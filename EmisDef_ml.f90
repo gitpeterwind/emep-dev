@@ -35,8 +35,22 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
 implicit none
-public :: EmisDef_Init    ! sets names and conv. factors of allowed emissions
-public :: EmisDef_Index   ! function to find index of given pollutant name
+
+  !! No. emission files to be read for non-speciated
+
+   integer, public, parameter :: NEMIS_FILES =      7 
+
+   !/** The names used below must have length of 6 characters and must
+   !    belong to the full list given in Emissions_ml, as they will
+   !    be used together with information in that module. An error
+   !    message (fatal)  will be produced if this is not the case.
+   !-----------------------------------------------------------------
+
+    character(len=6), public, save, dimension(NEMIS_FILES) :: &
+      EMIS_NAME  = &
+      (/ "sox   ", "co    "   &   ! =non-split first
+       , "nh3   ", "pm25  ", "pmco  "   &
+       , "nox   ", "voc   "  /)                       ! =to be split
 
     !----------------- basic emissions file definitions --------------------!
     !  Here we define the parameters *not* likely to change often           !
@@ -73,35 +87,18 @@ public :: EmisDef_Index   ! function to find index of given pollutant name
 
 
    integer, public, parameter :: NCMAX  =  11  ! Max. No. countries per grid
-!hf
    integer, public, parameter :: FNCMAX  =  10 ! Max. No. countries (with 
                                                ! flat emissions) per grid
-
-
-   !/.. List of possible emissions, and their initial conversion factors:
-
-   type, public :: emislist
-      character(len=16) :: name
-      real             :: conv  ! conv. emis file units to required units
-   end type emislist
-
-   integer, public, parameter :: NEMIS_DEF=15         ! No of emitted species
-                                                      ! ( before splitting )
-   type(emislist), public, save, dimension(NEMIS_DEF) :: &
-                       EmisDef  = emislist("notdef", -1.0)
-
 
    !/.. Sector specific information
 
    integer, public, parameter :: &
           NSECTORS  = 11       ! Number of SNAP-sectors in emissions
-!hf
-!hf SECENARIO
+!
+! SCENARIO
   integer, public, parameter :: &
-          ANTROP_SECTORS=10 ! Non-natural sectors
-
-   integer, public, parameter :: &
-          ISNAP_NAT  = 11,&      ! SNAP index for volcanoe emissions 
+          ANTROP_SECTORS=10, &   ! Non-natural sectors
+          ISNAP_NAT  = 11,   &   ! SNAP index for volcanoe emissions 
           ISNAP_SHIP = 8         ! SNAP index for flat emissions,e.g ship
                                  ! Note that flat emissions do NOT necessarily
                                  ! belong to the same SNAP sector
@@ -131,59 +128,23 @@ public :: EmisDef_Index   ! function to find index of given pollutant name
         (/NEMISLAYERS,NSECTORS /) )!hf stakheigth
 
 
+  ! Biogenics
+   integer, public, parameter ::   NBVOC = 2   
+   character(len=8),public, save, dimension(NBVOC) :: &
+                                   BVOC_USED = (/ "isoprene","terpene "/)   
 
-contains
+   !SeaSalt
+   integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
+                                 ,QSSFI = 1 &   ! production of fine SS
+                                 ,QSSCO = 2     ! production of coarse SS  
 
-subroutine EmisDef_Init()
 
-  ! Here we define the allowed emissions and their standard conversion
-  ! factors. Any emissions used must be in this list, but not all  of
-  ! the following are required. E.g. MADE might just use sox, nox and nh3.
-  ! This will be checked in the Emissions_ml
-      !EMIS_NAME  = &
-      !(/ "sox   ", "co    "   &   ! =non-split first
-      ! , "nh3   ", "pm25  ", "pmco  "   &
-      ! , "poc_f_wood", "poc_f_ffuel", "poc_c_ffuel"  &
-      ! , "ec_f_wood",  "ec_c_wood", "ec_f_ffuel", "ec_c_ffuel"  &
-      ! , "nox   ", "voc   "  /)                       ! =to be split
+   !/** Lightning and aircraft NOx. 
+    logical, public, parameter :: AIRNOX   = .true.   ! Gives NOx emission
+ 
+   !/** Volcanos. 
+    logical, public, parameter :: VOLCANOES  = .true.  ! Gives Volcanos
 
-  EmisDef(1) = emislist( "sox   ",  0.5       )   !  tonne SO2 -> tonne S 
-  EmisDef(2) = emislist( "nox   ", 14.0/46.0  )   !  tonne NO2 -> tonne N
-  EmisDef(3) = emislist( "co    ",  1.0       )   !  tonne CO  -> tonne CO
-  EmisDef(4) = emislist( "nh3   ", 14.0/17.0  )   !  tonne NH3 -> tonne N
-  EmisDef(5) = emislist( "voc   ",  1.0       )   !  tonne VOC -> tonne VOC
-  EmisDef(6) = emislist( "pm25  ",  1.0       )   !  tonne pm  -> tonne pm 
-  EmisDef(7) = emislist( "pm10  ",  1.0       )   !  tonne pm  -> tonne pm 
-  EmisDef(8) = emislist( "pmco  ",  1.0       )   !  tonne pm  -> tonne pm 
-  EmisDef(9) = emislist( "poc_f_wood",  1.0   )   !  tonne pm  -> tonne pm 
-  EmisDef(10) = emislist( "poc_f_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
-  EmisDef(11) = emislist( "poc_c_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
-  EmisDef(12) = emislist( "ec_f_wood",  1.0   )   !  tonne pm  -> tonne pm 
-  EmisDef(13) = emislist( "ec_c_wood",  1.0   )   !  tonne pm  -> tonne pm 
-  EmisDef(14) = emislist( "ec_f_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
-  EmisDef(15) = emislist( "ec_c_ffuel",  1.0   )   !  tonne pm  -> tonne pm 
-
-end subroutine EmisDef_Init
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-function EmisDef_Index(name) result(index)
-
-  ! Here we find the index in EmisDef which corresponds to the pollutant name
-  ! passed as an argument. If no match is found index is returned as -1.
-  !---------------------------------------------------------------------------
-  character(len=*), intent(in) :: name
-  integer :: index, i
-
-  index = -1
-  do i = 1, NEMIS_DEF
-     if ( name == EmisDef(i)%name )  then
-         index = i
-         exit 
-     end if
-  end do
-
-end function EmisDef_Index
-
-!_____________________________________________________________________________
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
                      end module EmisDef_ml

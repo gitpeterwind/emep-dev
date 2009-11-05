@@ -119,7 +119,7 @@ contains
 
         if ( DEBUG_IOPROG ) then ! nb already MasterProc
            if( ok2print ) write(unit=*,fmt="(a,i3,2a,i5,a,a,i4)") &
-               "IOREADLINE ", io_in, label2, " Len ", len_trim(txt), &
+               "IOREADLINE ", io_in, trim(label2), " Len ", len_trim(txt), &
                "TXT:" //  trim(txt), " Stat ", status
         end if
      end if
@@ -192,7 +192,7 @@ contains
                ios = NO_FILE
          else
            open(unit=io_num,file=fname,status="old",action="read",iostat=ios)
-           write(unit=6,fmt=*) "File opened: ", fname, ios
+           if( MasterProc ) write(unit=6,fmt=*) "File opened: ", fname, ios
            ! *** skip header lines if requested ****
            if ( present( skip ) ) then ! Read (skip) some lines at start of file
               do i = 1, skip
@@ -243,6 +243,7 @@ contains
       character(len=5)  :: marker   ! e.g. !> or !#
       character(len=MAXLINELEN)  :: inputline
       integer :: i, NxHeaders, ncheck
+      logical :: Headers_found
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 
@@ -260,7 +261,7 @@ contains
          inputline=""
          call read_line(io_num,inputline,ios,"From ReadHeaders")
          if ( DEBUG_IOPROG .and. MasterProc ) then
-             write(*,*) "IN ", io_num, me, ios, &
+             write(*,"(a3,3i3,i6,a)") "IN ", io_num, me, ios, &
                len_trim(inputline) ,trim(inputline)
          end if
          if ( ios /= 0 ) then  ! End of file
@@ -275,9 +276,8 @@ contains
               KeyValues(NKeys)%key = key
               KeyValues(NKeys)%value = value
               if ( MasterProc .and.  DEBUG_IOPROG) then
-                 write(unit=*,fmt=*) "KEYS FULL =", trim(inputline)
-                 write(unit=*,fmt=*) "KEYS LINE NKeys=", NKeys, &
-                     trim(key), " : ", trim(value)
+                 write(unit=*,fmt="(a,i3,a,a,a)") "KEYS LINE NKeys=", &
+                      NKeys, trim(key), " : ", trim(value)
               end if
               cycle
 
@@ -342,9 +342,12 @@ end do
          else if ( inputline(1:1) == "#" ) then ! Comments
 
               if ( MasterProc .and. DEBUG_IOPROG )  write(unit=*,fmt=*) &
-                      "COMMENTS LINE" // trim(inputline)
+                      "COMMENT LINE" // trim(inputline)
               cycle
 
+         else 
+           call  CheckStop( NHeaders < 1, &
+            "GOT TO END - NO #HEADER or #DATA STATEMENT MAYBE?")
          end if
 
        end do

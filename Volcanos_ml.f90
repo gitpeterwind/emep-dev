@@ -48,7 +48,6 @@ module Volcanos_ml
   !-----------------------------------------------------------------------!
 
  use CheckStop_ml,          only : CheckStop
- use My_Emis_ml,            only : QRCVOL,molwt
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
  use GridValues_ml,         only : sigma_bnd, i_fdom, j_fdom,i_local, j_local
  use Io_ml,                 only : ios, open_file, check_file, IO_VOLC
@@ -153,6 +152,7 @@ contains
 
     !**Local variables
     integer            :: k,i,j, i1,i2,j1,j2
+    integer            :: iqrc  ! index in emission arrays from EmisGet
     real               :: unit_conv1  
 
     rcemis_volc0(:) = 0.0
@@ -177,7 +177,8 @@ contains
                       (sigma_bnd(KMAX_BND-k+1) - sigma_bnd(KMAX_BND-k))
 
           rcemis_volc0(volc_no) = emis_volc(volc_no)  &
-                                * unit_conv1 / molwt(QRCVOL)
+                                * unit_conv1 / 64.0 !DSRC molwt(QRCVOL)
+                                   ! HARD_CODED 64 - fix in future
 
          if ( DEBUG_VULC ) &
            write(*,*)'rc_emis_volc is ',rcemis_volc(volc_no)
