@@ -93,8 +93,7 @@ KRC68                         C2H5OOH + OH  = C2H5O2       ;
 2.0e-12*EXP(500.0*TINV)       CH3O2 + CH3COO2 = 0.9 HO2 + HCHO + 0.9 CH3O2 + 0.1 {CH3COOH} ; IUPAC2002, missing 10% CH3COOH formation, could easily be added acetic acid would only add 1 component and 1 reaction to the scheme
 2.9e-12*EXP(500.0*TINV)       CH3COO2 + CH3COO2 = CH3O2 + CH3O2 ; acp2006
 *NOTE : J(115,116)has other products for HO2:
-5.2e-13*EXP(980.0*TINV)       CH3COO2 + HO2     = 0.71 CH3COO2H + 0.29 O3 + 0.29 {CH3COOH}  ; possibly should add a third reaction path to give OH (see IUPAC2005), as written suggestion by CR based on IUPAC 2005 HIGHLY uncertain rate since the third path was not taken into account in the determination; alternative see below
-* CH3COO2 + HO2 = 0.4 CH3COO2H + 0.2 O3 (+ 0.2 CH3COOH) + 0.4 OH + 0.4 CH3O2 : ARR2(5.2e-13, 980.0)   ;   (based on IUPAC 2005 HIGHLY uncertain rate since the third path was not taken into account in the determination} 
+5.2e-13*EXP(980.0*TINV)       CH3COO2 + HO2     = 0.41 CH3COO2H + 0.15 O3 + 0.44 OH + 0.44 CH3O2 + 0.15 {CH3COOH}  ; IUPAC2005 HIGHLY uncertain rate 
 1.9e-12*EXP(190.0*TINV)       CH3COO2H + OH     = CH3COO2   ;
 * ;
 *----- ethanol chemistry ----------------------------------- ;

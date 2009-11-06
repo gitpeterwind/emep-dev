@@ -36,6 +36,7 @@
         + rct(5,k) * xnew(NO ) * xnew(HO2 )  &
         + 0.4*rct(15,k) * xnew(CH3O2H ) * xnew(OH )  &
         + 8.01e-12 * xnew(C2H5OOH ) * xnew(OH )  &
+        + 0.44*rct(25,k) * xnew(CH3COO2 ) * xnew(HO2 )  &
         + 2.15e-11 * xnew(BURO2H ) * xnew(OH )  &
         + 1.38e-11 * xnew(ETRO2H ) * xnew(OH )  &
         + 0.13*rct(28,k) * xnew(C2H4 ) * xnew(O3 )  &
@@ -193,6 +194,7 @@
         + 0.9*rct(23,k) * xnew(CH3O2 ) * xnew(CH3COO2 )  &
         + rct(24,k) * xnew(CH3COO2 ) * xnew(CH3COO2 )  &
         + rct(24,k) * xnew(CH3COO2 ) * xnew(CH3COO2 )  &
+        + 0.44*rct(25,k) * xnew(CH3COO2 ) * xnew(HO2 )  &
         + 0.28*rct(29,k) * xnew(O3 ) * xnew(C3H6 )  &
         + rcphot(IDCH3CHO,K) * xnew(CH3CHO )  &
         + rcphot(IDCH3O2H,K) * xnew(CH3COO2H ) 
@@ -351,7 +353,7 @@
 
       P =   &
           rcmisc(1,k) * xnew(OP )  &
-        + 0.29*rct(25,k) * xnew(CH3COO2 ) * xnew(HO2 )  &
+        + 0.15*rct(25,k) * xnew(CH3COO2 ) * xnew(HO2 )  &
         + 0.29*rct(44,k) * xnew(MACO3 ) * xnew(HO2 ) 
 
       L =  &
@@ -961,7 +963,7 @@
 !-> CH3COO2H 
 
       P =   &
-          0.71*rct(25,k) * xnew(CH3COO2 ) * xnew(HO2 ) 
+          0.41*rct(25,k) * xnew(CH3COO2 ) * xnew(HO2 ) 
 
       L =  &
           rct(20,k)* xnew(OH )  &
