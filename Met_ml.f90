@@ -1,9 +1,9 @@
 ! <Met_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 !_____________________________________________________________________________
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
@@ -81,27 +81,27 @@ module Met_ml
   !
   ! Vertical levels: z_mid,  z_bnd, sigma_mid, sigma_bnd
   !=============================================================================
-  !*   "mid" and "bnd" are used as suffixes on z and sigma as shown in 
-  !*   the sketch below. "bnd" is the boundary between two layers and 
-  !*   "mid" the midddle of the layer. The numbering of layers starts 
+  !*   "mid" and "bnd" are used as suffixes on z and sigma as shown in
+  !*   the sketch below. "bnd" is the boundary between two layers and
+  !*   "mid" the midddle of the layer. The numbering of layers starts
   !*   from 1 at the surface.
-  !* 
-  !* 
-  !* 
+  !*
+  !*
+  !*
   !* ---------------------------
-  !* 
-  !* 
+  !*
+  !*
   !* - - - - - - - - - - - -     KMAX_MID -1
-  !* 
-  !* 
+  !*
+  !*
   !* --------------------------  KMAX_BDN-1       (z_bnd)   (sigma_bnd)
-  !* 
-  !* 
+  !*
+  !*
   !* - - - - - - - - -           KMAX_MID(old kmax2) = 20    (z_mid)   (sigma_mid)   (old z2)
-  !* 
+  !*
   !* ------------------------    KMAX_BND = 21    (z_bnd)                 (old z1)
   !* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  surface \\\\\\\\\\\\\\\\
-  !* 
+  !*
 
 
 
@@ -109,7 +109,7 @@ module Met_ml
   INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
 
-  !   Two sets of Met. fields are read in, and a linear interpolation is made 
+  !   Two sets of Met. fields are read in, and a linear interpolation is made
   !   between these two points in time. NMET  == 2 (two points in time)
   !
   real,public, save, dimension(0:MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u  ! m/s
@@ -149,7 +149,7 @@ module Met_ml
 
 
 
-  ! Fields below are derived/calculated from the input meteorological fields 
+  ! Fields below are derived/calculated from the input meteorological fields
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
@@ -168,35 +168,35 @@ module Met_ml
   real,public, save, &
        dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: z_mid ! height of half layers
 
-  integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: & 
+  integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        snow        ! monthly snow (1=true), read in MetModel_LandUse
 
 
-  logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: & 
+  logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
 
   logical, private, parameter ::  MY_DEBUG = .false.
   logical, private, save      ::  debug_proc = .false.
   integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
 
-  logical, public, save :: foundustar  ! Used for MM5-type, where u* but 
+  logical, public, save :: foundustar  ! Used for MM5-type, where u* but
   ! not tau
-  logical, public, save :: foundsdot   ! If not found: compute using 
+  logical, public, save :: foundsdot   ! If not found: compute using
   ! divergence=0
-  logical, public, save :: sdot_at_mid ! set false if sdot is defined 
+  logical, public, save :: sdot_at_mid ! set false if sdot is defined
   logical, public, save :: foundSST    ! false if no SeaSurfaceT in metdata
 !hf snow
   logical, public, save :: foundsdepth    ! false if no snow depth in metdata
   logical, public, save :: foundice       ! false if no ice coverage (%) in metdata
   logical, public, save :: foundnwp_sea   !false if no rough file is found
-  ! (when read) at level  boundaries 
-  ! and therefore do not need to be 
+  ! (when read) at level  boundaries
+  ! and therefore do not need to be
   ! interpolated.
 
   ! for tiphys
   !check dimension
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
-       xksig ! estimated exchange coefficient, Kz, in intermediate 
+       xksig ! estimated exchange coefficient, Kz, in intermediate
   ! sigma levels, m2/s
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
@@ -217,9 +217,9 @@ module Met_ml
   integer, public :: startdate(4)
   integer, save   :: Nhh &         ! number of field stored per 24 hours
        ,nhour_first&  ! time of the first meteo stored
-       ,nrec          ! nrec=record in meteofile, for example 
+       ,nrec          ! nrec=record in meteofile, for example
   ! (Nhh=8): 1=00:00 2=03:00 ... 8=21:00
-  ! if nhour_first=3 then 
+  ! if nhour_first=3 then
   ! 1=03:00 2=06:00...8=24:00
 
       character (len = 100)        ::  field_not_found='field_not_found'
@@ -229,10 +229,10 @@ module Met_ml
 
   public :: MeteoGridRead
   public :: infield,MeteoRead
-  public :: MetModel_LandUse    
+  public :: MetModel_LandUse
   public :: metvar
   public :: metint
-  public :: tiphys         
+  public :: tiphys
 
 
 
@@ -247,7 +247,7 @@ contains
   subroutine MeteoRead(numt)
 
     !    the subroutine reads meteorological fields and parameters (every
-    !    METSTEP-hours) from NetCDF fields-files, divide the fields into 
+    !    METSTEP-hours) from NetCDF fields-files, divide the fields into
     !       domains    and sends subfields to the processors
 
 
@@ -257,11 +257,11 @@ contains
 
     character (len = 100), save  ::  meteoname   ! name of the meteofile
     character (len = 100)        ::  namefield & ! name of the requested field
-         ,validity    ! field is either instaneous 
+         ,validity    ! field is either instaneous
     ! or averaged
     integer ::   ndim,nyear,nmonth,nday,nhour,k
-    integer ::   nr                              ! Fields are interpolate in 
-    ! time (NMET = 2): between 
+    integer ::   nr                              ! Fields are interpolate in
+    ! time (NMET = 2): between
     ! nr=1 and nr=2
 
 
@@ -285,16 +285,16 @@ contains
 
 
     if(numt == 1)then !first time meteo is read
-       nr = 1  
+       nr = 1
        sdot_at_mid = .false.
-       foundustar = .false.   
+       foundustar = .false.
        foundsdot = .false.
-       foundSST  = .false. 
+       foundSST  = .false.
 
        next_inptime = current_date
 
        ! If origin of meteodomain does not coincide with origin of large domain,
-       ! xp and yp should be shifted here, and coordinates must be shifted when 
+       ! xp and yp should be shifted here, and coordinates must be shifted when
        ! meteofields are read (not yet implemented)
 
 
@@ -315,7 +315,7 @@ contains
     nyear=next_inptime%year
     nmonth=next_inptime%month
 
-    nday=next_inptime%day 
+    nday=next_inptime%day
     nhour=next_inptime%hour
 
     if(  current_date%month == 1 .and.         &
@@ -332,7 +332,7 @@ contains
 
 
     !  Read rec=1 in case 00:00 from 1st January is missing
-    if((numt-1)*METSTEP<=nhour_first)nrec=0 
+    if((numt-1)*METSTEP<=nhour_first)nrec=0
     nrec=nrec+1
 
 
@@ -355,14 +355,14 @@ contains
     ! 3D fields (i,j,k)
     ndim=3
 
-    !note that u and v have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX  
+    !note that u and v have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX
     !u(i=0) and v(j=0) are set in metvar
 
     namefield='u_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,     &
          validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-    
+
 
     namefield='v_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
@@ -393,6 +393,8 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, pr(:,:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+    pr=max(0.0,pr)  ! AMVB 2009-11-06: positive precipitation
+
 
     namefield='3D_cloudcover'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
@@ -445,7 +447,7 @@ contains
     if(validity==field_not_found)then
        if(me==0)write(*,*)'WARNING: sea_surface_temperature not found '
        foundSST = .false.
-    else          
+    else
        foundSST = .true.
     endif
 
@@ -455,7 +457,7 @@ contains
     if(validity==field_not_found)then
        if(me==0)write(*,*)'WARNING: snow depth not found '
        foundsdepth = .false.
-    else          
+    else
        foundsdepth = .true.
     endif
 
@@ -466,7 +468,7 @@ contains
     if(validity==field_not_found)then
        if(me==0)write(*,*)'WARNING: ice coverage (%) not found '
        foundice = .false.
-    else          
+    else
        foundice = .true.
     endif
 
@@ -495,7 +497,7 @@ contains
        GRIDWIDTH_M=50000.0
        call infield(1)!to get sigma_mid etc
        call DefGrid()
-       call GlobalPosition !for gl_stagg       
+       call GlobalPosition !for gl_stagg
        return
     endif
 
@@ -549,7 +551,7 @@ contains
 
 
     !pw
-    ! NB: This routine may disapear in later versions 
+    ! NB: This routine may disapear in later versions
     !
     !    the subroutine reads meteorological fields and parameters every
     !    six-hour from fields-files, divide the fields into domains
@@ -575,7 +577,7 @@ contains
     type(date) addhours_to_input
     type(date) next_inptime, buf_date
 
-    type(timestamp)::ts_now        ! time in timestamp format    
+    type(timestamp)::ts_now        ! time in timestamp format
 
     real,   dimension(MAXLIMAX,MAXLJMAX)   ::  dumhel
     real,   dimension(20)                  ::  xrand
@@ -592,17 +594,17 @@ contains
     !    u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
     !    ps(8),t2_nwp(31),fh(36),fl(37),tau(38),ustar(53),trw(845), sst(103)
     !  Meteorology available from year 2002 in EMEP files:
-    !       rh2m(32), SWC(85, first 7.2cm), 
+    !       rh2m(32), SWC(85, first 7.2cm),
     !          SWCdeep(86, in the following 6x7.2cm = 43.2 cm))
 
 
 
 
-    projection='Stereographic'     
+    projection='Stereographic'
 
     nr=2
     if(numt == 1)then
-       nr = 1     
+       nr = 1
        u  = 0.0
        v  = 0.0
     endif
@@ -687,7 +689,7 @@ contains
           !
           !..hj..ko
           !.. the name of the fltqhh.yymmdd-file input contains the "ifelt"
-          !.. time parameters of the analysis, thus the 3 hour prognosis 
+          !.. time parameters of the analysis, thus the 3 hour prognosis
           !.. data are valid 9-12 hours later!!!!
           !
           !vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
@@ -695,7 +697,7 @@ contains
           !pw use nprognosis=ident(4) for determining the date of the prognosis
 
 
-          if(numt == 1) then   !!! initialise 
+          if(numt == 1) then   !!! initialise
              current_date = date(nyear, nmonth, nday, nhour, 0 )
              call Init_nmdays( current_date )
              nsec= nprognosis*3600.0
@@ -712,7 +714,7 @@ contains
              ! for printout assign current_date to next_inptime!
 
 
-             next_inptime = current_date    !hfTD ?? Can this be done? 
+             next_inptime = current_date    !hfTD ?? Can this be done?
              !Why add_dates before??
 
       else
@@ -725,7 +727,7 @@ contains
              call add_secs(ts_now,nsec)
              next_inptime=make_current_date(ts_now)
 
-             !    compare the input time with current_date, 
+             !    compare the input time with current_date,
              !       it should be METSTEP hours later
              !    check if current_date+METSTEP = next_inptime
 
@@ -778,10 +780,10 @@ contains
 
           do j = 1,ljmax
              do i = 1,limax
-                u(i,j,k,nr) = dumhel(i,j)-1.E-9    ! the "-1.E-9" is included 
-                ! in order to avoid possible 
-                ! different roundings on 
-                ! different machines. 
+                u(i,j,k,nr) = dumhel(i,j)-1.E-9    ! the "-1.E-9" is included
+                ! in order to avoid possible
+                ! different roundings on
+                ! different machines.
              enddo
           enddo
 
@@ -793,10 +795,10 @@ contains
 
           do j = 1,ljmax
              do i = 1,limax
-                v(i,j,k,nr) = dumhel(i,j)-1.E-9   ! the "-1.E-9" is included 
-                ! in order to avoid possible 
-                ! different roundings on 
-                ! different machines.  
+                v(i,j,k,nr) = dumhel(i,j)-1.E-9   ! the "-1.E-9" is included
+                ! in order to avoid possible
+                ! different roundings on
+                ! different machines.
              enddo
           enddo
 
@@ -851,7 +853,7 @@ contains
 
           call getmetfieldMet(ident(20),itmp,t2_nwp(1,1,nr))
           ! NEWMET:
-          !   rh2m(32), SWC(85, first 7.2cm), SWCdeep(86, in the following 
+          !   rh2m(32), SWC(85, first 7.2cm), SWCdeep(86, in the following
           !     6x7.2cm = 43.2 cm))
 !hf XX
        case (66)
@@ -891,7 +893,7 @@ contains
 
        case (103) ! SST
 
-          foundSST = .true. 
+          foundSST = .true.
           call getmetfieldMet(ident(20),itmp,sst(1,1,nr))
 
 
@@ -920,7 +922,7 @@ contains
 
   subroutine getflti2Met(ifile,ident,itmp,ierr)
 
-    ! NB: This routine may disapear in later versions 
+    ! NB: This routine may disapear in later versions
 
     !fpp$ noconcur r
     !
@@ -972,7 +974,7 @@ contains
     !
     !
     !  modified by Peter Wind 11.03.2002:
-    !  uses nx=ident(10) (read from file) as first dimension of array, 
+    !  uses nx=ident(10) (read from file) as first dimension of array,
     !  instead of IIFULLDOM. (only modified for not _CRAY)
     !
 
@@ -1051,8 +1053,8 @@ contains
           npack=nword
           read(ifile,iostat=ios) (ipack(i),i=22,npack+21)
 
-          if ( ios <  0 ) ierr = 2    ! End of file is allowed. Therefore 
-          ! check ios > 0 in Checkstop 
+          if ( ios <  0 ) ierr = 2    ! End of file is allowed. Therefore
+          ! check ios > 0 in Checkstop
           call CheckStop( ios > 0 , "**getflt** read error 2 " )
 
        endif
@@ -1069,7 +1071,7 @@ contains
           do d = 1, NPROC-1
 
              CALL MPI_SEND(ipack,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3  &
-                  ,MPI_COMM_WORLD,INFO) 
+                  ,MPI_COMM_WORLD,INFO)
 
           enddo
           close(ifile)
@@ -1105,7 +1107,7 @@ contains
              itp = itp + ipack(11)
           enddo
           CALL MPI_SEND(itmp,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3  &
-               ,MPI_COMM_WORLD,INFO) 
+               ,MPI_COMM_WORLD,INFO)
        enddo
        ida = 21
        itp = 21+(JRUNBEG-1)*ipack(11) + IRUNBEG-1
@@ -1119,13 +1121,13 @@ contains
 
 
 
-    else    	
+    else
 
        ! me.ne.0, always receive to get itmp(1)
 
 
        CALL MPI_RECV( itmp, 2*(21+NUMHOR4), MPI_BYTE, 0, &
-            MSG_INIT3, MPI_COMM_WORLD,MPISTATUS, INFO) 
+            MSG_INIT3, MPI_COMM_WORLD,MPISTATUS, INFO)
 
        if(itmp(1).eq.-999)then
           ierr = 2
@@ -1154,7 +1156,7 @@ contains
   subroutine getmetfieldMet(ident,itmp,array)
 
 
-    ! NB: This routine may disapear in later versions 
+    ! NB: This routine may disapear in later versions
 
     implicit none
 
@@ -1203,16 +1205,16 @@ contains
          ,exf2
     real,   dimension(KMAX_BND)          ::  exf1
 
-    real,   dimension(MAXLJMAX,KMAX_MID) :: usnd   ! send in x 
+    real,   dimension(MAXLJMAX,KMAX_MID) :: usnd   ! send in x
     real,   dimension(MAXLIMAX,KMAX_MID) :: vsnd   ! and in y direction
-    real,   dimension(MAXLJMAX,KMAX_MID) :: urcv   ! rcv in x 
+    real,   dimension(MAXLJMAX,KMAX_MID) :: urcv   ! rcv in x
     real,   dimension(MAXLIMAX,KMAX_MID) :: vrcv   ! and in y direction
 
     real   bm, cm, dm, divt, x1,x2, xkmin, p1, p2, uvh2, uvhs
     real   ri, z00, a2, cdh, fac, fac2, ro, xkh, dvdz, dvdzm, xlmix
     real   ric, arg, sl2,dz2k,dex12
-    real   prhelp_sum,divk(KMAX_MID),sumdiv      
-    real   inv_METSTEP   
+    real   prhelp_sum,divk(KMAX_MID),sumdiv
+    real   inv_METSTEP
 
     integer :: i, j, k, lx1,lx2, nr,info
     integer request_s,request_n,request_e,request_w
@@ -1261,9 +1263,9 @@ contains
           enddo
        enddo
 !       CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
-!            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, INFO) 
+!            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, INFO)
        CALL MPI_ISEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO) 
+            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
     endif
 
 
@@ -1276,9 +1278,9 @@ contains
           enddo
        enddo
 !       CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
-!            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, INFO) 
+!            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, INFO)
        CALL MPI_ISEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO) 
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
     endif
 
 
@@ -1290,7 +1292,7 @@ contains
     if (neighbor(WEST) .ne. NOPROC) then
 
        CALL MPI_RECV( urcv, 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
-            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
        do k = 1,KMAX_MID
       do j = 1,ljmax
              u(0,j,k,nr) = urcv(j,k)
@@ -1313,7 +1315,7 @@ contains
     if (neighbor(SOUTH) .ne. NOPROC) then
 
        CALL MPI_RECV( vrcv, 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
-            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
        do k = 1,KMAX_MID
           do i = 1,limax
              v(i,0,k,nr) = vrcv(i,k)
@@ -1350,13 +1352,13 @@ contains
           enddo
        enddo
     endif
-    
+
     if (neighbor(EAST) .ne. NOPROC) then
-       CALL MPI_WAIT(request_e, MPISTATUS, INFO) 
+       CALL MPI_WAIT(request_e, MPISTATUS, INFO)
     endif
-    
+
     if (neighbor(NORTH) .ne. NOPROC) then
-       CALL MPI_WAIT(request_n, MPISTATUS, INFO) 
+       CALL MPI_WAIT(request_n, MPISTATUS, INFO)
     endif
 
 
@@ -1377,13 +1379,13 @@ contains
           surface_precip(i,j) = pr(i,j,KMAX_MID) * inv_METSTEP
 
 
-          rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) ) 
+          rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) )
 
           !     For MM5 we get u*, not tau. Since it seems better to
           !     interpolate tau than u*  between time-steps we convert
 
           if ( foundustar) then
-             tau(i,j,nr)    = ustar_nwp(i,j)*ustar_nwp(i,j)* rho_surf(i,j) 
+             tau(i,j,nr)    = ustar_nwp(i,j)*ustar_nwp(i,j)* rho_surf(i,j)
           end if
 
 
@@ -1402,7 +1404,7 @@ contains
 
           enddo
 
-          !   accumulated deposition over 3 hour interval 
+          !   accumulated deposition over 3 hour interval
           !   k=KMAX_MID now includes accumulated precipitation over all layers
           !   evaporation has been set to zero as it is not accounted for in the
           !   wet deposition
@@ -1428,13 +1430,13 @@ contains
              enddo
           endif
 
-          !    set sdot equal to zero at the top and bottom of atmosphere. 
+          !    set sdot equal to zero at the top and bottom of atmosphere.
 
           sdot(i,j,KMAX_BND,nr)=0.0
           sdot(i,j,1,nr)=0.0
 
           !    conversion from % to fractions (<0,1>) for cloud cover
-          !    calculation of cc3dmax (see eulmc.inc) - 
+          !    calculation of cc3dmax (see eulmc.inc) -
           !    maximum of cloud fractions for layers above a given layer
 
           cc3d(i,j,1) = 0.01 * cc3d(i,j,1)
@@ -1456,7 +1458,7 @@ contains
 
 
 
-    !     lines associated with computation of surface diffusion 
+    !     lines associated with computation of surface diffusion
     !    coefficient are commented
 
     xkmin = 1.e-3
@@ -1476,10 +1478,10 @@ contains
 
           do k = KMAX_MID,1,-1
 
-             !     eddy diffusivity in the surface-layer follows the formulation used 
+             !     eddy diffusivity in the surface-layer follows the formulation used
              !     in the nwp-model which is based on Louis (1979), (see mc7e.f).
 
-             !     the shorter loop is the inner loop to save memory. the order 
+             !     the shorter loop is the inner loop to save memory. the order
              !     of the do loops will be changed on a vector machine.
 
              !     exner-function of the half-layers
@@ -1493,9 +1495,9 @@ contains
 
              !     exner-function of the full-levels
 
-         exf2(k) = CP * Exner_nd(p2)  
+         exf2(k) = CP * Exner_nd(p2)
 
-             !     height of the half-layers 
+             !     height of the half-layers
 
              z_bnd(i,j,k) = z_bnd(i,j,k+1) + (th(i,j,k,nr)*            &
                   (exf1(k+1) - exf1(k)))/GRAV
@@ -1530,7 +1532,7 @@ contains
 
     do k = 1,KMAX_MID
        do j = 1,ljmax
-          do i = 0,limax               
+          do i = 0,limax
              u(i,j,k,nr) = u(i,j,k,nr)/xm_j(i,j)
 
              !divide by the scaling in the perpendicular direction to get effective u
@@ -1564,20 +1566,20 @@ contains
              usnd(j,1) = ps(limax,j,nr)
           enddo
        CALL MPI_ISEND( usnd, 8*MAXLJMAX, MPI_BYTE,  &
-            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO) 
+            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
     endif
     if (neighbor(NORTH) .ne. NOPROC) then
           do i = 1,limax
              vsnd(i,1) = ps(i,ljmax,nr)
           enddo
        CALL MPI_ISEND( vsnd , 8*MAXLIMAX, MPI_BYTE,  &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO) 
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
     endif
 
     !     receive from WEST neighbor if any
     if (neighbor(WEST) .ne. NOPROC) then
        CALL MPI_RECV( urcv, 8*MAXLJMAX, MPI_BYTE, &
-            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
       do j = 1,ljmax
              Ps_extended(0,j) = urcv(j,1)
           enddo
@@ -1589,13 +1591,13 @@ contains
     !     receive from SOUTH neighbor if any
     if (neighbor(SOUTH) .ne. NOPROC) then
        CALL MPI_RECV( vrcv, 8*MAXLIMAX, MPI_BYTE,  &
-            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
           do i = 1,limax
              Ps_extended(i,0) = vrcv(i,1)
           enddo
     else
           do i = 1,limax
-             Ps_extended(i,0) = Ps_extended(i,1) 
+             Ps_extended(i,0) = Ps_extended(i,1)
           enddo
     endif
     if (neighbor(WEST) .ne. NOPROC) then
@@ -1603,14 +1605,14 @@ contains
              usnd(j,2) = ps(1,j,nr)
           enddo
        CALL MPI_ISEND( usnd(1,2), 8*MAXLJMAX, MPI_BYTE,  &
-            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, request_w, INFO) 
+            neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, request_w, INFO)
     endif
     if (neighbor(SOUTH) .ne. NOPROC) then
           do i = 1,limax
              vsnd(i,2) = ps(i,1,nr)
           enddo
        CALL MPI_ISEND( vsnd(1,2) , 8*MAXLIMAX, MPI_BYTE,  &
-            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, request_s, INFO) 
+            neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, request_s, INFO)
     endif
 
 
@@ -1618,7 +1620,7 @@ contains
     !     receive from EAST neighbor if any
     if (neighbor(EAST) .ne. NOPROC) then
        CALL MPI_RECV( urcv, 8*MAXLJMAX, MPI_BYTE, &
-            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
       do j = 1,ljmax
              Ps_extended(limax+1,j) = urcv(j,1)
           enddo
@@ -1630,29 +1632,29 @@ contains
     !     receive from NORTH neighbor if any
     if (neighbor(NORTH) .ne. NOPROC) then
        CALL MPI_RECV( vrcv, 8*MAXLIMAX, MPI_BYTE,  &
-            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
           do i = 1,limax
              Ps_extended(i,ljmax+1) = vrcv(i,1)
           enddo
     else
           do i = 1,limax
-             Ps_extended(i,ljmax+1) = Ps_extended(i,ljmax) 
+             Ps_extended(i,ljmax+1) = Ps_extended(i,ljmax)
           enddo
     endif
 
     if (neighbor(EAST) .ne. NOPROC) then
-       CALL MPI_WAIT(request_e, MPISTATUS, INFO) 
+       CALL MPI_WAIT(request_e, MPISTATUS, INFO)
     endif
-    
+
     if (neighbor(NORTH) .ne. NOPROC) then
-       CALL MPI_WAIT(request_n, MPISTATUS, INFO) 
+       CALL MPI_WAIT(request_n, MPISTATUS, INFO)
     endif
     if (neighbor(WEST) .ne. NOPROC) then
-       CALL MPI_WAIT(request_w, MPISTATUS, INFO) 
+       CALL MPI_WAIT(request_w, MPISTATUS, INFO)
     endif
-    
+
     if (neighbor(SOUTH) .ne. NOPROC) then
-       CALL MPI_WAIT(request_s, MPISTATUS, INFO) 
+       CALL MPI_WAIT(request_s, MPISTATUS, INFO)
     endif
 
 
@@ -1687,7 +1689,7 @@ contains
 
     call met_derived !compute derived meteo fields
 
-    call tiphys(numt) 
+    call tiphys(numt)
 
   end subroutine metvar
 
@@ -1784,7 +1786,7 @@ contains
        tau(:,:,1)    = tau(:,:,2)
        fl(:,:,1)     = fl(:,:,2)
 
-       sst(:,:,1)    = sst(:,:,2)  
+       sst(:,:,1)    = sst(:,:,2)
 
     endif
 
@@ -1805,13 +1807,13 @@ contains
 
     ! This routine calculates fields derived from meteofields.
     ! The interpolation in time is done for the meteofields and the
-    ! fields here are derived from the interpolated fields after 
-    ! each interpolation (i.e. every dt_advec). 
+    ! fields here are derived from the interpolated fields after
+    ! each interpolation (i.e. every dt_advec).
     ! CPU costly fields (those with special functions like log )
-    ! can be computed in metvar only once every METSTEP and interpolated 
+    ! can be computed in metvar only once every METSTEP and interpolated
     ! in metint.
 
-    !horizontal wind speed (averaged over the four edges)       
+    !horizontal wind speed (averaged over the four edges)
     !Note that u and v are wind velocities divided by xm
     !At present u_ref is defined at KMAX_MID
 
@@ -1845,18 +1847,18 @@ contains
 
     !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
-    forall( i=1:limax, j=1:ljmax ) 
-       rho_surf(i,j)  = ps(i,j,1)/(RGAS_KG * t2_nwp(i,j,1) ) 
+    forall( i=1:limax, j=1:ljmax )
+       rho_surf(i,j)  = ps(i,j,1)/(RGAS_KG * t2_nwp(i,j,1) )
     end forall
 
     if(.not. foundustar)then
-       forall( i=1:limax, j=1:ljmax ) 
+       forall( i=1:limax, j=1:ljmax )
           ustar_nwp(i,j)   = sqrt( tau(i,j,1)/rho_surf(i,j) )
        end forall
     endif
 
 
-    forall( i=1:limax, j=1:ljmax ) 
+    forall( i=1:limax, j=1:ljmax )
        ustar_nwp(i,j) = max( ustar_nwp(i,j), 1.0e-5 )
     end forall
 
@@ -1891,17 +1893,17 @@ contains
     integer, intent(in) :: callnum
     integer ::  i,j, err
 
-    real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real) 
+    real, dimension(MAXLIMAX,MAXLJMAX) :: r_class  ! Roughness (real)
 
     character*20 fname
     logical :: needed_found
 
     ios = 0
 
-    if ( callnum == 1  ) then 
+    if ( callnum == 1  ) then
 
        if ( me == 0  ) then
-          write(fname,fmt='(''rough.dat'')') 
+          write(fname,fmt='(''rough.dat'')')
           write(6,*) 'filename for landuse ',fname
        end if
        needed_found=.false.
@@ -1932,7 +1934,7 @@ contains
        if(.not. needed_found)then
              snow=0!should be defined through snowsepth from metdata
        endif
-    end if ! callnum == 1 
+    end if ! callnum == 1
 
     ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -1965,10 +1967,10 @@ contains
     !c
     !c-----------------------------------------------------------------
     !c
-    !!        This routine calculates the exner function, 
-    !!        the  geopotential height, and the vertical exchange coefficient 
+    !!        This routine calculates the exner function,
+    !!        the  geopotential height, and the vertical exchange coefficient
     !!        in sigma surfaces.
-    !!        The height zi of the "well mixed layer" or ABL-height 
+    !!        The height zi of the "well mixed layer" or ABL-height
     !!        is also calculated.
     !c
     !c
@@ -1984,7 +1986,7 @@ contains
     !c
     !c-----------------------------------------------------------------
     !c
-    !c    DescriPTion of the parameters/variables defined in this file:  
+    !c    DescriPTion of the parameters/variables defined in this file:
     !c
     !c
     !c    absfac	: |xfac|
@@ -2055,7 +2057,7 @@ contains
     !c    thsrf	: potensial temperature at the surface, K
     !c    trc	: helping variable telling whether or not unstable ABL exists
     !!              :       0 => no need for further calc. of ziu
-    !!              :       1 => ziu not found yet. 
+    !!              :       1 => ziu not found yet.
     !c    u	: wind speed in the x-direction, m/s
     !c       umax    : maximum value of u and v, m/s
     !c    ustar	: friction velocity, m/s
@@ -2079,8 +2081,8 @@ contains
     !c    xkdz	: the vertical derivative of xkhs at hs, m/s
     !!              : i.e. vertical gradient of xkhs
     !c    xkhs	: diffusivity at hs (in surface layer), m2/s
-    !!              : i.e. vertical exchange coeff. on top of prandtl-layer 
-    !c    xksig	: estimated exchange coefficient, Kz,  in intermediate 
+    !!              : i.e. vertical exchange coeff. on top of prandtl-layer
+    !c    xksig	: estimated exchange coefficient, Kz,  in intermediate
     !c    	  sigma levels, m2/s
     !c    xksm	: spacially smoothed Kz in z direction, m2/s.
     !!              : xksig smoothed over three adjacent layers
@@ -2105,13 +2107,13 @@ contains
     !c
     !c
     !!                ///////////////////
-    !c    sigma_bnd(1) = 0 - -sigmas - - - - - sdot(1) = 0, xksig(1)=xksm(1)=0, 
+    !c    sigma_bnd(1) = 0 - -sigmas - - - - - sdot(1) = 0, xksig(1)=xksm(1)=0,
     !!                                           pr(1)=0,PT,exns(1), zs_bnd(1)
     !c
     !c        sigma_mid(1) ---sigmam---------- u, v, th, q, cw, exnm (1)
     !c
     !c
-    !c        sigma_bnd(2) - - - - s - - - - - sdot(2), xksig(2), exns(2), pr(2) 
+    !c        sigma_bnd(2) - - - - s - - - - - sdot(2), xksig(2), exns(2), pr(2)
     !!                                                 zs_bnd(2), xksm(2)
     !c
     !c        sigma_mid(2) --------m---------- u, v, th, q, cw, exnm (2)
@@ -2135,29 +2137,29 @@ contains
     !!                        :
     !!                        :
     !c
-    !  sigma_bnd(KMAX_BND-1) - - - - s - - -  - sdot(KMAX_BND-1), xksig(KMAX_MID), 
-    !!                                    exns(KMAX_BND-1),zs_bnd(KMAX_BND-1), 
+    !  sigma_bnd(KMAX_BND-1) - - - - s - - -  - sdot(KMAX_BND-1), xksig(KMAX_MID),
+    !!                                    exns(KMAX_BND-1),zs_bnd(KMAX_BND-1),
     !!                                    pr(KMAX_BND-1),xksm(KMAX_MID)
     !c
-    !c    sigma_mid(KMAX_MID) --------m-------- u, v, th, q, cw, exnm (KMAX_MID); 
+    !c    sigma_mid(KMAX_MID) --------m-------- u, v, th, q, cw, exnm (KMAX_MID);
     !!                                    this level is assumed to be
     !!                                    the top of Prandtl-layer (LAM50E)
     !c
-    ! sigma_bnd(KMAX_BND) = 1- -  - s - - - - sdot(KMAX_BND) = 0, ps, t2_nwp, fh, 
-    !!                ///////////////////        fm, mslp, xksig(KMAX_MID)=0, 
-    !!                                           exns(KMAX_BND), zs_bnd(KMAX_BND), 
+    ! sigma_bnd(KMAX_BND) = 1- -  - s - - - - sdot(KMAX_BND) = 0, ps, t2_nwp, fh,
+    !!                ///////////////////        fm, mslp, xksig(KMAX_MID)=0,
+    !!                                           exns(KMAX_BND), zs_bnd(KMAX_BND),
     !!                                           pr(KMAX_BND),xksm(KMAX_BND)=0.
     !c
     !c
     !c..alternativ names:   kkin = KMAX_MID=20 (number of sigma-layers)
-    !!                     kkinp = kkin+1 = KMAX_BND=21 (number of 
-    !!                                        level-bounds for layers) 
-    !!                     kkinm = kkin-1 = KMAX_MID-1                
+    !!                     kkinp = kkin+1 = KMAX_BND=21 (number of
+    !!                                        level-bounds for layers)
+    !!                     kkinm = kkin-1 = KMAX_MID-1
     !c
     !c**********************************************************************
     logical, parameter :: DEBUG_KZ = .false.
     logical, parameter :: PIELKE_KZ = .true.    ! Default
-    logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP 
+    logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP
     ! STILL!!!!
     !  Kz-tests
     real, parameter :: KZ_MINIMUM = 0.001   ! m2/s
@@ -2174,7 +2176,7 @@ contains
     real ::lim,xdthdz,zmmin,zimin,zlimax,kzmin,kzmax,sm,pref,xtime,umax,eps,ric,&
          ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,dvdz,xl2,uvhs,zimhs,&
          zimz,zmhs,ux0,fac,fac2,dex12,ro
-    real ::h100 ! Top of lowest layer - replaces 100.0 
+    real ::h100 ! Top of lowest layer - replaces 100.0
     real ::hsurfl
 
     integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp, nr
@@ -2258,7 +2260,7 @@ contains
        !
        !     Height of the half levels
        !
-       do  k=KMAX_BND-1,1,-1 
+       do  k=KMAX_BND-1,1,-1
           do i=1,limax
              zs_bnd(i,j,k)=zs_bnd(i,j,k+1)+th(i,j,k,nr)*&
                   (exns(i,j,k+1)-exns(i,j,k))/GRAV
@@ -2271,7 +2273,7 @@ contains
           do i=1,limax
              zm(i,k) = ((exnm(i,j,k)-exns(i,j,k))*zs_bnd(i,j,k+1)&
                   + (exns(i,j,k+1)-exnm(i,j,k))*zs_bnd(i,j,k))&
-                  / (exns(i,j,k+1)-exns(i,j,k))    
+                  / (exns(i,j,k+1)-exns(i,j,k))
           end do
        end do
 
@@ -2345,7 +2347,7 @@ contains
        !.........................................................
        !..vertical smoothing of xksig over three adjacent layers:
        !
-       k=2 
+       k=2
        km=1
        kp=3
        do i=1,limax
@@ -2354,7 +2356,7 @@ contains
                / ( zm(i,km) - zm(i,kp) )
        enddo
        !c
-       k=KMAX_MID 
+       k=KMAX_MID
        km2=k-2
        km1=k-1
        do i=1,limax
@@ -2370,7 +2372,7 @@ contains
           do i=1,limax
              xksm(i,k)=(  (zm(i,km2)-zm(i,km1))*xksig(i,j,km1)&
                   + (zm(i,km1)-zm(i,k))*xksig(i,j,k)&
-                  + (zm(i,k)-zm(i,kp))*xksig(i,j,kp) )& 
+                  + (zm(i,k)-zm(i,kp))*xksig(i,j,kp) )&
                   / ( zm(i,km2) - zm(i,kp) )
           enddo
        enddo
@@ -2384,7 +2386,7 @@ contains
        do i = 1,limax
           zis(i)=zimin
           nh1(i) = KMAX_MID
-          nh2(i) = 1            
+          nh2(i) = 1
        enddo
        !c
        do k=KMAX_MID,2,-1
@@ -2405,7 +2407,7 @@ contains
           !c
           if(zs_bnd(i,j,nh1(i)).ge.zimin) then
 
-             if( abs(xksm(i,k)-xksm(i,k-1)) .gt. eps) then 
+             if( abs(xksm(i,k)-xksm(i,k-1)) .gt. eps) then
 
                 zis(i)=((xksm(i,k)-KZ_SBL_LIMIT )*zs_bnd(i,j,k-1) &
                      + (KZ_SBL_LIMIT -xksm(i,k-1))*zs_bnd(i,j,k))&
@@ -2473,8 +2475,8 @@ contains
           ! calculating the height of unstable ABL
           !
           !!      if(trc(i).eq.1.) then
-      kabl = KMAX_MID	
-          do while( trc(i).eq.1) 
+      kabl = KMAX_MID
+          do while( trc(i).eq.1)
              !! 28     if(trc(i).eq.1.) then
              kabl = kabl-1
          pidth(i)=0.
@@ -2518,7 +2520,7 @@ contains
 
 
           end do ! while
-          !!           go to 28			  
+          !!           go to 28
 
           !!    	endif
 
@@ -2567,11 +2569,11 @@ contains
     !----------------------------------------------------------!
     if( TKE_DIFF ) then
        call tkediff (nr)                            ! guta
-    else 
-       call O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  & 
+    else
+       call O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
             , exns, exnm, zixx )
     end if
-    !----------------------------------------------------------!       
+    !----------------------------------------------------------!
 
   end subroutine tiphys
 
@@ -2583,7 +2585,7 @@ contains
 
 
 
-  subroutine smoosp(f,rmin,rmax)      
+  subroutine smoosp(f,rmin,rmax)
 
     !c    file: eulmet-mnd.f
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -2596,12 +2598,12 @@ contains
     !c
     !c----------------------------------------------------------------------
     !c
-    !c    This routine applies the shapiro filter with s=0.5 and s=-0.5         
-    !c    to the field f usinh h as a work space also the boundaries 
+    !c    This routine applies the shapiro filter with s=0.5 and s=-0.5
+    !c    to the field f usinh h as a work space also the boundaries
     !c    are smoothed. f contains the smoothed field upon return.
     !c
 
-    !c    Definition of the variables:  
+    !c    Definition of the variables:
     !c
     !c
     !c    f	: data to be smoothed
@@ -2680,7 +2682,7 @@ contains
     enddo
     !! 44 format(I2,30F5.0)
 
-    do  is=2,1,-1                                          
+    do  is=2,1,-1
 
        s=is-1.5  !s=0,5 s=-0.5
        if(is /= 2)h1=h2
@@ -2689,9 +2691,9 @@ contains
 
        do  j=2,jjfl-1
           do  i=2,iifl-1
-             h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&                              
+             h2(i,j)=(1.-2.*s+s*s)*h1(i,j)&
                   + 0.5*s*(1.-s)*(h1(i+1,j)+h1(i-1,j)+h1(i,j+1)+h1(i,j-1))  &
-                  + s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4. 
+                  + s*s*(h1(i+1,j+1)+h1(i-1,j-1)+h1(i+1,j-1)+h1(i-1,j+1))/4.
              h2(i,j) = amax1(h2(i,j),rmin)
              h2(i,j) = amin1(h2(i,j),rmax)
           end do
@@ -2704,7 +2706,7 @@ contains
        jj=j+thick
        do i=1,iif
           ii=i+thick
-          f(i,j)=h2(ii,jj) 
+          f(i,j)=h2(ii,jj)
        enddo
     enddo
 
@@ -2717,7 +2719,7 @@ contains
   subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
 
-    ! Read data at the other side of the boundaries 
+    ! Read data at the other side of the boundaries
     !
     ! thick is the number of gridcells in each direction to be transferred
     ! Note that we also fetch data from processors in the "diagonal"
@@ -2725,11 +2727,11 @@ contains
     !
     ! Written by Peter February 2003
     !
-    !Note, 
-    !The data_west(jj,:)=data(1,j) is not a bug: when there is no west 
-    !neighbour, 
-    !the data is simply copied from the nearest points: data_west(jj,:) should 
-    !be =data(-thick+1:0,j), but since this data does not exist, we 
+    !Note,
+    !The data_west(jj,:)=data(1,j) is not a bug: when there is no west
+    !neighbour,
+    !the data is simply copied from the nearest points: data_west(jj,:) should
+    !be =data(-thick+1:0,j), but since this data does not exist, we
     !put it =data(1,j).
 
 
@@ -2754,16 +2756,16 @@ contains
     data_north(:,:)=data(:,ljmax-thick+1:ljmax)
     if(neighbor(SOUTH) >= 0 )then
        CALL MPI_SEND( data_south , 8*MAXLIMAX*thick, MPI_BYTE,&
-            neighbor(SOUTH), msgnr, MPI_COMM_WORLD, INFO) 
+            neighbor(SOUTH), msgnr, MPI_COMM_WORLD, INFO)
     endif
     if(neighbor(NORTH) >= 0 )then
        CALL MPI_SEND( data_north , 8*MAXLIMAX*thick, MPI_BYTE,&
-            neighbor(NORTH), msgnr+9, MPI_COMM_WORLD, INFO) 
+            neighbor(NORTH), msgnr+9, MPI_COMM_WORLD, INFO)
     endif
 
     if(neighbor(SOUTH) >= 0 )then
        CALL MPI_RECV( data_south, 8*MAXLIMAX*thick, MPI_BYTE,&
-            neighbor(SOUTH), msgnr+9, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(SOUTH), msgnr+9, MPI_COMM_WORLD, MPISTATUS, INFO)
     else
        do tj=1,thick
           data_south(:,tj)=data(:,1)
@@ -2772,7 +2774,7 @@ contains
 44  format(I2,30F5.0)
     if(neighbor(NORTH) >= 0 )then
        CALL MPI_RECV( data_north, 8*MAXLIMAX*thick, MPI_BYTE,&
-            neighbor(NORTH), msgnr, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(NORTH), msgnr, MPI_COMM_WORLD, MPISTATUS, INFO)
     else
        do tj=1,thick
           data_north(:,tj)=data(:,ljmax)
@@ -2798,16 +2800,16 @@ contains
 
     if(neighbor(WEST) >= 0 )then
        CALL MPI_SEND( data_west , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(WEST), msgnr+3, MPI_COMM_WORLD, INFO) 
+            neighbor(WEST), msgnr+3, MPI_COMM_WORLD, INFO)
     endif
     if(neighbor(EAST) >= 0 )then
        CALL MPI_SEND( data_east , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(EAST), msgnr+7, MPI_COMM_WORLD, INFO) 
+            neighbor(EAST), msgnr+7, MPI_COMM_WORLD, INFO)
     endif
 
     if(neighbor(WEST) >= 0 )then
        CALL MPI_RECV( data_west, 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(WEST), msgnr+7, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(WEST), msgnr+7, MPI_COMM_WORLD, MPISTATUS, INFO)
     else
        jj=0
        do jt=1,thick
@@ -2825,7 +2827,7 @@ contains
     endif
     if(neighbor(EAST) >= 0 )then
        CALL MPI_RECV( data_east, 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE, &
-            neighbor(EAST), msgnr+3, MPI_COMM_WORLD, MPISTATUS, INFO) 
+            neighbor(EAST), msgnr+3, MPI_COMM_WORLD, MPISTATUS, INFO)
     else
        jj=0
        do jt=1,thick
@@ -2852,7 +2854,7 @@ contains
   !************************************************************************!
   subroutine tkediff (nr)                                             !
     !************************************************************************!
-    !                                                                        !   
+    !                                                                        !
     !    This routine computes vertical eddy diffusivities as a function     !
     !    altitude, height of PBL, and a velocity scale, square root of       !
     !    turbulent kinetic energy (TKE). This is a non-local scheme.         !
@@ -2872,53 +2874,53 @@ contains
          ,CKZ=0.001      &   ! Constant (Zhang and Athens, 1982)
          ,REFPR=1.0E+05  &   ! Referent pressure
          ,KZ0LT=1.0E-04  &   ! Constant (Alapaty et al., 1997)
-         ,RIC=0.10       &   ! Critical Richardson number 
+         ,RIC=0.10       &   ! Critical Richardson number
                                 ! (Holstlag et al., 1993)
          ,ROVG=RGAS_KG/GRAV        ! Used in Calculation of R-number
-    integer, parameter :: KLM =KMAX_MID-1   
+    integer, parameter :: KLM =KMAX_MID-1
 
 
 
-    !     INPUT      
-    integer, intent(in) :: nr  ! Number of meteorological stored 
+    !     INPUT
+    integer, intent(in) :: nr  ! Number of meteorological stored
     ! in arrays (1 or 2)
 
     !     OUTPUT
-    !     skh(i,j,k,nr) array    
-    !     Values of the Kz coefficients (eddyz (i,j,k)) are transformed nto 
-    !     sigma system and then they stored in this array which is later used 
-    !     in ADVECTION module     
+    !     skh(i,j,k,nr) array
+    !     Values of the Kz coefficients (eddyz (i,j,k)) are transformed nto
+    !     sigma system and then they stored in this array which is later used
+    !     in ADVECTION module
 
 
-    !     Local arrays 
+    !     Local arrays
 
     integer, dimension(MAXLIMAX,MAXLJMAX)      :: iblht   ! Level of the PBL top
-    real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND):: eddyz   ! Eddy coefficients 
+    real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND):: eddyz   ! Eddy coefficients
     ! (m2/s)
     real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID):: &
          t_virt    &! Potential temperature (K)
          ,e         &! Kinetic energy with respect to height (m2/s2)
          ,dzq       &! Thickness of sigma interface layers (m)
-         ,u_mid     &! Wind speed in x-direction (m/s)  
-         ,v_mid      ! Wind speed in y-direction (m/s)       
+         ,u_mid     &! Wind speed in x-direction (m/s)
+         ,v_mid      ! Wind speed in y-direction (m/s)
 
     real, dimension(MAXLIMAX,MAXLJMAX,KLM):: &
          dza         ! Thickness of half sigma layers (m)
 
     real, dimension(MAXLIMAX,MAXLJMAX):: &
-         pblht ,    &! PBL (Holstag, 1990) (m)    
+         pblht ,    &! PBL (Holstag, 1990) (m)
          h_flux,    &! Sensible heat flux  (W/m2)
-         ust_r ,    &! Friction velocity (m/s) 
+         ust_r ,    &! Friction velocity (m/s)
          mol   ,    &! Monin-obukhov length (m)
          wstar       ! Convective velocity (m/s)
 
-    real, dimension(KMAX_BND) :: rib         ! Bulk Richardson number 
+    real, dimension(KMAX_BND) :: rib         ! Bulk Richardson number
 
     real, dimension(KMAX_MID) :: &
-         rich,       &! Richardson number 
+         rich,       &! Richardson number
          psi_zi       ! Used in the vertical integration
 
-    real, dimension (10) ::      & 
+    real, dimension (10) ::      &
          psi_z       & ! Used for calculating
          , zovh          ! TKE
 
@@ -2931,7 +2933,7 @@ contains
     integer i, j, k, l, kcbl
 
 
-    !     Functions for averaging the vertical turbulent kinetic energy 
+    !     Functions for averaging the vertical turbulent kinetic energy
     !      (Alapaty, 2003)
     data psi_z /0.00,2.00,1.85,1.51,1.48,1.52,1.43,1.10,1.20,0.25/
     data zovh  /0.00,0.05,0.10,0.20,0.40,0.60,0.80,1.00,1.10,1.20/
@@ -2943,14 +2945,14 @@ contains
 
     !     Avoid devision by zero later in the code
 
-    where (ABS(h_flux(1:limax,1:ljmax))<0.0001) h_flux(1:limax,1:ljmax)=0.0001 
+    where (ABS(h_flux(1:limax,1:ljmax))<0.0001) h_flux(1:limax,1:ljmax)=0.0001
 
     !     Check PBL height   ! strange tests! Negative pzpbl check? From 1 to 100m
     !   - odd!
     do i=1,limax
        do j=1,ljmax
           if(ABS(pzpbl(i,j)) < 1.) then
-             pzpbl(i,j)=100. 
+             pzpbl(i,j)=100.
           endif
        enddo
     enddo
@@ -2980,11 +2982,11 @@ contains
 
     !     Calculate tickness of the full layers
     dzq(1:limax,1:ljmax,1:KMAX_MID) = z_bnd(1:limax,1:ljmax,1:KMAX_MID)  &
-         - z_bnd(1:limax,1:ljmax,2:KMAX_BND)   
+         - z_bnd(1:limax,1:ljmax,2:KMAX_BND)
 
     !     ... and the half sigma layers
     dza(1:limax,1:ljmax,1:KLM) = z_mid(1:limax,1:ljmax,1:KLM)          &
-         - z_mid(1:limax,1:ljmax,2:KMAX_MID)  
+         - z_mid(1:limax,1:ljmax,2:KMAX_MID)
 
     !     Calculate virtual temperature
 
@@ -3032,7 +3034,7 @@ contains
           if (h_flux(i,j) < 0.0) then
              tconv=0.0                                   ! Holstlag et al. (1990)
           else
-             tconv=8.5*h_flux(i,j)/rho_surf(i,j)/CP/wss   ! Conversion to 
+             tconv=8.5*h_flux(i,j)/rho_surf(i,j)/CP/wss   ! Conversion to
              ! kinematic flux
           endif
 
@@ -3155,7 +3157,7 @@ contains
                 dthdz=z_mid(i,j,k)/pzpbl(i,j)                 ! -----------------
                 dthdz=1.0-dthdz
                 dthdz=AMAX1(1.0E-2,dthdz)
-                busfc=0.74+4.7*z_mid(i,j,KMAX_MID)/mol(i,j)     
+                busfc=0.74+4.7*z_mid(i,j,KMAX_MID)/mol(i,j)
                 busfc=AMAX1(busfc,1.0)
                 dthdz=dthdz**1.50                                  !test (2004)
                 eddyz(i,j,k)=goth*dthdz/busfc
@@ -3247,14 +3249,14 @@ contains
          ,KZ_MAXIMUM
 
     real,intent(in), dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: zs_bnd &
-         ,exns   
-    real,intent(in), dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: exnm 
+         ,exns
+    real,intent(in), dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: exnm
 
     real,intent(in), dimension(MAXLIMAX,MAXLJMAX) :: ziu    &
          ,zixx
 
 
-    real :: h100   & ! Top of lowest layer - replaces 100.0 
+    real :: h100   & ! Top of lowest layer - replaces 100.0
          ,xfrco  &
          ,exfrco &
          ,sm     &
@@ -3278,7 +3280,7 @@ contains
          ,xkhs    &
          ,xkdz    &
          ,xkzi    &
-         ,hs      
+         ,hs
 
 
     real, dimension(MAXLIMAX,MAXLJMAX) :: help
@@ -3299,8 +3301,8 @@ contains
     do j=1,ljmax
        do i=1,limax
 
-          xkh100(i)=0.  
-          xkhs(i)=0.                                            
+          xkh100(i)=0.
+          xkhs(i)=0.
           xkdz(i)=0.
           xkzi(i)=0.
           h100 = zs_bnd(i,j,KMAX_MID)
@@ -3310,8 +3312,8 @@ contains
           !..air density at ground level is always calculated diagnostically:
           !
 
-          ux0 = ustar_nwp(i,j)  
-          ux3 = ux0*ux0*ux0     
+          ux0 = ustar_nwp(i,j)
+          ux3 = ux0*ux0*ux0
 
 
           if(ziu(i,j) >= zimin) then
@@ -3330,8 +3332,8 @@ contains
              !changes: use simple Garratt \Phi function
              !   instead of "older" Businge and Iversen/Nordeng stuff:
 
-             xkhs(i) = ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)  ! /Pr=1.00   
-             xkdz(i) = xkhs(i)*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs(i)        
+             xkhs(i) = ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)  ! /Pr=1.00
+             xkdz(i) = xkhs(i)*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs(i)
 
              hsurfl = KARMAN*GRAV*h100*fh(i,j,nr)*KAPPA           &
                   /(ps(i,j,nr)*ux3)
@@ -3354,7 +3356,7 @@ contains
                   /(ps(i,j,nr)*ux3)
 
 
-             xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)   
+             xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)
 
 
 
@@ -3378,17 +3380,17 @@ contains
                 xkzi(i)=xksig(i,j,k)
              elseif (ziu(i,j).gt.zimin) then
                 !
-                !.....................................................   
-                !..the obrien-profile for z<ziu                      . 
-                !.....................................................                  
+                !.....................................................
+                !..the obrien-profile for z<ziu                      .
+                !.....................................................
                 !
-                if(zs_bnd(i,j,k).le.hs(i)) then   
-                   xksig(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)          
-                else                                                      
-                   zimhs = ziu(i,j)-hs(i)   
-                   zimz  =ziu(i,j)-zs_bnd(i,j,k)                     
-                   zmhs  =zs_bnd(i,j,k)-hs(i)                  
-                   xksig(i,j,k) = xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &  
+                if(zs_bnd(i,j,k).le.hs(i)) then
+                   xksig(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)
+                else
+                   zimhs = ziu(i,j)-hs(i)
+                   zimz  =ziu(i,j)-zs_bnd(i,j,k)
+                   zmhs  =zs_bnd(i,j,k)-hs(i)
+                   xksig(i,j,k) = xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &
                         *(xkhs(i)-xkzi(i)+zmhs*(xkdz(i)     &
                         + 2.*(xkhs(i)-xkzi(i))/zimhs))
                 endif
@@ -3426,7 +3428,7 @@ contains
              fac2  = fac*fac
              dex12 = th(i,j,k-1,nr)*(exnm(i,j,k) - exns(i,j,k))       &
                   + th(i,j,k,nr)*(exns(i,j,k) - exnm(i,j,k-1))
-             ro    = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) & 
+             ro    = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) &
                   - exnm(i,j,k-1))/(RGAS_KG*exns(i,j,k)*dex12)
              skh(i,j,k,nr) = xksig(i,j,k)*ro*ro*fac2
           enddo
@@ -3473,11 +3475,11 @@ contains
 
 
     integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
-    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with 
-    ! fixed dimensions for all 
+    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
+    ! fixed dimensions for all
     ! nodes?
     real :: scalefactors(2)
-    integer :: KMAX,ijk,i,k,j,nfetch   
+    integer :: KMAX,ijk,i,k,j,nfetch
 
     validity=''
 
@@ -3495,8 +3497,8 @@ contains
     !note: var_global is defined only for me=0
     call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
          KMAX,1,1)
-    CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(validity,20,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(validity,20,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
 
     deallocate(var_global)
@@ -3531,7 +3533,7 @@ contains
     !
     implicit none
 
-    character (len=*),intent(in) :: fileName 
+    character (len=*),intent(in) :: fileName
 
     character (len = *),intent(in) ::varname
     character (len = *),intent(out) ::validity
@@ -3636,7 +3638,7 @@ contains
        !open an existing netcdf dataset
        status = nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
 
-       if(status /= nf90_noerr) then     
+       if(status /= nf90_noerr) then
           print *,'not found',trim(meteoname)
           METEOfelt=1
        else
@@ -3644,13 +3646,13 @@ contains
           projection=''
          call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
           if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
-               .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then 
+               .or.trim(projection)=='rotated_pole'.or.trim(projection)=='rotated_latitude_longitude')then
              projection='Rotated_Spherical'
           endif
           write(*,*)'projection: ',trim(projection)
 
           !get dimensions id
-          if(trim(projection)=='Stereographic') then     
+          if(trim(projection)=='Stereographic') then
              call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
              call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
           elseif(trim(projection)==trim('lon lat')) then
@@ -3714,11 +3716,11 @@ contains
 
              if(trim(timeunit)==trim("days since 1900-1-1 0:0:0"))then
                 call check(nf90_get_var(ncFileID, timeVarID, ndays,&
-                     start=(/ ihh /),count=(/ n1 /)))   
+                     start=(/ ihh /),count=(/ n1 /)))
                 call datefromdayssince1900(ndate,ndays(1),0)
              else
                 call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
-                  start=(/ ihh /),count=(/ n1 /)))   
+                  start=(/ ihh /),count=(/ n1 /)))
                 call datefromsecondssince1970(ndate,nseconds(1),0)
              endif
 
@@ -3738,7 +3740,7 @@ contains
                   ,yp ))
              call check(nf90_get_att(ncFileID, nf90_global, "fi",fi ))
 
-             call GlobalPosition 
+             call GlobalPosition
           elseif(trim(projection)==trim('lon lat')) then
              ref_latitude=60.
              xp=0.0
@@ -3749,7 +3751,7 @@ contains
              do i=1,IIFULLDOM
                 if(gl_glob(i,1)>180.0)gl_glob(i,1)=gl_glob(i,1)-360.0
                 if(gl_glob(i,j)<-180.0)gl_glob(i,j)=gl_glob(i,j)+360.0
-              enddo
+             enddo
              do j=1,JJFULLDOM
                 gl_glob(:,j)=gl_glob(:,1)
              enddo
@@ -3763,7 +3765,7 @@ contains
              xp=0.0
              yp=GJMAX
              fi =0.0
-             if(trim(projection)=='Rotated_Spherical')then 
+             if(trim(projection)=='Rotated_Spherical')then
                 call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_latitude",grid_north_pole_latitude))
                 call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
              endif
@@ -3828,21 +3830,21 @@ contains
        endif !found meteo
     endif !me=0
 
-    CALL MPI_BCAST(METEOfelt ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(METEOfelt ,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     if( METEOfelt==1)return !do not use NetCDF meteo input
 
 
-    CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(GRIDWIDTH_M,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(ref_latitude,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(xp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(yp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(fi,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(gb_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(gl_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(Nhh,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(GRIDWIDTH_M,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(ref_latitude,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(xp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(yp,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(fi,8*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(gb_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(gl_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(projection,len(projection),MPI_CHARACTER,0,MPI_COMM_WORLD,INFO) 
 
 
@@ -4012,7 +4014,7 @@ contains
     !If some cells are to narrow (Poles in lat lon coordinates),
     !this will give too small time steps in the Advection,
     !because of the constraint that the Courant number should be <1.
-    ! 
+    !
     !If Poles are found and lon-lat coordinates are used the Advection scheme
     !will be modified to be able to cope with the singularity
 
@@ -4066,7 +4068,7 @@ contains
   !_______________________________________________________________________
 
   subroutine datefromsecondssince1970(ndate,nseconds,printdate)
-    ! calculate date from seconds that have passed since the start of 
+    ! calculate date from seconds that have passed since the start of
     ! the year 1970
 
     implicit none
@@ -4076,7 +4078,7 @@ contains
     integer,  intent(in) :: printdate
 
     integer :: n,nday,nmdays(12),nmdays2(13)
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
+    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
     nmdays2(1:12)=nmdays
     nmdays2(13)=0
@@ -4117,8 +4119,8 @@ contains
 
 
   subroutine datefromdayssince1900(ndate,ndays,printdate)
-    ! calculate date from days that have passed since the start of 
-    ! the year 1900 
+    ! calculate date from days that have passed since the start of
+    ! the year 1900
     ! NB: 1900 is not a leap year
 
 
@@ -4131,7 +4133,7 @@ contains
     integer :: n,nday,nmdays(12),nmdays2(13)
     real*8 :: nr
 
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
+    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
     nmdays2(1:12)=nmdays
     nmdays2(13)=0

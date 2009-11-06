@@ -1,8 +1,82 @@
+xxxxxxxxxxxxxx rv3_4_2   Alvaro, 6 Nov. 2009 xxxxxxxxxxxxxxxx
+
+Makefile_titan - added file: titan.uio.no version of Makefile
+
+Makefile_gfortran - added Ubuntu 8.04 pedantic setting for INCL, LLIB & LDFLAGS
+
+OutputChem_ml - avoid double output when End_of_Run==END_OF_EMEPDAY
+              - pedantic: remove unused variables icmp and scale (Wrtchem)
+
+EmisDef_ml - increase FNCMAX to 20
+
+ModelConstants_ml - added FORECAST logical variable to enforce FORECAST run mode
+                  - added (commented) definitions for GEMS/MACC domain
+                  - cleanup, alignment and formatting of comments
+
+Derived_ml - only dayly (and hourly) output on FORECAST mode
+
+Advection_ml - enforce dt_advec=600.0 on FORECAST mode
+         - ycmax minimum value consistent to xcmax definition
+         - replace amin1/amax1 by min/max intrinsics
+         - uniform names for Add_2timing calls
+         - cleanup, alignment and formatting of code & comments
+         - pedantic: remove the following unused variables
+             adv_var    dhskmax,ulmin,ulmax,vlmin,vlmax,
+                        sdotmink,sdotmax,sdotmin,sdotmaxk
+             preadvx    request1,request2
+             preadvx2   request1,request2
+             preadvy    request1,request2
+             preadvy2   request1,request2
+             advx       x3,nn
+             advy       x3
+             advvdifvk  adif,bdif,cdif,e1,n
+             vgrid      i,j
+             advecdiff  n,l,dtsave,dhskmax,
+                        sdotmin,sdotmax,sdotmink,sdotmaxk,sdotmaxadv,
+                        ulmin,ulmax,vlmin,vlmax,ucmax,vcmax,
+                        inadvst,firstcall,lvertsplit,sum,
+                        numt,idebug,jdebug,i_fdom,j_fdom,pwdebug
+             advecdiff_poles  l,dhskmax,c_max,dtsave,inadvst,lvertsplit,
+                        sdotmax,sdotmin,sdotmaxk,sdotmink,sdotmaxadv,sum,
+                        ulmin,ulmax,vlmin,vlmax,ucmax,vcmax,
+                        dt_xysmax,dt_xymax,dt_xys,dt_xy,
+                        numt,idebug,jdebug,i_fdom,j_fdom,pwdebug,
+                        hours,houre,houra,date_ad,iterxy,niterxy
+
+PhyChem_ml - use advecdiff_poles on FORECAST mode even if poles are
+             not contained on the model domain
+
+GlobalBCs_ml - use 10-yr average Mace-Head correction on FORECAST mode
+             - pedantic: remove tabs and the following unused variables
+                 GetGlobalData  buf_lon,buf_lat,bufi,bufj,val,oldmonth
+                 setgl_actarray i1
+             - pedantic: initialize variables
+                 real:: USso2trend=1.0,USnoxtrend=1.0,USnh4trend=1.0
+
+NetCDF_ml - time units "time at end of period" for hourly output
+
+Met_ml - ensure positive precipitation
+
+Nest_ml - nested input/output on FORECAST mode:
+          Read nested input (all ADV variables) at start of the run
+          and write nested output (all ADV variables) one/two date-times.
+          The first nested output will be used to start next day forecast.
+          The second nested output can be used for NMC statistics.
+
+Unimod.f90 - open only output netCDF files if needed
+           - hourly output for hour "zero" on FORECAST mode
+           - write 'modelrun.finished' file to flag the end of the FORECAST
+           - nested input/output on FORECAST mode
+           - pedantic: remove unused variables fileName & iotyp
+
+run.pl - add titan setup
+       - add Forecast mode (CWF) and FORECAST grid
+
 xxxxxxxxxxxxxx rv3_4_1    Peter  6 Nov 2009 xxxxxxxxxxxxxxxx
 
-New routine ReadField_CDF , which reads a global lat-lon file with data and 
+New routine ReadField_CDF , which reads a global lat-lon file with data and
 interpolates into subdomain. Note that all CPUs read the same file simultaneously.
-In the future this can be developed into explicit parallel reads. 
+In the future this can be developed into explicit parallel reads.
 This routine will soon be used for reading forest fires emissions.
 
 Met_ml: more robust definition of gl_stagg (staggered longitude)

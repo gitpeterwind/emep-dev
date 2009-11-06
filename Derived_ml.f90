@@ -1,9 +1,9 @@
 ! <Derived_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 
 !==============================================================================
 module Derived_ml
@@ -32,17 +32,17 @@ module Derived_ml
   !---------------------------------------------------------------------------
   ! DESCRIPTION
   ! This module performs the calculations associated with "derived" 2D and 3D,
-  ! such as accumulated precipitation or sulphate, daily, monthly or yearly 
-  ! averages, depositions. These fields are all typically output as netCDF 
+  ! such as accumulated precipitation or sulphate, daily, monthly or yearly
+  ! averages, depositions. These fields are all typically output as netCDF
   ! fields.
   !
-  ! This routine defines many possible derived  outputs. 
+  ! This routine defines many possible derived  outputs.
   ! The names of the derived fields actualy required should have been specified
   !  in the user-defined My_Derived_ml.
   !
 
-  ! User-defined routines and treatments are often needed here. Here there is 
-  ! added stuff for VOC, AOTs, accsu. In 
+  ! User-defined routines and treatments are often needed here. Here there is
+  ! added stuff for VOC, AOTs, accsu. In
   ! general such code should be added in such a way that it isn't activated if
   ! not needed. It then doesn't need to be commented out if not used.
   !---------------------------------------------------------------------------
@@ -87,37 +87,37 @@ use EcoSystem_ml,   only : DepEcoSystem, NDEF_ECOSYSTEMS, &
                            EcoSystemFrac,FULL_GRID
 use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M
 use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp, z_bnd
-use ModelConstants_ml, &
-                   only: KMAX_MID &   ! =>  z dimension
-                        , NPROC   &   ! No. processors
-                        , atwS, atwN, ATWAIR  &
-                        , PPBINV  &   !   1.0e9, for conversion of units 
-                        , PPTINV  &   !   1.0e12, for conversion of units 
-                        , MFAC    &   ! converts roa (kg/m3 to M, molec/cm3)
-                        , AOT_HORIZON&! limit of daylight for AOT calcs
-                        ,DEBUG_i, DEBUG_j & 
-                        ,DEBUG => DEBUG_DERIVED, MasterProc    & 
-                        , SOURCE_RECEPTOR &
-                        , NTDAY        !Number of 2D O3 to be saved each day (for SOMO)  
+use ModelConstants_ml, only: &
+   KMAX_MID     & ! =>  z dimension
+  ,NPROC        & ! No. processors
+  ,atwS, atwN, ATWAIR  &
+  ,PPBINV       & ! 1.0e9, for conversion of units
+  ,PPTINV       & ! 1.0e12, for conversion of units
+  ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
+  ,AOT_HORIZON  & ! limit of daylight for AOT calcs
+  ,DEBUG_i, DEBUG_j &
+  ,DEBUG => DEBUG_DERIVED, MasterProc &
+  ,SOURCE_RECEPTOR &
+  ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
+  ,NTDAY          ! Number of 2D O3 to be saved each day (for SOMO)
 use OwnDataTypes_ml, only: Deriv,TXTLEN_DERIV   ! type & length of names
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me,                &   ! for print outs
                      gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
-                     li0,lj0,limax, ljmax    ! => used x, y area 
+                     li0,lj0,limax, ljmax    ! => used x, y area
 use PhysicalConstants_ml,  only : PI
 use SmallUtils_ml, only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml, only : day_of_year,daynumber,current_date
-
 implicit none
 private
 
  public  :: Init_Derived         !
  public  :: ResetDerived         ! Resets values to zero
  public  :: DerivedProds         ! Calculates any production terms
- public  :: AddDef 
+ public  :: AddDef
  private :: Define_Derived       !
- private :: Setups 
- private :: write_debug 
+ private :: Setups
+ private :: write_debug
 
  public :: Derived              ! Calculations of sums, avgs etc.
  private :: Setup_VOC            ! Defines VOC group
@@ -136,7 +136,7 @@ private
       ,MAXDEF_DERIV3D = 17   ! Max. No. 3D derived fields to be defined
 
    integer, public, save :: num_deriv2d, num_deriv3d
-   integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived 
+   integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived
 
   ! We put definitions of **all** possible variables in def_2d, def_3d
   ! and copy the needed ones into f_xx. The data will go into d_2d, d_3d
@@ -170,7 +170,7 @@ private
 
    ! save O3 every hour during one day to find running max
     real, save,  public :: &     ! to be used for SOMO35
-     D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0. 
+     D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0.
 
 
   ! Counters to keep track of averaging
@@ -189,7 +189,7 @@ private
    !-- some variables for the VOC sum done for ozone models
    !   (have no effect in non-ozone models - leave in code)
 
-   integer, private, save :: nvoc   ! No. VOCs 
+   integer, private, save :: nvoc   ! No. VOCs
    integer, private, dimension(NSPEC_ADV), save :: &
              voc_index, &     ! Index of VOC in xn_adv
              voc_carbon       ! Number of C atoms
@@ -213,7 +213,7 @@ private
          ! get lengths of wanted arrays (excludes notset values)
           num_deriv2d = LenArray(wanted_deriv2d,NOT_SET_STRING)
           num_deriv3d = LenArray(wanted_deriv3d,NOT_SET_STRING)
- 
+
           call CheckStop(num_deriv2d<1,"num_deriv2d<1 !!")
 
      if ( num_deriv2d > 0 ) then
@@ -250,8 +250,8 @@ private
            name,unit,Is3D)
 
        character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
-       logical, intent(in)  :: avg      ! True => average data (divide by 
-                                        ! nav at end), else accumulate over 
+       logical, intent(in)  :: avg      ! True => average data (divide by
+                                        ! nav at end), else accumulate over
                                         ! run period
        integer, intent(in)  :: index    ! index in e.g. concentration array
        real, intent(in)     :: scale    ! Scaling factor
@@ -260,7 +260,7 @@ private
        logical, intent(in)  :: year     ! True when yearly averages wanted
        logical, intent(in)  :: month    ! True when monthly averages wanted
        logical, intent(in)  :: day      ! True when daily averages wanted
-       character(len=*), intent(in):: name ! Name of the variable 
+       character(len=*), intent(in):: name ! Name of the variable
                                            ! (used in  netCDF output)
        character(len=*), intent(in) :: unit ! Unit (writen in netCDF output)
        logical, intent(in), optional :: Is3D
@@ -291,7 +291,7 @@ private
    ! used by DNMI/xfelt and scaling factors. (The scaling factors may
    ! be changed later in Derived_ml.
    ! And, Initialise the fields to zero.
-   
+
     real, save    :: ugS = atwS*PPBINV/ATWAIR
     real, save    :: ugN = atwN*PPBINV/ATWAIR
     real, save    :: ugSO4, ugHCHO!DSGC, ugCH3CHO
@@ -317,7 +317,7 @@ private
     if(DEBUG .and. MasterProc ) write(6,*) " START DEFINE DERIVED "
     !   same mol.wt assumed for PPM25 and PPMco
 
-     ugPMad = species(PPM25)%molwt * PPBINV /ATWAIR 
+     ugPMad = species(PPM25)%molwt * PPBINV /ATWAIR
      ugPMde = PPBINV /ATWAIR
      ugSS  = species( SSfi )%molwt * PPBINV /ATWAIR  !SeaS
 
@@ -327,10 +327,10 @@ private
 
 !-- Deposition fields. Define all possible fields and their xfelt codes here:
 
-      !code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
+      !code class  avg? ind scale rho Inst Yr Mn Day   name      unit
 
 Is3D = .false.
-call AddDef( "PREC ", F, -1, 1.0,   F  , F  ,T ,T ,T ,"WDEP_PREC","mm") 
+call AddDef( "PREC ", F, -1, 1.0,   F  , F  ,T ,T ,T ,"WDEP_PREC","mm")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mgS/m2")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mgN/m2")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mgN/m2")
@@ -343,11 +343,11 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_pNO3","mgN/m2")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_NH3","mgN/m2")
 call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 
-      !code class  avg? ind scale rho Inst Yr Mn Day   name      unit  
+      !code class  avg? ind scale rho Inst Yr Mn Day   name      unit
 
 !ECO08:
 ! Compound-specific depositions:
-  
+
 ! We process the various combinations of gas-species and ecosystem:
 ! (e.g. for D2_SO2_m2SN)
 !-------------------------------------------------------------------------------
@@ -358,21 +358,21 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
   end do
 !-------------------------------------------------------------------------------
   do n = 1, nOutVg ! Index is adv
-                 !code            avg?       ind             scale 
+                 !code            avg?       ind             scale
                  !    rho Inst Yr Mn Day
     call AddDef( OutVg(n)%label, T, OutVg(n)%Index, OutVg(n)%scale, &
                        F  , F  ,T ,T ,T , OutVg(n)%name,OutVg(n)%units)
   end do
 !-------------------------------------------------------------------------------
   do n = 1, nOutRG ! Index is adv
-                 !code            avg?       ind             scale 
+                 !code            avg?       ind             scale
                  !  rho Inst Yr Mn Day  Units
     call AddDef( OutRG(n)%label, T, OutRG(n)%Index, OutRG(n)%scale, &
                     F  , F  ,T ,T ,T , OutRG(n)%name,OutRG(n)%units)
   end do
 !-------------------------------------------------------------------------------
   do n = 1, nOutMET ! NB Adv not used
-                 !code            avg?       ind             scale 
+                 !code            avg?       ind             scale
                  !  rho Inst Yr Mn Day  Units
     call AddDef(OutMET(n)%class, T,OutMET(n)%Index,OutMET(n)%scale,&
                     F  , F  ,T ,T ,T , OutMET(n)%name,OutMET(n)%units)
@@ -380,7 +380,7 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 !-------------------------------------------------------------------------------
 !VEGO3 for AFstY and AOTX
   do n = 1, nOutVEGO3 ! NB Adv not used
-                 !code            avg?       ind             scale 
+                 !code            avg?       ind             scale
                  !  rho Inst Yr Mn Day  Units
     call AddDef(OutVEGO3(n)%class, F,OutVEGO3(n)%Index,OutVEGO3(n)%scale,&
                     F  , F  ,T ,T ,T , OutVEGO3(n)%name,OutVEGO3(n)%units)
@@ -397,7 +397,7 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
 
-!       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
+!       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit
 
 !Oct09
 !call AddDef( "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")
@@ -420,7 +420,7 @@ call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
 ! -- simple advected species. Note that some indices need to be set as dummys
 !    in ACID, e.g. IXADV_O3
 !
-!       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit 
+!       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit
 
 call AddDef( "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")
 
@@ -445,7 +445,7 @@ do ind = 1, size(SURF_UG_S)
   ind2 = SURF_UG_S(ind)
   ixadv = ind2 - NSPEC_SHL
   dname = "SURF_ugS_" //species( ind2 )%name
-   !    code class      avg? ind    scale rho  Inst  Yr  Mn   Day  name      unit 
+   !    code class      avg? ind    scale rho  Inst  Yr  Mn   Day  name      unit
   call AddDef( "SURF_UG",T,  ixadv ,ugSm3, T , F, T, T, T ,dname,"ugS/m3")
 end do
 
@@ -480,19 +480,19 @@ end do
 
 !hf output
 call AddDef( "SNOW",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNOW","frac")
-!surface 0.6*SO2/NH3 ratio where conc are 24 averaged 
+!surface 0.6*SO2/NH3 ratio where conc are 24 averaged
 call AddDef( "SNratio",T,  0 ,       1.0, F , T, T, T, T ,"D2_SNratio","ratio")
 !
 ! drydep
 !   set as "external" parameters - ie set outside Derived subroutine
-!      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit 
+!      code class   avg? ind scale rho  Inst Yr  Mn   Day    name      unit
 
-!      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
+!      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit
 call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3DF   ","ppb")
 call AddDef( "EXT  ", T, -1, 1.   , F, F,T ,T ,T ,"D2_O3WH   ","ppb")
 !
 ! Also, use field for EU definition (8-20 CET) and Mapping Manual/UNECE
-! (daylight hours). 
+! (daylight hours).
 !Oct09! All of these use O3 at crop height, in contrast to the older AOT30, AOT40
 !Oct09! as defined above, and all allow daily output.
 !Oct09call AddDef( "EXT  ", F, -1, 1.   , F, F,T ,T ,T ,"D2_EUAOT40WH","ppb h")
@@ -512,7 +512,7 @@ call AddDef( "VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")
 !
 ! -- miscellaneous user-defined functions
 !
-!      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit 
+!      code class   avg? ind scale rho Inst Yr Mn  Day   name      unit
 !! ,Deriv( "TSO4 ", T,   -1  ,ugS ,    T , F,T,T,T,"D2_SOX","ugS/m3")
 call AddDef( "TOXN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_OXN","ugN/m3")
 call AddDef( "TRDN ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_REDN","ugN/m3")
@@ -526,9 +526,9 @@ call AddDef( "PMco ", T, -1, ugPMde, T, F, T, T, T,"D2_PMco", "ug/m3")
 call AddDef( "PM25 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM25", "ug/m3")
 call AddDef( "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")
 call AddDef( "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O ", "ug/m3")
-call AddDef( "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3") 
-call AddDef( "SOM", F, 35, 1.,   F, F, T, T, F,"D2_SOMO35", "ppb day") 
-call AddDef( "SOM", F,  0, 1.,   F, F, T, T, F,"D2_SOMO0", "ppb day") 
+call AddDef( "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3")
+call AddDef( "SOM", F, 35, 1.,   F, F, T, T, F,"D2_SOMO35", "ppb day")
+call AddDef( "SOM", F,  0, 1.,   F, F, T, T, F,"D2_SOMO0", "ppb day")
 
 !-- 3-D fields
 
@@ -561,6 +561,16 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         def_2d(:)%day = .false.
      end if
 
+     if ( FORECAST .and. num_deriv2d>0 ) then ! only dayly (and hourly) output
+        def_2d(:)%inst  = .false.             ! on FORECAST mode
+        def_2d(:)%year  = .false.
+        def_2d(:)%month = .false.
+     end if
+     if ( FORECAST .and. num_deriv3d>0 ) then
+        def_3d(:)%inst  = .false.
+        def_3d(:)%year  = .false.
+        def_3d(:)%month = .false.
+     end if
 
      ! Get indices of wanted fields in larger def_xx arrays:
       do i = 1, num_deriv2d
@@ -569,7 +579,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                f_2d(i) = def_2d(ind)
                call CheckStop ( found_ind2d(ind) > 0,  &
                   "REQUESTED 2D DERIVED ALREADY DEFINED: "// &
-                      def_2d(ind)%name  ) 
+                      def_2d(ind)%name  )
                found_ind2d(ind)  = 1
 
           else
@@ -577,7 +587,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
             print *,   "OOOPS N,N :", num_deriv2d, Nadded2d
             if(  MasterProc  ) then
                do idebug = 1, Nadded2d
-                write (*,"(a,i4,a)") "Had def_2d: ", idebug, def_2d(idebug)%name 
+                write (*,"(a,i4,a)") "Had def_2d: ", idebug, def_2d(idebug)%name
                end do
                call CheckStop("OOPS STOPPED")
             end if
@@ -592,7 +602,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
           call CheckStop ( found_ind3d(ind) > 0,  &
                   "REQUESTED 3D DERIVED ALREADY DEFINED: "// &
-                      def_3d(ind)%name  ) 
+                      def_3d(ind)%name  )
           found_ind3d(ind)  = 1
           f_3d(i) = def_3d(ind)
           if ( DEBUG .and. MasterProc ) write(*,*) "Index f_3d ", i,&
@@ -605,7 +615,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       if ( num_deriv2d > 0  ) d_2d( :,:,:,:) = 0.0
       if ( num_deriv3d > 0  ) d_3d( :,:,:,:,:) = 0.0
 
-      debug_flag = ( DEBUG  .and. debug_proc ) 
+      debug_flag = ( DEBUG  .and. debug_proc )
 
   end subroutine Define_Derived
  !=========================================================================
@@ -613,9 +623,9 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
     !/** flexibility note. By making use of character-based tests such
     !    as for "VOC" below, we achieve code which can stay for both ACID and
-    !    OZONE without having to define non-used indices. 
+    !    OZONE without having to define non-used indices.
     !    Similarly, we avoid the previous "if NUM_ACCSU eq 1" type test,
-    !    since the appropriate code will now only activate 
+    !    since the appropriate code will now only activate
 
     !/ ** if voc wanted, set up voc_array. Works for all ozone chemistries
     !     (and code not called for MADE-type).
@@ -650,12 +660,12 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       real :: dayfrac              ! fraction of day elapsed (in middle of dt)
       real :: km2_grid
       integer :: ntime                       ! 1...NTDAYS
-      real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when 
+      real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when
                                                     ! scale in ug,  else 1
-      real, dimension(MAXLIMAX,MAXLJMAX) :: tmpwork 
+      real, dimension(MAXLIMAX,MAXLJMAX) :: tmpwork
 
       real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: inv_air_density3D
-                ! Inverse of No. air mols/cm3 = 1/M 
+                ! Inverse of No. air mols/cm3 = 1/M
                 ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
       logical :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
       logical :: first_call = .true.
@@ -686,7 +696,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
         end if
 
         !/** user-defined time-averaging. Here we have defined TADV and TVOC
-        !    so that 8-hour daytime averages will be calculated. 
+        !    so that 8-hour daytime averages will be calculated.
         !    Just comment out if not wanted, or (better!) don't define any
         !    f_2d as TADV or TVOC
 
@@ -735,12 +745,12 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           case ( "HMIX", "HMIX00", "HMIX12" )
 
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = pzpbl(i,j)  
+              d_2d( n, i,j,IOU_INST) = pzpbl(i,j)
             end forall
 
             if ( debug_flag ) then
              write(*,fmt="(a12,i4,f12.3)") "HMIX" , n , &
-                     d_2d(n,debug_li,debug_lj,IOU_INST)       
+                     d_2d(n,debug_li,debug_lj,IOU_INST)
             end if
 
          ! Simple advected species:
@@ -748,7 +758,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID)  &
-                                     * cfac(index,i,j) * density(i,j)  
+                                     * cfac(index,i,j) * density(i,j)
             end forall
 
             if ( debug_flag ) call write_debug(n,index, &
@@ -765,7 +775,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
-                                     * cfac(index,i,j) * density(i,j)  
+                                     * cfac(index,i,j) * density(i,j)
             end forall
             if ( debug_flag ) call write_debug(n,index, &
                                      density(debug_li,debug_lj), "SURF_UG")
@@ -773,9 +783,9 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
           case ( "H2O" )      !water
 
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = PM_water(i,j,KMAX_MID)  
+              d_2d( n, i,j,IOU_INST) = PM_water(i,j,KMAX_MID)
             end forall
-  
+
 
           case ( "MAXADV" )
 
@@ -794,7 +804,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
               if(    current_date%month >= 4 &
                  .or.current_date%month <= 9 )then
-              d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY) 
+              d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY)
               nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
               endif
             endif
@@ -823,7 +833,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
               if(    current_date%month >= 4 &
                  .or.current_date%month <= 9 )then
-              d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY) 
+              d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY)
               nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
               endif
             endif
@@ -843,7 +853,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 !Oct09            if(     current_date%month<startmonth_forest&
 !Oct09                 .or.current_date%month>endmonth_forest)then
-!Oct09               if( f_2d(n)%name=="D2_AOT30f".or.& 
+!Oct09               if( f_2d(n)%name=="D2_AOT30f".or.&
 !Oct09                   f_2d(n)%name=="D2_AOT40f".or.&
 !Oct09                   f_2d(n)%name=="D2_AOT60f")then
 !Oct09                   accumulate_2dyear=.false.
@@ -868,18 +878,18 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               ntime=int(dayfrac*NTDAY )+1 !must be >=1 and <= NTDAY
               if(dayfrac<0)ntime=NTDAY !midnight
 
-        !last value  (not averaged): 
+        !last value  (not averaged):
           D2_O3_DAY( : , : , ntime) =&
            xn_adv(IXADV_O3,:,:,KMAX_MID)*cfac(IXADV_O3,:,:)*PPBINV
 
               if(dayfrac<0)then !only at midnight: write on d_2d
 
-                 
+
                  call som_calc( n ) !  accumulate
-                 d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY) 
+                 d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
 
                 ! if(current_date%month>=4.and.current_date%month<=9)then
-                 d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY) 
+                 d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_DAY)
                 !NB overwritten anyway D2_O3_DAY = 0.
               endif
 
@@ -909,7 +919,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                end do ! k
                d_2d( n, i, j, IOU_INST) = MFAC * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
 
-        
+
             end do !i
             end do !j
             if( debug_flag ) &
@@ -917,7 +927,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
           case ( "ECOAREA" )
-            
+
             if( .not. first_call ) cycle ! Only need to do once
             if( f_2d(n)%Index == FULL_GRID ) then
               km2_grid = (GRIDWIDTH_M*GRIDWIDTH_M) * 1.0e-6 ! km2
@@ -939,7 +949,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
           case ( "EXT" )
 
-          ! Externally set for IOU_INST (in other routines); so no new work 
+          ! Externally set for IOU_INST (in other routines); so no new work
           ! needed except decision to accumalate to yearly or not.
           ! Used for e.g. AOT40s
              call setaccumulate_2dyear(n,accumulate_2dyear)
@@ -957,27 +967,27 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
                     "My_Deriv index?, nav? length?, class? ", index,&
                     nav_2d(n,IOU_INST), len(f_2d%class), trim(f_2d(n)%class)
                  write(*,*) "My_Deriv index?, avg ", f_2d(n)%avg
-             end if 
+             end if
 
-             call My_DerivFunc( d_2d(n,:,:,IOU_INST), typ, density ) 
+             call My_DerivFunc( d_2d(n,:,:,IOU_INST), typ, density )
 
         end select
 
 
         !/** add to daily, monthly and yearly average, and increment counters
         !  Note that the MAXADV and MAXSHL and SOM needn't be summed here, but
-        !  since the INST values are zero it doesn't harm, and the code is 
+        !  since the INST values are zero it doesn't harm, and the code is
         !  shorter. These d_2d ( MAXADV, MAXSHL, SOM) are set elsewhere
 
-        d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + d_2d(n,:,:,IOU_INST) 
+        d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
-        d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_INST) 
+        d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
         if(accumulate_2dyear)then
-           d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_INST) 
+           d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_INST)
            if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
         endif
- 
+
      end do   ! num_deriv2d
 
      !/***** 3-D fields **************************
@@ -1076,7 +1086,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 
         end select
-     
+
 
       !/** add to monthly and yearly average, and increment counters
        !    ( no daily averaging done for 3-D fields so far).
@@ -1130,7 +1140,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 !                              + d_3d(n,:,:,:,IOU_INST)
 !
 !       if ( f_3d(n)%avg )  nav_3d(n,:) = nav_3d(n,:) + 1
-  
+
       end do
 
       first_call = .false.
@@ -1141,8 +1151,8 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
     subroutine DerivedProds(text,dt)
 
     !/** DESCRIPTION
-    !  Calculates chemical changes by comparing values before and  after 
-    !  chemistry subroutine. Intended to be a more flexible version of the old 
+    !  Calculates chemical changes by comparing values before and  after
+    !  chemistry subroutine. Intended to be a more flexible version of the old
     !  PRODO3  calculation
 
       character(len=*), intent(in) :: text  ! "Before" or "After"
@@ -1183,7 +1193,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
            end select
         end if
       end do
-     
+
     end subroutine DerivedProds
     !=========================================================================
 
@@ -1193,7 +1203,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
        if ( period <= LENOUT2D ) then
            nav_2d  (:,period) = 0.0
            d_2d(:,:,:,period) = 0.0
-       end if 
+       end if
 
 
        if ( num_deriv3d > 0 .and.  period <= LENOUT3D ) then
@@ -1212,7 +1222,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
       !
       !--------------------------------------------------------
        integer :: n
-   
+
       do n = 1, NSPEC_ADV
 
         if ( species( NSPEC_SHL+n )%carbons > 0 .and. &
@@ -1235,7 +1245,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
      ! over voc. Some CPU could be saved by initialising
      ! with the 1st voc, then looping over 2, nvoc, but who cares...
 
-      
+
       d_2d( n, 1:limax,1:ljmax,IOU_INST) =  0.0
 
       do ivoc = 1, nvoc
@@ -1291,16 +1301,16 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
            if ( izen < AOT_HORIZON ) then
                 o3 = xn_adv(IXADV_O3,i,j,KMAX_MID) &
-                     * cfac(IXADV_O3,i,j) * PPBINV 
+                     * cfac(IXADV_O3,i,j) * PPBINV
 
                 o3 = max( o3 - threshold , 0.0 )   ! Definition of AOTs
 
              ! d_2d values will be accumulated in Derived_ml
 
-              d_2d(n, i,j,IOU_INST ) = o3 * timefrac  
+              d_2d(n, i,j,IOU_INST ) = o3 * timefrac
 
            else
-               d_2d(n, i,j,IOU_INST ) = 0.0   
+               d_2d(n, i,j,IOU_INST ) = 0.0
            end if
         end do
       end do
@@ -1341,14 +1351,14 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               if(n<0)write(*,*)o3 !pw fake for compiler!!
            enddo
 
-           !divide by N8h to find 8h mean 
+           !divide by N8h to find 8h mean
            o3=o3*N8h_inv
 
            o3 = max( o3 - threshold , 0.0 )   ! Definition of SOMs
 
              ! d_2d values will be accumulated in Derived_ml
 
-           d_2d(n, i,j,IOU_DAY ) = o3  
+           d_2d(n, i,j,IOU_DAY ) = o3
 
         end do
       end do
@@ -1360,7 +1370,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
 ! We don't want the yearly output to accumulate over the whole year
      integer, intent(in) :: n
-      logical, intent(inout) :: accumulate_2dyear !flag to know when to 
+      logical, intent(inout) :: accumulate_2dyear !flag to know when to
                                                   !accumulate d_2d (case "EXT")
 
       if( f_2d(n)%name=="D2_EUAOT30DF".or.&
@@ -1371,7 +1381,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
          if(   current_date%month<startmonth_forest&
               .or.current_date%month>endmonth_forest)then
             accumulate_2dyear=.false.
-         endif   
+         endif
       endif
 
        if(f_2d(n)%name=="D2_EUAOT30WH".or.&
@@ -1383,7 +1393,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
               .or.current_date%month>endmonth_crops)then
             accumulate_2dyear=.false.
 
-         endif   
+         endif
       endif
 
     end subroutine setaccumulate_2dyear
@@ -1392,7 +1402,7 @@ call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
        integer, intent(in) :: n, index
        real, intent(in) :: rho
        character(len=*) :: txt
-    
+
        write(*,fmt="(2a,2i4,a,4f12.3)") "PROCESS " , txt , n, index  &
                   ,trim(f_2d(n)%name)  &
                   ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &

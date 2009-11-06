@@ -1,9 +1,9 @@
 ! <NetCDF_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 
        module NetCDF_ml
 !
@@ -42,11 +42,11 @@
 !
 !/home/u4/mifahik/bin/ncdump results.nc |less
 !
-!for details see: 
+!for details see:
 !http://www.unidata.ucar.edu/packages/netcdf/f90/Documentation/f90-html-docs/
 !
 !
-!To improve: When output is onto the same file, but with different positions for the 
+!To improve: When output is onto the same file, but with different positions for the
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
   use My_Derived_ml, only : model
@@ -73,7 +73,7 @@
   use OwnDataTypes_ml,  only : Deriv
   use Par_ml, only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax,gi0,gj0
-  use PhysicalConstants_ml,  only : PI       
+  use PhysicalConstants_ml,  only : PI
   use TimeDate_ml, only: nmdays,leapyear ,current_date, date
 
 
@@ -92,9 +92,9 @@
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
   integer      :: ncFileID_new=closedID  !don't save because should always be redefined (in case several routines are using ncFileID_new with different filename_given)
-  integer,save :: ncFileID_inst=closedID  
-  integer,save :: ncFileID_hour=closedID  
-  integer,save :: ncFileID_day=closedID  
+  integer,save :: ncFileID_inst=closedID
+  integer,save :: ncFileID_hour=closedID
+  integer,save :: ncFileID_day=closedID
   integer,save :: ncFileID_month=closedID
   integer,save :: ncFileID_year=closedID
   integer,save :: outCDFtag=0
@@ -121,11 +121,11 @@ contains
 !_______________________________________________________________________
 
 
-subroutine Init_new_netCDF(fileName,iotyp) 
+subroutine Init_new_netCDF(fileName,iotyp)
 
 
 integer,  intent(in) :: iotyp
-  character(len=*),  intent(in)  :: fileName 
+  character(len=*),  intent(in)  :: fileName
 
 integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 integer :: ih
@@ -187,9 +187,9 @@ subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXc
   ! Create the netCDF file
 
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-character(len=*),  intent(in)  :: fileName 
+character(len=*),  intent(in)  :: fileName
 character (len=*),optional, intent(in):: requiredprojection
-character (len=*), parameter :: author_of_run='Unimod group' 
+character (len=*), parameter :: author_of_run='Unimod group'
 character(len=*), parameter :: vert_coord='sigma: k ps: PS ptop: PT'
 character (len=19) :: projection_params='90.0 -32.0 0.933013' !set later on
 
@@ -202,7 +202,7 @@ integer :: iEMEPVarID,jEMEPVarID,latVarID,longVarID,PTVarID
 real :: izero,jzero,scale_at_projection_origin
 character*80 ::UsedProjection
 
-  ! fileName: Name of the new created file 
+  ! fileName: Name of the new created file
   ! nf90_clobber: protect existing datasets
   ! ncFileID: netcdf ID
 
@@ -213,13 +213,13 @@ write(*,*)trim(fileName),' not created. Requested area too small (or outside dom
 write(*,*)'sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 return
 endif
-   
+
 if(present(RequiredProjection))then
    UsedProjection=trim(RequiredProjection)
 else
    UsedProjection=trim(projection)
 endif
-  
+
 write(*,*)'create ',trim(fileName)
 write(*,*)'UsedProjection ',trim(UsedProjection)
 write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
@@ -231,7 +231,7 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
   call check(nf90_def_dim(ncid = ncFileID, name = "i", len = GIMAXcdf, dimid = iDimID))
   call check(nf90_def_dim(ncid = ncFileID, name = "j", len = GJMAXcdf, dimid = jDimID))
 
-  elseif(UsedProjection=='lon lat')then 
+  elseif(UsedProjection=='lon lat')then
 
   call check(nf90_def_dim(ncid = ncFileID, name = "lon", len = GIMAXcdf, dimid = iDimID))
   call check(nf90_def_var(ncFileID, "lon", nf90_double, dimids = iDimID, varID = iVarID) )
@@ -347,14 +347,15 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
 
 !  call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
   call check(nf90_def_var(ncFileID, "time", nf90_double, dimids = timeDimID, varID = VarID) )
-  if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown'.and.trim(period_type) /= 'fullrun')then
+  if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown'.and.&
+     trim(period_type) /= 'hourly' .and.trim(period_type) /= 'fullrun')then ! AMVB 2009-11-06: hourly time units
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   else
   call check(nf90_put_att(ncFileID, VarID, "long_name", "time at end of period"))
   endif
 !  call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
   call check(nf90_put_att(ncFileID, VarID, "units", "days since 1900-1-1 0:0:0"))
- 
+
 
 !CF-1.0 definitions:
   if(UsedProjection=='Stereographic')then
@@ -363,9 +364,9 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
      call check(nf90_put_att(ncFileID, VarID, "straight_vertical_longitude_from_pole", Fi))
      call check(nf90_put_att(ncFileID, VarID, "latitude_of_projection_origin", 90.0))
      call check(nf90_put_att(ncFileID, VarID, "scale_factor_at_projection_origin", scale_at_projection_origin))
-  elseif(UsedProjection=='lon lat')then 
+  elseif(UsedProjection=='lon lat')then
 
-  elseif(UsedProjection=='Rotated_Spherical')then 
+  elseif(UsedProjection=='Rotated_Spherical')then
      call check(nf90_def_var(ncid = ncFileID, name = "Rotated_Spherical", xtype = nf90_int, varID=varID ) )
      call check(nf90_put_att(ncFileID, VarID, "grid_mapping_name", "rotated_latitude_longitude"))
      call check(nf90_put_att(ncFileID, VarID, "grid_north_pole_latitude", grid_north_pole_latitude))
@@ -392,13 +393,13 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
         !     print *, i,xcoord(i)
      enddo
      call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
-     
+
      ycoord(1)=(JSMBEGcdf-yp)*GRIDWIDTH_M/1000.
      do j=2,GJMAXcdf
         ycoord(j)=ycoord(j-1)+GRIDWIDTH_M/1000.
      enddo
      call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
-     
+
      ! Define horizontal coordinates in the official EMEP grid
      !  xp_EMEP_official=8.
      !  yp_EMEP_official=110.
@@ -425,7 +426,7 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
      endif
      call check(nf90_put_var(ncFileID, iEMEPVarID, xcoord(1:GIMAXcdf)) )
      call check(nf90_put_var(ncFileID, jEMEPVarID, ycoord(1:GJMAXcdf)) )
-     
+
      if(MY_DEBUG) write(*,*) "NetCDF: Starting long/lat defs"
      !Define longitude and latitude
      call GlobalPosition !because this may not yet be done if old version of meteo is used
@@ -435,7 +436,7 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
         call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
              ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
      endif
-     
+
 
   elseif(UsedProjection=='lon lat') then
      do i=1,GIMAXcdf
@@ -453,7 +454,7 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
         !     print *, i,xcoord(i)
      enddo
      call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
-     
+
      ycoord(1)=(JSMBEGcdf-0.5)*GRIDWIDTH_M/1000.
      do j=2,GJMAXcdf
         ycoord(j)=ycoord(j-1)+GRIDWIDTH_M/1000.
@@ -461,19 +462,19 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
      call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
      call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
      !  write(*,*)'coord written'
-     
+
      !Define longitude and latitude
-     
+
      if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
         call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
              ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
         call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
              ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
      endif
-     
+
   endif
   if(MY_DEBUG) write(*,*) "NetCDF: lon lat written"
-  
+
   !Define vertical levels
   if(KMAXcdf==KMAX_MID)then
      do k=1,KMAX_MID
@@ -504,11 +505,11 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer ,intent(in) :: ndim,kmax
   type(Deriv),     intent(in) :: def1 ! definition of fields
   integer,                         intent(in) :: iotyp
-  real    ,intent(in) :: scale 
+  real    ,intent(in) :: scale
   !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
   real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
   integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
-  integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4) 
+  integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4)
   character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
   !NB if the file fileName_given exist (also from earlier runs) it will be appended
 
@@ -520,8 +521,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer :: nyear,nmonth,nday,nhour,ndate(4)
   integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
   integer :: i1,i2,j1,j2
-  !real*4 :: buff 
-  real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID) 
+  !real*4 :: buff
+  real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID)
   real*8 , allocatable,dimension(:,:,:)  :: R8data3D
   real*4 , allocatable,dimension(:,:,:)  :: R4data3D
   integer*4, allocatable,dimension(:,:,:)  :: Idata3D
@@ -541,7 +542,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   if(present(jen))j2=min(jen-JRUNBEG+1,j2)
 
   !Check that that the area is larger than 0
-  if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return 
+  if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return
 
   !make variable name
   write(varname,fmt='(A)')trim(def1%name)
@@ -568,7 +569,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
            period_type = 'unknown'
            call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
            ncFileID=closedID
-        else !test if the defined dimensions are compatible 
+        else !test if the defined dimensions are compatible
            !         write(6,*) 'exists: ',trim(fileName_given)
            if(projection=='lon lat') then
               call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
@@ -622,8 +623,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   endif
   if(MY_DEBUG) write(*,*)'Out_NetCDF: filename ', fileName
 
-  call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3") 
-  
+  call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3")
+
   OUTtype=Real4  !default value
   if(present(CDFtype))OUTtype=CDFtype
 
@@ -646,13 +647,13 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !allocate a large array (only on one processor)
      if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
         allocate(Idata3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-        call CheckStop(alloc_err, "alloc failed in NetCDF_ml") 
+        call CheckStop(alloc_err, "alloc failed in NetCDF_ml")
      elseif(OUTtype==Real4)then
         allocate(R4data3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-        call CheckStop(alloc_err, "alloc failed in NetCDF_ml") 
+        call CheckStop(alloc_err, "alloc failed in NetCDF_ml")
      elseif(OUTtype==Real8)then
         allocate(R8data3D(GIMAX,GJMAX,kmax), stat=alloc_err)
-        call CheckStop(alloc_err, "alloc failed in NetCDF_ml") 
+        call CheckStop(alloc_err, "alloc failed in NetCDF_ml")
      else
         WRITE(*,*)'WARNING NetCDF:Data type not supported'
      endif
@@ -692,7 +693,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      do d = 1, NPROC-1
         CALL MPI_RECV(buff, 8*tlimax(d)*tljmax(d)*kmax, MPI_BYTE, d, &
-             outCDFtag, MPI_COMM_WORLD, MPISTATUS, INFO) 
+             outCDFtag, MPI_COMM_WORLD, MPISTATUS, INFO)
 
         !copy data to global buffer
         if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
@@ -729,7 +730,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      enddo
   else
      CALL MPI_SEND( buff, 8*tlimax(me)*tljmax(me)*kmax, MPI_BYTE, 0, &
-          outCDFtag, MPI_COMM_WORLD, INFO) 
+          outCDFtag, MPI_COMM_WORLD, INFO)
   endif
   !return
 
@@ -762,7 +763,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !test first if the variable is already defined:
      status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
 
-     if(status == nf90_noerr) then     
+     if(status == nf90_noerr) then
 !             print *, 'variable exists: ',varname
         if (MY_DEBUG) write(6,*) 'Out_NetCDF: variable exists: ',varname!,nf90_strerror(status)
      else
@@ -780,18 +781,18 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !  print *,'number of dataset saved: ',nrecords
      !test if new record is needed
      if(present(ik).and.nrecords>0)then
-        !The new record may already exist 
+        !The new record may already exist
         !use time as record reference, (instead of "numberofrecords")
 !        call secondssince1970(ndate,nseconds,iotyp)
 !       call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
-!        call check(nf90_get_var(ncFileID, timeVarID, nseconds_time,start=(/ nrecords /)))   
+!        call check(nf90_get_var(ncFileID, timeVarID, nseconds_time,start=(/ nrecords /)))
 !        !check if this is a newer time
 !        if((nseconds/=nseconds_time(1)))then
 !           nrecords=nrecords+1 !start a new record
 !        endif
         call dayssince1900(ndate,rdays,iotyp)
         call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
-        call check(nf90_get_var(ncFileID, timeVarID, rdays_time,start=(/ nrecords /)))   
+        call check(nf90_get_var(ncFileID, timeVarID, rdays_time,start=(/ nrecords /)))
         !check if this is a newer time
         if((abs(rdays-rdays_time(1))<0.00001))then!0.00001is about 1 second
            nrecords=nrecords+1 !start a new record
@@ -816,15 +817,15 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
                       Idata3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
               enddo
            endif
-        else 
+        else
            call check(nf90_put_var(ncFileID, VarID,&
                 Idata3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
         endif
 
         deallocate(Idata3D, stat=alloc_err)
-        call CheckStop(alloc_err, "dealloc failed in NetCDF_ml") 
+        call CheckStop(alloc_err, "dealloc failed in NetCDF_ml")
 
-     elseif(OUTtype==Real4)then  
+     elseif(OUTtype==Real4)then
         !type Real4
         if(ndim==3)then
            if(present(ik))then
@@ -837,13 +838,13 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
                       R4data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
               enddo
            endif
-        else 
+        else
            call check(nf90_put_var(ncFileID, VarID,&
                 R4data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
         endif
 
         deallocate(R4data3D, stat=alloc_err)
-        call CheckStop(alloc_err, "dealloc failed in NetCDF_ml") 
+        call CheckStop(alloc_err, "dealloc failed in NetCDF_ml")
 
      else
         !type Real8
@@ -858,15 +859,15 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
                       R8data3D(i1:i2, j1:j2, k), start = (/ 1, 1, k,nrecords /)) )
               enddo
            endif
-        else 
+        else
            call check(nf90_put_var(ncFileID, VarID,&
                 R8data3D(i1:i2, j1:j2, 1), start = (/ 1, 1, nrecords /)) )
         endif
 
         deallocate(R8data3D, stat=alloc_err)
-        call CheckStop(alloc_err, "dealloc failed in NetCDF_ml") 
+        call CheckStop(alloc_err, "dealloc failed in NetCDF_ml")
 
-     endif !type 
+     endif !type
 
 
      call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour0  ))
@@ -931,7 +932,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   elseif(OUTtype==Real8)then
      OUTtypeCDF=nf90_double
   else
-     call CheckStop("NetCDF_ml:undefined datatype") 
+     call CheckStop("NetCDF_ml:undefined datatype")
   endif
 
      call check(nf90_redef(ncid = ncFileID))
@@ -944,10 +945,10 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
      call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
   endif
-  
+
   call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
   call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
-  
+
   !define new variable
   if(ndim==3)then
      call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,     &
@@ -956,7 +957,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,     &
           dimids = (/ iDimID, jDimID , timeDimID/), varID=varID ) )
   else
-     print *, 'createnewvariable: unexpected ndim ',ndim   
+     print *, 'createnewvariable: unexpected ndim ',ndim
   endif
   !     FillValue=0.
   scale=1.
@@ -966,16 +967,16 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   if(trim(projection)=='Stereographic')then
      call check(nf90_put_att(ncFileID, varID, "grid_mapping", "Polar_Stereographic"))
   elseif(projection=='lon lat') then
-     
-  elseif(projection=='Rotated_Spherical')then 
+
+  elseif(projection=='Rotated_Spherical')then
      call check(nf90_put_att(ncFileID, varID, "grid_mapping", "Rotated_Spherical"))
   else
      call check(nf90_put_att(ncFileID, varID, "grid_mapping",Default_projection_name ))
   endif
-  
+
   nrecords=0
   call check(nf90_put_att(ncFileID, varID, "numberofrecords", nrecords))
-  
+
   call check(nf90_put_att(ncFileID, varID, "units",   def1%unit))
   call check(nf90_put_att(ncFileID, varID, "class",   def1%class))
 
@@ -998,7 +999,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
 !25/10/2005     call check(nf90_put_att(ncFileID, varID, "xfelt_ident",ident ))
   call check(nf90_put_att(ncFileID, varID, "current_date_first",ndate ))
   call check(nf90_put_att(ncFileID, varID, "current_date_last",ndate ))
-  
+
   call check(nf90_enddef(ncid = ncFileID))
 
 end subroutine  createnewvariable
@@ -1007,17 +1008,17 @@ end subroutine  createnewvariable
   subroutine check(status)
     implicit none
     integer, intent ( in) :: status
-    
-    if(status /= nf90_noerr) then 
+
+    if(status /= nf90_noerr) then
       print *, trim(nf90_strerror(status))
-      call CheckStop("NetCDF_ml : error in netcdf routine") 
+      call CheckStop("NetCDF_ml : error in netcdf routine")
     end if
-  end subroutine check  
+  end subroutine check
 
   subroutine CloseNetCDF
 !close open files
 !NB the data in a NetCDF file is not "safe" before the file
-!is closed. The files are NOT automatically properly 
+!is closed. The files are NOT automatically properly
 !closed after end of program, and data may be lost if the files are not
 !closed explicitely.
 
@@ -1066,7 +1067,7 @@ endif
     integer, intent(in) :: ndate(4)
     integer, intent(out) :: nseconds
     integer, optional, intent(in):: iotyp
-    integer :: n,nday,is_leap 
+    integer :: n,nday,is_leap
 
     nday=0
     do n=1,ndate(2)-1
@@ -1089,7 +1090,7 @@ endif
        if (leapyear(ndate(1)-1))is_leap=1
        if(iotyp==IOU_YEAR)then
           !take end of run date
-          nseconds=nseconds       
+          nseconds=nseconds
 !          nseconds=nseconds-43200*365-43200*is_leap
        elseif(iotyp==IOU_MON)then
           nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
@@ -1100,9 +1101,9 @@ endif
        elseif(iotyp==IOU_HOUR_MEAN)then !not implemented yet
           nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
        elseif(iotyp==IOU_INST)then
-          nseconds=nseconds       
+          nseconds=nseconds
        else
-          nseconds=nseconds       
+          nseconds=nseconds
        endif
     endif
   end subroutine secondssince1970
@@ -1119,10 +1120,10 @@ endif
     integer, optional, intent(in):: iotyp
     integer :: n,nday,nmdays(12),is_leap
     real*8 ::nseconds
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
+    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
     n=ndate(1)
        if(4*(n/4)==n.and.n/=1900)nmdays(2)=29!NB: 1900 is not a leap year
-      
+
     ndays=0.0
     do n=1,ndate(2)-1
        ndays=ndays+nmdays(n)!entire months since start of last year
@@ -1132,7 +1133,7 @@ endif
     ndays=ndays+ndate(4)/24.0!hours since start of last day
 !     write(*,*)'days since year start ',ndays
 
-!add days from each entire year since 1900 
+!add days from each entire year since 1900
      do n=1900,ndate(1)-1
        ndays=ndays+365
        if(4*(n/4)==n.and.n/=1900)ndays=ndays+1!NB: 1900 is not a leap year
@@ -1145,7 +1146,7 @@ endif
        if (leapyear(ndate(1)-1))is_leap=1
        if(iotyp==IOU_YEAR)then
           !take end of run date
-          ndays=ndays      
+          ndays=ndays
        elseif(iotyp==IOU_MON)then
           ndays=ndays-0.5*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
        elseif(iotyp==IOU_DAY)then
@@ -1155,7 +1156,7 @@ endif
        elseif(iotyp==IOU_HOUR_MEAN)then !not implemented yet
           ndays=ndays-1.0/48.0*FREQ_HOURLY  !1.0/48.0=half hour
        elseif(iotyp==IOU_INST)then
-          ndays=ndays   
+          ndays=ndays
        else
           ndays=ndays
        endif
@@ -1173,7 +1174,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   !
   use netcdf
   implicit none
-  character (len=*),intent(in) :: fileName 
+  character (len=*),intent(in) :: fileName
 
   character (len = *),intent(in) ::varname
   integer, intent(in) :: nstart,varGIMAX,varGJMAX,varKMAX
@@ -1198,7 +1199,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   if(present(needed))then
      fileneeded=needed
   endif
-     
+
   if(fileneeded)then
      call check(nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID))
   else
@@ -1219,12 +1220,12 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
 
-  if(status == nf90_noerr) then     
+  if(status == nf90_noerr) then
      print *, 'variable exists: ',trim(varname)
   else
      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
      nfetch=0
-     call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found") 
+     call CheckStop(fileneeded, "NetCDF_ml : variable needed but not found")
      return
   endif
 
@@ -1263,16 +1264,16 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   totsize=totsize*dims(ndims)
 
   if(xtype==NF90_SHORT.or.xtype==NF90_INT.or.xtype==NF90_BYTE)then
-     allocate(Ivalues(totsize), stat=alloc_err)    
+     allocate(Ivalues(totsize), stat=alloc_err)
      call check(nf90_get_var(ncFileID, VarID, Ivalues,start=startvec,count=dims))
-     
+
     scalefactors(1) = 1.0 !default
     scalefactors(2) = 0.  !default
     status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
     if(status == nf90_noerr) scalefactors(1) = scale
     status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
     if(status == nf90_noerr) scalefactors(2) = offset
-    
+
     do i=1,totsize
        Rvar(i)=Ivalues(i)*scalefactors(1)+scalefactors(2)
     enddo
@@ -1316,7 +1317,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  if(present(filename_given))then
     filename=trim(fileName_given)
  else
-    filename='EMEP_OUT.nc'    
+    filename='EMEP_OUT.nc'
  endif
 
  if(present(newfile))then
@@ -1324,7 +1325,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
     !make a new file (i.e. delete possible old one)
     if ( me == 0 )then
        write(*,*)'creating',me
-       call Init_new_netCDF(fileName,iotyp) 
+       call Init_new_netCDF(fileName,iotyp)
        write(*,*)'created',me
     endif
     endif
@@ -1425,16 +1426,16 @@ if(present(needed))then
    fileneeded=needed
 endif
 
-!1)Read data 
+!1)Read data
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
-  if(status == nf90_noerr) then     
+  if(status == nf90_noerr) then
      print *, 'reading ',trim(filename)
   else
      nfetch=0
      if(fileneeded)then
      print *, 'file does not exist: ',trim(varname),nf90_strerror(status)
-     call CheckStop(fileneeded, "Read_Inter_CDF : file needed but not found") 
+     call CheckStop(fileneeded, "Read_Inter_CDF : file needed but not found")
      else
      print *, 'file does not exist (but not needed): ',trim(varname),nf90_strerror(status)
         print *, 'file not needed '
@@ -1445,13 +1446,13 @@ endif
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
-  if(status == nf90_noerr) then     
+  if(status == nf90_noerr) then
      print *, 'variable exists: ',trim(varname)
   else
      nfetch=0
      if(fileneeded)then
         print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
-        call CheckStop(fileneeded, "Read_Inter_CDF : variable needed but not found") 
+        call CheckStop(fileneeded, "Read_Inter_CDF : variable needed but not found")
      else
         print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
         return
@@ -1474,19 +1475,19 @@ endif
      totsize=totsize*dims(i)
   enddo
 !  write(*,*)'total size variable ',totsize
-  allocate(Rvalues(totsize), stat=alloc_err)    
+  allocate(Rvalues(totsize), stat=alloc_err)
 
   if(xtype==NF90_SHORT.or.xtype==NF90_INT)then
-     allocate(Ivalues(totsize), stat=alloc_err)    
+     allocate(Ivalues(totsize), stat=alloc_err)
      call check(nf90_get_var(ncFileID, VarID, Ivalues,start=startvec,count=dims))
-     
+
     scalefactors(1) = 1.0 !default
     scalefactors(2) = 0.  !default
     status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
     if(status == nf90_noerr) scalefactors(1) = scale
     status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
     if(status == nf90_noerr) scalefactors(2) = offset
-    
+
     do i=1,totsize
        Rvalues(i)=Ivalues(i)*scalefactors(1)+scalefactors(2)
     enddo
@@ -1508,12 +1509,12 @@ endif
   call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
   if(trim(name)/='lat')goto 444
 
-  allocate(Rlon(dims(1)), stat=alloc_err)    
-  allocate(Rlat(dims(2)), stat=alloc_err)    
+  allocate(Rlon(dims(1)), stat=alloc_err)
+  allocate(Rlat(dims(2)), stat=alloc_err)
   status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = VarID)
-  if(status /= nf90_noerr) then     
+  if(status /= nf90_noerr) then
      status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = VarID)
-     if(status /= nf90_noerr) then  
+     if(status /= nf90_noerr) then
         write(*,*)'did not find longitude variable'
         stop
      endif
@@ -1525,9 +1526,9 @@ endif
      if(Rlon(i)>180.0)Rlon(i)=Rlon(i)-360.0
   enddo
   status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = VarID)
-  if(status /= nf90_noerr) then     
+  if(status /= nf90_noerr) then
      status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = VarID)
-     if(status /= nf90_noerr) then  
+     if(status /= nf90_noerr) then
         write(*,*)'did not find latitude variable'
         stop
      endif
@@ -1582,7 +1583,7 @@ ijk=0
 
            if(ig1>dims(1))ig1=i361
            jg1=jg+1
- 
+
 !           if(gb_glob(i,j)<Rlat(jg).or.gb_glob(i,j)>Rlat(jg1))then
 !              if(ig1>1)then
 !                 write(*,*)'error',gb_glob(i,j),Rlat(ig),Rlat(jg1),i,j,jg1
@@ -1716,16 +1717,16 @@ GLC2PFT(20,23)=0.0!undefined
 
 
 
-!1)Read data 
+!1)Read data
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
-  if(status == nf90_noerr) then     
+  if(status == nf90_noerr) then
      print *, 'reading ',trim(filename)
   else
 !     nfetch=0
      if(fileneeded)then
      print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
-     call CheckStop(fileneeded, "Read_Inter_CDF : file needed but not found") 
+     call CheckStop(fileneeded, "Read_Inter_CDF : file needed but not found")
      else
      print *, 'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
         print *, 'file not needed '
@@ -1736,13 +1737,13 @@ GLC2PFT(20,23)=0.0!undefined
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
-  if(status == nf90_noerr) then     
+  if(status == nf90_noerr) then
     ! print *, 'variable exists: ',trim(varname)
   else
 !     nfetch=0
      if(fileneeded)then
         print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
-        call CheckStop(fileneeded, "Read_Inter_CDF : variable needed but not found") 
+        call CheckStop(fileneeded, "Read_Inter_CDF : variable needed but not found")
      else
         print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
         return
@@ -1770,12 +1771,12 @@ GLC2PFT(20,23)=0.0!undefined
   call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
   if(trim(name)/='lat')goto 444
 
-  allocate(Rlon(dims(1)), stat=alloc_err)    
-  allocate(Rlat(dims(2)), stat=alloc_err)    
+  allocate(Rlon(dims(1)), stat=alloc_err)
+  allocate(Rlat(dims(2)), stat=alloc_err)
   status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = lonVarID)
-  if(status /= nf90_noerr) then     
+  if(status /= nf90_noerr) then
      status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
-     if(status /= nf90_noerr) then  
+     if(status /= nf90_noerr) then
         write(*,*)'did not find longitude variable'
         stop
      endif
@@ -1783,9 +1784,9 @@ GLC2PFT(20,23)=0.0!undefined
   call check(nf90_get_var(ncFileID, lonVarID, Rlon))
 
   status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = latVarID)
-  if(status /= nf90_noerr) then     
+  if(status /= nf90_noerr) then
      status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = latVarID)
-     if(status /= nf90_noerr) then  
+     if(status /= nf90_noerr) then
         write(*,*)'did not find latitude variable'
         stop
      endif
@@ -1834,11 +1835,11 @@ endif
 !  write(*,*)'size variable ',i,startvec(i),dims(i)
   enddo
 !  write(*,*)'total size variable ',totsize
-  allocate(Rvalues(totsize), stat=alloc_err)    
+  allocate(Rvalues(totsize), stat=alloc_err)
 
   if(xtype==NF90_BYTE)then
-!     allocate(Bvalues(totsize), stat=alloc_err)    
-     allocate(Bvalues(dims(1),dims(2)), stat=alloc_err)    
+!     allocate(Bvalues(totsize), stat=alloc_err)
+     allocate(Bvalues(dims(1),dims(2)), stat=alloc_err)
      call check(nf90_get_var(ncFileID, VarID, Bvalues,start=startvec,count=dims))
 
      ijn=0
@@ -1854,7 +1855,7 @@ endif
      do j=1,ljmax
      do i=1,limax
 
-! We take the smallest lon-lat rectangle which includes the entire gridcells. 
+! We take the smallest lon-lat rectangle which includes the entire gridcells.
 ! This will include points than are not in the (i,j) gridcell, these
 ! are then filtered out by "inside_1234".
 
@@ -1890,7 +1891,7 @@ endif
                        write(*,*)n,ig,jg,gl_stagg(i,j),gb_stagg(i,j)
                        write(*,*)ig-startvec(1)+1,jg-startvec(2)+1,dims(1),dims(2),Bvalues(ig-startvec(1)+1,jg-startvec(2)+1)
                        call StopAll('STOP')
-        
+
                     endif
                     do npft=1,NLANDUSE_PFT
                      ijn=i+(j-1)*varGIMAX+(npft-1)*varGIMAX*varGJMAX
@@ -1959,7 +1960,7 @@ deallocate(Rlat)
 deallocate(Rvalues)
 
 
-     
+
 !     write(*,*)'Reading LANDUSE'
 !READ LU descriptions:
   call check(nf90_inq_varid(ncid = ncFileID, name = 'PFT_names', varID = VarID))
@@ -2038,15 +2039,15 @@ deallocate(Rvalues)
            write(*,*)'NORMALIZATION ERROR ',i,j,tot
            do n=1,NLANDUSE_PFT
               ijn=i+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-              
+
               write(*,*)'ERROR ',n,Rvar(ijn)
            enddo
            call StopAll('error in glc2pft')
-           
+
         endif
      enddo
  enddo
- 
+
  return
 
  def1%class='Landuse' !written
@@ -2062,7 +2063,7 @@ deallocate(Rvalues)
  def1%unit='category'       !written
 !NB: does not work together with other output routines. (bug)
  do n= 1,NLANDUSE_PFT
-  write( def1%name,fmt='(i2.2)')n 
+  write( def1%name,fmt='(i2.2)')n
    ! Send 1-D array into 3-D:
  call Out_netCDF(IOU_INST,def1,2,1, &
     Rvar((1+(n-1)*varGIMAX*varGJMAX):(n*varGIMAX*varGJMAX)),&

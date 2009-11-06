@@ -1,9 +1,9 @@
 ! <PhyChem_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,47 +11,48 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 module PhyChem_ml
 !
 !     physical and chemical routine calls within one advection step
 !     driven from here
-!   
+!
 !     Output of hourly data
 !
 !-----------------------------------------------------------------------------
-!hf CoDep 
+!hf CoDep
    use CoDep_ml, only : make_so2nh3_24hr
-   use ChemSpecs_adv_ml, only : IXADV_SO2, IXADV_NH3  
+   use ChemSpecs_adv_ml, only : IXADV_SO2, IXADV_NH3
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
-   use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after  
+   use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after
 
    use Advection_ml,   only: advecdiff,advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
    use Derived_ml,     only : IOU_INST, DerivedProds, Derived, &
                                num_deriv2d,d_2d, f_2d
    use DryDep_ml,      only : drydep,init_drydep
-   use Emissions_ml,   only : EmisSet  
+   use Emissions_ml,   only : EmisSet
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
                              gl, gb, projection, Poles
    use Met_ml ,        only : roa,z_bnd,z_mid,metint, ps, cc3dmax, &
                                zen,coszen,Idirect,Idiffuse
    use ModelConstants_ml, only : KMAX_MID, nmax, nstep &
-                        ,dt_advec  &    ! time-step for phyche/advection
-                        ,END_OF_EMEPDAY ! (usually 6am)
+                        ,dt_advec       & ! time-step for phyche/advection
+                        ,END_OF_EMEPDAY & ! (usually 6am)
+                        ,FORECAST ! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
    use Nest_ml,        only : readxn, wrtxn
    use Par_ml,         only : me, MAXLIMAX, MAXLJMAX
    use TimeDate_ml,       only : date,daynumber,day_of_year, add_secs, &
@@ -61,10 +62,10 @@ module PhyChem_ml
    use Radiation_ml,   only : SolarSetup,       &! sets up radn params
                              ZenithAngle,      &! gets zenith angle
                              ClearSkyRadn,     &! Idirect, Idiffuse
-                             CloudAtten         ! 
+                             CloudAtten         !
    use Runchem_ml,     only : runchem   ! Calls setup subs and runs chemistry
    use Sites_ml,       only: siteswrt_surf, siteswrt_sondes    ! outputs
-   use Timefactors_ml, only : NewDayFactors  
+   use Timefactors_ml, only : NewDayFactors
 !-----------------------------------------------------------------------------
 implicit none
 private
@@ -96,8 +97,8 @@ contains
        !     Hours since midnight at any time-step
        !    using current_date we have already nstep taken into account
 
-       thour = real(current_date%hour) + current_date%seconds/3600.0 & 
-                   + 0.5*dt_advec/3600.0 
+       thour = real(current_date%hour) + current_date%seconds/3600.0 &
+                   + 0.5*dt_advec/3600.0
 
        if ( DEBUG .and. debug_proc ) then
            write(6,*) "PhyChe debug ", me, thour,  &
@@ -116,7 +117,7 @@ contains
 
         call wrtxn(current_date,.false.) !Write xn_adv for future nesting
         call readxn(current_date) !Read xn_adv from earlier runs
- 
+
 !        ==================
          call Code_timer(tim_before)
 
@@ -152,8 +153,18 @@ contains
 
 
         !================
-        if( (Poles(1)==1.or.Poles(2)==1).and. &
+! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
+! advecdiff_poles considers the local courant number along a 1D line
+! and divides the advection step "locally" in a number of substeps.
+! Up north in the EMEPCWF domain, mapfactors go up to four,
+! so using advecdiff_poles pays off, even though none of the poles are
+! included in the domain.
+! For efficient parallellisation each subdomain needs to have the same work load,
+! This can be obtained by setting NPROCY=1 (number of subdomains in latitude- or y-direction).
+! Then, all subdomains have exactly the same geometry.
+        if( (Poles(1)==1.or.Poles(2)==1.or.FORECAST).and. & ! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
                               trim(projection)==trim('lon lat'))then
+
            call advecdiff_poles
         else
            call advecdiff
@@ -184,7 +195,7 @@ contains
           call Add_2timing(28,tim_after,tim_before,"Runchem")
 
           !=========================================================
-                           
+
 
          !/ See if we are calculating any before-after chemistry productions:
 

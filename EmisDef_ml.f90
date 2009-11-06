@@ -1,9 +1,9 @@
 ! <EmisDef_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 !_____________________________________________________________________________
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
@@ -68,7 +68,7 @@ implicit none
     ! Note on SNAP sectors:
     ! ----------------------
     ! SNAP1  =  public power stations,150m nat gas
-    ! SNAP2  =  Comm./inst. combustion 
+    ! SNAP2  =  Comm./inst. combustion
     ! SNAP3  =  Industrial combustion !60m nat gas
     ! SNAP4  =  Production processes
     ! SNAP5  =  Extracton fossil fuels
@@ -82,12 +82,12 @@ implicit none
 
 
   !/.. First, define here the characteristics of the EMEP/CORINAIR
-  !    SNAP sector emissions data-bases: 
+  !    SNAP sector emissions data-bases:
 
 
 
    integer, public, parameter :: NCMAX  =  11  ! Max. No. countries per grid
-   integer, public, parameter :: FNCMAX  =  10 ! Max. No. countries (with 
+   integer, public, parameter :: FNCMAX =  20  ! Max. No. countries (with
                                                ! flat emissions) per grid
 
    !/.. Sector specific information
@@ -96,14 +96,14 @@ implicit none
           NSECTORS  = 11       ! Number of SNAP-sectors in emissions
 !
 ! SCENARIO
-  integer, public, parameter :: &
+   integer, public, parameter :: &
           ANTROP_SECTORS=10, &   ! Non-natural sectors
-          ISNAP_NAT  = 11,   &   ! SNAP index for volcanoe emissions 
+          ISNAP_NAT  = 11,&      ! SNAP index for volcanoe emissions
           ISNAP_SHIP = 8         ! SNAP index for flat emissions,e.g ship
                                  ! Note that flat emissions do NOT necessarily
                                  ! belong to the same SNAP sector
 
-!  New vertical allocation from SNAP sectors. 
+!  New vertical allocation from SNAP sectors.
 !       - allocations are guesswork  - should be investigated
 
    integer, public, parameter :: NEMISLAYERS = 7
@@ -114,8 +114,8 @@ implicit none
              reshape (          &  ! Vertical distribution of SNAP emissions
 !       Ground , ...       High
     (/  0.0    , 0.00, 0.08, 0.46, 0.29, 0.17, 0.00,  & ! SNAP1
-        0.5    , 0.50, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP2 
-        0.0    , 0.04, 0.19, 0.41, 0.30, 0.06, 0.0,   & ! SNAP3 
+        0.5    , 0.50, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP2
+        0.0    , 0.04, 0.19, 0.41, 0.30, 0.06, 0.0,   & ! SNAP3
         0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP4
         0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP5
         1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP6
@@ -141,7 +141,7 @@ implicit none
 
    !/** Lightning and aircraft NOx. 
     logical, public, parameter :: AIRNOX   = .true.   ! Gives NOx emission
- 
+
    !/** Volcanos. 
     logical, public, parameter :: VOLCANOES  = .true.  ! Gives Volcanos
 

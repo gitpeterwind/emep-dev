@@ -1,9 +1,9 @@
 ! <Unimod.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 program myeul
   !
   !     This is the main program for the off-line regional scale multilayer
@@ -35,7 +35,8 @@ program myeul
   !
   !------------------------------------------------------------------------
 
-  use My_Outputs_ml,    only : set_output_defs
+  use My_Outputs_ml,    only : set_output_defs &
+                              ,NHOURLY_OUT
   use My_Timing_ml,     only : lastptim,mytimm,Output_timing, &
        Init_timing, Add_2timing, Code_timer, &
        tim_before,tim_before0,tim_before1, &
@@ -48,15 +49,16 @@ program myeul
   use Biogenics_ml,     only : Init_BVOC
   use BoundaryConditions_ml, only : BoundaryConditions
   use CheckStop_ml,     only : CheckStop
-  use Chemfields_ml  , only : xn_adv
+  use Chemfields_ml,    only : xn_adv
   use DefPhotolysis_ml, only : readdiss
-  use Derived_ml,    only :  Init_Derived &
-       ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
+  use Derived_ml,       only :  Init_Derived &
+       ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
+       ,f_2d,f_3d
   use EcoSystem_ml,     only : Init_EcoSystems
   use EmisDef_ml,       only : NBVOC, AIRNOX
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
-  use ChemChemicals_ml,  only : define_chemicals
-  use ChemSpecs_adv_ml  , only : NSPEC_ADV
+  use ChemChemicals_ml, only : define_chemicals
+  use ChemSpecs_adv_ml, only : NSPEC_ADV
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use Io_Progs_ml  ,    only : read_line
@@ -66,16 +68,17 @@ program myeul
        tiphys,Meteoread,MeteoGridRead,&
        startdate
   use ModelConstants_ml,only : KMAX_MID   &   ! No. vertical layers
-       ,RUNDOMAIN  &   ! 
+       ,RUNDOMAIN  &   !
        ,NPROC      &   ! No. processors
        ,METSTEP    &   ! Hours between met input
        ,runlabel1  &   ! explanatory text
        ,runlabel2  &   ! explanatory text
-       ,nprint,nass,nterm,iyr_trend, PT
+       ,nprint,nass,nterm,iyr_trend, PT &
+       ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
   use OutputChem_ml,    only : WrtChem
   use Par_ml,           only : me,GIMAX,GJMAX ,MSG_MAIN1,MSG_MAIN2&
-       ,Topology, parinit & 
+       ,Topology, parinit &
        ,li0,li1,lj0,lj1,tgi0,tgj0  &   ! FOR TESTING
        ,limax, ljmax, MAXLIMAX, MAXLJMAX, gi0, gj0
   use PhyChem_ml,       only : phyche  ! Calls phys/chem routines each dt_advec
@@ -83,14 +86,15 @@ program myeul
   use Tabulations_ml,   only : tabulate
   use TimeDate_ml,      only : date, current_date, day_of_year,daynumber
   use Trajectory_ml,    only : trajectory_init,trajectory_in
-  use Nest_ml,         only : wrtxn
-
+  use Nest_ml,          only : wrtxn &
+       ,FORECAST_NDUMP &  ! number of nested outputs on FORECAST mode
+       ,outdate           ! dates of nested outputs on FORECAST mode
   !--------------------------------------------------------------------
   !
-  !  Variables. There are too many to list here. Still, here are a 
+  !  Variables. There are too many to list here. Still, here are a
   !  few key variables that  might help:
 
-  !     dt_advec       - length of advection (phyche) time-step 
+  !     dt_advec       - length of advection (phyche) time-step
   !     GRIDWIDTH_M    - grid-distance
   !     gb             - latitude (sorry, still Norwegian influenced..)
   !     NPROC          - number of processors used
@@ -128,12 +132,12 @@ program myeul
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
-  logical, parameter :: DEBUG_UNI = .false. 
+  logical, parameter :: DEBUG_UNI = .false.
   integer numt, nadd, oldseason,newseason
-  integer i, iotyp
+  integer i
   integer :: mm, mm_old   ! month and old-month
   integer :: nproc_mpi,cyclicgrid
-  character (len=130) :: fileName, errmsg,txt
+  character (len=130) :: errmsg,txt
 
   !
   !     initialize the parallel topology
@@ -148,7 +152,7 @@ program myeul
   if(nproc_mpi /= NPROC)then
      write(unit=errmsg,fmt=*)"Wrong processor number!", &
           "program was compiled with NPROC = ",NPROC, &
-          " but linked with ", nproc_mpi 
+          " but linked with ", nproc_mpi
      call CheckStop( errmsg )
   end if
   call CheckStop( digits(1.0) < 50, &
@@ -166,7 +170,7 @@ program myeul
   read(txt,*) nass
   call read_line(IO_TMP,txt,status(1))
   read(txt,*) iyr_trend
- 
+
   call read_line(IO_TMP,runlabel1,status(1))! explanation text short
   call read_line(IO_TMP,runlabel2,status(1))! explanation text long
   do i=1,3
@@ -174,6 +178,17 @@ program myeul
      read(txt,*)startdate(i)! meteo year,month,day to start the run
   enddo
   startdate(4)=0!meteo hour to start the run
+
+  if(FORECAST)then  ! read dates of nested outputs on FORECAST mode
+    do i=1,FORECAST_NDUMP
+      call read_line(IO_TMP,txt,status(1))
+      read(txt,"(I4,3(I2),I3)")outdate(i)  ! outputdate YYYYMMDDHHSSS
+      if(me==0) print "(A,I5.4,2('-',I2.2),I3.2,2(':',I2.2))",&
+        " Forecast nest/dump at",                             &
+        outdate(i)%year,outdate(i)%month,outdate(i)%day,      &
+        outdate(i)%hour,outdate(i)%seconds/60,mod(outdate(i)%seconds,60)
+    enddo
+  end if
 
   if( me == 0 ) then
      close(IO_TMP)
@@ -199,7 +214,7 @@ program myeul
 
   call parinit(MIN_ADVGRIDS)     !define subdomains sizes and position
   call MeteoGridRead(cyclicgrid) !define grid projection and parameters
-  call Topology(cyclicgrid,Poles)      !define GlobalBoundaries 
+  call Topology(cyclicgrid,Poles)      !define GlobalBoundaries
   !and subdomains neighbors
   call assign_dtadvec(GRIDWIDTH_M)! set dt_advec
 
@@ -268,31 +283,24 @@ program myeul
   !   (read input files "sites.dat" and "sondes.dat" )
 
   call vgrid    !  initialisation of constants used in vertical advection
-  if ( me == 0 .and. DEBUG_UNI) write(6,*)"vgrid finish" 
+  if ( me == 0 .and. DEBUG_UNI) write(6,*)"vgrid finish"
 
+! open only output netCDF files if needed
   if ( me == 0 ) then
-     fileName=trim(runlabel1)//'_inst.nc'
-     iotyp=IOU_INST
-     call Init_new_netCDF(fileName,iotyp) 
-     !netCDF hourly is initiated in Output_hourly
-     fileName=trim(runlabel1)//'_hour.nc'
-     iotyp=IOU_HOUR
-     call Init_new_netCDF(fileName,iotyp) 
-     fileName=trim(runlabel1)//'_day.nc'
-     iotyp=IOU_DAY
-     call Init_new_netCDF(fileName,iotyp) 
-     fileName=trim(runlabel1)//'_month.nc'
-     iotyp=IOU_MON
-
-   ! The fullrun file contains the accumulated or average results
-   ! over the full run period, often a year, but even just for
-   ! a few timesteps if that is all that is run:
-
-     call Init_new_netCDF(fileName,iotyp) 
-     fileName=trim(runlabel1)//'_fullrun.nc'
-     iotyp=IOU_YEAR
-     call Init_new_netCDF(fileName,iotyp) 
-
+    if(any(f_2d%inst).or.any(f_3d%inst))&
+      call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
+    !netCDF hourly is initiated in Output_hourly
+    if(NHOURLY_OUT>0)&
+      call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
+    if(any(f_2d%day).or.any(f_3d%day))&
+      call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
+    if(any(f_2d%month).or.any(f_3d%month))&
+      call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
+    ! The fullrun file contains the accumulated or average results
+    ! over the full run period, often a year, but even just for
+    ! a few timesteps if that is all that is run:
+    if(any(f_2d%year).or.any(f_3d%year))&
+      call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
   endif
 
   call metvar(1)
@@ -352,7 +360,7 @@ program myeul
         call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
         call MetModel_LandUse(2)   ! e.g.  gets snow
-        if ( me == 0 .and. DEBUG_UNI) write(6,*)"vnewmonth start" 
+        if ( me == 0 .and. DEBUG_UNI) write(6,*)"vnewmonth start"
 
         call newmonth
 
@@ -413,6 +421,9 @@ program myeul
 
      call Code_timer(tim_before)
 
+     if (numt == 2 .and. FORECAST) &
+       call hourly_out() ! hourly output for hour "zero" on FORECAST mode
+
      call phyche(numt)
 
      call Add_2timing(18,tim_after,tim_before,"phyche")
@@ -442,8 +453,8 @@ program myeul
      write(6,*) 'programme is finished'
     ! Gather timing info:
      if(NPROC-1 >  0)then
-        CALL MPI_RECV( lastptim, 8*39, MPI_BYTE,  NPROC-1 & 
-             ,765, MPI_COMM_WORLD, STATUS, INFO) 
+        CALL MPI_RECV( lastptim, 8*39, MPI_BYTE,  NPROC-1 &
+             ,765, MPI_COMM_WORLD, STATUS, INFO)
      else
         lastptim(:) = mytimm(:)
      endif
@@ -451,9 +462,15 @@ program myeul
      call Output_timing(IO_MYTIM,me,NPROC,nterm,GIMAX,GJMAX)
 
   else if(me == NPROC-1) then
-     CALL MPI_SEND( mytimm, 8*39, MPI_BYTE,  0, 765, MPI_COMM_WORLD, INFO) 
+     CALL MPI_SEND( mytimm, 8*39, MPI_BYTE,  0, 765, MPI_COMM_WORLD, INFO)
   endif
   !cccccccccccccccccccccccccccccccccc
+
+  ! write 'modelrun.finished' file to flag the end of the FORECAST
+  if (me==0 .and. FORECAST) then
+    open(1,file='modelrun.finished')
+    close(1)
+  endif
 
   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
   CALL MPI_FINALIZE(INFO)

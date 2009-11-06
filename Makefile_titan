@@ -1,0 +1,51 @@
+#
+#
+PROG =	Unimod
+###################################################
+
+include Makefile.SRCS
+
+###################################################
+NETCDF = /usit/titan/u1/alfgr/netcdf-3.6.1
+
+LIBS = -lfmpi -lmpi -lnetcdf
+INCL = -I$(NETCDF)/include -I/opt/scali/include64
+LLIB = -L$(NETCDF)/lib     -L/opt/scali/lib64 -lfmpi -lmpi
+
+## module load intel
+F90 = ifort
+LDFLAGS  = -convert big_endian -r8 -O2 -xW -ipo -ip -static-libgcc
+F90FLAGS = $(LDFLAGS) $(INCL) -static -unroll -align
+LD = $(F90)
+
+## module load netcdf.gfortran4
+# NETCDF = /site/netcdf/AuthenticAMD-x86_64/gfortran4
+# F90 = mpif90 -ccl gfortran
+# LDFLAGS =  -fdefault-real-8 -O3 -Wall -ffixed-line-length-none -fbounds-check -pedantic -fimplicit-none
+# F90FLAGS =  $(LDFLAGS) $(INCL)
+# LD = gfortran
+
+makedepf90 = /usit/titan/u1/mifapw/bin/makedepf90
+
+.SUFFIXES: $(SUFFIXES)  .f90
+
+.f90.o:
+	$(F90) $(F90FLAGS) -c $<
+
+all: .depend $(PROG)
+
+# Include the dependency-list created by makedepf90 below
+include .depend
+
+depend .depend:
+	$(makedepf90) $(SRCS) -o '$$(PROG)' \
+	-l '$$(F90) $$(LDFLAGS) $$(INCL) $$(LLIB) $$(LIBS) $$+ -o $$@' > .depend
+
+clean: diskclean touchdepend depend
+
+diskclean:
+	rm -f $(PROG) *.o *.mod
+
+touchdepend:
+	touch .depend
+##########################################################

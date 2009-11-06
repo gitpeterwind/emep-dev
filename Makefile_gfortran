@@ -19,12 +19,17 @@ LLIB = -L/home/davids/WRF_2009/netcdf4/lib
 #TP
 INCL = -I/home/davids/local/netcdf-4.0.1/include
 LLIB = -L/home/davids/local/netcdf-4.0.1/lib
-
+makedepf90 = /home/davids/local/bin/makedepf90
+#ubuntu 8.04
+LIBS = -lnetcdff -lnetcdf
+INCL = -I/usr/include
+LLIB = -L/usr/lib
+makedepf90 = /disk1/emep_U804/local/bin/makedepf90
 
 F90 = mpif90
 
 #LDFLAGS =  -shared-intel -CB -r8  -debug-parameters all -traceback  -ftrapuv -g -fpe0 -O0 -convert big_endian -IPF_fp_relaxed $(INCL)
-#GF LDFLAGS =  -shared-intel -r8 -O3 -ftz -convert big_endian  -IPF_fp_relaxed 
+#GF LDFLAGS =  -shared-intel -r8 -O3 -ftz -convert big_endian  -IPF_fp_relaxed
 LDFLAGS =  -fdefault-real-8  -O3 -ffixed-line-length-none -fconvert=big-endian
 LDFLAGS =  -fdefault-real-8  -O3 -ffixed-line-length-none -fconvert=big-endian -fbounds-check
 LDFLAGS =  -fdefault-real-8  -O2 -Wall -ffree-line-length-none -fbounds-check -fbacktrace
@@ -32,11 +37,12 @@ LDFLAGS =  -fdefault-real-8  -O2 -ffree-line-length-none # -fbounds-check   # Ga
 #PED:
 LDFLAGS =  -fdefault-real-8  -O3 -Wall -ffixed-line-length-none -fbounds-check -pedantic -fbacktrace -fimplicit-none
 F90FLAGS =  $(LDFLAGS) $(INCL)
-
+#PEDANTIC Ubuntu 8.04: -fbacktrace option not available on gfortran-4.2
+LDFLAGS =  -fdefault-real-8  -O3 -Wall -ffixed-line-length-none -fbounds-check -pedantic -fimplicit-none
+F90FLAGS =  $(LDFLAGS) $(INCL)
 
 LD = mpif90
 LD = gfortran
-
 
 .SUFFIXES: $(SUFFIXES)  .f90
 

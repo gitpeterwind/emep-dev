@@ -1,9 +1,9 @@
 ! <Nest_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 
 module Nest_ml
   !
@@ -37,7 +37,7 @@ module Nest_ml
 
   !
   !Set MODE and istart,jstart,iend,jend
-  !Choose NHOURSAVE and NHOURREAD 
+  !Choose NHOURSAVE and NHOURREAD
   !
 
 
@@ -54,9 +54,9 @@ module Nest_ml
 
   !Peter May 2006
 
-  use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY  
-  use OwnDataTypes_ml, only :Deriv 
-  use TimeDate_ml,       only : date   
+  use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
+  use OwnDataTypes_ml, only :Deriv
+  use TimeDate_ml,       only : date
   use GridValues_ml,  only : gl,gb
   use ChemChemicals_ml , only :species
   use ChemSpecs_shl_ml , only :NSPEC_SHL
@@ -66,7 +66,7 @@ module Nest_ml
   use netcdf_ml,      only : GetCDF,Out_netCDF,Init_new_netCDF,&
        secondssince1970,Int1,Int2,Int4,Real4,Real8
   use Functions_ml,    only : great_circle_distance
-  use ModelConstants_ml,    only : KMAX_MID, NPROC
+  use ModelConstants_ml,    only : KMAX_MID, NPROC, FORECAST ! AMVB 2009-11-06: nested input/output on FORECAST mode
   use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
        , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
   use Chemfields_ml,  only : xn_adv, xn_shl    ! emep model concs.
@@ -80,6 +80,13 @@ module Nest_ml
 
   integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
   !10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
+
+
+! AMVB 2009-11-06: nested input/output on FORECAST mode
+  integer, public, parameter :: FORECAST_NDUMP = 2  ! Number of nested output
+  ! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
+  type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
+  ! Nested output dates on FORECAST mode
 
   !coordinates of subdomain to write
   !coordinates relative to LARGE domain (only used in write mode)
@@ -114,8 +121,8 @@ module Nest_ml
   integer,save :: Next,KMAX_ext,GJMAX_ext,GIMAX_ext
 
   integer,save :: itime_saved(2),itime
-  character*30,save  :: filename_read='EMEP_IN.nc' 
-  character*30,save  :: filename_write='EMEP_OUT.nc' 
+  character*30,save  :: filename_read='EMEP_IN.nc'
+  character*30,save  :: filename_write='EMEP_OUT.nc'
 
 contains
 
@@ -131,8 +138,9 @@ contains
 
     real :: W1,W2
     logical, save :: first_call=.true.
+    logical :: fexist=.false. ! AMVB 2009-11-06: nested input/output on FORECAST mode
 
-    if(MODE /= 2.and.MODE /= 3.and. MODE /= 11.and. MODE /= 12)return
+    if(MODE /= 2.and.MODE /= 3.and. MODE /= 11.and. MODE /= 12.and. .not.FORECAST)return ! AMVB 2009-11-06: nested input/output on FORECAST mode
 
     ndate(1)  = indate%year
     ndate(2)  = indate%month
@@ -140,7 +148,20 @@ contains
     ndate(4)  = indate%hour
     call secondssince1970(ndate,nseconds_indate)
 
-    if(MODE == 11.or.MODE == 12)then
+! AMVB 2009-11-06: nested input/output on FORECAST mode
+    if(FORECAST)then ! FORECAST mode superseeds nest MODE
+      if(.not. first_call)return
+      first_call=.false.
+      inquire(file=filename_read,exist=fexist)
+      if(.not. fexist)then
+        if(me==0) print *,'No nest/dump file found: ',trim(filename_read)
+        return
+      end if
+      if(me==0)   print *,'RESET ALL XN 3D'
+      call init_nest(nseconds_indate)
+      call reset_3D(nseconds_indate)
+      return
+    elseif(MODE == 11.or.MODE == 12)then
        if(.not. first_call)return
        first_call=.false.
        if(me==0)   print *,'RESET ALL XN 3D'
@@ -192,7 +213,7 @@ contains
              enddo
           enddo
           do j=1,lj0-1
-             do i=1,limax 
+             do i=1,limax
                 xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
              enddo
           enddo
@@ -222,8 +243,8 @@ contains
 
     implicit none
 
-    type(date), intent(in) :: indate      
-    logical, intent(in) :: WriteNow !Do not check indate value 
+    type(date), intent(in) :: indate
+    logical, intent(in) :: WriteNow !Do not check indate value
     real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
 
     type(Deriv) :: def1 ! definition of fields
@@ -232,9 +253,25 @@ contains
     logical, save ::first_call=.true.
     character *40:: command
 
-    if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12)return
+    if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12.and. .not.FORECAST)return ! AMVB 2009-11-06: nested input/output on FORECAST mode
 
-    if(MODE == 10.or.MODE == 12)then
+ ! AMVB 2009-11-06: nested input/output on FORECAST mode
+    if(FORECAST)then ! FORECAST mode superseeds nest MODE
+      outdate(:)%seconds=0   ! output only at full hours
+      if(.not.any(indate%year   ==outdate%year  .and.   &
+                  indate%month  ==outdate%month .and.   &
+                  indate%day    ==outdate%day   .and.   &
+                  indate%hour   ==outdate%hour  .and.   &
+                  indate%seconds==outdate%seconds))return
+      if(me==0) print "(A,I5.4,2('-',I2.2),I3.2,2(':',I2.2))",&
+        " Forecast nest/dump at",                             &
+        indate%year,indate%month,indate%day,                  &
+        indate%hour,indate%seconds/60,mod(indate%seconds,60)
+      istart=1
+      jstart=1
+      iend=GIMAX
+      jend=GJMAX
+    elseif(MODE == 10.or.MODE == 12)then
        if(.not.WriteNow)return
        istart=1
        jstart=1
@@ -257,7 +294,7 @@ contains
        if(me==0)then
           write(*,*)'Writing BC on ',trim(fileName_write)
 !          write(command,*)'rm ',trim(fileName_write)
-!          call system(command)       
+!          call system(command)
        endif
        first_call=.false.
     endif
@@ -295,10 +332,10 @@ contains
     implicit none
     integer, intent ( in) :: status
 
-    if(status /= nf90_noerr) then 
+    if(status /= nf90_noerr) then
        print *, trim(nf90_strerror(status))
-         WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml" 
-         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+         WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml"
+         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
     end if
   end subroutine check
 
@@ -313,7 +350,7 @@ contains
     integer,  intent(in) :: printdate
 
     integer :: n,nday,nmdays(12),nmdays2(13)
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/) 
+    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
     nmdays2(1:12)=nmdays
     nmdays2(13)=0
@@ -359,7 +396,7 @@ contains
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
     integer :: nseconds_indate,ndate(4)
     real :: dist(0:4)
-    integer :: nseconds(1),n1,n,i,j,k,II,JJ  
+    integer :: nseconds(1),n1,n,i,j,k,II,JJ
     real, allocatable, dimension(:,:) ::lon_ext,lat_ext
     character*80 ::projection
 
@@ -369,7 +406,7 @@ contains
     if(me==0)then
        status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
 
-       if(status /= nf90_noerr) then     
+       if(status /= nf90_noerr) then
           print *,'not found',trim(filename_read)
           return
        else
@@ -379,7 +416,7 @@ contains
        call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
        write(*,*)'projection: ',trim(projection)
        !get dimensions id
-       if(trim(projection)=='Stereographic') then     
+       if(trim(projection)=='Stereographic') then
           call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
        elseif(trim(projection)==trim('lon lat')) then
@@ -389,8 +426,8 @@ contains
           !     write(*,*)'GENERAL PROJECTION ',trim(projection)
           call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-          !       WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED" 
-            !     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
+          !       WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED"
+            !     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
        endif
 
        call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
@@ -403,10 +440,10 @@ contains
 
        write(*,*)'dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,Next
     endif
-      CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-      CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-      CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-      CALL MPI_BCAST(Next,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(Next,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
     allocate(lon_ext(GIMAX_ext,GJMAX_ext))
     allocate(lat_ext(GIMAX_ext,GJMAX_ext))
@@ -427,15 +464,15 @@ contains
        else
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
           call check(nf90_get_var(ncFileID, varID, lon_ext ))
-          
+
           call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
           call check(nf90_get_var(ncFileID, varID, lat_ext ))
        endif
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
-       
+
        !          do n=1,Next
        call check(nf90_get_var(ncFileID, varID, nseconds,start=(/ 1 /),count=(/ 1 /) ))
-       
+
        if(nseconds(1)>nseconds_indate)then
           write(*,*)'WARNING: did not find BIC for date:'
           call datefromsecondssince1970(ndate,nseconds_indate,1)
@@ -443,16 +480,16 @@ contains
           call datefromsecondssince1970(ndate,nseconds(1),1)
        endif
        !          enddo
-       
+
        call check(nf90_close(ncFileID))
 
     endif
 
-      CALL MPI_BCAST(lon_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-      CALL MPI_BCAST(lat_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST(lon_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(lat_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
     !find interpolation constants
-    !note that i,j are local 
+    !note that i,j are local
     !find the four closest points
     do j=1,ljmax
        do i=1,limax
@@ -520,12 +557,12 @@ contains
     implicit none
     real, allocatable, dimension(:,:,:) ::data
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
-    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,nseconds_indate,nr  
+    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,nseconds_indate,nr
     integer :: nseconds_old
 
     nseconds_old=itime_saved(2)
     allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
-    if(me==0)then 
+    if(me==0)then
        call check(nf90_open(path = trim(fileName_read), mode = nf90_nowrite, ncid = ncFileID))
 
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
@@ -546,7 +583,7 @@ contains
        itime_saved(2)=nseconds(1)
     endif
 
-      CALL MPI_BCAST(itime_saved,4*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+      CALL MPI_BCAST(itime_saved,4*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
     do n= 1, NSPEC_ADV
        if(nr==2)then
@@ -559,7 +596,7 @@ contains
                 enddo
              enddo
              do j=1,lj0-1
-                do i=1,limax 
+                do i=1,limax
                    xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
                 enddo
              enddo
@@ -584,7 +621,7 @@ contains
                ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
 
        endif
-         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
        !overwrite Global Boundaries (lateral faces)
 
@@ -599,7 +636,7 @@ contains
              enddo
           enddo
           do j=1,lj0-1
-             do i=1,limax 
+             do i=1,limax
                 xn_adv_bnds(n,i,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
                      Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
                      Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
@@ -628,7 +665,7 @@ contains
 
 
     deallocate(data)
-    if(me==0)then 
+    if(me==0)then
        call check(nf90_close(ncFileID))
     endif
 
@@ -637,12 +674,12 @@ contains
   subroutine reset_3D(nseconds_indate)
     implicit none
     real, allocatable, dimension(:,:,:) ::data
-    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,itime,status  
+    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,itime,status
     integer :: nseconds_indate
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
 
     allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
-    if(me==0)then 
+    if(me==0)then
        call check(nf90_open(path = trim(fileName_read), mode = nf90_nowrite, ncid = ncFileID))
 
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
@@ -670,7 +707,7 @@ contains
                ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
 
        endif
-         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
        ! overwrite everything 3D (init)
        do k=1,KMAX_ext
@@ -687,7 +724,7 @@ contains
     enddo
 
     deallocate(data)
-    if(me==0)then 
+    if(me==0)then
        call check(nf90_close(ncFileID))
     endif
 
