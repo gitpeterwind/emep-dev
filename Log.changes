@@ -1,3 +1,7 @@
+xxxxxxxxxxxxxx rv3_4_3   Alvaro, 6 Nov. 2009 xxxxxxxxxxxxxxxx
+
+Advection_ml - corrected bug introdiced on rv3_4_2
+
 xxxxxxxxxxxxxx rv3_4_2   Alvaro, 6 Nov. 2009 xxxxxxxxxxxxxxxx
 
 Makefile_titan - added file: titan.uio.no version of Makefile
@@ -109,7 +113,7 @@ My_Emis_ml --- ** deleted **
 EmisDef - now simpler. Define your emission files here.
 
 EmisGet_ml now does more work, but doesn't need to worry about PLAIN
-versus SPLIT. 
+versus SPLIT.
 
 Setup_1d_ml
 Setup_1dfields_ml
@@ -188,7 +192,7 @@ RO2POOL introduced in Solver to cope with CRI chemistry
 Makefile_gfortran added. Code compiles with stricted flags (although
   with lots of warning!)
 
- !!!!****** ZD_ACID removed ****!!!! 
+ !!!!****** ZD_ACID removed ****!!!!
  Functionality must be created through GenChem system now.
 
 
@@ -207,7 +211,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_3beta4, Dave,  9  Oct. 2009xxxxxx
 
 Changes to ease compilation with gfortran, and execution on PC.
 
-Derived_ml.f90 :  f_3d -associated code changed to make it easier to skip 
+Derived_ml.f90 :  f_3d -associated code changed to make it easier to skip
                   this. Needed for PC runs (at least on my PC):
 
                   Some unused arguments removed also from functions
@@ -230,7 +234,7 @@ My_Derived_ml - lots of changes to get AOT, VEGO3 etc.
 
 My_DryDep_ml  - lots of changes to get AOT, VEGO3 etc.
 
-ChemFunctions_ml: kmt3 added 
+ChemFunctions_ml: kmt3 added
 
 EmisGet - small extra debug output
 
@@ -244,7 +248,7 @@ and will be cleaned out in a revision ort two.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_3beta2, Dave,  5  Oct. 2009xxxxxx
 
-GenChem enabled EMEP chemistries, almost done? 
+GenChem enabled EMEP chemistries, almost done?
 
 New file-labelling system and directories:
 
@@ -268,7 +272,7 @@ replaced by a ZCM_ directory for acid chemistry. Somebody would need
 to check over how O3 and stuff are handled though).
 
 Thus, from Unimod.rv3_3,do:
-   cp ZCM_EmChem03/CM* 
+   cp ZCM_EmChem03/CM*
    cp ZD_OZONE/My* .
 
 GenXXXX -> ChemXXXX
@@ -291,7 +295,7 @@ More  changes to make it easier to swap chemistry (coming soon...) :
   My_Derived_ml - uses groups from ChemGroups_ml, removes hard-coded OXN etc.
 
   My_DryDep_ml - now includes "CM_DryDep.inc" from GenChem's ZCM_EmChem03 directory
-  
+
   CM_ .... files now from GenChem's ZCM_EmChem03 directory
 
 Plus:
@@ -307,7 +311,7 @@ Plus:
 Status and ToDo
 -----------------
 I think that the GenChem-associated changes are basically done (though of
-course I am sure changes will be needed!). 
+course I am sure changes will be needed!).
 
 The code still needs work to recover some outputs, notably AOT40, which were
 omitted during the changes to Derived and My_Derived (rv3_2_13 onwards).
@@ -387,9 +391,9 @@ rv3_2_11. New code seems to work fine, but more checks would be useful
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2_29, Peter,   17 Sep. 2009xxxxxx
 
 removed -mieee-fp from Makefile and Makefile_stallo
-This options made the floating point operations ieee compliant, but are now slowing down the computation 
+This options made the floating point operations ieee compliant, but are now slowing down the computation
 quite a lot, and even more (30% diff) with the next intel compiler version (11.1, to come on stallo in October)
-If one wish to compare results between diferent machines (stallo and njord for example it may be useful 
+If one wish to compare results between diferent machines (stallo and njord for example it may be useful
 to put the option back)
 
 
@@ -401,9 +405,9 @@ My_SlowReactions.inc added
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2_27, Peter,  10 Sep. 2009xxxxxx
 
 Changes to comply with the rotated spherical projections and new definition/units for time:
-now in days since year 1900. The seconds used earlier do not run after 2037 or so and we 
+now in days since year 1900. The seconds used earlier do not run after 2037 or so and we
 need to run later for climate studies.
-NBNB: if you have postprocesing scripts which make use of the date read from the netcdf 
+NBNB: if you have postprocesing scripts which make use of the date read from the netcdf
 files, make sure to update these!
 
 NetCDF_ml and Met_ml are changed
@@ -429,7 +433,7 @@ My_FastReactions
 
 *** note, since these files are from GenChem, we have lost some of
 the optimisations which Peter introduced. This can one day be
-coded into GenChem, or done by hand again. 
+coded into GenChem, or done by hand again.
    On the oter hand, GenChem got rid of some of the bugs introduced
 by hand-coding ;-)
 
@@ -445,7 +449,7 @@ unexpected input files when changing domain.
 Input files expected:  Now expect rough.dat and Inputs.2BVOC
 xxxxxxxxxxxxxxxxxxxx
 
-Met_ml now requires rough.dat, not rough.170. The new "fill_needed" 
+Met_ml now requires rough.dat, not rough.170. The new "fill_needed"
 parameter is used to ensure that this data fills the grid. Unlike
 the zero sized rough.170 in the EECCA data-directory ;-)
 
@@ -484,7 +488,7 @@ Defined "rotated_latitude_longitude" projection following CF-1.0 convention.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2_21, Dave, 24-26th xxxxxx
 
-found_ind2d, found_ind3d added to Derived_ml to esnure that we 
+found_ind2d, found_ind3d added to Derived_ml to esnure that we
 don't try to define the same variable twice.
 
 Comma removed in GLobal_ml, needed to compile
@@ -500,7 +504,7 @@ Function_ml, Nest_ml:
 Moved great_circle_distance into Functions_ml.
 
 
-Note: The new default compiler on stallo (ifort 11.0), gives a segmentation fault 
+Note: The new default compiler on stallo (ifort 11.0), gives a segmentation fault
 on line 711 in NetCDF_ml, when compiled with debug options. After closer look, this is most probably due to
 a bug in the compiler...
 
@@ -556,7 +560,7 @@ Added modules: My_ChemSpecs_ml My_ChemRates_ml
 
   - split from old My_Chem_ml, to make use of GenChem easier
   - RiemerN2O5, kaero now done in ChemFunctions
-  - tabulation of rate constants switched off for now. 
+  - tabulation of rate constants switched off for now.
     ( Surprisingly, ** No CPU cost **. Time for chemistry almost
       identical )
 
@@ -567,7 +571,7 @@ Removed modules: My_Chem_ml,  OrganicAerosol_ml
 Setup_1d_ml, Setup_1dfields_ml
    - removed Rimer stuff, some re-organisation because of My_Chem changes
 
-Solver_ml - has EXTRA_ITER to allow 
+Solver_ml - has EXTRA_ITER to allow
             ONLY_NIGHT code removed
 
 Unimod.f90 - no need for Init_mychem
@@ -691,7 +695,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2_9, Dave  8th May 2009xxxxxx
 
 Derived_ml, My_Derived_ml:
 
-SURF_UG_C, SURF_UG and SURF_PPB added 
+SURF_UG_C, SURF_UG and SURF_PPB added
 
 Also write_debug routine added in Derived_ml
 
@@ -707,7 +711,7 @@ Derived to be specified with simple loop over SURF_UG_N. Similar
 system in place for SURF_UG_S, and will later implement SURF_PPB
 
 
-Derived, My_DryDep 
+Derived, My_DryDep
 AOT30 outputs removed. (Whole AOT system should also be replaced. Usage
 of e.g. D2_AOT30 in My_DryDep caused hard-to-find bug in d_2d when AOT30 removed
 from Derived system)
@@ -723,13 +727,13 @@ My_DryDep_ml
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2_7, Dave  5th May 2009xxxxxx
 
 ** Bugs found and fixed **
--  bugs were in old  My_WetDep_ml code, but luckily not for 
+-  bugs were in old  My_WetDep_ml code, but luckily not for
 anything we have reported. wepdeppm25 and wdeppmco were wrong.
 WDEP_NH3 and WDEP_aNH4 were mixed up, but WDEP_RDN was okay.
 
 
 Aqueous_ml - loop over SO4LIKE once wet dep loss rate for SO4
-  calculated. 
+  calculated.
   uses wdeploss frm MassBudget instead of old sumloss
   now sets wdeploss using indices, e.g. wdeploss(SO2)
 
@@ -802,7 +806,7 @@ My_Chem_ml:
 species%sulphurx0 for ISONO3,ISNI and ISNIR (bug)
 
 Landuse_ml:
-NLUMAX x 19 
+NLUMAX x 19
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2_2, Dave 27th Mar 2009xxxxxx
 
@@ -939,7 +943,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2beta13 Peter,   4th Feb 2009xxxxxx
 
 Met_ml:
 New method of deriving sigma_dot when it is missing.
-Hopefully this can be a usable alternative, which will avoid most of the prostprosessing 
+Hopefully this can be a usable alternative, which will avoid most of the prostprosessing
 problems of the metdata (mass filtering etc).
 
 Will not changes results in case sigma_dot is found.
@@ -960,11 +964,11 @@ MasterProc introduced in:
  Use "if (MasterProc)" instead of "if (me xx 0)", which needs use ModelConstants
 instead of use Par_ml. Easier for box-model type codes.
 
-Also: 
+Also:
 
 LandDefs_ml made F-complaint
 PhysicalConstants_ml: R removed, only use RGAS_KG
-  Met_ml: R replaced by RGAS_KG. 
+  Met_ml: R replaced by RGAS_KG.
 (I think single letter parameters are too hard to search for.)
 
 SubMet_ml   made F-complaint
@@ -975,7 +979,7 @@ Units wrong for case ( "ADVugm3" ).
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2beta10 Peter,   22nd Jan 2009xxxxxx
 
-Bug in Met_ml introduced 20th Nov 2008: when a metfield was not found the routine GetCDF_short 
+Bug in Met_ml introduced 20th Nov 2008: when a metfield was not found the routine GetCDF_short
 returns without closing the file.
 If the number of open files exceeds 4096, the program will stop.
 No differences if you haven't noticed.
@@ -995,7 +999,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2beta7 Dave,   12th Jan 2009xxxxxx
 CoDep has a small bug-fix (for IRHx0, F4) and more debug options
  + includes Hilde's bug-fix for MAX_SN
 
-Derived_ml + My_Derived_ml 
+Derived_ml + My_Derived_ml
   now has OutRG as merge of OutR and OutG terms
 
 DryDep + My_DryDep
@@ -1014,14 +1018,14 @@ Area(:) renamed to EcoArea
 
 
 
-OutR, outG merged into outRG 
+OutR, outG merged into outRG
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2beta6 Hilde,  17th Dec 2008xxxxxx
 
 Derived_ml: small change (only effect is that less 'warnings' written out, there was a problem with undef values)
 CoDep_ml:a_SN_24hrxso2/nh3,a_SNxso2/nh3, both capped at so2/nh3x3.0, Switch off debug flag
 Rsurface_ml: fsnow x2.0 *G%sdepth/Sdmax (before G%sdepth/Sdmax)
 
-Changing a_SN_24hr from 0.6*so2/nh3 to so2/nh3 has only minor effect on so2/nh3 in 2006 
+Changing a_SN_24hr from 0.6*so2/nh3 to so2/nh3 has only minor effect on so2/nh3 in 2006
 (average increase from 0.8 to 0.81, 1% to 3% higher than obs)
 
 Changing fsnow from G%sdepth/Sdmax to 2.0*G%sdepth/Sdmax
@@ -1037,7 +1041,7 @@ DryDep_ml: changed dimensions
 My_DryDep_ml: small change in output for Rns since it is not defined for all landuses always
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_2beta4 Hilde,   8th Dec 2008xxxxxx
-PhyChem_ml: call to make so2nh3_24hr! Was forgotten committed, so so2nh3 was 
+PhyChem_ml: call to make so2nh3_24hr! Was forgotten committed, so so2nh3 was
 effectively set to 0 everywhere after new CoDep routine added...
 
 run.pl: New links Inputs_LandDefs.csv_05.12.2008 and Inputs_DO3SE.csv_05.12.2008
@@ -1128,7 +1132,7 @@ Ecosystem dry deps changed, to be per m2 of ecosystem
           not of ecosystem!  No need now to scale anything with landuse
           data.
 
-*Note change of output names: 
+*Note change of output names:
    DDEP_SOX   is now  DDEP_SOX_m2Grid
    DDEP_OXSCF is now  DDEP_SOX_m2CF
  etc.
@@ -1152,11 +1156,11 @@ First bug fixes:
   sign of Hd test and GRAV changed for wstar calculation - bug spotted
   by Massimo
 
-  
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
- As used for 2008 EMEP Reports 
+ As used for 2008 EMEP Reports
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3_0_7 10th june, Dave xxxxxxxxxxxxxx
 
@@ -1171,7 +1175,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3.0.5, Peter,  Apr 15th 2008  xxxxxxxxxxxxxx
 Output_hourly: put the vertical coordinate for hourly output right.
 	       If 20 level are requested the lowest level has kx20 (as usual)
 	       If less than 20 levels are requested the lowest level has kx1
-	       Also corrected ist etc. to be compatible with the nesting changes 
+	       Also corrected ist etc. to be compatible with the nesting changes
 	       made in rv3.0.4
 
 Makefile is now Makefile_stallo
@@ -1181,7 +1185,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3.0.4, Peter,  Apr 4th 2008  xxxxxxxxxxxxxx
 Hourly cdf output: put timestamp at end of period
 Nesting: istart etc coordinates relative to large domain instead of small domain.
 LandDefs_ml: dimension of Header put to 15
-Advection_ml: improved the ADVEC_TYPEx2 option (not the default value) for exact mass conservation 
+Advection_ml: improved the ADVEC_TYPEx2 option (not the default value) for exact mass conservation
 Sites_ml: allow sites/sondes on model boundaries (needed for poles in global runs)
 Timing_ml: use MPI_WTIME to measure walltime
 
@@ -1189,7 +1193,7 @@ None of these changes should affect the results of "standard" runs.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3.0.3, Dave,  Mar 18th 2008  xxxxxxxxxxxxxx
 
-GlobalBCs_ml 
+GlobalBCs_ml
 added 2006 O3 backgroud, using data from Derwent et al. (2007) paper
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3.0.2, Peter,  Mar 3rd 2008  xxxxxxxxxxxxxx
@@ -1201,7 +1205,7 @@ In ModelConstants_ml PT x 1.0e+4    ! Top of model region x 10000 Pa x 100 hPa
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx rv3.0.1, Dave,  Mar 1st 2008  xxxxxxxxxxxxxx
 
-Io_Progs_ml  -  bug fix to remove text trailing # in HEADER line  (doesn't 
+Io_Progs_ml  -  bug fix to remove text trailing # in HEADER line  (doesn't
      matter to results though)
 
 Landuse_ml - small formatting change
@@ -1217,14 +1221,14 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 End of rv3 series. Almost identical to rv3 as given on web, but
 
 (Had to reset Nest_ml and NetCDF_ml to slightly older code. Will
-update again as 3.1. 
+update again as 3.1.
 
 ** modrun.pl is still different in rv3 and on web-version. Too many
 differences to bother about here.)
 
 xxxxxxxxxxxxxx rv3beta13  feb 6  2008  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter
-Small bug: current_date declared twice in NetCDF_ml (does not influence 
+Small bug: current_date declared twice in NetCDF_ml (does not influence
 output, but pgi compiler complains).
 
 xxxxxxxxxxxxxx rv3beta12  feb 2  2008  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -1233,7 +1237,7 @@ New update of adv_var: the previous version seemed to hang on stallo in some sit
 
 xxxxxxxxxxxxxx rv3beta11  Jan 31  2008  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-copied the new Inputs_LandDefs.csv into DataDir and corrected a bug 
+copied the new Inputs_LandDefs.csv into DataDir and corrected a bug
 introduced in run.pl from rv3beta9 when runnning on snykov.
 
 run.pl, modrun.pl - modified to use renamed Inputs_LandDefs.csv
@@ -1264,7 +1268,7 @@ Stallo version of run.pl and Makefile_stallo.
 Just set STALLOx1. Choose USER, ProgDir,WorkDir, Emissions etc. as usual.
 32 procs choosen in ModelConstants_ml.
 
-Put an  MPI_BARRIER in Io_Progs_ml: OpenMPI becomes crazy (huge memory 
+Put an  MPI_BARRIER in Io_Progs_ml: OpenMPI becomes crazy (huge memory
 leak->node crashes) because each line was is in separate buffers to all nodes,
  before they were received.
 
@@ -1279,9 +1283,9 @@ Defined veg_month in DryDep. Seemed not to be defined before? Does it work now??
 Initialized veg_monthx1 in DO3SE_ml
 
 Changed definition of LandType in LandDefs_ml:
-            LandType(n)%is_water  x  LandInput%code xx "W" 
-            LandType(n)%is_ice    x  LandInput%code xx "ICE" 
-            LandType(n)%is_iam    x  LandInput%code(1:4) xx "IAM_" 
+            LandType(n)%is_water  x  LandInput%code xx "W"
+            LandType(n)%is_ice    x  LandInput%code xx "ICE"
+            LandType(n)%is_iam    x  LandInput%code(1:4) xx "IAM_"
 
             LandType(n)%is_forest x  &
                 ( LandInput%type xx "ECF" .or. LandInput%type xx "EDF" )
@@ -1289,13 +1293,13 @@ Changed definition of LandType in LandDefs_ml:
             LandType(n)%is_decid x ( LandInput%type xx "EDF"  )
             LandType(n)%is_crop  x ( LandInput%type xx "ECR"  )
             LandType(n)%is_seminat  x ( LandInput%type xx "SNL"  )
-            LandType(n)%is_bulk   x  LandInput%type xx "BLK" 
+            LandType(n)%is_bulk   x  LandInput%type xx "BLK"
             LandType(n)%is_veg    x  LandInput%type /x "U" .and. &
-                  LandInput%hveg_max > 0.01   ! Excludes water, ice, desert 
+                  LandInput%hveg_max > 0.01   ! Excludes water, ice, desert
 
 NB:Water defined with type "BLK" in  /home/mifapw/emep_common/Data/Inputs.LandDefs
 BUT NOT IN ~mifads/Unify/Data/EMEP/Inputs.LandDefs
-Copied also the other input files from ~mifads/Unify/Data/EMEP/ over to /home/mifapw/emep_common/Data and 
+Copied also the other input files from ~mifads/Unify/Data/EMEP/ over to /home/mifapw/emep_common/Data and
 /home/mifapw/emep_common/Data/EMEP
 Changed run.pl to take into account these changes
 
@@ -1315,13 +1319,13 @@ My_FastReactions.inc added, and included in My_Reactions.inc
 
 xxxxxxxxxxxxxx rv3beta5  Nov 7-8  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Peter
-Met_ml: non-blocking MPI_ISEND for wind speeds in metvar. 
-        Uses dedicated arrays for receive buffers. 
+Met_ml: non-blocking MPI_ISEND for wind speeds in metvar.
+        Uses dedicated arrays for receive buffers.
 	Was giving worng results with -O3 option (!?)
 
 SubMet_ml: Sub(iL)%rh x min(1.0,Sub(iL)%rh)! keeps rh <x 1
-	   instead of e x min(esat,e) 	
-           Is mathematically identical, but gave slightly different results with -O3 option.	
+	   instead of e x min(esat,e)
+           Is mathematically identical, but gave slightly different results with -O3 option.
 
 Dave
 CellMet_ml: wetarea change to avoid numerical problems.
@@ -1362,7 +1366,7 @@ OutputChem_ml.f90
 
 Makefile and Makefile_snow:
 replaced the -O3 compiler option with:
--O2 -mieee-fp -ftz 
+-O2 -mieee-fp -ftz
 
 xxxxxxxxxxxxxx rv3beta3, Oct 26  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave, Svetlana
@@ -1401,7 +1405,7 @@ xxxxxxxxxxxx
 CellMet_ml - sets met params for lower grid cell, call SubMet
 CoDep_ml   - for SO2/NH3
 DO3SE_ml   - reads in and set sto. conductance stuff
-LandDefs_ml - 
+LandDefs_ml -
 LocalVariables_ml   - grid met in Grid%, sub-met in Sub(iL)%
 Rb_ml  - for Rb...
 StoFlux_ml
@@ -1413,7 +1417,7 @@ xxxxxxxxx             xxxxxxxxxxxxxxx
 DepVariables_ml       LocalVariables_ml
 UKsetup_ml            LandDefs_ml.f90
 JUN06_gfac1.dat       Inputs_DO3SE.csv
-JUN06_gfac2.dat          "      "       
+JUN06_gfac2.dat          "      "
 JUN06_biomass.dat     Inputs.LandDefs
 
 
@@ -1437,7 +1441,7 @@ SeaSalt - JUST A FAKE FOR NOW!
 Cleanups:
 xxxxxxxxxx
 Chem_ml
-Derived_ml 
+Derived_ml
 Emissions_ml
 GridValues_ml
 Io_Nums_ml
@@ -1482,12 +1486,12 @@ xxxxxxxxxxxxxx rv2_9_14, (also 13?) Sept.  27th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Dave
 Sites_ml.   2nd Bug-fix for sondes --- for now excluding values from domain boundary.
-   Was giving e+254 type values ..... 
+   Was giving e+254 type values .....
 
 
 Hilde+Heiko
 run.pl corrected so that SR runs works
-TimeDate_ml.f90,GlobalBCs_ml.f90,BoundaryConditions_ml.f90 cleaned 
+TimeDate_ml.f90,GlobalBCs_ml.f90,BoundaryConditions_ml.f90 cleaned
 
 xxxxxxxxxxxxxx Dave, rv2_9_12, Sept.  26th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1547,7 +1551,7 @@ New run.pl with SR stuff placed near end of file.
 xxxxxxxxxxxxxx Peter, Svetlana, rv2_9_8, Sept.  21th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl $linex~ s/!.*//;
-	for cases where NPROCX has been uncommented 
+	for cases where NPROCX has been uncommented
 
 Solver_ml - cleanup
 
@@ -1564,7 +1568,7 @@ SmallUtils - small update (trim used)
 
 xxxxxxxxxxxxxx Peter, rv2_9_6, Sept.  19th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Setup_1d_ml: checkstop when a NaN is detected 
+Setup_1d_ml: checkstop when a NaN is detected
              removed: use MyChem_ml,  only :  Set_2dBgnd
 
 Met_ml: CheckStop(nhour/x0 .and. nhour /x3..) for netcdf metinput
@@ -1592,7 +1596,7 @@ xxxxxxxxxxxxxx Dave, rv2_9_4, August 30th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Biogenics_ml re-written to simply read in BVOC emission potentials, rather than
    calculate them. Now same procedure for EMEP domain, GLOBAL and HEMIS.
 
-  Associated changes and small tidy-ups in Emissions_ml,  Setup_1d_ml, 
+  Associated changes and small tidy-ups in Emissions_ml,  Setup_1d_ml,
      Setup_1dfields_ml, Unimod.f90
 
 Derived_ml --- debugging now uses debug_proc etc. from GridValues. Small bug-fix
@@ -1609,7 +1613,7 @@ TimeDate_ml  - small tidy-up
 run.pl --  $NDATA points to new Inputs directory.
            prog.exe now added into Remove.sh
 
-Inputs: new inputs directory, ~mifads/Data/EMEP (GLOBAL + HEMIS) created while 
+Inputs: new inputs directory, ~mifads/Data/EMEP (GLOBAL + HEMIS) created while
   new style data being created (with headers and key-values)
 
 cvs DELETED::  UiO_ml  Wrtchem_ml
@@ -1619,7 +1623,7 @@ xxxxxxxxxxxxxx Peter, rv2_9_3, August 28th 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Unimod.f90: Removed call to DefGrid (moved into Met_ml)
 	    Read input parameters using read_line
 
-Met_ml.f90: call to infield(1) and DefGrid in the MeteoGridRead routine, 
+Met_ml.f90: call to infield(1) and DefGrid in the MeteoGridRead routine,
             for the case where felt files are used.
 
 
@@ -1658,15 +1662,15 @@ Major change - rewrite of Derived and My_Derived
         No need of DUMMY either in 3d output.
         Arrays are allocated as needed.
 
- 
+
 SmallUtils - added AddArray and LenArray to add arrays, and to count number of
     allocated elements (not allocated define with NOT_SET_STRING
-      
+
 Included Svetlana's OutputChem_ml, a wrapper containing Wrtchem.f90 and other
    subroutines
 
 Deleted: Wrtchem.f90 - now in OutputChem_ml
- 
+
 run.pl - check now added that the number of processors in run.pl matches
    the number in ModelConstants_ml.f90
 
@@ -1721,7 +1725,7 @@ Major change:
 
 
  Emissions_ml   - very small tidfy up
- 
+
  Io_Progs_ml      Read2D added
 
  + probably some other small tidy-ups.
@@ -1735,8 +1739,8 @@ Provisional - needs to be tested still!!!!!!!
 Met_ml:  Cleaned(Jan Eiof), also  some extra Met params made available
            (RH2m, Soil water --- but both seem to have problems!)
 
-DOCS/cookbook + other :  Cookbook  1st darft added, Semeena. Now have 
-     both a cookbook for new users, and a Manual for programmers.  
+DOCS/cookbook + other :  Cookbook  1st darft added, Semeena. Now have
+     both a cookbook for new users, and a Manual for programmers.
      Do either of:
 
          latex cookbook
@@ -1770,7 +1774,7 @@ EmisGet_ml  - added safety check on country codes
 
 ReadField_ml  - corrected bug (not initialising integer fields, e.g. snow)
 
-Volcanos_ml  - corrected bug in coordinate systems. Started move to i_local 
+Volcanos_ml  - corrected bug in coordinate systems. Started move to i_local
 
 xxxxxxxxxxxxxx Misc, rv2_7_10,  Jun 7  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1778,7 +1782,7 @@ xxxxxxxxxxxxxx Misc, rv2_7_10,  Jun 7  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Svetlana :
       found (non-fatal) bug in CheckStop in BoundaryConditions_ml
 
-Dave: 
+Dave:
       Rsurface_ml - Swapped Idir, Idiff, removed albedo
 
 Michael:
@@ -1786,13 +1790,13 @@ Michael:
 
 xxxxxxxxxxxxxx Misc, rv2_7_9,  May 30 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Dave: 
-      
+Dave:
+
     Major changes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
       Io_Progs_ml added -  new system for reading input files. Simpler (I hope!)
              syntax, requirement for descriptive headers and lines in input
- 
+
       Io_Nums_ml added - just integer values
              file. See Manual for description.
 
@@ -1814,7 +1818,7 @@ Dave:
       DOCS/Manual/Domains.tex - added description of coordinate systems,
            which have confused me for years!
 
-  NEW - Usage of Self_Test in some modules - highly encouraged!! 
+  NEW - Usage of Self_Test in some modules - highly encouraged!!
 
     Small changes xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
       CheckStop_ml - added test for CheckStop( string1, string2, info )
@@ -1827,8 +1831,8 @@ Dave:
       GridAllocate_ml -  small changes
 
       GridValues_ml  -  some tidy up, and table created for various coordinates
-          (prints out li0,li1,limax, etc..... for each me ) 
-  
+          (prints out li0,li1,limax, etc..... for each me )
+
           i_local, j_local arrays created (reverse of i_glob, j_glob)
 
       Makefile.SRCS - updated
@@ -1858,7 +1862,7 @@ xxxxxxxxxxxxxx Misc, rv2_7_7,  May 16 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Dave:  Makefile.SRCS added - list of .f90 files, included from all
         other Makefiles.
 
-      CheckStop_ml : Changed name of confusing is_true to is_error 
+      CheckStop_ml : Changed name of confusing is_true to is_error
 
       Moved GridAllocate from Functions to GridAllocate_ml
       - changes in EmisGet,  UK_ml
@@ -1880,9 +1884,9 @@ Svetlana: Cleaned up Timefactors_ml
 xxxxxxxxxxxxxx Misc, rv2_7_6,  May 11 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Dave: Added new module CheckStop,  to simplify error-testing and
-       calls to MPI_ABORT. Can now do e.g. 
+       calls to MPI_ABORT. Can now do e.g.
 
-              call CheckStop( lu<0,"UKdep lu problem"), or, 
+              call CheckStop( lu<0,"UKdep lu problem"), or,
               call Check(errmsg,"Something fishy here...") , or, ...
 
         - there are five possibilities.
@@ -1909,7 +1913,7 @@ Jan Eiof: CheckStop in EmisGet_ml
 Semeena: Cleaned:      MassBudget_ml
 
 
-xxxxxxxxxxxxxx Misc, rv2_7_5, Apr 19 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx Misc, rv2_7_5, Apr 19 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 April 10th, Dave:
 
@@ -1923,14 +1927,14 @@ April 18th, Peter/Semeena:
 	Updated NetCDF_ml such that:
 	1) Output is CF-1.0 compilant for the vertical coordinates
 	2) Corrected a bug when 3D hourly output is required
-	
-	Derived_mland My_Derived: renamed D2_PS as PS, to be more compatible 
+
+	Derived_mland My_Derived: renamed D2_PS as PS, to be more compatible
 	with what other use (PS is used in the definition of the vertical levels)
 
-	run.pl: put lpmemx200MB 
+	run.pl: put lpmemx200MB
 
 
-xxxxxxxxxxxxxx Misc, rv2_7_4, Mar 30 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx Misc, rv2_7_4, Mar 30 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Cleanups:
 
@@ -1939,9 +1943,9 @@ Michael: Aero_water.f90
 Svetlana: Volcanos_ml.f90
 
 
-xxxxxxxxxxxxxx Misc, rv2_7_3, Mar 29 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx Misc, rv2_7_3, Mar 29 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Hilde: Dates_ml replaced by TimeDate_ml (TimeDate corrected for bug). Changes in: 
+Hilde: Dates_ml replaced by TimeDate_ml (TimeDate corrected for bug). Changes in:
 
  (calc daynumber) Derived_ml.f90
  (daynumber) DryDep_ml.f90
@@ -1971,22 +1975,22 @@ Semeena:  AirEmis_ml cleaned and documented
 
 
 
-xxxxxxxxxxxxxx Misc, rv2_7_2 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx Misc, rv2_7_2 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Peter: Advection_ml: more robust advection for global model.
        UK_ml: bug in effectivdaynumberxdaynumber (no consequences in practice)
 
-       Met_ml: bug in my gc/MPI changes (rv2_7): gb,gl,gb_glob and gl_glob may be wrong 
+       Met_ml: bug in my gc/MPI changes (rv2_7): gb,gl,gb_glob and gl_glob may be wrong
                on nodes different from mexx0.
 
        Added comment in Emissions_ml (newmonth):units are ktonnes PER YEAR
-       Comment:shouldn't we define emissions as ktonnes per 365 days? 
+       Comment:shouldn't we define emissions as ktonnes per 365 days?
        A leap year has more 1 day more DMS emissions than a 365 days year...
 
 Dave: xRgsO corrected in Rsurface_ml for snow. Will change results slightly.
-	
 
-xxxxxxxxxxxxxx Misc, rv2_7_1  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+xxxxxxxxxxxxxx Misc, rv2_7_1  2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Peter:
    Nest_ml - Modex12, for read 3D at start of run and write at end
@@ -1994,10 +1998,10 @@ Peter:
    Makefile_snow, Makefile_njord - replaced Polinat_ml with Trajectory_ml
 
 Joffen:
- Country_ml - cleaned, March 6 2007. This version includes the 
-  division of ship emissions into inside/outside the 12 mz, EU/ROW flags, 
-  Ferries/cargo ships as this is supposed to be the "strategy" for the 
-  future. 
+ Country_ml - cleaned, March 6 2007. This version includes the
+  division of ship emissions into inside/outside the 12 mz, EU/ROW flags,
+  Ferries/cargo ships as this is supposed to be the "strategy" for the
+  future.
 
   EmisDef_ml.f90: Cleaned by Joffen, March 6th 2007.
    With the division of the ship emissions in Country_ml,
@@ -2009,11 +2013,11 @@ Joffen:
 
   Trajectory_ml - replaces Polinat_ml (mainly name change)
   PhyChem_ml    - now refers to trajectory_out
-  
+
 
 Dave:
   ModelConstanstants_ml - removed assign_nmax, assign_tdadvec
-  
+
   Advection_ml - placed assign_nmax, assign_tdadvec here
 
 
@@ -2023,7 +2027,7 @@ Misc:
 
 
 
-xxxxxxxxxxxxxx Peter 5/3 rv2_7 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx Peter 5/3 rv2_7 2007  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 All gc_ routines removed! They are replaced by the standard MPI routines.
 Affect most of the files.
@@ -2049,10 +2053,10 @@ Some minima criteria in Ra removed to prevent problems in extreme stable cases
 
 GlobalBCs_ml - updated to 2005
 
-Nest_ml (and Unimod.f90 ,PhyChem_ml): 
-Mode 10,11 for warm start option and corrected bug ("idimid") when writing in lat lon 
+Nest_ml (and Unimod.f90 ,PhyChem_ml):
+Mode 10,11 for warm start option and corrected bug ("idimid") when writing in lat lon
 
-NetCDF_ml: 
+NetCDF_ml:
 allocate a real*4 array instead of real*8. Avoids possible underflow errors and saves some memory.
 
 
@@ -2073,7 +2077,7 @@ Removed srun.pl, nrun.pl, local2global.f, global2local.f, gc_com.f from cvs
 xxxxxxxxxxxxxx Peter   rv2_6_5    19/1/2007 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 New common run.pl script for njord and snykov. NB: It also use /global/work on snykov.
-Use this one as it will simplify maintenance to have 
+Use this one as it will simplify maintenance to have
 fewer scripts. Not yet made for SR runs (should also be done with the same script).
 Choose  $NJORDx1 or $SNYKOVx1 in the script.
 
@@ -2083,7 +2087,7 @@ Changed units written in outputs for all depositions (ug/m2  was written instead
 
 Small changes for the global version: (does not affect other runs)
 
-Advection_ml: 2 old "bugs" corrected. 
+Advection_ml: 2 old "bugs" corrected.
 	preadvx(2): did not work if west neighbour x east neighbour (possible in cyclic grid)
 	adv_var: nonblocking sends. Otherwise may hang if extremely large grids are used.
 
@@ -2121,13 +2125,13 @@ gc_com,local2global,global2local set to f90
 MARS_ml.f90 line 864 1.d0 changed to 1.0
 TimeDate_ml: line 53 reduced month length to 10
 Derived_ml.f90 : case ( "MAXADV" ) changed forall (program crashes with segmentation fault otherwise??)
-Advection_ml: changed hel1/hel2 into hel1/(hel2+1.0E-100) 
+Advection_ml: changed hel1/hel2 into hel1/(hel2+1.0E-100)
 	      because of overflow otherwise (compiler weakness, works without if only -O2 is used)
 removed all *.f files (gc_com.f,local2global.f,global2local.f)
 new nrun.pl and nSRrun.pl (n for njord)
 
 Makefile_njord created
-Makefile_snow updated (.f removed or replaced with .f90) 
+Makefile_snow updated (.f removed or replaced with .f90)
 
 Put values in the "k" og the Boundary_and_Initial_Conditions.nc
 
@@ -2135,24 +2139,24 @@ Put values in the "k" og the Boundary_and_Initial_Conditions.nc
 xxxxxxxxxxxxxx Heiko  rv2_6_1  25/10/2006 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
  I just found a problem in the Makefile_snow, it included
- 
+
  clean:
  	rm ... \
  	touch ... \
  	make depend
- 
- 
- The last one did thus run 'make depend' instead of 'make -f 
+
+
+ The last one did thus run 'make depend' instead of 'make -f
  Makefile_snow depend'. This is fixed in the cvs'd file.
 
 xxxxxxxxxxxxxx Peter  rv2_6   23/8/2006 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Included Nesting options. 
+Included Nesting options.
 Not enough tested but needed for ENEA delivery: 3D BC 3-hourly all components.
 For a nest run: Set MODE and istart,jstart,iend,jend
 
 Nest_ml: completely revised
-NetCDF_ml: secondssince1970 public, 
+NetCDF_ml: secondssince1970 public,
            not time at middle of period for instant data (like BC).
 PhyChem_ml: moved wrtxn call.
 ZD_OZONE/My_Derived: SR x false "consistent"
@@ -2214,7 +2218,7 @@ xxxxxxxxxxxxxx Dave, rv2_5beta   27/6/2006 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 New flux parameters slightly re-defined. MMAOT30 and MMAOT40 added - AOTs according to
  new Mapping Manual approaches.
  Now:
-    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
+    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &
     D2_AFSTCR0, D2_AFSTCR3, D2_AFSTCR6,&
     D2_MMAOT30, D2_MMAOT40
 
@@ -2235,7 +2239,7 @@ Done now....
 xxxxxxxxxxxxxx Dave, rv2_4_7   22/6/2006 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 New flux parameters defined,  see JUN06 changes
-    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, & 
+    D2_AFSTDF0, D2_AFSTDF16, D2_AFSTBF0, D2_AFSTBF16, &
     D2_AFSTCR0, D2_AFSTWCR, D2_AFSTCR6,&
     D2_AFSTCN0, D2_AFSTCN3, D2_AFSTCN6,&
 
@@ -2280,17 +2284,17 @@ Accept any projection in CF-1.0 convention.
 
 NetCDF accept "general projection"
 Met_ml  accept "general projection"
-moved some "use Gridvalues :sigma" (the SGI compiler didn't like variables 
+moved some "use Gridvalues :sigma" (the SGI compiler didn't like variables
                         to be send as argument and defines with "use")
 GridValues AN calculated in GlobalPosition
 Derived_ml daily D3_THx.False.
 Dates_ml: included 2004
 
 xxxxxxxxxxxxxx Peter rv2_4_3, 16/12/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Better Global version. In case of lon-lat grid and poles, special advection 
+Better Global version. In case of lon-lat grid and poles, special advection
 routines are used.
 
-grun.pl includes a parameter   $HEMIS which (whenx1) makes the script link to 
+grun.pl includes a parameter   $HEMIS which (whenx1) makes the script link to
 the hemispherical input data. (this script is however quite messy...)
 meteo year must be 2001 then.
 (put also READBVOCx.true. in Biogenics_ml for improved BVOC emissions)
@@ -2303,7 +2307,7 @@ or (blizzard):
 
 
 No changes of results in "normal" runs, except that in Country_ml, Russia (42)
- is defined with timezone -100, which means that longitude time is used. 
+ is defined with timezone -100, which means that longitude time is used.
 (can be changed in the file if wanted)
 
 
@@ -2321,12 +2325,12 @@ AirEmis_ml: bug when longitude close to 360 degrees or when latitudex90
 Emissions_ml: bug in "daytime_longitude"
 
 Advection_ml: new subroutines for advection used in case of lat-lon
-grid. Less good treatment of the xy time splitting, but faster and 
-can cope with singularity at Poles. 
+grid. Less good treatment of the xy time splitting, but faster and
+can cope with singularity at Poles.
 Changed also adv_var, so that it can treat the
 case when a subdomain is its own neighbor (cyclic grid).
 For best efficiency of advection it is recommended to use NDYx2 (or
-NDYx1) in case lat-lon and poles are included in the domain. 
+NDYx1) in case lat-lon and poles are included in the domain.
 
 
 PhyChem_ml: calls  advecdiff_poles instead of advecdiff when necessary
@@ -2355,28 +2359,28 @@ Lat lon grid possible (defined through mapping factors xm_i and xm_j)
 
 Cyclic grid in i direction
 
-Special treatment at poles: 
+Special treatment at poles:
 	-.no "neighbors", but not an outer boundary
 	-.special treatment of advection
 
 Emission_ml includes an option to choose that the local time
  (used for the day/night timefactor) is determined by the longitude
 instead of the timezone defined in "Countries_ml". This option is selected when timezonex-100.
-This should be better at least for countries which cover many 
+This should be better at least for countries which cover many
 timezones (Russia, USA ...)
- (This also avoids defining timezones for hundreds of countries :-) 
+ (This also avoids defining timezones for hundreds of countries :-)
 
-splitted parinit into two subroutines, one for subdomain sizes and the 
+splitted parinit into two subroutines, one for subdomain sizes and the
 other for neighbors and BC definitions
 
 Removed the last optional argument from CloudAtten in Radiation_ml:
 it produced a compiler error in PhyChem_ml, even if I didn't change
-PhyChem nor Radiation !? 
+PhyChem nor Radiation !?
 
 EmisGet keep VOC from sector 10 (it was removed in earlier versions)
 
-Modified: Unimod.f90, Model_Constants, GridValues_ml, Met_ml, 
-Boundary_Conditions, Par_ml.pat,NetCDF_ml, Advection_ml, 
+Modified: Unimod.f90, Model_Constants, GridValues_ml, Met_ml,
+Boundary_Conditions, Par_ml.pat,NetCDF_ml, Advection_ml,
 Emissions_ml, My_Output_ml, Radiation_ml, EmisGet_ml
 
 Still the results are not affected by these changes (!)
@@ -2406,7 +2410,7 @@ Results are not affected by these changes
 
 xxxxxxxxxxxxxx Peter & Joffen (+Maarten+Dave)  rv2_3_2, 6/10/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-New AirEmis from Joffen. More general: can use any grid. Some differences 
+New AirEmis from Joffen. More general: can use any grid. Some differences
 in results can be expected (due to different vertical interpolation).
 
 Changes in GlobalBC Macehead corrections.
@@ -2417,18 +2421,18 @@ A small test for 2001 shows the following for the "O3fix" correction:
 jan: old O3fixx-6.903 ; newO3fixx-6.635
 aug: old O3fixx-4.871 ; newO3fixx-4.876
 
-In the future we should also introduce an option (as an input parameter) 
+In the future we should also introduce an option (as an input parameter)
 to skip the Macehead correction
 
 
 Changed Par_ml.pat so that also the large domain is set by grun.pl
 Changed grun.pl sp that it sets the large domain in Par_ml.
 The date of start is now read in by the model.
-The program tries now first to find at NetCDF meteo input file, if it does 
+The program tries now first to find at NetCDF meteo input file, if it does
 not find it it reads the old felt files.
 NB: You MUST update grun.pl
 
- 
+
 Changed definition of xm_i and xm_j: now it is directly the mapping factor
 at the boundary of two gridcells.
 
@@ -2477,12 +2481,12 @@ xxxxxxxxxxxxxx Dave/Hilde,   rv2_2_14 , 14/6/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 .depend:      Removed from CVS. Not needed, as gmake depend generates it, and
               it complicates cvs commit.
 
-DryDep_ml:    Tidy up (interim), plus some commented out code marker for 
-              EXTRA_LU outputs added - often used, but has no effect as coded 
-              now. Can be used to call user-generated include files if 
+DryDep_ml:    Tidy up (interim), plus some commented out code marker for
+              EXTRA_LU outputs added - often used, but has no effect as coded
+              now. Can be used to call user-generated include files if
               uncommented.
 
-GlobalBCs_ml: Small correction to Mace head correction 
+GlobalBCs_ml: Small correction to Mace head correction
 
 GridValues_ml:  New DEBUG system introduced. GridValues now works out immediately
         which processor the DEBUG_i, DEBUG_j coordinates apply to (new logical
@@ -2499,7 +2503,7 @@ GridValues_ml:  New DEBUG system introduced. GridValues now works out immediatel
           as before.  ( See the new PhyChem_ml for other examples)
 
          Request: please switch modules you work on to this new system - it is
-         cleaner and faster. 
+         cleaner and faster.
 
 
 PhyChem_ml.f90 - replaces phyche.f. Finally f90 !!!!!!!! ;-)
@@ -2512,7 +2516,7 @@ phyche.f   ..... history !
 Setup_1d_fields_ml - removed unused Idrctt, Idffuse
 
 Unimod.f90         - uses PhyChem_ml, tidied up "use statements"
- 
+
 
 
 xxxxxxxxxxxxxx Hilde,   rv2_2_13 , 10/6/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2541,7 +2545,7 @@ r_class  - declared simply, not with allocatable.
 xxxxxxxxxxxxxx Dave,   rv2_2_10 , 22/4/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 psurf replaced by ps throughout. Small error in placement of psurf now hopefully
-avoided. 
+avoided.
 
 xxxxxxxxxxxxxx Hilde,  rv2_2_9  , 14/4/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 My_chem_ml: small bug
@@ -2577,8 +2581,8 @@ xxxxxxxxxxxxxx Dave,  rv2_2_6 , 08/4/2005 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
 New (simpler?) arrangements for calculations of ustar, Obukhov length, Exner
-Less confusing use and conversions between temperature (t2_nwp) and 
-potential temperature (TPot2m). 
+Less confusing use and conversions between temperature (t2_nwp) and
+potential temperature (TPot2m).
 
 
 Some new notations:
@@ -2597,8 +2601,8 @@ Functions_ml
      - Exner function subroutines, and conversion functions between T and Tpot
          - causes changes in Met_ml, Sites_ml, DryDep, .....
        Note that sometimes we need Exner_nd(p) and sometimes CP*Exner_nd(p)
-      
-Met_ml 
+
+Met_ml
      - tau (was fm) - now created for MM5-type inputs from ustar, on assumption
        that it is better to linearly interpolate tau in metint than ustar.
        (Since tau ~ ustar**2 is proportional to energy.)
@@ -2608,7 +2612,7 @@ Met_ml
 
      - Exner_ml used
 
-SeaSalt 
+SeaSalt
      - use of new ustar_nwp. Moved "use" statements to start of module (should
        be done for all modules)
 
@@ -2632,10 +2636,10 @@ TimeDate_ml.f90 - added. Much nicer date calculations! (Will supercede Dates_ml
                     in future code)
 **** NEW *****
 
-Radiation_ml - subdivided with new routines and re-arranged. Now doesn't need Par_ml. 
+Radiation_ml - subdivided with new routines and re-arranged. Now doesn't need Par_ml.
                Uses elemntal routines to allow use in both 1-d models and EMEP
 
-               Some changes 
+               Some changes
                  SolarSetup  subroutine
                  Ashrea table ......
                  ZenithAngle sub
@@ -2661,7 +2665,7 @@ Wrtchem      - AOT output removed.
 
 xxxxxxxxxxxxxx Peter, rv2_2_2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Redefined u_ref into Met_ml including the map factor: 
+Redefined u_ref into Met_ml including the map factor:
 NB: Will influence the depositions rates,
 specially in Southern areas (15% higher deposition rate in Greece?).
 Concentrations and depositions may change by several % in Southern areas.
@@ -2670,16 +2674,16 @@ Concentrations and depositions may change by several % in Southern areas.
 I propose the following principle for variables derived from
 meteo variables in Met_ml:
 
-one routine (metvar) controls the variables derived from the meteofields 
+one routine (metvar) controls the variables derived from the meteofields
 after every meteoread (every METSTEP)
 
-one routine (metint) redefines (interpolates) the meteo fields between 
+one routine (metint) redefines (interpolates) the meteo fields between
 each meteoread (every dt_advec)
 
-one routine (met_derived (new)) derives the meteofields after each 
+one routine (met_derived (new)) derives the meteofields after each
 interpolation (i.e. met_derived is called from or after metint)
 
-In this logic tiphys is called from metvar  and u_ref is defined 
+In this logic tiphys is called from metvar  and u_ref is defined
 in met_derived
 
 metvar needs some cleaning. Volunteers?
@@ -2689,25 +2693,25 @@ xxxxxxxxxxxxxx Peter, rv2_2_1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Defined "ref_latitude" which is latitude for true distances (60 for PARLAM-PS)
 
-GlobalBCs_ml: defined IGLOB x IILARDOM and JGLOB x JJLARDOM (resulting values 
+GlobalBCs_ml: defined IGLOB x IILARDOM and JGLOB x JJLARDOM (resulting values
 are the same as before, but in new grids these will change)
 
 Removed part in ReadField for non-EMEP grid.
 
 xxxxxxxxxxxxxx Peter, rv2_2_0 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Included a new routine into Met_ml which is able to read meteo fields 
-in NetCDF format. Still under development. 
+Included a new routine into Met_ml which is able to read meteo fields
+in NetCDF format. Still under development.
 The old one is still used as default.
 
-Some cleaning. Removed some meteo fields which are not often used, 
+Some cleaning. Removed some meteo fields which are not often used,
 but kept SST for Svetlana)
 
 xxxxxxxxxxxxxx Dave, rv2_1_10  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 UniMan added!
         - intended as guide for new users, and reminder for old ones.
-        
+
 
 Met_ml - some tidy up ot tkediff subroutine, to follow coding suggestions
          of User guide.
@@ -2748,7 +2752,7 @@ xxxxxxxxxxxxxx Dave  17/2-2005            , rv2_1_6 xxxxxxxxxxxxxxxxxxxxx
 
 ReadField_ml
   -Initialisation to zero added, so now we do not need to input an array which
-   covers the whole domain. 
+   covers the whole domain.
 
    Also, print used instead of write for error messages, and
    errmsg more explicit now.
@@ -2761,13 +2765,13 @@ Sites_ml: Fix for Embla/Gridur bug,  where printouts of numbers < 1.0e-99
 
 ZD_.../My_Outputs:   N_NIT -> N_NOy
 
-         Also, max NSITES_MAX and NSONDES_MAX increased to 99. 
+         Also, max NSITES_MAX and NSONDES_MAX increased to 99.
          (Temporary. Will make arrays allocatable soon....)
 
 xxxxxxxxxxxxxx Peter, 9/2-2005            , rv2_1_5 xxxxxxxxxxxxxxxxxxxxx
 
-N_NIT was not defined in ZD_ACID 
-Updated ZD_ACID/My_Ouputs_ml so that it is compatible with the ZD_OZONE 
+N_NIT was not defined in ZD_ACID
+Updated ZD_ACID/My_Ouputs_ml so that it is compatible with the ZD_OZONE
 changes.I defined N_NITx1. If necessary please define differently.
 (Also changed to NHOURLY_OUT x 1, since clouds do not seem to be defined.)
 
@@ -2784,9 +2788,9 @@ Name on 3D ouput changed: Wrtchem.f90
 
 xxxxxxxxxxxxxx Hilde, 15/12-2004            , rv2_1_2  xxxxxxxxxxxxxxxxxxxxx
 
-BC trends 1980-2003 for S and N based on EPA emissions for 1980-2003 added in 
+BC trends 1980-2003 for S and N based on EPA emissions for 1980-2003 added in
 GlobalBCs_ml. For NH4 the trend is based on 2/3SO2 +1/3NOx
- 
+
 Also, PhiH added to Functions_ml, Dave
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -2800,9 +2804,9 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxx Peter, 29/10-2004            , rv2_0_9  xxxxxxxxxxxxxxxxxxxxx
 
 added file gc_com_for_1_proc.f
-This can be used as a "fake" gc_com.f in the cases where 
-NPROCx1 and no mpi compiler is available. 
-To use it: replace gc_com.f with gc_com_for_1_proc.f and remove the 
+This can be used as a "fake" gc_com.f in the cases where
+NPROCx1 and no mpi compiler is available.
+To use it: replace gc_com.f with gc_com_for_1_proc.f and remove the
 preprocessing of gc_com.F from Makefile
 
 
@@ -2821,7 +2825,7 @@ maceheadxmacehead+3 ppb  for 2010 runs
 
 xxxxxxxxxxxxxx Svetlana, Peter  28/09-2004, rv2_0_7  xxxxxxxxxxxxxxxxxxxxx
 SeaSalt_ml.f90 used "rough.170" to find sea areas (iclas x 0)
-Now it has been changed to identify sea areas using "landuse.mars2004" data 
+Now it has been changed to identify sea areas using "landuse.mars2004" data
 and scales the sea salt emissions with the water area fraction in the grid.
 
 New grun.pl with extra RunLog info.
@@ -2839,17 +2843,17 @@ xxxxxxxxxxxxxx Peter,Svetlana,Dave  24/09-2004, rv2_0_5  xxxxxxxxxxxxxxxxxxxxx
 ZD_ACID/,ZD_OZONE/My_Aerosols_ml:
      t20(:)  x 293.  (instead of  t20(:)  x 283.)
 
-molwt defined as real in My_Chem_ml 
+molwt defined as real in My_Chem_ml
 
 xxxxxxxxxxxxxxxxxxx Peter,  23/09-2004, rv2_0_4  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Modified Setup_1d and Met_ml: subtracted 1.E-9 from u,v, it2m and itemp.
-This should not change results, but is there in order to avoid 
+This should not change results, but is there in order to avoid
 rounding differences on gridur and cluster.
 
 xxxxxxxxxxxxxxxxxxx Peter,  17/09-2004, rv2_0_4  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Derived_ml and ZD_OZONE/My_Derived_ml: 
+Derived_ml and ZD_OZONE/My_Derived_ml:
 five new d_2d ("D2_SOMO35","D2_AOT30f",D2_AOT40f","D2_AOT60f","D2_AOT40c").
 
 NB: the definition of SOMO35 is slightly different than in "hourlyozone2ramot35":
@@ -2863,7 +2867,7 @@ Introduced new "averaging" for yearly and monthly output of AOTXXc, AOTXXf, SOMO
 NB: the D2_MAXO3 obtained in the yearly output is slightly different than that obtained using "hourlyozone2ramot35" on hourly output, because in the yearly the max is taken on EMEP_day, while "hourlyozone2ramot35" uses 00:00-24:00.
 
 Dry_Dep_ml: bug corrected (small effect (<1%) on results) in def of SAIadd
-	    
+
 My_BoundaryConditions_ml: removed a double declaration of IXADV_H2O2 (compiler on blizzard don't like that)
 
 small changes in grun.pl
@@ -2872,17 +2876,17 @@ xxxxxxxxxxxxxxxxxxx Hilde,  27/08/2004, rv2_0_3  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 GlobalBCs_ml
  My_Chem_ml and My_BoundConditions_ml in OZONE
- 
+
  H2O2 and CH3COO2 BC corrected for H2O2 and CH3COO2.
  OH BCs in OZONE taken out.
- 
+
  Hilde 27/8/2004
 
 Output_hourly  -- cfac comments fixed to 50m->3m
 
 xxxxxxxxxxxxxxxxxxx Dave,              6-11/07/2004, rv2_0_2  xxxxxxxxxxxxxxxx
 
-GlobalBCs_ml: 2002 and 2003 added to mace_head. Preliminary values needed for 
+GlobalBCs_ml: 2002 and 2003 added to mace_head. Preliminary values needed for
    EMEP report, derived from Mace Head obs data for CFCs
 
 My_Derived_ml: Warnings only written once now in My_Derived, to avoid huge log
@@ -2898,7 +2902,7 @@ grun.pl: no bzip2 of hourly.nc file. Some emisdir changes. Alsop BCDIR moved so 
 
 xxxxxxxxxxxxxxxxxxx Hilde,               01/06/2004, rv2_0_1  xxxxxxxxxxxxxxxxxxxxxxxxxx
 ACID and OZONE changes to include BCs from OZONE (OH,CH3COO2,H2O2, O3(acid)). For OZONE, this will have
- effect only when a smaller domain than 170*133 is used.  
+ effect only when a smaller domain than 170*133 is used.
 Link to Logan files in mixing ratio.
 Some SR-My_Derived stuff that should not have been put into ACID removed.
 Files changed:
@@ -2955,7 +2959,7 @@ xxxxxxxxxxxxxxxxxx Dave,               31/03/2004, rv1_9_32   xxxxxxxxxxxxxxxxxx
   !        evaluation.  The SR runs should use as few as possible outputs
   !        to keep CPU and disc-requirements down. We define first then the
   !        minimum list of outputs for use in SR ("NSR_2D"), then define an extra list
-  !        of parameters (dimesnion NEXTRA_"2D) needed in model evaluation, or even 
+  !        of parameters (dimesnion NEXTRA_"2D) needed in model evaluation, or even
   !        for the base-case  of SR runs.
 
   Also define SOURCE_RECPEPTOR in My_Derived. Used in Derived to set all daily
@@ -3048,7 +3052,7 @@ Several modules: Removed double declarations,
 
 Advection_ml: preadvx,preadvy:
 		 small bug in array size declaration (preadvx only)
-	         non-blocking send with buffered arrays 
+	         non-blocking send with buffered arrays
 BoundaryConditions_ml:
 		allocate also when sizex0
 	        forall with mask replaced by loop
@@ -3086,7 +3090,7 @@ looked reasonable
 
 Everuthing  is on ~mifast/Unified__rv.1.9.25/Unimod.
 
-New lines are marked with  "!water". 
+New lines are marked with  "!water".
 
 The modules affected are:
   phyche.f
@@ -3108,7 +3112,7 @@ AFRIC_ADDED bit (non-serious bug) fixed in grun.pl
 
 xxxxxxxxxxxxxxxxxx Dave,        20/02/2004, rv1_9_25 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
-GlobalBCs_ml     ... bug fixed: SpecBC needs to be set for all used species 
+GlobalBCs_ml     ... bug fixed: SpecBC needs to be set for all used species
                     (H2O2 wasn't) check for this added
 
 PhysicalConstants_ml ...   RAD2DEG added
@@ -3120,13 +3124,13 @@ Radiation_ml.f90 --- Bug found! 1900 wrongly added to year. Gives small
                  --- solarnoon and daylength calculation added. Useful in ACID
 
 xxxxxxxxxxxxxxxxxx Peter,        17/02/2004, rv1_9_24 xxxxxxxxxxxxxxxxxxxxxxxxxx
-NetCDF_ml: Out_netCDF, optional input parameter "fileName_given", can be 
-	used to explicitely give the name of an output file. 
-	The use of fileName_given is probably slower than the implicit 
-	filename used by defining iotyp. Use it only if a "non-standard" 
+NetCDF_ml: Out_netCDF, optional input parameter "fileName_given", can be
+	used to explicitely give the name of an output file.
+	The use of fileName_given is probably slower than the implicit
+	filename used by defining iotyp. Use it only if a "non-standard"
 	output (i.e. not out_year.nc etc.) is needed
 
-Met_ml: defined case(-11) to define sdot when it is given at level 
+Met_ml: defined case(-11) to define sdot when it is given at level
 	boundaries instead of midlevels. (ident(6)x-11 is pw defined)
 
 xxxxxxxxxxxxxxxxxx Dave,        29/01/2004, rv1_9_23 xxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3137,7 +3141,7 @@ grun.pl  - now chooses sonde file depending on SR or not - fewer stations
 
 xxxxxxxxxxxxxxxxxx Dave,        21/01/2004, rv1_9_22 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
-GlobalBCs_ml   - add close(IO_GLOBBC)  statements after read. Maybe it doesn't 
+GlobalBCs_ml   - add close(IO_GLOBBC)  statements after read. Maybe it doesn't
                  matter, but it feels safer!
 
 grun.pl - add OHDIR for acid if $SR
@@ -3156,7 +3160,7 @@ Bug-fix: ddep needed initialisations for ecosystem stuff!
 
 xxxxxxxxxxxxxxxxxx Dave,        13/01/2004, rv1_9_20 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Derived_ml -- added T for month in D2_MAXO3 
+Derived_ml -- added T for month in D2_MAXO3
 
 
 xxxxxxxxxxxxxxxxxx Dave,         7/01/2004, rv1_9_19 xxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3186,7 +3190,7 @@ out what these are. "Master" lists of derived variables are kept
 in def_xx variables which correspond to the used f_xx (i.e.
 def_ddep contains the full list of possible f_ddep).
 
-In other routines, most changes are to "use Derived" instead of 
+In other routines, most changes are to "use Derived" instead of
 "use My_Derived".
 
 BUG-FIX - c_hveg O3 calculation improved in DryDep_ml
@@ -3212,7 +3216,7 @@ My_Outputs_ml - NLEVELS_SONDE added - gives number of vertical levels for
                 IMPORTANT - COMMENT OUT THE CORRECT BIT!
                 (default should be non-merlin)
 
-Sites_ml      - make uses of NLEVELS_SONDE. 
+Sites_ml      - make uses of NLEVELS_SONDE.
 
 Rsurface_ml: g_temp function changed.
 
@@ -3244,7 +3248,7 @@ Unimod.f90 : Hourly netCDFfile not initiated here.
 
 grun.pl : removed double definition of femis.dat
 	  create a file RunLog.${runlabel1}.out
- 
+
 xxxxxxxxxxxxxxxxxx Dave     13/12/2003, rv1_9_12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug-fix. Submet_ml:
@@ -3297,7 +3301,7 @@ xxxxxxxxxxxxxxxxxxx Peter  20/11/2003, rv1_9_6 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 runlabel read in grun.pl used to "label" the output
 
 Small Netcdf changes: use runlabel1 in file names.
-	              CDF time is set to current time - half period		      
+	              CDF time is set to current time - half period
 Unimod.f90: read runlabels
 Emissions: inverted a do and a if loop
 ModelConstants: define runlabel1 and runlabel2
@@ -3321,7 +3325,7 @@ Output to RunLog.out added (with IO_LOG) to provide output file with emissions.
    x> Changes in Emissions_ml, Unimod
 
 
-WHEAT(x10) added to DepVariables. 
+WHEAT(x10) added to DepVariables.
 Used in UK_ml  (to provide more obvious hard-coding   ;-)
 
 
@@ -3353,10 +3357,10 @@ Setup_1d_fields_ml
 Solver
 My_Reactions.inc
 
-updated to include changes of N2O5 hydrolysis rate on fine particles. Now we use 
+updated to include changes of N2O5 hydrolysis rate on fine particles. Now we use
 the method of Riemer et al (2003) with a
-'base' reaction probability of 0.02 (before 0.1) and then scaled with the realtive 
-mass of SO4 and NO3, SO4/(NO3+SO4). Only NO3 fine particles would led to a reaction 
+'base' reaction probability of 0.02 (before 0.1) and then scaled with the realtive
+mass of SO4 and NO3, SO4/(NO3+SO4). Only NO3 fine particles would led to a reaction
 probability of 0.002.
 
 xxxxxxxxxxxxxxxxxx Dave, 17  Oct 2003, rv1_8_5 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3372,7 +3376,7 @@ xxxxxxxxxxxxxxxxxxx Peter, 14  Oct 2003, rv1_8_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 My_Outputs_ml: Defined number of vertical levels in Asc2d%nk
 
-Output_hourly: Allow hourly output in NetCDF format on a restricted 
+Output_hourly: Allow hourly output in NetCDF format on a restricted
                domain and in a new file every month.
 
 NetCDF_ml:Sizes of restricted domain can be given (horizontal and vertical).
@@ -3388,7 +3392,7 @@ xxxxxxxxxxxxxxxxxxx Dave, 25  Sep 2003, rv1_8_2 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ds rv1_8_2: Added possibility of multi-layer output. Specify
 
     NLEVELS_HOURLY in My_Outputs_ml, and in hr_out defs use either:
-   
+
          ADVppbv to get surface concentrations (onyl relevant for
                  layer kx20 of course - gives meaningless  number f
                   or higher levels.
@@ -3400,22 +3404,22 @@ Dave, 23/9/2003 - removed double definition of iland in Functions_ml
 
 xxxxxxxxxxxxxxxxxxx Peter, 23 Sep 2003, 1.8.1 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Several changes for nesting purposes and netcdf. 
+Several changes for nesting purposes and netcdf.
 	If you do only "usual" calculations: use EMEP grid
 	and H50 meteo and you will not nest or use NetCDF output etc..
-	then these changes do not affect the results. 
+	then these changes do not affect the results.
 
-Output_binary: bug for instantaneous output. Should not divide scale by nav 
+Output_binary: bug for instantaneous output. Should not divide scale by nav
                if inst output
 
 NetCDF_ml: write NetCDF output files
 	   new definition of projection_params
 	   Instantaneous concentration file
-	   
+
 Many changes in Nest_ml
 
 Met_ml: Test ident(17) for defining xp,yp
-        (not used yet but available: calculate sigmadot from a mass 
+        (not used yet but available: calculate sigmadot from a mass
                                      conserving principle)
 
 Read_Field: In case of non-EMEP grid transform fields to grid (bug corrected)
@@ -3480,12 +3484,12 @@ ZD_OZONE: My_Reactions_ml
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Dave, 19th Aug.  rv1_7_3 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Derived_ml: 
---  Subroutines Consistency_checks and Consistency_count added to search 
+Derived_ml:
+--  Subroutines Consistency_checks and Consistency_count added to search
      for duplicate entries in derived fields.
 
-ZD_OZONE/My_Derived_ml: 
---   Renumbered ecosystem-entires to avoid collision of numbers (had 541 for 
+ZD_OZONE/My_Derived_ml:
+--   Renumbered ecosystem-entires to avoid collision of numbers (had 541 for
      both WDEP_SOX and DDEP_RDNWE
 --   Added AOT30.
 
@@ -3508,15 +3512,15 @@ BoundaryConditions_ml.f90
 -- replaced old Rorvik stuff with use of DEBUG_i,j
 
 GlobalBCs_ml.f90
--- Bug fixes: 
-   1) 2*PI instead of 4.0 * atan(1.0) for twopi_yr 
+-- Bug fixes:
+   1) 2*PI instead of 4.0 * atan(1.0) for twopi_yr
 
    2) bc_rawdata(kx20) set to specified BCs, not kx1 !!
    (the BCs were upside down !)
 
 -- Improved vertical scaling - now  uses physical height instead of sigma index
 -- mace_head iyr_trend /x year option.
-    
+
 
 Functions_ml.f90
 
@@ -3548,7 +3552,7 @@ Makefile: touch depend removed from clean
 Output_hourly - Idirectt, Idiffuse added as options
 
 My_Outputs_ml - SITE_XTRA_INDEX, SONDE_XTRA_INDEX introduced to simplify
-      access to data from d_2d, d_3d  arrays. 
+      access to data from d_2d, d_3d  arrays.
 Sites_ml - d2index, d3index introduced to simplify
       access to data from d_2d, d_3d  arrays. Removes need for explicit
       FSTCF0 cases etc.
@@ -3558,8 +3562,8 @@ ZD_ACID/
     My_Outputs - as above
 ZD_OZONE/
     My_Outputs     - as above
-    My_Derived_ml  - new definations for ddep and ecosystem-specific stuff 
-    My_DryDep      - added use of ECO_ arrays 
+    My_Derived_ml  - new definations for ddep and ecosystem-specific stuff
+    My_DryDep      - added use of ECO_ arrays
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Hilde, Dave, 11th June, rv1.6.11 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3570,7 +3574,7 @@ Dates_ml changed to use FIRST_SDYEARx1980, LAST_SDYEARx2001
   Timefactors_ml modified to use these also.
 
 iyr_ytrend introduced - allows "trend" year to get BCs outside the
-   normal 1990-2000 range, e.g. for 1980 or 2050. 
+   normal 1990-2000 range, e.g. for 1980 or 2050.
    Changes in:
         BoundaryConditions, ZD_XX/My_BoundaryCOnditions, Global_ml.f90,
         grun.pl, ModelConstants_ml, Unimod.f90
@@ -3628,7 +3632,7 @@ Pielke's Kz instead of Iversen+Nordeng variety
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Dave, 5th June, rv1.6.5  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-Changed to SEI_based landuse, and added new-style (Fst) flux calculations. 
+Changed to SEI_based landuse, and added new-style (Fst) flux calculations.
 Changes in DryDep, UK_ml, outouts, etc.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3660,7 +3664,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Dave, 27-28 May 2003, rv1.6.2  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Output_hourly, and My_Outputs_ml.f90 modified to add headers to outputs, 
+Output_hourly, and My_Outputs_ml.f90 modified to add headers to outputs,
 including number, names, etc. - should make it easier to write and use
 processing programs.
 
@@ -3668,7 +3672,7 @@ Aqueous_ml .. small printout bug fixed
 
 Met_ml - added field surface_precip x rainfall direc from HIRLAM in mm/hr
 
-DryDep_ml, Rsurface_ml, uses surface_precip and logical is_wet instead 
+DryDep_ml, Rsurface_ml, uses surface_precip and logical is_wet instead
 of pr_acc
 
 xxxxxxxxxxxxxxxxxxx Hilde 27th of May rv1.6.1 xxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3685,7 +3689,7 @@ xxxxxxxxxxxxxxxxxxx Svetlana, 7th May  2003, rv1.6  xxxxxxxxxxxxxxxxxxxxxxxxxx
 Primary PM25 and PMco are included in OZONE version. Files modified are:
 My_Chem_ml.f90,  My_Emis_ml.f90,  My_DryDep_ml.f90,
 My_WetDep_ml.f90, My_MassBudget_ml.f90, My_Derived_ml.f90, My_Reactions
- 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Hilde, 7th MAy  2003, rv1.6  xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 My_Reaction.inc : Added H2O2 loss due to SO2 ox
@@ -3698,13 +3702,13 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 corrected name of PPM25 and PPMco in ZD_ACID/My_Derived (affects only Net_CDF output )
 Used 600 instead of 619 for aNH4 in ZD_ACID & ZD_OZONE /My_Derived
- 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Peter, 2nd April  2003, rv1.5.2  xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Increased maxsize of Deriv%name to 15 characters in My_Derived and redefined some names
- 
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Dave, 1st April  2003, rv1.5.1  xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3716,7 +3720,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxx Dave, 28th March 2003, rv1.5  xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Stable (?) version fir TFMM runs. 
+Stable (?) version fir TFMM runs.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Hilde/Joffen/Dave  28th March 2003, rv1.4.29   xxxxxxxxxxxxxxxxxxxxxxxx
@@ -3766,14 +3770,14 @@ xxxxxxxxxxx Hilde/Dave 24th 2003, rv1.4.24  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ZD_ACID/My_WetDep changed to remove wet dep of PM
-ZD_OZONE/My_Reactions changed to include aqrck for OH, HO2 
+ZD_OZONE/My_Reactions changed to include aqrck for OH, HO2
 .depend and Makefile  introduced - new system suggested by Heiko.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Dave  24th 2003, rv1.4.23  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Bug fixes found by Hilde in ZD_ACID/My_WetDep_ml, My_Reactions, My_DryDep. 
+Bug fixes found by Hilde in ZD_ACID/My_WetDep_ml, My_Reactions, My_DryDep.
 Bug fix in DryDep_ml (max in so2nh3ratio), Dave
 Logicals vegetation, urban, added to DepVariables_ml, UK_ml
 
@@ -3821,8 +3825,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Dave, March 21th 2003, rv1.4.17  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Met_ml bug fixed. 
-SO2-> SO4 treatment unified in OZONE and ACID 
+Met_ml bug fixed.
+SO2-> SO4 treatment unified in OZONE and ACID
 (SO2+CH3O2 reaction removed from OZONE as part of this, Fe-reaction added to both).
 pNO3 introduced - coarse mode nitrate
 Forgot to say earlier: New NO2 deposition method, FNO2 x Vg. max(NO2-4,0)
@@ -3841,7 +3845,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Peter ,  Feb. 27th 2003, rv1.4.15  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Dave  ,  Feb. 27th 2003,           xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-pw: Improved netCDF output. 
+pw: Improved netCDF output.
 ds: New style of BC specification, with ACID and OZONE in grun.pl
 ds: O3fix removed from My_Chem_ml
 ds: My_Chem_ml not needed for Global... in Makefile
@@ -3905,7 +3909,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Crude adjustment of BCs (+10 ppb ozone) added in Global_BCs, so that clean
-air masses have same ozone as Mace Head. 
+air masses have same ozone as Mace Head.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Dave,  Jan. 22nd 2003, rv1.4.6  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -3942,9 +3946,9 @@ xxxxxxxxxxx Peter , January 2003, rv1.4.2  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-1)DryDep_ml: 
+1)DryDep_ml:
 	use amk
-	confac2x... /amk(KMAX_MID) 
+	confac2x... /amk(KMAX_MID)
         ds-Bug created whewn xn_2d used instead of xn_adv (when put inside i,j loop ?)
 
 2)NetCDF_ml: new module
@@ -3956,7 +3960,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 4)ReadCDF_ml: not used by the model, but contains routines that can read the
 	NetCDF output.
 
-5)Makefile: 
+5)Makefile:
 	LIBS x -lmpi -lnetcdf
 	INCL x -I/home/u4/mifahik/netcdf/include
 	LLIB x -L/home/u4/mifahik/netcdf/lib64
@@ -3987,7 +3991,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Corrected Logan's data. grun.pl refers to new location.
-Timefactors_ml bug corrected  (Hilde had done this already, so rv1.3.1 
+Timefactors_ml bug corrected  (Hilde had done this already, so rv1.3.1
                                was okay)
 
 
@@ -4027,7 +4031,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug found by Svetlana fixed, Setup_1d_ml now uses KEMISTOP, noit
-KMAX_MID-3. ModelConstants_ml also fixed. 
+KMAX_MID-3. ModelConstants_ml also fixed.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -4035,7 +4039,7 @@ xxxxxxxxxxx Dave  , Nov   26  2002, rv1.2  xxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Fixed (non-influencing?) bugs found by Hilde, Peter, in ZD_ACID version, 
+Fixed (non-influencing?) bugs found by Hilde, Peter, in ZD_ACID version,
 My_Chem_ml and  My_MassBalance_ml.
 
 
@@ -4053,7 +4057,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Wrtchem changed to correct problems with daily binary output.
 Small other changes.
-        
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxx Dave  , Oct.  22  2002, emep1.2helcomU  xxxxxxxxxxxxxxxxxxxxxxxxxx
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -4070,7 +4074,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Version used for Helcom runs.
 Added ij Hilde's stack table, but used NEMISLAYERS in EmisDef instead of
 KEMISTOP in ModelConstants, to keep emission definitions in Emis files.
-Added crude effect of wetness on RextS in Rsurface_ml. 
+Added crude effect of wetness on RextS in Rsurface_ml.
 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -4143,8 +4147,8 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 8)Changed 2 last decimals of PI in PhysicalConstants_ml
 
-9)Dates_ml: add_dates_s : Allow to add 3600 seconds (before 3599 was 
-  largest allowed). 
+9)Dates_ml: add_dates_s : Allow to add 3600 seconds (before 3599 was
+  largest allowed).
 
 10)Print max Courant number in Advection_ml
 
@@ -4158,7 +4162,7 @@ xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 15)included a DEBUG compiler option in Makefile
 
-16)commented out a declaration (amax,amin) 
+16)commented out a declaration (amax,amin)
 
 17)Commented out call to smoosp. The routine is not well parallelized.
 

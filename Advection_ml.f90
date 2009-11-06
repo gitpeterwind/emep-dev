@@ -2405,7 +2405,7 @@
           fluxps(ij) = -fluxps(ij)
           ps3d(ij+1) = xm2loc(ij+1)*(hel1ps-hel2ps)
         endif
-        ps3d(ij) = max(0.,ps3d(ij)*(fluxps(ij)-fluxps(ij-1)))
+        ps3d(ij) = max(0.,ps3d(ij)-xm2loc(ij)*(fluxps(ij)-fluxps(ij-1)))
     enddo
 
 357 continue
