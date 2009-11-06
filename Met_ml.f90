@@ -3629,7 +3629,7 @@ contains
     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
     real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
     integer :: status,iglobal,jglobal,info,South_pole,North_pole
-    real :: xm_i_max,ndays(1)
+    real :: xm_i_max,ndays(1),x1,x2,x3,x4
     character (len = 50) :: timeunit
 
     if(me==0)then
@@ -3748,7 +3748,8 @@ contains
              call check(nf90_get_var(ncFileID, varID, gl_glob(1:IIFULLDOM,1) ))
              do i=1,IIFULLDOM
                 if(gl_glob(i,1)>180.0)gl_glob(i,1)=gl_glob(i,1)-360.0
-             enddo
+                if(gl_glob(i,j)<-180.0)gl_glob(i,j)=gl_glob(i,j)+360.0
+              enddo
              do j=1,JJFULLDOM
                 gl_glob(:,j)=gl_glob(:,1)
              enddo
@@ -3842,7 +3843,7 @@ contains
     CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST(gb_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST(gl_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST(projection,4*25,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST(projection,len(projection),MPI_CHARACTER,0,MPI_COMM_WORLD,INFO) 
 
 
     do j=1,MAXLJMAX
@@ -3862,10 +3863,21 @@ contains
 
     do j=j0,jm
        do i=i0,im
-          gl_stagg(i,j)=0.25*(gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gl_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          x1=gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x2=gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x3=gl_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+          x4=gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+
+!8100=90*90; could use any number much larger than zero and much smaller than 180*180  
+          if(x1*x2<-8100.0 .or. x1*x3<-8100.0 .or. x1*x4<-8100.0)then
+             !Points are on both sides of the longitude -180=180              
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+             if(x3<0)x3=x3+360.0
+             if(x4<0)x4=x4+360.0
+          endif
+          gl_stagg(i,j)=0.25*(x1+x2+x3+x4)
+
           gb_stagg(i,j)=0.25*(gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
                gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
                gb_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
@@ -3874,29 +3886,59 @@ contains
     enddo
     do j=0,j0
        do i=i0,im
-          gl_stagg(i,j)=2*gl_stagg(i,j+1)-gl_stagg(i,j+2)
+          x1=gl_stagg(i,j+1)
+          x2=gl_stagg(i,j+2)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
           gb_stagg(i,j)=2*gb_stagg(i,j+1)-gb_stagg(i,j+2)
        enddo
     enddo
     do j=jm,MAXLJMAX
        do i=i0,im
-          gl_stagg(i,j)=2*gl_stagg(i,j-1)-gl_stagg(i,j-2)
+          x1=gl_stagg(i,j-1)
+          x2=gl_stagg(i,j-2)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
           gb_stagg(i,j)=2*gb_stagg(i,j-1)-gb_stagg(i,j-2)
        enddo
     enddo
     do j=0,MAXLJMAX
        do i=0,i0
-          gl_stagg(i,j)=2*gl_stagg(i+1,j)-gl_stagg(i+2,j)
+          x1=gl_stagg(i+1,j)
+          x2=gl_stagg(i+2,j)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
           gb_stagg(i,j)=2*gb_stagg(i+1,j)-gb_stagg(i+2,j)
        enddo
     enddo
     do j=0,MAXLJMAX
        do i=im,MAXLIMAX
-          gl_stagg(i,j)=2*gl_stagg(i-1,j)-gl_stagg(i-2,j)
+          x1=gl_stagg(i-1,j)
+          x2=gl_stagg(i-2,j)
+          if(x1*x2<-8100.0 )then
+             if(x1<0)x1=x1+360.0
+             if(x2<0)x2=x2+360.0
+          endif
+          gl_stagg(i,j)=2*x1-x2
           gb_stagg(i,j)=2*gb_stagg(i-1,j)-gb_stagg(i-2,j)
        enddo
     enddo
-
+!ensure that values are within [-180,+180]]
+    do j=0,MAXLJMAX
+       do i=0,MAXLIMAX
+          if(gl_stagg(i,j)>180.0)gl_stagg(i,j)=gl_stagg(i,j)-360.0
+          if(gl_stagg(i,j)<-180.0)gl_stagg(i,j)=gl_stagg(i,j)+360.0
+       enddo
+    enddo
 
     !test if the grid is cyclicgrid:
     !The last cell + 1 cell = first cell
@@ -3968,7 +4010,7 @@ contains
 
     !pw
     !If some cells are to narrow (Poles in lat lon coordinates),
-    !this will make give too small time steps in the Advection,
+    !this will give too small time steps in the Advection,
     !because of the constraint that the Courant number should be <1.
     ! 
     !If Poles are found and lon-lat coordinates are used the Advection scheme
@@ -3976,7 +4018,7 @@ contains
 
     !Look for poles
     !If the northernmost or southernmost lines are poles, they are not
-    !considered as outer boundaries and will not be treat 
+    !considered as outer boundaries and will not be treated 
     !by "BoundaryConditions_ml".
     !Note that "Poles" is defined in subdomains
 

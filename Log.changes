@@ -1,3 +1,14 @@
+xxxxxxxxxxxxxx rv3_4_1    Peter  6 Nov 2009 xxxxxxxxxxxxxxxx
+
+New routine ReadField_CDF , which reads a global lat-lon file with data and 
+interpolates into subdomain. Note that all CPUs read the same file simultaneously.
+In the future this can be developed into explicit parallel reads. 
+This routine will soon be used for reading forest fires emissions.
+
+Met_ml: more robust definition of gl_stagg (staggered longitude)
+
+run.pl: link to global forest fire emission file.
+
 xxxxxxxxxxxxxx rv3_4     Dave, Robert  6 Nov 2009 xxxxxxxxxxxxxxxx
 
 Small corrections to ZCM_EmChem09. EXTRA_ITER=1 in Solver_ml

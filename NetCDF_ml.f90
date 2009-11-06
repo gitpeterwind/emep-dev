@@ -65,14 +65,14 @@
                                   ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                   ,grid_north_pole_latitude,grid_north_pole_longitude&
                                   ,GlobalPosition,gb_glob,gl_glob,ref_latitude&
-                                  ,projection, sigma_mid,gb_stagg,gl_stagg
+                                  ,projection, sigma_mid,gb_stagg,gl_stagg,gl,gb,lb2ij
   use ModelConstants_ml, only : KMAX_MID, runlabel1, runlabel2 &
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
                                 ,PT,NLANDUSEMAX
   use netcdf
   use OwnDataTypes_ml,  only : Deriv
   use Par_ml, only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &
-                        MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax
+                        MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax,gi0,gj0
   use PhysicalConstants_ml,  only : PI       
   use TimeDate_ml, only: nmdays,leapyear ,current_date, date
 
@@ -111,6 +111,7 @@
   public :: dayssince1900
   public :: Read_Inter_CDF
   public :: Read_Local_Inter_CDF
+  public :: ReadField_CDF
 
   private :: CreatenetCDFfile
   private :: createnewvariable
@@ -2079,5 +2080,315 @@ stop
 
 
 end subroutine Read_Local_Inter_CDF
+
+
+subroutine ReadField_CDF(fileName,varname,Rvar,nstart,interpol,needed)
+!reads data from file and interpolates data into local grid
+
+  use netcdf
+
+implicit none
+character(len = *),intent(in) ::fileName,varname
+real,intent(out) :: Rvar(*)
+integer,intent(in) :: nstart
+character(len = *), optional,intent(in) :: interpol
+logical, optional, intent(in) :: needed
+integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
+integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k,luVarID
+integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
+integer ::alloc_err
+character*100 ::name
+real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
+integer ::ij,jdiv,idiv,Ndiv,Ndiv2,ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
+integer ::imin,imax,jmin,jjmin,jmax,igjg,dimi,dimj
+integer, allocatable:: Ivalues(:)
+real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
+real ::lat,lon,maxlon,minlon,maxlat,minlat
+logical ::fileneeded
+character(len = 20) :: interpol_used
+!NOT_USED  integer, parameter ::NLU_EMEP=20,NLU_TERRAIN=25
+!NOT_USED  real :: convT_E(NLU_TERRAIN,NLU_EMEP)
+real :: tot,ir,jr,Grid_resolution
+type(Deriv) :: def1 ! definition of fields
+
+
+
+fileneeded=.true.!default
+if(present(needed))then
+   fileneeded=needed
+endif
+
+  status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
+  if(status /= nf90_noerr) then     
+     Grid_resolution=111177.4 !assume 1 degree resolution
+  endif
+
+!divide the coarse grid into pieces significantly smaller than the fine grid
+!only used in the conservatives cases
+  Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
+  Ndiv=max(1,Ndiv)
+
+if(present(interpol))then
+
+   interpol_used=interpol
+
+else
+!the method chosen depends on the relative resolutions
+   if(Grid_resolution/GRIDWIDTH_M>4)then
+      interpol_used='zero_order'!usually good enough, and keeps gradients
+   else
+      interpol_used='conservative'!may be better, but more CPU expensive
+   endif
+endif
+
+
+
+!1)Read data 
+  !open an existing netcdf dataset
+  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+  if(status == nf90_noerr) then     
+!     print *, 'reading ',trim(filename)
+  else
+!     nfetch=0
+     if(fileneeded)then
+        print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
+        call CheckStop(fileneeded, "ReadField_CDF : file needed but not found") 
+     else
+        print *, 'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
+        return
+     endif
+  endif
+
+
+  !test if the variable is defined and get varID:
+  status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
+  if(status == nf90_noerr) then     
+!     print *, 'variable exists: ',trim(varname)
+  else
+!     nfetch=0
+     if(fileneeded)then
+!        print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+        call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found") 
+     else
+        print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
+        return
+     endif
+  endif
+
+  !get dimensions id
+  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+
+
+  !get dimensions
+  startvec=1
+  dims=0
+  do i=1,ndims
+     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
+!     write(*,*)'size variable ',i,dims(i)
+  enddo
+
+!get coordinates
+!we assume first that data is originally in lon lat grid
+!check that there are dimensions called lon and lat
+
+  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ))
+  if(trim(name)/='lon')goto 447
+  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
+  if(trim(name)/='lat')goto 447
+
+  allocate(Rlon(dims(1)), stat=alloc_err)    
+  allocate(Rlat(dims(2)), stat=alloc_err)    
+  status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = lonVarID)
+  if(status /= nf90_noerr) then     
+     status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
+     if(status /= nf90_noerr) then  
+        write(*,*)'did not find longitude variable'
+        stop
+     endif
+  endif
+  call check(nf90_get_var(ncFileID, lonVarID, Rlon))
+
+  status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = latVarID)
+  if(status /= nf90_noerr) then     
+     status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = latVarID)
+     if(status /= nf90_noerr) then  
+        write(*,*)'did not find latitude variable'
+        stop
+     endif
+  endif
+  call check(nf90_get_var(ncFileID, latVarID, Rlat))
+
+!NB: we assume regular grid
+!inverse of resolution
+  dloni=1.0/(Rlon(2)-Rlon(1))
+  dlati=1.0/(Rlat(2)-Rlat(1))
+
+
+!Find chunk of data required (local)
+maxlon=maxval(gl_stagg)
+minlon=minval(gl_stagg)
+maxlat=maxval(gb_stagg)
+minlat=minval(gb_stagg)
+imin=mod(nint((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+jmin=max(1,min(dims(2),nint((minlat-Rlat(1))*dlati)+1))
+imax=mod(nint((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+jmax=max(1,min(dims(2),nint((maxlat-Rlat(1))*dlati)+1))
+
+!latitude is sometime counted from north pole, sometimes from southpole:
+jjmin=jmin
+jmin=min(jmin,jmax)
+jmax=max(jjmin,jmax)
+!  write(*,"(a,4f8.2,6i8)")'minmax ',minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
+if(imax<imin)then
+!crossing longitude border !
+!   write(*,*)'WARNING: crossing end of map'
+!take everything...could be memory expensive
+   imin=1
+   imax=dims(1)
+endif
+!   imin=1
+!   imax=dims(1)
+!   jmin=1
+!   jmax=dims(2)
+
+  startvec(1)=imin
+  startvec(2)=jmin
+  startvec(ndims)=nstart
+  dimi=dims(1)
+  dimj=dims(2)
+  dims=1
+ dims(1)=imax-imin+1
+ dims(2)=jmax-jmin+1
+
+  totsize=1
+  do i=1,ndims
+     totsize=totsize*dims(i)
+!  write(*,*)'size variable ',i,startvec(i),dims(i)
+  enddo
+!  write(*,*)'total size variable ',totsize
+
+  if(xtype==NF90_REAL)then
+     allocate(Rvalues(totsize), stat=alloc_err)    
+    call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims))
+
+     if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
+        !conserves integral (almost, does not take into account local differences in mapping factor)
+        !takes weighted average over gridcells covered by model gridcell
+        !2D only for now
+        if(ndims>3)then
+           write(*,*)'3D interpolation not implemented'
+           stop
+        endif
+        !Divide each global gridcell into Ndiv x Ndiv pieces
+        Ndiv2=Ndiv*Ndiv
+        !
+        if(projection/='Stereographic'.and.projection/='lon lat')then
+           !the method should be revised or used only occasionally
+           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
+        endif
+        allocate(Ivalues(limax*ljmax))
+        do ij=1,limax*ljmax
+           Ivalues(ij)=0
+           Rvar(ij)=0.0
+        enddo
+
+        do jg=1,dims(2)
+           do jdiv=1,Ndiv
+              lat=Rlat(startvec(2)-1+jg)-0.5/dlati+(jdiv-0.5)/(dlati*Ndiv)
+              do ig=1,dims(1)
+                 igjg=ig+(jg-1)*dims(1)
+                 do idiv=1,Ndiv
+                    lon=Rlon(startvec(1)-1+ig)-0.5/dloni+(idiv-0.5)/(dloni*Ndiv)  
+                    call lb2ij(lon,lat,ir,jr)
+!if(me==40)write(*,*)'ir,jr ',ir,jr,'lon.lat ',lon,lat
+                    i=nint(ir)-gi0+1
+                    j=nint(jr)-gj0+1
+                    if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
+                       ij=i+(j-1)*limax
+                       Ivalues(ij)=Ivalues(ij)+1
+                       Rvar(ij)=Rvar(ij)+Rvalues(igjg)
+                    endif
+                 enddo
+              enddo
+           enddo
+        enddo
+      
+        do ij=1,limax*ljmax
+           if(Ivalues(ij)<=0)then
+              write(*,*)'ERROR. no values found!',ij,me,maxlon,minlon,maxlat,minlat
+              call CheckStop("Interpolation error") 
+           else
+              if(interpol_used=='mass_conservative')then
+                 !used for example for emissions in kg (or kg/s)
+                 Rvar(ij)=Rvar(ij)/Ndiv2! Total sum of values from all cells is constant
+              else
+                 !used for example for emissions in kg/m2 (or kg/m2/s)
+                 Rvar(ij)=Rvar(ij)/Ivalues(ij)! integral is approximately conserved
+              endif
+           endif
+        enddo
+        
+        deallocate(Ivalues)
+
+     elseif(interpol_used=='zero_order')then
+        !interpolation 1:
+        !nearest gridcell
+        ijk=0
+        do k=1,1
+           do j=1,ljmax
+              do i=1,limax
+                 ijk=ijk+1
+                 ig=nint((gl(i,j)-Rlon(startvec(1)))*dloni)+1
+                 jg=max(1,min(dims(2),nint((gb(i,j)-Rlat(startvec(2)))*dlati)+1))
+                 igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                 Rvar(ijk)=Rvalues(igjgk)
+                 
+              enddo
+           enddo
+        enddo
+        
+     else
+        write(*,*)'interpolation method not recognized'
+        stop
+     endif
+     
+     
+     deallocate(Rvalues)
+     
+  else
+     
+     write(*,*)'datatype not yet supported'
+     stop
+  endif
+
+  deallocate(Rlon)
+  deallocate(Rlat)
+!  CALL MPI_FINALIZE(INFO)
+!   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+
+return
+
+!only for tests:
+ def1%class='ForestFireEmis' !written
+ def1%avg=.false.      !not used
+ def1%index=0          !not used
+ def1%scale=1.0      !not used
+ def1%rho=.false.      !not used
+ def1%inst=.true.      !not used
+ def1%year=.false.     !not used
+ def1%month=.false.    !not used
+ def1%day=.false.      !not used
+ def1%name=trim(varname)        !written
+ def1%unit='g/m2'       !written
+
+ call Out_netCDF(IOU_INST,def1,2,1, &
+    Rvar,1.0,CDFtype=Real4,fileName_given='FF.nc')
+
+  return
+447 continue
+  write(*,*)'NOT a longitude-latitude grid!',trim(fileName)
+  call CheckStop("projection not yet implemented") 
+
+end subroutine ReadField_CDF
 
 end module NetCDF_ml
