@@ -1,6 +1,6 @@
 !>_________________________________________________________<
 
-  module  GenOut_SOA_ml
+  module  ChemSOA_ml
 !-----------------------------------------------------------
 
   use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices
@@ -16,5 +16,5 @@
   end type VBST
 
 
- end module GenOut_SOA_ml
+ end module ChemSOA_ml
  !-----------------------------------------------------------

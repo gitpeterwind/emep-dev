@@ -63,13 +63,13 @@
          ,0.35  &
          ,m  &
          ,0.75-1.27*log10(0.35)) 
-       rcmisc(22,:) = iupac_troe(1.3e-3*exp(3.5*log300divt)*exp(-11000*tinv)  &
-         ,9.70e14*exp(-0.1*log300divt)*exp(-11080*tinv)  &
+       rcmisc(22,:) = iupac_troe(1.3e-3*exp(3.5*log300divt)*exp(-11000.0*tinv)  &
+         ,9.70e14*exp(-0.1*log300divt)*exp(-11080.0*tinv)  &
          ,0.35  &
          ,m  &
          ,0.75-1.27*log10(0.35)) 
        rcmisc(23,:) = iupac_troe(3.3e-30*exp(3.0*log300divt)  &
-         ,4.1e-11*exp(0.0*log300divt)  &
+         ,4.1e-11  &
          ,0.40  &
          ,m  &
          ,0.75-1.27*log10(0.4)) 
@@ -78,8 +78,8 @@
          ,0.3  &
          ,m  &
          ,0.75-1.27*log10(0.3)) 
-       rcmisc(25,:) = iupac_troe(4.9e-3*exp(-12100*tinv)  &
-         ,5.4e16*exp(-13830*tinv)  &
+       rcmisc(25,:) = iupac_troe(4.9e-3*exp(-12100.0*tinv)  &
+         ,5.4e16*exp(-13830.0*tinv)  &
          ,0.3  &
          ,m  &
          ,0.75-1.27*log10(0.3)) 
@@ -89,7 +89,7 @@
          ,m  &
          ,0.75-1.27*log10(0.48)) 
        rcmisc(27,:) = iupac_troe(8.0e-27*exp(3.5*log300divt)  &
-         ,3.0e-11*exp(1.0*log300divt)  &
+         ,3.0e-11*300.0*tinv  &
          ,0.5  &
          ,m  &
          ,0.75-1.27*log10(0.5)) 
@@ -98,16 +98,16 @@
          ,0.3  &
          ,m  &
          ,0.75-1.27*log10(0.3)) 
-       rcmisc(29,:) = iupac_troe(4.9e-3*exp(-12100*tinv)  &
-         ,5.4e16*exp(-13830*tinv)  &
+       rcmisc(29,:) = iupac_troe(4.9e-3*exp(-12100.0*tinv)  &
+         ,5.4e16*exp(-13830.0*tinv)  &
          ,0.3  &
          ,m  &
          ,0.75-1.27*log10(0.3)) 
        rcmisc(30,:) = iupac_troe(7.4e-31*exp(2.4*log300divt)  &
          ,3.3e-11*exp(0.3*log300divt)  &
-         ,0.81  &
+         ,exp(-temp/1420.0)  &
          ,m  &
-         ,0.75-1.27*log10(0.81)) 
+         ,0.75+3.884e-4*temp) 
 
   end subroutine set_rcmisc_rates
 end module  ChemRates_rcmisc_ml
