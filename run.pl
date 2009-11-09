@@ -310,7 +310,7 @@ my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-#$NTERM = 2;       # for testing, simply reset here
+ $NTERM = 2;       # for testing, simply reset here
  $NTERM = 25 if $CWF ;  # 3-day forecast (8*3+1=25)
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
@@ -547,6 +547,14 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
         $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
         $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
         $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
+	if ( $GRID eq "GLOBAL" ) {
+	    foreach my $t ( qw (nox voc co nh3 pm25 pmco)) {
+		$ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
+	    }
+	    foreach my $t ( qw (so2)) {
+		$ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
+	    }
+	}
     }
 
 # Emissions setup:
