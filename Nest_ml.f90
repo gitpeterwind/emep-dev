@@ -64,7 +64,7 @@ module Nest_ml
   use ChemSpecs_tot_ml , only :NSPEC_TOT
   use netcdf
   use netcdf_ml,      only : GetCDF,Out_netCDF,Init_new_netCDF,&
-       secondssince1970,Int1,Int2,Int4,Real4,Real8
+       secondssince1970,dayssince1900,Int1,Int2,Int4,Real4,Real8
   use Functions_ml,    only : great_circle_distance
   use ModelConstants_ml,    only : KMAX_MID, NPROC, FORECAST ! AMVB 2009-11-06: nested input/output on FORECAST mode
   use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
@@ -120,19 +120,23 @@ module Nest_ml
   !dimension of external grid
   integer,save :: Next,KMAX_ext,GJMAX_ext,GIMAX_ext
 
-  integer,save :: itime_saved(2),itime
+  integer,save :: itime!itime_saved(2),
+  real*8,save :: rtime_saved(2)
   character*30,save  :: filename_read='EMEP_IN.nc'
   character*30,save  :: filename_write='EMEP_OUT.nc'
+  real*8, parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
 
 contains
 
   subroutine readxn(indate)
+    implicit none
     type(date), intent(in) :: indate           ! Gives year..seconds
     integer,save  :: first_data=-1
 
 
     integer :: nseconds(1),n1,n,i,j,k,II,JJ
     integer :: nstart,nfetch,ndate(4),nseconds_indate
+    real*8:: ndays_indate
 
     !    real , dimension(48,48,20) ::data
 
@@ -146,7 +150,8 @@ contains
     ndate(2)  = indate%month
     ndate(3)  = indate%day
     ndate(4)  = indate%hour
-    call secondssince1970(ndate,nseconds_indate)
+!    call secondssince1970(ndate,nseconds_indate)
+    call dayssince1900(ndate,ndays_indate)
 
 ! AMVB 2009-11-06: nested input/output on FORECAST mode
     if(FORECAST)then ! FORECAST mode superseeds nest MODE
@@ -158,15 +163,15 @@ contains
         return
       end if
       if(me==0)   print *,'RESET ALL XN 3D'
-      call init_nest(nseconds_indate)
-      call reset_3D(nseconds_indate)
+      call init_nest(ndays_indate)
+      call reset_3D(ndays_indate)
       return
     elseif(MODE == 11.or.MODE == 12)then
        if(.not. first_call)return
        first_call=.false.
        if(me==0)   print *,'RESET ALL XN 3D'
-       call init_nest(nseconds_indate)
-       call reset_3D(nseconds_indate)
+       call init_nest(ndays_indate)
+       call reset_3D(ndays_indate)
        return
     else
 !    if(me==0)   print *,'call to READXN',indate%hour,indate%seconds
@@ -175,35 +180,36 @@ contains
     if(me==0)   print *,'NESTING'
 
     if(first_data==-1)then
-       call init_nest(nseconds_indate)
-       call reset_3D(nseconds_indate)
-       call read_newdata_LATERAL(nseconds_indate,1)
-       call read_newdata_LATERAL(nseconds_indate,2)
+       call init_nest(ndays_indate)
+       call reset_3D(ndays_indate)
+       call read_newdata_LATERAL(ndays_indate,1)
+       call read_newdata_LATERAL(ndays_indate,2)
     endif
 
 
-    if(itime_saved(2)<nseconds_indate)then
+    if(ndays_indate-rtime_saved(2)>halfsecond)then
        !look for a new data set
        if(me==0)write(*,*)'NEST: READING NEW BC DATA'
-       call read_newdata_LATERAL(nseconds_indate,2)
+       call read_newdata_LATERAL(ndays_indate,2)
     endif
 
 
     !    make weights for time interpolation
     W1=1.0;  W2=0.0!default
-    if(itime_saved(1)<nseconds_indate)then
+    if(ndays_indate-rtime_saved(1)>halfsecond)then
        !interpolate
-       W2=(nseconds_indate-itime_saved(1))/(1.0*itime_saved(2)-itime_saved(1))
+       W2=(ndays_indate-rtime_saved(1))/(rtime_saved(2)-rtime_saved(1))
        W1=1.0-W2
-!       call datefromsecondssince1970(ndate,nseconds_indate,1)
+!       if(me==1)then
+!       call datefromdayssince1900(ndate,ndays_indate,1)
 !       write(*,*)'interpolating between'
-!       call datefromsecondssince1970(ndate,itime_saved(1),1)
+!       call datefromdayssince1900(ndate,rtime_saved(1),1)
 !       write(*,*)'and'
-!       call datefromsecondssince1970(ndate,itime_saved(2),1)
+!       call datefromdayssince1900(ndate,rtime_saved(2),1)
 !       write(*,*)'with weights : ',W1,W2
-
+!       endif
     endif
-!    if(me==0)write(*,*)'weights : ',W1,W2,itime_saved(1),itime_saved(2)
+!    if(me==0)write(*,*)'weights : ',W1,W2,rtime_saved(1),rtime_saved(2)
 
     do n=1,NSPEC_ADV
        do k=1,KMAX_ext
@@ -285,7 +291,7 @@ contains
     222 FORMAT(A,I2.2,I4.4,A)
 !    write(fileName_write,222)'EMEP_BC_',indate%month,indate%year,'.nc'!for different names each month
                                                                       !NB: readxn should have same name
-    if(me==0)write(*,*)'write Nest data',trim(fileName_write)
+    if(me==0)write(*,*)'write Nest data ',trim(fileName_write)
 
 
 
@@ -390,9 +396,68 @@ contains
 55  format(A,I5,A,I4,A,I4,A,I4,A,I10)
   end subroutine datefromsecondssince1970
 
-  subroutine init_nest(nseconds_indate)
+  subroutine datefromdayssince1900(ndate,ndays,printdate)
+    !calculate date from seconds that have passed since the start of the year 1900
+
+    !  use Dates_ml, only : nmdays
+    implicit none
+
+    integer, intent(out) :: ndate(4)
+    real*8, intent(inout) :: ndays
+    integer,  intent(in) :: printdate
+    real*8 :: rn
+
+    integer :: n,nday,nmdays(12),nmdays2(13)
+    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+
+!add 0.5 seconds to avoid numerical errors in (n<=ndays) 
+    ndays=ndays+halfsecond
+
+    nmdays2(1:12)=nmdays
+    nmdays2(13)=0
+    ndate(1)=1899
+    n=0
+    do while(n<=ndays)
+       n=n+365
+       ndate(1)=ndate(1)+1
+       if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n+1
+    enddo
+    n=n-365
+    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n-1
+    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)nmdays2(2)=29
+    ndate(2)=0
+    do while(n<=ndays)
+       ndate(2)=ndate(2)+1
+       n=n+nmdays2(ndate(2))
+    enddo
+    n=n-nmdays2(ndate(2))
+    ndate(3)=0
+    do while(n<=ndays)
+       ndate(3)=ndate(3)+1
+       n=n+1
+    enddo
+    rn=n-1
+    ndate(4)=-1
+    do while(rn<=ndays)
+       ndate(4)=ndate(4)+1
+       rn=rn+1/24.0
+    enddo
+    rn=rn-1/24.0
+
+!correct for modification
+    ndays=ndays-halfsecond
+    !    ndate(5)=(ndays-rn)*24*3600.0
+    if(printdate>0)then
+       write(*,55)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
+            ndate(3),', hour: ',ndate(4),', seconds: ',(ndays-rn)*24*3600.0
+    endif
+55  format(A,I5,A,I4,A,I4,A,I4,A,F10.2)
+  end subroutine datefromdayssince1900
+
+  subroutine init_nest(ndays_indate)
 
     implicit none
+    real*8 :: ndays_indate,ndays(1)
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
     integer :: nseconds_indate,ndate(4)
     real :: dist(0:4)
@@ -400,7 +465,7 @@ contains
     real, allocatable, dimension(:,:) ::lon_ext,lat_ext
     character*80 ::projection
 
-    itime_saved = -999999 !initialization
+    rtime_saved = -99999.9 !initialization
 
     !Read dimensions (global)
     if(me==0)then
@@ -471,13 +536,13 @@ contains
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
 
        !          do n=1,Next
-       call check(nf90_get_var(ncFileID, varID, nseconds,start=(/ 1 /),count=(/ 1 /) ))
+       call check(nf90_get_var(ncFileID, varID, ndays,start=(/ 1 /),count=(/ 1 /) ))
 
-       if(nseconds(1)>nseconds_indate)then
+       if(ndays(1)-ndays_indate>halfsecond)then
           write(*,*)'WARNING: did not find BIC for date:'
-          call datefromsecondssince1970(ndate,nseconds_indate,1)
+          call datefromdayssince1900(ndate,ndays_indate,1)
           write(*,*)'first date found:'
-          call datefromsecondssince1970(ndate,nseconds(1),1)
+          call datefromdayssince1900(ndate,ndays(1),1)
        endif
        !          enddo
 
@@ -552,43 +617,45 @@ contains
 
   end subroutine init_nest
 
-  subroutine read_newdata_LATERAL(nseconds_indate,nr)
+  subroutine read_newdata_LATERAL(ndays_indate,nr)
 
     implicit none
+    real*8, intent(in)::ndays_indate
     real, allocatable, dimension(:,:,:) ::data
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
     integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,nseconds_indate,nr
     integer :: nseconds_old
+    real*8:: ndays(1),ndays_old
 
-    nseconds_old=itime_saved(2)
+    ndays_old=rtime_saved(2)
     allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
     if(me==0)then
        call check(nf90_open(path = trim(fileName_read), mode = nf90_nowrite, ncid = ncFileID))
 
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
        do n=1,Next
-          call check(nf90_get_var(ncFileID, varID, nseconds,start=(/ n /),count=(/ 1 /) ))
-          if(nseconds(1)>=nseconds_indate)then
+          call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
+          if(ndays_indate-ndays(1)<halfsecond)then
              write(*,*)'Using date '
-             call datefromsecondssince1970(ndate,nseconds(1),1)
+             call datefromdayssince1900(ndate,ndays(1),1)
              goto 876
           endif
        enddo
        write(*,*)'WARNING: did not find correct date'
        itime=Next
        write(*,*)'Using date '
-       call datefromsecondssince1970(ndate,nseconds(1),1)
+       call datefromdayssince1900(ndate,ndays(1),1)
 876    continue
        itime=n
-       itime_saved(2)=nseconds(1)
+       rtime_saved(2)=ndays(1)
     endif
 
-      CALL MPI_BCAST(itime_saved,4*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(rtime_saved,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
     do n= 1, NSPEC_ADV
        if(nr==2)then
-          !store the old vaules in 1
-          itime_saved(1)=nseconds_old
+          !store the old values in 1
+          rtime_saved(1)=ndays_old
           do k=1,KMAX_ext
              do i=1,li0-1
                 do j=1,ljmax
@@ -671,12 +738,14 @@ contains
 
   end subroutine read_newdata_LATERAL
 
-  subroutine reset_3D(nseconds_indate)
+  subroutine reset_3D(ndays_indate)
     implicit none
+    real*8, intent(in)::ndays_indate
     real, allocatable, dimension(:,:,:) ::data
     integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,itime,status
     integer :: nseconds_indate
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
+    real*8 :: ndays(1)
 
     allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
     if(me==0)then
@@ -684,10 +753,10 @@ contains
 
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
        do n=1,Next
-          call check(nf90_get_var(ncFileID, varID, nseconds,start=(/ n /),count=(/ 1 /) ))
-          if(nseconds(1)>=nseconds_indate)then
+          call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
+          if(ndays(1)>=ndays_indate)then
              write(*,*)'found date '
-             call datefromsecondssince1970(ndate,nseconds(1),1)
+             call datefromdayssince1900(ndate,ndays(1),1)
              goto 876
           endif
        enddo
