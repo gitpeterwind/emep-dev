@@ -46,7 +46,7 @@ module PhyChem_ml
    use DryDep_ml,      only : drydep,init_drydep
    use Emissions_ml,   only : EmisSet
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
-                             gl, gb, projection, Poles
+                             gl, gb, projection, Pole_included
    use Met_ml ,        only : roa,z_bnd,z_mid,metint, ps, cc3dmax, &
                                zen,coszen,Idirect,Idiffuse
    use ModelConstants_ml, only : KMAX_MID, nmax, nstep &
@@ -162,7 +162,7 @@ contains
 ! For efficient parallellisation each subdomain needs to have the same work load,
 ! This can be obtained by setting NPROCY=1 (number of subdomains in latitude- or y-direction).
 ! Then, all subdomains have exactly the same geometry.
-        if( (Poles(1)==1.or.Poles(2)==1.or.FORECAST).and. & ! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
+        if( (Pole_included==1.or.FORECAST).and. & ! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
                               trim(projection)==trim('lon lat'))then
 
            call advecdiff_poles

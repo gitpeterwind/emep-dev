@@ -154,6 +154,7 @@
     character (len=100),public::projection
   integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
   integer, public :: Poles(2) !Poles(1)=1 if North pole is found, Poles(2)=1:SP
+  integer, public :: Pole_included!Pole_included=1 if the grid include at least one pole
 
 contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

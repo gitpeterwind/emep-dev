@@ -41,7 +41,7 @@ module Met_ml
   use Functions_ml,         only : Exner_tab, Exner_nd
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
        ,gl,gb, gb_glob, gl_glob, MIN_ADVGRIDS   &
-       ,Poles, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
+       ,Poles, Pole_included, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
@@ -3630,7 +3630,7 @@ contains
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
     integer :: GIMAX_file,GJMAX_file,KMAX_file,ihh,ndate(4)
     real,dimension(-1:GIMAX+2,-1:GJMAX+2) ::xm_global,xm_global_j,xm_global_i
-    integer :: status,iglobal,jglobal,info,South_pole,North_pole
+    integer :: status,iglobal,jglobal,info,South_pole,North_pole,Ibuff(2)
     real :: xm_i_max,ndays(1),x1,x2,x3,x4
     character (len = 50) :: timeunit
 
@@ -4049,8 +4049,11 @@ contains
        write(*,*)me,'Found South Pole'
     endif
 
-
-
+     CALL MPI_ALLREDUCE(Poles,Ibuff,2,MPI_INTEGER,MPI_MAX,MPI_COMM_WORLD,INFO)
+     Pole_included=max(Ibuff(1),Ibuff(2))
+     
+     if(ME==0.and.Pole_included==1)write(*,*)'The grid includes a pole'
+     
   end subroutine Getgridparams
 
 
