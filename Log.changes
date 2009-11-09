@@ -1,3 +1,12 @@
+xxxxxxxxxxxxxx rv3_4_4   Peter, 9 Nov. 2009 xxxxxxxxxxxxxxxx
+
+GridValues_ml.f90,Met_ml.f90,PhyChem_ml.f90: use Pole_included instead of Poles.
+Should make the global model work also when NPROCY >2 (but still in an inefficient way).
+
+Nest_ml : use dayssince1900 for nesting.
+
+run.pl: linked monthly gridded emissions if GLOBAL
+
 xxxxxxxxxxxxxx rv3_4_3   Alvaro, 6 Nov. 2009 xxxxxxxxxxxxxxxx
 
 Advection_ml - corrected bug introdiced on rv3_4_2
