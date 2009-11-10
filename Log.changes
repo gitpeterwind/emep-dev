@@ -1,3 +1,9 @@
+xxxxxxxxxxxxxx rv3_4_5   Alvaro, 10 Nov. 2009 xxxxxxxxxxxxxxxx
+
+run.pl - corrected bugs introdiced on rv3_4_2
+
+Makefile_titan - small change for linking rule (makedepf90/Depend/.depend)
+
 xxxxxxxxxxxxxx rv3_4_4   Peter, 9 Nov. 2009 xxxxxxxxxxxxxxxx
 
 GridValues_ml.f90,Met_ml.f90,PhyChem_ml.f90: use Pole_included instead of Poles.

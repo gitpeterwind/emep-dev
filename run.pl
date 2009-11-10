@@ -113,16 +113,17 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 die " TO DO: Need still to create SR split files\n" if $SR ;
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
+my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP) if $CWF;
 if ($CWF) {
-  chop(my $CWFBASE = `date +%Y%m%d`);   # Forecast base date (default today)
-       my $CWFDAYS = $CWF               # Forecast lenght indays (default $CWF)
-  $CWFBASE = shift if @ARGV;            # Forecast base date and lenght can be
-  $CWFDAYS = shift if @ARGV;            # passed as argument to script
-  my @CWFDATE = (chop(`date -d '$CWFBASE 1 day ago'    +%Y%m%d`), # yesterday
-                 $CWFBASE,                                        # start date
-                 chop(`date -d '$CWFBASE $CWFDAYS day' +%Y%m%d`));# end date
-  my @CWFDUMP = (chop(`date -d '$CWFBASE 1 day' +%Y%m%d00000`),
-                 chop(`date -d '$CWFBASE 2 day' +%Y%m%d00000`));
+  chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date (default today)
+       $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
+       $CWFBASE = shift if @ARGV;    # Forecast base date and lenght can be
+       $CWFDAYS = shift if @ARGV;    # passed as argument to script
+  chop($CWFDATE[0] = `date -d '$CWFBASE 1 day ago'    +%Y%m%d`);  # yesterday
+       $CWFDATE[1] = $CWFBASE;                                    # start date
+  chop($CWFDATE[2] = `date -d '$CWFBASE $CWFDAYS day' +%Y%m%d`);  # end date
+  chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d00000`); # 1st dump/nest
+  chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d00000`); # 2nd dump/nest
 }
 
 # <---------- start of user-changeable section ----------------->
@@ -162,44 +163,39 @@ my $USER       =  $DAVE;
 
 my $METformat="cdf"; # felt or cdf
 
-my ($HOMEROOT, $WORKROOT, $MetDir);
 my $GRID = "EMEP"; # EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "FORECAST" if $CWF;
+
+my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($STALLO) {
-    $HOMEROOT      = "/home";
-    $WORKROOT      = "/global/work";
-    $DataDir       = "/global/work/mifapw/emep/Data";
-    my $AnnaDir       = "/global/work/mifaab/emep/Data";
-#    $MetDir        = "$DataDir/EMEP/metdata/$year" ;
-# Still crude switching:
-    if ( $GRID eq "EECA" ) {
-       $MetDir = "/global/work/mifapw/emep/Data/EECCA/metdata_H20/$year"; #assumes $METformat eq "cdf";
-    } elsif ( $GRID eq "EMEP" ) {
+    $HOMEROOT = "/home";
+    $WORKROOT = "/global/work";
+    $DataDir  = "/global/work/mifapw/emep/Data";
+    $MetDir   = "$DataDir/$GRID/metdata/$year" ;
+    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
+    if ( $GRID eq "EMEP" ) {
+      my $AnnaDir = "/global/work/mifaab/emep/Data";
       $MetDir  = "$AnnaDir/Parlam-PS/metdata/$year" ;
       $MetDir  = "$AnnaDir/Parlam-PS/metcdf/$year" if $METformat eq "cdf"; ;
-    } else { #GLOBAL
-      $MetDir        = "$DataDir/GLOBAL/metdata/$year" ;
     }
-
 } elsif ($TITAN) {
-    $HOMEROOT      = "/usit/titan/u1";
-    $WORKROOT      = "/xanadu/d1";
-    $DataDir       = "/data3/metno/emep/Data";
-    $MetDir        = "$DataDir/$GRID/$year" ;
-    $MetDir        = "$DataDir/$GRID/metdata_H20/$year"  if $GRID eq "EECCA";
-    $DataDir       = "$HOMEROOT/$ALVARO/work/input_data" if $GRID eq "FORECAST";
-    $MetDir        = "$DataDir/EMEP_metdata/Forecast"    if $GRID eq "FORECAST";
+    $HOMEROOT = "/usit/titan/u1";
+    $WORKROOT = "/xanadu/d1";
+    $DataDir  = "/data3/metno/emep/Data";
+    $MetDir   = "$DataDir/$GRID/metdata/$year" ;
+    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA";
+    $MetDir   = "$DataDir/$GRID/metcdf/$year" if ($GRID eq "EMEP") and
+                                                 ($METformat eq "cdf");
 } else {
-    $HOMEROOT      = "/home/ntnu";
-    $WORKROOT      = "/work";
-    $MetDir        = "/work/emep/metdata/$year" ;
-    $DataDir       = "/home/ntnu/mifapw/emep/Data";
+    $HOMEROOT = "/home/ntnu";
+    $WORKROOT = "/work";
+    $MetDir   = "/work/emep/metdata/$year" ;
+    $DataDir  = "/home/ntnu/mifapw/emep/Data";
 }
-# DataDir    = Main general Data directory
 
+# DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
-   $DATA_LOCAL = "$DataDir/EMEP_GriddedData_LL" if $CWF;
 
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
@@ -208,18 +204,17 @@ my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 my $Chem     = "EmChem09";        # Label for chemical scheme used
 #$Chem     = "EmChem03c";        # Label for chemical scheme used
-$testv       = "rv3_4"; 
+$testv       = "rv3_4";
 
 #User directories
 my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 # Chemistry-specific files:
 my $ChemDir     = "$ProgDir/ZCM_$Chem";                    # for vocspec for this schem
 
-#my $WORKDIR     = "$WORKROOT/$USER/${testv}_$Chem.$year";    # working and result directory
-my $WORKDIR     = "$WORKROOT/$USER/${testv}.$year";    # working and result directory
-my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";    # for each user's private input
-   $WORKDIR     = "$WORKROOT/$USER/work/${testv}.$year" if $CWF;
-my $CWFDUMPDIR  = "$WORKROOT/$USER/work/$testv.dump";      # Forecast nest/dump files
+#my $WORKDIR     = "$WORKROOT/$USER/${testv}_$Chem.$year";  # working and result directory
+my $WORKDIR     = "$WORKROOT/$USER/${testv}.$year";         # working and result directory
+my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
+my $CWFDUMPDIR  = "$WORKROOT/$USER/${testv}.dump" if $CWF;  # Forecast nest/dump files
 
 
 #ds check: and change
@@ -229,7 +224,7 @@ chdir "$ProgDir";
 print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
-my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;       
+my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;
 my $Africa      = "$DATA_LOCAL/Africa";  # Emissions for Africa, y=1..11
 
 my $timeseries  = "$DataDir";
@@ -243,25 +238,38 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # The effect is to choose the approproate femis file
 
 my $scenario = "Base";     # Reset later if SR
-my @runs        = ( $scenario );
+my @runs     = ( $scenario );
 
+#EMISSIONS: default settings
+my ($EMIS_INP, $emisdir, $pm_emisdir);
+$EMIS_INP = "$DATA_LOCAL"                             if $STALLO;
+$EMIS_INP = "$DATA_LOCAL/Emissions/ModelInputModruns" if $TITAN;
+$emisdir = "$EMIS_INP/Modrun06/2006-Trend$year-V7"  if (1990 <= $year) and
+                                                      ($year <= 2004);
+$emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
+$emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
+                                                    if $year eq 2006;
+$emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
+$pm_emisdir = $emisdir;
+$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
 
-#EMISSIONS
-#Dave, reset to Emission_Trends for Chem project, Oct 18th
-
-my $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
-my $emisdir = "$EMIS_INP/$year";
-
-if ( $GRID eq "GLOBAL" ) {
-   $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
-   $emisdir = $EMIS_INP; 
+#EMISSIONS: FORECAST settings
+if ($GRID eq "FORECAST") {
+  $EMIS_INP = "$DATA_LOCAL/Emissions";
+  $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3";
+  $pm_emisdir = $emisdir;
 }
 
-# $EMIS_INP = "$DATA_LOCAL/Modrun08" if $year > 0 ;# EGU2005 2004;
-# my $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V2"; # 2006 only?
-my $pm_emisdir = $emisdir;
-#$pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
-
+#Dave, reset to Emission_Trends for Chem project, Oct 18th
+if ($STALLO) {
+  $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
+  $emisdir = "$EMIS_INP/$year";
+  if ( $GRID eq "GLOBAL" ) {
+    $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
+    $emisdir = $EMIS_INP;
+  }
+  $pm_emisdir = $emisdir;
+}
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
@@ -304,14 +312,14 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "07";       # first month, use 2-digits!
-my $mm2   =  "07";       # last month, use 2-digits!
+my $mm1   =  "03";       # first month, use 2-digits!
+my $mm2   =  "03";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 2;       # for testing, simply reset here
- $NTERM = 25 if $CWF ;  # 3-day forecast (8*3+1=25)
+ $NTERM = 32;       # for testing, simply reset here
+ $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
@@ -325,8 +333,8 @@ if ($SR) {
 }
 
 if ($CWF) {
-    print "CWF is true\n";
-    @runs = ( $CWF );
+    print "CWF is true: $CWFDAYS-day foracast mode\n";
+    @runs = ( $CWFBASE );
 }
 
 
@@ -449,10 +457,10 @@ foreach my $scenflag ( @runs ) {
         my $new = sprintf "fil%04d", $nnn;
         mylink( "LAST RECORD SET: ", $old,$new ) ;
 
-    elsif ($CWF) {
+    } elsif ($CWF) {
 # Forecast Meteorology in NetCDF
         for (my $n = 0; $n <= $CWFDAYS; $n++) {
-            my $old = sprintf "$MetForDir/meteo${CWFBASE}_%02d.nc",$n;
+            my $old = sprintf "$MetDir/meteo${CWFBASE}_%02d.nc",$n;
             if (-e $old) {
                 chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
                 my $new = "meteo${CWFDATE[2]}.nc";
@@ -472,7 +480,7 @@ foreach my $scenflag ( @runs ) {
         } else {
         # if we have yesterday meteo, we can have an extra spin up day!
             print "No dumpfile present, trying to take an extra spin-up day!\n";
-            my $old = "$MetForDir/meteo${CWFDATE[0]}_00.nc";
+            my $old = "$MetDir/meteo${CWFDATE[0]}_00.nc";
             if (-e $old) {
                 my $new = "meteo${CWFDATE[0]}.nc";
                 mylink( "Linking:", $old, $new);
@@ -483,7 +491,7 @@ foreach my $scenflag ( @runs ) {
                 $NTERM+=8;
                 chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
            # see if we can link to a dump file ...
-                my $old="$CWFDUMPDIR/CWF_${$CWFDATE[0]}_dump.nc";
+                my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";
                 if (-e $old) {
                 # we manage to link the dumpfile
                     my $new="EMEP_IN.nc";
@@ -536,10 +544,10 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
         $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
 #DSRC
         $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
-	# specials aren't required
-	if( -e "$SplitDir/emissplit.specials.$poll" ) {
-        	$ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll";
-	}
+        # specials aren't required
+        if( -e "$SplitDir/emissplit.specials.$poll" ) {
+                $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll";
+        }
     }
 
     foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
@@ -547,14 +555,14 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
         $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
         $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
         $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
-	if ( $GRID eq "GLOBAL" ) {
-	    foreach my $t ( qw (nox voc co nh3 pm25 pmco)) {
-		$ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
-	    }
-	    foreach my $t ( qw (so2)) {
-		$ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
-	    }
-	}
+        if ( $GRID eq "GLOBAL" ) {
+            foreach my $t ( qw (nox voc co nh3 pm25 pmco)) {
+                $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
+            }
+            foreach my $t ( qw (so2)) {
+                $ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
+            }
+        }
     }
 
 # Emissions setup:
@@ -654,14 +662,14 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 
     foreach my $exclu ( @exclus) {
         print "starting $PROGRAM with
-        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\n startyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
+        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\nstartyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
         print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
 
 
         my $PRERUN = "";
-       #$PRERUN = "scampiexec " if $SNYKOV;
-        $PRERUN = "mpiexec "    if $STALLO ;
-        $PRERUN = "mpirun "     if $TITAN ;
+       #$PRERUN = "scampiexec" if $SNYKOV;
+        $PRERUN = "mpiexec "   if $STALLO ;
+        $PRERUN = "mpirun "    if $TITAN ;
         if ($DRY_RUN) {
             print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";
             system("ls -lt *")

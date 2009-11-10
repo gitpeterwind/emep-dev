@@ -39,7 +39,7 @@ include .depend
 
 depend .depend:
 	$(makedepf90) $(SRCS) -o '$$(PROG)' \
-	-l '$$(F90) $$(LDFLAGS) $$(INCL) $$(LLIB) $$(LIBS) $$+ -o $$@' > .depend
+	-l '$$(F90) $$(LDFLAGS) $$(INCL) $$(LLIB) $$+ -o $$@ $$(LIBS)' > .depend
 
 clean: diskclean touchdepend depend
 
