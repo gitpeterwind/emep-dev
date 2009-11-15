@@ -453,7 +453,7 @@ contains
     end if
 
     !DSRC now we now nrecmis and can allocate for gridrcemis:
-print *, "ALLOCATING GRIDRC", me, NRCEMIS
+    !print *, "ALLOCATING GRIDRC", me, NRCEMIS
    allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err1)
    allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err2)
    call CheckStop(err1, "Allocation error 1 - gridrcemis") 

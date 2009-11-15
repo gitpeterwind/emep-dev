@@ -5,8 +5,8 @@ module EcoSystem_ml
  use LandDefs_ml,        only : LandDefs, LandType
 !CIRCULAR SOMEHERE use Landuse_ml !!!,         only : LandCover
  use ModelConstants_ml , only : MasterProc, DEBUG_ECOSYSTEMS, NLANDUSEMAX
- use OwnDataTypes_ml,    only : dep_type, print_dep_type &
-                                ,TXTLEN_DERIV, TXTLEN_UNIT
+ use OwnDataTypes_ml,    only : Deriv, print_deriv_type &
+                                ,TXTLEN_DERIV, TXTLEN_SHORT
  use Par_ml,             only : li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX
  implicit none
  private
@@ -23,14 +23,14 @@ module EcoSystem_ml
   ! the grid in practice.
 
    integer, parameter, public :: NDEF_ECOSYSTEMS = 6
-   character(len=7), public, dimension(NDEF_ECOSYSTEMS), parameter :: &
+   character(len=8), public, dimension(NDEF_ECOSYSTEMS), parameter :: &
     DEF_ECOSYSTEMS = (/ "Grid    " &
                       , "Conif   " &
                       , "Decid   " &
                       , "Crops   " &
                       , "Seminat " &
                       , "Water_D " /)
-   type(dep_type), public, dimension(NDEF_ECOSYSTEMS), save :: DepEcoSystem
+   type(Deriv), public, dimension(NDEF_ECOSYSTEMS), save :: DepEcoSystem
 
    logical,  public, dimension(NDEF_ECOSYSTEMS,NLANDUSEMAX), &
             save :: Is_EcoSystem
@@ -48,7 +48,7 @@ contains
 
     real, dimension(NDEF_ECOSYSTEMS) :: invEcoFrac, EcoFrac
     character(len=TXTLEN_DERIV) :: name
-    character(len=TXTLEN_UNIT)  :: unit
+    character(len=TXTLEN_SHORT)  :: unit
     integer :: i,j,ilc,lc,nlc, iEco
     logical, parameter :: T = .true., F = .false. ! shorthands only
     logical :: debug_flag
@@ -70,12 +70,15 @@ contains
         ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
         !            x     d      d    d   a10    a10   a10     f    i    a10
 
-        DepEcoSystem(iEco) = Dep_type(  &
-                    name, iEco,  iEco, -99,"EcoFrac", "Area", &
-                                          DEF_ECOSYSTEMS(iEco), 1.0, 1.0, unit)
+          !Deriv(name, class,    subc,  txt,           unit
+          !Deriv index, f2d,  LC, XYLC, scale, avg? rho Inst Yr Mn Day atw
+        DepEcoSystem(iEco) = Deriv(  &
+               name, "EcoFrac", "Area",DEF_ECOSYSTEMS(iEco) , unit, &
+                  iEco, -99, iEco,-99.9,  1.0,   F,   F , F ,T ,F ,F, -99.9 )
+
 
         if(DEBUG_ECOSYSTEMS .and. MasterProc) &
-             call print_dep_type( DepEcoSystem(iEco) )
+             call print_deriv_type( DepEcoSystem(iEco) )
 
     end do
 

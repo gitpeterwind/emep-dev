@@ -1,6 +1,51 @@
+xxxxxxxxxxxxxx rv3_4_6   Dave,   15 Nov. 2009 xxxxxxxxxxxxxxxx
+
+
+Re-write of many Derived fields and usage. This work is only
+partly complete, and so some "old" derived fields aren't
+yet in the new system. Still, many of them need re-thinking
+anywa, and many need to be included in a cleaner "SURF_UG"
+type approach. 
+
+All use an expanded "Deriv" data type, 
+
+Derived_ml
+
+   - many simplifications
+   - AddDeriv and AddNewDeriv replace AddDef
+   - nMosaic, MosaicOutput includes all of what used to be 
+        nOutDDEP, OutDDep, nOutVg, Out.... etc.
+
+DryDep_ml
+
+    - call to Add_MosaicOutput replaces Add_Vg, Add_RG, Add_LCC
+
+EcoSystem_ml
+
+    - small changes (TXTLEN_UNIT -> TXTLEN_SHORT
+    - use of new Deriv for DepEcoSystem
 
 EmisGet_ml:  internal read of MassValue%value changed to MassValue(1)%value to
   satisfy older gfortran.
+
+My_Derived_ml:
+
+    - use of new MosaicOutput and Deriv type. 
+    - Note, not all outputs have been converted to new system yet. Just
+      commented out for now.
+
+My_DryDep_ml:
+
+    - use of new MosaicOutput and Deriv type. 
+    - subroutine Add_MosaicOutput replaces Add_Vg, Add_RG, Add_LCC
+
+OwnDataTypes - expand Deriv type, replace print_dep_type with 
+   print_deriv_type, remove "dep_type"
+
+Sites_ml
+
+    - "hmix" special case removed. Use "HMIX" and "D2D" in My_Outputs instead
+
 
 xxxxxxxxxxxxxx rv3_4_5   Alvaro, 10 Nov. 2009 xxxxxxxxxxxxxxxx
 

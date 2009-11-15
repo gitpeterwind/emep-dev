@@ -450,12 +450,13 @@ end subroutine Init_sites
             out(nn,i)   = t2_nwp(ix,iy,1) - 273.15 
           case ( "th" ) 
             out(nn,i)   = th(ix,iy,iz,1)
-          case ( "hmix" ) 
-            out(nn,i)   = pzpbl(ix,iy)
+!          case ( "hmix" ) 
+!            out(nn,i)   = pzpbl(ix,iy)
 
           case ( "D2D" )
             d2code       = SITE_XTRA_CODE (ispec)
             d2index      = find_index(d2code, f_2d(:)%name)
+            call CheckStop( d2index < 1,  "SITES D2D NOT FOUND"//trim(d2code) )
             out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
    
         end select 

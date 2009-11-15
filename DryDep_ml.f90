@@ -62,8 +62,8 @@ module DryDep_ml
  
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
-                          DepLoss, Add_ddep, &
-                          Add_Vg, Add_RG, Add_LCC_Met,  &  ! ECO08, for  Mosaic_Vg3m
+                          DepLoss, Add_MosaicOutput, &
+!                          Add_Vg, Add_RG, Add_LCC_Met,  &  ! ECO08, for  Mosaic_Vg3m
                           Dep        ! Mapping (type = depmap)
 
 
@@ -723,8 +723,6 @@ end if
             end if !SO2 CF
             end if
          end do
-             
-
           
 
       !..accumulated dry deposition per grid square and summed over the whole
@@ -760,12 +758,13 @@ end if
 
       !.. Add DepLoss to budgets if needed:
 
-       call Add_ddep(debug_flag,dt_advec,i,j,convfac2,lossfrac,&
-           fluxfrac_adv,c_hvegppb,Sub(:)%coverage)
+       call Add_MosaicOutput(debug_flag,dt_advec,i,j,convfac2,lossfrac,&
+           fluxfrac_adv,c_hvegppb,Sub(:)%coverage, &
+           Mosaic_Vg3m,Mosaic_Gsur, Mosaic_Gns, Mosaic_Met)
 
-       call Add_Vg(debug_flag,i,j, Mosaic_Vg3m)
-       call Add_RG(debug_flag,i,j, Mosaic_Gsur, Mosaic_Gns)
-       call Add_LCC_Met(debug_flag,i,j, Mosaic_Met)
+       !DSX call Add_Vg(debug_flag,i,j, Mosaic_Vg3m)
+       !DSX call Add_RG(debug_flag,i,j, Mosaic_Gsur, Mosaic_Gns)
+       !DSX call Add_LCC_Met(debug_flag,i,j, Mosaic_Met)
 
  end subroutine drydep
 

@@ -72,7 +72,7 @@ use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , PPBINV  &  !   1.0e9
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
 
-use OwnDataTypes_ml, only : dep_type, print_dep_type, TXTLEN_DERIV
+use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -149,57 +149,57 @@ private
 ! Tropospheric columns
    integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(17) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
   D2_SR = (/ &
+       "SURF_MAXO3  " &
+      ,"SOMO35      " & !"D2_SOMO0    " &
+      ,"PSURF       " &  ! Surface  pressure (for cross section):
+  /)
 !
 !    Particles: sums
-       "D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
-      ,"D2_SS       ","D2_tNO3     ","D2_PM25_H2O " &
+!       "D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
+!      ,"D2_SS       ","D2_tNO3     ","D2_PM25_H2O " &
 !
 !    Ozone and AOTs
-      ,"D2_MAXO3    " &
 !Oct09      ,"D2_AOT40    ","D2_AOT60    " &  ! Exc AOT30 ( 7 versions)
 !Oct09      ,"D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
 !Oct09      ,"D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
 !Oct09      ,"D2_UNAOT40WH","D2_UNAOT40DF" &! NB: do not remove without removing from My_DryDep too
 !Oct09      ,"D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
-      ,"D2_SOMO35   ","D2_SOMO0    " &
 !
 !    NOy-type sums
-      ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
+!      ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
 !
 !    Ecosystem - fluxes:
  ! NB: do not remove without removing from My_DryDep too
 !      ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
 !      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
-       ,"D2_O3DF     ","D2_O3WH     " &
+!       ,"D2_O3DF     ","D2_O3WH     " &
 !
-!    Surface  pressure (for cross section):
-      ,"PS          " &
-  /)
 
   !============ Extra parameters for model evaluation: ===================!
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
+    !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
   D2_EXTRA = (/ &
-       "D2_VOC            " &
-      ,"WDEP_SO2          " &
+       "WDEP_SO2          " &
       ,"WDEP_SO4          " &
       ,"WDEP_HNO3         " &
       ,"WDEP_aNO3         " &
       ,"WDEP_pNO3         " &
       ,"WDEP_NH3          " &
       ,"WDEP_aNH4         " &
-      ,"D2_REDN           " &
-      ,"D2_SNOW           " &
-      ,"D2_SNratio        " &
-      ,"Area_Grid_km2     " &
-      ,"Area_Conif_Frac   " &
-      ,"Area_Decid_Frac   " &
-      ,"Area_Seminat_Frac " &
-      ,"Area_Crops_Frac   " &
-      ,"Area_Water_D_Frac " &
-      ,"D2_HMIX           " &
+!      ,"D2_REDN           " &
+!      ,"D2_SNOW           " &
+!      ,"D2_SNratio        " &
+!       "D2_VOC            " &
+!      ,"Area_Grid_km2     " &
+!      ,"Area_Conif_Frac   " &
+!      ,"Area_Decid_Frac   " &
+!      ,"Area_Seminat_Frac " &
+!      ,"Area_Crops_Frac   " &
+!      ,"Area_Water_D_Frac " &
+      ,"HMIX              " &
 !      ,"D2_HMIX00         " &
 !      ,"D2_HMIX12         " &
       ,"USTAR_NWP         " &
@@ -218,10 +218,13 @@ private
 !  D2_SO2_m2Conif.
 
 
-  integer, public, save :: nOutDDep, nOutVg, nOutVEGO3
-  integer, public, save :: nOutRG  ! RG = resistances and conductances
-  integer, public, save :: nOutMET ! RG = resistances and conductances
+  integer, private, save :: nOutDDep, nOutVg, nOutVEGO3
+  integer, private, save :: nOutRG  ! RG = resistances and conductances
+  integer, private, save :: nOutMET ! RG = resistances and conductances
 
+ ! Mosaic-specific outputs, e.g. VG_CF_HNO3 or Rns_GR_NH3
+  integer, public, save :: nMosaic = 0
+  integer, public, parameter :: MAX_MOSAIC_OUTPUTS=100
 
 
    ! Specify some species and land-covers we want to output
@@ -243,9 +246,12 @@ private
       !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
 
 
+  type(Deriv), public, &
+     dimension( MAX_MOSAIC_OUTPUTS ), save :: MosaicOutput
+
   ! Have many combinations: species x ecosystems
-  type(Dep_type), public, &
-     dimension( size(DDEP_SPECS)*size(DDEP_ECOS) ), save :: OutDDep
+!  type(Deriv), public, &
+!     dimension( size(DDEP_SPECS)*size(DDEP_ECOS) ), save :: OutDDep
 
    !ECO08 - specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
@@ -257,20 +263,24 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
       VG_LCS  = (/ "Grid", "CF  ", "SNL ", "GR  " /)
 
-    type(Dep_type), public, &
-     dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
+!    type(Deriv), public, &
+!     dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
 
 ! VEGO3 outputs for AFstY and AOTX
 !To avoid many unwanted combinations of land and Y values we just give
 ! the name here and let the code interpret it later.
 ! *** to use format f3.1 or i2 for the Y  or X value for fluxes/AOT! ***
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(14) :: &
      VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", &
+                        "AFST_0.0_IAM_DF", &
                         "AFST_1.6_BF    ", &
+                        "AFST_0.0_BF    ", &
                         "AFST_0.0_IAM_CR", &
                         "AFST_3.0_IAM_CR", &
                         "AFST_6.0_IAM_CR", &
+                        "AFST_0.0_IAM_MF", &
+                        "AFST_1.6_IAM_MF", &
                         "AOT_30_IAM_DF  ", &
                         "AOT_40_IAM_DF  ", & ! only iam allowed
                         "AOT_30_IAM_CR  ", & ! only iam allowed
@@ -278,9 +288,8 @@ private
                         "AOT_40_IAM_WH  " /) !NB -last not found. Could
                                              !just be skipped, but kept
                                              !to show behaviour
-
-    type(Dep_type), public, &
-     dimension( size(VEGO3_OUTPUTS) ),  save :: OutVEGO3
+!    type(Deriv), public, &
+!     dimension( size(VEGO3_OUTPUTS) ),  save :: OutVEGO3
 
 ! For resistances and conductances we normally want the same landuse
 ! outputs, so we use a combined variable:
@@ -294,8 +303,8 @@ private
 !    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
 !      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" , "TESTRG","TC"/)
 
-    type(Dep_type), public, & !Non-stomatal conductance
-     dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
+!    type(Deriv), public, & !Non-stomatal conductance
+!     dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
 
 ! For met-data ...
 
@@ -308,8 +317,8 @@ private
       ! Can also set dim 4:1 to exclude all - gives zero size MET_LCS
 
    ! We use Dep_type anyway since we can use the LCC elements
-    type(Dep_type), public, & !Non-stomatal conductance
-     dimension( size(MET_PARAMS)*size( MET_LCS) ),  save :: OutMET
+!    type(Dep_type), public, & !Non-stomatal conductance
+!     dimension( size(MET_PARAMS)*size( MET_LCS) ),  save :: OutMET
 
 !----------------------
 ! Less often needed:
@@ -348,11 +357,12 @@ private
     real    :: Y           ! threshold for AFSTY, also used as X in AOT40X
     integer :: Threshold   ! threshold for AFSTY
     character(len=TXTLEN_DERIV), &
-     dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
+    dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
     character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
+    logical, parameter :: T=.true., F=.false.
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -386,6 +396,7 @@ private
      ! Column data:
      do n = 1, size(COLUMN_MOLEC_CM2)
        tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n))%name )
+       !if(MasterProc) print *, "COL MY_DERIV", trim( species(COLUMN_MOLEC_CM2(n))%name )
      end do
      call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "COLUMN too long" )
@@ -446,20 +457,23 @@ private
         ! Set defaults
         ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
         !            x     d      d    d   a10    a10   a10     f    i    a10
-             OutDDep(nDD) = Dep_type(  &
-              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units)
-           if(DEBUG .and. MasterProc) call print_dep_type( OutDDep(nDD) )
+!             OutDDep(nDD) = Dep_type(  &
+!              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units)
+
+             nMosaic = nMosaic + 1
+          !Deriv(name, class,    subc,  txt,           unit
+          !Deriv index, f2d,LC, XYLC, scale, avg? rho Inst Yr Mn Day atw
+             MosaicOutput(nMosaic) = Deriv(  &
+              name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
+                  iadv,-99,-99, -99.9, 1.0e6,   F,   F,   F, T,  T,  F, atw)
+
+          if(DEBUG .and. MasterProc) then
+            write(6,*) "DDEP setups"
+            call print_deriv_type(MosaicOutput(nMosaic))
+          end if
         end do ! DDEP_SPECS
      end do ! DDEP_ECOS
      nOutDDep = nDD
-
-!nEcoWDep = 0
-!do i = 1, size(WDEP_SPECS)
-!    EcoWDep(nEcoWDep)%name = "WDEP_"  // trim( species(WDEP_SPECS(i))%name ) )
-!end do
-
-    call AddArray( OutDDep(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
-    call CheckStop( errmsg, errmsg // "OutDDep too long" )
 
       !------------- Deposition velocities for d_2d -------------------------
       ! Add species and ecosystem depositions if wanted:
@@ -484,20 +498,18 @@ private
           call CheckStop( iadv < 1 .or. iadv > NSPEC_ADV, &
                  " ERR: DDEP_SPECS: VG_SPECS" )
 
- ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
- !            x     d      d    d   a10    a10   a10     f    i    a10
-           OutVg(nVg) = Dep_type(  &
-             name, iLC, iadv, -99,"Mosaic", VG_LABELS(ilab), VG_LCS(n),&
-                                             100.0, -99,  "cm/s")
+          nMosaic = nMosaic + 1
 
-          if(DEBUG .and. MasterProc) call print_dep_type(OutVg(nVg))
+          !Deriv(name, class,    subc,  txt,           unit
+          !Deriv index, f2d,LC,XYLC, scale, avg? rho Inst Yr Mn Day atw
+          MosaicOutput(nMosaic) = Deriv(  &
+              name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
+                iadv, -99,iLC, -99.9,  100.0, T,   F,   F, T, T, T, atw)
+
         end do VG_LC !n
       end do ! i
       end do ! ilab
       nOutVg = nVg
-
-     call AddArray( OutVg(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "OutVg too long" )
 
       !------------- VEGO3 stuff ----------------------------------------------
       ! For fluxes or AOTs we start with a formatted name, eg. AFST_3.0_CF and
@@ -523,14 +535,6 @@ private
          else if( txt == "AOT" )  then
             read(txtnum,fmt="(i2)") Threshold ! really X
             units = "ppb.h"
-!   if(DEBUG .and. MasterProc) then
-!         print *, "txt:", trim(txt)
-!         print *, "txtnum:", trim(txtnum)
-!         print *, "txt2:", trim(txt2)
-!         print *, "Y:", Y, Threshold
-!         print *, "units:", trim(units)
-!   end if
-!call CheckStop("NAMED")
          end if
 
 
@@ -545,19 +549,16 @@ private
 
           write(unit=name,fmt="(a)") trim(txt)// trim(txtnum)//"_"//trim(txt2)
 
- ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
- !            x     d      d    d   a10    a10   a10     f    i    a10
-           OutVEGO3(nVEGO3) = Dep_type(  &
-             name, iLC, Threshold, -99,"Mosaic", txt , txt2,&
-                                             1.0, -99,  units )
+           nMosaic = nMosaic + 1
+          !Deriv(name, class,    subc,  txt,           unit
+          !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
+           MosaicOutput(nMosaic) = Deriv(  &
+              name, "Mosaic", txt, txt2, units, &
+                iadv, -99,iLC,Threshold, 1.0, F,   F,   F, T, T, F, atw)
 
-          if(DEBUG .and. MasterProc) call print_dep_type(OutVEGO3(nVEGO3))
       end do VEGO3_LC !n
       nOutVEGO3 = nVEGO3
           if(DEBUG .and. MasterProc)  print *, "VEGO3 FINAL NUM ", nVEGO3
-
-     call AddArray( OutVEGO3(1:nVEGO3)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "OutVEG too long" )
 
 
       !------------- Surface resistance for d_2d -------------------------
@@ -583,23 +584,37 @@ private
           !OutRG(nRG)%label  = RG_LABELS(ilab)
           !OutRG(nRG)%txt  =   RG_LCS(n)
 
-          OutRG(nRG) = Dep_type(  &
-             name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
-                                             1.0, -99,  "-")
-          if( OutRG(nRG)%label(1:1) == "R" )  then
-              OutRG(nRG)%units  =   "s/m"
-          else if( OutRG(nRG)%label(1:1) == "G" )  then
-              OutRG(nRG)%scale  =    100.0
-              OutRG(nRG)%units  =   "cm/s"
+!          OutRG(nRG) = Dep_type(  &
+!             name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
+!                                             1.0, -99,  "-")
+           nMosaic = nMosaic + 1
+
+          !Deriv(name, class,    subc,  txt,           unit
+          !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
+
+          if( RG_LABELS(ilab)(1:1) == "R" )  then
+             MosaicOutput(nMosaic) = Deriv( &
+               name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
+                iadv, -99,iLC,-99.9, 1.0, T,   F,   F, T, T, T, atw)
+          else if( RG_LABELS(ilab)(1:1) == "G" )  then
+             MosaicOutput(nMosaic) = Deriv( &
+               name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
+                iadv, -99,iLC,-99.9, 100.0, T,   F,   F, T, T, T, atw)
           end if
-          if(DEBUG .and. MasterProc) call print_dep_type(OutRG(nRG))
+!          if( OutRG(nRG)%label(1:1) == "R" )  then
+!              OutRG(nRG)%units  =   "s/m"
+!          else if( OutRG(nRG)%label(1:1) == "G" )  then
+!              OutRG(nRG)%scale  =    100.0
+!              OutRG(nRG)%units  =   "cm/s"
+!          end if
+!          if(DEBUG .and. MasterProc) call print_dep_type(OutRG(nRG))
         end do RG_LC !n
       end do ! i
       end do ! ilab
       nOutRG = nRG
 
-     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "OutRG  too long" )
+!     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
+!     call CheckStop( errmsg, errmsg // "OutRG  too long" )
 
       !------------- Met data for d_2d -------------------------
       ! We find the various combinations of met and ecosystem,
@@ -617,26 +632,35 @@ private
           nMET = nMET + 1
           name = trim ( MET_PARAMS(ilab) ) // "_"  // trim( MET_LCS(n) )
 
-          OutMET(nMET) = Dep_type( &
-           name, iLC, ilab, -99, "Mosaic", MET_PARAMS(ilab),  &
-                                              MET_LCS(n), 1.0, -99, "-")
+          nMosaic = nMosaic + 1
+          !Deriv(name, class,    subc,  txt,           unit
+          !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
+           MosaicOutput(nMosaic) = Deriv(  &
+              name, "Mosaic", "MET", MET_LCS(n), MET_PARAMS(ilab), &
+                ilab, -99,iLC,-99.9, 1.0, T,   F,   F, T, T, T, atw)
+!MESS          OutMET(nMET) = Dep_type( &
+!           name, ilab, -99, iLC, "Mosaic", MET_PARAMS(ilab),  &
+!                                              MET_LCS(n), 1.0, -99, "-")
 
-          if( OutMET(nMET)%label(1:5) == "USTAR" )  then
-              OutMET(nMET)%units  =   "m/s"
-          else if( OutMET(nMET)%label(1:4) == "INVL" )  then
-              OutMET(nMET)%units  =   "m"
+          if( MET_PARAMS(ilab)(1:5) == "USTAR" )  then
+              MosaicOutput(nMosaic)%unit  =   "m/s"
+          else if( MET_PARAMS(ilab)(1:4) == "INVL" )  then
+              MosaicOutput(nMosaic)%unit  =   "m"
           end if
 
-          if(DEBUG .and. MasterProc) call print_dep_type(OutMET(nMET))
+          if(DEBUG .and. MasterProc) call print_deriv_type(MosaicOutput(nMosaic))
         end do MET_LC !n
       end do ! ilab
       nOutMET = nMET
 
-     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "OutMET too long" )
+!     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
+!     call CheckStop( errmsg, errmsg // "OutMET too long" )
 
       !------------- end LCC data for d_2d -------------------------
 
+     call AddArray( MosaicOutput(1:nMosaic)%name, &
+                        wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "MosaicOutput too long" )
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
@@ -865,3 +889,32 @@ private
   end subroutine misc_xn
  !=========================================================================
 end module My_Derived_ml
+!From Old Derived
+!                 !code avg? ind scale rho Inst Yr Mn Day
+!    call AddDef( "DDEP", F, -1, 1.0e6, F  , F  ,T ,T ,F , &
+!           OutDDep(n)%name,OutDDep(n)%units)
+!-------------------------------------------------------------------------------
+!    call AddDef( OutVg(n)%label, T, OutVg(n)%Index, OutVg(n)%scale, &
+!                       F  , F  ,T ,T ,T , OutVg(n)%name,OutVg(n)%units)
+!-------------------------------------------------------------------------------
+!    call AddDef( OutRG(n)%label, T, OutRG(n)%Index, OutRG(n)%scale, &
+!                    F  , F  ,T ,T ,T , OutRG(n)%name,OutRG(n)%units)
+!-------------------------------------------------------------------------------
+!    call AddDef(OutMET(n)%class, T,OutMET(n)%Index,OutMET(n)%scale,&
+!                    F  , F  ,T ,T ,T , OutMET(n)%name,OutMET(n)%units)
+!-------------------------------------------------------------------------------
+!  do n = 1, nOutVEGO3 ! NB Adv not used
+!    call AddDef(OutVEGO3(n)%class, F,OutVEGO3(n)%Index,OutVEGO3(n)%scale,&
+!                    F  , F  ,T ,T ,T , OutVEGO3(n)%name,OutVEGO3(n)%units)
+!-------------------------------------------------------------------------------
+!!     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
+!!     integer :: LC            ! Index of Receiver land-cover (one 
+!!                              ! of Dep_Receivers)
+!!     integer :: Index         ! e.g. index in e.g. xn_adv arrays, or Y for AFstY
+!!     integer :: f2d           ! index in f_2d arrays
+!!     character(len=10) :: class !  "Mosaic"
+!!     character(len=10) :: label !  e.g. "VG", "Rns"
+!!     character(len=10) :: txt ! text where needed, e.g. "Conif"
+!!     real    :: scale         !  e.g. use 100.0 to get cm/s
+!!     integer :: atw           ! atomic weight where needed
+!!     character(len=10) :: units ! e.g.  mgN/m2
