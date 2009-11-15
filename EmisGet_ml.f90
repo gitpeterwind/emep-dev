@@ -538,7 +538,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
        !  to check mass-balance.
 
         call Read_Headers(IO_EMIS,errmsg,nsplit,NKeys,Headers, MassValue)
-        read(MassValue%value,fmt=*) Emis_MolWt(ie)
+        read(MassValue(1)%value,fmt=*) Emis_MolWt(ie)
         call CheckStop( errmsg , "Read Headers" // fname )
         call CheckStop( nsplit < 3 , "nsplit problem " // fname )
 
