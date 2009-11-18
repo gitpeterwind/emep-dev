@@ -325,7 +325,7 @@ contains
 
 
 
-    if(me == 0 .and. MY_DEBUG) write(6,*)     				&
+    if(me == 0 .and. MY_DEBUG) write(6,*)         			&
          '*** nyear,nmonth,nday,nhour,numt,nmdays2'    &
          ,next_inptime%year,next_inptime%month,next_inptime%day    &
          ,next_inptime%hour,numt,nmdays(2)
@@ -622,7 +622,7 @@ contains
 
        write(fname,fmt='(''fil'',i4.4)') numt
 
-       open (fid,file=fname    			&
+       open (fid,file=fname        		&
             ,form='unformatted',access='sequential'    &
             ,status='old',iostat=ios)
 
@@ -761,7 +761,7 @@ contains
 
           end if  ! numt
 
-          if(me == 0 .and. MY_DEBUG) write(6,*)     				&
+          if(me == 0 .and. MY_DEBUG) write(6,*)         			&
                '*** nyear,nmonth,nday,nhour,numt,nmdays2,nydays'    &
                ,next_inptime%year,next_inptime%month,next_inptime%day    &
                ,next_inptime%hour,numt,nmdays(2),nydays
@@ -1422,7 +1422,7 @@ contains
           if(foundsdot.and.sdot_at_mid)then !pw rv1_9_24
              do k = KMAX_MID,2,-1
 
-                sdot(i,j,k,nr) = sdot(i,j,k-1,nr)     	   &
+                sdot(i,j,k,nr) = sdot(i,j,k-1,nr)            &
                      + (sdot(i,j,k,nr)-sdot(i,j,k-1,nr))   &
                      * (sigma_bnd(k)-sigma_mid(k-1))       &
                      / (sigma_mid(k)-sigma_mid(k-1))
@@ -1715,25 +1715,25 @@ contains
 
        div = 1./real(nmax-(nstep-1))
 
-       u(:,:,:,1)    = u(:,:,:,1)     			&
+       u(:,:,:,1)    = u(:,:,:,1)         		&
             + (u(:,:,:,2) - u(:,:,:,1))*div
-       v(:,:,:,1)    = v(:,:,:,1)     			&
+       v(:,:,:,1)    = v(:,:,:,1)         		&
             + (v(:,:,:,2) - v(:,:,:,1))*div
-       sdot(:,:,:,1) = sdot(:,:,:,1)     		&
+       sdot(:,:,:,1) = sdot(:,:,:,1)         	&
             + (sdot(:,:,:,2) - sdot(:,:,:,1))*div
-       th(:,:,:,1)   = th(:,:,:,1)     			&
+       th(:,:,:,1)   = th(:,:,:,1)         		&
             + (th(:,:,:,2) - th(:,:,:,1))*div
-       q(:,:,:,1)    = q(:,:,:,1)     			&
+       q(:,:,:,1)    = q(:,:,:,1)         		&
             + (q(:,:,:,2) - q(:,:,:,1))*div
        !      ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
        !                   + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
-       skh(:,:,:,1)  = skh(:,:,:,1)     			&
+       skh(:,:,:,1)  = skh(:,:,:,1)         		&
             + (skh(:,:,:,2) - skh(:,:,:,1))*div
-       roa(:,:,:,1)  = roa(:,:,:,1)     			&
+       roa(:,:,:,1)  = roa(:,:,:,1)         		&
             + (roa(:,:,:,2) - roa(:,:,:,1))*div
-       ps(:,:,1)     = ps(:,:,1)     			&
+       ps(:,:,1)     = ps(:,:,1)         		&
             + (ps(:,:,2) - ps(:,:,1))*div
-       t2_nwp(:,:,1) = t2_nwp(:,:,1)     			&
+       t2_nwp(:,:,1) = t2_nwp(:,:,1)         		&
             + (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
        rh2m(:,:,1) = rh2m(:,:,1)  &
             + (rh2m(:,:,2) - rh2m(:,:,1))*div
@@ -1743,18 +1743,18 @@ contains
             + (SoilWater_deep(:,:,2) - SoilWater_deep(:,:,1))*div
 
 
-       fh(:,:,1)     = fh(:,:,1)     			&
+       fh(:,:,1)     = fh(:,:,1)         		&
             + (fh(:,:,2) - fh(:,:,1))*div
-       fl(:,:,1)     = fl(:,:,1)     			&
+       fl(:,:,1)     = fl(:,:,1)         		&
             + (fl(:,:,2) - fl(:,:,1))*div
-       tau(:,:,1)    = tau(:,:,1)     			&
+       tau(:,:,1)    = tau(:,:,1)         		&
             + (tau(:,:,2) - tau(:,:,1))*div
-       sst(:,:,1)    = sst(:,:,1)     			&
+       sst(:,:,1)    = sst(:,:,1)         		&
             + (sst(:,:,2)   - sst(:,:,1))*div
 !hf XX
-       sdepth(:,:,1)    = sdepth(:,:,1)     			&
+       sdepth(:,:,1)    = sdepth(:,:,1)         		&
             + (sdepth(:,:,2)   - sdepth(:,:,1))*div
-       ice(:,:,1)    = ice(:,:,1)     			&
+       ice(:,:,1)    = ice(:,:,1)         		&
             + (ice(:,:,2)   - ice(:,:,1))*div
 
        !  precipitation and cloud cover are no longer interpolated
@@ -1981,7 +1981,7 @@ contains
     !c-----------------------------------------------------------------
     !c    routines called:
     !c
-    !c    	smoosp
+    !c        smoosp
     !c
     !c
     !c-----------------------------------------------------------------
@@ -1989,79 +1989,79 @@ contains
     !c    DescriPTion of the parameters/variables defined in this file:
     !c
     !c
-    !c    absfac	: |xfac|
-    !c    abshd	: |fm|
-    !c    amax1	: fortran function, choosing largest value
-    !c    amin1	: fortran function, choosing smallest value
-    !c    CP	: heat capaciyt of air at constant pressure, J/(kg K)
-    !c    delq	: available heat flux for developing the unstable ABL, J/m2
+    !c    absfac    : |xfac|
+    !c    abshd    : |fm|
+    !c    amax1    : fortran function, choosing largest value
+    !c    amin1    : fortran function, choosing smallest value
+    !c    CP    : heat capaciyt of air at constant pressure, J/(kg K)
+    !c    delq    : available heat flux for developing the unstable ABL, J/m2
     !!              : heat-input per m2 from the ground during unstable BL
-    !c    deltaz	: zm(i,k) - zm(i,k+1), m
-    !c    dpidth	: heat increasement in accordance with temp. increasement, J/m2
-    !c    dth	: iterative increament in potential temperature
-    !c    dth0	: accumulated increament in iterative temperature
-    !c    dtz	: time interwall for integration of surface heat fluxes
-    !c    	  in the ABL-height calculations, s
-    !c    dvdz	: Wind shear, 1/s
-    !c    eps	: small number avoiding ri to become infinitely large
-    !c    exfrco	: parameter in the Kz model
-    !c    exnm	: exner function in the full sigma-levels, J/(kg K)
-    !c    exns	: exner function in the half sigma-levels, J/(kg K)
-    !c    fh	: surface flux of sensible heat, W/m2
-    !c    fl	: surface flux of sensible heat, W/m2 ! ds u7.4vg
-    !c    fm	: surface stress (flux of momentum), N/m2
-    !c    g	: gravitational acceleration, m/s2
-    !c    hs	: height of surface layer (i.e. prandtl-layer), m
-    !c    hsl	: (= hs/l, where l is the monin-obhukov length)
-    !c    i	: grid index in x-direction
-    !c    iip	: limax + 1
-    !c    limax	: max number of grid points in x-direction
-    !c    iznew	: index for new value of the ABL-height, m
-    !c    izold	: index for previous value of the ABL-height, m
-    !c    j	: grid index in y-direction
-    !c    jjp	: ljmax + 1
-    !c    ljmax	: max number of grid points in y-direction
-    !c    k	: grid index in vertical-direction
-    !c    kkk	: helping index for the cycling of ABL-height
-    !c    kkm	: number of full s-levels, *** not used ***
-    !c    KMAX_BND	: max number of vertical half levels
-    !c    	  in sigma coordinates
-    !c    KMAX_MID	: max number of vertical full levels
-    !c    	  in sigma coordinates
+    !c    deltaz    : zm(i,k) - zm(i,k+1), m
+    !c    dpidth    : heat increasement in accordance with temp. increasement, J/m2
+    !c    dth    : iterative increament in potential temperature
+    !c    dth0    : accumulated increament in iterative temperature
+    !c    dtz    : time interwall for integration of surface heat fluxes
+    !c          in the ABL-height calculations, s
+    !c    dvdz    : Wind shear, 1/s
+    !c    eps    : small number avoiding ri to become infinitely large
+    !c    exfrco    : parameter in the Kz model
+    !c    exnm    : exner function in the full sigma-levels, J/(kg K)
+    !c    exns    : exner function in the half sigma-levels, J/(kg K)
+    !c    fh    : surface flux of sensible heat, W/m2
+    !c    fl    : surface flux of sensible heat, W/m2 ! ds u7.4vg
+    !c    fm    : surface stress (flux of momentum), N/m2
+    !c    g    : gravitational acceleration, m/s2
+    !c    hs    : height of surface layer (i.e. prandtl-layer), m
+    !c    hsl    : (= hs/l, where l is the monin-obhukov length)
+    !c    i    : grid index in x-direction
+    !c    iip    : limax + 1
+    !c    limax    : max number of grid points in x-direction
+    !c    iznew    : index for new value of the ABL-height, m
+    !c    izold    : index for previous value of the ABL-height, m
+    !c    j    : grid index in y-direction
+    !c    jjp    : ljmax + 1
+    !c    ljmax    : max number of grid points in y-direction
+    !c    k    : grid index in vertical-direction
+    !c    kkk    : helping index for the cycling of ABL-height
+    !c    kkm    : number of full s-levels, *** not used ***
+    !c    KMAX_BND    : max number of vertical half levels
+    !c          in sigma coordinates
+    !c    KMAX_MID    : max number of vertical full levels
+    !c          in sigma coordinates
     !c       kzmax   : maximum value of xksig, m2/s
     !c       kzmin   : minimum value of xksig, m2/s
-    !c    ndth	: do variable for convective ABL-height iteration loop
-    !c    nh1	: counts number of layers below zlimax
-    !c    nh2	: counts number of layers with Kz > ( Kz )limit
-    !c    nr	: number of met.fields stored in arrays (= 1 or 2)
-    !c    nt	: time counting variable of the outer time-loop
-    !c    p	: local pressure, hPa (mb)
+    !c    ndth    : do variable for convective ABL-height iteration loop
+    !c    nh1    : counts number of layers below zlimax
+    !c    nh2    : counts number of layers with Kz > ( Kz )limit
+    !c    nr    : number of met.fields stored in arrays (= 1 or 2)
+    !c    nt    : time counting variable of the outer time-loop
+    !c    p    : local pressure, hPa (mb)
     !c       pi      : pi = 4.*atan(1.) = 3.14 ...
-    !c    pidth	: heat used to adjust air temperature, J/m2
-    !c    pref	: refference pressure (at ground level), 1.e+5 Pa
-    !c    ps	: surface pressure, hPa
-    !c    PT	: pressure at the top of the model atmosphere, hPa (mb)
-    !c    pz	: local pressure in half sigma levels, hPa (mb),
-    !c    	  helping array (j - slices) for pressure
-    !c    pzpbl	: stores H(ABL) for averaging and plotting purposes, m
-    !c    ri	: richardson`s number
-    !c    ri0	: critical richardson`s number
-    !c    risig	: richardson's number in sigmas-levels
-    !c    roas	: air density at surface, kg/m3
-    !c    sigma_bnd	: height of the half-sigma layers
-    !c    sigma_mid	: height of the full-sigma layers
-    !c    sm	: height of the surface layer in s-coordinates (4% of H(ABL), m
-    !c    th	: potensial temperature (theta), K
-    !c    t2_nwp	: potensial temperature at 2m height, K
-    !c    thadj	: adjustable surface temperature, K
-    !c    thsrf	: potensial temperature at the surface, K
-    !c    trc	: helping variable telling whether or not unstable ABL exists
+    !c    pidth    : heat used to adjust air temperature, J/m2
+    !c    pref    : refference pressure (at ground level), 1.e+5 Pa
+    !c    ps    : surface pressure, hPa
+    !c    PT    : pressure at the top of the model atmosphere, hPa (mb)
+    !c    pz    : local pressure in half sigma levels, hPa (mb),
+    !c          helping array (j - slices) for pressure
+    !c    pzpbl    : stores H(ABL) for averaging and plotting purposes, m
+    !c    ri    : richardson`s number
+    !c    ri0    : critical richardson`s number
+    !c    risig    : richardson's number in sigmas-levels
+    !c    roas    : air density at surface, kg/m3
+    !c    sigma_bnd    : height of the half-sigma layers
+    !c    sigma_mid    : height of the full-sigma layers
+    !c    sm    : height of the surface layer in s-coordinates (4% of H(ABL), m
+    !c    th    : potensial temperature (theta), K
+    !c    t2_nwp    : potensial temperature at 2m height, K
+    !c    thadj    : adjustable surface temperature, K
+    !c    thsrf    : potensial temperature at the surface, K
+    !c    trc    : helping variable telling whether or not unstable ABL exists
     !!              :       0 => no need for further calc. of ziu
     !!              :       1 => ziu not found yet.
-    !c    u	: wind speed in the x-direction, m/s
+    !c    u    : wind speed in the x-direction, m/s
     !c       umax    : maximum value of u and v, m/s
-    !c    ustar	: friction velocity, m/s
-    !c    v	: wind speed in the y-direction, m/s
+    !c    ustar    : friction velocity, m/s
+    !c    v    : wind speed in the y-direction, m/s
     !c       ven     : ventilation coefficient, m3
     !c       venav   : time averaged ventilation coefficient, m3
     !c       venmax  : maximum value of ven, m3
@@ -2070,37 +2070,37 @@ contains
     !c       ven06   : averaged ventilation coefficient at 06 UTC, m3
     !c       ven12   : averaged ventilation coefficient at 12 UTC, m3
     !c       ven18   : averaged ventilation coefficient at 18 UTC, m3
-    !c    vdfac	: factor for reduction of vD(1m) to vD(hs)
+    !c    vdfac    : factor for reduction of vD(1m) to vD(hs)
     !!              : i.e. factor for aerodynamic resistance towards dry deposition
     !!              : vd(50m) = vd(1m)/(1 + vd(1m)*vdfac)
-    !c    x12	: mixing length squared, m2
-    !c    xfac	: helping variable for reducing concentrations to 1m values
-    !c    xfrco	: parameter in the Kz model
-    !c    KAPPA	: r/CP (-)
-    !c    KARMAN	: von Karmans constant
-    !c    xkdz	: the vertical derivative of xkhs at hs, m/s
+    !c    x12    : mixing length squared, m2
+    !c    xfac    : helping variable for reducing concentrations to 1m values
+    !c    xfrco    : parameter in the Kz model
+    !c    KAPPA    : r/CP (-)
+    !c    KARMAN    : von Karmans constant
+    !c    xkdz    : the vertical derivative of xkhs at hs, m/s
     !!              : i.e. vertical gradient of xkhs
-    !c    xkhs	: diffusivity at hs (in surface layer), m2/s
+    !c    xkhs    : diffusivity at hs (in surface layer), m2/s
     !!              : i.e. vertical exchange coeff. on top of prandtl-layer
-    !c    xksig	: estimated exchange coefficient, Kz,  in intermediate
-    !c    	  sigma levels, m2/s
-    !c    xksm	: spacially smoothed Kz in z direction, m2/s.
+    !c    xksig    : estimated exchange coefficient, Kz,  in intermediate
+    !c          sigma levels, m2/s
+    !c    xksm    : spacially smoothed Kz in z direction, m2/s.
     !!              : xksig smoothed over three adjacent layers
-    !c    xkzi	: local helping array for the vertical diffusivity, m2/s
+    !c    xkzi    : local helping array for the vertical diffusivity, m2/s
     !!              : i.e. vertical exchange coeff. on top of ABL for unstable BL
     !c       xtime   : 6.*3600. (seconds in one term, six hours)
-    !c    zi	: Height of ABL (final value), m
-    !c    zlimax	: maximum value of ABL-height, zi, (2000), m
-    !c    zimhs	: ziu - hs
-    !c    zimin	: minimum value of ABL-height, zi, (200), m
-    !c    zimz	: ziu - zs_bnd
-    !c    zis	: height of the stable ABL, m
-    !c    ziu	: height of the unstable ABL, m
-    !c    zixx	: Height og ABL (intermediate value), m
-    !c    zm	: geopotential height of full sigma levels above topography, m
-    !c    zmhs	: zs_bnd - hs
-    !c    zs_bnd	: geopotential height of  half sigma levels above topography, m
-    !c    ztop	: height of the uppermost layer in s-coordinates
+    !c    zi    : Height of ABL (final value), m
+    !c    zlimax    : maximum value of ABL-height, zi, (2000), m
+    !c    zimhs    : ziu - hs
+    !c    zimin    : minimum value of ABL-height, zi, (200), m
+    !c    zimz    : ziu - zs_bnd
+    !c    zis    : height of the stable ABL, m
+    !c    ziu    : height of the unstable ABL, m
+    !c    zixx    : Height og ABL (intermediate value), m
+    !c    zm    : geopotential height of full sigma levels above topography, m
+    !c    zmhs    : zs_bnd - hs
+    !c    zs_bnd    : geopotential height of  half sigma levels above topography, m
+    !c    ztop    : height of the uppermost layer in s-coordinates
     !c
     !c-------------------------------------------------------------------
     !c..the following sketches the sigma-surfaces:
@@ -2522,7 +2522,7 @@ contains
           end do ! while
           !!           go to 28
 
-          !!    	endif
+          !!        endif
 
           !!      endif
 
@@ -2606,12 +2606,12 @@ contains
     !c    Definition of the variables:
     !c
     !c
-    !c    f	: data to be smoothed
-    !c    iif	: =limax
-    !c    jjf	: =ljmax
-    !c    h1,h2	: = help variable
-    !c    rmin	: min allowed
-    !c    rmax	: max allowed
+    !c    f    : data to be smoothed
+    !c    iif    : =limax
+    !c    jjf    : =ljmax
+    !c    h1,h2    : = help variable
+    !c    rmin    : min allowed
+    !c    rmax    : max allowed
     !c
     implicit none
 

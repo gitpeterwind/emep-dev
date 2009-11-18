@@ -846,18 +846,18 @@ contains
 !          are NOT the sum of the 12 files emissions (but about 12 times less than the sum). 
 !          More precisely: year_emis=sum_months(emis_month*nmdays/nydays)
 
-        ktonne_to_kgm2s  = 1.0e6 /     			&
-    	(nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
+        ktonne_to_kgm2s  = 1.0e6 /         		&
+        (nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
     if ( MasterProc .and. DEBUG) then
-      write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',	&
+      write(6,*) 'Enters newmonth, mm, ktonne_to_kgm2s = ',    &
           current_date%month,ktonne_to_kgm2s
       write(6,*) ' first_dms_read = ', first_dms_read
     end if ! me 
 !...........................................................................
 
 !...........................................................................
-!    	DMS Input - land 35 - SNAP sector 11
+!        DMS Input - land 35 - SNAP sector 11
 !...........................................................................
      flat_ncmaxfound = 0 ! Max. no. countries(w/flat emissions) per grid
 !    natural so2 emissions
@@ -876,8 +876,8 @@ contains
 
              if ( MasterProc ) then
 
-              write(fname,fmt='(''natso2'',i2.2,''.dat'')') 	&
-    		current_date%month
+              write(fname,fmt='(''natso2'',i2.2,''.dat'')')     &
+        	current_date%month
               write(6,*) 'filename for nat-so2',fname
               endif
 
@@ -909,14 +909,14 @@ contains
                   endif 
 
                   snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s &
-    		* xm2(i,j)
+        	* xm2(i,j)
             enddo ! i
           enddo ! j
 
 
               if ( first_dms_read ) then
                  if (DEBUG) write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
-    		,flat_ncmaxfound 
+        	,flat_ncmaxfound 
               first_dms_read = .false.
           end if
 
@@ -938,7 +938,7 @@ contains
       first_call=.false.
    endif
     month = current_date%month
-    tonnemonth_to_kgm2s= 1.0e3 /     			&
+    tonnemonth_to_kgm2s= 1.0e3 /         		&
          (nmdays(month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
     if ( MasterProc ) then

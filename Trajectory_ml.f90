@@ -87,35 +87,35 @@ module Trajectory_ml
   !  Here month and day where trajectory is expected is hardcoded. 
     if(current_date%month == 6) then
       if(current_date%day == 1 .or. current_date%day == 16 ) then
-    	if(me == 0)then
-    	  write(falc,fmt='(''tra9606'',i2.2,''.pos'')') 	&
-    		current_date%day
-    	  inquire(file=falc,exist=tra_exist)
-    	  write(6,*)'trajectory exists?',tra_exist
-    	  if(.not.tra_exist)goto 912
-    	  open(IO_AIRCR,file=falc,status='unknown')
-    	  ii = 0
-    	  do while (.true.)
-    	    ii = ii + 1
-    	    read(IO_AIRCR,*,end=701) rhour(ii), fapos(1,ii), 	&
-    		fapos(2,ii), kfalc(ii)
-    	  end do
-701    	  continue
-    	  iimax = ii
-    	  rhour(iimax+1) = 0.
-    	  write(6,*) 'falcon positions  ',iimax
-    	  write(6,*) (rhour(ii),			&
-    		fapos(1,ii), fapos(2,ii),kfalc(ii),ii=1,5)
-    	  close(IO_AIRCR)
-    	  open(IO_AIRCR,file='aircraft.dat',position='append')
-    	  write(IO_AIRCR,*) 'month and day ',current_date%month	&
-    		,current_date%day
-    	  close(IO_AIRCR)
-    	endif
-    	iii = 1
+        if(me == 0)then
+          write(falc,fmt='(''tra9606'',i2.2,''.pos'')') 	&
+        	current_date%day
+          inquire(file=falc,exist=tra_exist)
+          write(6,*)'trajectory exists?',tra_exist
+          if(.not.tra_exist)goto 912
+          open(IO_AIRCR,file=falc,status='unknown')
+          ii = 0
+          do while (.true.)
+            ii = ii + 1
+            read(IO_AIRCR,*,end=701) rhour(ii), fapos(1,ii), 	&
+        	fapos(2,ii), kfalc(ii)
+          end do
+701          continue
+          iimax = ii
+          rhour(iimax+1) = 0.
+          write(6,*) 'falcon positions  ',iimax
+          write(6,*) (rhour(ii),			&
+        	fapos(1,ii), fapos(2,ii),kfalc(ii),ii=1,5)
+          close(IO_AIRCR)
+          open(IO_AIRCR,file='aircraft.dat',position='append')
+          write(IO_AIRCR,*) 'month and day ',current_date%month	&
+        	,current_date%day
+          close(IO_AIRCR)
+        endif
+        iii = 1
 !su    read on node 0
 
-912    	continue
+912        continue
 
 !su    now distribute
 
@@ -141,46 +141,46 @@ module Trajectory_ml
         integer :: i
 
 !    trajectory positions
-!    if(me == 0) write(6,*) 'for tidsjekk',current_date%hour	&
-!    		,dt_advec,(rhour(ii),ii=1,5)
+!    if(me == 0) write(6,*) 'for tidsjekk',current_date%hour    &
+!        	,dt_advec,(rhour(ii),ii=1,5)
 
     dtmil = dt_advec/60./60.
     ttt = current_date%hour+current_date%seconds/3600.
-    if (rhour(2) > rhour(1) 			&
-    	.and. ttt+dtmil > rhour(1)) then
+    if (rhour(2) > rhour(1)     		&
+        .and. ttt+dtmil > rhour(1)) then
       do jjj = 1,10
-        if(me == 0) write(6,*) 'inne i tidsjekk',	&
-    		iii,jjj,ttt,rhour(iii),rhour(iii+1),dt_advec,dtmil
+        if(me == 0) write(6,*) 'inne i tidsjekk',    &
+        	iii,jjj,ttt,rhour(iii),rhour(iii+1),dt_advec,dtmil
 
-        if (ttt > rhour(iii) 		&
-    		.and. ttt < rhour(iii+1)) then
+        if (ttt > rhour(iii)     	&
+        	.and. ttt < rhour(iii+1)) then
 !su    we have to synchronise the processors, since for next jjj(iii)
 !su    the aircraft can be on another processor !!!!
 
               CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
-          if(me == 0) write(6,*) 'inne i tidsjekk2'	&
-    		,fapos(1,iii),fapos(1,iii), ttt
-          if(gi0+IRUNBEG-1 <= fapos(1,iii) .and. 	&
-    		gi1+IRUNBEG-1 >= fapos(1,iii) .and.	&
-    		gj0+JRUNBEG-1 <= fapos(2,iii) .and. 	&
-    		gj1+JRUNBEG-1 >= fapos(2,iii)) then
-    	write(6,*) 'inne i tidsjekk3',me,kfalc(iii)
-    	ii = fapos(1,iii) - gi0-IRUNBEG+2
-    	jj = fapos(2,iii) - gj0-JRUNBEG+2
+          if(me == 0) write(6,*) 'inne i tidsjekk2'    &
+        	,fapos(1,iii),fapos(1,iii), ttt
+          if(gi0+IRUNBEG-1 <= fapos(1,iii) .and.     &
+        	gi1+IRUNBEG-1 >= fapos(1,iii) .and.	&
+        	gj0+JRUNBEG-1 <= fapos(2,iii) .and. 	&
+        	gj1+JRUNBEG-1 >= fapos(2,iii)) then
+        write(6,*) 'inne i tidsjekk3',me,kfalc(iii)
+        ii = fapos(1,iii) - gi0-IRUNBEG+2
+        jj = fapos(2,iii) - gj0-JRUNBEG+2
             do k = 1,KMAX_BND-1
               if(z_bnd(ii,jj,k) > kfalc(iii) .and.       &
                   z_bnd(ii,jj,k+1) < kfalc(iii)) then
-    	    write(6,*) 'inne i tidsjekk4',me,kfalc(iii)
-    	    open(IO_AIRCR,file='aircraft.dat'	&
-    			,position='append')
-    	!ds uni.1: remove IXADV_O3 and replace by loop over FLIGHT_ADV
-    	    write(IO_AIRCR,*) ttt				&
-    		,( xn_adv( FLIGHT_ADV(i),ii,jj,k)*PPBINV, i=1, NADV_FLIGHT)  &
+            write(6,*) 'inne i tidsjekk4',me,kfalc(iii)
+            open(IO_AIRCR,file='aircraft.dat'	&
+        		,position='append')
+        !ds uni.1: remove IXADV_O3 and replace by loop over FLIGHT_ADV
+            write(IO_AIRCR,*) ttt				&
+        	,( xn_adv( FLIGHT_ADV(i),ii,jj,k)*PPBINV, i=1, NADV_FLIGHT)  &
                   ,k,z_mid(ii,jj,k), gb(ii,jj),gl(ii,jj)
-    	    close(IO_AIRCR)
-    	  end if
-    	end do
+            close(IO_AIRCR)
+          end if
+        end do
           end if
           iii = iii + 1
         end if
