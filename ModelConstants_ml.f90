@@ -43,18 +43,18 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-    RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
-  ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
+  ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+   RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
   ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
-  ! RUNDOMAIN = (/ 85, 120, 55,  70 /)     ! (changeable)
+  !RUNDOMAIN = (/ 85, 120, 55,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   4        & ! Actual number of processors in longitude
+  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
   ! ds Jan2009
@@ -98,7 +98,7 @@ module ModelConstants_ml
     ,DEBUG_GETEMIS        = .false. &
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
-    ,DEBUG_RUNCHEM        = .false. &
+    ,DEBUG_RUNCHEM        = .true. &
     ,DEBUG_SOA            = .false. & !
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_LANDDEFS       = .false. & !

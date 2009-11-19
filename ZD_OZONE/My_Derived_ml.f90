@@ -224,7 +224,7 @@ private
 
  ! Mosaic-specific outputs, e.g. VG_CF_HNO3 or Rns_GR_NH3
   integer, public, save :: nMosaic = 0
-  integer, public, parameter :: MAX_MOSAIC_OUTPUTS=100
+  integer, public, parameter :: MAX_MOSAIC_OUTPUTS=120
 
 
    ! Specify some species and land-covers we want to output
@@ -308,8 +308,8 @@ private
 
 ! For met-data ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
-      MET_PARAMS = (/ "USTAR", "INVL " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+      MET_PARAMS = (/ "USTAR", "INVL ", "RH   " /)
     character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
       MET_LCS  = (/ "CF ", "SNL", "GR " ,"TC "/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &

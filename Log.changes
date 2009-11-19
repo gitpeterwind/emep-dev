@@ -1,8 +1,22 @@
-xxxxxxxxxxxxxx rv3_4_7   Dave,   18 Nov. 2009 xxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxx rv3_4_7   Dave,   19 Nov. 2009 xxxxxxxxxxxxxxxx
 
-GLobal change, tabs replaced by 4 spaces
+CellMet_ml - rh2m replaces rh for grid met
+
+Derived_ml, som replaced by somo, SOM by SOMO.
+
+DryDep - zero index allowed for Mosaic_Met, to collect grid-values
+
+My_DryDep - zero index allowed for Mosaic_Met, to collect grid-values
+
+Met_ml  - relative_humidity_2m read from metcdf files (for tests
+   and possible replacement of mosaic rh calculation)
+
+Global change, tabs replaced by 4 spaces
 (might mess up some code-indentation in a few files. Please fix
 when seen!)
+
+pedantic changes for DryDep - removed or commented out (dsVDS) 
+unused variables.
 
 xxxxxxxxxxxxxx rv3_4_6   Dave,   15 Nov. 2009 xxxxxxxxxxxxxxxx
 

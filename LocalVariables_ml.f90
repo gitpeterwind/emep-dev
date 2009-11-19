@@ -72,7 +72,7 @@ module LocalVariables_ml
   ! the following are likely used in Sub below also
     real :: t2C                ! Surface (2m) temperature in degrees C
     real :: t2                 ! Surface (2m) temperature in degrees K
-    real :: rh                 ! Relative humidity, fraction (0-1)
+    real :: rh2m               ! Relative humidity, fraction (0-1)
     real :: rho_s              !  Air density (kg/m3) at surface, here 2m
     real :: vpd                ! Vapour pressure deficit  (kPa) ! CHECK UNITS
     real :: SWP                ! SWP  ! CHECK UNITS

@@ -68,7 +68,7 @@ module DryDep_ml
 
 
 use LandDefs_ml, only : LandDefs !hf CoDep extra
-use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
+use My_Derived_ml, only : MET_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  !dsVDS use Aero_DryDep_ml,    only : Aero_Rb
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds, Nemitz2004  !dsVDS FEB2009
@@ -241,12 +241,12 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
           Grid_Rs      & ! Grid average of Rsurface
          ,Grid_Gns       ! Grid average of Gns
 
-    integer n, iiL, nlu, ncalc, nadv, ispec, err,k   ! help indexes
+    integer n, iiL, nlu, ncalc, nadv  ! help indexes
     integer :: imm, idd, ihh, iss     ! date
     integer :: nadv2d !index of adv species in xn_2d array
 
     real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
-    real :: RaVs    ! Ra_ref *Vs for particles
+!dsVDS    real :: RaVs    ! Ra_ref *Vs for particles
 
     real convfac,  & ! rescaling to different units
          convfac2, & ! rescaling to different units
@@ -255,8 +255,9 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
                      ! z = height of layer)
 
     integer :: nae
-    real, dimension(NSIZE):: aeRb, aeRbw , Vs
-    real :: convec
+    !dsVDS real, dimension(NSIZE):: aeRb, aeRbw , Vs
+    !dsVDS real :: convec
+    real, dimension(NSIZE)::  Vs
 
 
      real, save :: inv_gridarea  ! inverse of grid area, m2
@@ -274,15 +275,14 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
             , Mosaic_VgRef & ! Vg at ref height, e.g. 45m
             , Mosaic_Vg3m  ! Vg at 3m
 
-      real, dimension(size(MET_PARAMS),NLANDUSEMAX):: &
+      real, dimension(size(MET_PARAMS),0:NLANDUSEMAX):: &
             Mosaic_Met  ! met, just 
 
       real, dimension(NSPEC_ADV ,NLANDUSEMAX):: fluxfrac_adv
-      integer :: iL_used(NLUMAX), nlu_used
+      integer :: iL_used(NLUMAX)
       real :: wet, dry    ! Fractions
-!hf snow
       real :: snow_iL !snow fraction for one landuse
-      real :: Vds, tmpref, tmp3m, u_hveg   ! FEB2009 Vds
+      real :: Vds     ! FEB2009 Vds
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
@@ -357,6 +357,7 @@ use My_Derived_ml      ! ->  d_2d, IOU_INST, D2_VG etc...
     Mosaic_Gsur(:,:)  = 0.0
     Mosaic_Gns(:,:)   = 0.0
     Mosaic_Met(:,:)   = 0.0
+    Mosaic_Met(3,0) = rh2m(i,j,1)  ! NWP output
 
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
@@ -428,6 +429,11 @@ end if
 
          Mosaic_Met(1,iL) = L%ustar
          Mosaic_Met(2,iL) = L%invL
+         Mosaic_Met(3,iL) = L%rh
+if( debug_flag ) then
+   write(6,"(a,i4,a,2f12.3)") "MOSAIC ", iL, &
+     trim(MET_PARAMS(3)), Mosaic_Met(3,iL), Mosaic_Met(3,0)
+end if
 
 
        !===================

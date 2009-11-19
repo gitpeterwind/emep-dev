@@ -218,7 +218,7 @@ contains
      real, dimension(:),   intent(in) :: coverage  ! dim (NLANDUSE), fraction
      real, dimension(:,0:),intent(in) :: VgLU  ! dim (NLANDUSE*nlu), 0=Grid
      real, dimension(:,0:),intent(in) :: GsLU, GnsLU  ! dim (0:NLANDUSE*nlu)
-     real, dimension(:,:), intent(in) :: LCC_Met   ! dim (nMET, NLANDUSE*nlu)
+     real, dimension(:,0:), intent(in) :: LCC_Met   ! dim (nMET, NLANDUSE*nlu)
 
      integer :: n, nadv, nadv2, ihh, idd, imm, iLC, iEco
      integer :: imc, f2d, cdep

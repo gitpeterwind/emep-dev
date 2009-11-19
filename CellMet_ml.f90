@@ -42,7 +42,7 @@ use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
 !hf snowuse Met_ml, only: cc3dmax, nwp_sea, snow, surface_precip, ps,fh,fl,z_mid, z_bnd, &
 !hf snow    q, roa, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, u_ref, zen, coszen, Idirect, Idiffuse
 use Met_ml, only: cc3dmax, nwp_sea, snow,sdepth,ice, surface_precip, ps,fh,fl,z_mid, z_bnd, &
-           q, roa, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, u_ref, zen, coszen, Idirect, Idiffuse
+           q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, u_ref, zen, coszen, Idirect, Idiffuse
 use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 use SubMet_ml, only : Get_SubMet
@@ -108,6 +108,7 @@ contains
      Grid%ustar = ustar_nwp(i,j)   !  u*
      Grid%t2    = t2_nwp(i,j,1)    ! t2 , K
      Grid%t2C   = Grid%t2 - 273.15 ! deg C
+     Grid%rh2m  = rh2m(i,j,1)      ! 
      Grid%rho_s = rho_surf(i,j)    ! Should replace Met_ml calc. in future
 
      Grid%is_NWPsea = nwp_sea(i,j)

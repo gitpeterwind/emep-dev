@@ -422,6 +422,13 @@ contains
          validity, t2_nwp(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
+!dsNOV2009
+    namefield='relative_humidity_2m'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+         validity, rh2m(:,:,nr))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+    rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert to fraction 
+
     namefield='surface_flux_sensible_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, fh(:,:,nr))

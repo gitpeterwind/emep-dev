@@ -928,7 +928,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 !Oct09               endif
 !Oct09            endif
 
-           case( "SOM" )
+           case( "SOMO" )
 
 
               !dt/7200: half a dt time step in hours
@@ -944,7 +944,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
               if(dayfrac<0)then !only at midnight: write on d_2d
 
 
-                 call som_calc( n ) !  accumulate
+                 call somo_calc( n ) !  accumulate
                  d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
 
                 ! if(current_date%month>=4.and.current_date%month<=9)then
@@ -1034,9 +1034,9 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 
 
         !/** add to daily, monthly and yearly average, and increment counters
-        !  Note that the MAXADV and MAXSHL and SOM needn't be summed here, but
+        !  Note that the MAXADV and MAXSHL and SOMO needn't be summed here, but
         !  since the INST values are zero it doesn't harm, and the code is
-        !  shorter. These d_2d ( MAXADV, MAXSHL, SOM) are set elsewhere
+        !  shorter. These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
 
         d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
@@ -1377,16 +1377,16 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 
 !=========================================================================
 
-  subroutine som_calc( n )
+  subroutine somo_calc( n )
 
 
-    !/-- Calculates SOM (8hours) values for input threshold.  !pw rv2_1
+    !/-- Calculates SOMO (8hours) values for input threshold.  !pw rv2_1
 
     implicit none
     integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
 
     real    :: threshold               ! Threshold, e.g. 35 (ppb)
-    real :: o3                         ! Ozone (ppb) - needed if SOMs
+    real :: o3                         ! Ozone (ppb) - needed if SOMOs
     real :: sum8h
     integer, parameter :: N8h = (NTDAY*8)/24 !number of periods in 8 hours
     real, parameter :: N8h_inv=1./N8h
@@ -1413,7 +1413,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
            !divide by N8h to find 8h mean
            o3=o3*N8h_inv
 
-           o3 = max( o3 - threshold , 0.0 )   ! Definition of SOMs
+           o3 = max( o3 - threshold , 0.0 )   ! Definition of SOMOs
 
              ! d_2d values will be accumulated in Derived_ml
 
@@ -1421,7 +1421,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 
         end do
       end do
-   end subroutine som_calc
+   end subroutine somo_calc
 
  !=========================================================================
 
