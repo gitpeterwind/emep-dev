@@ -1,3 +1,7 @@
+xxxxxxxxxxxxxx rv3_4_7_1   Peter,   25 Nov. 2009 xxxxxxxxxxxxxxxx
+
+Met_ml: does not stop if rh2m is not found, but set it to a meaningless value 
+
 xxxxxxxxxxxxxx rv3_4_7   Dave,   19 Nov. 2009 xxxxxxxxxxxxxxxx
 
 CellMet_ml - rh2m replaces rh for grid met

@@ -426,8 +426,13 @@ contains
     namefield='relative_humidity_2m'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, rh2m(:,:,nr))
+    if(validity==field_not_found)then
+        if(me==0)write(*,*)'WARNING: relative_humidity_2m not found'
+        rh2m(:,:,nr) = -999.9  ! ?
+    else
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-    rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert to fraction 
+       rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert to fraction 
+    endif
 
     namefield='surface_flux_sensible_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
