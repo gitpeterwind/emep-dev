@@ -222,6 +222,7 @@ contains
      real    :: eland   ! for Pb210  - emissions from land
 
     integer ::  i_help,j_help,i_l,j_l
+    logical :: my_first_call = .true.
 
 ! initilize
     rcemis(:,:)=0.    
@@ -250,11 +251,13 @@ contains
            j_l=j_help - gj0  +1
            if((i_l==i).and.(j_l==j))then !i,j have a volcano
               k=height_volc(volc_no)
-              !DSSRC rcemis(QRCVOL,k)=rcemis(QRCVOL,k)+rcemis_volc(volc_no)
               rcemis(SO2,k)=rcemis(SO2,k)+rcemis_volc(volc_no)
-              write(*,*)'Adding volc. emissions ',rcemis_volc(volc_no),volc_no,&
-                          'to height=',k,'i,j',i_help,j_help
-              !write(*,*)'TOT rcemis=',rcemis(QRCVOL,:)
+              if ( DEBUG_SETUP_1DCHEM  .and. my_first_call ) then
+                  write(*,*)'Adding volc. emissions ',&
+                     rcemis_volc(volc_no),volc_no,&
+                    'to height=',k,'i,j',i_help,j_help
+                  write(*,*)'TOT rcemis=',rcemis(SO2,:)
+               end if
            endif
         endif
      enddo
@@ -327,6 +330,8 @@ contains
      rc_Rn222(KMAX_MID) = &
             ( 0.00182 * water_fraction(i,j)  + eland ) / &
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.) 
+
+     my_first_call = .false.
 
   end subroutine setup_rcemis
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

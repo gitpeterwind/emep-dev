@@ -37,29 +37,30 @@ module My_DryDep_ml    ! DryDep_ml
 
  use My_Derived_ml,  only : &
    nMosaic, MosaicOutput &
+  ,MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD &  ! hard-coded :-(
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
- use CheckStop_ml,  only : CheckStop, StopAll
+ use AOTx_ml,             only : Calc_AOTx
+ use CheckStop_ml,        only : CheckStop, StopAll
  use ChemChemicals_ml,    only : species 
  use ChemSpecs_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
- use ChemSpecs_shl_ml,     only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
+ use ChemSpecs_shl_ml,    only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
  use ChemGroups_ml,       only : DDEP_OXNGROUP  !DSGC
- use Derived_ml,    only : f_2d, d_2d, IOU_INST, IOU_YEAR
- use EcoSystem_ml,      only : DEF_ECOSYSTEMS, NDEF_ECOSYSTEMS, &
-                               EcoSystemFrac, & 
-                                 FULL_GRID, Is_EcoSystem !DSOCT09
- use GridValues_ml,  only: debug_proc, debug_li, debug_lj
- use LandDefs_ml,        only : LandDefs, LandType
- use Landuse_ml,         only : WheatGrowingSeason, LandCover   ! DSOCT09
- use LocalVariables_ml,  only : Grid  !=> izen  integer of zenith angle
- use ModelConstants_ml , only : atwS, atwN, AOT_HORIZON, DEBUG_MY_DRYDEP,MasterProc
- use OwnDataTypes_ml,    only : print_Deriv_type
- use Par_ml,             only: li0, lj0, li1, lj1
- use PhysicalConstants_ml, only : AVOG
- use SmallUtils_ml,      only: find_index, NOT_FOUND
- use StoFlux_ml,         only : unit_flux, lai_flux, leaf_flux
- use TimeDate_ml,        only : current_date
+ use Derived_ml,          only : f_2d, d_2d, IOU_INST, IOU_YEAR
+ use EcoSystem_ml,        only : DEF_ECOSYSTEMS, NDEF_ECOSYSTEMS, &
+                                 EcoSystemFrac, FULL_GRID, Is_EcoSystem
+ use GridValues_ml,       only : debug_proc, debug_li, debug_lj
+ use LandDefs_ml,         only : LandDefs, LandType
+ use Landuse_ml,          only : WheatGrowingSeason, LandCover
+ use LocalVariables_ml,   only : Grid, Sub  !=> izen  integer of zenith angle
+ use ModelConstants_ml ,  only : atwS, atwN, DEBUG_MY_DRYDEP,MasterProc
+ use OwnDataTypes_ml,     only : print_Deriv_type
+ use Par_ml,              only : li0, lj0, li1, lj1
+ use PhysicalConstants_ml,only : AVOG
+ use SmallUtils_ml,       only : find_index, NOT_FOUND
+ use StoFlux_ml,          only : unit_flux, lai_flux
+ use TimeDate_ml,         only : current_date
  use Wesely_ml
  implicit none
  private
@@ -174,7 +175,7 @@ contains
         call CheckStop( MosaicOutput(imc)%LC < 1, & !0=GRID (careful,FULL_GRID=1)
         "MosaicOutput-LC Error " // trim(MosaicOutput(imc)%name))
 
-      case ( "VG", "Rs ", "Rns", "Gns", "AOT", "AFST" ) ! could we use RG_LABELS? 
+      case ( "VG", "Rs ", "Rns", "Gns", "MMAOT", "EUAOT", "AFST" ) ! could we use RG_LABELS? 
 
         if( MosaicOutput(imc)%txt == "Grid") then
            MosaicOutput(imc)%LC = FULL_GRID   ! zero
@@ -204,25 +205,22 @@ contains
   end subroutine Init_DepMap
 
   !<==========================================================================
-  subroutine Add_MosaicOutput(debug_flag,dt,i,j,convfac,lossfrac,fluxfrac,&
-           c_hvegppb,coverage, VgLU, GsLU, GnsLU,LCC_Met)
+  subroutine Add_MosaicOutput(debug_flag,dt,i,j,convfac,fluxfrac,&
+                VgLU, GsLU, GnsLU,LCC_Met)
 
   !<==========================================================================
      ! Adds deposition losses to ddep arrays
      logical, intent(in) :: debug_flag
      real,    intent(in) :: dt              ! time-step
      integer, intent(in) :: i,j             ! coordinates
-     real,    intent(in) ::  convfac, lossfrac
+     real,    intent(in) ::  convfac  !!???, lossfrac
      real, dimension(:,:), intent(in) :: fluxfrac  ! dim (NADV, NLANDUSE)
-     real, dimension(:),   intent(in) :: c_hvegppb ! dim (NLANDUSE)
-     real, dimension(:),   intent(in) :: coverage  ! dim (NLANDUSE), fraction
      real, dimension(:,0:),intent(in) :: VgLU  ! dim (NLANDUSE*nlu), 0=Grid
      real, dimension(:,0:),intent(in) :: GsLU, GnsLU  ! dim (0:NLANDUSE*nlu)
      real, dimension(:,0:), intent(in) :: LCC_Met   ! dim (nMET, NLANDUSE*nlu)
 
      integer :: n, nadv, nadv2, ihh, idd, imm, iLC, iEco
      integer :: imc, f2d, cdep
-     real :: veg_o3     ! O3 (ppb)  at canopy top, for  e.g. wheat, forests
      real :: X, Y       ! Threshold for flux AFstY, AOTX
      real :: output     ! tmp variable
      !character(len=len(MosaicOutput(1)%subclass)) :: subclass
@@ -327,18 +325,26 @@ contains
         ! - invEcoFracCF divides the flux per grid by the landarea of each
         ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
 
-          !d_2d( f2d,i,j,IOU_INST) =  &
           output = Fflux * convfac * MosaicOutput(imc)%atw * invEcoFrac(iEco)
 
           if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-             write(6,"(a,3i4,3es12.3)") "DEBUG_ECO Fflux ", imc, nadv, &
-                iEco, Fflux, output ! d_2d( f2d,i,j,IOU_INST)
+             write(6,"(a,3i4,3es12.3)") "Add_MosaicOutput DDEP "// &
+              trim(MosaicOutput(imc)%name), imc, nadv, iEco, Fflux, output
           end if ! DEBUG_ECO 
 
-        case ( "MET" )    ! Fluxes, AFstY 
+        case ( "METCONC" )    ! Fluxes, AFstY 
 
-          n       =  MosaicOutput(imc)%Index  !ind = ustar or ..
-          output  =  LCC_Met( n, iLC )
+          n   =  MosaicOutput(imc)%Index  !ind = ustar or ..
+          if( n == MMC_USTAR  ) output = Sub(iLC)%ustar
+          if( n == MMC_RH     ) output = Sub(iLC)%rh
+          if( n == MMC_INVL   ) output = Sub(iLC)%invL
+          if( n == MMC_CANO3  ) output = Sub(iLC)%cano3_ppb
+          if( n == MMC_VPD    ) output = Sub(iLC)%vpd
+
+          if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
+             write(6,"(a,3i4,es12.3)") "Add_MosaicOutput METCONC " // &
+               trim(MosaicOutput(imc)%name), imc, n, iLC, output
+          end if ! DEBUG_ECO 
 
         case ( "AFST" )    ! Fluxes, AFstY 
                            ! o3WH = c_hvegppb(iam_wheat)* lossfrac
@@ -346,34 +352,28 @@ contains
           Y   = MosaicOutput(imc)%XYCL   ! threshold Y, nmole/m2/s
 
           if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-             write(6,"(a,2i3,f4.1,es12.3)") "DEBUG_FST Fflux ", &
-                imc, iLC, Y, leaf_flux(iLC)
+             write(6,"(a,2i3,f6.1,es12.3)") "Add_MosaicOutput Fflux "// &
+               trim(MosaicOutput(imc)%name),  &
+                imc, iLC, Y, Sub(iLC)%leaf_o3flux
           end if
 
          ! Add fluxes:
-          !d_2d( f2d ,i,j,IOU_INST) = fstfrac* max(leaf_flux(iLC)-Y,0.0)
-          output  = fstfrac* max(leaf_flux(iLC)-Y,0.0)
+          output  = fstfrac* max(Sub(iLC)%leaf_o3flux - Y,0.0)
 
-        case ( "AOT" )    ! AOTX
+        case ( "MMAOT", "UNAOT", "EUAOT" )    ! AOTX
 
-          X   = MosaicOutput(imc)%XYCL   ! threshold X,  ppb.h
+          !OLD: veg_o3 = c_hvegppb(iLC)* lossfrac  ! lossfrac????
 
-         !/-- Calcuates AOT values for specific veg. Daylight values calculated
-         !    only, for zenith < AOT_HORIZON ( e.g. 89 )
+          X      = MosaicOutput(imc)%XYCL   ! threshold X,  ppb.h
 
-          if ( Grid%izen < AOT_HORIZON .and. veg_o3>X ) then
-            veg_o3 = c_hvegppb(iLC)* lossfrac
+          call Calc_AOTx( subclass,iLC, Sub(iLC)%cano3_ppb, X,output) 
 
-            !d_2d( f2d ,i,j,IOU_INST) = (veg_o3-X) * timefrac
-            output = (veg_o3-X) * timefrac
-
-            if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-              write(6,"(a,2i3,2f9.1,i4)") "DEBUG_AOT ", n, iLC, X, veg_o3 &
-                 ,WheatGrowingSeason(i,j)  ! NOT USED YET....!
-            end if
-
-          !else not needed, since output=0 by default
-          !  d_2d( f2d ,i,j,IOU_INST) = 0.0
+          if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
+              write(6,"(a,i5,2i3,f6.1,f9.3,i4,f12.4)") "Add_MosaicOutput AOT " // &
+               trim(MosaicOutput(imc)%name),  &
+               current_date%hour, n, iLC, X, &
+                Sub(iLC)%cano3_ppb , &  ! c_hvegppb(iLC), &
+                 WheatGrowingSeason(i,j), output  ! NOT USED YET....!
           end if
 
         case ( "VG", "Rs ", "Rns", "Gns" ) ! could we use RG_LABELS? 
@@ -428,14 +428,21 @@ contains
            end if ! subclass
 
            if( DEBUG_MY_DRYDEP .and. debug_flag ) then
-              write(*,"(2a,2i4,f8.3)") "ADD_VGR: ", &
+              write(*,"(2a,2i4,f9.3)") "ADD_VGR: ", &
                  trim(MosaicOutput(imc)%name), cdep, iLC, output
 
            end if
         case default
-           call CheckStop("OUTVEG UNDEF")
+           if ( MasterProc ) then
+              print *, "OUTVEG UNDEF name ",   MosaicOutput(imc)%name
+              print *, "OUTVEG UNDEF subclass ",   MosaicOutput(imc)%subclass
+           call CheckStop("OUTVEG UNDEF" // subclass )
+           end if
         end select
 
+        if( DEBUG_MY_DRYDEP .and. debug_flag ) then
+              write(*,"(a,f12.3)") "ADDED output: ",  output
+        end if
         d_2d( f2d,i,j,IOU_INST) = output
      
      end do ! Mosaic
@@ -449,29 +456,6 @@ contains
      imm      =    current_date%month            ! for debugging
      idd      =    current_date%day              ! for debugging
      ihh      =    current_date%hour             ! for debugging
-
-
-! EXCLUDED THE REST PENDING RE_WRITE OF AOTx system - will be similar to
-! the other "Out" variables, e.g OutVEGO3
-!TMPDS
-!TMPDS     if ( ihh >= 9 .and. ihh <= 21 ) then ! 8-20 CET, assuming summertime
-!TMPDS        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  max(o3DF-40.0,0.0) * timefrac
-!TMPDS     else
-!TMPDS        d_2d(D2_EUAOT40DF,i,j,IOU_INST) =  0.0
-!TMPDS     end if
-!????????????????????
-!TMPDS       ! MM AOT added (same as UNECE, but different growing season)
-!TMPDS             d_2d(D2_MMAOT40WH,i,j,IOU_INST) = d_2d(D2_UNAOT40WH,i,j,IOU_INST)&
-!TMPDS                     * WheatGrowingSeason(i,j)
-!TMPDS
-!TMPDS    if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-!TMPDS          write(6,"(a12,3i5,f7.2,5es12.3,i3,es12.3)") "DEBUG_ECO ", &
-!TMPDS          imm, idd, ihh, o3WH, &
-!TMPDS             leaf_flux(iam_beech), d_2d(D2_AFSTDF0,i,j,IOU_INST), &
-!TMPDS             leaf_flux(iam_wheat), d_2d(D2_AFSTCR0,i,j,IOU_INST), &
-!TMPDS             d_2d(D2_UNAOT40WH,i,j,IOU_INST), &
-!TMPDS             WheatGrowingSeason(i,j), d_2d(D2_MMAOT40WH,i,j,IOU_INST)
-!TMPDS    end if ! DEBUG
 
    !---- end ecosystem specific ----------------------------------------------
 

@@ -79,7 +79,7 @@ integer, public, parameter :: &
 !GCTEST    ,NADV_SITE  =    6 &  !NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE =    9            ! No. Misc. met. params  ( e.g. T2, d_2d)
+    ,NXTRA_SITE =    13           ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
 !GCDS    SITE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO, IXADV_CH4, IXADV_C2H6 /) 
@@ -98,16 +98,21 @@ integer, public, parameter :: &
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
-   SITE_XTRA=      (/ "D2D  ","th   ","T2   ","D2D  ","D2D  ","D2D  ","D2D  ","D2D  ","D2D  "   /)
+   SITE_XTRA=      (/ "D2D  ","th   ","T2   ","D2D  ",&
+                       "D2D  ","D2D  ", &
+                       "D2D  ", "D2D  ", &
+                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  "   /)
 !    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        " /) 
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
-    SITE_XTRA_CODE= (/ "HMIX       ","th         ","T2         ","PSURF      ", &
-                       "COLUMN_CO  ","COLUMN_C2H6","COLUMN_HCHO","COLUMN_CH4 ", "COLUMN_NO2 " /)
-!    SITE_XTRA_CODE= (/ "hmix ", "th  ", "T2",  "PS"/)  
+    SITE_XTRA_CODE= (/ &
+     "HMIX       ","th         ","T2         ","PSURF      ", &
+     "RH_GR      ","CanopyO3_DF","CanopyO3_GR","VPD_GR     ", &
+     "COLUMN_CO  ","COLUMN_C2H6","COLUMN_HCHO","COLUMN_CH4 ", &
+     "COLUMN_NO2 " /)
    
    integer,           public, parameter, dimension(NXTRA_SITE) :: &
-   SITE_XTRA_INDEX=  (/  0,    0,   0,  0, 0, 0 , 0, 0, 0 /)
+   SITE_XTRA_INDEX=  (/  0,    0,   0,  0, 0, 0 ,0, 0, 0, 0, 0, 0, 0 /)
 !    SITE_XTRA_INDEX=  (/  0,    0,   0  /)
 
 

@@ -43,8 +43,8 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-  ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
-   RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
+   RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
   ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
@@ -53,7 +53,7 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 85, 120, 55,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   4        & ! Actual number of processors in longitude
+    NPROCX      =   8        & ! Actual number of processors in longitude
   , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
@@ -80,7 +80,8 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
  !integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i= 97, DEBUG_j= 62 ! Waldhof
-  integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
+ !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
+  integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
 
 !=============================================================================
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
@@ -95,10 +96,11 @@ module ModelConstants_ml
     ,DEBUG_VDS            = .false. & !
     ,DEBUG_MY_DRYDEP      = .false. & !
     ,DEBUG_EMISSIONS      = .false. &
+    ,DEBUG_STOFLUX        = .false. &
     ,DEBUG_GETEMIS        = .false. &
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
-    ,DEBUG_RUNCHEM        = .true. &
+    ,DEBUG_RUNCHEM        = .false. &
     ,DEBUG_SOA            = .false. & !
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_LANDDEFS       = .false. & !

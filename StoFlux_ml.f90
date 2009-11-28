@@ -26,31 +26,30 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
 module StoFlux_ml
+  use My_outputs_ml, only : 
   use DO3SE_ml, only : do3se
   use LandDefs_ml, only : LandType, STUBBLE,NLanduse_DEF
-  use LocalVariables_ml, only : L, Grid
+  use LocalVariables_ml, only : L, Grid, Sub
   use MicroMet_ml, only : AerRes, Wind_at_h
-  use ModelConstants_ml, only : NLANDUSEMAX, dt_advec
+  use ModelConstants_ml, only : NLANDUSEMAX, dt_advec, DEBUG_STOFLUX
   use Par_ml, only : MAXLIMAX, MAXLJMAX
   use PhysicalConstants_ml, only : AVOG, KARMAN
   use TimeDate_ml, only : current_date
   implicit none
   private
 
-  public :: Init_StoFlux
+!  public :: Init_StoFlux
   public :: Setup_StoFlux
   public :: Calc_StoFlux
 
   logical, public, parameter  :: STO_FLUXES = .true.
-  logical, private, parameter :: DEBUG_FLUX = .false.
   logical, public,  dimension(NLANDUSEMAX), save :: luflux_wanted
 
   real, private :: c_hveg, u_hveg ! Values at canopy top, for fluxes
   real, public,  dimension(NLANDUSEMAX), save :: &
-      lai_flux,         & ! Fluxes to total LAI
-      unit_flux,        & ! Fluxes per m2 of leaf area
-      leaf_flux,        & ! Flag-leaf Fluxes per m2 of leaf area
-      c_hvegppb           ! Conc. to of canop
+      lai_flux,      & ! Fluxes to total LAI
+      unit_flux        ! Fluxes per m2 of leaf area
+!ds      leaf_flux,        & ! Flag-leaf Fluxes per m2 of leaf area
 
 
  real,   public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
@@ -68,15 +67,16 @@ module StoFlux_ml
 
 
 contains
-  subroutine Init_StoFlux()
-    integer :: iL
+!  subroutine Init_StoFlux()
+!    integer :: iL
+!
+!     luflux_wanted(:) = .false.
+!     do iL = 1, NLanduse_DEF
+!        if ( LandType(iL)%is_iam ) luflux_wanted(iL)  = .true.
+!        if ( LandType(iL)%is_seminat ) luflux_wanted(iL)  = .true.
+!     end do
 
-     luflux_wanted(:) = .false.
-     do iL = 1, NLanduse_DEF
-        if ( LandType(iL)%is_iam ) luflux_wanted(iL)  = .true.
-     end do
-
-  end subroutine Init_StoFlux
+!  end subroutine Init_StoFlux
 
   subroutine Setup_StoFlux(jd,xo3,xm)
  ! xo3 is in #/cm3. xo3/xm gives mixing ratio, and 1.0e9*xo3/xm = ppb
@@ -88,8 +88,7 @@ contains
        ppb_o3   =  1.0e9* xo3/xm
        nmole_o3 =  xo3 * NMOLE_M3
 
-       c_hvegppb(:) = 0.0
-       leaf_flux(:) = 0.0
+       Sub(:)%leaf_o3flux = 0.0
 
 
        ! resets whole grid on 1st day change
@@ -117,8 +116,10 @@ contains
 
 ! take care of  temperate crops, outside growing season
     if ( L%hveg < 1.1 * L%z0 ) then 
-          leaf_flux(iL) = 0.0
-          if ( DEBUG_FLUX .and. debug_flag ) &
+
+          Sub(iL)%leaf_o3flux = 0.0
+          Sub(iL)%cano3_ppb   = 0.0  !! Can't do better?
+          if ( DEBUG_STOFLUX .and. debug_flag ) &
             write(6,"(a15,f8.3,a8,f8.3)")  "FST - too low ", &
                 L%hveg, " <  1.1*",  L%z0
 
@@ -133,8 +134,12 @@ contains
 
           Ra_diff = AerRes(max( L%hveg-L%d, STUBBLE) , Grid%z_ref-L%d,&
                        L%ustar,L%invL,KARMAN)
+
           c_hveg         = nmole_o3 * ( 1.0 - Ra_diff * Vg_ref )
-          c_hvegppb(iL)  = ppb_o3   * ( 1.0 - Ra_diff * Vg_ref )
+
+         ! Need to be careful with scope. L is within iL loop, whereas Sub
+         ! will be kept throughout i,j calculations:
+          Sub(iL)%cano3_ppb   = ppb_o3   * ( 1.0 - Ra_diff * Vg_ref )
 
 
          !Could be coded faster with Ra....
@@ -157,7 +162,7 @@ contains
               if( L%g_sun > 0.0 ) SumVPD(i,j) = SumVPD(i,j) + L%vpd*dt_advec/3600.0
               tmp_gsun = L%g_sun
               if ( SumVPD(i,j) > 8.0 ) L%g_sun = min( L%g_sun, old_gsun(i,j) )
-              if( DEBUG_FLUX .and. debug_flag ) &
+              if( DEBUG_STOFLUX .and. debug_flag ) &
                  write(6,"(a8,3i3,4f8.3,4es10.2)") "SUMVPD ", &
                   current_date%month, current_date%day, current_date%hour, &
                     L%rh, L%t2C,  L%vpd, SumVPD(i,j), &
@@ -166,13 +171,14 @@ contains
           end if
 
          ! Flux in nmole/m2/s:
-          leaf_flux(iL) = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
+          !ds leaf_flux(iL) = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
+          Sub(iL)%leaf_o3flux = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
 
-          if ( DEBUG_FLUX .and. debug_flag ) then 
-            write(6,"(a8,3i3,i4,f6.2,2f8.1,2es10.2,f6.2,es12.3)")  "FST ",&
+          if ( DEBUG_STOFLUX .and. debug_flag ) then 
+            write(6,"(a8,3i3,i4,f6.2,2f8.1,2es10.2,f6.2,2es12.3)")  "STOFLUX ",&
             iL, current_date%month, current_date%day, current_date%hour, &
             L%LAI, nmole_o3, c_hveg, L%g_sto, L%g_sun, u_hveg,&
-            leaf_flux(iL)
+            Sub(iL)%cano3_ppb, Sub(iL)%leaf_o3flux
           end if
 
     end if

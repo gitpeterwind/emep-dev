@@ -62,7 +62,8 @@ MODULE TimeDate_ml
 
 !=========================================================================
 integer, public,                save ::  daynumber    ! Day no. (1st jan=1).
-  ! (Could be done locally?)
+! In Southern Hemisphere, we use an effective day number, shifted by 6 months
+integer, public,                save ::  effectivdaynumber 
 integer, public,                save ::  nydays       ! No. days per year
 integer, public, dimension(12), save ::  nmdays       ! No. days per month
 
