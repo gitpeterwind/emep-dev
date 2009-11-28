@@ -1,3 +1,32 @@
+CellMet_ml  - ResetSub added to ensure proper reset at start of each i,j
+Derived_ml  - small format changes
+
+DryDep_ml - uses METCONC_AT
+               remove call to Init_StoFlux, fewer parameters in
+          call Add_MosaicOutput
+
+LandDefs_ml - use LandType()%flux_wanted
+Landuse_ml  - iam_wheat code removed (not functioning)
+LocalVariables - added cano3_ppb, leaf_o3flux, ResetSub
+ModelConstants_ml - added DEBUG_STOFLUX
+Setup_1d_ml - added my_first_call to limit number of volcano printouts
+StoFlux_ml -   uses Sub(iL)%leaf_o3flux %cano3_ppb instead of 
+               c_hvegppb array
+               remove sub Init_StoFlux
+TimeDate_ml - added effectivedate here
+
+My_Derived_ml - changed AOT system
+                Allow MMAOT, EUAOT
+                Added CanopyRH and RH to possible Mosaic outputs
+My_DryDep_ml - adapted to new AOT system
+               use of lossfrac removed
+               tidy up of "select case" options - use of Calc_AOTx
+My_Outputs_ml - examples with e.g. VPD_GR, CanopyO3_GR
+ 
+
+
+
+
 xxxxxxxxxxxxxx rv3_4_8  Peter,   25 Nov. 2009 xxxxxxxxxxxxxxxx
 
 Met_ml: does not stop if rh2m is not found, but set it to a meaningless value 

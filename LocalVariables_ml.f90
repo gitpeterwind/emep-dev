@@ -153,7 +153,10 @@ module LocalVariables_ml
     ,LAIsunfrac= NOT_SET &! fraction of LAI in sun
   ! outputs from Rsurface will include:
     ,g_sto     = NOT_SET &! stomatal conductance (m/s)
-    ,g_sun     = NOT_SET  ! g_sto for sunlit upper-canopy (flag) leaves
+    ,g_sun     = NOT_SET &! g_sto for sunlit upper-canopy (flag) leaves
+  ! and enable concentrations at canopy height:
+    ,cano3_ppb  =  0.0    &! Use 0.0 to make d_2d behave better 
+    ,leaf_o3flux = 0.0     ! 
 
     !,ObsRad    = NOT_SET &! Used for box-model, for observed values
     !,snow      = NOT_SET &!  Usually from Grid
@@ -165,7 +168,8 @@ module LocalVariables_ml
   end type SubDat
 
   type(SubDat), public, dimension(NLANDUSEMAX), save :: Sub
-  type(SubDat), public, save :: L    ! For just one land-class
+  type(SubDat), public, save :: L       ! For just one land-class
+  type(SubDat), public, save :: ResetSub  !  Keeps NOT_SET values
 
 
 

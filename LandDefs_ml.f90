@@ -102,6 +102,7 @@ end interface Check_LandCoverPresent
      logical :: is_veg
      logical :: is_bulk  ! Bulk-surface resistance used 
      logical :: is_iam   ! Fake species for IAM outputs 
+     logical :: flux_wanted ! usually IAM, set by My_Derived
   end type land_type
                                                !##############
   type(land_type), public,  dimension(NLANDUSEMAX) :: LandType
@@ -200,6 +201,7 @@ contains
             LandType(n)%is_water  =  LandInput%code == "W" 
             LandType(n)%is_ice    =  LandInput%code == "ICE" 
             LandType(n)%is_iam    =  LandInput%code(1:4) == "IAM_" 
+            LandType(n)%flux_wanted = LandType(n)%is_iam  ! default
 
             LandType(n)%is_forest =  &
                 ( LandInput%type == "ECF" .or. LandInput%type == "EDF" )

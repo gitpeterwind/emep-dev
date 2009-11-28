@@ -901,7 +901,9 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 
             call voc_2dcalc()
 
-          case( "AOT" )
+          case( "AOT" )    !  Hardly used these days. The vegetation-specific 
+                           !  AOTs are handled in the Mosaic class and as
+                           !  part of the dry dep calculations.
 
             call aot_calc( n, timefrac )
 
@@ -1380,7 +1382,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
   subroutine somo_calc( n )
 
 
-    !/-- Calculates SOMO (8hours) values for input threshold.  !pw rv2_1
+    !/-- Calculates SOMO (8hours) values for input threshold.
 
     implicit none
     integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays

@@ -45,7 +45,7 @@ use NetCDF_ml, only:Read_Local_Inter_CDF
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
-use TimeDate_ml,    only: daynumber, nydays, current_date
+use TimeDate_ml,    only: daynumber, effectivdaynumber, nydays, current_date
 
 implicit none
 private
@@ -257,9 +257,8 @@ contains
     logical, save :: my_first_call = .true.
     logical :: debug_flag = .false.
     real :: hveg, lat_factor
-    integer :: effectivdaynumber !6 months shift in Southern hemisphere.
     real :: xSAIadd
-    logical :: iam_wheat
+!WHEAT    logical :: iam_wheat
     real, parameter ::water_fraction_THRESHOLD=0.5
 
 ! Treatment of growing seasons in the southern hemisphere:
@@ -368,11 +367,11 @@ contains
              xSAIadd = 0.0
 
 
-             iam_wheat = .false.
+!WHEAT             iam_wheat = .false.
              if (  LandType(lu)%is_crop ) then
 
                 if ( LandType(lu)%is_iam  ) then ! IAM wheat
-                    iam_wheat = .true.
+!WHEA T                   iam_wheat = .true.
                     if  ( effectivdaynumber >= LandCover(i,j)%SGS(ilu) .and. &
                           effectivdaynumber <= LandCover(i,j)%EGS(ilu)  ) then
                             WheatGrowingSeason(i,j) =  1

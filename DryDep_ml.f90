@@ -63,12 +63,11 @@ module DryDep_ml
                           FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_MosaicOutput, &
-!                          Add_Vg, Add_RG, Add_LCC_Met,  &  ! ECO08, for  Mosaic_Vg3m
                           Dep        ! Mapping (type = depmap)
 
 
 use LandDefs_ml, only : LandDefs !hf CoDep extra
-use My_Derived_ml, only : MET_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
+use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  !dsVDS use Aero_DryDep_ml,    only : Aero_Rb
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds, Nemitz2004  !dsVDS FEB2009
@@ -107,12 +106,10 @@ use My_Derived_ml, only : MET_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
  use Setup_1dfields_ml, only : xn_2d,amk
  use StoFlux_ml,  only:   STO_FLUXES,  &   ! true if fluxes wanted.
-                            leaf_flux, &! = flag-leaf sto. flux per m2
                             unit_flux, &! = sto. flux per m2
                             lai_flux,  &! = lai * unit_flux
-                            luflux_wanted, & !  logical
-                            c_hvegppb, & !  logical
-                            Init_StoFlux, Setup_StoFlux, Calc_StoFlux  ! subs
+                            Setup_StoFlux, Calc_StoFlux  ! subs
+                            !Init_StoFlux, Setup_StoFlux, Calc_StoFlux  ! subs
  use ChemSpecs_shl_ml,    only :  NSPEC_SHL
  use My_Aerosols_ml,    only : NSIZE
  use TimeDate_ml,       only : daynumber, current_date
@@ -158,7 +155,7 @@ use My_Derived_ml, only : MET_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
         call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
         call CheckStop(errmsg, "Reading DO3SE ")
      endif
-     call Init_StoFlux()              
+!     call Init_StoFlux()              
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  
@@ -275,7 +272,7 @@ use My_Derived_ml, only : MET_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
             , Mosaic_VgRef & ! Vg at ref height, e.g. 45m
             , Mosaic_Vg3m  ! Vg at 3m
 
-      real, dimension(size(MET_PARAMS),0:NLANDUSEMAX):: &
+      real, dimension(size(METCONC_PARAMS),0:NLANDUSEMAX):: &
             Mosaic_Met  ! met, just 
 
       real, dimension(NSPEC_ADV ,NLANDUSEMAX):: fluxfrac_adv
@@ -363,9 +360,7 @@ use My_Derived_ml, only : MET_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
     Sumcover = 0.0
     Sumland  = 0.0
     fluxfrac_adv (:,:) = 0.0
-!hf snow
     Grid_snow(i,j)=0.0 
-!hf Rs
     Grid_Rs(:) = 0.0
     Grid_Gns(:)  = 0.0
  
@@ -373,13 +368,14 @@ use My_Derived_ml, only : MET_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
     Grid%so2nh3ratio = &
                xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID) / & 
                max(1.0,xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID))
-!hf CoDep
+
     Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
 
-if ( DEBUG_DRYDEP .and. debug_flag ) then
+    if ( DEBUG_DRYDEP .and. debug_flag ) then
          write(*,"(a,2i4,2es15.4)") "DRYDEP CONCS ", i,j, &
           xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID), xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID)
-end if
+    end if
+
     if ( STO_FLUXES ) call Setup_StoFlux(daynumber, &
          xn_2d(NSPEC_SHL+FLUX_ADV,KMAX_MID),amk(KMAX_MID))
 
@@ -430,10 +426,10 @@ end if
          Mosaic_Met(1,iL) = L%ustar
          Mosaic_Met(2,iL) = L%invL
          Mosaic_Met(3,iL) = L%rh
-if( debug_flag ) then
-   write(6,"(a,i4,a,2f12.3)") "MOSAIC ", iL, &
-     trim(MET_PARAMS(3)), Mosaic_Met(3,iL), Mosaic_Met(3,0)
-end if
+!if( debug_flag ) then
+!   write(6,"(a,i4,a,2f12.3)") "MOSAIC ", iL, &
+!     trim(METCONC_PARAMS(3)), Mosaic_Met(3,iL), Mosaic_Met(3,0)
+!end if
 
 
        !===================
@@ -584,7 +580,6 @@ end if
                write(*,"(a14,2i4,f7.3,i3,2f10.2,es12.2,2f8.2,a5,f8.3,2es18.6)") &
                   "UKDEP EXT: ", iiL, iL, L%coverage, n,&
                    L%LAI,100.0*L%g_sto, &  ! tmp, in cm/s 
-!hf XX                   L%Ra_ref, Rb(n), min( 999.0,Rsur_dry(n) ),  &
                    L%Ra_ref, Rb(n), min( 999.0,Rsur(n) ),  &
                   " Vg: ", 100.0*Vg_3m(n), 100.0*Vg_ref(n), Vg_ratio(n)
             end do
@@ -595,9 +590,15 @@ end if
          
        !=======================
 
-        if ( STO_FLUXES .and. luflux_wanted(iL) ) then
+          if ( DEBUG_DRYDEP .and. debug_flag ) then
+               write(*,*) "DEPSTO IN?: ", iL, LandType(iL)%flux_wanted , Sub(iL)%cano3_ppb
+          end if
+        if ( STO_FLUXES .and. LandType(iL)%flux_wanted ) then
              call Calc_StoFlux(iL,  Vg_ref(FLUX_CDEP), debug_flag )
         end if ! STO_FLUXES
+          if ( DEBUG_DRYDEP .and. debug_flag ) then
+               write(*,*) "DEPSTO OUT?: ", iL, LandType(iL)%flux_wanted , Sub(iL)%cano3_ppb
+          end if
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! Extra outputs sometime used for Sweden/IVL/SEI/CEH
@@ -764,9 +765,8 @@ end if
 
       !.. Add DepLoss to budgets if needed:
 
-       call Add_MosaicOutput(debug_flag,dt_advec,i,j,convfac2,lossfrac,&
-           fluxfrac_adv,c_hvegppb,Sub(:)%coverage, &
-           Mosaic_Vg3m,Mosaic_Gsur, Mosaic_Gns, Mosaic_Met)
+       call Add_MosaicOutput(debug_flag,dt_advec,i,j,convfac2,&
+           fluxfrac_adv, Mosaic_Vg3m,Mosaic_Gsur, Mosaic_Gns, Mosaic_Met)
 
        !DSX call Add_Vg(debug_flag,i,j, Mosaic_Vg3m)
        !DSX call Add_RG(debug_flag,i,j, Mosaic_Gsur, Mosaic_Gns)
