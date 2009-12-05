@@ -76,6 +76,18 @@ contains
       end if
     end if
 
+  ! Temporary setup - accumulation period for NS Clover for Mills et al paper
+!    if ( defn == "CV" ) then
+!      if ( current_date%month < 5 .or.  &
+!           current_date%month == 5 .and.  current_date%day < 15) .or.
+!           current_date%month == 5 .and.  current_date%day < 15) .or.
+!
+!           ) then
+!             ! accumulate_2dyear = .false.
+!             return
+!      end if
+!    end if
+
     if (   LandType(iLC)%is_forest .and. &
          ( current_date%month < 4 .or.  current_date%month > 9) ) then
              ! accumulate_2dyear = .false.
