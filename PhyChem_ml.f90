@@ -33,7 +33,6 @@ module PhyChem_ml
 !     Output of hourly data
 !
 !-----------------------------------------------------------------------------
-!hf CoDep
    use CoDep_ml, only : make_so2nh3_24hr
    use ChemSpecs_adv_ml, only : IXADV_SO2, IXADV_NH3
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
@@ -52,7 +51,7 @@ module PhyChem_ml
    use ModelConstants_ml, only : KMAX_MID, nmax, nstep &
                         ,dt_advec       & ! time-step for phyche/advection
                         ,END_OF_EMEPDAY & ! (usually 6am)
-                        ,FORECAST ! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
+                        ,FORECAST ! use advecdiff_poles on FORECAST mode
    use Nest_ml,        only : readxn, wrtxn
    use Par_ml,         only : me, MAXLIMAX, MAXLJMAX
    use TimeDate_ml,       only : date,daynumber,day_of_year, add_secs, &
@@ -60,9 +59,9 @@ module PhyChem_ml
                                  make_timestamp, make_current_date
    use Trajectory_ml,  only : trajectory_out     ! 'Aircraft'-type  outputs
    use Radiation_ml,   only : SolarSetup,       &! sets up radn params
-                             ZenithAngle,      &! gets zenith angle
-                             ClearSkyRadn,     &! Idirect, Idiffuse
-                             CloudAtten         !
+                              ZenithAngle,      &! gets zenith angle
+                              ClearSkyRadn,     &! Idirect, Idiffuse
+                              CloudAtten         !
    use Runchem_ml,     only : runchem   ! Calls setup subs and runs chemistry
    use Sites_ml,       only: siteswrt_surf, siteswrt_sondes    ! outputs
    use Timefactors_ml, only : NewDayFactors
@@ -124,7 +123,7 @@ contains
         call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
 
-!       For safety we initialise add instant. values here to zero.
+!       For safety we initialise instant. values here to zero.
 !       Usually not needed, but sometimes
 !       ==================
          d_2d(:,:,:,IOU_INST) = 0.0
@@ -182,7 +181,7 @@ contains
           if ( nstep == nmax ) call DerivedProds("Before",dt_advec)
           !=============================
 
-          call Add_2timing(26,tim_after,tim_before,"phyche:MACHO-prod")
+          call Add_2timing(26,tim_after,tim_before,"phyche:prod")
 
          !===================================
            call init_drydep()
