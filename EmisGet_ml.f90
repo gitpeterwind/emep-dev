@@ -591,7 +591,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
            call CheckStop( ios ,"EmisGet: ios error on "//trim(fname) )
 
            n = n + 1
-           if ( MasterProc )  then
+           if ( DEBUG .and. MasterProc ) then
                write(6,"(a,i3,a,3i3,50f8.2)") "Splits: ",  n, trim(fname),&
                   iland, isec, nsplit, tmp(1:nsplit)
            end if
