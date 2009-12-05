@@ -148,7 +148,8 @@ private
 
 ! Tropospheric columns
    integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
-!   integer, public, parameter, dimension(3) :: COLUMN_MOLEC_CM2 = (/ CO, HCHO, NO2 /)
+   character(len=3), public, parameter, dimension(4) :: COLUMN_LEVELS = &
+      (/  "k20", "k16", "k12", "k08" /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
   D2_SR = (/ &
@@ -170,12 +171,6 @@ private
 !
 !    NOy-type sums
 !      ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
-!
-!    Ecosystem - fluxes:
- ! NB: do not remove without removing from My_DryDep too
-!      ,"D2_AFSTDF0  ","D2_AFSTDF16 ","D2_AFSTBF0  ","D2_AFSTBF16 " &
-!      ,"D2_AFSTCR0  ","D2_AFSTCR3  ","D2_AFSTCR6  " & !
-!       ,"D2_O3DF     ","D2_O3WH     " &
 !
 
   !============ Extra parameters for model evaluation: ===================!
@@ -271,12 +266,15 @@ private
 !To avoid many unwanted combinations of land and Y values we just give
 ! the name here and let the code interpret it later.
 ! *** to use format f3.1 or i2 for the Y  or X value for fluxes/AOT! ***
+!
+! AFstY vs Fst - not that the accumulated AFstY is processed here.
+! the instantaneous Fst is set as for Canopy O3 in METCONCS
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
      VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", &
                         "AFST_0.0_IAM_DF", &
-                        "AFST_1.6_BF    ", &
                         "AFST_0.0_BF    ", &
+                        "AFST_1.6_BF    ", &
                         "AFST_0.0_IAM_CR", &
                         "AFST_3.0_IAM_CR", &
                         "AFST_6.0_IAM_CR", &
@@ -312,15 +310,17 @@ private
 !    type(Deriv), public, & !Non-stomatal conductance
 !     dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
 
-! For met-data ...
+! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-      METCONC_PARAMS = (/ "USTAR   ", "INVL    ", "RH      ", &
-                          "CanopyO3", "VPD     "  /)
-    integer, parameter, public :: MMC_USTAR = 1, MMC_INVL=2, MMC_RH=3,&
-            MMC_CANO3=4, MMC_VPD=5
-    character(len=TXTLEN_DERIV), public, save, dimension(8) :: &
-      MET_LCS  = (/ "DF     ", "CF    ", "SNL   ", "GR    " ,"TC    ", "IAM_CR", "IAM_DF", "IAM_MF"/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+      METCONC_PARAMS = (/ "RH      ", &
+                          "CanopyO3", "VPD     ", "FstO3   "/)
+                          ! "USTAR   ", "INVL    ", 
+                          ! "g_sto" needs more work - only set as L%g_sto
+    integer, public, save :: MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3,  &
+           MMC_VPD, MMC_FST
+    character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
+      MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       !MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
       ! Can also set dim 4:1 to exclude all - gives zero size MET_LCS
@@ -358,19 +358,30 @@ private
   subroutine Init_My_Deriv()
 
     integer :: i, ilab, nDD, nVg, nRG, nMET, nVEGO3, iLC, &
-      iadv, ispec, atw
+      iadv, ispec, atw, ncol, n1, n2
     integer :: isep1, isep2  ! location of seperators in sting
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: txt, txt2, units, txtnum
     real    :: Y           ! threshold for AFSTY, also used as X in AOT40X
     integer :: Threshold   ! threshold for AFSTY
     character(len=TXTLEN_DERIV), &
-    dimension(size(COLUMN_MOLEC_CM2)) :: tmpname ! e.g. DDEP_SO2_m2Conif
+    dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) :: tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
     character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
     logical, parameter :: T=.true., F=.false.
+    real :: dt_scale
+
+
+    ! Set indices of mosaic metconc params for later use. Will be zero if 
+    ! not found, but that's okay I hope...
+      MMC_RH    = find_index("RH",METCONC_PARAMS) 
+      MMC_CANO3 = find_index("CanopyO3",METCONC_PARAMS) 
+      MMC_VPD   = find_index("VPD",METCONC_PARAMS) 
+      MMC_FST   = find_index("FstO3",METCONC_PARAMS) 
+      MMC_USTAR = find_index("USTAR",METCONC_PARAMS)
+      MMC_INVL  = find_index("INVL",METCONC_PARAMS) 
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -379,7 +390,7 @@ private
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
 
-!ds May 2009, added surf concs in various units (e.g. ugS/m3 or ppb):
+! add surf concs in various units (e.g. ugS/m3 or ppb):
      tag_name(1:size(SURF_UG_S)) = "SURF_ugS_" // species(SURF_UG_S)%name
      call AddArray(  tag_name(1:size(SURF_UG_S)) , wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "SURF_ugS too long" )
@@ -402,9 +413,13 @@ private
      end if
 
      ! Column data:
-     do n = 1, size(COLUMN_MOLEC_CM2)
-       tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n))%name )
+     n = 0
+     do n1 = 1, size(COLUMN_MOLEC_CM2)
+     do n2 = 1, size(COLUMN_LEVELS)
+       n = n + 1
+       tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n1))%name ) // "_" // COLUMN_LEVELS(n2)
        !if(MasterProc) print *, "COL MY_DERIV", trim( species(COLUMN_MOLEC_CM2(n))%name )
+     end do
      end do
      call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "COLUMN too long" )
@@ -472,10 +487,10 @@ private
              call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, DDEP" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, XYLC, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, XYLC, scale, dt_scale, avg? rho Inst Yr Mn Day atw
              MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99,-99, -99.9, 1.0e6,   F,   F,   F, T,  T,  F, atw)
+                  iadv,-99,-99, -99.9, 1.0e6, 0.0,   F,   F,   F, T,  T,  F, atw)
 
           if(DEBUG .and. MasterProc) then
             write(6,*) "DDEP setups"
@@ -516,7 +531,7 @@ private
           !Deriv index, f2d,LC,XYLC, scale, avg? rho Inst Yr Mn Day atw
           MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
-                iadv, -99,iLC, -99.9,  100.0, T,   F,   F, T, T, T, atw)
+                iadv, -99,iLC, -99.9,  100.0, 0.0,  T,   F,   F, T, T, T, atw)
 
         end do VG_LC !n
       end do ! i
@@ -528,6 +543,7 @@ private
       !untangle it to get threshold Y (=3.0) and landcover type
 
       nVEGO3 = 0
+      dt_scale = 0.0   ! for AFstY and AOT we need to reset this.
       VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS)
 
          name = VEGO3_OUTPUTS(n)
@@ -542,11 +558,14 @@ private
          if( txt == "AFST" ) then
             read(txtnum,fmt="(f3.1)") Y
             if(txtnum == ".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
-            Threshold = nint( 10*Y)   ! Store Y=1.6 as 16
+            !WHY??!!!! Threshold = nint( 10*Y)   ! Store Y=1.6 as 16
+            Threshold = Y
             units = "mmole/m2"
+            dt_scale = 1.0e-6   ! Accumulates nmole/s to mmole (*dt_advec)
          else if( txt(3:5) == "AOT" )  then
             read(txtnum,fmt="(i2)") Threshold ! really X
             units = "ppb.h"
+            dt_scale = 1.0/3600.0 ! AOT in ppb.hour
          end if
 
 
@@ -566,10 +585,10 @@ private
            call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, VEGO3" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC,XYCL, scale dt_scale avg? rho Inst Yr Mn Day atw
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", txt, txt2, units, &
-                iadv, -99,iLC,Threshold, 1.0, F,   F,   F, T, T, F, atw)
+                iadv, -99,iLC,Threshold, 1.0, dt_scale,  F,   F,   F, T, T, F, atw)
 
       end do VEGO3_LC !n
       nOutVEGO3 = nVEGO3
@@ -612,11 +631,11 @@ private
           if( RG_LABELS(ilab)(1:1) == "R" )  then
              MosaicOutput(nMosaic) = Deriv( &
                name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
-                iadv, -99,iLC,-99.9, 1.0, T,   F,   F, T, T, T, atw)
+                iadv, -99,iLC,-99.9, 1.0, 0.0,  T,   F,   F, T, T, T, atw)
           else if( RG_LABELS(ilab)(1:1) == "G" )  then
              MosaicOutput(nMosaic) = Deriv( &
                name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
-                iadv, -99,iLC,-99.9, 100.0, T,   F,   F, T, T, T, atw)
+                iadv, -99,iLC,-99.9, 100.0, 0.0,  T,   F,   F, T, T, T, atw)
           end if
 !          if( OutRG(nRG)%label(1:1) == "R" )  then
 !              OutRG(nRG)%units  =   "s/m"
@@ -644,7 +663,8 @@ private
           !------------------- Check if LC present in this array ------!
           iLC = Check_LandCoverPresent( "MET_LCS", n, MET_LCS, (ilab == 1))
           if ( iLC < 0 ) cycle  MET_LC
-          if ( METCONC_PARAMS(ilab)(1:6) == "Canopy" ) &
+          if ( METCONC_PARAMS(ilab)(1:6) == "Canopy" .or. & 
+               METCONC_PARAMS(ilab)(1:5) == "FstO3" ) &
                  LandType(iLC)%flux_wanted  = .true.  ! Canopy calc in StoFlux
           !-------------End of Check if LC present in this array ------!
 
@@ -658,7 +678,7 @@ private
           !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "METCONC", MET_LCS(n), METCONC_PARAMS(ilab), &
-                ilab, -99,iLC,-99.9, 1.0, T,   F,   F, T, T, T, atw)
+                ilab, -99,iLC,-99.9, 1.0, 0.0,  T,   F,   F, T, T, T, atw)
 !MESS          OutMET(nMET) = Dep_type( &
 !           name, ilab, -99, iLC, "Mosaic", METCONC_PARAMS(ilab),  &
 !                                              MET_LCS(n), 1.0, -99, "-")
@@ -669,6 +689,8 @@ private
               MosaicOutput(nMosaic)%unit  =   "m"
           else if( METCONC_PARAMS(ilab)(1:8) == "CanopyO3" )  then
               MosaicOutput(nMosaic)%unit  =   "ppb"
+          else if( METCONC_PARAMS(ilab)(1:5) == "FstO3" )  then
+              MosaicOutput(nMosaic)%unit  =   "mmole/m2" ! accumulated
           end if
 
           if(DEBUG .and. MasterProc) call print_deriv_type(MosaicOutput(nMosaic))

@@ -37,7 +37,7 @@ module My_DryDep_ml    ! DryDep_ml
 
  use My_Derived_ml,  only : &
    nMosaic, MosaicOutput &
-  ,MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD &  ! hard-coded :-(
+  ,MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST &
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
   ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
@@ -51,10 +51,10 @@ module My_DryDep_ml    ! DryDep_ml
  use EcoSystem_ml,        only : DEF_ECOSYSTEMS, NDEF_ECOSYSTEMS, &
                                  EcoSystemFrac, FULL_GRID, Is_EcoSystem
  use GridValues_ml,       only : debug_proc, debug_li, debug_lj
- use LandDefs_ml,         only : LandDefs, LandType
+ use LandDefs_ml,         only : LandDefs, LandType, iLC_grass
  use Landuse_ml,          only : WheatGrowingSeason, LandCover
  use LocalVariables_ml,   only : Grid, Sub  !=> izen  integer of zenith angle
- use ModelConstants_ml ,  only : atwS, atwN, DEBUG_MY_DRYDEP,MasterProc
+ use ModelConstants_ml ,  only : atwS, atwN, DEBUG_MY_DRYDEP, DEBUG_CLOVER, MasterProc
  use OwnDataTypes_ml,     only : print_Deriv_type
  use Par_ml,              only : li0, lj0, li1, lj1
  use PhysicalConstants_ml,only : AVOG
@@ -234,11 +234,12 @@ contains
      real, dimension(NDEF_ECOSYSTEMS) :: invEcoFrac, EcoFrac
      real :: Fflux, Gs, Gns
 
-     real ::  to_nmole, timefrac, fstfrac 
+     real ::  to_nmole, timefrac, nmole_s_to_mmole 
 
      to_nmole =  NMOLE_M3
      timefrac = dt/3600.0
-     fstfrac  = dt*1.0e-6     ! Converts also nmole to mmole
+     nmole_s_to_mmole  = dt*1.0e-6   ! Accumulates nmole/s to mmole
+     cdep = -99                      ! set on first_vgr_call
 
   ! Must match areas given above, e.g. DDEP_CONIF -> Conif
 
@@ -290,6 +291,10 @@ contains
             call CheckStop(iLC<0, "ILC ERROR: "//MosaicOutput(imc)%name)
             call CheckStop(f2d<1, "f2d ERROR:  "//MosaicOutput(imc)%name)
         end if
+        if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
+           write(6,"(a,a)",advance='no') "Add_Mosaic: "// &
+                  trim(MosaicOutput(imc)%name), ", " // trim(subclass)
+        end if
 
         select case ( subclass )
         case ( "DDEP" )
@@ -316,11 +321,12 @@ contains
               Fflux = Fflux + Deploss(nadv) * &
                 sum( fluxfrac(nadv,:), Is_EcoSystem(iEco,:) )
            end do ! n
-           if ( Fflux < 0.0 ) then
-             write(6,*) "CATASTR ", imc, f2d,trim(MosaicOutput(imc)%name)
-             write(6,*) "CATASTR  iEco", iEco
+
+           if ( DEBUG_MY_DRYDEP .and. Fflux < 0.0 ) then
+             write(6,"(a,3i4,a)") "DDEP Fflux CATASTR ", imc, f2d, iEco, &
+                    trim(MosaicOutput(imc)%name)
              call CheckStop("CATASTROPHE: "//MosaicOutput(imc)%name)
-          end if
+           end if
 
         ! - invEcoFracCF divides the flux per grid by the landarea of each
         ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
@@ -328,11 +334,10 @@ contains
           output = Fflux * convfac * MosaicOutput(imc)%atw * invEcoFrac(iEco)
 
           if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-             write(6,"(a,3i4,3es12.3)") "Add_MosaicOutput DDEP "// &
-              trim(MosaicOutput(imc)%name), imc, nadv, iEco, Fflux, output
+             write(6,"(3i4,3es12.3)") imc, nadv, iEco, Fflux, output
           end if ! DEBUG_ECO 
 
-        case ( "METCONC" )    ! Fluxes, AFstY 
+        case ( "METCONC" )    ! hard-coded bit n' pieces
 
           n   =  MosaicOutput(imc)%Index  !ind = ustar or ..
           if( n == MMC_USTAR  ) output = Sub(iLC)%ustar
@@ -340,10 +345,13 @@ contains
           if( n == MMC_INVL   ) output = Sub(iLC)%invL
           if( n == MMC_CANO3  ) output = Sub(iLC)%cano3_ppb
           if( n == MMC_VPD    ) output = Sub(iLC)%vpd
+          if( n == MMC_FST    ) output = Sub(iLC)%FstO3
 
-          if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-             write(6,"(a,3i4,es12.3)") "Add_MosaicOutput METCONC " // &
-               trim(MosaicOutput(imc)%name), imc, n, iLC, output
+          if ( DEBUG_CLOVER .and. debug_flag .and. &
+               n == MMC_FST .and. LandType(iLC)%is_clover ) then
+             write(6,"(a,3i4,i5,2i4,i6,es12.3)") "MDCV ", imc, n, iLC, &
+                 current_date%month, current_date%day, &
+                 current_date%hour, current_date%seconds,   output
           end if ! DEBUG_ECO 
 
         case ( "AFST" )    ! Fluxes, AFstY 
@@ -352,13 +360,19 @@ contains
           Y   = MosaicOutput(imc)%XYCL   ! threshold Y, nmole/m2/s
 
           if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-             write(6,"(a,2i3,f6.1,es12.3)") "Add_MosaicOutput Fflux "// &
-               trim(MosaicOutput(imc)%name),  &
-                imc, iLC, Y, Sub(iLC)%leaf_o3flux
+             write(6,"(2i3,f6.1,es12.3)") imc, iLC, Y, Sub(iLC)%FstO3
           end if
 
          ! Add fluxes:
-          output  = fstfrac* max(Sub(iLC)%leaf_o3flux - Y,0.0)
+          !output  = nmole_s_to_mmole * max(Sub(iLC)%FstO3 - Y,0.0)
+          output  = max(Sub(iLC)%FstO3 - Y,0.0)
+
+          if ( DEBUG_CLOVER .and. debug_flag .and. &
+               LandType(iLC)%is_clover ) then
+             write(6,"(a,3i4,i5,2i4,i6,2es12.3)") "MDCVA", imc, n, iLC, &
+                 current_date%month, current_date%day, &
+                 current_date%hour, current_date%seconds,Y, output
+          end if ! DEBUG_ECO 
 
         case ( "MMAOT", "UNAOT", "EUAOT" )    ! AOTX
 
@@ -369,8 +383,7 @@ contains
           call Calc_AOTx( subclass,iLC, Sub(iLC)%cano3_ppb, X,output) 
 
           if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
-              write(6,"(a,i5,2i3,f6.1,f9.3,i4,f12.4)") "Add_MosaicOutput AOT " // &
-               trim(MosaicOutput(imc)%name),  &
+              write(6,"(i5,2i3,f6.1,f9.3,i4,f12.4)") &
                current_date%hour, n, iLC, X, &
                 Sub(iLC)%cano3_ppb , &  ! c_hvegppb(iLC), &
                  WheatGrowingSeason(i,j), output  ! NOT USED YET....!
@@ -428,8 +441,7 @@ contains
            end if ! subclass
 
            if( DEBUG_MY_DRYDEP .and. debug_flag ) then
-              write(*,"(2a,2i4,f9.3)") "ADD_VGR: ", &
-                 trim(MosaicOutput(imc)%name), cdep, iLC, output
+              write(*,"(2i4,f9.3)") cdep, iLC, output
 
            end if
         case default
@@ -441,7 +453,7 @@ contains
         end select
 
         if( DEBUG_MY_DRYDEP .and. debug_flag ) then
-              write(*,"(a,f12.3)") "ADDED output: ",  output
+              write(*,"(a,es12.3)") "ADDED output: ",  output
         end if
         d_2d( f2d,i,j,IOU_INST) = output
      

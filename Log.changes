@@ -1,3 +1,42 @@
+xxxxxxxxxxxxxx rv3_4_10 Dave,     5 Dec. 2009 xxxxxxxxxxxxxxxx
+
+Changes made while implementing clover as an option for Fst outputs
+ - also includes some general tidy-ups
+
+AOTx_ml - no real change, but a draft clover growing period added
+          as comment
+
+Derived_ml - column data now uses vertical starting level, to allow
+           use against mountain sites
+
+EcoSystem_ml - dt_scale added - see below
+
+EmisGet_ml - small tidy up
+
+LandDefs_ml - iLC_grass defined for clover usage
+
+LocalVariables_ml - use FstO3 instead of leaf_o3flux
+
+ModelConstants_ml - Added DEBUG_CLOVER
+
+My_Derived_ml - VPD, FST added to MMC_ possibilities. 
+                More Fst output.
+                dt_scale set
+
+My_DryDep_ml.f90 - outout for ozone flux (FST) added
+
+My_Outputs_ml - examples of landcovermet, e.g. RH_GR
+
+OwnDataTypes - dt_scale added - will inform prog of scalin factor
+         needed to get from instantaneous d2_  value to accumulated,
+         assuming values multiplied by dt_advec
+         e.g. for AOT, we need to multiply by dt_advec/3600.0 to
+         get ppb.h, so we set dt_scale = 1.0/3600.0
+
+PhyChem.f90 - small tidy up
+
+StoFlux - clover coding added. Clover pots take their O3 from the
+         grassland class (which therefore needs to be set 1st)
  
 xxxxxxxxxxxxxx rv3_4_9  Dave,    28 Nov. 2009 xxxxxxxxxxxxxxxx
 

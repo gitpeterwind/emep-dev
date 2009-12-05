@@ -68,6 +68,7 @@ use My_Derived_ml,  only : & !EcoDep
       nMosaic, &
       MosaicOutput, &
       COLUMN_MOLEC_CM2, &  !ds added May 2009
+      COLUMN_LEVELS   , &  !ds added Dec 2009
       SURF_UG_S, &  !ds added May 2009
       SURF_UG_N, &  !ds added May 2009
       SURF_UG_C, &  !ds added May 2009
@@ -90,7 +91,7 @@ use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp, z_bnd
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
   ,NPROC        & ! No. processors
-  ,atwS, atwN, ATWAIR  &
+  ,atwS, atwN, ATWAIR, dt_advec  &
   ,PPBINV       & ! 1.0e9, for conversion of units
   ,PPTINV       & ! 1.0e12, for conversion of units
   ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
@@ -248,7 +249,7 @@ private
 
    !=========================================================================
     subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
-           LC,XYCL,scale,avg,rho,inst,year,month,day,atw,Is3D)
+           LC,XYCL,scale,dt_scale, avg,rho,inst,year,month,day,atw,Is3D)
 
        character(len=*), intent(in) :: name ! e.g. DDEP_SO2_m2Conif
        character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
@@ -260,6 +261,8 @@ private
        integer, intent(in) :: LC        ! Index of Receiver land-cover (one 
        real, intent(in)    :: XYCL      ! Threshold or CL, e.f. AOTx or AFstY
        real, intent(in)    :: scale     !  e.g. use 100.0 to get cm/s
+       real, intent(in)    :: dt_scale  !  where scaling by dt_advec needed,
+                                        ! otherwise zero
        logical, intent(in)  :: avg      ! True => average data (divide by
                            ! nav at end),  else accumulate over run period
        logical, intent(in)  :: rho      ! True when scale is ug (N or S)
@@ -275,7 +278,7 @@ private
 
        inderiv = Deriv(trim(name),trim(class),trim(subclass),&
                            trim(txt),trim(unit),index,f2d,LC,XYCL,scale,&
-                           avg,rho,inst,year,month,day,atw)
+                            dt_scale, avg,rho,inst,year,month,day,atw)
 
        if ( present(Is3D) ) then 
           call AddDeriv(inderiv,Is3D)
@@ -327,12 +330,12 @@ private
     real, save    :: ugXm3 = PPBINV/ATWAIR
 
     character(len=30) :: dname
-
+    character(len=3) :: subclass
 
   ! - for debug  - now not affecting ModelConstants version
   ! integer, dimension(MAXLIMAX) :: i_fdom
   ! integer, dimension(MAXLJMAX) :: j_fdom
-   integer :: ind, iadv, itot, idebug, n
+   integer :: ind, iadv, itot, idebug, n, n2, iLC
 
   ! - And to check if a wanted field has been previously defined.
         integer, dimension(MAXDEF_DERIV2D) :: found_ind2d = 0
@@ -355,43 +358,33 @@ private
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit
 
 Is3D = .false.
-!call AddDef( "PREC ", F, -1, 1.0,   F  , F  ,T ,T ,T ,"WDEP_PREC","mm")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SOX","mgS/m2")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_OXN","mgN/m2")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_RDN","mgN/m2")
        !Deriv(name, class,    subc,  txt,           unit
-       !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
+       !Deriv index, f2d,LC, XYCL, scale, dt_scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv( "WDEP_PREC","PREC ","-","-", "mm",  &
-                -1, -99,-99,  0.0, 1.0,     F,   F , F ,T ,T ,T ,-999)
+                -1, -99,-99,  0.0,   1.0,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_SOX ","WDEP ","-","-", "mgS/m2", & 
-                -1, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+                -1, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_OXN ","WDEP ","-","-", "mgN/m2",  &
-                -1, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+                -1, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_RDN ","WDEP ","-","-", "mgN/m2",  &
-                -1, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+                -1, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 ! Hard-coded for ECO08 - will rewrite later as with DDEP
 !DONEcall AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SO2","mgS/m2")
 !ixadv not yet used I think.
 call AddNewDeriv( "WDEP_SO2 ","WDEP ","-","-", "mgS/m2", & 
-         IXADV_SO2, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+         IXADV_SO2, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_SO4 ","WDEP ","-","-", "mgS/m2", & 
-         IXADV_SO4, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+         IXADV_SO4, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_HNO3 ","WDEP ","-","-", "mgN/m2", & 
-         IXADV_HNO3, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+         IXADV_HNO3, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_aNO3 ","WDEP ","-","-", "mgN/m2", & 
-         IXADV_aNO3, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+         IXADV_aNO3, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_pNO3 ","WDEP ","-","-", "mgN/m2", & 
-         IXADV_pNO3, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+         IXADV_pNO3, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_NH3 ","WDEP ","-","-", "mgN/m2", & 
-         IXADV_NH3, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
+         IXADV_NH3, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", & 
-         IXADV_aNH4, -99,-99,  0.0, 1.0e6,   F,   F , F ,T ,T ,T ,-999)
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SO4","mgS/m2")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_HNO3","mgN/m2")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNO3","mgN/m2")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_pNO3","mgN/m2")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_NH3","mgN/m2")
-!call AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_aNH4","mgN/m2")
+         IXADV_aNH4, -99,-99,  0.0, 1.0e6,      0.0, F,   F , F ,T ,T ,T ,-999)
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit
 
@@ -428,7 +421,6 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit
 
 !Oct09
-!call AddDef( "AOT  ", F, 20, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT20","ppb h")
 !call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
 !call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
 !call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
@@ -439,14 +431,18 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 !-- Tropospheric columns
 !
   do n = 1, size(COLUMN_MOLEC_CM2)
+  do n2 = 1, size(COLUMN_LEVELS)
 
     itot = COLUMN_MOLEC_CM2(n)
     iadv = itot - NSPEC_SHL
-            !Deriv(name, class,    subc,  txt,           unit
-            !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
-     dname = "COLUMN_" //trim(species( itot )%name)
-     call AddNewDeriv( dname, "COLUMN ","-","-", "molec/cm2", &
-                    iadv, -99,-99,  0.0, 1.0,     T,  F , F ,T ,T ,T ,-999)
+      !Deriv(name, class,    subc,  txt,           unit
+      !Deriv index, f2d,LC, XYCL, scale, dt_scale, avg? rho Inst Yr Mn Day atw
+     dname = "COLUMN_" //trim(species( itot )%name) //"_"//COLUMN_LEVELS(n2)
+     subclass = COLUMN_LEVELS(n2)
+     read(unit=subclass(2:3),fmt="(i2)") iLC  ! Faking vertical index with iLC :-(
+     call AddNewDeriv( dname, "COLUMN ",subclass,"-", "molec/cm2", &
+               iadv, -99,iLC,  0.0, 1.0,    0.0,     T,  F , F ,T ,T ,T ,-999)
+  end do
   end do
 !-------------------------------------------------------------------------------
 !
@@ -454,8 +450,6 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 !    in ACID, e.g. IXADV_O3
 !
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit
-
-!call AddDef( "ADV  ", T, IXADV_SO2, ugS, T, F , T , T , T ,"D2_SO2","ugS/m3")
 
 !REWRITE as groups!
 !call AddDef( "NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")
@@ -470,18 +464,18 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 !dsxcall AddDef( "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")
 !dsxcall AddDef( "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")
        !Deriv(name, class,    subc,  txt,           unit
-       !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
+       !Deriv index, f2d,LC, XYCL, scale, dt_scale, avg? rho Inst Yr Mn Day atw
 ! NOT YET: Scale pressure by 0.01 to get hPa
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,-99, 0.0, 1.0 ,   T,  F , T,   T, T, T , -999)
-!call AddDef( "HMIX  ",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX","m")
+               -99,  -99,-99, 0.0,   1.0 , 0.0,  T,  F , T,   T, T, T , -999)
+!call AddDef( "HMIX  ",T,  0 ,       1.0,     0.0,  T , F, T, T, T ,"D2_HMIX","m")
 call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-               -99,  -99,-99, 0.0,   1.0, T, T , F, T, T, T ,-999)
-!call AddDef( "HMIX00",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX00","m")
-!call AddDef( "HMIX12",T,  0 ,       1.0, T , F, T, T, T ,"D2_HMIX12","m")
-!DONEcall AddDef( "USTAR_NWP",T,  0 ,       1.0, T , F, T, T, T ,"USTAR_NWP","m/s")
+               -99,  -99,-99, 0.0,   1.0,  0.0,  T, T , F, T, T, T ,-999)
+!call AddDef( "HMIX00",T,  0 ,       1.0,  0.0,  T , F, T, T, T ,"D2_HMIX00","m")
+!call AddDef( "HMIX12",T,  0 ,       1.0,  0.0,  T , F, T, T, T ,"D2_HMIX12","m")
+!DONEcall AddDef( "USTAR_NWP",T,  0 ,    1.0, T , F, T, T, T ,"USTAR_NWP","m/s")
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
-               -99,  -99,-99, 0.0,   1.0, T, T , F, T, T, T ,-999)
+               -99,  -99,-99, 0.0,   1.0, 0.0,   T, T , F, T, T, T ,-999)
 
 !Mass-based outputs
 do ind = 1, size(SURF_UG_S)
@@ -491,7 +485,7 @@ do ind = 1, size(SURF_UG_S)
    !Deriv(name, class,    subc,  txt,           unit
    !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
   call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugS/m3", &
-         iadv , -99, -99, 0.0, ugSm3,   T, T , F, T, T, T, -999 ) !?? atw?
+         iadv , -99, -99, 0.0, ugSm3,   0.0,   T, T , F, T, T, T, -999 ) !?? atw?
 end do
 
 do ind = 1, size(SURF_UG_N)
@@ -499,7 +493,7 @@ do ind = 1, size(SURF_UG_N)
   iadv = itot - NSPEC_SHL
   dname = "SURF_ugN_" //species( itot )%name
   call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugN/m3", &
-         iadv , -99, -99, 0.0, ugSm3,   T, T , F, T, T, T, -999 ) !?? atw?
+         iadv , -99, -99, 0.0, ugSm3,   0.0,   T, T , F, T, T, T, -999 ) !?? atw?
 end do
 
 do ind = 1, size(SURF_UG_C)
@@ -507,7 +501,7 @@ do ind = 1, size(SURF_UG_C)
   iadv = itot - NSPEC_SHL
   dname = "SURF_ugC_" //species( itot )%name
   call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugC/m3", &
-         iadv , -99, -99, 0.0, ugCm3,   T, T , F, T, T, T, -999 ) !?? atw?
+         iadv , -99, -99, 0.0, ugCm3,   0.0,   T, T , F, T, T, T, -999 ) !?? atw?
 end do
 
 do ind = 1, size(SURF_UG)
@@ -515,7 +509,7 @@ do ind = 1, size(SURF_UG)
   iadv = itot - NSPEC_SHL
   dname = "SURF_ug_" //species( itot )%name
   call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ug/m3", &
-         iadv , -99, -99, 0.0, ugXm3*species(itot)%molwt, T, T , F, T, T, T, -999 ) !?? atw?
+         iadv , -99, -99, 0.0, ugXm3*species(itot)%molwt, 0.0,   T, T , F, T, T, T, -999 ) !?? atw?
 end do
 
 do ind = 1, size(SURF_PPB)   ! ppb has rho flag set false
@@ -523,7 +517,7 @@ do ind = 1, size(SURF_PPB)   ! ppb has rho flag set false
   iadv = itot - NSPEC_SHL
   dname = "SURF_ppb_" //species( itot )%name
   call AddNewDeriv( dname, "SURF_PPB", "-", "-", "ppb", &
-         iadv , -99, -99, 0.0, PPBINV,   T, F , F, T, T, T, -999 ) !?? atw?
+         iadv , -99, -99, 0.0, PPBINV,   0.0,   T, F , F, T, T, T, -999 ) !?? atw?
 end do
 
 
@@ -579,9 +573,9 @@ end do
               !Deriv(name, class,    subc,  txt,           unit
               !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
-                  IXADV_O3, -99,-99,35.0, 1.0,   F,  F , F,   T, T, F , -999)
+                  IXADV_O3, -99,-99,35.0, 1.0, 0.0,     F,  F , F,   T, T, F , -999)
 call AddNewDeriv( "SOMO00","SOMO",  "SURF","-",   "ppb.day", &
-                  IXADV_O3, -99,-99, 0.0, 1.0,   F,  F , F,   T, T, F , -999)
+                  IXADV_O3, -99,-99, 0.0, 1.0, 0.0,     F,  F , F,   T, T, F , -999)
 
 !-- 3-D fields
 
@@ -609,7 +603,7 @@ Is3D = .true.
        !Deriv(name, class,    subc,  txt,           unit
        !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
-           IXADV_O3, -99,-99, 0.0, PPBINV,  F,  F , F,   T, T, T , -999)
+           IXADV_O3, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999)
 !DONE call AddDef( "MAXADV", F,IXADV_O3,PPBINV, F, F,T,T,T,"D2_MAXO3","ppb")
 !call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 
@@ -651,8 +645,9 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
             end if
           end if
           if (  DEBUG .and. MasterProc  ) then
-               write(*,*) "Index f_2d ", i, " = def ", ind, def_2d(ind)%name,&
-                def_2d(ind)%unit, def_2d(ind)%class
+               write(*,"(a,i4,a,i4,3a)") "Index f_2d ", i, " = def ", ind, &
+                 trim(def_2d(ind)%name),trim(def_2d(ind)%unit), &
+                    trim(def_2d(ind)%class)
           end if
       end do
 
@@ -716,8 +711,9 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
       real :: thour                          ! Time of day (GMT)
       real :: timefrac                       ! dt as fraction of hour (3600/dt)
       real :: dayfrac              ! fraction of day elapsed (in middle of dt)
-      real :: km2_grid
+      real :: km2_grid, af
       integer :: ntime                       ! 1...NTDAYS
+      integer :: klow                        !  lowest extent of column data
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when
                                                     ! scale in ug,  else 1
       real, dimension(MAXLIMAX,MAXLJMAX) :: tmpwork
@@ -740,7 +736,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 
         accumulate_2dyear=.true.
         typ = f_2d(n)%class
-        if( DEBUG .and. debug_flag .and. first_call ) &
+        if( debug_flag .and. first_call ) &
            write(*,"(a,i3,7a)") "Derive2d-typ",&
             n, "T:", typ, "N:", f_2d(n)%name, "C:", f_2d(n)%class,"END"
 
@@ -958,10 +954,12 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
           case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic" )
 !            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(typ),&
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
+!            Nothing to do - all set in My_DryDep
 
           case ( "COLUMN" )   ! Dave May 2009, simplified from Joffen's COLUMN
                             ! MFAC gives #/cm3, 100 is for m -> cm
 
+            klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
             do j = 1, ljmax
             do i = 1, limax
                k = 1
@@ -969,14 +967,16 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
                     xn_adv(index,i,j,k)  * &
                     roa(i,j,k,1)* (z_bnd(i,j,k)-z_bnd(i,j,k+1))
 
-               do k = 2, KMAX_MID
+               do k = 2, klow   !!! KMAX_MID
                   tmpwork( i,j ) = tmpwork( i,j ) + &
                     xn_adv(index,i,j,k)  * &
                     roa(i,j,k,1) * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-!            if ( debug_flag ) write(*,"(a12,3i4,a4,f8.3,f8.1,2es12.3)")&
-!                "COLUMN workk",&
-!                   n, index, k, " => ", roa(i,j,k,1), &
-!                   z_bnd(i,j,k)-z_bnd(i,j,k+1), xn_adv(index,i,j,k),tmpwork(i,j)
+                  if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
+                     write(*,"(a,3i4,a4,f8.3,f8.1,2es12.3)") &
+                        trim(f_2d(n)%name), n, index, k, " => ", &
+                        roa(i,j,k,1), z_bnd(i,j,k)-z_bnd(i,j,k+1), &
+                        xn_adv(index,i,j,k),tmpwork(i,j)
+                  end if
                end do ! k
                d_2d( n, i, j, IOU_INST) = MFAC * 100.0 * tmpwork( i, j ) ! Should be molec/cm2
 
@@ -1040,12 +1040,18 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
         !  since the INST values are zero it doesn't harm, and the code is
         !  shorter. These d_2d ( MAXADV, MAXSHL, SOMO) are set elsewhere
 
-        d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + d_2d(n,:,:,IOU_INST)
+        af = 1.0 ! accumlation factor
+        if( f_2d(n)%dt_scale > 1.0e-19 ) then !need to scale with dt_advec
+            af = dt_advec * f_2d(n)%dt_scale 
+        end if
+
+        d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + af*d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_DAY) = nav_2d(n,IOU_DAY) + 1
-        d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_INST)
+        d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + af*d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_MON) = nav_2d(n,IOU_MON) + 1
         if(accumulate_2dyear)then
-           d_2d(n,:,:,IOU_YEAR ) = d_2d(n,:,:,IOU_YEAR ) + d_2d(n,:,:,IOU_INST)
+           d_2d(n,:,:,IOU_YEAR ) = &
+                 d_2d(n,:,:,IOU_YEAR ) + af*d_2d(n,:,:,IOU_INST)
            if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
         endif
 

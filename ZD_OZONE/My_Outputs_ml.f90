@@ -44,14 +44,11 @@
 ! -----------------------------------------------------------------------
 
   use CheckStop_ml,     only: CheckStop
-!dsx use Derived_ml,       only: f_2d, d_2d
   use ChemSpecs_adv_ml
-!AMVB 2009-07-06
 !  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
   use ChemSpecs_shl_ml,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
-! use ChemSpecs_shl_ml,    only: IXSHL_OH,IXSHL_HO2
   use ChemChemicals_ml ,  only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
   use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
@@ -76,10 +73,9 @@ integer, private :: isite              ! To assign arrays, if needed
 integer, public, parameter :: &
      NSITES_MAX =    99         & ! Max. no surface sites allowed
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
-!GCTEST    ,NADV_SITE  =    6 &  !NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE =    13           ! No. Misc. met. params  ( e.g. T2, d_2d)
+    ,NXTRA_SITE =    17           ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
 !GCDS    SITE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO, IXADV_CH4, IXADV_C2H6 /) 
@@ -98,22 +94,28 @@ integer, public, parameter :: &
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
-   SITE_XTRA=      (/ "D2D  ","th   ","T2   ","D2D  ",&
-                       "D2D  ","D2D  ", &
-                       "D2D  ", "D2D  ", &
-                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  "   /)
+   SITE_XTRA=      (/  "D2D  ","th   ","T2   ","D2D  ",&
+                       "D2D  ","D2D  ","D2D  ","D2D  ", &
+                       "D2D  ","D2D  ","D2D  ","D2D  ", &
+                       "D2D  ","D2D  ","D2D  ","D2D  ",&
+                       "D2D  "   /)
 !    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        " /) 
 
-   character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
+!Remember, d2d variables must have been set in My_Derived for
+!them to be used.
+   character(len=18), public, parameter, dimension(NXTRA_SITE) :: &
     SITE_XTRA_CODE= (/ &
-     "HMIX       ","th         ","T2         ","PSURF      ", &
-     "RH_GR      ","CanopyO3_DF","CanopyO3_GR","VPD_GR     ", &
-     "COLUMN_CO  ","COLUMN_C2H6","COLUMN_HCHO","COLUMN_CH4 ", &
-     "COLUMN_NO2 " /)
+     "HMIX           ","th             ","T2             ","PSURF          ", &
+     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
+     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
+     "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ", "COLUMN_NO2_k20 " /)
    
    integer,           public, parameter, dimension(NXTRA_SITE) :: &
-   SITE_XTRA_INDEX=  (/  0,    0,   0,  0, 0, 0 ,0, 0, 0, 0, 0, 0, 0 /)
-!    SITE_XTRA_INDEX=  (/  0,    0,   0  /)
+   SITE_XTRA_INDEX=  (/  0, 0,  0,  0, &
+                         0, 0,  0,  0, &
+                         0, 0,  0,  0, &
+                         0, 0,  0,  0, &
+                         0 /)
 
 
 
