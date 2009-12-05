@@ -155,8 +155,8 @@ module LocalVariables_ml
     ,g_sto     = NOT_SET &! stomatal conductance (m/s)
     ,g_sun     = NOT_SET &! g_sto for sunlit upper-canopy (flag) leaves
   ! and enable concentrations at canopy height:
-    ,cano3_ppb  =  0.0    &! Use 0.0 to make d_2d behave better 
-    ,leaf_o3flux = 0.0     ! 
+    ,cano3_ppb  = 0.0    &! Use 0.0 to make d_2d behave better 
+    ,FstO3      = 0.0     ! leaf O3 flux, nmole/m2/s
 
     !,ObsRad    = NOT_SET &! Used for box-model, for observed values
     !,snow      = NOT_SET &!  Usually from Grid
