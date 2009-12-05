@@ -43,7 +43,7 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-   RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
   ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
@@ -54,7 +54,7 @@ module ModelConstants_ml
 
   integer, public, parameter ::  &
     NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
   ! ds Jan2009
@@ -76,12 +76,15 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i= 96, DEBUG_j= 40 ! High VG_SO2_CF!
  !integer, public, parameter :: DEBUG_i=111, DEBUG_j= 54 ! High VG_PMCO_CF!
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j= 51 ! Schauinsland
- !integer, public, parameter :: DEBUG_i= 87, DEBUG_j= 20 ! Aveiro
+ !QUERY? integer, public, parameter :: DEBUG_i= 87, DEBUG_j= 20 ! Aveiro
+ !QUERY? integer, public, parameter :: DEBUG_i= 86, DEBUG_j= 21 ! Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
  !integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i= 97, DEBUG_j= 62 ! Waldhof
  !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
-  integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
+ !integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
+ integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
+ !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
 
 !=============================================================================
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
@@ -95,6 +98,7 @@ module ModelConstants_ml
     ,DEBUG_DRYDEP         = .false. & !
     ,DEBUG_VDS            = .false. & !
     ,DEBUG_MY_DRYDEP      = .false. & !
+    ,DEBUG_CLOVER         = .false. & !
     ,DEBUG_EMISSIONS      = .false. &
     ,DEBUG_STOFLUX        = .false. &
     ,DEBUG_GETEMIS        = .false. &
