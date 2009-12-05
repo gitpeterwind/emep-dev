@@ -28,7 +28,7 @@
 module StoFlux_ml
   use My_outputs_ml, only : 
   use DO3SE_ml, only : do3se
-  use LandDefs_ml, only : LandType, STUBBLE,NLanduse_DEF
+  use LandDefs_ml, only : LandType, STUBBLE,NLanduse_DEF, iLC_grass
   use LocalVariables_ml, only : L, Grid, Sub
   use MicroMet_ml, only : AerRes, Wind_at_h
   use ModelConstants_ml, only : NLANDUSEMAX, dt_advec, DEBUG_STOFLUX
@@ -48,9 +48,7 @@ module StoFlux_ml
   real, private :: c_hveg, u_hveg ! Values at canopy top, for fluxes
   real, public,  dimension(NLANDUSEMAX), save :: &
       lai_flux,      & ! Fluxes to total LAI
-      unit_flux        ! Fluxes per m2 of leaf area
-!ds      leaf_flux,        & ! Flag-leaf Fluxes per m2 of leaf area
-
+      unit_flux        ! Fluxes per m2 of leaf area (flag-leaf)
 
  real,   public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
        SumVPD ,   &   ! For critical VPD calcs, reset each day  
@@ -88,7 +86,7 @@ contains
        ppb_o3   =  1.0e9* xo3/xm
        nmole_o3 =  xo3 * NMOLE_M3
 
-       Sub(:)%leaf_o3flux = 0.0
+       Sub(:)%FstO3 = 0.0
 
 
        ! resets whole grid on 1st day change
@@ -117,7 +115,7 @@ contains
 ! take care of  temperate crops, outside growing season
     if ( L%hveg < 1.1 * L%z0 ) then 
 
-          Sub(iL)%leaf_o3flux = 0.0
+          Sub(iL)%FstO3 = 0.0
           Sub(iL)%cano3_ppb   = 0.0  !! Can't do better?
           if ( DEBUG_STOFLUX .and. debug_flag ) &
             write(6,"(a15,f8.3,a8,f8.3)")  "FST - too low ", &
@@ -162,23 +160,41 @@ contains
               if( L%g_sun > 0.0 ) SumVPD(i,j) = SumVPD(i,j) + L%vpd*dt_advec/3600.0
               tmp_gsun = L%g_sun
               if ( SumVPD(i,j) > 8.0 ) L%g_sun = min( L%g_sun, old_gsun(i,j) )
-              if( DEBUG_STOFLUX .and. debug_flag ) &
-                 write(6,"(a8,3i3,4f8.3,4es10.2)") "SUMVPD ", &
-                  current_date%month, current_date%day, current_date%hour, &
-                    L%rh, L%t2C,  L%vpd, SumVPD(i,j), &
-                     old_gsun(i,j), tmp_gsun, L%g_sun , L%g_sto
+              !if( DEBUG_STOFLUX .and. debug_flag ) then
+              !   write(6,"(a8,3i3,4f8.3,4es10.2)") "SUMVPD ", &
+              !    current_date%month, current_date%day, current_date%hour, &
+              !      L%rh, L%t2C,  L%vpd, SumVPD(i,j), &
+              !       old_gsun(i,j), tmp_gsun, L%g_sun , L%g_sto
+              !endif
+
               old_gsun(i,j) = L%g_sun
           end if
 
          ! Flux in nmole/m2/s:
           !ds leaf_flux(iL) = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
-          Sub(iL)%leaf_o3flux = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
+          Sub(iL)%FstO3 = c_hveg * rc_leaf/(rb_leaf+rc_leaf) * L%g_sun 
 
+! ======   CLOVER  ===========================================================
+      ! For Clover we have a very special procedure, using O3 from grassland
+      ! to scale the fluxes. As grassland is entered in Inputs.Landuse before
+      ! clover we can assume that Fst and O3 for grassland are available and 
+      ! correct
+          if( LandType(iL)%is_clover) then
+
+             Sub(iL)%FstO3 = Sub(iLC_grass)%cano3_ppb/Sub(iL)%cano3_ppb * Sub(iL)%FstO3
+
+             if ( DEBUG_STOFLUX  .and. debug_flag ) then
+                write(6,"(a,es12.3,2f12.3)") "CLOVER ",  &
+                 Sub(iL)%FstO3, Sub(iLC_grass)%cano3_ppb, &
+                       Sub(iLC_grass)%cano3_ppb/Sub(iL)%cano3_ppb
+             end if
+          end if ! clover
+! ======   CLOVER  =========================================================
           if ( DEBUG_STOFLUX .and. debug_flag ) then 
             write(6,"(a8,3i3,i4,f6.2,2f8.1,2es10.2,f6.2,2es12.3)")  "STOFLUX ",&
             iL, current_date%month, current_date%day, current_date%hour, &
             L%LAI, nmole_o3, c_hveg, L%g_sto, L%g_sun, u_hveg,&
-            Sub(iL)%cano3_ppb, Sub(iL)%leaf_o3flux
+            Sub(iL)%cano3_ppb, Sub(iL)%FstO3
           end if
 
     end if
