@@ -65,8 +65,10 @@ interface Check_LandCoverPresent
 end interface Check_LandCoverPresent
 
  real, public, parameter :: STUBBLE  = 0.01 ! Veg. ht. out of season
- integer, public :: NLanduse_DEF ! number of landuse categories actually defined
- integer, public, parameter :: NLANDUSE_EMEP=19 !Number of categories defined in EMEP grid (per April 2009)
+ integer, public :: NLanduse_DEF ! No. of landuse categories actually defined
+ integer, public, parameter :: NLANDUSE_EMEP=19 !No. of categories defined 
+                                                !in EMEP grid (per April 2009)
+ integer, public, save :: iLC_grass    ! Used with clover outputs
 
  !/*****   Data to be read from Phenology_inputs.dat:
 
@@ -102,6 +104,7 @@ end interface Check_LandCoverPresent
      logical :: is_veg
      logical :: is_bulk  ! Bulk-surface resistance used 
      logical :: is_iam   ! Fake species for IAM outputs 
+     logical :: is_clover ! Fake species for clover
      logical :: flux_wanted ! usually IAM, set by My_Derived
   end type land_type
                                                !##############
@@ -201,6 +204,7 @@ contains
             LandType(n)%is_water  =  LandInput%code == "W" 
             LandType(n)%is_ice    =  LandInput%code == "ICE" 
             LandType(n)%is_iam    =  LandInput%code(1:4) == "IAM_" 
+            LandType(n)%is_clover =  LandInput%code(1:2) == "CV" 
             LandType(n)%flux_wanted = LandType(n)%is_iam  ! default
 
             LandType(n)%is_forest =  &
@@ -212,6 +216,7 @@ contains
             LandType(n)%is_bulk   =  LandInput%type == "BLK" 
             LandType(n)%is_veg    =  LandInput%code /= "U" .and. &
                   LandInput%hveg_max > 0.01   ! Excludes water, ice, desert 
+            if( LandInput%code(1:2) == "GR" ) iLC_grass =  n ! for use with clover
        end do
        if ( MasterProc ) then 
              close(unit=IO_TMP)
