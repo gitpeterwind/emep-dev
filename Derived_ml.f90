@@ -73,7 +73,8 @@ use My_Derived_ml,  only : & !EcoDep
       SURF_UG_N, &  !ds added May 2009
       SURF_UG_C, &  !ds added May 2009
       SURF_UG  , &  !ds added May 2009
-      SURF_PPB      !ds added May 2009
+      SURF_PPB , &  !ds added May 2009
+      D3_PPB        ! hb new 3D output
 
 
 
@@ -320,10 +321,6 @@ private
    ! be changed later in Derived_ml.
    ! And, Initialise the fields to zero.
 
-    real, save    :: ugS = atwS*PPBINV/ATWAIR
-    real, save    :: ugN = atwN*PPBINV/ATWAIR
-    real, save    :: ugSO4, ugHCHO!DSGC, ugCH3CHO
-    real, save    :: ugPMad, ugPMde, ugSS  !advected and derived PM's & SeaS
     real, save    :: ugSm3 = atwS*PPBINV/ATWAIR
     real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
     real, save    :: ugCm3 = 12*PPBINV/ATWAIR
@@ -345,12 +342,9 @@ private
     if(DEBUG .and. MasterProc ) write(6,*) " START DEFINE DERIVED "
     !   same mol.wt assumed for PPM25 and PPMco
 
-     ugPMad = species(PPM25)%molwt * PPBINV /ATWAIR
-     ugPMde = PPBINV /ATWAIR
-     ugSS  = species( SSfi )%molwt * PPBINV /ATWAIR  !SeaS
+     !ds ugPMad = species(PPM25)%molwt * PPBINV /ATWAIR
+     !ds ugPMde = PPBINV /ATWAIR
 
-     ugSO4 = species( SO4 )%molwt * PPBINV /ATWAIR
-     ugHCHO   = species ( HCHO )%molwt * PPBINV /ATWAIR
 !DSGC     ugCH3CHO = species ( CH3CHO )%molwt * PPBINV /ATWAIR
 
 !-- Deposition fields. Define all possible fields and their xfelt codes here:
@@ -493,7 +487,7 @@ do ind = 1, size(SURF_UG_N)
   iadv = itot - NSPEC_SHL
   dname = "SURF_ugN_" //species( itot )%name
   call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugN/m3", &
-         iadv , -99, -99, 0.0, ugSm3,   0.0,   T, T , F, T, T, T, -999 ) !?? atw?
+         iadv , -99, -99, 0.0, ugNm3,   0.0,   T, T , F, T, T, T, -999 ) !?? atw?
 end do
 
 do ind = 1, size(SURF_UG_C)
@@ -606,6 +600,23 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
            IXADV_O3, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999)
 !DONE call AddDef( "MAXADV", F,IXADV_O3,PPBINV, F, F,T,T,T,"D2_MAXO3","ppb")
 !call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
+! hb new 3D output
+do ind = 1, size(D3_PPB)
+  itot = D3_PPB(ind)
+  iadv = itot - NSPEC_SHL
+  dname = "D3_ppb_" //species( itot )%name
+   !Deriv(name, class,    subc,  txt,           unit
+   !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw, Is3D
+  call AddNewDeriv( dname, "D3_PPB", "-", "-", "ppb", &
+         iadv , -99, -99, 0.0, PPBINV,   0.0,   T, T , F, T, T, T, -999,Is3D ) !?? atw?
+end do
+! hb new 3D output
+  call AddNewDeriv( "D3_PM25","PM25", "-","-",   "ppb", &
+           -1, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
+  call AddNewDeriv( "D3_PMco","PMco", "-","-",   "ppb", &
+           -1, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
+  call AddNewDeriv( "D3_TH","TH", "-","-",   "m", &
+           0, -99,-99, 0.0, 1.0,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
 
 
      if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
@@ -1144,6 +1155,36 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
           case ( "VOC" )
 
             call voc_3dcalc()
+
+! hb new 3D output 
+        case ( "D3_PPB" )
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
+            end forall
+           if ( debug_flag ) call write_debug(n,index, 1.0, "D3 PPB OUTS")
+
+
+! hb new 3D output
+         case ( "PM25" )
+         
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = xn_adv(IXADV_SO4,i,j,k) &
+                + xn_adv(IXADV_aNO3,i,j,k) &
+                + xn_adv(IXADV_aNH4,i,j,k) &
+                + xn_adv(IXADV_PPM25,i,j,k) &
+                + xn_adv(IXADV_SSfi,i,j,k) 
+            end forall
+
+! hb new 3D output
+         case ( "PMco" )
+         
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) =   &
+                + xn_adv(IXADV_pNO3,i,j,k) &
+                + xn_adv(IXADV_PPMco,i,j,k) &
+                + xn_adv(IXADV_SSco,i,j,k) 
+            end forall
 
           case  default
 

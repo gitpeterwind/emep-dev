@@ -174,7 +174,9 @@ private
 !
 
   !============ Extra parameters for model evaluation: ===================!
-
+ ! hb new 3D output
+    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, aNO3, pNO3 /)
+    integer, public, parameter, dimension(1) ::   D3_PPB = (/ O3 /)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
     character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
   D2_EXTRA = (/ &
@@ -269,6 +271,10 @@ private
 !
 ! AFstY vs Fst - not that the accumulated AFstY is processed here.
 ! the instantaneous Fst is set as for Canopy O3 in METCONCS
+          ! N.B. AOTs have several definitions. We usually want
+          ! the ICP-veg Mapping Manual (MM) ones. Other
+          ! possibilities are EU (8-20daytime) or UN (May-July for
+          ! crops)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
      VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", &
@@ -280,16 +286,12 @@ private
                         "AFST_6.0_IAM_CR", &
                         "AFST_0.0_IAM_MF", &
                         "AFST_1.6_IAM_MF", &
-               ! AOTs have several definitions. We usually want
-               ! the ICP-veg Mapping Manual (MM) ones. Other
-               ! possibilities are EU (8-20daytime) or UN (May-July for
-               ! crops)
-                        "MMAOT_30_IAM_DF  ", &
-                        "MMAOT_40_IAM_DF  ", & ! only iam allowed
-                        "MMAOT_30_IAM_CR  ", & ! only iam allowed
-                        "MMAOT_40_IAM_CR  ", &
-                        "EUAOT_40_IAM_CR  ", &
-                        "MMAOT_40_IAM_WH  " /) !NB -last not found. Could
+                        "MMAOT_30_IAM_DF", &
+                        "MMAOT_40_IAM_DF", & ! only iam allowed
+                        "MMAOT_30_IAM_CR", & ! only iam allowed
+                        "MMAOT_40_IAM_CR", &
+                        "EUAOT_40_IAM_CR", &
+                        "MMAOT_40_IAM_WH" /) !NB -last not found. Could
                                              !just be skipped, but kept
                                              !to show behaviour
 !    type(Deriv), public, &
@@ -346,9 +348,11 @@ private
 
     ! For some reason having this as a parameter caused problems for
     ! PC-gfortran runs.
-     character(len=TXTLEN_DERIV), public, save, dimension(4:2) :: &
-       d3_wanted != (/ "D3_O3        ","D3_TH        " /)
 
+! hb other (non-ppb) 3D output
+     character(len=TXTLEN_DERIV), public, save, dimension(2:0) :: &
+       D3_OTHER ! = (/ "D3_PM25        ", &!"D3_TH        " /)
+                !       "D3_PMco        "/)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
@@ -358,7 +362,7 @@ private
   subroutine Init_My_Deriv()
 
     integer :: i, ilab, nDD, nVg, nRG, nMET, nVEGO3, iLC, &
-      iadv, ispec, atw, ncol, n1, n2
+      iadv, ispec, atw, n1, n2
     integer :: isep1, isep2  ! location of seperators in sting
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: txt, txt2, units, txtnum
@@ -367,7 +371,9 @@ private
     character(len=TXTLEN_DERIV), &
     dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) :: tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
-    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)) ::&
+! hb new 3D output
+!    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)) ::&
+    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)+size(D3_PPB)) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
     logical, parameter :: T=.true., F=.false.
@@ -712,11 +718,19 @@ private
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
    ! ditto wanted_deriv3d....
-
-     !if ( .not. SOURCE_RECEPTOR ) then
-     !   call AddArray( d3_wanted,  wanted_deriv3d, NOT_SET_STRING, errmsg)
-     !   call CheckStop( errmsg, errmsg // "Outd3  too long" )
-     !end if
+! hb new 3D ouput
+     if ( .not. SOURCE_RECEPTOR ) then
+       if ( size(D3_PPB) > 0 ) then
+         tag_name(1:size(D3_PPB)) = "D3_ppb_" // species(D3_PPB)%name
+         call AddArray(  tag_name(1:size(D3_PPB)) , wanted_deriv3d, &
+            NOT_SET_STRING, errmsg)
+         call CheckStop( errmsg, errmsg // "D3_ppb too long" )
+       end if
+       if ( size(D3_OTHER) > 0 ) then
+         call AddArray( D3_OTHER,  wanted_deriv3d, NOT_SET_STRING, errmsg)
+         call CheckStop( errmsg, errmsg // "Wanted D3 too long" )
+       end if
+     end if
      mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
 
 

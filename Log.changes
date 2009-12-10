@@ -1,3 +1,10 @@
+xxxxxxxxxxxxxx rv3_4_11 Haldis,  11 Dec. 2009 xxxxxxxxxxxxxxxx
+
+3-D My_Derived outputs reinstated using new Deriv system. Now
+     have D3_PPB and D3_OTHER possibilities
+
+(+ some small tidy ups, Dave)
+
 xxxxxxxxxxxxxx rv3_4_10 Dave,     5 Dec. 2009 xxxxxxxxxxxxxxxx
 
 Changes made while implementing clover as an option for Fst outputs
