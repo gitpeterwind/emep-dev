@@ -88,7 +88,7 @@ private
            ,pm_calc              ! Miscelleaneous PM's
 
 
-   character(len=8),  public ,parameter :: model='ZD_OZONE'
+  !ds character(len=8),  public ,parameter :: model='ZD_OZONE'
 
 
    !/** Depositions are stored in separate arrays for now - to keep size of
@@ -174,9 +174,6 @@ private
 !
 
   !============ Extra parameters for model evaluation: ===================!
- ! hb new 3D output
-    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, aNO3, pNO3 /)
-    integer, public, parameter, dimension(1) ::   D3_PPB = (/ O3 /)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
     character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
   D2_EXTRA = (/ &
@@ -348,6 +345,11 @@ private
 
     ! For some reason having this as a parameter caused problems for
     ! PC-gfortran runs.
+
+ ! hb new 3D output when ppb
+    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, aNO3, pNO3 /)
+    !integer, public, parameter, dimension(1) ::   D3_PPB = (/ O3 /)
+    integer, public, save, dimension(2:1) ::   D3_PPB ! ZERO-size default
 
 ! hb other (non-ppb) 3D output
      character(len=TXTLEN_DERIV), public, save, dimension(2:0) :: &

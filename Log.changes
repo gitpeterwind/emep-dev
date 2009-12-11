@@ -1,9 +1,28 @@
-xxxxxxxxxxxxxx rv3_4_11 Haldis,  11 Dec. 2009 xxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxx rv3_4_12 Dave,    11 Dec. 2009 xxxxxxxxxxxxxxxx
+
+AOTx_ml now extended with more code from Derived_ml.
+
+       -  for grids AOT calc now done in AOTx_ml, function Calc_GridAOTx
+
+       - also setaccumulate_2dyear.
+
+      (** NOTE ** though - the accumulation periods have not been taken care
+       of yet, so be careful to use monthly outputs if needed. Still,
+       these Grid-average data are hardly needed any more, except for
+       comparison to older results and measurement-derived AOTs.
+       The newer Mapping manual requires vegetation-specific AOTs)
+   
+IOU_ indices moved to ModelConstants_ml, to reduce dependencies
+   in NetCDF_ml --- > small changes in many modules
+
+xxxxxxxxxxxxxx rv3_4_11 Haldis,  10 Dec. 2009 xxxxxxxxxxxxxxxx
 
 3-D My_Derived outputs reinstated using new Deriv system. Now
      have D3_PPB and D3_OTHER possibilities
 
-(+ some small tidy ups, Dave)
+(+ some small tidy ups, 
++ BUG-fix for ugS to ugN concentration outputs (N-compounds) 
+  in Derived_ml, Dave)
 
 xxxxxxxxxxxxxx rv3_4_10 Dave,     5 Dec. 2009 xxxxxxxxxxxxxxxx
 

@@ -54,7 +54,6 @@ module Nest_ml
 
   !Peter May 2006
 
-  use Derived_ml,    only :IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use OwnDataTypes_ml, only :Deriv
   use TimeDate_ml,       only : date
   use GridValues_ml,  only : gl,gb
@@ -66,7 +65,9 @@ module Nest_ml
   use netcdf_ml,      only : GetCDF,Out_netCDF,Init_new_netCDF,&
        secondssince1970,dayssince1900,Int1,Int2,Int4,Real4,Real8
   use Functions_ml,    only : great_circle_distance
-  use ModelConstants_ml,    only : KMAX_MID, NPROC, FORECAST ! AMVB 2009-11-06: nested input/output on FORECAST mode
+  use ModelConstants_ml,    only : KMAX_MID, NPROC &
+          , FORECAST & ! AMVB 2009-11-06: nested input/output on FORECAST mode
+          , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
   use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
        , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
   use Chemfields_ml,  only : xn_adv, xn_shl    ! emep model concs.

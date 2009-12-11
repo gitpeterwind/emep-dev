@@ -28,8 +28,8 @@
 module My_WetDep_ml
  use Io_ml,             only : IO_DEBUG
  use MassBudget_ml,     only : totwdep, wdeploss
- use ModelConstants_ml, only : atwS, atwN, atwPM
- use Derived_ml,  only : f_2d, d_2d, IOU_INST
+ use ModelConstants_ml, only : atwS, atwN, atwPM, IOU_INST
+ use Derived_ml,  only : f_2d, d_2d
  use SmallUtils_ml,  only : find_index
 
 

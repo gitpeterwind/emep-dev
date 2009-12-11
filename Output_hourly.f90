@@ -50,14 +50,15 @@
 
    use CheckStop_ml,     only : CheckStop
    use Chemfields_ml ,   only : xn_adv,xn_shl, cfac
-   use Derived_ml,    only : d_2d, IOU_INST,IOU_HOUR
+   use Derived_ml,    only : d_2d
    use OwnDataTypes_ml,    only : Deriv
    use ChemSpecs_shl_ml ,  only : NSPEC_SHL        ! Maps indices
    use ChemChemicals_ml , only : species          ! Gives names
    use GridValues_ml,    only : i_fdom, j_fdom   ! Gives emep coordinates
    use Io_ml,            only : IO_HOURLY
 
-   use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,identi,runlabel1
+   use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,&
+                           identi,runlabel1, IOU_INST,IOU_HOUR
    use Met_ml,           only : t2_nwp,th, roa, surface_precip, &
                                    Idirect, Idiffuse
    use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF &

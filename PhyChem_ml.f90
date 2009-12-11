@@ -40,8 +40,7 @@ module PhyChem_ml
 
    use Advection_ml,   only: advecdiff,advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
-   use Derived_ml,     only : IOU_INST, DerivedProds, Derived, &
-                               num_deriv2d,d_2d, f_2d
+   use Derived_ml,     only : DerivedProds, Derived, num_deriv2d,d_2d, f_2d
    use DryDep_ml,      only : drydep,init_drydep
    use Emissions_ml,   only : EmisSet
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
@@ -51,6 +50,7 @@ module PhyChem_ml
    use ModelConstants_ml, only : KMAX_MID, nmax, nstep &
                         ,dt_advec       & ! time-step for phyche/advection
                         ,END_OF_EMEPDAY & ! (usually 6am)
+                        ,IOU_INST       & !
                         ,FORECAST ! use advecdiff_poles on FORECAST mode
    use Nest_ml,        only : readxn, wrtxn
    use Par_ml,         only : me, MAXLIMAX, MAXLJMAX

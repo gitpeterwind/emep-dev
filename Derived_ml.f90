@@ -52,13 +52,6 @@ module Derived_ml
 !SOMO35: accumulated over one year
 !D2_MAXO3 :  daily max is found over an EMEPDAY
 !D2_MAXO3 : accumulated into yearly_output from April to September
-!AOTXXc: accumulated into yearly_output from May to July
-!AOTXXf: accumulated into yearly_output from April to September
-!D2_EUAOTXXWH: accumulated into yearly_output from May to July
-!D2_EUAOTXXDF: accumulated into yearly_output from April to September
-!D2_UNAOTXXWH: accumulated into yearly_output from May to July
-!D2_UNAOTXXDF: accumulated into yearly_output from April to September
-!D2_MMAOTXXWH: accumulated into yearly_output over growing season
 !D2_O3 is now yearly accumulated
 
 use My_Derived_ml, only : &
@@ -76,8 +69,7 @@ use My_Derived_ml,  only : & !EcoDep
       SURF_PPB , &  !ds added May 2009
       D3_PPB        ! hb new 3D output
 
-
-
+use AOTx_ml,           only: Calc_GridAOTx, setaccumulate_2dyear
 use CheckStop_ml,      only: CheckStop
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
@@ -96,12 +88,14 @@ use ModelConstants_ml, only: &
   ,PPBINV       & ! 1.0e9, for conversion of units
   ,PPTINV       & ! 1.0e12, for conversion of units
   ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
-  ,AOT_HORIZON  & ! limit of daylight for AOT calcs
   ,DEBUG_i, DEBUG_j &
   ,DEBUG => DEBUG_DERIVED, MasterProc &
   ,SOURCE_RECEPTOR &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
-  ,NTDAY          ! Number of 2D O3 to be saved each day (for SOMO)
+  ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
+  ! output types corresponding to instantaneous,year,month,day
+  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, IOU_HOUR_MEAN
+
 use OwnDataTypes_ml, only: Deriv,TXTLEN_DERIV   ! type & length of names
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me,                &   ! for print outs
@@ -151,12 +145,6 @@ private
     type(Deriv),public, allocatable, dimension(:), save :: f_3d
 
 
-  ! Define 4 output types corresponding to instantaneous,year,month,day
-
-   integer, public, parameter ::  &
-        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, &
-        IOU_HOUR=5, IOU_HOUR_MEAN=6
-
   ! The 2-d and 3-d fields use the above as a time-dimension. We define
   ! LENOUTxD according to how fine resolution we want on output. For 2d
   ! fields we use daily outputs. For the big 3d fields, monthly output
@@ -201,8 +189,8 @@ private
    character(len=100), private :: errmsg
 
    integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
-   integer, public, parameter:: startmonth_forest=4,endmonth_forest=9&
-                                ,startmonth_crops=5,endmonth_crops=7
+!ds   integer, public, parameter:: startmonth_forest=4,endmonth_forest=9&
+!ds                                ,startmonth_crops=5,endmonth_crops=7
 
    contains
 
@@ -412,10 +400,13 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
 
-!       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit
+!OLD    code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit
 
 !Oct09
-!call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT40","ppb h")
+      !Deriv(name, class,    subc,  txt,           unit
+      !Deriv index, f2d,LC, XYCL, scale, dt_scale, avg? rho Inst Yr Mn Day atw
+call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
+           IXADV_O3, -99,0, 40.0, 1.0, 1.0/3600.0, F,  F , F ,T ,T ,T ,-999)
 !call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , T ,  F,"D2_AOT60","ppb h")
 !call AddDef( "AOT  ", F, 40, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT40f","ppb h")
 !call AddDef( "AOT  ", F, 60, 1.0,   F  , F  ,  T , F ,  F,"D2_AOT60f","ppb h")
@@ -576,15 +567,8 @@ call AddNewDeriv( "SOMO00","SOMO",  "SURF","-",   "ppb.day", &
 Is3D = .true.
 !call AddDef( "TH  ",T,  0 ,       1.0, F , T, T, T, F ,"D3_TH","m",Is3D)
 !call AddDef( "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_SO2, PPBINV, F, T, T, T, F ,"D3_SO2","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_PAN, PPBINV, F, T, T, T, F ,"D3_PAN","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_HNO3,PPBINV, F, T, T, T, F ,"D3_HNO3","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_aNO3,PPBINV, F, T, T, T, F ,"D3_aNO3","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_NO2, PPBINV, F, T, T, T, F ,"D3_NO2","ppb",Is3D)
+! etc... use D3_PPB sustem
 !call AddDef( "VOC  ", T,       -1 , PPBINV, F, T, T, T, F ,"D3_VOC","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_aNH4,PPBINV, F, T, T, T, F ,"D3_aNH4","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_SO4, PPBINV, F, T, T, T, F ,"D3_SO4","ppb",Is3D)
-!call AddDef( "ADV  ", T, IXADV_H2O2,PPBINV, F, T, T, T, F ,"D3_H2O2","ppb",Is3D)
 !
 ! Set Year true to allow debug - change later
 !call AddDef( "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?",Is3D)
@@ -598,7 +582,6 @@ Is3D = .true.
        !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
            IXADV_O3, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999)
-!DONE call AddDef( "MAXADV", F,IXADV_O3,PPBINV, F, F,T,T,T,"D2_MAXO3","ppb")
 !call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
 ! hb new 3D output
 do ind = 1, size(D3_PPB)
@@ -912,7 +895,8 @@ end do
                            !  AOTs are handled in the Mosaic class and as
                            !  part of the dry dep calculations.
 
-            call aot_calc( n, timefrac )
+            !DS call aot_calc( n, timefrac )
+            d_2d(n, 1:limax, 1:ljmax, IOU_INST) = Calc_GridAOTx(f_2d(n)%XYCL)
 
            !if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
            if( debug_flag ) then
@@ -1024,7 +1008,9 @@ end do
           ! Externally set for IOU_INST (in other routines); so no new work
           ! needed except decision to accumalate to yearly or not.
           ! Used for e.g. AOT40s
-             call setaccumulate_2dyear(n,accumulate_2dyear)
+
+             call setaccumulate_2dyear(f_2d(n)%name,accumulate_2dyear)
+
             !if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
             !       n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
@@ -1387,45 +1373,6 @@ end do
    end subroutine voc_3dcalc
  !=========================================================================
 
-  subroutine aot_calc( n, timefrac )
-
-    !/-- Calcuates AOT values for input threshold. Daylight values calculated
-    !    only, for zenith < AOT_HORIZON ( e.g. 89 )
-    !    Only relevant in ozone models, so far....
-
-    integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
-    real,    intent(in) :: timefrac    ! Timestep as fraction of hour
-
-    real    :: threshold               ! Threshold, e.g. 40 or 60 (ppb)
-    integer :: izen                    ! integer of zenith angle
-    real :: o3                         ! Ozone (ppb) - needed if AOTs
-
-     threshold = f_2d(n)%index
-
-      do i=1,limax
-        do j=1,ljmax
-
-           izen = max(1,int( zen(i,j) + 0.5))
-
-           if ( izen < AOT_HORIZON ) then
-                o3 = xn_adv(IXADV_O3,i,j,KMAX_MID) &
-                     * cfac(IXADV_O3,i,j) * PPBINV
-
-                o3 = max( o3 - threshold , 0.0 )   ! Definition of AOTs
-
-             ! d_2d values will be accumulated in Derived_ml
-
-              d_2d(n, i,j,IOU_INST ) = o3 * timefrac
-
-           else
-               d_2d(n, i,j,IOU_INST ) = 0.0
-           end if
-        end do
-      end do
-   end subroutine aot_calc
-
-!=========================================================================
-
   subroutine somo_calc( n )
 
 
@@ -1473,38 +1420,38 @@ end do
    end subroutine somo_calc
 
  !=========================================================================
-
-   subroutine setaccumulate_2dyear(n,accumulate_2dyear)
-
-! We don't want the yearly output to accumulate over the whole year
-     integer, intent(in) :: n
-      logical, intent(inout) :: accumulate_2dyear !flag to know when to
-                                                  !accumulate d_2d (case "EXT")
-
-      if( f_2d(n)%name=="D2_EUAOT30DF".or.&
-          f_2d(n)%name=="D2_EUAOT40DF".or.&
-          f_2d(n)%name=="D2_UNAOT30DF".or.&
-          f_2d(n)%name=="D2_UNAOT40DF"    &
-          )then
-         if(   current_date%month<startmonth_forest&
-              .or.current_date%month>endmonth_forest)then
-            accumulate_2dyear=.false.
-         endif
-      endif
-
-       if(f_2d(n)%name=="D2_EUAOT30WH".or.&
-          f_2d(n)%name=="D2_EUAOT40WH".or.&
-          f_2d(n)%name=="D2_UNAOT30WH".or.&
-          f_2d(n)%name=="D2_UNAOT40WH"    &
-          )then
-         if(   current_date%month<startmonth_crops&
-              .or.current_date%month>endmonth_crops)then
-            accumulate_2dyear=.false.
-
-         endif
-      endif
-
-    end subroutine setaccumulate_2dyear
+!
+!   subroutine setaccumulate_2dyear(n,accumulate_2dyear)
+!
+!! We don't want the yearly output to accumulate over the whole year
+!     integer, intent(in) :: n
+!      logical, intent(inout) :: accumulate_2dyear !flag to know when to
+!                                                  !accumulate d_2d (case "EXT")
+!
+!      if( f_2d(n)%name=="D2_EUAOT30DF".or.&
+!          f_2d(n)%name=="D2_EUAOT40DF".or.&
+!          f_2d(n)%name=="D2_UNAOT30DF".or.&
+!          f_2d(n)%name=="D2_UNAOT40DF"    &
+!          )then
+!         if(   current_date%month<startmonth_forest&
+!              .or.current_date%month>endmonth_forest)then
+!            accumulate_2dyear=.false.
+!         endif
+!      endif
+!
+!       if(f_2d(n)%name=="D2_EUAOT30WH".or.&
+!          f_2d(n)%name=="D2_EUAOT40WH".or.&
+!          f_2d(n)%name=="D2_UNAOT30WH".or.&
+!          f_2d(n)%name=="D2_UNAOT40WH"    &
+!          )then
+!         if(   current_date%month<startmonth_crops&
+!              .or.current_date%month>endmonth_crops)then
+!            accumulate_2dyear=.false.
+!
+!         endif
+!      endif
+!
+!    end subroutine setaccumulate_2dyear
 
     subroutine write_debug(n,index,rho,txt)
        integer, intent(in) :: n, index

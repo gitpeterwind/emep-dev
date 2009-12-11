@@ -150,8 +150,7 @@ module ModelConstants_ml
   , NMET         = 2     &    ! No. met fields in memory
   , KCHEMTOP     = 2     &    ! chemistry not done for k=1
   , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)
-  , KUPPER       = 6     &    ! limit of clouds (for wet dep.)
-  , AOT_HORIZON  = 89         ! Limit of daylight zenith angle for AOTs
+  , KUPPER       = 6          ! limit of clouds (for wet dep.)
 
 ! EMEP measurements end at 6am, used in  daily averages
   integer, public, parameter :: END_OF_EMEPDAY  = 6
@@ -205,6 +204,15 @@ module ModelConstants_ml
   ! density (roa, kg/m3) to  molecules/cm3
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
     real, public, parameter   :: MFAC = 0.001*AVOG/ATWAIR
+
+
+  ! Define 4 output types corresponding to instantaneous,year,month,day
+
+   integer, public, parameter ::  &
+        IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, &
+        IOU_HOUR=5, IOU_HOUR_MEAN=6
+
+   character(len=8),  public ,parameter :: model='ZD_OZONE'
 
 end module ModelConstants_ml
 !_____________________________________________________________________________

@@ -51,9 +51,7 @@ program myeul
   use CheckStop_ml,     only : CheckStop
   use Chemfields_ml,    only : xn_adv
   use DefPhotolysis_ml, only : readdiss
-  use Derived_ml,       only :  Init_Derived &
-       ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
-       ,f_2d,f_3d
+  use Derived_ml,       only : Init_Derived, f_2d, f_3d
   use EcoSystem_ml,     only : Init_EcoSystems
   use EmisDef_ml,       only : NBVOC, AIRNOX
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
@@ -74,6 +72,7 @@ program myeul
        ,runlabel1  &   ! explanatory text
        ,runlabel2  &   ! explanatory text
        ,nprint,nass,nterm,iyr_trend, PT &
+       ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
        ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
   use OutputChem_ml,    only : WrtChem

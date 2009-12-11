@@ -49,7 +49,6 @@ module GlobalBCs_ml
 !  are since these names are not seen outside this module.
 !   -- for use with BoundConditions_ml and My_BoundConditions_ml --
 !____________________________________________________________________________
-  use My_Derived_ml,only: model
 
   use CheckStop_ml,      only: CheckStop
   use GridValues_ml, only: gbacmax,gbacmin,glacmax,glacmin&
@@ -62,6 +61,7 @@ module GlobalBCs_ml
   use ModelConstants_ml, only:  PPB, PPT,PPBINV &
                                ,KMAX_MID, PT &
                                ,MasterProc  &
+                               ,model & !not really needed now....
                                ,IIFULLDOM,JJFULLDOM &
                                ,FORECAST     ! FORECAST mode
 
@@ -662,11 +662,11 @@ elseif( year == 2005) then
                    macehead_O3(month),O3fix/PPB
               endif
 
-              if (model=='ZD_ACID') then
+              !ds if (model=='ZD_ACID') then
+              !ds    bc_rawdata=max(15.*PPB,bc_rawdata)
 
-                 bc_rawdata=max(15.*PPB,bc_rawdata)
-
-              elseif (model=='ZD_OZONE') then
+              !ds else
+              if (model=='ZD_OZONE') then
                  bc_rawdata=max(15.0*PPB,bc_rawdata-O3fix)
               else
                  call CheckStop("Problem with Mace Head Correction in GlobalBCs_ml")

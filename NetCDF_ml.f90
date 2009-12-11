@@ -49,14 +49,14 @@
 !To improve: When output is onto the same file, but with different positions for the
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
-  use My_Derived_ml, only : model
+  !ds use My_Derived_ml, only : model
   use My_Outputs_ml,    only : FREQ_HOURLY, &
                              NHOURLY_OUT, &      ! No. outputs
                              Asc2D, hr_out      ! Required outputs
 
   use Chemfields_ml,   only : xn_shl,xn_adv
   use CheckStop_ml,    only: CheckStop,StopAll
-  use Derived_ml,      only :IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR ,IOU_MON, IOU_DAY
+  !ds use Derived_ml,      only :IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR ,IOU_MON, IOU_DAY
   use ChemSpecs_shl_ml , only :NSPEC_SHL
   use ChemSpecs_adv_ml , only :NSPEC_ADV
   use ChemSpecs_tot_ml , only :NSPEC_TOT
@@ -68,7 +68,8 @@
                                   ,projection, sigma_mid,gb_stagg,gl_stagg,gl,gb,lb2ij
   use ModelConstants_ml, only : KMAX_MID, runlabel1, runlabel2 &
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
-                                ,PT,NLANDUSEMAX
+                                ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
+                                ,IOU_MON, IOU_DAY ,PT,NLANDUSEMAX, model
   use netcdf
   use OwnDataTypes_ml,  only : Deriv
   use Par_ml, only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &

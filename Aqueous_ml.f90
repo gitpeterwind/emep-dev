@@ -63,8 +63,7 @@ module Aqueous_ml
 !EGU - was commented out as SO4LIKE_DEP USED
   use My_Aerosols_ml,    only: ORGANIC_AEROSOLS
 
-  use Derived_ml,    only : IOU_INST & ! Index: instantaneous values
-                            ,d_2d      ! Contains Wet deposition fields
+  use Derived_ml,    only : d_2d      ! Contains Wet deposition fields
   use ChemChemicals_ml, only: species
   use ChemSpecs_tot_ml, only: NSPEC_TOT, SO4
   use GridValues_ml, only : gridwidth_m,xm2,xmd,carea
@@ -76,6 +75,7 @@ module Aqueous_ml
      ,KUPPER                   &       ! -> top of cloud-chemistry, k=6
      ,KCHEMTOP                 &       ! -> top of chemistry, now k=2
      ,dt => dt_advec           &       ! -> model timestep
+     ,IOU_INST                 &       ! Index: instantaneous values
      ,PT, ATWAIR                       ! -> pressure at top, atw. air
   use Met_ml,            only : pr, roa, z_bnd, cc3d, ps, lwc
 !EGU  use OrganicAerosol_ml, only : SO4LIKE_DEP, SOALIKE_DEP

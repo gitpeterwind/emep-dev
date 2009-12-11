@@ -44,7 +44,7 @@ use My_Outputs_ml, only : &  ! for sitesout
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
       FREQ_SONDE  ! DSGC, NOy_SPEC
 
-use Derived_ml,        only : d_2d, d_3d, f_2d, IOU_INST  ! for deriv system
+use Derived_ml,        only : d_2d, d_3d, f_2d
 use Functions_ml,      only : Tpot_2_T              ! Conversion function
 use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom &
                               , i_local, j_local
@@ -62,7 +62,7 @@ use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
                               , z_bnd, z_mid, roa, xksig, u, v, ps, q
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
                               ,KMAX_BND,PT,ATWAIR, NPROC &
-                              ,DomainName, RUNDOMAIN
+                              ,DomainName, RUNDOMAIN, IOU_INST  
 use Par_ml,            only : li0,lj0,li1,lj1 &
                               ,GIMAX,GJMAX &
                               ,GI0,GI1,GJ0,GJ1,me,MAXLIMAX,MAXLJMAX
