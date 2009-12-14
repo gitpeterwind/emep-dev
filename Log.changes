@@ -1,3 +1,9 @@
+xxxxxxxxxxxxxx rv3_4_13 Peter,    14 Dec. 2009 xxxxxxxxxxxxxxxx
+
+Bug in ReadField_CDF in NetCDF_ml (read of ForestFire).
+Include a safer area when Poles are nearby.
+
+
 xxxxxxxxxxxxxx rv3_4_12 Dave,    11 Dec. 2009 xxxxxxxxxxxxxxxx
 
 AOTx_ml now extended with more code from Derived_ml.

@@ -2236,6 +2236,11 @@ jmin=max(1,min(dims(2),nint((minlat-Rlat(1))*dlati)+1))
 imax=mod(nint((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
 jmax=max(1,min(dims(2),nint((maxlat-Rlat(1))*dlati)+1))
 
+if(maxlat>85.0.or.minlat<-85.0)then
+   imin=1
+   imax=dims(1)
+endif
+
 !latitude is sometime counted from north pole, sometimes from southpole:
 jjmin=jmin
 jmin=min(jmin,jmax)
