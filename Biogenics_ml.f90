@@ -109,7 +109,7 @@ module Biogenics_ml
 
    !========= Read in Standard (30 deg C, full sunlight emissions factors = !
 
-    call Read2DN("Inputs.BVOC",2,emforest,CheckValues)
+    call Read2DN("Inputs.BVOC",NBVOC,emforest,CheckValues)
 
    !========================================================================!
 
@@ -162,7 +162,7 @@ module Biogenics_ml
       agct = exp( 0.09*(itk-agts) )
       ! for terpene fac = 0.5*fac(iso): as mass terpene = 2xmass isoprene
 
-      canopy_ecf(BIO_TERP,it) = agct
+      if (BIO_TERP > 0) canopy_ecf(BIO_TERP,it) = agct
 
       if(DEBUG_BIO  .and.  MasterProc ) &
              write(6,"(A12,i4,5g12.3)") 'Biogenic ecfs: ', &
