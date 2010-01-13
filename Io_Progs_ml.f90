@@ -41,7 +41,7 @@
 
   use CheckStop_ml, only: CheckStop
   use GridValues_ml, only : i_local, j_local
-  use Io_Nums_ml,   only: IO_TMP
+  use Io_Nums_ml,   only: IO_TMP, IO_LOG
   use ModelConstants_ml, only : DEBUG_IOPROG, DEBUG_i, DEBUG_j, &
           DomainName, MasterProc, IIFULLDOM, JJFULLDOM
   use KeyValue_ml,  only: KeyVal, KeyValue, LENKEYVAL
@@ -61,6 +61,7 @@
   public :: Read_Headers !  Reads header information from input files
   public :: Read2D       !  Reads x,y,z data for simple case
   public :: Read2DN      !  Reads x,y,z1...z2 data for simple case
+  public :: PrintLog       !  writes message to both RunLog and unit 6
   public :: Self_Test
 
   logical, public :: fexist                      ! true if file exists
@@ -73,6 +74,20 @@
 
 contains
 
+  !=======================================================================
+  subroutine PrintLog(txt,OutputProc)
+     character(len=*), intent(in) :: txt
+     logical, intent(in), optional :: OutputProc  !typically MasterProc, me==0
+     logical :: ok2print 
+     ok2print = .true.
+     if ( present(OutputProc) ) then
+        ok2print = OutputProc
+     end if
+     if ( ok2print) then
+        write(*,*)  trim(txt)
+        write(IO_LOG,*)  trim(txt)
+     end if
+  end subroutine PrintLog
   !=======================================================================
   subroutine read_line(io_in,txt,status,label,printif)
   !=======================================================================
