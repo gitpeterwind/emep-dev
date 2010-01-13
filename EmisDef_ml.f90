@@ -129,9 +129,10 @@ implicit none
 
 
   ! Biogenics
-   integer, public, parameter ::   NBVOC = 2   
+   integer, public, parameter ::   NBVOC = 1   
    character(len=8),public, save, dimension(NBVOC) :: &
-                                   BVOC_USED = (/ "isoprene","terpene "/)   
+                                   BVOC_USED = (/ "isoprene"/)   
+!!                                   BVOC_USED = (/ "isoprene","terpene "/)   
 
    !SeaSalt
    integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
@@ -140,10 +141,13 @@ implicit none
 
 
    !/** Lightning and aircraft NOx. 
-    logical, public, parameter :: AIRNOX   = .true.   ! Gives NOx emission
+    logical, public, parameter :: AIRNOX      = .true.   ! Gives NOx emission
 
    !/** Volcanos. 
-    logical, public, parameter :: VOLCANOES  = .true.  ! Gives Volcanos
+    logical, public, parameter :: VOLCANOES   = .true.  ! Gives Volcanos
+
+   !/** Forest fires. 
+    logical, public, parameter :: FOREST_FIRES = .true.  ! Gives Volcanos
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
