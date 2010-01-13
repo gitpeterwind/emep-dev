@@ -147,6 +147,10 @@ module Country_ml
   integer, parameter, public :: IC_RS  =  72   ! Serbia
   integer, parameter, public :: IC_ME  =  73   ! Montenegro
 
+  ! Biomass-burnung (Wild-fires etc.) allocated to a country-number
+  ! Allows easy use of emissplits to allocate speciatin
+
+  integer, parameter, public :: IC_BB  =  101 
 
   ! extra subdivisions:
   ! Baltic Sea  (30)
@@ -322,6 +326,8 @@ Country( IC_RUX) = cc(  "RUX" , 71 ,F,  42, 4  , "Russian Fed. outside emep     
 Country( IC_RS)  = cc(  "RS " , 72 ,F,  72, 1  , "Serbia                        " )
 Country( IC_ME)  = cc(  "ME " , 73 ,F,  73, 1  , "Montenegro                    " )
 
+!  integer, parameter, public :: IC_WF  =  101 
+Country( IC_BB)  = cc(  "BB ", 101,F,  101, 0  , "Biomass burning (wild)        " )
 
 ! Sea areas splitt according to innside/outside 12 nautical mile zone, 
 ! ferries/cargo ships, registred inside/outside EU
