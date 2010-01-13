@@ -1,3 +1,36 @@
+xxxxxxxxxxxxxx rv3_5beta1  Joffen, Peter, Svetlana, Dave Jan 13th 2010
+
+ **NEW**  ForestFire_ml introduced. Most of the work done here. Called
+     from Setup_1d_ml
+
+ Note also new "PrintLog" routine in Io_ml - hopefully to be used
+    more in future to help write a neat log file.
+
+Biogenics_ml - use NBVOC instead of 2 for ReadSDN. Allows NBVOC to be
+    set to one for some runs
+
+Country_ml : Biomass-burning (Wild-fires etc.) allocated to a country-number
+    integer, parameter, public :: IC_BB  =  101 
+
+EmisDef_ml.f90: logical  FOREST_FIRES added
+
+EmisGet_ml.f90   FOREST_FIRES debug Checking 
+
+Io_Progs_ml    PrintLog subroutine added
+
+Makefile.SRCS ForestFire_ml added
+
+ModelConstants_ml.f90 DEBUG_FORESTFIRE added
+
+NetCDF_ml - reinstated print for missing variable ReadField_CDF
+
+Unimod.f90 FF added.
+
+Volcanoes_ml   NMAX extended to 12 (is this enough for global)
+
+My_ some extra column outputs added for a project I'd doing. Should be
+   removed in future, but for now it helps me (DS).
+
 xxxxxxxxxxxxxx rv3_4_13 Peter,    14 Dec. 2009 xxxxxxxxxxxxxxxx
 
 Bug in ReadField_CDF in NetCDF_ml (read of ForestFire).
