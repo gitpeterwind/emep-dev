@@ -2169,7 +2169,7 @@ endif
   else
 !     nfetch=0
      if(fileneeded)then
-!        print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
+        print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
         call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found") 
      else
         print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)

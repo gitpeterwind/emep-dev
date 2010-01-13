@@ -129,9 +129,9 @@ private
 
    integer, public, parameter, dimension(1) ::  SURF_UG_C = (/ HCHO /)
 
-   integer, public, parameter, dimension(2) :: SRSURF_UG = (/ PPM25, PPMco /)
+   integer, public, parameter, dimension(3) :: SRSURF_UG = (/ PPM25, PPM25_FIRE, PPMco /)
    integer, public, parameter, dimension(2) ::  XSURF_UG = (/ SSfi,SSco /)
-   integer, public, parameter, dimension(4) ::   SURF_UG = (/ SRSURF_UG, XSURF_UG /)
+   integer, public, parameter, dimension(5) ::   SURF_UG = (/ SRSURF_UG, XSURF_UG /)
 
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
    integer, public, parameter, dimension(1) ::  XSURF_PPB = (/ HCHO /)

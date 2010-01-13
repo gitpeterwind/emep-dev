@@ -164,7 +164,8 @@ contains
   do imc = 1, nMosaic
     subclass =  MosaicOutput(imc)%subclass
     MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name ,f_2d(:)%name)
-    if( MasterProc) write(6,*) "Init_MyDry process", trim(MosaicOutput(imc)%name)
+    if(DEBUG_MY_DRYDEP .and. MasterProc) &
+       write(6,*) "Init_MyDry process", trim(MosaicOutput(imc)%name)
     call CheckStop( MosaicOutput(imc)%f2d < 1, &
         "MosaicOutput-f2d Error " // trim(MosaicOutput(imc)%name))
 
