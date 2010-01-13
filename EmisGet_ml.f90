@@ -551,7 +551,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
            do i = 1, nsplit      ! 1st 2 columns are cc, isec:
               intext(idef,i) = Headers(i+2)
-              if(MasterProc) print *, "SPLITINFO iem ", i,idef, intext(idef,i)
+              if(MasterProc) write(*,*) "SPLITINFO iem ", i,idef, intext(idef,i)
               itot = find_index(intext(idef,i), species(:)%name )
               if ( defaults ) then
                 if ( Headers(i+2) /= "UNREAC" ) then 
@@ -641,7 +641,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                 tmp_emisfrac(iqrc,isec,iland) = 0.01 * tmp(i)
 
                 ! just a check
-                if ( DEBUG .and. iland == 27.and.MasterProc ) then 
+                !if ( DEBUG .and. iland == 27.and.MasterProc ) then 
+                if ( DEBUG .and. iland == 101.and.MasterProc ) then 
                     itot = tmp_iqrc2itot(iqrc)
                     write(*,"(a35,4i3,i4,a,f10.4)") &
                       "DEBUG_EMISGET splitdef UK", isec, ie, i,  &
