@@ -49,14 +49,15 @@ program myeul
   use Biogenics_ml,     only : Init_BVOC
   use BoundaryConditions_ml, only : BoundaryConditions
   use CheckStop_ml,     only : CheckStop
+  use ChemChemicals_ml, only : define_chemicals
   use Chemfields_ml,    only : xn_adv
+  use ChemSpecs_adv_ml, only : NSPEC_ADV
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,       only : Init_Derived, f_2d, f_3d
   use EcoSystem_ml,     only : Init_EcoSystems
-  use EmisDef_ml,       only : NBVOC, AIRNOX
+  use EmisDef_ml,       only : NBVOC, AIRNOX, FOREST_FIRES
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
-  use ChemChemicals_ml, only : define_chemicals
-  use ChemSpecs_adv_ml, only : NSPEC_ADV
+  use ForestFire_ml,   only : Fire_Emis
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
   use Io_Progs_ml  ,    only : read_line
@@ -401,6 +402,8 @@ program myeul
 
 
      call Meteoread(numt)
+
+     if ( FOREST_FIRES ) call Fire_Emis(daynumber)
 
      call Add_2timing(10,tim_after,tim_before,"infield")
 

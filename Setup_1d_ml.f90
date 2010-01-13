@@ -38,19 +38,18 @@
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
   use BoundaryConditions_ml, only : BGN_2D
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
-!DSGC use ChemFunctions_ml,      only : f_Riemer  !weighting factor for N2O5 hydrolysis
   use CheckStop_ml,          only :  CheckStop
-  use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES &
+  use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES, FOREST_FIRES &
                                   ,NSS  !SeaS
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
+  use ForestFire_ml,         only : Fire_rcemis, burning !,  rcNOx_fire,rcCO_fire, rcHC_fire !DSFF
   use Functions_ml,          only :  Tpot_2_T
-  use ChemSpecs_tot_ml,        only :  SO4,aNO3,pNO3,C5H8,NO,NO2,SO2
+use ChemChemicals_ml,        only :  species
+  use ChemSpecs_tot_ml,        only :  SO4,aNO3,pNO3,C5H8,NO,NO2,SO2,CO
   use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
-!DSGC  use MyChem_ml,             only :  Set_2dBgnd
-!DSGC  use ChemRates_rct_ml,       only :  NRCT, rcit ! Tabulated rate coeffs
   use ChemRates_rct_ml,       only :  set_rct_rates, rct
   use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, carea, &
@@ -163,9 +162,11 @@ contains
    end do ! k
 
 ! Check that concentrations are not "contaminated" with NaN
-   call CheckStop( .not.xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)+1>&
-                        xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)   &
-                  ,"Detected non numerical concentrations (NaN)")
+   if ( .not.xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)+1>&
+                        xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID) ) then
+      print *, "NANAN ", trim(species(IXADV_NO2+NSPEC_SHL)%name) 
+   call CheckStop( "Detected non numerical concentrations (NaN)")
+   end if
 
 !DSGC o2k(:) = 0.21*amk(:)
    o2(:) = 0.21 *amk(:)
@@ -222,7 +223,6 @@ contains
      real    :: eland   ! for Pb210  - emissions from land
 
     integer ::  i_help,j_help,i_l,j_l
-    logical :: my_first_call = .true.
 
 ! initilize
     rcemis(:,:)=0.    
@@ -251,13 +251,12 @@ contains
            j_l=j_help - gj0  +1
            if((i_l==i).and.(j_l==j))then !i,j have a volcano
               k=height_volc(volc_no)
+              !DSSRC rcemis(QRCVOL,k)=rcemis(QRCVOL,k)+rcemis_volc(volc_no)
               rcemis(SO2,k)=rcemis(SO2,k)+rcemis_volc(volc_no)
-              if ( DEBUG_SETUP_1DCHEM  .and. my_first_call ) then
-                  write(*,*)'Adding volc. emissions ',&
-                     rcemis_volc(volc_no),volc_no,&
-                    'to height=',k,'i,j',i_help,j_help
-                  write(*,*)'TOT rcemis=',rcemis(SO2,:)
-               end if
+              !write(*,*)'Adding volc. emissions ' &
+              !          ,rcemis_volc(volc_no),volc_no,&
+              !          'to height=',k,'i,j',i_help,j_help
+              !write(*,*)'TOT rcemis=',rcemis(QRCVOL,:)
            endif
         endif
      enddo
@@ -296,6 +295,14 @@ contains
 ! Hard-coded for now, for isoprene only:
      rcemis(C5H8,KMAX_MID) =  rcemis(C5H8,KMAX_MID) + rcbio(BIO_ISOP)
 
+
+     if ( FOREST_FIRES  .and. burning(i,j)  ) then
+
+       call Fire_rcemis(i,j)
+
+     endif  !ForestFires
+
+
 !Mass Budget calculations
 !   Adding up the emissions in each timestep
 
@@ -330,8 +337,6 @@ contains
      rc_Rn222(KMAX_MID) = &
             ( 0.00182 * water_fraction(i,j)  + eland ) / &
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.) 
-
-     my_first_call = .false.
 
   end subroutine setup_rcemis
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -372,6 +377,7 @@ contains
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
+  if(BIO_TERP > 0)  &
   rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
 
   ! Isoprene has emissions in daytime only:
