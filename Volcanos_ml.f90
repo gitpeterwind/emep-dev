@@ -68,7 +68,7 @@ module Volcanos_ml
   public :: Scale_Volc   
 
 
-  integer, public, parameter  :: NMAX_VOLC = 3  ! Max number of volcanoes
+  integer, public, parameter  :: NMAX_VOLC = 12  ! Max number of volcanoes
   integer, public, save       :: nvolc = 0    & ! No. grids with volcano 
                                                 ! emissions in gridSOx
                                 ,volc_no = 0 
