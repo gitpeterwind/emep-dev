@@ -1,3 +1,7 @@
+xxxxxxxxxxxxxx rv3_5beta2  Robert Jan 15th 2010
+
+ZCM_EmChem09/CM_ChemRates_ml.f90: bug fix, rate of O+O2+M -> O3
+
 xxxxxxxxxxxxxx rv3_5beta1  Joffen, Peter, Svetlana, Dave Jan 13th 2010
 
  **NEW**  ForestFire_ml introduced. Most of the work done here. Called
