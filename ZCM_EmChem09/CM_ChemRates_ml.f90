@@ -34,11 +34,11 @@
                 !( 1.0e-11*xn_2d(NO,:) + 4.2e-12*exp(180*TINV(:))*xn_2d(HO2,:) )
 !       BranchingHO2(:) = 1.0 - BranchingNO(:)
 
-       rcmisc(1,:) = (6.0e-34*o2+5.6e-34*n2)*o2*exp(-2.6*log300divt) 
+       rcmisc(1,:) = (6.0e-34*o2+5.6e-34*n2)*o2*exp(-2.6*logtdiv300) 
        rcmisc(2,:) = 1.8e-11*n2*exp(107.0*tinv) 
        rcmisc(3,:) = 3.2e-11*o2*exp(67.0*tinv) 
        rcmisc(4,:) = 2.2e-10*h2o 
-       rcmisc(5,:) = 2.03e-16*exp(-4.57*log300divt)*exp(693.0*tinv) 
+       rcmisc(5,:) = 2.03e-16*exp(4.57*logtdiv300)*exp(693.0*tinv) 
        rcmisc(6,:) = kmt3(2.4e-14,460.0,6.5e-34,1335.0,2.7e-17,2199.0,m) 
        rcmisc(7,:) = (1.0+1.4e-21*h2o*exp(2200.0*tinv))*2.2e-13*exp(600.0*tinv) 
        rcmisc(8,:) = (1.0+1.4e-21*h2o*exp(2200.0*tinv))*1.9e-33*exp(980.0*tinv)*m 
