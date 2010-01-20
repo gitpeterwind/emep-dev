@@ -56,10 +56,10 @@ module GlobalBCs_ml
                           ,i_fdom,j_fdom &
                           ,sigma_mid             ! for use in Hz scaling
   use Functions_ml, only: StandardAtmos_kPa_2_km ! for use in Hz scaling
-  use GridValues_ml, only: lb2ij, xp, yp, AN, fi, gb_glob, gl_glob
+  use GridValues_ml, only: lb2ij, xp, yp, AN, fi, gb_glob, gl_glob,A_mid,B_mid
   use Io_ml,             only : IO_GLOBBC, ios, open_file
   use ModelConstants_ml, only:  PPB, PPT,PPBINV &
-                               ,KMAX_MID, PT &
+                               ,KMAX_MID, PT, Pref &
                                ,MasterProc  &
                                ,model & !not really needed now....
                                ,IIFULLDOM,JJFULLDOM &
@@ -559,7 +559,8 @@ elseif( year == 2005) then
 
   !Use Standard Atmosphere to get average heights of layers
 
-    p_kPa(:) = 0.001*( PT + sigma_mid(:)*(101325.0-PT) ) ! Pressure in kPa
+    p_kPa(:) = 0.001*( A_mid(:) + B_mid(:)*Pref ) ! Pressure in kPa
+    
     h_km     = StandardAtmos_kPa_2_km(p_kPa)
 
     my_first_call = .false.

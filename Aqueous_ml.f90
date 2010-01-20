@@ -66,7 +66,7 @@ module Aqueous_ml
   use Derived_ml,    only : d_2d      ! Contains Wet deposition fields
   use ChemChemicals_ml, only: species
   use ChemSpecs_tot_ml, only: NSPEC_TOT, SO4
-  use GridValues_ml, only : gridwidth_m,xm2,xmd,carea
+  use GridValues_ml, only : gridwidth_m,xm2,dA,dB
   use MassBudget_ml,     only : wdeploss
   use ModelConstants_ml, only: &
       CHEMTMIN, CHEMTMAX       &       ! -> range of temperature 
@@ -76,10 +76,11 @@ module Aqueous_ml
      ,KCHEMTOP                 &       ! -> top of chemistry, now k=2
      ,dt => dt_advec           &       ! -> model timestep
      ,IOU_INST                 &       ! Index: instantaneous values
-     ,PT, ATWAIR                       ! -> pressure at top, atw. air
-  use Met_ml,            only : pr, roa, z_bnd, cc3d, ps, lwc
+     ,ATWAIR                           ! -> atw. air
+  use Met_ml,              only : pr, roa, z_bnd, cc3d, ps, lwc
+  use PhysicalConstants_ml,only : GRAV
 !EGU  use OrganicAerosol_ml, only : SO4LIKE_DEP, SOALIKE_DEP
-  use Setup_1dfields_ml, only : xn_2d, amk  !EGUOA , Fpart, Fgas
+  use Setup_1dfields_ml,   only : xn_2d, amk  !EGUOA , Fpart, Fgas
 
   implicit none
   private
@@ -506,14 +507,15 @@ subroutine WetDeposition(i,j,debug_flag)
   real, dimension(KUPPER:KMAX_MID) :: vw ! Svavenging rates (tmp. array)
   real, dimension(KUPPER:KMAX_MID) :: lossfrac ! EGU
 
+  invgridarea = xm2(i,j)/( gridwidth_m*gridwidth_m )
+  f_rho  = 1.0/(invgridarea*GRAV*ATWAIR)
 ! Loop starting from above:
-  f_rho  = xmd(i,j)*(ps(i,j,1) - PT)/ATWAIR
   do k=kcloudtop, KMAX_MID           ! No need to go above cloudtop
-     rho(k)  = f_rho * carea(k) / amk(k)
+   rho(k)  = f_rho*(dA(k) + dB(k)*ps(i,j,1))/ amk(k)
   end do
+
   wdeploss(:) = 0.0
 
-  invgridarea = xm2(i,j)/( gridwidth_m*gridwidth_m )
 
 ! calculate concentration after wet deposition and sum up the vertical
 ! column of the depositions for the fully soluble species.

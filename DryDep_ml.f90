@@ -80,7 +80,7 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
  use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
  use EcoSystem_ml,   only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
- use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2,carea, gb, &
+ use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2, gb,dA,dB, &
           debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
  use Io_Nums_ml,     only : IO_DO3SE
  use Landuse_ml,     only : Land_codes,LU_cdf, LandCover
@@ -318,15 +318,17 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
      ! -----------------------------------------------------------------!
      !.and conversion factor,  convfac (( ps-pt)/grav... )  ===> 
      !      pressure in kg m-1 s-2
+     ! 
+      convfac = (dA(KMAX_MID) + dB(KMAX_MID)*Grid%psurf)&!dP
+                 *xmd(i,j)/(ATWAIR*GRAV*inv_gridarea)
 
-      convfac = (Grid%psurf - PT)*carea(KMAX_MID)*xmd(i,j)/ATWAIR
      ! -----------------------------------------------------------------!
 
 !     !.and factor,  kg_air_ij (( ps-pt)/grav... )  ===> 
 !     !      pressure in kg m-1 s
 !     !      used for converting from mixing ratio to kg
 !
-!      kg_air_ij = (ps(i,j,1) - PT)*carea(KMAX_MID)
+!      kg_air_ij = (ps(i,j,1) - PT)*carea(KMAX_MID) = dP*dx**2/g
 !     ! -----------------------------------------------------------------!
 !
       lossfrac = 1.0 !  Ratio of xn before and after deposition

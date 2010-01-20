@@ -47,7 +47,7 @@ use My_Outputs_ml, only : &  ! for sitesout
 use Derived_ml,        only : d_2d, d_3d, f_2d
 use Functions_ml,      only : Tpot_2_T              ! Conversion function
 use GridValues_ml,     only : sigma_bnd, sigma_mid, lb2ij, i_fdom, j_fdom &
-                              , i_local, j_local
+                              , i_local, j_local, A_mid, B_mid
 use Io_ml,             only : check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
@@ -576,7 +576,7 @@ end subroutine siteswrt_surf
 
           case ( "RH   " ) 
             do k = 1,KMAX_MID
-              pp(k) = PT + sigma_mid(k)*(ps(ix,iy,1) - PT)
+              pp(k) = A_mid(k) + B_mid(k)*ps(ix,iy,1)
               temp(k) = th(ix,iy,k,1)* Tpot_2_T( pp(k) )
               itemp(k) = nint( temp(k) )
               qsat(k)  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
@@ -588,8 +588,8 @@ end subroutine siteswrt_surf
             out(nn+1:nn+NLEVELS_SONDE,i) =  z_mid(ix,iy,KMAX_MID:KTOP_SONDE:-1)
 
           case ( "p_mid" ) 
-            out(nn+1:nn+NLEVELS_SONDE,i) = PT + sigma_mid(KMAX_MID:KTOP_SONDE:-1) &
-                                                 *(ps(ix,iy,1) - PT)
+            out(nn+1:nn+NLEVELS_SONDE,i) = A_mid(KMAX_MID:KTOP_SONDE:-1) + &
+                                      B_mid(KMAX_MID:KTOP_SONDE:-1)*ps(ix,iy,1)
 
           case ( "xksig" ) 
             out(nn+1:nn+NLEVELS_SONDE,i) =  xksig(ix,iy,KMAX_MID:KTOP_SONDE:-1)

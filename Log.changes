@@ -1,3 +1,28 @@
+xxxxxxxxxxxxxx rv3_5_1beta2  Peter Jan 20th 2010
+
+Changes to prepare for flexible vertical coordinates.
+
+GridValues: defined A and B, parameters vertical coordinates to be 
+read from metfile later
+ModelConstants: Pref= 101325.0  Reference pressure in Pa 
+
+Replaced Pressure expressions from sigma to eta nomenclature in:
+Aqueous_ml, DryDep_ml, Sites_ml, Setup_1d_ml, GlobalBCs_ml
+
+
+And other small changes:
+
+run.pl: link without "ifile" for BIC, so that the script does not check if the file exists:
+it can do without local BIC, by interpolating the global BIC file.
+
+ForestFire_ml: use GLOBAL_ForestFireEmis.nc instead of ForestFireEmis.nc. They are equal, but 
+I prefer to have as many non gridspecific files as possible in DataDir.
+
+Nest_ml: Allow the BC and the IC files to be different. (required by Alvaro). Not tested yet.
+
+None of the changes before change the results.
+
+
 xxxxxxxxxxxxxx rv3_5beta2  Robert Jan 15th 2010
 
 ZCM_EmChem09/CM_ChemRates_ml.f90: bug fix, rate of O+O2+M -> O3

@@ -46,7 +46,7 @@
                             
  use ModelConstants_ml,    only : KMAX_BND, KMAX_MID  &! vertical extent
       ,DEBUG_i, DEBUG_j  &  ! full-domain coordinate of debug-site
-      ,NPROC, IIFULLDOM,JJFULLDOM
+      ,NPROC, IIFULLDOM,JJFULLDOM, PT, Pref
  use Par_ml, only : &
         MAXLIMAX,MAXLJMAX   & ! max. possible i, j in this domain
       ,limax,ljmax          & ! actual max.   i, j in this domain
@@ -54,7 +54,7 @@
       ,IRUNBEG,JRUNBEG      & ! start of user-specified domain
       ,gi0,gj0         & ! full-dom coordinates of domain lower l.h. corner
       ,me                ! local processor
- use PhysicalConstants_ml, only : GRAV, PI       ! gravity, pi
+ use PhysicalConstants_ml, only : GRAV, PI     ! gravity, pi
  implicit none
  private
 
@@ -94,6 +94,21 @@
   integer, public, save, dimension(IIFULLDOM) :: i_local  !local coordinates
   integer, public, save, dimension(JJFULLDOM) :: j_local  !of full-domain i,j
 
+!Parameters for Vertical Hybrid coordinates:
+  real, public, save,  dimension(KMAX_BND) ::  &
+           A !Unit Pa.  first constant, defined at layer boundary (i.e. half levels in EC nomenclature)
+  real, public, save,  dimension(KMAX_BND) ::  &
+           B !Unit 1.  second constant, defined at layer boundary (i.e. half levels in EC nomenclature)
+  real, public, save,  dimension(KMAX_MID) ::  &
+           A_mid !Unit Pa.  first constant, defined at layer boundary (i.e. full levels in EC nomenclature)
+  real, public, save,  dimension(KMAX_MID) ::  &
+           B_mid !Unit 1.  second constant, defined at layer boundary (i.e. full levels in EC nomenclature)
+  real, public, save,  dimension(KMAX_MID) ::  &
+           dA !Unit Pa.  A(k+1)-A(k) 
+  real, public, save,  dimension(KMAX_MID) ::  &
+           dB !Unit 1.  B(k+1)-B(k) 
+! P = A + B*PS
+! eta = A/Pref + B
 
   real, public, save,  dimension(KMAX_BND) ::  &
            sigma_bnd ! sigma, layer boundary 
@@ -263,6 +278,19 @@ contains
    enddo
    sigma_bnd(1) = 0.
           
+!TEMPORARY: definition of A and B. Will be read from metfile in the future
+   do k = 1,KMAX_BND
+      A(k)=PT * (1-sigma_bnd(k)) 
+      B(k)=sigma_bnd(k) 
+   enddo
+   do k = 1,KMAX_MID
+      dA(k)=A(k+1)-A(k)
+      dB(k)=B(k+1)-B(k)
+      A_mid(k)=(A(k+1)+A(k))/2.0      
+      B_mid(k)=(B(k+1)+B(k))/2.0
+   enddo
+
+
    !
    !     some conversion coefficients needed for budget calculations
    !

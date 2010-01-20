@@ -52,8 +52,9 @@ use ChemChemicals_ml,        only :  species
   use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use ChemRates_rct_ml,       only :  set_rct_rates, rct
   use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
-  use GridValues_ml,         only :  sigma_mid, xmd, carea, &
-                                     debug_proc, debug_li, debug_lj
+  use GridValues_ml,         only :  sigma_mid, xmd, &
+                                     debug_proc, debug_li, debug_lj,&
+                                     A_mid,B_mid,gridwidth_m,dA,dB
   use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use Met_ml,                only :  roa, th, ps, q, t2_nwp, cc3dmax &
@@ -70,7 +71,7 @@ use ChemChemicals_ml,        only :  species
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
-  use PhysicalConstants_ml,  only :  AVOG, PI
+  use PhysicalConstants_ml,  only :  AVOG, PI, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : &
      xn_2d                &  ! concentration terms
@@ -128,9 +129,8 @@ contains
       ! nb. max function for h2o  used as semi-lagrangian scheme used
       ! in LAM50 (and HIRLAM) often gives negative H2O....   :-(
 
-
-       pp(k) = PT + sigma_mid(k)*(ps(i,j,1) - PT)
-
+       pp(k) = A_mid(k) + B_mid(k)*ps(i,j,1)
+       
        temp(k) = th(i,j,k,1)* Tpot_2_T( pp(k) )
 
        itemp(k) = nint( temp(k) -1.E-9)
@@ -306,11 +306,13 @@ contains
 !Mass Budget calculations
 !   Adding up the emissions in each timestep
 
-   scaling = dt_advec * xmd(i,j) * (ps(i,j,1) - PT)
+
+   scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
 
    do k = KCHEMTOP,KMAX_MID
 
-       scaling_k = scaling * carea(k)/amk(k)
+       
+       scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
 
        do iqrc = 1, NSPEC_ADV
           
