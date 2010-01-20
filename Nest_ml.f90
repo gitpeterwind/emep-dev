@@ -111,19 +111,13 @@ module Nest_ml
   real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,2) :: xn_adv_bnds,xn_adv_bndn !north and south
   real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,2) :: xn_adv_bndw,xn_adv_bnde !west and east
 
-  !4 nearest points from external grid
-  integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
-
-  !weights of the 4 nearest points
-  real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
-  real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
-
-  !dimension of external grid
-  integer,save :: Next,KMAX_ext,GJMAX_ext,GIMAX_ext
+  !dimension of external grid for BC
+  integer,save :: Next_BC,KMAX_ext_BC
 
   integer,save :: itime!itime_saved(2),
   real*8,save :: rtime_saved(2)
-  character*30,save  :: filename_read='EMEP_IN.nc'
+  character*30,save  :: filename_read_BC='EMEP_IN.nc'
+  character*30,save  :: filename_read_3D='EMEP_IN.nc'
   character*30,save  :: filename_write='EMEP_OUT.nc'
   real*8, parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
 
@@ -158,30 +152,30 @@ contains
     if(FORECAST)then ! FORECAST mode superseeds nest MODE
       if(.not. first_call)return
       first_call=.false.
-      inquire(file=filename_read,exist=fexist)
+      inquire(file=filename_read_3D,exist=fexist)
       if(.not. fexist)then
-        if(me==0) print *,'No nest/dump file found: ',trim(filename_read)
+        if(me==0) print *,'No nest/dump file found: ',trim(filename_read_3D)
         return
       end if
       if(me==0)   print *,'RESET ALL XN 3D'
-      call init_nest(ndays_indate)
       call reset_3D(ndays_indate)
       return
     elseif(MODE == 11.or.MODE == 12)then
        if(.not. first_call)return
        first_call=.false.
        if(me==0)   print *,'RESET ALL XN 3D'
-       call init_nest(ndays_indate)
        call reset_3D(ndays_indate)
        return
     else
 !    if(me==0)   print *,'call to READXN',indate%hour,indate%seconds
        if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0)return
     endif
+
+!never comes to this point if MODE=FORECAST, 11 or 12
+
     if(me==0)   print *,'NESTING'
 
     if(first_data==-1)then
-       call init_nest(ndays_indate)
        call reset_3D(ndays_indate)
        call read_newdata_LATERAL(ndays_indate,1)
        call read_newdata_LATERAL(ndays_indate,2)
@@ -213,7 +207,7 @@ contains
 !    if(me==0)write(*,*)'weights : ',W1,W2,rtime_saved(1),rtime_saved(2)
 
     do n=1,NSPEC_ADV
-       do k=1,KMAX_ext
+       do k=1,KMAX_ext_BC
           do i=1,li0-1
              do j=1,ljmax
                 xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
@@ -455,9 +449,15 @@ contains
 55  format(A,I5,A,I4,A,I4,A,I4,A,F10.2)
   end subroutine datefromdayssince1900
 
-  subroutine init_nest(ndays_indate)
+  subroutine init_nest(ndays_indate,filename_read,IIij,JJij,&
+       Weight1,Weight2,Weight3,Weight4,Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
 
     implicit none
+    character(len=*),intent(in) :: filename_read
+    real ,intent(out):: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
+    real ,intent(out):: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
+    integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
+    integer ,intent(out)::Next,KMAX_ext,GIMAX_ext,GJMAX_ext
     real*8 :: ndays_indate,ndays(1)
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
     integer :: nseconds_indate,ndate(4)
@@ -627,14 +627,35 @@ contains
     integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,nseconds_indate,nr
     integer :: nseconds_old
     real*8:: ndays(1),ndays_old
+    logical, save :: first_call=.true.
+
+    !BC values at boundaries in present grid
+    real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,2) :: xn_adv_bnds,xn_adv_bndn !north and south
+    real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,2) :: xn_adv_bndw,xn_adv_bnde !west and east
+
+    !4 nearest points from external grid
+    integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
+    
+    !weights of the 4 nearest points
+    real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
+    real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
+
+    !dimensions of external grid for BC
+    integer, save ::GIMAX_ext,GJMAX_ext
+
+    if(first_call)then
+       first_call=.false.
+       call init_nest(ndays_indate,filename_read_BC,IIij,JJij,&
+            Weight1,Weight2,Weight3,Weight4,Next_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
+    endif
 
     ndays_old=rtime_saved(2)
-    allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
+    allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext_BC), stat=status)
     if(me==0)then
-       call check(nf90_open(path = trim(fileName_read), mode = nf90_nowrite, ncid = ncFileID))
+       call check(nf90_open(path = trim(fileName_read_BC), mode = nf90_nowrite, ncid = ncFileID))
 
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
-       do n=1,Next
+       do n=1,Next_BC
           call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
           if(ndays_indate-ndays(1)<halfsecond)then
              write(*,*)'Using date '
@@ -643,7 +664,7 @@ contains
           endif
        enddo
        write(*,*)'WARNING: did not find correct date'
-       itime=Next
+       itime=Next_BC
        write(*,*)'Using date '
        call datefromdayssince1900(ndate,ndays(1),1)
 876    continue
@@ -657,7 +678,7 @@ contains
        if(nr==2)then
           !store the old values in 1
           rtime_saved(1)=ndays_old
-          do k=1,KMAX_ext
+          do k=1,KMAX_ext_BC
              do i=1,li0-1
                 do j=1,ljmax
                    xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
@@ -686,14 +707,14 @@ contains
           call check(nf90_inq_varid(ncid=ncFileID, name=trim(species(NSPEC_SHL+n)%name), varID=varID))
 
           call check(nf90_get_var(ncFileID, varID, data &
-               ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
+               ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext_BC,1 /) ))
 
        endif
-         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
        !overwrite Global Boundaries (lateral faces)
 
-       do k=1,KMAX_ext
+       do k=1,KMAX_ext_BC
           do i=1,li0-1
              do j=1,ljmax
                 xn_adv_bndw(n,j,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
@@ -730,8 +751,6 @@ contains
        enddo
     enddo
 
-
-
     deallocate(data)
     if(me==0)then
        call check(nf90_close(ncFileID))
@@ -747,10 +766,30 @@ contains
     integer :: nseconds_indate
     integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
     real*8 :: ndays(1)
+    logical, save :: first_call=.true.
 
+    !BC values at boundaries in present grid
+    real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,2) :: xn_adv_bnds,xn_adv_bndn !north and south
+    real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,2) :: xn_adv_bndw,xn_adv_bnde !west and east
+
+    !4 nearest points from external grid
+    integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
+    
+    !weights of the 4 nearest points
+    real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
+    real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
+
+    !dimensions of external grid for 3D
+    integer, save ::Next,KMAX_ext,GIMAX_ext,GJMAX_ext
+
+    if(first_call)then
+       first_call=.false.
+       call init_nest(ndays_indate,filename_read_3D,IIij,JJij,&
+            Weight1,Weight2,Weight3,Weight4,Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
+    endif
     allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
     if(me==0)then
-       call check(nf90_open(path = trim(fileName_read), mode = nf90_nowrite, ncid = ncFileID))
+       call check(nf90_open(path = trim(fileName_read_3D), mode = nf90_nowrite, ncid = ncFileID))
 
        call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
        do n=1,Next
