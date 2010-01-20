@@ -160,7 +160,7 @@ contains
 
          fires_found(iem) = .true.
 
-         call ReadField_CDF('ForestFireEmis.nc',gfed_poll,&
+         call ReadField_CDF('GLOBAL_ForestFireEmis.nc',gfed_poll,&
               rdemis,nstart,'zero_order',.true.)
 
          if ( my_first_call ) then ! Assume NEMIS_FILES for now
