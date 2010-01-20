@@ -567,6 +567,10 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 
 # Emissions setup:
     $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+    my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
+    my $new="Boundary_and_Initial_Conditions.nc";
+    mylink( "BIC: ", $old,$new ) ;
+    $ifile{"$DataDir/femis.dat"} =  "femis.dat";
     $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
               "Boundary_and_Initial_Conditions.nc";
     $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =
