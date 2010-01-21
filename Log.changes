@@ -1,3 +1,12 @@
+xxxxxxxxxxxxxx rv3_5beta4  Dave  Jan 21th 2010
+
+PPM25_Fire added to species, changing CM_ChemSpecs_ml and
+CM_Reactions
+
+SPLITS_JAN10 now used - same as NOV09 version but with forest-fire
+emissions added to country 101, sector 11, in specials file.
+
+
 xxxxxxxxxxxxxx rv3_5beta3  Peter Jan 20th 2010
 
 Changes to prepare for flexible vertical coordinates.

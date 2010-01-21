@@ -549,8 +549,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
           write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
         end if
 
-           do i = 1, nsplit      ! 1st 2 columns are cc, isec:
-              intext(idef,i) = Headers(i+2)
+           do i = 1, nsplit
+              intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
               if(MasterProc) write(*,*) "SPLITINFO iem ", i,idef, intext(idef,i)
               itot = find_index(intext(idef,i), species(:)%name )
               if ( defaults ) then
@@ -579,7 +579,6 @@ READEMIS: do   ! ************* Loop over emislist files *******************
            end do
            if ( MasterProc )  write(6,"(a,i4,a,i4)") "Compare ns: used=", &
                 emis_nsplit(ie), "including any UNREAC:", nsplit
-!        end if
            
         n = 0
 
