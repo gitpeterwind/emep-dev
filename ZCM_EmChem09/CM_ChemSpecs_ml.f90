@@ -9,7 +9,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_ADV = 62 
+   integer, public, parameter ::  NSPEC_ADV = 63 
  
 
 
@@ -82,12 +82,13 @@
   ,  IXADV_ANO3        =  56   &
   ,  IXADV_PPM25       =  57   &
   ,  IXADV_PPMCO       =  58   &
-  ,  IXADV_SSFI        =  59
+  ,  IXADV_PPM25_FIRE  =  59
 
    integer, public, parameter ::   & 
-     IXADV_SSCO        =  60   &
-  ,  IXADV_RN222       =  61   &
-  ,  IXADV_PB210       =  62
+     IXADV_SSFI        =  60   &
+  ,  IXADV_SSCO        =  61   &
+  ,  IXADV_RN222       =  62   &
+  ,  IXADV_PB210       =  63
 
  !-----------------------------------------------------------
   end module ChemSpecs_adv_ml
@@ -139,7 +140,7 @@
 
 !   ( Output from GenChem, sub print_species ) 
 
-   integer, public, parameter ::  NSPEC_TOT = 78 
+   integer, public, parameter ::  NSPEC_TOT = 79 
  
   ! Aerosols:
            integer, public, parameter :: &
@@ -238,10 +239,11 @@
   ,  ANO3        =  72   &
   ,  PPM25       =  73   &
   ,  PPMCO       =  74   &
-  ,  SSFI        =  75   &
-  ,  SSCO        =  76   &
-  ,  RN222       =  77   &
-  ,  PB210       =  78
+  ,  PPM25_FIRE  =  75   &
+  ,  SSFI        =  76   &
+  ,  SSCO        =  77   &
+  ,  RN222       =  78   &
+  ,  PB210       =  79
 
  !-----------------------------------------------------------
   end module ChemSpecs_tot_ml
@@ -347,8 +349,9 @@
        species(NH3) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
        species(ANH4) = Chemical("ANH4        ",  18,  0,  0,   1,  0 ) 
        species(ANO3) = Chemical("ANO3        ",  62,  0,  0,   1,  0 ) 
-       species(PPM25) = Chemical("PPM25       ",  12,  0,  0,   0,  0 ) 
-       species(PPMCO) = Chemical("PPMCO       ",   1,  0,  0,   0,  0 ) 
+       species(PPM25) = Chemical("PPM25       ", 999,  0,  0,   0,  0 ) 
+       species(PPMCO) = Chemical("PPMCO       ", 999,  0,  0,   0,  0 ) 
+       species(PPM25_FIRE) = Chemical("PPM25_FIRE  ", 999,  0,  0,   0,  0 ) 
        species(SSFI) = Chemical("SSFI        ",  58,  0,  0,   0,  0 ) 
        species(SSCO) = Chemical("SSCO        ",  58,  0,  0,   0,  0 ) 
        species(RN222) = Chemical("RN222       ", 222,  0,  0,   0,  0 ) 

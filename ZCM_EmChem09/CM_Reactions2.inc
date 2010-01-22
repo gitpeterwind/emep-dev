@@ -62,6 +62,15 @@
 
       xnew(PPMCO)=  max(0.0,  xold(PPMCO) + dt2 * P)
 
+!-> PPM25_FIRE 
+
+      P =   &
+          RCEMIS(PPM25_FIRE,K) 
+      ! L = 0.0
+ 
+
+      xnew(PPM25_FIRE)=  max(0.0,  xold(PPM25_FIRE) + dt2 * P)
+
 !-> SSFI 
 
       P =   &

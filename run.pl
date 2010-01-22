@@ -8,7 +8,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=64:ib
+#PBS -lnodes=32:ib
 # wall time limit of run
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -131,7 +131,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2005";
+my $year = "2006";
    $year = substr($CWFBASE,0,4) if $CWF;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
@@ -204,7 +204,7 @@ my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 my $Chem     = "EmChem09";        # Label for chemical scheme used
 #$Chem     = "EmChem03c";        # Label for chemical scheme used
-$testv       = "rv3_4";
+$testv       = "rv3_5beta4";
 
 #User directories
 my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -224,7 +224,7 @@ chdir "$ProgDir";
 print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
-my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;
+my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
 my $Africa      = "$DATA_LOCAL/Africa";  # Emissions for Africa, y=1..11
 
 my $timeseries  = "$DataDir";
@@ -312,13 +312,13 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "03";       # first month, use 2-digits!
-my $mm2   =  "03";       # last month, use 2-digits!
+my $mm1   =  "05";       # first month, use 2-digits!
+my $mm2   =  "05";       # last month, use 2-digits!
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 32;       # for testing, simply reset here
+ $NTERM = 8;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
