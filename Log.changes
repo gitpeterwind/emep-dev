@@ -1,3 +1,8 @@
+xxxxxxxxxxxxxx rv3_5beta5  Dave  FEb 3rd 2010
+
+run.pl - Revert to NOV2009 emispslit files, which do not contain PPM25_FIRE.
+Will re-implement fire shortly...
+
 xxxxxxxxxxxxxx rv3_5beta4  Dave  Jan 21th 2010
 
 PPM25_Fire added to species, changing CM_ChemSpecs_ml and

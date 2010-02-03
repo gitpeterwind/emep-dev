@@ -224,7 +224,8 @@ chdir "$ProgDir";
 print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
-my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
+#my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
+my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;
 my $Africa      = "$DATA_LOCAL/Africa";  # Emissions for Africa, y=1..11
 
 my $timeseries  = "$DataDir";
