@@ -37,6 +37,7 @@ module Met_ml
 
 
 
+  use BLPhysics_ml,         only : PZPBL_MAX, RiB_Hmix !TESTING
   use CheckStop_ml,         only : CheckStop
   use Functions_ml,         only : Exner_tab, Exner_nd
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
@@ -47,8 +48,9 @@ module Met_ml
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET &
+       ,KWINDTOP  & ! extent needed for windspeed calcs
        ,IIFULLDOM, JJFULLDOM, NPROC  &
-       ,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
+       ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,nstep
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
@@ -127,6 +129,7 @@ module Met_ml
        ,cc3d    & ! 3-d cloud cover (cc3d),
        ,cc3dmax & ! and maximum for layers above a given layer
        ,lwc     & !liquid water content
+!       ,zm3d    & ! TMP FOR TESTING
        ,sst       ! SST Sea Surface Temprature- ONLY from 2002
 
 
@@ -153,6 +156,8 @@ module Met_ml
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
+  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KWINDTOP:KMAX_MID) :: &
+         windspeed  ! (m/s)
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        surface_precip    & ! Surface precip mm/hr
        ,u_ref !wind speed
@@ -175,7 +180,6 @@ module Met_ml
   logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
 
-  logical, private, parameter ::  MY_DEBUG = .false.
   logical, private, save      ::  debug_proc = .false.
   integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
 
@@ -325,7 +329,7 @@ contains
 
 
 
-    if(me == 0 .and. MY_DEBUG) write(6,*)         			&
+    if(me == 0 .and. DEBUG_MET) write(6,*)         			&
          '*** nyear,nmonth,nday,nhour,numt,nmdays2'    &
          ,next_inptime%year,next_inptime%month,next_inptime%day    &
          ,next_inptime%hour,numt,nmdays(2)
@@ -342,13 +346,13 @@ contains
     if(nrec>Nhh.or.nrec==1) then              ! define a new meteo input file
 56     FORMAT(a5,i4.4,i2.2,i2.2,a3)
        write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-       if(me==0)write(*,*)'reading ',trim(meteoname)
+       if(MasterProc)write(*,*)'reading ',trim(meteoname)
        nrec = 1
        !could open and close file here instead of in Getmeteofield
     endif
 
 
-    if(me==0 .and. MY_DEBUG) write(*,*)'nrec,nhour=',nrec,nhour
+    if(MasterProc .and. DEBUG_MET) write(*,*)'nrec,nhour=',nrec,nhour
 
 
 
@@ -379,7 +383,7 @@ contains
          validity, sdot(:,:,:,nr))
     if(validity==field_not_found)then
        foundsdot = .false.
-       if(me==0)write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
+       if(MasterProc)write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
     else
        foundsdot = .true.
     endif
@@ -403,7 +407,7 @@ contains
 
 
     if(trim(validity)/='averaged')then
-       if(me==0)write(*,*)'WARNING: 3D cloud cover is not averaged'
+       if(MasterProc)write(*,*)'WARNING: 3D cloud cover is not averaged'
     endif
 
 
@@ -427,7 +431,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, rh2m(:,:,nr))
     if(validity==field_not_found)then
-        if(me==0)write(*,*)'WARNING: relative_humidity_2m not found'
+        if(MasterProc)write(*,*)'WARNING: relative_humidity_2m not found'
         rh2m(:,:,nr) = -999.9  ! ?
     else
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
@@ -457,7 +461,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, sst(:,:,nr))
     if(validity==field_not_found)then
-       if(me==0)write(*,*)'WARNING: sea_surface_temperature not found '
+       if(MasterProc)write(*,*)'WARNING: sea_surface_temperature not found '
        foundSST = .false.
     else
        foundSST = .true.
@@ -467,7 +471,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, sdepth(:,:,nr))
     if(validity==field_not_found)then
-       if(me==0)write(*,*)'WARNING: snow depth not found '
+       if(MasterProc)write(*,*)'WARNING: snow depth not found '
        foundsdepth = .false.
     else
        foundsdepth = .true.
@@ -478,7 +482,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, ice(:,:,nr))
     if(validity==field_not_found)then
-       if(me==0)write(*,*)'WARNING: ice coverage (%) not found '
+       if(MasterProc)write(*,*)'WARNING: ice coverage (%) not found '
        foundice = .false.
     else
        foundice = .true.
@@ -525,7 +529,7 @@ contains
     !*********initialize grid parameters*********
 56  FORMAT(a5,i4.4,i2.2,i2.2,a3)
     write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-    if(me==0)write(*,*)'looking for ',trim(meteoname)
+    if(MasterProc)write(*,*)'looking for ',trim(meteoname)
 
 
     call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
@@ -544,7 +548,7 @@ contains
        return
     endif
 
-    if(me==0 .and. MY_DEBUG)then
+    if(MasterProc .and. DEBUG_MET)then
        write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
        write(*,*)'grid resolution:',GRIDWIDTH_M
        write(*,*)'xcoordinate of North Pole, xp:',xp
@@ -682,7 +686,7 @@ contains
              GRIDWIDTH_M = 50000.0 ! =~ 1000.*abs(ident(17))/10.
           else
              GRIDWIDTH_M = 1000.*abs(ident(17))/10.
-             if(me==0 .and. MY_DEBUG)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
+             if(MasterProc .and. DEBUG_MET)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
                   'AN= ',6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M
           endif
 
@@ -691,7 +695,7 @@ contains
              xp = 41.006530761718750 !=~ ident(15)
              yp = 3234.5815429687500 !=~ ident(16)
              fi = 10.50000 ! =~ ident(18)
-             if(me==0 .and. MY_DEBUG)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
+             if(MasterProc .and. DEBUG_MET)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
           endif
           nprognosis = ident(4)
 
@@ -773,7 +777,7 @@ contains
 
           end if  ! numt
 
-          if(me == 0 .and. MY_DEBUG) write(6,*)         			&
+          if(me == 0 .and. DEBUG_MET) write(6,*)         			&
                '*** nyear,nmonth,nday,nhour,numt,nmdays2,nydays'    &
                ,next_inptime%year,next_inptime%month,next_inptime%day    &
                ,next_inptime%hour,numt,nmdays(2),nydays
@@ -1251,7 +1255,7 @@ contains
 
        do i = 1, limax
           do j = 1, ljmax
-             if (MY_DEBUG .and. &
+             if (DEBUG_MET .and. &
                   i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J ) then
                 debug_proc = .true.
                 debug_iloc    = i
@@ -1529,13 +1533,40 @@ contains
     enddo
     !-----------------------------------------------------------------------
 
-    if( MY_DEBUG .and. debug_proc ) then
+    if( DEBUG_MET .and. debug_proc ) then
        write(*,*) "DEBUG meIJ" , me, limax, ljmax
        do k = 1, KMAX_MID
-          write(6,"(a12,2i3,2f12.4)") "DEBUG Z",me, k, &
-               z_bnd(debug_iloc,debug_jloc,k), z_mid(debug_iloc,debug_jloc,k)
+          write(6,"(a12,2i3,3f12.4)") "DEBUG_Z",me, k, &
+            z_bnd(debug_iloc,debug_jloc,k), z_mid(debug_iloc,debug_jloc,k)!,&
+!            zm3d(debug_iloc,debug_jloc,k)
        end do
     end if
+
+! RESULT FROM ONE TEST
+!Tested zm3d (=zm) which is sometimes used against
+!z_mid. Seems almost identical. Diff in exner functions maybe?
+!                   z_bnd        z_mid       zm3d 
+!     DEBUG_Z  2  1  16276.2359  15244.9023  15244.7131
+!     DEBUG_Z  2  2  14319.8682  13536.3354  13531.2981
+!     DEBUG_Z  2  3  12815.7707  12185.9090  12177.9740
+!     DEBUG_Z  2  4  11598.2202  11011.4342  11004.0286
+!     DEBUG_Z  2  5  10461.1309   9792.2354   9788.6193
+!     DEBUG_Z  2  6   9168.4701   8431.0622   8430.8546
+!     DEBUG_Z  2  7   7747.1534   7010.9878   7013.5860
+!     DEBUG_Z  2  8   6324.9278   5696.2857   5700.0226
+!     DEBUG_Z  2  9   5103.2253   4595.6436   4598.2893
+!     DEBUG_Z  2 10   4110.6562   3690.7686   3692.3391
+!     DEBUG_Z  2 11   3286.0770   2933.6493   2934.3594
+!     DEBUG_Z  2 12   2591.8972   2296.1632   2296.2730
+!     DEBUG_Z  2 13   2007.7924   1761.4943   1761.6936
+!     DEBUG_Z  2 14   1520.4434   1316.9528   1317.4565
+!     DEBUG_Z  2 15   1116.9477    950.9995    951.4678
+!     DEBUG_Z  2 16    787.3321    655.5900    655.8842
+!     DEBUG_Z  2 17    525.1633    424.5627    424.7443
+!     DEBUG_Z  2 18    324.8232    253.9725    254.0498
+!     DEBUG_Z  2 19    183.6019    137.4135    137.4284
+!     DEBUG_Z  2 20     91.3017     45.6234     45.6146
+
 
 
 
@@ -1831,7 +1862,7 @@ contains
 
 
     implicit none
-    integer ::i,j
+    integer ::i,j, k
     logical :: DEBUG_DERIV = .false.
 
     do j = 1,ljmax
@@ -1852,6 +1883,31 @@ contains
 
        enddo
     enddo
+
+! Consider simpler alterantive: 
+!          u_mid(i,j,k)=0.5*(u(i-1,j  ,k,nr)+u(i,j,k,nr))
+!          v_mid(i,j,k)=0.5*(v(i  ,j-1,k,nr)+v(i,j,k,nr))
+ 
+    do k = KWINDTOP,KMAX_MID
+    do j = 1,ljmax
+       do i = 1,limax
+          windspeed(i,j,k)=0.25*(&
+               sqrt((0.5*( u(i,j,k,1)*xm_j(i,j)&
+               +u(i-1,j,k,1)*xm_j(i-1,j) ))**2&
+               +( v(i,j,k,1)*xm_i(i,j))**2)&
+               +sqrt((0.5*( u(i,j,k,1)*xm_j(i,j)&
+               +u(i-1,j,k,1)*xm_j(i-1,j) ))**2&
+               +( v(i,j-1,k,1)*xm_i(i,j-1) )**2)&
+               +sqrt(( u(i,j,k,1)*xm_j(i,j) )**2&
+               +(0.5*( v(i,j,k,1)*xm_i(i,j) &
+               +v(i,j-1,k,1)*xm_i(i,j-1) ))**2)&
+               +sqrt((u(i-1,j,k,1)*xm_j(i-1,j) )**2&
+               +(0.5*( v(i,j,k,1)*xm_i(i,j) &
+               +v(i,j-1,k,1)*xm_i(i,j-1) ))**2) )
+
+       enddo
+    enddo
+    end do
 
     ! Tmp ustar solution. May need re-consideration for MM5 etc., but
     ! basic principal should be that fm is interpolated with time, and
@@ -1937,7 +1993,7 @@ contains
           write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
           write(6,*) 'filename for snow ',fname
 
-       endif !me==0
+       endif !MasterProc
 
        needed_found=.not.foundsdepth !needed if not defined through metdata
 
@@ -2190,6 +2246,7 @@ contains
          zimz,zmhs,ux0,fac,fac2,dex12,ro
     real ::h100 ! Top of lowest layer - replaces 100.0
     real ::hsurfl
+real :: tmpHmix
 
     integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp, nr
 
@@ -2286,6 +2343,7 @@ contains
              zm(i,k) = ((exnm(i,j,k)-exns(i,j,k))*zs_bnd(i,j,k+1)&
                   + (exns(i,j,k+1)-exnm(i,j,k))*zs_bnd(i,j,k))&
                   / (exns(i,j,k+1)-exns(i,j,k))
+!             zm3d(i,j,k) = zm(i,k)
           end do
        end do
 
@@ -2567,6 +2625,18 @@ contains
     do j=1,ljmax
        do i=1,limax
           pzpbl(i,j) = zixx(i,j)
+         if( DEBUG_MET .and. debug_proc ) then
+          if ( i == debug_i .and. j == debug_j ) then 
+           ! test alternative calculation from Amela
+            call RiB_Hmix(windspeed(i,j,:), z_mid(i,j,:), th(i,j,:,nr), tmpHmix)
+            write(6,"(a,4i5,3f12.4)") "DEBUG_Hmix: ", &
+              current_date%month,&
+              current_date%day,&
+              current_date%hour,&
+              current_date%seconds,&
+                pzpbl(debug_iloc,debug_jloc),  tmpHmix
+           end if
+         end if
        enddo
     enddo
 
@@ -3497,7 +3567,7 @@ contains
 
     if(ndim==3)KMAX=KMAX_MID
     if(ndim==2)KMAX=1
-    if(me==0)then
+    if(MasterProc)then
        allocate(var_global(GIMAX,GJMAX,KMAX))
        nfetch=1
        call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
@@ -3646,7 +3716,7 @@ contains
     real :: xm_i_max,ndays(1),x1,x2,x3,x4
     character (len = 50) :: timeunit
 
-    if(me==0)then
+    if(MasterProc)then
        !open an existing netcdf dataset
        status = nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
 
@@ -3964,7 +4034,7 @@ contains
        endif
     enddo
 
-    if(me==0 .and. MY_DEBUG)write(*,*)'CYCLICGRID:',Cyclicgrid
+    if(MasterProc .and. DEBUG_MET)write(*,*)'CYCLICGRID:',Cyclicgrid
 
     !complete (extrapolate) along the four lateral sides
     do i=1,GIMAX

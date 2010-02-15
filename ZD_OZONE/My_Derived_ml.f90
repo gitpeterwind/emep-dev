@@ -311,15 +311,17 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-      METCONC_PARAMS = (/ "RH      ", &
-                          "CanopyO3", "VPD     ", "FstO3   "/)
-                          ! "USTAR   ", "INVL    ", 
+    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+      METCONC_PARAMS = (/ "RH      " &
+                         ,"CanopyO3", "VPD     ", "FstO3   " &
+                         ,"USTAR   ", "INVL    "  &
+                       /)
                           ! "g_sto" needs more work - only set as L%g_sto
     integer, public, save :: MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3,  &
            MMC_VPD, MMC_FST
     character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
-      MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
+      MET_LCS  = (/ "GR    " , "CF    ", "IAM_DF", "IAM_MF"/)
+      !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       !MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
       ! Can also set dim 4:1 to exclude all - gives zero size MET_LCS
@@ -330,9 +332,8 @@ private
 
 !----------------------
 ! Less often needed:
-!exc  "D2_CO     ","D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ",
-!exc ,"D2_O3CF   ","D2_O3TC   ","D2_O3GR   ","D2_ACCSU  ",
-!"D2_FRNIT  ","D2_MAXOH  ","D2_HMIX   ","D2_HMIX00 ","D2_HMIX12 " &
+!exc  "D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ","D2_O3TC   ","D2_ACCSU  ",
+!"D2_FRNIT  ","D2_MAXOH  "
 
    !======= MY_DERIVED SYSTEM ======================================
 

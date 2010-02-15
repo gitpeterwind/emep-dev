@@ -97,6 +97,7 @@ module ModelConstants_ml
     ,DEBUG_DERIVED        = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
+    ,DEBUG_MET            = .false. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !
     ,DEBUG_VDS            = .false. & !
@@ -150,6 +151,7 @@ module ModelConstants_ml
   , KMAX_MID     = 20    &    ! Number of points (levels) in vertical
   , KMAX_BND     = KMAX_MID+1 & ! Number of points (levels) in vertical + 1
   , KTOP         = 1     &    ! K-value at top of domain
+  , KWINDTOP     = 5     &    ! Define extent needed for wind-speed array
   , NMET         = 2     &    ! No. met fields in memory
   , KCHEMTOP     = 2     &    ! chemistry not done for k=1
   , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)

@@ -70,7 +70,7 @@ use LandDefs_ml, only : LandDefs !hf CoDep extra
 use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  !dsVDS use Aero_DryDep_ml,    only : Aero_Rb
- use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds, Nemitz2004  !dsVDS FEB2009
+ use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
  use CheckStop_ml, only: CheckStop
  use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
 
@@ -490,13 +490,14 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
                  !/ Use eqn *loosely* derived from Petroff results
 
-                  Vds = GPF_Vds(L%ustar,L%invL, L%SAI )
+                  Vds = GPF_Vds300(L%ustar,L%invL, L%SAI )
 
               else !!!  Vds NOV08
 
-                !/  Use Nemitz et al  for other veg & sea
+                !/  Use Wesely et al  for other veg & sea
 
-                 Vds = Nemitz2004( 0.4, L%ustar, L%invL )
+                 ! Vds = Nemitz2004( 0.4, L%ustar, L%invL )
+                 Vds = Wesely300( L%ustar, L%invL )
 
               end if
 
@@ -508,13 +509,16 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
                  Vg_3m (n) =  Vs(nae)/ ( 1.0 - exp( -( L%Ra_3m  + 1.0/Vds)* Vs(nae)))
 
 
-        if ( DEBUG_VDS .and.  Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ) then
-            print "(a,5i3,2i4,2f7.3,f8.2,20f7.2)", "AEROSTOP", imm, idd, ihh, &
+        if ( DEBUG_VDS ) then
+            if ( debug_flag .or. (Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 )) then
+              print "(a,5i3,2i4,2f7.3,f8.2,20f7.2)", "AEROCHECK", imm, idd, ihh, &
               n, iL, i_fdom(i), j_fdom(j), L%ustar,  L%invL, pzpbl(i,j), &
                 Grid%ustar, Grid%Hd,  100.0*Vds, &
               100.0*Vs(nae), 100.0*Vg_ref(n),  100.0*Vg_3m (n) &
              , Grid%t2, Grid%rho_ref 
-            call CheckStop("AEROSTOP")
+            
+            call CheckStop((Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ), "AEROSTOP")
+          end if
         end if
 
         !FEB2009 Vds ================================================

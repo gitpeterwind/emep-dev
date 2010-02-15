@@ -30,7 +30,8 @@
 
   public  :: SettlingVelocity
   public  :: PetroffFit
-  public  :: GPF_Vds    ! General, loosely based on fits to Petroff...
+  public  :: GPF_VdsZi  ! General, Gallager-Petroff fits (loosely!)
+  public  :: GPF_Vds300 !  "  "
   public  :: WeselyWT
   public  :: Wesely300
   public  :: Gallagher1997
@@ -49,8 +50,10 @@ contains
    !------------------------------------------------------------------------
    function SettlingVelocity(tsK,roa) result(Vs)
     ! gravitational settling for 2 modes
-    ! Equations Axx referred to here are from Appendix A, Binkowski+Shankar,
-    ! JGR, 1995
+    ! Equations Axx referred to here are from Appendix A,
+    !  Binkowski+Shankar, JGR, 1995
+    !  Note confusing notation in B+S, dp was used for diff. coeff.
+    !  here we use Di
 
      real, intent(in) :: tsK, roa ! temp, density
      integer, parameter :: NSIZE = 2  ! TMP - should be elsewhere
@@ -58,12 +61,16 @@ contains
 
    !QUERIES should FREEPATH, VISCO be constants? 
 
+   ! here we use dp=0.33 equivalent to McDonald et al.2007, Table 3 
+   ! data for accumulation mode, background.
+
      real, parameter, dimension(NSIZE) ::   &
-                                       diam   = (/ 0.3e-6, 4.0e-6 /)   &
+                                       !diam   = (/ 0.3e-6, 4.0e-6 /)   &
+                                       diam   = (/ 0.33e-6, 4.0e-6 /)   &
                                      , sigma  = (/ 1.8, 2.0 /)         &
                                      , PMdens = (/ 1600., 2200. /) ! kg/m3
      integer :: imod 
-     real    :: stdlog,sig, dg, knut, & !slip, &
+     real    :: lnsig2, dg, knut, & !slip, &
                   Di1,Di, vind, &
                   stoke, schmidt, &  ! Stoke's and Schmidt numbers
                   vsmo, vs1          ! Settling velocity
@@ -71,19 +78,18 @@ contains
 
     do imod = 1, NSIZE
 
-    stdlog = log(sigma(imod))
-    sig = stdlog * stdlog     ! (log(STD))^2
+        lnsig2 = log(sigma(imod))**2
 
        !... mass median diameter -> geometric diameter 
 
-        dg = exp (log(diam(imod)) - 3.* sig )
+        dg = exp (log(diam(imod)) - 3.* lnsig2 )
 
-        knut = 2.*FREEPATH/dg   ! Knut's number
+        knut = 2.0*FREEPATH/dg   ! Knut's number
 
 !... slip correction coefficient  
-!    slipmo= 1.+ knut*       &               ! for monodisperse
+!	slipmo= 1.+ knut*       &               ! for monodisperse
 !                (1.257+0.4*exp(-1.1* /knut))
-!NOT-USED?    slip =  1.+ 1.246*knut                  ! for polydisperse
+!NOT-USED?	slip =  1.+ 1.246*knut                  ! for polydisperse
 
 !== monodisperse aerosols =====
 !     Dimo =BOLTZMANN*tsK*slipmo/(3*PI*dg *VISCO*roa)        ! diffusion coefficient
@@ -91,13 +97,13 @@ contains
 
 !== polydisperse aerosols (log-normal size distribution) =====
 
-        Di1 =BOLTZMANN*tsK/(3*PI*dg *VISCO *roa)          ! A30, Dpg
+        Di1 =BOLTZMANN*tsK/(3*PI*dg *VISCO *roa)          ! A30, dpg
 
         ! diffusion coefficient:
-        Di = Di1*(exp(-2.5*sig)+1.246*knut*exp(-4.*sig))  ! A29, Dpk 
+        Di = Di1*(exp(-2.5*lnsig2)+1.246*knut*exp(-4.*lnsig2))  ! A29, dpk 
 
         vs1=dg*dg * PMdens(imod)*GRAV/18.0/VISCO/roa          ! A32
-        vs(imod) = vs1*(exp(8.*sig)+1.246*knut*exp(3.5*sig))  ! A31  
+        vs(imod) = vs1*(exp(8.0*lnsig2)+1.246*knut*exp(3.5*lnsig2)) ! A31, k=3
 
      end do !imod
    end function SettlingVelocity
@@ -107,7 +113,7 @@ contains
      ! "Simple" fitting of Petroff et al.
      ! Fig12b suggests  Vd = 0.3 cm/s for u* = 0.45, LAI=22
      ! ->  Vds = 0.007 * u*
-     ! Fig.15 suggests that vds is approx prop to LAI for Dp~0.4um
+     ! Fig.15 suggests that vds is approx prop to LAI for dp~0.4um
      ! We use SAI to keep some winter dep in decid forests
      ! To keep Vds above grassland, we use max(3.0, SAI)
      real, intent(in) :: ustar, invL,SAI
@@ -120,25 +126,45 @@ contains
        end if
    end function PetroffFit
    !------------------------------------------------------------------------
-   function GPF_Vds(ustar,invL,SAI) result(Vds)
-     ! "Simple" fitting of Petroff et al., whcich roughly captures the
-     ! the differences between Speulderbos-type and typical Euro
+   ! GallagherPetrof fits
+   ! Two functions here, for different stability methods
+     ! "Simple" fitting of Gallagher et al. (1997) and Petroff et al., which 
+     ! roughly captures the differences between Speulderbos-type and typical
      ! forests, because of LAI. 
+     ! Gallagher et al. had   Vds/u* = 0.0135 * Dp * stab function
+     ! which gives 0.3 cm/s for neutral conditions, Dp=0.5
+     !
      ! Fig12b suggests  Vd ~ 0.3 cm/s for u* = 0.45, LAI=22
      ! ->  Vds = 0.006 * u*
-     ! Fig.15 suggests that vds is approx prop to LAI for Dp~0.4um
+     ! Fig.15 suggests that vds is approx prop to LAI for dp~0.5um
      ! We use SAI to keep some winter dep in decid forests
      ! As Petroff started with a total LAI of 22, which is ca.
      ! 1-sided LAI=10, SAI=11, so we scale with SAI/11 = 0.09
+     ! 
+     ! We also limit the lowest Vds/u* to be 0.002, consistent with
+     ! Wesely.
+
+   function GPF_VdsZi(ustar,invL,SAI,zi) result(Vds)
+     real, intent(in) :: ustar, invL,SAI, zi
+     real :: Vds
+
+        Vds   = ustar * max( 0.002, 0.006 * 0.1 * SAI )
+
+       if ( invL <  0.0 ) then
+         Vds = Vds * (1.0+(-0.3*zi*max(-0.04, invL))**0.6667)
+       end if
+   end function GPF_VdsZi
+   !------------------------------------------------------------------------
+   function GPF_Vds300(ustar,invL,SAI) result(Vds)
      real, intent(in) :: ustar, invL,SAI
      real :: Vds
 
-        Vds   = max( 0.001, 0.006 * ustar * 0.09 * SAI )
+        Vds   = ustar * max( 0.002, 0.006 * 0.1 * SAI )
 
        if ( invL <  0.0 ) then
          Vds = Vds * (1.0+(-300.0 * max(-0.04,invL))**0.6667)
        end if
-   end function GPF_Vds
+   end function GPF_Vds300
    !------------------------------------------------------------------------
    function Wesely1985(ustar,invL, zi) result(Vds)
      real, intent(in) :: ustar, invL, zi
@@ -147,7 +173,8 @@ contains
         Vds   = 0.002 * ustar  ! from grass
 
        if ( invL <  0.0 ) then
-         Vds = Vds * (1.0+(-0.3*zi*invL)**0.6667)
+         Vds = Vds * (1.0+(-0.3*zi*max(-0.04, invL))**0.6667)
+         !Alt: Vds = Vds * 0.0009 ( -zi*invL)**0.6667
        end if
    end function Wesely1985
    !------------------------------------------------------------------------
@@ -198,22 +225,22 @@ contains
         end if
    end function RuijgrokWetSO4
    !------------------------------------------------------------------------
-   function Nemitz2004(Dp,ustar,invL) result(Vds)
-     real, intent(in) :: Dp, ustar, invL
+   function Nemitz2004(dp,ustar,invL) result(Vds)
+     real, intent(in) :: dp, ustar, invL
      real :: Vds
 
         Vds = 0.001*ustar 
 
         if ( invL < 0.0 ) then
-           Vds = Vds *( 1+( -(960*Dp-88.0)*invL )**0.6667)
+           Vds = Vds *( 1+( -(960*dp-88.0)*invL )**0.6667)
         end if
    end function Nemitz2004 
    !------------------------------------------------------------------------
-   function Gallagher1997(Dp,ustar,invL) result(Vds)
-     real, intent(in) :: Dp, ustar, invL
+   function Gallagher1997(dp,ustar,invL) result(Vds)
+     real, intent(in) :: dp, ustar, invL
      real :: Vds
 
-        Vds = 0.0135 * ustar * Dp 
+        Vds = 0.0135 * ustar * dp 
 
         if ( invL < 0.0 ) then
            Vds = Vds * (1.0+(-300*invL)**0.6667 )
@@ -225,7 +252,18 @@ contains
      real :: Vds
      real :: k1, k2
 
-     k1 = 0.001222 * log(z0) + 0.003906 
+     !if( log(z0) > 0.0 ) then ! z0 > ~0.04 m
+     !if( log10(z0) > 0.0 ) then ! z0 > ~0.04 m
+       !k1 = 0.001222 * log(z0) + 0.003906 
+       k1 = 0.001222 * log10(z0) + 0.003906  ! Eqn (13)
+
+     ! This equation has negative solutions. We set
+     ! a small min value,  consistent wth 0.2 m/s from G02, Fig
+     ! and u* = 0.5 m/s.
+       k1 = min( 0.0004, k1)
+     !else
+     !  k1 = 0.001222
+     !end if
      k2 = 0.0009
 
         if ( invL < 0.0 ) then
@@ -235,22 +273,22 @@ contains
            Vds = ustar * k1
         end if
    end function Gallagher2002
-   !-- ----------------------------------------------------------------------
-   function GallagherWT(Dp,ustar,invL, zi) result(Vds)
+   !------------------------------------------------------------------------
+   function GallagherWT(dp,ustar,invL, zi) result(Vds)
      ! Same as Gallagher1997, but with Wesely's zi form of
      ! stability correction, and 1/L limit
-     real, intent(in) :: Dp, ustar, invL,  zi
+     real, intent(in) :: dp, ustar, invL,  zi
      real :: Vds
 
-        Vds = 0.0135 * ustar * Dp 
+        Vds = 0.0135 * ustar * dp 
 
         if ( invL < 0.0 ) then
           Vds = Vds * (1.0+(-0.3*zi*max(-0.04,invL))**0.6667)
         end if
    end function GallagherWT
    !-- ----------------------------------------------------------------------
-!TMP   function McDonaldForest(DpMed,ustar) result(Vds)
-!TMP     real, intent(in) :: DpMed, ustar
+!TMP   function McDonaldForest(dpMed,ustar) result(Vds)
+!TMP     real, intent(in) :: dpMed, ustar
 !TMP     real :: Vds
 !TMP     real :: X
 !TMP     integer :: i
@@ -258,7 +296,7 @@ contains
 !TMP     a = (/ 0.0000614,0.0012994,0.0023525, &
 !TMP                                -0.0647616,-0.0794396,1.2454391,3.8075140 /)
 !TMP     Vds = a(7)
-!TMP     X = log(DpMed)
+!TMP     X = log(dpMed)
 !TMP     do i = 1, 6
 !TMP         Vds = Vds + a(7-i) * X**i
 !TMP     end do 
@@ -284,11 +322,11 @@ end module Aero_Vds_ml
 !TMP!// Stokes and Schmidt numbers:
 !TMP
 !TMP   ! == monodisperse ======
-!TMP    ! STmo=vsmo*ustar*ustar/VISCO/GRAV
-!TMP    ! SCmo=VISCO/dimo
+!TMP	! STmo=vsmo*ustar*ustar/VISCO/GRAV
+!TMP	! SCmo=VISCO/dimo
 !TMP   ! == polydisperse ======
-!TMP     schmidt = VISCO/Di              ! Schmidt number
-!TMP     stoke = vs(imod)*ustar*ustar/VISCO/GRAV ! Stoke number(based on depth 
+!TMP	 schmidt = VISCO/Di              ! Schmidt number
+!TMP	 stoke = vs(imod)*ustar*ustar/VISCO/GRAV ! Stoke number(based on depth 
 !TMP                                              ! of laminar layer)
 !TMP
 !TMP !// collection efficiency  =======================
@@ -301,7 +339,7 @@ end module Aero_Vds_ml
 !TMP
 !TMP      if( LandType(lu)%is_water )    then !//===  WATER surface  ( Slinn & Slinn, 1980 ) =
 !TMP
-!TMP             coleff= ustar / (KARMAN * vind) *      &          ! polydisperse
+!TMP      	   coleff= ustar / (KARMAN * vind) *      &          ! polydisperse
 !TMP                  (exp(-0.5*log(schmidt)) + exp(-3./stoke*log10) )   
 !TMP
 !TMP      elseif ( LandType(lu)%is_conif )  then !//===  CONIFEROUS ==============

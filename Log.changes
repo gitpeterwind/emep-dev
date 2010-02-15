@@ -1,3 +1,19 @@
+xxxxxxxxxxxxxx rv3_5  Dave  Feb 15th 2010
+
+Dry deposition finally settles down .., so I stop the beta's and move
+straighy to rv3_5.
+
+New module:
+
+BLPhysics_ml.f90 ---  Intended as a place to put calculation of Hmix, Kz, etc.
+  Will move more of tiphys here in future. Currently the model contains some
+  code for testing Amela's Hmix ideas. Not used except in DEBUG mode.
+
+AeroVds
+
+  - Now use GPF_Vds300f for forests and Wesely300 for other land-classes.
+    Hopefully a reasonable and consistent set of Vds for PM2.5 calculations
+
 xxxxxxxxxxxxxx rv3_5beta5  Dave  FEb 3rd 2010
 
 run.pl - Revert to NOV2009 emispslit files, which do not contain PPM25_FIRE.

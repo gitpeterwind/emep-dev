@@ -453,12 +453,12 @@ call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
 ! NOT YET: Scale pressure by 0.01 to get hPa
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,-99, 0.0,   1.0 , 0.0,  T,  F , T,   T, T, T , -999)
-!call AddDef( "HMIX  ",T,  0 ,       1.0,     0.0,  T , F, T, T, T ,"D2_HMIX","m")
+
 call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
                -99,  -99,-99, 0.0,   1.0,  0.0,  T, T , F, T, T, T ,-999)
 !call AddDef( "HMIX00",T,  0 ,       1.0,  0.0,  T , F, T, T, T ,"D2_HMIX00","m")
 !call AddDef( "HMIX12",T,  0 ,       1.0,  0.0,  T , F, T, T, T ,"D2_HMIX12","m")
-!DONEcall AddDef( "USTAR_NWP",T,  0 ,    1.0, T , F, T, T, T ,"USTAR_NWP","m/s")
+
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
                -99,  -99,-99, 0.0,   1.0, 0.0,   T, T , F, T, T, T ,-999)
 
