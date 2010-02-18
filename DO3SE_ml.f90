@@ -67,7 +67,7 @@ module DO3SE_ml
      character(len=15) :: name
      real:: g_max           ! max. value conductance g_s
      real:: f_min           ! min. value Conductance, factor
-     real:: f_phen_a        ! f_phen a  (v. start of season
+     real:: f_phen_a        ! f_phen a  (very start of season
      real:: f_phen_b        ! f_phen b
      real:: f_phen_c        ! f_phen c
      real:: f_phen_d        ! f_phen d

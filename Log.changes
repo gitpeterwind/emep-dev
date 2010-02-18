@@ -1,3 +1,14 @@
+xxxxxxxxxxxxxx rv3_5_1  Dave  Feb 18th 2010
+
+My_DryDep_ml -- Bug-fix!! (first_vgr_call didn't work as expected)
+
+And renaming of wind fields to u_xmj, v_xmi
+(Peter's suggestion - these have not really physical meaning, they are actually divided by the mapping factor in the perpendicular direction).
+
+NOTE: The many-year old problem with Ri being calculated with the wrong winds is
+still not corrected. I've added some !WAIT marks to relevent bits of the code to
+help remind about this.....
+
 xxxxxxxxxxxxxx rv3_5  Dave  Feb 15th 2010
 
 Dry deposition finally settles down .., so I stop the beta's and move

@@ -228,7 +228,7 @@ contains
      !character(len=len(MosaicOutput(1)%subclass)) :: subclass
      character(len=12) :: subclass
      logical :: my_first_call = .true.
-     logical :: first_vgr_call     ! reset each subroutine call
+     !buggy logical :: first_vgr_call     ! reset each subroutine call
 
      real, parameter  :: NMOLE_M3 = 1.0e6*1.0e9/AVOG  ! Converts from 
                                                       ! mol/cm3 to nmole/m3
@@ -278,7 +278,7 @@ contains
 
     ! Ecosystem depositions, for grouped or individual species:
 
-     first_vgr_call = .true.
+     !buggy first_vgr_call = .true.
      do imc = 1, nMosaic
         subclass = MosaicOutput(imc)%subclass
         f2d      = MosaicOutput(imc)%f2d
@@ -393,12 +393,12 @@ contains
 
         case ( "VG", "Rs ", "Rns", "Gns" ) ! could we use RG_LABELS? 
 
-           if ( first_vgr_call ) then ! We pre-calculate some dep-related stuff
+           !buggy if ( first_vgr_call ) then ! We pre-calculate some dep-related stuff
              cdep = DepAdv2Calc( nadv ) ! Convert e.g. IXADV_O3
              Gs   = GsLU( cdep, MosaicOutput(imc)%LC )
              Gns  = GnsLU( cdep, MosaicOutput(imc)%LC )
-           end if
-           first_vgr_call = .false.
+           !buggy end if
+           !buggy first_vgr_call = .false.
 
            !It is easy to make mistakes with Vg, so we have som extra checks
            !here

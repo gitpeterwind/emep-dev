@@ -59,7 +59,7 @@ use ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PPM25, PPMCO &
                               ,SSfi, SSco  !SeaS
 use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
-                              , z_bnd, z_mid, roa, xksig, u, v, ps, q
+                              , z_bnd, z_mid, roa, xksig, u_xmj, v_xmi, ps, q
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
                               ,KMAX_BND,PT,ATWAIR, NPROC &
                               ,DomainName, RUNDOMAIN, IOU_INST  
@@ -598,12 +598,12 @@ end subroutine siteswrt_surf
             out(nn+1:nn+NLEVELS_SONDE,i) =  th(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
 
           case ( "U" ) 
-            out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( u(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
-                                            +u(ix-1,iy,KMAX_MID:KTOP_SONDE:-1,1) )
+            out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( u_xmj(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
+                                            +u_xmj(ix-1,iy,KMAX_MID:KTOP_SONDE:-1,1) )
 
           case ( "V" ) 
-            out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( v(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
-                                            +v(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
+            out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( v_xmi(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
+                                            +v_xmi(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
 
           case ( "D3D" )    
             d3index                 = SONDE_XTRA_INDEX(ispec)

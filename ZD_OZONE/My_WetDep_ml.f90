@@ -73,7 +73,7 @@ contains
 
   subroutine Init_WetDep()
 
-  !/ INCLOUDFAC is A/v where A is 5.2 m3 kg-1 s-1, !  and v is the fallspeed (5 m/s). 
+  !/ INCLOUDFAC is A/v_xmi where A is 5.2 m3 kg-1 s-1, !  and v_xmi is the fallspeed (5 m/s). 
     real, parameter ::  FALLSPEED = 5.0                            ! m/s 
     real, parameter ::  SUBCLFAC = 5.2 / FALLSPEED
 

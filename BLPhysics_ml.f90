@@ -129,7 +129,7 @@ end subroutine RiB_Hmix
 !!      method with critical value of Ric=0.25
 !
 !            do k=KMAX_MID,2,-1
-!               ri(i,j,k) = risig1(u(i,j,k-1,nr), v(i,j,k-1,nr), &
+!               ri(i,j,k) = risig1(u_xmj(i,j,k-1,nr), v_xmi(i,j,k-1,nr), &
 !                              th(i,j,KMAX_MID,nr), th(i,j,k-1,nr), &
 !                              zm(i,j,k-1))
 !               if(ri(i,j,k) >= ric) then

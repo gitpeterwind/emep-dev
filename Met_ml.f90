@@ -48,7 +48,7 @@ module Met_ml
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET &
-       ,KWINDTOP  & ! extent needed for windspeed calcs
+!skip       ,KWINDTOP  & ! extent needed for windspeed calcs
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,nstep
@@ -114,8 +114,10 @@ module Met_ml
   !   Two sets of Met. fields are read in, and a linear interpolation is made
   !   between these two points in time. NMET  == 2 (two points in time)
   !
-  real,public, save, dimension(0:MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u  ! m/s
-  real,public, save, dimension(MAXLIMAX,0:MAXLJMAX,KMAX_MID,NMET) :: v  ! m/s
+  real,public, save, dimension(0:MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u_xmj  ! m/s
+  real,public, save, dimension(MAXLIMAX,0:MAXLJMAX,KMAX_MID,NMET) :: v_xmi  ! m/s
+!WAIT  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u_mid  ! m/s
+!WAIT  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: v_mid  ! m/s
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! 1/s
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
@@ -156,8 +158,8 @@ module Met_ml
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KWINDTOP:KMAX_MID) :: &
-         windspeed  ! (m/s)
+!skip  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KWINDTOP:KMAX_MID) :: &
+!skip         windspeed  ! (m/s)
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        surface_precip    & ! Surface precip mm/hr
        ,u_ref !wind speed
@@ -183,7 +185,7 @@ module Met_ml
   logical, private, save      ::  debug_proc = .false.
   integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
 
-  logical, public, save :: foundustar  ! Used for MM5-type, where u* but
+  logical, public, save :: foundustar  ! Used for MM5-type, where u_xmj* but
   ! not tau
   logical, public, save :: foundsdot   ! If not found: compute using
   ! divergence=0
@@ -359,18 +361,18 @@ contains
     ! 3D fields (i,j,k)
     ndim=3
 
-    !note that u and v have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX
-    !u(i=0) and v(j=0) are set in metvar
+    !note that u_xmj and v_xmi have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX
+    !u_xmj(i=0) and v_xmi(j=0) are set in metvar
 
     namefield='u_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,     &
-         validity,u(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+         validity,u_xmj(1:MAXLIMAX,1:MAXLJMAX,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
 
     namefield='v_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity,v(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+         validity,v_xmi(1:MAXLIMAX,1:MAXLJMAX,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='specific_humidity'
@@ -607,7 +609,7 @@ contains
     !    read from field-files:
 
     !
-    !    u(2),v(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
+    !    u_xmj(2),v_xmi(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
     !    ps(8),t2_nwp(31),fh(36),fl(37),tau(38),ustar(53),trw(845), sst(103)
     !  Meteorology available from year 2002 in EMEP files:
     !       rh2m(32), SWC(85, first 7.2cm),
@@ -621,8 +623,8 @@ contains
     nr=2
     if(numt == 1)then
        nr = 1
-       u  = 0.0
-       v  = 0.0
+       u_xmj  = 0.0
+       v_xmi  = 0.0
     endif
 
 
@@ -796,7 +798,7 @@ contains
 
           do j = 1,ljmax
              do i = 1,limax
-                u(i,j,k,nr) = dumhel(i,j)-1.E-9    ! the "-1.E-9" is included
+                u_xmj(i,j,k,nr) = dumhel(i,j)-1.E-9    ! the "-1.E-9" is included
                 ! in order to avoid possible
                 ! different roundings on
                 ! different machines.
@@ -811,7 +813,7 @@ contains
 
           do j = 1,ljmax
              do i = 1,limax
-                v(i,j,k,nr) = dumhel(i,j)-1.E-9   ! the "-1.E-9" is included
+                v_xmi(i,j,k,nr) = dumhel(i,j)-1.E-9   ! the "-1.E-9" is included
                 ! in order to avoid possible
                 ! different roundings on
                 ! different machines.
@@ -1275,7 +1277,7 @@ contains
     if (neighbor(EAST) .ne. NOPROC) then
        do k = 1,KMAX_MID
           do j = 1,ljmax
-             usnd(j,k) = u(limax,j,k,nr)
+             usnd(j,k) = u_xmj(limax,j,k,nr)
           enddo
        enddo
 !       CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
@@ -1290,7 +1292,7 @@ contains
     if (neighbor(NORTH) .ne. NOPROC) then
        do k = 1,KMAX_MID
           do i = 1,limax
-             vsnd(i,k) = v(i,ljmax,k,nr)
+             vsnd(i,k) = v_xmi(i,ljmax,k,nr)
           enddo
        enddo
 !       CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
@@ -1311,7 +1313,7 @@ contains
             neighbor(WEST), MSG_WEST2, MPI_COMM_WORLD, MPISTATUS, INFO)
        do k = 1,KMAX_MID
       do j = 1,ljmax
-             u(0,j,k,nr) = urcv(j,k)
+             u_xmj(0,j,k,nr) = urcv(j,k)
           enddo
        enddo
 
@@ -1319,7 +1321,7 @@ contains
 
        do k = 1,KMAX_MID
           do j = 1,ljmax
-             u(0,j,k,nr) = u(1,j,k,nr)
+             u_xmj(0,j,k,nr) = u_xmj(1,j,k,nr)
           enddo
        enddo
 
@@ -1334,7 +1336,7 @@ contains
             neighbor(SOUTH), MSG_SOUTH2, MPI_COMM_WORLD, MPISTATUS, INFO)
        do k = 1,KMAX_MID
           do i = 1,limax
-             v(i,0,k,nr) = vrcv(i,k)
+             v_xmi(i,0,k,nr) = vrcv(i,k)
           enddo
        enddo
 
@@ -1343,14 +1345,14 @@ contains
        if(Poles(2)/=1)  then
           do k = 1,KMAX_MID
              do i = 1,limax
-                v(i,0,k,nr) = v(i,1,k,nr)
+                v_xmi(i,0,k,nr) = v_xmi(i,1,k,nr)
              enddo
           enddo
        else
           !"close" the South pole
           do k = 1,KMAX_MID
              do i = 1,limax
-                v(i,0,k,nr) = 0.0
+                v_xmi(i,0,k,nr) = 0.0
              enddo
           enddo
        endif
@@ -1364,7 +1366,7 @@ contains
        !"close" the North pole
        do k = 1,KMAX_MID
           do i = 1,limax
-             v(i,ljmax,k,nr) = 0.0
+             v_xmi(i,ljmax,k,nr) = 0.0
           enddo
        enddo
     endif
@@ -1397,8 +1399,8 @@ contains
 
           rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) )
 
-          !     For MM5 we get u*, not tau. Since it seems better to
-          !     interpolate tau than u*  between time-steps we convert
+          !     For MM5 we get u_xmj*, not tau. Since it seems better to
+          !     interpolate tau than u_xmj*  between time-steps we convert
 
           if ( foundustar) then
              tau(i,j,nr)    = ustar_nwp(i,j)*ustar_nwp(i,j)* rho_surf(i,j)
@@ -1570,24 +1572,36 @@ contains
 
 
 
+! Calculate mid-cell wind-fields, befopre map-factor scaling is applied
+! Consider simpler alterantive: 
+!WAIT    do k = 1,KMAX_MID
+!WAIT       do j = 1,ljmax
+!WAIT          do i = 1,limax
+!WAIT          u_mid(i,j,k,n)=0.5*(u_xmj(i-1,j  ,k,nr)+u_xmj(i,j,k,nr))
+!WAIT          v_mid(i,j,k,n)=0.5*(v_xmi(i  ,j-1,k,nr)+v_xmi(i,j,k,nr))
+!WAIT! Or
+!WAIT!          v_mid(i,j,k)=0.5*(v_xmi(i-1,j  ,k,nr)+v_xmi(i,j,k,nr)) ! from HIRLAM manual
+!WAIT          end do
+!WAIT       end do
+!WAIT    end do
 
     !     Horizontal velocity divided by map-factor.
 
     do k = 1,KMAX_MID
        do j = 1,ljmax
           do i = 0,limax
-             u(i,j,k,nr) = u(i,j,k,nr)/xm_j(i,j)
+             u_xmj(i,j,k,nr) = u_xmj(i,j,k,nr)/xm_j(i,j)
 
-             !divide by the scaling in the perpendicular direction to get effective u
+             !divide by the scaling in the perpendicular direction to get effective u_xmj
              !(for conformal projections like Polar Stereo, xm_i and xm_j are equal)
 
       enddo
        enddo
        do j = 0,ljmax
           do i = 1,limax
-             v(i,j,k,nr) = v(i,j,k,nr)/xm_i(i,j)
+             v_xmi(i,j,k,nr) = v_xmi(i,j,k,nr)/xm_i(i,j)
 
-             !  divide by the scaling in the perpendicular direction to get effective v
+             !  divide by the scaling in the perpendicular direction to get effective v_xmi
           enddo
        enddo
     enddo
@@ -1701,7 +1715,7 @@ contains
     endif
 
 
-!note that u and v have already been divided by xm here
+!note that u_xmj and v_xmi have already been divided by xm here
        do j = 1,ljmax
           do i = 1,limax
              Pmid=Ps_extended(i,j)-PT
@@ -1714,8 +1728,8 @@ contains
              sdot(i,j,1,nr)=0.0
              sumdiv=0.0
              do k=1,KMAX_MID
-                divk(k)=((u(i,j,k,nr)*Pu2-u(i-1,j,k,nr)*Pu1)            &
-                     + (v(i,j,k,nr)*Pv2-v(i,j-1,k,nr)*Pv1))            &
+                divk(k)=((u_xmj(i,j,k,nr)*Pu2-u_xmj(i-1,j,k,nr)*Pu1)            &
+                     + (v_xmi(i,j,k,nr)*Pv2-v_xmi(i,j-1,k,nr)*Pv1))            &
                      * xm2(i,j)*(sigma_bnd(k+1)-sigma_bnd(k))  &
                      / GRIDWIDTH_M/Pmid
                 sumdiv=sumdiv+divk(k)
@@ -1758,10 +1772,10 @@ contains
 
        div = 1./real(nmax-(nstep-1))
 
-       u(:,:,:,1)    = u(:,:,:,1)         		&
-            + (u(:,:,:,2) - u(:,:,:,1))*div
-       v(:,:,:,1)    = v(:,:,:,1)         		&
-            + (v(:,:,:,2) - v(:,:,:,1))*div
+       u_xmj(:,:,:,1)    = u_xmj(:,:,:,1)         		&
+            + (u_xmj(:,:,:,2) - u_xmj(:,:,:,1))*div
+       v_xmi(:,:,:,1)    = v_xmi(:,:,:,1)         		&
+            + (v_xmi(:,:,:,2) - v_xmi(:,:,:,1))*div
        sdot(:,:,:,1) = sdot(:,:,:,1)         	&
             + (sdot(:,:,:,2) - sdot(:,:,:,1))*div
        th(:,:,:,1)   = th(:,:,:,1)         		&
@@ -1807,8 +1821,8 @@ contains
        !     assign the the meteorological data at time-level 2 to level 1 for
        !     the next 6 hours integration period before leaving the inner loop.
 
-       u(:,:,:,1)    = u(:,:,:,2)
-       v(:,:,:,1)    = v(:,:,:,2)
+       u_xmj(:,:,:,1)    = u_xmj(:,:,:,2)
+       v_xmi(:,:,:,1)    = v_xmi(:,:,:,2)
        sdot(:,:,:,1) = sdot(:,:,:,2)
        th(:,:,:,1)   = th(:,:,:,2)
        q(:,:,:,1)    = q(:,:,:,2)
@@ -1857,7 +1871,7 @@ contains
     ! in metint.
 
     !horizontal wind speed (averaged over the four edges)
-    !Note that u and v are wind velocities divided by xm
+    !Note that u_xmj and v_xmi are wind velocities divided by xm
     !At present u_ref is defined at KMAX_MID
 
 
@@ -1865,49 +1879,50 @@ contains
     integer ::i,j, k
     logical :: DEBUG_DERIV = .false.
 
+!WAIT - needs correcting!
     do j = 1,ljmax
        do i = 1,limax
           u_ref(i,j)=0.25*(&
-               sqrt((0.5*( u(i,j,KMAX_MID,1)*xm_j(i,j)&
-               +u(i-1,j,KMAX_MID,1)*xm_j(i-1,j) ))**2&
-               +( v(i,j,KMAX_MID,1)*xm_i(i,j))**2)&
-               +sqrt((0.5*( u(i,j,KMAX_MID,1)*xm_j(i,j)&
-               +u(i-1,j,KMAX_MID,1)*xm_j(i-1,j) ))**2&
-               +( v(i,j-1,KMAX_MID,1)*xm_i(i,j-1) )**2)&
-               +sqrt(( u(i,j,KMAX_MID,1)*xm_j(i,j) )**2&
-               +(0.5*( v(i,j,KMAX_MID,1)*xm_i(i,j) &
-               +v(i,j-1,KMAX_MID,1)*xm_i(i,j-1) ))**2)&
-               +sqrt((u(i-1,j,KMAX_MID,1)*xm_j(i-1,j) )**2&
-               +(0.5*( v(i,j,KMAX_MID,1)*xm_i(i,j) &
-               +v(i,j-1,KMAX_MID,1)*xm_i(i,j-1) ))**2) )
+               sqrt((0.5*( u_xmj(i,j,KMAX_MID,1)*xm_j(i,j)&
+               +u_xmj(i-1,j,KMAX_MID,1)*xm_j(i-1,j) ))**2&
+               +( v_xmi(i,j,KMAX_MID,1)*xm_i(i,j))**2)&
+               +sqrt((0.5*( u_xmj(i,j,KMAX_MID,1)*xm_j(i,j)&
+               +u_xmj(i-1,j,KMAX_MID,1)*xm_j(i-1,j) ))**2&
+               +( v_xmi(i,j-1,KMAX_MID,1)*xm_i(i,j-1) )**2)&
+               +sqrt(( u_xmj(i,j,KMAX_MID,1)*xm_j(i,j) )**2&
+               +(0.5*( v_xmi(i,j,KMAX_MID,1)*xm_i(i,j) &
+               +v_xmi(i,j-1,KMAX_MID,1)*xm_i(i,j-1) ))**2)&
+               +sqrt((u_xmj(i-1,j,KMAX_MID,1)*xm_j(i-1,j) )**2&
+               +(0.5*( v_xmi(i,j,KMAX_MID,1)*xm_i(i,j) &
+               +v_xmi(i,j-1,KMAX_MID,1)*xm_i(i,j-1) ))**2) )
 
        enddo
     enddo
 
 ! Consider simpler alterantive: 
-!          u_mid(i,j,k)=0.5*(u(i-1,j  ,k,nr)+u(i,j,k,nr))
-!          v_mid(i,j,k)=0.5*(v(i  ,j-1,k,nr)+v(i,j,k,nr))
+!          u_mid(i,j,k)=0.5*(u_xmj(i-1,j  ,k,nr)+u_xmj(i,j,k,nr))
+!          v_mid(i,j,k)=0.5*(v_xmi(i  ,j-1,k,nr)+v_xmi(i,j,k,nr))
  
-    do k = KWINDTOP,KMAX_MID
-    do j = 1,ljmax
-       do i = 1,limax
-          windspeed(i,j,k)=0.25*(&
-               sqrt((0.5*( u(i,j,k,1)*xm_j(i,j)&
-               +u(i-1,j,k,1)*xm_j(i-1,j) ))**2&
-               +( v(i,j,k,1)*xm_i(i,j))**2)&
-               +sqrt((0.5*( u(i,j,k,1)*xm_j(i,j)&
-               +u(i-1,j,k,1)*xm_j(i-1,j) ))**2&
-               +( v(i,j-1,k,1)*xm_i(i,j-1) )**2)&
-               +sqrt(( u(i,j,k,1)*xm_j(i,j) )**2&
-               +(0.5*( v(i,j,k,1)*xm_i(i,j) &
-               +v(i,j-1,k,1)*xm_i(i,j-1) ))**2)&
-               +sqrt((u(i-1,j,k,1)*xm_j(i-1,j) )**2&
-               +(0.5*( v(i,j,k,1)*xm_i(i,j) &
-               +v(i,j-1,k,1)*xm_i(i,j-1) ))**2) )
-
-       enddo
-    enddo
-    end do
+!skip    do k = KWINDTOP,KMAX_MID
+!skip    do j = 1,ljmax
+!skip       do i = 1,limax
+!skip          windspeed(i,j,k)=0.25*(&
+!skip               sqrt((0.5*( u_xmj(i,j,k,1)*xm_j(i,j)&
+!skip               +u_xmj(i-1,j,k,1)*xm_j(i-1,j) ))**2&
+!skip               +( v_xmi(i,j,k,1)*xm_i(i,j))**2)&
+!skip               +sqrt((0.5*( u_xmj(i,j,k,1)*xm_j(i,j)&
+!skip               +u_xmj(i-1,j,k,1)*xm_j(i-1,j) ))**2&
+!skip               +( v_xmi(i,j-1,k,1)*xm_i(i,j-1) )**2)&
+!skip               +sqrt(( u_xmj(i,j,k,1)*xm_j(i,j) )**2&
+!skip               +(0.5*( v_xmi(i,j,k,1)*xm_i(i,j) &
+!skip               +v_xmi(i,j-1,k,1)*xm_i(i,j-1) ))**2)&
+!skip               +sqrt((u_xmj(i-1,j,k,1)*xm_j(i-1,j) )**2&
+!skip               +(0.5*( v_xmi(i,j,k,1)*xm_i(i,j) &
+!skip               +v_xmi(i,j-1,k,1)*xm_i(i,j-1) ))**2) )
+!skip
+!skip       enddo
+!skip    enddo
+!skip    end do
 
     ! Tmp ustar solution. May need re-consideration for MM5 etc., but
     ! basic principal should be that fm is interpolated with time, and
@@ -2126,10 +2141,10 @@ contains
     !c    trc    : helping variable telling whether or not unstable ABL exists
     !!              :       0 => no need for further calc. of ziu
     !!              :       1 => ziu not found yet.
-    !c    u    : wind speed in the x-direction, m/s
-    !c       umax    : maximum value of u and v, m/s
+    !c    u_xmj    : wind speed in the x-direction, m/s
+    !c       umax    : maximum value of u_xmj and v_xmi, m/s
     !c    ustar    : friction velocity, m/s
-    !c    v    : wind speed in the y-direction, m/s
+    !c    v_xmi    : wind speed in the y-direction, m/s
     !c       ven     : ventilation coefficient, m3
     !c       venav   : time averaged ventilation coefficient, m3
     !c       venmax  : maximum value of ven, m3
@@ -2178,25 +2193,25 @@ contains
     !c    sigma_bnd(1) = 0 - -sigmas - - - - - sdot(1) = 0, xksig(1)=xksm(1)=0,
     !!                                           pr(1)=0,PT,exns(1), zs_bnd(1)
     !c
-    !c        sigma_mid(1) ---sigmam---------- u, v, th, q, cw, exnm (1)
+    !c        sigma_mid(1) ---sigmam---------- u_xmj, v_xmi, th, q, cw, exnm (1)
     !c
     !c
     !c        sigma_bnd(2) - - - - s - - - - - sdot(2), xksig(2), exns(2), pr(2)
     !!                                                 zs_bnd(2), xksm(2)
     !c
-    !c        sigma_mid(2) --------m---------- u, v, th, q, cw, exnm (2)
+    !c        sigma_mid(2) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (2)
     !c
     !c
     !c        sigma_bnd(3) - - - - s - - - - - sdot(3), xksig(3), exns(3), pr(3)
     !!                                                 zs_bnd(3), xksm(3)
     !c
-    !c        sigma_mid(3) --------m---------- u, v, th, q, cw, exnm (3)
+    !c        sigma_mid(3) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (3)
     !c
     !c
     !c        sigma_bnd(4) - - - - s - - - - - sdot(4), xksig(4), exns(4), pr(4)
     !!                                                  zs_bnd(4), xksm(4)
     !c
-    !c        sigma_mid(4) --------m---------- u, v, th, q, cw, exnm (4)
+    !c        sigma_mid(4) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (4)
     !c
     !c
     !c        sigma_bnd(5) - - - - s - - - - - sdot(5), xksig(5), exns(5), pr(5)
@@ -2209,7 +2224,7 @@ contains
     !!                                    exns(KMAX_BND-1),zs_bnd(KMAX_BND-1),
     !!                                    pr(KMAX_BND-1),xksm(KMAX_MID)
     !c
-    !c    sigma_mid(KMAX_MID) --------m-------- u, v, th, q, cw, exnm (KMAX_MID);
+    !c    sigma_mid(KMAX_MID) --------m-------- u_xmj, v_xmi, th, q, cw, exnm (KMAX_MID);
     !!                                    this level is assumed to be
     !!                                    the top of Prandtl-layer (LAM50E)
     !c
@@ -2360,8 +2375,8 @@ real :: tmpHmix
              !..wind sheare
              !
              ! Slightly different formulation of dvdz than in metvar
-             dvdz = ( (u(i,j,km,nr)-u(i,j,k,nr))**2 &
-                  + (v(i,j,km,nr)-v(i,j,k,nr))**2 + eps)
+             dvdz = ( (u_xmj(i,j,km,nr)-u_xmj(i,j,k,nr))**2 &
+                  + (v_xmi(i,j,km,nr)-v_xmi(i,j,k,nr))**2 + eps)
              !
              risig(i,k)=(2.*GRAV/(th(i,j,km,nr)+th(i,j,k,nr)))*&
                   (th(i,j,km,nr)-th(i,j,k,nr))*(zm(i,km)-zm(i,k))&
@@ -2628,7 +2643,7 @@ real :: tmpHmix
          if( DEBUG_MET .and. debug_proc ) then
           if ( i == debug_i .and. j == debug_j ) then 
            ! test alternative calculation from Amela
-            call RiB_Hmix(windspeed(i,j,:), z_mid(i,j,:), th(i,j,:,nr), tmpHmix)
+!WAIT            call RiB_Hmix(windspeed(i,j,:), z_mid(i,j,:), th(i,j,:,nr), tmpHmix)
             write(6,"(a,4i5,3f12.4)") "DEBUG_Hmix: ", &
               current_date%month,&
               current_date%day,&
@@ -3043,11 +3058,11 @@ real :: tmpHmix
     do k=1,KMAX_MID
        do i=1,limax
           do j=1,ljmax
-             !          u_mid(i,j,k)=0.5*(u(i-1,j  ,k,nr)+u(i,j,k,nr))
-             !          v_mid(i,j,k)=0.5*(v(i  ,j-1,k,nr)+v(i,j,k,nr))
+             !          u_mid(i,j,k)=0.5*(u_xmj(i-1,j  ,k,nr)+u_xmj(i,j,k,nr))
+             !          v_mid(i,j,k)=0.5*(v_xmi(i  ,j-1,k,nr)+v_xmi(i,j,k,nr))
 
-             u_mid(i,j,k)=u(i,j  ,k,nr)
-             v_mid(i,j,k)=v(i  ,j,k,nr)
+             u_mid(i,j,k)=u_xmj(i,j  ,k,nr)
+             v_mid(i,j,k)=v_xmi(i  ,j,k,nr)
 
           enddo
        enddo
@@ -3273,9 +3288,9 @@ real :: tmpHmix
              eddyz(i,j,k)=0.5*(eddyz(i,j,k-1)+eddyz(i,j,k)) !!
 
              !              if(i.eq.10.and.j.eq.10.) then
-             !             if (abs(u(i,j  ,k,nr)-u_mid(i,j,k)).gt.5.) then
+             !             if (abs(u_xmj(i,j  ,k,nr)-u_mid(i,j,k)).gt.5.) then
              !
-             !       print *,"NEW ",i,j,u(i,j  ,KMAX_MID,nr),u_mid(i,j,KMAX_MID)
+             !       print *,"NEW ",i,j,u_xmj(i,j  ,KMAX_MID,nr),u_mid(i,j,KMAX_MID)
              !              endif
           enddo
 

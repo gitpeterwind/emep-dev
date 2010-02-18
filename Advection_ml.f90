@@ -81,7 +81,7 @@
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST ! AMVB 2009-11-06: FORECAST mode
-  use Met_ml ,only : ps,sdot,skh,u,v
+  use Met_ml ,only : ps,sdot,skh,u_xmj,v_xmi
   use MassBudget_ml, only : fluxin,fluxout
   use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
   use Par_ml,        only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&
@@ -273,19 +273,19 @@
 ! Determine timestep for horizontal advection.
 !
 ! Courant criterion, which takes into account the mapping factor xm2:
-! left face:    xm2(i)    u(i)  dt/dx < 1  when u(i) > 0
-! right face:   xm2(i) |u(i-1)| dt/dx < 1  when u(i-1) < 0
+! left face:    xm2(i)    u_xmj(i)  dt/dx < 1  when u_xmj(i) > 0
+! right face:   xm2(i) |u_xmj(i-1)| dt/dx < 1  when u_xmj(i-1) < 0
 !
 ! In the case where the flux is streaming out of the cell i from both faces,
 ! then the total should be < 1:
-! xm2(i) |u(i-1)| dt/dx + xm2(i) u(i) dt/dx < 1    for u(i-1)<0 and u(i)>0
+! xm2(i) |u_xmj(i-1)| dt/dx + xm2(i) u_xmj(i) dt/dx < 1    for u_xmj(i-1)<0 and u_xmj(i)>0
 !
 ! The three conditions can be written as:
 !
-! max(xm2(i)*u(i)*dt/dx , 0.0) - min(xm2(i)*u(i-1)*dt/dx , 0.0) < 1
+! max(xm2(i)*u_xmj(i)*dt/dx , 0.0) - min(xm2(i)*u_xmj(i-1)*dt/dx , 0.0) < 1
 !
 ! or equivalently:
-! dt < dx / ( max(xm2(i)*u(i) , 0.0) - min(xm2(i)*u(i-1) , 0.0) )
+! dt < dx / ( max(xm2(i)*u_xmj(i) , 0.0) - min(xm2(i)*u_xmj(i-1) , 0.0) )
 !
 ! In the case of variable cell size, dx is defined as dx(i) in these formula.
 !
@@ -295,11 +295,11 @@
 
     do k=1,KMAX_MID
       xcmax(k) = maxval(                                                     &
-                 max(u(1:limax  ,1:ljmax,k,1)*xm2(1:limax,1:ljmax),1.e-30)   &
-                -min(u(0:limax-1,1:ljmax,k,1)*xm2(1:limax,1:ljmax),0.0   ))
+                 max(u_xmj(1:limax  ,1:ljmax,k,1)*xm2(1:limax,1:ljmax),1.e-30)   &
+                -min(u_xmj(0:limax-1,1:ljmax,k,1)*xm2(1:limax,1:ljmax),0.0   ))
       ycmax(k) = maxval(                                                     &
-                 max(v(1:limax,1:ljmax  ,k,1)*xm2(1:limax,1:ljmax),1.e-30)   &
-                -min(v(1:limax,0:ljmax-1,k,1)*xm2(1:limax,1:ljmax),0.0   ))
+                 max(v_xmi(1:limax,1:ljmax  ,k,1)*xm2(1:limax,1:ljmax),1.e-30)   &
+                -min(v_xmi(1:limax,0:ljmax-1,k,1)*xm2(1:limax,1:ljmax),0.0   ))
       xcmax(k) = max(xcmax(k),ycmax(k))
     enddo
 
@@ -383,14 +383,14 @@
 
               ! send/receive in x-direction
               call preadvx(1100+k                           &
-                  ,xn_adv(1,1,1,k),ps3d(1,1,k),u(0,1,k,1)   &
+                  ,xn_adv(1,1,1,k),ps3d(1,1,k),u_xmj(0,1,k,1)   &
                   ,xnw,xne                                  &
                   ,psw,pse)
 
               ! x-direction
               do j = lj0,lj1
                 call advx(                                   &
-                       u(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
+                       u_xmj(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
                       ,xn_adv(1,1,j,k),xnw(1,j),xne(1,j)     &
                       ,ps3d(1,j,k),psw(1,j),pse(1,j)         &
                       ,xm2(0,j),xmd(0,j)                     &
@@ -401,14 +401,14 @@
 
               ! send/receive in y-direction
               call preadvy(1300+k                            &
-                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v(1,0,k,1)    &
+                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v_xmi(1,0,k,1)    &
                   ,xns, xnn                                  &
                   ,pss, psn)
 
               ! y-direction
               do i = li0,li1
                 call advy(                                   &
-                       v(i,0,k,1),vs(i,k,1),vn(i,k,1)        &
+                       v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)        &
                       ,xn_adv(1,i,1,k),xns(1,i),xnn(1,i)     &
                       ,ps3d(i,1,k),pss(1,i),psn(1,i)         &
                       ,xm2ji(0,i),xmdji(0,i)                 &
@@ -443,14 +443,14 @@
 
               ! send/receive in y-direction
               call preadvy(1300+k                            &
-                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v(1,0,k,1)    &
+                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v_xmi(1,0,k,1)    &
                   ,xns, xnn                                  &
                   ,pss, psn)
 
               ! y-direction
               do i = li0,li1
                 call advy(                                   &
-                       v(i,0,k,1),vs(i,k,1),vn(i,k,1)        &
+                       v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)        &
                       ,xn_adv(1,i,1,k),xns(1,i),xnn(1,i)     &
                       ,ps3d(i,1,k),pss(1,i),psn(1,i)         &
                       ,xm2ji(0,i),xmdji(0,i)                 &
@@ -461,14 +461,14 @@
 
               ! send/receive in x-direction
               call preadvx(1100+k                            &
-                  ,xn_adv(1,1,1,k),ps3d(1,1,k),u(0,1,k,1)    &
+                  ,xn_adv(1,1,1,k),ps3d(1,1,k),u_xmj(0,1,k,1)    &
                   ,xnw,xne                                   &
                   ,psw,pse)
 
               ! x-direction
               do j = lj0,lj1
                 call advx(                                   &
-                       u(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
+                       u_xmj(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
                       ,xn_adv(1,1,j,k),xnw(1,j),xne(1,j)     &
                       ,ps3d(1,j,k),psw(1,j),pse(1,j)         &
                       ,xm2(0,j),xmd(0,j)                     &
@@ -710,19 +710,19 @@
 ! Determine timestep for horizontal advection.
 !
 ! Courant criterion, which takes into account the mapping factor xm2:
-! left face:    xm2(i)    u(i)  dt/dx < 1  when u(i) > 0
-! right face:   xm2(i) |u(i-1)| dt/dx < 1  when u(i-1) < 0
+! left face:    xm2(i)    u_xmj(i)  dt/dx < 1  when u_xmj(i) > 0
+! right face:   xm2(i) |u_xmj(i-1)| dt/dx < 1  when u_xmj(i-1) < 0
 !
 ! In the case where the flux is streaming out of the cell i from both faces,
 ! then the total should be < 1:
-! xm2(i) |u(i-1)| dt/dx + xm2(i) u(i) dt/dx < 1    for u(i-1)<0 and u(i)>0
+! xm2(i) |u_xmj(i-1)| dt/dx + xm2(i) u_xmj(i) dt/dx < 1    for u_xmj(i-1)<0 and u_xmj(i)>0
 !
 ! The three conditions can be written as:
 !
-! max(xm2(i)*u(i)*dt/dx , 0.0) - min(xm2(i)*u(i-1)*dt/dx , 0.0) < 1
+! max(xm2(i)*u_xmj(i)*dt/dx , 0.0) - min(xm2(i)*u_xmj(i-1)*dt/dx , 0.0) < 1
 !
 ! or equivalently:
-! dt < dx / ( max(xm2(i)*u(i) , 0.0) - min(xm2(i)*u(i-1) , 0.0) )
+! dt < dx / ( max(xm2(i)*u_xmj(i) , 0.0) - min(xm2(i)*u_xmj(i-1) , 0.0) )
 !
 ! In the case of variable cell size, dx is defined as dx(i) in these formula.
 !
@@ -734,13 +734,13 @@
     do k=1,KMAX_MID
       do j=1,ljmax
         xcmax(k,j+gj0-1) = maxval(                                         &
-                           max(u(1:limax  ,j,k,1)*xm2(1:limax,j),1.e-30)   &
-                          -min(u(0:limax-1,j,k,1)*xm2(1:limax,j),0.0   ))
+                           max(u_xmj(1:limax  ,j,k,1)*xm2(1:limax,j),1.e-30)   &
+                          -min(u_xmj(0:limax-1,j,k,1)*xm2(1:limax,j),0.0   ))
       enddo
       do i=1,limax
         ycmax(k,i+gi0-1) = maxval(                                         &
-                           max(v(i,1:ljmax  ,k,1)*xm2(i,1:ljmax),1.e-30)   &
-                          -min(v(i,0:ljmax-1,k,1)*xm2(i,1:ljmax),0.0   ))
+                           max(v_xmi(i,1:ljmax  ,k,1)*xm2(i,1:ljmax),1.e-30)   &
+                          -min(v_xmi(i,0:ljmax-1,k,1)*xm2(i,1:ljmax),0.0   ))
       enddo
     enddo
 
@@ -867,13 +867,13 @@
 
                   ! send/receive in x-direction
                   call preadvx2(110+k+KMAX_MID*j               &
-                        ,xn_adv(1,1,j,k),ps3d(1,j,k),u(0,j,k,1)&
+                        ,xn_adv(1,1,j,k),ps3d(1,j,k),u_xmj(0,j,k,1)&
                         ,xnw,xne                               &
                         ,psw,pse)
 
                   ! x-direction
                   call advx(                                   &
-                         u(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
+                         u_xmj(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
                         ,xn_adv(1,1,j,k),xnw,xne               &
                         ,ps3d(1,j,k),psw,pse                   &
                         ,xm2(0,j),xmd(0,j)                     &
@@ -908,12 +908,12 @@
 
               ! send/receive in y-direction
               call preadvy2(520+k                            &
-                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v(1,0,k,1)    &
+                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v_xmi(1,0,k,1)    &
                   ,xns, xnn                                  &
                   ,pss, psn,i)
 
               call advy(                                     &
-                   v(i,0,k,1),vs(i,k,1),vn(i,k,1)            &
+                   v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)            &
                   ,xn_adv(1,i,1,k),xns,xnn                   &
                   ,ps3d(i,1,k),pss,psn                       &
                   ,xm2ji(0,i),xmdji(0,i)                     &
@@ -961,14 +961,14 @@
 
               ! send/receive in y-direction
               call preadvy2(13000+k+KMAX_MID*itery+1000*i    &
-                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v(1,0,k,1)    &
+                  ,xn_adv(1,1,1,k),ps3d(1,1,k),v_xmi(1,0,k,1)    &
                   ,xns, xnn                                  &
                   ,pss, psn,i)
 
               ! y-direction
 
               call advy(                                    &
-                   v(i,0,k,1),vs(i,k,1),vn(i,k,1)           &
+                   v_xmi(i,0,k,1),vs(i,k,1),vn(i,k,1)           &
                   ,xn_adv(1,i,1,k),xns,xnn                  &
                   ,ps3d(i,1,k),pss,psn                      &
                   ,xm2ji(0,i),xmdji(0,i)                    &
@@ -1001,13 +1001,13 @@
 
                 ! send/receive in x-direction
                 call preadvx2(21000+k+KMAX_MID*iterx+1000*j  &
-                      ,xn_adv(1,1,j,k),ps3d(1,j,k),u(0,j,k,1)&
+                      ,xn_adv(1,1,j,k),ps3d(1,j,k),u_xmj(0,j,k,1)&
                       ,xnw,xne                               &
                       ,psw,pse)
 
                 ! x-direction
                 call advx(                                   &
-                       u(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
+                       u_xmj(0,j,k,1),uw(j,k,1),ue(j,k,1)        &
                       ,xn_adv(1,1,j,k),xnw,xne               &
                       ,ps3d(1,j,k),psw,pse                   &
                       ,xm2(0,j),xmd(0,j)                     &
@@ -3632,7 +3632,7 @@
       if(neighbor(WEST) .ne. me)then
         do k = 1,KMAX_MID
           do j = 1,ljmax
-            buf_uw(j,k) = u(1,j,k,nr)
+            buf_uw(j,k) = u_xmj(1,j,k,nr)
           enddo
         enddo
 
@@ -3642,7 +3642,7 @@
         ! cyclic grid: own neighbor
         do k = 1,KMAX_MID
           do j = 1,ljmax
-            ue(j,k,nr) = u(1,j,k,nr)
+            ue(j,k,nr) = u_xmj(1,j,k,nr)
           enddo
         enddo
       endif
@@ -3654,7 +3654,7 @@
       if (neighbor(EAST) .ne. me) then
         do k = 1,KMAX_MID
           do j = 1,ljmax
-            buf_ue(j,k) = u(limax-1,j,k,nr)
+            buf_ue(j,k) = u_xmj(limax-1,j,k,nr)
           enddo
         enddo
         CALL MPI_ISEND(buf_ue(1,1), 8*MAXLJMAX*KMAX_MID, MPI_BYTE, &
@@ -3663,7 +3663,7 @@
         ! cyclic grid: own neighbor
         do k = 1,KMAX_MID
           do j = 1,ljmax
-            uw(j,k,nr) = u(limax-1,j,k,nr)
+            uw(j,k,nr) = u_xmj(limax-1,j,k,nr)
           enddo
         enddo
       endif
@@ -3674,7 +3674,7 @@
     if (neighbor(SOUTH) .ne. NOPROC) then
       do k = 1,KMAX_MID
         do i = 1,limax
-          buf_vs(i,k) = v(i,1,k,nr)
+          buf_vs(i,k) = v_xmi(i,1,k,nr)
         enddo
       enddo
 
@@ -3687,7 +3687,7 @@
     if (neighbor(NORTH) .ne. NOPROC) then
       do k = 1,KMAX_MID
         do i = 1,limax
-          buf_vn(i,k) = v(i,ljmax-1,k,nr)
+          buf_vn(i,k) = v_xmi(i,ljmax-1,k,nr)
         enddo
       enddo
 
