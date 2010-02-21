@@ -1,3 +1,18 @@
+xxxxxxxxxxxxxx rv3_5_2  Dave  Feb 20th 2010
+
+Met_ml   - Bug-fix  (many years old bug!!!) 
+           real winds used in Ri dvdz calculation.
+           New arrays u_mid, v_mid used, and u_ref simplified too.
+
+  *** MetFields_ml **** new. Will gradually move most met fields here, and
+       keep Met_ml for subroutines and processing.
+
+
+  *** felt stuff removed :-)   (100s lines gone, double :-)
+
+ changes in many modules to use MetFields for wind, ps, sdot
+
+
 xxxxxxxxxxxxxx rv3_5_1  Dave  Feb 18th 2010
 
 My_DryDep_ml -- Bug-fix!! (first_vgr_call didn't work as expected)

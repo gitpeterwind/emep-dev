@@ -46,9 +46,9 @@ module Met_ml
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
+  use MetFields_ml    ! Imports many fields, too many for "only"
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET &
-!skip       ,KWINDTOP  & ! extent needed for windspeed calcs
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,nstep
@@ -111,14 +111,7 @@ module Met_ml
   INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
 
 
-  !   Two sets of Met. fields are read in, and a linear interpolation is made
-  !   between these two points in time. NMET  == 2 (two points in time)
-  !
-  real,public, save, dimension(0:MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u_xmj  ! m/s
-  real,public, save, dimension(MAXLIMAX,0:MAXLJMAX,KMAX_MID,NMET) :: v_xmi  ! m/s
-!WAIT  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: u_mid  ! m/s
-!WAIT  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: v_mid  ! m/s
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! 1/s
+!MOVED  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! 1/s
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
        th      &  ! Potential teperature  ( deg. k )
@@ -138,8 +131,8 @@ module Met_ml
 
   ! surface fields
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,NMET) :: &
-       ps      & ! Surface pressure hPa (or Pa- CHECK!)
-       ,t2_nwp    & ! Temp 2 m   deg. K
+!MOVED       ps      & ! Surface pressure hPa (or Pa- CHECK!)
+        t2_nwp    & ! Temp 2 m   deg. K
        ,fh      & ! surf.flux.sens.heat W/m^2
        ,fl      & ! latent heat flux W/m^2
        ,tau     & ! surf. stress  N/m^2
@@ -156,13 +149,10 @@ module Met_ml
 
   ! Fields below are derived/calculated from the input meteorological fields
 
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
+!MOVED  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
-!skip  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KWINDTOP:KMAX_MID) :: &
-!skip         windspeed  ! (m/s)
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-       surface_precip    & ! Surface precip mm/hr
-       ,u_ref !wind speed
+       surface_precip     ! Surface precip mm/hr
 
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
@@ -234,7 +224,7 @@ module Met_ml
 
 
   public :: MeteoGridRead
-  public :: infield,MeteoRead
+  public :: MeteoRead
   public :: MetModel_LandUse
   public :: metvar
   public :: metint
@@ -278,16 +268,7 @@ contains
     real :: nsec                                 ! step in seconds
 
 
-
-
-
-    if( METEOfelt==1)then !felt format
-       call infield(numt)
-       return
-    endif
-
     nr=2 !set to one only when the first time meteo is read
-
 
 
     if(numt == 1)then !first time meteo is read
@@ -507,18 +488,6 @@ contains
     character (len = 100),save :: meteoname !name of the meteofile
 
 
-
-
-    if( METEOfelt==1)then
-       cyclicgrid=0
-       poles=0
-       GRIDWIDTH_M=50000.0
-       call infield(1)!to get sigma_mid etc
-       call DefGrid()
-       call GlobalPosition !for gl_stagg
-       return
-    endif
-
     nyear=startdate(1)
     nmonth=startdate(2)
     nday=startdate(3)
@@ -539,17 +508,6 @@ contains
          ,cyclicgrid)
 
 
-
-    if( METEOfelt==1)  then !felt format
-       cyclicgrid=0
-       poles=0
-       GRIDWIDTH_M=50000.0
-       call infield(1)
-       call DefGrid()
-       call GlobalPosition !for gl_stagg
-       return
-    endif
-
     if(MasterProc .and. DEBUG_MET)then
        write(*,*)'sigma_mid:',(sigma_mid(k),k=1,20)
        write(*,*)'grid resolution:',GRIDWIDTH_M
@@ -563,646 +521,6 @@ contains
     !sigma_bnd,carea,gbacmax,gbacmin,glacmax,glacmin
 
   end subroutine Meteogridread
-
-
-  subroutine infield(numt)
-
-
-    !pw
-    ! NB: This routine may disapear in later versions
-    !
-    !    the subroutine reads meteorological fields and parameters every
-    !    six-hour from fields-files, divide the fields into domains
-    !    and sends subfields to the processors using nx calls
-
-
-    implicit none
-
-    integer, intent(in):: numt
-
-
-
-    !    local
-
-    integer   ierr, fid, nr, i, j, k, ij
-    integer   nyear, nmonth, nday, nhour, nprognosis
-
-    integer,    dimension(20)                   ::  ident
-    integer*2,  dimension(21+MAXLIMAX*MAXLJMAX) ::  itmp
-
-    character*20 fname
-
-    type(date) addhours_to_input
-    type(date) next_inptime, buf_date
-
-    type(timestamp)::ts_now        ! time in timestamp format
-
-    real,   dimension(MAXLIMAX,MAXLJMAX)   ::  dumhel
-    real,   dimension(20)                  ::  xrand
-
-    real :: nsec                    !  step in seconds
-
-
-
-
-    !    definition of the parameter number of the meteorological variables
-    !    read from field-files:
-
-    !
-    !    u_xmj(2),v_xmi(3),q(9),sdot(11),th(18),cw(22),pr(23),cc3d(39),
-    !    ps(8),t2_nwp(31),fh(36),fl(37),tau(38),ustar(53),trw(845), sst(103)
-    !  Meteorology available from year 2002 in EMEP files:
-    !       rh2m(32), SWC(85, first 7.2cm),
-    !          SWCdeep(86, in the following 6x7.2cm = 43.2 cm))
-
-
-
-
-    projection='Stereographic'
-
-    nr=2
-    if(numt == 1)then
-       nr = 1
-       u_xmj  = 0.0
-       v_xmi  = 0.0
-    endif
-
-
-
-
-
-    !***********************
-    if(me.eq.0) then
-       !***********************
-
-       fid=IO_INFIELD
-       fname='filxxxx'
-
-       write(fname,fmt='(''fil'',i4.4)') numt
-
-       open (fid,file=fname        		&
-            ,form='unformatted',access='sequential'    &
-            ,status='old',iostat=ios)
-
-       call CheckStop(ios, "Error opening infield in Met_ml" // fname)
-
-       ierr=0
-
-    endif ! me == 0
-
-
-
-
-    sdot_at_mid = .true.
-    foundustar = .false.
-    foundsdot = .true.
-    foundSST = .false.
-
-
-
-    do while(.true.)
-       !!   do while(ierr /= 2)
-
-       call getflti2Met(fid,ident,itmp,ierr)
-       if(ierr == 2)goto 998
-
-       k = ident(7)
-
-       if (ident(6) .eq. 2.and.k.eq.1)then
-
-          nyear=ident(12)
-          nmonth=ident(13)/100
-          nday=ident(13)-(ident(13)/100)*100
-          nhour=ident(14)/100
-
-          if(ident(17)>0.0)then
-             xp = ident(15)/100.
-             yp = ident(16)/100.
-          else
-             xp = ident(15)/1.
-             yp = ident(16)/1.
-          endif
-
-          fi = ident(18)
-          if(ident(2).eq.1841)then
-             GRIDWIDTH_M = 50000.0 ! =~ 1000.*abs(ident(17))/10.
-          else
-             GRIDWIDTH_M = 1000.*abs(ident(17))/10.
-             if(MasterProc .and. DEBUG_MET)write(*,*)'GRIDWIDTH_M=' ,GRIDWIDTH_M ,&
-                  'AN= ',6.370e6*(1.0+0.5*sqrt(3.0))/GRIDWIDTH_M
-          endif
-
-
-          if(ident(2).eq.1600)then
-             xp = 41.006530761718750 !=~ ident(15)
-             yp = 3234.5815429687500 !=~ ident(16)
-             fi = 10.50000 ! =~ ident(18)
-             if(MasterProc .and. DEBUG_MET)write(*,*)ident(15),ident(16),ident(18),xp,yp,fi
-          endif
-          nprognosis = ident(4)
-
-          identi(:)=ident(:)
-
-          !vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-          !
-          !..hj..ko
-          !.. the name of the fltqhh.yymmdd-file input contains the "ifelt"
-          !.. time parameters of the analysis, thus the 3 hour prognosis
-          !.. data are valid 9-12 hours later!!!!
-          !
-          !vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-
-          !pw use nprognosis=ident(4) for determining the date of the prognosis
-
-
-          if(numt == 1) then   !!! initialise
-             current_date = date(nyear, nmonth, nday, nhour, 0 )
-             call Init_nmdays( current_date )
-             nsec= nprognosis*3600.0
-             ts_now=make_timestamp(current_date)
-             call add_secs(ts_now,nsec)
-             current_date=make_current_date(ts_now)
-
-             !  if we start 1. of January, then nyear is the year before
-             !  so we have to rerun Init_nmdays!
-
-             if(current_date%year.ne.nyear)    &
-                  call Init_nmdays( current_date )
-
-             ! for printout assign current_date to next_inptime!
-
-
-             next_inptime = current_date    !hfTD ?? Can this be done?
-             !Why add_dates before??
-
-      else
-
-             !   find time for which meteorology is valid:
-
-             next_inptime = date(nyear, nmonth, nday, nhour, 0 )
-             nsec= nprognosis*3600.0
-             ts_now=make_timestamp(next_inptime)
-             call add_secs(ts_now,nsec)
-             next_inptime=make_current_date(ts_now)
-
-             !    compare the input time with current_date,
-             !       it should be METSTEP hours later
-             !    check if current_date+METSTEP = next_inptime
-
-             nsec= METSTEP*3600.0
-             ts_now=make_timestamp(current_date)
-             call add_secs(ts_now,nsec)
-             buf_date=make_current_date(ts_now)
-
-
-             !    now check:
-
-             call CheckStop(buf_date%year,   next_inptime%year,   &
-                  "In infield: wrong next input year")
-             call CheckStop(buf_date%month,  next_inptime%month,  &
-                  "In infield: wrong next input month")
-             call CheckStop(buf_date%day,    next_inptime%day,    &
-                  "In infield: wrong next input day")
-             call CheckStop(buf_date%hour,   next_inptime%hour,   &
-                  "In infield: wrong next input hour")
-             call CheckStop(buf_date%seconds,next_inptime%seconds,&
-                  "In infield: wrong next input seconds")
-
-
-             !    now the last check, if we have reached a new year, i.e. current date
-             !    is 1.1. midnight, then we have to rerun Init_nmdays
-
-             if(  current_date%month == 1 .and.         &
-                  current_date%day   == 1 .and.         &
-                  current_date%hour  == 0 )              &
-                  call Init_nmdays( current_date )
-
-          end if  ! numt
-
-          if(me == 0 .and. DEBUG_MET) write(6,*)         			&
-               '*** nyear,nmonth,nday,nhour,numt,nmdays2,nydays'    &
-               ,next_inptime%year,next_inptime%month,next_inptime%day    &
-               ,next_inptime%hour,numt,nmdays(2),nydays
-
-       endif
-
-
-
-       select case (ident(6))
-
-       case (2)
-
-          sigma_mid(k)=ident(19)/1.0e+4
-
-          call getmetfieldMet(ident(20),itmp,dumhel)
-
-          do j = 1,ljmax
-             do i = 1,limax
-                u_xmj(i,j,k,nr) = dumhel(i,j)-1.E-9    ! the "-1.E-9" is included
-                ! in order to avoid possible
-                ! different roundings on
-                ! different machines.
-             enddo
-          enddo
-
-
-
-       case (3)
-
-      call getmetfieldMet(ident(20),itmp,dumhel)
-
-          do j = 1,ljmax
-             do i = 1,limax
-                v_xmi(i,j,k,nr) = dumhel(i,j)-1.E-9   ! the "-1.E-9" is included
-                ! in order to avoid possible
-                ! different roundings on
-                ! different machines.
-             enddo
-          enddo
-
-       case (9)
-
-          call getmetfieldMet(ident(20),itmp,q(1,1,k,nr))
-
-       case (11)
-
-          call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
-
-       case (-11) !pw (not standard convention)
-
-          call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
-
-          sdot_at_mid = .false.
-
-       case (810) !pw u3 MM5 SIGMADOT
-
-          call getmetfieldMet(ident(20),itmp,sdot(1,1,k,nr))
-
-       case (18)
-
-          call getmetfieldMet(ident(20),itmp,th(1,1,k,nr))
-
-          !      case (22)
-          !
-          !          call getmetfield(ident(20),itmp,cw(1,1,k,nr))
-
-          !          case (26)                                          !ASSYCON
-          !              call getmetfield(ident(20),itmp,ccc(1,1,k,nr)) !ASSYCON
-
-       case (23)
-
-          call getmetfieldMet(ident(20),itmp,pr(1,1,k))
-
-          !      case (845) ! pw u3 MM5 TOTALRW
-          !
-          !              call getmetfield(ident(20),itmp,trw(1,1,k))
-
-       case (39)
-
-          call getmetfieldMet(ident(20),itmp,cc3d(1,1,k))
-
-          !..2D fields!
-
-       case (8)
-
-          call getmetfieldMet(ident(20),itmp,ps(1,1,nr))
-
-       case (31)
-
-          call getmetfieldMet(ident(20),itmp,t2_nwp(1,1,nr))
-          ! NEWMET:
-          !   rh2m(32), SWC(85, first 7.2cm), SWCdeep(86, in the following
-          !     6x7.2cm = 43.2 cm))
-!hf XX
-       case (66)
-          foundsdepth = .true.
-          call getmetfieldMet(ident(20),itmp,sdepth(1,1,nr))
-
-       case (191)
-          foundice = .true.
-          call getmetfieldMet(ident(20),itmp,ice(1,1,nr))
-
-       case (32)
-          rh2m(:,:,nr) = 0.0
-          call getmetfieldMet(ident(20),itmp,rh2m(1,1,nr))
-       case (85)
-          SoilWater(:,:,nr) = 0.0
-          call getmetfieldMet(ident(20),itmp,SoilWater(1,1,nr))
-       case (86)
-          SoilWater_deep(:,:,nr) = 0.0
-          call getmetfieldMet(ident(20),itmp,SoilWater_deep(1,1,nr))
-
-       case (36)
-
-          call getmetfieldMet(ident(20),itmp,fh(1,1,nr))
-
-       case (37)
-
-          call getmetfieldMet(ident(20),itmp,fl(1,1,nr))
-
-       case (38)
-
-          call getmetfieldMet(ident(20),itmp,tau(1,1,nr))
-
-       case (53)
-
-          foundustar = .true.
-          call getmetfieldMet(ident(20),itmp,ustar_nwp(1,1))
-
-       case (103) ! SST
-
-          foundSST = .true.
-          call getmetfieldMet(ident(20),itmp,sst(1,1,nr))
-
-
-       end select
-
-    enddo
-
-998 continue
-
-    !     definition of the half-sigma levels from the full levels.
-
-
-  end subroutine infield
-
-
-
-
-
-
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
-
-
-
-  subroutine getflti2Met(ifile,ident,itmp,ierr)
-
-    ! NB: This routine may disapear in later versions
-
-    !fpp$ noconcur r
-    !
-    !  16 bit input and unpack
-    !
-    !  input:
-    !     mode:   0 = read field    is now hardcoded
-    !             1 = read field, skip fields until time > itime
-    !             2 = read field if field time = itime
-    !                 (otherwise next read starts at the same field)
-    !           100 = read field identification
-    !                 (next read starts at the same field)
-    !           101 = read field identification, skip fields
-    !                 until time > itime
-    !                 (next read starts at the same (last) field)
-    !           102 = read field identification, skip fields
-    !                 until time >= itime
-    !                 (next read starts at the same (last) field)
-    !           200 = scan rest of the file and read field with
-    !                 matching identification, specified identification
-    !                 input in ident(1:20) where -32767 means any value
-    !           201 = scan the whole file and read field with
-    !                 matching identification, specified identification
-    !                 input in ident(1:20) where -32767 means any value
-    !            -1 = clean up after a file is closed, and the same
-    !                 file unit no. is used for another file.
-    !     ifile: file unit no.
-    !     MFSIZEINPUT:  length of fdata (max field size)
-    !
-    !  output:
-    !     ident(20): field identification
-    !     fdata(..): field (unscaled, according to identification)
-    !     ierr = 0:  read o.k.
-    !            1:  read error
-    !            2:  read error, end_of_file
-    !
-    !
-    !  warning: using file unit no. (not file name) to identify
-    !           files when storing field identification.
-    !           if more than one file is opened with the same
-    !           unit, use 'call getflt(-1,...)' after closing
-    !           a file to avoid errors.
-    !
-    !  computer dependant i/o methodes for:
-    !              1) computer='cray'     (integer*2 not available)
-    !              2) computer='not.cray' (integer*2 used)
-    !
-    !  dnmi/fou  19.08.1993  anstein foss
-    !
-    !
-    !  modified by Peter Wind 11.03.2002:
-    !  uses nx=ident(10) (read from file) as first dimension of array,
-    !  instead of IIFULLDOM. (only modified for not _CRAY)
-    !
-
-    implicit none
-
-    integer d,i,j,info
-
-    !  MAXPK4: max record length in cray 64 bit integer words
-
-    integer, parameter :: NUMHOR4 = MAXLIMAX*MAXLJMAX
-    integer, parameter :: MAXPK4  = IIFULLDOM*JJFULLDOM
-
-    integer ida,itp
-    integer*2 idpack(20)
-    integer*2 ipack(21+MAXPK4)
-    integer*2 itmp(21+NUMHOR4)
-
-
-    !  input/output
-    integer   ifile,ident(20),ierr,iteserr
-    !
-    !
-    !  cray uses ipack as a standard length integer
-    !
-    !
-    !
-    integer isave,nsave,ios,ierror
-    integer nxin,nyin,nword,npack
-
-    ierr = 0
-    iteserr = 0
-
-    if(me.eq.0)then
-
-       ipack(1) = 0
-
-       call CheckStop(ifile < 1,  "ifile<1  in Met_ml")
-       call CheckStop(ifile > 99, "ifile>99 in Met_ml")
-
-    endif
-
-    if(me == 0)then
-       !        a) read field identification (one record)
-       !        b) read field data           (one record)
-       !
-       !
-
-       read(ifile,iostat=ios) (idpack(i),i=1,20)
-       if ( ios <  0 ) ierr = 2    ! End of file
-       call CheckStop( ios > 0 , "**getflt** read error 1 " )
-
-       do i=1,20
-      ident(i)=idpack(i)
-      ipack(i+1)=idpack(i)
-       end do
-
-       !
-       !  not using extra geometry identification (after field data)
-       if(ident(9).gt.999) ident(9)=ident(9)/1000
-
-       nxin=ident(10)
-       nyin=ident(11)
-       nword=nxin*nyin
-
-       if(nword.gt.MFSIZEINP) then
-          write(6,*) ' **getflt** field length too big', &
-               ' (input buffer MFSIZEINP too small)'
-          write(6,*) ' **          MFSIZEINP = ',MFSIZEINP
-          write(6,*) ' ** ident: ',(ident(i),i=1,11)
-          write(6,*) ' **        ',(ident(i),i=12,20)
-          write(6,*) ' ** nx,ny,nx*ny: ',nxin,nyin,nword
-          ierr=1
-          iteserr = 1
-
-       else
-          npack=nword
-          read(ifile,iostat=ios) (ipack(i),i=22,npack+21)
-
-          if ( ios <  0 ) ierr = 2    ! End of file is allowed. Therefore
-          ! check ios > 0 in Checkstop
-          call CheckStop( ios > 0 , "**getflt** read error 2 " )
-
-       endif
-    endif
-
-    call CheckStop(ierr==1, "getflti2ex in Met_ml")
-
-
-
-    if(me.eq.0)then
-
-       if(ierr.eq.2)then    ! end of file
-          ipack(1) = -999
-          do d = 1, NPROC-1
-
-             CALL MPI_SEND(ipack,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3  &
-                  ,MPI_COMM_WORLD,INFO)
-
-          enddo
-          close(ifile)
-          return
-       endif
-
-
-
-
-       !.... scaling is done within the getflti2 subroutine!!!!!!!!
-       !
-       if (ident(1) .ne. 88) then
-          write(6,*) 'ERROR IN INFIELD : produsent =',ident(1)
-       endif
-       !
-       if (ident(2) .ne. 1841.and. ident(2) .ne. 1600) then
-          write(6,*) 'ERROR IN INFIELD : grid =',ident(2)
-       endif
-       !
-
-
-       do i=1,21
-          itmp(i) = ipack(i)
-       enddo
-       do d = 1, NPROC-1
-          ida = 21
-          itp = 21+(tgj0(d)+JRUNBEG-2)*ipack(11) + tgi0(d)+IRUNBEG-2
-          do j = 1,tljmax(d)
-             do i = 1,tlimax(d)
-            itmp(ida+i) = ipack(itp+i)
-             enddo
-             ida = ida + MAXLIMAX
-             itp = itp + ipack(11)
-          enddo
-          CALL MPI_SEND(itmp,2*(21+NUMHOR4),MPI_BYTE,d,MSG_INIT3  &
-               ,MPI_COMM_WORLD,INFO)
-       enddo
-       ida = 21
-       itp = 21+(JRUNBEG-1)*ipack(11) + IRUNBEG-1
-       do j = 1,ljmax
-          do i = 1,limax
-             itmp(ida+i) = ipack(itp+i)
-          enddo
-          ida = ida + MAXLIMAX
-          itp = itp + ipack(11)
-       enddo
-
-
-
-    else
-
-       ! me.ne.0, always receive to get itmp(1)
-
-
-       CALL MPI_RECV( itmp, 2*(21+NUMHOR4), MPI_BYTE, 0, &
-            MSG_INIT3, MPI_COMM_WORLD,MPISTATUS, INFO)
-
-       if(itmp(1).eq.-999)then
-          ierr = 2
-          return
-       endif
-
-       do i=1,20
-          ident(i) = itmp(i+1)
-       enddo
-
-    endif
-
-  end subroutine getflti2Met
-
-
-
-
-
-
-
-  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
-
-  subroutine getmetfieldMet(ident,itmp,array)
-
-
-    ! NB: This routine may disapear in later versions
-
-    implicit none
-
-    integer NUMHOR4
-    integer i
-    integer ident
-
-    parameter (NUMHOR4=MAXLIMAX*MAXLJMAX)
-    integer*2 itmp(21+NUMHOR4)
-
-    real scale
-    real array(MAXLIMAX*MAXLJMAX)
-
-    scale = 10.**ident
-
-
-    do i = 1,MAXLIMAX*MAXLJMAX
-       array(i) = scale * itmp(i+21)
-    enddo
-
-
-    return
-  end subroutine getmetfieldMet
-
-
-
-
-
 
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1242,7 +560,7 @@ contains
 
 
     nr = 2
-    if (numt.eq.1) then
+    if (numt == 1) then
 
        nr = 1
 
@@ -1280,8 +598,6 @@ contains
              usnd(j,k) = u_xmj(limax,j,k,nr)
           enddo
        enddo
-!       CALL MPI_SEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
-!            neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, INFO)
        CALL MPI_ISEND( usnd, 8*MAXLJMAX*KMAX_MID, MPI_BYTE,  &
             neighbor(EAST), MSG_WEST2, MPI_COMM_WORLD, request_e, INFO)
     endif
@@ -1295,8 +611,6 @@ contains
              vsnd(i,k) = v_xmi(i,ljmax,k,nr)
           enddo
        enddo
-!       CALL MPI_SEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
-!            neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, INFO)
        CALL MPI_ISEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
             neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
     endif
@@ -1388,8 +702,6 @@ contains
           !     conversion of pressure from mb to Pascal.
 
           ps(i,j,nr) = ps(i,j,nr)*PASCAL
-
-
 
 
           ! surface precipitation, mm/hr
@@ -1569,21 +881,6 @@ contains
 !     DEBUG_Z  2 19    183.6019    137.4135    137.4284
 !     DEBUG_Z  2 20     91.3017     45.6234     45.6146
 
-
-
-
-! Calculate mid-cell wind-fields, befopre map-factor scaling is applied
-! Consider simpler alterantive: 
-!WAIT    do k = 1,KMAX_MID
-!WAIT       do j = 1,ljmax
-!WAIT          do i = 1,limax
-!WAIT          u_mid(i,j,k,n)=0.5*(u_xmj(i-1,j  ,k,nr)+u_xmj(i,j,k,nr))
-!WAIT          v_mid(i,j,k,n)=0.5*(v_xmi(i  ,j-1,k,nr)+v_xmi(i,j,k,nr))
-!WAIT! Or
-!WAIT!          v_mid(i,j,k)=0.5*(v_xmi(i-1,j  ,k,nr)+v_xmi(i,j,k,nr)) ! from HIRLAM manual
-!WAIT          end do
-!WAIT       end do
-!WAIT    end do
 
     !     Horizontal velocity divided by map-factor.
 
@@ -1853,13 +1150,6 @@ contains
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
-
-
-
-
-
-
   subroutine met_derived
 
     ! This routine calculates fields derived from meteofields.
@@ -1879,50 +1169,21 @@ contains
     integer ::i,j, k
     logical :: DEBUG_DERIV = .false.
 
-!WAIT - needs correcting!
+    do k = 1, KMAX_MID
     do j = 1,ljmax
        do i = 1,limax
-          u_ref(i,j)=0.25*(&
-               sqrt((0.5*( u_xmj(i,j,KMAX_MID,1)*xm_j(i,j)&
-               +u_xmj(i-1,j,KMAX_MID,1)*xm_j(i-1,j) ))**2&
-               +( v_xmi(i,j,KMAX_MID,1)*xm_i(i,j))**2)&
-               +sqrt((0.5*( u_xmj(i,j,KMAX_MID,1)*xm_j(i,j)&
-               +u_xmj(i-1,j,KMAX_MID,1)*xm_j(i-1,j) ))**2&
-               +( v_xmi(i,j-1,KMAX_MID,1)*xm_i(i,j-1) )**2)&
-               +sqrt(( u_xmj(i,j,KMAX_MID,1)*xm_j(i,j) )**2&
-               +(0.5*( v_xmi(i,j,KMAX_MID,1)*xm_i(i,j) &
-               +v_xmi(i,j-1,KMAX_MID,1)*xm_i(i,j-1) ))**2)&
-               +sqrt((u_xmj(i-1,j,KMAX_MID,1)*xm_j(i-1,j) )**2&
-               +(0.5*( v_xmi(i,j,KMAX_MID,1)*xm_i(i,j) &
-               +v_xmi(i,j-1,KMAX_MID,1)*xm_i(i,j-1) ))**2) )
-
+           u_mid(i,j,k) = 0.5*( u_xmj(i,j,k,1)*xm_j(i,j) + &
+                                u_xmj(i-1,j,k,1)*xm_j(i-1,j) )
+           v_mid(i,j,k) = 0.5*( v_xmi(i,j-1,k,1)*xm_i(i,j-1) + &
+                                v_xmi(i,j,k,1)*xm_i(i,j))
        enddo
     enddo
-
-! Consider simpler alterantive: 
-!          u_mid(i,j,k)=0.5*(u_xmj(i-1,j  ,k,nr)+u_xmj(i,j,k,nr))
-!          v_mid(i,j,k)=0.5*(v_xmi(i  ,j-1,k,nr)+v_xmi(i,j,k,nr))
- 
-!skip    do k = KWINDTOP,KMAX_MID
-!skip    do j = 1,ljmax
-!skip       do i = 1,limax
-!skip          windspeed(i,j,k)=0.25*(&
-!skip               sqrt((0.5*( u_xmj(i,j,k,1)*xm_j(i,j)&
-!skip               +u_xmj(i-1,j,k,1)*xm_j(i-1,j) ))**2&
-!skip               +( v_xmi(i,j,k,1)*xm_i(i,j))**2)&
-!skip               +sqrt((0.5*( u_xmj(i,j,k,1)*xm_j(i,j)&
-!skip               +u_xmj(i-1,j,k,1)*xm_j(i-1,j) ))**2&
-!skip               +( v_xmi(i,j-1,k,1)*xm_i(i,j-1) )**2)&
-!skip               +sqrt(( u_xmj(i,j,k,1)*xm_j(i,j) )**2&
-!skip               +(0.5*( v_xmi(i,j,k,1)*xm_i(i,j) &
-!skip               +v_xmi(i,j-1,k,1)*xm_i(i,j-1) ))**2)&
-!skip               +sqrt((u_xmj(i-1,j,k,1)*xm_j(i-1,j) )**2&
-!skip               +(0.5*( v_xmi(i,j,k,1)*xm_i(i,j) &
-!skip               +v_xmi(i,j-1,k,1)*xm_i(i,j-1) ))**2) )
-!skip
-!skip       enddo
-!skip    enddo
-!skip    end do
+    enddo !k
+    do j = 1,ljmax
+       do i = 1,limax
+          u_ref(i,j)= sqrt( u_mid(i,j,KMAX_MID)**2 + v_mid(i,j,KMAX_MID)**2 )
+       enddo
+    enddo
 
     ! Tmp ustar solution. May need re-consideration for MM5 etc., but
     ! basic principal should be that fm is interpolated with time, and
@@ -2375,8 +1636,11 @@ real :: tmpHmix
              !..wind sheare
              !
              ! Slightly different formulation of dvdz than in metvar
-             dvdz = ( (u_xmj(i,j,km,nr)-u_xmj(i,j,k,nr))**2 &
-                  + (v_xmi(i,j,km,nr)-v_xmi(i,j,k,nr))**2 + eps)
+
+             !BUG dvdz = ( (u_xmj(i,j,km,nr)-u_xmj(i,j,k,nr))**2 &
+             !BUG      + (v_xmi(i,j,km,nr)-v_xmi(i,j,k,nr))**2 + eps)
+              dvdz = (u_mid(i,j,km)-u_mid(i,j,k))**2 + & ! Actually (dv)^2 
+                     (v_mid(i,j,km)-v_mid(i,j,k))**2 + eps  
              !
              risig(i,k)=(2.*GRAV/(th(i,j,km,nr)+th(i,j,k,nr)))*&
                   (th(i,j,km,nr)-th(i,j,k,nr))*(zm(i,km)-zm(i,k))&

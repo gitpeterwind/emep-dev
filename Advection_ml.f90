@@ -81,7 +81,7 @@
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST ! AMVB 2009-11-06: FORECAST mode
-  use Met_ml ,only : ps,sdot,skh,u_xmj,v_xmi
+  use MetFields_ml ,only : ps,sdot,skh,u_xmj,v_xmi
   use MassBudget_ml, only : fluxin,fluxout
   use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
   use Par_ml,        only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&

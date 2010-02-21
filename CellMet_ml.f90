@@ -39,8 +39,9 @@ use CheckStop_ml, only : CheckStop
 use Landuse_ml, only : LandCover    ! Provides SGS, hveg, LAI ....
 use LocalVariables_ml, only: Grid, Sub, ResetSub
 use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
-use Met_ml, only: cc3dmax, nwp_sea, snow,sdepth,ice, surface_precip, ps,fh,fl,z_mid, z_bnd, &
-           q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, u_ref, zen, coszen, Idirect, Idiffuse
+use MetFields_ml, only: ps, u_ref
+use Met_ml, only: cc3dmax, nwp_sea, snow,sdepth,ice, surface_precip, fh,fl,z_mid, z_bnd, &
+           q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen, coszen, Idirect, Idiffuse
 use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 use SubMet_ml, only : Get_SubMet

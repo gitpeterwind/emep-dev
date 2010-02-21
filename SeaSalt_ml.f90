@@ -46,8 +46,9 @@
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
+ use MetFields_ml,         only : u_ref
  use Met_ml,               only : z_bnd, z_mid, sst, snow,   &
-                                  nwp_sea, u_ref, foundSST  
+                                  nwp_sea, foundSST  
  use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, DEBUG_i,DEBUG_j
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions

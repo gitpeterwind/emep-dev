@@ -80,7 +80,8 @@ use Chemfields_ml , only : so2nh3_24hr,Grid_snow
 use EcoSystem_ml,   only : DepEcoSystem, NDEF_ECOSYSTEMS, &
                            EcoSystemFrac,FULL_GRID
 use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M
-use Met_ml, only :   roa,pzpbl,xksig,ps,th,zen, ustar_nwp, z_bnd
+use Met_ml, only :   roa,pzpbl,xksig,th,zen, ustar_nwp, z_bnd
+use MetFields_ml, only :   ps
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
   ,NPROC        & ! No. processors
@@ -705,7 +706,8 @@ end do
       real :: thour                          ! Time of day (GMT)
       real :: timefrac                       ! dt as fraction of hour (3600/dt)
       real :: dayfrac              ! fraction of day elapsed (in middle of dt)
-      real :: km2_grid, af
+      real :: af
+      real, save :: km2_grid
       integer :: ntime                       ! 1...NTDAYS
       integer :: klow                        !  lowest extent of column data
       real, dimension(MAXLIMAX,MAXLJMAX) :: density !  roa (kgair m-3 when
@@ -723,6 +725,7 @@ end do
 
       daynumber=day_of_year(current_date%year,current_date%month,&
                              current_date%day)
+
 
      !/***** 2-D fields **************************
 
@@ -989,7 +992,7 @@ end do
               km2_grid = (GRIDWIDTH_M*GRIDWIDTH_M) * 1.0e-6 ! km2
               forall ( i=1:limax, j=1:ljmax )
                   d_2d(n,i,j,IOU_YEAR) =  EcoSystemFrac( f_2d(n)%Index ,i,j)&
-                        * km2_grid /xm2(i,j)
+                        * KM2_GRID /xm2(i,j)
               end forall
             else
               forall ( i=1:limax, j=1:ljmax )

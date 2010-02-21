@@ -52,7 +52,7 @@
                                            ! the area factor in the middle 
                                            ! of the cell 
  use Io_ml         ,  only : IO_RES        ! =25
- use Met_ml        ,  only : ps            ! surface pressure  
+ use MetFields_ml  ,  only : ps            ! surface pressure  
  use ModelConstants_ml,                 &
                       only : KMAX_MID   &  ! Number of levels in vertical
                             ,MasterProc &  ! Master processor

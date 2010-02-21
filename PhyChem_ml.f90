@@ -45,7 +45,8 @@ module PhyChem_ml
    use Emissions_ml,   only : EmisSet
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
                              gl, gb, projection, Pole_included
-   use Met_ml ,        only : roa,z_bnd,z_mid,metint, ps, cc3dmax, &
+   use MetFields_ml ,  only : ps
+   use Met_ml ,        only : roa,z_bnd,z_mid,metint, cc3dmax, &
                                zen,coszen,Idirect,Idiffuse
    use ModelConstants_ml, only : KMAX_MID, nmax, nstep &
                         ,dt_advec       & ! time-step for phyche/advection

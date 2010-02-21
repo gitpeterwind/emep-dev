@@ -65,7 +65,8 @@
                            ,sigma_bnd, xmd, gl
   use Io_Nums_ml,      only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,     only : ios, open_file
-  use Met_ml,          only :  ps, roa   ! ps in Pa, roa in kg/m3
+  use Met_ml,          only : roa   ! ps in Pa, roa in kg/m3
+  use MetFields_ml,      only :  ps  ! ps in Pa
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 

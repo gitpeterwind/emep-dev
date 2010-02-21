@@ -59,7 +59,8 @@ use ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PPM25, PPMCO &
                               ,SSfi, SSco  !SeaS
 use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
-                              , z_bnd, z_mid, roa, xksig, u_xmj, v_xmi, ps, q
+                              , z_bnd, z_mid, roa, xksig, q
+use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
                               ,KMAX_BND,PT,ATWAIR, NPROC &
                               ,DomainName, RUNDOMAIN, IOU_INST  

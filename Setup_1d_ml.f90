@@ -57,7 +57,8 @@ use ChemChemicals_ml,        only :  species
                                      A_mid,B_mid,gridwidth_m,dA,dB
   use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
-  use Met_ml,                only :  roa, th, ps, q, t2_nwp, cc3dmax &
+  use MetFields_ml,          only :  ps
+  use Met_ml,                only :  roa, th, q, t2_nwp, cc3dmax &
                                     ,zen, Idirect, Idiffuse,z_bnd
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        

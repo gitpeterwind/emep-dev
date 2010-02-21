@@ -52,7 +52,8 @@ module Volcanos_ml
  use GridValues_ml,         only : sigma_bnd, i_fdom, j_fdom,i_local, j_local
  use Io_ml,                 only : ios, open_file, check_file, IO_VOLC
  use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC
- use Met_ml,                only : ps, roa
+ use Met_ml,                only : roa
+ use MetFields_ml,          only : ps
  use Par_ml,                only : IRUNBEG, JRUNBEG, me, li0,lj0,li1,lj1  &
                                   ,gi0, gi1, gj0, gj1 !TEST
  use PhysicalConstants_ml,  only : GRAV, AVOG
