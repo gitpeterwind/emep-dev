@@ -278,6 +278,7 @@ module ChemFunctions_ml
      real, dimension(K1:K2) :: rate
      real    :: rc   ! was rcmisc(8,)
      real    :: f   ! Was f_Riemer
+     real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
      integer :: k
      
 ! old Setup_ml had:
@@ -297,7 +298,7 @@ module ChemFunctions_ml
           rc = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean mol. speed,m/s
              /(4*(2.5 - rh(k)*1.25)) !density, corrected for rh (moderate approx.)
 
-          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0*x(aNO3,k) )
+          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0*x(aNO3,k) + EPSIL )
 
 
           rate(k) =  (0.9*f + 0.1) * rc *  &

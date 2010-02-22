@@ -11,6 +11,9 @@ BLPhysics - several Hmix options added. Results for "TI" physics
       replace completely soon, getting rid of several routines.
       For now the routines in BLPhysics are waiting for use.
 
+ChemFunctions_ml, EPSIL in friemer for safety 
+      - div by zero spotted by Peter
+
 GridValues_ml
       A, B replaced by A_bnd, B_bnd
 
