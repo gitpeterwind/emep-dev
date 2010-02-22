@@ -50,8 +50,6 @@ program myeul
   use BoundaryConditions_ml, only : BoundaryConditions
   use CheckStop_ml,     only : CheckStop
   use ChemChemicals_ml, only : define_chemicals
-  use Chemfields_ml,    only : xn_adv
-  use ChemSpecs_adv_ml, only : NSPEC_ADV
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,       only : Init_Derived, f_2d, f_3d
   use EcoSystem_ml,     only : Init_EcoSystems
@@ -63,10 +61,10 @@ program myeul
   use Io_Progs_ml  ,    only : read_line
   use Landuse_ml,       only : InitLandUse
   use MassBudget_ml,    only : Init_massbudget,massbudget
-  use Met_ml  ,         only : metvar,MetModel_LandUse,&
-       tiphys,Meteoread,MeteoGridRead,&
-       startdate
+  use Met_ml,           only : metvar,MetModel_LandUse,&
+       tiphys,Meteoread,MeteoGridRead, startdate
   use ModelConstants_ml,only : KMAX_MID   &   ! No. vertical layers
+       ,MasterProc &   ! set true for host processor, me==0
        ,RUNDOMAIN  &   !
        ,NPROC      &   ! No. processors
        ,METSTEP    &   ! Hours between met input
@@ -98,17 +96,10 @@ program myeul
   !     GRIDWIDTH_M    - grid-distance
   !     gb             - latitude (sorry, still Norwegian influenced..)
   !     NPROC          - number of processors used
-  !     me             - number of local processor, e.g. me=0 is host
+  !     me             - number of local processor, me=0 is host (=MasterProc)
   !                       processor where many read/writes are done
-  !     NSPEC_ADV      - number of chemical components transport in the model
-  !     NSPEC_SHL      - number of chemical components not-transport in the model
-  !     NSPEC_BGN      - number of specified chemical components
   !     ndays          - number of days since 1 january (max 365 or 366)
   !     thour          - utc-time in hours every time-step
-  !     xm(i,j)        - map factor
-  !     xm2(i,j)       - xm**2
-  !     xmd(i,j)       - 1./xm2
-  !     xn_adv(NSPEC_ADV,i,j,k) - chemical component (1 = so2, 2 = so4)
   !     .
   !     .
   !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -190,7 +181,7 @@ program myeul
     enddo
   end if
 
-  if( me == 0 ) then
+  if( MasterProc ) then
      close(IO_TMP)
      write(unit=IO_LOG,fmt=*)trim(runlabel1)
      write(unit=IO_LOG,fmt=*)trim(runlabel2)
@@ -201,9 +192,9 @@ program myeul
      write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
   endif
 
-  if( me == 0 ) print *, "read standard input"
-  if( me == 0 ) print *, "RUNLABEL INPUT ", trim(runlabel1),' ',trim(runlabel2)
-  if( me == 0 ) print *, " Trend Year is ", iyr_trend
+  if( MasterProc ) print *, "read standard input"
+  if( MasterProc ) print *, "RUNLABEL INPUT ", trim(runlabel1),' ',trim(runlabel2)
+  if( MasterProc ) print *, " Trend Year is ", iyr_trend
 
 
   !*** Timing ********
@@ -214,8 +205,7 @@ program myeul
 
   call parinit(MIN_ADVGRIDS)     !define subdomains sizes and position
   call MeteoGridRead(cyclicgrid) !define grid projection and parameters
-  call Topology(cyclicgrid,Poles)      !define GlobalBoundaries
-  !and subdomains neighbors
+  call Topology(cyclicgrid,Poles)!def GlobalBoundaries & subdomain neighbors
   call assign_dtadvec(GRIDWIDTH_M)! set dt_advec
 
 
@@ -237,13 +227,11 @@ program myeul
 
   call define_chemicals()    ! sets up species details
 
-!dsx  call Init_Derived()        ! Derived field defs.
-
   call set_output_defs()     ! Initialises outputs
 
   call assign_nmax(METSTEP)   ! No. timesteps in inner loop
 
-  call trajectory_init
+  call trajectory_init()
 
   call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
 
@@ -252,7 +240,7 @@ program myeul
 
   call Add_2timing(3,tim_after,tim_before,"After infield")
 
-  if ( me == 0 .and. DEBUG_UNI) write(6,*)"Calling emissions with year" ,&
+  if ( MasterProc .and. DEBUG_UNI) write(6,*)"Calling emissions with year" ,&
           current_date%year
 
   call Emissions(current_date%year)
@@ -266,27 +254,25 @@ program myeul
   call MetModel_LandUse(1)   !
 
   call InitLandUse()  !  Reads Inputs.Landuse, Inputs.LandPhen
-  call Init_EcoSystems()     !   Defines ecosystem-groups for dep output
-!dsx:
-  call Init_Derived()        ! Derived field defs.
 
+  call Init_EcoSystems()     !   Defines ecosystem-groups for dep output
+
+  call Init_Derived()        ! Derived field defs.
 
   if ( NBVOC > 0  ) call Init_BVOC()
 
   call tabulate()    ! =>  sets up tab_esat, etc.
 
-!DSGC  call Init_mychem()   ! tabulates rct to rctit
-
   call Init_WetDep()   ! sets up scavenging ratios
 
   call sitesdef()      !--- see if any output for specific sites is wanted
-  !   (read input files "sites.dat" and "sondes.dat" )
+                       !   (read input files "sites.dat" and "sondes.dat" )
 
   call vgrid    !  initialisation of constants used in vertical advection
-  if ( me == 0 .and. DEBUG_UNI) write(6,*)"vgrid finish"
+  if ( MasterProc .and. DEBUG_UNI) write(6,*)"vgrid finish"
 
 ! open only output netCDF files if needed
-  if ( me == 0 ) then
+  if ( MasterProc ) then
     if(any(f_2d%inst).or.any(f_3d%inst))&
       call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
     !netCDF hourly is initiated in Output_hourly
@@ -354,13 +340,13 @@ program myeul
 
         if ( AIRNOX ) call aircraft_nox(newseason)
 
-        if (me == 0 .and. DEBUG_UNI ) write(6,*) 'maaned og sesong', &
+        if (MasterProc .and. DEBUG_UNI ) write(6,*) 'maaned og sesong', &
              numt,mm,mm_old,newseason,oldseason
 
         call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
         call MetModel_LandUse(2)   ! e.g.  gets snow
-        if ( me == 0 .and. DEBUG_UNI) write(6,*)"vnewmonth start"
+        if ( MasterProc .and. DEBUG_UNI) write(6,*)"vnewmonth start"
 
         call newmonth
 
@@ -409,7 +395,7 @@ program myeul
 
      daynumber=day_of_year(current_date%year,current_date%month,&
           current_date%day)
-     if ( me == 0) write(6,*) 'TIME TEST ', 'current date ',current_date, &
+     if ( MasterProc) write(6,*) 'TIME TEST ', 'current date ',current_date, &
              "day number ", daynumber
 
 
@@ -451,7 +437,7 @@ program myeul
 
   call massbudget()
 
-  if(me == 0)then
+  if(MasterProc)then
      write(6,*) 'programme is finished'
     ! Gather timing info:
      if(NPROC-1 >  0)then

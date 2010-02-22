@@ -123,7 +123,7 @@ module BoundaryConditions_ml
                                   ,sigma_mid &  !sigma layer midpoint
                                   ,debug_proc & !DSGC
                                   ,i_fdom, j_fdom  !u1 for testing
-  use Met_ml               ,only : z_mid       ! height of half layers
+  use MetFields_ml               ,only : z_mid       ! height of half layers
   use ModelConstants_ml ,    only: KMAX_MID  &  ! Number of levels in vertical
                     ,NPROC   &    ! Number of processors
                     ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc

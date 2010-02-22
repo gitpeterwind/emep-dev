@@ -1,14 +1,32 @@
-xxxxxxxxxxxxxx rv3_5_2  Dave  Feb 20th 2010
+xxxxxxxxxxxxxx rv3_5_3  Dave  Feb 22nd 2010
+
+*** MetFields_ml ***  now has all met fields defined here
+
+  Bug spotted?? Not understood though - SST was defined as
+  3d (:,:,KMAX:MID) field, but setting to 2d (:,:,NMET)
+  doesn't change results. Don't know why.
+
+BLPhysics - several Hmix options added. Results for "TI" physics
+      zi checked  and identical to those of tiphys routine. Will
+      replace completely soon, getting rid of several routines.
+      For now the routines in BLPhysics are waiting for use.
+
+GridValues_ml
+      A, B replaced by A_bnd, B_bnd
+
+Various small tidy ups
+
+xxxxxxxxxxxxxx rv3_5_2  Dave  Feb 18th 2010
 
 Met_ml   - Bug-fix  (many years old bug!!!) 
            real winds used in Ri dvdz calculation.
            New arrays u_mid, v_mid used, and u_ref simplified too.
 
-  *** MetFields_ml **** new. Will gradually move most met fields here, and
+*** MetFields_ml **** new. Will gradually move most met fields here, and
        keep Met_ml for subroutines and processing.
 
 
-  *** felt stuff removed :-)   (100s lines gone, double :-)
+*** felt stuff removed :-)   (100s lines gone, double :-)
 
  changes in many modules to use MetFields for wind, ps, sdot
 

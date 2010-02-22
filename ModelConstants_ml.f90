@@ -55,7 +55,7 @@ module ModelConstants_ml
 
   integer, public, parameter ::  &
     NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
   ! ds Jan2009
@@ -81,11 +81,11 @@ module ModelConstants_ml
  !QUERY? integer, public, parameter :: DEBUG_i= 86, DEBUG_j= 21 ! Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
  !integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
- !integer, public, parameter :: DEBUG_i= 97, DEBUG_j= 62 ! Waldhof
+ integer, public, parameter :: DEBUG_i= 97, DEBUG_j= 62 ! Waldhof
  !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
  !integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
- integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
+ !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
 
 !=============================================================================
@@ -98,6 +98,7 @@ module ModelConstants_ml
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
     ,DEBUG_MET            = .false. & !
+      ,DEBUG_HMIX         = .false. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !
     ,DEBUG_VDS            = .false. & !
@@ -109,6 +110,7 @@ module ModelConstants_ml
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
     ,DEBUG_RUNCHEM        = .false. &
+      ,DEBUG_SEASALT        = .false. & !
     ,DEBUG_SOA            = .false. & !
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_LANDDEFS       = .false. & !

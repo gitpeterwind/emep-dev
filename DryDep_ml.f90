@@ -116,7 +116,7 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
 !FEB2009 - Met_ml needed for temp 
  use MetFields_ml, only: u_ref
- use Met_ml, only: tau, sdepth, SoilWater, SoilWater_deep, rh2m, th,pzpbl
+ use MetFields_ml, only: tau, sdepth, SoilWater, SoilWater_deep, rh2m, th,pzpbl
 ! use Sites_ml,         only : nlocal_sites,site_x,site_y,site_n,site_name  ! JP-DEPSITES
 
  implicit none

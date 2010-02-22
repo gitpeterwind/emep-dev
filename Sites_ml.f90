@@ -58,7 +58,7 @@ use ChemChemicals_ml,   only : species               ! for species names
 use ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PPM25, PPMCO &
                               ,SSfi, SSco  !SeaS
-use Met_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
+use MetFields_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
                               , z_bnd, z_mid, roa, xksig, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &

@@ -15,7 +15,7 @@ module ForestFire_ml
 
   use GridValues_ml, only : i_fdom, j_fdom, debug_li, debug_lj, debug_proc
   use Io_ml,       only : PrintLog
-  use Met_ml,      only : z_bnd
+  use MetFields_ml,      only : z_bnd
   use ModelConstants_ml, only : MasterProc, KMAX_MID, DEBUG_FORESTFIRE, &
                                 IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
   use NetCDF_ml, only : ReadField_CDF, Out_netCDF,  Real4 ! Reads, writes 

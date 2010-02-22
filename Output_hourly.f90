@@ -59,7 +59,7 @@
 
    use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,&
                            identi,runlabel1, IOU_INST,IOU_HOUR
-   use Met_ml,           only : t2_nwp,th, roa, surface_precip, &
+   use MetFields_ml,           only : t2_nwp,th, roa, surface_precip, &
                                    Idirect, Idiffuse
    use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF &
                                 ,Int1,Int2,Int4,Real4,Real8 !Output data type to choose

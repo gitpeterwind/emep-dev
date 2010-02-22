@@ -47,10 +47,11 @@
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
  use MetFields_ml,         only : u_ref
- use Met_ml,               only : z_bnd, z_mid, sst, snow,   &
+ use MetFields_ml,               only : z_bnd, z_mid, sst, snow,   &
                                   nwp_sea, foundSST  
  use MicroMet_ml,          only : Wind_at_h
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, DEBUG_i,DEBUG_j
+ use ModelConstants_ml,    only : KMAX_MID, KMAX_BND,&
+      DEBUG_SEASALT, DEBUG_i,DEBUG_j
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, GRAV, AVOG ,PI
  use TimeDate_ml,          only : current_date
@@ -73,7 +74,6 @@
   real, public, dimension(NSS,MAXLIMAX,MAXLJMAX) :: SS_prod !Sea salt flux
 
   logical, private, save :: my_first_call = .true.
-  logical, private, parameter :: MY_DEBUG = .false.
 
   contains
 
@@ -124,8 +124,8 @@
 
        if ( Sub(lu)%is_water ) then
 
-          if(MY_DEBUG .and. debug_flag) then
-              write(6,'(a20,2i5)') ' Sea-Salt Check ',DEBUG_i,DEBUG_j
+          if(DEBUG_SEASALT .and. debug_flag) then
+              write(6,*) ' Sea-Salt Check SST? ', foundSST
               write(6,'(a30,3f12.4,f8.2)') '** ustar_nwp, d, Z0, SST ** ',&
                    Grid%ustar, Sub(lu)%d,Sub(lu)%z0, sst(i,j,1)
           end if
@@ -138,7 +138,7 @@
          if (u10 <= 0.0) u10 = 1.0e-5    ! to make sure u10!=0 because of LOG(u10)
          u10_341=exp(log(u10) * (3.41))
 
-         if(MY_DEBUG .and. debug_flag) &
+         if(DEBUG_SEASALT .and. debug_flag) &
              write(6,'(a30,2f12.4,es14.4)')'** U*, U10, invL ** ', &
                 Sub(lu)%ustar, u10,Sub(lu)%invL
 
@@ -163,7 +163,7 @@
                ss_flux(ii) = flux_help * ( log_dp2(ii) - log_dp1(ii) )    &
                                    * u10_341 * 3.84e-6 
                d3(ii) = dp3(ii)  ! diameter cubed
-               if(MY_DEBUG .and. debug_flag) write(6,'(a20,i5,es13.4)') &
+               if(DEBUG_SEASALT .and. debug_flag) write(6,'(a20,i5,es13.4)') &
                   'Flux Maarten ->  ',ii, ss_flux(jj)
           enddo
 
@@ -174,7 +174,7 @@
                ss_flux(jj) = temp_Monah (ii) * u10_341
 
                d3(jj) = dSS3(ii)  ! diameter cubed
-               if(MY_DEBUG .and. debug_flag) &
+               if(DEBUG_SEASALT .and. debug_flag) &
                    write(6,'(a20,i5,es13.4)') 'Flux Monah ->  ',ii, ss_flux(jj)
           enddo
 
@@ -198,7 +198,7 @@
                                   * water_fraction(i,j)             
           enddo
 
-          if(MY_DEBUG .and. debug_flag) write(6,'(a35,2es15.4)')  &
+          if(DEBUG_SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &
              '>> SS production fine/coarse  >>', &
                 SS_prod(QSSFI,i,j), SS_prod(QSSCO,i,j)
                           

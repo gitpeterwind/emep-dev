@@ -37,7 +37,7 @@ use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP
 use KeyValue_ml,    only: KeyVal,KeyValue, LENKEYVAL
 use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, STUBBLE, Growing_Season,&
                           NLanduse_DEF,NLANDUSE_EMEP
-use Met_ml,         only :nwp_sea ,foundnwp_sea
+use MetFields_ml,       only :nwp_sea ,foundnwp_sea
 use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSEMAX, &
                           NPROC, IIFULLDOM, JJFULLDOM, &
                           DomainName

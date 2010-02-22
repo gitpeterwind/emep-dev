@@ -80,7 +80,7 @@ use Chemfields_ml , only : so2nh3_24hr,Grid_snow
 use EcoSystem_ml,   only : DepEcoSystem, NDEF_ECOSYSTEMS, &
                            EcoSystemFrac,FULL_GRID
 use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M
-use Met_ml, only :   roa,pzpbl,xksig,th,zen, ustar_nwp, z_bnd
+use MetFields_ml, only :   roa,pzpbl,xksig,th,zen, ustar_nwp, z_bnd
 use MetFields_ml, only :   ps
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension

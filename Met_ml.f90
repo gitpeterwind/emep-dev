@@ -34,10 +34,40 @@ module Met_ml
   ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
   ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   !_____________________________________________________________________________
+!  Subroutines:          Called from:
+!    MeteoGridRead        Unimod
+!    MeteoRead            Unimod
+!    MetModel_LandUse     Unimod
+!    metvar(numt)         Unimod
+!    metint               PhyChem
+!    met_derived          metint    
+!    tiphys               metvar
+! 
+!  metvar - This routines postprocess the meteo fields:
+!     ! Unit changes, special definitions etc...
+! 
+!     e.g. converts wind to u_xmj, v_xmi
+! 
+!     call tiphys(numt)
+! 
+!  metint
+! 
+!     !     this routine does the forward linear stepping of the meteorological
+!     !     fields read or derived every 3 hours.
+!        q(..1) = q(.., 1) + ...
+! 
+!     call met_derived - gets u_mid, rho_sruf, ustar_nwp, after each dt_advec
+! 
+!============================================================================= 
 
-
-
-  use BLPhysics_ml,         only : PZPBL_MAX, RiB_Hmix !TESTING
+  use BLPhysics_ml,         only : KPBL_MAX &
+    ,KPBL_MAX                & ! Max exent of PBL calcs, eg. k=10
+                               ! or 1 if no RiB method needed
+    ,JericevicRiB_Hmix       & ! TESTING
+    ,Venkatram_Hmix          & ! TESTING
+    ,Zilitinkevich_Hmix      & ! TESTING
+    ,SeibertRiB_Hmix         & ! TESTING
+    ,TI_BLphysics              ! TESTING or orig
   use CheckStop_ml,         only : CheckStop
   use Functions_ml,         only : Exner_tab, Exner_nd
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
@@ -51,6 +81,7 @@ module Met_ml
        ,KMAX_BND,KMAX_MID,NMET &
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
+       ,DEBUG_HMIX & 
        ,nstep
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
@@ -73,142 +104,12 @@ module Met_ml
   private
 
 
-
-
-  !----------------- basic met fields ----------------------------------!
-  !  Here we declare the metoeorlogical fields used in the model        !
-  !  From old eulmc.inc=eulmet.inc
-  !---------------------------------------------------------------------!
-  !
-  !
-  ! Vertical levels: z_mid,  z_bnd, sigma_mid, sigma_bnd
-  !=============================================================================
-  !*   "mid" and "bnd" are used as suffixes on z and sigma as shown in
-  !*   the sketch below. "bnd" is the boundary between two layers and
-  !*   "mid" the midddle of the layer. The numbering of layers starts
-  !*   from 1 at the surface.
-  !*
-  !*
-  !*
-  !* ---------------------------
-  !*
-  !*
-  !* - - - - - - - - - - - -     KMAX_MID -1
-  !*
-  !*
-  !* --------------------------  KMAX_BDN-1       (z_bnd)   (sigma_bnd)
-  !*
-  !*
-  !* - - - - - - - - -           KMAX_MID(old kmax2) = 20    (z_mid)   (sigma_mid)   (old z2)
-  !*
-  !* ------------------------    KMAX_BND = 21    (z_bnd)                 (old z1)
-  !* \\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\  surface \\\\\\\\\\\\\\\\
-  !*
-
-
-
   INCLUDE 'mpif.h'
   INTEGER MPISTATUS(MPI_STATUS_SIZE),INFO
-
-
-!MOVED  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: sdot ! 1/s
-
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
-       th      &  ! Potential teperature  ( deg. k )
-       ,q         ! Specific humidity
-
-
-  !    since pr,cc3d,cc3dmax used only for 1 time layer - define without NMET
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
-       pr      & ! Precipitation
-       ,cc3d    & ! 3-d cloud cover (cc3d),
-       ,cc3dmax & ! and maximum for layers above a given layer
-       ,lwc     & !liquid water content
-!       ,zm3d    & ! TMP FOR TESTING
-       ,sst       ! SST Sea Surface Temprature- ONLY from 2002
-
-
-
-  ! surface fields
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,NMET) :: &
-!MOVED       ps      & ! Surface pressure hPa (or Pa- CHECK!)
-        t2_nwp    & ! Temp 2 m   deg. K
-       ,fh      & ! surf.flux.sens.heat W/m^2
-       ,fl      & ! latent heat flux W/m^2
-       ,tau     & ! surf. stress  N/m^2
-                                ! These fields only available for EMEP from 2002 on
-       ,rh2m    & !  RH at 2m
-       ,SoilWater&!  Upper 7.2cm
-       ,SoilWater_deep& !   Next 6x7cm
-!hf snow
-       ,sdepth &!snowdepth, m
-       ,ice
-
-
-
-
-  ! Fields below are derived/calculated from the input meteorological fields
-
-!MOVED  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: skh
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: roa ! kg/m^3
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-       surface_precip     ! Surface precip mm/hr
-
-
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-       rho_surf    & ! Surface density
-       ,Tpot2m      & ! Potential temp at 2m
-       ,ustar_nwp     ! friction velocity m/s ustar^2 = tau/roa
-
-  real,public, save, &
-       dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: z_bnd ! height of full layers
-  real,public, save, &
-       dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: z_mid ! height of half layers
-
-  integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-       snow        ! monthly snow (1=true), read in MetModel_LandUse
-
-
-  logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-       nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
 
   logical, private, save      ::  debug_proc = .false.
   integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
 
-  logical, public, save :: foundustar  ! Used for MM5-type, where u_xmj* but
-  ! not tau
-  logical, public, save :: foundsdot   ! If not found: compute using
-  ! divergence=0
-  logical, public, save :: sdot_at_mid ! set false if sdot is defined
-  logical, public, save :: foundSST    ! false if no SeaSurfaceT in metdata
-!hf snow
-  logical, public, save :: foundsdepth    ! false if no snow depth in metdata
-  logical, public, save :: foundice       ! false if no ice coverage (%) in metdata
-  logical, public, save :: foundnwp_sea   !false if no rough file is found
-  ! (when read) at level  boundaries
-  ! and therefore do not need to be
-  ! interpolated.
-
-  ! for tiphys
-  !check dimension
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
-       xksig ! estimated exchange coefficient, Kz, in intermediate
-  ! sigma levels, m2/s
-
-  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-       pzpbl,   &  !stores H(ABL) for averaging and plotting purposes, m
-       Kz_min      ! Min Kz below hmix  !hf Hilde&Anton
-
-
-
-
-  !   temnporary placement of solar radiation variations
-
-  real, public, dimension(MAXLIMAX, MAXLJMAX), save:: &
-       zen          &  ! Zenith angle (degrees)
-       ,coszen=0.0   &  ! cos of zenith angle
-       ,Idiffuse     &  ! diffuse solar radiation (W/m^2)
-       ,Idirect         ! total direct solar radiation (W/m^2)
 
   integer, public :: startdate(4)
   integer, save   :: Nhh &         ! number of field stored per 24 hours
@@ -218,9 +119,7 @@ module Met_ml
   ! if nhour_first=3 then
   ! 1=03:00 2=06:00...8=24:00
 
-      character (len = 100)        ::  field_not_found='field_not_found'
-
-
+  character (len = 100)        ::  field_not_found='field_not_found'
 
 
   public :: MeteoGridRead
@@ -230,12 +129,7 @@ module Met_ml
   public :: metint
   public :: tiphys
 
-
-
 contains
-
-
-
 
 
 
@@ -253,12 +147,10 @@ contains
 
     character (len = 100), save  ::  meteoname   ! name of the meteofile
     character (len = 100)        ::  namefield & ! name of the requested field
-         ,validity    ! field is either instaneous
-    ! or averaged
+         ,validity    ! field is either instaneous or averaged
     integer ::   ndim,nyear,nmonth,nday,nhour,k
-    integer ::   nr                              ! Fields are interpolate in
-    ! time (NMET = 2): between
-    ! nr=1 and nr=2
+    integer ::   nr   ! Fields are interpolate in
+                      ! time (NMET = 2): between nr=1 and nr=2
 
 
     type(date)      ::  next_inptime             ! hfTD,addhours_to_input
@@ -312,7 +204,7 @@ contains
 
 
 
-    if(me == 0 .and. DEBUG_MET) write(6,*)         			&
+    if(MasterProc .and. DEBUG_MET) write(6,*) &
          '*** nyear,nmonth,nday,nhour,numt,nmdays2'    &
          ,next_inptime%year,next_inptime%month,next_inptime%day    &
          ,next_inptime%hour,numt,nmdays(2)
@@ -518,7 +410,7 @@ contains
     endif
 
     call DefGrid()!defines: i_fdom,j_fdom,i_local, j_local,xmd,xm2ji,xmdji,
-    !sigma_bnd,carea,gbacmax,gbacmin,glacmax,glacmin
+                  !         sigma_bnd,carea,gbacmax,gbacmin,glacmax,glacmin
 
   end subroutine Meteogridread
 
@@ -537,8 +429,7 @@ contains
 
     !    local
 
-    real,   dimension(KMAX_MID)          ::  prhelp    &
-         ,exf2
+    real,   dimension(KMAX_MID)          ::  prhelp, exf2
     real,   dimension(KMAX_BND)          ::  exf1
 
     real,   dimension(MAXLJMAX,KMAX_MID) :: usnd   ! send in x
@@ -557,8 +448,6 @@ contains
     real ::Ps_extended(0:MAXLIMAX+1,0:MAXLJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
 
 
-
-
     nr = 2
     if (numt == 1) then
 
@@ -575,8 +464,8 @@ contains
 
        do i = 1, limax
           do j = 1, ljmax
-             if (DEBUG_MET .and. &
-                  i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J ) then
+!             if (DEBUG_MET .and. &
+              if( i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J ) then
                 debug_proc = .true.
                 debug_iloc    = i
                 debug_jloc    = j
@@ -848,6 +737,7 @@ contains
     !-----------------------------------------------------------------------
 
     if( DEBUG_MET .and. debug_proc ) then
+     ! Note: example results are given in MetFields
        write(*,*) "DEBUG meIJ" , me, limax, ljmax
        do k = 1, KMAX_MID
           write(6,"(a12,2i3,3f12.4)") "DEBUG_Z",me, k, &
@@ -855,31 +745,6 @@ contains
 !            zm3d(debug_iloc,debug_jloc,k)
        end do
     end if
-
-! RESULT FROM ONE TEST
-!Tested zm3d (=zm) which is sometimes used against
-!z_mid. Seems almost identical. Diff in exner functions maybe?
-!                   z_bnd        z_mid       zm3d 
-!     DEBUG_Z  2  1  16276.2359  15244.9023  15244.7131
-!     DEBUG_Z  2  2  14319.8682  13536.3354  13531.2981
-!     DEBUG_Z  2  3  12815.7707  12185.9090  12177.9740
-!     DEBUG_Z  2  4  11598.2202  11011.4342  11004.0286
-!     DEBUG_Z  2  5  10461.1309   9792.2354   9788.6193
-!     DEBUG_Z  2  6   9168.4701   8431.0622   8430.8546
-!     DEBUG_Z  2  7   7747.1534   7010.9878   7013.5860
-!     DEBUG_Z  2  8   6324.9278   5696.2857   5700.0226
-!     DEBUG_Z  2  9   5103.2253   4595.6436   4598.2893
-!     DEBUG_Z  2 10   4110.6562   3690.7686   3692.3391
-!     DEBUG_Z  2 11   3286.0770   2933.6493   2934.3594
-!     DEBUG_Z  2 12   2591.8972   2296.1632   2296.2730
-!     DEBUG_Z  2 13   2007.7924   1761.4943   1761.6936
-!     DEBUG_Z  2 14   1520.4434   1316.9528   1317.4565
-!     DEBUG_Z  2 15   1116.9477    950.9995    951.4678
-!     DEBUG_Z  2 16    787.3321    655.5900    655.8842
-!     DEBUG_Z  2 17    525.1633    424.5627    424.7443
-!     DEBUG_Z  2 18    324.8232    253.9725    254.0498
-!     DEBUG_Z  2 19    183.6019    137.4135    137.4284
-!     DEBUG_Z  2 20     91.3017     45.6234     45.6146
 
 
     !     Horizontal velocity divided by map-factor.
@@ -1105,7 +970,6 @@ contains
             + (tau(:,:,2) - tau(:,:,1))*div
        sst(:,:,1)    = sst(:,:,1)         		&
             + (sst(:,:,2)   - sst(:,:,1))*div
-!hf XX
        sdepth(:,:,1)    = sdepth(:,:,1)         		&
             + (sdepth(:,:,2)   - sdepth(:,:,1))*div
        ice(:,:,1)    = ice(:,:,1)         		&
@@ -1132,7 +996,6 @@ contains
        rh2m(:,:,1) = rh2m(:,:,2)
        SoilWater(:,:,1) = SoilWater(:,:,2)
        SoilWater_deep(:,:,1) = SoilWater_deep(:,:,2)
-!hf XX
        sdepth(:,:,1) = sdepth(:,:,2)
        ice(:,:,1) = ice(:,:,2)
 
@@ -1169,7 +1032,7 @@ contains
     integer ::i,j, k
     logical :: DEBUG_DERIV = .false.
 
-    do k = 1, KMAX_MID
+    do k = KPBL_MAX, KMAX_MID
     do j = 1,ljmax
        do i = 1,limax
            u_mid(i,j,k) = 0.5*( u_xmj(i,j,k,1)*xm_j(i,j) + &
@@ -1246,7 +1109,7 @@ contains
 
     if ( callnum == 1  ) then
 
-       if ( me == 0  ) then
+       if ( MasterProc  ) then
           write(fname,fmt='(''rough.dat'')')
           write(6,*) 'filename for landuse ',fname
        end if
@@ -1265,7 +1128,7 @@ contains
           enddo
        endif
     else ! callnum == 2
-       if (me == 0) then
+       if (MasterProc) then
           write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
           write(6,*) 'filename for snow ',fname
 
@@ -1403,7 +1266,6 @@ contains
     !!              :       0 => no need for further calc. of ziu
     !!              :       1 => ziu not found yet.
     !c    u_xmj    : wind speed in the x-direction, m/s
-    !c       umax    : maximum value of u_xmj and v_xmi, m/s
     !c    ustar    : friction velocity, m/s
     !c    v_xmi    : wind speed in the y-direction, m/s
     !c       ven     : ventilation coefficient, m3
@@ -1432,7 +1294,6 @@ contains
     !!              : xksig smoothed over three adjacent layers
     !c    xkzi    : local helping array for the vertical diffusivity, m2/s
     !!              : i.e. vertical exchange coeff. on top of ABL for unstable BL
-    !c       xtime   : 6.*3600. (seconds in one term, six hours)
     !c    zi    : Height of ABL (final value), m
     !c    zlimax    : maximum value of ABL-height, zi, (2000), m
     !c    zimhs    : ziu - hs
@@ -1495,11 +1356,6 @@ contains
     !!                                           pr(KMAX_BND),xksm(KMAX_BND)=0.
     !c
     !c
-    !c..alternativ names:   kkin = KMAX_MID=20 (number of sigma-layers)
-    !!                     kkinp = kkin+1 = KMAX_BND=21 (number of
-    !!                                        level-bounds for layers)
-    !!                     kkinm = kkin-1 = KMAX_MID-1
-    !c
     !c**********************************************************************
     logical, parameter :: DEBUG_KZ = .false.
     logical, parameter :: PIELKE_KZ = .true.    ! Default
@@ -1517,12 +1373,13 @@ contains
     real, dimension(MAXLIMAX)::zis,delq,thsrf,trc,pidth,dpidth,xkhs,xkdz,xkzi,&
          hs,xkh100
     real,  dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,uabs,vdfac
-    real ::lim,xdthdz,zmmin,zimin,zlimax,kzmin,kzmax,sm,pref,xtime,umax,eps,ric,&
+    real ::lim,xdthdz,zmmin,zimin,zlimax,kzmin,kzmax,sm,pref,eps,ric,&
          ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,dvdz,xl2,uvhs,zimhs,&
          zimz,zmhs,ux0,fac,fac2,dex12,ro
     real ::h100 ! Top of lowest layer - replaces 100.0
     real ::hsurfl
-real :: tmpHmix
+real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
+    ziTI, ziSeibert, ziJericevic, ziVenki, ziZil !TEST
 
     integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp, nr
 
@@ -1545,8 +1402,6 @@ real :: tmpHmix
 
     !from ModelC      pi = 4.*atan(1.)
 
-    xtime = 6.*3600.
-    umax=+70.
     zlimax = 3000.
     zimin = 100.
     zmmin = 200.
@@ -1622,6 +1477,16 @@ real :: tmpHmix
 !             zm3d(i,j,k) = zm(i,k)
           end do
        end do
+
+   ! Shows that z_bnd == zs_bnd and z_mid == zm!!!
+   !if( DEBUG_HMIX .and. debug_proc .and. & 
+   !     !   modulo( current_date%hour, 3)  == 0  .and. &
+   !        current_date%seconds == 0 .and. j == debug_jloc ) then
+   !   i = debug_iloc !,    j = debug_jloc
+   !    do k = 17, 1, -4
+   !     write(6,"(a,i3,4f15.4)") "DEBUG_Hmix Zs", k, z_bnd(i,j,k), zs_bnd(i,j,k), z_mid(i,j,k), zm(i,k)
+   !    end do
+   ! end if
 
 
        !----------------------------------------------------------------------
@@ -1824,12 +1689,13 @@ real :: tmpHmix
           ! calculating the height of unstable ABL
           !
           !!      if(trc(i).eq.1.) then
-      kabl = KMAX_MID
+
+          kabl = KMAX_MID
+
           do while( trc(i).eq.1)
              !! 28     if(trc(i).eq.1.) then
              kabl = kabl-1
-         pidth(i)=0.
-
+             pidth(i)=0.
 
              do k=KMAX_MID,kabl,-1
                 xdth = thc(i,kabl)-thc(i,k)
@@ -1867,13 +1733,7 @@ real :: tmpHmix
                 trc(i)=0.
              endif
 
-
           end do ! while
-          !!           go to 28
-
-          !!        endif
-
-          !!      endif
 
        end do
 
@@ -1886,8 +1746,6 @@ real :: tmpHmix
           zixx(i,j)=amax1(ziu(i,j),zis(i))
           zixx(i,j)=amin1(zlimax,zixx(i,j))
        end do
-
-
 
 
 
@@ -1904,26 +1762,62 @@ real :: tmpHmix
     do j=1,ljmax
        do i=1,limax
           pzpbl(i,j) = zixx(i,j)
-         if( DEBUG_MET .and. debug_proc ) then
-          if ( i == debug_i .and. j == debug_j ) then 
-           ! test alternative calculation from Amela
-!WAIT            call RiB_Hmix(windspeed(i,j,:), z_mid(i,j,:), th(i,j,:,nr), tmpHmix)
-            write(6,"(a,4i5,3f12.4)") "DEBUG_Hmix: ", &
-              current_date%month,&
-              current_date%day,&
-              current_date%hour,&
-              current_date%seconds,&
-                pzpbl(debug_iloc,debug_jloc),  tmpHmix
-           end if
-         end if
        enddo
     enddo
+
+   if( DEBUG_HMIX .and. debug_proc .and. & 
+         modulo( current_date%hour, 3)  == 0  .and. &
+           current_date%seconds == 0  ) then
+
+      i = debug_iloc
+      j = debug_jloc
+
+      call SeibertRiB_Hmix(&
+          u_mid(i,j,KPBL_MAX:KMAX_MID),  &
+          v_mid(i,j,KPBL_MAX:KMAX_MID),  &
+          z_mid(i,j,:),  &
+          th(i,j,:,nr),  &
+          ziSeibert)
+      call JericevicRiB_Hmix(&
+          u_mid(i,j,KPBL_MAX:KMAX_MID),  &
+          v_mid(i,j,KPBL_MAX:KMAX_MID),  &
+          z_mid(i,j,:),  &
+          th(i,j,:,nr),  &
+          ziJericevic)
+      ziVenki = Venkatram_Hmix(ustar_nwp(i,j))
+      ! no 1/L yet
+      !call Zilitinkevich_Hmix(&
+      !    ustar_nwp(i,j),  &
+      !    ustar_nwp(i,j),  &
+      !    ziVenki)
+
+     !   "old" exner-function of the full-levels
+
+      p2(:) = sigma_mid(:)*(ps(i,j,nr) - PT) + PT
+      exf2(:) = CP * Exner_nd(p2(:))
+      call TI_BLphysics(&
+          u_mid(i,j,KPBL_MAX:KMAX_MID),  &
+          v_mid(i,j,KPBL_MAX:KMAX_MID),  &
+          z_mid(i,j,:),  &
+          z_bnd(i,j,:),  &
+          fh(i,j,nr),  &
+          th(i,j,:,nr),  &
+          exf2(:),  &
+          p2(:), &
+          ziTI,.true.)
+
+      write(6,"(a,4i5, f8.2,9f7.1)") "DEBUG_Hmix: ", &
+           current_date%month,&
+           current_date%day,&
+           current_date%hour,&
+           current_date%seconds, fh(i,j,nr), &
+           pzpbl(i,j), ziTI, ziSeibert, ziJericevic, ziVenki
+    end if
 
 
     !cttttttttttttttttttttttttttttttttttttttttttttttttttttttt
     !c..height of ABL finished..............................
     !c------------------------------------------------------
-
 
 
 

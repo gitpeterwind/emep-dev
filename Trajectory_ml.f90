@@ -44,7 +44,7 @@ module Trajectory_ml
  use ChemSpecs_adv_ml
  use GridValues_ml ,     only : gl, gb
  use Io_ml,              only : IO_AIRCR
- use Met_ml,             only : z_bnd,z_mid
+ use MetFields_ml,             only : z_bnd,z_mid
  use ModelConstants_ml , only : dt_advec,PPBINV,KMAX_BND,NPROC
  use Par_ml   ,          only : gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG,me
  use TimeDate_ml,        only : current_date

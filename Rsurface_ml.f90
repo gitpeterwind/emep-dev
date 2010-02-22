@@ -42,7 +42,7 @@ use Radiation_ml, only : CanopyPAR
 use Wesely_ml,    only : Wesely_tab2 &  ! Wesely Table 2 for 14 gases
    ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 !hf snow
-use Met_ml, only : foundsdepth, foundice
+use MetFields_ml, only : foundsdepth, foundice
 implicit none
 private
 

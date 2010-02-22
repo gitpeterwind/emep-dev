@@ -63,7 +63,7 @@ use ChemGroups_ml,  only :  OXNGROUP, DDEP_OXNGROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
-use Met_ml,        only : z_bnd, roa    ! 6c REM: zeta
+use MetFields_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
                         , MasterProc  &
                         , SOURCE_RECEPTOR  &

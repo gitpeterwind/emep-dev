@@ -96,17 +96,17 @@
 
 !Parameters for Vertical Hybrid coordinates:
   real, public, save,  dimension(KMAX_BND) ::  &
-           A !Unit Pa.  first constant, defined at layer boundary (i.e. half levels in EC nomenclature)
+           A_bnd !Unit Pa.  first constant, defined at layer boundary (i.e. half levels in EC nomenclature)
   real, public, save,  dimension(KMAX_BND) ::  &
-           B !Unit 1.  second constant, defined at layer boundary (i.e. half levels in EC nomenclature)
+           B_bnd !Unit 1.  second constant, defined at layer boundary (i.e. half levels in EC nomenclature)
   real, public, save,  dimension(KMAX_MID) ::  &
            A_mid !Unit Pa.  first constant, defined at layer boundary (i.e. full levels in EC nomenclature)
   real, public, save,  dimension(KMAX_MID) ::  &
            B_mid !Unit 1.  second constant, defined at layer boundary (i.e. full levels in EC nomenclature)
   real, public, save,  dimension(KMAX_MID) ::  &
-           dA !Unit Pa.  A(k+1)-A(k) 
+           dA !Unit Pa.  A_bnd(k+1)-A_bnd(k) 
   real, public, save,  dimension(KMAX_MID) ::  &
-           dB !Unit 1.  B(k+1)-B(k) 
+           dB !Unit 1.  B_bnd(k+1)-B_bnd(k) 
 ! P = A + B*PS
 ! eta = A/Pref + B
 
@@ -280,14 +280,14 @@ contains
           
 !TEMPORARY: definition of A and B. Will be read from metfile in the future
    do k = 1,KMAX_BND
-      A(k)=PT * (1-sigma_bnd(k)) 
-      B(k)=sigma_bnd(k) 
+      A_bnd(k)=PT * (1-sigma_bnd(k)) 
+      B_bnd(k)=sigma_bnd(k) 
    enddo
    do k = 1,KMAX_MID
-      dA(k)=A(k+1)-A(k)
-      dB(k)=B(k+1)-B(k)
-      A_mid(k)=(A(k+1)+A(k))/2.0      
-      B_mid(k)=(B(k+1)+B(k))/2.0
+      dA(k)=A_bnd(k+1)-A_bnd(k)
+      dB(k)=B_bnd(k+1)-B_bnd(k)
+      A_mid(k)=(A_bnd(k+1)+A_bnd(k))/2.0      
+      B_mid(k)=(B_bnd(k+1)+B_bnd(k))/2.0
    enddo
 
 
