@@ -601,6 +601,8 @@ end do
            -1, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
   call AddNewDeriv( "D3_TH","TH", "-","-",   "m", &
            0, -99,-99, 0.0, 1.0,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
+  call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
+           0, -99,-99, 0.0, 1.0,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
 
 
      if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
@@ -1174,6 +1176,14 @@ end do
                 + xn_adv(IXADV_PPMco,i,j,k) &
                 + xn_adv(IXADV_SSco,i,j,k) 
             end forall
+
+! hb                                                                            
+         case ( "Kz" )
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = xksig(i,j,k)
+            end forall
+
 
           case  default
 

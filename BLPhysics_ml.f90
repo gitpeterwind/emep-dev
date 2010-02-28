@@ -5,7 +5,7 @@ module BLPhysics_ml
  ! Copiedfrom Unimod.rv18WTA  14th Feb 2010
  ! use GridValues_ml,  only : sigma_bnd
 
- use ModelConstants_ml,  only : KMAX_MID, KMAX_BND, KWINDTOP
+ use ModelConstants_ml,  only : KMAX_MID, KMAX_BND, KWINDTOP, PT
  use PhysicalConstants_ml,  only : KARMAN
  implicit none
  private
@@ -19,6 +19,9 @@ module BLPhysics_ml
  real, parameter, public :: PZPBL_MAX=5000.  ! Amela's
  integer, parameter, private :: PIELKE_KZ=1
  integer, parameter, public :: KZ_METHOD=PIELKE_KZ
+ ! hb 23.02.2010 Kz from meteo 
+ logical, parameter, public :: NWP_Kz=.false.
+ logical, parameter, public :: OBRIAN_Kz=.true.
 
 ! We don't need to calculate Kz for all layer in future maybe
 ! Still, for safety  we let this extent to K=1 for now
@@ -28,21 +31,79 @@ module BLPhysics_ml
  real, parameter, private :: EPS=0.01  !prevents div by zero for WS
 
 public :: SeibertRiB_Hmix
+public :: SeibertRiB_Hmix_3d
 public :: JericevicRiB_Hmix
 public :: Venkatram_Hmix
 public :: Zilitinkevich_Hmix
 public :: TI_BLphysics
 public :: fake_zmid
-
+public :: fake_zbnd
 !public :: Grisogono
 public :: risig1
+public :: BrostWyngaardKz
+
+public :: SigmaKz_2_m2s ! hb 23.02.2010 Kz from meteo
+ private :: SigmaKz_2_m2s_scalar
+ private :: SigmaKz_2_m2s_array
 
 ! We put GRAV here to simplify dependenceis
 
  real, parameter, private :: GRAV = 9.807   ! Gravity, m/s2
 
+! conversion of Kz in sigma coordinates to m2/s, from HF Kz(sigma)=Kz*ro**2*(GRAV/p*)**2
+! We can call this conversion routine as either scalar or array
+  interface SigmaKz_2_m2s
+     module procedure SigmaKz_2_m2s_scalar
+     module procedure SigmaKz_2_m2s_array
+  end interface SigmaKz_2_m2s
 
 contains
+
+ !----------------------------------------------------------------------------
+function BrostWyngaardKz(z,h,ustar,invL) result(Kz)
+  real, intent(in) :: z    ! height
+  real, intent(in) :: h    ! Boundary layer depth 
+  real, intent(in) :: ustar!  u*
+  real, intent(in) :: invL !  1/L  
+  real :: Kz
+
+     if ( z < h ) then
+        Kz = KARMAN * ustar * z * (1-z/h)**1.5 / (1+5*z*invL)
+     else
+        Kz= 0.0
+     end if
+
+end function BrostWyngaardKz
+
+! hb 23.02.2010 Kz from meteo
+function SigmaKz_2_m2s_scalar (roa,ps) result(Kz_fac)
+  real, intent(in) :: roa
+  real, intent(in) :: ps
+  real :: fac
+  real :: Kz_fac
+
+     fac= (ps - PT)/(GRAV*roa)
+     Kz_fac= fac*fac
+
+end function SigmaKz_2_m2s_scalar
+
+function SigmaKz_2_m2s_array (roa,ps) result(Kz_fac)
+  real, intent(in), dimension(:,:,:) :: roa
+  real, intent(in), dimension(:,:)   :: ps
+  real, dimension(size(roa,1),size(roa,2),size(roa,3)) :: Kz_fac
+  real :: fac
+  integer :: i,j,k
+
+  do k = 1, size(roa,3)
+  do j = 1, size(ps,2)
+  do i = 1, size(ps,1)
+     fac= (ps(i,j) - PT)/(GRAV*roa(i,j,k))
+     Kz_fac(i,j,k) = fac*fac
+  end do
+  end do
+  end do
+
+end function SigmaKz_2_m2s_array
 
  !----------------------------------------------------------------------------
 
@@ -54,6 +115,71 @@ contains
 ! Note, can never give first layer as Hmix. Is
 ! this intenional? What if we have a really stable BL?
 
+!subroutine SH (Nij,Nk,u,v, zm, theta, pzpbl)
+!  integer, intent(in) :: Nij, Nk   ! dims (i x j, k)
+!  real, dimension(Nij,Nk), intent(in) :: u,v ! winds
+!  real, dimension(Nij,Nk), intent(in) :: zm ! mid-cell height
+!  real, dimension(Nij,Nk), intent(in) :: theta !pot. temp
+!  real, intent(out) :: pzpbl(Nij)
+!  integer :: k, n
+!  real, parameter :: Ric = 0.25  ! critical Ric
+!  real,dimension(Nij) :: Rib  ! bulk Richardson number
+!  real,dimension(Nij) :: Theta1   ! pot temp of lowest cell
+!
+!! Seibert et al., AE, 2000, pp1001-,  eqn (9): 
+!! Although we should use virtual pot temp, not just theta
+!
+!
+!   do n = 1, Nij
+!     Theta1(n) = theta(n,KMAX_MID)
+!     KLOOP: do k=Nk-1, KWINDTOP, -1 ! KMAX_MID -1
+!
+!        Rib(n) =      GRAV * zm(n,k) &
+!             *(theta(n,k)-Theta1(n) ) / &
+!             ( Theta1(n) * ( u(n,k)**2 + v(n,k)**2 )+EPS )
+!        if (Rib(n) >= Ric) then
+!              pzpbl = zm(n,k)
+!              exit KLOOP
+!        end if 
+!      end do KLOOP
+!    enddo !n
+!
+!   !QUERY  pzpbl=min(pzpbl,pzpbl_max )
+!   !QUERY  pzpbl=max(pzpbl, pzpbl_min)
+!end subroutine SH
+
+subroutine SeibertRiB_Hmix_3d (u,v, zm, theta, pzpbl)
+  real, dimension(:,:,:), intent(in) :: u,v ! winds
+  real, dimension(:,:,:), intent(in) :: zm ! mid-cell height
+  real, dimension(:,:,:), intent(in) :: theta !pot. temp
+  real, intent(out) :: pzpbl(:,:)
+  integer :: k, n, kmax
+  real, parameter :: Ric = 0.25  ! critical Ric
+  real,dimension(size(pzpbl,1),size(pzpbl,2)) :: RiB, Theta1   ! pot temp of lowest cell
+
+! Seibert et al., AE, 2000, pp1001-,  eqn (9): 
+! Although we should use virtual pot temp, not just theta
+
+     Theta1(:,:) = theta(:,:,KMAX_MID)
+     pzpbl = -999.999
+     KLOOP: do k=KMAX_MID-1, KWINDTOP, -1 
+
+        where ( pzpbl < 0 ) 
+           Rib(:,:) =      GRAV * zm(:,:,k) &
+             *(theta(:,:,k)-Theta1(:,:) ) / &
+             ( Theta1(:,:) * ( u(:,:,k)**2 + v(:,:,k)**2 )+EPS )
+           where (Rib(:,:) >= Ric) 
+              pzpbl(:,:) = zm(:,:,k)
+           end where 
+         end where 
+
+      end do KLOOP
+
+   !QUERY  pzpbl=min(pzpbl,pzpbl_max )
+   !QUERY  pzpbl=max(pzpbl, pzpbl_min)
+end subroutine SeibertRiB_Hmix_3d
+
+ !----------------------------------------------------------------------------
 subroutine SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
   real, dimension(KWINDTOP:KMAX_MID), intent(in) :: u,v ! winds
   real, dimension(KMAX_MID), intent(in) :: zm ! mid-cell height
@@ -73,6 +199,7 @@ subroutine SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
        Rib =      GRAV * zm(k) &
              *(theta(k)-Theta1 ) / &
              ( Theta1 * ( u(k)**2 + v(k)**2 )+EPS )
+             !print *, k, zm(k), theta(k), sqrt(( u(k)**2 + v(k)**2 )),  RiB
        if(Rib >= Ric) then
               pzpbl = zm(k)
               exit
@@ -180,7 +307,6 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
   real :: dpidth !heat increasement in accordance with temp. increasement, J/m2
   real :: pidth  !heat used to adjust air temperature, J/m2
   integer :: trc !help variable telling whether or not unstable ABL exists
-  real,dimension(KMAX_BND)::  pz ! local pressure in half sigma levels, hPa (mb),
   integer :: kabl
   real :: ziu    ! height of the unstable ABL, m
 
@@ -313,6 +439,7 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
       dthdz(k)=max(dthc,dthdzm)
 
       thc(k)=thc(k+1)+dthdz(k)*(zm(k)-zm(k+1))
+if ( debug_flag ) write(6,"(a,i3,3es10.3)") "DEBUG THC ", k, th(k), dthc, thc(k)
 
   enddo
 
@@ -325,6 +452,7 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
   delq=-min(fh,0.0)*DTZ
      thsrf=0.0
      ziu=0.0
+if ( debug_flag ) write(6,"(a,3es10.3)") "DEBUG fH, DELQ ", fh, delq
 
      !.................................
 
@@ -341,8 +469,9 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
 
         do k=KMAX_MID,kabl,-1
            xdth = thc(kabl)-thc(k)
-           dpidth = exnm(k)*xdth*(pz(k+1)-pz(k))/GRAV
+           dpidth = exnm(k)*xdth*(pm(k+1)-pm(k))/GRAV
            pidth = pidth + dpidth
+if ( debug_flag ) write(6,"(a,2i3,6es11.3,i4)") "DEBUG PID ", kabl, k, xdth, exnm(k), pm(k),  dpidth, pidth 
         end do
 
        if(pidth >= delq.and.trc == 1  ) then
@@ -357,13 +486,15 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
           ziu = zm(kabl+1) + (thsrf-thc(kabl+1))/xdthdz
 
           trc=0  
+if ( debug_flag ) write(6,"(a,i3,2es10.3,i4)") "DEBUG PICTH ", kabl, delq, pidth, trc 
 
         endif
 
 
+if ( debug_flag ) write(6,"(a,i3,es10.3,i5)") "DEBUG mid ", kabl, delq, trc 
         if(kabl <= 4 .and. trc == 1  ) then
 
-           write(6,*)'ziu calculations failed!'
+           write(6,*)'PBL ziu calculations failed!'
 
            ziu=zlimax
 
@@ -516,5 +647,42 @@ subroutine fake_zmid(z)
    z(20) =      45.6146
 end subroutine fake_zmid
 
+subroutine fake_zbnd(z)
+   
+ ! Data for testing. Note that z here is really geopotetntial
+ ! heught, but near the ground it doesn't matter so much
+ ! from 1 time-period, see DEBUG_Z in Met_ml
+   real, dimension(21), intent(out) :: z
+  z( 1) =    16276.236
+  z( 2) =    14319.868
+  z( 3) =    12815.771
+  z( 4) =    11598.220
+  z( 5) =    10461.131
+  z( 6) =     9168.470
+  z( 7) =     7747.153
+  z( 8) =     6324.928
+  z( 9) =     5103.225
+  z(10) =     4110.656
+  z(11) =     3286.077
+  z(12) =     2591.897
+  z(13) =     2007.792
+  z(14) =     1520.443
+  z(15) =     1116.948
+  z(16) =      787.332
+  z(17) =      525.163
+  z(18) =      324.823
+  z(19) =      183.602
+  z(20) =       91.302
+  z(21) =       91.302
+end subroutine fake_zbnd
+
 
 end module BLPhysics_ml
+
+!program testBLM
+!  use ModelConstants_ml, only : KMAX_MID
+!  use BLPhysics_ml
+!  real, dimension(KMAX_MID) :: u,v,zm,theta
+!  real :: pzpbl
+!  call SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
+!end program testBLM

@@ -350,12 +350,12 @@ private
  ! hb new 3D output when ppb
     !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, aNO3, pNO3 /)
     !integer, public, parameter, dimension(1) ::   D3_PPB = (/ O3 /)
-    integer, public, save, dimension(2:1) ::   D3_PPB ! ZERO-size default
+    integer, public, save, dimension(2) ::   D3_PPB = (/ PPMco, PPM25 /)! ZERO-size default
 
 ! hb other (non-ppb) 3D output
-     character(len=TXTLEN_DERIV), public, save, dimension(2:0) :: &
-       D3_OTHER ! = (/ "D3_PM25        ", &!"D3_TH        " /)
-                !       "D3_PMco        "/)
+     character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
+       D3_OTHER  = (/ "D3_Kz          " /)!"D3_TH        " /)
+                !     "D3_PMco        "/)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 

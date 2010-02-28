@@ -108,7 +108,9 @@ module MetFields_ml
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: &
         skh      &! vertical diffusivity in sigma coords
-       ,sdot      ! vertical velocity, sigma coords, 1/s
+       ,sdot     &! vertical velocity, sigma coords, 1/s
+! hb 23.02.2010 Kz from meteo
+       ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
 
   ! since pr,cc3d,cc3dmax used only for 1 time layer - define without NMET
@@ -185,10 +187,12 @@ module MetFields_ml
     ,foundSST       & ! false if no SeaSurfaceT in metdata
     ,foundsdepth    & ! false if no snow depth in metdata
     ,foundice       & ! false if no ice coverage (%) in metdata
-    ,foundnwp_sea     ! false if no rough file is found QUERY description?
+    ,foundnwp_sea   &  ! false if no rough file is found QUERY description?
   ! (when read) at level  boundaries QUERY?
   ! and therefore do not need to be
   ! interpolated.
+! hb 23.02.2010 Kz from meteo
+    ,foundKz_met      ! false if no Kz from meteorology
 
 
 end module MetFields_ml

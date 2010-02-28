@@ -146,8 +146,9 @@ implicit none
    !/** Volcanos. 
     logical, public, parameter :: VOLCANOES   = .true.  ! Gives Volcanos
 
+! hb not emis for 2008 yet
    !/** Forest fires. 
-    logical, public, parameter :: FOREST_FIRES = .true.  ! Gives Volcanos
+    logical, public, parameter :: FOREST_FIRES = .false.  ! Gives Volcanos
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD

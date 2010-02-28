@@ -155,7 +155,7 @@ integer, public, parameter :: &
     ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =     8                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
-    ,NXTRA_SONDE =    4                    ! No. Misc. met. params  (now th)
+    ,NXTRA_SONDE =    5                    ! No. Misc. met. params  (now th)
 !Oct09    ,N_NOy       =   10                    ! # of N species in NOy
 
 !SEP09
@@ -176,13 +176,13 @@ integer, public, parameter :: &
     SONDE_SHL =  (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 !    SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /) 
-    SONDE_XTRA=  (/ "NOy  ", "z_mid", "p_mid", "th   " /) !Height at mid-cell
+    SONDE_XTRA=  (/ "NOy  ", "z_mid", "p_mid", "th   ","xksig" /) !Height at mid-cell
 
  !   can access d_3d fields through index here, by
  !   setting "D3D" above and say D3_XKSIG12 here:
 
    integer,           public, parameter, dimension(NXTRA_SONDE) :: &
-                    SONDE_XTRA_INDEX=  (/      0, 0, 0, 0 /)
+                    SONDE_XTRA_INDEX=  (/    0, 0, 0, 0, 0 /)
 
 
 
@@ -206,7 +206,7 @@ integer, public, parameter :: &
     logical, public, parameter :: Hourly_ASCII = .false.
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
 
-    integer, public, parameter :: NHOURLY_OUT =  1 ! No. outputs
+    integer, public, parameter :: NHOURLY_OUT =  5 ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 1 ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
@@ -339,14 +339,14 @@ integer, public, parameter :: &
 !  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
-!  hr_out(2)=  Asc2D("aNH4-air","ADVugXX",&
-!                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
-!  hr_out(3)= Asc2D("aNO3-air", "ADVugXX",&
-!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
-!  hr_out(4)=  Asc2D("SO4-air", "ADVugXX",&
-!                  "(f8.4)",IXADV_SO4,  ix1,ix2,iy1,iy2,1, "ugS",to_ug_S,400.0)
-!  hr_out(5)=  Asc2D("pNO3-air","ADVugXX",&
-!                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,400.0)
+  hr_out(2)=  Asc2D("aNH4-air","ADVugXX",&
+                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
+  hr_out(3)= Asc2D("aNO3-air", "ADVugXX",&
+                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
+  hr_out(4)=  Asc2D("SO4-air", "ADVugXX",&
+                  "(f8.4)",IXADV_SO4,  ix1,ix2,iy1,iy2,1, "ugS",to_ug_S,400.0)
+  hr_out(5)=  Asc2D("pNO3-air","ADVugXX",&
+                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,400.0)
 !
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)

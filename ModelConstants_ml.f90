@@ -43,10 +43,10 @@ module ModelConstants_ml
 
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-   RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-  ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+   RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
@@ -97,8 +97,9 @@ module ModelConstants_ml
     ,DEBUG_DERIVED        = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
-    ,DEBUG_MET            = .false. & !
-      ,DEBUG_HMIX         = .false. & !
+    ,DEBUG_MET            = .true. & !
+      ,DEBUG_HMIX         = .true. & !
+      ,DEBUG_Kz           = .true. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !
     ,DEBUG_VDS            = .false. & !
@@ -134,8 +135,8 @@ module ModelConstants_ml
 !+ 2)  Define domain-name,  something that will
 !       generally only change when switching Met-driver or large domain
 
-  character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
- !character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
+ ! character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+ character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
  !character(len=20), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
 
   logical, parameter, public :: IS_GLOBAL = .false.
@@ -144,8 +145,8 @@ module ModelConstants_ml
 !+ 3)  Define main model dimensions,  things that will
 !       generally only change when switching Met-driver or large domain
   integer, public, parameter ::  &
-    IIFULLDOM = 170, JJFULLDOM = 133 &! x,y-Dimensions of full EMEP domain
-  ! IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
+  !  IIFULLDOM = 170, JJFULLDOM = 133 &! x,y-Dimensions of full EMEP domain
+   IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 &! x,y-Dimensions of full GLOBAL domain
   ! IIFULLDOM = 201, JJFULLDOM = 161 &! x,y-Dimensions of full GEMS/MACC domain
   , NLANDUSEMAX  = 23    &    ! Number of land use types in Inputs.Landuse file

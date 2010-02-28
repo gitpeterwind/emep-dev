@@ -131,7 +131,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2006";
+my $year = "2008";
    $year = substr($CWFBASE,0,4) if $CWF;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
@@ -158,12 +158,13 @@ my $SEMEENA    = "mifasv";
 my $AGNES      = "nyiri";
 my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";
+my $HALDIS      = "mifahb";
 
 my $USER       =  $DAVE;
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EMEP"; # EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "FORECAST" if $CWF;
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
@@ -204,7 +205,7 @@ my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 my $Chem     = "EmChem09";        # Label for chemical scheme used
 #$Chem     = "EmChem03c";        # Label for chemical scheme used
-$testv       = "rv3_5_3";
+$testv       = "rv3_5_4";
 
 #User directories
 my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -251,6 +252,7 @@ $emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
 $emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
                                                     if $year eq 2006;
 $emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
+$emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2008;
 $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
 
@@ -262,15 +264,15 @@ if ($GRID eq "FORECAST") {
 }
 
 #Dave, reset to Emission_Trends for Chem project, Oct 18th
-if ($STALLO) {
-  $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
-  $emisdir = "$EMIS_INP/$year";
-  if ( $GRID eq "GLOBAL" ) {
-    $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
-    $emisdir = $EMIS_INP;
-  }
-  $pm_emisdir = $emisdir;
-}
+#if ($STALLO) {
+#  $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
+#  $emisdir = "$EMIS_INP/$year";
+#  if ( $GRID eq "GLOBAL" ) {
+#    $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
+#    $emisdir = $EMIS_INP;
+#  }
+#  $pm_emisdir = $emisdir;
+#}
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
@@ -585,7 +587,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
     $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
     $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
-    $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
+#    $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
+    $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
     $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
 
 

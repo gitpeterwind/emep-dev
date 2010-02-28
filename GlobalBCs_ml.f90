@@ -440,8 +440,12 @@ elseif( year == 2005) then
  elseif ( year == 2007 )  then
    macehead_O3 = (/  40.7, 38.2, 46.1, 46.4, 40.9, 34.5, &
                      31.2, 28.8, 33.3, 36.1, 40.6, 41.7 /)
+! hb for now 2008=2007
+ elseif ( year == 2008 )  then
+   macehead_O3 = (/  40.7, 38.2, 46.1, 46.4, 40.9, 34.5, &
+                     31.2, 28.8, 33.3, 36.1, 40.6, 41.7 /)
 !---------------------------------------------------------------------------
- elseif ( year > 2007 .and. &   ! use defoult Mace-Head correction
+ elseif ( year > 2008 .and. &   ! use defoult Mace-Head correction
           .not.FORECAST ) then  ! (10-yr average) on FORECAST mode
    write(unit=errmsg,fmt=*) &
        "ERROR: No Mace Head correction for this year yet! ", year

@@ -67,7 +67,12 @@ module Met_ml
     ,Venkatram_Hmix          & ! TESTING
     ,Zilitinkevich_Hmix      & ! TESTING
     ,SeibertRiB_Hmix         & ! TESTING
-    ,TI_BLphysics              ! TESTING or orig
+    ,BrostWyngaardKz         & ! TESTING
+    ,TI_BLphysics            & ! TESTING or orig
+    ,NWP_Kz                  & ! hb 23.02.2010 Kz from meteo 
+    ,OBRIAN_Kz               &
+    ,SigmaKz_2_m2s
+
   use CheckStop_ml,         only : CheckStop
   use Functions_ml,         only : Exner_tab, Exner_nd
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
@@ -81,7 +86,7 @@ module Met_ml
        ,KMAX_BND,KMAX_MID,NMET &
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
-       ,DEBUG_HMIX & 
+       ,DEBUG_HMIX, DEBUG_Kz & 
        ,nstep
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
@@ -169,6 +174,9 @@ contains
        foundustar = .false.
        foundsdot = .false.
        foundSST  = .false.
+! hb 23.02.2010 Kz from meteo
+       foundKz_met = .false.
+
 
        next_inptime = current_date
 
@@ -280,10 +288,30 @@ contains
          validity, cc3d(:,:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
-
     if(trim(validity)/='averaged')then
        if(MasterProc)write(*,*)'WARNING: 3D cloud cover is not averaged'
     endif
+
+! hb 23.02.2010 Kz from meteo
+    if (NWP_Kz) then
+        namefield='eddy_diffusion_coefficient'
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             validity, Kz_met(:,:,:,nr))
+        if(validity==field_not_found)then
+           foundKz_met = .false.
+        if(MasterProc)write(*,*)'WARNING: Kz will be derived in model '
+        else
+           foundKz_met = .true.
+        endif
+        Kz_met=max(0.0,Kz_met)  ! only positive Kz
+    end if
+    if( MasterProc .and. DEBUG_Kz)then
+          write(6,*)               &
+         '*** After Kz', sum(Kz_met(:,:,:,nr)), minval(Kz_met(:,:,:,nr)), maxval(Kz_met(:,:,:,nr)),maxval(Kz_met(:,:,KMAX_BND,nr)), DEBUG_Kz, NWP_Kz, nr, nrec, ndim, namefield
+
+    endif
+
+
 
 
 
@@ -1378,7 +1406,8 @@ contains
          zimz,zmhs,ux0,fac,fac2,dex12,ro
     real ::h100 ! Top of lowest layer - replaces 100.0
     real ::hsurfl
-real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
+real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
+         p_bnd(KMAX_BND), & !TESTzi
     ziTI, ziSeibert, ziJericevic, ziVenki, ziZil !TEST
 
     integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp, nr
@@ -1701,6 +1730,7 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
                 xdth = thc(i,kabl)-thc(i,k)
                 dpidth(i) = exnm(i,j,k)*xdth*(pz(i,k+1)-pz(i,k))/GRAV
                 pidth(i) = pidth(i) + dpidth(i)
+
              end do
 
 
@@ -1726,7 +1756,7 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
              if(kabl.le.4 .and. trc(i).eq.1.) then
 
-                write(6,*)'ziu calculations failed!'
+                write(6,*)'Metml ziu calculations failed!'
 
                 ziu(i,j)=zlimax
 
@@ -1743,6 +1773,9 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
        do i=1,limax
 
+      if( i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J &
+            .and.  debug_proc == .true. ) &
+           write(6,"(a,3f9.3)") "TIDEBUG zius ", ziu(i,j),zis(i), zixx(i,j)
           zixx(i,j)=amax1(ziu(i,j),zis(i))
           zixx(i,j)=amin1(zlimax,zixx(i,j))
        end do
@@ -1793,8 +1826,9 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
      !   "old" exner-function of the full-levels
 
-      p2(:) = sigma_mid(:)*(ps(i,j,nr) - PT) + PT
-      exf2(:) = CP * Exner_nd(p2(:))
+      p_bnd(:) = sigma_bnd(:)*(ps(i,j,nr) - PT) + PT
+      p_mid(:) = sigma_mid(:)*(ps(i,j,nr) - PT) + PT
+      exf2(:) = CP * Exner_nd(p_mid(:))
       call TI_BLphysics(&
           u_mid(i,j,KPBL_MAX:KMAX_MID),  &
           v_mid(i,j,KPBL_MAX:KMAX_MID),  &
@@ -1803,14 +1837,15 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
           fh(i,j,nr),  &
           th(i,j,:,nr),  &
           exf2(:),  &
-          p2(:), &
+          p_bnd(:), &
           ziTI,.true.)
 
-      write(6,"(a,4i5, f8.2,9f7.1)") "DEBUG_Hmix: ", &
+      write(6,"(a,4i5, f8.2,11f7.1)") "DEBUG_Hmix: ", &
            current_date%month,&
            current_date%day,&
            current_date%hour,&
            current_date%seconds, fh(i,j,nr), &
+           ziu(i,j),zis(i),  &
            pzpbl(i,j), ziTI, ziSeibert, ziJericevic, ziVenki
     end if
 
@@ -1824,11 +1859,46 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
     !----------------------------------------------------------!
     if( TKE_DIFF ) then
        call tkediff (nr)                            ! guta
-    else
+    else if (NWP_Kz) then
+       do  k=2,KMAX_MID
+         do i=1,limax
+            do j=1,ljmax
+! hb KZ_met are accumulated values over three hours, to get m2/s divide with 60*60*3  
+               skh(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*3)
+               xksig(i,j,k)=skh(i,j,k,nr)*SigmaKz_2_m2s(roa(i,j,k,nr),ps(i,j,nr))
+            enddo
+         enddo
+       enddo
+
+     else if (OBRIAN_Kz ) then
+
        call O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
-            , exns, exnm, zixx )
+            , exns, exnm, zixx, DEBUG_HMIX )
     end if
+
+   if( MasterProc .and. DEBUG_Kz)then            
+       write(6,*)               &
+       '*** After Set skh', sum(skh(:,:,:,nr)), minval(skh(:,:,:,nr)), maxval(skh(:,:,:,nr)), DEBUG_Kz, 'NWP_Kz:',NWP_Kz,'OBRIAN_Kz:',OBRIAN_Kz, '*** After convert to z',sum(xksig(:,:,:)), minval(xksig(:,:,:)), maxval(xksig(:,:,:))
+    endif
+
     !----------------------------------------------------------!
+  if( DEBUG_Kz .and. debug_proc .and. &
+         modulo( current_date%hour, 3)  == 0  .and. &
+           current_date%seconds == 0  ) then
+    
+      i = debug_iloc
+      j = debug_jloc
+      do k=1,KMAX_MID
+
+      write(6,"(a,4i5, 4f17.12)") "DEBUG_Kz: ", &
+           current_date%month,&
+           current_date%day,&
+           current_date%hour,&
+           k,&
+           skh(i,j,k,nr),&
+           xksig(i,j,k)
+      enddo
+   end if
 
   end subroutine tiphys
 
@@ -2486,7 +2556,7 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
   !************************************************************************!
   subroutine O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
-       , exns, exnm, zixx )                            !
+       , exns, exnm, zixx, debug_flag )                            !
     !************************************************************************!
 
     !......................................................
@@ -2509,7 +2579,9 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
     real,intent(in), dimension(MAXLIMAX,MAXLJMAX) :: ziu    &
          ,zixx
+    logical, intent(in) :: debug_flag
 
+    real ::  KBW, invL
 
     real :: h100   & ! Top of lowest layer - replaces 100.0
          ,xfrco  &
@@ -2597,6 +2669,10 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
              Kz_min(i,j)=xkh100(i)
              xksig(i,j,KMAX_MID)=xkhs(i)
 
+     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
+          write(6,"(a,4f8.2,f12.4)") "HMIX INU", ux0, ziu(i,j),  hs(i), hsl, xkhs(i)
+     end if
+
           else
              !
              !..........................
@@ -2610,9 +2686,17 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
              hsl = KARMAN*GRAV*hs(i)*amax1(0.001,fh(i,j,nr))*KAPPA&
                   /(ps(i,j,nr)*ux3)
 
-
              xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)
 
+     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
+         invL = hsl/hs(i)
+
+!function BrostWyngaardKz(z,h,ustar,invL) result(Kz)
+!and try again:
+         KBW = BrostWyngaardKz( zs_bnd(i,j,KMAX_MID), zixx(i,j), ux0, invL      )
+          write(6,"(a,10es12.3)") "HMIX INux0", ustar_nwp(i,j), ux0
+          write(6,"(a,f9.4,3f8.2,10es12.3)") "HMIX INS", ux0, ziu(i,j), fh(i,j,nr),  hs(i), hsl, xksig(i,j,KMAX_MID), KBW
+     end if
 
 
           endif
@@ -2620,6 +2704,9 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
           hsurfl = KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
                /(ps(i,j,nr)*ux3)
           Kz_min(i,j)=ux0*KARMAN*h100/(1.00+5.0*hsurfl)
+     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
+          write(6,"(a,4f8.2,f12.4)") "HMIX KzMIN", ux0, ziu(i,j),  hsurfl, Kz_min(i,j)
+     end if
           !
           !...............................................................
 
@@ -2633,6 +2720,10 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
              if(ziu(i,j).gt.zimin .and. zs_bnd(i,j,k).ge.ziu(i,j)) then
                 xkzi(i)=xksig(i,j,k)
+     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
+         KBW = BrostWyngaardKz( zs_bnd(i,j,k), zixx(i,j), ux0, invL      )
+          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKA", k, xksig(i,j,k), ziu(i,j), zixx(i,j), invL,  KBW
+     end if
              elseif (ziu(i,j).gt.zimin) then
                 !
                 !.....................................................
@@ -2641,6 +2732,9 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
                 !
                 if(zs_bnd(i,j,k).le.hs(i)) then
                    xksig(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)
+     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
+          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKB", k, xksig(i,j,k)
+     end if
                 else
                    zimhs = ziu(i,j)-hs(i)
                    zimz  =ziu(i,j)-zs_bnd(i,j,k)
@@ -2648,6 +2742,9 @@ real ::  p2(KMAX_MID), exf2(KMAX_MID), & !TESTzi
                    xksig(i,j,k) = xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &
                         *(xkhs(i)-xkzi(i)+zmhs*(xkdz(i)     &
                         + 2.*(xkhs(i)-xkzi(i))/zimhs))
+     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
+          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKC", k, xksig(i,j,k)
+     end if
                 endif
 
              endif

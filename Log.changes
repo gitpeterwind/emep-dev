@@ -1,3 +1,22 @@
+xxxxxxxxxxxxxx rv3_5_4  Haldis/Dave  Feb 28rd 2010
+
+Start of NWP_Kz work and testing of other Kz options
+
+  Met_ml, MetFields_ml now deals with Kz read in from met
+  
+  BLPhysics - Brost+Wynaarg  formula added for testing
+              SigmaKz- 
+  
+  Derived_ml.f90  AddNewDeriv( "D3_Kz", ....
+  
+  GlobalBCs_ml.f90  Macehead O3 added as 2008=2007
+  
+  My_Derived_ml.f90   D3_OTHER  = (/ "D3_Kz          " /) added 
+  
+  My_Outputs_ml.f90  SONDE_XTRA=  ....  "xksig"  added
+  
+  
+
 xxxxxxxxxxxxxx rv3_5_3  Dave  Feb 22nd 2010
 
 *** MetFields_ml ***  now has all met fields defined here
