@@ -81,7 +81,7 @@
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST ! AMVB 2009-11-06: FORECAST mode
-  use MetFields_ml ,only : ps,sdot,skh,u_xmj,v_xmi
+  use MetFields_ml ,only : ps,sdot,SigmaKz,u_xmj,v_xmi
   use MassBudget_ml, only : fluxin,fluxout
   use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
   use Par_ml,        only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&
@@ -548,7 +548,7 @@
 !     write(*,*)'sum before diffusion ',me,sum
       do j = lj0,lj1
         do i = li0,li1
-          call vertdiffn(xn_adv(1,i,j,1),skh(i,j,1,1),ds3,ds4,ndiff)
+          call vertdiffn(xn_adv(1,i,j,1),SigmaKz(i,j,1,1),ds3,ds4,ndiff)
         enddo
       enddo
 !     sum = 0.
@@ -1154,7 +1154,7 @@
 !   write(*,*)'sum before diffusion ',me,sum
     do j = lj0,lj1
       do i = li0,li1
-        call vertdiffn(xn_adv(1,i,j,1),skh(i,j,1,1),ds3,ds4,ndiff)
+        call vertdiffn(xn_adv(1,i,j,1),SigmaKz(i,j,1,1),ds3,ds4,ndiff)
       enddo
     enddo
 !   sum = 0.
@@ -1533,7 +1533,7 @@
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine advvdifvk(xn_adv,ps3d,sdot,skh,ds3,ds4,psfac,dt_s)
+  subroutine advvdifvk(xn_adv,ps3d,sdot,SigmaKz,ds3,ds4,psfac,dt_s)
 
 !     executes advection with a. bott's integreated flux-form
 !     using 2'nd order polynomial in the vertical.
@@ -1545,7 +1545,7 @@
 
 !    input
     real,intent(in)::  sdot(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
-    real,intent(in)::  skh(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
+    real,intent(in)::  SigmaKz(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
     real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
     real,intent(in)::  psfac,dt_s
 
@@ -1737,7 +1737,7 @@
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine vertdiff(xn_adv,skh,ds3,ds4)
+  subroutine vertdiff(xn_adv,SigmaKz,ds3,ds4)
 
 !     executes vertical diffusion
 
@@ -1747,7 +1747,7 @@
     implicit none
 
 !    input
-    real,intent(in)::  skh(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
+    real,intent(in)::  SigmaKz(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
     real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
 
 !    output
@@ -1759,8 +1759,8 @@
     real, dimension(KMAX_MID) :: adif,bdif,cdif,e1
 
     do k = 1,KMAX_MID-1
-      adif(k) = skh(k*MAXLIMAX*MAXLJMAX)*ds3(k)
-      bdif(k+1) = skh(k*MAXLIMAX*MAXLJMAX)*ds4(k)
+      adif(k) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds3(k)
+      bdif(k+1) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds4(k)
     enddo
 
     cdif(KMAX_MID) = 1./(1. + bdif(KMAX_MID))
@@ -1789,7 +1789,7 @@
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine vertdiffn(xn_adv,skh,ds3,ds4,ndiff)
+  subroutine vertdiffn(xn_adv,SigmaKz,ds3,ds4,ndiff)
 
 !     executes vertical diffusion ndiff times
 
@@ -1809,7 +1809,7 @@
     implicit none
 
 !    input
-    real,intent(in)::  skh(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
+    real,intent(in)::  SigmaKz(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
     real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
     integer,intent(in)::  ndiff
 
@@ -1827,8 +1827,8 @@
     ndiffi=1./ndiff
 
     do k = 1,KMAX_MID-1
-      adif(k-1) = skh(k*MAXLIMAX*MAXLJMAX)*ds3(k)*ndiffi
-      bdif(k) = skh(k*MAXLIMAX*MAXLJMAX)*ds4(k)*ndiffi
+      adif(k-1) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds3(k)*ndiffi
+      bdif(k) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds4(k)*ndiffi
     enddo
 
     cdif(KMAX_MID-1) = 1./(1. + bdif(KMAX_MID-1))
@@ -1862,7 +1862,7 @@
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine vertdiffn2(xn_adv,skh,ds3,ds4,ndiff)
+  subroutine vertdiffn2(xn_adv,SigmaKz,ds3,ds4,ndiff)
 
 !     executes vertical diffusion ndiff times
 
@@ -1872,7 +1872,7 @@
     implicit none
 
 !    input
-    real,intent(in)::  skh(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
+    real,intent(in)::  SigmaKz(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
     real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
     integer,intent(in)::  ndiff
 
@@ -1890,8 +1890,8 @@
     ndiffi=1./ndiff
 
     do k = 1,KMAX_MID-1
-      adif(k) = skh(k*MAXLIMAX*MAXLJMAX)*ds3(k)*ndiffi
-      bdif(k+1) = skh(k*MAXLIMAX*MAXLJMAX)*ds4(k)*ndiffi
+      adif(k) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds3(k)*ndiffi
+      bdif(k+1) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds4(k)*ndiffi
     enddo
 
     cdif(KMAX_MID) = 1./(1. + bdif(KMAX_MID))

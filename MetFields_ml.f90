@@ -107,7 +107,7 @@ module MetFields_ml
        ,roa       ! kg/m3
 
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: &
-        skh      &! vertical diffusivity in sigma coords
+        SigmaKz      &! vertical diffusivity in sigma coords
        ,sdot     &! vertical velocity, sigma coords, 1/s
 ! hb 23.02.2010 Kz from meteo
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
@@ -120,7 +120,7 @@ module MetFields_ml
        ,cc3dmax & ! and maximum for layers above a given layer
        ,lwc     & !liquid water content
   ! QUERY - should xksig be MID, not BND? Is it needed at all?
-       ,xksig     ! estimated Kz, in intermediate sigma levels, m2/s
+       ,Kz_m2s     ! estimated Kz, in intermediate sigma levels, m2/s
 !       ,zm3d    & ! TMP FOR TESTING
 ! **************  BUG FIX LATER  ***************** !!!!!:
 !BUG!!      ,sst       ! SST Sea Surface Temprature- ONLY from 2002

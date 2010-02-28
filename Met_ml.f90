@@ -974,8 +974,8 @@ contains
             + (q(:,:,:,2) - q(:,:,:,1))*div
        !      ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
        !                   + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
-       skh(:,:,:,1)  = skh(:,:,:,1)         		&
-            + (skh(:,:,:,2) - skh(:,:,:,1))*div
+       SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,1)         		&
+            + (SigmaKz(:,:,:,2) - SigmaKz(:,:,:,1))*div
        roa(:,:,:,1)  = roa(:,:,:,1)         		&
             + (roa(:,:,:,2) - roa(:,:,:,1))*div
        ps(:,:,1)     = ps(:,:,1)         		&
@@ -1016,7 +1016,7 @@ contains
        th(:,:,:,1)   = th(:,:,:,2)
        q(:,:,:,1)    = q(:,:,:,2)
        !       ccc(:,:,:,1) = ccc(:,:,:,2)   !ASSYCON
-       skh(:,:,:,1)  = skh(:,:,:,2)
+       SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,2)
        roa(:,:,:,1)  = roa(:,:,:,2)
        !  - note we need pressure first before surface_pressure
        ps(:,:,1)     = ps(:,:,2)
@@ -1443,7 +1443,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
     !..preset=zero:
     xksm(:,:)   = 0
     risig(:,:)  = 0.
-    xksig(:,:,:)= 0.
+    Kz_m2s(:,:,:)= 0.
 
 
     !c..................................
@@ -1559,22 +1559,22 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
              !..exchange coefficient (Pielke,...)
              if ( PIELKE_KZ  ) then
                 if (risig(i,k) > ric ) then
-                   xksig(i,j,k) = KZ_MINIMUM
+                   Kz_m2s(i,j,k) = KZ_MINIMUM
                 else
-                   xksig(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
+                   Kz_m2s(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
                 end if
              else
 
                 !..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
                 !
                 if(risig(i,k).le.0.) then
-                   xksig(i,j,k)=xl2*dvdz*sqrt(1.1-87.*risig(i,k))
+                   Kz_m2s(i,j,k)=xl2*dvdz*sqrt(1.1-87.*risig(i,k))
                 elseif(risig(i,k).le.0.5*ric) then
-                   xksig(i,j,k)=xl2*dvdz*(1.1-1.2*risig(i,k)/ric)
+                   Kz_m2s(i,j,k)=xl2*dvdz*(1.1-1.2*risig(i,k)/ric)
                 elseif(risig(i,k).le.ric) then
-                   xksig(i,j,k)=xl2*dvdz*(1.-risig(i,k)/ric)
+                   Kz_m2s(i,j,k)=xl2*dvdz*(1.-risig(i,k)/ric)
                 else
-                   xksig(i,j,k)=0.001
+                   Kz_m2s(i,j,k)=0.001
                 endif
              end if ! Pielke or Blackadar
              !
@@ -1594,8 +1594,8 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
        km=1
        kp=3
        do i=1,limax
-          xksm(i,k)=( (zm(i,km)-zm(i,k))*xksig(i,j,k)&
-               + (zm(i,k)-zm(i,kp))*xksig(i,j,kp) )&
+          xksm(i,k)=( (zm(i,km)-zm(i,k))*Kz_m2s(i,j,k)&
+               + (zm(i,k)-zm(i,kp))*Kz_m2s(i,j,kp) )&
                / ( zm(i,km) - zm(i,kp) )
        enddo
        !c
@@ -1603,8 +1603,8 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
        km2=k-2
        km1=k-1
        do i=1,limax
-          xksm(i,k)=( (zm(i,km2)-zm(i,km1))*xksig(i,j,km1)&
-               + (zm(i,km1)-zm(i,k))*xksig(i,j,k) )&
+          xksm(i,k)=( (zm(i,km2)-zm(i,km1))*Kz_m2s(i,j,km1)&
+               + (zm(i,km1)-zm(i,k))*Kz_m2s(i,j,k) )&
                / ( zm(i,km2) - zm(i,k) )
        enddo
        !c
@@ -1613,9 +1613,9 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
           km2=k-2
           kp=k+1
           do i=1,limax
-             xksm(i,k)=(  (zm(i,km2)-zm(i,km1))*xksig(i,j,km1)&
-                  + (zm(i,km1)-zm(i,k))*xksig(i,j,k)&
-                  + (zm(i,k)-zm(i,kp))*xksig(i,j,kp) )&
+             xksm(i,k)=(  (zm(i,km2)-zm(i,km1))*Kz_m2s(i,j,km1)&
+                  + (zm(i,km1)-zm(i,k))*Kz_m2s(i,j,k)&
+                  + (zm(i,k)-zm(i,kp))*Kz_m2s(i,j,kp) )&
                   / ( zm(i,km2) - zm(i,kp) )
           enddo
        enddo
@@ -1864,8 +1864,8 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
          do i=1,limax
             do j=1,ljmax
 ! hb KZ_met are accumulated values over three hours, to get m2/s divide with 60*60*3  
-               skh(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*3)
-               xksig(i,j,k)=skh(i,j,k,nr)*SigmaKz_2_m2s(roa(i,j,k,nr),ps(i,j,nr))
+               SigmaKz(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*3)
+               Kz_m2s(i,j,k)=SigmaKz(i,j,k,nr)*SigmaKz_2_m2s(roa(i,j,k,nr),ps(i,j,nr))
             enddo
          enddo
        enddo
@@ -1878,7 +1878,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
    if( MasterProc .and. DEBUG_Kz)then            
        write(6,*)               &
-       '*** After Set skh', sum(skh(:,:,:,nr)), minval(skh(:,:,:,nr)), maxval(skh(:,:,:,nr)), DEBUG_Kz, 'NWP_Kz:',NWP_Kz,'OBRIAN_Kz:',OBRIAN_Kz, '*** After convert to z',sum(xksig(:,:,:)), minval(xksig(:,:,:)), maxval(xksig(:,:,:))
+       '*** After Set SigmaKz', sum(SigmaKz(:,:,:,nr)), minval(SigmaKz(:,:,:,nr)), maxval(SigmaKz(:,:,:,nr)), DEBUG_Kz, 'NWP_Kz:',NWP_Kz,'OBRIAN_Kz:',OBRIAN_Kz, '*** After convert to z',sum(Kz_m2s(:,:,:)), minval(Kz_m2s(:,:,:)), maxval(Kz_m2s(:,:,:))
     endif
 
     !----------------------------------------------------------!
@@ -1895,8 +1895,8 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
            current_date%day,&
            current_date%hour,&
            k,&
-           skh(i,j,k,nr),&
-           xksig(i,j,k)
+           SigmaKz(i,j,k,nr),&
+           Kz_m2s(i,j,k)
       enddo
    end if
 
@@ -2538,7 +2538,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
     do k=2,KMAX_MID
        do i=1,limax
           do j=1,ljmax
-             skh(i,j,k,nr)=eddyz(i,j,k)
+             SigmaKz(i,j,k,nr)=eddyz(i,j,k)
           enddo
        enddo
     enddo
@@ -2667,7 +2667,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
              xkh100(i) = ux0*KARMAN*h100*sqrt(1.-16.*hsurfl)
 
              Kz_min(i,j)=xkh100(i)
-             xksig(i,j,KMAX_MID)=xkhs(i)
+             Kz_m2s(i,j,KMAX_MID)=xkhs(i)
 
      if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
           write(6,"(a,4f8.2,f12.4)") "HMIX INU", ux0, ziu(i,j),  hs(i), hsl, xkhs(i)
@@ -2686,7 +2686,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
              hsl = KARMAN*GRAV*hs(i)*amax1(0.001,fh(i,j,nr))*KAPPA&
                   /(ps(i,j,nr)*ux3)
 
-             xksig(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)
+             Kz_m2s(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)
 
      if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
          invL = hsl/hs(i)
@@ -2695,7 +2695,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 !and try again:
          KBW = BrostWyngaardKz( zs_bnd(i,j,KMAX_MID), zixx(i,j), ux0, invL      )
           write(6,"(a,10es12.3)") "HMIX INux0", ustar_nwp(i,j), ux0
-          write(6,"(a,f9.4,3f8.2,10es12.3)") "HMIX INS", ux0, ziu(i,j), fh(i,j,nr),  hs(i), hsl, xksig(i,j,KMAX_MID), KBW
+          write(6,"(a,f9.4,3f8.2,10es12.3)") "HMIX INS", ux0, ziu(i,j), fh(i,j,nr),  hs(i), hsl, Kz_m2s(i,j,KMAX_MID), KBW
      end if
 
 
@@ -2719,10 +2719,10 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
           do  i=1,limax
 
              if(ziu(i,j).gt.zimin .and. zs_bnd(i,j,k).ge.ziu(i,j)) then
-                xkzi(i)=xksig(i,j,k)
+                xkzi(i)=Kz_m2s(i,j,k)
      if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
          KBW = BrostWyngaardKz( zs_bnd(i,j,k), zixx(i,j), ux0, invL      )
-          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKA", k, xksig(i,j,k), ziu(i,j), zixx(i,j), invL,  KBW
+          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKA", k, Kz_m2s(i,j,k), ziu(i,j), zixx(i,j), invL,  KBW
      end if
              elseif (ziu(i,j).gt.zimin) then
                 !
@@ -2731,19 +2731,19 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
                 !.....................................................
                 !
                 if(zs_bnd(i,j,k).le.hs(i)) then
-                   xksig(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)
+                   Kz_m2s(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)
      if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKB", k, xksig(i,j,k)
+          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKB", k, Kz_m2s(i,j,k)
      end if
                 else
                    zimhs = ziu(i,j)-hs(i)
                    zimz  =ziu(i,j)-zs_bnd(i,j,k)
                    zmhs  =zs_bnd(i,j,k)-hs(i)
-                   xksig(i,j,k) = xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &
+                   Kz_m2s(i,j,k) = xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &
                         *(xkhs(i)-xkzi(i)+zmhs*(xkdz(i)     &
                         + 2.*(xkhs(i)-xkzi(i))/zimhs))
      if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKC", k, xksig(i,j,k)
+          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKC", k, Kz_m2s(i,j,k)
      end if
                 endif
 
@@ -2763,10 +2763,10 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
        do i=1,limax
           do j=1,ljmax
              if ( (pzpbl(i,j)>z_mid(i,j,k)) )then
-                xksig(i,j,k)=max(xksig(i,j,k),Kz_min(i,j))
+                Kz_m2s(i,j,k)=max(Kz_m2s(i,j,k),Kz_min(i,j))
              endif
 
-             help(i,j) = xksig(i,j,k)
+             help(i,j) = Kz_m2s(i,j,k)
           enddo
        enddo
 
@@ -2774,7 +2774,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
        do i=1,limax
           do j=1,ljmax
-             xksig(i,j,k) = help(i,j)
+             Kz_m2s(i,j,k) = help(i,j)
 
              fac   = GRAV/(ps(i,j,nr) - PT)
              fac2  = fac*fac
@@ -2782,7 +2782,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
                   + th(i,j,k,nr)*(exns(i,j,k) - exnm(i,j,k-1))
              ro    = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) &
                   - exnm(i,j,k-1))/(RGAS_KG*exns(i,j,k)*dex12)
-             skh(i,j,k,nr) = xksig(i,j,k)*ro*ro*fac2
+             SigmaKz(i,j,k,nr) = Kz_m2s(i,j,k)*ro*ro*fac2
           enddo
        enddo
 

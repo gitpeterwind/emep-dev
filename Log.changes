@@ -16,6 +16,8 @@ Start of NWP_Kz work and testing of other Kz options
   My_Outputs_ml.f90  SONDE_XTRA=  ....  "xksig"  added
   
   
+  Rename:  xksig becomes  Kz_m2s
+           skh   becomes  SigmaKz  (Kz in sigma coords)
 
 xxxxxxxxxxxxxx rv3_5_3  Dave  Feb 22nd 2010
 

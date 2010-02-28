@@ -80,7 +80,7 @@ use Chemfields_ml , only : so2nh3_24hr,Grid_snow
 use EcoSystem_ml,   only : DepEcoSystem, NDEF_ECOSYSTEMS, &
                            EcoSystemFrac,FULL_GRID
 use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M
-use MetFields_ml, only :   roa,pzpbl,xksig,th,zen, ustar_nwp, z_bnd
+use MetFields_ml, only :   roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
 use MetFields_ml, only :   ps
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
@@ -1094,10 +1094,10 @@ end do
               d_3d( n, i,j,k,IOU_INST) = xn_bgn(index,i,j,k)
             end forall
 
-         case ("XKSIG00", "XKSIG12" ) !hf hmix xksig
+         case ("XKSIG00", "XKSIG12" ) !hf hmix Kz_m2s
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-              d_3d( n, i,j,k,IOU_INST) = xksig(i,j,k)
+              d_3d( n, i,j,k,IOU_INST) = Kz_m2s(i,j,k)
             end forall
 
          case ("TH  " ) !JEJ Pot. temp (needed for cross sections)
@@ -1181,7 +1181,7 @@ end do
          case ( "Kz" )
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-              d_3d( n, i,j,k,IOU_INST) = xksig(i,j,k)
+              d_3d( n, i,j,k,IOU_INST) = Kz_m2s(i,j,k)
             end forall
 
 

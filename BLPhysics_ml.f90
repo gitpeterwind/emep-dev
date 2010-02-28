@@ -281,7 +281,7 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
 
   real, dimension(KMAX_BND) :: &
        Ris   &! Richardson number, sigma coords
-      ,xksig &! xksig smoothed over three adjacent layers
+      ,Kz_m2s &! Kz_m2s smoothed over three adjacent layers
       ,xksm   ! spacially smoothed Kz in z direction, m2/s.
 
   integer :: k, km, km1, km2, kp, nh1, nh2
@@ -341,22 +341,22 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
       !..exchange coefficient (Pielke,...)
       if ( KZ_METHOD == PIELKE_KZ  ) then
          if (Ris(k) > Ric ) then
-            xksig(k) = KZ_MINIMUM
+            Kz_m2s(k) = KZ_MINIMUM
          else
-            xksig(k) = 1.1 * (Ric-Ris(k)) * xl2 * dvdz /Ric
+            Kz_m2s(k) = 1.1 * (Ric-Ris(k)) * xl2 * dvdz /Ric
          end if
       else
 
          !..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
          !
          if(Ris(k) <= 0.0) then
-            xksig(k)=xl2*dvdz*sqrt(1.1-87.*Ris(k))
+            Kz_m2s(k)=xl2*dvdz*sqrt(1.1-87.*Ris(k))
          elseif(Ris(k) <= 0.5*Ric) then
-                xksig(k)=xl2*dvdz*(1.1-1.2*Ris(k)/Ric)
+                Kz_m2s(k)=xl2*dvdz*(1.1-1.2*Ris(k)/Ric)
          elseif(Ris(k) <= Ric) then
-                xksig(k)=xl2*dvdz*(1.-Ris(k)/Ric)
+                Kz_m2s(k)=xl2*dvdz*(1.-Ris(k)/Ric)
          else
-                xksig(k)=0.001
+                Kz_m2s(k)=0.001
          endif
       end if ! Pielke or Blackadar
 
@@ -365,21 +365,21 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
   k=2
   km=1
   kp=3
-  xksm(k)=( (zm(km)-zm(k))*xksig(k) + (zm(k)-zm(kp))*xksig(kp) )&
+  xksm(k)=( (zm(km)-zm(k))*Kz_m2s(k) + (zm(k)-zm(kp))*Kz_m2s(kp) )&
               / ( zm(km) - zm(kp) )
 
   k=KMAX_MID
   km2=k-2
   km1=k-1
-  xksm(k)=( (zm(km2)-zm(km1))*xksig(km1) + (zm(km1)-zm(k))*xksig(k) )&
+  xksm(k)=( (zm(km2)-zm(km1))*Kz_m2s(km1) + (zm(km1)-zm(k))*Kz_m2s(k) )&
                / ( zm(km2) - zm(k) )
 
   do k = 3,KMAX_MID-1
       km1=k-1
       km2=k-2
       kp=k+1
-      xksm(k)=(  (zm(km2)-zm(km1))*xksig(km1) + (zm(km1)-zm(k))*xksig(k)&
-            + (zm(k)-zm(kp))*xksig(kp) ) / ( zm(km2) - zm(kp) )
+      xksm(k)=(  (zm(km2)-zm(km1))*Kz_m2s(km1) + (zm(km1)-zm(k))*Kz_m2s(k)&
+            + (zm(k)-zm(kp))*Kz_m2s(kp) ) / ( zm(km2) - zm(kp) )
   end do ! k
 
  !............................................................

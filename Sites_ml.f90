@@ -59,7 +59,7 @@ use ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PPM25, PPMCO &
                               ,SSfi, SSco  !SeaS
 use MetFields_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
-                              , z_bnd, z_mid, roa, xksig, q
+                              , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
                               ,KMAX_BND,PT,ATWAIR, NPROC &
@@ -502,7 +502,7 @@ end subroutine siteswrt_surf
   do ispec = 1, NXTRA_SONDE
      select case ( SONDE_XTRA(ispec) )
        case ( "PM25 " ,"PMco " , "NOy ", "RH ","z_mid", "p_mid", &
-              "xksig ", "th   ", "U   ", "V    " )
+              "Kz_m2s ", "th   ", "U   ", "V    " )
                errmsg = "ok"
        case default
          call CheckStop("Error, Sites_ml/siteswrt_sondes: SONDE_XTRA:"&
@@ -592,8 +592,8 @@ end subroutine siteswrt_surf
             out(nn+1:nn+NLEVELS_SONDE,i) = A_mid(KMAX_MID:KTOP_SONDE:-1) + &
                                       B_mid(KMAX_MID:KTOP_SONDE:-1)*ps(ix,iy,1)
 
-          case ( "xksig" ) 
-            out(nn+1:nn+NLEVELS_SONDE,i) =  xksig(ix,iy,KMAX_MID:KTOP_SONDE:-1)
+          case ( "Kz_m2s" ) 
+            out(nn+1:nn+NLEVELS_SONDE,i) =  Kz_m2s(ix,iy,KMAX_MID:KTOP_SONDE:-1)
 
           case ( "th" ) 
             out(nn+1:nn+NLEVELS_SONDE,i) =  th(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
