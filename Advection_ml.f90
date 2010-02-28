@@ -1567,8 +1567,8 @@
 
     do k = 1,KMAX_MID-1
       fc(k) = sdot(k*MAXLIMAX*MAXLJMAX)*dt_s
-!     adif(k) = skh(k*MAXLIMAX*MAXLJMAX)*ds3(k)
-!     bdif(k+1) = skh(k*MAXLIMAX*MAXLJMAX)*ds4(k)
+!     adif(k) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds3(k)
+!     bdif(k+1) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds4(k)
     enddo
     fc(KMAX_MID) = -1.
 
@@ -1793,15 +1793,15 @@
 
 !     executes vertical diffusion ndiff times
 
-! skh(k) mixes xn_adv(k) and xn_adv(k-1)
+! SigmaKz(k) mixes xn_adv(k) and xn_adv(k-1)
 !
 ! adif(k) -> mixing of layers k and k+1:
-!            skh(k+1)*ds3(k+1)= skh(k+1)*dt_advec*dhs1i(k+1)*dhs2i(k+1)
-!            = skh(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k+1)-sigma_mid(k))
+!            SigmaKz(k+1)*ds3(k+1)= SigmaKz(k+1)*dt_advec*dhs1i(k+1)*dhs2i(k+1)
+!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k+1)-sigma_mid(k))
 !
 ! bdif(k) -> mixing of layers k and k-1:
-!            skh(k)*ds4(k)= skh(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
-!            = skh(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
+!            SigmaKz(k)*ds4(k)= SigmaKz(k)*dt_advec*dhs1i(k+1)*dhs2i(k)
+!            = SigmaKz(k+1)*dt_advec/(sigma_bnd(k+1)-sigma_bnd(k))/(sigma_mid(k)-sigma_mid(k-1))
 
     use ModelConstants_ml  , only : KCHEMTOP, EPSIL
     use ChemSpecs_adv_ml , only : NSPEC_ADV

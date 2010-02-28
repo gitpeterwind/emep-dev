@@ -558,7 +558,7 @@ end subroutine TI_BLphysics
 !            do k=KMAX_MID,2,-1
 !!AJ               jedan=Kmax(i,j)*zm(i,j,k)*sqrt(exp(1.))/h(i,j)
 !!AJ               dva=exp(-0.5*(zm(i,j,k)/h(i,j))**2)
-!                  xksig(i,j,k)=Kmax(i,j)*zm(i,j,k)*sqrt(exp(1.))/h(i,j)&
+!                  Kz_ms2(i,j,k)=Kmax(i,j)*zm(i,j,k)*sqrt(exp(1.))/h(i,j)&
 !                              *exp(-0.5*(zm(i,j,k)/h(i,j))**2)+KZ_MINIMUM
 !               if(zm(i,j,k)>z(i,j)) exit
 !            enddo
@@ -575,14 +575,14 @@ end subroutine TI_BLphysics
 !
 !        call smoosp(pzpbl,pzpbl_min,pzpbl_max)
 !      !
-!      ! transformation of xksig(i,j,k) into skh(i,j,k,nr)
+!      ! transformation of Kz_ms2(i,j,k) into SigmaKz(i,j,k,nr)
 !      ! from HF Kz(sigma)=Kz*ro**2*(GRAV/p*)
 !      !
 !      do k=2,KMAX_MID
 !     !AJ added smoothing of Kz with Shapiro -same as with O_Brien 
 !      do i=1,limax
 !           do j=1,ljmax
-!             help(i,j)=xksig(i,j,k)
+!             help(i,j)=Kz_ms2(i,j,k)
 !           enddo
 !      enddo
 !
@@ -599,7 +599,7 @@ end subroutine TI_BLphysics
 !               ro = ((ps(i,j,nr)-PT)*sigma_bnd(k)+PT)*CP &
 !                  *(exnm(i,j,k)-exnm(i,j,k-1))/(RGAS_KG*exns(i,j,k)*dex12)
 !
-!               skh(i,j,k,nr) = xksig(i,j,k)*ro*ro*fac2
+!               SigmaKz(i,j,k,nr) = Kz_ms2(i,j,k)*ro*ro*fac2
 !            enddo
 !         enddo
 !      enddo

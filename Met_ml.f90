@@ -1263,8 +1263,8 @@ contains
     !c          in sigma coordinates
     !c    KMAX_MID    : max number of vertical full levels
     !c          in sigma coordinates
-    !c       kzmax   : maximum value of xksig, m2/s
-    !c       kzmin   : minimum value of xksig, m2/s
+    !c       kzmax   : maximum value of Kz_ms2, m2/s
+    !c       kzmin   : minimum value of Kz_ms2, m2/s
     !c    ndth    : do variable for convective ABL-height iteration loop
     !c    nh1    : counts number of layers below zlimax
     !c    nh2    : counts number of layers with Kz > ( Kz )limit
@@ -1316,10 +1316,10 @@ contains
     !!              : i.e. vertical gradient of xkhs
     !c    xkhs    : diffusivity at hs (in surface layer), m2/s
     !!              : i.e. vertical exchange coeff. on top of prandtl-layer
-    !c    xksig    : estimated exchange coefficient, Kz,  in intermediate
+    !c    Kz_ms2    : estimated exchange coefficient, Kz,  in intermediate
     !c          sigma levels, m2/s
     !c    xksm    : spacially smoothed Kz in z direction, m2/s.
-    !!              : xksig smoothed over three adjacent layers
+    !!              : Kz_ms2 smoothed over three adjacent layers
     !c    xkzi    : local helping array for the vertical diffusivity, m2/s
     !!              : i.e. vertical exchange coeff. on top of ABL for unstable BL
     !c    zi    : Height of ABL (final value), m
@@ -1340,37 +1340,37 @@ contains
     !c
     !c
     !!                ///////////////////
-    !c    sigma_bnd(1) = 0 - -sigmas - - - - - sdot(1) = 0, xksig(1)=xksm(1)=0,
+    !c    sigma_bnd(1) = 0 - -sigmas - - - - - sdot(1) = 0, Kz_ms2(1)=xksm(1)=0,
     !!                                           pr(1)=0,PT,exns(1), zs_bnd(1)
     !c
     !c        sigma_mid(1) ---sigmam---------- u_xmj, v_xmi, th, q, cw, exnm (1)
     !c
     !c
-    !c        sigma_bnd(2) - - - - s - - - - - sdot(2), xksig(2), exns(2), pr(2)
+    !c        sigma_bnd(2) - - - - s - - - - - sdot(2), Kz_ms2(2), exns(2), pr(2)
     !!                                                 zs_bnd(2), xksm(2)
     !c
     !c        sigma_mid(2) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (2)
     !c
     !c
-    !c        sigma_bnd(3) - - - - s - - - - - sdot(3), xksig(3), exns(3), pr(3)
+    !c        sigma_bnd(3) - - - - s - - - - - sdot(3), Kz_ms2(3), exns(3), pr(3)
     !!                                                 zs_bnd(3), xksm(3)
     !c
     !c        sigma_mid(3) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (3)
     !c
     !c
-    !c        sigma_bnd(4) - - - - s - - - - - sdot(4), xksig(4), exns(4), pr(4)
+    !c        sigma_bnd(4) - - - - s - - - - - sdot(4), Kz_ms2(4), exns(4), pr(4)
     !!                                                  zs_bnd(4), xksm(4)
     !c
     !c        sigma_mid(4) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (4)
     !c
     !c
-    !c        sigma_bnd(5) - - - - s - - - - - sdot(5), xksig(5), exns(5), pr(5)
+    !c        sigma_bnd(5) - - - - s - - - - - sdot(5), Kz_ms2(5), exns(5), pr(5)
     !!                                                  zs_bnd(5), xksm(5)
     !c
     !!                        :
     !!                        :
     !c
-    !  sigma_bnd(KMAX_BND-1) - - - - s - - -  - sdot(KMAX_BND-1), xksig(KMAX_MID),
+    !  sigma_bnd(KMAX_BND-1) - - - - s - - -  - sdot(KMAX_BND-1), Kz_ms2(KMAX_MID),
     !!                                    exns(KMAX_BND-1),zs_bnd(KMAX_BND-1),
     !!                                    pr(KMAX_BND-1),xksm(KMAX_MID)
     !c
@@ -1379,7 +1379,7 @@ contains
     !!                                    the top of Prandtl-layer (LAM50E)
     !c
     ! sigma_bnd(KMAX_BND) = 1- -  - s - - - - sdot(KMAX_BND) = 0, ps, t2_nwp, fh,
-    !!                ///////////////////        fm, mslp, xksig(KMAX_MID)=0,
+    !!                ///////////////////        fm, mslp, Kz_ms2(KMAX_MID)=0,
     !!                                           exns(KMAX_BND), zs_bnd(KMAX_BND),
     !!                                           pr(KMAX_BND),xksm(KMAX_BND)=0.
     !c
@@ -1588,7 +1588,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
        !..height of stable boundary layer:
        !
        !.........................................................
-       !..vertical smoothing of xksig over three adjacent layers:
+       !..vertical smoothing of Kz_ms2 over three adjacent layers:
        !
        k=2
        km=1
@@ -2754,7 +2754,7 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
     end do
     !
-    !..spatial smoothing of xksig:
+    !..spatial smoothing of Kz_ms2:
     !
     !
 
