@@ -34,21 +34,32 @@ module Met_ml
   ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
   ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   !_____________________________________________________________________________
-!  Subroutines:          Called from:
-!    MeteoGridRead        Unimod
-!    MeteoRead            Unimod
-!    MetModel_LandUse     Unimod
-!    metvar(numt)         Unimod
-!    metint               PhyChem
-!    met_derived          metint    
-!    tiphys               metvar
+!  Subroutines:      Frequency    Called from:
+!    MeteoGridRead                   Unimod
+!    MetModel_LandUse                Unimod
+!    MeteoRead         3h            Unimod    - puts data into nr
+!    metvar            3h            Unimod    -      data into nr
+!    metint            20 min        PhyChem, ends with call met_derived
+!    met_derived       20 min        metvar, metint - gets u_mid, rho_sruf,
+!                                       ustar_nwp, inL_nwp
+!    BLPhysics(numt)   3h            metvar, after met_derived
 ! 
+! Alt:
+!  Unimod  do numt = 1, ....
+!              call MeteoRead - puts data into nr
+!              call metvar(numt)
+!                    call met_derived      uses q(...,1)
+!                    call BLPhysics(numt)  
+!              call phyche(numt) ... do i = 1, nstep
+!                    chemistry stuff
+!                    call metint 
+!                          call met_derived
 !  metvar - This routines postprocess the meteo fields:
 !     ! Unit changes, special definitions etc...
 ! 
 !     e.g. converts wind to u_xmj, v_xmi
 ! 
-!     call tiphys(numt)
+!     call BLPhysics(numt)
 ! 
 !  metint
 ! 
@@ -56,21 +67,28 @@ module Met_ml
 !     !     fields read or derived every 3 hours.
 !        q(..1) = q(.., 1) + ...
 ! 
-!     call met_derived - gets u_mid, rho_sruf, ustar_nwp, after each dt_advec
 ! 
 !============================================================================= 
 
-  use BLPhysics_ml,         only : KPBL_MAX &
-    ,KPBL_MAX                & ! Max exent of PBL calcs, eg. k=10
-                               ! or 1 if no RiB method needed
+  use BLPhysics_ml,         only : &
+     KZ_MINIMUM, KZ_MAXIMUM, KZ_SBL_LIMIT,PIELKE   &
+    ,HmixMethod, UnstableKzMethod, StableKzMethod, KzMethod  &
+    ,USE_MIN_KZ              & ! From old code, is it needed?
+    ,MIN_USTAR_LAND          & ! sets u* > 0.1 m/s over land
+    ,OB_invL_LIMIT           & ! 
+    ,Test_BLM                & ! Tests all Kz, Hmix routines
+    ,PBL_ZiMAX, PBL_ZiMIN    & ! max  and min PBL heights
     ,JericevicRiB_Hmix       & ! TESTING
     ,Venkatram_Hmix          & ! TESTING
     ,Zilitinkevich_Hmix      & ! TESTING
-    ,SeibertRiB_Hmix         & ! TESTING
+    ,SeibertRiB_Hmix_3d      & ! TESTING
     ,BrostWyngaardKz         & ! TESTING
-    ,TI_BLphysics            & ! TESTING or orig
+    ,JericevicKz         & ! TESTING
+    ,TI_Hmix                 & ! TESTING or orig
+    ,PielkeBlackadarKz       &
+    ,O_BrienKz               &
     ,NWP_Kz                  & ! hb 23.02.2010 Kz from meteo 
-    ,OBRIAN_Kz               &
+    ,Kz_m2s_toSigmaKz        & 
     ,SigmaKz_2_m2s
 
   use CheckStop_ml,         only : CheckStop
@@ -81,12 +99,15 @@ module Met_ml
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
-  use MetFields_ml    ! Imports many fields, too many for "only"
+
+  use MetFields_ml !, only : ustar_nwp, invL_nwp, fh,  pzpbl, u_mid, v_mid, &
+!    z_mid, z_bnd, th, Kz_m2s, SigmaZ, foundKz_met
+  use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
        ,KMAX_BND,KMAX_MID,NMET &
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
-       ,DEBUG_HMIX, DEBUG_Kz & 
+       ,DEBUG_BLM, DEBUG_Kz & 
        ,nstep
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
@@ -132,7 +153,7 @@ module Met_ml
   public :: MetModel_LandUse
   public :: metvar
   public :: metint
-  public :: tiphys
+  public :: BLPhysics
 
 contains
 
@@ -174,8 +195,7 @@ contains
        foundustar = .false.
        foundsdot = .false.
        foundSST  = .false.
-! hb 23.02.2010 Kz from meteo
-       foundKz_met = .false.
+       foundKz_met = .false.  ! hb 23.02.2010 Kz from meteo
 
 
        next_inptime = current_date
@@ -239,7 +259,7 @@ contains
 
 
 
-    ! 3D fields (i,j,k)
+    !==============    3D fields (surface) (i,j,k) ==========================================
     ndim=3
 
     !note that u_xmj and v_xmi have dimensions 0:MAXLIJMAX instead of 1:MAXLIJMAX
@@ -305,7 +325,7 @@ contains
         endif
         Kz_met=max(0.0,Kz_met)  ! only positive Kz
     end if
-    if( MasterProc .and. DEBUG_Kz)then
+    if( debug_proc .and. DEBUG_Kz)then
           write(6,*)               &
          '*** After Kz', sum(Kz_met(:,:,:,nr)), minval(Kz_met(:,:,:,nr)), maxval(Kz_met(:,:,:,nr)),maxval(Kz_met(:,:,KMAX_BND,nr)), DEBUG_Kz, NWP_Kz, nr, nrec, ndim, namefield
 
@@ -314,9 +334,8 @@ contains
 
 
 
+    !==============    2D fields (surface) (i,j)   ==========================================
 
-
-    ! 2D fields (surface) (i,j)
     ndim=2
 
     namefield='surface_pressure'
@@ -393,6 +412,7 @@ contains
 
   end subroutine Meteoread
 
+  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine MeteoGridRead(cyclicgrid)
 
@@ -503,7 +523,7 @@ contains
        if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
        !-------------------------------------------------------------------
 
-    end if
+    end if !numt == 1
 
 
     divt = 1./(3600.0*METSTEP)
@@ -531,8 +551,6 @@ contains
        CALL MPI_ISEND( vsnd , 8*MAXLIMAX*KMAX_MID, MPI_BYTE,  &
             neighbor(NORTH), MSG_SOUTH2, MPI_COMM_WORLD, request_n, INFO)
     endif
-
-
 
 
 
@@ -768,9 +786,9 @@ contains
      ! Note: example results are given in MetFields
        write(*,*) "DEBUG meIJ" , me, limax, ljmax
        do k = 1, KMAX_MID
-          write(6,"(a12,2i3,3f12.4)") "DEBUG_Z",me, k, &
+          write(6,"(a12,2i3,9f12.4)") "DEBUG_Z",me, k, &
             z_bnd(debug_iloc,debug_jloc,k), z_mid(debug_iloc,debug_jloc,k)!,&
-!            zm3d(debug_iloc,debug_jloc,k)
+!            sigma_mid(k) !,            zm3d(debug_iloc,debug_jloc,k)
        end do
     end if
 
@@ -934,16 +952,13 @@ contains
 
 
 
-    call met_derived !compute derived meteo fields
+    call met_derived(nr) !compute derived meteo fields
 
-    call tiphys(numt)
+    call BLPhysics(numt)
 
   end subroutine metvar
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-
-
 
 
 
@@ -962,25 +977,25 @@ contains
 
        div = 1./real(nmax-(nstep-1))
 
-       u_xmj(:,:,:,1)    = u_xmj(:,:,:,1)         		&
+       u_xmj(:,:,:,1)    = u_xmj(:,:,:,1)                 &
             + (u_xmj(:,:,:,2) - u_xmj(:,:,:,1))*div
-       v_xmi(:,:,:,1)    = v_xmi(:,:,:,1)         		&
+       v_xmi(:,:,:,1)    = v_xmi(:,:,:,1)                 &
             + (v_xmi(:,:,:,2) - v_xmi(:,:,:,1))*div
-       sdot(:,:,:,1) = sdot(:,:,:,1)         	&
+       sdot(:,:,:,1) = sdot(:,:,:,1)             &
             + (sdot(:,:,:,2) - sdot(:,:,:,1))*div
-       th(:,:,:,1)   = th(:,:,:,1)         		&
+       th(:,:,:,1)   = th(:,:,:,1)                 &
             + (th(:,:,:,2) - th(:,:,:,1))*div
-       q(:,:,:,1)    = q(:,:,:,1)         		&
+       q(:,:,:,1)    = q(:,:,:,1)                 &
             + (q(:,:,:,2) - q(:,:,:,1))*div
        !      ccc(:,:,:,1) = ccc(:,:,:,1)                           & !ASSYCON
        !                   + (ccc(:,:,:,2) - ccc(:,:,:,1))*div       !ASSYCON
-       SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,1)         		&
+       SigmaKz(:,:,:,1)  = SigmaKz(:,:,:,1)                 &
             + (SigmaKz(:,:,:,2) - SigmaKz(:,:,:,1))*div
-       roa(:,:,:,1)  = roa(:,:,:,1)         		&
+       roa(:,:,:,1)  = roa(:,:,:,1)                 &
             + (roa(:,:,:,2) - roa(:,:,:,1))*div
-       ps(:,:,1)     = ps(:,:,1)         		&
+       ps(:,:,1)     = ps(:,:,1)                 &
             + (ps(:,:,2) - ps(:,:,1))*div
-       t2_nwp(:,:,1) = t2_nwp(:,:,1)         		&
+       t2_nwp(:,:,1) = t2_nwp(:,:,1)                 &
             + (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
        rh2m(:,:,1) = rh2m(:,:,1)  &
             + (rh2m(:,:,2) - rh2m(:,:,1))*div
@@ -990,17 +1005,17 @@ contains
             + (SoilWater_deep(:,:,2) - SoilWater_deep(:,:,1))*div
 
 
-       fh(:,:,1)     = fh(:,:,1)         		&
+       fh(:,:,1)     = fh(:,:,1)                 &
             + (fh(:,:,2) - fh(:,:,1))*div
-       fl(:,:,1)     = fl(:,:,1)         		&
+       fl(:,:,1)     = fl(:,:,1)                 &
             + (fl(:,:,2) - fl(:,:,1))*div
-       tau(:,:,1)    = tau(:,:,1)         		&
+       tau(:,:,1)    = tau(:,:,1)                 &
             + (tau(:,:,2) - tau(:,:,1))*div
-       sst(:,:,1)    = sst(:,:,1)         		&
+       sst(:,:,1)    = sst(:,:,1)                 &
             + (sst(:,:,2)   - sst(:,:,1))*div
-       sdepth(:,:,1)    = sdepth(:,:,1)         		&
+       sdepth(:,:,1)    = sdepth(:,:,1)                 &
             + (sdepth(:,:,2)   - sdepth(:,:,1))*div
-       ice(:,:,1)    = ice(:,:,1)         		&
+       ice(:,:,1)    = ice(:,:,1)                 &
             + (ice(:,:,2)   - ice(:,:,1))*div
 
        !  precipitation and cloud cover are no longer interpolated
@@ -1035,13 +1050,13 @@ contains
 
     endif
 
-    call met_derived !update derived meteo fields
+    call met_derived(1) !update derived meteo fields
 
   end subroutine metint
 
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-  subroutine met_derived
+  subroutine met_derived(nt)
 
     ! This routine calculates fields derived from meteofields.
     ! The interpolation in time is done for the meteofields and the
@@ -1057,16 +1072,17 @@ contains
 
 
     implicit none
+    integer, intent(in) :: nt  ! set to 1 from metint or nr from matvar
     integer ::i,j, k
     logical :: DEBUG_DERIV = .false.
 
-    do k = KPBL_MAX, KMAX_MID
+    do k = 1, KMAX_MID
     do j = 1,ljmax
        do i = 1,limax
-           u_mid(i,j,k) = 0.5*( u_xmj(i,j,k,1)*xm_j(i,j) + &
-                                u_xmj(i-1,j,k,1)*xm_j(i-1,j) )
-           v_mid(i,j,k) = 0.5*( v_xmi(i,j-1,k,1)*xm_i(i,j-1) + &
-                                v_xmi(i,j,k,1)*xm_i(i,j))
+           u_mid(i,j,k) = 0.5*( u_xmj(i,j,k,nt)*xm_j(i,j) + &
+                                u_xmj(i-1,j,k,nt)*xm_j(i-1,j) )
+           v_mid(i,j,k) = 0.5*( v_xmi(i,j-1,k,nt)*xm_i(i,j-1) + &
+                                v_xmi(i,j,k,nt)*xm_i(i,j))
        enddo
     enddo
     enddo !k
@@ -1083,24 +1099,48 @@ contains
     !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
     forall( i=1:limax, j=1:ljmax )
-       rho_surf(i,j)  = ps(i,j,1)/(RGAS_KG * t2_nwp(i,j,1) )
+       rho_surf(i,j)  = ps(i,j,nt)/(RGAS_KG * t2_nwp(i,j,nt) )
     end forall
 
     if(.not. foundustar)then
        forall( i=1:limax, j=1:ljmax )
-          ustar_nwp(i,j)   = sqrt( tau(i,j,1)/rho_surf(i,j) )
+          ustar_nwp(i,j)   = sqrt( tau(i,j,nt)/rho_surf(i,j) )
        end forall
     endif
 
+    !ds 25/2/2009.. following Branko's comments, 
+    ! we limit u* to a physically plausible value over land
+    ! to prevent numerical problems, and to account for enhanced
+    ! mixing which is usually found over real terrain
+
+    where ( nwp_sea ) 
+       ustar_nwp = max( ustar_nwp, 1.0e-5 )
+    elsewhere 
+       ustar_nwp = max( ustar_nwp, MIN_USTAR_LAND )
+    end where
+!    forall( i=1:limax, j=1:ljmax )
+!       ustar_nwp(i,j) = max( ustar_nwp(i,j), 1.0e-5 )
+!    end forall
+
 
     forall( i=1:limax, j=1:ljmax )
-       ustar_nwp(i,j) = max( ustar_nwp(i,j), 1.0e-5 )
+     invL_nwp(i,j)  = KARMAN * GRAV * fh(i,j,nt) & ! - disliked by gfortran
+            / (CP*rho_surf(i,j) * ustar_nwp(i,j)**3 * t2_nwp(i,j,1) )
     end forall
+
+    ! BIG QUERY....
+    where ( invL_nwp < -1.0 ) 
+     invL_nwp  = -1.0
+    else where ( invL_nwp > 1.0 ) 
+     invL_nwp  = 1.0
+    end where 
+     
 
     if ( DEBUG_DERIV .and. debug_proc ) then
        i = debug_iloc
        j = debug_jloc
-       write(*,*) "MET_DERIV DONE ", me, ustar_nwp(i,j), rho_surf(i,j)
+       write(*,*) "MET_DERIV DONE ", me, nt, ustar_nwp(i,j), rho_surf(i,j), &
+            fh(i,j,nt), invL_nwp(i,j)
     end if
     !aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
@@ -1179,26 +1219,16 @@ contains
 
 
 
-
-
-
-
-
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-
-
-
-
-
-
-  subroutine tiphys(numt)
+  subroutine BLPhysics(numt)
     !c
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    !c
-    !c    written by Trond Iversen,  modified by Hugo Jakobsen, 060994
-    !c
-    !c    Called from: eulmain.f
+    !c    First written by Trond Iversen,  modified by Hugo Jakobsen, 060994
+    !c    Extensive modifications to structure by Dave Simpson, March 2010. 
+    !c    Some code moved to BLPhysics_ml, together with additinal options. 
+    !c    Also now includes Haldis's use of NWP Kz values.
+    !c      ** not optimised, bujt called only at 3 h intervals
     !c
     !c-----------------------------------------------------------------
     !c
@@ -1216,710 +1246,302 @@ contains
     !c-----------------------------------------------------------------
     !c    routines called:
     !c
+    !c        Several options for Kz, Hmix
     !c        smoosp
     !c
     !c
     !c-----------------------------------------------------------------
     !c
-    !c    DescriPTion of the parameters/variables defined in this file:
-    !c
-    !c
-    !c    absfac    : |xfac|
-    !c    abshd    : |fm|
-    !c    amax1    : fortran function, choosing largest value
-    !c    amin1    : fortran function, choosing smallest value
-    !c    CP    : heat capaciyt of air at constant pressure, J/(kg K)
-    !c    delq    : available heat flux for developing the unstable ABL, J/m2
-    !!              : heat-input per m2 from the ground during unstable BL
-    !c    deltaz    : zm(i,k) - zm(i,k+1), m
-    !c    dpidth    : heat increasement in accordance with temp. increasement, J/m2
-    !c    dth    : iterative increament in potential temperature
-    !c    dth0    : accumulated increament in iterative temperature
-    !c    dtz    : time interwall for integration of surface heat fluxes
-    !c          in the ABL-height calculations, s
-    !c    dvdz    : Wind shear, 1/s
-    !c    eps    : small number avoiding ri to become infinitely large
-    !c    exfrco    : parameter in the Kz model
-    !c    exnm    : exner function in the full sigma-levels, J/(kg K)
-    !c    exns    : exner function in the half sigma-levels, J/(kg K)
-    !c    fh    : surface flux of sensible heat, W/m2
-    !c    fl    : surface flux of sensible heat, W/m2 ! ds u7.4vg
-    !c    fm    : surface stress (flux of momentum), N/m2
-    !c    g    : gravitational acceleration, m/s2
-    !c    hs    : height of surface layer (i.e. prandtl-layer), m
-    !c    hsl    : (= hs/l, where l is the monin-obhukov length)
-    !c    i    : grid index in x-direction
-    !c    iip    : limax + 1
-    !c    limax    : max number of grid points in x-direction
-    !c    iznew    : index for new value of the ABL-height, m
-    !c    izold    : index for previous value of the ABL-height, m
-    !c    j    : grid index in y-direction
-    !c    jjp    : ljmax + 1
-    !c    ljmax    : max number of grid points in y-direction
-    !c    k    : grid index in vertical-direction
-    !c    kkk    : helping index for the cycling of ABL-height
-    !c    kkm    : number of full s-levels, *** not used ***
-    !c    KMAX_BND    : max number of vertical half levels
-    !c          in sigma coordinates
-    !c    KMAX_MID    : max number of vertical full levels
-    !c          in sigma coordinates
-    !c       kzmax   : maximum value of Kz_ms2, m2/s
-    !c       kzmin   : minimum value of Kz_ms2, m2/s
-    !c    ndth    : do variable for convective ABL-height iteration loop
-    !c    nh1    : counts number of layers below zlimax
-    !c    nh2    : counts number of layers with Kz > ( Kz )limit
-    !c    nr    : number of met.fields stored in arrays (= 1 or 2)
-    !c    nt    : time counting variable of the outer time-loop
-    !c    p    : local pressure, hPa (mb)
-    !c       pi      : pi = 4.*atan(1.) = 3.14 ...
-    !c    pidth    : heat used to adjust air temperature, J/m2
-    !c    pref    : refference pressure (at ground level), 1.e+5 Pa
-    !c    ps    : surface pressure, hPa
-    !c    PT    : pressure at the top of the model atmosphere, hPa (mb)
-    !c    pz    : local pressure in half sigma levels, hPa (mb),
-    !c          helping array (j - slices) for pressure
-    !c    pzpbl    : stores H(ABL) for averaging and plotting purposes, m
-    !c    ri    : richardson`s number
-    !c    ri0    : critical richardson`s number
-    !c    risig    : richardson's number in sigmas-levels
-    !c    roas    : air density at surface, kg/m3
-    !c    sigma_bnd    : height of the half-sigma layers
-    !c    sigma_mid    : height of the full-sigma layers
-    !c    sm    : height of the surface layer in s-coordinates (4% of H(ABL), m
-    !c    th    : potensial temperature (theta), K
-    !c    t2_nwp    : potensial temperature at 2m height, K
-    !c    thadj    : adjustable surface temperature, K
-    !c    thsrf    : potensial temperature at the surface, K
-    !c    trc    : helping variable telling whether or not unstable ABL exists
-    !!              :       0 => no need for further calc. of ziu
-    !!              :       1 => ziu not found yet.
-    !c    u_xmj    : wind speed in the x-direction, m/s
-    !c    ustar    : friction velocity, m/s
-    !c    v_xmi    : wind speed in the y-direction, m/s
-    !c       ven     : ventilation coefficient, m3
-    !c       venav   : time averaged ventilation coefficient, m3
-    !c       venmax  : maximum value of ven, m3
-    !c       venmin  : minimum value of ven, m3
-    !c       ven00   : averaged ventilation coefficient at 00 UTC, m3
-    !c       ven06   : averaged ventilation coefficient at 06 UTC, m3
-    !c       ven12   : averaged ventilation coefficient at 12 UTC, m3
-    !c       ven18   : averaged ventilation coefficient at 18 UTC, m3
-    !c    vdfac    : factor for reduction of vD(1m) to vD(hs)
-    !!              : i.e. factor for aerodynamic resistance towards dry deposition
-    !!              : vd(50m) = vd(1m)/(1 + vd(1m)*vdfac)
-    !c    x12    : mixing length squared, m2
-    !c    xfac    : helping variable for reducing concentrations to 1m values
-    !c    xfrco    : parameter in the Kz model
-    !c    KAPPA    : r/CP (-)
-    !c    KARMAN    : von Karmans constant
-    !c    xkdz    : the vertical derivative of xkhs at hs, m/s
-    !!              : i.e. vertical gradient of xkhs
-    !c    xkhs    : diffusivity at hs (in surface layer), m2/s
-    !!              : i.e. vertical exchange coeff. on top of prandtl-layer
-    !c    Kz_ms2    : estimated exchange coefficient, Kz,  in intermediate
-    !c          sigma levels, m2/s
-    !c    xksm    : spacially smoothed Kz in z direction, m2/s.
-    !!              : Kz_ms2 smoothed over three adjacent layers
-    !c    xkzi    : local helping array for the vertical diffusivity, m2/s
-    !!              : i.e. vertical exchange coeff. on top of ABL for unstable BL
-    !c    zi    : Height of ABL (final value), m
-    !c    zlimax    : maximum value of ABL-height, zi, (2000), m
-    !c    zimhs    : ziu - hs
-    !c    zimin    : minimum value of ABL-height, zi, (200), m
-    !c    zimz    : ziu - zs_bnd
-    !c    zis    : height of the stable ABL, m
-    !c    ziu    : height of the unstable ABL, m
-    !c    zixx    : Height og ABL (intermediate value), m
-    !c    zm    : geopotential height of full sigma levels above topography, m
-    !c    zmhs    : zs_bnd - hs
-    !c    zs_bnd    : geopotential height of  half sigma levels above topography, m
-    !c    ztop    : height of the uppermost layer in s-coordinates
-    !c
-    !c-------------------------------------------------------------------
-    !c..the following sketches the sigma-surfaces:
-    !c
-    !c
-    !!                ///////////////////
-    !c    sigma_bnd(1) = 0 - -sigmas - - - - - sdot(1) = 0, Kz_ms2(1)=xksm(1)=0,
-    !!                                           pr(1)=0,PT,exns(1), zs_bnd(1)
-    !c
-    !c        sigma_mid(1) ---sigmam---------- u_xmj, v_xmi, th, q, cw, exnm (1)
-    !c
-    !c
-    !c        sigma_bnd(2) - - - - s - - - - - sdot(2), Kz_ms2(2), exns(2), pr(2)
-    !!                                                 zs_bnd(2), xksm(2)
-    !c
-    !c        sigma_mid(2) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (2)
-    !c
-    !c
-    !c        sigma_bnd(3) - - - - s - - - - - sdot(3), Kz_ms2(3), exns(3), pr(3)
-    !!                                                 zs_bnd(3), xksm(3)
-    !c
-    !c        sigma_mid(3) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (3)
-    !c
-    !c
-    !c        sigma_bnd(4) - - - - s - - - - - sdot(4), Kz_ms2(4), exns(4), pr(4)
-    !!                                                  zs_bnd(4), xksm(4)
-    !c
-    !c        sigma_mid(4) --------m---------- u_xmj, v_xmi, th, q, cw, exnm (4)
-    !c
-    !c
-    !c        sigma_bnd(5) - - - - s - - - - - sdot(5), Kz_ms2(5), exns(5), pr(5)
-    !!                                                  zs_bnd(5), xksm(5)
-    !c
-    !!                        :
-    !!                        :
-    !c
-    !  sigma_bnd(KMAX_BND-1) - - - - s - - -  - sdot(KMAX_BND-1), Kz_ms2(KMAX_MID),
-    !!                                    exns(KMAX_BND-1),zs_bnd(KMAX_BND-1),
-    !!                                    pr(KMAX_BND-1),xksm(KMAX_MID)
-    !c
-    !c    sigma_mid(KMAX_MID) --------m-------- u_xmj, v_xmi, th, q, cw, exnm (KMAX_MID);
-    !!                                    this level is assumed to be
-    !!                                    the top of Prandtl-layer (LAM50E)
-    !c
-    ! sigma_bnd(KMAX_BND) = 1- -  - s - - - - sdot(KMAX_BND) = 0, ps, t2_nwp, fh,
-    !!                ///////////////////        fm, mslp, Kz_ms2(KMAX_MID)=0,
-    !!                                           exns(KMAX_BND), zs_bnd(KMAX_BND),
-    !!                                           pr(KMAX_BND),xksm(KMAX_BND)=0.
-    !c
-    !c
     !c**********************************************************************
-    logical, parameter :: DEBUG_KZ = .false.
-    logical, parameter :: PIELKE_KZ = .true.    ! Default
     logical, parameter :: TKE_DIFF = .false.  !!! CODE NEEDS TESTING/TIDY UP
-    ! STILL!!!!
-    !  Kz-tests
-    real, parameter :: KZ_MINIMUM = 0.001   ! m2/s
-    real, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
-    real, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
 
     real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID)::exnm
-    real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND)::exns,zs_bnd
-    real, dimension(MAXLIMAX,KMAX_MID)::zm,dthdz,deltaz,thc
-    real, dimension(MAXLIMAX,KMAX_BND)::risig,xksm,pz
-    real, dimension(MAXLIMAX)::zis,delq,thsrf,trc,pidth,dpidth,xkhs,xkdz,xkzi,&
-         hs,xkh100
-    real,  dimension(MAXLIMAX,MAXLJMAX)::ziu,help,a,zixx,uabs,vdfac
-    real ::lim,xdthdz,zmmin,zimin,zlimax,kzmin,kzmax,sm,pref,eps,ric,&
-         ric0,dthdzm,dthc,xdth,xfrco,exfrco,hsl,dtz,p,dvdz,xl2,uvhs,zimhs,&
-         zimz,zmhs,ux0,fac,fac2,dex12,ro
-    real ::h100 ! Top of lowest layer - replaces 100.0
-    real ::hsurfl
-real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
-         p_bnd(KMAX_BND), & !TESTzi
-    ziTI, ziSeibert, ziJericevic, ziVenki, ziZil !TEST
+    real, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND)::exns
 
-    integer i,j,k,km,km1,km2,kabl,iip,jjp,numt,kp, nr
+    real,  dimension(MAXLIMAX,MAXLJMAX)::ziu, zis,help
+    real :: p_m, p_s, hs
 
+    real, dimension(KMAX_BND) :: &
+         p_bnd !TESTzi
+    real, dimension(KMAX_MID) :: &
+         p_mid, exf2, Kz_nwp 
+    real    :: Kz_min, stab_x, stab_h
+    logical :: Pielke_flag    ! choice in Blackadar/Pielke equations
 
-    integer, dimension(MAXLIMAX) ::  nh1, nh2
+    integer i,j,k,numt, nr
 
-    !  Check:
     call CheckStop( KZ_SBL_LIMIT < 1.01*KZ_MINIMUM,   &
          "SBLlimit too low! in Met_ml")
 
-    iip = limax+1
-    jjp = ljmax+1
-
-    !
     !     Preliminary definitions
-    !
+
     nr = 2
-    if (numt.eq.1) nr = 1
-    pref = 1.e+5
+    if (numt == 1) nr = 1
 
-    !from ModelC      pi = 4.*atan(1.)
-
-    zlimax = 3000.
-    zimin = 100.
-    zmmin = 200.
-
-    eps = 0.01
-    dtz = 3600.
-    sm = 0.04
-    !
-    !
-    !..preset=zero:
-    xksm(:,:)   = 0
-    risig(:,:)  = 0.
     Kz_m2s(:,:,:)= 0.
-
+    Kz_nwp(:)    = -99.0   ! store for printout. only set if read from NWP
 
     !c..................................
-    !c..exner-function in the full sigma-levels..
+    !c..exner-functions (j/k kg)
     !c
     do  k=1,KMAX_MID
-       do j=1,ljmax
-          do i=1,limax
+    do j=1,ljmax
+       do i=1,limax
 
-             !c..pressure (pa)
-             p = PT + sigma_mid(k)*(ps(i,j,nr) - PT)
-             !c..exner (j/k kg)
-             exnm(i,j,k)= CP * Exner_nd(p)
+          p_m = PT + sigma_mid(k)*(ps(i,j,nr) - PT)
+          p_s = PT + sigma_bnd(k)*(ps(i,j,nr) - PT)
+
+             exnm(i,j,k)= CP * Exner_nd(p_m) !c..exner (j/k kg)
+             exns(i,j,k)= CP * Exner_nd(p_s)
           end do
        end do
     end do
 
-    !c.........................................
-    !c..procedure to arrive at mixing height..:
-    !c
-    !c++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    !c
-    !c     Start j-slice here.
-    !c
 
-
-    do j=1,ljmax
-
-       !c..exner in half-sigma levels:
-       do  k=1,KMAX_BND
-          do i=1,limax
-             p = PT + sigma_bnd(k)*(ps(i,j,nr) - PT)
-             pz(i,k) = p
-             exns(i,j,k)= CP * Exner_nd(p)
-          end do
-       end do
-       !
-       !
-       !.. exns(KMAX_BND), th(KMAX_BND) and height of sigmas:
-       do  i=1,limax
-          zs_bnd(i,j,KMAX_BND)=0.
-       end do
-       !
-       !     Height of the half levels
-       !
-       do  k=KMAX_BND-1,1,-1
-          do i=1,limax
-             zs_bnd(i,j,k)=zs_bnd(i,j,k+1)+th(i,j,k,nr)*&
-                  (exns(i,j,k+1)-exns(i,j,k))/GRAV
-
-          end do
-       end do
-       !
-       !..height of sigma:
-       do  k=1,KMAX_MID
-          do i=1,limax
-             zm(i,k) = ((exnm(i,j,k)-exns(i,j,k))*zs_bnd(i,j,k+1)&
-                  + (exns(i,j,k+1)-exnm(i,j,k))*zs_bnd(i,j,k))&
-                  / (exns(i,j,k+1)-exns(i,j,k))
-!             zm3d(i,j,k) = zm(i,k)
-          end do
-       end do
-
-   ! Shows that z_bnd == zs_bnd and z_mid == zm!!!
-   !if( DEBUG_HMIX .and. debug_proc .and. & 
-   !     !   modulo( current_date%hour, 3)  == 0  .and. &
-   !        current_date%seconds == 0 .and. j == debug_jloc ) then
-   !   i = debug_iloc !,    j = debug_jloc
-   !    do k = 17, 1, -4
-   !     write(6,"(a,i3,4f15.4)") "DEBUG_Hmix Zs", k, z_bnd(i,j,k), zs_bnd(i,j,k), z_mid(i,j,k), zm(i,k)
-   !    end do
-   ! end if
-
-
-       !----------------------------------------------------------------------
-       !...........................................
-       !..the following variables in sigmas-levels:
-       !
-       do  k=2,KMAX_MID
-          km=k-1
-          do i=1,limax
-             !
-             !.........................
-             !..wind sheare
-             !
-             ! Slightly different formulation of dvdz than in metvar
-
-             !BUG dvdz = ( (u_xmj(i,j,km,nr)-u_xmj(i,j,k,nr))**2 &
-             !BUG      + (v_xmi(i,j,km,nr)-v_xmi(i,j,k,nr))**2 + eps)
-              dvdz = (u_mid(i,j,km)-u_mid(i,j,k))**2 + & ! Actually (dv)^2 
-                     (v_mid(i,j,km)-v_mid(i,j,k))**2 + eps  
-             !
-             risig(i,k)=(2.*GRAV/(th(i,j,km,nr)+th(i,j,k,nr)))*&
-                  (th(i,j,km,nr)-th(i,j,k,nr))*(zm(i,km)-zm(i,k))&
-                  /dvdz
-             !........................
-             !..mixing length squared:
-             !
-             xl2=(KARMAN*amin1(zs_bnd(i,j,k),zmmin))**2
-
-             !
-             !..............................
-             !..critical richardsons number:
-             !
-             ric0=0.115*((zm(i,km)-zm(i,k))*100.)**0.175
-             ric=amax1(0.25,ric0)
+! Are the invL and fh comparable??
+    if  ( debug_proc ) then
+      i = debug_iloc
+      j = debug_jloc
+      write(*,"(a,i4,2f12.5)") "TESTNR th ", nr , th(i,j,20,1), th(i,j,20,nr)
+      write(*,"(a,i4,2f12.5,es10.2)") "TESTNR fh ", nr , fh(i,j,1), fh(i,j,nr), invL_nwp(i,j)
+      write(*,"(a,i4,2es10.2)") "TESTNR ps ", nr , ps(i,j,1), ps(i,j,nr)
+    end if
 
 
 
-             dvdz = sqrt(dvdz)/(zm(i,km)-zm(i,k))
+   !SSSSSSSSSSSSSSSSSS Start choice of Kz and Hmix methods SSSSSSSSSSSSSSSSSS
 
-             !..................................................................
-             !..exchange coefficient (Pielke,...)
-             if ( PIELKE_KZ  ) then
-                if (risig(i,k) > ric ) then
-                   Kz_m2s(i,j,k) = KZ_MINIMUM
-                else
-                   Kz_m2s(i,j,k) = 1.1 * (ric-risig(i,k)) * xl2 * dvdz /ric
-                end if
-             else
 
-                !..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
-                !
-                if(risig(i,k).le.0.) then
-                   Kz_m2s(i,j,k)=xl2*dvdz*sqrt(1.1-87.*risig(i,k))
-                elseif(risig(i,k).le.0.5*ric) then
-                   Kz_m2s(i,j,k)=xl2*dvdz*(1.1-1.2*risig(i,k)/ric)
-                elseif(risig(i,k).le.ric) then
-                   Kz_m2s(i,j,k)=xl2*dvdz*(1.-risig(i,k)/ric)
-                else
-                   Kz_m2s(i,j,k)=0.001
-                endif
-             end if ! Pielke or Blackadar
-             !
-          end do
-       end do
-       !
-       !tttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt
-       !
-       !---------------------------------------------------------------------
-       !..................................
-       !..height of stable boundary layer:
-       !
-       !.........................................................
-       !..vertical smoothing of Kz_ms2 over three adjacent layers:
-       !
-       k=2
-       km=1
-       kp=3
-       do i=1,limax
-          xksm(i,k)=( (zm(i,km)-zm(i,k))*Kz_m2s(i,j,k)&
-               + (zm(i,k)-zm(i,kp))*Kz_m2s(i,j,kp) )&
-               / ( zm(i,km) - zm(i,kp) )
-       enddo
-       !c
-       k=KMAX_MID
-       km2=k-2
-       km1=k-1
-       do i=1,limax
-          xksm(i,k)=( (zm(i,km2)-zm(i,km1))*Kz_m2s(i,j,km1)&
-               + (zm(i,km1)-zm(i,k))*Kz_m2s(i,j,k) )&
-               / ( zm(i,km2) - zm(i,k) )
-       enddo
-       !c
-       do k = 3,KMAX_MID-1
-          km1=k-1
-          km2=k-2
-          kp=k+1
-          do i=1,limax
-             xksm(i,k)=(  (zm(i,km2)-zm(i,km1))*Kz_m2s(i,j,km1)&
-                  + (zm(i,km1)-zm(i,k))*Kz_m2s(i,j,k)&
-                  + (zm(i,k)-zm(i,kp))*Kz_m2s(i,j,kp) )&
-                  / ( zm(i,km2) - zm(i,kp) )
+    if (NWP_Kz .and. foundKz_met ) then  ! read from met data
+
+       !hb, +ds rewrote to reduce number of lines. LAter we should remove Kz_met
+       ! and Kz_m2s
+
+       forall(i=1:limax,j=1:ljmax,k=2:KMAX_MID)
+             SigmaKz(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*3)
+       end forall
+
+       call SigmaKz_2_m2s( SigmaKz(:,:,:,nr), roa(:,:,:,nr),ps(:,:,nr), Kz_m2s )
+
+       if( debug_proc ) Kz_nwp(:) = Kz_m2s(debug_iloc,debug_jloc,:) !for printout
+
+
+       if( debug_proc .and. DEBUG_Kz)then            
+          write(6,*) '*** After Set SigmaKz', sum(SigmaKz(:,:,:,nr)), &
+             minval(SigmaKz(:,:,:,nr)), maxval(SigmaKz(:,:,:,nr)), &
+             DEBUG_Kz, 'NWP_Kz:',NWP_Kz, &
+            '*** After convert to z',sum(Kz_m2s(:,:,:)), &
+            minval(Kz_m2s(:,:,:)), maxval(Kz_m2s(:,:,:))
+          write(6,*) 'DS  After Set SigmaKz KTOP', Kz_met(debug_iloc,debug_jloc,1,nr)
+       endif
+
+    else   ! Not NWP Kz. Must calculate
+
+         ! 1/  Get Kz first from PielkeBlackadar methods
+         ! Use for all methods except NWP_Kz
+         ! Do the physics for each i,j for now. Optimise later
+
+          do j=1,ljmax
+             do i=1,limax
+
+            call PielkeBlackadarKz ( &
+              u_mid(i,j,:),  v_mid(i,j,:),  &
+              z_mid(i,j,:),  z_bnd(i,j,:),  &
+              th(i,j,:,nr),  Kz_m2s(i,j,:), &
+              PIELKE, &     !Pielke_flag, &
+              .false. )
+              !( debug_proc .and. i == debug_iloc .and. j == debug_jloc )  )
+
+             enddo
           enddo
-       enddo
 
+        !======================================================================
+        ! Hmix choices:
 
-       !c
-       !c............................................................
-       !c..The height of the stable BL is the lowest level for which:
-       !c..xksm .le. 1 m2/s (this limit may be changed):
-       !c
-       do i = 1,limax
-          zis(i)=zimin
-          nh1(i) = KMAX_MID
-          nh2(i) = 1
-       enddo
-       !c
-       do k=KMAX_MID,2,-1
-          do i=1,limax
+          if ( HmixMethod == "TIZi" ) then
+    
+              ! 2/ Get Mixing height from "orig" method
+              !   "old" exner-function of the full-levels
 
-             if(xksm(i,k) >= KZ_SBL_LIMIT .and. nh2(i) == 1) then
-                nh1(i)=k   ! Still unstable
-             else
-                nh2(i)=0   ! Now stable
-             endif
-             !c
-          end do
-       end do
-       !c
-       do i=1,limax
-          !c
-          k=nh1(i)
-          !c
-          if(zs_bnd(i,j,nh1(i)).ge.zimin) then
+            do j=1,ljmax
+               do i=1,limax
 
-             if( abs(xksm(i,k)-xksm(i,k-1)) .gt. eps) then
+                  p_bnd(:) = sigma_bnd(:)*(ps(i,j,nr) - PT) + PT
+                 ! p_mid(:) = sigma_mid(:)*(ps(i,j,nr) - PT) + PT
+                 !exf2(:) = CP * Exner_nd(p_mid(:))
+    
+               call TI_Hmix ( &     ! Original EMEP method
+                 Kz_m2s(i,j,:), z_mid(i,j,:),  &
+                 z_bnd(i,j,:),  fh(i,j,nr),  &
+                 th(i,j,:,nr),  exnm(i,j,:),  &
+                 p_bnd(:), pzpbl(i,j), &       
+                 .false.)
 
-                zis(i)=((xksm(i,k)-KZ_SBL_LIMIT )*zs_bnd(i,j,k-1) &
-                     + (KZ_SBL_LIMIT -xksm(i,k-1))*zs_bnd(i,j,k))&
-                     /(xksm(i,k)-xksm(i,k-1))
-             else
+                 pzpbl(i,j) = max( PBL_ZiMIN, pzpbl(i,j))  ! Keep old fixed height ZiMin here
+                 pzpbl(i,j)  = min( PBL_ZiMAX, pzpbl(i,j))
 
-                zis(i)=zimin
-             endif
+               enddo
+            enddo
 
-          endif
-          !
-       end do
-       !
-       !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-       !
-       !---------------------------------------------------------------------
-       !....................................
-       !..height of unstable boundary layer:
-       !
-       !
-       !..assuring that th is increasing with height.
-       !..adjusted th-sounding is assigned to thc-array.
-       !..This adjusted th is not meant to be used in
-       !..other parts of the model program
-       !
-       dthdzm = 1.e-4
-       do i =1,limax
-          thc(i,KMAX_MID)=th(i,j,KMAX_MID,nr)
-          do k=KMAX_MID-1,1,-1
+          else ! Newer non-TI methods
+             if ( HmixMethod == "SbRb" ) then
 
-             dthc = (th(i,j,k,nr)-th(i,j,k+1,nr))&
-                  / (zm(i,k)-zm(i,k+1))
+                 call SeibertRiB_Hmix_3d(&
+                  u_mid(1:limax,1:ljmax,:),  &
+                  v_mid(1:limax,1:ljmax,:),  &
+                  z_mid(1:limax,1:ljmax,:),  &
+                  th(1:limax,1:ljmax,:,nr),  &
+                  pzpbl(1:limax,1:ljmax))
 
-             dthdz(i,k)=amax1(dthc,dthdzm)
+              else if ( HmixMethod == "JcRb" ) then
 
-             thc(i,k)=thc(i,k+1)+dthdz(i,k)*(zm(i,k)-zm(i,k+1))
+                 do i=1,limax
+                    do j=1,ljmax
 
-          enddo
-       enddo
+                      call JericevicRiB_Hmix(&
+                          u_mid(i,j,:), v_mid(i,j,:),  &
+                          z_mid(i,j,:), th(i,j,:,nr),  &
+                          pzpbl(i,j))
+                      end do
+                   end do
+              else
+                 call CheckStop("Need HmixMethod")
+              end if ! end of newer methods
 
-       !
-       !
-       !..estimated as the height to which an hour's input
-       !..of heat from the ground is vertically distributed,
-       !..assuming dry adiabatic adjustment.
-       !
-       !
-       do  i=1,limax
+           ! Set limits on Zi
+           ! mid-call at k=19 is lowest we can resolve, so set as min
+              forall(i=1:limax,j=1:ljmax)
+                 pzpbl(i,j) = max( z_mid(i,j,KMAX_MID-1), pzpbl(i,j))
+                 pzpbl(i,j) = min( PBL_ZiMAX, pzpbl(i,j) )
+              end forall
 
-          delq(i)=-amin1((fh(i,j,nr)),0.)*dtz
-          thsrf(i)=0.
-          ziu(i,j)=0.
-          !
-          !.................................
-          !..trc=1 for unstable BL (delq>0):
-          !..   =0 for stable BL (delq=0):
-          !
-          if(delq(i).gt.0.00001) then
-             trc(i)=1.
-          else
-             trc(i)=0.
-          endif
-          !
-          !------------------------------------------------------------
-          ! calculating the height of unstable ABL
-          !
-          !!      if(trc(i).eq.1.) then
+          end if ! Hmix done
 
-          kabl = KMAX_MID
+        !======================================================================
+        ! Kz choices:
 
-          do while( trc(i).eq.1)
-             !! 28     if(trc(i).eq.1.) then
-             kabl = kabl-1
-             pidth(i)=0.
-
-             do k=KMAX_MID,kabl,-1
-                xdth = thc(i,kabl)-thc(i,k)
-                dpidth(i) = exnm(i,j,k)*xdth*(pz(i,k+1)-pz(i,k))/GRAV
-                pidth(i) = pidth(i) + dpidth(i)
-
+           if ( KzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
+             do k = 2, KMAX_MID
+              do j=1,ljmax
+                 do i=1,limax
+                 Kz_m2s(i,j,k) = JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j) )
+             end do
+             end do
              end do
 
+          else  ! Specify unstable, stable separately:
 
-         if(pidth(i).ge.delq(i).and.trc(i).eq.1.) then
-
-                !c    at level kabl or below level kabl and above level kabl+1
-
-
-                thsrf(i) = thc(i,kabl)     &
-                     - (thc(i,kabl)-thc(i,KMAX_MID))    &
-                     * (pidth(i)-delq(i))/pidth(i)
-
-                xdthdz = (thc(i,kabl)-thc(i,kabl+1))        &
-                     / (zm(i,kabl)-zm(i,kabl+1))
-
-                ziu(i,j) = zm(i,kabl+1)                     &
-                     + (thsrf(i)-thc(i,kabl+1))/xdthdz
-
-                trc(i)=0.
-
-             endif
+            if ( StableKzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
+              do j=1,ljmax
+                 do i=1,limax
+                   if ( invL_nwp(i,j) > OB_invL_LIMIT ) then !neutral and unstable
+                     do k = 2, KMAX_MID
+                       Kz_m2s(i,j,k) = &
+                          JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j) )
+                     end do
+                   end if
+                 end do
+              end do
 
 
-             if(kabl.le.4 .and. trc(i).eq.1.) then
+            else if ( StableKzMethod == "BW" ) then
 
-                write(6,*)'Metml ziu calculations failed!'
+                 do k = 2, KMAX_MID
+                  do j=1,ljmax
+                     do i=1,limax
+                       if ( invL_nwp(i,j) > 1.0e-10 ) then !stable ! leaves gap near zero
+                           Kz_m2s(i,j,k) = BrostWyngaardKz(z_bnd(i,j,k),pzpbl(i,j),&
+                                           ustar_nwp(i,j),invL_nwp(i,j)) 
+                       end if
+                 end do
+                 end do
+                 end do
 
-                ziu(i,j)=zlimax
+            else if ( StableKzMethod == "PB" ) then
+                 ! no change
+            else
+                 call CheckStop("Need StableKzMethod")
+            end if ! Stable Kz
 
-                trc(i)=0.
-             endif
+             if ( UnstableKzMethod == "OB" ) then
+                do j=1,ljmax
+                   do i=1,limax
+                     if ( invL_nwp(i,j) < OB_invL_LIMIT ) then !neutral and unstable
+                        call O_BrienKz ( &     ! Original EMEP method
+                          pzpbl(i,j),  z_bnd(i,j,:),  &
+                          ustar_nwp(i,j),  invL_nwp(i,j),  &
+                          Kz_m2s(i,j,:), .false.)
+                     end if
+                   end do
+                 end do
+         
+              else
+                 call CheckStop("Need UnstableKzMethod")
+              end if
 
-          end do ! while
-
-       end do
-
-       !..iteration, finding height of unstable BL  finished
-       !.....................................................................
-
-
-       do i=1,limax
-
-      if( i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J &
-            .and.  debug_proc == .true. ) &
-           write(6,"(a,3f9.3)") "TIDEBUG zius ", ziu(i,j),zis(i), zixx(i,j)
-          zixx(i,j)=amax1(ziu(i,j),zis(i))
-          zixx(i,j)=amin1(zlimax,zixx(i,j))
-       end do
-
-
-
-    end do !     End j-slice
-    !!-------------------------------------------
+           end if  ! Specify unstable, stable separately:
+    end if
 
 
+    !..spatial smoothing of new zi: Need fixed minimum here. 100 m is okay
 
+     call smoosp(pzpbl,PBL_ZiMIN,PBL_ZiMAX)
 
-    !..spatial smoothing of new zi:
-
-    call smoosp(zixx,zimin,zlimax)
-
-    do j=1,ljmax
-       do i=1,limax
-          pzpbl(i,j) = zixx(i,j)
-       enddo
-    enddo
-
-   if( DEBUG_HMIX .and. debug_proc .and. & 
-         modulo( current_date%hour, 3)  == 0  .and. &
-           current_date%seconds == 0  ) then
+  !************************************************************************!
+  ! test some alternative options for Kz and Hmix
+   if( DEBUG_BLM .and. debug_proc .and. modulo( current_date%hour, 3)  == 0 &
+         .and. current_date%seconds == 0  ) then
 
       i = debug_iloc
       j = debug_jloc
-
-      call SeibertRiB_Hmix(&
-          u_mid(i,j,KPBL_MAX:KMAX_MID),  &
-          v_mid(i,j,KPBL_MAX:KMAX_MID),  &
-          z_mid(i,j,:),  &
-          th(i,j,:,nr),  &
-          ziSeibert)
-      call JericevicRiB_Hmix(&
-          u_mid(i,j,KPBL_MAX:KMAX_MID),  &
-          v_mid(i,j,KPBL_MAX:KMAX_MID),  &
-          z_mid(i,j,:),  &
-          th(i,j,:,nr),  &
-          ziJericevic)
-      ziVenki = Venkatram_Hmix(ustar_nwp(i,j))
-      ! no 1/L yet
-      !call Zilitinkevich_Hmix(&
-      !    ustar_nwp(i,j),  &
-      !    ustar_nwp(i,j),  &
-      !    ziVenki)
-
-     !   "old" exner-function of the full-levels
-
       p_bnd(:) = sigma_bnd(:)*(ps(i,j,nr) - PT) + PT
-      p_mid(:) = sigma_mid(:)*(ps(i,j,nr) - PT) + PT
-      exf2(:) = CP * Exner_nd(p_mid(:))
-      call TI_BLphysics(&
-          u_mid(i,j,KPBL_MAX:KMAX_MID),  &
-          v_mid(i,j,KPBL_MAX:KMAX_MID),  &
-          z_mid(i,j,:),  &
-          z_bnd(i,j,:),  &
-          fh(i,j,nr),  &
-          th(i,j,:,nr),  &
-          exf2(:),  &
-          p_bnd(:), &
-          ziTI,.true.)
 
-      write(6,"(a,4i5, f8.2,11f7.1)") "DEBUG_Hmix: ", &
-           current_date%month,&
-           current_date%day,&
-           current_date%hour,&
-           current_date%seconds, fh(i,j,nr), &
-           ziu(i,j),zis(i),  &
-           pzpbl(i,j), ziTI, ziSeibert, ziJericevic, ziVenki
+  !************************************************************************!
+  ! We test all the various options here. Pass in  data as keyword arguments
+  ! to avoid possible errors!
+
+      call Test_BLM( mm=current_date%month, dd=current_date%day, &
+           hh=current_date%hour, ss=current_date%seconds, fH=fh(i,j,nr), &
+           u=u_mid(i,j,:),v=v_mid(i,j,:), zm=z_mid(i,j,:), &
+           zb=z_bnd(i,j,:), exnm=exnm(i,j,:), Kz=Kz_m2s(i,j,:), &
+           Kz_nwp=Kz_nwp(:), invL=invL_nwp(i,j), &
+           ustar=ustar_nwp(i,j), th=th(i,j,:,nr), pb=p_bnd(:), zi=pzpbl(i,j))
+  !************************************************************************!
+      ! if ( USE_MIN_Kz) then
+         !hs = min( z_bnd(i,j,KMAX_MID), 0.04*pzpbl(i,j))
+         hs = z_bnd(i,j,KMAX_MID)
+
+        stab_h = min( PsiH(hs*invL_nwp(i,j)), 0.9 )
+         Kz_min = ustar_nwp(i,j)*KARMAN*hs /( 1 - stab_h  )
+        write(*,"(a,10f10.3)") "PSIH ", stab_h, fh(i,j,nr), invL_nwp(i,j), &
+             PsiH(hs*invL_nwp(i,j)),Kz_min
+      ! end if
+
+    end if ! end of debug extra options
+
+
+    !***************************************************
+    if ( .not. (NWP_Kz .and. foundKz_met) ) then  ! convert to Sigma units
+
+        call Kz_m2s_toSigmaKz (Kz_m2s,roa(:,:,:,nr),ps(:,:,nr),SigmaKz(:,:,:,nr))
+
     end if
+    !***************************************************
 
 
-    !cttttttttttttttttttttttttttttttttttttttttttttttttttttttt
-    !c..height of ABL finished..............................
-    !c------------------------------------------------------
-
-
-
-    !----------------------------------------------------------!
-    if( TKE_DIFF ) then
-       call tkediff (nr)                            ! guta
-    else if (NWP_Kz) then
-       do  k=2,KMAX_MID
-         do i=1,limax
-            do j=1,ljmax
-! hb KZ_met are accumulated values over three hours, to get m2/s divide with 60*60*3  
-               SigmaKz(i,j,k,nr)=Kz_met(i,j,k,nr)/(60*60*3)
-               Kz_m2s(i,j,k)=SigmaKz(i,j,k,nr)*SigmaKz_2_m2s(roa(i,j,k,nr),ps(i,j,nr))
-            enddo
-         enddo
-       enddo
-
-     else if (OBRIAN_Kz ) then
-
-       call O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
-            , exns, exnm, zixx, DEBUG_HMIX )
-    end if
-
-   if( MasterProc .and. DEBUG_Kz)then            
-       write(6,*)               &
-       '*** After Set SigmaKz', sum(SigmaKz(:,:,:,nr)), minval(SigmaKz(:,:,:,nr)), maxval(SigmaKz(:,:,:,nr)), DEBUG_Kz, 'NWP_Kz:',NWP_Kz,'OBRIAN_Kz:',OBRIAN_Kz, '*** After convert to z',sum(Kz_m2s(:,:,:)), minval(Kz_m2s(:,:,:)), maxval(Kz_m2s(:,:,:))
-    endif
-
-    !----------------------------------------------------------!
-  if( DEBUG_Kz .and. debug_proc .and. &
-         modulo( current_date%hour, 3)  == 0  .and. &
-           current_date%seconds == 0  ) then
-    
-      i = debug_iloc
-      j = debug_jloc
-      do k=1,KMAX_MID
-
-      write(6,"(a,4i5, 4f17.12)") "DEBUG_Kz: ", &
-           current_date%month,&
-           current_date%day,&
-           current_date%hour,&
-           k,&
-           SigmaKz(i,j,k,nr),&
-           Kz_m2s(i,j,k)
-      enddo
-   end if
-
-  end subroutine tiphys
+  end subroutine BLPhysics
 
   !c+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  !
-  !
-
-
-
 
 
   subroutine smoosp(f,rmin,rmax)
 
-    !c    file: eulmet-mnd.f
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !c
     !c    written by Trond Iversen,  modified by Hugo Jakobsen, 080994
     !       parallellized and modified by Peter February 2003
-    !
     !c
-    !c    Called from: tiphys.f
+    !c    Called from: BLPhysics.f
     !c
     !c----------------------------------------------------------------------
     !c
@@ -2549,262 +2171,6 @@ real ::  p_mid(KMAX_MID), exf2(KMAX_MID), & !TESTzi
 
   end subroutine tkediff
   !---------------------------------------------------------------
-
-
-
-
-
-  !************************************************************************!
-  subroutine O_Brian(nr, KZ_MINIMUM, KZ_MAXIMUM, zimin, zs_bnd, ziu  &
-       , exns, exnm, zixx, debug_flag )                            !
-    !************************************************************************!
-
-    !......................................................
-    !..exchange coefficients for convective boundary layer:
-    !..o'brien's profile formula:
-    !..and the air density at ground level:
-    !
-    !..constants for free-convection limit:
-    !
-
-    integer, intent(in) :: nr
-
-    real, intent(in) :: zimin        &
-         ,KZ_MINIMUM   &
-         ,KZ_MAXIMUM
-
-    real,intent(in), dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: zs_bnd &
-         ,exns
-    real,intent(in), dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: exnm
-
-    real,intent(in), dimension(MAXLIMAX,MAXLJMAX) :: ziu    &
-         ,zixx
-    logical, intent(in) :: debug_flag
-
-    real ::  KBW, invL
-
-    real :: h100   & ! Top of lowest layer - replaces 100.0
-         ,xfrco  &
-         ,exfrco &
-         ,sm     &
-         ,ux0    &   ! local ustar
-         ,ux3    &   ! ustar**3, ds apr2005
-         ,hsl    &
-         ,hsurfl &
-         ,zimhs  &
-         ,zimz   &
-         ,zmhs   &
-         ,fac    &
-         ,fac2   &
-         ,dex12  &
-         ,ro
-
-
-    integer :: i,j,k
-
-    ! local arrays:
-    real, dimension(MAXLIMAX)::   xkh100  &
-         ,xkhs    &
-         ,xkdz    &
-         ,xkzi    &
-         ,hs
-
-
-    real, dimension(MAXLIMAX,MAXLJMAX) :: help
-
-
-
-    sm = 0.04
-
-
-    xfrco=0.5*(sqrt(6859.)-1)
-    exfrco=1./3.
-
-
-
-
-    !c..exchange parameter and its vertical derivative at z = hs
-
-    do j=1,ljmax
-       do i=1,limax
-
-          xkh100(i)=0.
-          xkhs(i)=0.
-          xkdz(i)=0.
-          xkzi(i)=0.
-          h100 = zs_bnd(i,j,KMAX_MID)
-          !
-          !
-          !...................................................................
-          !..air density at ground level is always calculated diagnostically:
-          !
-
-          ux0 = ustar_nwp(i,j)
-          ux3 = ux0*ux0*ux0
-
-
-          if(ziu(i,j) >= zimin) then
-             !
-             !..........................
-             !..unstable surface-layer.:
-             !
-             !..height of surface layer
-             hs(i)=sm*ziu(i,j)
-
-             !c..hsl=hs/l where l is the monin-obhukov length
-             hsl = KARMAN*GRAV*hs(i)*fh(i,j,nr)*KAPPA &
-                  /(ps(i,j,nr)*ux3)
-
-
-             !changes: use simple Garratt \Phi function
-             !   instead of "older" Businge and Iversen/Nordeng stuff:
-
-             xkhs(i) = ux0*KARMAN*hs(i)*sqrt(1.0-16.0*hsl)  ! /Pr=1.00
-             xkdz(i) = xkhs(i)*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs(i)
-
-             hsurfl = KARMAN*GRAV*h100*fh(i,j,nr)*KAPPA           &
-                  /(ps(i,j,nr)*ux3)
-             xkh100(i) = ux0*KARMAN*h100*sqrt(1.-16.*hsurfl)
-
-             Kz_min(i,j)=xkh100(i)
-             Kz_m2s(i,j,KMAX_MID)=xkhs(i)
-
-     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-          write(6,"(a,4f8.2,f12.4)") "HMIX INU", ux0, ziu(i,j),  hs(i), hsl, xkhs(i)
-     end if
-
-          else
-             !
-             !..........................
-             !..stable surface-layer...:
-             !----------------------------------
-             !
-             !..height of surface layer
-             hs(i)=sm*zixx(i,j)
-             !
-             !..hsl=hs/l where l is the monin-obhukov length
-             hsl = KARMAN*GRAV*hs(i)*amax1(0.001,fh(i,j,nr))*KAPPA&
-                  /(ps(i,j,nr)*ux3)
-
-             Kz_m2s(i,j,KMAX_MID)=ux0*KARMAN*hs(i)/(1.00+5.0*hsl)
-
-     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-         invL = hsl/hs(i)
-
-!function BrostWyngaardKz(z,h,ustar,invL) result(Kz)
-!and try again:
-         KBW = BrostWyngaardKz( zs_bnd(i,j,KMAX_MID), zixx(i,j), ux0, invL      )
-          write(6,"(a,10es12.3)") "HMIX INux0", ustar_nwp(i,j), ux0
-          write(6,"(a,f9.4,3f8.2,10es12.3)") "HMIX INS", ux0, ziu(i,j), fh(i,j,nr),  hs(i), hsl, Kz_m2s(i,j,KMAX_MID), KBW
-     end if
-
-
-          endif
-
-          hsurfl = KARMAN*GRAV*100.*amax1(0.001,fh(i,j,nr))*KAPPA&
-               /(ps(i,j,nr)*ux3)
-          Kz_min(i,j)=ux0*KARMAN*h100/(1.00+5.0*hsurfl)
-     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-          write(6,"(a,4f8.2,f12.4)") "HMIX KzMIN", ux0, ziu(i,j),  hsurfl, Kz_min(i,j)
-     end if
-          !
-          !...............................................................
-
-       end do
-       !
-       !
-       !..exchange parameter at z = ziu
-       !
-       do  k=1,KMAX_MID
-          do  i=1,limax
-
-             if(ziu(i,j).gt.zimin .and. zs_bnd(i,j,k).ge.ziu(i,j)) then
-                xkzi(i)=Kz_m2s(i,j,k)
-     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-         KBW = BrostWyngaardKz( zs_bnd(i,j,k), zixx(i,j), ux0, invL      )
-          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKA", k, Kz_m2s(i,j,k), ziu(i,j), zixx(i,j), invL,  KBW
-     end if
-             elseif (ziu(i,j).gt.zimin) then
-                !
-                !.....................................................
-                !..the obrien-profile for z<ziu                      .
-                !.....................................................
-                !
-                if(zs_bnd(i,j,k).le.hs(i)) then
-                   Kz_m2s(i,j,k)=zs_bnd(i,j,k)*xkhs(i)/hs(i)
-     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKB", k, Kz_m2s(i,j,k)
-     end if
-                else
-                   zimhs = ziu(i,j)-hs(i)
-                   zimz  =ziu(i,j)-zs_bnd(i,j,k)
-                   zmhs  =zs_bnd(i,j,k)-hs(i)
-                   Kz_m2s(i,j,k) = xkzi(i)+(zimz/zimhs)*(zimz/zimhs)  &
-                        *(xkhs(i)-xkzi(i)+zmhs*(xkdz(i)     &
-                        + 2.*(xkhs(i)-xkzi(i))/zimhs))
-     if( debug_flag .and. i == debug_iloc .and. j == debug_jloc ) then
-          write(6,"(a,i3, f10.4,4f8.2,f12.4)") "HMIX KKC", k, Kz_m2s(i,j,k)
-     end if
-                endif
-
-             endif
-
-          end do
-       end do
-
-    end do
-    !
-    !..spatial smoothing of Kz_ms2:
-    !
-    !
-
-    do  k=2,KMAX_MID
-
-       do i=1,limax
-          do j=1,ljmax
-             if ( (pzpbl(i,j)>z_mid(i,j,k)) )then
-                Kz_m2s(i,j,k)=max(Kz_m2s(i,j,k),Kz_min(i,j))
-             endif
-
-             help(i,j) = Kz_m2s(i,j,k)
-          enddo
-       enddo
-
-       call smoosp(help,KZ_MINIMUM ,KZ_MAXIMUM )
-
-       do i=1,limax
-          do j=1,ljmax
-             Kz_m2s(i,j,k) = help(i,j)
-
-             fac   = GRAV/(ps(i,j,nr) - PT)
-             fac2  = fac*fac
-             dex12 = th(i,j,k-1,nr)*(exnm(i,j,k) - exns(i,j,k))       &
-                  + th(i,j,k,nr)*(exns(i,j,k) - exnm(i,j,k-1))
-             ro    = ((ps(i,j,nr) - PT)*sigma_bnd(k) + PT)*CP*(exnm(i,j,k) &
-                  - exnm(i,j,k-1))/(RGAS_KG*exns(i,j,k)*dex12)
-             SigmaKz(i,j,k,nr) = Kz_m2s(i,j,k)*ro*ro*fac2
-          enddo
-       enddo
-
-    end do
-
-
-    !
-    !...............................................................
-    !..mixing-layer parameterization finished.......................
-    !...............................................................
-    !
-
-  end subroutine O_Brian
-
-
-
-
-
-
-
-
-
 
 
   subroutine Getmeteofield(meteoname,namefield,nrec,&

@@ -41,21 +41,23 @@ module ModelConstants_ml
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains or debug points:
 
+ !integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
+ integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-  ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+   RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-   RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+  ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
-  !RUNDOMAIN = (/ 85, 120, 55,  70 /)     ! (changeable)
+  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
     NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
   ! ds Jan2009
@@ -81,7 +83,7 @@ module ModelConstants_ml
  !QUERY? integer, public, parameter :: DEBUG_i= 86, DEBUG_j= 21 ! Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
  !integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
- integer, public, parameter :: DEBUG_i= 97, DEBUG_j= 62 ! Waldhof
+ integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
  !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
  !integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
@@ -97,9 +99,9 @@ module ModelConstants_ml
     ,DEBUG_DERIVED        = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
-    ,DEBUG_MET            = .true. & !
-      ,DEBUG_HMIX         = .true. & !
-      ,DEBUG_Kz           = .true. & !
+    ,DEBUG_MET            = .false. & !
+      ,DEBUG_BLM          = .true. & !    produces matrix of differnt Kz and Hmix 
+      ,DEBUG_Kz           = .false. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !
     ,DEBUG_VDS            = .false. & !
@@ -145,8 +147,8 @@ module ModelConstants_ml
 !+ 3)  Define main model dimensions,  things that will
 !       generally only change when switching Met-driver or large domain
   integer, public, parameter ::  &
-  !  IIFULLDOM = 170, JJFULLDOM = 133 &! x,y-Dimensions of full EMEP domain
-   IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
+    IIFULLDOM = 170, JJFULLDOM = 133 &! x,y-Dimensions of full EMEP domain
+  ! IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 &! x,y-Dimensions of full GLOBAL domain
   ! IIFULLDOM = 201, JJFULLDOM = 161 &! x,y-Dimensions of full GEMS/MACC domain
   , NLANDUSEMAX  = 23    &    ! Number of land use types in Inputs.Landuse file

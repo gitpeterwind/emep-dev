@@ -5,61 +5,93 @@ module BLPhysics_ml
  ! Copiedfrom Unimod.rv18WTA  14th Feb 2010
  ! use GridValues_ml,  only : sigma_bnd
 
- use ModelConstants_ml,  only : KMAX_MID, KMAX_BND, KWINDTOP, PT
- use PhysicalConstants_ml,  only : KARMAN
+ use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, KWINDTOP, PT
+ use PhysicalConstants_ml, only : KARMAN, GRAV
  implicit none
  private
 
-
-! Queries  a
+! Queries  
 ! - should we keep this min value. Very high for stable?
 ! - max value also seems high. We used to use 2500 m
+! real, parameter, public :: PZPBL_MIN=200.   ! Amela's
+! real, parameter, public :: PBL_ZiMAX=5000.  ! Amela's
 
- real, parameter, public :: PZPBL_MIN=200.   ! Amela's
- real, parameter, public :: PZPBL_MAX=5000.  ! Amela's
- integer, parameter, private :: PIELKE_KZ=1
- integer, parameter, public :: KZ_METHOD=PIELKE_KZ
- ! hb 23.02.2010 Kz from meteo 
- logical, parameter, public :: NWP_Kz=.false.
- logical, parameter, public :: OBRIAN_Kz=.true.
+!ds minimum value now generally calculated as z_mid(19), but we
+!   keep a fixed value for smoothing. 
+ real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
+ real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
 
-! We don't need to calculate Kz for all layer in future maybe
-! Still, for safety  we let this extent to K=1 for now
+! Choose one Hmix method here (not needed for NWP?)
+ character(len=4), parameter, public :: HmixMethod = &
+     "JcRb"   ! Jericevic
+    !"SbRb"   ! Seibert
+    !"TIZi"   ! Original from Trond Iversen tiphysics
 
- real, parameter, public :: KPBL_MAX=1      ! Dave, TMP, 
+! Choose one Kz method here. Prefered method is likely to use O'brien
+! in convective, Jericevic in Stable.
+ logical, parameter, public  :: NWP_Kz=.false.     ! hb 23.02.2010 Kz from meteo 
+ logical, parameter, public  :: USE_MIN_KZ =.false. ! "fix"
+  character(len=2), parameter, public :: KzMethod = &
+     "--"   ! Set U, S separately, preferred? :
+  !   "JG"   ! Jericevic/Grisogono - both unstable + stable
+  character(len=2), parameter, public :: UnstableKzMethod = &
+     "OB"   ! O'Brien
+  character(len=2), parameter, public :: StableKzMethod = &
+     "JG"   ! Jericevic/Grisogono
+    !"BW"   ! Brost Wynngard
+    !"Sb"   ! Seibert
+
+ logical, parameter, public :: PIELKE = .true.
+ real, public, parameter :: KZ_MINIMUM = 0.001   ! m2/s
+ real, public, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
+ real, public, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
+ ! TI code had unstable if delq > 0.00001, ca. fh >10-8 so excluded neutral
+ real, public, parameter :: OB_invL_LIMIT =  -1.0e-10 ! 
+ real, public, parameter :: MIN_USTAR_LAND = 0.1 ! ms - Defines stable BL height
 
  real, parameter, private :: EPS=0.01  !prevents div by zero for WS
 
+! - Hmix routines
 public :: SeibertRiB_Hmix
 public :: SeibertRiB_Hmix_3d
 public :: JericevicRiB_Hmix
 public :: Venkatram_Hmix
 public :: Zilitinkevich_Hmix
-public :: TI_BLphysics
+public :: TI_Hmix
+
+! Kz routines
+public :: PielkeBlackadarKz
+public :: BrostWyngaardKz
+public :: JericevicKz
+public :: O_BrienKz
+
+! Misc
+!OLD public :: TI_BLphysics
 public :: fake_zmid
 public :: fake_zbnd
-!public :: Grisogono
 public :: risig1
-public :: BrostWyngaardKz
 
+! Test all
+public :: Test_BLM
+
+
+!Conversions
 public :: SigmaKz_2_m2s ! hb 23.02.2010 Kz from meteo
- private :: SigmaKz_2_m2s_scalar
- private :: SigmaKz_2_m2s_array
-
-! We put GRAV here to simplify dependenceis
-
- real, parameter, private :: GRAV = 9.807   ! Gravity, m/s2
+ private :: SigmaKz_2_m2s_scalar  ! function to get factor
+ private :: SigmaKz_2_m2s_arrays  ! subrouitne for 3d arrays
+public :: Kz_m2s_toSigmaKz
 
 ! conversion of Kz in sigma coordinates to m2/s, from HF Kz(sigma)=Kz*ro**2*(GRAV/p*)**2
 ! We can call this conversion routine as either scalar or array
   interface SigmaKz_2_m2s
      module procedure SigmaKz_2_m2s_scalar
-     module procedure SigmaKz_2_m2s_array
+     module procedure SigmaKz_2_m2s_arrays
   end interface SigmaKz_2_m2s
 
 contains
 
  !----------------------------------------------------------------------------
+
 function BrostWyngaardKz(z,h,ustar,invL) result(Kz)
   real, intent(in) :: z    ! height
   real, intent(in) :: h    ! Boundary layer depth 
@@ -75,78 +107,33 @@ function BrostWyngaardKz(z,h,ustar,invL) result(Kz)
 
 end function BrostWyngaardKz
 
-! hb 23.02.2010 Kz from meteo
-function SigmaKz_2_m2s_scalar (roa,ps) result(Kz_fac)
-  real, intent(in) :: roa
-  real, intent(in) :: ps
-  real :: fac
-  real :: Kz_fac
+function JericevicKz(z,h,ustar) result(Kz)
+  real, intent(in) :: z    ! height
+  real, intent(in) :: h    ! Boundary layer depth 
+  real, intent(in) :: ustar!  u*
+  real :: Kz
+  real :: Kmax, zmax
 
-     fac= (ps - PT)/(GRAV*roa)
-     Kz_fac= fac*fac
 
-end function SigmaKz_2_m2s_scalar
+     if ( z < h ) then
+        Kmax = 0.05 * h * ustar
+        zmax = 0.21 * h
+        Kz = 0.39 * ustar * z * exp( -0.5*(z/zmax)**2 )
+     else
+        Kz= 0.0
+     end if
 
-function SigmaKz_2_m2s_array (roa,ps) result(Kz_fac)
-  real, intent(in), dimension(:,:,:) :: roa
-  real, intent(in), dimension(:,:)   :: ps
-  real, dimension(size(roa,1),size(roa,2),size(roa,3)) :: Kz_fac
-  real :: fac
-  integer :: i,j,k
+end function JericevicKz
 
-  do k = 1, size(roa,3)
-  do j = 1, size(ps,2)
-  do i = 1, size(ps,1)
-     fac= (ps(i,j) - PT)/(GRAV*roa(i,j,k))
-     Kz_fac(i,j,k) = fac*fac
-  end do
-  end do
-  end do
 
-end function SigmaKz_2_m2s_array
-
- !----------------------------------------------------------------------------
+!----------------------------------------------------------------------------
 
 ! Two Rib-based mixing height methods.
 ! Seibert et al., AE, 2000, pp1001-,  eqn (9): 
 ! Jericevic et al., ACP, 2009,  eqn (17): 
 ! Boundary layer height is calculated with the bulk Richardson number
 ! method with critical value of Ric=0.25
-! Note, can never give first layer as Hmix. Is
-! this intenional? What if we have a really stable BL?
-
-!subroutine SH (Nij,Nk,u,v, zm, theta, pzpbl)
-!  integer, intent(in) :: Nij, Nk   ! dims (i x j, k)
-!  real, dimension(Nij,Nk), intent(in) :: u,v ! winds
-!  real, dimension(Nij,Nk), intent(in) :: zm ! mid-cell height
-!  real, dimension(Nij,Nk), intent(in) :: theta !pot. temp
-!  real, intent(out) :: pzpbl(Nij)
-!  integer :: k, n
-!  real, parameter :: Ric = 0.25  ! critical Ric
-!  real,dimension(Nij) :: Rib  ! bulk Richardson number
-!  real,dimension(Nij) :: Theta1   ! pot temp of lowest cell
-!
-!! Seibert et al., AE, 2000, pp1001-,  eqn (9): 
-!! Although we should use virtual pot temp, not just theta
-!
-!
-!   do n = 1, Nij
-!     Theta1(n) = theta(n,KMAX_MID)
-!     KLOOP: do k=Nk-1, KWINDTOP, -1 ! KMAX_MID -1
-!
-!        Rib(n) =      GRAV * zm(n,k) &
-!             *(theta(n,k)-Theta1(n) ) / &
-!             ( Theta1(n) * ( u(n,k)**2 + v(n,k)**2 )+EPS )
-!        if (Rib(n) >= Ric) then
-!              pzpbl = zm(n,k)
-!              exit KLOOP
-!        end if 
-!      end do KLOOP
-!    enddo !n
-!
-!   !QUERY  pzpbl=min(pzpbl,pzpbl_max )
-!   !QUERY  pzpbl=max(pzpbl, pzpbl_min)
-!end subroutine SH
+!----------------------------------------------------------------------------
 
 subroutine SeibertRiB_Hmix_3d (u,v, zm, theta, pzpbl)
   real, dimension(:,:,:), intent(in) :: u,v ! winds
@@ -175,8 +162,6 @@ subroutine SeibertRiB_Hmix_3d (u,v, zm, theta, pzpbl)
 
       end do KLOOP
 
-   !QUERY  pzpbl=min(pzpbl,pzpbl_max )
-   !QUERY  pzpbl=max(pzpbl, pzpbl_min)
 end subroutine SeibertRiB_Hmix_3d
 
  !----------------------------------------------------------------------------
@@ -206,8 +191,6 @@ subroutine SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
        endif
     enddo
 
-   !QUERY  pzpbl=min(pzpbl,pzpbl_max )
-   !QUERY  pzpbl=max(pzpbl, pzpbl_min)
 end subroutine SeibertRiB_Hmix
 
  !----------------------------------------------------------------------------
@@ -270,45 +253,24 @@ end function Zilitinkevich_Hmix
 
  !----------------------------------------------------------------------------
 
-subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
+subroutine PielkeBlackadarKz (u,v, zm, zb, th, Kz, Pielke_flag, debug_flag)
+
+!  Use of Pielke/Blackadar for Kz as in orig EMEP and MET.NO NWP model 
+!  (Derived from T.Iversen's tiphysics code)
+!
   real, dimension(:), intent(in) :: u,v ! wind-vels
   real, dimension(:), intent(in) :: zm, zb ! heights of mid and bnd
-  real, intent(in) :: fh  ! surface flux of sensible heat, W/m2
   real, dimension(:), intent(in) :: th
-  real, dimension(:), intent(in) :: exnm, pm ! exner_mid and p_mid
-  real, intent(out) :: zi  ! Final height of ABL
-  logical, intent(in) :: debug_flag
+  real, dimension(:), intent(out) :: Kz ! Kz  (m2/s)
+  logical, intent(in) :: Pielke_flag, debug_flag
 
-  real, dimension(KMAX_BND) :: &
-       Ris   &! Richardson number, sigma coords
-      ,Kz_m2s &! Kz_m2s smoothed over three adjacent layers
-      ,xksm   ! spacially smoothed Kz in z direction, m2/s.
+  real, dimension(KMAX_BND) :: Ris   ! Richardson number, sigma (???) coords
 
-  integer :: k, km, km1, km2, kp, nh1, nh2
+  integer :: k, km, km1
   real :: xl2    ! mixing length squared
   real, save :: zmmin = 200.0 !QUERY, Pielke or EMEP?
-  real, save :: zimin = 100.0
-  real, save :: zlimax= 3000.0
   real :: Ric, Ric0 !critical Richardson number variables
   real :: dvdz
-!  real, parameter :: Ric = 0.25  ! critical Ric
-  real, parameter :: DTZ = 3600.0 !time interval for integration of surface 
-                                  !heat fluxes in ABL-height calculations, s
-  real, parameter :: KZ_MINIMUM = 0.001   ! m2/s
-  real, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
-  real, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
-  real :: zis    ! height of the stable ABL, m
-
-  ! For unstable BL
-  real :: delq   ! available heat flux for developing the unstable ABL, J/m2
-                 ! (heat-input per m2 from the ground during unstable BL)
-  real :: thsrf, xdth, dthdzm, dthc, xdthdz
-  real, dimension(KMAX_MID) :: thc, dthdz ! Assures th increases with height
-  real :: dpidth !heat increasement in accordance with temp. increasement, J/m2
-  real :: pidth  !heat used to adjust air temperature, J/m2
-  integer :: trc !help variable telling whether or not unstable ABL exists
-  integer :: kabl
-  real :: ziu    ! height of the unstable ABL, m
 
  !..the following variables in sigmas-levels:
  !
@@ -339,54 +301,180 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
 
       !..................................................................
       !..exchange coefficient (Pielke,...)
-      if ( KZ_METHOD == PIELKE_KZ  ) then
+      if ( Pielke_flag ) then
+         !if( debug_flag ) write(6,*) "BLPielke Ris ",k, Ris(k), Ric
          if (Ris(k) > Ric ) then
-            Kz_m2s(k) = KZ_MINIMUM
+            Kz(k) = KZ_MINIMUM
          else
-            Kz_m2s(k) = 1.1 * (Ric-Ris(k)) * xl2 * dvdz /Ric
+            Kz(k) = 1.1 * (Ric-Ris(k)) * xl2 * dvdz /Ric
+           if( debug_flag ) write(6,"(a,es10.2,f6.3,9es10.2)") "BLPielke Ks ", &
+                Ris(k), Ric, xl2, dvdz, Kz(k)
          end if
       else
 
          !..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
          !
          if(Ris(k) <= 0.0) then
-            Kz_m2s(k)=xl2*dvdz*sqrt(1.1-87.*Ris(k))
+            Kz(k)=xl2*dvdz*sqrt(1.1-87.*Ris(k))
          elseif(Ris(k) <= 0.5*Ric) then
-                Kz_m2s(k)=xl2*dvdz*(1.1-1.2*Ris(k)/Ric)
+                Kz(k)=xl2*dvdz*(1.1-1.2*Ris(k)/Ric)
          elseif(Ris(k) <= Ric) then
-                Kz_m2s(k)=xl2*dvdz*(1.-Ris(k)/Ric)
+                Kz(k)=xl2*dvdz*(1.-Ris(k)/Ric)
          else
-                Kz_m2s(k)=0.001
+                Kz(k)=KZ_MINIMUM
          endif
       end if ! Pielke or Blackadar
 
   end do ! k
+end subroutine PielkeBlackadarKz
+
+ !----------------------------------------------------------------------------
+
+ !----------------------------------------------------------------------------
+subroutine Test_BLM (mm,dd,hh,ss,fH,u,v, zm, zb, pb, exnm, &
+          th, Kz, Kz_nwp, invL, ustar, zi )
+  integer, intent(in) :: mm, dd, hh, ss   ! date
+  real, intent(in)               :: fh    ! heart flux, -ve = Unstable
+  real, dimension(:), intent(in) :: u,v   ! winds
+  real, dimension(:), intent(in) :: exnm  ! mid-cell exner function (CP*)
+  real, dimension(:), intent(in) :: zm    ! mid-cell height
+  real, dimension(:), intent(in) :: zb    ! cell boundary height
+  real, dimension(:), intent(in) :: pb    ! pressure at boundaries
+  real, dimension(:), intent(in) :: th    !pot. temp
+  real, dimension(:), intent(in) :: Kz    ! Kz  (m2/s) 
+  real, dimension(:), intent(in) :: Kz_nwp ! Kz from NWP if available/used
+  real, intent(in)               :: ustar ! m/s
+  real, intent(in)               :: invL  ! 1/m
+  real, intent(in)               ::  zi   !pot. temp
+  integer :: k
+
+  real, dimension(size(Kz)) :: &
+    Kz_OB   &! Kz  O'Brien
+   ,Kz_AJ   &! Kz  Amela
+   ,Kz_BW   &! Kz   Brost-Wynaargd, unstable
+   ,Kz_PBT  &! Kz  Pielke+Blackader, Pielke flag=T
+   ,Kz_PBF   ! Kz   "   "   flag=F
+  real :: ziSeibert, ziJericevic, ziVenki, ziTI
+
+    write(*,*)"HmixMETHOD "//HmixMethod
+    write(*,*)"KzMETHOD "//KzMethod//"-U:"//UnstableKzMethod//"-S:"//StableKzMethod
+
+    call PielkeBlackadarKz (u,v, zm, zb, th, Kz_PBT, &
+              Pielke_flag=.true., debug_flag=.false.)
+
+    call PielkeBlackadarKz (u,v, zm, zb, th, Kz_PBF, &
+              Pielke_flag=.false., debug_flag=.false.)
+
+  !/ Hmix methods *************************************
+
+    call SeibertRiB_Hmix( u,v, zm, th, ziSeibert)
+
+    call JericevicRiB_Hmix (u,v, zm, th, ziJericevic)
+
+    ziVenki = Venkatram_Hmix(ustar)
+
+    call TI_Hmix(Kz_PBT, zm, zb, fh, th, exnm, pb, ziTI, debug_flag=.true.)
+
+    write(*,"(a,3i3,f9.3,10(a,f7.1))") "TEST_BLM fh:", mm, dd, hh, fh, &
+          " zi ", zi, " ziS: ", ziSeibert, " ziJ: ", ziJericevic, &
+          " ziV: ", ziVenki, " ziTI: ", ziTI
+
+  !/ Kz *************************************************
+    write(*,"(a,4a3,a7,a9,9a8)") "DEBUG_Kz: ", "mm", "dd", "hh", "k", &
+           "fh", "zb", "pzpbl", &
+           "Kz_m2s", "Kz_nwp", "Kz_PBT", "Kz_PBF", "Kz_OB", "KBW", "KAJ"!, "Kmin"
+
+    Kz_OB(:) = Kz_PBT(:) ! sim to orig emep
+    Kz_BW(:) = Kz_PBT(:) ! sim to orig emep
+
+    if( fh < 0 ) then
+       if ( invL > 0 ) print *, "TEST BLM SIGN ERRORR!!", fh, invL
+       call O_BrienKz( zi, zb, ustar, invL, Kz_OB(:),.false.)
+    end if
+
+    do k = 2, size(th)
+
+       Kz_AJ(k) = JericevicKz    ( zb(k), ziJericevic, ustar )
+
+       if( fh > 0 ) then  ! Query choices above zi?
+           if( zb(k) < ziSeibert ) then ! Query
+               Kz_BW(k) = BrostWyngaardKz( zb(k), ziSeibert, ustar, invL )
+           else
+               Kz_BW(k) = KZ_MINIMUM
+           end if
+       end if
+
+       write(*,"(a,4i3,f7.1,2f8.0,9f8.2)") "DEBUG_Kz: ", &
+        mm, dd, hh, k, fh, zb(k), zi, Kz(k), Kz_nwp(k), Kz_PBT(k), &
+           Kz_PBF(k), Kz_OB(k), Kz_BW(k), Kz_AJ(k)
+
+    end do
+
+    ! Write out as arrays for plotting:
+    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_nwp ", mm, dd, hh, zi, (Kz_nwp(k),k=5,20)
+    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_PBT ", mm, dd, hh, zi,  (Kz_PBT(k),k=5,20)
+    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_AJ  ", mm, dd, hh, ziJericevic, (Kz_AJ(k), k=5,20)
+
+end subroutine Test_BLM
+
+subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
+  real, dimension(:), intent(in) :: Kz     ! Kz (m2/s units) 
+  real, dimension(:), intent(in) :: zm, zb ! heights of mid and bnd
+  real, intent(in) :: fh  ! surface flux of sensible heat, W/m2
+  real, dimension(:), intent(in) :: th
+  real, dimension(:), intent(in) :: exnm, pb ! exner_mid and p_bnd
+  real, intent(out) :: zi  ! Final height of ABL
+  logical, intent(in) :: debug_flag
+
+  real, dimension(KMAX_BND) :: &
+       Ris   &! Richardson number, sigma coords
+      ,xksm   ! spacially smoothed Kz in z direction, m2/s.
+
+  integer :: k, km, km1, km2, kp, nh1, nh2
+  real :: Ric, Ric0 !critical Richardson number variables
+
+  real, parameter :: DTZ = 3600.0 !time interval for integration of surface 
+                                  !heat fluxes in ABL-height calculations, s
+  real :: zis    ! height of the stable ABL, m
+
+  ! For unstable BL
+  real :: delq   ! available heat flux for developing the unstable ABL, J/m2
+                 ! (heat-input per m2 from the ground during unstable BL)
+  real :: thsrf, xdth, dthdzm, dthc, xdthdz
+  real, dimension(KMAX_MID) :: thc, dthdz ! Assures th increases with height
+  real :: dpidth !heat increasement in accordance with temp. increasement, J/m2
+  real :: pidth  !heat used to adjust air temperature, J/m2
+  integer :: trc !help variable telling whether or not unstable ABL exists
+  integer :: kabl
+  real :: ziu    ! height of the unstable ABL, m
+
+  ! Smooth Kz verticall over 3 levels
 
   k=2
   km=1
   kp=3
-  xksm(k)=( (zm(km)-zm(k))*Kz_m2s(k) + (zm(k)-zm(kp))*Kz_m2s(kp) )&
+  xksm(k)=( (zm(km)-zm(k))*Kz(k) + (zm(k)-zm(kp))*Kz(kp) )&
               / ( zm(km) - zm(kp) )
 
   k=KMAX_MID
   km2=k-2
   km1=k-1
-  xksm(k)=( (zm(km2)-zm(km1))*Kz_m2s(km1) + (zm(km1)-zm(k))*Kz_m2s(k) )&
+  xksm(k)=( (zm(km2)-zm(km1))*Kz(km1) + (zm(km1)-zm(k))*Kz(k) )&
                / ( zm(km2) - zm(k) )
 
   do k = 3,KMAX_MID-1
       km1=k-1
       km2=k-2
       kp=k+1
-      xksm(k)=(  (zm(km2)-zm(km1))*Kz_m2s(km1) + (zm(km1)-zm(k))*Kz_m2s(k)&
-            + (zm(k)-zm(kp))*Kz_m2s(kp) ) / ( zm(km2) - zm(kp) )
+      xksm(k)=(  (zm(km2)-zm(km1))*Kz(km1) + (zm(km1)-zm(k))*Kz(k)&
+            + (zm(k)-zm(kp))*Kz(kp) ) / ( zm(km2) - zm(kp) )
   end do ! k
 
  !............................................................
  !..The height of the stable BL is the lowest level for which:
  !..xksm .le. 1 m2/s (this limit may be changed):
  
-  zis=zimin
+  zis = PBL_ZiMIN
   nh1 = KMAX_MID
   nh2 = 1
 
@@ -400,7 +488,7 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
   end do
 
   k=nh1
-  if(zb(nh1) >= zimin) then
+  if(zb(nh1) >=  PBL_ZiMIN) then
 
       if( abs(xksm(k)-xksm(k-1)) > eps) then
 
@@ -408,7 +496,7 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
                + (KZ_SBL_LIMIT -xksm(k-1))*zb(k))&
                      /(xksm(k)-xksm(k-1))
       else
-          zis=zimin
+          zis= PBL_ZiMIN
       endif
 
    endif
@@ -418,11 +506,8 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
 
  !
   !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  !
-  !---------------------------------------------------------------------
   !....................................
   !..height of unstable boundary layer:
-  !
   !
   !..assuring that th is increasing with height.
   !..adjusted th-sounding is assigned to thc-array.
@@ -439,7 +524,8 @@ subroutine TI_BLphysics (u,v, zm, zb, fh, th, exnm, pm, zi, debug_flag)
       dthdz(k)=max(dthc,dthdzm)
 
       thc(k)=thc(k+1)+dthdz(k)*(zm(k)-zm(k+1))
-if ( debug_flag ) write(6,"(a,i3,3es10.3)") "DEBUG THC ", k, th(k), dthc, thc(k)
+        ! if ( debug_flag ) write(6,"(a,i3,3es10.3)") "DEBUG THC ", 
+        !  k, th(k), dthc, thc(k)
 
   enddo
 
@@ -452,7 +538,7 @@ if ( debug_flag ) write(6,"(a,i3,3es10.3)") "DEBUG THC ", k, th(k), dthc, thc(k)
   delq=-min(fh,0.0)*DTZ
      thsrf=0.0
      ziu=0.0
-if ( debug_flag ) write(6,"(a,3es10.3)") "DEBUG fH, DELQ ", fh, delq
+     if ( debug_flag ) write(6,"(a,3es10.3)") "DEBUG fH (-ve => U) ", fh
 
      !.................................
 
@@ -469,9 +555,10 @@ if ( debug_flag ) write(6,"(a,3es10.3)") "DEBUG fH, DELQ ", fh, delq
 
         do k=KMAX_MID,kabl,-1
            xdth = thc(kabl)-thc(k)
-           dpidth = exnm(k)*xdth*(pm(k+1)-pm(k))/GRAV
+           dpidth = exnm(k)*xdth*(pb(k+1)-pb(k))/GRAV
            pidth = pidth + dpidth
-if ( debug_flag ) write(6,"(a,2i3,6es11.3,i4)") "DEBUG PID ", kabl, k, xdth, exnm(k), pm(k),  dpidth, pidth 
+          !   if ( debug_flag ) write(6,"(a,2i3,6es11.3,i4)") "DEBUG PID ",&
+          !    kabl, k, xdth, exnm(k), pb(k),  dpidth, pidth 
         end do
 
        if(pidth >= delq.and.trc == 1  ) then
@@ -486,17 +573,25 @@ if ( debug_flag ) write(6,"(a,2i3,6es11.3,i4)") "DEBUG PID ", kabl, k, xdth, exn
           ziu = zm(kabl+1) + (thsrf-thc(kabl+1))/xdthdz
 
           trc=0  
-if ( debug_flag ) write(6,"(a,i3,2es10.3,i4)") "DEBUG PICTH ", kabl, delq, pidth, trc 
+          !  if ( debug_flag ) write(6,"(a,i3,2es10.3,i4)") "DEBUG PICTH ",&
+          !      kabl, delq, pidth, trc 
 
         endif
 
 
-if ( debug_flag ) write(6,"(a,i3,es10.3,i5)") "DEBUG mid ", kabl, delq, trc 
+            if ( debug_flag ) write(6,"(a,i3,es10.3,i5)") "DEBUG mid ", &
+              kabl, delq, trc 
         if(kabl <= 4 .and. trc == 1  ) then
 
-           write(6,*)'PBL ziu calculations failed!'
+           write(6,*)'PBL ziu calculations failed!', fh
+           !if ( debug_flag ) then
+              do k=KMAX_MID,kabl,-1
+                 write(6,"(a,i3,3es10.3)") "DEBUG ZIU ", k, th(k), thc(k)
+              end do
+           !end if
+           
 
-           ziu=zlimax
+           ziu=PBL_ZiMAX
 
            trc=0 
         endif
@@ -504,106 +599,104 @@ if ( debug_flag ) write(6,"(a,i3,es10.3,i5)") "DEBUG mid ", kabl, delq, trc
      end do ! while
 
   zi = max( ziu, zis)
-  zi = min( zlimax, zi)
+  zi = min( PBL_ZiMAX, zi)
 
 
-end subroutine TI_BLphysics
+end subroutine TI_Hmix
 
-!     !AJ-have tested and this can be removed     ustar_nwp(i,j)=max(ustar_nwp(i,j), 0.1)
-!
-!     !  ustar_nwp(i,j) = max( ustar_nwp(i,j), 1.0e-5 )
-!     ! and a consistency between tau and ustar. Here you reset ustar
-!     ! and this may affect other routines?
-!
-!!     Mixing height calculation
-!!     Boundary layer height is calculated with the bulk Richardson number
-!!      method with critical value of Ric=0.25
-!
-!            do k=KMAX_MID,2,-1
-!               ri(i,j,k) = risig1(u_xmj(i,j,k-1,nr), v_xmi(i,j,k-1,nr), &
-!                              th(i,j,KMAX_MID,nr), th(i,j,k-1,nr), &
-!                              zm(i,j,k-1))
-!               if(ri(i,j,k) >= ric) then
-!                  pzpbl(i,j) = zm(i,j,k)
-!                  exit
-!               endif
-!            enddo
-!
-!            pzpbl(i,j)=min(pzpbl(i,j),pzpbl_max )
-!            pzpbl(i,j)=max(pzpbl(i,j), pzpbl_min)
-!!AJ You have this minimum pbl height limit in earlier version.
-!!AJ I kept it becouse it might influence dry deposition.
-!
-!! Determination of two input parameters needed in Grisogono aproach
-!
-!            !DS Kmax(i,j)=const(i,j)*vsm(i,j)*ustar_nwp(i,j)
-!            !AJ Yes, this is better
-!            Kmax(i,j)=KZ_CONST*pzpbl(i,j)*ustar_nwp(i,j)
-!            h(i,j)=max(pzpbl(i,j)/3.,zm(i,j,KMAX_MID-1))
-!
-! !AJ changed 3 to 4 to , result of tests in 2001 on NO2, SO2 and SO4
-! ! Grisogono approach is valid for boundary layer, so z(i,j) is defined as
-! ! upper boundary 
-! ! above the PBL K(z) calculated with Blackadar approach is used 
-!
-!!DS - query -what did you mean by nz? z perhaps?
-!!AJ -yes z not nz, typing mistake
-!
-!!DS - faster to write (?):
-!!AJ -OK
-!               z(i,j)= 1.25 * pzpbl(i,j)
-!
-!!Calculation of the exponential profile
-!
-!            do k=KMAX_MID,2,-1
-!!AJ               jedan=Kmax(i,j)*zm(i,j,k)*sqrt(exp(1.))/h(i,j)
-!!AJ               dva=exp(-0.5*(zm(i,j,k)/h(i,j))**2)
-!                  Kz_ms2(i,j,k)=Kmax(i,j)*zm(i,j,k)*sqrt(exp(1.))/h(i,j)&
-!                              *exp(-0.5*(zm(i,j,k)/h(i,j))**2)+KZ_MINIMUM
-!               if(zm(i,j,k)>z(i,j)) exit
-!            enddo
-!         enddo
-!      enddo
-!
-!      !
-!      ! storing of pbl height
-!      ! Why use vsm at all, could use pzpbl(i,j) from start?
-!      !
-!      !AJ changed vsm to pzpbl
-!      
-!      !smoothing of pbl height
-!
-!        call smoosp(pzpbl,pzpbl_min,pzpbl_max)
-!      !
-!      ! transformation of Kz_ms2(i,j,k) into SigmaKz(i,j,k,nr)
-!      ! from HF Kz(sigma)=Kz*ro**2*(GRAV/p*)
-!      !
-!      do k=2,KMAX_MID
-!     !AJ added smoothing of Kz with Shapiro -same as with O_Brien 
-!      do i=1,limax
-!           do j=1,ljmax
-!             help(i,j)=Kz_ms2(i,j,k)
-!           enddo
-!      enddo
-!
-!      call smoosp(help,KZ_MINIMUM,KZ_MAXIMUM)
-!         do i=1,limax
-!            do j=1,ljmax
-!
-!!I have exns=exf1,exnm=exf2,
-!               fac = GRAV/(ps(i,j,nr) - PT)
-!               fac2 = fac*fac
-!               dex12 = th(i,j,k-1,nr)*(exnm(i,j,k)-exns(i,j,k)) &
-!                     + th(i,j,k,nr)*(exns(i,j,k)-exnm(i,j,k-1))
-!
-!               ro = ((ps(i,j,nr)-PT)*sigma_bnd(k)+PT)*CP &
-!                  *(exnm(i,j,k)-exnm(i,j,k-1))/(RGAS_KG*exns(i,j,k)*dex12)
-!
-!               SigmaKz(i,j,k,nr) = Kz_ms2(i,j,k)*ro*ro*fac2
-!            enddo
-!         enddo
-!      enddo
-!   end subroutine Grisogono
+ !----------------------------------------------------------------------------
+
+    !************************************************************************!
+      subroutine O_BrienKz( zi, zs_bnd, ustar, invL , Kz, debug_flag )       !
+    !**********************************************************************!
+    !..exchange coefficients for convective boundary layer:
+    !..o'brien's profile formula:
+
+    real,intent(in) :: zi
+    real,intent(in), dimension(:) :: zs_bnd
+    real,intent(in) :: ustar, invL
+    real, intent(inout), dimension(:) :: Kz
+    logical, intent(in) :: debug_flag
+
+    real, parameter :: FHSL = 0.04 ! surface layer as fraction zi
+
+    real :: ux3 ,hsl ,hsurfl  &
+         ,zimhs ,zimz ,zmhs
+    real  ::  Kzhs  ,dKzdz ,Kzzi ,hs
+    integer :: i,k
+
+    !c..exchange parameter and its vertical derivative at z = hs
+
+      Kzhs=0.    ! Kz at hs
+      dKzdz=0.   ! d Kz(hs) /dz - derivateive at hs (or KB)
+      Kzzi=0.    ! Kz at top of BL, set to zero or KZ_MINIMUM?
+
+      !...................................................................
+      !..air density at ground level is always calculated diagnostically:
+      !
+
+      ux3 = ustar*ustar*ustar
+
+     !..........................
+     !..unstable surface-layer.:
+
+     hs=FHSL*zi          !  height of surface layer
+
+     !c..hsl=hs/l where l is the monin-obhukov length
+     !hsl = KARMAN*GRAV*hs*fh*KAPPA /(ps*ux3)
+
+     hsl = hs*invL
+
+     ! Garratt \Phi function - take from MicroMet
+
+     Kzhs = ustar*KARMAN*hs*sqrt(1.0-16.0*hsl)  ! /Pr=1.00
+     dKzdz = Kzhs*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs
+
+     Kz(KMAX_MID)=Kzhs  ! QUERY - should be at z_bnd(20)?
+     if ( debug_flag ) write(*,"(a,f7.2,3es12.3)") "OBRIEN Kz20 ", hs, invL, Kzhs, dKzdz
+     if ( 16.0*hsl >= 1.0 ) then
+        write(*,"(a,f7.2,4es12.3)") "OBRIEN NEG ", hs, hsl,  Kzhs, dKzdz
+     end if
+
+!QUERY    if(zi <  PBL_ZiMIN ) then
+!RETURN maybe?
+
+   !..exchange parameter at z = ziu
+
+   !do  k=1,KMAX_MID !had -ve values at k=1, and not needed
+   do  k=2,KMAX_MID
+
+         if( zs_bnd(k) >= zi) then
+
+            Kzzi=Kz(k)  ! values above zi  stored
+
+            if ( debug_flag ) write(*,"(a,i3,es12.3)") "OBRIEN Kzzi ", k,  Kzzi
+
+         else 
+            !.....................................................
+            !..the obrien-profile for z<ziu                      .
+            !.....................................................
+            !
+            if(zs_bnd(k) <= hs) then
+               Kz(k)=zs_bnd(k)*Kzhs/hs
+               if ( debug_flag ) &
+                   write(*,"(a,i3,es12.3)") "OBRIEN Kzhs ", k, Kz(k)
+            else !! if( zs_bnd(k) < zi) then
+               zimhs = zi-hs
+               zimz  =zi-zs_bnd(k)
+               zmhs  =zs_bnd(k)-hs
+               Kz(k) = Kzzi+(zimz/zimhs)*(zimz/zimhs)  &
+                    *(Kzhs-Kzzi+zmhs*(dKzdz     &
+                    + 2.*(Kzhs-Kzzi)/zimhs))
+               if ( debug_flag ) &
+                   write(*,"(a,i3,es12.3)") "OBRIEN Kz(k) ", k,  Kz(k)
+            endif
+
+         endif
+
+   end do
+
+  end subroutine O_BrienKz
  !----------------------------------------------------------------------------
   function risig1(ws,th1,th2,z)    ! Amela, not used in new version
    !calculates the bulk Richardson number
@@ -675,7 +768,56 @@ subroutine fake_zbnd(z)
   z(20) =       91.302
   z(21) =       91.302
 end subroutine fake_zbnd
+function SigmaKz_2_m2s_scalar (roa,ps) result(Kz_fac)   ! hb
+  real, intent(in) :: roa
+  real, intent(in) :: ps
+  real :: fac
+  real :: Kz_fac
 
+     fac= (ps - PT)/(GRAV*roa)
+     Kz_fac= fac*fac
+
+end function SigmaKz_2_m2s_scalar
+
+subroutine SigmaKz_2_m2s_arrays (SigmaKz,roa,ps,Kz)
+  real, intent(in), dimension(:,:,:) :: SigmaKz, roa
+  real, intent(in), dimension(:,:)   :: ps
+  real, intent(out), dimension(:,:,:) :: Kz 
+  real :: fac
+  integer :: i,j,k
+
+ ! Kz has dim 1:KMAX_MID, whereas SigmaKz has 1:KMAX_BND
+  do k = 1, size(Kz,3)
+    do j = 1, size(Kz,2)
+      do i = 1, size(Kz,1)
+         fac= (ps(i,j) - PT)/(GRAV*roa(i,j,k))
+         Kz(i,j,k) = fac*fac*SigmaKz(i,j,k)
+      end do
+    end do
+  end do
+
+end subroutine SigmaKz_2_m2s_arrays
+
+subroutine Kz_m2s_toSigmaKz (Kz,roa,ps,SigmaKz)
+  real, intent(in), dimension(:,:,:) :: Kz, roa
+  real, intent(in), dimension(:,:)   :: ps
+  real, intent(out), dimension(:,:,:) :: SigmaKz 
+  real :: fac
+  integer :: i,j,k
+
+ ! Kz has dim 1:KMAX_MID, whereas SigmaKz has 1:KMAX_BND
+  do k = 1, size(Kz,3)
+    do j = 1, size(Kz,2)
+      do i = 1, size(Kz,1)
+         fac= (GRAV*roa(i,j,k))/(ps(i,j) - PT)
+         SigmaKz(i,j,k) = fac*fac*Kz(i,j,k)
+      end do
+    end do
+  end do
+  k=size(Kz,3)+1  ! k=21 for Sigma's
+  SigmaKz(:,:,k) = 0.0
+
+end subroutine Kz_m2s_toSigmaKz
 
 end module BLPhysics_ml
 

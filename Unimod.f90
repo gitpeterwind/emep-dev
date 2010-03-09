@@ -62,7 +62,7 @@ program myeul
   use Landuse_ml,       only : InitLandUse
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml,           only : metvar,MetModel_LandUse,&
-       tiphys,Meteoread,MeteoGridRead, startdate
+       Meteoread,MeteoGridRead, startdate
   use ModelConstants_ml,only : KMAX_MID   &   ! No. vertical layers
        ,MasterProc &   ! set true for host processor, me==0
        ,RUNDOMAIN  &   !

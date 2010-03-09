@@ -1,3 +1,45 @@
+xxxxxxxxxxxxxx rv3_5_5  Dave  Mar 1st  2010
+
+BLPhysics
+
+    - added routines for O'Brien, Jericivic Kz, Seibert Kz and Hmix
+    - parameters to switch Kz, Hmnix routines
+    - parameters for e.g. USTAR_
+    
+    default options give:
+      Hmix from Jericevic Rb method
+      Pielke/Blackater Kz outside PBL
+      Kz from O'Brien for unstable conditions
+      Kz from Jericevic/Grisogono for stable conditions
+
+   with DEBUG_BLM true, the log file will compare Hmix and
+   Kz from all routines for the debug cell.
+
+Met_ml
+
+  Big rewrite of tiphys, now called BLPhysics
+
+  met_derived now has nt argument (1 or nr as appropriate),
+
+  More documentation at start
+
+  Removed most Kz, Hmix calculations - now done by routines from BLPhysics_ml.
+
+  Code could be optimised further, but is only called every 3 hours so
+  should be okay. Should delete 3D Kz though and keep just SigmaKz as
+  3-D fields.
+
+MetFields_ml
+
+   - invL_nwp added. Query on limits, also ustar?
+   - limit on ustar over land > 0.1 m/s (or MIN_USTAR_LAND) 
+
+ModelConstants_ml
+
+    OFFSET_X, OFFSET_Y introduced to make coordinates match
+     EMEP or EECCA grids. (Set to zero for EMEP, -35,-11 for EECCA
+
+
 xxxxxxxxxxxxxx rv3_5_4  Haldis/Dave  Feb 28rd 2010
 
 Start of NWP_Kz work and testing of other Kz options

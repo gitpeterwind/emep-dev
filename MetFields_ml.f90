@@ -121,9 +121,6 @@ module MetFields_ml
        ,lwc     & !liquid water content
   ! QUERY - should xksig be MID, not BND? Is it needed at all?
        ,Kz_m2s     ! estimated Kz, in intermediate sigma levels, m2/s
-!       ,zm3d    & ! TMP FOR TESTING
-! **************  BUG FIX LATER  ***************** !!!!!:
-!BUG!!      ,sst       ! SST Sea Surface Temprature- ONLY from 2002
 
  ! We don't need to calculate u,v for RiB, Kz for all layer in future maybe
  ! Still, for safety  we let this extent to K=1 for now
@@ -156,9 +153,10 @@ module MetFields_ml
     ,surface_precip     & ! Surface precip mm/hr
     ,Tpot2m             & ! Potential temp at 2m
     ,ustar_nwp          & ! friction velocity m/s ustar^2 = tau/roa
-    ,pzpbl              & ! stores H(ABL) for averaging and plotting purposes, m
+    ,invL_nwp           & ! friction velocity m/s ustar^2 = tau/roa
+    ,pzpbl                ! stores H(ABL) for averaging and plotting purposes, m
 ! QUERY - get rid of if possible. Shouldn't need array anyway?
-    ,Kz_min               ! Min Kz below hmix  !hf Hilde&Anton
+! NOT HERE    ,Kz_min               ! Min Kz below hmix  !hf Hilde&Anton
 
 
 !  temporary placement of solar radiation variations QUERY?

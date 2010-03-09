@@ -35,6 +35,7 @@ module SubMet_ml
 !=============================================================================
 
 
+use BLPhysics_ml, only : MIN_USTAR_LAND
 use CheckStop_ml, only : CheckStop
 use LandDefs_ml,   only: LandType
 use Landuse_ml,    only: LandCover
@@ -255,7 +256,7 @@ contains
               Sub(iL)%ustar, Sub(iL)%invL
    ! , & log( Sub(iL)%z_refd/Sub(iL)%z0 ), & PsiM( Sub(iL)%z_refd*Sub(iL)%invL )
     end if
-       Sub(iL)%ustar = max( Sub(iL)%ustar, 0.1 )
+       Sub(iL)%ustar = max( Sub(iL)%ustar, MIN_USTAR_LAND )
     end do ! iter
     end if ! allNWPsea
 
