@@ -592,17 +592,17 @@ do ind = 1, size(D3_PPB)
    !Deriv(name, class,    subc,  txt,           unit
    !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw, Is3D
   call AddNewDeriv( dname, "D3_PPB", "-", "-", "ppb", &
-         iadv , -99, -99, 0.0, PPBINV,   0.0,   T, T , F, T, T, T, -999,Is3D ) !?? atw?
+         iadv , -99, -99, 0.0, PPBINV,   0.0,   T, T , F, T, T, F, -999,Is3D ) !?? atw?
 end do
 ! hb new 3D output
   call AddNewDeriv( "D3_PM25","PM25", "-","-",   "ppb", &
-           -1, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
+           -1, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   F, F, F , -999,Is3D)
   call AddNewDeriv( "D3_PMco","PMco", "-","-",   "ppb", &
-           -1, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
+           -1, -99,-99, 0.0, PPBINV,  0.0,   F,  F , F,   F, F, F , -999,Is3D)
   call AddNewDeriv( "D3_TH","TH", "-","-",   "m", &
-           0, -99,-99, 0.0, 1.0,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
+           0, -99,-99, 0.0, 1.0,  0.0,   F,  F , F,   F, F, F , -999,Is3D)
   call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
-           0, -99,-99, 0.0, 1.0,  0.0,   F,  F , F,   T, T, T , -999,Is3D)
+           0, -99,-99, 0.0, 1.0,  0.0,   F,  F , F,   F, F, F , -999,Is3D)
 
 
      if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
