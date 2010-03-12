@@ -38,7 +38,7 @@ module PhyChem_ml
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
    use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after
 
-   use Advection_ml,   only: advecdiff,advecdiff_poles,adv_int
+   use Advection_ml,   only:  advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
    use Derived_ml,     only : DerivedProds, Derived, num_deriv2d,d_2d, f_2d
    use DryDep_ml,      only : drydep,init_drydep
@@ -162,13 +162,13 @@ contains
 ! For efficient parallellisation each subdomain needs to have the same work load,
 ! This can be obtained by setting NPROCY=1 (number of subdomains in latitude- or y-direction).
 ! Then, all subdomains have exactly the same geometry.
-        if( (Pole_included==1.or.FORECAST).and. & ! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
-                              trim(projection)==trim('lon lat'))then
+!        if( (Pole_included==1.or.FORECAST).and. & ! AMVB 2009-11-06: use advecdiff_poles on FORECAST mode
+!                              trim(projection)==trim('lon lat'))then
 
            call advecdiff_poles
-        else
-           call advecdiff
-        endif
+!        else
+!           call advecdiff
+!        endif
 
         call Add_2timing(17,tim_after,tim_before,"phyche:advecdiff")
         !================

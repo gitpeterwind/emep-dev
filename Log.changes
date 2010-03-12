@@ -1,3 +1,18 @@
+xxxxxxxxxxxxxx rv3_5_6  Peter  Mar 12th  2010
+
+Advection_ml (PhyChem_ml):
+Use always the advecdiff_poles routines. (until now it was only used in the global runs, 
+in other runs advecdiff was used).
+advecdiff will be completely removed later (after a test period to see that we don't need it).
+
+advecdiff_poles is also slightly changed:
+no renormaliztion with ps-PT between x, y and vertical advection.
+division by max(psi,1.0) instead of psi. NB: bad winddata will not crash the model anymore, 
+and therefore we won't get any warning.
+
+ForestFire/NetCDF: safer interpolation routine
+
+
 xxxxxxxxxxxxxx rv3_5_5  Dave  Mar 9th  2010
 
 BLPhysics

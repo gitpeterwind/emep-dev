@@ -77,7 +77,7 @@
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
   use Chemfields_ml, only : xn_adv
   use ChemSpecs_adv_ml , only : NSPEC_ADV
-  use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i
+  use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i, Pole_included
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST ! AMVB 2009-11-06: FORECAST mode
@@ -682,7 +682,7 @@
     call Code_timer(tim_before)
 
     if(firstcall)then
-      if(NPROCY>2.and.me==0)write(*,*)&
+      if(NPROCY>2.and.me==0.and.Pole_included==1)write(*,*)&
           'COMMENT: Advection routine will work faster if NDY = 2 (or 1)'
     endif
 
@@ -842,7 +842,7 @@
 
       enddo
       if(me.eq.0)then
-          write(*,43)KMAX_MID*ljmax,nxx,nxxmin,KMAX_MID*limax,nyy,niters
+!          write(*,43)KMAX_MID*ljmax,nxx,nxxmin,KMAX_MID*limax,nyy,niters
       endif
 43    format('total iterations x, y, k: ',I4,' +',I4,' -',I4,', ',I5,' +',I3,',',I4)
 
@@ -885,18 +885,6 @@
             enddo !j
           enddo !k horizontal (x) advection
 
-          ! renormalize with p*
-          if(ADVEC_TYPE==1)then
-            do k=1,KMAX_MID
-              do j = lj0,lj1
-                do i = li0,li1
-                  psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                  xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                  ps3d(i,j,k) = ps(i,j,1) - PT
-                enddo
-              enddo
-            enddo
-          endif
 
           call Add_2timing(21,tim_after,tim_before,"advecdiff:advx")
 
@@ -925,18 +913,7 @@
 
         call Add_2timing(23,tim_after,tim_before,"advecdiff:advy")
 
-        ! renormalize with p*
-        if(ADVEC_TYPE==1)then
-          do k=1,KMAX_MID
-            do j = lj0,lj1
-              do i = li0,li1
-                psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                ps3d(i,j,k) = ps(i,j,1) - PT
-              enddo
-            enddo
-          enddo
-        endif
+
 
         do iters=1,niters
 
@@ -978,18 +955,7 @@
           enddo !i
         enddo !k horizontal (y) advection
 
-        ! renormalize with p*
-        if(ADVEC_TYPE==1)then
-          do k=1,KMAX_MID
-            do j = lj0,lj1
-              do i = li0,li1
-                psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                ps3d(i,j,k) = ps(i,j,1) - PT
-              enddo
-            enddo
-          enddo
-        endif
+
 
         call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")  ! AMVB 2009-11-06: uniform names for Add_2timing calls
 
@@ -1020,18 +986,6 @@
 
         call Add_2timing(21,tim_after,tim_before,"advecdiff:preadvx,advx")  ! AMVB 2009-11-06: uniform names for Add_2timing calls
 
-        ! renormalize with p*
-        if(ADVEC_TYPE==1)then
-          do k=1,KMAX_MID
-            do j = lj0,lj1
-              do i = li0,li1
-                psi = (ps(i,j,1) - PT)/ps3d(i,j,k)
-                xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
-                ps3d(i,j,k) = ps(i,j,1) - PT
-              enddo
-            enddo
-          enddo
-        endif
 
         do iters=1,niters
 
