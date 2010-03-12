@@ -2231,10 +2231,13 @@ maxlon=maxval(gl_stagg)
 minlon=minval(gl_stagg)
 maxlat=maxval(gb_stagg)
 minlat=minval(gb_stagg)
-imin=mod(nint((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-jmin=max(1,min(dims(2),nint((minlat-Rlat(1))*dlati)+1))
-imax=mod(nint((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-jmax=max(1,min(dims(2),nint((maxlat-Rlat(1))*dlati)+1))
+!floor(minlon*dloni)=closest existing coordinate on the left (multiplied by dloni)
+!floor(minlon*dloni)-Rlon(1)*dloni = number of gridcells between start of grid and minlon
+!mod(nint((floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
+imin=mod(nint(floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+jmin=max(1,min(dims(2),nint(floor(minlat*dlati)-Rlat(1)*dlati)+1))
+imax=mod(nint(ceiling(maxlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+jmax=max(1,min(dims(2),nint(ceiling(maxlat*dlati)-Rlat(1)*dlati)+1))
 
 if(maxlat>85.0.or.minlat<-85.0)then
    imin=1
@@ -2346,6 +2349,7 @@ endif
               do i=1,limax
                  ijk=ijk+1
                  ig=nint((gl(i,j)-Rlon(startvec(1)))*dloni)+1
+                 ig=max(1,min(dims(1),ig))
                  jg=max(1,min(dims(2),nint((gb(i,j)-Rlat(startvec(2)))*dlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
                  Rvar(ijk)=Rvalues(igjgk)
