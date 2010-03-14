@@ -1,6 +1,7 @@
-  integer, public, parameter ::  NDRYDEP_ADV  = 23
+  integer, public, parameter ::  NDRYDEP_ADV  = 24
   type(depmap), public, dimension(NDRYDEP_ADV), parameter:: Dep= (/ &
        depmap( IXADV_HNO3, CDEP_HNO3, -1) & 
+      , depmap( IXADV_HONO, CDEP_HNO2, -1) & 
       , depmap( IXADV_PAN, CDEP_PAN, -1) & 
       , depmap( IXADV_NO2, CDEP_NO2, -1) & 
       , depmap( IXADV_SO2, CDEP_SO2, -1) & 

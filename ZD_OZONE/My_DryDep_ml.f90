@@ -38,15 +38,16 @@ module My_DryDep_ml    ! DryDep_ml
  use My_Derived_ml,  only : &
    nMosaic, MosaicOutput &
   ,MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST &
-  ,SOX_INDEX, OXN_INDEX, RDN_INDEX &  ! Equal -1, -2, -3
-  ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
+  ,SOX_INDEX, OXN_INDEX, RDN_INDEX !ds rv3_5_6&  ! Equal -1, -2, -3
+   !ds rv3_5_6  ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
  use AOTx_ml,             only : Calc_AOTx
  use CheckStop_ml,        only : CheckStop, StopAll
  use ChemChemicals_ml,    only : species 
  use ChemSpecs_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use ChemSpecs_shl_ml,    only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
- use ChemGroups_ml,       only : DDEP_OXNGROUP  !DSGC
+ use ChemGroups_ml,       only : DDEP_OXNGROUP,DDEP_SOXGROUP, &
+                                 DDEP_RDNGROUP, DDEP_GROUP
  use Derived_ml,          only : f_2d, d_2d
  use EcoSystem_ml,        only : DEF_ECOSYSTEMS, NDEF_ECOSYSTEMS, &
                                  EcoSystemFrac, FULL_GRID, Is_EcoSystem
@@ -82,7 +83,7 @@ module My_DryDep_ml    ! DryDep_ml
   !/** IMPORTANT: the variables below must match up in the sense that, for 
   ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
-  integer, public, parameter :: NDRYDEP_GASES = 10  ! gases
+  integer, public, parameter :: NDRYDEP_GASES = 11  ! gases
   integer, public, parameter :: NDRYDEP_AER = 2    ! aerosols
   integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
 
@@ -91,7 +92,7 @@ module My_DryDep_ml    ! DryDep_ml
        CDEP_HNO3 = 1, CDEP_O3  = 2, CDEP_SO2 = 3  &
       ,CDEP_NH3  = 4, CDEP_NO2 = 5, CDEP_PAN  = 6 &
       ,CDEP_H2O2 = 7, CDEP_ALD = 8, CDEP_HCHO = 9, &
-       CDEP_OP = 10,  CDEP_FIN = 11, CDEP_COA = 12 
+       CDEP_OP = 10,  CDEP_HNO2 = 11, CDEP_FIN = 12, CDEP_COA = 13 
 
   integer, public, parameter :: CDEP_SET = -99    
 
@@ -108,7 +109,7 @@ module My_DryDep_ml    ! DryDep_ml
   integer, public, parameter, dimension(NDRYDEP_GASES) :: &
     DRYDEP_GASES = (/ WES_HNO3, WES_O3,   WES_SO2, &
                      WES_NH3,  WES_NO2 , WES_PAN, &
-                     WES_H2O2, WES_ALD, WES_HCHO, WES_OP    /)
+                     WES_H2O2, WES_ALD, WES_HCHO, WES_OP, WES_HNO2    /)
 
   !/** Compensation pount approach from CEH used?:
 

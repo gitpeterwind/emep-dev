@@ -293,6 +293,7 @@ rcss(QSSCO,k)                           = SSco ;
 rc_Rn222(k)                                = Rn222    ;
 rcemis(PPM25,k)                      = PPM25 ;
 rcemis(PPMCO,k)                      = PPMCO ;
+rcemis(PPM25_Fire,k)                 = PPM25_Fire ;
 *
 * <----------- Biogenic emissions ----------------------------->
 rcemis(C5H8,k)                        = C5H8    ;
@@ -303,13 +304,14 @@ rcemis(NH3,k)                          = NH3 ;
 * Depositions
 *
 DRY_HNO3     HNO3                        =    ;
+DRY_HNO2     HONO                        =    ;
 DRY_PAN      PAN                         =    ;
 DRY_NO2      NO2                         =    ;
 DRY_SO2      SO2                         =    ;
-DRY_FIN      SO4                    =    ;
+DRY_FIN      SO4                         =    ;
 DRY_NH3      NH3                         =    ; Missed in Garry
-DRY_FIN      aNH4                     =    ; Missed in Garry
-DRY_FIN      aNO3                     =    ; Missed in Garry
+DRY_FIN      aNH4                        =    ; Missed in Garry
+DRY_FIN      aNO3                        =    ; Missed in Garry
 DRY_O3       O3                          =    ;
 DRY_SO2      H2O2                        =    ;
 DRY_PAN      MPAN                        =    ;

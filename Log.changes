@@ -1,3 +1,40 @@
+xxxxxxxxxxxxxx rv3_5_7  Dave  Mar 14th  2010
+
+Bug-fix - added HONO dry dep into system (was missing)
+
+
+Added grouping-ability to GenChem, which now extends CM_ChemSpecs_ml
+with e.g.:
+
+ integer, public, parameter, dimension(2) :: &
+             PMCO_GROUP     = (/ PNO3,PPMCO /)
+
+  integer, public, parameter, dimension(2) :: &
+             SOX_GROUP     = (/ SO2,SO4 /)
+
+..
+  integer, public, parameter, dimension(4) :: &
+             SIA_GROUP     = (/ SO4,PNO3,ANH4,ANO3 /)
+
+  integer, public, parameter, dimension(6) :: &
+             PM25_GROUP     = (/ SO4,ANH4,ANO3,PPM25,PPM25_FIRE,SSFI /)
+
+! ------- Dry dep      species ------------------
+  integer, public, parameter, dimension(6) :: &
+               DDEP_OXNGROUP = (/ HNO3,PAN,NO2,ANO3,MPAN,PNO3 /)
+  integer, public, parameter, dimension(2) :: &
+               DDEP_SOXGROUP = (/ SO2,SO4 /)
+  integer, public, parameter, dimension(2) :: &
+               DDEP_RDNGROUP = (/ NH3,ANH4 /)
+
+These "groups" are to be "use"d in the rest of Unimod,  so that
+one doesn't have to hard code the indices separately.
+btw I haven't added a PM10 group, since that is the sum of
+PM25 and PMCO. We should think how to code some of these
+supergroups to avoid uncessessary operations in the model.
+
+
+
 xxxxxxxxxxxxxx rv3_5_6  Peter  Mar 12th  2010
 
 Advection_ml (PhyChem_ml):

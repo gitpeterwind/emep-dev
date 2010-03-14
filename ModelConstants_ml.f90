@@ -100,7 +100,7 @@ module ModelConstants_ml
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
     ,DEBUG_MET            = .false. & !
-      ,DEBUG_BLM          = .true. & !    produces matrix of differnt Kz and Hmix 
+      ,DEBUG_BLM          = .false. & !    produces matrix of differnt Kz and Hmix 
       ,DEBUG_Kz           = .false. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !

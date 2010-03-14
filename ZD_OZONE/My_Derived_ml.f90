@@ -59,7 +59,7 @@ use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
 use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
                    !        ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
                    !       ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
-use ChemGroups_ml,  only :  OXNGROUP, DDEP_OXNGROUP
+use ChemGroups_ml,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, DDEP_RDNGROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
@@ -203,10 +203,11 @@ private
 
   integer, public, parameter :: &   ! Groups for DDEP and WDEP
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
-  integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
-  integer, public, dimension(2) ::  DDEP_RDNGROUP = (/ NH3, aNH4 /)
-  integer, public, dimension(size(DDEP_OXNGROUP)) :: DDEP_GROUP ! Working array
-   ! should be set as max of SOX, OXN, RDN, assume OXN biggest
+  !ds rv3_5_6 integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
+  !ds rv3_5_6 integer, public, dimension(2) ::  DDEP_RDNGROUP = (/ NH3, aNH4 /)
+  !rv3_5_6 has put DDEP_SOXGROUP; DDEP_RDNGROUP in CM_ChemSpecs_ml, as DDEP_OXNGROUP
+  !rv3_5_6 integer, public, dimension(size(DDEP_OXNGROUP)) :: DDEP_GROUP ! Working array
+  ! should be set as max of SOX, OXN, RDN, assume OXN biggest
 
  ! Ecosystem dep output uses receiver land-cover classes (LCs)
  ! which might include several landuse types, e.g. Conif in
@@ -895,9 +896,9 @@ private
       e_2d( :,: ) = 0.0
       do i=1,limax
         do j=1,ljmax
-          do igrp = 1, size(OXNGROUP)
-            itot = OXNGROUP(igrp)
-            iadv = OXNGROUP(igrp) - NSPEC_SHL
+          do igrp = 1, size(OXN_GROUP)
+            itot = OXN_GROUP(igrp)
+            iadv = OXN_GROUP(igrp) - NSPEC_SHL
             e_2d( i,j ) = e_2d( i,j ) + &
               xn_adv(iadv,i,j,KMAX_MID) * &
                 cfac(iadv,i,j) * species(itot)%nitrogens

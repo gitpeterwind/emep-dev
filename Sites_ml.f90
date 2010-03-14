@@ -53,7 +53,7 @@ use Io_ml,             only : check_file,open_file,ios &
                               , Read_Headers,read_line
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml,    only : NSPEC_SHL
-use ChemGroups_ml,      only : OXNGROUP
+use ChemGroups_ml,      only : OXN_GROUP
 use ChemChemicals_ml,   only : species               ! for species names
 use ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
                               ,aNO3, pNO3, aNH4, PPM25, PPMCO &
@@ -568,8 +568,8 @@ end subroutine siteswrt_surf
           case ( "NOy" )
             sum_NOy(:) = 0.
             do k = 1, KMAX_MID
-              do ii = 1, size(OXNGROUP)  !DSGC N_NOy
-                sum_NOy(k) = sum_NOy(k) + xn_adv(OXNGROUP(ii)-NSPEC_SHL,ix,iy,k)
+              do ii = 1, size(OXN_GROUP)  !DSGC N_NOy
+                sum_NOy(k) = sum_NOy(k) + xn_adv(OXN_GROUP(ii)-NSPEC_SHL,ix,iy,k)
               end do
             end do 
             out(nn+1:nn+KMAX_MID,i) = PPBINV &

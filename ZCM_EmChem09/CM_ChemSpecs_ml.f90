@@ -81,8 +81,8 @@
   ,  IXADV_ANH4        =  55   &
   ,  IXADV_ANO3        =  56   &
   ,  IXADV_PPM25       =  57   &
-  ,  IXADV_PPMCO       =  58   &
-  ,  IXADV_PPM25_FIRE  =  59
+  ,  IXADV_PPM25_FIRE  =  58   &
+  ,  IXADV_PPMCO       =  59
 
    integer, public, parameter ::   & 
      IXADV_SSFI        =  60   &
@@ -238,8 +238,8 @@
   ,  ANH4        =  71   &
   ,  ANO3        =  72   &
   ,  PPM25       =  73   &
-  ,  PPMCO       =  74   &
-  ,  PPM25_FIRE  =  75   &
+  ,  PPM25_FIRE  =  74   &
+  ,  PPMCO       =  75   &
   ,  SSFI        =  76   &
   ,  SSCO        =  77   &
   ,  RN222       =  78   &
@@ -349,9 +349,9 @@
        species(NH3) = Chemical("NH3         ",  17,  0,  0,   1,  0 ) 
        species(ANH4) = Chemical("ANH4        ",  18,  0,  0,   1,  0 ) 
        species(ANO3) = Chemical("ANO3        ",  62,  0,  0,   1,  0 ) 
-       species(PPM25) = Chemical("PPM25       ", 999,  0,  0,   0,  0 ) 
-       species(PPMCO) = Chemical("PPMCO       ", 999,  0,  0,   0,  0 ) 
-       species(PPM25_FIRE) = Chemical("PPM25_FIRE  ", 999,  0,  0,   0,  0 ) 
+       species(PPM25) = Chemical("PPM25       ",  12,  0,  0,   0,  0 ) 
+       species(PPM25_FIRE) = Chemical("PPM25_FIRE  ",  12,  0,  0,   0,  0 ) 
+       species(PPMCO) = Chemical("PPMCO       ",   1,  0,  0,   0,  0 ) 
        species(SSFI) = Chemical("SSFI        ",  58,  0,  0,   0,  0 ) 
        species(SSCO) = Chemical("SSCO        ",  58,  0,  0,   0,  0 ) 
        species(RN222) = Chemical("RN222       ", 222,  0,  0,   0,  0 ) 
@@ -367,17 +367,51 @@
   use ChemSpecs_tot_ml  ! => species indices
   implicit none
   private
-! Automate assignment of OXN species:
+! Assignment of groups from GenIn.species:
 
 ! ------- Gas/particle species ------------------
-  integer, public, parameter :: SIZE_OXNGROUP = 10
-  integer, public, parameter, dimension(10) :: &
-     OXNGROUP = (/ NO,NO2,PAN,MPAN,NO3,N2O5,HNO3,HONO,PNO3,ANO3 /)
+
+  integer, public, parameter, dimension(2) :: &
+             PMCO_GROUP     = (/ PNO3,PPMCO /)
+
+  integer, public, parameter, dimension(2) :: &
+             SOX_GROUP     = (/ SO2,SO4 /)
+
+  integer, public, parameter, dimension(2) :: &
+             RDN_GROUP     = (/ NH3,ANH4 /)
+
+  integer, public, parameter, dimension(1) :: &
+             BVOC_GROUP     = (/ C5H8 /)
+
+  integer, public, parameter, dimension(2) :: &
+             OX_GROUP     = (/ O3,NO2 /)
+
+  integer, public, parameter, dimension(4) :: &
+             SIA_GROUP     = (/ SO4,PNO3,ANH4,ANO3 /)
+
+  integer, public, parameter, dimension(6) :: &
+             PM25_GROUP     = (/ SO4,ANH4,ANO3,PPM25,PPM25_FIRE,SSFI /)
+
+  integer, public, parameter, dimension(2) :: &
+             NOX_GROUP     = (/ NO,NO2 /)
+
+  integer, public, parameter, dimension(2) :: &
+             SS_GROUP     = (/ PPMCO,SSFI /)
+
+  integer, public, parameter, dimension(13) :: &
+             OXN_GROUP     = (/ NO,NO2,PAN,MPAN,NO3,N2O5,ISONO3,HNO3,HONO,ISNI,ISNIR,PNO3,ANO3 /)
+
+  integer, public, parameter, dimension(2) :: &
+             TNO3_GROUP     = (/ PNO3,ANO3 /)
 
 ! ------- Dry dep      species ------------------
-  integer, public, parameter :: SIZE_DDEP_OXNGROUP = 6
-  integer, public, parameter, dimension(6) :: &
-     DDEP_OXNGROUP = (/ HNO3,PAN,NO2,ANO3,MPAN,PNO3 /)
+  integer, public, parameter, dimension(7) :: &
+               DDEP_OXNGROUP = (/ HNO3,HONO,PAN,NO2,ANO3,MPAN,PNO3 /)
+  integer, public, parameter, dimension(2) :: &
+               DDEP_SOXGROUP = (/ SO2,SO4 /)
+  integer, public, parameter, dimension(2) :: &
+               DDEP_RDNGROUP = (/ NH3,ANH4 /)
+  integer, public, dimension(7) :: DDEP_GROUP
 
 ! ------- RO2 Pool     species ------------------
   integer, public, parameter :: SIZE_RO2_POOL      = 1
