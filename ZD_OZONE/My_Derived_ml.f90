@@ -59,9 +59,11 @@ use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
 use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
                    !        ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
                    !       ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
-use ChemGroups_ml,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, DDEP_RDNGROUP
+use ChemGroups_ml,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
+                            DDEP_RDNGROUP, SIA_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
@@ -151,9 +153,10 @@ private
    character(len=3), public, parameter, dimension(4) :: COLUMN_LEVELS = &
       (/  "k20", "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
+      ,"SURF_ug_SIA    " & !ds rv3_5_6 using groups
       ,"SOMO35      " & !"D2_SOMO0    " &
       ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
@@ -350,12 +353,11 @@ private
 
  ! hb new 3D output when ppb
     !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, aNO3, pNO3 /)
-    !integer, public, parameter, dimension(1) ::   D3_PPB = (/ O3 /)
-    integer, public, save, dimension(2) ::   D3_PPB = (/ PPMco, PPM25 /)! ZERO-size default
+    integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
 
 ! hb other (non-ppb) 3D output
-     character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
-       D3_OTHER  = (/ "D3_Kz          " /)!"D3_TH        " /)
+     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
+       D3_OTHER  ! = (/ "D3_Kz          " /)!"D3_TH        " /)
                 !     "D3_PMco        "/)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -773,8 +775,10 @@ private
 
            call misc_xn( e_2d, class, density )
 
-      case ( "SIA", "PM10", "PM25", "PMco" )
+      !case ( "SIA", "PM10", "PM25", "PMco" )
+      case ( "PMGROUP", "PM10", "PM25", "PMco" )
 
+          if(DEBUG .and. debug_proc) write(*,"(a,a)") "DEBUG CLASS", trim(class)
           call pm_calc(e_2d, class,  density)
 
       case  default
@@ -789,24 +793,39 @@ private
 
   subroutine pm_calc( pm_2d, class, density )
 
-    !/--  calulates PM10 = SIA + PPM2.5 + PPMco
+    !/--  calulates e.g. SIA = SO4 + aNO3 + pNO3 + aNH4
+    ! (only SIA converted to new group system so far, rv3_5_6 )
+    !/--  calulates also PM10  = SIA + PPM2.5 + PPMco
 
     real, dimension(:,:), intent(inout) :: pm_2d  ! i,j section of d_2d arrays
     character(len=*)    :: class   ! Type of data
     real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+    integer :: n, iadv, itot
 
     select case ( class )
 
-    case ( "SIA" )
+    case ( "PMGROUP" )     !was "SIA", should in future cope with PM25 etc.
+                           !Sums all species in SIA_GROUP
+ 
+      pm_2d( :,:) = 0.0
+      do n = 1, size(SIA_GROUP)
+         itot = SIA_GROUP(n)
+         iadv = SIA_GROUP(n) - NSPEC_SHL
 
+        forall ( i=1:limax, j=1:ljmax )
+          pm_2d( i,j) = pm_2d( i,j) + &      !ds d_2d( n, i,j,IOU_INST) = &
+           xn_adv(iadv,i,j,KMAX_MID) *species(itot)%molwt *cfac(iadv,i,j) 
+        end forall
+
+        if(DEBUG .and. debug_proc) then
+             i=debug_li
+             j=debug_lj
+             write(*,"(a,4i4,2es12.3)") "DEBUG SIA", n, &
+               itot, iadv, species(itot)%molwt, xn_adv(iadv,i,j,KMAX_MID), pm_2d(i,j)
+        end if
+      end do !n
       forall ( i=1:limax, j=1:ljmax )
-        !ds d_2d( n, i,j,IOU_INST) = &
-        pm_2d( i,j) = &
-         ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
-         + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
-         + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
-         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j))&
-         * density(i,j)
+        pm_2d( i,j) = pm_2d( i,j) * density(i,j)
       end forall
 
     case ( "PM25" )

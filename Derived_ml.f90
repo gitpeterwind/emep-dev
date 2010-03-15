@@ -313,7 +313,8 @@ private
     real, save    :: ugSm3 = atwS*PPBINV/ATWAIR
     real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
     real, save    :: ugCm3 = 12*PPBINV/ATWAIR
-    real, save    :: ugXm3 = PPBINV/ATWAIR
+    real, save    :: ugXm3 = PPBINV/ATWAIR   ! will be multiplied by molwwt(X)
+    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
 
     character(len=30) :: dname
     character(len=3) :: subclass
@@ -332,7 +333,6 @@ private
     !   same mol.wt assumed for PPM25 and PPMco
 
      !ds ugPMad = species(PPM25)%molwt * PPBINV /ATWAIR
-     !ds ugPMde = PPBINV /ATWAIR
 
 !DSGC     ugCH3CHO = species ( CH3CHO )%molwt * PPBINV /ATWAIR
 
@@ -549,15 +549,17 @@ end do
 !call AddDef( "MAXSHL", F,IXSHL_OH,1.0e13,F , F,T,F,T,"D2_MAXOH","?")
 !!
 !call AddDef( "tNO3 ", T, -1, ugN,    T, F, T, T, T,"D2_tNO3", "ugN/m3")
-!call AddDef( "SIA  ", T, -1, ugPMde, T, F, T, T, T,"D2_SIA" , "ug/m3")
 !call AddDef( "PMco ", T, -1, ugPMde, T, F, T, T, T,"D2_PMco", "ug/m3")
 !call AddDef( "PM25 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM25", "ug/m3")
 !call AddDef( "PM10 ", T, -1, ugPMde, T, F, T, T, T,"D2_PM10", "ug/m3")
 !call AddDef( "H2O  ", T, -1,   1.0 , T, F, T, T, T,"D2_PM25_H2O ", "ug/m3")
 !call AddDef( "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3")
+!call AddDef( "SIA  ", T, -1, ugPMde, T, F, T, T, T,"D2_SIA" , "ug/m3")
 
               !Deriv(name, class,    subc,  txt,           unit
               !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
+call AddNewDeriv("SURF_ug_SIA", "PMGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, ugPM, 0.0,   T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   IXADV_O3, -99,-99,35.0, 1.0, 0.0,     F,  F , F,   T, T, F , -999)
 call AddNewDeriv( "SOMO00","SOMO",  "SURF","-",   "ppb.day", &

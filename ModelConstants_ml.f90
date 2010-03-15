@@ -41,23 +41,25 @@ module ModelConstants_ml
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains or debug points:
 
+ !ds - I added these offsets, but now suspect I was thinking wrong.
+ ! The difference between EMEP and EECCA is confusing...
  !integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
  integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-   RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
   ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
-  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
+  ! RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
     NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
   ! ds Jan2009

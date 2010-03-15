@@ -1,7 +1,10 @@
-xxxxxxxxxxxxxx rv3_5_7  Dave  Mar 14th  2010
+xxxxxxxxxxxxxx rv3_5_7  Dave  Mar 15th  2010
 
 Bug-fix - added HONO dry dep into system (was missing)
 
+Needs attention: Shoud give 2nd look to molwt for PPM25_FIRE
+
+*** Main change **** (Works with EmChem09 only so far!!)
 
 Added grouping-ability to GenChem, which now extends CM_ChemSpecs_ml
 with e.g.:
@@ -11,7 +14,6 @@ with e.g.:
 
   integer, public, parameter, dimension(2) :: &
              SOX_GROUP     = (/ SO2,SO4 /)
-
 ..
   integer, public, parameter, dimension(4) :: &
              SIA_GROUP     = (/ SO4,PNO3,ANH4,ANO3 /)
@@ -27,12 +29,25 @@ with e.g.:
   integer, public, parameter, dimension(2) :: &
                DDEP_RDNGROUP = (/ NH3,ANH4 /)
 
-These "groups" are to be "use"d in the rest of Unimod,  so that
-one doesn't have to hard code the indices separately.
-btw I haven't added a PM10 group, since that is the sum of
-PM25 and PMCO. We should think how to code some of these
-supergroups to avoid uncessessary operations in the model.
+These "groups" are to be "use"d in the rest of Unimod,  so that one
+doesn't have to hard code the indices separately.  btw I haven't added
+a PM10 group, since that is the sum of PM25 and PMCO. We should think
+how to code some of these supergroups to avoid uncessessary operations
+in the model.
 
+I have just managed to re-instate one of the older groups so far,
+SIA which is now SURF_ug_SIA. Other groups, e.g. PM25 can be 
+quickly added following this pattern though.
+
+Background: defining such "groups" in the GenIn.species file and letting
+Genchem handle them automatically has many advantages.  Not least, we can
+change chemical scheme without breaking the code or making errors. For
+example, the old code for PM25 defined just a few species. In future
+we may want to add seveal new species such as OC, EC, from fires, or
+SOA. Or we may want to use a carbon-bond scheme or CRI.
+
+The principal being aimed at is that GenChem needs to know about the
+chemistry, Unimod shouldn't.
 
 
 xxxxxxxxxxxxxx rv3_5_6  Peter  Mar 12th  2010
