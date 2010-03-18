@@ -2122,14 +2122,31 @@ fileneeded=.true.!default
 if(present(needed))then
    fileneeded=needed
 endif
+  !open an existing netcdf dataset
+  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+  if(status == nf90_noerr) then     
+!     print *, 'reading ',trim(filename)
+  else
+!     nfetch=0
+     if(fileneeded)then
+        print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
+        call CheckStop(fileneeded, "ReadField_CDF : file needed but not found") 
+     else
+        print *, 'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
+        return
+     endif
+  endif
+
 debug = .false.
 if(present(debug_flag))then
    debug = debug_flag .and. MasterProc
    if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename), trim(varname)
 end if
-
+debug=.true.
   status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
   if(status /= nf90_noerr) then     
+write(*,*) 'STUS ERROR '
+call check(status)
      Grid_resolution=111177.4 !assume 1 degree resolution
      !
      ! as GRIDWIDTH_M=EARTH_RADIUS*360.0/GIMAX*PI/180.0 
@@ -2137,7 +2154,7 @@ end if
      !  (1 degree -> GIMAX=360)
   endif
   if ( debug ) write(*,*) 'ReadCDF Res: ',Grid_resolution
-
+stop
 !divide the coarse grid into pieces significantly smaller than the fine grid
 !only used in the conservatives cases
   Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
