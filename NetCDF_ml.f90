@@ -67,6 +67,7 @@
                                   ,GlobalPosition,gb_glob,gl_glob,ref_latitude&
                                   ,projection, sigma_mid,gb_stagg,gl_stagg,gl,gb,lb2ij
   use ModelConstants_ml, only : KMAX_MID, runlabel1, runlabel2 &
+                                ,MasterProc & 
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
                                 ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
                                 ,IOU_MON, IOU_DAY ,PT,NLANDUSEMAX, model
@@ -2084,7 +2085,8 @@ stop
 end subroutine Read_Local_Inter_CDF
 
 
-subroutine ReadField_CDF(fileName,varname,Rvar,nstart,interpol,needed)
+subroutine ReadField_CDF(fileName,varname,Rvar,nstart,interpol, &
+     needed,debug_flag)
 !reads data from file and interpolates data into local grid
 
   use netcdf
@@ -2095,6 +2097,7 @@ real,intent(out) :: Rvar(*)
 integer,intent(in) :: nstart
 character(len = *), optional,intent(in) :: interpol
 logical, optional, intent(in) :: needed
+logical, optional, intent(in) :: debug_flag
 integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
 integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k,luVarID
 integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
@@ -2106,7 +2109,7 @@ integer ::imin,imax,jmin,jjmin,jmax,igjg,dimi,dimj
 integer, allocatable:: Ivalues(:)
 real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
 real ::lat,lon,maxlon,minlon,maxlat,minlat
-logical ::fileneeded
+logical ::fileneeded, debug
 character(len = 20) :: interpol_used
 !NOT_USED  integer, parameter ::NLU_EMEP=20,NLU_TERRAIN=25
 !NOT_USED  real :: convT_E(NLU_TERRAIN,NLU_EMEP)
@@ -2119,11 +2122,21 @@ fileneeded=.true.!default
 if(present(needed))then
    fileneeded=needed
 endif
+debug = .false.
+if(present(debug_flag))then
+   debug = debug_flag .and. MasterProc
+   if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename), trim(varname)
+end if
 
   status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
   if(status /= nf90_noerr) then     
      Grid_resolution=111177.4 !assume 1 degree resolution
+     !
+     ! as GRIDWIDTH_M=EARTH_RADIUS*360.0/GIMAX*PI/180.0 
+     !               = 6.370e6*360.0/360*PI/180=111177.4 m
+     !  (1 degree -> GIMAX=360)
   endif
+  if ( debug ) write(*,*) 'ReadCDF Res: ',Grid_resolution
 
 !divide the coarse grid into pieces significantly smaller than the fine grid
 !only used in the conservatives cases
@@ -2149,7 +2162,7 @@ endif
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
   if(status == nf90_noerr) then     
-!     print *, 'reading ',trim(filename)
+      if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename)
   else
 !     nfetch=0
      if(fileneeded)then
@@ -2165,7 +2178,7 @@ endif
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
   if(status == nf90_noerr) then     
-!     print *, 'variable exists: ',trim(varname)
+      if ( debug ) write(*,*) 'ReadCDF variable exists: ',trim(varname)
   else
 !     nfetch=0
      if(fileneeded)then
@@ -2185,8 +2198,9 @@ endif
   startvec=1
   dims=0
   do i=1,ndims
-     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
-!     write(*,*)'size variable ',i,dims(i)
+     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i), &
+        len=dims(i)))
+      if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   enddo
 
 !get coordinates
@@ -2248,7 +2262,8 @@ endif
 jjmin=jmin
 jmin=min(jmin,jmax)
 jmax=max(jjmin,jmax)
-!  write(*,"(a,4f8.2,6i8)")'minmax ',minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
+      if ( debug ) write(*,"(a,4f8.2,6i8)") 'ReadCDF minmax ',&
+           minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
 if(imax<imin)then
 !crossing longitude border !
 !   write(*,*)'WARNING: crossing end of map'
