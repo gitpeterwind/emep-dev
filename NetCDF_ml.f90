@@ -2125,6 +2125,23 @@ endif
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
   if(status == nf90_noerr) then     
+      if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename)
+  else
+!     nfetch=0
+     if(fileneeded)then
+        print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
+        call CheckStop(fileneeded, "ReadField_CDF : file needed but not found") 
+     else
+        print *, 'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
+        return
+     endif
+  endif
+
+
+
+  !open an existing netcdf dataset
+  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+  if(status == nf90_noerr) then     
 !     print *, 'reading ',trim(filename)
   else
 !     nfetch=0
@@ -2176,21 +2193,6 @@ endif
 
 
 !1)Read data 
-  !open an existing netcdf dataset
-  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
-  if(status == nf90_noerr) then     
-      if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename)
-  else
-!     nfetch=0
-     if(fileneeded)then
-        print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
-        call CheckStop(fileneeded, "ReadField_CDF : file needed but not found") 
-     else
-        print *, 'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
-        return
-     endif
-  endif
-
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)

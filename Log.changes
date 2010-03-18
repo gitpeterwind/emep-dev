@@ -1,5 +1,7 @@
 xxxxxxxxxxxxxx rv3_5_7  Dave  Mar 15th  2010
 
+(Peter:)Bug in ReadField_CDF (NetCDF_ml) : did not work if file is not 1 degree resolution
+
 Bug-fix - added HONO dry dep into system (was missing)
 
 Needs attention: Shoud give 2nd look to molwt for PPM25_FIRE
