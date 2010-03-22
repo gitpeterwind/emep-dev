@@ -1,3 +1,13 @@
+xxxxxxxxxxxxxx rv3_5_8  Dave  Mar 22nd  2010
+
+Interim-change while modifying landuse changes:
+
+NetCDF_ml: debug_flag added to ReadField_CDF
+           stop replaced by StopAll
+
+           Read_Local_Inter_CDF commented out for now - not used
+           wit current system. Reconsider later
+
 xxxxxxxxxxxxxx rv3_5_7  Dave  Mar 15th  2010
 
 (Peter:)Bug in ReadField_CDF (NetCDF_ml) : did not work if file is not 1 degree resolution
