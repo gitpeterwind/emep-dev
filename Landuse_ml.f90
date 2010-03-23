@@ -27,7 +27,7 @@
 !*****************************************************************************! 
 module Landuse_ml
 
-use CheckStop_ml,      only: CheckStop
+use CheckStop_ml,      only: CheckStop,StopAll
 use DO3SE_ml,   only : fPhenology
 use GridAllocate_ml,only: GridAllocate
 use GridValues_ml,  only: gb_glob, gb, i_fdom, j_fdom, & ! latitude, coordinates
@@ -41,7 +41,7 @@ use MetFields_ml,       only :nwp_sea ,foundnwp_sea
 use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSEMAX, &
                           NPROC, IIFULLDOM, JJFULLDOM, &
                           DomainName
-use NetCDF_ml, only:Read_Local_Inter_CDF
+!use NetCDF_ml, only:Read_Local_Inter_CDF
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
@@ -203,11 +203,12 @@ contains
          
       else
          filefound=.false.
-         !Read and interpolate from global data
-         call Read_Local_Inter_CDF('GLOBAL_landuse.nc',&
-              'category',landuse_in,MAXLIMAX,MAXLJMAX,NLanduse_DEF)
-         CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-!         CALL MPI_FINALIZE(INFO)
+      Call StopAll('Inputs.Landuse not found') 
+!        !Read and interpolate from global data
+!         call Read_Local_Inter_CDF('GLOBAL_landuse.nc',&
+!              'category',landuse_in,MAXLIMAX,MAXLJMAX,NLanduse_DEF)
+!         CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+!!         CALL MPI_FINALIZE(INFO)
 
       endif
 
