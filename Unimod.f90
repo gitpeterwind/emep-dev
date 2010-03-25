@@ -52,14 +52,15 @@ program myeul
   use ChemChemicals_ml, only : define_chemicals
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,       only : Init_Derived, f_2d, f_3d
+  use DO3SE_ml,       only : Init_DO3SE !LPJ
   use EcoSystem_ml,     only : Init_EcoSystems
   use EmisDef_ml,       only : NBVOC, AIRNOX, FOREST_FIRES
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use ForestFire_ml,   only : Fire_Emis
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
-  use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP
+  use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE
   use Io_Progs_ml  ,    only : read_line
-  use Landuse_ml,       only : InitLandUse
+  use Landuse_ml,       only : InitLandUse, SetLanduse, Land_codes
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml,           only : metvar,MetModel_LandUse,&
        Meteoread,MeteoGridRead, startdate
@@ -255,6 +256,12 @@ program myeul
 
   call InitLandUse()  !  Reads Inputs.Landuse, Inputs.LandPhen
 
+! Read data for DO3SE (deposition O3 and  stomatal exchange) module
+! (also used for other gases!)
+!     if(.not.LU_cdf)then
+        call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
+        call CheckStop(errmsg, "Reading DO3SE ")
+
   call Init_EcoSystems()     !   Defines ecosystem-groups for dep output
 
   call Init_Derived()        ! Derived field defs.
@@ -388,6 +395,8 @@ program myeul
 
 
      call Meteoread(numt)
+
+     call SetLandUse()    !Moved here from DryDep !LPJ
 
      if ( FOREST_FIRES ) call Fire_Emis(daynumber)
 

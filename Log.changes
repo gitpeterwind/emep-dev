@@ -1,3 +1,62 @@
+xxxxxxxxxxxxxx rv3_5_10  Dave  Mar 25th  2010
+
+Main change:
+Emissions added as standard netcdf outputs. Done so far for
+"Grid" emissions and isoprene. Not yet aircraft,forest-fires
+etc.
+
+Preparatory changes: some code for use of LPJ landcover data
+
+
+Emissions-associated changes:
+-----------------------------
+Biogenics_ml:   EmisNat array added to store emissions
+
+Derived_ml:  processing of EmisNat and SumSnapEmis added with
+            NatEmis and SnapEmis types.
+
+            dt_scale now changed to logical. If set true
+            the outputs are mutliplied by dt_advec*scale, if
+            false just by scale.
+
+            Some tidy-ups
+
+Emissions_ml : SnapEmis processing added
+
+GridValues_ml:  Array GridArea_m2 added  ( = GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
+
+
+OwnDataTypes_ml: dt_scale now changed to logical.
+
+Setup_1d_ml:  EmisNat processing added
+
+
+PFT (plant-functional-type)/LPJ changes:
+----------------------------------------
+
+** LandPFT_ml ** added to read LPJ/PFT
+
+DO3SE_ml: more debug options
+
+DryDep_ml -  Call SetLandUse moved to Unimd.f90
+             Possibility of LU_cdf removed for now
+
+LandDefs_ml - added %has_lpj and %pft to LandType defs and
+              Inputs_LandDefs.csv
+
+Landuse_ml - uses LandPFTs - just for preliminary testing and
+             comparison so far. Many debug statements.
+
+ModelConstants_ml : DEBUG_LANDPFTS added
+
+Unimod -  Call SetLandUse moved here from DryDep
+
+Other
+-----
+
+My_Outputs - some of the column outputs commented out
+
+
 xxxxxxxxxxxxxx rv3_5_9  Peter  Mar 23rd  2010
 
 Small change in ForestFire_ml:

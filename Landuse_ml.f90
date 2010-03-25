@@ -37,11 +37,12 @@ use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP
 use KeyValue_ml,    only: KeyVal,KeyValue, LENKEYVAL
 use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, STUBBLE, Growing_Season,&
                           NLanduse_DEF,NLANDUSE_EMEP
+use LandPFT_ml,     only: PFTS_USED, MapPFT_LAI, pft_lai
 use MetFields_ml,       only :nwp_sea ,foundnwp_sea
 use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSEMAX, &
-                          NPROC, IIFULLDOM, JJFULLDOM, &
-                          DomainName
-!use NetCDF_ml, only:Read_Local_Inter_CDF
+                          DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
+                          DEBUG_LANDPFTS, &
+                          DomainName, MasterProc
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
@@ -76,7 +77,7 @@ private
           codes     &! landcover codes
          ,SGS       &! Start of growing season (days)
          ,EGS       &! End of growing season (days)
-         ,Astart    &! Start photosyntgetic activity, for DO3SE
+         ,Astart    &! Start photosynthetic activity, for DO3SE
          ,Aend       ! 
    real,   dimension(NLUMAX) :: &
           fraction  &!  (coverage) ! 
@@ -84,6 +85,8 @@ private
          ,SAI       &! Surface-area-index (m2/m2)   (leaves+bark, etc.)
          ,hveg      &! Max. height of veg.
          ,fphen     &! Potential (age) factor for Jarvis-calc
+         ,Eiso      &! Emission potential, isoprene
+         ,Emt       &! Emission potential, monoterpenes
          ,SumVPD    &! For critical VPD calcs, reset each day
          ,old_gsun   ! also for flux
  end type LandCov
@@ -99,7 +102,6 @@ private
 
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
 
- logical, private, parameter :: DEBUG_LU = .false.
  character(len=80), private :: errmsg
 
 
@@ -120,6 +122,7 @@ contains
            LU_cdf=.true.
            !land codes already fetched
         endif
+
   end subroutine InitLanduse
  !==========================================================================
   subroutine ReadLanduse(filefound)
@@ -147,7 +150,7 @@ contains
    integer, dimension(MAXLIMAX,MAXLJMAX):: landuse_ncodes ! tmp, with all data
    integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
 
-   if ( DEBUG_LU .and. me == 0 ) &
+   if ( DEBUG_LANDUSE .and. me == 0 ) &
         write(*,*) "LANDUSE: Starting ReadLandUse, me ",me
 
    maxlufound = 0   
@@ -162,7 +165,7 @@ contains
       ! Read Header info - this will define landuse classes for model
 
       fname = "Inputs.Landuse"
-      if ( me == 0 ) then
+      if ( MasterProc ) then
 !         call open_file(IO_TMP,"r",fname,needed=.true.)
 !         call CheckStop(ios,"open_file error on " // fname )
          call open_file(IO_TMP,"r",fname,needed=.false.)
@@ -196,12 +199,13 @@ contains
          !------------------------------------------------------------------------------
          
          
-         if ( DEBUG_LU .and. me == 0 ) then
+         if ( DEBUG_LANDUSE .and. me == 0 ) then
             write(*,*) "NOW LAND_CODES ARE ", NHeaders
             call WriteArray(Land_codes,NLanduse_DEF,"Land_Codes")
          end if
          
       else
+         call StopAll('No Inputs.Landuse')
          filefound=.false.
       Call StopAll('Inputs.Landuse not found') 
 !        !Read and interpolate from global data
@@ -226,7 +230,7 @@ contains
                      landuse_data(i,j,index_lu) = &
                        landuse_data(i,j,index_lu) + 0.01 * landuse_in(i,j,lu)
                end if
-               if ( DEBUG_LU .and. debug_flag )  &
+               if ( DEBUG_LANDUSE .and. debug_flag )  &
                        write(*,"(a15,i3,f8.4,a10,i3,f8.4)") "DEBUG Landuse ",&
                           lu, landuse_in(i,j,lu), &
                            "index_lu ", index_lu, landuse_data(i,j,index_lu)
@@ -248,31 +252,33 @@ contains
       end do  !j
    end do  !i
 
-   if (DEBUG_LU) write(6,*) "Landuse_ml: me, Nlines, maxlufound = ", me, Nlines, maxlufound
+   if (DEBUG_LANDUSE) write(6,*) "Landuse_ml: me, Nlines, maxlufound = ", me, Nlines, maxlufound
 
   end subroutine  ReadLanduse
  
   !=========================================================================
   subroutine  SetLandUse()
     integer :: i,j,ilu,lu, nlu, n ! indices
+    integer, save :: old_month = -1
     logical, save :: my_first_call = .true.
     logical :: debug_flag = .false.
     real :: hveg, lat_factor
     real :: xSAIadd
-!WHEAT    logical :: iam_wheat
     real, parameter ::water_fraction_THRESHOLD=0.5
+    integer :: pft
 
 ! Treatment of growing seasons in the southern hemisphere:
-!   all the static definitions (SGS,EGS...) refer to northern hemisphere, but the actual 
-!   simulation dates are shifted by 6 monthes in the southern hemisphere by using
-!   uses effectivdaynumber and mod(current_date%month+5,12)+1 in southern hemis
+!   all the static definitions (SGS,EGS...) refer to northern hemisphere, 
+!   but the actual simulation dates are shifted by 6 months in the southern
+!   hemisphere by using uses effectivdaynumber and 
+!   mod(current_date%month+5,12)+1 in southern hemis
 
 
-    if ( DEBUG_LU .and. debug_proc ) write(*,*) "UKDEP SetLandUse, me, day ", me, daynumber, debug_proc
-    if ( DEBUG_LU .and. debug_proc ) write(*,*) "DEBUG_LU SetLandUse, me, day ", me, daynumber
+    if ( DEBUG_LANDUSE .and. debug_proc ) then
+        write(*,*) "DEBUG_LU SetLandUse, me, day ", me, daynumber, debug_proc
+    end if
 
     if ( my_first_call ) then
-        if ( DEBUG_LU .and. debug_proc ) write(*,*) "UKDEP FIrst Start SetLandUse, me ", me
 
      ! effectiv daynumber to shift 6 month when in southern hemisphere
         effectivdaynumber=daynumber
@@ -297,12 +303,12 @@ contains
 
                     call Growing_season( lu,abs(gb(i,j)),&  
                             LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu) )
-                    if ( DEBUG_LU .and. debug_flag ) write(*,*)"LU_SETGS", lu,  LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu)
                 else
                    LandCover(i,j)%SGS(ilu) =  LandDefs(lu)%SGS50
                    LandCover(i,j)%EGS(ilu) =  LandDefs(lu)%EGS50
-                    if ( DEBUG_LU .and. debug_flag ) write(*,*)"LU_FIXGS", lu,  LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu)
                 end if
+                if ( DEBUG_LANDUSE .and. debug_flag ) write(*,"(a,i3,a20,2i4)")"LU_SETGS", &
+                   lu, LandDefs(lu)%name,  LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu)
 
 
                !/ for landuse classes with bulk-resistances, we only
@@ -319,10 +325,10 @@ contains
              if ( LandType(lu)%is_ice   )   ice_fraction(i,j) = LandCover(i,j)%fraction(ilu)
 
              
-                if ( DEBUG_LU .and. debug_flag ) then
-                      write(*,"(a,2i4,2f12.4)") "DEBUG_LU WATER ", ilu, lu, &
-                          water_fraction(i,j), ice_fraction(i,j)
-                end if
+                !if ( DEBUG_LANDUSE .and. debug_flag ) then
+                !      write(*,"(a,2i4,2f12.4)") "DEBUG_LU WATER ", ilu, lu, &
+                !          water_fraction(i,j), ice_fraction(i,j)
+                !end if
 
             end do ! ilu
             if(.not. foundnwp_sea)then
@@ -336,6 +342,15 @@ contains
     end if ! my_first_call
    !======================================================================
 
+   !ds Mar2010. Landcover data can be set either from simplified LPJ
+   !PFTs, or from the "older" DO3SE inputs file
+
+     if ( PFTS_USED ) then !- Check for LPJ-derived data ----------------------
+         if ( current_date%month /= old_month ) then 
+           call MapPFT_LAI( current_date%month )
+         end if
+     end if
+
     
      do i = li0, li1
        do j = lj0, lj1
@@ -345,11 +360,12 @@ contains
           if(gb(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1 
 
           debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
-          if ( DEBUG_LU .and. debug_flag ) then
+          if ( DEBUG_LANDUSE .and. debug_flag ) then
                  write(*,"(a12,i3,i4)") "LANDUSE N Day? ", LandCover(i,j)%ncodes, daynumber
           end if
           do ilu= 1, LandCover(i,j)%ncodes
              lu      = LandCover(i,j)%codes(ilu)
+             pft     = LandType(lu)%pft
 
              if ( LandType(lu)%is_bulk ) cycle    !else Growing veg present:
 
@@ -362,6 +378,14 @@ contains
                               ,LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)  &
                               ,debug_flag )
 
+          if ( DEBUG_LANDPFTS .and. debug_flag.and. PFTS_USED ) then
+                 if ( pft > 0.0 ) then
+                   write(*,"(2a,i4,i6,2f8.3)") "LANDPFTS COMP? ", &
+                      LandDefs(lu)%name, daynumber, pft,&
+                       LandCover(i,j)%LAI(ilu), pft_lai(i,j, pft)
+                 end if
+               
+          end if
 
 
              hveg = LandDefs(lu)%hveg_max   ! defaults
@@ -416,7 +440,7 @@ contains
 
              LandCover(i,j)%hveg(ilu) =  hveg
 
-            if ( DEBUG_LU .and. debug_flag ) then
+            if ( DEBUG_LANDUSE .and. debug_flag ) then
                    write(*,"(a12,i3,a16,i4,f7.2,2f8.3,4i4)") "LANDPhen ", lu, trim(LandDefs(lu)%name), daynumber, &
                      LandCover(i,j)%hveg(ilu), LandCover(i,j)%LAI(ilu), LandCover(i,j)%fphen(ilu), &
                      LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)
@@ -426,8 +450,9 @@ contains
          end do ! lu
        end do ! j
     end do ! i
-    if ( DEBUG_LU .and. me==0 ) write(*,*)"UKDEP Finishing SetLandUse "
-    if(debug_proc .and. DEBUG_LU) write(*,*) "LAST GROWSEASON ", effectivdaynumber, WheatGrowingSeason(debug_li,debug_lj)
+
+    if(debug_proc .and. DEBUG_LANDUSE) write(*,*) "LAST GROWSEASON ", &
+          effectivdaynumber, WheatGrowingSeason(debug_li,debug_lj)
 
   end subroutine  SetLandUse
 ! =====================================================================

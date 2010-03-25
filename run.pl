@@ -205,7 +205,7 @@ my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 my $Chem     = "EmChem09";        # Label for chemical scheme used
 #$Chem     = "EmChem03c";        # Label for chemical scheme used
-$testv       = "rv3_5_6";
+$testv       = "rv3_5_10";
 
 #User directories
 my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -585,11 +585,15 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
     $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
     $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
-    $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
+    #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
+    $ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
     $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
 #    $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
     $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
     $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
+
+#Prelim BVOC attempt
+    $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
 
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?

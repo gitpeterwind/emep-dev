@@ -29,6 +29,7 @@ module LandDefs_ml
  use CheckStop_ml, only : CheckStop
  use Io_ml, only : IO_TMP, open_file, ios, Read_Headers, read_line
  use KeyValue_ml, only :  KeyVal
+ use LandPFT_ml,  only : PFT_CODES
  use ModelConstants_ml, only : NLANDUSEMAX, MasterProc, DEBUG_LANDDEFS
  use SmallUtils_ml, only : find_index
   implicit none
@@ -76,6 +77,7 @@ end interface Check_LandCoverPresent
      character(len=15) :: name
      character(len=9) :: code
      character(len=3) :: type   ! Ecocystem type, see headers
+     character(len=5) :: LPJtype   ! Simplified LPJ assignment
      real    ::  hveg_max
      real    ::  Albedo
      integer ::  eNH4         ! Possible source of NHx
@@ -94,6 +96,8 @@ end interface Check_LandCoverPresent
   type(land_input), private :: LandInput
 
   type, public :: land_type
+     logical :: has_lpj ! if LPJ LAI/BVOC data to be used
+     integer :: pft    ! for assignment to equivalent PFT
      logical :: is_forest
      logical :: is_conif
      logical :: is_decid
@@ -209,6 +213,13 @@ contains
 
             LandType(n)%is_forest =  &
                 ( LandInput%type == "ECF" .or. LandInput%type == "EDF" )
+            LandType(n)%has_lpj   =  &
+                ( LandInput%type /= "NOLPJ" )
+            LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)
+            if ( DEBUG_LANDDEFS .and. MasterProc ) then
+                 write(unit=*,fmt=*) "LANDPFT  match? ", n, &
+                   LandInput%name, LandInput%code, wanted_codes(n), LandType(n)%pft
+            end if
             LandType(n)%is_conif = ( LandInput%type == "ECF"  )
             LandType(n)%is_decid = ( LandInput%type == "EDF"  )
             LandType(n)%is_crop  = ( LandInput%type == "ECR"  )

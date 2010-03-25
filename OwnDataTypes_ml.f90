@@ -24,9 +24,8 @@ module OwnDataTypes_ml
        integer :: f2d           ! index in f_2d arrays
        integer :: LC            ! Index of Receiver land-cover (one 
        real    :: XYCL          ! Threshold or CL, e.f. AOTx or AFstY
+       logical :: dt_scale     ! used only if we need a factor on dt_advec,
        real    :: scale         !  e.g. use 100.0 to get cm/s
-       real :: dt_scale     ! used only if we need a factor on dt_advec,
-                            ! otherwise set to zero.
        logical  :: avg      ! True => average data (divide by nav at end),
                             !     else accumulate over run period
        logical  :: rho      ! True when scale is ug (N or S)

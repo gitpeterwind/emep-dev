@@ -35,17 +35,19 @@
 
   !-----------------------------------------------------------------------!
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
-  use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP
+  use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP, &
+                                      emforest, EmisNat  !ds
   use BoundaryConditions_ml, only : BGN_2D
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
   use CheckStop_ml,          only :  CheckStop
+  use Derived_ml,            only : d_2d
   use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES, FOREST_FIRES &
                                   ,NSS  !SeaS
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
-  use ForestFire_ml,         only : Fire_rcemis, burning !,  rcNOx_fire,rcCO_fire, rcHC_fire !DSFF
+  use ForestFire_ml,         only : Fire_rcemis, burning
   use Functions_ml,          only :  Tpot_2_T
-use ChemChemicals_ml,        only :  species
+  use ChemChemicals_ml,        only :  species
   use ChemSpecs_tot_ml,        only :  SO4,aNO3,pNO3,C5H8,NO,NO2,SO2,CO
   use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
@@ -53,6 +55,7 @@ use ChemChemicals_ml,        only :  species
   use ChemRates_rct_ml,       only :  set_rct_rates, rct
   use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, &
+                                     GridArea_m2, & !dsbvoc
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB
   use LocalVariables_ml,     only :  Grid
@@ -71,6 +74,7 @@ use ChemChemicals_ml,        only :  species
   use My_Aerosols_ml,       only : SEASALT
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
+                             ,MAXLIMAX,MAXLJMAX & !ds NatEmis
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
   use PhysicalConstants_ml,  only :  AVOG, PI, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
@@ -96,6 +100,7 @@ use ChemChemicals_ml,        only :  species
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
   real, dimension(NBVOC), public, save :: rcbio  !ispop and terpene
+  real, dimension(MAXLIMAX,MAXLJMAX,NBVOC), public, save :: NatEmisSum 
 
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -112,10 +117,6 @@ contains
 
     integer           :: k, n, ispec, irc    ! loop variables
     real              :: qsat ! saturation water content
-
-
-!DSGC    real ,dimension(KCHEMTOP:KMAX_MID) :: tinv, & ! Inverse of temp.
-!DSGC        h2o, o2k     ! water, O2
 
     do k = KCHEMTOP, KMAX_MID
  
@@ -157,9 +158,6 @@ contains
               xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
         end do ! ispec   
 
-!DSGC ! setup weighting factor for hydrolysis  
-!DSGC              f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(aNO3,k)) )
-
    end do ! k
 
 ! Check that concentrations are not "contaminated" with NaN
@@ -169,7 +167,6 @@ contains
    call CheckStop( "Detected non numerical concentrations (NaN)")
    end if
 
-!DSGC o2k(:) = 0.21*amk(:)
    o2(:) = 0.21 *amk(:)
    n2(:) = amk(:) - o2(:)
 !FAKE   o2(:) = 0.2095 *amk(:)
@@ -380,8 +377,13 @@ contains
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
-  if(BIO_TERP > 0)  &
-  rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+  if(BIO_TERP > 0)  then
+     rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+
+     !emnat was in molec/cm3/s. We use the easier emforest which
+     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
+     EmisNat(i,j,BIO_TERP)= emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+  end if
 
   ! Isoprene has emissions in daytime only:
   rcbio(BIO_ISOP) = 0.0
@@ -393,11 +395,17 @@ contains
 
       rcbio(BIO_ISOP) = emnat(i,j,BIO_ISOP) &
              * canopy_ecf(BIO_ISOP,it2m) * cL
+
+     !emnat was in molec/cm3/s. We use the easier emforest which
+     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
+
+     EmisNat(i,j,BIO_ISOP)= emforest(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL
   endif
+
   if ( DEBUG_SETUP_1DBIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
-     write(*,"(a5,2i4,4es12.3)") "DBIO ", current_date%day, &
-      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP)
+     write(*,"(a5,2i4,5es12.3)") "DBIO ", current_date%day, &
+      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP), EmisNat(i,j,BIO_ISOP)
   end if
 
   end subroutine setup_bio

@@ -60,9 +60,10 @@ use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
                    !        ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
                    !       ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
 use ChemGroups_ml,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
-                            DDEP_RDNGROUP, SIA_GROUP
+                            DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+use EmisDef_ml,     only :  EMIS_NAME
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa    ! 6c REM: zeta
@@ -88,9 +89,6 @@ private
 
  private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
            ,pm_calc              ! Miscelleaneous PM's
-
-
-  !ds character(len=8),  public ,parameter :: model='ZD_OZONE'
 
 
    !/** Depositions are stored in separate arrays for now - to keep size of
@@ -150,8 +148,8 @@ private
 
 ! Tropospheric columns
    integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
-   character(len=3), public, parameter, dimension(4) :: COLUMN_LEVELS = &
-      (/  "k20", "k16", "k12", "k08" /)
+   character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
+      (/  "k20" /) ! , "k16", "k12", "k08" /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
@@ -160,17 +158,11 @@ private
       ,"SOMO35      " & !"D2_SOMO0    " &
       ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
+
 !
 !    Particles: sums
 !       "D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
 !      ,"D2_SS       ","D2_tNO3     ","D2_PM25_H2O " &
-!
-!    Ozone and AOTs
-!Oct09      ,"D2_AOT40    ","D2_AOT60    " &  ! Exc AOT30 ( 7 versions)
-!Oct09      ,"D2_AOT40f   ","D2_AOT60f   ","D2_AOT40c   " &
-!Oct09      ,"D2_EUAOT40WH","D2_EUAOT40DF" &! NB: do not remove without removing from My_DryDep too
-!Oct09      ,"D2_UNAOT40WH","D2_UNAOT40DF" &! NB: do not remove without removing from My_DryDep too
-!Oct09      ,"D2_MMAOT40WH" &! NB: do not remove without removing from My_DryDep too
 !
 !    NOy-type sums
 !      ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
@@ -203,6 +195,9 @@ private
       ,"USTAR_NWP         " &
   /)
 
+
+ ! Emissions
+   integer, public, parameter, dimension(1) :: EMIS_OUT   = (/ C5H8 /)
 
   integer, public, parameter :: &   ! Groups for DDEP and WDEP
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
@@ -367,7 +362,7 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 
-    integer :: i, ilab, nDD, nVg, nRG, nMET, nVEGO3, iLC, &
+    integer :: i, ilab, itot, nDD, nVg, nRG, nMET, nVEGO3, iLC, &
       iadv, ispec, atw, n1, n2
     integer :: isep1, isep2  ! location of seperators in sting
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
@@ -383,7 +378,8 @@ private
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
     logical, parameter :: T=.true., F=.false.
-    real :: dt_scale
+    logical :: dt_scale
+    real :: scale
 
 
     ! Set indices of mosaic metconc params for later use. Will be zero if 
@@ -401,6 +397,17 @@ private
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
+
+  ! Emission sums - we always add these (good policy!)
+   do  i = 1, size(EMIS_NAME)
+     tag_name(1) = "Emis_mgm2_" // trim(EMIS_NAME(i))
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end do
+   do  i = 1, size(BVOC_GROUP)
+     itot = BVOC_GROUP(i)
+     tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end do
 
 ! add surf concs in various units (e.g. ugS/m3 or ppb):
      tag_name(1:size(SURF_UG_S)) = "SURF_ugS_" // species(SURF_UG_S)%name
@@ -499,10 +506,11 @@ private
              call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, DDEP" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, XYLC, scale, dt_scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, XYLC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
              MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99,-99, -99.9, 1.0e6, 0.0,   F,   F,   F, T,  T,  F, atw)
+                  iadv,-99,-99, -99.9, F, 1.0e6,  F,   F,   F, T,  T,  F, atw)
+!QUERY - why no dt_scale??
 
           if(DEBUG .and. MasterProc) then
             write(6,*) "DDEP setups"
@@ -543,7 +551,7 @@ private
           !Deriv index, f2d,LC,XYLC, scale, avg? rho Inst Yr Mn Day atw
           MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
-                iadv, -99,iLC, -99.9,  100.0, 0.0,  T,   F,   F, T, T, T, atw)
+                iadv, -99,iLC, -99.9,  F, 100.0, T,   F,   F, T, T, T, atw)
 
         end do VG_LC !n
       end do ! i
@@ -573,11 +581,13 @@ private
             !WHY??!!!! Threshold = nint( 10*Y)   ! Store Y=1.6 as 16
             Threshold = Y
             units = "mmole/m2"
-            dt_scale = 1.0e-6   ! Accumulates nmole/s to mmole (*dt_advec)
+            scale = 1.0e-6   ! Accumulates nmole/s to mmole (*dt_advec)
+            dt_scale = .true.   ! Accumulates nmole/s to mmole (*dt_advec)
          else if( txt(3:5) == "AOT" )  then
             read(txtnum,fmt="(i2)") Threshold ! really X
             units = "ppb.h"
-            dt_scale = 1.0/3600.0 ! AOT in ppb.hour
+            scale = 1.0/3600.0 ! AOT in ppb.hour
+            dt_scale = .true.
          end if
 
 
@@ -600,7 +610,7 @@ private
           !Deriv index, f2d,LC,XYCL, scale dt_scale avg? rho Inst Yr Mn Day atw
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", txt, txt2, units, &
-                iadv, -99,iLC,Threshold, 1.0, dt_scale,  F,   F,   F, T, T, F, atw)
+                iadv, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, atw)
 
       end do VEGO3_LC !n
       nOutVEGO3 = nVEGO3

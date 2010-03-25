@@ -38,6 +38,7 @@ module Biogenics_ml
           i_fdom,j_fdom,debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, Read2DN
   use KeyValue_ml,       only : KeyVal,KeyValue
+  use Landuse_ml,        only : LandCover
   use ModelConstants_ml, only : NPROC, MasterProc, DEBUG_BIO
   use Par_ml   , only : me, MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1
   implicit none
@@ -52,6 +53,7 @@ module Biogenics_ml
 
   real, public, save, dimension(MAXLIMAX,MAXLJMAX,NBVOC) :: &
       emforest    & !  Gridded standard (30deg. C, full light) emissions
+     ,EmisNat     & !  will be transferred to d_2d emis sums
      ,emnat         !  Gridded std. emissions after scaling with density, etc.
 
   !/-- Canopy environmental correction factors-----------------------------

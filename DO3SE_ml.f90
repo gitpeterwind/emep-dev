@@ -36,7 +36,7 @@ module DO3SE_ml
 !        ,PARshade => L%PARshade       &!  " " for shade leaves
 !        ,LAIsunfrac => L%LAIsunfrac      ! fraction of LAI in sun
 
-  use ModelConstants_ml, only : NLANDUSEMAX
+  use ModelConstants_ml, only : NLANDUSEMAX, DEBUG_DO3SE, MasterProc
 
   implicit none
   private
@@ -110,6 +110,7 @@ contains
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       ! Read data (still old-style reading, on all processors)
 
+      io_msg="ok"
       open(unit=io_num,file=fname,status="old",&
                       action="read",position="rewind",iostat=ios)
       call CheckStop(ios,"ERROR : Opening " // fname)
@@ -132,6 +133,11 @@ contains
             end if
 
             read(unit=inputline,fmt=*) do3se(lu)
+
+            if ( DEBUG_DO3SE .and. MasterProc ) then
+                print *, " DO3SE LU", lu,  do3se(lu)%code, wanted_codes(lu)
+            end if
+
             call CheckStop( wanted_codes(lu), do3se(lu)%code, "DO3SE MATCHING")
             lu = lu + 1
        end do

@@ -43,14 +43,14 @@ module ModelConstants_ml
 
  !ds - I added these offsets, but now suspect I was thinking wrong.
  ! The difference between EMEP and EECCA is confusing...
- !integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
- integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
+ integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
+ !integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-  ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+   RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
@@ -58,8 +58,8 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   3        & ! Actual number of processors in longitude
+  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
   ! ds Jan2009
@@ -99,6 +99,7 @@ module ModelConstants_ml
     ,DEBUG_BCS            = .false. & !
     ,DEBUG_BIO            = .false. & !
     ,DEBUG_DERIVED        = .false. & !
+    ,DEBUG_DO3SE          = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
     ,DEBUG_MET            = .false. & !
@@ -119,9 +120,11 @@ module ModelConstants_ml
     ,DEBUG_SOA            = .false. & !
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_LANDDEFS       = .false. & !
+    ,DEBUG_LANDUSE        = .false. & !
+    ,DEBUG_LANDPFTS       = .false. &
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
-    ,DEBUG_SETUP_1DBIO    = .false.   !
+    ,DEBUG_SETUP_1DBIO    = .true.   !
 
 !=============================================================================
   ! Source-receptor runs?
@@ -149,8 +152,8 @@ module ModelConstants_ml
 !+ 3)  Define main model dimensions,  things that will
 !       generally only change when switching Met-driver or large domain
   integer, public, parameter ::  &
-    IIFULLDOM = 170, JJFULLDOM = 133 &! x,y-Dimensions of full EMEP domain
-  ! IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
+  !  IIFULLDOM = 170, JJFULLDOM = 133 &! x,y-Dimensions of full EMEP domain
+   IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 &! x,y-Dimensions of full GLOBAL domain
   ! IIFULLDOM = 201, JJFULLDOM = 161 &! x,y-Dimensions of full GEMS/MACC domain
   , NLANDUSEMAX  = 23    &    ! Number of land use types in Inputs.Landuse file
@@ -167,8 +170,8 @@ module ModelConstants_ml
 ! EMEP measurements end at 6am, used in  daily averages
   integer, public, parameter :: END_OF_EMEPDAY  = 6
 
-  real, public :: dt_advec     ! time-step for advection (s)
-  real, public :: dt_advec_inv ! =1/dt_advec
+  real, public, save :: dt_advec     ! time-step for advection (s)
+  real, public, save :: dt_advec_inv ! =1/dt_advec
 
   ! NTDAY:  Number of 2D O3 to be saved each day (for SOMO)
   ! 24/NTDAY is the time integration step for SOMO

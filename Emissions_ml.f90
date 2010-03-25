@@ -112,6 +112,7 @@
 ! for `flat emissions, i.e. no vertical extent:
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: flat_nlandcode
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX,FNCMAX):: flat_landcode
+
  !
  !  The output emission matrix for the 11-SNAP data is snapemis:
  !
@@ -121,6 +122,11 @@
 
   real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILES) &
             , save ::  snapemis_flat !/* main emission arrays, in kg/m2/s  
+
+ !ds May 2010 - we store the emissions for output to d_2d files and netcdf
+ ! in kg/m2/s
+
+  real, public, dimension(MAXLIMAX,MAXLJMAX,NEMIS_FILES), save :: SumSnapEmis
 
   !/-- emissions for input to chemistry routines
 
@@ -468,19 +474,12 @@ contains
   !    checks that all the values given so far are consistent        !
   !------------------------------------------------------------------!
 !DSRC  integer, dimension(NEMIS_FILES), intent(in) :: eindex
+! Should add more checks
   character(len=30) :: errormsg
   integer :: i
 
   errormsg = "ok"
-!DSRC  do i = 1, NEMIS_FILES
-!DSRC     if ( eindex(i) < 0 ) then
-!DSRC          print *, "EmisIndex: Mis-match for ", i, eindex(i)
-!DSRC          errormsg = "EmisIndex: Mismatch"
-!DSRC     end if
-!DSRC  end do
-!DSRC  if ( nrcemis < NEMIS_FILES             ) errormsg = " NRCEMIS < NEMIS_FILES"
   if ( size(EMIS_NAME) /= NEMIS_FILES    ) errormsg = " size EMISNAME wrong "
-!DSRC  if ( NEMIS_PLAIN+sum(EMIS_NSPLIT) /= NRCEMIS   ) errormsg = "sum ne NRCEMIS"
 
   call CheckStop(errormsg,"Failed consistency check")
 
@@ -619,6 +618,7 @@ contains
 
          totemadd(:)  = 0.
          gridrcemis0(:,:,:,:) = 0.0 
+         SumSnapEmis(:,:,:) = 0.0
 
 
         !..........................................
@@ -668,6 +668,9 @@ contains
                                  day_factor(isec,daytime_iland)
 
                       s =  tfac * snapemis(isec,i,j,icc,iem)
+
+            !prelim emis sum kg/m2/s
+                       SumSnapEmis(i,j,iem) = SumSnapEmis(i,j,iem) + s
 
                       do f = 1, emis_nsplit( iem )
                            iqrc = iqrc + 1
@@ -727,6 +730,9 @@ contains
             do iem = 1, NEMIS_FILES 
 
                 sf =  snapemis_flat(i,j,ficc,iem)    
+
+            !prelim emis sum kg/m2/s
+                SumSnapEmis(i,j,iem) = SumSnapEmis(i,j,iem) + sf
 
                 do f = 1, emis_nsplit( iem )
                    iqrc = iqrc + 1

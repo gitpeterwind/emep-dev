@@ -156,6 +156,10 @@
                xm2ji  &
               ,xmdji
 
+  !/** Grid Area
+
+  real, public, save, dimension(MAXLIMAX,MAXLJMAX) :: GridArea_m2
+
   integer, public, save :: &
               debug_li, debug_lj         ! Local Coordinates of debug-site
   logical, public, save :: debug_proc          ! Processor with debug-site
@@ -267,6 +271,11 @@ contains
          xmd(i,j) = 1.0/xm2(i,j)
          xm2ji(j,i) = xm2(i,j)
          xmdji(j,i) = xmd(i,j)
+      enddo
+   enddo
+   do j=1,MAXLJMAX
+      do i=1,MAXLIMAX
+          GridArea_m2(i,j) = GRIDWIDTH_M*GRIDWIDTH_M*xmd(i,j)
       enddo
    enddo
    

@@ -77,12 +77,13 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use ChemSpecs_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
  use ChemSpecs_tot_ml, only : NSPEC_TOT
- use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
+!LPJ  use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
+ use DO3SE_ml,       only : do3se, f_phen
  use EcoSystem_ml,   only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
  use GridValues_ml , only : GRIDWIDTH_M,xmd,xm2, gb,dA,dB, &
           debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
- use Io_Nums_ml,     only : IO_DO3SE
+!LPJ use Io_Nums_ml,     only : IO_DO3SE
  use Landuse_ml,     only : Land_codes,LU_cdf, LandCover
  use LandDefs_ml,    only : LandType
  use LocalVariables_ml, only : Grid, Sub, L, iL ! Grid and sub-scale Met/Veg data
@@ -152,10 +153,10 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
 ! Read data for DO3SE (deposition O3 and  stomatal exchange) module
 ! (also used for other gases!)
-     if(.not.LU_cdf)then
-        call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
-        call CheckStop(errmsg, "Reading DO3SE ")
-     endif
+!LPJ     if(.not.LU_cdf)then
+!LPJ        call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
+!LPJ        call CheckStop(errmsg, "Reading DO3SE ")
+!LPJ     endif
 !     call Init_StoFlux()              
 
      nadv = 0
@@ -204,14 +205,14 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 !=============================================================================
   end if !  my_first_call
 
-  if ( old_daynumber /= daynumber ) then
-
-      if( MasterProc .and. DEBUG_DRYDEP) write(*,*) "INIT_DRYDEP set ", &
-           daynumber, old_daynumber
-      call SetLandUse()         ! Sets LandCover()%LAI, %hveg , etc
-      old_daynumber = daynumber
-
-  end if
+  !UNIMOD if ( old_daynumber /= daynumber ) then
+  !UNIMOD
+     !UNIMOD   if( MasterProc .and. DEBUG_DRYDEP) write(*,*) "INIT_DRYDEP set ", &
+     !UNIMOD        daynumber, old_daynumber
+    !UNIMOD    call SetLandUse()         ! Sets LandCover()%LAI, %hveg , etc
+       !UNIMOD old_daynumber = daynumber
+  !UNIMOD
+   !UNIMOD end if
 
   end subroutine init_drydep
 

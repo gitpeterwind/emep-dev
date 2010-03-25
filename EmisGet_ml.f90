@@ -662,7 +662,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end do ! ie
   ios = 0
   
-  !DSRC Now, we know how many split species we have, nrcsplit, so we allocate
+  ! Now, we know how many split species we have, nrcsplit, so we allocate
   !  and fill emisfrac:
   nrcemis = sum( emis_nsplit(:) )
   allocate(emisfrac(nrcemis,NSECTORS,NLAND),stat=allocerr)
