@@ -37,6 +37,10 @@ module ModelConstants_ml
   implicit none
   private
 
+! Temporary switch to include convection or not
+! will be removed when convection is sufficiently tested (use foundconv in permanent code)
+  logical, public :: use_convection= .false.
+
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains or debug points:

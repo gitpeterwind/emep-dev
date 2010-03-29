@@ -108,7 +108,7 @@ module Met_ml
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,DEBUG_BLM, DEBUG_Kz & 
-       ,nstep
+       ,nstep,use_convection
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
        ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -310,6 +310,24 @@ contains
 
     if(trim(validity)/='averaged')then
        if(MasterProc)write(*,*)'WARNING: 3D cloud cover is not averaged'
+    endif
+
+    if(use_convection)then
+       namefield='convective_updraft_flux'
+       call Getmeteofield(meteoname,namefield,nrec,ndim,&
+            validity, cnvuf(:,:,:))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+       cnvuf=max(0.0,cnvuf)!no negative upward fluxes
+       cnvuf(:,:,KMAX_BND)=0.0!no flux through surface
+       cnvuf(:,:,1)=0.0!no flux through top
+       
+       namefield='convective_downdraft_flux'
+       call Getmeteofield(meteoname,namefield,nrec,ndim,&
+            validity, cnvdf(:,:,:))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+       cnvdf=min(0.0,cnvdf)!no positive downward fluxes
+       cnvdf(:,:,KMAX_BND)=0.0!no flux through surface
+       cnvdf(:,:,1)=0.0!no flux through top
     endif
 
 ! hb 23.02.2010 Kz from meteo

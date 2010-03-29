@@ -8,10 +8,10 @@ module MetFields_ml
 
 
 !----------------- basic met fields ----------------------------------!
-!  Here we declare the metoeorlogical fields used in the model        !
+!  Here we declare the meteorological fields used in the model        !
 !
 ! Horizonal alignments....
-! Placement of q(i,j), u(i,j), v(i,j)
+! Placement of q(i,j), u(i,j), v(i,j) 
 !
 !    --------------- --------------- --------------- ---------------
 !    |              |               |               |               | 
@@ -113,7 +113,7 @@ module MetFields_ml
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
 
-  ! since pr,cc3d,cc3dmax used only for 1 time layer - define without NMET
+  ! since pr,cc3d,cc3dmax,cnvuf,cnvdf used only for 1 time layer - define without NMET
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: &
         pr      & ! Precipitation
        ,cc3d    & ! 3-d cloud cover (cc3d),
@@ -121,6 +121,11 @@ module MetFields_ml
        ,lwc     & !liquid water content
   ! QUERY - should xksig be MID, not BND? Is it needed at all?
        ,Kz_m2s     ! estimated Kz, in intermediate sigma levels, m2/s
+
+  real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND) :: &
+        cnvuf   & ! convective_updraft_flux (kg/s/m2)
+       ,cnvdf    ! convective_downdraft_flux (kg/s/m2)
+
 
  ! We don't need to calculate u,v for RiB, Kz for all layer in future maybe
  ! Still, for safety  we let this extent to K=1 for now
@@ -190,7 +195,7 @@ module MetFields_ml
   ! and therefore do not need to be
   ! interpolated.
 ! hb 23.02.2010 Kz from meteo
-    ,foundKz_met      ! false if no Kz from meteorology
-
+    ,foundKz_met    & ! false if no Kz from meteorology
+    ,foundconv        ! false if convection not found or not used
 
 end module MetFields_ml
