@@ -154,7 +154,7 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
-      ,"SURF_ug_SIA    " & !ds rv3_5_6 using groups
+      ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
       ,"SOMO35      " & !"D2_SOMO0    " &
       ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
@@ -563,7 +563,7 @@ private
       !untangle it to get threshold Y (=3.0) and landcover type
 
       nVEGO3 = 0
-      dt_scale = 0.0   ! for AFstY and AOT we need to reset this.
+      dt_scale = .false. ! for AFstY and AOT we need to reset this.
       VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS)
 
          name = VEGO3_OUTPUTS(n)
@@ -653,11 +653,11 @@ private
           if( RG_LABELS(ilab)(1:1) == "R" )  then
              MosaicOutput(nMosaic) = Deriv( &
                name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
-                iadv, -99,iLC,-99.9, 1.0, 0.0,  T,   F,   F, T, T, T, atw)
+                iadv, -99,iLC,-99.9, F , 1.0,  T,   F,   F, T, T, T, atw)
           else if( RG_LABELS(ilab)(1:1) == "G" )  then
              MosaicOutput(nMosaic) = Deriv( &
                name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
-                iadv, -99,iLC,-99.9, 100.0, 0.0,  T,   F,   F, T, T, T, atw)
+                iadv, -99,iLC,-99.9, F, 100.0,  T,   F,   F, T, T, T, atw)
           end if
 !          if( OutRG(nRG)%label(1:1) == "R" )  then
 !              OutRG(nRG)%units  =   "s/m"
@@ -700,7 +700,7 @@ private
           !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "METCONC", MET_LCS(n), METCONC_PARAMS(ilab), &
-                ilab, -99,iLC,-99.9, 1.0, 0.0,  T,   F,   F, T, T, T, atw)
+                ilab, -99,iLC,-99.9,  F , 1.0,  T,   F,   F, T, T, T, atw)
 !MESS          OutMET(nMET) = Dep_type( &
 !           name, ilab, -99, iLC, "Mosaic", METCONC_PARAMS(ilab),  &
 !                                              MET_LCS(n), 1.0, -99, "-")

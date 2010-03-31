@@ -546,14 +546,13 @@ contains
   integer :: iem              ! loop variable over 1..NEMIS_FILES
   integer :: itot             ! index in xn()
 !
-  integer :: i_l,j_l           ! Local i,j
   !uni - save daytime value between calls, intiialise to zero
   integer, save, dimension(NLAND) ::  daytime = 0  !  0=night, 1=day
   integer                         ::  hourloc      !  local hour 
   logical                         ::  hourchange   !      "     "           
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
 
-  real ::  deploc,ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
+  real ::  ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
   real ::  s               ! source term (emis) before splitting
   integer :: iland, iland_timefac  ! country codes, and codes for timefac 
@@ -853,7 +852,7 @@ contains
 !          are NOT the sum of the 12 files emissions (but about 12 times less than the sum). 
 !          More precisely: year_emis=sum_months(emis_month*nmdays/nydays)
 
-        ktonne_to_kgm2s  = 1.0e6 /         		&
+        ktonne_to_kgm2s  = 1.0e6 /        &
         (nydays*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
     if ( MasterProc .and. DEBUG) then
@@ -884,7 +883,7 @@ contains
              if ( MasterProc ) then
 
               write(fname,fmt='(''natso2'',i2.2,''.dat'')')     &
-        	current_date%month
+                current_date%month
               write(6,*) 'filename for nat-so2',fname
               endif
 
@@ -916,14 +915,14 @@ contains
                   endif 
 
                   snapemis_flat(i,j,n,IQSO2) = rdemis(i,j) * ktonne_to_kgm2s &
-        	* xm2(i,j)
+                     * xm2(i,j)
             enddo ! i
           enddo ! j
 
 
               if ( first_dms_read ) then
                  if (DEBUG) write(6,*)'me ',me, ' Increased flat_ncmaxfound to ' &
-        	,flat_ncmaxfound 
+                  ,flat_ncmaxfound 
               first_dms_read = .false.
           end if
 
@@ -945,7 +944,7 @@ contains
       first_call=.false.
    endif
     month = current_date%month
-    tonnemonth_to_kgm2s= 1.0e3 /         		&
+    tonnemonth_to_kgm2s= 1.0e3 /         &
          (nmdays(month)*24.*60.*60.*GRIDWIDTH_M*GRIDWIDTH_M)
 
     if ( MasterProc ) then

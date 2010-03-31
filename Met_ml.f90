@@ -345,7 +345,9 @@ contains
     end if
     if( debug_proc .and. DEBUG_Kz)then
           write(6,*)               &
-         '*** After Kz', sum(Kz_met(:,:,:,nr)), minval(Kz_met(:,:,:,nr)), maxval(Kz_met(:,:,:,nr)),maxval(Kz_met(:,:,KMAX_BND,nr)), DEBUG_Kz, NWP_Kz, nr, nrec, ndim, namefield
+         '*** After Kz', sum(Kz_met(:,:,:,nr)), minval(Kz_met(:,:,:,nr)), &
+               maxval(Kz_met(:,:,:,nr)),maxval(Kz_met(:,:,KMAX_BND,nr)), &
+               DEBUG_Kz, NWP_Kz, nr, nrec, ndim, namefield
 
     endif
 

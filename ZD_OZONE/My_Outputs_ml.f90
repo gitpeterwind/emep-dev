@@ -178,7 +178,7 @@ integer, public, parameter :: &
     SONDE_SHL =  (/ IXSHL_OH /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 !    SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /) 
-    SONDE_XTRA=  (/ "NOy  ", "z_mid", "p_mid", "th   ","Kz_m2s" /) !Height at mid-cell
+    SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /) 
 
  !   can access d_3d fields through index here, by
  !   setting "D3D" above and say D3_XKSIG12 here:

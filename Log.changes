@@ -1,3 +1,20 @@
+xxxxxxxxxxxxxx rv3_5_12  Dave   Mar 31st  2010
+
+Small corrections:
+
+1) to continue use of logical dt_scale instead of real:
+
+My_Derived_ml
+EcoSystem_ml
+
+2) tidy-ups spotted by gfortran's pedantic mode:
+
+Emissions_ml - tabs  and some unused variables removed
+
+LandPFT_ml - space added in "Emt_ "
+Met_ml     - very long line (<130 chars) shortened. Should try for < 78
+My_Outputs_ml - spaces in SONDE_XTRA init
+
 xxxxxxxxxxxxxx rv3_5_11  Peter  Mar 29th  2010
 
 Convection routines included. Not used by default.

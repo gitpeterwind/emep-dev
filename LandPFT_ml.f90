@@ -63,7 +63,7 @@ private
 
     character(len=5),public, parameter :: LAI_VAR =  "LAIv_"
     character(len=5),public, parameter, dimension(2) :: BVOC_VAR = &
-        (/ "Eiso_" , "Emt_" /)
+        (/ "Eiso_" , "Emt_ " /)
 
    !skip (/ "Normed_LAIv", "LAIv_      ", "Emt_       ", "Eiso_      " /)
 
