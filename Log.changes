@@ -1,3 +1,13 @@
+xxxxxxxxxxxxxx rv3_5_13  Peter   Apr 6th  2010
+
+Bug in Country_ml: The default country (index 67), had timezone=0 (meaning GMT),
+should be -100 (meaning longitude determined).
+This has been introduced in rv2_7_1 (in 2007, when introducing a lot of "shipping" countries) 
+Should affect mostly (only?) global runs.
+
+
+
+
 xxxxxxxxxxxxxx rv3_5_12  Dave   Mar 31st  2010
 
 Small corrections:
