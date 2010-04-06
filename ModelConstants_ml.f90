@@ -43,18 +43,30 @@ module ModelConstants_ml
 
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
-!     run domains or debug points:
+!     run domains
+
+  character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+ !character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
+ !character(len=20), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
+
+  logical, parameter, public :: IS_GLOBAL = .false.
+
+  integer, public, parameter ::  &
+    IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
+  ! IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
+  ! IIFULLDOM = 360, JJFULLDOM = 180 &! x,y-Dimensions of full GLOBAL domain
+  ! IIFULLDOM = 201, JJFULLDOM = 161 &! x,y-Dimensions of full GEMS/MACC domain
 
  !ds - I added these offsets, but now suspect I was thinking wrong.
  ! The difference between EMEP and EECCA is confusing...
- integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
- !integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
+ ! integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
+  integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-  !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-   RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+  ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
@@ -62,14 +74,17 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   3        & ! Actual number of processors in longitude
-  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   8        & ! Actual number of processors in longitude
+  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
-  ! ds Jan2009
+!=============================================================================
+!+ 2) Define  debug flags.
+
   ! We have one variable, to say if we are on master-processor
   ! or not: (kept here to avoid too many dependencies for box-model
   ! codes which don't need Par_ml
+
   logical, public, save ::  MasterProc = .true.
   logical, public, save ::  DebugCell  = .false.
 
@@ -131,7 +146,7 @@ module ModelConstants_ml
     ,DEBUG_SETUP_1DBIO    = .true.   !
 
 !=============================================================================
-  ! Source-receptor runs?
+  ! 3)  Source-receptor runs?
   ! We don't (generally) want daily outputs for SR runs, so in
   ! Derived_ml, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
 
@@ -143,24 +158,12 @@ module ModelConstants_ml
     logical, public, parameter :: FORECAST = .false.
 
 !=============================================================================
-!+ 2)  Define domain-name,  something that will
-!       generally only change when switching Met-driver or large domain
-
- ! character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
- character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
- !character(len=20), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
-
-  logical, parameter, public :: IS_GLOBAL = .false.
 
 !=============================================================================
-!+ 3)  Define main model dimensions,  things that will
-!       generally only change when switching Met-driver or large domain
+!+ 4)  Define main model dimensions,  things that will
+!       generally only change when switching Met-driver 
   integer, public, parameter ::  &
-  !  IIFULLDOM = 170, JJFULLDOM = 133 &! x,y-Dimensions of full EMEP domain
-   IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
-  ! IIFULLDOM = 360, JJFULLDOM = 180 &! x,y-Dimensions of full GLOBAL domain
-  ! IIFULLDOM = 201, JJFULLDOM = 161 &! x,y-Dimensions of full GEMS/MACC domain
-  , NLANDUSEMAX  = 23    &    ! Number of land use types in Inputs.Landuse file
+    NLANDUSEMAX  = 23    &    ! Number of land use types in Inputs.Landuse file
   , METSTEP      = 3     &    ! time-step of met. (h)
   , KMAX_MID     = 20    &    ! Number of points (levels) in vertical
   , KMAX_BND     = KMAX_MID+1 & ! Number of points (levels) in vertical + 1

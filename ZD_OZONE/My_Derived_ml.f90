@@ -170,7 +170,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
   D2_EXTRA = (/ &
        "WDEP_SO2          " &
       ,"WDEP_SO4          " &
@@ -179,10 +179,10 @@ private
       ,"WDEP_pNO3         " &
       ,"WDEP_NH3          " &
       ,"WDEP_aNH4         " &
+      ,"SURF_ppbC_VOC     " &
 !      ,"D2_REDN           " &
 !      ,"D2_SNOW           " &
 !      ,"D2_SNratio        " &
-!       "D2_VOC            " &
 !      ,"Area_Grid_km2     " &
 !      ,"Area_Conif_Frac   " &
 !      ,"Area_Decid_Frac   " &
@@ -331,7 +331,7 @@ private
 
 !----------------------
 ! Less often needed:
-!exc  "D2T_HCHO  ","D2T_CH3CHO","D2_VOC    ","D2_O3TC   ","D2_ACCSU  ",
+!exc  "D2T_HCHO  ","D2T_CH3CHO","D2_O3TC   ","D2_ACCSU  ",
 !"D2_FRNIT  ","D2_MAXOH  "
 
    !======= MY_DERIVED SYSTEM ======================================

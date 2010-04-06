@@ -122,7 +122,6 @@ private
  private :: write_debug
 
  public :: Derived              ! Calculations of sums, avgs etc.
- private :: Setup_VOC            ! Defines VOC group
  private :: voc_2dcalc           ! Calculates sum of VOC for 2d fields
  private :: voc_3dcalc           ! Calculates sum of VOC for 3d fields
 
@@ -511,6 +510,9 @@ do ind = 1, size(SURF_PPB)   ! ppb has rho flag set false
          iadv , -99, -99, 0.0, F, PPBINV,  T, F , F, T, T, T, -999 ) !?? atw?
 end do
 
+!call AddDef( "VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")
+call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
+         -1 , -99, -99, 0.0, F, PPBINV,  T, F , F, T, T, T, -999 ) !?? atw?
 
 !Emissions:
 ! We use mg/m2 outputs for consistency with depositions
@@ -555,7 +557,6 @@ end do ! ind
 !
 !call AddDef( "TADV ", T,IXADV_HCHO  ,ugHCHO,  T, F, T, T, T,"D2T_HCHO","ug/m3")
 !DSGCcall AddDef( "TADV ", T,IXADV_CH3CHO,ugCH3CHO,T, F, T, T,T,"D2T_CH3CHO","ug/m3")
-!call AddDef( "VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")
 !
 ! -- miscellaneous user-defined functions
 !
@@ -589,7 +590,6 @@ Is3D = .true.
 !call AddDef( "TH  ",T,  0 ,       1.0, F , T, T, T, F ,"D3_TH","m",Is3D)
 !call AddDef( "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb",Is3D)
 ! etc... use D3_PPB sustem
-!call AddDef( "VOC  ", T,       -1 , PPBINV, F, T, T, T, F ,"D3_VOC","ppb",Is3D)
 !
 ! Set Year true to allow debug - change later
 !call AddDef( "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?",Is3D)
@@ -689,25 +689,43 @@ end do
 
   end subroutine Define_Derived
  !=========================================================================
-     subroutine Setups()
+  subroutine Setups()
+     integer :: n
 
     !/** flexibility note. By making use of character-based tests such
-    !    as for "VOC" below, we achieve code which can stay for both ACID and
-    !    OZONE without having to define non-used indices.
-    !    Similarly, we avoid the previous "if NUM_ACCSU eq 1" type test,
-    !    since the appropriate code will now only activate
+    !    as for "VOC" below, we achieve code which can stay for
+    !    different chemical mechanisms, without having to define non-used indices.
 
     !/ ** if voc wanted, set up voc_array. Works for all ozone chemistries
-    !     (and code not called for MADE-type).
 
       if ( any(  f_2d(:)%class == "VOC" ) ) then !TMP .or. &
-!TMP           any(  f_3d(:)%class == "VOC" )  ) then
-            call Setup_VOC()
-            if (DEBUG  .and. MasterProc )then
+          !TMP           any(  f_3d(:)%class == "VOC" )  ) then
+          ! was call Setup_VOC(), moved here Mar 2010
+          !--------------------------------------------------------
+          ! Searches through the advected species and colects the
+          ! index and carbon content of nmhc/voc species, as they are
+          ! defined in CM_ChemSpecs_ml
+          !
+          !--------------------------------------------------------
+
+         !====================================================================
+          do n = 1, NSPEC_ADV
+
+            if ( species( NSPEC_SHL+n )%carbons > 0 .and. &
+                 species( NSPEC_SHL+n )%name   /= "CO"  .and. &
+                 species( NSPEC_SHL+n )%name   /= "CH4" ) then
+
+                 nvoc = nvoc + 1
+                 voc_index(nvoc) = n
+                 voc_carbon(nvoc) = species( NSPEC_SHL+n )%carbons
+            end if
+          end do
+         !====================================================================
+          if (DEBUG  .and. MasterProc )then
                write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
                write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
                write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
-            endif
+          endif
       end if
 
 
@@ -1356,28 +1374,6 @@ end do
     end subroutine ResetDerived
  !=========================================================================
 
-  subroutine Setup_VOC()
-      !--------------------------------------------------------
-      ! Searches through the advected species and colects the
-      ! index and carbon content of nmhc/voc species, as they were
-      ! defined in GenOut_ml
-      !
-      !--------------------------------------------------------
-       integer :: n
-
-      do n = 1, NSPEC_ADV
-
-        if ( species( NSPEC_SHL+n )%carbons > 0 .and. &
-             species( NSPEC_SHL+n )%name   /= "CO"  .and. &
-             species( NSPEC_SHL+n )%name   /= "CH4" ) then
-
-             nvoc = nvoc + 1
-             voc_index(nvoc) = n
-             voc_carbon(nvoc) = species( NSPEC_SHL+n )%carbons
-        end if
-      end do
-  end subroutine Setup_VOC
- !=========================================================================
 
    subroutine voc_2dcalc()
 
