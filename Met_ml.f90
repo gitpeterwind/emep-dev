@@ -94,7 +94,7 @@ module Met_ml
   use CheckStop_ml,         only : CheckStop
   use Functions_ml,         only : Exner_tab, Exner_nd
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
-       ,gl,gb, gb_glob, gl_glob, MIN_ADVGRIDS   &
+       ,gl,gb, gb_fdom, gl_fdom, MIN_ADVGRIDS   &
        ,Poles, Pole_included, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
@@ -2485,18 +2485,18 @@ contains
              yp=GJMAX
              fi =0.0
              call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gl_glob(1:IIFULLDOM,1) ))
+             call check(nf90_get_var(ncFileID, varID, gl_fdom(1:IIFULLDOM,1) ))
              do i=1,IIFULLDOM
-                if(gl_glob(i,1)>180.0)gl_glob(i,1)=gl_glob(i,1)-360.0
-                if(gl_glob(i,j)<-180.0)gl_glob(i,j)=gl_glob(i,j)+360.0
+                if(gl_fdom(i,1)>180.0)gl_fdom(i,1)=gl_fdom(i,1)-360.0
+                if(gl_fdom(i,j)<-180.0)gl_fdom(i,j)=gl_fdom(i,j)+360.0
              enddo
              do j=1,JJFULLDOM
-                gl_glob(:,j)=gl_glob(:,1)
+                gl_fdom(:,j)=gl_fdom(:,1)
              enddo
              call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gb_glob(1,1:JJFULLDOM) ))
+             call check(nf90_get_var(ncFileID, varID, gb_fdom(1,1:JJFULLDOM) ))
              do i=1,IIFULLDOM
-                gb_glob(i,:)=gb_glob(1,:)
+                gb_fdom(i,:)=gb_fdom(1,:)
              enddo
           else
              ref_latitude=60.
@@ -2508,14 +2508,14 @@ contains
                 call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
              endif
              call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gl_glob(1:IIFULLDOM,1:JJFULLDOM) ))
+             call check(nf90_get_var(ncFileID, varID, gl_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
 
              call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gb_glob(1:IIFULLDOM,1:JJFULLDOM) ))
+             call check(nf90_get_var(ncFileID, varID, gb_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
              do j=1,JJFULLDOM
              do i=1,IIFULLDOM
-                if(gl_glob(i,j)>180.0)gl_glob(i,j)=gl_glob(i,j)-360.0
-                if(gl_glob(i,j)<-180.0)gl_glob(i,j)=gl_glob(i,j)+360.0
+                if(gl_fdom(i,j)>180.0)gl_fdom(i,j)=gl_fdom(i,j)-360.0
+                if(gl_fdom(i,j)<-180.0)gl_fdom(i,j)=gl_fdom(i,j)+360.0
              enddo
              enddo
 
@@ -2581,15 +2581,15 @@ contains
     CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(gb_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(gl_glob(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(gb_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(gl_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(projection,len(projection),MPI_CHARACTER,0,MPI_COMM_WORLD,INFO) 
 
 
     do j=1,MAXLJMAX
        do i=1,MAXLIMAX
-          gl(i,j)=gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          gb(i,j)=gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          gl(i,j)=gl_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          gb(i,j)=gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
        enddo
     enddo
     i0=0
@@ -2603,10 +2603,10 @@ contains
 
     do j=j0,jm
        do i=i0,im
-          x1=gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          x2=gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          x3=gl_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
-          x4=gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+          x1=gl_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x2=gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x3=gl_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+          x4=gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
 
 !8100=90*90; could use any number much larger than zero and much smaller than 180*180  
           if(x1*x2<-8100.0 .or. x1*x3<-8100.0 .or. x1*x4<-8100.0)then
@@ -2618,10 +2618,10 @@ contains
           endif
           gl_stagg(i,j)=0.25*(x1+x2+x3+x4)
 
-          gb_stagg(i,j)=0.25*(gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gb_stagg(i,j)=0.25*(gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
        enddo
     enddo
     do j=0,j0
@@ -2684,8 +2684,8 @@ contains
     !The last cell + 1 cell = first cell
     Cyclicgrid=1 !Cyclicgrid
     do j=1,JJFULLDOM
-       if(mod(nint(gl_glob(GIMAX,j)+360+360.0/GIMAX),360)/=&
-            mod(nint(gl_glob(IRUNBEG,j)+360.0),360))then
+       if(mod(nint(gl_fdom(GIMAX,j)+360+360.0/GIMAX),360)/=&
+            mod(nint(gl_fdom(IRUNBEG,j)+360.0),360))then
           Cyclicgrid=0  !not cyclicgrid
        endif
     enddo
@@ -2716,7 +2716,7 @@ contains
 
     j=1
     i=1
-    if(abs(1.5*gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)-0.5*gb_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2))>89.5)then
+    if(abs(1.5*gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)-0.5*gb_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2))>89.5)then
        write(*,*)'south pole' !xm is infinity
        xm_global_i(:,0)=1.0E19
        xm_global_i(:,-1)=1.0E19

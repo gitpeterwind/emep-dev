@@ -52,11 +52,11 @@ module GlobalBCs_ml
 
   use CheckStop_ml,      only: CheckStop
   use GridValues_ml, only: gbacmax,gbacmin,glacmax,glacmin&
-                          ,gl,gb_glob,GlobalPosition &
+                          ,gl,gb_fdom,GlobalPosition &
                           ,i_fdom,j_fdom &
                           ,sigma_mid             ! for use in Hz scaling
   use Functions_ml, only: StandardAtmos_kPa_2_km ! for use in Hz scaling
-  use GridValues_ml, only: lb2ij, xp, yp, AN, fi, gb_glob, gl_glob,A_mid,B_mid
+  use GridValues_ml, only: lb2ij, xp, yp, AN, fi, gb_fdom, gl_fdom,A_mid,B_mid
   use Io_ml,             only : IO_GLOBBC, ios, open_file
   use ModelConstants_ml, only:  PPB, PPT,PPBINV &
                                ,KMAX_MID, PT, Pref &
@@ -475,7 +475,7 @@ elseif( year == 2005) then
    do i = 1, IGLOB
      do j = 1, JGLOB    ! Don't bother with south pole complications
 
-        lat5(i,j) = gb_glob(i,j)/5      ! lat/5 used in latfunc below
+        lat5(i,j) = gb_fdom(i,j)/5      ! lat/5 used in latfunc below
         lat5(i,j) = max(lat5(i,j),6)   ! Min value in latfunc
         lat5(i,j) = min(lat5(i,j),14)  ! Max value in latfunc
      end do
@@ -646,10 +646,10 @@ elseif( year == 2005) then
               if(MACEHEADFIX)then
               do j=1,JGLOB
                  do i=1,IGLOB
-                    if(       gb_glob(i,j)<macehead_lat+20.0 &
-                         .and.gb_glob(i,j)>macehead_lat-25.0 &
-                         .and.gl_glob(i,j)<macehead_lon      &
-                         .and.gl_glob(i,j)>macehead_lon-40.0)then
+                    if(       gb_fdom(i,j)<macehead_lat+20.0 &
+                         .and.gb_fdom(i,j)>macehead_lat-25.0 &
+                         .and.gl_fdom(i,j)<macehead_lon      &
+                         .and.gl_fdom(i,j)>macehead_lon-40.0)then
                        O3fix=O3fix+bc_rawdata(i,j,20)
                        icount=icount+1
                     endif

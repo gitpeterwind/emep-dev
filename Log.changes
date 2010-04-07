@@ -1,3 +1,14 @@
+xxxxxxxxxxxxxx rv3_5_    Dave.... (not rtagged yet)
+
+
+swapped  gl_glob => gl_fdom, gb_glob => gb_fdom, affects:
+
+GlobalBCs_ml.f90
+GridValues_ml.f90 
+Landuse_ml.f90Met_ml.f90
+Met_ml.f90
+NetCDF_ml.f90
+
 xxxxxxxxxxxxxx rv3_5_13  Dave/Peter  Apr 6th  2010
 
 ** Bug ** in Country_ml: The default country (index 67), had timezone=0 (meaning GMT),

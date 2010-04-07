@@ -128,8 +128,8 @@
 ! These differ slightly from the staggered points in the (i,j) grid. 
 
     real, public, save,  dimension(IIFULLDOM,JJFULLDOM) :: &
-            gb_glob,   &               !latitude of gridcell centers
-            gl_glob                    !longitude of gridcell centers
+            gb_fdom,   &               !latitude of gridcell centers
+            gl_fdom                    !longitude of gridcell centers
 
 
   real, public, save :: gbacmax,gbacmin,glacmax,glacmin
@@ -461,8 +461,8 @@ contains
          if (rp >  1.0e-10) rl = fi + om*atan2(dx,dy)
          if (rl <  glmin)   rl = rl + 360.0
          if (rl >  glmax)   rl = rl - 360.0
-         gl_glob(i,j)=rl                     !     longitude
-         gb_glob(i,j)=rb                     !     latitude
+         gl_fdom(i,j)=rl                     !     longitude
+         gb_fdom(i,j)=rb                     !     latitude
 
        end do ! i
     end do ! j
@@ -477,14 +477,14 @@ contains
     if(gj0+0+JRUNBEG-2<1)j0=1!outside fulldomain
     do j=j0,jm
        do i=i0,im
-          gl_stagg(i,j)=0.25*(gl_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gl_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               gl_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
-          gb_stagg(i,j)=0.25*(gb_glob(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_glob(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               gb_glob(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gl_stagg(i,j)=0.25*(gl_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gl_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gb_stagg(i,j)=0.25*(gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               gb_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
        enddo
     enddo
     do j=0,j0
@@ -600,16 +600,16 @@ end subroutine GlobalPosition
     xr2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
     yr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
   else  if(projection=='lon lat')then! lon-lat grid
-     xr2=(gl2-gl_glob(1,1))/(gl_glob(2,1)-gl_glob(1,1))+1
-     if(xr2<0.5)xr2=xr2+360.0/(gl_glob(2,1)-gl_glob(1,1))
-     yr2=(gb2-gb_glob(1,1))/(gb_glob(1,2)-gb_glob(1,1))+1
-  else!general projection, Use only info from gl_glob and gb_glob
+     xr2=(gl2-gl_fdom(1,1))/(gl_fdom(2,1)-gl_fdom(1,1))+1
+     if(xr2<0.5)xr2=xr2+360.0/(gl_fdom(2,1)-gl_fdom(1,1))
+     yr2=(gb2-gb_fdom(1,1))/(gb_fdom(1,2)-gb_fdom(1,1))+1
+  else!general projection, Use only info from gl_fdom and gb_fdom
      !first find closest by testing all gridcells. 
      dist=10.0!max distance is PI
      do j=1,JJFULLDOM
         do i=1,IIFULLDOM
-           if(dist>great_circle_distance(gl2,gb2,gl_glob(i,j),gb_glob(i,j)))then
-              dist=great_circle_distance(gl2,gb2,gl_glob(i,j),gb_glob(i,j))
+           if(dist>great_circle_distance(gl2,gb2,gl_fdom(i,j),gb_fdom(i,j)))then
+              dist=great_circle_distance(gl2,gb2,gl_fdom(i,j),gb_fdom(i,j))
               xr2=i
               yr2=j
            endif
@@ -631,11 +631,11 @@ end subroutine GlobalPosition
      jr2 = nint(yr2)
      ip1=ir2+1
      if(ip1>IIFULLDOM)ip1=ip1-2
-     dist2=great_circle_distance(gl2,gb2,gl_glob(ip1,jr2),gb_glob(ip1,jr2))
-     dist3=great_circle_distance( gl_glob(ir2,jr2), &
-                                  gb_glob(ir2,jr2), &
-                                  gl_glob(ip1,jr2), &
-                                  gb_glob(ip1,jr2))
+     dist2=great_circle_distance(gl2,gb2,gl_fdom(ip1,jr2),gb_fdom(ip1,jr2))
+     dist3=great_circle_distance( gl_fdom(ir2,jr2), &
+                                  gb_fdom(ir2,jr2), &
+                                  gl_fdom(ip1,jr2), &
+                                  gb_fdom(ip1,jr2))
 
      xr2=xr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 
@@ -643,12 +643,12 @@ end subroutine GlobalPosition
      jp1=jr2+1
      if(jp1>JJFULLDOM)jp1=jp1-2
 
-     dist2=great_circle_distance(gl2,gb2,gl_glob(ir2,jp1),gb_glob(ir2,jp1))
+     dist2=great_circle_distance(gl2,gb2,gl_fdom(ir2,jp1),gb_fdom(ir2,jp1))
 !GFORTRAN CHANGE
-     dist3=great_circle_distance( gl_glob(ir2,jr2), &
-                                  gb_glob(ir2,jr2), &
-                                  gl_glob(ir2,jp1), & 
-                                  gb_glob(ir2,jp1) )
+     dist3=great_circle_distance( gl_fdom(ir2,jr2), &
+                                  gb_fdom(ir2,jr2), &
+                                  gl_fdom(ir2,jp1), & 
+                                  gb_fdom(ir2,jp1) )
 
      yr2=yr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 

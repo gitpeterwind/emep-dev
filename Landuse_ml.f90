@@ -30,7 +30,7 @@ module Landuse_ml
 use CheckStop_ml,      only: CheckStop,StopAll
 use DO3SE_ml,   only : fPhenology
 use GridAllocate_ml,only: GridAllocate
-use GridValues_ml,  only: gb_glob, gb, i_fdom, j_fdom, & ! latitude, coordinates
+use GridValues_ml,  only: gb_fdom, gb, i_fdom, j_fdom, & ! latitude, coordinates
                           i_local, j_local, &
                          debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP

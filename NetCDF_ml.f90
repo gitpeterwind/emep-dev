@@ -65,7 +65,7 @@
                                   ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                   ,grid_north_pole_latitude&
                                   ,grid_north_pole_longitude&
-                                  ,GlobalPosition,gb_glob,gl_glob,ref_latitude&
+                                  ,GlobalPosition,gb_fdom,gl_fdom,ref_latitude&
                                   ,projection, sigma_mid,gb_stagg,gl_stagg,gl&
                                   ,gb,lb2ij
   use ModelConstants_ml, only : KMAX_MID, runlabel1, runlabel2 &
@@ -435,19 +435,19 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
      !Define longitude and latitude
      call GlobalPosition !because this may not yet be done if old version of meteo is used
      if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
-        call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+        call check(nf90_put_var(ncFileID, latVarID, gb_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
              ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
-        call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+        call check(nf90_put_var(ncFileID, longVarID, gl_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
              ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
      endif
 
 
   elseif(UsedProjection=='lon lat') then
      do i=1,GIMAXcdf
-        xcoord(i)= gl_glob(i+ISMBEGcdf-1,1)
+        xcoord(i)= gl_fdom(i+ISMBEGcdf-1,1)
      enddo
      do j=1,GJMAXcdf
-        ycoord(j)= gb_glob(1,j+JSMBEGcdf-1)
+        ycoord(j)= gb_fdom(1,j+JSMBEGcdf-1)
      enddo
      call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
      call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
@@ -470,9 +470,9 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
      !Define longitude and latitude
 
      if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
-        call check(nf90_put_var(ncFileID, latVarID, gb_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+        call check(nf90_put_var(ncFileID, latVarID, gb_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
              ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
-        call check(nf90_put_var(ncFileID, longVarID, gl_glob(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
+        call check(nf90_put_var(ncFileID, longVarID, gl_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1&
              ,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)) )
      endif
 
@@ -1565,8 +1565,8 @@ if(interpol_used=='zero_order')then
      do j=1,varGJMAX
         do i=1,varGIMAX
            ijk=ijk+1
-           ig=mod(nint((gl_glob(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
-           jg=max(1,min(dims(2),nint((gb_glob(i,j)-Rlat(1))*dlati)+1))
+           ig=mod(nint((gl_fdom(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
+           jg=max(1,min(dims(2),nint((gb_fdom(i,j)-Rlat(1))*dlati)+1))
            igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
            Rvar(ijk)=Rvalues(igjgk)
         enddo
@@ -1582,8 +1582,8 @@ ijk=0
      do j=1,varGJMAX
         do i=1,varGIMAX
            ijk=ijk+1
-           ig=mod(floor(abs(gl_glob(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
-           jg=max(1,min(dims(2),floor((gb_glob(i,j)-Rlat(1))*dlati)+1))
+           ig=mod(floor(abs(gl_fdom(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
+           jg=max(1,min(dims(2),floor((gb_fdom(i,j)-Rlat(1))*dlati)+1))
            ig1=ig+1
            jg1=min(jg+1,dims(2))
 
@@ -1596,8 +1596,8 @@ ijk=0
 !                 stop
 !              endif
 !           endif
-           di=(gl_glob(i,j)-Rlon(ig))*dloni
-           dj=(gb_glob(i,j)-Rlat(jg))*dlati
+           di=(gl_fdom(i,j)-Rlon(ig))*dloni
+           dj=(gb_fdom(i,j)-Rlat(jg))*dlati
            igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
            ig1jgk=ig1+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
            igjg1k=ig+(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
