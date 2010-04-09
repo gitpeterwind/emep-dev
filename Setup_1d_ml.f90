@@ -265,7 +265,7 @@ contains
 
      if ( AIRNOX  ) then
 
-        do k=KCHEMTOP, KEMISTOP,KMAX_MID
+        do k=KCHEMTOP, KMAX_MID
 
           rcemis(NO,k)  = rcemis(NO,k) &  
                               + 0.95 * (airn(k,i,j)+airlig(k,i,j))

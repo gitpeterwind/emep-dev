@@ -345,7 +345,7 @@ program myeul
 
         call readdiss(newseason)
 
-        if ( AIRNOX ) call aircraft_nox(newseason)
+!rv3_5_14: aircraft from "newmonth"      if ( AIRNOX ) call aircraft_nox(newseason)
 
         if (MasterProc .and. DEBUG_UNI ) write(6,*) 'maaned og sesong', &
              numt,mm,mm_old,newseason,oldseason

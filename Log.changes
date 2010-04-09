@@ -1,3 +1,30 @@
+xxxxxxxxxxxxxx rv3_5_14    Peter
+
+Upgrade of ReadField_CDF. 
+1) Can read 3D data (but no interpolation in vertical yet).
+(In progress: 2) Can  read any projection, given lat and lon of each gridcell.)
+
+Also corrected two bugs (wrote in Rvar with 1st dimension limax instead of 
+maxlimax and omitted IRUNBEG) 
+
+NetCDF_ml
+ForestFire
+LandPFT
+Emissions
+Par_ml
+
+Aircraft: new emission file
+run.pl
+    $ifile{"$DataDir/AircraftEmis.nc"} = "AircraftEmis.nc";
+
+Unimod.f90
+
+Setup1d_ml: 
+Bug in AIRNOX (introduced in rv3_4? Effect: no AIRNOX below KCHEMTOP).
+if ( AIRNOX  ) then k=KCHEMTOP,KEMISTOP,KMAX_MID
+
+Why is AVOG   = 6.023e23 (instead of 6.02214179e23)?
+
 xxxxxxxxxxxxxx rv3_5_    Dave.... (not rtagged yet)
 
 

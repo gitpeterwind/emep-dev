@@ -99,7 +99,7 @@ contains
            varname = trim(LAI_VAR) // trim(PFT_CODES(pft)) 
 
            call ReadField_CDF('GLOBAL_LAInBVOC.nc',varname,&
-              lpj,month,'zero_order',needed=.true.,debug_flag=.true.)
+              lpj,month,interpol='zero_order',needed=.true.,debug_flag=.true.)
 
            pft_lai(:,:,pft ) = lpj(:,:)
 
@@ -145,7 +145,7 @@ contains
            varname = trim(BVOC_VAR(ivar)) // trim(PFT_CODES(pft)) 
 
            call ReadField_CDF('GLOBAL_LAInBVOC.nc',varname,&
-              lpj,month,'zero_order',needed=.true.,debug_flag=.true.)
+              lpj,month,interpol='zero_order',needed=.true.,debug_flag=.true.)
 
            pft_bvoc(:,:,pft, ivar ) = lpj(:,:)
 

@@ -41,7 +41,8 @@
   use Biogenics_ml, only: first_dms_read,IQ_DMS,emnat,emforest
   use CheckStop_ml,only : CheckStop
   use ChemSpecs_shl_ml, only: NSPEC_SHL
-  use ChemSpecs_tot_ml, only: NSPEC_TOT
+  use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
+  use ChemChemicals_ml, only: species
   use Country_ml,    only : NLAND,Country_Init,Country, IC_NAT
   use EmisDef_ml, only : NSECTORS & ! No. sectors
                      ,NEMISLAYERS & ! No. vertical layers for emission
@@ -53,7 +54,8 @@
                      ,VOLCANOES   & ! 
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
-                     ,VERTFAC       ! vertical emission split
+                     ,VERTFAC     & ! vertical emission split
+                     ,AIRNOX        !aircraft emissions or not
   use EmisGet_ml, only : EmisGet, EmisSplit, &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
         ,iqrc2itot                   &  !maps from split index to total index
@@ -62,7 +64,7 @@
   use GridValues_ml, only:  GRIDWIDTH_M    & !  size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
-                           ,sigma_bnd, xmd, gl
+                           ,sigma_bnd, xmd, gl,dA,dB
   use Io_Nums_ml,      only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,     only : ios, open_file
   use MetFields_ml,          only : roa   ! ps in Pa, roa in kg/m3
@@ -817,9 +819,15 @@ contains
 !     landcode and nlandcode arrays as needed.
 
 !     Reads in snow cover at start of each month. 
+!
+!     April 2010: read monthly aircraft NOx emissions
+!
 !...........................................................................
+      use AirEmis_ml , only : airn
+      use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID
+      use NetCDF_ml, only : ReadField_CDF
 
-    integer i, j
+    integer i, j,k
     integer ijin(2) 
     integer n, flat_ncmaxfound      ! Max. no. countries w/flat emissions
     real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
@@ -840,7 +848,46 @@ contains
   !dsx logical, parameter ::MONTHLY_GRIDEMIS=.true. ! GLOBAL
 
         logical, parameter ::MONTHLY_GRIDEMIS= IS_GLOBAL      
+        integer ::kstart,kend
 
+if(AIRNOX)then
+!AIRCRAFT
+kstart=KCHEMTOP
+kend=KMAX_MID
+do k=KEMISTOP,KMAX_MID
+do j=1,ljmax
+do i=1,limax
+
+airn(i,j,k)=0.0
+
+enddo
+enddo
+enddo
+call ReadField_CDF('AircraftEmis.nc','NOx',airn,nstart=current_date%month,kstart=kstart,kend=kend,interpol='mass_conservative', &
+     needed=.true.,debug_flag=.true.)
+
+!convert from kg(NO2)/month into molecules/cm3/s
+!from kg to molecules: 0.001*AVOG/species(NO2)%molwt
+!use roa to find dz for consistency with other emissions (otherwise could have used z_bnd directly)
+!dz=dP/(roa*GRAV)  dP=dA(k) + dB(k)*ps(i,j,1)
+!dV=dz*dx*dy=dz*gridwidth**2/xm**2 *1e6 (1e6 for m3->cm3)
+!from month to seconds: ndaysmonth*24*3600
+
+do k=KEMISTOP,KMAX_MID
+conv=0.001*AVOG/species(NO2)%molwt*GRAV/gridwidth_m**2*1.0e-6/(nmdays(current_date%month)*24*3600)
+do j=1,ljmax
+do i=1,limax
+
+airn(i,j,k)=airn(i,j,k)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))*xm2(i,j)
+
+enddo
+enddo
+enddo
+
+endif
+
+
+!DMS
 !*** Units:
 !    Input files seem to be in ktonne PER YEAR. We convert here to kg/m2/s
 !     to save CPU in setemis.f.

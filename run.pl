@@ -160,7 +160,7 @@ my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";
 my $HALDIS      = "mifahb";
 
-my $USER       =  $DAVE;
+my $USER       =  $PETER;
 
 my $METformat="cdf"; # felt or cdf
 
@@ -208,13 +208,13 @@ my $Chem     = "EmChem09";        # Label for chemical scheme used
 $testv       = "rv3_5_13";
 
 #User directories
-my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
+my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod";   # input of source-code
 # Chemistry-specific files:
 my $ChemDir     = "$ProgDir/ZCM_$Chem";                    # for vocspec for this schem
 
 #my $WORKDIR     = "$WORKROOT/$USER/${testv}_$Chem.$year";  # working and result directory
-my $WORKDIR     = "$WORKROOT/$USER/${testv}.$year";         # working and result directory
-my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
+my $WORKDIR     = "$WORKROOT/$USER/test";         # working and result directory
+my $MyDataDir   = "$HOMEROOT/$DAVE/Unify/MyData";           # for each user's private input
 my $CWFDUMPDIR  = "$WORKROOT/$USER/${testv}.dump" if $CWF;  # Forecast nest/dump files
 
 
@@ -580,6 +580,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
                                    "GLOBAL_Boundary_and_Initial_Conditions.nc";
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
     $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc";
+    $ifile{"$DataDir/AircraftEmis.nc"} = "AircraftEmis.nc";
 
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";

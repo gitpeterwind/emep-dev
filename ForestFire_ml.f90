@@ -167,7 +167,7 @@ contains
          fires_found(iem) = .true.
 
          call ReadField_CDF('GLOBAL_ForestFireEmis.nc',gfed_poll,&
-              rdemis,nstart,'zero_order',.true.)
+              rdemis,nstart,interpol='zero_order',needed=.true.)
 
          if ( my_first_call ) then ! Assume NEMIS_FILES for now
              allocate(BiomassBurningEmis(NEMIS_FILES,MAXLIMAX,MAXLJMAX),&

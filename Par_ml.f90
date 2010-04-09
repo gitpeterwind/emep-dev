@@ -95,10 +95,10 @@ private
 !     on each processor
 !
  integer, public, save :: & 
-     gi0        &  ! Global address of longitude start point
-   , gi1        &  ! Global address of longitude end point
-   , gj0        &  ! Global address of latitute start point
-   , gj1           ! Global address of latitude end point
+     gi0        &  ! Global address of longitude start point (in rundomain)
+   , gi1        &  ! Global address of longitude end point (in rundomain)
+   , gj0        &  ! Global address of latitute start point (in rundomain)
+   , gj1           ! Global address of latitude end point (in rundomain)
 
 !
 !     Variables used as loop indexes on each processor. The values are
