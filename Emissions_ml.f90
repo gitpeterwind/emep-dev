@@ -135,13 +135,10 @@
    ! KEMISTOP added to avoid hard-coded KMAX_MID-3:
 
    integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
-   !DSRC dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) ::
-   !DSRC dimension(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX) ::
    real, public, allocatable, save, dimension(:,:,:,:) :: &
         gridrcemis      & ! varies every time-step (as ps changes)
        ,gridrcemis0       ! varies every hour
 
-  !SEEE real,    allocatable, dimension(:,:,:,:)  :: globemis 
   !/-- and for budgets (not yet used - not changed dimension)
 
    !DSRC real, public,  save, dimension(NRCEMIS) ::  totemadd

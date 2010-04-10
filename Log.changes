@@ -25,8 +25,7 @@ if ( AIRNOX  ) then k=KCHEMTOP,KEMISTOP,KMAX_MID
 
 Why is AVOG   = 6.023e23 (instead of 6.02214179e23)?
 
-xxxxxxxxxxxxxx rv3_5_    Dave.... (not rtagged yet)
-
+ + Dave.... 
 
 swapped  gl_glob => gl_fdom, gb_glob => gb_fdom, affects:
 
@@ -50,11 +49,14 @@ Derived_ml:
 
 My_Derived_ml : SURF_ppbC_VOC added
 
+<<<<<<< Log.changes
+=======
 ModelConstants_ml : re-arranged to put FFULLDOM.. and RUNDOMAIN
   closer together - will hopefully help to stop errors (e.g. missing
   rough.dat) caused by mis-matched domain sizes.
 
 
+>>>>>>> 1.479
 xxxxxxxxxxxxxx rv3_5_12  Dave   Mar 31st  2010
 
 Small corrections:

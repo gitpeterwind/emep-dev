@@ -584,11 +584,14 @@ call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
 call AddNewDeriv( "SOMO00","SOMO",  "SURF","-",   "ppb.day", &
                   IXADV_O3, -99,-99, 0.0, F, 1.0,   F,  F , F,   T, T, F , -999)
 
+call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
+           IXADV_O3, -99,-99, 0.0, F, PPBINV,   F,  F , F,   T, T, T , -999)
+
+
 !-- 3-D fields
 
 Is3D = .true.
 !call AddDef( "TH  ",T,  0 ,       1.0, F , T, T, T, F ,"D3_TH","m",Is3D)
-!call AddDef( "ADV  ", T, IXADV_O3 , PPBINV, F, T, T, T, F ,"D3_O3","ppb",Is3D)
 ! etc... use D3_PPB sustem
 !
 ! Set Year true to allow debug - change later
@@ -599,11 +602,7 @@ Is3D = .true.
 !DSGC call AddDef( "MAX3DADV", T, IXADV_CH3COO2,&
 !DSGC                                     PPTINV, F, F, T, T, F ,"D3_MAXCH3COO2","?",Is3D)
 !DSGC call AddDef( "PHNO3   ", T, IXSHL_PHNO3,1.0e8, F, F, T, T, F ,"D3_PHNO3","?",Is3D)
-       !Deriv(name, class,    subc,  txt,           unit
-       !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
-call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
-           IXADV_O3, -99,-99, 0.0, F, PPBINV,   F,  F , F,   T, T, T , -999)
-!call AddDef( "MAX3DADV", T, IXADV_O3,PPBINV,F, F, T, T, F ,"D3_MAXO3","?",Is3D)
+
 ! hb new 3D output
 do ind = 1, size(D3_PPB)
   itot = D3_PPB(ind)
