@@ -58,14 +58,11 @@ Derived_ml:
 
 My_Derived_ml : SURF_ppbC_VOC added
 
-<<<<<<< Log.changes
-=======
 ModelConstants_ml : re-arranged to put FFULLDOM.. and RUNDOMAIN
   closer together - will hopefully help to stop errors (e.g. missing
   rough.dat) caused by mis-matched domain sizes.
 
 
->>>>>>> 1.479
 xxxxxxxxxxxxxx rv3_5_12  Dave   Mar 31st  2010
 
 Small corrections:

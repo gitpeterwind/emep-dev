@@ -272,7 +272,7 @@ private
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
      VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", &
                         "AFST_0.0_IAM_DF", &
                         "AFST_0.0_BF    ", &
@@ -281,9 +281,12 @@ private
                         "AFST_3.0_IAM_CR", &
                         "AFST_6.0_IAM_CR", &
                         "AFST_0.0_IAM_MF", &
+                        "AFST_1.0_IAM_MF", & ! WGSR POD1 birch
+                        "AFST_1.0_IAM_DF", & ! WGSR POD1
                         "AFST_1.6_IAM_MF", &
                         "MMAOT_30_IAM_DF", &
-                        "MMAOT_40_IAM_DF", & ! only iam allowed
+                        "MMAOT_40_IAM_DF", & ! WGSR beech
+                        "MMAOT_40_IAM_MF", & ! WGSR birch
                         "MMAOT_30_IAM_CR", & ! only iam allowed
                         "MMAOT_40_IAM_CR", &
                         "EUAOT_40_IAM_CR", &
@@ -584,7 +587,7 @@ private
             scale = 1.0e-6   ! Accumulates nmole/s to mmole (*dt_advec)
             dt_scale = .true.   ! Accumulates nmole/s to mmole (*dt_advec)
          else if( txt(3:5) == "AOT" )  then
-            read(txtnum,fmt="(i2)") Threshold ! really X
+            read(txtnum,fmt="(i2)") Threshold ! e.g. 40 ppb
             units = "ppb.h"
             scale = 1.0/3600.0 ! AOT in ppb.hour
             dt_scale = .true.
