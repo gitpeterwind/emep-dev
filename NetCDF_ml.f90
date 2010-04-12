@@ -2093,6 +2093,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      needed,debug_flag)
 !reads data from file and interpolates data into local grid
 
+!NB k coordinate in Rvar assumed as first coordinate. Could consider to change this.
+
   use netcdf
 
 implicit none
@@ -2111,16 +2113,18 @@ integer ::alloc_err
 character*100 ::name
 real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
 integer ::ij,jdiv,idiv,Ndiv,Ndiv2,ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
+integer :: ijk1,ijk2,ijk3,ijk4
 integer ::imin,imax,jmin,jjmin,jmax,igjg,dimi,dimj,k2
 integer, allocatable:: Ivalues(:)
 real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
 real ::lat,lon,maxlon,minlon,maxlat,minlat
 logical ::fileneeded, debug,data3D
-character(len = 20) :: interpol_used
+character(len = 50) :: interpol_used, data_projection
 real :: tot,ir,jr,Grid_resolution
 type(Deriv) :: def1 ! definition of fields
 
-
+real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
+integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
 
 fileneeded=.true.!default
 if(present(needed))then
@@ -2217,6 +2221,12 @@ endif
         len=dims(i)),"GetDims")
       if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   enddo
+
+
+  call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ))
+
+  if(trim(data_projection)=="lon lat")then
+!  if(interpol_used=='mass_conservative')then
 
 !get coordinates
 !we assume first that data is originally in lon lat grid
@@ -2363,7 +2373,7 @@ endif
                        k2=1
                        if(data3D)k2=kend-kstart+1
                        do k=1,k2
-                          ijk=ij+(k-1)*MAXLIMAX*MAXLJMAX
+                          ijk=k+(ij-1)*k2
                           Ivalues(ijk)=Ivalues(ijk)+1
                           igjgk=igjg+(k-1)*dims(1)*dims(2)
                           Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
@@ -2380,7 +2390,7 @@ endif
            do i=1,limax
               do j=1,ljmax
                  ij=i+(j-1)*MAXLIMAX
-                 ijk=ij+(k-1)*MAXLIMAX*MAXLJMAX
+                 ijk=k+(ij-1)*k2
                  if(Ivalues(ijk)<=0)then
                     write(*,*)'ERROR. no values found!',i,j,k,me,maxlon,minlon,maxlat,minlat
                     call CheckStop("Interpolation error") 
@@ -2409,7 +2419,7 @@ endif
            do j=1,ljmax
               do i=1,limax
                  ij=i+(j-1)*MAXLIMAX
-                 ijk=ij+(k-1)*MAXLIMAX*MAXLJMAX
+                 ijk=k+(ij-1)*k2
                  ig=nint((gl(i,j)-Rlon(startvec(1)))*dloni)+1
                  ig=max(1,min(dims(1),ig))
                  jg=max(1,min(dims(2),nint((gb(i,j)-Rlat(startvec(2)))*dlati)+1))
@@ -2436,10 +2446,114 @@ endif
 
   deallocate(Rlon)
   deallocate(Rlat)
+
+  else ! data_projection)/="lon lat"
+     if(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+        
+     call CheckStop(interpol_used=='mass_conservative', "ReadField_CDF: only linear interpolation implemented") 
+    if(interpol_used=='zero_order'.and.MasterProc)&
+         write(*,*)'zero_order interpolation asked, but performing linear interpolation'
+
+     call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection") 
+
+    allocate(Weight1(MAXLIMAX,MAXLJMAX))
+    allocate(Weight2(MAXLIMAX,MAXLJMAX))
+    allocate(Weight3(MAXLIMAX,MAXLJMAX))
+    allocate(Weight4(MAXLIMAX,MAXLJMAX))
+    allocate(IIij(MAXLIMAX,MAXLJMAX,4))
+    allocate(JJij(MAXLIMAX,MAXLJMAX,4))
+
+    call grid2grid_coeff(ncFileID,IIij,JJij,Weight1,Weight2,Weight3,Weight4)
+
+    imin=MAXLIMAX
+    jmin=MAXLJMAX
+    imax=1
+    jmax=1
+    do i=1,limax
+       do j=1,ljmax
+          imin=min(imin,IIij(i,j,1))
+          imin=min(imin,IIij(i,j,2))
+          imin=min(imin,IIij(i,j,3))
+          imin=min(imin,IIij(i,j,4))
+          jmin=min(jmin,JJij(i,j,1))
+          jmin=min(jmin,JJij(i,j,2))
+          jmin=min(jmin,JJij(i,j,3))
+          jmin=min(jmin,JJij(i,j,4))
+
+          imax=max(imax,IIij(i,j,1))
+          imax=max(imax,IIij(i,j,2))
+          imax=max(imax,IIij(i,j,3))
+          imax=max(imax,IIij(i,j,4))
+          jmax=max(jmax,JJij(i,j,1))
+          jmax=max(jmax,JJij(i,j,2))
+          jmax=max(jmax,JJij(i,j,3))
+          jmax=max(jmax,JJij(i,j,4))
+       enddo
+    enddo
+    startvec(1)=imin
+    startvec(2)=jmin
+    startvec(ndims)=nstart
+    dimi=dims(1)
+    dimj=dims(2)
+    dims=1
+    dims(1)=imax-imin+1
+    dims(2)=jmax-jmin+1
+    
+    totsize=1
+    do i=1,ndims
+       totsize=totsize*dims(i)
+        ! write(*,*)'size variable ',i,startvec(i),dims(i),me,imin,imax,jmin,jmax
+    enddo
+!  write(*,*)'total size variable ',totsize
+    if(xtype==NF90_REAL)then
+       allocate(Rvalues(totsize), stat=alloc_err)    
+       if ( debug ) then
+          write(*,"(a,2i6,a)") 'ReadCDF VarID ', VarID,NF90_MAX_VAR_DIMS,trim(varname)
+          do i=1, 10 ! NF90_MAX_VAR_DIMS ! would be 1024:w
+             write(*,"(a,6i8)") 'ReadCDFI ',i, dims(i),startvec(i),sizesvec(i)
+          end do
+       end if
+    else
+       write(*,*)'datatype not yet supported'
+       stop
+    endif
+
+
+     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+    call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
+        errmsg="RRvalues")
+
+
+    k=1
+    do i=1,limax
+       do j=1,ljmax
+          ijk=i+(j-1)*MAXLIMAX
+          ijk1=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
+          ijk2=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
+          ijk3=IIij(i,j,3)-startvec(1)+1+(JJij(i,j,3)-startvec(2))*dims(1)
+          ijk4=IIij(i,j,4)-startvec(1)+1+(JJij(i,j,4)-startvec(2))*dims(1)
+          Rvar(ijk)=Weight1(i,j)*Rvalues(ijk1)+&
+               Weight2(i,j)*Rvalues(ijk2)+&
+               Weight3(i,j)*Rvalues(ijk3)+&
+               Weight4(i,j)*Rvalues(ijk4)
+          
+       enddo
+    enddo
+    
+
+    deallocate(Rvalues)
+    deallocate(Weight1)
+    deallocate(Weight2)
+    deallocate(Weight3)
+    deallocate(Weight4)
+    deallocate(IIij)
+    deallocate(JJij)
+endif
+
 !  CALL MPI_FINALIZE(INFO)
 !   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
-return
+if(data3D)return
 
 !only for tests:
  def1%class='Readtest' !written
@@ -2483,46 +2597,40 @@ end subroutine ReadField_CDF
 
 
 
-  subroutine grid2grid_coeff(ndays_indate,filename_read,IIij,JJij,&
-       Weight1,Weight2,Weight3,Weight4,Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
+  subroutine grid2grid_coeff(ncFileID,IIij,JJij,&
+       Weight1,Weight2,Weight3,Weight4)
 
 !makes interpolation coefficients from one grid to the other, 
-!assuming only latitude and longitudes for grids
+!using only latitude and longitudes of individual gridcells
 
    use Functions_ml,    only : great_circle_distance
    implicit none
-    character(len=*),intent(in) :: filename_read
+    integer,intent(in) :: ncFileID
     real ,intent(out):: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
     real ,intent(out):: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
     integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
-    integer ,intent(out)::Next,KMAX_ext,GIMAX_ext,GJMAX_ext
-    real*8 :: ndays_indate,ndays(1)
-    integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
-    integer :: nseconds_indate,ndate(4)
+    integer :: idimID,jdimID, kdimID,varid,status
     real :: dist(0:4)
-    integer :: nseconds(1),n1,n,i,j,k,II,JJ
-    real, allocatable, dimension(:,:) ::lon_ext,lat_ext
-    character*80 ::projection
-  real*8, parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
+    integer :: n1,n,i,j,k,II,JJ,GIMAX_data,GJMAX_data
+    real, allocatable, dimension(:,:) ::lon_data,lat_data
+    character*80 ::data_projection
 
     !Read dimensions (global)
     if(me==0)then
-       status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
-
-       if(status /= nf90_noerr) then
-          print *,'not found',trim(filename_read)
-          return
-       else
-          print *,'  reading ',trim(filename_read)
-       endif
-       projection=''
-       call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
-       write(*,*)'projection: ',trim(projection)
+!       status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
+!       if(status /= nf90_noerr) then
+!          print *,'not found',trim(filename_read)
+!          return
+!       else
+!          print *,'  reading ',trim(filename_read)
+!       endif
+       data_projection=''
+       call check(nf90_get_att(ncFileID,nf90_global,"projection",data_projection))
        !get dimensions id
-       if(trim(projection)=='Stereographic') then
+       if(trim(data_projection)=='Stereographic') then
           call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-       elseif(trim(projection)==trim('lon lat')) then
+       elseif(trim(data_projection)==trim('lon lat')) then
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
        else
@@ -2533,63 +2641,44 @@ end subroutine ReadField_CDF
             !     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
        endif
 
-       call check(nf90_inq_dimid(ncid = ncFileID, name = "k", dimID = kdimID))
-       call check(nf90_inq_dimid(ncid = ncFileID, name = "time", dimID = timeDimID))
+       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_data))
+       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_data))
 
-       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_ext))
-       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_ext))
-       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_ext))
-       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Next))
-
-       write(*,*)'dimensions external grid',GIMAX_ext,GJMAX_ext,KMAX_ext,Next
+     !  write(*,*)'dimensions data grid',GIMAX_data,GJMAX_data
     endif
-      CALL MPI_BCAST(GIMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-      CALL MPI_BCAST(GJMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-      CALL MPI_BCAST(KMAX_ext,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-      CALL MPI_BCAST(Next,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(GIMAX_data,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(GJMAX_data,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
-    allocate(lon_ext(GIMAX_ext,GJMAX_ext))
-    allocate(lat_ext(GIMAX_ext,GJMAX_ext))
+    allocate(lon_data(GIMAX_data,GJMAX_data))
+    allocate(lat_data(GIMAX_data,GJMAX_data))
 
     if(me==0)then
        !Read lon lat of the external grid (global)
-       if(trim(projection)==trim('lon lat')) then
+       if(trim(data_projection)==trim('lon lat')) then
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lon_ext(:,1) ))
-          do i=1,GJMAX_ext
-             lon_ext(:,i)=lon_ext(:,1)
+          call check(nf90_get_var(ncFileID, varID, lon_data(:,1) ))
+          do i=1,GJMAX_data
+             lon_data(:,i)=lon_data(:,1)
           enddo
           call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lat_ext(1,:) ))
-          do i=1,GIMAX_ext
-             lat_ext(i,:)=lat_ext(1,:)
+          call check(nf90_get_var(ncFileID, varID, lat_data(1,:) ))
+          do i=1,GIMAX_data
+             lat_data(i,:)=lat_data(1,:)
           enddo
        else
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lon_ext ))
+          call check(nf90_get_var(ncFileID, varID, lon_data ))
 
           call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lat_ext ))
+          call check(nf90_get_var(ncFileID, varID, lat_data ))
        endif
-       call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
 
-       !          do n=1,Next
-       call check(nf90_get_var(ncFileID, varID, ndays,start=(/ 1 /),count=(/ 1 /) ))
-
-       if(ndays(1)-ndays_indate>halfsecond)then
-          write(*,*)'WARNING: did not find BIC for date:'
-          call datefromdayssince1900(ndate,ndays_indate,1)
-          write(*,*)'first date found:'
-          call datefromdayssince1900(ndate,ndays(1),1)
-       endif
-       !          enddo
-
-       call check(nf90_close(ncFileID))
+!       call check(nf90_close(ncFileID))
 
     endif
 
-      CALL MPI_BCAST(lon_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-      CALL MPI_BCAST(lat_ext,8*GIMAX_ext*GJMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(lon_data,8*GIMAX_data*GJMAX_data,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      CALL MPI_BCAST(lat_data,8*GIMAX_data*GJMAX_data,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
     !find interpolation constants
     !note that i,j are local
@@ -2597,10 +2686,10 @@ end subroutine ReadField_CDF
     do j=1,ljmax
        do i=1,limax
           dist=1.0E40
-          do JJ=1,GJMAX_ext
-             do II=1,GIMAX_ext
+          do JJ=1,GJMAX_data
+             do II=1,GIMAX_data
                 !distance between (i,j) and (II,JJ)
-                dist(0)=great_circle_distance(lon_ext(II,JJ),lat_ext(II,JJ),gl(i,j),gb(i,j))
+                dist(0)=great_circle_distance(lon_data(II,JJ),lat_data(II,JJ),gl(i,j),gb(i,j))
                 if(dist(0)<dist(1))then
                    dist(4)=dist(3)
                    dist(3)=dist(2)
@@ -2650,8 +2739,8 @@ end subroutine ReadField_CDF
        enddo
     enddo
 
-    deallocate(lon_ext)
-    deallocate(lat_ext)
+    deallocate(lon_data)
+    deallocate(lat_data)
 
   end subroutine grid2grid_coeff
 
