@@ -3829,7 +3829,7 @@
                mass_exchanged=(cnvuf(i,j,k+1)-cnvuf(i,j,k))*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))*mass_air_grid(k)
                if(mass_exchanged<-mass_air_grid(k))then
                   !limit fluxes
-                  cnvuf(i,j,k+1)=0.99*mass_air_grid(k)*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*dt_conv)+cnvuf(i,j,k+1)!0.99 to determine
+                  cnvuf(i,j,k+1)=0.99*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*dt_conv)+cnvuf(i,j,k+1)!0.99 to determine
                   mass_exchanged=(cnvuf(i,j,k+1)-cnvuf(i,j,k))*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))*mass_air_grid(k)
                endif
             else
@@ -3890,7 +3890,7 @@
                mass_exchanged=(cnvdf(i,j,k+1)-cnvdf(i,j,k))*mass_air_grid(k)*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))
                if(mass_exchanged<-mass_air_grid(k))then
                !limit fluxes
-                  cnvdf(i,j,k)=-0.99*mass_air_grid(k)*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*dt_conv)+cnvdf(i,j,k+1)!0.99 to determine
+                  cnvdf(i,j,k+1)=-0.99*(dA(k)+dB(k)*ps(i,j,1))/(GRAV*dt_conv)+cnvdf(i,j,k)!0.99 to determine
                   mass_exchanged=(cnvdf(i,j,k+1)-cnvdf(i,j,k))*mass_air_grid(k)*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))
                endif
             else
