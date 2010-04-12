@@ -2553,7 +2553,7 @@ endif
 !  CALL MPI_FINALIZE(INFO)
 !   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
-if(data3D)return
+return
 
 !only for tests:
  def1%class='Readtest' !written
