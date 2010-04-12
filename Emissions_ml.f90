@@ -855,7 +855,7 @@ do k=KEMISTOP,KMAX_MID
 do j=1,ljmax
 do i=1,limax
 
-airn(i,j,k)=0.0
+airn(k,i,j)=0.0
 
 enddo
 enddo
@@ -870,12 +870,12 @@ call ReadField_CDF('AircraftEmis.nc','NOx',airn,nstart=current_date%month,kstart
 !dV=dz*dx*dy=dz*gridwidth**2/xm**2 *1e6 (1e6 for m3->cm3)
 !from month to seconds: ndaysmonth*24*3600
 
-do k=KEMISTOP,KMAX_MID
 conv=0.001*AVOG/species(NO2)%molwt*GRAV/gridwidth_m**2*1.0e-6/(nmdays(current_date%month)*24*3600)
+do k=KEMISTOP,KMAX_MID
 do j=1,ljmax
 do i=1,limax
 
-airn(i,j,k)=airn(i,j,k)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))*xm2(i,j)
+airn(k,i,j)=airn(k,i,j)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))*xm2(i,j)
 
 enddo
 enddo
