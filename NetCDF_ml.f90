@@ -2146,6 +2146,8 @@ endif
      endif
   endif
 
+  
+  data3D=.false.
   if(present(kstart).or.present(kend))then
      call CheckStop((.not. present(kend).or. .not. present(kend)), &
           "ReadField_CDF : both or none kstart and kend should be present") 
