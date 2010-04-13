@@ -2488,7 +2488,7 @@ contains
              call check(nf90_get_var(ncFileID, varID, gl_fdom(1:IIFULLDOM,1) ))
              do i=1,IIFULLDOM
                 if(gl_fdom(i,1)>180.0)gl_fdom(i,1)=gl_fdom(i,1)-360.0
-                if(gl_fdom(i,j)<-180.0)gl_fdom(i,j)=gl_fdom(i,j)+360.0
+                if(gl_fdom(i,1)<-180.0)gl_fdom(i,1)=gl_fdom(i,j)+360.0
              enddo
              do j=1,JJFULLDOM
                 gl_fdom(:,j)=gl_fdom(:,1)

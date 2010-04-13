@@ -2310,7 +2310,7 @@ endif
 
   startvec(1)=imin
   startvec(2)=jmin
-  startvec(ndims)=nstart
+  if(ndims>2)startvec(ndims)=nstart
   dimi=dims(1)
   dimj=dims(2)
   dims=1
