@@ -1,3 +1,8 @@
+xxxxxxxxxxxxxx rv3_5_16    Peter,  13th April 2010
+
+Met_ml: bug in def of gl_fdom when lon lat gl_fdom(i,j) -> gl_fdom(i,1)
+NetCDF_ml: ReadField_CDF also accep files without time dimension
+
 xxxxxxxxxxxxxx rv3_5_16    Peter,  12th April 2010
 
 Convection: (Advection_ml), bug in flux limitation (only used with 2008 meteo)
