@@ -1,3 +1,26 @@
+xxxxxxxxxxxxxx rv3_5_18    Dave,   14th April 2010
+
+run.pl
+
+    -- modified to do some checks which will avoid the previously
+    unhelpful crash of the code with missing rough.dat error. This
+    was 99% of the time casued by $GRID being set to one domain in
+    run.pl, but the ModelConstants_ml had an other domain.
+
+    We now check the x-dimension of ModelConstants, and in  run.pl:
+
+ die "Domain mis-match Model: $XDIM Grid $GRID" if (  
+    ( $GRID eq "EMEP" && $XDIM != 170 ) or 
+    ( $GRID eq "EECCA" && $XDIM != 132 ) or 
+    ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
+
+In addition, run.pl now compares the CM_ChemSpec file in your
+Unimod directory with that in ZCM_$Chem. This might help if we have an EmChem09RF
+version for example. The $Chem variable is added to runlabel2 and so
+stored in the netcdf files also.
+
+  $runlabel2 = "${testv}_${Chem}_${scenario}_$year\_Trend$iyr_trend";
+
 xxxxxxxxxxxxxx rv3_5_17    Peter,  13th April 2010
 
 Met_ml: bug in def of gl_fdom when lon lat gl_fdom(i,j) -> gl_fdom(i,1)

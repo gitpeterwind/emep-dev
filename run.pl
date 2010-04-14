@@ -8,7 +8,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=32:ib
+#PBS -lnodes=6:ib
 # wall time limit of run
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -92,6 +92,7 @@ use 5.6.0;
 use strict;
 use warnings;
 use File::Copy qw();
+use File::Compare;
 
 $| = 1; # autoflush STDOUT
 
@@ -131,7 +132,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2008";
+my $year = "2006";
    $year = substr($CWFBASE,0,4) if $CWF;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
@@ -160,11 +161,11 @@ my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";
 my $HALDIS      = "mifahb";
 
-my $USER       =  $PETER;
+my $USER       =  $DAVE; 
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EMEP"; # EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "FORECAST" if $CWF;
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
@@ -203,17 +204,20 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 
 my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
-my $Chem     = "EmChem09";        # Label for chemical scheme used
-#$Chem     = "EmChem03c";        # Label for chemical scheme used
-$testv       = "rv3_5_13";
+my $Chem     = "EmChem09";                   # Label for chemical scheme used
+$testv       = "rv3_5_18";
 
 #User directories
-my $ProgDir     = "$HOMEROOT/$USER/Unify/Unimod";   # input of source-code
-# Chemistry-specific files:
-my $ChemDir     = "$ProgDir/ZCM_$Chem";                    # for vocspec for this schem
+my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
+my $ChemDir  = "$ProgDir/ZCM_EmChem09"; 
 
-#my $WORKDIR     = "$WORKROOT/$USER/${testv}_$Chem.$year";  # working and result directory
-my $WORKDIR     = "$WORKROOT/$USER/test";         # working and result directory
+# Check that the code directory has the chem files we want:
+
+die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
+  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
+
+my $WORKDIR     = "$WORKROOT/$USER/${testv}.$year";  # working and result directory
+#my $WORKDIR     = "$WORKROOT/$USER/test";         # working and result directory
 my $MyDataDir   = "$HOMEROOT/$DAVE/Unify/MyData";           # for each user's private input
 my $CWFDUMPDIR  = "$WORKROOT/$USER/${testv}.dump" if $CWF;  # Forecast nest/dump files
 
@@ -286,16 +290,21 @@ my $DRY_RUN      = 0 ;  # Test script without running model (but compiling)
 
 print "$ProgDir/ModelConstants_ml.f90\n";
 open(IN,"<$ProgDir/ModelConstants_ml.f90");
-my ( $NDX, $NDY ); # Processors in x-, y-, direction
+my ( $NDX, $NDY , $XDIM ); # Processors in x-, y-, direction, and x-dimension
 while(my $line = <IN>){
     $line=~ s/!.*//; # Get rid of comment lines
     $NDX = $1 if $line =~ /\W+ NPROCX \W+ (\d+) /x ;
     $NDY = $1 if $line =~ /\W+ NPROCY \W+ (\d+) /x ;
+    $XDIM = $1 if $line =~ /\W+ IIFULLDOM \W+ (\d+) /x ;
 }
 close(IN);
 my $NPROC =  $NDX * $NDY ;
 print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
 die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
+die "Domain mis-match Model: $XDIM Grid $GRID" if ( 
+   ( $GRID eq "EMEP" && $XDIM != 170 ) or 
+   ( $GRID eq "EECCA" && $XDIM != 132 ) or 
+   ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
 
 if ( $ENV{PBS_NODEFILE} ) {
    $_ =  `wc -l $ENV{PBS_NODEFILE}`;
@@ -321,7 +330,7 @@ my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 8;        # for testing, simply reset here
+ $NTERM = 2;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
@@ -431,7 +440,7 @@ foreach my $scenflag ( @runs ) {
     print "STARTING RUN $scenario \n";
 
     my $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
-    my $runlabel2    = "${testv}_${scenario}_$year\_$iyr_trend";   # NO SPACES! LONG (written into CDF files)
+    my $runlabel2    = "${testv}_${Chem}_${scenario}_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
 
     my $RESDIR = "$WORKDIR/$scenario";
     mkdir_p($RESDIR);
@@ -595,6 +604,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 
 #Prelim BVOC attempt
     $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
+#    $ifile{"/home/mifads/TESTBVOC/testbvoc.nc"} = "LOCAL_BVOC.nc";
 
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
