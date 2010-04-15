@@ -2091,116 +2091,94 @@ end subroutine Read_Inter_CDF
 
 subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      needed,debug_flag)
-!reads data from file and interpolates data into local grid
+  !reads data from file and interpolates data into local grid
 
-!NB k coordinate in Rvar assumed as first coordinate. Could consider to change this.
+  !NB k coordinate in Rvar assumed as first coordinate. Could consider to change this.
 
   use netcdf
 
-implicit none
-character(len = *),intent(in) ::fileName,varname
-real,intent(out) :: Rvar(*)
-integer,intent(in) :: nstart
-character(len = *), optional,intent(in) :: interpol
-logical, optional, intent(in) :: needed
-integer, optional,intent(in) :: kstart!smallest k (vertical level) to read. Default: assume 2D field
-integer, optional,intent(in) :: kend!largest k to read. Default: assume 2D field
-logical, optional, intent(in) :: debug_flag
-integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
-integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k,luVarID
-integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
-integer ::alloc_err
-character*100 ::name
-real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
-integer ::ij,jdiv,idiv,Ndiv,Ndiv2,ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
-integer :: ijk1,ijk2,ijk3,ijk4
-integer ::imin,imax,jmin,jjmin,jmax,igjg,dimi,dimj,k2
-integer, allocatable:: Ivalues(:)
-real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
-real ::lat,lon,maxlon,minlon,maxlat,minlat
-logical ::fileneeded, debug,data3D
-character(len = 50) :: interpol_used, data_projection
-real :: tot,ir,jr,Grid_resolution
-type(Deriv) :: def1 ! definition of fields
+  implicit none
+  character(len = *),intent(in) ::fileName,varname
+  real,intent(out) :: Rvar(*)
+  integer,intent(in) :: nstart
+  character(len = *), optional,intent(in) :: interpol
+  logical, optional, intent(in) :: needed
+  integer, optional,intent(in) :: kstart!smallest k (vertical level) to read. Default: assume 2D field
+  integer, optional,intent(in) :: kend!largest k to read. Default: assume 2D field
+  logical, optional, intent(in) :: debug_flag
+  integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
+  integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
+  integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
+  integer ::alloc_err
+  character*100 ::name
+  real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
+  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
+  integer :: ijk1,ijk2,ijk3,ijk4
+  integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
+  integer, allocatable:: Ivalues(:)
+  real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
+  real ::lat,lon,maxlon,minlon,maxlat,minlat
+  logical ::fileneeded, debug,data3D
+  character(len = 50) :: interpol_used, data_projection
+  real :: tot,ir,jr,Grid_resolution
+  type(Deriv) :: def1 ! definition of fields
 
-real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
-integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
+  real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
+  integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
 
-fileneeded=.true.!default
-if(present(needed))then
-   fileneeded=needed
-endif
+
+  !_______________________________________________________________________________
+  !
+  !1)           General checks and init
+  !_______________________________________________________________________________
+
+  fileneeded=.true.!default
+  if(present(needed))   fileneeded=needed
 
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
   if(status == nf90_noerr) then     
-      if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), 'nstart ', nstart
+     if ( debug ) write(*,*) 'ReadCDF reading ',trim(filename), 'nstart ', nstart
   else
-!     nfetch=0
      if(fileneeded)then
         print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
         call CheckStop(fileneeded, "ReadField_CDF : file needed but not found") 
      else
-        print *, 'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
+        print *,'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
         return
      endif
   endif
 
-  
-  data3D=.false.
-  if(present(kstart).or.present(kend))then
-     call CheckStop((.not. present(kend).or. .not. present(kend)), &
-          "ReadField_CDF : both or none kstart and kend should be present") 
-     data3D=.true.
+
+  debug = .false.
+  if(present(debug_flag))then
+     debug = debug_flag .and. MasterProc
+     if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
+  end if
+
+
+  if(present(interpol))then
+     interpol_used=interpol
+  else
+     !the method chosen depends on the relative resolutions
+     if(Grid_resolution/GRIDWIDTH_M>4)then
+        interpol_used='zero_order'!usually good enough, and keeps gradients
+     else
+        interpol_used='conservative'!may be better, but more CPU expensive
+     endif
   endif
+  call CheckStop(interpol_used/='zero_order'.and.&
+                 interpol_used/='conservative'.and.&
+                 interpol_used/='mass_conservative',&
+         'interpolation method not recognized')
 
-
-debug = .false.
-if(present(debug_flag))then
-   debug = debug_flag .and. MasterProc
-   if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
-end if
-!ds debug=.true.
-  status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
-  if(status /= nf90_noerr) then     
-write(*,*) 'STUS ERROR '
-call check(status)
-     Grid_resolution=111177.4 !assume 1 degree resolution
-     !
-     ! as GRIDWIDTH_M=EARTH_RADIUS*360.0/GIMAX*PI/180.0 
-     !               = 6.370e6*360.0/360*PI/180=111177.4 m
-     !  (1 degree -> GIMAX=360)
-  endif
-  if ( debug ) write(*,*) 'ReadCDF Res: ',Grid_resolution
-  !dsQUERY stop
-!divide the coarse grid into pieces significantly smaller than the fine grid
-!only used in the conservatives cases
-  Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
-  Ndiv=max(1,Ndiv)
-
-if(present(interpol))then
-
-   interpol_used=interpol
-
-else
-!the method chosen depends on the relative resolutions
-   if(Grid_resolution/GRIDWIDTH_M>4)then
-      interpol_used='zero_order'!usually good enough, and keeps gradients
-   else
-      interpol_used='conservative'!may be better, but more CPU expensive
-   endif
-endif
-
-
-
-!1)Read data 
 
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
   if(status == nf90_noerr) then     
-      if ( debug ) write(*,*) 'ReadCDF variable exists: ',trim(varname)
+     if ( debug ) write(*,*) 'ReadCDF variable exists: ',trim(varname)
   else
-!     nfetch=0
+     !     nfetch=0
      if(fileneeded)then
         print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
         call CheckStop(fileneeded, "ReadField_CDF : variable needed but not found") 
@@ -2212,140 +2190,173 @@ endif
 
   !get dimensions id
   call check(nf90_Inquire_Variable(ncFileID,VarID,name,&
-               xtype,ndims,dimids,nAtts),"GetDimsId")
+       xtype,ndims,dimids,nAtts),"GetDimsId")
 
+  !only characters cannot be handled
+  call CheckStop(xtype==NF90_CHAR,"ReadField_CDF: Datatype not recognised")
 
   !get dimensions
   startvec=1
   dims=0
   do i=1,ndims
      call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i), &
-        len=dims(i)),"GetDims")
-      if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
+          len=dims(i)),"GetDims")
+     if ( debug ) write(*,*) 'ReadCDF size variable ',i,dims(i)
   enddo
 
-
-  call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ))
-
-  if(trim(data_projection)=="lon lat")then
-!  if(interpol_used=='mass_conservative')then
-
-!get coordinates
-!we assume first that data is originally in lon lat grid
-!check that there are dimensions called lon and lat
-
-  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ))
-  if(trim(name)/='lon')goto 447
-  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
-  if(trim(name)/='lat')goto 447
-
-  if(data3D)then
-     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
-     if(trim(name)/='k')goto 448
+  data3D=.false.
+  if(present(kstart).or.present(kend))then
+     call CheckStop((.not. present(kend).or. .not. present(kend)), &
+          "ReadField_CDF : both or none kstart and kend should be present") 
+     data3D=.true.
   endif
 
-  allocate(Rlon(dims(1)), stat=alloc_err)    
-  allocate(Rlat(dims(2)), stat=alloc_err)    
+  call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ))
+     if ( debug ) write(*,*) 'data projection ',trim(data_projection)
+
+
+  if(trim(data_projection)=="lon lat")then
+     allocate(Rlon(dims(1)), stat=alloc_err)    
+     allocate(Rlat(dims(2)), stat=alloc_err)   
+  else
+     allocate(Rlon(dims(1)*dims(2)), stat=alloc_err)    
+     allocate(Rlat(dims(1)*dims(2)), stat=alloc_err)   
+  endif
+
   status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = lonVarID)
   if(status /= nf90_noerr) then     
      status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
-     if(status /= nf90_noerr) then  
-        write(*,*)'did not find longitude variable'
-        stop
-     endif
+     call CheckStop(status /= nf90_noerr,'did not find longitude variable')
   endif
-  call check(nf90_get_var(ncFileID, lonVarID, Rlon))
-
+  
   status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = latVarID)
   if(status /= nf90_noerr) then     
      status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = latVarID)
-     if(status /= nf90_noerr) then  
-        write(*,*)'did not find latitude variable'
-        stop
+     call CheckStop(status /= nf90_noerr,'did not find latitude variable')
+  endif
+  if(trim(data_projection)=="lon lat")then
+     call check(nf90_get_var(ncFileID, lonVarID, Rlon))
+     call check(nf90_get_var(ncFileID, latVarID, Rlat))
+  else
+     call check(nf90_get_var(ncFileID, lonVarID, Rlon,start=(/1,1/),count=(/dims(1),dims(2)/)))
+     call check(nf90_get_var(ncFileID, latVarID, Rlat,start=(/1,1/),count=(/dims(1),dims(2)/)))
+  endif
+
+  !_______________________________________________________________________________
+  !
+  !2)        Coordinates conversion and interpolation
+  !_______________________________________________________________________________
+
+
+  if(trim(data_projection)=="lon lat")then
+
+     call check(nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution ))
+     if ( debug ) write(*,*) 'ReadCDF Resolution: ',Grid_resolution
+
+     !get coordinates
+     !we assume first that data is originally in lon lat grid
+     !check that there are dimensions called lon and lat
+
+     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ))
+     call CheckStop(trim(name)/='lon',"longitude not found")
+     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
+     call CheckStop(trim(name)/='lat',"latitude not found")
+
+     if(data3D)then
+        call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
+        call CheckStop(trim(name)/='k',"vertical coordinate k not found")
      endif
-  endif
-  call check(nf90_get_var(ncFileID, latVarID, Rlat))
-
-!NB: we assume regular grid
-!inverse of resolution
-  dloni=1.0/(Rlon(2)-Rlon(1))
-  dlati=1.0/(Rlat(2)-Rlat(1))
 
 
-!Find chunk of data required (local)
-maxlon=maxval(gl_stagg)
-minlon=minval(gl_stagg)
-maxlat=maxval(gb_stagg)
-minlat=minval(gb_stagg)
-!floor(minlon*dloni)=closest existing coordinate on the left (multiplied by dloni)
-!floor(minlon*dloni)-Rlon(1)*dloni = number of gridcells between start of grid and minlon
-!mod(nint((floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
-imin=mod(nint(floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-jmin=max(1,min(dims(2),nint(floor(minlat*dlati)-Rlat(1)*dlati)+1))
-imax=mod(nint(ceiling(maxlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-jmax=max(1,min(dims(2),nint(ceiling(maxlat*dlati)-Rlat(1)*dlati)+1))
+     !NB: we assume regular grid
+     !inverse of resolution
+     dloni=1.0/(Rlon(2)-Rlon(1))
+     dlati=1.0/(Rlat(2)-Rlat(1))
 
-if(maxlat>85.0.or.minlat<-85.0)then
-   imin=1
-   imax=dims(1)
-endif
 
-!latitude is sometime counted from north pole, sometimes from southpole:
-jjmin=jmin
-jmin=min(jmin,jmax)
-jmax=max(jjmin,jmax)
-      if ( debug ) write(*,"(a,4f8.2,6i8)") 'ReadCDF minmax ',&
-           minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
-if(imax<imin)then
-!crossing longitude border !
-!   write(*,*)'WARNING: crossing end of map'
-!take everything...could be memory expensive
-   imin=1
-   imax=dims(1)
-endif
-!   imin=1
-!   imax=dims(1)
-!   jmin=1
-!   jmax=dims(2)
+     !Find chunk of data required (local)
+     maxlon=maxval(gl_stagg)
+     minlon=minval(gl_stagg)
+     maxlat=maxval(gb_stagg)
+     minlat=minval(gb_stagg)
+     !floor(minlon*dloni)=closest existing coordinate on the left (multiplied by dloni)
+     !floor(minlon*dloni)-Rlon(1)*dloni = number of gridcells between start of grid and minlon
+     !mod(nint((floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
+     imin=mod(nint(floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+     jmin=max(1,min(dims(2),nint(floor(minlat*dlati)-Rlat(1)*dlati)+1))
+     imax=mod(nint(ceiling(maxlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+     jmax=max(1,min(dims(2),nint(ceiling(maxlat*dlati)-Rlat(1)*dlati)+1))
 
-  startvec(1)=imin
-  startvec(2)=jmin
-  if(ndims>2)startvec(ndims)=nstart
-  dimi=dims(1)
-  dimj=dims(2)
-  dims=1
-  dims(1)=imax-imin+1
-  dims(2)=jmax-jmin+1
+     if(maxlat>85.0.or.minlat<-85.0)then
+        !close to poles
+        imin=1
+        imax=dims(1)
+     endif
 
-  if(data3D)then
-     startvec(3)=kstart
-     dims(3)=kend-kstart+1
-  endif
+     !latitude is sometime counted from north pole, sometimes from southpole:
+     jjmin=jmin
+     jmin=min(jmin,jmax)
+     jmax=max(jjmin,jmax)
+     if(imax<imin)then
+        !crossing longitude border !
+        !   write(*,*)'WARNING: crossing end of map'
+        !take everything...could be memory expensive
+        imin=1
+        imax=dims(1)
+     endif
 
-  totsize=1
-  do i=1,ndims
-     totsize=totsize*dims(i)
-!  write(*,*)'size variable ',i,startvec(i),dims(i)
-  enddo
-!  write(*,*)'total size variable ',totsize
+     if ( debug ) write(*,"(a,4f8.2,6i8)") 'ReadCDF minmax ',&
+          minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
 
-  if(xtype==NF90_REAL)then
+
+     startvec(1)=imin
+     startvec(2)=jmin
+     if(ndims>2)startvec(ndims)=nstart
+     dims=1
+     dims(1)=imax-imin+1
+     dims(2)=jmax-jmin+1
+
+     if(data3D)then
+        startvec(3)=kstart
+        dims(3)=kend-kstart+1
+     endif
+
+     totsize=1
+     do i=1,ndims
+        totsize=totsize*dims(i)
+     enddo
+
      allocate(Rvalues(totsize), stat=alloc_err)    
      if ( debug ) then
-       write(*,"(a,2i6,a)") 'ReadCDF VarID ', VarID,NF90_MAX_VAR_DIMS,trim(varname)
-       do i=1, 10 ! NF90_MAX_VAR_DIMS ! would be 1024:w
-          write(*,"(a,6i8)") 'ReadCDFI ',i, dims(i),startvec(i),sizesvec(i)
-       end do
+        write(*,"(a,2i6,a)") 'ReadCDF VarID ', VarID,NF90_MAX_VAR_DIMS,trim(varname)
+        do i=1, ndims ! NF90_MAX_VAR_DIMS ! would be 1024:w
+           write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i),sizesvec(i)
+        end do
+        write(*,*)'total size variable (part read only)',totsize
      end if
-     
-    call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
-        errmsg="RRvalues")
+
+     call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
+          errmsg="RRvalues")
+
+     if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
+        !scale data if it is packed
+        scalefactors(1) = 1.0 !default
+        scalefactors(2) = 0.  !default
+        status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+        if(status == nf90_noerr) scalefactors(1) = scale
+        status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+        if(status == nf90_noerr) scalefactors(2) = offset
+        Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
+     endif
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
         !conserves integral (almost, does not take into account local differences in mapping factor)
         !takes weighted average over gridcells covered by model gridcell
 
+        !divide the coarse grid into pieces significantly smaller than the fine grid
         !Divide each global gridcell into Ndiv x Ndiv pieces
+        Ndiv=5*nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=max(1,Ndiv)
         Ndiv2=Ndiv*Ndiv
         !
         if(projection/='Stereographic'.and.projection/='lon lat')then
@@ -2385,7 +2396,7 @@ endif
               enddo
            enddo
         enddo
-      
+
         k2=1
         if(data3D)k2=kend-kstart+1
         do k=1,k2
@@ -2408,7 +2419,7 @@ endif
               enddo
            enddo
         enddo
-        
+
         deallocate(Ivalues)
 
      elseif(interpol_used=='zero_order')then
@@ -2427,260 +2438,159 @@ endif
                  jg=max(1,min(dims(2),nint((gb(i,j)-Rlat(startvec(2)))*dlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
                  Rvar(ijk)=Rvalues(igjgk)
-                 
+
               enddo
            enddo
         enddo
-        
-     else
-        write(*,*)'interpolation method not recognized'
-        stop
-     endif
-     
-     
-     deallocate(Rvalues)
-     
-  else
-     
-     write(*,*)'datatype not yet supported'
-     stop
-  endif
 
-  deallocate(Rlon)
-  deallocate(Rlat)
+     endif
+
 
   else ! data_projection)/="lon lat"
+
      if(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
-        
+
      call CheckStop(interpol_used=='mass_conservative', "ReadField_CDF: only linear interpolation implemented") 
-    if(interpol_used=='zero_order'.and.MasterProc)&
-         write(*,*)'zero_order interpolation asked, but performing linear interpolation'
+     if(interpol_used=='zero_order'.and.MasterProc)&
+          write(*,*)'zero_order interpolation asked, but performing linear interpolation'
 
      call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection") 
 
-    allocate(Weight1(MAXLIMAX,MAXLJMAX))
-    allocate(Weight2(MAXLIMAX,MAXLJMAX))
-    allocate(Weight3(MAXLIMAX,MAXLJMAX))
-    allocate(Weight4(MAXLIMAX,MAXLJMAX))
-    allocate(IIij(MAXLIMAX,MAXLJMAX,4))
-    allocate(JJij(MAXLIMAX,MAXLJMAX,4))
+     allocate(Weight1(MAXLIMAX,MAXLJMAX))
+     allocate(Weight2(MAXLIMAX,MAXLJMAX))
+     allocate(Weight3(MAXLIMAX,MAXLJMAX))
+     allocate(Weight4(MAXLIMAX,MAXLJMAX))
+     allocate(IIij(MAXLIMAX,MAXLJMAX,4))
+     allocate(JJij(MAXLIMAX,MAXLJMAX,4))
 
-    call grid2grid_coeff(ncFileID,IIij,JJij,Weight1,Weight2,Weight3,Weight4)
+!Make interpolation coefficients.
+!Coefficients could be saved and reused if called several times.
+     call grid2grid_coeff(IIij,JJij,Weight1,Weight2,Weight3,Weight4,Rlon,Rlat,dims(1),dims(2))
 
-    imin=MAXLIMAX
-    jmin=MAXLJMAX
-    imax=1
-    jmax=1
-    do i=1,limax
-       do j=1,ljmax
-          imin=min(imin,IIij(i,j,1))
-          imin=min(imin,IIij(i,j,2))
-          imin=min(imin,IIij(i,j,3))
-          imin=min(imin,IIij(i,j,4))
-          jmin=min(jmin,JJij(i,j,1))
-          jmin=min(jmin,JJij(i,j,2))
-          jmin=min(jmin,JJij(i,j,3))
-          jmin=min(jmin,JJij(i,j,4))
+     startvec(1)=minval(IIij(1:limax,1:ljmax,1:4))
+     startvec(2)=minval(JJij(1:limax,1:ljmax,1:4))
+     if(ndims>2)startvec(ndims)=nstart
+     dims=1
+     dims(1)=maxval(IIij(1:limax,1:ljmax,1:4))-startvec(1)+1
+     dims(2)=maxval(JJij(1:limax,1:ljmax,1:4))-startvec(2)+1
 
-          imax=max(imax,IIij(i,j,1))
-          imax=max(imax,IIij(i,j,2))
-          imax=max(imax,IIij(i,j,3))
-          imax=max(imax,IIij(i,j,4))
-          jmax=max(jmax,JJij(i,j,1))
-          jmax=max(jmax,JJij(i,j,2))
-          jmax=max(jmax,JJij(i,j,3))
-          jmax=max(jmax,JJij(i,j,4))
-       enddo
-    enddo
-    startvec(1)=imin
-    startvec(2)=jmin
-    startvec(ndims)=nstart
-    dimi=dims(1)
-    dimj=dims(2)
-    dims=1
-    dims(1)=imax-imin+1
-    dims(2)=jmax-jmin+1
-    
-    totsize=1
-    do i=1,ndims
-       totsize=totsize*dims(i)
-        ! write(*,*)'size variable ',i,startvec(i),dims(i),me,imin,imax,jmin,jmax
-    enddo
-!  write(*,*)'total size variable ',totsize
-    if(xtype==NF90_REAL)then
-       allocate(Rvalues(totsize), stat=alloc_err)    
-       if ( debug ) then
-          write(*,"(a,2i6,a)") 'ReadCDF VarID ', VarID,NF90_MAX_VAR_DIMS,trim(varname)
-          do i=1, 10 ! NF90_MAX_VAR_DIMS ! would be 1024:w
-             write(*,"(a,6i8)") 'ReadCDFI ',i, dims(i),startvec(i),sizesvec(i)
-          end do
-       end if
-    else
-       write(*,*)'datatype not yet supported'
-       stop
-    endif
+     totsize=1
+     do i=1,ndims
+        totsize=totsize*dims(i)
+     enddo
 
+     allocate(Rvalues(totsize), stat=alloc_err)    
+     if ( debug ) then
+        write(*,"(a,2i6,a)") 'ReadCDF VarID ', VarID,NF90_MAX_VAR_DIMS,trim(varname)
+        do i=1, ndims 
+           write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i),sizesvec(i)
+        end do
+        write(*,*)'total size variable (part read only)',totsize
+     end if
 
-     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-    call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
-        errmsg="RRvalues")
+     call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
+          errmsg="RRvalues")
+
+     if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
+        !scale data if it is packed
+        scalefactors(1) = 1.0 !default
+        scalefactors(2) = 0.  !default
+        status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+        if(status == nf90_noerr) scalefactors(1) = scale
+        status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+        if(status == nf90_noerr) scalefactors(2) = offset
+        Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
+     endif
+
+     k=1
+     do i=1,limax
+        do j=1,ljmax
+           ijk=i+(j-1)*MAXLIMAX
+           ijk1=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
+           ijk2=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
+           ijk3=IIij(i,j,3)-startvec(1)+1+(JJij(i,j,3)-startvec(2))*dims(1)
+           ijk4=IIij(i,j,4)-startvec(1)+1+(JJij(i,j,4)-startvec(2))*dims(1)
+           Rvar(ijk)=Weight1(i,j)*Rvalues(ijk1)+&
+                Weight2(i,j)*Rvalues(ijk2)+&
+                Weight3(i,j)*Rvalues(ijk3)+&
+                Weight4(i,j)*Rvalues(ijk4)
+
+        enddo
+     enddo
 
 
-    k=1
-    do i=1,limax
-       do j=1,ljmax
-          ijk=i+(j-1)*MAXLIMAX
-          ijk1=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
-          ijk2=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
-          ijk3=IIij(i,j,3)-startvec(1)+1+(JJij(i,j,3)-startvec(2))*dims(1)
-          ijk4=IIij(i,j,4)-startvec(1)+1+(JJij(i,j,4)-startvec(2))*dims(1)
-          Rvar(ijk)=Weight1(i,j)*Rvalues(ijk1)+&
-               Weight2(i,j)*Rvalues(ijk2)+&
-               Weight3(i,j)*Rvalues(ijk3)+&
-               Weight4(i,j)*Rvalues(ijk4)
-          
-       enddo
-    enddo
-    
+     deallocate(Weight1)
+     deallocate(Weight2)
+     deallocate(Weight3)
+     deallocate(Weight4)
+     deallocate(IIij)
+     deallocate(JJij)
 
-    deallocate(Rvalues)
-    deallocate(Weight1)
-    deallocate(Weight2)
-    deallocate(Weight3)
-    deallocate(Weight4)
-    deallocate(IIij)
-    deallocate(JJij)
-endif
+  endif
 
-!  CALL MPI_FINALIZE(INFO)
-!   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  deallocate(Rvalues)
+  deallocate(Rlon)
+  deallocate(Rlat)
+  call check(nf90_close(ncFileID))
 
-return
 
-!only for tests:
- def1%class='Readtest' !written
- def1%avg=.false.      !not used
- def1%index=0          !not used
- def1%scale=1.0      !not used
- def1%rho=.false.      !not used
- def1%inst=.true.      !not used
- def1%year=.false.     !not used
- def1%month=.false.    !not used
- def1%day=.false.      !not used
- def1%name=trim(varname)        !written
- def1%unit='g/m2'       !written
-
- if(data3D)then
-    k2=kend-kstart+1
-    n=3
-    call Out_netCDF(IOU_INST,def1,n,k2, &
-         Rvar,1.0,CDFtype=Real4,fileName_given='ReadField3D.nc')
- else
-    n=2
-    k2=1
-    call Out_netCDF(IOU_INST,def1,n,k2, &
-         Rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc')
-    
- endif
-!  CALL MPI_FINALIZE(INFO)
-!   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-!   stop
+  !  CALL MPI_FINALIZE(INFO)
+  !   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
   return
-447 continue
-  write(*,*)'NOT a longitude-latitude grid!',trim(fileName)
-  call CheckStop("projection not yet implemented") 
+     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+     if(debug)write(*,*)'writing in file'
 
-448 continue
-  write(*,*)'vertical coordinate k not found!',trim(fileName)
-  call CheckStop("Vertical coordinate not yet implemented") 
+  !only for tests:
+  def1%class='Readtest' !written
+  def1%avg=.false.      !not used
+  def1%index=0          !not used
+  def1%scale=1.0      !not used
+  def1%rho=.false.      !not used
+  def1%inst=.true.      !not used
+  def1%year=.false.     !not used
+  def1%month=.false.    !not used
+  def1%day=.false.      !not used
+  def1%name=trim(varname)        !written
+  def1%unit='g/m2'       !written
+
+  if(data3D)then
+     k2=kend-kstart+1
+     n=3
+     call Out_netCDF(IOU_INST,def1,n,k2, &
+          Rvar,1.0,CDFtype=Real4,fileName_given='ReadField3D.nc')
+  else
+     n=2
+     k2=1
+     call Out_netCDF(IOU_INST,def1,n,k2, &
+          Rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc')
+
+  endif
+  !  CALL MPI_FINALIZE(INFO)
+  !   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  !   stop
+
+  return
 
 end subroutine ReadField_CDF
 
 
 
-  subroutine grid2grid_coeff(ncFileID,IIij,JJij,&
-       Weight1,Weight2,Weight3,Weight4)
+subroutine grid2grid_coeff(IIij,JJij,Weight1,Weight2,Weight3,Weight4&
+       ,lon_data,lat_data,GIMAX_data,GJMAX_data)
 
 !makes interpolation coefficients from one grid to the other, 
 !using only latitude and longitudes of individual gridcells
 
    use Functions_ml,    only : great_circle_distance
    implicit none
-    integer,intent(in) :: ncFileID
+    integer,intent(in) :: GIMAX_data,GJMAX_data
+    real, intent(in), dimension(GIMAX_data,GJMAX_data) ::lon_data,lat_data
     real ,intent(out):: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
     real ,intent(out):: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
     integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
-    integer :: idimID,jdimID, kdimID,varid,status
     real :: dist(0:4)
-    integer :: n1,n,i,j,k,II,JJ,GIMAX_data,GJMAX_data
-    real, allocatable, dimension(:,:) ::lon_data,lat_data
-    character*80 ::data_projection
-
-    !Read dimensions (global)
-    if(me==0)then
-!       status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
-!       if(status /= nf90_noerr) then
-!          print *,'not found',trim(filename_read)
-!          return
-!       else
-!          print *,'  reading ',trim(filename_read)
-!       endif
-       data_projection=''
-       call check(nf90_get_att(ncFileID,nf90_global,"projection",data_projection))
-       !get dimensions id
-       if(trim(data_projection)=='Stereographic') then
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-       elseif(trim(data_projection)==trim('lon lat')) then
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
-       else
-          !     write(*,*)'GENERAL PROJECTION ',trim(projection)
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
-          call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-          !       WRITE(*,*) 'MPI_ABORT: ', "PROJECTION NOT RECOGNIZED"
-            !     call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
-       endif
-
-       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=idimID,len=GIMAX_data))
-       call check(nf90_inquire_dimension(ncid=ncFileID,dimID=jdimID,len=GJMAX_data))
-
-     !  write(*,*)'dimensions data grid',GIMAX_data,GJMAX_data
-    endif
-      CALL MPI_BCAST(GIMAX_data,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-      CALL MPI_BCAST(GJMAX_data,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-
-    allocate(lon_data(GIMAX_data,GJMAX_data))
-    allocate(lat_data(GIMAX_data,GJMAX_data))
-
-    if(me==0)then
-       !Read lon lat of the external grid (global)
-       if(trim(data_projection)==trim('lon lat')) then
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lon_data(:,1) ))
-          do i=1,GJMAX_data
-             lon_data(:,i)=lon_data(:,1)
-          enddo
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lat_data(1,:) ))
-          do i=1,GIMAX_data
-             lat_data(i,:)=lat_data(1,:)
-          enddo
-       else
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lon_data ))
-
-          call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-          call check(nf90_get_var(ncFileID, varID, lat_data ))
-       endif
-
-!       call check(nf90_close(ncFileID))
-
-    endif
-
-      CALL MPI_BCAST(lon_data,8*GIMAX_data*GJMAX_data,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-      CALL MPI_BCAST(lat_data,8*GIMAX_data*GJMAX_data,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    integer :: n1,n,i,j,k,II,JJ
 
     !find interpolation constants
     !note that i,j are local
@@ -2692,6 +2602,7 @@ end subroutine ReadField_CDF
              do II=1,GIMAX_data
                 !distance between (i,j) and (II,JJ)
                 dist(0)=great_circle_distance(lon_data(II,JJ),lat_data(II,JJ),gl(i,j),gb(i,j))
+!          if(me==0.and.i==1.and.j==1)write(*,*)dist(0),IIij(i,j,1),JJij(i,j,1),lon_data(II,JJ),lat_data(II,JJ),gl(i,j),gb(i,j)
                 if(dist(0)<dist(1))then
                    dist(4)=dist(3)
                    dist(3)=dist(2)
@@ -2737,12 +2648,8 @@ end subroutine ReadField_CDF
           dist(0)=(dist(3)+dist(4))
           Weight3(i,j)=(1.0-Weight1(i,j)-Weight2(i,j))*(1.0-dist(3)/dist(0))
           Weight4(i,j)=1.0-Weight1(i,j)-Weight2(i,j)-Weight3(i,j)
-
        enddo
     enddo
-
-    deallocate(lon_data)
-    deallocate(lat_data)
 
   end subroutine grid2grid_coeff
 
