@@ -1,3 +1,7 @@
+xxxxxxxxxxxxxx rv3_5_20    Agnes,   19th April 2010
+
+GlobalBCs_ml   - updated for 2008 data, also default of 1998-2008 average
+
 xxxxxxxxxxxxxx rv3_5_19    Peter,   15th April 2010
 
 Cleaned the  ReadField_CDF routine

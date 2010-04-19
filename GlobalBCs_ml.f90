@@ -354,8 +354,12 @@ endif
 !                     29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
 
 ! For trends, use defaults from 1998-2007 average (Agnes, 01.06.2009)
-   macehead_O3 = (/  40.2, 41.8, 45.1, 46.5, 43.5, 35.8, &
-                     30.4, 30.0, 33.9, 37.3, 39.6, 38.9 /)
+!   macehead_O3 = (/  40.2, 41.8, 45.1, 46.5, 43.5, 35.8, &
+!                     30.4, 30.0, 33.9, 37.3, 39.6, 38.9 /)
+
+! For trends, use defaults from 1998-2008 average (Agnes, 19.04.2010)
+   macehead_O3 = (/  40.3, 42.1, 45.4, 46.5, 43.6, 36.0, &
+                     30.4, 30.1, 33.9, 37.4, 39.4, 39.0 /)
 
 ! 01.06.2009, Joffen and Dave suggested to drop the +3 (4.5) ppb scaling
 ! for future "trends". The 1998-2007 average will be used for these.
@@ -427,12 +431,11 @@ elseif( year == 2005) then
    macehead_O3 = (/ 40.9,    41.4,    44.1,    45.6,    42.7,    32.9 &
                ,    26.7,    30.0,    33.2,    37.7,    39.5,    38.0/)
 
-!  elseif ( year == 2006 )  then ! Derwent et al., (2007)
-!    macehead_O3 = (/  42.1, 44.6, 48.7, 49.9, 44.5, 39.3, &
-!                      32.9, 31.2, 36.7, 39.9, 42.8, 43.1 /)
-
-! 2006 and 2007 are now calculated with 1998-2007 averages
+! 2006 and 2007 are calculated with using IE31 O3 data and 
+! trajectory sectors (based on PARLAM-PS and HIRLAM20 met) 
+! for 2006 and 2007, respectively
 ! Modified by Agnes, 01.06.2009
+
  elseif ( year == 2006 )  then
    macehead_O3 = (/  39.8, 42.4, 44.2, 48.3, 41.3, 39.0, &
                      31.9, 29.5, 34.8, 37.4, 41.9, 39.9 /)
@@ -440,22 +443,26 @@ elseif( year == 2005) then
  elseif ( year == 2007 )  then
    macehead_O3 = (/  40.7, 38.2, 46.1, 46.4, 40.9, 34.5, &
                      31.2, 28.8, 33.3, 36.1, 40.6, 41.7 /)
-! hb for now 2008=2007
+
+! 2008 Mace Head correction calculated using IE31 O3 data and 
+! trajectory sectors (based on HIRLAM20 met) for 2008  
+! AN, 19.04.2010
  elseif ( year == 2008 )  then
-   macehead_O3 = (/  40.7, 38.2, 46.1, 46.4, 40.9, 34.5, &
-                     31.2, 28.8, 33.3, 36.1, 40.6, 41.7 /)
+   macehead_O3 = (/  41.0, 45.1, 48.0, 46.3, 44.2, 37.1, &
+                     30.8, 31.3, 34.3, 37.5, 37.9, 40.0 /)
+
+
 !---------------------------------------------------------------------------
- elseif ( year > 2008 .and. &   ! use defoult Mace-Head correction
+ elseif ( year > 2008 .and. &   ! use default Mace-Head correction
           .not.FORECAST ) then  ! (10-yr average) on FORECAST mode
    write(unit=errmsg,fmt=*) &
        "ERROR: No Mace Head correction for this year yet! ", year
    call CheckStop(errmsg)
-!  else  ! Defaults, from 1990-2000 average !
-!    macehead_O3 = (/  37.6, 40.0, 42.9, 43.2, 41.9, 33.9, &
-!                      29.4, 30.1, 33.3, 36.5, 35.1, 37.8 /)
- else  ! Defaults, from 1998-2007 average (Agnes, 01.06.2009)
-   macehead_O3 = (/  40.2, 41.8, 45.1, 46.5, 43.5, 35.8, &
-                     30.4, 30.0, 33.9, 37.3, 39.6, 38.9 /)
+
+ else ! Defaults, from 1998-2008 average (Agnes, 19.04.2010)
+   macehead_O3 = (/  40.3, 42.1, 45.4, 46.5, 43.6, 36.0, &
+                     30.4, 30.1, 33.9, 37.4, 39.4, 39.0 /)
+
  end if
 !=========== Generated from Mace Head Data =======================
 
