@@ -1,3 +1,12 @@
+xxxxxxxxxxxxxx rv3_5_21    Peter, Alvaro,   21st April 2010
+
+Two bugs found by Alvaro (CWF):
+Nest_ml: istart,jstart,iend,jend, was wrongly defined in mode 11,12 or forecast
+
+NetCDF_ml:"if((abs(rdays-rdays_time(1))>0.00001))"
+replaced "<" with ">". Used when outputting 3D on a limited number of levels.
+
+
 xxxxxxxxxxxxxx rv3_5_20    Agnes,   19th April 2010
 
 GlobalBCs_ml   - updated for 2008 data, also default of 1998-2008 average

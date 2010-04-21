@@ -67,7 +67,7 @@ module Nest_ml
   use Functions_ml,    only : great_circle_distance
   use ModelConstants_ml,    only : KMAX_MID, NPROC &
           , FORECAST & ! AMVB 2009-11-06: nested input/output on FORECAST mode
-          , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY
+          , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN
   use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
        , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
   use Chemfields_ml,  only : xn_adv, xn_shl    ! emep model concs.
@@ -268,16 +268,16 @@ contains
         " Forecast nest/dump at",                             &
         indate%year,indate%month,indate%day,                  &
         indate%hour,indate%seconds/60,mod(indate%seconds,60)
-      istart=1
-      jstart=1
-      iend=GIMAX
-      jend=GJMAX
+      istart=RUNDOMAIN(1)
+      jstart=RUNDOMAIN(3)
+      iend=RUNDOMAIN(2)
+      jend=RUNDOMAIN(4)
     elseif(MODE == 10.or.MODE == 12)then
        if(.not.WriteNow)return
-       istart=1
-       jstart=1
-       iend=GIMAX
-       jend=GJMAX
+       istart=RUNDOMAIN(1)
+       jstart=RUNDOMAIN(3)
+       iend=RUNDOMAIN(2)
+       jend=RUNDOMAIN(4)
     else
        if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
     endif
