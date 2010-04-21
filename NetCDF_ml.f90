@@ -798,7 +798,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
         call check(nf90_get_var(ncFileID, timeVarID, rdays_time,start=(/ nrecords /)))
         !check if this is a newer time
-        if((abs(rdays-rdays_time(1))<0.00001))then!0.00001is about 1 second
+        if((abs(rdays-rdays_time(1))>0.00001))then!0.00001is about 1 second
            nrecords=nrecords+1 !start a new record
         endif
      else
