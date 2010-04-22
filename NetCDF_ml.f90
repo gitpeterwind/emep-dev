@@ -56,7 +56,6 @@
 
   use Chemfields_ml,   only : xn_shl,xn_adv
   use CheckStop_ml,    only: CheckStop,StopAll
-  !ds use Derived_ml,      only :IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR ,IOU_MON, IOU_DAY
   use ChemSpecs_shl_ml , only :NSPEC_SHL
   use ChemSpecs_adv_ml , only :NSPEC_ADV
   use ChemSpecs_tot_ml , only :NSPEC_TOT
@@ -77,7 +76,7 @@
   use OwnDataTypes_ml,  only : Deriv
   use Par_ml, only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax,gi0,gj0
-  use PhysicalConstants_ml,  only : PI
+  use PhysicalConstants_ml,  only : PI, EARTH_RADIUS
   use TimeDate_ml, only: nmdays,leapyear ,current_date, date
 
 
@@ -1625,472 +1624,9 @@ deallocate(Rvalues)
 
 end subroutine Read_Inter_CDF
 
-!DSsubroutine Read_Local_Inter_CDF(fileName,varname,Rvar,varGIMAX,varGJMAX,NLanduse_DEF,needed)
-!DS!reads data from file and interpolates data into local grid
-!DS
-!DS  use netcdf
-!DS  use LandDefs_ml,  only: LandDefs
-!DS  use DO3SE_ml,     only: do3se
-!DSuse Functions_ml, only: inside_1234
-!DS
-!DSimplicit none
-!DScharacter(len = *),intent(in) ::fileName,varname
-!DSreal,intent(out) :: Rvar(*)
-!DSinteger,intent(in) :: varGIMAX,varGJMAX
-!DSinteger,intent(out) :: NLanduse_DEF
-!DS!character(len = *), optional,intent(in) :: interpol
-!DSlogical, optional, intent(in) :: needed
-!DSinteger :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
-!DSinteger :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k,luVarID
-!DSinteger :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
-!DSinteger ::alloc_err
-!DScharacter*100 ::name
-!DSreal :: scale,offset,scalefactors(2),di,dj,dloni,dlati
-!DSinteger ::ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
-!DSinteger ::imin,imax,jmin,jjmin,jmax,igjg,dimi,dimj
-!DSinteger*1, allocatable:: Bvalues(:,:)
-!DSinteger*2, allocatable:: Ivalues(:,:)
-!DSreal, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
-!DSreal ::maxlon,minlon,maxlat,minlat
-!DSlogical ::fileneeded
-!DScharacter(len = 20) :: interpol_used
-!DS!NOT_USED  integer, parameter ::NLU_EMEP=20,NLU_TERRAIN=25
-!DS!NOT_USED  real :: convT_E(NLU_TERRAIN,NLU_EMEP)
-!DSreal :: tot
-!DStype(Deriv) :: def1 ! definition of fields
-!DS
-!DSinteger :: npft,name_size,NLANDUSE_grid
-!DSinteger, parameter ::NLANDUSE_PFT=20, NLANDUSE_GLC=23
-!DSreal GLC2PFT(NLANDUSE_PFT,NLANDUSE_GLC),Rvar_save(NLANDUSE_GLC)
-!DS
-!DS!  type :: land_input
-!DS!     character(len=name_size) :: name
-!DS!     character(len=9) :: code
-!DS!     character(len=3) :: type   ! Ecocystem type, see headers
-!DS!     real    ::  hveg_max
-!DS!     real    ::  Albedo
-!DS!     integer ::  eNH4         ! Possible source of NHx
-!DS!     integer ::  SGS50        ! Start of grow season at 50 deg. N
-!DS!     real    ::  DSGS         ! Increase in SGS per degree N
-!DS!     integer ::  EGS50        ! End of grow season at 50 deg. N
-!DS!     real    ::  DEGS         ! Increase in EGS per degree N
-!DS!     real    ::  LAImin       ! Min value of LAI
-!DS!     real    ::  LAImax       ! Max value of LAI
-!DS!     integer ::  SLAIlen      ! Length of LAI growth periods
-!DS!     integer ::  ELAIlen      ! Length of LAI decline periods
-!DS!  end type land_input
-!DS
-!DSname_size=len(LandDefs%name)
-!DSNLANDUSE_grid=0!number of categories found in grid
-!DS
-!DSfileneeded=.true.!default
-!DSif(present(needed))then
-!DS   fileneeded=needed
-!DSendif
-!DS
-!DSGLC2PFT=0.0
-!DSGLC2PFT(5,1)=1.0!to correct for latitude
-!DSGLC2PFT(7,2)=1.0!to correct for latitude
-!DSGLC2PFT(7,3)=0.5!to correct for latitude
-!DSGLC2PFT(13,3)=0.5!to correct for latitude
-!DSGLC2PFT(1,4)=1.0!to correct for latitude
-!DSGLC2PFT(3,5)=1.0!
-!DSGLC2PFT(1,6)=0.5!to correct for latitude
-!DSGLC2PFT(7,6)=0.5!to correct for latitude
-!DSGLC2PFT(7,7)=1.0!to correct for latitude
-!DSGLC2PFT(7,8)=1.0!to correct for latitude
-!DSGLC2PFT(7,9)=0.5!to correct for latitude
-!DSGLC2PFT(13,9)=0.5!to correct for latitude
-!DSGLC2PFT(17,10)=1.0!NEW defined BARE AREAS
-!DSGLC2PFT(9,11)=1.0!
-!DSGLC2PFT(10,12)=1.0!
-!DSGLC2PFT(13,13)=1.0!to correct for latitude
-!DSGLC2PFT(13,14)=0.5!to correct for latitude
-!DSGLC2PFT(17,14)=0.5!
-!DSGLC2PFT(13,15)=1.0!to correct for latitude
-!DSGLC2PFT(15,16)=1.0!
-!DSGLC2PFT(7,17)=0.2!
-!DSGLC2PFT(13,17)=0.4!
-!DSGLC2PFT(15,17)=0.4!
-!DSGLC2PFT(13,18)=0.5!
-!DSGLC2PFT(15,18)=0.5!
-!DSGLC2PFT(17,19)=1.0!NEW BARE AREAS
-!DSGLC2PFT(18,20)=1.0!NEW WATER
-!DSGLC2PFT(19,21)=1.0!NEW ICE/SNOW
-!DSGLC2PFT(20,22)=1.0!NEW URBAN
-!DSGLC2PFT(20,23)=0.0!undefined
-!DS
-!DS
-!DS
-!DS
-!DS!1)Read data
-!DS  !open an existing netcdf dataset
-!DS  status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
-!DS  if(status == nf90_noerr) then
-!DS     print *, 'reading ',trim(filename)
-!DS  else
-!DS!     nfetch=0
-!DS     if(fileneeded)then
-!DS     print *, 'file does not exist: ',trim(fileName),nf90_strerror(status)
-!DS     call CheckStop(fileneeded, "Read_Inter_CDF : file needed but not found")
-!DS     else
-!DS     print *, 'file does not exist (but not needed): ',trim(fileName),nf90_strerror(status)
-!DS        print *, 'file not needed '
-!DS     return
-!DS     endif
-!DS  endif
-!DS
-!DS
-!DS  !test if the variable is defined and get varID:
-!DS  status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
-!DS  if(status == nf90_noerr) then
-!DS    ! print *, 'variable exists: ',trim(varname)
-!DS  else
-!DS!     nfetch=0
-!DS     if(fileneeded)then
-!DS        print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
-!DS        call CheckStop(fileneeded, "Read_Inter_CDF : variable needed but not found")
-!DS     else
-!DS        print *, 'variable does not exist (but not needed): ',trim(varname),nf90_strerror(status)
-!DS        return
-!DS     endif
-!DS  endif
-!DS
-!DS  !get dimensions id
-!DS  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-!DS
-!DS
-!DS  !get dimensions
-!DS  startvec=1
-!DS  dims=0
-!DS  do i=1,ndims
-!DS     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
-!DS!     write(*,*)'size variable ',i,dims(i)
-!DS  enddo
-!DS
-!DS!get coordinates
-!DS!we assume first that data is originally in lon lat grid
-!DS!check that there are dimensions called lon and lat
-!DS
-!DS  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ))
-!DS  if(trim(name)/='lon')goto 444
-!DS  call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
-!DS  if(trim(name)/='lat')goto 444
-!DS
-!DS  allocate(Rlon(dims(1)), stat=alloc_err)
-!DS  allocate(Rlat(dims(2)), stat=alloc_err)
-!DS  status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = lonVarID)
-!DS  if(status /= nf90_noerr) then
-!DS     status=nf90_inq_varid(ncid = ncFileID, name = 'LON', varID = lonVarID)
-!DS     if(status /= nf90_noerr) then
-!DS        write(*,*)'did not find longitude variable'
-!DS        call StopAll('did not find longitude variable')
-!DS     endif
-!DS  endif
-!DS  call check(nf90_get_var(ncFileID, lonVarID, Rlon))
-!DS
-!DS  status=nf90_inq_varid(ncid = ncFileID, name = 'lat', varID = latVarID)
-!DS  if(status /= nf90_noerr) then
-!DS     status=nf90_inq_varid(ncid = ncFileID, name = 'LAT', varID = latVarID)
-!DS     if(status /= nf90_noerr) then
-!DS        write(*,*)'did not find latitude variable'
-!DS        call StopAll('did not find latitude variable')
-!DS     endif
-!DS  endif
-!DS  call check(nf90_get_var(ncFileID, latVarID, Rlat))
-!DS
-!DS!NB: we assume regular grid
-!DS!inverse of resolution
-!DS  dloni=1.0/(Rlon(2)-Rlon(1))
-!DS  dlati=1.0/(Rlat(2)-Rlat(1))
-!DS
-!DS
-!DS!Find chunk of data required (local)
-!DSmaxlon=maxval(gl_stagg)
-!DSminlon=minval(gl_stagg)
-!DSmaxlat=maxval(gb_stagg)
-!DSminlat=minval(gb_stagg)
-!DSimin=mod(nint((minlon-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
-!DSjmin=max(1,min(dims(2),nint((minlat-Rlat(1))*dlati)+1))
-!DSimax=mod(nint((maxlon-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
-!DSjmax=max(1,min(dims(2),nint((maxlat-Rlat(1))*dlati)+1))
-!DS
-!DS!latitude is sometime counted from north pole, sometimes from southpole:
-!DSjjmin=jmin
-!DSjmin=min(jmin,jmax)
-!DSjmax=max(jjmin,jmax)
-!DS!  write(*,"(a,4f8.2,6i8)")'minmax ',minlon,maxlon,minlat,maxlat,imin,imax,jmin,jmax
-!DSif(imax<imin)then
-!DS!crossing longitude border ... TO CHECK!
-!DS   write(*,*)'WARNING: crossing end of map: NOT TESTED'
-!DS!take everything...could be memory expensive
-!DS   imin=1
-!DS   imax=dims(1)
-!DSendif
-!DS
-!DS  startvec(1)=imin
-!DS  startvec(2)=jmin
-!DS  dimi=dims(1)
-!DS  dimj=dims(2)
-!DS dims(1)=imax-imin+1
-!DS dims(2)=jmax-jmin+1
-!DS
-!DS  totsize=1
-!DS  do i=1,ndims
-!DS     totsize=totsize*dims(i)
-!DS!  write(*,*)'size variable ',i,startvec(i),dims(i)
-!DS  enddo
-!DS!  write(*,*)'total size variable ',totsize
-!DS  allocate(Rvalues(totsize), stat=alloc_err)
-!DS
-!DS  if(xtype==NF90_BYTE)then
-!DS!     allocate(Bvalues(totsize), stat=alloc_err)
-!DS     allocate(Bvalues(dims(1),dims(2)), stat=alloc_err)
-!DS     call check(nf90_get_var(ncFileID, VarID, Bvalues,start=startvec,count=dims))
-!DS
-!DS     ijn=0
-!DS     do n=1,NLANDUSE_PFT
-!DS     do j=1,ljmax
-!DS     do i=1,limax
-!DS           ijn=i+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS           Rvar(ijn)=0.0
-!DS     enddo
-!DS     enddo
-!DS     enddo
-!DS
-!DS     do j=1,ljmax
-!DS     do i=1,limax
-!DS
-!DS! We take the smallest lon-lat rectangle which includes the entire gridcells.
-!DS! This will include points than are not in the (i,j) gridcell, these
-!DS! are then filtered out by "inside_1234".
-!DS
-!DS        imin=mod(nint((gl_stagg(i-1,j-1)-Rlon(1))*dloni),dimi)+1
-!DS        imin=min(imin,mod(nint((gl_stagg(i,j-1)-Rlon(1))*dloni),dimi)+1)
-!DS        imin=min(imin,mod(nint((gl_stagg(i-1,j)-Rlon(1))*dloni),dimi)+1)
-!DS        imin=min(imin,mod(nint((gl_stagg(i,j)-Rlon(1))*dloni),dimi)+1)
-!DS        imax=mod(nint((gl_stagg(i-1,j-1)-Rlon(1))*dloni),dimi)+1
-!DS        imax=max(imax,mod(nint((gl_stagg(i,j-1)-Rlon(1))*dloni),dimi)+1)
-!DS        imax=max(imax,mod(nint((gl_stagg(i-1,j)-Rlon(1))*dloni),dimi)+1)
-!DS        imax=max(imax,mod(nint((gl_stagg(i,j)-Rlon(1))*dloni),dimi)+1)
-!DS
-!DS
-!DS        jmin=max(1,min(dimj,nint((gb_stagg(i-1,j-1)-Rlat(1))*dlati)+1))
-!DS        jmin=min(jmin,max(1,min(dimj,nint((gb_stagg(i,j-1)-Rlat(1))*dlati)+1)))
-!DS        jmin=min(jmin,max(1,min(dimj,nint((gb_stagg(i-1,j)-Rlat(1))*dlati)+1)))
-!DS        jmin=min(jmin,max(1,min(dimj,nint((gb_stagg(i,j)-Rlat(1))*dlati)+1)))
-!DS
-!DS        jmax=max(1,min(dimj,nint((gb_stagg(i-1,j-1)-Rlat(1))*dlati)+1))
-!DS        jmax=max(jmax,max(1,min(dimj,nint((gb_stagg(i,j-1)-Rlat(1))*dlati)+1)))
-!DS        jmax=max(jmax,max(1,min(dimj,nint((gb_stagg(i-1,j)-Rlat(1))*dlati)+1)))
-!DS        jmax=max(jmax,max(1,min(dimj,nint((gb_stagg(i,j)-Rlat(1))*dlati)+1)))
-!DS
-!DS        do ig=imin,imax
-!DS           do jg=jmin,jmax
-!DS                 if(  inside_1234(gl_stagg(i,j),gl_stagg(i,j-1),gl_stagg(i-1,j-1),gl_stagg(i-1,j),&
-!DS                                  gb_stagg(i,j),gb_stagg(i,j-1),gb_stagg(i-1,j-1),gb_stagg(i-1,j),&
-!DS                                  Rlon(ig),Rlat(jg))                                             )then
-!DS!                    Rvar(ijn)=Rvar(ijn)+convT_E(Bvalues(ig-startvec(1)+1,jg-startvec(2)+1),n)
-!DS                    n=Bvalues(ig-startvec(1)+1,jg-startvec(2)+1)
-!DS                    NLANDUSE_grid=max(n,NLANDUSE_grid)
-!DS                    if(n>NLANDUSE_GLC)then
-!DS                       write(*,*)n,ig,jg,gl_stagg(i,j),gb_stagg(i,j)
-!DS                       write(*,*)ig-startvec(1)+1,jg-startvec(2)+1,dims(1),dims(2),Bvalues(ig-startvec(1)+1,jg-startvec(2)+1)
-!DS                       call StopAll('STOP')
-!DS
-!DS                    endif
-!DS                    do npft=1,NLANDUSE_PFT
-!DS                     ijn=i+(j-1)*varGIMAX+(npft-1)*varGIMAX*varGJMAX
-!DS                      Rvar(ijn)=Rvar(ijn)+GLC2PFT(npft,n)
-!DS                    enddo!
-!DS                    !Rvar(ijn)=Rvar(ijn)+1.0
-!DS                 endif
-!DS           enddo
-!DS        enddo
-!DS     enddo
-!DS     enddo
-!DS     if(NLANDUSE_grid>NLANDUSE_GLC)then
-!DS        write(*,*)'The number og LU categories found is larger than the max allowed. Increase NLANDUSE_GLC'
-!DS        write(*,*)'current value NLANDUSE_GLC= ',NLANDUSE_GLC,', NLANDUSE found = ',NLANDUSE_grid
-!DS        call StopAll('error reading landuse CDF file')
-!DS     endif
-!DS     tot=0.0
-!DS     do j=1,ljmax
-!DS     do i=1,limax
-!DS        tot=0.0
-!DS        do n=1,NLANDUSE_PFT
-!DS           ijn=i+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS           tot=tot+Rvar(ijn)
-!DS        enddo
-!DS        if(tot<0.99)then
-!DS!not defined, like north pole
-!DS
-!DS           if(i>1)then
-!DS              do n=1,NLANDUSE_PFT
-!DS                 ijn=i-1+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS                 Rvar(ijn+1)=Rvar(ijn)
-!DS              enddo
-!DS           elseif(j>1)then
-!DS              do n=1,NLANDUSE_PFT
-!DS                 ijn=i+(j-2)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS                 Rvar(ijn+varGIMAX)=Rvar(ijn)
-!DS              enddo
-!DS           else
-!DS              write(*,*)'error',me,i,j
-!DS              do n=1,NLANDUSE_PFT
-!DS                 ijn=i+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS                 write(*,*)'error',n,Rvar(ijn)
-!DS              enddo!
-!DS              call StopAll('GetCDF nRvar error')
-!DS           endif
-!DS           tot=100.0
-!DS      endif
-!DS      tot=100.0/tot
-!DS       do n=1,NLANDUSE_PFT
-!DS           ijn=i+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS           Rvar(ijn)=Rvar(ijn)*tot
-!DS        enddo!
-!DS
-!DS     enddo
-!DS     enddo
-!DS
-!DS     deallocate(Bvalues)
-!DS  else
-!DS
-!DS     write(*,*)'datatype not yet supported'!Char
-!DS     call StopAll('GetCDF datatype not yet supported')
-!DS  endif
-!DS
-!DSdeallocate(Rlon)
-!DSdeallocate(Rlat)
-!DSdeallocate(Rvalues)
-!DS
-!DS
-!DS
-!DS!     write(*,*)'Reading LANDUSE'
-!DS!READ LU descriptions:
-!DS  call check(nf90_inq_varid(ncid = ncFileID, name = 'PFT_names', varID = VarID))
-!DS  !get dimensions id
-!DS  call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
-!DS  dims=0
-!DS  do i=1,ndims
-!DS     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(i),  len=dims(i)))
-!DS!     write(*,*)'dimensions',dims(i)
-!DS  enddo
-!DS  NLanduse_DEF=dims(2)!dims(2) gives the number of different LU defined
-!DS     if(NLANDUSE_grid>NLANDUSEMAX)then
-!DS        write(*,*)'The number og LU categories defined is larger than the max allowed. Increase NLANDUSEMAX'
-!DS        write(*,*)'current value NLANDUSEMAX= ',NLANDUSEMAX,', NLANDUSE found = ',NLANDUSE_grid
-!DS        call StopAll('error defining landuse from CDF file')
-!DS     endif
-!DS  !Read LU properties
-!DS  do i=1,NLanduse_DEF
-!DS     call check(nf90_get_var(ncFileID, VarID, name,start=(/1,i/),count=(/dims(1),1/)))
-!DS!     write(*,*)'name: ',trim(name)
-!DS     call check(nf90_inq_varid(ncid = ncFileID, name = name, varID = luVarID))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "name",  LandDefs(i)%name))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "code",  LandDefs(i)%code))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "type",  LandDefs(i)%type))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "hveg_max",  LandDefs(i)%hveg_max))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "Albedo",  LandDefs(i)%Albedo))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "eNH4",  LandDefs(i)%eNH4))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "SGS50",  LandDefs(i)%SGS50))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "DSGS",  LandDefs(i)%DSGS))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "EGS50",  LandDefs(i)%EGS50))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "DEGS",  LandDefs(i)%DEGS))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "LAImin",  LandDefs(i)%LAImin))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "LAImax",  LandDefs(i)%LAImax))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "SLAIlen",  LandDefs(i)%SLAIlen))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "ELAIlen ",  LandDefs(i)%ELAIlen ))
-!DS
-!DS
-!DS      call check(nf90_get_att(ncFileID, luvarID, "name",  do3se(i)%name))
-!DS     call check(nf90_get_att(ncFileID, luvarID, "code",  do3se(i)%code))
-!DS       call check(nf90_get_att(ncFileID, luvarID, "g_max",  do3se(i)%g_max))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_min",  do3se(i)%f_min))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_phen_a",  do3se(i)%f_phen_a))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_phen_b",  do3se(i)%f_phen_b))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_phen_c",  do3se(i)%f_phen_c))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_phen_d ",  do3se(i)%f_phen_d ))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_phen_Slen",  do3se(i)%f_phen_Slen))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_phen_Elen",  do3se(i)%f_phen_Elen))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "Astart_rel",  do3se(i)%Astart_rel))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "Aend_rel",  do3se(i)%Aend_rel))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "f_light",  do3se(i)%f_light))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "T_min",  do3se(i)%T_min))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "T_opt",  do3se(i)%T_opt))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "T_max",  do3se(i)%T_max))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "RgsS",  do3se(i)%RgsS))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "RgsO",  do3se(i)%RgsO))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "VPD_max",  do3se(i)%VPD_max))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "VPD_min",  do3se(i)%VPD_min))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "SWP_max",  do3se(i)%SWP_max))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "PWP",  do3se(i)%PWP))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "rootdepth",  do3se(i)%rootdepth))
-!DS        call check(nf90_get_att(ncFileID, luvarID, "Lw",  do3se(i)%Lw))
-!DS
-!DS!     write(*,*) LandDefs(i)
-!DS  enddo
-!DS
-!DS
-!DS
-!DS do j=1,ljmax
-!DS    do i=1,limax
-!DS       tot=0.0
-!DS        do n=1,NLANDUSE_PFT
-!DS           ijn=i+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS           tot=tot+Rvar(ijn)
-!DS        enddo
-!DS        if(tot<99.or.tot>101)then
-!DS           write(*,*)'NORMALIZATION ERROR ',i,j,tot
-!DS           do n=1,NLANDUSE_PFT
-!DS              ijn=i+(j-1)*varGIMAX+(n-1)*varGIMAX*varGJMAX
-!DS
-!DS              write(*,*)'ERROR ',n,Rvar(ijn)
-!DS           enddo
-!DS           call StopAll('error in glc2pft')
-!DS
-!DS        endif
-!DS     enddo
-!DS enddo
-!DS
-!DS return
-!DS
-!DS def1%class='Landuse' !written
-!DS def1%avg=.false.      !not used
-!DS def1%index=0          !not used
-!DS def1%scale=scale      !not used
-!DS def1%rho=.false.      !not used
-!DS def1%inst=.true.      !not used
-!DS def1%year=.false.     !not used
-!DS def1%month=.false.    !not used
-!DS def1%day=.false.      !not used
-!DS def1%name='GLC2000'        !written
-!DS def1%unit='category'       !written
-!DS!NB: does not work together with other output routines. (bug)
-!DS do n= 1,NLANDUSE_PFT
-!DS  write( def1%name,fmt='(i2.2)')n
-!DS   ! Send 1-D array into 3-D:
-!DS call Out_netCDF(IOU_INST,def1,2,1, &
-!DS    Rvar((1+(n-1)*varGIMAX*varGJMAX):(n*varGIMAX*varGJMAX)),&
-!DS     1.0,CDFtype=Real4,fileName_given='landuse.nc')
-!DS! call Out_netCDF(IOU_INST,def1,2,1,Rvar,1.0,CDFtype=Real4,fileName_given='lu.nc')
-!DSenddo
-!DS  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-!DS  CALL MPI_FINALIZE(INFO)
-!DS  call StopAll('Read_Local_Inter_CDF pre444')
-!DS  return
-!DS444 continue
-!DS  write(*,*)'NOT a longitude-latitude grid!',trim(fileName)
-!DS  write(*,*)'case not yet implemented'
-!DS  call StopAll('Read_Local_Inter_CDF 444 case not yet implemented')
-!DS
-!DS
-!DSend subroutine Read_Local_Inter_CDF
-
 
 subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
-     needed,debug_flag)
+     needed,debug_flag,Undef_threshold)
   !reads data from file and interpolates data into local grid
 
   !NB k coordinate in Rvar assumed as first coordinate. Could consider to change this.
@@ -2106,22 +1642,25 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, optional,intent(in) :: kstart!smallest k (vertical level) to read. Default: assume 2D field
   integer, optional,intent(in) :: kend!largest k to read. Default: assume 2D field
   logical, optional, intent(in) :: debug_flag
+  real, optional, intent(in) :: Undef_threshold  ! used to exclude areas < Undef_threshold
+
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
   integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
-  integer ::alloc_err
+  integer ::alloc_err, nf_status
   character*100 ::name
   real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
   integer ::ij,jdiv,idiv,Ndiv,Ndiv2,ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
   integer :: ijk1,ijk2,ijk3,ijk4
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
-  integer, allocatable:: Ivalues(:)
+  integer, allocatable:: Ivalues(:), Vvalues(:)  ! I counts all data, V counts data > Undef_threshold
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection
   real :: tot,ir,jr,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
+  logical ::  Undef_used
 
   real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
@@ -2134,6 +1673,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   fileneeded=.true.!default
   if(present(needed))   fileneeded=needed
+  Undef_used = .false.
+  if(present(Undef_threshold)) Undef_used = .true.
 
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
@@ -2159,6 +1700,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   if(present(interpol))then
      interpol_used=interpol
+     if ( debug ) write(*,*) 'ReadCDF interp request: ',trim(filename),':', trim(interpol)
   else
      !the method chosen depends on the relative resolutions
      if(Grid_resolution/GRIDWIDTH_M>4)then
@@ -2171,6 +1713,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  interpol_used/='conservative'.and.&
                  interpol_used/='mass_conservative',&
          'interpolation method not recognized')
+  if ( debug ) write(*,*) 'ReadCDF interp set: ',trim(filename),':', trim(interpol)
 
 
   !test if the variable is defined and get varID:
@@ -2211,16 +1754,18 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      data3D=.true.
   endif
 
-  call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ))
+  call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ),"Proj")
      if ( debug ) write(*,*) 'data projection ',trim(data_projection)
 
 
   if(trim(data_projection)=="lon lat")then
      allocate(Rlon(dims(1)), stat=alloc_err)    
      allocate(Rlat(dims(2)), stat=alloc_err)   
+     if ( debug ) write(*,*) 'data allocLL ',trim(data_projection), alloc_err
   else
      allocate(Rlon(dims(1)*dims(2)), stat=alloc_err)    
      allocate(Rlat(dims(1)*dims(2)), stat=alloc_err)   
+     if ( debug ) write(*,*) 'data allocElse ',trim(data_projection), alloc_err
   endif
 
   status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = lonVarID)
@@ -2235,8 +1780,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      call CheckStop(status /= nf90_noerr,'did not find latitude variable')
   endif
   if(trim(data_projection)=="lon lat")then
-     call check(nf90_get_var(ncFileID, lonVarID, Rlon))
-     call check(nf90_get_var(ncFileID, latVarID, Rlat))
+     call check(nf90_get_var(ncFileID, lonVarID, Rlon), 'Getting Rlon')
+     call check(nf90_get_var(ncFileID, latVarID, Rlat), 'Getting Rlat')
   else
      call check(nf90_get_var(ncFileID, lonVarID, Rlon,start=(/1,1/),count=(/dims(1),dims(2)/)))
      call check(nf90_get_var(ncFileID, latVarID, Rlat,start=(/1,1/),count=(/dims(1),dims(2)/)))
@@ -2250,20 +1795,29 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   if(trim(data_projection)=="lon lat")then
 
-     call check(nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution ))
-     if ( debug ) write(*,*) 'ReadCDF Resolution: ',Grid_resolution
+!ds remioved for now, set later
+!     Grid_resolution = -999
+     !call check(nf90_get_att(ncFileID, nf90_global, &
+     !      "Grid_resolution", Grid_resolution ), &
+     !         "Checking Grid resolution:" // trim(fileName))
+     !status = nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
+!
+!     write(*,*) "Checking Grid resolution:" // trim(fileName), &
+!           Grid_resolution, ' Stat ', status
+!
+!     if ( debug ) write(*,*) 'ReadCDF Resolution: ',Grid_resolution
 
      !get coordinates
      !we assume first that data is originally in lon lat grid
      !check that there are dimensions called lon and lat
 
-     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ))
+     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ),name)
      call CheckStop(trim(name)/='lon',"longitude not found")
-     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ))
+     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ),name)
      call CheckStop(trim(name)/='lat',"latitude not found")
 
      if(data3D)then
-        call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
+        call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ),name)
         call CheckStop(trim(name)/='k',"vertical coordinate k not found")
      endif
 
@@ -2273,12 +1827,21 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      dloni=1.0/(Rlon(2)-Rlon(1))
      dlati=1.0/(Rlat(2)-Rlat(1))
 
+     Grid_resolution = EARTH_RADIUS*360.0/dims(1)*PI/180.0
 
      !Find chunk of data required (local)
      maxlon=maxval(gl_stagg)
      minlon=minval(gl_stagg)
      maxlat=maxval(gb_stagg)
      minlat=minval(gb_stagg)
+
+     if(debug) then
+         write(*,*) "SET Grid resolution:" // trim(fileName), Grid_resolution
+         write(*,"(a,6f8.2,2x,4f8.2)") 'ReadCDF LL stuff ',&
+           Rlon(2),Rlon(1),dloni, Rlat(2),Rlat(1), dlati, &
+           maxlon, minlon, maxlat, minlat
+     end if
+
      !floor(minlon*dloni)=closest existing coordinate on the left (multiplied by dloni)
      !floor(minlon*dloni)-Rlon(1)*dloni = number of gridcells between start of grid and minlon
      !mod(nint((floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
@@ -2370,6 +1933,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
            Ivalues(ij)=0
            Rvar(ij)=0.0
         enddo
+        if( Undef_used)then
+           allocate(Vvalues(MAXLIMAX*MAXLJMAX*k2))
+           Vvalues(:) = 0.0
+        end if
 
         do jg=1,dims(2)
            do jdiv=1,Ndiv
@@ -2389,7 +1956,14 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           ijk=k+(ij-1)*k2
                           Ivalues(ijk)=Ivalues(ijk)+1
                           igjgk=igjg+(k-1)*dims(1)*dims(2)
-                          Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
+                          if( Undef_used ) then
+                            if ( Rvalues(igjgk) > Undef_threshold )then
+                               Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
+                               Vvalues(ijk)= Vvalues(ijk)+1
+                            end if
+                          else
+                             Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
+                          end if
                        enddo
                     endif
                  enddo
@@ -2413,12 +1987,24 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                        Rvar(ijk)=Rvar(ijk)/Ndiv2! Total sum of values from all cells is constant
                     else
                        !used for example for emissions in kg/m2 (or kg/m2/s)
-                       Rvar(ijk)=Rvar(ijk)/Ivalues(ijk)! integral is approximately conserved
+                       ! integral is approximately conserved
+                          if( Undef_used ) then
+                              if( Vvalues(ijk) > 0 ) then
+                                  Rvar(ijk)=Rvar(ijk)/Vvalues(ijk)
+                               end if  !no need for Vvvalues=0 case, as Rvar then zero
+                          else
+                              Rvar(ijk)=Rvar(ijk)/Ivalues(ijk)
+                          end if
                     endif
                  endif
               enddo
            enddo
         enddo
+
+        if( Undef_used ) then
+            if(debug) write(*,*) "ReadField_CDF Ivalues, VValues ", sum(Ivalues), sum(Vvalues)
+            deallocate(Vvalues)
+        end if
 
         deallocate(Ivalues)
 
