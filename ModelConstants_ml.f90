@@ -52,21 +52,21 @@ module ModelConstants_ml
   logical, parameter, public :: IS_GLOBAL = .false.
 
   integer, public, parameter ::  &
-    IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
-  ! IIFULLDOM = 132, JJFULLDOM = 159 &! x,y-Dimensions of full EECA domain
-  ! IIFULLDOM = 360, JJFULLDOM = 180 &! x,y-Dimensions of full GLOBAL domain
-  ! IIFULLDOM = 201, JJFULLDOM = 161 &! x,y-Dimensions of full GEMS/MACC domain
+  !  IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
+   IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+  ! IIFULLDOM = 360, JJFULLDOM = 180 ! x,y-Dimensions of full GLOBAL domain
+  ! IIFULLDOM = 201, JJFULLDOM = 161 ! x,y-Dimensions of full GEMS/MACC domain
 
  !ds - I added these offsets, but now suspect I was thinking wrong.
  ! The difference between EMEP and EECCA is confusing...
- ! integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
-  integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
+  integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
+ ! integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-  ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+   RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
@@ -74,8 +74,8 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   3        & ! Actual number of processors in longitude
+  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
 !=============================================================================
@@ -143,7 +143,7 @@ module ModelConstants_ml
     ,DEBUG_LANDPFTS       = .false. &
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
-    ,DEBUG_SETUP_1DBIO    = .true.   !
+    ,DEBUG_SETUP_1DBIO    = .false.   !
 
 !=============================================================================
   ! 3)  Source-receptor runs?

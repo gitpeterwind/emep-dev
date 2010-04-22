@@ -252,10 +252,10 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
       VG_LABELS = (/ "VG" /)
-    integer, public, parameter, dimension(6) :: &
-      VG_SPECS = (/ O3, NH3, SO2, PPM25,  PPMCO , HNO3/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-      VG_LCS  = (/ "Grid", "CF  ", "SNL ", "GR  " /)
+    integer, public, parameter, dimension(1) :: &
+      VG_SPECS = (/ O3 /) ! , NH3, SO2, PPM25,  PPMCO , HNO3/)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+      VG_LCS  = (/ "Grid" /) ! , "CF  ", "SNL ", "GR  " /)
 
 !    type(Deriv), public, &
 !     dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
@@ -272,22 +272,22 @@ private
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
      VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", &
                         "AFST_0.0_IAM_DF", &
                         "AFST_0.0_BF    ", &
                         "AFST_1.6_BF    ", &
                         "AFST_0.0_IAM_CR", &
                         "AFST_3.0_IAM_CR", &
-                        "AFST_6.0_IAM_CR", &
+!                        "AFST_6.0_IAM_CR", &
                         "AFST_0.0_IAM_MF", &
                         "AFST_1.0_IAM_MF", & ! WGSR POD1 birch
                         "AFST_1.0_IAM_DF", & ! WGSR POD1
                         "AFST_1.6_IAM_MF", &
-                        "MMAOT_30_IAM_DF", &
+!                        "MMAOT_30_IAM_DF", &
                         "MMAOT_40_IAM_DF", & ! WGSR beech
                         "MMAOT_40_IAM_MF", & ! WGSR birch
-                        "MMAOT_30_IAM_CR", & ! only iam allowed
+!                        "MMAOT_30_IAM_CR", & ! only iam allowed
                         "MMAOT_40_IAM_CR", &
                         "EUAOT_40_IAM_CR", &
                         "MMAOT_40_IAM_WH" /) !NB -last not found. Could
@@ -313,16 +313,16 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
       METCONC_PARAMS = (/ "RH      " &
-                         ,"CanopyO3", "VPD     ", "FstO3   " &
-                         ,"USTAR   ", "INVL    "  &
+                         ,"CanopyO3" & !SKIP ,"VPD     ", "FstO3   " &
+                        !SKIP  ,"USTAR   ", "INVL    "  &
                        /)
                           ! "g_sto" needs more work - only set as L%g_sto
     integer, public, save :: MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3,  &
            MMC_VPD, MMC_FST
-    character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
-      MET_LCS  = (/ "GR    " , "CF    ", "IAM_DF", "IAM_MF"/)
+    character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
+      MET_LCS  = (/ "GR    " , "CF    " /) !, "IAM_DF", "IAM_MF"/)
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       !MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)

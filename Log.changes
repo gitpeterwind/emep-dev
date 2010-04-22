@@ -1,3 +1,16 @@
+xxxxxxxxxxxxxx rv3_5_22    Dave,  22nd April 2010
+
+DryDep, My_DryDep, My_Derived
+
+Bug-fix needed when reducing number of Derived outputs:
+
+  Hard-coded numbers (1..3) in Mosaic_Met for RTH replaved by MMC_RH
+  MMC_USTAR etc.  Prevents assignment when variables now asked for in My_Derived
+
+Also number of default outputs reduced. Will continue this process further
+one day. Use of d_2d and EXTRA_SITES in My_Outputs also very crude - should
+really be improved,... one day.
+
 xxxxxxxxxxxxxx rv3_5_21    Peter, Alvaro,   21st April 2010
 
 Two bugs found by Alvaro (CWF):

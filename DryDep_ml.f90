@@ -67,7 +67,8 @@ module DryDep_ml
 
 
 use LandDefs_ml, only : LandDefs !hf CoDep extra
-use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
+use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
+   ,MMC_USTAR, MMC_RH, MMC_INVL  !
 
  !dsVDS use Aero_DryDep_ml,    only : Aero_Rb
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
@@ -358,7 +359,7 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
     Mosaic_Gsur(:,:)  = 0.0
     Mosaic_Gns(:,:)   = 0.0
     Mosaic_Met(:,:)   = 0.0
-    Mosaic_Met(3,0) = rh2m(i,j,1)  ! NWP output
+    if(MMC_RH >0) Mosaic_Met(MMC_RH,0) = rh2m(i,j,1)  ! NWs 3 P output
 
     Vg_ratio(:) = 0.0
     Sumcover = 0.0
@@ -427,9 +428,9 @@ use My_Derived_ml, only : METCONC_PARAMS      ! ->  d_2d, IOU_INST, D2_VG etc...
 
          Grid_snow(i,j) = Grid_snow(i,j) +  L%coverage * snow_iL 
 
-         Mosaic_Met(1,iL) = L%ustar
-         Mosaic_Met(2,iL) = L%invL
-         Mosaic_Met(3,iL) = L%rh
+         if( MMC_USTAR >0) Mosaic_Met(MMC_USTAR,iL) = L%ustar !ds was 1
+         if( MMC_INVL  >0) Mosaic_Met(MMC_INVL ,iL) = L%invL  !ds was 2
+         if( MMC_RH    >0) Mosaic_Met(MMC_RH   ,iL) = L%rh    !ds was 3
 !if( debug_flag ) then
 !   write(6,"(a,i4,a,2f12.3)") "MOSAIC ", iL, &
 !     trim(METCONC_PARAMS(3)), Mosaic_Met(3,iL), Mosaic_Met(3,0)

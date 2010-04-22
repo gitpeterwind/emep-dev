@@ -75,8 +75,7 @@ integer, public, parameter :: &
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE =    13              ! No. Misc. met. params  ( e.g. T2, d_2d)
-    !,NXTRA_SITE =    32           ! No. Misc. met. params  ( e.g. T2, d_2d) inc columns
+    ,NXTRA_SITE =    5              ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
 !GCDS    SITE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO, IXADV_CH4, IXADV_C2H6 /) 
@@ -96,8 +95,8 @@ integer, public, parameter :: &
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
    SITE_XTRA=      (/  "D2D  ","th   ","T2   ","D2D  ",&
-                       "D2D  ","D2D  ","D2D  ","D2D  ", &
-                       "D2D  ","D2D  ","D2D  ","D2D  ", &
+!                       "D2D  ","D2D  ","D2D  ","D2D  ", &
+!                       "D2D  ","D2D  ","D2D  ","D2D  ", &
 !                       "D2D  ","D2D  ","D2D  ","D2D  ",&
 !                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
 !                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
@@ -110,8 +109,8 @@ integer, public, parameter :: &
    character(len=18), public, parameter, dimension(NXTRA_SITE) :: &
     SITE_XTRA_CODE= (/ &
      "HMIX           ","th             ","T2             ","PSURF          ", &
-     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
-     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
+!     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
+!     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
 !     "COLUMN_CO_k08  ","COLUMN_C2H6_k08","COLUMN_HCHO_k08","COLUMN_CH4_k08 ", "COLUMN_NO2_k08 ",&
 !     "COLUMN_CO_k12  ","COLUMN_C2H6_k12","COLUMN_HCHO_k12","COLUMN_CH4_k12 ", "COLUMN_NO2_k12 ",&
 !     "COLUMN_CO_k16  ","COLUMN_C2H6_k16","COLUMN_HCHO_k16","COLUMN_CH4_k16 ", "COLUMN_NO2_k16 ",&
@@ -120,8 +119,8 @@ integer, public, parameter :: &
    
    integer,           public, parameter, dimension(NXTRA_SITE) :: &
    SITE_XTRA_INDEX=  (/  0, 0,  0,  0, &
-                         0, 0,  0,  0, &
-                         0, 0,  0,  0, &
+!                         0, 0,  0,  0, &
+!                         0, 0,  0,  0, &
 !                         0, 0,  0,  0, &
 !                         0, 0,  0,  0, 0, &
 !                         0, 0,  0,  0, 0, &
