@@ -1,3 +1,12 @@
+xxxxxxxxxxxxxx rv3_5_23    Peter, Dave  23rd April 2010
+
+ReadField_CDF:
+Can read latlon fields with undefined values. Define UnDef to give value put into
+ the gridcells which are not defined.
+
+PhysicalConstants_ml: earthradius
+
+
 xxxxxxxxxxxxxx rv3_5_22    Dave,  22nd April 2010
 
 DryDep, My_DryDep, My_Derived

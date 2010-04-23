@@ -1626,7 +1626,7 @@ end subroutine Read_Inter_CDF
 
 
 subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
-     needed,debug_flag,Undef_threshold)
+     needed,debug_flag,Undef)
   !reads data from file and interpolates data into local grid
 
   !NB k coordinate in Rvar assumed as first coordinate. Could consider to change this.
@@ -1642,7 +1642,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer, optional,intent(in) :: kstart!smallest k (vertical level) to read. Default: assume 2D field
   integer, optional,intent(in) :: kend!largest k to read. Default: assume 2D field
   logical, optional, intent(in) :: debug_flag
-  real, optional, intent(in) :: Undef_threshold  ! used to exclude areas < Undef_threshold
+  real, optional, intent(in) :: Undef ! Value put into the undefined gridcells
 
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
@@ -1653,18 +1653,18 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer ::ij,jdiv,idiv,Ndiv,Ndiv2,ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
   integer :: ijk1,ijk2,ijk3,ijk4
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
-  integer, allocatable:: Ivalues(:), Vvalues(:)  ! I counts all data, V counts data > Undef_threshold
+  integer, allocatable:: Ivalues(:)  ! I counts all data
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection
   real :: tot,ir,jr,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
-  logical ::  Undef_used
+  logical ::  Undef_used,OnlyDefinedValues
 
   real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
-
+  real :: FillValue=0
 
   !_______________________________________________________________________________
   !
@@ -1673,8 +1673,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   fileneeded=.true.!default
   if(present(needed))   fileneeded=needed
-  Undef_used = .false.
-  if(present(Undef_threshold)) Undef_used = .true.
 
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
@@ -1698,16 +1696,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   end if
 
 
+  interpol_used='zero_order'!default
   if(present(interpol))then
      interpol_used=interpol
      if ( debug ) write(*,*) 'ReadCDF interp request: ',trim(filename),':', trim(interpol)
-  else
-     !the method chosen depends on the relative resolutions
-     if(Grid_resolution/GRIDWIDTH_M>4)then
-        interpol_used='zero_order'!usually good enough, and keeps gradients
-     else
-        interpol_used='conservative'!may be better, but more CPU expensive
-     endif
   endif
   call CheckStop(interpol_used/='zero_order'.and.&
                  interpol_used/='conservative'.and.&
@@ -1737,6 +1729,14 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   !only characters cannot be handled
   call CheckStop(xtype==NF90_CHAR,"ReadField_CDF: Datatype not recognised")
+
+  !Find whether Fill values are defined 
+  status=nf90_get_att(ncFileID, VarID, "_FillValue", FillValue)
+  OnlyDefinedValues=.true.
+  if(status == nf90_noerr)then
+     OnlyDefinedValues=.false.
+     if ( debug ) write(*,*)' FillValue (not counted)',FillValue
+  endif
 
   !get dimensions
   startvec=1
@@ -1787,6 +1787,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      call check(nf90_get_var(ncFileID, latVarID, Rlat,start=(/1,1/),count=(/dims(1),dims(2)/)))
   endif
 
+
+
+
   !_______________________________________________________________________________
   !
   !2)        Coordinates conversion and interpolation
@@ -1828,6 +1831,12 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      dlati=1.0/(Rlat(2)-Rlat(1))
 
      Grid_resolution = EARTH_RADIUS*360.0/dims(1)*PI/180.0
+
+     !the method chosen depends on the relative resolutions
+     if(.not.present(interpol).and.Grid_resolution/GRIDWIDTH_M>4)then
+        interpol_used='zero_order'!usually good enough, and keeps gradients
+    endif
+    if ( debug ) write(*,*) 'interpol_used: ',interpol_used
 
      !Find chunk of data required (local)
      maxlon=maxval(gl_stagg)
@@ -1910,6 +1919,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
         if(status == nf90_noerr) scalefactors(2) = offset
         Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
+        FillValue=FillValue*scalefactors(1)+scalefactors(2)
+        if ( debug ) write(*,*)' FillValue scaled to',FillValue
      endif
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
@@ -1931,12 +1942,12 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
         do ij=1,MAXLIMAX*MAXLJMAX*k2
            Ivalues(ij)=0
-           Rvar(ij)=0.0
+           if(present(UnDef))then
+              Rvar(ij)=UnDef!default value
+           else
+              Rvar(ij)=0.0
+           endif
         enddo
-        if( Undef_used)then
-           allocate(Vvalues(MAXLIMAX*MAXLJMAX*k2))
-           Vvalues(:) = 0.0
-        end if
 
         do jg=1,dims(2)
            do jdiv=1,Ndiv
@@ -1956,21 +1967,20 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           ijk=k+(ij-1)*k2
                           Ivalues(ijk)=Ivalues(ijk)+1
                           igjgk=igjg+(k-1)*dims(1)*dims(2)
-                          if( Undef_used ) then
-                            if ( Rvalues(igjgk) > Undef_threshold )then
-                               Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
-                               Vvalues(ijk)= Vvalues(ijk)+1
-                            end if
-                          else
+                          
+                          if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                              Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
-                          end if
+                          else
+                             !Not defined: don't include this Rvalue
+                             Ivalues(ijk)=Ivalues(ijk)-1
+                          endif
+
                        enddo
                     endif
                  enddo
               enddo
            enddo
         enddo
-
         k2=1
         if(data3D)k2=kend-kstart+1
         do k=1,k2
@@ -1978,9 +1988,11 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               do j=1,ljmax
                  ij=i+(j-1)*MAXLIMAX
                  ijk=k+(ij-1)*k2
-                 if(Ivalues(ijk)<=0)then
-                    write(*,*)'ERROR. no values found!',i,j,k,me,maxlon,minlon,maxlat,minlat
-                    call CheckStop("Interpolation error") 
+                 if(Ivalues(ijk)<=0.)then
+                    if( .not.present(UnDef))then
+                       write(*,*)'ERROR. no values found!',i,j,k,me,maxlon,minlon,maxlat,minlat
+                       call CheckStop("Interpolation error") 
+                    endif
                  else
                     if(interpol_used=='mass_conservative')then
                        !used for example for emissions in kg (or kg/s)
@@ -1988,23 +2000,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     else
                        !used for example for emissions in kg/m2 (or kg/m2/s)
                        ! integral is approximately conserved
-                          if( Undef_used ) then
-                              if( Vvalues(ijk) > 0 ) then
-                                  Rvar(ijk)=Rvar(ijk)/Vvalues(ijk)
-                               end if  !no need for Vvvalues=0 case, as Rvar then zero
-                          else
-                              Rvar(ijk)=Rvar(ijk)/Ivalues(ijk)
-                          end if
+                       Rvar(ijk)=Rvar(ijk)/Ivalues(ijk)
+
                     endif
                  endif
               enddo
            enddo
         enddo
-
-        if( Undef_used ) then
-            if(debug) write(*,*) "ReadField_CDF Ivalues, VValues ", sum(Ivalues), sum(Vvalues)
-            deallocate(Vvalues)
-        end if
 
         deallocate(Ivalues)
 
@@ -2023,15 +2025,18 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                  ig=max(1,min(dims(1),ig))
                  jg=max(1,min(dims(2),nint((gb(i,j)-Rlat(startvec(2)))*dlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                 Rvar(ijk)=Rvalues(igjgk)
-
+                 if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                    Rvar(ijk)=Rvalues(igjgk)
+                 else
+                    Rvar(ijk)=UnDef
+                 endif
               enddo
            enddo
         enddo
 
      endif
-
-
+!_________________________________________________________________________________________________________
+!_________________________________________________________________________________________________________
   else ! data_projection)/="lon lat"
 
      if(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
@@ -2041,6 +2046,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
           write(*,*)'zero_order interpolation asked, but performing linear interpolation'
 
      call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection") 
+     call CheckStop(present(Undef), "Default values filling not implemented") 
 
      allocate(Weight1(MAXLIMAX,MAXLJMAX))
      allocate(Weight2(MAXLIMAX,MAXLJMAX))
@@ -2125,7 +2131,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   return
      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-     if(debug)write(*,*)'writing in file'
+     if(debug)write(*,*)'writing results in file'
 
   !only for tests:
   def1%class='Readtest' !written
@@ -2152,8 +2158,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
           Rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc')
 
   endif
+     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
   !  CALL MPI_FINALIZE(INFO)
-  !   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
   !   stop
 
   return

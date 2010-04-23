@@ -48,6 +48,7 @@ implicit none
 
   real, public, parameter  ::    &
        GRAV    = 9.807           &   ! Gravity, m s-2
+    ,  EARTH_RADIUS = 6.37e6     &   ! 
     ,  CP      = 1004.0          &   ! Specific heat at const. pressure
     ,  KAPPA   = RGAS_KG/CP      &   
     ,  KARMAN  = 0.41            &   ! Von Karman  (=0.35 elsehwere in code!)
