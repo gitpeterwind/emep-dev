@@ -8,7 +8,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=6:ib
+#PBS -lnodes=8:ib
 # wall time limit of run
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -165,7 +165,7 @@ my $USER       =  $DAVE;
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EMEP"; # EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "FORECAST" if $CWF;
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
@@ -589,7 +589,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
                                    "GLOBAL_Boundary_and_Initial_Conditions.nc";
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
     $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc";
-    $ifile{"$DataDir/AircraftEmis.nc"} = "AircraftEmis.nc";
+    $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
+    $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
 
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
