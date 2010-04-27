@@ -74,7 +74,7 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   3        & ! Actual number of processors in longitude
+    NPROCX      =   4        & ! Actual number of processors in longitude
   , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
