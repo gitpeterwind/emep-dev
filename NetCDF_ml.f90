@@ -66,8 +66,8 @@
                                   ,grid_north_pole_longitude&
                                   ,GlobalPosition,gb_fdom,gl_fdom,ref_latitude&
                                   ,projection, sigma_mid,gb_stagg,gl_stagg,gl&
-                                  ,gb,lb2ij
-  use ModelConstants_ml, only : KMAX_MID, runlabel1, runlabel2 &
+                                  ,gb,lb2ij,A_bnd,B_bnd
+  use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                                 ,MasterProc & 
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
                                 ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
@@ -78,6 +78,7 @@
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax,gi0,gj0
   use PhysicalConstants_ml,  only : PI, EARTH_RADIUS
   use TimeDate_ml, only: nmdays,leapyear ,current_date, date
+  use Functions_ml, only: StandardAtmos_km_2_kPa
 
 
   implicit none
@@ -1190,7 +1191,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   logical :: fileneeded
   integer :: status,ndims,alloc_err
   integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
-  integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
+  integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS)
   integer :: ncFileID,VarID,i,j,k
   character*100::name
   real :: scale,offset,scalefactors(2)
@@ -1415,7 +1416,7 @@ character(len = *), optional,intent(in) :: interpol
 logical, optional, intent(in) :: needed
 integer :: ncFileID,VarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
 integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
-integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
+integer :: startvec(NF90_MAX_VAR_DIMS)
 integer ::alloc_err
 character*100 ::name
 real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
@@ -1646,7 +1647,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
-  integer :: startvec(NF90_MAX_VAR_DIMS),sizesvec(NF90_MAX_VAR_DIMS)
+  integer :: startvec(NF90_MAX_VAR_DIMS)
   integer ::alloc_err, nf_status
   character*100 ::name
   real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
@@ -1658,13 +1659,18 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection
-  real :: tot,ir,jr,Grid_resolution
+  real :: tot,ir,jr,Grid_resolution,A_bnd_ext(KMAX_BND),B_bnd_ext(KMAX_BND)
   type(Deriv) :: def1 ! definition of fields
+  integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
+  real :: P_FL(0:NFLmax),Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
   logical ::  Undef_used,OnlyDefinedValues
 
   real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
   real :: FillValue=0
+  logical :: Flight_Levels
+  integer :: k_FL,k_FL2
+!  real :: temp(MAXLIMAX, MAXLJMAX,KMAX_MID)
 
   !_______________________________________________________________________________
   !
@@ -1787,6 +1793,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      call check(nf90_get_var(ncFileID, latVarID, Rlat,start=(/1,1/),count=(/dims(1),dims(2)/)))
   endif
 
+  Flight_Levels=.false.
+  !for the FL case we assume the surface to be very low. This is to avoid problems with levels below surface.
+  do k=1,KMAX_BND
+     A_bnd_ext(k)=A_bnd(k)
+     B_bnd_ext(k)=B_bnd(k)
+  enddo
+  B_bnd_ext(KMAX_BND)=3.0!will put lowest level at P=3*P_surf = very high pressure ,i.e. "low altitude"
 
 
 
@@ -1798,18 +1811,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   if(trim(data_projection)=="lon lat")then
 
-!ds remioved for now, set later
-!     Grid_resolution = -999
-     !call check(nf90_get_att(ncFileID, nf90_global, &
-     !      "Grid_resolution", Grid_resolution ), &
-     !         "Checking Grid resolution:" // trim(fileName))
-     !status = nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
-!
-!     write(*,*) "Checking Grid resolution:" // trim(fileName), &
-!           Grid_resolution, ' Stat ', status
-!
-!     if ( debug ) write(*,*) 'ReadCDF Resolution: ',Grid_resolution
-
      !get coordinates
      !we assume first that data is originally in lon lat grid
      !check that there are dimensions called lon and lat
@@ -1820,8 +1821,25 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      call CheckStop(trim(name)/='lat',"latitude not found")
 
      if(data3D)then
-        call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ),name)
-        call CheckStop(trim(name)/='k',"vertical coordinate k not found")
+        call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(3), name=name ))
+        if(trim(name)=='FL')then
+           !special vertical levels for Aircrafts
+           !make table for conversion Flight Level -> Pressure
+           !Hard coded because non-standard anyway. 610 meters layers
+           do k=0,NFLmax
+              P_FL(k)=1000*StandardAtmos_km_2_kPa(k*0.610)
+           enddo
+           Flight_Levels=.true.
+           call CheckStop(interpol_used/='mass_conservative',&
+           "only mass_conservative interpolation implemented for Flight Levels")
+           
+           !need average surface pressure for the current month
+           !montly average is needed, not instantaneous pressure
+           call ReadField_CDF('SurfacePressure.nc','surface_pressure',&
+                Psurf_ref,current_date%month,needed=.true.,interpol='zero_order',debug_flag=debug_flag)
+        else
+           call CheckStop(trim(name)/='k',"vertical coordinate k not found")
+        endif
      endif
 
 
@@ -1891,6 +1909,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      if(data3D)then
         startvec(3)=kstart
         dims(3)=kend-kstart+1
+        if(Flight_Levels)dims(3)=NFL
+        if(Flight_Levels)startvec(3)=1
+        if(ndims>3)startvec(ndims)=nstart
      endif
 
      totsize=1
@@ -1900,9 +1921,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      allocate(Rvalues(totsize), stat=alloc_err)    
      if ( debug ) then
-        write(*,"(a,2i6,a)") 'ReadCDF VarID ', VarID,NF90_MAX_VAR_DIMS,trim(varname)
-        do i=1, ndims ! NF90_MAX_VAR_DIMS ! would be 1024:w
-           write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i),sizesvec(i)
+        write(*,"(a,1i6,a)") 'ReadCDF VarID ', VarID,trim(varname)
+        do i=1, ndims ! NF90_MAX_VAR_DIMS would be 1024
+           write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i)
         end do
         write(*,*)'total size variable (part read only)',totsize
      end if
@@ -1963,19 +1984,51 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
                        if(data3D)k2=kend-kstart+1
-                       do k=1,k2
-                          ijk=k+(ij-1)*k2
-                          Ivalues(ijk)=Ivalues(ijk)+1
-                          igjgk=igjg+(k-1)*dims(1)*dims(2)
-                          
-                          if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
-                             Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
-                          else
-                             !Not defined: don't include this Rvalue
-                             Ivalues(ijk)=Ivalues(ijk)-1
-                          endif
+                       if(.not. Flight_Levels)then
+                          do k=1,k2
+                             ijk=k+(ij-1)*k2
+                             Ivalues(ijk)=Ivalues(ijk)+1
+                             igjgk=igjg+(k-1)*dims(1)*dims(2)
+                             
+                             if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
+                             else
+                                !Not defined: don't include this Rvalue
+                                Ivalues(ijk)=Ivalues(ijk)-1
+                             endif
+                          enddo
+                       else
+                          !Flight_Levels
+                          !start filling levels from surface and upwards
+                          !add emissions at every emep OR FL level boundary
+                          k_FL=1
+                          k_FL2=0!last index of entirely included FL layer
+                          P_FL(0)=A_bnd_ext(KMAX_MID+1)+B_bnd_ext(KMAX_MID+1)*Psurf_ref(i,j)
+                          do k=KMAX_MID,KMAX_MID-k2+1,-1
+                             ijk=k-(KMAX_MID-k2)+(ij-1)*k2
+                             P_EMEP=A_bnd_ext(k)+B_bnd_ext(k)*Psurf_ref(i,j)
+                             do while(P_FL(k_FL)>P_EMEP.and.k_FL<NFL)
+                                dp=min(A_bnd_ext(k+1)+B_bnd_ext(k+1)*Psurf_ref(i,j),P_FL(k_FL2))-P_FL(k_FL)
+                                igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
+                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
+                                k_FL2=k_FL
+                                k_FL=k_FL+1
+                             enddo
+                             Ivalues(ijk)=Ivalues(ijk)+1
+                             if(k_FL<=NFL)then
+                                if(P_FL(k_FL2)<Psurf_ref(i,j))then
+                                   !normal: levels are above surface
+                                   dp=min(A_bnd_ext(k+1)+B_bnd_ext(k+1)*Psurf_ref(i,j),P_FL(k_FL2))-P_EMEP
+                                else
+                                   !layer is below surface (def of topography is not compatible) 
+                                   dp=P_FL(k_FL2)-P_EMEP
+                                endif
+                                igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
+                                Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
+                             endif
+                          enddo
+                       endif !Flight levels
 
-                       enddo
                     endif
                  enddo
               enddo
@@ -2073,9 +2126,9 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
      allocate(Rvalues(totsize), stat=alloc_err)    
      if ( debug ) then
-        write(*,"(a,2i6,a)") 'ReadCDF VarID ', VarID,NF90_MAX_VAR_DIMS,trim(varname)
+        write(*,"(2a)") 'ReadCDF VarID ', trim(varname)
         do i=1, ndims 
-           write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i),sizesvec(i)
+           write(*,"(a,6i8)") 'ReadCDF ',i, dims(i),startvec(i)
         end do
         write(*,*)'total size variable (part read only)',totsize
      end if
@@ -2149,8 +2202,32 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   if(data3D)then
      k2=kend-kstart+1
      n=3
+
      call Out_netCDF(IOU_INST,def1,n,k2, &
           Rvar,1.0,CDFtype=Real4,fileName_given='ReadField3D.nc')
+!output Flight levels (reverse order of indices)
+!     do k=1,2
+!       do j=1,ljmax
+!           do i=1,limax
+!              temp(i,j,k)=0.0
+!           enddo
+!        enddo
+!     enddo
+!     do k=KMAX_MID,KMAX_MID-k2+1,-1
+!        write(*,*)k,k+(KMAX_MID-k2),kend,kstart
+!       do j=1,ljmax
+!           do i=1,limax
+!              ijk=k-(KMAX_MID-k2)+(i+(j-1)*MAXLIMAX-1)*k2
+!              temp(i,j,k)=Rvar(ijk)
+!           enddo
+!        enddo
+!     enddo
+!     call Out_netCDF(IOU_INST,def1,n, KMAX_MID,&
+!          temp,1.0,CDFtype=Real4,fileName_given='ReadField3D.nc')
+
+     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+    CALL MPI_FINALIZE(INFO)
+     stop
   else
      n=2
      k2=1

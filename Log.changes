@@ -1,3 +1,17 @@
+xxxxxxxxxxxxxx rv3_5_24    Peter  27th April 2010
+
+In order to be able to read the aircraft emissions given in flight levels, the 
+ReadField_CDF routine has been adapted for this very specific task.
+It must use monthly surface pressure average. This is given in a separate file, 
+which is produce from IFS 0.2 degrees 2008.
+The Makefile must be adapted for recursive calls.
+Gives slightly different results, since topography is taken into account now
+
+Files modified:
+NetCDF_ml.f90, Emissions_ml.f90, run.pl, Makefile, Makefile_stallo, ModelConstants_ml 
+(put NPROCX=4, since there are only advantges running on stallo with 8 compred to 6 CPU)
+
+
 xxxxxxxxxxxxxx rv3_5_23    Peter, Dave  23rd April 2010
 
 ReadField_CDF:

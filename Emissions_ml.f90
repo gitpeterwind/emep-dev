@@ -860,7 +860,7 @@ airn(k,i,j)=0.0
 enddo
 enddo
 enddo
-call ReadField_CDF('AircraftEmis.nc','NOx',airn,nstart=current_date%month,kstart=kstart,kend=kend,interpol='mass_conservative', &
+call ReadField_CDF('AircraftEmis_FL.nc','NOx',airn,nstart=current_date%month,kstart=kstart,kend=kend,interpol='mass_conservative', &
      needed=.true.,debug_flag=.true.)
 
 !convert from kg(NO2)/month into molecules/cm3/s
