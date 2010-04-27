@@ -53,6 +53,7 @@ module Functions_ml
                             ! used. (E.g. for H2O2 in ACID versions)
 
   public :: StandardAtmos_kPa_2_km   ! US Standard Atmosphere conversion
+  public :: StandardAtmos_km_2_kPa   ! US Standard Atmosphere conversion
 
   public :: inside_1234 !test wether a point is inside the quadrilateral 1234 
 
@@ -278,6 +279,30 @@ module Functions_ml
   end subroutine bilin_interp_elem
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+
+ elemental function StandardAtmos_km_2_kPa(h_km) result (p_kPa)
+ !=======================================================================
+   implicit none
+
+  !+ Converts height (km)  to pressure (kPa) for a US standard Atmosphere
+  !  Valid up to 20 km
+  !
+  ! pw 07/4/2010
+
+   real :: p_kPa
+   real   , intent(in)          :: h_km
+   real :: t    ! Temperature (K)
+
+   if( h_km < 11.0 ) then   ! = p_kPa > 22.632
+      ! t = 288.15/(p_kPa/101.325)**(-1.0/5.255876)
+      !- use the power function replacament, m**n == exp(n*log m)
+      p_kPa = 101.325*exp(-5.255876*log(288.15/(288.15-6.5*h_km)))
+   else
+      p_kPa =  22.632*exp(-0.1576884*(h_km - 11.0)  )
+      
+   end if
+   
+ end function StandardAtmos_km_2_kPa
 
  !=======================================================================
  elemental function StandardAtmos_kPa_2_km(p_kPa) result (h_km)
