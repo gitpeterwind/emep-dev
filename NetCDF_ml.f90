@@ -1659,7 +1659,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection
-  real :: tot,ir,jr,Grid_resolution,A_bnd_ext(KMAX_BND),B_bnd_ext(KMAX_BND)
+  real :: tot,ir,jr,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
@@ -1667,7 +1667,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
   real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
-  real :: FillValue=0
+  real :: FillValue=0,Pcounted
   logical :: Flight_Levels
   integer :: k_FL,k_FL2
 !  real :: temp(MAXLIMAX, MAXLJMAX,KMAX_MID)
@@ -1794,13 +1794,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   endif
 
   Flight_Levels=.false.
-  !for the FL case we assume the surface to be very low. This is to avoid problems with levels below surface.
-  do k=1,KMAX_BND
-     A_bnd_ext(k)=A_bnd(k)
-     B_bnd_ext(k)=B_bnd(k)
-  enddo
-  B_bnd_ext(KMAX_BND)=3.0!will put lowest level at P=3*P_surf = very high pressure ,i.e. "low altitude"
-
 
 
   !_______________________________________________________________________________
@@ -2003,30 +1996,28 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                           !add emissions at every emep OR FL level boundary
                           k_FL=1
                           k_FL2=0!last index of entirely included FL layer
-                          P_FL(0)=A_bnd_ext(KMAX_MID+1)+B_bnd_ext(KMAX_MID+1)*Psurf_ref(i,j)
+                          P_FL(0)=max(A_bnd(KMAX_MID+1)+B_bnd(KMAX_MID+1)*Psurf_ref(i,j), P_FL(0))
+                          Pcounted=P_FL(0)!Lowest Pressure accounted for 
                           do k=KMAX_MID,KMAX_MID-k2+1,-1
                              ijk=k-(KMAX_MID-k2)+(ij-1)*k2
-                             P_EMEP=A_bnd_ext(k)+B_bnd_ext(k)*Psurf_ref(i,j)
+                             P_EMEP=A_bnd(k)+B_bnd(k)*Psurf_ref(i,j)
                              do while(P_FL(k_FL)>P_EMEP.and.k_FL<NFL)
-                                dp=min(A_bnd_ext(k+1)+B_bnd_ext(k+1)*Psurf_ref(i,j),P_FL(k_FL2))-P_FL(k_FL)
+                                dp=Pcounted-P_FL(k_FL)
                                 igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
                                 Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
                                 k_FL2=k_FL
                                 k_FL=k_FL+1
+                                Pcounted=P_FL(k_FL2)
                              enddo
                              Ivalues(ijk)=Ivalues(ijk)+1
                              if(k_FL<=NFL)then
-                                if(P_FL(k_FL2)<Psurf_ref(i,j))then
-                                   !normal: levels are above surface
-                                   dp=min(A_bnd_ext(k+1)+B_bnd_ext(k+1)*Psurf_ref(i,j),P_FL(k_FL2))-P_EMEP
-                                else
-                                   !layer is below surface (def of topography is not compatible) 
-                                   dp=P_FL(k_FL2)-P_EMEP
-                                endif
+                                dp=Pcounted-P_EMEP
                                 igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
                                 Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)*dp/(P_FL(k_FL2)-P_FL(k_FL))
+                                Pcounted=P_EMEP
                              endif
                           enddo
+
                        endif !Flight levels
 
                     endif
