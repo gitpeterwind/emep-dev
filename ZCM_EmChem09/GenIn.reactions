@@ -33,7 +33,7 @@
 *-- Inorganic chemistry ----- ;
 *-- ;
 * ERR (6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*Log300divT)   OP + {O2} + {M}  = O3      ; acp2004, V4, p1461-1738, Atkinson et al.
-(6.0e-34*O2+5.6e-34*N2)*EXP(-2.6*LogTdiv300)   OP + {O2} + {M}  = O3      ; acp2004, V4, p1461-1738, Atkinson et al.
+(6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*LogTdiv300)   OP + {O2} + {M}  = O3      ; acp2004, V4, p1461-1738, Atkinson et al, Table 1, reaction 1)
 1.8e-11*N2*EXP(107.0*TINV)          OD + {N2}  = OP           ; A97,J
 3.2e-11*O2*EXP(67.0*TINV)           OD + {O2}  = OP           ; A97,J
 2.2e-10*H2O                         OD + {H2O} = 2. OH        ; A97,J

@@ -1,3 +1,10 @@
+xxxxxxxxxxxxxx rv3_5_27    Dave,  26th May   2010
+
+DO NOT USE. There is something odd with older rates in
+ZCM_EmChem09 - these must have been brought back from
+an older version with some cvs change :-(
+
+
 xxxxxxxxxxxxxx rv3_5_26    Dave,  26th May   2010
 
 More GenChem enabled, with use of "groups" to avoid hard-coded indices:

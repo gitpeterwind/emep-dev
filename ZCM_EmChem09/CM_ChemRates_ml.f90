@@ -34,7 +34,7 @@
                 !( 1.0e-11*xn_2d(NO,:) + 4.2e-12*exp(180*TINV(:))*xn_2d(HO2,:) )
 !       BranchingHO2(:) = 1.0 - BranchingNO(:)
 
-       rcmisc(1,:) = (6.0e-34*o2+5.6e-34*n2)*exp(-2.6*logtdiv300) 
+       rcmisc(1,:) = (6.0e-34*o2+5.6e-34*n2)*o2*exp(-2.6*logtdiv300) 
        rcmisc(2,:) = 1.8e-11*n2*exp(107.0*tinv) 
        rcmisc(3,:) = 3.2e-11*o2*exp(67.0*tinv) 
        rcmisc(4,:) = 2.2e-10*h2o 
