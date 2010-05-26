@@ -205,7 +205,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 my $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv       = "rv3_5_18";
+$testv       = "rv3_5_26";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
