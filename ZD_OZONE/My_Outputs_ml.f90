@@ -78,7 +78,6 @@ integer, public, parameter :: &
     ,NXTRA_SITE =    5              ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
-!GCDS    SITE_ADV =  (/ IXADV_O3, IXADV_NO, IXADV_NO2, IXADV_CO, IXADV_CH4, IXADV_C2H6 /) 
     SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
 
    integer, public, parameter, dimension(NSHL_SITE) :: &
@@ -157,21 +156,10 @@ integer, public, parameter :: &
     ,NADV_SONDE  =     8                &   ! No.  advected species
     ,NSHL_SONDE  =    1                &   ! No. short-lived species
     ,NXTRA_SONDE =    5                    ! No. Misc. met. params  (now th)
-!Oct09    ,N_NOy       =   10                    ! # of N species in NOy
 
-!SEP09
    integer, public, parameter, dimension(NADV_SONDE) :: &
    SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_CO, &
-   IXADV_pNO3,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
-
-!ORIG   SONDE_ADV =  (/ IXADV_O3, IXADV_CO, IXADV_HCHO, IXADV_NO2, IXADV_HNO3, & 
-!ORIG                    IXADV_SO4, IXADV_CH4, IXADV_C2H6 /)
-
-
-!GC   integer, public, parameter, dimension(N_NOy) :: &
-!GC     NOy_SPEC =  (/ IXADV_HNO3, IXADV_NO,  IXADV_NO2,  IXADV_PAN,    &
-!GC                    IXADV_MPAN, IXADV_NO3, IXADV_N2O5, IXADV_ISONO3, &
-!GC                    IXADV_ISNI, IXADV_ISNIR /)
+   IXADV_pNO3_c,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
 
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH /)
@@ -321,20 +309,6 @@ integer, public, parameter :: &
 ! hr_out(5)= Asc2D("FST_WH00", "D2D", &
 !                  "(f7.3)", D2_FSTWH00, ix1,ix2,iy1,iy2,1, "NNNN", 1.0  ,600.0)
 
-!AMVB 2009-07-06
-!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
-!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
-!    For ugX/m3 output use in combination with to_ug_X.
-!  hr_out(1)=  Asc2D("Ozone", "ADVppbv", &
-!                  "(f9.5)",IXADV_O3, ix1,ix2,iy1,iy2,1, "ppb",PPBINV,600.0)
-!  hr_out(2)=  Asc2D("aNH4-air", "ADVugXX", &
-!                  "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_aNH4),600.0)
-!  hr_out(3)=  Asc2D("aNO3-air", "ADVugXX", &
-!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_aNO3),600.0)
-!  hr_out(4)=  Asc2D("SO4-air", "ADVugXX", &
-!                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_aNO3),600.0)
-!  hr_out(5)=  Asc2D("pNO3-air","ADVugXX", &
-!                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2,1, "ug",to_ug_ADV(IXADV_pNO3),400.0)
 
 !AMVB 2009-07-06
 !  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
@@ -342,12 +316,12 @@ integer, public, parameter :: &
 !    For ugX/m3 output use in combination with to_ug_X.
   hr_out(2)=  Asc2D("aNH4-air","ADVugXX",&
                   "(f8.4)",IXADV_aNH4, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
-  hr_out(3)= Asc2D("aNO3-air", "ADVugXX",&
-                  "(f8.4)",IXADV_aNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
+  hr_out(3)= Asc2D("pNO3_f-air", "ADVugXX",&
+                  "(f8.4)",IXADV_pNO3_f, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,600.0)
   hr_out(4)=  Asc2D("SO4-air", "ADVugXX",&
                   "(f8.4)",IXADV_SO4,  ix1,ix2,iy1,iy2,1, "ugS",to_ug_S,400.0)
-  hr_out(5)=  Asc2D("pNO3-air","ADVugXX",&
-                  "(f8.4)",IXADV_pNO3, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,400.0)
+  hr_out(5)=  Asc2D("cNO3-air","ADVugXX",&
+                  "(f8.4)",IXADV_pNO3_c, ix1,ix2,iy1,iy2,1, "ugN",to_ug_N,400.0)
 !
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)

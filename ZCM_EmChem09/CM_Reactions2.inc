@@ -12,14 +12,14 @@
 
       xnew(SO4)=  max(0.0,  xold(SO4) + dt2 * P)
 
-!-> PNO3 
+!-> PNO3_C 
 
       P =   &
           rcmisc(19,k) * xnew(HNO3 ) 
       ! L = 0.0
  
 
-      xnew(PNO3)=  max(0.0,  xold(PNO3) + dt2 * P)
+      xnew(PNO3_C)=  max(0.0,  xold(PNO3_C) + dt2 * P)
 
 !-> NH3 
 
@@ -37,12 +37,12 @@
  
 !Nothing to do for ANH4! xnew(ANH4)=  max(0.0, xold(ANH4))
 
-!-> ANO3 
+!-> PNO3_F 
       ! P = 0.0
  
       ! L = 0.0
  
-!Nothing to do for ANO3! xnew(ANO3)=  max(0.0, xold(ANO3))
+!Nothing to do for PNO3_F! xnew(PNO3_F)=  max(0.0, xold(PNO3_F))
 
 !-> PPM25 
 
@@ -54,13 +54,11 @@
       xnew(PPM25)=  max(0.0,  xold(PPM25) + dt2 * P)
 
 !-> PPM25_FIRE 
-
-      P =   &
-          RCEMIS(PPM25_FIRE,K) 
+      ! P = 0.0
+ 
       ! L = 0.0
  
-
-      xnew(PPM25_FIRE)=  max(0.0,  xold(PPM25_FIRE) + dt2 * P)
+!Nothing to do for PPM25_FIRE! xnew(PPM25_FIRE)=  max(0.0, xold(PPM25_FIRE))
 
 !-> PPMCO 
 
@@ -71,23 +69,23 @@
 
       xnew(PPMCO)=  max(0.0,  xold(PPMCO) + dt2 * P)
 
-!-> SSFI 
+!-> SEASALT_F 
 
       P =   &
           RCSS(QSSFI,K) 
       ! L = 0.0
  
 
-      xnew(SSFI)=  max(0.0,  xold(SSFI) + dt2 * P)
+      xnew(SEASALT_F)=  max(0.0,  xold(SEASALT_F) + dt2 * P)
 
-!-> SSCO 
+!-> SEASALT_C 
 
       P =   &
           RCSS(QSSCO,K) 
       ! L = 0.0
  
 
-      xnew(SSCO)=  max(0.0,  xold(SSCO) + dt2 * P)
+      xnew(SEASALT_C)=  max(0.0,  xold(SEASALT_C) + dt2 * P)
 
 !-> RN222 
 

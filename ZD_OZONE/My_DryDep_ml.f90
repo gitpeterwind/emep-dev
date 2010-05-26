@@ -39,7 +39,6 @@ module My_DryDep_ml    ! DryDep_ml
    nMosaic, MosaicOutput &
   ,MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST &
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX !ds rv3_5_6&  ! Equal -1, -2, -3
-   !ds rv3_5_6  ,DDEP_SOXGROUP, DDEP_RDNGROUP, DDEP_GROUP
 
  use AOTx_ml,             only : Calc_AOTx
  use CheckStop_ml,        only : CheckStop, StopAll
@@ -47,7 +46,7 @@ module My_DryDep_ml    ! DryDep_ml
  use ChemSpecs_adv_ml        !   e.g. NSPEC_ADV,IXADV_O3,IXADV_H2O2,
  use ChemSpecs_shl_ml,    only : NSPEC_SHL   ! For DDEP_SOXGROUP etc.
  use ChemGroups_ml,       only : DDEP_OXNGROUP,DDEP_SOXGROUP, &
-                                 DDEP_RDNGROUP, DDEP_GROUP
+                                 DDEP_RDNGROUP, NMAX_DDEP
  use Derived_ml,          only : f_2d, d_2d
  use EcoSystem_ml,        only : DEF_ECOSYSTEMS, NDEF_ECOSYSTEMS, &
                                  EcoSystemFrac, FULL_GRID, Is_EcoSystem
@@ -57,7 +56,7 @@ module My_DryDep_ml    ! DryDep_ml
  use LocalVariables_ml,   only : Grid, Sub  !=> izen  integer of zenith angle
  use ModelConstants_ml ,  only : atwS, atwN, DEBUG_MY_DRYDEP, DEBUG_CLOVER, &
                                     MasterProc , IOU_INST, IOU_YEAR
- use OwnDataTypes_ml,     only : print_Deriv_type
+ use OwnDataTypes_ml,     only : print_Deriv_type, depmap
  use Par_ml,              only : li0, lj0, li1, lj1
  use PhysicalConstants_ml,only : AVOG
  use SmallUtils_ml,       only : find_index, NOT_FOUND
@@ -89,20 +88,20 @@ module My_DryDep_ml    ! DryDep_ml
 
 
   integer, public, parameter :: &
-       CDEP_HNO3 = 1, CDEP_O3  = 2, CDEP_SO2 = 3  &
-      ,CDEP_NH3  = 4, CDEP_NO2 = 5, CDEP_PAN  = 6 &
-      ,CDEP_H2O2 = 7, CDEP_ALD = 8, CDEP_HCHO = 9, &
-       CDEP_OP = 10,  CDEP_HNO2 = 11, CDEP_FIN = 12, CDEP_COA = 13 
+       CDDEP_HNO3 = 1, CDDEP_O3  = 2, CDDEP_SO2 = 3  &
+      ,CDDEP_NH3  = 4, CDDEP_NO2 = 5, CDDEP_PAN  = 6 &
+      ,CDDEP_H2O2 = 7, CDDEP_ALD = 8, CDDEP_HCHO = 9, &
+       CDDEP_OP = 10,  CDDEP_HNO2 = 11, CDDEP_FIN = 12, CDDEP_COA = 13 
 
-  integer, public, parameter :: CDEP_SET = -99    
+  integer, public, parameter :: CDDEP_SET = -99    
 
 
 
- ! WE NEED A FLUX_CDEP, FLUX_ADV FOR OZONE;
+ ! WE NEED A FLUX_CDDEP, FLUX_ADV FOR OZONE;
  ! (set to one for non-ozone models)
 
   logical, public, parameter :: STO_FLUXES = .true.
-  integer, public, parameter :: FLUX_CDEP  = CDEP_O3
+  integer, public, parameter :: FLUX_CDDEP  = CDDEP_O3
   integer, public, parameter :: FLUX_ADV   = IXADV_O3
 
  
@@ -114,16 +113,6 @@ module My_DryDep_ml    ! DryDep_ml
   !/** Compensation pount approach from CEH used?:
 
   logical, public, parameter :: COMPENSATION_PT = .false. 
-
-
-  !/-- we define a type to map indices of species to be deposited
-  !   to the lesser number of species where Vg is calculated
-
-   type, public :: depmap
-      integer :: adv   ! Index of species in IXADV_ arrays
-      integer :: calc  ! Index of species in  calculated dep arrays
-      real    :: vg    ! if CDEP_SET, give vg in m/s
-   end type depmap
 
    real, public, save, dimension(NSPEC_ADV) :: DepLoss   ! Amount lost
 
@@ -137,7 +126,7 @@ module My_DryDep_ml    ! DryDep_ml
    !      the specied for which the calculation needs to be done.
    !  We also define the number of species which will be deposited in
    ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
-   ! The actual species used and their relation to the CDEP_ indices
+   ! The actual species used and their relation to the CDDEP_ indices
    ! above will be defined in Init_DepMap
 
        include 'CM_DryDep.inc'
@@ -151,11 +140,11 @@ contains
 
 !#######################  ECO08 new mappng  #######################
   do i = 1, NDRYDEP_ADV  ! 22
-      iadv = Dep(i)%adv
+      iadv = DDepMap(i)%ind
       if(DEBUG_MY_DRYDEP .and. MasterProc) &
-         write(6,*) "DEPMAP   ", Dep(i)%adv, Dep(i)%calc
+         write(6,*) "DEPMAP   ", DDepMap(i)%ind, DDepMap(i)%calc
       call CheckStop( iadv < 1, "ERROR: Negative iadv" )
-      DepAdv2Calc(iadv) = Dep(i)%calc
+      DepAdv2Calc(iadv) = DDepMap(i)%calc
  end do
   
 !##################################################################
@@ -222,6 +211,7 @@ contains
      real, dimension(:,0:),intent(in) :: GsLU, GnsLU  ! dim (0:NLANDUSE*nlu)
      real, dimension(:,0:), intent(in) :: LCC_Met   ! dim (nMET, NLANDUSE*nlu)
 
+     integer, dimension(NMAX_DDEP) :: ddep_code 
      integer :: n, nadv, nadv2, ihh, idd, imm, iLC, iEco
      integer :: imc, f2d, cdep
      real :: X, Y       ! Threshold for flux AFstY, AOTX
@@ -275,7 +265,7 @@ contains
 !     d_2d(DDEP_SOX,i,j,IOU_INST) = (  &
 !          DepLoss(IXADV_SO2) + DepLoss(IXADV_SO4) ) * convfac * atwS
 !
-!       d_2d(D2_VddCOA,i,j,IOU_INST) =  100.0* Vg3m(CDEP_COA)
+!       d_2d(D2_VddCOA,i,j,IOU_INST) =  100.0* Vg3m(CDDEP_COA)
 
     ! Ecosystem depositions, for grouped or individual species:
 
@@ -306,21 +296,21 @@ contains
                          ! land-cover classes, see EcoSystem_ml
            if ( nadv > 0 ) then  ! normal advectde species
               nadv2 = 1
-              DDEP_GROUP(1) = nadv
+              ddep_code(1) = nadv
            else if ( nadv == SOX_INDEX ) then
               nadv2 = size( DDEP_SOXGROUP )
-              DDEP_GROUP(1:nadv2) = DDEP_SOXGROUP - NSPEC_SHL
+              ddep_code(1:nadv2) = DDEP_SOXGROUP - NSPEC_SHL
            else if ( nadv == OXN_INDEX ) then
               nadv2 = size( DDEP_OXNGROUP )
-              DDEP_GROUP(1:nadv2) = DDEP_OXNGROUP - NSPEC_SHL
+              ddep_code(1:nadv2) = DDEP_OXNGROUP - NSPEC_SHL
            else  !if ( nadv == RDN_INDEX ) then
               nadv2 = size( DDEP_RDNGROUP )
-              DDEP_GROUP(1:nadv2) = DDEP_RDNGROUP - NSPEC_SHL
+              ddep_code(1:nadv2) = DDEP_RDNGROUP - NSPEC_SHL
            end if
    
            Fflux = 0.0
            do n = 1, nadv2
-              nadv = DDEP_GROUP(n)
+              nadv = ddep_code(n)
               Fflux = Fflux + Deploss(nadv) * &
                 sum( fluxfrac(nadv,:), Is_EcoSystem(iEco,:) )
            end do ! n

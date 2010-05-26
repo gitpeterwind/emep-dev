@@ -70,7 +70,7 @@ contains
  !..................................................................
 
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4, NO3
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, pNO3_f, aNH4, NO3
  use Setup_1dfields_ml,  only :  temp, rh
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use ChemChemicals_ml,    only :  species
@@ -99,7 +99,7 @@ contains
       so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef
       hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef 
       nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef
-      no3in  = xn_2d(aNO3,k) * species(aNO3)%molwt  *coef
+      no3in  = xn_2d(pNO3_f,k) * species(pNO3_f)%molwt  *coef
       nh4in  = xn_2d(aNH4,k) * species(aNH4)%molwt  *coef
 
  !--------------------------------------------------------------------------                
@@ -110,7 +110,7 @@ contains
 
       xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
       xn_2d(NH3,k)   = max (FLOOR, gNH3out / (species(NH3)%molwt  *coef) )
-      xn_2d(aNO3,k)  = max (FLOOR, aNO3out / (species(aNO3)%molwt  *coef) )
+      xn_2d(pNO3_f,k)  = max (FLOOR, aNO3out / (species(pNO3_f)%molwt  *coef) )
       xn_2d(aNH4,k)  = max (FLOOR, aNH4out / (species(aNH4)%molwt  *coef) )
 
    enddo  ! K-levels
@@ -133,7 +133,7 @@ contains
 
  use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4,NO3
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, pNO3_f, aNH4,NO3
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
@@ -173,14 +173,14 @@ contains
 
   if ( debsub .and. debug_cell ) then ! Selected debug cell
     write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
-               xn_2d(NH3,20),xn_2d(aNO3,20),xn_2d(aNH4,20)
+               xn_2d(NH3,20),xn_2d(pNO3_f,20),xn_2d(aNH4,20)
   endif
 
 !//.... molec/cm3 -> micromoles/m**3
     so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
     hno3in(KCHEMTOP:KMAX_MID) = xn_2d(HNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
     nh3in(KCHEMTOP:KMAX_MID)  = xn_2d(NH3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
-    no3in(KCHEMTOP:KMAX_MID)  = xn_2d(aNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
+    no3in(KCHEMTOP:KMAX_MID)  = xn_2d(pNO3_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
     nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(aNH4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
 
     NAin(KCHEMTOP:KMAX_MID)  = 0.0
@@ -199,13 +199,13 @@ contains
 
       xn_2d(HNO3,KCHEMTOP:KMAX_MID)  = max(FLOOR,gNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(NH3,KCHEMTOP:KMAX_MID)   = max(FLOOR,gNH3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
-      xn_2d(aNO3,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 ) 
+      xn_2d(pNO3_f,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNO3out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 ) 
       xn_2d(aNH4,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNH4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(SO4,KCHEMTOP:KMAX_MID)   = max(FLOOR,aSO4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
 
  if ( debsub .and. debug_cell ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
-               xn_2d(NH3,20),xn_2d(aNO3,20),xn_2d(aNH4,20)
+               xn_2d(NH3,20),xn_2d(pNO3_f,20),xn_2d(aNH4,20)
   endif
 
  end subroutine My_EQSAM
@@ -232,7 +232,7 @@ contains
  use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d      ! SIA concentration 
  use Chemfields_ml,      only :  PM_water               !PMwater  
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, aNO3, aNH4
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, pNO3_f, aNH4
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
@@ -271,14 +271,14 @@ contains
 
 !  if ( debsub .and. debug_cell ) then ! Selected debug cell
 !    write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
-!               xn_2d(NH3,20),xn_2d(aNO3,20),xn_2d(aNH4,20)
+!               xn_2d(NH3,20),xn_2d(pNO3_f,20),xn_2d(aNH4,20)
 !  endif
 
 !//.... molec/cm3 -> micromoles/m**3
       so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
       hno3in(KCHEMTOP:KMAX_MID) = xn_2d(HNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
       nh3in(KCHEMTOP:KMAX_MID)  = xn_2d(NH3,KCHEMTOP:KMAX_MID)*1.e12/AVOG 
-      no3in(KCHEMTOP:KMAX_MID)  = xn_2d(aNO3,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+      no3in(KCHEMTOP:KMAX_MID)  = xn_2d(pNO3_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
       nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(aNH4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
 
       NAin(KCHEMTOP:KMAX_MID)  = 0.
@@ -301,7 +301,7 @@ contains
 
 ! if ( debsub .and. debug_cell ) then ! Selected debug cell
 !    write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
-!               xn_2d(NH3,20),xn_2d(aNO3,20),xn_2d(aNH4,20)
+!               xn_2d(NH3,20),xn_2d(pNO3_f,20),xn_2d(aNH4,20)
 !  endif
 
  end subroutine  Aero_water

@@ -44,7 +44,7 @@ module ChemFunctions_ml
  use ModelConstants_ml,     only : K1  => KCHEMTOP, K2 => KMAX_MID
  use PhysicalConstants_ml,  only : AVOG, RGAS_J
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
- use ChemSpecs_tot_ml,        only : SO4,aNO3,aNH4
+ use ChemSpecs_tot_ml,        only : SO4,pNO3_f,aNH4
   implicit none
   private
 
@@ -283,12 +283,12 @@ module ChemFunctions_ml
      
 ! old Setup_ml had:
 ! setup weighting factor for hydrolysis  
-!     f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(aNO3,k)) )
+!     f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(pNO3_f,k)) )
 !Query - no aNH4 above?
 ! then FastReactions had for L(N2O5):
 !     + (0.9*f_Riemer(k)+0.1) * rcmisc(8,k)* &
 !                 ( VOLFACSO4*xnew(SO4)      & !Total sulpate aerosol surface
-!                 + VOLFACNO3*xnew(aNO3)     & !Total sulpate aerosol surface
+!                 + VOLFACNO3*xnew(pNO3_f)     & !Total sulpate aerosol surface
 !                 + VOLFACNH4*xnew(aNH4)  )  & !Total sulpate aerosol surface
    
 
@@ -298,11 +298,11 @@ module ChemFunctions_ml
           rc = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean mol. speed,m/s
              /(4*(2.5 - rh(k)*1.25)) !density, corrected for rh (moderate approx.)
 
-          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0*x(aNO3,k) + EPSIL )
+          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0*x(pNO3_f,k) + EPSIL )
 
 
           rate(k) =  (0.9*f + 0.1) * rc *  &
-             ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * x(aNO3,k) &
+             ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * x(pNO3_f,k) &
               + VOLFACNH4 * x(aNH4,k) )    !Total aerosol surface
         else
           rate(k) = 0.0

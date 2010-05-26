@@ -58,13 +58,15 @@ module Aqueous_ml
 !    model. Atm.  Env. Vol. 33, pp.2853-2879.
 !-----------------------------------------------------------------------
 
-  use My_WetDep_ml,  only : WetDep, NWETDEP, WetDep_Budget, WDEP_PREC,&
-           WETDEP_SO4LIKE !EGUOA, WETDEP_SOALIKE
+  use My_WetDep_ml,  only : WetDep, NWETDEP_CALC, &
+             WetDep_Budget, WDEP_PREC, Calc2tot
+!dsMay2010 & WETDEP_SO4LIKE !EGUOA, WETDEP_SOALIKE
 !EGU - was commented out as SO4LIKE_DEP USED
   use My_Aerosols_ml,    only: ORGANIC_AEROSOLS
 
   use Derived_ml,    only : d_2d      ! Contains Wet deposition fields
   use ChemChemicals_ml, only: species
+  use ChemSpecs_adv_ml
   use ChemSpecs_tot_ml, only: NSPEC_TOT, SO4
   use GridValues_ml, only : gridwidth_m,xm2,dA,dB
   use MassBudget_ml,     only : wdeploss
@@ -79,6 +81,7 @@ module Aqueous_ml
      ,ATWAIR                           ! -> atw. air
   use MetFields_ml,              only : pr, roa, z_bnd, cc3d, lwc
   use MetFields_ml,              only : ps
+  use OwnDataTypes_ml,           only : depmap  ! has adv, calc, vg
   use PhysicalConstants_ml,only : GRAV
 !EGU  use OrganicAerosol_ml, only : SO4LIKE_DEP, SOALIKE_DEP
   use Setup_1dfields_ml,   only : xn_2d, amk  !EGUOA , Fpart, Fgas
@@ -375,8 +378,8 @@ subroutine tabulate_aqueous()
 
 end subroutine tabulate_aqueous
 
-
 !-----------------------------------------------------------------------
+
 subroutine setup_aqurates(b ,cloudwater,incloud)
 
 !-----------------------------------------------------------------------
@@ -496,11 +499,10 @@ subroutine WetDeposition(i,j,debug_flag)
   logical, intent(in) :: debug_flag  
 
 ! local
-  integer :: itot,ipm,is !  index in xn_2d arrays
+  integer :: itot,is !  index in xn_2d arrays
   integer :: spec        ! species index from WetDep array
-  integer :: n,k
+  integer :: n,k, icalc
 
-!TMP real :: tmpxn, xnloss !EGU
   real    :: invgridarea ! xm2/(h*h)
   real    :: f_rho       ! Factors in rho calculation
   real    :: rho(KUPPER:KMAX_MID)
@@ -526,56 +528,63 @@ subroutine WetDeposition(i,j,debug_flag)
                    kcloudtop, ksubcloud, pr_acc(KMAX_MID)
   end if ! DEBUG
 
-  do spec = 1, NWETDEP
+  do icalc = 1, NWETDEP_CALC  ! Here we loop over "model" species
 
 ! Put both in- and sub-cloud scavenging ratios in the array vw:
 
 !TMP xnloss = 0.0
-     vw(kcloudtop:ksubcloud-1) = WetDep(spec)%W_sca ! Scav. for incloud
-     vw(ksubcloud:KMAX_MID  )  = WetDep(spec)%W_sub ! Scav. for subcloud
+     vw(kcloudtop:ksubcloud-1) = WetDep(icalc)%W_sca ! Scav. for incloud
+     vw(ksubcloud:KMAX_MID  )  = WetDep(icalc)%W_sub ! Scav. for subcloud
 
-     itot = WetDep(spec)%itot
+!dsMay2010     itot = WetDep(spec)%itot
 
-     if ( DEBUG .and. debug_flag ) then
-        Write(6,"(a,i3,a,2es14.4)") "DEBUG_WDEP Sca", spec, &
-         species(itot)%name, WetDep(spec)%W_sca, WetDep(spec)%W_sub
-     end if ! DEBUG
+!dsMay2010    if ( DEBUG .and. debug_flag ) then
+!dsMay2010       Write(6,"(a,i3,a,2es14.4)") "DEBUG_WDEP Sca", spec, &
+!dsMay2010        species(itot)%name, WetDep(spec)%W_sca, WetDep(spec)%W_sub
+!dsMay2010    end if ! DEBUG
 
      do k = kcloudtop, KMAX_MID
 
         lossfrac(k)  = exp( -vw(k)*pr_acc(k)*dt ) 
-        !loss = xn_2d(itot,k) * ( 1.0 - exp( -vw(k)*pr_acc(k)*dt ) )
-        loss = xn_2d(itot,k) * ( 1.0 - lossfrac(k)  )
+
+        ! For each "calc" species we have often a number of model
+        ! species
+            do is = 1, Calc2tot(icalc,0)  ! number of species
+               itot = Calc2tot(icalc,is)
+
+               loss = xn_2d(itot,k) * ( 1.0 - lossfrac(k)  )
+               xn_2d(itot,k) = xn_2d(itot,k) - loss
+               wdeploss(itot) = wdeploss(itot) + loss * rho(k)
+            end do ! is
+        !end do ! spec
 
          !TMP tmpxn = xn_2d(itot,k) * lossfrac(k) ! Just for testing
          !TMP xnloss = xnloss+ (1.0-lossfrac(k))*xn_2d(itot,k)*rho(k)
-         xn_2d(itot,k) = xn_2d(itot,k) - loss
-         wdeploss(itot) = wdeploss(itot) + loss * rho(k)
 
      end do ! k loop
      if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
         do k = kcloudtop, KMAX_MID
-           Write(6,"(a,i4,a,9es12.2)") "DEBUG_WDEP, k, spec", &
-                     k, trim(species(itot)%name), vw(k), pr_acc(k), lossfrac(k)
+           Write(6,"(a,2i4,a,9es12.2)") "DEBUG_WDEP, k, icalc, spec", k, &
+            icalc, trim(species(itot)%name), vw(k), pr_acc(k), lossfrac(k)
         end do ! k loop
      end if ! DEBUG
 
-     if ( itot ==  SO4 ) then !/ Apply SO4 rates to similar PM:
-       !do ipm = 1, size(SO4LIKE_DEP)
-       do ipm = 1, size(WETDEP_SO4LIKE)
-         !is = SO4LIKE_DEP(ipm)
-         is = WETDEP_SO4LIKE(ipm)
-         do k = kcloudtop, KMAX_MID
-            loss = xn_2d(is,k) * ( 1.0 - lossfrac(k) )
-            !xn_2d(is,k) = xn_2d(is,k) * lossfrac(k)
-            xn_2d(is,k) = xn_2d(is,k) - loss
-            wdeploss(is) = wdeploss(is) + loss * rho(k)
-         end do
-         if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
-           write(6,"(2a,i3,2es12.3)") "WETDEP SIM: ", species(is)%name, &
-            is, lossfrac(20), wdeploss(is)
-         end if
-       end do
+!dsMay2010     if ( itot ==  SO4 ) then !/ Apply SO4 rates to similar PM:
+!dsMay2010       !do ipm = 1, size(SO4LIKE_DEP)
+!dsMay2010       do ipm = 1, size(WETDEP_SO4LIKE)
+!dsMay2010         !is = SO4LIKE_DEP(ipm)
+!dsMay2010         is = WETDEP_SO4LIKE(ipm)
+!dsMay2010         do k = kcloudtop, KMAX_MID
+!dsMay2010            loss = xn_2d(is,k) * ( 1.0 - lossfrac(k) )
+!dsMay2010            !xn_2d(is,k) = xn_2d(is,k) * lossfrac(k)
+!dsMay2010            xn_2d(is,k) = xn_2d(is,k) - loss
+!dsMay2010            wdeploss(is) = wdeploss(is) + loss * rho(k)
+!dsMay2010         end do
+!dsMay2010         if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
+!dsMay2010           write(6,"(2a,i3,2es12.3)") "WETDEP SIM: ", species(is)%name, &
+!dsMay2010            is, lossfrac(20), wdeploss(is)
+!dsMay2010         end if
+!dsMay2010       end do
        !do ipm = 1, NUM_NONVOL
        ! For SOA we make use of Fgas, which has been calculated in
        ! OrganicAerosol_ml
@@ -594,9 +603,9 @@ subroutine WetDeposition(i,j,debug_flag)
 !EGUOA        end if
 !EGUOA         end do ! ipm
 !EGUOA       end if ! OA 
-     end if
+!dsMay2010     end if
           
-  end do ! spec loop
+  end do ! icalc loop
 
   d_2d(WDEP_PREC,i,j,IOU_INST) = sum ( pr(i,j,:) ) * dt
                                               ! Same for all models

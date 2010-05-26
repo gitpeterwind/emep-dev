@@ -13,89 +13,94 @@
 *     If a number is given GenChem will assume this is MW.
 *************************************************************
 #GROUPED_STYLE - fewer columns than Garry's new-style files
-* Spec         adv  forumula                     MW    Groups !Comments
-OD               0  O                             -      -    !
-OP               0  O                             -      -    !
-OH               0  OH                            -      -    !
-HO2              0  HO2                           -      -    !
-CH3O2            0  CH3O2                         -      -    !
-C2H5O2           0  C2H5O2                        -      -    !
-SECC4H9O2        0  secC4H9O2                     -      -    !
-ISRO2            0  C5H9O2                        -      -    !( 6 isomers)
-ETRO2            0  CH2O2CH2OH                    -      -    !(from ethene ...)         
-PRRO2            0  CH3CHO2CH2OH                  -      -    !(from propene ...)        
-OXYO2            0  oxyo2                         -      -    !
-MEKO2            0  CH3COCHO2CH3                  -      -    !(from MEK)                 
-MALO2            0  CH3COCH(OH)CH(O2)CHO          -      -    !
-MVKO2            0  HOCH2CH(OO)C(CH3)=O           -      -    !(also OOCH2CH(OH)C(CH3)=CH2 - see P&S
-MACRO2           0  O=CHC(O2)(CH3)CH2OH           -      -    !(RO2 from macr degredation, from MCM)
-MACO3            0  CH2C(CH3)C(=O)O2              -      -    !(RO2 from macr degredation, from MCM)
-O3               1  O3                            -      OX    !
-NO               1  NO                            -      NOX,OXN    !(NB - I Keep the NOx species close)           
-NO2              1  NO2                           -      NOX,OX,OXN    !
-PAN              1  CH3COO2NO2                    -      OXN    !
-MPAN             1  CH2CH(CH3)C(=0)O2NO2          -      OXN    !( from macr degredation)
-NO3              1  NO3                           -      OXN    !
-N2O5             1  N2O5                          -      OXN    !
-ISONO3           1  isono3                        -      OXN    !isoprene-NO3 adduct                     
-HNO3             1  HNO3                          -      OXN    !
-HONO             1  HONO                          -      OXN    !
-CH3COO2          1  CH3COO2                       -      -      !
-MACR             1  CH2=CCH3CHO                   -      -      !(structure?)                            
-ISNI             1  isni                          -      OXN    !isoprene-nitrate                        
-ISNIR            1  isnir                         -      OXN    !isoprXX       dduct                     
-GLYOX            1  HCOHCO                        -      -    !
-MGLYOX           1  CH3COCHO                      -      -    !
-MAL              1  CH3COCH=CHCHO                 -      -    !
-MEK              1  CH3COC2H5                     -      -    !
-MVK              1  CH3C(=O)CH=CH2                -      -    !
-HCHO             1  HCHO                          -      -    !
-CH3CHO           1  CH3CHO                        -      -    !
-C2H6             1  C2H6                          -      -    !
-NC4H10           1  nC4H10                        -      -    !
-C2H4             1  C2H4                          -      -    !
-C3H6             1  C3H6                          -      -    !
-OXYL             1  o-C6H4(CH3)CH3                -      -    !
-C5H8             1  CH2=HCC=CH2CH3                -      BVOC !
-CH3O2H           1  CH3O2H                        -      -    !
-C2H5OOH          1  C2H5OOH                       -      -    !
-BURO2H           1  secC4H9O2H                    -      -    !(butane RO2 + ho2)          
-ETRO2H           1  CH2O2HCH2OH                   -      -    !(ethene RO2 + ho2)          
-PRRO2H           1  CH3CHO2HCH2OH                 -      -    !(peroxide from propene degredation + ho2)
-OXYO2H           1  oxyo2H                        -      -    !hydroperoxide from oxyo2 + ho2 
-MEKO2H           1  CH3COCHO2HCH3                 -      -    !
-MALO2H           1  CH3COCHOHCHO2CHO              -      -    !
-MVKO2H           1  mvko2H                        -      -    !hydroperoxide from mvko2 + ho2          
-MACROOH          1  O=CHC(CH3)(OOH)CH2OH          -      -    !hydroperoxide from macro2 + ho2          
-MACO3H           1  CH2=C(CH3)C(=O)OOH            -      -    !hydroperoxide from maco3 + ho2          
-MACO2H           1  CH2=C(CH3)C(=O)OH             -      -    !Methacrylic acid from maco3 + ho2          
-ISRO2H           1  isro2H                        -      -    !peroxide from isoprene degredation + ho2
-H2O2             1  H2O2                          -      -    !
-CH3COO2H         1  CH3COO2H                      -      -    !
-ISONO3H          1  isono3H                       -      -    !hydroperoxide from isono3 + ho2         
-ISNIRH           1  isnirH                        -      -    !hydroperoxide from isnir + ho2          
-CH3OH            1  CH3OH                         -      -    !
-C2H5OH           1  C2H5OH                        -      -    !
-ACETOL           1  CH3COCH2OH                    -      -    !hydroxy acetone
-H2               1  H2                            -      -    !
-CO               1  CO                            -      -    !
-CH4              1  CH4                           -      -    !
-SO2              1  SO2                           -      SOX  !Move to slow?
+* Spec         adv  forumula                     MW Ext C* dH   Groups !Comments
+OD               0  O                             -  0  0  0      -    !
+OP               0  O                             -  0  0  0      -    !
+OH               0  OH                            -  0  0  0      -    !
+HO2              0  HO2                           -  0  0  0      RO2    !
+CH3O2            0  CH3O2                         -  0  0  0      RO2    !
+C2H5O2           0  C2H5O2                        -  0  0  0      RO2    !
+SECC4H9O2        0  secC4H9O2                     -  0  0  0      RO2    !
+ISRO2            0  C5H9O2                        -  0  0  0      RO2    !( 6 isomers)
+ETRO2            0  CH2O2CH2OH                    -  0  0  0      RO2    !(from ethene ...)         
+PRRO2            0  CH3CHO2CH2OH                  -  0  0  0      RO2    !(from propene ...)        
+OXYO2            0  oxyo2                         -  0  0  0      RO2    !
+MEKO2            0  CH3COCHO2CH3                  -  0  0  0      RO2    !(from MEK)                 
+MALO2            0  CH3COCH(OH)CH(O2)CHO          -  0  0  0      RO2    !
+MVKO2            0  HOCH2CH(OO)C(CH3)=O           -  0  0  0      RO2   !(also OOCH2CH(OH)C(CH3)=CH2 - see P&S
+MACRO2           0  O=CHC(O2)(CH3)CH2OH           -  0  0  0      RO2    !(from macr degredation, from MCM)
+MACO3            0  CH2C(CH3)C(=O)O2              -  0  0  0      RO2    !(from macr degredation, from MCM)
+O3               1  O3                            -  0  0  0      OX    !
+# NOx species - keep them together for numerical reasons
+NO               1  NO                            -  0  0  0      NOX,OXN       !
+NO2              1  NO2                           -  0  0  0      NOX,OX,OXN    !
+PAN              1  CH3COO2NO2                    -  0  0  0      OXN    !
+MPAN             1  CH2CH(CH3)C(=0)O2NO2          -  0  0  0      OXN    !( from macr degredation)
+NO3              1  NO3                           -  0  0  0      OXN    !
+N2O5             1  N2O5                          -  0  0  0      OXN    !
+ISONO3           1  isono3                        -  0  0  0      OXN    !isoprene-NO3 adduct
+HNO3             1  HNO3                          -  0  0  0      OXN    !
+HONO             1  HONO                          -  0  0  0      OXN    !
+CH3COO2          1  CH3COO2                       -  0  0  0      -      !
+MACR             1  CH2=CCH3CHO                   -  0  0  0      -      !(structure?)
+ISNI             1  isni                          -  0  0  0      OXN    !isoprene-nitrate
+ISNIR            1  isnir                         -  0  0  0      OXN    !isopr adduct
+GLYOX            1  HCOHCO                        -  0  0  0      -    !
+MGLYOX           1  CH3COCHO                      -  0  0  0      -    !
+MAL              1  CH3COCH=CHCHO                 -  0  0  0      -    !
+MEK              1  CH3COC2H5                     -  0  0  0      -    !
+MVK              1  CH3C(=O)CH=CH2                -  0  0  0      -    !
+HCHO             1  HCHO                          -  0  0  0      -    !
+CH3CHO           1  CH3CHO                        -  0  0  0      -    !
+C2H6             1  C2H6                          -  0  0  0      -    !
+NC4H10           1  nC4H10                        -  0  0  0      -    !
+C2H4             1  C2H4                          -  0  0  0      -    !
+C3H6             1  C3H6                          -  0  0  0      -    !
+OXYL             1  oC6H4(CH3)CH3                 -  0  0  0      -    !
+C5H8             1  CH2=HCC=CH2CH3                -  0  0  0      BVOC !
+CH3O2H           1  CH3O2H                        -  0  0  0      ROOH !
+C2H5OOH          1  C2H5OOH                       -  0  0  0      ROOH !
+BURO2H           1  secC4H9O2H                    -  0  0  0      ROOH !(butane RO2 + ho2)          
+ETRO2H           1  CH2O2HCH2OH                   -  0  0  0      ROOH !(ethene RO2 + ho2)          
+PRRO2H           1  CH3CHO2HCH2OH                 -  0  0  0      ROOH !from propene degredation + ho2
+OXYO2H           1  oxyo2H                        -  0  0  0      ROOH !from oxyo2 + ho2 
+MEKO2H           1  CH3COCHO2HCH3                 -  0  0  0      ROOH !
+MALO2H           1  CH3COCHOHCHO2CHO              -  0  0  0      ROOH !
+MVKO2H           1  mvko2H                        -  0  0  0      ROOH !from mvko2 + ho2          
+MACROOH          1  O=CHC(CH3)(OOH)CH2OH          -  0  0  0      ROOH !from macro2 + ho2          
+MACO3H           1  CH2=C(CH3)C(=O)OOH            -  0  0  0      ROOH !from maco3 + ho2          
+MACO2H           1  CH2=C(CH3)C(=O)OH             -  0  0  0      -    !Methacrylic acid from maco3 + ho2
+ISRO2H           1  isro2H                        -  0  0  0      ROOH !from isoprene degredation + ho2
+H2O2             1  H2O2                          -  0  0  0      ROOH !
+CH3COO2H         1  CH3COO2H                      -  0  0  0      ROOH !
+ISONO3H          1  isono3H                       -  0  0  0      ROOH !from isono3 + ho2         
+ISNIRH           1  isnirH                        -  0  0  0      ROOH !from isnir + ho2          
+CH3OH            1  CH3OH                         -  0  0  0      -    !
+C2H5OH           1  C2H5OH                        -  0  0  0      -    !
+ACETOL           1  CH3COCH2OH                    -  0  0  0      -    !hydroxy acetone
+H2               1  H2                            -  0  0  0      -    !
+CO               1  CO                            -  0  0  0      -    !
+CH4              1  CH4                           -  0  0  0      -    !
+SO2              1  SO2                           -  0  0  0      SOX  !Move to slow?
 *
 *===== END OF SOA STUFF ======================================================
 *
+* Here we also have particles among the compounds. Specify AOD in groups if this
+* is wanted (or always, it doesn't matter). Same with VBS params for SOA stuff
+* if present.
+*
 #SLOW
-SO4              1  SO4                           -      PM25,SIA,SOX    !
-pNO3             1  NO3                           -      PMCO,SIA,OXN,TNO3  !Course nitrate
-NH3              1  NH3                           -      RDN    !
-aNH4             1  NH4                           -      RDN,PM25,SIA    !Chemistry spec in equilib module
-aNO3             1  NO3                           -      PM25,SIA,OXN,TNO3 !Chemistry spec in equilib module
-PPM25            1  -                         12.00      PM25  !Primary inorganic emissions, fine (PM25-OC-EC)
-PPM25_FIRE       1  -                         12.00      PM25  !Primary inorganic emissions, fine (PM25-OC-EC)
-PPMco            1  pmco                          -      PMCO,SS !Primary inorganic emissions, coarse
-SSfi             1  -                         58.00      PM25,SS !
-SSco             1  -                         58.00      -    !
-Rn222            1  -                        222.00      -    !
-Pb210            1  -                        210.00      -    !
+SO4              1  SO4                           -  8.5  0  0      PM25,SIA,SOX,AOD  !
+pNO3_c           1  pNO3_c                        -  0    0  0      PMCO,SIA,OXN,TNO3 !Course nitrate
+NH3              1  NH3                           -  0    0  0      RDN    !
+aNH4             1  NH4                           -  8.5  0  0      RDN,PM25,SIA,AOD ! in equilib module
+pNO3_f           1  pNO3_f                        -  8.5  0  0      PM25,SIA,OXN,TNO3,AOD !in equilib module
+PPM25            1  -                            12  0    0  0      PM25  !Primary, fine <2.5um
+PPM25_FIRE       1  -                            12  0    0  0      PM25  !fires...
+PPMCO            1  -                            12  0    0  0      PMCO !Primary, 2.5--10u
+SeaSalt_f        1  -                         58.00  5.7  0  0      PM25,SS,AOD !
+SeaSalt_c        1  -                         58.00  0    0  0      PMCO,SS !
+Rn222            1  -                        222.00  0    0  0      -       !
+Pb210            1  -                        210.00  0    0  0      -       !
 *
 *DONE READ_SPECIES

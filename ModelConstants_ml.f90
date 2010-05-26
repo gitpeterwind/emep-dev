@@ -45,22 +45,22 @@ module ModelConstants_ml
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
 
-  character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
- !character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
+ ! character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+ character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
  !character(len=20), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
 
   logical, parameter, public :: IS_GLOBAL = .false.
 
   integer, public, parameter ::  &
-  !  IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
-   IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+    IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
+  ! IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 ! x,y-Dimensions of full GLOBAL domain
   ! IIFULLDOM = 201, JJFULLDOM = 161 ! x,y-Dimensions of full GEMS/MACC domain
 
  !ds - I added these offsets, but now suspect I was thinking wrong.
  ! The difference between EMEP and EECCA is confusing...
-  integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
- ! integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
+ ! integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
+  integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
   !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
@@ -70,11 +70,11 @@ module ModelConstants_ml
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
-  ! RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
+  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   4        & ! Actual number of processors in longitude
+    NPROCX      =   3        & ! Actual number of processors in longitude
   , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
@@ -235,7 +235,7 @@ module ModelConstants_ml
         IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, &
         IOU_HOUR=5, IOU_HOUR_MEAN=6
 
-   character(len=8),  public ,parameter :: model='ZD_OZONE'
+   character(len=10),  public ,parameter :: model="EMEP_MSC-W"
 
 end module ModelConstants_ml
 !_____________________________________________________________________________

@@ -36,7 +36,7 @@ module Ammonium_ml
  !     new values of ammonium sulphate (AMSU), NH3, HNO3, SO4 and 
  !     ammonium nitrate (AMNI).
  !
- !     Dec 2002 hf Routine change to treat SO4-NH3-HNO3-aNO3-aNH4 system instead
+ !     Dec 2002 hf Routine change to treat SO4-NH3-HNO3-pNO3_f-aNH4 system instead
  !     This makes code flexible with regards to which eq solver you choos: 
  !     Ammonium, MARS or EQSAM.
  !     In principle, this is exactly the same as using the old indices,
@@ -206,18 +206,18 @@ module Ammonium_ml
      !   Calculates the distribution of NH3, (NH4)1.5SO4, NH4NO3
      !   - needs more text...
      !   nov 2002 hf Changed from NH3-AMSU-AMNI-HNO3
-     !                       to   NH3-aNH4-aNO3-HNO3
+     !                       to   NH3-aNH4-pNO3_f-HNO3
      !   in order to have same structure as with EQSAM and MARS 
      !-------------------------------------------------------------------------
 
- use ChemSpecs_tot_ml      , only : SO4, aNH4,aNO3, NH3, HNO3
+ use ChemSpecs_tot_ml      , only : SO4, aNH4,pNO3_f, NH3, HNO3
  use Setup_1dfields_ml   , only :  xn => xn_2d
 
    real, dimension(KCHEMTOP:KMAX_MID)  ::  rcnh4 ! equilib. value
    real, dimension(KCHEMTOP:KMAX_MID) :: eqnh3, delteq   !ds, delt
    real, dimension(KCHEMTOP:KMAX_MID) :: freeSO4
 
-     freeSO4(:)=xn(SO4,:)-((xn(aNH4,:)-xn(aNO3,:))*2./3.) !hf Sulfate not in form 
+     freeSO4(:)=xn(SO4,:)-((xn(aNH4,:)-xn(pNO3_f,:))*2./3.) !hf Sulfate not in form 
                                                           !of (NH4)1.5SO4 or NH4NO3
      freeSO4(:)=max(0.0,freeSO4(:))
 
@@ -254,9 +254,9 @@ module Ammonium_ml
      delteq     = eqnh3 - xn(NH3,:)
      !hf amsu     delteq     = min(delteq,xn(AMNI,:))   ! ds - used to have delt here
      !hf amsu     xn(AMNI,:) = xn(AMNI,:) - delteq
-     delteq     = min(delteq,xn(aNO3,:))
+     delteq     = min(delteq,xn(pNO3_f,:))
 
-     xn(aNO3,:) = xn(aNO3,:) - delteq !hf
+     xn(pNO3_f,:) = xn(pNO3_f,:) - delteq !hf
 
      xn(NH3,:)  = xn(NH3,:)  + delteq
      xn(HNO3,:) = xn(HNO3,:) + delteq

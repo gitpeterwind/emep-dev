@@ -49,28 +49,27 @@ module DryDep_ml
 
 
  use My_DryDep_ml, only : Init_DepMap, &  ! Maps indices between 
-                          ! Vg-calculated (CDEP..) and advected  (IXADV_..)
+                          ! Vg-calculated (CDDEP..) and advected  (IXADV_..)
                           NDRYDEP_GASES , &  ! No. Vd values calculated 
                           NDRYDEP_ADV, &   ! No. advected species affected
                           NDRYDEP_AER, &   ! No. aerosol size modes for Vd
                           NDRYDEP_CALC, &  ! Total No. of  Vd values
                           DRYDEP_GASES, &  ! Wesely Index Vd values calculated 
-                          CDEP_SET,    &   ! for so4
-                          CDEP_NO2,CDEP_O3,    &   ! for NO2 comp pt. approach
-                          CDEP_SO2,CDEP_NH3, & !hf CoDep extra
-                          CDEP_FIN, CDEP_NH3,   &   ! FEB2009 Vds
+                          CDDEP_SET,    &   ! for so4
+                          CDDEP_NO2,CDDEP_O3,    &   ! for NO2 comp pt. approach
+                          CDDEP_SO2,CDDEP_NH3, & !hf CoDep extra
+                          CDDEP_FIN, CDDEP_NH3,   &   ! FEB2009 Vds
  
-                          FLUX_CDEP,   &   ! index O3 in CALC array, for STO_FLUXES
+                          FLUX_CDDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_MosaicOutput, &
-                          Dep        ! Mapping (type = depmap)
+                          DDepMap        ! Mapping (type = depmap)
 
 
-use LandDefs_ml, only : LandDefs !hf CoDep extra
+use LandDefs_ml, only : LandDefs
 use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
    ,MMC_USTAR, MMC_RH, MMC_INVL  !
 
- !dsVDS use Aero_DryDep_ml,    only : Aero_Rb
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
  use CheckStop_ml, only: CheckStop
  use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
@@ -149,7 +148,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
   if ( my_first_call ) then 
 
-     call Init_DepMap()               ! Maps CDEP to IXADV
+     call Init_DepMap()               ! Maps CDDEP to IXADV
      call Init_GasCoeff()             ! Sets Wesely coeffs.
 
 ! Read data for DO3SE (deposition O3 and  stomatal exchange) module
@@ -162,8 +161,8 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  
-         nadv       = max( Dep(n)%adv, nadv )  ! Looking for highest IXADV
-         vg_set(n)  = ( Dep(n)%calc == CDEP_SET ) ! for set vg
+         nadv       = max( DDepMap(n)%ind, nadv )  ! Looking for highest IXADV
+         vg_set(n)  = ( DDepMap(n)%calc == CDDEP_SET ) ! for set vg
          !if ( DEBUG_DRYDEP .and. MasterProc ) write(*,*) "VGSET ", n, nadv, vg_set(n)
      end do
 
@@ -206,15 +205,6 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 !=============================================================================
   end if !  my_first_call
 
-  !UNIMOD if ( old_daynumber /= daynumber ) then
-  !UNIMOD
-     !UNIMOD   if( MasterProc .and. DEBUG_DRYDEP) write(*,*) "INIT_DRYDEP set ", &
-     !UNIMOD        daynumber, old_daynumber
-    !UNIMOD    call SetLandUse()         ! Sets LandCover()%LAI, %hveg , etc
-       !UNIMOD old_daynumber = daynumber
-  !UNIMOD
-   !UNIMOD end if
-
   end subroutine init_drydep
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -223,10 +213,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
     real, dimension(NDRYDEP_GASES ) :: &
           Rb           & ! Quasi-boundary layer rsis.
-!hf XX         ,Rsur_dry     & ! Surface Resistance (s/m) over dry surface
-!hf XX         ,Rsur_wet       ! Surface Resistance (s/m) over wet surface
          ,Rsur    &   ! Surface Resistance (s/m) 
-!hf
          ,Gns !Surface conductance
          
     real, dimension(NDRYDEP_CALC) :: &
@@ -236,7 +223,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
          ,Vg_3m        & ! Vg at  3m
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
          ,sea_ratio     ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
-!hf
+
     real, dimension(NDRYDEP_GASES ) :: &
           Grid_Rs      & ! Grid average of Rsurface
          ,Grid_Gns       ! Grid average of Gns
@@ -542,15 +529,15 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
          ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
          ! Note, xn_2d has no2 in #/cm-3
 
-           if ( n == CDEP_NO2 ) then
+           if ( n == CDDEP_NO2 ) then
 
             no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   
             no2fac = max(1.0, no2fac)
             no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
 
-            Vg_ref(CDEP_NO2) = Vg_ref(CDEP_NO2) * no2fac
-            Vg_3m (CDEP_NO2) = Vg_3m (CDEP_NO2) * no2fac
-          end if ! CDEP_NO2
+            Vg_ref(CDDEP_NO2) = Vg_ref(CDDEP_NO2) * no2fac
+            Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
+          end if ! CDDEP_NO2
 
            Mosaic_VgRef(n,iL) = Vg_ref(n)  ! Note iL, not iiL 
            Mosaic_Vg3m(n,iL) = Vg_3m(n)  ! Note iL, not iiL 
@@ -603,7 +590,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
                write(*,*) "DEPSTO IN?: ", iL, LandType(iL)%flux_wanted , Sub(iL)%cano3_ppb
           end if
         if ( STO_FLUXES .and. LandType(iL)%flux_wanted ) then
-             call Calc_StoFlux(iL,  Vg_ref(FLUX_CDEP), debug_flag )
+             call Calc_StoFlux(iL,  Vg_ref(FLUX_CDDEP), debug_flag )
         end if ! STO_FLUXES
           if ( DEBUG_DRYDEP .and. debug_flag ) then
                write(*,*) "DEPSTO OUT?: ", iL, LandType(iL)%flux_wanted , Sub(iL)%cano3_ppb
@@ -654,15 +641,15 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
     end do ! n
 
       do n = 1, NDRYDEP_ADV 
-         nadv    = Dep(n)%adv
-         nadv2d  = NSPEC_SHL + Dep(n)%adv
+         nadv    = DDepMap(n)%ind
+         nadv2d  = NSPEC_SHL + DDepMap(n)%ind
 
-         ncalc   = Dep(n)%calc
+         ncalc   = DDepMap(n)%calc
 
          if ( vg_set(n) ) then
 
              DepLoss(nadv) =   & ! Use directly set Vg
-                 ( 1.0 - exp ( -Dep(n)%vg * dtz ) ) * xn_2d( nadv2d,KMAX_MID)
+                 ( 1.0 - exp ( -DDepMap(n)%vg * dtz ) ) * xn_2d( nadv2d,KMAX_MID)
              cfac(nadv, i,j) = 1.0   ! Crude, for now.
   
          else
@@ -723,11 +710,11 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
             if ( DEBUG_DRYDEP .and. debug_flag ) then
-            if ( n == CDEP_SO2 .and. iL == 1 ) then ! SO2, CF
+            if ( n == CDDEP_SO2 .and. iL == 1 ) then ! SO2, CF
 
                if ( vg_set(n) )  then
                  write(6,"(a12,3i3,3f12.3)") "FLUXSET  ", iiL, iL, nadv, &
-                     100.0*Dep(n)%vg, Sub(iL)%coverage, fluxfrac_adv(nadv,iL)
+                     100.0*DDepMap(n)%vg, Sub(iL)%coverage, fluxfrac_adv(nadv,iL)
                else
                  write(6,"(a12,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
                   Sub(iL)%coverage, &
@@ -749,7 +736,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
         if ( DEBUG_DRYDEP .and. debug_flag ) then
           if ( vg_set(n) ) then
-              write(*, "(a30,2i4,f8.3)") "DEBUG DryDep SET ",  n,nadv, Dep(n)%vg
+              write(*, "(a30,2i4,f8.3)") "DEBUG DryDep SET ",  n,nadv, DDepMap(n)%vg
           else
               write(*, "(a30,3i4,f12.5)") &
                   "DEBUG DryDep n, adv, calc, fac ",  n,nadv, ncalc, gradient_fac( ncalc)

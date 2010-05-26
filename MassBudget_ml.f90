@@ -41,7 +41,7 @@
 ! section at end
 !_____________________________________________________________________________
 
- use My_DryDep_ml, only : NDRYDEP_ADV, Dep 
+ use My_DryDep_ml, only : NDRYDEP_ADV, DDepMap 
 
  use ChemChemicals_ml, only : species       ! species identifier
  use ChemSpecs_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
@@ -439,7 +439,7 @@ contains
      DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio 
 
       do n = 1, NDRYDEP_ADV 
-         nadv    = Dep(n)%adv
+         nadv    = DDepMap(n)%ind
          totddep( nadv ) = totddep (nadv) + DryLoss(nadv) 
 
       enddo

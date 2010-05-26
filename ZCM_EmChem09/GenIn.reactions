@@ -32,14 +32,15 @@
 *
 *-- Inorganic chemistry ----- ;
 *-- ;
-(6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*LogTdiv300)   OP + {O2} +{M}  = O3      ; acp2004, V4, p1461-1738, Atkinson et al.
+* ERR (6.0e-34*O2+5.6e-34*N2)*O2*EXP(-2.6*Log300divT)   OP + {O2} + {M}  = O3      ; acp2004, V4, p1461-1738, Atkinson et al.
+(6.0e-34*O2+5.6e-34*N2)*EXP(-2.6*LogTdiv300)   OP + {O2} + {M}  = O3      ; acp2004, V4, p1461-1738, Atkinson et al.
 1.8e-11*N2*EXP(107.0*TINV)          OD + {N2}  = OP           ; A97,J
 3.2e-11*O2*EXP(67.0*TINV)           OD + {O2}  = OP           ; A97,J
 2.2e-10*H2O                         OD + {H2O} = 2. OH        ; A97,J
 1.4e-12*EXP(-1310.0*TINV)           O3 + NO    = NO2 + {O2}    ; acp2004
 1.4e-13*EXP(-2470.0*TINV)           O3 + NO2   = NO3 + {O2}    ; acp2004
 1.7e-12*EXP(-940.0*TINV)            O3 + OH    = HO2 + {O2}    ; acp2004 
-2.03e-16*EXP(4.57*LogTdiv300)*EXP(693.0*TINV)   O3 + HO2   = OH + 2 {O2}   ; acp2004
+2.03e-16*EXP(-4.57*Log300divT)*EXP(693.0*TINV)   O3 + HO2   = OH + 2 {O2}   ; acp2004
 1.8e-11*EXP(110.0*TINV)             NO + NO3   = NO2 + NO2     ; A97,J
 3.6e-12*EXP(270.0*TINV)             NO + HO2   = NO2 + OH      ; acp2004
 4.5e-14*EXP(-1260.0*TINV)           NO2 + NO3  = NO + NO2      ; MCM
@@ -185,7 +186,7 @@ KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MAC
 2.1e-6                Rn222 = Pb210 ;
 _func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
-_func_kaero()              HNO3 = pNO3        ;
+_func_kaero()              HNO3 = pNO3_c        ;
 TROE_NO_OP                 OP + NO  + {M}   = NO2     ; A97,J, jofmiss
 TROE_NO2_NO3               NO2 + NO3  = N2O5          ; A97,J
 TROE_N2O5                  N2O5       = NO2 + NO3     ; A97,J
@@ -287,13 +288,12 @@ rcemis(CH3OH,k)                        = CH3OH    ;
 rcemis(GLYOX,k)                       = GLYOX    ;
 rcemis(MGLYOX,k)                      = MGLYOX    ;
 *
-rcss(QSSFI,k)                           = SSfi ;
-rcss(QSSCO,k)                           = SSco ;
+rcss(QSSFI,k)                           = SeaSalt_f ;
+rcss(QSSCO,k)                           = SeaSalt_c ;
 *
-rc_Rn222(k)                                = Rn222    ;
-rcemis(PPM25,k)                      = PPM25 ;
-rcemis(PPMCO,k)                      = PPMCO ;
-rcemis(PPM25_Fire,k)                 = PPM25_Fire ;
+rc_Rn222(k)                             = Rn222    ;
+rcemis(PPM25,k)                         = PPM25 ;
+rcemis(PPMCO,k)                     = PPMCO ;
 *
 * <----------- Biogenic emissions ----------------------------->
 rcemis(C5H8,k)                        = C5H8    ;
@@ -301,33 +301,37 @@ rcemis(C5H8,k)                        = C5H8    ;
 * Add ammonia
 rcemis(NH3,k)                          = NH3 ;
 *
-* Depositions
+* Depositions. Give first the "master" compounds whose values are to be
+* applied to the gas/particle of interest. For example, we can use the
+* master compound DRY_FIN for all fine-particles
 *
-DRY_HNO3     HNO3                        =    ;
-DRY_HNO2     HONO                        =    ;
-DRY_PAN      PAN                         =    ;
-DRY_NO2      NO2                         =    ;
-DRY_SO2      SO2                         =    ;
-DRY_FIN      SO4                         =    ;
-DRY_NH3      NH3                         =    ; Missed in Garry
-DRY_FIN      aNH4                        =    ; Missed in Garry
-DRY_FIN      aNO3                        =    ; Missed in Garry
-DRY_O3       O3                          =    ;
-DRY_SO2      H2O2                        =    ;
-DRY_PAN      MPAN                        =    ;
-DRY_HCHO     HCHO                        =    ; Was DRY_RCHO earlier?
-DRY_ALD      CH3CHO                      =    ;
-DRY_ROOH     CH3O2H                      =    ;
-DRY_ROOH     C2H5OOH                     =    ;
-DRY_ALD      ACETOL                      =    ; Hydroxy acetone, Dry deposition? 
-DRY_COA      pNO3                        =    ;
-DRY_ALD      MAL                         =    ; ds query
-*? DRY_RCHO     MEK                        =    ;
-DRY_FIN      PPM25                       =    ;
-DRY_COA      PPMco                       =    ;
-DRY_FIN      SSfi                        =    ;
-DRY_COA      SSco                        =    ;
-DRY_FIN      Pb210                       =    ;
+DRY_HNO3   WET_HNO3    HNO3                        =    ;
+DRY_HNO2   WET_HNO3    HONO                        =    ; # Added March 2010
+DRY_PAN    -           PAN                         =    ;
+DRY_NO2    -           NO2                         =    ;
+DRY_SO2    WET_SO2     SO2                         =    ;
+DRY_FIN    WET_SO4     SO4                         =    ;
+DRY_NH3    WET_NH3     NH3                         =    ; Missed in Garry
+DRY_FIN    WET_PMf     aNH4                        =    ; Missed in Garry
+DRY_FIN    WET_PMf     pNO3_f                      =    ; Missed in Garry
+DRY_O3     -           O3                          =    ;
+DRY_SO2    WET_H2O2    H2O2                        =    ;
+DRY_PAN    -           MPAN                        =    ;
+DRY_HCHO   WET_HCHO    HCHO                        =    ; Was DRY_RCHO earlier?
+DRY_ALD    -           CH3CHO                      =    ;
+DRY_ROOH   -           CH3O2H                      =    ;
+DRY_ROOH   -           C2H5OOH                     =    ;
+DRY_ALD    -           ACETOL                      =    ; Hydroxy acetone, Dry deposition? 
+DRY_COA    WET_PMc     pNO3_c                        =    ;
+DRY_ALD    -           MAL                         =    ; ds query
+DRY_FIN    WET_PMf     PPM25                       =    ;
+DRY_COA    WET_PMc     PPMCO                       =    ;
+DRY_FIN    WET_PMf     SeaSalt_f                   =    ;
+DRY_COA    WET_PMc     SeaSalt_c                   =    ;
+DRY_FIN    -           Pb210                       =    ;
+*
+* Check another day.
+* DRY_RCHO      MEK                        =    ;
 * DRY_ROOH     CH3COO2H                    =    ;
 * DRY_ROOH     OXYO2H                      =    ;
 * DRY_ROOH     MALO2H                      =    ;
@@ -341,17 +345,15 @@ DRY_FIN      Pb210                       =    ;
 * DRY_ROOH     MACO3H                      =    ;
 *? DRY_ROOH     MACO2H                      =    ; Methacrylic acid, What dry deposition is expected? And perhaps wet dep? 
 * DRY_ROOH     ISONO3H                     =    ;
-WET_HNO3     H2O2                        =    ;
-WET_HNO3     HNO3                        =    ;
-WET_SO2      SO2                         =    ;
-WET_SO2      HCHO                        =    ;
-WET_SO2      ACETOL                      =    ; Hydroxy acetone, What wet deposition can be expected?
-WET_HNO3     CH3O2H                      =    ;
-WET_SO4      SO4                         =    ;
-WET_SO4      pNO3                        =    ;
-*
-*
-*
+*WET_HNO3     H2O2                        =    ;
+*WET_HNO3     HNO3                        =    ;
+*WET_SO2      SO2                         =    ;
+*WET_SO2      HCHO                        =    ;
+*WET_SO2      ACETOL                      =    ; Hydroxy acetone, What wet deposition can be expected?
+*WET_HNO3     CH3O2H                      =    ;
+*WET_SO4      SO4                         =    ;
+*WET_SO4      pNO3_c                        =    ;
+**
 *DRY_SA       OC                          =    ;
 *WET_SO4      OC                          =    ;
 *

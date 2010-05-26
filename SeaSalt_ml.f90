@@ -41,7 +41,7 @@
 !  Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
- use ChemSpecs_tot_ml,       only : SSFI, SSCO
+ use ChemSpecs_tot_ml,       only : SeaSalt_f, SeaSalt_c
  use ChemChemicals_ml,      only : species
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO
  use Landuse_ml,           only : LandCover, water_fraction
@@ -182,7 +182,7 @@
 !.. conversion factor from [part/m2/s] to [molec/cm3/s]
 
           invdz  = 1.0e-6 / Grid%DeltaZ       ! 1/dZ [1/cm3]
-          n2m = n_to_mSS * invdz *AVOG / species(SSFI)%molwt *1.0e-15
+          n2m = n_to_mSS * invdz *AVOG / species(SeaSalt_f)%molwt *1.0e-15
 
 !.. Fine particles emission [molec/cm3/s]
           do ii = 1, NFIN

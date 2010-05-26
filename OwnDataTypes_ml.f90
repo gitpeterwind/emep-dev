@@ -9,8 +9,19 @@ module OwnDataTypes_ml
   ! with these. Collecting them here will
   ! avoid some dependencies, and shorten some My type modules.
   !
-  ! Deriv used i My_Derived and  Derived_ml
+  ! depmap used in My_DryDep and My_WetDep_ml
+  ! Deriv used in My_Derived and  Derived_ml
   ! VBST from SOA_ml
+
+  !/-- we define a type to map indices of species to be deposited
+  !   to the lesser number of species where Vg is calculated
+
+   type, public :: depmap
+      integer :: ind   ! Index of species in IXADV_ or IX_ arrays
+      integer :: calc  ! Index of species in  calculated dep arrays
+      real    :: vg    ! if CDDEP_SET, give vg in m/s
+   end type depmap
+
 
    !================== 
 

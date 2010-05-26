@@ -48,7 +48,7 @@
   use ForestFire_ml,         only : Fire_rcemis, burning
   use Functions_ml,          only :  Tpot_2_T
   use ChemChemicals_ml,        only :  species
-  use ChemSpecs_tot_ml,        only :  SO4,aNO3,pNO3,C5H8,NO,NO2,SO2,CO
+  use ChemSpecs_tot_ml,        only :  SO4,C5H8,NO,NO2,SO2,CO
   use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn

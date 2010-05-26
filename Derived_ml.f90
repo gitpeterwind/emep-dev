@@ -73,6 +73,7 @@ use AOTx_ml,           only: Calc_GridAOTx, setaccumulate_2dyear
 use Biogenics_ml,       only: EmisNat !dsbvoc
 use CheckStop_ml,      only: CheckStop
 use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
+use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use ChemSpecs_shl_ml
 use ChemSpecs_tot_ml
@@ -124,6 +125,7 @@ private
  public :: Derived              ! Calculations of sums, avgs etc.
  private :: voc_2dcalc           ! Calculates sum of VOC for 2d fields
  private :: voc_3dcalc           ! Calculates sum of VOC for 3d fields
+ private :: pmgroup_calc              ! Calculates sum of groups, e.g. pm25
 
 
    INCLUDE 'mpif.h'
@@ -332,7 +334,7 @@ private
 
 
     if(DEBUG .and. MasterProc ) write(6,*) " START DEFINE DERIVED "
-    !   same mol.wt assumed for PPM25 and PPMco
+    !   same mol.wt assumed for PPM25 and PPMCOARSE
 
      !ds ugPMad = species(PPM25)%molwt * PPBINV /ATWAIR
 
@@ -362,10 +364,10 @@ call AddNewDeriv( "WDEP_SO4 ","WDEP ","-","-", "mgS/m2", &
          IXADV_SO4, -99,-99,  0.0,     F,    1.0e6,   F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_HNO3 ","WDEP ","-","-", "mgN/m2", & 
          IXADV_HNO3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_aNO3 ","WDEP ","-","-", "mgN/m2", & 
-         IXADV_aNO3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_pNO3 ","WDEP ","-","-", "mgN/m2", & 
-         IXADV_pNO3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
+call AddNewDeriv( "WDEP_pNO3_f","WDEP ","-","-", "mgN/m2", & 
+         IXADV_pNO3_f, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
+call AddNewDeriv( "WDEP_pNO3_c","WDEP ","-","-", "mgN/m2", & 
+         IXADV_pNO3_c, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_NH3 ","WDEP ","-","-", "mgN/m2", & 
          IXADV_NH3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", & 
@@ -446,11 +448,7 @@ call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
 
 !REWRITE as SURF_UG!
 !call AddDef( "ADV  ",T,IXADV_XPM25, ugPMad, T, F , T, T, T,"D2_XPM25","ug/m3")
-!dsxcall AddDef( "ADV  ",T,IXADV_PPM25, ugPMad, T, F , T, T, T,"D2_PPM25","ug/m3")
-!dsxcall AddDef( "ADV  ",T,IXADV_PPMco, ugPMad, T, F , T, T, T,"D2_PPMco","ug/m3")
 !Sea salt
-!dsxcall AddDef( "ADV  ",T,IXADV_SSfi, ugSS, T, F , T, T, T,"D2_SSfi","ug/m3")
-!dsxcall AddDef( "ADV  ",T,IXADV_SSco, ugSS, T, F , T, T, T,"D2_SSco","ug/m3")
        !Deriv(name, class,    subc,  txt,           unit
       !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
@@ -577,7 +575,9 @@ end do ! ind
 
               !Deriv(name, class,    subc,  txt,           unit
               !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
-call AddNewDeriv("SURF_ug_SIA", "PMGROUP", "MASS", "-", "ug/m3", &
+call AddNewDeriv("SURF_ug_SIA", "SIAGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   IXADV_O3, -99,-99,35.0, F, 1.0,   F,  F , F,   T, T, F , -999)
@@ -614,14 +614,16 @@ do ind = 1, size(D3_PPB)
          iadv , -99, -99, 0.0, F,  PPBINV,   T, T , F, T, T, F, -999,Is3D ) !?? atw?
 end do
 ! hb new 3D output
-  call AddNewDeriv( "D3_PM25","PM25", "-","-",   "ppb", &
-           -1, -99,-99, 0.0, F,  PPBINV,  F,  F , F,   F, F, F , -999,Is3D)
-  call AddNewDeriv( "D3_PMco","PMco", "-","-",   "ppb", &
-           -1, -99,-99, 0.0, F,  PPBINV,  F,  F , F,   F, F, F , -999,Is3D)
-  call AddNewDeriv( "D3_TH","TH", "-","-",   "m", &
-           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
-  call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
-           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
+!ds: Should not have PM in ppb! We do not know the Mol. Wt
+!ds  others removed for now to save memory
+!ds  call AddNewDeriv( "D3_PM25","PM25", "-","-",   "ppb", &
+!ds           -1, -99,-99, 0.0, F,  PPBINV,  F,  F , F,   F, F, F , -999,Is3D)
+!ds  call AddNewDeriv( "D3_PMco","PMco", "-","-",   "ppb", &
+!ds           -1, -99,-99, 0.0, F,  PPBINV,  F,  F , F,   F, F, F , -999,Is3D)
+!ds  call AddNewDeriv( "D3_TH","TH", "-","-",   "m", &
+!ds           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
+!ds  call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
+!ds           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
 
 
      if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
@@ -1071,6 +1073,11 @@ end do
             !if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
             !       n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
+          case ( "SIAGROUP" )
+            call pmgroup_calc( d_2d(n,:,:,IOU_INST), typ,SIA_GROUP, density )
+          case ( "PM25GROUP" )
+            call pmgroup_calc( d_2d(n,:,:,IOU_INST), typ,PM25_GROUP, density )
+
           case  default
 
             if ( debug_flag ) then
@@ -1209,25 +1216,26 @@ end do
 
 
 ! hb new 3D output
-         case ( "PM25" )
-         
-            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-              d_3d( n, i,j,k,IOU_INST) = xn_adv(IXADV_SO4,i,j,k) &
-                + xn_adv(IXADV_aNO3,i,j,k) &
-                + xn_adv(IXADV_aNH4,i,j,k) &
-                + xn_adv(IXADV_PPM25,i,j,k) &
-                + xn_adv(IXADV_SSfi,i,j,k) 
-            end forall
-
-! hb new 3D output
-         case ( "PMco" )
-         
-            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
-              d_3d( n, i,j,k,IOU_INST) =   &
-                + xn_adv(IXADV_pNO3,i,j,k) &
-                + xn_adv(IXADV_PPMco,i,j,k) &
-                + xn_adv(IXADV_SSco,i,j,k) 
-            end forall
+! ds Bug - cannot have PM in mixing ratio
+!ds         case ( "PM25" )
+!ds         
+!ds            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+!ds              d_3d( n, i,j,k,IOU_INST) = xn_adv(IXADV_SO4,i,j,k) &
+!ds                + xn_adv(IXADV_pNO3_f,i,j,k) &
+!ds                + xn_adv(IXADV_aNH4,i,j,k) &
+!ds                + xn_adv(IXADV_PPM25,i,j,k) &
+!ds                + xn_adv(IXADV_SeaSalt_f,i,j,k) 
+!ds            end forall
+!ds
+!ds! hb new 3D output
+!ds         case ( "PMco" )
+!ds         
+!ds            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+!ds              d_3d( n, i,j,k,IOU_INST) =   &
+!ds                + xn_adv(IXADV_pNO3_c,i,j,k) &
+!ds                + xn_adv(IXADV_PPMCOARSE,i,j,k) &
+!ds                + xn_adv(IXADV_SeaSalt_c,i,j,k) 
+!ds            end forall
 
 ! hb                                                                            
          case ( "Kz" )
@@ -1415,6 +1423,44 @@ end do
 
    end subroutine voc_3dcalc
  !=========================================================================
+ subroutine pmgroup_calc( pm_2d, class, group, density )
+
+    !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
+    ! (only SIA converted to new group system so far, rv3_5_6 )
+    !/--  calulates also PM10  = SIA + PPM2.5 + PPMCOARSE
+
+    real, dimension(:,:), intent(inout) :: pm_2d  ! i,j section of d_2d arrays
+    character(len=*)    :: class   ! Type of data
+    integer, intent(in), dimension(:)  :: group
+    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+    integer :: n, iadv, itot
+
+        if(DEBUG .and. debug_proc) then
+           write(*,"(a,4i4,2es12.3)") "DEBUG GROUP-PM-N", size(group)
+        end if
+      pm_2d( :,:) = 0.0
+      do n = 1, size(group)
+         itot = group(n)
+         iadv = group(n) - NSPEC_SHL
+
+        forall ( i=1:limax, j=1:ljmax )
+          pm_2d( i,j) = pm_2d( i,j) + &
+           xn_adv(iadv,i,j,KMAX_MID) *species(itot)%molwt *cfac(iadv,i,j)
+        end forall
+
+        if(DEBUG .and. debug_proc) then
+             i=debug_li
+             j=debug_lj
+             write(*,"(a,4i4,2es12.3)") "DEBUG GROUP-PM", n, &
+               itot, iadv, species(itot)%molwt, xn_adv(iadv,i,j,KMAX_MID), pm_2d(i,j)
+        end if
+      end do !n
+      forall ( i=1:limax, j=1:ljmax )
+        pm_2d( i,j) = pm_2d( i,j) * density(i,j)
+      end forall
+
+ end subroutine pmgroup_calc
+ !=========================================================================
 
   subroutine somo_calc( n )
 
@@ -1463,39 +1509,6 @@ end do
    end subroutine somo_calc
 
  !=========================================================================
-!
-!   subroutine setaccumulate_2dyear(n,accumulate_2dyear)
-!
-!! We don't want the yearly output to accumulate over the whole year
-!     integer, intent(in) :: n
-!      logical, intent(inout) :: accumulate_2dyear !flag to know when to
-!                                                  !accumulate d_2d (case "EXT")
-!
-!      if( f_2d(n)%name=="D2_EUAOT30DF".or.&
-!          f_2d(n)%name=="D2_EUAOT40DF".or.&
-!          f_2d(n)%name=="D2_UNAOT30DF".or.&
-!          f_2d(n)%name=="D2_UNAOT40DF"    &
-!          )then
-!         if(   current_date%month<startmonth_forest&
-!              .or.current_date%month>endmonth_forest)then
-!            accumulate_2dyear=.false.
-!         endif
-!      endif
-!
-!       if(f_2d(n)%name=="D2_EUAOT30WH".or.&
-!          f_2d(n)%name=="D2_EUAOT40WH".or.&
-!          f_2d(n)%name=="D2_UNAOT30WH".or.&
-!          f_2d(n)%name=="D2_UNAOT40WH"    &
-!          )then
-!         if(   current_date%month<startmonth_crops&
-!              .or.current_date%month>endmonth_crops)then
-!            accumulate_2dyear=.false.
-!
-!         endif
-!      endif
-!
-!    end subroutine setaccumulate_2dyear
-
     subroutine write_debug(n,index,rho,txt)
        integer, intent(in) :: n, index
        real, intent(in) :: rho

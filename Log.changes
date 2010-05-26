@@ -1,3 +1,68 @@
+xxxxxxxxxxxxxx rv3_5_26    Dave,  26th May   2010
+
+More GenChem enabled, with use of "groups" to avoid hard-coded indices:
+
+GenChem.pl and mk.GenChem  now in Unimod directory. Edit the ZCM_xxx/GenIn files
+to change reactions, depositions, etc.
+
+mk.GenChem - runs GenChem.pl and copies CM to current directory.
+
+GenChem.pl
+
+   1) Dep changes:
+   GenChem now produces CM_WetDep_ml
+
+   Define which species are deposited in GenIn.reactions, e.g. 
+
+     DRY_NO2    -           NO2      =    ;
+     DRY_SO2    WET_SO2     SO2      =    ;
+     DRY_FIN    WET_SO4     SO4      =    ;
+     DRY_FIN    WET_PMf     aNH4     =    ;
+     DRY_FIN    WET_PMf     pNO3_f   =    ; 
+
+  The idea is that we have some "CALC" compounds defined in My_WetDep_ml,
+  My_DryDep_ml, and can give the deposition rates of the species in terms
+  of these. Thus, we can use the WET_PMf rate for any fine particle,
+  we just need to define it once.
+
+  Aqueous_ml - rewritten to use the new CM_WetDep_ml approach.
+
+  DryDep_ml - rewritten to use the slightly renamed CM_DetDep_ml indices
+
+   2) Groups
+   Groups are defined in GenIn.species, e.g.
+
+     SO4   1  SO4        -  8.5  0  0      PM25,SIA,SOX,AOD  !
+
+   - adds SO4 to PM25_GROUP, SIA_GROUP, SOX_GROUP, AOD_GROUP
+    These groups can then be used in the rest of the code, so that
+    now we can get things like PM25 as the sum of all species in
+    PM25_GROUP; Avoids lots of lijnes with IXADV_PPM25, IXADV_SO4 ..
+    etc.
+
+   - the 8.5 0 0 are for AOD and VBS calculations. Will refine one day,
+     but these numbers are now added as species(..)%extC, %Cstar, %DeltaH
+     in CM_ChemSpecs_ml
+
+  Derived_ml changed with such group calculations. See pmgroup_calc
+  routine.
+
+  Also:
+
+    spotted outputs of PM in ppb, which has to be wrong. PM c an only have
+    mass output since we don't know the mol. wt.
+
+    Affects Derived_ml (3d outputs) and Sites_ml
+
+Name changes (provisional)
+
+  aNO3 -> pNO3_f
+  pNO3 -> pNO3_c
+  SSFi -> SeaSalt_f
+  SSCO -> SeaSalt_c
+
+In Ammonium_ml, 
+
 xxxxxxxxxxxxxx rv3_5_25    Peter  28th April 2010
 
 New version of ReadField_CDF. Simpler and more robust (when FL are below surface).

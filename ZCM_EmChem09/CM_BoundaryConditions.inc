@@ -27,8 +27,8 @@
 !EMEP:
   bc2xn_adv(IBC_CH3CHO  ,IXADV_CH3CHO  )   =   1.0
 !CB:  bc2xn_adv(IBC_CH3CHO  ,IXADV_ALD2    )   =   1.0 !CB05 ????
-  bc2xn_adv(IBC_aNO3    ,IXADV_aNO3    )   =   1.0
-  bc2xn_adv(IBC_pNO3    ,IXADV_pNO3    )   =   1.0
+  bc2xn_adv(IBC_aNO3    ,IXADV_pNO3_f  )   =   1.0
+  bc2xn_adv(IBC_pNO3    ,IXADV_pNO3_c  )   =   1.0
   bc2xn_adv(IBC_aNH4    ,IXADV_aNH4    )   =   1.0
   bc2xn_adv(IBC_H2O2    ,IXADV_H2O2    )   =   1.0
 !EMEP:

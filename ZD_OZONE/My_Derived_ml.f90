@@ -57,8 +57,8 @@ use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use ChemSpecs_adv_ml        ! Use IXADV_ indices...
 use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
 use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                   !        ,NO2, aNO3, pNO3, HNO3, NH3, aNH4, PPM25, PPMCO &
-                   !       ,O3, PAN, MPAN, SSfi, SSco  !SS=SeaSalt
+                   !        ,NO2, pNO3_f, pNO3_c, HNO3, NH3, aNH4, PPM25, PPMCO &
+                   !       ,O3, PAN, MPAN, SeaSalt_f, SeaSalt_c  !SS=SeaSalt
 use ChemGroups_ml,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
                             DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
@@ -87,8 +87,8 @@ private
  public  :: Init_My_Deriv
  public  :: My_DerivFunc
 
- private :: misc_xn   &          ! Miscelleaneous Sums and fractions of xn_adv
-           ,pm_calc              ! Miscelleaneous PM's
+ private :: misc_xn             ! Miscelleaneous Sums and fractions of xn_adv
+!dsMay2010           ,pm_calc              ! Miscelleaneous PM's
 
 
    !/** Depositions are stored in separate arrays for now - to keep size of
@@ -123,14 +123,14 @@ private
    integer, public, parameter, dimension(1) :: SRSURF_UG_S = (/ SO4 /)
    integer, public, parameter, dimension(2) ::   SURF_UG_S = (/ SO2, SO4 /)
 
-   integer, public, parameter, dimension(4) :: SRSURF_UG_N = (/ aNO3, pNO3, aNH4, NO2 /)
+   integer, public, parameter, dimension(4) :: SRSURF_UG_N = (/ pNO3_f, pNO3_c, aNH4, NO2 /)
    integer, public, parameter, dimension(2) ::  XSURF_UG_N = (/ NH3, HNO3 /)
    integer, public, parameter, dimension(6) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
 
    integer, public, parameter, dimension(1) ::  SURF_UG_C = (/ HCHO /)
 
-   integer, public, parameter, dimension(3) :: SRSURF_UG = (/ PPM25, PPM25_FIRE, PPMco /)
-   integer, public, parameter, dimension(2) ::  XSURF_UG = (/ SSfi,SSco /)
+   integer, public, parameter, dimension(3) :: SRSURF_UG = (/ PPM25, PPM25_FIRE, PPMCO /)
+   integer, public, parameter, dimension(2) ::  XSURF_UG = (/ SeaSalt_f,SeaSalt_c /)
    integer, public, parameter, dimension(5) ::   SURF_UG = (/ SRSURF_UG, XSURF_UG /)
 
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
@@ -151,10 +151,11 @@ private
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
       ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
+      ,"SURF_ug_PM25 " & !dsMay2010
       ,"SOMO35      " & !"D2_SOMO0    " &
       ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
@@ -175,8 +176,8 @@ private
        "WDEP_SO2          " &
       ,"WDEP_SO4          " &
       ,"WDEP_HNO3         " &
-      ,"WDEP_aNO3         " &
-      ,"WDEP_pNO3         " &
+      ,"WDEP_pNO3_f       " &
+      ,"WDEP_pNO3_c       " &
       ,"WDEP_NH3          " &
       ,"WDEP_aNH4         " &
       ,"SURF_ppbC_VOC     " &
@@ -201,11 +202,6 @@ private
 
   integer, public, parameter :: &   ! Groups for DDEP and WDEP
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
-  !ds rv3_5_6 integer, public, dimension(2) ::  DDEP_SOXGROUP = (/ SO2, SO4 /)
-  !ds rv3_5_6 integer, public, dimension(2) ::  DDEP_RDNGROUP = (/ NH3, aNH4 /)
-  !rv3_5_6 has put DDEP_SOXGROUP; DDEP_RDNGROUP in CM_ChemSpecs_ml, as DDEP_OXNGROUP
-  !rv3_5_6 integer, public, dimension(size(DDEP_OXNGROUP)) :: DDEP_GROUP ! Working array
-  ! should be set as max of SOX, OXN, RDN, assume OXN biggest
 
  ! Ecosystem dep output uses receiver land-cover classes (LCs)
  ! which might include several landuse types, e.g. Conif in
@@ -236,8 +232,8 @@ private
                     , "Decid  ", "Crops  " /)
 
     integer, public, parameter, dimension(2) :: &
-      WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, aNO3, HNO3, pNO3 /)
-      !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, aNO3, HNO3, pNO3 /)
+      WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, pNO3_f, HNO3, pNO3_c /)
+      !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, pNO3_f, HNO3, pNO3_c /)
 
 
   type(Deriv), public, &
@@ -350,7 +346,7 @@ private
     ! PC-gfortran runs.
 
  ! hb new 3D output when ppb
-    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, aNO3, pNO3 /)
+    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, pNO3_f, pNO3_c /)
     integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
 
 ! hb other (non-ppb) 3D output
@@ -789,10 +785,10 @@ private
            call misc_xn( e_2d, class, density )
 
       !case ( "SIA", "PM10", "PM25", "PMco" )
-      case ( "PMGROUP", "PM10", "PM25", "PMco" )
-
-          if(DEBUG .and. debug_proc) write(*,"(a,a)") "DEBUG CLASS", trim(class)
-          call pm_calc(e_2d, class,  density)
+!dsMay2010     case ( "PMGROUP", "PM10", "PM25", "PMco" )
+!dsMay2010
+!dsMay2010          if(DEBUG .and. debug_proc) write(*,"(a,a)") "DEBUG CLASS", trim(class)
+!dsMay2010          call pm_calc(e_2d, class,  density)
 
       case  default
 
@@ -804,83 +800,83 @@ private
   end subroutine My_DerivFunc
  !=========================================================================
 
-  subroutine pm_calc( pm_2d, class, density )
-
-    !/--  calulates e.g. SIA = SO4 + aNO3 + pNO3 + aNH4
-    ! (only SIA converted to new group system so far, rv3_5_6 )
-    !/--  calulates also PM10  = SIA + PPM2.5 + PPMco
-
-    real, dimension(:,:), intent(inout) :: pm_2d  ! i,j section of d_2d arrays
-    character(len=*)    :: class   ! Type of data
-    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-    integer :: n, iadv, itot
-
-    select case ( class )
-
-    case ( "PMGROUP" )     !was "SIA", should in future cope with PM25 etc.
-                           !Sums all species in SIA_GROUP
- 
-      pm_2d( :,:) = 0.0
-      do n = 1, size(SIA_GROUP)
-         itot = SIA_GROUP(n)
-         iadv = SIA_GROUP(n) - NSPEC_SHL
-
-        forall ( i=1:limax, j=1:ljmax )
-          pm_2d( i,j) = pm_2d( i,j) + &      !ds d_2d( n, i,j,IOU_INST) = &
-           xn_adv(iadv,i,j,KMAX_MID) *species(itot)%molwt *cfac(iadv,i,j) 
-        end forall
-
-        if(DEBUG .and. debug_proc) then
-             i=debug_li
-             j=debug_lj
-             write(*,"(a,4i4,2es12.3)") "DEBUG SIA", n, &
-               itot, iadv, species(itot)%molwt, xn_adv(iadv,i,j,KMAX_MID), pm_2d(i,j)
-        end if
-      end do !n
-      forall ( i=1:limax, j=1:ljmax )
-        pm_2d( i,j) = pm_2d( i,j) * density(i,j)
-      end forall
-
-    case ( "PM25" )
-
-      forall ( i=1:limax, j=1:ljmax )
-        pm_2d( i,j ) = &
-         ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
-         + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
-         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
-         + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt *cfac(IXADV_SSfi,i,j))&  !SeaS
-         * density(i,j)
-      end forall
-
-    case ( "PMco" )
-
-      forall ( i=1:limax, j=1:ljmax )
-        pm_2d( i,j ) = &
-         ( xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
-         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) &
-         + xn_adv(IXADV_SSco,i,j,KMAX_MID) *species(SSco)%molwt *cfac(IXADV_SSco,i,j))&  !SeaS
-          * density(i,j)
-      end forall
-
-    case ( "PM10" )
-
-      forall ( i=1:limax, j=1:ljmax )
-        pm_2d( i,j ) = &
-         ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt*cfac(IXADV_SO4,i,j)   &
-         + xn_adv(IXADV_aNO3,i,j,KMAX_MID)*species(aNO3)%molwt*cfac(IXADV_aNO3,i,j) &
-         + xn_adv(IXADV_pNO3,i,j,KMAX_MID)*species(pNO3)%molwt*cfac(IXADV_pNO3,i,j) &
-         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
-         + xn_adv(IXADV_PPMco,i,j,KMAX_MID)*species(PPMco)%molwt*cfac(IXADV_PPMco,i,j) &
-         + xn_adv(IXADV_SSfi,i,j,KMAX_MID)*species(SSfi)%molwt*cfac(IXADV_SSfi,i,j) & !SeaS
-         + xn_adv(IXADV_SSco,i,j,KMAX_MID)*species(SSco)%molwt*cfac(IXADV_SSco,i,j))& !SeaS
-         * density(i,j)
-      end forall
-
-    end select
-
-  end subroutine  pm_calc
+!dsMay2010  subroutine pm_calc( pm_2d, class, density )
+!dsMay2010
+!dsMay2010    !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
+!dsMay2010    ! (only SIA converted to new group system so far, rv3_5_6 )
+!dsMay2010    !/--  calulates also PM10  = SIA + PPM2.5 + PPMCO
+!dsMay2010
+!dsMay2010    real, dimension(:,:), intent(inout) :: pm_2d  ! i,j section of d_2d arrays
+!dsMay2010    character(len=*)    :: class   ! Type of data
+!dsMay2010    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+!dsMay2010    integer :: n, iadv, itot
+!dsMay2010
+!dsMay2010    select case ( class )
+!dsMay2010
+!dsMay2010    case ( "PMGROUP" )     !was "SIA", should in future cope with PM25 etc.
+!dsMay2010                           !Sums all species in SIA_GROUP
+!dsMay2010 
+!dsMay2010      pm_2d( :,:) = 0.0
+!dsMay2010      do n = 1, size(SIA_GROUP)
+!dsMay2010         itot = SIA_GROUP(n)
+!dsMay2010         iadv = SIA_GROUP(n) - NSPEC_SHL
+!dsMay2010
+!dsMay2010        forall ( i=1:limax, j=1:ljmax )
+!dsMay2010          pm_2d( i,j) = pm_2d( i,j) + &      !ds d_2d( n, i,j,IOU_INST) = &
+!dsMay2010           xn_adv(iadv,i,j,KMAX_MID) *species(itot)%molwt *cfac(iadv,i,j) 
+!dsMay2010        end forall
+!dsMay2010
+!dsMay2010        if(DEBUG .and. debug_proc) then
+!dsMay2010             i=debug_li
+!dsMay2010             j=debug_lj
+!dsMay2010             write(*,"(a,4i4,2es12.3)") "DEBUG SIA", n, &
+!dsMay2010               itot, iadv, species(itot)%molwt, xn_adv(iadv,i,j,KMAX_MID), pm_2d(i,j)
+!dsMay2010        end if
+!dsMay2010      end do !n
+!dsMay2010      forall ( i=1:limax, j=1:ljmax )
+!dsMay2010        pm_2d( i,j) = pm_2d( i,j) * density(i,j)
+!dsMay2010      end forall
+!dsMay2010
+!dsMay2010    case ( "PM25" )
+!dsMay2010
+!dsMay2010      forall ( i=1:limax, j=1:ljmax )
+!dsMay2010        pm_2d( i,j ) = &
+!dsMay2010         ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
+!dsMay2010         + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID)*species(pNO3_f)%molwt*cfac(IXADV_pNO3_f,i,j) &
+!dsMay2010         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
+!dsMay2010         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
+!dsMay2010         + xn_adv(IXADV_SeaSalt_f,i,j,KMAX_MID)*species(SeaSalt_f)%molwt *cfac(IXADV_SeaSalt_f,i,j))&  !SeaS
+!dsMay2010         * density(i,j)
+!dsMay2010      end forall
+!dsMay2010
+!dsMay2010    case ( "PMco" )
+!dsMay2010
+!dsMay2010      forall ( i=1:limax, j=1:ljmax )
+!dsMay2010        pm_2d( i,j ) = &
+!dsMay2010         ( xn_adv(IXADV_pNO3_c,i,j,KMAX_MID)*species(pNO3_c)%molwt*cfac(IXADV_pNO3_c,i,j) &
+!dsMay2010         + xn_adv(IXADV_PPMCO,i,j,KMAX_MID)*species(PPMCO)%molwt*cfac(IXADV_PPMCO,i,j) &
+!dsMay2010         + xn_adv(IXADV_SeaSalt_c,i,j,KMAX_MID) *species(SeaSalt_c)%molwt *cfac(IXADV_SeaSalt_c,i,j))&  !SeaS
+!dsMay2010          * density(i,j)
+!dsMay2010      end forall
+!dsMay2010
+!dsMay2010    case ( "PM10" )
+!dsMay2010
+!dsMay2010      forall ( i=1:limax, j=1:ljmax )
+!dsMay2010        pm_2d( i,j ) = &
+!dsMay2010         ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt*cfac(IXADV_SO4,i,j)   &
+!dsMay2010         + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID)*species(pNO3_f)%molwt*cfac(IXADV_pNO3_f,i,j) &
+!dsMay2010         + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID)*species(pNO3_c)%molwt*cfac(IXADV_pNO3_c,i,j) &
+!dsMay2010         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
+!dsMay2010         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
+!dsMay2010         + xn_adv(IXADV_PPMCO,i,j,KMAX_MID)*species(PPMCO)%molwt*cfac(IXADV_PPMCO,i,j) &
+!dsMay2010         + xn_adv(IXADV_SeaSalt_f,i,j,KMAX_MID)*species(SeaSalt_f)%molwt*cfac(IXADV_SeaSalt_f,i,j) & !SeaS
+!dsMay2010         + xn_adv(IXADV_SeaSalt_c,i,j,KMAX_MID)*species(SeaSalt_c)%molwt*cfac(IXADV_SeaSalt_c,i,j))& !SeaS
+!dsMay2010         * density(i,j)
+!dsMay2010      end forall
+!dsMay2010
+!dsMay2010    end select
+!dsMay2010
+!dsMay2010  end subroutine  pm_calc
  !=========================================================================
 
 !=========================================================================
@@ -901,8 +897,8 @@ private
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
               ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
-              + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
-              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j)) &
+              + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j) &
+              + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j)) &
               * density(i,j)
       end forall
 
@@ -938,8 +934,8 @@ private
           e_2d( i,j ) = e_2d( i,j ) * density(i,j)
         end do ! j
       end do ! i
-!DSGC              + xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
-!DSGC              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) &
+!DSGC              + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j) &
+!DSGC              + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j) &
 !DSGC              + xn_adv(IXADV_PAN,i,j,KMAX_MID) * cfac(IXADV_PAN,i,j) &
 !DSGC              + xn_adv(IXADV_MPAN,i,j,KMAX_MID) * cfac(IXADV_MPAN,i,j) &
 !DSGC              + xn_adv(IXADV_NO3,i,j,KMAX_MID) &
@@ -959,26 +955,26 @@ private
     case ( "FRNIT" )
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
-             ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)  &
-            +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j)) &
+             ( xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j)  &
+            +  xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j)) &
        /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))&
-            +  xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j)    &
-            +  xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j))
+            +  xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j)    &
+            +  xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j))
       end forall
 
     case ( "tNO3" )
       forall ( i=1:limax, j=1:ljmax )
           e_2d(  i,j ) = &
-              ( xn_adv(IXADV_aNO3,i,j,KMAX_MID) * cfac(IXADV_aNO3,i,j) &
-              + xn_adv(IXADV_pNO3,i,j,KMAX_MID) * cfac(IXADV_pNO3,i,j) )&
+              ( xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j) &
+              + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j) )&
               * density(i,j)
       end forall
 
     case ( "SSalt" )
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
-              ( xn_adv(IXADV_SSfi,i,j,KMAX_MID) * cfac(IXADV_SSfi,i,j) &
-              + xn_adv(IXADV_SSco,i,j,KMAX_MID) * cfac(IXADV_SSco,i,j) )&
+              ( xn_adv(IXADV_SeaSalt_f,i,j,KMAX_MID) * cfac(IXADV_SeaSalt_f,i,j) &
+              + xn_adv(IXADV_SeaSalt_c,i,j,KMAX_MID) * cfac(IXADV_SeaSalt_c,i,j) )&
               * density(i,j)
       end forall
 
