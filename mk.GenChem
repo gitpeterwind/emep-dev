@@ -1,0 +1,63 @@
+
+# Script to prepare CM_ files for Unimod
+#
+# 1) RUns GenChem to get chemical mechanism
+# 2) Copies Boundary Condition files
+# 3) Run GenVOC to get speciation
+#
+#====== Set run here =======================
+run=Test03   # CRI_v2_R5
+run=EmChem03c   # CRI_v2_R5
+run=vbs_tests   # CRI_v2_R5
+run=EmChem09    # CRI_v2_R5
+# ==========================================
+cdir=$PWD            #  Current when starting. Assumed now as a Unimod
+wdir=$PWD/ZCM_$run   # work-directory, with input files
+odir=$PWD/ZCM_$run   # We keep output in work-directory 
+echo $odir
+#mkdir $odir
+
+#GenSort.pl $run   # Creates GenIn.species, so be careful !#
+
+# 1) Runs GenChem to get chemical mechanism 
+#######################################################################
+cd $wdir
+
+$cdir/GenChem.pl
+
+# Mar 17th 2009, added fake GenSpec_bgn_ml
+
+cat GenOut_ChemRates*inc    > $odir/CM_ChemRates_ml.f90
+
+cat GenOut_ChemSpec*inc  GenOut_ChemChemicals_ml.inc \
+    GenOut_ChemGroups_ml.f90 ../DUMMY_Spec_bgn_ml \
+           > $odir/CM_ChemSpecs_ml.f90
+
+#mv GenOut_SOA_ml.f90 $odir/CM_SOA_ml.f90
+mv ChemSOA_ml.f90 $odir/CM_SOA_ml.f90
+
+mv GenOut_Reactions1.inc  $odir/CM_Reactions1.inc
+mv GenOut_Reactions2.inc  $odir/CM_Reactions2.inc
+mv GenOut_DryDep.inc      $odir/CM_DryDep.inc
+mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
+
+rm GenOut_*                # Clean up current directory
+#mv Log.GenOut  $odir/Log.$run
+
+cp $odir/CM* $cdir
+cd $cdir
+
+
+
+# Skipped now:
+# 2) Copies Boundary Condition files
+#######################################################################
+# This file needs creating by hand
+#cp BoundaryConditions.$run   $odir/CM_BoundaryConditions.inc   
+
+# 3) Run GenVOC to get speciation
+#######################################################################
+#Now done by Garry
+#cd ..
+#GenVOC.pl $run
+
