@@ -48,7 +48,7 @@
 !  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
-  use ChemSpecs_shl_ml,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
+  use ChemSpecs_shl_ml    !,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
   use ChemChemicals_ml ,  only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC
   use Par_ml,            only: me, GIMAX,GJMAX,IRUNBEG,JRUNBEG
@@ -154,7 +154,7 @@ integer, public, parameter :: &
     ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =     8                &   ! No.  advected species
-    ,NSHL_SONDE  =    1                &   ! No. short-lived species
+    ,NSHL_SONDE  =    3                &   ! No. short-lived species
     ,NXTRA_SONDE =    5                    ! No. Misc. met. params  (now th)
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
@@ -162,7 +162,7 @@ integer, public, parameter :: &
    IXADV_pNO3_c,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
 
    integer, public, parameter, dimension(NSHL_SONDE) :: &
-    SONDE_SHL =  (/ IXSHL_OH /)
+    SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 !    SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /) 
     SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /) 

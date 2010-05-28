@@ -1,3 +1,21 @@
+xxxxxxxxxxxxxx rv3_5_27    Dave,  28th May   2010
+
+GenChem.pl changes:   GenIn.species is now a comma-separated file which
+  can be edited in gnumeric, and contains details of the dry and wet dep,
+  also other params such as extinction coefficient and VBS details.
+
+ZCM_EmChem09:
+    GenIn_species.csv created as above
+    GenIn.Reactions - deposition stuff removed
+
+Derived_ml     - extended for more groups (tNO3, OXN...)
+
+GlobalBCs_ml   - test about ZD_OZONE removed
+
+ModelConsants_ml - model changed to EMEP-MSC-W instead of ZD_OZONE
+
+ChemSpecs_bgn_ml, Chem_ml: Content of ChemSpecs_bgn_ml moved into Chem_ml
+
 xxxxxxxxxxxxxx rv3_5_26    Dave,  26th May   2010
 
 More GenChem enabled, with use of "groups" to avoid hard-coded indices:

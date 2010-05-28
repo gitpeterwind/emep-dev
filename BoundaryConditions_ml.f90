@@ -102,15 +102,11 @@ module BoundaryConditions_ml
 ! domain, then monthly for the sides and top.
 ! Background species must be reset in 3-D each month.
 !_____________________________________________________________________________
-!DSGC  use My_BoundConditions_ml, only: &
-!DSGC          NTOT_BC                 & ! Total Number of species with bcs
-!DSGC         ,My_bcmap                &! set-up subroutine
-!DSGC         ,bc2xn_adv, bc2xn_bgn     ! mapping arrays
 
   use CheckStop_ml,      only: CheckStop
-  use Chemfields_ml,         only: xn_adv, xn_bgn  ! emep model concs.
+  use Chemfields_ml,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
+!ds  use ChemSpecs_bgn_ml,        only :NSPEC_BGN
   use ChemSpecs_adv_ml         ! Lots, including NSPEC_ADV and IXADV_
-  use ChemSpecs_bgn_ml,        only :NSPEC_BGN
   use GlobalBCs_ml,                only: &
           NGLOB_BC                 &  ! Number of species from global-model
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.

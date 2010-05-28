@@ -674,15 +674,7 @@ elseif( year == 2005) then
                    macehead_O3(month),O3fix/PPB
               endif
 
-              !ds if (model=='ZD_ACID') then
-              !ds    bc_rawdata=max(15.*PPB,bc_rawdata)
-
-              !ds else
-              if (model=='ZD_OZONE') then
-                 bc_rawdata=max(15.0*PPB,bc_rawdata-O3fix)
-              else
-                 call CheckStop("Problem with Mace Head Correction in GlobalBCs_ml")
-              endif
+              bc_rawdata=max(15.0*PPB,bc_rawdata-O3fix)
 
               bc_rawdata=trend_o3 * bc_rawdata
 

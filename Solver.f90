@@ -56,7 +56,8 @@
     use Emissions_ml,      only: KEMISTOP    
     use ChemGroups_ml,     only: RO2_POOL
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
-    use ChemSpecs_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
+    !dsjuse ChemSpecs_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
+    use Chemfields_ml,  only : NSPEC_BGN       ! => IXBGN_  indices and xn_2d_bgn values
     use ChemRates_rct_ml,   only: rct
     use ChemRates_rcmisc_ml,only: rcmisc  ! DSGC new
     use GridValues_ml,     only : GRIDWIDTH_M

@@ -88,7 +88,6 @@ private
  public  :: My_DerivFunc
 
  private :: misc_xn             ! Miscelleaneous Sums and fractions of xn_adv
-!dsMay2010           ,pm_calc              ! Miscelleaneous PM's
 
 
    !/** Depositions are stored in separate arrays for now - to keep size of
@@ -151,23 +150,21 @@ private
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
       ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
       ,"SURF_ug_PM25 " & !dsMay2010
+      ,"SURF_ug_PMc  " & !dsMay2010
+      ,"SURF_ug_PM10 " & !dsMay2010
+      ,"SURF_ugN_OXN " & !dsMay2010
+      ,"SURF_ugN_RDN " & !dsMay2010
+      ,"SURF_ugN_TNO3" & !dsMay2010
       ,"SOMO35      " & !"D2_SOMO0    " &
       ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
-
 !
-!    Particles: sums
-!       "D2_SIA      ","D2_PM25     ","D2_PM10     ","D2_PMco     " &
-!      ,"D2_SS       ","D2_tNO3     ","D2_PM25_H2O " &
-!
-!    NOy-type sums
-!      ,"D2_OXN      ","D2_NOX      ","D2_NOZ      ","D2_OX       "  &
-!
+!      ,ToDo "D2_PM25_H2O " &
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
@@ -221,15 +218,15 @@ private
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  from EcoSystem_ml.
    !
-    integer, public, parameter :: NNDRYDEP = 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
+    integer, public, parameter :: NNDRYDEP = 3 ! 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
    !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
     integer, public, parameter, dimension(NNDRYDEP) :: &
-      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, &
-           SO2,  SO4, NH3, aNH4, HNO3 /) ! DDEP_OXNGROUP /)
+      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) ! , &
+       !    SO2,  SO4, NH3, aNH4, HNO3 /) ! DDEP_OXNGROUP /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
-      DDEP_ECOS  = (/ "Grid   ", "Conif  ", "Seminat", "Water_D" &
-                    , "Decid  ", "Crops  " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+      DDEP_ECOS  = (/ "Grid   " /) !, "Conif  ", "Seminat", "Water_D" &
+                   ! , "Decid  ", "Crops  " /)
 
     integer, public, parameter, dimension(2) :: &
       WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, pNO3_f, HNO3, pNO3_c /)
@@ -784,12 +781,6 @@ private
 
            call misc_xn( e_2d, class, density )
 
-      !case ( "SIA", "PM10", "PM25", "PMco" )
-!dsMay2010     case ( "PMGROUP", "PM10", "PM25", "PMco" )
-!dsMay2010
-!dsMay2010          if(DEBUG .and. debug_proc) write(*,"(a,a)") "DEBUG CLASS", trim(class)
-!dsMay2010          call pm_calc(e_2d, class,  density)
-
       case  default
 
             write(*,*) "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
@@ -799,87 +790,6 @@ private
 
   end subroutine My_DerivFunc
  !=========================================================================
-
-!dsMay2010  subroutine pm_calc( pm_2d, class, density )
-!dsMay2010
-!dsMay2010    !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
-!dsMay2010    ! (only SIA converted to new group system so far, rv3_5_6 )
-!dsMay2010    !/--  calulates also PM10  = SIA + PPM2.5 + PPMCO
-!dsMay2010
-!dsMay2010    real, dimension(:,:), intent(inout) :: pm_2d  ! i,j section of d_2d arrays
-!dsMay2010    character(len=*)    :: class   ! Type of data
-!dsMay2010    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-!dsMay2010    integer :: n, iadv, itot
-!dsMay2010
-!dsMay2010    select case ( class )
-!dsMay2010
-!dsMay2010    case ( "PMGROUP" )     !was "SIA", should in future cope with PM25 etc.
-!dsMay2010                           !Sums all species in SIA_GROUP
-!dsMay2010 
-!dsMay2010      pm_2d( :,:) = 0.0
-!dsMay2010      do n = 1, size(SIA_GROUP)
-!dsMay2010         itot = SIA_GROUP(n)
-!dsMay2010         iadv = SIA_GROUP(n) - NSPEC_SHL
-!dsMay2010
-!dsMay2010        forall ( i=1:limax, j=1:ljmax )
-!dsMay2010          pm_2d( i,j) = pm_2d( i,j) + &      !ds d_2d( n, i,j,IOU_INST) = &
-!dsMay2010           xn_adv(iadv,i,j,KMAX_MID) *species(itot)%molwt *cfac(iadv,i,j) 
-!dsMay2010        end forall
-!dsMay2010
-!dsMay2010        if(DEBUG .and. debug_proc) then
-!dsMay2010             i=debug_li
-!dsMay2010             j=debug_lj
-!dsMay2010             write(*,"(a,4i4,2es12.3)") "DEBUG SIA", n, &
-!dsMay2010               itot, iadv, species(itot)%molwt, xn_adv(iadv,i,j,KMAX_MID), pm_2d(i,j)
-!dsMay2010        end if
-!dsMay2010      end do !n
-!dsMay2010      forall ( i=1:limax, j=1:ljmax )
-!dsMay2010        pm_2d( i,j) = pm_2d( i,j) * density(i,j)
-!dsMay2010      end forall
-!dsMay2010
-!dsMay2010    case ( "PM25" )
-!dsMay2010
-!dsMay2010      forall ( i=1:limax, j=1:ljmax )
-!dsMay2010        pm_2d( i,j ) = &
-!dsMay2010         ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt *cfac(IXADV_SO4,i,j)  &
-!dsMay2010         + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID)*species(pNO3_f)%molwt*cfac(IXADV_pNO3_f,i,j) &
-!dsMay2010         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-!dsMay2010         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
-!dsMay2010         + xn_adv(IXADV_SeaSalt_f,i,j,KMAX_MID)*species(SeaSalt_f)%molwt *cfac(IXADV_SeaSalt_f,i,j))&  !SeaS
-!dsMay2010         * density(i,j)
-!dsMay2010      end forall
-!dsMay2010
-!dsMay2010    case ( "PMco" )
-!dsMay2010
-!dsMay2010      forall ( i=1:limax, j=1:ljmax )
-!dsMay2010        pm_2d( i,j ) = &
-!dsMay2010         ( xn_adv(IXADV_pNO3_c,i,j,KMAX_MID)*species(pNO3_c)%molwt*cfac(IXADV_pNO3_c,i,j) &
-!dsMay2010         + xn_adv(IXADV_PPMCO,i,j,KMAX_MID)*species(PPMCO)%molwt*cfac(IXADV_PPMCO,i,j) &
-!dsMay2010         + xn_adv(IXADV_SeaSalt_c,i,j,KMAX_MID) *species(SeaSalt_c)%molwt *cfac(IXADV_SeaSalt_c,i,j))&  !SeaS
-!dsMay2010          * density(i,j)
-!dsMay2010      end forall
-!dsMay2010
-!dsMay2010    case ( "PM10" )
-!dsMay2010
-!dsMay2010      forall ( i=1:limax, j=1:ljmax )
-!dsMay2010        pm_2d( i,j ) = &
-!dsMay2010         ( xn_adv(IXADV_SO4,i,j,KMAX_MID) *species(SO4)%molwt*cfac(IXADV_SO4,i,j)   &
-!dsMay2010         + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID)*species(pNO3_f)%molwt*cfac(IXADV_pNO3_f,i,j) &
-!dsMay2010         + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID)*species(pNO3_c)%molwt*cfac(IXADV_pNO3_c,i,j) &
-!dsMay2010         + xn_adv(IXADV_aNH4,i,j,KMAX_MID)*species(aNH4)%molwt*cfac(IXADV_aNH4,i,j) &
-!dsMay2010         + xn_adv(IXADV_PPM25,i,j,KMAX_MID)*species(PPM25)%molwt*cfac(IXADV_PPM25,i,j) &
-!dsMay2010         + xn_adv(IXADV_PPMCO,i,j,KMAX_MID)*species(PPMCO)%molwt*cfac(IXADV_PPMCO,i,j) &
-!dsMay2010         + xn_adv(IXADV_SeaSalt_f,i,j,KMAX_MID)*species(SeaSalt_f)%molwt*cfac(IXADV_SeaSalt_f,i,j) & !SeaS
-!dsMay2010         + xn_adv(IXADV_SeaSalt_c,i,j,KMAX_MID)*species(SeaSalt_c)%molwt*cfac(IXADV_SeaSalt_c,i,j))& !SeaS
-!dsMay2010         * density(i,j)
-!dsMay2010      end forall
-!dsMay2010
-!dsMay2010    end select
-!dsMay2010
-!dsMay2010  end subroutine  pm_calc
- !=========================================================================
-
-!=========================================================================
 
   subroutine misc_xn( e_2d, class, density)
     real, dimension(:,:), intent(inout) :: e_2d  ! i,j section of d_2d arrays
@@ -934,14 +844,6 @@ private
           e_2d( i,j ) = e_2d( i,j ) * density(i,j)
         end do ! j
       end do ! i
-!DSGC              + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j) &
-!DSGC              + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j) &
-!DSGC              + xn_adv(IXADV_PAN,i,j,KMAX_MID) * cfac(IXADV_PAN,i,j) &
-!DSGC              + xn_adv(IXADV_MPAN,i,j,KMAX_MID) * cfac(IXADV_MPAN,i,j) &
-!DSGC              + xn_adv(IXADV_NO3,i,j,KMAX_MID) &
-!DSGC              + 2.0* xn_adv(IXADV_N2O5,i,j,KMAX_MID) &
-!DSGC              + xn_adv(IXADV_ISNI,i,j,KMAX_MID) &
-
 
     case ( "TRDN" )
       forall ( i=1:limax, j=1:ljmax )

@@ -39,7 +39,8 @@
   use EmisDef_ml,            only :  NSS, NBVOC   !NSS=SeaS
   use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SOA, LAST_SOA
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
-  use ChemSpecs_bgn_ml,        only :  NSPEC_COL
+  !ds use ChemSpecs_bgn_ml,        only :  NSPEC_COL
+  use Chemfields_ml,        only :  NSPEC_COL
   implicit none
   private
 

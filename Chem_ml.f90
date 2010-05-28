@@ -35,12 +35,28 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 !_____________________________________________________________________________
 use Par_ml               , only: MAXLIMAX,MAXLJMAX   ! => x, y dimensions
-use ModelConstants_ml    , only: KMAX_MID     ! =>  z dimension
+use ModelConstants_ml    , only: KMAX_MID, KCHEMTOP     ! =>  z dimension
 use ChemSpecs_adv_ml,  only: NSPEC_ADV         ! => No. species 
 use ChemSpecs_shl_ml,  only: NSPEC_SHL         ! => No. species 
-use ChemSpecs_bgn_ml,  only: NSPEC_BGN         ! => No. species 
+!see belowuse ChemSpecs_bgn_ml,  only: NSPEC_BGN         ! => No. species 
 implicit none
 private
+
+!-------- this snipppet was from older GenSpec_bgn_ml. ------
+  ! PRETTY MUCH FAKED FOR NOW. CAN BE DELETED SOON IN HOPE!
+  !+ Defines indices and NSPEC for bgn : Background species
+
+   ! Species which can be specified simply for each column, e.g.
+   ! as function of local meteorology or zenith angle
+   !   o2, m,  and for MADE-like, oh, ch3coo2
+
+   integer, public, parameter ::  NSPEC_BGN = 0 ! No. 3D bgn species
+   integer, public, parameter ::  NSPEC_COL = 0 ! total no. prescribed specs
+
+    !/ define xn_2d_bgn here.
+     real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
+
+!-------- end of this snipppet from older GenSpec_bgn_ml. ------
 
     !----------------- basic chemical fields ----------------------------------!
     !  Here we declare and initialise to zero the chemical fields used in the  !
@@ -61,6 +77,7 @@ private
 
   real, save, public :: &
      Grid_snow(MAXLIMAX,MAXLJMAX) = 0.0 !snow fraction in grid
+
 
 !_____________________________________________________________________________
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

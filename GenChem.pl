@@ -77,8 +77,8 @@ our %grp;   # Will be hash of arrays,  e.g. $grp{"NOX"} = [ "NO", "NO2" ]
  my( @ddep_soxgroup, @wdep_soxgroup, @soxgroup);
  my( @ddep_rdngroup, @wdep_rdngroup, @rdngroup);
 # my( @ddep_all, @wdep_all );
-#2010: reads groups from GenIn.species
- my( %groups );
+#2010: reads groups and headers from GenIn_species.csv
+ my( %groups, @headers );
  my @ro2pool = (); # used with new-style GenIn.species from Garry
 
  my $SOA_USED = 0;  # Set to one if SOA included
@@ -166,17 +166,6 @@ our %grp;   # Will be hash of arrays,  e.g. $grp{"NOX"} = [ "NO", "NO2" ]
 # and replace the very common 300/xt by t300. Both of these
 # are optimisations suggested by Steffen.
 
-#A08if ( $nrctroe > 0 ) {
-#A08    foreach my $i ( 1..$nrctroe ) {
-#A08        my $copy = $rctroe[$i];
-#A08        # troe(a1, a2, Fc, m )
-#A08        my ( $a1, $a2, $a3, $a4 ) = split(/,/,$copy);
-#A08        # Take log here of Fc parameter , for optimisation
-#A08        my $fc = sprintf "%8.4g", log($a3) ;
-#A08        $rctroe[$i] = join ",", $a1 , $a2 , $fc , $a4 ;
-#A08    }
-#A08    print_rates($rctroe, $nrctroe,\@rctroe,\@rctroetext) ;
-#A08}
 
 if ( $nrcmisc > 0 ) {
     print "SHOULD PRINT MISC RATES $nrcmisc \n";
@@ -208,12 +197,19 @@ sub read_species {
 	while ( $line = <F> ) {       # Reads a line
 		chomp($line) ;         # Remove newline character
 		next if $line =~ /^\*/ ;   # Skip comments
+		next if $line =~ /^\"\*/ ;   # Skip comments
                 next if $line =~ /^\s*$/ ; # skip empty lines
+                if ( $line =~ /^Spec/ ) {
+			@headers = split(/,/,$line);
+			print join(" ",@headers);
+			next;
+		}
 
 		$old_style = 1                  if $line =~ /^\#OLD_STYLE/ ;
-		$grp_style = 1                  if $line =~ /^\#GROUPED_STYLE/ ;
-		$SlowSpec = $nspecies[$tot] + 1 if $line =~ /^\#SLOW/ ;
-                next if $line =~ /^#/ ; # would be OLD_STYLE of SLOW
+		$grp_style = 1                  if $line =~ /^"\#GROUPED_STYLE/ ;
+		$SlowSpec = $nspecies[$tot] + 1 if $line =~ /^\"#SLOW/ ;
+		print "LINE $line STYLE $grp_style \n";
+                next if $line =~ /^"#/ ; # would be OLD_STYLE of SLOW
 		
                 my ( $spec, $typ, $formula, $comment, $in_ncarbon, $class );
 		my ( $extinc, $cstar, $DeltaH ) = 0.0x3; # Aerosol params
@@ -223,14 +219,30 @@ sub read_species {
 		if ( $old_style ) {
 		   ( $spec, $typ, $formula, $comment )  = split(/\s+/,$line,4);
 		} elsif ( $grp_style ) {
-                   ( $spec, $typ, $formula, $in_rmm,  
-		       $extinc, $cstar, $DeltaH, 
-		       $groups, $comment )  = split(/\s+/,$line,10);
+			#( $spec, $typ, $formula, $in_rmm,  
+			#$extinc, $cstar, $DeltaH, 
+			#$groups, $comment )  = split(/,/,$line,10);
+			$line =~ s/xx/-/g; # Oocalc didn't like -
+			my @r = split(/,/,$line);
+			$spec     = $r[0];
+			$typ      = $r[1];
+			$formula  = $r[2];
+			$in_rmm   = $r[3];
+			my $dry      = $r[4];
+			my $wet      = $r[5];
+			$extinc   = $r[6];
+			$cstar    = $r[7];
+			$DeltaH   = $r[8];
+			$groups   = $r[10];
+			#my $tgroups  = find_rec("Groups",@headers ) ;
+			my $tgroups  = $r[ find_rec("Groups",@headers ) ];
+			#die "TESTED T$tgroups should be ten\n";
 
 	       		# Assign species to groups if given: 
 	               	unless ( $groups =~ "-" ) {
 			       process_groups($spec, $groups);
 			}
+			process_alldep ( $dry, $wet, $spec ) unless $dry eq "-" ;
 
 	    	} else { # Garry's new style:
                    ( $spec, $typ, $formula, $in_rmm, $in_ncarbon, 
@@ -387,14 +399,14 @@ print LOG "\n\n............... read_reactions .........................
 
 		$rate = $terms[0];
 
-		if ( $rate =~ /DRY/ ) {
-			&process_alldep ( $line ) ;
-			#&process_drydep ( $line ) ;
-			next;
-		} elsif ( $rate =~ /WET/ ) {
-			&process_wetdep ( $line ) ;
-			next;
-		}
+		#if ( $rate =~ /DRY/ ) {
+		#	&process_alldep ( $line ) ;
+		#	#&process_drydep ( $line ) ;
+		#	next;
+		#} elsif ( $rate =~ /WET/ ) {
+		#	&process_wetdep ( $line ) ;
+		#	next;
+		#}
 
 
 		# Split rates into constants, variables, emis terms, etc:
@@ -1088,6 +1100,9 @@ END_CHEMSTART
            "     species(%s) = Chemical(\"%-12s\",%4d,%3d,%3d,%4d,%3d,%4.1f,%8.4f,%7.1f ) \n",  
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
                    $cnum, $nnum, $snum, $extinc[$tot], $Cstar[$tot], $DeltaH[$tot];
+            print "SPECF ", 
+                   $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
+                   $cnum, $nnum, $snum, $extinc[$tot], $Cstar[$tot], $DeltaH[$tot], "\n";
 	}
 
         print F "   end subroutine define_chemicals\n";
@@ -1246,15 +1261,11 @@ sub print_rates {
 } # end of sub print_rate  
 ###############################################################################
  sub process_alldep {
-	$_  = shift;
-	#won't:my $_  = shift;
-	my ( $ddep, $wdep, $adv) = split ;
+	my $ddep = shift; 
+	my $wdep = shift;
+	my  $adv = shift;
 	my $found = 0;
 	#ok: print "CHECKING ALLDEP DDEP$ddep WDEP$wdep ADV$adv : @species_tot\n";
-	for my $t ( @species_tot ) {
-		$found = 1 if $t eq $adv ;
-	}
-	die "ERROR!! DryWetDep spec $adv not in species list\n" unless $found;
 
 	$ddep = expand_shorthands($ddep);
 	     printall( "CDEP_EXPANDED ADV:$adv CDryDEP:$ddep\n");
@@ -1279,10 +1290,14 @@ sub print_rates {
 	}
 
 	$nddep += 1;
-	$nwdep += 1 unless $wdep eq "-" ;
 	printall( "CDEP $ddep $wdep ADV $adv NDDEP $nddep  NWDEP $nwdep LINE$_ \n");
 	$ddep =~ s/DRY_//;
 	$ddep_txt .= "      $comma depmap( IXADV_$adv, CDDEP_$ddep, -1) & \n";
+
+	$comma = ",";
+	$comma = "" if $nwdep < 1;
+	$nwdep += 1 unless $wdep eq "-" ;
+
 	unless ( $wdep eq "-" ) { # Here we use total, not IXADV
  	  $wdep =~ s/WET_//;
 	  $wdep_txt .= "      $comma depmap( $adv, CWDEP_$wdep, -1) & \n";
@@ -1464,10 +1479,10 @@ sub expand_shorthands {
 #########################################################################
 sub process_groups {
 	my ( $spec, $groups )  =  @_ ;
-   	my @groups = split(/,/,$groups);
+   	my @groups = split(/;/,$groups);
 	foreach my $g ( @groups ) {
 	  print "TESTG $g\n";
-	  $g = process_group_params($spec,$g) if $g =~ /:/;
+	  #$g = process_group_params($spec,$g) if $g =~ /:/;
 	  #push(@grp[$g],$spec);
 	  push @{ $grp{$g}},uc($spec);
 	  foreach my $gg ( keys %grp ) {
@@ -1476,11 +1491,22 @@ sub process_groups {
    	}
 } # end of process_groups
 #########################################################################
-sub process_group_params {
-	my ( $spec, $in )  =  @_ ;
-   	my @params = split(/:/,$in);
-	  print "TESTG-PARAMS $in\n";
-	  return $params[0];
-	  #push @{ $grp{$g}},uc($spec);
-
-} # end of process_group_params
+#sub process_group_params {
+#	my ( $spec, $in )  =  @_ ;
+#   	my @params = split(/:/,$in);
+#	  print "TESTG-PARAMS $in\n";
+#	  return $params[0];
+#	  #push @{ $grp{$g}},uc($spec);
+#
+#} # end of process_group_params
+#########################################################################
+#$groups   = $r[ find_rec("Groups",@r ) ];
+sub find_rec {
+	my ( $txt, @a )  =  @_ ;
+	my $n = 0;
+	#my $len = @a;
+	for($n=0; $n<= @a; $n++){
+		last if $a[$n] eq $txt;
+	}
+	return $n;
+}

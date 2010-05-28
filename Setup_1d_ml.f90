@@ -38,7 +38,8 @@
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP, &
                                       emforest, EmisNat  !ds
   use BoundaryConditions_ml, only : BGN_2D
-  use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl         
+  use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
+                                   NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
   use Derived_ml,            only : d_2d
   use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES, FOREST_FIRES &
@@ -51,7 +52,7 @@
   use ChemSpecs_tot_ml,        only :  SO4,C5H8,NO,NO2,SO2,CO
   use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
-  use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
+!MOVED  use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use ChemRates_rct_ml,       only :  set_rct_rates, rct
   use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, &

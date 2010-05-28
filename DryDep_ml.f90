@@ -57,9 +57,8 @@ module DryDep_ml
                           DRYDEP_GASES, &  ! Wesely Index Vd values calculated 
                           CDDEP_SET,    &   ! for so4
                           CDDEP_NO2,CDDEP_O3,    &   ! for NO2 comp pt. approach
-                          CDDEP_SO2,CDDEP_NH3, & !hf CoDep extra
-                          CDDEP_FIN, CDDEP_NH3,   &   ! FEB2009 Vds
- 
+                          CDDEP_SO2,CDDEP_NH3, & ! CoDep extra
+                          CDDEP_PMf,   &   !
                           FLUX_CDDEP,   &   ! index O3 in CALC array, for STO_FLUXES
                           FLUX_ADV ,   &   ! index O3 in ADV  array, for STO_FLUXES
                           DepLoss, Add_MosaicOutput, &

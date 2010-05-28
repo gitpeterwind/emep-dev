@@ -389,11 +389,11 @@
   integer, public, parameter, dimension(4) :: &
              AOD_GROUP     = (/ SO4,ANH4,PNO3_F,SEASALT_F /)
 
-  integer, public, parameter, dimension(2) :: &
-             RDN_GROUP     = (/ NH3,ANH4 /)
-
   integer, public, parameter, dimension(1) :: &
              BVOC_GROUP     = (/ C5H8 /)
+
+  integer, public, parameter, dimension(2) :: &
+             RDN_GROUP     = (/ NH3,ANH4 /)
 
   integer, public, parameter, dimension(4) :: &
              SIA_GROUP     = (/ SO4,PNO3_C,ANH4,PNO3_F /)
@@ -417,25 +417,25 @@
              TNO3_GROUP     = (/ PNO3_C,PNO3_F /)
 
 ! ------- Dry dep      species ------------------
-  integer, public, parameter, dimension(7) :: &
-               DDEP_OXNGROUP = (/ HNO3,HONO,PAN,NO2,PNO3_F,MPAN,PNO3_C /)
+  integer, public, parameter, dimension(5) :: &
+               DDEP_OXNGROUP = (/ NO2,PAN,MPAN,HNO3,HONO /)
   integer, public, parameter, dimension(2) :: &
                DDEP_SOXGROUP = (/ SO2,SO4 /)
-  integer, public, parameter, dimension(2) :: &
-               DDEP_RDNGROUP = (/ NH3,ANH4 /)
+  integer, public, parameter, dimension(1) :: &
+               DDEP_RDNGROUP = (/ NH3 /)
 
-  integer, public, parameter :: NMAX_DDEP = 7
+  integer, public, parameter :: NMAX_DDEP = 5
 
 
 ! ------- Wet dep      species ------------------
-  integer, public, parameter, dimension(4) :: &
-               WDEP_OXNGROUP = (/ HNO3,HONO,PNO3_F,PNO3_C /)
+  integer, public, parameter, dimension(2) :: &
+               WDEP_OXNGROUP = (/ HNO3,HONO /)
   integer, public, parameter, dimension(2) :: &
                WDEP_SOXGROUP = (/ SO2,SO4 /)
-  integer, public, parameter, dimension(2) :: &
-               WDEP_RDNGROUP = (/ NH3,ANH4 /)
+  integer, public, parameter, dimension(1) :: &
+               WDEP_RDNGROUP = (/ NH3 /)
 
-  integer, public, parameter :: NMAX_WDEP = 4
+  integer, public, parameter :: NMAX_WDEP = 2
 
 
 ! ------- RO2 Pool     species ------------------
@@ -446,24 +446,3 @@
 
  end module ChemGroups_ml
  !-----------------------------------------------------------
- module ChemSpecs_bgn_ml
-!-----------------------------------------------------------
-! PRETTY MUCH FAKED FOR NOW. CAN BE DELETED SOON IN HOPE!
-  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP
-  implicit none
-  private
-
-!+ Defines indices and NSPEC for bgn : Background species
-
- ! Species which can be specified simply for each column, e.g.
- ! as function of local meteorology or zenith angle
- !   o2, m,  and for MADE-like, oh, ch3coo2
-
-   integer, public, parameter ::  NSPEC_BGN = 0 ! No. 3D bgn species
-   integer, public, parameter ::  NSPEC_COL = 0 ! total no. prescribed specs
-
-  !/ define xn_2d_bgn here.
-   real, public, save, dimension(1,KCHEMTOP:KMAX_MID) :: xn_2d_bgn
-
-!-----------------------------------------------------------
-  end module ChemSpecs_bgn_ml
