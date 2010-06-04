@@ -1,3 +1,18 @@
+xxxxxxxxxxxxxx rv3_6_1     Dave,   4th May   2010
+
+New Module: InterpolationRoutines_ml 
+
+ - created as merge of bilinear code from Functions_ml and Peter's
+  grid2grid_coeff. Small caller routine Nearest4 added, as well as
+  test-code which can be uncommented for stand-alone testing.
+
+xxxxxxxxxxxxxx rv3_6        XXXXXXXXX TO BE BACK_ADDED XXXXXXXXXXXXXXXXX
+
+REPORT 1/2010 version will be added as a branch. Note that rv3_6 was
+really based upon rv3_5_25, so things got a bit confused here. Still,
+no worries ;-)
+
+
 xxxxxxxxxxxxxx rv3_5_27    Dave,  28th May   2010
 
 GenChem.pl changes:   GenIn.species is now a comma-separated file which

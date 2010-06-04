@@ -67,6 +67,7 @@
                                   ,GlobalPosition,gb_fdom,gl_fdom,ref_latitude&
                                   ,projection, sigma_mid,gb_stagg,gl_stagg,gl&
                                   ,gb,lb2ij,A_bnd,B_bnd
+  use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                                 ,MasterProc & 
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
@@ -2101,7 +2102,8 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
 !Make interpolation coefficients.
 !Coefficients could be saved and reused if called several times.
-     call grid2grid_coeff(IIij,JJij,Weight1,Weight2,Weight3,Weight4,Rlon,Rlat,dims(1),dims(2))
+     call grid2grid_coeff(gl,gb,IIij,JJij,Weight1,Weight2,Weight3,Weight4,&
+                  Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax, debug)
 
      startvec(1)=minval(IIij(1:limax,1:ljmax,1:4))
      startvec(2)=minval(JJij(1:limax,1:ljmax,1:4))
@@ -2234,84 +2236,6 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
 end subroutine ReadField_CDF
 
-
-
-subroutine grid2grid_coeff(IIij,JJij,Weight1,Weight2,Weight3,Weight4&
-       ,lon_data,lat_data,GIMAX_data,GJMAX_data)
-
-!makes interpolation coefficients from one grid to the other, 
-!using only latitude and longitudes of individual gridcells
-
-   use Functions_ml,    only : great_circle_distance
-   implicit none
-    integer,intent(in) :: GIMAX_data,GJMAX_data
-    real, intent(in), dimension(GIMAX_data,GJMAX_data) ::lon_data,lat_data
-    real ,intent(out):: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
-    real ,intent(out):: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
-    integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
-    real :: dist(0:4)
-    integer :: n1,n,i,j,k,II,JJ
-
-    !find interpolation constants
-    !note that i,j are local
-    !find the four closest points
-    do j=1,ljmax
-       do i=1,limax
-          dist=1.0E40
-          do JJ=1,GJMAX_data
-             do II=1,GIMAX_data
-                !distance between (i,j) and (II,JJ)
-                dist(0)=great_circle_distance(lon_data(II,JJ),lat_data(II,JJ),gl(i,j),gb(i,j))
-!          if(me==0.and.i==1.and.j==1)write(*,*)dist(0),IIij(i,j,1),JJij(i,j,1),lon_data(II,JJ),lat_data(II,JJ),gl(i,j),gb(i,j)
-                if(dist(0)<dist(1))then
-                   dist(4)=dist(3)
-                   dist(3)=dist(2)
-                   dist(2)=dist(1)
-                   dist(1)=dist(0)
-                   IIij(i,j,4)=IIij(i,j,3)
-                   JJij(i,j,4)=JJij(i,j,3)
-                   IIij(i,j,3)=IIij(i,j,2)
-                   JJij(i,j,3)=JJij(i,j,2)
-                   IIij(i,j,2)=IIij(i,j,1)
-                   JJij(i,j,2)=JJij(i,j,1)
-                   IIij(i,j,1)=II
-                   JJij(i,j,1)=JJ
-                elseif(dist(0)<dist(2))then
-                   dist(4)=dist(3)
-                   dist(3)=dist(2)
-                   dist(2)=dist(0)
-                   IIij(i,j,4)=IIij(i,j,3)
-                   JJij(i,j,4)=JJij(i,j,3)
-                   IIij(i,j,3)=IIij(i,j,2)
-                   JJij(i,j,3)=JJij(i,j,2)
-                   IIij(i,j,2)=II
-                   JJij(i,j,2)=JJ
-                elseif(dist(0)<dist(3))then
-                   dist(4)=dist(3)
-                   dist(3)=dist(0)
-                   IIij(i,j,4)=IIij(i,j,3)
-                   JJij(i,j,4)=JJij(i,j,3)
-                   IIij(i,j,3)=II
-                   JJij(i,j,3)=JJ
-                elseif(dist(0)<dist(4))then
-                   dist(4)=dist(0)
-                   IIij(i,j,4)=II
-                   JJij(i,j,4)=JJ
-                endif
-             enddo
-          enddo
-
-          dist(0)=(dist(1)+dist(2)+dist(3)+dist(4))
-          Weight1(i,j)=1.0-3.0*dist(1)/dist(0)
-          dist(0)=(dist(2)+dist(3)+dist(4))
-          Weight2(i,j)=(1.0-Weight1(i,j))*(1.0-2.0*dist(2)/dist(0))
-          dist(0)=(dist(3)+dist(4))
-          Weight3(i,j)=(1.0-Weight1(i,j)-Weight2(i,j))*(1.0-dist(3)/dist(0))
-          Weight4(i,j)=1.0-Weight1(i,j)-Weight2(i,j)-Weight3(i,j)
-       enddo
-    enddo
-
-  end subroutine grid2grid_coeff
 
 
   subroutine datefromdayssince1900(ndate,ndays,printdate)

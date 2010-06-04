@@ -29,12 +29,10 @@ module Functions_ml
 !____________________________________________________________________
 ! Miscellaneous collection of "standard" (or guessed ) functions
 ! Including Troe, sine and cosine curves, 
-! bilinear-interpolation routines, 
 ! and Standard Atmosphere p -> H conversion
 !____________________________________________________________________
 !
 !** includes
-!   bilin_interpolate - generic, elemental - guessed bilinera method
 !
 !   Depends on: none - self-contained.
 !   Language: F
@@ -55,7 +53,7 @@ module Functions_ml
   public :: StandardAtmos_kPa_2_km   ! US Standard Atmosphere conversion
   public :: StandardAtmos_km_2_kPa   ! US Standard Atmosphere conversion
 
-  public :: inside_1234 !test wether a point is inside the quadrilateral 1234 
+!  public :: inside_1234 !test wether a point is inside the quadrilateral 1234 
 
   public :: great_circle_distance!distance between two points following the surface on a unit sphere
 
@@ -75,19 +73,6 @@ module Functions_ml
       ,PBAS=-PINC
 
  real, save, private, dimension(131) ::  tab_exf  ! Tabulated Exner
-
-
-  !/-- interpolation stuff
-  public  :: bilin_interpolate                         !  "Generic" subroutine
-  private :: bilin_interp_elem
-  private :: bilin_interp_array
-
-  real, public, dimension(0:1,0:1) :: wt    ! weighting factors, array version
-
-  interface bilin_interpolate
-     module procedure bilin_interp_array
-     module procedure bilin_interp_elem
-  end interface
 
 
 
@@ -165,120 +150,8 @@ module Functions_ml
      end do
 
   end function Daily_halfsine
-  
-  !___________________________________________________________________________
-  !+ subroutines which can be used in 2-D interpolation
-  !  - includes "generic" subroutine bilin_interpolate
-  !___________________________________________________________________________
 
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  subroutine bilin_interp_array(xp,yp,ixp,iyp)
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  real,    intent(in)  :: xp, yp     ! coordinates of point P (see fig.)
-  integer, intent(out) :: ixp, iyp   ! integer coords P
-
-  !/ Output:
-  ! real, intent(out), dimension(0:1,0:1) :: wt    ! weights (see below)
-  !-----------------------------------------------------------------------------
-  ! This subroutine uses a bilinear interpolation method which suuplies the 
-  ! weighting factors needed to estimate the value of a field at a point P 
-  ! (input coords xp, yp) from the values at the nearest 4 grid points. 
-  !
-  ! This routine assumes that P is given in the coordinates of the field 
-  ! which is being interpolated. If we define ixp = int(xp),iyp=int(yp),
-  ! dx = xp - ixp, dy = yp - iyp,  we obtain a system: 
-  !
-  !        y'
-  !        ^
-  !        |
-  !        0,1--------------------------1,1
-  !        |                             |
-  !        |                             |
-  !        |                             |
-  !        p1               *P(dx,dy)    p2
-  !        |                             |
-  !        |                             |
-  !        |                             |
-  !        |                             |
-  !        |                             |
-  !        |                             |
-  !        |                             |
-  !        |                             |
-  !        0,0 -------------------------1,0----------> x'
-  !
-  ! This subroutine outputs the weight to be given to the four corners
-  ! using the array wt(0:1,0:1). 
-  !
-  ! For the bilinear interpolation we first calculate the weights associated
-  ! with points p1,p2 along the y-axis, then interpolate these to P along the 
-  ! x-axis
-  !
-  !  C(0,p1)  = (1-dy) * C(0,0)  + dy * C(0,1)
-  !  C(1,p2)  = (1-dy) * C(1,0)  + dy * C(1,1)
-  !  C(dx,dy) = (1-dx) * C(0,p1) + dx * C(1,p2)
-  !           = (1-dx) * (1-dy) * C(0,0) +(1-dx) * dy * C(0,1) 
-  !            +  dx   * (1-dy) * C(1,0) +   dx  * dy * C(1,1)
-  !  i.e. Cp  
-  !           = (1-dx-dy+dx.dy) * C(0,0)
-  !            +(dy  -dx.dy)    * C(0,1)
-  !            +(dx  -dx.dy)    * C(1,0)
-  !            +(dx.dy)         * C(1,1)
-  ! The "wt" array consists of the 4 coefficients of the C terms
-  !
-  ! Notes:
-  !  - robust against P lying on either or both axis - no special cases are 
-  !    needed.
-  !  - assumes that field values exist at all corners. This is fine as long
-  !    as we are using the method to interpolate from global fields.
-  !-----------------------------------------------------------------------------
-    real :: dx, dy, dxdy      ! local variables
-
-    ixp = int(xp)
-    iyp = int(yp)
-
-    dx  = xp - ixp
-    dy  = yp - iyp
-    dxdy =dx * dy
-
-    wt(0,0) = 1.0 - dx - dy + dxdy
-    wt(0,1) = dy - dxdy
-    wt(1,0) = dx - dxdy
-    wt(1,1) = dxdy
-
-  end subroutine bilin_interp_array
-
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  elemental subroutine bilin_interp_elem(xp,yp,ixp,iyp,wt_00,wt_01,wt_10,wt_11)
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  real,    intent(in)  :: xp, yp     ! coordinates of point P (see fig.)
-  integer, intent(out) :: ixp, iyp   ! integer coords P
-  real, intent(out)    :: wt_00, wt_01, wt_10, wt_11  ! weights, see below
-
-  !-----------------------------------------------------------------------------
-  ! method as for subroutine bilin_interp_array, but now we return scalar
-  ! arguments so that the routine can be elemental. Not quite so elegant
-  ! maybe, but elemental is nice.
-  !  Now we have wt_00 = wt(0,0), wt_01 = wt(0,1), etc.
-  ! Note the potential for error if the arguments are not called in the correct
-  ! order!
-  !-----------------------------------------------------------------------------
-    real :: dx, dy, dxdy      ! local variables
-
-    ixp = int(xp)
-    iyp = int(yp)
-
-    dx   = xp - ixp
-    dy   = yp - iyp
-    dxdy = dx * dy
-
-    wt_00   = 1.0 - dx - dy + dxdy
-    wt_01   = dy - dxdy
-    wt_10   = dx - dxdy
-    wt_11   = dxdy
-
-  end subroutine bilin_interp_elem
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
+ !=======================================================================
 
  elemental function StandardAtmos_km_2_kPa(h_km) result (p_kPa)
  !=======================================================================
@@ -413,26 +286,6 @@ module Functions_ml
 
   end function T_2_Tpot
   !-------------------------------------------------------------------
-
-
-
-function  inside_1234(x1,x2,x3,x4,y1,y2,y3,y4,x,y) result(inside)
-!test wether the point (x,y) is inside the quadrilateral 1234 
-!Note: 1234 = 1432, but not= 1324
-
-implicit none
-
-logical ::inside
-real:: x1,x2,x3,x4,y1,y2,y3,y4,x,y
-
-inside=.false.
-
-if(((x1-x2)*(y-y2)-(x-x2)*(y1-y2))*((x3-x4)*(y-y4)-(x-x4)*(y3-y4))>0 &
-     .and.((x2-x3)*(y-y3)-(x-x3)*(y2-y3))*((x4-x1)*(y-y1)-(x-x1)*(y4-y1))>0)then
-   inside=.true.
-endif
-
-end function inside_1234
 
 
   function great_circle_distance(fi1,lambda1,fi2,lambda2) result(dist)

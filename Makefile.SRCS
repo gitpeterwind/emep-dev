@@ -6,6 +6,7 @@ SRCS =	Aero_Vds_ml.f90 Aero_water_ml.f90 Ammonium_ml.f90 \
 	DefPhotolysis_ml.f90 Derived_ml.f90 DO3SE_ml.f90  DryDep_ml.f90 EcoSystem_ml.f90 \
 	EmisDef_ml.f90 EmisGet_ml.f90 Emissions_ml.f90 ForestFire_ml.f90 Functions_ml.f90 \
 	GlobalBCs_ml.f90 GridAllocate_ml.f90 GridValues_ml.f90 \
+	InterpolationRoutines_ml.f90 \
 	Io_ml.f90 Io_Nums_ml.f90 Io_Progs_ml.f90 KeyValue_ml.f90  LandDefs_ml.f90 Landuse_ml.f90 \
 	LandPFT_ml.f90 LocalVariables_ml.f90 MassBudget_ml.f90 \
 	Met_ml.f90 MetFields_ml.f90 EQSAM_ml.f90 MARS_ml.f90 MicroMet_ml.f90 ModelConstants_ml.f90 My_Aerosols_ml.f90 \
