@@ -1059,7 +1059,7 @@
         do j = lj0,lj1
           do i = li0,li1
 !           if(niterx(j,k)<=NITERXMAX)then
-            psi = 1./ps3d(i,j,k)
+             psi = (ps(i,j,1) - PT)/max(ps3d(i,j,k),1.0)
             xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
 !           endif
           enddo

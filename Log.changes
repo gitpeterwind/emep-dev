@@ -1,4 +1,11 @@
-xxxxxxxxxxxxxx rv3_6_1     Dave,   4th May   2010
+xxxxxxxxxxxxxx rv3_6_2     Peter,   8th June   2010
+
+Advection_ml: divide xn_advec by max(1,ps3d) instead of ps3d also if no convection is used.
+This will put a very small value for the concentrations, instead of NaN, in the case where 
+wind fields are very divergent.
+(Joffen reported that the advection gave NaN on north pole)
+
+xxxxxxxxxxxxxx rv3_6_1     Dave,   4th June   2010
 
 New Module: InterpolationRoutines_ml 
 
