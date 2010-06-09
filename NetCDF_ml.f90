@@ -2164,7 +2164,8 @@ if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
 end if
      call grid2grid_coeff(gl,gb,IIij,JJij,Weight1,Weight2,Weight3,Weight4,&
                   Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax,&
-                    debug_proc, debug_li, debug_lj )
+                    ( DEBUG_NETCDF_RF .and. debug_proc ), &
+                   debug_li, debug_lj )
 
      startvec(1)=minval(IIij(1:limax,1:ljmax,1:4))
      startvec(2)=minval(JJij(1:limax,1:ljmax,1:4))
