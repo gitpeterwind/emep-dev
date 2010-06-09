@@ -337,11 +337,10 @@ module InterpolationRoutines_ml
     real ,intent(out), dimension(NX,NY) :: Weight1,Weight2,Weight3,Weight4
     real, intent(in), dimension(NX,NY) :: &
         glon,glat ! lat/long of target grid
+    integer,intent(in) :: NXD,NYD ! dimension of data grid
     real, intent(in), dimension(NXD,NYD) :: &
         dlon,dlat ! lat/long of data to be interpolated
-    integer,intent(in) :: &
-         NXD,NYD,&  ! dimension of data grid
-         limax,ljmax              ! max dims needed (limax<=NX, ljmax<=NY)
+    integer,intent(in) :: limax,ljmax ! max dims needed (limax<=NX, ljmax<=NY)
     logical, intent(in) :: debug
     integer, intent(in) :: debug_li, debug_lj
 
