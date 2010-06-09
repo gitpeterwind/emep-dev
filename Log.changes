@@ -1,3 +1,11 @@
+xxxxxxxxxxxxxx rv3_6_3     Dave,    9th June   2010
+
+CM_WetDep.inc added to ZCM_EmChem09.  Note that in principal
+this isn't needed. One gets these files by typing mk.GenChem.
+Will clean up this behaviour one day, and just keep
+GenIn files rather than the CM_ outputs.
+
+
 xxxxxxxxxxxxxx rv3_6_2     Peter,   8th June   2010
 
 Advection_ml: divide xn_advec by max(1,ps3d) instead of ps3d also if no convection is used.
