@@ -2110,6 +2110,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         enddo
 
         deallocate(Ivalues)
+        deallocate(Nvalues)
 
      elseif(interpol_used=='zero_order')then
         !interpolation 1:
