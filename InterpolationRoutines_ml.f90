@@ -332,7 +332,7 @@ module InterpolationRoutines_ml
 !makes interpolation coefficients from one grid to the other, 
 !using only latitude and longitudes of individual gridcells
 
-    integer, intent(in) :: NX, NY, NXD, NYD
+    integer, intent(in) :: NX, NY
     integer , dimension(NX,NY,4), intent(out)::IIij, JJij
     real ,intent(out), dimension(NX,NY) :: Weight1,Weight2,Weight3,Weight4
     real, intent(in), dimension(NX,NY) :: &
