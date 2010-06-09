@@ -127,7 +127,7 @@ module ModelConstants_ml
  logical, public, parameter ::      &
      DEBUG_AQUEOUS        = .false. & !
     ,DEBUG_BCS            = .false. & !
-    ,DEBUG_BIO            = .true. & !
+    ,DEBUG_BIO            = .false. & !
     ,DEBUG_DERIVED        = .false. & !
     ,DEBUG_DO3SE          = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
@@ -153,7 +153,7 @@ module ModelConstants_ml
     ,DEBUG_LANDUSE        = .false. & !
     ,DEBUG_LANDPFTS       = .false. &
     ,DEBUG_NETCDF         = .false. &
-      ,DEBUG_NETCDF_RF    = .true. &  ! ReadField_CDF in NetCDF_ml
+      ,DEBUG_NETCDF_RF    = .false. &  ! ReadField_CDF in NetCDF_ml
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
     ,DEBUG_SETUP_1DBIO    = .false.   !
