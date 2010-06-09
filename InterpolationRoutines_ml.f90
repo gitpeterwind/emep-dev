@@ -273,7 +273,7 @@ module InterpolationRoutines_ml
        IIij,JJij,    & ! Gives coordinates of 4 nearest pts
        Weight1,Weight2,Weight3,Weight4, & ! and weights
        dlon,dlat,NXD,NYD, &
-       NXG, NYG, NXG, NYG, debug)
+       NXG, NYG, NXG, NYG, debug, 1, 1) !ds 1,1 is just a crude coord, while checking
 
       do i=1,limax
         do j=1,ljmax
@@ -326,7 +326,8 @@ module InterpolationRoutines_ml
 
   subroutine grid2grid_coeff(glon, glat &
        ,IIij,JJij,Weight1,Weight2,Weight3,Weight4&
-       ,dlon,dlat,NXD,NYD,NX,NY,limax,ljmax, debug)
+       ,dlon,dlat,NXD,NYD,NX,NY,limax,ljmax &
+       , debug, debug_li, debug_lj)
 
 !makes interpolation coefficients from one grid to the other, 
 !using only latitude and longitudes of individual gridcells
@@ -342,9 +343,10 @@ module InterpolationRoutines_ml
          NXD,NYD,&  ! dimension of data grid
          limax,ljmax              ! max dims needed (limax<=NX, ljmax<=NY)
     logical, intent(in) :: debug
+    integer, intent(in) :: debug_li, debug_lj
 
     real :: dist(0:4)
-    integer :: i,j,II,JJ
+    integer :: i,j,II,JJ, k
 
     !find interpolation constants
     !note that i,j are local
@@ -358,10 +360,6 @@ module InterpolationRoutines_ml
                 dist(0)=great_circle_distance(dlon(II,JJ),dlat(II,JJ),&
                     glon(i,j),glat(i,j))
 
-                !if(debug.and.i==1.and.j==1) &
-                !    write(*,"(a,f10.3,2i4,4f9.3)") "DEBUG-g2g", dist(0),&
-                !      IIij(i,j,1),JJij(i,j,1),dlon(II,JJ),dlat(II,JJ),&
-                !         glon(i,j),glat(i,j)
                 if(dist(0)<dist(1))then
                    dist(4)=dist(3)
                    dist(3)=dist(2)
@@ -397,8 +395,16 @@ module InterpolationRoutines_ml
                    IIij(i,j,4)=II
                    JJij(i,j,4)=JJ
                 endif
-             enddo
-          enddo
+
+                !if(debug.and.i==debug_li.and.j==debug_lj) then
+                !    write(*,"(a,2i4,f10.3,2i4,4f9.3,4es12.3)") "DEBUG-g2g", II, JJ, dist(0),&
+                !      IIij(i,j,1),JJij(i,j,1),dlon(II,JJ),dlat(II,JJ),&
+                !         glon(i,j),glat(i,j), dist(1), dist(2), dist(3), dist(4)
+                !    !write(*,*) "DEBUG-star", II, JJ, dist(0),&
+                !    !  IIij(i,j,1),JJij(i,j,1),dlon(II,JJ),dlat(II,JJ)
+                !end if
+             enddo ! II
+          enddo ! JJ
 
           dist(0)=(dist(1)+dist(2)+dist(3)+dist(4))
           Weight1(i,j)=1.0-3.0*dist(1)/dist(0)
@@ -407,6 +413,14 @@ module InterpolationRoutines_ml
           dist(0)=(dist(3)+dist(4))
           Weight3(i,j)=(1.0-Weight1(i,j)-Weight2(i,j))*(1.0-dist(3)/dist(0))
           Weight4(i,j)=1.0-Weight1(i,j)-Weight2(i,j)-Weight3(i,j)
+                if(debug.and.i==debug_li.and.j==debug_lj) then
+                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal0", dist(0)
+                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal1", dist(1), Weight1(i,j)
+                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal2", dist(2), Weight2(i,j)
+                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal3", dist(3), Weight3(i,j)
+                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal4", dist(4), Weight4(i,j)
+                end if
+
        enddo
     enddo
 
@@ -414,6 +428,7 @@ module InterpolationRoutines_ml
 
 end module InterpolationRoutines_ml
 
+!UNCOMMENT THE FOLLOWING TO TEST-RUN THIS MODULE AS STAND-ALONE
 !program test_int
 !  use InterpolationRoutines_ml, only : Nearest4interp
 !  implicit none

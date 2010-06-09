@@ -61,6 +61,7 @@
   use ChemSpecs_tot_ml , only :NSPEC_TOT
   use ChemChemicals_ml, only :species
   use GridValues_ml,   only : GRIDWIDTH_M,fi,xp,yp,xp_EMEP_official&
+                                  ,debug_proc, debug_li, debug_lj &
                                   ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                   ,grid_north_pole_latitude&
                                   ,grid_north_pole_longitude&
@@ -70,6 +71,7 @@
   use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                                 ,MasterProc & 
+                                ,DEBUG_NETCDF, DEBUG_NETCDF_RF & 
                                 ,NPROC, IIFULLDOM,JJFULLDOM &
                                 ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
                                 ,IOU_MON, IOU_DAY ,PT,NLANDUSEMAX, model
@@ -105,7 +107,6 @@
   integer,save :: outCDFtag=0
   integer, public, parameter :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 !CDF typr for output
   character (len=18),  parameter :: Default_projection_name = 'General_Projection'
-  logical, parameter :: MY_DEBUG = .false.
 
   public :: Out_netCDF
   public :: CloseNetCDF
@@ -135,7 +136,7 @@ integer,  intent(in) :: iotyp
 integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 integer :: ih
 
-if( MY_DEBUG ) write(*,*)'Init_new_netCDF ',fileName,iotyp
+if( DEBUG_NETCDF ) write(*,*)'Init_new_netCDF ',fileName,iotyp
 call CloseNetCDF
 
 if(iotyp==IOU_YEAR)then
@@ -185,7 +186,7 @@ else
 period_type = 'unknown'
 call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 endif
-if( MY_DEBUG ) write(*,*) "Finished Init_new_netCDF", fileName
+if( DEBUG_NETCDF ) write(*,*) "Finished Init_new_netCDF", fileName
 end subroutine Init_new_netCDF
 
 subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf,RequiredProjection)
@@ -432,7 +433,7 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
      call check(nf90_put_var(ncFileID, iEMEPVarID, xcoord(1:GIMAXcdf)) )
      call check(nf90_put_var(ncFileID, jEMEPVarID, ycoord(1:GJMAXcdf)) )
 
-     if(MY_DEBUG) write(*,*) "NetCDF: Starting long/lat defs"
+     if(DEBUG_NETCDF) write(*,*) "NetCDF: Starting long/lat defs"
      !Define longitude and latitude
      call GlobalPosition !because this may not yet be done if old version of meteo is used
      if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
@@ -478,7 +479,7 @@ write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf
      endif
 
   endif
-  if(MY_DEBUG) write(*,*) "NetCDF: lon lat written"
+  if(DEBUG_NETCDF) write(*,*) "NetCDF: lon lat written"
 
   !Define vertical levels
   if(KMAXcdf==KMAX_MID)then
@@ -626,7 +627,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   else
      return
   endif
-  if(MY_DEBUG) write(*,*)'Out_NetCDF: filename ', fileName
+  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: filename ', fileName
 
   call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3")
 
@@ -770,9 +771,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      if(status == nf90_noerr) then
 !             print *, 'variable exists: ',varname
-        if (MY_DEBUG) write(6,*) 'Out_NetCDF: variable exists: ',varname!,nf90_strerror(status)
+        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: variable exists: ',varname!,nf90_strerror(status)
      else
-        if (MY_DEBUG) write(6,*) 'Out_NetCDF: creating variable: ',varname!,nf90_strerror(status)
+        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: creating variable: ',varname!,nf90_strerror(status)
         call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      endif
 
@@ -902,7 +903,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      endif
   endif !me=0
 
-  if(MY_DEBUG) write(*,*)'Out_NetCDF: FINISHED '
+  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: FINISHED '
   return
 end subroutine Out_netCDF
 
@@ -1423,7 +1424,7 @@ character*100 ::name
 real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
 integer ::ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361
 
-integer, allocatable:: Ivalues(:)
+integer, allocatable:: Ivalues(:)  ! counts valid values
 real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
 logical ::fileneeded
 character(len = 20) :: interpol_used
@@ -1628,7 +1629,8 @@ end subroutine Read_Inter_CDF
 
 
 subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
-     needed,debug_flag,Undef)
+     known_projection,  &! can be provided by user, eg. for MEGAN.
+     needed,debug_flag,UnDef)
   !reads data from file and interpolates data into local grid
 
   !NB k coordinate in Rvar assumed as first coordinate. Could consider to change this.
@@ -1640,11 +1642,13 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   real,intent(out) :: Rvar(*)
   integer,intent(in) :: nstart
   character(len = *), optional,intent(in) :: interpol
+  character(len = *), optional,intent(in) :: known_projection
   logical, optional, intent(in) :: needed
   integer, optional,intent(in) :: kstart!smallest k (vertical level) to read. Default: assume 2D field
   integer, optional,intent(in) :: kend!largest k to read. Default: assume 2D field
   logical, optional, intent(in) :: debug_flag
-  real, optional, intent(in) :: Undef ! Value put into the undefined gridcells
+  real, optional, intent(in) :: UnDef ! Value put into the undefined gridcells
+  logical, save :: debug_ij
 
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
@@ -1656,6 +1660,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   integer :: ijk1,ijk2,ijk3,ijk4
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
+  integer, allocatable:: Nvalues(:)  !ds counts all values
   real, allocatable:: Rvalues(:),Rlon(:),Rlat(:)
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
@@ -1664,14 +1669,18 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   type(Deriv) :: def1 ! definition of fields
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
-  logical ::  Undef_used,OnlyDefinedValues
+  logical ::  UnDef_used,OnlyDefinedValues
 
   real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
   real :: FillValue=0,Pcounted
   logical :: Flight_Levels
   integer :: k_FL,k_FL2
-!  real :: temp(MAXLIMAX, MAXLJMAX,KMAX_MID)
+!ds Added for new Interpolations (nearest 4 neighbours)
+  real, dimension(4) :: Weight
+  real :: Undefined  , sumWeights
+  integer, dimension(4) :: ijkn
+  integer :: ii, jj
 
   !_______________________________________________________________________________
   !
@@ -1738,12 +1747,21 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
   call CheckStop(xtype==NF90_CHAR,"ReadField_CDF: Datatype not recognised")
 
   !Find whether Fill values are defined 
+     if ( debug ) write(*,*) 'PreFillCheck ',FillValue
   status=nf90_get_att(ncFileID, VarID, "_FillValue", FillValue)
   OnlyDefinedValues=.true.
   if(status == nf90_noerr)then
      OnlyDefinedValues=.false.
      if ( debug ) write(*,*)' FillValue (not counted)',FillValue
+  else ! ds Jun 2010
+     FillValue = -1.0e35  ! Should not arise in normal data
+     status=nf90_get_att(ncFileID, VarID, "missing_value", FillValue)
+     if(status == nf90_noerr)then
+         OnlyDefinedValues=.false.
+         if ( debug ) write(*,*)' FillValue found from missing_value (not counted)',FillValue
+     end if
   endif
+     if ( debug ) write(*,*) 'PostFillCheck ',FillValue
 
   !get dimensions
   startvec=1
@@ -1761,18 +1779,24 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      data3D=.true.
   endif
 
-  call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ),"Proj")
-     if ( debug ) write(*,*) 'data projection ',trim(data_projection)
+  if( present(known_projection) ) then
+     data_projection = trim(known_projection)
+     if ( debug ) write(*,*) 'data known_projection ',trim(data_projection)
+  else
+    call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ),"Proj")
+    if ( debug ) write(*,*) 'data projection from file ',trim(data_projection)
+  end if
 
 
-  if(trim(data_projection)=="lon lat")then
+  if(trim(data_projection)=="lon lat")then ! here we have simple 1-D lat, lon
      allocate(Rlon(dims(1)), stat=alloc_err)    
      allocate(Rlat(dims(2)), stat=alloc_err)   
-     if ( debug ) write(*,*) 'data allocLL ',trim(data_projection), alloc_err
+     if ( debug ) write(*,"(a,a,i5,i5,a,i5)") 'alloc lon lat ',&
+      trim(data_projection), alloc_err, dims(1), "x", dims(2)
   else
      allocate(Rlon(dims(1)*dims(2)), stat=alloc_err)    
      allocate(Rlat(dims(1)*dims(2)), stat=alloc_err)   
-     if ( debug ) write(*,*) 'data allocElse ',trim(data_projection), alloc_err
+     if ( debug ) write(*,*) 'data allocElse ',trim(data_projection), alloc_err, trim(fileName)
   endif
 
   status=nf90_inq_varid(ncid = ncFileID, name = 'lon', varID = lonVarID)
@@ -1935,7 +1959,17 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         if(status == nf90_noerr) scalefactors(2) = offset
         Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
         FillValue=FillValue*scalefactors(1)+scalefactors(2)
-        if ( debug ) write(*,*)' FillValue scaled to',FillValue
+        if ( debug ) then 
+           write(*,*)' Start scaling xtype',xtype
+           write(*,*)' FillValue scaled to',FillValue
+           write(*,*)' Max(RValues)   ',maxval(RValues)   
+        end if
+     else ! should this be allowed?
+        if ( debug ) then 
+           write(*,*)' xtype not found ',xtype
+           write(*,*)' FillValue still',FillValue
+           write(*,*)' Max(RValues)   ',maxval(RValues)   
+        end if
      endif
 
      if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
@@ -1955,8 +1989,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
         k2=1
         if(data3D)k2=kend-kstart+1
         allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
+        allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
         do ij=1,MAXLIMAX*MAXLJMAX*k2
            Ivalues(ij)=0
+           NValues(ij) = 0
            if(present(UnDef))then
               Rvar(ij)=UnDef!default value
            else
@@ -1977,18 +2013,29 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
+                 debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
+                                 i== debug_li .and. j== debug_lj )
                        if(data3D)k2=kend-kstart+1
                        if(.not. Flight_Levels)then
                           do k=1,k2
                              ijk=k+(ij-1)*k2
                              Ivalues(ijk)=Ivalues(ijk)+1
+                             Nvalues(ijk)=Nvalues(ijk)+1
                              igjgk=igjg+(k-1)*dims(1)*dims(2)
                              
+                         !if ( debug_ij ) write(*,"(a,5i4,2f12.5,2i4,2es12.3)")&
+                         !  '++ Ivalues' , ig, jg, idiv, jdiv, Ndiv, lon, lat,&
+                         !  Ivalues(ijk), Nvalues(ijk), Rvalues(igjgk), FillValue
+
                              if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                                 Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                              else
                                 !Not defined: don't include this Rvalue
                                 Ivalues(ijk)=Ivalues(ijk)-1
+
+                                !if ( debug_ij ) write(*,"(a,2i4,2es12.3)") &
+                                !    ' -- IValues!' , Ivalues(ijk), &
+                                !        Nvalues(ijk), Rvalues(igjgk)
                              endif
                           enddo
                        else
@@ -2011,6 +2058,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                                 Pcounted=P_FL(k_FL2)
                              enddo
                              Ivalues(ijk)=Ivalues(ijk)+1
+                             Nvalues(ijk)=Nvalues(ijk)+1
                              if(k_FL<=NFL)then
                                 dp=Pcounted-P_EMEP
                                 igjgk=igjg+(k_FL-1)*dims(1)*dims(2)
@@ -2033,6 +2081,10 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
               do j=1,ljmax
                  ij=i+(j-1)*MAXLIMAX
                  ijk=k+(ij-1)*k2
+
+                 debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
+                                 i== debug_li .and. j== debug_lj )
+                 if ( debug_ij ) write(*,*) 'DEBUG  -- INValues!' , Ivalues(ijk), Nvalues(ijk)
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
                        write(*,*)'ERROR. no values found!',i,j,k,me,maxlon,minlon,maxlat,minlat
@@ -2042,10 +2094,14 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
                     if(interpol_used=='mass_conservative')then
                        !used for example for emissions in kg (or kg/s)
                        Rvar(ijk)=Rvar(ijk)/Ndiv2! Total sum of values from all cells is constant
+                       if ( debug_ij ) write(*,"(a,a,3i5,es12.4)") 'DEBUG  -- mass!' , trim(varname), Ivalues(ijk), Nvalues(ijk), Ndiv2, Rvar(ijk)
                     else
                        !used for example for emissions in kg/m2 (or kg/m2/s)
                        ! integral is approximately conserved
                        Rvar(ijk)=Rvar(ijk)/Ivalues(ijk)
+                       if ( debug_ij ) write(*,"(a,a,3i5,es12.4)") &
+                          'DEBUG  -- approx!' ,  trim(varname),&
+                           Ivalues(ijk), Nvalues(ijk),Ndiv2, Rvar(ijk)
 
                     endif
                  endif
@@ -2091,7 +2147,7 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
           write(*,*)'zero_order interpolation asked, but performing linear interpolation'
 
      call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection") 
-     call CheckStop(present(Undef), "Default values filling not implemented") 
+     call CheckStop(present(UnDef), "Default values filling not implemented") 
 
      allocate(Weight1(MAXLIMAX,MAXLJMAX))
      allocate(Weight2(MAXLIMAX,MAXLJMAX))
@@ -2102,8 +2158,12 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
 
 !Make interpolation coefficients.
 !Coefficients could be saved and reused if called several times.
+if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
+       write(*,"(a)") "DEBUG_RF G2G ", me, debug_proc
+end if
      call grid2grid_coeff(gl,gb,IIij,JJij,Weight1,Weight2,Weight3,Weight4,&
-                  Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax, debug)
+                  Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax,&
+                    debug_proc, debug_li, debug_lj )
 
      startvec(1)=minval(IIij(1:limax,1:ljmax,1:4))
      startvec(2)=minval(JJij(1:limax,1:ljmax,1:4))
@@ -2143,19 +2203,54 @@ subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      k=1
      do i=1,limax
         do j=1,ljmax
+
+           Weight(1) = Weight1(i,j)  !ds tmp
+           Weight(2) = Weight2(i,j)  !ds tmp
+           Weight(3) = Weight3(i,j)  !ds tmp
+           Weight(4) = Weight4(i,j)  !ds tmp
+
+           ijkn(1)=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
+           ijkn(2)=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
+           ijkn(3)=IIij(i,j,3)-startvec(1)+1+(JJij(i,j,3)-startvec(2))*dims(1)
+           ijkn(4)=IIij(i,j,4)-startvec(1)+1+(JJij(i,j,4)-startvec(2))*dims(1)
+
            ijk=i+(j-1)*MAXLIMAX
-           ijk1=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
-           ijk2=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
-           ijk3=IIij(i,j,3)-startvec(1)+1+(JJij(i,j,3)-startvec(2))*dims(1)
-           ijk4=IIij(i,j,4)-startvec(1)+1+(JJij(i,j,4)-startvec(2))*dims(1)
-           Rvar(ijk)=Weight1(i,j)*Rvalues(ijk1)+&
-                Weight2(i,j)*Rvalues(ijk2)+&
-                Weight3(i,j)*Rvalues(ijk3)+&
-                Weight4(i,j)*Rvalues(ijk4)
+           Rvar(ijk)    = 0.0
+           sumWeights   = 0.0
+if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
+       write(*,*) "DEBUG_RF START ", me, debug_proc, debug_li, debug_lj
+       write(*,*) "DEBUG_RF UNDEF ", Undefined, FillValue
+end if
 
-        enddo
-     enddo
+           do k = 1, 4
+              ii = IIij(i,j,k)
+              jj = JJij(i,j,k)
+if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
+    write(*,"(a,2i3,es10.4,i6,f12.4)") "DEBUG_RF RVAR ", me, k, Weight(k), ijkn(k),  Rvalues(ijkn(k))
+end if
+              if ( Rvalues(ijkn(k) )  > FillValue ) then
+                   Rvar(ijk) =  Rvar(ijk) + Weight(k)*Rvalues(ijkn(k))
+                  sumWeights = sumWeights + Weight(k)
+if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
+       write(*,"(a,i2,f8.4,f12.4,i6,f12.4)") "DEBUG_RF ADD ", k, Weight(k), sumWeights, ijkn(k),  Rvalues(ijkn(k))
+end if
+              end if
+           enddo !k
 
+           if ( sumWeights > 1.0e-9 ) then 
+                Rvar(ijk) =  Rvar(ijk)/sumWeights
+if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
+       write(*,"(a,2es12.4)") "DEBUG_RF  VALID", sumWeights, Rvar(ijk)
+end if
+           else
+                Rvar(ijk) = FillValue
+if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
+       write(*,"(a,2es12.4)") "DEBUG_RF FILL", sumWeights, Rvar(ijk)
+end if
+           end if
+
+        enddo !j
+     enddo !i
 
      deallocate(Weight1)
      deallocate(Weight2)

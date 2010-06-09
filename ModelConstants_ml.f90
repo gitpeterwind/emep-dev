@@ -52,16 +52,16 @@ module ModelConstants_ml
   logical, parameter, public :: IS_GLOBAL = .false.
 
   integer, public, parameter ::  &
-  !  IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
-   IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+  ! IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
+   IIFULLDOM = 132, JJFULLDOM = 159  ! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 ! x,y-Dimensions of full GLOBAL domain
   ! IIFULLDOM = 201, JJFULLDOM = 161 ! x,y-Dimensions of full GEMS/MACC domain
 
  !ds - I added these offsets, but now suspect I was thinking wrong.
  ! The difference between EMEP and EECCA is confusing...
   integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
- ! integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
-  integer, public, parameter, dimension(4) ::  &
+  !integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
+   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
   !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
@@ -71,6 +71,7 @@ module ModelConstants_ml
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
   RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
+  !RUNDOMAIN = (/ 70+OFFSET_i,  95+OFFSET_i, 25+OFFSET_j,  50+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
@@ -110,13 +111,23 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
+ !integer, public, parameter :: DEBUG_i=76, DEBUG_j= 35 !  Sea,  North sea
 
+!=============================================================================
+! Some flags for model setup
+
+  ! Biogenics ................................................................
+   character(len=8),public, save, dimension(1) :: &
+                                   BVOC_USED = (/ "isoprene"/)   
+              !!                   BVOC_USED = (/ "isoprene","terpene "/)   
+  ! Next      ................................................................
+  ! Next      ................................................................
 !=============================================================================
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::      &
      DEBUG_AQUEOUS        = .false. & !
     ,DEBUG_BCS            = .false. & !
-    ,DEBUG_BIO            = .false. & !
+    ,DEBUG_BIO            = .true. & !
     ,DEBUG_DERIVED        = .false. & !
     ,DEBUG_DO3SE          = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
@@ -126,11 +137,11 @@ module ModelConstants_ml
       ,DEBUG_Kz           = .false. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !
-    ,DEBUG_VDS            = .false. & !
-    ,DEBUG_MY_DRYDEP      = .false. & !
-    ,DEBUG_CLOVER         = .false. & !
+      ,DEBUG_VDS          = .false. & !
+      ,DEBUG_MY_DRYDEP    = .false. & !
+      ,DEBUG_CLOVER       = .false. & !
+      ,DEBUG_STOFLUX      = .false. &
     ,DEBUG_EMISSIONS      = .false. &
-    ,DEBUG_STOFLUX        = .false. &
     ,DEBUG_GETEMIS        = .false. &
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
@@ -141,6 +152,8 @@ module ModelConstants_ml
     ,DEBUG_LANDDEFS       = .false. & !
     ,DEBUG_LANDUSE        = .false. & !
     ,DEBUG_LANDPFTS       = .false. &
+    ,DEBUG_NETCDF         = .false. &
+      ,DEBUG_NETCDF_RF    = .true. &  ! ReadField_CDF in NetCDF_ml
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
     ,DEBUG_SETUP_1DBIO    = .false.   !

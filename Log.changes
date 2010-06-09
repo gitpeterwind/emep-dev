@@ -1,3 +1,22 @@
+xxxxxxxxxxxxxx rv3_6_4     Dave,    9th June   2010
+
+Advection_ml returned to former, otherwise normal runs give NaN
+   I have added the new suggestion as a commented ourt block though
+   awaiting attention from Peter
+   see "QUERY" bit.
+
+NetCDF_ml modified
+
+   known_projection added as optional. Allows user to
+   specify e.g. MEGAN data as "lon lat", without need
+   to modify original MEGAN files.
+
+   Lots of debug statements added! Will reduce later
+
+   FillValues treatment extended+safer  (hope Peter agrees!)
+
+Interpolation_ml - more 
+
 xxxxxxxxxxxxxx rv3_6_3     Dave,    9th June   2010
 
 CM_WetDep.inc added to ZCM_EmChem09.  Note that in principal
