@@ -1059,16 +1059,7 @@
         do j = lj0,lj1
           do i = li0,li1
 !           if(niterx(j,k)<=NITERXMAX)then
-            psi = 1./ps3d(i,j,k)
-!QUERY - why ps-PT in one, just 1. in other
-!Caveat - I (DS) have no idea about any of this!
-!Here are the differences between the new and old. Peter's latest (> below)
-!caused NaN, but ...
-!diff -r1.35 Advection_ml.f90
-!1062c1062
-!<              psi = (ps(i,j,1) - PT)/max(ps3d(i,j,k),1.0)
-!---
-!>             psi = 1./ps3d(i,j,k)
+             psi =1.0/max(ps3d(i,j,k),1.0)
             xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
 !           endif
           enddo
