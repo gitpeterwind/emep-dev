@@ -4,6 +4,8 @@ Advection_ml: Bug in rv3_6_2 correction:should not multiply bi ps-PT too!
 
 NetCDF_ml - deallocate added for Nvalues
 
+NetCDF_ml: added "recursive" for ReadField_CDF routine
+
 xxxxxxxxxxxxxx rv3_6_4     Dave,    9th June   2010
 
 Advection_ml returned to former, otherwise normal runs give NaN

@@ -1628,7 +1628,7 @@ deallocate(Rvalues)
 end subroutine Read_Inter_CDF
 
 
-subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
+recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
      needed,debug_flag,UnDef)
   !reads data from file and interpolates data into local grid
