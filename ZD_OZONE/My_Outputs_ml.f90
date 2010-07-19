@@ -45,7 +45,7 @@
 
   use CheckStop_ml,     only: CheckStop
   use ChemSpecs_adv_ml
-!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
   use ChemSpecs_shl_ml    !,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
@@ -155,7 +155,7 @@ integer, public, parameter :: &
     ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =     8                &   ! No.  advected species
     ,NSHL_SONDE  =    3                &   ! No. short-lived species
-    ,NXTRA_SONDE =    5                    ! No. Misc. met. params  (now th)
+    ,NXTRA_SONDE =    7                    ! No. Misc. met. params  (now th)
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
    SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_CO, &
@@ -164,14 +164,18 @@ integer, public, parameter :: &
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-!    SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /) 
-    SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /) 
+!   SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /) 
+!   SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /)
+    SONDE_XTRA=  (/"PM25  ", "PMco  ", &  !AMVB 2010-07-19: PM-PPB bug fix
+                   "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /)
+
 
  !   can access d_3d fields through index here, by
  !   setting "D3D" above and say D3_XKSIG12 here:
 
    integer,           public, parameter, dimension(NXTRA_SONDE) :: &
-                    SONDE_XTRA_INDEX=  (/    0, 0, 0, 0, 0 /)
+                    SONDE_XTRA_INDEX=  (/ 0, 0, &  !AMVB 2010-07-19: PM-PPB bug fix
+                                          0, 0, 0, 0, 0 /)
 
 
 
@@ -225,6 +229,12 @@ integer, public, parameter :: &
      integer, public, parameter :: NBDATES = 3  
      type(date), public, save, dimension(NBDATES) :: wanted_dates_inst 
 
+!AMVB 2010-07-19: PM-PPB bug fix
+! Conversion to ug/m3
+!   xn_adv(ixadv,ix,iy,k)*to_ug_ADV(ixadv)*roa(ix,iy,k,1)
+! For ug/m3 output use in combination "ADVugXX" (set_output_defs)
+  real, public, save, dimension(NSPEC_ADV)  :: to_ug_ADV ! conversion to ug
+
  !================================================================
 
    public :: set_output_defs
@@ -239,11 +249,10 @@ integer, public, parameter :: &
    integer           :: i       ! Loop index
 
 !AMVB 2009-07-06
-!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
-  real                :: to_ug_ADV(NSPEC_ADV)& ! conversion to ug
-                        ,to_ug_S &  ! conversion to ug of S
+  real, save         :: to_ug_S &  ! conversion to ug of S
                         ,to_ug_N &  ! conversion to ug of N
                         ,to_mgSIA&  ! conversion to mg
                         ,to_ugSIA   ! conversion to ug
@@ -270,7 +279,7 @@ integer, public, parameter :: &
 !            wrong. 
 
 !AMVB 2009-07-06
-!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
   to_ug_ADV=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%molwt*PPBINV/ATWAIR
@@ -311,7 +320,7 @@ integer, public, parameter :: &
 
 
 !AMVB 2009-07-06
-!  Use "ADVugXX" for ug outout (ug/m3, ugS/m3, ugC/m3)
+!  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
   hr_out(2)=  Asc2D("aNH4-air","ADVugXX",&

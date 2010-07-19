@@ -1,9 +1,9 @@
 ! <Sites_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,25 +11,25 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 module Sites_ml
 
 ! -----------------------------------------------------------------------
-! Contains subroutines to read in list of measurement stations and/or 
-! radiosonde locations. Locations should be specified in the input 
+! Contains subroutines to read in list of measurement stations and/or
+! radiosonde locations. Locations should be specified in the input
 ! files "sites.dat" and "sondes.dat"
 !
 ! -----------------------------------------------------------------------
@@ -42,7 +42,8 @@ use My_Outputs_ml, only : &  ! for sitesout
       SITE_XTRA_CODE, FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
       NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &  ! DSGCN_NOy,  &
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
-      FREQ_SONDE  ! DSGC, NOy_SPEC
+      FREQ_SONDE, &  ! DSGC, NOy_SPEC
+      to_ug_ADV  !AMVB 2010-07-19: PM-PPB bug fix
 
 use Derived_ml,        only : d_2d, d_3d, f_2d
 use Functions_ml,      only : Tpot_2_T              ! Conversion function
@@ -53,7 +54,7 @@ use Io_ml,             only : check_file,open_file,ios &
                               , Read_Headers,read_line
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml,    only : NSPEC_SHL
-use ChemGroups_ml,      only : OXN_GROUP
+use ChemGroups_ml,      only : OXN_GROUP, PM25_GROUP, PMCO_GROUP
 use ChemChemicals_ml,   only : species               ! for species names
 !ds was used for output of PM25 in ppb. Bug!
 !dsuse ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
@@ -64,7 +65,7 @@ use MetFields_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentr
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
                               ,KMAX_BND,PT,ATWAIR, NPROC &
-                              ,DomainName, RUNDOMAIN, IOU_INST  
+                              ,DomainName, RUNDOMAIN, IOU_INST
 use Par_ml,            only : li0,lj0,li1,lj1 &
                               ,GIMAX,GJMAX &
                               ,GI0,GI1,GJ0,GJ1,me,MAXLIMAX,MAXLJMAX
@@ -140,7 +141,7 @@ contains
   ! local domains, and collects lists of sites/species/variables for output.
   ! -------------------------------------------------------------------------
 
-  ! Dummy arrays 
+  ! Dummy arrays
   integer, save, dimension (NSONDES_MAX) ::  &
       sonde_gz, sonde_z ! global coordinates
   sonde_gz(:) = 0
@@ -162,7 +163,7 @@ contains
   call set_species(SONDE_ADV,SONDE_SHL,SONDE_XTRA,sonde_species)
 
   if ( MY_DEBUG ) then
-     write(6,*) "sitesdef After nlocal ", nlocal_sites, " on me ", me 
+     write(6,*) "sitesdef After nlocal ", nlocal_sites, " on me ", me
      do i = 1, nlocal_sites
        write(6,*) "sitesdef After set_species x,y ", &
                      site_x(i), site_y(i),site_z(i), " on me ", me
@@ -186,8 +187,8 @@ contains
   character(len=*),intent(out), dimension(:) :: s
 
   integer :: nadv, nshl, n2, nout  ! local sizes
-  nadv = size(adv) 
-  nshl = size(shl) 
+  nadv = size(adv)
+  nshl = size(shl)
   n2 = nadv + nshl
   nout = size(s)                   ! Size of array to be returned
 
@@ -203,7 +204,7 @@ contains
           s_gindex, s_gx, s_gy, s_gz, s_x, s_y, s_z, s_n, s_name)
 
   ! ----------------------------------------------------------------------
-  ! Reads the file "sites.dat" and "sondes.dat" to get coordinates of 
+  ! Reads the file "sites.dat" and "sondes.dat" to get coordinates of
   ! surface measurement stations or locations where vertical profiles
   ! or extra output are required. (These files may be empty, but this is
   ! not recommended - the sites data provide good diagnostics).
@@ -217,9 +218,9 @@ contains
   character(len=*), intent(in) :: fname
   integer,          intent(in) :: io_num
   integer,          intent(in) :: NMAX     ! Max no. sites
-  integer, intent(out) :: nglobal, nlocal  ! No. sites 
+  integer, intent(out) :: nglobal, nlocal  ! No. sites
   integer, intent(out), dimension (0:,:) :: s_gindex  ! index, starts at me=0
-  integer, intent(out), dimension (:) ::  &   
+  integer, intent(out), dimension (:) ::  &
                              s_gx, s_gy, s_gz   & ! global coordinates
                            , s_x, s_y, s_z      & ! local coordinates
                            , s_n                  ! number in global
@@ -289,28 +290,28 @@ contains
      end if ! ioerr
 
 
-     if ( ix < RUNDOMAIN(1) .or. ix > RUNDOMAIN(2) .or. & 
+     if ( ix < RUNDOMAIN(1) .or. ix > RUNDOMAIN(2) .or. &
           iy < RUNDOMAIN(3) .or. iy > RUNDOMAIN(4) ) then
         if(me==0) write(6,*) "sitesdef: ", s, ix, iy, &
                 " outside computational domain"
-     else if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. & 
+     else if ( ix == RUNDOMAIN(1) .or. ix == RUNDOMAIN(2) .or. &
               iy == RUNDOMAIN(3) .or. iy == RUNDOMAIN(4) ) then
         if(me==0) write(6,*) "sitesdef: ", s, ix, iy, &
                 " on computational domain"
      else
         comment = " ok - inside domain         "
         n = n + 1
-        s_gx(n)   = ix  
-        s_gy(n)   = iy  
+        s_gx(n)   = ix
+        s_gy(n)   = iy
         s_gz(n)   = lev
 
         s_name(n)  = s // comment
 
      endif
 
-  end do SITELOOP 
+  end do SITELOOP
 
-  nglobal = n 
+  nglobal = n
 
   ! NSITES/SONDES_MAX must be _greater_ than the number used, for safety
 
@@ -360,10 +361,10 @@ contains
      end do
      do d = 1, NPROC-1
         CALL MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
-            333, MPI_COMM_WORLD,STATUS, INFO) 
+            333, MPI_COMM_WORLD,STATUS, INFO)
         if (nloc > 0) &
            CALL MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, &
-             334, MPI_COMM_WORLD,STATUS, INFO) 
+             334, MPI_COMM_WORLD,STATUS, INFO)
         if (MY_DEBUG) write(6,*) "sitesdef: recv d ", fname, d,  &
                    " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
         do n = 1, nloc
@@ -394,26 +395,26 @@ end subroutine Init_sites
   real, dimension(NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID), intent(in) :: xn_shl
 
   ! Local
-  integer :: ix, iy,iz, ispec                 ! Site indices
-  integer :: nn                               ! species index
-  logical, save :: my_first_call = .true.     ! for debugging
-  integer           :: d2index                ! index for d_2d field access
-  character(len=15) :: d2code                 ! parameter code -- # --
+  integer :: ix, iy,iz, ispec                   ! Site indices
+  integer :: nn                                 ! species index
+  logical, save :: my_first_call = .true.       ! for debugging
+  integer                            :: d2index ! index for d_2d field access
+  character(len=len(SITE_XTRA_CODE)) :: d2code  ! parameter code -- # --
 
   real,dimension(NOUT_SITE,NSITES_MAX) :: out ! for output, local node
 
-  if ( MY_DEBUG ) then 
-     write(6,*) "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me 
+  if ( MY_DEBUG ) then
+     write(6,*) "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me
      do i = 1, nlocal_sites
         write(6,*) "sitesdef Into surf  x,y ",site_x(i),site_y(i),&
                     site_z(i)," me ", me
      end do
- 
+
      if ( me == 0 ) then
         write(6,*)  "======= site_gindex ======== sitesdef ============"
-        do n = 1, nglobal_sites 
+        do n = 1, nglobal_sites
            write(6,'(a12,i4, 2x, 8i4)') "sitesdef ", n, &
-                    (site_gindex(d,n),d=0, NPROC-1)  
+                    (site_gindex(d,n),d=0, NPROC-1)
         end do
         write(6,*) "======= site_end    ======== sitesdef ============"
      end if ! me = 0
@@ -448,11 +449,11 @@ end subroutine Init_sites
      do ispec = 1, NXTRA_SITE
         nn = NADV_SITE + NSHL_SITE + ispec
         select case ( SITE_XTRA(ispec) )
-          case ( "T2" ) 
-            out(nn,i)   = t2_nwp(ix,iy,1) - 273.15 
-          case ( "th" ) 
+          case ( "T2" )
+            out(nn,i)   = t2_nwp(ix,iy,1) - 273.15
+          case ( "th" )
             out(nn,i)   = th(ix,iy,iz,1)
-!          case ( "hmix" ) 
+!          case ( "hmix" )
 !            out(nn,i)   = pzpbl(ix,iy)
 
           case ( "D2D" )
@@ -460,8 +461,8 @@ end subroutine Init_sites
             d2index      = find_index(d2code, f_2d(:)%name)
             call CheckStop( d2index < 1,  "SITES D2D NOT FOUND"//trim(d2code) )
             out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
-   
-        end select 
+
+        end select
         call CheckStop( abs( out(nn,i) )  > 1.0e99, "ABS(SITES OUT) TOO BIG" )
      end do
   end do
@@ -486,7 +487,7 @@ end subroutine siteswrt_surf
 
   real, dimension(:,:,:,:),    intent(in) ::  xn_adv
   real, dimension(:,:,:,:),    intent(in) ::  xn_shl
- 
+
   ! Output variables - none
 
   ! Local variables
@@ -494,11 +495,11 @@ end subroutine siteswrt_surf
   integer :: d3index    !ds index for d_3d field access
   integer, parameter ::  KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1
   integer, dimension(NLEVELS_SONDE)       :: itemp
-  real, dimension(KMAX_MID)               :: pp, temp, qsat, rh, sum_PM25 &
-                                             , sum_PMco, sum_NOy
+  real, dimension(KMAX_MID)               :: pp, temp, qsat, rh, sum_PM &
+                                             , sum_NOy
   real, dimension(NOUT_SONDE,NSONDES_MAX) :: out
- 
-  ! Consistency check 
+
+  ! Consistency check
 
   do ispec = 1, NXTRA_SONDE
      select case ( SONDE_XTRA(ispec) )
@@ -527,7 +528,7 @@ end subroutine siteswrt_surf
         nn = nn + NLEVELS_SONDE
      end do
 
-     do ispec = 1, NSHL_SONDE    !/ xn_shl  in molecules/cm3 
+     do ispec = 1, NSHL_SONDE    !/ xn_shl  in molecules/cm3
         out(nn+1:nn+NLEVELS_SONDE,i) = xn_shl( SONDE_SHL(ispec) , &
             ix,iy,KMAX_MID:KTOP_SONDE:-1)
         nn = nn + NLEVELS_SONDE
@@ -539,33 +540,49 @@ end subroutine siteswrt_surf
      do ispec = 1, NXTRA_SONDE
 
         select case ( SONDE_XTRA(ispec) )
+!AMVB 2010-07-19: PM-PPB bug fix
+          case ( "PM25" )    !!  PM data converted to ug m-3
+            sum_PM(:) = 0.
+            do k = 1, KMAX_MID
+              sum_PM(k) = dot_product(xn_adv(PM25_GROUP-NSPEC_SHL,ix,iy,k),&
+                                   to_ug_ADV(PM25_GROUP-NSPEC_SHL)) &
+                        * roa(ix,iy,k,1)
+            end do !k
+            out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
+          case ( "PMco" ) !!  PM data converted to ug m-3
+            sum_PM(:) = 0.
+            do k = 1, KMAX_MID
+              sum_PM(k) = dot_product(xn_adv(PMCO_GROUP-NSPEC_SHL,ix,iy,k),&
+                                   to_ug_ADV(PMCO_GROUP-NSPEC_SHL)) &
+                        * roa(ix,iy,k,1)
+            end do !k
+            out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
 
-          case ( "PM25" )    !!  PM data converted to ug m-3 
 !ds IS IN PPB - MUST BE WRONG!
 !BUGPPB            sum_PM25(:) = 0.
 !BUGPPB            do k = 1, KMAX_MID
 !BUGPPB              sum_PM25(k) = 0.0
 !BUGPPB              do ipm = 1, size( PM25_GROUP )
 !BUGPPB                iadv = ipm-NSPEC_SHL
-!BUGPPB                sum_PM25(k) = sum_PM25(k) + 
-!BUGPPB                  xn_adv(iadv,ix,iy,k) *species(idv)%molwt    
+!BUGPPB                sum_PM25(k) = sum_PM25(k) +
+!BUGPPB                  xn_adv(iadv,ix,iy,k) *species(idv)%molwt
 !BUGPPB              end do ! ipm
 !BUGPPB              sum_PM25(k) = sum_PM25(k) * roa(ix,iy,k,1) /ATWAIR
 !BUGPPB!ds               ( xn_adv(IXADV_SO4,ix,iy,k) *species(SO4)%molwt    &
 !BUGPPB!ds               + xn_adv(IXADV_aNO3,ix,iy,k)*species(aNO3)%molwt   &
 !BUGPPB!ds               + xn_adv(IXADV_aNH4,ix,iy,k)*species(aNH4)%molwt   &
-!BUGPPB!ds               + xn_adv(IXADV_PPM25,ix,iy,k)*species(PPM25)%molwt   & 
+!BUGPPB!ds               + xn_adv(IXADV_PPM25,ix,iy,k)*species(PPM25)%molwt   &
 !BUGPPB!ds               + xn_adv(IXADV_SSfi,ix,iy,k)*species(SSfi)%molwt  ) & !SeaS
 !BUGPPB            end do !k
 !BUGPPB            out(nn+1:nn+KMAX_MID,i) = PPBINV                         &
 !BUGPPB                                    * sum_PM25(KMAX_MID:1:-1)
 !BUGPPB
-!BUGPPB          case ( "PMco" ) !!  PM data converted to ug m-3 
+!BUGPPB          case ( "PMco" ) !!  PM data converted to ug m-3
 !BUGPPB            sum_PMco(:) = 0.
 !BUGPPB            do k = 1, KMAX_MID
 !BUGPPB              sum_PMco(k) =   &
 !BUGPPB               ( xn_adv(IXADV_pNO3,ix,iy,k) * species(pNO3)%molwt &
-!BUGPPB               + xn_adv(IXADV_PPMco,ix,iy,k) * species(PPMCO)%molwt & 
+!BUGPPB               + xn_adv(IXADV_PPMco,ix,iy,k) * species(PPMCO)%molwt &
 !BUGPPB               + xn_adv(IXADV_SSco,ix,iy,k) * species(SSco)%molwt ) & !SeaS
 !BUGPPB               * roa(ix,iy,k,1) /ATWAIR
 !BUGPPB            end do
@@ -578,46 +595,46 @@ end subroutine siteswrt_surf
               do ii = 1, size(OXN_GROUP)  !DSGC N_NOy
                 sum_NOy(k) = sum_NOy(k) + xn_adv(OXN_GROUP(ii)-NSPEC_SHL,ix,iy,k)
               end do
-            end do 
+            end do
             out(nn+1:nn+KMAX_MID,i) = PPBINV &
                                     * sum_NOy(KMAX_MID:1:-1)
 
-          case ( "RH   " ) 
+          case ( "RH   " )
             do k = 1,KMAX_MID
               pp(k) = A_mid(k) + B_mid(k)*ps(ix,iy,1)
               temp(k) = th(ix,iy,k,1)* Tpot_2_T( pp(k) )
               itemp(k) = nint( temp(k) )
               qsat(k)  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
-              rh(k) = min( q(ix,iy,k,1)/qsat(k) , 1.0) 
+              rh(k) = min( q(ix,iy,k,1)/qsat(k) , 1.0)
             end do
             out(nn+1:nn+NLEVELS_SONDE,i) =  rh(KMAX_MID:KTOP_SONDE:-1)
 
-          case ( "z_mid" ) 
+          case ( "z_mid" )
             out(nn+1:nn+NLEVELS_SONDE,i) =  z_mid(ix,iy,KMAX_MID:KTOP_SONDE:-1)
 
-          case ( "p_mid" ) 
+          case ( "p_mid" )
             out(nn+1:nn+NLEVELS_SONDE,i) = A_mid(KMAX_MID:KTOP_SONDE:-1) + &
                                       B_mid(KMAX_MID:KTOP_SONDE:-1)*ps(ix,iy,1)
 
-          case ( "Kz_m2s" ) 
+          case ( "Kz_m2s" )
             out(nn+1:nn+NLEVELS_SONDE,i) =  Kz_m2s(ix,iy,KMAX_MID:KTOP_SONDE:-1)
 
-          case ( "th" ) 
+          case ( "th" )
             out(nn+1:nn+NLEVELS_SONDE,i) =  th(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
 
-          case ( "U" ) 
+          case ( "U" )
             out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( u_xmj(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
                                             +u_xmj(ix-1,iy,KMAX_MID:KTOP_SONDE:-1,1) )
 
-          case ( "V" ) 
+          case ( "V" )
             out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( v_xmi(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
                                             +v_xmi(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
 
-          case ( "D3D" )    
+          case ( "D3D" )
             d3index                 = SONDE_XTRA_INDEX(ispec)
             out(nn+1:nn+NLEVELS_SONDE,i)= &
               d_3d(d3index,ix,iy,KMAX_MID:KTOP_SONDE:-1,IOU_INST)
- 
+
         end select
 
         nn = nn + NLEVELS_SONDE
@@ -702,8 +719,8 @@ end subroutine siteswrt_sondes
 
   if ( me /= 0 ) then   ! send data to me=0
 
-     CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO) 
-     CALL MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO) 
+     CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO)
+     CALL MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
 
   else ! me = 0
 
@@ -717,8 +734,8 @@ end subroutine siteswrt_sondes
 
      do d = 1, NPROC-1
         CALL MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
-           346, MPI_COMM_WORLD,STATUS, INFO) 
-        CALL MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, STATUS, INFO) 
+           346, MPI_COMM_WORLD,STATUS, INFO)
+        CALL MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, STATUS, INFO)
         do n = 1, nloc
            nglob = s_gindex(d,n)
            g_out(:,nglob) = out(:,n)

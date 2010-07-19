@@ -246,12 +246,12 @@ private
 
        character(len=*), intent(in) :: name ! e.g. DDEP_SO2_m2Conif
        character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
-       character(len=*), intent(in) :: subclass ! 
+       character(len=*), intent(in) :: subclass !
        character(len=*), intent(in) :: txt ! text where needed, e.g. "Conif"
        character(len=*), intent(in) :: unit ! writen in netCDF output
        integer, intent(in)  :: index    ! index in concentation array, or other
        integer, intent(in) :: f2d       ! index in f_2d arrays
-       integer, intent(in) :: LC        ! Index of Receiver land-cover (one 
+       integer, intent(in) :: LC        ! Index of Receiver land-cover (one
        real, intent(in)    :: XYCL      ! Threshold or CL, e.f. AOTx or AFstY
        logical, intent(in) :: dt_scale  !  where scaling by dt_advec needed,
        real, intent(in)    :: scale     !  e.g. use 100.0 to get cm/s
@@ -272,7 +272,7 @@ private
                            trim(txt),trim(unit),index,f2d,LC,XYCL,dt_scale, scale,&
                             avg,rho,inst,year,month,day,atw)
 
-       if ( present(Is3D) ) then 
+       if ( present(Is3D) ) then
           call AddDeriv(inderiv,Is3D)
        else
           call AddDeriv(inderiv)
@@ -347,7 +347,7 @@ Is3D = .false.
        !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv( "WDEP_PREC","PREC ","-","-", "mm",  &
                 -1, -99,-99,  0.0,       F,    1.0,   F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_SOX ","WDEP ","-","-", "mgS/m2", & 
+call AddNewDeriv( "WDEP_SOX ","WDEP ","-","-", "mgS/m2", &
                 -1, -99,-99,  0.0,     F,    1.0e6,   F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_OXN ","WDEP ","-","-", "mgN/m2",  &
                 -1, -99,-99,  0.0,     F,    1.0e6,   F,   F , F ,T ,T ,T ,-999)
@@ -356,19 +356,19 @@ call AddNewDeriv( "WDEP_RDN ","WDEP ","-","-", "mgN/m2",  &
 ! Hard-coded for ECO08 - will rewrite later as with DDEP
 !DONEcall AddDef( "WDEP ", F, -1, 1.0e6, F  , F  ,T ,T ,T ,"WDEP_SO2","mgS/m2")
 !ixadv not yet used I think.
-call AddNewDeriv( "WDEP_SO2 ","WDEP ","-","-", "mgS/m2", & 
+call AddNewDeriv( "WDEP_SO2 ","WDEP ","-","-", "mgS/m2", &
          IXADV_SO2, -99,-99,  0.0,     F,    1.0e6,   F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_SO4 ","WDEP ","-","-", "mgS/m2", & 
+call AddNewDeriv( "WDEP_SO4 ","WDEP ","-","-", "mgS/m2", &
          IXADV_SO4, -99,-99,  0.0,     F,    1.0e6,   F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_HNO3 ","WDEP ","-","-", "mgN/m2", & 
+call AddNewDeriv( "WDEP_HNO3 ","WDEP ","-","-", "mgN/m2", &
          IXADV_HNO3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_pNO3_f","WDEP ","-","-", "mgN/m2", & 
+call AddNewDeriv( "WDEP_pNO3_f","WDEP ","-","-", "mgN/m2", &
          IXADV_pNO3_f, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_pNO3_c","WDEP ","-","-", "mgN/m2", & 
+call AddNewDeriv( "WDEP_pNO3_c","WDEP ","-","-", "mgN/m2", &
          IXADV_pNO3_c, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_NH3 ","WDEP ","-","-", "mgN/m2", & 
+call AddNewDeriv( "WDEP_NH3 ","WDEP ","-","-", "mgN/m2", &
          IXADV_NH3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", & 
+call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
          IXADV_aNH4, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit
@@ -499,7 +499,7 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
 
 !Emissions:
 ! We use mg/m2 outputs for consistency with depositions
-! Would need to multiply by GridArea_m2 later to get ktonne/grid, but not 
+! Would need to multiply by GridArea_m2 later to get ktonne/grid, but not
 ! done here.
 !
 ! BVOC called every dt_advec, so use dt_scale=1.0e6 to get from kg/m2/s to
@@ -512,7 +512,7 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
                  1 , -99,-99, 0.0,  T ,    1.0e6,     F, F , F, T, T, T, -999 ) !?? atw?
 
 ! SNAP emissions called every hour, so use scale=3600.0 to get from kg/m2/s to kg/m2,
-! and by 1.0e6 to get from kg/m2 to mg/m2 accumulated. 
+! and by 1.0e6 to get from kg/m2 to mg/m2 accumulated.
 !
 ! Future option - might make use of Emis_Molwt to get mg(N)/m2
 do  ind = 1, size(EMIS_NAME)
@@ -604,6 +604,11 @@ end do
 !ds  call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
 !ds           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
 
+!AMVB 2010-07-19: PM-PPB bug fix
+call AddNewDeriv("D3_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
+         -99, -99,-99, 0.0, F, ugPM,  T, T , F, F, F, F, -999,Is3D ) !?? atw?
+call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
+         -99, -99,-99, 0.0, F, ugPM,  T, T , F, F, F, F, -999,Is3D ) !?? atw?
 
      if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
                                               ! daily outputs are wanted.
@@ -917,7 +922,7 @@ end do
 
             call voc_2dcalc()
 
-          case( "AOT" )    !  Hardly used these days. The vegetation-specific 
+          case( "AOT" )    !  Hardly used these days. The vegetation-specific
                            !  AOTs are handled in the Mosaic class and as
                            !  part of the dry dep calculations.
 
@@ -1039,24 +1044,29 @@ end do
             !       n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case ( "SIAGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,SIA_GROUP, density )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
+                               density, .false.)
           case ( "OXNGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,OXN_GROUP, density )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, OXN_GROUP, &
+                               density, .false.)
           case ( "RDNGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,RDN_GROUP, density )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, RDN_GROUP, &
+                               density, .false.)
           case ( "TNO3GROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,TNO3_GROUP, density )
-
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
+                              density, .false.)
           case ( "PM25GROUP" )
             ipm25 = n
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,PM25_GROUP, density )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PM25_GROUP, &
+                               density, .false.)
           case ( "PMcGROUP" )
             ipmc = n
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,PMCO_GROUP, density )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PMCO_GROUP, &
+                               density, .false.)
 
           case ( "PM10GROUP" ) ! Consider doing as sum later
             if ( ipm25 > 0 .and. ipmc > 0 ) then ! We have these already
-               d_2d(n,:,:,IOU_INST) = & 
+               d_2d(n,:,:,IOU_INST) = &
                  d_2d(ipm25,:,:,IOU_INST) + d_2d(ipmc,:,:,IOU_INST)
             else
               ! call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,PM10_GROUP, density )
@@ -1088,7 +1098,7 @@ end do
 
         af = 1.0 ! accumlation factor
         if( f_2d(n)%dt_scale ) then !need to scale with dt_advec
-            af = dt_advec 
+            af = dt_advec
         end if
 
         d_2d(n,:,:,IOU_DAY )  = d_2d(n,:,:,IOU_DAY )  + af*d_2d(n,:,:,IOU_INST)
@@ -1191,7 +1201,7 @@ end do
 
             call voc_3dcalc()
 
-! hb new 3D output 
+! hb new 3D output
         case ( "D3_PPB" )
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -1203,26 +1213,38 @@ end do
 ! hb new 3D output
 ! ds Bug - cannot have PM in mixing ratio
 !ds         case ( "PM25" )
-!ds         
+!ds
 !ds            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
 !ds              d_3d( n, i,j,k,IOU_INST) = xn_adv(IXADV_SO4,i,j,k) &
 !ds                + xn_adv(IXADV_pNO3_f,i,j,k) &
 !ds                + xn_adv(IXADV_aNH4,i,j,k) &
 !ds                + xn_adv(IXADV_PPM25,i,j,k) &
-!ds                + xn_adv(IXADV_SeaSalt_f,i,j,k) 
+!ds                + xn_adv(IXADV_SeaSalt_f,i,j,k)
 !ds            end forall
 !ds
 !ds! hb new 3D output
 !ds         case ( "PMco" )
-!ds         
+!ds
 !ds            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
 !ds              d_3d( n, i,j,k,IOU_INST) =   &
 !ds                + xn_adv(IXADV_pNO3_c,i,j,k) &
 !ds                + xn_adv(IXADV_PPMCOARSE,i,j,k) &
-!ds                + xn_adv(IXADV_SeaSalt_c,i,j,k) 
+!ds                + xn_adv(IXADV_SeaSalt_c,i,j,k)
 !ds            end forall
 
-! hb                                                                            
+!AMVB 2010-07-19: PM-PPB bug fix
+        case ( "PM25GROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25_GROUP, &
+                               roa(i,j,k,1), .true.)
+          enddo
+        case ( "PMcGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PMCO_GROUP, &
+                               roa(i,j,k,1), .true.)
+          enddo
+
+! hb
          case ( "Kz" )
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
@@ -1408,53 +1430,72 @@ end do
 
    end subroutine voc_3dcalc
  !=========================================================================
- subroutine uggroup_calc( ug_2d, n, class, group, density )
+!AMVB 2010-07-19: PM-PPB bug fix
+ subroutine uggroup_calc( ug_2d, n, class, group, density, IsSurf)
+!subroutine uggroup_calc( ug_2d, n, class, group, density )
 
-    !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
-    ! (only SIA converted to new group system so far, rv3_5_6 )
-    !/--  calulates also PM10  = SIA + PPM2.5 + PPMCOARSE
+  !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
+  ! (only SIA converted to new group system so far, rv3_5_6 )
+  !/--  calulates also PM10  = SIA + PPM2.5 + PPMCOARSE
 
-    real, dimension(:,:), intent(inout) :: ug_2d  ! i,j section of d_2d arrays
-    character(len=*)    :: class   ! Type of data
-    integer, intent(in)  :: n   ! 
-    !character(len=*)    :: unit   ! 
-    integer, intent(in), dimension(:)  :: group
-    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-    integer :: ig, iadv, itot
-    real :: scale
+  real, dimension(:,:), intent(inout) :: ug_2d  ! i,j section of d_2d arrays
+  character(len=*)    :: class   ! Type of data
+  integer, intent(in)  :: n   !
+  !character(len=*)    :: unit   !
+  integer, intent(in), dimension(:)  :: group
+  real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+  logical, intent(in) :: IsSurf   !AMVB 2010-07-19: PM-PPB bug fix
+  integer :: ig, iadv, itot
+  real :: scale
+  character(len=6) :: unit
 
-        if(DEBUG .and. debug_proc) then
-           write(*,"(a,4i4,2es12.3)") "DEBUG GROUP-PM-N", size(group)
-        end if
-      ug_2d( :,:) = 0.0
-      do ig = 1, size(group)
-         itot = group(ig)
-         iadv = group(ig) - NSPEC_SHL
+  if(DEBUG .and. debug_proc) then
+    write(*,"(a,4i4,2es12.3)") "DEBUG GROUP-PM-N", size(group)
+  end if
 
-         if ( f_2d(n)%unit .eq. "ug/m3") then
-            scale = species(itot)%molwt
-         else if ( f_2d(n)%unit .eq. "ugN/m3") then
-            scale = 14.0*species(itot)%nitrogens
-         else
-            call StopAll("uggroup called with wrong unit!")
-         end if
+  if ((     IsSurf .and. f_2d(n)%unit .eq. "ug/m3").or.&
+      (.not.IsSurf .and. f_3d(n)%unit .eq. "ug/m3")) then
+    unit = "ug"
+  elseif ((     IsSurf .and. f_2d(n)%unit .eq. "ugN/m3").or.&
+          (.not.IsSurf .and. f_3d(n)%unit .eq. "ugN/m3")) then
+    unit = "ugN"
+  else
+    call StopAll("uggroup called with wrong unit!")
+  end if
 
-        forall ( i=1:limax, j=1:ljmax )
-          ug_2d( i,j) = ug_2d( i,j) + &
-           xn_adv(iadv,i,j,KMAX_MID) *scale * cfac(iadv,i,j)
-        end forall
+  ug_2d( :,:) = 0.0
+  do ig = 1, size(group)
+    itot = group(ig)
+    iadv = group(ig) - NSPEC_SHL
 
-        if(DEBUG .and. debug_proc) then
-             i=debug_li
-             j=debug_lj
-             write(*,"(a,4i4,f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
-               itot, iadv, species(itot)%molwt, scale, &
-                  xn_adv(iadv,i,j,KMAX_MID), ug_2d(i,j)
-        end if
-      end do !n
+    select case (trim(unit))
+      case("ug" ); scale = species(itot)%molwt
+      case("ugN"); scale = species(itot)%nitrogens*atwN
+    end select
+
+    if(IsSurf)then
       forall ( i=1:limax, j=1:ljmax )
-        ug_2d( i,j) = ug_2d( i,j) * density(i,j)
+        ug_2d( i,j) = ug_2d( i,j) + &
+          xn_adv(iadv,i,j,KMAX_MID) *scale * cfac(iadv,i,j)
       end forall
+    else
+      forall ( i=1:limax, j=1:ljmax )
+        ug_2d( i,j) = ug_2d( i,j) + &
+          xn_adv(iadv,i,j,KMAX_MID) *scale
+      end forall
+    endif
+
+   if(DEBUG .and. debug_proc) then
+      i=debug_li
+      j=debug_lj
+      write(*,"(a,4i4,f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
+        itot, iadv, species(itot)%molwt, scale, &
+        xn_adv(iadv,i,j,KMAX_MID), ug_2d(i,j)
+    end if
+  end do !n
+  forall ( i=1:limax, j=1:ljmax )
+    ug_2d( i,j) = ug_2d( i,j) * density(i,j)
+  end forall
 
  end subroutine uggroup_calc
  !=========================================================================

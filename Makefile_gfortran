@@ -38,7 +38,8 @@ LDFLAGS =  -fdefault-real-8  -O2 -ffree-line-length-none # -fbounds-check   # Ga
 LDFLAGS =  -fdefault-real-8  -O3 -Wall -ffixed-line-length-none -fbounds-check -pedantic -fbacktrace -fimplicit-none
 F90FLAGS =  $(LDFLAGS) $(INCL)
 #PEDANTIC Ubuntu 8.04: -fbacktrace option not available on gfortran-4.2
-LDFLAGS =  -fdefault-real-8  -O3 -Wall -ffixed-line-length-none -fbounds-check -pedantic -fimplicit-none
+# gfortan Ubuntu 8.04: -ffixed-line-length-none is not enogh for GenChem long lines
+LDFLAGS =  -fdefault-real-8  -O3 -Wall -ffixed-line-length-none -ffree-line-length-none -fbounds-check -pedantic -fimplicit-none
 F90FLAGS =  $(LDFLAGS) $(INCL)
 
 LD = mpif90
@@ -56,10 +57,9 @@ all:  $(PROG)
 include .depend
 
 #
-depend .depend:
-	/home/davids/local/bin/makedepf90 $(SRCS) \
-	-o $(PROG) \
-	-l "$(F90) $(LDFLAGS) $(LLIB) -o $(PROG) $(FOBJ) $(INCL) $(LIBS)" > .depend
+depend .depend: $(SRCS)
+	$(makedepf90) $+ -o '$$(PROG)' \
+	-l '$$(F90) $$(LDFLAGS) $$(INCL) $$(LLIB) $$+ -o $$@ $$(LIBS)' > .depend
 
 clean: diskclean touchdepend depend
 

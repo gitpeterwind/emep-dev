@@ -1,3 +1,22 @@
+xxxxxxxxxxxxxx rv3_6_6     Alvaro,    19th July   2010
+
+Fix PM in ppb bug in Sites_ml and Derived_ml (rv3_5_26)
+
+Sites_ml & My_Outputs_ml:
+  use to_ug_ADV (My_Outputs_ml) to calculate "PM25" and  "PMco"
+  from SONDE_XTRA.
+
+Derived_ml:
+  - Define D3_ug_PM25 and D3_ug_PMc according its SURF_ug equivalents
+    in subroutine Define_Derived.
+  - Extend uggroup_calc to 3D or 2D(surface) ussage.
+  - Add "PM25GROUP" and "PMcGROUP" 3D tyes to subroutine Derived.
+
+Makefile_gfortran:
+  - add option -ffree-line-length-none so gfortran-4.2 (Ubuntu 8.04)
+    can deal with long lines from GenChem.
+  - improve 'depend' target
+
 xxxxxxxxxxxxxx rv3_6_5     Peter, Dave,    9th June   2010
 
 Advection_ml: Bug in rv3_6_2 correction:should not multiply bi ps-PT too!
@@ -23,7 +42,7 @@ NetCDF_ml modified
 
    FillValues treatment extended+safer  (hope Peter agrees!)
 
-Interpolation_ml - more 
+Interpolation_ml - more
 
 xxxxxxxxxxxxxx rv3_6_3     Dave,    9th June   2010
 
@@ -36,13 +55,13 @@ GenIn files rather than the CM_ outputs.
 xxxxxxxxxxxxxx rv3_6_2     Peter,   8th June   2010
 
 Advection_ml: divide xn_advec by max(1,ps3d) instead of ps3d also if no convection is used.
-This will put a very small value for the concentrations, instead of NaN, in the case where 
+This will put a very small value for the concentrations, instead of NaN, in the case where
 wind fields are very divergent.
 (Joffen reported that the advection gave NaN on north pole)
 
 xxxxxxxxxxxxxx rv3_6_1     Dave,   4th June   2010
 
-New Module: InterpolationRoutines_ml 
+New Module: InterpolationRoutines_ml
 
  - created as merge of bilinear code from Functions_ml and Peter's
   grid2grid_coeff. Small caller routine Nearest4 added, as well as
@@ -87,13 +106,13 @@ GenChem.pl
    1) Dep changes:
    GenChem now produces CM_WetDep_ml
 
-   Define which species are deposited in GenIn.reactions, e.g. 
+   Define which species are deposited in GenIn.reactions, e.g.
 
      DRY_NO2    -           NO2      =    ;
      DRY_SO2    WET_SO2     SO2      =    ;
      DRY_FIN    WET_SO4     SO4      =    ;
      DRY_FIN    WET_PMf     aNH4     =    ;
-     DRY_FIN    WET_PMf     pNO3_f   =    ; 
+     DRY_FIN    WET_PMf     pNO3_f   =    ;
 
   The idea is that we have some "CALC" compounds defined in My_WetDep_ml,
   My_DryDep_ml, and can give the deposition rates of the species in terms
@@ -136,7 +155,7 @@ Name changes (provisional)
   SSFi -> SeaSalt_f
   SSCO -> SeaSalt_c
 
-In Ammonium_ml, 
+In Ammonium_ml,
 
 xxxxxxxxxxxxxx rv3_5_25    Peter  28th April 2010
 
@@ -145,15 +164,15 @@ New version of ReadField_CDF. Simpler and more robust (when FL are below surface
 
 xxxxxxxxxxxxxx rv3_5_24    Peter  27th April 2010
 
-In order to be able to read the aircraft emissions given in flight levels, the 
+In order to be able to read the aircraft emissions given in flight levels, the
 ReadField_CDF routine has been adapted for this very specific task.
-It must use monthly surface pressure average. This is given in a separate file, 
+It must use monthly surface pressure average. This is given in a separate file,
 which is produce from IFS 0.2 degrees 2008.
 The Makefile must be adapted for recursive calls.
 Gives slightly different results, since topography is taken into account now
 
 Files modified:
-NetCDF_ml.f90, Emissions_ml.f90, run.pl, Makefile, Makefile_stallo, Functions_ml.f90,ModelConstants_ml 
+NetCDF_ml.f90, Emissions_ml.f90, run.pl, Makefile, Makefile_stallo, Functions_ml.f90,ModelConstants_ml
 (put NPROCX=4, since there are only advantges running on stallo with 8 compred to 6 CPU)
 
 
@@ -207,9 +226,9 @@ run.pl
 
     We now check the x-dimension of ModelConstants, and in  run.pl:
 
- die "Domain mis-match Model: $XDIM Grid $GRID" if (  
-    ( $GRID eq "EMEP" && $XDIM != 170 ) or 
-    ( $GRID eq "EECCA" && $XDIM != 132 ) or 
+ die "Domain mis-match Model: $XDIM Grid $GRID" if (
+    ( $GRID eq "EMEP" && $XDIM != 170 ) or
+    ( $GRID eq "EECCA" && $XDIM != 132 ) or
     ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
 
 In addition, run.pl now compares the CM_ChemSpec file in your
@@ -228,7 +247,7 @@ xxxxxxxxxxxxxx rv3_5_16    Peter,  12th April 2010
 
 Convection: (Advection_ml), bug in flux limitation (only used with 2008 meteo)
 
-Aircraft emissions: assume k coordinates as first index in airn (more efficient, 
+Aircraft emissions: assume k coordinates as first index in airn (more efficient,
 but not compatible with the syntax of most other arrays)
 
 NetCDF_ml: Can  read any projection, given lat and lon of each gridcell.
@@ -245,12 +264,12 @@ My_Derived_ml. Just some comments updated
 
 xxxxxxxxxxxxxx rv3_5_14    Peter
 
-Upgrade of ReadField_CDF. 
+Upgrade of ReadField_CDF.
 1) Can read 3D data (but no interpolation in vertical yet).
 (In progress: 2) Can  read any projection, given lat and lon of each gridcell.)
 
-Also corrected two bugs (wrote in Rvar with 1st dimension limax instead of 
-maxlimax and omitted IRUNBEG) 
+Also corrected two bugs (wrote in Rvar with 1st dimension limax instead of
+maxlimax and omitted IRUNBEG)
 
 NetCDF_ml
 ForestFire
@@ -264,18 +283,18 @@ run.pl
 
 Unimod.f90
 
-Setup1d_ml: 
+Setup1d_ml:
 Bug in AIRNOX (introduced in rv3_4? Effect: no AIRNOX below KCHEMTOP).
 if ( AIRNOX  ) then k=KCHEMTOP,KEMISTOP,KMAX_MID
 
 Why is AVOG   = 6.023e23 (instead of 6.02214179e23)?
 
- + Dave.... 
+ + Dave....
 
 swapped  gl_glob => gl_fdom, gb_glob => gb_fdom, affects:
 
 GlobalBCs_ml.f90
-GridValues_ml.f90 
+GridValues_ml.f90
 Landuse_ml.f90Met_ml.f90
 Met_ml.f90
 NetCDF_ml.f90
@@ -284,12 +303,12 @@ xxxxxxxxxxxxxx rv3_5_13  Dave/Peter  Apr 6th  2010
 
 ** Bug ** in Country_ml: The default country (index 67), had timezone=0 (meaning GMT),
 should be -100 (meaning longitude determined).
-This has been introduced in rv2_7_1 (in 2007, when introducing a lot of "shipping" countries) 
+This has been introduced in rv2_7_1 (in 2007, when introducing a lot of "shipping" countries)
 Should affect mostly (only?) global runs.
 
 Derived_ml:
 
-  SURF_ppbC_VOC added in Derived_ml. 
+  SURF_ppbC_VOC added in Derived_ml.
   Older Setup_VOC code moved into Setups()
 
 My_Derived_ml : SURF_ppbC_VOC added
@@ -443,7 +462,7 @@ how to code some of these supergroups to avoid uncessessary operations
 in the model.
 
 I have just managed to re-instate one of the older groups so far,
-SIA which is now SURF_ug_SIA. Other groups, e.g. PM25 can be 
+SIA which is now SURF_ug_SIA. Other groups, e.g. PM25 can be
 quickly added following this pattern though.
 
 Background: defining such "groups" in the GenIn.species file and letting
@@ -460,13 +479,13 @@ chemistry, Unimod shouldn't.
 xxxxxxxxxxxxxx rv3_5_6  Peter  Mar 12th  2010
 
 Advection_ml (PhyChem_ml):
-Use always the advecdiff_poles routines. (until now it was only used in the global runs, 
+Use always the advecdiff_poles routines. (until now it was only used in the global runs,
 in other runs advecdiff was used).
 advecdiff will be completely removed later (after a test period to see that we don't need it).
 
 advecdiff_poles is also slightly changed:
 no renormaliztion with ps-PT between x, y and vertical advection.
-division by max(psi,1.0) instead of psi. NB: bad winddata will not crash the model anymore, 
+division by max(psi,1.0) instead of psi. NB: bad winddata will not crash the model anymore,
 and therefore we won't get any warning.
 
 ForestFire/NetCDF: safer interpolation routine
@@ -479,7 +498,7 @@ BLPhysics
     - added routines for O'Brien, Jericivic Kz, Seibert Kz and Hmix
     - parameters to switch Kz, Hmnix routines
     - parameters for e.g. USTAR_
-    
+
     default options give:
       Hmix from Jericevic Rb method
       Pielke/Blackater Kz outside PBL
@@ -506,7 +525,7 @@ Met_ml
 MetFields_ml
 
    - invL_nwp added. Query on limits, also ustar?
-   - limit on ustar over land > 0.1 m/s (or MIN_USTAR_LAND) 
+   - limit on ustar over land > 0.1 m/s (or MIN_USTAR_LAND)
 
 ModelConstants_ml
 
@@ -519,19 +538,19 @@ xxxxxxxxxxxxxx rv3_5_4  Haldis/Dave  Feb 28rd 2010
 Start of NWP_Kz work and testing of other Kz options
 
   Met_ml, MetFields_ml now deals with Kz read in from met
-  
+
   BLPhysics - Brost+Wynaarg  formula added for testing
-              SigmaKz- 
-  
+              SigmaKz-
+
   Derived_ml.f90  AddNewDeriv( "D3_Kz", ....
-  
+
   GlobalBCs_ml.f90  Macehead O3 added as 2008=2007
-  
-  My_Derived_ml.f90   D3_OTHER  = (/ "D3_Kz          " /) added 
-  
+
+  My_Derived_ml.f90   D3_OTHER  = (/ "D3_Kz          " /) added
+
   My_Outputs_ml.f90  SONDE_XTRA=  ....  "xksig"  added
-  
-  
+
+
   Rename:  xksig becomes  Kz_m2s
            skh   becomes  SigmaKz  (Kz in sigma coords)
 
@@ -548,7 +567,7 @@ BLPhysics - several Hmix options added. Results for "TI" physics
       replace completely soon, getting rid of several routines.
       For now the routines in BLPhysics are waiting for use.
 
-ChemFunctions_ml, EPSIL in friemer for safety 
+ChemFunctions_ml, EPSIL in friemer for safety
       - div by zero spotted by Peter
 
 GridValues_ml
@@ -558,7 +577,7 @@ Various small tidy ups
 
 xxxxxxxxxxxxxx rv3_5_2  Dave  Feb 18th 2010
 
-Met_ml   - Bug-fix  (many years old bug!!!) 
+Met_ml   - Bug-fix  (many years old bug!!!)
            real winds used in Ri dvdz calculation.
            New arrays u_mid, v_mid used, and u_ref simplified too.
 
@@ -618,9 +637,9 @@ xxxxxxxxxxxxxx rv3_5beta3  Peter Jan 20th 2010
 
 Changes to prepare for flexible vertical coordinates.
 
-GridValues: defined A and B, parameters vertical coordinates to be 
+GridValues: defined A and B, parameters vertical coordinates to be
 read from metfile later
-ModelConstants: Pref= 101325.0  Reference pressure in Pa 
+ModelConstants: Pref= 101325.0  Reference pressure in Pa
 
 Replaced Pressure expressions from sigma to eta nomenclature in:
 Aqueous_ml, DryDep_ml, Sites_ml, Setup_1d_ml, GlobalBCs_ml
@@ -631,7 +650,7 @@ And other small changes:
 run.pl: link without "ifile" for BIC, so that the script does not check if the file exists:
 it can do without local BIC, by interpolating the global BIC file.
 
-ForestFire_ml: use GLOBAL_ForestFireEmis.nc instead of ForestFireEmis.nc. They are equal, but 
+ForestFire_ml: use GLOBAL_ForestFireEmis.nc instead of ForestFireEmis.nc. They are equal, but
 I prefer to have as many non gridspecific files as possible in DataDir.
 
 Nest_ml: Allow the BC and the IC files to be different. (required by Alvaro). Not tested yet.
@@ -655,11 +674,11 @@ Biogenics_ml - use NBVOC instead of 2 for ReadSDN. Allows NBVOC to be
     set to one for some runs
 
 Country_ml : Biomass-burning (Wild-fires etc.) allocated to a country-number
-    integer, parameter, public :: IC_BB  =  101 
+    integer, parameter, public :: IC_BB  =  101
 
 EmisDef_ml.f90: logical  FOREST_FIRES added
 
-EmisGet_ml.f90   FOREST_FIRES debug Checking 
+EmisGet_ml.f90   FOREST_FIRES debug Checking
 
 Io_Progs_ml    PrintLog subroutine added
 
@@ -695,7 +714,7 @@ AOTx_ml now extended with more code from Derived_ml.
        these Grid-average data are hardly needed any more, except for
        comparison to older results and measurement-derived AOTs.
        The newer Mapping manual requires vegetation-specific AOTs)
-   
+
 IOU_ indices moved to ModelConstants_ml, to reduce dependencies
    in NetCDF_ml --- > small changes in many modules
 
@@ -704,8 +723,8 @@ xxxxxxxxxxxxxx rv3_4_11 Haldis,  10 Dec. 2009 xxxxxxxxxxxxxxxx
 3-D My_Derived outputs reinstated using new Deriv system. Now
      have D3_PPB and D3_OTHER possibilities
 
-(+ some small tidy ups, 
-+ BUG-fix for ugS to ugN concentration outputs (N-compounds) 
+(+ some small tidy ups,
++ BUG-fix for ugS to ugN concentration outputs (N-compounds)
   in Derived_ml, Dave)
 
 xxxxxxxxxxxxxx rv3_4_10 Dave,     5 Dec. 2009 xxxxxxxxxxxxxxxx
@@ -729,7 +748,7 @@ LocalVariables_ml - use FstO3 instead of leaf_o3flux
 
 ModelConstants_ml - Added DEBUG_CLOVER
 
-My_Derived_ml - VPD, FST added to MMC_ possibilities. 
+My_Derived_ml - VPD, FST added to MMC_ possibilities.
                 More Fst output.
                 dt_scale set
 
@@ -747,7 +766,7 @@ PhyChem.f90 - small tidy up
 
 StoFlux - clover coding added. Clover pots take their O3 from the
          grassland class (which therefore needs to be set 1st)
- 
+
 xxxxxxxxxxxxxx rv3_4_9  Dave,    28 Nov. 2009 xxxxxxxxxxxxxxxx
 
 **New** module AOTx_ml.f90 - a place to keep definitions of AOT
@@ -764,7 +783,7 @@ Landuse_ml  - iam_wheat code removed (not functioning)
 LocalVariables - added cano3_ppb, leaf_o3flux, ResetSub
 ModelConstants_ml - added DEBUG_STOFLUX
 Setup_1d_ml - added my_first_call to limit number of volcano printouts
-StoFlux_ml -   uses Sub(iL)%leaf_o3flux %cano3_ppb instead of 
+StoFlux_ml -   uses Sub(iL)%leaf_o3flux %cano3_ppb instead of
                c_hvegppb array
                remove sub Init_StoFlux
 TimeDate_ml - added effectivedate here
@@ -776,10 +795,10 @@ My_DryDep_ml - adapted to new AOT system
                use of lossfrac removed
                tidy up of "select case" options - use of Calc_AOTx
 My_Outputs_ml - examples with e.g. VPD_GR, CanopyO3_GR
- 
+
 xxxxxxxxxxxxxx rv3_4_8  Peter,   25 Nov. 2009 xxxxxxxxxxxxxxxx
 
-Met_ml: does not stop if rh2m is not found, but set it to a meaningless value 
+Met_ml: does not stop if rh2m is not found, but set it to a meaningless value
 
 xxxxxxxxxxxxxx rv3_4_7   Dave,   19 Nov. 2009 xxxxxxxxxxxxxxxx
 
@@ -798,7 +817,7 @@ Global change, tabs replaced by 4 spaces
 (might mess up some code-indentation in a few files. Please fix
 when seen!)
 
-pedantic changes for DryDep - removed or commented out (dsVDS) 
+pedantic changes for DryDep - removed or commented out (dsVDS)
 unused variables.
 
 xxxxxxxxxxxxxx rv3_4_6   Dave,   15 Nov. 2009 xxxxxxxxxxxxxxxx
@@ -808,15 +827,15 @@ Re-write of many Derived fields and usage. This work is only
 partly complete, and so some "old" derived fields aren't
 yet in the new system. Still, many of them need re-thinking
 anywa, and many need to be included in a cleaner "SURF_UG"
-type approach. 
+type approach.
 
-All use an expanded "Deriv" data type, 
+All use an expanded "Deriv" data type,
 
 Derived_ml
 
    - many simplifications
    - AddDeriv and AddNewDeriv replace AddDef
-   - nMosaic, MosaicOutput includes all of what used to be 
+   - nMosaic, MosaicOutput includes all of what used to be
         nOutDDEP, OutDDep, nOutVg, Out.... etc.
 
 DryDep_ml
@@ -834,16 +853,16 @@ EmisGet_ml:  internal read of MassValue%value changed to MassValue(1)%value to
 
 My_Derived_ml:
 
-    - use of new MosaicOutput and Deriv type. 
+    - use of new MosaicOutput and Deriv type.
     - Note, not all outputs have been converted to new system yet. Just
       commented out for now.
 
 My_DryDep_ml:
 
-    - use of new MosaicOutput and Deriv type. 
+    - use of new MosaicOutput and Deriv type.
     - subroutine Add_MosaicOutput replaces Add_Vg, Add_RG, Add_LCC
 
-OwnDataTypes - expand Deriv type, replace print_dep_type with 
+OwnDataTypes - expand Deriv type, replace print_dep_type with
    print_deriv_type, remove "dep_type"
 
 Sites_ml
