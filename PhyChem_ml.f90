@@ -117,6 +117,8 @@ contains
 
         call wrtxn(current_date,.false.) !Write xn_adv for future nesting
         call readxn(current_date) !Read xn_adv from earlier runs
+!AMVB 2010-07-21: zero hour output
+        if (FORECAST .and. numt == 2 .and. nstep == 1) call hourly_out()
 
 !        ==================
          call Code_timer(tim_before)

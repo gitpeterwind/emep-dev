@@ -348,8 +348,8 @@ private
 
 ! hb other (non-ppb) 3D output
      character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-       D3_OTHER  ! = (/ "D3_Kz          " /)!"D3_TH        " /)
-                !     "D3_PMco        "/)
+!AMVB 2010-07-21: PM-PPB bug fix
+       D3_OTHER != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 

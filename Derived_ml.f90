@@ -67,7 +67,8 @@ use My_Derived_ml,  only : & !EcoDep
       SURF_UG_C, &  !ds added May 2009
       SURF_UG  , &  !ds added May 2009
       SURF_PPB , &  !ds added May 2009
-      D3_PPB        ! hb new 3D output
+!AMVB 2010-07-21: PM-PPB bug fix
+      D3_PPB,D3_OTHER ! hb new 3D output
 
 use AOTx_ml,           only: Calc_GridAOTx, setaccumulate_2dyear
 use Biogenics_ml,       only: EmisNat !dsbvoc
@@ -604,11 +605,23 @@ end do
 !ds  call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
 !ds           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
 
-!AMVB 2010-07-19: PM-PPB bug fix
+!AMVB 2010-07-21: PM-PPB bug fix
+do ind = 1, size(D3_OTHER)
+  select case ( trim(D3_OTHER(ind)) )
+  case ("D3_ug_PM25")
 call AddNewDeriv("D3_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
-         -99, -99,-99, 0.0, F, ugPM,  T, T , F, F, F, F, -999,Is3D ) !?? atw?
+         -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, F, -999,Is3D ) !?? atw?
+  case ("D3_ug_PMc")
 call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
-         -99, -99,-99, 0.0, F, ugPM,  T, T , F, F, F, F, -999,Is3D ) !?? atw?
+         -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, F, -999,Is3D ) !?? atw?
+  case ("D3_m_TH")
+  call AddNewDeriv("D3_m_TH","TH", "-","-",   "m", &
+         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999,Is3D )
+  case ("D3_m2s_Kz")
+  call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
+         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999,Is3D )
+  end select
+end do
 
      if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
                                               ! daily outputs are wanted.
@@ -1043,26 +1056,27 @@ call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
             !if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
             !       n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
+!AMVB 2010-07-21: PM-PPB bug fix uggroup_calc(... IsSurface?)
           case ( "SIAGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
-                               density, .false.)
+                               density, .true.)
           case ( "OXNGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, OXN_GROUP, &
-                               density, .false.)
+                               density, .true.)
           case ( "RDNGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, RDN_GROUP, &
-                               density, .false.)
+                               density, .true.)
           case ( "TNO3GROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
-                              density, .false.)
+                              density, .true.)
           case ( "PM25GROUP" )
             ipm25 = n
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PM25_GROUP, &
-                               density, .false.)
+                               density, .true.)
           case ( "PMcGROUP" )
             ipmc = n
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PMCO_GROUP, &
-                               density, .false.)
+                               density, .true.)
 
           case ( "PM10GROUP" ) ! Consider doing as sum later
             if ( ipm25 > 0 .and. ipmc > 0 ) then ! We have these already
@@ -1232,16 +1246,16 @@ call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
 !ds                + xn_adv(IXADV_SeaSalt_c,i,j,k)
 !ds            end forall
 
-!AMVB 2010-07-19: PM-PPB bug fix
+!AMVB 2010-07-21: PM-PPB bug fix
         case ( "PM25GROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25_GROUP, &
-                               roa(i,j,k,1), .true.)
+                               roa(i,j,k,1), .false.)
           enddo
         case ( "PMcGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PMCO_GROUP, &
-                               roa(i,j,k,1), .true.)
+                               roa(i,j,k,1), .false.)
           enddo
 
 ! hb
@@ -1447,20 +1461,19 @@ call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
   logical, intent(in) :: IsSurf   !AMVB 2010-07-19: PM-PPB bug fix
   integer :: ig, iadv, itot
   real :: scale
-  character(len=6) :: unit
+  character(len=10) :: unit=""
 
   if(DEBUG .and. debug_proc) then
     write(*,"(a,4i4,2es12.3)") "DEBUG GROUP-PM-N", size(group)
   end if
 
-  if ((     IsSurf .and. f_2d(n)%unit .eq. "ug/m3").or.&
-      (.not.IsSurf .and. f_3d(n)%unit .eq. "ug/m3")) then
-    unit = "ug"
-  elseif ((     IsSurf .and. f_2d(n)%unit .eq. "ugN/m3").or.&
-          (.not.IsSurf .and. f_3d(n)%unit .eq. "ugN/m3")) then
-    unit = "ugN"
+!AMVB 2010-07-21: PM-PPB bug fix
+  if     (     IsSurf .and. n<=num_deriv2d) then
+    unit=f_2d(n)%unit
+  elseif (.not.IsSurf .and. n<=num_deriv3d) then
+    unit=f_3d(n)%unit
   else
-    call StopAll("uggroup called with wrong unit!")
+    unit="not_found"
   end if
 
   ug_2d( :,:) = 0.0
@@ -1469,8 +1482,9 @@ call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
     iadv = group(ig) - NSPEC_SHL
 
     select case (trim(unit))
-      case("ug" ); scale = species(itot)%molwt
-      case("ugN"); scale = species(itot)%nitrogens*atwN
+      case("ug/m3" ); scale = species(itot)%molwt
+      case("ugN/m3"); scale = species(itot)%nitrogens*atwN
+      case default  ; call StopAll("uggroup called with wrong unit='"//unit//"'!")
     end select
 
     if(IsSurf)then

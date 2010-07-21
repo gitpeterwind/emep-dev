@@ -122,7 +122,7 @@ if ($CWF) {
        $CWFDAYS = shift if @ARGV;    # passed as argument to script
   chop($CWFDATE[0] = `date -d '$CWFBASE 1 day ago'    +%Y%m%d`);  # yesterday
        $CWFDATE[1] = $CWFBASE;                                    # start date
-  chop($CWFDATE[2] = `date -d '$CWFBASE $CWFDAYS day' +%Y%m%d`);  # end date
+  chop($CWFDATE[2] = `date -d '$CWFBASE ($CWFDAYS-1) day' +%Y%m%d`);  # end date
   chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d00000`); # 1st dump/nest
   chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d00000`); # 2nd dump/nest
 }
@@ -166,7 +166,7 @@ my $USER       =  $DAVE;
 my $METformat="cdf"; # felt or cdf
 
 my $GRID = "EECCA"; # EMEP or EECCA or GLOBAL or FORECAST
-   $GRID = "FORECAST" if $CWF;
+   $GRID = "MACC02" if $CWF;
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
@@ -209,10 +209,9 @@ $testv       = "rv3_5_26";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
-my $ChemDir  = "$ProgDir/ZCM_EmChem09"; 
+my $ChemDir  = "$ProgDir/ZCM_$Chem";
 
 # Check that the code directory has the chem files we want:
-
 die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
   ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
@@ -261,9 +260,10 @@ $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
 
 #EMISSIONS: FORECAST settings
-if ($GRID eq "FORECAST") {
+if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
   $EMIS_INP = "$DATA_LOCAL/Emissions";
-  $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3";
+  $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3"; # GEMS025
+  $emisdir = "$EMIS_INP/2007_emis_MACC" if $GRID eq "MACC02"; # MACC02
   $pm_emisdir = $emisdir;
 }
 
@@ -304,6 +304,8 @@ die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
 die "Domain mis-match Model: $XDIM Grid $GRID" if ( 
    ( $GRID eq "EMEP" && $XDIM != 170 ) or 
    ( $GRID eq "EECCA" && $XDIM != 132 ) or 
+   ( $GRID eq "EECCA_25" && $XDIM != 264 ) or
+   ( $GRID eq "MACC02"   && $XDIM != 321 ) or
    ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
 
 if ( $ENV{PBS_NODEFILE} ) {
@@ -471,7 +473,7 @@ foreach my $scenflag ( @runs ) {
 
     } elsif ($CWF) {
 # Forecast Meteorology in NetCDF
-        for (my $n = 0; $n <= $CWFDAYS; $n++) {
+        for (my $n = 0; $n < $CWFDAYS; $n++) {
             my $old = sprintf "$MetDir/meteo${CWFBASE}_%02d.nc",$n;
             if (-e $old) {
                 chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
@@ -579,12 +581,12 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
 
 # Emissions setup:
     $ifile{"$DataDir/femis.dat"} =  "femis.dat";
-    my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
-    my $new="Boundary_and_Initial_Conditions.nc";
-    mylink( "BIC: ", $old,$new ) ;
+#   my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
+#   my $new="Boundary_and_Initial_Conditions.nc";
+#   mylink( "BIC: ", $old,$new ) ;
     $ifile{"$DataDir/femis.dat"} =  "femis.dat";
     $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
-              "Boundary_and_Initial_Conditions.nc";
+              "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
     $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =
                                    "GLOBAL_Boundary_and_Initial_Conditions.nc";
     $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
@@ -599,8 +601,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
     $ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
     $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
-#    $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
-    $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
+    $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
+#   $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
     $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
 
 #Prelim BVOC attempt
@@ -751,7 +753,7 @@ EOT
         system("tar cvf ${runlabel1}.sondes sondes.*");
     }
 
-    system("mv EMEP_OUT.nc $CWFDUMPDIR/CWF_${CWF}_dump.nc") if $CWF; # DumpFile
+    system("mv EMEP_OUT.nc $CWFDUMPDIR/CWF_${CWFBASE}_dump.nc") if $CWF; # DumpFile
 
 ################################## END OF RUNS ######################
 }  ############################### END OF RUNS ######################

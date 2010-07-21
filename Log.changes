@@ -1,4 +1,24 @@
-xxxxxxxxxxxxxx rv3_6_6     Alvaro,    19th July   2010
+xxxxxxxxxxxxxx rv3_6_6     Alvaro,    21th July   2010
+
+Fix PM in ppb bug in Sites_ml and Derived_ml (rv3_5_26), additional changes.
+Small bug fix for Read_Inter_CDF.  Wrong data projection from file
+Small bug fix in forecast mode
+
+Derived_ml & My_Derived_ml:
+  use D3_OTHER to select additional D3 output.
+
+NetCDF_ml: Wrong data projection from file (Read_Inter_CDF)
+  data_projection might get non-pritable after the end of word
+  when not inializes. Set default value for data_projection="".
+    
+run.pl:
+ -Small bug fix in forecast mode. The dump (re-start) file name was wrong.
+ -Update $emisdir to MACC02 version.
+
+Makefile_titan:
+  add debug flags
+
+xxxxxxxxxxxxxx rv3_6_7     Alvaro,    19th July   2010
 
 Fix PM in ppb bug in Sites_ml and Derived_ml (rv3_5_26)
 

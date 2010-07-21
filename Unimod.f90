@@ -418,8 +418,9 @@ program myeul
 
      call Code_timer(tim_before)
 
-     if (numt == 2 .and. FORECAST) &
-       call hourly_out() ! hourly output for hour "zero" on FORECAST mode
+!AMVB 2010-07-21: zero hour output
+!    if (numt == 2 .and. FORECAST) &
+!      call hourly_out() ! hourly output for hour "zero" on FORECAST mode
 
      call phyche(numt)
 
