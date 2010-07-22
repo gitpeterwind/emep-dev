@@ -233,7 +233,8 @@ module Country_ml
  !b) Domain x = -16-132 y = -11-0
 
   integer, parameter, public :: IC_NAX = 91  !EMEP-external part of North Africa
-
+ ! hb NH3Emis x=44-75, y=35-66
+  integer, parameter, public :: IC_NMR = 98  !EMEP NMR-NH3 temporal emissions
   contains
   !
   subroutine Country_Init()
@@ -390,6 +391,8 @@ Country( IC_ARE ) = cc(  "ARE" , 83 ,F, 83, 4  , "Rest of Aral Lake (in the exte
 Country( IC_ASM ) = cc(  "ASM" , 84 ,F, 84, 3  , "Modified remaining Asian areas (in the original EMEP domain)     " )
 Country( IC_ASE ) = cc(  "ASE" , 85 ,F, 85, 6  , "Remaining extended Asian areas (in the extended EMEP domain)     " )
 Country( IC_AOE ) = cc(  "AOE" , 86 ,F, 86, 8  , "Arctic Ocean (in the extended EMEP domain)                       " )
+! hb NH3Emis new land code 
+Country( IC_NMR ) = cc(  "NMR" , 98 ,F, 98, 1  , "Area with temporal NMR-NH3 emissions                   " )
 
  !New external areas (only in modelling domain):
  !a) Domains: x = 160-170 y = 1-132 and x =  -16-0  y = 123-170

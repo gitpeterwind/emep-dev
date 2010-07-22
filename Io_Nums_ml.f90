@@ -76,6 +76,8 @@ implicit none
    ,IO_EMIS     = 84  &! Used for femis , emis_split(c)
    ,IO_TIMEFACS = 85  &! Used for monthly
    ,IO_NEST     = 88  &!   
-   ,IO_DMS      = 90   !  Emissions(c): for DMS 
+   ,IO_DMS      = 90  &!  Emissions(c): for DMS 
+   ,IO_NH3      = 92  &! hb NH3emis
+   ,IO_NH3_DEB  = 99   ! hb NH3emis
 
 end module Io_Nums_ml

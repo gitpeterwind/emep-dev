@@ -161,7 +161,10 @@ my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";
 my $HALDIS      = "mifahb";
 
-my $USER       =  $DAVE; 
+my $USER       =  $HALDIS; 
+
+# hb NH3Emis                                                                  
+my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3          
 
 my $METformat="cdf"; # felt or cdf
 
@@ -205,7 +208,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 my $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv       = "rv3_5_26";
+$testv       = "rv3_6_8";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -255,7 +258,7 @@ $emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
 $emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
                                                     if $year eq 2006;
 $emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
-$emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2008;
+$emisdir = "$EMIS_INP/Modrun09/2010-Trend2008-CEIP" if $year eq 2008;
 $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
 
@@ -553,7 +556,14 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     foreach my $poll  ( @emislist  ) {
         my $dir = $emisdir;
         $dir = $pm_emisdir if $poll =~ /pm/;   # FIX needed prior to 2000
-        $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll";
+# hb NH3emis, new emis files                                                   
+        if(($NH3EMIS_VAR)&&($poll eq "nh3")){
+              $dir = "/home/nyiri/emis_NMR" if $poll eq "nh3";
+#             if ($poll eq "nh3"){                                             
+              $ifile{"/home/nyiri/emis_NMR/gridNH3_NMR_$year"} = "emislist.$poll";
+          }else{
+        $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
+        }
         $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
         $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
 #DSRC
@@ -593,6 +603,10 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc";
     $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
     $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
+# hb NH3emis       
+# New ammonia emissions                                               
+    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt";
+
 
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";

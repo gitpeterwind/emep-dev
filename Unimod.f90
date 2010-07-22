@@ -47,6 +47,10 @@ program myeul
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Init_BVOC
+! hb NH3emis
+  use calc_emis_potential_ml,only : NH3emis_potential,lNH3emis_pot, &
+       readNH3emis,lEmis50_nh3
+  use NH3Emis_variation_ml,  only : SetNH3 
   use BoundaryConditions_ml, only : BoundaryConditions
   use CheckStop_ml,     only : CheckStop
   use ChemChemicals_ml, only : define_chemicals
@@ -54,11 +58,12 @@ program myeul
   use Derived_ml,       only : Init_Derived, f_2d, f_3d
   use DO3SE_ml,       only : Init_DO3SE !LPJ
   use EcoSystem_ml,     only : Init_EcoSystems
-  use EmisDef_ml,       only : NBVOC, AIRNOX, FOREST_FIRES
+  use EmisDef_ml,       only : NBVOC, AIRNOX, FOREST_FIRES, NH3EMIS_VAR ! hb NH3emis
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use ForestFire_ml,   only : Fire_Emis
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
-  use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE
+  use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE,&
+                               IO_NH3_DEB ! hb NH3Emis
   use Io_Progs_ml  ,    only : read_line
   use Landuse_ml,       only : InitLandUse, SetLanduse, Land_codes
   use MassBudget_ml,    only : Init_massbudget,massbudget
@@ -246,6 +251,25 @@ program myeul
 
   call Emissions(current_date%year)
 
+! hb NH3Emis
+!    if (NH3EMIS_VAR) then                                                     
+! writes temporal emis variation for Tange to file                             
+!       open(IO_NH3_DEB,FILE='out.Tange.dat')                                  
+!       write(IO_NH3_DEB,'(4a7,18a12)')"mm","dd","hh","TIME1","ISO_STABLE",&   
+!                      "OPEN_STABLE","STORAGE","WIN_CROP","SPR_CROP",&       
+!                      "SPR_SBEET","SPR_GRASS","MANURE1","MANURE2","MANURE3",& 
+!                      "MANURE4","MANURE4a","MIN_SPRING","MIN_AUTUMN",&      
+!                      "GRAZ_CATTLE","NH3_GRASS","TRAFFIC","SUM "            
+!    endif       
+  if (NH3EMIS_VAR)call readNH3emis() !read 16.7km activity NH3 emissions     
+  if (NH3EMIS_VAR)write(6,*)'New ammonia emissions on proc ', &         
+        me,sum( lEmis50_nh3(:,:,:) )
+
+  if (NH3EMIS_VAR)call NH3emis_potential(current_date%year) !calc emission potential                                                                      
+                                                                               
+  if (NH3EMIS_VAR)write(6,*)'Potential emissions on proc ', &
+          me,sum( lNH3emis_pot(:,:,:) )
+
 
   ! daynumber needed  for BCs, so call here to get initial
 
@@ -319,6 +343,9 @@ program myeul
 
 
   do numt = 2, nterm + nadd
+
+! hb NH3emis                                                                
+     if (NH3EMIS_VAR) call SetNH3()
 
      mm = current_date%month
 
@@ -419,8 +446,8 @@ program myeul
      call Code_timer(tim_before)
 
 !AMVB 2010-07-21: zero hour output
-!    if (numt == 2 .and. FORECAST) &
-!      call hourly_out() ! hourly output for hour "zero" on FORECAST mode
+!     if (numt == 2 .and. FORECAST) &
+!       call hourly_out() ! hourly output for hour "zero" on FORECAST mode
 
      call phyche(numt)
 

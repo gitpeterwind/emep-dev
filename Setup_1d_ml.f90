@@ -34,6 +34,7 @@
 
 
   !-----------------------------------------------------------------------!
+  use NH3variables_ml,       only : NNH3 ! hb NH3emis   
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP, &
                                       emforest, EmisNat  !ds
@@ -43,14 +44,16 @@
   use CheckStop_ml,          only :  CheckStop
   use Derived_ml,            only : d_2d
   use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES, FOREST_FIRES &
-                                  ,NSS  !SeaS
+                                  ,NSS & !SeaS
+                                  ,NH3EMIS_VAR ! hb NH3Emis    
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use ForestFire_ml,         only : Fire_rcemis, burning
   use Functions_ml,          only :  Tpot_2_T
   use ChemChemicals_ml,        only :  species
   use ChemSpecs_tot_ml,        only :  SO4,C5H8,NO,NO2,SO2,CO
-  use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3
+  use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
+                                       IXADV_NH3 ! hb NH3emis
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
 !MOVED  use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use ChemRates_rct_ml,       only :  set_rct_rates, rct
@@ -58,7 +61,8 @@
   use GridValues_ml,         only :  sigma_mid, xmd, &
                                      GridArea_m2, & !dsbvoc
                                      debug_proc, debug_li, debug_lj,&
-                                     A_mid,B_mid,gridwidth_m,dA,dB
+                                     A_mid,B_mid,gridwidth_m,dA,dB,&
+                                     i_fdom, j_fdom ! hb NH3emis
   use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use MetFields_ml,          only :  ps
@@ -71,7 +75,8 @@
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
-    ,KMAX_MID ,KMAX_BND, KCHEMTOP     ! Start and upper k for 1d fields
+    ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
+    ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
   use My_Aerosols_ml,       only : SEASALT
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
@@ -85,7 +90,8 @@
     ,rc_Rn222             &  ! for Pb210
     ,rcss                 &  !SeaS - sea salt
     ,rh, temp, tinv, itemp,pp      &  ! 
-    ,amk, o2, n2, h2o           ! Air concentrations 
+    ,amk, o2, n2, h2o     &  ! Air concentrations 
+    ,rcnh3                   ! hb NH3emis
   use SeaSalt_ml,        only : SS_prod 
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,           only :  current_date, date
@@ -98,6 +104,7 @@
   public :: setup_1d   ! Extracts results for i,j column from 3-D fields
   public :: setup_bio    ! Biogenic emissions
   public :: setup_rcemis ! Emissions  (formerly "poll")
+  public :: setup_nh3 ! hb NH3emis   
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
   real, dimension(NBVOC), public, save :: rcbio  !ispop and terpene
@@ -341,6 +348,58 @@ contains
 
   end subroutine setup_rcemis
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+! hb NH3emis
+  subroutine setup_nh3(i,j)
+  !                                                                            
+  !---- assign nh3 rates  ------------------------------------------------     
+  !                                                                            
+  !                                                                            
+  !  use NH3 emission potential for each activity sector, T2 and wind          
+  !                                                                            
+  !  Output : rcnh3 - nh3 emissions for 1d column                              
+  !                                                                            
+  !  Called from Setup_1d_ml, every advection timestep                         
+  !----------------------------------------------------------------------------
+    !  input         
+    use calc_emis_potential_ml, only :emnh3
+    integer, intent(in) ::  i,j
+    real ::scaling,scaling_k
+    real :: snh3
+    integer :: k
+
+    !  local  
+                                                     
+    rcnh3(:)=0.0
+    snh3=sum(emnh3(:,i,j))
+
+    if (NH3EMIS_VAR  )then
+
+       rcnh3(KMAX_MID) = snh3 
+       scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
+
+       do k = KCHEMTOP,KMAX_MID
+         scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
+
+          totem( IXADV_NH3 ) = totem( IXADV_NH3 ) + &
+               rcnh3(k) * scaling_k
+       enddo
+
+       if ( DEBUG_NH3 .and. i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then
+         write(6,*)'Tange coordinates, proc, i,j, ',me,i,j
+         write(6,*)'rcnh3',rcnh3(KMAX_MID)
+         write(6,*)'sum emnh3',sum(emnh3(:,i,j)),snh3
+         write(6,*)'emnh3 1',emnh3(1,i,j)
+       endif
+    else
+       rcnh3(KMAX_MID) =0.0
+    endif
+
+ 
+
+
+  end subroutine setup_nh3
+  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
 
   subroutine setup_bio(i,j)
   !

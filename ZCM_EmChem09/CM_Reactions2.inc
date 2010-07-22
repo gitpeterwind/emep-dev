@@ -23,8 +23,10 @@
 
 !-> NH3 
 
+! hb NH3Emis
       P =   &
-          RCEMIS(NH3,K) 
+          RCEMIS(NH3,K)  + rcnh3(K)
+!         RCEMIS(NH3,K) 
       ! L = 0.0
  
 

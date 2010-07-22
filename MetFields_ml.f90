@@ -149,17 +149,20 @@ module MetFields_ml
        ,SoilWater_deep  & !  Next 6x7cm
        ,sdepth          & !  Snowdepth, m
        ,ice             & ! QUERY why real?
-       ,sst       ! SST Sea Surface Temprature- ONLY from 2002
+       ,sst     &  ! SST Sea Surface Temprature- ONLY from 2002
+       ,u10     &  ! hb NH3emis 10m wind u-direction
+       ,v10        ! hb NH3emis 10m wind v-direction
  
 
  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-     u_ref              & ! wind speed m/s at 45m (real, not projected)
-    ,rho_surf           & ! Surface density
-    ,surface_precip     & ! Surface precip mm/hr
-    ,Tpot2m             & ! Potential temp at 2m
-    ,ustar_nwp          & ! friction velocity m/s ustar^2 = tau/roa
-    ,invL_nwp           & ! friction velocity m/s ustar^2 = tau/roa
-    ,pzpbl                ! stores H(ABL) for averaging and plotting purposes, m
+     u_ref             & ! wind speed m/s at 45m (real, not projected)
+    ,rho_surf          & ! Surface density
+    ,surface_precip    & ! Surface precip mm/hr
+    ,Tpot2m            & ! Potential temp at 2m
+    ,ustar_nwp         & ! friction velocity m/s ustar^2 = tau/roa
+    ,invL_nwp          & ! friction velocity m/s ustar^2 = tau/roa
+    ,pzpbl             & ! stores H(ABL) for averaging and plotting purposes, m
+    ,u_10                ! hb NH3emis
 ! QUERY - get rid of if possible. Shouldn't need array anyway?
 ! NOT HERE    ,Kz_min               ! Min Kz below hmix  !hf Hilde&Anton
 
@@ -196,6 +199,10 @@ module MetFields_ml
   ! interpolated.
 ! hb 23.02.2010 Kz from meteo
     ,foundKz_met    & ! false if no Kz from meteorology
-    ,foundconv        ! false if convection not found or not used
+    ,foundconv      & ! false if convection not found or not used
+! hb NH3emis 10m wind from meteo
+    ,foundu10_met   & ! false if no u10 from meteorology
+! hb NH3emis 10m wind from meteo
+    ,foundv10_met     ! false if no v10 from meteorology
 
 end module MetFields_ml

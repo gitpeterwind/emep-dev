@@ -108,7 +108,7 @@ module Met_ml
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,DEBUG_BLM, DEBUG_Kz & 
-       ,nstep,use_convection
+       ,nstep,use_convection 
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
        ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -154,6 +154,8 @@ module Met_ml
   public :: metvar
   public :: metint
   public :: BLPhysics
+! hb NH3emis
+  public :: GetCDF_short
 
 contains
 
@@ -196,6 +198,8 @@ contains
        foundsdot = .false.
        foundSST  = .false.
        foundKz_met = .false.  ! hb 23.02.2010 Kz from meteo
+       foundu10_met = .false. ! hb NH3emis
+       foundv10_met = .false. ! hb NH3emis
 
 
        next_inptime = current_date
@@ -368,6 +372,7 @@ contains
          validity, t2_nwp(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
+
 !dsNOV2009
     namefield='relative_humidity_2m'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
@@ -429,6 +434,34 @@ contains
     else
        foundice = .true.
     endif
+
+
+! hb NH3emis
+    ! u10 10m wind in x direction
+    ndim=2
+    namefield='u10'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+         validity, u10(:,:,nr))
+    if(validity==field_not_found)then
+       if(MasterProc)write(*,*)'WARNING: u10 not found '
+       foundu10_met = .false.
+    else
+       foundu10_met = .true.
+    endif
+
+! hb NH3emis
+   ! v10 10m wind in y direction
+    ndim=2
+    namefield='v10'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+         validity, v10(:,:,nr))
+    if(validity==field_not_found)then
+       if(MasterProc)write(*,*)'WARNING: v10 not found '
+       foundv10_met = .false.
+    else
+       foundv10_met = .true.
+    endif
+
 
   end subroutine Meteoread
 
@@ -1037,7 +1070,11 @@ contains
             + (sdepth(:,:,2)   - sdepth(:,:,1))*div
        ice(:,:,1)    = ice(:,:,1)                 &
             + (ice(:,:,2)   - ice(:,:,1))*div
-
+! hb NH3emis ! is this nescerssary, only called every third hour in NH3Emis_variation
+       u10(:,:,1)    = u10(:,:,1)         		&
+            + (u10(:,:,2)   - u10(:,:,1))*div
+       v10(:,:,1)    = v10(:,:,1)         		&
+            + (v10(:,:,2)   - v10(:,:,1))*div
        !  precipitation and cloud cover are no longer interpolated
 
     else
@@ -1067,7 +1104,9 @@ contains
        fl(:,:,1)     = fl(:,:,2)
 
        sst(:,:,1)    = sst(:,:,2)
-
+! hb NH3emis
+       u10(:,:,1)    = u10(:,:,2)
+       v10(:,:,1)    = v10(:,:,2)
     endif
 
     call met_derived(1) !update derived meteo fields
@@ -1109,6 +1148,8 @@ contains
     do j = 1,ljmax
        do i = 1,limax
           u_ref(i,j)= sqrt( u_mid(i,j,KMAX_MID)**2 + v_mid(i,j,KMAX_MID)**2 )
+! hb NH3emis
+          u_10(i,j) = sqrt((u10(i,j,1))**2+(v10(i,j,1))**2)
        enddo
     enddo
 

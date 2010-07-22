@@ -1,3 +1,48 @@
+xxxxxxxxxxxxxx rv3_6_9     Haldis,    22st July   2010
+
+New temporal ammonia emissions, only for a restricted area.
+Default is set as the old ammonia emission,
+new temporalemissions can be choosen by setting NH3EMIS_VAR=true in EmisDef 
+and in run.pl
+This method requires 10m wind from meteorology, this exist in meteofields for 
+2006 and 2008
+
+New modules:
+NH3Emis_variation_ml.f90:
+                sets up scaled emissionfactors, so they are never higher 
+                than 1. Uses then the potential emission factor from 
+                Tmp_ml.f90
+
+Tmp_Met_ml.f90 (contains temporary reading of meteorology and reading of
+                emissions):
+                -sets up the potential emission factor in each grid at each
+                 timestep
+                -calculates the time for maximums in the gauss functions
+                -reads the NH3 emissions, and make them equal to the reported
+                 emissions (from EmisDef_ml and EmisGet_ml), scale them to 50km
+                 grid and surface fluxes instead of tonn pr year
+                -reads in T2m and 10m winds from meteofiles
+NH3variables_ml.f90 (contains variables used in Tmp_Met and NH3Emis_variation)
+
+Minor changes in the following files:
+Unimod.f90
+Setup_1d_ml.f90
+Setup_1dfields_ml.f90
+Runchem_ml.f90
+Par_ml.f90
+Io_Nums_ml.f90
+EmisGet_ml.f90
+EmisDef_ml.f90 
+MetFields_ml.f90
+Met_ml.f90
+Makefile.SRCS
+Solver.f90
+CM_Reactions2.inc
+Country_ml.f90
+ModelConstants_ml.f90
+run.pl
+
+
 xxxxxxxxxxxxxx rv3_6_8     Alvaro,    21st July   2010
 
 Fix PM in ppb bug in Sites_ml and Derived_ml (rv3_5_26), additional changes.

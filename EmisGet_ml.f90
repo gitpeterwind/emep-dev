@@ -38,10 +38,12 @@
   use ChemSpecs_adv_ml,  only: NSPEC_ADV ! max possible number in split 
   use ChemSpecs_tot_ml,  only: NSPEC_TOT 
   use ChemChemicals_ml,  only: species
-  use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country
+  use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country, &
+                               IC_NMR ! hb NH3Emis
   use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
                                NEMIS_FILES, EMIS_NAME, &
-                               ISNAP_SHIP, ISNAP_NAT
+                               ISNAP_SHIP, ISNAP_NAT, &
+                               NH3EMIS_VAR,dknh3_agr, ISNAP_AGR,ISNAP_TRAF! hb NH3emis 
   use GridAllocate_ml,   only: GridAllocate
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line
@@ -150,6 +152,9 @@
       call open_file(IO_EMIS,"r",fname,needed=.true.)
       call CheckStop(ios,"EmisGet: ios error in emission file")
 
+      if (trim ( emisname ) == "nh3" ) dknh3_agr=0.0 !hb NH3Emis
+ 
+
 READEMIS: do   ! ************* Loop over emislist files *******************
 
             read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
@@ -256,6 +261,17 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              !  set to  zero
 
              if ( trim ( emisname ) == "voc" ) tmpsec(11:11) = 0.0
+  
+            ! hb NH3emis     
+            ! For NH3 activity data, set 'static emissions' to zero
+            ! For northwestern Europe, read in Sector_NH3Emis.txt in run.pl
+             if (NH3EMIS_VAR .and.  trim ( emisname ) == "nh3" .and. ic == IC_NMR) then
+                dknh3_agr=dknh3_agr+ tmpsec(ISNAP_AGR)+tmpsec(ISNAP_TRAF)
+                tmpsec(ISNAP_AGR:ISNAP_AGR) = 0.0!
+                tmpsec(ISNAP_TRAF:ISNAP_TRAF) = 0.0!
+             endif
+             !Traffic emis are zero in the danish emissions, so I leave them
+
 
              ! ..........................................................
              ! generate new land allocation in 50 km grid. First, we check if

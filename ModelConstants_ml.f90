@@ -67,16 +67,17 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
   ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+   RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10
   ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
   ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
   ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
-  RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
+  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70+OFFSET_i,  95+OFFSET_i, 25+OFFSET_j,  50+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   3        & ! Actual number of processors in longitude
-  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   8        & ! Actual number of processors in longitude
+  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
 !=============================================================================
@@ -105,13 +106,14 @@ module ModelConstants_ml
  !QUERY? integer, public, parameter :: DEBUG_i= 86, DEBUG_j= 21 ! Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
  !integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
- integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
+! integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
  !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
  !integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
  !integer, public, parameter :: DEBUG_i=76, DEBUG_j= 35 !  Sea,  North sea
+ integer, public, parameter :: DEBUG_i=91, DEBUG_j=67 ! hb NH3emis Tange 
 
 !=============================================================================
 ! Some flags for model setup
@@ -156,7 +158,9 @@ module ModelConstants_ml
       ,DEBUG_NETCDF_RF    = .false. &  ! ReadField_CDF in NetCDF_ml
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
-    ,DEBUG_SETUP_1DBIO    = .false.   !
+    ,DEBUG_SETUP_1DBIO    = .false. & !
+    ,DEBUG_NH3            = .true.    ! hb NH3Emis
+
 
 !=============================================================================
   ! 3)  Source-receptor runs?

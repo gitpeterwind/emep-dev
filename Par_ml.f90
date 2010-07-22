@@ -174,6 +174,7 @@ private
               ,MSG_READ3 = 83     &
               ,MSG_READ4 = 84     &
               ,MSG_READ5 = 85     &
+              ,MSG_READ6 = 86     & ! hb NH3emis   
               ,MSG_READ7 = 87     &
               ,MSG_FIELD1 = 91     &
               ,MSG_MET1 = 101     &

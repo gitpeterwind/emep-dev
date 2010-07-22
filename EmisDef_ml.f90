@@ -95,13 +95,14 @@ implicit none
    integer, public, parameter :: &
           NSECTORS  = 11       ! Number of SNAP-sectors in emissions
 !
+! hb NH3emis (ISNAP_AGR, ISNAP_TRAF)
 ! SCENARIO
    integer, public, parameter :: &
           ANTROP_SECTORS=10, &   ! Non-natural sectors
           ISNAP_NAT  = 11,&      ! SNAP index for volcanoe emissions
-          ISNAP_SHIP = 8         ! SNAP index for flat emissions,e.g ship
-                                 ! Note that flat emissions do NOT necessarily
-                                 ! belong to the same SNAP sector
+          ISNAP_SHIP = 8,&       ! SNAP index for flat emissions,e.g ship
+          ISNAP_AGR =10,&        ! Note that flat emissions do NOT necessarily
+          ISNAP_TRAF =7          ! belong to the same SNAP sector
 
 !  New vertical allocation from SNAP sectors.
 !       - allocations are guesswork  - should be investigated
@@ -146,9 +147,13 @@ implicit none
    !/** Volcanos. 
     logical, public, parameter :: VOLCANOES   = .true.  ! Gives Volcanos
 
-! hb not emis for 2008 yet
    !/** Forest fires. 
-    logical, public, parameter :: FOREST_FIRES = .false.  ! Gives Volcanos
+    logical, public, parameter :: FOREST_FIRES = .true.  ! Gives Volcanos
+
+ ! hb NH3emis                                                                  
+   !NH3 emissions set by meteorology and special activity data                 
+    logical, public, parameter :: NH3EMIS_VAR = .false.   
+    real, public, save  :: dknh3_agr !reported nh3emis (IC_NMR) read from gridXXfile
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
