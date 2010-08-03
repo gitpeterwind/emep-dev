@@ -5,6 +5,10 @@ FOREST_FIRES reset to false in EmisDef. Robert has noticed that
 
 NH3EMIS_VAR test added before linking NH3 sector data in run.pl
 
+NB - there is no read permission on Haldis's sector NH3 file, so
+the code won't  run with NH3EMIS_VAR anyway. Will fix once
+Haldis returns.
+
 xxxxxxxxxxxxxx rv3_6_9     Haldis,    22st July   2010
 
 New temporal ammonia emissions, only for a restricted area.
