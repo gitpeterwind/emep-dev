@@ -148,7 +148,7 @@ implicit none
     logical, public, parameter :: VOLCANOES   = .true.  ! Gives Volcanos
 
    !/** Forest fires. 
-    logical, public, parameter :: FOREST_FIRES = .true.  ! Gives Volcanos
+    logical, public, parameter :: FOREST_FIRES = .false.  ! Problems in code??
 
  ! hb NH3emis                                                                  
    !NH3 emissions set by meteorology and special activity data                 

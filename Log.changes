@@ -1,3 +1,8 @@
+xxxxxxxxxxxxxx rv3_6_10    Dave,       3rd Aug    2010
+
+FOREST_FIRES reset to false in EmisDef. Robert has noticed that
+   results depend on processor number, so there must be a bug.
+
 xxxxxxxxxxxxxx rv3_6_9     Haldis,    22st July   2010
 
 New temporal ammonia emissions, only for a restricted area.
