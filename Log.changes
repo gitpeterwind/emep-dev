@@ -1,3 +1,29 @@
+xxxxxxxxxxxxxx rv3_6_13      Alvaro,     4rd Aug    2010
+
+run.pl: pre-defined  benchmark datasets
+
+The benchmark sets indicate the grid, time period (full year)
+and emissions to use.
+There are, so far, two benchmark sets (my %BENCHMARK):
+  %BENCHMARK = (grid=>"EMEP" , year=>2005,
+                emis=>"Modrun07/OpenSourceEmis"     );
+  %BENCHMARK = (grid=>"EECCA", year=>2007,
+                emis=>"Modrun09/2009-Trend2007-CEIP");
+
+There are two additional keys to fine tune the benchmark behaviour:
+  $BENCHMARK{'debug'}   = 0;  # chech if all debug flags are .false.
+  $BENCHMARK{'archive'} = 0;  # save summary info in $DataDir
+
+if $BENCHMARK{'archive'}, summary info is copied to:
+  $DataDir/Benchmark/$GRID.$year/BM_$testv-$Chem.$USER
+
+You can find such info for rv3_6_10-EmChem09 (run in titan)
+for both EMEP.2005 and EECCA.2007 benchmarks in:
+  titan  $DataDir=/xanadu/project/metno/emep/Data/Benchmark/
+  stallo $DataDir=/global/work/mifapw/emep/Data/Benchmark/
+
+Makefile_titan: minor update
+
 xxxxxxxxxxxxxx rv3_6_12      Dave,       3rd Aug    2010
 
 preliminary SoilWater outputs added for testing
@@ -75,15 +101,15 @@ xxxxxxxxxxxxxx rv3_6_9     Haldis,    22st July   2010
 
 New temporal ammonia emissions, only for a restricted area.
 Default is set as the old ammonia emission,
-new temporalemissions can be choosen by setting NH3EMIS_VAR=true in EmisDef 
+new temporalemissions can be choosen by setting NH3EMIS_VAR=true in EmisDef
 and in run.pl
-This method requires 10m wind from meteorology, this exist in meteofields for 
+This method requires 10m wind from meteorology, this exist in meteofields for
 2006 and 2008
 
 New modules:
 NH3Emis_variation_ml.f90:
-                sets up scaled emissionfactors, so they are never higher 
-                than 1. Uses then the potential emission factor from 
+                sets up scaled emissionfactors, so they are never higher
+                than 1. Uses then the potential emission factor from
                 Tmp_ml.f90
 
 Tmp_Met_ml.f90 (contains temporary reading of meteorology and reading of
@@ -105,7 +131,7 @@ Runchem_ml.f90
 Par_ml.f90
 Io_Nums_ml.f90
 EmisGet_ml.f90
-EmisDef_ml.f90 
+EmisDef_ml.f90
 MetFields_ml.f90
 Met_ml.f90
 Makefile.SRCS
@@ -128,7 +154,7 @@ Derived_ml & My_Derived_ml:
 NetCDF_ml: Wrong data projection from file (Read_Inter_CDF)
   data_projection might get non-pritable after the end of word
   when not inializes. Set default value for data_projection="".
-    
+
 run.pl:
  -Small bug fix in forecast mode. The dump (re-start) file name was wrong.
  -Update $emisdir to MACC02 version.

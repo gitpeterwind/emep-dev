@@ -40,8 +40,8 @@ include .depend
 
 obj: .depend $(FOBJ)
 
-depend .depend:
-	$(makedepf90) $(SRCS) -o '$$(PROG)' \
+depend .depend: $(SRCS)
+	$(makedepf90) $+ -o '$$(PROG)' \
 	-l '$$(F90) $$(LDFLAGS) $$(INCL) $$(LLIB) $$+ -o $$@ $$(LIBS)' > .depend
 
 clean: diskclean touchdepend depend

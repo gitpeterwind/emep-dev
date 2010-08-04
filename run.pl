@@ -49,10 +49,10 @@
 #Titan queue commands
 
 #Queue system commands start with #SBATCH (these are not comments!)
-#SBATCH --account=metno
-#SBATCH --ntasks=32
+#SBATCH --account=nn2890k
+#SBATCH --nodes=8 --ntasks-per-node=8
 #SBATCH --constraint=ib
-#SBATCH --mem-per-cpu=200MB
+#SBATCH --mem-per-cpu=1G
 #SBATCH --time=06:00:00
 #SBATCH --job-name=emep
 #SBATCH --output=job.%N.%j.out
@@ -109,6 +109,14 @@ my @MAKE = ("gmake", "-j4", "--makefile=Makefile_snow");
 die "Must choose STALLO **or** NJORD **or** TITAN!\n"
   unless $STALLO+$NJORD+$TITAN==1;
 
+my %BENCHMARK;
+#  %BENCHMARK = (grid=>"EMEP" ,year=>2005,emis=>"Modrun07/OpenSourceEmis"     ) ;
+#  %BENCHMARK = (grid=>"EECCA",year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
+if (%BENCHMARK) {
+  $BENCHMARK{'debug'}   = 0;  # chech if all debug flags are .false.
+  $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
+}
+
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 die " TO DO: Need still to create SR split files\n" if $SR ;
@@ -126,6 +134,7 @@ if ($CWF) {
   chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d00000`); # 1st dump/nest
   chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d00000`); # 2nd dump/nest
 }
+ $CWF=0 if %BENCHMARK;
 
 # <---------- start of user-changeable section ----------------->
 
@@ -134,6 +143,7 @@ if ($CWF) {
 
 my $year = "2006";
    $year = substr($CWFBASE,0,4) if $CWF;
+   $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
 
 # iyr_trend:
@@ -170,6 +180,7 @@ my $METformat="cdf"; # felt or cdf
 
 my $GRID = "EECCA"; # EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
+   $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
@@ -205,10 +216,10 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
 
-my (@emislist, $testv);
+my (@emislist, $Chem, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
-my $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv       = "rv3_6_12";
+$Chem     = "EmChem09";                   # Label for chemical scheme used
+$testv    = "rv3_6_12";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -218,10 +229,11 @@ my $ChemDir  = "$ProgDir/ZCM_$Chem";
 die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
   ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
-my $WORKDIR     = "$WORKROOT/$USER/${testv}.$year";  # working and result directory
 #my $WORKDIR     = "$WORKROOT/$USER/test";         # working and result directory
+my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result directory
+   $WORKDIR     = "$WORKROOT/$USER/Benchmark/$GRID.$year" if (%BENCHMARK);
 my $MyDataDir   = "$HOMEROOT/$DAVE/Unify/MyData";           # for each user's private input
-my $CWFDUMPDIR  = "$WORKROOT/$USER/${testv}.dump" if $CWF;  # Forecast nest/dump files
+my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
 
 
 #ds check: and change
@@ -250,8 +262,8 @@ my @runs     = ( $scenario );
 
 #EMISSIONS: default settings
 my ($EMIS_INP, $emisdir, $pm_emisdir);
-$EMIS_INP = "$DATA_LOCAL"                             if $STALLO;
-$EMIS_INP = "$DATA_LOCAL/Emissions/ModelInputModruns" if $TITAN;
+$EMIS_INP = "$DATA_LOCAL"                   if $STALLO;
+$EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
 $emisdir = "$EMIS_INP/Modrun06/2006-Trend$year-V7"  if (1990 <= $year) and
                                                       ($year <= 2004);
 $emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
@@ -266,7 +278,15 @@ $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
 if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
   $EMIS_INP = "$DATA_LOCAL/Emissions";
   $emisdir = "$EMIS_INP/2008-Trend2006-V9-Extended_PM_corrected-V3"; # GEMS025
+# $emisdir = "$EMIS_INP/2008_emis_EMEP_from_PS50" if $GRID eq "MACC02"; # MACC02
+# $emisdir = "$EMIS_INP/2008_emis_EMEP_MACC" if $GRID eq "MACC02"; # MACC02
   $emisdir = "$EMIS_INP/2007_emis_MACC" if $GRID eq "MACC02"; # MACC02
+  $pm_emisdir = $emisdir;
+}
+
+#EMISSIONS: BENCHMARK settings
+if (%BENCHMARK){
+  $emisdir    = "$EMIS_INP/$BENCHMARK{'emis'}";
   $pm_emisdir = $emisdir;
 }
 
@@ -311,6 +331,11 @@ die "Domain mis-match Model: $XDIM Grid $GRID" if (
    ( $GRID eq "MACC02"   && $XDIM != 321 ) or
    ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
 
+if (%BENCHMARK and not $BENCHMARK{'debug'}){
+  die "No debug flags for benchmarks: "
+  if (system ("grep -ie 'logical.*DEBUG.*=\ *.TRUE.' $ProgDir/*.f90") == 0);
+}
+
 if ( $ENV{PBS_NODEFILE} ) {
    $_ =  `wc -l $ENV{PBS_NODEFILE}`;
    my $RUN_NPROC;
@@ -338,6 +363,13 @@ my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
  $NTERM = 2;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
+if (%BENCHMARK){ # Allways runn full year on benchmark mode
+  $mm1   =  "01";
+  $mm2   =  "12";
+  $NTERM_CALC =  calc_nterm($mm1,$mm2);
+  $NTERM =   $NTERM_CALC;
+}
+
 print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
 # <---------- end of normal use section ---------------------->
@@ -352,6 +384,11 @@ if ($SR) {
 if ($CWF) {
     print "CWF is true: $CWFDAYS-day foracast mode\n";
     @runs = ( $CWFBASE );
+}
+
+if (%BENCHMARK){
+  print "BENCHMARK is true: $GRID $year $testv $Chem\n";
+  @runs = ( "$testv-$Chem" );
 }
 
 
@@ -420,7 +457,7 @@ system "ls -lt | head -6 ";
 #unlink($PROGRAM);
 
 system (@MAKE, "depend") ;
-system (@MAKE, "all");
+system (@MAKE, "all") == 0 or die "@MAKE all failed";
 
 die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 
@@ -439,6 +476,8 @@ foreach my $scenflag ( @runs ) {
         $scenario = EMEP::Sr::getScenario($scenflag);
     } elsif ($CWF) {
         $scenario = "CWF_$scenflag";
+    } elsif (%BENCHMARK){
+      $scenario = "BM_$scenflag";
     } else {
         $scenario = $scenflag;
     }
@@ -558,11 +597,10 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
         $dir = $pm_emisdir if $poll =~ /pm/;   # FIX needed prior to 2000
 # hb NH3emis, new emis files                                                   
         if(($NH3EMIS_VAR)&&($poll eq "nh3")){
-              $dir = "/home/nyiri/emis_NMR" if $poll eq "nh3";
-#             if ($poll eq "nh3"){                                             
-              $ifile{"/home/nyiri/emis_NMR/gridNH3_NMR_$year"} = "emislist.$poll";
-          }else{
-        $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
+          $dir = "/home/nyiri/emis_NMR";
+          $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
+        }else{
+          $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
         }
         $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
         $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
@@ -604,12 +642,8 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
     $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
 # hb NH3emis       
-# New ammonia emissions                                               
-   if( $NH3EMIS_VAR ){
-=======
-    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt";
-   }
-
+# New ammonia emissions  ---   NB no read permissions yet!!
+    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
@@ -742,18 +776,34 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     open RUNLOG, ">> ${runlabel1}_RunLog"
         or die "cannot append ${runlabel1}_RunLog: $!\n";
     print RUNLOG <<"EOT";
+------------------------------
 Emission units: Gg/year
 ------------------------------
 Emissions: $emisdir
 Version: $testv
+Chemical scheme: $Chem
 Processors $NDX $NDY
 SR?  $SR
+CWF? $CWF
 iyr_trend: $iyr_trend
 ------------------------------
 femis: femis.$scenario
 ------------------------------
 EOT
     close RUNLOG;
+
+# BENCHMARK summary info
+    if (%BENCHMARK) {
+      system("cdo infov ${runlabel1}_fullrun.nc > ${runlabel1}_fullrun.infov");
+      system("ls -lth * > ${runlabel1}_filelist");
+      if ($BENCHMARK{'archive'}) {
+        my @fileBM=( "${runlabel1}_fullrun.infov", "${runlabel1}_RunLog",
+                     "${runlabel1}_filelist", "eulmod.res", "Timing.out" );
+        my $dirBM="$DataDir/Benchmark/$GRID.$year/BM_$testv-$Chem.$USER";
+        mkdir_p($dirBM);
+        foreach my $f ( @fileBM ) { cp ("$f","$dirBM/$f") if -f "$f"; }
+      }
+    }
 
 #clean up work directories and links
     if ($DRY_RUN) { # keep femis.dat
@@ -766,8 +816,8 @@ EOT
     print "LOOKING FOR LAST SITES $last_sondes\n";
     if ( -r $last_sondes ) {
         print "FOUND LAST sondes $last_sondes\n";
-        system("tar cvf ${runlabel1}.sites sites.*");
-        system("tar cvf ${runlabel1}.sondes sondes.*");
+        system("tar cvzf ${runlabel1}.sites.tgz  sites.*");
+        system("tar cvzf ${runlabel1}.sondes.tgz sondes.*");
     }
 
     system("mv EMEP_OUT.nc $CWFDUMPDIR/CWF_${CWFBASE}_dump.nc") if $CWF; # DumpFile
