@@ -14,7 +14,8 @@ LLIB = -L$(NETCDF)/lib     -L/opt/scali/lib64 -lfmpi -lmpi
 
 ## module load intel
 F90 = ifort
-LDFLAGS  = -convert big_endian -r8 -O2 -xW -ipo -ip -static-libgcc
+#DEBUG_FLAGS = -traceback -debug -check bounds #-check uninit #-check pointers #-opt_report
+LDFLAGS  = -convert big_endian -r8 -O2 -xW -ipo -ip -static-libgcc $(DEBUG_FLAGS)
 F90FLAGS = $(LDFLAGS) $(INCL) -static -unroll -align
 LD = $(F90)
 
@@ -36,6 +37,8 @@ all: .depend $(PROG)
 
 # Include the dependency-list created by makedepf90 below
 include .depend
+
+obj: .depend $(FOBJ)
 
 depend .depend:
 	$(makedepf90) $(SRCS) -o '$$(PROG)' \

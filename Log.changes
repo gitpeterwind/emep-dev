@@ -1,3 +1,52 @@
+xxxxxxxxxxxxxx rv3_6_11     Alvaro,  2nd (committed 4th) August 2010
+
+Updates relted to the forecast mode
+
+Unimod & PhyChem_ml:
+  Bug fix in forecast mode. The hourly output for the "zero hour" was wrong.
+
+ModelConstants_ml:
+  Add GEMS 0.25 extended (Eyjafjallaj\"okull) and MACC 0.20 domain definitions.
+
+Derived_ml:
+  Allow daily output for SOURCE_RECEPTOR calculations in FORECAST mode
+
+Nest_ml:
+  only 1 FORECAST_NDUMP (re-start file) by default
+
+Advection_ml:
+  advection timestep (dt_advec) set assign_dtadvec according to grid resolution
+  also in FORECAST mode. Before it was set to 10 min, independently of the
+  grid resolution. Now it is set as for non FORECAST runs.
+  GEMS025 domain 0.25 deg resol --> GRIDWIDTH_M~=27.8 km --> dt_advec=20 min
+  MACC02  domain 0.20 deg resol --> GRIDWIDTH_M~=22.2 km --> dt_advec=20 min
+
+Output_hourly:
+ -Only postive hr_out%max values will be check for excedance.
+ -New hourly output types (hr_out%type)
+    BCVugXX     ug/m3, ugC/m3, ugS/m3, ugN/m3 at model mid-levels
+    ADVugXXg    GROUP output in ug/m3 at the surface
+    BCVugXXg    GROUP output in ug/m3 at model mid-levels
+    PMwater     PM water content (PM_water) at model mid-levels
+    COLUMN      Column output in ug/m3, ugC/m3, ugS/m3, ugN/m3 or molec/cm2
+
+My_Outputs_ml:
+ -Add standard forecast houtly output hr_out (commented).
+ -Define to_ug_S and to_ug_N as arrays, matching to_ug_ADV definition
+  for ug output ("ADVugXX" hourly output type).
+  Add to_ug_C, to_molec_cm3 and to_molec_cm2 conversions.
+
+My_Outputs_ml, Output_hourly & NetCDF_ml: selected model levels on hourly output
+ -New parameters SELECT_LEVELS_HOURLY (logical) and
+  LEVELS_HOURLY (array of level indexes) indicate if and which levels
+  to output (My_Outputs_ml).
+ -Modify hourly_out (Output_hourly), Init_new_netCDF and CreatenetCDFfile (NetCDF_ml)
+  to allow feature. CreatenetCDFfile has a new optional parameter 'KLEVcdf'
+  to hold levels to be outputed.
+ -Backwards comptability provided by SELECT_LEVELS_HOURLY=.false. (default).
+
+NH3variables_ml.f90: gFortran compliance...
+
 xxxxxxxxxxxxxx rv3_6_10    Dave,       3rd Aug    2010
 
 FOREST_FIRES reset to false in EmisDef. Robert has noticed that

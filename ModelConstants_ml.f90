@@ -45,17 +45,20 @@ module ModelConstants_ml
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
 
- ! character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
- character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
- !character(len=20), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
+ !character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+  character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
+ !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
+ !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.20degEurope"
 
   logical, parameter, public :: IS_GLOBAL = .false.
 
   integer, public, parameter ::  &
-  ! IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
-   IIFULLDOM = 132, JJFULLDOM = 159  ! x,y-Dimensions of full EECA domain
+  ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
+    IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 ! x,y-Dimensions of full GLOBAL domain
-  ! IIFULLDOM = 201, JJFULLDOM = 161 ! x,y-Dimensions of full GEMS/MACC domain
+  ! IIFULLDOM = 201, JJFULLDOM = 161 ! x,y-Dimensions of full GEMS 0.25 domain
+  ! IIFULLDOM = 301, JJFULLDOM = 221 ! x,y-Dimensions of full GEMS 0.25 extended domain
+  ! IIFULLDOM = 321, JJFULLDOM = 221 ! x,y-Dimensions of full MACC 0.20 domain
 
  !ds - I added these offsets, but now suspect I was thinking wrong.
  ! The difference between EMEP and EECCA is confusing...
@@ -65,12 +68,14 @@ module ModelConstants_ml
   !                x0   x1  y0   y1
   !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
-  ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-  ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+  !RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
+  !RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
    RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10
-  ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
-  ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
-  ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF (GEMS/MACC) domain
+  !RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
+  !RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
+  !RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
+  !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
+  !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70+OFFSET_i,  95+OFFSET_i, 25+OFFSET_j,  50+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 70, 120, 12,  70 /)     ! (changeable)
@@ -106,14 +111,15 @@ module ModelConstants_ml
  !QUERY? integer, public, parameter :: DEBUG_i= 86, DEBUG_j= 21 ! Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
  !integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
-! integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
+ !integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
  !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
  !integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
  !integer, public, parameter :: DEBUG_i=76, DEBUG_j= 35 !  Sea,  North sea
- integer, public, parameter :: DEBUG_i=91, DEBUG_j=67 ! hb NH3emis Tange 
+  integer, public, parameter :: DEBUG_i=91, DEBUG_j=67 ! hb NH3emis Tange 
+ !integer, public, parameter :: DEBUG_i= 9, DEBUG_j= 201 ! MACC02
 
 !=============================================================================
 ! Some flags for model setup
@@ -135,31 +141,31 @@ module ModelConstants_ml
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
     ,DEBUG_MET            = .false. & !
-      ,DEBUG_BLM          = .false. & !    produces matrix of differnt Kz and Hmix 
-      ,DEBUG_Kz           = .false. & !
+    ,DEBUG_BLM            = .false. & !    produces matrix of differnt Kz and Hmix 
+    ,DEBUG_Kz             = .false. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !
-      ,DEBUG_VDS          = .false. & !
-      ,DEBUG_MY_DRYDEP    = .false. & !
-      ,DEBUG_CLOVER       = .false. & !
-      ,DEBUG_STOFLUX      = .false. &
+    ,DEBUG_VDS            = .false. & !
+    ,DEBUG_MY_DRYDEP      = .false. & !
+    ,DEBUG_CLOVER         = .false. & !
+    ,DEBUG_STOFLUX        = .false. &
     ,DEBUG_EMISSIONS      = .false. &
     ,DEBUG_GETEMIS        = .false. &
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
     ,DEBUG_RUNCHEM        = .false. &
-      ,DEBUG_SEASALT        = .false. & !
+    ,DEBUG_SEASALT        = .false. & !
     ,DEBUG_SOA            = .false. & !
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_LANDDEFS       = .false. & !
     ,DEBUG_LANDUSE        = .false. & !
     ,DEBUG_LANDPFTS       = .false. &
     ,DEBUG_NETCDF         = .false. &
-      ,DEBUG_NETCDF_RF    = .false. &  ! ReadField_CDF in NetCDF_ml
+    ,DEBUG_NETCDF_RF      = .false. &  ! ReadField_CDF in NetCDF_ml
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
     ,DEBUG_SETUP_1DBIO    = .false. & !
-    ,DEBUG_NH3            = .true.    ! hb NH3Emis
+    ,DEBUG_NH3            = .false.   ! hb NH3Emis
 
 
 !=============================================================================

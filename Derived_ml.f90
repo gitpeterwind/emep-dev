@@ -609,10 +609,10 @@ end do
 do ind = 1, size(D3_OTHER)
   select case ( trim(D3_OTHER(ind)) )
   case ("D3_ug_PM25")
-call AddNewDeriv("D3_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
+  call AddNewDeriv("D3_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
          -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, F, -999,Is3D ) !?? atw?
   case ("D3_ug_PMc")
-call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
+  call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
          -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, F, -999,Is3D ) !?? atw?
   case ("D3_m_TH")
   call AddNewDeriv("D3_m_TH","TH", "-","-",   "m", &
@@ -623,9 +623,11 @@ call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
   end select
 end do
 
-     if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
-                                              ! daily outputs are wanted.
-        def_2d(:)%day = .false.
+!AMVB 2010-08-02: SOURCE_RECEPTOR in FORECAST mode
+     if ( .not. FORECAST .and. &
+          SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
+!    if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
+        def_2d(:)%day = .false.               ! daily outputs are wanted.
      end if
 
      if ( FORECAST .and. num_deriv2d>0 ) then ! only dayly (and hourly) output
@@ -1474,7 +1476,7 @@ end do
     unit=f_3d(n)%unit
   else
     unit="not_found"
-  end if
+  endif
 
   ug_2d( :,:) = 0.0
   do ig = 1, size(group)

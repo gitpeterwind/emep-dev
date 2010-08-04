@@ -84,7 +84,7 @@ module Nest_ml
 
 
 ! AMVB 2009-11-06: nested input/output on FORECAST mode
-  integer, public, parameter :: FORECAST_NDUMP = 2  ! Number of nested output
+  integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
   ! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
   type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
   ! Nested output dates on FORECAST mode
@@ -405,7 +405,7 @@ contains
     integer :: n,nday,nmdays(12),nmdays2(13)
     nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
-!add 0.5 seconds to avoid numerical errors in (n<=ndays) 
+!add 0.5 seconds to avoid numerical errors in (n<=ndays)
     ndays=ndays+halfsecond
 
     nmdays2(1:12)=nmdays
@@ -635,7 +635,7 @@ contains
 
     !4 nearest points from external grid
     integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
-    
+
     !weights of the 4 nearest points
     real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
     real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
@@ -774,7 +774,7 @@ contains
 
     !4 nearest points from external grid
     integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
-    
+
     !weights of the 4 nearest points
     real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
     real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)

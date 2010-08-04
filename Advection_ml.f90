@@ -150,7 +150,10 @@
     if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
     if(GRIDWIDTH_M<11000.0) dt_advec= 600.0
     if(GRIDWIDTH_M< 6000.0) dt_advec= 300.0
-    if(FORECAST)            dt_advec= 600.0 ! AMVB 2009-11-06: FORECAST mode
+! AMVB 2010-08-02: dt_advec from model resolution also in FORECAST mode
+! GEMS025 domain 0.25 deg resol --> GRIDWIDTH_M~=27.8 km --> dt_advec=1200.0
+! MACC02  domain 0.20 deg resol --> GRIDWIDTH_M~=22.2 km --> dt_advec=1200.0
+!   if(FORECAST)            dt_advec= 600.0 ! AMVB 2009-11-06: FORECAST mode
 
     dt_advec_inv=1.0/dt_advec
 
@@ -508,7 +511,7 @@
                enddo
             enddo
          enddo
-         
+
          call convection_pstar(ps3d,dt_advec)
 
       endif
@@ -1035,7 +1038,7 @@
                enddo
             enddo
          enddo
-         
+
          call convection_pstar(ps3d,dt_advec)
 
       endif
@@ -3771,7 +3774,7 @@
     integer ::k,i,j,kk,k_fill,k1
    INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
-  
+
 !    return
 
   do k=1,KMAX_MID
@@ -3794,8 +3797,8 @@
 
          mass_air_core=0.0
          do k=KMAX_MID,1,-1
-            !-- mass_air=(dp/g)*gridarea 
-            
+            !-- mass_air=(dp/g)*gridarea
+
             mass_air_grid0(k) =mass ! average density. Used only if subsidience is included
             mass_air_grid(k) = ps3d(i,j,k)! start density = dp/dksi where ksi is the vertical coordinate
 
@@ -3843,14 +3846,14 @@
                !mass from grid to core - horizontal exchange
  !NB change xn_in_core before xn_adv
               xn_in_core(:,k) = xn_in_core(:,k)-(cnvuf(i,j,k+1)-cnvuf(i,j,k))*xn_adv(:,i,j,k)*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))
-               mass_air_core(k)=mass_air_core(k)-mass_exchanged  
+               mass_air_core(k)=mass_air_core(k)-mass_exchanged
                xn_adv(:,i,j,k)=xn_adv(:,i,j,k)+(cnvuf(i,j,k+1)-cnvuf(i,j,k))*xn_adv(:,i,j,k)*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
             else
-!NB change xn_adv before xn_in_core 
+!NB change xn_adv before xn_in_core
                xn_adv(:,i,j,k)=xn_adv(:,i,j,k)+(cnvuf(i,j,k+1)-cnvuf(i,j,k))/cnvuf(i,j,k+1)*xn_in_core(:,k)
                xn_in_core(:,k) = xn_in_core(:,k)-(cnvuf(i,j,k+1)-cnvuf(i,j,k))/cnvuf(i,j,k+1)*xn_in_core(:,k)
-               mass_air_core(k)=mass_air_core(k)-mass_exchanged  
+               mass_air_core(k)=mass_air_core(k)-mass_exchanged
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
             endif
 !              if(ME==0)write(*,*)'mass_air_grid',k,mass_air_grid(k),mass_air_core(k),mass_exchanged
@@ -3871,8 +3874,8 @@
          mass_air_core=0.0
          xn_in_core=0.0
          do k=1,KMAX_MID
-            !-- mass_air=(dp/g)*gridarea 
-            
+            !-- mass_air=(dp/g)*gridarea
+
             k1=k+1
             k1=min(k1,KMAX_MID)
             xn_in_core(:,k) = 0.0
@@ -3905,15 +3908,15 @@
                !mass from grid to core - horizontal exchange
 !NB change xn_in_core before xn_adv
                xn_in_core(:,k) = xn_in_core(:,k)-(cnvdf(i,j,k+1)-cnvdf(i,j,k))*xn_adv(:,i,j,k)*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))
-               mass_air_core(k)=mass_air_core(k)-mass_exchanged  
+               mass_air_core(k)=mass_air_core(k)-mass_exchanged
                xn_adv(:,i,j,k)= xn_adv(:,i,j,k)+(cnvdf(i,j,k+1)-cnvdf(i,j,k))*xn_adv(:,i,j,k)*GRAV*dt_conv/(dA(k)+dB(k)*ps(i,j,1))
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
             else
                !mass from core to grid - horizontal exchange
-!NB change xn_adv before xn_in_core 
+!NB change xn_adv before xn_in_core
                xn_adv(:,i,j,k) = xn_adv(:,i,j,k)-(cnvdf(i,j,k+1)-cnvdf(i,j,k))/cnvdf(i,j,k)*xn_in_core(:,k)
                xn_in_core(:,k) = xn_in_core(:,k)+(cnvdf(i,j,k+1)-cnvdf(i,j,k))/cnvdf(i,j,k)*xn_in_core(:,k)
-               mass_air_core(k) = mass_air_core(k)-mass_exchanged  
+               mass_air_core(k) = mass_air_core(k)-mass_exchanged
 
                mass_air_grid(k) = mass_air_grid(k)+mass_exchanged
 
@@ -3933,14 +3936,14 @@
          do k=1,KMAX_MID
             mass_air_grid_k_temp=0.0
             !fill level k with available mass
-            !put new xn_adv in xn_buff because xn_adv should not be changed while still used 
+            !put new xn_adv in xn_buff because xn_adv should not be changed while still used
             xn_buff(:,k) = 0.0
             do while (mass_air_grid_k_temp +mass_air_grid(k_fill)*dk(k_fill) <mass_air_grid0(k)*dk(k).and.k_fill<KMAX_MID)
                xn_buff(:,k) =  xn_buff(:,k)+ xn_adv(:,i,j,k_fill)*dk(k_fill)
                xn_adv(:,i,j,k_fill) =  0.0
                mass_air_grid_k_temp=mass_air_grid_k_temp+mass_air_grid(k_fill)*dk(k_fill)
                mass_air_grid(k_fill)=mass_air_grid(k_fill)-mass_air_grid(k_fill)!ZERO
-               k_fill=k_fill+1            
+               k_fill=k_fill+1
             enddo
 
             xn_buff(:,k)=xn_buff(:,k)+ xn_adv(:,i,j,k_fill)*dk(k_fill)*&
@@ -3953,7 +3956,7 @@
                  (mass_air_grid0(k)*dk(k)-mass_air_grid_k_temp)/dk(k_fill)
 
             ps3d(i,j,k) = mass_air_grid0(k)!=(mass_air_grid_k_temp+(mass_air_grid0(k)*dk(k)-mass_air_grid_k_temp))/dk(k)
-            
+
         enddo
         do k=1,KMAX_MID
            xn_adv(:,i,j,k)=xn_buff(:,k)/dk(k)
