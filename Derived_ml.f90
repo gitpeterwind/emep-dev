@@ -88,6 +88,7 @@ use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M&
                          ,GridArea_m2 ! dsbvoc
 use MetFields_ml, only :   roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
 use MetFields_ml, only :   ps
+use MetFields_ml, only :   SoilWater, SoilWater_deep
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
   ,NPROC        & ! No. processors
@@ -394,12 +395,14 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 !  end do
 !-------------------------------------------------------------------------------
 ! Areas of deposition-related ecosystems. Set externally
-!  do n = 1, NDEF_ECOSYSTEMS
+  do n = 1, NDEF_ECOSYSTEMS
+     print *, "ECODEF ",n, trim( DepEcoSystem(n)%name )
 !
 !    call AddDef("ECOAREA", F,DepEcoSystem(n)%Index,DepEcosystem(n)%scale,&
 !                    F  , F  ,T ,F ,F , DepEcosystem(n)%name,&
 !                                        DepEcosystem(n)%units)
-!  end do
+     call AddDeriv( DepEcoSystem(n) )
+  end do
 !!-------------------------------------------------------------------------------
 !-- 2-D fields - the complex ones
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
@@ -431,7 +434,6 @@ call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
 !       code class  avg? ind scale rho  Inst  Yr  Mn   Day  name      unit
 
 !REWRITE as groups!
-!call AddDef( "NOX  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOX","ugN/m3")
 !call AddDef( "NOZ  ", T,   -1  ,ugN ,    T , F,T,T,T,"D2_NOZ","ugN/m3")
 !call AddDef( "OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")
 
@@ -449,6 +451,11 @@ call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
 !call AddDef( "HMIX12",T,  0 ,         F,  1.0,  T , F, T, T, T ,"D2_HMIX12","m")
 
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
+               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
+!SoilWater
+call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
+               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
+call AddNewDeriv( "SoilWater","SoilWater",  "-","-",   "m", &
                -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
 
 !Mass-based outputs
@@ -548,6 +555,8 @@ end do ! ind
 call AddNewDeriv("SURF_ug_SIA", "SIAGROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ugN_OXN", "OXNGROUP", "MASS", "-", "ugN/m3", &
+                      -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ugN_NOX", "NOXGROUP", "MASS", "-", "ugN/m3", &
                       -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ugN_RDN", "RDNGROUP", "MASS", "-", "ugN/m3", &
                       -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
@@ -819,6 +828,16 @@ end do
               d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
           end forall
 
+          case ( "SoilWater_deep" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
+          end forall
+
+          case ( "SoilWater" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
+          end forall
+
           case ( "SNOW" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = Grid_snow(i,j)
@@ -1011,7 +1030,8 @@ end do
                 write(*,"(a18,es12.3)") "COLUMN d2_2d", d_2d( n, debug_li, debug_lj, IOU_INST)
 
 
-          case ( "ECOAREA" )
+          !case ( "ECOAREA" )
+         case ( "EcoFrac" ) ! ODD TO HAVE FRAC AND AREA BELOW:"ECOAREA" )
 
             if( .not. first_call ) cycle ! Only need to do once
             if( f_2d(n)%Index == FULL_GRID ) then
@@ -1064,6 +1084,9 @@ end do
                                density, .true.)
           case ( "OXNGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, OXN_GROUP, &
+                               density, .true.)
+          case ( "NOXGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, NOX_GROUP, &
                                density, .true.)
           case ( "RDNGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, RDN_GROUP, &

@@ -67,8 +67,7 @@
                            ,sigma_bnd, xmd, gl,dA,dB
   use Io_Nums_ml,      only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,     only : ios, open_file
-  use MetFields_ml,          only : roa   ! ps in Pa, roa in kg/m3
-  use MetFields_ml,      only :  ps  ! ps in Pa
+  use MetFields_ml,    only : roa, ps, z_bnd   ! ps in Pa, roa in kg/m3
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
@@ -801,6 +800,11 @@ contains
        write(*,"(a12,2g12.3,3x,2g12.3)")  "bio-setemis", &
          ( emforest(debug_li,debug_li,i), i = 1, NBVOC),&
          ( emnat(debug_li,debug_li,i), i = 1, NBVOC) 
+
+      ! dz = dp/(rho.g) = dsigma*pstar/(rho.g)
+      write(*,"(a,2f10.4)") "DEBUG BIODZ ", &
+             (sigma_bnd(21) - sigma_bnd(20)) * (ps(i,j,1)-PT)/ &
+                ( roa(i,j,KMAX_MID,1) * GRAV ) , z_bnd(i,j,20)
     end if
 
   endif ! NBVOC 

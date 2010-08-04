@@ -1,3 +1,16 @@
+xxxxxxxxxxxxxx rv3_6_12      Dave,       3rd Aug    2010
+
+preliminary SoilWater outputs added for testing
+
+Derived_ml - changed EcoArea handling
+
+OwnDataTypes_ml - extended size of TXTLEN_SHORT to 18
+
+PhyChem_ml - calls Set_SoilWater
+
+Some extra debugs added for BVOC work, e.g. BIODZ in Emissions
+
+
 xxxxxxxxxxxxxx rv3_6_11     Alvaro,  2nd (committed 4th) August 2010
 
 Updates relted to the forecast mode
@@ -47,6 +60,7 @@ My_Outputs_ml, Output_hourly & NetCDF_ml: selected model levels on hourly output
 
 NH3variables_ml.f90: gFortran compliance...
 
+>>>>>>> 1.515
 xxxxxxxxxxxxxx rv3_6_10    Dave,       3rd Aug    2010
 
 FOREST_FIRES reset to false in EmisDef. Robert has noticed that
