@@ -208,7 +208,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 my $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv       = "rv3_6_10";
+$testv       = "rv3_6_12";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -604,8 +604,9 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
     $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
 # hb NH3emis       
-# New ammonia emissions  ---   NB no read permissions yet!!
-   if($NH3EMIS_VAR){
+# New ammonia emissions                                               
+   if( $NH3EMIS_VAR ){
+=======
     $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt";
    }
 

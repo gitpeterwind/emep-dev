@@ -3,7 +3,7 @@ module OwnDataTypes_ml
 
     public :: print_deriv_type
     integer, public, parameter :: TXTLEN_DERIV = 24
-    integer, public, parameter :: TXTLEN_SHORT  = 12
+    integer, public, parameter :: TXTLEN_SHORT  = 18
 
   ! Contains some user-defined data-types, and routine associated
   ! with these. Collecting them here will

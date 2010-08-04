@@ -191,6 +191,8 @@ module MetFields_ml
     ,foundsdot      & ! If not found: compute using divergence=0
     ,sdot_at_mid    & ! set false if sdot is defined
     ,foundSST       & ! false if no SeaSurfaceT in metdata
+    ,foundSoilWater       & ! false if no SW-shallow
+    ,foundSoilWater_deep  & ! false if no SW-deep
     ,foundsdepth    & ! false if no snow depth in metdata
     ,foundice       & ! false if no ice coverage (%) in metdata
     ,foundnwp_sea   &  ! false if no rough file is found QUERY description?

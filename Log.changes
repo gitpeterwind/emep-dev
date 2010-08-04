@@ -60,7 +60,6 @@ My_Outputs_ml, Output_hourly & NetCDF_ml: selected model levels on hourly output
 
 NH3variables_ml.f90: gFortran compliance...
 
->>>>>>> 1.515
 xxxxxxxxxxxxxx rv3_6_10    Dave,       3rd Aug    2010
 
 FOREST_FIRES reset to false in EmisDef. Robert has noticed that

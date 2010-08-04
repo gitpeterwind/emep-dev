@@ -55,6 +55,7 @@ module PhyChem_ml
                         ,FORECAST ! use advecdiff_poles on FORECAST mode
    use Nest_ml,        only : readxn, wrtxn
    use Par_ml,         only : me, MAXLIMAX, MAXLJMAX
+   use SoilWater_ml,   only : Set_SoilWater
    use TimeDate_ml,       only : date,daynumber,day_of_year, add_secs, &
                                  current_date, timestamp,  &
                                  make_timestamp, make_current_date
@@ -185,6 +186,9 @@ contains
           !=============================
 
           call Add_2timing(26,tim_after,tim_before,"phyche:prod")
+
+         !===================================
+           call Set_SoilWater()
 
          !===================================
            call init_drydep()

@@ -123,8 +123,8 @@ private
    integer, public, parameter, dimension(2) ::   SURF_UG_S = (/ SO2, SO4 /)
 
    integer, public, parameter, dimension(4) :: SRSURF_UG_N = (/ pNO3_f, pNO3_c, aNH4, NO2 /)
-   integer, public, parameter, dimension(2) ::  XSURF_UG_N = (/ NH3, HNO3 /)
-   integer, public, parameter, dimension(6) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
+   integer, public, parameter, dimension(3) ::  XSURF_UG_N = (/ NH3, HNO3, NO /)
+   integer, public, parameter, dimension(7) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
 
    integer, public, parameter, dimension(1) ::  SURF_UG_C = (/ HCHO /)
 
@@ -168,7 +168,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
   D2_EXTRA = (/ &
        "WDEP_SO2          " &
       ,"WDEP_SO4          " &
@@ -177,19 +177,22 @@ private
       ,"WDEP_pNO3_c       " &
       ,"WDEP_NH3          " &
       ,"WDEP_aNH4         " &
+      ,"SURF_ugN_NOX      " &
       ,"SURF_ppbC_VOC     " &
 !      ,"D2_REDN           " &
 !      ,"D2_SNOW           " &
 !      ,"D2_SNratio        " &
-!      ,"Area_Grid_km2     " &
-!      ,"Area_Conif_Frac   " &
-!      ,"Area_Decid_Frac   " &
-!      ,"Area_Seminat_Frac " &
-!      ,"Area_Crops_Frac   " &
+      ,"Area_Grid_km2     " &
+      ,"Area_Conif_Frac   " &
+      ,"Area_Decid_Frac   " &
+      ,"Area_Seminat_Frac " &
+      ,"Area_Crops_Frac   " &
 !      ,"Area_Water_D_Frac " &
       ,"HMIX              " &
 !      ,"D2_HMIX00         " &
 !      ,"D2_HMIX12         " &
+      ,"SoilWater          " &
+      ,"SoilWater_deep     " &
       ,"USTAR_NWP         " &
   /)
 
@@ -224,9 +227,9 @@ private
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) ! , &
        !    SO2,  SO4, NH3, aNH4, HNO3 /) ! DDEP_OXNGROUP /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      DDEP_ECOS  = (/ "Grid   " /) !, "Conif  ", "Seminat", "Water_D" &
-                   ! , "Decid  ", "Crops  " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" &! "Water_D" &
+                    , "Decid  ", "Crops  " /)
 
     integer, public, parameter, dimension(2) :: &
       WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, pNO3_f, HNO3, pNO3_c /)

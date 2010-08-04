@@ -108,6 +108,7 @@ module Met_ml
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,DEBUG_BLM, DEBUG_Kz & 
+       ,NH3_U10   & !dshb  -- temporary
        ,nstep,use_convection 
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
@@ -197,6 +198,8 @@ contains
        foundustar = .false.
        foundsdot = .false.
        foundSST  = .false.
+       foundSoilWater  = .false.
+       foundSoilWater_deep  = .false.
        foundKz_met = .false.  ! hb 23.02.2010 Kz from meteo
        foundu10_met = .false. ! hb NH3emis
        foundv10_met = .false. ! hb NH3emis
@@ -414,6 +417,26 @@ contains
        foundSST = .true.
     endif
 
+    namefield='soil_water_content'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+        validity, SoilWater(:,:,nr))
+    if(validity==field_not_found)then
+       if(MasterProc)write(*,*)'WARNING: SoilWater not found '
+       foundSoilWater = .false.
+    else
+       foundSoilWater = .true.
+    endif
+
+    namefield='deep_soil_water_content'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+        validity, SoilWater_deep(:,:,nr))
+    if(validity==field_not_found)then
+       if(MasterProc)write(*,*)'WARNING: deep_SoilWater not found '
+       foundSoilWater_deep = .false.
+    else
+       foundSoilWater_deep = .true.
+    endif
+
     namefield='snow_depth'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, sdepth(:,:,nr))
@@ -438,6 +461,7 @@ contains
 
 ! hb NH3emis
     ! u10 10m wind in x direction
+if ( NH3_U10 ) then
     ndim=2
     namefield='u10'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
@@ -462,6 +486,7 @@ contains
        foundv10_met = .true.
     endif
 
+end if ! NH3_U10
 
   end subroutine Meteoread
 
@@ -1071,10 +1096,12 @@ contains
        ice(:,:,1)    = ice(:,:,1)                 &
             + (ice(:,:,2)   - ice(:,:,1))*div
 ! hb NH3emis ! is this nescerssary, only called every third hour in NH3Emis_variation
+if ( NH3_U10 ) then
        u10(:,:,1)    = u10(:,:,1)         		&
             + (u10(:,:,2)   - u10(:,:,1))*div
        v10(:,:,1)    = v10(:,:,1)         		&
             + (v10(:,:,2)   - v10(:,:,1))*div
+end if
        !  precipitation and cloud cover are no longer interpolated
 
     else
@@ -1105,8 +1132,10 @@ contains
 
        sst(:,:,1)    = sst(:,:,2)
 ! hb NH3emis
+if ( NH3_U10 ) then
        u10(:,:,1)    = u10(:,:,2)
        v10(:,:,1)    = v10(:,:,2)
+end if ! NH3_U10
     endif
 
     call met_derived(1) !update derived meteo fields
@@ -1148,10 +1177,18 @@ contains
     do j = 1,ljmax
        do i = 1,limax
           u_ref(i,j)= sqrt( u_mid(i,j,KMAX_MID)**2 + v_mid(i,j,KMAX_MID)**2 )
-! hb NH3emis
-          u_10(i,j) = sqrt((u10(i,j,1))**2+(v10(i,j,1))**2)
        enddo
     enddo
+ if ( NH3_U10 ) then !dshb
+! Note that this calc is slightly wrong - would need staggered winds
+! hb NH3emis
+    do j = 1,ljmax
+       do i = 1,limax
+           u_10(i,j) = sqrt((u10(i,j,1))**2+(v10(i,j,1))**2)
+       enddo
+    enddo
+ end if ! NH3_U10
+
 
     ! Tmp ustar solution. May need re-consideration for MM5 etc., but
     ! basic principal should be that fm is interpolated with time, and
