@@ -219,7 +219,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $Chem, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv    = "rv3_6_12";
+$testv    = "rv3_6_13";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -291,13 +291,17 @@ if (%BENCHMARK){
 }
 
 #Dave, reset to Emission_Trends for Chem project, Oct 18th
-#if ($STALLO) {
-#  $EMIS_INP = "/global/work/nyiri/Emission_Trends" if $year > 1994;
-#  $emisdir = "$EMIS_INP/$year";
-#  if ( $GRID eq "GLOBAL" ) {
-#    $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
-#    $emisdir = $EMIS_INP;
-#  }
+my $TREND_RUNS = 0;
+if ($STALLO && $TREND_RUNS ) {
+  $EMIS_INP = "/global/work/nyiri/Emission_Trends";
+  die "Year not in trend run series!! " unless -f $EMIS_INP/$year;
+  $emisdir = "$EMIS_INP/$year";
+  $pm_emisdir = $emisdir;
+}
+#DS needs check:
+#if ( $STALLO && $GRID eq "GLOBAL" ) {
+#  $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
+#  $emisdir = $EMIS_INP;
 #  $pm_emisdir = $emisdir;
 #}
 
