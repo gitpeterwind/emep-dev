@@ -298,12 +298,12 @@ if ($STALLO && $TREND_RUNS ) {
   $emisdir = "$EMIS_INP/$year";
   $pm_emisdir = $emisdir;
 }
-#DS needs check:
-#if ( $STALLO && $GRID eq "GLOBAL" ) {
-#  $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
-#  $emisdir = $EMIS_INP;
-#  $pm_emisdir = $emisdir;
-#}
+#
+if ( $STALLO && $GRID eq "GLOBAL" ) {
+  $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
+  $emisdir = $EMIS_INP;
+  $pm_emisdir = $emisdir;
+}
 
 my $RESET        = 0 ;  # usually 0 (false) is ok, but set to 1 for full restart
 my $COMPILE_ONLY = 0 ;  # usually 0 (false) is ok, but set to 1 for compile-only
