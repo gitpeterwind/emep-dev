@@ -4,9 +4,12 @@ module NH3variables_ml
  integer, public, parameter :: &
     NNH3=17                    &  ! number of NH3 activity classes
    ,TSPERDAY=8                 &  ! timesteps per day in meteorology
-   ,MAXTIMESTEPS=366*TSPERDAY     ! for dimensions. The exact number of timesteps is calc. in subroutines depending on 365 or 366 days
+   ,MAXTIMESTEPS=366*TSPERDAY     ! for dimensions. The exact number of
+                                  ! timesteps is calc. in subroutines depending
+                                  ! on 365 or 366 days
 !integer, parameter, public  :: &
-!     IO_NH3EMIS      = 120   !(c) Sector NH3 emis file from Gyldenkaerne To be set in Io_ml
+!     IO_NH3EMIS      = 120   !(c) Sector NH3 emis file from Gyldenkaerne 
+                              ! To be set in Io_ml
 
   integer, parameter :: &
     I_ISO_STABLE=1 &
