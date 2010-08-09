@@ -82,7 +82,7 @@ integer, public, parameter :: &
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE =    5              ! No. Misc. met. params  ( e.g. T2, d_2d)
+    ,NXTRA_SITE =    12             ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
     SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
@@ -101,13 +101,16 @@ integer, public, parameter :: &
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
    SITE_XTRA=      (/  "D2D  ","th   ","T2   ","D2D  ",&
+                       "D2D  ","D2D  ","D2D  ", &
+                       "D2D  ","D2D  ", &
+                       "D2D  ","D2D  ", &
+                       "D2D  "   /)
 !                       "D2D  ","D2D  ","D2D  ","D2D  ", &
 !                       "D2D  ","D2D  ","D2D  ","D2D  ", &
 !                       "D2D  ","D2D  ","D2D  ","D2D  ",&
 !                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
 !                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
 !                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
-                       "D2D  "   /)
 !    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        " /)
 
 !Remember, d2d variables must have been set in My_Derived for
@@ -115,6 +118,8 @@ integer, public, parameter :: &
    character(len=18), public, parameter, dimension(NXTRA_SITE) :: &
     SITE_XTRA_CODE= (/ &
      "HMIX           ","th             ","T2             ","PSURF          ", &
+     "SoilWater_deep ","SoilWater      ","EVAP_CF        ","EVAP_DF        ", &
+     "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
 !     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
 !     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
 !     "COLUMN_CO_k08  ","COLUMN_C2H6_k08","COLUMN_HCHO_k08","COLUMN_CH4_k08 ", "COLUMN_NO2_k08 ",&
@@ -123,15 +128,16 @@ integer, public, parameter :: &
 !     "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
       "COLUMN_NO2_k20 " /)
 
-   integer,           public, parameter, dimension(NXTRA_SITE) :: &
-   SITE_XTRA_INDEX=  (/  0, 0,  0,  0, &
+!ds Not used, so skip
+!ds   integer,           public, parameter, dimension(NXTRA_SITE) :: &
+!ds   SITE_XTRA_INDEX=  (/  0, 0,  0,  0, &
 !                         0, 0,  0,  0, &
 !                         0, 0,  0,  0, &
 !                         0, 0,  0,  0, &
 !                         0, 0,  0,  0, 0, &
 !                         0, 0,  0,  0, 0, &
 !                         0, 0,  0,  0, 0, &
-                         0 /)
+!                         0 /)
 
 
 
@@ -180,9 +186,10 @@ integer, public, parameter :: &
  !   can access d_3d fields through index here, by
  !   setting "D3D" above and say D3_XKSIG12 here:
 
-   integer,           public, parameter, dimension(NXTRA_SONDE) :: &
-                    SONDE_XTRA_INDEX=  (/ 0, 0, &  !AMVB 2010-07-19: PM-PPB bug fix
-                                          0, 0, 0, 0, 0 /)
+!ds not used, so skip
+!ds   integer,           public, parameter, dimension(NXTRA_SONDE) :: &
+!ds                    SONDE_XTRA_INDEX=  (/ 0, 0, &  !AMVB 2010-07-19: PM-PPB bug fix
+!ds                                          0, 0, 0, 0, 0 /)
 
 
 

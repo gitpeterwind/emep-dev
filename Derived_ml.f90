@@ -244,7 +244,7 @@ private
 
    !=========================================================================
     subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
-           LC,XYCL,dt_scale,scale, avg,rho,inst,year,month,day,atw,Is3D)
+           LC,Threshold,dt_scale,scale, avg,rho,inst,year,month,day,atw,Is3D)
 
        character(len=*), intent(in) :: name ! e.g. DDEP_SO2_m2Conif
        character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
@@ -254,7 +254,7 @@ private
        integer, intent(in)  :: index    ! index in concentation array, or other
        integer, intent(in) :: f2d       ! index in f_2d arrays
        integer, intent(in) :: LC        ! Index of Receiver land-cover (one
-       real, intent(in)    :: XYCL      ! Threshold or CL, e.f. AOTx or AFstY
+       real, intent(in)    :: Threshold ! Threshold or CL, e.f. AOTx or AFstY
        logical, intent(in) :: dt_scale  !  where scaling by dt_advec needed,
        real, intent(in)    :: scale     !  e.g. use 100.0 to get cm/s
        logical, intent(in)  :: avg      ! True => average data (divide by
@@ -271,7 +271,7 @@ private
        type(Deriv) :: inderiv
 
        inderiv = Deriv(trim(name),trim(class),trim(subclass),&
-                           trim(txt),trim(unit),index,f2d,LC,XYCL,dt_scale, scale,&
+                           trim(txt),trim(unit),index,f2d,LC,Threshold,dt_scale, scale,&
                             avg,rho,inst,year,month,day,atw)
 
        if ( present(Is3D) ) then
@@ -346,7 +346,7 @@ private
 
 Is3D = .false.
        !Deriv(name, class,    subc,  txt,           unit
-       !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+       !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv( "WDEP_PREC","PREC ","-","-", "mm",  &
                 -1, -99,-99,  0.0,       F,    1.0,   F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_SOX ","WDEP ","-","-", "mgS/m2", &
@@ -408,7 +408,7 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 ! (multiplied with roa in layers?? ==>  rho "false" ) !ds - explain!
 
       !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
            IXADV_O3, -99,0, 40.0,   T, 1.0/3600.0, F,  F , F ,T ,T ,T ,-999)
 !
@@ -421,7 +421,7 @@ call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
     itot = COLUMN_MOLEC_CM2(n)
     iadv = itot - NSPEC_SHL
       !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
      dname = "COLUMN_" //trim(species( itot )%name) //"_"//COLUMN_LEVELS(n2)
      subclass = COLUMN_LEVELS(n2)
      read(unit=subclass(2:3),fmt="(i2)") iLC  ! Faking vertical index with iLC :-(
@@ -438,7 +438,7 @@ call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
 !call AddDef( "OX   ", T,   -1  ,PPBINV , F , F,T,T,T,"D2_OX","ppb")
 
        !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 ! NOT YET: Scale pressure by 0.01 to get hPa
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
@@ -464,7 +464,7 @@ do ind = 1, size(SURF_UG_S)
   iadv = itot - NSPEC_SHL
   dname = "SURF_ugS_" //species( itot )%name
        !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
   call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugS/m3", &
               iadv , -99, -99, 0.0,   F,   ugSm3,     T, T , F, T, T, T, -999 ) !?? atw?
 end do
@@ -515,7 +515,7 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
 
 ! isoprene is 1 in the NatEmis array. Hard-coded for now..
              !Deriv(name,       class,    subc,  txt,           unit
-     !Deriv index, f2d,LC, XYCL, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+     !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
   call AddNewDeriv( "Emis_mgm2_C5H8", "NatEmis", "-", "-", "mg/m2", &
                  1 , -99,-99, 0.0,  T ,    1.0e6,     F, F , F, T, T, T, -999 ) !?? atw?
 
@@ -551,7 +551,7 @@ end do ! ind
 !call AddDef( "SSalt", T, -1, ugSS,   T, F, T, T, T,"D2_SS  ", "ug/m3")
 
               !Deriv(name, class,    subc,  txt,           unit
-              !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw
+              !Deriv index, f2d,LC, Threshold, scale, avg? rho Inst Yr Mn Day atw
 call AddNewDeriv("SURF_ug_SIA", "SIAGROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ugN_OXN", "OXNGROUP", "MASS", "-", "ugN/m3", &
@@ -598,7 +598,7 @@ do ind = 1, size(D3_PPB)
   iadv = itot - NSPEC_SHL
   dname = "D3_ppb_" //species( itot )%name
    !Deriv(name, class,    subc,  txt,           unit
-   !Deriv index, f2d,LC, XYCL, scale, avg? rho Inst Yr Mn Day atw, Is3D
+   !Deriv index, f2d,LC, Threshold, scale, avg? rho Inst Yr Mn Day atw, Is3D
   call AddNewDeriv( dname, "D3_PPB", "-", "-", "ppb", &
          iadv , -99, -99, 0.0, F,  PPBINV,   T, T , F, T, T, F, -999,Is3D ) !?? atw?
 end do
@@ -960,8 +960,7 @@ end do
                            !  AOTs are handled in the Mosaic class and as
                            !  part of the dry dep calculations.
 
-            !DS call aot_calc( n, timefrac )
-            d_2d(n, 1:limax, 1:ljmax, IOU_INST) = Calc_GridAOTx(f_2d(n)%XYCL)
+            d_2d(n, 1:limax, 1:ljmax, IOU_INST) = Calc_GridAOTx(f_2d(n)%Threshold)
 
            !if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
            if( debug_flag ) then

@@ -174,7 +174,7 @@ my $HALDIS      = "mifahb";
 my $USER       =  $HALDIS; 
 
 # hb NH3Emis                                                                  
-my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3          
+my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3. 
 
 my $METformat="cdf"; # felt or cdf
 
@@ -647,7 +647,9 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
 # hb NH3emis       
 # New ammonia emissions  ---   NB no read permissions yet!!
-    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
+ if($NH3EMIS_VAR) {
+    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt";
+ }
 
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";

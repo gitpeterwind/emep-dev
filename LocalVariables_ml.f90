@@ -127,6 +127,7 @@ module LocalVariables_ml
     ,rh        = NOT_SET &! Relative humidity, fraction (0-1)
     ,rho_s     = NOT_SET &! Air density (kg/m3) at surface, here 2m
     ,vpd       = NOT_SET &! Vapour pressure deficit  (kPa) ! CHECK UNITS
+    ,EvapTransp = NOT_SET &! Evapotranspiration             ! CHECK UNITS
     ,SWP       = NOT_SET &! SWP  ! CHECK UNITS
     ,ustar     = NOT_SET &! friction velocity, m/s
     ,wstar     = NOT_SET &! convective velocity scale, m/s

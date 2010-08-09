@@ -1,3 +1,35 @@
+xxxxxxxxxxxxxx rv3_6_14      Dave        4rd Aug    2010
+
+
+
+Derived_ml: XYCL renamed to Threshold :-)
+            EVAP, SoilWater, PREC_WDEP outputs added as Derived
+
+DryDep_ml: MMC_GSTO added
+
+LocalVariables_ml:  EvapTransp added
+
+ModelConstants_ml: DEBUG_SOILWATER added
+
+OwnDataTypes: XYCL renamed to Threshold, extra outputs in print
+
+Sites_ml: SITE_XTRA_INDEX, SONDE_XTRA_INDEX commented out - not used
+and a pain!
+
+StoFlux_ml: Evapotranspiration added  (1st attempt, should be optimised)
+
+My_Derived_ml: outputs for POD for ex-post analysis, + EVAP, SoilWater
+
+               Code for "NOX" commented out. Have both NO and NO2 as
+               outputs anyway, and should treat NOX as just another
+               group.
+
+My_Outputs_ml: ITE_XTRA_INDEX, SONDE_XTRA_INDEX commented out 
+
+
+run.pl  TREND_RUNS added to get consistent time-series
+
+
 xxxxxxxxxxxxxx rv3_6_13      Alvaro,     4rd Aug    2010
 
 run.pl: pre-defined  benchmark datasets

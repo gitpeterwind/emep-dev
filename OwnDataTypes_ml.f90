@@ -34,7 +34,7 @@ module OwnDataTypes_ml
        integer  :: index    ! index in concentation array, or other
        integer :: f2d           ! index in f_2d arrays
        integer :: LC            ! Index of Receiver land-cover (one 
-       real    :: XYCL          ! Threshold or CL, e.f. AOTx or AFstY
+       real    :: Threshold     ! Threshold or CL, e.f. AOTx or AFstY
        logical :: dt_scale     ! used only if we need a factor on dt_advec,
        real    :: scale         !  e.g. use 100.0 to get cm/s
        logical  :: avg      ! True => average data (divide by nav at end),
@@ -75,6 +75,9 @@ subroutine print_Deriv_type(w)
   write(6,"(a,i3)")     "f2d    :", w%f2d
   write(6,"(a,a10)")    "txt    :", w%txt
   write(6,"(a,es10.3)") "scale  :", w%scale
+  write(6,*)        "dt_scale:", w%dt_scale
+  !failed, why? write(6,fmt="(L8)")        "avg:",      w%avg
+  write(6,*)        "avg:",      w%avg
   write(6,"(a,i3)")     "atw    :", w%atw
 end subroutine print_Deriv_type
 

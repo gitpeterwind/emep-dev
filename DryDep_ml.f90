@@ -67,7 +67,7 @@ module DryDep_ml
 
 use LandDefs_ml, only : LandDefs
 use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
-   ,MMC_USTAR, MMC_RH, MMC_INVL  !
+   ,MMC_USTAR, MMC_RH, MMC_INVL, MMC_GSTO  !
 
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
  use CheckStop_ml, only: CheckStop

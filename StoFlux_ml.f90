@@ -35,6 +35,7 @@ module StoFlux_ml
   use Par_ml, only : MAXLIMAX, MAXLJMAX
   use PhysicalConstants_ml, only : AVOG, KARMAN
   use TimeDate_ml, only : current_date
+  use Wesely_ml, only : WES_O3, Rb_cor
   implicit none
   private
 
@@ -108,6 +109,8 @@ contains
     real :: loss   !SKIP ,sto_frac
     real :: Ra_diff,tmp_gsun
     integer :: i,j
+    ! Evapotranspiration needs:
+    real :: gv, gvcms  ! conductace for water vapour, mmole/ms/s and cm/s
 
     i = Grid%i
     j = Grid%j
@@ -117,6 +120,7 @@ contains
 
           Sub(iL)%FstO3 = 0.0
           Sub(iL)%cano3_ppb   = 0.0  !! Can't do better?
+          Sub(iL)%EvapTransp = 0.0   ! No evapo-transpiration ?
           if ( DEBUG_STOFLUX .and. debug_flag ) &
             write(6,"(a15,f8.3,a8,f8.3)")  "FST - too low ", &
                 L%hveg, " <  1.1*",  L%z0
@@ -190,11 +194,49 @@ contains
              end if
           end if ! clover
 ! ======   CLOVER  =========================================================
+
+! ======   Evapo-transpiration =============================================
+!
+         ! E = g * (Cleaf - Cair) = g * D(kPa)/101(KPa), cf. Cambell+Norman,p82
+         ! If E in mole/m2/s
+
+         ! and use 1/1.51 instead of 1/1.6. Checl
+         ! Lisa had R in s/mm, hence 1000.0
+         !
+         !gv = 1/(Rb+Rc) = 1(Rb+1/gsto)
+         !  Rb(O3) = 2.0 * Rb_cor(WES_O3)/(KARMAN*ustar) 
+         !
+         ! Step 1: Get gv in m/s units:
+
+            gv = 1.0/ (2.0 * Rb_cor(WES_O3) /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
+            gvcms = gv
+
+         ! Step 2: Convert to mole/m2/s and for H2O
+         ! mmol2sm = 8.3144e-8*L%t2  for O3, plus factor 1.6 for H2O
+         ! * 0.001 -> mole/m2/s
+         ! ms2molm2s = 1.6*1.0e-3/(8.3144e-8*L%t2)
+         
+            gv = gv * 1.6e-3/(8.3144e-8*L%t2)
+         
+         ! Step 3: 
+         ! Mass flux density is E x 0.018 kg/mole -> kg/m2/s
+         ! 1 kg/m2 = 1mm
+         ! ie ms2kgm2s  = 1.6*1.0e-3/(8.3144e-8*L%t2)
+         ! ie ms2mm     = 1.6*1.0e-3/(8.3144e-8*L%t2)
+
+            Sub(iL)%EvapTransp = 0.018 *  L%vpd/101.0  * gv
+
+         !!L%g_sto * L%LAI  * 1.6e-3/(8.3144e-8*L%t2)   ! Evapo-transpiration
+         !                 (rb_leaf/1.6 + 0.0224*(L%t2/273.0) 
+
+
           if ( DEBUG_STOFLUX .and. debug_flag ) then 
-            write(6,"(a8,3i3,i4,f6.2,2f8.1,2es10.2,f6.2,2es12.3)")  "STOFLUX ",&
+            write(6,*)  "STOFLUX? ", iL, LandType(iL)%flux_wanted
+            write(6,"(a8,3i3,i4,f6.2,2f8.1,2es10.2,f6.2,3es12.3)")  "STOFLUX ",&
             iL, current_date%month, current_date%day, current_date%hour, &
             L%LAI, nmole_o3, c_hveg, L%g_sto, L%g_sun, u_hveg,&
-            Sub(iL)%cano3_ppb, Sub(iL)%FstO3
+            Sub(iL)%cano3_ppb, Sub(iL)%FstO3, Sub(iL)%EvapTransp
+            write(6,"(a8,2es12.3)")  "STOFLUXG ", gv, gvcms
           end if
 
     end if

@@ -213,6 +213,7 @@ contains
 
             LandType(n)%is_forest =  &
                 ( LandInput%type == "ECF" .or. LandInput%type == "EDF" )
+!TEST             LandType(n)%flux_wanted = LandType(n)%is_iam .or. LandType(n)%is_forest  ! TEST
             LandType(n)%has_lpj   =  &
                 ( LandInput%type /= "NOLPJ" )
             LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)

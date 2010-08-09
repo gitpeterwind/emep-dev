@@ -133,8 +133,8 @@ private
    integer, public, parameter, dimension(5) ::   SURF_UG = (/ SRSURF_UG, XSURF_UG /)
 
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
-   integer, public, parameter, dimension(1) ::  XSURF_PPB = (/ HCHO /)
-   integer, public, parameter, dimension(2) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
+   integer, public, parameter, dimension(3) ::  XSURF_PPB = (/ NO, NO2, HCHO /)
+   integer, public, parameter, dimension(4) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
 
    integer, public, parameter :: NALL_SURF_UG = &
      size(SURF_UG_S) + size(SURF_UG_N) + size(SURF_UG_C) + size(SURF_UG)
@@ -268,22 +268,22 @@ private
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(15) :: &
-     VEGO3_OUTPUTS = (/ "AFST_1.6_IAM_DF", &
-                        "AFST_0.0_IAM_DF", &
-                        "AFST_0.0_BF    ", &
-                        "AFST_1.6_BF    ", &
-                        "AFST_0.0_IAM_CR", &
-                        "AFST_3.0_IAM_CR", &
-!                        "AFST_6.0_IAM_CR", &
-                        "AFST_0.0_IAM_MF", &
-                        "AFST_1.0_IAM_MF", & ! WGSR POD1 birch
-                        "AFST_1.0_IAM_DF", & ! WGSR POD1
-                        "AFST_1.6_IAM_MF", &
-!                        "MMAOT_30_IAM_DF", &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
+     VEGO3_OUTPUTS = (/ "POD_1.6_IAM_DF", &
+                        "POD_1.0_IAM_DF", & ! WGSR POD1
+                        "POD_0.0_IAM_DF", &
+                        "POD_1.6_IAM_MF", &
+                        "POD_1.0_IAM_MF", & ! WGSR POD1 birch
+                        "POD_1.6_BF    ", &
+                        "POD_1.0_DF    ", &
+                        "POD_1.0_CF    ", &
+                        "POD_1.6_DF    ", &
+                        "POD_1.6_CF    ", &
+                        "POD_3.0_IAM_CR", &
+                        "POD_0.0_IAM_CR", &
+                        "POD_6.0_IAM_CR", & ! FO NOT USE THOUGH!
                         "MMAOT_40_IAM_DF", & ! WGSR beech
                         "MMAOT_40_IAM_MF", & ! WGSR birch
-!                        "MMAOT_30_IAM_CR", & ! only iam allowed
                         "MMAOT_40_IAM_CR", &
                         "EUAOT_40_IAM_CR", &
                         "MMAOT_40_IAM_WH" /) !NB -last not found. Could
@@ -309,16 +309,18 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
       METCONC_PARAMS = (/ "RH      " &
-                         ,"CanopyO3" & !SKIP ,"VPD     ", "FstO3   " &
+                         ,"CanopyO3" & !SKIP 
+                         ,"VPD     ", "FstO3   " &
+                         ,"EVAP    ", "Gsto    " &
                         !SKIP  ,"USTAR   ", "INVL    "  &
                        /)
                           ! "g_sto" needs more work - only set as L%g_sto
     integer, public, save :: MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3,  &
-           MMC_VPD, MMC_FST
-    character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
-      MET_LCS  = (/ "GR    " , "CF    " /) !, "IAM_DF", "IAM_MF"/)
+           MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
+    character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
+      MET_LCS  = (/ "DF    " , "CF    ", "BF    ", "NF    " /) !, "IAM_DF", "IAM_MF"/)
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       !MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
@@ -366,8 +368,8 @@ private
     integer :: isep1, isep2  ! location of seperators in sting
     character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
     character(len=TXTLEN_DERIV) :: txt, txt2, units, txtnum
-    real    :: Y           ! threshold for AFSTY, also used as X in AOT40X
-    integer :: Threshold   ! threshold for AFSTY
+    real    :: Y           ! threshold for PODY, also used as X in AOT40X
+    integer :: Threshold   ! threshold for PODY
     character(len=TXTLEN_DERIV), &
     dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) :: tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
@@ -389,6 +391,8 @@ private
       MMC_FST   = find_index("FstO3",METCONC_PARAMS) 
       MMC_USTAR = find_index("USTAR",METCONC_PARAMS)
       MMC_INVL  = find_index("INVL",METCONC_PARAMS) 
+      MMC_GSTO  = find_index("GSTO",METCONC_PARAMS) 
+      MMC_EVAP  = find_index("EVAP",METCONC_PARAMS) 
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -558,7 +562,7 @@ private
       nOutVg = nVg
 
       !------------- VEGO3 stuff ----------------------------------------------
-      ! For fluxes or AOTs we start with a formatted name, eg. AFST_3.0_CF and
+      ! For fluxes or AOTs we start with a formatted name, eg. POD_3.0_CF and
       !untangle it to get threshold Y (=3.0) and landcover type
 
       nVEGO3 = 0
@@ -566,15 +570,15 @@ private
       VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS)
 
          name = VEGO3_OUTPUTS(n)
-         isep1 = scan(name,"_")                       ! AFST or AOT
-         isep2 = isep1 + scan(name(isep1+1:),"_")   ! 1.6 or 40
+         isep1 = scan(name,"_")                      ! POD or AOT
+         isep2 = isep1 + scan(name(isep1+1:),"_")    ! 1.6 or 40
          !isep3 = isep2 + scan(name(isep2+1:),"_")   ! IAM_CF or SNL
-         txt =name(1:isep1-1)           ! AFST or AOT
+         txt =name(1:isep1-1)           ! POD or AOT
          txtnum=name(isep1+1:isep2-1)     ! 1.6 or 40
          txt2=name(isep2+1:)            ! IAM_CF or SNL
 
 
-         if( txt == "AFST" ) then
+         if( txt == "POD" ) then
             read(txtnum,fmt="(f3.1)") Y
             if(txtnum == ".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
             !WHY??!!!! Threshold = nint( 10*Y)   ! Store Y=1.6 as 16
@@ -606,7 +610,7 @@ private
            call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, VEGO3" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,XYCL, scale dt_scale avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC,Threshold, scale dt_scale avg? rho Inst Yr Mn Day atw
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", txt, txt2, units, &
                 iadv, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, atw)
@@ -647,7 +651,7 @@ private
                        "too many nMosaics, nRG" )
 
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
 
           if( RG_LABELS(ilab)(1:1) == "R" )  then
              MosaicOutput(nMosaic) = Deriv( &
@@ -696,7 +700,7 @@ private
           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, nMET" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,XYCL, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "METCONC", MET_LCS(n), METCONC_PARAMS(ilab), &
                 ilab, -99,iLC,-99.9,  F , 1.0,  T,   F,   F, T, T, T, atw)
@@ -712,6 +716,10 @@ private
               MosaicOutput(nMosaic)%unit  =   "ppb"
           else if( METCONC_PARAMS(ilab)(1:5) == "FstO3" )  then
               MosaicOutput(nMosaic)%unit  =   "mmole/m2" ! accumulated
+          else if( METCONC_PARAMS(ilab)(1:4) == "EVAP" )  then
+              MosaicOutput(nMosaic)%avg       =  .false. ! accumulate
+              MosaicOutput(nMosaic)%unit      =  "mm"
+              MosaicOutput(nMosaic)%dt_scale  =  .true.
           end if
 
           if(DEBUG .and. MasterProc) call print_deriv_type(MosaicOutput(nMosaic))
@@ -733,7 +741,7 @@ private
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
    ! ditto wanted_deriv3d....
-! hb new 3D ouput
+
      if ( .not. SOURCE_RECEPTOR ) then
        if ( size(D3_PPB) > 0 ) then
          tag_name(1:size(D3_PPB)) = "D3_ppb_" // species(D3_PPB)%name
@@ -825,13 +833,13 @@ private
               + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j)
       end forall
 
-    case ( "NOX" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d( i,j ) = &
-              ( xn_adv(IXADV_NO,i,j,KMAX_MID) &
-              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j) &
-              ) * density(i,j)
-      end forall
+!    case ( "NOX" )
+!      forall ( i=1:limax, j=1:ljmax )
+!          e_2d( i,j ) = &
+!              ( xn_adv(IXADV_NO,i,j,KMAX_MID) &
+!              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j) &
+!              ) * density(i,j)
+!      end forall
 
     case ( "NOZ" )
       e_2d( :,: ) = 0.0

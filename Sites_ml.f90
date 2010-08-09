@@ -34,15 +34,15 @@ module Sites_ml
 !
 ! -----------------------------------------------------------------------
 
-use CheckStop_ml,  only : CheckStop
+use CheckStop_ml,  only : CheckStop, StopAll
 use My_Outputs_ml, only : &  ! for sitesout
       NSITES_MAX, &
       NADV_SITE, NSHL_SITE, NXTRA_SITE, &
-      SITE_ADV, SITE_SHL, SITE_XTRA, SITE_XTRA_INDEX, &
+      SITE_ADV, SITE_SHL, SITE_XTRA, & !ds SKIP SITE_XTRA_INDEX, &
       SITE_XTRA_CODE, FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
       NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &  ! DSGCN_NOy,  &
-      SONDE_ADV, SONDE_SHL, SONDE_XTRA, SONDE_XTRA_INDEX, &
-      FREQ_SONDE, &  ! DSGC, NOy_SPEC
+      SONDE_ADV, SONDE_SHL, SONDE_XTRA, & !ds SKIP SONDE_XTRA_INDEX, &
+      FREQ_SONDE, & 
       to_ug_ADV  !AMVB 2010-07-19: PM-PPB bug fix
 
 use Derived_ml,        only : d_2d, d_3d, f_2d
@@ -56,10 +56,6 @@ use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml,    only : NSPEC_SHL
 use ChemGroups_ml,      only : OXN_GROUP, PM25_GROUP, PMCO_GROUP
 use ChemChemicals_ml,   only : species               ! for species names
-!ds was used for output of PM25 in ppb. Bug!
-!dsuse ChemSpecs_tot_ml,    only : SO4 &  ! for mol. wts.
-!ds                              !ds,aNO3, pNO3, aNH4, PPM25, PPMCO &
-!ds                              !ds,SSfi, SSco  !SeaS
 use MetFields_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps
@@ -540,7 +536,7 @@ end subroutine siteswrt_surf
      do ispec = 1, NXTRA_SONDE
 
         select case ( SONDE_XTRA(ispec) )
-!AMVB 2010-07-19: PM-PPB bug fix
+!AMVB 2010-07-19:
           case ( "PM25" )    !!  PM data converted to ug m-3
             sum_PM(:) = 0.
             do k = 1, KMAX_MID
@@ -558,36 +554,6 @@ end subroutine siteswrt_surf
             end do !k
             out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
 
-!ds IS IN PPB - MUST BE WRONG!
-!BUGPPB            sum_PM25(:) = 0.
-!BUGPPB            do k = 1, KMAX_MID
-!BUGPPB              sum_PM25(k) = 0.0
-!BUGPPB              do ipm = 1, size( PM25_GROUP )
-!BUGPPB                iadv = ipm-NSPEC_SHL
-!BUGPPB                sum_PM25(k) = sum_PM25(k) +
-!BUGPPB                  xn_adv(iadv,ix,iy,k) *species(idv)%molwt
-!BUGPPB              end do ! ipm
-!BUGPPB              sum_PM25(k) = sum_PM25(k) * roa(ix,iy,k,1) /ATWAIR
-!BUGPPB!ds               ( xn_adv(IXADV_SO4,ix,iy,k) *species(SO4)%molwt    &
-!BUGPPB!ds               + xn_adv(IXADV_aNO3,ix,iy,k)*species(aNO3)%molwt   &
-!BUGPPB!ds               + xn_adv(IXADV_aNH4,ix,iy,k)*species(aNH4)%molwt   &
-!BUGPPB!ds               + xn_adv(IXADV_PPM25,ix,iy,k)*species(PPM25)%molwt   &
-!BUGPPB!ds               + xn_adv(IXADV_SSfi,ix,iy,k)*species(SSfi)%molwt  ) & !SeaS
-!BUGPPB            end do !k
-!BUGPPB            out(nn+1:nn+KMAX_MID,i) = PPBINV                         &
-!BUGPPB                                    * sum_PM25(KMAX_MID:1:-1)
-!BUGPPB
-!BUGPPB          case ( "PMco" ) !!  PM data converted to ug m-3
-!BUGPPB            sum_PMco(:) = 0.
-!BUGPPB            do k = 1, KMAX_MID
-!BUGPPB              sum_PMco(k) =   &
-!BUGPPB               ( xn_adv(IXADV_pNO3,ix,iy,k) * species(pNO3)%molwt &
-!BUGPPB               + xn_adv(IXADV_PPMco,ix,iy,k) * species(PPMCO)%molwt &
-!BUGPPB               + xn_adv(IXADV_SSco,ix,iy,k) * species(SSco)%molwt ) & !SeaS
-!BUGPPB               * roa(ix,iy,k,1) /ATWAIR
-!BUGPPB            end do
-!BUGPPB            out(nn+1:nn+KMAX_MID,i) = PPBINV                        &
-!BUGPPB                                    * sum_PMco(KMAX_MID:1:-1)
 
           case ( "NOy" )
             sum_NOy(:) = 0.
@@ -631,9 +597,10 @@ end subroutine siteswrt_surf
                                             +v_xmi(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
 
           case ( "D3D" )
-            d3index                 = SONDE_XTRA_INDEX(ispec)
-            out(nn+1:nn+NLEVELS_SONDE,i)= &
-              d_3d(d3index,ix,iy,KMAX_MID:KTOP_SONDE:-1,IOU_INST)
+             call StopAll("D3D Sites out not defined")
+!ds            d3index                 = SONDE_XTRA_INDEX(ispec)
+!ds            out(nn+1:nn+NLEVELS_SONDE,i)= &
+!ds              d_3d(d3index,ix,iy,KMAX_MID:KTOP_SONDE:-1,IOU_INST)
 
         end select
 

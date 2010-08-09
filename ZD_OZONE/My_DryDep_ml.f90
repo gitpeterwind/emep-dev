@@ -38,6 +38,7 @@ module My_DryDep_ml    ! DryDep_ml
  use My_Derived_ml,  only : &
    nMosaic, MosaicOutput &
   ,MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST &
+  ,MMC_GSTO,  MMC_EVAP &
   ,SOX_INDEX, OXN_INDEX, RDN_INDEX !ds rv3_5_6&  ! Equal -1, -2, -3
 
  use AOTx_ml,             only : Calc_AOTx
@@ -168,7 +169,7 @@ contains
         call CheckStop( MosaicOutput(imc)%LC < 1, & !0=GRID (careful,FULL_GRID=1)
         "MosaicOutput-LC Error " // trim(MosaicOutput(imc)%name))
 
-      case ( "VG", "Rs ", "Rns", "Gns", "MMAOT", "EUAOT", "AFST" ) ! could we use RG_LABELS? 
+      case ( "VG", "Rs ", "Rns", "Gns", "MMAOT", "EUAOT", "POD" ) ! could we use RG_LABELS? 
 
         if( MosaicOutput(imc)%txt == "Grid") then
            MosaicOutput(imc)%LC = FULL_GRID   ! zero
@@ -340,18 +341,21 @@ contains
           if( n == MMC_CANO3  ) output = Sub(iLC)%cano3_ppb
           if( n == MMC_VPD    ) output = Sub(iLC)%vpd
           if( n == MMC_FST    ) output = Sub(iLC)%FstO3
+          if( n == MMC_GSTO   ) output = Sub(iLC)%g_sto
+          if( n == MMC_EVAP   ) output = Sub(iLC)%EvapTransp
 
           if ( DEBUG_CLOVER .and. debug_flag .and. &
-               n == MMC_FST .and. LandType(iLC)%is_clover ) then
+               !n == MMC_FST .and. LandType(iLC)%is_clover ) then
+               n == MMC_EVAP .and. LandType(iLC)%is_forest ) then
              write(6,"(a,3i4,i5,2i4,i6,es12.3)") "MDCV ", imc, n, iLC, &
                  current_date%month, current_date%day, &
                  current_date%hour, current_date%seconds,   output
           end if ! DEBUG_ECO 
 
-        case ( "AFST" )    ! Fluxes, AFstY 
+        case ( "POD" )    ! Fluxes, AFstY 
                            ! o3WH = c_hvegppb(iam_wheat)* lossfrac
 
-          Y   = MosaicOutput(imc)%XYCL   ! threshold Y, nmole/m2/s
+          Y   = MosaicOutput(imc)%Threshold   ! threshold Y, nmole/m2/s
 
           if ( DEBUG_MY_DRYDEP .and. debug_flag ) then
              write(6,"(2i3,f6.1,es12.3)") imc, iLC, Y, Sub(iLC)%FstO3
@@ -372,7 +376,7 @@ contains
 
           !OLD: veg_o3 = c_hvegppb(iLC)* lossfrac  ! lossfrac????
 
-          X      = MosaicOutput(imc)%XYCL   ! threshold X,  ppb.h
+          X      = MosaicOutput(imc)%Threshold   ! threshold X,  ppb.h
 
           call Calc_AOTx( subclass,iLC, Sub(iLC)%cano3_ppb, X,output) 
 
