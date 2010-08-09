@@ -1,6 +1,4 @@
-xxxxxxxxxxxxxx rv3_6_14      Dave        4rd Aug    2010
-
-
+xxxxxxxxxxxxxx rv3_6_14      Dave   9th Aug 2010
 
 Derived_ml: XYCL renamed to Threshold :-)
             EVAP, SoilWater, PREC_WDEP outputs added as Derived
@@ -26,6 +24,7 @@ My_Derived_ml: outputs for POD for ex-post analysis, + EVAP, SoilWater
 
 My_Outputs_ml: ITE_XTRA_INDEX, SONDE_XTRA_INDEX commented out 
 
+ZD_OZONE/NH3variables_ml   removed. Use version in Unimod main directory
 
 run.pl  TREND_RUNS added to get consistent time-series
 
