@@ -286,8 +286,12 @@ private
 
        type(Deriv), intent(in) :: inderiv
        logical, intent(in), optional :: Is3D
+       logical :: Is3D_local
 
-       if ( present(Is3D) .and. Is3D ) then
+       Is3D_local = .false.
+       if ( present(Is3D) ) Is3D_local = Is3D
+       
+       if ( Is3D_local ) then
          Nadded3d = Nadded3d + 1
          N = Nadded3d
          if ( DEBUG .and. MasterProc   ) &

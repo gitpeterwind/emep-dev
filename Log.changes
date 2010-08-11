@@ -1,3 +1,27 @@
+xxxxxxxxxxxxxx rv3_6_15      Peter   11th Aug 2010
+
+Some changes to make the model portable to different machine/compilers
+(and some cleaning)
+
+Advection_ml:
+Some simplifications to test for allowed dt_advec.
+Cleaning/commenting of convection_pstar
+
+Met_ml:
+"readneighbors" is made MPI_safe (could hang for very large grids).
+
+NetCDF_ml:
+recursive ReadField_CDF (so we don't need to use compiler options)
+
+Derived_ml:
+splitted "if(present(iIs3D).and.Is3D)", as xlf (IBM/njord) seems to 
+test Is3D before looking if it is present
+
+Unimod.f90:
+Moved call parinit upward, because parinit defines MaterProc, which was used before it was set.
+
+
+
 xxxxxxxxxxxxxx rv3_6_14      Dave   9th Aug 2010
 
 Derived_ml: XYCL renamed to Threshold :-)

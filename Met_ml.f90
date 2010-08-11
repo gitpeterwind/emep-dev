@@ -1760,7 +1760,6 @@ end if ! NH3_U10
 
 
 
-
   subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 
 
@@ -1786,8 +1785,10 @@ end if ! NH3_U10
     real,intent(in), dimension(MAXLIMAX,MAXLJMAX) ::data
     real,intent(out), dimension(MAXLIMAX,thick) ::data_south,data_north
     real,intent(out), dimension(MAXLJMAX+2*thick,thick) ::data_west,data_east
+    real, dimension(MAXLIMAX,thick) ::data_south_snd,data_north_snd
+    real, dimension(MAXLJMAX+2*thick,thick) ::data_west_snd,data_east_snd
 
-    integer :: msgnr,info
+    integer :: msgnr,info,request_s,request_n,request_e,request_w
     integer :: i,j,tj,jj,jt
 
     !check that limax and ljmax are large enough
@@ -1797,16 +1798,19 @@ end if ! NH3_U10
 
     msgnr=1
 
-    data_south(:,:)=data(:,1:thick)
-    data_north(:,:)=data(:,ljmax-thick+1:ljmax)
+    data_south_snd(:,:)=data(:,1:thick)
+    data_north_snd(:,:)=data(:,ljmax-thick+1:ljmax)
     if(neighbor(SOUTH) >= 0 )then
-       CALL MPI_SEND( data_south , 8*MAXLIMAX*thick, MPI_BYTE,&
-            neighbor(SOUTH), msgnr, MPI_COMM_WORLD, INFO)
+       CALL MPI_ISEND( data_south_snd , 8*MAXLIMAX*thick, MPI_BYTE,&
+            neighbor(SOUTH), msgnr, MPI_COMM_WORLD, request_s,INFO)
     endif
     if(neighbor(NORTH) >= 0 )then
-       CALL MPI_SEND( data_north , 8*MAXLIMAX*thick, MPI_BYTE,&
-            neighbor(NORTH), msgnr+9, MPI_COMM_WORLD, INFO)
+       CALL MPI_ISEND( data_north_snd , 8*MAXLIMAX*thick, MPI_BYTE,&
+            neighbor(NORTH), msgnr+9, MPI_COMM_WORLD, request_n,INFO)
     endif
+
+
+
 
     if(neighbor(SOUTH) >= 0 )then
        CALL MPI_RECV( data_south, 8*MAXLIMAX*thick, MPI_BYTE,&
@@ -1826,31 +1830,35 @@ end if ! NH3_U10
        enddo
     endif
 
+
+
     jj=0
     do jt=1,thick
        jj=jj+1
-       data_west(jj,:)=data_south(1:thick,jt)
-       data_east(jj,:)=data_south(limax-thick+1:limax,jt)
+       data_west_snd(jj,:)=data_south(1:thick,jt)
+       data_east_snd(jj,:)=data_south(limax-thick+1:limax,jt)
     enddo
     do j=1,ljmax
        jj=jj+1
-       data_west(jj,:)=data(1:thick,j)
-       data_east(jj,:)=data(limax-thick+1:limax,j)
+       data_west_snd(jj,:)=data(1:thick,j)
+       data_east_snd(jj,:)=data(limax-thick+1:limax,j)
     enddo
     do jt=1,thick
        jj=jj+1
-       data_west(jj,:)=data_north(1:thick,jt)
-       data_east(jj,:)=data_north(limax-thick+1:limax,jt)
+       data_west_snd(jj,:)=data_north(1:thick,jt)
+       data_east_snd(jj,:)=data_north(limax-thick+1:limax,jt)
     enddo
 
     if(neighbor(WEST) >= 0 )then
-       CALL MPI_SEND( data_west , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(WEST), msgnr+3, MPI_COMM_WORLD, INFO)
+       CALL MPI_ISEND( data_west_snd , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
+            neighbor(WEST), msgnr+3, MPI_COMM_WORLD, request_w,INFO)
     endif
     if(neighbor(EAST) >= 0 )then
-       CALL MPI_SEND( data_east , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
-            neighbor(EAST), msgnr+7, MPI_COMM_WORLD, INFO)
+       CALL MPI_ISEND( data_east_snd , 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
+            neighbor(EAST), msgnr+7, MPI_COMM_WORLD, request_e,INFO)
     endif
+
+
 
     if(neighbor(WEST) >= 0 )then
        CALL MPI_RECV( data_west, 8*(MAXLJMAX+2*thick)*thick, MPI_BYTE,&
@@ -1889,10 +1897,20 @@ end if ! NH3_U10
        enddo
     endif
 
-  end subroutine readneighbors
+    if(neighbor(SOUTH) >= 0 )then
+       CALL MPI_WAIT(request_s, MPISTATUS,INFO)
+    endif
+    if(neighbor(NORTH) >= 0 )then
+       CALL MPI_WAIT(request_n, MPISTATUS,INFO)
+    endif
+    if(neighbor(WEST) >= 0 )then
+       CALL MPI_WAIT(request_w, MPISTATUS, INFO)
+    endif
+    if(neighbor(EAST) >= 0 )then
+       CALL MPI_WAIT(request_e, MPISTATUS,INFO)
+    endif
 
-
-
+ end subroutine readneighbors
 
 
 

@@ -155,7 +155,9 @@ program myeul
   call CheckStop( digits(1.0) < 50, &
        "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
 
-  if (me  ==  0) then
+  call parinit(MIN_ADVGRIDS)     !define MasterProc subdomains sizes and position
+
+  if (MasterProc) then
      open(IO_RES,file='eulmod.res')
      open(IO_LOG,file='RunLog.out')
      open(IO_TMP,file='INPUT.PARA')
@@ -209,7 +211,6 @@ program myeul
   call Code_Timer(tim_before0)
   tim_before = tim_before0
 
-  call parinit(MIN_ADVGRIDS)     !define subdomains sizes and position
   call MeteoGridRead(cyclicgrid) !define grid projection and parameters
   call Topology(cyclicgrid,Poles)!def GlobalBoundaries & subdomain neighbors
   call assign_dtadvec(GRIDWIDTH_M)! set dt_advec
