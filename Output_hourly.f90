@@ -575,7 +575,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
   contains
 
-!AMVB 2010-07-??: New hourly output types (group output)
+!AMVB 2010-08-02: New hourly output types (group output)
   subroutine group_setup()
     if(allocated(gspec)) deallocate(gspec)
     select case ( hr_out(ih)%spec )
