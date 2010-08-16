@@ -290,7 +290,7 @@ private
 
        Is3D_local = .false.
        if ( present(Is3D) ) Is3D_local = Is3D
-       
+
        if ( Is3D_local ) then
          Nadded3d = Nadded3d + 1
          N = Nadded3d
@@ -1084,27 +1084,27 @@ end do
 !AMVB 2010-07-21: PM-PPB bug fix uggroup_calc(... IsSurface?)
           case ( "SIAGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
-                               density, .true.)
+                               density, 0)
           case ( "OXNGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, OXN_GROUP, &
-                               density, .true.)
+                               density, 0)
           case ( "NOXGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, NOX_GROUP, &
-                               density, .true.)
+                               density, 0)
           case ( "RDNGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, RDN_GROUP, &
-                               density, .true.)
+                               density, 0)
           case ( "TNO3GROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
-                              density, .true.)
+                               density, 0)
           case ( "PM25GROUP" )
             ipm25 = n
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PM25_GROUP, &
-                               density, .true.)
+                               density, 0)
           case ( "PMcGROUP" )
             ipmc = n
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PMCO_GROUP, &
-                               density, .true.)
+                               density, 0)
 
           case ( "PM10GROUP" ) ! Consider doing as sum later
             if ( ipm25 > 0 .and. ipmc > 0 ) then ! We have these already
@@ -1278,12 +1278,12 @@ end do
         case ( "PM25GROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25_GROUP, &
-                               roa(i,j,k,1), .false.)
+                               roa(i,j,k,1), k)
           enddo
         case ( "PMcGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PMCO_GROUP, &
-                               roa(i,j,k,1), .false.)
+                               roa(i,j,k,1), k)
           enddo
 
 ! hb
@@ -1472,8 +1472,8 @@ end do
 
    end subroutine voc_3dcalc
  !=========================================================================
-!AMVB 2010-07-19: PM-PPB bug fix
- subroutine uggroup_calc( ug_2d, n, class, group, density, IsSurf)
+!AMVB 2010-08-16: PM-PPB bug fix
+ subroutine uggroup_calc( ug_2d, n, class, group, density, ik)
 !subroutine uggroup_calc( ug_2d, n, class, group, density )
 
   !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
@@ -1486,8 +1486,8 @@ end do
   !character(len=*)    :: unit   !
   integer, intent(in), dimension(:)  :: group
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-  logical, intent(in) :: IsSurf   !AMVB 2010-07-19: PM-PPB bug fix
-  integer :: ig, iadv, itot
+  integer, intent(in) :: ik   !AMVB 2010-08-16: PM-PPB bug fix
+  integer :: ig, iadv, itot,k
   real :: scale
   character(len=10) :: unit=""
 
@@ -1495,12 +1495,15 @@ end do
     write(*,"(a,4i4,2es12.3)") "DEBUG GROUP-PM-N", size(group)
   end if
 
-!AMVB 2010-07-21: PM-PPB bug fix
-  if     (     IsSurf .and. n<=num_deriv2d) then
+!AMVB 2010-08-16: PM-PPB bug fix
+  if     (ik==0 .and. n<=num_deriv2d) then
+    k=KMAX_MID
     unit=f_2d(n)%unit
-  elseif (.not.IsSurf .and. n<=num_deriv3d) then
+  elseif (ik/=0 .and. n<=num_deriv3d) then
+    k=ik
     unit=f_3d(n)%unit
   else
+    k=-1
     unit="not_found"
   endif
 
@@ -1511,19 +1514,17 @@ end do
 
     select case (trim(unit))
       case("ug/m3" ); scale = species(itot)%molwt
-      case("ugN/m3"); scale = species(itot)%nitrogens*atwN
+      case("ugN/m3"); scale = species(itot)%nitrogens!*atwN !AMVB 2010-08-16: PM-PPB bug fix
       case default  ; call StopAll("uggroup called with wrong unit='"//unit//"'!")
     end select
 
     if(IsSurf)then
       forall ( i=1:limax, j=1:ljmax )
-        ug_2d( i,j) = ug_2d( i,j) + &
-          xn_adv(iadv,i,j,KMAX_MID) *scale * cfac(iadv,i,j)
+        ug_2d( i,j) = ug_2d( i,j) + xn_adv(iadv,i,j,k) *scale * cfac(iadv,i,j)
       end forall
     else
       forall ( i=1:limax, j=1:ljmax )
-        ug_2d( i,j) = ug_2d( i,j) + &
-          xn_adv(iadv,i,j,KMAX_MID) *scale
+        ug_2d( i,j) = ug_2d( i,j) + xn_adv(iadv,i,j,k) *scale
       end forall
     endif
 
@@ -1531,8 +1532,7 @@ end do
       i=debug_li
       j=debug_lj
       write(*,"(a,4i4,f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
-        itot, iadv, species(itot)%molwt, scale, &
-        xn_adv(iadv,i,j,KMAX_MID), ug_2d(i,j)
+        itot, iadv, species(itot)%molwt, scale, xn_adv(iadv,i,j,k), ug_2d(i,j)
     end if
   end do !n
   forall ( i=1:limax, j=1:ljmax )
