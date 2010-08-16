@@ -219,7 +219,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $Chem, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv    = "rv3_6_14";
+$testv    = "rv3_6_16";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -234,6 +234,7 @@ my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result director
    $WORKDIR     = "$WORKROOT/$USER/Benchmark/$GRID.$year" if (%BENCHMARK);
 my $MyDataDir   = "$HOMEROOT/$DAVE/Unify/MyData";           # for each user's private input
 my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
+my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-files
 
 
 #ds check: and change
@@ -336,8 +337,9 @@ die "Domain mis-match Model: $XDIM Grid $GRID" if (
    ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
 
 if (%BENCHMARK and not $BENCHMARK{'debug'}){
-  die "No debug flags for benchmarks: "
-  if (system ("grep -ie 'logical.*DEBUG.*=\ *.TRUE.' $ProgDir/*.f90") == 0);
+  die "No debug flags for benchmarks!"
+  if (system ("grep -Hnie 'logical.*DEBUG.*=\ *.TRUE.' $ProgDir/*.f90") == 0) or
+     (system ("grep -Hnie 'DEBUG.*=\ *.TRUE.' $ProgDir/ModelConstants_ml.f90") == 0);
 }
 
 if ( $ENV{PBS_NODEFILE} ) {
@@ -525,6 +527,10 @@ foreach my $scenflag ( @runs ) {
                 chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
                 my $new = "meteo${CWFDATE[2]}.nc";
                 mylink( "Linking:", $old,$new ) ;
+           # IFS-MOZART BC file
+                $old = sprintf "$CWFBCDir/%04d/bc${CWFBASE}_fc%02d.nc",substr($CWFBASE,0,4),$n;
+                $new = "EMEP_IN_BC_${CWFDATE[2]}.nc";
+                mylink( "Linking:", $old,$new ) if (-e $old);
             } else {
             # meteo not in place !!!!!
                 print "Meteo file $old for $CWFBASE not available (yet). Try later ...\n";
@@ -535,7 +541,7 @@ foreach my $scenflag ( @runs ) {
         my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";  # yesterday
         if (-e $old) {
         # we manage to link the dumpfile
-            my $new="EMEP_IN.nc";
+            my $new="EMEP_IN_IC.nc";
             mylink( "Linking:", $old, $new);
         } else {
         # if we have yesterday meteo, we can have an extra spin up day!
@@ -545,18 +551,26 @@ foreach my $scenflag ( @runs ) {
                 my $new = "meteo${CWFDATE[0]}.nc";
                 mylink( "Linking:", $old, $new);
                 print "Managed to link meteo for an extra spin-up day!\n";
-           # Update simulation: start-date ($CWFDATE[1]), lenght ($NTERM) and
+           # IFS-MOZART BC file
+                $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr(${CWFDATE[0]},0,4),0;
+                if (-e $old) {
+                # we manage to link the BC file
+                  $new = "EMEP_IN_BC_${CWFDATE[0]}.nc";
+                  mylink( "Linking:", $old,$new );
+                  print "Managed to link BC file for the extra spin-up day!\n";
+                }
+           # Update simulation: lenght ($NTERM), start-date ($CWFDATE[1])
            #                   "yesterday" ($CWFDATE[0])
-                $CWFDATE[1]=$CWFDATE[0];
                 $NTERM+=8;
+                $CWFDATE[1]=$CWFDATE[0];
                 chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
            # see if we can link to a dump file ...
                 my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";
                 if (-e $old) {
                 # we manage to link the dumpfile
-                    my $new="EMEP_IN.nc";
+                    my $new="EMEP_IN_IC.nc";
                     mylink( "Linking:", $old, $new);
-                    print "Managed to link a dump file for the extra spin-up day!\n";
+                    print "Managed to link dump file for the extra spin-up day!\n";
                 }
             }
         }
@@ -647,9 +661,7 @@ my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
     $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
 # hb NH3emis       
 # New ammonia emissions  ---   NB no read permissions yet!!
- if($NH3EMIS_VAR) {
-    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt";
- }
+    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
   # new inputs style (Aug 2007)  with compulsory headers:
     $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";

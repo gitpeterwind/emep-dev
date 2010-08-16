@@ -59,7 +59,9 @@ module Nest_ml
   use GridValues_ml,  only : gl,gb
   use ChemChemicals_ml , only :species
   use ChemSpecs_shl_ml , only :NSPEC_SHL
-  use ChemSpecs_adv_ml , only :NSPEC_ADV
+! AMVB 2010-08-16: IFS-MOZART BC
+  use ChemSpecs_adv_ml
+! use ChemSpecs_adv_ml , only :NSPEC_ADV
   use ChemSpecs_tot_ml , only :NSPEC_TOT
   use netcdf
   use netcdf_ml,      only : GetCDF,Out_netCDF,Init_new_netCDF,&
@@ -67,6 +69,7 @@ module Nest_ml
   use Functions_ml,    only : great_circle_distance
   use ModelConstants_ml,    only : KMAX_MID, NPROC &
           , FORECAST & ! AMVB 2009-11-06: nested input/output on FORECAST mode
+          , DEBUG_ICBC=>DEBUG_NEST_ICBC & ! AMVB 2010-08-16: IFS-MOZART BC
           , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN
   use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
        , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
@@ -88,6 +91,28 @@ module Nest_ml
   ! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
   type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
   ! Nested output dates on FORECAST mode
+! AMVB 2010-08-16: IFS-MOZART BC
+  type, private :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
+    character(len=24) :: varname=""
+    logical           :: wanted=.false.,found=.false.
+  end type icbc
+  type(icbc), dimension(NSPEC_ADV), private :: &
+    adv_ic=icbc('',.false.,.false.), &  ! Initial 3D IC/CB
+    adv_bc=icbc('',.false.,.false.)     ! Time dependent BC
+  type, private :: adv_icbc             ! IC/BC Set, included intended ixadv
+    integer           :: ixadv=-1
+    type(icbc)        :: icbc
+  end type adv_icbc
+  type(adv_icbc), dimension(9), private, parameter :: &  ! BC from IFS-MOZART
+    FORECAST_BC=(/adv_icbc(IXADV_O3    ,icbc('O3_VMR_inst'    ,.true.,.false.)), &
+                  adv_icbc(IXADV_NO    ,icbc('NO_VMR_inst'    ,.true.,.false.)), &
+                  adv_icbc(IXADV_NO2   ,icbc('NO2_VMR_inst'   ,.true.,.false.)), &
+                  adv_icbc(IXADV_PAN   ,icbc('PAN_VMR_inst'   ,.true.,.false.)), &
+                  adv_icbc(IXADV_HNO3  ,icbc('HNO3_VMR_inst'  ,.true.,.false.)), &
+                  adv_icbc(IXADV_CO    ,icbc('CO_VMR_inst'    ,.true.,.false.)), &
+                  adv_icbc(IXADV_C2H6  ,icbc('C2H6_VMR_inst'  ,.true.,.false.)), &
+                  adv_icbc(IXADV_HCHO  ,icbc('CH2O_VMR_inst'  ,.true.,.false.)), &
+                  adv_icbc(IXADV_CH3CHO,icbc('CH3CHO_VMR_inst',.true.,.false.))/)
 
   !coordinates of subdomain to write
   !coordinates relative to LARGE domain (only used in write mode)
@@ -115,11 +140,11 @@ module Nest_ml
   integer,save :: Next_BC,KMAX_ext_BC
 
   integer,save :: itime!itime_saved(2),
-  real*8,save :: rtime_saved(2)
-  character*30,save  :: filename_read_BC='EMEP_IN.nc'
-  character*30,save  :: filename_read_3D='EMEP_IN.nc'
-  character*30,save  :: filename_write='EMEP_OUT.nc'
-  real*8, parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
+  real(kind=8),save :: rtime_saved(2)
+  character(len=30),save  :: filename_read_BC='EMEP_IN.nc'
+  character(len=30),save  :: filename_read_3D='EMEP_IN.nc'
+  character(len=30),save  :: filename_write='EMEP_OUT.nc'
+  real(kind=8), parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
 
 contains
 
@@ -129,9 +154,9 @@ contains
     integer,save  :: first_data=-1
 
 
-    integer :: nseconds(1),n1,n,i,j,k,II,JJ
-    integer :: nstart,nfetch,ndate(4),nseconds_indate
-    real*8:: ndays_indate
+    integer :: n,i,j,k !nseconds(1),n1,II,JJ
+    integer :: ndate(4) !nstart,nfetch,nseconds_indate
+    real(kind=8):: ndays_indate
 
     !    real , dimension(48,48,20) ::data
 
@@ -150,16 +175,37 @@ contains
 
 ! AMVB 2009-11-06: nested input/output on FORECAST mode
     if(FORECAST)then ! FORECAST mode superseeds nest MODE
-      if(.not. first_call)return
-      first_call=.false.
-      inquire(file=filename_read_3D,exist=fexist)
-      if(.not. fexist)then
-        if(me==0) print *,'No nest/dump file found: ',trim(filename_read_3D)
+! AMVB 2010-08-16: IFS-MOZART BC
+      filename_read_3D='EMEP_IN_IC.nc'          !IC file: dump/re-start
+      filename_read_BC='EMEP_IN_BC_YYYYMMDD.nc' !BC file: 01,...,24 UTC rec for 1 day
+      if(first_call)then
+        first_call=.false.
+        inquire(file=filename_read_3D,exist=fexist)
+        if(.not.fexist)then
+           if(me==0) print *,'No nest IC file found: ',trim(filename_read_3D)
+        else
+           if(me==0) print *,'RESET ALL XN 3D'
+           call reset_3D(ndays_indate)
+        endif
+      endif
+      if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0) return
+      n=index(filename_read_BC,'YYYYMMDD')
+      if(n>0) write(filename_read_BC(n:n+7),"(I4.4,2I2.2)")indate%year,indate%month,indate%day
+      inquire(file=filename_read_BC,exist=fexist)
+      if(.not.fexist)then
+        if(me==0) print *,'No nest BC file found: ',trim(filename_read_BC)
         return
-      end if
-      if(me==0)   print *,'RESET ALL XN 3D'
-      call reset_3D(ndays_indate)
-      return
+      endif
+!     if(.not. first_call)return
+!     first_call=.false.
+!     inquire(file=filename_read_3D,exist=fexist)
+!     if(.not. fexist)then
+!       if(me==0) print *,'No nest/dump file found: ',trim(filename_read_3D)
+!       return
+!     end if
+!     if(me==0)   print *,'RESET ALL XN 3D'
+!     call reset_3D(ndays_indate)
+!     return
     elseif(MODE == 11.or.MODE == 12)then
        if(.not. first_call)return
        first_call=.false.
@@ -171,12 +217,12 @@ contains
        if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0)return
     endif
 
-!never comes to this point if MODE=FORECAST, 11 or 12
+!never comes to this point if MODE=11 or 12
 
     if(me==0)   print *,'NESTING'
 
     if(first_data==-1)then
-       call reset_3D(ndays_indate)
+       if(.not.FORECAST) call reset_3D(ndays_indate)
        call read_newdata_LATERAL(ndays_indate,1)
        call read_newdata_LATERAL(ndays_indate,2)
     endif
@@ -206,30 +252,41 @@ contains
     endif
 !    if(me==0)write(*,*)'weights : ',W1,W2,rtime_saved(1),rtime_saved(2)
 
-    do n=1,NSPEC_ADV
-       do k=1,KMAX_ext_BC
-          do i=1,li0-1
-             do j=1,ljmax
-                xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
-             enddo
-          enddo
-          do j=1,lj0-1
-             do i=1,limax
-                xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
-             enddo
-          enddo
-          do i=li1+1,limax
-             do j=1,ljmax
-                xn_adv(n,i,j,k)=W1*xn_adv_bnde(n,j,k,1)+W2*xn_adv_bnde(n,j,k,2)
-             enddo
-          enddo
-          do j=lj1+1,ljmax
-             do i=1,limax
-                xn_adv(n,i,j,k)=W1*xn_adv_bndn(n,i,k,1)+W2*xn_adv_bndn(n,i,k,2)
-             enddo
-          enddo
-       enddo
-    enddo
+ ! AMVB 2010-08-16: IFS-MOZART BC
+  forall (n=1:NSPEC_ADV, adv_bc(n)%wanted.and.adv_bc(n)%found)
+    forall (k=1:KMAX_ext_BC, i=1:li0-1, j=1:ljmax) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
+    forall (k=1:KMAX_ext_BC, j=1:lj0-1, i=1:limax) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
+    forall (k=1:KMAX_ext_BC, i=li1+1:limax, j=1:ljmax) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bnde(n,j,k,1)+W2*xn_adv_bnde(n,j,k,2)
+    forall (k=1:KMAX_ext_BC, j=lj1+1:ljmax, i=1:limax) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bndn(n,i,k,1)+W2*xn_adv_bndn(n,i,k,2)
+  end forall
+!  do n=1,NSPEC_ADV
+!      do k=1,KMAX_ext_BC
+!         do i=1,li0-1
+!            do j=1,ljmax
+!               xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
+!            enddo
+!         enddo
+!         do j=1,lj0-1
+!            do i=1,limax
+!               xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
+!            enddo
+!         enddo
+!         do i=li1+1,limax
+!            do j=1,ljmax
+!               xn_adv(n,i,j,k)=W1*xn_adv_bnde(n,j,k,1)+W2*xn_adv_bnde(n,j,k,2)
+!            enddo
+!         enddo
+!         do j=lj1+1,ljmax
+!            do i=1,limax
+!               xn_adv(n,i,j,k)=W1*xn_adv_bndn(n,i,k,1)+W2*xn_adv_bndn(n,i,k,2)
+!            enddo
+!         enddo
+!      enddo
+!   enddo
 
 
     first_data=0
@@ -252,7 +309,7 @@ contains
     integer :: n,iotyp,ndim,kmax
     real :: scale
     logical, save ::first_call=.true.
-    character *40:: command
+   !character(len=40):: command
 
     if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12.and. .not.FORECAST)return ! AMVB 2009-11-06: nested input/output on FORECAST mode
 
@@ -283,7 +340,7 @@ contains
     endif
 
 
-    222 FORMAT(A,I2.2,I4.4,A)
+!   222 FORMAT(A,I2.2,I4.4,A)
 !    write(fileName_write,222)'EMEP_BC_',indate%month,indate%year,'.nc'!for different names each month
                                                                       !NB: readxn should have same name
     if(me==0)write(*,*)'write Nest data ',trim(fileName_write)
@@ -350,7 +407,7 @@ contains
     integer, intent(in) :: nseconds
     integer,  intent(in) :: printdate
 
-    integer :: n,nday,nmdays(12),nmdays2(13)
+    integer :: n,nmdays(12),nmdays2(13) !,nday
     nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
     nmdays2(1:12)=nmdays
@@ -398,11 +455,11 @@ contains
     implicit none
 
     integer, intent(out) :: ndate(4)
-    real*8, intent(inout) :: ndays
-    integer,  intent(in) :: printdate
-    real*8 :: rn
+    real(kind=8), intent(inout) :: ndays
+    integer, intent(in) :: printdate
+    real(kind=8) :: rn
 
-    integer :: n,nday,nmdays(12),nmdays2(13)
+    integer :: n,nmdays(12),nmdays2(13) !,nday
     nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
 !add 0.5 seconds to avoid numerical errors in (n<=ndays)
@@ -449,22 +506,72 @@ contains
 55  format(A,I5,A,I4,A,I4,A,I4,A,F10.2)
   end subroutine datefromdayssince1900
 
-  subroutine init_nest(ndays_indate,filename_read,IIij,JJij,&
-       Weight1,Weight2,Weight3,Weight4,Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
+! AMVB 2010-08-16: IFS-MOZART BC
+subroutine init_icbc()
+implicit none
+integer :: n
+  if(all(adv_ic%varname==""))then
+    adv_ic(:)%varname=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%name
+    adv_ic(:)%wanted=.true.
+    adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
+  endif
+  if(all(adv_bc%varname==""))then
+    if(FORECAST)then
+      adv_bc(:)%wanted=.false.
+      adv_bc(FORECAST_BC%ixadv)=FORECAST_BC%icbc
+      adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
+    else
+      adv_bc(:)=adv_ic(:)
+    endif
+  endif
+  if(DEBUG_ICBC.and.(me==0)) &
+    print "(/2(X,A,I3,'=',A24,2L2))",&
+      ('ADV_IC',n,adv_ic(n),'ADV_BC',n,adv_bc(n),n=1,NSPEC_ADV)
+contains
+function find_icbc(filename_read,varname) result(found)
+implicit none
+character(len=*), intent(in)               :: filename_read
+character(len=*), dimension(:), intent(in) :: varname
+logical, dimension(size(varname))          :: found
+integer :: status,ncFileID,varID,n
+  found(:)=.false.
+  if(me==0)then
+    status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
+    if(status /= nf90_noerr) then
+      print *,'not found ',trim(filename_read)
+    else
+      print *,'  reading ',trim(filename_read)
+      do n=1,size(varname)
+        if(varname(n)/="") &
+          found(n)=(nf90_inq_varid(ncid=ncFileID,name=trim(varname(n)),varID=varID)==nf90_noerr)
+      enddo
+    endif
+  endif
+  CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+end function find_icbc
+end subroutine init_icbc
+
+! AMVB 2010-08-16: IFS-MOZART BC
+  subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
+                       Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
+! subroutine init_nest(ndays_indate,filename_read,IIij,JJij,&
+!      Weight1,Weight2,Weight3,Weight4,Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
 
     implicit none
     character(len=*),intent(in) :: filename_read
-    real ,intent(out):: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
-    real ,intent(out):: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
+! AMVB 2010-08-16: IFS-MOZART BC
+!   real ,intent(out):: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
+!   real ,intent(out):: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
+    real ,intent(out):: Weight(MAXLIMAX,MAXLJMAX,4)
     integer ,intent(out)::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
     integer ,intent(out)::Next,KMAX_ext,GIMAX_ext,GJMAX_ext
-    real*8 :: ndays_indate,ndays(1)
-    integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
-    integer :: nseconds_indate,ndate(4)
+    real(kind=8) :: ndays_indate,ndays(1)
+    integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,status !,timeVarID
+    integer :: ndate(4) !nseconds_indate,
     real :: dist(0:4)
-    integer :: nseconds(1),n1,n,i,j,k,II,JJ
+    integer :: i,j,II,JJ !nseconds(1),n,n1,k
     real, allocatable, dimension(:,:) ::lon_ext,lat_ext
-    character*80 ::projection
+    character(len=80) ::projection
 
     rtime_saved = -99999.9 !initialization
 
@@ -485,7 +592,11 @@ contains
        if(trim(projection)=='Stereographic') then
           call check(nf90_inq_dimid(ncid = ncFileID, name = "i", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "j", dimID = jdimID))
-       elseif(trim(projection)==trim('lon lat')) then
+! AMVB 2010-08-16: IFS-MOZART BC
+       elseif(trim(projection)==trim('lon lat').or. &
+              trim(projection)==trim('lon_lat')) then
+          projection='lon lat'
+!      elseif(trim(projection)==trim('lon lat')) then
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lon", dimID = idimID))
           call check(nf90_inq_dimid(ncid = ncFileID, name = "lat", dimID = jdimID))
        else
@@ -514,7 +625,7 @@ contains
     allocate(lon_ext(GIMAX_ext,GJMAX_ext))
     allocate(lat_ext(GIMAX_ext,GJMAX_ext))
 
-    if(me==0)then
+   if(me==0)then
        !Read lon lat of the external grid (global)
        if(trim(projection)==trim('lon lat')) then
           call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
@@ -602,13 +713,21 @@ contains
              enddo
           enddo
 
+! AMVB 2010-08-16: IFS-MOZART BC
           dist(0)=(dist(1)+dist(2)+dist(3)+dist(4))
-          Weight1(i,j)=1.0-3.0*dist(1)/dist(0)
+          Weight(i,j,1)=1.0-3.0*dist(1)/dist(0)
           dist(0)=(dist(2)+dist(3)+dist(4))
-          Weight2(i,j)=(1.0-Weight1(i,j))*(1.0-2.0*dist(2)/dist(0))
+          Weight(i,j,2)=(1.0-Weight(i,j,1))*(1.0-2.0*dist(2)/dist(0))
           dist(0)=(dist(3)+dist(4))
-          Weight3(i,j)=(1.0-Weight1(i,j)-Weight2(i,j))*(1.0-dist(3)/dist(0))
-          Weight4(i,j)=1.0-Weight1(i,j)-Weight2(i,j)-Weight3(i,j)
+          Weight(i,j,3)=(1.0-Weight(i,j,1)-Weight(i,j,2))*(1.0-dist(3)/dist(0))
+          Weight(i,j,4)=1.0-Weight(i,j,1)-Weight(i,j,2)-Weight(i,j,3)
+!         dist(0)=(dist(1)+dist(2)+dist(3)+dist(4))
+!         Weight1(i,j)=1.0-3.0*dist(1)/dist(0)
+!         dist(0)=(dist(2)+dist(3)+dist(4))
+!         Weight2(i,j)=(1.0-Weight1(i,j))*(1.0-2.0*dist(2)/dist(0))
+!         dist(0)=(dist(3)+dist(4))
+!         Weight3(i,j)=(1.0-Weight1(i,j)-Weight2(i,j))*(1.0-dist(3)/dist(0))
+!         Weight4(i,j)=1.0-Weight1(i,j)-Weight2(i,j)-Weight3(i,j)
 
        enddo
     enddo
@@ -621,12 +740,12 @@ contains
   subroutine read_newdata_LATERAL(ndays_indate,nr)
 
     implicit none
-    real*8, intent(in)::ndays_indate
+    real(kind=8), intent(in)::ndays_indate
     real, allocatable, dimension(:,:,:) ::data
-    integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID,status
-    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,nseconds_indate,nr
-    integer :: nseconds_old
-    real*8:: ndays(1),ndays_old
+    integer :: ncFileID,varid,status !,idimID,jdimID,kdimID,timeDimID,timeVarID
+    integer :: ndate(4),n,i,j,k,nr !nseconds(1),n1,II,JJ,nseconds_indate
+   !integer :: nseconds_old
+    real(kind=8) :: ndays(1),ndays_old
     logical, save :: first_call=.true.
 
     !BC values at boundaries in present grid
@@ -637,16 +756,22 @@ contains
     integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
 
     !weights of the 4 nearest points
-    real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
-    real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
+! AMVB 2010-08-16: IFS-MOZART BC
+    real, save :: Weight(MAXLIMAX,MAXLJMAX,4)
+!   real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
+!   real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
 
     !dimensions of external grid for BC
     integer, save ::GIMAX_ext,GJMAX_ext
 
     if(first_call)then
        first_call=.false.
-       call init_nest(ndays_indate,filename_read_BC,IIij,JJij,&
-            Weight1,Weight2,Weight3,Weight4,Next_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
+! AMVB 2010-08-16: IFS-MOZART BC
+       call init_icbc()
+       call init_nest(ndays_indate,filename_read_BC,IIij,JJij,Weight,&
+                      Next_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
+!       call init_nest(ndays_indate,filename_read_BC,IIij,JJij,&
+!           Weight1,Weight2,Weight3,Weight4,Next_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
     endif
 
     ndays_old=rtime_saved(2)
@@ -674,82 +799,113 @@ contains
 
       CALL MPI_BCAST(rtime_saved,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
-    do n= 1, NSPEC_ADV
-       if(nr==2)then
-          !store the old values in 1
-          rtime_saved(1)=ndays_old
-          do k=1,KMAX_ext_BC
-             do i=1,li0-1
-                do j=1,ljmax
-                   xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
-                enddo
-             enddo
-             do j=1,lj0-1
-                do i=1,limax
-                   xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
-                enddo
-             enddo
-             do i=li1+1,limax
-                do j=1,ljmax
-                   xn_adv_bnde(n,j,k,1)=xn_adv_bnde(n,j,k,2)
-                enddo
-             enddo
-             do j=lj1+1,ljmax
-                do i=1,limax
-                   xn_adv_bndn(n,i,k,1)=xn_adv_bndn(n,i,k,2)
-                enddo
-             enddo
-          enddo
+! AMVB 2010-08-16: IFS-MOZART BC
+    DO_SPEC: do n= 1, NSPEC_ADV
+      if(.not.(adv_bc(n)%wanted.and.adv_bc(n)%found)) cycle DO_SPEC
+      if(nr==2)then
+        !store the old values in 1
+        rtime_saved(1)=ndays_old
+        i=li0-1; if(i>=1) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+          xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
+        j=lj0-1; if(j>=1) forall (k=1:KMAX_ext_BC, i=1:limax) &
+          xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
+        i=li1+1; if(i<=limax) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+          xn_adv_bnde(n,j,k,1)=xn_adv_bnde(n,j,k,2)
+        j=lj1+1; if(j<=ljmax) forall (k=1:KMAX_ext_BC, i=1:limax) &
+          xn_adv_bndn(n,i,k,1)=xn_adv_bndn(n,i,k,2)
+!         do k=1,KMAX_ext_BC
+!            do i=1,li0-1
+!               do j=1,ljmax
+!                  xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
+!               enddo
+!            enddo
+!            do j=1,lj0-1
+!               do i=1,limax
+!                  xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
+!               enddo
+!            enddo
+!            do i=li1+1,limax
+!               do j=1,ljmax
+!                  xn_adv_bnde(n,j,k,1)=xn_adv_bnde(n,j,k,2)
+!               enddo
+!            enddo
+!            do j=lj1+1,ljmax
+!               do i=1,limax
+!                  xn_adv_bndn(n,i,k,1)=xn_adv_bndn(n,i,k,2)
+!               enddo
+!            enddo
+!         enddo
        endif
        if(me==0)then
           !Could fetch one level at a time if sizes becomes too big
 
-          call check(nf90_inq_varid(ncid=ncFileID, name=trim(species(NSPEC_SHL+n)%name), varID=varID))
+! AMVB 2010-08-16: IFS-MOZART BC
+          call check(nf90_inq_varid(ncid=ncFileID, name=trim(adv_bc(n)%varname), varID=varID))
+!         call check(nf90_inq_varid(ncid=ncFileID, name=trim(species(NSPEC_SHL+n)%name), varID=varID))
 
           call check(nf90_get_var(ncFileID, varID, data &
                ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext_BC,1 /) ))
 
        endif
-         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+       CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
        !overwrite Global Boundaries (lateral faces)
 
-       do k=1,KMAX_ext_BC
-          do i=1,li0-1
-             do j=1,ljmax
-                xn_adv_bndw(n,j,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
-                     Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
-                     Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
-                     Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
-
-             enddo
-          enddo
-          do j=1,lj0-1
-             do i=1,limax
-                xn_adv_bnds(n,i,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
-                     Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
-                     Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
-                     Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
-             enddo
-          enddo
-          do i=li1+1,limax
-             do j=1,ljmax
-                xn_adv_bnde(n,j,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
-                     Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
-                     Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
-                     Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
-             enddo
-          enddo
-          do j=lj1+1,ljmax
-             do i=1,limax
-                xn_adv_bndn(n,i,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
-                     Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
-                     Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
-                     Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
-             enddo
-          enddo
-       enddo
-    enddo
+       i=li0-1; if(i>=1) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+         xn_adv_bndw(n,j,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
+                             +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
+                             +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
+                             +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
+       j=lj0-1; if(j>=1) forall (k=1:KMAX_ext_BC, i=1:limax) &
+         xn_adv_bnds(n,i,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
+                             +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
+                             +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
+                             +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
+       i=li1+1; if(i<=limax) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+         xn_adv_bnde(n,j,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
+                             +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
+                             +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
+                             +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
+       j=lj1+1; if(j<=ljmax) forall (k=1:KMAX_ext_BC, i=1:limax) &
+         xn_adv_bndn(n,i,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
+                             +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
+                             +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
+                             +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
+!      do k=1,KMAX_ext_BC
+!         do i=1,li0-1
+!            do j=1,ljmax
+!               xn_adv_bndw(n,j,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
+!                    Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
+!                    Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
+!                    Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
+!             enddo
+!         enddo
+!         do j=1,lj0-1
+!            do i=1,limax
+!               xn_adv_bnds(n,i,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
+!                    Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
+!                    Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
+!                    Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
+!            enddo
+!         enddo
+!         do i=li1+1,limax
+!            do j=1,ljmax
+!               xn_adv_bnde(n,j,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
+!                    Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
+!                    Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
+!                    Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
+!            enddo
+!         enddo
+!         do j=lj1+1,ljmax
+!            do i=1,limax
+!               xn_adv_bndn(n,i,k,2)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
+!                    Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
+!                    Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
+!                    Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
+!            enddo
+!         enddo
+!      enddo
+    enddo DO_SPEC
 
     deallocate(data)
     if(me==0)then
@@ -760,32 +916,38 @@ contains
 
   subroutine reset_3D(ndays_indate)
     implicit none
-    real*8, intent(in)::ndays_indate
+    real(kind=8), intent(in)::ndays_indate
     real, allocatable, dimension(:,:,:) ::data
-    integer :: nseconds(1),ndate(4),n1,n,i,j,k,II,JJ,itime,status
-    integer :: nseconds_indate
-    integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,timeVarID
-    real*8 :: ndays(1)
+    integer :: ndate(4),n,i,j,k,itime=0,status !,nseconds(1),n1,II,JJ
+   !integer :: nseconds_indate
+    integer :: ncFileID,varid !idimID,jdimID,kdimID,timeDimID,timeVarID
+    real(kind=8) :: ndays(1)
     logical, save :: first_call=.true.
 
     !BC values at boundaries in present grid
-    real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,2) :: xn_adv_bnds,xn_adv_bndn !north and south
-    real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,2) :: xn_adv_bndw,xn_adv_bnde !west and east
+   !real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,2) :: xn_adv_bnds,xn_adv_bndn !north and south
+   !real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,2) :: xn_adv_bndw,xn_adv_bnde !west and east
 
     !4 nearest points from external grid
     integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
 
     !weights of the 4 nearest points
-    real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
-    real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
+! AMVB 2010-08-16: IFS-MOZART BC
+    real, save :: Weight(MAXLIMAX,MAXLJMAX,4)
+!   real, save :: Weight1(MAXLIMAX,MAXLJMAX),Weight2(MAXLIMAX,MAXLJMAX)
+!   real, save :: Weight3(MAXLIMAX,MAXLJMAX),Weight4(MAXLIMAX,MAXLJMAX)
 
     !dimensions of external grid for 3D
     integer, save ::Next,KMAX_ext,GIMAX_ext,GJMAX_ext
 
     if(first_call)then
        first_call=.false.
-       call init_nest(ndays_indate,filename_read_3D,IIij,JJij,&
-            Weight1,Weight2,Weight3,Weight4,Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
+! AMVB 2010-08-16: IFS-MOZART BC
+       call init_icbc()
+       call init_nest(ndays_indate,filename_read_3D,IIij,JJij,Weight,&
+                      Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
+!       call init_nest(ndays_indate,filename_read_3D,IIij,JJij,&
+!           Weight1,Weight2,Weight3,Weight4,Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
     endif
     allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
     if(me==0)then
@@ -806,31 +968,37 @@ contains
        itime=n
     endif
 
-    do n= 1, NSPEC_ADV
-       if(me==0)then
-          !Could fetch one level at a time if sizes becomes too big
+! AMVB 2010-08-16: IFS-MOZART BC
+    DO_SPEC: do n= 1, NSPEC_ADV
+      if(.not.(adv_ic(n)%wanted.and.adv_ic(n)%found)) cycle DO_SPEC
+      if(me==0)then
+        !Could fetch one level at a time if sizes becomes too big
 
-          call check(nf90_inq_varid(ncid=ncFileID, name=trim(species(NSPEC_SHL+n)%name), varID=varID))
+        call check(nf90_inq_varid(ncid=ncFileID, name=trim(species(NSPEC_SHL+n)%name), varID=varID))
 
-          call check(nf90_get_var(ncFileID, varID, data &
-               ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
+        call check(nf90_get_var(ncFileID, varID, data &
+             ,start=(/ 1,1,1,itime /),count=(/ GIMAX_ext,GJMAX_ext,KMAX_ext,1 /) ))
 
-       endif
-         CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+      endif
+      CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
-       ! overwrite everything 3D (init)
-       do k=1,KMAX_ext
-          do j=1,ljmax
-             do i=1,limax
-                xn_adv(n,i,j,k)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
-                     Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
-                     Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
-                     Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
-             enddo
-          enddo
-       enddo
-
-    enddo
+      ! overwrite everything 3D (init)
+      forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax) &
+        xn_adv(n,i,j,k)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
+                       +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
+                       +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
+                       +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
+!       do k=1,KMAX_ext
+!         do j=1,ljmax
+!           do i=1,limax
+!               xn_adv(n,i,j,k)=Weight1(i,j)*data(IIij(i,j,1),JJij(i,j,1),k)+&
+!                    Weight2(i,j)*data(IIij(i,j,2),JJij(i,j,2),k)+&
+!                    Weight3(i,j)*data(IIij(i,j,3),JJij(i,j,3),k)+&
+!                    Weight4(i,j)*data(IIij(i,j,4),JJij(i,j,4),k)
+!            enddo
+!         enddo
+!       enddo
+    enddo DO_SPEC
 
     deallocate(data)
     if(me==0)then

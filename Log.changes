@@ -1,3 +1,17 @@
+xxxxxxxxxxxxxx rv3_6_16      Alvaro  16th Aug 2010
+
+Use MOZART-IFS BC in forecast mode
+
+Nest_ml:
+  * Add 'bc' and 'bc_set' types to expicitelly define which bc's are needed
+  * Additonally, some do-->forall replaces and gfortran-pedantic fixes
+
+ModelConstants_ml:
+  * Add DEBUG_NEST_ICBC parameter
+
+run.pl:
+  * Additional code for handeling forecast BC files from MOZART-IFS
+
 xxxxxxxxxxxxxx rv3_6_15      Peter   11th Aug 2010
 
 Some changes to make the model portable to different machine/compilers
@@ -14,7 +28,7 @@ NetCDF_ml:
 recursive ReadField_CDF (so we don't need to use compiler options)
 
 Derived_ml:
-splitted "if(present(iIs3D).and.Is3D)", as xlf (IBM/njord) seems to 
+splitted "if(present(iIs3D).and.Is3D)", as xlf (IBM/njord) seems to
 test Is3D before looking if it is present
 
 Unimod.f90:
@@ -46,7 +60,7 @@ My_Derived_ml: outputs for POD for ex-post analysis, + EVAP, SoilWater
                outputs anyway, and should treat NOX as just another
                group.
 
-My_Outputs_ml: ITE_XTRA_INDEX, SONDE_XTRA_INDEX commented out 
+My_Outputs_ml: ITE_XTRA_INDEX, SONDE_XTRA_INDEX commented out
 
 ZD_OZONE/NH3variables_ml   removed. Use version in Unimod main directory
 ZD_OZONE/NH3variables_m_variation_ml removed. Use version in Unimod main directory
