@@ -299,6 +299,7 @@ rcemis(C5H8,k)                        = C5H8    ;
 *
 * Add ammonia
 rcemis(NH3,k)                          = NH3 ;
+rcnh3(k)                               = NH3 ;  # hbNH3
 *
 * Depositions. Give first the "master" compounds whose values are to be
 * applied to the gas/particle of interest. For example, we can use the

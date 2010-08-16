@@ -1081,7 +1081,6 @@ end do
             !if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
             !       n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
-!AMVB 2010-07-21: PM-PPB bug fix uggroup_calc(... IsSurface?)
           case ( "SIAGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
                                density, 0)
@@ -1518,7 +1517,7 @@ end do
       case default  ; call StopAll("uggroup called with wrong unit='"//unit//"'!")
     end select
 
-    if(IsSurf)then
+    if(ik==0)then
       forall ( i=1:limax, j=1:ljmax )
         ug_2d( i,j) = ug_2d( i,j) + xn_adv(iadv,i,j,k) *scale * cfac(iadv,i,j)
       end forall

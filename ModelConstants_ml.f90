@@ -66,7 +66,7 @@ module ModelConstants_ml
   integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
    integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-   RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   !RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
   !RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
@@ -76,13 +76,13 @@ module ModelConstants_ml
   !RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
   !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
   !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
-  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
+  RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
-  , NPROC       = NPROCX * NPROCY
+    NPROCX      =   3        & ! Actual number of processors in longitude
+  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  , NPROC       = NPROCX * NPROCY ! and NPROCY=1 for Forecast.
 
 !=============================================================================
 !+ 2) Define  debug flags.
@@ -109,7 +109,7 @@ module ModelConstants_ml
  !QUERY? integer, public, parameter :: DEBUG_i= 87, DEBUG_j= 20 ! Aveiro
  !QUERY? integer, public, parameter :: DEBUG_i= 86, DEBUG_j= 21 ! Aveiro
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
- !integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
+  integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
  !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
  !integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
@@ -117,8 +117,8 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
  !integer, public, parameter :: DEBUG_i=76, DEBUG_j= 35 !  Sea,  North sea
- ! integer, public, parameter :: DEBUG_i=91, DEBUG_j=67 ! hb NH3emis Tange
-  integer, public, parameter :: DEBUG_i=103, DEBUG_j=32 ! Prades, SMDge
+ !integer, public, parameter :: DEBUG_i=91, DEBUG_j=67 ! hb NH3emis Tange 
+ !integer, public, parameter :: DEBUG_i=103, DEBUG_j=32 ! Prades, SMDge 
  !integer, public, parameter :: DEBUG_i= 9, DEBUG_j= 201 ! MACC02
 
 !=============================================================================
@@ -154,6 +154,8 @@ module ModelConstants_ml
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
     ,DEBUG_RUNCHEM        = .false. &
+      ,DEBUG_WETDEP         = .false. & !
+      ,DEBUG_MY_WETDEP      = .false. & !
     ,DEBUG_SEASALT        = .false. & !
     ,DEBUG_SOA            = .false. & !
     ,DEBUG_SUBMET         = .false. &

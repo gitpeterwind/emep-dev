@@ -33,7 +33,7 @@ module My_WetDep_ml
  use Derived_ml,  only : f_2d, d_2d
  use Io_ml,             only : IO_DEBUG
  use MassBudget_ml,     only : totwdep, wdeploss
- use ModelConstants_ml, only : atwS, atwN, atwPM, IOU_INST, MasterProc
+ use ModelConstants_ml, only : atwS, atwN, atwPM, IOU_INST, MasterProc, DEBUG_MY_WETDEP
  use OwnDataTypes_ml,   only : depmap
  use SmallUtils_ml,  only : find_index
 
@@ -173,12 +173,15 @@ contains
 
   end subroutine Init_WetDep
 
-  subroutine WetDep_Budget(i,j,invgridarea)
+  subroutine WetDep_Budget(i,j,invgridarea, debug_flag)
      integer,            intent(in) ::  i,j
      real, intent(in)  :: invgridarea
+     logical, intent(in)  :: debug_flag
+
      real :: wdeps, wdepox, wdepred, wdeppm25, wdeppmco
      real :: fS, fN
      integer :: itot, ispec
+
      fS = atwS * invgridarea
      fN = atwN * invgridarea
 
@@ -227,6 +230,17 @@ contains
        d_2d(WDEP_HNO3,i,j,IOU_INST) = wdeploss(HNO3) * fN 
        d_2d(WDEP_pNO3_f,i,j,IOU_INST) = wdeploss(pNO3_f) * fN 
        d_2d(WDEP_pNO3_c,i,j,IOU_INST) = wdeploss(pNO3_c) * fN 
+
+     if ( DEBUG_MY_WETDEP .and. debug_flag ) then
+       write(*,"(a,i4,2es12.4)" )   "DEBUG_WET NH3", WDEP_NH3, wdeploss(NH3), wdeploss(NH3) * fN
+       write(*,"(a,i4,2es12.4)" )   "DEBUG_WET ANH4", WDEP_aNH4, wdeploss(aNH4), wdeploss(aNH4) * fN
+       write(*,"(a,i4,2es12.4)" )   "DEBUG_WET RDN", WDEP_RDN, wdepred, wdepred* fN
+     do ispec = 1, size(WDEP_RDNGROUP)
+        itot = WDEP_RDNGROUP(ispec)
+        wdepred = wdepred + wdeploss(itot)
+         write(*,"(a,2i4,2es12.4)" )   "DEBUG_RDN", ispec, itot, wdeploss(itot)
+     end do
+     end if
 
 !write(IO_DEBUG,"(a,2i4,10es12.3)") "wdeps     ",i,j,wdeps,wdepred,wdepox!EX,wdeppm25,wdeppmco
 !write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_nh3  ",i,j,d_2d(WDEP_NH3,i,j,IOU_INST), wdeploss(NH3)

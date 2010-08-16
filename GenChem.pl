@@ -745,7 +745,7 @@ print "ZEROCOUNT_TRACER S$test_spec\n";
 }
         my @known =  @{ $species[$tot] }[ 0 .. $n ];
         foreach my $t ( @known ) {  #  @species[$tot] ) {
-print "COUNT_TRACER T$t N$n S$test_spec\n";
+   	print "COUNT_TRACER T$t N$n S$test_spec\n";
    	   return ("already known") if $test_spec eq $t;
         }
 print " NEWTRACER$test_spec\n";
@@ -1277,16 +1277,20 @@ sub print_rates {
      # 2010 use group hashes
 
         foreach my $n ( @{ $grp{"OXN"} } ) {
-	   push(@ddep_oxngroup,$adv) if  $adv eq $n;
-	   push(@wdep_oxngroup,$adv) if ( $adv eq $n && $wdep ne "-" ) ;
+           my $same_spec =  specs_equal($adv, $n ); # Ignores case
+	   push(@ddep_oxngroup,$adv) if  $same_spec; 
+	   push(@wdep_oxngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
 	}
         foreach my $s ( @{ $grp{"SOX"} } ) {
-	   push(@ddep_soxgroup,$adv) if $adv eq $s ;
-	   push(@wdep_soxgroup,$adv) if ( $adv eq $s && $wdep ne "-" ) ;
+           my $same_spec =  specs_equal($adv, $s ); # Ignores case
+	   push(@ddep_soxgroup,$adv) if $same_spec ;
+	   push(@wdep_soxgroup,$adv) if ($same_spec && $wdep ne "-" ) ;
 	}
         foreach my $r ( @{ $grp{"RDN"} } ) {
-	   push(@ddep_rdngroup,$adv) if $adv eq $r ;
-	   push(@wdep_rdngroup,$adv) if ( $adv eq $r && $wdep ne "-" ) ;
+           my $same_spec =  specs_equal($adv, $r ); # Ignores case
+	   push(@ddep_rdngroup,$adv) if $same_spec;
+	   push(@wdep_rdngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
+	   printall( "WETDRY FOUND RDN WET ADV$adv R$r WDEP$wdep\n") if $adv eq $r; 
 	}
 
 	$nddep += 1;
@@ -1303,6 +1307,7 @@ sub print_rates {
 	  $wdep_txt .= "      $comma depmap( $adv, CWDEP_$wdep, -1) & \n";
 	}
 }
+
 ###############################################################################
  sub printmap_dep {
 	printall( "ENTERING CDEP print $nddep NWDEP $nwdep \n");
@@ -1509,4 +1514,9 @@ sub find_rec {
 		last if $a[$n] eq $txt;
 	}
 	return $n;
+}
+#########################################################################
+sub specs_equal {   # See if names match, ignoring case
+    my ( $n1, $n2 ) = @_ ;
+    return ( uc($n1) eq uc($n2) );
 }

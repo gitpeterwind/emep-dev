@@ -611,7 +611,7 @@ subroutine WetDeposition(i,j,debug_flag)
                                               ! Same for all models
 
 ! add other losses into twetdep and wdep arrays:
-  call WetDep_Budget(i,j,invgridarea)
+  call WetDep_Budget(i,j,invgridarea, debug_flag)
 
 end subroutine WetDeposition
 

@@ -417,25 +417,25 @@
              TNO3_GROUP     = (/ PNO3_C,PNO3_F /)
 
 ! ------- Dry dep      species ------------------
-  integer, public, parameter, dimension(5) :: &
-               DDEP_OXNGROUP = (/ NO2,PAN,MPAN,HNO3,HONO /)
+  integer, public, parameter, dimension(7) :: &
+               DDEP_OXNGROUP = (/ NO2,PAN,MPAN,HNO3,HONO,pNO3_c,pNO3_f /)
   integer, public, parameter, dimension(2) :: &
                DDEP_SOXGROUP = (/ SO2,SO4 /)
-  integer, public, parameter, dimension(1) :: &
-               DDEP_RDNGROUP = (/ NH3 /)
+  integer, public, parameter, dimension(2) :: &
+               DDEP_RDNGROUP = (/ NH3,aNH4 /)
 
-  integer, public, parameter :: NMAX_DDEP = 5
+  integer, public, parameter :: NMAX_DDEP = 7
 
 
 ! ------- Wet dep      species ------------------
-  integer, public, parameter, dimension(2) :: &
-               WDEP_OXNGROUP = (/ HNO3,HONO /)
+  integer, public, parameter, dimension(4) :: &
+               WDEP_OXNGROUP = (/ HNO3,HONO,pNO3_c,pNO3_f /)
   integer, public, parameter, dimension(2) :: &
                WDEP_SOXGROUP = (/ SO2,SO4 /)
-  integer, public, parameter, dimension(1) :: &
-               WDEP_RDNGROUP = (/ NH3 /)
+  integer, public, parameter, dimension(2) :: &
+               WDEP_RDNGROUP = (/ NH3,aNH4 /)
 
-  integer, public, parameter :: NMAX_WDEP = 2
+  integer, public, parameter :: NMAX_WDEP = 4
 
 
 ! ------- RO2 Pool     species ------------------
