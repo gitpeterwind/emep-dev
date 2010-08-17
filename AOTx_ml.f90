@@ -114,7 +114,7 @@ contains
 
     if ( o3>X ) then  ! Add AOT, scaling for time-fraction
 
-        aot = (o3-X) * dt_advec/3600.0
+        aot = (o3-X)  ! BUG-fix. dt_advec takes care of:* dt_advec/3600.0
 
     end if
 
