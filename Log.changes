@@ -1,3 +1,17 @@
+xxxxxxxxxxxxxx rv3_6_19   Dave  17th Aug 2010
+
+
+Bug-fixes again .... old ones (rv3_5_15!) which somehow got lost
+
+Derived_ml:
+
+   BUG fix: somo_calc. SOMO35 was calculated incorrectly (somo_calc used index, wereas
+   XYCL should be used, to get the 35.). Added debug_flag to somo_calc also.
+   debug flags added to somo_calc
+
+AOTx_ml: BUG_fix: scaling with dt_advec/3600 removed. dt-scale does this.
+
+
 xxxxxxxxxxxxxx rv3_6_18   Dave  16th Aug 2010
 
 Bug-fixes! WDEP and DDEP of groups didn't include all species.
