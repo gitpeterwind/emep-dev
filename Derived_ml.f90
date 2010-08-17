@@ -988,7 +988,7 @@ end do
               if(dayfrac<0)then !only at midnight: write on d_2d
 
 
-                 call somo_calc( n ) !  accumulate
+                 call somo_calc( n, DEBUG .and. debug_proc ) !  accumulate
                  d_2d(n,:,:,IOU_MON )  = d_2d(n,:,:,IOU_MON )  + d_2d(n,:,:,IOU_DAY)
 
                 ! if(current_date%month>=4.and.current_date%month<=9)then
@@ -1541,13 +1541,14 @@ end do
  end subroutine uggroup_calc
  !=========================================================================
 
-  subroutine somo_calc( n )
+  subroutine somo_calc( n , debug_flag )
 
 
     !/-- Calculates SOMO (8hours) values for input threshold.
 
     implicit none
     integer, intent(in) :: n           ! index in Derived_ml::d_2d arrays
+    logical, intent(in) :: debug_flag
 
     real    :: threshold               ! Threshold, e.g. 35 (ppb)
     real :: o3                         ! Ozone (ppb) - needed if SOMOs
@@ -1557,7 +1558,8 @@ end do
     integer :: nh
 
 
-    threshold = f_2d(n)%index
+    !BUG threshold = f_2d(n)%index
+    threshold = f_2d(n)%Threshold
 
       do i=1,limax
         do j=1,ljmax
@@ -1576,6 +1578,11 @@ end do
 
            !divide by N8h to find 8h mean
            o3=o3*N8h_inv
+
+           if ( debug_flag .and. i==debug_li .and. j==debug_lj ) then
+             write(*,"(a,i4,f7.1,f12.3)") "SOMO DEBUG ", n, threshold, o3
+           end if
+   
 
            o3 = max( o3 - threshold , 0.0 )   ! Definition of SOMOs
 
