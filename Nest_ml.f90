@@ -83,10 +83,12 @@ module Nest_ml
   !10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
 
 
+! Nested input/output on FORECAST mode
   integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
   ! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
   type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
   ! Nested output dates on FORECAST mode
+! IFS-MOZART BC
   type, private :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
     character(len=24) :: varname=""
     logical           :: wanted=.false.,found=.false.
@@ -127,9 +129,14 @@ module Nest_ml
 
   private
 
+  !Use TOP BC on forecast mode
+  integer, parameter :: TOP_BC=.false..or.FORECAST
+  integer,save :: iw, ie, js, jn, kt ! i West/East bnd; j North/South bnd; k Top
   !BC values at boundaries in present grid
-  real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,2) :: xn_adv_bnds,xn_adv_bndn !north and south
-  real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,2) :: xn_adv_bndw,xn_adv_bnde !west and east
+  real, save, allocatable, dimension(:,:,:,:) :: &
+    xn_adv_bndw, xn_adv_bnde, & ! west and east
+    xn_adv_bnds, xn_adv_bndn, & ! north and south
+    xn_adv_bndt                 ! top
 
   !dimension of external grid for BC
   integer,save :: Next_BC,KMAX_ext_BC
@@ -200,7 +207,7 @@ subroutine readxn(indate)
 
 !never comes to this point if MODE=11 or 12
 
-  if(me==0)   print *,'NESTING'
+  if(me==0) print *,'NESTING'
 
   if(first_data==-1)then
     if(.not.FORECAST) call reset_3D(ndays_indate)
@@ -232,14 +239,16 @@ subroutine readxn(indate)
 ! if(me==0)write(*,*)'weights : ',W1,W2,rtime_saved(1),rtime_saved(2)
 
   forall (n=1:NSPEC_ADV, adv_bc(n)%wanted.and.adv_bc(n)%found)
-    forall (k=1:KMAX_ext_BC, i=1:li0-1, j=1:ljmax) &
+    forall (i=iw:iw, k=1:KMAX_ext_BC, j=1:ljmax, i>=1) &
       xn_adv(n,i,j,k)=W1*xn_adv_bndw(n,j,k,1)+W2*xn_adv_bndw(n,j,k,2)
-    forall (k=1:KMAX_ext_BC, j=1:lj0-1, i=1:limax) &
-      xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
-    forall (k=1:KMAX_ext_BC, i=li1+1:limax, j=1:ljmax) &
+    forall (i=ie:ie, k=1:KMAX_ext_BC, j=1:ljmax, i<=limax) &
       xn_adv(n,i,j,k)=W1*xn_adv_bnde(n,j,k,1)+W2*xn_adv_bnde(n,j,k,2)
-    forall (k=1:KMAX_ext_BC, j=lj1+1:ljmax, i=1:limax) &
+    forall (j=js:js, k=1:KMAX_ext_BC, i=1:limax, j>=1) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bnds(n,i,k,1)+W2*xn_adv_bnds(n,i,k,2)
+    forall (j=jn:jn, k=1:KMAX_ext_BC, i=1:limax, j<=ljmax) &
       xn_adv(n,i,j,k)=W1*xn_adv_bndn(n,i,k,1)+W2*xn_adv_bndn(n,i,k,2)
+    forall (k=kt:kt, i=1:limax, j=1:ljmax, k>=1) &
+      xn_adv(n,i,j,k)=W1*xn_adv_bndt(n,i,j,1)+W2*xn_adv_bndt(n,i,j,2)
   end forall
 
   first_data=0
@@ -256,7 +265,6 @@ subroutine wrtxn(indate,WriteNow)
   integer :: n,iotyp,ndim,kmax
   real :: scale
   logical, save ::first_call=.true.
- !character(len=40):: command
 
   if(MODE /= 1.and.MODE /= 3.and.MODE /= 10.and.MODE /= 12.and. .not.FORECAST)return
 
@@ -340,118 +348,116 @@ end subroutine wrtxn
     end if
   end subroutine check
 
-  subroutine datefromsecondssince1970(ndate,nseconds,printdate)
-    !calculate date from seconds that have passed since the start of the year 1970
+subroutine datefromsecondssince1970(ndate,nseconds,printdate)
+!calculate date from seconds that have passed since the start of the year 1970
 
-    !  use Dates_ml, only : nmdays
-    implicit none
+  !use Dates_ml, only : nmdays
+  implicit none
+  integer, intent(out) :: ndate(4)
+  integer, intent(in) :: nseconds
+  integer,  intent(in) :: printdate
 
-    integer, intent(out) :: ndate(4)
-    integer, intent(in) :: nseconds
-    integer,  intent(in) :: printdate
+  integer :: n,nmdays(12),nmdays2(13) !,nday
+  nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
-    integer :: n,nmdays(12),nmdays2(13) !,nday
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+  nmdays2(1:12)=nmdays
+  nmdays2(13)=0
+  ndate(1)=1969
+  n=0
+  do while(n<=nseconds)
+    n=n+24*3600*365
+    ndate(1)=ndate(1)+1
+    if(mod(ndate(1),4)==0)n=n+24*3600
+  enddo
+  n=n-24*3600*365
+  if(mod(ndate(1),4)==0)n=n-24*3600
+  if(mod(ndate(1),4)==0)nmdays2(2)=29
+  ndate(2)=0
+  do while(n<=nseconds)
+    ndate(2)=ndate(2)+1
+    n=n+24*3600*nmdays2(ndate(2))
+  enddo
+  n=n-24*3600*nmdays2(ndate(2))
+  ndate(3)=0
+  do while(n<=nseconds)
+    ndate(3)=ndate(3)+1
+    n=n+24*3600
+  enddo
+  n=n-24*3600
+  ndate(4)=-1
+  do while(n<=nseconds)
+    ndate(4)=ndate(4)+1
+    n=n+3600
+  enddo
+  n=n-3600
+ !ndate(5)=nseconds-n
+  if(printdate>0) write(*,"(A,I5,3(A,I4),A,I10)")&
+    'year: ',ndate(1),', month: ',ndate(2),', day: ',ndate(3),&
+    ', hour: ',ndate(4),', seconds: ',nseconds-n
+end subroutine datefromsecondssince1970
 
-    nmdays2(1:12)=nmdays
-    nmdays2(13)=0
-    ndate(1)=1969
-    n=0
-    do while(n<=nseconds)
-       n=n+24*3600*365
-       ndate(1)=ndate(1)+1
-       if(mod(ndate(1),4)==0)n=n+24*3600
-    enddo
-    n=n-24*3600*365
-    if(mod(ndate(1),4)==0)n=n-24*3600
-    if(mod(ndate(1),4)==0)nmdays2(2)=29
-    ndate(2)=0
-    do while(n<=nseconds)
-       ndate(2)=ndate(2)+1
-       n=n+24*3600*nmdays2(ndate(2))
-    enddo
-    n=n-24*3600*nmdays2(ndate(2))
-    ndate(3)=0
-    do while(n<=nseconds)
-       ndate(3)=ndate(3)+1
-       n=n+24*3600
-    enddo
-    n=n-24*3600
-    ndate(4)=-1
-    do while(n<=nseconds)
-       ndate(4)=ndate(4)+1
-       n=n+3600
-    enddo
-    n=n-3600
-    !    ndate(5)=nseconds-n
-    if(printdate>0)then
-       write(*,55)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
-            ndate(3),', hour: ',ndate(4),', seconds: ',nseconds-n
-    endif
-55  format(A,I5,A,I4,A,I4,A,I4,A,I10)
-  end subroutine datefromsecondssince1970
+subroutine datefromdayssince1900(ndate,ndays,printdate)
+!calculate date from seconds that have passed since the start of the year 1900
 
-  subroutine datefromdayssince1900(ndate,ndays,printdate)
-    !calculate date from seconds that have passed since the start of the year 1900
+ !use Dates_ml, only : nmdays
+  implicit none
+  integer, intent(out) :: ndate(4)
+  real(kind=8), intent(inout) :: ndays
+  integer, intent(in) :: printdate
+  real(kind=8) :: rn
 
-    !  use Dates_ml, only : nmdays
-    implicit none
-
-    integer, intent(out) :: ndate(4)
-    real(kind=8), intent(inout) :: ndays
-    integer, intent(in) :: printdate
-    real(kind=8) :: rn
-
-    integer :: n,nmdays(12),nmdays2(13) !,nday
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
+  integer :: n,nmdays(12),nmdays2(13) !,nday
+  nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
 
 !add 0.5 seconds to avoid numerical errors in (n<=ndays)
-    ndays=ndays+halfsecond
+  ndays=ndays+halfsecond
 
-    nmdays2(1:12)=nmdays
-    nmdays2(13)=0
-    ndate(1)=1899
-    n=0
-    do while(n<=ndays)
-       n=n+365
-       ndate(1)=ndate(1)+1
-       if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n+1
-    enddo
-    n=n-365
-    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n-1
-    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)nmdays2(2)=29
-    ndate(2)=0
-    do while(n<=ndays)
-       ndate(2)=ndate(2)+1
-       n=n+nmdays2(ndate(2))
-    enddo
-    n=n-nmdays2(ndate(2))
-    ndate(3)=0
-    do while(n<=ndays)
-       ndate(3)=ndate(3)+1
-       n=n+1
-    enddo
-    rn=n-1
-    ndate(4)=-1
-    do while(rn<=ndays)
-       ndate(4)=ndate(4)+1
-       rn=rn+1/24.0
-    enddo
-    rn=rn-1/24.0
+  nmdays2(1:12)=nmdays
+  nmdays2(13)=0
+  ndate(1)=1899
+  n=0
+  do while(n<=ndays)
+    n=n+365
+    ndate(1)=ndate(1)+1
+    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n+1
+  enddo
+  n=n-365
+  if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n-1
+  if(mod(ndate(1),4)==0.and.ndate(1)/=1900)nmdays2(2)=29
+  ndate(2)=0
+  do while(n<=ndays)
+    ndate(2)=ndate(2)+1
+    n=n+nmdays2(ndate(2))
+  enddo
+  n=n-nmdays2(ndate(2))
+  ndate(3)=0
+  do while(n<=ndays)
+    ndate(3)=ndate(3)+1
+    n=n+1
+  enddo
+  rn=n-1
+  ndate(4)=-1
+  do while(rn<=ndays)
+    ndate(4)=ndate(4)+1
+    rn=rn+1/24.0
+  enddo
+  rn=rn-1/24.0
 
 !correct for modification
-    ndays=ndays-halfsecond
-    !    ndate(5)=(ndays-rn)*24*3600.0
-    if(printdate>0)then
-       write(*,55)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
-            ndate(3),', hour: ',ndate(4),', seconds: ',(ndays-rn)*24*3600.0
-    endif
-55  format(A,I5,A,I4,A,I4,A,I4,A,F10.2)
-  end subroutine datefromdayssince1900
+  ndays=ndays-halfsecond
+ !ndate(5)=(ndays-rn)*24*3600.0
+  if(printdate>0) write(*,"(A,I5,3(A,I4),A,F10.2)")&
+    'year: ',ndate(1),', month: ',ndate(2),', day: ',ndate(3),&
+    ', hour: ',ndate(4),', seconds: ',(ndays-rn)*24*3600.0
+end subroutine datefromdayssince1900
 
 subroutine init_icbc()
   implicit none
+  logical, save :: first_call=.true.
   integer :: n
+
+  if(.not.first_call)return
+  first_call=.false.
 
   if(all(adv_ic%varname==""))then
     adv_ic(:)%varname=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%name
@@ -459,7 +465,7 @@ subroutine init_icbc()
     adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
   endif
   if(all(adv_bc%varname==""))then
-    if(FORECAST)then
+    if(FORECAST)then	! IFS-MOZART BC
       adv_bc(:)%wanted=.false.
       adv_bc(FORECAST_BC%ixadv)=FORECAST_BC%icbc
       adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
@@ -467,9 +473,12 @@ subroutine init_icbc()
       adv_bc(:)=adv_ic(:)
     endif
   endif
-  if(DEBUG_ICBC.and.(me==0)) &
-    print "(/2(X,A,I3,'=',A24,2L2))",&
+
+  if(DEBUG_ICBC.and.me==0)then
+    print "(A)","DEBUG_ICBC Variebles:"
+    print "(2(X,A,I3,'=',A24,2L2))",&
       ('ADV_IC',n,adv_ic(n),'ADV_BC',n,adv_bc(n),n=1,NSPEC_ADV)
+  endif
 contains
 function find_icbc(filename_read,varname) result(found)
   implicit none
@@ -658,9 +667,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
     enddo
   enddo
 
-  deallocate(lon_ext)
-  deallocate(lat_ext)
-
+  deallocate(lon_ext,lat_ext)
 end subroutine init_nest
 
 subroutine read_newdata_LATERAL(ndays_indate,nr)
@@ -671,10 +678,6 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
   integer :: ndate(4),n,i,j,k,nr
   real(kind=8) :: ndays(1),ndays_old
   logical, save :: first_call=.true.
-
-  !BC values at boundaries in present grid
-  real,save, dimension(NSPEC_ADV,MAXLIMAX,KMAX_MID,2) :: xn_adv_bnds,xn_adv_bndn !north and south
-  real,save, dimension(NSPEC_ADV,MAXLJMAX,KMAX_MID,2) :: xn_adv_bndw,xn_adv_bnde !west and east
 
   !4 nearest points from external grid
   integer, save ::IIij(MAXLIMAX,MAXLJMAX,4),JJij(MAXLIMAX,MAXLJMAX,4)
@@ -690,6 +693,31 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
     call init_icbc()
     call init_nest(ndays_indate,filename_read_BC,IIij,JJij,Weight,&
                   Next_BC,KMAX_ext_BC,GIMAX_ext,GJMAX_ext)
+
+    !Define & allocate West/East/South/Nort Boundaries
+    iw=li0-1;ie=li1+1   ! i West/East   boundaries
+    js=lj0-1;jn=lj1+1   ! j South/North boundaries
+    kt=0;if(TOP_BC)kt=1 ! k Top         boundary
+    if(iw>=1    .and..not.allocated(xn_adv_bndw)) &
+      allocate(xn_adv_bndw(NSPEC_ADV,MAXLJMAX,KMAX_MID,2)) ! West
+    if(ie<=limax.and..not.allocated(xn_adv_bnde)) &
+      allocate(xn_adv_bnde(NSPEC_ADV,MAXLJMAX,KMAX_MID,2)) ! East
+    if(js>=1    .and..not.allocated(xn_adv_bnds)) &
+      allocate(xn_adv_bnds(NSPEC_ADV,MAXLIMAX,KMAX_MID,2)) ! South
+    if(jn<=ljmax.and..not.allocated(xn_adv_bndn)) &
+      allocate(xn_adv_bndn(NSPEC_ADV,MAXLIMAX,KMAX_MID,2)) ! North
+    if(kt>=1    .and..not.allocated(xn_adv_bndt)) &
+      allocate(xn_adv_bndt(NSPEC_ADV,MAXLIMAX,MAXLJMAX,2)) ! Top
+    if(DEBUG_ICBC)then
+      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+      if(me==0) print "(A)","DEBUG_ICBC Boundaries:"
+      print "(X,'me=',i3,5(X,A,I0,'=',L1))",&
+        me,'W:i',iw,allocated(xn_adv_bndw),'E:i',ie,allocated(xn_adv_bnde),&
+           'S:j',js,allocated(xn_adv_bnds),'N:j',jn,allocated(xn_adv_bndn),&
+           'T:k',kt,allocated(xn_adv_bndt)
+      call flush(6)
+      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+    endif
   endif
 
   ndays_old=rtime_saved(2)
@@ -722,14 +750,16 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
     if(nr==2)then
       !store the old values in 1
       rtime_saved(1)=ndays_old
-      i=li0-1; if(i>=1) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+      if(iw>=1)     forall (k=1:KMAX_ext_BC, j=1:ljmax) &
         xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
-      j=lj0-1; if(j>=1) forall (k=1:KMAX_ext_BC, i=1:limax) &
-        xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
-      i=li1+1; if(i<=limax) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+      if(ie<=limax) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
         xn_adv_bnde(n,j,k,1)=xn_adv_bnde(n,j,k,2)
-      j=lj1+1; if(j<=ljmax) forall (k=1:KMAX_ext_BC, i=1:limax) &
+      if(js>=1)     forall (k=1:KMAX_ext_BC, i=1:limax) &
+        xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
+      if(jn<=ljmax) forall (k=1:KMAX_ext_BC, i=1:limax) &
         xn_adv_bndn(n,i,k,1)=xn_adv_bndn(n,i,k,2)
+      if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
+        xn_adv_bndt(n,i,j,1)=xn_adv_bndt(n,i,j,2)
     endif
     if(me==0)then
     !Could fetch one level at a time if sizes becomes too big
@@ -741,26 +771,31 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
     CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext_BC,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
    !overwrite Global Boundaries (lateral faces)
-    i=li0-1; if(i>=1) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
-      xn_adv_bndw(n,j,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
-                            +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
-                            +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
-                            +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
-    j=lj0-1; if(j>=1) forall (k=1:KMAX_ext_BC, i=1:limax) &
-      xn_adv_bnds(n,i,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
-                          +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
-                          +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
-                          +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
-    i=li1+1; if(i<=limax) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
-      xn_adv_bnde(n,j,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
-                          +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
-                          +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
-                          +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
-    j=lj1+1; if(j<=ljmax) forall (k=1:KMAX_ext_BC, i=1:limax) &
-      xn_adv_bndn(n,i,k,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
-                          +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
-                          +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
-                          +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
+    if(iw>=1)     forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+      xn_adv_bndw(n,j,k,2)=Weight(iw,j,1)*data(IIij(iw,j,1),JJij(iw,j,1),k) &
+                          +Weight(iw,j,2)*data(IIij(iw,j,2),JJij(iw,j,2),k) &
+                          +Weight(iw,j,3)*data(IIij(iw,j,3),JJij(iw,j,3),k) &
+                          +Weight(iw,j,4)*data(IIij(iw,j,4),JJij(iw,j,4),k)
+    if(ie<=limax) forall (k=1:KMAX_ext_BC, j=1:ljmax) &
+      xn_adv_bnde(n,j,k,2)=Weight(ie,j,1)*data(IIij(ie,j,1),JJij(ie,j,1),k) &
+                          +Weight(ie,j,2)*data(IIij(ie,j,2),JJij(ie,j,2),k) &
+                          +Weight(ie,j,3)*data(IIij(ie,j,3),JJij(ie,j,3),k) &
+                          +Weight(ie,j,4)*data(IIij(ie,j,4),JJij(ie,j,4),k)
+    if(js>=1)     forall (k=1:KMAX_ext_BC, i=1:limax) &
+      xn_adv_bnds(n,i,k,2)=Weight(i,js,1)*data(IIij(i,js,1),JJij(i,js,1),k) &
+                          +Weight(i,js,2)*data(IIij(i,js,2),JJij(i,js,2),k) &
+                          +Weight(i,js,3)*data(IIij(i,js,3),JJij(i,js,3),k) &
+                          +Weight(i,js,4)*data(IIij(i,js,4),JJij(i,js,4),k)
+    if(jn<=ljmax) forall (k=1:KMAX_ext_BC, i=1:limax) &
+      xn_adv_bndn(n,i,k,2)=Weight(i,jn,1)*data(IIij(i,jn,1),JJij(i,jn,1),k) &
+                          +Weight(i,jn,2)*data(IIij(i,jn,2),JJij(i,jn,2),k) &
+                          +Weight(i,jn,3)*data(IIij(i,jn,3),JJij(i,jn,3),k) &
+                          +Weight(i,jn,4)*data(IIij(i,jn,4),JJij(i,jn,4),k)
+    if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
+      xn_adv_bndt(n,i,j,2)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),kt) &
+                          +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),kt) &
+                          +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),kt) &
+                          +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),kt)
   enddo DO_SPEC
 
   deallocate(data)
@@ -799,9 +834,9 @@ subroutine reset_3D(ndays_indate)
     do n=1,Next
       call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
       if(ndays(1)>=ndays_indate)then
-          write(*,*)'found date '
-          call datefromdayssince1900(ndate,ndays(1),1)
-          goto 876
+        write(*,*)'found date '
+        call datefromdayssince1900(ndate,ndays(1),1)
+        goto 876
       endif
     enddo
     write(*,*)'WARNING: did not find correct date'
