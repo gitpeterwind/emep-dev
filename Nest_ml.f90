@@ -735,7 +735,7 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
       endif
     enddo
     write(*,*)'WARNING: did not find correct date'
-    itime=Next_BC
+    n=Next_BC
     write(*,*)'Using date '
     call datefromdayssince1900(ndate,ndays(1),1)
 876 continue
@@ -840,7 +840,7 @@ subroutine reset_3D(ndays_indate)
       endif
     enddo
     write(*,*)'WARNING: did not find correct date'
-    itime=Next
+    n=Next
 876 continue
     itime=n
   endif

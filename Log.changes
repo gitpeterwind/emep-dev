@@ -9,6 +9,12 @@ Nest_ml:
   * Bug fix. Lateral BC were wrongly set to zero.
     Subroutine read_newdata_LATERAL read boundary values into local variables,
     instead of global ones of the same name (xn_adv_bnd{w,e,s,n}).
+  * Bug fix. The assignment itime=Next/itime=Next_BC after the time finding
+    loop on reset_3D/read_newdata_LATERAL) causes that the wrong record to be read
+    when the "right date-time" is not found.
+    When there is no "right date-time" on the IC/BC file the index 'n'
+    is outside of the valid range for records, and therefore the program crashes
+    when trying to read beyond the last record.
   * Boundary variables (xn_adv_bnd{w,e,s,n,t}) are only allocated on the processors
     that will use them
   * New interer variables iw, ie, js, jn & kt contain the indexes corresponding
