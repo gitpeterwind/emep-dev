@@ -99,3 +99,5 @@ SeaSalt_f,1,xx,58,PMf,PMf,5.7,0,0,xx,PM25;SS;AOD,,!
 SeaSalt_c,1,xx,58,PMc,PMc,0,0,0,xx,PMCO;SS,,!
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 Pb210,1,xx,210,PMf,PMf,0,0,0,xx,xx,,!
+*TESTSOA,2,xx,999,PMf,PMf,0,1.0,70.0,xx,PM25;SOA;FALSEGROUP,,!
+*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"

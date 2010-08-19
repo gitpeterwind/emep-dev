@@ -35,7 +35,7 @@ cat GenOut_ChemSpec*inc  GenOut_ChemChemicals_ml.inc \
 # ../DUMMY_Spec_bgn_ml \
 
 #mv GenOut_SOA_ml.f90 $odir/CM_SOA_ml.f90
-mv ChemSOA_ml.f90 $odir/CM_SOA_ml.f90
+#mv ChemSOA_ml.f90 $odir/CM_SOA_ml.f90
 
 mv GenOut_Reactions1.inc  $odir/CM_Reactions1.inc
 mv GenOut_Reactions2.inc  $odir/CM_Reactions2.inc

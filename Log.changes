@@ -1,3 +1,18 @@
+xxxxxxxxxxxxxx rv3_6_21... in progress Dave
+
+GenChem.pl - modified for SOA treatment. Use typ=2 in GenIn.species
+  and add SOA, ASOA etc. in groups to get e.g. SOA_GROUP
+  in CM_ChemSpecs_ml.
+
+  Note that the DeltaH and Cstar info is now part of chemicals%
+
+mk.GenChem - removbed CM_SOA_ml
+
+
+ZCM_EmChem09/GenIn.species - some fake species added to test SOA+GenChem.
+   Commented out for now, just uncomment to try.
+
+
 xxxxxxxxxxxxxx rv3_6_20      Alvaro  18th Aug 2010
 
 MOZART-IFS BC in forecast mode: Use top boundary from BC file.

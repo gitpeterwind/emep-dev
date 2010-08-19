@@ -256,24 +256,24 @@ sub read_species {
 		$species[$tot][$n ]    = $spec ;
 		$species_tot[$n]       = $spec ;
 		$speciesmap[$tot][$n]  = $n ; 
-	        $extinc[$tot]  = $extinc;
-	        $Cstar[$tot]  = $cstar;
-	        $DeltaH[$tot]  = $DeltaH;
-		printall("SPECIES READ => $n $spec; ");
+	        $extinc[$n]  = $extinc;
+	        $Cstar[$n]  = $cstar;
+	        $DeltaH[$n]  = $DeltaH;
+		printall("SPECIES READ => $n $spec N $n DH $DeltaH; ");
 
-		# Find SOA specs, and store for print_soa
-		if ( $typ eq "ASOA" ) { 
-		  push(@asoa,$spec), push (@soa_extras, $comment), $typ = 2; }
-		if ( $typ eq "BSOA" ) { 
-		  push(@bsoa,$spec), push (@soa_extras, $comment), $typ = 2; }
-		if ( $typ eq "OPOA" ) { 
-		  push(@opoa,$spec), push (@soa_extras, $comment), $typ = 2; }
-	  #if ( $typ eq "BSOA" ) { push (@bsoa_extras, $comment)};
-	  #	if ( $typ eq "BSOA" ) { push(@bsoa,$spec), $typ = 2; }
-		if ( $typ eq "WOODOC") { push(@woodoc,$spec), $typ = 1; } #TEST1
-		if ( $typ eq "FFUELOC"){ push(@ffueloc,$spec), $typ = 1; }
-		if ( $typ eq "WOODEC") { push(@woodec,$spec), $typ = 1; } #TEST1
-		if ( $typ eq "FFUELEC"){ push(@ffuelec,$spec), $typ = 1; }
+#DSSOA		# Find SOA specs, and store for print_soa
+#DSSOA		if ( $typ eq "ASOA" ) { 
+#DSSOA		  push(@asoa,$spec), push (@soa_extras, $comment), $typ = 2; }
+#DSSOA		if ( $typ eq "BSOA" ) { 
+#DSSOA		  push(@bsoa,$spec), push (@soa_extras, $comment), $typ = 2; }
+#DSSOA		if ( $typ eq "OPOA" ) { 
+#DSSOA		  push(@opoa,$spec), push (@soa_extras, $comment), $typ = 2; }
+#DSSOA	  #if ( $typ eq "BSOA" ) { push (@bsoa_extras, $comment)};
+#DSSOA	  #	if ( $typ eq "BSOA" ) { push(@bsoa,$spec), $typ = 2; }
+#DSSOA		if ( $typ eq "WOODOC") { push(@woodoc,$spec), $typ = 1; } #TEST1
+#DSSOA		if ( $typ eq "FFUELOC"){ push(@ffueloc,$spec), $typ = 1; }
+#DSSOA		if ( $typ eq "WOODEC") { push(@woodec,$spec), $typ = 1; } #TEST1
+#DSSOA		if ( $typ eq "FFUELEC"){ push(@ffuelec,$spec), $typ = 1; }
 
 		if ( $typ == 2 ) {
 		    $naerosol++ ;
@@ -324,7 +324,7 @@ sub read_species {
 	@nonvolec = ( @ffuelec, @woodec );
 	@all_soa = ( @asoa, @bsoa, @opoa );
 	#@all_extras = ( @asoa_extras, @bsoa_extras , @opoa_extras );
-	print_OA();
+#DSSOA	print_OA();
 
 } # end of sub read_species
 
@@ -1099,10 +1099,10 @@ END_CHEMSTART
             printf F 
            "     species(%s) = Chemical(\"%-12s\",%4d,%3d,%3d,%4d,%3d,%4.1f,%8.4f,%7.1f ) \n",  
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-                   $cnum, $nnum, $snum, $extinc[$tot], $Cstar[$tot], $DeltaH[$tot];
+                   $cnum, $nnum, $snum, $extinc[$i], $Cstar[$i], $DeltaH[$i];
             print "SPECF ", 
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-                   $cnum, $nnum, $snum, $extinc[$tot], $Cstar[$tot], $DeltaH[$tot], "\n";
+                   $cnum, $nnum, $snum, $extinc[$i], $Cstar[$i], $DeltaH[$i], "\n";
 	}
 
         print F "   end subroutine define_chemicals\n";
@@ -1419,58 +1419,58 @@ sub print_soa {
 	print SOA "     $typ = (/  $out /)\n" ;
 }
 ###############################################################################
-sub print_OA {
-	my $comma = " ";
-	my $N   = @all_soa;
-	my @soa = @all_soa;
-	my($module, $end_of_line, $Use);
-
-	$module = "ChemSOA_ml";
-        open(SOA,">$module.f90");
-	$Use    = "use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices";
-        start_module($module,\*SOA,$Use);
-	print SOA	"!+ Defines SOA, NONVOL and VBS params \n"; 
-
-	print SOA <<"END_CHEMSTART";
-
-  type, public :: VBST
-       integer     :: index    ! just for clarity
-       real        :: CiStar   ! ug/m3
-       !real        :: Tref    ! Assumed 300
-       real        :: DeltaH   ! kJ/mole
-  end type VBST
-END_CHEMSTART
-
-        
-	if ( $first_soa > 0) {
-               print SOA <<"END_VBSDEF";
-  type(VBST), dimension(FIRST_SOA:LAST_SOA), public, &
-       parameter :: VBS = (/ &
-END_VBSDEF
-
-	  	for(my $n=0;$n<$N;$n++) {
- 		   my ( $Ci, $dH, @rest ) = split(/\s+/, $soa_extras[$n] );
-		   print SOA "      $comma VBST($soa[$n], $Ci, $dH ) & \n";
-		   $comma = ",";
-		}
-       	 print SOA " /)\n\n"; 
-
-		print_soa("ASOA", @asoa);
-		print_soa("BSOA", @bsoa);
-		print_soa("OPOA", @opoa);
-		print_soa("WOODOC", @woodoc);
-		print_soa("FFUELOC", @ffueloc);
-		print_soa("WOODEC", @woodec);
-		print_soa("FFUELEC", @ffuelec);
-		print_soa("VOL", @vol);
-		print_soa("NONVOLOC", @nonvoloc);
-		print_soa("NONVOLEC", @nonvolec);
-
-	} # SOA 
-        print SOA "\n\n end module $module\n $HLINE"; 
-	close(SOA);
-
-} # end of sub print_OA
+#DSSOAsub print_OA {
+#DSSOA	my $comma = " ";
+#DSSOA	my $N   = @all_soa;
+#DSSOA	my @soa = @all_soa;
+#DSSOA	my($module, $end_of_line, $Use);
+#DSSOA
+#DSSOA	$module = "ChemSOA_ml";
+#DSSOA        open(SOA,">$module.f90");
+#DSSOA	$Use    = "use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices";
+#DSSOA        start_module($module,\*SOA,$Use);
+#DSSOA	print SOA	"!+ Defines SOA, NONVOL and VBS params \n"; 
+#DSSOA
+#DSSOA	print SOA <<"END_CHEMSTART";
+#DSSOA
+#DSSOA  type, public :: VBST
+#DSSOA       integer     :: index    ! just for clarity
+#DSSOA       real        :: CiStar   ! ug/m3
+#DSSOA       !real        :: Tref    ! Assumed 300
+#DSSOA       real        :: DeltaH   ! kJ/mole
+#DSSOA  end type VBST
+#DSSOAEND_CHEMSTART
+#DSSOA
+#DSSOA        
+#DSSOA	if ( $first_soa > 0) {
+#DSSOA               print SOA <<"END_VBSDEF";
+#DSSOA  type(VBST), dimension(FIRST_SOA:LAST_SOA), public, &
+#DSSOA       parameter :: VBS = (/ &
+#DSSOAEND_VBSDEF
+#DSSOA
+#DSSOA	  	for(my $n=0;$n<$N;$n++) {
+#DSSOA 		   my ( $Ci, $dH, @rest ) = split(/\s+/, $soa_extras[$n] );
+#DSSOA		   print SOA "      $comma VBST($soa[$n], $Ci, $dH ) & \n";
+#DSSOA		   $comma = ",";
+#DSSOA		}
+#DSSOA       	 print SOA " /)\n\n"; 
+#DSSOA
+#DSSOA		print_soa("ASOA", @asoa);
+#DSSOA		print_soa("BSOA", @bsoa);
+#DSSOA		print_soa("OPOA", @opoa);
+#DSSOA		print_soa("WOODOC", @woodoc);
+#DSSOA		print_soa("FFUELOC", @ffueloc);
+#DSSOA		print_soa("WOODEC", @woodec);
+#DSSOA		print_soa("FFUELEC", @ffuelec);
+#DSSOA		print_soa("VOL", @vol);
+#DSSOA		print_soa("NONVOLOC", @nonvoloc);
+#DSSOA		print_soa("NONVOLEC", @nonvolec);
+#DSSOA
+#DSSOA	} # SOA 
+#DSSOA        print SOA "\n\n end module $module\n $HLINE"; 
+#DSSOA	close(SOA);
+#DSSOA
+#DSSOA} # end of sub print_OA
 #########################################################################
 sub expand_shorthands {
 	my $s  = shift;
