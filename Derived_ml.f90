@@ -517,11 +517,15 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
 ! BVOC called every dt_advec, so use dt_scale=1.0e6 to get from kg/m2/s to
 !  mg/m2 accumulated (after multiplication by dt_advec)
 
-! isoprene is 1 in the NatEmis array. Hard-coded for now..
-             !Deriv(name,       class,    subc,  txt,           unit
+     !Deriv(name,       class,    subc,  txt,           unit
      !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
-  call AddNewDeriv( "Emis_mgm2_C5H8", "NatEmis", "-", "-", "mg/m2", &
-                 1 , -99,-99, 0.0,  T ,    1.0e6,     F, F , F, T, T, T, -999 ) !?? atw?
+
+  do  ind = 1, size(BVOC_GROUP)
+     itot = BVOC_GROUP(ind)
+     dname = "Emis_mgm2_" // trim(species(itot)%name)
+     call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
+                 ind , -99,-99, 0.0,  T ,    1.0e6,     F, F , F, T, T, T, -999 ) !?? atw?
+   end do
 
 ! SNAP emissions called every hour, so use scale=3600.0 to get from kg/m2/s to kg/m2,
 ! and by 1.0e6 to get from kg/m2 to mg/m2 accumulated.
