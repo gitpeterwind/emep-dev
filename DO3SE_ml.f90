@@ -36,7 +36,8 @@ module DO3SE_ml
 !        ,PARshade => L%PARshade       &!  " " for shade leaves
 !        ,LAIsunfrac => L%LAIsunfrac      ! fraction of LAI in sun
 
-  use ModelConstants_ml, only : NLANDUSEMAX, DEBUG_DO3SE, MasterProc
+  use ModelConstants_ml, only : NLANDUSEMAX, DEBUG_DO3SE, MasterProc, &
+      USE_SOILWATER
 
   implicit none
   private
@@ -49,7 +50,8 @@ module DO3SE_ml
  public :: fPhenology     !  -> f_phen
 
  ! Make public for output testing
-  real, public, save  :: f_light, f_temp, f_vpd, f_swp, f_env         
+  real, public, save  :: f_light, f_temp, f_vpd, f_env         
+  real, public, save  :: f_swp = 1.0  ! Will only change if USE_SOILWATER set
   real, public, save  :: f_phen = 888 ! But set elsewhere
 
 !-----------------------------------------------------------------------------
@@ -92,7 +94,6 @@ module DO3SE_ml
 
   type(do3se_type), public, dimension(NLANDUSEMAX) :: do3se
 
-  logical, private, parameter :: MY_DEBUG = .false.
   real, private, dimension(7) ::  needed      ! For debugging
 
 
@@ -147,7 +148,7 @@ contains
 
 !=======================================================================
 
-    subroutine g_stomatal(lu)
+    subroutine g_stomatal(lu, debug_flag)
 !=======================================================================
 
 !    Calculates stomatal conductance g_sto based upon methodology from 
@@ -159,6 +160,7 @@ contains
 !
 
      integer, intent(in) :: lu
+     logical, intent(in) :: debug_flag
 
 ! Outputs:
 !    L%g_sto, L%g_sun       ! stomatal conductance for canopy and sun-leaves
@@ -223,10 +225,15 @@ contains
   !/  Use SWP_Mpa to get f_swp. We just need this updated
   !   once per day, but for simplicity we do it every time-step.
 
-       f_swp = do3se(lu)%f_min + &
-              (1-do3se(lu)%f_min)*(do3se(lu)%PWP-L%SWP)/ &
-                                  (do3se(lu)%PWP-do3se(lu)%SWP_max)
-       f_swp = min(1.0,f_swp)
+  !ds     f_swp = do3se(lu)%f_min + &
+  !ds            (1-do3se(lu)%f_min)*(do3se(lu)%PWP-L%SWP)/ &
+  !ds                                (do3se(lu)%PWP-do3se(lu)%SWP_max)
+  !ds     f_swp = min(1.0,f_swp)
+  ! Aug 2010: use HIRLAM's SW, and simple "DAM" function
+
+  ! ************************************
+   if ( USE_SOILWATER ) f_swp =  L%fSW
+  ! ************************************
 
 
 !.. And finally,
@@ -249,16 +256,17 @@ contains
    L%g_sun = L%g_sto * f_sun/f_light       ! sunlit part
 
 
-    if ( MY_DEBUG ) then
+    if ( DEBUG_DO3SE ) then
         needed = (/ L%t2C,L%t2,L%vpd ,L%SWP ,&
                     L%PARsun ,L%PARshade ,L%LAIsunfrac /)
         if ( any( needed(:) < -998.0 )) then
           print *, needed
           call CheckStop("ERROR in g_stomatal, Missing data")
         end if
-        ! debug_flag not implement yet.
-        !if ( debug_flag ) write(*,*) "G_STOMATAL f_temp, _vpd, _swp, _light", &
-        !        f_temp, f_vpd, f_swp, f_light
+
+        if ( debug_flag ) write(*,"(a,i3,7f10.4)") &
+          "G_STOMATAL lc f_temp, _vpd, _sw, _light, fvp*fsw,fmin", lu, &
+                f_temp, f_vpd, f_swp, f_light, f_swp*f_vpd, do3se(lu)%f_min
     end if
          
 

@@ -41,7 +41,8 @@ use LandDefs_ml,   only: LandType
 use Landuse_ml,    only: LandCover
 use LocalVariables_ml, only: Grid, Sub
 use MicroMet_ml, only :  PsiM, AerRes    !functions
-use ModelConstants_ml, only :  DEBUG_SUBMET  ! Needs DEBUG_RUNCHEM to get debug_flag
+use ModelConstants_ml, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_flag
+                              , USE_SOILWATER 
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
 implicit none
@@ -128,6 +129,8 @@ contains
 
         Sub(iL)%is_water  = LandType(iL)%is_water
         Sub(iL)%is_forest = LandType(iL)%is_forest
+
+        if( USE_SOILWATER ) Sub(iL)%fSW    = Grid%fSW
 
      ! If NWP thinks this is a sea-square, but we anyway have land,
      ! the surface temps will be wrong and so will stability gradients.

@@ -103,7 +103,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use Rb_ml,        only: Rb_gas
  use Rsurface_ml
- use SoilWater_ml, only : SWP ! = 0.0 always for now!
+ use SoilWater_ml, only : fSW !  SWP ! = 0.0 always for now!
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
  use Setup_1dfields_ml, only : xn_2d,amk, Fpart, Fgas
  use StoFlux_ml,  only:   STO_FLUXES,  &   ! true if fluxes wanted.
@@ -400,7 +400,8 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
                     "DEBUG_veg: me,nlu,iiL,iL, lat, SGS, EGS ", &
                     me,nlu,iiL, iL, gb(i,j), L%SGS, L%EGS, &
                    L%coverage, L%LAI, L%hveg,daynumber, &
-                   Grid%snow, SWP(daynumber),L%t2C
+                   Grid%snow, fSW(i,j),L%t2C
+                   !Grid%snow, SWP(daynumber),L%t2C
 
                 write(6,"(a10,2i4,2f7.2,2es12.3,3f8.3)") "UKDEP SUB", me, &
                   iL, Grid%ustar, L%ustar, Grid%invL, &

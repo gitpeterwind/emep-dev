@@ -39,6 +39,7 @@ use LocalVariables_ml, only : iL, L, G => Grid
 
 use ModelConstants_ml, only: DEBUG_RSUR
 use Radiation_ml, only : CanopyPAR
+use TimeDate_ml,  only : current_date
 use Wesely_ml,    only : Wesely_tab2 &  ! Wesely Table 2 for 14 gases
    ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
 !hf snow
@@ -56,9 +57,7 @@ real, public, save :: Rinc, RigsO, GnsO, RgsS  !hf CoDep
 contains
 ! =======================================================================
 
-
-!hf XX  subroutine Rsurface(i,j,DRYDEP_CALC,Rsur_dry,Rsur_wet,errmsg,debug_flag) 
-  subroutine Rsurface(i,j,DRYDEP_CALC,Gns,Rsur,errmsg,debug_flag,fsnow) 
+  subroutine Rsurface(i,j,DRYDEP_CALC,Gns,Rsur,errmsg,debug_arg,fsnow) 
 ! =======================================================================
 !
 !     Description
@@ -131,12 +130,12 @@ contains
 
    character(len=*), intent(out) :: errmsg
 ! Optional
-    logical, intent(in), optional :: debug_flag
+    logical, intent(in), optional :: debug_arg
+    logical :: debug_flag = .false.
 
 
  ! external resistance for Ozone
   real, parameter :: RextO =  2500.0   ! gives Gext=0.2 cm/s for LAI=5
-
 
 ! Here, "Gext=0.2cm/s" refers to the external conductance, G_ext, where 
 ! G_ext=LAI/R_ext. In many studies, it has been assumed 
@@ -168,6 +167,9 @@ contains
     real :: fice !fraction ice cover
     real :: Sdmax  !max snowdepth (fsnow =1)
 
+
+   if ( present(debug_arg) ) debug_flag = debug_arg
+
 ! START OF PROGRAMME: 
     errmsg = "ok"
     Sdmax = max( L%hveg/10.0, 0.01) !meters
@@ -189,10 +191,9 @@ contains
                             !and not Ggs from table
    
 
-    if ( DEBUG_RSUR .and. present(debug_flag) ) then
-      if ( debug_flag )  then
-        write(*,"(a,3f8.4)") "IN RSUR snowdepth ", Sdmax,G%sdepth, fsnow
-      end if
+    if ( DEBUG_RSUR .and. debug_flag ) then
+        write(*,"(a,i4,3f8.4)") "IN RSUR snowdepth ", &
+           current_date%hour,  Sdmax,G%sdepth, fsnow
     end if
 
 
@@ -244,7 +245,10 @@ contains
                     L%PARsun, L%PARshade, L%LAIsunfrac)
 
 
-        call g_stomatal(iL)
+   if ( DEBUG_RSUR .and. debug_flag ) then
+       write(*,*) "CALL G_STOM ", current_date, L%g_sto, L%fSW
+   end if
+        call g_stomatal(iL, debug_flag )
 
    else
         L%g_sun = 0.0
@@ -252,11 +256,8 @@ contains
 
    end if ! leafy canopy and daytime
 
-   if ( DEBUG_RSUR .and. present(debug_flag) ) then
-     if ( debug_flag )  then
-       write(*,*) "IN RSUR gsto ", leafy_canopy, &
-             G%Idirect,  L%g_sto
-     end if
+   if ( DEBUG_RSUR .and. debug_flag ) then
+       write(*,*) "IN RSUR gsto ", current_date, leafy_canopy, G%Idirect,  L%g_sto
    end if
 
 !Need to find a way to define vegetation outside growing season - Rns_SO2 and NH3 should be used here as well
@@ -408,13 +409,11 @@ contains
 
 
    if ( DEBUG_RSUR ) then
-     if ( present(debug_flag) ) then
        if ( debug_flag ) then 
       write(*,*)  "RSURFACE DRYDEP_CALC", size(DRYDEP_CALC), DRYDEP_CALC(1)
       write(*,*)  "RSURFACE iL, LAI, SAI, LOGIS ", iL, L%LAI, L%SAI, &
                        L%is_forest, L%is_water, L%is_veg, canopy, leafy_canopy
       write(*,"(a20,i3,4g12.3)")  "RSURFACE xed Gs", iL, do3se(iL)%RgsO,do3se(iL)%RgsS, lowTcorr, Rinc
-       end if
      end if
    end if
  end subroutine Rsurface

@@ -1,25 +1,50 @@
-xxxxxxxxxxxxxx rv3_6_21... in progress Dave/Robert
+xxxxxxxxxxxxxx rv3_6_21 Dave/Robert   Aug 20 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
+
+More SOA consistency and modified soilwater handling when USE_SOILWATER
+set true --- this *will* change results! Lower DryDep when soil
+is dry -> more O3, etc. in Southern Europe
+
 
 Aqueous_ml - modified for consistency with SOA module - uses
       Fpart for semivolatile species. Small changes in notation
       also
 
-Derived_ml - used BVOC array t set NatEmis Derived, instead of hard-coded C5H10.
+CellMet_ml - added fSW, Grid%fSW
 
-DryDep_ml  - modified for consistency with SOA module - uses
-      Fpart for semivolatile species. Small changes in notation
-      also
+Derived_ml - used BVOC array t set NatEmis Derived, instead of hard-coded C5H10.
+             changed old write_debug to write_debugadv
+            added simpler write_debug for other components than adv
+
+DO3SE_ml - uses new fSW instead of older DO3SE method.
+           Added debug_flag to g_stomatal + f_SW in DEBUG outputs
+
+DryDep_ml  - modified for consistency with SOA module - uses Fpart for semivolatile species.
+      Added fSW to prepare for soil-water changes.
+      Small changes in notation also.
 
 GenChem.pl - modified for SOA treatment. Use typ=2 in GenIn.species
-  and add SOA, ASOA etc. in groups to get e.g. SOA_GROUP
-  in CM_ChemSpecs_ml.
+  and add SOA, ASOA etc. in groups to get e.g. SOA_GROUP in CM_ChemSpecs_ml.
   Uses FIRST_SEMIVOL instead of FIRST_SOA, same for LAST
 
   Note that the DeltaH and Cstar info is now part of chemicals%
 
-mk.GenChem - removbed CM_SOA_ml
+LocalVariables_ml - added fSW
+
+mk.GenChem - removed CM_SOA_ml
+
+ModelConstants_ml: Added USE_SOILWATER
+
+Rsurface_ml - more debug options
+  
+run.pl - sets USER from $ENV{"USER"} - easier and safer!
+
+Sites_ml - improved debug options
 
 SOA_ml - uses FIRST_SEMIVOL instead of FIRST_SOA, same for LAST
+
+SoilWater_ml - start of "real" soil-water handling, generating fSW
+    from SoilWater_deep. Not used yet.
+     (HIRLAM-tested only)
 
 StoFlux.f90 - bug fix on evapotranspiration calculation - avoid div  by zero
 

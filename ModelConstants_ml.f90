@@ -40,6 +40,8 @@ module ModelConstants_ml
 ! Temporary switch to include convection or not
 ! will be removed when convection is sufficiently tested (use foundconv in permanent code)
   logical, public :: use_convection= .false.
+ logical, public, parameter :: USE_SOILWATER = .false.
+
 
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
@@ -164,11 +166,12 @@ module ModelConstants_ml
     ,DEBUG_LANDPFTS       = .false. &
     ,DEBUG_NETCDF         = .false. &
     ,DEBUG_NETCDF_RF      = .false. &  ! ReadField_CDF in NetCDF_ml
+    ,DEBUG_NH3            = .false. & ! hb NH3Emis
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
     ,DEBUG_SETUP_1DBIO    = .false. & !
+    ,DEBUG_SITES          = .false. & !
     ,DEBUG_SOILWATER      = .false. & !
-    ,DEBUG_NH3            = .false. & ! hb NH3Emis
     ,DEBUG_NEST_ICBC      = .false.   ! IFS-MOZART BC
 
 

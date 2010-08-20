@@ -122,6 +122,7 @@ private
  public  :: AddNewDeriv          ! Creates & Adds Deriv type to def_2d, def_3d
  private :: Define_Derived       !
  private :: Setups
+ private :: write_debugadv
  private :: write_debug
 
  public :: Derived              ! Calculations of sums, avgs etc.
@@ -840,6 +841,7 @@ end do
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
           end forall
+          if ( debug_flag ) call write_debug(n,index, "SoilWater_DEEP")
 
           case ( "SoilWater" )
             forall ( i=1:limax, j=1:ljmax )
@@ -883,7 +885,7 @@ end do
                                      * cfac(index,i,j) * density(i,j)
             end forall
 
-            if ( debug_flag ) call write_debug(n,index, &
+            if ( debug_flag ) call write_debugadv(n,index, &
                                      density(debug_li,debug_lj), "ADV or TADV")
 
           case ( "SURF_PPB" )
@@ -891,7 +893,7 @@ end do
               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                      * cfac(index,i,j)
             end forall
-            if ( debug_flag ) call write_debug(n,index, 1.0, "PPB OUTS")
+            if ( debug_flag ) call write_debugadv(n,index, 1.0, "PPB OUTS")
 
           case ( "SURF_UG" )
 
@@ -899,7 +901,7 @@ end do
               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                      * cfac(index,i,j) * density(i,j)
             end forall
-            if ( debug_flag ) call write_debug(n,index, &
+            if ( debug_flag ) call write_debugadv(n,index, &
                                      density(debug_li,debug_lj), "SURF_UG")
 
           case ( "H2O" )      !water
@@ -916,7 +918,7 @@ end do
                  max( d_2d( n, 1:limax,1:ljmax,IOU_DAY),  &
                       xn_adv(index,1:limax,1:ljmax,KMAX_MID)  &
                      * cfac(index,1:limax,1:ljmax) * density(1:limax,1:ljmax))
-            if ( debug_flag ) call write_debug(n,index, &
+            if ( debug_flag ) call write_debugadv(n,index, &
                                      density(debug_li,debug_lj), "MAXADV")
 
 
@@ -1252,7 +1254,7 @@ end do
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
               d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
             end forall
-           if ( debug_flag ) call write_debug(n,index, 1.0, "D3 PPB OUTS")
+           if ( debug_flag ) call write_debugadv(n,index, 1.0, "D3 PPB OUTS")
 
 
 ! hb new 3D output
@@ -1599,7 +1601,7 @@ end do
    end subroutine somo_calc
 
  !=========================================================================
-    subroutine write_debug(n,index,rho,txt)
+    subroutine write_debugadv(n,index,rho,txt)
        integer, intent(in) :: n, index
        real, intent(in) :: rho
        character(len=*) :: txt
@@ -1609,5 +1611,15 @@ end do
                   ,d_2d(n,debug_li,debug_lj,IOU_INST)*PPBINV &
                   ,xn_adv(index,debug_li,debug_lj,KMAX_MID)*PPBINV &
                   ,rho, cfac(index,debug_li,debug_lj)
+    end subroutine write_debugadv
+ !=========================================================================
+    subroutine write_debug(n,index,txt)
+       integer, intent(in) :: n, index
+       character(len=*) :: txt
+
+       write(*,fmt="(2a,2i4,a,4f12.3)") "DERIV: GEN " , txt , n, index  &
+                  ,trim(f_2d(n)%name)  &
+                  ,d_2d(n,debug_li,debug_lj,IOU_INST)
     end subroutine write_debug
+
 end module Derived_ml

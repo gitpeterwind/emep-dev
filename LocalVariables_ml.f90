@@ -76,6 +76,7 @@ module LocalVariables_ml
     real :: rho_s              !  Air density (kg/m3) at surface, here 2m
     real :: vpd                ! Vapour pressure deficit  (kPa) ! CHECK UNITS
     real :: SWP                ! SWP  ! CHECK UNITS
+    real :: fSW                ! fSW  - function for soil-water, 0--1
     real :: ustar              ! friction velocity, m/s
     real :: wstar              ! convective velocity scale, m/s
     real :: invL               ! 1/L, where L is Obukhiov length (1/m)
@@ -129,6 +130,7 @@ module LocalVariables_ml
     ,vpd       = NOT_SET &! Vapour pressure deficit  (kPa) ! CHECK UNITS
     ,EvapTransp = NOT_SET &! Evapotranspiration             ! CHECK UNITS
     ,SWP       = NOT_SET &! SWP  ! CHECK UNITS
+    ,fSW       = NOT_SET &! function for fSWP or fSMD or...
     ,ustar     = NOT_SET &! friction velocity, m/s
     ,wstar     = NOT_SET &! convective velocity scale, m/s
     ,invL      = NOT_SET &! 1/L, where L is Obukhiov length (1/m)

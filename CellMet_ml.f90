@@ -44,6 +44,7 @@ use MetFields_ml, only: cc3dmax, nwp_sea, snow,sdepth,ice, surface_precip, fh,fl
            q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen, coszen, Idirect, Idiffuse
 use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
+use SoilWater_ml, only : fSW
 use SubMet_ml, only : Get_SubMet
 use TimeDate_ml, only: current_date
 
@@ -116,6 +117,7 @@ contains
      Grid%sdepth    = sdepth(i,j,1)
      Grid%ice       = ice(i,j,1)
 
+     Grid%fSW       = fSW(i,j)
 
     !ds 25/2/2009.. following Branko's comments, 
     ! we limit u* to a physically plausible value

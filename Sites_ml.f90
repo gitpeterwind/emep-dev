@@ -59,8 +59,8 @@ use ChemChemicals_ml,   only : species               ! for species names
 use MetFields_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps
-use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID &
-                              ,KMAX_BND,PT,ATWAIR, NPROC &
+use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
+                              ,KMAX_BND,PT,ATWAIR, NPROC, DEBUG_SITES &
                               ,DomainName, RUNDOMAIN, IOU_INST
 use Par_ml,            only : li0,lj0,li1,lj1 &
                               ,GIMAX,GJMAX &
@@ -351,7 +351,7 @@ contains
      if (nlocal > 0) &
         CALL MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, MPI_COMM_WORLD, INFO)
   else
-     if (MY_DEBUG) write(6,*) "sitesdef for me =0 OCAL_SITES", me, nlocal
+     if (DEBUG_SITES) write(6,*) "sitesdef for me =0 LOCAL_SITES", me, nlocal
      do n = 1, nlocal
         s_gindex(me,n) = s_n(n)
      end do
@@ -361,17 +361,17 @@ contains
         if (nloc > 0) &
            CALL MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, &
              334, MPI_COMM_WORLD,STATUS, INFO)
-        if (MY_DEBUG) write(6,*) "sitesdef: recv d ", fname, d,  &
+        if (DEBUG_SITES) write(6,*) "sitesdef: recv d ", fname, d,  &
                    " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
         do n = 1, nloc
            s_gindex(d,n) = s_n_recv(n)
-           if ( MY_DEBUG ) write(6,*) "sitesdef: for d =", fname, d, &
+           if ( DEBUG_SITES ) write(6,*) "sitesdef: for d =", fname, d, &
               " nloc = ", nloc, " n: ",  n,  " gives nglob ", s_gindex(d,n)
         end do ! n
      end do ! d
   end if ! me
 
-  if ( MY_DEBUG ) write(6,*) 'sitesdef on me', me, ' = ', nlocal
+  if ( DEBUG_SITES ) write(6,*) 'sitesdef on me', me, ' = ', nlocal
 
 end subroutine Init_sites
 
@@ -399,14 +399,14 @@ end subroutine Init_sites
 
   real,dimension(NOUT_SITE,NSITES_MAX) :: out ! for output, local node
 
-  if ( MY_DEBUG ) then
+  if ( DEBUG_SITES ) then
      write(6,*) "sitesdef Into surf  nlocal ", nlocal_sites, " on me ", me
      do i = 1, nlocal_sites
         write(6,*) "sitesdef Into surf  x,y ",site_x(i),site_y(i),&
                     site_z(i)," me ", me
      end do
 
-     if ( me == 0 ) then
+     if ( MasterProc ) then  
         write(6,*)  "======= site_gindex ======== sitesdef ============"
         do n = 1, nglobal_sites
            write(6,'(a12,i4, 2x, 8i4)') "sitesdef ", n, &
@@ -414,7 +414,7 @@ end subroutine Init_sites
         end do
         write(6,*) "======= site_end    ======== sitesdef ============"
      end if ! me = 0
-  end if ! MY_DEBUG
+  end if ! DEBUG_SITES
 
   ! assign local data to out
 
@@ -457,7 +457,10 @@ end subroutine Init_sites
             d2index      = find_index(d2code, f_2d(:)%name)
             call CheckStop( d2index < 1,  "SITES D2D NOT FOUND"//trim(d2code) )
             out(nn,i)   = d_2d(d2index,ix,iy,IOU_INST)
-
+            if( DEBUG_SITES ) then
+               write(6,"(a,3i3,a,i4,es10.3)") "DEBUG_SITES ", me, nn, i,&
+                      trim(d2code), d2index, out(nn,i)
+            end if
         end select
         call CheckStop( abs( out(nn,i) )  > 1.0e99, "ABS(SITES OUT) TOO BIG" )
      end do
@@ -692,7 +695,7 @@ end subroutine siteswrt_sondes
   else ! me = 0
 
      ! first, assign me=0 local data to g_out
-     if ( MY_DEBUG ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
+     if ( DEBUG_SITES ) print *, "ASSIGNS ME=0 NLOCAL_SITES", me, nlocal
 
      do n = 1, nlocal
         nglob = s_gindex(0,n)
