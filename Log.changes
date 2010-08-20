@@ -1,5 +1,9 @@
 xxxxxxxxxxxxxx rv3_6_21... in progress Dave/Robert
 
+Aqueous_ml - modified for consistency with SOA module - uses
+      Fpart for semivolatile species. Small changes in notation
+      also
+
 DryDep_ml  - modified for consistency with SOA module - uses
       Fpart for semivolatile species. Small changes in notation
       also

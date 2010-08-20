@@ -67,7 +67,7 @@ module Aqueous_ml
   use Derived_ml,    only : d_2d      ! Contains Wet deposition fields
   use ChemChemicals_ml, only: species
   use ChemSpecs_adv_ml
-  use ChemSpecs_tot_ml, only: NSPEC_TOT, SO4
+  use ChemSpecs_tot_ml, only: NSPEC_TOT, SO4, FIRST_SEMIVOL, LAST_SEMIVOL
   use GridValues_ml, only : gridwidth_m,xm2,dA,dB
   use MassBudget_ml,     only : wdeploss
   use ModelConstants_ml, only: &
@@ -84,7 +84,7 @@ module Aqueous_ml
   use OwnDataTypes_ml,           only : depmap  ! has adv, calc, vg
   use PhysicalConstants_ml,only : GRAV
 !EGU  use OrganicAerosol_ml, only : SO4LIKE_DEP, SOALIKE_DEP
-  use Setup_1dfields_ml,   only : xn_2d, amk  !EGUOA , Fpart, Fgas
+  use Setup_1dfields_ml,   only : xn_2d, amk, Fpart, Fgas
 
   implicit none
   private
@@ -508,7 +508,7 @@ subroutine WetDeposition(i,j,debug_flag)
   real    :: rho(KUPPER:KMAX_MID)
   real    :: loss    ! conc. loss due to scavenging
   real, dimension(KUPPER:KMAX_MID) :: vw ! Svavenging rates (tmp. array)
-  real, dimension(KUPPER:KMAX_MID) :: lossfrac ! EGU
+  real, dimension(KUPPER:KMAX_MID) :: lossfac ! EGU
 
   invgridarea = xm2(i,j)/( gridwidth_m*gridwidth_m )
   f_rho  = 1.0/(invgridarea*GRAV*ATWAIR)
@@ -545,27 +545,33 @@ subroutine WetDeposition(i,j,debug_flag)
 
      do k = kcloudtop, KMAX_MID
 
-        lossfrac(k)  = exp( -vw(k)*pr_acc(k)*dt ) 
+        lossfac(k)  = exp( -vw(k)*pr_acc(k)*dt ) 
 
         ! For each "calc" species we have often a number of model
         ! species
             do is = 1, Calc2tot(icalc,0)  ! number of species
                itot = Calc2tot(icalc,is)
 
-               loss = xn_2d(itot,k) * ( 1.0 - lossfrac(k)  )
+!rbAug2010 For semivolatile species only the particle fraction is deposited
+
+               if ( itot >= FIRST_SEMIVOL .and. itot <=  LAST_SEMIVOL) then
+                  loss = xn_2d(itot,k) * Fpart(itot,k)*( 1.0 - lossfac(k)  )
+               else
+                  loss = xn_2d(itot,k) * ( 1.0 - lossfac(k)  )
+               endif
                xn_2d(itot,k) = xn_2d(itot,k) - loss
                wdeploss(itot) = wdeploss(itot) + loss * rho(k)
             end do ! is
         !end do ! spec
 
-         !TMP tmpxn = xn_2d(itot,k) * lossfrac(k) ! Just for testing
-         !TMP xnloss = xnloss+ (1.0-lossfrac(k))*xn_2d(itot,k)*rho(k)
+         !TMP tmpxn = xn_2d(itot,k) * lossfac(k) ! Just for testing
+         !TMP xnloss = xnloss+ (1.0-lossfac(k))*xn_2d(itot,k)*rho(k)
 
      end do ! k loop
      if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
         do k = kcloudtop, KMAX_MID
            Write(6,"(a,2i4,a,9es12.2)") "DEBUG_WDEP, k, icalc, spec", k, &
-            icalc, trim(species(itot)%name), vw(k), pr_acc(k), lossfrac(k)
+            icalc, trim(species(itot)%name), vw(k), pr_acc(k), lossfac(k)
         end do ! k loop
      end if ! DEBUG
 
@@ -575,14 +581,14 @@ subroutine WetDeposition(i,j,debug_flag)
 !dsMay2010         !is = SO4LIKE_DEP(ipm)
 !dsMay2010         is = WETDEP_SO4LIKE(ipm)
 !dsMay2010         do k = kcloudtop, KMAX_MID
-!dsMay2010            loss = xn_2d(is,k) * ( 1.0 - lossfrac(k) )
-!dsMay2010            !xn_2d(is,k) = xn_2d(is,k) * lossfrac(k)
+!dsMay2010            loss = xn_2d(is,k) * ( 1.0 - lossfac(k) )
+!dsMay2010            !xn_2d(is,k) = xn_2d(is,k) * lossfac(k)
 !dsMay2010            xn_2d(is,k) = xn_2d(is,k) - loss
 !dsMay2010            wdeploss(is) = wdeploss(is) + loss * rho(k)
 !dsMay2010         end do
 !dsMay2010         if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
 !dsMay2010           write(6,"(2a,i3,2es12.3)") "WETDEP SIM: ", species(is)%name, &
-!dsMay2010            is, lossfrac(20), wdeploss(is)
+!dsMay2010            is, lossfac(20), wdeploss(is)
 !dsMay2010         end if
 !dsMay2010       end do
        !do ipm = 1, NUM_NONVOL
@@ -593,13 +599,13 @@ subroutine WetDeposition(i,j,debug_flag)
 !EGUOA         do ipm = 1, size(SOALIKE_DEP)
 !EGUOA          is = SOALIKE_DEP(ipm)
 !EGUOA          do k = kcloudtop, KMAX_MID
-!EGUOA           xn_2d(is,k) = xn_2d(is,k) * (1.- Fpart(is,k)*(1.-lossfrac(k)))
+!EGUOA           xn_2d(is,k) = xn_2d(is,k) * (1.- Fpart(is,k)*(1.-lossfac(k)))
 !EGUOA          end do
 !EGUOA        if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
 !EGUOA          k=20
 !EGUOA          write(6,"(a,a,i3,4f10.5)") "WETDEP SOA: ", species(is)%name, &
-!EGUOA              is, Fgas(is,k), Fpart(is,k), lossfrac(k), &
-!EGUOA               (1.-Fpart(is,k)*(1.-lossfrac(k)))
+!EGUOA              is, Fgas(is,k), Fpart(is,k), lossfac(k), &
+!EGUOA               (1.-Fpart(is,k)*(1.-lossfac(k)))
 !EGUOA        end if
 !EGUOA         end do ! ipm
 !EGUOA       end if ! OA 
