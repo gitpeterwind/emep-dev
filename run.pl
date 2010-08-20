@@ -171,7 +171,9 @@ my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";
 my $HALDIS      = "mifahb";
 
-my $USER       =  $HALDIS; 
+my $USER = $ENV{"USER"};
+print "USER = $USER\n";
+
 
 # hb NH3Emis                                                                  
 my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3. 
