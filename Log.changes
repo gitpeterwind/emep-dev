@@ -1,4 +1,8 @@
-xxxxxxxxxxxxxx rv3_6_21... in progress Dave
+xxxxxxxxxxxxxx rv3_6_21... in progress Dave/Robert
+
+DryDep_ml  - modified for consistency with SOA module - uses
+      Fpart for semivolatile species. Small changes in notation
+      also
 
 GenChem.pl - modified for SOA treatment. Use typ=2 in GenIn.species
   and add SOA, ASOA etc. in groups to get e.g. SOA_GROUP

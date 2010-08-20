@@ -74,8 +74,9 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
  use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
 
 
+ use ChemChemicals_ml, only : species
  use ChemSpecs_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
- use ChemSpecs_tot_ml, only : NSPEC_TOT
+ use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
 !LPJ  use DO3SE_ml,       only : Init_DO3SE, do3se, f_phen
  use DO3SE_ml,       only : do3se, f_phen
  use EcoSystem_ml,   only : EcoSystemFrac, Is_EcoSystem,  &
@@ -104,7 +105,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
  use Rsurface_ml
  use SoilWater_ml, only : SWP ! = 0.0 always for now!
  use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
- use Setup_1dfields_ml, only : xn_2d,amk
+ use Setup_1dfields_ml, only : xn_2d,amk, Fpart, Fgas
  use StoFlux_ml,  only:   STO_FLUXES,  &   ! true if fluxes wanted.
                             unit_flux, &! = sto. flux per m2
                             lai_flux,  &! = lai * unit_flux
@@ -229,7 +230,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
     integer n, iiL, nlu, ncalc, nadv  ! help indexes
     integer :: imm, idd, ihh, iss     ! date
-    integer :: nadv2d !index of adv species in xn_2d array
+    integer :: ntot !index of adv species in xn_2d array
 
     real :: no2fac  ! Reduces Vg for NO2 in ration (NO2-4ppb)/NO2
 !dsVDS    real :: RaVs    ! Ra_ref *Vs for particles
@@ -641,29 +642,38 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
 
       do n = 1, NDRYDEP_ADV 
          nadv    = DDepMap(n)%ind
-         nadv2d  = NSPEC_SHL + DDepMap(n)%ind
+         ntot  = NSPEC_SHL + DDepMap(n)%ind
 
          ncalc   = DDepMap(n)%calc
 
          if ( vg_set(n) ) then
 
              DepLoss(nadv) =   & ! Use directly set Vg
-                 ( 1.0 - exp ( -DDepMap(n)%vg * dtz ) ) * xn_2d( nadv2d,KMAX_MID)
+                 ( 1.0 - exp ( -DDepMap(n)%vg * dtz ) ) * xn_2d( ntot,KMAX_MID)
              cfac(nadv, i,j) = 1.0   ! Crude, for now.
   
          else
-             DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( nadv2d,KMAX_MID)
-             cfac(nadv, i,j) = gradient_fac( ncalc )
+            if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
+               DepLoss(nadv) =   Fpart(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d( ntot,KMAX_MID)
+               cfac(nadv, i,j) = 1.0+Fpart(ntot,KMAX_MID)*(gradient_fac( ncalc )-1.0)
+            else
+               DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( ntot,KMAX_MID)
+               cfac(nadv, i,j) = gradient_fac( ncalc )
+            endif
+            if ( DEBUG_DRYDEP .and. debug_flag ) then
+               write(*,"(a,a,4i5,es10.3)") "DEBUG_DDEP:", trim(species(ntot)%name), &
+               n, nadv, ntot, ncalc, vg_fac(ncalc)
+            end if
          end if
 
          if ( DepLoss(nadv) < 0.0 .or. &
-              DepLoss(nadv)>xn_2d(nadv2d,KMAX_MID) ) then
+              DepLoss(nadv)>xn_2d(ntot,KMAX_MID) ) then
              call CheckStop("NEGXN DEPLOSS" )
          end if
 
 
-        xn_2d( nadv2d,KMAX_MID) = &
-             xn_2d( nadv2d,KMAX_MID) - DepLoss(nadv)
+        xn_2d( ntot,KMAX_MID) = &
+             xn_2d( ntot,KMAX_MID) - DepLoss(nadv)
 
 
 
@@ -671,13 +681,13 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
            ! fraction by which xn is reduced - used in
            ! safety measure:
              
-              if( xn_2d( nadv2d,KMAX_MID)  > 1.0e-30 ) then
+              if( xn_2d( ntot,KMAX_MID)  > 1.0e-30 ) then
                   lossfrac = ( 1.0 - DepLoss(nadv)/ &
-                                (DepLoss(nadv)+xn_2d( nadv2d,KMAX_MID)))
+                                (DepLoss(nadv)+xn_2d( ntot,KMAX_MID)))
               end if
               if ( DEBUG_DRYDEP .and. lossfrac < 0.1 ) then
                   call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
-                  !print *, "ERROR: LOSSFRAC ", lossfrac, nadv, nadv2d
+                  !print *, "ERROR: LOSSFRAC ", lossfrac, nadv, ntot
               end if
         end if
 
@@ -740,7 +750,7 @@ use My_Derived_ml, only : METCONC_PARAMS &    ! ->  d_2d, IOU_INST, D2_VG etc...
               write(*, "(a30,3i4,f12.5)") &
                   "DEBUG DryDep n, adv, calc, fac ",  n,nadv, ncalc, gradient_fac( ncalc)
               write(*, "(a20,2e12.4)") &
-                "DEBUG xn, DepLoss ", xn_2d(nadv2d,KMAX_MID), DepLoss(nadv)
+                "DEBUG xn, DepLoss ", xn_2d(ntot,KMAX_MID), DepLoss(nadv)
               write(*, "(a20,2f8.4)") "DEBUG gv_fac( ncalc)", &
                  vg_fac(ncalc), 1.0-vg_fac(ncalc)
           end if
