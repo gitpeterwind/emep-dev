@@ -208,15 +208,18 @@ contains
          !
          ! Step 1: Get gv in m/s units:
 
-            gv = 1.0/ (2.0 * Rb_cor(WES_O3) /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
-            gvcms = gv
+            gv = 0.0
+            if( L%g_sto > 1.0e-10 ) then
+              gv = 1.0/ (2.0 * Rb_cor(WES_O3) /(KARMAN*L%ustar) + 1.0/ ( L%g_sto * L%LAI ) )
+              gvcms = gv
 
          ! Step 2: Convert to mole/m2/s and for H2O
          ! mmol2sm = 8.3144e-8*L%t2  for O3, plus factor 1.6 for H2O
          ! * 0.001 -> mole/m2/s
          ! ms2molm2s = 1.6*1.0e-3/(8.3144e-8*L%t2)
          
-            gv = gv * 1.6e-3/(8.3144e-8*L%t2)
+              gv = gv * 1.6e-3/(8.3144e-8*L%t2)
+            end if
          
          ! Step 3: 
          ! Mass flux density is E x 0.018 kg/mole -> kg/m2/s

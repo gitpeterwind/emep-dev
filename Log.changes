@@ -8,6 +8,7 @@ GenChem.pl - modified for SOA treatment. Use typ=2 in GenIn.species
 
 mk.GenChem - removbed CM_SOA_ml
 
+StoFlux.f90 - bug fix on evapotranspiration calculation - avoid div  by zero
 
 ZCM_EmChem09/GenIn.species - some fake species added to test SOA+GenChem.
    Commented out for now, just uncomment to try.
