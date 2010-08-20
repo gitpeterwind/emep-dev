@@ -145,8 +145,8 @@
   ! Aerosols:
            integer, public, parameter :: &
                 NAEROSOL=0,   &!   Number of aerosol species
-                FIRST_SOA=-999, &!   First aerosol species
-                LAST_SOA=-999     !   Last  aerosol species  
+                FIRST_SEMIVOL=-999, &!   First aerosol species
+                LAST_SEMIVOL=-999     !   Last  aerosol species  
 
 
 
@@ -269,7 +269,7 @@
        real              :: nitrogens ! Nitrogen-number
        integer           :: sulphurs  ! Sulphur-number
        real              :: ExtC      ! Extinction coef (aerosols)
-       real              :: Cstar     ! VBS param
+       real              :: CiStar     ! VBS param
        real              :: DeltaH    ! VBS param
   end type Chemical
   type(Chemical), public, dimension(NSPEC_TOT) :: species
@@ -347,15 +347,15 @@
      species(CO) = Chemical("CO          ",  28,  0,  1,   0,  0, 0.0,  0.0000,    0.0 ) 
      species(CH4) = Chemical("CH4         ",  16,  0,  1,   0,  0, 0.0,  0.0000,    0.0 ) 
      species(SO2) = Chemical("SO2         ",  64,  0,  0,   0,  1, 0.0,  0.0000,    0.0 ) 
-     species(SO4) = Chemical("SO4         ",  96,  0,  0,   0,  1, 0.0,  0.0000,    0.0 ) 
+     species(SO4) = Chemical("SO4         ",  96,  0,  0,   0,  1, 8.5,  0.0000,    0.0 ) 
      species(PNO3_C) = Chemical("PNO3_C      ",  62,  0,  0,   1,  0, 0.0,  0.0000,    0.0 ) 
      species(NH3) = Chemical("NH3         ",  17,  0,  0,   1,  0, 0.0,  0.0000,    0.0 ) 
-     species(ANH4) = Chemical("ANH4        ",  18,  0,  0,   1,  0, 0.0,  0.0000,    0.0 ) 
-     species(PNO3_F) = Chemical("PNO3_F      ",  62,  0,  0,   1,  0, 0.0,  0.0000,    0.0 ) 
+     species(ANH4) = Chemical("ANH4        ",  18,  0,  0,   1,  0, 8.5,  0.0000,    0.0 ) 
+     species(PNO3_F) = Chemical("PNO3_F      ",  62,  0,  0,   1,  0, 8.5,  0.0000,    0.0 ) 
      species(PPM25) = Chemical("PPM25       ",  12,  0,  0,   0,  0, 0.0,  0.0000,    0.0 ) 
      species(PPM25_FIRE) = Chemical("PPM25_FIRE  ",  12,  0,  0,   0,  0, 0.0,  0.0000,    0.0 ) 
      species(PPMCO) = Chemical("PPMCO       ",  12,  0,  0,   0,  0, 0.0,  0.0000,    0.0 ) 
-     species(SEASALT_F) = Chemical("SEASALT_F   ",  58,  0,  0,   0,  0, 0.0,  0.0000,    0.0 ) 
+     species(SEASALT_F) = Chemical("SEASALT_F   ",  58,  0,  0,   0,  0, 5.7,  0.0000,    0.0 ) 
      species(SEASALT_C) = Chemical("SEASALT_C   ",  58,  0,  0,   0,  0, 0.0,  0.0000,    0.0 ) 
      species(RN222) = Chemical("RN222       ", 222,  0,  0,   0,  0, 0.0,  0.0000,    0.0 ) 
      species(PB210) = Chemical("PB210       ", 210,  0,  0,   0,  0, 0.0,  0.0000,    0.0 ) 
