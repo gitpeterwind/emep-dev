@@ -3,10 +3,13 @@ xxxxxxxxxxxxxx rv3_6_21... in progress Dave
 GenChem.pl - modified for SOA treatment. Use typ=2 in GenIn.species
   and add SOA, ASOA etc. in groups to get e.g. SOA_GROUP
   in CM_ChemSpecs_ml.
+  Uses FIRST_SEMIVOL instead of FIRST_SOA, same for LAST
 
   Note that the DeltaH and Cstar info is now part of chemicals%
 
 mk.GenChem - removbed CM_SOA_ml
+
+SOA_ml - uses FIRST_SEMIVOL instead of FIRST_SOA, same for LAST
 
 StoFlux.f90 - bug fix on evapotranspiration calculation - avoid div  by zero
 

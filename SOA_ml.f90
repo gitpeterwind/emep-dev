@@ -51,7 +51,7 @@ module OrganicAerosol_ml
    use PhysicalConstants_ml, only : AVOG
    use Setup_1dfields_ml,    only : itemp, xn => xn_2d
    use ChemChemicals_ml,      only : species   ! for molwts
-   use ChemSpecs_tot_ml,  A1 => FIRST_SOA , A2 => LAST_SOA
+   use ChemSpecs_tot_ml,  A1 => FIRST_SEMIVOL , A2 => LAST_SEMIVOL
    implicit none
 
    !/-- subroutines

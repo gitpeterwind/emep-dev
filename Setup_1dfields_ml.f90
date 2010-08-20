@@ -37,7 +37,7 @@
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
   use EmisDef_ml,            only :  NSS, NBVOC   !NSS=SeaS
-  use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SOA, LAST_SOA
+  use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   !ds use ChemSpecs_bgn_ml,        only :  NSPEC_COL
   use Chemfields_ml,        only :  NSPEC_COL
