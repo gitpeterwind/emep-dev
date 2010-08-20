@@ -81,10 +81,10 @@ our %grp;   # Will be hash of arrays,  e.g. $grp{"NOX"} = [ "NO", "NO2" ]
  my( %groups, @headers );
  my @ro2pool = (); # used with new-style GenIn.species from Garry
 
- my $SOA_USED = 0;  # Set to one if SOA included
- my ( $naerosol, $first_soa, $last_soa )   = ( 0, 0, 0 ) ;
+#dsrb not used  my $SOA_USED = 1;  # Set to one if SOA included
+ my ( $naerosol, $first_semivol, $last_semivol )   = ( 0, 0, 0 ) ;
  my ( @species, @nspecies, @speciesmap ) = ();     # e.g. species[TOT][n]
- my ( @extinc, @Cstar, @DeltaH ); # Aerosol params
+ my ( @extinc, @CiStar, @DeltaH ); # Aerosol params
  my ( @asoa, @bsoa, @opoa, @bgnd_oc, @vol ) = ();
  my ( @woodoc, @ffueloc, @nonvoloc ) = ();
  my ( @woodec, @ffuelec, @nonvolec ) = ();
@@ -257,7 +257,7 @@ sub read_species {
 		$species_tot[$n]       = $spec ;
 		$speciesmap[$tot][$n]  = $n ; 
 	        $extinc[$n]  = $extinc;
-	        $Cstar[$n]  = $cstar;
+	        $CiStar[$n]  = $cstar;
 	        $DeltaH[$n]  = $DeltaH;
 		printall("SPECIES READ => $n $spec N $n DH $DeltaH; ");
 
@@ -277,8 +277,8 @@ sub read_species {
 
 		if ( $typ == 2 ) {
 		    $naerosol++ ;
-		    if ( $naerosol == 1 ) { $first_soa = $n };
-		    $last_soa = $n ;
+		    if ( $naerosol == 1 ) { $first_semivol = $n };
+		    $last_semivol = $n ;
 		    $typ = 1;  # Reset for advection below
 		}
 
@@ -1024,15 +1024,15 @@ sub print_species {
            integer, public, parameter :: $nspec_txt{$s}=$nspecies[$s] \n";
 
 	if ( $s == $tot && $naerosol == 0 ) {   # aerosols kept in totals file 
-                $first_soa=-999;
-                $last_soa=-999;
+                $first_semivol=-999;
+                $last_semivol=-999;
 	}
 	if ( $s == $tot  ) {   # aerosols kept in totals file 
 		$aero_txt    = "\n  ! Aerosols:
            integer, public, parameter :: &
                 NAEROSOL=$naerosol,   &!   Number of aerosol species
-                FIRST_SOA=$first_soa, &!   First aerosol species
-                LAST_SOA=$last_soa     !   Last  aerosol species  \n\n";
+                FIRST_SEMIVOL=$first_semivol, &!   First aerosol species
+                LAST_SEMIVOL=$last_semivol     !   Last  aerosol species  \n\n";
 	} else {
 		$aero_txt    = "\n";
 	}
@@ -1078,7 +1078,7 @@ sub print_species {
        real              :: nitrogens ! Nitrogen-number
        integer           :: sulphurs  ! Sulphur-number
        real              :: ExtC      ! Extinction coef (aerosols)
-       real              :: Cstar     ! VBS param
+       real              :: CiStar     ! VBS param
        real              :: DeltaH    ! VBS param
   end type Chemical
   type(Chemical), public, dimension(NSPEC_TOT) :: species
@@ -1099,10 +1099,10 @@ END_CHEMSTART
             printf F 
            "     species(%s) = Chemical(\"%-12s\",%4d,%3d,%3d,%4d,%3d,%4.1f,%8.4f,%7.1f ) \n",  
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-                   $cnum, $nnum, $snum, $extinc[$i], $Cstar[$i], $DeltaH[$i];
+                   $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i];
             print "SPECF ", 
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
-                   $cnum, $nnum, $snum, $extinc[$i], $Cstar[$i], $DeltaH[$i], "\n";
+                   $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i], "\n";
 	}
 
         print F "   end subroutine define_chemicals\n";
@@ -1444,7 +1444,7 @@ sub print_soa {
 #DSSOA        
 #DSSOA	if ( $first_soa > 0) {
 #DSSOA               print SOA <<"END_VBSDEF";
-#DSSOA  type(VBST), dimension(FIRST_SOA:LAST_SOA), public, &
+#DSSOA  type(VBST), dimension(FIRST_SEMIVOL:LAST_SEMIVOL), public, &
 #DSSOA       parameter :: VBS = (/ &
 #DSSOAEND_VBSDEF
 #DSSOA
