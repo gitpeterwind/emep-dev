@@ -154,10 +154,10 @@ module ModelConstants_ml
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
     ,DEBUG_RUNCHEM        = .false. &
-    ,DEBUG_WETDEP         = .false. & !
-    ,DEBUG_MY_WETDEP      = .false. & !
+      ,DEBUG_WETDEP         = .false. & !
+      ,DEBUG_MY_WETDEP      = .false. & !
+      ,DEBUG_SOA            = .false. & !
     ,DEBUG_SEASALT        = .false. & !
-    ,DEBUG_SOA            = .false. & !
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_LANDDEFS       = .false. & !
     ,DEBUG_LANDUSE        = .false. & !
