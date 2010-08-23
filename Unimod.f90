@@ -58,7 +58,7 @@ program myeul
   use Derived_ml,       only : Init_Derived, f_2d, f_3d
   use DO3SE_ml,       only : Init_DO3SE !LPJ
   use EcoSystem_ml,     only : Init_EcoSystems
-  use EmisDef_ml,       only : NBVOC, AIRNOX, FOREST_FIRES, NH3EMIS_VAR ! hb NH3emis
+  use EmisDef_ml,       only : NBVOC, AIRNOX, NH3EMIS_VAR ! hb NH3emis
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use ForestFire_ml,   only : Fire_Emis
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
@@ -78,6 +78,7 @@ program myeul
        ,runlabel2  &   ! explanatory text
        ,nprint,nass,nterm,iyr_trend, PT &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
+       ,USE_FOREST_FIRES & !
        ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
   use OutputChem_ml,    only : WrtChem
@@ -426,7 +427,7 @@ program myeul
 
      call SetLandUse()    !Moved here from DryDep !LPJ
 
-     if ( FOREST_FIRES ) call Fire_Emis(daynumber)
+     if ( USE_FOREST_FIRES ) call Fire_Emis(daynumber)
 
      call Add_2timing(10,tim_after,tim_before,"infield")
 

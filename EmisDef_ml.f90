@@ -38,19 +38,24 @@ implicit none
 
   !! No. emission files to be read for non-speciated
 
-   integer, public, parameter :: NEMIS_FILES =      7 
+!ds   integer, public, parameter :: NEMIS_FILES =      7 
+!ds
+!ds   !/** The names used below must have length of 6 characters and must
+!ds   !    belong to the full list given in Emissions_ml, as they will
+!ds   !    be used together with information in that module. An error
+!ds   !    message (fatal)  will be produced if this is not the case.
+!ds   !-----------------------------------------------------------------
+!ds
+!ds    character(len=6), public, save, dimension(NEMIS_FILES) :: &
+!ds      EMIS_NAME  = &
+!ds      (/ "sox   ", "co    "   &   ! =non-split first
+!ds       , "nh3   ", "pm25  ", "pmco  "   &
+!ds       , "nox   ", "voc   "  /)                       ! =to be split
 
-   !/** The names used below must have length of 6 characters and must
-   !    belong to the full list given in Emissions_ml, as they will
-   !    be used together with information in that module. An error
-   !    message (fatal)  will be produced if this is not the case.
-   !-----------------------------------------------------------------
-
-    character(len=6), public, save, dimension(NEMIS_FILES) :: &
-      EMIS_NAME  = &
-      (/ "sox   ", "co    "   &   ! =non-split first
-       , "nh3   ", "pm25  ", "pmco  "   &
-       , "nox   ", "voc   "  /)                       ! =to be split
+    !************ Definitions of NEMIS_FILES ad EMIS_NAME are now
+    !************ deduced by GenChem from the GenIn.reactions file.
+    !
+       include 'CM_Emis.inc'
 
     !----------------- basic emissions file definitions --------------------!
     !  Here we define the parameters *not* likely to change often           !
@@ -129,11 +134,11 @@ implicit none
         (/NEMISLAYERS,NSECTORS /) )!hf stakheigth
 
 
-  ! Biogenics
-   integer, public, parameter ::   NBVOC = 1   
+  ! Biogenics. Use 2 even if no terpene chemistry - simplifies
+  ! rest of code
+   integer, public, parameter ::   NBVOC = 2   
    character(len=8),public, save, dimension(NBVOC) :: &
-                                   BVOC_USED = (/ "isoprene"/)   
-!!                                   BVOC_USED = (/ "isoprene","terpene "/)   
+                                   BVOC_USED = (/ "isoprene","terpene "/)   
 
    !SeaSalt
    integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
@@ -147,8 +152,8 @@ implicit none
    !/** Volcanos. 
     logical, public, parameter :: VOLCANOES   = .true.  ! Gives Volcanos
 
-   !/** Forest fires. 
-    logical, public, parameter :: FOREST_FIRES = .false.  ! Problems in code??
+   !/** Forest fires.  ! Moved to ModelConstants_ml
+   !dsPCM logical, public, parameter :: FOREST_FIRES = .false.  ! Problems in code??
 
  ! hb NH3emis                                                                  
    !NH3 emissions set by meteorology and special activity data                 

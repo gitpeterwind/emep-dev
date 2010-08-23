@@ -82,7 +82,7 @@ integer, public, parameter :: &
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE =    12             ! No. Misc. met. params  ( e.g. T2, d_2d)
+    ,NXTRA_SITE =    11             ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
     SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
@@ -102,23 +102,17 @@ integer, public, parameter :: &
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
    SITE_XTRA=      (/  "D2D  ","th   ","T2   ","D2D  ",&
                        "D2D  ","D2D  ","D2D  ", &
-                       "D2D  ","D2D  ", &
-                       "D2D  ","D2D  ", &
+                       "D2D  ","D2D  ","D2D  ", &
                        "D2D  "   /)
 !                       "D2D  ","D2D  ","D2D  ","D2D  ", &
-!                       "D2D  ","D2D  ","D2D  ","D2D  ", &
-!                       "D2D  ","D2D  ","D2D  ","D2D  ",&
 !                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
-!                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
-!                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
-!    SITE_XTRA=      (/ "hmix ", "th  ", "D2D        " /)
 
 !Remember, d2d variables must have been set in My_Derived for
 !them to be used.
    character(len=18), public, parameter, dimension(NXTRA_SITE) :: &
     SITE_XTRA_CODE= (/ &
      "HMIX           ","th             ","T2             ","PSURF          ", &
-     "SoilWater_deep ","SoilWater      ","EVAP_CF        ","EVAP_DF        ", &
+     "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
      "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
 !     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
 !     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
@@ -130,14 +124,8 @@ integer, public, parameter :: &
 
 !ds Not used, so skip
 !ds   integer,           public, parameter, dimension(NXTRA_SITE) :: &
-!ds   SITE_XTRA_INDEX=  (/  0, 0,  0,  0, &
-!                         0, 0,  0,  0, &
-!                         0, 0,  0,  0, &
-!                         0, 0,  0,  0, &
-!                         0, 0,  0,  0, 0, &
-!                         0, 0,  0,  0, 0, &
-!                         0, 0,  0,  0, 0, &
-!                         0 /)
+!ds   SITE_XTRA_INDEX=  (/  0, 0,  0,  0, & !      0, 0,  0,  0, &
+!                         0, 0,  0,  0, 0, & !    0 /)
 
 
 
@@ -166,20 +154,26 @@ integer, public, parameter :: &
      NSONDES_MAX =    99               &   ! Max. no sondes allowed
     ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
-    ,NADV_SONDE  =     8                &   ! No.  advected species
+    ,NADV_SONDE  =   8                &   ! No.  advected species
+!PCM    ,NADV_SONDE  =   22                &   ! No.  advected species
     ,NSHL_SONDE  =    3                &   ! No. short-lived species
     ,NXTRA_SONDE =    7                    ! No. Misc. met. params  (now th)
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
-   SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_CO, &
-   IXADV_pNO3_c,  IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
+   SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, &
+! Uncomment PCM to get SOA-relaetd outputs
+!PCMIXADV_AER_ASOA, &
+!PCM                IXADV_AER_BSOA, IXADV_AER_POA, IXADV_AER_OPOA, &
+!PCM                IXADV_AER_OC, IXADV_AER_POC, IXADV_AER_FFUELOC, &
+!PCM                IXADV_AER_WOODOC, IXADV_FFIRE_BC, IXADV_EC_F_FFUEL, &
+!PCM                IXADV_EC_C_FFUEL, IXADV_EC_F_WOOD, IXADV_EC_C_WOOD,IXADV_CO, &
+                IXADV_pNO3_c, IXADV_pNO3_f, IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
 
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-!   SONDE_XTRA=  (/ "PM25 ", "PMco ", "NOy  ", "z_mid", "p_mid", "th   " /)
 !   SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /)
-    SONDE_XTRA=  (/"PM25  ", "PMco  ", &  !AMVB 2010-07-19: PM-PPB bug fix
+    SONDE_XTRA=  (/"PM25  ", "PMco  ", & 
                    "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /)
 
 

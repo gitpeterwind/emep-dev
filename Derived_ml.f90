@@ -88,7 +88,7 @@ use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M&
                          ,GridArea_m2 ! dsbvoc
 use MetFields_ml, only :   roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
 use MetFields_ml, only :   ps
-use MetFields_ml, only :   SoilWater, SoilWater_deep
+use MetFields_ml, only :   SoilWater_deep
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
   ,NPROC        & ! No. processors
@@ -460,8 +460,8 @@ call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
 !SoilWater
 call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
                -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
-call AddNewDeriv( "SoilWater","SoilWater",  "-","-",   "m", &
-               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
+!call AddNewDeriv( "SoilWater","SoilWater",  "-","-",   "m", &
+!               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
 
 !Mass-based outputs
 do ind = 1, size(SURF_UG_S)
@@ -843,7 +843,7 @@ end do
           end forall
           if ( debug_flag ) call write_debug(n,index, "SoilWater_DEEP")
 
-          case ( "SoilWater" )
+          case ( "SoilWater" ) ! Not used so far. (=shallow)
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
           end forall

@@ -43,7 +43,7 @@
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
   use Derived_ml,            only : d_2d
-  use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES, FOREST_FIRES &
+  use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES &
                                   ,NSS & !SeaS
                                   ,NH3EMIS_VAR ! hb NH3Emis    
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
@@ -75,6 +75,7 @@
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
+    ,USE_FOREST_FIRES                & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
   use My_Aerosols_ml,       only : SEASALT
@@ -91,6 +92,7 @@
     ,rcss                 &  !SeaS - sea salt
     ,rh, temp, tinv, itemp,pp      &  ! 
     ,amk, o2, n2, h2o     &  ! Air concentrations 
+    ,rcbio                &  ! dsPCM
     ,rcnh3                   ! hb NH3emis
   use SeaSalt_ml,        only : SS_prod 
   use Tabulations_ml,    only :  tab_esat_Pa
@@ -107,7 +109,11 @@
   public :: setup_nh3 ! hb NH3emis   
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
-  real, dimension(NBVOC), public, save :: rcbio  !ispop and terpene
+  !dsPCM real, dimension(NBVOC), public, save :: rcbio  !ispop and terpene
+  ! We define a column array for isoprene and terpene for use in
+  ! the chemical solver. All values except for k=KMAX_MID will
+  ! remain zero however
+  !dsPCM real, dimension(NBVOC,KMAX_MID), public, save :: rcbio = 0.0  !ispop and terpene
   real, dimension(MAXLIMAX,MAXLJMAX,NBVOC), public, save :: NatEmisSum 
 
 contains
@@ -299,10 +305,12 @@ contains
 
 ! Biogenics:
 ! Hard-coded for now, for isoprene only:
-     rcemis(C5H8,KMAX_MID) =  rcemis(C5H8,KMAX_MID) + rcbio(BIO_ISOP)
+!RB: adding apinene also
+!dsPCM     rcemis(C5H8,KMAX_MID) =  rcemis(C5H8,KMAX_MID) + rcbio(BIO_ISOP)
+!dsPCM     rcemis(APINENE,KMAX_MID) =  rcemis(APINENE,KMAX_MID) + rcbio(BIO_TERP)
 
 
-     if ( FOREST_FIRES  .and. burning(i,j)  ) then
+     if ( USE_FOREST_FIRES  .and. burning(i,j)  ) then
 
        call Fire_rcemis(i,j)
 
@@ -438,7 +446,8 @@ contains
   it2m = min(it2m,40)
 
   if(BIO_TERP > 0)  then
-     rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+     !dsPCM rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+     rcbio(BIO_TERP,KMAX_MID) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
 
      !emnat was in molec/cm3/s. We use the easier emforest which
      ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
@@ -446,14 +455,16 @@ contains
   end if
 
   ! Isoprene has emissions in daytime only:
-  rcbio(BIO_ISOP) = 0.0
+  !dsPCM rcbio(BIO_ISOP) = 0.0
+  rcbio(BIO_ISOP,KMAX_MID) = 0.0
   if ( Grid%izen <= 90) then
 
      ! Light effects from Guenther G93
       par = (Idirect(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
       cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
 
-      rcbio(BIO_ISOP) = emnat(i,j,BIO_ISOP) &
+      !dsPCM rcbio(BIO_ISOP) = emnat(i,j,BIO_ISOP) &
+      rcbio(BIO_ISOP,KMAX_MID) = emnat(i,j,BIO_ISOP) &
              * canopy_ecf(BIO_ISOP,it2m) * cL
 
      !emnat was in molec/cm3/s. We use the easier emforest which
@@ -465,7 +476,8 @@ contains
   if ( DEBUG_SETUP_1DBIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
      write(*,"(a5,2i4,5es12.3)") "DBIO ", current_date%day, &
-      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), rcbio(BIO_ISOP), EmisNat(i,j,BIO_ISOP)
+      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), &
+        rcbio(BIO_ISOP,KMAX_MID), EmisNat(i,j,BIO_ISOP)
   end if
 
   end subroutine setup_bio

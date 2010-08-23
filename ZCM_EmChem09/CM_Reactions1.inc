@@ -791,7 +791,8 @@
 !-> C5H8 
 
       P =   &
-          RCEMIS(C5H8,K) 
+          RCEMIS(C5H8,K)  &
+        + RCBIO(BIO_ISOP,K) 
 
       L =  &
           rct(34,k)* xnew(O3 )  &

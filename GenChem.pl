@@ -63,6 +63,7 @@ my $old_style = 0;
 our $grp_style = 0;  
 our %grp;   # Will be hash of arrays,  e.g. $grp{"NOX"} = [ "NO", "NO2" ]
 
+our @emis_files = ();
 
 # Some descriptive variables for later output
  my ( $line, $linenum, $rate ) ;  # Input line
@@ -173,6 +174,7 @@ if ( $nrcmisc > 0 ) {
 }
  printmap_dep();
  print_groups();   # DDEP_OXNGROUP etc.
+ print_emis();     #  "nox ", etc.
 
 #print_speciesmap() ;
 
@@ -600,7 +602,9 @@ sub define_rates {
 		     # $nrcc++ ;    # $rate_label[$neqn] = "RCC(" . $nrcc. ")"    ;
 	} elsif ( $rate =~ /rcemis/i ) {
 		# $nemis++ ; NOT USED HERE
-		$k = $rate ;
+		printall( "Process??: RATE $rate \n" );
+		$k = process_emis( $rate ) ;
+		printall( "Process??: K $k \n" );
 	} elsif ( $rate =~ /aqrck/i ) {
 		$k = $rate ;
 	} elsif ( $rate =~ /DJ/i ) {   # e.g. DJ(iq,2)
@@ -1408,6 +1412,23 @@ sub print_rates {
 	close(GROUPS);
 }
 ###############################################################################
+ sub print_emis {
+        my $Nemis = @emis_files;
+	printall( "ENTERING EMIS print $Nemis\n");
+        open(EMIS,">GenOut_Emis.inc") or die "FAIL EMIS\n"; 
+
+	print EMIS "  integer, public, parameter ::  NEMIS_FILES  = $Nemis\n";
+	print EMIS "  character(len=6), public, save, dimension(NEMIS_FILES):: &\n";
+	print EMIS "      EMIS_NAME =  (/ &\n";
+	my $comma = "";
+	foreach my $e ( @emis_files ){
+		printf EMIS "%12s \"%-6s\" &\n", $comma, lc($e); 
+		$comma = ",";
+	}
+	print EMIS " /)\n ";
+        close(EMIS);
+}
+###############################################################################
 sub print_soa {
 	my ( $typ, @soa ) = @_ ; # assign subroutine arguments
 	my $N = @soa;
@@ -1419,59 +1440,6 @@ sub print_soa {
 	print SOA "     $typ = (/  $out /)\n" ;
 }
 ###############################################################################
-#DSSOAsub print_OA {
-#DSSOA	my $comma = " ";
-#DSSOA	my $N   = @all_soa;
-#DSSOA	my @soa = @all_soa;
-#DSSOA	my($module, $end_of_line, $Use);
-#DSSOA
-#DSSOA	$module = "ChemSOA_ml";
-#DSSOA        open(SOA,">$module.f90");
-#DSSOA	$Use    = "use ChemSpecs_tot_ml  ! => NSPEC_TOT, species indices";
-#DSSOA        start_module($module,\*SOA,$Use);
-#DSSOA	print SOA	"!+ Defines SOA, NONVOL and VBS params \n"; 
-#DSSOA
-#DSSOA	print SOA <<"END_CHEMSTART";
-#DSSOA
-#DSSOA  type, public :: VBST
-#DSSOA       integer     :: index    ! just for clarity
-#DSSOA       real        :: CiStar   ! ug/m3
-#DSSOA       !real        :: Tref    ! Assumed 300
-#DSSOA       real        :: DeltaH   ! kJ/mole
-#DSSOA  end type VBST
-#DSSOAEND_CHEMSTART
-#DSSOA
-#DSSOA        
-#DSSOA	if ( $first_soa > 0) {
-#DSSOA               print SOA <<"END_VBSDEF";
-#DSSOA  type(VBST), dimension(FIRST_SEMIVOL:LAST_SEMIVOL), public, &
-#DSSOA       parameter :: VBS = (/ &
-#DSSOAEND_VBSDEF
-#DSSOA
-#DSSOA	  	for(my $n=0;$n<$N;$n++) {
-#DSSOA 		   my ( $Ci, $dH, @rest ) = split(/\s+/, $soa_extras[$n] );
-#DSSOA		   print SOA "      $comma VBST($soa[$n], $Ci, $dH ) & \n";
-#DSSOA		   $comma = ",";
-#DSSOA		}
-#DSSOA       	 print SOA " /)\n\n"; 
-#DSSOA
-#DSSOA		print_soa("ASOA", @asoa);
-#DSSOA		print_soa("BSOA", @bsoa);
-#DSSOA		print_soa("OPOA", @opoa);
-#DSSOA		print_soa("WOODOC", @woodoc);
-#DSSOA		print_soa("FFUELOC", @ffueloc);
-#DSSOA		print_soa("WOODEC", @woodec);
-#DSSOA		print_soa("FFUELEC", @ffuelec);
-#DSSOA		print_soa("VOL", @vol);
-#DSSOA		print_soa("NONVOLOC", @nonvoloc);
-#DSSOA		print_soa("NONVOLEC", @nonvolec);
-#DSSOA
-#DSSOA	} # SOA 
-#DSSOA        print SOA "\n\n end module $module\n $HLINE"; 
-#DSSOA	close(SOA);
-#DSSOA
-#DSSOA} # end of sub print_OA
-#########################################################################
 sub expand_shorthands {
 	my $s  = shift;
 	foreach my $shorthand (keys(%shorthand)){
@@ -1481,6 +1449,25 @@ sub expand_shorthands {
 	}
 	return $s;
 } # end of expand_shorthands(
+#########################################################################
+sub process_emis {
+	my $arg = shift;
+	my ( $emis, $rate ); 
+	if( $arg =~ /:/) {
+		( $emis, $rate ) = split(/:/,$arg); 
+		my $found = 0;
+		foreach my $e ( @emis_files ) {
+			$found = 1 if $emis eq $e ;
+			printall( "RCEMIS FOUND: $emis R $rate \n" );
+		}
+		push( @emis_files, $emis ) unless $found;
+		printall( "RCEMIS  EMISF @emis_files\n" );
+	} else {
+		$rate = $arg;
+		die "No emission file specified for $arg\n";
+	}
+	return $rate;
+}
 #########################################################################
 sub process_groups {
 	my ( $spec, $groups )  =  @_ ;

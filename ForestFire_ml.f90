@@ -3,8 +3,8 @@ module ForestFire_ml
   use ChemChemicals_ml, only : species
   use ChemSpecs_tot_ml, only : NO, CO
   use Country_ml,       only : IC_BB   ! FFIRE
-  use EmisDef_ml,  only : FOREST_FIRES &
-    ,ISNAP_NAT   &  ! ForeFires are assigned to SNAP-11 usually
+  use EmisDef_ml,  only :  &
+     ISNAP_NAT   &  ! ForeFires are assigned to SNAP-11 usually
     ,NEMIS_FILES &
     ,EMIS_NAME  ! lets us know which pollutants are wanted, e.g. sox, pm25
 
@@ -16,7 +16,8 @@ module ForestFire_ml
   use GridValues_ml, only : i_fdom, j_fdom, debug_li, debug_lj, debug_proc
   use Io_ml,       only : PrintLog
   use MetFields_ml,      only : z_bnd
-  use ModelConstants_ml, only : MasterProc, KMAX_MID, DEBUG_FORESTFIRE, &
+  use ModelConstants_ml, only : MasterProc, KMAX_MID, &
+                                USE_FOREST_FIRES, DEBUG_FORESTFIRE, &
                                 IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
   use NetCDF_ml, only : ReadField_CDF, Out_netCDF,  Real4 ! Reads, writes 
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
@@ -62,7 +63,7 @@ implicit none
    end type
 
   ! GFED table ============================================================
-    integer, private, parameter :: NDEFINED_EMEP  = 9 ! No pollutants in file
+    integer, private, parameter :: NDEFINED_EMEP  = 16 ! No pollutants in file
 
    !/ Defintions of GFED data. If known, we assign the GFED pollutant which
    !  corresponds to each possible EMEP emission file. Simply add EMEP 
@@ -84,10 +85,17 @@ implicit none
       BB_Defs("pm25  ", "PM25  ", 0    ), & ! species(PPM25)%molwt ), & 
       BB_Defs("nox   ", "NOx   ", 30.0 ), & ! as NO in GFED, assign 100% in emissplit
       BB_Defs("nh3   ", "-     ",  1.0 ), & ! NH3 not available in GFED. Use 1 g/kg DW
+      BB_Defs("pocffl", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("poccfl", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("pocfwd", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("eccwd ", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("ecfwd ", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("ecffl ", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("eccfl ", "-     ",  0.0 ), & ! rb: is this really needed?
       BB_Defs("voc   ", "NMHC  ", 0    ), &  
-      BB_Defs("bc    ", "BC    ", 12.0 ), &
-      BB_Defs("oc    ", "OC    ", 0    ), &
-      BB_Defs("pmco  ", "TPM   ", 0    ) /)   ! nearest
+      BB_Defs("forfbc", "BC    ", 12.0 ), &
+      BB_Defs("forfoc", "OC    ", 0    ), &
+      BB_Defs("pmco  ", "TPM   ", 0    ) /)   ! nearest. QUERY pm25<<pmco though
   ! =======================================================================
 
 contains

@@ -8,8 +8,8 @@
 #====== Set run here =======================
 run=Test03   # CRI_v2_R5
 run=EmChem03c   # CRI_v2_R5
-run=vbs_tests   # CRI_v2_R5
 run=EmChem09    # CRI_v2_R5
+run=vbs_tests   # CRI_v2_R5
 # ==========================================
 cdir=$PWD            #  Current when starting. Assumed now as a Unimod
 wdir=$PWD/ZCM_$run   # work-directory, with input files
@@ -40,6 +40,7 @@ cat GenOut_ChemSpec*inc  GenOut_ChemChemicals_ml.inc \
 mv GenOut_Reactions1.inc  $odir/CM_Reactions1.inc
 mv GenOut_Reactions2.inc  $odir/CM_Reactions2.inc
 mv GenOut_DryDep.inc      $odir/CM_DryDep.inc
+mv GenOut_Emis.inc        $odir/CM_Emis.inc
 mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
 
 rm GenOut_*                # Clean up current directory

@@ -1,3 +1,43 @@
+xxxxxxxxxxxxxx rv3_6_22 Dave          Aug 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
+
+More  GenChem and SOA-related changes
+
+GenChem.pl  --- now used to set NEMIS_FILES and EMIS_FILES. Add wanted
+emission file as prefix to rcemis, e.g.:
+
+    nox:rcemis(NO,k)                           = NO    ;
+    nox:rcemis(NO2,k)                          = NO2    ;
+    sox:rcemis(SO2,k)                          = SO2    ;
+    sox:rcemis(SO4,k)                          = SO4    ;
+    co:rcemis(CO,k)                           = CO    ;
+    voc:rcemis(C2H6,k)                         = C2H6    ;
+    voc:rcemis(NC4H10,k)                       = NC4H10    ;
+
+With modified:
+   ZD_xx/GenIn.reactions
+   (also cleaned up - commented-out dry dep lines removed)
+
+
+NOTE: these prefixes are only used for the standard gridded emissions files
+ - the ones that were in EMIS_FILES. We also have rcbio and possibly rcnh3
+for isoprene, terpene, etc.
+
+SOA_ml removed!!
+ REplaced by ZD_OZONE/My_SOA_ml  or ZD_VBS/My_SOA_ml
+
+ZD_VBS/My_SOA_ml - now uses PCM_GROUP, PCM_HELP_GROUP from GenIn.species
+
+My_Aerosols_ml : ORGANIC_AEROSOLS flag removed. Moved to My_SOA_ml
+
+EmisDef - now uses CM_Emis.inc  -- hence is chemistry independent :-)
+
+Use modified rcbio:
+  Runchem_ml - uses modified rcbio
+  Setup_1d_ml - uses modified rcbio
+  Setup_1dfields_ - stores modified rcbio
+  Solver_ml
+
+
 xxxxxxxxxxxxxx rv3_6_21 Dave/Robert   Aug 20 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
 
 More SOA consistency and modified soilwater handling when USE_SOILWATER

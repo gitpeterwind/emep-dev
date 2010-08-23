@@ -109,7 +109,7 @@ module Met_ml
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,DEBUG_BLM, DEBUG_Kz & 
        ,NH3_U10   & !dshb  -- temporary
-       ,nstep,use_convection 
+       ,nstep,USE_CONVECTION 
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
        ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -319,7 +319,7 @@ contains
        if(MasterProc)write(*,*)'WARNING: 3D cloud cover is not averaged'
     endif
 
-    if(use_convection)then
+    if(USE_CONVECTION)then
        namefield='convective_updraft_flux'
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
             validity, cnvuf(:,:,:))

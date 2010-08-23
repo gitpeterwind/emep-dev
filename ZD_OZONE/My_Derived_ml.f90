@@ -59,8 +59,10 @@ use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
 use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
                    !        ,NO2, pNO3_f, pNO3_c, HNO3, NH3, aNH4, PPM25, PPMCO &
                    !       ,O3, PAN, MPAN, SeaSalt_f, SeaSalt_c  !SS=SeaSalt
-use ChemGroups_ml,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
-                            DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
+use ChemGroups_ml  !ds Allow all groups to ease compilation
+                    !,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
+                            !PCM only: PCM_GROUP, PCM_HELP_GROUP, &
+                    !        DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use EmisDef_ml,     only :  EMIS_NAME
@@ -126,11 +128,23 @@ private
    integer, public, parameter, dimension(3) ::  XSURF_UG_N = (/ NH3, HNO3, NO /)
    integer, public, parameter, dimension(7) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
 
-   integer, public, parameter, dimension(1) ::  SURF_UG_C = (/ HCHO /)
-
-   integer, public, parameter, dimension(3) :: SRSURF_UG = (/ PPM25, PPM25_FIRE, PPMCO /)
+!rb: remove PPM25_FIRE, replaced by FFIRE_OC and FFIRE_BC
+!dsrb - just testing with 2 for compilation
+   integer, public, parameter, dimension(2) :: SRSURF_UG = (/ PPM25, PPMCO /)
    integer, public, parameter, dimension(2) ::  XSURF_UG = (/ SeaSalt_f,SeaSalt_c /)
-   integer, public, parameter, dimension(5) ::   SURF_UG = (/ SRSURF_UG, XSURF_UG /)
+
+  !----------------------------------------------------------------------------
+  ! Options depending on PCM/TNO or OZONE
+  !dsPCM Outputs for particulate carbonaceous matter use groups defined from GenIn.species
+  ! Uncomment for SOA outputs!
+   integer, public, parameter, &
+       dimension(2+2) ::  &
+           SURF_UG = (/ SRSURF_UG, XSURF_UG /)
+  !PCM:     dimension(2+2+SIZE(PCM_GROUP)+SIZE(PCM_HELP_GROUP)) ::  &
+  !PCM:         SURF_UG = (/ SRSURF_UG, XSURF_UG, PCM_GROUP, PCM_HELP_GROUP /)
+  !PCM: integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, FFIRE_OC /)
+   integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, PPM25_FIRE /)
+  !----------------------------------------------------------------------------
 
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
    integer, public, parameter, dimension(3) ::  XSURF_PPB = (/ NO, NO2, HCHO /)
@@ -168,7 +182,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(17) :: &
   D2_EXTRA = (/ &
        "WDEP_SO2          " &
       ,"WDEP_SO4          " &
@@ -191,14 +205,14 @@ private
       ,"HMIX              " &
 !      ,"D2_HMIX00         " &
 !      ,"D2_HMIX12         " &
-      ,"SoilWater          " &
+!      ,"SoilWater          " &
       ,"SoilWater_deep     " &
       ,"USTAR_NWP         " &
   /)
 
-
- ! Emissions
-   integer, public, parameter, dimension(1) :: EMIS_OUT   = (/ C5H8 /)
+!RB: Perhaps add FFIRE?  ! Emissions
+!dsPCM - not used??
+!   integer, public, parameter, dimension(2) :: EMIS_OUT   = (/ C5H8, APINENE /)
 
   integer, public, parameter :: &   ! Groups for DDEP and WDEP
     SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3

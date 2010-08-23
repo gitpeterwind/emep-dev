@@ -37,11 +37,15 @@ module ModelConstants_ml
   implicit none
   private
 
-! Temporary switch to include convection or not
+!=============================================================================
+! Some flags for model setup
 ! will be removed when convection is sufficiently tested (use foundconv in permanent code)
-  logical, public :: use_convection= .false.
- logical, public, parameter :: USE_SOILWATER = .false.
+ logical, public, parameter :: USE_CONVECTION   = .false.
+ logical, public, parameter :: USE_SOILWATER    = .false.
+ logical, public, parameter :: USE_FOREST_FIRES = .true.
 
+  ! Next      ................................................................
+  ! Next      ................................................................
 
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
@@ -78,8 +82,8 @@ module ModelConstants_ml
   !RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
   !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
   !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
-  RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
-  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
+  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
+  RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
     NPROCX      =   3        & ! Actual number of processors in longitude
@@ -126,10 +130,6 @@ module ModelConstants_ml
 !=============================================================================
 ! Some flags for model setup
 
-  ! Biogenics ................................................................
-   character(len=8),public, save, dimension(1) :: &
-                                   BVOC_USED = (/ "isoprene"/)
-              !!                   BVOC_USED = (/ "isoprene","terpene "/)
   ! Next      ................................................................
   ! Next      ................................................................
 !=============================================================================
@@ -141,7 +141,7 @@ module ModelConstants_ml
     ,DEBUG_DERIVED        = .false. & !
     ,DEBUG_DO3SE          = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
-    ,DEBUG_FORESTFIRE     = .false. & !
+    ,DEBUG_FORESTFIRE     = .true. & !
     ,DEBUG_MET            = .false. & !
     ,DEBUG_BLM            = .false. & !    produces matrix of differnt Kz and Hmix
     ,DEBUG_Kz             = .false. & !

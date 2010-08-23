@@ -67,10 +67,15 @@
 
  !Emissions in column. We assume that these only involve advected species
    real, public, dimension(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
-!DSRC  real, public, dimension(NRCEMIS,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
-!DSGC   real, public, dimension(NRCT   ,KCHEMTOP:KMAX_MID), save :: rct    ! T-dependant
-!DSGC   real, public, dimension(NRCMISC,KCHEMTOP:KMAX_MID), save :: rcmisc ! T,M,H2O-dependant
-!DSGC   real, public, dimension(NBVOC ,KCHEMTOP:KMAX_MID), save   :: rcbio  !  Biogenic emissions
+
+!useDSGC   real, public, dimension(NBVOC ,KCHEMTOP:KMAX_MID), save   :: rcbio  !  Biogenic emissions
+
+  !dsPCM - reinstated
+  ! We define a column array for isoprene and terpene for use in
+  ! the chemical solver. All values except for k=KMAX_MID will
+  ! remain zero however
+
+   real, public, dimension(NBVOC ,KCHEMTOP:KMAX_MID), save  :: rcbio = 0.0  !  Biogenic emissions
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3  ! hb NH3emis
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222  ! 210Pb emissions, ds Pb210
    real, public, dimension(NSS,KCHEMTOP:KMAX_MID),     save :: rcss   ! Sea salt emissions

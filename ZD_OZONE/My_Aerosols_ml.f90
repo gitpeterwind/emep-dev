@@ -41,7 +41,6 @@
 ! 2. EQUILIB_EMEP - old EMEP scheme
 ! 3. EQUILIB_MARS - run MARS equilibrium model
 ! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
-! 5. ORGANIC_AEROSOLS - for including Secondary Organic Aerosol (not active)
 !----------------------------------------------------------------------
 
    implicit none
@@ -51,8 +50,7 @@
     logical, public, parameter :: AERO_DYNAMICS     = .false.   &  
                                 , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
                                 , EQUILIB_MARS      = .false. & !MARS
-                                , EQUILIB_EQSAM     = .true. & !EQSAM
-                                , ORGANIC_AEROSOLS  = .false.   
+                                , EQUILIB_EQSAM     = .true.   !EQSAM
    ! Number of aerosol sizes (1-fine, 2-coarse)
     integer, public, parameter :: NSIZE = 2    
 
@@ -70,7 +68,7 @@ contains
  !..................................................................
 
  use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, pNO3_f, aNH4, NO3
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, pNO3_f, aNH4
  use Setup_1dfields_ml,  only :  temp, rh
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use ChemChemicals_ml,    only :  species

@@ -82,7 +82,7 @@
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,& ! AMVB 2009-11-06: FORECAST mode
-                  use_convection
+                  USE_CONVECTION
   use MetFields_ml ,only : ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
   use MassBudget_ml, only : fluxin,fluxout
   use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
@@ -482,7 +482,7 @@
         endif ! yxs sequence
       enddo
 
-      if(use_convection)then
+      if(USE_CONVECTION)then
          do k=1,KMAX_MID
             do j = lj0,lj1
                do i = li0,li1
@@ -1006,7 +1006,7 @@
 
 
 
-      if(use_convection)then
+      if(USE_CONVECTION)then
 
          call CheckStop(ADVEC_TYPE/=1, "ADVEC_TYPE no longer supported")
 

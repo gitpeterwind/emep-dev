@@ -62,7 +62,7 @@ module Aqueous_ml
              WetDep_Budget, WDEP_PREC, Calc2tot
 !dsMay2010 & WETDEP_SO4LIKE !EGUOA, WETDEP_SOALIKE
 !EGU - was commented out as SO4LIKE_DEP USED
-  use My_Aerosols_ml,    only: ORGANIC_AEROSOLS
+  use OrganicAerosol_ml,    only: ORGANIC_AEROSOLS
 
   use Derived_ml,    only : d_2d      ! Contains Wet deposition fields
   use ChemChemicals_ml, only: species

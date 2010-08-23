@@ -41,8 +41,7 @@
 !----------------------------------------------------------------------
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,           &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
-                                ORGANIC_AEROSOLS, Aero_water, SEASALT
-!DSRC   use My_Emis_ml       ! debug QRC
+                                 Aero_water, SEASALT
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
@@ -63,15 +62,16 @@
                   DebugCell, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
 
-   use OrganicAerosol_ml, only: OrganicAerosol ! not yet implemented 
+   use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol ! not yet implemented 
    use Par_ml,            only : lj0,lj1,li0,li1  &
                                 ,gi0, gj0, me & !! for testing
                                 ,IRUNBEG, JRUNBEG    !! for testing
    use SeaSalt_ml,        only: SeaSalt_flux
    use Setup_1d_ml,       only: setup_1d, &
-                                setup_bio, rcbio, setup_rcemis, reset_3d,&
+                                setup_bio, setup_rcemis, reset_3d,&
+                                !dsPCM setup_bio, rcbio, setup_rcemis, reset_3d,&
                                 setup_nh3 ! hb NH3emis
-   use Setup_1dfields_ml, only: first_call  &
+   use Setup_1dfields_ml, only: first_call, rcbio  &
                      ,amk , rcemis, xn_2d  ! DEBUG for testing
    use TimeDate_ml,       only: current_date
 
@@ -161,7 +161,7 @@ if ( DEBUG .and. debug_flag  ) then
           current_date%day, current_date%hour, current_date%seconds, &
           rcemis(NO,20), rcemis(NO2,20), rcemis(HCHO,20), &
           rcemis(SO2,20), rcemis(NH3,20), &
-          rcbio(BIO_ISOP), rcemis(C5H8,KMAX_MID)
+          rcbio(BIO_ISOP,KMAX_MID), rcemis(C5H8,KMAX_MID)
 end if
 !          !rcemis(QRCCO,20), AROM, rcemis(QRCPM25,20), rcemis(QRCEC_f_FFUEL,20)
 !

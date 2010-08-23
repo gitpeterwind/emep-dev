@@ -70,7 +70,8 @@
                                  rh,            & 
                                  Fgas,          & ! fraction in gas-phase, for SOA
                                  rcss,amk,      & ! Sea salt emission rate
-                                 rcnh3            ! hb NH3emis
+                                 rcnh3,         & ! hb NH3emis
+                                 rcbio            ! dsPCM
     use N2O5_hydrolysis_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4,&
                                  f_Riemer! to weight the hydrolysis of N2O5 with NO3,SO4 mass
   implicit none
