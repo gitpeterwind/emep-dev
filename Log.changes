@@ -25,7 +25,11 @@ for isoprene, terpene, etc.
 SOA_ml removed!!
  REplaced by ZD_OZONE/My_SOA_ml  or ZD_VBS/My_SOA_ml
 
+ZD_VBS added
+
 ZD_VBS/My_SOA_ml - now uses PCM_GROUP, PCM_HELP_GROUP from GenIn.species
+
+ZCM_vbs_tests added - just for testing by Robert/Dave.
 
 My_Aerosols_ml : ORGANIC_AEROSOLS flag removed. Moved to My_SOA_ml
 
