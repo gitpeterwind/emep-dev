@@ -42,7 +42,7 @@ module ModelConstants_ml
 ! will be removed when convection is sufficiently tested (use foundconv in permanent code)
  logical, public, parameter :: USE_CONVECTION   = .false.
  logical, public, parameter :: USE_SOILWATER    = .false.
- logical, public, parameter :: USE_FOREST_FIRES = .true.
+ logical, public, parameter :: USE_FOREST_FIRES = .false.
 
   ! Next      ................................................................
   ! Next      ................................................................
