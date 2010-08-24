@@ -1075,7 +1075,7 @@ sub print_species {
   public :: define_chemicals    ! Sets names, molwts, carbon num, advec, nmhc
 
   type, public :: Chemical 
-       character(len=12) :: name
+       character(len=20) :: name
        integer           :: molwt
        integer           :: nmhc      ! nmhc (1) or not(0)
        integer           :: carbons   ! Carbon-number

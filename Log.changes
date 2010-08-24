@@ -1,3 +1,8 @@
+xxxxxxxxxxxxxx rv3_6_xx Dave          Aug 24 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
+               (not rtagged yet)
+
+GenChem.pl - length of species%name extended from 12 to 22
+
 xxxxxxxxxxxxxx rv3_6_22 Dave          Aug 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
 
 More  GenChem and SOA-related changes
