@@ -1,3 +1,13 @@
+IMPORTANT NOTE:
+The latest code does now CM_Emis.inc in CVS. This is generated from
+mk.GenChem, which reads the emissions needed from GenIn.reactions.
+
+Run mk.GenChem!!!!
+
+(In principal we could remove all CM_ files from the cvs system.
+Will do that soon I think.....)
+
+
 xxxxxxxxxxxxxx rv3_6_xx Dave          Aug 24 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
                (not rtagged yet)
 
