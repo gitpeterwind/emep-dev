@@ -1408,7 +1408,17 @@ else
 end subroutine WriteCDF
 
 subroutine Read_Inter_CDF(fileName,varname,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,interpol,needed)
-!reads data from file and interpolates data into local grid
+!
+!reads data from netcdf file and interpolates data into full-domain model grid
+!
+!the data in filename must have global coverage and lat-lon projection 
+!
+!Typical use: Master node reads the data with this routine and distributes the data to all subdomains.
+!
+!interpol='zero_order' (default) or 'bilinear'
+!
+!Since this routine is not working with subdomains, it does not scale (in terms of memory or cpu time)
+!Consider using ReadField_CDF instead
 
   use netcdf
 implicit none
@@ -1633,9 +1643,48 @@ end subroutine Read_Inter_CDF
 recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,interpol, &
      known_projection,  &! can be provided by user, eg. for MEGAN.
      needed,debug_flag,UnDef)
-  !reads data from file and interpolates data into local grid
+  !
+  !reads data from netcdf file and interpolates data into model local (subdomain) grid
+  !
+  !dimensions and indices:
+  !Rvar is assumed to have declared dimensions MAXLIMAX,MAXLJMAX in 2D.
+  !If 3D, k coordinate in Rvar assumed as first coordinate. Could consider to change this.
+  !nstart (otional) is the index of last dimension in the netcdf file, generally time dimension.
+  !
+  !undefined field values:
+  !Some data can be missing/not defined for some gridpoints;
+  !If Undef is present, it is used as value for these undefined gridpoints;
+  !If it is not present, an error occurs if data is missing.
+  !Data can be undefined either because it is outside the domain in the netcdf file,
+  !or because it has the value defined in "FillValue" ("FillValue" defined from netcdf file) 
+  !
 
-  !NB k coordinate in Rvar assumed as first coordinate. Could consider to change this.
+  !projections:
+  !Lon-lat projection in the netcdf file is implemented with most functionalities.
+  !General projection in the netcdf file is still primitive. Limitations are: no 3D, 
+  !   no Undef, only linear interpolation, cpu expensive.
+  !The netcdf file projection is defined by user in "known_projection" or read from 
+  !netcdf file (in attribute "projection").
+  !If the model grid projection is not lon-lat and not stereographic the method is not 
+  !very CPU efficient in th epresent version.
+  !Vertical interpolation is not implemented, except from "Fligh Levels", but
+  !"Flight Levels" are so specific that we will probably move them in an own routine
+
+  !interpolation:
+  !'zero_order' gives value at closest gridcell. Probably good enough for most applications. Does not smooth out values
+  !'conservative' and 'mass_conservative' give smoother fields and are approximatively 
+  !integral conservative (integral over a region is conserved). The initial gridcells 
+  !are subdivided into smaller subcells and each subcell is assigned to a cell in the model grid
+  !'conservative' can be used for emissions given in kg/m2 (or kg/m2/s) or landuse or most fields. The value
+  !in the netcdf file and in model gridcell are of the similar.
+  !'mass_conservative' can be used for emissions in kg (or kg/s). If the gricell in the model are twice as small
+  !as the gridcell in the netcdf file, the values will also be reduced by a factor 2.
+
+  !Technical, future developements:
+  !This routine is likely to change a lot in the future: can be divided into simpler routines; 
+  !more functionalities will be introduced.
+  !Should also be usable as standalone.
+  !All MPI processes read the same file simultaneously (i.e. in parallel). They read only the chunk of data they need for themselves.
 
   use netcdf
 
@@ -1749,7 +1798,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   call CheckStop(xtype==NF90_CHAR,"ReadField_CDF: Datatype not recognised")
 
   !Find whether Fill values are defined
-     if ( debug ) write(*,*) 'PreFillCheck ',FillValue
+  if ( debug ) write(*,*) 'PreFillCheck ',FillValue
   status=nf90_get_att(ncFileID, VarID, "_FillValue", FillValue)
   OnlyDefinedValues=.true.
   if(status == nf90_noerr)then
@@ -2203,6 +2252,7 @@ end if
         Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
      endif
 
+!NEEDS CLEANUP!
      k=1
      do i=1,limax
         do j=1,ljmax

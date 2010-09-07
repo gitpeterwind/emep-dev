@@ -1,3 +1,5 @@
+
+
 IMPORTANT NOTE:
 The latest code does now CM_Emis.inc in CVS. This is generated from
 mk.GenChem, which reads the emissions needed from GenIn.reactions.
@@ -8,9 +10,10 @@ Run mk.GenChem!!!!
 Will do that soon I think.....)
 
 
-xxxxxxxxxxxxxx rv3_6_xx Dave          Aug 24 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxx rv3_6_xx Dave  Peter        Aug 24 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
                (not rtagged yet)
 
+NetCDF_ml: comments put in beginning of interpolation routines  ReadField_CDF and Read_Inter_CDF
 GenChem.pl - length of species%name extended from 12 to 22
 
 xxxxxxxxxxxxxx rv3_6_22 Dave          Aug 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
