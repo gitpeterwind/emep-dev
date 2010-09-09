@@ -15,6 +15,8 @@
 #PBS -lpmem=1000MB
 # account for billing
 #PBS -A nn2890k
+# multiple tasks for paralel SR runs (one task per country)
+##PBS -t 1-56
 #___________________________________________________________________
 
 #___________________________________________________________________
@@ -169,7 +171,7 @@ my $SEMEENA    = "mifasv";
 my $AGNES      = "nyiri";
 my $ALVARO     = "alvarov";
 my $ROBER      = "mifarb";
-my $HALDIS      = "mifahb";
+my $HALDIS     = "mifahb";
 
 my $USER = $ENV{"USER"};
 print "USER = $USER\n";
@@ -332,11 +334,11 @@ my $NPROC =  $NDX * $NDY ;
 print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
 die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
 die "Domain mis-match Model: $XDIM Grid $GRID" if (
-   ( $GRID eq "EMEP" && $XDIM != 170 ) or
-   ( $GRID eq "EECCA" && $XDIM != 132 ) or
+   ( $GRID eq "EMEP"     && $XDIM != 170 ) or
+   ( $GRID eq "EECCA"    && $XDIM != 132 ) or
    ( $GRID eq "EECCA_25" && $XDIM != 264 ) or
    ( $GRID eq "MACC02"   && $XDIM != 321 ) or
-   ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
+   ( $GRID eq "GLOBAL"   && $XDIM != 360 ) );
 
 if (%BENCHMARK and not $BENCHMARK{'debug'}){
   die "No debug flags for benchmarks!"
@@ -544,8 +546,8 @@ foreach my $scenflag ( @runs ) {
       }
     }
 # Forecast nest/dump files
-   #my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";  # yesterday's BASE dump
-    my ($old="$CWFDUMPDIR/${scenario}_dump.nc")       # today's dump
+    my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";  # yesterday's BASE dump
+      ($old="$CWFDUMPDIR/${scenario}_dump.nc")        # today's dump
             =~s/$CWFBASE/$CWFDATE[0]/g;               # yesterday's dump
     if (-e $old) {
       # we manage to link the dumpfile
@@ -579,8 +581,8 @@ foreach my $scenflag ( @runs ) {
           }
         }
       # see if we can link to a dump file ...
-       #my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc"; # yesterday's BASE dump
-        my ($old="$CWFDUMPDIR/${scenario}_dump.nc")      # today's dump
+        my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc"; # yesterday's BASE dump
+          ($old="$CWFDUMPDIR/${scenario}_dump.nc")       # today's dump
                 =~s/$CWFBASE/$CWFDATE[0]/g;              # yesterday's dump
         if (-e $old) {
         # we manage to link the dumpfile
@@ -668,7 +670,7 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
                      "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
   $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =
-                   "GLOBAL_Boundary_and_Initial_Conditions.nc";
+                  "GLOBAL_Boundary_and_Initial_Conditions.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
   $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";

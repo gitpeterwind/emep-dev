@@ -465,7 +465,7 @@ subroutine init_icbc()
     adv_ic(:)%found=find_icbc(filename_read_3D,adv_ic%varname(:))
   endif
   if(all(adv_bc%varname==""))then
-    if(FORECAST)then	! IFS-MOZART BC
+    if(FORECAST)then ! IFS-MOZART BC
       adv_bc(:)%wanted=.false.
       adv_bc(FORECAST_BC%ixadv)=FORECAST_BC%icbc
       adv_bc(:)%found=find_icbc(filename_read_bc,adv_bc%varname(:))
@@ -715,7 +715,7 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
         me,'W:i',iw,allocated(xn_adv_bndw),'E:i',ie,allocated(xn_adv_bnde),&
            'S:j',js,allocated(xn_adv_bnds),'N:j',jn,allocated(xn_adv_bndn),&
            'T:k',kt,allocated(xn_adv_bndt)
-      call flush(6)
+      flush(6)
       CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
     endif
   endif
