@@ -1,4 +1,3 @@
-
 IMPORTANT NOTE:
 The latest code does now CM_Emis.inc in CVS. This is generated from
 mk.GenChem, which reads the emissions needed from GenIn.reactions.
@@ -8,6 +7,46 @@ Run mk.GenChem!!!!
 (In principal we could remove all CM_ files from the cvs system.
 Will do that soon I think.....)
 
+
+
+xxxxxxxxxxxxxx rv3_6_24 Semeena, Anna & Alvaro Sep 09 2010 xxxxxxxxxxxxxxxxxxx
+SR on FORECAST mode: script changes & bug fix
+
+run.pl:
+  * SR on FORECAST mode: allow SR & CWF options to coexist.
+    Modify EMEP::Sr::getScenario to create CWF-SR scenarios.
+    Use different dump files for different SR ensemble members.
+  * One country per Job task: If multiple tasks are submitted (e.g. #PBS -t 1-56),
+    use $ENV{'PBS_ARRAYID'} to select one element of @countries.
+    This removes the need for multiple scripts for parallel partial-SR runs,
+    as each country is handled by a single task and each task dealt
+    independently by the pbs-job-loader.
+  * MOZART-IFS BC in forecast mode: Use previous day BC if the file is not
+    not yet available for the base-date.
+  * Formatting/indentation.
+
+Sites_ml: Fix SOURCE_RECEPTOR bug.
+  Crash only on SR runs with message "SITES D2D NOT FOUND HMIX".
+  This was because, on SR runs, D2_EXTRA is not added to wanted_deriv2d
+  by Init_My_Deriv (My_Derived_ml). Therefore "HMIX" is not wanted,
+  but is still required by SITE_XTRA_CODE (My_Outputs_ml).
+  The impasse was solved by processing SITE_XTRA/SITE_XTRA_CODE only
+  if(.not.SOURCE_RECEPTOR).
+
+PhyChem_ml: No hourly, site & sonde outputs for SR runs.
+  Though it says in the code that hourly and daily are not written out
+  in the SR case, hourly output was still produced.
+  Now hourly will be produced for FORECAST-SR runs.
+  Hindcast SR runs will not produce hourly output.
+  Site & sonde outputs will not be produced for SR runs
+
+My_Derived_ml: Controlling the output variables.
+  Not writing out the emissions, deposition velocities,
+  resistances for different landuses and 3D variables.
+
+SoilWater_ml, Nest_ml: gFortran pedantic fix for logical statements
+
+xxxxxxxxxxxxxx rv3_6_23 Dave Peter  Aug 27 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
 
 xxxxxxxxxxxxxx rv3_6_23 Dave Peter  Aug 27 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -98,7 +137,7 @@ mk.GenChem - removed CM_SOA_ml
 ModelConstants_ml: Added USE_SOILWATER
 
 Rsurface_ml - more debug options
-  
+
 run.pl - sets USER from $ENV{"USER"} - easier and safer!
 
 Sites_ml - improved debug options

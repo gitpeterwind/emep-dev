@@ -119,7 +119,7 @@ if (%BENCHMARK) {
 
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
-die " TO DO: Need still to create SR split files\n" if $SR ;
+#die " TO DO: Need still to create SR split files\n" if $SR ;
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
 my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP) if $CWF;
@@ -175,8 +175,8 @@ my $USER = $ENV{"USER"};
 print "USER = $USER\n";
 
 
-# hb NH3Emis                                                                  
-my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3. 
+# hb NH3Emis
+my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
@@ -221,7 +221,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $Chem, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv    = "rv3_6_21";
+$testv    = "rv3_6_24";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -273,7 +273,7 @@ $emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
 $emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
                                                     if $year eq 2006;
 $emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
-$emisdir = "$EMIS_INP/Modrun09/2010-Trend2008-CEIP" if $year eq 2008;
+$emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
 $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
 
@@ -331,9 +331,9 @@ close(IN);
 my $NPROC =  $NDX * $NDY ;
 print "ModelConstants has: NDX = $NDX NDY = $NDY  =>  NPROC = $NPROC\n";
 die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
-die "Domain mis-match Model: $XDIM Grid $GRID" if ( 
-   ( $GRID eq "EMEP" && $XDIM != 170 ) or 
-   ( $GRID eq "EECCA" && $XDIM != 132 ) or 
+die "Domain mis-match Model: $XDIM Grid $GRID" if (
+   ( $GRID eq "EMEP" && $XDIM != 170 ) or
+   ( $GRID eq "EECCA" && $XDIM != 132 ) or
    ( $GRID eq "EECCA_25" && $XDIM != 264 ) or
    ( $GRID eq "MACC02"   && $XDIM != 321 ) or
    ( $GRID eq "GLOBAL" && $XDIM != 360 ) );
@@ -385,13 +385,13 @@ print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 #               (normally, that is...)
 
 if ($SR) {
-    print "SR is true\n";
-    @runs = EMEP::Sr::initRuns();
+  print "SR is true\n";
+  @runs = EMEP::Sr::initRuns();
 }
 
 if ($CWF) {
-    print "CWF is true: $CWFDAYS-day foracast mode\n";
-    @runs = ( $CWFBASE );
+  print "CWF is true: $CWFDAYS-day foracast mode\n";
+  @runs = ( $CWFBASE ) unless $SR ;
 }
 
 if (%BENCHMARK){
@@ -478,324 +478,332 @@ my @list_of_files = ();   # Keep list of data-files
 ########################### START OF RUNS  ##########################
 ########################### START OF RUNS  ##########################
 
-
 foreach my $scenflag ( @runs ) {
-    if ($SR) {
-        $scenario = EMEP::Sr::getScenario($scenflag);
-    } elsif ($CWF) {
-        $scenario = "CWF_$scenflag";
-    } elsif (%BENCHMARK){
-      $scenario = "BM_$scenflag";
-    } else {
-        $scenario = $scenflag;
+  if ($SR) {
+    $scenario = EMEP::Sr::getScenario($scenflag);
+  } elsif ($CWF) {
+    $scenario = "CWF_$scenflag";
+  } elsif (%BENCHMARK){
+    $scenario = "BM_$scenflag";
+  } else {
+    $scenario = $scenflag;
+  }
+  print "STARTING RUN $scenario \n";
+
+  my $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
+  my $runlabel2    = "${testv}_${Chem}_${scenario}_${year}_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
+
+  my $RESDIR = "$WORKDIR/$scenario";
+  mkdir_p($RESDIR);
+
+  chdir $RESDIR;   ############ ------ Change to RESDIR
+  print "Working in directory: $RESDIR\n";
+
+  if ($METformat eq "felt") {
+    my $nnn = 1;
+    for (my $mm = $mm1; $mm <= $mm2; $mm++) {
+      # Assign met files to fil001...etc.
+      for (my $n = 1; $n <= $month_days[$mm]; $n++) {
+        $nnn = metlink($n, $nnn, $mm);
+        last if $nnn > $NTERM;
+      }
     }
-    print "STARTING RUN $scenario \n";
 
-    my $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
-    my $runlabel2    = "${testv}_${Chem}_${scenario}_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
+    my $mmlast = $mm2 + 1;
+    my $yylast = $year;
+    if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+      $yylast = $yylast + 1;
+      $mmlast = 1;
+    }
+    my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
+    my $new = sprintf "fil%04d", $nnn;
+    mylink( "LAST RECORD SET: ", $old,$new ) ;
 
-    my $RESDIR = "$WORKDIR/$scenario";
-    mkdir_p($RESDIR);
-
-    chdir $RESDIR;   ############ ------ Change to RESDIR
-    print "Working in directory: $RESDIR\n";
-
-    if ($METformat eq "felt") {
-        my $nnn = 1;
-        for (my $mm = $mm1; $mm <= $mm2; $mm++) {
-
-            # Assign met files to fil001...etc.
-            for (my $n = 1; $n <= $month_days[$mm]; $n++) {
-                $nnn = metlink($n, $nnn, $mm);
-                last if $nnn > $NTERM;
-            }
-        }
-
-        my $mmlast = $mm2 + 1;
-        my $yylast = $year;
-        if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
-            $yylast = $yylast + 1;
-            $mmlast = 1;
-        }
-        my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
-        my $new = sprintf "fil%04d", $nnn;
-        mylink( "LAST RECORD SET: ", $old,$new ) ;
-
-    } elsif ($CWF) {
+  } elsif ($CWF) {
 # Forecast Meteorology in NetCDF
-        for (my $n = 0; $n < $CWFDAYS; $n++) {
-            my $old = sprintf "$MetDir/meteo${CWFBASE}_%02d.nc",$n;
-            if (-e $old) {
-                chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
-                my $new = "meteo${CWFDATE[2]}.nc";
-                mylink( "Linking:", $old,$new ) ;
-           # IFS-MOZART BC file
-                $old = sprintf "$CWFBCDir/%04d/bc${CWFBASE}_fc%02d.nc",substr($CWFBASE,0,4),$n;
-                $new = "EMEP_IN_BC_${CWFDATE[2]}.nc";
-                mylink( "Linking:", $old,$new ) if (-e $old);
-            } else {
-            # meteo not in place !!!!!
-                print "Meteo file $old for $CWFBASE not available (yet). Try later ...\n";
-                exit 0;
-            }
+    for (my $n = 0; $n < $CWFDAYS; $n++) {
+      my $old = sprintf "$MetDir/meteo${CWFBASE}_%02d.nc",$n;
+      if (-e $old) {
+        chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
+        my $new = "meteo${CWFDATE[2]}.nc";
+        mylink( "Linking:", $old,$new ) ;
+      # IFS-MOZART BC file
+        $old = sprintf "$CWFBCDir/%04d/bc${CWFBASE}_fc%02d.nc",substr($CWFBASE,0,4),$n;
+        $new = "EMEP_IN_BC_${CWFDATE[2]}.nc";
+        if (-e $old) {
+          mylink( "Linking:", $old,$new );
+        } else {
+          print "BC file for $CWFBASE not available (yet). Try yesterdays BC file:";
+          $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr($CWFDATE[0],0,4),$n+1;
+          mylink( "Linking:", $old,$new ) if (-e $old);
         }
+      } else {
+      # meteo not in place !!!!!
+        print "Meteo file $old for $CWFBASE not available (yet). Try later ...\n";
+        exit 0;
+      }
+    }
 # Forecast nest/dump files
-        my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";  # yesterday
+   #my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";  # yesterday's BASE dump
+    my ($old="$CWFDUMPDIR/${scenario}_dump.nc")       # today's dump
+            =~s/$CWFBASE/$CWFDATE[0]/g;               # yesterday's dump
+    if (-e $old) {
+      # we manage to link the dumpfile
+      my $new="EMEP_IN_IC.nc";
+      mylink( "Linking:", $old, $new);
+    } else {
+      # if we have yesterday meteo, we can have an extra spin up day!
+      print "No dumpfile present, trying to take an extra spin-up day!\n";
+      my $old = "$MetDir/meteo${CWFDATE[0]}_00.nc";
+      if (-e $old) {
+        my $new = "meteo${CWFDATE[0]}.nc";
+        mylink( "Linking:", $old, $new);
+        print "Managed to link meteo for an extra spin-up day!\n";
+      # Update simulation: lenght ($NTERM), start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
+        $NTERM+=8;
+        $CWFDATE[1]=$CWFDATE[0];
+        chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
+      # IFS-MOZART BC file
+        $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[1]}_fc%02d.nc",substr(${CWFDATE[1]},0,4),0;
+        $new = "EMEP_IN_BC_${CWFDATE[1]}.nc";
+        if (-e $old) {
+      # we manage to link the BC file
+          mylink( "Linking:", $old,$new );
+          print "Managed to link BC file for the extra spin-up day!\n";
+        } else {
+          print "BC file for $CWFDATE[1] not available (yet) (spin-up). Try yesterdays BC file:";
+          $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr(${CWFDATE[0]},0,4),1;
+          if (-e $old) {
+            mylink( "Linking:", $old,$new );
+            print "Managed to link yesterdays BC file for the extra spin-up day!\n";
+          }
+        }
+      # see if we can link to a dump file ...
+       #my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc"; # yesterday's BASE dump
+        my ($old="$CWFDUMPDIR/${scenario}_dump.nc")      # today's dump
+                =~s/$CWFBASE/$CWFDATE[0]/g;              # yesterday's dump
         if (-e $old) {
         # we manage to link the dumpfile
-            my $new="EMEP_IN_IC.nc";
-            mylink( "Linking:", $old, $new);
-        } else {
-        # if we have yesterday meteo, we can have an extra spin up day!
-            print "No dumpfile present, trying to take an extra spin-up day!\n";
-            my $old = "$MetDir/meteo${CWFDATE[0]}_00.nc";
-            if (-e $old) {
-                my $new = "meteo${CWFDATE[0]}.nc";
-                mylink( "Linking:", $old, $new);
-                print "Managed to link meteo for an extra spin-up day!\n";
-           # IFS-MOZART BC file
-                $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr(${CWFDATE[0]},0,4),0;
-                if (-e $old) {
-                # we manage to link the BC file
-                  $new = "EMEP_IN_BC_${CWFDATE[0]}.nc";
-                  mylink( "Linking:", $old,$new );
-                  print "Managed to link BC file for the extra spin-up day!\n";
-                }
-           # Update simulation: lenght ($NTERM), start-date ($CWFDATE[1])
-           #                   "yesterday" ($CWFDATE[0])
-                $NTERM+=8;
-                $CWFDATE[1]=$CWFDATE[0];
-                chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
-           # see if we can link to a dump file ...
-                my $old="$CWFDUMPDIR/CWF_${CWFDATE[0]}_dump.nc";
-                if (-e $old) {
-                # we manage to link the dumpfile
-                    my $new="EMEP_IN_IC.nc";
-                    mylink( "Linking:", $old, $new);
-                    print "Managed to link dump file for the extra spin-up day!\n";
-                }
-            }
+          my $new="EMEP_IN_IC.nc";
+          mylink( "Linking:", $old, $new);
+          print "Managed to link dump file for the extra spin-up day!\n";
         }
-# Update start and end months (used for linking some climatological files)
-        $mm1=substr($CWFDATE[1],4,2);  # start date
-        $mm2=substr($CWFDATE[2],4,2);  # end date
-    }else{
-
-#meteorology in NetCDF
-        for (my $mm = $mm1; $mm <= $mm2; $mm++) {
-            for (my $n = 1; $n <= $month_days[$mm]; $n++) {
-                my  $old = sprintf "$MetDir/meteo${year}%02d%02d.nc", $mm,$n;
-                my  $new = sprintf "meteo${year}%02d%02d.nc", $mm,$n;
-                mylink( "Linking:", $old,$new ) ;
-            }
-        }
-        my $mmlast = $mm2 + 1;
-        my $yylast = $year;
-        if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
-            $yylast = $yylast + 1;
-            $mmlast = 1;
-        }
-        my   $old = sprintf "$MetDir/meteo%02d%02d01.nc", $yylast, $mmlast;
-        my   $new = sprintf "meteo%02d%02d01.nc", $yylast, $mmlast;
-        mylink( "LAST RECORD SET: ", $old,$new ) ;
+      }
     }
+# Update start and end months (used for linking some climatological files)
+    $mm1=substr($CWFDATE[1],4,2);  # start date
+    $mm2=substr($CWFDATE[2],4,2);  # end date
+  } else {
+#meteorology in NetCDF
+    for (my $mm = $mm1; $mm <= $mm2; $mm++) {
+      for (my $n = 1; $n <= $month_days[$mm]; $n++) {
+        my  $old = sprintf "$MetDir/meteo${year}%02d%02d.nc", $mm,$n;
+        my  $new = sprintf "meteo${year}%02d%02d.nc", $mm,$n;
+        mylink( "Linking:", $old,$new ) ;
+      }
+    }
+    my $mmlast = $mm2 + 1;
+    my $yylast = $year;
+    if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+      $yylast = $yylast + 1;
+      $mmlast = 1;
+    }
+    my $old = sprintf "$MetDir/meteo%02d%02d01.nc", $yylast, $mmlast;
+    my $new = sprintf "meteo%02d%02d01.nc", $yylast, $mmlast;
+    mylink( "LAST RECORD SET: ", $old,$new ) ;
+  }
 
 #=================== INPUT FILES =========================================
 # ToDo Change noxsplit.default to defaults, as with voc (also in Unimod)
 
-    my %ifile   = ();   # List of input data-files
+  my %ifile   = ();   # List of input data-files
 
 # First, emission files are labelled e.g. gridSOx, whiuch we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
 # in the model.
 
-my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
+  my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
          "nox" => "NOx" , "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco" ) ;
 
-    foreach my $poll  ( @emislist  ) {
-        my $dir = $emisdir;
-        $dir = $pm_emisdir if $poll =~ /pm/;   # FIX needed prior to 2000
-# hb NH3emis, new emis files                                                   
-        if(($NH3EMIS_VAR)&&($poll eq "nh3")){
-          $dir = "/home/nyiri/emis_NMR";
-          $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
-        }else{
-          $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
-        }
-        $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-        $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+  foreach my $poll  ( @emislist  ) {
+    my $dir = $emisdir;
+    $dir = $pm_emisdir if $poll =~ /pm/;   # FIX needed prior to 2000
+# hb NH3emis, new emis files
+    if(($NH3EMIS_VAR)&&($poll eq "nh3")){
+      $dir = "/home/nyiri/emis_NMR";
+      $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
+    }else{
+      $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
+    }
+    $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+    $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
 #DSRC
-        $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
-        # specials aren't required
-        if( -e "$SplitDir/emissplit.specials.$poll" ) {
-                $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll";
-        }
-    }
+    $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
+    # specials aren't required
+    $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"
+    if( -e "$SplitDir/emissplit.specials.$poll" );
+  }
 
-    foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
-        my $mm = sprintf "%2.2d", $mmm ; # WHY DO WE NEED THIS?????
-        $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
-        $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
-        $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
-        if ( $GRID eq "GLOBAL" ) {
-            foreach my $t ( qw (nox voc co nh3 pm25 pmco)) {
-                $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
-            }
-            foreach my $t ( qw (so2)) {
-                $ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
-            }
-        }
+  foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
+    my $mm = sprintf "%2.2d", $mmm ; # WHY DO WE NEED THIS?????
+    $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
+    $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
+    $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
+    if ( $GRID eq "GLOBAL" ) {
+      foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
+        $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
+      }
+      foreach my $t ( qw (so2) ) {
+        $ifile{"$emisdir/gridSO2.$mm"} =  "gridsox.$mm";
+      }
     }
+  }
 
 # Emissions setup:
-    $ifile{"$DataDir/femis.dat"} =  "femis.dat";
-#   my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
-#   my $new="Boundary_and_Initial_Conditions.nc";
-#   mylink( "BIC: ", $old,$new ) ;
-    $ifile{"$DataDir/femis.dat"} =  "femis.dat";
-    $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
-              "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
-    $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =
-                                   "GLOBAL_Boundary_and_Initial_Conditions.nc";
-    $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
-    $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc";
-    $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
-    $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
-# hb NH3emis       
+  $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+# my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
+# my $new="Boundary_and_Initial_Conditions.nc";
+# mylink( "BIC: ", $old,$new ) ;
+  $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
+                     "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
+  $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =
+                   "GLOBAL_Boundary_and_Initial_Conditions.nc";
+  $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
+  $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc";
+  $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
+  $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
+# hb NH3emis
 # New ammonia emissions  ---   NB no read permissions yet!!
-    $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
+  $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
-  # new inputs style (Aug 2007)  with compulsory headers:
-    $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
-    $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
-    $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
-    #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
-    $ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
-    $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
-    $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
-#   $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
-    $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
+# new inputs style (Aug 2007)  with compulsory headers:
+  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
+  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
+  $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
+  #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
+  $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
+# $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
+  $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
 
 #Prelim BVOC attempt
-    $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
-#    $ifile{"/home/mifads/TESTBVOC/testbvoc.nc"} = "LOCAL_BVOC.nc";
-
+  $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
+# $ifile{"/home/mifads/TESTBVOC/testbvoc.nc"} = "LOCAL_BVOC.nc";
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
-    my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");
+  my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");
+  foreach my $s ( keys(%seasons) ) {
+    $ifile{"$DataDir/a${s}t42-nox.dat"} = "ancat$seasons{$s}.dat";
+    $ifile{"$DataDir/jclear.$s"} = "jclear$seasons{$s}.dat";
+    $ifile{"$DataDir/jcl1.$s"} = "jcl1km$seasons{$s}.dat";
+    $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
+  }
 
-    foreach my $s ( keys(%seasons) ) {
-        $ifile{"$DataDir/a${s}t42-nox.dat"} = "ancat$seasons{$s}.dat";
-        $ifile{"$DataDir/jclear.$s"} = "jclear$seasons{$s}.dat";
-        $ifile{"$DataDir/jcl1.$s"} = "jcl1km$seasons{$s}.dat";
-        $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
+  #GRID $ifile{"$DATA_LOCAL/rough.170"} = "rough.dat"; # Roughness length;
+  $ifile{"$DATA_LOCAL/rough.dat"} = "rough.dat"; # Roughness length;
+  $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat";
+
+
+  foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
+    if ( -r $old ) {
+      my $new =  $ifile{$old};
+      mylink( "Inputs: ", $old,$new ) ;
+    } else {
+      print "Missing Input $old !!!\n";
+      die "ERROR: Missing OLD $old\n" unless $old =~ /special/;
     }
+  }
 
-    #GRID $ifile{"$DATA_LOCAL/rough.170"} = "rough.dat"; # Roughness length;
-    $ifile{"$DATA_LOCAL/rough.dat"} = "rough.dat"; # Roughness length;
-    $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat";
-
-
-    foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
-        if ( -r $old ) {
-                my $new =  $ifile{$old};
-                       mylink( "Inputs: ", $old,$new ) ;
-        } else {
-                print "Missing Input $old !!!\n";
-                die "ERROR: Missing OLD $old\n" unless $old =~ /special/;
-        }
-    }
-
-    if ($SR) {
-        EMEP::Sr::generate_updated_femis(@$scenflag);
-    }
+  if ($SR) {
+    EMEP::Sr::generate_updated_femis(@$scenflag);
+  }
 
 #=================== INPUT FILES =========================================
 
 
 # FIX later - was the only emission control thingy....
-    my @exclus  = (9 ); #  NBOUND
+  my @exclus  = (9 ); #  NBOUND
 
 
 #------------      Run model ------------------------------------------
 #------------      Run model ------------------------------------------
 #------------      Run model ------------------------------------------
 
-    print "\n";
+  print "\n";
 
-# Link execultable also, since gridur is funny about these
+# Link executable also, since gridur is funny about these
 # things....
 
-    my $LPROG = "prog.exe";
-    #mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
-    cp ($PROGRAM, $LPROG) or die "cannot copy $PROGRAM to $LPROG\n";
-    push(@list_of_files , $LPROG);    # For later deletion
+  my $LPROG = "prog.exe";
+ #mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
+  cp ($PROGRAM, $LPROG) or die "cannot copy $PROGRAM to $LPROG\n";
+  push(@list_of_files , $LPROG);    # For later deletion
 
 # Write out list of linked files to a shell-script, useful in case the program
 # hangs or crashes:
 
-    open(RMF,">Remove.sh");
-    foreach my $f ( @list_of_files ) { print RMF "rm $f \n"; }
-    print RMF "rm $LPROG\n";   # Delete executable also
-    close(RMF);
+  open(RMF,">Remove.sh");
+  foreach my $f ( @list_of_files ) { print RMF "rm $f \n"; }
+  print RMF "rm $LPROG\n";   # Delete executable also
+  close(RMF);
 
-    my $startyear = $year;
-    my $startmonth = $mm1;
-    my $startday = 1;
-    if ($CWF){    # use forecast start date
-      $startyear  = substr($CWFDATE[1],0,4);
-      $startmonth = substr($CWFDATE[1],4,2);
-      $startday   = substr($CWFDATE[1],6,2);
-    }
+  my $startyear = $year;
+  my $startmonth = $mm1;
+  my $startday = 1;
+  if ($CWF){    # use forecast start date
+    $startyear  = substr($CWFDATE[1],0,4);
+    $startmonth = substr($CWFDATE[1],4,2);
+    $startday   = substr($CWFDATE[1],6,2);
+  }
 
-    my $NASS  =  0;   # Set to one if "dump" of all concentrations wanted at end
+  my $NASS  =  0;   # Set to one if "dump" of all concentrations wanted at end
 
 # make file with input parameters (to be read by Unimod.f90)
-    unlink("INPUT.PARA");
-    open(TMP,">INPUT.PARA");
-    print TMP "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\n";
-    print TMP "$CWFDUMP[0]\n$CWFDUMP[1]\n" if $CWF;
-    close(TMP);
+  unlink("INPUT.PARA");
+  open(TMP,">INPUT.PARA");
+  print TMP "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\n";
+  print TMP "$CWFDUMP[0]\n$CWFDUMP[1]\n" if $CWF;
+  close(TMP);
 
-    foreach my $exclu ( @exclus) {
-        print "starting $PROGRAM with
-        NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\nstartyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
-        print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
+  foreach my $exclu ( @exclus) {
+    print "starting $PROGRAM with
+    NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\nstartyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
+    print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
 
-
-        my $PRERUN = "";
-       #$PRERUN = "scampiexec" if $SNYKOV;
-        $PRERUN = "mpiexec "   if $STALLO ;
-        $PRERUN = "mpirun "    if $TITAN ;
-        if ($DRY_RUN) {
-            print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";
-            system("ls -lt *")
-        } else {
-            open (PROG, "| $PRERUN ./$LPROG") ||
-                die "Unable to execute $LPROG. Exiting.\\n" ;
-            close(PROG);
-        }
-
-    } #foreach $exclu
-            system("pwd");
-#------------    End of Run model -------------------------------------
-#------------    End of Run model -------------------------------------
-#------------    End of Run model -------------------------------------
-
-    if ( -r "core" )  {
-        die "Error somewhere - Core dumped !!!!\n";
-    } elsif ( -r "Timing.out" ) { #-- Done  :-)
-        print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
+    my $PRERUN = "";
+    #$PRERUN = "scampiexec" if $SNYKOV;
+    $PRERUN = "mpiexec "   if $STALLO ;
+    $PRERUN = "mpirun "    if $TITAN ;
+    if ($DRY_RUN) {
+      print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";
+      system("ls -lt *")
     } else {
-        print "\n  The program stopped abnormally!! \n" unless $DRY_RUN;
+      open (PROG, "| $PRERUN ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
+      close(PROG);
     }
 
+  } #foreach $exclu
+  system("pwd");
+#------------    End of Run model -------------------------------------
+#------------    End of Run model -------------------------------------
+#------------    End of Run model -------------------------------------
+
+  if ( -r "core" )  {
+    die "Error somewhere - Core dumped !!!!\n";
+  } elsif ( -r "Timing.out" ) { #-- Done  :-)
+    print "\n  Eulmod: Successful exit at" . `date '+%Z %Y-%m-%d %T %j'` ." \n";
+  } else {
+    print "\n  The program stopped abnormally!! \n" unless $DRY_RUN;
+  }
+
 #move RunLog
-    rename "RunLog.out",  "${runlabel1}_RunLog"
-        or warn "cannot mv RunLog.out ${runlabel1}_RunLog\n" unless $DRY_RUN;
-    open RUNLOG, ">> ${runlabel1}_RunLog"
-        or die "cannot append ${runlabel1}_RunLog: $!\n";
-    print RUNLOG <<"EOT";
+  rename "RunLog.out",  "${runlabel1}_RunLog"
+    or warn "cannot mv RunLog.out ${runlabel1}_RunLog\n" unless $DRY_RUN;
+  open RUNLOG, ">> ${runlabel1}_RunLog"
+    or die "cannot append ${runlabel1}_RunLog: $!\n";
+  print RUNLOG <<"EOT";
 ------------------------------
 Emission units: Gg/year
 ------------------------------
@@ -810,128 +818,133 @@ iyr_trend: $iyr_trend
 femis: femis.$scenario
 ------------------------------
 EOT
-    close RUNLOG;
+  close RUNLOG;
 
 # BENCHMARK summary info
-    if (%BENCHMARK) {
-      system("cdo infov ${runlabel1}_fullrun.nc > ${runlabel1}_fullrun.infov");
-      system("ls -lth * > ${runlabel1}_filelist");
-      if ($BENCHMARK{'archive'}) {
-        my @fileBM=( "${runlabel1}_fullrun.infov", "${runlabel1}_RunLog",
-                     "${runlabel1}_filelist", "eulmod.res", "Timing.out" );
-        my $dirBM="$DataDir/Benchmark/$GRID.$year/BM_$testv-$Chem.$USER";
-        mkdir_p($dirBM);
-        foreach my $f ( @fileBM ) { cp ("$f","$dirBM/$f") if -f "$f"; }
-      }
+  if (%BENCHMARK) {
+    system("cdo infov ${runlabel1}_fullrun.nc > ${runlabel1}_fullrun.infov");
+    system("ls -lth * > ${runlabel1}_filelist");
+    if ($BENCHMARK{'archive'}) {
+      my @fileBM=( "${runlabel1}_fullrun.infov", "${runlabel1}_RunLog",
+                   "${runlabel1}_filelist", "eulmod.res", "Timing.out" );
+      my $dirBM="$DataDir/Benchmark/$GRID.$year/BM_$testv-$Chem.$USER";
+      mkdir_p($dirBM);
+      foreach my $f ( @fileBM ) { cp ("$f","$dirBM/$f") if -f "$f"; }
     }
+  }
 
 #clean up work directories and links
-    if ($DRY_RUN) { # keep femis.dat
-        @list_of_files = grep {$_ ne 'femis.dat'} @list_of_files;
-    }
-    unlink ( @list_of_files );
+  if ($DRY_RUN or $SR){ # keep femis.dat
+    @list_of_files = grep {$_ ne 'femis.dat'} @list_of_files;
+  }
+  unlink ( @list_of_files );
 
 #tar sites and sondes. Use sondes to check as these are produced les frequently.
-    my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;
-    print "LOOKING FOR LAST SITES $last_sondes\n";
-    if ( -r $last_sondes ) {
-        print "FOUND LAST sondes $last_sondes\n";
-        system("tar cvzf ${runlabel1}.sites.tgz  sites.*");
-        system("tar cvzf ${runlabel1}.sondes.tgz sondes.*");
-    }
+  my $last_sondes = sprintf  "sondes.%02d%02d", $mm2, $yy;
+  print "LOOKING FOR LAST SITES $last_sondes\n";
+  if ( -r $last_sondes ) {
+    print "FOUND LAST sondes $last_sondes\n";
+    system("tar cvzf ${runlabel1}.sites.tgz  sites.*");
+    system("tar cvzf ${runlabel1}.sondes.tgz sondes.*");
+  }
 
-    system("mv EMEP_OUT.nc $CWFDUMPDIR/CWF_${CWFBASE}_dump.nc") if $CWF; # DumpFile
+  if ($CWF) {
+    my $old="EMEP_OUT.nc";
+    my $new="$CWFDUMPDIR/${scenario}_dump.nc";    # today's dump
+    system("mv $old $new") if (-e "$old");
+    if ($SR) {
+      ($old=$new)=~s/$CWFBASE/$CWFDATE[0]/g;      # yesterday's dump
+      system("rm $old") if (-e $old);
+      $old="modelrun.finished";
+      $new="runsr_$ENV{'PBS_ARRAYID'}.finished";
+      system("mkdir -p ../CWF_$CWFBASE/;echo $scenario >> ../CWF_$CWFBASE/$new")
+        if (-e $old) && $ENV{'PBS_ARRAYID'};
+    }
+  }
 
 ################################## END OF RUNS ######################
 }  ############################### END OF RUNS ######################
 ################################## END OF RUNS ######################
-
-
 exit 0;
 
 
 ### SUBPROGRAMS ################################################################
-
 sub leap_year {
-    my ($y) = ($_[0]);
+  my ($y) = ($_[0]);
 
-    if ($y < 20) {
-        $y += 2000;
-    } elsif ($y < 100) {
-        $y += 1900;
-    }
+  if ($y < 20) {
+    $y += 2000;
+  } elsif ($y < 100) {
+    $y += 1900;
+  }
 
-    if ($y % 400 == 0) {
-        return 1;
-    } elsif ($y % 100 == 0) {
-        return 0;
-    } else {
-        return ($y % 4 == 0) ? 1 : 0;
-    }
+  if ($y % 400 == 0) {
+    return 1;
+  } elsif ($y % 100 == 0) {
+    return 0;
+  } else {
+    return ($y % 4 == 0) ? 1 : 0;
+  }
 }
 
 sub metlink {  #---- meteorological data
-    my ($dd,$nnn,$mm) = ($_[0], $_[1], $_[2]);
+  my ($dd,$nnn,$mm) = ($_[0], $_[1], $_[2]);
 
-    for (my $hh = 0; $hh <= 21; $hh += 3) {
-        my $old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hh, $year, $mm, $dd;
-        my $new = sprintf "fil%04d", $nnn;
-        mylink("Met:", $old, $new);
-        $nnn++;
-    }
-    return $nnn;
+  for (my $hh = 0; $hh <= 21; $hh += 3) {
+    my $old = sprintf "$MetDir/f%02d.%04d%02d%02d", $hh, $year, $mm, $dd;
+    my $new = sprintf "fil%04d", $nnn;
+    mylink("Met:", $old, $new);
+    $nnn++;
+  }
+  return $nnn;
 }
-
 
 sub mylink {
   # links files from the original olcation (old) to
   # the new location (new) - generally the working directory.
   # Keeps track of all such linked files in list_of_files.
-
-    my ($text, $old,$new) = ($_[0], $_[1], $_[2]);
-
-    symlink $old,$new || die "symlink $old $new failed : $!";
-
-   print "$text $old => $new \n";
-   push(@list_of_files , $new);    # For later deletion
+  my ($text, $old,$new) = ($_[0], $_[1], $_[2]);
+  symlink $old,$new || die "symlink $old $new failed : $!";
+  print "$text $old => $new \n";
+  push(@list_of_files , $new);    # For later deletion
 }
 
 sub touch {
-    # simple touch -c implementation
-    my (@fileGlobs) = @_;
-    my @files;
-    foreach my $fileGlob (@fileGlobs) {
-        push @files, glob($fileGlob);
-    }
-    utime undef, undef, @files;
+  # simple touch -c implementation
+  my (@fileGlobs) = @_;
+  my @files;
+  foreach my $fileGlob (@fileGlobs) {
+    push @files, glob($fileGlob);
+  }
+  utime undef, undef, @files;
 }
 
 sub cp {
-    # copy, preserving permissions (stupid File::Copy::cp does not)
-    my ($from, $to, @extraArgs) = @_;
-    my $retVal = File::Copy::cp($from, $to, @extraArgs);
-    my $perm = (stat $from)[2] & 07777;
-    chmod($perm, $to);
-    return $retVal;
+  # copy, preserving permissions (stupid File::Copy::cp does not)
+  my ($from, $to, @extraArgs) = @_;
+  my $retVal = File::Copy::cp($from, $to, @extraArgs);
+  my $perm = (stat $from)[2] & 07777;
+  chmod($perm, $to);
+  return $retVal;
 }
 
 sub mkdir_p {
-    # mkdir -p on unix platforms
-    # does NOT fail on existing directories!
-    my ($dir) = @_;
-    $dir =~ s:/$::; # remove final /
-    my $curdir = './';
-    if ($dir =~ s:^/::) {
-        $curdir = '/';
+  # mkdir -p on unix platforms
+  # does NOT fail on existing directories!
+  my ($dir) = @_;
+  $dir =~ s:/$::; # remove final /
+  my $curdir = './';
+  if ($dir =~ s:^/::) {
+    $curdir = '/';
+  }
+  my @path = split ('/', $dir);
+  while (my $next = shift(@path)) {
+    $curdir .= $next . '/';
+    if (! -d $curdir) {
+      mkdir $curdir or die "cannot mkdir $curdir: $!\n";
     }
-    my @path = split ('/', $dir);
-    while (my $next = shift(@path)) {
-        $curdir .= $next . '/';
-        if (! -d $curdir) {
-            mkdir $curdir or die "cannot mkdir $curdir: $!\n";
-        }
-    }
-    return 1;
+  }
+  return 1;
 }
 
 sub calc_nterm {
@@ -957,7 +970,7 @@ sub calc_nterm {
 ##############################################################
 package EMEP::Sr;
 
-my (%country_nums, @eu15, @euNew04, @eu25, @euNew06, @eu27, @sea, @noneu, @emep, @external);
+my (%country_nums, @eu15, @euNew04, @eu25, @euNew06, @eu27, @sea, @noneu, @emep, @eecca, @eccomb);
 our ($base, $Split, $NOxSplit, $rednflag, $redn, @countries, @polls);
 
 INIT {
@@ -980,6 +993,12 @@ INIT {
   MC =>  62, NOA =>  63,  EU =>  64,  US =>  65,
   CA =>  66, BIC =>  67,  KG =>  68,  AZ =>  69,
   RUX =>  71,  ATX =>  70,
+ RFE => 74, KZE => 75, UZ => 76, TM  => 77, UZE => 78,
+ TME => 79, CAS => 80, TJ => 81, ARL => 82, ARE => 83,
+ ASM => 84, ASE => 85, AOE => 86,
+ RFX => 87, ASX => 88, PAX => 89, AOX => 90,
+ NAX => 91,
+ KZT => 92, RUE => 93, UZT => 94, TMT => 95, AST => 96,
  BA2 => 302, BA3 => 303, BA4 => 304, BA5 => 305, BA6 => 306, # Baltic sep.
  BA7 => 307, BA8 => 308, BA9 => 309,
  NS2 => 312, NS3 => 313, NS4 => 314, NS5 => 315, NS6 => 316, # N. Sea sep.
@@ -1000,9 +1019,9 @@ INIT {
 @eu27 = (@eu25, @euNew06);
 @sea = qw ( NOS ATL MED BAS BLS );
 @noneu = qw ( NO CH IS );
-@emep = qw ( RS ME BY BA HR TR RU UA KZ MD MK GE AM AL AZ KG NOA ASI REM) ;
-@external =qw ( RUX   ATX );
-
+@emep = qw ( RS ME BY BA HR TR UA MD MK GE AM AL AZ NOA ASI) ;
+@eecca = qw ( KG KZ RU TJ );
+@eccomb = qw ( RUE KZT UZT TMT AST );
 ########################################
 # End of country definitions          ##
 ########################################
@@ -1012,14 +1031,16 @@ INIT {
 #### start of SR parameters ####
 ################################
 $base        = "CLE";
-$Split       = "CLE_MAR2004";     # Defualt (IER-based) VOC splits
-$NOxSplit    = "CLE2020_ver2";    # Default scenario (IER-based) VOC splits
+#$Split       = "CLE_MAR2004";     # Defualt (IER-based) VOC splits
+#$NOxSplit    = "CLE2020_ver2";    # Default scenario (IER-based) VOC splits
 $rednflag    = "P15";  # 15% reduction label
 $redn        = "0.85"; # 15% reduction
 
 # modify those to fill up your queues for SR effectively!!!
-@countries  = (@eu27, @sea, @noneu, @emep);
+@countries  = (@eu27, @sea, @noneu, @emep, @eecca, @eccomb);
 @polls       = qw (BASE NP A V S );  #  (any, all, at least 1)
+
+@countries=($countries[$ENV{'PBS_ARRAYID'}-1]) if $ENV{'PBS_ARRAYID'};
 ################################
 #### end of SR parameters   ####
 ################################
@@ -1027,89 +1048,119 @@ $redn        = "0.85"; # 15% reduction
 
 
 sub initRuns {
-    my @runs;
-    foreach my $cc (@countries) {
-        foreach my $poll (@polls) {
-            push @runs, [$cc, $poll, $redn];
-            if ($poll eq 'BASE') {
-                # run BASE only once (for exactly one cc)!!!
-                @polls = grep {'BASE' ne $_} @polls;
-            }
-        }
+  my @runs;
+  foreach my $cc (@countries) {
+    foreach my $poll (@polls) {
+      push @runs, [$cc, $poll, $redn];
+      if ($poll eq 'BASE') {
+        # run BASE only once (for exactly one cc)!!!
+        @polls = grep {'BASE' ne $_} @polls;
+      }
     }
-    return @runs;
+  }
+  return @runs;
 }
 
 
 sub getScenario {
-    my ($scenflag) = @_;
-    my $cc = $scenflag->[0];
-    my $pollut = $scenflag->[1];
-    my $scenario = "${base}_${cc}_${pollut}_${rednflag}";
-    $scenario = "${base}" if $pollut eq "BASE" ;
-    return $scenario;
+  my ($scenflag) = @_;
+  my $cc = $scenflag->[0];
+  my $pollut = $scenflag->[1];
+  $base = "CWF_$CWFBASE" if $CWF ;
+  my $scenario = "${base}_${cc}_${pollut}_${rednflag}";
+  $scenario = "${base}" if $pollut eq "BASE" ;
+  return $scenario;
 }
 
 sub generate_updated_femis {
-    my ($cc, $pollut, $redn) = @_;
-   # Initialise to 1.0:
-    my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ;
-    if( $pollut eq "AV" ) { $voc = $nh3 = $redn  };
-    if( $pollut eq "A" ) { $nh3 = $redn  };
-    if( $pollut eq "V" ) { $voc = $redn  };
-    if( $pollut eq "S" ) { $sox = $redn  };
-    if( $pollut eq "N" ) { $nox = $redn  };
-    if( $pollut eq "NP" ) { $nox = $pm25 = $pmco = $redn  };
-    if( $pollut eq "SNP" ) { $sox = $nox = $pm25 = $pmco =  $redn  };
-    if( $pollut eq "AN" ) { $nh3 = $nox =  $redn  };
-    if( $pollut eq "SNAV" ) { $sox = $nox = $nh3 = $voc =  $redn  };
-    #if( $pollut eq BASE ) then no change!
+  my ($cc, $pollut, $redn) = @_;
+  # Initialise to 1.0:
+  my( $sox,$nox,$voc,$nh3,$testp,$co,$pm25,$pmco ) = ("1.0") x 8 ;
+  if( $pollut eq "AV" ) { $voc = $nh3 = $redn  };
+  if( $pollut eq "A" ) { $nh3 = $redn  };
+  if( $pollut eq "V" ) { $voc = $redn  };
+  if( $pollut eq "S" ) { $sox = $redn  };
+  if( $pollut eq "N" ) { $nox = $redn  };
+  if( $pollut eq "NP" ) { $nox = $pm25 = $pmco = $redn  };
+  if( $pollut eq "SNP" ) { $sox = $nox = $pm25 = $pmco =  $redn  };
+  if( $pollut eq "AN" ) { $nh3 = $nox =  $redn  };
+  if( $pollut eq "SNAV" ) { $sox = $nox = $nh3 = $voc =  $redn  };
+ #if( $pollut eq BASE ) then no change!
 
-    my $femisdat = slurp("$DataDir/femis.dat");
+  my $femisdat = slurp("$DataDir/femis.dat");
 
-    my $ccnum = defined($country_nums{$cc}) || die "ERROR!! No country Num for $cc!\n";
+  die "ERROR!! No country Num for $cc!\n" unless defined(my $ccnum = $country_nums{$cc});
 
-
-    # using 0 here as long as emissions are guaranteed to contain either
-    # only anthropogenic or only natural emissions perl 'country'
-    my $ss = 0; # 100 = antropogenic sectors (1..10)
-                # 0 = all sectors
-    $femisdat .= "$ccnum $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-    if ( $cc eq "DE" ) {  # Add splitted countries
-        foreach my $cx (9, 10) {
-            $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-        }
+  # using 0 here as long as emissions are guaranteed to contain either
+  # only anthropogenic or only natural emissions perl 'country'
+  my $ss = 0; # 100 = antropogenic sectors (1..10)
+              # 0 = all sectors
+  $femisdat .= "$ccnum $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+  if ( $cc eq "DE" ) {  # Add splitted countries
+    foreach my $cx (9, 10) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
     }
-    if ( $cc eq "RU" ) { # Add splitted and external RU
-        foreach my $cx (36..38, 42, 71) {
-            $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-        }
+  }
+  if ( $cc eq "KZT" ) {  # Add splitted countries
+    foreach my $cx (53, 75) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
     }
-    if ( $cc eq "ATL" ) {  # Add ATL outside EMEP
-        foreach my $cx (70) {
-            $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-        }
+  }
+  if ( $cc eq "TMT" ) {  # Add splitted countries
+    foreach my $cx (77, 79) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
     }
-    if ( 30 <= $ccnum and $ccnum <= 34) { # add splitted sea areas
-        for (my $cx = 10 * $ccnum + 2; $cx <= 10 * $ccnum + 9; $cx++) {
-            $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
-        }
+  }
+  if ( $cc eq "UZT" ) {  # Add splitted countries
+    foreach my $cx (76, 78) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
     }
-    unlink "femis.dat" if -l "femis.dat";
-    open FEMIS, ">femis.dat" or die "Cannot write femis.dat: $!\n";
-    print FEMIS $femisdat;
-    close FEMIS;
+  }
+  if ( $cc eq "RU" ) { # Add splitted and external RU
+    foreach my $cx (36..38, 42) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+    }
+  }
+  if ( $cc eq "RUE" ) { # Add RU and RFE
+    foreach my $cx (36, 37, 38, 42, 71, 74) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+    }
+  }
+  if ( $cc eq "ASI" ) { # Add splitted ASI
+    foreach my $cx (76, 77, 80, 82, 84) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+    }
+  }
+  if ( $cc eq "AST" ) { # Add ASI and ASE
+    foreach my $cx (80, 82, 83, 84, 85) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+    }
+  }
+  if ( $cc eq "ATL" ) {  # Add ATL outside EMEP
+    foreach my $cx (70) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+    }
+  }
+  if ( 30 <= $ccnum and $ccnum <= 34) { # add splitted sea areas
+    for (my $cx = 10 * $ccnum + 2; $cx <= 10 * $ccnum + 9; $cx++) {
+      $femisdat .= "$cx $ss  $sox $nox $voc $nh3 $testp $co $pm25 $pmco\n";
+    }
+  }
+  unlink "femis.dat" if -l "femis.dat";
+  open FEMIS, ">femis.dat" or die "Cannot write femis.dat: $!\n";
+  print FEMIS $femisdat;
+  close FEMIS;
 
-    # and to the logfile
-    print "NEW FEMIS\n", $femisdat;
+  # and to the logfile
+  print "NEW FEMIS\n", $femisdat;
 }
 
 sub slurp {
-    # read the complete content of a file
-    my ($file) = @_;
-    local $/ = undef;
-    open F, $file or die "Cannot read $file: $!\n";
-    my $data = <F>;
-    close F;
-    return $data;
+  # read the complete content of a file
+  my ($file) = @_;
+  local $/ = undef;
+  open F, $file or die "Cannot read $file: $!\n";
+  my $data = <F>;
+  close F;
+  return $data;
 }

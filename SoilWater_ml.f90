@@ -1,9 +1,9 @@
 ! <SoilWater_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2010 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 module SoilWater_ml
  use GridValues_ml,     only : debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
                              longitude => gl
@@ -51,7 +51,7 @@ module SoilWater_ml
 !                  /     :
 !  ----------------------:-----------------x
 !                 0      D                MAM
-! 
+!
 !   MAM = 0.02 in HIRLAM - max possible water
 !   DAM = D/MAM, min 0, max 1.0
 
@@ -59,7 +59,7 @@ module SoilWater_ml
     real, private, parameter ::   SoilDAM = 1.0 ! assumed fraction of
                             ! MAXM when decline begins, D on figure
                             ! DO NOT SET TO ZERO!
-!    real, dimension(366), public, save :: SWP = 0.0  ! daily soil water potential 
+!    real, dimension(366), public, save :: SWP = 0.0  ! daily soil water potential
                                               ! in  MPa
    real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
     fSW    ! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin)
@@ -84,7 +84,7 @@ contains
 
         fSW =  1.0
 
-        if ( USE_SOILWATER == .false. ) return
+        if ( .not.USE_SOILWATER ) return
 
         do j = 1, ljmax
            do i = 1, limax
@@ -104,9 +104,9 @@ contains
 !TMP             do ii = -1, 1
 !TMP             do jj = -1, 1
 !TMP               ii2=max(1,i+ii)
-!TMP               ii2=min(ii2, limax) 
+!TMP               ii2=min(ii2, limax)
 !TMP               jj2=max(1,j+jj)
-!TMP               jj2=min(jj2, ljmax) 
+!TMP               jj2=min(jj2, ljmax)
 !TMP               land = (1-water_fraction(ii2,jj2) )
 !TMP               sumland = sumland + land
 !TMP               newsw = newsw + land*SoilWater_deep(ii2,jj2,1)
@@ -115,7 +115,7 @@ contains
 !TMP             end do
 !TMP             end do
 !TMP             newsw = newsw/sumland
-        
+
         end do
         end do
 newsw = -999.9
@@ -128,7 +128,7 @@ newsw = -999.9
 
              write(*,"(a,2i5,2f12.4,i4,2f12.4,L8,f12.4)") "DEBUG_SWF: ", i_fdom(i)-35, j_fdom(j)-11,&
                  water_fraction(i,j), SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j), nwp_sea(i,j), newsw
-             
+
       end if
 
         my_first_call = .false.

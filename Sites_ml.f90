@@ -42,8 +42,7 @@ use My_Outputs_ml, only : &  ! for sitesout
       SITE_XTRA_CODE, FREQ_SITE, NSONDES_MAX, NLEVELS_SONDE, &
       NADV_SONDE, NSHL_SONDE, NXTRA_SONDE, &  ! DSGCN_NOy,  &
       SONDE_ADV, SONDE_SHL, SONDE_XTRA, & !ds SKIP SONDE_XTRA_INDEX, &
-      FREQ_SONDE, & 
-      to_ug_ADV  !AMVB 2010-07-19: PM-PPB bug fix
+      FREQ_SONDE, to_ug_ADV
 
 use Derived_ml,        only : d_2d, d_3d, f_2d
 use Functions_ml,      only : Tpot_2_T              ! Conversion function
@@ -61,7 +60,7 @@ use MetFields_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentr
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
                               ,KMAX_BND,PT,ATWAIR, NPROC, DEBUG_SITES &
-                              ,DomainName, RUNDOMAIN, IOU_INST
+                              ,DomainName, RUNDOMAIN, IOU_INST, SOURCE_RECEPTOR
 use Par_ml,            only : li0,lj0,li1,lj1 &
                               ,GIMAX,GJMAX &
                               ,GI0,GI1,GJ0,GJ1,me,MAXLIMAX,MAXLJMAX
@@ -406,7 +405,7 @@ end subroutine Init_sites
                     site_z(i)," me ", me
      end do
 
-     if ( MasterProc ) then  
+     if ( MasterProc ) then
         write(6,*)  "======= site_gindex ======== sitesdef ============"
         do n = 1, nglobal_sites
            write(6,'(a12,i4, 2x, 8i4)') "sitesdef ", n, &
@@ -419,39 +418,40 @@ end subroutine Init_sites
   ! assign local data to out
 
   do i = 1, nlocal_sites
-     ix = site_x(i)
-     iy = site_y(i)
-     iz = site_z(i)
+    ix = site_x(i)
+    iy = site_y(i)
+    iz = site_z(i)
 
-     do ispec = 1, NADV_SITE
-        if (iz == KMAX_MID ) then ! corrected to surface
-           out(ispec,i) = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
-                          cfac( SITE_ADV(ispec),ix,iy) * PPBINV
-        else                     ! Mountain sites not corrected to surface
-           out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,iz ) * PPBINV
-        end if
-     end do
+    do ispec = 1, NADV_SITE
+      if (iz == KMAX_MID ) then ! corrected to surface
+        out(ispec,i) = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
+                       cfac( SITE_ADV(ispec),ix,iy) * PPBINV
+      else                     ! Mountain sites not corrected to surface
+        out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,iz ) * PPBINV
+      end if
+    end do
 
-     my_first_call = .false.
+    my_first_call = .false.
 
-     do ispec = 1, NSHL_SITE
-        out(NADV_SITE+ispec,i)  = xn_shl( SITE_SHL(ispec) ,ix,iy,iz )
-     end do
+    do ispec = 1, NSHL_SITE
+      out(NADV_SITE+ispec,i)  = xn_shl( SITE_SHL(ispec) ,ix,iy,iz )
+    end do
 
     ! then print out XTRA stuff, usually the temmp
     ! or pressure
     ! SITE_XTRA=(/ "th  ", "hmix", "Vg_ref", "Vg_1m", "Vg_sto", "Flux_ref", "Flux_sto" /)
 
-     do ispec = 1, NXTRA_SITE
+
+    if (.not. SOURCE_RECEPTOR) then
+      do ispec = 1, NXTRA_SITE
         nn = NADV_SITE + NSHL_SITE + ispec
-        select case ( SITE_XTRA(ispec) )
+        select case ( trim(SITE_XTRA(ispec)) )
           case ( "T2" )
             out(nn,i)   = t2_nwp(ix,iy,1) - 273.15
           case ( "th" )
             out(nn,i)   = th(ix,iy,iz,1)
-!          case ( "hmix" )
-!            out(nn,i)   = pzpbl(ix,iy)
-
+!         case ( "hmix" )
+!           out(nn,i)   = pzpbl(ix,iy)
           case ( "D2D" )
             d2code       = SITE_XTRA_CODE (ispec)
             d2index      = find_index(d2code, f_2d(:)%name)
@@ -463,7 +463,8 @@ end subroutine Init_sites
             end if
         end select
         call CheckStop( abs( out(nn,i) )  > 1.0e99, "ABS(SITES OUT) TOO BIG" )
-     end do
+      end do
+    end if
   end do
 
   ! collect data into gout on me=0 t
@@ -539,7 +540,6 @@ end subroutine siteswrt_surf
      do ispec = 1, NXTRA_SONDE
 
         select case ( SONDE_XTRA(ispec) )
-!AMVB 2010-07-19:
           case ( "PM25" )    !!  PM data converted to ug m-3
             sum_PM(:) = 0.
             do k = 1, KMAX_MID
@@ -548,6 +548,7 @@ end subroutine siteswrt_surf
                         * roa(ix,iy,k,1)
             end do !k
             out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
+
           case ( "PMco" ) !!  PM data converted to ug m-3
             sum_PM(:) = 0.
             do k = 1, KMAX_MID
@@ -556,7 +557,6 @@ end subroutine siteswrt_surf
                         * roa(ix,iy,k,1)
             end do !k
             out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
-
 
           case ( "NOy" )
             sum_NOy(:) = 0.

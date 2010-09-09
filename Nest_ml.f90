@@ -130,7 +130,7 @@ module Nest_ml
   private
 
   !Use TOP BC on forecast mode
-  integer, parameter :: TOP_BC=.false..or.FORECAST
+  logical, parameter :: TOP_BC=.false..or.FORECAST
   integer,save :: iw, ie, js, jn, kt ! i West/East bnd; j North/South bnd; k Top
   !BC values at boundaries in present grid
   real, save, allocatable, dimension(:,:,:,:) :: &

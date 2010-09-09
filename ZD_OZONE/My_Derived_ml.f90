@@ -325,7 +325,7 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
       METCONC_PARAMS = (/ "RH      " &
-                         ,"CanopyO3" & !SKIP 
+                         ,"CanopyO3" & !SKIP
                          ,"VPD     ", "FstO3   " &
                          ,"EVAP    ", "Gsto    " &
                         !SKIP  ,"USTAR   ", "INVL    "  &
@@ -367,7 +367,6 @@ private
 
 ! hb other (non-ppb) 3D output
      character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-!AMVB 2010-07-21: PM-PPB bug fix
        D3_OTHER != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -397,16 +396,16 @@ private
     real :: scale
 
 
-    ! Set indices of mosaic metconc params for later use. Will be zero if 
+    ! Set indices of mosaic metconc params for later use. Will be zero if
     ! not found, but that's okay I hope...
-      MMC_RH    = find_index("RH",METCONC_PARAMS) 
-      MMC_CANO3 = find_index("CanopyO3",METCONC_PARAMS) 
-      MMC_VPD   = find_index("VPD",METCONC_PARAMS) 
-      MMC_FST   = find_index("FstO3",METCONC_PARAMS) 
+      MMC_RH    = find_index("RH",METCONC_PARAMS)
+      MMC_CANO3 = find_index("CanopyO3",METCONC_PARAMS)
+      MMC_VPD   = find_index("VPD",METCONC_PARAMS)
+      MMC_FST   = find_index("FstO3",METCONC_PARAMS)
       MMC_USTAR = find_index("USTAR",METCONC_PARAMS)
-      MMC_INVL  = find_index("INVL",METCONC_PARAMS) 
-      MMC_GSTO  = find_index("GSTO",METCONC_PARAMS) 
-      MMC_EVAP  = find_index("EVAP",METCONC_PARAMS) 
+      MMC_INVL  = find_index("INVL",METCONC_PARAMS)
+      MMC_GSTO  = find_index("GSTO",METCONC_PARAMS)
+      MMC_EVAP  = find_index("EVAP",METCONC_PARAMS)
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -416,15 +415,17 @@ private
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
 
   ! Emission sums - we always add these (good policy!)
-   do  i = 1, size(EMIS_NAME)
-     tag_name(1) = "Emis_mgm2_" // trim(EMIS_NAME(i))
-     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-   end do
-   do  i = 1, size(BVOC_GROUP)
-     itot = BVOC_GROUP(i)
-     tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
-     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-   end do
+   if(.not.SOURCE_RECEPTOR)then !may want emissions?
+     do i = 1, size(EMIS_NAME)
+       tag_name(1) = "Emis_mgm2_" // trim(EMIS_NAME(i))
+       call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     end do
+     do i = 1, size(BVOC_GROUP)
+       itot = BVOC_GROUP(i)
+       tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
+       call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     end do
+   end if
 
 ! add surf concs in various units (e.g. ugS/m3 or ppb):
      tag_name(1:size(SURF_UG_S)) = "SURF_ugS_" // species(SURF_UG_S)%name
@@ -542,38 +543,40 @@ private
       ! We find the various combinations of gas-species and ecosystem,
       ! adding them to the derived-type array LCC_DDep (e.g. => VGO3_CF)
 
-      nVg = 0
-      do ilab = 1, size(VG_LABELS)
-      do i = 1, size(VG_SPECS)
+      if(.not.SOURCE_RECEPTOR)then !may want deposition velocities?
+        nVg = 0
+        do ilab = 1, size(VG_LABELS)
+        do i = 1, size(VG_SPECS)
         VG_LC: do n = 1, size(VG_LCS)
 
           !------------------- Check if LC present in this array ------!
           iLC = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, &
-                   write_condition=(i==1 .and. ilab == 1))
+                  write_condition=(i==1 .and. ilab == 1))
           if ( iLC < 0 ) cycle  VG_LC
           !-------------End of Check if LC present in this array ------!
           nVg = nVg + 1
 
           name = trim( VG_LABELS(ilab) ) // "_"  // &
-             trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
+                 trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
           iadv = VG_SPECS(i) - NSPEC_SHL
           call CheckStop( iadv < 1 .or. iadv > NSPEC_ADV, &
                  " ERR: DDEP_SPECS: VG_SPECS" )
 
           nMosaic = nMosaic + 1
           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       "too many nMosaics, nVg" )
+                 "too many nMosaics, nVg" )
 
           !Deriv(name, class,    subc,  txt,           unit
           !Deriv index, f2d,LC,XYLC, scale, avg? rho Inst Yr Mn Day atw
-          MosaicOutput(nMosaic) = Deriv(  &
-              name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
-                iadv, -99,iLC, -99.9,  F, 100.0, T,   F,   F, T, T, T, atw)
+          MosaicOutput(nMosaic) = Deriv( &
+            name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
+            iadv, -99,iLC, -99.9,  F, 100.0, T,   F,   F, T, T, T, atw)
 
         end do VG_LC !n
-      end do ! i
-      end do ! ilab
-      nOutVg = nVg
+        end do ! i
+        end do ! ilab
+        nOutVg = nVg
+      endif ! SOURCE_RECEPTOR
 
       !------------- VEGO3 stuff ----------------------------------------------
       ! For fluxes or AOTs we start with a formatted name, eg. POD_3.0_CF and
@@ -614,7 +617,7 @@ private
                "=> Y", trim(txtnum), " iLC, LC ", iLC, trim(txt2)
           if ( iLC < 0 ) cycle  VEGO3_LC
           !DS if ( iLC > 0 .and. .not. LandType(iLC)%is_iam ) cycle  VEGO3_LC
-          if ( iLC > 0  ) LandType(iLC)%flux_wanted  = .true. 
+          if ( iLC > 0  ) LandType(iLC)%flux_wanted  = .true.
           !-------------End of Check if LC present in this array ------!
           nVEGO3 = nVEGO3 + 1
 
@@ -638,9 +641,10 @@ private
       ! We find the various combinations of gas-species and ecosystem,
       ! adding them to the derived-type array LCC_DDep (e.g. => RsO3_CF)
 
-      nRG = 0
-      do ilab = 1, size(RG_LABELS)
-      do i = 1, size(RG_SPECS)
+      if(.not.SOURCE_RECEPTOR)then !Don't need all these in SR case
+        nRG = 0
+        do ilab = 1, size(RG_LABELS)
+        do i = 1, size(RG_SPECS)
         RG_LC: do n = 1, size(RG_LCS)
 
           !------------------- Check if LC present in this array ------!
@@ -649,44 +653,44 @@ private
           !-------------End of Check if LC present in this array ------!
 
           nRG = nRG + 1
-          name = trim ( RG_LABELS(ilab) ) // "_"  // &
-           trim( species(RG_SPECS(i))%name ) // "_" // trim( RG_LCS(n) )
+          name = trim( RG_LABELS(ilab) ) // "_"  // &
+                 trim( species(RG_SPECS(i))%name ) // "_" // trim( RG_LCS(n) )
 
           iadv  =   RG_SPECS(i) - NSPEC_SHL
 
-          !OutRG(nRG)%label  = RG_LABELS(ilab)
-          !OutRG(nRG)%txt  =   RG_LCS(n)
+         !OutRG(nRG)%label  = RG_LABELS(ilab)
+         !OutRG(nRG)%txt  =   RG_LCS(n)
 
-!          OutRG(nRG) = Dep_type(  &
-!             name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
+!         OutRG(nRG) = Dep_type(  &
+!           name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
 !                                             1.0, -99,  "-")
-           nMosaic = nMosaic + 1
-           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       "too many nMosaics, nRG" )
+          nMosaic = nMosaic + 1
+          call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
+                 "too many nMosaics, nRG" )
 
-          !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
+         !Deriv(name, class,    subc,  txt,           unit
+         !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
 
           if( RG_LABELS(ilab)(1:1) == "R" )  then
-             MosaicOutput(nMosaic) = Deriv( &
-               name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
-                iadv, -99,iLC,-99.9, F , 1.0,  T,   F,   F, T, T, T, atw)
+            MosaicOutput(nMosaic) = Deriv( &
+              name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
+              iadv, -99,iLC,-99.9, F , 1.0,  T,   F,   F, T, T, T, atw)
           else if( RG_LABELS(ilab)(1:1) == "G" )  then
-             MosaicOutput(nMosaic) = Deriv( &
-               name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
-                iadv, -99,iLC,-99.9, F, 100.0,  T,   F,   F, T, T, T, atw)
-          end if
-!          if( OutRG(nRG)%label(1:1) == "R" )  then
-!              OutRG(nRG)%units  =   "s/m"
-!          else if( OutRG(nRG)%label(1:1) == "G" )  then
-!              OutRG(nRG)%scale  =    100.0
-!              OutRG(nRG)%units  =   "cm/s"
-!          end if
-!          if(DEBUG .and. MasterProc) call print_dep_type(OutRG(nRG))
-        end do RG_LC !n
-      end do ! i
-      end do ! ilab
-      nOutRG = nRG
+            MosaicOutput(nMosaic) = Deriv( &
+              name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
+              iadv, -99,iLC,-99.9, F, 100.0,  T,   F,   F, T, T, T, atw)
+          endif
+!         if( OutRG(nRG)%label(1:1) == "R" )  then
+!           OutRG(nRG)%units  =   "s/m"
+!         else if( OutRG(nRG)%label(1:1) == "G" )  then
+!           OutRG(nRG)%scale  =    100.0
+!           OutRG(nRG)%units  =   "cm/s"
+!         end if
+!         if(DEBUG .and. MasterProc) call print_dep_type(OutRG(nRG))
+        enddo RG_LC !n
+        enddo ! i
+        enddo ! ilab
+        nOutRG = nRG
 
 !     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
 !     call CheckStop( errmsg, errmsg // "OutRG  too long" )
@@ -695,16 +699,16 @@ private
       ! We find the various combinations of met and ecosystem,
       ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
 
-      nMET = 0
-      do ilab = 1, size(METCONC_PARAMS)
+        nMET = 0
+        do ilab = 1, size(METCONC_PARAMS)
         MET_LC: do n = 1, size(MET_LCS)
 
           !------------------- Check if LC present in this array ------!
           iLC = Check_LandCoverPresent( "MET_LCS", n, MET_LCS, (ilab == 1))
           if ( iLC < 0 ) cycle  MET_LC
-          if ( METCONC_PARAMS(ilab)(1:6) == "Canopy" .or. & 
-               METCONC_PARAMS(ilab)(1:5) == "FstO3" ) &
-                 LandType(iLC)%flux_wanted  = .true.  ! Canopy calc in StoFlux
+          if ( METCONC_PARAMS(ilab)(1:6) == "Canopy" .or. &
+            METCONC_PARAMS(ilab)(1:5) == "FstO3" ) &
+              LandType(iLC)%flux_wanted  = .true.  ! Canopy calc in StoFlux
           !-------------End of Check if LC present in this array ------!
 
           nMET = nMET + 1
@@ -712,34 +716,35 @@ private
 
           nMosaic = nMosaic + 1
           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       "too many nMosaics, nMET" )
-          !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
-           MosaicOutput(nMosaic) = Deriv(  &
-              name, "Mosaic", "METCONC", MET_LCS(n), METCONC_PARAMS(ilab), &
-                ilab, -99,iLC,-99.9,  F , 1.0,  T,   F,   F, T, T, T, atw)
+                 "too many nMosaics, nMET" )
+         !Deriv(name, class,    subc,  txt,           unit
+         !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
+          MosaicOutput(nMosaic) = Deriv(  &
+            name, "Mosaic", "METCONC", MET_LCS(n), METCONC_PARAMS(ilab), &
+            ilab, -99,iLC,-99.9,  F , 1.0,  T,   F,   F, T, T, T, atw)
 !MESS          OutMET(nMET) = Dep_type( &
 !           name, ilab, -99, iLC, "Mosaic", METCONC_PARAMS(ilab),  &
 !                                              MET_LCS(n), 1.0, -99, "-")
 
           if( METCONC_PARAMS(ilab)(1:5) == "USTAR" )  then
-              MosaicOutput(nMosaic)%unit  =   "m/s"
-          else if( METCONC_PARAMS(ilab)(1:4) == "INVL" )  then
-              MosaicOutput(nMosaic)%unit  =   "m"
-          else if( METCONC_PARAMS(ilab)(1:8) == "CanopyO3" )  then
-              MosaicOutput(nMosaic)%unit  =   "ppb"
-          else if( METCONC_PARAMS(ilab)(1:5) == "FstO3" )  then
-              MosaicOutput(nMosaic)%unit  =   "mmole/m2" ! accumulated
-          else if( METCONC_PARAMS(ilab)(1:4) == "EVAP" )  then
-              MosaicOutput(nMosaic)%avg       =  .false. ! accumulate
-              MosaicOutput(nMosaic)%unit      =  "mm"
-              MosaicOutput(nMosaic)%dt_scale  =  .true.
-          end if
+            MosaicOutput(nMosaic)%unit  =   "m/s"
+          elseif( METCONC_PARAMS(ilab)(1:4) == "INVL" )  then
+            MosaicOutput(nMosaic)%unit  =   "m"
+          elseif( METCONC_PARAMS(ilab)(1:8) == "CanopyO3" )  then
+            MosaicOutput(nMosaic)%unit  =   "ppb"
+          elseif( METCONC_PARAMS(ilab)(1:5) == "FstO3" )  then
+            MosaicOutput(nMosaic)%unit  =   "mmole/m2" ! accumulated
+          elseif( METCONC_PARAMS(ilab)(1:4) == "EVAP" )  then
+            MosaicOutput(nMosaic)%avg       =  .false. ! accumulate
+            MosaicOutput(nMosaic)%unit      =  "mm"
+            MosaicOutput(nMosaic)%dt_scale  =  .true.
+          endif
 
           if(DEBUG .and. MasterProc) call print_deriv_type(MosaicOutput(nMosaic))
-        end do MET_LC !n
-      end do ! ilab
-      nOutMET = nMET
+        enddo MET_LC !n
+        enddo ! ilab
+        nOutMET = nMET
+      endif !SOURCE_RECEPTOR
 
 !     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
 !     call CheckStop( errmsg, errmsg // "OutMET too long" )
@@ -760,7 +765,7 @@ private
        if ( size(D3_PPB) > 0 ) then
          tag_name(1:size(D3_PPB)) = "D3_ppb_" // species(D3_PPB)%name
          call AddArray(  tag_name(1:size(D3_PPB)) , wanted_deriv3d, &
-            NOT_SET_STRING, errmsg)
+           NOT_SET_STRING, errmsg)
          call CheckStop( errmsg, errmsg // "D3_ppb too long" )
        end if
        if ( size(D3_OTHER) > 0 ) then
