@@ -38,6 +38,7 @@ module DO3SE_ml
 
   use ModelConstants_ml, only : NLANDUSEMAX, DEBUG_DO3SE, MasterProc, &
       USE_SOILWATER
+  use TimeDate_ml,       only : current_date, daynumber
 
   implicit none
   private
@@ -107,7 +108,7 @@ contains
       character(len=*), dimension(:), intent(in) :: wanted_codes 
       character(len=*), intent(inout) :: io_msg 
       character(len=300)  :: inputline
-      integer :: lu, ios
+      integer :: iLC, ios
       !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
       ! Read data (still old-style reading, on all processors)
 
@@ -120,7 +121,7 @@ contains
       !------ Read in file. Lines beginning with "!" are taken as
       !       comments and skipped
 
-       lu = 1    
+       iLC = 1    
        do
             read(unit=io_num,fmt="(a200)",iostat=ios) inputline
 
@@ -133,14 +134,14 @@ contains
                 cycle
             end if
 
-            read(unit=inputline,fmt=*) do3se(lu)
+            read(unit=inputline,fmt=*) do3se(iLC)
 
             if ( DEBUG_DO3SE .and. MasterProc ) then
-                print *, " DO3SE LU", lu,  do3se(lu)%code, wanted_codes(lu)
+                print *, " DO3SE iLC", iLC,  do3se(iLC)%code, wanted_codes(iLC)
             end if
 
-            call CheckStop( wanted_codes(lu), do3se(lu)%code, "DO3SE MATCHING")
-            lu = lu + 1
+            call CheckStop( wanted_codes(iLC), do3se(iLC)%code, "DO3SE MATCHING")
+            iLC = iLC + 1
        end do
        close(unit=io_num)
 
@@ -148,7 +149,7 @@ contains
 
 !=======================================================================
 
-    subroutine g_stomatal(lu, debug_flag)
+    subroutine g_stomatal(iLC, debug_flag)
 !=======================================================================
 
 !    Calculates stomatal conductance g_sto based upon methodology from 
@@ -159,7 +160,7 @@ contains
 !    g_sto = [g_max * f_pot * f_light * f_temp * f_vpd * f_swp ]/41000.0
 !
 
-     integer, intent(in) :: lu
+     integer, intent(in) :: iLC
      logical, intent(in) :: debug_flag
 
 ! Outputs:
@@ -187,8 +188,8 @@ contains
 !    al. (1998), eqns. 31-35, based upon sun/shade method of  
 !    Norman (1979,1982)
 
-    f_sun   = (1.0 - exp (-do3se(lu)%f_light*L%PARsun  ) ) 
-    f_shade = (1.0 - exp (-do3se(lu)%f_light*L%PARshade) ) 
+    f_sun   = (1.0 - exp (-do3se(iLC)%f_light*L%PARsun  ) ) 
+    f_shade = (1.0 - exp (-do3se(iLC)%f_light*L%PARshade) ) 
 
     f_light = L%LAIsunfrac * f_sun + (1.0 - L%LAIsunfrac) * f_shade
 
@@ -200,11 +201,11 @@ contains
 ! Asymmetric  function from Mapping Manual
 ! NB _ much more efficient to tabulate this - do later!
   
-  dg  =    ( do3se(lu)%T_opt - do3se(lu)%T_min )
-  bt  =    ( do3se(lu)%T_max - do3se(lu)%T_opt ) / dg
-  dTs = max( do3se(lu)%T_max - L%t2C, 0.0 )      !CHECK why max?
-  f_temp = dTs / ( do3se(lu)%T_max - do3se(lu)%T_opt )
-  f_temp = ( L%t2C - do3se(lu)%T_min ) / dg *  f_temp**bt
+  dg  =    ( do3se(iLC)%T_opt - do3se(iLC)%T_min )
+  bt  =    ( do3se(iLC)%T_max - do3se(iLC)%T_opt ) / dg
+  dTs = max( do3se(iLC)%T_max - L%t2C, 0.0 )      !CHECK why max?
+  f_temp = dTs / ( do3se(iLC)%T_max - do3se(iLC)%T_opt )
+  f_temp = ( L%t2C - do3se(iLC)%T_min ) / dg *  f_temp**bt
 
   f_temp = max( f_temp, 0.01 )  ! Revised usage of min value during 2007
 
@@ -212,11 +213,11 @@ contains
 !..4) Calculate f_vpd
 !---------------------------------------
 
- f_vpd = do3se(lu)%f_min + &
-          (1.0-do3se(lu)%f_min) * (do3se(lu)%VPD_min - L%vpd )/ &
-              (do3se(lu)%VPD_min - do3se(lu)%VPD_max )
+ f_vpd = do3se(iLC)%f_min + &
+          (1.0-do3se(iLC)%f_min) * (do3se(iLC)%VPD_min - L%vpd )/ &
+              (do3se(iLC)%VPD_min - do3se(iLC)%VPD_max )
  f_vpd = min(f_vpd, 1.0)
- f_vpd = max(f_vpd, do3se(lu)%f_min)
+ f_vpd = max(f_vpd, do3se(iLC)%f_min)
 
 
 !..5) Calculate f_swp
@@ -225,9 +226,9 @@ contains
   !/  Use SWP_Mpa to get f_swp. We just need this updated
   !   once per day, but for simplicity we do it every time-step.
 
-  !ds     f_swp = do3se(lu)%f_min + &
-  !ds            (1-do3se(lu)%f_min)*(do3se(lu)%PWP-L%SWP)/ &
-  !ds                                (do3se(lu)%PWP-do3se(lu)%SWP_max)
+  !ds     f_swp = do3se(iLC)%f_min + &
+  !ds            (1-do3se(iLC)%f_min)*(do3se(iLC)%PWP-L%SWP)/ &
+  !ds                                (do3se(iLC)%PWP-do3se(iLC)%SWP_max)
   !ds     f_swp = min(1.0,f_swp)
   ! Aug 2010: use HIRLAM's SW, and simple "DAM" function
 
@@ -241,7 +242,7 @@ contains
 !  ( with revised usage of min value for f_temp during 2007)
 
    f_env = f_vpd * f_swp
-   f_env = max( f_env, do3se(lu)%f_min )
+   f_env = max( f_env, do3se(iLC)%f_min )
    f_env = max( f_temp, 0.01) * f_env
 
    f_env = f_phen * f_env * f_light  ! Canopy average
@@ -251,7 +252,7 @@ contains
 
    mmol2sm = 8.3144e-8 * L%t2       ! 0.001 * RT/P
 
-   L%g_sto = do3se(lu)%g_max * f_env * mmol2sm 
+   L%g_sto = do3se(iLC)%g_max * f_env * mmol2sm 
 
    L%g_sun = L%g_sto * f_sun/f_light       ! sunlit part
 
@@ -264,9 +265,17 @@ contains
           call CheckStop("ERROR in g_stomatal, Missing data")
         end if
 
-        if ( debug_flag ) write(*,"(a,i3,7f10.4)") &
-          "G_STOMATAL lc f_temp, _vpd, _sw, _light, fvp*fsw,fmin", lu, &
-                f_temp, f_vpd, f_swp, f_light, f_swp*f_vpd, do3se(lu)%f_min
+        if ( debug_flag.and.current_date%seconds==0 .and. iLC<5  &
+             .and. current_date%hour==12.and. iLC<5 )  then
+           write(*,"(a,2i3,9f8.3)") "F-DO3SE ", daynumber, &!current_date%hour, &
+               iLC, f_phen, f_light, f_temp, f_vpd, f_swp, &
+                 f_swp*f_vpd, do3se(iLC)%f_min, f_env
+
+          ! Met params, except soil water  where fSW =~ REW
+
+           write(*,"(a,2i3,2f7.2,2f8.3,9f9.2)") "M-DO3SE ", daynumber, &!current_date%hour, &
+               iLC, L%LAI, L%t2C, L%vpd, L%fSW, L%PARsun ,L%PARshade ,L%LAIsunfrac
+        end if
     end if
          
 
@@ -274,26 +283,26 @@ contains
 
 !===========================================================================
 
- elemental function fPhenology(lu,code,jday,SGS,EGS,debug_flag) result (fphen)
+ elemental function fPhenology(iLC,code,jday,SGS,EGS,debug_flag) result (fphen)
   real :: fphen
 
 ! Input
-  integer, intent(in) :: lu
+  integer, intent(in) :: iLC
   character(len=*), intent(in) :: code
   integer, intent(in) :: jday
   integer, intent(in):: SGS, EGS
   logical, intent(in) :: debug_flag
   real  :: a,b,c,d,Slen,Elen,Astart, Aend
 
-        a =  do3se(lu)%f_phen_a
-        b =  do3se(lu)%f_phen_b
-        c =  do3se(lu)%f_phen_c
-        d =  do3se(lu)%f_phen_d
-        Slen =  do3se(lu)%f_phen_Slen  ! e
-        Elen =  do3se(lu)%f_phen_Elen  ! f
+        a =  do3se(iLC)%f_phen_a
+        b =  do3se(iLC)%f_phen_b
+        c =  do3se(iLC)%f_phen_c
+        d =  do3se(iLC)%f_phen_d
+        Slen =  do3se(iLC)%f_phen_Slen  ! e
+        Elen =  do3se(iLC)%f_phen_Elen  ! f
 
-        Astart   = SGS  + do3se(lu)%Astart_rel
-        Aend   = EGS  - do3se(lu)%Aend_rel
+        Astart   = SGS  + do3se(iLC)%Astart_rel
+        Aend   = EGS  - do3se(iLC)%Aend_rel
 
 
         if ( jday <  SGS ) then

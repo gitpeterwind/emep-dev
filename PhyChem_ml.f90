@@ -34,14 +34,15 @@ module PhyChem_ml
 !
 !-----------------------------------------------------------------------------
    use CoDep_ml, only : make_so2nh3_24hr
-   use ChemSpecs_adv_ml, only : IXADV_SO2, IXADV_NH3
+   use ChemSpecs_adv_ml, only : IXADV_SO2, IXADV_NH3, IXADV_O3
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
    use My_Timing_ml,   only : Code_timer, Add_2timing, tim_before, tim_after
 
    use Advection_ml,   only:  advecdiff_poles,adv_int
    use Chemfields_ml,  only : xn_adv,cfac,xn_shl
-   use Derived_ml,     only : DerivedProds, Derived, num_deriv2d,d_2d, f_2d
-   use DryDep_ml,      only : drydep,init_drydep
+   use Derived_ml,     only : DerivedProds, Derived, num_deriv2d
+   use DerivedFields_ml,  only : d_2d, f_2d
+   use DryDep_ml,      only : init_drydep
    use Emissions_ml,   only : EmisSet
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
                              gl, gb, projection, Pole_included
@@ -50,6 +51,7 @@ module PhyChem_ml
                                zen,coszen,Idirect,Idiffuse
    use ModelConstants_ml, only : KMAX_MID, nmax, nstep &
                         ,dt_advec       & ! time-step for phyche/advection
+                        ,DEBUG_PHYCHEM, PPBINV  & 
                         ,END_OF_EMEPDAY & ! (usually 6am)
                         ,IOU_INST       & !
                         ,FORECAST       & ! use advecdiff_poles on FORECAST mode
@@ -72,7 +74,8 @@ module PhyChem_ml
 implicit none
 private
 
-public :: phyche
+public  :: phyche
+private :: debug_concs
 
 
 contains
@@ -80,7 +83,6 @@ contains
  subroutine phyche(numt)
    integer, intent(in) ::  numt
 
-   logical, parameter :: DEBUG = .false.
    logical, save :: End_of_Day = .false.
 
    integer :: ndays
@@ -102,11 +104,10 @@ contains
        thour = real(current_date%hour) + current_date%seconds/3600.0 &
                    + 0.5*dt_advec/3600.0
 
-       if ( DEBUG .and. debug_proc ) then
-           write(6,*) "PhyChe debug ", me, thour,  &
-                      current_date%hour, current_date%seconds
 
-           if ( current_date%hour == 12 ) then
+       if ( DEBUG_PHYCHEM .and. debug_proc ) then
+          call debug_concs("PhyChe start ")
+          if ( current_date%hour == 12 ) then
 
                ndays = day_of_year(current_date%year,current_date%month, &
                                     current_date%day)
@@ -141,7 +142,7 @@ contains
 
         call ZenithAngle(thour, gb, gl, zen, coszen )
 
-        if( DEBUG .and. debug_proc  ) then
+        if( DEBUG_PHYCHEM .and. debug_proc  ) then
           write(*,*) "PhyChem ZenRad ", current_date%day, current_date%hour, &
                thour, gl(debug_li,debug_lj),gb(debug_li,debug_lj), &
                      zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
@@ -194,13 +195,18 @@ contains
            call init_drydep()
          !===================================
 
-         !=========================================================
+         !=========================================================!
+          call debug_concs("PhyChe pre-chem ")
+
+         !************ NOW THE HEAVY BIT **************************!
 
           call runchem(numt)   !  calls setup subs and runs chemistry
 
           call Add_2timing(28,tim_after,tim_before,"Runchem")
+          call debug_concs("PhyChe post-chem ")
 
-          !=========================================================
+         !*********************************************************!
+         !========================================================!
 
 
          !/ See if we are calculating any before-after chemistry productions:
@@ -245,6 +251,7 @@ contains
                 END_OF_EMEPDAY, current_date%hour,current_date%seconds
           endif
 
+          call debug_concs("PhyChe pre-Derived ")
           call Derived(dt_advec,End_of_Day)
 
 
@@ -286,5 +293,18 @@ contains
       enddo DO_OUTER
 
    end subroutine phyche
-!-----------------------------------------------------------------------------
+   !--------------------------------------------------------------------------
+   subroutine debug_concs(txt)
+     character(len=*), intent(in) :: txt
+      ! Simple sub to print out eg O3 concentrations for different stages
+      ! of calculation. Saves lots of messy lines above.
+
+       if ( DEBUG_PHYCHEM .and. debug_proc ) then
+           write(6,"(a,2i3,i5,i3,f9.4)") trim(txt), me, &
+              current_date%hour, current_date%seconds, nstep,&
+                  xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID)*&
+                  cfac(IXADV_O3,debug_li,debug_lj)*PPBINV
+       end if
+   end subroutine debug_concs
+   !--------------------------------------------------------------------------
 end module PhyChem_ml

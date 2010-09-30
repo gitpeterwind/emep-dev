@@ -82,7 +82,7 @@ integer, public, parameter :: &
     ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
     ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
     ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE =    11             ! No. Misc. met. params  ( e.g. T2, d_2d)
+    ,NXTRA_SITE =    5             ! No. Misc. met. params  ( e.g. T2, d_2d)
 
    integer, public, parameter, dimension(NADV_SITE) :: &
     SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
@@ -101,8 +101,8 @@ integer, public, parameter :: &
 
    character(len=15), public, parameter, dimension(NXTRA_SITE) :: &
    SITE_XTRA=      (/  "D2D  ","th   ","T2   ","D2D  ",&
-                       "D2D  ","D2D  ","D2D  ", &
-                       "D2D  ","D2D  ","D2D  ", &
+!                       "D2D  ","D2D  ","D2D  ", &
+!                       "D2D  ","D2D  ","D2D  ", &
                        "D2D  "   /)
 !                       "D2D  ","D2D  ","D2D  ","D2D  ", &
 !                       "D2D  ","D2D  ","D2D  ","D2D  ","D2D  ", &
@@ -112,8 +112,8 @@ integer, public, parameter :: &
    character(len=18), public, parameter, dimension(NXTRA_SITE) :: &
     SITE_XTRA_CODE= (/ &
      "HMIX           ","th             ","T2             ","PSURF          ", &
-     "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
-     "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
+!     "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
+!     "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
 !     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
 !     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
 !     "COLUMN_CO_k08  ","COLUMN_C2H6_k08","COLUMN_HCHO_k08","COLUMN_CH4_k08 ", "COLUMN_NO2_k08 ",&

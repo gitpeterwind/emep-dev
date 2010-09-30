@@ -47,6 +47,7 @@
   use KeyValue_ml,  only: KeyVal, KeyValue, LENKEYVAL
   use Par_ml, only: me, li0, li1, lj0, lj1
   use SmallUtils_ml, only : wordsplit, WriteArray
+  use TimeDate_ml, only : current_date
   implicit none
 
    INCLUDE 'mpif.h' !MPI needed
@@ -61,7 +62,8 @@
   public :: Read_Headers !  Reads header information from input files
   public :: Read2D       !  Reads x,y,z data for simple case
   public :: Read2DN      !  Reads x,y,z1...z2 data for simple case
-  public :: PrintLog       !  writes message to both RunLog and unit 6
+  public :: PrintLog     !  writes message to both RunLog and unit 6
+  public :: datewrite    ! writes date then data - helper sub
   public :: Self_Test
 
   logical, public :: fexist                      ! true if file exists
@@ -575,6 +577,18 @@ end do
 
   end subroutine Read2DN
  
+  !-------------------------------------------------------------------------
+    SUBROUTINE datewrite (txt,ii,array )
+      ! Added ds Sep 2010
+      ! to write out date + supplied data array
+       character(len=*), intent(in) :: txt
+       integer, intent(in) :: ii  ! any old integer. Often needed
+       real, dimension(:), intent(in) :: array
+
+       write(*,"(a,3i3,i5,1x, i0, 20es11.4)") "StoFlux:" // trim(txt), &
+          current_date%month, current_date%day, current_date%hour, &
+          current_date%seconds, ii, array
+    END SUBROUTINE datewrite
   !-------------------------------------------------------------------------
   subroutine Self_Test()
    use ModelConstants_ml, only: NPROC

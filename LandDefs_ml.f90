@@ -89,6 +89,9 @@ end interface Check_LandCoverPresent
      real    ::  LAImax       ! Max value of LAI
      integer ::  SLAIlen      ! Length of LAI growth periods
      integer ::  ELAIlen      ! Length of LAI decline periods
+     real    ::  Eiso         ! Emission potential isoprene, ug/g/h
+     real    ::  Emtl         ! Emission potential m-terpenes, light
+     real    ::  Emtp         ! Emission potential m-terpenes, pool
   end type land_input
                                                !##############
   type(land_input), public, dimension(NLANDUSEMAX) :: LandDefs
@@ -149,7 +152,7 @@ contains
       ! Reads file Inputs_LandDefs.csv and extracts land-defs. Checks that
       ! codes match the "wanted_codes" which have been set in Inputs-Landuse
       character(len=*), dimension(:), intent(in) :: wanted_codes
-      character(len=20), dimension(15) :: Headers
+      character(len=20), dimension(25) :: Headers
       character(len=200) :: txtinput  ! Big enough to contain one input record
       type(KeyVal), dimension(2) :: KeyValues ! Info on units, coords, etc.
       character(len=50) :: errmsg, fname
@@ -189,8 +192,9 @@ contains
             LandDefs(n) = LandInput
            !############################
             if ( DEBUG_LANDDEFS .and. MasterProc ) then
-                 write(unit=*,fmt=*) "LANDDEFS N ", n, &
-                   LandInput%name, LandInput%code, LandDefs(n)%LAImax
+                 write(unit=*,fmt="(a,i3,a,a,f7.3,f10.3)") "LANDDEFS N ", n, &
+                   trim(LandInput%name), trim(LandInput%code),&
+                    LandDefs(n)%LAImax, LandDefs(n)%Emtp
             end if
 
         !/ Set any input negative values to physical ones (some were set as -1)
@@ -213,7 +217,6 @@ contains
 
             LandType(n)%is_forest =  &
                 ( LandInput%type == "ECF" .or. LandInput%type == "EDF" )
-!TEST             LandType(n)%flux_wanted = LandType(n)%is_iam .or. LandType(n)%is_forest  ! TEST
             LandType(n)%has_lpj   =  &
                 ( LandInput%type /= "NOLPJ" )
             LandType(n)%pft = find_index( LandDefs(n)%LPJtype, PFT_CODES)

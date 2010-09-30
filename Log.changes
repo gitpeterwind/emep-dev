@@ -8,6 +8,59 @@ Run mk.GenChem!!!!
 Will do that soon I think.....)
 
 
+xxxxxxxxxxxxxx rv3_7beta1 Dave  Sep 30th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Quite large changes - mainly to simplify and clean up, partly in preparation
+for new BVOC + soil water systems. The switch to "beta" is to emphasise that
+now we are working towards the rv3_7 public domain release. Clean ups and
+simplification are encouraged ;-)
+
+Two new modules:
+
+    DerivedFields_ml - stores f_2d, d_2d here (avoided circularity problems)
+    MosaicsOutputs_ml 
+
+      Much moved to MosaicOutputs_ml
+      Much removed and replaced by use of Grid% Sub(iL)%
+      (ie much cleaner I hope!)
+
+Changes in AOT, Fst calculations. 
+
+AOTx_ml  - simpler because of new o3cl types
+
+Biogenics_ml - much changed. A work in progress
+
+CellMet_ml -  small additions
+
+DerivedFields_ml added - stores f_2d, d_2d here (avoided circularity problems)
+
+Derived_ml - changes mainly due to DerivedFields_ml
+
+DryDep_ml  - ** bug fix ** on cano3
+
+DO3SE_ml   - mainly changed lu to iLC. Will try to keep same index throughout
+             Unimod.
+
+Io_Progs_ml : added datewrite - simplifies printout of current_date plus
+              other data.
+
+ModelConstants_ml - several new DEBUGs
+
+MosaicOutputs_ml - moved loads of code from My_DryDep and DryDep_ml here
+                   Still too messy, but most in one place at least.
+
+   DryDep_ml     - much shorter because of above
+   My_DryDep_ml  - *very* much shorter because of above. Almost nothing left :-)
+   My_Derived_ml - *very* much shorter because of above.
+
+OwnDataTypes : type o3cl added t cope with AOTX, PODY
+
+PhyChe: extra debug coding - added subroutine debug_concs to save some lines
+
+Setup_1d_ml: some  changes because of Bioegenic work. A work in progress
+
+StoFlux_ml :  cleanup
+
 
 xxxxxxxxxxxxxx rv3_6_24 Semeena, Anna & Alvaro Sep 09 2010 xxxxxxxxxxxxxxxxxxx
 SR on FORECAST mode: script changes & bug fix
@@ -55,6 +108,11 @@ NetCDF_ml: comments put in beginning of interpolation routines  ReadField_CDF an
 
 Dave:
 GenChem.pl - length of species%name extended from 12 to 22
+
+DryDep_ml, Landuse_ml: LU_cdf variable removed - not used
+
+DryDep_ml, StoFLux_ml:  debug statements re-formatted to fit < 78 chars per line.
+
 
 xxxxxxxxxxxxxx rv3_6_22 Dave          Aug 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxx
 

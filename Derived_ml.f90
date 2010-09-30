@@ -58,8 +58,6 @@ use My_Derived_ml, only : &
             wanted_deriv2d, wanted_deriv3d  &! names of wanted derived fields
            ,Init_My_Deriv, My_DerivFunc
 use My_Derived_ml,  only : & !EcoDep
-      nMosaic, &
-      MosaicOutput, &
       COLUMN_MOLEC_CM2, &  !ds added May 2009
       COLUMN_LEVELS   , &  !ds added Dec 2009
       SURF_UG_S, &  !ds added May 2009
@@ -67,7 +65,6 @@ use My_Derived_ml,  only : & !EcoDep
       SURF_UG_C, &  !ds added May 2009
       SURF_UG  , &  !ds added May 2009
       SURF_PPB , &  !ds added May 2009
-!AMVB 2010-07-21: PM-PPB bug fix
       D3_PPB,D3_OTHER ! hb new 3D output
 
 use AOTx_ml,           only: Calc_GridAOTx, setaccumulate_2dyear
@@ -80,6 +77,8 @@ use ChemSpecs_shl_ml
 use ChemSpecs_tot_ml
 use ChemChemicals_ml, only : species
 use Chemfields_ml , only : so2nh3_24hr,Grid_snow
+use DerivedFields_ml, only : MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
+    def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,   only : DepEcoSystem, NDEF_ECOSYSTEMS, &
                            EcoSystemFrac,FULL_GRID
 use EmisDef_ml,    only : EMIS_NAME
@@ -97,13 +96,15 @@ use ModelConstants_ml, only: &
   ,PPTINV       & ! 1.0e12, for conversion of units
   ,MFAC         & ! converts roa (kg/m3 to M, molec/cm3)
   ,DEBUG_i, DEBUG_j &
-  ,DEBUG => DEBUG_DERIVED, MasterProc &
+  ,DEBUG_AOT        &  !tests
+  ,DEBUG => DEBUG_DERIVED,  DEBUG_COLUMN, MasterProc &
   ,SOURCE_RECEPTOR &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
   ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, IOU_HOUR_MEAN
 
+use MosaicOutputs_ml, only: nMosaic, MosaicOutput
 use OwnDataTypes_ml, only: Deriv,TXTLEN_DERIV   ! type & length of names
 use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me,                &   ! for print outs
@@ -122,8 +123,8 @@ private
  public  :: AddNewDeriv          ! Creates & Adds Deriv type to def_2d, def_3d
  private :: Define_Derived       !
  private :: Setups
- private :: write_debugadv
  private :: write_debug
+ private :: write_debugadv
 
  public :: Derived              ! Calculations of sums, avgs etc.
  private :: voc_2dcalc          ! Calculates sum of VOC for 2d fields
@@ -135,24 +136,9 @@ private
    INTEGER STATUS(MPI_STATUS_SIZE),INFO
    logical, private, parameter :: T = .true., F = .false. ! shorthands only
 
-  ! Tip. For unix users, do "grep AddDef | grep -v Is3D | wc" or similar
-  ! to help get the number of these:
-   integer, private, parameter ::  &
-       MAXDEF_DERIV2D =250 & ! Max. No. 2D derived fields to be defined
-      ,MAXDEF_DERIV3D = 17   ! Max. No. 3D derived fields to be defined
 
    integer, public, save :: num_deriv2d, num_deriv3d
    integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived
-
-  ! We put definitions of **all** possible variables in def_2d, def_3d
-  ! and copy the needed ones into f_xx. The data will go into d_2d, d_3d
-
-    type(Deriv),private, dimension(MAXDEF_DERIV2D), save :: def_2d
-    type(Deriv),private, dimension(MAXDEF_DERIV3D), save :: def_3d
-
-    type(Deriv),public, allocatable, dimension(:), save :: f_2d
-    type(Deriv),public, allocatable, dimension(:), save :: f_3d
-
 
   ! The 2-d and 3-d fields use the above as a time-dimension. We define
   ! LENOUTxD according to how fine resolution we want on output. For 2d
@@ -162,10 +148,9 @@ private
    integer, public, parameter ::  LENOUT2D = 4  ! Allows INST..DAY for 2d fields
    integer, public, parameter ::  LENOUT3D = 4  ! Allows INST..MON for 3d fields
 
+  !will be used for:
   !e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
   ! &   d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
-   real, save, public, allocatable, dimension(:,:,:,:) :: d_2d
-   real, save, public, allocatable, dimension(:,:,:,:,:) :: d_3d
 
 
    ! save O3 every hour during one day to find running max
@@ -303,8 +288,10 @@ private
        else
          Nadded2d = Nadded2d + 1
          N = Nadded2d
-         if (  DEBUG .and. MasterProc ) write(*,*) "Define 2d deriv ",&
-               N, trim(inderiv%name), " Class:", inderiv%class, " Ind:", inderiv%index
+         if (  DEBUG .and. MasterProc ) &
+            write(*,"((a,i4,1x,4a,i4))") "Define 2d deriv ", N, &
+               trim(inderiv%name), " Class:", trim(inderiv%class), &
+              " Ind:", inderiv%index
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
          def_2d(N) = inderiv
 
@@ -796,7 +783,7 @@ end do
         typ = f_2d(n)%class
         if( debug_flag .and. first_call ) &
            write(*,"(a,i3,7a)") "Derive2d-typ",&
-            n, "T:", typ, "N:", f_2d(n)%name, "C:", f_2d(n)%class,"END"
+            n, "T:", trim(typ), "N:", trim(f_2d(n)%name), "C:", trim(f_2d(n)%class),"END"
 
 
         if ( f_2d(n)%rho ) then
@@ -970,12 +957,23 @@ end do
                            !  AOTs are handled in the Mosaic class and as
                            !  part of the dry dep calculations.
 
-            d_2d(n, 1:limax, 1:ljmax, IOU_INST) = Calc_GridAOTx(f_2d(n)%Threshold)
+            d_2d(n, 1:limax, 1:ljmax, IOU_INST) = &
+                 Calc_GridAOTx(f_2d(n)%Threshold, debug_proc,"DERIVAOT")
 
-           !if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
-           if( debug_flag ) then
-              write(*,*) "GROWINDERIV? ", n, f_2d(n)%name
-           end if
+!           if( DEBUG_AOT .and. debug_proc ) then
+!
+!!              write(*,"(a,i3,a,3i3,i5,f6.2,es9.2,2f8.3,f10.3)") "AOTLCGRID? ",&
+!                  n, trim(f_2d(n)%name),&
+!               current_date%month,current_date%day, &
+!               current_date%hour,current_date%seconds, &
+!               zen(debug_li,debug_lj), &
+!           xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID),&
+!              cfac(IXADV_O3,debug_li,debug_lj),&
+!              xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID)*&
+!              cfac(IXADV_O3,debug_li,debug_lj)*PPBINV, &
+!                d_2d(n, debug_li, debug_lj, IOU_INST )
+!
+!           end if
 
 
            case( "SOMO" )
@@ -1023,7 +1021,8 @@ end do
                   tmpwork( i,j ) = tmpwork( i,j ) + &
                     xn_adv(index,i,j,k)  * &
                     roa(i,j,k,1) * (z_bnd(i,j,k)-z_bnd(i,j,k+1))
-                  if( debug_flag .and. i == debug_li .and. j == debug_lj ) then
+                  if( DEBUG_COLUMN .and. debug_flag .and. &
+                         i == debug_li .and. j == debug_lj ) then
                      write(*,"(a,3i4,a4,f8.3,f8.1,2es12.3)") &
                         trim(f_2d(n)%name), n, index, k, " => ", &
                         roa(i,j,k,1), z_bnd(i,j,k)-z_bnd(i,j,k+1), &
@@ -1036,7 +1035,8 @@ end do
             end do !i
             end do !j
             if( debug_flag ) &
-                write(*,"(a18,es12.3)") "COLUMN d2_2d", d_2d( n, debug_li, debug_lj, IOU_INST)
+                write(*,"(a18,es12.3)") "COLUMN d2_2d", &
+                     d_2d( n, debug_li, debug_lj, IOU_INST)
 
 
           !case ( "ECOAREA" )
@@ -1067,6 +1067,9 @@ end do
                   d_2d(n,i,j,IOU_INST) =  EmisNat( i,j, f_2d(n)%Index)
               end forall
               !Not done, keep mg/m2  * GridArea_m2(i,j)
+              if ( debug_flag ) call write_debug(n,f_2d(n)%Index, "NatEmis")
+            if( debug_flag ) &
+                write(*,"(a18,i3,es12.3)") "EXTRA NatEmis", f_2d(n)%Index, EmisNat( debug_li,debug_lj, f_2d(n)%Index)
 
           case ( "SnapEmis" ) !emissions in kg/m2/s converted??
 
@@ -1084,8 +1087,8 @@ end do
 
              call setaccumulate_2dyear(f_2d(n)%name,accumulate_2dyear)
 
-            !if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
-            !       n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
+            if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
+                   n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
           case ( "SIAGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
@@ -1617,7 +1620,7 @@ end do
        integer, intent(in) :: n, index
        character(len=*) :: txt
 
-       write(*,fmt="(2a,2i4,a,4f12.3)") "DERIV: GEN " , txt , n, index  &
+       write(*,fmt="(2a,2i4,a,4g12.3)") "DERIV: GEN " , txt , n, index  &
                   ,trim(f_2d(n)%name)  &
                   ,d_2d(n,debug_li,debug_lj,IOU_INST)
     end subroutine write_debug

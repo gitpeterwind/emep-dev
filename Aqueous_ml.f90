@@ -60,11 +60,9 @@ module Aqueous_ml
 
   use My_WetDep_ml,  only : WetDep, NWETDEP_CALC, &
              WetDep_Budget, WDEP_PREC, Calc2tot
-!dsMay2010 & WETDEP_SO4LIKE !EGUOA, WETDEP_SOALIKE
-!EGU - was commented out as SO4LIKE_DEP USED
   use OrganicAerosol_ml,    only: ORGANIC_AEROSOLS
 
-  use Derived_ml,    only : d_2d      ! Contains Wet deposition fields
+  use DerivedFields_ml,    only : d_2d      ! Contains Wet deposition fields
   use ChemChemicals_ml, only: species
   use ChemSpecs_adv_ml
   use ChemSpecs_tot_ml, only: NSPEC_TOT, SO4, FIRST_SEMIVOL, LAST_SEMIVOL

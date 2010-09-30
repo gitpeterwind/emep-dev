@@ -136,9 +136,9 @@ implicit none
 
   ! Biogenics. Use 2 even if no terpene chemistry - simplifies
   ! rest of code
-   integer, public, parameter ::   NBVOC = 2   
-   character(len=8),public, save, dimension(NBVOC) :: &
-                                   BVOC_USED = (/ "isoprene","terpene "/)   
+  !dsBVOC integer, public, parameter ::   NBVOC = 2   
+  !dsBVOC character(len=8),public, save, dimension(NBVOC) :: &
+  !dsBVOC                                 BVOC_USED = (/ "isoprene","terpene "/)   
 
    !SeaSalt
    integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes

@@ -1397,7 +1397,7 @@ end if ! NH3_U10
 
 
 ! Are the invL and fh comparable??
-    if  ( debug_proc ) then
+    if( debug_proc .and. DEBUG_Kz)then            
       i = debug_iloc
       j = debug_jloc
       write(*,"(a,i4,2f12.5)") "TESTNR th ", nr , th(i,j,20,1), th(i,j,20,nr)

@@ -39,6 +39,9 @@
 ! sea salt production, particle water etc.
 !    
 !----------------------------------------------------------------------
+ !TEST use AOTx_ml, only: Calc_GridAOTx
+ use ModelConstants_ml, only : DEBUG_AOT
+ use Par_ml, only : limax, ljmax
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,           &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
                                  Aero_water, SEASALT
@@ -47,7 +50,7 @@
 
    use Ammonium_ml,       only: Ammonium
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Biogenics_ml      , only :  BIO_ISOP, BIO_TERP  ! debug only
+   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, setup_bio! , rcbio !for debug DSBIO
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
    use Chemfields_ml,     only: xn_adv  ! For DEBUG 
@@ -68,11 +71,12 @@
                                 ,IRUNBEG, JRUNBEG    !! for testing
    use SeaSalt_ml,        only: SeaSalt_flux
    use Setup_1d_ml,       only: setup_1d, &
-                                setup_bio, setup_rcemis, reset_3d,&
+                                !DSBIO setup_bio, 
+                                setup_rcemis, reset_3d, &
                                 !dsPCM setup_bio, rcbio, setup_rcemis, reset_3d,&
                                 setup_nh3 ! hb NH3emis
-   use Setup_1dfields_ml, only: first_call, rcbio  &
-                     ,amk , rcemis, xn_2d  ! DEBUG for testing
+   use Setup_1dfields_ml, only: first_call, rcbio,  &
+                                 amk, rcemis, xn_2d  ! DEBUG for testing
    use TimeDate_ml,       only: current_date
 
 !--------------------------------
@@ -95,6 +99,7 @@ subroutine runchem(numt)
    integer :: nmonth, nday, nhour     
    logical ::  Jan_1st, End_of_Run 
    logical ::  debug_flag    ! =>   Set true for selected i,j
+   !TEST real, dimension(limax,ljmax) :: aotpre, aotpost
 
 ! =============================
 
@@ -105,6 +110,7 @@ subroutine runchem(numt)
    Jan_1st    = ( nmonth == 1 .and. nday == 1 )
    End_of_Run = ( mod(numt,nprint) == 0       )
 
+     !TEST if( DEBUG_AOT .and. debug_proc ) aotpre=Calc_GridAOTx(40.0,.true.,"RUNPRE")
   !.... ****  processes calls *************************
 
    errcode = 0
@@ -157,11 +163,12 @@ subroutine runchem(numt)
              call SeaSalt_flux(i,j,debug_flag)
 
 if ( DEBUG .and. debug_flag  ) then
-    write(6,"(a,2i3,i5,9es10.2)") "DEBUG_RUNCHEM RCEMIS ", &
+    write(6,"(a,2i3,i5,9es9.2)") "DEBUG_RUNCHEM RC ", &
           current_date%day, current_date%hour, current_date%seconds, &
-          rcemis(NO,20), rcemis(NO2,20), rcemis(HCHO,20), &
-          rcemis(SO2,20), rcemis(NH3,20), &
+          rcemis(NO,20), &! rcemis(NO2,20), rcemis(HCHO,20), &
           rcbio(BIO_ISOP,KMAX_MID), rcemis(C5H8,KMAX_MID)
+    write(6,"(a16,10es10.2)") "RUNCHEM  PRE-CHEM ", &
+          xn_2d(NO,20),xn_2d(C5H8,20) !, &
 end if
 !          !rcemis(QRCCO,20), AROM, rcemis(QRCPM25,20), rcemis(QRCEC_f_FFUEL,20)
 !
@@ -195,14 +202,15 @@ end if
 !          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
 !          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
 !end if
-             call chemistry(i,j)
-!if ( DEBUG .and. debug_flag  ) then
-!    write(6,"(a16,10es10.2)") "RUNCHEM POST-CHEM ", &
+             call chemistry(i,j, DEBUG .and. debug_flag)
+if ( DEBUG .and. debug_flag  ) then
+    write(6,"(a16,10es10.2)") "RUNCHEM POST-CHEM ", &
+          xn_2d(NO,20),xn_2d(C5H8,20) !, &
 !          xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20), &
 !          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
 !          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
 !          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
-!end if
+end if
            !_________________________________________________
 
              call Add_2timing(31,tim_after,tim_before, &
@@ -262,6 +270,9 @@ end if
     end do ! i
 
                  !.... ************************************************
+                 !TEST if( DEBUG_AOT .and. debug_proc ) then
+                 !TEST      aotpost=Calc_GridAOTx(40.0,.true.,"RUNPOST")
+                 !TEST end if
 
    end subroutine runchem
 

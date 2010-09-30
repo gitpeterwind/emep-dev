@@ -43,6 +43,15 @@ module ModelConstants_ml
  logical, public, parameter :: USE_CONVECTION   = .false.
  logical, public, parameter :: USE_SOILWATER    = .false.
  logical, public, parameter :: USE_FOREST_FIRES = .false.
+! Biogenics. Use 3 even if no terpene chemistry - simplifies
+! rest of code.
+! iso = isoprene, mtp = monoterpenes from pools, mtl = monoterpenes
+! with light dependence
+  integer, public, parameter ::   NBVOC = 3
+  character(len=4),public, save, dimension(NBVOC) :: &
+       BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
+       !!BVOC_USED = (/ "isoprene","terpene "/)
+
 
   ! Next      ................................................................
   ! Next      ................................................................
@@ -72,8 +81,9 @@ module ModelConstants_ml
   integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-  !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
+  !RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
   !RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
   !RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
   !RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10
@@ -83,11 +93,12 @@ module ModelConstants_ml
   !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
   !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
-  RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
+  !RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
+  !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   3        & ! Actual number of processors in longitude
-  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   8        & ! Actual number of processors in longitude
+  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -113,18 +124,19 @@ module ModelConstants_ml
  !integer, public, parameter :: DEBUG_i=111, DEBUG_j= 54 ! High VG_PMCO_CF!
  !integer, public, parameter :: DEBUG_i=101, DEBUG_j= 51 ! Schauinsland
  !QUERY? integer, public, parameter :: DEBUG_i= 87, DEBUG_j= 20 ! Aveiro
- !QUERY? integer, public, parameter :: DEBUG_i= 86, DEBUG_j= 21 ! Aveiro
+ !QUERY? 
+!integer, public, parameter :: DEBUG_i= 88, DEBUG_j= 21 ! Aveiro+i2
  !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
-  integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
+ ! integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
  !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
- !integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
+ integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
  !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
  !integer, public, parameter :: DEBUG_i=76, DEBUG_j= 35 !  Sea,  North sea
  !integer, public, parameter :: DEBUG_i=91, DEBUG_j=67 ! hb NH3emis Tange 
- !integer, public, parameter :: DEBUG_i=103, DEBUG_j=32 ! Prades, SMDge 
+! integer, public, parameter :: DEBUG_i=103, DEBUG_j=32 ! Prades, SMDge 
  !integer, public, parameter :: DEBUG_i= 9, DEBUG_j= 201 ! MACC02
 
 !=============================================================================
@@ -139,22 +151,25 @@ module ModelConstants_ml
     ,DEBUG_BCS            = .false. & !
     ,DEBUG_BIO            = .false. & !
     ,DEBUG_DERIVED        = .false. & !
+       ,DEBUG_COLUMN      = .false. & ! extra option in Derived
     ,DEBUG_DO3SE          = .false. & !
     ,DEBUG_ECOSYSTEMS     = .false. & !
-    ,DEBUG_FORESTFIRE     = .true. & !
+    ,DEBUG_FORESTFIRE     = .false. & !
     ,DEBUG_MET            = .false. & !
     ,DEBUG_BLM            = .false. & !    produces matrix of differnt Kz and Hmix
     ,DEBUG_Kz             = .false. & !
     ,DEBUG_MY_DERIVED     = .false. & !
     ,DEBUG_DRYDEP         = .false. & !
-    ,DEBUG_VDS            = .false. & !
-    ,DEBUG_MY_DRYDEP      = .false. & !
-    ,DEBUG_CLOVER         = .false. & !
-    ,DEBUG_STOFLUX        = .false. &
+      ,DEBUG_VDS            = .false. & !
+      ,DEBUG_MY_DRYDEP      = .false. & !
+      ,DEBUG_AOT            = .false. & !
+      ,DEBUG_CLOVER         = .false. & !
+      ,DEBUG_STOFLUX        = .false. &
     ,DEBUG_EMISSIONS      = .false. &
     ,DEBUG_GETEMIS        = .false. &
     ,DEBUG_IOPROG         = .false. &
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
+    ,DEBUG_MOSAICS        = .false.  & !
     ,DEBUG_RUNCHEM        = .false. &
       ,DEBUG_WETDEP         = .false. & !
       ,DEBUG_MY_WETDEP      = .false. & !
@@ -166,6 +181,7 @@ module ModelConstants_ml
     ,DEBUG_LANDPFTS       = .false. &
     ,DEBUG_NETCDF         = .false. &
     ,DEBUG_NETCDF_RF      = .false. &  ! ReadField_CDF in NetCDF_ml
+    ,DEBUG_PHYCHEM        = .false.  & !
     ,DEBUG_NH3            = .false. & ! hb NH3Emis
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SETUP_1DCHEM   = .false. & !
@@ -208,7 +224,13 @@ module ModelConstants_ml
   , NMET         = 2     &    ! No. met fields in memory
   , KCHEMTOP     = 2     &    ! chemistry not done for k=1
   , KCLOUDTOP    = 8     &    ! limit of clouds (for MADE dj ??)
-  , KUPPER       = 6          ! limit of clouds (for wet dep.)
+  , KUPPER       = 6     &    ! limit of clouds (for wet dep.)
+! And for My_Derived_ml VG_SPECS & LocalVariables_ml Vg_ref etc. we need a limit
+  , NVGOUT_MAX   = 10         ! Max. no species for My_Derived VG outputs
+
+
+  integer, public, parameter :: &   ! Groups for DDEP and WDEP
+    SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
 
 ! EMEP measurements end at 6am, used in  daily averages
   integer, public, parameter :: END_OF_EMEPDAY  = 6
@@ -251,7 +273,9 @@ module ModelConstants_ml
   , PPT    = 1.0e-12         &  ! parts per trillion (mixing ratio)
   , PPTINV = 1.0e+12         &
   , PT     = 1.0e+4          &  ! Top of model region = 10000 Pa = 100 hPa
-  , Pref   = 101325.0           ! Reference pressure in Pa
+  , Pref   = 101325.0        &  ! Reference pressure in Pa
+  , TINY   = 1.0e-9             ! -1.E-9" is sometimes used  in order to avoid 
+                                ! different roundings on different machines.
 
   real, public, parameter :: &
     ATWAIR = 28.964          & ! Mol. weight of air (Jones, 1992)

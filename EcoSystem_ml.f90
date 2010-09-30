@@ -46,7 +46,6 @@ contains
  !<---------------------------------------------------------------------------
   subroutine Init_EcoSystems()
 
-    real, dimension(NDEF_ECOSYSTEMS) :: invEcoFrac, EcoFrac
     character(len=TXTLEN_DERIV) :: name
     character(len=TXTLEN_SHORT)  :: unit
     integer :: i,j,ilc,lc,nlc, iEco

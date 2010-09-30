@@ -58,7 +58,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use Chemfields_ml,    only : xn_adv,xn_shl, cfac, &
 !AMVB 2010-08-02: New hourly output types (PM water content)
                                PM_water
-  use Derived_ml,       only : d_2d
+  use DerivedFields_ml,       only : d_2d
   use OwnDataTypes_ml,  only : Deriv
   use ChemSpecs_shl_ml ,only : NSPEC_SHL        ! Maps indices
   use ChemChemicals_ml ,only : species          ! Gives names

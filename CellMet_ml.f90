@@ -36,13 +36,14 @@ module CellMet_ml
 
 
 use CheckStop_ml, only : CheckStop
+use GridValues_ml, only :  sigma_bnd
 use Landuse_ml, only : LandCover    ! Provides SGS, hveg, LAI ....
 use LocalVariables_ml, only: Grid, Sub, ResetSub
 use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
 use MetFields_ml, only: ps, u_ref
 use MetFields_ml, only: cc3dmax, nwp_sea, snow,sdepth,ice, surface_precip, fh,fl,z_mid, z_bnd, &
            q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen, coszen, Idirect, Idiffuse
-use ModelConstants_ml,    only : KMAX_MID, KMAX_BND
+use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, PT
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 use SoilWater_ml, only : fSW
 use SubMet_ml, only : Get_SubMet
@@ -90,8 +91,13 @@ contains
      Grid%i        = i
      Grid%j        = j
      Grid%psurf    = ps(i,j,1)    ! Surface pressure, Pa
-     Grid%z_ref    = z_mid(i,j,KMAX_MID)
-     Grid%DeltaZ    = z_bnd(i,j,KMAX_BND-1)
+     Grid%z_ref    = z_mid(i,j,KMAX_MID)   ! NB! Approx, updated every 3h
+
+! More exact for thickness of bottom layer, since used for emissions
+! from  dp = g. rho . dz and d sigma = dp/pstar
+! we get dz = d sigma . pstar/(g.rho)
+     Grid%DeltaZ  &!  = z_bnd(i,j,KMAX_BND-1) ! NB! Approx,updated every 3h
+                = (1.0 - sigma_bnd(20) ) * (ps(i,j,1)-PT) /(GRAV*roa(i,j,20,1))
      Grid%u_ref    = u_ref(i,j)
      Grid%qw_ref    =  q(i,j,KMAX_MID,1)   ! specific humidity
      Grid%rho_ref  = roa(i,j,KMAX_MID,1)

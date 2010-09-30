@@ -35,8 +35,8 @@
   !
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
-  use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
-  use EmisDef_ml,            only :  NSS, NBVOC   !NSS=SeaS
+  use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC
+  use EmisDef_ml,            only :  NSS !dsBVOC , NBVOC   !NSS=SeaS
   use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   !ds use ChemSpecs_bgn_ml,        only :  NSPEC_COL
@@ -57,7 +57,7 @@
    real, public, dimension(NSPEC_TOT,KCHEMTOP:KMAX_MID), save :: &
                    xn_2d            ! Concentrations [molecules/cm3]  
 
-!DSGC - used for SOA
+! For semivolatiles we track the farction as gas and particle- used for SOA
 ! We use NSPEC_TOT to allow us to write Fpart for FFUEL and WOOD also -
 ! these may be semivol one day.
    !real, public, dimension(FIRST_SOA:LAST_SOA,KCHEMTOP:KMAX_MID), save :: &

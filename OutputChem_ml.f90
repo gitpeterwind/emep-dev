@@ -34,10 +34,11 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   use CheckStop_ml,      only: CheckStop
-  use Derived_ml,        only: f_2d, d_2d, LENOUT2D                   &
-                              ,f_3d, d_3d, nav_3d, nav_2d, LENOUT3D   &
+  use Derived_ml,        only: LENOUT2D                   &
+                              ,nav_3d, nav_2d, LENOUT3D   &
                               , num_deriv2d, num_deriv3d &
                               ,ResetDerived
+  use DerivedFields_ml,  only: f_2d, d_2d, f_3d, d_3d
   use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
                                Ascii3D_WANTED
   use Io_ml,             only: IO_WRTCHEM

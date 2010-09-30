@@ -675,6 +675,7 @@ elseif( year == 2005) then
               endif
 
               bc_rawdata=max(15.0*PPB,bc_rawdata-O3fix)
+!CRUDE TEST: bc_rawdata=max(55.0*PPB,bc_rawdata-O3fix)
 
               bc_rawdata=trend_o3 * bc_rawdata
 

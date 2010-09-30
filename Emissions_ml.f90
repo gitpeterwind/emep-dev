@@ -38,7 +38,8 @@
 !  with the 3D model.
 !_____________________________________________________________________________
 
-  use Biogenics_ml, only: first_dms_read,IQ_DMS,emnat,emforest
+  use Biogenics_ml, only: first_dms_read,IQ_DMS
+!DSBIO ,emnat,emforest
   use CheckStop_ml,only : CheckStop
   use ChemSpecs_shl_ml, only: NSPEC_SHL
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
@@ -50,7 +51,6 @@
                      ,FNCMAX &      ! Max. No. countries (with flat ! emissions) per grid
                      ,NEMIS_FILES & ! No. emission files
                      ,EMIS_NAME   & ! Names of species ("sox  ",...)
-                     ,NBVOC       & ! > 0 if forest voc wanted
                      ,VOLCANOES   & ! 
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
@@ -70,6 +70,7 @@
   use MetFields_ml,    only : roa, ps, z_bnd   ! ps in Pa, roa in kg/m3
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
+                              NBVOC,     & ! > 0 if forest voc wanted
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               NPROC, IIFULLDOM,JJFULLDOM 
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
@@ -782,32 +783,7 @@ contains
  !/** Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
    if ( VOLCANOES ) call Scale_Volc
 
- if( NBVOC > 0  )then
-
-    do j = lj0,lj1
-      do i = li0,li1
-
-        ehlpcom = ehlpcom0(KMAX_MID) * roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
-
-        emnat(i,j,1:NBVOC) = emforest(i,j,1:NBVOC)*ehlpcom
-
-      end do ! i
-    end do ! j
-
-    if ( DEBUG .and. debug_proc ) then 
-       !print "(a12,2i4,/,(g12.3))",  "bio-setemis",li0,lj0, &
-        !  (gridrcemis(i,KMAX_MID,2,2),i=1, NRCEMIS), 
-       write(*,"(a12,2g12.3,3x,2g12.3)")  "bio-setemis", &
-         ( emforest(debug_li,debug_li,i), i = 1, NBVOC),&
-         ( emnat(debug_li,debug_li,i), i = 1, NBVOC) 
-
-      ! dz = dp/(rho.g) = dsigma*pstar/(rho.g)
-      write(*,"(a,2f10.4)") "DEBUG BIODZ ", &
-             (sigma_bnd(21) - sigma_bnd(20)) * (ps(i,j,1)-PT)/ &
-                ( roa(i,j,KMAX_MID,1) * GRAV ) , z_bnd(i,j,20)
-    end if
-
-  endif ! NBVOC 
+ !/ ** Biogenic VOC? Will be set in  Biogenics_ml, everuy time-step 
 
  end subroutine EmisSet
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

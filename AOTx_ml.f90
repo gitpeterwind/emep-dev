@@ -28,19 +28,21 @@
 module AOTx_ml
   use Chemfields_ml, only : xn_adv, cfac
   use ChemSpecs_adv_ml, only : IXADV_O3
+  use GridValues_ml, only : debug_li, debug_lj
   use LandDefs_ml,   only : LandType
   use Landuse_ml,    only : WheatGrowingSeason
   use LocalVariables_ml, only : L, Grid, Sub
   use MetFields_ml, only: zen
   use ModelConstants_ml, only : dt_advec, KMAX_MID &
+     ,DEBUG_AOT  & 
      ,PPBINV ! 1.0e9, for conversion from mixing ratio to ppb
   use Par_ml, only : MAXLIMAX, MAXLJMAX, limax, ljmax
   use TimeDate_ml, only : current_date, effectivdaynumber
   implicit none
   private
 
-  public :: Calc_AOTx
-  public :: Calc_GridAOTx
+  public :: Calc_AOTx          ! called from AddMosaicOutput, My_DryDep
+  public :: Calc_GridAOTx      ! called from Derived_ml
   public :: setaccumulate_2dyear
 
 ! Limit of daylight zenith angle for AOTs
@@ -53,21 +55,21 @@ module AOTx_ml
 
 contains
  !=========================================================================
-  subroutine Calc_AOTx(class,iLC,o3, X,aot ) !,accumulate_2dyear)
-    character(len=*), intent(in) :: class
+  subroutine Calc_AOTx(defn,iLC,o3, X,aot, debug_flag, debug_txt ) !,accumulate_2dyear)
+    character(len=*), intent(in) :: defn
+    logical, intent(in) :: debug_flag
+    character(len=*), intent(in), optional :: debug_txt
     integer, intent(in) :: iLC
     real, intent(in) :: o3, X
     real, intent(out)    :: aot
     ! logical, intent(inout) :: accumulate_2dyear
 
-    character(len=2) :: defn 
     integer :: i,j
 
 
 
     i = Grid%i
     j = Grid%j
-    defn = class(1:2)  ! GR, EU, MM or UN
 
     aot = 0.0
 
@@ -104,7 +106,8 @@ contains
 !    end if
 
     if (   LandType(iLC)%is_forest .and. &
-         ( current_date%month < 4 .or.  current_date%month > 9) ) then
+         (   current_date%month<STARTMONTH_FOREST&
+         .or.current_date%month>ENDMONTH_FOREST)   )  then   
              ! accumulate_2dyear = .false.
              return
     end if
@@ -117,26 +120,39 @@ contains
         aot = (o3-X)  ! BUG-fix. dt_advec takes care of:* dt_advec/3600.0
 
     end if
+    if ( DEBUG_AOT .and. debug_flag .and. present( debug_txt )) then
+       write(*,"(a, 4i5,2f7.1,2f10.3)") "CalcAOTLC:"//trim(debug_txt),&
+          current_date%month,current_date%day, &
+          current_date%hour,current_date%seconds, X,  o3, aot
+    end if
 
   end subroutine Calc_AOTx
 
  !=========================================================================
  !
-  function Calc_GridAOTx( X ) result (aot)
+  function Calc_GridAOTx( X, debug_flag, debug_txt ) result (aot)
 
     !/-- Calcuates AOT values for input threshold. Daylight values calculated
     !    only, for zenith < AOT_HORIZON ( e.g. 89 )
     !    Only relevant in ozone models, so far....
 
     real, intent(in) :: X           ! Threshold in AOTX (ppb)
+    logical, intent(in) :: debug_flag
+    character(len=*), intent(in), optional :: debug_txt
 
     real, dimension(limax,ljmax) :: aot
 
     integer :: izen                    ! integer of zenith angle
-    real :: o3                         ! Ozone (ppb) - needed if AOTs
+    real :: o3, o3_ref                 ! Ozone (ppb) - needed if AOTs
     integer :: i, j 
 
     aot = 0.0
+
+    !--------- ONLY April-Sept -------------------------
+    if(   current_date%month<STARTMONTH_FOREST&
+      .or.current_date%month>ENDMONTH_FOREST) return
+    !--------- ONLY April-Sept -------------------------
+
     do i=1, limax
         do j=1, ljmax
 
@@ -151,6 +167,15 @@ contains
            end if
         end do
     end do
+    if ( DEBUG_AOT .and. debug_flag .and. present( debug_txt )) then
+       o3_ref = xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID) * PPBINV
+       o3   = o3_ref * cfac(IXADV_O3,debug_li,debug_lj)
+       write(*,"(a, 4i5,f7.1,3f10.3)") "CalcGridAOT:"//debug_txt,&
+          current_date%month,current_date%day, &
+          current_date%hour,current_date%seconds, &
+               zen(debug_li,debug_lj), o3_ref, o3, aot(debug_li,debug_lj)
+    end if
+
   end function Calc_GridAOTx
 
 !=========================================================================

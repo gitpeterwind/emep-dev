@@ -29,9 +29,9 @@ module LandPFT_ml
 
 use CheckStop_ml,   only: CheckStop
 use GridValues_ml,  only: debug_proc, debug_li, debug_lj
-use ModelConstants_ml,  only : DEBUG_LANDPFTS, MasterProc
+use ModelConstants_ml,  only : DEBUG_LANDPFTS, MasterProc, BVOC_USED
 use NetCDF_ml, only: ReadField_CDF !dsLPJ
-use Par_ml,         only: MAXLIMAX, MAXLJMAX
+use Par_ml,         only: MAXLIMAX, MAXLJMAX, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
 
 implicit none
@@ -91,6 +91,9 @@ contains
      if ( my_first_call ) then
          allocate ( pft_lai(MAXLIMAX,MAXLJMAX,N_PFTS) )
          my_first_call = .false.
+!call Test_LocalBVOC()
+!call GetMEGAN_BVOC()
+
      end if
          
     ! Get LAI data:
@@ -109,7 +112,7 @@ contains
 
  !==========================================================================
 
- subroutine MapPFT_BVOC(month,bvoc_wanted)
+ subroutine MapPFT_BVOC(month)
 
 !.....................................................................
 !**    DESCRIPTION:
@@ -121,7 +124,6 @@ contains
 
 
     integer, intent(in) :: month
-    character(len=*), dimension(:), intent(in) :: bvoc_wanted   ! e.g. "C5H8"
 
     real    :: lpj(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
@@ -131,7 +133,7 @@ contains
     ! Ebvoc already includes monthly LAI changes - might be wrong?
     
      if ( my_first_call ) then
-         allocate ( pft_bvoc(MAXLIMAX,MAXLJMAX,N_PFTS,size(bvoc_wanted)) )
+         allocate ( pft_bvoc(MAXLIMAX,MAXLJMAX,N_PFTS,size(BVOC_USED)) )
          my_first_call = .false.
      end if
          
@@ -141,7 +143,7 @@ contains
 
 
      do pft =1, N_PFTS
-       do ivar =1, size( bvoc_wanted ) 
+       do ivar =1, size( BVOC_USED ) 
            varname = trim(BVOC_VAR(ivar)) // trim(PFT_CODES(pft)) 
 
            call ReadField_CDF('GLOBAL_LAInBVOC.nc',varname,&
@@ -153,7 +155,49 @@ contains
      end do ! pft
 
 
-  end subroutine MapPFT_BVOC
+ end subroutine MapPFT_BVOC
 
- !=======================================================================
+ !==========================================================================
+
+! subroutine Test_LocalBVOC()
+!
+!!.....................................................................
+!!**    DESCRIPTION:
+!
+!!    Reads the processed LPJ-based LAIv and BVOC emission potentials.
+!!    The LPJ data have been merged into 4 EMEP forest classes and two
+!!    other veg, for either C3 or C4 vegetation.
+!!    Normed_LAIv is relative LAI, with max value 1.0
+!
+!
+!
+!    real    :: loc(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
+!    logical :: my_first_call = .true.
+!    integer ::  n, pft, ivar, iVeg, iEmis
+!    character(len=1000) :: varname
+!    character(len=2), dimension(4) :: VegName = (/ "CF", "DF", "NF", "BF" /)
+!    character(len=4), dimension(3) :: EmisName = (/ "Eiso", "Emt ", "Emtl" /)
+!
+!
+!       varname = "Fake"
+!
+!       call ReadField_CDF('LOCAL_BVOC.nc',varname,&
+!           loc,1,interpol='zero_order',needed=.true.,debug_flag=.true.)
+!
+!       if( debug_proc ) print *, "LOCAL_BVOC 0,0", loc(1, 1)
+!       if( debug_proc ) print *, "LOCAL_BVOC i,j", loc(debug_li, debug_lj)
+!       !print *, "LOCAL_BVOC me,i,j", me, maxval(loc)
+!
+!     do iVeg = 1, size(VegName)
+!     do iEmis = 1, size(EmisName)
+!        varname = trim(EmisName(iEmis)) // "_" // trim(VegName(iVeg))
+!        call ReadField_CDF('LOCAL_BVOC.nc',varname,&
+!           loc,1,interpol='zero_order',needed=.true.,debug_flag=.true.)
+!       if( debug_proc ) print "(a,a,f12.3)", "LOCAL_BVOC:E ", trim(varname), loc(debug_li, debug_lj)
+!     end do
+!     end do
+!
+!  end subroutine Test_LocalBVOC
+!
+! !=======================================================================
 end module LandPFT_ml

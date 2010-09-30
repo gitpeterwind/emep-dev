@@ -36,14 +36,15 @@
   !-----------------------------------------------------------------------!
   use NH3variables_ml,       only : NNH3 ! hb NH3emis   
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
-  use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP, &
-                                      emforest, EmisNat  !ds
+!DSBIO  use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP, &
+!DSBIO                                      emforest, EmisNat  !ds
+!DSBIO  use Biogenics_ml         , only : BIO_ISOP, BIO_TERP !, rcbio
   use BoundaryConditions_ml, only : BGN_2D
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
-  use Derived_ml,            only : d_2d
-  use EmisDef_ml,           only : AIRNOX, NBVOC,VOLCANOES &
+  use DerivedFields_ml,            only : d_2d
+  use EmisDef_ml,           only : AIRNOX, VOLCANOES &
                                   ,NSS & !SeaS
                                   ,NH3EMIS_VAR ! hb NH3Emis    
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
@@ -104,7 +105,6 @@
 
 
   public :: setup_1d   ! Extracts results for i,j column from 3-D fields
-  public :: setup_bio    ! Biogenic emissions
   public :: setup_rcemis ! Emissions  (formerly "poll")
   public :: setup_nh3 ! hb NH3emis   
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
@@ -114,7 +114,7 @@
   ! the chemical solver. All values except for k=KMAX_MID will
   ! remain zero however
   !dsPCM real, dimension(NBVOC,KMAX_MID), public, save :: rcbio = 0.0  !ispop and terpene
-  real, dimension(MAXLIMAX,MAXLJMAX,NBVOC), public, save :: NatEmisSum 
+!DSBIO  real, dimension(MAXLIMAX,MAXLJMAX,NBVOC), public, save :: NatEmisSum 
 
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -409,81 +409,7 @@ contains
   end subroutine setup_nh3
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
 
-  subroutine setup_bio(i,j)
-  !
-  !---- assign isoprene rates  ------------------------------------------------
-  !
-  !  So far, assigns isoprene using surface (2m) temperature, and for all
-  !  zenith angles <90. Should include light dependance at some stage
-  !
-  !  Output : rcbio added to rcemis - isoprene emissions for 1d column
-  !
-  !  Called from setup_ml, every  advection step.
-  !----------------------------------------------------------------------------
-
-!  input
-  integer, intent(in) ::  i,j
-
-!  local
-  integer la,it2m,n,k,base,top,iclcat
-  real clear
-
- ! Light effects added for isoprene emissions
-
-  real            :: par   ! Photosynthetically active radiation
-  real            :: cL    ! Factor for light effects
-  real, parameter :: &
-      CL1 = 1.066  , &    ! Guenther et al's params
-      ALPHA = 0.0027      ! Guenther et al's params
-
-  if ( NBVOC == 0  ) return   ! e.g. for ACID only
-
-
-
-  it2m = nint(t2_nwp(i,j,1)-273.15-1.E-9)
-! the "-1.E-9" is put in order to avoid possible different roundings on different machines.
-  it2m = max(it2m,1)
-  it2m = min(it2m,40)
-
-  if(BIO_TERP > 0)  then
-     !dsPCM rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-     rcbio(BIO_TERP,KMAX_MID) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-
-     !emnat was in molec/cm3/s. We use the easier emforest which
-     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
-     EmisNat(i,j,BIO_TERP)= emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-  end if
-
-  ! Isoprene has emissions in daytime only:
-  !dsPCM rcbio(BIO_ISOP) = 0.0
-  rcbio(BIO_ISOP,KMAX_MID) = 0.0
-  if ( Grid%izen <= 90) then
-
-     ! Light effects from Guenther G93
-      par = (Idirect(i,j) + Idiffuse(i,j)) * PARfrac * Wm2_uE
-      cL = ALPHA * CL1 * par/ sqrt( 1 + ALPHA*ALPHA * par*par)
-
-      !dsPCM rcbio(BIO_ISOP) = emnat(i,j,BIO_ISOP) &
-      rcbio(BIO_ISOP,KMAX_MID) = emnat(i,j,BIO_ISOP) &
-             * canopy_ecf(BIO_ISOP,it2m) * cL
-
-     !emnat was in molec/cm3/s. We use the easier emforest which
-     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
-
-     EmisNat(i,j,BIO_ISOP)= emforest(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL
-  endif
-
-  if ( DEBUG_SETUP_1DBIO .and. debug_proc .and.  i==debug_li .and. j==debug_lj .and. &
-         current_date%seconds == 0 ) then
-     write(*,"(a5,2i4,5es12.3)") "DBIO ", current_date%day, &
-      current_date%hour, par, cL, emnat(i,j,BIO_ISOP), &
-        rcbio(BIO_ISOP,KMAX_MID), EmisNat(i,j,BIO_ISOP)
-  end if
-
-  end subroutine setup_bio
-
-  !----------------------------------------------------------------------------
-   subroutine reset_3d(i,j)
+  subroutine reset_3d(i,j)
 
     integer, intent(in) :: i,j
     integer :: k, n, ispec, irc    ! loop variables

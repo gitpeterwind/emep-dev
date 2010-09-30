@@ -60,6 +60,10 @@ implicit none
     ,  FREEPATH  = 6.5e-8        &   ! Mean Free Path of air [m]
     ,  VISCO     = 1.46e-5           ! Air viscosity [m2/s]   (was NU)
 
+
+! Converts from mol/cm3 to nmole/m3
+  real, public, parameter :: NMOLE_M3 = 1.0e6*1.0e9/AVOG  
+
 ! Some definitions for daylight, in terms of zenith angle and cos(zen):
 ! (calculated from criteria that DAY_COSZEN > 1.0e-10 as daytime)
 

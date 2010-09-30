@@ -192,8 +192,8 @@ contains
    
 
     if ( DEBUG_RSUR .and. debug_flag ) then
-        write(*,"(a,i4,3f8.4)") "IN RSUR snowdepth ", &
-           current_date%hour,  Sdmax,G%sdepth, fsnow
+        write(*,"(a,i4,3f8.4)") "IN RSUR snow ", &
+           current_date%hour,  Sdmax, G%sdepth, fsnow
     end if
 
 
@@ -245,9 +245,6 @@ contains
                     L%PARsun, L%PARshade, L%LAIsunfrac)
 
 
-   if ( DEBUG_RSUR .and. debug_flag ) then
-       write(*,*) "CALL G_STOM ", current_date, L%g_sto, L%fSW
-   end if
         call g_stomatal(iL, debug_flag )
 
    else
@@ -257,7 +254,8 @@ contains
    end if ! leafy canopy and daytime
 
    if ( DEBUG_RSUR .and. debug_flag ) then
-       write(*,*) "IN RSUR gsto ", current_date, leafy_canopy, G%Idirect,  L%g_sto
+       write(*,"(a,5i5,i3,L2,2f10.4)") "IN RSUR gsto ", &
+              current_date, iL, leafy_canopy, G%Idirect,  L%g_sto
    end if
 
 !Need to find a way to define vegetation outside growing season - Rns_SO2 and NH3 should be used here as well
@@ -371,11 +369,10 @@ contains
            if ( DRYDEP_CALC(icmp) == WES_NH3 ) then
 
                Gns(icmp) = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
-           else  ! Not NH3
+           else
 
                Gns(icmp) = 1.0e-5*Hstar*GnsS + f0 * GnsO   ! OLD SO2!
-
-           end if  ! NH3 test
+           end if
 
 
            Rsur(icmp) = 1.0/( L%LAI*DRx(iwes) *L%g_sto + Gns(icmp)  )
@@ -387,9 +384,9 @@ contains
            if ( DRYDEP_CALC(icmp) == WES_NH3 ) then
 
                Gns(icmp) = (1.-fsnow)/(Rns_NH3 * lowTcorr) + fsnow/RsnowS 
-           else  ! Not NH3
+           else 
                Gns(icmp) = 1.0e-5*Hstar*GnsS + f0 * GnsO   ! OLD SO2!
-           end if  ! NH3 test
+           end if
 
            Rsur(icmp) = 1.0/Gns(icmp)  
 
@@ -410,10 +407,10 @@ contains
 
    if ( DEBUG_RSUR ) then
        if ( debug_flag ) then 
-      write(*,*)  "RSURFACE DRYDEP_CALC", size(DRYDEP_CALC), DRYDEP_CALC(1)
-      write(*,*)  "RSURFACE iL, LAI, SAI, LOGIS ", iL, L%LAI, L%SAI, &
+      write(*,"(a,2i4)")  "RSURFACE DRYDEP_CALC", size(DRYDEP_CALC), DRYDEP_CALC(1)
+      write(*,"(a,i3,2f7.3,5L2)")  "RSURFACE iL, LAI, SAI, LOGIS ", iL, L%LAI, L%SAI, &
                        L%is_forest, L%is_water, L%is_veg, canopy, leafy_canopy
-      write(*,"(a20,i3,4g12.3)")  "RSURFACE xed Gs", iL, do3se(iL)%RgsO,do3se(iL)%RgsS, lowTcorr, Rinc
+      write(*,"(a,i3,4g12.3)")  "RSURFACE xed Gs", iL, do3se(iL)%RgsO,do3se(iL)%RgsS, lowTcorr, Rinc
      end if
    end if
  end subroutine Rsurface

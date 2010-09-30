@@ -69,15 +69,23 @@ use EmisDef_ml,     only :  EMIS_NAME
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa    ! 6c REM: zeta
-use ModelConstants_ml, only : atwS, atwN, ATWAIR  &
+use ModelConstants_ml, only : ATWAIR  &
+                        , SOX_INDEX, OXN_INDEX, RDN_INDEX &
                         , MasterProc  &
                         , SOURCE_RECEPTOR  &
                         , DEBUG => DEBUG_MY_DERIVED &
                         , KMAX_MID & ! =>  z dimension
                         , PPBINV  &  !   1.0e9
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
+use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
+  Init_MosaicMMC,  Add_MosaicMetConcs, & 
+  Add_MosaicRG, & 
+  Add_MosaicVG, & 
+  Add_MosaicVEGO3, & 
+  Add_MosaicDDEP, & 
+  MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
-use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV
+use OwnDataTypes_ml, only : Deriv, O3cl, print_deriv_type, TXTLEN_DERIV
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -147,8 +155,8 @@ private
   !----------------------------------------------------------------------------
 
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
-   integer, public, parameter, dimension(3) ::  XSURF_PPB = (/ NO, NO2, HCHO /)
-   integer, public, parameter, dimension(4) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
+   integer, public, parameter, dimension(4) ::  XSURF_PPB = (/ NO, NO2, HCHO, C5H8 /)
+   integer, public, parameter, dimension(5) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
 
    integer, public, parameter :: NALL_SURF_UG = &
      size(SURF_UG_S) + size(SURF_UG_N) + size(SURF_UG_C) + size(SURF_UG)
@@ -182,7 +190,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(17) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
   D2_EXTRA = (/ &
        "WDEP_SO2          " &
       ,"WDEP_SO4          " &
@@ -193,6 +201,7 @@ private
       ,"WDEP_aNH4         " &
       ,"SURF_ugN_NOX      " &
       ,"SURF_ppbC_VOC     " &
+      ,"AOT40_Grid        " &   ! Old fashioned AOT
 !      ,"D2_REDN           " &
 !      ,"D2_SNOW           " &
 !      ,"D2_SNratio        " &
@@ -214,8 +223,6 @@ private
 !dsPCM - not used??
 !   integer, public, parameter, dimension(2) :: EMIS_OUT   = (/ C5H8, APINENE /)
 
-  integer, public, parameter :: &   ! Groups for DDEP and WDEP
-    SOX_INDEX = -1, OXN_INDEX = -2, RDN_INDEX = -3
 
  ! Ecosystem dep output uses receiver land-cover classes (LCs)
  ! which might include several landuse types, e.g. Conif in
@@ -226,9 +233,6 @@ private
   integer, private, save :: nOutRG  ! RG = resistances and conductances
   integer, private, save :: nOutMET ! RG = resistances and conductances
 
- ! Mosaic-specific outputs, e.g. VG_CF_HNO3 or Rns_GR_NH3
-  integer, public, save :: nMosaic = 0
-  integer, public, parameter :: MAX_MOSAIC_OUTPUTS=150
 
 
    ! Specify some species and land-covers we want to output
@@ -249,10 +253,6 @@ private
       WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, pNO3_f, HNO3, pNO3_c /)
       !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, pNO3_f, HNO3, pNO3_c /)
 
-
-  type(Deriv), public, &
-     dimension( MAX_MOSAIC_OUTPUTS ), save :: MosaicOutput
-
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
 !     dimension( size(DDEP_SPECS)*size(DDEP_ECOS) ), save :: OutDDep
@@ -264,8 +264,8 @@ private
       VG_LABELS = (/ "VG" /)
     integer, public, parameter, dimension(1) :: &
       VG_SPECS = (/ O3 /) ! , NH3, SO2, PPM25,  PPMCO , HNO3/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      VG_LCS  = (/ "Grid" /) ! , "CF  ", "SNL ", "GR  " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+      VG_LCS  = (/ "Grid" , "CF  ", "SNL " /) ! , "GR  " /)
 
 !    type(Deriv), public, &
 !     dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
@@ -282,35 +282,30 @@ private
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
-     VEGO3_OUTPUTS = (/ "POD_1.6_IAM_DF", &
-                        "POD_1.0_IAM_DF", & ! WGSR POD1
-                        "POD_0.0_IAM_DF", &
-                        "POD_1.6_IAM_MF", &
-                        "POD_1.0_IAM_MF", & ! WGSR POD1 birch
-                        "POD_1.6_BF    ", &
-                        "POD_1.0_DF    ", &
-                        "POD_1.0_CF    ", &
-                        "POD_1.6_DF    ", &
-                        "POD_1.6_CF    ", &
-                        "POD_3.0_IAM_CR", &
-                        "POD_0.0_IAM_CR", &
-                        "POD_6.0_IAM_CR", & ! FO NOT USE THOUGH!
-                        "MMAOT_40_IAM_DF", & ! WGSR beech
-                        "MMAOT_40_IAM_MF", & ! WGSR birch
-                        "MMAOT_40_IAM_CR", &
-                        "EUAOT_40_IAM_CR", &
-                        "MMAOT_40_IAM_WH" /) !NB -last not found. Could
-                                             !just be skipped, but kept
-                                             !to show behaviour
-!    type(Deriv), public, &
-!     dimension( size(VEGO3_OUTPUTS) ),  save :: OutVEGO3
+    type(O3cl), public, parameter, dimension(14) :: &
+     VEGO3_OUTPUTS =  (/ &
+   O3cl( "POD1_IAM_DF",   "POD", 1.0,  "- ", "IAM_DF" ), & ! WGSR POD1
+   O3cl( "POD0_IAM_DF",   "POD", 0.0,  "- ", "IAM_DF" ), &
+   O3cl( "POD1_IAM_MF",   "POD", 1.0,  "- ", "IAM_MF" ), & ! WGSR POD1 birch
+   O3cl( "POD0_IAM_MF",   "POD", 0.0,  "- ", "IAM_DF" ), &
+   O3cl( "POD1_DF    ",   "POD", 1.0,  "- ", "DF    " ), &
+   O3cl( "POD1_CF    ",   "POD", 1.0,  "- ", "CF    " ), &
+   O3cl( "POD6_IAM_CR",   "POD", 6.0,  "- ", "IAM_CR" ), & ! FO NOT USE THOUGH!
+   O3cl( "POD3_IAM_CR",   "POD", 3.0,  "- ", "IAM_CR" ), &
+   O3cl( "POD0_IAM_CR",   "POD", 0.0,  "- ", "IAM_CR" ), &
+   O3cl( "MMAOT40_IAM_DF","AOT", 40.0, "MM", "IAM_DF" ), & ! WGSR beech
+   O3cl( "MMAOT40_IAM_MF","AOT", 40.0, "MM", "IAM_MF" ), & ! WGSR birch
+   O3cl( "MMAOT40_IAM_CR","AOT", 40.0, "MM", "IAM_CR" ), &
+   O3cl( "EUAOT40_IAM_CR","AOT", 40.0, "EU", "IAM_CR" ), &
+   O3cl( "MMAOT40_IAM_WH","AOT", 40.0, "MM", "IAM_WH" ) &
+    /) !NB -last not found. Could just be skipped, but kept
+       !to show behaviour
 
 ! For resistances and conductances we normally want the same landuse
 ! outputs, so we use a combined variable:
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      RG_LABELS = (/ "Rs ", "Rns", "Gns" /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+      RG_LABELS = (/ "Rs " /) ! , "Rns", "Gns" /)
     integer, public, parameter, dimension(2) :: &
       RG_SPECS = (/ NH3, SO2/)
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
@@ -323,18 +318,17 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
-      METCONC_PARAMS = (/ "RH      " &
-                         ,"CanopyO3" & !SKIP
-                         ,"VPD     ", "FstO3   " &
-                         ,"EVAP    ", "Gsto    " &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
+      MOSAIC_METCONCS = (/ "RH      " &
+                          ,"CanopyO3" & !SKIP 
+         !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
                         !SKIP  ,"USTAR   ", "INVL    "  &
                        /)
                           ! "g_sto" needs more work - only set as L%g_sto
-    integer, public, save :: MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3,  &
-           MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
+
     character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
       MET_LCS  = (/ "DF    " , "CF    ", "BF    ", "NF    " /) !, "IAM_DF", "IAM_MF"/)
+
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       !MET_LCS  = (/ "CF", "SNL", "TESTCF", "GR" ,"TC"/)
@@ -342,7 +336,7 @@ private
 
    ! We use Dep_type anyway since we can use the LCC elements
 !    type(Dep_type), public, & !Non-stomatal conductance
-!     dimension( size(METCONC_PARAMS)*size( MET_LCS) ),  save :: OutMET
+!     dimension( size(MOSAIC_METCONCS)*size( MET_LCS) ),  save :: OutMET
 
 !----------------------
 ! Less often needed:
@@ -361,11 +355,10 @@ private
     ! For some reason having this as a parameter caused problems for
     ! PC-gfortran runs.
 
- ! hb new 3D output when ppb
     !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, pNO3_f, pNO3_c /)
     integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
 
-! hb other (non-ppb) 3D output
+    ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
      character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
        D3_OTHER != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
 
@@ -395,17 +388,8 @@ private
     logical :: dt_scale
     real :: scale
 
+    call Init_MosaicMMC(MOSAIC_METCONCS)  ! sets MMC_USTAR etc.
 
-    ! Set indices of mosaic metconc params for later use. Will be zero if
-    ! not found, but that's okay I hope...
-      MMC_RH    = find_index("RH",METCONC_PARAMS)
-      MMC_CANO3 = find_index("CanopyO3",METCONC_PARAMS)
-      MMC_VPD   = find_index("VPD",METCONC_PARAMS)
-      MMC_FST   = find_index("FstO3",METCONC_PARAMS)
-      MMC_USTAR = find_index("USTAR",METCONC_PARAMS)
-      MMC_INVL  = find_index("INVL",METCONC_PARAMS)
-      MMC_GSTO  = find_index("GSTO",METCONC_PARAMS)
-      MMC_EVAP  = find_index("EVAP",METCONC_PARAMS)
 
    ! Build up the array wanted_deriv2d with the required field names
 
@@ -415,17 +399,15 @@ private
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
 
   ! Emission sums - we always add these (good policy!)
-   if(.not.SOURCE_RECEPTOR)then !may want emissions?
-     do i = 1, size(EMIS_NAME)
-       tag_name(1) = "Emis_mgm2_" // trim(EMIS_NAME(i))
-       call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-     end do
-     do i = 1, size(BVOC_GROUP)
-       itot = BVOC_GROUP(i)
-       tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
-       call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-     end do
-   end if
+   do  i = 1, size(EMIS_NAME)
+     tag_name(1) = "Emis_mgm2_" // trim(EMIS_NAME(i))
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end do
+   do  i = 1, size(BVOC_GROUP)
+     itot = BVOC_GROUP(i)
+     tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end do
 
 ! add surf concs in various units (e.g. ugS/m3 or ppb):
      tag_name(1:size(SURF_UG_S)) = "SURF_ugS_" // species(SURF_UG_S)%name
@@ -465,232 +447,33 @@ private
      !  wanted_deriv2d, NOT_SET_STRING)
 
 
-     !------------- Dry Depositions for d_2d -------------------------
-     ! Add species and ecosystem depositions if wanted:
-     ! We find the various combinations of gas-species and ecosystem,
-     ! adding them to the derived-type array OutDDep (e.g. => D2_SO4_m2Conif)
+      !------------- Depositions to ecosystems --------------------------------
 
-      nDD = 0
-      do i = 1, size(DDEP_SPECS)
-        do n = 1, size(DDEP_ECOS)
-
-          nDD = nDD + 1
-          ispec  = DDEP_SPECS(i)  ! Index in ix_tot arrays
-
-          if ( ispec > 0 ) then ! normal species, e.g. DDEP_SO2_m2CF
-             name = "DDEP_"  // trim( species(ispec)%name ) // &
-                    "_m2" // trim( DDEP_ECOS(n) )
-
-             iadv  = ispec - NSPEC_SHL ! adv for use in Derived
-
-             if ( species(ispec)%sulphurs > 0 ) then
-               atw  = species(ispec)%sulphurs * atwS
-               units  =  "mgS/m2"
-
-                call CheckStop( species( ispec )%nitrogens > 0 , &
-                 " ERROR in DDEP_SPECS: BOTH S AND N!"// &
-                   species(DDEP_SPECS(i))%name)
-
-             else if ( species( ispec )%nitrogens > 0 ) then
-               atw  = species( ispec )%nitrogens * atwN
-               units  =  "mgN/m2"
-
-             else
-               call StopAll("ERROR: OutDDep atw failure "// &
-                   species( ispec )%name)
-             end if
-          else ! GROUP
-             iadv   = ispec  ! e.g. -1 for SOX
-             atw   = atwN   ! first guess
-             units = "mgN/m2"
-            if ( ispec == SOX_INDEX ) then
-                atw   = atwS
-                units = "mgS/m2"
-                name = "DDEP_SOX_m2"//trim(DDEP_ECOS(n))
-             else if ( ispec == OXN_INDEX ) then
-                name = "DDEP_OXN_m2"//trim(DDEP_ECOS(n))
-             else if ( ispec == RDN_INDEX ) then
-                name = "DDEP_RDN_m2"//trim(DDEP_ECOS(n))
-             end if
-          end if
-
-        ! Set defaults
-        ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
-        !            x     d      d    d   a10    a10   a10     f    i    a10
-!             OutDDep(nDD) = Dep_type(  &
-!              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units)
-
-             nMosaic = nMosaic + 1
-             call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       "too many nMosaics, DDEP" )
-          !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, XYLC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
-             MosaicOutput(nMosaic) = Deriv(  &
-              name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99,-99, -99.9, F, 1.0e6,  F,   F,   F, T,  T,  F, atw)
-!QUERY - why no dt_scale??
-
-          if(DEBUG .and. MasterProc) then
-            write(6,*) "DDEP setups"
-            call print_deriv_type(MosaicOutput(nMosaic))
-          end if
-        end do ! DDEP_SPECS
-     end do ! DDEP_ECOS
-     nOutDDep = nDD
-
-      !------------- Deposition velocities for d_2d -------------------------
-      ! Add species and ecosystem depositions if wanted:
-      ! We find the various combinations of gas-species and ecosystem,
-      ! adding them to the derived-type array LCC_DDep (e.g. => VGO3_CF)
-
-      if(.not.SOURCE_RECEPTOR)then !may want deposition velocities?
-        nVg = 0
-        do ilab = 1, size(VG_LABELS)
-        do i = 1, size(VG_SPECS)
-        VG_LC: do n = 1, size(VG_LCS)
-
-          !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, &
-                  write_condition=(i==1 .and. ilab == 1))
-          if ( iLC < 0 ) cycle  VG_LC
-          !-------------End of Check if LC present in this array ------!
-          nVg = nVg + 1
-
-          name = trim( VG_LABELS(ilab) ) // "_"  // &
-                 trim( species(VG_SPECS(i))%name ) // "_" // trim( VG_LCS(n) )
-          iadv = VG_SPECS(i) - NSPEC_SHL
-          call CheckStop( iadv < 1 .or. iadv > NSPEC_ADV, &
-                 " ERR: DDEP_SPECS: VG_SPECS" )
-
-          nMosaic = nMosaic + 1
-          call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                 "too many nMosaics, nVg" )
-
-          !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,XYLC, scale, avg? rho Inst Yr Mn Day atw
-          MosaicOutput(nMosaic) = Deriv( &
-            name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
-            iadv, -99,iLC, -99.9,  F, 100.0, T,   F,   F, T, T, T, atw)
-
-        end do VG_LC !n
-        end do ! i
-        end do ! ilab
-        nOutVg = nVg
-      endif ! SOURCE_RECEPTOR
+      call Add_MosaicDDEP(DDEP_ECOS,DDEP_SPECS,nDD)
+      nOutDDep = nDD
 
       !------------- VEGO3 stuff ----------------------------------------------
       ! For fluxes or AOTs we start with a formatted name, eg. POD_3.0_CF and
       !untangle it to get threshold Y (=3.0) and landcover type
 
-      nVEGO3 = 0
-      dt_scale = .false. ! for AFstY and AOT we need to reset this.
-      VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS)
-
-         name = VEGO3_OUTPUTS(n)
-         isep1 = scan(name,"_")                      ! POD or AOT
-         isep2 = isep1 + scan(name(isep1+1:),"_")    ! 1.6 or 40
-         !isep3 = isep2 + scan(name(isep2+1:),"_")   ! IAM_CF or SNL
-         txt =name(1:isep1-1)           ! POD or AOT
-         txtnum=name(isep1+1:isep2-1)     ! 1.6 or 40
-         txt2=name(isep2+1:)            ! IAM_CF or SNL
-
-
-         if( txt == "POD" ) then
-            read(txtnum,fmt="(f3.1)") Y
-            if(txtnum == ".0") txtnum = txtnum(1:1)  ! 3.0 -> 3
-            !WHY??!!!! Threshold = nint( 10*Y)   ! Store Y=1.6 as 16
-            Threshold = Y
-            units = "mmole/m2"
-            scale = 1.0e-6   ! Accumulates nmole/s to mmole (*dt_advec)
-            dt_scale = .true.   ! Accumulates nmole/s to mmole (*dt_advec)
-         else if( txt(3:5) == "AOT" )  then
-            read(txtnum,fmt="(i2)") Threshold ! e.g. 40 ppb
-            units = "ppb.h"
-            scale = 1.0/3600.0 ! AOT in ppb.hour
-            dt_scale = .true.
-         end if
-
-
-          !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "VEGO3_LCS", txt2, .true. )
-          if(DEBUG .and. MasterProc)  write(*,*) "VEGO3 ", trim(name), &
-               "=> Y", trim(txtnum), " iLC, LC ", iLC, trim(txt2)
-          if ( iLC < 0 ) cycle  VEGO3_LC
-          !DS if ( iLC > 0 .and. .not. LandType(iLC)%is_iam ) cycle  VEGO3_LC
-          if ( iLC > 0  ) LandType(iLC)%flux_wanted  = .true.
-          !-------------End of Check if LC present in this array ------!
-          nVEGO3 = nVEGO3 + 1
-
-          write(unit=name,fmt="(a)") trim(txt)// trim(txtnum)//"_"//trim(txt2)
-
-           nMosaic = nMosaic + 1
-           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       "too many nMosaics, VEGO3" )
-          !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,Threshold, scale dt_scale avg? rho Inst Yr Mn Day atw
-           MosaicOutput(nMosaic) = Deriv(  &
-              name, "Mosaic", txt, txt2, units, &
-                iadv, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, atw)
-
-      end do VEGO3_LC !n
+      call Add_MosaicVEGO3(VEGO3_OUTPUTS,nVEGO3)
       nOutVEGO3 = nVEGO3
-          if(DEBUG .and. MasterProc)  print *, "VEGO3 FINAL NUM ", nVEGO3
 
+      !----- some "luxury outputs" -------------------------------------------
 
-      !------------- Surface resistance for d_2d -------------------------
-      ! We find the various combinations of gas-species and ecosystem,
-      ! adding them to the derived-type array LCC_DDep (e.g. => RsO3_CF)
+ if( .not.SOURCE_RECEPTOR)then
 
-      if(.not.SOURCE_RECEPTOR)then !Don't need all these in SR case
-        nRG = 0
-        do ilab = 1, size(RG_LABELS)
-        do i = 1, size(RG_SPECS)
-        RG_LC: do n = 1, size(RG_LCS)
+      !------------- Deposition velocities -----------------------------------
 
-          !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "RG_LCS", n, RG_LCS, (i==1 .and. ilab == 1))
-          if ( iLC < 0 ) cycle  RG_LC
-          !-------------End of Check if LC present in this array ------!
+      call Add_MosaicVG(VG_LABELS,VG_LCS,VG_SPECS,nVg)
+      nOutVg = nVg
 
-          nRG = nRG + 1
-          name = trim( RG_LABELS(ilab) ) // "_"  // &
-                 trim( species(RG_SPECS(i))%name ) // "_" // trim( RG_LCS(n) )
+       if(DEBUG .and. MasterProc)  print *, "VEGO3 FINAL NUM ", nVEGO3
 
-          iadv  =   RG_SPECS(i) - NSPEC_SHL
+      !-------------  R & G = Resistance & Conductances -----------------------
 
-         !OutRG(nRG)%label  = RG_LABELS(ilab)
-         !OutRG(nRG)%txt  =   RG_LCS(n)
-
-!         OutRG(nRG) = Dep_type(  &
-!           name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
-!                                             1.0, -99,  "-")
-          nMosaic = nMosaic + 1
-          call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                 "too many nMosaics, nRG" )
-
-         !Deriv(name, class,    subc,  txt,           unit
-         !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
-
-          if( RG_LABELS(ilab)(1:1) == "R" )  then
-            MosaicOutput(nMosaic) = Deriv( &
-              name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
-              iadv, -99,iLC,-99.9, F , 1.0,  T,   F,   F, T, T, T, atw)
-          else if( RG_LABELS(ilab)(1:1) == "G" )  then
-            MosaicOutput(nMosaic) = Deriv( &
-              name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
-              iadv, -99,iLC,-99.9, F, 100.0,  T,   F,   F, T, T, T, atw)
-          endif
-!         if( OutRG(nRG)%label(1:1) == "R" )  then
-!           OutRG(nRG)%units  =   "s/m"
-!         else if( OutRG(nRG)%label(1:1) == "G" )  then
-!           OutRG(nRG)%scale  =    100.0
-!           OutRG(nRG)%units  =   "cm/s"
-!         end if
-!         if(DEBUG .and. MasterProc) call print_dep_type(OutRG(nRG))
-        enddo RG_LC !n
-        enddo ! i
-        enddo ! ilab
-        nOutRG = nRG
+      call Add_MosaicRG(RG_LABELS,RG_LCS,RG_SPECS,nRG)
+      nOutRG = nRG
 
 !     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
 !     call CheckStop( errmsg, errmsg // "OutRG  too long" )
@@ -699,52 +482,9 @@ private
       ! We find the various combinations of met and ecosystem,
       ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
 
-        nMET = 0
-        do ilab = 1, size(METCONC_PARAMS)
-        MET_LC: do n = 1, size(MET_LCS)
-
-          !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "MET_LCS", n, MET_LCS, (ilab == 1))
-          if ( iLC < 0 ) cycle  MET_LC
-          if ( METCONC_PARAMS(ilab)(1:6) == "Canopy" .or. &
-            METCONC_PARAMS(ilab)(1:5) == "FstO3" ) &
-              LandType(iLC)%flux_wanted  = .true.  ! Canopy calc in StoFlux
-          !-------------End of Check if LC present in this array ------!
-
-          nMET = nMET + 1
-          name = trim ( METCONC_PARAMS(ilab) ) // "_"  // trim( MET_LCS(n) )
-
-          nMosaic = nMosaic + 1
-          call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                 "too many nMosaics, nMET" )
-         !Deriv(name, class,    subc,  txt,           unit
-         !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
-          MosaicOutput(nMosaic) = Deriv(  &
-            name, "Mosaic", "METCONC", MET_LCS(n), METCONC_PARAMS(ilab), &
-            ilab, -99,iLC,-99.9,  F , 1.0,  T,   F,   F, T, T, T, atw)
-!MESS          OutMET(nMET) = Dep_type( &
-!           name, ilab, -99, iLC, "Mosaic", METCONC_PARAMS(ilab),  &
-!                                              MET_LCS(n), 1.0, -99, "-")
-
-          if( METCONC_PARAMS(ilab)(1:5) == "USTAR" )  then
-            MosaicOutput(nMosaic)%unit  =   "m/s"
-          elseif( METCONC_PARAMS(ilab)(1:4) == "INVL" )  then
-            MosaicOutput(nMosaic)%unit  =   "m"
-          elseif( METCONC_PARAMS(ilab)(1:8) == "CanopyO3" )  then
-            MosaicOutput(nMosaic)%unit  =   "ppb"
-          elseif( METCONC_PARAMS(ilab)(1:5) == "FstO3" )  then
-            MosaicOutput(nMosaic)%unit  =   "mmole/m2" ! accumulated
-          elseif( METCONC_PARAMS(ilab)(1:4) == "EVAP" )  then
-            MosaicOutput(nMosaic)%avg       =  .false. ! accumulate
-            MosaicOutput(nMosaic)%unit      =  "mm"
-            MosaicOutput(nMosaic)%dt_scale  =  .true.
-          endif
-
-          if(DEBUG .and. MasterProc) call print_deriv_type(MosaicOutput(nMosaic))
-        enddo MET_LC !n
-        enddo ! ilab
-        nOutMET = nMET
-      endif !SOURCE_RECEPTOR
+      call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS, nMET)
+      nOutMET = nMET !not needed?
+  end if ! SOURCE_RECEPTOR
 
 !     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
 !     call CheckStop( errmsg, errmsg // "OutMET too long" )
@@ -765,7 +505,7 @@ private
        if ( size(D3_PPB) > 0 ) then
          tag_name(1:size(D3_PPB)) = "D3_ppb_" // species(D3_PPB)%name
          call AddArray(  tag_name(1:size(D3_PPB)) , wanted_deriv3d, &
-           NOT_SET_STRING, errmsg)
+            NOT_SET_STRING, errmsg)
          call CheckStop( errmsg, errmsg // "D3_ppb too long" )
        end if
        if ( size(D3_OTHER) > 0 ) then

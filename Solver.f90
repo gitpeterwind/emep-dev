@@ -96,10 +96,11 @@ contains
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-  subroutine chemistry(i,j)
+  subroutine chemistry(i,j,debug_flag)
 
     !.. In
     integer, intent(in) ::  i,j       ! Coordinates (needed for Dchem)
+    logical, intent(in) :: debug_flag
 
     real, dimension(NSPEC_TOT,KCHEMTOP:KMAX_MID,MAXLIMAX,MAXLJMAX), save :: &
                     Dchem=0.0  ! Concentration increments due to chemistry
@@ -242,6 +243,11 @@ contains
 
             Dchem(:,k,i,j) = (xnew(:) - xn_2d(:,k))*dt_advec_inv
             xn_2d(:,k) = xnew(:)
+
+        if (debug_flag.and.k==KMAX_MID) then
+          write(*,"(a,2i4,3es10.3)") "SOLVER ", C5H8, BIO_ISOP,&
+             RCEMIS(C5H8,K), RCBIO(BIO_ISOP,K), xn_2d(C5H8,k)
+        end if
 
     enddo ! End of vertical k-loop
 

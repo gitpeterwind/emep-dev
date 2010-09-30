@@ -33,7 +33,7 @@ module SoilWater_ml
  use MetFields_ml,      only : SoilWater_deep, nwp_sea
  use ModelConstants_ml, only : USE_SOILWATER, DEBUG_SOILWATER
  use Par_ml,            only : limax, ljmax, MAXLIMAX, MAXLJMAX
- use TimeDate_ml,       only : current_date
+ use TimeDate_ml,       only : current_date, daynumber
 
 
     implicit none
@@ -62,7 +62,7 @@ module SoilWater_ml
 !    real, dimension(366), public, save :: SWP = 0.0  ! daily soil water potential
                                               ! in  MPa
    real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-    fSW    ! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin)
+    fSW = 1.0    ! fSW= f(relative extractable water) =  (sw-swmin)/(swFC-swmin)
 
 
 contains
@@ -72,24 +72,32 @@ contains
       real :: land, sumland, newsw, REW ! For SW tests
       integer :: old_day=-999, old_hour = -999,  hourloc
 
-      if( debug_proc ) write(*,*) "DEBUG_SW START: ", current_date%day, &
-           current_date%hour, current_date%seconds, old_day
-      if ( current_date%day      == old_day .and. .not. my_first_call ) return
+      if( DEBUG_SOILWATER .and. debug_proc ) write(*,*) "DEBUG_SW START: ", &
+        current_date%day, current_date%hour, current_date%seconds, old_day
+      ! We rest once per day, but need to loop through the cells to find
+      ! the 3am reset point
+      !if ( current_date%day      == old_day .and. .not. my_first_call ) return
       if ( current_date%seconds  /= 0       .and. .not. my_first_call ) return
-      old_day = current_date%day
+      !old_day = current_date%day
 
      ! If NWP thinks this is a sea-square, but we anyway have land,
      ! the soil moisture might be very strange.  We search neighbouring
      ! grids and make a land-weighted mean SW
 
-        fSW =  1.0
+     !   fSW =  1.0
 
-        if ( .not.USE_SOILWATER ) return
+       !TEST if ( USE_SOILWATER == .true. ) return  ! FAKER
+       !TEST fSW = 0.1
+       !  return
+        if ( USE_SOILWATER == .false. ) return
 
         do j = 1, ljmax
            do i = 1, limax
 !TMP
               hourloc= mod(nint(current_date%hour+24*(1+longitude(i,j)/360.0)),24)
+             if ( DEBUG_SOILWATER .and. debug_proc.and. i==debug_li.and.j==debug_lj ) then
+               write(*,*) "CHECK_SWF", hourloc, " date ", current_date
+             end if
 !TMP          !if ( nwp_sea(i,j) .and. water_fraction(i,j) < 0.9 ) then
 !TMP          if ( water_fraction(i,j) < 0.9 ) then
              if ( my_first_call ) hourloc = 3 ! fake to get started
@@ -98,7 +106,15 @@ contains
              sumland  = 0.0
              REW      = SoilWater_deep(i,j,1)/ SoilMAM ! HIRLAM specific!
 
-             if ( REW < SoilDAM ) fSW(i,j) = REW/SoilDAM  ! HIRLAM specific!
+             if ( REW < SoilDAM ) then
+               fSW(i,j) = REW/SoilDAM  ! HIRLAM specific!
+             else
+               fSW(i,j) = 1.0
+             end if
+             if ( DEBUG_SOILWATER .and. debug_proc.and. i==debug_li.and.j==debug_lj ) then
+               write(*,"(a,i4,f7.4,i4,2f12.4)") "RESET_SWF: ", &
+                 daynumber, SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j)
+             end if
 
   !!!! WILL RE-VISIT LATER - with Peter's readneighbour routine
 !TMP             do ii = -1, 1
@@ -126,12 +142,12 @@ newsw = -999.9
          hourloc= mod(nint(current_date%hour+24*(1+longitude(i,j)/360.0)),24)
          REW      = SoilWater_deep(i,j,1)/ SoilMAM ! HIRLAM specific!
 
-             write(*,"(a,2i5,2f12.4,i4,2f12.4,L8,f12.4)") "DEBUG_SWF: ", i_fdom(i)-35, j_fdom(j)-11,&
-                 water_fraction(i,j), SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j), nwp_sea(i,j), newsw
-
+             write(*,"(a,f7.4,i4,f7.4,i4,2f12.4,L8,f12.4)") "DEBUG_SWF: ", &
+                 water_fraction(i,j), daynumber, SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j), nwp_sea(i,j) !!, newsw
+             
       end if
 
-        my_first_call = .false.
+      my_first_call = .false.
 
    end subroutine Set_SoilWater
 end module SoilWater_ml

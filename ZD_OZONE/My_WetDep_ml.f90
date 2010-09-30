@@ -30,7 +30,7 @@ module My_WetDep_ml
  use ChemSpecs_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
  use ChemGroups_ml, only : WDEP_OXNGROUP, WDEP_SOXGROUP, WDEP_RDNGROUP
  use ChemChemicals_ml
- use Derived_ml,  only : f_2d, d_2d
+ use DerivedFields_ml,  only : f_2d, d_2d
  use Io_ml,             only : IO_DEBUG
  use MassBudget_ml,     only : totwdep, wdeploss
  use ModelConstants_ml, only : atwS, atwN, atwPM, IOU_INST, MasterProc, DEBUG_MY_WETDEP

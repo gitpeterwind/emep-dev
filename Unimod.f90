@@ -46,7 +46,7 @@ program myeul
   use Advection_ml,     only : vgrid,adv_var, assign_nmax,assign_dtadvec
   use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
-  use Biogenics_ml,     only : Init_BVOC
+  use Biogenics_ml,     only : Init_BVOC, SetDailyBVOC  !dsBVOC
 ! hb NH3emis
   use calc_emis_potential_ml,only : NH3emis_potential,lNH3emis_pot, &
        readNH3emis,lEmis50_nh3
@@ -55,12 +55,13 @@ program myeul
   use CheckStop_ml,     only : CheckStop
   use ChemChemicals_ml, only : define_chemicals
   use DefPhotolysis_ml, only : readdiss
-  use Derived_ml,       only : Init_Derived, f_2d, f_3d
-  use DO3SE_ml,       only : Init_DO3SE !LPJ
+  use Derived_ml,       only : Init_Derived
+  use DerivedFields_ml, only : f_2d, f_3d
+  use DO3SE_ml,         only : Init_DO3SE !LPJ
   use EcoSystem_ml,     only : Init_EcoSystems
-  use EmisDef_ml,       only : NBVOC, AIRNOX, NH3EMIS_VAR ! hb NH3emis
+  use EmisDef_ml,       only : AIRNOX, NH3EMIS_VAR ! hb NH3emis
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
-  use ForestFire_ml,   only : Fire_Emis
+  use ForestFire_ml,    only : Fire_Emis
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE,&
                                IO_NH3_DEB ! hb NH3Emis
@@ -78,7 +79,7 @@ program myeul
        ,runlabel2  &   ! explanatory text
        ,nprint,nass,nterm,iyr_trend, PT &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
-       ,USE_FOREST_FIRES & !
+       ,USE_FOREST_FIRES, NBVOC  & !
        ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
   use OutputChem_ml,    only : WrtChem
@@ -284,7 +285,7 @@ program myeul
 
 ! Read data for DO3SE (deposition O3 and  stomatal exchange) module
 ! (also used for other gases!)
-!     if(.not.LU_cdf)then
+
         call Init_DO3SE(IO_DO3SE,"Inputs_DO3SE.csv",Land_codes, errmsg)
         call CheckStop(errmsg, "Reading DO3SE ")
 
@@ -426,6 +427,8 @@ program myeul
      call Meteoread(numt)
 
      call SetLandUse()    !Moved here from DryDep !LPJ
+
+     call SetDailyBVOC(daynumber)  !dsBVOC
 
      if ( USE_FOREST_FIRES ) call Fire_Emis(daynumber)
 

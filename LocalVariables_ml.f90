@@ -33,6 +33,7 @@
 
 module LocalVariables_ml
  use ModelConstants_ml, only : NLANDUSEMAX
+ use Wesely_ml,         only : NDRYDEP_CALC
  implicit none
  private
 
@@ -100,9 +101,11 @@ module LocalVariables_ml
                                 ! (= sinB, where B is elevation angle)
      integer :: izen = INOT_SET ! int(zen)
 !
-!  real, dimension(NDRYDEP_TOT) :: &
-!       Vg_ref   &! Grid average of Vg at ref ht. (effective Vg for cell)
-!      ,Vg_3m     ! and at 3m
+  real, dimension(NDRYDEP_CALC) :: & ! just for limited number of species
+      Vg_ref   &! Grid average of Vg at ref ht. (effective Vg for cell)
+     ,Vg_3m    &! and at 3m
+     ,Gsur     &! and at 3m
+     ,Gns       ! and at 3m
   end type GridDat
 
   type(GridDat), public, save :: Grid
@@ -159,8 +162,14 @@ module LocalVariables_ml
     ,g_sun     = NOT_SET &! g_sto for sunlit upper-canopy (flag) leaves
   ! and enable concentrations at canopy height:
     ,cano3_ppb  = 0.0    &! Use 0.0 to make d_2d behave better 
+    ,cano3_nmole= 0.0    &! Use 0.0 to make d_2d behave better 
     ,FstO3      = 0.0     ! leaf O3 flux, nmole/m2/s
 
+  real, dimension(NDRYDEP_CALC) :: & ! just for limited number of species
+      Vg_ref   &! Grid average of Vg at ref ht. (effective Vg for cell)
+     ,Vg_3m    &! and at 3m
+     ,Gsur     &! and at 3m
+     ,Gns       ! and at 3m
     !,ObsRad    = NOT_SET &! Used for box-model, for observed values
     !,snow      = NOT_SET &!  Usually from Grid
     !,wetarea   = NOT_SET &!  Usually from Grid

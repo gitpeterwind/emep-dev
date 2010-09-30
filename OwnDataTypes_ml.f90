@@ -24,7 +24,15 @@ module OwnDataTypes_ml
 
 
    !================== 
+    type, public:: O3cl
+       character(len=TXTLEN_DERIV) :: name ! e.g. POD1_IAM_DF
+       character(len=TXTLEN_SHORT) :: class ! POD or AOT
+       real    :: Threshold     ! Threshold or CL, e.f. AOTx or AFstY
+       character(len=TXTLEN_SHORT) :: defn !  MM or EU definitions
+       character(len=TXTLEN_SHORT) :: LC !  CF, DF, IAM_CF etc.
+    end type 
 
+   !================== 
     type, public:: Deriv
        character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
        character(len=TXTLEN_SHORT) :: class ! Type of data, e.g. ADV or Mosaic

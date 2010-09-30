@@ -62,7 +62,7 @@ private
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
  integer, public, parameter :: NLUMAX = 19 ! max no. landuse per grid
- logical, public :: LU_cdf
+ !ds logical, public :: LU_cdf
 
 ! The headers read from Inputs.Landuse define the "master-list" of
 ! codes for landuse. Each code must be present in the subsequent
@@ -114,14 +114,15 @@ contains
        !=====================================
         call ReadLandUse(filefound)     ! => Land_codes,  Percentage cover per grid
 
-        if(filefound)then
+        call CheckStop(.not.filefound,"InitLanduse failed!")
+
+        !if(filefound)then
            call Init_LandDefs(Land_codes)   ! => LandType, LandDefs
-           LU_cdf=.false.
        !=====================================
-        else
-           LU_cdf=.true.
-           !land codes already fetched
-        endif
+        !else
+        !   LU_cdf=.true.
+        !   !land codes already fetched
+        !endif
 
   end subroutine InitLanduse
  !==========================================================================
@@ -150,7 +151,7 @@ contains
    integer, dimension(MAXLIMAX,MAXLJMAX):: landuse_ncodes ! tmp, with all data
    integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
 
-   if ( DEBUG_LANDUSE .and. me == 0 ) &
+   if ( DEBUG_LANDUSE .and. MasterProc ) &
         write(*,*) "LANDUSE: Starting ReadLandUse, me ",me
 
    maxlufound = 0   
@@ -199,15 +200,14 @@ contains
          !------------------------------------------------------------------------------
          
          
-         if ( DEBUG_LANDUSE .and. me == 0 ) then
+         if ( DEBUG_LANDUSE .and. MasterProc ) then
             write(*,*) "NOW LAND_CODES ARE ", NHeaders
             call WriteArray(Land_codes,NLanduse_DEF,"Land_Codes")
          end if
          
       else
-         call StopAll('No Inputs.Landuse')
          filefound=.false.
-      Call StopAll('Inputs.Landuse not found') 
+         call StopAll('Inputs.Landuse not found') 
 !        !Read and interpolate from global data
 !         call Read_Local_Inter_CDF('GLOBAL_landuse.nc',&
 !              'category',landuse_in,MAXLIMAX,MAXLJMAX,NLanduse_DEF)
