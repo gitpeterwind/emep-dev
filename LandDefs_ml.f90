@@ -89,6 +89,7 @@ end interface Check_LandCoverPresent
      real    ::  LAImax       ! Max value of LAI
      integer ::  SLAIlen      ! Length of LAI growth periods
      integer ::  ELAIlen      ! Length of LAI decline periods
+     real    ::  BiomassD     ! Dry biomass density g/m2(ground area)
      real    ::  Eiso         ! Emission potential isoprene, ug/g/h
      real    ::  Emtl         ! Emission potential m-terpenes, light
      real    ::  Emtp         ! Emission potential m-terpenes, pool

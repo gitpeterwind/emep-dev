@@ -74,7 +74,7 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use ChemChemicals_ml, only : species
  use ChemSpecs_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
- use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
+ use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, O3
  use DO3SE_ml,         only : do3se, f_phen
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
@@ -274,7 +274,6 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
       real :: c_hveg, Ra_hveg, Ra_diff, o3_ppb, surf_ppb  ! for O3 fluxes and Fst where needed
       real :: c_hveg3m  !TESTS ONLY
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
 !! line is kept at the end of the variable definitions and the start of real
@@ -657,11 +656,12 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
     end do ! n
 
+
     GASLOOP2 :  do n = 1, NDRYDEP_ADV 
          nadv    = DDepMap(n)%ind
          ntot  = NSPEC_SHL + DDepMap(n)%ind
-
          ncalc   = DDepMap(n)%calc
+
 
          if ( vg_set(n) ) then
 
@@ -685,6 +685,20 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
          end if
 
 
+         if ( ntot == O3 ) then 
+
+           Grid%surf_o3_ppb = xn_2d(O3,KMAX_MID)*gradient_fac( ncalc )*surf_ppb
+
+          ! We strore the attenuation of O3 for the grid, to be used in
+          ! AOT calculations if wanted,
+           Grid%O3factor = DepLoss(nadv)/(max(1.0-10, xn_2d( ntot,KMAX_MID) ) )
+
+           if ( DEBUG_DRYDEP .and. debug_flag ) then
+              call datewrite("O3_ppb_ratios ", n, (/ &
+                 Grid%surf_o3_ppb, Grid%O3factor /) )
+           end if ! DEBUG
+         end if
+
         xn_2d( ntot,KMAX_MID) = &
              xn_2d( ntot,KMAX_MID) - DepLoss(nadv)
 
@@ -699,9 +713,9 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
                                 (DepLoss(nadv)+xn_2d( ntot,KMAX_MID)))
               end if
               if ( DEBUG_DRYDEP .and. lossfrac < 0.1 ) then
-                  call datewrite( "LOSSFRACING ", nadv, (/ 1.0*iL, Grid%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
+                  call datewrite( "LOSSFRACING ", nadv, (/ 1.0*iL, &
+                    Grid%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
                   call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
-                  !print *, "ERROR: LOSSFRAC ", lossfrac, nadv, ntot
               end if
         end if
 
@@ -764,11 +778,9 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
                    n,nadv, DDepMap(n)%vg
           else
               if( n == 1 ) & ! O3
-              write(*, "(2a,3i3,i5,3i4,f7.3,a,es10.3,f8.4)") &
-               "DEBUG DDEP ", trim(species(ntot)%name), &
-                   imm, idd, ihh, current_date%seconds, &
-                    n,nadv,ncalc, gradient_fac( ncalc),&
-                " xnd:", xn_2d(ntot,KMAX_MID), vg_fac(ncalc)
+              call datewrite( "DEBUG DDEPxnd: "// trim(species(ntot)%name), &
+                n, (/ real(nadv),real(ncalc), gradient_fac( ncalc),&
+                   xn_2d(ntot,KMAX_MID), vg_fac(ncalc) /) )
           end if
         end if
 

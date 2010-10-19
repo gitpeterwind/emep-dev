@@ -282,7 +282,7 @@ private
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
 
-    type(O3cl), public, parameter, dimension(14) :: &
+    type(O3cl), public, parameter, dimension(15) :: &
      VEGO3_OUTPUTS =  (/ &
    O3cl( "POD1_IAM_DF",   "POD", 1.0,  "- ", "IAM_DF" ), & ! WGSR POD1
    O3cl( "POD0_IAM_DF",   "POD", 0.0,  "- ", "IAM_DF" ), &
@@ -296,7 +296,8 @@ private
    O3cl( "MMAOT40_IAM_DF","AOT", 40.0, "MM", "IAM_DF" ), & ! WGSR beech
    O3cl( "MMAOT40_IAM_MF","AOT", 40.0, "MM", "IAM_MF" ), & ! WGSR birch
    O3cl( "MMAOT40_IAM_CR","AOT", 40.0, "MM", "IAM_CR" ), &
-   O3cl( "EUAOT40_IAM_CR","AOT", 40.0, "EU", "IAM_CR" ), &
+   O3cl( "EUAOT40_Crops", "AOT", 40.0, "EU", "IAM_CR" ), &  ! IAM_CR is a bit fake, we use 3m O3
+   O3cl( "EUAOT40_Forests", "AOT", 40.0, "EU", "IAM_DF" ), &  ! IAM_DF is a bit fake, we use 3m O3
    O3cl( "MMAOT40_IAM_WH","AOT", 40.0, "MM", "IAM_WH" ) &
     /) !NB -last not found. Could just be skipped, but kept
        !to show behaviour

@@ -85,6 +85,7 @@ use EmisDef_ml,    only : EMIS_NAME
 use Emissions_ml,  only : SumSnapEmis
 use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M&
                          ,GridArea_m2 ! dsbvoc
+use Io_Progs_ml,  only :  datewrite
 use MetFields_ml, only :   roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
 use MetFields_ml, only :   ps
 use MetFields_ml, only :   SoilWater_deep
@@ -401,7 +402,7 @@ call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
 
       !Deriv(name, class,    subc,  txt,           unit
       !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
-call AddNewDeriv( "AOT40_Grid", "AOT ","subclass","-", "ppb h", &
+call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
            IXADV_O3, -99,0, 40.0,   T, 1.0/3600.0, F,  F , F ,T ,T ,T ,-999)
 !
 !-------------------------------------------------------------------------------
@@ -953,27 +954,30 @@ end do
 
             call voc_2dcalc()
 
-          case( "AOT" )    !  Hardly used these days. The vegetation-specific
+          case( "GRIDAOT" )    !  Hardly used these days. The vegetation-specific
                            !  AOTs are handled in the Mosaic class and as
                            !  part of the dry dep calculations.
 
             d_2d(n, 1:limax, 1:ljmax, IOU_INST) = &
                  Calc_GridAOTx(f_2d(n)%Threshold, debug_proc,"DERIVAOT")
 
-!           if( DEBUG_AOT .and. debug_proc ) then
-!
-!!              write(*,"(a,i3,a,3i3,i5,f6.2,es9.2,2f8.3,f10.3)") "AOTLCGRID? ",&
+           if( DEBUG_AOT .and. debug_proc ) then
+             call datewrite("AOTDEBUG" // trim(f_2d(n)%name), n, &
+               (/ zen(debug_li,debug_lj), &
+                  xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID)*&
+                     cfac(IXADV_O3,debug_li,debug_lj)*PPBINV, &
+                  d_2d(n, debug_li, debug_lj, IOU_INST )  /) )
+           end if
+
+!              write(*,"(a,i3,a,3i3,i5,f6.2,es9.2,2f8.3,f10.3)") "AOTLCGRID? ",&
 !                  n, trim(f_2d(n)%name),&
 !               current_date%month,current_date%day, &
 !               current_date%hour,current_date%seconds, &
 !               zen(debug_li,debug_lj), &
 !           xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID),&
 !              cfac(IXADV_O3,debug_li,debug_lj),&
-!              xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID)*&
-!              cfac(IXADV_O3,debug_li,debug_lj)*PPBINV, &
 !                d_2d(n, debug_li, debug_lj, IOU_INST )
 !
-!           end if
 
 
            case( "SOMO" )
@@ -1083,7 +1087,6 @@ end do
 
           ! Externally set for IOU_INST (in other routines); so no new work
           ! needed except decision to accumalate to yearly or not.
-          ! Used for e.g. AOT40s
 
              call setaccumulate_2dyear(f_2d(n)%name,accumulate_2dyear)
 

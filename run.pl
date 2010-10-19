@@ -8,7 +8,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=8:ib
+#PBS -lnodes=6:ib
 # wall time limit of run
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -223,7 +223,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $Chem, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv    = "rv3_6_24";
+$testv    = "rv3_7beta2";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -366,11 +366,12 @@ $month_days[2] += leap_year($year);
 
 my $mm1   =  "05";       # first month, use 2-digits!
 my $mm2   =  "05";       # last month, use 2-digits!
+my $dd1   =  1;       # Start day, usually 1
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 2;        # for testing, simply reset here
+ $NTERM = 32;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
@@ -684,7 +685,8 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
   #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
-  $ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
+  #$ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/Inputs_LandDefs_20101016.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
 # $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
@@ -753,7 +755,7 @@ foreach my $scenflag ( @runs ) {
 
   my $startyear = $year;
   my $startmonth = $mm1;
-  my $startday = 1;
+  my $startday = $dd1;
   if ($CWF){    # use forecast start date
     $startyear  = substr($CWFDATE[1],0,4);
     $startmonth = substr($CWFDATE[1],4,2);

@@ -89,6 +89,8 @@ module LocalVariables_ml
     real :: Ra_2m             !
     real :: Ra_3m             !
     real :: so2nh3ratio       !  for CEH deposition scheme
+    real :: surf_o3_ppb       !  for  EU AOTs
+    real :: O3factor          !  ratio of O3out/O3in for DryDep module
 !hf CoDep
     real :: so2nh3ratio24hr       !  for new CEH SO2 deposition scheme
     real :: &    !Not quite sure how many of these we need. 

@@ -186,6 +186,7 @@ module Biogenics_ml
 
    !====================================
 
+ if ( BVOC_2010 == .true. ) then
     call GetEuroBVOC()
    !====================================
 
@@ -194,11 +195,14 @@ module Biogenics_ml
    ! Emissions factors shoudl now by ug/m2(grid)/h
 
     call MergedBVOC() 
+ end if ! BVOC_2010
    !====================================
 
     emforest = 0.0
-    call Read2DN("Inputs.BVOC",2,emforest,CheckValues)
-    call CheckStop( minval(emforest) < 0.0, "Negative BVOC emis!")
+    if ( BVOC_2010 == .false. ) then
+      call Read2DN("Inputs.BVOC",2,emforest,CheckValues)
+      call CheckStop( minval(emforest) < 0.0, "Negative BVOC emis!")
+    end if
    !========================================================================!
 
       if( debug_proc .and. DEBUG_BIO ) then
@@ -331,10 +335,10 @@ module Biogenics_ml
            if( use_local .and. HaveLocalEF(iL) ) then 
                 ! Keep EFs from EuroBVOC
                 if( debug_flag ) write(*,*) "MergeBVOC: Inside local"
-           else if ( iL <= last_bvoc_LC ) then
-               bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso 
-               bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp
-               bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl
+           else if ( iL <= last_bvoc_LC ) then ! use defaults
+               bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * LandDefs(iL)%BiomassD 
+               bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * LandDefs(iL)%BiomassD
+               bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * LandDefs(iL)%BiomassD
                 if( debug_flag ) write(*,*) "MergeBVOC: Outside local", iL
            else
                 if( debug_flag ) write(*,*) "MergeBVOC: Outside LCC", iL

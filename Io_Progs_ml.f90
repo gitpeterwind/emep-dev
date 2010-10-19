@@ -585,7 +585,7 @@ end do
        integer, intent(in) :: ii  ! any old integer. Often needed
        real, dimension(:), intent(in) :: array
 
-       write(*,"(a,3i3,i5,1x, i0, 20es11.4)") "StoFlux:" // trim(txt), &
+       write(*,"(a,3i3,i5,1x, i0, 20es11.4)") "dw:" // trim(txt), &
           current_date%month, current_date%day, current_date%hour, &
           current_date%seconds, ii, array
     END SUBROUTINE datewrite

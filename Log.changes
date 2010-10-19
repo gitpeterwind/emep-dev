@@ -4,9 +4,34 @@ mk.GenChem, which reads the emissions needed from GenIn.reactions.
 
 Run mk.GenChem!!!!
 
-(In principal we could remove all CM_ files from the cvs system.
-Will do that soon I think.....)
+NOTE: Now all all CM_ files are removed from the cvs system. You have to
+run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta2 Dave  Oct 18th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Re-coded AOT treatment, also to get EU AOT from 3m grid ozone
+
+AOTx_ml: now takes Sub(iL)%cano3_ppb, or Griod%surf_o3_ppb as appropriate
+
+Biogenics_ml : some changes connected to BVOC_2010 methods.
+
+Derived_ml: AOT changes
+
+DryDep_ml: AOT changes
+
+Inputs_LandDefs changed - extra variables
+
+LandDefs_ml - BiomassD added. Also new Inputs_LandDefs.csv
+
+LocalVariables_ml - added surf_o3_ppb, O3factor
+
+ModelConstants_ml : DEBUG_ii etc introduced to ease change from EMEP to EECA
+
+MosaicOutputs_ml: AOT+POD changes
+
+OwnDataTypes_ml: renamed LC to TXTLC to help rember this is a string
+
+run.pl:   dd1 introduced.... start day
 
 xxxxxxxxxxxxxx rv3_7beta1 Dave  Sep 30th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

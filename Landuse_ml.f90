@@ -405,6 +405,9 @@ contains
                     end if
                 end if
 
+               ! Note that IAM crops have SLAIlen=0, so are immediately
+               ! given LAI=3.5, SAI=5.
+
                 if ( effectivdaynumber < LandCover(i,j)%SGS(ilu) .or. &
                      effectivdaynumber > LandCover(i,j)%EGS(ilu)  ) then
                    hveg = STUBBLE
@@ -441,9 +444,11 @@ contains
              LandCover(i,j)%hveg(ilu) =  hveg
 
             if ( DEBUG_LANDUSE .and. debug_flag ) then
-                   write(*,"(a12,i3,a16,i4,f7.2,2f8.3,4i4)") "LANDPhen ", lu, trim(LandDefs(lu)%name), daynumber, &
-                     LandCover(i,j)%hveg(ilu), LandCover(i,j)%LAI(ilu), LandCover(i,j)%fphen(ilu), &
-                     LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)
+               write(*,"(a,i3,a16,i4,f7.2,3f8.3,4i4)") "LANDPhen ", lu,&
+                trim(LandDefs(lu)%name), daynumber, LandCover(i,j)%hveg(ilu),&
+                 LandCover(i,j)%SAI(ilu), LandCover(i,j)%LAI(ilu), &
+                 LandCover(i,j)%fphen(ilu), &
+                LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)
             end if
                    
 
@@ -451,8 +456,8 @@ contains
        end do ! j
     end do ! i
 
-    if(debug_proc .and. DEBUG_LANDUSE) write(*,*) "LAST GROWSEASON ", &
-          effectivdaynumber, WheatGrowingSeason(debug_li,debug_lj)
+    if(debug_proc .and. DEBUG_LANDUSE) write(*,*) "DEBUG WHEAT", &
+           effectivdaynumber, WheatGrowingSeason(debug_li,debug_lj)
 
   end subroutine  SetLandUse
 ! =====================================================================

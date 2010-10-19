@@ -29,6 +29,7 @@ module AOTx_ml
   use Chemfields_ml, only : xn_adv, cfac
   use ChemSpecs_adv_ml, only : IXADV_O3
   use GridValues_ml, only : debug_li, debug_lj
+  use Io_Progs_ml,   only : datewrite
   use LandDefs_ml,   only : LandType
   use Landuse_ml,    only : WheatGrowingSeason
   use LocalVariables_ml, only : L, Grid, Sub
@@ -48,22 +49,23 @@ module AOTx_ml
 ! Limit of daylight zenith angle for AOTs
   integer, private,  parameter :: AOT_HORIZON  = 89         
   integer, public, parameter:: STARTMONTH_FOREST=4,ENDMONTH_FOREST=9&
-                                ,STARTMONTH_CROPS=5,ENDMONTH_CROPS=7
+                                ,STARTMONTH_CROPS=5,ENDMONTH_CROPS=7 ! EU only!
 
 
 
 
 contains
  !=========================================================================
-  subroutine Calc_AOTx(defn,iLC,o3, X,aot, debug_flag, debug_txt ) !,accumulate_2dyear)
+  subroutine Calc_AOTx(defn,iLC, X,aot, debug_flag, debug_txt ) !,accumulate_2dyear)
     character(len=*), intent(in) :: defn
     logical, intent(in) :: debug_flag
     character(len=*), intent(in), optional :: debug_txt
     integer, intent(in) :: iLC
-    real, intent(in) :: o3, X
+    real, intent(in) :: X
     real, intent(out)    :: aot
     ! logical, intent(inout) :: accumulate_2dyear
 
+    real    :: o3
     integer :: i,j
 
 
@@ -72,6 +74,14 @@ contains
     j = Grid%j
 
     aot = 0.0
+
+
+    if (   LandType(iLC)%is_forest .and. &
+         (   current_date%month<STARTMONTH_FOREST&
+         .or.current_date%month>ENDMONTH_FOREST)   )  then    ! both EU and MM-EMEP
+             ! accumulate_2dyear = .false.
+             return
+    end if
 
    !If night, or outside growing season, we simply exit with aot=0
     if ( defn == "EU" .and.  (current_date%hour < 9 .or. &
@@ -91,6 +101,18 @@ contains
              ! accumulate_2dyear = .false.
              return
       end if
+
+      o3 = Sub(iLC)%cano3_ppb   ! canopy top O3 for MM
+
+    else if ( defn == "EU" ) then
+      if (   LandType(iLC)%is_crop .and. &
+            ( current_date%month<STARTMONTH_CROPS&
+              .or.current_date%month>ENDMONTH_CROPS) ) then
+           return
+      end if
+
+      o3 = Grid%surf_o3_ppb 
+
     end if
 
   ! Temporary setup - accumulation period for NS Clover for Mills et al paper
@@ -105,13 +127,6 @@ contains
 !      end if
 !    end if
 
-    if (   LandType(iLC)%is_forest .and. &
-         (   current_date%month<STARTMONTH_FOREST&
-         .or.current_date%month>ENDMONTH_FOREST)   )  then   
-             ! accumulate_2dyear = .false.
-             return
-    end if
-
 
     !========== Calculate ========================
 
@@ -121,9 +136,7 @@ contains
 
     end if
     if ( DEBUG_AOT .and. debug_flag .and. present( debug_txt )) then
-       write(*,"(a, 4i5,2f7.1,2f10.3)") "CalcAOTLC:"//trim(debug_txt),&
-          current_date%month,current_date%day, &
-          current_date%hour,current_date%seconds, X,  o3, aot
+       call datewrite("XXX"//trim(debug_txt) // "defn" // trim(defn), iLC, (/ real(Grid%izen), X,  o3, aot /) )
     end if
 
   end subroutine Calc_AOTx

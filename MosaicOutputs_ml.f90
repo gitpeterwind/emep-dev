@@ -39,7 +39,7 @@ module MosaicOutputs_ml
     EcoSystemFrac, FULL_GRID, Is_EcoSystem
  use LandDefs_ml,      only : LandDefs, LandType, &
          Check_LandCoverPresent ! e.g. "CF"
- use LocalVariables_ml,   only : Sub
+ use LocalVariables_ml,   only : Sub, Grid
  use MetFields_ml
  use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_MOSAICS,&
    NLANDUSEMAX, IOU_INST, &
@@ -293,6 +293,7 @@ module MosaicOutputs_ml
 
          veg = VEGO3_OUTPUTS(n)
          name = veg%name
+         !txt = veg%LC
 
          if( veg%class == "POD" ) then
             Threshold = veg%Threshold
@@ -304,11 +305,12 @@ module MosaicOutputs_ml
             units = "ppb.h"
             scale = 1.0/3600.0 ! AOT in ppb.hour
             dt_scale = .true.
+            !if( veg%defn == "EU") txt = veg%defn     ! Store MM or EU here
          end if
 
 
           !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "VEGO3_LCS", veg%LC, .true. )
+          iLC = Check_LandCoverPresent( "VEGO3_LCS", veg%TXTLC, .true. )
           if ( iLC < 0  ) cycle  VEGO3_LC
           if ( iLC > 0  ) LandType(iLC)%flux_wanted  = .true. 
           !-------------End of Check if LC present in this array ------!
@@ -321,10 +323,16 @@ module MosaicOutputs_ml
                        "too many nMosaics, VEGO3" )
           !Deriv(name, class,    subc,  txt,           unit
           !Deriv index, f2d,LC,Threshold, scale dt_scale avg? rho Inst Yr Mn Day atw
-          ! No need to set index/iadv for VEGO3. Always O3.
+          ! Use index for veg array. No need to set iadv for VEGO3. Always O3.
            MosaicOutput(nMosaic) = Deriv(  &
-              name, "Mosaic", veg%class, veg%LC, units, &
-                -99, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, -999.0)
+              name, veg%class,  veg%defn, veg%TXTLC, units, &
+                n, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, -999.0)
+              ! name, "Mosaic", veg%class, veg%defn, units, & ! Use defn, not LC
+              !TEST name, "Mosaic", veg%class, veg%LC, units, &
+              ! Txt has defn
+              ! class is AOT or defn here
+              !name, veg%class, veg%defn, veg%LC, units, &
+                !-99, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, -999.0)
 
       end do VEGO3_LC !n
  end subroutine Add_MosaicVEGO3
@@ -443,9 +451,17 @@ module MosaicOutputs_ml
         call CheckStop( MosaicOutput(imc)%LC < 1, & !0=GRID (careful,FULL_GRID=1)
         "MosaicOutput-LC Error " // trim(MosaicOutput(imc)%name))
 
-      case ( "VG", "Rs ", "Rns", "Gns", "AOT", "POD" ) ! could we use RG_LABELS? 
+      case ( "EUAOT" ) ! we use txt to specify MM or EU
+         if(DEBUG .and. MasterProc) then
+             write(6,"(a,i4,a,i3,f8.3)") "MosaicOuts EUAOTDEFN: ", imc, &
+              trim(MosaicOutput(imc)%txt), MosaicOutput(imc)%LC, Grid%surf_o3_ppb
+         end if
+
+      case ( "VG", "Rs ", "Rns", "Gns", "POD", "AOT" ) ! could we use RG_LABELS? 
 
         if( MosaicOutput(imc)%txt == "Grid") then
+           MosaicOutput(imc)%LC = FULL_GRID   ! zero
+        else if( MosaicOutput(imc)%txt == "EU") then
            MosaicOutput(imc)%LC = FULL_GRID   ! zero
         else 
            MosaicOutput(imc)%LC = &
@@ -491,8 +507,7 @@ module MosaicOutputs_ml
      integer :: imc, f2d, cdep
      real :: X, Y       ! Threshold for flux AFstY, AOTX
      real :: output     ! tmp variable
-     !character(len=len(MosaicOutput(1)%subclass)) :: subclass
-     character(len=12) :: subclass
+     character(len=TXTLEN_SHORT) :: subclass, class
      logical :: my_first_call = .true.
      logical :: first_call = .true.     ! reset each subroutine call
 
@@ -537,10 +552,13 @@ module MosaicOutputs_ml
     ! Ecosystem depositions, for grouped or individual species:
 
      do imc = 1, nMosaic
+        class = MosaicOutput(imc)%class
         subclass = MosaicOutput(imc)%subclass
         f2d      = MosaicOutput(imc)%f2d
         nadv     = MosaicOutput(imc)%Index  ! can be negatve for groups
         iLC      = MosaicOutput(imc)%LC
+       if( class == "AOT" ) subclass = class
+       if( class == "POD" ) subclass = class
 
         output = 0.0  ! We only have instantaneous outputs, so can initialise
                       ! here and set d-2d at end
@@ -641,14 +659,26 @@ module MosaicOutputs_ml
           !       current_date%hour, current_date%seconds,Y, output
           !end if ! DEBUG_ECO 
 
+        !!case ( "EUAOT" )    ! AOTX using 3m grid O3
+
+        !  X      = MosaicOutput(imc)%Threshold   ! threshold X,  ppb.h
+
+          !call Calc_AOTx( MosaicOutput(imc)%txt,iLC, Grid%surf_o3_ppb, X,output,&
+        !  defn = VEG
+        !  call Calc_AOTx( VEGO3_OUTPUTS( MosaicOutput(imc)%index)%defn,iLC, Grid%surf_o3_ppb, X,output,&
+        !         debug_flag, "EU-AOT " // trim(subclass) ) 
+!
         case ( "AOT" )    ! AOTX
 
           !OLD: veg_o3 = c_hvegppb(iLC)* lossfrac  ! lossfrac????
 
           X      = MosaicOutput(imc)%Threshold   ! threshold X,  ppb.h
 
-          call Calc_AOTx( subclass,iLC, Sub(iLC)%cano3_ppb, X,output,&
-                 debug_flag, "AOTLC " // trim(subclass) ) 
+         ! txt has EU or MM
+          call Calc_AOTx( MosaicOutput(imc)%subclass, iLC, X,output,&
+                 debug_flag, "AOTLC " // trim(MosaicOutput(imc)%name) ) 
+          !call Calc_AOTx( MosaicOutput(imc)%txt,iLC, Sub(iLC)%cano3_ppb, X,output,&
+          !TEST call Calc_AOTx( subclass,iLC, Sub(iLC)%cano3_ppb, X,output,&
 
 !          if ( DEBUG_AOT .and. debug_flag ) then
 !              write(6,"(a,4i3,i5,f8.3,i3,g12.4)") &

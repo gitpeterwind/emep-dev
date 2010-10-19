@@ -60,8 +60,8 @@ module ModelConstants_ml
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
 
-  character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
- !character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
+ !character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
+ character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
  !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
  !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.20degEurope"
 
@@ -77,8 +77,8 @@ module ModelConstants_ml
 
  !ds - I added these offsets, but now suspect I was thinking wrong.
  ! The difference between EMEP and EECCA is confusing...
- !integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
-  integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
+ integer, public, parameter :: OFFSET_i= -35, OFFSET_j= -11 ! EECCA
+ ! integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
   RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
@@ -98,7 +98,7 @@ module ModelConstants_ml
 
   integer, public, parameter ::  &
     NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  , NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -115,29 +115,33 @@ module ModelConstants_ml
   ! Set here:
 
  ! The coordinates given here only apply for the standard EMEP domain
- !integer, public, parameter :: DEBUG_i= 79, DEBUG_j= 56 ! Eskdalemuir
- !integer, public, parameter :: DEBUG_i= 73, DEBUG_j= 48 ! Mace Head
- !integer, public, parameter :: DEBUG_i= 91, DEBUG_j= 71 ! Rorvik
- !integer, public, parameter :: DEBUG_i= 82, DEBUG_j= 72 ! Voss, has some snow
- !integer, public, parameter :: DEBUG_i=110, DEBUG_j= 48 ! High Vg!
- !integer, public, parameter :: DEBUG_i= 96, DEBUG_j= 40 ! High VG_SO2_CF!
- !integer, public, parameter :: DEBUG_i=111, DEBUG_j= 54 ! High VG_PMCO_CF!
- !integer, public, parameter :: DEBUG_i=101, DEBUG_j= 51 ! Schauinsland
- !QUERY? integer, public, parameter :: DEBUG_i= 87, DEBUG_j= 20 ! Aveiro
+ !integer, private, parameter :: DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
+ !integer, private, parameter :: DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
+ !integer, private, parameter :: DEBUG_ii= 91, DEBUG_jj= 71 ! Rorvik
+ !integer, private, parameter :: DEBUG_ii= 82, DEBUG_jj= 72 ! Voss, has some snow
+ !integer, private, parameter :: DEBUG_ii=110, DEBUG_jj= 48 ! High Vg!
+ !integer, private, parameter :: DEBUG_ii= 96, DEBUG_jj= 40 ! High VG_SO2_CF!
+ !integer, private, parameter :: DEBUG_ii=111, DEBUG_jj= 54 ! High VG_PMCO_CF!
+ !integer, private, parameter :: DEBUG_ii=101, DEBUG_jj= 51 ! Schauinsland
+ !QUERY? integer, private, parameter :: DEBUG_ii= 87, DEBUG_jj= 20 ! Aveiro
  !QUERY? 
-!integer, public, parameter :: DEBUG_i= 88, DEBUG_j= 21 ! Aveiro+i2
- !integer, public, parameter :: DEBUG_i=103, DEBUG_j= 50 ! Mid-Europe
- ! integer, public, parameter :: DEBUG_i= 93, DEBUG_j= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
- !integer, public, parameter :: DEBUG_i= 97+OFFSET_i, DEBUG_j= 62+OFFSET_j ! Waldhof
- !integer, public, parameter :: DEBUG_i=116, DEBUG_j= 63 ! K-Puszta
- integer, public, parameter :: DEBUG_i=102, DEBUG_j= 48 !  Payerne
- !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 50 !   Harwell
- !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 15 !   biomass burnung, Aug 2003
- !integer, public, parameter :: DEBUG_i=85, DEBUG_j= 35 !  Sea, Bay of Biscay
- !integer, public, parameter :: DEBUG_i=76, DEBUG_j= 35 !  Sea,  North sea
- !integer, public, parameter :: DEBUG_i=91, DEBUG_j=67 ! hb NH3emis Tange 
-! integer, public, parameter :: DEBUG_i=103, DEBUG_j=32 ! Prades, SMDge 
+!integer, private, parameter :: DEBUG_ii= 88, DEBUG_jj= 21 ! Aveiro+i2
+ !integer, private, parameter :: DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
+ ! integer, private, parameter :: DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
+ !integer, private, parameter :: DEBUG_ii= 97, DEBUG_jj= 62  ! Waldhof
+ !integer, private, parameter :: DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
+ integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
+ !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 50 !   Harwell
+ !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 15 !   biomass burnung, Aug 2003
+ !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 35 !  Sea, Bay of Biscay
+ !integer, private, parameter :: DEBUG_ii=76, DEBUG_jj= 35 !  Sea,  North sea
+ !integer, private, parameter :: DEBUG_ii=91, DEBUG_jj=67 ! hb NH3emis Tange 
+! integer, private, parameter :: DEBUG_ii=103, DEBUG_jj=32 ! Prades, SMDge 
+
  !integer, public, parameter :: DEBUG_i= 9, DEBUG_j= 201 ! MACC02
+
+ integer, public, parameter :: &
+    DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j
 
 !=============================================================================
 ! Some flags for model setup
@@ -148,6 +152,7 @@ module ModelConstants_ml
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::      &
      DEBUG_AQUEOUS        = .false. & !
+    ,DEBUG_AOT            = .false. & !
     ,DEBUG_BCS            = .false. & !
     ,DEBUG_BIO            = .false. & !
     ,DEBUG_DERIVED        = .false. & !
@@ -162,7 +167,6 @@ module ModelConstants_ml
     ,DEBUG_DRYDEP         = .false. & !
       ,DEBUG_VDS            = .false. & !
       ,DEBUG_MY_DRYDEP      = .false. & !
-      ,DEBUG_AOT            = .false. & !
       ,DEBUG_CLOVER         = .false. & !
       ,DEBUG_STOFLUX        = .false. &
     ,DEBUG_EMISSIONS      = .false. &
