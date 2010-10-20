@@ -230,8 +230,9 @@ my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 
 # Check that the code directory has the chem files we want:
-die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
-  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
+# Now use mk.GenChem, CM_ files erased from ZCM_ directories
+#die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
+#  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
 #my $WORKDIR     = "$WORKROOT/$USER/test";         # working and result directory
 my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result directory
