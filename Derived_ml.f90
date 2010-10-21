@@ -567,8 +567,8 @@ call AddNewDeriv("SURF_ug_PM10", "PM10GROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   IXADV_O3, -99,-99,35.0, F, 1.0,   F,  F , F,   T, T, F , -999)
-call AddNewDeriv( "SOMO00","SOMO",  "SURF","-",   "ppb.day", &
-                  IXADV_O3, -99,-99, 0.0, F, 1.0,   F,  F , F,   T, T, F , -999)
+call AddNewDeriv( "SOMO0","SOMO",  "SURF","-",   "ppb.day", &
+                  IXADV_O3, -99,-99, 0.0, F, 1.0,   F,  F , F,   T, T, T , -999)
 
 call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
            IXADV_O3, -99,-99, 0.0, F, PPBINV,   F,  F , F,   T, T, T , -999)
@@ -1005,7 +1005,7 @@ end do
               endif
 
 
-          case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic" )
+          case ( "PREC", "WDEP", "DDEP", "VG" ,"Rs", "Rns", "Gns", "Mosaic", "POD", "AOT" )
 !            if ( debug_flag ) write(*,"(2a,i4,a,es12.3)")"PROCESS ",trim(typ),&
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
