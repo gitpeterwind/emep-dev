@@ -175,15 +175,15 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
-      ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
-      ,"SURF_ug_PM25 " & !dsMay2010
-      ,"SURF_ug_PMc  " & !dsMay2010
-      ,"SURF_ug_PM10 " & !dsMay2010
-      ,"SURF_ugN_OXN " & !dsMay2010
-      ,"SURF_ugN_RDN " & !dsMay2010
-      ,"SURF_ugN_TNO3" & !dsMay2010
-      ,"SOMO35      " & !"D2_SOMO0    " &
-      ,"PSURF       " &  ! Surface  pressure (for cross section):
+      ,"SURF_ug_SIA " &  ! using groups
+      ,"SURF_ug_PM25 " & !   "
+      ,"SURF_ug_PMc  " & !
+      ,"SURF_ug_PM10 " & !
+      ,"SURF_ugN_OXN " & !
+      ,"SURF_ugN_RDN " & !
+      ,"SURF_ugN_TNO3" & !
+      ,"SOMO35       " & ! Only SOMO35 for SR: Put SOMO0 as EXTRA below
+      ,"PSURF        " & ! Surface  pressure (for cross section):
   /)
 !
 !      ,ToDo "D2_PM25_H2O " &
@@ -201,7 +201,8 @@ private
       ,"WDEP_aNH4         " &
       ,"SURF_ugN_NOX      " &
       ,"SURF_ppbC_VOC     " &
-      ,"AOT40_Grid        " &   ! Old fashioned AOT
+      ,"SOMO0             " & !"D2_SOMO0    " &
+!dsOct2010      ,"AOT40_Grid        " &   ! Old fashioned AOT
 !      ,"D2_REDN           " &
 !      ,"D2_SNOW           " &
 !      ,"D2_SNratio        " &
@@ -243,7 +244,7 @@ private
    !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
     integer, public, parameter, dimension(NNDRYDEP) :: &
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) ! , &
-       !    SO2,  SO4, NH3, aNH4, HNO3 /) ! DDEP_OXNGROUP /)
+     !    SO2,  SO4, NH3, aNH4,  NO2, PAN, pNO3_f, pNO3_c, HNO3 /) ! DDEP_OXNGROUP /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" &! "Water_D" &
@@ -282,7 +283,7 @@ private
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
 
-    type(O3cl), public, parameter, dimension(15) :: &
+    type(O3cl), public, parameter, dimension(16) :: &
      VEGO3_OUTPUTS =  (/ &
    O3cl( "POD1_IAM_DF",   "POD", 1.0,  "- ", "IAM_DF" ), & ! WGSR POD1
    O3cl( "POD0_IAM_DF",   "POD", 0.0,  "- ", "IAM_DF" ), &
@@ -292,6 +293,7 @@ private
    O3cl( "POD1_CF    ",   "POD", 1.0,  "- ", "CF    " ), &
    O3cl( "POD6_IAM_CR",   "POD", 6.0,  "- ", "IAM_CR" ), & ! FO NOT USE THOUGH!
    O3cl( "POD3_IAM_CR",   "POD", 3.0,  "- ", "IAM_CR" ), &
+   O3cl( "POD1_IAM_CR",   "POD", 1.0,  "- ", "IAM_CR" ), &
    O3cl( "POD0_IAM_CR",   "POD", 0.0,  "- ", "IAM_CR" ), &
    O3cl( "MMAOT40_IAM_DF","AOT", 40.0, "MM", "IAM_DF" ), & ! WGSR beech
    O3cl( "MMAOT40_IAM_MF","AOT", 40.0, "MM", "IAM_MF" ), & ! WGSR birch
@@ -542,6 +544,7 @@ private
 
   real, dimension(:,:), intent(inout) :: e_2d  !  (i,j) 2-d extract of d_2d
   character(len=*), intent(in)    :: class       ! Class of data
+  integer, save :: num_warnings = 0  ! crude counter for now
 
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
 ! density = 1 ( or = roa when unit ug)
@@ -554,7 +557,10 @@ private
 
       case  default
 
+          if ( MasterProc .and. num_warnings < 100 ) then
             write(*,*) "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
+            num_warnings = num_warnings + 1
+          end if
      end select
 
 
