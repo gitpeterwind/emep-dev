@@ -7,6 +7,16 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta3 Dave  Oct 21st xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Small changes:
+
+  Derived_ml   POD, AOT added in case statement
+
+  My_Derived_ml SOMO0 added 
+
+  CoDep - small format change
+
 xxxxxxxxxxxxxx rv3_7beta2 Dave  Oct 18th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Re-coded AOT treatment, also to get EU AOT from 3m grid ozone
