@@ -55,8 +55,8 @@ module OrganicAerosol_ml
       ,NONVOLEC_GROUP &
       ,ASOA => ASOA_GROUP &
       ,BSOA => BSOA_GROUP &
-      ,POA  => POA_GROUP &
-      ,OPOA  => OPOA_GROUP &
+!rb only_for_semi-volatile_POA      ,POA  => POA_GROUP &
+!rb only_for_semi-volatile_POA      ,OPOA  => OPOA_GROUP &
       ,FFUELEC  => FFUELEC_GROUP &
       ,FFUELOC  => FFUELOC_GROUP &
       ,WOODOC  => WOODOC_GROUP
@@ -247,7 +247,7 @@ module OrganicAerosol_ml
    integer :: nmonth, nday, nhour, seconds
 
   ! Outputs:
-   real :: surfOC, surfASOA, surfBSOA, surfOPOA, surfPOA, surfFFUELOC, surfWOODOC, surfBGNDOC
+   real :: surfOC, surfASOA, surfBSOA, surfFFUELOC, surfWOODOC, surfBGNDOC !for semivolatile POA runs, surfOPOA, surfPOA
 
 
    nmonth = current_date%month
@@ -400,10 +400,10 @@ module OrganicAerosol_ml
      xn(GAS_ASOA,k)  = sum ( Fgas(ASOA,k) * xn(ASOA,k)  *species(ASOA)%carbons )
      xn(AER_BSOA,k)  = sum ( Fpart(BSOA,k) *xn(BSOA,k)  *species(BSOA)%carbons )
      xn(GAS_BSOA,k)  = sum ( Fgas( BSOA,k) *xn(BSOA,k)  *species(BSOA)%carbons )
-     xn(AER_POA,k)  = sum ( Fpart(POA,k) *xn(POA,k)  *species(POA)%carbons )
-     xn(GAS_POA,k)  = sum ( Fgas( POA,k) *xn(POA,k)  *species(POA)%carbons )
-     xn(AER_OPOA,k)  = sum ( Fpart(OPOA,k) *xn(OPOA,k)  *species(OPOA)%carbons )
-     xn(GAS_OPOA,k)  = sum ( Fgas( OPOA,k) *xn(OPOA,k)  *species(OPOA)%carbons )
+!rb     xn(AER_POA,k)  = sum ( Fpart(POA,k) *xn(POA,k)  *species(POA)%carbons )
+!rb     xn(GAS_POA,k)  = sum ( Fgas( POA,k) *xn(POA,k)  *species(POA)%carbons )
+!rb     xn(AER_OPOA,k)  = sum ( Fpart(OPOA,k) *xn(OPOA,k)  *species(OPOA)%carbons )
+!rb     xn(GAS_OPOA,k)  = sum ( Fgas( OPOA,k) *xn(OPOA,k)  *species(OPOA)%carbons )
      xn(AER_FFUELOC,k) = sum ( Fpart(FFUELOC,k)*xn(FFUELOC,k) *species(FFUELOC)%carbons)
      xn(AER_WOODOC,k)  = sum ( Fpart(WOODOC,k) *xn(WOODOC,k)  *species(WOODOC)%carbons )
 
@@ -430,14 +430,14 @@ module OrganicAerosol_ml
    xn(AER_BGNDOC,:)    = ugC2xn * BGND_OC(:)      ! FAKE FOR NOW, 0.5 ug/m3 at surface
 
  ! for convencience:
-   xn(AER_POC,:) =  xn(AER_POA,:)+xn(AER_FFUELOC,:)
-   xn(AER_OC,:)  =  xn(AER_ASOA,:)+xn(AER_BSOA,:)+xn(AER_OPOA,:)+xn(AER_POA,:)+xn(AER_FFUELOC,:) + &
-                    xn(AER_WOODOC,:) + xn(AER_BGNDOC,:)
+   xn(AER_POC,:) =  xn(AER_FFUELOC,:) ! + xn(AER_POA,:)
+   xn(AER_OC,:)  =  xn(AER_ASOA,:)+xn(AER_BSOA,:)+xn(AER_FFUELOC,:) + &
+                    xn(AER_WOODOC,:) + xn(AER_BGNDOC,:) ! +xn(AER_OPOA,:)+xn(AER_POA,:)
 
    surfASOA  = xn2ugC* xn(AER_ASOA,K2) ! sum ( Fpart(ASOA,K2) * xn(ASOA,K2)*species(ASOA)%carbons )
    surfBSOA  = xn2ugC* xn(AER_BSOA,K2) ! sum ( Fpart(BSOA,K2) * xn(BSOA,K2)*species(BSOA)%carbons )
-   surfOPOA  = xn2ugC* xn(AER_OPOA,K2) ! sum ( Fpart(BSOA,K2) * xn(BSOA,K2)*species(BSOA)%carbons )
-   surfPOA  = xn2ugC* xn(AER_POA,K2) ! 
+!rb   surfOPOA  = xn2ugC* xn(AER_OPOA,K2) ! sum ( Fpart(BSOA,K2) * xn(BSOA,K2)*species(BSOA)%carbons )
+!rb   surfPOA  = xn2ugC* xn(AER_POA,K2) ! 
    surfFFUELOC = xn2ugC* xn(AER_FFUELOC,K2) ! sum ( Fpart(FFUELOC,K2) * xn(FFUELOC,K2)*species(FFUELOC)%carbons )
    surfWOODOC  = xn2ugC* xn(AER_WOODOC,K2) ! sum ( Fpart(WOODOC,K2) * xn(WOODOC,K2)*species(WOODOC)%carbons )
 
@@ -445,7 +445,7 @@ module OrganicAerosol_ml
                   !FAKE       xn(BGND_OC,K2)*species(BGND_OC)%carbons )
 
    surfBGNDOC  = BGND_OC(K2)
-   surfOC    = surfASOA+surfBSOA+surfOPOA+surfPOA+surfFFUELOC+surfWOODOC+surfBGNDOC
+   surfOC    = surfASOA+surfBSOA+surfFFUELOC+surfWOODOC+surfBGNDOC ! +surfOPOA+surfPOA
 
 
    !/ Sum of Biogenics -----------------------
@@ -455,7 +455,7 @@ module OrganicAerosol_ml
        k=20
        write(unit=6,fmt="(a,3i3,2f7.2,f5.2,20es9.2)")"xns ug ", &
          nmonth, nday, nhour, &
-         COA(20), surfOC,surfBGNDOC, surfASOA, surfBSOA,surfOPOA,surfPOA,surfFFUELOC, surfWOODOC!, &
+         COA(20), surfOC,surfBGNDOC, surfASOA, surfBSOA,surfFFUELOC, surfWOODOC!, &
 !vbs      xn2ugC*xn(AER_IBSOA,k), xn2ugC*xn(AER_TBSOA,k), xn2ugC*xn(AER_SBSOA,k)
 
    endif
