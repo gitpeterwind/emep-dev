@@ -87,17 +87,17 @@ SO2,1,SO2,xx,SO2,SO2,0,0,0,xx,SOX,,"!Move to slow?"
 *,,,,,,,,,xx,,,
 "#SLOW,,,,,,,,,xx,,,
 "*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
-SO4,1,SO4,xx,PMf,SO4,8.5,0,0,xx,PM25;SIA;SOX;AOD,,!
+SO4,1,SO4,xx,PMfS,SO4,8.5,0,0,xx,PM25;SIA;SOX;AOD,,!
 pNO3_c,1,pNO3_c,xx,PMc,PMc,0,0,0,xx,PMCO;SIA;OXN;TNO3,,"!Course nitrate"
 NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
-aNH4,1,NH4,xx,PMf,PMf,8.5,0,0,xx,RDN;PM25;SIA;AOD,,"! in equilib module"
-pNO3_f,1,pNO3_f,xx,PMf,PMf,8.5,0,0,xx,PM25;SIA;OXN;TNO3;AOD,,"!in equilib module"
-PPM25,1,xx,12,PMf,PMf,0,0,0,xx,PM25,,"!Primary; fine <2.5um"
-PPM25_FIRE,1,xx,12,PMf,PMf,0,0,0,xx,PM25,,!fires...
+aNH4,1,NH4,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM25;SIA;AOD,,"! in equilib module"
+pNO3_f,1,pNO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM25;SIA;OXN;TNO3;AOD,,"!in equilib module"
+PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM25,,"!Primary; fine <2.5um"
+PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM25,,!fires...
 PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PMCO,,"!Primary; 2.5--10u"
-SeaSalt_f,1,xx,58,PMf,PMf,5.7,0,0,xx,PM25;SS;AOD,,!
+SeaSalt_f,1,xx,58,PMfS,PMf,5.7,0,0,xx,PM25;SS;AOD,,!
 SeaSalt_c,1,xx,58,PMc,PMc,0,0,0,xx,PMCO;SS,,!
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
-Pb210,1,xx,210,PMf,PMf,0,0,0,xx,xx,,!
+Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!
 *TESTSOA,2,xx,999,PMf,PMf,0,1.0,70.0,xx,PM25;SOA;FALSEGROUP,,!
 *"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
