@@ -16,6 +16,10 @@ for nitrate-like particles
 
 GenChem.pl - now outputs RO2POOL line in CM_Reactions1.inc if needed
 
+mk.GenChem - copies SAFE.CM_BoundaryConditions_ml.f90 to CM_BoundaryConditions_ml.f90
+
+(make sit easier to do rm CM_* in ZCM_EmChem09)
+
 Solver_ml - now uses RO2_GROUP
 
 Wesely_ml - added PMfS, PMfS distinction and AERO_SIZE
