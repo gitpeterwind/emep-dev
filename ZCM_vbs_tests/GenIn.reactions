@@ -315,13 +315,15 @@ voc:rcemis(MGLYOX,k)                      = MGLYOX    ;
 rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
 *
-* OPOA method:
-pocffl:rcemis(POC_f_FFUEL,k) = 0.03 FFUEL_ng10 +  0.06 FFUEL_ng100 +  0.09 FFUEL_ug1 +  0.14 FFUEL_ug10 +  0.18 FFUEL_ug1e2 +  0.30 FFUEL_ug1e3 +  0.40 FFUEL_ug1e4 +  0.50 FFUEL_ug1e5 +  0.80 FFUEL_ug1e6  ;
-poccfl:rcemis(POC_c_FFUEL,k)                  = POC_c_FFUEL ;
+* OPOA method (assuming semi-volatile POA-emissions 2.5 times the inventory POA-emissions, as in Shrivastava et al., 2008) [in this version the traditional nonvolatile POA emissions are used, to change to the semivolatile approach uncomment the following line]:
+*pocffl:rcemis(POC_f_FFUEL,k) = 0.03 FFUEL_ng10 +  0.06 FFUEL_ng100 +  0.09 FFUEL_ug1 +  0.14 FFUEL_ug10 +  0.18 FFUEL_ug1e2 +  0.30 FFUEL_ug1e3 +  0.40 FFUEL_ug1e4 +  0.50 FFUEL_ug1e5 +  0.80 FFUEL_ug1e6  ;
+* Here use nonvolatile POC emissions (traditional assumption) [to use the semi-volatile POA emissions remove the following line]
+pocffl:rcemis(POC_f_FFUEL,k)                 = POC_f_FFUEL ;
+poccfl:rcemis(POC_c_FFUEL,k)                 = POC_c_FFUEL ;
 ecffl:rcemis(EC_f_FFUEL,k)                   = EC_f_FFUEL ;
 eccfl:rcemis(EC_c_FFUEL,k)                   = EC_c_FFUEL ;
 *
-pocfwd:rcemis(POC_f_WOOD,k)                   = POC_f_WOOD ;
+pocfwd:rcemis(POC_f_WOOD,k)                  = POC_f_WOOD ;
 ecfwd:rcemis(EC_f_WOOD,k)                    = EC_f_WOOD ;
 eccwd:rcemis(EC_c_WOOD,k)                    = EC_c_WOOD ;
 *
@@ -461,7 +463,7 @@ KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 
 *DSGC *WET_SO2      PINALIC                          =    ;
 *DSGC *DRY_PAN      PINALDPAN                     =    ;
 *===========================================================================
-* Aging, follows Shrivastava for FFUEL (but neglect the mass increase suggested by Shrivastava et al.) and test aging SOA as in Lane
+* Aging of SOA as in Lane et al., 2008
 *
 4.0e-12*Fgas(ALK5_ug10,:)  ALK5_ug10 + [OH]     =  ALK5_UG1  ;
 4.0e-12*Fgas(OLE1_ug1,:)   [OH] + OLE1_ug1      = OLE1_ng100 ;
@@ -484,21 +486,22 @@ KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 
 4.0e-12*Fgas(TERP_ug1e2,:) [OH] + TERP_ug1e2    = TERP_ug10  ;
 4.0e-12*Fgas(TERP_ug1e3,:) [OH] + TERP_ug1e3    = TERP_ug1e2 ;
 *
-* skip 4.0e-11               [OH] + FFUEL_ng10  
-4.0e-11*Fgas(FFUEL_ng100,:)    [OH] + FFUEL_ng100   = OXFFUEL_ng10  ;
-4.0e-11*Fgas(FFUEL_ug1,:)      [OH] + FFUEL_ug1     = OXFFUEL_ng100 ;
-4.0e-11*Fgas(FFUEL_ug10,:)     [OH] + FFUEL_ug10    = OXFFUEL_ug1   ;
-4.0e-11*Fgas(FFUEL_ug1e2,:)    [OH] + FFUEL_ug1e2   = OXFFUEL_ug10  ;
-4.0e-11*Fgas(FFUEL_ug1e3,:)    [OH] + FFUEL_ug1e3   = OXFFUEL_ug1e2 ;
-4.0e-11*Fgas(FFUEL_ug1e4,:)    [OH] + FFUEL_ug1e4   = OXFFUEL_ug1e3 ;
-4.0e-11*Fgas(FFUEL_ug1e5,:)    [OH] + FFUEL_ug1e5   = OXFFUEL_ug1e4 ;
-4.0e-11*Fgas(FFUEL_ug1e6,:)    [OH] + FFUEL_ug1e6   = OXFFUEL_ug1e5 ;
+*aging of POA follows Shrivastava for FFUEL (but neglecting the mass increase suggested by Shrivastava et al.). In this version we neglect POA aging and semi-volatility. To add this uncomment the following (and remember to change GenIn.species as well).
+** skip 4.0e-11               [OH] + FFUEL_ng10  
+*4.0e-11*Fgas(FFUEL_ng100,:)    [OH] + FFUEL_ng100   = OXFFUEL_ng10  ;
+*4.0e-11*Fgas(FFUEL_ug1,:)      [OH] + FFUEL_ug1     = OXFFUEL_ng100 ;
+*4.0e-11*Fgas(FFUEL_ug10,:)     [OH] + FFUEL_ug10    = OXFFUEL_ug1   ;
+*4.0e-11*Fgas(FFUEL_ug1e2,:)    [OH] + FFUEL_ug1e2   = OXFFUEL_ug10  ;
+*4.0e-11*Fgas(FFUEL_ug1e3,:)    [OH] + FFUEL_ug1e3   = OXFFUEL_ug1e2 ;
+*4.0e-11*Fgas(FFUEL_ug1e4,:)    [OH] + FFUEL_ug1e4   = OXFFUEL_ug1e3 ;
+*4.0e-11*Fgas(FFUEL_ug1e5,:)    [OH] + FFUEL_ug1e5   = OXFFUEL_ug1e4 ;
+*4.0e-11*Fgas(FFUEL_ug1e6,:)    [OH] + FFUEL_ug1e6   = OXFFUEL_ug1e5 ;
 
-4.0e-11*Fgas(OXFFUEL_ng100,:)    [OH] + OXFFUEL_ng100   = OXFFUEL_ng10  ;
-4.0e-11*Fgas(OXFFUEL_ug1,:)      [OH] + OXFFUEL_ug1     = OXFFUEL_ng100 ;
-4.0e-11*Fgas(OXFFUEL_ug10,:)     [OH] + OXFFUEL_ug10    = OXFFUEL_ug1   ;
-4.0e-11*Fgas(OXFFUEL_ug1e2,:)    [OH] + OXFFUEL_ug1e2   = OXFFUEL_ug10  ;
-4.0e-11*Fgas(OXFFUEL_ug1e3,:)    [OH] + OXFFUEL_ug1e3   = OXFFUEL_ug1e2 ;
-4.0e-11*Fgas(OXFFUEL_ug1e4,:)    [OH] + OXFFUEL_ug1e4   = OXFFUEL_ug1e3 ;
-4.0e-11*Fgas(OXFFUEL_ug1e5,:)    [OH] + OXFFUEL_ug1e5   = OXFFUEL_ug1e4 ;
+*4.0e-11*Fgas(OXFFUEL_ng100,:)    [OH] + OXFFUEL_ng100   = OXFFUEL_ng10  ;
+*4.0e-11*Fgas(OXFFUEL_ug1,:)      [OH] + OXFFUEL_ug1     = OXFFUEL_ng100 ;
+*4.0e-11*Fgas(OXFFUEL_ug10,:)     [OH] + OXFFUEL_ug10    = OXFFUEL_ug1   ;
+*4.0e-11*Fgas(OXFFUEL_ug1e2,:)    [OH] + OXFFUEL_ug1e2   = OXFFUEL_ug10  ;
+*4.0e-11*Fgas(OXFFUEL_ug1e3,:)    [OH] + OXFFUEL_ug1e3   = OXFFUEL_ug1e2 ;
+*4.0e-11*Fgas(OXFFUEL_ug1e4,:)    [OH] + OXFFUEL_ug1e4   = OXFFUEL_ug1e3 ;
+*4.0e-11*Fgas(OXFFUEL_ug1e5,:)    [OH] + OXFFUEL_ug1e5   = OXFFUEL_ug1e4 ;
 *

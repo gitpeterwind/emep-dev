@@ -118,34 +118,36 @@ TERP_ug1,2,C10H16O3,xx,PMf,PMf,0,1.0,30.0,xx,PM25;PCM;BSOA,,"! OA/OC=1.53"
 TERP_ug10,2,C10H16O3,xx,PMf,PMf,0,10.0,30.0,xx,PM25;PCM;BSOA,,"! OA/OC=1.53"
 TERP_ug1e2,2,C10H16O3,xx,PMf,PMf,0,1.0e2,30.0,xx,PM25;PCM;BSOA,,"! OA/OC=1.53"
 TERP_ug1e3,2,C10H16O3,xx,PMf,PMf,0,1.0e3,30.0,xx,PM25;PCM;BSOA,,"! OA/OC=1.53"
-FFUEL_ng10,2,CH3,xx,PMf,PMf,0,0.01,112.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ng100,2,CH3,xx,PMf,PMf,0,0.1,106.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ug1,2,CH3,xx,PMf,PMf,0,1.0,100.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ug10,2,CH3,xx,PMf,PMf,0,10.0,94.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ug1e2,2,CH3,xx,PMf,PMf,0,1.0e2,88.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ug1e3,2,CH3,xx,PMf,PMf,0,1.0e3,82.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ug1e4,2,CH3,xx,PMf,PMf,0,1.0e4,76.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ug1e5,2,CH3,xx,PMf,PMf,0,1.0e5,70.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-FFUEL_ug1e6,2,CH3,xx,PMf,PMf,0,1.0e6,64.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ng10,2,CH3,xx,PMf,PMf,0,0.01,112.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ng100,2,CH3,xx,PMf,PMf,0,0.1,106.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ug1,2,CH3,xx,PMf,PMf,0,1.0,100.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ug10,2,CH3,xx,PMf,PMf,0,10.0,94.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ug1e2,2,CH3,xx,PMf,PMf,0,1.0e2,88.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ug1e3,2,CH3,xx,PMf,PMf,0,1.0e3,82.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ug1e4,2,CH3,xx,PMf,PMf,0,1.0e4,76.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
-OXFFUEL_ug1e5,2,CH3,xx,PMf,PMf,0,1.0e5,70.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"! In this version the FFUEL POA emissions are treated as non-volatile. To use semivolatile POA emissions with aging as in Shrivastava et al., 2008 uncomment the FFUEL_ and OXFFUEL_ lines below
+"*FFUEL_ng10,2,CH3,xx,PMf,PMf,0,0.01,112.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ng100,2,CH3,xx,PMf,PMf,0,0.1,106.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ug1,2,CH3,xx,PMf,PMf,0,1.0,100.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ug10,2,CH3,xx,PMf,PMf,0,10.0,94.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ug1e2,2,CH3,xx,PMf,PMf,0,1.0e2,88.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ug1e3,2,CH3,xx,PMf,PMf,0,1.0e3,82.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ug1e4,2,CH3,xx,PMf,PMf,0,1.0e4,76.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ug1e5,2,CH3,xx,PMf,PMf,0,1.0e5,70.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*FFUEL_ug1e6,2,CH3,xx,PMf,PMf,0,1.0e6,64.0,xx,PM25;PCM;POA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ng10,2,CH3,xx,PMf,PMf,0,0.01,112.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ng100,2,CH3,xx,PMf,PMf,0,0.1,106.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ug1,2,CH3,xx,PMf,PMf,0,1.0,100.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ug10,2,CH3,xx,PMf,PMf,0,10.0,94.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ug1e2,2,CH3,xx,PMf,PMf,0,1.0e2,88.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ug1e3,2,CH3,xx,PMf,PMf,0,1.0e3,82.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ug1e4,2,CH3,xx,PMf,PMf,0,1.0e4,76.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
+"*OXFFUEL_ug1e5,2,CH3,xx,PMf,PMf,0,1.0e5,70.0,xx,PM25;PCM;OPOA,,"! Volatile primary emissions, Shrivastava et al., JGR2008"
 "**************************************************"
 "*Helper species - sums of various SOA, EC etc..."
 "*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
 GAS_ASOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 GAS_BSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-GAS_POA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-GAS_OPOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+"! GAS_POA, GAS_OPOA, AER_POA and AER_OPOA only needed when aging of POA is included
+"*GAS_POA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+"*GAS_OPOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 AER_ASOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 AER_BSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-AER_POA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-AER_OPOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+"*AER_POA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+"*AER_OPOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 AER_TBSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 AER_IBSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 AER_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!

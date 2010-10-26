@@ -51,6 +51,7 @@
   use ChemSpecs_shl_ml    !,    only: IXSHL_OH,IXSHL_HO2,NSPEC_SHL
   use ChemChemicals_ml ,  only: species
   use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC,&
+                               TXTLEN_NAME, &
 !AMVB 2010-08-02: Output selected model levels
                                FORECAST, &
 !AMVB 2010-08-02: New hourly output types
@@ -222,7 +223,7 @@ integer, public, parameter :: &
       LEVELS_HOURLY = (/0,4,6,10/)
 
     type, public:: Asc2D
-         character(len=12):: name   ! Name (no spaces!)
+         character(len=TXTLEN_NAME):: name   ! Name (no spaces!)
          character(len=10):: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
          character(len=9) :: ofmt   ! Output format (e.g. es12.4)
          integer          :: spec   ! Species number in xn_adv or xn_shl array
@@ -232,7 +233,7 @@ integer, public, parameter :: &
          integer          :: iy1    ! bottom-left y
          integer          :: iy2    ! upper-right y
          integer          :: nk     ! number of vertical levels
-         character(len=12) :: unit   ! Unit used
+         character(len=TXTLEN_NAME) :: unit   ! Unit used
          real             :: unitconv   !  conv. factor
          real             :: max    ! Max allowed value for output
     end type Asc2D

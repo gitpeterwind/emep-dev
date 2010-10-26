@@ -58,7 +58,8 @@
                             ,MasterProc &  ! Master processor
                             ,NPROC      &  ! No. processors
                             ,PT         &  ! Pressure at top
-                            ,ATWAIR        ! Mol. weight of air(Jones,1992)
+                            ,ATWAIR     &  ! Mol. weight of air(Jones,1992)
+                            ,TXTLEN_NAME
  use Par_ml,          only : MAXLIMAX   & 
                             ,MAXLJMAX   &  
                             ,li0,li1    &
@@ -179,7 +180,7 @@ contains
                                                  ! info - printing info
   integer :: ispec, ifam                         ! Species and family index
   real, dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
-  character(len=12)  :: spec_name                ! Species name
+  character(len=TXTLEN_NAME)  :: spec_name       ! Species name
   integer, parameter :: NFAMILIES = 3            ! No. of families         
   character(len=8), dimension(NFAMILIES), save :: family_name = &
            (/ "Sulphur ", "Nitrogen", "Carbon  " /)

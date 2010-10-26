@@ -48,7 +48,8 @@
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line
   use KeyValue_ml,    only: KeyVal
-  use ModelConstants_ml, only: NPROC, DEBUG => DEBUG_GETEMIS, MasterProc
+  use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
+                               MasterProc
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
@@ -494,8 +495,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   !-- for read-ins, dimension for max possible number of columns: 
   !-- for CRI we have 100s of VOC, hence
   character(len=10000) :: txtinput
-  character(len=12), dimension(0:1, NMAX ) :: intext
-  character(len=12), dimension(NMAX) :: Headers
+  character(len=TXTLEN_NAME), dimension(0:1, NMAX ) :: intext
+  character(len=TXTLEN_NAME), dimension(NMAX) :: Headers
 ! Now we expect a  "key-value", e.g. 46 for NOx as NO2, or
 ! zero to just use species()%molwt.:
   type(KeyVal), dimension(1)  :: MassValue ! set for e.f. NOx as NO2, SOx as SO2

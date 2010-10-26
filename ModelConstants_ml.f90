@@ -265,7 +265,7 @@ module ModelConstants_ml
   integer, public, save   :: iyr_trend ! Year specified for say BC changes
 
   integer, public, save , dimension(20)   :: identi   !! ????
-
+  integer, public, parameter :: TXTLEN_NAME = 20
   character(len=120), public, save :: runlabel1&!SHORT Allows explanatory text
                                     , runlabel2 !LONG  Read in from grun.pl
 
