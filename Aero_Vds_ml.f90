@@ -135,7 +135,7 @@ contains
      ! which gives 0.3 cm/s for neutral conditions, Dp=0.5
      !
      ! Fig12b suggests  Vd ~ 0.3 cm/s for u* = 0.45, LAI=22
-     ! ->  Vds = 0.006 * u*
+     ! ->  Vds = 0.008 * u*
      ! Fig.15 suggests that vds is approx prop to LAI for dp~0.5um
      ! We use SAI to keep some winter dep in decid forests
      ! As Petroff started with a total LAI of 22, which is ca.
@@ -148,7 +148,7 @@ contains
      real, intent(in) :: ustar, invL,SAI, zi
      real :: Vds
 
-        Vds   = ustar * max( 0.002, 0.006 * 0.1 * SAI )
+        Vds   = ustar * max( 0.002, 0.008 * 0.1 * SAI )
 
        if ( invL <  0.0 ) then
          Vds = Vds * (1.0+(-0.3*zi*max(-0.04, invL))**0.6667)
@@ -159,7 +159,7 @@ contains
      real, intent(in) :: ustar, invL,SAI
      real :: Vds
 
-        Vds   = ustar * max( 0.002, 0.006 * 0.1 * SAI )
+        Vds   = ustar * max( 0.002, 0.008 * 0.1 * SAI )
 
        if ( invL <  0.0 ) then
          Vds = Vds * (1.0+(-300.0 * max(-0.04,invL))**0.6667)

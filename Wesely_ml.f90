@@ -111,7 +111,7 @@ integer, public, parameter :: &
   ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
   integer, public, parameter :: NDRYDEP_GASES = 11  ! gases
-  integer, public, parameter :: NDRYDEP_AER = 2    ! aerosols
+  integer, public, parameter :: NDRYDEP_AER = 3    ! aerosols
   integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
 
 
@@ -119,8 +119,13 @@ integer, public, parameter :: &
        CDDEP_HNO3 = 1, CDDEP_O3  = 2, CDDEP_SO2 = 3  &
       ,CDDEP_NH3  = 4, CDDEP_NO2 = 5, CDDEP_PAN  = 6 &
       ,CDDEP_H2O2 = 7, CDDEP_ALD = 8, CDDEP_HCHO = 9, &
-       CDDEP_ROOH = 10,  CDDEP_HNO2 = 11, CDDEP_PMf = 12, CDDEP_PMc = 13 
+       CDDEP_ROOH = 10,  CDDEP_HNO2 = 11   !, CDDEP_PMf = 12, CDDEP_PMc = 13
 !OP renamed to ROOH, FIN to PMf, COA to PMc
+!specials for aeosols. we have 2 fine and 1 coarse type
+  integer, public, parameter :: &
+       CDDEP_PMfS = 12, CDDEP_PMfN = 13, CDDEP_PMc = 14
+  integer, dimension(CDDEP_PMfS:CDDEP_PMc), public, parameter :: &
+       AERO_SIZE = (/ 1, 1, 2 /) !1=fine,2=coarse
 
   integer, public, parameter :: CDDEP_SET = -99    
 

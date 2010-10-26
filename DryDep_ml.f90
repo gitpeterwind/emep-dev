@@ -60,8 +60,8 @@ module DryDep_ml
                           DRYDEP_GASES, &   ! Wesely Index Vd values calculated 
                           CDDEP_SET,    &   ! for so4
                           CDDEP_NO2,CDDEP_O3,    &   ! for NO2 comp pt. approach
-                          CDDEP_SO2,CDDEP_NH3, & ! CoDep extra
-                          CDDEP_PMf
+                          CDDEP_SO2,CDDEP_NH3, &!, & ! CoDep extra
+                          AERO_SIZE,CDDEP_PMfN
 
 
 use LandDefs_ml, only : LandDefs, STUBBLE
@@ -270,7 +270,8 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
       integer, dimension(NLUMAX)  :: iL_used, iL_fluxes
       real :: wet, dry    ! Fractions
       real :: snow_iL !snow fraction for one landuse
-      real :: Vds     ! FEB2009 Vds
+      real :: Vds, Vsettle     ! FEB2009 Vds
+      real :: Vg_refN, Vg_3mN  ! Crude nitrate correction
 
       real :: c_hveg, Ra_hveg, Ra_diff, o3_ppb, surf_ppb  ! for O3 fluxes and Fst where needed
       real :: c_hveg3m  !TESTS ONLY
@@ -370,9 +371,10 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
     Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
 
    ! For NO2 we use a compensation pt. (kind-of) of ca. 4ppb
-    no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   
-    no2fac = max(1.0, no2fac)
-    no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
+   ! no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   
+   ! no2fac = max(1.0, no2fac)
+   ! no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
+no2fac = 1.0
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
          write(*,"(a,2i4,2es15.4)") "DRYDEP CONCS SO2,NH3 (ppb) ", i,j, &
@@ -389,6 +391,9 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
   ! very high otherwise,  e.g. see Fig. 4, Petroff..
 
      Vs(:) = min( Vs(:), 0.02) 
+    if ( DEBUG_DRYDEP .and. debug_flag ) then
+         write(*,*) "DRYDEP VS:", NSIZE,  Vs
+    end if
 
     !/ And start the sub-grid stuff over different landuse (iL)
 
@@ -450,7 +455,8 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
             if ( n > NDRYDEP_GASES )  then    ! particles
 
-                nae = n - NDRYDEP_GASES 
+                !nae = n - NDRYDEP_GASES 
+                nae = AERO_SIZE(n)
 
 
               if ( LandType(iL)%is_forest  ) then ! Vds NOV08
@@ -458,6 +464,9 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
                  !/ Use eqn *loosely* derived from Petroff results
 
                   Vds = GPF_Vds300(L%ustar,L%invL, L%SAI )
+                  if (n==CDDEP_PMfN .and. L%invL<0.0 ) then ! We allow nitrate to deposit x 2
+                       Vds = Vds * 2.0 ! for nitrate-like
+                  end if
 
               else !!!  Vds NOV08
 
@@ -465,6 +474,9 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
                  ! Vds = Nemitz2004( 0.4, L%ustar, L%invL )
                  Vds = Wesely300( L%ustar, L%invL )
+                  if (n==CDDEP_PMfN .and. L%invL<0.0 ) then ! We allow nitrate to deposit x 2
+                       Vds = Vds * 2.0 ! for nitrate-like
+                  end if
 
               end if
 
@@ -480,6 +492,7 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
                 Grid%ustar, Grid%Hd,  100.0*Vds, &
               100.0*Vs(nae), 100.0*Vg_ref(n),  100.0*Vg_3m (n) &
              , Grid%t2, Grid%rho_ref 
+               print "(a,2i4,3es10.3)", "VDS CHECK ",n, nae, Vds, Vg_ref(n)
             
             call CheckStop((Vg_3m(n)>0.50 .or. Vg_ref(n)>0.50 ), "AEROSTOP")
           end if
@@ -503,11 +516,11 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
          ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
          ! Note, xn_2d has no2 in #/cm-3
 
-           if ( n == CDDEP_NO2 ) then
-
-            Vg_ref(CDDEP_NO2) = Vg_ref(CDDEP_NO2) * no2fac
-            Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
-          end if ! CDDEP_NO2
+          ! if ( n == CDDEP_NO2 ) then
+!
+!            Vg_ref(CDDEP_NO2) = Vg_ref(CDDEP_NO2) * no2fac
+!            Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
+!          end if ! CDDEP_NO2
 
            !Mosaic_VgRef(n,iL) = Vg_ref(n)  ! Note iL, not iiL 
            !Mosaic_Vg3m(n,iL) = Vg_3m(n)  ! Note iL, not iiL 
@@ -705,8 +718,7 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
         if ( STO_FLUXES .and. ntot == FLUX_TOT ) then
-           ! fraction by which xn is reduced - used in
-           ! safety measure:
+           ! fraction by which xn is reduced - safety measure:
              
               if( xn_2d( ntot,KMAX_MID)  > 1.0e-30 ) then
                   lossfrac = ( 1.0 - DepLoss(nadv)/ &
@@ -748,7 +760,8 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
             if ( DEBUG_DRYDEP .and. debug_flag ) then
-            if ( n == CDDEP_SO2 .and. iL == 1 ) then ! SO2, CF
+            !if ( n == CDDEP_SO2 .and. iL == 1 ) then ! SO2, CF
+            if ( iL == 1 ) then ! SO2, CF
 
                if ( vg_set(n) )  then
                  write(6,"(a,3i3,3f12.3)") "FLUXSET  ", iiL, iL, nadv, &

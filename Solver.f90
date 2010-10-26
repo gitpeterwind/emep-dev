@@ -54,7 +54,7 @@
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use EmisDef_ml,        only: QSSFI, QSSCO
     use Emissions_ml,      only: KEMISTOP    
-    use ChemGroups_ml,     only: RO2_POOL
+    use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
     !dsjuse ChemSpecs_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
     use Chemfields_ml,  only : NSPEC_BGN       ! => IXBGN_  indices and xn_2d_bgn values

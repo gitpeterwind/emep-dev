@@ -47,7 +47,6 @@ rm GenOut_*                # Clean up current directory
 #mv Log.GenOut  $odir/Log.$run
 
 cp $odir/CM* $cdir
-cp $odir/SAFE.CM_BoundaryConditions.inc $cdir/CM_BoundaryConditions.inc  # Special
 cd $cdir
 
 

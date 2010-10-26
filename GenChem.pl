@@ -173,6 +173,10 @@ if ( $nrcmisc > 0 ) {
     print_rates($rcmisc, $nrcmisc,\@rcmisc,\@rcmisctext) ;
 }
  printmap_dep();
+        print "QQQQQQQQQQQQQQQQQQQQQQQQQQ ; \n";
+	foreach my $gg ( keys %grp ) {
+	  print "  TESTQQ $gg group is: @{ $grp{$gg} }\n";
+	}
  print_groups();   # DDEP_OXNGROUP etc.
  print_emis();     #  "nox ", etc.
 
@@ -220,6 +224,7 @@ sub read_species {
                 my $in_rmm = "-";   # init to "-" for old_style
 		if ( $old_style ) {
 		   ( $spec, $typ, $formula, $comment )  = split(/\s+/,$line,4);
+		   die " OLD NOT USED NOW \n";
 		} elsif ( $grp_style ) {
 			#( $spec, $typ, $formula, $in_rmm,  
 			#$extinc, $cstar, $DeltaH, 
@@ -242,11 +247,17 @@ sub read_species {
 
 	       		# Assign species to groups if given: 
 	               	unless ( $groups =~ "-" ) {
+				print "PG SPEC $spec G $groups\n";
 			       process_groups($spec, $groups);
+			       #print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
+			       #foreach my $gg ( keys %grp ) {
+			       #print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
+			       #}
 			}
 			process_alldep ( $dry, $wet, $spec ) unless $dry eq "-" ;
 
 	    	} else { # Garry's new style:
+		   die " GH NOT USED NOW \n";
                    ( $spec, $typ, $formula, $in_rmm, $in_ncarbon, 
 		       $class, $comment )  = split(/\s+/,$line,7);
 		   push(@ro2pool,$spec) if $class eq "peroxy";
@@ -263,19 +274,6 @@ sub read_species {
 	        $DeltaH[$n]  = $DeltaH;
 		printall("SPECIES READ => $n $spec N $n DH $DeltaH; ");
 
-#DSSOA		# Find SOA specs, and store for print_soa
-#DSSOA		if ( $typ eq "ASOA" ) { 
-#DSSOA		  push(@asoa,$spec), push (@soa_extras, $comment), $typ = 2; }
-#DSSOA		if ( $typ eq "BSOA" ) { 
-#DSSOA		  push(@bsoa,$spec), push (@soa_extras, $comment), $typ = 2; }
-#DSSOA		if ( $typ eq "OPOA" ) { 
-#DSSOA		  push(@opoa,$spec), push (@soa_extras, $comment), $typ = 2; }
-#DSSOA	  #if ( $typ eq "BSOA" ) { push (@bsoa_extras, $comment)};
-#DSSOA	  #	if ( $typ eq "BSOA" ) { push(@bsoa,$spec), $typ = 2; }
-#DSSOA		if ( $typ eq "WOODOC") { push(@woodoc,$spec), $typ = 1; } #TEST1
-#DSSOA		if ( $typ eq "FFUELOC"){ push(@ffueloc,$spec), $typ = 1; }
-#DSSOA		if ( $typ eq "WOODEC") { push(@woodec,$spec), $typ = 1; } #TEST1
-#DSSOA		if ( $typ eq "FFUELEC"){ push(@ffuelec,$spec), $typ = 1; }
 
 		if ( $typ == 2 ) {
 		    $naerosol++ ;
@@ -328,6 +326,10 @@ sub read_species {
 	#@all_extras = ( @asoa_extras, @bsoa_extras , @opoa_extras );
 #DSSOA	print_OA();
 
+        print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
+	foreach my $gg ( keys %grp ) {
+	  print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
+	}
 } # end of sub read_species
 
 ########################################################################
@@ -864,7 +866,8 @@ sub output_prod_loss {
 		    print "RO2 POOL FOUND \n";
                     $prod{$species[$tot][$i]} = "      ! $PROD = 0.0\n"; 
                     $loss{$species[$tot][$i]} = "      ! $LOSS = 0.0\n"; 
-		    $eqntext = "      xnew(RO2POOL) = sum( xnew(RO2_POOL) )!!!!\n\n"   ;  # Text to call 2-step
+		    #$eqntext = "      xnew(RO2POOL) = sum( xnew(RO2_POOL) )!!!!\n\n"   ;  # Text to call 2-step
+		    $eqntext = "      xnew(RO2POOL) = sum( xnew(RO2_GROUP) )!!!!\n\n"   ;  # Text to call 2-step
 			print "RO2 POOL EQN $eqntext \n";
 		}
 
@@ -1342,10 +1345,17 @@ sub print_rates {
 	 my $outline = join(",",@oxngroup);
 	 print GROUPS "\n! ------- Gas/particle species ------------------\n";
 
+        print "RRRRRRRRRRRRRRRRRRRRRRRRRR ; \n";
+	foreach my $gg ( keys %grp ) {
+          my $N = @{ $grp{$gg} }; 
+	  print "  TESTRR $gg  N$N group is: @{ $grp{$gg} }\n";
+	}
+
      # 2010 groups  assigned from GenIn.species
         foreach my $g ( keys %grp ) {
            my $N = @{ $grp{$g} }; 
 	   $outline = join(",", @{ $grp{$g} });
+	 print "  TESTSS $g  N$N group is: @{ $grp{$g} }\n";
          print GROUPS "\n  integer, public, parameter, dimension($N) :: &
              ${g}_GROUP     = (/ $outline /)\n";
 	}
@@ -1471,14 +1481,16 @@ sub process_emis {
 #########################################################################
 sub process_groups {
 	my ( $spec, $groups )  =  @_ ;
+	$groups = uc($groups);
    	my @groups = split(/;/,$groups);
+	  print "TESTGROUP $groups\n";
 	foreach my $g ( @groups ) {
 	  print "TESTG $g\n";
 	  #$g = process_group_params($spec,$g) if $g =~ /:/;
 	  #push(@grp[$g],$spec);
 	  push @{ $grp{$g}},uc($spec);
 	  foreach my $gg ( keys %grp ) {
-	      print "TESTGG $gg  @{ $grp{$gg} }\n";
+	      print "  TESTGG $gg group is: @{ $grp{$gg} }\n" if $g eq "SOX";
 	  }
    	}
 } # end of process_groups
