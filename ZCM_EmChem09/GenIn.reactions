@@ -290,8 +290,12 @@ rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
 *
 rc_Rn222(k)                             = Rn222    ;
-pm25:rcemis(PPM25,k)                         = PPM25 ;
+pm25:rcemis(PPM25,k)                     = PPM25 ;
 pmco:rcemis(PPMCO,k)                     = PPMCO ;
+* <----------- Fire tracers ----------------------------------->
+*
+pm25:rcemis(PPM25_FIRE,k)                = PPM25_FIRE ;
+co:rcemis(CO_FIRE,k)                     = CO_FIRE    ;
 *
 * <----------- Biogenic emissions ----------------------------->
 rcbio(BIO_ISOP,k)                        = C5H8    ;

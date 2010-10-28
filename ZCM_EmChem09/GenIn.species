@@ -94,6 +94,7 @@ aNH4,1,NH4,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM25;SIA;AOD,,"! in equilib module"
 pNO3_f,1,pNO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM25;SIA;OXN;TNO3;AOD,,"!in equilib module"
 PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM25,,"!Primary; fine <2.5um"
 PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM25,,!fires...
+CO_FIRE,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
 PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PMCO,,"!Primary; 2.5--10u"
 SeaSalt_f,1,xx,58,PMfS,PMf,5.7,0,0,xx,PM25;SS;AOD,,!
 SeaSalt_c,1,xx,58,PMc,PMc,0,0,0,xx,PMCO;SS,,!
