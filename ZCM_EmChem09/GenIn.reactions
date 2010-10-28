@@ -71,6 +71,7 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 * ;
 1.85e-20*EXP(2.82*LOG(TEMP))*EXP(-987.0*TINV)  OH + CH4 = CH3O2  ; acp2006, V6, p3625-4055, Atkinson et al.
 1.44e-13+M*3.43e-33                 OH     + CO    = HO2               ; IUPAC 2005
+1.44e-13+M*3.43e-33                 [OH]     CO_FIRE    =             ;  tracer
 2.3e-12*EXP(360.0*TINV)             CH3O2  + NO    = HCHO + HO2 + NO2  ; acp2006
 7.4e-13*EXP(-520.0*TINV)            CH3O2  + CH3O2 = 2. HCHO + 2. HO2  ; acp2006
 1.03e-13*EXP(365.0*TINV)-7.4e-13*EXP(-520.0*TINV)  CH3O2 + CH3O2 = CH3OH + HCHO  ; acp2006
