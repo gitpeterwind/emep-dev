@@ -7,7 +7,7 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
-xxxxxxxxxxxxxx rv3_7beta7 Svetlana Oct 29 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxx rv3_7beta7 Svetlana (+minor updates by Robert) Oct 29 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Main changes:
 1. Introduction of fine EC and POC from primary emissions
@@ -68,6 +68,12 @@ GenIn.species
 GenIn.reactions
 GenIn.shorthand
 SAFE.CM_BoundaryConditions.inc
+
+  In ZCM_vbs_tests/
+GenIn.species
+GenIn.reactions
+SAFE.CM_BoundaryConditions.inc
+
 
 ------------------------
 Makefile.SRCS
