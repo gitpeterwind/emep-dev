@@ -7,6 +7,72 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta7 Svetlana Oct 29 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Main changes:
+1. Introduction of fine EC and POC from primary emissions
+   EC is split to EC_f_new (fresh) and EC_f_age (aged)
+   ChemFunctions_ml.f90:  function ec_ageing_rate() result(rate)
+
+2. Changed names aNO3_f to NO3_f;  pNO3_c to NO3_c;  aNH4 to NH4_f
+
+3. Implemented natural dust: DUST_NAT_f and DUST_NAT_c
+   windblown - DustProd_ml.f90
+   Saharan BIC
+
+4. AOD calculation: AOD_PM_ml.f90
+----------------------------------------
+
+          Affected modules:
+    --------------------------
+My_Aerosols_ml.f90
+My_Derived_ml.f90
+My_DryDep_ml.f90
+My_Outputs_ml.f90
+My_WetDep_ml.f90
+
+Ammonium_ml.f90
+BoundaryConditions_ml.f90
+ChemFunctions_ml.f90
+Chem_ml.f90
+Derived_ml.f90
+EmisDef_ml.f90
+Functions_ml.f90
+GlobalBCs_ml.f90
+Io_Nums_ml.f90
+MetFields_ml.f90
+Met_ml.f90
+ModelConstants_ml.f90
+Runchem_ml.f90
+Setup_1d_ml.f90
+Setup_1dfields_ml.f90
+____________
+   New:
+-----------
+DustProd_ml.f90
+AOD_PM_ml.f90
+
+_______________
+   From GenChem
+---------------
+CM_ChemSpecs_ml.f90
+CM_ChemRates_ml.f90
+CM_WetDep.inc
+CM_Reactions1.inc
+CM_Emis.inc
+CM_DryDep.inc
+CM_BoundaryConditions.inc
+
+  In ZCM_EmChem09/
+GenIn.species
+GenIn.reactions
+GenIn.shorthand
+SAFE.CM_BoundaryConditions.inc
+
+------------------------
+Makefile.SRCS
+
+
 xxxxxxxxxxxxxx rv3_7beta6 Dave Oct 29 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Biogenics_ml:
