@@ -57,7 +57,7 @@ use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use ChemSpecs_adv_ml        ! Use IXADV_ indices...
 use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
 use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                   !        ,NO2, pNO3_f, pNO3_c, HNO3, NH3, aNH4, PPM25, PPMCO &
+                   !        ,NO2, NO3_f, NO3_c, HNO3, NH3, NH4_f, PPM25, PPMCO &
                    !       ,O3, PAN, MPAN, SeaSalt_f, SeaSalt_c  !SS=SeaSalt
 use ChemGroups_ml  !ds Allow all groups to ease compilation
                     !,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
@@ -129,29 +129,32 @@ private
 
 !Mass-outputs of advected species, will be added to Derived
 !Modify for SR
-   integer, public, parameter, dimension(1) :: SRSURF_UG_S = (/ SO4 /)
-   integer, public, parameter, dimension(2) ::   SURF_UG_S = (/ SO2, SO4 /)
+!   integer, public, parameter, dimension(1) :: SRSURF_UG_S = (/ SO4 /)
+   integer, public, parameter, dimension(1) ::   SURF_UG_S = (/ SO2/) !, SO4 /)
 
-   integer, public, parameter, dimension(4) :: SRSURF_UG_N = (/ pNO3_f, pNO3_c, aNH4, NO2 /)
+   integer, public, parameter, dimension(1) :: SRSURF_UG_N = (/ NO2 /) !,NO3_f, NO3_c, NH4_, 
    integer, public, parameter, dimension(3) ::  XSURF_UG_N = (/ NH3, HNO3, NO /)
-   integer, public, parameter, dimension(7) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
+   integer, public, parameter, dimension(4) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
+
 
 !rb: remove PPM25_FIRE, replaced by FFIRE_OC and FFIRE_BC
 !dsrb - just testing with 2 for compilation
-   integer, public, parameter, dimension(2) :: SRSURF_UG = (/ PPM25, PPMCO /)
-   integer, public, parameter, dimension(2) ::  XSURF_UG = (/ SeaSalt_f,SeaSalt_c /)
+   integer, public, parameter, dimension(4)  :: SRSURF_UG = (/ SO4, NO3_f, NO3_c, NH4_f/)
+   integer, public, parameter, dimension(4) ::  XSURF_UG = (/ SeaSalt_f,SeaSalt_c,        &
+                                                              DUST_NAT_F, DUST_NAT_C /)
 
   !----------------------------------------------------------------------------
   ! Options depending on PCM/TNO or OZONE
   !dsPCM Outputs for particulate carbonaceous matter use groups defined from GenIn.species
   ! Uncomment for SOA outputs!
    integer, public, parameter, &
-       dimension(2+2) ::  &
+       dimension(4+4) ::  &
            SURF_UG = (/ SRSURF_UG, XSURF_UG /)
   !PCM:     dimension(2+2+SIZE(PCM_GROUP)+SIZE(PCM_HELP_GROUP)) ::  &
   !PCM:         SURF_UG = (/ SRSURF_UG, XSURF_UG, PCM_GROUP, PCM_HELP_GROUP /)
   !PCM: integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, FFIRE_OC /)
-   integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, PPM25_FIRE /)
+   integer, public, parameter, dimension(5) ::  SURF_UG_C = (/ HCHO, PPM25_FIRE,     &
+                                                             EC_F_NEW, EC_F_AGE, POC_F/)
   !----------------------------------------------------------------------------
 
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
@@ -172,19 +175,27 @@ private
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
-      ,"SURF_ug_SIA " &  ! using groups
-      ,"SURF_ug_PM25 " & !   "
-      ,"SURF_ug_PMc  " & !
-      ,"SURF_ug_PM10 " & !
-      ,"SURF_ugN_OXN " & !
-      ,"SURF_ugN_RDN " & !
-      ,"SURF_ugN_TNO3" & !
-      ,"SOMO35       " & ! Only SOMO35 for SR: Put SOMO0 as EXTRA below
-      ,"PSURF        " & ! Surface  pressure (for cross section):
+      ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
+      ,"SURF_ug_PM25 " & !dsMay2010
+!      ,"SURF_ug_PM10 " & !dsMay2010
+      ,"SURF_ugN_OXN " & !dsMay2010
+      ,"SURF_ugN_RDN " & !dsMay2010
+!      ,"SURF_ugN_TNO3" & !dsMay2010
+      ,"SOMO35      " & !"D2_SOMO0    " &
+      ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+  D2_PM = (/ &
+       "SURF_ugC_ECf", "SURF_SS", "SURF_DU", &         ! , "SURF_ugC_EC"
+       "SURF_ug_TNO3","SURF_ug_PM25anthr", "SURF_PM25water" &  !,"SURF_ugN_TOXN", "SURF_ugN_RDN"
+  /)
+
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+  COL_ADD = (/ "AOD" /)
+
 !
 !      ,ToDo "D2_PM25_H2O " &
 
@@ -195,10 +206,10 @@ private
        "WDEP_SO2          " &
       ,"WDEP_SO4          " &
       ,"WDEP_HNO3         " &
-      ,"WDEP_pNO3_f       " &
-      ,"WDEP_pNO3_c       " &
+      ,"WDEP_NO3_f        " &
+      ,"WDEP_NO3_c        " &
       ,"WDEP_NH3          " &
-      ,"WDEP_aNH4         " &
+      ,"WDEP_NH4_f        " &
       ,"SURF_ugN_NOX      " &
       ,"SURF_ppbC_VOC     " &
       ,"SOMO0             " & !"D2_SOMO0    " &
@@ -244,15 +255,15 @@ private
    !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
     integer, public, parameter, dimension(NNDRYDEP) :: &
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) ! , &
-     !    SO2,  SO4, NH3, aNH4,  NO2, PAN, pNO3_f, pNO3_c, HNO3 /) ! DDEP_OXNGROUP /)
+       !    SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
       DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" &! "Water_D" &
                     , "Decid  ", "Crops  " /)
 
     integer, public, parameter, dimension(2) :: &
-      WDEP_SPECS = (/ SO2,  SO4 /)! , aNH4, NH3, pNO3_f, HNO3, pNO3_c /)
-      !WDEP_SPECS = (/ SO2,  SO4, aNH4, NH3, pNO3_f, HNO3, pNO3_c /)
+      WDEP_SPECS = (/ SO2,  SO4 /)! , NH4_f, NH3, NO3_f, HNO3, NO3_c /)
+      !WDEP_SPECS = (/ SO2,  SO4, NH4_f, NH3, NO3_f, HNO3, NO3_c /)
 
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
@@ -358,12 +369,14 @@ private
     ! For some reason having this as a parameter caused problems for
     ! PC-gfortran runs.
 
-    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, pNO3_f, pNO3_c /)
+    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, NO3_f, NO3_c /)
     integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
 
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
      character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-       D3_OTHER != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
+!     character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
+       D3_OTHER ! = (/ "D3_PM25water"/) !**** Under construction *******
+     != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
@@ -400,6 +413,10 @@ private
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
+     call AddArray( D2_PM,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "D2_PM too long" )
+     call AddArray( COL_ADD,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "COL_ADD too long" )
 
   ! Emission sums - we always add these (good policy!)
    do  i = 1, size(EMIS_NAME)
@@ -563,8 +580,6 @@ private
           end if
      end select
 
-
-
   end subroutine My_DerivFunc
  !=========================================================================
 
@@ -584,8 +599,8 @@ private
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
               ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
-              + xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j) &
-              + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j)) &
+              + xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j) &
+              + xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j)) &
               * density(i,j)
       end forall
 
@@ -626,7 +641,7 @@ private
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
                ( xn_adv(IXADV_NH3,i,j,KMAX_MID) * cfac(IXADV_NH3,i,j)    &
-              +  xn_adv(IXADV_aNH4,i,j,KMAX_MID) * cfac(IXADV_aNH4,i,j))  &
+              +  xn_adv(IXADV_NH4_f,i,j,KMAX_MID) * cfac(IXADV_NH4_f,i,j))  &
                * density(i,j)
       end forall
 
@@ -634,18 +649,18 @@ private
     case ( "FRNIT" )
       forall ( i=1:limax, j=1:ljmax )
           e_2d( i,j ) = &
-             ( xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j)  &
-            +  xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j)) &
+             ( xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)  &
+            +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j)) &
        /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))&
-            +  xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j)    &
-            +  xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j))
+            +  xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)    &
+            +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j))
       end forall
 
     case ( "tNO3" )
       forall ( i=1:limax, j=1:ljmax )
           e_2d(  i,j ) = &
-              ( xn_adv(IXADV_pNO3_f,i,j,KMAX_MID) * cfac(IXADV_pNO3_f,i,j) &
-              + xn_adv(IXADV_pNO3_c,i,j,KMAX_MID) * cfac(IXADV_pNO3_c,i,j) )&
+              ( xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j) &
+              + xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j) )&
               * density(i,j)
       end forall
 

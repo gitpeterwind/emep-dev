@@ -28,6 +28,9 @@ KRO2NO       2.54e-12*exp(360.0*TINV)
 KAEROSOL     rcrhaero
 KRIEMER      rcRiemer(k,xnew(SO4),xnew(aNO3),xnew(aNH4))
 
+ECageing     7.1e-6 
+*ECageing     ec_ageing_rate()
+
 beta         0.05
 
 DRY_RCHO     DRY_ALD  # Assign to Weseley's non CH3CHO ald

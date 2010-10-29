@@ -42,13 +42,14 @@
  !TEST use AOTx_ml, only: Calc_GridAOTx
  use ModelConstants_ml, only : DEBUG_AOT
  use Par_ml, only : limax, ljmax
-   use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,           &
+   use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS, AOD,      &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
-                                 Aero_water, SEASALT
+                                 Aero_water, SEASALT, DUST
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
    use Ammonium_ml,       only: Ammonium
+   use AOD_PM_ml,         only: AOD_calc
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
    use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, setup_bio! , rcbio !for debug DSBIO
    use CellMet_ml,        only: Get_CellMet
@@ -57,6 +58,7 @@
    use Chemsolver_ml,     only: chemistry
    use DefPhotolysis_ml,  only: setup_phot
    use DryDep_ml, only : drydep
+   use DustProd_ml,       only: WindDust
    use ChemSpecs_tot_ml                   ! DEBUG ONLY
    use ChemSpecs_adv_ml                   ! DEBUG ONLY
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
@@ -97,7 +99,8 @@ subroutine runchem(numt)
    integer :: i, j
    integer :: errcode
    integer :: nmonth, nday, nhour     
-   logical ::  Jan_1st, End_of_Run 
+   logical ::  Jan_1st, End_of_Run
+   logical :: ambient
    logical ::  debug_flag    ! =>   Set true for selected i,j
    !TEST real, dimension(limax,ljmax) :: aotpre, aotpost
 
@@ -159,8 +162,13 @@ subroutine runchem(numt)
 
 ! Called every adv step, only updated every third hour
              call setup_nh3(i,j)    ! hb NH3emis 
+
              if ( SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
+! dust
+             if ( DUST )     &
+             call WindDust (i,j,debug_flag)
+
 
 if ( DEBUG .and. debug_flag  ) then
     write(6,"(a,2i3,i5,9es9.2)") "DEBUG_RUNCHEM RC ", &
@@ -253,11 +261,20 @@ end if
                      if ( prclouds_present)  &
                         call WetDeposition(i,j,debug_flag)
 
+!// Calculate Aerosol Optical Depth
+                      if ( AOD )  &
+                        call AOD_calc (i,j,debug_flag)
+
                    !** Modelling PM water at filter equlibration conditions:
                    !** T=20C and Rh=50% for comparability with gravimetric PM
  
-                     if ( nhour == END_OF_EMEPDAY .or.  End_of_Run )    &
-                        call Aero_water(i,j)                      
+                     if ( nhour == END_OF_EMEPDAY .or.  End_of_Run ) then
+                        ambient = .false.
+                        call Aero_water(i,j, ambient)  !
+                     else
+                        ambient = .true.
+                        call Aero_water(i,j, ambient)
+                     endif                    
 
                      call reset_3d(i,j)
 

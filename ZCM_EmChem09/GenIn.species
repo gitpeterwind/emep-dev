@@ -88,17 +88,24 @@ SO2,1,SO2,xx,SO2,SO2,0,0,0,xx,SOX,,"!Move to slow?"
 *,,,,,,,,,xx,,,
 "#SLOW,,,,,,,,,xx,,,
 "*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
-SO4,1,SO4,xx,PMfS,SO4,8.5,0,0,xx,PM25;SIA;SOX;AOD,,!
-pNO3_c,1,pNO3_c,xx,PMc,PMc,0,0,0,xx,PMCO;SIA;OXN;TNO3,,"!Course nitrate"
+SO4,1,SO4,xx,PMfS,SO4,8.5,0,0,xx,PM10;PM25;PM10anthr;PM25anthr;SIA;SOX;AOD,,!
 NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
-aNH4,1,NH4,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM25;SIA;AOD,,"! in equilib module"
-pNO3_f,1,pNO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM25;SIA;OXN;TNO3;AOD,,"!in equilib module"
-PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM25,,"!Primary; fine <2.5um"
-PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM25,,!fires...
+NO3_f,1,NO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM10;PM25;PM25anthr;PM10anthr;SIA;OXN;TNO3;AOD,,"!in equilib module"
+NO3_c,1,NO3_c,xx,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;SIA;OXN;TNO3,,"!Course nitrate"
+NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PM25;PM10anthr;PM25anthr;SIA;AOD,,"! in equilib module"
+EC_f_new,1,xx,12,PMfS,ECfn,7.5,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
+EC_f_age,1,xx,12,PMfS,PMf,11.,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
+POC_f,1,xx,12,PMfS,PMf,5.7,0,0,xx,PM10;PM25anthr;PM25;PM25anthr;AOD,,"
+*EC_c_new,1,C,12,PMc,PMfn,0,0,0,xx,PM10;PM10anthr;PMCO;AOD,,"
+*EC_c_age,1,C,12,PMc,PMc,0,0,0,xx,PM10;PM10anthr;PMCO;AOD,,"
+*PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25;PM25anthr,,"!Primary; fine <2.5um"
+PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25,,!fires...
 CO_FIRE,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
-PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PMCO,,"!Primary; 2.5--10u"
-SeaSalt_f,1,xx,58,PMfS,PMf,5.7,0,0,xx,PM25;SS;AOD,,!
-SeaSalt_c,1,xx,58,PMc,PMc,0,0,0,xx,PMCO;SS,,!
+*PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;,,"!Primary; 2.5--10u"
+SeaSalt_f,1,xx,58,PMfS,SSf,3.0,0,0,xx,PM25;PM10;SS;AOD,,!
+SeaSalt_c,1,xx,58,PMc,SSc,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
+Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PM10;PM25;DUST;AOD,,!
+Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PM10;PM10;DUST;AOD,,!
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!
 *TESTSOA,2,xx,999,PMf,PMf,0,1.0,70.0,xx,PM25;SOA;FALSEGROUP,,!

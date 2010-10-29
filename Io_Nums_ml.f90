@@ -78,6 +78,8 @@ implicit none
    ,IO_NEST     = 88  &!   
    ,IO_DMS      = 90  &!  Emissions(c): for DMS 
    ,IO_NH3      = 92  &! hb NH3emis
+   ,IO_CLAY     = 92  &! clay
+   ,IO_SAND     = 93  &! sand
    ,IO_NH3_DEB  = 99   ! hb NH3emis
 
 end module Io_Nums_ml

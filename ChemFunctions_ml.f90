@@ -41,10 +41,11 @@ module ChemFunctions_ml
 !   History:
 !   ds - 2000-Jan. 2008
 !____________________________________________________________________
+ use LocalVariables_ml,     only : Grid   ! => izen
  use ModelConstants_ml,     only : K1  => KCHEMTOP, K2 => KMAX_MID
- use PhysicalConstants_ml,  only : AVOG, RGAS_J
+ use PhysicalConstants_ml,  only : AVOG, RGAS_J, DAY_ZEN
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
- use ChemSpecs_tot_ml,        only : SO4,pNO3_f,aNH4
+ use ChemSpecs_tot_ml,        only : SO4, NO3_f, NH4_f
   implicit none
   private
 
@@ -53,6 +54,7 @@ module ChemFunctions_ml
   public :: IUPAC_troe ! Using the approximate expression for F from Atkinson et al., 2006 (ACP6, 3625)
   public ::  kaero
   public ::  RiemerN2O5
+  public ::  ec_ageing_rate
   public ::  kmt3      ! For 3-body reactions, from Robert OCt 2009
 
 
@@ -283,13 +285,13 @@ module ChemFunctions_ml
      
 ! old Setup_ml had:
 ! setup weighting factor for hydrolysis  
-!     f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(pNO3_f,k)) )
+!     f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(NO3_f,k)) )
 !Query - no aNH4 above?
 ! then FastReactions had for L(N2O5):
 !     + (0.9*f_Riemer(k)+0.1) * rcmisc(8,k)* &
 !                 ( VOLFACSO4*xnew(SO4)      & !Total sulpate aerosol surface
-!                 + VOLFACNO3*xnew(pNO3_f)     & !Total sulpate aerosol surface
-!                 + VOLFACNH4*xnew(aNH4)  )  & !Total sulpate aerosol surface
+!                 + VOLFACNO3*xnew(NO3_f)     & !Total sulpate aerosol surface
+!                 + VOLFACNH4*xnew(NH4_f)  )  & !Total sulpate aerosol surface
    
 
      do k = K1, K2
@@ -298,12 +300,12 @@ module ChemFunctions_ml
           rc = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean mol. speed,m/s
              /(4*(2.5 - rh(k)*1.25)) !density, corrected for rh (moderate approx.)
 
-          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0*x(pNO3_f,k) + EPSIL )
+          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0*x(NO3_f,k) + EPSIL )
 
 
           rate(k) =  (0.9*f + 0.1) * rc *  &
-             ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * x(pNO3_f,k) &
-              + VOLFACNH4 * x(aNH4,k) )    !Total aerosol surface
+             ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * x(NO3_f,k) &
+              + VOLFACNH4 * x(NH4_f,k) )    !Total aerosol surface
         else
           rate(k) = 0.0
         endif
@@ -325,4 +327,23 @@ module ChemFunctions_ml
 
 
   end function kaero
+
+ !---------------------------------------------------------------------
+  function ec_ageing_rate() result(rate) 
+ 
+!.. Sets ageing rates for fresh EC based on Riemer et al.; ACP (2004). 
+
+     real, dimension(K1:K2) :: rate
+     integer :: k
+ 
+    if ( Grid%izen <= DAY_ZEN ) then  ! daytime
+
+       rate (K2-2 : K2)   = 3.5e-5  ! t= 2h
+       rate (K1   : K2-3) = 1.4e-4  ! t= 8h
+      else
+       rate (K1 : K2 )    = 9.2e-6  ! t= 30h
+    endif
+
+  end function ec_ageing_rate
+
 end module ChemFunctions_ml

@@ -168,7 +168,7 @@ integer, public, parameter :: &
 !PCM                IXADV_AER_OC, IXADV_AER_POC, IXADV_AER_FFUELOC, &
 !PCM                IXADV_AER_WOODOC, IXADV_FFIRE_BC, IXADV_EC_F_FFUEL, &
 !PCM                IXADV_EC_C_FFUEL, IXADV_EC_F_WOOD, IXADV_EC_C_WOOD,IXADV_CO, &
-                IXADV_pNO3_c, IXADV_pNO3_f, IXADV_SO4,  IXADV_aNH4, IXADV_NH3/)
+                IXADV_NO3_c, IXADV_NO3_f, IXADV_SO4,  IXADV_NH4_f, IXADV_NH3/)
 
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
@@ -371,14 +371,14 @@ integer, public, parameter :: &
 !  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
-  hr_out(2)= Asc2D("aNH4-air","ADVugXX","(f8.4)",&
-              IXADV_aNH4,  ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_aNH4),600.0)
-  hr_out(3)= Asc2D("pNO3_f-air", "ADVugXX","(f8.4)",&
-              IXADV_pNO3_f,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_pNO3_f),600.0)
+  hr_out(2)= Asc2D("NH4_f-air","ADVugXX","(f8.4)",&
+              IXADV_NH4_f,  ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NH4_f),600.0)
+  hr_out(3)= Asc2D("NO3_f-air", "ADVugXX","(f8.4)",&
+              IXADV_NO3_f,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NO3_f),600.0)
   hr_out(4)= Asc2D("SO4-air", "ADVugXX","(f8.4)",&
               IXADV_SO4,   ix1,ix2,iy1,iy2,1, "ugS",to_ug_S(IXADV_SO4),400.0)
   hr_out(5)= Asc2D("cNO3-air","ADVugXX","(f8.4)",&
-              IXADV_pNO3_c,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_pNO3_c),400.0)
+              IXADV_NO3_c,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NO3_c),400.0)
 
  ! Extra parameters - need to be coded in Sites_ml also. So far
  ! we can choose from T2, or th (pot. temp.)

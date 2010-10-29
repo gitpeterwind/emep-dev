@@ -144,6 +144,10 @@ implicit none
    integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
                                  ,QSSFI = 1 &   ! production of fine SS
                                  ,QSSCO = 2     ! production of coarse SS  
+   !Dust
+   integer, public, parameter ::  NDU   = 2 &   ! number of dust size modes
+                                 ,QDUFI = 1 &   ! production of fine dust
+                                 ,QDUCO = 2     ! production of coarse dust
 
 
    !/** Lightning and aircraft NOx. 

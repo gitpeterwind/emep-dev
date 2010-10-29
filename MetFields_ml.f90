@@ -183,6 +183,9 @@ module MetFields_ml
  logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
 
+  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &   !st-dust
+       clay_frac  &  ! clay fraction (%) in the soil
+      ,sand_frac     ! sand fraction (%) in the soil
 
 ! Logical flags, used to determine if some met fields are present in the
 ! input or not:

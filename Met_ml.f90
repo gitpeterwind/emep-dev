@@ -121,7 +121,8 @@ module Met_ml
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
        add_secs,timestamp,&
        make_timestamp, make_current_date, nydays
-  use Io_ml ,               only : IO_INFIELD, ios, IO_SNOW, IO_ROUGH, open_file
+  use Io_ml ,               only : IO_INFIELD, ios, IO_SNOW, IO_ROUGH, &
+                                   IO_CLAY, IO_SAND, open_file
   use ReadField_ml,         only : ReadField ! reads ascii fields
   use netcdf
 
@@ -1293,6 +1294,42 @@ end if ! NH3_U10
              enddo
           enddo
        endif
+
+!.. Clay soil content    !st-dust 
+      ios = 0
+
+        if ( me == 0  ) then
+           write(fname,fmt='(''clay_frac.dat'')') 
+           write(6,*) 'filename for clay fraction ',fname, IO_CLAY, ios
+        end if
+
+        call ReadField(IO_CLAY,fname,clay_frac)
+   
+ ! Convert from percent to fraction
+      
+        do j=1,ljmax
+           do i=1,limax
+              clay_frac(i,j) = 0.01 * clay_frac(i,j)
+           enddo
+        enddo
+!.. Sand soil content
+     ios = 0
+
+        if ( me == 0  ) then
+           write(fname,fmt='(''sand_frac.dat'')') 
+           write(6,*) 'filename for sand fraction ',fname, IO_SAND, ios
+        end if
+
+        call ReadField(IO_SAND,fname,sand_frac)
+   
+ ! Convert from percent to fraction
+      
+        do j=1,ljmax
+           do i=1,limax
+              sand_frac(i,j) = 0.01 * sand_frac(i,j)
+           enddo
+        enddo
+!st-dust 
     else ! callnum == 2
        if (MasterProc) then
           write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
@@ -1397,7 +1434,7 @@ end if ! NH3_U10
 
 
 ! Are the invL and fh comparable??
-    if( debug_proc .and. DEBUG_Kz)then            
+    if  ( debug_proc .and. DEBUG_Kz) then
       i = debug_iloc
       j = debug_jloc
       write(*,"(a,i4,2f12.5)") "TESTNR th ", nr , th(i,j,20,1), th(i,j,20,nr)

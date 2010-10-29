@@ -1104,7 +1104,7 @@ END_CHEMSTART
 	    $nnum = $count{$spec}{"N"};   # to save interpolating inside string!
 	    $snum = $count{$spec}{"S"};   # to save interpolating inside string!
             printf F 
-           "     species(%s) = Chemical(\"%-12s\",%4d,%3d,%3d,%4d,%3d,%4.1f,%8.4f,%7.1f ) \n",  
+           "     species(%s) = Chemical(\"%-12s\",%4d,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",  
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
                    $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i];
             print "SPECF ", 

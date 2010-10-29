@@ -2,7 +2,7 @@
   !use GlobalBCs_ml,  only:  NGLOB_BC  &!  indices from UiO model
   !              ,IBC_SO2, IBC_SO4, IBC_HCHO, IBC_CH3CHO &
   !              ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
-  !              ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_aNH4,IBC_aNO3,IBC_pNO3&
+  !              ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_NH4_f,IBC_NO3_f,IBC_NO3_c&
   !             ,IBC_H2O2,IBC_CH3COO2
 
  ! mappings for species from Logan + obs model given with IBC index. 
@@ -27,12 +27,14 @@
 !EMEP:
   bc2xn_adv(IBC_CH3CHO  ,IXADV_CH3CHO  )   =   1.0
 !CB:  bc2xn_adv(IBC_CH3CHO  ,IXADV_ALD2    )   =   1.0 !CB05 ????
-  bc2xn_adv(IBC_aNO3    ,IXADV_pNO3_f  )   =   1.0
-  bc2xn_adv(IBC_pNO3    ,IXADV_pNO3_c  )   =   1.0
-  bc2xn_adv(IBC_aNH4    ,IXADV_aNH4    )   =   1.0
+  bc2xn_adv(IBC_NO3_f    ,IXADV_NO3_f  )   =   1.0
+  bc2xn_adv(IBC_NO3_c    ,IXADV_NO3_c  )   =   1.0
+  bc2xn_adv(IBC_NH4_f    ,IXADV_NH4_f    )   =   1.0
   bc2xn_adv(IBC_H2O2    ,IXADV_H2O2    )   =   1.0
 !EMEP:
   bc2xn_adv(IBC_CH3COO2 ,IXADV_CH3COO2 )   =   1.0
+  bc2xn_adv(IBC_DUST_f  ,IXADV_DUST_NAT_F )  = 1.0  !Dust
+  bc2xn_adv(IBC_DUST_c  ,IXADV_DUST_NAT_C )  = 1.0  !Dust
 !SKIP  bc2xn_adv(IBC_CH3COO2 ,IXADV_C2O3 )   =   1.0 !CB05
 !QUERY??
 

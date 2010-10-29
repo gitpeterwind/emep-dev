@@ -67,28 +67,29 @@ use My_Derived_ml,  only : & !EcoDep
       SURF_PPB , &  !ds added May 2009
       D3_PPB,D3_OTHER ! hb new 3D output
 
-use AOTx_ml,           only: Calc_GridAOTx, setaccumulate_2dyear
-use Biogenics_ml,       only: EmisNat !dsbvoc
-use CheckStop_ml,      only: CheckStop, StopAll
-use Chemfields_ml, only : xn_adv, xn_shl, cfac,xn_bgn, PM_water
+use AOTx_ml,          only: Calc_GridAOTx, setaccumulate_2dyear
+use Biogenics_ml,     only: EmisNat !dsbvoc
+use CheckStop_ml,     only: CheckStop, StopAll
+use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
+                            PM25_water, PM25_water_rh50
 use ChemGroups_ml     ! SIA_GROUP, PMCO_GROUP -- use tot indices
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use ChemSpecs_shl_ml
 use ChemSpecs_tot_ml
-use ChemChemicals_ml, only : species
-use Chemfields_ml , only : so2nh3_24hr,Grid_snow
-use DerivedFields_ml, only : MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
-    def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
-use EcoSystem_ml,   only : DepEcoSystem, NDEF_ECOSYSTEMS, &
-                           EcoSystemFrac,FULL_GRID
-use EmisDef_ml,    only : EMIS_NAME
-use Emissions_ml,  only : SumSnapEmis
-use GridValues_ml, only : debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M&
-                         ,GridArea_m2 ! dsbvoc
-use Io_Progs_ml,  only :  datewrite
-use MetFields_ml, only :   roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
-use MetFields_ml, only :   ps
-use MetFields_ml, only :   SoilWater_deep
+use ChemChemicals_ml, only: species
+use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
+use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
+                            def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
+use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
+                            EcoSystemFrac,FULL_GRID
+use EmisDef_ml,       only: EMIS_NAME
+use Emissions_ml,     only: SumSnapEmis
+use GridValues_ml,    only: debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M&
+                            ,GridArea_m2 ! dsbvoc
+use Io_Progs_ml,      only: datewrite
+use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
+use MetFields_ml,     only: ps
+use MetFields_ml,     only: SoilWater_deep
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
   ,NPROC        & ! No. processors
@@ -357,14 +358,14 @@ call AddNewDeriv( "WDEP_SO4 ","WDEP ","-","-", "mgS/m2", &
          IXADV_SO4, -99,-99,  0.0,     F,    1.0e6,   F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_HNO3 ","WDEP ","-","-", "mgN/m2", &
          IXADV_HNO3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_pNO3_f","WDEP ","-","-", "mgN/m2", &
-         IXADV_pNO3_f, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_pNO3_c","WDEP ","-","-", "mgN/m2", &
-         IXADV_pNO3_c, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
+call AddNewDeriv( "WDEP_NO3_f","WDEP ","-","-", "mgN/m2", &
+         IXADV_NO3_f, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
+call AddNewDeriv( "WDEP_NO3_c","WDEP ","-","-", "mgN/m2", &
+         IXADV_NO3_c, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
 call AddNewDeriv( "WDEP_NH3 ","WDEP ","-","-", "mgN/m2", &
          IXADV_NH3, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
-call AddNewDeriv( "WDEP_aNH4 ","WDEP ","-","-", "mgN/m2", &
-         IXADV_aNH4, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
+call AddNewDeriv( "WDEP_NH4_f ","WDEP ","-","-", "mgN/m2", &
+         IXADV_NH4_f, -99,-99,  0.0,     F,    1.0e6,  F,   F , F ,T ,T ,T ,-999)
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit
 
@@ -559,12 +560,33 @@ call AddNewDeriv("SURF_ugN_RDN", "RDNGROUP", "MASS", "-", "ugN/m3", &
                       -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ugN_TNO3", "TNO3GROUP", "MASS", "-", "ugN/m3", &
                       -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ug_TNO3", "parNO3GROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ug_PMc ", "PMcGROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ug_PM10", "PM10GROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ug_PM25anthr", "PM25aGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ug_PM10anthr", "PM10aGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ugC_ECc", "ECcGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ugC_ECf", "ECfGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_SS", "SSGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_DU", "DUSTGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+
+call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
+                      -99 , -99,-99, 0.0, F, 1.0,   T, T , F, T, T, T, -999 ) !
+
+call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
+                      -99 , -99,-99, 0.0, F, 1.0,   T, T , F, T, T, T, -999 ) !
+
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   IXADV_O3, -99,-99,35.0, F, 1.0,   F,  F , F,   T, T, F , -999)
 call AddNewDeriv( "SOMO0","SOMO",  "SURF","-",   "ppb.day", &
@@ -620,6 +642,9 @@ do ind = 1, size(D3_OTHER)
   case ("D3_ug_PMc")
   call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
          -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, F, -999,Is3D ) !?? atw?
+  case ("D3_PM25water")
+  call AddNewDeriv("D3_PM25water", "PM25water3d", "-", "-", "-", &
+         -99, -99,-99, 0.0, F, 1.0,   F, F , F, T, T, F,-999, Is3D  ) !
   case ("D3_m_TH")
   call AddNewDeriv("D3_m_TH","TH", "-","-",   "m", &
          -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999,Is3D )
@@ -892,12 +917,18 @@ end do
             if ( debug_flag ) call write_debugadv(n,index, &
                                      density(debug_li,debug_lj), "SURF_UG")
 
-          case ( "H2O" )      !water
+          case ( "PM25water" )      !water
 
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = PM_water(i,j,KMAX_MID)
+              d_2d( n, i,j,IOU_INST) = PM25_water_rh50(i,j)
             end forall
 
+!/ Aerosol Optical Depth
+          case ( "AOD" )        
+
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = AOD(i,j)   
+            end forall
 
           case ( "MAXADV" )
 
@@ -1093,9 +1124,6 @@ end do
             if ( debug_flag ) write(*,"(a18,i4,a12,a4,es12.3)")"EXT d_2d",&
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
-          case ( "SIAGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
-                               density, 0)
           case ( "OXNGROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, OXN_GROUP, &
                                density, 0)
@@ -1106,6 +1134,12 @@ end do
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, RDN_GROUP, &
                                density, 0)
           case ( "TNO3GROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
+                               density, 0)
+          case ( "SIAGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
+                               density, 0)
+          case ( "parNO3GROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
                                density, 0)
           case ( "PM25GROUP" )
@@ -1125,6 +1159,25 @@ end do
               ! call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ,PM10_GROUP, density )
                call StopAll("PM10 group is special. Need to define PM25 and PMc first!")
             end if
+
+          case ( "PM25aGROUP" )   !.. antropogenic PM2.5 (w/o SS and Dust)
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PM25anthr_GROUP, &
+                               density, 0)
+          case ( "PM10aGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PM10anthr_GROUP, &
+                               density, 0)
+          case ( "ECfGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, EC_F_GROUP, &
+                               density, 0)
+!          case ( "ECcGROUP" )
+!            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, EC_C_GROUP, &
+!                               density, 0)
+          case ( "SSGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SS_GROUP, &
+                               density, 0)
+          case ( "DUSTGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, DUST_GROUP, &
+                               density, 0)
 
           case  default
 
@@ -1189,7 +1242,7 @@ end do
         select case ( f_3d(n)%class )
 
          ! Simple advected species:
-          case ( "ADV" )
+         case ( "ADV" )
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
               d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
@@ -1199,6 +1252,12 @@ end do
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
               d_3d( n, i,j,k,IOU_INST) = xn_bgn(index,i,j,k)
+            end forall
+
+         case ( "PM25water3d" )    !particle water
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = PM25_water(i,j,k)
             end forall
 
          case ("XKSIG00", "XKSIG12" ) !hf hmix Kz_m2s
@@ -1307,6 +1366,7 @@ end do
 
           case  default
 
+           write(*,*) "***** NOT FOUND", f_3d(n)%name, f_3d(n)%class
            write(unit=errmsg,fmt=*) "Derived 3D class NOT FOUND", n, index, &
                          f_3d(n)%name,f_3d(n)%class
            call CheckStop( errmsg )

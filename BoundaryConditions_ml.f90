@@ -112,8 +112,8 @@ module BoundaryConditions_ml
           ,GetGlobalData           &  ! Sub., reads global data+vert interp.
           ,IBC_SO2, IBC_SO4, IBC_HCHO, IBC_CH3CHO &
           ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
-          ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_aNH4,IBC_aNO3,IBC_pNO3&
-          ,IBC_H2O2,IBC_CH3COO2 &
+          ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_NH4_f,IBC_NO3_f,IBC_NO3_c&
+          ,IBC_H2O2,IBC_CH3COO2, IBC_DUST_f, IBC_DUST_c  &  ! Dust
           ,setgl_actarray
   use GridValues_ml,         only: gl, gb    &! lat, long
                                   ,sigma_mid &  !sigma layer midpoint

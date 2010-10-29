@@ -36,7 +36,7 @@
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC
-  use EmisDef_ml,            only :  NSS !dsBVOC , NBVOC   !NSS=SeaS
+  use EmisDef_ml,            only :  NSS, NDU !dsBVOC , NBVOC   !SeaS, Dust
   use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   !ds use ChemSpecs_bgn_ml,        only :  NSPEC_COL
@@ -79,6 +79,7 @@
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3  ! hb NH3emis
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222  ! 210Pb emissions, ds Pb210
    real, public, dimension(NSS,KCHEMTOP:KMAX_MID),     save :: rcss   ! Sea salt emissions
+   real, public, dimension(NDU,KCHEMTOP:KMAX_MID),     save :: rcwbd  ! windblown dust emissions
 
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)

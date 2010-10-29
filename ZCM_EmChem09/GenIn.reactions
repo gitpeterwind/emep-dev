@@ -186,7 +186,7 @@ KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MAC
 2.1e-6                Rn222 = Pb210 ;
 _func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
-_func_kaero()              HNO3 = pNO3_c        ;
+_func_kaero()              HNO3 = NO3_c        ;
 TROE_NO_OP                 OP + NO  + {M}   = NO2     ; A97,J, jofmiss
 TROE_NO2_NO3               NO2 + NO3  = N2O5          ; A97,J
 TROE_N2O5                  N2O5       = NO2 + NO3     ; A97,J
@@ -200,6 +200,15 @@ TROE_PAN                   MPAN = MACO3 + NO2   ; MCM
 * HONO chemistry to be added (also need photolysis of HONO!)
 TROE_OH_NO                 OH + NO = HONO          ; IUPAC 2002
 *
+*<----- EC ageing ------- -------------------------------------------->
+* ;
+_func_ec_ageing_rate()               EC_f_new = EC_f_age ;
+
+*ECageing                            EC_f_new = EC_f_age ; # to use const ageing rate
+*ECageing                            EC_c_new = EC_c_age ; # to use const ageing rate
+*_func_ec_ageing_rate()              EC_c_new = EC_c_age ;
+* ;
+
 *Wet * <---------- Wet scavenging ------------------------------------->
 * Rates set in My_Aqueous_ml
 * aqrck(ICLFSO2,k)      SO4 =    ;
@@ -291,8 +300,17 @@ rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
 *
 rc_Rn222(k)                             = Rn222    ;
-pm25:rcemis(PPM25,k)                     = PPM25 ;
-pmco:rcemis(PPMCO,k)                     = PPMCO ;
+*
+ECfi:rcemis(EC_f_new,k)                = EC_f_new ;
+ECfi:rcemis(EC_f_age,k)                = EC_f_age ;
+OCfi:rcemis(POC_f,k)                   = POC_f  ;
+*rcemis(EC_c_new,k)                = EC_c_new ;
+*rcemis(EC_c_age,k)                = EC_c_age ;
+
+*pm25:rcemis(PPM25,k)                     = PPM25 ;
+*pmco:rcemis(PPMCO,k)                     = PPMCO ;
+0.0                                  = DUST_NAT_F ;  # Dust
+0.0                                  = DUST_NAT_C ;
 * <----------- Fire tracers ----------------------------------->
 *
 pm25:rcemis(PPM25_FIRE,k)                = PPM25_FIRE ;

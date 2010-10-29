@@ -55,7 +55,7 @@ module My_WetDep_ml
 !  integer, public, parameter :: NWETDEP =  9  ! Number of solublity classes
 
   !ds May 2010 New wet-dep system. Pre-define various species or groups
-  integer, public, parameter :: NWETDEP_CALC =  8  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP_CALC =  11  ! Number of solublity classes
 
    !  Note - these are for "master" or model species - they do not
    !  need to be present in the chemical scheme. However, the chemical
@@ -71,7 +71,10 @@ module My_WetDep_ml
      CWDEP_H2O2 = 5,  &
      CWDEP_HCHO = 6,  &
      CWDEP_PMf  = 7,  &
-     CWDEP_PMc  = 8 
+     CWDEP_PMc  = 8,  &
+     CWDEP_ECfn = 9,  &
+     CWDEP_SSf  = 10, &
+     CWDEP_SSc  = 11
 
 ! Import WDepMap array produced from GenChem, with e.g. 
  !integer, public, parameter ::  NWETDEP_ADV  = 14
@@ -91,7 +94,7 @@ module My_WetDep_ml
 !EGU - find indices of SO4-like particles (PMc included for now - tmp!)
 ! for SOA we need a separate array, since Fgas will be needed
 !  integer, public, parameter, dimension(5) :: & !EGU:NUM_NONVOLOC+NUM_NONVOLEC) ::&
-!   WETDEP_SO4LIKE = (/ aNH4, pNO3_f, PPM25, SSFI, Pb210 /)
+!   WETDEP_SO4LIKE = (/ NH4_f, NO3_f, PPM25, SSFI, Pb210 /)
 !EGU  NONVOLOC, NONVOLEC /)
 !    integer, public, parameter, dimension(NUM_NONVOLOC) ::&
 !   WETDEP_SO4LIKE = (/ NONVOLOC /)
@@ -103,7 +106,7 @@ module My_WetDep_ml
   integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
   integer, private, save :: WDEP_SOX, WDEP_OXN, WDEP_RDN
   integer, private, save :: WDEP_SO2, WDEP_SO4, &
-    WDEP_HNO3, WDEP_pNO3_f, WDEP_pNO3_c, WDEP_NH3, WDEP_aNH4
+    WDEP_HNO3, WDEP_NO3_f, WDEP_NO3_c, WDEP_NH3, WDEP_NH4_f
 
 contains
 
@@ -130,6 +133,11 @@ contains
     WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   ! 
     WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   ! 
     WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  ! 
+    WetDep(CWDEP_ECfn)  = WScav(   0.0,  EFF25)
+!    WetDep(CWDEP_ECfa)  = WScav(   1.0,  EFF25) ! as PMf
+!    WetDep(CWDEP_ECcn)  = WScav(   0.0,  EFFCO)
+    WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
+    WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
     WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
     WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
 
@@ -145,10 +153,10 @@ contains
      WDEP_SO2 = find_index("WDEP_SO2",f_2d(:)%name)
      WDEP_SO4 = find_index("WDEP_SO4",f_2d(:)%name)
      WDEP_HNO3 = find_index("WDEP_HNO3",f_2d(:)%name)
-     WDEP_pNO3_f = find_index("WDEP_pNO3_f",f_2d(:)%name)
-     WDEP_pNO3_c = find_index("WDEP_pNO3_c",f_2d(:)%name)
+     WDEP_NO3_f = find_index("WDEP_NO3_f",f_2d(:)%name)
+     WDEP_NO3_c = find_index("WDEP_NO3_c",f_2d(:)%name)
      WDEP_NH3 = find_index("WDEP_NH3",f_2d(:)%name)
-     WDEP_aNH4 = find_index("WDEP_aNH4",f_2d(:)%name)
+     WDEP_NH4_f = find_index("WDEP_NH4_f",f_2d(:)%name)
    !####################### ds END define indices here ##########
 
    ! Now create table to map calc species to actual advected ones:
@@ -204,8 +212,8 @@ contains
      end do
 
 !dsMay2010      wdeps = wdeploss(SO2) + wdeploss(SO4)
-!dsMay2010      wdepred = wdeploss(NH3)  + wdeploss(aNH4) 
-!dsMay2010      wdepox  = wdeploss(HNO3) + wdeploss(pNO3_f) + wdeploss(pNO3_c)
+!dsMay2010      wdepred = wdeploss(NH3)  + wdeploss(NH4_f) 
+!dsMay2010      wdepox  = wdeploss(HNO3) + wdeploss(NO3_f) + wdeploss(NO3_c)
 
 !dsMay2010      wdeppm25= wdeploss(PPM25) 
 !dsMay2010      wdeppmco= wdeploss(PPMco) 
@@ -226,14 +234,14 @@ contains
        d_2d(WDEP_SO2,i,j,IOU_INST) = wdeploss(SO2) * fS 
        d_2d(WDEP_SO4,i,j,IOU_INST) = wdeploss(SO4) * fS 
        d_2d(WDEP_NH3,i,j,IOU_INST) = wdeploss(NH3) * fN 
-       d_2d(WDEP_aNH4,i,j,IOU_INST) = wdeploss(aNH4) * fN 
+       d_2d(WDEP_NH4_f,i,j,IOU_INST) = wdeploss(NH4_f) * fN 
        d_2d(WDEP_HNO3,i,j,IOU_INST) = wdeploss(HNO3) * fN 
-       d_2d(WDEP_pNO3_f,i,j,IOU_INST) = wdeploss(pNO3_f) * fN 
-       d_2d(WDEP_pNO3_c,i,j,IOU_INST) = wdeploss(pNO3_c) * fN 
+       d_2d(WDEP_NO3_f,i,j,IOU_INST) = wdeploss(NO3_f) * fN 
+       d_2d(WDEP_NO3_c,i,j,IOU_INST) = wdeploss(NO3_c) * fN 
 
      if ( DEBUG_MY_WETDEP .and. debug_flag ) then
        write(*,"(a,i4,2es12.4)" )   "DEBUG_WET NH3", WDEP_NH3, wdeploss(NH3), wdeploss(NH3) * fN
-       write(*,"(a,i4,2es12.4)" )   "DEBUG_WET ANH4", WDEP_aNH4, wdeploss(aNH4), wdeploss(aNH4) * fN
+       write(*,"(a,i4,2es12.4)" )   "DEBUG_WET ANH4", WDEP_NH4_f, wdeploss(NH4_f), wdeploss(NH4_f) * fN
        write(*,"(a,i4,2es12.4)" )   "DEBUG_WET RDN", WDEP_RDN, wdepred, wdepred* fN
      do ispec = 1, size(WDEP_RDNGROUP)
         itot = WDEP_RDNGROUP(ispec)
@@ -244,8 +252,8 @@ contains
 
 !write(IO_DEBUG,"(a,2i4,10es12.3)") "wdeps     ",i,j,wdeps,wdepred,wdepox!EX,wdeppm25,wdeppmco
 !write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_nh3  ",i,j,d_2d(WDEP_NH3,i,j,IOU_INST), wdeploss(NH3)
-!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_pNO3_f ",i,j,d_2d(WDEP_pNO3_f,i,j,IOU_INST), wdeploss(pNO3_f)
-!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_pNO3_c ",i,j,d_2d(WDEP_pNO3_c,i,j,IOU_INST), wdeploss(pNO3_c)
+!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_NO3_f ",i,j,d_2d(WDEP_NO3_f,i,j,IOU_INST), wdeploss(NO3_f)
+!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_NO3_c ",i,j,d_2d(WDEP_NO3_c,i,j,IOU_INST), wdeploss(NO3_c)
 
 
   end subroutine WetDep_Budget

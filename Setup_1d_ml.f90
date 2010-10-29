@@ -44,8 +44,9 @@
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
+  use DustProd_ml,           only :  DU_prod   ! Dust
   use EmisDef_ml,           only : AIRNOX, VOLCANOES &
-                                  ,NSS & !SeaS
+                                  ,NSS, NDU & !SeaS, Dust
                                   ,NH3EMIS_VAR ! hb NH3Emis    
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
@@ -79,7 +80,7 @@
     ,USE_FOREST_FIRES                & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
-  use My_Aerosols_ml,       only : SEASALT
+  use My_Aerosols_ml,       only : SEASALT, DUST
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
                              ,MAXLIMAX,MAXLJMAX & !ds NatEmis
@@ -90,7 +91,7 @@
      xn_2d                &  ! concentration terms
     ,rcemis               &  ! emission terms
     ,rc_Rn222             &  ! for Pb210
-    ,rcss                 &  !SeaS - sea salt
+    ,rcss, rcwbd          &  !Sea salt, Dust
     ,rh, temp, tinv, itemp,pp      &  ! 
     ,amk, o2, n2, h2o     &  ! Air concentrations 
     ,rcbio                &  ! dsPCM
@@ -239,7 +240,7 @@ contains
 ! initilize
     rcemis(:,:)=0.    
     rcss(:,:) = 0.  !SeaS 
-   
+    rcwbd(:,:) = 0.  ! Dust
      do k=KEMISTOP,KMAX_MID
 
         do iqrc = 1, NRCEMIS
@@ -299,6 +300,19 @@ contains
 
           do iqrc = 1, NSS
             rcss(iqrc,KMAX_MID) = SS_prod(iqrc,i,j)
+          enddo
+
+     endif
+
+     !/** Add windblown dust production
+    
+     if ( DUST  ) then
+ 
+          do iqrc = 1, NDU
+            rcwbd(iqrc,KMAX_MID) = DU_prod(iqrc,i,j)
+
+!       if(debug) write(6,'(a25,3i4,2es12.3)') '>> WBDust emissions >>',   &
+!             i_fdom(i), j_fdom(j), iqrc, DU_prod(iqrc,i,j), rcwbd(iqrc,KMAX_MID)
           enddo
 
      endif

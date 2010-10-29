@@ -64,10 +64,13 @@ private
     !---------------------------------------------------------------------!
 
   real, save, public :: &
-     xn_adv (NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
-    ,xn_shl (NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
-    ,xn_bgn (NSPEC_BGN,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0     &
-    ,PM_water (MAXLIMAX,MAXLJMAX,KMAX_MID)           = 0.0        !water
+     xn_adv (NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0  &
+    ,xn_shl (NSPEC_SHL,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0  &
+    ,xn_bgn (NSPEC_BGN,MAXLIMAX,MAXLJMAX,KMAX_MID)   = 0.0  &
+    ,PM25_water (MAXLIMAX,MAXLJMAX,KMAX_MID)         = 0.0  &  !3D PM water
+    ,PM25_water_rh50 (MAXLIMAX,MAXLJMAX)             = 0.0     !gravimetric PM water
+
+  real, public, dimension(MAXLIMAX,MAXLJMAX) :: AOD
 
   real, save, public :: &
      cfac   (NSPEC_ADV,MAXLIMAX,MAXLJMAX) = 1.0    
