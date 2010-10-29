@@ -8,9 +8,9 @@
 #====== Set run here =======================
 run=Test03   # CRI_v2_R5
 run=EmChem03c   # CRI_v2_R5
-run=vbs_tests   # CRI_v2_R5
 run=OSRM    # CRI_v2_R5
 run=CRI_v2_R5
+run=vbs_tests   # CRI_v2_R5
 run=EmChem09    # CRI_v2_R5
 # ==========================================
 cdir=$PWD            #  Current when starting. Assumed now as a Unimod

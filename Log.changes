@@ -7,9 +7,18 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
-xxxxxxxxxxxxxx rv3_7beta..........................xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxxxxxxxx rv3_7beta6 Dave Oct 29 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Add OH + OC_FIRE reaction
+Biogenics_ml:
+
+Switch on BVOC_2010 methods, uses file EMEP_Euro
+Add terpene emissions (only BVOC_2010 so far, older 2003 stuff not updated)
+
+ZCM_EmChem09/GenIn.species: added for testing  rcbio(BIO_TERP,k)   = APINENE ;
+ZCM_EmChem09/GenIn.reactions:
+  added for testing  APINENE emissions, [OH] + OC_FIRE reaction
+
+run.pl: use new BVOC file EMEP_EuroBVOC_KRS09.nc
 
 xxxxxxxxxxxxxx rv3_7beta5 Robert/Dave  Oct 28th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

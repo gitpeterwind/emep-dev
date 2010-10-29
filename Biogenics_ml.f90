@@ -118,7 +118,7 @@ module Biogenics_ml
      day_embvoc   !  emissions scaled by daily LAI
 
   logical, private, dimension(MAXLIMAX,MAXLJMAX) :: EuroMask
-  logical, public, parameter :: BVOC_2010 = .false.
+  logical, public, parameter :: BVOC_2010 = .true.
 
   !/-- Canopy environmental correction factors-----------------------------
   !
@@ -365,13 +365,14 @@ module Biogenics_ml
 
       integer, intent(in) :: daynumber
       integer, save :: last_daynumber = -999
-      integer :: i, j, n, nlu, iL, iiL
+      integer :: i, j, n, nlu, iL, iiL, ibvoc
       integer :: pft  ! pft associated with LAI data
       real :: LAIfac  ! Multiplies by land-fraction and then divides by 5
       real :: b    !  Just for printout
       logical :: use_local, debug
 
-      if( MasterProc ) write(*,*) "Into SetDailyBVOC", daynumber, last_daynumber
+      if( MasterProc ) write(*,"(a,3i5)") "Into SetDailyBVOC", &
+            daynumber, last_daynumber, last_bvoc_LC
 
       if ( daynumber == last_daynumber ) return
       last_daynumber = daynumber
@@ -395,18 +396,21 @@ module Biogenics_ml
              
               LAIfac = LandCover(i,j)%LAI(iiL)/LandDefs(IL)%LAImax
               LAIfac= min(LAIfac, 1.0)
+              LAIfac = LAIfac * LandCover(i,j)%fraction(iiL)
 
-              day_embvoc(i,j,:) = day_embvoc(i,j,:) + &
-                   LandCover(i,j)%fraction(iiL) *  &
-                   LAIfac * max(1.0e-10,bvocEF(i,j,iL,:))
+              do ibvoc = 1, size(BVOC_USED) 
+                day_embvoc(i,j,ibvoc) = day_embvoc(i,j,ibvoc) + &
+                   LAIfac * max(1.0e-10,bvocEF(i,j,iL,ibvoc))
+                   !done above LandCover(i,j)%fraction(iiL) *  &
+              end do
 
               if ( debug ) then
                  b = 0.0
                  if ( iL <= last_bvoc_LC ) b = bvocEF(i, j,iL, BIO_ISOP)
-                 write(*,"(a,a15,2i5,f9.5,f7.3,4f10.3)") "SetDailyBVOC", &
+                 write(*,"(a,a15,2i5,f9.5,f7.3,8f10.3)") "SetDailyBVOC", &
                   trim(LandDefs(iL)%name), daynumber, iL, &
-                   LandCover(i,j)%fraction(iiL),  LandCover(i,j)%LAI(iiL), &
-                     b, day_embvoc(i, j, BIO_ISOP)
+                   LandCover(i,j)%fraction(iiL),  LandCover(i,j)%LAI(iiL), b,&
+                     ( day_embvoc(i, j, ibvoc), ibvoc = 1, size(BVOC_USED) ) 
               end if
         end do LULOOP
       end do
@@ -463,7 +467,7 @@ module Biogenics_ml
   integer, intent(in) ::  i,j
 
   integer la,it2m,n,k,base,top,iclcat
-  real :: E2003, E2010 
+  real :: E2003, E2010 , MT2010
 
 ! To get from ug/m2/h to molec/cm3/s
   real, save :: biofac_ISOP = 1.0e-12*AVOG/64.0/3600.0   ! needs /Grid%DeltaZ
@@ -485,16 +489,19 @@ module Biogenics_ml
   it2m = max(it2m,1)
   it2m = min(it2m,40)
 
-!  if(BIO_TERP > 0)  then
-!     rcbio(BIO_TERP) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-!
+  rcbio(:,KG) = 0.0
+  EmisNat(i,j,:) = 0.0
+
+  if(BIO_TERP > 0)  then
+     !rcbio(BIO_TERP,KG) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+
+     ! pool-only terpenes rate first:
+     MT2010 = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
+
 !     !emnat was in molec/cm3/s. We use the easier emforest which
 !     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
 !     EmisNat(i,j,BIO_TERP)= emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-!  end if
-
-  rcbio(BIO_ISOP,KG) = 0.0
-  EmisNat(i,j,:) = 0.0
+  end if
 
   if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
@@ -508,6 +515,9 @@ module Biogenics_ml
 
       E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
       E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
+      ! Add light-dependent terpenes to pool-only
+      if(BIO_TERP > 0) MT2010 =  MT2010 + & 
+             day_embvoc(i,j,BIO_MTL)*canopy_ecf(ECF_TERP,it2m)*cL
 
      !  molecules/cm3/s
      ! And we scale EmisNat to get units kg/m2 consistent with
@@ -516,24 +526,25 @@ module Biogenics_ml
 
         rcbio(BIO_ISOP,KG) = E2010 * biofac_ISOP/Grid%DeltaZ
         EmisNat(i,j,BIO_ISOP)= E2010 * 1.0e-9/3600.0
+        if(BIO_TERP > 0) rcbio(BIO_TERP,KG) = MT2010 * biofac_TERP/Grid%DeltaZ
      else 
         rcbio(BIO_ISOP,KG) = E2003     * biofac_ISOP/Grid%DeltaZ
         EmisNat(i,j,BIO_ISOP)= E2003 * 1.0e-9/3600.0
      end if
 
-
-
+  endif ! daytime
+ 
      if ( DEBUG_BIO .and. debug_proc .and.  &
             i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
 
-        write(*,"(a,3i3,f8.2,2f7.3,6es9.2)") "DBIO NatEmis ", &
+        write(*,"(a,3i3,f8.2,3f7.3,9es9.2)") "DBIO NatEmis ", &
           current_date%month, current_date%day, current_date%hour, &
-          par, cL, canopy_ecf(BIO_ISOP,it2m), E2003, E2010, rcbio(BIO_ISOP,KG), EmisNat(i,j,BIO_ISOP)
+          par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m), E2003, E2010, MT2010, &
+          rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG),  EmisNat(i,j,BIO_ISOP)
 
      end if
 
-  endif
 
   end subroutine setup_bio
 

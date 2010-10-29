@@ -223,7 +223,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $Chem, $testv);
 @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv    = "rv3_7beta5";
+$testv    = "rv3_7beta6";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -695,7 +695,7 @@ foreach my $scenflag ( @runs ) {
 
 #Prelim BVOC attempt
   $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
-# $ifile{"/home/mifads/TESTBVOC/testbvoc.nc"} = "LOCAL_BVOC.nc";
+  $ifile{"$DataDir/EMEP_EuroBVOC_KRS09.nc"} = "LOCAL_BVOC.nc";
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
   my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");
