@@ -7,6 +7,10 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta7b Robert Oct 30 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Minor update in vbs-SOA scheme. Adding EC aging. 
+
 xxxxxxxxxxxxxx rv3_7beta7 Svetlana (+minor updates by Robert) Oct 29 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Main changes:

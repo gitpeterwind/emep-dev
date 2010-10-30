@@ -232,6 +232,16 @@ TROE_PAN                   PAN  + {M}    = CH3COO2 + NO2      ; A97,J
 TROE_OH_C2H4               C2H4 + OH + {M}  = ETRO2   ;   A97,J
 TROE_OH_C3H6               OH     + C3H6 + {M}   = PRRO2           ;  A97,J
 *
+*<----- EC ageing ------- -------------------------------------------->
+* ;
+_func_ec_ageing_rate()               EC_f_FFUEL_new = EC_f_FFUEL_age ;
+_func_ec_ageing_rate()               EC_f_WOOD_new = EC_f_WOOD_age ;
+*
+*ECageing                            EC_f_new = EC_f_age ; # to use const ageing rate
+*ECageing                            EC_c_new = EC_c_age ; # to use const ageing rate
+*_func_ec_ageing_rate()              EC_c_new = EC_c_age ;
+* ;
+*
 *Wet * <---------- Wet scavenging ------------------------------------->
 * Rates set in My_Aqueous_ml
 * aqrck(ICLFSO2,k)      SO4 =    ;
@@ -320,11 +330,11 @@ rcss(QSSCO,k)                           = SeaSalt_c ;
 * Here use nonvolatile POC emissions (traditional assumption) [to use the semi-volatile POA emissions remove the following line]
 pocffl:rcemis(POC_f_FFUEL,k)                 = POC_f_FFUEL ;
 poccfl:rcemis(POC_c_FFUEL,k)                 = POC_c_FFUEL ;
-ecffl:rcemis(EC_f_FFUEL,k)                   = EC_f_FFUEL ;
+ecffl:rcemis(EC_f_FFUEL_new,k)                   = EC_f_FFUEL_new ;
 eccfl:rcemis(EC_c_FFUEL,k)                   = EC_c_FFUEL ;
 *
 pocfwd:rcemis(POC_f_WOOD,k)                  = POC_f_WOOD ;
-ecfwd:rcemis(EC_f_WOOD,k)                    = EC_f_WOOD ;
+ecfwd:rcemis(EC_f_WOOD_new,k)                    = EC_f_WOOD_new ;
 eccwd:rcemis(EC_c_WOOD,k)                    = EC_c_WOOD ;
 *
 rc_Rn222(k)                                = Rn222    ;
