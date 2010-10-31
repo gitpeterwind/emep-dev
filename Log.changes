@@ -1,4 +1,17 @@
+IMPORTANT EUCAARI NOTE:
+
+  * Instructions to run EUCAARI version *
+
+    check out clean version of Unimod (safest as there are several new files)
+    Make use mk.GenChem has Eucaari_Trends, *not* EmChem09
+    mk.GenChem
+    cp ZD_OZONE/My* .
+    cp ZD_VBS/My* .          # gets MySOA_ml and My_Derived including SOA
+    make
+    edit run.pl for year etc.
+
 IMPORTANT NOTE:
+
 The latest code does now CM_Emis.inc in CVS. This is generated from
 mk.GenChem, which reads the emissions needed from GenIn.reactions.
 
@@ -11,16 +24,6 @@ xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 NOT rtagged yet. Probably good to test first and rtag the code actually used
 
-
-   * Instructions to run EUCAARI version *
-
-    check out clean version of Unimod (safest as there are several new files)
-    Make use mk.GenChem has Eucaari_Trends, *not* EmChem09
-    mk.GenChem
-    cp ZD_OZONE/My* .
-    cp ZD_VBS/My* .          # gets MySOA_ml and My_Derived including SOA
-    make
-    edit run.pl for year etc.
 
    *New directory*
 
