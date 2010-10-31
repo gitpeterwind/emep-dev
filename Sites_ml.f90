@@ -346,19 +346,19 @@ contains
                            me, nlocal
 
   if ( me /= 0 ) then
-     CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_WORLD, INFO)
+     call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 333, MPI_COMM_WORLD, INFO)
      if (nlocal > 0) &
-        CALL MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, MPI_COMM_WORLD, INFO)
+        call MPI_SEND(s_n, 4*nlocal, MPI_BYTE, 0, 334, MPI_COMM_WORLD, INFO)
   else
      if (DEBUG_SITES) write(6,*) "sitesdef for me =0 LOCAL_SITES", me, nlocal
      do n = 1, nlocal
         s_gindex(me,n) = s_n(n)
      end do
      do d = 1, NPROC-1
-        CALL MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
+        call MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
             333, MPI_COMM_WORLD,STATUS, INFO)
         if (nloc > 0) &
-           CALL MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, &
+           call MPI_RECV(s_n_recv, 4*nloc, MPI_BYTE, d, &
              334, MPI_COMM_WORLD,STATUS, INFO)
         if (DEBUG_SITES) write(6,*) "sitesdef: recv d ", fname, d,  &
                    " zzzz nloc : ", nloc, " zzzz me0 nlocal", nlocal
@@ -689,8 +689,8 @@ end subroutine siteswrt_sondes
 
   if ( me /= 0 ) then   ! send data to me=0
 
-     CALL MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO)
-     CALL MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
+     call MPI_SEND(nlocal, 4*1, MPI_BYTE, 0, 346, MPI_COMM_WORLD, INFO)
+     call MPI_SEND(out, 8*nout*nlocal, MPI_BYTE, 0, 347, MPI_COMM_WORLD, INFO)
 
   else ! me = 0
 
@@ -703,9 +703,9 @@ end subroutine siteswrt_sondes
      end do ! n
 
      do d = 1, NPROC-1
-        CALL MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
+        call MPI_RECV(nloc, 4*1, MPI_BYTE, d, &
            346, MPI_COMM_WORLD,STATUS, INFO)
-        CALL MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, STATUS, INFO)
+        call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, STATUS, INFO)
         do n = 1, nloc
            nglob = s_gindex(d,n)
            g_out(:,nglob) = out(:,n)

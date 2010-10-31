@@ -287,8 +287,8 @@ module Biogenics_ml
           varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
           call ReadField_CDF('LOCAL_BVOC.nc',varname,&
              loc,1,interpol='zero_order',needed=.true.,debug_flag=.false.)
-         if( debug_proc ) write(*, "(a,a,f12.3,2i2)") "EURO-BVOC:E ", &
-             trim(varname), loc(debug_li, debug_lj), ibvoc, iEmis
+         if( debug_proc ) write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
+             trim(varname), loc(debug_li, debug_lj), iVeg, ibvoc, iEmis
          bvocEF(:,:,ibvoc,iEmis) = loc(:,:)
        end do
      end do
@@ -308,7 +308,7 @@ module Biogenics_ml
 
       integer :: i, j, n, nlu, iL, iiL
       integer :: pft
-      real :: b    !  Just for printout
+      real :: biso, bmt    !  Just for printout
       logical :: use_local, debug_flag
 
       if( MasterProc ) write(*,*) "Into MergedBVOC"
@@ -347,12 +347,16 @@ module Biogenics_ml
 
            if( debug_flag ) then
 
-              b = 0.0
-              if ( iL <= last_bvoc_LC ) b = bvocEF(i, j,iL, BIO_ISOP)
-
-              write(*,"(a,2i7,2L,f12.6,4f12.3)") "MergeBVOC", &
+              biso = 0.0
+              bmt  = 0.0
+              if ( iL <= last_bvoc_LC ) then
+                biso   = bvocEF(i, j,iL, BIO_ISOP) 
+                bmt    = bvocEF(i, j,iL, BIO_TERP) 
+              end if
+              write(*,"(a,2i7,2L,f12.6,9f12.3)") "MergeBVOC", &
                  iL, pft,  use_local, HaveLocalEF(iL),  &
-                   LandCover(i,j)%fraction(iiL), b, LandDefs(iL)%Eiso
+                   LandCover(i,j)%fraction(iiL), biso, bmt, LandDefs(iL)%Eiso, &
+                     LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
            end if 
         end do LULOOP
       end do
@@ -467,7 +471,7 @@ module Biogenics_ml
   integer, intent(in) ::  i,j
 
   integer la,it2m,n,k,base,top,iclcat
-  real :: E2003, E2010 , MT2010
+  real :: E2003, E2010 , MTP, MTL
 
 ! To get from ug/m2/h to molec/cm3/s
   real, save :: biofac_ISOP = 1.0e-12*AVOG/64.0/3600.0   ! needs /Grid%DeltaZ
@@ -491,17 +495,18 @@ module Biogenics_ml
 
   rcbio(:,KG) = 0.0
   EmisNat(i,j,:) = 0.0
+  MTP = 0.0
+  MTL = 0.0
 
-  if(BIO_TERP > 0)  then
-     !rcbio(BIO_TERP,KG) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-
-     ! pool-only terpenes rate first:
-     MT2010 = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
-
-!     !emnat was in molec/cm3/s. We use the easier emforest which
-!     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
-!     EmisNat(i,j,BIO_TERP)= emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-  end if
+!  if(BIO_TERP > 0)  then
+!     !rcbio(BIO_TERP,KG) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+!     ! pool-only terpenes rate first:
+!     MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
+!
+!!     !emnat was in molec/cm3/s. We use the easier emforest which
+!!     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
+!!     EmisNat(i,j,BIO_TERP)= emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
+!  end if
 
   if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
@@ -516,7 +521,7 @@ module Biogenics_ml
       E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
       E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
       ! Add light-dependent terpenes to pool-only
-      if(BIO_TERP > 0) MT2010 =  MT2010 + & 
+      if(BIO_TERP > 0) MTL = &
              day_embvoc(i,j,BIO_MTL)*canopy_ecf(ECF_TERP,it2m)*cL
 
      !  molecules/cm3/s
@@ -526,13 +531,19 @@ module Biogenics_ml
 
         rcbio(BIO_ISOP,KG) = E2010 * biofac_ISOP/Grid%DeltaZ
         EmisNat(i,j,BIO_ISOP)= E2010 * 1.0e-9/3600.0
-        if(BIO_TERP > 0) rcbio(BIO_TERP,KG) = MT2010 * biofac_TERP/Grid%DeltaZ
      else 
         rcbio(BIO_ISOP,KG) = E2003     * biofac_ISOP/Grid%DeltaZ
         EmisNat(i,j,BIO_ISOP)= E2003 * 1.0e-9/3600.0
      end if
 
   endif ! daytime
+
+  if ( BVOC_2010 .and. BIO_TERP > 0) then
+     ! add pool-only terpenes rate;
+        MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
+        rcbio(BIO_TERP,KG)    = (MTL+MTP) * biofac_TERP/Grid%DeltaZ
+        EmisNat(i,j,BIO_TERP) = (MTL+MTP) * 1.0e-9/3600.0
+  end if
  
      if ( DEBUG_BIO .and. debug_proc .and.  &
             i==debug_li .and. j==debug_lj .and. &
@@ -540,7 +551,7 @@ module Biogenics_ml
 
         write(*,"(a,3i3,f8.2,3f7.3,9es9.2)") "DBIO NatEmis ", &
           current_date%month, current_date%day, current_date%hour, &
-          par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m), E2003, E2010, MT2010, &
+          par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m), E2003, E2010, MTP, MTL, &
           rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG),  EmisNat(i,j,BIO_ISOP)
 
      end if

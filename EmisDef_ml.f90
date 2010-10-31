@@ -134,12 +134,6 @@ implicit none
         (/NEMISLAYERS,NSECTORS /) )!hf stakheigth
 
 
-  ! Biogenics. Use 2 even if no terpene chemistry - simplifies
-  ! rest of code
-  !dsBVOC integer, public, parameter ::   NBVOC = 2   
-  !dsBVOC character(len=8),public, save, dimension(NBVOC) :: &
-  !dsBVOC                                 BVOC_USED = (/ "isoprene","terpene "/)   
-
    !SeaSalt
    integer, public, parameter ::  NSS   = 2 &   ! number of sea salt size modes
                                  ,QSSFI = 1 &   ! production of fine SS
@@ -154,7 +148,7 @@ implicit none
     logical, public, parameter :: AIRNOX      = .true.   ! Gives NOx emission
 
    !/** Volcanos. 
-    logical, public, parameter :: VOLCANOES   = .true.  ! Gives Volcanos
+    logical, public, parameter :: VOLCANOES   = .false.  ! Gives Volcanos
 
    !/** Forest fires.  ! Moved to ModelConstants_ml
    !dsPCM logical, public, parameter :: FOREST_FIRES = .false.  ! Problems in code??

@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!* s Copyright (C) 2007 met.no
+!*  Copyright (C) 2007 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -234,7 +234,7 @@ contains
  use EQSAM_v03d_ml,      only :  eqsam_v03d
  use Setup_1dfields_ml,  only :  xn_2d      ! SIA concentration 
  use Chemfields_ml,      only :  PM25_water, PM25_water_rh50 !PMwater  
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f, SEASALT_F
  use Setup_1dfields_ml,  only :  temp, rh,pp
  use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
  use PhysicalConstants_ml, only : AVOG
@@ -282,8 +282,10 @@ contains
       no3in(KCHEMTOP:KMAX_MID)  = xn_2d(NO3_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
       nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(NH4_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
 
-      NAin(KCHEMTOP:KMAX_MID)  = 0.
-      CLin(KCHEMTOP:KMAX_MID)  = 0.
+      NAin(KCHEMTOP:KMAX_MID)   = xn_2d(SEASALT_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+      CLin(:) =  NAin(:)
+!      NAin(KCHEMTOP:KMAX_MID)  = 0.
+!      CLin(KCHEMTOP:KMAX_MID)  = 0.
 
       if ( ambient ) then               ! real LWC
                   rlhum(:) = rh(:)
@@ -301,7 +303,7 @@ contains
  
  !--------------------------------------------------------------------------
 
-!//....aerosol water (ug/m**3 
+!//....aerosol water (ug/m**3) 
  if (ambient)  then      ! at ambient conditions (3D)
       PM25_water(i,j,KCHEMTOP:KMAX_MID) = max(0., aH2Oout(KCHEMTOP:KMAX_MID) )
  else                    ! In gravimetric PM (Rh=50% and t=20C)

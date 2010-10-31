@@ -61,7 +61,7 @@ module DryDep_ml
                           CDDEP_SET,    &   ! for so4
                           CDDEP_NO2,CDDEP_O3,    &   ! for NO2 comp pt. approach
                           CDDEP_SO2,CDDEP_NH3, &!, & ! CoDep extra
-                          AERO_SIZE,CDDEP_PMfN
+                          AERO_SIZE,CDDEP_PMfN,CDDEP_PMfS
 
 
 use LandDefs_ml, only : LandDefs, STUBBLE
@@ -684,8 +684,13 @@ no2fac = 1.0
   
          else
             if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
-               DepLoss(nadv) =   Fpart(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d( ntot,KMAX_MID)
-               cfac(nadv, i,j) = 1.0+Fpart(ntot,KMAX_MID)*(gradient_fac( ncalc )-1.0)
+!rb               DepLoss(nadv) =   Fpart(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d( ntot,KMAX_MID)
+!rb               cfac(nadv, i,j) = 1.0+Fpart(ntot,KMAX_MID)*(gradient_fac( ncalc )-1.0)
+!RB: Test assuming dry deposition of particulate part of semi-volatile components as PMfS and the gaseous part as specified in GenIn.species.
+               DepLoss(nadv) =   Fgas(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d( ntot,KMAX_MID) + &
+	           Fpart(ntot,KMAX_MID)*vg_fac( CDDEP_PMfS ) * xn_2d( ntot,KMAX_MID)
+               cfac(nadv, i,j) = Fgas(ntot,KMAX_MID)*(gradient_fac( ncalc ))+ &
+                   Fpart(ntot,KMAX_MID)*(gradient_fac( CDDEP_PMfS ))
             else
                DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( ntot,KMAX_MID)
                cfac(nadv, i,j) = gradient_fac( ncalc )

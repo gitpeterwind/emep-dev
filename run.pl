@@ -123,6 +123,8 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 #die " TO DO: Need still to create SR split files\n" if $SR ;
 
+my $EUCAARI=1;
+
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
 my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP) if $CWF;
 if ($CWF) {
@@ -182,9 +184,12 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
+#DS Confusing list of possibilites. Needs  CHECK LATER
+my $MetDriver = "H20" ; # DS consider condition "EC";  #"H20";
+   $MetDriver = "EC" if $year == 2008; #CHECK
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
@@ -193,7 +198,13 @@ if ($STALLO) {
     $WORKROOT = "/global/work";
     $DataDir  = "/global/work/mifapw/emep/Data";
     $MetDir   = "$DataDir/$GRID/metdata/$year" ;
-    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
+#    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
+    if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
+      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";  
+      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year"."_ny" if $GRID eq "EECCA";  
+      # TMP, just to make something work for 2006
+      $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;  
+    }
     if ( $GRID eq "EMEP" ) {
       my $AnnaDir = "/global/work/mifaab/emep/Data";
       $MetDir  = "$AnnaDir/Parlam-PS/metdata/$year" ;
@@ -221,12 +232,21 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
 
 my (@emislist, $Chem, $testv);
-@emislist = qw ( sox nox nh3 co voc pm25 pmco );
+
+if ($EUCAARI) {
+    @emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
+} else {
+    @emislist = qw ( sox nox nh3 co voc pm25 pmco );
+} 
+
 $Chem     = "EmChem09";                   # Label for chemical scheme used
-$testv    = "rv3_7beta6";
+$Chem     = "Eucaari_Trends";                   # Label for chemical scheme used
+$testv    = "rv3_7beta7";
+
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
+
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 
 # Check that the code directory has the chem files we want:
@@ -234,13 +254,16 @@ my $ChemDir  = "$ProgDir/ZCM_$Chem";
 #die "Mis-Match chemistry, Unimod.$testv Chem: $Chem" if
 #  ( File::Compare::compare( "$ProgDir/CM_ChemSpecs_ml.f90" , "$ChemDir/CM_ChemSpecs_ml.f90"));
 
-#my $WORKDIR     = "$WORKROOT/$USER/test";         # working and result directory
 my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result directory
    $WORKDIR     = "$WORKROOT/$USER/Benchmark/$GRID.$year" if (%BENCHMARK);
-my $MyDataDir   = "$HOMEROOT/$DAVE/Unify/MyData";           # for each user's private input
+my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
 my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
 my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-files
-
+my $SoilDir     = "/home/mifast/Unify/MyData";   # Saharan BIC
+my $DustDataDir = "/home/mifast/Unify/MyData/BC_DUST/2000";   # Saharan BIC
+#.. For using emissions of EC/OC instead of PMx
+my $RFEmisDir   = "/global/work/mifast/Data_RF";   # Split-Fraction files for EC/OC
+my $TNOemisDir  = "/global/work/mifast/Emis_TNO";  # TNO EC/OC emissions
 
 #ds check: and change
 chdir "$ProgDir";
@@ -251,6 +274,9 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 
 my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
 #my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;
+$SplitDir    = "$ChemDir/EMISSPLIT"  if $EUCAARI; 
+#RB: had  "/home/mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
+
 my $Africa      = "$DATA_LOCAL/Africa";  # Emissions for Africa, y=1..11
 
 my $timeseries  = "$DataDir";
@@ -277,8 +303,14 @@ $emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
                                                     if $year eq 2006;
 $emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
 $emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
+
+$emisdir = $TNOemisDir if $EUCAARI;
+
 $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
+
+# Emissions for global Radiative Forcing runs
+#$emisdir = "/global/work/nyiri/Emission_globalRF" if $RF;
 
 #EMISSIONS: FORECAST settings
 if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
@@ -372,7 +404,7 @@ my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 32;        # for testing, simply reset here
+ $NTERM = 9;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
@@ -627,7 +659,9 @@ foreach my $scenflag ( @runs ) {
 # in the model.
 
   my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
-         "nox" => "NOx" , "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco" ) ;
+		  "nox" => "NOx" , "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
+		  "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "POCfine"   ) ;
+
 
   foreach my $poll  ( @emislist  ) {
     my $dir = $emisdir;
@@ -639,8 +673,14 @@ foreach my $scenflag ( @runs ) {
     }else{
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
     }
-    $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-    $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+
+    if ( $EUCAARI ) {
+	$ifile{"$RFEmisDir/Emis08_EECCA/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+        $ifile{"$RFEmisDir/Emis08_EECCA/DailyFac.$poll"} = "DailyFac.$poll";
+    } else {
+	$ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+	$ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+    }
 #DSRC
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
     # specials aren't required
@@ -653,6 +693,10 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
+# BIC for Saharan dust
+	foreach my $bc ( qw ( DUST_c_ext DUST_f_ext )) { #
+	    $ifile{"$DustDataDir/$bc.$mm"} =  "$bc.$mm";
+	}
     if ( $GRID eq "GLOBAL" ) {
       foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
         $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
@@ -664,13 +708,18 @@ foreach my $scenflag ( @runs ) {
   }
 
 # Emissions setup:
-  $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+  if ($EUCAARI) {
+      $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
+  } else {
+      $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+  }
+
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
 # my $new="Boundary_and_Initial_Conditions.nc";
 # mylink( "BIC: ", $old,$new ) ;
-  $ifile{"$DataDir/femis.dat"} =  "femis.dat";
-  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
-                     "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
+#EUCAARI, but all?
+# Skip:  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
+#                     "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
   $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =
                   "GLOBAL_Boundary_and_Initial_Conditions.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
@@ -690,11 +739,11 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/Inputs_LandDefs_20101016.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
-# $ifile{"$MyDataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
 
 #Prelim BVOC attempt
   $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
+#New EURO BVOC
   $ifile{"$DataDir/EMEP_EuroBVOC_KRS09.nc"} = "LOCAL_BVOC.nc";
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
@@ -708,8 +757,11 @@ foreach my $scenflag ( @runs ) {
 
   #GRID $ifile{"$DATA_LOCAL/rough.170"} = "rough.dat"; # Roughness length;
   $ifile{"$DATA_LOCAL/rough.dat"} = "rough.dat"; # Roughness length;
-  $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat";
+  $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
 
+# For windblown dust
+    $ifile{"$SoilDir/clay_isric_percent_ext.dat"} = "clay_frac.dat";
+    $ifile{"$SoilDir/sand_isric_percent_ext.dat"} = "sand_frac.dat";
 
   foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
     if ( -r $old ) {
