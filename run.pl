@@ -241,7 +241,7 @@ if ($EUCAARI) {
 
 $Chem     = "EmChem09";                   # Label for chemical scheme used
 $Chem     = "Eucaari_Trends";                   # Label for chemical scheme used
-$testv    = "rv3_7beta7";
+$testv    = "eucaari"; # "rv3_7beta7";
 
 
 #User directories

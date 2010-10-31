@@ -373,9 +373,9 @@ private
     integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
 
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
-     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-!     character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
-       D3_OTHER ! = (/ "D3_PM25water"/) !**** Under construction *******
+!     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
+     character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
+       D3_OTHER  = (/ "D3_PM25water", "D3_ug_PM25"/) !**** Under construction *******
      != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
