@@ -29,6 +29,8 @@ MALO2,0,CH3COCH(OH)CH(O2)CHO,xx,xx,xx,0,0,0,xx,RO2,,!
 MVKO2,0,HOCH2CH(OO)C(CH3)=O,xx,xx,xx,0,0,0,xx,RO2,,"!(also OOCH2CH(OH)C(CH3)=CH2 - see P&S"
 MACRO2,0,O=CHC(O2)(CH3)CH2OH,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
 MACO3,0,CH2C(CH3)C(=O)O2,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
+*SOA:
+TERPPeroxy,0,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
 O3,1,O3,xx,O3,xx,0,0,0,xx,OX,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
@@ -93,12 +95,26 @@ NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
 NO3_f,1,NO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM10;PM25;PM25anthr;PM10anthr;SIA;OXN;TNO3;AOD,,"!in equilib module"
 NO3_c,1,NO3_c,xx,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;SIA;OXN;TNO3,,"!Course nitrate"
 NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PM25;PM10anthr;PM25anthr;SIA;AOD,,"! in equilib module"
-EC_f_new,1,xx,12,PMfS,ECfn,7.5,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
-EC_f_age,1,xx,12,PMfS,PMf,11.,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
-POC_f,1,xx,12,PMfS,PMf,5.7,0,0,xx,PM10;PM25anthr;PM25;PM25anthr;AOD,,"
+* For the SOA work we use more species, to keep comatability with 
+*VBS  EC_f_new,1,xx,12,PMfS,ECfn,7.5,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
+*VBS EC_f_age,1,xx,12,PMfS,PMf,11.,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
+*VBS POC_f,1,xx,12,PMfS,PMf,5.7,0,0,xx,PM10;PM25anthr;PM25;PM25anthr;AOD,,"
 *EC_c_new,1,C,12,PMc,PMfn,0,0,0,xx,PM10;PM10anthr;PMCO;AOD,,"
 *EC_c_age,1,C,12,PMc,PMc,0,0,0,xx,PM10;PM10anthr;PMCO;AOD,,"
 *PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25;PM25anthr,,"!Primary; fine <2.5um"
+**********************************************
+POC_f_WOOD,1,CO,xx,PMfS,PMf,0,0,0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;WOODOC;NONVOLOC,,"!Primary wood burning OC emissions, OA/OC=2.3"
+POC_f_FFUEL,1,CH3,xx,PMfS,PMf,0,0,0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;FFUELOC;NONVOLOC,,"!Primary fossil fuel burning fine OC emissions, OA/OC=1.25"
+POC_c_FFUEL,1,CH3,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;FFUELOC;NONVOLOC,,"!Primary fossil fuel burning coarse OC emissions, OA/OC=1.25"
+EC_f_WOOD_new,1,C,xx,PMfS,ECfn,0,0,0,xx,EC_f;PM25;PM10;PM25anthr;PM10anthr;PCM;WOODEC;NONVOLEC,,"!Primary wood burning fine EC emissions"
+EC_f_WOOD_age,1,C,xx,PMfS,PMf,0,0,0,xx,EC_f;PM25;PM10;PM25anthr;PM10anthr;PCM;WOODEC;NONVOLEC,,"!Aged wood burning fine EC emissions"
+EC_c_WOOD,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;WOODEC;NONVOLEC,,"!Primary wood burning coarse EC emissions"
+EC_f_FFUEL_new,1,C,xx,PMfS,ECfn,0,0,0,xx,EC_f;PM25;PM10;PM25anthr;PM10anthr;PCM;FFUELEC;NONVOLEC,,"!Primary fossil fuel burning fine EC emissions"
+EC_f_FFUEL_age,1,C,xx,PMfS,PMf,0,0,0,xx,EC_f;PM25;PM10;PM25anthr;PM10anthr;PCM;FFUELEC;NONVOLEC,,"!Aged fossil fuel burning fine EC emissions"
+EC_c_FFUEL,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;FFUELEC;NONVOLEC,,"!Primary fossil fuel burning coarse EC emissions"
+FFIRE_OC,1,CO,xx,PMfS,PMf,0,0,0,xx,PM25;PM10;PCM;FFIREOC;NONVOLOC,,"!Wildfire OC emissions, OA/OC assumed to be =2.3"
+FFIRE_BC,1,CO,xx,PMfS,PMf,0,0,0,xx,PM25;PM10;PCM;FFIREBC;NONVOLEC,,"!Wildfire BC emissions"
+*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
 PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25,,!fires...
 CO_FIRE,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
 *PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;,,"!Primary; 2.5--10u"
@@ -109,4 +125,42 @@ Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PM10;PM10;DUST;AOD,,!
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!
 *TESTSOA,2,xx,999,PMf,PMf,0,1.0,70.0,xx,PM25;SOA;FALSEGROUP,,!
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
+*SOA species (including dry dep changes!)
+*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
+ALK5_ug1,2,C4H8O,xx,ALD,PMf,0,1.0,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=1.8"
+ALK5_ug10,2,C4H8O,xx,ALD,PMf,0,10.0,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=1.8"
+OLE1_ng100,2,C3H6O2,xx,ALD,PMf,0,0.1,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=2.1"
+OLE1_ug1,2,C3H6O2,xx,ALD,PMf,0,1.0,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=2.1"
+OLE1_ug10,2,C3H6O2,xx,ALD,PMf,0,10.0,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=2.1"
+OLE1_ug1e2,2,C3H6O2,xx,ALD,PMf,0,1.0e2,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=2.1"
+OLE1_ug1e3,2,C3H6O2,xx,ALD,PMf,0,1.0e3,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=2.1"
+ARO2_ng100,2,C7H10O2,xx,ALD,PMf,0,0.1,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=1.5"
+ARO2_ug1,2,C7H10O2,xx,ALD,PMf,0,1.0,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=1.5"
+ARO2_ug10,2,C7H10O2,xx,ALD,PMf,0,10.0,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=1.5"
+ARO2_ug1e2,2,C7H10O2,xx,ALD,PMf,0,1.0e2,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=1.5"
+ARO2_ug1e3,2,C7H10O2,xx,ALD,PMf,0,1.0e3,30.0,xx,PM25;PM10;PM25anthr;PM10anthr;PCM;ASOA,,"! OA/OC=1.5"
+ISOP_ng100,2,C5H8O2,xx,ALD,PMf,0,0.1,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.67"
+ISOP_ug1,2,C5H8O2,xx,ALD,PMf,0,1.0,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.67"
+ISOP_ug10,2,C5H8O2,xx,ALD,PMf,0,10.0,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.67"
+ISOP_ug1e2,2,C5H8O2,xx,ALD,PMf,0,1.0e2,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.67"
+ISOP_ug1e3,2,C5H8O2,xx,ALD,PMf,0,1.0e3,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.67"
+TERP_ng100,2,C10H16O3,xx,ALD,PMf,0,0.1,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.53"
+TERP_ug1,2,C10H16O3,xx,ALD,PMf,0,1.0,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.53"
+TERP_ug10,2,C10H16O3,xx,ALD,PMf,0,10.0,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.53"
+TERP_ug1e2,2,C10H16O3,xx,ALD,PMf,0,1.0e2,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.53"
+TERP_ug1e3,2,C10H16O3,xx,ALD,PMf,0,1.0e3,30.0,xx,PM25;PM10;PCM;BSOA,,"! OA/OC=1.53"
+"**************************************************"
+"*Helper species - sums of various SOA, EC etc..."
+"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
+GAS_ASOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+GAS_BSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_ASOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_BSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_TBSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_IBSOA,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_POC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_FFUELOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_WOODOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+AER_BGNDOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+"***************************************************"
