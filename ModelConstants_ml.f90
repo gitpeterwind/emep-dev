@@ -81,7 +81,7 @@ module ModelConstants_ml
  ! integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-!   RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
+   RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
   !RUNDOMAIN = (/ 1, 100, 1, 100 /)     ! EMEP domain in EECCA
   !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
@@ -99,8 +99,8 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   3        & ! Actual number of processors in longitude
-  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   6        & ! Actual number of processors in longitude
+  , NPROCY      =   6        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -156,7 +156,7 @@ module ModelConstants_ml
      DEBUG_AQUEOUS        = .false. & !
     ,DEBUG_AOT            = .false. & !
     ,DEBUG_BCS            = .false. & !
-    ,DEBUG_BIO            = .true. & !
+    ,DEBUG_BIO            = .false. & !
     ,DEBUG_DERIVED        = .false. & !
        ,DEBUG_COLUMN      = .false. & ! extra option in Derived
     ,DEBUG_DO3SE          = .false. & !
@@ -179,7 +179,7 @@ module ModelConstants_ml
     ,DEBUG_RUNCHEM        = .false. &
       ,DEBUG_WETDEP         = .false. & !
       ,DEBUG_MY_WETDEP      = .false. & !
-      ,DEBUG_SOA            = .true. & !
+      ,DEBUG_SOA            = .false. & !
     ,DEBUG_SEASALT        = .false. & !
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_LANDDEFS       = .false. & !
