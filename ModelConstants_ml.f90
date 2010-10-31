@@ -95,7 +95,7 @@ module ModelConstants_ml
   !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
   !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
-  RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
+  !RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
