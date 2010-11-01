@@ -130,7 +130,8 @@ contains
           READVOLC: do
              read(IO_VOLC,*,iostat=ios) i,j,height
 
-             if (DEBUG_VULC) write(*,*)'found i,j,heigh',i,j,height
+             if (DEBUG_VULC) write(*,"(a,2i5,f12.3,i9)") &
+                   'VOLCIJ:found i,j,height,ios',i,j,height,ios
              if ( ios /= 0 ) exit READVOLC
 
              !/** Read (i,j) are given for the full EMEP polar-stereographic domain
@@ -144,7 +145,7 @@ contains
                 if ((i_volc(volc_no)==i) .and. (j_volc(volc_no)==j)) then
                    height_volc(volc_no)=height
                    nvolc_read=nvolc_read+1
-                   if (DEBUG_VULC) write(*,*)'Found volcano with height k=',height
+                   if (DEBUG_VULC) write(*,*)'VOLCIJ:Found volcano with height k=',height
                 endif
              enddo
           enddo READVOLC
@@ -167,7 +168,7 @@ contains
        fname = "VolcanoesLL.dat"  
        if (MasterProc) call open_file(IO_VOLC,"r",fname,needed=.true.)
        CALL MPI_BCAST(ios,1,MPI_INTEGER,0,MPI_COMM_WORLD,INFO)
-           write(*,*)'READfile',me,ios,me,MasterProc
+           write(*,*)'VOLC: READfile',me,ios,me,MasterProc
 
        if(ios/=0)then
           if (MasterProc) write(6,*) ' No volcanoes found in VolcanoesLL.dat'
@@ -176,7 +177,7 @@ contains
 
        call Read_Headers(IO_VOLC,errmsg,NHeaders,NKeys,Headers,Keyvalues)
        VOLCLOOP: do nin = 1, NMAX_VOLC+1
-          write(*,*)'READLINE'
+       !   write(*,*)'READLINE'
         call read_line(IO_VOLC,txtinput,ios)
         if ( ios /= 0 ) exit  ! End of file
         nvolc=nvolc+1
@@ -186,8 +187,10 @@ contains
         call lb2ij(lon,lat,xr,yr)
         i_volc(nvolc)=nint(xr)
         j_volc(nvolc)=nint(yr)
-        if (DEBUG_VULC.and.MasterProc) write(*,*)'Found ',s,  lon,  lat, i_volc(nvolc),j_volc(nvolc)&
-             , i_volc(nvolc)+IRUNBEG-1,j_volc(nvolc)+JRUNBEG-1, height_volc(nvolc), emis_volc(nvolc)
+        if (DEBUG_VULC.and.MasterProc) write(*,*)'VOLC:Found ',trim(s), &
+             lon,  lat, i_volc(nvolc),j_volc(nvolc)&
+             ,i_volc(nvolc)+IRUNBEG-1,j_volc(nvolc)+JRUNBEG-1, & 
+              height_volc(nvolc), emis_volc(nvolc)
 
        end do VOLCLOOP
        if (MasterProc)close(IO_VOLC)
