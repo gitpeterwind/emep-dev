@@ -59,11 +59,16 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
 
   Biogenic_ml - * fixed bug * for terpene emissions. Added EmisNat for BIO_TERP
 
+  Derived_ml - Idirect, Idiffuse, T2m options added
+  My_Derived_ml - Idirect, Idiffuse, T2m options added
+
   run.pl - various EUCAARI options. Needs attention for MetDir, but tested for 2008, 2006
 
   ModelConstants_ml - had to switch off Volcanoes
 
   Sites_ml,   just renamed CALL to call. Was looking ofr lat/long "LL"
+
+  Volcanoes_ml, lat/long option added.
 
 
 xxxxxxxxxxxxxx rv3_7beta7b Robert Oct 30 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
