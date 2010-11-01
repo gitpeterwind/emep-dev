@@ -1,3 +1,20 @@
+xxxxxxxxxxxxxx rv3_7eucaari with VolcanoesLL (Peter 1/11-2010)xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+Included a lon lat description for Volcanoes:
+/global/work/mifapw/emep/Data/VolcanoesLL.dat 
+NB:emission values and positions should be updated
+
+It is used ONLY if all these conditions are met:
+1)There are no volcanoes (country code=28) emissions in gridSOx
+2)Volcanoes.dat does not exist (remove it from the links in run.pl, NB also remove 
+  from the work directory if you still have an old link there)
+
+Otherwise the conversion to grid coordinates should be automatic.
+
+Changes in:
+Volcanos_ml, Emissions_ml, run.pl
+
+
+xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 IMPORTANT EUCAARI NOTE:
 
   * Instructions to run EUCAARI version *

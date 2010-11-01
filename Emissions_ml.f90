@@ -410,34 +410,12 @@ contains
     enddo !iem
 
     if ( VOLCANOES ) then
-
-       !DSRC eindex_vol = EmisDef_Index( "sox" )
-       conv = tonne_to_kgm2s !DSRC * EmisDef(eindex_vol)%conv
-
-       do volc_no=1,nvolc 
-          i=i_volc(volc_no)
-          j=j_volc(volc_no)
-          !Find global<->local coordinates for xm2
-             if ((i >= gi0).and.(i<=gi1).and.(j>= gj0).and.&
-                 (j<= gj1))then !on the correct processor
-                if ( DEBUG ) write(*,*)'i,j for volcanoe is',i,j
-                if ( DEBUG ) write(*,*)'EMIS_VOLC is',emis_volc(volc_no)
-                i_l = i -gi0 +1
-                j_l = j- gj0 +1
-                 if ( DEBUG ) write(*,*)'Local coord is',i_l,j_l,gi0,gj0
-                emis_volc(volc_no) = emis_volc(volc_no)* conv * xm2(i_l,j_l)
-            endif
-        enddo !volc_no
-
-        !/** Read  Volcano.dat to get volcano height
-        if (MasterProc)then
-            call VolcGet(height_volc)
-             if (DEBUG) write(*,*)'Volcano heights',height_volc
-        endif
-
-        !/** broadcast volcano heights
-          CALL MPI_BCAST(height_volc,4*NMAX_VOLC,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-     endif ! VOLCANOES
+       
+       !/** Read  Volcanos.dat or VolcanoesLL.dat to get volcano height 
+       !        and magnitude in the case of VolcanoesLL.dat
+       call VolcGet(height_volc)
+       
+    endif ! VOLCANOES
 
     err1 = 0
     if ( MasterProc ) then

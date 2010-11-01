@@ -49,13 +49,15 @@ module Volcanos_ml
 
  use CheckStop_ml,          only : CheckStop
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
- use GridValues_ml,         only : sigma_bnd, i_fdom, j_fdom,i_local, j_local
- use Io_ml,                 only : ios, open_file, check_file, IO_VOLC
- use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC
+ use GridValues_ml,         only : GRIDWIDTH_M, xm2, sigma_bnd, i_fdom, j_fdom,i_local, j_local,lb2ij
+ use Io_ml,                 only : ios, NO_FILE, open_file, check_file, IO_VOLC, Read_Headers,read_line
+ use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC, MasterProc
  use MetFields_ml,          only : roa, ps
  use Par_ml,                only : IRUNBEG, JRUNBEG, me, li0,lj0,li1,lj1  &
                                   ,gi0, gi1, gj0, gj1 !TEST
  use PhysicalConstants_ml,  only : GRAV, AVOG
+ use TimeDate_ml,           only : nydays  ! No. days per year
+ use KeyValue_ml,           only : KeyVal, KeyValue, LENKEYVAL
 
  implicit none
  private
@@ -81,67 +83,140 @@ module Volcanos_ml
                         rcemis_volc, & ! Emissions part varying every time-step 
                         emis_volc = 0.0 ! Volcanoes' emissions
 
-  logical, private, parameter :: DEBUG_VULC = .false.
+  logical, private, parameter :: DEBUG_VULC = .true.
+
+  INCLUDE 'mpif.h'
+  INTEGER STATUS(MPI_STATUS_SIZE),INFO
 
 contains 
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    subroutine VolcGet(height_volc)
-!***********************************************************************
- !-----------------------------------------------------------------------!
- ! Reads volcanoes' coorinates (i,j) and height level(height) 
- ! Returns to EmisSet with height of volcanos (height_volc)
- ! Input file: Volcanoes.dat
- !-----------------------------------------------------------------------!
+  subroutine VolcGet(height_volc)
+    !***********************************************************************
+    !-----------------------------------------------------------------------!
+    ! Reads volcanoes' coordinates (i,j) and height level(height) 
+    ! Returns to EmisSet with height of volcanos (height_volc)
+    ! Input file: Volcanoes.dat
+    !-----------------------------------------------------------------------!
 
-  integer, intent(out), dimension(NMAX_VOLC) :: height_volc
-  integer            :: nvolc_read,height,i,j          ! Local variables
-  character (len=13) :: fname
-  logical            :: fexist 
-     
-     fname = "Volcanoes.dat"  
+    integer, intent(out), dimension(NMAX_VOLC) :: height_volc
+    integer            :: nvolc_read,height,i,j          ! Local variables
+    character (len=23) :: fname
+    logical            :: fexist 
+    
+    integer            ::nin,i_l,j_l
+    real               ::lon,lat,value,xr,yr,conv,tonne_to_kgm2s
 
-     ios=0    ! Start with  assumed ok status
+    character(len=70)               :: errmsg ! Message text
+    character(len=20), dimension(4) :: Headers
+    type(KeyVal), dimension(20)     :: KeyValues ! Info on units, coords, etc.
+    integer                         :: NHeaders, NKeys
+    character(len=80)               :: txtinput,s  ! Big enough to contain
+                                                 ! one full input record
+    fname = "Volcanoes.dat"  
 
-     call open_file(IO_VOLC,"r",fname,needed=.true.,skip=1)
+    ios=0    ! Start with  assumed ok status
 
-     call CheckStop(ios,"VolcGet: problems with Volcanoes.dat ")
+    height_volc(:)=KMAX_MID
+    nvolc_read=0
+ 
+    if (MasterProc)then
+       call open_file(IO_VOLC,"r",fname,needed=.false.,skip=1)
+
+       if(ios/=NO_FILE)then!"Volcanoes.dat" does exist
+          call CheckStop(ios,"VolcGet: problems with Volcanoes.dat ")
 
 
-     height_volc(:)=0.0
-     nvolc_read=0
+          READVOLC: do
+             read(IO_VOLC,*,iostat=ios) i,j,height
 
-     READVOLC: do
-           read(IO_VOLC,*,iostat=ios) i,j,height
+             if (DEBUG_VULC) write(*,*)'found i,j,heigh',i,j,height
+             if ( ios /= 0 ) exit READVOLC
 
-           if (DEBUG_VULC) write(*,*)'found i,j,heigh',i,j,height
-           if ( ios /= 0 ) exit READVOLC
+             !/** Read (i,j) are given for the full EMEP polar-stereographic domain
+             !    Convert them to actual run domain
+             i = i -IRUNBEG+1    
+             j = j -JRUNBEG+1    
 
-  !/** Read (i,j) are given for the full EMEP polar-stereographic domain
-  !    Convert them to actual run domain
-           i = i -IRUNBEG+1    
-           j = j -JRUNBEG+1    
+             !/** Set the volcano number to be the same as in emission data (gridSOx)
 
-  !/** Set the volcano number to be the same as in emission data (gridSOx)
+             do volc_no=1,nvolc
+                if ((i_volc(volc_no)==i) .and. (j_volc(volc_no)==j)) then
+                   height_volc(volc_no)=height
+                   nvolc_read=nvolc_read+1
+                   if (DEBUG_VULC) write(*,*)'Found volcano with height k=',height
+                endif
+             enddo
+          enddo READVOLC
 
-           do volc_no=1,nvolc
-               if ((i_volc(volc_no)==i) .and. (j_volc(volc_no)==j)) then
-                  height_volc(volc_no)=height
-                  nvolc_read=nvolc_read+1
-                  if (DEBUG_VULC) write(*,*)'Found volcano with height k=',height
-               endif
-           enddo
-     enddo READVOLC
+          write(6,*) nvolc_read,' volcanos on volcanos.dat &
+               & match volcanos on emislist.sox'
+          write(6,*) nvolc,' volcanos found in emislist.sox'
 
-     write(6,*) nvolc_read,' volcanos on volcanos.dat &
-             & match volcanos on emislist.sox'
-     write(6,*) nvolc,' volcanos found in emislist.sox'
+          call CheckStop(nvolc_read < nvolc, "Volc missing in Volcanos.dat")
 
-     call CheckStop(nvolc_read < nvolc, "Volc missing in Volcanos.dat")
-  
-     close(IO_VOLC)
 
-    end subroutine VolcGet
+       endif
+       close(IO_VOLC)
+    endif
+
+    CALL MPI_BCAST(ios,1,MPI_INTEGER,0,MPI_COMM_WORLD,INFO)
+    if(ios==NO_FILE)then!"Volcanoes.dat" does not exist
+      call CheckStop(nvolc>0,"Volcanoes defined in gridSOx, but not in Volcanoes.dat")
+       !read volcanoes from lon lat format file:
+       fname = "VolcanoesLL.dat"  
+       if (MasterProc) call open_file(IO_VOLC,"r",fname,needed=.true.)
+       CALL MPI_BCAST(ios,1,MPI_INTEGER,0,MPI_COMM_WORLD,INFO)
+           write(*,*)'READfile',me,ios,me,MasterProc
+
+       if(ios/=0)then
+          if (MasterProc) write(6,*) ' No volcanoes found in VolcanoesLL.dat'
+          return
+       endif
+
+       call Read_Headers(IO_VOLC,errmsg,NHeaders,NKeys,Headers,Keyvalues)
+       VOLCLOOP: do nin = 1, NMAX_VOLC+1
+          write(*,*)'READLINE'
+        call read_line(IO_VOLC,txtinput,ios)
+        if ( ios /= 0 ) exit  ! End of file
+        nvolc=nvolc+1
+        call CheckStop(nvolc>NMAX_VOLC, "more Volcanoes in VolcanoesLL.dat than NMAX_VOLC")
+
+        read(unit=txtinput,fmt=*) s,  lon,  lat, height_volc(nvolc), emis_volc(nvolc)
+        call lb2ij(lon,lat,xr,yr)
+        i_volc(nvolc)=nint(xr)
+        j_volc(nvolc)=nint(yr)
+        if (DEBUG_VULC.and.MasterProc) write(*,*)'Found ',s,  lon,  lat, i_volc(nvolc),j_volc(nvolc)&
+             , i_volc(nvolc)+IRUNBEG-1,j_volc(nvolc)+JRUNBEG-1, height_volc(nvolc), emis_volc(nvolc)
+
+       end do VOLCLOOP
+       if (MasterProc)close(IO_VOLC)
+
+    endif
+
+
+    tonne_to_kgm2s=1.0e3 / (nydays * 24.0 * 3600.0 * GRIDWIDTH_M * GRIDWIDTH_M)
+    conv = tonne_to_kgm2s !DSRC * EmisDef(eindex_vol)%conv
+    do volc_no=1,nvolc 
+       i=i_volc(volc_no)
+       j=j_volc(volc_no)
+       !Find global<->local coordinates for xm2
+       if ((i >= gi0).and.(i<=gi1).and.(j>= gj0).and.&
+            (j<= gj1))then !on the correct processor
+          if ( DEBUG_VULC ) write(*,*)'i,j for volcanoe is',i,j
+          if ( DEBUG_VULC ) write(*,*)'EMIS_VOLC is',emis_volc(volc_no)
+          i_l = i -gi0 +1
+          j_l = j- gj0 +1
+          if ( DEBUG_VULC ) write(*,*)'Local coord is',i_l,j_l,gi0,gj0
+          emis_volc(volc_no) = emis_volc(volc_no)* conv * xm2(i_l,j_l)
+       endif
+    enddo !volc_no
+    !   endif
+
+    !/** broadcast volcano heights
+    CALL MPI_BCAST(height_volc,4*NMAX_VOLC,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
+
+  end subroutine VolcGet
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     subroutine Set_Volc
