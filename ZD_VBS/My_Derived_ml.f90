@@ -200,7 +200,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(21) :: &
   D2_EXTRA = (/ &
        "WDEP_SO2          " &
       ,"WDEP_SO4          " &
@@ -226,6 +226,9 @@ private
 !      ,"D2_HMIX00         " &
 !      ,"D2_HMIX12         " &
 !      ,"SoilWater          " &
+      ,"T2m                " &
+      ,"Idirect            " &
+      ,"Idiffuse           " &
       ,"SoilWater_deep     " &
       ,"USTAR_NWP         " &
   /)

@@ -88,8 +88,8 @@ use GridValues_ml,    only: debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M&
                             ,GridArea_m2 ! dsbvoc
 use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
-use MetFields_ml,     only: ps
-use MetFields_ml,     only: SoilWater_deep
+use MetFields_ml,     only: ps, t2_nwp
+use MetFields_ml,     only: SoilWater_deep, Idirect, Idiffuse
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
   ,NPROC        & ! No. processors
@@ -449,6 +449,17 @@ call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
 !SoilWater
 call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
                -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
+
+       !Deriv(name, class,    subc,  txt,           unit
+      !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+!T2 and Radiation
+call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
+               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
+call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
+               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
+call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
+               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
+
 !call AddNewDeriv( "SoilWater","SoilWater",  "-","-",   "m", &
 !               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
 
@@ -859,6 +870,19 @@ end do
           case ( "SoilWater" ) ! Not used so far. (=shallow)
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
+          end forall
+
+          case ( "T2m" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = t2_nwp(i,j,1) - 273.15
+          end forall
+          case ( "Idirect" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = Idirect(i,j)
+          end forall
+          case ( "Idiffuse" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = Idiffuse(i,j)
           end forall
 
           case ( "SNOW" )
