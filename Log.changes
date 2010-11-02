@@ -11,7 +11,7 @@ NB: femis.dat reductions will not work anymore on country=28 (volcanoes)
 The conversion to grid coordinates should be automatic.
 
 Changes in:
-Volcanos_ml, Emissions_ml, emisGet_ml, EmisDef_ml, run.pl
+Volcanos_ml, Emissions_ml, emisGet_ml, EmisDef_ml, Setup1d_ml, run.pl
 
 Note that Volcanoes_found is a local variable (different value on different processors)
 There are still some back and forth i,j conversion which should be removed once.

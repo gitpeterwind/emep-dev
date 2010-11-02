@@ -51,7 +51,7 @@
                      ,FNCMAX &      ! Max. No. countries (with flat ! emissions) per grid
                      ,NEMIS_FILES & ! No. emission files
                      ,EMIS_NAME   & ! Names of species ("sox  ",...)
-                     ,VOLCANOES   & ! 
+                     !,VOLCANOES   & ! 
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
                      ,VERTFAC     & ! vertical emission split
@@ -409,13 +409,13 @@ contains
        end forall
     enddo !iem
 
-    if ( VOLCANOES ) then
+!    if ( VOLCANOES ) then
        
        !/** Read  Volcanos.dat or VolcanoesLL.dat to get volcano height 
        !        and magnitude in the case of VolcanoesLL.dat
        call VolcGet(height_volc)
        
-    endif ! VOLCANOES
+!    endif ! VOLCANOES
 
     err1 = 0
     if ( MasterProc ) then
@@ -738,7 +738,8 @@ contains
    end do ! i
  end do ! j
 
-    if ( VOLCANOES ) call Set_Volc !set hourly volcano emission(rcemis_volc0)
+    !if ( VOLCANOES )& 
+    call Set_Volc !set hourly volcano emission(rcemis_volc0)
 
   end if ! hourchange 
 
@@ -759,7 +760,8 @@ contains
    end do ! k
 
  !/** Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
-   if ( VOLCANOES ) call Scale_Volc
+   !if ( VOLCANOES )&
+        call Scale_Volc
 
  !/ ** Biogenic VOC? Will be set in  Biogenics_ml, everuy time-step 
 

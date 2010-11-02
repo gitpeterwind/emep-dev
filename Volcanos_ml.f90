@@ -48,7 +48,7 @@ module Volcanos_ml
   !-----------------------------------------------------------------------!
 
  use CheckStop_ml,          only : CheckStop
- use EmisDef_ml,            only : NSECTORS,ISNAP_NAT
+ use EmisDef_ml,            only : NSECTORS,ISNAP_NAT,VOLCANOES_LL
  use GridValues_ml,         only : GRIDWIDTH_M, xm2, sigma_bnd, i_fdom, j_fdom,i_local, j_local,lb2ij
  use Io_ml,                 only : ios, NO_FILE, open_file, check_file, IO_VOLC, Read_Headers,read_line
  use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC, MasterProc
@@ -74,6 +74,8 @@ module Volcanos_ml
   integer, public, save       :: nvolc = 0    & ! No. grids with volcano 
                                                 ! emissions in gridSOx
                                 ,volc_no = 0 
+  logical, public, save :: Volcanoes_found=.false.! true if Volcanoes found on this processor/subdomain
+
   integer, public, save, dimension(NMAX_VOLC):: &
                         height_volc,          &  ! Height of volcanoes
                         i_volc, j_volc           ! Volcano's EMEP coordinates
@@ -113,15 +115,18 @@ contains
     integer                         :: NHeaders, NKeys
     character(len=80)               :: txtinput,s  ! Big enough to contain
                                                  ! one full input record
-    fname = "Volcanoes.dat"  
-
     ios=0    ! Start with  assumed ok status
 
     height_volc(:)=KMAX_MID
     nvolc_read=0
  
+    if(.not.VOLCANOES_LL)then
+       !Old style: data read from gridSOx and Volcanoes.dat
+
+   fname = "Volcanoes.dat"  
+
     if (MasterProc)then
-       call open_file(IO_VOLC,"r",fname,needed=.false.,skip=1)
+       call open_file(IO_VOLC,"r",fname,needed=.true.,skip=1)
 
        if(ios/=NO_FILE)then!"Volcanoes.dat" does exist
           call CheckStop(ios,"VolcGet: problems with Volcanoes.dat ")
@@ -162,13 +167,14 @@ contains
     endif
 
     CALL MPI_BCAST(ios,1,MPI_INTEGER,0,MPI_COMM_WORLD,INFO)
-    if(ios==NO_FILE)then!"Volcanoes.dat" does not exist
-      call CheckStop(nvolc>0,"Volcanoes defined in gridSOx, but not in Volcanoes.dat")
+
+
+    else ! use "VolcanoesLL.dat" and disregard volcanoes from gridSOx
+       nvolc=0
        !read volcanoes from lon lat format file:
        fname = "VolcanoesLL.dat"  
        if (MasterProc) call open_file(IO_VOLC,"r",fname,needed=.true.)
        CALL MPI_BCAST(ios,1,MPI_INTEGER,0,MPI_COMM_WORLD,INFO)
-           write(*,*)'VOLC: READfile',me,ios,me,MasterProc
 
        if(ios/=0)then
           if (MasterProc) write(6,*) ' No volcanoes found in VolcanoesLL.dat'
@@ -177,7 +183,6 @@ contains
 
        call Read_Headers(IO_VOLC,errmsg,NHeaders,NKeys,Headers,Keyvalues)
        VOLCLOOP: do nin = 1, NMAX_VOLC+1
-       !   write(*,*)'READLINE'
         call read_line(IO_VOLC,txtinput,ios)
         if ( ios /= 0 ) exit  ! End of file
         nvolc=nvolc+1
@@ -197,7 +202,6 @@ contains
 
     endif
 
-
     tonne_to_kgm2s=1.0e3 / (nydays * 24.0 * 3600.0 * GRIDWIDTH_M * GRIDWIDTH_M)
     conv = tonne_to_kgm2s !DSRC * EmisDef(eindex_vol)%conv
     do volc_no=1,nvolc 
@@ -206,6 +210,7 @@ contains
        !Find global<->local coordinates for xm2
        if ((i >= gi0).and.(i<=gi1).and.(j>= gj0).and.&
             (j<= gj1))then !on the correct processor
+          Volcanoes_found=.true.
           if ( DEBUG_VULC ) write(*,*)'i,j for volcanoe is',i,j
           if ( DEBUG_VULC ) write(*,*)'EMIS_VOLC is',emis_volc(volc_no)
           i_l = i -gi0 +1

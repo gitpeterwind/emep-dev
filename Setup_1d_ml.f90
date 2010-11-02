@@ -45,7 +45,7 @@
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
   use DustProd_ml,           only :  DU_prod   ! Dust
-  use EmisDef_ml,           only : AIRNOX, VOLCANOES &
+  use EmisDef_ml,           only : AIRNOX &
                                   ,NSS, NDU & !SeaS, Dust
                                   ,NH3EMIS_VAR ! hb NH3Emis    
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
@@ -251,7 +251,7 @@ contains
 
      !/** Add volcanoe emissions
     
-     if ( VOLCANOES  ) then ! for models that include volcanos
+     if ( Volcanoes_found  ) then ! for models that include volcanos
                       !QRCVOL=QRCSO2 for models with volcanos
                       !For non-volc models it is set to dummy value 1
                       !to avoid problems with undefined QRCVOL
