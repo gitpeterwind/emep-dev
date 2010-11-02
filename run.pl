@@ -758,6 +758,8 @@ foreach my $scenflag ( @runs ) {
   #GRID $ifile{"$DATA_LOCAL/rough.170"} = "rough.dat"; # Roughness length;
   $ifile{"$DATA_LOCAL/rough.dat"} = "rough.dat"; # Roughness length;
   $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
+  $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
+
 
 # For windblown dust
     $ifile{"$SoilDir/clay_isric_percent_ext.dat"} = "clay_frac.dat";
