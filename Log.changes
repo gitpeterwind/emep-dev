@@ -3,16 +3,18 @@ Included a lon lat description for Volcanoes:
 /global/work/mifapw/emep/Data/VolcanoesLL.dat 
 NB:emission values and positions should be updated
 
-It is used ONLY if all these conditions are met:
-1)There are no volcanoes (country code=28) emissions in gridSOx
-2)Volcanoes.dat does not exist (remove it from the links in run.pl, NB also remove 
-  from the work directory if you still have an old link there)
+It is used if  VOLCANOES_LL  = .true. in EmisDef
+Then the volcanoes from gridSOX and Vocanos.dat are not used!
 
-Otherwise the conversion to grid coordinates should be automatic.
+NB: femis.dat reductions will not work anymore on country=28 (volcanoes)
+
+The conversion to grid coordinates should be automatic.
 
 Changes in:
-Volcanos_ml, Emissions_ml, run.pl
+Volcanos_ml, Emissions_ml, emisGet_ml, EmisDef_ml, run.pl
 
+Note that Volcanoes_found is a local variable (different value on different processors)
+There are still some back and forth i,j conversion which should be removed once.
 
 xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 IMPORTANT EUCAARI NOTE:

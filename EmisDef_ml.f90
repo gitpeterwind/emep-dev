@@ -148,7 +148,8 @@ implicit none
     logical, public, parameter :: AIRNOX      = .true.   ! Gives NOx emission
 
    !/** Volcanos. 
-    logical, public, parameter :: VOLCANOES   = .false.  ! Gives Volcanos
+    logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes from VolcanoesLL.dat 
+                                                          ! and disregard them from gridSOx
 
    !/** Forest fires.  ! Moved to ModelConstants_ml
    !dsPCM logical, public, parameter :: FOREST_FIRES = .false.  ! Problems in code??

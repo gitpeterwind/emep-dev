@@ -43,7 +43,8 @@
   use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
                                NEMIS_FILES, EMIS_NAME, &
                                ISNAP_SHIP, ISNAP_NAT, &
-                               NH3EMIS_VAR,dknh3_agr, ISNAP_AGR,ISNAP_TRAF! hb NH3emis 
+                               NH3EMIS_VAR,dknh3_agr, ISNAP_AGR,ISNAP_TRAF&! hb NH3emis
+                               ,VOLCANOES_LL
   use GridAllocate_ml,   only: GridAllocate
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                              Read_Headers, read_line
@@ -183,7 +184,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             if ( i  <=  0 .or. i  >  GIMAX .or.   & 
                  j  <=  0 .or. j  >  GJMAX .or.   &
                  ic <=  0 .or. ic >  NLAND .or.   &
-                 ic == IC_NAT )                   &  ! Excludes DMS
+                 ic == IC_NAT              .or.   &  ! Excludes DMS
+                 (ic == IC_VUL .and. VOLCANOES_LL) )&! Excludes Volcanoes from gridSOx. Read from VolcanoesLL.dat instead
              cycle READEMIS
 
              !/* Ship emissions
