@@ -456,11 +456,11 @@ elseif( year == 2005) then
 
 
 !---------------------------------------------------------------------------
- elseif ( year > 2008 .and. &   ! use default Mace-Head correction
-          .not.FORECAST ) then  ! (10-yr average) on FORECAST mode
-   write(unit=errmsg,fmt=*) &
-       "ERROR: No Mace Head correction for this year yet! ", year
-   call CheckStop(errmsg)
+! elseif ( year > 2008 .and. &   ! use default Mace-Head correction
+!          .not.FORECAST ) then  ! (10-yr average) on FORECAST mode
+!   write(unit=errmsg,fmt=*) &
+!       "ERROR: No Mace Head correction for this year yet! ", year
+!   call CheckStop(errmsg)
 
  else ! Defaults, from 1998-2008 average (Agnes, 19.04.2010)
    macehead_O3 = (/  40.3, 42.1, 45.4, 46.5, 43.6, 36.0, &
