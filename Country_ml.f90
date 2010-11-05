@@ -51,6 +51,7 @@ module Country_ml
   ! country/region/emission_type. As an example defining Bavaria as 
   ! a separate region with timefactors as in Germany.
 
+  use ModelConstants_ml, only : DomainName, IIFULLDOM
   implicit none
 
   public :: Country_Init     ! sets country details
@@ -281,11 +282,22 @@ Country( IC_SU ) = cc(  "SU " , 26 ,F, 26,  3  , "Former USSR                   
 Country( IC_GB ) = cc(  "GB " , 27 ,F, 27,  0  , "United Kingdom                " )
 Country( IC_VUL) = cc(  "VUL" , 28 ,F, 28,  1  , "Volcanoes                     " )
 Country( IC_REM) = cc(  "REM" , 29 ,F, 29,  1  , "Remaining land areas          " )
-Country( IC_BAS) = cc(  "BAS" , 30 ,T, 30,  1  , "The Baltic Sea                " )
-Country( IC_NOS) = cc(  "NOS" , 31 ,T, 31,  1  , "The North Sea                 " )
-Country( IC_ATL) = cc(  "ATL" , 32 ,T, 32,  1  , "Remaining NE Atlantic Ocean   " )
-Country( IC_MED) = cc(  "MED" , 33 ,T, 33,  1  , "The Mediterranean Sea         " )
-Country( IC_BLS) = cc(  "BLS" , 34 ,T, 34,  1  , "The Black Sea                 " )
+Country( IC_BAS) = cc(  "BAS" , 30 ,F, 30,  1  , "The Baltic Sea                " )
+Country( IC_NOS) = cc(  "NOS" , 31 ,F, 31,  1  , "The North Sea                 " )
+Country( IC_ATL) = cc(  "ATL" , 32 ,F, 32,  1  , "Remaining NE Atlantic Ocean   " )
+Country( IC_MED) = cc(  "MED" , 33 ,F, 33,  1  , "The Mediterranean Sea         " )
+Country( IC_BLS) = cc(  "BLS" , 34 ,F, 34,  1  , "The Black Sea                 " )
+
+! why why whya........ 
+if ( DomainName == "HIRHAM" .and. IIFULLDOM == 182 ) then ! Special fix
+
+  Country( IC_BAS) = cc(  "BAS" , 30 ,T, 30,  1  , "The Baltic Sea                " )
+  Country( IC_NOS) = cc(  "NOS" , 31 ,T, 31,  1  , "The North Sea                 " )
+  Country( IC_ATL) = cc(  "ATL" , 32 ,T, 32,  1  , "Remaining NE Atlantic Ocean   " )
+  Country( IC_MED) = cc(  "MED" , 33 ,T, 33,  1  , "The Mediterranean Sea         " )
+  Country( IC_BLS) = cc(  "BLS" , 34 ,T, 34,  1  , "The Black Sea                 " )
+end if ! HIRHAM fix
+
 Country( IC_NAT) = cc(  "NAT" , 35 ,F, 35,  1  , "Natural marine sources        " )
 Country( IC_RUO) = cc(  "RUO" , 36 ,F, 36,  3  , "Kola/Karelia                  " )
 Country( IC_RUP) = cc(  "RUP" , 37 ,F, 37,  3  , "St.Petersburg/Novgorod-Pskov  " )
