@@ -1,21 +1,3 @@
-xxxxxxxxxxxxxx rv3_7eucaari with VolcanoesLL (Peter 1/11-2010)xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
-Included a lon lat description for Volcanoes:
-/global/work/mifapw/emep/Data/VolcanoesLL.dat 
-NB:emission values and positions should be updated
-
-It is used if  VOLCANOES_LL  = .true. in EmisDef
-Then the volcanoes from gridSOX and Vocanos.dat are not used!
-
-NB: femis.dat reductions will not work anymore on country=28 (volcanoes)
-
-The conversion to grid coordinates should be automatic.
-
-Changes in:
-Volcanos_ml, Emissions_ml, emisGet_ml, EmisDef_ml, Setup1d_ml, run.pl
-
-Note that Volcanoes_found is a local variable (different value on different processors)
-There are still some back and forth i,j conversion which should be removed once.
-
 xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 IMPORTANT EUCAARI NOTE:
 
@@ -59,19 +41,37 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
 
   Other:
 
+  Advection_ml - added min(ps3d) safety checks
+
   Biogenic_ml - * fixed bug * for terpene emissions. Added EmisNat for BIO_TERP
 
-  Derived_ml - Idirect, Idiffuse, T2m options added
+  Derived_ml - Idirect, Idiffuse, T2m and *lots* of 3D options added
   My_Derived_ml - Idirect, Idiffuse, T2m options added
 
   run.pl - various EUCAARI options. Needs attention for MetDir, but tested for 2008, 2006
 
-  ModelConstants_ml - had to switch off Volcanoes
+  ModelConstants_ml - added HIRHAM and DRYRUN flag
 
   Sites_ml,   just renamed CALL to call. Was looking ofr lat/long "LL"
 
-  Volcanoes_ml, lat/long option added.
-
+    xxxxxxxxxxxxxx .... with VolcanoesLL (Peter 1/11-2010)xxxxxxxxxxxxxxxx
+    Included a lon lat description for Volcanoes:
+    /global/work/mifapw/emep/Data/VolcanoesLL.dat 
+    NB:emission values and positions should be updated
+    
+    It is used if  VOLCANOES_LL  = .true. in EmisDef
+    Then the volcanoes from gridSOX and Vocanos.dat are not used!
+    
+    NB: femis.dat reductions will not work anymore on country=28 (volcanoes)
+    
+    The conversion to grid coordinates should be automatic.
+    
+    Changes in:
+    Volcanos_ml, Emissions_ml, emisGet_ml, EmisDef_ml, Setup1d_ml, run.pl
+    
+    Note that Volcanoes_found is a local variable (different value on different processors)
+    There are still some back and forth i,j conversion which should be removed once.
+    
 
 xxxxxxxxxxxxxx rv3_7beta7b Robert Oct 30 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
