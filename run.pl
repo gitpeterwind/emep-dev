@@ -8,7 +8,7 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=6:ib
+#PBS -lnodes=8:ib
 # wall time limit of run
 #PBS -lwalltime=00:10:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -184,7 +184,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "HIRHAM"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -397,14 +397,14 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "05";       # first month, use 2-digits!
-my $mm2   =  "05";       # last month, use 2-digits!
+my $mm1   =  "08";       # first month, use 2-digits!
+my $mm2   =  "08";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 9;        # for testing, simply reset here
+ $NTERM = 32;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
@@ -731,7 +731,7 @@ foreach my $scenflag ( @runs ) {
   $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
 # new inputs style (Aug 2007)  with compulsory headers:
-  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
+#NOT NEEDED  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
   #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
@@ -755,9 +755,8 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
   }
 
-  #GRID $ifile{"$DATA_LOCAL/rough.170"} = "rough.dat"; # Roughness length;
   $ifile{"$DATA_LOCAL/rough.dat"} = "rough.dat"; # Roughness length;
-  $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
+  #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 
 
