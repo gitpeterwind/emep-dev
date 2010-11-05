@@ -41,7 +41,7 @@ module ModelConstants_ml
 ! Some flags for model setup
 ! will be removed when convection is sufficiently tested (use foundconv in permanent code)
  logical, public, parameter :: USE_CONVECTION   = .false.
- logical, public, parameter :: USE_SOILWATER    = .false.
+ logical, public, parameter :: USE_SOILWATER    = .true.
  logical, public, parameter :: USE_FOREST_FIRES = .false.
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.

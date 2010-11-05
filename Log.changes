@@ -51,6 +51,7 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
   run.pl - various EUCAARI options. Needs attention for MetDir, but tested for 2008, 2006
 
   ModelConstants_ml - added HIRHAM and DRYRUN flag
+                    - switched on soil water :-)
 
   Sites_ml,   just renamed CALL to call. Was looking ofr lat/long "LL"
 
