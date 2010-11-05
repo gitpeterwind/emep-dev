@@ -282,21 +282,29 @@ Country( IC_SU ) = cc(  "SU " , 26 ,F, 26,  3  , "Former USSR                   
 Country( IC_GB ) = cc(  "GB " , 27 ,F, 27,  0  , "United Kingdom                " )
 Country( IC_VUL) = cc(  "VUL" , 28 ,F, 28,  1  , "Volcanoes                     " )
 Country( IC_REM) = cc(  "REM" , 29 ,F, 29,  1  , "Remaining land areas          " )
-Country( IC_BAS) = cc(  "BAS" , 30 ,F, 30,  1  , "The Baltic Sea                " )
-Country( IC_NOS) = cc(  "NOS" , 31 ,F, 31,  1  , "The North Sea                 " )
-Country( IC_ATL) = cc(  "ATL" , 32 ,F, 32,  1  , "Remaining NE Atlantic Ocean   " )
-Country( IC_MED) = cc(  "MED" , 33 ,F, 33,  1  , "The Mediterranean Sea         " )
-Country( IC_BLS) = cc(  "BLS" , 34 ,F, 34,  1  , "The Black Sea                 " )
+Country( IC_BAS) = cc(  "BAS" , 30 ,T, 30,  1  , "The Baltic Sea                " )
+Country( IC_NOS) = cc(  "NOS" , 31 ,T, 31,  1  , "The North Sea                 " )
+Country( IC_ATL) = cc(  "ATL" , 32 ,T, 32,  1  , "Remaining NE Atlantic Ocean   " )
+Country( IC_MED) = cc(  "MED" , 33 ,T, 33,  1  , "The Mediterranean Sea         " )
+Country( IC_BLS) = cc(  "BLS" , 34 ,T, 34,  1  , "The Black Sea                 " )
 
-! why why whya........ 
+!The GEA emission data, which is used for EUCAARI runs on the HIRHAM domain
+!have in several sea grid cells non-zero emissions in other sectors than SNAP8
+!and there are also NH3 emission over sea areas. The former problem makes 
+!the code crash if the sea areas are defines as sea (sea=T), so we treat 
+!them as land in the EUCAARI/HIRHAM runs (sea=F). This is aproblem with GEA 
+!emission data, not the HIRHAM domain! When e.g. interpolated EMEP emissions
+!are used on the HIRHAM domain, this is not a problem.
+ 
 if ( DomainName == "HIRHAM" .and. IIFULLDOM == 182 ) then ! Special fix
 
-  Country( IC_BAS) = cc(  "BAS" , 30 ,T, 30,  1  , "The Baltic Sea                " )
-  Country( IC_NOS) = cc(  "NOS" , 31 ,T, 31,  1  , "The North Sea                 " )
-  Country( IC_ATL) = cc(  "ATL" , 32 ,T, 32,  1  , "Remaining NE Atlantic Ocean   " )
-  Country( IC_MED) = cc(  "MED" , 33 ,T, 33,  1  , "The Mediterranean Sea         " )
-  Country( IC_BLS) = cc(  "BLS" , 34 ,T, 34,  1  , "The Black Sea                 " )
-end if ! HIRHAM fix
+  Country( IC_BAS) = cc(  "BAS" , 30 ,F, 30,  1  , "The Baltic Sea                " )
+  Country( IC_NOS) = cc(  "NOS" , 31 ,F, 31,  1  , "The North Sea                 " )
+  Country( IC_ATL) = cc(  "ATL" , 32 ,F, 32,  1  , "Remaining NE Atlantic Ocean   " )
+  Country( IC_MED) = cc(  "MED" , 33 ,F, 33,  1  , "The Mediterranean Sea         " )
+  Country( IC_BLS) = cc(  "BLS" , 34 ,F, 34,  1  , "The Black Sea                 " )
+
+end if ! HIRHAM/GEA fix
 
 Country( IC_NAT) = cc(  "NAT" , 35 ,F, 35,  1  , "Natural marine sources        " )
 Country( IC_RUO) = cc(  "RUO" , 36 ,F, 36,  3  , "Kola/Karelia                  " )
