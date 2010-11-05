@@ -65,7 +65,7 @@ use My_Derived_ml,  only : & !EcoDep
       SURF_UG_C, &  !ds added May 2009
       SURF_UG  , &  !ds added May 2009
       SURF_PPB , &  !ds added May 2009
-      D3_PPB,D3_OTHER ! hb new 3D output
+      D3_PPB,D3_OTHER, D3_UG ! hb new 3D output
 
 use AOTx_ml,          only: Calc_GridAOTx, setaccumulate_2dyear
 use Biogenics_ml,     only: EmisNat !dsbvoc
@@ -84,7 +84,7 @@ use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_GRID
 use EmisDef_ml,       only: EMIS_NAME
 use Emissions_ml,     only: SumSnapEmis
-use GridValues_ml,    only: debug_li, debug_lj, debug_proc, xm2, GRIDWIDTH_M&
+use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, GRIDWIDTH_M&
                             ,GridArea_m2 ! dsbvoc
 use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
@@ -101,6 +101,7 @@ use ModelConstants_ml, only: &
   ,DEBUG_AOT        &  !tests
   ,DEBUG => DEBUG_DERIVED,  DEBUG_COLUMN, MasterProc &
   ,SOURCE_RECEPTOR &
+  ,PT           &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
@@ -112,7 +113,7 @@ use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      me,                &   ! for print outs
                      gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
                      li0,lj0,limax, ljmax    ! => used x, y area
-use PhysicalConstants_ml,  only : PI
+use PhysicalConstants_ml,  only : PI,KAPPA
 use SmallUtils_ml, only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml, only : day_of_year,daynumber,current_date
 implicit none
@@ -589,9 +590,12 @@ call AddNewDeriv("SURF_ugC_ECf", "ECfGROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_SS", "SSGROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ug_ASOA", "ASOAGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+call AddNewDeriv("SURF_ug_BSOA", "BSOAGROUP", "MASS", "-", "ug/m3", &
+                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_DU", "DUSTGROUP", "MASS", "-", "ug/m3", &
                       -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-
 call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
                       -99 , -99,-99, 0.0, F, 1.0,   T, T , F, T, T, T, -999 ) !
 
@@ -601,7 +605,7 @@ call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   IXADV_O3, -99,-99,35.0, F, 1.0,   F,  F , F,   T, T, F , -999)
 call AddNewDeriv( "SOMO0","SOMO",  "SURF","-",   "ppb.day", &
-                  IXADV_O3, -99,-99, 0.0, F, 1.0,   F,  F , F,   T, T, T , -999)
+                  IXADV_O3, -99,-99, 0.0, F, 1.0,   F,  F , F,   T, T, F , -999)
 
 call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
            IXADV_O3, -99,-99, 0.0, F, PPBINV,   F,  F , F,   T, T, T , -999)
@@ -610,19 +614,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 !-- 3-D fields
 
 Is3D = .true.
-!call AddDef( "TH  ",T,  0 ,       1.0, F , T, T, T, F ,"D3_TH","m",Is3D)
-! etc... use D3_PPB sustem
-!
-! Set Year true to allow debug - change later
-!call AddDef( "SHL",   T, IXSHL_OH,  PPTINV, T, F, T, T, F ,"D3_OH","?",Is3D)
-!DSGC call AddDef( "ADV",   T, IXADV_CH3COO2, &
-!DSGC                                     PPTINV, F, F, T, T, F ,"D3_CH3COO2","?",Is3D)
-!call AddDef( "MAX3DSHL", T,IXSHL_OH,PPTINV, T, F, T, T, F ,"D3_MAXOH","?",Is3D)   ! rho true for shl
-!DSGC call AddDef( "MAX3DADV", T, IXADV_CH3COO2,&
-!DSGC                                     PPTINV, F, F, T, T, F ,"D3_MAXCH3COO2","?",Is3D)
-!DSGC call AddDef( "PHNO3   ", T, IXSHL_PHNO3,1.0e8, F, F, T, T, F ,"D3_PHNO3","?",Is3D)
 
-! hb new 3D output
 do ind = 1, size(D3_PPB)
   itot = D3_PPB(ind)
   iadv = itot - NSPEC_SHL
@@ -630,45 +622,64 @@ do ind = 1, size(D3_PPB)
    !Deriv(name, class,    subc,  txt,           unit
    !Deriv index, f2d,LC, Threshold, scale, avg? rho Inst Yr Mn Day atw, Is3D
   call AddNewDeriv( dname, "D3_PPB", "-", "-", "ppb", &
-         iadv , -99, -99, 0.0, F,  PPBINV,   T, T , F, T, T, F, -999,Is3D ) !?? atw?
+         iadv , -99, -99, 0.0, F,  PPBINV,   T, T , F, T, T, T, -999,Is3D ) !?? atw?
 end do
-! hb new 3D output
-!ds: Should not have PM in ppb! We do not know the Mol. Wt
-!ds  others removed for now to save memory
-!ds  call AddNewDeriv( "D3_PM25","PM25", "-","-",   "ppb", &
-!ds           -1, -99,-99, 0.0, F,  PPBINV,  F,  F , F,   F, F, F , -999,Is3D)
-!ds  call AddNewDeriv( "D3_PMco","PMco", "-","-",   "ppb", &
-!ds           -1, -99,-99, 0.0, F,  PPBINV,  F,  F , F,   F, F, F , -999,Is3D)
-!ds  call AddNewDeriv( "D3_TH","TH", "-","-",   "m", &
-!ds           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
-!ds  call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
-!ds           0, -99,-99, 0.0, F,  1.0,      F,  F , F,   F, F, F , -999,Is3D)
 
-!AMVB 2010-07-21: PM-PPB bug fix
+do ind = 1, size(D3_UG)
+  itot = D3_UG(ind)
+  iadv = itot - NSPEC_SHL
+  dname = "D3_ug_" //species( itot )%name
+   !Deriv(name, class,    subc,  txt,           unit
+   !Deriv index, f2d,LC, Threshold, scale, avg? rho Inst Yr Mn Day atw, Is3D
+  call AddNewDeriv( dname, "D3_UG", "MASS", "-", "ug/m3", &
+         iadv , -99, -99, 0.0, F, ugXm3*species(itot)%molwt,  T, T , F, T, T, T, -999,Is3D ) !?? atw?
+end do
+
+
 do ind = 1, size(D3_OTHER)
   select case ( trim(D3_OTHER(ind)) )
   case ("D3_ug_PM25")
   call AddNewDeriv("D3_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
-         -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, F, -999,Is3D ) !?? atw?
+         -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999, Is3D ) !?? atw?
   case ("D3_ug_PMc")
   call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
-         -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, F, -999,Is3D ) !?? atw?
+         -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999, Is3D ) !?? atw?
+  case("D3_ug_PM25anthr")
+  call AddNewDeriv("D3_ug_PM25anthr", "PM25aGROUP", "MASS", "-", "ug/m3", &
+         -99, -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999, Is3D ) !?? atw?
+  case("D3_ugC_ECf")
+  call AddNewDeriv("D3_ugC_ECf", "ECfGROUP", "MASS", "-", "ug/m3", &
+         -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999, Is3D ) !?? atw?
+  case("D3_SS")
+  call AddNewDeriv("D3_SS", "SSGROUP", "MASS", "-", "ug/m3", &
+         -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999, Is3D ) !?? atw?
+  case("D3_DUST")
+  call AddNewDeriv("D3_DUST", "DUSTGROUP", "MASS", "-", "ug/m3", &
+         -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999, Is3D ) !?? atw?
   case ("D3_PM25water")
   call AddNewDeriv("D3_PM25water", "PM25water3d", "-", "-", "-", &
-         -99, -99,-99, 0.0, F, 1.0,   F, F , F, T, T, F,-999, Is3D  ) !
+         -99, -99,-99, 0.0, F, 1.0,   T, F , F, T, T, T,-999, Is3D ) !
+  case("D3_ASOA")
+  call AddNewDeriv("D3_ASOA", "ASOAGROUP", "MASS", "-", "ug/m3", &
+         -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999, Is3D ) !?? atw?
+  case("D3_BSOA")
+  call AddNewDeriv("D3_BSOA", "BSOAGROUP", "MASS", "-", "ug/m3", &
+         -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999, Is3D ) !?? atw?
   case ("D3_m_TH")
   call AddNewDeriv("D3_m_TH","TH", "-","-",   "m", &
-         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999,Is3D )
+         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999, Is3D )
   case ("D3_m2s_Kz")
   call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
-         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999,Is3D )
+         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999, Is3D )
+  case ("D3_T")
+  call AddNewDeriv("D3_T","T", "-","-",   "K", &
+         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, T, -999, Is3D )
   end select
 end do
 
-!AMVB 2010-08-02: SOURCE_RECEPTOR in FORECAST mode
+! SOURCE_RECEPTOR in FORECAST mode
      if ( .not. FORECAST .and. &
           SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
-!    if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
         def_2d(:)%day = .false.               ! daily outputs are wanted.
      end if
 
@@ -1203,6 +1214,14 @@ end do
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, DUST_GROUP, &
                                density, 0)
 
+          case ( "ASOAGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, ASOA_GROUP, &
+                               density, 0)
+
+          case ( "BSOAGROUP" )
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, BSOA_GROUP, &
+                               density, 0)
+
           case  default
 
             if ( debug_flag ) then
@@ -1296,6 +1315,13 @@ end do
               d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)
             end forall
 
+         case ("T   " ) ! Absolute Temperature                                                                                                 
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+	      d_3d( n, i,j,k,IOU_INST) = th(i,j,k,1)&
+                   *exp(KAPPA*log((PT+sigma_mid(k)*(ps(i,j,1) - PT))*1.e-5))!NB: PT and PS in Pa                                               
+            end forall
+
 !DSGC         case ( "PHNO3" )   !ds-hf  rv1_9_28
 !DSGC            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
 !DSGC              d_3d( n, i,j,k,IOU_INST) = xn_shl(index,i,j,k)
@@ -1345,6 +1371,13 @@ end do
             end forall
            if ( debug_flag ) call write_debugadv(n,index, 1.0, "D3 PPB OUTS")
 
+        case ( "D3_UG" )
+
+            forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
+              d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k) * roa(i,j,k,1)
+            end forall
+           if ( debug_flag ) call write_debugadv(n,index, 1.0, "D3 UG OUTS")
+
 
 ! hb new 3D output
 ! ds Bug - cannot have PM in mixing ratio
@@ -1377,6 +1410,54 @@ end do
         case ( "PMcGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PMCO_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "PM25aGROUP" )   !.. antropogenic PM2.5 (w/o SS and Dust)
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25anthr_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "PM10aGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM10anthr_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "ECfGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, EC_F_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "SSGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SS_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "DUSTGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, DUST_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "SIAGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SIA_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "BSOAGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
+                               roa(i,j,k,1), k)
+          enddo
+
+          case ( "ASOAGROUP" )
+          do k=1,KMAX_MID
+            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
                                roa(i,j,k,1), k)
           enddo
 
