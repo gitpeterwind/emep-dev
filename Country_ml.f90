@@ -291,9 +291,9 @@ Country( IC_BLS) = cc(  "BLS" , 34 ,T, 34,  1  , "The Black Sea                 
 !The GEA emission data, which is used for EUCAARI runs on the HIRHAM domain
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8
 !and there are also NH3 emission over sea areas. The former problem makes 
-!the code crash if the sea areas are defines as sea (sea=T), so we treat 
-!them as land in the EUCAARI/HIRHAM runs (sea=F). This is aproblem with GEA 
-!emission data, not the HIRHAM domain! When e.g. interpolated EMEP emissions
+!the code crash if the sea areas are defined  as sea (sea=T), so we treat 
+!them as land in the EUCAARI/HIRHAM runs (sea=F). This is a problem with GEA 
+!emission data only, not the HIRHAM domain! When e.g. interpolated EMEP emissions
 !are used on the HIRHAM domain, this is not a problem.
  
 if ( DomainName == "HIRHAM" .and. IIFULLDOM == 182 ) then ! Special fix
