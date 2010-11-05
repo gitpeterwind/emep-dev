@@ -61,15 +61,17 @@ module ModelConstants_ml
 !     run domains
 
  !character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
- character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
+ !character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
  !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
  !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.20degEurope"
+  character(len=20), parameter, public :: DomainName = "HIRHAM"
 
   logical, parameter, public :: IS_GLOBAL = .false.
 
   integer, public, parameter ::  &
- !   IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
-   IIFULLDOM = 132, JJFULLDOM = 159  ! x,y-Dimensions of full EECA domain
+    IIFULLDOM = 182, JJFULLDOM = 197  ! x,y-Dimensions of full HIRHAM domain 
+  ! IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
+  ! IIFULLDOM = 132, JJFULLDOM = 159  ! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
   ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
   ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
@@ -81,7 +83,8 @@ module ModelConstants_ml
  ! integer, public, parameter :: OFFSET_i= 0, OFFSET_j= 0 ! EMEP
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
-   RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
+   RUNDOMAIN = (/ 1, 182, 1, 197 /)      ! HIRHAM
+  !RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
   !RUNDOMAIN = (/ 1, 100, 1, 100 /)     ! EMEP domain in EECCA
   !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
@@ -95,12 +98,12 @@ module ModelConstants_ml
   !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
   !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
-  !RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
+!  RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   6        & ! Actual number of processors in longitude
-  , NPROCY      =   6        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   8        & ! Actual number of processors in longitude
+  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -160,6 +163,7 @@ module ModelConstants_ml
     ,DEBUG_DERIVED        = .false. & !
        ,DEBUG_COLUMN      = .false. & ! extra option in Derived
     ,DEBUG_DO3SE          = .false. & !
+    ,DEBUG_DRYRUN         = .false. & ! Skips chemistry and advection
     ,DEBUG_ECOSYSTEMS     = .false. & !
     ,DEBUG_FORESTFIRE     = .false. & !
     ,DEBUG_MET            = .false. & !
