@@ -79,6 +79,7 @@
   use ChemSpecs_adv_ml , only : NSPEC_ADV
   use CheckStop_ml,     only : CheckStop
   use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i, Pole_included,dA,dB
+  use Io_ml,         only : datewrite
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,& ! AMVB 2009-11-06: FORECAST mode
@@ -129,6 +130,17 @@
   private :: preadvx
   private :: preadvy
 
+   ! Checks & warnings
+   ! introduced after getting Nan when using "poor" meteo can give this too.
+   !  ps3d can get zero values when winds are extremely divergent (empty a 
+   !  gridcell for air). This seems to happen only very occasionally (one 
+   !  gridcell, once every week for instance); & does not harm results 
+   !  significantly, at least much less than the poor metdata does anyway.
+   !  Still, we need to know about it.
+
+    integer, private, save :: nWarnings = 0
+    integer, private, parameter :: MAX_WARNINGS = 100
+    real, private :: minps3d
   contains
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   subroutine assign_dtadvec(GRIDWIDTH_M)
@@ -229,6 +241,8 @@
     integer niterxys,niterxy(KMAX_MID),niters,nxy,ndiff
     integer iterxys,iterxy,iters
     logical, parameter :: DEBUG_ADV = .false.
+
+    
 
 13  format(10E16.7)
 
@@ -491,6 +505,11 @@
                   ps3d(i,j,k) = ps(i,j,1) - PT
                enddo
             enddo
+            minps3d = minval( ps3d(li0:li1, lj0:lj1, k) )
+            if ( nWarnings < MAX_WARNINGS ) then
+              call datewrite("WARNING ps3d < 1",k,  (/ minps3d /) )
+              nWarnings = nWarnings + 1
+            end if
          enddo
 
          call convection_pstar(ps3d,dt_advec)
@@ -515,10 +534,14 @@
         do k=1,KMAX_MID
           do j = lj0,lj1
             do i = li0,li1
-              psi = 1./ps3d(i,j,k)
+              psi = 1./max(1.0,ps3d(i,j,k))
               xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
             enddo
           enddo
+            if ( nWarnings < MAX_WARNINGS ) then
+              call datewrite("WARNING:B ps3d < 1",k,  (/ minps3d /) )
+              nWarnings = nWarnings + 1
+            end if
         enddo
 
       else
@@ -1018,6 +1041,10 @@
                   ps3d(i,j,k) = ps(i,j,1) - PT
                enddo
             enddo
+            if ( nWarnings < MAX_WARNINGS ) then
+              call datewrite("WARNING:C ps3d < 1",k,  (/ minps3d /) )
+              nWarnings = nWarnings + 1
+            end if
          enddo
 
          call convection_pstar(ps3d,dt_advec)
@@ -1048,6 +1075,10 @@
 !           endif
           enddo
         enddo
+            if ( nWarnings < MAX_WARNINGS ) then
+              call datewrite("WARNING:D ps3d < 1",k,  (/ minps3d /) )
+              nWarnings = nWarnings + 1
+            end if
       enddo
     else
       do k=1,KMAX_MID
