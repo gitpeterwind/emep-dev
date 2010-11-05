@@ -109,6 +109,7 @@ module Met_ml
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,DEBUG_BLM, DEBUG_Kz & 
        ,NH3_U10   & !dshb  -- temporary
+       ,DomainName & !HIRHAM
        ,nstep,USE_CONVECTION 
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
@@ -429,6 +430,10 @@ contains
     endif
 
     namefield='deep_soil_water_content'
+    if(DomainName == "HIRHAM" ) then
+         write(*,*) "Rename soil water in HIRHAM"
+         namefield='soil_water_second_layer'
+    end if
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, SoilWater_deep(:,:,nr))
     if(validity==field_not_found)then
