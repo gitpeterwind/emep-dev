@@ -1,4 +1,4 @@
-xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 IMPORTANT EUCAARI NOTE:
 
   * Instructions to run EUCAARI version *
@@ -21,7 +21,7 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
-xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
 NOT rtagged yet. Probably good to test first and rtag the code actually used
 
@@ -30,11 +30,12 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
 
     ZCM_Eucaari_Trends - use instead of EmChem09 for EUCAARI work.
 
-    Has VBS SOA chemistry from Robert.  Note that instead of EC_f_new we now have
-    EC_f_FFUEL_new, EC_f_WOOD_new, etc. Not perfect (as we don't have wood emissions)
-    but it limits the number of SOA schemes used.
+    Has VBS SOA chemistry from Robert.  Note that instead of EC_f_new we
+    now have EC_f_FFUEL_new, EC_f_WOOD_new, etc. Not perfect (as we don't
+    have wood emissions) but it limits the number of SOA schemes used.
 
-    Has changed  GenIn.species for SOA (DryDep fom Robert has gas-phase dep of SOA)
+    Has changed  GenIn.species for SOA (DryDep fom Robert has gas-phase dep
+    of SOA)
 
     Contains EMISSPLIT -  split files
 
@@ -44,14 +45,18 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
   Advection_ml - added min(ps3d) safety checks
 
   Biogenic_ml - * fixed bug * for terpene emissions. Added EmisNat for BIO_TERP
+    - reset to 2003-style emissions to keep consistent with Robert's SOA
+      clearer coding of differences I hope
 
   Derived_ml - Idirect, Idiffuse, T2m and *lots* of 3D options added
   My_Derived_ml - Idirect, Idiffuse, T2m options added
+                - outputs reduced for EUCAARI runs. (still v. many)
 
-  run.pl - various EUCAARI options. Needs attention for MetDir, but tested for 2008, 2006
+  run.pl - various EUCAARI options. 
 
   ModelConstants_ml - added HIRHAM and DRYRUN flag
-                    - switched on soil water :-)
+                    - switched on deep soil water :-)
+                    - added Payerne as HIRHAM debug coords
 
   Sites_ml,   just renamed CALL to call. Was looking ofr lat/long "LL"
 
