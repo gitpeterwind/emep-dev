@@ -61,18 +61,19 @@ module Biogenics_ml
   use CheckStop_ml,      only: CheckStop
   use GridValues_ml    , only : xm2, gb, &
           i_fdom,j_fdom,debug_proc,debug_li,debug_lj
-  use Io_ml            , only : IO_FORES, open_file, ios, Read2DN, PrintLog
+  use Io_ml            , only : IO_FORES, open_file, ios, Read2DN, PrintLog, datewrite
   use KeyValue_ml,       only : KeyVal,KeyValue
   use LandDefs_ml,       only: LandType, LandDefs
   use LandPFT_ml,        only: PFTS_USED, MapPFT_LAI, pft_lai
   use Landuse_ml,        only : LandCover
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
-                           NLANDUSEMAX, & 
+                           NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & ! DSBIO
                            DEBUG_BIO, BVOC_USED,MasterProc
-  use NetCDF_ml,         only : ReadField_CDF
-  use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1
+  use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,  Real4
+  use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
+  use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1,me
   use PhysicalConstants_ml,  only :  AVOG, GRAV ! , PI
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : rcbio  
@@ -89,6 +90,7 @@ module Biogenics_ml
   public ::  setup_bio
   public ::  SetDailyBVOC
   private :: TabulateECF
+  private :: Export_Bio
 
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -118,7 +120,7 @@ module Biogenics_ml
      day_embvoc   !  emissions scaled by daily LAI
 
   logical, private, dimension(MAXLIMAX,MAXLJMAX) :: EuroMask
-  logical, public, parameter :: BVOC_2010 = .true.
+  logical, public, parameter :: BVOC_2010 = .false.
 
   !/-- Canopy environmental correction factors-----------------------------
   !
@@ -186,7 +188,7 @@ module Biogenics_ml
 
    !====================================
 
- if ( BVOC_2010 == .true. ) then
+ if ( BVOC_2010 == .true.  .or. DEBUG_BIO ) then
     call GetEuroBVOC()
    !====================================
 
@@ -222,16 +224,18 @@ module Biogenics_ml
               'Biogenics_ml, ibio, sum1',i, bvocsum, bvocsum1
       end do
 
-      if( DEBUG_BIO) then
-!Z            do n = 1, size(BVOC_USED)
-!Z               bvocsum   = sum ( bvocEF(li0:li1,lj0:lj1,n) )
-!Z               CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
-!Z                 MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-!Z               if ( MasterProc  ) &
-!Z                write(6,"(a20,i4,2es12.4)") 'Biogenics_ml, Merge',n, &
-!Z                  bvocsum, bvocsum1
-!Z            end do !n
-      end if
+! No, we would need the day:Embvoc every ady to get the equivalent annual
+! sum
+!      if( DEBUG_BIO .and. BVOC_2010 ) then
+!            do n = 1, size(BVOC_USED)
+!               bvocsum   = sum ( bvocEF(li0:li1,lj0:lj1,n) )
+!               CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
+!                 MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+!               if ( MasterProc  ) &
+!                write(6,"(a20,i4,2es12.4)") 'Biogenics_ml, Merge',n, &
+!                  bvocsum, bvocsum1
+!            end do !n
+!      end if
 
    end subroutine Init_BVOC
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -368,12 +372,14 @@ module Biogenics_ml
   subroutine SetDailyBVOC(daynumber)
 
       integer, intent(in) :: daynumber
-      integer, save :: last_daynumber = -999
+      integer, save :: last_daynumber = -999, alloc_err
       integer :: i, j, n, nlu, iL, iiL, ibvoc
       integer :: pft  ! pft associated with LAI data
       real :: LAIfac  ! Multiplies by land-fraction and then divides by 5
       real :: b    !  Just for printout
       logical :: use_local, debug
+      logical :: my_first_call = .true.
+      real, allocatable, dimension(:,:) ::  workarray
 
       if( MasterProc ) write(*,"(a,3i5)") "Into SetDailyBVOC", &
             daynumber, last_daynumber, last_bvoc_LC
@@ -415,6 +421,18 @@ module Biogenics_ml
                   trim(LandDefs(iL)%name), daynumber, iL, &
                    LandCover(i,j)%fraction(iiL),  LandCover(i,j)%LAI(iiL), b,&
                      ( day_embvoc(i, j, ibvoc), ibvoc = 1, size(BVOC_USED) ) 
+                  
+                 if ( my_first_call  ) then ! print out 1st day
+                   allocate(  workarray(MAXLIMAX,MAXLJMAX),&
+                        stat=alloc_err )
+                  call CheckStop( alloc_err , "workarray alloc failed"  )
+                  workarray(:,:) = day_embvoc(:,:,1)
+                  call Export_Bio("Eiso", workarray )
+                  workarray(:,:) = day_embvoc(:,:,2)
+                  call Export_Bio("Emt", workarray )
+                  my_first_call = .false.
+                  deallocate(  workarray )
+                 end if
               end if
         end do LULOOP
       end do
@@ -471,9 +489,10 @@ module Biogenics_ml
   integer, intent(in) ::  i,j
 
   integer la,it2m,n,k,base,top,iclcat
-  real :: E2003, E2010 , MTP, MTL
+  real :: E2003, E2010 , MT2003, MTP, MTL
 
 ! To get from ug/m2/h to molec/cm3/s
+! ug -> g  1.0e-9; g -> mole / MW; x AVOG
   real, save :: biofac_ISOP = 1.0e-12*AVOG/64.0/3600.0   ! needs /Grid%DeltaZ
   real, save :: biofac_TERP = 1.0e-12*AVOG/136.0/3600.0  ! needs /Grid%DeltaZ
 
@@ -498,15 +517,6 @@ module Biogenics_ml
   MTP = 0.0
   MTL = 0.0
 
-!  if(BIO_TERP > 0)  then
-!     !rcbio(BIO_TERP,KG) = emnat(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-!     ! pool-only terpenes rate first:
-!     MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
-!
-!!     !emnat was in molec/cm3/s. We use the easier emforest which
-!!     ! was kg/m2/s. Should now get kg. NB:: Could move GridEmis to print-out stage...
-!!     EmisNat(i,j,BIO_TERP)= emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m)
-!  end if
 
   if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
@@ -518,6 +528,7 @@ module Biogenics_ml
 
      ! E in ug/m2/h
 
+      ! both just for print out
       E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
       E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
       ! Add light-dependent terpenes to pool-only
@@ -529,30 +540,57 @@ module Biogenics_ml
      ! Emissions_ml (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
      if ( BVOC_2010 ) then
 
+        E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
         rcbio(BIO_ISOP,KG) = E2010 * biofac_ISOP/Grid%DeltaZ
         EmisNat(i,j,BIO_ISOP)= E2010 * 1.0e-9/3600.0
      else 
+        E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
         rcbio(BIO_ISOP,KG) = E2003     * biofac_ISOP/Grid%DeltaZ
         EmisNat(i,j,BIO_ISOP)= E2003 * 1.0e-9/3600.0
      end if
 
   endif ! daytime
 
-  if ( BVOC_2010 .and. BIO_TERP > 0) then
+  if ( BIO_TERP > 0 ) then
+    if ( BVOC_2010 ) then
      ! add pool-only terpenes rate;
         MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
         rcbio(BIO_TERP,KG)    = (MTL+MTP) * biofac_TERP/Grid%DeltaZ
         EmisNat(i,j,BIO_TERP) = (MTL+MTP) * 1.0e-9/3600.0
+     else 
+
+       MT2003 = emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m) 
+       rcbio(BIO_TERP,KG) =  MT2003 * biofac_TERP/Grid%DeltaZ
+       EmisNat(i,j,BIO_TERP)=  MT2003 * 1.0e-9/3600.0  ! Nov4th
+     end if
   end if
  
      if ( DEBUG_BIO .and. debug_proc .and.  &
             i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
 
-        write(*,"(a,3i3,f8.2,3f7.3,9es9.2)") "DBIO NatEmis ", &
-          current_date%month, current_date%day, current_date%hour, &
-          par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m), E2003, E2010, MTP, MTL, &
-          rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG),  EmisNat(i,j,BIO_ISOP)
+      ! just for print out
+      ! both just for print out
+      E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
+      E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
+       MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
+       MT2003 = emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m) 
+
+        call datewrite("DBIO NatEmis env ", it2m,  &
+          (/ par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
+        call datewrite("DBIO NatEmis for ", &
+          (/ emforest(i,j,1),  emforest(i,j,2) /) )
+        call datewrite("DBIO NatEmis EIcmp ", (/  E2003, E2010 /) ) 
+        call datewrite("DBIO NatEmis EMTcmp ", (/  MT2003, MTP /) ) 
+        call datewrite("DBIO NatEmis rc  ", &
+          (/ rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG) /) )
+        call datewrite("DBIO NatEmis EmisNat  ", EmisNat(i,j,:) )
+
+!        write(*,"(a,3i3,f6.1,3f7.3,9es9.2)") "DBIO NatEmis-2003 ", &
+!        write(*,"(a,3i3,f6.1,3f7.3,9es9.2)") "DBIO NatEmis ", &
+!          current_date%month, current_date%day, current_date%hour, &
+!          par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m), E2003, E2010, MTP, MTL, &
+!          rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG),  EmisNat(i,j,BIO_ISOP), EmisNat(i,j,BIO_TERP)
 
      end if
 
@@ -560,4 +598,32 @@ module Biogenics_ml
   end subroutine setup_bio
 
   !----------------------------------------------------------------------------
+ subroutine Export_Bio(name, array)
+    real, dimension(:,:), intent(in) :: array
+    character(len=*), intent(in) :: name
+    character(len=60) :: fname
+    type(Deriv) :: def1 ! definition of fields
+    
+    def1%class='Biogenics' !written
+    def1%avg=.false.      !not used
+    def1%index=0          !not used
+    def1%scale=1.0      !not used
+    def1%rho=.false.      !not used
+    def1%inst=.true.      !not used
+    def1%year=.false.     !not used
+    def1%month=.false.    !not used
+    def1%day=.false.      !not used
+    def1%name=trim(name)   ! eg 'EmisPot'        !written
+    def1%unit='ug/m2/h'       !written
+    
+    fname = "OUTBIO_" // trim(fname) // ".nc"
+
+    !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
+
+print *, "TEST EXPOERT BIO", me,  maxval(array)
+    call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
+           CDFtype=Real4,fileName_given=fname)
+  end subroutine Export_Bio
+
+
 end module Biogenics_ml
