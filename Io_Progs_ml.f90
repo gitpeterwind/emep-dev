@@ -64,6 +64,8 @@
   public :: Read2DN      !  Reads x,y,z1...z2 data for simple case
   public :: PrintLog     !  writes message to both RunLog and unit 6
   public :: datewrite    ! writes date then data - helper sub
+  private :: datewrite_ia  ! int, array vesion
+  private :: datewrite_a   !  array versions
   public :: Self_Test
 
   logical, public :: fexist                      ! true if file exists
@@ -73,6 +75,10 @@
   integer, private, parameter :: MAXLINELEN = 9000 ! Max length of ascii inputs
   integer, private, parameter :: MAXHEADERS = 900  ! Max  No. headers
 
+  interface datewrite
+    module procedure datewrite_ia
+    module procedure datewrite_a
+  end interface datewrite
 
 contains
 
@@ -578,17 +584,26 @@ end do
   end subroutine Read2DN
  
   !-------------------------------------------------------------------------
-    SUBROUTINE datewrite (txt,ii,array )
-      ! Added ds Sep 2010
-      ! to write out date + supplied data array
+    SUBROUTINE datewrite_ia (txt,ii,array )
+      ! to write out date, integer + supplied data array
        character(len=*), intent(in) :: txt
        integer, intent(in) :: ii  ! any old integer. Often needed
        real, dimension(:), intent(in) :: array
 
-       write(*,"(a,3i3,i5,1x, i0, 20es11.4)") "dw:" // trim(txt), &
+       write(*,"(a,3i3,i5,1x, i0, 20es10.3)") "dw:" // trim(txt), &
           current_date%month, current_date%day, current_date%hour, &
           current_date%seconds, ii, array
-    END SUBROUTINE datewrite
+    END SUBROUTINE datewrite_ia
+    SUBROUTINE datewrite_a (txt,array )
+      ! to write out date + supplied data array
+       character(len=*), intent(in) :: txt
+       real, dimension(:), intent(in) :: array
+
+       write(*,"(a,3i3,i5,1x, 20es10.3)") "dw:" // trim(txt), &
+          current_date%month, current_date%day, current_date%hour, &
+          current_date%seconds, array
+    END SUBROUTINE datewrite_a
+  !-------------------------------------------------------------------------
   !-------------------------------------------------------------------------
   subroutine Self_Test()
    use ModelConstants_ml, only: NPROC
