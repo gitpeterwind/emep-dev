@@ -68,7 +68,7 @@
   real, parameter        :: soil_dens = 2650.0  ! [kg/m3]
   logical, private, save :: my_first_call = .true.
   integer, save          :: dry_period(MAXLIMAX, MAXLJMAX) = 72
-  logical, parameter, private :: DEBUG_DUST = .true.
+  logical, parameter, private :: DEBUG_DUST = .false.
   character(len=20)           :: soil_type
   contains
 
