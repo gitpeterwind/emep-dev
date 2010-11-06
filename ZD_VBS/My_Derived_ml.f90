@@ -116,7 +116,7 @@ private
   !============ parameters for source-receptor modelling: ===================!
 
     integer, public, parameter :: MAX_NUM_DERIV2D = 200
-    integer, public, parameter :: MAX_NUM_DERIV3D =   5
+    integer, public, parameter :: MAX_NUM_DERIV3D =  20
     character(len=TXTLEN_DERIV), public, save, &
          dimension(MAX_NUM_DERIV2D) :: wanted_deriv2d = NOT_SET_STRING
     character(len=TXTLEN_DERIV), public, save, &
@@ -151,6 +151,7 @@ private
 !           SURF_UG = (/ SRSURF_UG, XSURF_UG /)
         dimension(4+4+SIZE(PCM_GROUP)+SIZE(PCM_HELP_GROUP)) ::  &
         SURF_UG = (/ SRSURF_UG, XSURF_UG, PCM_GROUP, PCM_HELP_GROUP /)
+
    integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, FFIRE_OC /)
 !   integer, public, parameter, dimension(6) ::  SURF_UG_C = (/ HCHO, FFIRE_OC, PPM25_FIRE,     &
 !                                                             EC_F_NEW, EC_F_AGE, POC_F/)
@@ -170,14 +171,17 @@ private
    real, public, save, dimension( NALL_SURF_UG ) :: ALL_SURF_ATW
 
 ! Tropospheric columns
-   integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
+   !EUCAARI integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
+   integer, public, parameter, dimension(3) :: COLUMN_MOLEC_CM2 = (/ CO, HCHO, NO2 /)
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
       ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
+      ,"SURF_ug_ASOA " & !an eucaari
+      ,"SURF_ug_BSOA " & !an eucaari
       ,"SURF_ug_PM25 " & !dsMay2010
 !      ,"SURF_ug_PM10 " & !dsMay2010
       ,"SURF_ugN_OXN " & !dsMay2010
@@ -342,8 +346,9 @@ private
                        /)
                           ! "g_sto" needs more work - only set as L%g_sto
 
-    character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
-      MET_LCS  = (/ "DF    " , "CF    ", "BF    ", "NF    " /) !, "IAM_DF", "IAM_MF"/)
+    character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
+      MET_LCS  = (/ "CF    " , "GR    " /) ! EUCAARI
+      !MET_LCS  = (/ "DF    " , "CF    ", "BF    ", "NF    " /) !, "IAM_DF", "IAM_MF"/)
 
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
@@ -372,12 +377,13 @@ private
     ! PC-gfortran runs.
 
     !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, NO3_f, NO3_c /)
-    integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
-
+    integer, public, save, dimension(1) ::   D3_PPB  = (/ O3 /)
+    integer, public, parameter, dimension(4)  :: D3_UG = (/ SO4, NO3_f, NO3_c, NH4_f/)
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
-     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-!     character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
-       D3_OTHER ! = (/ "D3_PM25water"/) !**** Under construction *******
+    ! character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
+     character(len=TXTLEN_DERIV), public, save, dimension(8) :: &
+       D3_OTHER  = (/ "D3_PM25water", "D3_ug_PM25", "D3_ug_PM25anthr", &
+                      "D3_ugC_ECf", "D3_SS", "D3_DUST", "D3_ASOA", "D3_BSOA"/)
      != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -530,9 +536,15 @@ private
             NOT_SET_STRING, errmsg)
          call CheckStop( errmsg, errmsg // "D3_ppb too long" )
        end if
+       if ( size(D3_UG) > 0 ) then
+         tag_name(1:size(D3_UG)) = "D3_ug_" // species(D3_UG)%name
+         call AddArray(  tag_name(1:size(D3_UG)) , wanted_deriv3d, &
+            NOT_SET_STRING, errmsg)
+         call CheckStop( errmsg, errmsg // "D3_ug too long" )
+       end if
        if ( size(D3_OTHER) > 0 ) then
          call AddArray( D3_OTHER,  wanted_deriv3d, NOT_SET_STRING, errmsg)
-         call CheckStop( errmsg, errmsg // "Wanted D3 too long" )
+         call CheckStop( errmsg, errmsg // "Wanted D3_other too long" )
        end if
      end if
      mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
