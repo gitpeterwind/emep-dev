@@ -135,7 +135,8 @@ module ModelConstants_ml
  ! integer, private, parameter :: DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, private, parameter :: DEBUG_ii= 97, DEBUG_jj= 62  ! Waldhof
  !integer, private, parameter :: DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
- integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
+ !integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
+ integer, private, parameter :: DEBUG_ii=74, DEBUG_jj= 79 !  Payerne_HIRHAM
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 50 !   Harwell
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 15 !   biomass burnung, Aug 2003
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 35 !  Sea, Bay of Biscay
