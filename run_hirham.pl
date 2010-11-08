@@ -753,7 +753,7 @@ if ($GRID eq "HIRHAM"){
   $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
 # new inputs style (Aug 2007)  with compulsory headers:
-#NOT NEEDED  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
+  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
   #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
