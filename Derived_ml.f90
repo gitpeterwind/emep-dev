@@ -615,6 +615,7 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 
 Is3D = .true.
 
+! hb new 3D output
 do ind = 1, size(D3_PPB)
   itot = D3_PPB(ind)
   iadv = itot - NSPEC_SHL
@@ -636,6 +637,7 @@ do ind = 1, size(D3_UG)
 end do
 
 
+!AMVB 2010-07-21: PM-PPB bug fix
 do ind = 1, size(D3_OTHER)
   select case ( trim(D3_OTHER(ind)) )
   case ("D3_ug_PM25")
@@ -673,13 +675,14 @@ do ind = 1, size(D3_OTHER)
          -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, F, -999, Is3D )
   case ("D3_T")
   call AddNewDeriv("D3_T","T", "-","-",   "K", &
-         -99, -99,-99, 0.0, F,  1.0,  F, F , F, T, T, T, -999, Is3D )
+         -99, -99,-99, 0.0, F,  1.0,  T, F , F, T, T, T, -999, Is3D )
   end select
 end do
 
-! SOURCE_RECEPTOR in FORECAST mode
+!AMVB 2010-08-02: SOURCE_RECEPTOR in FORECAST mode
      if ( .not. FORECAST .and. &
           SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
+!    if ( SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
         def_2d(:)%day = .false.               ! daily outputs are wanted.
      end if
 
@@ -1402,63 +1405,64 @@ end do
 !ds            end forall
 
 !AMVB 2010-07-21: PM-PPB bug fix
+!AMVB and AN 2010-11-05: PMgroups bug fix
         case ( "PM25GROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
         case ( "PMcGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PMCO_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "PM25aGROUP" )   !.. antropogenic PM2.5 (w/o SS and Dust)
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25anthr_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "PM10aGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM10anthr_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "ECfGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, EC_F_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "SSGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SS_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "DUSTGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, DUST_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "SIAGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SIA_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "BSOAGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
           case ( "ASOAGROUP" )
           do k=1,KMAX_MID
             call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
-                               roa(i,j,k,1), k)
+                               roa(:,:,k,1), k)
           enddo
 
 ! hb
