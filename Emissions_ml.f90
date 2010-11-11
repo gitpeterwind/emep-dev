@@ -883,18 +883,18 @@ CALL MPI_ALLREDUCE(SumSoilNOx_buff, SumSoilNOx , 1, &
      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
 if(MasterProc)write(*,*)'Soil NOx emissions this month within domain',SumSoilNOx,' kg per day'
 
-!convert from g(N)/day into molecules/cm3/s
+!convert from g(N)/m2/day into molecules/cm3/s
 !from g to molecules: AVOG/14  14=molweight N
 !use roa to find dz for consistency with other emissions (otherwise could have used z_bnd directly)
 !dz=dP/(roa*GRAV)  dP=dA(k) + dB(k)*ps(i,j,1)
-!dV=dz*dx*dy=dz*gridwidth**2/xm**2 *1e6 (1e6 for m3->cm3)
+!dV=dz*1e6 (1e6 for m3->cm3)
 !from month to seconds: ndaysmonth*24*3600
 
-conv=AVOG/14.0*GRAV/gridwidth_m**2*1.0e-6/(24*3600)
+conv=AVOG/14.0*GRAV*1.0e-6/(24*3600)
 k=KMAX_MID!surface
 do j=1,ljmax
    do i=1,limax      
-      SoilNOx(i,j)=SoilNOx(i,j)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))*xm2(i,j)      
+      SoilNOx(i,j)=SoilNOx(i,j)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))     
    enddo
 enddo
 
