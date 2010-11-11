@@ -49,7 +49,7 @@
                                   ,NSS, NDU & !SeaS, Dust
                                   ,NH3EMIS_VAR ! hb NH3Emis    
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
-  use Emissions_ml,          only :  gridrcemis, KEMISTOP
+  use Emissions_ml,          only :  gridrcemis, KEMISTOP, SoilNOx
   use ForestFire_ml,         only : Fire_rcemis, burning
   use Functions_ml,          only :  Tpot_2_T
   use ChemChemicals_ml,        only :  species
@@ -78,6 +78,7 @@
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,USE_FOREST_FIRES                & !
+    ,USE_SOIL_NOX                    & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
   use My_Aerosols_ml,       only : SEASALT, DUST
@@ -330,6 +331,10 @@ contains
 
      endif  !ForestFires
 
+!Soil NOx
+     if( USE_SOIL_NOX)then
+        rcemis(NO2,KMAX_MID)=rcemis(NO2,KMAX_MID)+SoilNOx(i,j)
+     endif
 
 !Mass Budget calculations
 !   Adding up the emissions in each timestep

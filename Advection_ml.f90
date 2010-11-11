@@ -1041,6 +1041,7 @@
                   ps3d(i,j,k) = ps(i,j,1) - PT
                enddo
             enddo
+            minps3d = minval( ps3d(li0:li1, lj0:lj1, k) )
             if ( nWarnings < MAX_WARNINGS ) then
               call datewrite("WARNING:C ps3d < 1",k,  (/ minps3d /) )
               nWarnings = nWarnings + 1
@@ -1075,7 +1076,8 @@
 !           endif
           enddo
         enddo
-            if ( nWarnings < MAX_WARNINGS ) then
+            minps3d = minval( ps3d(li0:li1, lj0:lj1, k) )
+            if ( nWarnings < MAX_WARNINGS .and.minps3d<1.0) then
               call datewrite("WARNING:D ps3d < 1",k,  (/ minps3d /) )
               nWarnings = nWarnings + 1
             end if

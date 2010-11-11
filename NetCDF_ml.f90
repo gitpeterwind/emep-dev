@@ -1937,13 +1937,25 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            maxlon, minlon, maxlat, minlat
      end if
 
-     !floor(minlon*dloni)=closest existing coordinate on the left (multiplied by dloni)
-     !floor(minlon*dloni)-Rlon(1)*dloni = number of gridcells between start of grid and minlon
-     !mod(nint((floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
-     imin=mod(nint(floor(minlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-     jmin=max(1,min(dims(2),nint(floor(minlat*dlati)-Rlat(1)*dlati)+1))
-     imax=mod(nint(ceiling(maxlon*dloni)-Rlon(1)*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
-     jmax=max(1,min(dims(2),nint(ceiling(maxlat*dlati)-Rlat(1)*dlati)+1))
+     if(dloni>0)then
+        !floor((minlon-Rlon(1))*dloni)<=number of gridcells between minlon and Rlon(1)
+        !mod(floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
+        imin=mod( floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        imax=mod(ceiling((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+     else
+        call CheckStop("Not tested: negativ dloni")
+        imin=mod(floor((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        imax=mod(ceiling((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+     endif
+
+     if(dlati>0)then
+        jmin=max(1,min(dims(2),floor((minlat-Rlat(1))*dlati)))
+        jmax=max(1,min(dims(2),ceiling((maxlat-Rlat(1))*dlati)+1))
+     else!if starting to count from north pole
+        jmin=max(1,min(dims(2),floor((maxlat-Rlat(1))*dlati)))!maxlat is closest to Rlat(1)
+        jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dlati)+1))        
+     endif
+
 
      if(maxlat>85.0.or.minlat<-85.0)then
         !close to poles
@@ -1995,7 +2007,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         end do
         write(*,*)'total size variable (part read only)',totsize
      end if
-
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg="RRvalues")
 
@@ -2010,13 +2021,13 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
         FillValue=FillValue*scalefactors(1)+scalefactors(2)
         if ( debug ) then
-           write(*,*)' Start scaling xtype',xtype
+           write(*,*)' Start scaling mpixtype',xtype
            write(*,*)' FillValue scaled to',FillValue
            write(*,*)' Max(RValues)   ',maxval(RValues)
         end if
-     else ! should this be allowed?
+     else ! Real
         if ( debug ) then
-           write(*,*)' xtype not found ',xtype
+           write(*,*)' xtype real ',xtype
            write(*,*)' FillValue still',FillValue
            write(*,*)' Max(RValues)   ',maxval(RValues)
         end if
@@ -2137,7 +2148,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  if ( debug_ij ) write(*,*) 'DEBUG  -- INValues!' , Ivalues(ijk), Nvalues(ijk)
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
-                       write(*,*)'ERROR. no values found!',i,j,k,me,maxlon,minlon,maxlat,minlat
+                       write(*,*)'ERROR. no values found!',i,j,k,me,maxlon,minlon,maxlat,minlat,gl(i,j),gb(i,j)
                        call CheckStop("Interpolation error")
                     endif
                  else
@@ -2325,7 +2336,7 @@ end if
 
   return
      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-     if(debug)write(*,*)'writing results in file'
+     if(debug)write(*,*)'writing results in file',trim(varname)
 
   !only for tests:
   def1%class='Readtest' !written
@@ -2341,6 +2352,7 @@ end if
   def1%unit='g/m2'       !written
 
   if(data3D)then
+     return
      k2=kend-kstart+1
      n=3
 
@@ -2370,15 +2382,16 @@ end if
     CALL MPI_FINALIZE(INFO)
      stop
   else
-     n=2
+      if(trim(varname)=='NOX_EMISSION')then
+    n=2
      k2=1
      call Out_netCDF(IOU_INST,def1,n,k2, &
           Rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc')
-
-  endif
-     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-  !  CALL MPI_FINALIZE(INFO)
-  !   stop
+    CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+    CALL MPI_FINALIZE(INFO)
+     stop
+     endif
+   endif
 
   return
 

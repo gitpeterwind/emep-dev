@@ -72,7 +72,8 @@
                               IS_GLOBAL, & 
                               NBVOC,     & ! > 0 if forest voc wanted
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
-                              NPROC, IIFULLDOM,JJFULLDOM 
+                              NPROC, IIFULLDOM,JJFULLDOM , & 
+                              USE_SOIL_NOX
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
                              limax,ljmax,li0,lj0,li1,lj1, &
@@ -144,7 +145,7 @@
    !DSRC real, public,  save, dimension(NRCEMIS) ::  totemadd
    real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
 
-
+  real, public, save, dimension(MAXLIMAX,MAXLJMAX) :: SoilNOx
 
 contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -805,7 +806,8 @@ contains
   !dsx logical, parameter ::MONTHLY_GRIDEMIS=.true. ! GLOBAL
 
         logical, parameter ::MONTHLY_GRIDEMIS= IS_GLOBAL      
-        integer ::kstart,kend
+        integer ::kstart,kend,nstart,Nyears
+        real ::buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
 
 if(AIRNOX)then
 !AIRCRAFT
@@ -839,6 +841,61 @@ airn(k,i,j)=airn(k,i,j)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))*xm2(i,j)
 
 enddo
 enddo
+enddo
+
+endif
+
+!Soil NOx emissions
+if(USE_SOIL_NOX)then 
+
+do j=1,ljmax
+   do i=1,limax
+      SoilNOx(i,j)=0.0      
+   enddo
+enddo
+
+nstart=current_date%year-1996 + current_date%month
+if(nstart>0.and.nstart<=120)then
+   !the month is defined
+   call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',SoilNOx,nstart=nstart,&
+   interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.)
+else
+   !the year is not defined; average over all years
+   Nyears=10!10 years defined
+   do i=1,Nyears!10 years defined
+      call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',buffer,nstart=nstart,&
+      interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.,UnDef=0.0)
+      SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
+   enddo
+   SoilNOx=SoilNOx/Nyears
+endif
+
+!for testing, compute total soil NOx emissions within domain
+!convert from g/m2/day into kg/day
+SumSoilNOx_buff=0.0
+SumSoilNOx=0.0
+do j=1,ljmax
+   do i=1,limax      
+      SumSoilNOx_buff=SumSoilNOx_buff+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
+   enddo
+enddo
+CALL MPI_ALLREDUCE(SumSoilNOx_buff, SumSoilNOx , 1, &
+     MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+if(MasterProc)write(*,*)'Soil NOx emissions this month within domain',SumSoilNOx,' kg per day'
+
+!convert from g(N)/day into molecules/cm3/s
+!from g to molecules: AVOG/14  14=molweight N
+!use roa to find dz for consistency with other emissions (otherwise could have used z_bnd directly)
+!dz=dP/(roa*GRAV)  dP=dA(k) + dB(k)*ps(i,j,1)
+!dV=dz*dx*dy=dz*gridwidth**2/xm**2 *1e6 (1e6 for m3->cm3)
+!from month to seconds: ndaysmonth*24*3600
+
+conv=AVOG/14.0*GRAV/gridwidth_m**2*1.0e-6/(24*3600)
+k=KMAX_MID!surface
+do j=1,ljmax
+   do i=1,limax      
+      SoilNOx(i,j)=SoilNOx(i,j)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))*xm2(i,j)      
+   enddo
 enddo
 
 endif
