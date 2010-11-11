@@ -110,7 +110,7 @@ contains
     real               ::lon,lat,value,xr,yr,conv,tonne_to_kgm2s
 
     character(len=70)               :: errmsg ! Message text
-    character(len=20), dimension(4) :: Headers
+    character(len=20), dimension(5) :: Headers
     type(KeyVal), dimension(20)     :: KeyValues ! Info on units, coords, etc.
     integer                         :: NHeaders, NKeys
     character(len=80)               :: txtinput,s  ! Big enough to contain

@@ -77,7 +77,8 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
     
     Note that Volcanoes_found is a local variable (different value on different processors)
     There are still some back and forth i,j conversion which should be removed once.
-    
+
+	11th November: corrected small bug    (character(len=20), dimension(5) :: Headers )
 
 xxxxxxxxxxxxxx rv3_7beta7b Robert Oct 30 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
