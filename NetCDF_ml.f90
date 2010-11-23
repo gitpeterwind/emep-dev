@@ -1942,10 +1942,12 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         !mod(floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1 = get a number in [1,dims(1)]
         imin=mod( floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
         imax=mod(ceiling((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        if(imax==1)imax=dims(1)!covered entire circle
      else
         call CheckStop("Not tested: negativ dloni")
         imin=mod(floor((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
         imax=mod(ceiling((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
+        if(imax==1)imax=dims(1)!covered entire circle
      endif
 
      if(dlati>0)then

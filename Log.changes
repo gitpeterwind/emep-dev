@@ -60,6 +60,9 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
 
   Sites_ml,   just renamed CALL to call. Was looking ofr lat/long "LL"
 
+    xxxxxxxxxxxxxx ....  (Peter 23/11-2010)xxxxxxxxxxxxxxxx
+	new bug in ReadField_CDF: special case when imax=360 because the area covers all longitudes (was set to 1)
+
     xxxxxxxxxxxxxx .... SoilNOx  (Peter 11/11-2010)xxxxxxxxxxxxxxxx
 set USE_SOIL_NOX=.true. in ModelConstants_ml to get soil nox
 
