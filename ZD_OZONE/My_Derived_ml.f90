@@ -130,11 +130,11 @@ private
 !Mass-outputs of advected species, will be added to Derived
 !Modify for SR
 !   integer, public, parameter, dimension(1) :: SRSURF_UG_S = (/ SO4 /)
-   integer, public, parameter, dimension(1) ::   SURF_UG_S = (/ SO2/) !, SO4 /)
+   integer, public, parameter, dimension(2) ::   SURF_UG_S = (/ SO2, SO4 /)
 
-   integer, public, parameter, dimension(1) :: SRSURF_UG_N = (/ NO2 /) !,NO3_f, NO3_c, NH4_, 
-   integer, public, parameter, dimension(3) ::  XSURF_UG_N = (/ NH3, HNO3, NO /)
-   integer, public, parameter, dimension(4) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
+   integer, public, parameter, dimension(1) :: SRSURF_UG_N = (/ NO2 /) !,NO3_f, NO3_c, NH4_f, 
+   integer, public, parameter, dimension(8) ::  XSURF_UG_N = (/ NH3, HNO3, HONO, PAN, NO, NO3_f, NO3_c, NH4_f /)
+   integer, public, parameter, dimension(9) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
 
 
 !rb: remove PPM25_FIRE, replaced by FFIRE_OC and FFIRE_BC
@@ -153,8 +153,8 @@ private
   !PCM:     dimension(2+2+SIZE(PCM_GROUP)+SIZE(PCM_HELP_GROUP)) ::  &
   !PCM:         SURF_UG = (/ SRSURF_UG, XSURF_UG, PCM_GROUP, PCM_HELP_GROUP /)
   !PCM: integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, FFIRE_OC /)
-   integer, public, parameter, dimension(5) ::  SURF_UG_C = (/ HCHO, PPM25_FIRE,     &
-                                                             EC_F_NEW, EC_F_AGE, POC_F/)
+   integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, PPM25_FIRE /) !,     &
+                                                         !    EC_F_NEW, EC_F_AGE, POC_F/)
   !----------------------------------------------------------------------------
 
    integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
@@ -178,26 +178,36 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
-      ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
-      ,"SURF_ug_PM25 " & !dsMay2010
+      !GRPD ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
+      !GRPD ,"SURF_ug_PM25 " & !dsMay2010
 !      ,"SURF_ug_PM10 " & !dsMay2010
-      ,"SURF_ugN_OXN " & !dsMay2010
-      ,"SURF_ugN_RDN " & !dsMay2010
-!      ,"SURF_ugN_TNO3" & !dsMay2010
+       ,"SURF_ugN_OXN " & !dsMay2010
+       ,"SURF_ugN_RDN " & !dsMay2010
+      ,"SURF_ugN_TNO3" & !dsMay2010
+      ,"SURF_PM25water" &  !
       ,"SOMO35      " & !"D2_SOMO0    " &
       ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
-  D2_PM = (/ &
-       "SURF_ugC_ECf", "SURF_SS", "SURF_DU", &         ! , "SURF_ugC_EC"
-       "SURF_ug_TNO3","SURF_ug_PM25anthr", "SURF_PM25water" &  !,"SURF_ugN_TOXN", "SURF_ugN_RDN"
-  /)
+!GRPD    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+!GRPD  D2_PM = (/ &
+!GRPD       !NOGRP "SURF_ugC_ECf", "SURF_SS", "SURF_DU", &         ! , "SURF_ugC_EC"
+!GRPD       "SURF_PM25water" &  !,"SURF_ugN_TOXN", "SURF_ugN_RDN"
+       !GRPD"SURF_ug_TNO3","SURF_ug_PM25anthr", "SURF_PM25water" &  !,"SURF_ugN_TOXN", "SURF_ugN_RDN"
+!GRPD  /)
+
+!DS Nov 2010. GenChem produces a number of groups of species.
+! Here we say which ones we want for different units
+! ****** UPPER CASE ONLY ************
+! Sorry, this is a limitation that GenChem converts all names to
+! uppercase:
+    character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
+  SURF_UG_GROUP = (/ "SIA", "PM25", "PM10","TNO3",&
+       "PM25ANTHR", "PM10ANTHR",&
+       "PMCO", &  ! Omitted parNO3, have TNO3 = pNO3_f+pNO3_c
+       "SS", "DUST" /)        ! , "SURF_ugC_EC"
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
   COL_ADD = (/ "AOD" /)
-
-!
-!      ,ToDo "D2_PM25_H2O " &
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
@@ -371,6 +381,7 @@ private
 
     !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, NO3_f, NO3_c /)
     integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
+    integer, public, save, dimension(4:1) ::   D3_UG  ! = (/ O3 /)
 
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
 !     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
@@ -413,8 +424,8 @@ private
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
-     call AddArray( D2_PM,  wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "D2_PM too long" )
+!GRPD     call AddArray( D2_PM,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+!GRPD     call CheckStop( errmsg, errmsg // "D2_PM too long" )
      call AddArray( COL_ADD,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "COL_ADD too long" )
 
@@ -445,6 +456,11 @@ private
      tag_name(1:size(SURF_PPB)) = "SURF_ppb_"//species(SURF_PPB)%name
      call AddArray( tag_name(1:size(SURF_PPB)) ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "SURF_ppb too long" )
+
+     n=size(SURF_UG_GROUP)
+     tag_name(1:n) = "SURF_ug_"//SURF_UG_GROUP(:)
+     call AddArray( tag_name(1:n), wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "SURF_UG_GROUP too long" )
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
         call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING, errmsg)

@@ -47,7 +47,8 @@
                                   t2_nwp, snow, fh, ps, surface_precip,  &
                                   rho_surf, SoilWater, foundSoilWater,  &
                                   clay_frac, sand_frac
- use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, NPROC
+ use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
+    NPROC, MasterProc
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,MAXLIMAX,MAXLJMAX
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
@@ -105,7 +106,7 @@
 
 !_______________________________________________________
 
-    if ( my_first_call ) then 
+    if ( my_first_call.and.MasterProc ) then 
      write(6,*)'***    Call for init_dust     ***   '
 
         call init_dust
@@ -580,7 +581,7 @@
        x1 = log ( d1(idu) / dsoil(isoil) ) / y
        x2 = log ( d2(idu) / dsoil(isoil) ) / y
 
-       if (me == 0) write (6,'(a30,4e12.4)') 'TEST 3', &
+       if (MasterProc) write (6,'(a,4e12.4)') 'DUST TEST 3', &
                                x1,x2,ERFfunc(x1),ERFfunc(x2)
 
        dif2(isoil,idu) = 0.5 * ( ERFfunc(x2) - ERFfunc(x1) )

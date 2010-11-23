@@ -86,7 +86,7 @@ contains
 
      !   fSW =  1.0
 
-       !TEST if ( USE_SOILWATER == .true. ) return  ! FAKER
+       !TEST if ( USE_SOILWATER .eqv. .true. ) return  ! FAKER
        !TEST fSW = 0.1
        !  return
         if ( USE_SOILWATER == .false. ) return

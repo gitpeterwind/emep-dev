@@ -2150,7 +2150,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  if ( debug_ij ) write(*,*) 'DEBUG  -- INValues!' , Ivalues(ijk), Nvalues(ijk)
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
-                       write(*,*)'ERROR. no values found!',i,j,k,me,maxlon,minlon,maxlat,minlat,gl(i,j),gb(i,j)
+                       write(*,*)'ERROR. no values found!', trim(fileName), &
+                    i,j,k,me,maxlon,minlon,maxlat,minlat,gl(i,j),gb(i,j), &
+                    Ivalues(ijk)
                        call CheckStop("Interpolation error")
                     endif
                  else

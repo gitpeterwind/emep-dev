@@ -188,7 +188,7 @@ module Biogenics_ml
 
    !====================================
 
- if ( BVOC_2010 == .true.  .or. DEBUG_BIO ) then
+ if ( BVOC_2010  .or. DEBUG_BIO ) then
     call GetEuroBVOC()
    !====================================
 

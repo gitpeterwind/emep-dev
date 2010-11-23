@@ -1,6 +1,10 @@
 module OwnDataTypes_ml
   implicit none
 
+  ! O3cl for AOT, POD etc.
+  ! depmap
+  ! gtype for species groups, used in CM_ChemSpecs and Derived 
+
     public :: print_deriv_type
     integer, public, parameter :: TXTLEN_DERIV = 34
     integer, public, parameter :: TXTLEN_SHORT  = 28
@@ -21,6 +25,9 @@ module OwnDataTypes_ml
       integer :: calc  ! Index of species in  calculated dep arrays
       real    :: vg    ! if CDDEP_SET, give vg in m/s
    end type depmap
+
+   !================== 
+   ! gtype - will implement later (don't know arrays size yet)
 
 
    !================== 

@@ -72,6 +72,7 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 1.85e-20*EXP(2.82*LOG(TEMP))*EXP(-987.0*TINV)  OH + CH4 = CH3O2  ; acp2006, V6, p3625-4055, Atkinson et al.
 1.44e-13+M*3.43e-33                 OH     + CO    = HO2               ; IUPAC 2005
 1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
+1.44e-13+M*3.43e-33                 [OH]   + CO_BIC     =             ;  tracer
 2.3e-12*EXP(360.0*TINV)             CH3O2  + NO    = HCHO + HO2 + NO2  ; acp2006
 7.4e-13*EXP(-520.0*TINV)            CH3O2  + CH3O2 = 2. HCHO + 2. HO2  ; acp2006
 1.03e-13*EXP(365.0*TINV)-7.4e-13*EXP(-520.0*TINV)  CH3O2 + CH3O2 = CH3OH + HCHO  ; acp2006
@@ -85,6 +86,7 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 *----- ethane chemistry ----------------------------------- ;
 * ;
 6.9e-12*EXP(-1000.0*TINV)     OH     + C2H6 = C2H5O2 + {H2O}     ; IUPAC2007
+6.9e-12*EXP(-1000.0*TINV)    [OH]    + C2H6 =                    ; tracer
 2.55e-12*EXP(380.0*TINV)      C2H5O2  + NO  = HO2 + CH3CHO + NO2 ; IUPAC2005
 3.8e-13*EXP(900.0*TINV)       C2H5O2  + HO2 = C2H5OOH            ; IUPAC2005
 8.01e-12                      C2H5OOH + OH  = CH3CHO + OH     ; Saunders ACP3, 2003, 161-180 CR 
@@ -202,7 +204,7 @@ TROE_OH_NO                 OH + NO = HONO          ; IUPAC 2002
 *
 *<----- EC ageing ------- -------------------------------------------->
 * ;
-_func_ec_ageing_rate()               EC_f_new = EC_f_age ;
+*USEPPM _func_ec_ageing_rate()               EC_f_new = EC_f_age ;
 
 *ECageing                            EC_f_new = EC_f_age ; # to use const ageing rate
 *ECageing                            EC_c_new = EC_c_age ; # to use const ageing rate
@@ -301,18 +303,18 @@ rcss(QSSCO,k)                           = SeaSalt_c ;
 *
 rc_Rn222(k)                             = Rn222    ;
 *
-ECfi:rcemis(EC_f_new,k)                = EC_f_new ;
-ECfi:rcemis(EC_f_age,k)                = EC_f_age ;
-OCfi:rcemis(POC_f,k)                   = POC_f  ;
+*USEPPM ECfi:rcemis(EC_f_new,k)                = EC_f_new ;
+*USEPPM ECfi:rcemis(EC_f_age,k)                = EC_f_age ;
+*USEPPM OCfi:rcemis(POC_f,k)                   = POC_f  ;
 *rcemis(EC_c_new,k)                = EC_c_new ;
 *rcemis(EC_c_age,k)                = EC_c_age ;
-*pm25:rcemis(PPM25,k)                     = PPM25 ;
-*pmco:rcemis(PPMCO,k)                     = PPMCO ;
-0.0                                  = DUST_NAT_F ;  # Dust
-0.0                                  = DUST_NAT_C ;
+pm25:rcemis(PPM25,k)                     = PPM25 ;
+pmco:rcemis(PPMCO,k)                     = PPMCO ;
+*DS 0.0                                  = DUST_NAT_F ;  # Dust
+*DS 0.0                                  = DUST_NAT_C ;
 * <----------- Fire tracers ----------------------------------->
 *
-*pm25fire:rcemis(PPM25_FIRE,k)           = PPM25_FIRE ;
+pm25:rcemis(PPM25_FIRE,k)           = PPM25_FIRE ;
 co:rcemis(CO_FIRE,k)                     = CO_FIRE    ;
 *
 * <----------- Biogenic emissions ----------------------------->

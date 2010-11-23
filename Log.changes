@@ -1,4 +1,4 @@
-xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 IMPORTANT EUCAARI NOTE:
 
   * Instructions to run EUCAARI version *
@@ -21,10 +21,58 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
-xxxxxxxxxxxxxx rv3_7eucaari xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7beta8  Dave+Peter  Nov 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
-NOT rtagged yet. Probably good to test first and rtag the code actually used
+New group system started --- not finished!
 
+  Changes to handle groups better, and get rid of hard-coding in Derived_ml
+  (The rv3_7eucaari version would not compile with EmChem09 chemistry.)
+
+GenChem.pl now produces extra group info in CM_ChemSpecs_ml, with
+   a new type gtype, e.g.
+
+    type(gtype), public, parameter, dimension(18) :: &
+       GROUP_ARRAY = (/ &
+ gtype( "SOX", 2, (/ SO2,SO4,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /) ) &
+  ......
+
+My_Derived_ml:   now has SURF_UG_GROUP = (/ "SIA", "PM25",  ....
+
+   - works the same way as for SURF_UG = (/ "SO2", .....
+
+   - BUT - I haven't had time to make SURF_UG_N_GROUP, SURF_PPB_GROUP etc.
+     [Note: Should redesign again with units specified with name,
+       eg SURF_GROUP = (/ pair( "SIA", "ugm3"), pair("OXN", "ugNm3"), &
+                          pair("NOX", "ppb") /) or similar....    ]
+
+   - outouts called SURFGRP_UGM3_SOX etc.... [Note: Will rename to just SURF_
+     once the older SURF stuff is erased for groups.
+
+   - D2_PM removed. Functionality in above or elsewhere
+
+   Thus the former SOX_GROUP is not needed, but just the character array "SOX".
+   This avoids compilation problems where groups do note exist (eg "BSOA")
+   and allows looping.
+
+
+Derived_ml
+
+   - all groups that are defined in SURF_UG_GROUP now removed from
+   Derived_ml. Instead we use AddNewDeriv for SURF_UG_GROUP similar
+   to for SURF_UG. Gets rid of lots of lines (currently commented
+   out with !GRPD
+
+   - flex_uggroup_calc routine removed. All can be done with the original uggroup_calc
+
+Also
+   Dust_ml : MasterProc used to limit outputs (should use in
+    preference to me == 0 anyway.)
+
+   NetCDF_ml - bug fix on ReadField_CDF:
+        if(imax==1)imax=dims(1)!covered entire circle
+
+
+xxxxxxxxxxxxxx rv3_7eucaari xxxxx Many authors !! 21 Nov 2010 xxxxxxxxxxxxxxxx 
 
    *New directory*
 
@@ -64,7 +112,7 @@ NOT rtagged yet. Probably good to test first and rtag the code actually used
 	new bug in ReadField_CDF: special case when imax=360 because the area covers all longitudes (was set to 1)
 
     xxxxxxxxxxxxxx .... SoilNOx  (Peter 11/11-2010)xxxxxxxxxxxxxxxx
-set USE_SOIL_NOX=.true. in ModelConstants_ml to get soil nox
+   set USE_SOIL_NOX=.true. in ModelConstants_ml to get soil nox
 
 Corrected a bug in ReadField_CDF (a few values were set to undef/0 when latitude start from north poles in the datafile.) 
 Changed test for ps3d in Advection_ml, to avoid unnecessary warnings.

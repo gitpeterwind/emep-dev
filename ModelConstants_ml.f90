@@ -41,7 +41,7 @@ module ModelConstants_ml
 ! Some flags for model setup
 ! will be removed when convection is sufficiently tested (use foundconv in permanent code)
  logical, public, parameter :: USE_CONVECTION   = .false.
- logical, public, parameter :: USE_SOILWATER    = .true.
+ logical, public, parameter :: USE_SOILWATER    = .false.
  logical, public, parameter :: USE_FOREST_FIRES = .false.
  logical, public, parameter :: USE_SOIL_NOX     = .false.
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
@@ -62,10 +62,10 @@ module ModelConstants_ml
 !     run domains
 
  !character(len=20), parameter, public :: DomainName = "EMEP-50kmEurope"
- !character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
+ character(len=20), parameter, public :: DomainName = "EMEP-50kmEECCA"
  !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.25degEurope"
  !character(len=22), parameter, public :: DomainName = "EMEPCWF-0.20degEurope"
-  character(len=20), parameter, public :: DomainName = "HIRHAM"
+ !character(len=20), parameter, public :: DomainName = "HIRHAM"
 
   logical, parameter, public :: IS_GLOBAL = .false.
 
@@ -85,7 +85,7 @@ module ModelConstants_ml
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
   ! RUNDOMAIN = (/ 1, 182, 1, 197 /)      ! HIRHAM
-  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
+   RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
   !RUNDOMAIN = (/ 1, 100, 1, 100 /)     ! EMEP domain in EECCA
   !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
@@ -99,7 +99,7 @@ module ModelConstants_ml
   !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
   !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
-!  RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
+  !RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
@@ -136,8 +136,8 @@ module ModelConstants_ml
  ! integer, private, parameter :: DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
  !integer, private, parameter :: DEBUG_ii= 97, DEBUG_jj= 62  ! Waldhof
  !integer, private, parameter :: DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
- !integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
- integer, private, parameter :: DEBUG_ii=74, DEBUG_jj= 79 !  Payerne_HIRHAM
+ integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
+ !integer, private, parameter :: DEBUG_ii=74, DEBUG_jj= 79 !  Payerne_HIRHAM
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 50 !   Harwell
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 15 !   biomass burnung, Aug 2003
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 35 !  Sea, Bay of Biscay

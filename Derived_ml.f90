@@ -65,6 +65,7 @@ use My_Derived_ml,  only : & !EcoDep
       SURF_UG_C, &  !ds added May 2009
       SURF_UG  , &  !ds added May 2009
       SURF_PPB , &  !ds added May 2009
+      SURF_UG_GROUP , &  !ds added May 2009
       D3_PPB,D3_OTHER, D3_UG ! hb new 3D output
 
 use AOTx_ml,          only: Calc_GridAOTx, setaccumulate_2dyear
@@ -133,6 +134,8 @@ private
  private :: voc_2dcalc          ! Calculates sum of VOC for 2d fields
  private :: voc_3dcalc          ! Calculates sum of VOC for 3d fields
  private :: uggroup_calc        ! Calculates sum of groups, e.g. pm25
+! private :: flex_uggroup_calc   ! JUST STARTED: Will Calculates sum of groups, e.g. pm25
+                                ! from new group arrays
 
 
    INCLUDE 'mpif.h'
@@ -321,7 +324,7 @@ private
   ! - for debug  - now not affecting ModelConstants version
   ! integer, dimension(MAXLIMAX) :: i_fdom
   ! integer, dimension(MAXLJMAX) :: j_fdom
-   integer :: ind, iadv, itot, idebug, n, n2, iLC
+   integer :: ind, iadv, itot, idebug, n, n2, iLC, igrp, ngrp
 
   ! - And to check if a wanted field has been previously defined.
         integer, dimension(MAXDEF_DERIV2D) :: found_ind2d = 0
@@ -391,7 +394,7 @@ call AddNewDeriv( "WDEP_NH4_f ","WDEP ","-","-", "mgN/m2", &
 !-------------------------------------------------------------------------------
 ! Areas of deposition-related ecosystems. Set externally
   do n = 1, NDEF_ECOSYSTEMS
-     print *, "ECODEF ",n, trim( DepEcoSystem(n)%name )
+     if(MasterProc) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
 !
 !    call AddDef("ECOAREA", F,DepEcoSystem(n)%Index,DepEcosystem(n)%scale,&
 !                    F  , F  ,T ,F ,F , DepEcosystem(n)%name,&
@@ -499,6 +502,22 @@ do ind = 1, size(SURF_UG)
          iadv , -99, -99, 0.0, F, ugXm3*species(itot)%molwt,  T, T , F, T, T, T, -999 ) !?? atw?
 end do
 
+! 22 Nov 2010. New system for groups of species. Search for GROUP_ARRAY in code
+do ind = 1, size(SURF_UG_GROUP)
+  igrp = find_index( trim( SURF_UG_GROUP(ind) ), GROUP_ARRAY(:)%name )
+  !dname = "SURFGRP_ugm3_" //trim(SURF_UG_GROUP(ind))
+  dname = "SURF_ug_" //trim(SURF_UG_GROUP(ind))
+  if( DEBUG .and.  MasterProc ) then
+    write(*,"(a,i3,a,i3,a)") "ADDING GROUPY ", ind, &
+         trim(SURF_UG_GROUP(ind)), igrp, trim(dname)
+  end if
+             !Deriv(name, class,    subc,  txt,           unit
+  !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+  call AddNewDeriv( dname, "SURF_UG_GROUP", "MASS", "-", "ug/m3", &
+         igrp , -99, -99, 0.0, F, ugPM, T, T , F, T, T, T, -999 ) !?? atw?
+end do
+
+
 do ind = 1, size(SURF_PPB)   ! ppb has rho flag set false
   itot = SURF_PPB(ind)
   iadv = itot - NSPEC_SHL
@@ -562,8 +581,8 @@ end do ! ind
 
               !Deriv(name, class,    subc,  txt,           unit
               !Deriv index, f2d,LC, Threshold, scale, avg? rho Inst Yr Mn Day atw
-call AddNewDeriv("SURF_ug_SIA", "SIAGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_ug_SIA", "SIAGROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ugN_OXN", "OXNGROUP", "MASS", "-", "ugN/m3", &
                       -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ugN_NOX", "NOXGROUP", "MASS", "-", "ugN/m3", &
@@ -572,30 +591,30 @@ call AddNewDeriv("SURF_ugN_RDN", "RDNGROUP", "MASS", "-", "ugN/m3", &
                       -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_ugN_TNO3", "TNO3GROUP", "MASS", "-", "ugN/m3", &
                       -99 , -99,-99, 0.0, F, ugNm3,  T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_TNO3", "parNO3GROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_PMc ", "PMcGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_PM10", "PM10GROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_PM25anthr", "PM25aGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_PM10anthr", "PM10aGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ugC_ECc", "ECcGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ugC_ECf", "ECfGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_SS", "SSGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_ASOA", "ASOAGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_ug_BSOA", "BSOAGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
-call AddNewDeriv("SURF_DU", "DUSTGROUP", "MASS", "-", "ug/m3", &
-                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_ug_TNO3", "parNO3GROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_ug_PMc ", "PMcGROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_ug_PM10", "PM10GROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,  T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_ug_PM25anthr", "PM25aGROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_ug_PM10anthr", "PM10aGROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!NOGRPcall AddNewDeriv("SURF_ugC_ECc", "ECcGROUP", "MASS", "-", "ug/m3", &
+!NOGRP                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!NOGRP call AddNewDeriv("SURF_ugC_ECf", "ECfGROUP", "MASS", "-", "ug/m3", &
+!NOGRP                       -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_SS", "SSGROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!NOGRP call AddNewDeriv("SURF_ug_ASOA", "ASOAGROUP", "MASS", "-", "ug/m3", &
+!NOGRP                       -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!NOGRP call AddNewDeriv("SURF_ug_BSOA", "BSOAGROUP", "MASS", "-", "ug/m3", &
+!NOGRP                       -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
+!GRPDcall AddNewDeriv("SURF_DU", "DUSTGROUP", "MASS", "-", "ug/m3", &
+!GRPD                      -99 , -99,-99, 0.0, F, ugPM,   T, T , F, T, T, T, -999 ) !?? atw?
 call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
                       -99 , -99,-99, 0.0, F, 1.0,   T, T , F, T, T, T, -999 ) !
 
@@ -714,7 +733,7 @@ end do
                do idebug = 1, Nadded2d
                 write (*,"(a,i4,a)") "Had def_2d: ", idebug, def_2d(idebug)%name
                end do
-               call CheckStop("OOPS STOPPED")
+               call CheckStop("OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
             end if
           end if
           if (  DEBUG .and. MasterProc  ) then
@@ -816,6 +835,7 @@ end do
       logical :: accumulate_2dyear !flag to know when to accumulate d_2d (case "EXT")
       logical :: first_call = .true.
       integer :: ipm25, ipmc ! will save some calcs for pm10
+      integer :: igrp, ngrp  !  DS new group methods
 
       timefrac = dt/3600.0
       thour = current_date%hour+current_date%seconds/3600.0
@@ -866,7 +886,8 @@ end do
 
         index = f_2d(n)%index
         if ( DEBUG .and. MasterProc .and. first_call ) then
-           write(*,*) "DEBUG Derived 2d", n, f_2d(n)%name, index, trim(typ)
+           write(*,"(a,i4,a,i4,a)") "DEBUG Derived 2d", n, &
+              trim(f_2d(n)%name), index, trim(typ)
         end if
 
         select case ( typ )
@@ -1174,12 +1195,25 @@ end do
           case ( "TNO3GROUP" )
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
                                density, 0)
-          case ( "SIAGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
-                               density, 0)
-          case ( "parNO3GROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
-                               density, 0)
+          !GRPDcase ( "SIAGROUP" )
+          !GRPD  call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SIA_GROUP, &
+          !GRPD                     density, 0)
+          case ( "SURF_UG_GROUP" ) ! 
+            igrp = f_2d(n)%index 
+            call CheckStop(igrp<1, "NEG GRP "//trim(f_2d(n)%name) )
+            if(DEBUG.and. MasterProc ) then
+                write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
+                write(*,*) "CASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp) 
+                write(*,*) "CASEunit", trim(f_2d(n)%unit)
+            end if
+            ngrp = GROUP_ARRAY(igrp)%Ngroup
+            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, &
+              GROUP_ARRAY(igrp)%itot(1:ngrp) ,  density, 0, &
+              GROUP_ARRAY(igrp)%name )
+
+!GRPD          case ( "parNO3GROUP" )
+!GRPD            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, TNO3_GROUP, &
+!GRPD                               density, 0)
           case ( "PM25GROUP" )
             ipm25 = n
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PM25_GROUP, &
@@ -1205,8 +1239,9 @@ end do
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, PM10anthr_GROUP, &
                                density, 0)
           case ( "ECfGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, EC_F_GROUP, &
-                               density, 0)
+              call CheckStop("Asked for EC_FGROUP")
+!NOGRP            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, EC_F_GROUP, &
+!NOGRP                               density, 0)
 !          case ( "ECcGROUP" )
 !            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, EC_C_GROUP, &
 !                               density, 0)
@@ -1214,16 +1249,16 @@ end do
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, SS_GROUP, &
                                density, 0)
           case ( "DUSTGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, DUST_GROUP, &
-                               density, 0)
+!NOGRP            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, DUST_GROUP, &
+!NOGRP                               density, 0)
 
           case ( "ASOAGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, ASOA_GROUP, &
-                               density, 0)
+!NOGRP           call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, ASOA_GROUP, &
+!NOGRP                              density, 0)
 
           case ( "BSOAGROUP" )
-            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, BSOA_GROUP, &
-                               density, 0)
+!NOGRP            call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, BSOA_GROUP, &
+!NOGRP                               density, 0)
 
           case  default
 
@@ -1430,10 +1465,11 @@ end do
           enddo
 
           case ( "ECfGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, EC_F_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
+              call CheckStop("Asked for EC_FGROUP")
+!NOGRP          do k=1,KMAX_MID
+!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, EC_F_GROUP, &
+!NOGRP                               roa(:,:,k,1), k)
+!NOGRP          enddo
 
           case ( "SSGROUP" )
           do k=1,KMAX_MID
@@ -1454,16 +1490,18 @@ end do
           enddo
 
           case ( "BSOAGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
+              call CheckStop("Asked for BSOAGROUP")
+!NOGRP          do k=1,KMAX_MID
+!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
+!NOGRP                               roa(:,:,k,1), k)
+!NOGRP          enddo
 
           case ( "ASOAGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
+              call CheckStop("Asked for ASOAGROUP")
+!NOGRP          do k=1,KMAX_MID
+!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
+!NOGRP                               roa(:,:,k,1), k)
+!NOGRP          enddo
 
 ! hb
          case ( "Kz" )
@@ -1652,9 +1690,7 @@ end do
 
    end subroutine voc_3dcalc
  !=========================================================================
-!AMVB 2010-08-16: PM-PPB bug fix
- subroutine uggroup_calc( ug_2d, n, class, group, density, ik)
-!subroutine uggroup_calc( ug_2d, n, class, group, density )
+ subroutine uggroup_calc( ug_2d, n, class, group, density, ik, gname)
 
   !/--  calulates e.g. SIA = SO4 + pNO3_f + pNO3_c + aNH4
   ! (only SIA converted to new group system so far, rv3_5_6 )
@@ -1667,12 +1703,14 @@ end do
   integer, intent(in), dimension(:)  :: group
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
   integer, intent(in) :: ik   !AMVB 2010-08-16: PM-PPB bug fix
+  character(len=*),intent(in), optional    :: gname   ! group name
   integer :: ig, iadv, itot,k
   real :: scale
   character(len=10) :: unit=""
 
   if(DEBUG .and. debug_proc) then
-    write(*,"(a,4i4,2es12.3)") "DEBUG GROUP-PM-N", size(group)
+    write(*,"(a,i4,L1,2i4)") "DEBUG GROUP-PM-N", size(group),debug_proc,me,ik
+    if ( present(gname ) ) write(*,*) " GNAME ", trim(gname)
   end if
 
 !AMVB 2010-08-16: PM-PPB bug fix
@@ -1711,8 +1749,9 @@ end do
    if(DEBUG .and. debug_proc) then
       i=debug_li
       j=debug_lj
-      write(*,"(a,4i4,f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
-        itot, iadv, species(itot)%molwt, scale, xn_adv(iadv,i,j,k), ug_2d(i,j)
+      write(*,"(a,i4,a,2i4,f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
+        trim(species(itot)%name), iadv, species(itot)%molwt,&
+           scale, xn_adv(iadv,i,j,k), ug_2d(i,j)
     end if
   end do !n
   forall ( i=1:limax, j=1:ljmax )

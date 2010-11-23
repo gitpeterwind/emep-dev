@@ -5,7 +5,7 @@ use warnings;
 #  GenChem - a perl script to read in equations and output
 #  production and loss terms for fortran programmes.
 # 
-# Dave Simpson    1998-2008: 
+# Dave Simpson    1998-2010: 
 # Includes: species checks, atom-balance,  use of shorthands, 
 #  rate-simplication, various user-changeable options.
 # 
@@ -746,15 +746,13 @@ sub count_tracer {
 
 	# Urghhhhh, but from Prog. Perl, p272 
 	my $n = $nspecies[$tot] - 1;
-if ( $n < 0 ) {
-print "ZEROCOUNT_TRACER S$test_spec\n";
-}
+# if ( $n < 0 ) { print "ZEROCOUNT_TRACER S$test_spec\n"; }
         my @known =  @{ $species[$tot] }[ 0 .. $n ];
         foreach my $t ( @known ) {  #  @species[$tot] ) {
-   	print "COUNT_TRACER T$t N$n S$test_spec\n";
+   	#print "COUNT_TRACER T$t N$n S$test_spec\n";
    	   return ("already known") if $test_spec eq $t;
         }
-print " NEWTRACER$test_spec\n";
+#print " NEWTRACER$test_spec\n";
 	# If we got to here, we have a new tracer
         count_atoms($test_spec,$test_spec); 
         printall ("New tracer, $test_spec,  processed, mol. wt is $molwt{$test_spec} \n");
@@ -1338,6 +1336,8 @@ sub print_rates {
 	my $module = "ChemGroups_ml";
         open(GROUPS,">GenOut_$module.f90");
 	my $Use    = "use ChemSpecs_tot_ml  ! => species indices";
+      # implement later
+      #   use OwnDataTypes_ml, only : gtype  ! => for group defs";
         start_module($module,\*GROUPS,$Use);
 	print GROUPS	"! Assignment of groups from GenIn.species:\n";
 
@@ -1352,13 +1352,50 @@ sub print_rates {
 	}
 
      # 2010 groups  assigned from GenIn.species
+	my $Ngroup = 0;
+	my $MaxNgroup = 0;
         foreach my $g ( keys %grp ) {
            my $N = @{ $grp{$g} }; 
+	   $Ngroup ++ ;
+	   $MaxNgroup = $N if $N > $MaxNgroup ;
 	   $outline = join(",", @{ $grp{$g} });
 	 print "  TESTSS $g  N$N group is: @{ $grp{$g} }\n";
+         print GROUPS "\n  integer, public, parameter ::  INDEX_${g}_GROUP = $Ngroup";
          print GROUPS "\n  integer, public, parameter, dimension($N) :: &
              ${g}_GROUP     = (/ $outline /)\n";
+             
 	}
+	# Tmp for now  and horrible code -
+	# print out again but in group array
+ 	# get size of group hash and max size (need to pre-process)
+	my $gsize = keys( %grp ); 
+	print GROUPS "\n\n!GROUP ARRAY SIZE $gsize MAXN $MaxNgroup \n";
+	print GROUPS "
+  type, public :: gtype 
+       character(len=20) :: name
+       integer :: Ngroup
+       integer, dimension($MaxNgroup) :: itot   ! indices from xn_tot arrays
+  end type gtype
+
+  type(gtype), public, parameter, dimension($gsize) :: &
+       GROUP_ARRAY = (/ &\n";
+
+	my @out = 0;
+	my $comma = "";
+        foreach my $g ( keys %grp ) {
+           for my $col ( 0 .. $MaxNgroup-1 ) { $out[$col] = "0"; };
+           my $N = @{ $grp{$g} }; 
+	   my $col = 0;
+	   for my $gg (  @{ $grp{$g} } )  {
+		$out[$col] = $gg;
+		$col ++;
+	   }
+	   $outline = join(",", @out );
+
+           print GROUPS "$comma gtype( \"${g}\", $N, (/ $outline /) ) &\n";
+	   $comma = ",";
+	}
+	print GROUPS "   /)\n";
 
 	 print GROUPS "\n! ------- Dry dep      species ------------------\n";
 
@@ -1424,14 +1461,16 @@ sub print_rates {
 ###############################################################################
  sub print_emis {
         my $Nemis = @emis_files;
+        my $MaxLen = 12;
 	printall( "ENTERING EMIS print $Nemis\n");
         open(EMIS,">GenOut_Emis.inc") or die "FAIL EMIS\n"; 
 
 	print EMIS "  integer, public, parameter ::  NEMIS_FILES  = $Nemis\n";
-	print EMIS "  character(len=6), public, save, dimension(NEMIS_FILES):: &\n";
+	print EMIS "  character(len=$MaxLen), public, save, dimension(NEMIS_FILES):: &\n";
 	print EMIS "      EMIS_NAME =  (/ &\n";
 	my $comma = "";
 	foreach my $e ( @emis_files ){
+		die "LONG EMIS name $e > $MaxLen \n" if length($e) >= $MaxLen ;
 		printf EMIS "%12s \"%-6s\" &\n", $comma, lc($e); 
 		$comma = ",";
 	}
