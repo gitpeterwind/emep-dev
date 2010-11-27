@@ -10,7 +10,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=8:ib
 # wall time limit of run
-#PBS -lwalltime=00:10:00
+#PBS -lwalltime=00:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -119,11 +119,11 @@ if (%BENCHMARK) {
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
 }
 
+my $EUCAARI=0;
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 #die " TO DO: Need still to create SR split files\n" if $SR ;
 
-my $EUCAARI=1;
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
 my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP) if $CWF;
@@ -184,7 +184,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "HIRHAM"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -201,6 +201,7 @@ if ($STALLO) {
 #    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
     if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
       $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";  
+      $MetDir   = "$DataDir/$GRID/metdata/$year" if $GRID eq "HIRHAM";
       $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year"."_ny" if $GRID eq "EECCA";  
       # TMP, just to make something work for 2006
       $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;  
@@ -234,14 +235,14 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $Chem, $testv);
 
 if ($EUCAARI) {
+    $Chem     = "Eucaari_Trends";      # Label for chemical scheme used
     @emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 } else {
+    $Chem     = "EmChem09";            # Label for chemical scheme used
     @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 } 
 
-$Chem     = "EmChem09";                   # Label for chemical scheme used
-$Chem     = "Eucaari_Trends";                   # Label for chemical scheme used
-$testv    = "eucaari"; # "rv3_7beta7";
+$testv    = "rv3_9beta9"; # aari"; # "rv3_7beta7";
 
 
 #User directories
@@ -259,11 +260,13 @@ my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result director
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
 my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
 my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-files
-my $SoilDir     = "/home/mifast/Unify/MyData";   # Saharan BIC
-my $DustDataDir = "/home/mifast/Unify/MyData/BC_DUST/2000";   # Saharan BIC
+my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
+my $DustDataDir = "$DATA_LOCAL/dust_input/BC_DUST/2000";   # Saharan BIC
+
 #.. For using emissions of EC/OC instead of PMx
-my $RFEmisDir   = "/global/work/mifast/Data_RF";   # Split-Fraction files for EC/OC
-my $TNOemisDir  = "/global/work/mifast/Emis_TNO";  # TNO EC/OC emissions
+# Avoid directories which depend on domain, unless global files!
+#my $RFEmisDir   = "/global/work/mifast/Data_RF";   # Split-Fraction files for EC/OC
+#my $TNOemisDir  = "/global/work/mifast/Emis_TNO";  # TNO EC/OC emissions
 
 #ds check: and change
 chdir "$ProgDir";
@@ -274,10 +277,8 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 
 my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
 #my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;
-$SplitDir    = "$ChemDir/EMISSPLIT"  if $EUCAARI; 
-#RB: had  "/home/mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
-
-my $Africa      = "$DATA_LOCAL/Africa";  # Emissions for Africa, y=1..11
+$SplitDir    = "$ChemDir/EMISSPLIT"; # FOR ALL NOW, Nov 20th! if $EUCAARI; 
+#RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $timeseries  = "$DataDir";
 
@@ -290,6 +291,14 @@ my $subv        = "$testv" ;                  # sub-version (to track changes)
 # The effect is to choose the approproate femis file
 
 my $scenario = "Base";     # Reset later if SR
+
+#Possible emission scenarios for HIRHAM run
+#GEA scenarios: HIGH_CLE, HIGH_FROZEN, LOW_CLE, LOW_SLE
+#Historic emissions from Lamargue et al. : historic_emis
+my $emisscen = "historic_emis";
+my $emisyear = $year;
+$scenario = "${emisscen}_emis${emisyear}_met${year}" if $GRID eq "HIRHAM";
+
 my @runs     = ( $scenario );
 
 #EMISSIONS: default settings
@@ -304,7 +313,16 @@ $emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
 $emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
 $emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
 
+
+#TMP and should be improved because it gives errors for
+# other domains!
+#.. For using emissions of EC/OC instead of PMx
+my $RFEmisDir = "/global/work/mifast/Data_RF"; # Split-Fraction files for EC/OC
+my $TNOemisDir = "/global/work/mifast/Emis_TNO"; # TNO EC/OC emissions
+
+
 $emisdir = $TNOemisDir if $EUCAARI;
+$emisdir = "$EMIS_INP/emissions/${emisscen}/${emisyear}" if $GRID eq "HIRHAM";
 
 $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
@@ -371,6 +389,7 @@ die "Domain mis-match Model: $XDIM Grid $GRID" if (
    ( $GRID eq "EECCA"    && $XDIM != 132 ) or
    ( $GRID eq "EECCA_25" && $XDIM != 264 ) or
    ( $GRID eq "MACC02"   && $XDIM != 321 ) or
+   ( $GRID eq "HIRHAM"   && $XDIM != 182 ) or
    ( $GRID eq "GLOBAL"   && $XDIM != 360 ) );
 
 if (%BENCHMARK and not $BENCHMARK{'debug'}){
@@ -397,14 +416,17 @@ if ( $ENV{PBS_NODEFILE} ) {
 my @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,31);
 $month_days[2] += leap_year($year);
 
-my $mm1   =  "08";       # first month, use 2-digits!
-my $mm2   =  "08";       # last month, use 2-digits!
+#Only 360 days in HIRHAM metdata. We ignore leaps
+@month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
+
+my $mm1   =  "01";       # first month, use 2-digits!
+my $mm2   =  "01";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 32;        # for testing, simply reset here
+ $NTERM = 16;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
@@ -656,12 +678,18 @@ foreach my $scenflag ( @runs ) {
 
 # First, emission files are labelled e.g. gridSOx, whiuch we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
-# in the model.
+# in the model. It doesn't matter if we have extra mapping here,it
+# is  GenIn.reactions and the associated emislist that decides what gets used.
+# eg if having pm25:rcemis(PM25) = OC we would get PM25
+# but if having ocfi:rcemis(POCfi) = POCfi we would get POCfi
+# (Hence ok for HIRHAM, RF etc.)
 
-  my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", "sox" => "SOx",
-		  "nox" => "NOx" , "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
-		  "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "POCfine"   ) ;
-
+  my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", 
+                  "sox" => "SOx", "nox" => "NOx" , 
+                  "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
+		  "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine"   ) ;
+		  # sometimes was "ocfi" => "POCfine"   ) ;
+   
 
   foreach my $poll  ( @emislist  ) {
     my $dir = $emisdir;
@@ -708,8 +736,9 @@ foreach my $scenflag ( @runs ) {
   }
 
 # Emissions setup:
-  if ($EUCAARI) {
+  if ($EUCAARI) { # DS RE-CHECK shouldn't be needed
       $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
+      $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
   } else {
       $ifile{"$DataDir/femis.dat"} =  "femis.dat";
   }
@@ -732,7 +761,8 @@ foreach my $scenflag ( @runs ) {
   $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
 # new inputs style (Aug 2007)  with compulsory headers:
-#NOT NEEDED  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
+#NOT NEEDED if using BVOC_2010 .eqv. .true.
+  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
   #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
