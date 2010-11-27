@@ -40,6 +40,7 @@
  use ChemChemicals_ml,     only : species
  use ChemSpecs_tot_ml,     only : DUST_NAT_F
  use GridValues_ml,        only : gb, gl, gb_fdom, gl_fdom, i_fdom, j_fdom 
+ use Io_ml,                only : PrintLog
  use Landuse_ml,           only : LandCover, NLUMAX 
  use LandDefs_ml,          only:  LandType
  use LocalVariables_ml,    only : Sub, Grid
@@ -48,7 +49,7 @@
                                   rho_surf, SoilWater, foundSoilWater,  &
                                   clay_frac, sand_frac
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
-    NPROC, MasterProc
+    NPROC, MasterProc, USE_DUST
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,MAXLIMAX,MAXLJMAX
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
@@ -105,6 +106,10 @@
    integer :: n, ii, jj,nlu, ilu, lu
 
 !_______________________________________________________
+    if ( USE_DUST .eqv. .false. ) then
+        call PrintLog("Skipping soil dust")
+        return
+    end if
 
     if ( my_first_call.and.MasterProc ) then 
      write(6,*)'***    Call for init_dust     ***   '

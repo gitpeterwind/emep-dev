@@ -61,7 +61,7 @@ module GlobalBCs_ml
   use ModelConstants_ml, only:  PPB, PPT,PPBINV &
                                ,KMAX_MID, PT, Pref &
                                ,MasterProc  &
-                               ,model & !not really needed now....
+                               ,DO_SAHARA  &
                                ,IIFULLDOM,JJFULLDOM &
                                ,FORECAST     ! FORECAST mode
 
@@ -186,7 +186,7 @@ contains
    integer,            intent(out) :: io_num    !  i/o number
    integer,          intent(inout) :: errcode   !  i/o number
    logical, save :: my_first_call = .true.      ! u3
-   logical, parameter :: DO_SAHARA = .true.     ! Turn on/off BG Saharan Dust
+   logical, parameter :: DO_SAHARA = .false.     ! Turn on/off BG Saharan Dust
 
    real, dimension(IGLOB,JGLOB,KMAX_MID) :: bc_rawdata   ! Data (was rtcdmp)
 

@@ -198,7 +198,7 @@ if ($STALLO) {
     $WORKROOT = "/global/work";
     $DataDir  = "/global/work/mifapw/emep/Data";
     $MetDir   = "$DataDir/$GRID/metdata/$year" ;
-#    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
+#    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA";
     if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
       $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";  
       $MetDir   = "$DataDir/$GRID/metdata/$year" if $GRID eq "HIRHAM";
@@ -242,7 +242,7 @@ if ($EUCAARI) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 } 
 
-$testv    = "rv3_9beta9"; # aari"; # "rv3_7beta7";
+$testv    = "rv3_7beta9"; # aari"; # "rv3_7beta7";
 
 
 #User directories
@@ -261,7 +261,7 @@ my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's pr
 my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
 my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-files
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
-my $DustDataDir = "$DATA_LOCAL/dust_input/BC_DUST/2000";   # Saharan BIC
+$SoilDir = 0 if $GRID eq "EMEP"; 
 
 #.. For using emissions of EC/OC instead of PMx
 # Avoid directories which depend on domain, unless global files!
@@ -722,9 +722,11 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
 # BIC for Saharan dust
+    if ( $SoilDir ) { # Not yet for EMEP domain
 	foreach my $bc ( qw ( DUST_c_ext DUST_f_ext )) { #
-	    $ifile{"$DustDataDir/$bc.$mm"} =  "$bc.$mm";
+	    $ifile{"$SoilDir/BC_DUST/2000/$bc.$mm"} =  "$bc.$mm";
 	}
+    } # dust
     if ( $GRID eq "GLOBAL" ) {
       foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
         $ifile{"$emisdir/grid$gridmap{$t}.$mm"} =  "grid$t.$mm";
@@ -792,8 +794,10 @@ foreach my $scenflag ( @runs ) {
 
 
 # For windblown dust
+   if ( $SoilDir ) {
     $ifile{"$SoilDir/clay_isric_percent_ext.dat"} = "clay_frac.dat";
     $ifile{"$SoilDir/sand_isric_percent_ext.dat"} = "sand_frac.dat";
+   }
 
   foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
     if ( -r $old ) {

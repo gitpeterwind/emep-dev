@@ -46,6 +46,8 @@ module ModelConstants_ml
  logical, public, parameter :: USE_FOREST_FIRES = .false.
  logical, public, parameter :: USE_SOIL_NOX     = .false.
  logical, public, parameter :: USE_BVOC_2010    = .false.
+ logical, public, parameter :: USE_DUST         = .false.
+ logical, public, parameter :: DO_SAHARA = .false.     ! Turn on/off BG Saharan Dust
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.
 ! iso = isoprene, mtp = monoterpenes from pools, mtl = monoterpenes
@@ -73,8 +75,8 @@ module ModelConstants_ml
 
   integer, public, parameter ::  &
   !  IIFULLDOM = 182, JJFULLDOM = 197  ! x,y-Dimensions of full HIRHAM domain 
-  ! IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
-   IIFULLDOM = 132, JJFULLDOM = 159  ! x,y-Dimensions of full EECA domain
+   IIFULLDOM = 170, JJFULLDOM = 133  ! x,y-Dimensions of full EMEP domain
+  ! IIFULLDOM = 132, JJFULLDOM = 159  ! x,y-Dimensions of full EECA domain
   ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
   ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
   ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
@@ -87,7 +89,7 @@ module ModelConstants_ml
   integer, public, parameter, dimension(4) ::  &
   !                x0   x1  y0   y1
   ! RUNDOMAIN = (/ 1, 182, 1, 197 /)      ! HIRHAM
- ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
+  !RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
   !RUNDOMAIN = (/ 1, 100, 1, 100 /)     ! EMEP domain in EECCA
   !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU

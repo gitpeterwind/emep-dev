@@ -44,7 +44,7 @@
  use Par_ml, only : limax, ljmax
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS, AOD,      &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
-                                 Aero_water, SEASALT, DUST
+                                 Aero_water, SEASALT   !DUST -> USE_DUST
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
@@ -64,6 +64,7 @@
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
                                   nprint, END_OF_EMEPDAY, &
+                                  USE_DUST, &
                   DebugCell, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
 
@@ -166,7 +167,7 @@ subroutine runchem(numt)
              if ( SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
 ! dust
-             if ( DUST )     &
+             if ( USE_DUST )     &
              call WindDust (i,j,debug_flag)
 
 

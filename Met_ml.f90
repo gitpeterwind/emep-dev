@@ -110,6 +110,7 @@ module Met_ml
        ,DEBUG_BLM, DEBUG_Kz & 
        ,NH3_U10   & !dshb  -- temporary
        ,DomainName & !HIRHAM
+       ,USE_DUST & 
        ,nstep,USE_CONVECTION 
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
@@ -1303,7 +1304,8 @@ end if ! NH3_U10
 !.. Clay soil content    !st-dust 
       ios = 0
 
-        if ( me == 0  ) then
+      if ( USE_DUST ) then
+        if ( MasterProc  ) then
            write(fname,fmt='(''clay_frac.dat'')') 
            write(6,*) 'filename for clay fraction ',fname, IO_CLAY, ios
         end if
@@ -1334,7 +1336,8 @@ end if ! NH3_U10
               sand_frac(i,j) = 0.01 * sand_frac(i,j)
            enddo
         enddo
-!st-dust 
+!st-dust  
+      end if ! USE_DUST
     else ! callnum == 2
        if (MasterProc) then
           write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month

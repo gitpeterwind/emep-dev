@@ -54,8 +54,7 @@
                                 , AOD               = .true.   &
                                 , VOLCANO           = .false.
 
-    logical, public, parameter :: SEASALT = .true.  &
-                                , DUST    = .true. 
+    logical, public, parameter :: SEASALT = .true. 
  !.. Number of aerosol sizes (1-fine, 2-coarse)
     integer, public, parameter :: NSIZE = 2    
 

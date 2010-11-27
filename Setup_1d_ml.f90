@@ -78,10 +78,10 @@
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,USE_FOREST_FIRES                & !
-    ,USE_SOIL_NOX                    & !
+    ,USE_SOIL_NOX, USE_DUST          & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
-  use My_Aerosols_ml,       only : SEASALT, DUST
+  use My_Aerosols_ml,       only : SEASALT
   use Landuse_ml,            only : water_fraction, ice_fraction
   use Par_ml,                only :  me& !!(me for tests)
                              ,MAXLIMAX,MAXLJMAX & !ds NatEmis
@@ -307,7 +307,7 @@ contains
 
      !/** Add windblown dust production
     
-     if ( DUST  ) then
+     if ( USE_DUST  ) then
  
           do iqrc = 1, NDU
             rcwbd(iqrc,KMAX_MID) = DU_prod(iqrc,i,j)

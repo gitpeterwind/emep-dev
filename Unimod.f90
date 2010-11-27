@@ -80,6 +80,7 @@ program myeul
        ,nprint,nass,nterm,iyr_trend, PT &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
        ,USE_CONVECTION, USE_SOILWATER,USE_SOIL_NOX,USE_FOREST_FIRES &
+       ,USE_DUST,DO_SAHARA &
        ,NBVOC  & !
        ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
@@ -202,12 +203,15 @@ program myeul
      call PrintLog( trim(txt) )
      write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
 
-     ! And record some settings to RunLog
-      call PrintLog("Options used (convec., soilwater, soilnox, forest fires)")
+     ! And record some settings to RunLog (will recode later)
+      call PrintLog("Options used of (convec., soilwater, soilnox, forest fires)")
       if(  USE_CONVECTION ) call PrintLog("Convection used")
       if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
       if(  USE_SOIL_NOX   ) call PrintLog("SoilNOx    switch on")
       if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
+      call PrintLog("Options used of (dust, sahara)")
+      if(  USE_DUST        )call PrintLog("Dust switch on")
+      if(  DO_SAHARA       )call PrintLog("Sahara switch on")
   endif
 
 

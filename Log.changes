@@ -38,7 +38,9 @@ run GenChem!!!
 xxxxxxxxxxxxxx rv3_7beta9  Dave        Nov 27 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
 Fixed run.pl
-    Possible issue though: no dust data yet for "EMEP" grid.
+    Dust switched off for "EMEP" grid since we don't have the data file
+    yet. (Solution will be to netcdf the files, not to have one in each
+    LOCAL_DATA dir.)
 
 Added pm25 and pmco files to ZCM_EmChem09/EMISSPLIT 
 
@@ -46,6 +48,17 @@ Added pm25 and pmco files to ZCM_EmChem09/EMISSPLIT
 with which to split pm25.)
 
 More use of PrintLog in Unimod.f90 - to record which switches were used in RunLog.
+
+Dust changes
+
+   - USE_DUST and DO_SAHARA put in ModelConstants_ml (where
+    similar switches are kept). Makes it easier to switch off for EMEP domain.
+
+   RunChem_ml and Dust_ml only if USE_DUST
+
+   ZD_OZONE/MyAerosols - DUST logical replaced by USE_DUST from ModelConstants
+
+   GlobalBCs_ml - DO_SAHARA from ModelConstants
 
 
 xxxxxxxxxxxxxx rv3_7beta8  Dave+Peter  Nov 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
