@@ -1,15 +1,29 @@
 
-IMPORTANT EUCAARI NOTE:
+IMPORTANT NOTE:
 
-  * Instructions to run EUCAARI version *
+  * Instructions to run *
 
     check out clean version of Unimod (safest as there are several new files)
-    Make use mk.GenChem has Eucaari_Trends, *not* EmChem09
+    edit mk.GenChem, set "run" to  EmChem09 as standard, can be Eucaari_Trends
     mk.GenChem
     cp ZD_OZONE/My* .
+  [option: if Eucaari_Trends, do also:
     cp ZD_VBS/My* .          # gets MySOA_ml and My_Derived including SOA
+  ]
+    make clean
     make
     edit run.pl for year etc.
+
+KNOWN PROBLEMS
+I (DS) have modified the treatment of groups for output in EmChem09, so
+that My_Derived has SURF_UG_GROUPS.  I have therefore deleted some
+code in Derived that hadled this lot the "old" way. This will cause
+problems for any Eucaari_Trend runs. The solution is to  modify ZCM_Eucaari_Trends
+to match the changes made in the ZCM_EmChem09. Sorry about this, but I didn't
+have time to complete this project. Should also extend to SURF_UG_N_GROUPS
+etc, or even better to a SURF_GROUPS array where the units are specified with
+the group. To Do.
+
 
 IMPORTANT NOTE:
 
@@ -20,6 +34,18 @@ Run mk.GenChem!!!!
 
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
+
+xxxxxxxxxxxxxx rv3_7beta9  Dave        Nov 27 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+Fixed run.pl
+
+Added pm25 and pmco files to ZCM_EmChem09/EMISSPLIT 
+
+(Not updated in Eucaari directory yet. Need to decide how much detail
+with which to split pm25.)
+
+More use of PrintLog in Unimod.f90 - to record which switches were used in RunLog.
+
 
 xxxxxxxxxxxxxx rv3_7beta8  Dave+Peter  Nov 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 

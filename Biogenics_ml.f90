@@ -70,7 +70,7 @@ module Biogenics_ml
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
                            NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & ! DSBIO
-                           DEBUG_BIO, BVOC_USED,MasterProc
+                           DEBUG_BIO, BVOC_USED, USE_BVOC_2010, MasterProc
   use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,  Real4
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
   use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1,me
@@ -120,7 +120,6 @@ module Biogenics_ml
      day_embvoc   !  emissions scaled by daily LAI
 
   logical, private, dimension(MAXLIMAX,MAXLJMAX) :: EuroMask
-  logical, public, parameter :: BVOC_2010 = .false.
 
   !/-- Canopy environmental correction factors-----------------------------
   !
@@ -158,7 +157,7 @@ module Biogenics_ml
         call PrintLog("No Biogenic Emissions ", MasterProc)
         return
       end if
-      if( BVOC_2010 ) then
+      if( USE_BVOC_2010 ) then
          call PrintLog("BVOC Emission Style: 2010", MasterProc)
       else
          call PrintLog("BVOC Emission Style: 2003", MasterProc)
@@ -188,7 +187,7 @@ module Biogenics_ml
 
    !====================================
 
- if ( BVOC_2010  .or. DEBUG_BIO ) then
+ if ( USE_BVOC_2010  .or. DEBUG_BIO ) then
     call GetEuroBVOC()
    !====================================
 
@@ -201,7 +200,7 @@ module Biogenics_ml
    !====================================
 
     emforest = 0.0
-    if ( BVOC_2010 == .false. ) then
+    if ( USE_BVOC_2010 .eqv. .false. ) then
       call Read2DN("Inputs.BVOC",2,emforest,CheckValues)
       call CheckStop( minval(emforest) < 0.0, "Negative BVOC emis!")
     end if
@@ -226,7 +225,7 @@ module Biogenics_ml
 
 ! No, we would need the day:Embvoc every ady to get the equivalent annual
 ! sum
-!      if( DEBUG_BIO .and. BVOC_2010 ) then
+!      if( DEBUG_BIO .and. USE_BVOC_2010 ) then
 !            do n = 1, size(BVOC_USED)
 !               bvocsum   = sum ( bvocEF(li0:li1,lj0:lj1,n) )
 !               CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
@@ -538,7 +537,7 @@ module Biogenics_ml
      !  molecules/cm3/s
      ! And we scale EmisNat to get units kg/m2 consistent with
      ! Emissions_ml (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
-     if ( BVOC_2010 ) then
+     if ( USE_BVOC_2010 ) then
 
         E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
         rcbio(BIO_ISOP,KG) = E2010 * biofac_ISOP/Grid%DeltaZ
@@ -552,7 +551,7 @@ module Biogenics_ml
   endif ! daytime
 
   if ( BIO_TERP > 0 ) then
-    if ( BVOC_2010 ) then
+    if ( USE_BVOC_2010 ) then
      ! add pool-only terpenes rate;
         MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
         rcbio(BIO_TERP,KG)    = (MTL+MTP) * biofac_TERP/Grid%DeltaZ

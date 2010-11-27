@@ -65,7 +65,7 @@ program myeul
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
   use Io_ml  ,          only : IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE,&
                                IO_NH3_DEB ! hb NH3Emis
-  use Io_Progs_ml  ,    only : read_line
+  use Io_Progs_ml  ,    only : read_line, PrintLog
   use Landuse_ml,       only : InitLandUse, SetLanduse, Land_codes
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml,           only : metvar,MetModel_LandUse,&
@@ -79,7 +79,8 @@ program myeul
        ,runlabel2  &   ! explanatory text
        ,nprint,nass,nterm,iyr_trend, PT &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
-       ,USE_FOREST_FIRES, NBVOC  & !
+       ,USE_CONVECTION, USE_SOILWATER,USE_SOIL_NOX,USE_FOREST_FIRES &
+       ,NBVOC  & !
        ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
   use OutputChem_ml,    only : WrtChem
@@ -184,7 +185,7 @@ program myeul
     do i=1,FORECAST_NDUMP
       call read_line(IO_TMP,txt,status(1))
       read(txt,"(I4,3(I2),I3)")outdate(i)  ! outputdate YYYYMMDDHHSSS
-      if(me==0) print "(A,I5.4,2('-',I2.2),I3.2,2(':',I2.2))",&
+      if(MasterProc) print "(A,I5.4,2('-',I2.2),I3.2,2(':',I2.2))",&
         " Forecast nest/dump at",                             &
         outdate(i)%year,outdate(i)%month,outdate(i)%day,      &
         outdate(i)%hour,outdate(i)%seconds/60,mod(outdate(i)%seconds,60)
@@ -193,18 +194,22 @@ program myeul
 
   if( MasterProc ) then
      close(IO_TMP)
-     write(unit=IO_LOG,fmt=*)trim(runlabel1)
-     write(unit=IO_LOG,fmt=*)trim(runlabel2)
-     write(unit=IO_LOG,fmt=*)startdate(1)
-     write(unit=IO_LOG,fmt=*)startdate(2)
-     write(unit=IO_LOG,fmt=*)startdate(3)
-     write(unit=IO_LOG,fmt=*)"iyr_trend= ", iyr_trend
+     call PrintLog( trim(runlabel1) )
+     call PrintLog( trim(runlabel2) )
+     write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "startdate= ", (startdate(i),i=1,3)
+     call PrintLog( trim(txt) )
+     write(unit=txt,fmt="(a,i4)") "iyr_trend= ", iyr_trend
+     call PrintLog( trim(txt) )
      write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
+
+     ! And record some settings to RunLog
+      call PrintLog("Options used (convec., soilwater, soilnox, forest fires)")
+      if(  USE_CONVECTION ) call PrintLog("Convection used")
+      if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
+      if(  USE_SOIL_NOX   ) call PrintLog("SoilNOx    switch on")
+      if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
   endif
 
-  if( MasterProc ) print *, "read standard input"
-  if( MasterProc ) print *, "RUNLABEL INPUT ", trim(runlabel1),' ',trim(runlabel2)
-  if( MasterProc ) print *, " Trend Year is ", iyr_trend
 
 
   !*** Timing ********
@@ -293,7 +298,7 @@ program myeul
 
   call Init_Derived()        ! Derived field defs.
 
-  if ( NBVOC > 0  ) call Init_BVOC()
+  call Init_BVOC()
 
   call tabulate()    ! =>  sets up tab_esat, etc.
 
