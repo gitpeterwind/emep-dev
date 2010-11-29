@@ -333,7 +333,8 @@ contains
 
 !Soil NOx
      if( USE_SOIL_NOX)then
-        rcemis(NO2,KMAX_MID)=rcemis(NO2,KMAX_MID)+SoilNOx(i,j)
+        rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
+        !ds rcemis(NO2,KMAX_MID)=rcemis(NO2,KMAX_MID)+SoilNOx(i,j)
      endif
 
 !Mass Budget calculations

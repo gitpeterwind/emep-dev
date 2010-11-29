@@ -35,6 +35,14 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta10 Dave        Nov 29 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+Bug fixes for SoilNO  (no effect unless USE_SOILNO = .true.)
+
+Emissions_ml
+Setup_1d_ml
+
+
 xxxxxxxxxxxxxx rv3_7beta9  Dave        Nov 27 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
 Fixed run.pl

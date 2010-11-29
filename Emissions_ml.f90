@@ -64,7 +64,7 @@
   use GridValues_ml, only:  GRIDWIDTH_M    & !  size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
-                           ,sigma_bnd, xmd, gl,dA,dB
+                           ,sigma_bnd, xmd, gb, gl,dA,dB
   use Io_Nums_ml,      only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,     only : ios, open_file
   use MetFields_ml,    only : roa, ps, z_bnd   ! ps in Pa, roa in kg/m3
@@ -72,6 +72,7 @@
                               IS_GLOBAL, & 
                               NBVOC,     & ! > 0 if forest voc wanted
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
+                              DEBUG_SOILNO, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               USE_SOIL_NOX
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
@@ -142,7 +143,6 @@
 
   !/-- and for budgets (not yet used - not changed dimension)
 
-   !DSRC real, public,  save, dimension(NRCEMIS) ::  totemadd
    real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
 
   real, public, save, dimension(MAXLIMAX,MAXLJMAX) :: SoilNOx
@@ -785,7 +785,7 @@ contains
       use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID
       use NetCDF_ml, only : ReadField_CDF
 
-    integer i, j,k
+    integer i, j,k, iyr
     integer ijin(2) 
     integer n, flat_ncmaxfound      ! Max. no. countries w/flat emissions
     real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
@@ -848,27 +848,50 @@ endif
 !Soil NOx emissions
 if(USE_SOIL_NOX)then 
 
+
 do j=1,ljmax
    do i=1,limax
       SoilNOx(i,j)=0.0      
+      buffer(i,j)=0.0      
    enddo
 enddo
 
-nstart=current_date%year-1996 + current_date%month
+!dsBUG: nstart=current_date%year-1996 + current_date%month
+nstart=(current_date%year-1996)*12 + current_date%month
 if(nstart>0.and.nstart<=120)then
    !the month is defined
    call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',SoilNOx,nstart=nstart,&
    interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.)
+  if ( DEBUG_SOILNO.and.debug_proc ) write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
 else
    !the year is not defined; average over all years
    Nyears=10!10 years defined
-   do i=1,Nyears!10 years defined
+   do iyr=1,Nyears ! DS switched i to iyr. Confused with i,j below
+      nstart=12*(iyr-1) + current_date%month  !dsAdded
       call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',buffer,nstart=nstart,&
+      !TESTED interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.)
       interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.,UnDef=0.0)
-      SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
+      do j=1,ljmax !DS added
+         do i=1,limax
+           SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
+         end do
+      end do
+      if ( DEBUG_SOILNO.and.debug_proc ) then
+         write(*,"(a,2i6,es10.3,a,2es10.3)") "Averaging SOILNO  inputs", &
+           1995+(i-1), nstart,SoilNOx(debug_li, debug_lj), &
+            "max: ", maxval(buffer), maxval(SoilNOx)
+      !else if ( DEBUG_SOILNO ) then
+      !     write(*,"(a,2i6,a,es10.3)") &
+      !  "Averaging SOILNO  inputs", 1995+(i-1), nstart, "max: ", maxval(SoilNOx)
+      end if
    enddo
    SoilNOx=SoilNOx/Nyears
 endif
+if ( DEBUG_SOILNO .and. debug_proc ) then
+   write(*,"(a,i3,2es10.3)") "After SOILNO ", me, maxval(SoilNOx), SoilNOx(debug_li, debug_lj)
+!else if ( DEBUG_SOILNO ) then
+!   write(*,"(a,i3,es10.3, 2f8.2)") "After SOILNO ", me, maxval(SoilNOx), gb(1,1), gl(1,1)
+end if
 
 !for testing, compute total soil NOx emissions within domain
 !convert from g/m2/day into kg/day
