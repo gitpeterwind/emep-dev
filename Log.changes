@@ -35,6 +35,15 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta11 Semeena, Peter        Dec 2 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+Convection routine moved in own file (no change in results)
+Modified:
+Convection_ml.f90 (new file)
+Makefile.SRCS
+Advection_ml
+(GridValues_ml: just a comment modified)
+
 xxxxxxxxxxxxxx rv3_7beta10 Dave        Nov 29 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
 Bug fixes for SoilNO  (no effect unless USE_SOILNO = .true.)
