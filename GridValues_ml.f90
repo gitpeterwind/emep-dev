@@ -100,9 +100,9 @@
   real, public, save,  dimension(KMAX_BND) ::  &
            B_bnd !Unit 1.  second constant, defined at layer boundary (i.e. half levels in EC nomenclature)
   real, public, save,  dimension(KMAX_MID) ::  &
-           A_mid !Unit Pa.  first constant, defined at layer boundary (i.e. full levels in EC nomenclature)
+           A_mid !Unit Pa.  first constant, defined at middle of layer (i.e. full levels in EC nomenclature)
   real, public, save,  dimension(KMAX_MID) ::  &
-           B_mid !Unit 1.  second constant, defined at layer boundary (i.e. full levels in EC nomenclature)
+           B_mid !Unit 1.  second constant, defined at middle of layer (i.e. full levels in EC nomenclature)
   real, public, save,  dimension(KMAX_MID) ::  &
            dA !Unit Pa.  A_bnd(k+1)-A_bnd(k) 
   real, public, save,  dimension(KMAX_MID) ::  &
