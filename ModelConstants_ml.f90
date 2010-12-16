@@ -270,6 +270,11 @@ module ModelConstants_ml
   , CLOUDTHRES = 1.0e-5        !pw when cloudwater is larger than
                                !CLOUDTHRES, there are clouds.
                                !THIS VALUE MUST BE CHECKED BEFORE USE!
+  real, public, parameter :: &
+       CW_THRESHOLD = 1.0E-7&!Cloudwater (kg/kg); above threshold allow possibility 
+                             ! for precipitations. Value could be adjusted.
+     , RH_THRESHOLD = 0.85   !Relative humidity (fraction); above threshold allow 
+                             ! possibility for precipitations.Value could be adjusted.
 !
 !  additional parameters
 !

@@ -98,7 +98,7 @@ module Met_ml
        ,Poles, Pole_included, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
-       ,GlobalPosition,DefGrid,gl_stagg,gb_stagg
+       ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid
 
   use MetFields_ml !, only : ustar_nwp, invL_nwp, fh,  pzpbl, u_mid, v_mid, &
 !    z_mid, z_bnd, th, Kz_m2s, SigmaZ, foundKz_met
@@ -111,7 +111,8 @@ module Met_ml
        ,NH3_U10   & !dshb  -- temporary
        ,DomainName & !HIRHAM
        ,USE_DUST & 
-       ,nstep,USE_CONVECTION 
+       ,nstep,USE_CONVECTION & 
+       ,CW_THRESHOLD,RH_THRESHOLD
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
        ,limax,ljmax,li0,li1,lj0,lj1  &
        ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
@@ -124,7 +125,7 @@ module Met_ml
        add_secs,timestamp,&
        make_timestamp, make_current_date, nydays
   use Io_ml ,               only : IO_INFIELD, ios, IO_SNOW, IO_ROUGH, &
-                                   IO_CLAY, IO_SAND, open_file
+                                   IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
   use netcdf
 
@@ -184,13 +185,12 @@ contains
     integer ::   nr   ! Fields are interpolate in
                       ! time (NMET = 2): between nr=1 and nr=2
 
-
     type(date)      ::  next_inptime             ! hfTD,addhours_to_input
     type(timestamp) ::  ts_now                   ! time in timestamp format
 
-
     real :: nsec                                 ! step in seconds
 
+    real :: temp(MAXLIMAX,MAXLJMAX)!temporary metfields
 
     nr=2 !set to one only when the first time meteo is read
 
@@ -206,7 +206,8 @@ contains
        foundKz_met = .false.  ! hb 23.02.2010 Kz from meteo
        foundu10_met = .false. ! hb NH3emis
        foundv10_met = .false. ! hb NH3emis
-
+       foundprecip = .false.
+       foundcloudwater = .false.
 
        next_inptime = current_date
 
@@ -306,13 +307,6 @@ contains
          validity, th(:,:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
-    namefield='precipitation'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, pr(:,:,:))
-       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-    pr=max(0.0,pr)  ! AMVB 2009-11-06: positive precipitation
-
-
     namefield='3D_cloudcover'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          validity, cc3d(:,:,:))
@@ -321,6 +315,45 @@ contains
     if(trim(validity)/='averaged')then
        if(MasterProc)write(*,*)'WARNING: 3D cloud cover is not averaged'
     endif
+
+    namefield='precipitation'
+    call Getmeteofield(meteoname,namefield,nrec,ndim,&
+         validity, pr(:,:,:))
+    foundprecip = .true.
+    if(validity==field_not_found)then
+       foundprecip = .false.       
+       !Will construct 3D precipitations from 2D precipitations
+       namefield='large_scale_precipitations'
+       call Getmeteofield(meteoname,namefield,nrec,2,&
+            validity, surface_precip(:,:))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+       namefield='convective_precipitations'
+       call Getmeteofield(meteoname,namefield,nrec,2,&
+            validity, temp(:,:))
+       call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+       surface_precip=surface_precip+temp
+
+       !if available, will use cloudwater to determine the height of release
+       namefield='cloudwater'
+       foundcloudwater = .true.
+       if(nr==2)cw(:,:,:,1)=cw(:,:,:,2)
+       call Getmeteofield(meteoname,namefield,nrec,ndim,&
+            validity, cw(:,:,:,nr))
+       if(validity==field_not_found)foundcloudwater = .false.
+       if(MasterProc.and.foundcloudwater)then
+          write(*,*)'WARNING: 3D precipitations not found. Using 2D precipitations and cloudwater to make 3D'
+          if(nr==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and cloudwater"
+       endif
+       !if cloudwater not available, will use RH to determine the height of release
+       if(MasterProc.and..not.foundcloudwater)then
+          write(*,*)'WARNING: 3D precipitations not found. Using 2D precipitations and relative humidity to make 3D'
+          if(nr==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and humidity"
+       endif
+
+    else
+       pr=max(0.0,pr)  ! AMVB 2009-11-06: positive precipitation
+    endif
+
 
     if(USE_CONVECTION)then
        namefield='convective_updraft_flux'
@@ -576,10 +609,10 @@ end if ! NH3_U10
     real   prhelp_sum,divk(KMAX_MID),sumdiv
     real   inv_METSTEP
 
-    integer :: i, j, k, lx1,lx2, nr,info
+    integer :: i, j, k, kk, lx1,lx2, nr,info
     integer request_s,request_n,request_e,request_w
     real ::Ps_extended(0:MAXLIMAX+1,0:MAXLJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
-
+    real :: relh1,relh2,temperature,swp,wp
 
     nr = 2
     if (numt == 1) then
@@ -713,6 +746,64 @@ end if ! NH3_U10
        CALL MPI_WAIT(request_n, MPISTATUS, INFO)
     endif
 
+    if(.not.foundprecip)then
+       !have to construct 3D precipitations from 2D precipitations
+       if(foundcloudwater)then
+          !if available, use cloudwater to determine the height of release
+          if(nr==1)cw(:,:,:,2)=cw(:,:,:,nr)       
+          do j=1,ljmax
+             do i=1,limax
+                pr(i,j,KMAX_MID)= surface_precip(i,j)*10800000.0!guarantees precip at surface
+                do k=1,KMAX_MID-1
+                   if(cw(i,j,k,2)+cw(i,j,k,1)>CW_THRESHOLD)then
+                      !fill the column up to this level with constant precip
+                      do kk=k,KMAX_MID-1
+                         pr(i,j,kk)= surface_precip(i,j)*METSTEP*3600.0*1000.0!from m/s to mm/METSTEP              
+                      enddo
+                      exit
+                   else
+                   pr(i,j,k)=0.0               
+                endif
+             enddo
+          enddo
+       enddo
+
+       else
+          !will use RH to determine the height of release (less accurate than cloudwater)
+          do j=1,ljmax
+             do i=1,limax 
+                pr(i,j,KMAX_MID)= surface_precip(i,j)*10800000.0!guarantees precip at surface
+                do k=1,KMAX_MID-1
+                   !convert from potential temperature into absolute temperature
+                   temperature = th(i,j,k,nr)*exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,nr)*100)*1.e-5))!Pa, Ps still in hPa here
+                   !saturation water pressure
+                   swp=611.2*exp(17.67*(temperature-273.15)/(temperature-29.65))
+                   !water pressure
+                   wp=q(i,j,k,nr)*(A_mid(k) + B_mid(k)*ps(i,j,nr)*100)/0.622
+                   relh2=wp/swp
+                   !convert from potential temperature into absolute temperature
+                   temperature = th(i,j,k,1)*exp(KAPPA*log((A_mid(k) + B_mid(k)*ps(i,j,1)*100)*1.e-5))!Pa, Ps still in hPa here
+                   !saturation water pressure
+                   swp=611.2*exp(17.67*(temperature-273.15)/(temperature-29.65))
+                   !water pressure
+                   wp=q(i,j,k,1)*(A_mid(k) + B_mid(k)*ps(i,j,1)*100)/0.622
+                   relh1=wp/swp
+                   if(relh1>RH_THRESHOLD.or.relh2>RH_THRESHOLD)then
+                      !fill the column up to this level with constant precip
+                      do kk=k,KMAX_MID-1
+                         pr(i,j,kk)= surface_precip(i,j)*10800000.0!3hours and m->mm              
+                      enddo
+                      exit
+                   else
+                      pr(i,j,k)=0.0               
+                   endif                                     
+                enddo
+             enddo
+          enddo
+       endif
+       pr=max(0.0,pr)  ! positive precipitation
+    endif
+
 
     inv_METSTEP = 1.0/METSTEP
 
@@ -725,8 +816,9 @@ end if ! NH3_U10
 
 
           ! surface precipitation, mm/hr
-
-          surface_precip(i,j) = pr(i,j,KMAX_MID) * inv_METSTEP
+          !NB: surface_precip is different than the one read directly from the metfile 
+          !  (which has different units, and is the sum of the 2D large_scale_precipitations+convective_precipitations)
+          surface_precip(i,j) = pr(i,j,KMAX_MID) * inv_METSTEP 
 
 
           rho_surf(i,j)  = ps(i,j,nr)/(RGAS_KG * t2_nwp(i,j,nr) )
