@@ -104,8 +104,8 @@ module MetFields_ml
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID,NMET) :: &
        th      &  ! Potential teperature  ( deg. k )
        ,q      &  ! Specific humidity
-       ,roa       ! kg/m3
-
+       ,roa    &  ! kg/m3
+       ,cw        ! cloudwater
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: &
         SigmaKz      &! vertical diffusivity in sigma coords
        ,sdot     &! vertical velocity, sigma coords, 1/s
@@ -208,6 +208,8 @@ module MetFields_ml
 ! hb NH3emis 10m wind from meteo
     ,foundu10_met   & ! false if no u10 from meteorology
 ! hb NH3emis 10m wind from meteo
-    ,foundv10_met     ! false if no v10 from meteorology
+    ,foundv10_met   & ! false if no v10 from meteorology
+    ,foundprecip    & ! false if no precipitationfrom meteorology
+    ,foundcloudwater  !false if no cloudwater found
 
 end module MetFields_ml

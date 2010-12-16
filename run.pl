@@ -176,6 +176,7 @@ my $ROBER      = "mifarb";
 my $HALDIS     = "mifahb";
 
 my $USER = $ENV{"USER"};
+if ($USER eq "mifapw") {$USER="$USER/emep"};
 print "USER = $USER\n";
 
 

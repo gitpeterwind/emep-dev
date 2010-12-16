@@ -35,6 +35,18 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta12  Peter        Dec 15 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+Generate 3D precipitation if it is missing. Use 2D precipitations and 3D cloudwater. 
+If Cloudwater is missing use relative humidity (derived from specific humidity) instead.
+Units are assumed as in EECCA/metdata_EC, i.e. m/s for surface precipitation and kg/kg for cloudwater
+
+ToDo: consider replacing lwc (computed from cc3d) with cw (read from metdata)
+
+(removed -recursive from Makefile: it is no more required)
+
+Modified: Met_ml, MetFields_ml, ModelConstants_ml, Makefile, Makefile_stallo (, run.pl)
+
 xxxxxxxxxxxxxx rv3_7beta11 Semeena, Peter        Dec 2 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
 Convection routine moved in own file (no change in results)
