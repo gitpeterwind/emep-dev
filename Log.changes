@@ -35,6 +35,15 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta13  Peter        Dec 21 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+
+
+the -recursive option seems to be useful for the compiler. If omitted it may give this 
+kind of error messsages for large grids:
+   Ammonium_ml.f90:(.text+0x3b): relocation truncated to fit: R_X86_64_32S against symbol `set...
+
+Remodified Makefile and Makefile_stallo
+
 xxxxxxxxxxxxxx rv3_7beta12  Peter        Dec 15 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
 Generate 3D precipitation if it is missing. Use 2D precipitations and 3D cloudwater. 
