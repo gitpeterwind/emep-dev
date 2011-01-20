@@ -85,7 +85,7 @@
 ######################################################################
 #Tips:            SNYKOV or STALLO  NJORD            TITAN
 #  submit job     qsub run.pl       llsubmit run.pl  sbatch run.sh
-#  queue status   qstat -a          llq              squeue -u $USER
+#  queue status   qstat -u $USER    llq              squeue -u $USER
 #  job status                       checkjob 3456    checkjob 3456
 #  kill job       qdel 3456         llcancel 3456    scancel 3456
 ######################################################################
@@ -115,7 +115,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP" ,year=>2005,emis=>"Modrun07/OpenSourceEmis"     ) ;
 #  %BENCHMARK = (grid=>"EECCA",year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 if (%BENCHMARK) {
-  $BENCHMARK{'debug'}   = 0;  # chech if all debug flags are .false.
+  $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
 }
 
@@ -123,7 +123,6 @@ my $EUCAARI=0;
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 #die " TO DO: Need still to create SR split files\n" if $SR ;
-
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
 my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP) if $CWF;
@@ -199,13 +198,15 @@ if ($STALLO) {
     $WORKROOT = "/global/work";
     $DataDir  = "/global/work/mifapw/emep/Data";
     $MetDir   = "$DataDir/$GRID/metdata/$year" ;
-#    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA";
+    $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
+    $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
+    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
     if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
-      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";  
+      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";
       $MetDir   = "$DataDir/$GRID/metdata/$year" if $GRID eq "HIRHAM";
-      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year"."_ny" if $GRID eq "EECCA";  
+      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year"."_ny" if $GRID eq "EECCA";
       # TMP, just to make something work for 2006
-      $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;  
+      $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;
     }
     if ( $GRID eq "EMEP" ) {
       my $AnnaDir = "/global/work/mifaab/emep/Data";
@@ -241,14 +242,13 @@ if ($EUCAARI) {
 } else {
     $Chem     = "EmChem09";            # Label for chemical scheme used
     @emislist = qw ( sox nox nh3 co voc pm25 pmco );
-} 
+}
 
-$testv    = "rv3_7beta9"; # aari"; # "rv3_7beta7";
+$testv    = "rv3_7beta14"; # aari"; # "rv3_7beta7";
 
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
-
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
 
 # Check that the code directory has the chem files we want:
@@ -262,7 +262,7 @@ my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's pr
 my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
 my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-files
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
-$SoilDir = 0 if $GRID eq "EMEP"; 
+$SoilDir = 0 if $GRID eq "EMEP";
 
 #.. For using emissions of EC/OC instead of PMx
 # Avoid directories which depend on domain, unless global files!
@@ -278,7 +278,7 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 
 my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
 #my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;
-$SplitDir    = "$ChemDir/EMISSPLIT"; # FOR ALL NOW, Nov 20th! if $EUCAARI; 
+$SplitDir    = "$ChemDir/EMISSPLIT"; # FOR ALL NOW, Nov 20th! if $EUCAARI;
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
 my $timeseries  = "$DataDir";
@@ -530,7 +530,7 @@ die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 
 
 my @list_of_files = ();   # Keep list of data-files
-
+my $cwfbc = "No BC file";
 
 
 ########################### START OF RUNS  ##########################
@@ -550,7 +550,7 @@ foreach my $scenflag ( @runs ) {
   print "STARTING RUN $scenario \n";
 
   my $runlabel1    = "$scenario";   # NO SPACES! SHORT name (used in CDF names)
-  my $runlabel2    = "${testv}_${Chem}_${scenario}_${year}_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
+  my $runlabel2    = "$testv\_$Chem\_$scenario\_$year\_Trend$iyr_trend";   # NO SPACES! LONG (written into CDF files)
 
   my $RESDIR = "$WORKDIR/$scenario";
   mkdir_p($RESDIR);
@@ -591,10 +591,14 @@ foreach my $scenflag ( @runs ) {
         $new = "EMEP_IN_BC_${CWFDATE[2]}.nc";
         if (-e $old) {
           mylink( "Linking:", $old,$new );
+          $cwfbc=$old;
         } else {
           print "BC file for $CWFBASE not available (yet). Try yesterdays BC file:";
           $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr($CWFDATE[0],0,4),$n+1;
-          mylink( "Linking:", $old,$new ) if (-e $old);
+          if (-e $old) {
+            mylink( "Linking:", $old,$new ) if (-e $old);
+            $cwfbc=$old;
+          }
         }
       } else {
       # meteo not in place !!!!!
@@ -612,7 +616,7 @@ foreach my $scenflag ( @runs ) {
       mylink( "Linking:", $old, $new);
     } else {
       # if we have yesterday meteo, we can have an extra spin up day!
-      print "No dumpfile present, trying to take an extra spin-up day!\n";
+      print "No dumpfile present:\n\t$old,\n\ttrying to take an extra spin-up day!\n";
       my $old = "$MetDir/meteo${CWFDATE[0]}_00.nc";
       if (-e $old) {
         my $new = "meteo${CWFDATE[0]}.nc";
@@ -629,6 +633,7 @@ foreach my $scenflag ( @runs ) {
       # we manage to link the BC file
           mylink( "Linking:", $old,$new );
           print "Managed to link BC file for the extra spin-up day!\n";
+          $cwfbc=$old;
         } else {
           print "BC file for $CWFDATE[1] not available (yet) (spin-up). Try yesterdays BC file:";
           $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr(${CWFDATE[0]},0,4),1;
@@ -685,12 +690,12 @@ foreach my $scenflag ( @runs ) {
 # but if having ocfi:rcemis(POCfi) = POCfi we would get POCfi
 # (Hence ok for HIRHAM, RF etc.)
 
-  my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC", 
-                  "sox" => "SOx", "nox" => "NOx" , 
+  my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC",
+                  "sox" => "SOx", "nox" => "NOx" ,
                   "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
 		  "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine"   ) ;
 		  # sometimes was "ocfi" => "POCfine"   ) ;
-   
+
 
   foreach my $poll  ( @emislist  ) {
     my $dir = $emisdir;
@@ -907,6 +912,7 @@ Chemical scheme: $Chem
 Processors $NDX $NDY
 SR?  $SR
 CWF? $CWF
+BC? $cwfbc
 iyr_trend: $iyr_trend
 ------------------------------
 femis: femis.$scenario
@@ -1183,7 +1189,7 @@ sub generate_updated_femis {
 
   my $femisdat = slurp("$DataDir/femis.dat");
 
-  die "ERROR!! No country Num for $cc!\n" unless defined(my $ccnum = $country_nums{$cc});
+  my $ccnum = defined($country_nums{$cc}) || die "ERROR!! No country Num for $cc!\n";
 
   # using 0 here as long as emissions are guaranteed to contain either
   # only anthropogenic or only natural emissions perl 'country'

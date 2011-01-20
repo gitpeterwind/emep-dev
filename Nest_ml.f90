@@ -176,6 +176,8 @@ subroutine readxn(indate)
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
     filename_read_3D='EMEP_IN_IC.nc'          !IC file: dump/re-start
     filename_read_BC='EMEP_IN_BC_YYYYMMDD.nc' !BC file: 01,...,24 UTC rec for 1 day
+    n=index(filename_read_BC,'YYYYMMDD')
+    if(n>0) write(filename_read_BC(n:n+7),"(I4.4,2I2.2)")indate%year,indate%month,indate%day
     if(first_call)then
       first_call=.false.
       inquire(file=filename_read_3D,exist=fexist)
@@ -187,8 +189,6 @@ subroutine readxn(indate)
       endif
     endif
     if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0) return
-    n=index(filename_read_BC,'YYYYMMDD')
-    if(n>0) write(filename_read_BC(n:n+7),"(I4.4,2I2.2)")indate%year,indate%month,indate%day
     inquire(file=filename_read_BC,exist=fexist)
     if(.not.fexist)then
       if(me==0) print *,'No nest BC file found: ',trim(filename_read_BC)
@@ -475,7 +475,7 @@ subroutine init_icbc()
   endif
 
   if(DEBUG_ICBC.and.me==0)then
-    print "(A)","DEBUG_ICBC Variebles:"
+    print "(A)","DEBUG_ICBC Variables:"
     print "(2(X,A,I3,'=',A24,2L2))",&
       ('ADV_IC',n,adv_ic(n),'ADV_BC',n,adv_bc(n),n=1,NSPEC_ADV)
   endif

@@ -6,17 +6,26 @@ PROG =	Unimod
 include Makefile.SRCS
 
 ###################################################
+## module load intel/11.1u8 openmpi/1.4.3.intel
+INTEL = /site/VERSIONS/intel-11.1u8
 NETCDF = /usit/titan/u1/alfgr/netcdf-3.6.1
 
-LIBS = -lfmpi -lmpi -lnetcdf
-INCL = -I$(NETCDF)/include -I/opt/scali/include64
-LLIB = -L$(NETCDF)/lib     -L/opt/scali/lib64 -lfmpi -lmpi
+LIBS = -lirc -lnetcdf
+INCL = -I$(NETCDF)/include -I$(INTEL)/include/intel64
+LLIB = -L$(NETCDF)/lib -L$(INTEL)/lib/intel64 -lirc
 
-## module load intel
-F90 = ifort
-#DEBUG_FLAGS = -traceback -debug -check bounds #-check uninit #-check pointers #-opt_report
-LDFLAGS  = -convert big_endian -r8 -O2 -xW -ipo -ip -static-libgcc $(DEBUG_FLAGS)
-F90FLAGS = $(LDFLAGS) $(INCL) -static -unroll -align
+##LDFLAGS  = -convert big_endian -r8 -O2 -msse2 -ipo -ip -static-libgcc $(DEBUG_FLAGS)
+##F90FLAGS = $(LDFLAGS) $(INCL) -static -unroll -align
+
+#DEBUG_FLAGS = -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0 -check bounds
+#DEBUG_FLAGS += -check uninit -check pointers -opt_report
+F90 = mpif90
+ifdef $(DEBUG_FLAGS)
+  LDFLAGS = -r8 -recursive -convert big_endian -IPF_fp_relaxed $(DEBUG_FLAGS) -static
+else
+  LDFLAGS = -r8 -recursive -convert big_endian -IPF_fp_relaxed -O3 -ftz -shared-intel
+endif
+F90FLAGS = $(LDFLAGS) -cpp $(INCL)
 LD = $(F90)
 
 ## module load netcdf.gfortran4
@@ -44,11 +53,14 @@ depend .depend: $(SRCS)
 	$(makedepf90) $+ -o '$$(PROG)' \
 	-l '$$(F90) $$(LDFLAGS) $$(INCL) $$(LLIB) $$+ -o $$@ $$(LIBS)' > .depend
 
-clean: diskclean touchdepend depend
+clean: diskclean touchdepend depend module
 
 diskclean:
 	rm -f $(PROG) *.o *.mod
 
 touchdepend:
 	touch .depend
+
+module:
+	@echo -e "Remeber: before compilation & run\n\tmodule load intel/11.1u8 openmpi/1.4.3.intel"
 ##########################################################

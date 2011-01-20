@@ -35,6 +35,27 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta14  Anna, Semmena & Alvaro   Jan 20 2010 xxxxxxxxxxxxxxxxxxxxx
+
+Small changes concerning FORECAST & FORECAST-SR modes
+
+run.pl: - Naming for Nest-IC/re-start (dump) files under FORECAST-SR mode
+        - Small bug fixes on the Perl code for SR mode
+
+Nest_ml: Bug fix on FORECAST mode. The Nest-BC (IFS-Mozart) files where not found/read.
+  The BC variables were searched on the Nest-BC files
+  before the filenames where set to the corresponding date.
+  Therefore, the Nest-BC file and all of its variables where considered missing.
+
+Makefile_titan: homogenize with Makefile_stallo
+  - MPI: use openmpi library as in stallo.
+    This replaces the scampi library, which will be discontinued in June 2011.
+  - IFORT: use same options than Makefile_stallo.
+    Because of the -shared-intel option it is of VITAL IMPORTANCE to have
+    the same modules available for compilation and run.
+    In titan this is done by the following command line:
+      module load intel/11.1u8 openmpi/1.4.3.intel
+
 xxxxxxxxxxxxxx rv3_7beta13  Peter        Dec 21 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
 
 
