@@ -37,7 +37,7 @@ run GenChem!!!
 
 xxxxxxxxxxxxxx rv3_7beta15  Dave, Jan 22 2010 xxxxxxxxxxxxxxxxxxxxx
 
-Clean-up code changes and 1 bug fix.....
+Clean-up code changes, single-year run.pl,  and 1 bug fix.....
 
  *** Bug-fix ***  in Volcanoes_ml - coordinates were wrong for 
         EMEP/EECCA cases
@@ -74,6 +74,11 @@ Clean-up code changes and 1 bug fix.....
        ModelConstants_ml  - now has USE_STO_FLUXES
        Sto_Fluxes_ml
 
+
+ *** safer run.pl ***********
+
+     run.pl changed to avoid taking data from next year (in principal we need
+     a few hours from 1st Jan of $yy + 1. Very very easy to not have this.)
 
 xxxxxxxxxxxxxx rv3_7beta14  Anna, Semmena & Alvaro   Jan 20 2010 xxxxxxxxxxxxxxxxxxxxx
 

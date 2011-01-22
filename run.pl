@@ -208,11 +208,6 @@ if ($STALLO) {
       # TMP, just to make something work for 2006
       $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;
     }
-    if ( $GRID eq "EMEP" ) {
-      my $AnnaDir = "/global/work/mifaab/emep/Data";
-      $MetDir  = "$AnnaDir/Parlam-PS/metdata/$year" ;
-      $MetDir  = "$AnnaDir/Parlam-PS/metcdf/$year" if $METformat eq "cdf"; ;
-    }
 } elsif ($TITAN) {
     $HOMEROOT = "/usit/titan/u1";
     $WORKROOT = "/xanadu/d1";
@@ -244,7 +239,7 @@ if ($EUCAARI) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-$testv    = "rv3_7beta14"; # aari"; # "rv3_7beta7";
+$testv    = "rv3_7beta15"; # aari"; # "rv3_7beta7";
 
 
 #User directories
@@ -424,6 +419,8 @@ my $mm1   =  "01";       # first month, use 2-digits!
 my $mm2   =  "01";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
+# Avoid data from following year. Too easy to forget the met data:
+$NTERM_CALC = $NTERM_CALC -1 if( $mm2 == 12 && $NTERM>100 ) ;  
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
@@ -434,6 +431,8 @@ if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm1   =  "01";
   $mm2   =  "12";
   $NTERM_CALC =  calc_nterm($mm1,$mm2);
+  # Avoid data from following year. Too easy to forget the met data:
+  $NTERM_CALC = $NTERM_CALC -1 if( $mm2 == 12 ) ;  # Avoid data from following year
   $NTERM =   $NTERM_CALC;
 }
 
@@ -570,10 +569,12 @@ foreach my $scenflag ( @runs ) {
 
     my $mmlast = $mm2 + 1;
     my $yylast = $year;
-    if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
-      $yylast = $yylast + 1;
-      $mmlast = 1;
-    }
+    # We avoid data from following year
+    $mmlast = 12 if $mmlast > 12;
+    #if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+    #  $yylast = $yylast + 1;
+    #  $mmlast = 1;
+    #}
     my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
     my $new = sprintf "fil%04d", $nnn;
     mylink( "LAST RECORD SET: ", $old,$new ) ;
@@ -667,11 +668,13 @@ foreach my $scenflag ( @runs ) {
       }
     }
     my $mmlast = $mm2 + 1;
+    # Avoid using data from following year
+    $mmlast = 12 if  $mmlast > 12;
     my $yylast = $year;
-    if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
-      $yylast = $yylast + 1;
-      $mmlast = 1;
-    }
+    #if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+    #  $yylast = $yylast + 1;
+    #  $mmlast = 1;
+    #}
     my $old = sprintf "$MetDir/meteo%02d%02d01.nc", $yylast, $mmlast;
     my $new = sprintf "meteo%02d%02d01.nc", $yylast, $mmlast;
     mylink( "LAST RECORD SET: ", $old,$new ) ;
