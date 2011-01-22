@@ -35,6 +35,13 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta15  Dave, Jan 22 2010 xxxxxxxxxxxxxxxxxxxxx
+
+
+Bug-fix in Volcanoes_ml - coordinates were wrong for EMEP/EECCA cases
+               Also, DEBUG_VOLC moved to ModelConstants_ml
+
+
 xxxxxxxxxxxxxx rv3_7beta14  Anna, Semmena & Alvaro   Jan 20 2010 xxxxxxxxxxxxxxxxxxxxx
 
 Small changes concerning FORECAST & FORECAST-SR modes

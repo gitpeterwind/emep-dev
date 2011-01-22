@@ -51,7 +51,7 @@ module Volcanos_ml
  use EmisDef_ml,            only : NSECTORS,ISNAP_NAT,VOLCANOES_LL
  use GridValues_ml,         only : GRIDWIDTH_M, xm2, sigma_bnd, i_fdom, j_fdom,i_local, j_local,lb2ij
  use Io_ml,                 only : ios, NO_FILE, open_file, check_file, IO_VOLC, Read_Headers,read_line
- use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC, MasterProc
+ use ModelConstants_ml,     only : KMAX_BND,KMAX_MID,PT, NPROC, MasterProc, DEBUG_VOLC
  use MetFields_ml,          only : roa, ps
  use Par_ml,                only : IRUNBEG, JRUNBEG, me, li0,lj0,li1,lj1  &
                                   ,gi0, gi1, gj0, gj1 !TEST
@@ -84,8 +84,6 @@ module Volcanos_ml
   real, public, save, dimension(NMAX_VOLC) ::   &
                         rcemis_volc, & ! Emissions part varying every time-step 
                         emis_volc = 0.0 ! Volcanoes' emissions
-
-  logical, private, parameter :: DEBUG_VULC = .false.
 
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -135,14 +133,9 @@ contains
           READVOLC: do
              read(IO_VOLC,*,iostat=ios) i,j,height
 
-             if (DEBUG_VULC) write(*,"(a,2i5,f12.3,i9)") &
+             if (DEBUG_VOLC) write(*,"(a,2i5,f12.3,i9)") &
                    'VOLCIJ:found i,j,height,ios',i,j,height,ios
              if ( ios /= 0 ) exit READVOLC
-
-             !/** Read (i,j) are given for the full EMEP polar-stereographic domain
-             !    Convert them to actual run domain
-             i = i -IRUNBEG+1    
-             j = j -JRUNBEG+1    
 
              !/** Set the volcano number to be the same as in emission data (gridSOx)
 
@@ -150,7 +143,7 @@ contains
                 if ((i_volc(volc_no)==i) .and. (j_volc(volc_no)==j)) then
                    height_volc(volc_no)=height
                    nvolc_read=nvolc_read+1
-                   if (DEBUG_VULC) write(*,*)'VOLCIJ:Found volcano with height k=',height
+                   if (DEBUG_VOLC) write(*,*)'VOLCIJ:Found volcano with height k=',height
                 endif
              enddo
           enddo READVOLC
@@ -192,7 +185,7 @@ contains
         call lb2ij(lon,lat,xr,yr)
         i_volc(nvolc)=nint(xr)
         j_volc(nvolc)=nint(yr)
-        if (DEBUG_VULC.and.MasterProc) write(*,*)'VOLC:Found ',trim(s), &
+        if (DEBUG_VOLC.and.MasterProc) write(*,*)'VOLC:Found ',trim(s), &
              lon,  lat, i_volc(nvolc),j_volc(nvolc)&
              ,i_volc(nvolc)+IRUNBEG-1,j_volc(nvolc)+JRUNBEG-1, & 
               height_volc(nvolc), emis_volc(nvolc)
@@ -211,11 +204,12 @@ contains
        if ((i >= gi0).and.(i<=gi1).and.(j>= gj0).and.&
             (j<= gj1))then !on the correct processor
           Volcanoes_found=.true.
-          if ( DEBUG_VULC ) write(*,*)'i,j for volcanoe is',i,j
-          if ( DEBUG_VULC ) write(*,*)'EMIS_VOLC is',emis_volc(volc_no)
           i_l = i -gi0 +1
           j_l = j- gj0 +1
-          if ( DEBUG_VULC ) write(*,*)'Local coord is',i_l,j_l,gi0,gj0
+          if ( DEBUG_VOLC ) then
+               write(*,*)'i,j for volcano ',i,j, 'EMIS_VOLC: ',emis_volc(volc_no)
+               write(*,*)'Volc Local coords are',i_l,j_l,gi0,gj0
+          end if
           emis_volc(volc_no) = emis_volc(volc_no)* conv * xm2(i_l,j_l)
        endif
     enddo !volc_no
@@ -244,10 +238,10 @@ contains
     !/** Set volcano
     do volc_no=1,nvolc
        k=height_volc(volc_no)
-       i=i_volc(volc_no) +IRUNBEG-1   !NEW
-       j=j_volc(volc_no) +JRUNBEG-1   !NEW
+       i=i_volc(volc_no)
+       j=j_volc(volc_no)
 
-       if ( DEBUG_VULC ) &
+       if ( DEBUG_VOLC ) &
        write(6,'(a20/4i6/6i6/4i6)')'Volcan: check1 ',  &
        i,j, i_volc(volc_no),j_volc(volc_no),           &
        i_local(i),j_local(j), li0, li1, lj0, lj1,      &
@@ -263,7 +257,7 @@ contains
                                 * unit_conv1 / 64.0 !DSRC molwt(QRCVOL)
                                    ! HARD_CODED 64 - fix in future
 
-         if ( DEBUG_VULC ) &
+         if ( DEBUG_VOLC ) &
            write(*,*)'rc_emis_volc is ',rcemis_volc(volc_no)
 
        endif
@@ -286,16 +280,14 @@ contains
   do volc_no=1,nvolc
 
      k=height_volc(volc_no)
-     i=i_volc(volc_no) +IRUNBEG-1   !NEW
-     j=j_volc(volc_no) +JRUNBEG-1   !NEW
-    ! i=i_volc(volc_no)
-    ! j=j_volc(volc_no)
+     i=i_volc(volc_no)
+     j=j_volc(volc_no)
 
-     if ( DEBUG_VULC ) &
-     write(6,'(a20/4i6/6i6/4i6)')'Volcan: check2 ', &
-     i,j, i_volc(volc_no),j_volc(volc_no),           &
-     i_local(i),j_local(j), li0, li1, lj0, lj1,      &
-     gi0,gi1,gj0,gj1
+     if ( DEBUG_VOLC ) &
+       write(6,'(a20/4i6/6i6/4i6)')'Volcan: check2 ', &
+         i,j, i_volc(volc_no),j_volc(volc_no),           &
+         i_local(i),j_local(j), li0, li1, lj0, lj1,      &
+         gi0,gi1,gj0,gj1
 
        if ( (i_local(i) >= li0) .and. (i_local(i) <= li1 )  .and.  &
             (j_local(j) >= lj0) .and. (j_local(j) <= lj1) ) then 
@@ -304,7 +296,7 @@ contains
         j_l = j_local(j) !local j
 
 
-        if ( DEBUG_VULC ) &
+        if ( DEBUG_VOLC ) &
         write(6,'(a30,4i8)')'Volcan: check 3: ',   &
         i_l, j_l, i_volc(volc_no)-gi0+1, j_volc(volc_no)-gj0+1
 
@@ -312,7 +304,7 @@ contains
 
         rcemis_volc(volc_no) = rcemis_volc0(volc_no) * unit_conv2
 
-        if ( DEBUG_VULC ) &
+        if ( DEBUG_VOLC ) &
            write(*,*)'rc_emis_volc is ',rcemis_volc(volc_no)
 
      endif

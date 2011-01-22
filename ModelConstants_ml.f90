@@ -205,6 +205,7 @@ module ModelConstants_ml
     ,DEBUG_SETUP_1DBIO    = .false. & !
     ,DEBUG_SITES          = .false. & !
     ,DEBUG_SOILWATER      = .false. & !
+    ,DEBUG_VOLC           = .false. & ! volcanoes
     ,DEBUG_NEST_ICBC      = .false.   ! IFS-MOZART BC
 
 
