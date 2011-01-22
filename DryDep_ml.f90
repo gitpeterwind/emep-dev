@@ -1,8 +1,16 @@
+!*****************************************************************************! 
+!module My_DryDep_ml    ! DryDep_ml
+! use CheckStop_ml,        only : CheckStop, StopAll
+! use ChemSpecs_tot_ml,    only : O3
+! use ChemSpecs_adv_ml     ! Needed for all IXADV_ 
+! use Wesely_ml
+!end module My_DryDep_ml
+
 ! <DryDep_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -45,27 +53,8 @@ module DryDep_ml
   ! Tuovinen, J.-P.,Ashmore, M.R.,Emberson, L.D.,Simpson, D., 2004, "Testing
   !   and improving the EMEP ozone deposition module", Atmos.Env.,38,2373-2385
 
- !-- model specific dry dep values are set in My_DryDep_ml
-
-
- use My_DryDep_ml, only : FLUX_CDDEP,   &   ! index O3 in CALC array, for STO_FLUXES
-                          FLUX_TOT ,   &   ! index O3 in TOT  array, for STO_FLUXES
-                          NDRYDEP_ADV, &   ! No. advected species affected
-                          DDepMap        ! Mapping (type = depmap)
-                          ! Vg-calculated (CDDEP..) and advected  (IXADV_..)
-
- use Wesely_ml, only :    NDRYDEP_GASES , &  ! No. Vd values calculated 
-                          NDRYDEP_AER, &   ! No. aerosol size modes for Vd
-                          NDRYDEP_CALC,  &   ! = NDRYDEP_AER+NDRYDEP_GASES
-                          DRYDEP_GASES, &   ! Wesely Index Vd values calculated 
-                          CDDEP_SET,    &   ! for so4
-                          CDDEP_NO2,CDDEP_O3,    &   ! for NO2 comp pt. approach
-                          CDDEP_SO2,CDDEP_NH3, &!, & ! CoDep extra
-                          AERO_SIZE,CDDEP_PMfN,CDDEP_PMfS
-
-
-use LandDefs_ml, only : LandDefs, STUBBLE
-use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
+ use My_Aerosols_ml,    only : NSIZE  
+! use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
  use CheckStop_ml, only: CheckStop
@@ -73,7 +62,7 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
 
  use ChemChemicals_ml, only : species
- use ChemSpecs_adv_ml, only : NSPEC_ADV, IXADV_NO2, IXADV_SO2, IXADV_NH3
+ use ChemSpecs_adv_ml     ! Might need any
  use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, O3
  use DO3SE_ml,         only : do3se, f_phen
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
@@ -84,13 +73,14 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
  use Landuse_ml,       only : SetLandUse, Land_codes  & 
                               ,NLUMAX &  ! Max. no countries per grid
                               ,LandCover   ! Provides codes, SGS, LAI, etc,
- use LandDefs_ml,      only : LandType
+ use LandDefs_ml,      only : LandType, LandDefs, STUBBLE
  use LocalVariables_ml,only : Grid, Sub, L, iL ! Grid and sub-scale Met/Veg data
- use MassBudget_ml,    only : totddep,DryDep_Budget
+ use MassBudget_ml,    only : totddep
  use MetFields_ml,     only : u_ref, rh2m
  use MetFields_ml,     only : tau, sdepth, SoilWater, SoilWater_deep, th,pzpbl
  use MicroMet_ml,      only : AerRes, Wind_at_h
  use ModelConstants_ml,only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
+                              USE_STO_FLUXES, &
                                   DEBUG_i, DEBUG_j, NPROC, &
                                   DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                                   MasterProc, &
@@ -98,41 +88,67 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
                                   ATWAIR, atwS, atwN, PPBINV,&
                                   KUPPER, NLANDUSEMAX
 
- use MosaicOutputs_ml, only : Add_MosaicOutput, Init_MosaicOutputs, MMC_RH
+ use MosaicOutputs_ml,     only : Add_MosaicOutput, Init_MosaicOutputs, MMC_RH
+ use OwnDataTypes_ml,      only : depmap
  use Par_ml,               only : li0,li1,lj0,lj1, me
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG, NMOLE_M3
 
  use Rb_ml,        only: Rb_gas
  use Rsurface_ml
- use SoilWater_ml, only : fSW !  SWP ! = 0.0 always for now!
- use Wesely_ml,    only : Init_GasCoeff !  Wesely stuff, DRx, Rb_Cor, ...
  use Setup_1dfields_ml, only : xn_2d,amk, Fpart, Fgas
- use StoFlux_ml,  only:   STO_FLUXES,  &   ! true if fluxes wanted.
-                            unit_flux, &! = sto. flux per m2
-                            lai_flux,  &! = lai * unit_flux
-                            Setup_StoFlux, Calc_StoFlux  ! subs
- use ChemSpecs_shl_ml,    only :  NSPEC_SHL
- use My_Aerosols_ml,    only : NSIZE
+ use SoilWater_ml, only : fSW !  SWP ! = 0.0 always for now!
+ use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
+                          lai_flux,  &! = lai * unit_flux
+                          Setup_StoFlux, Calc_StoFlux  ! subs
+ use ChemSpecs_shl_ml,  only :  NSPEC_SHL
  use TimeDate_ml,       only : daynumber, current_date
+ use Wesely_ml         ! ... Init_GasCoeff, DRx, Rb_Cor, ...
 
-! use Sites_ml,         only : nlocal_sites,site_x,site_y,site_n,site_name  ! JP-DEPSITES
 
  implicit none
  private
 
- public :: drydep, init_drydep
+ public  :: DryDep, init_drydep
  private :: Init_DepMap
  
  INCLUDE 'mpif.h'
  INTEGER STATUS(MPI_STATUS_SIZE),INFO
-
-  logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
   ! Maps from adv index to one of calc indices
   integer, public, save, dimension(NSPEC_ADV) :: DepAdv2Calc 
 
   logical, private, save :: my_first_call = .true.
   character(len=30),private, save :: errmsg = "ok"
+
+ ! WE NEED A FLUX_CDDEP, FLUX_ADV FOR OZONE;
+ ! (set to one for non-ozone models)
+
+  integer, public, parameter :: FLUX_CDDEP  = CDDEP_O3
+  integer, public, parameter :: FLUX_ADV   = IXADV_O3
+  integer, public, parameter :: FLUX_TOT   = O3
+
+
+  logical, public, parameter :: COMPENSATION_PT = .false. 
+
+
+
+!/**************************************************************************
+!  Specifies which of the possible species (from Wesely's list)
+!  are required in the current air pollution model   
+!/**************************************************************************
+   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   ! .... Define the mapping between the advected species and
+   !      the specied for which the calculation needs to be done.
+   !  We also define the number of species which will be deposited in
+   ! total, NDRYDEP_ADV. This number should be >= NDRYDEP_GASES
+   ! The actual species used and their relation to the CDDEP_ indices
+   ! above will be defined in Init_DepMap
+
+       include 'CM_DryDep.inc'
+
+   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+   logical, public, dimension(NDRYDEP_ADV), save :: vg_set 
 
 
  contains
@@ -157,7 +173,6 @@ use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
      do n = 1, NDRYDEP_ADV  
          nadv       = max( DDepMap(n)%ind, nadv )  ! Looking for highest IXADV
          vg_set(n)  = ( DDepMap(n)%calc == CDDEP_SET ) ! for set vg
-         !if ( DEBUG_DRYDEP .and. MasterProc ) write(*,*) "VGSET ", n, nadv, vg_set(n)
      end do
 
      my_first_call = .false.
@@ -382,7 +397,7 @@ no2fac = 1.0
             xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID)*surf_ppb
     end if
 
-    if ( STO_FLUXES ) call Setup_StoFlux( daynumber ) ! , &
+    if ( USE_STO_FLUXES ) call Setup_StoFlux( daynumber )
 
 !dsVDS - can set settling velcoty here since not landuse dependent
 
@@ -438,10 +453,6 @@ no2fac = 1.0
            Sub(iL)%g_sun = L%g_sun
 
          Grid_snow(i,j) = Grid_snow(i,j) +  L%coverage * snow_iL 
-
-         !SKIP if( MMC_USTAR >0) Mosaic_Met(MMC_USTAR,iL) = L%ustar !ds was 1
-         !SKIP if( MMC_INVL  >0) Mosaic_Met(MMC_INVL ,iL) = L%invL  !ds was 2
-         !SKIP if( MMC_RH    >0) Mosaic_Met(MMC_RH   ,iL) = L%rh    !ds was 3
 
 
        !/... add to grid-average Vg:
@@ -522,11 +533,6 @@ no2fac = 1.0
 !            Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
 !          end if ! CDDEP_NO2
 
-           !Mosaic_VgRef(n,iL) = Vg_ref(n)  ! Note iL, not iiL 
-           !Mosaic_Vg3m(n,iL) = Vg_3m(n)  ! Note iL, not iiL 
-           !Mosaic_Vg3m(n,0)  = Mosaic_Vg3m(n,0)  + L%coverage * Vg_3m(n)
-           !Mosaic_VgRef(n,0) = Mosaic_VgRef(n,0) + L%coverage * Vg_ref(n)
- 
           ! new!
             Grid%Vg_ref(n) = Grid%Vg_ref(n) + L%coverage * Vg_ref(n)
             Grid%Vg_3m(n)  = Grid%Vg_3m(n)  + L%coverage * Vg_3m(n)
@@ -535,13 +541,10 @@ no2fac = 1.0
 
 
          if ( n <= NDRYDEP_GASES )  then    ! gases
-             !Mosaic_Gsur(n,iL) = 1.0/Rsur(n) ! Note iL, not iiL 
-             !Mosaic_Gns(n,iL) = Gns(n)  ! Note iL, not iiL 
+
              Sub(iL)%Gsur(n) = 1.0/Rsur(n) ! Note iL, not iiL 
              Sub(iL)%Gns(n)  = Gns(n)  ! Note iL, not iiL 
-          ! Grid averages. Wait with Rs
-             !Mosaic_Gsur (n,0) =  Mosaic_Gsur(n,0) + L%coverage / Rsur(n)
-             !Mosaic_Gns(n,0) =  Mosaic_Gns(n,0)+ L%coverage * Gns(n)
+
              Grid%Gsur(n)  =  Grid%Gsur(n) + L%coverage / Rsur(n)
              Grid%Gns(n)  =  Grid%Gns(n)+ L%coverage * Gns(n)
          endif
@@ -581,7 +584,7 @@ no2fac = 1.0
        !=======================
 
         !TEST
-        if ( STO_FLUXES .and. LandType(iL)%flux_wanted ) then
+        if ( USE_STO_FLUXES .and. LandType(iL)%flux_wanted ) then
         !if ( STO_FLUXES ) then
 
             n = CDDEP_O3
@@ -618,8 +621,7 @@ no2fac = 1.0
           Sub(iL)%cano3_ppb   = c_hveg * surf_ppb  ! change units
           Sub(iL)%cano3_nmole = c_hveg * NMOLE_M3  ! units of nmole/m3
 
-          !ORIG call Calc_StoFlux(iL, c_hveg, debug_flag )
-        end if ! STO_FLUXES
+        end if ! USE_STO_FLUXES
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! Extra outputs sometime used for Sweden/IVL/SEI/CEH
@@ -651,11 +653,6 @@ no2fac = 1.0
             call datewrite("DEP VGR snow Vg", Grid%snow, &
              (/ (100.0*Grid%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
                 (100.0*Sub(iL)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) /) )
-             !(/ (100.0*Mosaic_VgRef(n,0), n = 1, min(4,NDRYDEP_GASES )) /) )
-!            write(*, "(a,i2,3i3,10f6.3)") "DEP VGR", &
-!                   Grid%snow, imm, idd, ihh,  &
-!                 (100.0*Mosaic_VgRef(n,0), n = 1, min(4,NDRYDEP_GASES )), &
-!                 (100.0*Mosaic_Vg3m(n,0), n = 1, min(4,NDRYDEP_GASES ))
         end if
 
 
@@ -664,7 +661,6 @@ no2fac = 1.0
 
     do ncalc = 1, NDRYDEP_CALC
 
-        !vg_fac (ncalc) = 1.0 - exp ( -Mosaic_VgRef(ncalc,0) * dtz ) 
         vg_fac (ncalc) = 1.0 - exp ( -Grid%Vg_Ref(ncalc) * dtz ) 
 
     end do ! n
@@ -688,7 +684,7 @@ no2fac = 1.0
 !rb               cfac(nadv, i,j) = 1.0+Fpart(ntot,KMAX_MID)*(gradient_fac( ncalc )-1.0)
 !RB: Test assuming dry deposition of particulate part of semi-volatile components as PMfS and the gaseous part as specified in GenIn.species.
                DepLoss(nadv) =   Fgas(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d( ntot,KMAX_MID) + &
-	           Fpart(ntot,KMAX_MID)*vg_fac( CDDEP_PMfS ) * xn_2d( ntot,KMAX_MID)
+                   Fpart(ntot,KMAX_MID)*vg_fac( CDDEP_PMfS ) * xn_2d( ntot,KMAX_MID)
                cfac(nadv, i,j) = Fgas(ntot,KMAX_MID)*(gradient_fac( ncalc ))+ &
                    Fpart(ntot,KMAX_MID)*(gradient_fac( CDDEP_PMfS ))
             else
@@ -722,7 +718,7 @@ no2fac = 1.0
 
 
 
-        if ( STO_FLUXES .and. ntot == FLUX_TOT ) then
+        if ( USE_STO_FLUXES .and. ntot == FLUX_TOT ) then
            ! fraction by which xn is reduced - safety measure:
              
               if( xn_2d( ntot,KMAX_MID)  > 1.0e-30 ) then
@@ -811,10 +807,17 @@ no2fac = 1.0
           end if
        end do GASLOOP2 ! n
 
-        call DryDep_Budget(i,j,Deploss,convfac)
+!     call DryDep_Budget(i,j,Deploss,convfac)
+! Explicit here:
+      convfac =  convfac/amk(KMAX_MID)
+      do n = 1, NDRYDEP_ADV
+         nadv    = DDepMap(n)%ind
+         totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
+         !wastotddep( nadv ) = totddep (nadv) + DryLoss(nadv)
+      enddo
 
        ! inv_gridarea = xm2(i,j)/(GRIDWIDTH_M*GRIDWIDTH_M)
-       convfac2 = convfac * xm2(i,j) * inv_gridarea/amk(KMAX_MID)
+       convfac2 = convfac * xm2(i,j) * inv_gridarea !DONE:/amk(KMAX_MID)
 
 
       !.. Add DepLoss to budgets if needed:

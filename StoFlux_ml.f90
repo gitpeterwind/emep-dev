@@ -42,7 +42,6 @@ module StoFlux_ml
   public :: Setup_StoFlux
   public :: Calc_StoFlux
 
-  logical, public, parameter  :: STO_FLUXES = .true.
   logical, public,  dimension(NLANDUSEMAX), save :: luflux_wanted
 
   real, private :: u_hveg ! Values at canopy top, for fluxes

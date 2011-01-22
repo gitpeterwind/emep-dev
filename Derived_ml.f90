@@ -60,11 +60,7 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : & !EcoDep
       COLUMN_MOLEC_CM2, &  !ds added May 2009
       COLUMN_LEVELS   , &  !ds added Dec 2009
-      SURF_UG_S, &  !ds added May 2009
-      SURF_UG_N, &  !ds added May 2009
-      SURF_UG_C, &  !ds added May 2009
-      SURF_UG  , &  !ds added May 2009
-      SURF_PPB , &  !ds added May 2009
+      SURF_CONC,  &  !ds added Jan 2010
       SURF_UG_GROUP , &  !ds added May 2009
       D3_PPB,D3_OTHER, D3_UG ! hb new 3D output
 
@@ -317,8 +313,9 @@ private
     real, save    :: ugCm3 = 12*PPBINV/ATWAIR
     real, save    :: ugXm3 = PPBINV/ATWAIR   ! will be multiplied by molwwt(X)
     real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
+    real ::   unitscale
 
-    character(len=30) :: dname
+    character(len=30) :: dname, txt, txt2
     character(len=3) :: subclass
 
   ! - for debug  - now not affecting ModelConstants version
@@ -467,45 +464,44 @@ call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
 !call AddNewDeriv( "SoilWater","SoilWater",  "-","-",   "m", &
 !               -99,  -99,-99, 0.0,   F, 1.0,  T, T , F, T, T, T ,-999)
 
-!Mass-based outputs
-do ind = 1, size(SURF_UG_S)
-  itot = SURF_UG_S(ind)
+
+do ind = 1, size( SURF_CONC(:)%txt1 )
+  itot = find_index( trim(SURF_CONC(ind)%txt1) , species(:)%name ) 
   iadv = itot - NSPEC_SHL
-  dname = "SURF_ugS_" //species( itot )%name
-       !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, Threshold, dt_scale, scale, avg? rho Inst Yr Mn Day atw
-  call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugS/m3", &
-              iadv , -99, -99, 0.0,   F,   ugSm3,     T, T , F, T, T, T, -999 ) !?? atw?
+  dname = "SURF_" // trim(SURF_CONC( ind )%txt2) // "_" &
+         // trim(SURF_CONC( ind )%txt1)
+  call CheckStop(itot<0, "SURF_CONC Species not found " // trim(dname) )
+
+  !print *, "SURFCHECK ", me, size( SURF_CONC(:)%txt1 ), ind, trim(SURF_CONC(ind)%txt1), itot, trim(dname)
+!  if ( SURF_CONC( ind )%unit .eq.  "ugm3" ) then
+!      unitscale = ugm3
+!         iadv , -99, -99, 0.0, F, ugXm3*species(itot)%molwt,  T, T , F, T, T, T, -999 ) !?? atw?
+!  else
+  txt = "SURF_UG"
+  txt2 = "MASS" ! Not used?
+  if ( SURF_CONC( ind )%txt2 .eq.  "ugS" ) then
+      unitscale = ugSm3
+  else if ( SURF_CONC( ind )%txt2 .eq.  "ugN" ) then
+      unitscale = ugNm3
+  else if ( SURF_CONC( ind )%txt2 .eq.  "ugC" ) then
+      unitscale = ugCm3
+  else if ( SURF_CONC( ind )%txt2 .eq.  "ug" ) then
+      unitscale = ugXm3*species(itot)%molwt
+  else if ( SURF_CONC( ind )%txt2 .eq.  "ppb" ) then
+      unitscale = PPBINV
+      txt = "SURF_PPB"
+      txt2 = "VOL" ! Not used?
+  else
+      call StopAll("UNITS WRONG IN "// dname )
+  end if
+  call AddNewDeriv( dname, txt, txt2, "-", trim(SURF_CONC( ind )%txt2) , &
+              iadv , -99, -99, 0.0,   F,   unitscale,     T, T , F, T, T, T, -999 ) !?? atw?
 end do
 
-do ind = 1, size(SURF_UG_N)
-  itot = SURF_UG_N(ind)
-  iadv = itot - NSPEC_SHL
-  dname = "SURF_ugN_" //species( itot )%name
-  call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugN/m3", &
-         iadv , -99, -99, 0.0, F,   ugNm3,   T, T , F, T, T, T, -999 ) !?? atw?
-end do
-
-do ind = 1, size(SURF_UG_C)
-  itot = SURF_UG_C(ind)
-  iadv = itot - NSPEC_SHL
-  dname = "SURF_ugC_" //species( itot )%name
-  call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ugC/m3", &
-         iadv , -99, -99, 0.0, F,  ugCm3,   T, T , F, T, T, T, -999 ) !?? atw?
-end do
-
-do ind = 1, size(SURF_UG)
-  itot = SURF_UG(ind)
-  iadv = itot - NSPEC_SHL
-  dname = "SURF_ug_" //species( itot )%name
-  call AddNewDeriv( dname, "SURF_UG", "MASS", "-", "ug/m3", &
-         iadv , -99, -99, 0.0, F, ugXm3*species(itot)%molwt,  T, T , F, T, T, T, -999 ) !?? atw?
-end do
 
 ! 22 Nov 2010. New system for groups of species. Search for GROUP_ARRAY in code
 do ind = 1, size(SURF_UG_GROUP)
   igrp = find_index( trim( SURF_UG_GROUP(ind) ), GROUP_ARRAY(:)%name )
-  !dname = "SURFGRP_ugm3_" //trim(SURF_UG_GROUP(ind))
   dname = "SURF_ug_" //trim(SURF_UG_GROUP(ind))
   if( DEBUG .and.  MasterProc ) then
     write(*,"(a,i3,a,i3,a)") "ADDING GROUPY ", ind, &
@@ -518,15 +514,15 @@ do ind = 1, size(SURF_UG_GROUP)
 end do
 
 
-do ind = 1, size(SURF_PPB)   ! ppb has rho flag set false
-  itot = SURF_PPB(ind)
-  iadv = itot - NSPEC_SHL
-  dname = "SURF_ppb_" //species( itot )%name
-  call AddNewDeriv( dname, "SURF_PPB", "-", "-", "ppb", &
-         iadv , -99, -99, 0.0, F, PPBINV,  T, F , F, T, T, T, -999 ) !?? atw?
-end do
-
-!call AddDef( "VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")
+!TYPE_SS do ind = 1, size(SURF_PPB)   ! ppb has rho flag set false
+!TYPE_SS   itot = SURF_PPB(ind)
+!TYPE_SS   iadv = itot - NSPEC_SHL
+!TYPE_SS   dname = "SURF_ppb_" //species( itot )%name
+!TYPE_SS   call AddNewDeriv( dname, "SURF_PPB", "-", "-", "ppb", &
+!TYPE_SS          iadv , -99, -99, 0.0, F, PPBINV,  T, F , F, T, T, T, -999 ) !?? atw?
+!TYPE_SS end do
+!TYPE_SS 
+!TYPE_SS !call AddDef( "VOC  ", T,  -1    ,PPBINV, F, F, T, T, T,"D2_VOC","ppb")
 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
          -1 , -99, -99, 0.0, F, PPBINV,  T, F , F, T, T, T, -999 ) !?? atw?
 

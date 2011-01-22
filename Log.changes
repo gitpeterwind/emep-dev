@@ -37,9 +37,42 @@ run GenChem!!!
 
 xxxxxxxxxxxxxx rv3_7beta15  Dave, Jan 22 2010 xxxxxxxxxxxxxxxxxxxxx
 
+Clean-up code changes and 1 bug fix.....
 
-Bug-fix in Volcanoes_ml - coordinates were wrong for EMEP/EECCA cases
-               Also, DEBUG_VOLC moved to ModelConstants_ml
+ *** Bug-fix ***  in Volcanoes_ml - coordinates were wrong for 
+        EMEP/EECCA cases
+        Also, DEBUG_VOLC moved to ModelConstants_ml
+
+ *** code cleaned/removed ***
+
+  1)  My_Derived_ml, Derived_ml  - simpler outputs :-)
+
+      Now use the one array SURF_CONCS to specify outputs, with
+      desired unit. Replaces SURF_UG_S, SURF_UG_N, SURF_UG_C,
+      SURF_UG and SURF_PPB. Now say e.g.:
+
+     type(typ_ss), public, parameter, dimension(26) :: &
+           SURF_CONC = (/ typ_ss("SO2", "ugS"),&
+                          typ_ss("SO4", "ugS"),& 
+                          typ_ss("NO", "ugN"),& 
+                          typ_ss("O3", "ppb"),& 
+           .....
+
+     Associated changes in:
+      OwnDerivedTypes_ml ... added typ_ss for pair of text strings
+
+
+  2)  My_DryDep_ml - deleted :-)
+
+      Not needed now since CM_DryDep.ninc has all the important information -
+      now this is imported to DryDep
+
+      Associated changes in:
+
+       DryDep_ml     
+       MassBudget_ml 
+       ModelConstants_ml  - now has USE_STO_FLUXES
+       Sto_Fluxes_ml
 
 
 xxxxxxxxxxxxxx rv3_7beta14  Anna, Semmena & Alvaro   Jan 20 2010 xxxxxxxxxxxxxxxxxxxxx

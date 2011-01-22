@@ -47,6 +47,7 @@ module ModelConstants_ml
  logical, public, parameter :: USE_SOIL_NOX     = .false.
  logical, public, parameter :: USE_BVOC_2010    = .false.
  logical, public, parameter :: USE_DUST         = .false.
+ logical, public, parameter :: USE_STO_FLUXES   = .true.
  logical, public, parameter :: DO_SAHARA = .false.     ! Turn on/off BG Saharan Dust
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.

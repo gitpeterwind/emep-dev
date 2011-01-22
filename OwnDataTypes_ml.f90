@@ -27,8 +27,12 @@ module OwnDataTypes_ml
    end type depmap
 
    !================== 
-   ! gtype - will implement later (don't know arrays size yet)
 
+   !/ generic group for two (short) strings
+   type, public :: typ_ss
+       character(len=TXTLEN_SHORT) :: txt1 ! e.g. POD1_IAM_DF
+       character(len=TXTLEN_SHORT) :: txt2 ! e.g. POD1_IAM_DF
+   end type typ_ss
 
    !================== 
     type, public:: O3cl

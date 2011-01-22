@@ -41,7 +41,7 @@
 ! section at end
 !_____________________________________________________________________________
 
- use My_DryDep_ml, only : NDRYDEP_ADV, DDepMap 
+!! use DryDep_ml, only : NDRYDEP_ADV, DDepMap , DryDep_Budget
 
  use ChemChemicals_ml, only : species       ! species identifier
  use ChemSpecs_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
@@ -124,7 +124,7 @@ private
 
   public :: Init_massbudget
   public :: massbudget
-  public :: DryDep_Budget
+!  public :: DryDep_Budget
 
 contains
 
@@ -427,25 +427,25 @@ contains
 
 
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
-  subroutine DryDep_Budget(i,j,Loss,convfac)
-     !use ChemSpecs_adv_ml
-
-      real, dimension(NSPEC_ADV), intent(in) :: Loss
-      real, dimension(NSPEC_ADV)             :: DryLoss
- 
-     real, intent(in)  :: convfac
-     integer           :: n,nadv,i,j  ! index in IXADV_  arrays
-
-     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio 
-
-      do n = 1, NDRYDEP_ADV 
-         nadv    = DDepMap(n)%ind
-         totddep( nadv ) = totddep (nadv) + DryLoss(nadv) 
-
-      enddo
-  end subroutine DryDep_Budget
-
+!
+!  subroutine DryDep_Budget(i,j,Loss,convfac)
+!     !use ChemSpecs_adv_ml
+!
+!      real, dimension(NSPEC_ADV), intent(in) :: Loss
+!      real, dimension(NSPEC_ADV)             :: DryLoss
+! 
+!     real, intent(in)  :: convfac
+!     integer           :: n,nadv,i,j  ! index in IXADV_  arrays
+!
+!     DryLoss(:)=Loss(:)* convfac /amk(KMAX_MID)   !molec/cm3->mix ratio 
+!
+!      do n = 1, NDRYDEP_ADV 
+!         nadv    = DDepMap(n)%ind
+!         totddep( nadv ) = totddep (nadv) + DryLoss(nadv) 
+!
+!      enddo
+!  end subroutine DryDep_Budget
+!
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
  end module MassBudget_ml
 !--------------------------------------------------------------------------
