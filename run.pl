@@ -8,9 +8,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=8:ib
+#PBS -lnodes=6:ib
 # wall time limit of run
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=07:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -184,7 +184,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EMEP"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -416,15 +416,15 @@ $month_days[2] += leap_year($year);
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
 my $mm1   =  "01";       # first month, use 2-digits!
-my $mm2   =  "01";       # last month, use 2-digits!
+my $mm2   =  "12";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
 my $NTERM_CALC =  calc_nterm($mm1,$mm2);
 # Avoid data from following year. Too easy to forget the met data:
-$NTERM_CALC = $NTERM_CALC -1 if( $mm2 == 12 && $NTERM>100 ) ;  
+$NTERM_CALC = ( $NTERM_CALC -1 ) if( $mm2 == 12 && $NTERM_CALC>100 ) ;  
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
- $NTERM = 16;        # for testing, simply reset here
+# $NTERM = 16;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
@@ -432,7 +432,7 @@ if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm2   =  "12";
   $NTERM_CALC =  calc_nterm($mm1,$mm2);
   # Avoid data from following year. Too easy to forget the met data:
-  $NTERM_CALC = $NTERM_CALC -1 if( $mm2 == 12 ) ;  # Avoid data from following year
+  $NTERM_CALC = ( $NTERM_CALC -1 ) if( $mm2 == 12 ) ;  # Avoid data from following year
   $NTERM =   $NTERM_CALC;
 }
 
