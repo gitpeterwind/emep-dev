@@ -108,8 +108,8 @@ module ModelConstants_ml
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   3        & ! Actual number of processors in longitude
-  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   8        & ! Actual number of processors in longitude
+  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY
 
 !=============================================================================

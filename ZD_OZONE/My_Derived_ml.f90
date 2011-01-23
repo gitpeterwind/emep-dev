@@ -59,8 +59,8 @@ use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
 use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
                    !        ,NO2, NO3_f, NO3_c, HNO3, NH3, NH4_f, PPM25, PPMCO &
                    !       ,O3, PAN, MPAN, SeaSalt_f, SeaSalt_c  !SS=SeaSalt
-use ChemGroups_ml  !ds Allow all groups to ease compilation
-                    !,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
+use ChemGroups_ml  ! Allow all groups to ease compilation
+                   !,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
                             !PCM only: PCM_GROUP, PCM_HELP_GROUP, &
                     !        DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
@@ -85,7 +85,7 @@ use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Add_MosaicDDEP, & 
   MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
-use OwnDataTypes_ml, only : Deriv, O3cl, print_deriv_type, TXTLEN_DERIV
+use OwnDataTypes_ml, only : Deriv, O3cl, print_deriv_type, TXTLEN_DERIV, typ_ss
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -126,49 +126,37 @@ private
     integer, private, save :: mynum_deriv3d
 
 
-
 !Mass-outputs of advected species, will be added to Derived
-!Modify for SR
-!   integer, public, parameter, dimension(1) :: SRSURF_UG_S = (/ SO4 /)
-   integer, public, parameter, dimension(2) ::   SURF_UG_S = (/ SO2, SO4 /)
-
-   integer, public, parameter, dimension(1) :: SRSURF_UG_N = (/ NO2 /) !,NO3_f, NO3_c, NH4_f, 
-   integer, public, parameter, dimension(8) ::  XSURF_UG_N = (/ NH3, HNO3, HONO, PAN, NO, NO3_f, NO3_c, NH4_f /)
-   integer, public, parameter, dimension(9) ::   SURF_UG_N = (/ SRSURF_UG_N, XSURF_UG_N /)
-
-
-!rb: remove PPM25_FIRE, replaced by FFIRE_OC and FFIRE_BC
-!dsrb - just testing with 2 for compilation
-   integer, public, parameter, dimension(4)  :: SRSURF_UG = (/ SO4, NO3_f, NO3_c, NH4_f/)
-   integer, public, parameter, dimension(4) ::  XSURF_UG = (/ SeaSalt_f,SeaSalt_c,        &
-                                                              DUST_NAT_F, DUST_NAT_C /)
-
-  !----------------------------------------------------------------------------
-  ! Options depending on PCM/TNO or OZONE
-  !dsPCM Outputs for particulate carbonaceous matter use groups defined from GenIn.species
-  ! Uncomment for SOA outputs!
-   integer, public, parameter, &
-       dimension(4+4) ::  &
-           SURF_UG = (/ SRSURF_UG, XSURF_UG /)
-  !PCM:     dimension(2+2+SIZE(PCM_GROUP)+SIZE(PCM_HELP_GROUP)) ::  &
-  !PCM:         SURF_UG = (/ SRSURF_UG, XSURF_UG, PCM_GROUP, PCM_HELP_GROUP /)
-  !PCM: integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, FFIRE_OC /)
-   integer, public, parameter, dimension(2) ::  SURF_UG_C = (/ HCHO, PPM25_FIRE /) !,     &
-                                                         !    EC_F_NEW, EC_F_AGE, POC_F/)
-  !----------------------------------------------------------------------------
-
-   integer, public, parameter, dimension(1) :: SRSURF_PPB = (/ O3 /)
-   integer, public, parameter, dimension(4) ::  XSURF_PPB = (/ NO, NO2, HCHO, C5H8 /)
-   integer, public, parameter, dimension(5) ::   SURF_PPB = (/ SRSURF_PPB, XSURF_PPB /)
-
-   integer, public, parameter :: NALL_SURF_UG = &
-     size(SURF_UG_S) + size(SURF_UG_N) + size(SURF_UG_C) + size(SURF_UG)
-
-   integer, public, parameter, dimension( NALL_SURF_UG ) :: &
-      ALL_SURF_UGX = (/ SURF_UG_S, SURF_UG_N, SURF_UG_C, SURF_UG /)
-   character(len=3), public, save, dimension( NALL_SURF_UG ) :: &
-      ALL_SURF_UGTXT
-   real, public, save, dimension( NALL_SURF_UG ) :: ALL_SURF_ATW
+   type(typ_ss), public, parameter, dimension(26) :: &
+         SURF_CONC = (/ typ_ss("SO2", "ugS"),&
+                        typ_ss("SO4", "ugS"),& 
+                        typ_ss("NO", "ugN"),& 
+                        typ_ss("NO2", "ugN"),& 
+                        typ_ss("NH3", "ugN"),& 
+                        typ_ss("HNO3", "ugN"),& 
+                        typ_ss("HONO", "ugN"),& 
+                        typ_ss("PAN",  "ugN"),& 
+                        typ_ss("NO3_F",  "ugN"),&  ! Remeber, species have upper case!
+                        typ_ss("NO3_C",  "ugN"),& 
+                        typ_ss("NH4_F",  "ugN"),& 
+                      ! ug/m3
+                        typ_ss("SO4", "ug"),& 
+                        typ_ss("NO3_F",  "ug"),& 
+                        typ_ss("NO3_C",  "ug"),& 
+                        typ_ss("NH4_F",  "ug"),& 
+                        typ_ss("SEASALT_F",  "ug"),& 
+                        typ_ss("SEASALT_C",  "ug"),& 
+                        typ_ss("DUST_NAT_F",  "ug"),& 
+                        typ_ss("DUST_NAT_C",  "ug"),& 
+                      ! ppb
+                        typ_ss("O3 ", "ppb"),& 
+                        typ_ss("NO ", "ppb"),& 
+                        typ_ss("NO2", "ppb"),& 
+                        typ_ss("HCHO", "ppb"),& 
+                        typ_ss("C5H8", "ppb"),& 
+                        typ_ss("HCHO",  "ugC"),& 
+                      ! ugC/m3
+                        typ_ss("PPM25_FIRE",  "ugC") /)
 
 ! Tropospheric columns
    integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
@@ -178,9 +166,6 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
-      !GRPD ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
-      !GRPD ,"SURF_ug_PM25 " & !dsMay2010
-!      ,"SURF_ug_PM10 " & !dsMay2010
        ,"SURF_ugN_OXN " & !dsMay2010
        ,"SURF_ugN_RDN " & !dsMay2010
       ,"SURF_ugN_TNO3" & !dsMay2010
@@ -188,14 +173,8 @@ private
       ,"SOMO35      " & !"D2_SOMO0    " &
       ,"PSURF       " &  ! Surface  pressure (for cross section):
   /)
-!GRPD    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-!GRPD  D2_PM = (/ &
-!GRPD       !NOGRP "SURF_ugC_ECf", "SURF_SS", "SURF_DU", &         ! , "SURF_ugC_EC"
-!GRPD       "SURF_PM25water" &  !,"SURF_ugN_TOXN", "SURF_ugN_RDN"
-       !GRPD"SURF_ug_TNO3","SURF_ug_PM25anthr", "SURF_PM25water" &  !,"SURF_ugN_TOXN", "SURF_ugN_RDN"
-!GRPD  /)
 
-!DS Nov 2010. GenChem produces a number of groups of species.
+! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
 ! Sorry, this is a limitation that GenChem converts all names to
@@ -223,16 +202,11 @@ private
       ,"SURF_ugN_NOX      " &
       ,"SURF_ppbC_VOC     " &
       ,"SOMO0             " & !"D2_SOMO0    " &
-!dsOct2010      ,"AOT40_Grid        " &   ! Old fashioned AOT
-!      ,"D2_REDN           " &
-!      ,"D2_SNOW           " &
-!      ,"D2_SNratio        " &
       ,"Area_Grid_km2     " &
       ,"Area_Conif_Frac   " &
       ,"Area_Decid_Frac   " &
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
-!      ,"Area_Water_D_Frac " &
       ,"HMIX              " &
 !      ,"D2_HMIX00         " &
 !      ,"D2_HMIX12         " &
@@ -240,10 +214,6 @@ private
       ,"SoilWater_deep     " &
       ,"USTAR_NWP         " &
   /)
-
-!RB: Perhaps add FFIRE?  ! Emissions
-!dsPCM - not used??
-!   integer, public, parameter, dimension(2) :: EMIS_OUT   = (/ C5H8, APINENE /)
 
 
  ! Ecosystem dep output uses receiver land-cover classes (LCs)
@@ -254,7 +224,6 @@ private
   integer, private, save :: nOutDDep, nOutVg, nOutVEGO3
   integer, private, save :: nOutRG  ! RG = resistances and conductances
   integer, private, save :: nOutMET ! RG = resistances and conductances
-
 
 
    ! Specify some species and land-covers we want to output
@@ -406,9 +375,7 @@ private
     character(len=TXTLEN_DERIV), &
     dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) :: tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
-! hb new 3D output
-!    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)) ::&
-    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)+size(D3_PPB)) ::&
+    character(len=TXTLEN_DERIV), dimension(size(SURF_CONC(:)%txt1)+size(D3_PPB)) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
     logical, parameter :: T=.true., F=.false.
@@ -440,22 +407,12 @@ private
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
 
-! add surf concs in various units (e.g. ugS/m3 or ppb):
-     tag_name(1:size(SURF_UG_S)) = "SURF_ugS_" // species(SURF_UG_S)%name
-     call AddArray(  tag_name(1:size(SURF_UG_S)) , wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "SURF_ugS too long" )
-     tag_name(1:size(SURF_UG_N)) = "SURF_ugN_"//species(SURF_UG_N)%name
-     call AddArray( tag_name(1:size(SURF_UG_N)) ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "SURF_ugN too long" )
-     tag_name(1:size(SURF_UG_C)) = "SURF_ugC_"//species(SURF_UG_C)%name
-     call AddArray( tag_name(1:size(SURF_UG_C)),  wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "SURF_ugC too long" )
-     tag_name(1:size(SURF_UG)) = "SURF_ug_"//species(SURF_UG)%name
-     call AddArray( tag_name(1:size(SURF_UG)) ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "SURF_ug too long" )
-     tag_name(1:size(SURF_PPB)) = "SURF_ppb_"//species(SURF_PPB)%name
-     call AddArray( tag_name(1:size(SURF_PPB)) ,  wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "SURF_ppb too long" )
+! generalised outputs:    txt1 is name, txt2 is unit
+   do i = 1, size( SURF_CONC )
+     txt = "SURF_" // trim ( SURF_CONC(i)%txt2 ) // "_" // &
+             trim( SURF_CONC(i)%txt1 )
+     call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end do
 
      n=size(SURF_UG_GROUP)
      tag_name(1:n) = "SURF_ug_"//SURF_UG_GROUP(:)
@@ -473,11 +430,11 @@ private
      do n2 = 1, size(COLUMN_LEVELS)
        n = n + 1
        tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n1))%name ) // "_" // COLUMN_LEVELS(n2)
-       !if(MasterProc) print *, "COL MY_DERIV", trim( species(COLUMN_MOLEC_CM2(n))%name )
      end do
      end do
      call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "COLUMN too long" )
+
      ! Didn't work:
      !call AddArray( "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(:))%name ), &
      !  wanted_deriv2d, NOT_SET_STRING)
@@ -511,9 +468,6 @@ private
       call Add_MosaicRG(RG_LABELS,RG_LCS,RG_SPECS,nRG)
       nOutRG = nRG
 
-!     call AddArray( OutRG(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
-!     call CheckStop( errmsg, errmsg // "OutRG  too long" )
-
       !------------- Met data for d_2d -------------------------
       ! We find the various combinations of met and ecosystem,
       ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
@@ -522,8 +476,6 @@ private
       nOutMET = nMET !not needed?
   end if ! SOURCE_RECEPTOR
 
-!     call AddArray( OutMET(:)%name, wanted_deriv2d, NOT_SET_STRING, errmsg)
-!     call CheckStop( errmsg, errmsg // "OutMET too long" )
 
       !------------- end LCC data for d_2d -------------------------
 

@@ -13,7 +13,7 @@ module OwnDataTypes_ml
   ! with these. Collecting them here will
   ! avoid some dependencies, and shorten some My type modules.
   !
-  ! depmap used in My_DryDep and My_WetDep_ml
+  ! depmap used in DryDep_ml and My_WetDep_ml
   ! Deriv used in My_Derived and  Derived_ml
   ! VBST from SOA_ml
 
