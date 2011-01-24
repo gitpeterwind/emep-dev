@@ -191,12 +191,14 @@ contains
     real :: nsec                                 ! step in seconds
 
     real :: temp(MAXLIMAX,MAXLJMAX)!temporary metfields
+    logical :: fexist  
 
     nr=2 !set to one only when the first time meteo is read
 
 
     if(numt == 1)then !first time meteo is read
        nr = 1
+       nrec = 0
        sdot_at_mid = .false.
        foundustar = .false.
        foundsdot = .false.
@@ -249,7 +251,7 @@ contains
          ,next_inptime%hour,numt,nmdays(2)
 
 
-    !  Read rec=1 in case 00:00 from 1st January is missing
+    !  Read rec=1 both for h=0 and h=3:00 in case 00:00 from 1st January is missing
     if((numt-1)*METSTEP<=nhour_first)nrec=0
     nrec=nrec+1
 
@@ -260,8 +262,17 @@ contains
     if(nrec>Nhh.or.nrec==1) then              ! define a new meteo input file
 56     FORMAT(a5,i4.4,i2.2,i2.2,a3)
        write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-       if(MasterProc)write(*,*)'reading ',trim(meteoname)
        nrec = 1
+       if(nday==1.and.nmonth==1)then
+          !hour 00:00 from 1st January may be missing;checking first:
+          inquire(file=meteoname,exist=fexist)
+          if(.not.fexist)then
+             if(MasterProc)write(*,*)trim(meteoname),' does not exist; using data from 31 December'
+             write(meteoname,56)'meteo',nyear-1,12,31,'.nc'
+             nrec=Nhh
+          endif
+       endif
+       if(MasterProc)write(*,*)'reading ',trim(meteoname)
        !could open and close file here instead of in Getmeteofield
     endif
 

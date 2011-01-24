@@ -418,9 +418,7 @@ $month_days[2] += leap_year($year);
 my $mm1   =  "01";       # first month, use 2-digits!
 my $mm2   =  "12";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $NTERM_CALC =  calc_nterm($mm1,$mm2);
-# Avoid data from following year. Too easy to forget the met data:
-$NTERM_CALC = ( $NTERM_CALC -1 ) if( $mm2 == 12 && $NTERM_CALC>100 ) ;  
+my $NTERM_CALC =  calc_nterm($mm1,$mm2,$dd1);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
@@ -430,9 +428,9 @@ my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm1   =  "01";
   $mm2   =  "12";
-  $NTERM_CALC =  calc_nterm($mm1,$mm2);
+  $dd1   =  1;       # Start day, usually 1
+  $NTERM_CALC =  calc_nterm($mm1,$mm2,$dd1);
   # Avoid data from following year. Too easy to forget the met data:
-  $NTERM_CALC = ( $NTERM_CALC -1 ) if( $mm2 == 12 ) ;  # Avoid data from following year
   $NTERM =   $NTERM_CALC;
 }
 
@@ -668,13 +666,11 @@ foreach my $scenflag ( @runs ) {
       }
     }
     my $mmlast = $mm2 + 1;
-    # Avoid using data from following year
-    $mmlast = 12 if  $mmlast > 12;
     my $yylast = $year;
-    #if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
-    #  $yylast = $yylast + 1;
-    #  $mmlast = 1;
-    #}
+    if ( $mmlast > 12 ) { 
+      $yylast = $yylast + 1;
+      $mmlast = 1;
+    }
     my $old = sprintf "$MetDir/meteo%02d%02d01.nc", $yylast, $mmlast;
     my $new = sprintf "meteo%02d%02d01.nc", $yylast, $mmlast;
     mylink( "LAST RECORD SET: ", $old,$new ) ;
@@ -1056,12 +1052,13 @@ sub calc_nterm {
   #  the global month_days array which is used.
   #   $NTERM = 2921;    # works for non-leap year (365*8+1)
 
-  my ($mm1,$mm2) = ($_[0], $_[1]) ;
+  my ($mm1,$mm2,$dd1) = ($_[0], $_[1], $_[2]) ;
   my $ndays=0;
   foreach my $i ( $mm1..$mm2 ) {
     $ndays += $month_days[$i] ;
   }
   my $nterm = 1 + 8*$ndays ;
+  $nterm  = $nterm  - 8* ($dd1 - 1)  ;    # remove days if not starting at day 1
 
   print "Calculated NTERM = $nterm\n";
   return $nterm;
