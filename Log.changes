@@ -37,7 +37,7 @@ run GenChem!!!
 
 xxxxxxxxxxxxxx rv3_7beta16  Peter, Jan 24 2010 xxxxxxxxxxxxxxxxxxxxx
 
-Retabished the original way of making the last met record (see rv3_7beta15)
+Retabished the original way of making the last met record in run.pl (see rv3_7beta15)
 and instead changed Met_ml:
 When the first record when starting a new year is not found, use the same value
 for metdata as in 31 December (21:00 values instead of 00:00 next day).
