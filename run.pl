@@ -567,12 +567,10 @@ foreach my $scenflag ( @runs ) {
 
     my $mmlast = $mm2 + 1;
     my $yylast = $year;
-    # We avoid data from following year
-    $mmlast = 12 if $mmlast > 12;
-    #if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
-    #  $yylast = $yylast + 1;
-    #  $mmlast = 1;
-    #}
+   if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+      $yylast = $yylast + 1;
+      $mmlast = 1;
+    }
     my $old = sprintf "$MetDir/f00.%04d%02d01", $yylast, $mmlast;
     my $new = sprintf "fil%04d", $nnn;
     mylink( "LAST RECORD SET: ", $old,$new ) ;
