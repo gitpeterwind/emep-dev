@@ -181,13 +181,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
     hr_out_type=hr_out(ih)%type
     hr_out_nk=hr_out(ih)%nk
-    select case ( trim(hr_out_type) )
-      case ( "ADVppbv","ADVugXX","ADVugXXgroup" )
-        hr_out_nk=1
-      case ( "COLUMN" ,"COLUMNg" )
-        hr_out_nk=1
-        if(hr_out(ih)%nk<=1)hr_out_nk=KMAX_MID  ! 1-lev column does not make sense
-    end select
+    if(any(hr_out_type==(/"ADVppbv","ADVugXX","ADVugXXgroup",&
+             "COLUMN" ,"COLUMNgroup"/)))hr_out_nk=1
 
     KVLOOP: do k = 1,hr_out_nk
 
@@ -199,19 +194,22 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           "DEBUG OH", me, ispec, trim(name),&
           "INTO HOUR TYPE", trim(hr_out(ih)%type)
 
-      ik=KMAX_MID-k+1
-      if(SELECT_LEVELS_HOURLY)then
-        ik=LEVELS_HOURLY(k)
-        if(ik==0)then
-          ik=KMAX_MID
-          select case ( trim(hr_out_type) )
-            case ( "BCVppbv","BCVugXX","BCVugXXgroup" );hr_out_type(1:3)="ADV"
-          end select
-        else
-          ik=KMAX_MID-ik+1
-          select case ( trim(hr_out_type) )
-            case ( "ADVppbv","ADVugXX","ADVugXXgroup" );hr_out_type(1:3)="BCV"
-          end select
+      if(any(hr_out_type==(/"COLUMN" ,"COLUMNgroup"/)))then
+        ik=KMAX_MID-hr_out(ih)%nk+1  ! top of the column
+        if(ik>=KMAX_MID)ik=1         ! 1-level column does not make sense
+      else
+        ik=KMAX_MID-k+1              ! all levels from model bottom are outputed,
+        if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
+          ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
+          if(ik==0)then
+            ik=KMAX_MID              ! surface/lowermost level
+            if(any(hr_out_type==(/"BCVppbv","BCVugXX","BCVugXXgroup"/)))&
+              hr_out_type(1:3)="ADV" ! ensure surface output
+          else
+            ik=KMAX_MID-ik+1         ! model level to be outputed
+            if(any(hr_out_type==(/"ADVppbv","ADVugXX","ADVugXXgroup"/)))&
+              ik=KMAX_MID            ! all ADV* types represent surface output
+          endif
         endif
       endif
 
