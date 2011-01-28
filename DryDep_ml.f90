@@ -54,7 +54,6 @@ module DryDep_ml
   !   and improving the EMEP ozone deposition module", Atmos.Env.,38,2373-2385
 
  use My_Aerosols_ml,    only : NSIZE  
-! use My_Derived_ml, only : MOSAIC_METCONCS   ! ->  d_2d, IOU_INST, D2_VG etc...
 
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
  use CheckStop_ml, only: CheckStop
@@ -80,7 +79,6 @@ module DryDep_ml
  use MetFields_ml,     only : tau, sdepth, SoilWater, SoilWater_deep, th,pzpbl
  use MicroMet_ml,      only : AerRes, Wind_at_h
  use ModelConstants_ml,only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
-                              USE_STO_FLUXES, &
                                   DEBUG_i, DEBUG_j, NPROC, &
                                   DEBUG_DRYDEP, DEBUG_ECOSYSTEMS, DEBUG_VDS,&
                                   MasterProc, &
@@ -92,11 +90,10 @@ module DryDep_ml
  use OwnDataTypes_ml,      only : depmap
  use Par_ml,               only : li0,li1,lj0,lj1, me
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG, NMOLE_M3
-
- use Rb_ml,        only: Rb_gas
+ use Rb_ml,                only : Rb_gas
  use Rsurface_ml
- use Setup_1dfields_ml, only : xn_2d,amk, Fpart, Fgas
- use SoilWater_ml, only : fSW !  SWP ! = 0.0 always for now!
+ use Setup_1dfields_ml,    only : xn_2d,amk, Fpart, Fgas
+ use SoilWater_ml,         only : fSW !  SWP ! = 0.0 always for now!
  use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
                           lai_flux,  &! = lai * unit_flux
                           Setup_StoFlux, Calc_StoFlux  ! subs
@@ -136,7 +133,6 @@ module DryDep_ml
 !  Specifies which of the possible species (from Wesely's list)
 !  are required in the current air pollution model   
 !/**************************************************************************
-   !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    ! .... Define the mapping between the advected species and
    !      the specied for which the calculation needs to be done.
    !  We also define the number of species which will be deposited in
@@ -219,7 +215,6 @@ module DryDep_ml
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine Init_DepMap
    integer :: iadv, i
-   character(len=12) :: subclass
 
      do i = 1, NDRYDEP_ADV  ! 22
       iadv = DDepMap(i)%ind
@@ -255,10 +250,6 @@ module DryDep_ml
          ,Vg_ratio     & ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over land
          ,sea_ratio     ! Ratio Vg_ref/Vg_3m = ratio C(3m)/C(ref), over sea
 
-    real, dimension(NDRYDEP_GASES ) :: &
-          Grid_Rs      & ! Grid average of Rsurface
-         ,Grid_Gns       ! Grid average of Gns
-
     integer n, iiL, nlu, ncalc, nadv, nFlux  ! help indexes
     integer :: imm, idd, ihh, iss     ! date
     integer :: ntot !index of adv species in xn_2d array
@@ -283,12 +274,12 @@ module DryDep_ml
 
       real, dimension(NSPEC_ADV ,NLANDUSEMAX):: fluxfrac_adv
       integer, dimension(NLUMAX)  :: iL_used, iL_fluxes
-      real :: wet, dry    ! Fractions
-      real :: snow_iL !snow fraction for one landuse
-      real :: Vds, Vsettle     ! FEB2009 Vds
+      real :: wet, dry         ! Fractions
+      real :: snow_iL          !snow fraction for one landuse
+      real :: Vds              ! Aerosol
       real :: Vg_refN, Vg_3mN  ! Crude nitrate correction
 
-      real :: c_hveg, Ra_hveg, Ra_diff, o3_ppb, surf_ppb  ! for O3 fluxes and Fst where needed
+      real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
       real :: c_hveg3m  !TESTS ONLY
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !! Extra outputs sometime used. Important that this 
@@ -385,29 +376,27 @@ module DryDep_ml
 
     Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
 
-   ! For NO2 we use a compensation pt. (kind-of) of ca. 4ppb
-   ! no2fac = xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID)   
-   ! no2fac = max(1.0, no2fac)
-   ! no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
-no2fac = 1.0
+    no2fac = 1.0
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
-         write(*,"(a,2i4,2es15.4)") "DRYDEP CONCS SO2,NH3 (ppb) ", i,j, &
+         write(*,"(a,2i4,3es12.4)") "DRYDEP CONCS SO2,NH3,O3 (ppb) ", i,j, &
           xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID)*surf_ppb, &
-            xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID)*surf_ppb
+          xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID)*surf_ppb, &
+            xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID)*surf_ppb
     end if
 
-    if ( USE_STO_FLUXES ) call Setup_StoFlux( daynumber )
+    call Setup_StoFlux( daynumber )
 
-!dsVDS - can set settling velcoty here since not landuse dependent
+! - can set settling velcoty here since not landuse dependent
 
     Vs = SettlingVelocity( Grid%t2, Grid%rho_ref )
+
   ! Restrict settling velocity to 2cm/s. Seems
   ! very high otherwise,  e.g. see Fig. 4, Petroff..
 
      Vs(:) = min( Vs(:), 0.02) 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
-         write(*,*) "DRYDEP VS:", NSIZE,  Vs
+         write(*,"(a,i3,10es10.2)") "DRYDEP VS:", NSIZE,  Vs
     end if
 
     !/ And start the sub-grid stuff over different landuse (iL)
@@ -569,7 +558,7 @@ no2fac = 1.0
 
         if ( DEBUG_DRYDEP .and. debug_flag ) then
             do n = CDDEP_O3 , CDDEP_O3 !!! 1,NDRYDEP_GASES 
-               call datewrite("DEPMOS ", iL, &
+               call datewrite("DEPO3 ", iL, &
                    (/ Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
                    !(/ Mosaic_VgRef(n,iL) , Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
                call datewrite("DEPDVG", iL, (/ L%coverage, 1.0*n,& ! gs in cm/s :
@@ -584,7 +573,7 @@ no2fac = 1.0
        !=======================
 
         !TEST
-        if ( USE_STO_FLUXES .and. LandType(iL)%flux_wanted ) then
+        if (  LandType(iL)%flux_wanted ) then
         !if ( STO_FLUXES ) then
 
             n = CDDEP_O3
@@ -621,7 +610,7 @@ no2fac = 1.0
           Sub(iL)%cano3_ppb   = c_hveg * surf_ppb  ! change units
           Sub(iL)%cano3_nmole = c_hveg * NMOLE_M3  ! units of nmole/m3
 
-        end if ! USE_STO_FLUXES
+        end if !
 
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
           !! Extra outputs sometime used for Sweden/IVL/SEI/CEH
@@ -703,9 +692,8 @@ no2fac = 1.0
 
            Grid%surf_o3_ppb = xn_2d(O3,KMAX_MID)*gradient_fac( ncalc )*surf_ppb
 
-          ! We strore the attenuation of O3 for the grid, to be used in
-          ! AOT calculations if wanted,
-           Grid%O3factor = DepLoss(nadv)/(max(1.0-10, xn_2d( ntot,KMAX_MID) ) )
+           !BUG:! &n not neededGrid%O3factor = DepLoss(nadv)/(max(1.0-10, xn_2d( ntot,KMAX_MID) ) )
+           Grid%O3factor = vg_fac(ncalc)
 
            if ( DEBUG_DRYDEP .and. debug_flag ) then
               call datewrite("O3_ppb_ratios ", n, (/ &
@@ -718,7 +706,7 @@ no2fac = 1.0
 
 
 
-        if ( USE_STO_FLUXES .and. ntot == FLUX_TOT ) then
+        if ( ntot == FLUX_TOT ) then
            ! fraction by which xn is reduced - safety measure:
              
               if( xn_2d( ntot,KMAX_MID)  > 1.0e-30 ) then
@@ -822,7 +810,7 @@ no2fac = 1.0
 
       !.. Add DepLoss to budgets if needed:
 
-       call Add_MosaicOutput(debug_flag,dt_advec,i,j,convfac2,&
+       call Add_MosaicOutput(debug_flag,i,j,convfac2,&
            DepAdv2Calc, fluxfrac_adv, Deploss ) 
 
  end subroutine drydep

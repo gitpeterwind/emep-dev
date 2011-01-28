@@ -86,6 +86,7 @@ module DO3SE_ml
      real:: RgsO            ! ground surface resistance, Ozone
      real:: VPD_max         ! threshold VPD when relative f = f_min
      real:: VPD_min         ! threshold VPD when relative f = 1
+     real:: VPDcrit         ! threshold SumVPD for TC/RC/IAM_CR
      real:: SWP_max         ! threshold SWP when relative f = 1
      real:: PWP             ! threshold SWP when relative f = f_min
                         ! and assumed equal to permanent wilting point
@@ -94,6 +95,12 @@ module DO3SE_ml
   end type do3se_type
 
   type(do3se_type), public, dimension(NLANDUSEMAX) :: do3se
+
+  ! For some veg we have a SumVPD limitation. Usually just for a few,
+  ! so we assume max 3 for now
+  integer, private, parameter :: MAXnSumVPD=3
+  integer, public, save       :: nSumVPD
+  integer, public, dimension(MAXnSumVPD), save :: SumVPD_LC
 
   real, private, dimension(7) ::  needed      ! For debugging
 
@@ -122,6 +129,7 @@ contains
       !       comments and skipped
 
        iLC = 1    
+       nSumVPD = 0
        do
             read(unit=io_num,fmt="(a200)",iostat=ios) inputline
 
@@ -129,7 +137,7 @@ contains
                 exit
             end if
 
-            if( inputline(1:1) == "!" ) then ! Is a  comment
+            if( inputline(1:1) == "#" ) then ! Is a  comment
                 !print *, "COMMENT: ", trim(inputline)
                 cycle
             end if
@@ -138,6 +146,12 @@ contains
 
             if ( DEBUG_DO3SE .and. MasterProc ) then
                 print *, " DO3SE iLC", iLC,  do3se(iLC)%code, wanted_codes(iLC)
+            end if
+            if ( do3se(iLC)%VPDcrit > 0.0 ) then
+              nSumVPD = nSumVPD + 1
+              call CheckStop( nSumVPD > MAXnSumVPD, "DO3SE nSumVPD")
+              SumVPD_LC(nSumVPD) = iLC
+              if(MasterProc) write(*,*)'VPDlimit ',do3se(iLC)%VPDcrit,' for iLC ',iLC, nSumVPD
             end if
 
             call CheckStop( wanted_codes(iLC), do3se(iLC)%code, "DO3SE MATCHING")
@@ -283,12 +297,11 @@ contains
 
 !===========================================================================
 
- elemental function fPhenology(iLC,code,jday,SGS,EGS,debug_flag) result (fphen)
+ elemental function fPhenology(iLC,jday,SGS,EGS,debug_flag) result (fphen)
   real :: fphen
 
 ! Input
   integer, intent(in) :: iLC
-  character(len=*), intent(in) :: code
   integer, intent(in) :: jday
   integer, intent(in):: SGS, EGS
   logical, intent(in) :: debug_flag

@@ -35,6 +35,57 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta17  Dave  Jan 26 2010 xxxxxxxxxxxxxxxxxxxxx
+
+Major re-write of AOT, POD, VEGO3_OUTPUTS and associated simplification
+of Derived system
+
+ *** needs new input files for DO3SE  *********
+
+ - AOTnPOD_ml - replaces AOTx_ml. 
+   This module now collects together much of the code for
+   processing AOTs and fluxes (PODs). Includes O3cl type which
+   defines allowed outputs. e.g.
+
+    VEGO3_DEFS    =  (/ &
+   O3cl( "POD1_IAM_DF   ",   "POD", 1.0,  "- ", "IAM_DF",F,0,999 ), &
+   O3cl( "POD0_IAM_DF   ",   "POD", 0.0,  "- ", "IAM_DF",F,0,999 ), &
+   O3cl( "MMAOT40_TC    ","AOT", 40.0, "MM", "TC    ",F,0,999 ), &
+
+ so that My_Derived  just needs to give the names wanted, e.g. POD1_IAM_DF
+
+   Accumulation period for calculation defined in this array, so 
+   older (and inflexible!) WheatGrowingSeason removed.
+
+ -  My_Derived_ml - see new O3cl types
+
+ -  DO3SE_ml changed, also with extra input param: VPDcrit 
+
+  associated changes in
+
+   Derived_ml  (Threshold removed from Deriv type, SOMO changed, ..)
+                accumlate_2dyear removed
+   
+   Ecosystems_ml
+   Makefile.SRCS - AOTnPOD_ml replaces AOTx_ml
+   ModelConstants_ml  - removed need for STO_FLUXES
+   MosaicOutputs
+
+   StoFLux_ml
+      - use of VPDcrit 
+
+ - Unimod - more timing calls added
+
+Some gfortran pedantic cleanups in
+
+    DryDep_ml
+    LandDefs_ml
+    Landuse_ml
+    SoilWater_ml - Alvaro's change
+
+And run.pl changed to use Modrun10 emissions for "EMEP" Benchmarks
+ %BENCHMARK = (grid=>"EMEP" ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
+
 xxxxxxxxxxxxxx rv3_7beta16  Peter, Jan 24 2010 xxxxxxxxxxxxxxxxxxxxx
 
 Retabished the original way of making the last met record in run.pl (see rv3_7beta15)

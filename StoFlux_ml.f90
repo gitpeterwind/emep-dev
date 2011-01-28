@@ -27,14 +27,15 @@
 !*****************************************************************************! 
 module StoFlux_ml
   use CheckStop_ml
-  use DO3SE_ml, only : do3se
+  use DO3SE_ml, only : do3se, nSumVPD, SumVPD_LC  !, MAXnSumVPD
+  use Io_Progs_ml, only : current_date, datewrite
   use LandDefs_ml, only : LandType, STUBBLE,NLanduse_DEF, iLC_grass
   use LocalVariables_ml, only : L, Grid, Sub
   use MicroMet_ml, only : AerRes, Wind_at_h
   use ModelConstants_ml, only : NLANDUSEMAX, dt_advec, DEBUG_STOFLUX
   use Par_ml, only : MAXLIMAX, MAXLJMAX
   use PhysicalConstants_ml, only : AVOG, KARMAN
-  use Io_Progs_ml, only : current_date, datewrite
+  use SmallUtils_ml, only : find_index
   use Wesely_ml, only : WES_O3, Rb_cor
   implicit none
   private
@@ -49,9 +50,13 @@ module StoFlux_ml
       lai_flux,      & ! Fluxes to total LAI
       unit_flux        ! Fluxes per m2 of leaf area (flag-leaf)
 
- real,   public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
+ !real,   public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
+ !      SumVPD ,   &   ! For critical VPD calcs, reset each day  
+ !      old_gsun       !
+ real,   public,save, allocatable,dimension(:,:,:) :: &
        SumVPD ,   &   ! For critical VPD calcs, reset each day  
        old_gsun       !
+  integer, private, save, dimension(NLANDUSEMAX) :: mapSumVPD
 
   real, private, save :: gext_leaf = 1.0/2500.0
   real, private :: rc_leaf, rb_leaf, Fst
@@ -64,6 +69,19 @@ contains
 
     integer, intent(in) :: jd ! daynumber
     integer, save :: old_daynumber
+    logical, save :: my_first_call = .true.
+    integer ::  istat, iL
+
+     if ( my_first_call ) then
+       allocate(SumVPD(MAXLIMAX,MAXLJMAX,nSumVPD),stat=istat)
+       allocate(old_gsun(MAXLIMAX,MAXLJMAX,nSumVPD),stat=istat)
+       do iL = 1, NLANDUSEMAX
+         if ( do3se(iL)%VPDcrit > 0.0  ) then
+           mapSumVPD(iL) = find_index( iL, SumVPD_LC )
+         end if
+       end do
+     end if
+
 
        Sub(:)%FstO3 = 0.0
 
@@ -84,14 +102,10 @@ contains
     integer, dimension(nLC), intent(in) :: iL_used
     logical, intent(in) :: debug_flag
 
-    !ORIG real:: c_hveg
-    real :: loss   !SKIP ,sto_frac
-    real :: Ra_diff,tmp_gsun
-    integer :: i,j, iiL, iL
+    real :: tmp_gsun
+    integer :: i,j, iiL, iL, ivpd
     ! Evapotranspiration needs:
     real :: gv, gvcms  ! conductace for water vapour, mmole/ms/s and cm/s
-    real, dimension(10) :: out  ! array of data for output to datewrite
-                                ! check old gfortran if needed
 
     i = Grid%i
     j = Grid%j
@@ -135,18 +149,19 @@ contains
 
           ! VPD limitation for wheat
 
-         if ( LandType(iL)%is_iam .and. LandType(iL)%is_crop ) then
-              if( L%g_sun > 0.0 ) SumVPD(i,j) = SumVPD(i,j) + L%vpd*dt_advec/3600.0
+         !if ( LandType(iL)%is_iam .and. LandType(iL)%is_crop ) then
+         if ( do3se(iL)%VPDcrit > 0.0  ) then
+              ivpd = mapSumVPD(iL)
+              if( L%g_sun > 0.0 ) SumVPD(i,j,ivpd) = SumVPD(i,j,ivpd) + L%vpd*dt_advec/3600.0
               tmp_gsun = L%g_sun
-              if ( SumVPD(i,j) > 8.0 ) L%g_sun = min( L%g_sun, old_gsun(i,j) )
-              !if( DEBUG_STOFLUX .and. debug_flag ) then
-              !   write(6,"(a8,3i3,4f8.3,4es10.2)") "SUMVPD ", &
-              !    current_date%month, current_date%day, current_date%hour, &
-              !      L%rh, L%t2C,  L%vpd, SumVPD(i,j), &
+              if ( SumVPD(i,j,ivpd) > 8.0 ) L%g_sun = min( L%g_sun, old_gsun(i,j,ivpd) )
+              if( DEBUG_STOFLUX .and. debug_flag ) then
+                 call datewrite("StoFlux SUMVPD ", iL, &
+                    (/ real(ivpd), L%rh, L%t2C,  L%vpd, SumVPD(i,j,ivpd) /) ) 
               !       old_gsun(i,j), tmp_gsun, L%g_sun , L%g_sto
-              !endif
+              endif
 
-              old_gsun(i,j) = L%g_sun
+              old_gsun(i,j,ivpd) = L%g_sun
           end if
 
          ! Flux in nmole/m2/s:

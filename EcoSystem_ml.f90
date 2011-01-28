@@ -70,10 +70,10 @@ contains
         !            x     d      d    d   a10    a10   a10     f    i    a10
 
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,  LC, XYLC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,  LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
         DepEcoSystem(iEco) = Deriv(  &
                name, "EcoFrac", "Area",DEF_ECOSYSTEMS(iEco) , unit, &
-                  iEco, -99, iEco,-99.9,    F, 1.0,  F,   F , F ,T ,F ,F, -99.9 )
+                  iEco, -99, iEco,  F, 1.0,  F,   F , F ,T ,F ,F, -99.9 )
 
 
         if(DEBUG_ECOSYSTEMS .and. MasterProc) &

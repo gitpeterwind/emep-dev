@@ -8,9 +8,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=6:ib
+#PBS -lnodes=64:ib
 # wall time limit of run
-#PBS -lwalltime=07:20:00
+#PBS -lwalltime=04:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -112,7 +112,9 @@ die "Must choose STALLO **or** NJORD **or** TITAN!\n"
   unless $STALLO+$NJORD+$TITAN==1;
 
 my %BENCHMARK;
-#  %BENCHMARK = (grid=>"EMEP" ,year=>2005,emis=>"Modrun07/OpenSourceEmis"     ) ;
+#  %BENCHMARK = (grid=>"EMEP" ,year=>2006,emis=>"Modrun07/OpenSourceEmis"     ) ;
+# Dave's preference for EMEP:
+  %BENCHMARK = (grid=>"EMEP" ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
 #  %BENCHMARK = (grid=>"EECCA",year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
@@ -239,9 +241,7 @@ if ($EUCAARI) {
     @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-$testv    = "rv3_7beta15"; # aari"; # "rv3_7beta7";
-
-
+$testv = "rv3_7beta17"; # aari"; # "rv3_7beta7"; 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -301,13 +301,22 @@ my @runs     = ( $scenario );
 my ($EMIS_INP, $emisdir, $pm_emisdir);
 $EMIS_INP = "$DATA_LOCAL"                   if $STALLO;
 $EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
-$emisdir = "$EMIS_INP/Modrun06/2006-Trend$year-V7"  if (1990 <= $year) and
-                                                      ($year <= 2004);
-$emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
-$emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
-                                                    if $year eq 2006;
-$emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
-$emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
+
+# Dave trying to tidy up::
+#$emisdir = "$EMIS_INP/Modrun06/2006-Trend$year-V7"  if (1990 <= $year) and
+#                                                      ($year <= 2004);
+#$emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
+#$emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
+#                                                    if $year eq 2006;
+#$emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
+#$emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
+#$emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
+
+#dave: Use Modrun10 if possible:
+my $EMIS_OLD = "/global/work/nyiri/Emission_Trends";
+$emisdir = "$EMIS_OLD/$year" if $year < 2000;
+$emisdir = "$EMIS_INP/Modrun10/EMEP_trend_2000-2008/$year" if ( $year > 1999 ) and ($year < 2009);
+$emisdir = "$EMIS_INP/Modrun10/EMEP_trend_2000-2008/2008" if $year > 2008 ;
 
 
 #TMP and should be improved because it gives errors for
@@ -772,8 +781,9 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
   #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
   #$ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
-  $ifile{"$DataDir/Inputs_LandDefs_20101016.csv"} = "Inputs_LandDefs.csv";
-  $ifile{"$DataDir/Inputs_DO3SE.csv_25.02.2009"} = "Inputs_DO3SE.csv";
+  #$ifile{"$DataDir/Inputs_LandDefs_20101016.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$MyDataDir/LandInputs_Jan2011/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$MyDataDir/LandInputs_Jan2011/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
 

@@ -47,7 +47,6 @@ module ModelConstants_ml
  logical, public, parameter :: USE_SOIL_NOX     = .false.
  logical, public, parameter :: USE_BVOC_2010    = .false.
  logical, public, parameter :: USE_DUST         = .false.
- logical, public, parameter :: USE_STO_FLUXES   = .true.
  logical, public, parameter :: DO_SAHARA = .false.     ! Turn on/off BG Saharan Dust
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.
@@ -139,9 +138,10 @@ module ModelConstants_ml
 !integer, private, parameter :: DEBUG_ii= 88, DEBUG_jj= 21 ! Aveiro+i2
  !integer, private, parameter :: DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
  ! integer, private, parameter :: DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
- !integer, private, parameter :: DEBUG_ii= 97, DEBUG_jj= 62  ! Waldhof
+ integer, private, parameter :: DEBUG_ii= 97, DEBUG_jj= 62  ! Waldhof
+ !LOW: integer, private, parameter :: DEBUG_ii= 91, DEBUG_jj= 56  ! LOW values
  !integer, private, parameter :: DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
- integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
+ !integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
  !integer, private, parameter :: DEBUG_ii=74, DEBUG_jj= 79 !  Payerne_HIRHAM
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 50 !   Harwell
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 15 !   biomass burnung, Aug 2003

@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -96,7 +96,7 @@ private
 
 
   integer, public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
-          WheatGrowingSeason   ! Growing season (days), IAM_WHEAT =1 for true
+          WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
  
  ! For some flux work, experimental  XXXXXXXx
 
@@ -111,18 +111,12 @@ contains
   subroutine InitLanduse()
    logical :: filefound
 
-       !=====================================
-        call ReadLandUse(filefound)     ! => Land_codes,  Percentage cover per grid
+    !=====================================
+     call ReadLandUse(filefound) !=> Land_codes, Percentage cover per grid
 
-        call CheckStop(.not.filefound,"InitLanduse failed!")
+     call CheckStop(.not.filefound,"InitLanduse failed!")
 
-        !if(filefound)then
-           call Init_LandDefs(Land_codes)   ! => LandType, LandDefs
-       !=====================================
-        !else
-        !   LU_cdf=.true.
-        !   !land codes already fetched
-        !endif
+     call Init_LandDefs(Land_codes)   ! => LandType, LandDefs
 
   end subroutine InitLanduse
  !==========================================================================
@@ -132,18 +126,17 @@ contains
    integer :: i,j,lu, index_lu, maxlufound
    real, dimension(NLANDUSEMAX) :: tmp
    character(len=20), dimension(NLANDUSEMAX+10) :: Headers
-   character(len=(NLANDUSEMAX+10)*20) :: txtinput  ! Big enough to contain one full input record
    type(KeyVal), dimension(10)      :: KeyValues ! Info on units, coords, etc.
-   real, dimension(NLANDUSEMAX+1) :: tmpmay
    character(len=50) :: fname
-   integer :: iL, n, NHeaders, NKeys, Nlines
+   integer :: NHeaders, NKeys, Nlines
    logical :: debug_flag
    real :: sumfrac
    
   ! Specify the assumed coords and units - Read2DN will check that the data
   ! conform to these.
-    type(keyval), dimension(2) :: CheckValues = (/ keyval("Units","PercentGrid"), &
-                                                  keyval("Coords","ModelCoords") /)
+    type(keyval), dimension(2) :: CheckValues = &
+        (/ keyval("Units","PercentGrid"), &
+           keyval("Coords","ModelCoords") /)
 
  ! temporary arrays used.  Will re-write one day....
    real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
@@ -152,7 +145,7 @@ contains
    integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
 
    if ( DEBUG_LANDUSE .and. MasterProc ) &
-        write(*,*) "LANDUSE: Starting ReadLandUse, me ",me
+        write(*,*) "LANDUSE: Starting ReadLandUse "
 
    maxlufound = 0   
    Nlines = 0
@@ -175,7 +168,8 @@ contains
       if(ios==0)then
          filefound=.true.
 
-         call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,Headers,Keyvalues,CheckValues)
+         call Read_Headers(IO_TMP,errmsg,NHeaders,NKeys,&
+                     Headers,Keyvalues,CheckValues)
          
          call CheckStop( errmsg , "Read Headers" // fname )
          
@@ -195,25 +189,19 @@ contains
          
          ! Then data:
          
-         call Read2DN("Inputs.Landuse",NLanduse_DEF,landuse_in,HeadersRead=.true.)
+         call Read2DN("Inputs.Landuse",NLanduse_DEF,landuse_in,&
+                 HeadersRead=.true.)
          
-         !------------------------------------------------------------------------------
-         
+         !-------------------------------------------------------------------
          
          if ( DEBUG_LANDUSE .and. MasterProc ) then
-            write(*,*) "NOW LAND_CODES ARE ", NHeaders
+            write(*,*) "LANDUSE: LAND_CODES ARE ", NHeaders
             call WriteArray(Land_codes,NLanduse_DEF,"Land_Codes")
          end if
          
       else
          filefound=.false.
          call StopAll('Inputs.Landuse not found') 
-!        !Read and interpolate from global data
-!         call Read_Local_Inter_CDF('GLOBAL_landuse.nc',&
-!              'category',landuse_in,MAXLIMAX,MAXLJMAX,NLanduse_DEF)
-!         CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-!!         CALL MPI_FINALIZE(INFO)
-
       endif
 
  
@@ -258,8 +246,9 @@ contains
  
   !=========================================================================
   subroutine  SetLandUse()
-    integer :: i,j,ilu,lu, nlu, n ! indices
+    integer :: i,j,ilu,lu ! indices
     integer, save :: old_month = -1
+    integer, save :: old_daynumber = -1
     logical, save :: my_first_call = .true.
     logical :: debug_flag = .false.
     real :: hveg, lat_factor
@@ -275,7 +264,7 @@ contains
 
 
     if ( DEBUG_LANDUSE .and. debug_proc ) then
-        write(*,*) "DEBUG_LU SetLandUse, me, day ", me, daynumber, debug_proc
+        write(*,*) "LANDUSE: SetLandUse, me, day ", me, daynumber, debug_proc
     end if
 
     if ( my_first_call ) then
@@ -307,8 +296,10 @@ contains
                    LandCover(i,j)%SGS(ilu) =  LandDefs(lu)%SGS50
                    LandCover(i,j)%EGS(ilu) =  LandDefs(lu)%EGS50
                 end if
-                if ( DEBUG_LANDUSE .and. debug_flag ) write(*,"(a,i3,a20,2i4)")"LU_SETGS", &
-                   lu, LandDefs(lu)%name,  LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu)
+                if ( DEBUG_LANDUSE .and. debug_flag ) &
+                  write(*,"(a,i3,a20,2i4)")"LANDUSE: LU_SETGS", &
+                   lu, LandDefs(lu)%name,&
+                     LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu)
 
 
                !/ for landuse classes with bulk-resistances, we only
@@ -323,16 +314,12 @@ contains
 
              if ( LandType(lu)%is_water ) water_fraction(i,j) = LandCover(i,j)%fraction(ilu)
              if ( LandType(lu)%is_ice   )   ice_fraction(i,j) = LandCover(i,j)%fraction(ilu)
-
              
-                !if ( DEBUG_LANDUSE .and. debug_flag ) then
-                !      write(*,"(a,2i4,2f12.4)") "DEBUG_LU WATER ", ilu, lu, &
-                !          water_fraction(i,j), ice_fraction(i,j)
-                !end if
 
             end do ! ilu
             if(.not. foundnwp_sea)then
-               if(water_fraction(i,j)>water_fraction_THRESHOLD)nwp_sea(i,j) = .true.
+               if(water_fraction(i,j)>water_fraction_THRESHOLD) &
+                  nwp_sea(i,j) = .true.
             endif
           end do ! j
         end do ! i
@@ -342,7 +329,13 @@ contains
     end if ! my_first_call
    !======================================================================
 
-   !ds Mar2010. Landcover data can be set either from simplified LPJ
+    if ( daynumber == old_daynumber ) then
+        return
+    end if
+    old_daynumber = daynumber
+
+
+   !Landcover data can be set either from simplified LPJ
    !PFTs, or from the "older" DO3SE inputs file
 
      if ( PFTS_USED ) then !- Check for LPJ-derived data ----------------------
@@ -361,7 +354,9 @@ contains
 
           debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
           if ( DEBUG_LANDUSE .and. debug_flag ) then
-                 write(*,"(a12,i3,i4)") "LANDUSE N Day? ", LandCover(i,j)%ncodes, daynumber
+                 write(*,"(a12,i3,i4)") "LANDUSE N Day? ", &
+                  LandCover(i,j)%ncodes, daynumber
+                 write(*,*) "LANDUSE DATE ", current_date
           end if
           do ilu= 1, LandCover(i,j)%ncodes
              lu      = LandCover(i,j)%codes(ilu)
@@ -370,33 +365,30 @@ contains
              if ( LandType(lu)%is_bulk ) cycle    !else Growing veg present:
 
              LandCover(i,j)%LAI(ilu) = Polygon(effectivdaynumber, &
-                                      0.0, LandDefs(lu)%LAImin, LandDefs(lu)%LAImax,&
-                                      LandCover(i,j)%SGS(ilu), LandDefs(lu)%SLAIlen, &
-                                      LandCover(i,j)%EGS(ilu), LandDefs(lu)%ELAIlen)
+                    0.0, LandDefs(lu)%LAImin, LandDefs(lu)%LAImax,&
+                      LandCover(i,j)%SGS(ilu), LandDefs(lu)%SLAIlen, &
+                         LandCover(i,j)%EGS(ilu), LandDefs(lu)%ELAIlen)
 
-             LandCover(i,j)%fphen(ilu) = fPhenology( lu, LandDefs(lu)%code,effectivdaynumber &
-                              ,LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)  &
-                              ,debug_flag )
+             LandCover(i,j)%fphen(ilu) = fPhenology( lu &
+                ,effectivdaynumber &
+                ,LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)&
+                ,debug_flag )
 
           if ( DEBUG_LANDPFTS .and. debug_flag.and. PFTS_USED ) then
                  if ( pft > 0.0 ) then
-                   write(*,"(2a,i4,i6,2f8.3)") "LANDPFTS COMP? ", &
+                   write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
                       LandDefs(lu)%name, daynumber, pft,&
                        LandCover(i,j)%LAI(ilu), pft_lai(i,j, pft)
                  end if
-               
           end if
 
 
              hveg = LandDefs(lu)%hveg_max   ! defaults
              xSAIadd = 0.0
 
-
-!WHEAT             iam_wheat = .false.
              if (  LandType(lu)%is_crop ) then
 
                 if ( LandType(lu)%is_iam  ) then ! IAM wheat
-!WHEA T                   iam_wheat = .true.
                     if  ( effectivdaynumber >= LandCover(i,j)%SGS(ilu) .and. &
                           effectivdaynumber <= LandCover(i,j)%EGS(ilu)  ) then
                             WheatGrowingSeason(i,j) =  1
@@ -443,21 +435,27 @@ contains
 
              LandCover(i,j)%hveg(ilu) =  hveg
 
-            if ( DEBUG_LANDUSE .and. debug_flag ) then
-               write(*,"(a,i3,a16,i4,f7.2,3f8.3,4i4)") "LANDPhen ", lu,&
-                trim(LandDefs(lu)%name), daynumber, LandCover(i,j)%hveg(ilu),&
-                 LandCover(i,j)%SAI(ilu), LandCover(i,j)%LAI(ilu), &
-                 LandCover(i,j)%fphen(ilu), &
-                LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)
-            end if
-                   
 
          end do ! lu
        end do ! j
     end do ! i
 
-    if(debug_proc .and. DEBUG_LANDUSE) write(*,*) "DEBUG WHEAT", &
-           effectivdaynumber, WheatGrowingSeason(debug_li,debug_lj)
+! --- print out for debug cell
+    if ( DEBUG_LANDUSE.and.debug_proc ) then
+       i=debug_li
+       j=debug_lj
+       do ilu= 1, LandCover(i,j)%ncodes
+          lu      = LandCover(i,j)%codes(ilu)
+          pft     = LandType(lu)%pft
+          if ( LandType(lu)%is_bulk ) cycle    !else Growing veg present:
+
+            write(*,"(a,i3,a16,i4,f7.2,3f8.3,2i4)") "LANDUSE Phen ", lu,&
+             trim(LandDefs(lu)%name), daynumber, LandCover(i,j)%hveg(ilu),&
+              LandCover(i,j)%SAI(ilu), LandCover(i,j)%LAI(ilu), &
+              LandCover(i,j)%fphen(ilu), &
+             LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)
+       end do
+   end if
 
   end subroutine  SetLandUse
 ! =====================================================================
@@ -481,12 +479,9 @@ result (Poly)
 !  ----------------------------- <- Ymin
 !       S  S1            E1   E
 !
-!1.4 The following has been simplified
-    
 
 !   Inputs
     integer, intent(in) :: jdayin      !day of year
-!d1.4 integer, intent(in) :: yydays    !no. days in year (365 or 366)
     real, intent(in) ::    Ymin        !minimum value of Y
     real, intent(in) ::    Ystart      !value Y at start of growing season
     real, intent(in) ::    Ymax        !maximum value of Y
@@ -516,7 +511,6 @@ result (Poly)
        return
     end if
 
-  !d1.3 - slightly re-written tests:
 
     if (jday <=  S+LenS  .and. LenS > 0 ) then
 

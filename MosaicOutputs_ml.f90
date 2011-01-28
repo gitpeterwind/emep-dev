@@ -27,7 +27,8 @@
 !*****************************************************************************! 
 
 module MosaicOutputs_ml
- use AOTx_ml,          only : Calc_AOTx
+ use AOTx_ml,          only : Calc_AOTx, Calc_POD
+ use AOTx_ml,  only: O3cl, VEGO3_OUTPUTS
  use CheckStop_ml,  only: CheckStop, StopAll
  use ChemChemicals_ml, only : species
  use ChemSpecs_shl_ml, only : NSPEC_SHL
@@ -39,15 +40,16 @@ module MosaicOutputs_ml
     EcoSystemFrac, FULL_GRID, Is_EcoSystem
  use LandDefs_ml,      only : LandDefs, LandType, &
          Check_LandCoverPresent ! e.g. "CF"
+ use Landuse_ml,       only : LandCover ! for POD
  use LocalVariables_ml,   only : Sub, Grid
  use MetFields_ml
  use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_MOSAICS,&
    NLANDUSEMAX, IOU_INST, &
    atwS, atwN, SOX_INDEX, OXN_INDEX, RDN_INDEX ! indices for dep groups
 
- use OwnDataTypes_ml,  only: Deriv,O3cl, print_deriv_type, TXTLEN_DERIV, TXTLEN_SHORT
+ use OwnDataTypes_ml,  only: Deriv, print_deriv_type, TXTLEN_DERIV, TXTLEN_SHORT
  use SmallUtils_ml, only: find_index
- use TimeDate_ml, only : current_date
+ use TimeDate_ml, only : current_date, effectivdaynumber
  use Wesely_ml, only : NDRYDEP_CALC
  implicit none
  private
@@ -135,10 +137,10 @@ module MosaicOutputs_ml
           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, nMET" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "METCONC", MET_LCS(n), MOSAIC_METCONCS(ilab), &
-                ilab, -99,iLC,-99.9,  F , 1.0,  T,   F,   F, T, T, T, atw)
+                ilab, -99,iLC, F , 1.0,  T,   F,   F, T, T, T, atw)
 !MESS          OutMET(nMET) = Dep_type( &
 !           name, ilab, -99, iLC, "Mosaic", MOSAIC_METCONCS(ilab),  &
 !                                              MET_LCS(n), 1.0, -99, "-")
@@ -202,16 +204,16 @@ module MosaicOutputs_ml
                        "too many nMosaics, nRG" )
 
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,Threshold, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw
 
           if( RG_LABELS(ilab)(1:1) == "R" )  then
              MosaicOutput(nMosaic) = Deriv( &
                name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
-                iadv, -99,iLC,-99.9, F , 1.0,  T,   F,   F, T, T, T, -999.0)
+                iadv, -99,iLC, F , 1.0,  T,   F,   F, T, T, T, -999.0)
           else if( RG_LABELS(ilab)(1:1) == "G" )  then
              MosaicOutput(nMosaic) = Deriv( &
                name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
-                iadv, -99,iLC,-99.9, F, 100.0,  T,   F,   F, T, T, T, -999.0)
+                iadv, -99,iLC, F, 100.0,  T,   F,   F, T, T, T, -999.0)
           end if
         end do RG_LC !n
       end do ! itot
@@ -256,10 +258,10 @@ module MosaicOutputs_ml
                        "too many nMosaics, nVg" )
 
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,XYLC, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw
           MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
-                iadv, -99,iLC, -99.9,  F, 100.0, T,   F,   F, T, T, T, -999.0)
+                iadv, -99,iLC, F, 100.0, T,   F,   F, T, T, T, -999.0)
 
         end do VG_LC !n
       end do ! i
@@ -268,19 +270,15 @@ module MosaicOutputs_ml
 
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine Add_MosaicVEGO3(VEGO3_OUTPUTS,nVEGO3)
-   ! Diagnoses type, index and vegetation of POD or AOT type
-   ! metrics: eg POD_1.0_IAM_MF, AOT_40_CF
+ subroutine Add_MosaicVEGO3(nVEGO3)
 
-        type(O3cl), dimension(:), intent(in) :: VEGO3_OUTPUTS
-        !character(len=*), dimension(:), intent(in) :: VEGO3_OUTPUTS
+!        type(O3cl), dimension(:), intent(in) :: VEGO3_OUTPUTS
         integer, intent(out) :: nVEGO3
-        integer :: n, isep1, isep2, iLC
+        integer :: n, iLC
         character(len=TXTLEN_DERIV) :: name
-        character(len=TXTLEN_SHORT) :: txt, txtnum, txt2, units
-        real :: Threshold, scale, Y
+        character(len=TXTLEN_SHORT) :: units
+        real :: Threshold, scale
         type(O3cl) :: veg
-        integer :: testIX
         logical :: dt_scale
 
       !------------- VEGO3 stuff ----------------------------------------------
@@ -288,7 +286,7 @@ module MosaicOutputs_ml
       !untangle it to get threshold Y (=3.0) and landcover type
 
       nVEGO3 = 0
-      dt_scale = .false. ! for AFstY and AOT we need to reset this.
+      dt_scale = .false. ! for POD and AOT we need to reset this.
       VEGO3_LC: do n = 1, size(VEGO3_OUTPUTS%name)
 
          veg = VEGO3_OUTPUTS(n)
@@ -296,16 +294,13 @@ module MosaicOutputs_ml
          !txt = veg%LC
 
          if( veg%class == "POD" ) then
-            Threshold = veg%Threshold
             units = "mmole/m2"
             scale = 1.0e-6   ! Accumulates nmole/s to mmole (*dt_advec)
             dt_scale = .true.   ! Accumulates nmole/s to mmole (*dt_advec)
          else if( veg%class == "AOT" )  then
-            Threshold = veg%Threshold
             units = "ppb.h"
             scale = 1.0/3600.0 ! AOT in ppb.hour
             dt_scale = .true.
-            !if( veg%defn == "EU") txt = veg%defn     ! Store MM or EU here
          end if
 
 
@@ -322,17 +317,17 @@ module MosaicOutputs_ml
            call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, VEGO3" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC,Threshold, scale dt_scale avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, scale dt_scale avg? rho Inst Yr Mn Day atw
           ! Use index for veg array. No need to set iadv for VEGO3. Always O3.
            MosaicOutput(nMosaic) = Deriv(  &
               name, veg%class,  veg%defn, veg%TXTLC, units, &
-                n, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, -999.0)
+                n, -99,iLC, T,  scale,  F,   F,   F, T, T, F, -999.0)
               ! name, "Mosaic", veg%class, veg%defn, units, & ! Use defn, not LC
               !TEST name, "Mosaic", veg%class, veg%LC, units, &
               ! Txt has defn
               ! class is AOT or defn here
               !name, veg%class, veg%defn, veg%LC, units, &
-                !-99, -99,iLC,Threshold,  T,  scale,  F,   F,   F, T, T, F, -999.0)
+                !-99, -99,iLC, T,  scale,  F,   F,   F, T, T, F, -999.0)
 
       end do VEGO3_LC !n
  end subroutine Add_MosaicVEGO3
@@ -345,11 +340,10 @@ module MosaicOutputs_ml
         character(len=*), dimension(:), intent(in) :: DDEP_ECOS
         integer, dimension(:), intent(in) :: DDEP_SPECS  ! eg NH3
         integer, intent(out) :: nDD
-        integer :: i, n, ispec, iadv, iLC
+        integer :: i, n, ispec, iadv
         character(len=TXTLEN_DERIV) :: name
         character(len=TXTLEN_SHORT) :: txt, txtnum, txt2, units
-        real :: Threshold, scale, Y, atw
-        logical :: dt_scale
+        real :: atw
          
 
 
@@ -412,10 +406,10 @@ module MosaicOutputs_ml
              call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, DDEP" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, XYLC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
              MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99,-99, -99.9, F, 1.0e6,  F,   F,   F, T,  T,  F, atw)
+                  iadv,-99,-99, F, 1.0e6,  F,   F,   F, T,  T,  F, atw)
 !QUERY - why no dt_scale??
 
           if(DEBUG .and. MasterProc) then
@@ -428,7 +422,7 @@ module MosaicOutputs_ml
 
 !<==========================================================================
  subroutine Init_MosaicOutputs()
-   integer :: iadv, i, i2, n, imc
+   integer :: imc
    character(len=TXTLEN_SHORT) :: subclass
 
 !##################################################################
@@ -489,13 +483,12 @@ module MosaicOutputs_ml
   end subroutine Init_MosaicOutputs
 
 !<==========================================================================
- subroutine Add_MosaicOutput(debug_flag,dt,i,j,convfac,DepAdv2Calc,fluxfrac,&
+ subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
                 Deploss)
 
   !<==========================================================================
      ! Adds deposition losses to ddep arrays
      logical, intent(in) :: debug_flag
-     real,    intent(in) :: dt              ! time-step
      integer, intent(in) :: i,j             ! coordinates
      real,    intent(in) ::  convfac  !!???, lossfrac
      integer, dimension(:), intent(in) :: DepAdv2Calc
@@ -505,7 +498,6 @@ module MosaicOutputs_ml
      integer, dimension(NMAX_DDEP) :: ddep_code 
      integer :: n, nadv, nadv2, iLC, iEco
      integer :: imc, f2d, cdep
-     real :: X, Y       ! Threshold for flux AFstY, AOTX
      real :: output     ! tmp variable
      character(len=TXTLEN_SHORT) :: subclass, class
      logical :: my_first_call = .true.
@@ -636,59 +628,18 @@ module MosaicOutputs_ml
           !     !n == MMC_FST .and. LandType(iLC)%is_clover ) then
           !     n == MMC_EVAP .and. LandType(iLC)%is_forest ) then
           !   write(6,"(a,3i4,i5,2i4,i6,es12.3)") "MDCV ", imc, n, iLC, &
-          !       current_date%month, current_date%day, &
-          !       current_date%hour, current_date%seconds,   output
+          ! ....
           !end if ! DEBUG_ECO 
 
-        case ( "POD" )    ! Fluxes, AFstY 
-                           ! o3WH = c_hvegppb(iam_wheat)* lossfrac
+        case ( "POD" )    ! Fluxes, PODY (was AFstY)
 
-          Y   = MosaicOutput(imc)%Threshold   ! threshold Y, nmole/m2/s
+          n   =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
+          call Calc_POD( n, iLC, output, debug_flag) 
 
-          if ( DEBUG .and. debug_flag ) then
-             write(6,"(2i3,f6.1,es12.3)") imc, iLC, Y, Sub(iLC)%FstO3
-          end if
-
-         ! Add fluxes:
-          output  = max(Sub(iLC)%FstO3 - Y,0.0)
-
-          !if ( DEBUG_CLOVER .and. debug_flag .and. &
-          !     LandType(iLC)%is_clover ) then
-          !   write(6,"(a,3i4,i5,2i4,i6,2es12.3)") "MDCVA", imc, n, iLC, &
-          !       current_date%month, current_date%day, &
-          !       current_date%hour, current_date%seconds,Y, output
-          !end if ! DEBUG_ECO 
-
-        !!case ( "EUAOT" )    ! AOTX using 3m grid O3
-
-        !  X      = MosaicOutput(imc)%Threshold   ! threshold X,  ppb.h
-
-          !call Calc_AOTx( MosaicOutput(imc)%txt,iLC, Grid%surf_o3_ppb, X,output,&
-        !  defn = VEG
-        !  call Calc_AOTx( VEGO3_OUTPUTS( MosaicOutput(imc)%index)%defn,iLC, Grid%surf_o3_ppb, X,output,&
-        !         debug_flag, "EU-AOT " // trim(subclass) ) 
-!
         case ( "AOT" )    ! AOTX
 
-          !OLD: veg_o3 = c_hvegppb(iLC)* lossfrac  ! lossfrac????
-
-          X      = MosaicOutput(imc)%Threshold   ! threshold X,  ppb.h
-
-         ! txt has EU or MM
-          call Calc_AOTx( MosaicOutput(imc)%subclass, iLC, X,output,&
-                 debug_flag, "AOTLC " // trim(MosaicOutput(imc)%name) ) 
-          !call Calc_AOTx( MosaicOutput(imc)%txt,iLC, Sub(iLC)%cano3_ppb, X,output,&
-          !TEST call Calc_AOTx( subclass,iLC, Sub(iLC)%cano3_ppb, X,output,&
-
-!          if ( DEBUG_AOT .and. debug_flag ) then
-!              write(6,"(a,4i3,i5,f8.3,i3,g12.4)") &
-!               "AOTLC " // trim(subclass), iLC, &
-!                 current_date%month, current_date%day, &
-!                 current_date%hour, current_date%seconds,&
-!                Sub(iLC)%cano3_ppb , &  ! c_hvegppb(iLC), &
-!                 WheatGrowingSeason(i,j), output  ! NOT USED YET....!
-!!               current_date%hour, n, iLC, X, &
-!          end if
+          n   =  MosaicOutput(imc)%Index !Index in VEGO3_OUPUTS
+          call Calc_AOTx( n, iLC, output, debug_flag) 
 
         case ( "VG", "Rs ", "Rns", "Gns" ) ! could we use RG_LABELS? 
 

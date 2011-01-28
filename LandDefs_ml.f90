@@ -157,7 +157,7 @@ contains
       character(len=200) :: txtinput  ! Big enough to contain one input record
       type(KeyVal), dimension(2) :: KeyValues ! Info on units, coords, etc.
       character(len=50) :: errmsg, fname
-      integer :: iL, n, NHeaders, NKeys
+      integer :: n, NHeaders, NKeys
 
 
       ! Read data
@@ -193,6 +193,7 @@ contains
             LandDefs(n) = LandInput
            !############################
             if ( DEBUG_LANDDEFS .and. MasterProc ) then
+                 !write(*,"(a)") trim(txtinput)
                  write(unit=*,fmt="(a,i3,a,a,f7.3,f10.3)") "LANDDEFS N ", n, &
                    trim(LandInput%name), trim(LandInput%code),&
                     LandDefs(n)%LAImax, LandDefs(n)%Emtp
@@ -204,10 +205,12 @@ contains
            LandDefs(n)%LAImax   = max( LandDefs(n)%LAImax,   0.0)
 
 
-            if ( DEBUG_LANDDEFS .and. MasterProc ) then
+            !if ( DEBUG_LANDDEFS .and. MasterProc ) then
+                 write(*,"(a)") trim(txtinput)
                  write(unit=*,fmt=*) "LANDPHEN match? ", n, &
-                   LandInput%name, LandInput%code, wanted_codes(n)
-            end if
+                   LandInput%name, trim(LandInput%code), trim(wanted_codes(n)),&
+                 len(trim(LandInput%code)), len(trim(wanted_codes(n)))
+            !end if
             call CheckStop(  LandInput%code, wanted_codes(n), "MATCHING CODES in LandDefs")
 
             LandType(n)%is_water  =  LandInput%code == "W" 

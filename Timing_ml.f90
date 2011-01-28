@@ -40,7 +40,7 @@
   ! Code commented out or marked with !SYS is intended for system_clock
   ! Code commented out or marked with !CPU is intended for cpu_time
   !----------------------------------------------------------------------------
-   implicit none     !6z addition
+   implicit none
 
   public :: Init_timing
   public :: Add_2timing   !  Calls Code_timer, adds times and descriptions

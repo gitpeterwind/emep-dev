@@ -89,7 +89,7 @@ contains
        !TEST if ( USE_SOILWATER .eqv. .true. ) return  ! FAKER
        !TEST fSW = 0.1
        !  return
-        if ( USE_SOILWATER == .false. ) return
+        if ( .not. USE_SOILWATER  ) return
 
         do j = 1, ljmax
            do i = 1, limax

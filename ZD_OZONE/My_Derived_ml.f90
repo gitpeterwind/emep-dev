@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -52,17 +52,18 @@ module My_Derived_ml
   !   of the bigger d_2d arrays
   !---------------------------------------------------------------------------
 
+use AOTx_ml, only : O3cl, VEGO3_OUTPUTS, VEGO3_DEFS
 use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use ChemSpecs_adv_ml        ! Use IXADV_ indices...
 use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
 use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                   !        ,NO2, NO3_f, NO3_c, HNO3, NH3, NH4_f, PPM25, PPMCO &
-                   !       ,O3, PAN, MPAN, SeaSalt_f, SeaSalt_c  !SS=SeaSalt
+                  !        ,NO2, NO3_f, NO3_c, HNO3, NH3, NH4_f, PPM25, PPMCO &
+                  !       ,O3, PAN, MPAN, SeaSalt_f, SeaSalt_c  !SS=SeaSalt
 use ChemGroups_ml  ! Allow all groups to ease compilation
-                   !,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
-                            !PCM only: PCM_GROUP, PCM_HELP_GROUP, &
-                    !        DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
+                  !,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
+                           !PCM only: PCM_GROUP, PCM_HELP_GROUP, &
+                   !        DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
 use EmisDef_ml,     only :  EMIS_NAME
@@ -70,22 +71,22 @@ use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa    ! 6c REM: zeta
 use ModelConstants_ml, only : ATWAIR  &
-                        , SOX_INDEX, OXN_INDEX, RDN_INDEX &
-                        , MasterProc  &
-                        , SOURCE_RECEPTOR  &
-                        , DEBUG => DEBUG_MY_DERIVED &
-                        , KMAX_MID & ! =>  z dimension
-                        , PPBINV  &  !   1.0e9
-                        , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
+                       , SOX_INDEX, OXN_INDEX, RDN_INDEX &
+                       , MasterProc  &
+                       , SOURCE_RECEPTOR  &
+                       , DEBUG => DEBUG_MY_DERIVED &
+                       , KMAX_MID & ! =>  z dimension
+                       , PPBINV  &  !   1.0e9
+                       , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
-  Init_MosaicMMC,  Add_MosaicMetConcs, & 
-  Add_MosaicRG, & 
-  Add_MosaicVG, & 
-  Add_MosaicVEGO3, & 
-  Add_MosaicDDEP, & 
-  MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
+ Init_MosaicMMC,  Add_MosaicMetConcs, & 
+ Add_MosaicRG, & 
+ Add_MosaicVG, & 
+ Add_MosaicVEGO3, & 
+ Add_MosaicDDEP, & 
+ MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
-use OwnDataTypes_ml, only : Deriv, O3cl, print_deriv_type, TXTLEN_DERIV, typ_ss
+use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, typ_ss
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -112,8 +113,9 @@ private
   !        of parameters needed in model evaluation, or even for the base-case
   !        of SR runs.
 
+    logical, parameter, private :: T=.true., F=.false.
 
-  !============ parameters for source-receptor modelling: ===================!
+  !============ parameters for concentration outputs ========================!
 
     integer, public, parameter :: MAX_NUM_DERIV2D = 200
     integer, public, parameter :: MAX_NUM_DERIV3D =   5
@@ -136,7 +138,7 @@ private
                         typ_ss("HNO3", "ugN"),& 
                         typ_ss("HONO", "ugN"),& 
                         typ_ss("PAN",  "ugN"),& 
-                        typ_ss("NO3_F",  "ugN"),&  ! Remeber, species have upper case!
+                        typ_ss("NO3_F",  "ugN"),&  ! Remember, species have upper case!
                         typ_ss("NO3_C",  "ugN"),& 
                         typ_ss("NH4_F",  "ugN"),& 
                       ! ug/m3
@@ -165,13 +167,13 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
   D2_SR = (/ &
-       "SURF_MAXO3  " &
-       ,"SURF_ugN_OXN " & !dsMay2010
-       ,"SURF_ugN_RDN " & !dsMay2010
-      ,"SURF_ugN_TNO3" & !dsMay2010
-      ,"SURF_PM25water" &  !
-      ,"SOMO35      " & !"D2_SOMO0    " &
-      ,"PSURF       " &  ! Surface  pressure (for cross section):
+       "SURF_MAXO3    " &
+      ,"SURF_ugN_OXN  " & 
+      ,"SURF_ugN_RDN  " & 
+      ,"SURF_ugN_TNO3 " & 
+      ,"SURF_PM25water" & 
+      ,"SOMO35        " & 
+      ,"PSURF         " &  ! Surface  pressure (for cross section):
   /)
 
 ! GenChem produces a number of groups of species.
@@ -180,10 +182,16 @@ private
 ! Sorry, this is a limitation that GenChem converts all names to
 ! uppercase:
     character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
-  SURF_UG_GROUP = (/ "SIA", "PM25", "PM10","TNO3",&
-       "PM25ANTHR", "PM10ANTHR",&
-       "PMCO", &  ! Omitted parNO3, have TNO3 = pNO3_f+pNO3_c
-       "SS", "DUST" /)        ! , "SURF_ugC_EC"
+  SURF_UG_GROUP = (/ &
+      "SIA      ", &
+      "PM25     ", &
+      "PM10     ",&
+      "TNO3     ",&
+      "PM25ANTHR",&
+      "PM10ANTHR",&
+      "PMCO     ",&  ! Omitted parNO3, have TNO3 = pNO3_f+pNO3_c
+      "SS       ",&
+      "DUST     " /)        ! , "SURF_ugC_EC"
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
   COL_ADD = (/ "AOD" /)
@@ -201,7 +209,7 @@ private
       ,"WDEP_NH4_f        " &
       ,"SURF_ugN_NOX      " &
       ,"SURF_ppbC_VOC     " &
-      ,"SOMO0             " & !"D2_SOMO0    " &
+      ,"SOMO0             " &
       ,"Area_Grid_km2     " &
       ,"Area_Conif_Frac   " &
       ,"Area_Decid_Frac   " &
@@ -210,8 +218,7 @@ private
       ,"HMIX              " &
 !      ,"D2_HMIX00         " &
 !      ,"D2_HMIX12         " &
-!      ,"SoilWater          " &
-      ,"SoilWater_deep     " &
+      ,"SoilWater_deep    " &
       ,"USTAR_NWP         " &
   /)
 
@@ -272,25 +279,33 @@ private
           ! the ICP-veg Mapping Manual (MM) ones. Other
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
+! Accumulation period often to F,0,999 - not used for IAM (yet)
 
-    type(O3cl), public, parameter, dimension(16) :: &
-     VEGO3_OUTPUTS =  (/ &
-   O3cl( "POD1_IAM_DF",   "POD", 1.0,  "- ", "IAM_DF" ), & ! WGSR POD1
-   O3cl( "POD0_IAM_DF",   "POD", 0.0,  "- ", "IAM_DF" ), &
-   O3cl( "POD1_IAM_MF",   "POD", 1.0,  "- ", "IAM_MF" ), & ! WGSR POD1 birch
-   O3cl( "POD0_IAM_MF",   "POD", 0.0,  "- ", "IAM_DF" ), &
-   O3cl( "POD1_DF    ",   "POD", 1.0,  "- ", "DF    " ), &
-   O3cl( "POD1_CF    ",   "POD", 1.0,  "- ", "CF    " ), &
-   O3cl( "POD6_IAM_CR",   "POD", 6.0,  "- ", "IAM_CR" ), & ! FO NOT USE THOUGH!
-   O3cl( "POD3_IAM_CR",   "POD", 3.0,  "- ", "IAM_CR" ), &
-   O3cl( "POD1_IAM_CR",   "POD", 1.0,  "- ", "IAM_CR" ), &
-   O3cl( "POD0_IAM_CR",   "POD", 0.0,  "- ", "IAM_CR" ), &
-   O3cl( "MMAOT40_IAM_DF","AOT", 40.0, "MM", "IAM_DF" ), & ! WGSR beech
-   O3cl( "MMAOT40_IAM_MF","AOT", 40.0, "MM", "IAM_MF" ), & ! WGSR birch
-   O3cl( "MMAOT40_IAM_CR","AOT", 40.0, "MM", "IAM_CR" ), &
-   O3cl( "EUAOT40_Crops", "AOT", 40.0, "EU", "IAM_CR" ), &  ! IAM_CR is a bit fake, we use 3m O3
-   O3cl( "EUAOT40_Forests", "AOT", 40.0, "EU", "IAM_DF" ), &  ! IAM_DF is a bit fake, we use 3m O3
-   O3cl( "MMAOT40_IAM_WH","AOT", 40.0, "MM", "IAM_WH" ) &
+!    type(O3cl), public, parameter, allocatable, dimension(:) :: &
+!     VEGO3_OUTPUTS
+!    type(O3cl), public, parameter, dimension(17) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(20) :: &
+     VEGO3_WANTED  =  (/ &
+         "POD1_IAM_DF    ",&
+         "POD1_IAM_MF    ",&
+         "POD1_DF        ",&
+         "POD1_CF        ",&
+         "POD3_TC        ",&
+         "POD3_TC30d     ",&
+         "POD3_TC55d     ",&
+         "POD3_IAM_CR    ",&
+         "POD3_IAM_CR30d ",&
+         "POD3_IAM_CR55d ",&
+         "POD6_IAM_CR    ",&
+         "POD6_IAM_CR30d ",& 
+         "POD6_IAM_CR55d ",&
+         "MMAOT40_TC     ",&
+         "MMAOT40_IAM_DF ",&
+         "MMAOT40_IAM_MF ",&
+         "MMAOT40_IAM_CR ",&
+         "EUAOT40_Crops  ", &
+         "EUAOT40_Forests", & 
+         "MMAOT40_IAM_WH " &
     /) !NB -last not found. Could just be skipped, but kept
        !to show behaviour
 
@@ -355,7 +370,8 @@ private
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
 !     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
      character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
-       D3_OTHER  = (/ "D3_PM25water", "D3_ug_PM25"/) !**** Under construction *******
+       D3_OTHER  = (/ "D3_PM25water", &
+                      "D3_ug_PM25  "/) !**** Under construction *******
      != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
@@ -365,22 +381,14 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 
-    integer :: i, ilab, itot, nDD, nVg, nRG, nMET, nVEGO3, iLC, &
-      iadv, ispec, atw, n1, n2
-    integer :: isep1, isep2  ! location of seperators in sting
-    character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif
-    character(len=TXTLEN_DERIV) :: txt, txt2, units, txtnum
-    real    :: Y           ! threshold for PODY, also used as X in AOT40X
-    integer :: Threshold   ! threshold for PODY
+    integer :: i, itot, nDD, nVg, nRG, nMET, nVEGO3, n1, n2,istat
+    character(len=TXTLEN_DERIV) :: txt
     character(len=TXTLEN_DERIV), &
-    dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) :: tmpname ! e.g. DDEP_SO2_m2Conif
+      dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) :: tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
     character(len=TXTLEN_DERIV), dimension(size(SURF_CONC(:)%txt1)+size(D3_PPB)) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
-    logical, parameter :: T=.true., F=.false.
-    logical :: dt_scale
-    real :: scale
 
     call Init_MosaicMMC(MOSAIC_METCONCS)  ! sets MMC_USTAR etc.
 
@@ -391,8 +399,6 @@ private
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
-!GRPD     call AddArray( D2_PM,  wanted_deriv2d, NOT_SET_STRING, errmsg)
-!GRPD     call CheckStop( errmsg, errmsg // "D2_PM too long" )
      call AddArray( COL_ADD,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "COL_ADD too long" )
 
@@ -429,7 +435,8 @@ private
      do n1 = 1, size(COLUMN_MOLEC_CM2)
      do n2 = 1, size(COLUMN_LEVELS)
        n = n + 1
-       tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n1))%name ) // "_" // COLUMN_LEVELS(n2)
+       tmpname(n) = "COLUMN_" // trim( species(COLUMN_MOLEC_CM2(n1))%name ) &
+          // "_" // COLUMN_LEVELS(n2)
      end do
      end do
      call AddArray(tmpname, wanted_deriv2d, NOT_SET_STRING, errmsg)
@@ -449,7 +456,20 @@ private
       ! For fluxes or AOTs we start with a formatted name, eg. POD_3.0_CF and
       !untangle it to get threshold Y (=3.0) and landcover type
 
-      call Add_MosaicVEGO3(VEGO3_OUTPUTS,nVEGO3)
+      allocate(VEGO3_OUTPUTS( size(VEGO3_WANTED) ), stat=istat)
+      if( DEBUG .and. istat /= 0 ) then
+         print *, "My_Derived ISTAT ERR VEGO3"
+      end if
+
+      do n = 1, size(VEGO3_WANTED)
+         n1 = find_index(VEGO3_WANTED(n),VEGO3_DEFS(:)%name)
+         call CheckStop(  n1>size(VEGO3_DEFS(:)%name) .or. n1<1 , &
+                   "VEGO3 not found"//trim(VEGO3_WANTED(n)) )
+         VEGO3_OUTPUTS(n) = VEGO3_DEFS(n1)
+       if(DEBUG .and. MasterProc)  print *, "VEGO3 NUMS ", n, n1, trim( VEGO3_WANTED(n) )
+      end do
+      call WriteArray(VEGO3_OUTPUTS(:)%name,nVEGO3," VEGO3 OUTPUTS")
+      call Add_MosaicVEGO3(nVEGO3)
       nOutVEGO3 = nVEGO3
 
       !----- some "luxury outputs" -------------------------------------------

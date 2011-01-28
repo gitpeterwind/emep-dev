@@ -403,7 +403,7 @@ program myeul
         call init_aqueous()
 
 
-        call Add_2timing(9,tim_after,tim_before,"init_aqueous")
+        call Add_2timing(8,tim_after,tim_before,"init_aqueous")
 
      end if    ! mm_old.ne.mm
 
@@ -428,20 +428,22 @@ program myeul
      oldseason = newseason
      mm_old = mm
 
-     call Add_2timing(8,tim_after,tim_before,"BoundaryConditions")
+     call Add_2timing(9,tim_after,tim_before,"BoundaryConditions")
 
      if( DEBUG_UNI ) print *, "1st Infield" , me, " numu ", numt
 
 
      call Meteoread(numt)
+        call Add_2timing(10,tim_after,tim_before,"Meteoread")
 
      call SetLandUse()    !Moved here from DryDep !LPJ
+        call Add_2timing(11,tim_after,tim_before,"SetLanduse")
 
      call SetDailyBVOC(daynumber)  !dsBVOC
 
      if ( USE_FOREST_FIRES ) call Fire_Emis(daynumber)
 
-     call Add_2timing(10,tim_after,tim_before,"infield")
+        call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
 
      daynumber=day_of_year(current_date%year,current_date%month,&
           current_date%day)
@@ -455,7 +457,7 @@ program myeul
 
      call adv_var(numt)
 
-     call Add_2timing(11,tim_after,tim_before,"metvar")
+     call Add_2timing(13,tim_after,tim_before,"metvar")
 
      call Code_timer(tim_before)
 
@@ -465,7 +467,7 @@ program myeul
 
      call phyche(numt)
 
-     call Add_2timing(18,tim_after,tim_before,"phyche")
+     call Add_2timing(14,tim_after,tim_before,"phyche")
 
      call WrtChem(numt)
 

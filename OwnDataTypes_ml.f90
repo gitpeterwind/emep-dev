@@ -1,7 +1,6 @@
 module OwnDataTypes_ml
   implicit none
 
-  ! O3cl for AOT, POD etc.
   ! depmap
   ! gtype for species groups, used in CM_ChemSpecs and Derived 
 
@@ -34,14 +33,6 @@ module OwnDataTypes_ml
        character(len=TXTLEN_SHORT) :: txt2 ! e.g. POD1_IAM_DF
    end type typ_ss
 
-   !================== 
-    type, public:: O3cl
-       character(len=TXTLEN_DERIV) :: name ! e.g. POD1_IAM_DF
-       character(len=TXTLEN_SHORT) :: class ! POD or AOT
-       real    :: Threshold     ! Threshold or CL, e.f. AOTx or AFstY
-       character(len=TXTLEN_SHORT) :: defn !  MM or EU definitions
-       character(len=TXTLEN_SHORT) :: TXTLC !  CF, DF, IAM_CF etc.
-    end type 
 
    !================== 
     type, public:: Deriv
@@ -53,7 +44,6 @@ module OwnDataTypes_ml
        integer  :: index    ! index in concentation array, or other
        integer :: f2d           ! index in f_2d arrays
        integer :: LC            ! Index of Receiver land-cover (one 
-       real    :: Threshold     ! Threshold or CL, e.f. AOTx or AFstY
        logical :: dt_scale     ! used only if we need a factor on dt_advec,
        real    :: scale         !  e.g. use 100.0 to get cm/s
        logical  :: avg      ! True => average data (divide by nav at end),
