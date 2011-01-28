@@ -35,6 +35,51 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxxxxxxxx rv3_7beta18  Anna, Jan Eiof, Svetlana & Alvaro   Jan 28 2010 xxxxxxxxxxxxxxxxxxxxx
+
+Update of hourly (netCDF) output routines
+
+My_Outputs_ml:
+  Set FORECAST default output in an IF, instead of commented code.
+  Full model domain is to be outputed for 10 pre-defined variables.
+
+Output_hourly:
+  group COLUMN calculations
+
+My_Outputs_ml, Output_hourly:
+  - use INDEX_*_GROUP (from ChemGroups_ml) for identification of groups
+  - Partial/Full COLUMN/COLUMgroup calculations:
+    hr_out%nk indecate the number of levels in the column,
+      1<%nk<KMAX_MID  ==>  Partial column: %nk lowermost levels
+         oterwise     ==>  Full column: all model levels
+  - cleanup: gFortran pedantic; removal of old comments & old commented code
+
+My_Outputs_ml, Sites_ml:
+  - replace SITE_XTRA/SITE_XTRA_CODE by SITE_EXTRA_MISC/SITE_EXTRA_D2D
+    in order to avoid the multiple "D2D" commented liles
+  - Imprrove print/write formats in Sites_ml
+  - cleanup: gFortran pedantic; removal of old comments & old commented code
+
+ZCM_EmChem09/GenIn.species:
+  - DUST_NAT_C repeated in PM10 group
+  - Same kind of fix for other commented aerosol components  (EC_f/c_new/age)
+
+Makefile_gfortran:
+  Ubuntu 10.04 (Lucid) stings
+
+Makefile_titan:
+  No optimization options in LDFLAGS if DEBUG_FLAGS is defined
+
+run.pl:
+ - Update titan directories
+ - Paralell SR runs (one country per Job task) option also available in titan.
+   Multiple tasks are submitted (e.g. arrayrun 1-56 run.sh).
+   The variable $ENV{'TASK_ID'} is used to select one element of @countries.
+ - Inclaude MACC02 Benchmark set
+
+Unimod, Derived_ml:
+  clean AMVB comments
+
 xxxxxxxxxxxxxx rv3_7beta17  Dave  Jan 26 2010 xxxxxxxxxxxxxxxxxxxxx
 
 Major re-write of AOT, POD, VEGO3_OUTPUTS and associated simplification

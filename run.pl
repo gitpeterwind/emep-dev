@@ -88,6 +88,8 @@
 #  queue status   qstat -u $USER    llq              squeue -u $USER
 #  job status                       checkjob 3456    checkjob 3456
 #  kill job       qdel 3456         llcancel 3456    scancel 3456
+#  submit multi-task SR job (one task per country)
+#                 qsub -t 1-56 run.pl                arrayrun 1-56 run.sh
 ######################################################################
 
 use 5.6.0;
@@ -112,10 +114,12 @@ die "Must choose STALLO **or** NJORD **or** TITAN!\n"
   unless $STALLO+$NJORD+$TITAN==1;
 
 my %BENCHMARK;
-#  %BENCHMARK = (grid=>"EMEP" ,year=>2006,emis=>"Modrun07/OpenSourceEmis"     ) ;
+#  OpenSource 2008
+#  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"     ) ;
 # Dave's preference for EMEP:
-  %BENCHMARK = (grid=>"EMEP" ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
-#  %BENCHMARK = (grid=>"EECCA",year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
+   %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
+#  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
@@ -196,33 +200,33 @@ my $MetDriver = "H20" ; # DS consider condition "EC";  #"H20";
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
 if ($STALLO) {
-    $HOMEROOT = "/home";
-    $WORKROOT = "/global/work";
-    $DataDir  = "/global/work/mifapw/emep/Data";
-    $MetDir   = "$DataDir/$GRID/metdata/$year" ;
-    $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
-    $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
-    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
-    if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
-      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";
-      $MetDir   = "$DataDir/$GRID/metdata/$year" if $GRID eq "HIRHAM";
-      $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year"."_ny" if $GRID eq "EECCA";
-      # TMP, just to make something work for 2006
-      $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;
-    }
+  $HOMEROOT = "/home";
+  $WORKROOT = "/global/work";
+  $DataDir  = "/global/work/mifapw/emep/Data";
+  $MetDir   = "$DataDir/$GRID/metdata/$year" ;
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
+  $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
+  $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
+  if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
+    $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";
+    $MetDir   = "$DataDir/$GRID/metdata/$year" if $GRID eq "HIRHAM";
+    $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year"."_ny" if $GRID eq "EECCA";
+    # TMP, just to make something work for 2006
+    $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;
+  }
 } elsif ($TITAN) {
-    $HOMEROOT = "/usit/titan/u1";
-    $WORKROOT = "/xanadu/d1";
-    $DataDir  = "/data3/metno/emep/Data";
-    $MetDir   = "$DataDir/$GRID/metdata/$year" ;
-    $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA";
-    $MetDir   = "$DataDir/$GRID/metcdf/$year" if ($GRID eq "EMEP") and
-                                                 ($METformat eq "cdf");
+  $HOMEROOT = "/usit/titan/u1";
+  $WORKROOT = "/xanadu/d1";
+  $DataDir  = "/projects/metno/emep/Data";
+  $MetDir   = "$DataDir/$GRID/metdata/$year" ;
+  $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA";
+  $MetDir   = "$DataDir/$GRID/metcdf/$year" if ($GRID eq "EMEP") and
+                                               ($METformat eq "cdf");
 } else {
-    $HOMEROOT = "/home/ntnu";
-    $WORKROOT = "/work";
-    $MetDir   = "/work/emep/metdata/$year" ;
-    $DataDir  = "/home/ntnu/mifapw/emep/Data";
+  $HOMEROOT = "/home/ntnu";
+  $WORKROOT = "/work";
+  $MetDir   = "/work/emep/metdata/$year" ;
+  $DataDir  = "/home/ntnu/mifapw/emep/Data";
 }
 
 # DataDir    = Main general Data directory
@@ -234,14 +238,14 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my (@emislist, $Chem, $testv);
 
 if ($EUCAARI) {
-    $Chem     = "Eucaari_Trends";      # Label for chemical scheme used
-    @emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
+  $Chem     = "Eucaari_Trends";      # Label for chemical scheme used
+  @emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 } else {
-    $Chem     = "EmChem09";            # Label for chemical scheme used
-    @emislist = qw ( sox nox nh3 co voc pm25 pmco );
+  $Chem     = "EmChem09";            # Label for chemical scheme used
+  @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-$testv = "rv3_7beta17"; # aari"; # "rv3_7beta7"; 
+$testv = "rv3_7beta18"; # aari"; # "rv3_7beta7";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -257,7 +261,7 @@ my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's pr
 my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
 my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-files
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
-$SoilDir = 0 if $GRID eq "EMEP";
+$SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
 
 #.. For using emissions of EC/OC instead of PMx
 # Avoid directories which depend on domain, unless global files!
@@ -779,11 +783,11 @@ foreach my $scenflag ( @runs ) {
   $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
-  #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
-  #$ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
-  #$ifile{"$DataDir/Inputs_LandDefs_20101016.csv"} = "Inputs_LandDefs.csv";
-  $ifile{"$MyDataDir/LandInputs_Jan2011/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$MyDataDir/LandInputs_Jan2011/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+ #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
+ #$ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
+ #$ifile{"$DataDir/Inputs_LandDefs_20101016.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/LandInputs_Jan2011/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$DataDir/LandInputs_Jan2011/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
 
@@ -963,9 +967,10 @@ EOT
       ($old=$new)=~s/$CWFBASE/$CWFDATE[0]/g;      # yesterday's dump
       system("rm $old") if (-e $old);
       $old="modelrun.finished";
-      $new="runsr_$ENV{'PBS_ARRAYID'}.finished";
+      $new="runsr_$ENV{'PBS_ARRAYID'}.finished" if $ENV{'PBS_ARRAYID'};
+      $new="runsr_$ENV{'TASK_ID'}.finished"     if $ENV{'TASK_ID'};
       system("mkdir -p ../CWF_$CWFBASE/;echo $scenario >> ../CWF_$CWFBASE/$new")
-        if (-e $old) && $ENV{'PBS_ARRAYID'};
+        if (-e $old) && ($ENV{'PBS_ARRAYID'} or $ENV{'TASK_ID'});
     }
   }
 
@@ -1148,7 +1153,9 @@ $redn        = "0.85"; # 15% reduction
 @countries  = (@eu27, @sea, @noneu, @emep, @eecca, @eccomb);
 @polls       = qw (BASE NP A V S );  #  (any, all, at least 1)
 
-@countries=($countries[$ENV{'PBS_ARRAYID'}-1]) if $ENV{'PBS_ARRAYID'};
+# multiple tasks for paralel SR runs: one task per country             # Queue system
+@countries=($countries[$ENV{'PBS_ARRAYID'}-1]) if $ENV{'PBS_ARRAYID'};   # PBS
+@countries=($countries[$ENV{'TASK_ID'}-1])     if $ENV{'TASK_ID'};       # SLURM
 ################################
 #### end of SR parameters   ####
 ################################

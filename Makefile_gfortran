@@ -25,6 +25,11 @@ LIBS = -lnetcdff -lnetcdf
 INCL = -I/usr/include
 LLIB = -L/usr/lib
 makedepf90 = /disk1/emep_U804/local/bin/makedepf90
+#ubuntu 10.04
+LIBS = -lnetcdff -lnetcdf
+INCL = -I/usr/include
+LLIB = -L/usr/lib
+makedepf90 = /disk1/emep_U1004/local/bin/makedepf90
 
 F90 = mpif90
 

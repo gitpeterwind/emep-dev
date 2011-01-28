@@ -1584,7 +1584,7 @@ end do
   !character(len=*)    :: unit   !
   integer, intent(in), dimension(:)  :: group
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-  integer, intent(in) :: ik   !AMVB 2010-08-16: PM-PPB bug fix
+  integer, intent(in) :: ik
   character(len=*),intent(in), optional    :: gname   ! group name
   integer :: ig, iadv, itot,k
   real :: scale
@@ -1595,7 +1595,6 @@ end do
     if ( present(gname ) ) write(*,*) " GNAME ", trim(gname)
   end if
 
-!AMVB 2010-08-16: PM-PPB bug fix
   if     (ik==0 .and. n<=num_deriv2d) then
     k=KMAX_MID
     unit=f_2d(n)%unit

@@ -94,9 +94,9 @@ NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
 NO3_f,1,NO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM10;PM25;PM25anthr;PM10anthr;SIA;OXN;TNO3;AOD,,"!in equilib module"
 NO3_c,1,NO3_c,xx,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;SIA;OXN;TNO3,,"!Course nitrate"
 NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PM25;PM10anthr;PM25anthr;SIA;AOD,,"! in equilib module"
-*USEPPM EC_f_new,1,xx,12,PMfS,ECfn,7.5,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
-*USEPPM EC_f_age,1,xx,12,PMfS,PMf,11.,0,0,xx,EC_f;PM10;PM25anthr;PM25;PM25anthr;AOD,,"
-*USEPPM POC_f,1,xx,12,PMfS,PMf,5.7,0,0,xx,PM10;PM25anthr;PM25;PM25anthr;AOD,,"
+*USEPPM EC_f_new,1,xx,12,PMfS,ECfn,7.5,0,0,xx,EC_f;PM10;PM10anthr;PM25;PM25anthr;AOD,,"
+*USEPPM EC_f_age,1,xx,12,PMfS,PMf,11.,0,0,xx,EC_f;PM10;PM10anthr;PM25;PM25anthr;AOD,,"
+*USEPPM POC_f,1,xx,12,PMfS,PMf,5.7,0,0,xx,PM10;PM10anthr;PM25;PM25anthr;AOD,,"
 *EC_c_new,1,C,12,PMc,PMfn,0,0,0,xx,PM10;PM10anthr;PMCO;AOD,,"
 *EC_c_age,1,C,12,PMc,PMc,0,0,0,xx,PM10;PM10anthr;PMCO;AOD,,"
 PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25;PM25anthr,,"!Primary; fine <2.5um"
@@ -106,8 +106,8 @@ CO_BIC,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
 PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;,,"!Primary; 2.5--10u"
 SeaSalt_f,1,xx,58,PMfS,SSf,3.0,0,0,xx,PM25;PM10;SS;AOD,,!
 SeaSalt_c,1,xx,58,PMc,SSc,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
-Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PM10;PM25;DUST;AOD,,!
-Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PM10;PM10;DUST;AOD,,!
+Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PM25;PM10;DUST;AOD,,!
+Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;AOD,,!
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!
 *TESTSOA,2,xx,999,PMf,PMf,0,1.0,70.0,xx,PM25;SOA;FALSEGROUP,,!

@@ -20,11 +20,8 @@ LLIB = -L$(NETCDF)/lib -L$(INTEL)/lib/intel64 -lirc
 #DEBUG_FLAGS = -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0 -check bounds
 #DEBUG_FLAGS += -check uninit -check pointers -opt_report
 F90 = mpif90
-ifdef $(DEBUG_FLAGS)
-  LDFLAGS = -r8 -recursive -convert big_endian -IPF_fp_relaxed $(DEBUG_FLAGS) -static
-else
-  LDFLAGS = -r8 -recursive -convert big_endian -IPF_fp_relaxed -O3 -ftz -shared-intel
-endif
+LDFLAGS = -r8 -recursive -convert big_endian -IPF_fp_relaxed -shared-intel \
+          $(if $(DEBUG_FLAGS),$(DEBUG_FLAGS),-O3 -ftz)
 F90FLAGS = $(LDFLAGS) -cpp $(INCL)
 LD = $(F90)
 

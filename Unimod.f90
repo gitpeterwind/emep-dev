@@ -461,10 +461,6 @@ program myeul
 
      call Code_timer(tim_before)
 
-!AMVB 2010-07-21: zero hour output
-!     if (numt == 2 .and. FORECAST) &
-!       call hourly_out() ! hourly output for hour "zero" on FORECAST mode
-
      call phyche(numt)
 
      call Add_2timing(14,tim_after,tim_before,"phyche")
