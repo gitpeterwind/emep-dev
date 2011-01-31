@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -33,7 +33,8 @@ module My_WetDep_ml
  use DerivedFields_ml,  only : f_2d, d_2d
  use Io_ml,             only : IO_DEBUG
  use MassBudget_ml,     only : totwdep, wdeploss
- use ModelConstants_ml, only : atwS, atwN, atwPM, IOU_INST, MasterProc, DEBUG_MY_WETDEP
+ use ModelConstants_ml, only : atwS, atwN, atwPM, IOU_INST, &
+           MasterProc, DEBUG_MY_WETDEP
  use OwnDataTypes_ml,   only : depmap
  use SmallUtils_ml,  only : find_index
 
@@ -45,17 +46,12 @@ module My_WetDep_ml
 
 
   type, public :: WScav
-!ss     integer  :: itot     !ds may05 - was adv - confusing
      real  :: W_sca       ! Scavenging ratio/z_Sca/rho = W_sca/1.0e6
      real  :: W_sub       ! same for subcloud
   end type WScav
   
 
-  !dsx integer, public, parameter :: NWETDEP =  14  !SeaS 11  ! Number of solublity classes
-!  integer, public, parameter :: NWETDEP =  9  ! Number of solublity classes
-
-  !ds May 2010 New wet-dep system. Pre-define various species or groups
-  integer, public, parameter :: NWETDEP_CALC =  11  ! Number of solublity classes
+  integer, public, parameter :: NWETDEP_CALC =  11 ! No. of solublity classes
 
    !  Note - these are for "master" or model species - they do not
    !  need to be present in the chemical scheme. However, the chemical
@@ -90,16 +86,6 @@ module My_WetDep_ml
 
    integer, public, dimension(NWETDEP_CALC,0:NWETDEP_ADV) :: Calc2tot
 
-
-!EGU - find indices of SO4-like particles (PMc included for now - tmp!)
-! for SOA we need a separate array, since Fgas will be needed
-!  integer, public, parameter, dimension(5) :: & !EGU:NUM_NONVOLOC+NUM_NONVOLEC) ::&
-!   WETDEP_SO4LIKE = (/ NH4_f, NO3_f, PPM25, SSFI, Pb210 /)
-!EGU  NONVOLOC, NONVOLEC /)
-!    integer, public, parameter, dimension(NUM_NONVOLOC) ::&
-!   WETDEP_SO4LIKE = (/ NONVOLOC /)
-!  integer, public, parameter, dimension(NUM_VOL) ::&
-!   WETDEP_SOALIKE = (/ VOL /)   
 
   type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
   
@@ -143,7 +129,7 @@ contains
 
   ! Other PM compounds treated with SO4LIKE array defined above
 
-   !####################### ds NEW define indices here ##########
+   !####################### NEW define indices here ##########
 
      WDEP_PREC= find_index("WDEP_PREC",f_2d(:)%name)
      WDEP_SOX = find_index("WDEP_SOX",f_2d(:)%name)
@@ -153,11 +139,13 @@ contains
      WDEP_SO2 = find_index("WDEP_SO2",f_2d(:)%name)
      WDEP_SO4 = find_index("WDEP_SO4",f_2d(:)%name)
      WDEP_HNO3 = find_index("WDEP_HNO3",f_2d(:)%name)
-     WDEP_NO3_f = find_index("WDEP_NO3_f",f_2d(:)%name)
-     WDEP_NO3_c = find_index("WDEP_NO3_c",f_2d(:)%name)
+     WDEP_NO3_f = find_index("WDEP_NO3_F",f_2d(:)%name)
+     WDEP_NO3_c = find_index("WDEP_NO3_C",f_2d(:)%name)
      WDEP_NH3 = find_index("WDEP_NH3",f_2d(:)%name)
-     WDEP_NH4_f = find_index("WDEP_NH4_f",f_2d(:)%name)
-   !####################### ds END define indices here ##########
+     WDEP_NH4_f = find_index("WDEP_NH4_F",f_2d(:)%name)
+     if( MasterProc ) write(*,*) "Init MY_WETDEP ind SO2, NH4f ", &
+           WDEP_SO2, WDEP_NH4_f
+   !####################### END define indices here ##########
 
    ! Now create table to map calc species to actual advected ones:
      Calc2tot = 0
@@ -166,7 +154,8 @@ contains
          itot  = WDepMap(n)%ind
          Calc2tot(icalc,0) =  Calc2tot(icalc,0)  + 1
          nc = Calc2tot(icalc,0)
-     if( MasterProc ) write(6,"(a,4i5)") "CHECKING WetDep Calc2tot ", n,icalc,itot,nc
+     if( MasterProc ) write(6,"(a,4i5)") "CHECKING WetDep Calc2tot ", &
+            n,icalc,itot,nc
          Calc2tot(icalc,nc) = itot
       end do 
 
@@ -211,26 +200,11 @@ contains
         wdepox  = wdepox  + wdeploss(itot)
      end do
 
-!dsMay2010      wdeps = wdeploss(SO2) + wdeploss(SO4)
-!dsMay2010      wdepred = wdeploss(NH3)  + wdeploss(NH4_f) 
-!dsMay2010      wdepox  = wdeploss(HNO3) + wdeploss(NO3_f) + wdeploss(NO3_c)
-
-!dsMay2010      wdeppm25= wdeploss(PPM25) 
-!dsMay2010      wdeppmco= wdeploss(PPMco) 
-
-!ds Why mix labels and species like this?
-! remove for now
-!       totwdep(IXADV_SO4)  = totwdep(IXADV_SO4) + wdeps
-!       totwdep(IXADV_HNO3) = totwdep(IXADV_HNO3) + wdepox
-!       totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)  + wdepred
-!       totwdep(IXADV_PPM25)  = totwdep(IXADV_PPM25)  + wdeppm25
-!       totwdep(IXADV_PPMco)  = totwdep(IXADV_PPMco)  + wdeppmco
 
        d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * fS 
        d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * fN 
        d_2d(WDEP_RDN,i,j,IOU_INST) = wdepred * fN 
 
-!dsMay2010 skip for now until
        d_2d(WDEP_SO2,i,j,IOU_INST) = wdeploss(SO2) * fS 
        d_2d(WDEP_SO4,i,j,IOU_INST) = wdeploss(SO4) * fS 
        d_2d(WDEP_NH3,i,j,IOU_INST) = wdeploss(NH3) * fN 
@@ -249,12 +223,6 @@ contains
          write(*,"(a,2i4,2es12.4)" )   "DEBUG_RDN", ispec, itot, wdeploss(itot)
      end do
      end if
-
-!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdeps     ",i,j,wdeps,wdepred,wdepox!EX,wdeppm25,wdeppmco
-!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_nh3  ",i,j,d_2d(WDEP_NH3,i,j,IOU_INST), wdeploss(NH3)
-!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_NO3_f ",i,j,d_2d(WDEP_NO3_f,i,j,IOU_INST), wdeploss(NO3_f)
-!write(IO_DEBUG,"(a,2i4,10es12.3)") "wdep_NO3_c ",i,j,d_2d(WDEP_NO3_c,i,j,IOU_INST), wdeploss(NO3_c)
-
 
   end subroutine WetDep_Budget
 end module My_WetDep_ml

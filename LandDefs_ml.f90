@@ -205,12 +205,12 @@ contains
            LandDefs(n)%LAImax   = max( LandDefs(n)%LAImax,   0.0)
 
 
-            !if ( DEBUG_LANDDEFS .and. MasterProc ) then
+            if ( DEBUG_LANDDEFS .and. MasterProc ) then
                  write(*,"(a)") trim(txtinput)
                  write(unit=*,fmt=*) "LANDPHEN match? ", n, &
                    LandInput%name, trim(LandInput%code), trim(wanted_codes(n)),&
                  len(trim(LandInput%code)), len(trim(wanted_codes(n)))
-            !end if
+            end if
             call CheckStop(  LandInput%code, wanted_codes(n), "MATCHING CODES in LandDefs")
 
             LandType(n)%is_water  =  LandInput%code == "W" 

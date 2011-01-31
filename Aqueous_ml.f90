@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -534,13 +534,6 @@ subroutine WetDeposition(i,j,debug_flag)
      vw(kcloudtop:ksubcloud-1) = WetDep(icalc)%W_sca ! Scav. for incloud
      vw(ksubcloud:KMAX_MID  )  = WetDep(icalc)%W_sub ! Scav. for subcloud
 
-!dsMay2010     itot = WetDep(spec)%itot
-
-!dsMay2010    if ( DEBUG .and. debug_flag ) then
-!dsMay2010       Write(6,"(a,i3,a,2es14.4)") "DEBUG_WDEP Sca", spec, &
-!dsMay2010        species(itot)%name, WetDep(spec)%W_sca, WetDep(spec)%W_sub
-!dsMay2010    end if ! DEBUG
-
      do k = kcloudtop, KMAX_MID
 
         lossfac(k)  = exp( -vw(k)*pr_acc(k)*dt ) 
@@ -550,7 +543,7 @@ subroutine WetDeposition(i,j,debug_flag)
             do is = 1, Calc2tot(icalc,0)  ! number of species
                itot = Calc2tot(icalc,is)
 
-!rbAug2010 For semivolatile species only the particle fraction is deposited
+    ! For semivolatile species only the particle fraction is deposited
 
                if ( itot >= FIRST_SEMIVOL .and. itot <=  LAST_SEMIVOL) then
                   loss = xn_2d(itot,k) * Fpart(itot,k)*( 1.0 - lossfac(k)  )
@@ -560,10 +553,7 @@ subroutine WetDeposition(i,j,debug_flag)
                xn_2d(itot,k) = xn_2d(itot,k) - loss
                wdeploss(itot) = wdeploss(itot) + loss * rho(k)
             end do ! is
-        !end do ! spec
 
-         !TMP tmpxn = xn_2d(itot,k) * lossfac(k) ! Just for testing
-         !TMP xnloss = xnloss+ (1.0-lossfac(k))*xn_2d(itot,k)*rho(k)
 
      end do ! k loop
      if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
@@ -573,42 +563,6 @@ subroutine WetDeposition(i,j,debug_flag)
         end do ! k loop
      end if ! DEBUG
 
-!dsMay2010     if ( itot ==  SO4 ) then !/ Apply SO4 rates to similar PM:
-!dsMay2010       !do ipm = 1, size(SO4LIKE_DEP)
-!dsMay2010       do ipm = 1, size(WETDEP_SO4LIKE)
-!dsMay2010         !is = SO4LIKE_DEP(ipm)
-!dsMay2010         is = WETDEP_SO4LIKE(ipm)
-!dsMay2010         do k = kcloudtop, KMAX_MID
-!dsMay2010            loss = xn_2d(is,k) * ( 1.0 - lossfac(k) )
-!dsMay2010            !xn_2d(is,k) = xn_2d(is,k) * lossfac(k)
-!dsMay2010            xn_2d(is,k) = xn_2d(is,k) - loss
-!dsMay2010            wdeploss(is) = wdeploss(is) + loss * rho(k)
-!dsMay2010         end do
-!dsMay2010         if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
-!dsMay2010           write(6,"(2a,i3,2es12.3)") "WETDEP SIM: ", species(is)%name, &
-!dsMay2010            is, lossfac(20), wdeploss(is)
-!dsMay2010         end if
-!dsMay2010       end do
-       !do ipm = 1, NUM_NONVOL
-       ! For SOA we make use of Fgas, which has been calculated in
-       ! OrganicAerosol_ml
-       ! Rem = G + loss.P = (1-P) + loss*P = 1-P(1-loss)
-!EGUOA       if (  ORGANIC_AEROSOLS ) then
-!EGUOA         do ipm = 1, size(SOALIKE_DEP)
-!EGUOA          is = SOALIKE_DEP(ipm)
-!EGUOA          do k = kcloudtop, KMAX_MID
-!EGUOA           xn_2d(is,k) = xn_2d(is,k) * (1.- Fpart(is,k)*(1.-lossfac(k)))
-!EGUOA          end do
-!EGUOA        if ( DEBUG .and. debug_flag .and. pr_acc(20)>1.0e-5 ) then
-!EGUOA          k=20
-!EGUOA          write(6,"(a,a,i3,4f10.5)") "WETDEP SOA: ", species(is)%name, &
-!EGUOA              is, Fgas(is,k), Fpart(is,k), lossfac(k), &
-!EGUOA               (1.-Fpart(is,k)*(1.-lossfac(k)))
-!EGUOA        end if
-!EGUOA         end do ! ipm
-!EGUOA       end if ! OA 
-!dsMay2010     end if
-          
   end do ! icalc loop
 
   d_2d(WDEP_PREC,i,j,IOU_INST) = sum ( pr(i,j,:) ) * dt

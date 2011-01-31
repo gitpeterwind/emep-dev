@@ -44,10 +44,12 @@ module MosaicOutputs_ml
  use LocalVariables_ml,   only : Sub, Grid
  use MetFields_ml
  use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_MOSAICS,&
+   atwS, atwN, &
    NLANDUSEMAX, IOU_INST, &
-   atwS, atwN, SOX_INDEX, OXN_INDEX, RDN_INDEX ! indices for dep groups
+   SOX_INDEX, OXN_INDEX, RDN_INDEX ! indices for dep groups
 
- use OwnDataTypes_ml,  only: Deriv, print_deriv_type, TXTLEN_DERIV, TXTLEN_SHORT
+ use OwnDataTypes_ml,  only: Deriv, print_deriv_type, &
+       TXTLEN_DERIV, TXTLEN_SHORT, typ_s4
  use SmallUtils_ml, only: find_index
  use TimeDate_ml, only : current_date, effectivdaynumber
  use Wesely_ml, only : NDRYDEP_CALC
@@ -57,10 +59,10 @@ module MosaicOutputs_ml
  ! From My_Derived we created:
  public ::  Init_MosaicMMC
  public ::  Add_MosaicMetConcs
- public ::  Add_MosaicRG
- public ::  Add_MosaicVG
+! public ::  Add_MosaicRG
  public ::  Add_MosaicVEGO3
  public ::  Add_MosaicDDEP
+ public ::  Add_NewMosaics
 
  ! From My_DryDep_ml we just move:
  public :: Init_MosaicOutputs
@@ -110,7 +112,7 @@ module MosaicOutputs_ml
         integer, intent(out) :: nMET
         integer :: ilab, n, iLC
         character(len=TXTLEN_DERIV) :: name
-        real :: atw 
+!JAN30        real :: atw 
 
 
       !------------- Met data for d_2d -------------------------
@@ -118,7 +120,6 @@ module MosaicOutputs_ml
       ! adding them to the derived-type array Mosaic_Met (e.g. => Met_CF)
 
       nMET = 0
-      atw = -999.0 !fake
       do ilab = 1, size(MOSAIC_METCONCS)
         MET_LC: do n = 1, size(MET_LCS)
 
@@ -137,13 +138,10 @@ module MosaicOutputs_ml
           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, nMET" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, scale, avg? Inst Yr Mn Day
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "METCONC", MET_LCS(n), MOSAIC_METCONCS(ilab), &
-                ilab, -99,iLC, F , 1.0,  T,   F,   F, T, T, T, atw)
-!MESS          OutMET(nMET) = Dep_type( &
-!           name, ilab, -99, iLC, "Mosaic", MOSAIC_METCONCS(ilab),  &
-!                                              MET_LCS(n), 1.0, -99, "-")
+                ilab, -99,iLC, F , 1.0,  T,  F, T, T, T)
 
           if( MOSAIC_METCONCS(ilab)(1:5) == "USTAR" )  then
               MosaicOutput(nMosaic)%unit  =   "m/s"
@@ -165,93 +163,35 @@ module MosaicOutputs_ml
 
  end subroutine Add_MosaicMetConcs
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine Add_MosaicRG(RG_LABELS,RG_LCS,RG_SPECS,nRG)
-        character(len=*), dimension(:), intent(in) :: RG_LABELS ! eg Rs,Gs
-        character(len=*), dimension(:), intent(in) :: RG_LCS    ! eg CF, Grid
-        integer, dimension(:), intent(in) :: RG_SPECS  ! eg NH3
-        integer, intent(out) :: nRG
-        integer :: ilab, n, itot, iLC, iadv
+ subroutine Add_NewMosaics(Mc,nMc)
+        type(typ_s4), dimension(:), intent(in) :: Mc ! eg VG
+        integer, intent(out) :: nMc
+        integer :: n, itot, iLC, iadv
         character(len=TXTLEN_DERIV) :: name
+        character(len=TXTLEN_SHORT) :: typ, poll, lctxt
 
-      !------------- Surface resistance for d_2d -------------------------
-      ! We find the various combinations of gas-species and ecosystem,
-      ! adding them to the derived-type array LCC_DDep (e.g. => RsO3_CF)
-
-      nRG = 0
-      do ilab = 1, size(RG_LABELS)
-      do itot = 1, size(RG_SPECS)
-        RG_LC: do n = 1, size(RG_LCS)
+      nMc = 0
+      MC_LOOP: do n = 1, size( Mc(:)%txt1 )
 
           !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "RG_LCS", n, RG_LCS, (itot==1 .and. ilab == 1))
-          if ( iLC < 0 ) cycle  RG_LC
+          iLC = Check_LandCoverPresent( "MMC-VG", n, Mc(:)%txt4 , &
+                   write_condition=.true. )
+          if ( iLC < 0 ) cycle  MC_LOOP
           !-------------End of Check if LC present in this array ------!
+          nMc = nMc + 1
+          typ   = Mc(n)%txt2
+          poll  = Mc(n)%txt3
+          lctxt = Mc(n)%txt4
 
-          nRG = nRG + 1
-          name = trim ( RG_LABELS(ilab) ) // "_"  // &
-           trim( species(RG_SPECS(itot))%name ) // "_" // trim( RG_LCS(n) )
+         ! name = VG_O3_GRID?
+          name = trim( Mc(n)%txt2 ) // "_" //  & ! VG
+                 trim( Mc(n)%txt3 ) // "_" //  & ! O3, HNO3, ...
+                 trim( Mc(n)%txt4 )              ! Grid, SNL,..
 
-          iadv  =   RG_SPECS(itot) - NSPEC_SHL
-
-          !OutRG(nRG)%label  = RG_LABELS(ilab)
-          !OutRG(nRG)%txt  =   RG_LCS(n)
-
-!          OutRG(nRG) = Dep_type(  &
-!             name, iLC, iadv, -99,"Mosaic", RG_LABELS(ilab), RG_LCS(n),&
-!                                             1.0, -99,  "-")
-           nMosaic = nMosaic + 1
-           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
-                       "too many nMosaics, nRG" )
-
-          !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw
-
-          if( RG_LABELS(ilab)(1:1) == "R" )  then
-             MosaicOutput(nMosaic) = Deriv( &
-               name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "s/m", &
-                iadv, -99,iLC, F , 1.0,  T,   F,   F, T, T, T, -999.0)
-          else if( RG_LABELS(ilab)(1:1) == "G" )  then
-             MosaicOutput(nMosaic) = Deriv( &
-               name, "Mosaic", RG_LABELS(ilab), RG_LCS(n), "cm/s", &
-                iadv, -99,iLC, F, 100.0,  T,   F,   F, T, T, T, -999.0)
-          end if
-        end do RG_LC !n
-      end do ! itot
-      end do ! ilab
- end subroutine Add_MosaicRG
-
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine Add_MosaicVG(VG_LABELS,VG_LCS,VG_SPECS,nVG)
-        character(len=*), dimension(:), intent(in) :: VG_LABELS ! eg Vg
-        character(len=*), dimension(:), intent(in) :: VG_LCS ! eg CF, Grid
-        integer, dimension(:), intent(in) :: VG_SPECS  ! eg NH3
-        integer, intent(out) :: nVG
-        integer :: ilab, n, itot, iLC, iadv
-        character(len=TXTLEN_DERIV) :: name
-
-
-      !------------- Deposition velocities for d_2d -------------------------
-      ! Add species and ecosystem depositions if wanted:
-      ! We find the various combinations of gas-species and ecosystem,
-      ! adding them to the derived-type array LCC_DDep (e.g. => VGO3_CF)
-
-      nVg = 0
-      do ilab = 1, size(VG_LABELS)
-      do itot = 1, size(VG_SPECS)
-        VG_LC: do n = 1, size(VG_LCS)
-
-          !------------------- Check if LC present in this array ------!
-          iLC = Check_LandCoverPresent( "VG_LCS", n, VG_LCS, &
-                   write_condition=(itot==1 .and. ilab == 1))
-          if ( iLC < 0 ) cycle  VG_LC
-          !-------------End of Check if LC present in this array ------!
-          nVg = nVg + 1
-
-          name = trim( VG_LABELS(ilab) ) // "_"  // &
-             trim( species(VG_SPECS(itot))%name ) // "_" // trim( VG_LCS(n) )
-          iadv = VG_SPECS(itot) - NSPEC_SHL
+          itot = find_index( poll,  species(:)%name )
+          iadv = itot - NSPEC_SHL
           call CheckStop( iadv < 1 .or. iadv > NSPEC_ADV, &
-                 " ERR: DDEP_SPECS: VG_SPECS" )
+                 " ERR: Mc  _SPECS: Mc_SPECS" )
 
           nMosaic = nMosaic + 1
           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
@@ -259,14 +199,24 @@ module MosaicOutputs_ml
 
           !Deriv(name, class,    subc,  txt,           unit
           !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw
-          MosaicOutput(nMosaic) = Deriv(  &
-              name, "Mosaic", VG_LABELS(ilab), VG_LCS(n), "cm/s", &
-                iadv, -99,iLC, F, 100.0, T,   F,   F, T, T, T, -999.0)
 
-        end do VG_LC !n
-      end do ! i
-      end do ! ilab
- end subroutine Add_MosaicVG
+      !------------- Deposition velocities for d_2d -------------------------
+          if( trim ( typ ) == "VG" ) then
+            MosaicOutput(nMosaic) = Deriv(  &
+              name, "Mosaic", typ , lctxt,  "cm/s", &
+                iadv, -99,iLC, F, 100.0, T, F, T, T, T)
+          else if( typ == "Rs" )  then
+             MosaicOutput(nMosaic) = Deriv( &
+               name, "Mosaic", typ, lctxt, "s/m", &
+                iadv, -99,iLC, F , 1.0,  T, F, T, T, T)
+          end if
+          if(  MasterProc ) write(*,*) "DEBUG nMc ", &
+            trim(name) // ":" // &
+            trim(Mc(n)%txt2) // ":" // trim(Mc(n)%txt3), iadv, iLC
+
+      end do MC_LOOP
+ end subroutine Add_NewMosaics
+
 
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -317,17 +267,11 @@ module MosaicOutputs_ml
            call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, VEGO3" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, scale dt_scale avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, scale dt_scale avg? Inst Yr Mn Day
           ! Use index for veg array. No need to set iadv for VEGO3. Always O3.
            MosaicOutput(nMosaic) = Deriv(  &
               name, veg%class,  veg%defn, veg%TXTLC, units, &
-                n, -99,iLC, T,  scale,  F,   F,   F, T, T, F, -999.0)
-              ! name, "Mosaic", veg%class, veg%defn, units, & ! Use defn, not LC
-              !TEST name, "Mosaic", veg%class, veg%LC, units, &
-              ! Txt has defn
-              ! class is AOT or defn here
-              !name, veg%class, veg%defn, veg%LC, units, &
-                !-99, -99,iLC, T,  scale,  F,   F,   F, T, T, F, -999.0)
+                n, -99,iLC, T,  scale,  F,   F, T, T, F)
 
       end do VEGO3_LC !n
  end subroutine Add_MosaicVEGO3
@@ -396,20 +340,14 @@ module MosaicOutputs_ml
              end if
           end if
 
-        ! Set defaults
-        ! dep_type( name, LC, index, f2d, class, label, txt, scale, atw, units )
-        !            x     d      d    d   a10    a10   a10     f    i    a10
-!             OutDDep(nDD) = Dep_type(  &
-!              name, -99, iadv, -99,"Mosaic", "DDEP", DDEP_ECOS(n), 1.0, atw, units)
-
              nMosaic = nMosaic + 1
              call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, DDEP" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+          !Deriv index, f2d,LC, dt_scale, scale, avg? Inst Yr Mn Day
              MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99,-99, F, 1.0e6,  F,   F,   F, T,  T,  F, atw)
+                  iadv,-99,-99, F, 1.0e6 * atw ,  F,   F, T,  T,  F)
 !QUERY - why no dt_scale??
 
           if(DEBUG .and. MasterProc) then
@@ -451,7 +389,7 @@ module MosaicOutputs_ml
               trim(MosaicOutput(imc)%txt), MosaicOutput(imc)%LC, Grid%surf_o3_ppb
          end if
 
-      case ( "VG", "Rs ", "Rns", "Gns", "POD", "AOT" ) ! could we use RG_LABELS? 
+      case ( "VG", "Rs ", "Rns", "Gns", "POD", "AOT" )
 
         if( MosaicOutput(imc)%txt == "Grid") then
            MosaicOutput(imc)%LC = FULL_GRID   ! zero
@@ -462,7 +400,8 @@ module MosaicOutputs_ml
               find_index( MosaicOutput(imc)%txt, LandDefs(:)%code )
         end if
         call CheckStop( MosaicOutput(imc)%LC < FULL_GRID , & !ie zero
-          "OutVg-LC Error " // MosaicOutput(imc)%name)
+          "OutVg-LC Error " // trim(MosaicOutput(imc)%name) &
+                 // " LC:" // trim(MosaicOutput(imc)%txt) )
 
       case default
 
@@ -600,7 +539,8 @@ module MosaicOutputs_ml
         ! - invEcoFracCF divides the flux per grid by the landarea of each
         ! ecosystem, to give deposition in units of mg/m2 of ecosystem.
 
-          output = Fflux * convfac * MosaicOutput(imc)%atw * invEcoFrac(iEco)
+        !JAN30  output = Fflux * convfac * MosaicOutput(imc)%atw * invEcoFrac(iEco)
+             output = Fflux * convfac * invEcoFrac(iEco)
 
           if ( DEBUG .and. debug_flag ) then
              write(6,"(3i4,3es12.3)") imc, nadv, iEco, Fflux, output

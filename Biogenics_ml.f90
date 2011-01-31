@@ -607,7 +607,6 @@ module Biogenics_ml
     def1%avg=.false.      !not used
     def1%index=0          !not used
     def1%scale=1.0      !not used
-    def1%rho=.false.      !not used
     def1%inst=.true.      !not used
     def1%year=.false.     !not used
     def1%month=.false.    !not used

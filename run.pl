@@ -235,7 +235,7 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
 
-my (@emislist, $Chem, $testv);
+my (@emislist, $Chem );
 
 if ($EUCAARI) {
   $Chem     = "Eucaari_Trends";      # Label for chemical scheme used
@@ -245,7 +245,7 @@ if ($EUCAARI) {
   @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-$testv = "rv3_7beta18"; # aari"; # "rv3_7beta7";
+my $testv = "rv3_7beta19";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";

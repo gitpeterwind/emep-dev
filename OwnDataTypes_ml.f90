@@ -33,6 +33,13 @@ module OwnDataTypes_ml
        character(len=TXTLEN_SHORT) :: txt2 ! e.g. POD1_IAM_DF
    end type typ_ss
 
+   !/ generic group for four (short) strings
+   type, public :: typ_s4
+       character(len=TXTLEN_SHORT) :: txt1 ! e.g. POD1_IAM_DF
+       character(len=TXTLEN_SHORT) :: txt2 ! e.g. POD1_IAM_DF
+       character(len=TXTLEN_SHORT) :: txt3 ! e.g. POD1_IAM_DF
+       character(len=TXTLEN_SHORT) :: txt4 ! e.g. POD1_IAM_DF
+   end type typ_s4
 
    !================== 
     type, public:: Deriv
@@ -48,13 +55,11 @@ module OwnDataTypes_ml
        real    :: scale         !  e.g. use 100.0 to get cm/s
        logical  :: avg      ! True => average data (divide by nav at end),
                             !     else accumulate over run period
-       logical  :: rho      ! True when scale is ug (N or S)
        logical  :: inst     ! True when instantaneous values needed
        logical  :: year     ! True when yearly averages wanted
        logical  :: month    ! True when monthly averages wanted
        logical  :: day      ! True when daily averages wanted
                               ! of Dep_Receivers)
-       integer :: atw           ! atomic weight where needed
   end type 
 
   !================== 
@@ -87,7 +92,6 @@ subroutine print_Deriv_type(w)
   write(6,*)        "dt_scale:", w%dt_scale
   !failed, why? write(6,fmt="(L8)")        "avg:",      w%avg
   write(6,*)        "avg:",      w%avg
-  write(6,"(a,i3)")     "atw    :", w%atw
 end subroutine print_Deriv_type
 
  !=========================================================================

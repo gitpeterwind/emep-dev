@@ -57,19 +57,15 @@ use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
 use ChemSpecs_adv_ml        ! Use IXADV_ indices...
 use ChemSpecs_shl_ml        ! Use IXSHL_ indices...
-use ChemSpecs_tot_ml !,  only : SO2, SO4, HCHO, CH3CHO  &   !  For mol. wts.
-                   !        ,NO2, NO3_f, NO3_c, HNO3, NH3, NH4_f, PPM25, PPMCO &
-                   !       ,O3, PAN, MPAN, SeaSalt_f, SeaSalt_c  !SS=SeaSalt
+use ChemSpecs_tot_ml        ! eg SO2, SO4, HCHO,  ....
 use ChemGroups_ml  ! Allow all groups to ease compilation
-                   !,  only :  OXN_GROUP, DDEP_OXNGROUP, DDEP_SOXGROUP, &
-                            !PCM only: PCM_GROUP, PCM_HELP_GROUP, &
-                    !        DDEP_RDNGROUP, SIA_GROUP, BVOC_GROUP
+                   !,  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
-use ChemSpecs_adv_ml         ! Use NSPEC_ADV amd any of IXADV_ indices
+use ChemSpecs_adv_ml         ! Use NSPEC_ADV, IXADV_ indices
 use EmisDef_ml,     only :  EMIS_NAME
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
-use MetFields_ml,        only : z_bnd, roa    ! 6c REM: zeta
+use MetFields_ml,        only : z_bnd, roa
 use ModelConstants_ml, only : ATWAIR  &
                         , SOX_INDEX, OXN_INDEX, RDN_INDEX &
                         , MasterProc  &
@@ -80,13 +76,13 @@ use ModelConstants_ml, only : ATWAIR  &
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
 use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   Init_MosaicMMC,  Add_MosaicMetConcs, &
-  Add_MosaicRG, &
-  Add_MosaicVG, &
+  Add_NewMosaics, & 
   Add_MosaicVEGO3, &
   Add_MosaicDDEP, &
   MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
-use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, typ_ss
+use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, &
+           typ_ss, typ_s4
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -96,9 +92,8 @@ implicit none
 private
 
  public  :: Init_My_Deriv
- public  :: My_DerivFunc
-
- private :: misc_xn             ! Miscelleaneous Sums and fractions of xn_adv
+ public  :: My_DerivFunc ! Miscelleaneous functions of xn_adv for output
+                         ! (not currently used)
 
 
    !/** Depositions are stored in separate arrays for now - to keep size of
@@ -138,7 +133,8 @@ private
                         typ_ss("HNO3", "ugN"),& 
                         typ_ss("HONO", "ugN"),& 
                         typ_ss("PAN",  "ugN"),& 
-                        typ_ss("NO3_F",  "ugN"),&  ! Remember, species have upper case!
+             ! Remember, species have upper case, so not _f !
+                        typ_ss("NO3_F",  "ugN"),&  
                         typ_ss("NO3_C",  "ugN"),& 
                         typ_ss("NH4_F",  "ugN"),& 
                       ! ug/m3
@@ -161,16 +157,14 @@ private
                         typ_ss("PPM25_FIRE",  "ugC") /)
 
 ! Tropospheric columns
-   integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = (/ CO, CH4, C2H6, HCHO, NO2 /)
+   integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = &
+          (/ CO, CH4, C2H6, HCHO, NO2 /)
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(7) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3    " &
-      ,"SURF_ugN_OXN  " & 
-      ,"SURF_ugN_RDN  " & 
-      ,"SURF_ugN_TNO3 " & 
       ,"SURF_PM25water" & 
       ,"SOMO35        " & 
       ,"PSURF         " &  ! Surface  pressure (for cross section):
@@ -181,43 +175,48 @@ private
 ! ****** UPPER CASE ONLY ************
 ! Sorry, this is a limitation that GenChem converts all names to
 ! uppercase:
-    character(len=TXTLEN_DERIV), public, parameter, dimension(9) :: &
-  SURF_UG_GROUP = (/ &
-      "SIA      ", &
-      "PM25     ", &
-      "PM10     ",&
-      "TNO3     ",&
-      "PM25ANTHR",&
-      "PM10ANTHR",&
-      "PMCO     ",&  ! Omitted parNO3, have TNO3 = pNO3_f+pNO3_c
-      "SS       ",&
-      "DUST     " /)        ! , "SURF_ugC_EC"
+
+   type(typ_ss), public, parameter, dimension(13) :: &
+     SURF_GROUP = (/ &
+      typ_ss( "OXN      ","ugN") &
+     ,typ_ss( "NOX      ","ugN") &
+     ,typ_ss( "RDN      ","ugN") &
+     ,typ_ss( "TNO3     ","ugN") &
+     ,typ_ss( "SIA      ","ug") &
+     ,typ_ss( "PM25     ","ug") &
+     ,typ_ss( "PM10     ","ug") &
+     ,typ_ss( "TNO3     ","ug") &
+     ,typ_ss( "PM25ANTHR","ug") &
+     ,typ_ss( "PM10ANTHR","ug") &
+     ,typ_ss( "PMCO     ","ug") &  ! Omitted parNO3, have TNO3 = pNO3_f+pNO3_c
+     ,typ_ss( "SS       ","ug") &
+     ,typ_ss( "DUST     ","ug") /)  ! , "SURF_ugC_EC"
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
   COL_ADD = (/ "AOD" /)
 
+   type(typ_ss), public, parameter, dimension(7) :: &
+     WDEP_CONCS = (/ &
+      typ_ss( "SO2      ","mgS") &
+     ,typ_ss( "SO4      ","mgS") &
+     ,typ_ss( "HNO3     ","mgN") &
+     ,typ_ss( "NO3_F    ","mgN") &
+     ,typ_ss( "NO3_C    ","mgN") &
+     ,typ_ss( "NH4_F    ","mgN") &
+     ,typ_ss( "NH3      ","mgN") &
+     /)
+
   !============ Extra parameters for model evaluation: ===================!
-    !character(len=TXTLEN_DERIV), public, parameter, dimension(19) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(18) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
   D2_EXTRA = (/ &
-       "WDEP_SO2          " &
-      ,"WDEP_SO4          " &
-      ,"WDEP_HNO3         " &
-      ,"WDEP_NO3_f        " &
-      ,"WDEP_NO3_c        " &
-      ,"WDEP_NH3          " &
-      ,"WDEP_NH4_f        " &
-      ,"SURF_ugN_NOX      " &
-      ,"SURF_ppbC_VOC     " &
+       "SURF_ppbC_VOC     " &
       ,"SOMO0             " &
       ,"Area_Grid_km2     " &
       ,"Area_Conif_Frac   " &
       ,"Area_Decid_Frac   " &
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
-      ,"HMIX              " &
-!      ,"D2_HMIX00         " &
-!      ,"D2_HMIX12         " &
+      ,"HMIX              " & !"D2_HMIX00 ,"D2_HMIX12 ...
       ,"SoilWater_deep    " &
       ,"USTAR_NWP         " &
   /)
@@ -228,9 +227,8 @@ private
 !  D2_SO2_m2Conif.
 
 
-  integer, private, save :: nOutDDep, nOutVg, nOutVEGO3
-  integer, private, save :: nOutRG  ! RG = resistances and conductances
-  integer, private, save :: nOutMET ! RG = resistances and conductances
+  integer, private, save :: nOutDDep, nOutVEGO3
+  integer, private, save :: nOutMET ! 
 
 
    ! Specify some species and land-covers we want to output
@@ -247,43 +245,29 @@ private
       DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" &! "Water_D" &
                     , "Decid  ", "Crops  " /)
 
-    integer, public, parameter, dimension(2) :: &
-      WDEP_SPECS = (/ SO2,  SO4 /)! , NH4_f, NH3, NO3_f, HNO3, NO3_c /)
+    !integer, public, parameter, dimension(2) :: &
+    !  WDEP_SPECS = (/ SO2,  SO4 /)! , NH4_f, NH3, NO3_f, HNO3, NO3_c /)
       !WDEP_SPECS = (/ SO2,  SO4, NH4_f, NH3, NO3_f, HNO3, NO3_c /)
 
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
 !     dimension( size(DDEP_SPECS)*size(DDEP_ECOS) ), save :: OutDDep
 
-   !ECO08 - specify some species and land-covers we want to output
+   !- specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      VG_LABELS = (/ "VG" /)
-    integer, public, parameter, dimension(1) :: &
-      VG_SPECS = (/ O3 /) ! , NH3, SO2, PPM25,  PPMCO , HNO3/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      VG_LCS  = (/ "Grid" , "CF  ", "SNL " /) ! , "GR  " /)
+    type(typ_s4), public, parameter, dimension(5) :: &
+         NewMosaic = (/ &
+             typ_s4( "Mosaic", "VG", "O3     ", "Grid" ) &
+            ,typ_s4( "Mosaic", "VG", "O3     ", "CF  " ) &
+            ,typ_s4( "Mosaic", "VG", "O3     ", "SNL " ) &
+            ,typ_s4( "Mosaic", "Rs", "SO2    ", "Grid" ) &
+            ,typ_s4( "Mosaic", "Rs", "NH3    ", "Grid" ) &
+         /)
 
-!    type(Deriv), public, &
-!     dimension( size(VG_LABELS)*size(VG_SPECS)*size(VG_LCS) ),  save :: OutVg
-
-! VEGO3 outputs for AFstY and AOTX
-!To avoid many unwanted combinations of land and Y values we just give
-! the name here and let the code interpret it later.
-! *** to use format f3.1 or i2 for the Y  or X value for fluxes/AOT! ***
+! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
+! Any string used here must have been defined in AOTnPOD_ml.
 !
-! AFstY vs Fst - not that the accumulated AFstY is processed here.
-! the instantaneous Fst is set as for Canopy O3 in METCONCS
-          ! N.B. AOTs have several definitions. We usually want
-          ! the ICP-veg Mapping Manual (MM) ones. Other
-          ! possibilities are EU (8-20daytime) or UN (May-July for
-          ! crops)
-! Accumulation period often to F,0,999 - not used for IAM (yet)
-
-!    type(O3cl), public, parameter, allocatable, dimension(:) :: &
-!     VEGO3_OUTPUTS
-!    type(O3cl), public, parameter, dimension(17) :: &
     character(len=TXTLEN_DERIV), public, parameter, dimension(20) :: &
      VEGO3_WANTED  =  (/ &
          "POD1_IAM_DF    ",&
@@ -309,20 +293,6 @@ private
     /) !NB -last not found. Could just be skipped, but kept
        !to show behaviour
 
-! For resistances and conductances we normally want the same landuse
-! outputs, so we use a combined variable:
-
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      RG_LABELS = (/ "Rs " /) ! , "Rns", "Gns" /)
-    integer, public, parameter, dimension(2) :: &
-      RG_SPECS = (/ NH3, SO2/)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      RG_LCS  = (/ "Grid" /) !, "CF  ", "SNL ", "GR  " /)
-!    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
-!      RG_LCS  = (/ "Grid", "CF", "SNL", "GR" , "TESTRG","TC"/)
-
-!    type(Deriv), public, & !Non-stomatal conductance
-!     dimension( size(RG_LABELS)*size( RG_SPECS)*size( RG_LCS) ),  save :: OutRG
 
 ! For met-data and canopy concs/fluxes ...
 
@@ -347,10 +317,6 @@ private
 !     dimension( size(MOSAIC_METCONCS)*size( MET_LCS) ),  save :: OutMET
 
 !----------------------
-! Less often needed:
-!exc  "D2T_HCHO  ","D2T_CH3CHO","D2_O3TC   ","D2_ACCSU  ",
-!"D2_FRNIT  ","D2_MAXOH  "
-
    !======= MY_DERIVED SYSTEM ======================================
 
   ! use character arrays to specify which outputs are wanted
@@ -381,12 +347,14 @@ private
  !=========================================================================
   subroutine Init_My_Deriv()
 
-    integer :: i, itot, nDD, nVg, nRG, nMET, nVEGO3, n1, n2,istat
+    integer :: i, itot, nDD, nMET, nVEGO3, n1, n2,istat, nMc
     character(len=TXTLEN_DERIV) :: txt
     character(len=TXTLEN_DERIV), &
-    dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) :: tmpname ! e.g. DDEP_SO2_m2Conif
+    dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) ::&
+            tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
-    character(len=TXTLEN_DERIV), dimension(size(SURF_CONC(:)%txt1)+size(D3_PPB)) ::&
+    character(len=TXTLEN_DERIV), &
+       dimension(size(SURF_CONC(:)%txt1)+size(D3_PPB)) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
 
@@ -419,16 +387,24 @@ private
              trim( SURF_CONC(i)%txt1 )
      call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
+   do i = 1, size( WDEP_CONCS )
+     txt = "WDEP_" // & !!LATER:trim ( WDEP_CONCS(i)%txt2 ) // "_" // &
+             trim( WDEP_CONCS(i)%txt1 )
+     call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end do
 
-     n=size(SURF_UG_GROUP)
-     tag_name(1:n) = "SURF_ug_"//SURF_UG_GROUP(:)
-     call AddArray( tag_name(1:n), wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "SURF_UG_GROUP too long" )
+   do i = 1, size( SURF_GROUP )
+     txt = "SURF_" // trim ( SURF_GROUP(i)%txt2 ) // "_" // &
+             trim( SURF_GROUP(i)%txt1 )
+     call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end do
+
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
         call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING, errmsg)
         call CheckStop( errmsg, errmsg // "D2_EXTRA too long" )
      end if
+
 
      ! Column data:
      n = 0
@@ -466,7 +442,8 @@ private
          call CheckStop(  n1>size(VEGO3_DEFS(:)%name) .or. n1<1 , &
                    "VEGO3 not found"//trim(VEGO3_WANTED(n)) )
          VEGO3_OUTPUTS(n) = VEGO3_DEFS(n1)
-       if(DEBUG .and. MasterProc)  print *, "VEGO3 NUMS ", n, n1, trim( VEGO3_WANTED(n) )
+       if(DEBUG .and. MasterProc)  print *, "VEGO3 NUMS ", n, n1,&
+            trim( VEGO3_WANTED(n) )
       end do
       call WriteArray(VEGO3_OUTPUTS(:)%name,nVEGO3," VEGO3 OUTPUTS")
       call Add_MosaicVEGO3(nVEGO3)
@@ -478,15 +455,12 @@ private
 
       !------------- Deposition velocities -----------------------------------
 
-      call Add_MosaicVG(VG_LABELS,VG_LCS,VG_SPECS,nVg)
-      nOutVg = nVg
+      call Add_NewMosaics(NewMosaic, nMc)
+!       if(DEBUG .and. MasterProc)  
+print *, "NEWMOSAIC   NUM ", nMc
+      !nOutMos = nMos
 
        if(DEBUG .and. MasterProc)  print *, "VEGO3 FINAL NUM ", nVEGO3
-
-      !-------------  R & G = Resistance & Conductances -----------------------
-
-      call Add_MosaicRG(RG_LABELS,RG_LCS,RG_SPECS,nRG)
-      nOutRG = nRG
 
       !------------- Met data for d_2d -------------------------
       ! We find the various combinations of met and ecosystem,
@@ -542,23 +516,28 @@ private
   subroutine My_DerivFunc( e_2d, class , density )
 
     ! We define here here any functions which cannot easily be defined
-    ! in the more general Derived_ml. For example, we need the
-    ! index for IXADV_O3 for AOTs, and this might not be available in the model
-    ! we are running (a PM2.5 model for example), so it is better to define
-    ! this function here.
+    ! in the more general Derived_ml. 
 
   real, dimension(:,:), intent(inout) :: e_2d  !  (i,j) 2-d extract of d_2d
   character(len=*), intent(in)    :: class       ! Class of data
   integer, save :: num_warnings = 0  ! crude counter for now
 
   real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-! density = 1 ( or = roa when unit ug)
+  ! density = 1 ( or = roa when unit ug)
 
   select case ( class )
 
-      case ( "OX", "NOX", "NOZ", "TOXN", "TRDN", "FRNIT", "tNO3 ", "SSalt" )
+    !      (not currently used)
 
-           call misc_xn( e_2d, class, density )
+    case ( "FRNIT" )
+      forall ( i=1:limax, j=1:ljmax )
+          e_2d( i,j ) = &
+             ( xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)  &
+            +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j)) &
+       /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))&
+            +  xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)    &
+            +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j))
+      end forall
 
       case  default
 
@@ -571,96 +550,4 @@ private
   end subroutine My_DerivFunc
  !=========================================================================
 
-  subroutine misc_xn( e_2d, class, density)
-    real, dimension(:,:), intent(inout) :: e_2d  ! i,j section of d_2d arrays
-    character(len=*)    :: class   ! Type of data
-    real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
-    integer :: itot, iadv, igrp
-! density = 1 ( or = roa when unit ug)
-
-
-    !/--  adds up sulphate, nitrate, or whatever is defined
-
-    select case ( class )
-
-    case ( "TOXN" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d( i,j ) = &
-              ( xn_adv(IXADV_HNO3,i,j,KMAX_MID) * cfac(IXADV_HNO3,i,j) &
-              + xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j) &
-              + xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j)) &
-              * density(i,j)
-      end forall
-
-
-! OX for O3 and NO2 trend studies
-
-    case ( "OX" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d( i,j ) = &
-                xn_adv(IXADV_O3,i,j,KMAX_MID)  * cfac(IXADV_O3,i,j)   &
-              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j)
-      end forall
-
-!    case ( "NOX" )
-!      forall ( i=1:limax, j=1:ljmax )
-!          e_2d( i,j ) = &
-!              ( xn_adv(IXADV_NO,i,j,KMAX_MID) &
-!              + xn_adv(IXADV_NO2,i,j,KMAX_MID) * cfac(IXADV_NO2,i,j) &
-!              ) * density(i,j)
-!      end forall
-
-    case ( "NOZ" )
-      e_2d( :,: ) = 0.0
-      do i=1,limax
-        do j=1,ljmax
-          do igrp = 1, size(OXN_GROUP)
-            itot = OXN_GROUP(igrp)
-            iadv = OXN_GROUP(igrp) - NSPEC_SHL
-            e_2d( i,j ) = e_2d( i,j ) + &
-              xn_adv(iadv,i,j,KMAX_MID) * &
-                cfac(iadv,i,j) * species(itot)%nitrogens
-          end do ! n
-          e_2d( i,j ) = e_2d( i,j ) * density(i,j)
-        end do ! j
-      end do ! i
-
-    case ( "TRDN" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d( i,j ) = &
-               ( xn_adv(IXADV_NH3,i,j,KMAX_MID) * cfac(IXADV_NH3,i,j)    &
-              +  xn_adv(IXADV_NH4_f,i,j,KMAX_MID) * cfac(IXADV_NH4_f,i,j))  &
-               * density(i,j)
-      end forall
-
-
-    case ( "FRNIT" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d( i,j ) = &
-             ( xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)  &
-            +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j)) &
-       /max(1E-80, (xn_adv(IXADV_HNO3,i,j,KMAX_MID) *  cfac(IXADV_HNO3,i,j))&
-            +  xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j)    &
-            +  xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j))
-      end forall
-
-    case ( "tNO3" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d(  i,j ) = &
-              ( xn_adv(IXADV_NO3_f,i,j,KMAX_MID) * cfac(IXADV_NO3_f,i,j) &
-              + xn_adv(IXADV_NO3_c,i,j,KMAX_MID) * cfac(IXADV_NO3_c,i,j) )&
-              * density(i,j)
-      end forall
-
-    case ( "SSalt" )
-      forall ( i=1:limax, j=1:ljmax )
-          e_2d( i,j ) = &
-              ( xn_adv(IXADV_SeaSalt_f,i,j,KMAX_MID) * cfac(IXADV_SeaSalt_f,i,j) &
-              + xn_adv(IXADV_SeaSalt_c,i,j,KMAX_MID) * cfac(IXADV_SeaSalt_c,i,j) )&
-              * density(i,j)
-      end forall
-
-    end select
-  end subroutine misc_xn
- !=========================================================================
 end module My_Derived_ml

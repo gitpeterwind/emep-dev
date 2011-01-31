@@ -35,7 +35,56 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
-xxxxxxxxxxxxxx rv3_7beta18  Anna, Jan Eiof, Svetlana & Alvaro   Jan 28 2010 xxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7beta19  Dave code simplification xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+My_Derived 
+
+ - 100 lines shorter :-)
+ - type_s4 now used to specify wanted Vg, Rs
+ - Add_NewMosaics replaces Add_MosaicVg, Add_MosaicRG
+ - WDEP_CONCS now specifies eg SO2, NH3 ... for WDEP outputs
+ - SURF_GROUPS now specifies OXN, .... etc.
+ - misc_xn subroutine - removed OX, NOX, NOZ, TRDN, tNO3, ssalt - all
+   such groupings are now handed using the GROUPS feature of GenChem
+ - last function, for FRNITR moved into MyDeriv_Func
+
+Derived 
+
+ - 50 lines shorter :-)
+ - WDEP_CONCS now specifies eg SO2, NH3 ... for WDEP outputs
+ - SURF_GROUPS now specifies OXN, .... etc.
+ - suboutine Units_Scale added to return scaling and unit txts
+ - density calculation movied outside of loop - only used as
+    appropriate now anyway
+ - so test for ppb in MAXADV and MAXSHL
+ - ADV, TADV lines removed
+ - OXNGROUP NOXGROUP etc. lines removed for 2d stuff. Shoud do same
+   for 3d soon....
+
+Mosaics_ml
+ - Add_NewMosaics replaces Add_MosaicVg, Add_MosaicRG
+   (will rename from "New" once process finished)
+
+
+OwnDataTypes
+ - Deriv - removed rho and atw
+
+rho, atw removed also in:
+
+Biogenics_ml
+EcoSystem_ml
+ForestFire_ml
+Nest_ml
+NetCDF_ml
+
+
+Some tidy-ups, small changes:
+
+ Aqueous_ml
+ LandDefs_ml
+ My_WetDep_ml
+
+xxxxxxxx rv3_7beta18  Anna, Jan Eiof, Svetlana & Alvaro Jan 28 2010 xxxxxxxxxx
 
 Update of hourly (netCDF) output routines
 
@@ -81,6 +130,7 @@ Unimod, Derived_ml:
   clean AMVB comments
 
 xxxxxxxxxxxxxx rv3_7beta17  Dave  Jan 26 2010 xxxxxxxxxxxxxxxxxxxxx
+               (not rtagged, but essentially same as beta18)
 
 Major re-write of AOT, POD, VEGO3_OUTPUTS and associated simplification
 of Derived system

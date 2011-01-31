@@ -319,4 +319,13 @@ contains
 
  !=========================================================================
 
+
+ ! Will move SOMO and maxo3 here.
+!current definitions:
+!SOMO35: daily max is found over 00:00 to 24:00. (not emepday)
+!SOMO35: accumulated over one year
+!D2_MAXO3 :  daily max is found over an EMEPDAY
+!D2_MAXO3 : accumulated into yearly_output from April to September
+
+
 end module AOTx_ml
