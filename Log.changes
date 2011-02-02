@@ -35,9 +35,18 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxx rv3_7beta20  Alvaro Feb 2 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Output_hourly:
+  - Bug fix introduced in rv3_7beta18.
+    All levels on BCV* output types (model level output)
+    where wrongly claculated as ADV* output types (surface level output).
+    All BCV* output types where affected.
+  - gFortran pedantic: Different CHARACTER lengths in array constructor
+
 xxxxxxxx rv3_7beta19  Dave code simplification xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-My_Derived 
+My_Derived
 
  - 100 lines shorter :-)
  - type_s4 now used to specify wanted Vg, Rs
@@ -48,7 +57,7 @@ My_Derived
    such groupings are now handed using the GROUPS feature of GenChem
  - last function, for FRNITR moved into MyDeriv_Func
 
-Derived 
+Derived
 
  - 50 lines shorter :-)
  - WDEP_CONCS now specifies eg SO2, NH3 ... for WDEP outputs
@@ -137,7 +146,7 @@ of Derived system
 
  *** needs new input files for DO3SE  *********
 
- - AOTnPOD_ml - replaces AOTx_ml. 
+ - AOTnPOD_ml - replaces AOTx_ml.
    This module now collects together much of the code for
    processing AOTs and fluxes (PODs). Includes O3cl type which
    defines allowed outputs. e.g.
@@ -149,25 +158,25 @@ of Derived system
 
  so that My_Derived  just needs to give the names wanted, e.g. POD1_IAM_DF
 
-   Accumulation period for calculation defined in this array, so 
+   Accumulation period for calculation defined in this array, so
    older (and inflexible!) WheatGrowingSeason removed.
 
  -  My_Derived_ml - see new O3cl types
 
- -  DO3SE_ml changed, also with extra input param: VPDcrit 
+ -  DO3SE_ml changed, also with extra input param: VPDcrit
 
   associated changes in
 
    Derived_ml  (Threshold removed from Deriv type, SOMO changed, ..)
                 accumlate_2dyear removed
-   
+
    Ecosystems_ml
    Makefile.SRCS - AOTnPOD_ml replaces AOTx_ml
    ModelConstants_ml  - removed need for STO_FLUXES
    MosaicOutputs
 
    StoFLux_ml
-      - use of VPDcrit 
+      - use of VPDcrit
 
  - Unimod - more timing calls added
 
@@ -195,7 +204,7 @@ xxxxxxxxxxxxxx rv3_7beta15  Dave, Jan 22 2010 xxxxxxxxxxxxxxxxxxxxx
 
 Clean-up code changes, single-year run.pl,  and 1 bug fix.....
 
- *** Bug-fix ***  in Volcanoes_ml - coordinates were wrong for 
+ *** Bug-fix ***  in Volcanoes_ml - coordinates were wrong for
         EMEP/EECCA cases
         Also, DEBUG_VOLC moved to ModelConstants_ml
 
@@ -209,9 +218,9 @@ Clean-up code changes, single-year run.pl,  and 1 bug fix.....
 
      type(typ_ss), public, parameter, dimension(26) :: &
            SURF_CONC = (/ typ_ss("SO2", "ugS"),&
-                          typ_ss("SO4", "ugS"),& 
-                          typ_ss("NO", "ugN"),& 
-                          typ_ss("O3", "ppb"),& 
+                          typ_ss("SO4", "ugS"),&
+                          typ_ss("NO", "ugN"),&
+                          typ_ss("O3", "ppb"),&
            .....
 
      Associated changes in:
@@ -225,8 +234,8 @@ Clean-up code changes, single-year run.pl,  and 1 bug fix.....
 
       Associated changes in:
 
-       DryDep_ml     
-       MassBudget_ml 
+       DryDep_ml
+       MassBudget_ml
        ModelConstants_ml  - now has USE_STO_FLUXES
        Sto_Fluxes_ml
 
@@ -257,18 +266,18 @@ Makefile_titan: homogenize with Makefile_stallo
     In titan this is done by the following command line:
       module load intel/11.1u8 openmpi/1.4.3.intel
 
-xxxxxxxxxxxxxx rv3_7beta13  Peter        Dec 21 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7beta13  Peter        Dec 21 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-the -recursive option seems to be useful for the compiler. If omitted it may give this 
+the -recursive option seems to be useful for the compiler. If omitted it may give this
 kind of error messsages for large grids:
    Ammonium_ml.f90:(.text+0x3b): relocation truncated to fit: R_X86_64_32S against symbol `set...
 
 Remodified Makefile and Makefile_stallo
 
-xxxxxxxxxxxxxx rv3_7beta12  Peter        Dec 15 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7beta12  Peter        Dec 15 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Generate 3D precipitation if it is missing. Use 2D precipitations and 3D cloudwater. 
+Generate 3D precipitation if it is missing. Use 2D precipitations and 3D cloudwater.
 If Cloudwater is missing use relative humidity (derived from specific humidity) instead.
 Units are assumed as in EECCA/metdata_EC, i.e. m/s for surface precipitation and kg/kg for cloudwater
 
@@ -278,7 +287,7 @@ ToDo: consider replacing lwc (computed from cc3d) with cw (read from metdata)
 
 Modified: Met_ml, MetFields_ml, ModelConstants_ml, Makefile, Makefile_stallo (, run.pl)
 
-xxxxxxxxxxxxxx rv3_7beta11 Semeena, Peter        Dec 2 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7beta11 Semeena, Peter        Dec 2 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Convection routine moved in own file (no change in results)
 Modified:
@@ -287,7 +296,7 @@ Makefile.SRCS
 Advection_ml
 (GridValues_ml: just a comment modified)
 
-xxxxxxxxxxxxxx rv3_7beta10 Dave        Nov 29 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7beta10 Dave        Nov 29 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug fixes for SoilNO  (no effect unless USE_SOILNO = .true.)
 
@@ -295,14 +304,14 @@ Emissions_ml
 Setup_1d_ml
 
 
-xxxxxxxxxxxxxx rv3_7beta9  Dave        Nov 27 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7beta9  Dave        Nov 27 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Fixed run.pl
     Dust switched off for "EMEP" grid since we don't have the data file
     yet. (Solution will be to netcdf the files, not to have one in each
     LOCAL_DATA dir.)
 
-Added pm25 and pmco files to ZCM_EmChem09/EMISSPLIT 
+Added pm25 and pmco files to ZCM_EmChem09/EMISSPLIT
 
 (Not updated in Eucaari directory yet. Need to decide how much detail
 with which to split pm25.)
@@ -321,7 +330,7 @@ Dust changes
    GlobalBCs_ml - DO_SAHARA from ModelConstants
 
 
-xxxxxxxxxxxxxx rv3_7beta8  Dave+Peter  Nov 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7beta8  Dave+Peter  Nov 23 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 New group system started --- not finished!
 
@@ -372,7 +381,7 @@ Also
         if(imax==1)imax=dims(1)!covered entire circle
 
 
-xxxxxxxxxxxxxx rv3_7eucaari xxxxx Many authors !! 21 Nov 2010 xxxxxxxxxxxxxxxx 
+xxxxxxxxxxxxxx rv3_7eucaari xxxxx Many authors !! 21 Nov 2010 xxxxxxxxxxxxxxxx
 
    *New directory*
 
@@ -400,7 +409,7 @@ xxxxxxxxxxxxxx rv3_7eucaari xxxxx Many authors !! 21 Nov 2010 xxxxxxxxxxxxxxxx
   My_Derived_ml - Idirect, Idiffuse, T2m options added
                 - outputs reduced for EUCAARI runs. (still v. many)
 
-  run.pl - various EUCAARI options. 
+  run.pl - various EUCAARI options.
 
   ModelConstants_ml - added HIRHAM and DRYRUN flag
                     - switched on deep soil water :-)
@@ -414,7 +423,7 @@ xxxxxxxxxxxxxx rv3_7eucaari xxxxx Many authors !! 21 Nov 2010 xxxxxxxxxxxxxxxx
     xxxxxxxxxxxxxx .... SoilNOx  (Peter 11/11-2010)xxxxxxxxxxxxxxxx
    set USE_SOIL_NOX=.true. in ModelConstants_ml to get soil nox
 
-Corrected a bug in ReadField_CDF (a few values were set to undef/0 when latitude start from north poles in the datafile.) 
+Corrected a bug in ReadField_CDF (a few values were set to undef/0 when latitude start from north poles in the datafile.)
 Changed test for ps3d in Advection_ml, to avoid unnecessary warnings.
 
 Changes in:
@@ -427,19 +436,19 @@ run.pl
 
    xxxxxxxxxxxxxx .... with VolcanoesLL (Peter 1/11-2010)xxxxxxxxxxxxxxxx
     Included a lon lat description for Volcanoes:
-    /global/work/mifapw/emep/Data/VolcanoesLL.dat 
+    /global/work/mifapw/emep/Data/VolcanoesLL.dat
     NB:emission values and positions should be updated
-    
+
     It is used if  VOLCANOES_LL  = .true. in EmisDef
     Then the volcanoes from gridSOX and Vocanos.dat are not used!
-    
+
     NB: femis.dat reductions will not work anymore on country=28 (volcanoes)
-    
+
     The conversion to grid coordinates should be automatic.
-    
+
     Changes in:
     Volcanos_ml, Emissions_ml, emisGet_ml, EmisDef_ml, Setup1d_ml, run.pl
-    
+
     Note that Volcanoes_found is a local variable (different value on different processors)
     There are still some back and forth i,j conversion which should be removed once.
 
@@ -447,7 +456,7 @@ run.pl
 
 xxxxxxxxxxxxxx rv3_7beta7b Robert Oct 30 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Minor update in vbs-SOA scheme. Adding EC aging. 
+Minor update in vbs-SOA scheme. Adding EC aging.
 
 xxxxxxxxxxxxxx rv3_7beta7 Svetlana (+minor updates by Robert) Oct 29 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -571,7 +580,7 @@ Small changes:
 
   Derived_ml   POD, AOT added in case statement
 
-  My_Derived_ml SOMO0 added 
+  My_Derived_ml SOMO0 added
 
   CoDep - small format change
 
@@ -611,13 +620,13 @@ simplification are encouraged ;-)
 Two new modules:
 
     DerivedFields_ml - stores f_2d, d_2d here (avoided circularity problems)
-    MosaicsOutputs_ml 
+    MosaicsOutputs_ml
 
       Much moved to MosaicOutputs_ml
       Much removed and replaced by use of Grid% Sub(iL)%
       (ie much cleaner I hope!)
 
-Changes in AOT, Fst calculations. 
+Changes in AOT, Fst calculations.
 
 AOTx_ml  - simpler because of new o3cl types
 

@@ -181,8 +181,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
     hr_out_type=hr_out(ih)%type
     hr_out_nk=hr_out(ih)%nk
-    if(any(hr_out_type==(/"ADVppbv","ADVugXX","ADVugXXgroup",&
-             "COLUMN" ,"COLUMNgroup"/)))hr_out_nk=1
+    if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
+                          "COLUMN      ","COLUMNgroup "/)))hr_out_nk=1
 
     KVLOOP: do k = 1,hr_out_nk
 
@@ -194,20 +194,21 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           "DEBUG OH", me, ispec, trim(name),&
           "INTO HOUR TYPE", trim(hr_out(ih)%type)
 
-      if(any(hr_out_type==(/"COLUMN" ,"COLUMNgroup"/)))then
+      if(any(hr_out_type==(/"COLUMN     " ,"COLUMNgroup"/)))then
         ik=KMAX_MID-hr_out(ih)%nk+1  ! top of the column
         if(ik>=KMAX_MID)ik=1         ! 1-level column does not make sense
       else
         ik=KMAX_MID-k+1              ! all levels from model bottom are outputed,
         if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
           ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
+          hr_out_type=hr_out(ih)%type
           if(ik==0)then
             ik=KMAX_MID              ! surface/lowermost level
-            if(any(hr_out_type==(/"BCVppbv","BCVugXX","BCVugXXgroup"/)))&
+            if(any(hr_out_type==(/"BCVppbv     ","BCVugXX     ","BCVugXXgroup"/)))&
               hr_out_type(1:3)="ADV" ! ensure surface output
           else
             ik=KMAX_MID-ik+1         ! model level to be outputed
-            if(any(hr_out_type==(/"ADVppbv","ADVugXX","ADVugXXgroup"/)))&
+            if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup"/)))&
               ik=KMAX_MID            ! all ADV* types represent surface output
           endif
         endif
