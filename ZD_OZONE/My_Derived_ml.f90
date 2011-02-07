@@ -71,6 +71,7 @@ use ModelConstants_ml, only : ATWAIR  &
                         , MasterProc  &
                         , SOURCE_RECEPTOR  &
                         , DEBUG => DEBUG_MY_DERIVED &
+                        , M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
                         , KMAX_MID & ! =>  z dimension
                         , PPBINV  &  !   1.0e9
                         , MFAC       ! converts roa (kg/m3 to M, molec/cm3)
@@ -82,7 +83,7 @@ use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
 use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, &
-           typ_ss, typ_s4
+           TXTLEN_SHORT, typ_ss, typ_s4, typ_s5i
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -124,37 +125,61 @@ private
 
 
 !Mass-outputs of advected species, will be added to Derived
-   type(typ_ss), public, parameter, dimension(26) :: &
-         SURF_CONC = (/ typ_ss("SO2", "ugS"),&
-                        typ_ss("SO4", "ugS"),& 
-                        typ_ss("NO", "ugN"),& 
-                        typ_ss("NO2", "ugN"),& 
-                        typ_ss("NH3", "ugN"),& 
-                        typ_ss("HNO3", "ugN"),& 
-                        typ_ss("HONO", "ugN"),& 
-                        typ_ss("PAN",  "ugN"),& 
-             ! Remember, species have upper case, so not _f !
-                        typ_ss("NO3_F",  "ugN"),&  
-                        typ_ss("NO3_C",  "ugN"),& 
-                        typ_ss("NH4_F",  "ugN"),& 
-                      ! ug/m3
-                        typ_ss("SO4", "ug"),& 
-                        typ_ss("NO3_F",  "ug"),& 
-                        typ_ss("NO3_C",  "ug"),& 
-                        typ_ss("NH4_F",  "ug"),& 
-                        typ_ss("SEASALT_F",  "ug"),& 
-                        typ_ss("SEASALT_C",  "ug"),& 
-                        typ_ss("DUST_NAT_F",  "ug"),& 
-                        typ_ss("DUST_NAT_C",  "ug"),& 
-                      ! ppb
-                        typ_ss("O3 ", "ppb"),& 
-                        typ_ss("NO ", "ppb"),& 
-                        typ_ss("NO2", "ppb"),& 
-                        typ_ss("HCHO", "ppb"),& 
-                        typ_ss("C5H8", "ppb"),& 
-                        typ_ss("HCHO",  "ugC"),& 
-                      ! ugC/m3
-                        typ_ss("PPM25_FIRE",  "ugC") /)
+! time-res: M -> monthly, D-> daily....
+
+  ! some shorthands for this table
+   character(len=TXTLEN_SHORT), private, parameter ::&
+        D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
+
+   type(typ_s5i), public, parameter, dimension(36) :: &
+      OutputConcs = (/  &
+         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D),&
+         typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+       ! Remember, species have upper case, so not _f !
+         typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D),&  
+         typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+       ! ug/m3
+         typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+       ! ppb
+         typ_s5i("O3        ", "ppb", D3,"AIR_CONCS", SPEC, D),&  !#20 test 3d
+         typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D),& ! also have ugN
+         typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D),& ! also have ugN 
+         typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("HCHO      ", "ugC", D2,"AIR_CONCS", SPEC, D),& !#25
+       ! ugC/m3
+! GenChem produces a number of groups of species.
+! Here we say which ones we want for different units
+! ****** UPPER CASE ONLY ************
+! Sorry, this is a limitation that GenChem converts all names to
+! uppercase:
+         typ_s5i("OXN       ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("NOX       ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("PM25      ",  "ug ", D3,"AIR_CONCS", GROUP, D),& !3D
+         typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
+         typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
+         typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) /)
+!     ,typ_ss( "PM25ANTHR","ug") &
+!     ,typ_ss( "PM10ANTHR","ug") &
 
 ! Tropospheric columns
    integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = &
@@ -170,27 +195,7 @@ private
       ,"PSURF         " &  ! Surface  pressure (for cross section):
   /)
 
-! GenChem produces a number of groups of species.
-! Here we say which ones we want for different units
-! ****** UPPER CASE ONLY ************
-! Sorry, this is a limitation that GenChem converts all names to
-! uppercase:
 
-   type(typ_ss), public, parameter, dimension(13) :: &
-     SURF_GROUP = (/ &
-      typ_ss( "OXN      ","ugN") &
-     ,typ_ss( "NOX      ","ugN") &
-     ,typ_ss( "RDN      ","ugN") &
-     ,typ_ss( "TNO3     ","ugN") &
-     ,typ_ss( "SIA      ","ug") &
-     ,typ_ss( "PM25     ","ug") &
-     ,typ_ss( "PM10     ","ug") &
-     ,typ_ss( "TNO3     ","ug") &
-     ,typ_ss( "PM25ANTHR","ug") &
-     ,typ_ss( "PM10ANTHR","ug") &
-     ,typ_ss( "PMCO     ","ug") &  ! Omitted parNO3, have TNO3 = pNO3_f+pNO3_c
-     ,typ_ss( "SS       ","ug") &
-     ,typ_ss( "DUST     ","ug") /)  ! , "SURF_ugC_EC"
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
   COL_ADD = (/ "AOD" /)
@@ -321,24 +326,24 @@ private
 
   ! use character arrays to specify which outputs are wanted
 
-   character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
-       WDEP_WANTED = (/ "WDEP_PREC", "WDEP_SOX ", "WDEP_OXN ", &
-                      "WDEP_RDN " /)   ! WDEP_PM not used
+   character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+       WDEP_WANTED = (/ "WDEP_PREC ", "WDEP_SOX  ", "WDEP_OXN  ", &
+                        "WDEP_SSALT", "WDEP_RDN  " /)   ! WDEP_PM not used
 
 
     ! For some reason having this as a parameter caused problems for
     ! PC-gfortran runs.
 
     !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, NO3_f, NO3_c /)
-    integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
-    integer, public, save, dimension(4:1) ::   D3_UG  ! = (/ O3 /)
+    !TAGTEST integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
+    !ds Feb integer, public, save, dimension(1:1) ::   D3_PPB  = (/ O3 /)
+    !ds Feb integer, public, save, dimension(4:1) ::   D3_UG  ! = (/ O3 /)
 
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
 !     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-     character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
-       D3_OTHER  = (/ "D3_PM25water", &
-                      "D3_ug_PM25  "/) !**** Under construction *******
-     != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
+     character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
+       D3_OTHER  = (/ "D3_PM25water" /) !**** Under construction *******
+     != (/ "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
@@ -354,9 +359,10 @@ private
             tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
     character(len=TXTLEN_DERIV), &
-       dimension(size(SURF_CONC(:)%txt1)+size(D3_PPB)) ::&
+       dimension(size( OutputConcs(:)%txt1 ) ) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
+    character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp
 
     call Init_MosaicMMC(MOSAIC_METCONCS)  ! sets MMC_USTAR etc.
 
@@ -381,21 +387,9 @@ private
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
 
-! generalised outputs:    txt1 is name, txt2 is unit
-   do i = 1, size( SURF_CONC )
-     txt = "SURF_" // trim ( SURF_CONC(i)%txt2 ) // "_" // &
-             trim( SURF_CONC(i)%txt1 )
-     call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
-   end do
    do i = 1, size( WDEP_CONCS )
      txt = "WDEP_" // & !!LATER:trim ( WDEP_CONCS(i)%txt2 ) // "_" // &
              trim( WDEP_CONCS(i)%txt1 )
-     call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
-   end do
-
-   do i = 1, size( SURF_GROUP )
-     txt = "SURF_" // trim ( SURF_GROUP(i)%txt2 ) // "_" // &
-             trim( SURF_GROUP(i)%txt1 )
      call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
 
@@ -456,8 +450,7 @@ private
       !------------- Deposition velocities -----------------------------------
 
       call Add_NewMosaics(NewMosaic, nMc)
-!       if(DEBUG .and. MasterProc)  
-print *, "NEWMOSAIC   NUM ", nMc
+       if(DEBUG .and. MasterProc)  write(*, *) "NEWMOSAIC   NUM ", nMc
       !nOutMos = nMos
 
        if(DEBUG .and. MasterProc)  print *, "VEGO3 FINAL NUM ", nVEGO3
@@ -481,15 +474,45 @@ print *, "NEWMOSAIC   NUM ", nMc
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
+   ! Add the pollutants wanted from OutputConcs:
+   !type(typ_s5i), public, parameter, dimension(27) :: &
+   !   OutputConcs = (/  typ_s5i("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
+   !                     typ_s5i("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),& 
+
+      do n = 1, size( OutputConcs(:)%txt1 )
+
+         outname= trim(OutputConcs(n)%txt1)
+         outunit= trim(OutputConcs(n)%txt2)
+         outdim = trim(OutputConcs(n)%txt3)
+         outtyp = trim(OutputConcs(n)%txt4)
+
+         if( outdim == "3d" ) txt = "D3"  ! Will simplify later
+         if( outdim == "2d" ) txt = "SURF"  ! Will simplify later
+
+         if( outtyp == "AIR_CONCS" ) then 
+              tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
+              call AddArray(  tag_name(1:1) , wanted_deriv2d, &
+                     NOT_SET_STRING, errmsg)
+              call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
+              if(MasterProc) write(*,*) "Xd-2d-DONE ", n, trim(outname)
+
+              if( outdim == "3d" ) then
+                  tag_name(1) = "D3_" // trim(outunit) // "_" //  trim(outname)
+                  call AddArray(  tag_name(1:1) , wanted_deriv3d, &
+                     NOT_SET_STRING, errmsg)
+                  call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
+                  if(MasterProc) write(*,*) "Xd-3d-DONE ", n, trim(tag_name(1))
+              end if
+         else
+            call StopAll("Not coded yet")
+         end if
+
+      end do
+
    ! ditto wanted_deriv3d....
 
      if ( .not. SOURCE_RECEPTOR ) then
-       if ( size(D3_PPB) > 0 ) then
-         tag_name(1:size(D3_PPB)) = "D3_ppb_" // species(D3_PPB)%name
-         call AddArray(  tag_name(1:size(D3_PPB)) , wanted_deriv3d, &
-            NOT_SET_STRING, errmsg)
-         call CheckStop( errmsg, errmsg // "D3_ppb too long" )
-       end if
+
        if ( size(D3_OTHER) > 0 ) then
          call AddArray( D3_OTHER,  wanted_deriv3d, NOT_SET_STRING, errmsg)
          call CheckStop( errmsg, errmsg // "Wanted D3 too long" )

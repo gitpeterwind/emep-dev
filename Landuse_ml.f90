@@ -37,11 +37,11 @@ use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP
 use KeyValue_ml,    only: KeyVal,KeyValue, LENKEYVAL
 use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, STUBBLE, Growing_Season,&
                           NLanduse_DEF,NLANDUSE_EMEP
-use LandPFT_ml,     only: PFTS_USED, MapPFT_LAI, pft_lai
+use LandPFT_ml,     only: MapPFT_LAI, pft_lai
 use MetFields_ml,       only :nwp_sea ,foundnwp_sea
 use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSEMAX, &
+                          USE_PFT_MAPS, DEBUG_LANDPFTS, &
                           DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
-                          DEBUG_LANDPFTS, &
                           DomainName, MasterProc
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
@@ -338,7 +338,7 @@ contains
    !Landcover data can be set either from simplified LPJ
    !PFTs, or from the "older" DO3SE inputs file
 
-     if ( PFTS_USED ) then !- Check for LPJ-derived data ----------------------
+     if ( USE_PFT_MAPS ) then !- Check for LPJ-derived data ----------------------
          if ( current_date%month /= old_month ) then 
            call MapPFT_LAI( current_date%month )
          end if
@@ -374,7 +374,7 @@ contains
                 ,LandCover(i,j)%SGS(ilu), LandCover(i,j)%EGS(ilu)&
                 ,debug_flag )
 
-          if ( DEBUG_LANDPFTS .and. debug_flag.and. PFTS_USED ) then
+          if ( DEBUG_LANDPFTS .and. debug_flag.and. USE_PFT_MAPS ) then
                  if ( pft > 0.0 ) then
                    write(*,"(2a,i4,i6,2f8.3)") "LANDUSE PFTS COMP? ", &
                       LandDefs(lu)%name, daynumber, pft,&

@@ -52,10 +52,9 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : &
       COLUMN_MOLEC_CM2, &
       COLUMN_LEVELS   , &
-      SURF_CONC,  &  !ds added Jan 2011
+      OutputConcs,  &  !ds added Feb 2011
       WDEP_CONCS, &  !ds added Jan 2011
-      SURF_GROUP, &  !ds added Jan 2011
-      D3_PPB,D3_OTHER, D3_UG ! hb new 3D output
+      D3_OTHER
 
 use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat
@@ -295,7 +294,7 @@ private
     subroutine Define_Derived()
 
    ! Set the parameters for the derived parameters, including the codes
-   ! used by DNMI/xfelt and scaling factors. (The scaling factors may
+   ! used by MET.NO/xfelt and scaling factors. (The scaling factors may
    ! be changed later in Derived_ml.
    ! And, Initialise the fields to zero.
 
@@ -303,15 +302,17 @@ private
     real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
     real, save    :: ugCm3 = 12*PPBINV/ATWAIR
     real, save    :: ugXm3 = PPBINV/ATWAIR   ! will be multiplied by molwwt(X)
-    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
+!ds    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
     real ::   unitscale
     logical :: volunit   ! set true for volume units, e.g. ppb
+    logical :: outmm, outdd, outhh   ! sets time-intervals
 
-    character(len=30) :: dname, txt, txt2
+    character(len=30) :: dname, txt, txt2, class
     character(len=10) :: unittxt
     character(len=3) :: subclass
+    character(len=TXTLEN_SHORT) ::  outname, outunit, outtyp, outdim
 
-   integer :: ind, iadv, itot, idebug, n, n2, iLC, igrp
+   integer :: ind, iadv, itot, idebug, n, n2, iLC, igrp, iout
 
   ! - And to check if a wanted field has been previously defined.
         integer, dimension(MAXDEF_DERIV2D) :: found_ind2d = 0
@@ -336,6 +337,8 @@ call AddNewDeriv( "WDEP_SOX ","WDEP ","-","-", "mgS/m2", &
 call AddNewDeriv( "WDEP_OXN ","WDEP ","-","-", "mgN/m2",  &
                 -1, -99,-99,   F,    1.0e6,   F,    F ,T ,T ,T )
 call AddNewDeriv( "WDEP_RDN ","WDEP ","-","-", "mgN/m2",  &
+                -1, -99,-99,   F,    1.0e6,   F,    F ,T ,T ,T )
+call AddNewDeriv( "WDEP_SSALT ","WDEP ","-","-", "mgN/m2",  &
                 -1, -99,-99,   F,    1.0e6,   F,    F ,T ,T ,T )
 
 ! Compound-specific depositions:
@@ -414,26 +417,102 @@ call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
                -99,  -99,-99, F, 1.0,  T,  F, T, T, T )
 
 
-do ind = 1, size( SURF_CONC(:)%txt1 )
-  itot = find_index( trim(SURF_CONC(ind)%txt1) , species(:)%name ) 
-  iadv = itot - NSPEC_SHL
-  dname = "SURF_" // trim(SURF_CONC( ind )%txt2) // "_" &
-         // trim(SURF_CONC( ind )%txt1)
-  call CheckStop(itot<0, "SURF_CONC Species not found " // trim(dname) )
+!do ind = 1, size( SURF_CONC(:)%txt1 )
+!  itot = find_index( trim(SURF_CONC(ind)%txt1) , species(:)%name ) 
+!  iadv = itot - NSPEC_SHL
+!  dname = "SURF_" // trim(SURF_CONC( ind )%txt2) // "_" &
+!         // trim(SURF_CONC( ind )%txt1)
+!  call CheckStop(itot<0, "SURF_CONC Species not found " // trim(dname) )
+!
+!  txt = "SURF_UG"
+!  call Units_Scale(SURF_CONC( ind )%txt2, itot,  unitscale, txt2, volunit )
+!  if (  volunit ) txt = "SURF_PPB" 
+!!  call AddNewDeriv( dname, txt, txt2, "-", trim(SURF_CONC( ind )%txt2) , &
+!!              iadv , -99, -99,  F,   unitscale,     T,  F, T, T, T )
+!end do
 
-  txt = "SURF_UG"
-  call Units_Scale(SURF_CONC( ind )%txt2, itot,  unitscale, txt2, volunit )
-  if (  volunit ) txt = "SURF_PPB" 
-  call AddNewDeriv( dname, txt, txt2, "-", trim(SURF_CONC( ind )%txt2) , &
-              iadv , -99, -99,  F,   unitscale,     T,  F, T, T, T )
-end do
+
+
+! OutputConcs can contain both 2d and 3d specs. We automatically
+! set 2d if 3d wanted
+
+do ind = 1, size( OutputConcs(:)%txt1 )
+
+   outname = trim( OutputConcs(ind)%txt1 )
+   outunit= trim( OutputConcs(ind)%txt2 )   ! eg ugN, which gives unitstxt ugN/m3
+   outdim = trim( OutputConcs(ind)%txt3 )   ! 2d or 3d
+   outtyp = trim( OutputConcs(ind)%txt5 )   ! SPEC or GROUP
+   txt2   = "-" ! not needed?
+
+   if ( outtyp == "SPEC" ) then ! Simple species
+
+     itot = find_index( trim( outname ) , species(:)%name ) 
+     iout = itot - NSPEC_SHL   ! set to iadv
+
+     call CheckStop(itot<0, "OutputConcs Species not found " // trim(dname) )
+     txt = "SURF_UG"
+
+   else if ( outtyp == "GROUP" ) then ! Simple species
+
+    igrp = find_index( trim( outname ), GROUP_ARRAY(:)%name )
+
+    txt = "SURF_UG_GROUP"   ! ppb not implementde yet
+    itot = -1
+    iout = igrp
+   else
+
+     call StopAll("OutputConcs Error " // trim( outtyp ) )
+   end if
+
+   call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
+
+   class = "SURF_MASS_" // trim(outtyp)
+   if (  volunit .and. itot > 0 ) class = "SURF_PPB_" // trim(outtyp)
+   if (  volunit .and. itot < 1 ) call StopAll(&
+           "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
+                                                
+   dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
+
+    ! Set time.resolution, cf
+    !  IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_MEAN=6
+    !  Assume always yearly, always average
+   outhh  = F
+   outdd  = F
+   outmm  = F
+   if( OutputConcs(ind)%ind >= IOU_HOUR ) outhh = T ! not yet used...
+   if( OutputConcs(ind)%ind >= IOU_DAY  ) outdd = T
+   if( OutputConcs(ind)%ind >= IOU_MON  ) outmm = T
+
+   if( MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") "ADD   ", ind, iout, &
+     trim(dname),";", trim(class), outmm, outdd, OutputConcs(ind)%ind,unitscale
+
+   call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
+   !                                               avg  inst yy mm      dd
+             iout  , -99, -99,  F,   unitscale,     T,  F, T, outmm, outdd )
+
+  if ( outdim == "3d" ) then
+
+     class = "3D_MASS_" // trim(outtyp)
+     if (  volunit .and. itot > 0 ) class = "3D_PPB_" // trim(outtyp)
+
+     dname = "D3_" // trim( outunit ) // "_" // trim( outname )
+
+     if( MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") "ADD-3D ", ind, iout, &
+      trim(dname),";", trim(class), outmm, outdd, OutputConcs(ind)%ind,unitscale
+
+     call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
+   !                                               avg inst yy mm      dd
+             iout  , -99, -99,  F,   unitscale,     T,   F, T, outmm, outdd,&
+             Is3D=.true. )
+
+  end if ! 3d
+end do ! OutputConcs
 
 
 do ind = 1, size( WDEP_CONCS(:)%txt1 )
   itot = find_index( trim(WDEP_CONCS(ind)%txt1) , species(:)%name ) 
   iadv = itot - NSPEC_SHL
-  !dname = "WDEP_" // trim(WDEP_CONCS( ind )%txt2) // "_" &
-  !       // trim(WDEP_CONCS( ind )%txt1)
+
   ! Without units for now:
   dname = "WDEP_" // trim(WDEP_CONCS( ind )%txt1)
   call CheckStop(itot<0, "WDEP_CONCS Species not found " // trim(dname) )
@@ -441,27 +520,11 @@ do ind = 1, size( WDEP_CONCS(:)%txt1 )
   call Units_Scale(WDEP_CONCS( ind )%txt2, itot,  unitscale, unittxt, volunit)
   call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
               iadv , -99, -99,  F,   unitscale,     F,  F, T, T, T)
-if(MasterProc) write(*,*) "WETTING ", trim(dname), " ",  trim(unittxt)
+  if(MasterProc) write(*,*) "WETTING ", trim(dname), " ",  trim(unittxt)
 end do
 !JAN29call AddNewDeriv( "WDEP_SO2 ","WDEP ","-","-", "mgS/m2", &
 !JAN29         IXADV_SO2, -99,-99,   F,    1.0e6,   F,   F , F ,T ,T ,T )
 
-
-! Search for GROUP_ARRAY in code
-do ind = 1, size(SURF_GROUP)
-  igrp = find_index( trim( SURF_GROUP(ind)%txt1 ), GROUP_ARRAY(:)%name )
-  dname = "SURF_" // trim(SURF_GROUP( ind )%txt2) // "_" &
-         // trim(SURF_GROUP( ind )%txt1)
-  call Units_Scale(SURF_GROUP( ind )%txt2, -1,  unitscale, unittxt, volunit)
-  if( DEBUG .and.  MasterProc ) then
-    write(*,"(a,i3,a,i3,a,es10.2)") "ADDING GROUPY ", ind, &
-         trim(SURF_GROUP(ind)%txt1), igrp, trim(dname), unitscale
-  end if
-             !Deriv(name, class,    subc,  txt,           unit
-  !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
-  call AddNewDeriv( dname, "SURF_GROUP", "MASS", "-", unittxt, &
-         igrp , -99, -99, F, unitscale, T,  F, T, T, T ) !?? atw?
-end do
 
 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
          -1 , -99, -99, F, PPBINV,  T,  F, T, T, T ) !?? atw?
@@ -515,56 +578,38 @@ call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
 
 Is3D = .true.
 
-do ind = 1, size(D3_PPB)
-  itot = D3_PPB(ind)
-  iadv = itot - NSPEC_SHL
-  dname = "D3_ppb_" //species( itot )%name
-   !Deriv(name, class,    subc,  txt,           unit
-   !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw, Is3D
-  call AddNewDeriv( dname, "D3_PPB", "-", "-", "ppb", &
-         iadv , -99, -99, F,  PPBINV,   T,  F, T, T, T,Is3D ) !?? atw?
-end do
-
-do ind = 1, size(D3_UG)
-  itot = D3_UG(ind)
-  iadv = itot - NSPEC_SHL
-  dname = "D3_ug_" //species( itot )%name
-   !Deriv(name, class,    subc,  txt,           unit
-   !Deriv index, f2d,LC, scale, avg? rho Inst Yr Mn Day atw, Is3D
-  call AddNewDeriv( dname, "D3_UG", "MASS", "-", "ug/m3", &
-         iadv , -99, -99, F, ugXm3*species(itot)%molwt,  T,  F, T, T, T,Is3D ) !?? atw?
-end do
-
-
 do ind = 1, size(D3_OTHER)
   select case ( trim(D3_OTHER(ind)) )
-  case ("D3_ug_PM25")
-  call AddNewDeriv("D3_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
-         -99, -99,-99, F, ugPM,  T,  F, T, T, T, Is3D ) !?? atw?
-  case ("D3_ug_PMc")
-  call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
-         -99, -99,-99, F, ugPM,  T,  F, T, T, T, Is3D ) !?? atw?
-  case("D3_ug_PM25anthr")
-  call AddNewDeriv("D3_ug_PM25anthr", "PM25aGROUP", "MASS", "-", "ug/m3", &
-         -99, -99,-99, F, ugPM,  T,  F, T, T, T, Is3D ) !?? atw?
-  case("D3_ugC_ECf")
-  call AddNewDeriv("D3_ugC_ECf", "ECfGROUP", "MASS", "-", "ug/m3", &
-         -99 , -99,-99, F, ugPM,   T,  F, T, T, T, Is3D ) !?? atw?
-  case("D3_SS")
-  call AddNewDeriv("D3_SS", "SSGROUP", "MASS", "-", "ug/m3", &
-         -99 , -99,-99, F, ugPM,   T,  F, T, T, T, Is3D ) !?? atw?
-  case("D3_DUST")
-  call AddNewDeriv("D3_DUST", "DUSTGROUP", "MASS", "-", "ug/m3", &
-         -99 , -99,-99, F, ugPM,   T,  F, T, T, T, Is3D ) !?? atw?
+
+! Feb 6 2011. All the following groups are now accessed in the 3D_UG_GROUP
+! code: 
+!  case ("D3_ug_PM25")
+!  call AddNewDeriv("D3_ug_PM25", "PM25GROUP", "MASS", "-", "ug/m3", &
+!         -99, -99,-99, F, ugPM,  T,  F, T, T, T, Is3D ) !?? atw?
+!  case ("D3_ug_PMc")
+!  call AddNewDeriv("D3_ug_PMc ", "PMcGROUP" , "MASS", "-", "ug/m3", &
+!         -99, -99,-99, F, ugPM,  T,  F, T, T, T, Is3D ) !?? atw?
+!  case("D3_ug_PM25anthr")
+!  call AddNewDeriv("D3_ug_PM25anthr", "PM25aGROUP", "MASS", "-", "ug/m3", &
+!         -99, -99,-99, F, ugPM,  T,  F, T, T, T, Is3D ) !?? atw?
+!  case("D3_ugC_ECf")
+!  call AddNewDeriv("D3_ugC_ECf", "ECfGROUP", "MASS", "-", "ug/m3", &
+!        -99 , -99,-99, F, ugPM,   T,  F, T, T, T, Is3D ) !?? atw?
+!  case("D3_SS")
+!  call AddNewDeriv("D3_SS", "SSGROUP", "MASS", "-", "ug/m3", &
+!         -99 , -99,-99, F, ugPM,   T,  F, T, T, T, Is3D ) !?? atw?
+!  case("D3_DUST")
+!  call AddNewDeriv("D3_DUST", "DUSTGROUP", "MASS", "-", "ug/m3", &
+!         -99 , -99,-99, F, ugPM,   T,  F, T, T, T, Is3D ) !?? atw?
   case ("D3_PM25water")
   call AddNewDeriv("D3_PM25water", "PM25water3d", "-", "-", "-", &
          -99, -99,-99, F, 1.0,   T,  F, T, T, T, Is3D ) !
-  case("D3_ASOA")
-  call AddNewDeriv("D3_ASOA", "ASOAGROUP", "MASS", "-", "ug/m3", &
-         -99 , -99,-99, F, ugPM,   T,  F, T, T, T,  Is3D ) !?? atw?
-  case("D3_BSOA")
-  call AddNewDeriv("D3_BSOA", "BSOAGROUP", "MASS", "-", "ug/m3", &
-         -99 , -99,-99, F, ugPM,   T,  F, T, T, T,  Is3D ) !?? atw?
+!  case("D3_ASOA")
+!  call AddNewDeriv("D3_ASOA", "ASOAGROUP", "MASS", "-", "ug/m3", &
+!         -99 , -99,-99, F, ugPM,   T,  F, T, T, T,  Is3D ) !?? atw?
+!  case("D3_BSOA")
+!  call AddNewDeriv("D3_BSOA", "BSOAGROUP", "MASS", "-", "ug/m3", &
+!         -99 , -99,-99, F, ugPM,   T,  F, T, T, T,  Is3D ) !?? atw?
   case ("D3_m_TH")
   call AddNewDeriv("D3_m_TH","TH", "-","-",   "m", &
          -99, -99,-99, F,  1.0,  F,  F, T, T, F,  Is3D )
@@ -598,10 +643,9 @@ end do
       do i = 1, num_deriv2d
           ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
           if ( ind>0) then
+
                f_2d(i) = def_2d(ind)
-if( MasterProc ) then
-    print *, "CHECK2D", i, ind, trim(def_2d(ind)%name)
-end if
+
                call CheckStop ( found_ind2d(ind) > 0,  &
                   "REQUESTED 2D DERIVED ALREADY DEFINED: "// &
                       trim( def_2d(ind)%name)  )
@@ -625,10 +669,11 @@ end if
       end do
 
       do i = 1, num_deriv3d
+          if(DEBUG .and. MasterProc) write(*,*) "CHECK 3d", &
+               num_deriv3d, i, trim(wanted_deriv3d(i))
           ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
           call CheckStop ( found_ind3d(ind) > 0,  &
-                  "REQUESTED 3D DERIVED ALREADY DEFINED: "// &
-                      def_3d(ind)%name  )
+            "REQUESTED 3D DERIVED ALREADY DEFINED: "// def_3d(ind)%name  )
           found_ind3d(ind)  = 1
           f_3d(i) = def_3d(ind)
           if ( DEBUG .and. MasterProc ) write(*,*) "Index f_3d ", i,&
@@ -830,21 +875,21 @@ end if
                      d_2d(n,debug_li,debug_lj,IOU_INST)
             end if
 
-          case ( "SURF_PPB" )
+          case ( "SURF_PPB_SPEC" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                      * cfac(index,i,j)
             end forall
             if ( debug_flag ) call write_debugadv(n,index, 1.0, "PPB OUTS")
 
-          case ( "SURF_UG" )
+          case ( "SURF_MASS_SPEC" )  ! Here we need density
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = xn_adv(index,i,j,KMAX_MID) &
                                      * cfac(index,i,j) * density(i,j)
             end forall
             if ( debug_flag ) call write_debugadv(n,index, &
-                                     density(debug_li,debug_lj), "SURF_UG")
+                                     density(debug_li,debug_lj), "SURF_MASS")
 
           case ( "PM25water" )      !water
 
@@ -852,8 +897,7 @@ end if
               d_2d( n, i,j,IOU_INST) = PM25_water_rh50(i,j)
             end forall
 
-!/ Aerosol Optical Depth
-          case ( "AOD" )        
+          case ( "AOD" )        !/ Aerosol Optical Depth
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = AOD(i,j)   
@@ -974,8 +1018,7 @@ end if
 !                   n, trim(f_2d(n)%name), d_2d(n,debug_li,debug_lj,IOU_INST)
 !            Nothing to do - all set in My_DryDep
 
-          case ( "COLUMN" )   ! Dave May 2009, simplified from Joffen's COLUMN
-                            ! MFAC gives #/cm3, 100 is for m -> cm
+          case ( "COLUMN" ) ! MFAC gives #/cm3, 100 is for m -> cm
 
             klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
             do j = 1, ljmax
@@ -1037,7 +1080,8 @@ end if
               !Not done, keep mg/m2  * GridArea_m2(i,j)
               if ( debug_flag ) call write_debug(n,f_2d(n)%Index, "NatEmis")
             if( debug_flag ) &
-                write(*,"(a18,i3,es12.3)") "EXTRA NatEmis", f_2d(n)%Index, EmisNat( debug_li,debug_lj, f_2d(n)%Index)
+                write(*,"(a18,i3,es12.3)") "EXTRA NatEmis", f_2d(n)%Index,&
+                       EmisNat( debug_li,debug_lj, f_2d(n)%Index)
 
           case ( "SnapEmis" ) !emissions in kg/m2/s converted??
 
@@ -1056,9 +1100,11 @@ end if
                    n, f_2d(n)%name, " is ", d_2d(n,debug_li,debug_lj,IOU_INST)
 
 
-          case ( "SURF_GROUP" ) ! 
+          case ( "SURF_MASS_GROUP" ) ! 
             igrp = f_2d(n)%index 
             call CheckStop(igrp<1, "NEG GRP "//trim(f_2d(n)%name) )
+            call CheckStop(igrp>size( GROUP_ARRAY(:)%name ), &
+                 "Outside GRP "//trim(f_2d(n)%name) )
             ngrp = GROUP_ARRAY(igrp)%Ngroup
             if(DEBUG.and. MasterProc ) then
                 write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
@@ -1069,6 +1115,7 @@ end if
             call uggroup_calc( d_2d(n,:,:,IOU_INST), n, typ, &
               GROUP_ARRAY(igrp)%itot(1:ngrp) ,  density, 0, &
               GROUP_ARRAY(igrp)%name )
+
 
           case  default
 
@@ -1217,82 +1264,100 @@ end if
 
             call voc_3dcalc()
 
-        case ( "D3_PPB" )
+        case ( "3D_PPB_SPEC" )
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
               d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k)
             end forall
-           if ( debug_flag ) call write_debugadv(n,index, 1.0, "D3 PPB OUTS")
+           if ( debug_flag ) call write_debugadv(n,index, 1.0, "3D PPB OUTS")
 
-        case ( "D3_UG" )
+        case ( "3D_MASS_SPEC" )
 
             forall ( i=1:limax, j=1:ljmax, k=1:KMAX_MID )
               d_3d( n, i,j,k,IOU_INST) = xn_adv(index,i,j,k) * roa(i,j,k,1)
             end forall
-           if ( debug_flag ) call write_debugadv(n,index, 1.0, "D3 UG OUTS")
+           if ( debug_flag ) call write_debugadv(n,index, 1.0, "3D UG OUTS")
 
+        case ( "3D_MASS_GROUP" ) ! 
+            igrp = f_3d(n)%index 
+            call CheckStop(igrp<1, "NEG GRP "//trim(f_3d(n)%name) )
+            call CheckStop(igrp>size( GROUP_ARRAY(:)%name ), &
+                 "Outside GRP "//trim(f_3d(n)%name) )
+            ngrp = GROUP_ARRAY(igrp)%Ngroup
+            if(DEBUG.and. MasterProc ) then
+                write(*,*) "3DCASEGRP ", n, igrp, ngrp, trim(typ)
+                write(*,*) "3DCASENAM ", trim(f_3d(n)%name)
+                write(*,*) "3DCASEGRP:", GROUP_ARRAY(igrp)%itot(1:ngrp) 
+                write(*,*) "3DCASEunit", trim(f_3d(n)%unit)
+            end if
 
-        case ( "PM25GROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
-        case ( "PMcGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PMCO_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
+            do k=1,KMAX_MID
+              call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, &
+                  GROUP_ARRAY(igrp)%itot(1:ngrp) , &
+                        roa(:,:,k,1), k, GROUP_ARRAY(igrp)%name )
+            end do
 
-          case ( "PM25aGROUP" )   !.. antropogenic PM2.5 (w/o SS and Dust)
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25anthr_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
-
-          case ( "PM10aGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM10anthr_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
-
-          case ( "ECfGROUP" )
-              call CheckStop("Asked for EC_FGROUP")
-!NOGRP          do k=1,KMAX_MID
-!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, EC_F_GROUP, &
-!NOGRP                               roa(:,:,k,1), k)
-!NOGRP          enddo
-
-          case ( "SSGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SS_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
-
-          case ( "DUSTGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, DUST_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
-
-          case ( "SIAGROUP" )
-          do k=1,KMAX_MID
-            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SIA_GROUP, &
-                               roa(:,:,k,1), k)
-          enddo
-
-          case ( "BSOAGROUP" )
-              call CheckStop("Asked for BSOAGROUP")
-!NOGRP          do k=1,KMAX_MID
-!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
-!NOGRP                               roa(:,:,k,1), k)
-!NOGRP          enddo
-
-          case ( "ASOAGROUP" )
-              call CheckStop("Asked for ASOAGROUP")
-!NOGRP          do k=1,KMAX_MID
-!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
-!NOGRP                               roa(:,:,k,1), k)
-!NOGRP          enddo
+!        case ( "PM25GROUP" )
+!          do k=1,KMAX_MID
+!            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25_GROUP, &
+!                               roa(:,:,k,1), k)
+!          enddo
+!        case ( "PMcGROUP" )
+!          do k=1,KMAX_MID
+!            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PMCO_GROUP, &
+!                               roa(:,:,k,1), k)
+!          enddo
+!
+!          case ( "PM25aGROUP" )   !.. antropogenic PM2.5 (w/o SS and Dust)
+!          do k=1,KMAX_MID
+!            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM25anthr_GROUP, &
+!                               roa(:,:,k,1), k)
+!          enddo
+!
+!          case ( "PM10aGROUP" )
+!          do k=1,KMAX_MID
+!            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, PM10anthr_GROUP, &
+!                               roa(:,:,k,1), k)
+!          enddo
+!
+!          case ( "ECfGROUP" )
+!              call CheckStop("Asked for EC_FGROUP")
+!!NOGRP          do k=1,KMAX_MID
+!!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, EC_F_GROUP, &
+!!NOGRP                               roa(:,:,k,1), k)
+!!NOGRP          enddo
+!
+!          case ( "SSGROUP" )
+!          do k=1,KMAX_MID
+!            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SS_GROUP, &
+!                               roa(:,:,k,1), k)
+!          enddo
+!
+!          case ( "DUSTGROUP" )
+!          do k=1,KMAX_MID
+!            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, DUST_GROUP, &
+!                               roa(:,:,k,1), k)
+!          enddo
+!
+!          case ( "SIAGROUP" )
+!          do k=1,KMAX_MID
+!            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, SIA_GROUP, &
+!                               roa(:,:,k,1), k)
+!          enddo
+!
+!          case ( "BSOAGROUP" )
+!              call CheckStop("Asked for BSOAGROUP")
+!!NOGRP          do k=1,KMAX_MID
+!!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
+!!NOGRP                               roa(:,:,k,1), k)
+!!NOGRP          enddo
+!
+!          case ( "ASOAGROUP" )
+!              call CheckStop("Asked for ASOAGROUP")
+!!NOGRP          do k=1,KMAX_MID
+!!NOGRP            call uggroup_calc( d_3d(n,:,:,k,IOU_INST), n, typ, BSOA_GROUP, &
+!!NOGRP                               roa(:,:,k,1), k)
+!!NOGRP          enddo
 
          case ( "Kz" )
 
@@ -1303,9 +1368,10 @@ end if
 
           case  default
 
-           write(*,*) "***** NOT FOUND", f_3d(n)%name, f_3d(n)%class
+           write(*,"(a,2i3,3a)") "*** NOT FOUND",n,index, trim(f_3d(n)%name),&
+                 ";Class:", trim(f_3d(n)%class)
            write(unit=errmsg,fmt=*) "Derived 3D class NOT FOUND", n, index, &
-                         f_3d(n)%name,f_3d(n)%class
+                         trim(f_3d(n)%name),trim(f_3d(n)%class)
            call CheckStop( errmsg )
 
 
@@ -1522,7 +1588,10 @@ end if
     select case (trim(unit))
       case("ug/m3" ); scale = species(itot)%molwt
       case("ugN/m3"); scale = species(itot)%nitrogens
-      case default  ; call StopAll("uggroup called with wrong unit='"//unit//"'!")
+      case default 
+       if(ik==0)  print *, "uggroup Wrong Units 2d "//trim(f_2d(n)%name)
+       if(ik/=0)  print *, "uggroup Wrong Units 3d "//trim(f_3d(n)%name)
+       call StopAll("uggroup called with wrong unit='"//unit//"'!")
     end select
 
     if(ik==0)then
@@ -1635,7 +1704,7 @@ end if
     real, save    :: ugNm3 = atwN*PPBINV/ATWAIR
     real, save    :: ugCm3 = 12*PPBINV/ATWAIR
     real, save    :: ugXm3 = PPBINV/ATWAIR   ! will be multiplied by molwwt(X)
-    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
+!ds    real, save    :: ugPM  = PPBINV /ATWAIR  ! No multiplication needed
 
     volunit = .false.
 

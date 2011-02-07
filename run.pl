@@ -245,7 +245,7 @@ if ($EUCAARI) {
   @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-my $testv = "rv3_7beta19";
+my $testv = "rv3_7beta21";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -429,13 +429,13 @@ $month_days[2] += leap_year($year);
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
 my $mm1   =  "01";       # first month, use 2-digits!
-my $mm2   =  "12";       # last month, use 2-digits!
+my $mm2   =  "01";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
 my $NTERM_CALC =  calc_nterm($mm1,$mm2,$dd1);
 
 my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
 # -- or --
-# $NTERM = 16;        # for testing, simply reset here
+ $NTERM = 16;        # for testing, simply reset here
  $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode

@@ -28,10 +28,10 @@
 module My_WetDep_ml
  use ChemSpecs_tot_ml          ! SO2, SO4, etc.
  use ChemSpecs_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
- use ChemGroups_ml, only : WDEP_OXNGROUP, WDEP_SOXGROUP, WDEP_RDNGROUP
+ use ChemGroups_ml, only : WDEP_OXNGROUP, WDEP_SOXGROUP, WDEP_RDNGROUP, WDEP_SSALTGROUP
  use ChemChemicals_ml
  use DerivedFields_ml,  only : f_2d, d_2d
- use Io_ml,             only : IO_DEBUG
+ use Io_ml,             only : IO_DEBUG, datewrite
  use MassBudget_ml,     only : totwdep, wdeploss
  use ModelConstants_ml, only : atwS, atwN, atwPM, IOU_INST, &
            MasterProc, DEBUG_MY_WETDEP
@@ -51,7 +51,7 @@ module My_WetDep_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP_CALC =  11 ! No. of solublity classes
+  integer, public, parameter :: NWETDEP_CALC =  12 ! No. of solublity classes
 
    !  Note - these are for "master" or model species - they do not
    !  need to be present in the chemical scheme. However, the chemical
@@ -70,7 +70,8 @@ module My_WetDep_ml
      CWDEP_PMc  = 8,  &
      CWDEP_ECfn = 9,  &
      CWDEP_SSf  = 10, &
-     CWDEP_SSc  = 11
+     CWDEP_SSc  = 11, &
+     CWDEP_ROOH = 12   ! TEST!!
 
 ! Import WDepMap array produced from GenChem, with e.g. 
  !integer, public, parameter ::  NWETDEP_ADV  = 14
@@ -90,7 +91,7 @@ module My_WetDep_ml
   type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
   
   integer, public, save  :: WDEP_PREC   ! Used in Aqueous_ml
-  integer, private, save :: WDEP_SOX, WDEP_OXN, WDEP_RDN
+  integer, private, save :: WDEP_SOX, WDEP_OXN, WDEP_RDN, WDEP_SSALT
   integer, private, save :: WDEP_SO2, WDEP_SO4, &
     WDEP_HNO3, WDEP_NO3_f, WDEP_NO3_c, WDEP_NH3, WDEP_NH4_f
 
@@ -126,6 +127,7 @@ contains
     WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
     WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
     WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
+    WetDep(CWDEP_ROOH)   = WScav(  0.05,  0.015) !! TEST half of HCHO
 
   ! Other PM compounds treated with SO4LIKE array defined above
 
@@ -135,6 +137,7 @@ contains
      WDEP_SOX = find_index("WDEP_SOX",f_2d(:)%name)
      WDEP_OXN = find_index("WDEP_OXN",f_2d(:)%name)
      WDEP_RDN = find_index("WDEP_RDN",f_2d(:)%name)
+     WDEP_SSALT = find_index("WDEP_SSALT",f_2d(:)%name)
 
      WDEP_SO2 = find_index("WDEP_SO2",f_2d(:)%name)
      WDEP_SO4 = find_index("WDEP_SO4",f_2d(:)%name)
@@ -175,7 +178,7 @@ contains
      real, intent(in)  :: invgridarea
      logical, intent(in)  :: debug_flag
 
-     real :: wdeps, wdepox, wdepred, wdeppm25, wdeppmco
+     real :: wdeps, wdepox, wdepred, wdeppm25, wdeppmco, wdepss
      real :: fS, fN
      integer :: itot, ispec
 
@@ -200,10 +203,16 @@ contains
         wdepox  = wdepox  + wdeploss(itot)
      end do
 
+     wdepss  = 0.0
+     do ispec = 1, size(WDEP_SSALTGROUP)
+        itot = WDEP_SSALTGROUP(ispec)
+        wdepss  = wdepss  + wdeploss(itot)
+     end do
 
        d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * fS 
        d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * fN 
        d_2d(WDEP_RDN,i,j,IOU_INST) = wdepred * fN 
+       d_2d(WDEP_SSALT,i,j,IOU_INST) = wdepss * fN 
 
        d_2d(WDEP_SO2,i,j,IOU_INST) = wdeploss(SO2) * fS 
        d_2d(WDEP_SO4,i,j,IOU_INST) = wdeploss(SO4) * fS 
@@ -214,9 +223,11 @@ contains
        d_2d(WDEP_NO3_c,i,j,IOU_INST) = wdeploss(NO3_c) * fN 
 
      if ( DEBUG_MY_WETDEP .and. debug_flag ) then
+       call datewrite("MyWet NH3", WDEP_NH3, (/  wdeploss(NH3), wdeploss(NH3) * fN /) )
        write(*,"(a,i4,2es12.4)" )   "DEBUG_WET NH3", WDEP_NH3, wdeploss(NH3), wdeploss(NH3) * fN
        write(*,"(a,i4,2es12.4)" )   "DEBUG_WET ANH4", WDEP_NH4_f, wdeploss(NH4_f), wdeploss(NH4_f) * fN
        write(*,"(a,i4,2es12.4)" )   "DEBUG_WET RDN", WDEP_RDN, wdepred, wdepred* fN
+       call datewrite("MyWet SS", WDEP_SSALT , (/  wdeploss(SeaSalt_f), wdeploss(SeaSalt_c)  /) )
      do ispec = 1, size(WDEP_RDNGROUP)
         itot = WDEP_RDNGROUP(ispec)
         wdepred = wdepred + wdeploss(itot)

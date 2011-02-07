@@ -30,7 +30,7 @@ module LandPFT_ml
 use CheckStop_ml,   only: CheckStop
 use GridValues_ml,  only: debug_proc, debug_li, debug_lj
 use ModelConstants_ml,  only : DEBUG_LANDPFTS, MasterProc, BVOC_USED
-use NetCDF_ml, only: ReadField_CDF !dsLPJ
+use NetCDF_ml, only: ReadField_CDF
 use Par_ml,         only: MAXLIMAX, MAXLJMAX, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
 
@@ -49,7 +49,6 @@ private
 
  character(len=80), private :: errmsg
 
- logical, public, parameter :: PFTS_USED = .false.
  real, public, allocatable :: pft_lai(:,:,:) 
  real, public, allocatable :: pft_bvoc(:,:,:,:) 
 
@@ -88,6 +87,7 @@ contains
     integer ::  n, pft, ivar, iLC, alloc_err, iiLC
     character(len=20) :: varname
 
+return ! JAN31TEST
      if ( my_first_call ) then
          allocate ( pft_lai(MAXLIMAX,MAXLJMAX,N_PFTS) )
          my_first_call = .false.
@@ -105,6 +105,9 @@ contains
               lpj,month,interpol='zero_order',needed=.true.,debug_flag=.true.)
 
            pft_lai(:,:,pft ) = lpj(:,:)
+           if( DEBUG_LANDPFTS .and. debug_proc ) then
+             write(*,*) "PFT_DEBUG ", pft, lpj(debug_li, debug_lj)
+           end if
 
      end do ! pft
 
@@ -132,6 +135,7 @@ contains
 
     ! Ebvoc already includes monthly LAI changes - might be wrong?
     
+return ! JAN31TEST
      if ( my_first_call ) then
          allocate ( pft_bvoc(MAXLIMAX,MAXLJMAX,N_PFTS,size(BVOC_USED)) )
          my_first_call = .false.

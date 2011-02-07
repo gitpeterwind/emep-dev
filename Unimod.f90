@@ -80,7 +80,7 @@ program myeul
        ,nprint,nass,nterm,iyr_trend, PT &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
        ,USE_CONVECTION, USE_SOILWATER,USE_SOIL_NOX,USE_FOREST_FIRES &
-       ,USE_DUST,DO_SAHARA &
+       ,USE_BVOC_2010,USE_DUST,DO_SAHARA &
        ,NBVOC  & !
        ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
@@ -209,6 +209,7 @@ program myeul
       if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
       if(  USE_SOIL_NOX   ) call PrintLog("SoilNOx    switch on")
       if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
+      if(  USE_BVOC_2010 )  call PrintLog("BVOC 2010 switch on")
       call PrintLog("Options used of (dust, sahara)")
       if(  USE_DUST        )call PrintLog("Dust switch on")
       if(  DO_SAHARA       )call PrintLog("Sahara switch on")

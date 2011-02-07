@@ -15,14 +15,13 @@ IMPORTANT NOTE:
     edit run.pl for year etc.
 
 KNOWN PROBLEMS
-I (DS) have modified the treatment of groups for output in EmChem09, so
-that My_Derived has SURF_UG_GROUPS.  I have therefore deleted some
-code in Derived that hadled this lot the "old" way. This will cause
-problems for any Eucaari_Trend runs. The solution is to  modify ZCM_Eucaari_Trends
-to match the changes made in the ZCM_EmChem09. Sorry about this, but I didn't
-have time to complete this project. Should also extend to SURF_UG_N_GROUPS
-etc, or even better to a SURF_GROUPS array where the units are specified with
-the group. To Do.
+
+None? 
+I (DS) have re-writting My_Derived and Derived to use the array
+OutputConcs.  This harmonises 2d and 3d, ppb, ug, ugN, etc., and
+has either simple species or groups.  No problems known, but this
+re-write will continue, and should be harmonised with the hourly
+outputs in some way (at some stage).
 
 
 IMPORTANT NOTE:
@@ -35,7 +34,41 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
-xxxxxxxx rv3_7beta20  Alvaro Feb 2 2010 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7beta21  Dave   Feb 6 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+My_Derived_ml
+  OutputConcs array created for  2d and 3d concentrations and groups
+  Further simplifications in Derived_ml - simplifcation
+
+Derived_ml
+
+  OutputConcs array used  for  2d and 3d concentrations and groups
+  ( Old D3_PPB, D3_UG stuff replaced by OutputConcs processing.
+    Hard-coded groups such as D3_ug_PM25 removed. Such groups
+    should now be asked for in OutputConcs. )
+  WDEP_SSALT added
+
+OwnDataTypes_ml: typ_s5i added - used for OutputConcs
+
+
+Biogenics_ml.
+    - some extra safety measures and tidy-up
+
+GenChem.pl
+   seagroup dep arrays added for sea-salt
+
+Io_Progs_ml
+   small format change in datewrite
+
+My_WetDep_ml
+   wdepss added for sea-salt
+
+Unimod.f90
+   USE_BVOC_2010 added to printlog
+
+
+
+xxxxxxxx rv3_7beta20  Alvaro Feb 2 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Output_hourly:
   - Bug fix introduced in rv3_7beta18.

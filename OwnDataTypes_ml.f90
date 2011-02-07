@@ -41,6 +41,16 @@ module OwnDataTypes_ml
        character(len=TXTLEN_SHORT) :: txt4 ! e.g. POD1_IAM_DF
    end type typ_s4
 
+   !/ generic group for five (short) strings
+   type, public :: typ_s5i
+       character(len=TXTLEN_SHORT) :: txt1 ! e.g.  SO2
+       character(len=TXTLEN_SHORT) :: txt2 ! e.g.  ugS
+       character(len=TXTLEN_SHORT) :: txt3 ! e.g.  2d
+       character(len=TXTLEN_SHORT) :: txt4 ! e.g.  "AIR_CONC"
+       character(len=TXTLEN_SHORT) :: txt5 ! e.g.  M 
+       integer                     :: ind  ! e.g.  IOU_DAY
+   end type typ_s5i
+
    !================== 
     type, public:: Deriv
        character(len=TXTLEN_DERIV) :: name ! e.g. DDEP_SO2_m2Conif

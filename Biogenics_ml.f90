@@ -64,11 +64,11 @@ module Biogenics_ml
   use Io_ml            , only : IO_FORES, open_file, ios, Read2DN, PrintLog, datewrite
   use KeyValue_ml,       only : KeyVal,KeyValue
   use LandDefs_ml,       only: LandType, LandDefs
-  use LandPFT_ml,        only: PFTS_USED, MapPFT_LAI, pft_lai
+  use LandPFT_ml,        only: MapPFT_LAI, pft_lai
   use Landuse_ml,        only : LandCover
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
-                           NLANDUSEMAX, IOU_INST, & 
+                           USE_PFT_MAPS, NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & ! DSBIO
                            DEBUG_BIO, BVOC_USED, USE_BVOC_2010, MasterProc
   use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,  Real4
@@ -103,11 +103,11 @@ module Biogenics_ml
  ! (Currently for 1st four LCC)
   logical, private, dimension(NLANDUSEMAX), save :: HaveLocalEF 
 
-  !TEST real, public, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)) :: &
-  real, public, save, dimension(MAXLIMAX,MAXLJMAX,2) :: &
+  !TEST
+  real, public, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)) :: &
+  !TEST real, public, save, dimension(MAXLIMAX,MAXLJMAX,2) :: &
       emforest    & !  Gridded standard (30deg. C, full light) emissions
      ,EmisNat       !  will be transferred to d_2d emis sums
-!OLD     ,emnat         !  Gridded std. emissions after scaling with density, etc.
 
 
   !standard emission factors per LC  for LAI=5 m2/m2
@@ -333,12 +333,15 @@ module Biogenics_ml
                write(*,"(a,2i7,2L)") &
                    "TryMergeBVOC" //trim(LandDefs(iL)%name), iL, pft, &
                      use_local, HaveLocalEF(iL)
+               write(*,*) "TryMergeBVOC last_bvoc_LC = ", last_bvoc_LC
            end if
 
            if( use_local .and. HaveLocalEF(iL) ) then 
+
                 ! Keep EFs from EuroBVOC
                 if( debug_flag ) write(*,*) "MergeBVOC: Inside local"
-           else if ( iL <= last_bvoc_LC ) then ! use defaults
+
+           else if ( iL <= last_bvoc_LC ) then ! otherwise use defaults
                bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * LandDefs(iL)%BiomassD 
                bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * LandDefs(iL)%BiomassD
                bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * LandDefs(iL)%BiomassD
@@ -356,7 +359,7 @@ module Biogenics_ml
                 biso   = bvocEF(i, j,iL, BIO_ISOP) 
                 bmt    = bvocEF(i, j,iL, BIO_TERP) 
               end if
-              write(*,"(a,2i7,2L,f12.6,9f12.3)") "MergeBVOC", &
+              write(*,"(a,2i4,2L,f9.4,9f10.3)") "MergeBVOC", &
                  iL, pft,  use_local, HaveLocalEF(iL),  &
                    LandCover(i,j)%fraction(iiL), biso, bmt, LandDefs(iL)%Eiso, &
                      LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
@@ -401,7 +404,6 @@ module Biogenics_ml
 
             if ( iL >  last_bvoc_LC ) cycle
             if ( LandCover(i,j)%LAI(iiL)<1.0e-5 ) cycle ! no veg:
-
              
               LAIfac = LandCover(i,j)%LAI(iiL)/LandDefs(IL)%LAImax
               LAIfac= min(LAIfac, 1.0)
@@ -416,26 +418,31 @@ module Biogenics_ml
               if ( debug ) then
                  b = 0.0
                  if ( iL <= last_bvoc_LC ) b = bvocEF(i, j,iL, BIO_ISOP)
-                 write(*,"(a,a15,2i5,f9.5,f7.3,8f10.3)") "SetDailyBVOC", &
+                 write(*,"(a,a10,2i5,f9.5,2f7.3,8f10.3)") "SetBVOC", &
                   trim(LandDefs(iL)%name), daynumber, iL, &
-                   LandCover(i,j)%fraction(iiL),  LandCover(i,j)%LAI(iiL), b,&
+                   LandCover(i,j)%fraction(iiL), &
+                   LandCover(i,j)%LAI(iiL), LandDefs(iL)%LAImax, b,&
                      ( day_embvoc(i, j, ibvoc), ibvoc = 1, size(BVOC_USED) ) 
                   
-                 if ( my_first_call  ) then ! print out 1st day
-                   allocate(  workarray(MAXLIMAX,MAXLJMAX),&
-                        stat=alloc_err )
-                  call CheckStop( alloc_err , "workarray alloc failed"  )
-                  workarray(:,:) = day_embvoc(:,:,1)
-                  call Export_Bio("Eiso", workarray )
-                  workarray(:,:) = day_embvoc(:,:,2)
-                  call Export_Bio("Emt", workarray )
-                  my_first_call = .false.
-                  deallocate(  workarray )
-                 end if
               end if
         end do LULOOP
       end do
       end do
+
+      if ( DEBUG_BIO ) then
+         if ( my_first_call  ) then ! print out 1st day
+              allocate(  workarray(MAXLIMAX,MAXLJMAX),&
+                        stat=alloc_err )
+              write(*,"(a,i3)") "workarray success????", alloc_err
+              call CheckStop( alloc_err , "workarray alloc failed"  )
+                  workarray(:,:) = day_embvoc(:,:,1)
+                  call Export_Bio("Eiso", workarray )
+                  workarray(:,:) = day_embvoc(:,:,2)
+                  call Export_Bio("Emt", workarray )
+              deallocate(  workarray )
+         end if
+       end if
+       my_first_call = .false.
 
    end subroutine SetDailyBVOC
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -570,13 +577,14 @@ module Biogenics_ml
 
       ! just for print out
       ! both just for print out
-      E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
-      E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
+      E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * max(cL,0.0)
+      E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * max(cL,0.0) 
        MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
        MT2003 = emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m) 
 
         call datewrite("DBIO NatEmis env ", it2m,  &
-          (/ par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
+          (/ max(par,0.0), max(cL,0.0), &
+            canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
         call datewrite("DBIO NatEmis for ", &
           (/ emforest(i,j,1),  emforest(i,j,2) /) )
         call datewrite("DBIO NatEmis EIcmp ", (/  E2003, E2010 /) ) 
@@ -614,11 +622,11 @@ module Biogenics_ml
     def1%name=trim(name)   ! eg 'EmisPot'        !written
     def1%unit='ug/m2/h'       !written
     
-    fname = "OUTBIO_" // trim(fname) // ".nc"
+    fname = "OUTBIO_" // trim(name) // ".nc"
 
     !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
 
-print *, "TEST EXPOERT BIO", me,  maxval(array)
+    if(MasterProc) write(*,*) "TEST EXPORT BIO:"//trim(fname),  maxval(array)
     call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
            CDFtype=Real4,fileName_given=fname)
   end subroutine Export_Bio

@@ -77,7 +77,8 @@ our @emis_files = ();
  my( @ddep_oxngroup, @wdep_oxngroup, @oxngroup);
  my( @ddep_soxgroup, @wdep_soxgroup, @soxgroup);
  my( @ddep_rdngroup, @wdep_rdngroup, @rdngroup);
-# my( @ddep_all, @wdep_all );
+ my( @ddep_seagroup, @wdep_seagroup, @seagroup);
+
 #2010: reads groups and headers from GenIn_species.csv
  my( %groups, @headers );
  my @ro2pool = (); # used with new-style GenIn.species from Garry
@@ -1291,6 +1292,11 @@ sub print_rates {
 	   push(@ddep_soxgroup,$adv) if $same_spec ;
 	   push(@wdep_soxgroup,$adv) if ($same_spec && $wdep ne "-" ) ;
 	}
+        foreach my $s ( @{ $grp{"SS"} } ) {
+           my $same_spec =  specs_equal($adv, $s ); # Ignores case
+	   push(@ddep_seagroup,$adv) if $same_spec ;
+	   push(@wdep_seagroup,$adv) if ($same_spec && $wdep ne "-" ) ;
+	}
         foreach my $r ( @{ $grp{"RDN"} } ) {
            my $same_spec =  specs_equal($adv, $r ); # Ignores case
 	   push(@ddep_rdngroup,$adv) if $same_spec;
@@ -1433,6 +1439,12 @@ sub print_rates {
 	 $outline = join(",",@wdep_soxgroup);
          print GROUPS "  integer, public, parameter, dimension($N) :: &
                WDEP_SOXGROUP = (/ $outline /)\n";
+
+	 $N = @wdep_seagroup;
+	 $MaxN = $N if $N > $MaxN ;
+	 $outline = join(",",@wdep_seagroup);
+         print GROUPS "  integer, public, parameter, dimension($N) :: &
+               WDEP_SSALTGROUP = (/ $outline /)\n";
 
 	 $N = @wdep_rdngroup;
 	 $MaxN = $N if $N > $MaxN ;
