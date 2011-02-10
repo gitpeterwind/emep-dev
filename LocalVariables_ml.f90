@@ -181,7 +181,8 @@ module LocalVariables_ml
  !
   end type SubDat
 
-  type(SubDat), public, dimension(NLANDUSEMAX), save :: Sub
+  !SUB0 type(SubDat), public, dimension(NLANDUSEMAX), save :: Sub
+  type(SubDat), public, dimension(0:NLANDUSEMAX), save :: Sub
   type(SubDat), public, save :: L       ! For just one land-class
   type(SubDat), public, save :: ResetSub  !  Keeps NOT_SET values
 

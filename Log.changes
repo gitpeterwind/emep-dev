@@ -34,6 +34,26 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxx rv3_7beta22  Dave   Feb 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+ ** BUG fix ** My_WetDep_ml
+    NaCl wet deposition output: now use fSS, not fN
+
+Derived_ml.f90 & 
+Ecosystem_ml.f90
+MosaicOutputs_ml.f90
+
+  FULL_GRID now called either FULL_ECOGRID or FULL_LCGRID to avoid confusing the two
+
+LocalVariables_ml
+  Sub array now starts at zero, which is used for full grid (FULL_LCGRID=0)
+
+My_Derived_ml
+  seasalt Vg added while testing NaCl
+
+OwnDataTypes_ml
+   typ_sp with name and pointer introduced (for experiments so far)
+
 xxxxxxxx rv3_7beta21  Dave   Feb 6 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 My_Derived_ml

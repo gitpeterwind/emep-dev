@@ -364,10 +364,14 @@ module DryDep_ml
     Sumland  = 0.0
     fluxfrac_adv (:,:) = 0.0
     Grid_snow(i,j)=0.0 
-    Grid%Gsur = 0.0
-    Grid%Gns  = 0.0
-    Grid%Vg_Ref  = 0.0
-    Grid%Vg_3m   = 0.0
+    !SUB0 Grid%Gsur = 0.0
+    !SUB0 Grid%Gns  = 0.0
+    !SUB0 Grid%Vg_Ref  = 0.0
+    !SUB0 Grid%Vg_3m   = 0.0
+    Sub(0)%Gsur = 0.0
+    Sub(0)%Gns  = 0.0
+    Sub(0)%Vg_Ref  = 0.0
+    Sub(0)%Vg_3m   = 0.0
  
     !/ SO2/NH3 for Rsur calc
     Grid%so2nh3ratio = &
@@ -392,12 +396,14 @@ module DryDep_ml
     Vs = SettlingVelocity( Grid%t2, Grid%rho_ref )
 
   ! Restrict settling velocity to 2cm/s. Seems
-  ! very high otherwise,  e.g. see Fig. 4, Petroff..
+  ! very high otherwise,  e.g. see Fig. 4, Petroff et al., 2008 (Part I), where
+  ! observed Vg for forests is usually < 2cm/s.
 
-     Vs(:) = min( Vs(:), 0.02) 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
-         write(*,"(a,i3,10es10.2)") "DRYDEP VS:", NSIZE,  Vs
+         call datewrite("DRYDEP VS",NSIZE,(/ Grid%t2, Grid%rho_ref, Vs /) )
+         if( maxval(Vs) > 0.02 ) write(*,*) "DRYDEP LIM!"
     end if
+     Vs(:) = min( Vs(:), 0.02) 
 
     !/ And start the sub-grid stuff over different landuse (iL)
 
@@ -523,8 +529,10 @@ module DryDep_ml
 !          end if ! CDDEP_NO2
 
           ! new!
-            Grid%Vg_ref(n) = Grid%Vg_ref(n) + L%coverage * Vg_ref(n)
-            Grid%Vg_3m(n)  = Grid%Vg_3m(n)  + L%coverage * Vg_3m(n)
+          !SUB0   Grid%Vg_ref(n) = Grid%Vg_ref(n) + L%coverage * Vg_ref(n)
+          !SUB0   Grid%Vg_3m(n)  = Grid%Vg_3m(n)  + L%coverage * Vg_3m(n)
+            Sub(0)%Vg_ref(n) = Sub(0)%Vg_ref(n) + L%coverage * Vg_ref(n)
+            Sub(0)%Vg_3m(n)  = Sub(0)%Vg_3m(n)  + L%coverage * Vg_3m(n)
             Sub(iL)%Vg_ref(n) = Vg_ref(n)
             Sub(iL)%Vg_3m(n) = Vg_3m(n)
 
@@ -534,8 +542,10 @@ module DryDep_ml
              Sub(iL)%Gsur(n) = 1.0/Rsur(n) ! Note iL, not iiL 
              Sub(iL)%Gns(n)  = Gns(n)  ! Note iL, not iiL 
 
-             Grid%Gsur(n)  =  Grid%Gsur(n) + L%coverage / Rsur(n)
-             Grid%Gns(n)  =  Grid%Gns(n)+ L%coverage * Gns(n)
+             !SUB0 Grid%Gsur(n)  =  Grid%Gsur(n) + L%coverage / Rsur(n)
+             !SUB0 Grid%Gns(n)  =  Grid%Gns(n)+ L%coverage * Gns(n)
+             Sub(0)%Gsur(n)  =  Sub(0)%Gsur(n) + L%coverage / Rsur(n)
+             Sub(0)%Gns(n)   =  Sub(0)%Gns(n)  + L%coverage * Gns(n)
          endif
          end do !species loop
 
@@ -640,7 +650,8 @@ module DryDep_ml
 
         if ( DEBUG_DRYDEP .and. debug_flag ) then
             call datewrite("DEP VGR snow Vg", Grid%snow, &
-             (/ (100.0*Grid%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
+             !SUB0 (/ (100.0*Grid%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
+             (/ (100.0*Sub(0)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
                 (100.0*Sub(iL)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) /) )
         end if
 
@@ -650,7 +661,8 @@ module DryDep_ml
 
     do ncalc = 1, NDRYDEP_CALC
 
-        vg_fac (ncalc) = 1.0 - exp ( -Grid%Vg_Ref(ncalc) * dtz ) 
+        !SUB0 vg_fac (ncalc) = 1.0 - exp ( -Grid%Vg_Ref(ncalc) * dtz ) 
+        vg_fac (ncalc) = 1.0 - exp ( -Sub(0)%Vg_Ref(ncalc) * dtz ) 
 
     end do ! n
 
@@ -715,7 +727,8 @@ module DryDep_ml
               end if
               if ( DEBUG_DRYDEP .and. lossfrac < 0.1 ) then
                   call datewrite( "LOSSFRACING ", nadv, (/ 1.0*iL, &
-                    Grid%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
+                    !SUB0 Grid%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
+                    Sub(0)%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
                   call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
               end if
         end if
@@ -731,7 +744,7 @@ module DryDep_ml
                fluxfrac_adv(nadv,iL) = Sub(iL)%coverage  ! Since all vg_set equal
             else
                !Vg_scale = Mosaic_VgRef(ncalc,iL)/ Mosaic_VgRef(ncalc,0)
-               Vg_scale = Sub(iL)%Vg_Ref(ncalc)/ Grid%Vg_Ref(ncalc)
+               Vg_scale = Sub(iL)%Vg_Ref(ncalc)/ Sub(0)%Vg_Ref(ncalc)
                fluxfrac_adv(nadv,iL) = Sub(iL)%coverage*Vg_scale
             end if
 
@@ -758,7 +771,7 @@ module DryDep_ml
                else
                  write(6,"(a,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
                   Sub(iL)%coverage, &
-                  100.0*Grid%Vg_Ref(ncalc), & ! Mosaic_VgRef(ncalc,0), & ! GRID
+                  100.0*Sub(0)%Vg_Ref(ncalc), & ! Mosaic_VgRef(ncalc,0), & ! GRID
                   100.0*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic_VgRef(ncalc,iL), &
                   100.0*Sub(iL)%coverage*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic_VgRef(ncalc,iL), &
                    fluxfrac_adv(nadv,iL)

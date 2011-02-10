@@ -70,7 +70,7 @@ use Chemfields_ml ,   only: so2nh3_24hr,Grid_snow
 use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
-                            EcoSystemFrac,FULL_GRID
+                            EcoSystemFrac,FULL_ECOGRID
 use EmisDef_ml,       only: EMIS_NAME
 use Emissions_ml,     only: SumSnapEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, &
@@ -338,7 +338,7 @@ call AddNewDeriv( "WDEP_OXN ","WDEP ","-","-", "mgN/m2",  &
                 -1, -99,-99,   F,    1.0e6,   F,    F ,T ,T ,T )
 call AddNewDeriv( "WDEP_RDN ","WDEP ","-","-", "mgN/m2",  &
                 -1, -99,-99,   F,    1.0e6,   F,    F ,T ,T ,T )
-call AddNewDeriv( "WDEP_SSALT ","WDEP ","-","-", "mgN/m2",  &
+call AddNewDeriv( "WDEP_SSALT ","WDEP ","-","-", "mg/m2",  &
                 -1, -99,-99,   F,    1.0e6,   F,    F ,T ,T ,T )
 
 ! Compound-specific depositions:
@@ -1054,7 +1054,7 @@ end do
          case ( "EcoFrac" ) ! ODD TO HAVE FRAC AND AREA BELOW:"ECOAREA" )
 
             if( .not. first_call ) cycle ! Only need to do once
-            if( f_2d(n)%Index == FULL_GRID ) then
+            if( f_2d(n)%Index == FULL_ECOGRID ) then
               km2_grid = (GRIDWIDTH_M*GRIDWIDTH_M) * 1.0e-6 ! km2
               forall ( i=1:limax, j=1:ljmax )
                   d_2d(n,i,j,IOU_YEAR) =  EcoSystemFrac( f_2d(n)%Index ,i,j)&
@@ -1721,10 +1721,12 @@ end do
       unitscale = ugXm3  ! will be multplied by species(itot)%molwt later
       unitstxt  = "ug/m3"
       if( itot>0) unitscale = ugXm3 * species(itot)%molwt
+
   else if ( txt .eq.  "ppb" ) then
       unitscale = PPBINV
       unitstxt  = "ppb"
       volunit = .true.
+
   else if ( txt .eq.  "mgS" ) then  ! For wet deposition
       unitscale = 1.0e6
       unitstxt  = "mgS/m2"

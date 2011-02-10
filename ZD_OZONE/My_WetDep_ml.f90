@@ -179,16 +179,19 @@ contains
      logical, intent(in)  :: debug_flag
 
      real :: wdeps, wdepox, wdepred, wdeppm25, wdeppmco, wdepss
-     real :: fS, fN
+     real :: fS, fN, fSS
      integer :: itot, ispec
 
      fS = atwS * invgridarea
      fN = atwN * invgridarea
+     fSS= 58.0 * invgridarea   ! atwSS = 58.0
 
      wdeps = 0.0
      do ispec = 1, size(WDEP_SOXGROUP)
         itot = WDEP_SOXGROUP(ispec)
         wdeps = wdeps + wdeploss(itot)
+        if( DEBUG_MY_WETDEP .and. debug_flag ) call datewrite("WET-SOXGROUP: "//species(itot)%name ,&
+             itot, (/ wdeploss(itot) /) )
      end do
 
      wdepred = 0.0
@@ -212,7 +215,7 @@ contains
        d_2d(WDEP_SOX,i,j,IOU_INST) = wdeps * fS 
        d_2d(WDEP_OXN,i,j,IOU_INST) = wdepox * fN 
        d_2d(WDEP_RDN,i,j,IOU_INST) = wdepred * fN 
-       d_2d(WDEP_SSALT,i,j,IOU_INST) = wdepss * fN 
+       d_2d(WDEP_SSALT,i,j,IOU_INST) = wdepss * fSS
 
        d_2d(WDEP_SO2,i,j,IOU_INST) = wdeploss(SO2) * fS 
        d_2d(WDEP_SO4,i,j,IOU_INST) = wdeploss(SO4) * fS 

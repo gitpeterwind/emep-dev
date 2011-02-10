@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2010 met.no
+!*  Copyright (C) 2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -37,7 +37,8 @@ module MosaicOutputs_ml
                                  DDEP_RDNGROUP, NMAX_DDEP
  use DerivedFields_ml, only : f_2d, d_2d
  use EcoSystem_ml,     only : NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS, &
-    EcoSystemFrac, FULL_GRID, Is_EcoSystem
+    EcoSystemFrac, FULL_ECOGRID, FULL_LCGRID, Is_EcoSystem
+ use Io_Progs_ml,      only : datewrite
  use LandDefs_ml,      only : LandDefs, LandType, &
          Check_LandCoverPresent ! e.g. "CF"
  use Landuse_ml,       only : LandCover ! for POD
@@ -112,7 +113,6 @@ module MosaicOutputs_ml
         integer, intent(out) :: nMET
         integer :: ilab, n, iLC
         character(len=TXTLEN_DERIV) :: name
-!JAN30        real :: atw 
 
 
       !------------- Met data for d_2d -------------------------
@@ -371,7 +371,7 @@ module MosaicOutputs_ml
     subclass =  MosaicOutput(imc)%subclass
     MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name ,f_2d(:)%name)
     if(DEBUG .and. MasterProc) &
-       write(6,*) "Init_MyDry process", trim(MosaicOutput(imc)%name)
+       write(6,*) "Init_MosaicOutputs ", trim(MosaicOutput(imc)%name)
     call CheckStop( MosaicOutput(imc)%f2d < 1, &
         "MosaicOutput-f2d Error " // trim(MosaicOutput(imc)%name))
 
@@ -380,7 +380,8 @@ module MosaicOutputs_ml
 
         MosaicOutput(imc)%LC   = find_index(MosaicOutput(imc)%txt ,DEF_ECOSYSTEMS)
 
-        call CheckStop( MosaicOutput(imc)%LC < 1, & !0=GRID (careful,FULL_GRID=1)
+       !careful, deposition is to ecosystems, not LC: FULL_ECOGRID=1, not zero
+        call CheckStop( MosaicOutput(imc)%LC < FULL_ECOGRID, & 
         "MosaicOutput-LC Error " // trim(MosaicOutput(imc)%name))
 
       case ( "EUAOT" ) ! we use txt to specify MM or EU
@@ -390,16 +391,18 @@ module MosaicOutputs_ml
          end if
 
       case ( "VG", "Rs ", "Rns", "Gns", "POD", "AOT" )
+       !careful, these are to LC:
 
         if( MosaicOutput(imc)%txt == "Grid") then
-           MosaicOutput(imc)%LC = FULL_GRID   ! zero
+           MosaicOutput(imc)%LC = FULL_LCGRID   ! zero
         else if( MosaicOutput(imc)%txt == "EU") then
-           MosaicOutput(imc)%LC = FULL_GRID   ! zero
+           MosaicOutput(imc)%LC = FULL_LCGRID   ! zero
         else 
            MosaicOutput(imc)%LC = &
               find_index( MosaicOutput(imc)%txt, LandDefs(:)%code )
         end if
-        call CheckStop( MosaicOutput(imc)%LC < FULL_GRID , & !ie zero
+if(MasterProc) print *, "MOSCHECK ", trim(MosaicOutput(imc)%txt), MosaicOutput(imc)%LC
+        call CheckStop( MosaicOutput(imc)%LC < FULL_LCGRID , & !ie zero
           "OutVg-LC Error " // trim(MosaicOutput(imc)%name) &
                  // " LC:" // trim(MosaicOutput(imc)%txt) )
 
@@ -496,7 +499,7 @@ module MosaicOutputs_ml
 
         if ( my_first_call ) then ! Some safety tests.
            ! Land-cover index can be zero, for FULL_GRID
-            call CheckStop(iLC<0, "ILC ERROR: "//MosaicOutput(imc)%name)
+            call CheckStop(iLC<FULL_LCGRID, "ILC ERROR: "//MosaicOutput(imc)%name)
             call CheckStop(f2d<1, "f2d ERROR:  "//MosaicOutput(imc)%name)
         end if
         if ( DEBUG .and. debug_flag ) then
@@ -603,6 +606,11 @@ module MosaicOutputs_ml
            if ( subclass == "VG" ) then
 
              output = Sub(iLC)%Vg_3m(cdep)  ! CHECK iLC
+          if ( DEBUG .and. debug_flag ) then !DF
+             call datewrite(":: ",iLC,(/ output /) )
+             !call datewrite("MYDDEP VGVG "//trim( MosaicOutput(imc)%name),&
+             !    iLC,  (/ output /) )
+          end if
 
            else if ( subclass == "Gs" ) then
 

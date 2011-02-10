@@ -200,7 +200,7 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
   COL_ADD = (/ "AOD" /)
 
-   type(typ_ss), public, parameter, dimension(7) :: &
+   type(typ_ss), public, parameter, dimension(9) :: &
      WDEP_CONCS = (/ &
       typ_ss( "SO2      ","mgS") &
      ,typ_ss( "SO4      ","mgS") &
@@ -209,6 +209,8 @@ private
      ,typ_ss( "NO3_C    ","mgN") &
      ,typ_ss( "NH4_F    ","mgN") &
      ,typ_ss( "NH3      ","mgN") &
+     ,typ_ss( "SEASALT_F","mgN") &
+     ,typ_ss( "SEASALT_C","mgN") &
      /)
 
   !============ Extra parameters for model evaluation: ===================!
@@ -261,13 +263,19 @@ private
    !- specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
-    type(typ_s4), public, parameter, dimension(5) :: &
+    type(typ_s4), public, parameter, dimension(11) :: &
          NewMosaic = (/ &
-             typ_s4( "Mosaic", "VG", "O3     ", "Grid" ) &
-            ,typ_s4( "Mosaic", "VG", "O3     ", "CF  " ) &
-            ,typ_s4( "Mosaic", "VG", "O3     ", "SNL " ) &
-            ,typ_s4( "Mosaic", "Rs", "SO2    ", "Grid" ) &
-            ,typ_s4( "Mosaic", "Rs", "NH3    ", "Grid" ) &
+             typ_s4( "Mosaic", "VG", "O3       ", "Grid" ) &
+            ,typ_s4( "Mosaic", "VG", "O3       ", "CF  " ) &
+            ,typ_s4( "Mosaic", "VG", "O3       ", "SNL " ) &
+            ,typ_s4( "Mosaic", "VG", "HNO3     ", "Grid" ) &
+            ,typ_s4( "Mosaic", "VG", "HNO3     ", "W   " ) &
+            ,typ_s4( "Mosaic", "VG", "SEASALT_F", "W   " ) &
+            ,typ_s4( "Mosaic", "VG", "SEASALT_C", "W   " ) &
+            ,typ_s4( "Mosaic", "VG", "SEASALT_F", "Grid" ) &
+            ,typ_s4( "Mosaic", "VG", "SEASALT_C", "Grid" ) &
+            ,typ_s4( "Mosaic", "Rs", "SO2      ", "Grid" ) &
+            ,typ_s4( "Mosaic", "Rs", "NH3      ", "Grid" ) &
          /)
 
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
@@ -334,15 +342,10 @@ private
     ! For some reason having this as a parameter caused problems for
     ! PC-gfortran runs.
 
-    !integer, public, parameter, dimension(3) ::   D3_PPB = (/ O3, NO3_f, NO3_c /)
-    !TAGTEST integer, public, save, dimension(4:1) ::   D3_PPB ! = (/ O3 /)
-    !ds Feb integer, public, save, dimension(1:1) ::   D3_PPB  = (/ O3 /)
-    !ds Feb integer, public, save, dimension(4:1) ::   D3_UG  ! = (/ O3 /)
-
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
-!     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-     character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
-       D3_OTHER  = (/ "D3_PM25water" /) !**** Under construction *******
+     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
+     !character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
+       D3_OTHER  != (/ "D3_PM25water" /) !**** Under construction *******
      != (/ "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables

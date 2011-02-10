@@ -33,6 +33,12 @@ module OwnDataTypes_ml
        character(len=TXTLEN_SHORT) :: txt2 ! e.g. POD1_IAM_DF
    end type typ_ss
 
+   !/ generic group for name and pointer to arrays
+   type, public :: typ_sp
+       character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
+       integer, dimension(:), pointer :: ptr
+   end type typ_sp
+
    !/ generic group for four (short) strings
    type, public :: typ_s4
        character(len=TXTLEN_SHORT) :: txt1 ! e.g. POD1_IAM_DF

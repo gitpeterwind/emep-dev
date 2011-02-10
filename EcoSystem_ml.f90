@@ -16,6 +16,16 @@ module EcoSystem_ml
   ! depositions are calculated to the following landuse classes, where
   ! e.g. conif may include both temperate and Medit. forests
 
+   integer, public, parameter :: FULL_ECOGRID=1
+   integer, private, parameter :: &
+     CONIF=2, DECID=3, CROP=4, SEMINAT=5, WATER_D=6 ! try to skip
+
+  ! We also keep the parameter for FULL_LCGRID=0 here, which is used
+  ! for e.g. Vg values. Do not confuse LC with ECO stuff!
+  ! 
+
+   integer, public, parameter :: FULL_LCGRID=0
+
   ! Water_D
   ! *** Note *** Water_D is introduced for some NEU work, with direct 
   ! deposition to the water surface. This is not to be used for IAM, 
@@ -38,10 +48,6 @@ module EcoSystem_ml
    real, public, dimension(NDEF_ECOSYSTEMS,MAXLIMAX,MAXLJMAX), &
             save :: EcoSystemFrac
 
-   integer, public, parameter :: FULL_GRID=1
-   integer, private, parameter :: &
-     CONIF=2, DECID=3, CROP=4, SEMINAT=5, WATER_D=6 ! try to skip
-
 contains
  !<---------------------------------------------------------------------------
   subroutine Init_EcoSystems()
@@ -60,7 +66,7 @@ contains
 
        name = "Area_"//trim(DEF_ECOSYSTEMS(iEco))//"_Frac"
        unit = "Fraction"
-       if(iEco==FULL_GRID) then
+       if(iEco==FULL_ECOGRID) then
           name = "Area_"//trim(DEF_ECOSYSTEMS(iEco))//"_km2"
           unit = "km2"
        end if
@@ -79,7 +85,7 @@ contains
 
  !  Define which landcovers belong to which ecosystem
 
-        Is_EcoSystem(FULL_GRID,:)    =  .true.
+        Is_EcoSystem(FULL_ECOGRID,:)    =  .true.
         Is_EcoSystem(CONIF,:)   =  LandType(:)%is_conif
         Is_EcoSystem(DECID,:)   =  LandType(:)%is_decid
         Is_EcoSystem(CROP,:)    =  LandType(:)%is_crop
