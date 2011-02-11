@@ -83,15 +83,9 @@ our @emis_files = ();
  my( %groups, @headers );
  my @ro2pool = (); # used with new-style GenIn.species from Garry
 
-#dsrb not used  my $SOA_USED = 1;  # Set to one if SOA included
  my ( $naerosol, $first_semivol, $last_semivol )   = ( 0, 0, 0 ) ;
  my ( @species, @nspecies, @speciesmap ) = ();     # e.g. species[TOT][n]
  my ( @extinc, @CiStar, @DeltaH ); # Aerosol params
- my ( @asoa, @bsoa, @opoa, @bgnd_oc, @vol ) = ();
- my ( @woodoc, @ffueloc, @nonvoloc ) = ();
- my ( @woodec, @ffuelec, @nonvolec ) = ();
- my ( @soa_extras ) = (); #Used to get Ci, dH
- my ( @all_soa, @all_extras );
 
 # Arrays for left and righthand side of equations:
  my (@lhs,  @rhs) = ();               # Initialise lhs and rhs species
@@ -249,7 +243,7 @@ sub read_species {
 	       		# Assign species to groups if given: 
 	               	unless ( $groups =~ "-" ) {
 				print "PG SPEC $spec G $groups\n";
-			       process_groups($spec, $groups);
+			       process_groups($spec, $groups, $dry, $wet );
 			       #print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
 			       #foreach my $gg ( keys %grp ) {
 			       #print "  TESTPP $gg group is: @{ $grp{$gg} }\n";
@@ -319,13 +313,6 @@ sub read_species {
 	}
 	close(F);
 
-	# Collect SOA or POC groups:
-	@vol = ( @asoa, @bsoa, @opoa );
-	@nonvoloc = ( @ffueloc, @woodoc );
-	@nonvolec = ( @ffuelec, @woodec );
-	@all_soa = ( @asoa, @bsoa, @opoa );
-	#@all_extras = ( @asoa_extras, @bsoa_extras , @opoa_extras );
-#DSSOA	print_OA();
 
         print "PPPPPPPPPPPPPPPPPPPPPPPPPP ; \n";
 	foreach my $gg ( keys %grp ) {
@@ -1341,11 +1328,16 @@ sub print_rates {
  sub print_groups {
 	my $module = "ChemGroups_ml";
         open(GROUPS,">GenOut_$module.f90");
-	my $Use    = "use ChemSpecs_tot_ml  ! => species indices";
+	my $ngroups  = 0;
+	my $groupsub = "\n$HLINE  contains\n subroutine Init_ChemGroups()\n\n" .
+                     "   integer, dimension(:), pointer :: p\n";
+	my $Use    = "use ChemSpecs_tot_ml  ! => species indices\n";
+	   $Use   .= "use OwnDataTypes_ml   ! => typ_sp";
       # implement later
       #   use OwnDataTypes_ml, only : gtype  ! => for group defs";
         start_module($module,\*GROUPS,$Use);
 	print GROUPS	"! Assignment of groups from GenIn.species:\n";
+	print GROUPS	" public :: Init_ChemGroups\n";
 
 	 my $N = @oxngroup;
 	 my $outline = join(",",@oxngroup);
@@ -1367,8 +1359,10 @@ sub print_rates {
 	   $outline = join(",", @{ $grp{$g} });
 	 print "  TESTSS $g  N$N group is: @{ $grp{$g} }\n";
          print GROUPS "\n  integer, public, parameter ::  INDEX_${g}_GROUP = $Ngroup";
-         print GROUPS "\n  integer, public, parameter, dimension($N) :: &
+         print GROUPS "\n  integer, public, target, save, dimension($N) :: &
              ${g}_GROUP     = (/ $outline /)\n";
+	 $ngroups += 1;
+         $groupsub .= "\n p => ${g}_GROUP \n chemgroups($ngroups) = typ_sp(\"$g\", p )\n"; 
              
 	}
 	# Tmp for now  and horrible code -
@@ -1467,6 +1461,10 @@ sub print_rates {
          print GROUPS "  integer, public, parameter, dimension($N) :: &
      RO2_POOL      = (/ $outline /)\n";
 
+        print GROUPS "   type(typ_sp), dimension($ngroups), public, save :: chemgroups\n\n";
+        print GROUPS $groupsub;
+        print GROUPS "\n   nullify(p)\n"; 
+        print GROUPS "\n\n end subroutine Init_ChemGroups\n $HLINE"; 
         print GROUPS "\n\n end module $module\n $HLINE"; 
 	close(GROUPS);
 }
@@ -1531,7 +1529,7 @@ sub process_emis {
 }
 #########################################################################
 sub process_groups {
-	my ( $spec, $groups )  =  @_ ;
+	my ( $spec, $groups , $dry, $wet )  =  @_ ;
 	$groups = uc($groups);
    	my @groups = split(/;/,$groups);
 	  print "TESTGROUP $groups\n";
@@ -1543,6 +1541,20 @@ sub process_groups {
 	  foreach my $gg ( keys %grp ) {
 	      print "  TESTGG $gg group is: @{ $grp{$gg} }\n" if $g eq "SOX";
 	  }
+	  if( $wet ne "-" ) { # Creates groups such as WET_OXN, WET_xxxx ... many!
+	    my $gwet = "WDEP_$g";
+	    push @{ $grp{$gwet}},uc($spec);
+	    foreach my $gg ( keys %grp ) {
+	      print "  TESTWETGG $gwet $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
+	    }
+	  } # wet
+	  if( $dry ne "-" ) { # Creates groups such as DRY_OXN, DRY_xxxx ... many!
+	    my $gdry = "DDEP_$g";
+	    push @{ $grp{$gdry}},uc($spec);
+	    foreach my $gg ( keys %grp ) {
+	      print "  TESTdry $gdry $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
+	    }
+	  } # dry
    	}
 } # end of process_groups
 #########################################################################

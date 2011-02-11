@@ -83,7 +83,7 @@ use MosaicOutputs_ml, only : nMosaic, MAX_MOSAIC_OUTPUTS, MosaicOutput, & !
   MMC_USTAR, MMC_INVL, MMC_RH, MMC_CANO3, MMC_VPD, MMC_FST, MMC_GSTO, MMC_EVAP
 
 use OwnDataTypes_ml, only : Deriv, print_deriv_type, TXTLEN_DERIV, &
-           TXTLEN_SHORT, typ_ss, typ_s4, typ_s5i
+           TXTLEN_SHORT, typ_ss, typ_s3, typ_s4, typ_s5i
 use Par_ml,    only: me, MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      limax, ljmax           ! => used x, y area
 use SmallUtils_ml,  only : AddArray, LenArray, NOT_SET_STRING, WriteArray, &
@@ -196,22 +196,9 @@ private
   /)
 
 
-
     character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
   COL_ADD = (/ "AOD" /)
 
-   type(typ_ss), public, parameter, dimension(9) :: &
-     WDEP_CONCS = (/ &
-      typ_ss( "SO2      ","mgS") &
-     ,typ_ss( "SO4      ","mgS") &
-     ,typ_ss( "HNO3     ","mgN") &
-     ,typ_ss( "NO3_F    ","mgN") &
-     ,typ_ss( "NO3_C    ","mgN") &
-     ,typ_ss( "NH4_F    ","mgN") &
-     ,typ_ss( "NH3      ","mgN") &
-     ,typ_ss( "SEASALT_F","mgN") &
-     ,typ_ss( "SEASALT_C","mgN") &
-     /)
 
   !============ Extra parameters for model evaluation: ===================!
     character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
@@ -334,9 +321,23 @@ private
 
   ! use character arrays to specify which outputs are wanted
 
-   character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-       WDEP_WANTED = (/ "WDEP_PREC ", "WDEP_SOX  ", "WDEP_OXN  ", &
-                        "WDEP_SSALT", "WDEP_RDN  " /)   ! WDEP_PM not used
+   type(typ_s3), dimension(14), public, parameter :: WDEP_WANTED = (/ &
+         typ_s3( "PREC     ", "PREC ", "mm  " )  &
+        ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
+        ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
+        ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
+        ,typ_s3( "SS       ", "GROUP", "mgSS" )  &
+      ! 
+        ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
+        ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
+        ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
+        ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
+        ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
+        ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
+        ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
+        ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
+        ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
+     /)
 
 
     ! For some reason having this as a parameter caused problems for
@@ -372,7 +373,7 @@ private
 
    ! Build up the array wanted_deriv2d with the required field names
 
-     call AddArray(WDEP_WANTED, wanted_deriv2d, NOT_SET_STRING,errmsg)
+     call AddArray( "WDEP_" // WDEP_WANTED(:)%txt1, wanted_deriv2d, NOT_SET_STRING,errmsg)
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
      call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "D2_SR too long" )
@@ -388,12 +389,6 @@ private
      itot = BVOC_GROUP(i)
      tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-   end do
-
-   do i = 1, size( WDEP_CONCS )
-     txt = "WDEP_" // & !!LATER:trim ( WDEP_CONCS(i)%txt2 ) // "_" // &
-             trim( WDEP_CONCS(i)%txt1 )
-     call AddArray(  (/ txt /) , wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
 
 

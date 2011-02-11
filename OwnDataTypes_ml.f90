@@ -26,6 +26,17 @@ module OwnDataTypes_ml
    end type depmap
 
    !================== 
+   !/ generic group for two integers
+   type, public :: typ_i2
+       integer :: int1
+       integer :: int2
+   end type typ_i2
+
+   type, public :: typ_i3
+       integer :: int1
+       integer :: int2
+       integer :: int3
+   end type typ_i3
 
    !/ generic group for two (short) strings
    type, public :: typ_ss
@@ -38,6 +49,14 @@ module OwnDataTypes_ml
        character(len=TXTLEN_SHORT) :: name ! e.g. POD1_IAM_DF
        integer, dimension(:), pointer :: ptr
    end type typ_sp
+
+
+   !/ generic group for three (short) strings
+   type, public :: typ_s3
+       character(len=TXTLEN_SHORT) :: txt1
+       character(len=TXTLEN_SHORT) :: txt2
+       character(len=TXTLEN_SHORT) :: txt3
+   end type typ_s3
 
    !/ generic group for four (short) strings
    type, public :: typ_s4

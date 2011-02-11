@@ -162,7 +162,7 @@ contains
 
      if ( NList > size(list) ) then
        write(unit=*,fmt=*) "WRITEARRAY PROBLEM Nlist, size(List) ", &
-                 Nlist, size(list)
+                 Nlist, size(list), trim(txt)
        return
      end if
      do i = 1, Nlist

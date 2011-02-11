@@ -227,7 +227,7 @@ module MosaicOutputs_ml
         integer :: n, iLC
         character(len=TXTLEN_DERIV) :: name
         character(len=TXTLEN_SHORT) :: units
-        real :: Threshold, scale
+        real :: scale
         type(O3cl) :: veg
         logical :: dt_scale
 
@@ -251,6 +251,8 @@ module MosaicOutputs_ml
             units = "ppb.h"
             scale = 1.0/3600.0 ! AOT in ppb.hour
             dt_scale = .true.
+         else if(DEBUG ) then
+           call StopAll( "MosaicOuputs: vegclass errror" // veg%class )
          end if
 
 
@@ -286,9 +288,8 @@ module MosaicOutputs_ml
         integer, intent(out) :: nDD
         integer :: i, n, ispec, iadv
         character(len=TXTLEN_DERIV) :: name
-        character(len=TXTLEN_SHORT) :: txt, txtnum, txt2, units
+        character(len=TXTLEN_SHORT) :: units
         real :: atw
-         
 
 
      !------------- Dry Depositions for d_2d -------------------------

@@ -10,9 +10,9 @@ run=Test03   # CRI_v2_R5
 run=EmChem03c   # CRI_v2_R5
 run=OSRM    # CRI_v2_R5
 run=vbs_tests   # CRI_v2_R5
-run=Eucaari_Trends 
 run=EmChem09    # CRI_v2_R5
-#run=CRI_v2_R5
+run=Eucaari_Trends 
+run=CRI_v2_R5
 # ==========================================
 cdir=$PWD            #  Current when starting. Assumed now as a Unimod
 wdir=$PWD/ZCM_$run   # work-directory, with input files
@@ -33,8 +33,10 @@ $cdir/GenChem.pl
 cat GenOut_ChemRates*inc    > $odir/CM_ChemRates_ml.f90
 
 cat GenOut_ChemSpec*inc  GenOut_ChemChemicals_ml.inc \
-    GenOut_ChemGroups_ml.f90 \
            > $odir/CM_ChemSpecs_ml.f90
+cat GenOut_ChemGroups_ml.f90 \
+           > $odir/CM_ChemGroups_ml.f90
+
 # ../DUMMY_Spec_bgn_ml \
 
 #mv GenOut_SOA_ml.f90 $odir/CM_SOA_ml.f90

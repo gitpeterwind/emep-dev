@@ -41,10 +41,9 @@ program myeul
        Init_timing, Add_2timing, Code_timer, &
        tim_before,tim_before0,tim_before1, &
        tim_after,tim_after0
-  use My_WetDep_ml,     only : Init_WetDep
 
   use Advection_ml,     only : vgrid,adv_var, assign_nmax,assign_dtadvec
-  use Aqueous_ml,       only : init_aqueous   !  Initialises & tabulates
+  use Aqueous_ml,       only : init_aqueous, Init_WetDep   !  Initialises & tabulates
   use AirEmis_ml,       only : aircraft_nox, lightning
   use Biogenics_ml,     only : Init_BVOC, SetDailyBVOC  !dsBVOC
 ! hb NH3emis
@@ -54,12 +53,13 @@ program myeul
   use BoundaryConditions_ml, only : BoundaryConditions
   use CheckStop_ml,     only : CheckStop
   use ChemChemicals_ml, only : define_chemicals
+  use ChemGroups_ml,    only : Init_ChemGroups  
   use DefPhotolysis_ml, only : readdiss
   use Derived_ml,       only : Init_Derived
   use DerivedFields_ml, only : f_2d, f_3d
   use DO3SE_ml,         only : Init_DO3SE !LPJ
   use EcoSystem_ml,     only : Init_EcoSystems
-  use EmisDef_ml,       only : AIRNOX, NH3EMIS_VAR ! hb NH3emis
+  use EmisDef_ml,       only : AIRNOX, NH3EMIS_VAR ! NH3emis, experimental
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use ForestFire_ml,    only : Fire_Emis
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
@@ -245,6 +245,7 @@ program myeul
   call Add_2timing(1,tim_after,tim_before,"Before define_Chemicals")
 
   call define_chemicals()    ! sets up species details
+  call Init_ChemGroups()    ! sets up species details
 
   call set_output_defs()     ! Initialises outputs
 

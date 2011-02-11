@@ -277,7 +277,7 @@ module DryDep_ml
       real :: wet, dry         ! Fractions
       real :: snow_iL          !snow fraction for one landuse
       real :: Vds              ! Aerosol
-      real :: Vg_refN, Vg_3mN  ! Crude nitrate correction
+      real :: Vg_3mN           ! Crude nitrate correction
 
       real :: c_hveg, Ra_diff, surf_ppb  ! for O3 fluxes and Fst where needed
       real :: c_hveg3m  !TESTS ONLY

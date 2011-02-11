@@ -34,6 +34,74 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+xxxxxxxx rv3_7beta23  Dave   Feb 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+New (again!) groups system!   Removal of My_WetDep_ml :-)
+
+1. New chemgroups array added in CM_ChemGroups_ml, with pointers to the 
+   different group arrays, see below.
+
+2. CM_ChemGroups_ml.f90 now kept as separate file, not in CM_ChemSpecs_ml
+
+3. GenChem.pl re-written for the above changes
+
+4. GenChem also makes groups for wet and dry dep automatically, e.g. it
+   will figure out WDEP_PM10 or WDEP_DUST  ... the user only has to have
+   these properly set in GenIn.species
+
+5. My_WetDep_ml merged with Aqueous_ml - > Aqueous_n_WetDep_ml. All chemistry
+   dependencies are now through the imported CM_WetDep.inc file. 
+
+
+These changes also make "older" code like ZCM_Eucaari_Trends, or newer
+code like CRI_v2_R5, work again since we have avoided the need for
+hard-coded groups.
+
+More on the new group system:
+
+from before we had something like:
+ integer, public, target, save, dimension(2) :: &
+             NOX_GROUP     = (/ NO,NO2 /)
+
+and which could be accessed by searching for "NOX_GROUP" in the (messy!) GROUP_ARRAY, as something like:
+, gtype( "NOX", 2, (/ NO,NO2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /) ) &
+
+Now we use an array chemgroups which uses pointers. For example, "NOX" in
+chemgroups is specified with:
+
+ p => NOX_GROUP
+ chemgroups(8) = typ_sp("NOX", p )
+
+Search for NOx and you get the full array of NOX_GROUP.
+
+Much easier!
+
+So far I have only implemented this for wet deposition, so look there for examples.
+
+
+Other changes:
+
+Derived_ml
+   clean-out of old and unneeded code - e.g. old GROUP stuff
+
+My_Derived_ml:
+    WDEP_WANTED now used typ_s3 for both groups and species
+
+My_WetDep_ml - deleted :-)
+
+    Functionality moved to Aqeuos_n_WetDep_ml.
+
+OwnDataTypes_ml - added new types
+
+SmallUtils_ml, added txt to outputs
+
+Unimod.f90 - small changes for new files
+
+gfortran-pedantic clean for
+
+DryDep_ml
+MosaicOutputs_ml
+
 xxxxxxxx rv3_7beta22  Dave   Feb 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
  ** BUG fix ** My_WetDep_ml
