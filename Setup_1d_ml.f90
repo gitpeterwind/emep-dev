@@ -36,9 +36,6 @@
   !-----------------------------------------------------------------------!
   use NH3variables_ml,       only : NNH3 ! hb NH3emis   
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
-!DSBIO  use Biogenics_ml         , only :  emnat,canopy_ecf, BIO_ISOP, BIO_TERP, &
-!DSBIO                                      emforest, EmisNat  !ds
-!DSBIO  use Biogenics_ml         , only : BIO_ISOP, BIO_TERP !, rcbio
   use BoundaryConditions_ml, only : BGN_2D
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
@@ -55,9 +52,9 @@
   use ChemChemicals_ml,        only :  species
   use ChemSpecs_tot_ml,        only :  SO4,C5H8,NO,NO2,SO2,CO
   use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
+                                      IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F, &
                                        IXADV_NH3 ! hb NH3emis
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
-!MOVED  use ChemSpecs_bgn_ml,        only :  NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use ChemRates_rct_ml,       only :  set_rct_rates, rct
   use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
   use GridValues_ml,         only :  sigma_mid, xmd, &
@@ -72,8 +69,8 @@
                                     ,zen, Idirect, Idiffuse,z_bnd
   use ModelConstants_ml,     only :  &
      ATWAIR                          &        
-    ,DEBUG_SETUP_1DCHEM              & !DSGC
-    ,DEBUG_SETUP_1DBIO               & !DSGC
+    ,DEBUG_SETUP_1DCHEM              & 
+    ,DEBUG_SETUP_1DBIO               & 
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
@@ -151,11 +148,12 @@ contains
        
        temp(k) = th(i,j,k,1)* Tpot_2_T( pp(k) )
 
-       itemp(k) = nint( temp(k) -1.E-9)
-! the "-1.E-9" is put in order to avoid possible different roundings on different machines. 
+       itemp(k) = nint( temp(k) -1.E-9) ! the "-1.E-9" is put in order to
+               ! avoid possible different roundings on different machines. 
 
        qsat  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
        rh(k) = min( q(i,j,k,1)/qsat , 1.0) 
+       rh(k) = max( q(i,j,k,1)/qsat , 0.001) 
 
         ! 1)/ Short-lived species - no need to scale with M
 
@@ -192,14 +190,11 @@ contains
 
   ! 5 ) Rates  (!!!!!!!!!! NEEDS TO BE AFTER RH, XN, etc. !!!!!!!!!!)
 
-!DSGC   rct(:,:)    = rcit(:,itemp(:))
 
    call set_rct_rates()
 
-   !old: call set_rctroe_rates(tinv,amk,rctroe)
 
    call set_rcmisc_rates()
-   !DSGC call set_rcmisc_rates(itemp,tinv,amk,o2k,h2o,rh,rcmisc)
 
   if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
             i==debug_li .and. j==debug_lj .and. &
@@ -214,6 +209,10 @@ contains
       write(*,"(a,10es10.3)") " DEBUG_SETUP_1DCHEM XN  ", &
         amk(KMAX_MID),  xn_2d(IXADV_O3+NSPEC_SHL,KMAX_MID), &
           xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)
+      write(*,"(a,10es10.3)") " DEBUG_SETUP_1D-Riemer",&
+        xn_2d(IXADV_SO4+NSPEC_SHL,KMAX_MID) &
+       ,xn_2d(IXADV_NO3_F+NSPEC_SHL,KMAX_MID) &
+       ,rcmisc(19,KMAX_MID)
   end if
 
 
@@ -265,7 +264,6 @@ contains
            j_l=j_help - gj0  +1
            if((i_l==i).and.(j_l==j))then !i,j have a volcano
               k=height_volc(volc_no)
-              !DSSRC rcemis(QRCVOL,k)=rcemis(QRCVOL,k)+rcemis_volc(volc_no)
               rcemis(SO2,k)=rcemis(SO2,k)+rcemis_volc(volc_no)
               !write(*,*)'Adding volc. emissions ' &
               !          ,rcemis_volc(volc_no),volc_no,&
@@ -377,8 +375,7 @@ contains
   end subroutine setup_rcemis
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-! hb NH3emis
-  subroutine setup_nh3(i,j)
+  subroutine setup_nh3(i,j)  ! EXPERIMENTAL
   !                                                                            
   !---- assign nh3 rates  ------------------------------------------------     
   !                                                                            

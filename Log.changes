@@ -68,7 +68,7 @@ ds --     CoDep_ml.f90
           DerivedFields_ml.f90
           Derived_ml.f90
           DO3SE_ml.f90
-          DryDep_ml.f90
+ds --     DryDep_ml.f90
           DustProd_ml.f90
           EcoSystem_ml.f90
           EmisDef_ml.f90
@@ -120,9 +120,9 @@ ds --     CoDep_ml.f90
           Sites_ml.f90
           SmallUtils_ml.f90
           SoilWater_ml.f90
-          Solver.f90
-          StoFlux_ml.f90
-          SubMet_ml.f90
+ds --     Solver.f90
+ds --     StoFlux_ml.f90
+ds --     SubMet_ml.f90
           Tabulations_ml.f90
           TimeDate_ml.f90
           Timefactors_ml.f90
@@ -140,6 +140,13 @@ ZD_OZONE/
           My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+
+xxxxxxxx rv3_7beta24  Dave   Feb 20 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Clean-up list added to Log.changes - please use!
+
+ModelConstants_ml - added DEBUG_SOLVER
 
 
 xxxxxxxx rv3_7beta23  Dave   Feb 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
