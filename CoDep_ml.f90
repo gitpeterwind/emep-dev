@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -33,11 +33,6 @@ module CoDep_ml
   use Par_ml,        only : MAXLIMAX, MAXLJMAX
 
 
-
- ! In a future version, we might test for  Ts_C > -2 instead of
- ! Ts_C > 0  as we have now.
-
- ! Still have RgsS_dry - in future rename to Rns_SO2_dry
 
   !---------------------------------------------------------------------------
   ! Calculates the  non-stomatal resistances Rns_SO2 and Rns_NH3. 
@@ -88,7 +83,6 @@ module CoDep_ml
 
   !/ Calculated values /outputs):
    real, public, save ::  &
-!hf CoDep        RgsS_dry          &!
 !hf CoDep       ,RgsS_wet          &!
        humidity_fac      &! to interpolate Gns  across different RH
        ,Rns_NH3           & ! Resistance for NH3 on ground (water) surface
@@ -116,14 +110,13 @@ contains
 ! Input:
    
    real, intent(in) :: so2nh3ratio    ! so2/nh3 ratio
-!hf CoDep
    real, intent(in) :: so2nh3ratio24hr    ! so2/nh3 ratio accumulated 
                                           ! over previous 24 hours
 
    real, intent(in) :: Ts_C           ! surface temp. (degrees C)
-   real, intent (in):: frh             ! relative humidity (as a fraction)
+   real, intent (in):: frh            ! relative humidity (as a fraction)
    logical, intent (in):: forest      ! true if forest
-   logical, intent (in):: debug_flag      ! true if forest
+   logical, intent (in):: debug_flag
 
 
  ! On first call we will tabulate Rns_NH3
@@ -133,12 +126,10 @@ contains
   !local terms governing intermediary calculations in the evaluation of NH3_st:
 
    real, parameter :: BETA=1.0/22.0   ! Rns factors, see Unimod eqn (8.16)
-   real :: F1, F2                     ! Rns factors, see Unimod eqn (8.16)
-   real :: F3, F4                     ! Rns factors for SO2
-   ! real :: F3, F4                   !  (not used)
-   real :: a_SN                ! so2/nh3 after correction with 0.6
-   real :: a_SN_24hr                ! so2/nh3 24hr average after correction with 0.6
-!hf CoDep
+   real    :: F1, F2           ! Rns factors, NH3
+   real    :: F3, F4           ! Rns factors for SO2
+   real    :: a_SN             ! so2/nh3 after correction with 0.6
+   real    :: a_SN_24hr        ! so2/nh3 24hr average 
    integer :: itemp            ! integer Temp in deg.C
    integer :: ia_SN            ! 10*a_SN
    integer :: ia_SN_24hr       ! 10*a_SN_24hr
@@ -184,35 +175,14 @@ contains
       end if
    end if
 
-!hf CoDep====NOW THIS IS OLD STUFF============================
-  !/ 1) Acidity factor & Rgs for sulphur:
-
-!       acidity_fac = tab_acidity_fac( ia_SN )
-!       RgsS_dry    = acidity_fac * CEHd
-!       RgsS_wet    = acidity_fac * CEHw
-!       call CheckStop ( RgsS_dry<0.0 .or. RgsS_wet<0.0  , "CoDep NEG ERROR")
-
-  !/ 2) Humidity factor:  (F=forest, G=grass+other)
-
-!       if( forest ) then
-!           humidity_fac = tab_humidity_fac(IRH,1) 
-!       else
-!           humidity_fac = tab_humidity_fac(IRH,2) 
-!       end if
-!hf CoDep end=====================================================
-
-
-
-
 
   !/ 3) Rns_NH3   - see Unimod eqn (8.16)
-  !                =RIS eq. (24), modified by CEH Note
-  !     & Rns_SO2   - provisional !!!
+  !     Rns_SO2   - Fagerli et al, in preperation
 
 
     if (Ts_C >0 ) then    ! Use "rh" - now in fraction 0..1.0
 
-           !F1 = 10.0 * log10(Ts_C+2.0) * exp(100.0*(1.0-frh)/7.0)
+          !F1 = 10.0 * log10(Ts_C+2.0) * exp(100.0*(1.0-frh)/7.0)
            F1 = 10.0 * log10(Ts_C+2.0) * tab_exp_rh(IRH)
            F2 = tab_F2( ia_SN  )
 
@@ -220,20 +190,16 @@ contains
            Rns_NH3 = min( 200.0, Rns_NH3)  ! After discussion with Ron
            Rns_NH3 = max(  10.0,Rns_NH3)
 
-           !Ex F3 =  40.0 * log10(Ts_C+2.0) * exp(100.0*(1.0-frh)/25.0)
-           !Ex F4 = tab_F4( ia_SN  )
-           !Ex Rns_SO2 = F3 * F4
-
-!New Formulation (article to be submitted)
-! Rns_SO2_dry = 11.84  * exp(1.1*so2nh3ratio24hr) * ( frh**(-1.67) )
+        ! New Formulation (article to be submitted)
+        ! Rns_SO2_dry = 11.84  * exp(1.1*so2nh3ratio24hr) * ( frh**(-1.67) )
 
            F3 = tab_F3 (ia_SN_24hr) !11.84  * exp(1.1*so2nh3ratio24hr)
            F4 = tab_F4(IRH)      !frh**(-1.67)
            Rns_SO2 = F3 * F4
 
 
-!Limit on So2/nh3 
-!hf CoDep
+        !Limit on So2/nh3 
+
           Rns_SO2 = min( 1000.0, Rns_SO2)  ! Set because rh goes almost 
                  ! to zero occationally over the Alps, Greenland and Svalbard
                  ! 1000 chosen sort of random
@@ -250,22 +216,18 @@ contains
 
 
      else if (  Ts_C > -5 ) then
+       ! In a future version, we might test for  Ts_C > -2 instead of
+       ! Ts_C > 0  as we have now.
 
-!hf           Rns_NH3=200.0
-           Rns_NH3 = 100.0
-!hf CoDep           Rns_SO2=200.0 !Reason:Already have Rlow in Rsurface
-           Rns_SO2= 100.0 ! multiply by lowTcorr in Rsurface,so effectively means 200
+           Rns_NH3 = 100.0 ! will be modified bu low-T factor later
+           Rns_SO2 = 100.0
 
      else 
 
-!hf           Rns_NH3=1000.0
-           Rns_NH3= 500.0
-!hf CoDep           Rns_SO2=1000.0!Reason:Already have Rlow in Rsurface
-           Rns_SO2= 500.0 ! adds lowTcorr in Rsurface,so effectively means 1000. This will be for frozen surfaces
+           Rns_NH3= 500.0 ! will be modified bu low-T factor later
+           Rns_SO2= 500.0
 
      end if !Ts_C
-
-
 
  end subroutine CoDep_factors
 
@@ -275,25 +237,18 @@ contains
     !/**  Tabulates humidity factors, 
 
      real :: a_SN, a_SN_24hr
-     integer :: IRH, rh_lim, veg, ia_SN, ia_SN_24hr
-     integer, parameter, dimension(2) :: &
-          Rhlim = (/ 85,  75 /)   ! RH limits for F=forest, G=grass
-
-    !ds NOTUSEDtab_humidity_fac(:,:) = 0.0
+     integer :: IRH, veg, ia_SN, ia_SN_24hr
 
     ! Acidity factor
 
-!ds bug     do ia_SN = 1, NTAB
      do ia_SN = 0, NTAB
        a_SN =  ia_SN * MAX_SN /real(NTAB)
        tab_acidity_fac( ia_SN )  = exp( -(2.0- a_SN) )
        tab_F2 (ia_SN)            = 10.0**( (-1.1099 * a_SN)+1.6769 )
-!hf CoDep       tab_F4 (ia_SN)            = 10.0**( (0.55 * a_SN)-1.0 ) 
        if(MY_DEBUG.and. MasterProc ) write(6,*) "TABIA ", ia_SN, a_SN, &
               tab_acidity_fac( ia_SN ), tab_F2(ia_SN)
      end do
 
-!hf CoDep
      do ia_SN_24hr = 0, NTAB
        a_SN_24hr            = ia_SN_24hr * MAX_SN /real(NTAB)
        tab_F3 (ia_SN_24hr)  = 11.84  * exp(1.1 * a_SN_24hr)
@@ -301,23 +256,8 @@ contains
             a_SN_24hr, tab_F3(ia_SN_24hr)
      enddo
 
-!ds NOTUSED  do veg = 1, 2
-!ds NOTUSED    rh_lim = Rhlim(veg)
-!ds NOTUSED    do IRH = rh_lim, 100
-!ds NOTUSED      !BUG tab_humidity_fac(IRH,veg) = ( (IRH-rh_lim)/(100-rh_lim) )
-!ds NOTUSED      tab_humidity_fac(IRH,veg) = ( (IRH-rh_lim)/(100.0-rh_lim) )
-!ds NOTUSED      if(MY_DEBUG.and.me==0) write(6,*) "TABVEGRH ", &
-!ds NOTUSED           veg, IRH, rh_lim,  tab_humidity_fac(IRH,veg)
-!ds NOTUSED    end do
-!ds NOTUSED  end do
-
-!???     do IRH = 0, 100
-!???
-!???     enddo
-
      do IRH = 0, 100
           tab_exp_rh(IRH) = exp( (100.0-IRH)/7.0)
-!hf CoDep  
           tab_F4(IRH)= (max(1,IRH)/100.)**(-1.67)
           if(MY_DEBUG.and. MasterProc ) write(6,*) "TABRH ", IRH, &
               tab_exp_rh(IRH), tab_F4(IRH)
