@@ -193,6 +193,7 @@ module ModelConstants_ml
       ,DEBUG_WETDEP         = .false. & !
       ,DEBUG_MY_WETDEP      = .false. & !
       ,DEBUG_SOA            = .false. & !
+      ,DEBUG_SOLVER         = .false. & !
     ,DEBUG_LANDDEFS       = .false. & !
     ,DEBUG_LANDUSE        = .false. & !
     ,DEBUG_LANDPFTS       = .false. &
