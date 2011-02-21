@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -42,17 +42,25 @@
 ! 3. EQUILIB_MARS - run MARS equilibrium model
 ! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
 !----------------------------------------------------------------------
+ use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
+ use ChemSpecs_tot_ml,   only :  NH3, HNO3, SO4, NO3_f, NH4_f
+ use Setup_1dfields_ml,  only :  temp, rh,pp
+ use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP, DEBUG=>DEBUG_AEROSOL
+ use ChemChemicals_ml,     only :  species
+ use PhysicalConstants_ml, only : AVOG
 
    implicit none
 
    !/-- public           !!  true if wanted
                     
-    logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
-                                , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
-                                , EQUILIB_MARS      = .false.  & !MARS
-                                , EQUILIB_EQSAM     = .true.   & !EQSAM
-                                , AOD               = .true.   &
-                                , VOLCANO           = .false.
+    logical, public, parameter :: AERO_DYNAMICS   = .false.  &  
+                            !old Ammonium stuff
+                                , EQUILIB_EMEP    = .false.  & 
+                                , EQUILIB_MARS    = .false.  & !MARS
+                            !now use EQSAM:
+                                , EQUILIB_EQSAM   = .true.   & !EQSAM
+                                , AOD             = .true.   &
+                                , VOLCANO         = .false.
 
     logical, public, parameter :: SEASALT = .true. 
  !.. Number of aerosol sizes (1-fine, 2-coarse)
@@ -70,15 +78,9 @@ contains
  ! JGR, 108, D6, 4183
  !..................................................................
 
- use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f
- use Setup_1dfields_ml,  only :  temp, rh
- use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
- use ChemChemicals_ml,    only :  species
- use PhysicalConstants_ml, only : AVOG
  use MARS_ml, only: rpmares
-
  implicit none
+
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
 
  logical, intent(in)  :: deb
@@ -89,7 +91,6 @@ contains
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
   integer :: k, ic, bin, spec, errmark
-  logical :: debsub
  !-----------------------------------
 
    coef = 1.e12 / AVOG
@@ -106,7 +107,7 @@ contains
  !--------------------------------------------------------------------------                
       call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
                     aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
-                    ERRMARK,debsub) 
+                    ERRMARK,DEBUG) 
  !--------------------------------------------------------------------------
 
       xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
@@ -133,12 +134,6 @@ contains
     !..................................................................
 
  use EQSAM_v03d_ml,      only :  eqsam_v03d
- use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f,NO3
- use Setup_1dfields_ml,  only :  temp, rh,pp
- use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
- use PhysicalConstants_ml, only : AVOG
-
  implicit none
 
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
@@ -168,11 +163,10 @@ contains
              gSO4out(KCHEMTOP:KMAX_MID)
 
   integer :: i,j,k, errmark
-  logical :: debsub = .false.
  !-----------------------------------
 
 
-  if ( debsub .and. debug_cell ) then ! Selected debug cell
+  if ( DEBUG .and. debug_cell ) then ! Selected debug cell
     write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
@@ -204,7 +198,7 @@ contains
       xn_2d(NH4_f,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNH4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(SO4,KCHEMTOP:KMAX_MID)   = max(FLOOR,aSO4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
 
- if ( debsub .and. debug_cell ) then ! Selected debug cell
+ if ( DEBUG .and. debug_cell ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
@@ -265,7 +259,6 @@ contains
 
   real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
   integer :: k, errmark
-  logical :: debsub = .false.
  !-----------------------------------
 
 

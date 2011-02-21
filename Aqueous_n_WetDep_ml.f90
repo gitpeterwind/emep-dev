@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -61,10 +61,9 @@ module Aqueous_ml
 
   use CheckStop_ml, only : CheckStop
   use ChemChemicals_ml, only: species
-!  use ChemSpecs_adv_ml
   use ChemSpecs_tot_ml
-  use ChemGroups_ml, only : ChemGroups ! new syste
-  use DerivedFields_ml,    only : f_2d, d_2d      ! Contains Wet deposition fields
+  use ChemGroups_ml, only : ChemGroups
+  use DerivedFields_ml, only : f_2d, d_2d     ! Contains Wet deposition fields
   use GridValues_ml, only : gridwidth_m,xm2,dA,dB
   use Io_ml,             only : IO_DEBUG, datewrite
   use MassBudget_ml,     only : wdeploss
@@ -253,7 +252,8 @@ module Aqueous_ml
     integer, save, private :: nwgrp = 0, nwspec = 0  ! no. groups & specs
     integer, save, allocatable, dimension(:), private :: wetgroup, wetspec 
 
-    type(typ_i3), save, private, dimension(size(WDEP_WANTED(:)%txt1 )) :: tmpgroup, tmpspec
+    type(typ_i3), save, private, &
+          dimension(size(WDEP_WANTED(:)%txt1 )) :: tmpgroup, tmpspec
 
     type(WScav), public, dimension(NWETDEP_CALC), save  :: WetDep
   
@@ -266,33 +266,32 @@ contains
 
     integer :: itot, icalc, n, nc, if2, igr, isp, alloc_err, atw
 
-  !/ INCLOUDFAC is A/v_xmi where A is 5.2 m3 kg-1 s-1, !  and v_xmi is the fallspeed (5 m/s). 
-    real, parameter ::  FALLSPEED = 5.0                            ! m/s 
+  !/ INCLOUDFAC is A/v_xmi where A is 5.2 m3 kg-1 s-1, 
+  !  and v_xmi is the fallspeed (5 m/s). 
+    real, parameter ::  FALLSPEED = 5.0               ! m/s 
     real, parameter ::  SUBCLFAC = 5.2 / FALLSPEED
 
   !/ e is the scavenging efficiency (0.1 for fine particles, 0.4 for course)
 
     real, parameter ::  EFF25 = 0.1*SUBCLFAC  & 
-                      , EFFCO = 0.4*SUBCLFAC  ! collection efficiency b/clouds - coarse
+                      , EFFCO = 0.4*SUBCLFAC  
 
    !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
    !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
-   !    efficiency * INCLOUDFAC. See also notes in Aqueous_ml.
+   !    efficiency * INCLOUDFAC.
    !/..                             W_Sca  W_sub
-    WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)   ! Berge+Jakobsen, issh
-    WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25)  ! Berge+Jakobsen, jej
+    WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)  ! Berge+Jakobsen
+    WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25) ! Berge+Jakobsen
     WetDep(CWDEP_NH3)   = WScav(   1.4,  0.5 )  ! subcloud = 1/3 of cloud for gases
     WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   ! 
     WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   ! 
     WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  ! 
     WetDep(CWDEP_ECfn)  = WScav(   0.0,  EFF25)
-!    WetDep(CWDEP_ECfa)  = WScav(   1.0,  EFF25) ! as PMf
-!    WetDep(CWDEP_ECcn)  = WScav(   0.0,  EFFCO)
     WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
     WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
     WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
     WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
-    WetDep(CWDEP_ROOH)   = WScav(  0.05,  0.015) !! TEST half of HCHO
+    WetDep(CWDEP_ROOH)   = WScav(  0.05,  0.015) ! assumed half of HCHO
 
   ! Other PM compounds treated with SO4LIKE array defined above
 

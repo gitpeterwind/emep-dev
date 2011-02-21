@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -51,7 +51,7 @@
    use Ammonium_ml,       only: Ammonium
    use AOD_PM_ml,         only: AOD_calc
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, setup_bio! , rcbio !for debug DSBIO
+   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, setup_bio! rcbio for debug
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
    use Chemfields_ml,     only: xn_adv  ! For DEBUG 
@@ -62,21 +62,20 @@
    use ChemSpecs_tot_ml                   ! DEBUG ONLY
    use ChemSpecs_adv_ml                   ! DEBUG ONLY
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
+   use Io_Progs_ml,       only : datewrite
    use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
                                   nprint, END_OF_EMEPDAY, &
                                   USE_DUST, &
                   DebugCell, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
 
-   use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol ! not yet implemented 
+   use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol
    use Par_ml,            only : lj0,lj1,li0,li1  &
-                                ,gi0, gj0, me & !! for testing
-                                ,IRUNBEG, JRUNBEG    !! for testing
+                                ,gi0, gj0, me &    !! for testing
+                                ,IRUNBEG, JRUNBEG  !! for testing
    use SeaSalt_ml,        only: SeaSalt_flux
    use Setup_1d_ml,       only: setup_1d, &
-                                !DSBIO setup_bio, 
                                 setup_rcemis, reset_3d, &
-                                !dsPCM setup_bio, rcbio, setup_rcemis, reset_3d,&
                                 setup_nh3 ! hb NH3emis
    use Setup_1dfields_ml, only: first_call, rcbio,  &
                                  amk, rcemis, xn_2d  ! DEBUG for testing
@@ -114,7 +113,6 @@ subroutine runchem(numt)
    Jan_1st    = ( nmonth == 1 .and. nday == 1 )
    End_of_Run = ( mod(numt,nprint) == 0       )
 
-     !TEST if( DEBUG_AOT .and. debug_proc ) aotpre=Calc_GridAOTx(40.0,.true.,"RUNPRE")
   !.... ****  processes calls *************************
 
    errcode = 0
@@ -162,32 +160,21 @@ subroutine runchem(numt)
              call setup_rcemis(i,j)
 
 ! Called every adv step, only updated every third hour
-             call setup_nh3(i,j)    ! hb NH3emis 
+             call setup_nh3(i,j)    ! NH3emisa, experimental
 
              if ( SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
-! dust
+
              if ( USE_DUST )     &
              call WindDust (i,j,debug_flag)
 
 
-if ( DEBUG .and. debug_flag  ) then
-    write(6,"(a,2i3,i5,9es9.2)") "DEBUG_RUNCHEM RC ", &
-          current_date%day, current_date%hour, current_date%seconds, &
-          rcemis(NO,20), &! rcemis(NO2,20), rcemis(HCHO,20), &
-          rcbio(BIO_ISOP,KMAX_MID), rcemis(C5H8,KMAX_MID)
-    write(6,"(a16,10es10.2)") "RUNCHEM  PRE-CHEM ", &
-          xn_2d(NO,20),xn_2d(C5H8,20) !, &
-end if
-!          !rcemis(QRCCO,20), AROM, rcemis(QRCPM25,20), rcemis(QRCEC_f_FFUEL,20)
-!
-!    write(6,"(a16,9es10.2)") "RUNCHEM PRE_OC ", &
-!          xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20), &
-!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
-!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
-!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
-!         
-!          
+             if ( DEBUG .and. debug_flag  ) then
+               call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
+                rcbio(BIO_ISOP,KMAX_MID), rcemis(C5H8,KMAX_MID), &
+                xn_2d(NO,20),xn_2d(C5H8,20) /) )
+             end if
+
              if ( ORGANIC_AEROSOLS )  &
                call OrganicAerosol(i,j,debug_flag)
 
@@ -195,31 +182,21 @@ end if
                                           "Runchem:2nd setups")
 
 !if ( DEBUG .and. debug_flag  ) then
-!    write(6,"(a16,9es10.2)") "RUNCHEM POST_OC ", &
-!          xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20), &
-!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
-!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
-!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
-!end if
-!
-!
-!           !-------------------------------------------------
-!if ( DEBUG .and. debug_flag  ) then
 !    write(6,"(a16,9es10.2)") "RUNCHEM PRE-CHEM ", &
 !          xn_2d(PPM25,20), xn_2d(AER_BGNDOC,20), &
-!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
-!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
-!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
 !end if
+!           !-------------------------------------------------
+!           !-------------------------------------------------
+!           !-------------------------------------------------
              call chemistry(i,j, DEBUG .and. debug_flag)
-if ( DEBUG .and. debug_flag  ) then
-    write(6,"(a16,10es10.2)") "RUNCHEM POST-CHEM ", &
-          xn_2d(NO,20),xn_2d(C5H8,20) !, &
-!          xn_2d(PPM25,20),xn_2d(AER_BGNDOC,20), &
-!          xn_2d(EC_F_FFUEL,20), xn_2d(POC_F_FFUEL,20), xn_2d(AER_FFUELOC,20),&
-!          xn_2d(GAS_ASOA,20), xn_2d(AER_ASOA,20),&
-!          xn_2d(GAS_BSOA,20), xn_2d(AER_BSOA,20)
-end if
+!           !-------------------------------------------------
+!           !-------------------------------------------------
+!           !-------------------------------------------------
+
+             if ( DEBUG .and. debug_flag  ) then
+               call datewrite("Runchem Post-Chem", &
+                   (/ xn_2d(NO,20),xn_2d(C5H8,20) /) )
+             end if
            !_________________________________________________
 
              call Add_2timing(31,tim_after,tim_before, &
@@ -262,7 +239,7 @@ end if
                      if ( prclouds_present)  &
                         call WetDeposition(i,j,debug_flag)
 
-!// Calculate Aerosol Optical Depth
+                      !// Calculate Aerosol Optical Depth
                       if ( AOD )  &
                         call AOD_calc (i,j,debug_flag)
 
@@ -286,11 +263,6 @@ end if
 
       end do ! j
     end do ! i
-
-                 !.... ************************************************
-                 !TEST if( DEBUG_AOT .and. debug_proc ) then
-                 !TEST      aotpost=Calc_GridAOTx(40.0,.true.,"RUNPOST")
-                 !TEST end if
 
    end subroutine runchem
 

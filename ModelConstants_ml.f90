@@ -140,16 +140,16 @@ module ModelConstants_ml
 !integer, private, parameter :: DEBUG_ii= 88, DEBUG_jj= 21 ! Aveiro+i2
  !integer, private, parameter :: DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
  ! integer, private, parameter :: DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
+  integer, private, parameter :: DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
  !integer, private, parameter :: DEBUG_ii= 97, DEBUG_jj= 62  ! Waldhof
- !LOW: integer, private, parameter :: DEBUG_ii= 91, DEBUG_jj= 56  ! LOW values
  !integer, private, parameter :: DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
  !integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
  !integer, private, parameter :: DEBUG_ii=74, DEBUG_jj= 79 !  Payerne_HIRHAM
- integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 50 !   Harwell
- !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 15 !   biomass burnung, Aug 2003
- !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 35 !  Sea, Bay of Biscay
- !integer, private, parameter :: DEBUG_ii=76, DEBUG_jj= 35 !  Sea,  North sea
- !integer, private, parameter :: DEBUG_ii=91, DEBUG_jj=67 ! hb NH3emis Tange 
+ !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 50 !   Harwell
+ !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 15 !  biomass burnung, Aug 2003
+ !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 35 ! Sea, Bay of Biscay
+ !integer, private, parameter :: DEBUG_ii=76, DEBUG_jj= 35 ! Sea,  North sea
+ !integer, private, parameter :: DEBUG_ii=91, DEBUG_jj=67  ! Tange 
 ! integer, private, parameter :: DEBUG_ii=103, DEBUG_jj=32 ! Prades, SMDge 
 
  !integer, public, parameter :: DEBUG_i= 9, DEBUG_j= 201 ! MACC02
@@ -190,10 +190,11 @@ module ModelConstants_ml
  !!! DEBUG_RUNCHEM is SPECIAL.. needed for indented debugs are to work
     ,DEBUG_MOSAICS        = .false.  & !
     ,DEBUG_RUNCHEM        = .false. &
-      ,DEBUG_WETDEP         = .false. & !
+      ,DEBUG_AEROSOL        = .false. & !
       ,DEBUG_MY_WETDEP      = .false. & !
       ,DEBUG_SOA            = .false. & !
       ,DEBUG_SOLVER         = .false. & !
+      ,DEBUG_WETDEP         = .false. & !
     ,DEBUG_LANDDEFS       = .false. & !
     ,DEBUG_LANDUSE        = .false. & !
     ,DEBUG_LANDPFTS       = .false. &

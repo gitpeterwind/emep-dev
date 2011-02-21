@@ -135,13 +135,13 @@
      NSONDES_MAX =    99               &   ! Max. no sondes allowed
     ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
-    ,NADV_SONDE  =   8                &   ! No.  advected species
+    ,NADV_SONDE  =   9                &   ! No.  advected species
 !PCM    ,NADV_SONDE  =   22                &   ! No.  advected species
     ,NSHL_SONDE  =    3                &   ! No. short-lived species
     ,NXTRA_SONDE =    7                    ! No. Misc. met. params  (now th)
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
-   SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, &
+   SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_PAN,  &
 ! Uncomment PCM to get SOA-relaetd outputs
 !PCMIXADV_AER_ASOA, &
 !PCM                IXADV_AER_BSOA, IXADV_AER_POA, IXADV_AER_OPOA, &
@@ -269,7 +269,7 @@
 !  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(ixadv).
 !    For ugX/m3 output use in combination with to_ug_X(ixadv).
-  to_ug_ADV=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%molwt         *PPBINV/ATWAIR
+  to_ug_ADV=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%molwt    *PPBINV/ATWAIR
   to_ug_C = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%carbons  *atwC*PPBINV/ATWAIR
   to_ug_N = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%nitrogens*atwN*PPBINV/ATWAIR
   to_ug_S = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%sulphurs *atwS*PPBINV/ATWAIR
@@ -323,16 +323,6 @@
     hr_out(1)= Asc2D("o3_3m", "ADVppbv", "(f9.4)",&
                 IXADV_o3,   ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0)
 
-! Deriv output
-!   hr_out(2)= Asc2D("O3_Wheat", "D2D", "(f7.3)", &
-!     find_index("D2_O3WH",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "ppbv",1.0,600.0)
-!   hr_out(3)= Asc2D("O3_Beech", "D2D", "(f7.3)", &
-!     find_index("D2_O3DF",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "ppbv",1.0,600.0)
-!   hr_out(4)= Asc2D("FST_DF00", "D2D", "(f7.3)", &
-!     find_index("D2_FSTDF00",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "NNNN",1.0,600.0)
-!   hr_out(5)= Asc2D("FST_WH00", "D2D", "(f7.3)", &
-!     find_index("D2_FSTWH00",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "NNNN",1.0,600.0)
-
 !  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
@@ -352,18 +342,6 @@
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
 !   hr_out(3)= Asc2D("D2_HMIX","D2D", "(f6.1)", &
 !     find_index("D2_HMIX",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "m",1.0,10000.0)
-
-! Flux output
-!   hr_out(2)= Asc2D("Fst_TConif", "D2D", "(f8.5)",&
-!     find_index("D2_FSTCF0",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "nmole/m2/s",1.0,900.0)
-!   hr_out(3)= Asc2D("Fst_TBroad", "D2D", "(f8.5)",&
-!     find_index("D2_FSTDF0",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "nmole/m2/s",1.0,900.0)
-!   hr_out(4)= Asc2D("Fst_Grass", "D2D", "(f8.5)",&
-!     find_index("D2_FSTGR0",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "nmole/m2/s",1.0,900.0)
-!   hr_out(5)= Asc2D("Fst_Wheat", "D2D", "(f8.5)",&
-!     find_index("D2_FSTWH0"",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "nmole/m2/s",1.0,900.0)
-!   hr_out(10)=Asc2D("O3_Conif", "D2D", "(f7.3)",&
-!     find_index("D2_O3CF"",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "ppb",1.0,900.0)
 
 !/** theta is in deg.K
 !   hr_out(1)=  Asc2D("T2_C",   "T2_C   ", "(f5.1)",     &

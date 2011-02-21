@@ -56,24 +56,25 @@
     use Emissions_ml,      only: KEMISTOP    
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
-    !dsjuse ChemSpecs_bgn_ml           ! => IXBGN_  indices and xn_2d_bgn values
-    use Chemfields_ml,  only : NSPEC_BGN       ! => IXBGN_  indices and xn_2d_bgn values
+    use Chemfields_ml, only : NSPEC_BGN  ! => IXBGN_  indices and xn_2d_bgn 
     use ChemRates_rct_ml,   only: rct
-    use ChemRates_rcmisc_ml,only: rcmisc  ! DSGC new
+    use ChemRates_rcmisc_ml,only: rcmisc
     use GridValues_ml,     only : GRIDWIDTH_M
-    use Io_ml,             only : IO_LOG
-    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, DebugCell, MasterProc
+    use Io_ml,             only : IO_LOG, datewrite
+    use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
+                                 DebugCell, MasterProc, DEBUG_SOLVER
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX  ! me for TEST
+ use PhysicalConstants_ml, only:  RGAS_J !TTTT
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
                                  rc_Rn222,      & ! Pb210
                                  xn_2d,         & 
                                  rh,            & 
-                                 Fgas,          & ! fraction in gas-phase, for SOA
+                                 Fgas,   & ! fraction in gas-phase, for SOA
                                  rcss,amk,      & ! Sea salt emission rate
-                                 rcnh3,         & ! hb NH3emis
-                                 rcbio            ! dsPCM
-    use N2O5_hydrolysis_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4,&
-                                 f_Riemer! to weight the hydrolysis of N2O5 with NO3,SO4 mass
+                                 rcnh3,         & ! NH3emis
+                                 rcbio            ! bvoc
+ use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
+    use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
   implicit none
 
   private
@@ -82,10 +83,7 @@
   INCLUDE 'mpif.h'
 
   integer::  STATUS(MPI_STATUS_SIZE),INFO
-!DSGC  integer, parameter:: nchemMAX=15
-  !DS TEST
      integer, parameter:: nchemMAX=15
-  !DS TEST integer, parameter:: nchemMAX=18
   integer, parameter:: NUM_INITCHEM=5    ! Number of initial time-steps with shorter dt
   real, save::         DT_INITCHEM=20.0  ! shorter dt for initial time-steps, reduced for 
   integer, parameter  :: EXTRA_ITER = 1    ! Set > 1 for even more iteration
@@ -128,6 +126,7 @@ contains
     real, dimension(nchemMAX), save :: &
                         coeff1,coeff2,cc ! coefficients for variable timestep
     integer :: nextraiter
+real :: tmprc, tmpf, tmprate, tmpv !TTTT
 
 !======================================================
 
@@ -154,13 +153,7 @@ contains
     toiter(KEMISTOP:KMAX_MID) = 3    ! Near-ground, emis levels
 
    ! to get better accuracy if wanted (at CPU cost)
-    toiter = toiter * EXTRA_ITER     ! DSGC , 
-
-
-    !** Comments: Only NO2+O3->H+ +NO3- at night time 
-    !   and in the8 lowest layers and if rh>0.5
-
-!DSGC    if (ONLY_NIGHT) call set_night_rct(rct,rh,i,j)  ! Only for ACID version
+    toiter = toiter * EXTRA_ITER  
 
 
     !** Establishment of initial conditions:
@@ -250,6 +243,40 @@ contains
         end if
 
     enddo ! End of vertical k-loop
+    if( DEBUG_SOLVER .and.  debug_flag  ) then
+
+       tmprate = 1.0/(600*exp(-(rh(20)/0.28)**2.8) + 5) ! Chang
+      call datewrite("S:Riemer", (/ rh(20),  &
+         xn_2d(SO4,20), xn_2d(NO3_f,20), 60.0*rcmisc(19,20), tmprate /) )
+
+!TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+!real, parameter, private :: VOLFACSO4 = 96.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+!real, parameter, private :: VOLFACNO3 = 62.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+!real, parameter, private :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+
+
+       k = 20
+       if ( rh(k)  > 0.4) then
+
+          tmpv  = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) ! mean mol. speed,m/s
+          tmprc = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean mol. speed,m/s
+             /(4*(2.5 - rh(k)*1.25)) !density, corrected for rh (moderate approx.)
+
+          tmpf = 96.0*xn_2d(SO4,k)/( 96.*xn_2d(SO4,k) + 62.0*xn_2d(NO3_f,k) + 1.0 )
+
+          tmprate =  (0.9*tmpf + 0.1) * tmprc *  &
+             ( VOLFACSO4 * xn_2d(SO4,k) + VOLFACNO3 * xn_2d(NO3_f,k) &
+              + VOLFACNH4 * xn_2d(NH4_f,k) )    !Total aerosol surface
+        else
+          tmpv=0.0
+          tmprc=0.0
+          tmpf =0.0
+          tmprate= 0.0
+        endif
+      call datewrite("TTT:Riemer", (/  tmpv, tmprc, tmpf, tmprate /) )
+
+!TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
+    end if
 
   end subroutine chemistry
 
@@ -279,13 +306,11 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
  integer :: i,j
 !_________________________
 
-  !DSGC nchem=12 !number of chemical timesteps inside dt_advec
-
   nchem=nchemMax !number of chemical timesteps inside dt_advec
 
    dt_init = NUM_INITCHEM*DT_INITCHEM
 
- ! DSGC - puit special cases here:
+ ! - put special cases here:
   !NOT NEEDED? if(GRIDWIDTH_M>60000.0)nchem=15
 
 !/ ** For smaller scales, but not tested
@@ -304,9 +329,10 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
    endif
 !/ **
 
-   call CheckStop(dt_advec<DT_INITCHEM, "Error in Solver/makedt: dt_advec too small!")
-
-   call CheckStop(nchem>nchemMAX,"Error in Solver/makedt: nchemMAX too small!")
+   call CheckStop(dt_advec<DT_INITCHEM, &
+        "Error in Solver/makedt: dt_advec too small!")
+   call CheckStop(nchem>nchemMAX,&
+        "Error in Solver/makedt: nchemMAX too small!")
 
    nchem=min(nchemMAX,nchem)
 
