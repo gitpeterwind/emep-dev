@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -232,7 +232,13 @@ module ModelConstants_ml
 
     logical, public, parameter :: NH3_U10 = .false.
 
-!=============================================================================
+  ! Nesting modes:
+  ! produces netcdf dump of concentrations if wanted, or initialises mode runs from
+  ! such a file. Used in Nest_ml
+
+  integer,parameter ::NEST_MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
+  !10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
+
 
 !=============================================================================
 !+ 4)  Define main model dimensions,  things that will

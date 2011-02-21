@@ -66,6 +66,7 @@ module Nest_ml
        secondssince1970,dayssince1900,Int1,Int2,Int4,Real4,Real8
   use Functions_ml,    only : great_circle_distance
   use ModelConstants_ml,    only : KMAX_MID, NPROC &
+          , MODE => NEST_MODE & 
           , FORECAST, DEBUG_ICBC=>DEBUG_NEST_ICBC &
           , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN
   use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
@@ -79,7 +80,8 @@ module Nest_ml
   INCLUDE 'mpif.h'
   INTEGER INFO
 
-  integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
+  ! Nesting mode is set in ModelConstants_ml
+  ! integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
   !10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
 
 
