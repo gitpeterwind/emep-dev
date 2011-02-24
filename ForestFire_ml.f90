@@ -143,6 +143,7 @@ contains
 
 
    ! Fire emissions are called at 8 days intervals (1, 9, 17, ....)
+   ! 46 values available each year: day 361 is the last one.
    ! Return unless new period
 
     if ( .not. my_first_call .and. mod ( daynumber, 8 ) /= 1  ) return
