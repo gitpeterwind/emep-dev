@@ -92,7 +92,7 @@ module ModelConstants_ml
   ! RUNDOMAIN = (/ 1, 182, 1, 197 /)      ! HIRHAM
   !RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
   !RUNDOMAIN = (/ 1, 100, 1, 100 /)     ! EMEP domain in EECCA
-  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+  !RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
   !RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
   !RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
   !RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
@@ -104,13 +104,14 @@ module ModelConstants_ml
   !RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
   !RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
   !RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /)     ! (UK)
+  RUNDOMAIN = (/ 70+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /)     ! (UK)
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /)     ! (changeable)
   !RUNDOMAIN = (/ 75+OFFSET_i, 110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /)     ! (gets Esk)
   !RUNDOMAIN = (/ 85+OFFSET_i, 120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /)     ! (changeable)
 
   integer, public, parameter ::  &
-    NPROCX      =   8        & ! Actual number of processors in longitude
-  , NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+    NPROCX      =   3        & ! Actual number of processors in longitude
+  , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
   , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -140,12 +141,13 @@ module ModelConstants_ml
 !integer, private, parameter :: DEBUG_ii= 88, DEBUG_jj= 21 ! Aveiro+i2
  !integer, private, parameter :: DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
  ! integer, private, parameter :: DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
-  integer, private, parameter :: DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
+ ! integer, private, parameter :: DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
  !integer, private, parameter :: DEBUG_ii= 97, DEBUG_jj= 62  ! Waldhof
  !integer, private, parameter :: DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
  !integer, private, parameter :: DEBUG_ii=102, DEBUG_jj= 48 !  Payerne
  !integer, private, parameter :: DEBUG_ii=74, DEBUG_jj= 79 !  Payerne_HIRHAM
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 50 !   Harwell
+ integer, private, parameter :: DEBUG_ii=71, DEBUG_jj= 55 !   Harwell
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 15 !  biomass burnung, Aug 2003
  !integer, private, parameter :: DEBUG_ii=85, DEBUG_jj= 35 ! Sea, Bay of Biscay
  !integer, private, parameter :: DEBUG_ii=76, DEBUG_jj= 35 ! Sea,  North sea
@@ -200,8 +202,9 @@ module ModelConstants_ml
     ,DEBUG_LANDPFTS       = .false. &
     ,DEBUG_NETCDF         = .false. &
     ,DEBUG_NETCDF_RF      = .false. &  ! ReadField_CDF in NetCDF_ml
+    ,DEBUG_NH3            = .false. & ! NH3Emis experimental
+    ,DEBUG_OUTPUTCHEM     = .false.  & !  output of netcdf results
     ,DEBUG_PHYCHEM        = .false.  & !
-    ,DEBUG_NH3            = .false. & ! hb NH3Emis
     ,DEBUG_RSUR           = .false. & !
     ,DEBUG_SEASALT        = .false. & !
     ,DEBUG_SOILNO         = .false. & !

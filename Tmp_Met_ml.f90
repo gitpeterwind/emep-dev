@@ -1,3 +1,8 @@
+!MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+! EXPERIMENTAL NH3 EMISSIONS MODULE
+! Created for testing the impacts of online NH3 emis
+! Only for a part of the domain.
+!MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 module calc_emis_potential_ml
   use Met_ml,           only: GetCDF_short
   use MetFields_ml,     only: foundu10_met,foundv10_met
@@ -7,7 +12,6 @@ module calc_emis_potential_ml
                               MAXLJMAX,MSG_READ2,MSG_READ3,MSG_READ5, &
                               limax,ljmax !hb new meteoread
   use TimeDate_ml,      only: nydays, &
-! hb new meteoread
                               current_date, date,Init_nmdays,nmdays, &
                               add_secs,timestamp,&
                               make_timestamp, make_current_date

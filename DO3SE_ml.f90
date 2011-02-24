@@ -151,7 +151,8 @@ contains
               nSumVPD = nSumVPD + 1
               call CheckStop( nSumVPD > MAXnSumVPD, "DO3SE nSumVPD")
               SumVPD_LC(nSumVPD) = iLC
-              if(MasterProc) write(*,*)'VPDlimit ',do3se(iLC)%VPDcrit,' for iLC ',iLC, nSumVPD
+              if(DEBUG_DO3SE .and. MasterProc) &
+                write(*,*)'VPDlimit ',do3se(iLC)%VPDcrit,' for iLC ',iLC, nSumVPD
             end if
 
             call CheckStop( wanted_codes(iLC), do3se(iLC)%code, "DO3SE MATCHING")

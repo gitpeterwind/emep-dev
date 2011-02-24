@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -39,7 +39,6 @@
 !_____________________________________________________________________________
 
   use Biogenics_ml, only: first_dms_read,IQ_DMS
-!DSBIO ,emnat,emforest
   use CheckStop_ml,only : CheckStop
   use ChemSpecs_shl_ml, only: NSPEC_SHL
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
@@ -66,7 +65,7 @@
                            ,debug_proc,debug_li,debug_lj & 
                            ,sigma_bnd, xmd, gb, gl,dA,dB
   use Io_Nums_ml,      only : IO_LOG, IO_DMS, IO_EMIS
-  use Io_Progs_ml,     only : ios, open_file
+  use Io_Progs_ml,     only : ios, open_file, datewrite
   use MetFields_ml,    only : roa, ps, z_bnd   ! ps in Pa, roa in kg/m3
   use ModelConstants_ml, only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
@@ -127,8 +126,7 @@
   real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILES) &
             , save ::  snapemis_flat !/* main emission arrays, in kg/m2/s  
 
- !ds May 2010 - we store the emissions for output to d_2d files and netcdf
- ! in kg/m2/s
+ ! - we store the emissions for output to d_2d files and netcdf in kg/m2/s
 
   real, public, dimension(MAXLIMAX,MAXLJMAX,NEMIS_FILES), save :: SumSnapEmis
 
@@ -146,6 +144,7 @@
    real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
 
   real, public, save, dimension(MAXLIMAX,MAXLJMAX) :: SoilNOx
+  integer, private, save :: iemCO  ! index of CO emissions, for debug
 
 contains
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -177,13 +176,12 @@ contains
   integer, intent(in)   :: year        !  Year ( 4-digit)
 
   !-- local variables
-  !DSRC integer, dimension(NEMIS_FILES) :: eindex   ! Index of emissions in EmisDef
   real    :: conv              ! Conversion factor
   integer :: iqrc, k, kused    ! index over emitted species, QRCSO2.. 
   integer :: i, j, n           ! Loop variables
   integer :: i_l,j_l           ! Local i,j
   real   :: tonne_to_kgm2s    ! Converts tonnes/grid to kg/m2/s
-  real   :: ccsum             ! Sum of emissions for one country !ds, rv1_9_3
+  real   :: ccsum             ! Sum of emissions for one country
  
   ! arrays for whole EMEP area:
   !--    additional arrays on host only for landcode,nlandcode
@@ -214,48 +212,31 @@ contains
   !      emission indices (IQSO2=.., )
 
   !=========================
-  !DSRC call EmisDef_Init()                      ! In EmisDef_ml
   call Country_Init()    ! In Country_ml, => NLAND, country codes and 
                          !                   names, timezone
   !=========================
 
-  !DSRC do i = 1, NEMIS_FILES
-  !DSRC    eindex(i) = EmisDef_Index( EMIS_NAME(i) )
-  !DSRC end do
+  call consistency_check()               ! Below
+  !=========================
 
-  !=========================
-  !  Check that all is well!
-    call consistency_check()               ! Below
-    !DSRC call consistency_check(eindex)               ! Below
-  !=========================
   ios = 0
 
   if( MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
 
-    ! ** 1)
     !=========================
      call timefactors(year)               ! => fac_emm, fac_edd, day_factor
     !=========================
 
-
-    !** 2) 
-    !=========================
-    !DSRC call EmisSplit()    ! In EmisGet_ml, => emisfrac
-    !=========================
-
-
   endif
 
-  !DSRC - do read ins of splits on all procs
-    !=========================
-     call EmisSplit()    ! In EmisGet_ml, => emisfrac
-    !=========================
+ !=========================
+   call EmisSplit()    ! In EmisGet_ml, => emisfrac
+ !=========================
   call CheckStop(ios, "ioserror: EmisSplit")
 
 
   ! #################################
   !    *** Broadcast  monthly and Daily factors ****
-!DSRC    CALL MPI_BCAST( emisfrac ,8*NRCSPLIT*NSECTORS*NLAND,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS_FILES,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS_FILES,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( day_factor ,8*2*NSECTORS,MPI_BYTE,               0,MPI_COMM_WORLD,INFO) 
@@ -394,11 +375,18 @@ contains
            write(unit=6,fmt="(a15,f12.2)") EMIS_NAME(iem),emsum(iem)
         end do
     endif
-
+              
 
     do iem = 1, NEMIS_FILES
-       conv = tonne_to_kgm2s !DSRC * EmisDef( eindex(iem) )%conv
+       conv = tonne_to_kgm2s
+       if ( trim(EMIS_NAME(iem)) == "co" )  iemCO = iem  ! save this index
  
+        if ( DEBUG .and.  debug_proc .and. iem == iemCO ) then
+          write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_NAME(iem)), &
+                  sum( snapemis (:,debug_li,debug_lj,:,iem) ) &
+                 ,sum( snapemis_flat (debug_li,debug_lj,:,iem) )
+        end if
+
        forall (ic=1:NCMAX, j=lj0:lj1, i=li0:li1, isec=1:NSECTORS)
           snapemis (isec,i,j,ic,iem) = &
                  snapemis (isec,i,j,ic,iem) * conv * xm2(i,j)
@@ -408,6 +396,12 @@ contains
           snapemis_flat(i,j,fic,iem) = &
                  snapemis_flat(i,j,fic,iem) * conv * xm2(i,j)
        end forall
+
+        if ( DEBUG .and.  debug_proc .and. iem == iemCO ) then
+          write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_NAME(iem)), &
+                  sum( snapemis (:,debug_li,debug_lj,:,iem) ) &
+                 ,sum( snapemis_flat (debug_li,debug_lj,:,iem) )
+        end if
     enddo !iem
 
 !    if ( VOLCANOES ) then
@@ -437,7 +431,7 @@ contains
 
     end if
 
-    !DSRC now we now nrecmis and can allocate for gridrcemis:
+    !now we now nrecmis and can allocate for gridrcemis:
     !print *, "ALLOCATING GRIDRC", me, NRCEMIS
    allocate(gridrcemis(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err1)
    allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err2)
@@ -447,11 +441,10 @@ contains
   end subroutine Emissions
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- subroutine consistency_check() !DSRC eindex)
+ subroutine consistency_check()
   !------------------------------------------------------------------!
   !    checks that all the values given so far are consistent        !
   !------------------------------------------------------------------!
-!DSRC  integer, dimension(NEMIS_FILES), intent(in) :: eindex
 ! Should add more checks
   character(len=30) :: errormsg
   integer :: i
@@ -668,7 +661,7 @@ contains
                          gridrcemis0(iqrc,k,i,j) =   &
                             gridrcemis0(iqrc,k,i,j) + tmpemis(iqrc)*   &
                             ehlpcom0(k)*VERTFAC(KMAX_BND-k,isec) &
-                            * emis_masscorr(iqrc)   !DSRC was /molwt
+                            * emis_masscorr(iqrc)
                       end do ! iem
                    end do   ! k
 
@@ -731,15 +724,18 @@ contains
 
                 gridrcemis0(iqrc,KMAX_MID,i,j) =   &
                   gridrcemis0(iqrc,KMAX_MID,i,j) + tmpemis(iqrc)*&
-                    ehlpcom0(KMAX_MID) * emis_masscorr(iqrc)   !DSRC was /molwt
+                    ehlpcom0(KMAX_MID) * emis_masscorr(iqrc)
              end do ! iem
 
 !      ==================================================
        end do !ficc 
    end do ! i
  end do ! j
+        if ( DEBUG .and.  debug_proc ) then    ! emis sum kg/m2/s
+          call datewrite("SnapSum, kg/m2/s:" // trim(EMIS_NAME(iemCO)), &
+                  (/ SumSnapEmis(debug_li,debug_lj,iemCO)  /) )
+        end if
 
-    !if ( VOLCANOES )& 
     call Set_Volc !set hourly volcano emission(rcemis_volc0)
 
   end if ! hourchange 
@@ -761,8 +757,8 @@ contains
    end do ! k
 
  !/** Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
-   !if ( VOLCANOES )&
-        call Scale_Volc
+
+     call Scale_Volc
 
  !/ ** Biogenic VOC? Will be set in  Biogenics_ml, everuy time-step 
 
@@ -794,7 +790,6 @@ contains
     integer :: IQSO2             ! Index of sox in  EMIS_NAME
     integer errcode
     real,    allocatable, dimension(:,:,:,:)  :: globemis 
-!DSRC    integer, dimension(NEMIS_FILES) :: eindex   ! Index of emissions in EmisDef
     integer:: month,iem,ic,iic,isec, err3,ic1,icc
     real ::duml,dumh,tmpsec(NSECTORS),conv
         logical ,save ::first_call=.true.
@@ -1035,9 +1030,6 @@ endif
        allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
        call CheckStop(err3, "Allocation error err3 - globland")
     end if
-!DSRC    do i = 1, NEMIS_FILES
-!DSRC       eindex(i) = EmisDef_Index( EMIS_NAME(i) )
-!DSRC    end do
     do iem = 1, NEMIS_FILES
 !      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
@@ -1094,7 +1086,7 @@ endif
 !      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
 !           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
-      conv = tonnemonth_to_kgm2s !DSRC * EmisDef( eindex(iem) )%conv
+      conv = tonnemonth_to_kgm2s
       do j=lj0,lj1
          do i=li0,li1
             icc=nlandcode(i,j)!67

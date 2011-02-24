@@ -114,11 +114,11 @@ subroutine print_Deriv_type(w)
   type(Deriv), intent(in) :: w  ! wanted
 
   write(6,*) "Prints Deriv type ========================="
-  write(6,"(a,a)")      "Name   :", w%name
-  write(6,"(a,a10)")    "class  :", w%class
-  write(6,"(a,a10)")    "subclass  :", w%subclass
-  write(6,"(a,a10)")    "txt    :", w%txt   
-  write(6,"(a,a10)")    "units  :", w%unit
+  write(6,"(a,a)")      "Name   :",    trim(w%name)
+  write(6,"(a,a)")      "class  :",    trim(w%class)
+  write(6,"(a,a)")      "subclass  :", trim(w%subclass)
+  write(6,"(a,a)")      "txt    :",    trim(w%txt)   
+  write(6,"(a,a)")      "units  :",    trim(w%unit)
   write(6,"(a,i3)")     "LC     :", w%LC
   write(6,"(a,i3)")     "index  :", w%index
   write(6,"(a,i3)")     "f2d    :", w%f2d

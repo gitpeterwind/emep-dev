@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -50,6 +50,7 @@
                              Read_Headers, read_line
   use KeyValue_ml,    only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
+                               DEBUG_i, DEBUG_j, &
                                MasterProc
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
@@ -81,9 +82,7 @@
   integer, public, parameter :: NMAX=NSPEC_ADV ! good guess for max
   integer, public, save :: nrcemis, nrcsplit
   integer, public, dimension(NEMIS_FILES) , save :: emis_nsplit
-  !DSRC real, public, dimension(NRCSPLIT,NSECTORS,NLAND), save :: emisfrac
   real, public,allocatable, dimension(:,:,:), save :: emisfrac
-  !DSRC: maps from iqrc, dimension nrcsplit
   integer, public,allocatable, dimension(:), save :: iqrc2itot
   integer, public, dimension(NSPEC_TOT), save :: itot2iqrc
   integer, public, dimension(NEMIS_FILES), save :: Emis_MolWt
@@ -149,12 +148,12 @@
       globemis   (:,:,:,:) = 0.0
       globemis_flat(:,:,:) = 0.0
 
-      if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, emisname
+      if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, trim(emisname)
       fname = "emislist." // emisname
       call open_file(IO_EMIS,"r",fname,needed=.true.)
       call CheckStop(ios,"EmisGet: ios error in emission file")
 
-      if (trim ( emisname ) == "nh3" ) dknh3_agr=0.0 !hb NH3Emis
+      if (trim ( emisname ) == "nh3" ) dknh3_agr=0.0 ! NH3Emis experimental
  
 
 READEMIS: do   ! ************* Loop over emislist files *******************
@@ -162,6 +161,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
             read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, duml,dumh,  &
                                     (tmpsec(isec),isec=1,NSECTORS)
 
+            if( DEBUG .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
+                "DEBUG GetEmis "//trim(emisname) // ":" , iic, duml,dumh
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop(ios > 0,"EmisGet: ios error in emission file")
 
@@ -265,15 +266,15 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
              if ( trim ( emisname ) == "voc" ) tmpsec(11:11) = 0.0
   
-            ! hb NH3emis     
+            ! NH3emis      (EXPERIMENTAL!)
             ! For NH3 activity data, set 'static emissions' to zero
             ! For northwestern Europe, read in Sector_NH3Emis.txt in run.pl
+            ! Traffic emis are zero in the danish emissions, so I leave them
              if (NH3EMIS_VAR .and.  trim ( emisname ) == "nh3" .and. ic == IC_NMR) then
                 dknh3_agr=dknh3_agr+ tmpsec(ISNAP_AGR)+tmpsec(ISNAP_TRAF)
                 tmpsec(ISNAP_AGR:ISNAP_AGR) = 0.0!
                 tmpsec(ISNAP_TRAF:ISNAP_TRAF) = 0.0!
              endif
-             !Traffic emis are zero in the danish emissions, so I leave them
 
 
              ! ..........................................................

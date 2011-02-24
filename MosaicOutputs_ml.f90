@@ -210,7 +210,7 @@ module MosaicOutputs_ml
                name, "Mosaic", typ, lctxt, "s/m", &
                 iadv, -99,iLC, F , 1.0,  T, F, T, T, T)
           end if
-          if(  MasterProc ) write(*,*) "DEBUG nMc ", &
+          if(  DEBUG .and. MasterProc ) write(*,*) "DEBUG nMc ", &
             trim(name) // ":" // &
             trim(Mc(n)%txt2) // ":" // trim(Mc(n)%txt3), iadv, iLC
 
