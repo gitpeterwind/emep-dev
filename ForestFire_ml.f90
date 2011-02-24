@@ -123,12 +123,14 @@ contains
         if( my_first_call .and. MasterProc  ) then
            call PrintLog("NO 8d GFED FOREST FIRES BEFORE 2001")
         end if
+        my_first_call = .false.
         return
     end if
     if (current_date%year>2007) then
         if( my_first_call .and. MasterProc  ) then
            call PrintLog("NO 8d GFED FOREST FIRES AFTER 2007")
         end if
+        my_first_call = .false.
         return
     end if
 
