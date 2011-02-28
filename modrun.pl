@@ -13,8 +13,8 @@ runlabel2=Opensource_setup #long label
 startyear=2008 #start year (metdata)
 startmonth=1 #start month (metdata)
 startday=1 #start day (metdata)
-startmonth=1 #end month (metdata)
-startday=1 #end day (metdata)
+endmonth=1 #end month (metdata)
+endday=1 #end day (metdata)
 
 #put input data into a file called INPUT.PARA
 cat>>    'INPUT.PARA'<<    EOF
@@ -33,3 +33,4 @@ mpirun Unimod
 
 #clean the links to the input data
 find . -type l -delete
+rm INPUT.PARA
