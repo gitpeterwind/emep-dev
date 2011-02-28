@@ -160,6 +160,7 @@ Met_ml: moved startdate,enddate out of this module
 ModelConstants_ml and MassBudget_ml: defined EXTENDEDMASSBUDGET to be set 
                         as true if all the massbalance output is required
 
+modrun.pl: completely changed and simplified
 
 xxxxxxxx rv3_7beta26 Feb 28 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
