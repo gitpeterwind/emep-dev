@@ -202,7 +202,7 @@ program myeul
      call PrintLog( trim(runlabel2) )
      write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "startdate= ", (startdate(i),i=1,3)
      call PrintLog( trim(txt) )
-     write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "enddate= ", (enddate(i),i=2,3)
+     write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "enddate= ", startdate(1),(enddate(i),i=2,3)
      call PrintLog( trim(txt) )
      write(unit=txt,fmt="(a,i4)") "iyr_trend= ", iyr_trend
      call PrintLog( trim(txt) )
