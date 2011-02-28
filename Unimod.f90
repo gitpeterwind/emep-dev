@@ -69,7 +69,7 @@ program myeul
   use Landuse_ml,       only : InitLandUse, SetLanduse, Land_codes
   use MassBudget_ml,    only : Init_massbudget,massbudget
   use Met_ml,           only : metvar,MetModel_LandUse,&
-       Meteoread,MeteoGridRead, startdate
+       Meteoread,MeteoGridRead
   use ModelConstants_ml,only : KMAX_MID   &   ! No. vertical layers
        ,MasterProc &   ! set true for host processor, me==0
        ,RUNDOMAIN  &   !
@@ -77,7 +77,7 @@ program myeul
        ,METSTEP    &   ! Hours between met input
        ,runlabel1  &   ! explanatory text
        ,runlabel2  &   ! explanatory text
-       ,nprint,nass,nterm,iyr_trend, PT &
+       ,nprint,nterm,iyr_trend, PT &
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
        ,USE_CONVECTION, USE_SOILWATER,USE_SOIL_NOX,USE_FOREST_FIRES &
        ,USE_BVOC_2010,USE_DUST,DO_SAHARA &
@@ -92,7 +92,8 @@ program myeul
   use PhyChem_ml,       only : phyche  ! Calls phys/chem routines each dt_advec
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
-  use TimeDate_ml,      only : date, current_date, day_of_year,daynumber
+  use TimeDate_ml,      only : date, current_date, day_of_year,daynumber,&
+                               assign_NTERM,startdate,enddate
   use Trajectory_ml,    only : trajectory_init,trajectory_in
   use Nest_ml,          only : wrtxn &
        ,FORECAST_NDUMP &  ! number of nested outputs on FORECAST mode
@@ -138,7 +139,7 @@ program myeul
   integer i
   integer :: mm, mm_old   ! month and old-month
   integer :: nproc_mpi,cyclicgrid
-  character (len=130) :: errmsg,txt
+  character (len=230) :: errmsg,txt
 
   !
   !     initialize the parallel topology
@@ -151,10 +152,12 @@ program myeul
   !  some checks
   !
   if(nproc_mpi /= NPROC)then
-     write(unit=errmsg,fmt=*)"Wrong processor number!", &
-          "program was compiled with NPROC = ",NPROC, &
-          " but linked with ", nproc_mpi
-     call CheckStop( errmsg )
+     if(me==0)write(*,fmt=*)"Wrong processor number!", &
+          " Program was compiled with NPROC = ",NPROC, &
+          " but MPI found ", nproc_mpi," processors available.", &
+          " Please change NPROCX or NPROCY in ModelConstants_ml.f90"
+          CALL MPI_FINALIZE(INFO)
+          stop
   end if
   call CheckStop( digits(1.0) < 50, &
        "COMPILED WRONGLY: Need double precision, e.g. f90 -r8")
@@ -168,10 +171,6 @@ program myeul
   endif
 
   call read_line(IO_TMP,txt,status(1))
-  read(txt,*) nterm
-  call read_line(IO_TMP,txt,status(1))
-  read(txt,*) nass
-  call read_line(IO_TMP,txt,status(1))
   read(txt,*) iyr_trend
 
   call read_line(IO_TMP,runlabel1,status(1))! explanation text short
@@ -179,6 +178,10 @@ program myeul
   do i=1,3
      call read_line(IO_TMP,txt,status(1))
      read(txt,*)startdate(i)! meteo year,month,day to start the run
+  enddo
+  do i=2,3
+     call read_line(IO_TMP,txt,status(1))
+     read(txt,*)enddate(i)! meteo month,day to start the run
   enddo
   startdate(4)=0!meteo hour to start the run
 
@@ -198,6 +201,8 @@ program myeul
      call PrintLog( trim(runlabel1) )
      call PrintLog( trim(runlabel2) )
      write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "startdate= ", (startdate(i),i=1,3)
+     call PrintLog( trim(txt) )
+     write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "enddate= ", (enddate(i),i=2,3)
      call PrintLog( trim(txt) )
      write(unit=txt,fmt="(a,i4)") "iyr_trend= ", iyr_trend
      call PrintLog( trim(txt) )
@@ -225,6 +230,7 @@ program myeul
 
   call MeteoGridRead(cyclicgrid) !define grid projection and parameters
   call Topology(cyclicgrid,Poles)!def GlobalBoundaries & subdomain neighbors
+  call assign_NTERM(NTERM)!set NTERM, the number of 3-hourly periods
   call assign_dtadvec(GRIDWIDTH_M)! set dt_advec
 
 

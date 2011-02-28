@@ -431,23 +431,14 @@ $month_days[2] += leap_year($year);
 my $mm1   =  "01";       # first month, use 2-digits!
 my $mm2   =  "01";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $NTERM_CALC =  calc_nterm($mm1,$mm2,$dd1);
-
-my $NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
-# -- or --
- $NTERM = 16;        # for testing, simply reset here
- $NTERM = $CWFDAYS*8+1 if $CWF ;  # $CWFDAYS-day forecast (e.g. 3*8+1=25)
+my $dd2   =  31;       # End day (can be too large; will be limited to max number of days in the month)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm1   =  "01";
   $mm2   =  "12";
   $dd1   =  1;       # Start day, usually 1
-  $NTERM_CALC =  calc_nterm($mm1,$mm2,$dd1);
-  # Avoid data from following year. Too easy to forget the met data:
-  $NTERM =   $NTERM_CALC;
+  $dd2   =  31;       # End day, usually 31
 }
-
-print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
 
 # <---------- end of normal use section ---------------------->
 # <---------- end of user-changeable section ----------------->
@@ -574,13 +565,12 @@ foreach my $scenflag ( @runs ) {
       # Assign met files to fil001...etc.
       for (my $n = 1; $n <= $month_days[$mm]; $n++) {
         $nnn = metlink($n, $nnn, $mm);
-        last if $nnn > $NTERM;
       }
     }
 
     my $mmlast = $mm2 + 1;
     my $yylast = $year;
-   if ( $mmlast > 12 && $NTERM > 200 ) { # Crude check that we aren't testing with NTERM=5
+   if ( $mmlast > 12 ) { 
       $yylast = $yylast + 1;
       $mmlast = 1;
     }
@@ -633,7 +623,9 @@ foreach my $scenflag ( @runs ) {
         mylink( "Linking:", $old, $new);
         print "Managed to link meteo for an extra spin-up day!\n";
       # Update simulation: lenght ($NTERM), start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
-        $NTERM+=8;
+
+#NB:to correct for        $NTERM+=8;
+
         $CWFDATE[1]=$CWFDATE[0];
         chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
       # IFS-MOZART BC file
@@ -862,35 +854,33 @@ foreach my $scenflag ( @runs ) {
   my $startyear = $year;
   my $startmonth = $mm1;
   my $startday = $dd1;
+  my $endmonth = $mm2;
+  my $endday = $dd2;
   if ($CWF){    # use forecast start date
     $startyear  = substr($CWFDATE[1],0,4);
     $startmonth = substr($CWFDATE[1],4,2);
     $startday   = substr($CWFDATE[1],6,2);
   }
 
-  my $NASS  =  0;   # Set to one if "dump" of all concentrations wanted at end
-
 # make file with input parameters (to be read by Unimod.f90)
   unlink("INPUT.PARA");
   open(TMP,">INPUT.PARA");
-  print TMP "$NTERM\n$NASS\n$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\n";
+  print TMP "$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\n${endmonth}\n${endday}\n";
   print TMP "$CWFDUMP[0]\n$CWFDUMP[1]\n" if $CWF;
   close(TMP);
 
+
   foreach my $exclu ( @exclus) {
     print "starting $PROGRAM with
-    NTERM $NTERM\nNASS $NASS\nEXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\nstartyear ${startyear}\nstartmonth ${startmonth}\nstartday ${startday}\n";
+    EXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\nstartyear ${startyear}\n
+     startmonth ${startmonth}\nstartday ${startday}\nendmonth ${endmonth}\nendday ${endday}\n";
     print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
 
-    my $PRERUN = "";
-    #$PRERUN = "scampiexec" if $SNYKOV;
-    $PRERUN = "mpiexec "   if $STALLO ;
-    $PRERUN = "mpirun "    if $TITAN ;
     if ($DRY_RUN) {
-      print "DRY_RUN: not running '| $PRERUN ./$LPROG'\n";
+      print "DRY_RUN: not running '| mpirun ./$LPROG'\n";
       system("ls -lt *")
     } else {
-      open (PROG, "| $PRERUN ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
+      open (PROG, "| mpirun ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
       close(PROG);
     }
 

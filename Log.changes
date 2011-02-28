@@ -140,6 +140,26 @@ ds --     My_Outputs_ml.f90
           My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7beta27 Feb 28 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Removed NTERM from run.pl. Instead endday and endmonth are defined and 
+NTERM is calculated in the model.
+Also removed NASS, which was not used anyway.
+
+Note: if enddate is before startdate, 3-hour run is performed.
+      if endday is larger than the number of days in the month (for example 
+        endday=33), it is set as the number of days of the month; this is 
+        to avoid thinking about leap years etc.   
+      The new code will not work with old run.pl, since the variables read in have changed. 
+
+NB: CWF runs are broken now. run.pl is not yet updated for CWF!
+
+Unimod.f90: call assign_NTERM(NTERM). Better comments when wrong number of PROCS.
+TimeDate_ml:defined assign_NTERM(NTERM) and moved startdate,enddate there.
+Met_ml: moved startdate,enddate out of this module
+ModelConstants_ml and MassBudget_ml: defined EXTENDEDMASSBUDGET to be set 
+                        as true if all the massbalance output is required
+
 
 xxxxxxxx rv3_7beta26 Feb 28 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

@@ -123,7 +123,7 @@ module Met_ml
        ,ROWATER, PI
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
        add_secs,timestamp,&
-       make_timestamp, make_current_date, nydays
+       make_timestamp, make_current_date, nydays, startdate, enddate
   use Io_ml ,               only : IO_INFIELD, ios, IO_SNOW, IO_ROUGH, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
@@ -142,7 +142,6 @@ module Met_ml
   integer, private, save      ::  debug_iloc, debug_jloc  ! local coords
 
 
-  integer, public :: startdate(4)
   integer, save   :: Nhh &         ! number of field stored per 24 hours
        ,nhour_first&  ! time of the first meteo stored
        ,nrec          ! nrec=record in meteofile, for example

@@ -59,7 +59,8 @@
                             ,NPROC      &  ! No. processors
                             ,PT         &  ! Pressure at top
                             ,ATWAIR     &  ! Mol. weight of air(Jones,1992)
-                            ,TXTLEN_NAME
+                            ,TXTLEN_NAME&
+                            ,EXTENDEDMASSBUDGET
  use Par_ml,          only : MAXLIMAX   & 
                             ,MAXLJMAX   &  
                             ,li0,li1    &
@@ -382,22 +383,19 @@ contains
 
    end if
 
-  if ( MasterProc ) then     ! printout from node 0
+  if ( MasterProc .and. EXTENDEDMASSBUDGET) then     ! printout from node 0
 
      !/.. now use species array which is set in My_MassBudget_ml
-
-    do n = 1,NSPEC_ADV
-
-      write(6,*)
-      write(IO_RES,*)
-      do k = 1,KMAX_MID
-        write(6,950)      n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
-        write(IO_RES,950) n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
-      end do
-    enddo
- 950  format(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)
-
-
+     do n = 1,NSPEC_ADV
+        write(6,*)
+        write(IO_RES,*)
+        do k = 1,KMAX_MID
+           write(6,950)      n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
+           write(IO_RES,950) n,species(n+NSPEC_SHL)%name, k,sumk(n,k)
+        end do
+     enddo
+950  format(' Spec ',i3,2x,a12,5x,'k= ',i2,5x,es12.5)
+     
      do n = 1,NSPEC_ADV
 
         write(6,*)

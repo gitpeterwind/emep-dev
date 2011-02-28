@@ -27,13 +27,17 @@
 !*****************************************************************************! 
 !_____________________________________________________________________________
 MODULE TimeDate_ml
-        IMPLICIT NONE
 
 ! Originally timedate.f90 from Paul Curtis, found on web, 31/8/04: 
 ! Removed some Windows-specific or un-needed routines, 
 ! and converted to F. Some routines given longer names, eg. dow -> day_in_week,
 ! ndiy -> day_of_year. Change IFIX to INT, FLOAT to REAL, MAX0 to MAX, etc.
 !===================Routines =================================================
+
+
+  use ModelConstants_ml, only : METSTEP,MasterProc
+
+  IMPLICIT NONE
 
  !/ Functions ...............
   public :: make_current_date      ! convert timestamp to current_date 
@@ -58,6 +62,8 @@ MODULE TimeDate_ml
   public :: dup_timestamp        ! ts2=ts1
   public :: add_secs             ! ts+seconds -> new ts. fixit option
   public :: add_month            ! jdate+month, force_day option
+  public :: assign_NTERM         ! set NTERM, the number of 3-hourly periods
+
 !===================TIMESTAMP TYPES & DEFINES=================================
 
 !=========================================================================
@@ -66,6 +72,7 @@ integer, public,                save ::  daynumber    ! Day no. (1st jan=1).
 integer, public,                save ::  effectivdaynumber 
 integer, public,                save ::  nydays       ! No. days per year
 integer, public, dimension(12), save ::  nmdays       ! No. days per month
+integer, public,                save ::  startdate(4),enddate(4)!start and end of the run
 
 type, public :: date
   integer :: year
@@ -381,5 +388,46 @@ CONTAINS
                    nydays=nydays+maxd
                 enddo
         END SUBROUTINE Init_nmdays
+
+
+        subroutine assign_NTERM(NTERM)
+          !calculate NTERM (the number of metdata periods)
+          !on the basis of start and enddate
+          integer,intent(out) :: NTERM
+          integer :: i,Nperday
+
+          enddate(1)=startdate(1)!year change not yet tested
+          enddate(4)=24          !not used
+          
+          Nperday = 24/METSTEP!number of metdata periods per 24 hours
+          NTERM=1
+          if(startdate(2)<enddate(2))then
+             !days in the first month
+             do i=max(1,startdate(3)),nmdays(startdate(2))
+                NTERM = NTERM + Nperday
+             enddo
+             !days in the last month
+             do i=1,min(enddate(3),nmdays(enddate(2)))
+                NTERM=NTERM+Nperday
+             enddo
+          elseif(startdate(2)==enddate(2))then
+             do i=max(1,startdate(3)),min(enddate(3),nmdays(enddate(2)))
+                NTERM = NTERM + Nperday
+             enddo
+          endif
+          !entire monthes
+          do i=min(12,startdate(2)+1),max(1,enddate(2)-1)
+             NTERM=NTERM+nmdays(i)*Nperday
+          enddo
+          if(NTERM<=1)then
+             if(MasterProc)then
+                write(*,*)'WARNING: enddate before startdate'
+                write(*,*)'Start date: ',startdate
+                write(*,*)'End   date: ',enddate
+                write(*,*)'WARNING: running only one metstep'
+             endif
+             NTERM=max(2,NTERM)!run at least one period
+          endif
+        end subroutine assign_NTERM
 
 END MODULE TimeDate_ml
