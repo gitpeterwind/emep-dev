@@ -1,10 +1,8 @@
-<<<<<<< Derived_ml.f90
-=======
 ! <Derived_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -54,8 +52,8 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : &
       COLUMN_MOLEC_CM2, &
       COLUMN_LEVELS   , &
-      OutputConcs,  &  !ds added Feb 2011
-      WDEP_WANTED, &  !ds added Jan 2011
+      OutputConcs,  &  ! added Feb 2011
+      WDEP_WANTED, &   ! added Jan 2011
       D3_OTHER
 
 use AOTx_ml,          only: Calc_GridAOTx
@@ -285,7 +283,7 @@ private
             write(*,"((a,i4,1x,4a,i4))") "DEBUG AddDeriv 2d ", N, &
                trim(inderiv%name), " Class:", trim(inderiv%class), &
               " Ind:", inderiv%index
-         if (  DEBUG .and. MasterProc )  write(*,*) "DALL", inderiv
+         !if (  DEBUG .and. MasterProc )  write(*,*) "DALL", inderiv
          call CheckStop(N>MAXDEF_DERIV2D,"Nadded2d too big!")
          def_2d(N) = inderiv
 
@@ -324,7 +322,7 @@ private
 
       !code class  avg? ind scale rho Inst Yr Mn Day   name      unit
 
-Is3D = .false.
+  Is3D = .false.
 
 
 ! We process the various combinations of gas-species and ecosystem:
@@ -339,11 +337,9 @@ Is3D = .false.
 ! Areas of deposition-related ecosystems. Set externally
   do n = 1, NDEF_ECOSYSTEMS
      if(MasterProc) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
-!
-!    call AddDef("ECOAREA", F,DepEcoSystem(n)%Index,DepEcosystem(n)%scale,&
-!                    F  , F  ,T ,F ,F , DepEcosystem(n)%name,&
-!                                        DepEcosystem(n)%units)
+
      call AddDeriv( DepEcoSystem(n) )
+
   end do
 !!-------------------------------------------------------------------------------
 
@@ -532,14 +528,15 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
                  ind , -99,-99, T ,    1.0e6,     F,  F, T, T, T ) !?? atw?
    end do
 
-! SNAP emissions called every hour, so use scale=3600.0 to get from kg/m2/s to kg/m2,
-! and by 1.0e6 to get from kg/m2 to mg/m2 accumulated.
+! SNAP emissions called every hour, given in kg/m2/s, but added to
+! d_2d every advection step, so get kg/m2. 
+! Need 1.0e6 to get from kg/m2 to mg/m2 accumulated.
 !
 ! Future option - might make use of Emis_Molwt to get mg(N)/m2
 do  ind = 1, size(EMIS_NAME)
   dname = "Emis_mgm2_" // trim(EMIS_NAME(ind))
   call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                     ind , -99,-99, F,  3600.0e6,  F,  F, T, T, T ) !?? atw?
+                     ind , -99,-99, T,  1.0e6,  F,  F, T, T, T ) !?? atw?
 end do ! ind
 
 
@@ -1048,8 +1045,8 @@ end do
               !Not done, keep mg/m2  * GridArea_m2(i,j)
               if ( debug_flag ) call write_debug(n,f_2d(n)%Index, "NatEmis")
             if( debug_flag ) &
-                write(*,"(a18,i3,es12.3)") "EXTRA NatEmis", f_2d(n)%Index,&
-                       EmisNat( debug_li,debug_lj, f_2d(n)%Index)
+              call datewrite("NatEmis-in-Derived, still kg/m2/s", &
+                f_2d(n)%Index, (/ EmisNat( debug_li,debug_lj, f_2d(n)%Index) /) )
 
           case ( "SnapEmis" ) !emissions in kg/m2/s converted??
 
@@ -1057,6 +1054,9 @@ end do
                   d_2d(n,i,j,IOU_INST) =  SumSnapEmis( i,j, f_2d(n)%Index)
               end forall
               !not done, to keep mg/m2 * GridArea_m2(i,j)
+            if( debug_flag .and. f_2d(n)%Index == 3  ) & ! CO:
+              call datewrite("SnapEmis-in-Derived, still kg/m2/s", n, & !f_2d(n)%Index,&
+                    (/   SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index ) /) )
 
 
           case ( "EXT" )
@@ -1122,6 +1122,15 @@ end do
         d_2d(n,:,:,IOU_YEAR ) = &
                  d_2d(n,:,:,IOU_YEAR ) + af*d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
+
+        if( debug_flag .and. n == 27  ) & ! C5H8 BvocEmis:
+              call datewrite("NatEmis-end-Derived", n, (/ af, & 
+                 SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index), &
+                 d_2d(n,debug_li,debug_lj,IOU_INST), &
+                 d_2d(n,debug_li,debug_lj,IOU_DAY), &
+                 d_2d(n,debug_li,debug_lj,IOU_MON), &
+                 d_2d(n,debug_li,debug_lj,IOU_YEAR) &
+               /) )
 
      end do   ! num_deriv2d
 
@@ -1639,4 +1648,3 @@ end do
   end subroutine Units_Scale
 
 end module Derived_ml
->>>>>>> 1.104
