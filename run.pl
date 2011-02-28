@@ -838,7 +838,7 @@ foreach my $scenflag ( @runs ) {
 # Link executable also, since gridur is funny about these
 # things....
 
-  my $LPROG = "prog.exe";
+  my $LPROG = "Unimod";
  #mylink( "PROGRAM!!  ", $PROGRAM,$LPROG) ;
   cp ($PROGRAM, $LPROG) or die "cannot copy $PROGRAM to $LPROG\n";
   push(@list_of_files , $LPROG);    # For later deletion
