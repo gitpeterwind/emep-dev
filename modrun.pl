@@ -32,5 +32,5 @@ EOF
 mpirun Unimod
 
 #clean the links to the input data
-find . -type l -delete
+find -maxdepth 1  -type l -delete
 rm INPUT.PARA
