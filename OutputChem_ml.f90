@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -39,13 +39,15 @@
                               , num_deriv2d, num_deriv3d &
                               ,ResetDerived
   use DerivedFields_ml,  only: f_2d, d_2d, f_3d, d_3d
+  use GridValues_ml,     only : debug_proc ,debug_li, debug_lj
   use My_Outputs_ml,     only: NBDATES, wanted_dates_inst,            &
                                Ascii3D_WANTED
-  use Io_ml,             only: IO_WRTCHEM
+  use Io_ml,             only: IO_WRTCHEM, datewrite
   use ModelConstants_ml, only: nprint, END_OF_EMEPDAY, KMAX_MID, MasterProc&
+                              ,DEBUG => DEBUG_OUTPUTCHEM &
                               ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY
   use NetCDF_ml,         only: CloseNetCDF, Out_netCDF
-  use OwnDataTypes_ml,   only: Deriv
+  use OwnDataTypes_ml,   only: Deriv, print_deriv_type
   use Par_ml,            only: MAXLIMAX,MAXLJMAX,GIMAX,GJMAX,     &
                                IRUNBEG,JRUNBEG
   use TimeDate_ml      , only: current_date, max_day  ! days in month
@@ -58,8 +60,6 @@
   public :: Output_fields   ! (iotyp)
   public :: Output_f2d      ! (iotyp, dim, nav, def, dat)
   public :: Output_f3d      ! (iotyp, dim, nav, def, dat)
-
-  logical, private, parameter :: MY_DEBUG = .false.
 
   contains
 
@@ -105,7 +105,7 @@
      Jan_1st    = ( nmonth == 1 .and. nday == 1 )
      End_of_Run = ( mod(numt,nprint) == 0       )
 
-     if(MasterProc .and. MY_DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",          &
+     if(MasterProc .and. DEBUG) write(6,"(a12,i5,5i4)") "DAILY DD_OUT ",          &
           numt, nmonth, mm_out, nday, dd_out, nhour
 
 
@@ -116,7 +116,7 @@
 
         dd_out = nday - 1     ! only used for daily outputs
 
-        if( MasterProc .and. MY_DEBUG) write(6,"(a12,i5,5i4)")&
+        if( MasterProc .and. DEBUG) write(6,"(a12,i5,5i4)")&
           "DAILY SET ", numt, nmonth, mm_out, nday, dd_out, nhour
 
         if(dd_out == 0) then
@@ -126,7 +126,7 @@
 
              dd_out = max_day(mm_out, nyear)  !  Last day of month
 
-              if( MasterProc .and. MY_DEBUG) write(6,"(a12,i5,4i4)") "DAILY FIX ",     &
+              if( MasterProc .and. DEBUG) write(6,"(a12,i5,4i4)") "DAILY FIX ",     &
                              numt, nmonth, mm_out, nday, dd_out
         end if
      end if      ! for END_OF_EMEPDAY <= 7
@@ -176,7 +176,7 @@
      if (nday == 1 .and. nhour == 0) then
         nmonpr = nmonth-1
 
-        if (nmonpr.eq.0) nmonpr=12
+        if (nmonpr == 0) nmonpr=12
 
         !== Monthly output ====
 
@@ -292,13 +292,20 @@
           scale  = def(icmp)%scale
            if (iotyp /= IOU_INST )    &
              scale = scale / max(1,nav(icmp,iotyp))
-             if ( MasterProc .and. My_DEBUG ) then
-                write(*,*) "DEBUG Output_f2d ", icmp, iotyp, def(icmp)%name, &
-                   def(icmp), scale, maxval(dat(icmp,:,:,iotyp)), &
-                       minval(dat(icmp,:,:,iotyp))
-             end if
+           !if ( MasterProc .and. DEBUG ) then
+           if ( DEBUG .and. debug_proc ) then
+                write(*,*) "DEBUG Output_f2d ", icmp, iotyp, trim(def(icmp)%name)
+                write(*,"(a,i6,2es10.3)") "Output_f2d n,Scales:"// &
+                  trim(def(icmp)%name), nav(icmp,iotyp), def(icmp)%scale, scale
+                write(*,"(a,2es10.3)") "Output_f2d  max/min", &
+                  maxval(dat(icmp,:,:,iotyp)), minval(dat(icmp,:,:,iotyp))
+                if( def(icmp)%name == "Emis_mgm2_co" ) then
+                  call print_deriv_type(def(icmp))
+                  call datewrite("SnapEmis-Output_f2d Emis", iotyp, (/ dat(icmp,debug_li,debug_lj,iotyp) /) )
+                end if
+           end if
 
-             call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,iotyp),scale)
+           call Out_netCDF(iotyp,def(icmp),2,1,dat(icmp,:,:,iotyp),scale)
 
         endif     ! wanted
      enddo        ! component loop
