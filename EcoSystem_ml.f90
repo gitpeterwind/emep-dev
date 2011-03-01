@@ -4,7 +4,7 @@ module EcoSystem_ml
  use GridValues_ml,      only : debug_proc, debug_li, debug_lj
  use LandDefs_ml,        only : LandDefs, LandType
 !CIRCULAR SOMEHERE use Landuse_ml !!!,         only : LandCover
- use ModelConstants_ml , only : MasterProc, DEBUG_ECOSYSTEMS, NLANDUSEMAX
+ use ModelConstants_ml , only : MasterProc, DEBUG_ECOSYSTEMS, NLANDUSEMAX, IOU_YEAR
  use OwnDataTypes_ml,    only : Deriv, print_deriv_type &
                                 ,TXTLEN_DERIV, TXTLEN_SHORT
  use Par_ml,             only : li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX
@@ -72,10 +72,10 @@ contains
        end if
 
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,  LC, dt_scale, scale, avg? Inst Yr Mn Day
+          !Deriv index, f2d, dt_scale, scale, avg? Inst Yr Mn Day
         DepEcoSystem(iEco) = Deriv(  &
                name, "EcoFrac", "Area",DEF_ECOSYSTEMS(iEco) , unit, &
-                  iEco, -99, iEco,  F, 1.0,  F,    F ,T ,F ,F )
+                  iEco, -99, F, 1.0,  F,    IOU_YEAR   )
 
 
         if(DEBUG_ECOSYSTEMS .and. MasterProc) &

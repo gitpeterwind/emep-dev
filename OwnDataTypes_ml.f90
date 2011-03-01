@@ -85,15 +85,15 @@ module OwnDataTypes_ml
        character(len=TXTLEN_SHORT) :: unit ! writen in netCDF output
        integer  :: index    ! index in concentation array, or other
        integer :: f2d           ! index in f_2d arrays
-       integer :: LC            ! Index of Receiver land-cover (one 
        logical :: dt_scale     ! used only if we need a factor on dt_advec,
        real    :: scale         !  e.g. use 100.0 to get cm/s
        logical  :: avg      ! True => average data (divide by nav at end),
                             !     else accumulate over run period
-       logical  :: inst     ! True when instantaneous values needed
-       logical  :: year     ! True when yearly averages wanted
-       logical  :: month    ! True when monthly averages wanted
-       logical  :: day      ! True when daily averages wanted
+       integer  :: iotype       ! sets output timing
+!FEB       logical  :: inst     ! True when instantaneous values needed
+!FEB       logical  :: year     ! True when yearly averages wanted
+!FEB       logical  :: month    ! True when monthly averages wanted
+!FEB       logical  :: day      ! True when daily averages wanted
                               ! of Dep_Receivers)
   end type 
 
@@ -119,7 +119,6 @@ subroutine print_Deriv_type(w)
   write(6,"(a,a)")      "subclass  :", trim(w%subclass)
   write(6,"(a,a)")      "txt    :",    trim(w%txt)   
   write(6,"(a,a)")      "units  :",    trim(w%unit)
-  write(6,"(a,i3)")     "LC     :", w%LC
   write(6,"(a,i3)")     "index  :", w%index
   write(6,"(a,i3)")     "f2d    :", w%f2d
   write(6,"(a,a10)")    "txt    :", w%txt

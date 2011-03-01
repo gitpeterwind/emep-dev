@@ -86,7 +86,7 @@ module DryDep_ml
                                   ATWAIR, atwS, atwN, PPBINV,&
                                   KUPPER, NLANDUSEMAX
 
- use MosaicOutputs_ml,     only : Add_MosaicOutput, Init_MosaicOutputs, MMC_RH
+ use MosaicOutputs_ml,     only : Add_MosaicOutput, MMC_RH
  use OwnDataTypes_ml,      only : depmap
  use Par_ml,               only : li0,li1,lj0,lj1, me
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG, NMOLE_M3
@@ -163,7 +163,7 @@ module DryDep_ml
 
      call Init_DepMap()               ! Maps CDDEP to IXADV
      call Init_GasCoeff()             ! Sets Wesely coeffs.
-     call Init_MosaicOutputs()
+!FEB2011 call Init_MosaicOutputs()
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  

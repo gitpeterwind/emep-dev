@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -49,11 +49,9 @@
 !To improve: When output is onto the same file, but with different positions for the
 !lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
 !
-  !ds use My_Derived_ml, only : model
   use My_Outputs_ml,     only : FREQ_HOURLY, &
                                 NHOURLY_OUT, &      ! No. outputs
                                 Asc2D, hr_out, &      ! Required outputs
- !AMVB 2010-08-02: Output selected model levels
                                 SELECT_LEVELS_HOURLY, LEVELS_HOURLY
   use Chemfields_ml,     only : xn_shl,xn_adv
   use CheckStop_ml,      only : CheckStop,StopAll
@@ -68,7 +66,6 @@
                                ,grid_north_pole_longitude&
                                ,GlobalPosition,gb_fdom,gl_fdom,ref_latitude&
                                ,projection, sigma_mid,gb_stagg,gl_stagg,gl&
- !AMVB 2010-08-02: selected model levels
                                ,sigma_bnd&
                                ,gb,lb2ij,A_bnd,B_bnd
   use InterpolationRoutines_ml,  only : grid2grid_coeff
@@ -119,7 +116,6 @@
   public :: secondssince1970
   public :: dayssince1900
   public :: Read_Inter_CDF
-  !ds public :: Read_Local_Inter_CDF
   public :: ReadField_CDF
 
   private :: CreatenetCDFfile
@@ -137,25 +133,29 @@ character(len=*),  intent(in)  :: fileName
 integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 integer :: ih
 
-if( DEBUG_NETCDF ) write(*,*)'Init_new_netCDF ',fileName,iotyp
 call CloseNetCDF
+if( DEBUG_NETCDF ) write(*,*)'Init_new_netCDF ',trim(fileName),iotyp
 
 select case (iotyp)
 case (IOU_YEAR)
   fileName_year = trim(fileName)
   period_type = 'fullrun'
+  if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 case(IOU_MON)
   fileName_month = trim(fileName)
   period_type = 'monthly'
+  if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 case(IOU_DAY)
   fileName_day = trim(fileName)
   period_type = 'daily'
+  if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 case(IOU_HOUR)
   fileName_hour = trim(fileName)
   period_type = 'hourly'
+  if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
   ISMBEGcdf=GIMAX+IRUNBEG-1; JSMBEGcdf=GJMAX+JRUNBEG-1  !initialisations
   GIMAXcdf=0; GJMAXcdf=0                                !initialisations
   KMAXcdf=1
@@ -169,31 +169,33 @@ case(IOU_HOUR)
   GIMAXcdf=min(GIMAXcdf,GIMAX)
   GJMAXcdf=min(GJMAXcdf,GJMAX)
   !write(*,*)'sizes CDF ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-!AMVB 2010-08-02: Output selected model levels
+
+! Output selected model levels
   if(SELECT_LEVELS_HOURLY)then
     call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf,&
                           KLEVcdf=LEVELS_HOURLY)
   else
+  if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
     call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
   endif
- !call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
+
 case(IOU_INST)
   fileName_inst = trim(fileName)
   period_type = 'instant'
+  if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 case default
   period_type = 'unknown'
+  if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 end select
 
-if( DEBUG_NETCDF ) write(*,*) "Finished Init_new_netCDF", fileName
+if( DEBUG_NETCDF ) write(*,*) "Finished Init_new_netCDF", trim(fileName),trim(period_type)
 end subroutine Init_new_netCDF
 
-!AMVB 2010-08-02: Output selected model levels
+! Output selected model levels
 subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
                             KMAXcdf,KLEVcdf,RequiredProjection)
-!subroutine CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf,RequiredProjection)
-  ! Create the netCDF file
 
 integer, intent(in) :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 character(len=*),  intent(in)  :: fileName
@@ -235,7 +237,8 @@ character(len=80) ::UsedProjection
   write(*,*)'UsedProjection ',trim(UsedProjection)
   write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
     GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-  call check(nf90_create(path = trim(fileName), cmode = nf90_clobber, ncid = ncFileID))
+  call check(nf90_create(path = trim(fileName), &
+        cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
 
   ! Define the dimensions
   if(UsedProjection=='Stereographic')then
@@ -338,7 +341,8 @@ character(len=80) ::UsedProjection
   endif
 
 ! call check(nf90_put_att(ncFileID, nf90_global, "vert_coord", vert_coord))
-  call check(nf90_put_att(ncFileID, nf90_global, "period_type", trim(period_type)))
+  call check(nf90_put_att(ncFileID, nf90_global, "period_type", &
+        trim(period_type)), ":period_type"//trim(period_type) )
   call check(nf90_put_att(ncFileID, nf90_global, "run_label", trim(runlabel2)))
 
   call check(nf90_def_var(ncFileID, "k", nf90_float, dimids = kDimID, varID = kVarID) )
@@ -384,7 +388,7 @@ character(len=80) ::UsedProjection
   endif
 
   ! Leave define mode
-  call check(nf90_enddef(ncFileID))
+  call check(nf90_enddef(ncFileID), "define_done"//trim(fileName) )
 
   call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
 
@@ -394,7 +398,6 @@ character(len=80) ::UsedProjection
     xcoord(1)=(ISMBEGcdf-xp)*GRIDWIDTH_M/1000.
     do i=2,GIMAXcdf
       xcoord(i)=xcoord(i-1)+GRIDWIDTH_M/1000.
-     !print *, i,xcoord(i)
     enddo
     call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
 
@@ -514,14 +517,12 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   type(Deriv),     intent(in) :: def1 ! definition of fields
   integer,                         intent(in) :: iotyp
   real    ,intent(in) :: scale
-  !real, dimension(:,:,:,:), intent(in) :: dat ! Data arrays
   real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
   integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
   integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4)
   character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
   !NB if the file fileName_given exist (also from earlier runs) it will be appended
 
-  !dsDec08 character*18 :: varname
   character(len=len(def1%name)) :: varname
   character*8 ::lastmodified_date
   character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
@@ -529,7 +530,6 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer :: nyear,nmonth,nday,nhour,ndate(4)
   integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
   integer :: i1,i2,j1,j2
-  !real*4 :: buff
   real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID)
   real*8 , allocatable,dimension(:,:,:)  :: R8data3D
   real*4 , allocatable,dimension(:,:,:)  :: R4data3D
@@ -554,6 +554,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
   !make variable name
   write(varname,fmt='(A)')trim(def1%name)
+  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: START ' , me, trim(varname)
 
   !to shorten the output we can save only the components explicitely named here
   !if(varname.ne.'D2_NO2'.and.varname.ne.'D2_O3' &
@@ -566,6 +567,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   if(present(fileName_given))then
      !NB if the file already exist (also from earlier runs) it will be appended
      if(me==0)then
+        if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' , me, trim(fileName_given)
         !try to open the file
         status=nf90_open(path = trim(fileName_given), mode = nf90_write, ncid = ncFileID)
         ISMBEGcdf=IRUNBEG+i1-1
@@ -608,6 +610,14 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      ncFileID_new=ncFileID
   endif
 
+  if(DEBUG_NETCDF) then
+    if(iotyp_new==1)then
+      write(*,*),' Out_NetCDF: cases new ', trim(fileName_given), iotyp
+    else
+      write(*,*),' Out_NetCDF: cases old ', trim(fileName), iotyp
+    end if
+  end if
+
   if(iotyp_new==1)then
      fileName=trim(fileName_given)
      ncFileID = ncFileID_new
@@ -629,7 +639,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   else
      return
   endif
-  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: filename ', fileName
+  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: filename ', trim(fileName), iotyp
 
   call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3")
 
@@ -752,7 +762,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      !test if the file is already open
      if(ncFileID==closedID)then
         !open an existing netcdf dataset
-        call check(nf90_open(path = trim(fileName), mode = nf90_write, ncid = ncFileID))
+        call check(nf90_open(path = trim(fileName), mode = nf90_write, &
+              ncid = ncFileID), "nf90_open"//trim(fileName) )
        if(iotyp_new==1)then      !needed in case iotyp is defined
            ncFileID_new = ncFileID!not really needed
         elseif(iotyp==IOU_YEAR)then
@@ -906,7 +917,6 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   endif !me=0
 
   if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: FINISHED '
-  return
 end subroutine Out_netCDF
 
 !_______________________________________________________________________
@@ -1349,10 +1359,10 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  def1%avg=.false.      !not used
  def1%index=0          !not used
  def1%scale=scale      !not used
- def1%inst=.true.      !not used
- def1%year=.false.     !not used
- def1%month=.false.    !not used
- def1%day=.false.      !not used
+!FEB2011 !FEB2011 def1%inst=.true.      !not used
+!FEB2011!FEB2011  def1%year=.false.     !not used
+!FEB2011!FEB2011  def1%month=.false.    !not used
+!FEB2011!FEB2011  def1%day=.false.      !not used
  def1%name='O3'        !written
  def1%unit='mix_ratio'       !written
 
@@ -2346,10 +2356,10 @@ end if
   def1%avg=.false.      !not used
   def1%index=0          !not used
   def1%scale=1.0      !not used
-  def1%inst=.true.      !not used
-  def1%year=.false.     !not used
-  def1%month=.false.    !not used
-  def1%day=.false.      !not used
+!FEBN2011  def1%inst=.true.      !not used
+!FEBN2011  def1%year=.false.     !not used
+!FEBN2011  def1%month=.false.    !not used
+!FEBN2011  def1%day=.false.      !not used
   def1%name=trim(varname)        !written
   def1%unit='g/m2'       !written
 

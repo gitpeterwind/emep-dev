@@ -282,10 +282,13 @@
      do icmp = 1, dim
 
         wanted = .false.
-        if( iotyp == IOU_YEAR) wanted = def(icmp)%year
-        if( iotyp == IOU_MON ) wanted = def(icmp)%month
-        if( iotyp == IOU_DAY ) wanted = def(icmp)%day
-        if( iotyp == IOU_INST) wanted = def(icmp)%inst
+        !if( iotyp == IOU_YEAR) wanted = def(icmp)%year
+        !if( iotyp == IOU_MON ) wanted = def(icmp)%month
+        !if( iotyp == IOU_DAY ) wanted = def(icmp)%day
+        !if( iotyp == IOU_INST) wanted = def(icmp)%inst
+! 
+       !FEB2011. QUERY on INST ??
+        if( iotyp <= def(icmp)%iotype ) wanted = .true.
 
         if ( wanted ) then
 
@@ -340,10 +343,13 @@
      do icmp = 1, dim
 
         wanted = .false.
-        if( iotyp == IOU_YEAR) wanted = def(icmp)%year
-        if( iotyp == IOU_MON ) wanted = def(icmp)%month
-        if( iotyp == IOU_DAY ) wanted = def(icmp)%day
-        if( iotyp == IOU_INST) wanted = def(icmp)%inst
+        !FEB2011 if( iotyp == IOU_YEAR) wanted = def(icmp)%year
+        !FEB2011 if( iotyp == IOU_MON ) wanted = def(icmp)%month
+        !FEB2011 if( iotyp == IOU_DAY ) wanted = def(icmp)%day
+        !FEB2011 if( iotyp == IOU_INST) wanted = def(icmp)%inst
+! 
+       !FEB2011. QUERY on INST ??
+        if( iotyp <= def(icmp)%iotype ) wanted = .true.
 
         if ( wanted ) then
 

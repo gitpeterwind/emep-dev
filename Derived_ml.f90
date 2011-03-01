@@ -224,7 +224,8 @@ private
 
    !=========================================================================
     subroutine AddNewDeriv( name,class,subclass,txt,unit,index,f2d,&
-           LC,dt_scale,scale, avg,inst,year,month,day,Is3D)
+           dt_scale,scale, avg,iotype,Is3D)
+           !FEN2011 dt_scale,scale, avg,inst,year,month,day,Is3D)
 
        character(len=*), intent(in) :: name ! e.g. DDEP_SO2_m2Conif
        character(len=*), intent(in) :: class ! Type of data, e.g. ADV or VOC
@@ -233,23 +234,24 @@ private
        character(len=*), intent(in) :: unit ! writen in netCDF output
        integer, intent(in)  :: index    ! index in concentation array, or other
        integer, intent(in) :: f2d       ! index in f_2d arrays
-       integer, intent(in) :: LC        ! Index of Receiver land-cover (one
        logical, intent(in) :: dt_scale  !  where scaling by dt_advec needed,
        real, intent(in)    :: scale     !  e.g. use 100.0 to get cm/s
        logical, intent(in)  :: avg      ! True => average data (divide by
                            ! nav at end),  else accumulate over run period
-       logical, intent(in)  :: inst     ! True when instantaneous values needed
-       logical, intent(in)  :: year     ! True when yearly averages wanted
-       logical, intent(in)  :: month    ! True when monthly averages wanted
-       logical, intent(in)  :: day      ! True when daily averages wanted
+       integer, intent(in)  :: iotype   ! sets daily, monthly, etc.
+!FEB2011       logical, intent(in)  :: inst     ! True when instantaneous values needed
+!FEB2011       logical, intent(in)  :: year     ! True when yearly averages wanted
+!FEB2011       logical, intent(in)  :: month    ! True when monthly averages wanted
+!FEB2011       logical, intent(in)  :: day      ! True when daily averages wanted
                                         ! of Dep_Receivers)
 
        logical, intent(in), optional :: Is3D
        type(Deriv) :: inderiv
 
        inderiv = Deriv(trim(name),trim(class),trim(subclass),&
-                           trim(txt),trim(unit),index,f2d,LC,dt_scale, scale,&
-                            avg,inst,year,month,day)
+                           trim(txt),trim(unit),index,f2d,dt_scale, scale,&
+                            avg,iotype)
+                            !FEN2011 avg,inst,year,month,day)
 
        if ( present(Is3D) ) then
           call AddDeriv(inderiv,Is3D)
@@ -344,10 +346,11 @@ private
 !!-------------------------------------------------------------------------------
 
       !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
       ! for AOT we can use index for the threshold, usually 40
 call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
-           40, -99,0, T, 1.0/3600.0, F,   F ,T ,T ,T )
+           40, -99, T, 1.0/3600.0, F,   IOU_DAY    )
+           !FEB2011 40, -99, T, 1.0/3600.0, F,   F ,T ,T ,T )
 !
 !-------------------------------------------------------------------------------
 !-- Tropospheric columns
@@ -358,44 +361,51 @@ call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
     itot = COLUMN_MOLEC_CM2(n)
     iadv = itot - NSPEC_SHL
       !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
      dname = "COLUMN_" //trim(species( itot )%name) //"_"//COLUMN_LEVELS(n2)
      subclass = COLUMN_LEVELS(n2)
      read(unit=subclass(2:3),fmt="(i2)") iLC  ! Faking vertical index with iLC :-(
      call AddNewDeriv( dname, "COLUMN ",subclass,"-", "molec/cm2", &
-               iadv, -99,iLC,  F,    1.0,     T,   F ,T ,T ,T )
+               iadv, -99,  F,    1.0,     T,   IOU_DAY )
+               !FEB2011 iadv, -99,  F,    1.0,     T,   F ,T ,T ,T )
   end do
   end do
 !-------------------------------------------------------------------------------
 !
        !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 ! NOT YET: Scale pressure by 0.01 to get hPa
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
-               -99,  -99,-99,  F,  1.0,  T,   T,   T, T, T )
+               -99,  -99,  F,  1.0,  T,   IOU_DAY ) 
+               !FEB2011 -99,  -99,  F,  1.0,  T,   T,   T, T, T )
 
 call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-               -99,  -99,-99,  F,  1.0,  T,  F, T, T, T )
+               -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
+               !FEB2011 -99,  -99,  F,  1.0,  T,  F, T, T, T )
 
 ! "HMIX00","HMIX12", ....
 
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
-               -99,  -99,-99, F, 1.0,  T,  F, T, T, T )
+               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 
 call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
-               -99,  -99,-99, F, 1.0,  T,  F, T, T, T )
+               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 
        !Deriv(name, class,    subc,  txt,           unit
-      !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+      !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
-               -99,  -99,-99, F, 1.0,  T,  F, T, T, T )
+               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
-               -99,  -99,-99, F, 1.0,  T,  F, T, T, T )
+               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
-               -99,  -99,-99, F, 1.0,  T,  F, T, T, T )
-
+               -99,  -99, F, 1.0,  T,  IOU_DAY )
+               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 
 
 ! OutputConcs can contain both 2d and 3d specs. We automatically
@@ -441,19 +451,19 @@ do ind = 1, size( OutputConcs(:)%txt1 )
     ! Set time.resolution, cf
     !  IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_MEAN=6
     !  Assume always yearly, always average
-   outhh  = F
-   outdd  = F
-   outmm  = F
-   if( OutputConcs(ind)%ind >= IOU_HOUR ) outhh = T ! not yet used...
-   if( OutputConcs(ind)%ind >= IOU_DAY  ) outdd = T
-   if( OutputConcs(ind)%ind >= IOU_MON  ) outmm = T
+   !FEB2011 outhh  = F
+   !FEB2011 outdd  = F
+   !FEB2011 outmm  = F
+   !FEB2011 if( OutputConcs(ind)%ind >= IOU_HOUR ) outhh = T ! not yet used...
+   !FEB2011 if( OutputConcs(ind)%ind >= IOU_DAY  ) outdd = T
+   !FEB2011 if( OutputConcs(ind)%ind >= IOU_MON  ) outmm = T
 
    if( MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") "ADD   ", ind, iout, &
      trim(dname),";", trim(class), outmm, outdd, OutputConcs(ind)%ind,unitscale
 
    call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-   !                                               avg  inst yy mm      dd
-             iout  , -99, -99,  F,   unitscale,     T,  F, T, outmm, outdd )
+             iout  , -99,  F,   unitscale,     T,  OutputConcs(ind)%ind )
+             !FEB2011 iout  , -99,  F,   unitscale,     T,  F, T, outmm, outdd )
 
   if ( outdim == "3d" ) then
 
@@ -466,8 +476,8 @@ do ind = 1, size( OutputConcs(:)%txt1 )
       trim(dname),";", trim(class), outmm, outdd, OutputConcs(ind)%ind,unitscale
 
      call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-   !                                               avg inst yy mm      dd
-             iout  , -99, -99,  F,   unitscale,     T,   F, T, outmm, outdd,&
+             iout  , -99, F,   unitscale,     T,   OutputConcs(ind)%ind, & 
+             !FEB2011 iout  , -99, F,   unitscale,     T,   F, T, outmm, outdd,&
              Is3D=.true. )
 
   end if ! 3d
@@ -480,7 +490,8 @@ do ind = 1, size( WDEP_WANTED(:)%txt1 )
 
      dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1) ! just for printout below
      call AddNewDeriv( "WDEP_PREC","PREC ","-","-", "mm",  &
-                       -1, -99,-99,   F,    1.0,   F,    F ,T ,T ,T )
+                       -1, -99,   F,    1.0,   F,    IOU_DAY )
+                       !FEB2011 -1, -99,   F,    1.0,   F,    F ,T ,T ,T )
 
   else if ( WDEP_WANTED(ind)%txt2 == "GROUP" ) then
 
@@ -489,7 +500,8 @@ do ind = 1, size( WDEP_WANTED(:)%txt1 )
 
      dname = "WDEP_" // trim(WDEP_WANTED( ind )%txt1) 
      call AddNewDeriv( dname,  "WDEP ","-","-", unittxt ,  &
-                -1, -99,-99,   F,    1.0e6,   F,    F ,T ,T ,T )
+                -1, -99,   F,    1.0e6,   F,    IOU_DAY ) 
+                !FEB2011 -1, -99,   F,    1.0e6,   F,    F ,T ,T ,T )
 
   else ! SPEC
 
@@ -502,13 +514,15 @@ do ind = 1, size( WDEP_WANTED(:)%txt1 )
 
      call Units_Scale(WDEP_WANTED( ind )%txt3, itot,  unitscale, unittxt, volunit)
      call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
-              iadv , -99, -99,  F,   unitscale,     F,  F, T, T, T)
+              iadv , -99,   F,   unitscale,     F,  IOU_DAY ) 
+              !FEB2011 iadv , -99,   F,   unitscale,     F,  F, T, T, T)
    end if
    if(MasterProc) write(*,*) "WETTING ", trim(dname), " ",  trim(unittxt)
 end do
 
 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
-         -1 , -99, -99, F, PPBINV,  T,  F, T, T, T ) !?? atw?
+         -1 , -99,  F, PPBINV,  T,  IOU_DAY ) 
+         !FEB2011 -1 , -99,  F, PPBINV,  T,  F, T, T, T ) !?? atw?
 
 !Emissions:
 ! We use mg/m2 outputs for consistency with depositions
@@ -519,13 +533,14 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
 !  mg/m2 accumulated (after multiplication by dt_advec)
 
      !Deriv(name,       class,    subc,  txt,           unit
-     !Deriv index, f2d,LC, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+     !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
   do  ind = 1, size(BVOC_GROUP)
      itot = BVOC_GROUP(ind)
      dname = "Emis_mgm2_" // trim(species(itot)%name)
      call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
-                 ind , -99,-99, T ,    1.0e6,     F,  F, T, T, T ) !?? atw?
+                 ind , -99, T ,    1.0e6,     F, IOU_DAY )  
+                 !FEB2011 ind , -99, T ,    1.0e6,     F,  F, T, T, T ) !?? atw?
    end do
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
@@ -536,24 +551,30 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
 do  ind = 1, size(EMIS_NAME)
   dname = "Emis_mgm2_" // trim(EMIS_NAME(ind))
   call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
-                     ind , -99,-99, T,  1.0e6,  F,  F, T, T, T ) !?? atw?
+                     ind , -99, T,  1.0e6,  F,  IOU_DAY )
+                     !FEB2011 ind , -99, T,  1.0e6,  F,  F, T, T, T )
 end do ! ind
 
 
 call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
-                      -99 , -99,-99, F, 1.0,   T,  F, T, T, T ) !
+                      -99 , -99, F, 1.0,   T,  IOU_DAY )
+                      !FEB2011 -99 , -99, F, 1.0,   T,  F, T, T, T ) !
 
 call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
-                      -99 , -99,-99, F, 1.0,   T,  F, T, T, T ) !
+                      -99 , -99, F, 1.0,   T, IOU_DAY ) 
+                      !FEB2011 -99 , -99, F, 1.0,   T,  F, T, T, T ) !
 
 ! As for GRIDAOT, we can use index for the threshold
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
-                  35, -99,-99, F, 1.0,   F,   F,   T, T, F )
+                  35, -99, F, 1.0,   F,   IOU_MON ) 
+                  !FEB2011 35, -99, F, 1.0,   F,   F,   T, T, F )
 call AddNewDeriv( "SOMO0 ","SOMO",  "SURF","-",   "ppb.day", &
-                  0 , -99,-99, F, 1.0,   F,   F,   T, T, F )
+                  0 , -99, F, 1.0,   F,   IOU_MON ) 
+                  !FEB2011 0 , -99, F, 1.0,   F,   F,   T, T, F )
 
 call AddNewDeriv( "SURF_MAXO3","MAXADV", "O3","-",   "ppb", &
-           IXADV_O3, -99,-99, F, PPBINV,   F,   F,   T, T, T )
+           IXADV_O3, -99, F, PPBINV,   F,   IOU_DAY) 
+           !FEB2011 IXADV_O3, -99, F, PPBINV,   F,   F,   T, T, T )
 
 
 !-- 3-D fields
@@ -567,22 +588,23 @@ do ind = 1, size(D3_OTHER)
   case ("D3_PM25water")
 
     call AddNewDeriv("D3_PM25water", "PM25water3d", "-", "-", "-", &
-         -99, -99,-99, F, 1.0,   T,  F, T, T, T, Is3D ) !
+         -99, -99, F, 1.0,   T,  IOU_MON,    Is3D ) !
+         !FEB2011 -99, -99, F, 1.0,   T,  F, T, T, T, Is3D ) !
 
   case ("D3_m_TH")
 
     call AddNewDeriv("D3_m_TH","TH", "-","-",   "m", &
-         -99, -99,-99, F,  1.0,  F,  F, T, T, F,  Is3D )
+         -99, -99, F,  1.0,  F,  IOU_MON,     Is3D )
 
   case ("D3_m2s_Kz")
 
     call AddNewDeriv( "D3_Kz","Kz", "-","-",   "-", &
-         -99, -99,-99, F,  1.0,  F,  F, T, T, F,  Is3D )
+         -99, -99, F,  1.0,  F,  IOU_MON,     Is3D )
 
   case ("D3_T")
 
     call AddNewDeriv("D3_T","T", "-","-",   "K", &
-         -99, -99,-99, F,  1.0,  T,  F, T, T, T,  Is3D )
+         -99, -99, F,  1.0,  T,  IOU_MON,     Is3D )
 
   end select
 end do
@@ -590,18 +612,21 @@ end do
 ! SOURCE_RECEPTOR in FORECAST mode
      if ( .not. FORECAST .and. &
           SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
-        def_2d(:)%day = .false.               ! daily outputs are wanted.
+        def_2d(:)%iotype = IOU_MON                ! daily outputs are wanted.
+        !FEB2011 def_2d(:)%day = .false.               ! daily outputs are wanted.
      end if
 
      if ( FORECAST .and. num_deriv2d>0 ) then ! only dayly (and hourly) output
-        def_2d(:)%inst  = .false.             ! on FORECAST mode
-        def_2d(:)%year  = .false.
-        def_2d(:)%month = .false.
+          def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
+!FEB2011        def_2d(:)%inst  = .false.             ! on FORECAST mode
+!FEB2011        def_2d(:)%year  = .false.
+!FEB2011        def_2d(:)%month = .false.
      end if
      if ( FORECAST .and. num_deriv3d>0 ) then
-        def_3d(:)%inst  = .false.
-        def_3d(:)%year  = .false.
-        def_3d(:)%month = .false.
+          def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
+!FEB2011        def_3d(:)%inst  = .false.
+!FEB2011        def_3d(:)%year  = .false.
+!FEB2011        def_3d(:)%month = .false.
      end if
 
      ! Get indices of wanted fields in larger def_xx arrays:
@@ -985,7 +1010,9 @@ end do
 
           case ( "COLUMN" ) ! MFAC gives #/cm3, 100 is for m -> cm
 
-            klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
+            read(unit=f_2d(n)%subclass,fmt="(a1i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+            !klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
+
             do j = 1, ljmax
             do i = 1, limax
                k = 1

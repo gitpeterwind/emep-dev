@@ -324,20 +324,38 @@ program myeul
 
 ! open only output netCDF files if needed
   if ( MasterProc ) then
-    if(any(f_2d%inst).or.any(f_3d%inst))&
-      call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
-    !netCDF hourly is initiated in Output_hourly
+
+    print *, "NETCDFINITS; maxval", maxval(f_2d%iotype)
+    call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
+    call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
+
+    if( maxval(f_2d%iotype) == IOU_HOUR ) &
+      call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
+    if( maxval(f_2d%iotype) >= IOU_DAY ) &
+      call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
+    if( maxval(f_2d%iotype) >= IOU_MON ) &
+      call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
+
+!FEB2011 
+    !if(any(f_2d%inst).or.any(f_3d%inst))&
+    !  call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
+    !!netCDF hourly is initiated in Output_hourly
+!
+!FEB2011 - keep with NHOURLY test for now
     if(NHOURLY_OUT>0)&
       call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
-    if(any(f_2d%day).or.any(f_3d%day))&
-      call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
-    if(any(f_2d%month).or.any(f_3d%month))&
-      call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
+!
+!    if(any(f_2d%day).or.any(f_3d%day))&
+!      call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
+!
+!    if(any(f_2d%month).or.any(f_3d%month))&
+!      call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
+
     ! The fullrun file contains the accumulated or average results
     ! over the full run period, often a year, but even just for
     ! a few timesteps if that is all that is run:
-    if(any(f_2d%year).or.any(f_3d%year))&
-      call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
+    !FEB2011 if(any(f_2d%year).or.any(f_3d%year))&
+    !FEB2011 - Always....  call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
   endif
 
   call metvar(1)

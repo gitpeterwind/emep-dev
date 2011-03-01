@@ -66,7 +66,7 @@ ds --     CoDep_ml.f90
           Country_ml.f90
           DefPhotolysis_ml.f90
           DerivedFields_ml.f90
-          Derived_ml.f90
+ds --     Derived_ml.f90
           DO3SE_ml.f90
 ds --     DryDep_ml.f90
           DustProd_ml.f90
@@ -135,11 +135,51 @@ ds --     SubMet_ml.f90
 ZD_OZONE/
 
 ds --     My_Aerosols_ml.f90
-          My_Derived_ml.f90
+ds --     My_Derived_ml.f90
 ds --     My_Outputs_ml.f90
           My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7beta28 Mar  1 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Main change is usage of iotype in f_2d Deriv arrays. Changes lablled with
+FEB2011, pending merge with Alvaro's version and checks for FORECAST mode. 
+
+Derived_ml,
+
+   Replaced inst, month, year, day logicals in Derived_ml by integer iotype
+   Changes marked with !FEB2011 for now. Will clean up once more changes
+   made
+
+My_Derived_ml
+    Similar changes, also Mosaic outputs had one extra field for units.
+    (now typ_s5i)
+
+Ecosystem_ml - iotype
+
+Mosaics_ml
+
+    Init_MosaicOutputs routine removed. Hardly did anything!
+    typ_s5i replaces typ_s4 (am iterating towards full Deriv type!)
+    iotype used as input arg to subroutines -set in My_Derived
+    find_MosaicLC function added to assign correct LC index,
+    acccounting for FULL_GRID=0 (Grid or EU cases)
+
+NetCDF_ml
+    iotype usage added
+    more error messages in check calls
+    commented out def1% inst, month, year, day   - anyway not used
+
+OutputChem_ml
+    iotype usage added
+    QUERY - need to check usage for FORECAST especially
+    
+Unimod.f90
+     iotype usage added.
+
+Biogenics_ml, ForestFire_ml, Nest_ml
+   commented out def1% inst, month, year, day   - anyway not used
+
 xxxxxxxx rv3_7beta27 Feb 28 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Removed NTERM from run.pl. Instead endday and endmonth are defined and 

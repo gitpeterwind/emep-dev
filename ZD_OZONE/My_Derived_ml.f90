@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -239,10 +239,6 @@ private
       DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" &! "Water_D" &
                     , "Decid  ", "Crops  " /)
 
-    !integer, public, parameter, dimension(2) :: &
-    !  WDEP_SPECS = (/ SO2,  SO4 /)! , NH4_f, NH3, NO3_f, HNO3, NO3_c /)
-      !WDEP_SPECS = (/ SO2,  SO4, NH4_f, NH3, NO3_f, HNO3, NO3_c /)
-
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
 !     dimension( size(DDEP_SPECS)*size(DDEP_ECOS) ), save :: OutDDep
@@ -250,19 +246,19 @@ private
    !- specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
-    type(typ_s4), public, parameter, dimension(11) :: &
+    type(typ_s5i), public, parameter, dimension(11) :: &
          NewMosaic = (/ &
-             typ_s4( "Mosaic", "VG", "O3       ", "Grid" ) &
-            ,typ_s4( "Mosaic", "VG", "O3       ", "CF  " ) &
-            ,typ_s4( "Mosaic", "VG", "O3       ", "SNL " ) &
-            ,typ_s4( "Mosaic", "VG", "HNO3     ", "Grid" ) &
-            ,typ_s4( "Mosaic", "VG", "HNO3     ", "W   " ) &
-            ,typ_s4( "Mosaic", "VG", "SEASALT_F", "W   " ) &
-            ,typ_s4( "Mosaic", "VG", "SEASALT_C", "W   " ) &
-            ,typ_s4( "Mosaic", "VG", "SEASALT_F", "Grid" ) &
-            ,typ_s4( "Mosaic", "VG", "SEASALT_C", "Grid" ) &
-            ,typ_s4( "Mosaic", "Rs", "SO2      ", "Grid" ) &
-            ,typ_s4( "Mosaic", "Rs", "NH3      ", "Grid" ) &
+             typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
+            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
          /)
 
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
@@ -438,7 +434,7 @@ private
             trim( VEGO3_WANTED(n) )
       end do
       call WriteArray(VEGO3_OUTPUTS(:)%name,nVEGO3," VEGO3 OUTPUTS")
-      call Add_MosaicVEGO3(nVEGO3)
+      call Add_MosaicVEGO3(M, nVEGO3)  ! M=monthly
       nOutVEGO3 = nVEGO3
 
       !----- some "luxury outputs" -------------------------------------------
@@ -456,8 +452,9 @@ private
       !------------- Met data for d_2d -------------------------
       ! We find the various combinations of met and ecosystem,
       ! adding them to the derived-type array LCC_Met (e.g. => Met_CF)
+      !FEB2011  Daiyl output asked for just now. Change larer
 
-      call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS, nMET)
+      call Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS, D, nMET)
       nOutMET = nMET !not needed?
   end if ! SOURCE_RECEPTOR
 

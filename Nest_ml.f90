@@ -316,10 +316,10 @@ subroutine wrtxn(indate,WriteNow)
   def1%avg=.false.      !not used
   def1%index=0          !not used
   def1%scale=scale      !not used
-  def1%inst=.true.      !not used
-  def1%year=.false.     !not used
-  def1%month=.false.    !not used
-  def1%day=.false.      !not used
+!FEB2011   def1%inst=.true.      !not used
+!FEB2011   def1%year=.false.     !not used
+!FEB2011   def1%month=.false.    !not used
+!FEB2011   def1%day=.false.      !not used
   def1%name=''        !written
   def1%unit='mix_ratio'       !written
 

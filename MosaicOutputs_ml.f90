@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -47,27 +47,25 @@ module MosaicOutputs_ml
  use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_MOSAICS,&
    atwS, atwN, &
    NLANDUSEMAX, IOU_INST, &
+     IOU_MON, & !FEB2011 tmp
    SOX_INDEX, OXN_INDEX, RDN_INDEX ! indices for dep groups
 
  use OwnDataTypes_ml,  only: Deriv, print_deriv_type, &
-       TXTLEN_DERIV, TXTLEN_SHORT, typ_s4
+       TXTLEN_DERIV, TXTLEN_SHORT, typ_s5i
  use SmallUtils_ml, only: find_index
  use TimeDate_ml, only : current_date, effectivdaynumber
  use Wesely_ml, only : NDRYDEP_CALC
  implicit none
  private
 
- ! From My_Derived we created:
  public ::  Init_MosaicMMC
  public ::  Add_MosaicMetConcs
-! public ::  Add_MosaicRG
  public ::  Add_MosaicVEGO3
  public ::  Add_MosaicDDEP
  public ::  Add_NewMosaics
 
- ! From My_DryDep_ml we just move:
- public :: Init_MosaicOutputs
  public :: Add_MosaicOutput
+ public :: find_MosaicLC
 
  
  INCLUDE 'mpif.h'
@@ -107,9 +105,10 @@ module MosaicOutputs_ml
      end subroutine Init_MosaicMMC
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-     subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,nMET)
+     subroutine Add_MosaicMetConcs(MOSAIC_METCONCS,MET_LCS,iotyp, nMET)
         character(len=*), dimension(:), intent(in) :: MOSAIC_METCONCS
         character(len=*), dimension(:), intent(in) :: MET_LCS
+        integer, intent(in)  :: iotyp
         integer, intent(out) :: nMET
         integer :: ilab, n, iLC
         character(len=TXTLEN_DERIV) :: name
@@ -138,10 +137,10 @@ module MosaicOutputs_ml
           call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, nMET" )
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, scale, avg? Inst Yr Mn Day
+          !Deriv index, f2d, scale, avg? Inst Yr Mn Day
            MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "METCONC", MET_LCS(n), MOSAIC_METCONCS(ilab), &
-                ilab, -99,iLC, F , 1.0,  T,  F, T, T, T)
+                ilab, -99,F , 1.0,  T,  iotyp )    !FEBN2011 fix later
 
           if( MOSAIC_METCONCS(ilab)(1:5) == "USTAR" )  then
               MosaicOutput(nMosaic)%unit  =   "m/s"
@@ -164,7 +163,7 @@ module MosaicOutputs_ml
  end subroutine Add_MosaicMetConcs
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  subroutine Add_NewMosaics(Mc,nMc)
-        type(typ_s4), dimension(:), intent(in) :: Mc ! eg VG
+        type(typ_s5i), dimension(:), intent(in) :: Mc ! eg VG
         integer, intent(out) :: nMc
         integer :: n, itot, iLC, iadv
         character(len=TXTLEN_DERIV) :: name
@@ -204,11 +203,12 @@ module MosaicOutputs_ml
           if( trim ( typ ) == "VG" ) then
             MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", typ , lctxt,  "cm/s", &
-                iadv, -99,iLC, F, 100.0, T, F, T, T, T)
+                iadv, -99, F, 100.0, T, Mc(n)%ind ) ! ind gives iotype
           else if( typ == "Rs" )  then
              MosaicOutput(nMosaic) = Deriv( &
                name, "Mosaic", typ, lctxt, "s/m", &
-                iadv, -99,iLC, F , 1.0,  T, F, T, T, T)
+                iadv, -99, F , 1.0,  T, Mc(n)%ind ) ! ind gives iotype
+
           end if
           if(  DEBUG .and. MasterProc ) write(*,*) "DEBUG nMc ", &
             trim(name) // ":" // &
@@ -220,9 +220,9 @@ module MosaicOutputs_ml
 
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine Add_MosaicVEGO3(nVEGO3)
+ subroutine Add_MosaicVEGO3(iotype,nVEGO3)
 
-!        type(O3cl), dimension(:), intent(in) :: VEGO3_OUTPUTS
+        integer, intent(in) :: iotype
         integer, intent(out) :: nVEGO3
         integer :: n, iLC
         character(len=TXTLEN_DERIV) :: name
@@ -273,15 +273,13 @@ module MosaicOutputs_ml
           ! Use index for veg array. No need to set iadv for VEGO3. Always O3.
            MosaicOutput(nMosaic) = Deriv(  &
               name, veg%class,  veg%defn, veg%TXTLC, units, &
-                n, -99,iLC, T,  scale,  F,   F, T, T, F)
+                n, -99, T,  scale,  F,   iotype ) 
 
       end do VEGO3_LC !n
  end subroutine Add_MosaicVEGO3
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_SPECS,nDD)
-   ! Diagnoses type, index and vegetation of POD or AOT type
-   ! metrics: eg POD_1.0_IAM_MF, AOT_40_CF
 
         character(len=*), dimension(:), intent(in) :: DDEP_ECOS
         integer, dimension(:), intent(in) :: DDEP_SPECS  ! eg NH3
@@ -344,11 +342,13 @@ module MosaicOutputs_ml
              nMosaic = nMosaic + 1
              call CheckStop( NMosaic >= MAX_MOSAIC_OUTPUTS, &
                        "too many nMosaics, DDEP" )
+
           !Deriv(name, class,    subc,  txt,           unit
-          !Deriv index, f2d,LC, dt_scale, scale, avg? Inst Yr Mn Day
+          !Deriv index, f2d,dt_scale, scale, avg? Inst Yr Mn Day
+
              MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99,-99, F, 1.0e6 * atw ,  F,   F, T,  T,  F)
+                  iadv,-99, F, 1.0e6 * atw ,  F,   IOU_MON ) !FEB2011
 !QUERY - why no dt_scale??
 
           if(DEBUG .and. MasterProc) then
@@ -360,72 +360,7 @@ module MosaicOutputs_ml
  end subroutine Add_MosaicDDEP
 
 !<==========================================================================
- subroutine Init_MosaicOutputs()
-   integer :: imc
-   character(len=TXTLEN_SHORT) :: subclass
 
-!##################################################################
-! We process the various combinations of gas-species and ecosystem:
-! starting with DryDep, e.g. DDEP_SO2_m2CF
-
-  do imc = 1, nMosaic
-    subclass =  MosaicOutput(imc)%subclass
-    MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name ,f_2d(:)%name)
-    if(DEBUG .and. MasterProc) &
-       write(6,*) "Init_MosaicOutputs ", trim(MosaicOutput(imc)%name)
-    call CheckStop( MosaicOutput(imc)%f2d < 1, &
-        "MosaicOutput-f2d Error " // trim(MosaicOutput(imc)%name))
-
-    select case ( subclass ) 
-      case ( "DDEP" ) 
-
-        MosaicOutput(imc)%LC   = find_index(MosaicOutput(imc)%txt ,DEF_ECOSYSTEMS)
-
-       !careful, deposition is to ecosystems, not LC: FULL_ECOGRID=1, not zero
-        call CheckStop( MosaicOutput(imc)%LC < FULL_ECOGRID, & 
-        "MosaicOutput-LC Error " // trim(MosaicOutput(imc)%name))
-
-      case ( "EUAOT" ) ! we use txt to specify MM or EU
-         if(DEBUG .and. MasterProc) then
-             write(6,"(a,i4,a,i3,f8.3)") "MosaicOuts EUAOTDEFN: ", imc, &
-              trim(MosaicOutput(imc)%txt), MosaicOutput(imc)%LC, Grid%surf_o3_ppb
-         end if
-
-      case ( "VG", "Rs ", "Rns", "Gns", "POD", "AOT" )
-       !careful, these are to LC:
-
-        if( MosaicOutput(imc)%txt == "Grid") then
-           MosaicOutput(imc)%LC = FULL_LCGRID   ! zero
-        else if( MosaicOutput(imc)%txt == "EU") then
-           MosaicOutput(imc)%LC = FULL_LCGRID   ! zero
-        else 
-           MosaicOutput(imc)%LC = &
-              find_index( MosaicOutput(imc)%txt, LandDefs(:)%code )
-        end if
-if(MasterProc) print *, "MOSCHECK ", trim(MosaicOutput(imc)%txt), MosaicOutput(imc)%LC
-        call CheckStop( MosaicOutput(imc)%LC < FULL_LCGRID , & !ie zero
-          "OutVg-LC Error " // trim(MosaicOutput(imc)%name) &
-                 // " LC:" // trim(MosaicOutput(imc)%txt) )
-
-      case default
-
-        if( MasterProc) write(6,*) "Init_MyDry skips ", &
-            trim(MosaicOutput(imc)%name), ",subclass:", trim(subclass)
-
-    end select ! subclass
-
-    if(DEBUG .and. MasterProc) then
-          write(6,*) "MosaicOuts Init: ", imc
-          call print_Deriv_type( MosaicOutput(imc) )
-    end if
-
-  end do
- 
-     if(MasterProc) write(6,*) "Init_MosaicOutputs FINISHED"
-
-  end subroutine Init_MosaicOutputs
-
-!<==========================================================================
  subroutine Add_MosaicOutput(debug_flag,i,j,convfac,DepAdv2Calc,fluxfrac,&
                 Deploss)
 
@@ -466,13 +401,20 @@ if(MasterProc) print *, "MOSCHECK ", trim(MosaicOutput(imc)%txt), MosaicOutput(i
      end do 
 
    !  Query - crops, outisde g.s. ????
-     if ( DEBUG .and. first_call .and. debug_flag ) then
-       write(*,*)  "ECOAREAS ", i,j
-         do n = 1,  NDEF_ECOSYSTEMS
-           write(*,"(a,i3,a,f14.4,g12.3)")  "ECOCHECK ", n, &
+    if ( first_call ) then  ! need to find indices
+       do imc = 1, nMosaic
+         MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name ,f_2d(:)%name)
+         if(MasterProc) write(*,*) "MOS f2D", imc, trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
+       end do
+
+       if ( DEBUG .and. debug_flag ) then
+          write(*,*)  "ECOAREAS ", i,j
+             do n = 1,  NDEF_ECOSYSTEMS
+                 write(*,"(a,i3,a,f14.4,g12.3)")  "ECOCHECK ", n, &
                DEF_ECOSYSTEMS(n), EcoFrac(n), invEcoFrac(n)
-         end do
-       write(*,*) "Done ECOCHECK ========================"
+               end do
+          write(*,*) "Done ECOCHECK ========================"
+       end if
         
      end if
      first_call = .false.
@@ -491,18 +433,20 @@ if(MasterProc) print *, "MOSCHECK ", trim(MosaicOutput(imc)%txt), MosaicOutput(i
         subclass = MosaicOutput(imc)%subclass
         f2d      = MosaicOutput(imc)%f2d
         nadv     = MosaicOutput(imc)%Index  ! can be negatve for groups
-        iLC      = MosaicOutput(imc)%LC
+        iLC  = find_MosaicLC(imc)   ! Used for many cases, but replaced by iEco sometimes
+
        if( class == "AOT" ) subclass = class
        if( class == "POD" ) subclass = class
 
         output = 0.0  ! We only have instantaneous outputs, so can initialise
                       ! here and set d-2d at end
 
-        if ( my_first_call ) then ! Some safety tests.
-           ! Land-cover index can be zero, for FULL_GRID
-            call CheckStop(iLC<FULL_LCGRID, "ILC ERROR: "//MosaicOutput(imc)%name)
-            call CheckStop(f2d<1, "f2d ERROR:  "//MosaicOutput(imc)%name)
-        end if
+        !if ( my_first_call ) then ! Some safety tests.
+        !   ! Land-cover index can be zero, for FULL_GRID
+        !    iLC = find_MosaicLC( imc )
+        !    call CheckStop(iLC<FULL_LCGRID, "ILC ERROR: "//MosaicOutput(imc)%name)
+        !    call CheckStop(f2d<1, "f2d ERROR:  "//MosaicOutput(imc)%name)
+        !end if
         if ( DEBUG .and. debug_flag ) then
            write(6,"(a,a)",advance='no') "Add_Mosaic: "// &
                   trim(MosaicOutput(imc)%name), ", " // trim(subclass)
@@ -511,7 +455,8 @@ if(MasterProc) print *, "MOSCHECK ", trim(MosaicOutput(imc)%txt), MosaicOutput(i
         select case ( subclass )
         case ( "DDEP" )
 
-           iEco   = iLC  ! We rename for clarity. Eco landcovers can include several
+           iEco   = find_index( MosaicOutput(imc)%txt, DEF_ECOSYSTEMS) 
+                         ! Eco landcovers can include several
                          ! land-cover classes, see EcoSystem_ml
            if ( nadv > 0 ) then  ! normal advectde species
               nadv2 = 1
@@ -561,19 +506,13 @@ if(MasterProc) print *, "MOSCHECK ", trim(MosaicOutput(imc)%txt), MosaicOutput(i
           if( n == MMC_FST    ) output = Sub(iLC)%FstO3
           if( n == MMC_GSTO   ) output = Sub(iLC)%g_sto
           if( n == MMC_EVAP   ) output = Sub(iLC)%EvapTransp
+
           if ( DEBUG .and. debug_flag .and. &
                n==MMC_CANO3 .and. iLC == 2 ) then !DF
              write(6,"(a,4i5,f10.4)") "MYDDEP CANO3 ", &
                  current_date%month, current_date%day, &
                  current_date%hour, current_date%seconds,   output
           end if ! DEBUG_ECO 
-
-          !if ( DEBUG_CLOVER .and. debug_flag .and. &
-          !     !n == MMC_FST .and. LandType(iLC)%is_clover ) then
-          !     n == MMC_EVAP .and. LandType(iLC)%is_forest ) then
-          !   write(6,"(a,3i4,i5,2i4,i6,es12.3)") "MDCV ", imc, n, iLC, &
-          ! ....
-          !end if ! DEBUG_ECO 
 
         case ( "POD" )    ! Fluxes, PODY (was AFstY)
 
@@ -662,5 +601,19 @@ if(MasterProc) print *, "MOSCHECK ", trim(MosaicOutput(imc)%txt), MosaicOutput(i
 
   end subroutine  Add_MosaicOutput
   !<==========================================================================
+  function  find_MosaicLC(imc) result(iLC)
+     ! Searches for index in LandType array, and sets to zero if grid or EU
+     ! (simple find:_index would set negati9ve if not found)
+     integer, intent(in) :: imc
+     integer :: iLC
+
+     if( MosaicOutput(imc)%txt == "Grid") then
+         iLC = FULL_LCGRID   ! zero
+     else if( MosaicOutput(imc)%txt == "EU") then
+         iLC = FULL_LCGRID   ! zero
+     else 
+         iLC = find_index( MosaicOutput(imc)%txt, LandDefs(:)%code )
+     end if
+  end function find_MosaicLC
 
 end module MosaicOutputs_ml
