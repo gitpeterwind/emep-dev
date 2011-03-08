@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -51,16 +51,18 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                                SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
   use CheckStop_ml,     only : CheckStop
   use Chemfields_ml,    only : xn_adv,xn_shl, cfac, PM25_water_rh50
-  use ChemGroups_ml
-  use DerivedFields_ml, only: d_2d              ! D2D houtly output type
+  use ChemGroups_ml,    only : chemgroups
+  use Derived_ml,       only : num_deriv2d        ! D2D houtly output type
+  use DerivedFields_ml, only : f_2d,d_2d          ! D2D houtly output type
   use OwnDataTypes_ml,  only : Deriv
-  use ChemSpecs_shl_ml ,only : NSPEC_SHL        ! Maps indices
-  use ChemChemicals_ml ,only : species          ! Gives names
-  use GridValues_ml,    only : i_fdom, j_fdom   ! Gives emep coordinates
+  use ChemSpecs_shl_ml ,only : NSPEC_SHL          ! Maps indices
+  use ChemChemicals_ml ,only : species            ! Gives names
+  use GridValues_ml,    only : i_fdom, j_fdom     ! Gives emep coordinates
   use Io_ml,            only : IO_HOURLY
 
   use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,TXTLEN_NAME,&
-                               identi,runlabel1,IOU_INST,IOU_HOUR,MasterProc
+                               identi,runlabel1,IOU_INST,IOU_HOUR,&
+                               IOU_YEAR,IOU_HOUR_PREVIOUS,MasterProc
   use MetFields_ml,     only : t2_nwp,th, roa, surface_precip, &
                                Idirect, Idiffuse, z_bnd
   use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF &
@@ -73,19 +75,18 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   implicit none
 
 !*.. Components of  hr_out
-!* character(len=10) :: type   ! "ADVp" or "ADVu" or "SHL" or "T2 "
-!*  integer          :: spec   ! Species number in xn_adv or xn_shl array
-!* character(len=12) :: ofmt   ! Output format (e.g. es12.4)
-!*  integer          :: ix1    ! bottom-left x
-!*  integer          :: iy1    ! bottom-left y
-!*  integer          :: ix2    ! upper-right x
-!*  integer          :: iy2    ! upper-right y
-!*  real             :: unitconv   !  conv. factor
-!*  real             :: max    ! max allowed value
+!* character(len=TXTLEN_NAME) :: name   ! netCDF variable name
+!* character(len=TXTLEN_NAME) :: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
+!* character(len=9) :: ofmt     ! Output format (e.g. es12.4)
+!* integer          :: spec     ! Species number in xn_adv or xn_shl array or other arrays
+!* integer          :: ix1,ix2  ! bottom-left & upper-right x
+!* integer          :: iy1,iy2  ! bottom-left & upper-right y
+!* integer          :: nk       ! number of vertical levels
+!* character(len=TXTLEN_NAME) :: unit   ! netCDF unit attribute
+!* real             :: unitconv !  conv. factor
+!* real             :: max      ! Max allowed value for output
 
 ! local variables
-! INCLUDE 'mpif.h'
-! INTEGER STATUS(MPI_STATUS_SIZE),INFO
   logical, save     :: my_first_call = .true. ! Set false after file opened
   logical, save     :: debug_flag = .false.
   integer, save     :: i_debug, j_debug       ! Coords matching i,j
@@ -101,14 +102,12 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   integer ist,ien,jst,jen             ! start and end coords
   character(len=50) :: errmsg = "ok"  ! For  consistecny check
   character(len=20) :: name           ! For output file, species names
-! character(len=120) :: netCDFName    ! For netCDF output filename
   character(len=4)  :: suffix         ! For date "mmyy"
   integer, save :: prev_month = -99   ! Initialise with non-possible month
   logical, parameter :: DEBUG = .false.
-! integer :: NLEVELS_HOURLYih
-  type(Deriv) :: def1 !for NetCDF
-  real :: scale !for NetCDF
-  integer ::CDFtype,nk,klevel!for NetCDF
+  type(Deriv) :: def1           ! for NetCDF
+  real :: scale                 ! for NetCDF
+  integer ::CDFtype,nk,klevel   ! for NetCDF
   character(len=TXTLEN_NAME) :: hr_out_type   ! hr_out%type
   integer                    :: hr_out_nk     ! hr_out%nk
   integer, allocatable, dimension(:) :: gspec       ! group array of indexes
@@ -236,7 +235,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
    !  For molec/cm2 output, set hr_out%unitconv=to_molec_cm2.
    !----------------------------------------------------------------
 
-
       OPTIONS: select case ( trim(hr_out_type) )
         case ( "ADVppbv" )
           itot = NSPEC_SHL + ispec
@@ -329,11 +327,11 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
         case ( "COLUMNgroup" )! GROUP Column output in ug/m2, ugX/m2, molec/cm2
           call group_setup()
-          if(ih>0) hourly(:,:) = 0.0
+          if(ih>1) hourly(:,:) = 0.0
           do iik=ik,KMAX_MID
             forall ( i=1:limax, j=1:ljmax)
               hourly(i,j) = hourly(i,j)                     &
-                        + dot_product(xn_adv(gspec,i,j,ik), &
+                        + dot_product(xn_adv(gspec,i,j,iik),&
                                       gunit_conv(:))        & ! Units conv.
                         * roa(i,j,iik,1)                    & ! density.
                         * (z_bnd(i,j,iik)-z_bnd(i,j,iik+1))   ! level thickness
@@ -351,17 +349,17 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * hr_out(ih)%unitconv  ! Units conv.
           end forall
 
-        case ( "T2_C   " )        ! No cfac for short-lived species
+        case ( "T2_C   " )        ! No cfac for surf.variable
           forall ( i=1:limax, j=1:ljmax)
             hourly(i,j) = t2_nwp(i,j,1) - 273.15     ! Skip Units conv.
           end forall
 
-        case ( "theta  " )        ! No cfac for short-lived species
+        case ( "theta  " )        ! No cfac for met.variable
           forall ( i=1:limax, j=1:ljmax)
             hourly(i,j) = th(i,j,KMAX_MID,1)  ! Skip Units conv.
           end forall
 
-        case ( "PRECIP " )        ! No cfac for short-lived species
+        case ( "PRECIP " )        ! No cfac for surf.variables
           forall ( i=1:limax, j=1:ljmax)
             hourly(i,j) = surface_precip(i,j)     ! Skip Units conv.
           end forall
@@ -376,12 +374,24 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             hourly(i,j) = Idiffuse(i,j)    ! Skip Units conv.
           end forall
 
-        case ( "D2D" )        ! No cfac for short-lived species
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * hr_out(ih)%unitconv
-          end forall
+        case ( "D2D" )
+          call CheckStop(ispec<1.or.ispec>num_deriv2d,"ERROR-DEF! Hourly_out: "&
+                         //trim(hr_out(ih)%name)//", wrong D2D id!")
+          if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_2d(ispec)%unit
+          unit_conv = hr_out(ih)%unitconv*f_2d(ispec)%scale
+          if(f_2d(ispec)%avg)then           ! non accumulated variables
+            forall ( i=1:limax, j=1:ljmax)
+              hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * unit_conv
+            end forall
+          else                              ! hourly accumulated variables
+            forall ( i=1:limax, j=1:ljmax)
+              hourly(i,j) = (d_2d(ispec,i,j,IOU_YEAR)&
+                            -d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)) * unit_conv
+              d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)=d_2d(ispec,i,j,IOU_YEAR)
+            end forall
+          endif
           if( DEBUG  .and. debug_flag) &
-            write(6,"(a12,2i3,2es12.3)") "HHH DEBUG", ispec, ih, &
+            write(6,"(a,2i3,2es12.3)") "HHH DEBUG D2D", ispec, ih, &
               hr_out(ih)%unitconv, hourly(i_debug,j_debug)
 
         case DEFAULT
@@ -489,13 +499,14 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   subroutine group_setup()
     if(allocated(gspec)) deallocate(gspec)
     select case ( hr_out(ih)%spec )
-      case (1:size(GROUP_ARRAY))
-        name = trim(GROUP_ARRAY(hr_out(ih)%spec)%name)//"_"//trim(hr_out(ih)%unit)
-        allocate(gspec(GROUP_ARRAY(hr_out(ih)%spec)%Ngroup))
-        gspec=GROUP_ARRAY(hr_out(ih)%spec)%itot(1:GROUP_ARRAY(hr_out(ih)%spec)%Ngroup)-NSPEC_SHL
+      case (1:size(chemgroups))
+        name = trim(chemgroups(hr_out(ih)%spec)%name)//"_"//trim(hr_out(ih)%unit)
+        allocate(gspec(size(chemgroups(hr_out(ih)%spec)%ptr)))
+        gspec=chemgroups(hr_out(ih)%spec)%ptr-NSPEC_SHL
       case DEFAULT
-        call CheckStop( "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%type)// &
-                        "hourly, wrong group id!")
+        call CheckStop( "ERROR-DEF! Hourly_out: "//&
+                        " hourly variable "//trim(hr_out(ih)%name)//&
+                        " type "//trim(hr_out(ih)%type)//", wrong group id!")
     end select
     if(allocated(gunit_conv)) deallocate(gunit_conv)
     allocate(gunit_conv(size(gspec)))

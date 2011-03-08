@@ -93,7 +93,8 @@ program myeul
   use Sites_ml,         only : sitesdef  ! to get output sites
   use Tabulations_ml,   only : tabulate
   use TimeDate_ml,      only : date, current_date, day_of_year,daynumber,&
-                               assign_NTERM,startdate,enddate
+                               startdate,enddate
+  use TimeDate_ExtraUtil_ml,only : assign_NTERM,date2string
   use Trajectory_ml,    only : trajectory_init,trajectory_in
   use Nest_ml,          only : wrtxn &
        ,FORECAST_NDUMP &  ! number of nested outputs on FORECAST mode
@@ -175,50 +176,42 @@ program myeul
 
   call read_line(IO_TMP,runlabel1,status(1))! explanation text short
   call read_line(IO_TMP,runlabel2,status(1))! explanation text long
-  do i=1,3
-     call read_line(IO_TMP,txt,status(1))
-     read(txt,*)startdate(i)! meteo year,month,day to start the run
-  enddo
-  do i=2,3
-     call read_line(IO_TMP,txt,status(1))
-     read(txt,*)enddate(i)! meteo month,day to start the run
-  enddo
-  startdate(4)=0!meteo hour to start the run
+  call read_line(IO_TMP,txt,status(1))  ! meteo year,month,day to start the run
+  read(txt,*)startdate(1:3)             ! meteo hour to start the run is set in assign_NTERM
+  call read_line(IO_TMP,txt,status(1))  ! meteo year,month,day to end the run
+  read(txt,*)enddate(1:3)               ! meteo hour to end the run is set in assign_NTERM
 
   if(FORECAST)then  ! read dates of nested outputs on FORECAST mode
     do i=1,FORECAST_NDUMP
       call read_line(IO_TMP,txt,status(1))
-      read(txt,"(I4,3(I2),I3)")outdate(i)  ! outputdate YYYYMMDDHHSSS
-      if(MasterProc) print "(A,I5.4,2('-',I2.2),I3.2,2(':',I2.2))",&
-        " Forecast nest/dump at",                             &
-        outdate(i)%year,outdate(i)%month,outdate(i)%day,      &
-        outdate(i)%hour,outdate(i)%seconds/60,mod(outdate(i)%seconds,60)
+      read(txt,"(I4,3(I2),I4)")outdate(i)  ! outputdate YYYYMMDDhhssss
+      if(MasterProc) print "(1X,A)",&
+        date2string("Forecast nest/dump at YYYY-MM-DD hh:mm:ss",outdate(i))
     enddo
   end if
 
   if( MasterProc ) then
-     close(IO_TMP)
-     call PrintLog( trim(runlabel1) )
-     call PrintLog( trim(runlabel2) )
-     write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "startdate= ", (startdate(i),i=1,3)
-     call PrintLog( trim(txt) )
-     write(unit=txt,fmt="(a,i4,i2.2,i2.2)") "enddate= ", startdate(1),(enddate(i),i=2,3)
-     call PrintLog( trim(txt) )
-     write(unit=txt,fmt="(a,i4)") "iyr_trend= ", iyr_trend
-     call PrintLog( trim(txt) )
-     write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
+    close(IO_TMP)
+    call PrintLog( trim(runlabel1) )
+    call PrintLog( trim(runlabel2) )
+    call PrintLog( date2string("startdate = YYYYMMDD",startdate(1:3)) )
+    call PrintLog( date2string("enddate   = YYYYMMDD",enddate  (1:3)) )
+    write(unit=txt,fmt="(a,i4)") "iyr_trend= ", iyr_trend
+    call PrintLog( trim(txt) )
+    write(unit=IO_LOG,fmt="(a12,4i4)")"RunDomain:  ", RUNDOMAIN
 
-     ! And record some settings to RunLog (will recode later)
-      call PrintLog("Options used of (convec., soilwater, soilnox, forest fires)")
-      if(  USE_CONVECTION ) call PrintLog("Convection used")
-      if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
-      if(  USE_SOIL_NOX   ) call PrintLog("SoilNOx    switch on")
-      if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
-      if(  USE_BVOC_2010 )  call PrintLog("BVOC 2010 switch on")
-      call PrintLog("Options used of (dust, sahara)")
-      if(  USE_DUST        )call PrintLog("Dust switch on")
-      if(  DO_SAHARA       )call PrintLog("Sahara switch on")
-  endif
+   ! And record some settings to RunLog (will recode later)
+    if(  FORECAST       ) call PrintLog("Forecast mode on")
+    call PrintLog("Options used of (convec., soilwater, soilnox, forest fires)")
+    if(  USE_CONVECTION ) call PrintLog("Convection used")
+    if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
+    if(  USE_SOIL_NOX   ) call PrintLog("SoilNOx    switch on")
+    if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
+    if(  USE_BVOC_2010 )  call PrintLog("BVOC 2010 switch on")
+    call PrintLog("Options used of (dust, sahara)")
+    if(  USE_DUST        )call PrintLog("Dust switch on")
+    if(  DO_SAHARA       )call PrintLog("Sahara switch on")
+endif
 
 
 
@@ -252,8 +245,6 @@ program myeul
 
   call define_chemicals()    ! sets up species details
   call Init_ChemGroups()    ! sets up species details
-
-  call set_output_defs()     ! Initialises outputs
 
   call assign_nmax(METSTEP)   ! No. timesteps in inner loop
 
@@ -316,6 +307,7 @@ program myeul
 
   call Init_WetDep()   ! sets up scavenging ratios
 
+  call set_output_defs()     ! Initialises outputs
   call sitesdef()      !--- see if any output for specific sites is wanted
                        !   (read input files "sites.dat" and "sondes.dat" )
 

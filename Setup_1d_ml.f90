@@ -153,7 +153,7 @@ contains
 
        qsat  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
        rh(k) = min( q(i,j,k,1)/qsat , 1.0) 
-       rh(k) = max( q(i,j,k,1)/qsat , 0.001) 
+       rh(k) = max( rh(k) , 0.001) 
 
         ! 1)/ Short-lived species - no need to scale with M
 

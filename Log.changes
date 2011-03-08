@@ -84,7 +84,7 @@ ds --     DryDep_ml.f90
           InterpolationRoutines_ml.f90
           Io_ml.f90
           Io_Nums_ml.f90
-          Io_Progs_ml.f90
+av done   Io_Progs_ml.f90
           KeyValue_ml.f90
           LandDefs_ml.f90
           LandPFT_ml.f90
@@ -98,12 +98,12 @@ ds --     DryDep_ml.f90
           MicroMet_ml.f90
           ModelConstants_ml.f90
           MosaicOutputs_ml.f90
-          Nest_ml.f90
+av done   Nest_ml.f90
           NetCDF_ml.f90
           NH3Emis_variation_ml.f90
           NH3variables_ml.f90
           OutputChem_ml.f90
-          Output_hourly.f90
+av done   Output_hourly.f90
           OwnDataTypes_ml.f90
           Par_ml.f90
           PhyChem_ml.f90
@@ -123,7 +123,7 @@ ds --     Solver.f90
 ds --     StoFlux_ml.f90
 ds --     SubMet_ml.f90
           Tabulations_ml.f90
-          TimeDate_ml.f90
+av done   TimeDate_ml.f90
           Timefactors_ml.f90
           Timing_ml.f90
           Tmp_Met_ml.f90
@@ -140,6 +140,159 @@ ds --     My_Outputs_ml.f90
           My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7beta29  Alvaro   Mar 8 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Small bug fixes
+
+run.pl
+  - Re-introduced small bug fix from rv3_7beta14, which got lost in rv3_7beta18.
+    On SR runs, only AL was reduced.
+
+Output_hourly:
+  - Bug fix introduced in rv3_7beta18.
+    COLUMNgroup hourly output type was wrongly calculated.
+  - Scale factor (f_2d(ispec)%scale) was not used for D2D hourly output type.
+
+Setup_1d_ml:
+  - small bug fix regarding rh(k) min & max values, introduced in rv3_7beta24.
+
+Unimod:
+  - Fix bug regarding D2D hourly output:
+    D2D output fail to find correct index based on f_2d%name.
+    The reason is that set_output_defs was called before Init_Derived.
+    Therefore, f_2d was not defined when f_2d%name was searched.
+
+Nest_ml & ModelConsants_ml:
+  - NEST_MODE introduced in rv3_7beta25 was not being used on Nest_ml.
+    Now NEST_MODE is declared as a public parameter in ModelConsants_ml,
+    and is used in Nest_ml (ModelConsants_ml, only: ...MODE=>NEST_MODE...).
+
+Nest_ml:
+  - type(deriv) components inst, month, year, day where still "in unuse"
+    in wrtxn. The lines where commented with !FEB2011 and replaced
+    with the corresponding iotype.
+
+Hourly accumulated Dry & Wet depositions available trough D2D hourly output type.
+All accumulated D2D variables are now outputted as Hourly accumulated values,
+instead of instantaneous values (previous behavior).
+
+ModelConsants_ml:
+  - Introduce IOU_HOUR_PREVIOUS=5 (ModelConsants_ml)
+
+Derived_ml:
+  - Introduce explicit dependence between LENOUTxD and IOU_*.
+    Define LENOUT2D = IOU_HOUR_PREVIOUS and LENOUT3D = IOU_DAY.
+
+Output_hourly:
+  - modify D2D hourly output type
+    - non accumulated D2D variables (f_2d%avg) are access trough IOU_INST.
+      This was the behavior for all D2D variables until version rv3_7_beta21.
+    - accumulated variables (.not.f_2d%avg) are now calculated as the
+      difference between IOU_YEAR and IOU_HOUR_PREVIOUS.
+    - if(hr_out%unit=="")f_2d%unit is used
+    - f_2d%scale is always used in conjunction of hr_out%unitconv
+
+My_Outputs_ml:
+  - add "sox_wdep" variable to standard hourly output,
+    in order to test D2D hourly output type. The max difference between
+    WDEP_SOX from fullrun sox_wdep (hourly accumulated variable) and
+    is ~1e-4 mgS/m2. This additional variable can be commented on future versions.
+
+Modified handling of start/end dates to allow multi-year runs.
+This feature is needed in FORECAST mode, but it is also available for non forecasts.
+
+run.pl:
+  - replace $startyear/month/day & $endmonth/day variables for $startdate and $enddate.
+    Each $start/$enddate is a string in "YYYY MM DD" format.
+    In non FORECAST runs both the YYYY fraction of $startdate and $enddate
+    have the same value ($year). In forecast runs $start/$enddate are set
+    accordingly to $CWFDATE[1] (forecast start date) and $CWFDATE[2] (end date)
+  - remove calc_nterm
+
+Unimod:
+  - modify reading of start/endate arrays, so each date is read from a single line.
+
+New module TimeDate_ExtraUtil_ml
+this new module contains more specific utilities than TimeDate_ml, such as:
+   * assign_NTERM:  previously in TimeDate_ml)
+   * dayssince1900: previously in NetCDF_ml
+   * datefromdayssince1900: previously in NetCDF_ml, Nest_ml & Met_ml
+
+TimeDate_ExtraUtil_ml, Makefile.SRCS:
+  - new module TimeDate_ExtraUtil_ml
+  - re-write assign_NTERM, *date/scondssince* procedures
+    to take advantage already defined time tools (TimeDate_ml)
+    such as tdif_secs. New assign_NTERM code can deal with multi rear runs.
+  - nctime2date and date2nctime interfaces take advantage from the
+    fact that the current time variable in our netCDF files
+    (dayssince1900) is a real variable, while the old one
+    (secondssince1970) was an integer variable.
+  - date to string conversion function based on string keywords:
+    date2string replaces several text keywords by the corresponding
+    year, momnt, day, ... for a given date, e.g.
+    create a file name from a date2string:
+      filename_read_BC=date2string('EMEP_IN_BC_YYYYMMDD.nc',indate)
+    time stamp an error message
+      call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
+          date2string("NetCDF_ml: wrong meteo hour YYYY-MM-DD hh",ndate))
+
+TimeDate_ml:
+  - Add tdif_days & add_days functions
+  - move assign_NTERM to TimeDate_ExtraUtil_ml (new module)
+
+NetCDF_ml:
+  - move dayssince1900 & secondssince1970 to TimeDate_ExtraUtil_ml,
+    and use general date2nctime interface instead
+  - remove datefromdayssince1900, which was unused
+
+Nest_ml & Met_ml:
+  - move datefromdayssince1900 & datefromsecondssince1970 to TimeDate_ExtraUtil_ml,
+    and use general nctime2idate interface instead
+
+Io_Progs_ml:
+  - Include an optional input variable (txt_pattern) into datewrite,
+    which indicates if the input text is to be phrased trough str_pattern.
+    E.g. the "standard" datewrite call:
+      call datewrite("Test", (/ a1, T2, rh /) )
+    can be extended into:
+      call datewrite("Test YYYY-MM-DD hh:mm:ss",&
+                     (/ a1, T2, rh /), txt_pattern=.true.) ! extended call
+
+Unimod, Nest_ml & Met_ml:
+  - use date2string for time stamping CWF-dump messages (Unimod),
+    obtaining the BC file name on FORECAST mode (Nest_ml) &
+    adding date information to error messages.
+
+Other Updates
+
+My_Outputs_ml, Output_hourly:
+  - use groups system: chemgroups instead of GROUP_ARRAY & INDEX_XXX_GROUP.
+
+Open Source Clean-ups:
+
+SmallUtils_ml:
+  - add optional option 'debug' to find_index & find_indices,
+    in order to printout additional debug information.
+  - Indent & gFortran-pedantic cleanup.
+
+TimeDate_ml
+  - re-write leapyear and Init_nmdays in a simpler fashion
+  - a default result was added to y4dig
+  - Indent & gFortran-pedantic cleanup
+
+Output_hourly:
+  - Remove/update old comments, indent & gFortran-pedantic cleanup
+
+Nest_ml:
+  - replace me==0 by MasterProc
+  - Indent & gFortran-pedantic cleanup
+
+Io_Progs_ml:
+  - Indent & gFortran-pedantic cleanup
+
+ModelConstants_ml
+  - Indent & cleanup code
+
 xxxxxxxx rv3_7beta28 Mar  1 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Main change is usage of iotype in f_2d Deriv arrays. Changes lablled with

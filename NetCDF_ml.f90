@@ -81,6 +81,7 @@
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax,gi0,gj0
   use PhysicalConstants_ml,  only : PI, EARTH_RADIUS
   use TimeDate_ml,       only: nmdays,leapyear ,current_date, date
+  use TimeDate_ExtraUtil_ml,only: idate2nctime
   use Functions_ml,      only: StandardAtmos_km_2_kPa
 
 
@@ -113,8 +114,6 @@
   public :: Init_new_netCDF
   public :: GetCDF
   public :: WriteCDF
-  public :: secondssince1970
-  public :: dayssince1900
   public :: Read_Inter_CDF
   public :: ReadField_CDF
 
@@ -616,7 +615,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
     else
       write(*,*),' Out_NetCDF: cases old ', trim(fileName), iotyp
     end if
-  end if
+  endif
 
   if(iotyp_new==1)then
      fileName=trim(fileName_given)
@@ -802,14 +801,14 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      if(present(ik).and.nrecords>0)then
         !The new record may already exist
         !use time as record reference, (instead of "numberofrecords")
-!        call secondssince1970(ndate,nseconds,iotyp)
+!        call idate2nctime(ndate,nseconds,iotyp)
 !       call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
 !        call check(nf90_get_var(ncFileID, timeVarID, nseconds_time,start=(/ nrecords /)))
 !        !check if this is a newer time
 !        if((nseconds/=nseconds_time(1)))then
 !           nrecords=nrecords+1 !start a new record
 !        endif
-        call dayssince1900(ndate,rdays,iotyp)
+        call idate2nctime(ndate,rdays,iotyp)
         call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
         call check(nf90_get_var(ncFileID, timeVarID, rdays_time,start=(/ nrecords /)))
         !check if this is a newer time
@@ -905,9 +904,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      !get variable id
      call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
-!     call secondssince1970(ndate,nseconds,iotyp)!middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
+!     call idate2nctime(ndate,nseconds,iotyp)!middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
 !     call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
-     call dayssince1900(ndate,rdays,iotyp)
+     call idate2nctime(ndate,rdays,iotyp)
      call check(nf90_put_var(ncFileID, VarID, rdays, start = (/nrecords/) ) )
 
      !close file if present(fileName_given)
@@ -1076,113 +1075,7 @@ if(me==0)then
        ncFileID_inst=closedID
     endif
 endif
-
-
-  end subroutine CloseNetCDF
-
-  subroutine secondssince1970(ndate,nseconds,iotyp)
-    !calculate how many seconds have passed since the start of the year 1970
-
-
-    integer, intent(in) :: ndate(4)
-    integer, intent(out) :: nseconds
-    integer, optional, intent(in):: iotyp
-    integer :: n,nday,is_leap
-
-    nday=0
-    do n=1,ndate(2)-1
-       nday=nday+nmdays(n)
-    enddo
-    nday=nday+ndate(3)
-
-    nseconds=3600*(ndate(4)+24*(nday-1))
-
-!add seconds from each year since 1970
-    do n=1970,ndate(1)-1
-       is_leap=0
-       if (leapyear(n))is_leap=1
-       nseconds=nseconds+24*3600*365+24*3600*is_leap
-    enddo
-
-    if(present(iotyp))then
-       !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
-       is_leap=0
-       if (leapyear(ndate(1)-1))is_leap=1
-       if(iotyp==IOU_YEAR)then
-          !take end of run date
-          nseconds=nseconds
-!          nseconds=nseconds-43200*365-43200*is_leap
-       elseif(iotyp==IOU_MON)then
-          nseconds=nseconds-43200*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
-       elseif(iotyp==IOU_DAY)then
-          nseconds=nseconds-43200 !24*3600/2=43200
-       elseif(iotyp==IOU_HOUR)then
-          nseconds=nseconds  !hourly is instantaneous
-       elseif(iotyp==IOU_HOUR_MEAN)then !not implemented yet
-          nseconds=nseconds-1800*FREQ_HOURLY  !1800=half hour
-       elseif(iotyp==IOU_INST)then
-          nseconds=nseconds
-       else
-          nseconds=nseconds
-       endif
-    endif
-  end subroutine secondssince1970
-
-
-  subroutine dayssince1900(ndate,ndays,iotyp)
-    !calculate how many days have passed since the start of the year 1900
-!NB: 1900 is not a leap year
-
-    implicit none
-
-    integer, intent(in) :: ndate(4)
-    real*8, intent(out) :: ndays
-    integer, optional, intent(in):: iotyp
-    integer :: n,nday,nmdays(12),is_leap
-    real*8 ::nseconds
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-    n=ndate(1)
-       if(4*(n/4)==n.and.n/=1900)nmdays(2)=29!NB: 1900 is not a leap year
-
-    ndays=0.0
-    do n=1,ndate(2)-1
-       ndays=ndays+nmdays(n)!entire months since start of last year
-    enddo
-    ndays=ndays+ndate(3)-1!entire days since start of last month
-
-    ndays=ndays+ndate(4)/24.0!hours since start of last day
-!     write(*,*)'days since year start ',ndays
-
-!add days from each entire year since 1900
-     do n=1900,ndate(1)-1
-       ndays=ndays+365
-       if(4*(n/4)==n.and.n/=1900)ndays=ndays+1!NB: 1900 is not a leap year
-     enddo
-!     write(*,*)ndate(1),ndate(2),ndate(3),ndate(4),ndays
-
-    if(present(iotyp))then
-       !middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
-       is_leap=0
-       if (leapyear(ndate(1)-1))is_leap=1
-       if(iotyp==IOU_YEAR)then
-          !take end of run date
-          ndays=ndays
-       elseif(iotyp==IOU_MON)then
-          ndays=ndays-0.5*nmdays(max(ndate(2)-1,1))!nmdays(jan)=nmdays(dec)
-       elseif(iotyp==IOU_DAY)then
-          ndays=ndays-0.5 !24*3600/2=43200
-       elseif(iotyp==IOU_HOUR)then
-           ndays=ndays  !hourly is instantaneous
-       elseif(iotyp==IOU_HOUR_MEAN)then !not implemented yet
-          ndays=ndays-1.0/48.0*FREQ_HOURLY  !1.0/48.0=half hour
-       elseif(iotyp==IOU_INST)then
-          ndays=ndays
-       else
-          ndays=ndays
-       endif
-    endif
-
-  end subroutine dayssince1900
+end subroutine CloseNetCDF
 
 subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,needed)
   !
@@ -1328,7 +1221,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  ndate(2)=vardate%month
  ndate(3)=vardate%day
  ndate(4)=vardate%hour
- call secondssince1970(ndate,nseconds)
+ call idate2nctime(ndate,nseconds)
  nseconds=nseconds+vardate%seconds
  write(*,*)nseconds
 
@@ -2408,66 +2301,5 @@ end if
   return
 
 end subroutine ReadField_CDF
-
-
-
-  subroutine datefromdayssince1900(ndate,ndays,printdate)
-    !calculate date from seconds that have passed since the start of the year 1900
-
-    !  use Dates_ml, only : nmdays
-    implicit none
-
-    integer, intent(out) :: ndate(4)
-    real*8, intent(inout) :: ndays
-    integer,  intent(in) :: printdate
-    real*8 :: rn
-
-    integer :: n,nday,nmdays(12),nmdays2(13)
-    real*8, parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-
-!add 0.5 seconds to avoid numerical errors in (n<=ndays)
-    ndays=ndays+halfsecond
-
-    nmdays2(1:12)=nmdays
-    nmdays2(13)=0
-    ndate(1)=1899
-    n=0
-    do while(n<=ndays)
-       n=n+365
-       ndate(1)=ndate(1)+1
-       if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n+1
-    enddo
-    n=n-365
-    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n-1
-    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)nmdays2(2)=29
-    ndate(2)=0
-    do while(n<=ndays)
-       ndate(2)=ndate(2)+1
-       n=n+nmdays2(ndate(2))
-    enddo
-    n=n-nmdays2(ndate(2))
-    ndate(3)=0
-    do while(n<=ndays)
-       ndate(3)=ndate(3)+1
-       n=n+1
-    enddo
-    rn=n-1
-    ndate(4)=-1
-    do while(rn<=ndays)
-       ndate(4)=ndate(4)+1
-       rn=rn+1/24.0
-    enddo
-    rn=rn-1/24.0
-
-!correct for modification
-    ndays=ndays-halfsecond
-    !    ndate(5)=(ndays-rn)*24*3600.0
-    if(printdate>0)then
-       write(*,55)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
-            ndate(3),', hour: ',ndate(4),', seconds: ',(ndays-rn)*24*3600.0
-    endif
-55  format(A,I5,A,I4,A,I4,A,I4,A,F10.2)
-  end subroutine datefromdayssince1900
 
 end module NetCDF_ml

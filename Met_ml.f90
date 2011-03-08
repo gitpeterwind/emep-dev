@@ -128,6 +128,7 @@ module Met_ml
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
   use netcdf
+  use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
 
 
@@ -2679,12 +2680,11 @@ end if ! NH3_U10
              write(*,*)'Meteo date in days since 1900-1-1 0:0:0'
              call check(nf90_get_var(ncFileID,timeVarID,ndays,&
                   start=(/ihh/),count=(/n1 /)))
-
-             call datefromdayssince1900(ndate,ndays(1),0)
+             call nctime2idate(ndate,ndays(1))  ! for printout: msg="meteo hour YYYY-MM-DD hh"
           else
              call check(nf90_get_var(ncFileID,timeVarID,nseconds,&
                   start=(/ihh/),count=(/n1 /)))
-             call datefromsecondssince1970(ndate,nseconds(1),0) !default
+             call nctime2idate(ndate,nseconds(1)) ! default
           endif
           nhour_first=ndate(4)
 
@@ -2698,15 +2698,14 @@ end if ! NH3_U10
              if(trim(timeunit)==trim("days since 1900-1-1 0:0:0"))then
                 call check(nf90_get_var(ncFileID, timeVarID, ndays,&
                      start=(/ ihh /),count=(/ n1 /)))
-                call datefromdayssince1900(ndate,ndays(1),0)
+                call nctime2idate(ndate,ndays(1))
              else
                 call check(nf90_get_var(ncFileID, timeVarID, nseconds,&
                   start=(/ ihh /),count=(/ n1 /)))
-                call datefromsecondssince1970(ndate,nseconds(1),0)
+                call nctime2idate(ndate,nseconds(1))
              endif
-
              call CheckStop( mod((ihh-1)*METSTEP+nhour_first,24), ndate(4),  &
-                  "NetCDF_ml: wrong meteo hour" )
+                  date2string("NetCDF_ml: wrong meteo hour YYYY-MM-DD hh",ndate))
 
           enddo
 
@@ -3049,117 +3048,6 @@ end if ! NH3_U10
          //  trim( nf90_strerror(status) ) )
 
   end subroutine check
-  !_______________________________________________________________________
-
-  subroutine datefromsecondssince1970(ndate,nseconds,printdate)
-    ! calculate date from seconds that have passed since the start of
-    ! the year 1970
-
-    implicit none
-
-    integer, intent(out) :: ndate(4)
-    integer, intent(in) :: nseconds
-    integer,  intent(in) :: printdate
-
-    integer :: n,nday,nmdays(12),nmdays2(13)
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-
-    nmdays2(1:12)=nmdays
-    nmdays2(13)=0
-    ndate(1)=1969
-    n=0
-    do while(n<=nseconds)
-       n=n+24*3600*365
-       ndate(1)=ndate(1)+1
-       if(mod(ndate(1),4)==0)n=n+24*3600
-    enddo
-    n=n-24*3600*365
-    if(mod(ndate(1),4)==0)n=n-24*3600
-    if(mod(ndate(1),4)==0)nmdays2(2)=29
-    ndate(2)=0
-    do while(n<=nseconds)
-       ndate(2)=ndate(2)+1
-       n=n+24*3600*nmdays2(ndate(2))
-    enddo
-    n=n-24*3600*nmdays2(ndate(2))
-    ndate(3)=0
-    do while(n<=nseconds)
-       ndate(3)=ndate(3)+1
-       n=n+24*3600
-    enddo
-    n=n-24*3600
-    ndate(4)=-1
-    do while(n<=nseconds)
-       ndate(4)=ndate(4)+1
-       n=n+3600
-    enddo
-    n=n-3600
-    !    ndate(5)=nseconds-n
-    if(printdate>0)then
-       write(*,*)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
-            ndate(3),', hour: ',ndate(4),', seconds: ',nseconds-n
-    endif
-  end subroutine datefromsecondssince1970
-
-
-  subroutine datefromdayssince1900(ndate,ndays,printdate)
-    ! calculate date from days that have passed since the start of
-    ! the year 1900
-    ! NB: 1900 is not a leap year
-
-
-    implicit none
-
-    integer, intent(out) :: ndate(4)
-    real, intent(in) :: ndays
-    integer,  intent(in) :: printdate
-
-    integer :: n,nday,nmdays(12),nmdays2(13)
-    real*8 :: nr
-
-    nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-
-    nmdays2(1:12)=nmdays
-    nmdays2(13)=0
-    ndate(1)=1899
-    n=0
-    do while(n<=ndays)
-       n=n+365
-       ndate(1)=ndate(1)+1
-       if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n+1 !NB: 1900 is not a leap year
-    enddo
-    n=n-365
-    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n-1
-    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)nmdays2(2)=29
-    ndate(2)=0
-    do while(n<=ndays)
-       ndate(2)=ndate(2)+1
-       n=n+nmdays2(ndate(2))
-    enddo
-    n=n-nmdays2(ndate(2))
-    ndate(3)=0
-    do while(n<=ndays)
-       ndate(3)=ndate(3)+1
-       n=n+1
-    enddo
-    n=n-1
-    ndate(4)=-1
-    nr=n
-    do while(nr<=ndays+1.0d0/24.0d0/3600.0d0/2)
-       ndate(4)=ndate(4)+1
-       nr=nr+1.0d0/24.0d0
-    enddo
-    nr=nr-1.0d0/24.0d0
-    if(nint((ndays-nr)*3600.0*24.0)/=0)then
-       write(*,*)'WARNING: not integer number of hours'
-    endif
-    !    ndate(5)=nseconds-n
-    if(printdate>0)then
-       write(*,*)'year: ',ndate(1),', month: ',ndate(2),', day: ',&
-            ndate(3),', hour: ',ndate(4),', seconds: ',nint((ndays-nr)*3600.0*24.0)
-    endif
-  end subroutine datefromdayssince1900
-
 end module met_ml
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
 !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

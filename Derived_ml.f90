@@ -94,7 +94,7 @@ use ModelConstants_ml, only: &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
   ! output types corresponding to instantaneous,year,month,day
-  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR, IOU_HOUR_MEAN
+  ,IOU_INST, IOU_YEAR, IOU_MON, IOU_DAY, IOU_HOUR_PREVIOUS, IOU_HOUR, IOU_HOUR_MEAN
 
 use MosaicOutputs_ml, only: nMosaic, MosaicOutput
 use OwnDataTypes_ml, only: Deriv,TXTLEN_DERIV,TXTLEN_SHORT ! type & length of names
@@ -139,8 +139,8 @@ private
   ! fields we use daily outputs. For the big 3d fields, monthly output
   ! is sufficient.
 
-   integer, public, parameter ::  LENOUT2D = 4  ! Allows INST..DAY for 2d fields
-   integer, public, parameter ::  LENOUT3D = 4  ! Allows INST..MON for 3d fields
+   integer, public, parameter ::  LENOUT2D = IOU_HOUR_PREVIOUS  ! Allows INST..DAY,H.PREV. for 2d fields
+   integer, public, parameter ::  LENOUT3D = IOU_DAY            ! Allows INST..DAY for 3d fields
 
   !will be used for:
   !e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
@@ -449,7 +449,7 @@ do ind = 1, size( OutputConcs(:)%txt1 )
    dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
 
     ! Set time.resolution, cf
-    !  IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR=5, IOU_HOUR_MEAN=6
+    !  IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, IOU_HOUR_PREVIOUS=5, IOU_HOUR=6, IOU_HOUR_MEAN=7
     !  Assume always yearly, always average
    !FEB2011 outhh  = F
    !FEB2011 outdd  = F
@@ -610,24 +610,27 @@ do ind = 1, size(D3_OTHER)
 end do
 
 ! SOURCE_RECEPTOR in FORECAST mode
-     if ( .not. FORECAST .and. &
-          SOURCE_RECEPTOR .and. num_deriv2d>0 ) then  ! We assume that no
-        def_2d(:)%iotype = IOU_MON                ! daily outputs are wanted.
-        !FEB2011 def_2d(:)%day = .false.               ! daily outputs are wanted.
-     end if
+if ( SOURCE_RECEPTOR .and. num_deriv2d>0 .and. & ! We assume that
+     .not. FORECAST) &                           ! no daily outputs are wanted
+!ALVARO-2-DAVE?  def_2d(:)%iotype = IOU_MON                ! daily outputs are wanted.
+  where(def_2d%iotype == IOU_DAY)def_2d%iotype=IOU_MON ! on SOURCE_RECEPTOR mode
+!FEB2011         def_2d(:)%day = .false.               ! daily outputs are wanted.
+!FEB2011     end if
 
-     if ( FORECAST .and. num_deriv2d>0 ) then ! only dayly (and hourly) output
-          def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
+if ( FORECAST .and. num_deriv2d>0 ) & ! only dayly (and hourly) output
+!ALVARO-2-DAVE?  def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
+  where(def_2d%iotype > IOU_DAY)def_2d%iotype=-999 ! on FORECAST mode
 !FEB2011        def_2d(:)%inst  = .false.             ! on FORECAST mode
 !FEB2011        def_2d(:)%year  = .false.
 !FEB2011        def_2d(:)%month = .false.
-     end if
-     if ( FORECAST .and. num_deriv3d>0 ) then
-          def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
+!FEB2011     end if
+if ( FORECAST .and. num_deriv3d>0 ) & ! only dayly (and hourly) output
+!ALVARO-2-DAVE?  def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
+  where(def_3d%iotype > IOU_DAY)def_3d%iotype=-999 ! on FORECAST mode
 !FEB2011        def_3d(:)%inst  = .false.
 !FEB2011        def_3d(:)%year  = .false.
 !FEB2011        def_3d(:)%month = .false.
-     end if
+!FEB2011     end if
 
      ! Get indices of wanted fields in larger def_xx arrays:
       do i = 1, num_deriv2d

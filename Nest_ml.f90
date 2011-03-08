@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -27,126 +27,113 @@
 !*****************************************************************************!
 
 module Nest_ml
-  !
-  !This module performs the reading or writing of data for nested runs
-  !
-  !To make a nested run:
-  !1) run with MODE=1 to write out 3d BC
-  !2) run (in a smaller domain) with MODE=2
+! This module performs the reading or writing of data for nested runs
+!
+! The Nesting modes (NEST_MODE in ModelConstants_ml) are:
+! 0=donothing , 1=write , 2=read , 3=read and write
+! 10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
+!
+! To make a nested run:
+! 1) run with MODE=1 (NEST_MODE in ModelConstants_ml) to write out 3d BC
+! 2) run (in a smaller domain) with MODE=2
+!
+! Set MODE (NEST_MODE in ModelConstants_ml) and istart,jstart,iend,jend
+! Choose NHOURSAVE and NHOURREAD
+!
+! Grids may have any projection.
+! Horizontal interpolation uses a weighted average of the four closest points
+! This will work also if points in the present grid are not covered by the external grid.
+!
+!To do:
+!  At present the vertical coordinates cannot be interpolated and must be the same in both grid.
+!  It should be possible to save only xn_adv_bnd if the inner grid is known for the outer grid.
+!  The routines should be thought together with GlobalBC_ml (can it replace it?)
 
+use OwnDataTypes_ml,        only: Deriv
+use TimeDate_ml,            only: date
+use GridValues_ml,          only: gl,gb
+use ChemChemicals_ml,       only: species
+use ChemSpecs_shl_ml,       only: NSPEC_SHL
+use ChemSpecs_adv_ml
+use ChemSpecs_tot_ml,       only: NSPEC_TOT
+use netcdf
+use netcdf_ml,              only: GetCDF,Out_netCDF,Init_new_netCDF&
+  ,Int1,Int2,Int4,Real4,Real8
+use Functions_ml,           only: great_circle_distance
+use ModelConstants_ml,      only: KMAX_MID, MasterProc, NPROC     &
+  , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN  &
+  , MODE=>NEST_MODE, FORECAST, DEBUG_ICBC=>DEBUG_NEST_ICBC
+use Par_ml,                 only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
+  , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
+use Chemfields_ml,          only: xn_adv, xn_shl    ! emep model concs.
+use TimeDate_ExtraUtil_ml,  only: idate2nctime,nctime2idate,date2string
 
-  !
-  !Set MODE and istart,jstart,iend,jend
-  !Choose NHOURSAVE and NHOURREAD
-  !
+implicit none
 
-
-  !Grids may have any projection.
-  !Horizontal interpolation uses a weighted average of the four closest points
-  !This will work also if points in the present grid are not covered by the external grid.
-
-
-  !To do:
-  !At present the vertical coordinates cannot be interpolated and must be the same in both grid.
-  !It should be possible to save only xn_adv_bnd if the inner grid is known for the outer grid.
-  !The routines should be thought together with GlobalBC_ml (can it replace it?)
-
-
-  !Peter May 2006
-
-  use OwnDataTypes_ml, only :Deriv
-  use TimeDate_ml,       only : date
-  use GridValues_ml,  only : gl,gb
-  use ChemChemicals_ml , only :species
-  use ChemSpecs_shl_ml , only :NSPEC_SHL
-  use ChemSpecs_adv_ml
-  use ChemSpecs_tot_ml , only :NSPEC_TOT
-  use netcdf
-  use netcdf_ml,      only : GetCDF,Out_netCDF,Init_new_netCDF,&
-       secondssince1970,dayssince1900,Int1,Int2,Int4,Real4,Real8
-  use Functions_ml,    only : great_circle_distance
-  use ModelConstants_ml,    only : KMAX_MID, NPROC &
-          , FORECAST, DEBUG_ICBC=>DEBUG_NEST_ICBC &
-          , IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY,RUNDOMAIN
-  use Par_ml   ,      only : MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,IRUNBEG,JRUNBEG &
-       , me, li0,li1,lj0,lj1,limax,ljmax, tgi0, tgj0, tlimax, tljmax
-  use Chemfields_ml,  only : xn_adv, xn_shl    ! emep model concs.
-
-  use NetCDF_ml, only :WriteCDF
-
-  implicit none
-
-  INCLUDE 'mpif.h'
-  INTEGER INFO
-
-  integer,parameter ::MODE=0   !0=donothing , 1=write , 2=read , 3=read and write
-  !10=write at end of run, 11=read at start , 12=read at start and write at end (BIC)
-
+INCLUDE 'mpif.h'
+INTEGER INFO
 
 ! Nested input/output on FORECAST mode
-  integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
-  ! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
-  type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
-  ! Nested output dates on FORECAST mode
+integer, public, parameter :: FORECAST_NDUMP = 1  ! Number of nested output
+! on FORECAST mode (1: starnt next forecast; 2: NMC statistics)
+type(date), public :: outdate(FORECAST_NDUMP)=date(-1,-1,-1,-1,-1)
+! Nested output dates on FORECAST mode
 ! IFS-MOZART BC
-  type, private :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
-    character(len=24) :: varname=""
-    logical           :: wanted=.false.,found=.false.
-  end type icbc
-  type(icbc), dimension(NSPEC_ADV), private :: &
-    adv_ic=icbc('',.false.,.false.), &  ! Initial 3D IC/CB
-    adv_bc=icbc('',.false.,.false.)     ! Time dependent BC
-  type, private :: adv_icbc             ! IC/BC Set, included intended ixadv
-    integer           :: ixadv=-1
-    type(icbc)        :: icbc
-  end type adv_icbc
-  type(adv_icbc), dimension(9), private, parameter :: &  ! BC from IFS-MOZART
-    FORECAST_BC=(/adv_icbc(IXADV_O3    ,icbc('O3_VMR_inst'    ,.true.,.false.)), &
-                  adv_icbc(IXADV_NO    ,icbc('NO_VMR_inst'    ,.true.,.false.)), &
-                  adv_icbc(IXADV_NO2   ,icbc('NO2_VMR_inst'   ,.true.,.false.)), &
-                  adv_icbc(IXADV_PAN   ,icbc('PAN_VMR_inst'   ,.true.,.false.)), &
-                  adv_icbc(IXADV_HNO3  ,icbc('HNO3_VMR_inst'  ,.true.,.false.)), &
-                  adv_icbc(IXADV_CO    ,icbc('CO_VMR_inst'    ,.true.,.false.)), &
-                  adv_icbc(IXADV_C2H6  ,icbc('C2H6_VMR_inst'  ,.true.,.false.)), &
-                  adv_icbc(IXADV_HCHO  ,icbc('CH2O_VMR_inst'  ,.true.,.false.)), &
-                  adv_icbc(IXADV_CH3CHO,icbc('CH3CHO_VMR_inst',.true.,.false.))/)
+type, private :: icbc                 ! Inital (IC) & Boundary Conditions (BC)
+  character(len=24) :: varname=""
+  logical           :: wanted=.false.,found=.false.
+end type icbc
+type(icbc), dimension(NSPEC_ADV), private :: &
+  adv_ic=icbc('',.false.,.false.), &  ! Initial 3D IC/CB
+  adv_bc=icbc('',.false.,.false.)     ! Time dependent BC
+type, private :: adv_icbc             ! IC/BC Set, included intended ixadv
+  integer           :: ixadv=-1
+  type(icbc)        :: icbc
+end type adv_icbc
+type(adv_icbc), dimension(9), private, parameter :: &  ! BC from IFS-MOZART
+  FORECAST_BC=(/adv_icbc(IXADV_O3    ,icbc('O3_VMR_inst'    ,.true.,.false.)), &
+                adv_icbc(IXADV_NO    ,icbc('NO_VMR_inst'    ,.true.,.false.)), &
+                adv_icbc(IXADV_NO2   ,icbc('NO2_VMR_inst'   ,.true.,.false.)), &
+                adv_icbc(IXADV_PAN   ,icbc('PAN_VMR_inst'   ,.true.,.false.)), &
+                adv_icbc(IXADV_HNO3  ,icbc('HNO3_VMR_inst'  ,.true.,.false.)), &
+                adv_icbc(IXADV_CO    ,icbc('CO_VMR_inst'    ,.true.,.false.)), &
+                adv_icbc(IXADV_C2H6  ,icbc('C2H6_VMR_inst'  ,.true.,.false.)), &
+                adv_icbc(IXADV_HCHO  ,icbc('CH2O_VMR_inst'  ,.true.,.false.)), &
+                adv_icbc(IXADV_CH3CHO,icbc('CH3CHO_VMR_inst',.true.,.false.))/)
 
-  !coordinates of subdomain to write
-  !coordinates relative to LARGE domain (only used in write mode)
-  integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA NB: version has changed, these numbers where for small domain!!!
+!coordinates of subdomain to write
+!coordinates relative to LARGE domain (only used in write mode)
+integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA NB: version has changed, these numbers where for small domain!!!
 
-  !/-- subroutines
+!/-- subroutines
 
-  public  :: readxn
-  public  :: wrtxn
+public  :: readxn
+public  :: wrtxn
 
+integer, public, parameter :: NHOURSAVE=3 !time between two saves. should be a fraction of 24
+integer, public, parameter :: NHOURREAD=1 !time between two reads. should be a fraction of 24
+!if(NHOURREAD<NHOURSAVE) the data is interpolated in time
 
-  !  logical, save, public::Nest_BC,Nest_3D
+private
 
-  integer, public, parameter :: NHOURSAVE=3 !time between two saves. should be a fraction of 24
-  integer, public, parameter :: NHOURREAD=1 !time between two reads. should be a fraction of 24
-  !if(NHOURREAD<NHOURSAVE) the data is interpolated in time
+!Use TOP BC on forecast mode
+logical, parameter :: TOP_BC=.false..or.FORECAST
+integer,save :: iw, ie, js, jn, kt ! i West/East bnd; j North/South bnd; k Top
+!BC values at boundaries in present grid
+real, save, allocatable, dimension(:,:,:,:) :: &
+  xn_adv_bndw, xn_adv_bnde, & ! west and east
+  xn_adv_bnds, xn_adv_bndn, & ! north and south
+  xn_adv_bndt                 ! top
 
-  private
+!dimension of external grid for BC
+integer,save :: Next_BC,KMAX_ext_BC
 
-  !Use TOP BC on forecast mode
-  logical, parameter :: TOP_BC=.false..or.FORECAST
-  integer,save :: iw, ie, js, jn, kt ! i West/East bnd; j North/South bnd; k Top
-  !BC values at boundaries in present grid
-  real, save, allocatable, dimension(:,:,:,:) :: &
-    xn_adv_bndw, xn_adv_bnde, & ! west and east
-    xn_adv_bnds, xn_adv_bndn, & ! north and south
-    xn_adv_bndt                 ! top
-
-  !dimension of external grid for BC
-  integer,save :: Next_BC,KMAX_ext_BC
-
-  integer,save :: itime!itime_saved(2),
-  real(kind=8),save :: rtime_saved(2)
-  character(len=30),save  :: filename_read_BC='EMEP_IN.nc'
-  character(len=30),save  :: filename_read_3D='EMEP_IN.nc'
-  character(len=30),save  :: filename_write='EMEP_OUT.nc'
-  real(kind=8), parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
+integer,save :: itime!itime_saved(2),
+real(kind=8),save :: rtime_saved(2)
+character(len=30),save  :: filename_read_BC='EMEP_IN.nc'
+character(len=30),save  :: filename_read_3D='EMEP_IN.nc'
+character(len=30),save  :: filename_write='EMEP_OUT.nc'
+real(kind=8), parameter :: halfsecond=1.0/(24.0*3600.0)!used to avoid rounding errors
 
 contains
 
@@ -170,44 +157,41 @@ subroutine readxn(indate)
   ndate(2)  = indate%month
   ndate(3)  = indate%day
   ndate(4)  = indate%hour
- !call secondssince1970(ndate,nseconds_indate)
-  call dayssince1900(ndate,ndays_indate)
+  call idate2nctime(ndate,ndays_indate)
 
   if(FORECAST)then ! FORECAST mode superseeds nest MODE
     filename_read_3D='EMEP_IN_IC.nc'          !IC file: dump/re-start
-    filename_read_BC='EMEP_IN_BC_YYYYMMDD.nc' !BC file: 01,...,24 UTC rec for 1 day
-    n=index(filename_read_BC,'YYYYMMDD')
-    if(n>0) write(filename_read_BC(n:n+7),"(I4.4,2I2.2)")indate%year,indate%month,indate%day
+    filename_read_BC=date2string('EMEP_IN_BC_YYYYMMDD.nc',indate) !BC file: 01,...,24 UTC rec for 1 day
     if(first_call)then
       first_call=.false.
       inquire(file=filename_read_3D,exist=fexist)
       if(.not.fexist)then
-        if(me==0) print *,'No nest IC file found: ',trim(filename_read_3D)
+        if(MasterProc) print *,'No nest IC file found: ',trim(filename_read_3D)
       else
-        if(me==0) print *,'RESET ALL XN 3D'
+        if(MasterProc) print *,'RESET ALL XN 3D'
         call reset_3D(ndays_indate)
       endif
     endif
     if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0) return
     inquire(file=filename_read_BC,exist=fexist)
     if(.not.fexist)then
-      if(me==0) print *,'No nest BC file found: ',trim(filename_read_BC)
+      if(MasterProc) print *,'No nest BC file found: ',trim(filename_read_BC)
       return
     endif
   elseif(MODE == 11.or.MODE == 12)then
     if(.not. first_call)return
     first_call=.false.
-    if(me==0)   print *,'RESET ALL XN 3D'
+    if(MasterProc)   print *,'RESET ALL XN 3D'
     call reset_3D(ndays_indate)
     return
   else
-   !if(me==0)   print *,'call to READXN',indate%hour,indate%seconds
+   !if(MasterProc) print *,'call to READXN',indate%hour,indate%seconds
     if(mod(indate%hour,NHOURREAD)/=0.or.indate%seconds/=0)return
   endif
 
 !never comes to this point if MODE=11 or 12
 
-  if(me==0) print *,'NESTING'
+  if(MasterProc) print *,'NESTING'
 
   if(first_data==-1)then
     if(.not.FORECAST) call reset_3D(ndays_indate)
@@ -217,26 +201,24 @@ subroutine readxn(indate)
 
   if(ndays_indate-rtime_saved(2)>halfsecond)then
     !look for a new data set
-    if(me==0)write(*,*)'NEST: READING NEW BC DATA'
+    if(MasterProc) print *,'NEST: READING NEW BC DATA'
     call read_newdata_LATERAL(ndays_indate,2)
   endif
 
 !   make weights for time interpolation
-  W1=1.0;  W2=0.0!default
+  W1=1.0;  W2=0.0 ! default
   if(ndays_indate-rtime_saved(1)>halfsecond)then
     !interpolate
     W2=(ndays_indate-rtime_saved(1))/(rtime_saved(2)-rtime_saved(1))
     W1=1.0-W2
 !   if(me==1)then
-!   call datefromdayssince1900(ndate,ndays_indate,1)
-!   write(*,*)'interpolating between'
-!   call datefromdayssince1900(ndate,rtime_saved(1),1)
-!   write(*,*)'and'
-!   call datefromdayssince1900(ndate,rtime_saved(2),1)
-!   write(*,*)'with weights : ',W1,W2
+!     call nctime2idate(ndate,ndays_indate,'YYYY-MM-DD hh:mm:ss')
+!     call nctime2idate(ndate,rtime_saved(1),'interpolating between YYYY-MM-DD hh:mm:ss')
+!     call nctime2idate(ndate,rtime_saved(2),'and                   YYYY-MM-DD hh:mm:ss')
+!     print *,'with weights : ',W1,W2
 !   endif
   endif
-! if(me==0)write(*,*)'weights : ',W1,W2,rtime_saved(1),rtime_saved(2)
+! if(MasterProc) print *,'weights : ',W1,W2,rtime_saved(1),rtime_saved(2)
 
   forall (n=1:NSPEC_ADV, adv_bc(n)%wanted.and.adv_bc(n)%found)
     forall (i=iw:iw, k=1:KMAX_ext_BC, j=1:ljmax, i>=1) &
@@ -275,10 +257,8 @@ subroutine wrtxn(indate,WriteNow)
                 indate%day    ==outdate%day   .and.   &
                 indate%hour   ==outdate%hour  .and.   &
                 indate%seconds==outdate%seconds))return
-    if(me==0) print "(A,I5.4,2('-',I2.2),I3.2,2(':',I2.2))",&
-      " Forecast nest/dump at",                             &
-      indate%year,indate%month,indate%day,                  &
-      indate%hour,indate%seconds/60,mod(indate%seconds,60)
+    if(MasterProc) print *,&
+      date2string(" Forecast nest/dump at YYYY-MM-DD hh:mm:ss",indate)
     istart=RUNDOMAIN(1)
     jstart=RUNDOMAIN(3)
     iend=RUNDOMAIN(2)
@@ -293,16 +273,14 @@ subroutine wrtxn(indate,WriteNow)
     if(mod(indate%hour,NHOURSAVE)/=0.or.indate%seconds/=0)return
   endif
 
-
-!222 FORMAT(A,I2.2,I4.4,A)
-!    write(fileName_write,222)'EMEP_BC_',indate%month,indate%year,'.nc'!for different names each month
-                                                                     !NB: readxn should have same name
-  if(me==0)write(*,*)'write Nest data ',trim(fileName_write)
+! fileName_write=date2string("EMEP_BC_MMYYYY.nc",indate)!for different names each month
+                                                        !NB: readxn should have same name
+  if(MasterProc)print *,'write Nest data ',trim(fileName_write)
 
   iotyp=IOU_INST
   if(first_call)then
-    if(me==0)then
-      write(*,*)'Writing BC on ',trim(fileName_write)
+    if(MasterProc)then
+      print *,'Writing BC on ',trim(fileName_write)
      !write(command,*)'rm ',trim(fileName_write)
      !call system(command)
     endif
@@ -312,16 +290,17 @@ subroutine wrtxn(indate,WriteNow)
   ndim=3 !3-dimensional
   kmax=KMAX_MID
   scale=1.0
-  def1%class='Advected' !written
-  def1%avg=.false.      !not used
-  def1%index=0          !not used
-  def1%scale=scale      !not used
-!FEB2011   def1%inst=.true.      !not used
-!FEB2011   def1%year=.false.     !not used
-!FEB2011   def1%month=.false.    !not used
-!FEB2011   def1%day=.false.      !not used
-  def1%name=''        !written
-  def1%unit='mix_ratio'       !written
+  def1%class='Advected' ! written
+  def1%avg=.false.      ! not used
+  def1%index=0          ! not used
+  def1%scale=scale      ! not used
+!FEB2011   def1%inst=.true.      ! not used
+!FEB2011   def1%year=.false.     ! not used
+!FEB2011   def1%month=.false.    ! not used
+!FEB2011   def1%day=.false.      ! not used
+  def1%iotype=iotyp     ! not used
+  def1%name=''          ! written
+  def1%unit='mix_ratio' ! written
 
   do n= 1, NSPEC_ADV
  !do n= 1, NSPEC_ADV-4  !ENEA
@@ -335,120 +314,17 @@ subroutine wrtxn(indate,WriteNow)
 end subroutine wrtxn
 
 
-  subroutine check(status)
-    use netcdf
-    implicit none
-    integer, intent ( in) :: status
-
-    if(status /= nf90_noerr) then
-       print *, trim(nf90_strerror(status))
-         WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml"
-         call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
-    end if
-  end subroutine check
-
-subroutine datefromsecondssince1970(ndate,nseconds,printdate)
-!calculate date from seconds that have passed since the start of the year 1970
-
-  !use Dates_ml, only : nmdays
+subroutine check(status)
+  use netcdf
   implicit none
-  integer, intent(out) :: ndate(4)
-  integer, intent(in) :: nseconds
-  integer,  intent(in) :: printdate
+  integer, intent ( in) :: status
 
-  integer :: n,nmdays(12),nmdays2(13) !,nday
-  nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-
-  nmdays2(1:12)=nmdays
-  nmdays2(13)=0
-  ndate(1)=1969
-  n=0
-  do while(n<=nseconds)
-    n=n+24*3600*365
-    ndate(1)=ndate(1)+1
-    if(mod(ndate(1),4)==0)n=n+24*3600
-  enddo
-  n=n-24*3600*365
-  if(mod(ndate(1),4)==0)n=n-24*3600
-  if(mod(ndate(1),4)==0)nmdays2(2)=29
-  ndate(2)=0
-  do while(n<=nseconds)
-    ndate(2)=ndate(2)+1
-    n=n+24*3600*nmdays2(ndate(2))
-  enddo
-  n=n-24*3600*nmdays2(ndate(2))
-  ndate(3)=0
-  do while(n<=nseconds)
-    ndate(3)=ndate(3)+1
-    n=n+24*3600
-  enddo
-  n=n-24*3600
-  ndate(4)=-1
-  do while(n<=nseconds)
-    ndate(4)=ndate(4)+1
-    n=n+3600
-  enddo
-  n=n-3600
- !ndate(5)=nseconds-n
-  if(printdate>0) write(*,"(A,I5,3(A,I4),A,I10)")&
-    'year: ',ndate(1),', month: ',ndate(2),', day: ',ndate(3),&
-    ', hour: ',ndate(4),', seconds: ',nseconds-n
-end subroutine datefromsecondssince1970
-
-subroutine datefromdayssince1900(ndate,ndays,printdate)
-!calculate date from seconds that have passed since the start of the year 1900
-
- !use Dates_ml, only : nmdays
-  implicit none
-  integer, intent(out) :: ndate(4)
-  real(kind=8), intent(inout) :: ndays
-  integer, intent(in) :: printdate
-  real(kind=8) :: rn
-
-  integer :: n,nmdays(12),nmdays2(13) !,nday
-  nmdays = (/31,28,31,30,31,30,31,31,30,31,30,31/)
-
-!add 0.5 seconds to avoid numerical errors in (n<=ndays)
-  ndays=ndays+halfsecond
-
-  nmdays2(1:12)=nmdays
-  nmdays2(13)=0
-  ndate(1)=1899
-  n=0
-  do while(n<=ndays)
-    n=n+365
-    ndate(1)=ndate(1)+1
-    if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n+1
-  enddo
-  n=n-365
-  if(mod(ndate(1),4)==0.and.ndate(1)/=1900)n=n-1
-  if(mod(ndate(1),4)==0.and.ndate(1)/=1900)nmdays2(2)=29
-  ndate(2)=0
-  do while(n<=ndays)
-    ndate(2)=ndate(2)+1
-    n=n+nmdays2(ndate(2))
-  enddo
-  n=n-nmdays2(ndate(2))
-  ndate(3)=0
-  do while(n<=ndays)
-    ndate(3)=ndate(3)+1
-    n=n+1
-  enddo
-  rn=n-1
-  ndate(4)=-1
-  do while(rn<=ndays)
-    ndate(4)=ndate(4)+1
-    rn=rn+1/24.0
-  enddo
-  rn=rn-1/24.0
-
-!correct for modification
-  ndays=ndays-halfsecond
- !ndate(5)=(ndays-rn)*24*3600.0
-  if(printdate>0) write(*,"(A,I5,3(A,I4),A,F10.2)")&
-    'year: ',ndate(1),', month: ',ndate(2),', day: ',ndate(3),&
-    ', hour: ',ndate(4),', seconds: ',(ndays-rn)*24*3600.0
-end subroutine datefromdayssince1900
+  if(status /= nf90_noerr) then
+      print *, trim(nf90_strerror(status))
+        WRITE(*,*) 'MPI_ABORT: ', "errorin NetCDF_ml"
+        call  MPI_ABORT(MPI_COMM_WORLD,9,INFO)
+  end if
+end subroutine check
 
 subroutine init_icbc()
   implicit none
@@ -473,34 +349,34 @@ subroutine init_icbc()
     endif
   endif
 
-  if(DEBUG_ICBC.and.me==0)then
+  if(DEBUG_ICBC.and.MasterProc)then
     print "(A)","DEBUG_ICBC Variables:"
-    print "(2(X,A,I3,'=',A24,2L2))",&
+    print "(2(1X,A,I3,'=',A24,2L2))",&
       ('ADV_IC',n,adv_ic(n),'ADV_BC',n,adv_bc(n),n=1,NSPEC_ADV)
   endif
-contains
-function find_icbc(filename_read,varname) result(found)
-  implicit none
-  character(len=*), intent(in)               :: filename_read
-  character(len=*), dimension(:), intent(in) :: varname
-  logical, dimension(size(varname))          :: found
-  integer :: status,ncFileID,varID,n
+  contains
+  function find_icbc(filename_read,varname) result(found)
+    implicit none
+    character(len=*), intent(in)               :: filename_read
+    character(len=*), dimension(:), intent(in) :: varname
+    logical, dimension(size(varname))          :: found
+    integer :: status,ncFileID,varID,n
 
-  found(:)=.false.
-  if(me==0)then
-    status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
-    if(status /= nf90_noerr) then
-      print *,'not found ',trim(filename_read)
-    else
-      print *,'  reading ',trim(filename_read)
-      do n=1,size(varname)
-        if(varname(n)/="") &
-          found(n)=(nf90_inq_varid(ncid=ncFileID,name=trim(varname(n)),varID=varID)==nf90_noerr)
-      enddo
+    found(:)=.false.
+    if(MasterProc)then
+      status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
+      if(status /= nf90_noerr) then
+        print *,'not found ',trim(filename_read)
+      else
+        print *,'  reading ',trim(filename_read)
+        do n=1,size(varname)
+          if(varname(n)/="") &
+            found(n)=(nf90_inq_varid(ncid=ncFileID,name=trim(varname(n)),varID=varID)==nf90_noerr)
+        enddo
+      endif
     endif
-  endif
-  CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
-end function find_icbc
+    CALL MPI_BCAST(found,size(found),MPI_LOGICAL,0,MPI_COMM_WORLD,INFO)
+  end function find_icbc
 end subroutine init_icbc
 
 subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
@@ -522,7 +398,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   rtime_saved = -99999.9 !initialization
 
 !Read dimensions (global)
-  if(me==0)then
+  if(MasterProc)then
     status = nf90_open(path=trim(filename_read),mode=nf90_nowrite,ncid=ncFileID)
     if(status /= nf90_noerr) then
       print *,'not found',trim(filename_read)
@@ -569,7 +445,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   allocate(lon_ext(GIMAX_ext,GJMAX_ext))
   allocate(lat_ext(GIMAX_ext,GJMAX_ext))
 
-  if(me==0)then
+  if(MasterProc)then
    !Read lon lat of the external grid (global)
     if(trim(projection)==trim('lon lat')) then
       call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
@@ -595,10 +471,10 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
     call check(nf90_get_var(ncFileID, varID, ndays,start=(/ 1 /),count=(/ 1 /) ))
 
     if(ndays(1)-ndays_indate>halfsecond)then
-      write(*,*)'WARNING: did not find BIC for date:'
-      call datefromdayssince1900(ndate,ndays_indate,1)
-      write(*,*)'first date found:'
-      call datefromdayssince1900(ndate,ndays(1),1)
+      call nctime2idate(ndate,ndays_indate,&
+        'WARNING: did not find BIC for date YYYY-MM-DD hh:mm:ss')
+      call nctime2idate(ndate,ndays(1),&
+        'first date found YYYY-MM-DD hh:mm:ss')
     endif
    !enddo
 
@@ -709,8 +585,8 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
       allocate(xn_adv_bndt(NSPEC_ADV,MAXLIMAX,MAXLJMAX,2)) ! Top
     if(DEBUG_ICBC)then
       CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-      if(me==0) print "(A)","DEBUG_ICBC Boundaries:"
-      print "(X,'me=',i3,5(X,A,I0,'=',L1))",&
+      if(MasterProc) print "(A)","DEBUG_ICBC Boundaries:"
+      print "(1X,'me=',i3,5(1X,A,I0,'=',L1))",&
         me,'W:i',iw,allocated(xn_adv_bndw),'E:i',ie,allocated(xn_adv_bnde),&
            'S:j',js,allocated(xn_adv_bnds),'N:j',jn,allocated(xn_adv_bndn),&
            'T:k',kt,allocated(xn_adv_bndt)
@@ -721,23 +597,18 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
 
   ndays_old=rtime_saved(2)
   allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext_BC), stat=status)
-  if(me==0)then
+  if(MasterProc)then
     call check(nf90_open(path = trim(fileName_read_BC), mode = nf90_nowrite, ncid = ncFileID))
 
     call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
     do n=1,Next_BC
       call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
-      if(ndays_indate-ndays(1)<halfsecond)then
-        write(*,*)'Using date '
-        call datefromdayssince1900(ndate,ndays(1),1)
-        goto 876
-      endif
+      if(ndays_indate-ndays(1)<halfsecond) goto 876
     enddo
-    write(*,*)'WARNING: did not find correct date'
     n=Next_BC
-    write(*,*)'Using date '
-    call datefromdayssince1900(ndate,ndays(1),1)
+    write(*,*)'WARNING: did not find correct date'
 876 continue
+    call nctime2idate(ndate,ndays(1),'Using date YYYY-MM-DD hh:mm:ss')
     itime=n
     rtime_saved(2)=ndays(1)
   endif
@@ -760,7 +631,7 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
       if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
         xn_adv_bndt(n,i,j,1)=xn_adv_bndt(n,i,j,2)
     endif
-    if(me==0)then
+    if(MasterProc)then
     !Could fetch one level at a time if sizes becomes too big
       call check(nf90_inq_varid(ncid=ncFileID, name=trim(adv_bc(n)%varname), varID=varID))
 
@@ -798,7 +669,7 @@ subroutine read_newdata_LATERAL(ndays_indate,nr)
   enddo DO_SPEC
 
   deallocate(data)
-  if(me==0) call check(nf90_close(ncFileID))
+  if(MasterProc) call check(nf90_close(ncFileID))
 end subroutine read_newdata_LATERAL
 
 subroutine reset_3D(ndays_indate)
@@ -826,27 +697,24 @@ subroutine reset_3D(ndays_indate)
                   Next,KMAX_ext,GIMAX_ext,GJMAX_ext)
   endif
   allocate(data(GIMAX_ext,GJMAX_ext,KMAX_ext), stat=status)
-  if(me==0)then
+  if(MasterProc)then
     call check(nf90_open(path = trim(fileName_read_3D), mode = nf90_nowrite, ncid = ncFileID))
 
     call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = varID))
     do n=1,Next
       call check(nf90_get_var(ncFileID, varID, ndays,start=(/ n /),count=(/ 1 /) ))
-      if(ndays(1)>=ndays_indate)then
-        write(*,*)'found date '
-        call datefromdayssince1900(ndate,ndays(1),1)
-        goto 876
-      endif
+      if(ndays(1)>=ndays_indate) goto 876
     enddo
-    write(*,*)'WARNING: did not find correct date'
     n=Next
+    write(*,*)'WARNING: did not find correct date'
 876 continue
+    call nctime2idate(ndate,ndays(1),'Using date YYYY-MM-DD hh:mm:ss')
     itime=n
   endif
 
   DO_SPEC: do n= 1, NSPEC_ADV
     if(.not.(adv_ic(n)%wanted.and.adv_ic(n)%found)) cycle DO_SPEC
-    if(me==0)then
+    if(MasterProc)then
     !Could fetch one level at a time if sizes becomes too big
       call check(nf90_inq_varid(ncid=ncFileID, name=trim(species(NSPEC_SHL+n)%name), varID=varID))
 
@@ -858,13 +726,13 @@ subroutine reset_3D(ndays_indate)
    !overwrite everything 3D (init)
     forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax) &
       xn_adv(n,i,j,k)=Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k) &
-                      +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
-                      +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
-                      +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
+                     +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k) &
+                     +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k) &
+                     +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k)
   enddo DO_SPEC
 
   deallocate(data)
-  if(me==0) call check(nf90_close(ncFileID))
+  if(MasterProc) call check(nf90_close(ncFileID))
 end subroutine reset_3D
 
 end module Nest_ml

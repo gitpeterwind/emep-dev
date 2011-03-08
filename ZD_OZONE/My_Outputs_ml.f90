@@ -50,9 +50,9 @@
 !    For ugX/m3 output use in combination with to_ug_X.
   use ChemSpecs_shl_ml
   use ChemChemicals_ml,  only: species
-  use ChemGroups_ml
-  use DerivedFields_ml,  only: f_2d  ! D2D houtly output type
-  use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, NPROC,&
+  use ChemGroups_ml,     only: chemgroups
+  use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
+  use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
                                TXTLEN_NAME, FORECAST, to_molec_cm3=>MFAC
   use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG
   use SmallUtils_ml,     only: find_index
@@ -181,7 +181,7 @@
     logical, public, parameter :: Hourly_ASCII = .false.
      ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
 
-    integer, public            :: NHOURLY_OUT =  5 ! No. outputs
+    integer, public            :: NHOURLY_OUT =  6 ! No. outputs
     integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
     integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 ! Output selected model levels
@@ -302,9 +302,9 @@
     hr_out(06)=Asc2D("Rn222_3km" ,"BCVugXX","(f9.4)",&
              IXADV_Rn222,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_Rn222),-999.9)
     hr_out(07)=Asc2D("pm25_3km"  ,"BCVugXXgroup","(f9.4)",&
-        INDEX_PM25_GROUP,ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
+        find_index("PM25",chemgroups(:)%name),ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
     hr_out(08)=Asc2D("pm10_3km"  ,"BCVugXXgroup","(f9.4)",&
-        INDEX_PM10_GROUP,ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
+        find_index("PM10",chemgroups(:)%name),ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
     hr_out(09)=Asc2D("pm_h2o_3km","PMwater","(f9.4)",&
              00         ,ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
 ! Partial/Full COLUMN/COLUMgroup calculations:
@@ -334,6 +334,9 @@
               IXADV_SO4,   ix1,ix2,iy1,iy2,1, "ugS",to_ug_S(IXADV_SO4),400.0)
     hr_out(5)= Asc2D("cNO3-air","ADVugXX","(f8.4)",&
               IXADV_NO3_c,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NO3_c),400.0)
+!Hourly accumulated deposition. NB if(hr_out%unit=="")f_2d%unit is used
+    hr_out(6)=Asc2D("sox_wdep" ,"D2D","(f9.4)",&
+              find_index("WDEP_SOX",f_2d(:)%name),ix1,ix2,iy1,iy2,1,"",1.0,-999.9)
 
  ! Extra parameters - need to be coded in Sites_ml also.
  ! So far we can choose from T2, or th (pot. temp.) or from d_2d arrays.

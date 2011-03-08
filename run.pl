@@ -52,10 +52,8 @@
 
 #Queue system commands start with #SBATCH (these are not comments!)
 #SBATCH --account=nn2890k
-#SBATCH --nodes=8 --ntasks-per-node=8
-#SBATCH --constraint=ib
-#SBATCH --mem-per-cpu=1G
-#SBATCH --time=06:00:00
+#SBATCH --nodes=8 --ntasks-per-node=8 --constraint=ib
+#SBATCH --mem-per-cpu=2G --time=06:00:00
 #SBATCH --job-name=emep
 #SBATCH --output=job.%N.%j.out
 #SBATCH  --error=job.%N.%j.err
@@ -114,7 +112,7 @@ die "Must choose STALLO **or** NJORD **or** TITAN!\n"
   unless $STALLO+$NJORD+$TITAN==1;
 
 my %BENCHMARK;
-#  OpenSource 2008
+# OpenSource 2008
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"     ) ;
 # Dave's preference for EMEP:
 #   %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
@@ -140,8 +138,8 @@ if ($CWF) {
   chop($CWFDATE[0] = `date -d '$CWFBASE 1 day ago'    +%Y%m%d`);  # yesterday
        $CWFDATE[1] = $CWFBASE;                                    # start date
   chop($CWFDATE[2] = `date -d '$CWFBASE ($CWFDAYS-1) day' +%Y%m%d`);  # end date
-  chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d00000`); # 1st dump/nest
-  chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d00000`); # 2nd dump/nest
+  chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d000000`); # 1st dump/nest
+  chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d000000`); # 2nd dump/nest
 }
  $CWF=0 if %BENCHMARK;
 
@@ -245,7 +243,7 @@ if ($EUCAARI) {
   @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-my $testv = "rv3_7beta28";
+my $testv = "rv3_7beta29";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -519,7 +517,7 @@ if ( $RESET ) { ########## Recompile everything!
 }
 system "pwd";
 print "Check last files modified:\n";
-system "ls -lt | head -6 ";
+system "ls -lht --time-style=long-iso -I\*{~,.o,.mod} | head -6 ";
 
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
@@ -593,7 +591,7 @@ foreach my $scenflag ( @runs ) {
           mylink( "Linking:", $old,$new );
           $cwfbc=$old;
         } else {
-          print "BC file for $CWFBASE not available (yet). Try yesterdays BC file:";
+          print "BC file for $CWFBASE not available (yet). Try yesterdays BC file\n";
           $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr($CWFDATE[0],0,4),$n+1;
           if (-e $old) {
             mylink( "Linking:", $old,$new ) if (-e $old);
@@ -622,10 +620,7 @@ foreach my $scenflag ( @runs ) {
         my $new = "meteo${CWFDATE[0]}.nc";
         mylink( "Linking:", $old, $new);
         print "Managed to link meteo for an extra spin-up day!\n";
-      # Update simulation: lenght ($NTERM), start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
-
-#NB:to correct for        $NTERM+=8;
-
+      # Update simulation: start-date ($CWFDATE[1]), "yesterday" ($CWFDATE[0])
         $CWFDATE[1]=$CWFDATE[0];
         chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
       # IFS-MOZART BC file
@@ -637,7 +632,7 @@ foreach my $scenflag ( @runs ) {
           print "Managed to link BC file for the extra spin-up day!\n";
           $cwfbc=$old;
         } else {
-          print "BC file for $CWFDATE[1] not available (yet) (spin-up). Try yesterdays BC file:";
+          print "BC file for $CWFDATE[1] not available (yet) (spin-up). Try yesterdays BC file\n";
           $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr(${CWFDATE[0]},0,4),1;
           if (-e $old) {
             mylink( "Linking:", $old,$new );
@@ -695,8 +690,8 @@ foreach my $scenflag ( @runs ) {
   my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC",
                   "sox" => "SOx", "nox" => "NOx" ,
                   "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
-		  "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine"   ) ;
-		  # sometimes was "ocfi" => "POCfine"   ) ;
+                  "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine" ) ;
+                  # sometimes was "ocfi" => "POCfine"   ) ;
 
 
   foreach my $poll  ( @emislist  ) {
@@ -711,11 +706,11 @@ foreach my $scenflag ( @runs ) {
     }
 
     if ( $EUCAARI ) {
-	$ifile{"$RFEmisDir/Emis08_EECCA/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-        $ifile{"$RFEmisDir/Emis08_EECCA/DailyFac.$poll"} = "DailyFac.$poll";
+      $ifile{"$RFEmisDir/Emis08_EECCA/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+      $ifile{"$RFEmisDir/Emis08_EECCA/DailyFac.$poll"} = "DailyFac.$poll";
     } else {
-	$ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-	$ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+      $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+      $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
     }
 #DSRC
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
@@ -731,9 +726,9 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
 # BIC for Saharan dust
     if ( $SoilDir ) { # Not yet for EMEP domain
-	foreach my $bc ( qw ( DUST_c_ext DUST_f_ext )) { #
-	    $ifile{"$SoilDir/BC_DUST/2000/$bc.$mm"} =  "$bc.$mm";
-	}
+      foreach my $bc ( qw ( DUST_c_ext DUST_f_ext )) { #
+        $ifile{"$SoilDir/BC_DUST/2000/$bc.$mm"} =  "$bc.$mm";
+      }
     } # dust
     if ( $GRID eq "GLOBAL" ) {
       foreach my $t ( qw (nox voc co nh3 pm25 pmco) ) {
@@ -747,10 +742,10 @@ foreach my $scenflag ( @runs ) {
 
 # Emissions setup:
   if ($EUCAARI) { # DS RE-CHECK shouldn't be needed
-      $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
-      $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
+    $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
+    $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
   } else {
-      $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+    $ifile{"$DataDir/femis.dat"} =  "femis.dat";
   }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
@@ -801,7 +796,6 @@ foreach my $scenflag ( @runs ) {
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 
-
 # For windblown dust
    if ( $SoilDir ) {
     $ifile{"$SoilDir/clay_isric_percent_ext.dat"} = "clay_frac.dat";
@@ -851,34 +845,29 @@ foreach my $scenflag ( @runs ) {
   print RMF "rm $LPROG\n";   # Delete executable also
   close(RMF);
 
-  my $startyear = $year;
-  my $startmonth = $mm1;
-  my $startday = $dd1;
-  my $endmonth = $mm2;
-  my $endday = $dd2;
+  my $startdate = sprintf "%04d %02d %02d",$year,$mm1,$dd1;
+  my $enddate   = sprintf "%04d %02d %02d",$year,$mm2,$dd2;
   if ($CWF){    # use forecast start date
-    $startyear  = substr($CWFDATE[1],0,4);
-    $startmonth = substr($CWFDATE[1],4,2);
-    $startday   = substr($CWFDATE[1],6,2);
+    $startdate = substr($CWFDATE[1],0,4)+" "+substr($CWFDATE[1],4,2)+" "+substr($CWFDATE[1],6,2);
+    $enddate   = substr($CWFDATE[2],0,4)+" "+substr($CWFDATE[2],4,2)+" "+substr($CWFDATE[2],6,2);
   }
 
 # make file with input parameters (to be read by Unimod.f90)
   unlink("INPUT.PARA");
   open(TMP,">INPUT.PARA");
-  print TMP "$iyr_trend\n${runlabel1}\n${runlabel2}\n${startyear}\n${startmonth}\n${startday}\n${endmonth}\n${endday}\n";
+  print TMP "$iyr_trend\n$runlabel1\n$runlabel2\n$startdate\n$enddate\n";
   print TMP "$CWFDUMP[0]\n$CWFDUMP[1]\n" if $CWF;
   close(TMP);
 
-
   foreach my $exclu ( @exclus) {
-    print "starting $PROGRAM with
-    EXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\nstartyear ${startyear}\n
-     startmonth ${startmonth}\nstartday ${startday}\nendmonth ${endmonth}\nendday ${endday}\n";
+    print "starting $PROGRAM with\n".
+    "EXCLU $exclu\nIYR_TREND $iyr_trend\nLABEL1 $runlabel1\nLABEL2 $runlabel2\n".
+    "startdate $startdate\nenddate $enddate\n";
     print "CWFDUMP1 $CWFDUMP[0]\nCWFDUMP2 $CWFDUMP[1]\n" if $CWF;
 
     if ($DRY_RUN) {
       print "DRY_RUN: not running '| mpirun ./$LPROG'\n";
-      system("ls -lt *")
+      system("ls -lht --time-style=long-iso *")
     } else {
       open (PROG, "| mpirun ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
       close(PROG);
@@ -922,15 +911,15 @@ EOT
   close RUNLOG;
 
 # BENCHMARK summary info
-  if (%BENCHMARK) {
-    system("cdo infov ${runlabel1}_fullrun.nc > ${runlabel1}_fullrun.infov");
-    system("ls -lth * > ${runlabel1}_filelist");
+  if (%BENCHMARK and -s "$runlabel1\_fullrun.nc") {
+    system("cdo infov $runlabel1\_fullrun.nc > $runlabel1\_fullrun.infov");
+    system("ls -lh --time-style=long-iso * > $runlabel1\_filelist");
     if ($BENCHMARK{'archive'}) {
-      my @fileBM=( "${runlabel1}_fullrun.infov", "${runlabel1}_RunLog",
-                   "${runlabel1}_filelist", "eulmod.res", "Timing.out" );
+      my @fileBM=( "$runlabel1\_fullrun.infov", "$runlabel1\_RunLog",
+                   "$runlabel1\_filelist", "eulmod.res", "Timing.out" );
       my $dirBM="$DataDir/Benchmark/$GRID.$year/BM_$testv-$Chem.$USER";
       mkdir_p($dirBM);
-      foreach my $f ( @fileBM ) { cp ("$f","$dirBM/$f") if -f "$f"; }
+      foreach my $f ( @fileBM ) { cp ("$f","$dirBM/$f") if -e "$f"; }
     }
   }
 
@@ -945,13 +934,13 @@ EOT
   print "LOOKING FOR LAST SITES $last_sondes\n";
   if ( -r $last_sondes ) {
     print "FOUND LAST sondes $last_sondes\n";
-    system("tar cvzf ${runlabel1}.sites.tgz  sites.*");
-    system("tar cvzf ${runlabel1}.sondes.tgz sondes.*");
+    system("tar cvzf $runlabel1.sites.tgz  sites.*");
+    system("tar cvzf $runlabel1.sondes.tgz sondes.*");
   }
 
   if ($CWF) {
     my $old="EMEP_OUT.nc";
-    my $new="$CWFDUMPDIR/${scenario}_dump.nc";    # today's dump
+    my $new="$CWFDUMPDIR/$scenario\_dump.nc";    # today's dump
     system("mv $old $new") if (-e "$old");
     if ($SR) {
       ($old=$new)=~s/$CWFBASE/$CWFDATE[0]/g;      # yesterday's dump
@@ -1048,25 +1037,6 @@ sub mkdir_p {
   }
   return 1;
 }
-
-sub calc_nterm {
-  # Calculates the number of 3-hourly steps from month mm1 to
-  #  mm2. Leap-years should already have been dealt with through
-  #  the global month_days array which is used.
-  #   $NTERM = 2921;    # works for non-leap year (365*8+1)
-
-  my ($mm1,$mm2,$dd1) = ($_[0], $_[1], $_[2]) ;
-  my $ndays=0;
-  foreach my $i ( $mm1..$mm2 ) {
-    $ndays += $month_days[$i] ;
-  }
-  my $nterm = 1 + 8*$ndays ;
-  $nterm  = $nterm  - 8* ($dd1 - 1)  ;    # remove days if not starting at day 1
-
-  print "Calculated NTERM = $nterm\n";
-  return $nterm;
-}
-
 
 ##############################################################
 ##### Stuff for Source receptor matrisses             ########
@@ -1194,7 +1164,7 @@ sub generate_updated_femis {
 
   my $femisdat = slurp("$DataDir/femis.dat");
 
-  my $ccnum = defined($country_nums{$cc}) || die "ERROR!! No country Num for $cc!\n";
+  die "ERROR!! No country Num for $cc!\n" unless defined(my $ccnum = $country_nums{$cc});
 
   # using 0 here as long as emissions are guaranteed to contain either
   # only anthropogenic or only natural emissions perl 'country'
