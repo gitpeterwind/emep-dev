@@ -205,7 +205,7 @@ module Aqueous_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP_CALC =  12 ! No. of solublity classes
+  integer, public, parameter :: NWETDEP_CALC =  13 ! No. of solublity classes
 
    !  Note - these are for "master" or model species - they do not
    !  need to be present in the chemical scheme. However, the chemical
@@ -224,7 +224,8 @@ module Aqueous_ml
      CWDEP_ECfn = 9,  &
      CWDEP_SSf  = 10, &
      CWDEP_SSc  = 11, &
-     CWDEP_ROOH = 12   ! TEST!!
+     CWDEP_SSg  = 12, &
+     CWDEP_ROOH = 13   ! TEST!!
 
 
 
@@ -273,8 +274,9 @@ contains
 
   !/ e is the scavenging efficiency (0.1 for fine particles, 0.4 for course)
 
-    real, parameter ::  EFF25 = 0.1*SUBCLFAC  & 
-                      , EFFCO = 0.4*SUBCLFAC  
+    real, parameter ::  EFF25 = 0.02*SUBCLFAC  & 
+                      , EFFCO = 0.4*SUBCLFAC   &
+                      , EFFGI = 0.7*SUBCLFAC  
 
    !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
    !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
@@ -289,6 +291,7 @@ contains
     WetDep(CWDEP_ECfn)  = WScav(   0.0,  EFF25)
     WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
     WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
+    WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
     WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
     WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
     WetDep(CWDEP_ROOH)   = WScav(  0.05,  0.015) ! assumed half of HCHO
