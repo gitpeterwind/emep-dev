@@ -52,7 +52,7 @@
     use Biogenics_ml,      only: BIO_ISOP, BIO_TERP
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
-    use EmisDef_ml,        only: QSSFI, QSSCO
+    use EmisDef_ml,        only: QSSFI, QSSCO, QSSGI
     use Emissions_ml,      only: KEMISTOP    
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
