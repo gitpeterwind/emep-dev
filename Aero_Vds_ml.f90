@@ -1,8 +1,10 @@
 !=============================================================================
   module Aero_Vds_ml
 !==============================================================================
-  use PhysicalConstants_ml, only : FREEPATH, VISCO, BOLTZMANN, PI, GRAV
-
+  use PhysicalConstants_ml, only : FREEPATH, VISCO, BOLTZMANN, PI, GRAV, ROWATER
+  use My_Aerosols_ml,       only : NSIZE, FINE_PM, COAR_PM, GIG_PM
+  use ModelConstants_ml,    only : DEBUG_VDS
+ 
   ! DESCRIPTION
   ! Calculates laminar sub-layer resistance (rb) and gravitational settling 
   ! velocity (vs) for particles
@@ -55,8 +57,8 @@ contains
     !  Note confusing notation in B+S, dp was used for diff. coeff.
     !  here we use Di
 
-     real, intent(in) :: tsK, roa ! temp, density
-     integer, parameter :: NSIZE = 2  ! TMP - should be elsewhere
+     real, intent(in) :: tsK, roa ! temp, air density, Rel.hum
+!     integer, parameter :: NSIZE = 2  ! In My_Aerosols
      real  :: Vs(NSIZE)
 
    !QUERIES should FREEPATH, VISCO be constants? 
@@ -65,15 +67,15 @@ contains
    ! data for accumulation mode, background.
 
      real, parameter, dimension(NSIZE) ::   &
-                                       !diam   = (/ 0.3e-6, 4.0e-6 /)   &
-                                       diam   = (/ 0.33e-6, 4.0e-6 /)   &
-                                     , sigma  = (/ 1.8, 2.0 /)         &
-                                     , PMdens = (/ 1600., 2200. /) ! kg/m3
+                 diam   = (/ 0.33e-6, 4.0e-6, 8.5e-6 /),  &
+                 sigma  = (/ 1.8, 2.0, 2.2 /),                    &
+                 PMdens = (/ 1600.0, 2200.0, 2200.0 /) ! kg/m3
+     real, parameter :: one2three = 1.0/3.0
      integer :: imod 
-     real    :: lnsig2, dg, knut, & !slip, &
-                  Di1,Di, vind, &
-                  stoke, schmidt, &  ! Stoke's and Schmidt numbers
-                  vsmo, vs1          ! Settling velocity
+     real    :: lnsig2, dg, dg_dry, r_cm, rw, Rh, GF3, part_dens, & !slip, &
+                knut, Di1, Di, vind, &
+                stoke, schmidt, &  ! Stoke's and Schmidt numbers
+                vsmo, vs1          ! Settling velocity
 
 
     do imod = 1, NSIZE
@@ -97,13 +99,15 @@ contains
 
 !== polydisperse aerosols (log-normal size distribution) =====
 
-        Di1 =BOLTZMANN*tsK/(3*PI*dg *VISCO *roa)          ! A30, dpg
+        Di1 =BOLTZMANN*tsK/(3*PI*dg *VISCO *roa)                    ! A30, dpg
 
         ! diffusion coefficient:
-        Di = Di1*(exp(-2.5*lnsig2)+1.246*knut*exp(-4.*lnsig2))  ! A29, dpk 
+        Di = Di1*(exp(-2.5*lnsig2)+1.246*knut*exp(-4.*lnsig2))      ! A29, dpk 
 
-        vs1=dg*dg * PMdens(imod)*GRAV/18.0/VISCO/roa          ! A32
+        vs1= dg*dg * PMdens(imod) * GRAV / (18.0* VISCO*roa)           ! A32
         vs(imod) = vs1*(exp(8.0*lnsig2)+1.246*knut*exp(3.5*lnsig2)) ! A31, k=3
+
+        if ( DEBUG_VDS ) write (6,'(a19,i3,f8.3)'), "** Settling Vd **",imod, vs(imod)*100.0
 
      end do !imod
    end function SettlingVelocity
