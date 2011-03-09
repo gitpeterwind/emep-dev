@@ -148,7 +148,7 @@ module MetFields_ml
        ,SoilWater       & !  Upper 7.2cm
        ,SoilWater_deep  & !  Next 6x7cm
        ,sdepth          & !  Snowdepth, m
-       ,ice             & ! QUERY why real?
+       ,ice_nwp             & ! QUERY why real?
        ,sst     &  ! SST Sea Surface Temprature- ONLY from 2002
        ,u10     &  ! hb NH3emis 10m wind u-direction
        ,v10        ! hb NH3emis 10m wind v-direction
@@ -176,9 +176,9 @@ module MetFields_ml
       ,Idirect         ! total direct solar radiation (W/m^2)
 
 
- ! QUERY - is usage still monthly?
- integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
-       snow        ! monthly snow (1=true), read in MetModel_LandUse
+ !ACB! QUERY - is usage still monthly?
+ !ACB integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
+ !ACB      snow        ! monthly snow (1=true), read in MetModel_LandUse
 
  logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
@@ -196,8 +196,8 @@ module MetFields_ml
     ,foundSST       & ! false if no SeaSurfaceT in metdata
     ,foundSoilWater       & ! false if no SW-shallow
     ,foundSoilWater_deep  & ! false if no SW-deep
-    ,foundsdepth    & ! false if no snow depth in metdata
-    ,foundice       & ! false if no ice coverage (%) in metdata
+    ,foundsdepth    & ! false if no snow_flag depth in metdata
+    ,foundice       & ! false if no ice_nwp coverage (%) in metdata
     ,foundnwp_sea   &  ! false if no rough file is found QUERY description?
   ! (when read) at level  boundaries QUERY?
   ! and therefore do not need to be

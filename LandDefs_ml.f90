@@ -234,7 +234,7 @@ contains
             LandType(n)%is_seminat  = ( LandInput%type == "SNL"  )
             LandType(n)%is_bulk   =  LandInput%type == "BLK" 
             LandType(n)%is_veg    =  LandInput%code /= "U" .and. &
-                  LandInput%hveg_max > 0.01   ! Excludes water, ice, desert 
+                  LandInput%hveg_max > 0.01   ! Excludes water, ice_nwp, desert 
             if( LandInput%code(1:2) == "GR" ) iLC_grass =  n ! for use with clover
        end do
        if ( MasterProc ) then 

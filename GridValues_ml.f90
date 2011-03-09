@@ -67,7 +67,7 @@
  Public :: lb2ij        !longitude latitude to (i,j) in any grid projection
 
  Public :: GlobalPosition     ! => 
- private :: Position   ! => lat(gb), long (gl)
+ private :: Position   ! => lat(glat), long (glon)
 
 
   !** 1) Public (saved) Variables from module:
@@ -119,8 +119,8 @@
   real, public, save,  dimension(KMAX_MID) ::  carea    ! for budgets ???
 
   real, public, save,  dimension(MAXLIMAX,MAXLJMAX) :: &
-            gl   &               !longitude of gridcell centers
-           ,gb                   !latitude  of gridcell centers
+            glon   &               !longitude of gridcell centers
+           ,glat                   !latitude  of gridcell centers
   real, public, save,  dimension(0:MAXLIMAX,0:MAXLJMAX) :: &
             gl_stagg   &               !longitude of gridcell corners 
            ,gb_stagg                   !latitude  of gridcell corners
@@ -128,8 +128,8 @@
 ! These differ slightly from the staggered points in the (i,j) grid. 
 
     real, public, save,  dimension(IIFULLDOM,JJFULLDOM) :: &
-            gb_fdom,   &               !latitude of gridcell centers
-            gl_fdom                    !longitude of gridcell centers
+            glat_fdom,   &               !latitude of gridcell centers
+            glon_fdom                    !longitude of gridcell centers
 
 
   real, public, save :: gbacmax,gbacmin,glacmax,glacmin
@@ -320,15 +320,15 @@ contains
               "li0","li1","lix","MXI",&
               "lj0","lj1","ljx"," MXJ"," ig1"," igX","jg1","jgX"
          write(*,802) "GRIDLL ","me", "mingl"," maxgl"," mingb"," maxgb",&
-              " gb(1,1)"," gb(MAX..)"
+              " glat(1,1)"," glat(MAX..)"
        end if
 
        write(*,804) "GRIDTAB",me,IRUNBEG,JRUNBEG,gi0,gj0,li0,li1,limax,MAXLIMAX,&
             lj0,lj1,ljmax, MAXLJMAX, &
               i_fdom(1), i_fdom(MAXLIMAX+1),j_fdom(1), j_fdom(MAXLJMAX+1)
 
-       write(*,806) "GRIDLL ",me, minval(gl), maxval(gl), minval(gb), &
-               maxval(gb), gb(1,1), gb(MAXLIMAX,MAXLJMAX)
+       write(*,806) "GRIDLL ",me, minval(glon), maxval(glon), minval(glat), &
+               maxval(glat), glat(1,1), glat(MAXLIMAX,MAXLJMAX)
     end if
  800 format(a10,20a4)
  802 format(a10,a4,10a12)
@@ -390,8 +390,8 @@ contains
          if (rp >  1.0e-10) rl = fi + om*atan2(dx,dy)
          if (rl <  glmin)   rl = rl + 360.0
          if (rl >  glmax)   rl = rl - 360.0
-         gl(i,j)=rl                     !     longitude
-         gb(i,j)=rb                     !     latitude
+         glon(i,j)=rl                     !     longitude
+         glat(i,j)=rb                     !     latitude
 
        end do ! i
     end do ! j
@@ -399,10 +399,10 @@ contains
 
     ! test to find full-domain min and max lat/long values
 
-    gbacmax = maxval(gb(:,:))
-    gbacmin = minval(gb(:,:))
-    glacmax = maxval(gl(:,:))
-    glacmin = minval(gl(:,:))
+    gbacmax = maxval(glat(:,:))
+    gbacmin = minval(glat(:,:))
+    glacmax = maxval(glon(:,:))
+    glacmin = minval(glon(:,:))
     MPIbuff= gbacmax 
     CALL MPI_ALLREDUCE(MPIbuff, gbacmax, 1,MPI_DOUBLE_PRECISION, &
          MPI_MAX, MPI_COMM_WORLD, INFO) 
@@ -416,7 +416,7 @@ contains
     CALL MPI_ALLREDUCE(MPIbuff, glacmin  , 1, &
          MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
     
-    if(me==0) write(unit=6,fmt="(a30,4f9.4)") "GridValues: max/min for gb,gl", &
+    if(me==0) write(unit=6,fmt="(a30,4f9.4)") "GridValues: max/min for glat,glon", &
                      gbacmax,gbacmin,glacmax,glacmin
 
     if ( DEBUG_GRID ) then
@@ -424,8 +424,8 @@ contains
          do i = 1, MAXLIMAX
            if ( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
              write(*,"(a15,a30,5i4,2f8.2,f7.3)") "DEBUGPosition: ",  &
-                        " me,i,j,i_fdom,j_fdom,gl,gb,rp: ", &
-              me, i,j, i_fdom(i), j_fdom(j), gl(i,j), gb(i,j),rp
+                        " me,i,j,i_fdom,j_fdom,glon,glat,rp: ", &
+              me, i,j, i_fdom(i), j_fdom(j), glon(i,j), glat(i,j),rp
            end if
          end do
        end do
@@ -461,8 +461,8 @@ contains
          if (rp >  1.0e-10) rl = fi + om*atan2(dx,dy)
          if (rl <  glmin)   rl = rl + 360.0
          if (rl >  glmax)   rl = rl - 360.0
-         gl_fdom(i,j)=rl                     !     longitude
-         gb_fdom(i,j)=rb                     !     latitude
+         glon_fdom(i,j)=rl                     !     longitude
+         glat_fdom(i,j)=rb                     !     latitude
 
        end do ! i
     end do ! j
@@ -477,14 +477,14 @@ contains
     if(gj0+0+JRUNBEG-2<1)j0=1!outside fulldomain
     do j=j0,jm
        do i=i0,im
-          gl_stagg(i,j)=0.25*(gl_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gl_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
-          gb_stagg(i,j)=0.25*(gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gl_stagg(i,j)=0.25*(glon_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glon_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gb_stagg(i,j)=0.25*(glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glat_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
        enddo
     enddo
     do j=0,j0
@@ -518,7 +518,7 @@ contains
 end subroutine GlobalPosition
 
 
-  subroutine lb2ijm(imax,jmax,gl,gb,xr2,yr2,fi2,an2,xp2,yp2)
+  subroutine lb2ijm(imax,jmax,glon,glat,xr2,yr2,fi2,an2,xp2,yp2)
     !-------------------------------------------------------------------! 
     !      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
     !
@@ -535,7 +535,7 @@ end subroutine GlobalPosition
 
     integer :: imax,jmax,i1, j1
     real    :: fi2,an2,xp2,yp2
-    real    :: gl(imax,jmax),gb(imax,jmax)
+    real    :: glon(imax,jmax),glat(imax,jmax)
     real    :: xr2(imax,jmax),yr2(imax,jmax)
 
     real, parameter :: PI=3.14159265358979323
@@ -549,8 +549,8 @@ end subroutine GlobalPosition
     do j1 = 1, jmax
        do i1 = 1, imax
 
-          xr2(i1,j1)=xp2+an2*tan(PId4-gb(i1,j1)*dr2)*sin(dr*(gl(i1,j1)-fi2))
-          yr2(i1,j1)=yp2-an2*tan(PId4-gb(i1,j1)*dr2)*cos(dr*(gl(i1,j1)-fi2))
+          xr2(i1,j1)=xp2+an2*tan(PId4-glat(i1,j1)*dr2)*sin(dr*(glon(i1,j1)-fi2))
+          yr2(i1,j1)=yp2-an2*tan(PId4-glat(i1,j1)*dr2)*cos(dr*(glon(i1,j1)-fi2))
 
        end do ! i
     end do ! j
@@ -600,16 +600,16 @@ end subroutine GlobalPosition
     xr2=xp_loc+an_loc*tan(PId4-gb2*dr2)*sin(dr*(gl2-fi_loc))
     yr2=yp_loc-an_loc*tan(PId4-gb2*dr2)*cos(dr*(gl2-fi_loc))
   else  if(projection=='lon lat')then! lon-lat grid
-     xr2=(gl2-gl_fdom(1,1))/(gl_fdom(2,1)-gl_fdom(1,1))+1
-     if(xr2<0.5)xr2=xr2+360.0/(gl_fdom(2,1)-gl_fdom(1,1))
-     yr2=(gb2-gb_fdom(1,1))/(gb_fdom(1,2)-gb_fdom(1,1))+1
-  else!general projection, Use only info from gl_fdom and gb_fdom
+     xr2=(gl2-glon_fdom(1,1))/(glon_fdom(2,1)-glon_fdom(1,1))+1
+     if(xr2<0.5)xr2=xr2+360.0/(glon_fdom(2,1)-glon_fdom(1,1))
+     yr2=(gb2-glat_fdom(1,1))/(glat_fdom(1,2)-glat_fdom(1,1))+1
+  else!general projection, Use only info from glon_fdom and glat_fdom
      !first find closest by testing all gridcells. 
      dist=10.0!max distance is PI
      do j=1,JJFULLDOM
         do i=1,IIFULLDOM
-           if(dist>great_circle_distance(gl2,gb2,gl_fdom(i,j),gb_fdom(i,j)))then
-              dist=great_circle_distance(gl2,gb2,gl_fdom(i,j),gb_fdom(i,j))
+           if(dist>great_circle_distance(gl2,gb2,glon_fdom(i,j),glat_fdom(i,j)))then
+              dist=great_circle_distance(gl2,gb2,glon_fdom(i,j),glat_fdom(i,j))
               xr2=i
               yr2=j
            endif
@@ -631,11 +631,11 @@ end subroutine GlobalPosition
      jr2 = nint(yr2)
      ip1=ir2+1
      if(ip1>IIFULLDOM)ip1=ip1-2
-     dist2=great_circle_distance(gl2,gb2,gl_fdom(ip1,jr2),gb_fdom(ip1,jr2))
-     dist3=great_circle_distance( gl_fdom(ir2,jr2), &
-                                  gb_fdom(ir2,jr2), &
-                                  gl_fdom(ip1,jr2), &
-                                  gb_fdom(ip1,jr2))
+     dist2=great_circle_distance(gl2,gb2,glon_fdom(ip1,jr2),glat_fdom(ip1,jr2))
+     dist3=great_circle_distance( glon_fdom(ir2,jr2), &
+                                  glat_fdom(ir2,jr2), &
+                                  glon_fdom(ip1,jr2), &
+                                  glat_fdom(ip1,jr2))
 
      xr2=xr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 
@@ -643,12 +643,12 @@ end subroutine GlobalPosition
      jp1=jr2+1
      if(jp1>JJFULLDOM)jp1=jp1-2
 
-     dist2=great_circle_distance(gl2,gb2,gl_fdom(ir2,jp1),gb_fdom(ir2,jp1))
+     dist2=great_circle_distance(gl2,gb2,glon_fdom(ir2,jp1),glat_fdom(ir2,jp1))
 !GFORTRAN CHANGE
-     dist3=great_circle_distance( gl_fdom(ir2,jr2), &
-                                  gb_fdom(ir2,jr2), &
-                                  gl_fdom(ir2,jp1), & 
-                                  gb_fdom(ir2,jp1) )
+     dist3=great_circle_distance( glon_fdom(ir2,jr2), &
+                                  glat_fdom(ir2,jr2), &
+                                  glon_fdom(ir2,jp1), & 
+                                  glat_fdom(ir2,jp1) )
 
      yr2=yr2+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 
@@ -657,7 +657,7 @@ end subroutine GlobalPosition
     return
   end subroutine lb2ij
 
-  subroutine ij2lbm(imax,jmax,gl,gb,fi,an,xp,yp)
+  subroutine ij2lbm(imax,jmax,glon,glat,fi,an,xp,yp)
   !-------------------------------------------------------------------! 
   !      calculates l(lat),b(long) (geographical coord.) 
   !      in every grid point. 
@@ -677,7 +677,7 @@ end subroutine GlobalPosition
   !-------------------------------------------------------------------! 
 
     integer :: i, j, imax, jmax
-    real    :: gl(imax,jmax),gb(imax,jmax)
+    real    :: glon(imax,jmax),glat(imax,jmax)
     real    :: fi, an, xp, yp 
     real    :: om, om2, glmin, glmax,dy, dy2,rp,rb, rl, dx, dr
     real, parameter :: PI=3.14159265358979323
@@ -703,8 +703,8 @@ end subroutine GlobalPosition
          if (rp >  1.0e-10) rl = fi + om*atan2(dx,dy)
          if (rl <  glmin)   rl = rl + 360.0
          if (rl >  glmax)   rl = rl - 360.0
-         gl(i,j)=rl                     !     longitude
-         gb(i,j)=rb                     !     latitude
+         glon(i,j)=rl                     !     longitude
+         glat(i,j)=rb                     !     latitude
 !         write(*,*)i,j,gl(i,j),gb(i,j)
        end do ! i
     end do ! j
@@ -724,7 +724,7 @@ end subroutine GlobalPosition
         real, intent(in) :: in_field(imaxin,jmaxin)! Field to be transformed
         real, intent(out) :: out_field(imaxout,jmaxout)! Field to be transformed
 
-        real, allocatable,dimension(:,:) :: x,y,gb,gl
+        real, allocatable,dimension(:,:) :: x,y,glat,glon
         integer alloc_err,i,j,i2,j2
         logical :: interpolate
         real :: f11,f12,f21,f22
@@ -734,16 +734,16 @@ end subroutine GlobalPosition
 
        allocate(x(imaxout,jmaxout), stat=alloc_err)
        allocate(y(imaxout,jmaxout), stat=alloc_err)
-       allocate(gb(imaxout,jmaxout), stat=alloc_err)
-       allocate(gl(imaxout,jmaxout), stat=alloc_err)
+       allocate(glat(imaxout,jmaxout), stat=alloc_err)
+       allocate(glon(imaxout,jmaxout), stat=alloc_err)
        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ij2ij alloc failed" 
          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
 
 ! find longitude, latitude of wanted area
-    call ij2lbm(imaxout,jmaxout,gl,gb,fiout,anout,xpout,ypout)
+    call ij2lbm(imaxout,jmaxout,glon,glat,fiout,anout,xpout,ypout)
 
 ! find corresponding coordinates (i,j) in in_field coordinates 
-    call lb2ijm(imaxout,jmaxout,gl,gb,x,y,fiin,anin,xpin,ypin)
+    call lb2ijm(imaxout,jmaxout,glon,glat,x,y,fiin,anin,xpin,ypin)
 
 
     ! check if the corners of the domain are inside the area covered by the 
@@ -805,8 +805,8 @@ end subroutine GlobalPosition
 
        deallocate(x,stat=alloc_err)
        deallocate(y,stat=alloc_err)
-       deallocate(gb,stat=alloc_err)
-       deallocate(gl,stat=alloc_err)
+       deallocate(glat,stat=alloc_err)
+       deallocate(glon,stat=alloc_err)
        if ( alloc_err /= 0 )   WRITE(*,*) 'MPI_ABORT: ', "ij2ijde-alloc_err" 
          if ( alloc_err /= 0 ) call  MPI_ABORT(MPI_COMM_WORLD,9,INFO) 
     

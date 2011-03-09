@@ -94,7 +94,7 @@ module Met_ml
   use CheckStop_ml,         only : CheckStop
   use Functions_ml,         only : Exner_tab, Exner_nd
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
-       ,gl,gb, gb_fdom, gl_fdom, MIN_ADVGRIDS   &
+       ,glon,glat, glat_fdom, glon_fdom, MIN_ADVGRIDS   &
        ,Poles, Pole_included, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
        ,xp, yp, fi, GRIDWIDTH_M,ref_latitude     &
        ,grid_north_pole_latitude,grid_north_pole_longitude &
@@ -124,7 +124,7 @@ module Met_ml
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
        add_secs,timestamp,&
        make_timestamp, make_current_date, nydays, startdate, enddate
-  use Io_ml ,               only : IO_INFIELD, ios, IO_SNOW, IO_ROUGH, &
+  use Io_ml ,               only : IO_INFIELD, ios, IO_ROUGH, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
   use netcdf
@@ -492,7 +492,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         validity, sdepth(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: snow depth not found '
+       if(MasterProc)write(*,*)'WARNING: snow_flag depth not found '
        foundsdepth = .false.
     else
        foundsdepth = .true.
@@ -501,9 +501,9 @@ contains
 
     namefield='fraction_of_ice' !is really percentage
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        validity, ice(:,:,nr))
+        validity, ice_nwp(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: ice coverage (%) not found '
+       if(MasterProc)write(*,*)'WARNING: ice_nwp coverage (%) not found '
        foundice = .false.
     else
        foundice = .true.
@@ -1203,8 +1203,8 @@ end if ! NH3_U10
             + (sst(:,:,2)   - sst(:,:,1))*div
        sdepth(:,:,1)    = sdepth(:,:,1)                 &
             + (sdepth(:,:,2)   - sdepth(:,:,1))*div
-       ice(:,:,1)    = ice(:,:,1)                 &
-            + (ice(:,:,2)   - ice(:,:,1))*div
+       ice_nwp(:,:,1)    = ice_nwp(:,:,1)                 &
+            + (ice_nwp(:,:,2)   - ice_nwp(:,:,1))*div
 ! hb NH3emis ! is this nescerssary, only called every third hour in NH3Emis_variation
 if ( NH3_U10 ) then
        u10(:,:,1)    = u10(:,:,1)         		&
@@ -1234,7 +1234,7 @@ end if
        SoilWater(:,:,1) = SoilWater(:,:,2)
        SoilWater_deep(:,:,1) = SoilWater_deep(:,:,2)
        sdepth(:,:,1) = sdepth(:,:,2)
-       ice(:,:,1) = ice(:,:,2)
+       ice_nwp(:,:,1) = ice_nwp(:,:,2)
 
        fh(:,:,1)     = fh(:,:,2)
        tau(:,:,1)    = tau(:,:,2)
@@ -1366,7 +1366,7 @@ end if ! NH3_U10
     !
     !     This subroutine reads parameterfields from file
     !     reading surface roughness classes from file: rough.dat
-    !     reading snow                      from file: snowc.dat
+ !ACB  !     reading snow                      from file: snowc.dat
     !
     !     ... fields as used in meteorological model
     !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1441,20 +1441,20 @@ end if ! NH3_U10
         enddo
 !st-dust  
       end if ! USE_DUST
-    else ! callnum == 2
-       if (MasterProc) then
-          write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
-          write(6,*) 'filename for snow ',fname
+ !ACB   else ! callnum == 2
+ !ACB      if (MasterProc) then
+ !ACB         write(fname,fmt='(''snowc'',i2.2,''.dat'')') current_date%month
+ !ACB         write(6,*) 'filename for snow ',fname
 
-       endif !MasterProc
+ !ACB      endif !MasterProc
 
-       needed_found=.not.foundsdepth !needed if not defined through metdata
+ !ACB      needed_found=.not.foundsdepth !needed if not defined through metdata
 
-       call ReadField(IO_SNOW,fname,snow,needed_found)
+ !ACB      call ReadField(IO_SNOW,fname,snow,needed_found)
 
-       if(.not. needed_found)then
-             snow=0!should be defined through snowsepth from metdata
-       endif
+ !ACB      if(.not. needed_found)then
+ !ACB            snow=0!should be defined through snowsepth from metdata
+ !ACB      endif
     end if ! callnum == 1
 
     ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -2727,18 +2727,18 @@ end if ! NH3_U10
              yp=GJMAX
              fi =0.0
              call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gl_fdom(1:IIFULLDOM,1) ))
+             call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1) ))
              do i=1,IIFULLDOM
-                if(gl_fdom(i,1)>180.0)gl_fdom(i,1)=gl_fdom(i,1)-360.0
-                if(gl_fdom(i,1)<-180.0)gl_fdom(i,1)=gl_fdom(i,j)+360.0
+                if(glon_fdom(i,1)>180.0)glon_fdom(i,1)=glon_fdom(i,1)-360.0
+                if(glon_fdom(i,1)<-180.0)glon_fdom(i,1)=glon_fdom(i,j)+360.0
              enddo
              do j=1,JJFULLDOM
-                gl_fdom(:,j)=gl_fdom(:,1)
+                glon_fdom(:,j)=glon_fdom(:,1)
              enddo
              call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gb_fdom(1,1:JJFULLDOM) ))
+             call check(nf90_get_var(ncFileID, varID, glat_fdom(1,1:JJFULLDOM) ))
              do i=1,IIFULLDOM
-                gb_fdom(i,:)=gb_fdom(1,:)
+                glat_fdom(i,:)=glat_fdom(1,:)
              enddo
           else
              ref_latitude=60.
@@ -2750,14 +2750,14 @@ end if ! NH3_U10
                 call check(nf90_get_att(ncFileID,nf90_global,"grid_north_pole_longitude",grid_north_pole_longitude))
              endif
              call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gl_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
+             call check(nf90_get_var(ncFileID, varID, glon_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
 
              call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-             call check(nf90_get_var(ncFileID, varID, gb_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
+             call check(nf90_get_var(ncFileID, varID, glat_fdom(1:IIFULLDOM,1:JJFULLDOM) ))
              do j=1,JJFULLDOM
              do i=1,IIFULLDOM
-                if(gl_fdom(i,j)>180.0)gl_fdom(i,j)=gl_fdom(i,j)-360.0
-                if(gl_fdom(i,j)<-180.0)gl_fdom(i,j)=gl_fdom(i,j)+360.0
+                if(glon_fdom(i,j)>180.0)glon_fdom(i,j)=glon_fdom(i,j)-360.0
+                if(glon_fdom(i,j)<-180.0)glon_fdom(i,j)=glon_fdom(i,j)+360.0
              enddo
              enddo
 
@@ -2823,15 +2823,15 @@ end if ! NH3_U10
     CALL MPI_BCAST(sigma_mid,8*KMAX_MID,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(xm_global_i(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(xm_global_j(1:GIMAX,1:GJMAX),8*GIMAX*GJMAX,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(gb_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(gl_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(glat_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(glon_fdom(1:IIFULLDOM,1:JJFULLDOM),8*IIFULLDOM*JJFULLDOM,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(projection,len(projection),MPI_CHARACTER,0,MPI_COMM_WORLD,INFO) 
 
 
     do j=1,MAXLJMAX
        do i=1,MAXLIMAX
-          gl(i,j)=gl_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          gb(i,j)=gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          glon(i,j)=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          glat(i,j)=glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
        enddo
     enddo
     i0=0
@@ -2845,10 +2845,10 @@ end if ! NH3_U10
 
     do j=j0,jm
        do i=i0,im
-          x1=gl_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          x2=gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)
-          x3=gl_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
-          x4=gl_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+          x1=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x2=glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)
+          x3=glon_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
+          x4=glon_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2)
 
 !8100=90*90; could use any number much larger than zero and much smaller than 180*180  
           if(x1*x2<-8100.0 .or. x1*x3<-8100.0 .or. x1*x4<-8100.0)then
@@ -2860,10 +2860,10 @@ end if ! NH3_U10
           endif
           gl_stagg(i,j)=0.25*(x1+x2+x3+x4)
 
-          gb_stagg(i,j)=0.25*(gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
-               gb_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
-               gb_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
+          gb_stagg(i,j)=0.25*(glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+JRUNBEG-2)+&
+               glat_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2)+&
+               glat_fdom(gi0+i+1+IRUNBEG-2,gj0+j+1+JRUNBEG-2))
        enddo
     enddo
     do j=0,j0
@@ -2926,8 +2926,8 @@ end if ! NH3_U10
     !The last cell + 1 cell = first cell
     Cyclicgrid=1 !Cyclicgrid
     do j=1,JJFULLDOM
-       if(mod(nint(gl_fdom(GIMAX,j)+360+360.0/GIMAX),360)/=&
-            mod(nint(gl_fdom(IRUNBEG,j)+360.0),360))then
+       if(mod(nint(glon_fdom(GIMAX,j)+360+360.0/GIMAX),360)/=&
+            mod(nint(glon_fdom(IRUNBEG,j)+360.0),360))then
           Cyclicgrid=0  !not cyclicgrid
        endif
     enddo
@@ -2958,7 +2958,7 @@ end if ! NH3_U10
 
     j=1
     i=1
-    if(abs(1.5*gb_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)-0.5*gb_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2))>89.5)then
+    if(abs(1.5*glat_fdom(gi0+i+IRUNBEG-2,gj0+j+JRUNBEG-2)-0.5*glat_fdom(gi0+i+IRUNBEG-2,gj0+j+1+JRUNBEG-2))>89.5)then
        write(*,*)'south pole' !xm is infinity
        xm_global_i(:,0)=1.0E19
        xm_global_i(:,-1)=1.0E19
@@ -3006,14 +3006,14 @@ end if ! NH3_U10
 
     North_pole=1
     do i=1,limax
-       if(nint(gb(i,ljmax))<=88)then
+       if(nint(glat(i,ljmax))<=88)then
           North_pole=0  !not north pole
        endif
     enddo
 
     South_pole=1
     do i=1,limax
-       if(nint(gb(i,1))>=-88)then
+       if(nint(glat(i,1))>=-88)then
           South_pole=0  !not south pole
        endif
     enddo

@@ -63,7 +63,7 @@
   use GridValues_ml, only:  GRIDWIDTH_M    & !  size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
-                           ,sigma_bnd, xmd, gb, gl,dA,dB
+                           ,sigma_bnd, xmd, glat, glon,dA,dB
   use Io_Nums_ml,      only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,     only : ios, open_file, datewrite
   use MetFields_ml,    only : roa, ps, z_bnd   ! ps in Pa, roa in kg/m3
@@ -600,7 +600,7 @@ contains
                ncc = nlandcode(i,j)            ! No. of countries in grid
 
                 ! find the approximate local time:
-                  hourloc= mod(nint(indate%hour+24*(1+gl(i,j)/360.0)),24)
+                  hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
                   daytime_longitude=0
                   if( hourloc>=7.and.hourloc<= 18) daytime_longitude=1
     
@@ -772,7 +772,7 @@ contains
 !     Reads in natural DMS emissions at start of each month. Update
 !     landcode and nlandcode arrays as needed.
 
-!     Reads in snow cover at start of each month. 
+!!!ACB     Reads in snow cover at start of each month. 
 !
 !     April 2010: read monthly aircraft NOx emissions
 !

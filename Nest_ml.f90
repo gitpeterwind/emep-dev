@@ -51,7 +51,7 @@ module Nest_ml
 
 use OwnDataTypes_ml,        only: Deriv
 use TimeDate_ml,            only: date
-use GridValues_ml,          only: gl,gb
+use GridValues_ml,          only: glon,glat
 use ChemChemicals_ml,       only: species
 use ChemSpecs_shl_ml,       only: NSPEC_SHL
 use ChemSpecs_adv_ml
@@ -493,7 +493,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
       do JJ=1,GJMAX_ext
         do II=1,GIMAX_ext
          !distance between (i,j) and (II,JJ)
-          dist(0)=great_circle_distance(lon_ext(II,JJ),lat_ext(II,JJ),gl(i,j),gb(i,j))
+          dist(0)=great_circle_distance(lon_ext(II,JJ),lat_ext(II,JJ),glon(i,j),glat(i,j))
           if(dist(0)<dist(1))then
             dist(4)=dist(3)
             dist(3)=dist(2)

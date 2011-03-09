@@ -42,7 +42,7 @@
 !-------------------------------------------------------------------------------
 
    use CheckStop_ml,      only: CheckStop
-   use GridValues_ml    , only : gb
+   use GridValues_ml    , only : glat
    use Io_ml,           only : IO_DJ, open_file, ios
    use MetFields_ml           , only : cc3d,cc3dmax,z_bnd
    use ModelConstants_ml,    only: KMAX_MID, KCHEMTOP, NPROC
@@ -296,7 +296,7 @@
 
 
 
-            la = max(1,int(0.1*gb(i,j)-2.0001))
+            la = max(1,int(0.1*glat(i,j)-2.0001))
 
             if(iclcat == 0)then
               do k = KCHEMTOP,KMAX_MID

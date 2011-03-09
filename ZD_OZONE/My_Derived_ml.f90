@@ -201,7 +201,7 @@ private
 
 
   !============ Extra parameters for model evaluation: ===================!
-    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(11) :: &
   D2_EXTRA = (/ &
        "SURF_ppbC_VOC     " &
       ,"SOMO0             " &
@@ -210,7 +210,8 @@ private
       ,"Area_Decid_Frac   " &
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
-      ,"HMIX              " & !"D2_HMIX00 ,"D2_HMIX12 ...
+      ,"HMIX              " & !alt HMIX00 ,HMIX12 ...
+      ,"Snow_m            " & 
       ,"SoilWater_deep    " &
       ,"USTAR_NWP         " &
   /)

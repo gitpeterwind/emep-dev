@@ -64,10 +64,10 @@
                                ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                ,grid_north_pole_latitude&
                                ,grid_north_pole_longitude&
-                               ,GlobalPosition,gb_fdom,gl_fdom,ref_latitude&
-                               ,projection, sigma_mid,gb_stagg,gl_stagg,gl&
+                               ,GlobalPosition,glat_fdom,glon_fdom,ref_latitude&
+                               ,projection, sigma_mid,gb_stagg,gl_stagg,glon&
                                ,sigma_bnd&
-                               ,gb,lb2ij,A_bnd,B_bnd
+                               ,glat,lb2ij,A_bnd,B_bnd
   use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                                ,MasterProc &
@@ -438,17 +438,17 @@ character(len=80) ::UsedProjection
     call GlobalPosition !because this may not yet be done if old version of meteo is used
     if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
       call check(nf90_put_var(ncFileID, latVarID, &
-        gb_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+        glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
       call check(nf90_put_var(ncFileID, longVarID, &
-        gl_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+        glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
     endif
 
   elseif(UsedProjection=='lon lat') then
     do i=1,GIMAXcdf
-      xcoord(i)= gl_fdom(i+ISMBEGcdf-1,1)
+      xcoord(i)= glon_fdom(i+ISMBEGcdf-1,1)
     enddo
     do j=1,GJMAXcdf
-      ycoord(j)= gb_fdom(1,j+JSMBEGcdf-1)
+      ycoord(j)= glat_fdom(1,j+JSMBEGcdf-1)
     enddo
     call check(nf90_put_var(ncFileID, iVarID, xcoord(1:GIMAXcdf)) )
     call check(nf90_put_var(ncFileID, jVarID, ycoord(1:GJMAXcdf)) )
@@ -471,9 +471,9 @@ character(len=80) ::UsedProjection
    !Define longitude and latitude
    if(ISMBEGcdf+GIMAXcdf-1<=IIFULLDOM .and. JSMBEGcdf+GJMAXcdf-1<=JJFULLDOM)then
      call check(nf90_put_var(ncFileID, latVarID, &
-       gb_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+       glat_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
      call check(nf90_put_var(ncFileID, longVarID, &
-       gl_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
+       glon_fdom(ISMBEGcdf:ISMBEGcdf+GIMAXcdf-1,JSMBEGcdf:JSMBEGcdf+GJMAXcdf-1)))
      endif
   endif
   if(DEBUG_NETCDF) write(*,*) "NetCDF: lon lat written"
@@ -1481,8 +1481,8 @@ if(interpol_used=='zero_order')then
      do j=1,varGJMAX
         do i=1,varGIMAX
            ijk=ijk+1
-           ig=mod(nint((gl_fdom(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
-           jg=max(1,min(dims(2),nint((gb_fdom(i,j)-Rlat(1))*dlati)+1))
+           ig=mod(nint((glon_fdom(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
+           jg=max(1,min(dims(2),nint((glat_fdom(i,j)-Rlat(1))*dlati)+1))
            igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
            Rvar(ijk)=Rvalues(igjgk)
         enddo
@@ -1498,8 +1498,8 @@ ijk=0
      do j=1,varGJMAX
         do i=1,varGIMAX
            ijk=ijk+1
-           ig=mod(floor(abs(gl_fdom(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
-           jg=max(1,min(dims(2),floor((gb_fdom(i,j)-Rlat(1))*dlati)+1))
+           ig=mod(floor(abs(glon_fdom(i,j)-Rlon(1))*dloni),dims(1))+1!NB lon  -90 = +270
+           jg=max(1,min(dims(2),floor((glat_fdom(i,j)-Rlat(1))*dlati)+1))
            ig1=ig+1
            jg1=min(jg+1,dims(2))
 
@@ -1512,8 +1512,8 @@ ijk=0
 !                 stop
 !              endif
 !           endif
-           di=(gl_fdom(i,j)-Rlon(ig))*dloni
-           dj=(gb_fdom(i,j)-Rlat(jg))*dlati
+           di=(glon_fdom(i,j)-Rlon(ig))*dloni
+           dj=(glat_fdom(i,j)-Rlat(jg))*dlati
            igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
            ig1jgk=ig1+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
            igjg1k=ig+(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
@@ -2053,7 +2053,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
                        write(*,*)'ERROR. no values found!', trim(fileName), &
-                    i,j,k,me,maxlon,minlon,maxlat,minlat,gl(i,j),gb(i,j), &
+                    i,j,k,me,maxlon,minlon,maxlat,minlat,glon(i,j),glat(i,j), &
                     Ivalues(ijk)
                        call CheckStop("Interpolation error")
                     endif
@@ -2090,9 +2090,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
               do i=1,limax
                  ij=i+(j-1)*MAXLIMAX
                  ijk=k+(ij-1)*k2
-                 ig=nint((gl(i,j)-Rlon(startvec(1)))*dloni)+1
+                 ig=nint((glon(i,j)-Rlon(startvec(1)))*dloni)+1
                  ig=max(1,min(dims(1),ig))
-                 jg=max(1,min(dims(2),nint((gb(i,j)-Rlat(startvec(2)))*dlati)+1))
+                 jg=max(1,min(dims(2),nint((glat(i,j)-Rlat(startvec(2)))*dlati)+1))
                  igjgk=ig+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
                  if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                     Rvar(ijk)=Rvalues(igjgk)
@@ -2129,7 +2129,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
        write(*,"(a)") "DEBUG_RF G2G ", me, debug_proc
 end if
-     call grid2grid_coeff(gl,gb,IIij,JJij,Weight1,Weight2,Weight3,Weight4,&
+     call grid2grid_coeff(glon,glat,IIij,JJij,Weight1,Weight2,Weight3,Weight4,&
                   Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax,&
                     ( DEBUG_NETCDF_RF .and. debug_proc ), &
                    debug_li, debug_lj )

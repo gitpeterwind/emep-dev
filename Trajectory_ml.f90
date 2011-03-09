@@ -42,7 +42,7 @@ module Trajectory_ml
  use My_Outputs_ml,      only : NADV_FLIGHT, FLIGHT_ADV !ds - added
  use Chemfields_ml  ,    only : xn_adv
  use ChemSpecs_adv_ml
- use GridValues_ml ,     only : gl, gb
+ use GridValues_ml ,     only : glon, glat
  use Io_ml,              only : IO_AIRCR
  use MetFields_ml,             only : z_bnd,z_mid
  use ModelConstants_ml , only : dt_advec,PPBINV,KMAX_BND,NPROC
@@ -177,7 +177,7 @@ module Trajectory_ml
         !ds uni.1: remove IXADV_O3 and replace by loop over FLIGHT_ADV
             write(IO_AIRCR,*) ttt				&
         	,( xn_adv( FLIGHT_ADV(i),ii,jj,k)*PPBINV, i=1, NADV_FLIGHT)  &
-                  ,k,z_mid(ii,jj,k), gb(ii,jj),gl(ii,jj)
+                  ,k,z_mid(ii,jj,k), glat(ii,jj),glon(ii,jj)
             close(IO_AIRCR)
           end if
         end do

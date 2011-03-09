@@ -66,7 +66,7 @@ implicit none
    ,IO_INFIELD  = 50  &! infield.F(c) -reads fil000xx  
    ,IO_DO3SE    = 51  &! for DO3SE inputs(c)
    ,IO_ROUGH    = 52  &! inpar.f -reads roughn. class  
-   ,IO_SNOW     = 53  &! newmonth(c): for snow
+ !ACB ,IO_SNOW     = 53  &! newmonth(c): for snow
    ,IO_VOLC     = 54  &
    ,IO_DJ       = 55  &! readdiss.f(c) - inp. solar r.
    ,IO_AIRCR    = 66  &! phyche.f(c) - write aircraft conc.

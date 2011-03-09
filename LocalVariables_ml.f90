@@ -61,10 +61,10 @@ module LocalVariables_ml
     real    :: precip      ! Precip at surface
     real    :: wetarea     ! Fraction of grid which is wet
     real    :: cloud       ! Cloud-cover (fraction)
-    integer :: snow        ! 1=snow present, 0 = no snow
-!hf snow
+!ACB    integer :: snow        ! 1=snow present, 0 = no snow
+    logical ::  snowice    ! true is sdepth > 0 or ice>0
     real     :: sdepth        ! snowdepth (m)
-    real     :: ice        ! ice (%)
+    real     :: ice_nwp        ! ice_nwp (%)
     real    :: psurf       ! Surface pressure (Pa)
     real    :: z_ref       !  Height of grid centre (m)
     real    :: DeltaZ      !  Depth of grid centre (m)

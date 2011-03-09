@@ -105,7 +105,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 15+OFFSET_j,  40+OFFSET_j /) ! (changeable)
+! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 70+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 
 integer, public, parameter ::  &
   NPROCX      =   8        & ! Actual number of processors in longitude
@@ -317,7 +317,7 @@ real, public, parameter :: MFAC = 0.001*AVOG/ATWAIR
 
 
 ! Define output types.
-!   Derived output types: Fist 4 types (instantaneous,year,month,day),
+!   Derived output types: First 4 types (instantaneous,year,month,day),
 !                         refer to output variables defined in Derived_ml.
 !   Hourly  output types: Last 2 types (hourly inst.,hourly mean),
 !                         refer to output variables defined in My_Outputs_ml.

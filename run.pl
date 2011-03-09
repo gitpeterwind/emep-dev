@@ -243,7 +243,7 @@ if ($EUCAARI) {
   @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-my $testv = "rv3_7beta29";
+my $testv = "rv3_7beta31";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -721,7 +721,7 @@ foreach my $scenflag ( @runs ) {
 
   foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
     my $mm = sprintf "%2.2d", $mmm ; # WHY DO WE NEED THIS?????
-    $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
+    #SNOW $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
 # BIC for Saharan dust

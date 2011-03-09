@@ -59,7 +59,7 @@ module Biogenics_ml
 
 
   use CheckStop_ml,      only: CheckStop
-  use GridValues_ml    , only : xm2, gb, &
+  use GridValues_ml    , only : xm2, glat, &
           i_fdom,j_fdom,debug_proc,debug_li,debug_lj
   use Io_ml            , only : IO_FORES, open_file, ios, Read2DN, PrintLog, datewrite
   use KeyValue_ml,       only : KeyVal,KeyValue

@@ -45,7 +45,7 @@ module PhyChem_ml
    use DryDep_ml,      only : init_drydep
    use Emissions_ml,   only : EmisSet
    use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
-                             gl, gb, projection, Pole_included
+                             glon, glat, projection, Pole_included
    use Met_ml,         only : metint
    use MetFields_ml,   only : ps, roa,z_bnd,z_mid, cc3dmax, &
                                zen,coszen,Idirect,Idiffuse
@@ -140,11 +140,11 @@ contains
         call SolarSetup(current_date%year,current_date%month, &
                            current_date%day,thour)
 
-        call ZenithAngle(thour, gb, gl, zen, coszen )
+        call ZenithAngle(thour, glat, glon, zen, coszen )
 
         if( DEBUG_PHYCHEM .and. debug_proc  ) then
           write(*,*) "PhyChem ZenRad ", current_date%day, current_date%hour, &
-               thour, gl(debug_li,debug_lj),gb(debug_li,debug_lj), &
+               thour, glon(debug_li,debug_lj),glat(debug_li,debug_lj), &
                      zen(debug_li,debug_lj),coszen(debug_li,debug_lj)
         end if
 

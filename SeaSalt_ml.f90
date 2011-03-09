@@ -47,10 +47,11 @@
  use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c, SeaSalt_g
  use ChemChemicals_ml,     only : species
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO, QSSGI
- use GridValues_ml,        only : gb, gl
- use Landuse_ml,           only : LandCover, water_fraction
+ use GridValues_ml,        only : glat, glon
+ use Landuse_ml,           only : LandCover, water_cover
  use LocalVariables_ml,    only : Sub, Grid
- use MetFields_ml,         only : z_bnd, z_mid, sst, snow,   &
+ use MetFields_ml,         only : u_ref
+ use MetFields_ml,         only : z_bnd, z_mid, sst,  &
                                   nwp_sea, u_ref, foundSST  
  use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, &
@@ -114,7 +115,7 @@
 
     SS_prod(:,i,j) = 0.0
 
-    if ( .not. Grid%is_NWPsea .or. Grid%snow == 1) return ! quick check
+    if ( .not. Grid%is_NWPsea .or. Grid%snowice ) return ! quick check
 
 
 !// Loop over the land-use types present in the grid
@@ -202,7 +203,7 @@
           do ii = 1, NFIN
                SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
-                                  * water_fraction(i,j) 
+                                  * water_cover(i,j) 
             if(DEBUG_SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'Flux fine ->  ',ii,d3(ii),SS_prod(QSSFI,i,j)
           enddo
@@ -211,7 +212,7 @@
           do ii = NFIN+1, NFIN+NCOA
                SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
-                                  * water_fraction(i,j)
+                                  * water_cover(i,j)
             if(DEBUG_SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'Flux coarse ->  ',ii,d3(ii),SS_prod(QSSCO,i,j)
           enddo
@@ -219,13 +220,13 @@
           do ii = NFIN+NCOA+1, NFIN+NCOA+NGIG
                SS_prod(QSSGI,i,j) = SS_prod(QSSGI,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
-                                  * water_fraction(i,j)
+                                  * water_cover(i,j)
           enddo
 
 !... Crude fix for the effect of lower salinity in the Baltic Sea
 
-          if ( (gb(i,j) > 52.0 .and. gb(i,j) < 67.0)     .and.   &  
-               (gl(i,j) > 13.0 .and. gl(i,j) < 30.0) )   then 
+          if ( (glat(i,j) > 52.0 .and. glat(i,j) < 67.0)     .and.   &  
+               (glon(i,j) > 13.0 .and. glon(i,j) < 30.0) )   then 
           
                  SS_prod(:,i,j) =  0.5 * SS_prod(:,i,j)
           endif

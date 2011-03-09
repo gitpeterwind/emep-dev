@@ -378,34 +378,30 @@ call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
 ! NOT YET: Scale pressure by 0.01 to get hPa
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY ) 
-               !FEB2011 -99,  -99,  F,  1.0,  T,   T,   T, T, T )
 
 call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
                -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
-               !FEB2011 -99,  -99,  F,  1.0,  T,  F, T, T, T )
+
+call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
+               -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
 
 ! "HMIX00","HMIX12", ....
 
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
-               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 
 call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
-               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 
        !Deriv(name, class,    subc,  txt,           unit
       !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
 
 call AddNewDeriv( "T2m","T2m",  "-","-",   "deg. C", &
                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
-               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 call AddNewDeriv( "Idirect","Idirect",  "-","-",   "W/m2", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
-               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
-               !FEB2011 -99,  -99, F, 1.0,  T,  F, T, T, T )
 
 
 ! OutputConcs can contain both 2d and 3d specs. We automatically

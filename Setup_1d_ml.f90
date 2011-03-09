@@ -79,7 +79,7 @@
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
   use My_Aerosols_ml,       only : SEASALT
-  use Landuse_ml,            only : water_fraction, ice_fraction
+  use Landuse_ml,            only : water_cover, ice_landcover
   use Par_ml,                only :  me& !!(me for tests)
                              ,MAXLIMAX,MAXLJMAX & !ds NatEmis
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
@@ -362,14 +362,14 @@ contains
   ! Soil Rn222 emissions from non-ice covered land, + water
   ! at rate of 1 atom/cm2/s
 
-     eland = 1.0 - water_fraction(i,j) - ice_fraction(i,j)
+     eland = 1.0 - water_cover(i,j) - ice_landcover(i,j)
 
 ! initialize, needed in My_Reactions
      rc_Rn222(:)=0.0     
 
 ! z_bnd is in m, not cm, so need to divide by 100.
      rc_Rn222(KMAX_MID) = &
-            ( 0.00182 * water_fraction(i,j)  + eland ) / &
+            ( 0.00182 * water_cover(i,j)  + eland ) / &
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.) 
 
   end subroutine setup_rcemis

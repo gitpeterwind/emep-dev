@@ -39,15 +39,15 @@
  use Functions_ml,         only : ERF, ERFfunc
  use ChemChemicals_ml,     only : species
  use ChemSpecs_tot_ml,     only : DUST_NAT_F
- use GridValues_ml,        only : gb, gl, gb_fdom, gl_fdom, i_fdom, j_fdom 
+ use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
  use Io_ml,                only : PrintLog
  use Landuse_ml,           only : LandCover, NLUMAX 
  use LandDefs_ml,          only:  LandType
  use LocalVariables_ml,    only : Sub, Grid
  use MetFields_ml,         only : z_bnd, z_mid, u_ref, ustar_nwp, roa,  &
-                                  t2_nwp, snow, fh, ps, surface_precip,  &
+                                  t2_nwp, sdepth, fh, ps, surface_precip,  &
                                   rho_surf, SoilWater, foundSoilWater,  &
-                                  clay_frac, sand_frac
+                                  clay_frac, sand_frac !ACB snow_flag
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
     NPROC, MasterProc, USE_DUST
  use MicroMet_ml,          only : Wind_at_h
@@ -126,7 +126,7 @@
  if(DEBUG_DUST .and. debug_flag) write(6,*)'***   WINDBLOWN DUST',  &
                                  i_fdom(i), j_fdom(j)
 
- if ((gb(i,j)>65.0 .and. gl(i,j)>50.0)) return ! Avoid dust production in N. Siberia
+ if ((glat(i,j)>65.0 .and. glon(i,j)>50.0)) return ! Avoid dust production in N. Siberia
 
 !/..  landuse types ..........
 
@@ -151,11 +151,13 @@
 
 !/.. No dust production when soil is frozen, or covered by snow,
 !/.. or wet (crude approximation by surface Rh)
-  FROST: if ( Grid%t2C > 0.0 .and.  Grid%snow == 0 .and.  &
+!ACB Grid%snow == 1
+  FROST: if ( Grid%t2C > 0.0 .and.  Grid%sdepth > 0 .and.  & 
                                     rh(KMAX_MID) < 0.85)  then
 
     if(DEBUG_DUST .and. debug_flag) write(6,'(a25,2f10.2,i4)')   &
-          '>>      FAVOURABLE >>', Grid%t2C, rh(KMAX_MID), Grid%snow
+          '>>      FAVOURABLE >>', Grid%t2C, rh(KMAX_MID), Grid%sdepth 
+!ACB Grid%snow
 
 
 !==  Land-use loop ===============================================
@@ -258,8 +260,8 @@
         dust_lim = 0.5     ! 1.0
         alfa = 2.0e-5 
  !//  European deserts: lat(gb), long (gl)
-     if ( (gb(i,j) > 36.0 .and. gl(i,j) < 0.0) .or.   &  
-          (gb(i,j) > 37.0 .and. gl(i,j) < 45.0) )    then 
+     if ( (glat(i,j) > 36.0 .and. glon(i,j) < 0.0) .or.   &  
+          (glat(i,j) > 37.0 .and. glon(i,j) < 45.0) )    then 
         soil_type = 'European Arid'
         dust_lim = 0.05
         alfa = 1.3e-5 
@@ -391,7 +393,7 @@
     endif
 
     if(DEBUG_DUST .and. debug_flag) then
-      write(6,'(/a25,4f8.2)') soil_type,gb(i,j),gl(i,j),gb_fdom(i,j),gl_fdom(i,j)
+      write(6,'(/a25,4f8.2)') soil_type,glat(i,j),glon(i,j),glat_fdom(i,j),glon_fdom(i,j)
       write(6,'(a25,3f10.3,es10.2)') '>>  U*/U*t/Klim,alfa  >>',  &
             ustar,ustar_th, dust_lim, alfa
       write(6,'(a15,f10.3,2es12.3)') 'FLUXES:',uratio, flx_hrz_slt*1000.0,  &

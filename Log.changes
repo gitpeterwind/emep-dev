@@ -141,6 +141,39 @@ ds --     My_Outputs_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_7beta31  Anna/Dave  Mar 9 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Interim, but changes committed due to impending cleanup! Results may change
+because of snow/ice !
+
+Main changes: Usage of old climatology files removed. Left as !ACB comments
+    for now, but will clean those out after testing
+
+    files: CellMet_ml, DryDep_ml, DustProd_ml, Emissions_ml, Io_Nums_ml,
+           LocalVariables_ml,  MetFields_ml, Rsurface_ml
+
+Science change: ice_nwo now used! Was a bug that it wasn't used before!
+                 Still needs thought in DryDep module, but should be okay
+                 in SeaSalt_ml
+
+Derived_ml, My_Derived_ml
+
+  Snow_m added as output
+
+
+  Renaming of variables: most modules have changes!!!
+  -----------------------
+
+  my %swaps = (
+    gl_fdom => "glon_fdom"
+   ,gb_fdom => "glat_fdom"
+   ,gb      => "glat"
+   ,gl      => "glon"
+   ,ice     => "ice_nwp"
+   ,water_fraction     => "water_cover"
+   ,snow     => "snow_flag"
+  );
+
 xxxxxxxx rv3_7beta30  Svetlana   Mar 9 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Introduced an extra size bin ('giant') for sea salt

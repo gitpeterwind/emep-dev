@@ -27,8 +27,8 @@
 !*****************************************************************************!
 module SoilWater_ml
  use GridValues_ml,     only : debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
-                             longitude => gl
- use Landuse_ml,        only : water_fraction
+                             longitude => glon
+ use Landuse_ml,        only : water_cover
  use LocalVariables_ml, only: Grid
  use MetFields_ml,      only : SoilWater_deep, nwp_sea
  use ModelConstants_ml, only : USE_SOILWATER, DEBUG_SOILWATER
@@ -143,7 +143,7 @@ newsw = -999.9
          REW      = SoilWater_deep(i,j,1)/ SoilMAM ! HIRLAM specific!
 
              write(*,"(a,f7.4,i4,f7.4,i4,2f12.4,L8,f12.4)") "DEBUG_SWF: ", &
-                 water_fraction(i,j), daynumber, SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j), nwp_sea(i,j) !!, newsw
+                 water_cover(i,j), daynumber, SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j), nwp_sea(i,j) !!, newsw
              
       end if
 

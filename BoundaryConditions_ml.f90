@@ -115,7 +115,7 @@ module BoundaryConditions_ml
           ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_NH4_f,IBC_NO3_f,IBC_NO3_c&
           ,IBC_H2O2,IBC_CH3COO2, IBC_DUST_f, IBC_DUST_c  &  ! Dust
           ,setgl_actarray
-  use GridValues_ml,         only: gl, gb    &! lat, long
+  use GridValues_ml,         only: glon, glat    &! lat, long
                                   ,sigma_mid &  !sigma layer midpoint
                                   ,debug_proc & !DSGC
                                   ,i_fdom, j_fdom  !u1 for testing
@@ -415,7 +415,7 @@ contains
 
 
    if ( DEBUG_BCS .and. debug_proc .and. i_test > 0  ) then
-         write(6,"(a20,3i4,2f8.2)") "DEBUG BCS Rorvik", me, i,j,gl(i,j),gb(i,j)
+         write(6,"(a20,3i4,2f8.2)") "DEBUG BCS Rorvik", me, i,j,glon(i,j),glat(i,j)
          write(6,"(a20,3i4)")       "DEBUG BCS Rorvik DIMS", & 
                     num_adv_changed,iglobact,jglobact
          do k = 1, KMAX_MID

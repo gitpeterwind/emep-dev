@@ -409,7 +409,7 @@ endif
 
         call Add_2timing(6,tim_after,tim_before,"readdiss, aircr_nox")
 
-        call MetModel_LandUse(2)   ! e.g.  gets snow
+        call MetModel_LandUse(2)   ! e.g.  gets snow_flag
         if ( MasterProc .and. DEBUG_UNI) write(6,*)"vnewmonth start"
 
         call newmonth

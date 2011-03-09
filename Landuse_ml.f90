@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -30,7 +30,7 @@ module Landuse_ml
 use CheckStop_ml,      only: CheckStop,StopAll
 use DO3SE_ml,   only : fPhenology
 use GridAllocate_ml,only: GridAllocate
-use GridValues_ml,  only: gb_fdom, gb, i_fdom, j_fdom, & ! latitude, coordinates
+use GridValues_ml,  only: glat_fdom, glat, i_fdom, j_fdom, & ! latitude, coordinates
                           i_local, j_local, &
                          debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP
@@ -100,7 +100,7 @@ private
  
  ! For some flux work, experimental  XXXXXXXx
 
- real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_fraction 
+ real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_cover, ice_landcover 
 
  character(len=80), private :: errmsg
 
@@ -276,8 +276,8 @@ contains
       !/ -- Calculate growing seasons where needed and water_fraction
       !          (for Rn emissions)
 
-        water_fraction(:,:) = 0.0         !ds Pb210 
-        ice_fraction(:,:)   = 0.0         !ds Pb210 
+        water_cover(:,:) = 0.0         !for Pb210 
+        ice_landcover(:,:)   = 0.0         !for Pb210 
 
         do i = li0, li1
           do j = lj0, lj1
@@ -290,7 +290,7 @@ contains
 
                 if ( LandDefs(lu)%SGS50 > 0 ) then  ! need to set growing seasons 
 
-                    call Growing_season( lu,abs(gb(i,j)),&  
+                    call Growing_season( lu,abs(glat(i,j)),&  
                             LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu) )
                 else
                    LandCover(i,j)%SGS(ilu) =  LandDefs(lu)%SGS50
@@ -312,13 +312,13 @@ contains
                  LandCover(i,j)%fphen(ilu) =  0.0          
              end if
 
-             if ( LandType(lu)%is_water ) water_fraction(i,j) = LandCover(i,j)%fraction(ilu)
-             if ( LandType(lu)%is_ice   )   ice_fraction(i,j) = LandCover(i,j)%fraction(ilu)
+             if ( LandType(lu)%is_water ) water_cover(i,j) = LandCover(i,j)%fraction(ilu)
+             if ( LandType(lu)%is_ice   ) ice_landcover(i,j) = LandCover(i,j)%fraction(ilu)
              
 
             end do ! ilu
             if(.not. foundnwp_sea)then
-               if(water_fraction(i,j)>water_fraction_THRESHOLD) &
+               if(water_cover(i,j)>water_fraction_THRESHOLD) &
                   nwp_sea(i,j) = .true.
             endif
           end do ! j
@@ -350,7 +350,7 @@ contains
 
           effectivdaynumber=daynumber
          ! effectiv daynumber to shift 6 months when in southern hemisphere
-          if(gb(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1 
+          if(glat(i,j)<0.0)effectivdaynumber=mod(daynumber+182,nydays)+1 
 
           debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
           if ( DEBUG_LANDUSE .and. debug_flag ) then
@@ -423,8 +423,8 @@ contains
            ! Gsto if we allow higher LAI in central Europe.
 
              else if( LandType(lu)%is_forest ) then
-               if ( gb(i,j) >= 60.0 ) then
-                       lat_factor  = max(0.3, ( 1.0 - 0.05* (gb(i,j)-60.0)) )
+               if ( glat(i,j) >= 60.0 ) then
+                       lat_factor  = max(0.3, ( 1.0 - 0.05* (glat(i,j)-60.0)) )
                        hveg  = hveg *  lat_factor
                        LandCover(i,j)%LAI(ilu) = LandCover(i,j)%LAI(ilu)  * lat_factor
                end if

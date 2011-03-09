@@ -66,7 +66,7 @@ module DryDep_ml
  use DO3SE_ml,         only : do3se, f_phen
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
- use GridValues_ml ,   only : GRIDWIDTH_M,xmd,xm2, gb,dA,dB, &
+ use GridValues_ml ,   only : GRIDWIDTH_M,xmd,xm2, glat,dA,dB, &
           debug_proc, debug_li, debug_lj, i_fdom, j_fdom   ! for testing
  use Io_Progs_ml,      only : datewrite
  use Landuse_ml,       only : SetLandUse, Land_codes  & 
@@ -275,7 +275,7 @@ module DryDep_ml
       real, dimension(NSPEC_ADV ,NLANDUSEMAX):: fluxfrac_adv
       integer, dimension(NLUMAX)  :: iL_used, iL_fluxes
       real :: wet, dry         ! Fractions
-      real :: snow_iL          !snow fraction for one landuse
+      real :: snow_iL          !snow_flag fraction for one landuse
       real :: Vds              ! Aerosol
       real :: Vg_3mN           ! Crude nitrate correction
 
@@ -429,9 +429,9 @@ module DryDep_ml
 
              if ( DEBUG_DRYDEP .and. debug_flag ) then
                 write(6,"(a,3i3,f6.1,2i4,3f7.3,i4,i2,2f6.2)") "DVEG: ", &
-                    nlu,iiL, iL, gb(i,j), L%SGS, L%EGS, &
+                    nlu,iiL, iL, glat(i,j), L%SGS, L%EGS, &
                    L%coverage, L%LAI, L%hveg,daynumber, &
-                   Grid%snow, fSW(i,j),L%t2C
+                   Grid%sdepth, fSW(i,j),L%t2C !ACB Grid%snow_flag
 
                 write(6,"(a,i4,2f7.2,2es10.2,3f8.3)") "DMET SUB", &
                   iL, Grid%ustar, L%ustar, Grid%invL, &
@@ -649,9 +649,9 @@ module DryDep_ml
         end if
 
         if ( DEBUG_DRYDEP .and. debug_flag ) then
-            call datewrite("DEP VGR snow Vg", Grid%snow, &
+            call datewrite("DEP VGR snow_flag Vg", (/ Grid%sdepth, & !ACB Grid%snow_flag
              !SUB0 (/ (100.0*Grid%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
-             (/ (100.0*Sub(0)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
+                (100.0*Sub(0)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) , &
                 (100.0*Sub(iL)%Vg_Ref(n), n = 1, min(4,NDRYDEP_GASES )) /) )
         end if
 

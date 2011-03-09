@@ -79,7 +79,7 @@ private
      so2nh3_24hr(MAXLIMAX,MAXLJMAX) = 0.0 !hf CoDep
 
   real, save, public :: &
-     Grid_snow(MAXLIMAX,MAXLJMAX) = 0.0 !snow fraction in grid
+     Grid_snow(MAXLIMAX,MAXLJMAX) = 0.0 !snow_flag fraction in grid
 
 
 !_____________________________________________________________________________

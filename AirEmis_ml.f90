@@ -43,7 +43,7 @@ module AirEmis_ml
    use Par_ml               , only : MAXLIMAX, MAXLJMAX, limax,ljmax, me
    use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC
    use Io_ml                , only : IO_AIRN, IO_LIGHT, ios, open_file
-   use GridValues_ml        , only : gl,gb, GRIDWIDTH_M
+   use GridValues_ml        , only : glon,glat, GRIDWIDTH_M
    use PhysicalConstants_ml , only : AVOG
    use MetFields_ml               , only : z_bnd  
    use TimeDate_ml,           only : current_date
@@ -415,21 +415,21 @@ module AirEmis_ml
       jg = GGL-1
       do j = 1,ljmax
          do i = 1,limax
-            if(abs(gb(i,j)-90.0)<0.001) then
+            if(abs(glat(i,j)-90.0)<0.001) then
                ixn(i,j) = 1
                jxn(i,j) = 1
             else
 
-               do while(gb(i,j)<ygrida(jg+1))
+               do while(glat(i,j)<ygrida(jg+1))
                   jg = jg+1
                enddo
 
-               do while(gb(i,j)>=ygrida(jg))
+               do while(glat(i,j)>=ygrida(jg))
                   jg = jg-1
                enddo
  
                jxn(i,j) = jg
-               glij = gl(i,j)
+               glij = glon(i,j)
                if(glij<=rlon(1)) glij = glij+360.
                ig = int((glij-rlon(1))/DLON)+1
                if(ig>ILON) ig=ig-ILON 
@@ -496,8 +496,8 @@ module AirEmis_ml
       do j = 1,ljmax
          do i = 1,limax
 
-            if(gl(i,j)>rlon(lo_tst1) .and. gl(i,j)<rlon(lo_tst2+1) .and.     &
-               gb(i,j)<ygrida(la_tst1) .and. gb(i,j)>ygrida(la_tst2+1)) then
+            if(glon(i,j)>rlon(lo_tst1) .and. glon(i,j)<rlon(lo_tst2+1) .and.     &
+               glat(i,j)<ygrida(la_tst1) .and. glat(i,j)>ygrida(la_tst2+1)) then
                 do k=KCHEMTOP,KMAX_MID
                    vol = GRIDWIDTH_M*GRIDWIDTH_M                             &
                         *(z_bnd(i,j,k)-z_bnd(i,j,k+1))*1.e6

@@ -159,12 +159,12 @@ contains
     real :: Hstar, f0           ! Wesely tabulated Henry's coeff.'s, reactivity
     real :: Rgs    !  
     real :: GigsO
-    real :: RsnowS, RsnowO !surface resistance for snow, S and O3
+    real :: RsnowS, RsnowO !surface resistance for snow_flag, S and O3
     real :: lowTcorr !low temperature correction  
     real :: lowT     !low temperature correction for HNO3  
     real ::  GnsS
     real,  intent(out) :: fsnow ! the output is max(fsnow,fice)
-    real :: fice !fraction ice cover
+    real :: fice !fraction ice_nwp cover
     real :: Sdmax  !max snowdepth (fsnow =1)
 
 
@@ -176,23 +176,23 @@ contains
     fsnow = 2.0 *G%sdepth/Sdmax
 
 !Treat ice in the same way as snow
-    fice=0.01*G%ice !from percent to fraction
-    fsnow = max(fsnow,fice) !if snow, ice probably has snow
+    fice=0.01*G%ice_nwp !from percent to fraction
+    fsnow = max(fsnow,fice) !if snow_flag, ice_nwp probably has snow_flag
                             !but it might be ice without snow..
     fsnow = min(fsnow,1.0)  
     fsnow = max(fsnow,0.0)
-    if ( .not. foundsdepth)then
-       fsnow=G%snow !snow from climatology files, 1 or 0
-    endif
+ !ACB   if ( .not. foundsdepth)then
+ !ACB      fsnow=G%snow !snow from climatology files, 1 or 0
+ !ACB   endif
 
-    if (L%is_ice) fsnow=1.0 !ice in Landuse
+    if (L%is_ice) fsnow=1.0 !ice_nwp in Landuse
                             !to ensure it is treated
                             !same way as met input
                             !and not Ggs from table
    
 
     if ( DEBUG_RSUR .and. debug_flag ) then
-        write(*,"(a,i4,3f8.4)") "IN RSUR snow ", &
+        write(*,"(a,i4,3f8.4)") "IN RSUR snow_flag ", &
            current_date%hour,  Sdmax, G%sdepth, fsnow
     end if
 
@@ -213,12 +213,12 @@ contains
                                    !kick in for T<-1
 
 ! Rsnow for sulphur and O3, Erisman, 1994 + Zhang, 2003. Also used for ice. 
-    RsnowS = 70.0*(2.0 -L%t2C) !Used for snow and ice
+    RsnowS = 70.0*(2.0 -L%t2C) !Used for snow_flag and ice_nwp
     if (L%t2C < -1.0) RsnowS = 700.0 !700 from Cadle,1985
     RsnowS = min(700.0,RsnowS) !Erisman 1994=500,very low.. Puts to 2000
     RsnowS = max(70.0,RsnowS)  !Erisman 1994. 70 above 1 degree
 
-    RsnowO = 2000.0 !same for snow, ice, water. Later corrected with lowTcorr
+    RsnowO = 2000.0 !same for snow_flag, ice_nwp, water. Later corrected with lowTcorr
                     !as recommended by Juha-Pekka
 
 
@@ -329,10 +329,10 @@ contains
 
         if ( iwes == WES_HNO3 ) then
             lowT= -L%t2C *2.0
-            Rsur(icmp)  = max(10.0,lowT) !not so affected by snow, e.g. Erisman 1994,table 6,
+            Rsur(icmp)  = max(10.0,lowT) !not so affected by snow_flag, e.g. Erisman 1994,table 6,
 !FEB2009 - reimplement Vg limitation for HNO3. 10 cm/s max is enoug
 ! anyway!
-            Rsur(icmp)  = max(1.0,lowT) !not so affected by snow, e.g. Erisman 1994,table 6,
+            Rsur(icmp)  = max(1.0,lowT) !not so affected by snow_flag, e.g. Erisman 1994,table 6,
                                         !Cadle,1985
         !lowT based on: Rc=10scm-1 for -5, Rc=50scm-1 at -18 in Johanson&Granat, 1986
 

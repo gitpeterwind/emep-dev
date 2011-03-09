@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -37,12 +37,12 @@ module CellMet_ml
 
 use CheckStop_ml, only : CheckStop
 use GridValues_ml, only :  sigma_bnd
-use Landuse_ml, only : LandCover    ! Provides SGS, hveg, LAI ....
+use Landuse_ml, only : LandCover, ice_landcover    ! Provides SGS, hveg, LAI ....
 use LocalVariables_ml, only: Grid, Sub, ResetSub
 use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
 use MetFields_ml, only: ps, u_ref
-use MetFields_ml, only: cc3dmax, nwp_sea, snow,sdepth,ice, surface_precip, fh,fl,z_mid, z_bnd, &
-           q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen, coszen, Idirect, Idiffuse
+use MetFields_ml, only: cc3dmax, nwp_sea, sdepth,ice_nwp, surface_precip, fh,fl,z_mid, z_bnd, &
+           q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen, coszen, Idirect, Idiffuse !ACB snow_flag
 use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, PT
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 use SoilWater_ml, only : fSW
@@ -119,9 +119,10 @@ contains
 
      Grid%is_NWPsea = nwp_sea(i,j)
      Grid%is_allNWPsea = ( nwp_sea(i,j) .and. LandCover(i,j)%ncodes == 1)
-     Grid%snow      = snow(i,j)
+ !ACB    Grid%snow      = snow(i,j)
      Grid%sdepth    = sdepth(i,j,1)
-     Grid%ice       = ice(i,j,1)
+     Grid%ice_nwp   = max( ice_nwp(i,j,1), ice_landcover(i,j) ) 
+     Grid%snowice   = ( Grid%sdepth  > 0.0 .or. Grid%ice_nwp > 0.0 )
 
      Grid%fSW       = fSW(i,j)
 
