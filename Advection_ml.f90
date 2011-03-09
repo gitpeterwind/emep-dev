@@ -75,20 +75,21 @@
 ! exactly mass conservative (?). ndiff and ADVEC_TYPE=2 have not yet been tested.
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-  use Chemfields_ml, only : xn_adv
+  use Chemfields_ml,     only : xn_adv
   use ChemSpecs_adv_ml , only : NSPEC_ADV
-  use CheckStop_ml,     only : CheckStop
-  use Convection_ml, only : convection_pstar
-  use GridValues_ml, only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji,carea,xm_i, Pole_included,dA,dB
-  use Io_ml,         only : datewrite
+  use CheckStop_ml,      only : CheckStop
+  use Convection_ml,     only : convection_pstar
+  use GridValues_ml,     only : GRIDWIDTH_M,xm2,xmd,xm2ji,xmdji, &
+                                carea,xm_i, Pole_included,dA,dB
+  use Io_ml,             only : datewrite
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,& ! AMVB 2009-11-06: FORECAST mode
                   USE_CONVECTION
-  use MetFields_ml ,only : ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
-  use MassBudget_ml, only : fluxin,fluxout
-  use My_Timing_ml,  only : Code_timer, Add_2timing, tim_before,tim_after
-  use Par_ml,        only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&
+  use MetFields_ml,      only : ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
+  use MassBudget_ml,     only : fluxin,fluxout
+  use My_Timing_ml,      only : Code_timer, Add_2timing, tim_before,tim_after
+  use Par_ml,            only : MAXLIMAX,MAXLJMAX,GJMAX,GIMAX,me,mex,mey,&
             li0,li1,lj0,lj1 ,limax,ljmax, gi0, IRUNBEG,gj0, JRUNBEG &
            ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC            &
            ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2
@@ -113,8 +114,8 @@
   real, private,save, dimension(MAXLIMAX,KMAX_MID,NMET) :: vs,vn
 
   integer, public, parameter :: ADVEC_TYPE = 1 ! Divides by advected p*
-! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by "meteorologically" advected p*
-                                               ! -> mass consistent (in kg)
+! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by "meteorologically" 
+                                               ! advected p* -> mass consistent (in kg)
 
   public :: assign_dtadvec
   public :: assign_nmax
@@ -125,7 +126,6 @@
   public :: adv_int
 
   private :: advvk
-  private :: advvdifvk
   private :: advx
   private :: advy
   private :: preadvx
@@ -243,9 +243,6 @@
     integer iterxys,iterxy,iters
     logical, parameter :: DEBUG_ADV = .false.
 
-    
-
-13  format(10E16.7)
 
     call Code_timer(tim_before)
 
@@ -312,8 +309,6 @@
       dt_xymax(k)=GRIDWIDTH_M/xcmax(k)
     enddo
 
-44  format('k =',I4,6F12.4)
-
 !Courant number in vertical sigma coordinates:  sigmadot*dt/deltasigma
 !
 !Note that dhs1(k+1) denotes thickness of layer k
@@ -366,8 +361,8 @@
 !     if(me.eq.0)then
 !       write(*,47)nxy,nxy/20.
 !     endif
-45    format(2F12.4,I6)
-46    format('k = ',I6,2F12.4,I6,2F12.4,I6)
+!45    format(2F12.4,I6)
+!46    format('k = ',I6,2F12.4,I6,2F12.4,I6)
 47    format('extra iterations (xyz,xy,z), C_max, C_max_surface:',3I3,2F7.3)
 
       call Add_2timing(20,tim_after,tim_before,"advecdiff:synchronization")
@@ -416,7 +411,8 @@
                       ,dth,carea(k))
               enddo
 
-              call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")  ! AMVB 2009-11-06: uniform names for Add_2timing calls
+              call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")  
+                   ! AMVB 2009-11-06: uniform names for Add_2timing calls
 
             enddo !iterxy horizontal (xy) advection
           enddo !k horizontal (xy) advection
@@ -702,8 +698,6 @@
     integer,parameter :: NITERXMAX=10
 
 
-13  format(10E16.7)
-
     call Code_timer(tim_before)
 
     if(firstcall)then
@@ -816,8 +810,6 @@
       enddo
     enddo
 
-44  format('k =',I4,6F12.4)
-
 !Courant number in vertical sigma coordinates:  sigmadot*dt/deltasigma
 !
 !Note that dhs1(k+1) denotes thickness of layer k
@@ -869,12 +861,9 @@
       if(me.eq.0)then
 !          write(*,43)KMAX_MID*ljmax,nxx,nxxmin,KMAX_MID*limax,nyy,niters
       endif
-43    format('total iterations x, y, k: ',I4,' +',I4,' -',I4,', ',I5,' +',I3,',',I4)
+!43    format('total iterations x, y, k: ',I4,' +',I4,' -',I4,', ',I5,' +',I3,',',I4)
 
       ! stop
-45    format(2F12.4,I6)
-46    format('k = ',I6,2F12.4,I6,2F12.4,I6)
-47    format('extra iterations (xyz,xy,z), C_max, C_max_surface:',3I3,2F7.3)
 
       call Add_2timing(20,tim_after,tim_before,"advecdiff:synchronization")  ! AMVB 2009-11-06: uniform names for Add_2timing calls
 
@@ -1537,210 +1526,6 @@
                   +fluxps(KMAX_MID)*dhs1i(KMAX_MID+1))
 
   end subroutine advvk
-
-! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-  subroutine advvdifvk(xn_adv,ps3d,sdot,SigmaKz,ds3,ds4,psfac,dt_s)
-
-!     executes advection with a. bott's integreated flux-form
-!     using 2'nd order polynomial in the vertical.
-
-    use ModelConstants_ml  , only : KCHEMTOP, EPSIL
-    use ChemSpecs_adv_ml , only : NSPEC_ADV
-!hf u2      use My_Runmode_ml , only : ADVEC_TYPE
-    implicit none
-
-!    input
-    real,intent(in)::  sdot(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
-    real,intent(in)::  SigmaKz(0:MAXLIMAX*MAXLJMAX*KMAX_BND-1)
-    real,intent(in)::  ds3(KMAX_MID-1),ds4(KMAX_MID-1)
-    real,intent(in)::  psfac,dt_s
-
-!    output
-    real ,intent(inout):: xn_adv(NSPEC_ADV,0:MAXLIMAX*MAXLJMAX*KMAX_MID-1)
-    real ,intent(inout):: ps3d(0:MAXLIMAX*MAXLJMAX*KMAX_MID-1)
-
-!    local
-    real fluxk(NSPEC_ADV,KMAX_MID),fluxps(KMAX_MID),fc(KMAX_MID)
-
-!    local
-
-    integer  k,k1
-    integer klimlow,klimhig,n1k
-    real totk(NSPEC_ADV),totps
-    real zzfl1,zzfl2,zzfl3
-    real f1(NSPEC_ADV,KMAX_MID),fps(KMAX_MID)
-    real fc1,fc2,fc3
-
-    do k = 1,KMAX_MID-1
-      fc(k) = sdot(k*MAXLIMAX*MAXLJMAX)*dt_s
-!     adif(k) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds3(k)
-!     bdif(k+1) = SigmaKz(k*MAXLIMAX*MAXLJMAX)*ds4(k)
-    enddo
-    fc(KMAX_MID) = -1.
-
-!-------------- calculate the advection ----------------------------
-
-    klimlow = 2
-    if(fc(1).ge.0.)klimlow=3
-      klimhig = KMAX_MID
-      if(fc(KMAX_MID-1).lt.0)klimhig = KMAX_MID-1
-
-        fluxk(:,1) = 0.
-        fluxps(1) = 0.
-
-        if(fc(1).ge.0.)then
-
-          fc1 = fc(1)
-          fc2 = fc1*fc1
-          fc3 = fc1*fc2
-          zzfl2 = alfbegnew(1)*fc1                &
-                + alfbegnew(2)*fc2                &
-                + alfbegnew(3)*fc3
-          zzfl3 = alfnew(7,2,0)*fc1               &
-                + alfnew(8,2,0)*fc2               &
-                + alfnew(9,2,0)*fc3
-
-          fluxk(:,2) = max(0.,xn_adv(:,0)*zzfl2   &
-             +xn_adv(:,MAXLIMAX*MAXLJMAX)*zzfl3)
-          fluxps(2)  = max(0.,ps3d(0)*zzfl2       &
-             +ps3d(MAXLIMAX*MAXLJMAX)*zzfl3)
-
-        endif
-
-        do k = klimlow,klimhig
-          fc1 = fc(k-1)
-          fc2 = fc1*fc1
-          fc3 = fc1*fc2
-          n1k = 0
-          if(fc1.lt.0.)n1k=1
-
-          zzfl1 = alfnew(1,k,n1k)*fc1                &
-                + alfnew(2,k,n1k)*fc2                &
-                + alfnew(3,k,n1k)*fc3
-          zzfl2 = alfnew(4,k,n1k)*fc1                &
-                + alfnew(5,k,n1k)*fc2                &
-                + alfnew(6,k,n1k)*fc3
-          zzfl3 = alfnew(7,k,n1k)*fc1                &
-                + alfnew(8,k,n1k)*fc2                &
-                + alfnew(9,k,n1k)*fc3
-
-          k1 = k-2+n1k
-
-          fluxk(:,k) = max(0.,                            &
-                 xn_adv(:,(k1-1)*MAXLIMAX*MAXLJMAX)*zzfl1 &
-                +xn_adv(:, k1   *MAXLIMAX*MAXLJMAX)*zzfl2 &
-                +xn_adv(:,(k1+1)*MAXLIMAX*MAXLJMAX)*zzfl3)
-          fluxps(k) = max(0.,                             &
-                 ps3d((k1-1)*MAXLIMAX*MAXLJMAX)*zzfl1     &
-                +ps3d( k1   *MAXLIMAX*MAXLJMAX)*zzfl2     &
-                +ps3d((k1+1)*MAXLIMAX*MAXLJMAX)*zzfl3)
-
-        enddo
-
-      if(fc(KMAX_MID-1).lt.0.)then
-
-        fc1 = fc(KMAX_MID-1)
-        fc2 = fc1*fc1
-        fc3 = fc1*fc2
-        zzfl1 = alfnew(1,KMAX_MID,1)*fc1      &
-              + alfnew(2,KMAX_MID,1)*fc2      &
-              + alfnew(3,KMAX_MID,1)*fc3
-        zzfl2 = alfendnew(1)*fc1              &
-              + alfendnew(2)*fc2              &
-              + alfendnew(3)*fc3
-
-        fluxk(:,KMAX_MID) = max(0.,                           &
-             xn_adv(:,(KMAX_MID-2)*MAXLIMAX*MAXLJMAX)*zzfl1   &
-            +xn_adv(:,(KMAX_MID-1)*MAXLIMAX*MAXLJMAX)*zzfl2)
-        fluxps(KMAX_MID) = max(0.,                            &
-             ps3d((KMAX_MID-2)*MAXLIMAX*MAXLJMAX)*zzfl1       &
-            +ps3d((KMAX_MID-1)*MAXLIMAX*MAXLJMAX)*zzfl2)
-
-    endif
-
-    k=2
-    do while(.true.)
-      do while(fc(k-1).ge.0.)
-        fluxk(:,k)= min(xn_adv(:,(k-2)*MAXLIMAX*MAXLJMAX)*dhs1(k),fluxk(:,k))
-        f1(:,k-1) = max(0.,xn_adv(:,(k-2)*MAXLIMAX*MAXLJMAX)        &
-                          -(fluxk(:,k) - fluxk(:,k-1))*dhs1i(k))
-        fluxps(k) = min(ps3d((k-2)*MAXLIMAX*MAXLJMAX)*dhs1(k),fluxps(k))
-        fps(k-1)  = max(0.,ps3d((k-2)*MAXLIMAX*MAXLJMAX)            &
-                          -(fluxps(k) - fluxps(k-1))*dhs1i(k))
-!       ps3d((k-2)*MAXLIMAX*MAXLJMAX)=max(0.,ps3d((k-2)*MAXLIMAX*MAXLJMAX) &
-!                                        -(fluxps(k)-fluxps(k-1))*dhs1i(k))
-        k=k+1
-        if(k.gt.KMAX_MID)goto 435
-      enddo
-
-      do while(fc(k).lt.0.)
-        fluxk(:,k)=-min(xn_adv(:,(k-1)*MAXLIMAX*MAXLJMAX)*dhs1(k+1),  &
-                        fluxk(:,k))
-        f1(:,k-1) = max(0.,xn_adv(:,(k-2)*MAXLIMAX*MAXLJMAX)          &
-                          -(fluxk(:,k) - fluxk(:,k-1))*dhs1i(k))
-        fluxps(k) =-min(ps3d((k-1)*MAXLIMAX*MAXLJMAX)*dhs1(k+1),      &
-                        fluxps(k))
-        fps(k-1)  = max(0.,ps3d((k-2)*MAXLIMAX*MAXLJMAX)              &
-                          -(fluxps(k) - fluxps(k-1))*dhs1i(k))
-!       ps3d((k-2)*MAXLIMAX*MAXLJMAX)=max(0.,ps3d((k-2)*MAXLIMAX*MAXLJMAX)&
-!                                         -(fluxps(k)-fluxps(k-1))*dhs1i(k))
-        k=k+1
-        if(k.gt.KMAX_MID)goto 435
-      enddo
-      totk(:) = min(xn_adv(:,(k-1)*MAXLIMAX*MAXLJMAX)*dhs1(k+1)      &
-                   /(fluxk(:,k) + fluxk(:,k+1)+ EPSIL),1.)
-      fluxk(:,k)   =-fluxk(:,k)  *totk(:)
-      fluxk(:,k+1) = fluxk(:,k+1)*totk(:)
-      f1(:,k-1) = max(0.,xn_adv(:,(k-2)*MAXLIMAX*MAXLJMAX)           &
-                        -(fluxk(:,k  ) - fluxk(:,k-1))*dhs1i(k  ))
-      f1(:,k)   = max(0.,xn_adv(:,(k-1)*MAXLIMAX*MAXLJMAX)           &
-                        -(fluxk(:,k+1) - fluxk(:,k  ))*dhs1i(k+1))
-
-      totps = min(ps3d((k-1)*MAXLIMAX*MAXLJMAX)*dhs1(k+1)            &
-                 /(fluxps(k)+ fluxps(k+1)+ EPSIL),1.)
-
-      fluxps(k)   =-fluxps(k)  *totps
-      fluxps(k+1) = fluxps(k+1)*totps
-      fps(k-1) = max(0.,ps3d((k-2)*MAXLIMAX*MAXLJMAX)               &
-                      -(fluxps(k  ) - fluxps(k-1))*dhs1i(k  ))
-      fps(k)   = max(0.,ps3d((k-1)*MAXLIMAX*MAXLJMAX)               &
-                      -(fluxps(k+1) - fluxps(k  ))*dhs1i(k+1))
-!       ps3d((k-2)*MAXLIMAX*MAXLJMAX)= max(0.,ps3d((k-2)*MAXLIMAX*MAXLJMAX)&
-!                   -(fluxps(k  ) - fluxps(k-1))*dhs1i(k  ))
-!       ps3d((k-1)*MAXLIMAX*MAXLJMAX)= max(0.,ps3d((k-1)*MAXLIMAX*MAXLJMAX)&
-!                   -(fluxps(k+1) - fluxps(k  ))*dhs1i(k+1))
-      k = k+2
-      if(k.gt.KMAX_MID)goto 435
-    enddo
-
-435 continue
-
-
-    if(ADVEC_TYPE==1)then
-      fps(KMAX_MID) =                                      &
-        max(0.,ps3d((KMAX_MID-1)*MAXLIMAX*MAXLJMAX)        &
-              +fluxps(KMAX_MID)*dhs1i(KMAX_MID+1))
-!     ps3d((KMAX_MID-1)*MAXLIMAX*MAXLJMAX) =               &
-!       max(0.,ps3d((KMAX_MID-1)*MAXLIMAX*MAXLJMAX)        &
-!             +fluxps(KMAX_MID)*dhs1i(KMAX_MID+1))
-    endif
-    if(ADVEC_TYPE==0)then
-      fps(:) = psfac
-    endif
-
-    f1(:,KMAX_MID) = max(0.,xn_adv(:,(KMAX_MID-1)*MAXLIMAX*MAXLJMAX)      &
-                           +fluxk(:,KMAX_MID)*dhs1i(KMAX_MID+1))
-
-    do k = 1,KMAX_MID
-!     xn_adv(:,(k-1)*MAXLIMAX*MAXLJMAX) = f1(:,k)/fps(k)
-      xn_adv(:,(k-1)*MAXLIMAX*MAXLJMAX) = f1(:,k)
-      ps3d((k-1)*MAXLIMAX*MAXLJMAX) = fps(k)
-    enddo
-
-    return
-
-  end subroutine advvdifvk
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
