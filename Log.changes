@@ -46,7 +46,7 @@ Files and cleanup status.
 -- indicates in-progress, otherwise mark done.
 !----------------------------------------------------------
 
-          Advection_ml.f90
+st        Advection_ml.f90
           Aero_Vds_ml.f90
           Aero_water_ml.f90
           AirEmis_ml.f90
@@ -140,6 +140,21 @@ ds --     My_Outputs_ml.f90
           My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3_7beta29  Svetlana   Mar 9 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Introduced an extra size bin ('giant') for sea salt
+SeaSalt_ml.f90                - extra 'giant' size bin
+Aero_Vds_ml.f90               - Vd for giant size (d=8.8 um)
+Aqueous_n_WetDep_ml.f90       - scavenging ratio for SSg
+My_Aerosols_ml.f90            - NSIZE = 3
+Wesely_ml.f90                 - new CDDEP_PMg = 15 and AERO_SIZE=3
+EmisDef_ml.f90                - QSSGI index
+Solver.f90                    
+-----
+ZCM_EmChem09/GenIn.species
+             GenIn.reactions 
+
 xxxxxxxx rv3_7beta29  Alvaro   Mar 8 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Small bug fixes

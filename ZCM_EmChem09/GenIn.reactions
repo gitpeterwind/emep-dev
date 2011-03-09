@@ -300,6 +300,7 @@ voc:rcemis(C5H8,k)                        = C5H8    ; # Anthropogenic isoprene
 *
 rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
+rcss(QSSGI,k)                           = SeaSalt_g ;
 *
 rc_Rn222(k)                             = Rn222    ;
 *

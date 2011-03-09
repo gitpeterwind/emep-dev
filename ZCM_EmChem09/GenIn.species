@@ -106,6 +106,7 @@ CO_BIC,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
 PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;,,"!Primary; 2.5--10u"
 SeaSalt_f,1,xx,58,PMfS,SSf,3.0,0,0,xx,PM25;PM10;SS;AOD,,!
 SeaSalt_c,1,xx,58,PMc,SSc,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
+SeaSalt_g,1,xx,58,PMg,SSg,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
 Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PM25;PM10;DUST;AOD,,!
 Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;AOD,,!
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
