@@ -55,8 +55,9 @@
                                 , VOLCANO           = .false.
 
     logical, public, parameter :: SEASALT = .true. 
- !.. Number of aerosol sizes (1-fine, 2-coarse)
-    integer, public, parameter :: NSIZE = 2    
+ !.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
+    integer, public, parameter :: NSIZE = 3,   &
+                                  FINE_PM = 1, COAR_PM = 3, GIG_PM = 3    
 
 
 contains
