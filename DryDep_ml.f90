@@ -682,7 +682,7 @@ module DryDep_ml
 
              DepLoss(nadv) =  &
               Fgas(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d(ntot,KMAX_MID) + &
-              Fpart(ntot,KMAX_MID)*vg_fac( CDDEP_PMfS ) * xn_2d(ntot,KMAX_MID)&
+              Fpart(ntot,KMAX_MID)*vg_fac( CDDEP_PMfS ) * xn_2d(ntot,KMAX_MID)
 
               cfac(nadv, i,j) = Fgas(ntot,KMAX_MID)*gradient_fac(ncalc) + &
                    Fpart(ntot,KMAX_MID)*gradient_fac( CDDEP_PMfS )
