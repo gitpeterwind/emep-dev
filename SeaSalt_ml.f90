@@ -44,7 +44,7 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
- use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c, SeaSalt_g
+ use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c
  use ChemChemicals_ml,     only : species
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO, QSSGI
  use GridValues_ml,        only : glat, glon
