@@ -1,16 +1,9 @@
 !*****************************************************************************! 
-!module My_DryDep_ml    ! DryDep_ml
-! use CheckStop_ml,        only : CheckStop, StopAll
-! use ChemSpecs_tot_ml,    only : O3
-! use ChemSpecs_adv_ml     ! Needed for all IXADV_ 
-! use Wesely_ml
-!end module My_DryDep_ml
-
 ! <DryDep_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -36,6 +29,9 @@
 
 module DryDep_ml
 
+  ! Dry deposition scheme uses a mosaic approach. Updated extensively
+  ! in 2010-2011.
+  ! History
   ! Module started from the drag-coefficient based approach of BJ98:
   ! Berge, E. and  Jakobsen, H.A., A regional scale multi-layer model
   ! for the calculation of long-term transport and deposition of air
@@ -61,7 +57,7 @@ module DryDep_ml
 
 
  use ChemChemicals_ml, only : species
- use ChemSpecs_adv_ml     ! Might need any
+ use ChemSpecs_adv_ml     ! Might need any species
  use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, O3
  use DO3SE_ml,         only : do3se, f_phen
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
@@ -604,7 +600,6 @@ module DryDep_ml
            c_hveg = xn_2d(FLUX_TOT,KMAX_MID)  &     ! #/cm3 units
                         * ( 1.0-Ra_diff*Vg_ref(n) )
 
-          !if ( DEBUG_DRYDEP .and. debug_flag ) then
           if ( DEBUG_AOT .and. debug_flag ) then
               write(*, "(a,3i3,i5,i3, 3f9.3,f5.2,9es10.3)") &
                "CHVEG ", imm, idd, ihh, current_date%seconds,  iL, &
@@ -680,14 +675,17 @@ module DryDep_ml
              cfac(nadv, i,j) = 1.0   ! Crude, for now.
   
          else
-            if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
-!rb               DepLoss(nadv) =   Fpart(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d( ntot,KMAX_MID)
-!rb               cfac(nadv, i,j) = 1.0+Fpart(ntot,KMAX_MID)*(gradient_fac( ncalc )-1.0)
-!RB: Test assuming dry deposition of particulate part of semi-volatile components as PMfS and the gaseous part as specified in GenIn.species.
-               DepLoss(nadv) =   Fgas(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d( ntot,KMAX_MID) + &
-                   Fpart(ntot,KMAX_MID)*vg_fac( CDDEP_PMfS ) * xn_2d( ntot,KMAX_MID)
-               cfac(nadv, i,j) = Fgas(ntot,KMAX_MID)*(gradient_fac( ncalc ))+ &
-                   Fpart(ntot,KMAX_MID)*(gradient_fac( CDDEP_PMfS ))
+           if ( ntot >= FIRST_SEMIVOL .and. ntot <= LAST_SEMIVOL ) THEN
+              ! Assuming dry deposition of particulate part of
+              ! semi-volatile components as PMfS and the gaseous part as
+              ! specified in GenIn.species.
+
+             DepLoss(nadv) =  &
+              Fgas(ntot,KMAX_MID)*vg_fac( ncalc ) * xn_2d(ntot,KMAX_MID) + &
+              Fpart(ntot,KMAX_MID)*vg_fac( CDDEP_PMfS ) * xn_2d(ntot,KMAX_MID)&
+
+              cfac(nadv, i,j) = Fgas(ntot,KMAX_MID)*gradient_fac(ncalc) + &
+                   Fpart(ntot,KMAX_MID)*gradient_fac( CDDEP_PMfS )
             else
                DepLoss(nadv) =   vg_fac( ncalc )  * xn_2d( ntot,KMAX_MID)
                cfac(nadv, i,j) = gradient_fac( ncalc )
@@ -704,7 +702,6 @@ module DryDep_ml
 
            Grid%surf_o3_ppb = xn_2d(O3,KMAX_MID)*gradient_fac( ncalc )*surf_ppb
 
-           !BUG:! &n not neededGrid%O3factor = DepLoss(nadv)/(max(1.0-10, xn_2d( ntot,KMAX_MID) ) )
            Grid%O3factor = vg_fac(ncalc)
 
            if ( DEBUG_DRYDEP .and. debug_flag ) then
@@ -727,7 +724,7 @@ module DryDep_ml
               end if
               if ( DEBUG_DRYDEP .and. lossfrac < 0.1 ) then
                   call datewrite( "LOSSFRACING ", nadv, (/ 1.0*iL, &
-                    !SUB0 Grid%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
+                  !SUB0 Grid%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
                     Sub(0)%Vg_Ref(n), DepLoss(nadv), vg_fac(ncalc), lossfrac /) )
                   call CheckStop( lossfrac < 0.1, "ERROR: LOSSFRAC " )
               end if
@@ -762,7 +759,6 @@ module DryDep_ml
 
 
             if ( DEBUG_DRYDEP .and. debug_flag ) then
-            !if ( n == CDDEP_SO2 .and. iL == 1 ) then ! SO2, CF
             if ( iL == 1 ) then ! SO2, CF
 
                if ( vg_set(n) )  then
@@ -771,9 +767,9 @@ module DryDep_ml
                else
                  write(6,"(a,3i3,f8.5,5f8.3)") "FLUXFRAC ", iiL, iL, nadv, &
                   Sub(iL)%coverage, &
-                  100.0*Sub(0)%Vg_Ref(ncalc), & ! Mosaic_VgRef(ncalc,0), & ! GRID
-                  100.0*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic_VgRef(ncalc,iL), &
-                  100.0*Sub(iL)%coverage*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic_VgRef(ncalc,iL), &
+                  100.0*Sub(0)%Vg_Ref(ncalc), &  ! GRID
+                  100.0*Sub(iL)%Vg_Ref(ncalc), & ! Mosaic VgRef &
+                  100.0*Sub(iL)%coverage*Sub(iL)%Vg_Ref(ncalc), & 
                    fluxfrac_adv(nadv,iL)
                end if
             end if !SO2 CF
@@ -808,17 +804,15 @@ module DryDep_ml
           end if
        end do GASLOOP2 ! n
 
-!     call DryDep_Budget(i,j,Deploss,convfac)
-! Explicit here:
+    !  DryDep Budget terms
+
       convfac =  convfac/amk(KMAX_MID)
       do n = 1, NDRYDEP_ADV
          nadv    = DDepMap(n)%ind
          totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
-         !wastotddep( nadv ) = totddep (nadv) + DryLoss(nadv)
       enddo
 
-       ! inv_gridarea = xm2(i,j)/(GRIDWIDTH_M*GRIDWIDTH_M)
-       convfac2 = convfac * xm2(i,j) * inv_gridarea !DONE:/amk(KMAX_MID)
+       convfac2 = convfac * xm2(i,j) * inv_gridarea
 
 
       !.. Add DepLoss to budgets if needed:

@@ -145,9 +145,6 @@ implicit none
                                  ,QDUCO = 2     ! production of coarse dust
 
 
-   !/** Lightning and aircraft NOx. 
-    logical, public, parameter :: AIRNOX      = .true.   ! Gives NOx emission
-
    !/** Volcanos. 
     logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes from VolcanoesLL.dat 
                                                           ! and disregard them from gridSOx

@@ -44,6 +44,8 @@ private
 logical, public, parameter :: USE_CONVECTION   = .false.
 logical, public, parameter :: USE_SOILWATER    = .false.
 logical, public, parameter :: USE_FOREST_FIRES = .false.
+logical, public, parameter :: USE_AIRCRAFT_EMIS= .true.
+logical, public, parameter :: USE_LIGHTNING_EMIS= .true.
 logical, public, parameter :: USE_SOIL_NOX     = .false.
 logical, public, parameter :: USE_BVOC_2010    = .false.
 logical, public, parameter :: USE_DUST         = .false.
@@ -108,8 +110,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 70+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 
 integer, public, parameter ::  &
-  NPROCX      =   8        & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   3        & ! Actual number of processors in longitude
+, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================

@@ -53,8 +53,7 @@
                      !,VOLCANOES   & ! 
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
-                     ,VERTFAC     & ! vertical emission split
-                     ,AIRNOX        !aircraft emissions or not
+                     ,VERTFAC      ! vertical emission split
   use EmisGet_ml, only : EmisGet, EmisSplit, &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
         ,iqrc2itot                   &  !maps from split index to total index
@@ -73,6 +72,7 @@
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               DEBUG_SOILNO, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
+                              USE_AIRCRAFT_EMIS, &
                               USE_SOIL_NOX
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -804,7 +804,7 @@ contains
         integer ::kstart,kend,nstart,Nyears
         real ::buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
 
-if(AIRNOX)then
+if( USE_AIRCRAFT_EMIS )then
 !AIRCRAFT
 kstart=KCHEMTOP
 kend=KMAX_MID

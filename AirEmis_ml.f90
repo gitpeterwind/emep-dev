@@ -41,7 +41,8 @@ module AirEmis_ml
   !
   !  
    use Par_ml               , only : MAXLIMAX, MAXLJMAX, limax,ljmax, me
-   use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC
+   use ModelConstants_ml    , only : KCHEMTOP, KMAX_MID, KMAX_BND, NPROC,&
+           USE_LIGHTNING_EMIS
    use Io_ml                , only : IO_AIRN, IO_LIGHT, ios, open_file
    use GridValues_ml        , only : glon,glat, GRIDWIDTH_M
    use PhysicalConstants_ml , only : AVOG
