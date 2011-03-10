@@ -79,8 +79,8 @@ mg done   EcoSystem_ml.f90
           Functions_ml.f90
           global2local.f90
           GlobalBCs_ml.f90
-          GridAllocate_ml.f90
-          GridValues_ml.f90
+mg done   GridAllocate_ml.f90
+mg done   GridValues_ml.f90
           InterpolationRoutines_ml.f90
           Io_ml.f90
           Io_Nums_ml.f90
