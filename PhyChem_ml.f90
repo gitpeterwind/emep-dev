@@ -54,7 +54,7 @@ module PhyChem_ml
                         ,DEBUG_PHYCHEM, PPBINV  & 
                         ,END_OF_EMEPDAY & ! (usually 6am)
                         ,IOU_INST       & !
-                        ,FORECAST       & ! use advecdiff_poles on FORECAST mode
+                        ,FORECAST       & !use advecdiff_poles on FORECAST mode
                         ,SOURCE_RECEPTOR
    use Nest_ml,        only : readxn, wrtxn
    use Par_ml,         only : me, MAXLIMAX, MAXLJMAX
@@ -120,10 +120,9 @@ contains
 
         call wrtxn(current_date,.false.) !Write xn_adv for future nesting
         call readxn(current_date) !Read xn_adv from earlier runs
-        if (FORECAST .and. numt == 2 .and. nstep == 1) call hourly_out() !Zero hour output
+        if(FORECAST.and.numt==2.and.nstep==1)call hourly_out()!Zero hour output
 
-!        ==================
-         call Code_timer(tim_before)
+        call Code_timer(tim_before)
 
         call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")
@@ -163,8 +162,9 @@ contains
 ! Up north in the EMEP-CWF domain, mapfactors go up to four,
 ! so using advecdiff_poles pays off, even though none of the poles are
 ! included in the domain.
-! For efficient parallellisation each subdomain needs to have the same work load,
-! This can be obtained by setting NPROCY=1 (number of subdomains in latitude- or y-direction).
+! For efficient parallellisation each subdomain needs to have the same work 
+! load; this can be obtained by setting NPROCY=1 (number of subdomains in 
+! latitude- or y-direction).
 ! Then, all subdomains have exactly the same geometry.
 !        if( (Pole_included==1.or.FORECAST).and. &
 !            trim(projection)==trim('lon lat'))then
@@ -266,12 +266,12 @@ contains
                  modulo(current_date%hour, FREQ_SONDE) == 0 ) &
               call siteswrt_sondes(xn_adv,xn_shl)
 
-            if ( (.not.SOURCE_RECEPTOR .or. FORECAST) .and. NHOURLY_OUT > 0 .and. &
+            if ((.not.SOURCE_RECEPTOR.or.FORECAST).and.NHOURLY_OUT > 0 .and. &
                  modulo(current_date%hour, FREQ_HOURLY) == 0 ) &
               call hourly_out()
 
           end if
-          !hf CoDep
+          !CoDep
              if ( modulo(current_date%hour, 1) == 0 ) & !every hour
                   call make_so2nh3_24hr(current_date%hour,&
                   xn_adv(IXADV_SO2,:,:,KMAX_MID),&
