@@ -52,7 +52,7 @@
                                 , EQUILIB_MARS      = .false.  & !MARS
                                 , EQUILIB_EQSAM     = .true.     !EQSAM
                                 
-    logical, public, parameter :: SEASALT = .true. , AOD = .false. 
+!    logical, public, parameter :: SEASALT = .true. , AOD = .false. 
  
  !.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
     integer, public, parameter :: NSIZE = 3
