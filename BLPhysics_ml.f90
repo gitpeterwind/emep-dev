@@ -10,12 +10,6 @@ module BLPhysics_ml
  implicit none
  private
 
-! Queries  
-! - should we keep this min value. Very high for stable?
-! - max value also seems high. We used to use 2500 m
-! real, parameter, public :: PZPBL_MIN=200.   ! Amela's
-! real, parameter, public :: PBL_ZiMAX=5000.  ! Amela's
-
 !ds minimum value now generally calculated as z_mid(19), but we
 !   keep a fixed value for smoothing. 
  real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
@@ -29,7 +23,7 @@ module BLPhysics_ml
 
 ! Choose one Kz method here. Prefered method is likely to use O'brien
 ! in convective, Jericevic in Stable.
- logical, parameter, public  :: NWP_Kz=.false.     ! hb 23.02.2010 Kz from meteo 
+ logical, parameter, public  :: NWP_Kz=.false. ! hb 23.02.2010 Kz from meteo 
  logical, parameter, public  :: USE_MIN_KZ =.false. ! "fix"
   character(len=2), parameter, public :: KzMethod = &
      "--"   ! Set U, S separately, preferred? :
@@ -66,7 +60,6 @@ public :: JericevicKz
 public :: O_BrienKz
 
 ! Misc
-!OLD public :: TI_BLphysics
 public :: fake_zmid
 public :: fake_zbnd
 public :: risig1
@@ -74,14 +67,14 @@ public :: risig1
 ! Test all
 public :: Test_BLM
 
-
-!Conversions
+! Conversions
 public :: SigmaKz_2_m2s ! hb 23.02.2010 Kz from meteo
  private :: SigmaKz_2_m2s_scalar  ! function to get factor
  private :: SigmaKz_2_m2s_arrays  ! subrouitne for 3d arrays
 public :: Kz_m2s_toSigmaKz
 
-! conversion of Kz in sigma coordinates to m2/s, from HF Kz(sigma)=Kz*ro**2*(GRAV/p*)**2
+! Conversion of Kz in sigma coordinates to m2/s,
+! from HF Kz(sigma)=Kz*ro**2*(GRAV/p*)**2
 ! We can call this conversion routine as either scalar or array
   interface SigmaKz_2_m2s
      module procedure SigmaKz_2_m2s_scalar
@@ -127,7 +120,6 @@ end function JericevicKz
 
 
 !----------------------------------------------------------------------------
-
 ! Two Rib-based mixing height methods.
 ! Seibert et al., AE, 2000, pp1001-,  eqn (9): 
 ! Jericevic et al., ACP, 2009,  eqn (17): 
@@ -142,7 +134,7 @@ subroutine SeibertRiB_Hmix_3d (u,v, zm, theta, pzpbl)
   real, intent(out) :: pzpbl(:,:)
   integer :: k, n, kmax
   real, parameter :: Ric = 0.25  ! critical Ric
-  real,dimension(size(pzpbl,1),size(pzpbl,2)) :: RiB, Theta1   ! pot temp of lowest cell
+  real,dimension(size(pzpbl,1),size(pzpbl,2)) :: RiB, Theta1 ! pot temp of lowest cell
 
 ! Seibert et al., AE, 2000, pp1001-,  eqn (9): 
 ! Although we should use virtual pot temp, not just theta
@@ -180,16 +172,15 @@ subroutine SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
 
    Theta1 = theta(KMAX_MID)
    do k=KMAX_MID-1, KWINDTOP, -1
-
-       Rib =      GRAV * zm(k) &
+      Rib =      GRAV * zm(k) &
              *(theta(k)-Theta1 ) / &
              ( Theta1 * ( u(k)**2 + v(k)**2 )+EPS )
              !print *, k, zm(k), theta(k), sqrt(( u(k)**2 + v(k)**2 )),  RiB
-       if(Rib >= Ric) then
-              pzpbl = zm(k)
-              exit
-       endif
-    enddo
+      if(Rib >= Ric) then
+             pzpbl = zm(k)
+             exit
+      endif
+   enddo
 
 end subroutine SeibertRiB_Hmix
 
@@ -203,7 +194,7 @@ subroutine JericevicRiB_Hmix (u,v, zm, theta, zi)
   integer :: k
   real, parameter :: Ric = 0.25  ! critical Ric
   real :: Rib  ! bulk Richardson number
-  real :: Theta1, z1   ! pot temp  and height of lowest cell
+  real :: Theta1, z1  ! pot temp  and height of lowest cell
 
 ! Jericevic et al., ACP, 2009, pp1001-,  eqn (17): 
 
@@ -222,15 +213,13 @@ subroutine JericevicRiB_Hmix (u,v, zm, theta, zi)
        endif
     enddo
 
-   !QUERY  pzpbl=min(pzpbl,pzpbl_max )
-   !QUERY  pzpbl=max(pzpbl, pzpbl_min)
 end subroutine JericevicRiB_Hmix
 
  !----------------------------------------------------------------------------
 function Venkatram_Hmix (ustar) result(zi)
   real, intent(in) :: ustar
   real :: zi
-  ! From Venkatram, 1980, super-simple method!
+  ! From Venkatram, 1980, simple method!
 
      zi = 2.4e3 * ustar**1.5
 
@@ -273,12 +262,12 @@ subroutine PielkeBlackadarKz (u,v, zm, zb, th, Kz, Pielke_flag, debug_flag)
   real :: dvdz
 
  !..the following variables in sigmas-levels:
- !
-  do  k=2,KMAX_MID
+
+   do k=2,KMAX_MID
 
       km=k-1
 
-     !..wind sheer (first keep as squared)
+      !..wind sheer (first keep as squared)
 
       dvdz = (u(km)-u(k))**2 + (v(km)-v(k))**2 + EPS 
 
@@ -290,7 +279,6 @@ subroutine PielkeBlackadarKz (u,v, zm, zb, th, Kz, Pielke_flag, debug_flag)
       !
        xl2=(KARMAN*min(zb(k),zmmin))**2
 
-      !
       !..............................
       !..critical richardsons number:
       !
@@ -312,7 +300,7 @@ subroutine PielkeBlackadarKz (u,v, zm, zb, th, Kz, Pielke_flag, debug_flag)
          end if
       else
 
-         !..exchange coefficient (blackadar, 1979; iversen & nordeng, 1987):
+         !..exchange coefficient (Blackadar, 1979; Iversen & Nordeng, 1987):
          !
          if(Ris(k) <= 0.0) then
             Kz(k)=xl2*dvdz*sqrt(1.1-87.*Ris(k))
@@ -325,7 +313,7 @@ subroutine PielkeBlackadarKz (u,v, zm, zb, th, Kz, Pielke_flag, debug_flag)
          endif
       end if ! Pielke or Blackadar
 
-  end do ! k
+   end do ! k
 end subroutine PielkeBlackadarKz
 
  !----------------------------------------------------------------------------
@@ -333,31 +321,32 @@ end subroutine PielkeBlackadarKz
  !----------------------------------------------------------------------------
 subroutine Test_BLM (mm,dd,hh,ss,fH,u,v, zm, zb, pb, exnm, &
           th, Kz, Kz_nwp, invL, ustar, zi )
-  integer, intent(in) :: mm, dd, hh, ss   ! date
-  real, intent(in)               :: fh    ! heart flux, -ve = Unstable
-  real, dimension(:), intent(in) :: u,v   ! winds
-  real, dimension(:), intent(in) :: exnm  ! mid-cell exner function (CP*)
-  real, dimension(:), intent(in) :: zm    ! mid-cell height
-  real, dimension(:), intent(in) :: zb    ! cell boundary height
-  real, dimension(:), intent(in) :: pb    ! pressure at boundaries
-  real, dimension(:), intent(in) :: th    !pot. temp
-  real, dimension(:), intent(in) :: Kz    ! Kz  (m2/s) 
+  integer, intent(in) :: mm, dd, hh, ss    ! date
+  real, intent(in)               :: fh     ! heart flux, -ve = Unstable
+  real, dimension(:), intent(in) :: u,v    ! winds
+  real, dimension(:), intent(in) :: exnm   ! mid-cell exner function (CP*)
+  real, dimension(:), intent(in) :: zm     ! mid-cell height
+  real, dimension(:), intent(in) :: zb     ! cell boundary height
+  real, dimension(:), intent(in) :: pb     ! pressure at boundaries
+  real, dimension(:), intent(in) :: th     ! pot. temp
+  real, dimension(:), intent(in) :: Kz     ! Kz  (m2/s) 
   real, dimension(:), intent(in) :: Kz_nwp ! Kz from NWP if available/used
-  real, intent(in)               :: ustar ! m/s
-  real, intent(in)               :: invL  ! 1/m
-  real, intent(in)               ::  zi   !pot. temp
+  real, intent(in)               :: ustar  ! m/s
+  real, intent(in)               :: invL   ! 1/m
+  real, intent(in)               :: zi     ! pot. temp
   integer :: k
 
   real, dimension(size(Kz)) :: &
     Kz_OB   &! Kz  O'Brien
-   ,Kz_AJ   &! Kz  Amela
-   ,Kz_BW   &! Kz   Brost-Wynaargd, unstable
+   ,Kz_AJ   &! Kz  Amela Jericevic
+   ,Kz_BW   &! Kz  Brost-Wynaargd, unstable
    ,Kz_PBT  &! Kz  Pielke+Blackader, Pielke flag=T
-   ,Kz_PBF   ! Kz   "   "   flag=F
+   ,Kz_PBF   ! Kz    "   "   flag=F
   real :: ziSeibert, ziJericevic, ziVenki, ziTI
 
     write(*,*)"HmixMETHOD "//HmixMethod
-    write(*,*)"KzMETHOD "//KzMethod//"-U:"//UnstableKzMethod//"-S:"//StableKzMethod
+    write(*,*)"KzMETHOD "//KzMethod//"-U:"//UnstableKzMethod// &
+              "-S:"//StableKzMethod
 
     call PielkeBlackadarKz (u,v, zm, zb, th, Kz_PBT, &
               Pielke_flag=.true., debug_flag=.false.)
@@ -382,7 +371,7 @@ subroutine Test_BLM (mm,dd,hh,ss,fH,u,v, zm, zb, pb, exnm, &
   !/ Kz *************************************************
     write(*,"(a,4a3,a7,a9,9a8)") "DEBUG_Kz: ", "mm", "dd", "hh", "k", &
            "fh", "zb", "pzpbl", &
-           "Kz_m2s", "Kz_nwp", "Kz_PBT", "Kz_PBF", "Kz_OB", "KBW", "KAJ"!, "Kmin"
+           "Kz_m2s", "Kz_nwp", "Kz_PBT", "Kz_PBF", "Kz_OB", "KBW", "KAJ"
 
     Kz_OB(:) = Kz_PBT(:) ! sim to orig emep
     Kz_BW(:) = Kz_PBT(:) ! sim to orig emep
@@ -411,9 +400,12 @@ subroutine Test_BLM (mm,dd,hh,ss,fH,u,v, zm, zb, pb, exnm, &
     end do
 
     ! Write out as arrays for plotting:
-    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_nwp ", mm, dd, hh, zi, (Kz_nwp(k),k=5,20)
-    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_PBT ", mm, dd, hh, zi,  (Kz_PBT(k),k=5,20)
-    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_AJ  ", mm, dd, hh, ziJericevic, (Kz_AJ(k), k=5,20)
+    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_nwp ", mm, dd, hh, zi, &
+            (Kz_nwp(k),k=5,20)
+    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_PBT ", mm, dd, hh, zi, &
+            (Kz_PBT(k),k=5,20)
+    write(*,"(a,3i3,25f7.1)") "KZMAT Kz_AJ  ", mm, dd, hh, ziJericevic, &
+            (Kz_AJ(k), k=5,20)
 
 end subroutine Test_BLM
 
@@ -504,9 +496,6 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
 
    zi = zis
 
- !
-  !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  !....................................
   !..height of unstable boundary layer:
   !
   !..assuring that th is increasing with height.
@@ -532,8 +521,6 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
   !..estimated as the height to which an hour's input
   !..of heat from the ground is vertically distributed,
   !..assuming dry adiabatic adjustment.
-  !
-  !
 
   delq=-min(fh,0.0)*DTZ
      thsrf=0.0
@@ -547,7 +534,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
 
      !------------------------------------------------------------
      ! calculating the height of unstable ABL
-     !
+
     kabl = KMAX_MID
     do while( trc == 1)
         kabl = kabl-1
@@ -557,8 +544,8 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
            xdth = thc(kabl)-thc(k)
            dpidth = exnm(k)*xdth*(pb(k+1)-pb(k))/GRAV
            pidth = pidth + dpidth
-          !   if ( debug_flag ) write(6,"(a,2i3,6es11.3,i4)") "DEBUG PID ",&
-          !    kabl, k, xdth, exnm(k), pb(k),  dpidth, pidth 
+          ! if ( debug_flag ) write(6,"(a,2i3,6es11.3,i4)") "DEBUG PID ",&
+          ! kabl, k, xdth, exnm(k), pb(k),  dpidth, pidth 
         end do
 
        if(pidth >= delq.and.trc == 1  ) then
@@ -579,8 +566,8 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
         endif
 
 
-            if ( debug_flag ) write(6,"(a,i3,es10.3,i5)") "DEBUG mid ", &
-              kabl, delq, trc 
+        if ( debug_flag ) write(6,"(a,i3,es10.3,i5)") "DEBUG mid ", &
+             kabl, delq, trc 
         if(kabl <= 4 .and. trc == 1  ) then
 
            write(6,*)'PBL ziu calculations failed!', fh
@@ -633,7 +620,6 @@ end subroutine TI_Hmix
 
       !...................................................................
       !..air density at ground level is always calculated diagnostically:
-      !
 
       ux3 = ustar*ustar*ustar
 
@@ -653,13 +639,11 @@ end subroutine TI_Hmix
      dKzdz = Kzhs*(1.-0.5*16.0*hsl/(1.0-16.0*hsl))/hs
 
      Kz(KMAX_MID)=Kzhs  ! QUERY - should be at z_bnd(20)?
-     if ( debug_flag ) write(*,"(a,f7.2,3es12.3)") "OBRIEN Kz20 ", hs, invL, Kzhs, dKzdz
+     if ( debug_flag ) write(*,"(a,f7.2,3es12.3)") "OBRIEN Kz20 ", &
+        hs, invL, Kzhs, dKzdz
      if ( 16.0*hsl >= 1.0 ) then
         write(*,"(a,f7.2,4es12.3)") "OBRIEN NEG ", hs, hsl,  Kzhs, dKzdz
      end if
-
-!QUERY    if(zi <  PBL_ZiMIN ) then
-!RETURN maybe?
 
    !..exchange parameter at z = ziu
 
@@ -698,7 +682,7 @@ end subroutine TI_Hmix
 
   end subroutine O_BrienKz
  !----------------------------------------------------------------------------
-  function risig1(ws,th1,th2,z)    ! Amela, not used in new version
+  function risig1(ws,th1,th2,z) ! Amela Jericevic, not used in new version
    !calculates the bulk Richardson number
       implicit none
       real, intent(in) :: ws   ! wind-speed
@@ -820,11 +804,3 @@ subroutine Kz_m2s_toSigmaKz (Kz,roa,ps,SigmaKz)
 end subroutine Kz_m2s_toSigmaKz
 
 end module BLPhysics_ml
-
-!program testBLM
-!  use ModelConstants_ml, only : KMAX_MID
-!  use BLPhysics_ml
-!  real, dimension(KMAX_MID) :: u,v,zm,theta
-!  real :: pzpbl
-!  call SeibertRiB_Hmix (u,v, zm, theta, pzpbl)
-!end program testBLM
