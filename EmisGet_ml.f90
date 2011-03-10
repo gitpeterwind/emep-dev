@@ -39,16 +39,17 @@
   use ChemSpecs_tot_ml,  only: NSPEC_TOT 
   use ChemChemicals_ml,  only: species
   use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country, &
-                               IC_NMR ! hb NH3Emis
+                               ! NMR-NH3 specific variables (hb NH3Emis)
+                               IC_NMR 
   use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
                                NEMIS_FILES, EMIS_NAME, &
-                               ISNAP_SHIP, ISNAP_NAT, &
-                               NH3EMIS_VAR,dknh3_agr, ISNAP_AGR,ISNAP_TRAF&! hb NH3emis
-                               ,VOLCANOES_LL
+                               ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
+                               ! NMR-NH3 specific variables (hb NH3Emis)
+                               NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF
   use GridAllocate_ml,   only: GridAllocate
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
-                             Read_Headers, read_line
-  use KeyValue_ml,    only: KeyVal
+                               Read_Headers, read_line
+  use KeyValue_ml,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
                                MasterProc
@@ -59,10 +60,10 @@
   implicit none
   private
 
- !/* subroutines:
+ ! subroutines:
 
   public  :: EmisGet           ! Collects emissions of each pollutant
-  public  :: EmisSplit         ! => emisfrac, Speciation of voc, pm25, etc.
+  public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
   private :: femis             ! Sets emissions control factors 
 
 
@@ -76,10 +77,10 @@
   real, private, save, &
          dimension(NSECTORS,NLAND,NEMIS_FILES)  :: e_fact 
 
-  !/* emisfrac is used at each time-step of the model run to split
-  !   emissions such as VOC; PM into species. 
+  ! emisfrac is used at each time-step of the model run to split
+  ! emissions such as VOC, PM into species. 
 
-  integer, public, parameter :: NMAX=NSPEC_ADV ! good guess for max
+  integer, public, parameter :: NMAX = NSPEC_ADV 
   integer, public, save :: nrcemis, nrcsplit
   integer, public, dimension(NEMIS_FILES) , save :: emis_nsplit
   real, public,allocatable, dimension(:,:,:), save :: emisfrac
@@ -88,7 +89,7 @@
   integer, public, dimension(NEMIS_FILES), save :: Emis_MolWt
   real, public,allocatable, dimension(:), save :: emis_masscorr
 
-  !/ some common variables
+  ! some common variables
   character(len=40), private :: fname             ! File name
   character(len=80), private :: errmsg
 
@@ -102,7 +103,7 @@
                      globemis_flat,flat_globnland,flat_globland)
 
 !.......................................................................
-!**    DESCRIPTION:
+!  DESCRIPTION:
 !  Reads in emissions from one file, specified by iemis. 
 !  The arrays read in here are the global arrays (allocatable)
 !.......................................................................
@@ -124,8 +125,8 @@
                                                      ! country(after e_fact) 
 
   !--local
-  integer :: flat_iland, flat_nc,       &
-             i, j, isec, iland, k, nc,  &  ! loop variables
+  integer :: flat_iland,                &
+             i, j, isec, iland,         &  ! loop variables
              iic,ic                        ! country code (read from file)
   real    :: duml,dumh                     ! dummy variables, low/high emis.
   real, dimension(NSECTORS)  :: tmpsec     ! array for reading emission files
@@ -136,9 +137,9 @@
    !>============================
  
     if ( my_first_call ) then
-         sumemis(:,:) =  0.0       ! Initialise sums
+         sumemis(:,:) =  0.0       ! initialize sums
          ios = 0
-         call femis()              ! emission factors (femis.dat file).
+         call femis()              ! emission factors (femis.dat file)
          if ( ios /= 0 )return
          my_first_call = .false.
     endif
@@ -186,10 +187,12 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                  j  <=  0 .or. j  >  GJMAX .or.   &
                  ic <=  0 .or. ic >  NLAND .or.   &
                  ic == IC_NAT              .or.   &  ! Excludes DMS
-                 (ic == IC_VUL .and. VOLCANOES_LL) )&! Excludes Volcanoes from gridSOx. Read from VolcanoesLL.dat instead
+                 (ic == IC_VUL .and. VOLCANOES_LL) )&! Excludes Volcanoes 
+                                                     ! from gridSOx. Read from
+                                                     ! VolcanoesLL.dat instead
              cycle READEMIS
 
-             !/* Ship emissions
+             ! Ship emissions
 
              if ( Country(ic)%is_sea ) then    ! ship emissions
 
@@ -199,7 +202,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               ! has already  been found within that grid. If not, then ic is
               ! added to flat_landcode and flat_nlandcode increased by one.
    
-              !/** Test that ship emissions are only in sector ISNAP_SHIP
+              ! Test that ship emissions are only in sector ISNAP_SHIP
                do isec=1,(ISNAP_SHIP-1) 
                   call CheckStop(tmpsec(isec) /= 0,  &
                         "EmisGet: NOT FLAT EMISSIONS")
@@ -208,7 +211,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                   call CheckStop(tmpsec(isec) /= 0,  &
                         "EmisGet: NOT FLAT EMISSIONS")
                enddo
-              !/** end test
+              ! end test
 
                call GridAllocate("FLat",i,j,ic,FNCMAX, flat_iland, &
                    flat_ncmaxfound,flat_globland,flat_globnland)
@@ -221,7 +224,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                      + e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)
 
               !......................................................
-              !..        Sum over all sectors, store as Ktonne:
+              !        Sum over all sectors, store as Ktonne:
               !......................................................
 
                  sumemis(ic,iemis) = sumemis(ic,iemis)   &
@@ -232,7 +235,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
 
               !.......................................................
-              !/**  Volcanos
+              !  Volcanos
               !.......................................................
 
               if ( trim ( emisname ) == "sox" ) then
@@ -257,7 +260,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              endif ! so2
 
              !..............................................................
-             !/** end Volcanoes
+             ! end Volcanoes
              !..............................................................
 
 
@@ -266,14 +269,15 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
              if ( trim ( emisname ) == "voc" ) tmpsec(11:11) = 0.0
   
-            ! NH3emis      (EXPERIMENTAL!)
+            ! NH3emis (EXPERIMENTAL for NMR-NH3 project)
             ! For NH3 activity data, set 'static emissions' to zero
             ! For northwestern Europe, read in Sector_NH3Emis.txt in run.pl
-            ! Traffic emis are zero in the danish emissions, so I leave them
-             if (NH3EMIS_VAR .and.  trim ( emisname ) == "nh3" .and. ic == IC_NMR) then
+            ! Traffic emis are zero in the Danish emissions
+             if (NH3EMIS_VAR .and.  trim ( emisname ) == "nh3" .and.&
+                 ic == IC_NMR) then
                 dknh3_agr=dknh3_agr+ tmpsec(ISNAP_AGR)+tmpsec(ISNAP_TRAF)
-                tmpsec(ISNAP_AGR:ISNAP_AGR) = 0.0!
-                tmpsec(ISNAP_TRAF:ISNAP_TRAF) = 0.0!
+                tmpsec(ISNAP_AGR:ISNAP_AGR) = 0.0
+                tmpsec(ISNAP_TRAF:ISNAP_TRAF) = 0.0
              endif
 
 
@@ -285,20 +289,17 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               call GridAllocate("SNAP"// trim ( emisname ),i,j,ic,NCMAX, &
                                  iland,ncmaxfound,globland,globnland)
 
-             ! ...................................................
-             ! ...................................................
-
               globemis(:,i,j,iland) = globemis(:,i,j,iland) &
                         + e_fact(:,ic,iemis) *  tmpsec(:)
 
 
-             !..        Sum over all sectors, store as Ktonne:
+             ! Sum over all sectors, store as Ktonne:
 
               sumemis(ic,iemis) = sumemis(ic,iemis)   &
                                   + 0.001 * sum (globemis (:,i,j,iland))
               
         end do READEMIS 
-        !
+        
         close(IO_EMIS)
         ios = 0
   end subroutine EmisGet
@@ -331,11 +332,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                        ,inland                     & ! Country read from femis
                        ,isec, isec1 , isec2        & ! loop vars: emis sectors
                        ,ncols, n, oldn               ! No. cols. in "femis" 
-  integer, parameter        :: NCOLS_MAX = 20      ! Max. no. cols. in "femis"
-  integer, dimension(NEMIS_FILES) :: qc           ! index for sorting femis columns
-  real, dimension(NCOLS_MAX):: e_f                 ! factors read from femis
-  character(len=200) :: txt                         ! For read-in 
-  character(len=20), dimension(NCOLS_MAX)::  polltxt! to read line 1
+  integer, parameter        :: NCOLS_MAX = 20  ! Max. no. cols. in "femis"
+  integer, dimension(NEMIS_FILES) :: qc        ! index for sorting femis columns
+  real, dimension(NCOLS_MAX):: e_f             ! factors read from femis
+  character(len=200) :: txt                    ! For read-in 
+  character(len=20), dimension(NCOLS_MAX)::  polltxt ! to read line 1
  !--------------------------------------------------------
 
 
@@ -352,8 +353,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   call CheckStop( ios < 0 ,"EmisGet:ios error in femis.dat")
 
 
-  !/** Reads in the header line, e.g. name sec sox nox voc. 
-  !    Pollutant names wil be checked against those defined in My_Emis_ml **/
+  ! Reads in the header line, e.g. name sec sox nox voc. 
+  ! Pollutant names wil be checked against those defined in My_Emis_ml 
 
   read(unit=IO_EMIS,fmt="(a200)") txt
   write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
@@ -364,7 +365,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   call CheckStop( ncols > NCOLS_MAX , "EmisGet:femisncols ncols > NCOLS_MAX" )
    if(ios>0)return
 
-  !/** we allow the femis file to give factors in any order, and
+  !    we allow the femis file to give factors in any order, and
   !    for pollutants not needed, so we need to work out the indices
   !    for each column. Remember also that ncols includes the 1st
   !    2 columns (country_code and sector), which are not e_factors
@@ -407,9 +408,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
       if (inland == 0 ) then     ! Apply factors to all countries
           iland1 = 1 
           iland2 = NLAND
-      else                       !  Apply factors to country "inland"
+      else                       ! Apply factors to country "inland"
 
-!.. find country number  corresponding to index as written in emisfile
+! find country number  corresponding to index as written in emisfile
          do iland1=1,NLAND
             if(Country(iland1)%index==inland) goto 544
          enddo
@@ -471,7 +472,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 !-------------------------------------------------------------------------   
-!** DESCRIPTION:
+!  DESCRIPTION:
 !  Sets speciation for emissions to be splitted as defined in My_Emissions, 
 !  e.g. VOC, PM, NOx, per source category for each country from input files. 
 !  Done for species where NEMISFRAC > 1
@@ -487,12 +488,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 !------------------------------------------------------------------------- 
 
   !-- local
-  integer ::  ie                  ! emission index in EMIS_NAME (1..NEMIS_FILES)
-  integer ::  isp                 ! emission index in 1..NEMIS_SPLIT
-  integer ::  itot                !  Index in IX_ arrays
+  integer ::  ie             ! emission index in EMIS_NAME (1..NEMIS_FILES)
+  integer ::  itot           ! Index in IX_ arrays
   integer ::  iqrc           ! index of split compound in emisfrac   
 
-  integer, parameter :: NONREACTIVE = 1   ! No.columns of non-reactive species
+  integer, parameter :: NONREACTIVE = 1   ! No. columns of non-reactive species
                                           ! enforced for read-ins.
 
   !-- for read-ins, dimension for max possible number of columns: 
