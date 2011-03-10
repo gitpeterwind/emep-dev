@@ -4,6 +4,8 @@
 \usepackage{color}
 \usepackage{url}
 \usepackage{rotating}
+\usepackage[hypertex]{hyperref}
+\usepackage{parskip}
 %\usepackage[Sonny]{fncychap}
 %\usepackage[Bjarne]{fncychap}
 %\usepackage[Lenny]{fncychap}
@@ -23,15 +25,19 @@
 
 \begin{document}
 %\begin{landscape}
- 
+
 \title{The Unified EMEP Model - User's Guide}
 %\date{(draft 25th Sept 2007)}
 \maketitle
 
-\input{general}
-\input{Inputs}
-\input{Outputs}
-\input{running}
+\tableofcontents
+
+\input{Intro}
+\input{Input}
+\input{Output}
+\input{Subrun}
+
+\input{references}
 
 % More coding comments .....
 %\input{Structure}   %  - same as in cookbook

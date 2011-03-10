@@ -1,0 +1,218 @@
+\chapter{Submitting a Run}
+\label{ch:SubmitARun}
+
+In this chapter we provide detailed information on how to run the
+regional Unified EMEP model for two different types of
+simulations, namely: 
+
+\begin{itemize}
+
+\item {\bf Base run} \\
+This is the default set up for yearly transport model calculations
+in 50x50 km$^2$ grid. 
+\item{\bf Scenario run} \\
+ A run with reduced emissions from a particular country or several
+ countries is called 
+a ``Scenario run''. It is the basic type of run for source-receptor
+calculations. 
+
+\end{itemize}
+
+\noindent
+Details about the submission of these
+different types of runs are given below. We suggest that users test
+the ``Base run'' first, which can be done without significant changes in
+the code itself. One can also use the outputs of such a run in the
+future as a reference run for the other simulations.\\  
+% 
+% As explained in the previous chapters, once the model tar file is
+% untarred and all the files are located in the directory called
+% {\sl Unify/Unimod.rv3\_7/}, one can find the run script with name
+% ``modrun.sh'' in this 
+% directory.
+
+\newpage
+\section{Base run}
+
+This is an example of a minimum modrun.sh script to run the model.
+
+
+\begin{verbatim}
+#!/bin/bash
+
+#Minimum script to run the emep model
+
+#link to the input data
+inputdir=./Base
+ln -s $inputdir/* .
+
+#define some input data
+trendyear=2008 #emission year
+runlabel1=rv3_7 #short label
+runlabel2=Opensource_setup #long label
+startyear=2008 #start year (metdata)
+startmonth=1 #start month (metdata)
+startday=1 #start day (metdata)
+endmonth=1 #end month (metdata)
+endday=31 #end day (metdata)
+
+#put input data into a temporary file called INPUT.PARA
+cat>>    'INPUT.PARA'<<    EOF
+$trendyear
+$runlabel1
+$runlabel2
+$startyear
+$startmonth
+$startday
+$endmonth
+$endday
+EOF
+
+#run the model
+mpirun Unimod
+
+#clean the links to the input data
+ls $inputdir|xargs rm
+rm INPUT.PARA
+
+\end{verbatim}
+
+The script is pretty self-explanatory, first the script links 
+all the input files so you check if all the input files are in 
+the right directory. 
+The trendyear can be set to change the boundary emissions for 
+earlier and future years, see the modules {\bf BoundaryConditions\_ml.f90 } 
+and {\bf GlobalBCs\_ml.f90 } to understand better what the trendyear 
+setting does. 
+The runlabel1 option sets the name of the different output netCDF 
+files. 
+Startyear has to be set equal to the year 
+that the metdata is available. The period you want to run the 
+EMEP model is set with startmonth, and startday and the last day is 
+set with endmonth and endday. \\
+
+It is recommended to submit the script as a batch job. Please check the submission soutine 
+on the computer system you are running on. 
+When setting the number of nodes, it is important that it equals to the number set in the fortran module 
+{\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with NPROCX and 
+NPROCY. The sum of these two is the number of nodes used. \\
+
+When the job is no longer model is finnished or has crashed for some reason, there will be an output log file and 
+an error file in the directory. If the run was successful, a message stating 
+\begin{verbatim}
+Eulmod: Successful exit atCET ..date..
+\end{verbatim}
+will be stated at the end of the log file, before listing up site and sonde files. 
+The model results will also produced in the same directory, or you can set you own working directory in 
+the script. For more information about the model results output files, see chapter \ref{ch:output}.\\
+
+If for some reason 
+the model crashed, please check both the log and error file for any clue of the crash. After fixing the 
+problem the job can be submitted again. If the model has crashed, then the links to the inputdatas are not cleaned. 
+
+The script can also be submitted interactivelly, and either have the output be written to the screen or to 
+named output log and error files. 
+ 
+
+
+\subsection{Setting the model domain}
+
+It is possible to run the model on a smaller domain than the full
+regional model domain, which is defined by  x coordinates ranging
+from 1 to 132 and y coordinates ranging from 1 to 159. 
+
+To set a smaller domain, one needs only to specify the
+coordinates of the new domain in {\bf RUNDOMAIN} in the Fortran module
+called {\bf ModelConstants\_ml.f90}. For example:
+
+
+\begin{verbatim}
+  
+   !                    x0   x1  y0   y1
+        RUNDOMAIN = (/  36, 100, 50, 150 /)  ! smaller EECCA domain
+
+\end{verbatim}
+
+tells the model to run in the domain with x coordinates ranging from
+36 to 100 and y coordinates from 50 to 150.\\ 
+
+\section{Scenario run}
+
+The EMEP  model can be used to test the impact of reduced emission of
+one or more pollutants from a particular country or a number of
+countries.  Such runs are called ``Scenario runs''. They are the basic
+runs for source-receptor calculations.
+
+
+Emission factors for reduced emissions of pollutants from different
+sectors and countries can be defined in the input file called
+``femis.dat'', which can be found in the downloaded input data
+directory, {\sl input\_data/Common/}.
+
+An example of the ``femis.dat'' file for a base run is shown below:
+
+\begin{verbatim}
+------------------------------------------
+Name  5     sox    nox   voc   nh3  pm25
+27    0     1.0    1.0   1.0   1.0  1.0  
+
+------------------------------------------
+\end{verbatim}
+
+\noindent
+This base run example means that there is 100\% (1.0) emission of sox (SO$_x$),
+nox (NO$_x$), voc (VOC), nh3 (NH$_3$) and pm25 (PM$_{2.5}$) from all
+sectors in the UK. 
+
+\begin{itemize}
+
+\item The first column of
+the second line represents the country code. (27 is the code for UK.)
+The codes for all countries can be found in  Fortran module {\bf
+  Country\_ml.f90}. Please note that the country code must be the same
+which is used in the emission files for the given country. Some
+countries and areas are divided into sub-areas in the emission
+files. In this case, one line for each sub-area has to be included
+into the ``femis.dat'' file. Countries and areas where emissions are
+given for sub-areas include the Russian Federation, Germany and all 
+sea areas.    
+
+\item The second
+column of the second line 
+represents the sector and ``0'' means all sectors. Here one can write
+the appropriate sector code if the emission is reduced only from a specific
+sector. The description of each sector can also be found in the Fortran
+module {\bf EmisDef\_ml.f90}. 
+
+\item The columns under the pollutant names show the emission factors
+  for the given pollutants. For example, 0.7 would mean 70\% of the
+  original emission, thus 30\% reduction.
+
+
+\item The number (``5'') following
+the first text (``Name'') in the first line gives the number of
+pollutants treated in the file.   
+              
+\end{itemize}
+
+An example of ``femis.dat'' file describing 50\% reduced emission of
+``sox'' from sector 10 (the emission from agriculture) in the UK can be given as:  
+
+\begin{verbatim}
+-----------------------------------------
+Name  5    sox    nox   voc   nh3  pm25 
+27    10   0.5    1.0   1.0   1.0  1.0   
+
+-----------------------------------------
+\end{verbatim}        
+
+For a scenario run ``femis.dat'' file should be edited 
+manually depending on the factor of
+reduction one would like to test with any pollutant from any sector
+and/or any country. Several lines can be written in the file.
+
+Once the ``femis.dat''  file is
+edited, the run can be submitted.  
+
+
+

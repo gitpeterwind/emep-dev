@@ -1,175 +1,215 @@
-\chapter{Introduction}
+\chapter{Welcome to EMEP }
 
-This guide gives a brief documentation of the EMEP unified model.
-It is intended to complement the CookBook, with a more
-in-depth guide for users 
-wishing to understand or change 
+This guide gives a brief documentation of the Unified EMEP model
+version rv.3\_7.
+It is intended primarily as a guide on how to run the model, and
+to help users wishing to understand or change 
 the model in terms of domains, outputs, chemistry, etc.
-This guide is also intended to guide new programming with a few
-simple ideas and rules.
+% This guide is also intended to give some advice on new programming with a few
+% simple ideas and rules.
 
 The main documentation for the model is given in:
 
 \begin{itemize}
 \item
 D.~Simpson, H.~Fagerli, J.E. Jonson, S.~Tsyro, P.~Wind, and J.-P. Tuovinen.
-{The EMEP Unified Eulerian Model. Model Description}.
+{The Unified EMEP Eulerian Model. Model Description}.
 EMEP MSC-W Report 1/2003, The Norwegian
 Meteorological Institute, Oslo, Norway, 2003.
 \item
-Fagerli, H., Simpson, D., and Tsyro, S., {Unified EMEP model: Updates}, in {\em
-  EMEP Report 1/2004, Transboundary acidification, eutrophication and ground
-  level ozone in Europe. Status Report 1/2004\/}, pp. 11--18, The Norwegian
-  Meteorological Institute, Oslo, Norway, 2004.
+H.~Fagerli and D.~Simpson and S.~Tsyro,
+%L.Tarrason, H. Fagerli, J.E. Jonson, H. Klein, M van Loon, D. Simpson,
+%        S. Tsyro, V. Vestreng, P. Wind, M. Posch, S. Solberg, T. Spranger,
+%        K. Cuvelier, P. Thunis and L. White., Unified EMEP model: Updates,
+        in EMEP Status Report 1/2004 (Tarrason, L. {\sl et al.}), Transboundary acidification, eutrophication
+        and ground level ozone in Europe, Status Report 1/2004, Chapter 2 (pp~11-18), The
+        Norwegian Meteorological Institute, Oslo, Norway, 2004. 
+
 \end{itemize}
 
-Copies of both reports can be obtained from \url{www.emep.int}. An HTML
-copy of EMEP report 1/2003 is available at \url{www.emep.int/UniDoc/index.html}.
+ Copies of both reports can be obtained from the EMEP website: \\
+\url{http://www.emep.int}, and a HTML copy of EMEP Status Report
+1/2003 is
+available at 
+\url{http://www.emep.int/UniDoc/index.html}
 
+The model source code is available from the  EMEP Open Source
+  website: \url{http://www.emep.int/OpenSource/index.html}
 
+\section{Licenses and Caveats}
 
+The EMEP code is provided under the GNU General Public License version 3
+(\url{http://fsf.org} and/or
+\url{http://www.gnu.org/copyleft/gpl.html}).
+\newpage 
+Each code module is prefaced with something like:
 
-The main documentation for each subroutine should be contained within
-each subroutine (and updated regularly!).
-
-\section{First steps}
-
-Learn how to use ``run.pl'' (or grun.pl) - the perl scripts which generates
-the appropriate Makefile and fortran files. run.pl allows
-the user to change time-period, domain, inputs, etc., without
-having to change any fortran files by hand. The procedure for running
-this is somehwat different on the Linux cluster and  Origin (gridur)
-machines.
-
-An extract from run.pl:
 \begin{verbatim}
-#!/usr/local/bin/perl
-#
-# To submit on GRIDUR with say 32 processors, put grun.pl into work directory, 
-# and from there do something like:
-#
-#    bsub -n 32 -o log.out < grun.pl
-.....
-
-$year = "2000";        # Meteorology and emissions year
-
-my $SR = 0;            #NEW Set to 1 for source-receptor stuff
-
-# iyr_trend:
-# :can be set to meteorology year or arbitrary year, say 2050
-
-$iyr_trend = $year;  
-$iyr_trend = "2010" if $SR ;  # 2010 assumed for SR runs here
-
-print "Year is $yy YEAR $year Trend year $ir_trend\n";
-
-if ( $year == 2000 ) {
-  $MetDir = "/work/mifads/metdata/$year" ;
-...
-}
-
-#---  User-specific directories (changeable)
-
-$DAVE        = "/home/u2/mifads";      
-$PETER       = "/home/u4/mifapw";      
-
-$USER        =  $DAVE ;      
-
-#ds - simplified treatment of BCs and emissions:
-
-$OZONE = 1, $ACID = 0;     # Specify model type here
-
-$version     = "Unimod" ;  
-$Split       = "BASE_MAR2004" ;               #  -- Scenario label for MACH - DS
-$ProgDir     = "$USER/Unify/Unimod.$testv";   # input of source-code
-$MyDataDir   = "$USER/Unify/MyData";          # for each user's femis, etc.
-$DaveDataDir = "$DAVE/Unify/MyData";          # for each user's femis, etc.
-$DataDir     = "$DAVE/Unify/Data";      # common files, e.g. ukdep_biomass.dat
-$PROGRAM     = "$ProgDir/$version";         # programme
-$WORKDIR     = "$WORK{$USER}/Unimod.$testv.$year";    # working directory
-
-......
-$emisdir     = "$SVETLANA/Unify/MyData/emission/2004_emis00_V2";
-
-# Specify small domain if required. 
-#                 x0   x1  y0   y1
-@largedomain = (   1, 171,  1, 133 ) ;
-@smalldomain = (  18, 169,  7, 124 ) ;     # OSPAR/HELCOM domain+border-south
-
-$RESET        = 0   ;  # usually 0 (false) is ok, but set to 1 for full restart
-$COMPILE_ONLY = 0   ;  # usually 0 (false) is ok, but set to 1 for compile-only
-$INTERACTIVE  = 0   ;  # usually 0 (false), but set to 1 to make program stop
-                       # just before execution - so code can be run interactivel.
-
-$NDX   = 8;           # Processors in x-direction
-$NDY   = 4;           # Processors in y-direction
-if ( $INTERACTIVE ) { $NDX = $NDY = 1 };
-
-$mm1   =  1;       # first month
-$mm2   =  3 ;      # last month
-
-$NTERM_CALC =  calc_nterm($mm1,$mm2);
-
-$NTERM =   $NTERM_CALC;    # sets NTERM for whole time-period
-  # -- or --
- $NTERM = 2;       # for testing, simply reset here
-
-  print "NTERM_CALC = $NTERM_CALC, Used NTERM = $NTERM\n";
-
-# <---------- end of normal use section ---------------------->
+! <EXAMPLE_CODE.f90 - A component of the EMEP MSC-W Unified Eulerian
+!          Chemical transport Model>
+!*****************************************************************************!
+!*
+!*  Copyright (C) 2007 met.no
+!*
+!*  Contact information:
+!*  Norwegian Meteorological Institute
+!*  Box 43 Blindern
+!*  0313 OSLO
+!*  NORWAY
+!*  email: emep.mscw@met.no
+!*
+!*    This program is free software: you can redistribute it and/or modify
+!*    it under the terms of the GNU General Public License as published by
+!*    the Free Software Foundation, either version 3 of the License, or
+!*    (at your option) any later version.
+!*
+!*    This program is distributed in the hope that it will be useful,
+!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
+!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!*    GNU General Public License for more details.
+!*
+!*    You should have received a copy of the GNU General Public License
+!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!*****************************************************************************!
 \end{verbatim}
-%OLDIf we let \$hdir be the user's home directory (e.g. Unify/Unimod.rv2_1) and
-%OLD\$wdir be the work directory (e.g. /work/mifads/Unimod.rv2_1.1997), then
-%OLDwe can submit a job for 8 processors either interactively or as a batch job,
-%OLDas illustrated in Table~\ref{RUNPL}.
-%OLD
-%OLD
-%OLD\begin{small}
-%OLD\begin{table}
-%OLD\begin{tabular}{|llcl|}\hline
-%OLD                     &   Cluster    &  & Gridur                \\ \cline{2-2} \cline{4-4}
-%OLD  & & & \\
-%OLDInteractive          &   cd \$hdir  &  & cd \$wdir              \\
-%OLD                     &   run.pl     &  & cp \$hdir/grun.pl .    \\
-%OLD                     &              &  & grun.pl               \\
-%OLD  & & & \\
-%OLDBatch                &   cd \$hdir  &  & cd \$wdir              \\
-%OLD                     &              &  & cp \$hdir/grun.pl .    \\
-%OLD                     &              & & bsub -n 8 -q express grun.pl \\
-%OLD                     &              &  &                        \\ \hline
-%OLD\end{tabular}
-%OLD\caption{ Submission of run-scripts on cluster and gridur
-%OLD  \label{RUNPL}
-%OLD}
-%OLD\end{table}
-%OLD\end{small}
-%OLD
-%OLD
-%OLDThe first option is for interactive use - it will link all files
-%OLDand set the model running. For this option a version of the model with
-%OLDsmall domain (e.g. 40x40) and using not more than 8 processors is
-%OLDrequired (see below).
-%OLD
-%OLDThe second option is for batch use. Any number of processors
-%OLDis possible, although between 8 and 32 will ensure a faster throughput.
-%OLDThe number specified here must match that in the run.pl script
 
-\subsection{The *.pat, Make.log files}
+And a copy of the license file, {\bf gpl.txt}, is provided with the
+model code source files.
 
-The Par\_ml.f90 file needs to be changed when the model domain or
-number of processor used is changed. Rather than 
-do this by hand, or keep multiple copies  for all
-conceivable options, 
-the `pattern' file {\bf Par\_ml.pat} is 
-used. When run.pl is run, this is converted into the
-appropriate  Par\_ml.f90 with the relavent domain and
-processor number as specified in the run.pl script. This
-methodology is intended to simplify the process of changing 
-domains and processors, and ensure consistsent Makefiles
-and Par\_ml.f90. 
+\noindent It is important to note that the code is provided ``as it is'', 
+and EMEP/MSC-W has very limited resources with which to support
+code-usage. An {\bf EMEP Forum} is set up and are available from the
+EMEP Open Source website in section ``Users'': ``EMEP Forum''
+to help users, and hopefully to let users help other users.
+Support to the user community will develop here with your
+contribution. 
+Please let us know what your needs for information are 
+(e-mail: emep.mscw@met.no).
 
-The values used for domain, and processor number (NDX and NDY)
-are stored after compilation in the Make.log file. run.pl
-reads this file, and recompiles the programme if the
-domain or processor information have changed. 
 
+\section{Computer Information}
+
+To compile the Unified EMEP model you need:\\
+
+\textbf{Fortran 95 compiler}
+
+\textbf{NetCDF Library ($>$3.5.1)}
+
+\textbf{MPI Library ($>$1.0)}\\
+
+It is necessary to compile with double precision reals (8 bytes
+reals). The program has been used on computers ranging from a Linux laptop to supercomputers 
+(Itanium2 cluster, Intel Xeon cluster, Cray XT4, IBM power5+). It is compatible with all 
+compilers tested so far:  Intel, PGI, gfortran, XL fortran. Examples of Makefiles are provided 
+with the model code source files.
+
+The code has been tested with 1 to 1024 CPU, and scales well (for large grids).  If only one 
+CPU is used 1-2 GB memory is required and if more than one,
+for example 64 CPU are used, 200 MB of memory per CPU is enough (in
+the case of a 132 X 159 grid size). For runs on more than 32 CPU, a fast interconnect is 
+recommended (infiniband for example), for smaller runs, gigabit ethernet is sufficient. 
+It takes $\sim$3.5 hrs on 64*Xeon X5355 (2.66GHz) for 1 year simulation.
+
+When downloading input data in order to do a ``base run'' please make
+sure that there are 35 Gb disc space available, especially due to
+large meteorology input files.
+
+ 
+
+\section{Getting Started}
+
+
+It is recommended to read all the chapters of this Unified EMEP model
+User Guide before you start downloading anything from the EMEP Open
+Source website.
+
+Please register as an EMEP User on the {\bf EMEP Forum}
+(EMEP Open Source website under ``Users'' section: ``EMEP Forum'')
+before you start downloading the Unified EMEP model code and/or input
+data. This will give you access to further communication with the
+developing team and to the section on ``Questions and Answers''. 
+
+
+This is what you need to do before you can do a ``base run'' with the
+Unified EMEP model:
+
+\begin{itemize}
+\item Register as an EMEP User
+\item Read the Unified EMEP model User Guide
+\item
+Download input data (description in Chapter~\ref{ch:InputFiles} and
+data available from the EMEP Open Source website under ``Download''
+section: ``Input Data'')
+\item
+Download the Unified EMEP model source code (description in 
+section~\ref{sec:ModelCode} and the files are available from the EMEP 
+Open Source website under ``Download'' section: ``Model Cod'')
+\item
+Follow the instructions for 'Submitting a Run' description in
+Chapter~\ref{ch:SubmitARun}.% and/or on the EMEP Open Source website
+%under ``Documentation'' section: ``Submitting a run'')
+\item
+Download some model results for comparison (description in
+Chapter~\ref{ch:output} and the files are available from the EMEP 
+Open Source website under ``Download'' section: ``Model Results'')
+\end{itemize}
+
+\section{Model code}
+\label{sec:ModelCode}
+
+The Unified EMEP model code version rv3\_7 are archived into a tar file. 
+The tar file is called ``EMEP\_Unified\_model.tar'' and is downloadable from
+the EMEP Open Source website.
+
+All model files needed for a model run will be found under the
+directory {\bf Unify/Unimod.rv3\_7/} where the model source code, 
+makefiles, the runscript and a copy of the license file are stored, 
+once this tar file is untarred. An overview is given in 
+Table~\ref{Tab:modelfiles}
+
+\begin{table}[h]
+\begin{center}
+\caption{Contents of ``EMEP\_Unified\_model.tar'' file
+   \label{Tab:modelfiles}}
+\begin{tabular}{ll}
+& \\
+\hline
+Type      & Filename          \\
+\hline
+& \\
+{\bf Model code directory} & Unify/Unimod.rv3 \\ 
+\hline
+modules files & *.f90 \\
+include files & *.inc \\
+makefiles & Makefile\_* \\
+run script & modrun.sh \\
+a copy of the licence & gpl.txt \\
+\hline
+\end{tabular}
+\end{center}
+\end{table}
+
+The model source code is written in Fortran 90/95 programming language.
+There are three makefiles provided. ``Makefile'' is for a SGI Origin 3800
+computer, ``Makefile\_snow'' is for an Itanium2 cluster and the
+``Makefile\_njord'' is for an IBM power5+ cluster. The run script, 
+``modrun.sh'', is written in Perl and is initially meant for an Itanium2
+cluster. A detailed description about  how to handle this script
+is given in Chapter~\ref{ch:SubmitARun}, ``Submitting a Run''.  
+
+
+\section{Model grid}
+\label{sec:ModelGrid}
+
+The current EMEP model version and the provided input data
+have a horizontal resolution of 50$\times$50 km$^2$ and are defined on a
+polar stereographic projection with 20 sigma levels vertically. 
+The model uses the same horizontal and vertical grid resolution as the 
+meteorological data provided with the model. The physical
+description is given in detail in Chapter 2 of the EMEP Status Report
+1/2003 Part I (Simpson {\sl et al.}, 2003).
+
+The technical description of the EMEP model grid is also given on the 
+EMEP website:
+\url{http://www.emep.int/grid/index.html} with details of the projection, and
+conversion to/from latitude-longitude coordinates.

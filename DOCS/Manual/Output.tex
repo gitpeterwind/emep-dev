@@ -1,0 +1,226 @@
+\chapter{Output files}
+\label{ch:output}
+
+
+
+Output files from a model run are written out in either ASCII, or
+(for most data outputs) in netCDF format into the working directory. 
+The model will write out the output files in the same directory as the model 
+code, if there is not a working directory path set. 
+
+
+The different netCDF files will be called after the runlabel1 set in the modrun.sh script 
+described in Chapter \ref{ch:SubmitARun}.
+
+
+\begin{table}
+\caption[List of model output files]{List of output files written in the
+  working directory after a  model run. 
+Note: YY: year, MM: month.}
+\vspace{1cm}
+
+%\begin{small}
+\hspace{-1cm}
+\begin{tabular}{lll}
+\hline\hline
+{\bf Output data files} &  {\bf Short description} & {\bf Format}\\
+\hline\hline
+    rv3\_7\_day.nc & Gridded daily values of a selection & netCDF\\
+&   of compounds.& \\ \hline
+    rv3\_7\_hour.nc &Gridded hourly values of a selection &
+    netCDF\\  
+ &  of compounds.& \\\hline
+    rv3\_7\_inst.nc &Gridded instantaneous values of a selection
+     & netCDF\\
+ &  of compounds.& \\\hline
+    rv3\_7\_month.nc & Gridded monthly values of a selection&
+    netCDF\\
+ &  of compounds.& \\\hline
+    rv3\_7\_fullrun.nc & Gridded yearly values of a selection&
+    netCDF\\
+ &  of compounds. & \\\hline
+    sites.MMYY & Surface daily values of a selection&  ASCII\\
+ & of stations and compounds per month.& \\\hline
+    rv3\_7.sites.tgz & All the ``sites.MMYY'' files in one zipped tar file. & ASCII\\\hline
+    sondes.MMYY & Vertical daily values of a selection& ASCII\\
+ &  of stations and compounds per month.& \\\hline
+    rv3\_7.sondes.tgz& All the ``sondes.MMYY'' files in one zipped tar file.&
+    ASCII\\ 
+& &\\ 
+& &\\ \hline\hline
+{\bf Additional files} &  {\bf Short description} & {\bf Format}\\
+\hline\hline
+    rv3\_7\_RunLog & Total emissions of different air   & ASCII\\
+ & pollutants per country& \\\hline
+eulmod.res & Mass budget of different compounds & ASCII\\\hline
+% INPUT.PARA & List of input parameters & ASCII\\\hline
+% Remove.sh & Removes the links to the input data at the& ASCII\\
+% & end of the run&\\\hline
+Timing.out & Timing log file& ASCII \\\hline
+ 
+\hline
+\end{tabular}
+%\end{small}
+
+\label{Tab:outputs}
+\end{table}
+
+
+
+\section{Ascii outputs: sites and sondes}\label{sec:sitesonde}
+
+
+Two main options are available for the output of ascii files for comparison
+with measurements or detailed model analysis. These are
+
+\begin{description}
+\item[sites]  
+
+      output of surface concentrations for a set of specified
+      measurement site locations.
+\item[sondes] 
+
+      output of concentrations for the vertical column above
+     a set of specified locations.
+\end{description}
+
+Both sites and sondes are specified and handled in similar ways, in
+the module {\bf Sites\_ml}, so we treat them both together below.
+Locations are specified in input files ('sites.dat' and 'sondes.dat')
+whose directory-locations should be specified in {\bf run.pl}.
+sites.dat and sondes.dat start with a description of the file contents
+followed by a list of the stations. For example, a sondes.dat file
+may look like this:
+
+\begin{small}
+\begin{verbatim}
+# "Sondes: names, locations, elevations"
+# "Area: Northern Hemisphere"
+# "latitude in degrees (positive north)"
+# "longitude in degrees (positive east of Greenwich)"
+: Units deg
+: Coords LatLong
+: VertCoords EMEPsigma
+: DomainName Hemis
+#
+name lat long lev #HEADERS
+-    deg deg level #SKIP
+#DATA:
+Uccle             50.80    4.35  20  ! comment
+Lerwick           60.13   -1.18  20  ! comment
+Sodankyla         67.39   26.65  20  ! comment
+Ny_Alesund        78.93   11.88  20  ! comment
+Hohenpeissenberg  47.80   11.02  20  ! comment
+\end{verbatim}
+\end{small}
+
+Or, in cases where latitudes and longitudes are used rather than grid
+indices to specify the locations of the stations:
+
+\begin{small}
+\begin{verbatim}
+# "Sondes: names, locations, elevations"
+# "Area: EMEP-Europe"
+# "ix: x coordinate"
+# "iy: y coordinate"
+# "lev: vertical coordinate (20=ground)"
+: Units index
+: Coords ModelCoords
+: VertCoords EMEPsigma
+: DomainName EMEP-50kmEurope
+#
+name ix iy lev #HEADERS
+-    index index level #SKIP
+#DATA:
+Col_Dome          104   45  20  ! comment
+Sonnblick         109   55  20  ! comment
+Colle_Gnifetti    105   47  20  ! comment
+Schauinsland      101   51  20  ! comment
+Mt._Zeppelin       59  104  20  ! comment
+\end{verbatim}
+\end{small}
+
+
+The first line in each file is a header telling what is in the file.
+Then, the contents are described in more detail. Text strings after
+\# are just clarifying comments. 'Area', e.g., is the domain to which
+the stations belong, e.g. 'Northern Hemisphere'.
+
+Text after ':' is read in by the model:\newline
+- Units: either 'deg' (degrees) or 'index' (model grid indices)\newline
+- Coords: either 'LatLong' (latitudes/longitudes) or 'ModelCoords'
+(indices of the grid box in which the station is located)\newline
+- VertCoords: vertical coordinate system that is used in the model (usually
+'EMEPsigma')\newline
+- DomainName: domain, for which the model is run (e.g. 'Global\_1x1' or 'Hemis')\newline
+
+
+Both sites.dat and sondes.dat files are optional, but recommended.
+\newline
+The species and meteorological data required are specified in {\bf My\_Outputs}
+through the use of arrays. Only a few met fields are defined so far but
+more can be added into {\bf Sites\_ml} as required. The outputs consist
+of a header giving the number of sites used, species/met data used, and
+then actual values specified with a 5es10.3 format. For the sonde data
+values are given for all 20 levels, starting with the ground-level values.
+
+
+
+
+\section{Netcdf outputs, Derived fields}
+
+{\bf modules My\_Derived\_ml, Derived\_ml }\\
+
+% My\_Derived\_ml:\\
+% \begin{itemize}
+%   \item Constructs arrays wanted\_deriv2d, wanted\_deriv3d, listing
+%    the outputs which the user wants in netcdf fields.
+% \end{itemize}
+% 
+% Derived\_ml:\\
+% \begin{itemize}
+%   \item Contains definitions of possible output fields
+%   \item Allocates data arrays d\_2d and d\_3d for those
+%     fields which were requested in My\_Derived\_ml	
+% \end{itemize}
+
+The netCDF output files can contain both 2D and 3D data fields. The module 
+{ \bf Derived\_ml.f90 } contains an extensive set of predifined outputs. 
+The user may choose which of these possible data fields should be written 
+into the output files by modifying the module called { \bf My\_Derived\_ml.f90}.\\
+
+Most datafiels are defined by the array {\bf OutputConcs }. A defined output 
+field for ozone in ppb is for example given  as:
+\begin{verbatim}
+ typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
+\end{verbatim}
+
+This will give a 'SURF\_ppb\_O3' 2-dimensional field in the output netCDF file for 
+the fullrun, monthly and daily output. 
+Setting the dimensions to 3D will give an additional 3-dimensional field. 
+
+
+Other arrays where output fields are given are D2\_SR, D2\_EXRTA,\
+ VEGO3\_WANTED and 
+WDEP\_WANTED. Other fields are also defined in { \bf My\_Derived\_ml.f90 } e.g. for dry 
+depositions, emissions, canopy etc. \\
+
+
+
+It is also worth noting that from default the maximum field of 2- and 3-dimensional fileds 
+are 200 and 5 respectivelly. These can be changed with MAX\_NUM\_DERIV2D and MAX\_NUM\_DERIV3D 
+in { \bf My\_Derived\_ml.f90 }.
+
+
+The output frequency is set in { \bf Derived\_ml.f90 }, for example for the surface fields:
+
+\begin{verbatim}
+ call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
+               -99,  -99,  F,  1.0,  T,   IOU_DAY )
+\end{verbatim}
+
+ Where the IOU\_DAY setting gives the field in the fullrun.nc, month.nc in addition to the day.nc 
+model output files. IOU\_MON gives the field in the fullrun.nc and the month.nc file. 
+
+
+
