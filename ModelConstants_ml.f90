@@ -65,8 +65,8 @@ character(len=4),public, save, dimension(NBVOC) :: &
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
 character(len=*), parameter, public :: &
-  DomainName = "EMEP-50kmEurope"
-! DomainName = "EMEP-50kmEECCA"
+! DomainName = "EMEP-50kmEurope"
+  DomainName = "EMEP-50kmEECCA"
 ! DomainName = "EMEPCWF-0.25degEurope"
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
@@ -75,24 +75,23 @@ logical, parameter, public :: IS_GLOBAL = .false.
 
 integer, public, parameter ::  &
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
-  IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
-! IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
+ IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
 ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
 ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
 ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
 ! IIFULLDOM = 321, JJFULLDOM = 221 ! .... full MACC 0.20 domain
 
-!ds - I added these offsets, but now suspect I was thinking wrong.
 ! The difference between EMEP and EECCA is confusing...
 integer, public, parameter :: &
-  OFFSET_i=  0, OFFSET_j=  0    ! EMEP
-! OFFSET_i=-35, OFFSET_j=-11    ! EECCA
+! OFFSET_i=  0, OFFSET_j=  0    ! EMEP
+ OFFSET_i=-35, OFFSET_j=-11    ! EECCA
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
+ RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! EMEP domain in EECCA
-  RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
 ! RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
 ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
@@ -104,13 +103,10 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
 ! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
 ! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
-! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
-! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 70+OFFSET_j,  110+OFFSET_j /) ! (changeable)
+
 
 integer, public, parameter ::  &
-  NPROCX      =   3        & ! Actual number of processors in longitude
+  NPROCX      =   4        & ! Actual number of processors in longitude
 , NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
@@ -187,7 +183,7 @@ integer, public, parameter :: &
   ,DEBUG_IOPROG         = .false. &
   ,DEBUG_MOSAICS        = .false. &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
-    ,DEBUG_AEROSOL      = .false. & ! ... needed for indented debugs are to work
+    ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_MY_WETDEP    = .false. &
     ,DEBUG_SOA          = .false. &
     ,DEBUG_SOLVER       = .false. &
@@ -230,11 +226,12 @@ logical, public, parameter :: FORECAST = .false.
 logical, public, parameter :: NH3_U10 = .false.
 
 ! Nesting modes:
-! produces netcdf dump of concentrations if wanted, or initialises mode runs from
-! such a file. Used in Nest_ml
+! produces netcdf dump of concentrations if wanted, or initialises mode runs 
+! from such a file. Used in Nest_ml
 
-integer, public, parameter ::NEST_MODE=0  !0=donothing , 1=write , 2=read , 3=read and write,
-!10=write at end of run, 11=read at start, 12=read at start and write at end (BIC)
+integer, public, parameter ::NEST_MODE=0  !0=donothing , 1=write , 2=read , 
+!3=read and write, 10=write at end of run, 11=read at start, 12=read at 
+!start and write at end (BIC)
 
 
 !=============================================================================
@@ -275,15 +272,15 @@ integer, public, parameter :: NTDAY = 72
 integer, parameter, public :: CHEMTMIN=148,CHEMTMAX=333
 
 real, public, parameter :: &
-  V_RAIN     = 5.          & !pw approximate vertical speed of rain m/
-, CLOUDTHRES = 1.0e-5        !pw when cloudwater is larger than
-                              !CLOUDTHRES, there are clouds.
-                              !THIS VALUE MUST BE CHECKED BEFORE USE!
+  V_RAIN     = 5.          & !approximate vertical speed of rain m/
+, CLOUDTHRES = 1.0e-5        !when cloudwater is larger than
+                             !CLOUDTHRES, there are clouds.
+
 real, public, parameter :: &
   CW_THRESHOLD = 1.0E-7&!Cloudwater (kg/kg); above threshold allow possibility
                         ! for precipitations. Value could be adjusted.
 , RH_THRESHOLD = 0.85   !Relative humidity (fraction); above threshold allow
-                        ! possibility for precipitations.Value could be adjusted.
+                        !possibility for precipitations.Value could be adjusted.
 !
 !  additional parameters
 !
