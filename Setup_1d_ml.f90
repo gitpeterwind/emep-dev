@@ -1,9 +1,9 @@
 ! <Setup_1d_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
-!* 
+!*****************************************************************************!
+!*
 !*  Copyright (C) 2007 met.no
-!* 
+!*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
 !*  Box 43 Blindern
@@ -11,20 +11,20 @@
 !*  NORWAY
 !*  email: emep.mscw@met.no
 !*  http://www.emep.int
-!*  
+!*
 !*    This program is free software: you can redistribute it and/or modify
 !*    it under the terms of the GNU General Public License as published by
 !*    the Free Software Foundation, either version 3 of the License, or
 !*    (at your option) any later version.
-!* 
+!*
 !*    This program is distributed in the hope that it will be useful,
 !*    but WITHOUT ANY WARRANTY; without even the implied warranty of
 !*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 !*    GNU General Public License for more details.
-!* 
+!*
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
 !_____________________________________________________________________________!
  module Setup_1d_ml
 
@@ -34,16 +34,15 @@
 
 
   !-----------------------------------------------------------------------!
-  !FUTURE use NH3variables_ml,       only : NNH3 ! hb NH3emis   
+  !FUTURE use NH3variables_ml,       only : NNH3 ! hb NH3emis
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
-  use BoundaryConditions_ml, only : BGN_2D
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
   use DustProd_ml,           only :  DU_prod   ! Dust
   use EmisDef_ml,           only : NSS, NDU & !SeaS, Dust
-                                  ,NH3EMIS_VAR ! hb NH3Emis    
+                                  ,NH3EMIS_VAR ! hb NH3Emis
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP, SoilNOx
   use ForestFire_ml,         only : Fire_rcemis, burning
@@ -59,16 +58,16 @@
                                      GridArea_m2, & !dsbvoc
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB,&
-                                     i_fdom, j_fdom ! 
+                                     i_fdom, j_fdom !
   use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use MetFields_ml,          only :  ps
   use MetFields_ml,                only :  roa, th, q, t2_nwp, cc3dmax &
                                     ,zen, Idirect, Idiffuse,z_bnd
   use ModelConstants_ml,     only :  &
-     ATWAIR                          &        
-    ,DEBUG_SETUP_1DCHEM              & 
-    ,DEBUG_SETUP_1DBIO               & 
+     ATWAIR                          &
+    ,DEBUG_SETUP_1DCHEM              &
+    ,DEBUG_SETUP_1DBIO               &
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
@@ -76,7 +75,7 @@
     ,USE_LIGHTNING_EMIS              & !
     ,USE_SOIL_NOX, USE_DUST          & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
-    ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
+    ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis
   use My_Aerosols_ml,       only : SEASALT
   use Landuse_ml,            only : water_cover, ice_landcover
   use Par_ml,                only :  me& !!(me for tests)
@@ -89,11 +88,11 @@
     ,rcemis               &  ! emission terms
     ,rc_Rn222             &  ! for Pb210
     ,rcss, rcwbd          &  !Sea salt, Dust
-    ,rh, temp, tinv, itemp,pp      &  ! 
-    ,amk, o2, n2, h2o     &  ! Air concentrations 
+    ,rh, temp, tinv, itemp,pp      &  !
+    ,amk, o2, n2, h2o     &  ! Air concentrations
     ,rcbio                &  ! dsPCM
     ,rcnh3                   ! hb NH3emis
-  use SeaSalt_ml,        only : SS_prod 
+  use SeaSalt_ml,        only : SS_prod
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,           only :  current_date, date
   use Volcanos_ml
@@ -123,7 +122,7 @@ contains
     real              :: qsat ! saturation water content
 
     do k = KCHEMTOP, KMAX_MID
- 
+
   !- MFAC - to scale from  density (roa, kg/m3) to  molecules/cm3
   ! (kg/m3 = 1000 g/m3 = 0.001 * Avog/Atw molecules/cm3)
 
@@ -136,15 +135,15 @@ contains
       ! in LAM50 (and HIRLAM) often gives negative H2O....   :-(
 
        pp(k) = A_mid(k) + B_mid(k)*ps(i,j,1)
-       
+
        temp(k) = th(i,j,k,1)* Tpot_2_T( pp(k) )
 
        itemp(k) = nint( temp(k) -1.E-9) ! the "-1.E-9" is put in order to
-               ! avoid possible different roundings on different machines. 
+               ! avoid possible different roundings on different machines.
 
        qsat  = 0.622 * tab_esat_Pa( itemp(k) ) / pp(k)
-       rh(k) = min( q(i,j,k,1)/qsat , 1.0) 
-       rh(k) = max( rh(k) , 0.001) 
+       rh(k) = min( q(i,j,k,1)/qsat , 1.0)
+       rh(k) = max( rh(k) , 0.001)
 
         ! 1)/ Short-lived species - no need to scale with M
 
@@ -157,18 +156,18 @@ contains
               ispec = NSPEC_SHL + n
               xn_2d(ispec,k) = max(0.0,xn_adv(n,i,j,k)*amk(k))
         end do ! ispec
- 
+
         ! 3)/ Background species ( * CTM2 with units in mix. ratio)
         do n = 1, NSPEC_BGN
               xn_2d_bgn(n,k) = max(0.0,xn_bgn(n,i,j,k)*amk(k))
-        end do ! ispec   
+        end do ! ispec
 
    end do ! k
 
 ! Check that concentrations are not "contaminated" with NaN
    if ( .not.xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID)+1>&
                         xn_2d(IXADV_NO2+NSPEC_SHL,KMAX_MID) ) then
-      print *, "NANAN ", trim(species(IXADV_NO2+NSPEC_SHL)%name) 
+      print *, "NANAN ", trim(species(IXADV_NO2+NSPEC_SHL)%name)
    call CheckStop( "Detected non numerical concentrations (NaN)")
    end if
 
@@ -229,8 +228,8 @@ contains
     integer ::  i_help,j_help,i_l,j_l
 
 ! initilize
-    rcemis(:,:)=0.    
-    rcss(:,:) = 0.  !SeaS 
+    rcemis(:,:)=0.
+    rcss(:,:) = 0.  !SeaS
     rcwbd(:,:) = 0.  ! Dust
      do k=KEMISTOP,KMAX_MID
 
@@ -241,7 +240,7 @@ contains
      enddo
 
      !/** Add volcanoe emissions
-    
+
      if ( Volcanoes_found  ) then ! for models that include volcanos
                       !QRCVOL=QRCSO2 for models with volcanos
                       !For non-volc models it is set to dummy value 1
@@ -263,7 +262,7 @@ contains
            endif
         endif
      enddo
-    
+
      endif ! VOLCANOES
 
     !/** lightning and aircraft ... Airial NOx emissions if required:
@@ -272,7 +271,7 @@ contains
 
         do k=KCHEMTOP, KMAX_MID
 
-          rcemis(NO,k)  = rcemis(NO,k) &  
+          rcemis(NO,k)  = rcemis(NO,k) &
                               + 0.95 * (airn(k,i,j)+airlig(k,i,j))
           rcemis(NO2,k) = rcemis(NO2,k) &
                               + 0.05 * (airn(k,i,j)+airlig(k,i,j))
@@ -285,7 +284,7 @@ contains
      end if ! AIRNOX
 
      !/** Add sea salt production
-    
+
      if ( SEASALT  ) then
 
           do iqrc = 1, NSS
@@ -295,9 +294,9 @@ contains
      endif
 
      !/** Add windblown dust production
-    
+
      if ( USE_DUST  ) then
- 
+
           do iqrc = 1, NDU
             rcwbd(iqrc,KMAX_MID) = DU_prod(iqrc,i,j)
 
@@ -327,11 +326,11 @@ contains
 
    do k = KCHEMTOP,KMAX_MID
 
-       
+
        scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
 
        do iqrc = 1, NSPEC_ADV
-          
+
           itot = iqrc + NSPEC_SHL
           totem( iqrc ) = totem( iqrc ) + &
                 rcemis( itot, k ) * scaling_k
@@ -341,7 +340,7 @@ contains
           !end if
        end do
 
-   end do ! k loop 
+   end do ! k loop
 
   ! Soil Rn222 emissions from non-ice covered land, + water
   ! at rate of 1 atom/cm2/s
@@ -349,40 +348,40 @@ contains
      eland = 1.0 - water_cover(i,j) - ice_landcover(i,j)
 
 ! initialize, needed in My_Reactions
-     rc_Rn222(:)=0.0     
+     rc_Rn222(:)=0.0
 
 ! z_bnd is in m, not cm, so need to divide by 100.
      rc_Rn222(KMAX_MID) = &
             ( 0.00182 * water_cover(i,j)  + eland ) / &
-            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.) 
+            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
 
   end subroutine setup_rcemis
 
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
+  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
   subroutine reset_3d(i,j)
 
     integer, intent(in) :: i,j
     integer :: k, n, ispec, irc    ! loop variables
- 
- 
+
+
          do k = KCHEMTOP, KMAX_MID
- 
+
            ! 1)/ Short-lived species - no need to scale with M
 
             do n = 1, NSPEC_SHL
                xn_shl(n,i,j,k) = xn_2d(n,k)
             end do ! ispec
- 
+
            ! 2)/ Advected species
 
            do n = 1, NSPEC_ADV
               ispec = NSPEC_SHL + n
               xn_adv(n,i,j,k) = xn_2d(ispec,k)/amk(k)
            end do ! ispec
-  
+
          end do ! k
- 
+
    end subroutine reset_3d
    !---------------------------------------------------------------------------
 
@@ -392,31 +391,31 @@ end module Setup_1d_ml
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
    !FUTURE  subroutine setup_nh3(i,j)  ! EXPERIMENTAL
-   !FUTURE  !                                                                            
-   !FUTURE  !---- assign nh3 rates  ------------------------------------------------     
-   !FUTURE  !                                                                            
-   !FUTURE  !                                                                            
-   !FUTURE  !  use NH3 emission potential for each activity sector, T2 and wind          
-   !FUTURE  !                                                                            
-   !FUTURE  !  Output : rcnh3 - nh3 emissions for 1d column                              
-   !FUTURE  !                                                                            
-   !FUTURE  !  Called from Setup_1d_ml, every advection timestep                         
+   !FUTURE  !
+   !FUTURE  !---- assign nh3 rates  ------------------------------------------------
+   !FUTURE  !
+   !FUTURE  !
+   !FUTURE  !  use NH3 emission potential for each activity sector, T2 and wind
+   !FUTURE  !
+   !FUTURE  !  Output : rcnh3 - nh3 emissions for 1d column
+   !FUTURE  !
+   !FUTURE  !  Called from Setup_1d_ml, every advection timestep
    !FUTURE  !----------------------------------------------------------------------------
-   !FUTURE    !  input         
+   !FUTURE    !  input
    !FUTURE    use calc_emis_potential_ml, only :emnh3
    !FUTURE    integer, intent(in) ::  i,j
    !FUTURE    real ::scaling,scaling_k
    !FUTURE    real :: snh3
    !FUTURE    integer :: k
    !FUTURE
-   !FUTURE    !  local  
-   !FUTURE                                                     
+   !FUTURE    !  local
+   !FUTURE
    !FUTURE    rcnh3(:)=0.0
    !FUTURE    snh3=sum(emnh3(:,i,j))
    !FUTURE
    !FUTURE    if (NH3EMIS_VAR  )then
    !FUTURE
-   !FUTURE       rcnh3(KMAX_MID) = snh3 
+   !FUTURE       rcnh3(KMAX_MID) = snh3
    !FUTURE       scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
    !FUTURE
    !FUTURE       do k = KCHEMTOP,KMAX_MID

@@ -42,47 +42,45 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 !
 !*************************************************************************
 !
-  use My_Outputs_ml,    only : NHOURLY_OUT, &     ! No. outputs
-                               NLEVELS_HOURLY, &  ! No. output levels
-                               FREQ_HOURLY, &     ! No. hours between outputs
-                               Asc2D, hr_out, &   ! Required outputs
-                               Hourly_ASCII, &    ! ASCII output or not
-                               to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
-                               SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
-  use CheckStop_ml,     only : CheckStop
-  use Chemfields_ml,    only : xn_adv,xn_shl, cfac, PM25_water_rh50
-  use ChemGroups_ml,    only : chemgroups
-  use Derived_ml,       only : num_deriv2d        ! D2D houtly output type
-  use DerivedFields_ml, only : f_2d,d_2d          ! D2D houtly output type
-  use OwnDataTypes_ml,  only : Deriv
-  use ChemSpecs_shl_ml ,only : NSPEC_SHL          ! Maps indices
-  use ChemChemicals_ml ,only : species            ! Gives names
-  use GridValues_ml,    only : i_fdom, j_fdom     ! Gives emep coordinates
-  use Io_ml,            only : IO_HOURLY
-
-  use ModelConstants_ml,only : NPROC,KMAX_MID,DEBUG_i,DEBUG_j,TXTLEN_NAME,&
-                               identi,runlabel1,IOU_INST,IOU_HOUR,&
-                               IOU_YEAR,IOU_HOUR_PREVIOUS,MasterProc
-  use MetFields_ml,     only : t2_nwp,th, roa, surface_precip, &
-                               Idirect, Idiffuse, z_bnd
-  use NetCDF_ml,        only : Out_netCDF,Init_new_netCDF &
-                              ,Int1,Int2,Int4,Real4,Real8 !Output data type to choose
-  use Par_ml,           only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX    &
-                              ,li0,li1,lj0,lj1 &
-                              ,me,IRUNBEG,JRUNBEG,limax,ljmax
-  use TimeDate_ml,      only : current_date
+  use My_Outputs_ml,    only: NHOURLY_OUT, &     ! No. outputs
+                              NLEVELS_HOURLY, &  ! No. output levels
+                              FREQ_HOURLY, &     ! No. hours between outputs
+                              Asc2D, hr_out, &   ! Required outputs
+                              Hourly_ASCII, &    ! ASCII output or not
+                              to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
+                              SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
+  use CheckStop_ml,     only: CheckStop
+  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water_rh50
+  use ChemGroups_ml,    only: chemgroups
+  use Derived_ml,       only: num_deriv2d        ! D2D houtly output type
+  use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
+  use OwnDataTypes_ml,  only: Deriv
+  use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
+  use ChemChemicals_ml ,only: species            ! Gives names
+  use GridValues_ml,    only: i_fdom, j_fdom     ! Gives emep coordinates
+  use Io_ml,            only: IO_HOURLY
+  use ModelConstants_ml,only: KMAX_MID, DEBUG_i, DEBUG_j, MasterProc, &
+                              IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS
+  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip,         &
+                              Idirect, Idiffuse, z_bnd
+  use NetCDF_ml,        only: Out_netCDF,                             &
+                              Int1, Int2, Int4, Real4, Real8  !Output data type to choose
+  use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
+  use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
+                              me, IRUNBEG, JRUNBEG, limax, ljmax
+  use TimeDate_ml,      only: current_date
 
   implicit none
 
 !*.. Components of  hr_out
-!* character(len=TXTLEN_NAME) :: name   ! netCDF variable name
-!* character(len=TXTLEN_NAME) :: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
+!* character(len=TXTLEN_DERIV):: name   ! netCDF variable name
+!* character(len=TXTLEN_SHORT):: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
 !* character(len=9) :: ofmt     ! Output format (e.g. es12.4)
 !* integer          :: spec     ! Species number in xn_adv or xn_shl array or other arrays
 !* integer          :: ix1,ix2  ! bottom-left & upper-right x
 !* integer          :: iy1,iy2  ! bottom-left & upper-right y
 !* integer          :: nk       ! number of vertical levels
-!* character(len=TXTLEN_NAME) :: unit   ! netCDF unit attribute
+!* character(len=TXTLEN_SHORT) :: unit   ! netCDF unit attribute
 !* real             :: unitconv !  conv. factor
 !* real             :: max      ! Max allowed value for output
 
@@ -100,16 +98,15 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   integer i,j,ih,ispec,itot           ! indices
   integer :: k,ik,iik                 ! Index for vertical level
   integer ist,ien,jst,jen             ! start and end coords
-  character(len=50) :: errmsg = "ok"  ! For  consistecny check
-  character(len=20) :: name           ! For output file, species names
+  character(len=TXTLEN_DERIV) :: name ! For output file, species names
   character(len=4)  :: suffix         ! For date "mmyy"
   integer, save :: prev_month = -99   ! Initialise with non-possible month
   logical, parameter :: DEBUG = .false.
   type(Deriv) :: def1           ! for NetCDF
   real :: scale                 ! for NetCDF
   integer ::CDFtype,nk,klevel   ! for NetCDF
-  character(len=TXTLEN_NAME) :: hr_out_type   ! hr_out%type
-  integer                    :: hr_out_nk     ! hr_out%nk
+  character(len=TXTLEN_SHORT)        :: hr_out_type ! hr_out%type
+  integer                            :: hr_out_nk   ! hr_out%nk
   integer, allocatable, dimension(:) :: gspec       ! group array of indexes
   real,    allocatable, dimension(:) :: gunit_conv  ! group array of unit conv. factors
 
@@ -391,12 +388,12 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             end forall
           endif
           if( DEBUG  .and. debug_flag) &
-            write(6,"(a,2i3,2es12.3)") "HHH DEBUG D2D", ispec, ih, &
+            print "(a,2i3,2es12.3)","HHH DEBUG D2D", ispec, ih, &
               hr_out(ih)%unitconv, hourly(i_debug,j_debug)
 
         case DEFAULT
-            errmsg = "ERROR-DEF! Hourly_out: " // hr_out(ih)%type
-            call CheckStop( errmsg  // "hourly type not found!")
+          call CheckStop( "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%type)//&
+                          " hourly type not found!")
 
       end select OPTIONS
 

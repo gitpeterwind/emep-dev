@@ -62,7 +62,7 @@ ds done   AOTnPOD_ml.f90
           Aqueous_n_WetDep_ml.f90     jej - please update scav coeffs.
           Biogenics_ml.f90
 mg done   BLPhysics_ml.f90
-          BoundaryConditions_ml.f90
+av done   BoundaryConditions_ml.f90
 ds done   CellMet_ml.f90
 ds done   CheckStop_ml.f90
           ChemFunctions_ml.f90
@@ -84,7 +84,7 @@ an done   Emissions_ml.f90
           ForestFire_ml.f90
           Functions_ml.f90
           global2local.f90
-          GlobalBCs_ml.f90
+av done   GlobalBCs_ml.f90
 mg done   GridAllocate_ml.f90
 mg done   GridValues_ml.f90
 pw done   InterpolationRoutines_ml.f90
@@ -96,7 +96,7 @@ ds --     LandDefs_ml.f90
 ds --     LandPFT_ml.f90
 mg done   Landuse_ml.f90
           local2global.f90
-          LocalVariables_ml.f90
+av done   LocalVariables_ml.f90
           MARS_ml.f90
 pw done   MassBudget_ml.f90
           MetFields_ml.f90
@@ -135,7 +135,7 @@ an done   Timefactors_ml.f90
 ds moved   Tmp_Met_ml.f90  - ds moved to FUTURE_Tmp_Met_ml.f90
           Trajectory_ml.f90
 av/ds done Unimod.f90
-          Volcanos_ml.f90
+av done   Volcanos_ml.f90
 pw done   Wesely_ml.f90
 
 ZD_OZONE/
@@ -146,6 +146,52 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx h23:15       Alvaro       Mar 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+My_Outputs_ml,OwnDataTypes_ml,Output_hourly:
+  - Move Asc2D data type from My_Outputs_ml to OwnDataTypes_ml
+  - Extennd lenght of Asc2D%name,type,unit from TXTLEN_NAME
+    TXTLEN_DERIV,TXTLEN_SHORT,TXTLEN_SHORT respectively
+  - remove unused variables from use,only statements.
+  - Additional indent & gFortran-pedantic cleanup.
+
+Setup_1d_ml:
+  - remove unused BGN_2D variable from use,only statement.
+
+TimeDate_ExtraUtil_ml:
+  - add ncdate2string function for nctime (seconds/days since ...) to formatted
+    string conversion.
+
+BoundaryConditions_ml
+  - use PPB parameter from Model_Constants_ml instead of local variables.
+  - remove unused variables from use,only statements.
+  - replace WRITE by PRINT statements on debut printpouts.
+  - replace me==0 by MasterProc
+
+GlobalBCs_ml
+  - replace USso2trend,USnoxtrend,USnh4trend by a own data type to shorten
+    its definition.
+  - replace UStrend & macehead_O3 if/else definitions by a select/case statement.
+  - use date2string (TimeDate_ExtraUtil_ml) to generate monthly filenames.
+  - replace WRITE by PRINT statements on debut printpouts.
+  - remove unused variables from use,only statements.
+  - Indent & gFortran-pedantic cleanup.
+
+LocalVariables_ml:
+  - Indent & gFortran-pedantic cleanup.
+
+Unimod:
+  - replace newseason if/else definition by a select/case statement.
+  - replace WRITE by PRINT statements on debut printpouts.
+  - remove unused variables from use,only statements.
+  - Indent & gFortran-pedantic cleanup.
+
+Volcanos_ml:
+  - replace WRITE by PRINT statements on debut printpouts.
+  - replace hardcoded 64.0 by species(SO2)%molwt.
+  - remove unused variables from use,only statements
+  - Indent & gFortran-pedantic cleanup.
 
 xxxxxxxx rv3_7beta32  ALL - cleanup by 17:30 on Mar 10th xxxxxxxxxxxxxxxxxxxxxxx
 

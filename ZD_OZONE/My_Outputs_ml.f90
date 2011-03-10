@@ -25,40 +25,33 @@
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************!
-!_____________________________________________________________________________
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-
-                          module  My_Outputs_ml
-
-! MOD OD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
-! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
+module  My_Outputs_ml
 ! -----------------------------------------------------------------------
 ! Allows user to specify which species are output to various
-!  ascii and binary output files.
+! ascii and binary output files.
 !
 ! Sites  - surface sites,     to sites.out
 ! Sondes - vertical profiles, to sondes.out
 ! Hourly - ascii output of selected species, selcted domain
 ! -----------------------------------------------------------------------
 
-  use CheckStop_ml,     only: CheckStop
-  use ChemSpecs_adv_ml
-  use ChemSpecs_shl_ml
-  use ChemChemicals_ml,  only: species
-  use ChemGroups_ml,     only: chemgroups
-  use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
-  use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
-                               TXTLEN_NAME, FORECAST, to_molec_cm3=>MFAC
-  use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG
-  use SmallUtils_ml,     only: find_index
-  use TimeDate_ml,       only: date
+use CheckStop_ml,     only: CheckStop
+use ChemSpecs_adv_ml
+use ChemSpecs_shl_ml
+use ChemChemicals_ml,  only: species
+use ChemGroups_ml,     only: chemgroups
+use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
+use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
+                             FORECAST, to_molec_cm3=>MFAC
+use OwnDataTypes_ml,   only: Asc2D
+use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG
+use SmallUtils_ml,     only: find_index
+use TimeDate_ml,       only: date
 
-  implicit none
+implicit none
 
-  logical, public, parameter :: out_binary = .false.
-  logical, public, parameter :: Ascii3D_WANTED = .false.
+logical, public, parameter :: out_binary = .false.
+logical, public, parameter :: Ascii3D_WANTED = .false.
 
 ! Site outputs   (used in Sites_ml)
 !==============================================================
@@ -66,20 +59,20 @@
 ! For met params we have no simple index, so we use characters.
 ! These must be defined in Sites_ml.f90.
 
-  integer, private :: isite              ! To assign arrays, if needed
-  integer, public, parameter :: &
-     NSITES_MAX =    99         & ! Max. no surface sites allowed
-    ,FREQ_SITE  =    1          & ! Interval (hrs) between outputs
-    ,NADV_SITE  =    NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
-    ,NSHL_SITE  =    NSPEC_SHL  & ! No. short-lived species
-    ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
-    ,NXTRA_SITE_D2D  =    3       ! No. Misc. met. params  ( e.g. T2, d_2d)
+integer, private :: isite              ! To assign arrays, if needed
+integer, public, parameter :: &
+   NSITES_MAX =       99      & ! Max. no surface sites allowed
+  ,FREQ_SITE  =        1      & ! Interval (hrs) between outputs
+  ,NADV_SITE  = NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
+  ,NSHL_SITE  = NSPEC_SHL  & ! No. short-lived species
+  ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_D2D  =    3       ! No. Misc. met. params  ( e.g. T2, d_2d)
 
-  integer, public, parameter, dimension(NADV_SITE) :: &
-    SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
+integer, public, parameter, dimension(NADV_SITE) :: &
+  SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
 
-  integer, public, parameter, dimension(NSHL_SITE) :: &
-    SITE_SHL =  (/ (isite, isite=1,NSHL_SITE) /)  ! All short-lived species
+integer, public, parameter, dimension(NSHL_SITE) :: &
+  SITE_SHL =  (/ (isite, isite=1,NSHL_SITE) /)  ! All short-lived species
 
 ! Extra parameters - need to be coded in Sites_ml also. So far
 ! we can choose from hmix, T2, or th (pot. temp.) or d_2d fields.
@@ -90,121 +83,103 @@
 !** IMPORTANT!! Make sure the correspondence between selected for output
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
-  character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
-    SITE_XTRA_MISC=(/"th   ","T2   "/)
+character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
+  SITE_XTRA_MISC=(/"th   ","T2   "/)
 
 !These variables must have been set in My_Derived for them to be used.
-  character(len=18), public, parameter, dimension(NXTRA_SITE_D2D) :: &
-    SITE_XTRA_D2D= (/ &
-     "HMIX           ","PSURF          ", &
-!     "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
-!     "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
-!     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
-!     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
-!     "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
-      "COLUMN_NO2_k20 " /)
+character(len=18), public, parameter, dimension(NXTRA_SITE_D2D) :: &
+  SITE_XTRA_D2D= (/ &
+    "HMIX           ","PSURF          ", &
+!   "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
+!   "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
+!   "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
+!   "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
+!   "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
+    "COLUMN_NO2_k20 " /)
 
-   !/*** Aircraft outputs   (used in Polinat_ml)
-   !==============================================================
-   !   Specify the species to be output by Polinat for aircraft flight tracks
+!/*** Aircraft outputs   (used in Polinat_ml)
+!==============================================================
+!   Specify the species to be output by Polinat for aircraft flight tracks
 
-   integer, public, parameter :: &
-     NFLIGHT_MAX =    10               &   ! Max. no sondes allowed
-    ,FREQ_FLIGHT =    12               &   ! Interval (hrs) between outputs
-    ,NADV_FLIGHT =    1                    ! No.  advected species
+integer, public, parameter :: &
+  NFLIGHT_MAX =    10         &   ! Max. no sondes allowed
+ ,FREQ_FLIGHT =    12         &   ! Interval (hrs) between outputs
+ ,NADV_FLIGHT =    1              ! No.  advected species
 
-   integer, public, parameter, dimension(NADV_FLIGHT) :: &
-    FLIGHT_ADV =  (/ IXADV_O3 /)
+integer, public, parameter, dimension(NADV_FLIGHT) :: &
+  FLIGHT_ADV =  (/ IXADV_O3 /)
 
 
-   !/*** Sonde outputs   (used in Sites_ml)
-   !==============================================================
-   !     Specify the species to be output to the sondes.out file
-   !  We typically deal with fewer species for sonde output than
-   !  surface sites, so we use a different method to specify.
-   ! For met params we have no simple index, so we use characters.
-   ! These must be defined in Sites_ml.f90.
+!/*** Sonde outputs   (used in Sites_ml)
+!==============================================================
+!     Specify the species to be output to the sondes.out file
+!  We typically deal with fewer species for sonde output than
+!  surface sites, so we use a different method to specify.
+! For met params we have no simple index, so we use characters.
+! These must be defined in Sites_ml.f90.
 
-   integer, public, parameter :: &
-     NSONDES_MAX =    99               &   ! Max. no sondes allowed
-    ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
-    ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
-    ,NADV_SONDE  =   9                &   ! No.  advected species
-    ,NSHL_SONDE  =    3                &   ! No. short-lived species
-    ,NXTRA_SONDE =    4                    ! No. Misc. met. params
+integer, public, parameter :: &
+   NSONDES_MAX =    99        &   ! Max. no sondes allowed
+  ,NLEVELS_SONDE =  20        &   ! No. k-levels (9 => 0--2500 m)
+  ,FREQ_SONDE  =     1        &   ! Interval (hrs) between outputs
+  ,NADV_SONDE  =    9         &   ! No.  advected species
+  ,NSHL_SONDE  =    3         &   ! No. short-lived species
+  ,NXTRA_SONDE =    4             ! No. Misc. met. params
 
-   integer, public, parameter, dimension(NADV_SONDE) :: &
+integer, public, parameter, dimension(NADV_SONDE) :: &
    SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_PAN,  &
-                IXADV_NO3_c, IXADV_NO3_f, IXADV_SO4,  IXADV_NH4_f, IXADV_NH3/)
+                IXADV_NO3_c, IXADV_NO3_f, IXADV_SO4, IXADV_NH4_f, IXADV_NH3/)
 
-   integer, public, parameter, dimension(NSHL_SONDE) :: &
-    SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
-   character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-   SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    " /) !, "Kz_m2s" /)
+integer, public, parameter, dimension(NSHL_SONDE) :: &
+  SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
+character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
+  SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    " /) !, "Kz_m2s" /)
 
 
- !   can access d_3d fields through index here, by
- !   setting "D3D" above and say D3_XKSIG12 here:
+!   can access d_3d fields through index here, by
+!   setting "D3D" above and say D3_XKSIG12 here:
 
-   !====================================================================
-   !/*** Hourly outputs   (from hourly_out routine) to print out
-   !     concentrations  or even met. parameters every hour
-   !     (or multiple: HOURLY_FREQ) for specified sub-grid.
-   !     Note: as to met. parameters, only temp2m Th arespecified
-   !           so far- others need change in hourly_out.f also).
+!====================================================================
+!/*** Hourly outputs   (from hourly_out routine) to print out
+!     concentrations  or even met. parameters every hour
+!     (or multiple: HOURLY_FREQ) for specified sub-grid.
+!     Note: as to met. parameters, only temp2m Th arespecified
+!           so far- others need change in hourly_out.f also).
 
-   !-------------------------------------------------------------------
-   !  Possibility of multi-layer output. Specify NLEVELS_HOURLY here
-   !  and in hr_out defs use either:
-   !
-   !  ADVppbv to get surface concentrations (only relevant for layer k=20
-   !  while gives meaningless  number for higher levels.
-   !
-   !  Or BCVppbv to get grid-centre concentrations (relevant for all layers)
-   !----------------------------------------------------------------
+!-------------------------------------------------------------------
+!  Possibility of multi-layer output. Specify NLEVELS_HOURLY here
+!  and in hr_out defs use either:
+!
+!  ADVppbv to get surface concentrations (only relevant for layer k=20
+!  while gives meaningless  number for higher levels.
+!
+!  Or BCVppbv to get grid-centre concentrations (relevant for all layers)
+!----------------------------------------------------------------
 
-    logical, public, parameter :: Hourly_ASCII = .false.
-     ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
+logical, public, parameter :: Hourly_ASCII = .false.
+! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
 
-    integer, public            :: NHOURLY_OUT =  6 ! No. outputs
-    integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
-    integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
+integer, public            :: NHOURLY_OUT =  6 ! No. outputs
+integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
+integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
+
 ! Output selected model levels
-    logical, public, parameter ::  SELECT_LEVELS_HOURLY = .false..or.FORECAST
-!   Decide which levels to print out
-!   20<==>uppermost model level (m01)
-!   01<==>lowermost model level (m20)
-!   00<==>surface approx. from lowermost model level
-!   00 and 01 can be both printed out,
-!   but it might create loads of missing values...
-    integer, public, parameter, dimension(NLEVELS_HOURLY) :: &
-      LEVELS_HOURLY = (/0,4,6,10/)
+logical, public, parameter ::  SELECT_LEVELS_HOURLY = .false..or.FORECAST
+! Decide which levels to print out
+! 20<==>uppermost model level (m01)
+! 01<==>lowermost model level (m20)
+! 00<==>surface approx. from lowermost model level
+! 00 and 01 can be both printed out,
+! but it might create loads of missing values...
+integer, public, parameter, dimension(NLEVELS_HOURLY) :: &
+  LEVELS_HOURLY = (/0,4,6,10/)
 
-    type, public:: Asc2D
-         character(len=TXTLEN_NAME):: name   ! Name (no spaces!)
-         character(len=TXTLEN_NAME):: type   ! "ADVppbv" or "ADVugm3" or "SHLmcm3"
-         character(len=9) :: ofmt   ! Output format (e.g. es12.4)
-         integer          :: spec   ! Species number in xn_adv or xn_shl array
-                                    !  .. or other arrays
-         integer          :: ix1    ! bottom-left x
-         integer          :: ix2    ! upper-right x
-         integer          :: iy1    ! bottom-left y
-         integer          :: iy2    ! upper-right y
-         integer          :: nk     ! number of vertical levels
-         character(len=TXTLEN_NAME) :: unit   ! Unit used
-         real             :: unitconv   !  conv. factor
-         real             :: max    ! Max allowed value for output
-    end type Asc2D
+type(Asc2D), public, dimension(:), allocatable :: hr_out  ! Set below
 
-    type(Asc2D), public, dimension(:), allocatable :: hr_out  ! Set below
-
-
-  !/** wanted binary dates... specify days for which full binary
-  !    output is wanted. Replaces the hard-coding which was
-  !    in wrtchem:
-
-     integer, public, parameter :: NBDATES = 3
-     type(date), public, save, dimension(NBDATES) :: wanted_dates_inst
+!/** wanted binary dates... specify days for which full binary
+!    output is wanted. Replaces the hard-coding which was in wrtchem:
+integer, public, parameter :: NBDATES = 3
+type(date), public, save, dimension(NBDATES) :: wanted_dates_inst
 
 ! Conversion to ug/m3
 !   xn_adv(ixadv,ix,iy,k)*roa(ix,iy,k,1)*to_ug_ADV(ixadv)
@@ -213,19 +188,18 @@
 !  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
 !   For ug/m3  output use in combination with to_ug_ADV(ixadv).
 !   For ugX/m3 output use in combination with to_ug_X(ixadv).
-  real, public, save, dimension(NSPEC_ADV)  :: &
-    to_ug_ADV,  & ! conversion to ug
-    to_ug_C,    & ! conversion to ug of C
-    to_ug_N,    & ! conversion to ug of N
-    to_ug_S       ! conversion to ug of S
- !================================================================
+real, public, save, dimension(NSPEC_ADV)  :: &
+  to_ug_ADV,  & ! conversion to ug
+  to_ug_C,    & ! conversion to ug of C
+  to_ug_N,    & ! conversion to ug of N
+  to_ug_S       ! conversion to ug of S
+!================================================================
 
-   public :: set_output_defs
+public :: set_output_defs
 
-   contains
+contains
 
-!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
- subroutine set_output_defs
+subroutine set_output_defs
    implicit none
 
    character(len=44) :: errmsg  ! Local error message
@@ -240,32 +214,32 @@
   ! introduce some integers to make specification of domain simpler
   ! and less error-prone. Numbers can be changed as desired.
 
-  !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  !EMEP
-   integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  !restricted EMEP
-  !integer, save :: ix1=IRUNBEG, ix2=IRUNBEG+GIMAX-1,  &
-  !                 iy1=JRUNBEG, iy2=JRUNBEG+GJMAX-1   ! all
+ !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  ! EMEP
+  integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  ! restricted EMEP
+ !integer, save :: ix1=IRUNBEG, ix2=IRUNBEG+GIMAX-1,  &
+ !                 iy1=JRUNBEG, iy2=JRUNBEG+GJMAX-1   ! all
 
-! WARNING: If the specification of the subdomain is different for
-!            different components (ix1=125 for ozone and ix1=98 for
-!            NH4 for example) , the variables i_EMEP, j_EMEP
-!            latitude and longitude in NetCDF output will be
-!            wrong.
+  ! WARNING: If the specification of the subdomain is different for
+  !            different components (ix1=125 for ozone and ix1=98 for
+  !            NH4 for example) , the variables i_EMEP, j_EMEP
+  !            latitude and longitude in NetCDF output will be
+  !            wrong.
 
-!  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
-!    For ug/m3  output use in combination with to_ug_ADV(ixadv).
-!    For ugX/m3 output use in combination with to_ug_X(ixadv).
+  !  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
+  !    For ug/m3  output use in combination with to_ug_ADV(ixadv).
+  !    For ugX/m3 output use in combination with to_ug_X(ixadv).
   to_ug_ADV=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%molwt    *PPBINV/ATWAIR
   to_ug_C = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%carbons  *atwC*PPBINV/ATWAIR
   to_ug_N = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%nitrogens*atwN*PPBINV/ATWAIR
   to_ug_S = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%sulphurs *atwS*PPBINV/ATWAIR
 
- !/** Hourly outputs
- !    Note that the hourly output uses **lots** of disc space, so specify
- !    as few as you need and with as small format as possible (cf max value).
+  !/** Hourly outputs
+  !    Note that the hourly output uses **lots** of disc space, so specify
+  !    as few as you need and with as small format as possible (cf max value).
 
- ! ** REMEMBER : ADV species are mixing ratios !!
- ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
- ! ** REMEMBER : No spaces in name, except at end !!
+  ! ** REMEMBER : ADV species are mixing ratios !!
+  ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
+  ! ** REMEMBER : No spaces in name, except at end !!
 
   if(FORECAST)then
     ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
@@ -342,7 +316,6 @@
 !                 -99,     ix1,ix2,iy1,iy2, "umole/m2/s",1.0, 1000.0)
   endif
 
-
   !/** Consistency checks
    do i = 1, NHOURLY_OUT
     ! We use ix1 to see if the array has been set.
@@ -359,8 +332,6 @@
   wanted_dates_inst(2) = date(-1,1,1,3,0)
   wanted_dates_inst(3) = date(-1,1,1,6,0)
 
- end subroutine set_output_defs
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+end subroutine set_output_defs
 
 end module My_Outputs_ml
-

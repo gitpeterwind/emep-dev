@@ -42,7 +42,8 @@ public :: &
   assign_NTERM,     & ! set NTERM, the number of 3-hourly periods
   date2string,      & ! date (various formats) --> formatted string
   idate2nctime,     & ! idate (int array)--> secs since(int)/days since(real)
-  nctime2idate        ! idate2nctime inverse
+  nctime2idate,     & ! idate2nctime inverse
+  nctime2string       ! as date2string, but from  secs/days since...
 
 interface date2string
   module procedure detail2str,cd2str,int2str,ts2str
@@ -56,7 +57,18 @@ interface nctime2idate
   module procedure secs1970_to_idate,days1900_to_idate
 end interface nctime2idate
 
+interface nctime2string
+  module procedure secs2str,days2str
+end interface nctime2string
+
+character(len=*), public, parameter :: &  ! Keywords for ncdate2string
+! secs1970_key="secs  19.70"           ,&
+! days1900_key="days  19.00"           ,&
+  nctime_key  ="12345678.12"
+
 private ::  &
+  key2str,          & ! basic keyword substitution
+  ikey2str,rkey2str,& ! auxiliary keyword substitution tools
   detail2str,             & ! detailed date input--> formatted string
   cd2str,int2str,ts2str,  & ! date/idate (int array)/timestamp --> formatted string
   idate_to_secs1970,& ! idate (int array)--> secs since 1970-01-01 00:00 UTC (int)
@@ -68,6 +80,10 @@ private ::  &
   to_idate,         & ! create int array from timestap or date
   int2ts,int2date,ts2int,date2int,& ! auxiliary dateformat transformation tools
   init_ts             ! init 1900 & 1970 timestamps
+
+interface key2str
+  module procedure ikey2str,rkey2str
+end interface key2str
 
 interface to_stamp
   module procedure date2ts,int2ts
@@ -104,6 +120,7 @@ function date2int (cd,n) result (id)
   integer, intent(in)               :: n
   integer, dimension(n)             :: id
   select case (n)
+    case (1);     id=cd%year*1000000+cd%month*10000+cd%day*100+cd%hour ! ad-hoc convention
     case (3);     id=(/cd%year,cd%month,cd%day/)
     case (4);     id=(/cd%year,cd%month,cd%day,cd%hour/)
     case (5);     id=(/cd%year,cd%month,cd%day,cd%hour,cd%seconds/)
@@ -132,6 +149,44 @@ subroutine init_ts()
   ts1900=to_stamp(date(1900,1,1,0,0))
 end subroutine init_ts
 
+function ikey2str(iname,key,val) result(fname)
+  implicit none
+  character(len=*), intent(in) :: iname,key
+  character(len=len(iname))    :: fname
+  integer, intent(in)          :: val
+  character(len=9)             :: ifmt="(I??.??)"
+  integer :: ind=0,n=0
+  fname=iname
+  ind=index(fname,trim(key))
+  if(ind==0)return
+  n=len_trim(key)
+  write(ifmt,"('(I',I0,'.',I0,')')")n,n
+  do while (ind>0)
+    write(fname(ind:ind+n-1),ifmt)val
+    ind=index(fname,trim(key))
+  enddo
+end function ikey2str
+
+function rkey2str(iname,key,val) result(fname)
+  implicit none
+  character(len=*), intent(in) :: iname,key
+  character(len=len(iname))    :: fname
+  real, intent(in)             :: val
+  character(len=9)             :: ifmt="(F??.??)"
+  integer :: ind=0,n=0,n1=0
+  fname=iname
+  ind=index(fname,trim(key))
+  if(ind==0)return
+  n=len_trim(key)
+  n1=index(key,".")
+  if(n1==0)n1=n
+  write(ifmt,"('(F',I0,'.',I0,')')")n1-1,n-n1
+  do while (ind>0)
+    write(fname(ind:ind+n-1),ifmt)val
+    ind=index(fname,trim(key))
+  enddo
+end function rkey2str
+
 function detail2str(iname,year,month,day,hour,seconds,minute,second,&
                         fstep,ntme,nlev,nlat,nlon,debug) result(fname)
   implicit none
@@ -157,24 +212,6 @@ function detail2str(iname,year,month,day,hour,seconds,minute,second,&
   if(present(debug))then
     if(debug) print *,'date2string: ',trim(iname),'-->',trim(fname)
   endif
-contains
-function key2str(iname,key,val) result(fname)
-  implicit none
-  character(len=*), intent(in) :: iname,key
-  character(len=len(iname))    :: fname
-  integer, intent(in)          :: val
-  character(len=7)             :: ifmt="(I?.?)"
-  integer :: ind=0,n=0
-  fname=iname
-  ind=index(fname,trim(key))
-  if(ind==0)return
-  n=len_trim(key)
-  write(ifmt,"('(I',I0,'.',I0,')')")n,n
-  do while (ind>0)
-    write(fname(ind:ind+n-1),ifmt)val
-    ind=index(fname,trim(key))
-  enddo
-end function key2str
 end function detail2str
 
 function cd2str(iname,cd,debug) result(fname)
@@ -245,16 +282,16 @@ subroutine idate_to_days1900(idate,ndays,iotyp)
   endif
 end subroutine idate_to_days1900
 
-subroutine secs1970_to_idate(idate,nseconds,msg)
+subroutine secs1970_to_idate(idate,nsecs,msg)
 !calculate date from seconds that have passed since the start of the year 1970
   integer, intent(out), dimension(:)      :: idate
-  integer, intent(in)                     :: nseconds
+  integer, intent(in)                     :: nsecs
   character(len=*), intent(in), optional  :: msg
   type(timestamp) :: ts
 
   if(first_call)call init_ts()
   ts=ts1970
-  call add_days(ts,nseconds/spd)
+  call add_days(ts,nsecs/spd)
   idate=to_idate(ts,size(idate))
 
   if(present(msg)) print *,date2string(msg,idate)
@@ -274,6 +311,28 @@ subroutine days1900_to_idate(idate,ndays,msg)
 
   if(present(msg)) print *,date2string(msg,idate)
 end subroutine days1900_to_idate
+
+function secs2str(iname,nsecs,debug) result(fname)
+  implicit none
+  character(len=*), intent(in)            :: iname
+  character(len=len(iname))               :: fname
+  integer, intent(in)                     :: nsecs
+  integer, dimension(5)                   :: idate
+  logical, intent(in), optional           :: debug
+  call nctime2idate(idate,nsecs)
+  fname=date2string(key2str(iname,nctime_key,nsecs),idate,debug=debug)
+end function secs2str
+
+function days2str(iname,ndays,debug) result(fname)
+  implicit none
+  character(len=*), intent(in)            :: iname
+  character(len=len(iname))               :: fname
+  real(kind=8), intent(in)                :: ndays
+  integer, dimension(5)                   :: idate
+  logical, intent(in),  optional          :: debug
+  call nctime2idate(idate,ndays)
+  fname=date2string(key2str(iname,nctime_key,ndays),idate,debug=debug)
+end function days2str
 
 subroutine assign_NTERM(NTERM)
 ! calculate NTERM (the number of metdata periods)
