@@ -59,7 +59,7 @@ program myeul
   use DerivedFields_ml, only : f_2d, f_3d
   use DO3SE_ml,         only : Init_DO3SE !LPJ
   use EcoSystem_ml,     only : Init_EcoSystems
-  use EmisDef_ml,       only : AIRNOX, NH3EMIS_VAR ! NH3emis, experimental
+  use EmisDef_ml,       only : NH3EMIS_VAR ! NH3emis, experimental
   use Emissions_ml,     only : Emissions ,newmonth      !  subroutines
   use ForestFire_ml,    only : Fire_Emis
   use GridValues_ml,    only : MIN_ADVGRIDS,GRIDWIDTH_M,Poles
@@ -81,6 +81,7 @@ program myeul
        ,IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY &
        ,USE_CONVECTION, USE_SOILWATER,USE_SOIL_NOX,USE_FOREST_FIRES &
        ,USE_BVOC_2010,USE_DUST,DO_SAHARA &
+       ,USE_LIGHTNING_EMIS &
        ,NBVOC  & !
        ,FORECAST       ! FORECAST mode
   use NetCDF_ml,        only : Init_new_netCDF
@@ -416,7 +417,7 @@ endif
 
         call Add_2timing(7,tim_after,tim_before,"newmonth")
 
-        if ( AIRNOX ) call lightning()
+        if ( USE_LIGHTNING_EMIS ) call lightning()
 
         call init_aqueous()
 

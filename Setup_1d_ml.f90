@@ -42,8 +42,7 @@
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
   use DustProd_ml,           only :  DU_prod   ! Dust
-  use EmisDef_ml,           only : AIRNOX &
-                                  ,NSS, NDU & !SeaS, Dust
+  use EmisDef_ml,           only : NSS, NDU & !SeaS, Dust
                                   ,NH3EMIS_VAR ! hb NH3Emis    
   use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP, SoilNOx
@@ -75,6 +74,7 @@
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,USE_FOREST_FIRES                & !
+    ,USE_LIGHTNING_EMIS              & !
     ,USE_SOIL_NOX, USE_DUST          & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis  
@@ -277,7 +277,7 @@ contains
 
     !/** lightning and aircraft ... Airial NOx emissions if required:
 
-     if ( AIRNOX  ) then
+     if ( USE_LIGHTNING_EMIS  ) then
 
         do k=KCHEMTOP, KMAX_MID
 

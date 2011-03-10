@@ -142,6 +142,11 @@ ds --     My_Outputs_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx h08:45       Dave       Mar 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Add USE_AIRCRAFT_NOX; USE_LIGHTNING_NOX to ModelConstants_ml
+  Changes in Unimod.f90, Setup_ml, Airnox_ml
+
 xxxxxxxx rv3_7beta31  Anna/Dave  Mar 9 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Interim, but changes committed due to impending cleanup! Results may change
