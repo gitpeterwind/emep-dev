@@ -62,15 +62,14 @@ private
 
 
   integer, public, parameter ::  &
-    IRUNBEG      =   RUNDOMAIN(1)  &
-  , JRUNBEG      =   RUNDOMAIN(3)  &
-  , GIMAX       =   RUNDOMAIN(2)-RUNDOMAIN(1) + 1   & ! Number of global points in longitude
-  , GJMAX       =   RUNDOMAIN(4)-RUNDOMAIN(3) + 1   & ! Number of global points in longitude
-  , MAXLIMAX   = (GIMAX+NPROCX-1)/NPROCX   & ! Maximum number of local points in longitude
-  , MAXLJMAX   = (GJMAX+NPROCY-1)/NPROCY   & ! Maximum number of local points in latitude
-  , MFSIZEINP = IIFULLDOM*JJFULLDOM      & ! Maximum field size for input
-  , MFSIZEOUT = GIMAX*GJMAX                  ! Maximum field size for output
-!
+    IRUNBEG = RUNDOMAIN(1)  &
+  , JRUNBEG = RUNDOMAIN(3)  &
+  , GIMAX = RUNDOMAIN(2)-RUNDOMAIN(1)+1 &!Number of global points in longitude
+  , GJMAX = RUNDOMAIN(4)-RUNDOMAIN(3)+1 &!Number of global points in longitude
+  , MAXLIMAX = (GIMAX+NPROCX-1)/NPROCX &! Maximum number of local points in lon
+  , MAXLJMAX = (GJMAX+NPROCY-1)/NPROCY &! Maximum number of local points in lat
+  , MFSIZEINP = IIFULLDOM*JJFULLDOM    &! Maximum field size for input
+  , MFSIZEOUT = GIMAX*GJMAX             ! Maximum field size for output
 !
 !     Parameter statements for the parameters used to access the tabell 
 !     of neighbor processors (neighbor)
@@ -325,8 +324,8 @@ private
 
     subroutine Topology(cyclicgrid,poles)   
 
-!defines the neighbors and boundaries of (sub)domain
-!Boundaries are defined as having coordinates 
+! Defines the neighbors and boundaries of (sub)domain
+! Boundaries are defined as having coordinates 
 ! between 1 and li0 or between li1 and limax or
 ! between 1 and lj0 or between lj1 and ljmax
 
@@ -334,8 +333,6 @@ private
         integer, intent(in) :: cyclicgrid  ! rv2_4_1 1 if cyclic grid
        integer, intent(in) :: poles(2)  !  poles(1)=1 if North pole,
                                         !  poles(2)=1 if South pole
-    integer i, j, ime, imex, imey, rest
-           
 !
 !
 !     Find the x-, y-, and z-addresses of the domain assigned to the
@@ -346,7 +343,7 @@ private
     mex = me - mey*NPROCX
 !
 !
-!     Find the neighbors of this processor.
+!   Find the neighbors of this processor.
 !   Allow cyclic map in i direction.
 !   Do not define north and south poles as outer Boundaries
 !
