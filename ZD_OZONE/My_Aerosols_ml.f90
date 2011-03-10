@@ -50,21 +50,20 @@
     logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
                                 , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
                                 , EQUILIB_MARS      = .false.  & !MARS
-                                , EQUILIB_EQSAM     = .true.   & !EQSAM
-                                , AOD               = .true.   &
-                                , VOLCANO           = .false.
-
-    logical, public, parameter :: SEASALT = .true. 
+                                , EQUILIB_EQSAM     = .true.     !EQSAM
+                                
+    logical, public, parameter :: SEASALT = .true. , AOD = .false. 
+ 
  !.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
-    integer, public, parameter :: NSIZE = 3,   &
-                                  FINE_PM = 1, COAR_PM = 3, GIG_PM = 3    
+    integer, public, parameter :: NSIZE = 3
+                               !   FINE_PM = 1, COAR_PM = 2, GIG_PM = 3    
 
 
 contains
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-      subroutine My_MARS(deb)
+      subroutine My_MARS
 
  !..................................................................
  ! Pretty old F. Binkowski code from EPA CMAQ-Models3
@@ -82,15 +81,12 @@ contains
  implicit none
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
 
- logical, intent(in)  :: deb
-
-
  !.. local
   real    :: so4in, no3in, nh4in, hno3in, nh3in,   &
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
-  integer :: k, ic, bin, spec, errmark
-  logical :: debsub
+  integer :: k, errmark
+  logical, parameter :: debsub = .false.
  !-----------------------------------
 
    coef = 1.e12 / AVOG
@@ -123,7 +119,7 @@ contains
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-      subroutine My_EQSAM(debug_cell)
+      subroutine My_EQSAM
 
     !..................................................................
     !EQSAM - Equlibrium Simplified Aerosol Model by Swen Metzger
@@ -143,8 +139,6 @@ contains
  implicit none
 
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
-
- logical, intent(in)  :: debug_cell
 
 
  !.. local
@@ -168,12 +162,11 @@ contains
              gCLout(KCHEMTOP:KMAX_MID),  &
              gSO4out(KCHEMTOP:KMAX_MID)
 
-  integer :: i,j,k, errmark
   logical :: debsub = .false.
  !-----------------------------------
 
 
-  if ( debsub .and. debug_cell ) then ! Selected debug cell
+  if ( debsub  ) then ! Selected debug cell
     write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
@@ -205,7 +198,7 @@ contains
       xn_2d(NH4_f,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNH4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(SO4,KCHEMTOP:KMAX_MID)   = max(FLOOR,aSO4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
 
- if ( debsub .and. debug_cell ) then ! Selected debug cell
+ if ( debsub ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
@@ -265,15 +258,14 @@ contains
              rlhum(KCHEMTOP:KMAX_MID),tmpr(KCHEMTOP:KMAX_MID)
 
   real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
-  integer :: k, errmark
   logical :: debsub = .false.
  !-----------------------------------
 
 
-!  if ( debsub .and. debug_cell ) then ! Selected debug cell
-!    write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
-!               xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
-!  endif
+  if ( debsub ) then ! Selected debug cell
+    write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
+               xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
+  endif
 
 !//.... molec/cm3 -> micromoles/m**3
       so4in(KCHEMTOP:KMAX_MID)  = xn_2d(SO4,KCHEMTOP:KMAX_MID)*1.e12/AVOG
@@ -310,10 +302,10 @@ contains
       PM25_water_rh50 (i,j)             = max(0., aH2Oout(KMAX_MID) )
  endif
 
-! if ( debsub .and. debug_cell ) then ! Selected debug cell
-!    write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
-!               xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
-!  endif
+ if ( debsub ) then ! Selected debug cell
+    write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
+               xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
+  endif
 
  end subroutine  Aero_water
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
