@@ -321,7 +321,7 @@ end subroutine PielkeBlackadarKz
  !----------------------------------------------------------------------------
 subroutine Test_BLM (mm,dd,hh,fH,u,v, zm, zb, pb, exnm, &
           th, Kz, Kz_nwp, invL, ustar, zi )
-  integer, intent(in) :: mm, dd, hh, ss    ! date
+  integer, intent(in) :: mm, dd, hh        ! date
   real, intent(in)               :: fh     ! heart flux, -ve = Unstable
   real, dimension(:), intent(in) :: u,v    ! winds
   real, dimension(:), intent(in) :: exnm   ! mid-cell exner function (CP*)
@@ -419,7 +419,7 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
   logical, intent(in) :: debug_flag
 
   real, dimension(KMAX_BND) :: &
-      ,xksm   ! spacially smoothed Kz in z direction, m2/s.
+      xksm   ! spacially smoothed Kz in z direction, m2/s.
 
   integer :: k, km, km1, km2, kp, nh1, nh2
 
