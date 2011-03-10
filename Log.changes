@@ -2,7 +2,6 @@
 IMPORTANT NOTE:
 
   * Instructions to run *
-
     check out clean version of Unimod (safest as there are several new files)
     edit mk.GenChem, set "run" to  EmChem09 as standard, can be Eucaari_Trends
     mk.GenChem
@@ -56,7 +55,7 @@ ds done   Ammonium_ml.f90
           AOTnPOD_ml.f90
           Aqueous_n_WetDep_ml.f90     jej - please update scav coeffs.
           Biogenics_ml.f90
-          BLPhysics_ml.f90
+mg done   BLPhysics_ml.f90
           BoundaryConditions_ml.f90
 ds --     CellMet_ml.f90
 ds done   CheckStop_ml.f90
