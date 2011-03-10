@@ -3,8 +3,8 @@ module EcoSystem_ml
  use CheckStop_ml,       only : CheckStop, StopAll
  use GridValues_ml,      only : debug_proc, debug_li, debug_lj
  use LandDefs_ml,        only : LandDefs, LandType
-!CIRCULAR SOMEHERE use Landuse_ml !!!,         only : LandCover
- use ModelConstants_ml , only : MasterProc, DEBUG_ECOSYSTEMS, NLANDUSEMAX, IOU_YEAR
+ use ModelConstants_ml , only : MasterProc, DEBUG_ECOSYSTEMS &
+                                , NLANDUSEMAX, IOU_YEAR
  use OwnDataTypes_ml,    only : Deriv, print_deriv_type &
                                 ,TXTLEN_DERIV, TXTLEN_SHORT
  use Par_ml,             only : li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX
@@ -18,7 +18,7 @@ module EcoSystem_ml
 
    integer, public, parameter :: FULL_ECOGRID=1
    integer, private, parameter :: &
-     CONIF=2, DECID=3, CROP=4, SEMINAT=5, WATER_D=6 ! try to skip
+    CONIF=2, DECID=3, CROP=4, SEMINAT=5, WATER_D=6 ! try to skip
 
   ! We also keep the parameter for FULL_LCGRID=0 here, which is used
   ! for e.g. Vg values. Do not confuse LC with ECO stuff!
@@ -42,7 +42,7 @@ module EcoSystem_ml
                       , "Water_D " /)
    type(Deriv), public, dimension(NDEF_ECOSYSTEMS), save :: DepEcoSystem
 
-   logical,  public, dimension(NDEF_ECOSYSTEMS,NLANDUSEMAX), &
+   logical, public, dimension(NDEF_ECOSYSTEMS,NLANDUSEMAX), &
             save :: Is_EcoSystem
 
    real, public, dimension(NDEF_ECOSYSTEMS,MAXLIMAX,MAXLJMAX), &
@@ -53,8 +53,8 @@ contains
   subroutine Init_EcoSystems()
 
     character(len=TXTLEN_DERIV) :: name
-    character(len=TXTLEN_SHORT)  :: unit
-    integer :: i,j,ilc,lc,nlc, iEco
+    character(len=TXTLEN_SHORT) :: unit
+    integer :: iEco
     logical, parameter :: T = .true., F = .false. ! shorthands only
     logical :: debug_flag
     real :: coverage
@@ -75,8 +75,7 @@ contains
           !Deriv index, f2d, dt_scale, scale, avg? Inst Yr Mn Day
         DepEcoSystem(iEco) = Deriv(  &
                name, "EcoFrac", "Area",DEF_ECOSYSTEMS(iEco) , unit, &
-                  iEco, -99, F, 1.0,  F,    IOU_YEAR   )
-
+                  iEco, -99, F, 1.0, F, IOU_YEAR   )
 
         if(DEBUG_ECOSYSTEMS .and. MasterProc) &
              call print_deriv_type( DepEcoSystem(iEco) )
