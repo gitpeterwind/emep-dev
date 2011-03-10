@@ -52,10 +52,10 @@ use Io_ml,             only : check_file,open_file,ios &
                               , fexist, IO_SITES, IO_SONDES &
                               , Read_Headers,read_line
 use ChemSpecs_adv_ml
-use ChemSpecs_shl_ml,    only : NSPEC_SHL
-use ChemGroups_ml,      only : OXN_GROUP, PM25_GROUP, PMCO_GROUP
-use ChemChemicals_ml,   only : species               ! for species names
-use MetFields_ml,            only : t2_nwp, th, pzpbl  &  ! Output with concentrations
+use ChemSpecs_shl_ml,  only : NSPEC_SHL
+use ChemGroups_ml,     only : OXN_GROUP, PM25_GROUP, PMCO_GROUP
+use ChemChemicals_ml,  only : species               ! for species names
+use MetFields_ml,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
 use MetFields_ml,      only : u_xmj, v_xmi, ps
 use ModelConstants_ml, only : NMET,PPBINV,PPTINV, KMAX_MID, MasterProc &
@@ -93,7 +93,7 @@ integer, private, save :: nglobal_sondes, nlocal_sondes
 ! site_gindex stores the global index n asociated
 ! with each processor and local site
 
-integer, private, save, dimension (0:NPROC-1,NSITES_MAX) :: site_gindex
+integer, private, save, dimension (0:NPROC-1,NSITES_MAX)  :: site_gindex
 integer, private, save, dimension (0:NPROC-1,NSONDES_MAX) :: sonde_gindex
 
 integer, private, save, dimension (NSITES_MAX) :: &
@@ -363,11 +363,11 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
 end subroutine Init_sites
 !==================================================================== >
 subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
-  ! ---------------------------------------------------------------------
+  ! -------------------------------------------------------------------
   ! writes out just simple concentrations for now....
   ! will be improved later to allow choice of output parameter
   ! should look at chemint also - seems similar for somethings
-  ! ---------------------------------------------------------------------
+  ! -------------------------------------------------------------------
 
   ! arguments
   real, dimension(NSPEC_ADV,MAXLIMAX,MAXLJMAX,KMAX_MID), intent(in) :: xn_adv
@@ -411,7 +411,7 @@ subroutine siteswrt_surf(xn_adv,cfac,xn_shl)
       if (iz == KMAX_MID ) then ! corrected to surface
         out(ispec,i) = xn_adv( SITE_ADV(ispec) ,ix,iy,KMAX_MID ) * &
                        cfac( SITE_ADV(ispec),ix,iy) * PPBINV
-      else                     ! Mountain sites not corrected to surface
+      else                      ! Mountain sites not corrected to surface
         out(ispec,i)  = xn_adv( SITE_ADV(ispec) ,ix,iy,iz ) * PPBINV
       endif
     enddo
@@ -477,7 +477,7 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
   ! Output variables - none
 
   ! Local variables
-  integer :: n, i, ii, k,  ix, iy, nn, ispec   ! Site and chem indices
+  integer :: n, i, k,  ix, iy, nn, ispec   ! Site and chem indices
   integer, parameter ::  KTOP_SONDE = KMAX_MID - NLEVELS_SONDE + 1
   integer, dimension(NLEVELS_SONDE)      :: itemp
   real, dimension(KMAX_MID)              :: pp, temp, qsat, rh, sum_PM, sum_NOy
@@ -518,10 +518,10 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
       nn = nn + NLEVELS_SONDE
     enddo
 
-     ! then print out XTRA stuff first,
-     ! usually the height or pressure
+    ! then print out XTRA stuff first,
+    ! usually the height or pressure
 
-     do ispec = 1, NXTRA_SONDE
+    do ispec = 1, NXTRA_SONDE
 
       select case ( SONDE_XTRA(ispec) )
         case ( "PM25" )    !!  PM data converted to ug m-3
@@ -573,12 +573,14 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
           out(nn+1:nn+NLEVELS_SONDE,i) =  th(ix,iy,KMAX_MID:KTOP_SONDE:-1,1)
 
         case ( "U" )
-          out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( u_xmj(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
-                                          +u_xmj(ix-1,iy,KMAX_MID:KTOP_SONDE:-1,1) )
+          out(nn+1:nn+NLEVELS_SONDE,i) = 0.5 &
+             *( u_xmj(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
+             +u_xmj(ix-1,iy,KMAX_MID:KTOP_SONDE:-1,1) )
 
         case ( "V" )
-          out(nn+1:nn+NLEVELS_SONDE,i) = 0.5*( v_xmi(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
-                                          +v_xmi(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
+          out(nn+1:nn+NLEVELS_SONDE,i) = 0.5 &
+             *( v_xmi(ix,iy,KMAX_MID:KTOP_SONDE:-1,1) &
+             +v_xmi(ix,iy-1,KMAX_MID:KTOP_SONDE:-1,1) )
 
         case ( "D3D" )
             call StopAll("D3D Sites out not defined")
@@ -643,14 +645,16 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
 
     ! Open new file for write-out
 
-    write(suffix,fmt="(2i2.2)") current_date%month,modulo(current_date%year,100)
+    write(suffix,fmt="(2i2.2)") current_date%month, &
+                                modulo(current_date%year,100)
     outfile = fname // "." // suffix
     open(file=outfile,unit=io_num,action="write")
 
     write(io_num,"(i3,2x,a,a, 4i4)") nglobal, fname, " in domain",RUNDOMAIN
     write(io_num,"(i3,a)") f, " Hours between outputs"
 
-    write(io_num,"(1(a50,3i4))")(s_name(n), s_gx(n), s_gy(n),s_gz(n),n=1,nglobal)
+    write(io_num,"(1(a50,3i4))")(s_name(n), s_gx(n), s_gy(n),s_gz(n),&
+                                n=1,nglobal)
 
     write(io_num,"(i3,a)") size(s_species), " Variables:"
     write(io_num,"(1(i3,2x,a))")(n, s_species(n), n=1,size(s_species))
@@ -674,7 +678,8 @@ subroutine siteswrt_out(fname,io_num,nout,f,nglobal,nlocal, &
 
     do d = 1, NPROC-1
       call MPI_RECV(nloc, 4*1, MPI_BYTE, d, 346, MPI_COMM_WORLD,STATUS, INFO)
-      call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, STATUS, INFO)
+      call MPI_RECV(out, 8*nout*nloc, MPI_BYTE, d, 347, MPI_COMM_WORLD, &
+                    STATUS, INFO)
       do n = 1, nloc
         nglob = s_gindex(d,n)
         g_out(:,nglob) = out(:,n)

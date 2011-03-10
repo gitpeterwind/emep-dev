@@ -101,7 +101,7 @@ ds done   MicroMet_ml.f90
 av done   Nest_ml.f90
 pw done   NetCDF_ml.f90
 mg done   NH3Emis_variation_ml.f90 - ds suggests move to FUTURE_NH3Emis_variation_ml.f90
-          NH3variables_ml.f90 - ds suggests move to FUTURE_NH3variables_ml.f90
+mg done   NH3variables_ml.f90 - ds suggests move to FUTURE_NH3variables_ml.f90
           OutputChem_ml.f90
 av done   Output_hourly.f90
           OwnDataTypes_ml.f90
@@ -116,7 +116,7 @@ an done   ReadField_ml.f90
           SeaSalt_ml.f90
           Setup_1dfields_ml.f90
 ds --     Setup_1d_ml.f90
-          Sites_ml.f90
+mg done   Sites_ml.f90
           SmallUtils_ml.f90
 ds --     SoilWater_ml.f90
 ds --     Solver.f90
