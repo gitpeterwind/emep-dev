@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2010 met.no
+!*  Copyright (C) 2010-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -56,7 +56,7 @@ module SoilWater_ml
 !   DAM = D/MAM, min 0, max 1.0
 
     real, private, parameter ::   SoilMAM = 0.02  ! HIRLAM
-    real, private, parameter ::   SoilDAM = 1.0 ! assumed fraction of
+    real, private, parameter ::   SoilDAM = 0.5 ! assumed fraction of
                             ! MAXM when decline begins, D on figure
                             ! DO NOT SET TO ZERO!
 !    real, dimension(366), public, save :: SWP = 0.0  ! daily soil water potential
@@ -116,7 +116,7 @@ contains
                  daynumber, SoilWater_deep(i,j,1), hourloc, REW, fSW(i,j)
              end if
 
-  !!!! WILL RE-VISIT LATER - with Peter's readneighbour routine
+  !!!! WILL RE-VISIT LATER - with readneighbour routine
 !TMP             do ii = -1, 1
 !TMP             do jj = -1, 1
 !TMP               ii2=max(1,i+ii)
