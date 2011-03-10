@@ -33,8 +33,8 @@ module DerivedFields_ml
   private
 
   integer, public, parameter ::  &
-       MAXDEF_DERIV2D =250 & ! Max. No. 2D derived fields to be defined
-      ,MAXDEF_DERIV3D = 17   ! Max. No. 3D derived fields to be defined
+       MAXDEF_DERIV2D = 250 & ! Max. No. 2D derived fields to be defined
+      ,MAXDEF_DERIV3D = 17    ! Max. No. 3D derived fields to be defined
 
 
   ! We put definitions of **all** possible variables in def_2d, def_3d
@@ -50,8 +50,8 @@ module DerivedFields_ml
   ! Fields for storing derived-style outputs. Will be allocated
   ! in Derived_ml.
 
-  !e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
-  ! &   d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
+  ! e.g. d_2d( num_deriv2d,MAXLIMAX, MAXLJMAX, LENOUT2D)
+  ! &    d_3d( num_deriv3d,MAXLIMAX, MAXLJMAX, KMAX_MID, LENOUT3D )
    real, save, public, allocatable, dimension(:,:,:,:) :: d_2d
    real, save, public, allocatable, dimension(:,:,:,:,:) :: d_3d
 
