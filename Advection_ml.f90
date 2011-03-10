@@ -38,19 +38,15 @@
 ! "Bott's fourth order scheme". The routine preadvx and preadvy take care of
 ! the transfer of information between processors before the advection step.
 !
-! The advvk routine performs the vertical advection. The advvdifvk does both
-! vertical advection and diffusion. Bott's second order scheme with variable
-! grid distance is used. The calculation of the coefficients used for this
-! scheme is done in the routine vgrid.
-!
-! Corrected version by pw, 1/11/01: xn_adv(k=top) is updated in
-! advvdifvk. We update fluxin and fluxout to account for the change in
-! concentrations which occur when the top layer is "reset".
+! The advvk routine performs the vertical advection. Bott's second order 
+! scheme with variable grid distance is used. 
+! The calculation of the coefficients used for this scheme is done in the 
+! routine vgrid.
 !
 ! Notes from Peter; 7/11/01
 ! About the division by the surface pressure (p*):
 ! In my opinion the best way is to divide by the advected p*, (corresponding
-! to the option where NSPEC_ADD_ADV is NOT equal to 0).  This should ensure
+! to the option where ADVEC_TYPE==1).  This should ensure
 ! that, in the case of a uniform mixing ratio, we end up with a uniform mixing
 ! ratio, whatever the meteo.  The problem is that if the meteo is not
 ! consistent (air is "created", or surface pressure does not corespond to the
@@ -59,20 +55,14 @@
 !
 !
 ! Peter, January 2002: The advecdiff routine has been completely reorganised,
-! in order to allow for flexible timesteps. The timestep dt_advec can now be large.
+! in order to allow for flexible timesteps. The timestep can now be large.
 ! The advecdiff routine will divide dt_advec in several advection steps if the
 ! CFL condition is not met. For small dt_advec (600s in a 50x50 km2 grid))
 ! these changes should usually have no effect on the result.
-! Some small changes have been made in the Bott's scheme in the advx, advy and
-! vgrid routines. The effect of these changes is estimated to be less than 1% on
-! average monthly values.
 !
 ! Peter, January 2003: The vertical diffusion and the division by p* have been
 ! extracted out of the advvdifvk routine. Now they are done separately.
 ! The number of diffusion iterations can be chosen (ndiff).
-! A new option ADVEC_TYPE=2 can be chosen. This use the surface pressure of
-! next meteo step for p* before division. This should make the advection scheme
-! exactly mass conservative (?). ndiff and ADVEC_TYPE=2 have not yet been tested.
 !
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
   use Chemfields_ml,     only : xn_adv
@@ -84,7 +74,7 @@
   use Io_ml,             only : datewrite
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
-                  FORECAST,& ! AMVB 2009-11-06: FORECAST mode
+                  FORECAST,& 
                   USE_CONVECTION
   use MetFields_ml,      only : ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
   use MassBudget_ml,     only : fluxin,fluxout
@@ -105,7 +95,6 @@
   real, private, save, dimension(KMAX_BND)  ::  dhs1, dhs1i, dhs2i
 
 !  for vertical advection (nonequidistant spacing)
-
   real, private, save, dimension(9,2:KMAX_MID,0:1)  ::  alfnew
   real, private, save, dimension(3)  ::  alfbegnew,alfendnew
 
@@ -115,7 +104,7 @@
 
   integer, public, parameter :: ADVEC_TYPE = 1 ! Divides by advected p*
 ! integer, public, parameter :: ADVEC_TYPE = 2 ! Divides by "meteorologically" 
-                                               ! advected p* -> mass consistent (in kg)
+                                               ! advected p* 
 
   public :: assign_dtadvec
   public :: assign_nmax
@@ -163,11 +152,9 @@
     if(GRIDWIDTH_M<21000.0) dt_advec= 900.0
     if(GRIDWIDTH_M<11000.0) dt_advec= 600.0
     if(GRIDWIDTH_M< 6000.0) dt_advec= 300.0
-! AMVB 2010-08-02: dt_advec from model resolution also in FORECAST mode
+
 ! GEMS025 domain 0.25 deg resol --> GRIDWIDTH_M~=27.8 km --> dt_advec=1200.0
 ! MACC02  domain 0.20 deg resol --> GRIDWIDTH_M~=22.2 km --> dt_advec=1200.0
-!   if(FORECAST)            dt_advec= 600.0 ! AMVB 2009-11-06: FORECAST mode
-
 
 !check that it is allowed:
     call CheckStop(mod(3600,nint(dt_advec)).ne.0, "3600/dt_advec must be an integer")
@@ -412,8 +399,6 @@
               enddo
 
               call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")  
-                   ! AMVB 2009-11-06: uniform names for Add_2timing calls
-
             enddo !iterxy horizontal (xy) advection
           enddo !k horizontal (xy) advection
 
@@ -535,6 +520,7 @@
               xn_adv(:,i,j,k) = xn_adv(:,i,j,k)*psi
             enddo
           enddo
+            minps3d = minval( ps3d(li0:li1, lj0:lj1, k) )
             if ( nWarnings < MAX_WARNINGS ) then
               call datewrite("WARNING:B ps3d < 1",k,  (/ minps3d /) )
               nWarnings = nWarnings + 1
@@ -561,7 +547,7 @@
         ds4(k) = dt_advec*dhs1i(k+1)*dhs2i(k)
       enddo
 
-      ! sum is conserved under vertical diffusion
+! sum is conserved under vertical diffusion
 !     sum = 0.
 !     do k=1,KMAX_MID
 !       sum = sum + xn_adv(1,4,4,k)/dhs1i(k+1)
@@ -611,8 +597,7 @@
 
     if(KCHEMTOP==2)then
 
-!pw since the xn_adv are changed it corresponds to a flux in or
-!   out of the system:
+!since the xn_adv are changed it corresponds to a flux in or out of the system:
 
       do i  = li0,li1
         do j = lj0,lj1
@@ -629,7 +614,6 @@
 
     endif
 
-!   call Add_2timing(24,tim_after,tim_before,"advecdiff:advvkdiff")
     return
 
   end subroutine advecdiff
@@ -865,7 +849,7 @@
 
       ! stop
 
-      call Add_2timing(20,tim_after,tim_before,"advecdiff:synchronization")  ! AMVB 2009-11-06: uniform names for Add_2timing calls
+      call Add_2timing(20,tim_after,tim_before,"advecdiff:synchronization")
 
       ! Start xys advection loop:
       iterxys = 0
@@ -971,7 +955,7 @@
 
 
 
-        call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")  ! AMVB 2009-11-06: uniform names for Add_2timing calls
+        call Add_2timing(23,tim_after,tim_before,"advecdiff:preadvy,advy")
 
         do k = 1,KMAX_MID
           do j = lj0,lj1
@@ -998,7 +982,7 @@
           enddo !j
         enddo !k horizontal (x) advection
 
-        call Add_2timing(21,tim_after,tim_before,"advecdiff:preadvx,advx")  ! AMVB 2009-11-06: uniform names for Add_2timing calls
+        call Add_2timing(21,tim_after,tim_before,"advecdiff:preadvx,advx") 
 
 
         do iters=1,niters
@@ -1612,7 +1596,7 @@
 
     integer  k,n
 
-    real, dimension(0:KMAX_MID-1) :: adif,bdif,cdif,e1  ! AMVB 2009-11-06: formatting
+    real, dimension(0:KMAX_MID-1) :: adif,bdif,cdif,e1  
 
     real ndiffi
 
@@ -1675,7 +1659,7 @@
 
     integer  k,n
 
-    real, dimension(KMAX_MID) :: adif,bdif,cdif,e1  ! AMVB 2009-11-06: formatting
+    real, dimension(KMAX_MID) :: adif,bdif,cdif,e1 
 
     real ndiffi
 
@@ -1739,9 +1723,9 @@
 !    parameter:
 !    input
     real,intent(in) :: vel(0:MAXLIMAX),velbeg, velend
-    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend   ! AMVB 2009-11-06: formatting
-    real,intent(in),dimension(3)           :: psbeg,psend   ! AMVB 2009-11-06: formatting
-    real,intent(in),dimension(0:MAXLIMAX+1):: xm2loc,xmdloc ! AMVB 2009-11-06: formatting
+    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend 
+    real,intent(in),dimension(3)           :: psbeg,psend 
+    real,intent(in),dimension(0:MAXLIMAX+1):: xm2loc,xmdloc
     real,intent(in) :: dth,fac1
 
 !    input+output
@@ -2287,9 +2271,9 @@
 !    parameter:
 !    input
     real,intent(in) :: vel(0:MAXLIMAX*MAXLJMAX),velbeg, velend
-    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend   ! AMVB 2009-11-06: formatting
-    real,intent(in),dimension(3)           :: psbeg,psend   ! AMVB 2009-11-06: formatting
-    real,intent(in),dimension(0:MAXLJMAX+1):: xm2loc,xmdloc ! AMVB 2009-11-06: formatting
+    real,intent(in),dimension(NSPEC_ADV,3) :: xnbeg,xnend  
+    real,intent(in),dimension(3)           :: psbeg,psend  
+    real,intent(in),dimension(0:MAXLJMAX+1):: xm2loc,xmdloc
     real,intent(in):: dth,fac1
 
 !    input+output
@@ -2854,16 +2838,16 @@
                      ,vel(MAXLIMAX+1:(MAXLIMAX+1)*(MAXLJMAX+1))
 
 !    output
-    real,intent(out),dimension(NSPEC_ADV,3,MAXLJMAX) :: xnend,xnbeg ! AMVB 2009-11-06: formatting
-    real,intent(out),dimension(3,MAXLJMAX)           :: psend,psbeg ! AMVB 2009-11-06: formatting
+    real,intent(out),dimension(NSPEC_ADV,3,MAXLJMAX) :: xnend,xnbeg
+    real,intent(out),dimension(3,MAXLJMAX)           :: psend,psbeg
 
 !    local
     integer  i, info
 
     integer request_ps_w, request_ps_e, &
             request_xn_w, request_xn_e
-    real,dimension(NSPEC_ADV, 3, MAXLJMAX) :: buf_xn_w,buf_xn_e ! AMVB 2009-11-06: formatting
-    real,dimension(3, MAXLJMAX)            :: buf_ps_w,buf_ps_e ! AMVB 2009-11-06: formatting
+    real,dimension(NSPEC_ADV, 3, MAXLJMAX) :: buf_xn_w,buf_xn_e
+    real,dimension(3, MAXLJMAX)            :: buf_ps_w,buf_ps_e
 
 !     Initialize arrays holding boundary slices
 
@@ -2993,16 +2977,16 @@
                      ,vel(MAXLIMAX+1:(MAXLIMAX+1)*(MAXLJMAX+1))
 
 !    output
-    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg  ! AMVB 2009-11-06: formatting
-    real,intent(out),dimension(3)           :: psend,psbeg  ! AMVB 2009-11-06: formatting
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
+    real,intent(out),dimension(3)           :: psend,psbeg 
 
 !    local
     integer  i, info
 
   integer request_ps_w, request_ps_e, &
           request_xn_w, request_xn_e
-  real,dimension(NSPEC_ADV,3) :: buf_xn_w,buf_xn_e    ! AMVB 2009-11-06: formatting
-  real,dimension(3)           :: buf_ps_w,buf_ps_e    ! AMVB 2009-11-06: formatting
+  real,dimension(NSPEC_ADV,3) :: buf_xn_w,buf_xn_e  
+  real,dimension(3)           :: buf_ps_w,buf_ps_e  
 
 !     Initialize arrays holding boundary slices
 
@@ -3130,16 +3114,16 @@
                      ,vel(MAXLIMAX*(MAXLJMAX+1))
 
 !    output
-    real,intent(out),dimension(NSPEC_ADV,3,MAXLIMAX) :: xnend,xnbeg   ! AMVB 2009-11-06: formatting
-    real,intent(out),dimension(3,MAXLIMAX)           :: psend,psbeg   ! AMVB 2009-11-06: formatting
+    real,intent(out),dimension(NSPEC_ADV,3,MAXLIMAX) :: xnend,xnbeg 
+    real,intent(out),dimension(3,MAXLIMAX)           :: psend,psbeg 
 
 !    local
     integer  i, info
 
   integer request_ps_n, request_ps_s, &
           request_xn_n, request_xn_s
-  real,dimension(NSPEC_ADV,3,MAXLIMAX) :: buf_xn_n,buf_xn_s ! AMVB 2009-11-06: formatting
-  real,dimension(3,MAXLIMAX)           :: buf_ps_n,buf_ps_s ! AMVB 2009-11-06: formatting
+  real,dimension(NSPEC_ADV,3,MAXLIMAX) :: buf_xn_n,buf_xn_s
+  real,dimension(3,MAXLIMAX)           :: buf_ps_n,buf_ps_s
 
 !     Initialize arrays holding boundary slices
 
@@ -3276,16 +3260,16 @@
 
 !    output
 
-    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg    ! AMVB 2009-11-06: formatting
-    real,intent(out),dimension(3)           :: psend,psbeg    ! AMVB 2009-11-06: formatting
+    real,intent(out),dimension(NSPEC_ADV,3) :: xnend,xnbeg 
+    real,intent(out),dimension(3)           :: psend,psbeg 
 
 !    local
     integer  i, info
 
     integer request_ps_n, request_ps_s, &
             request_xn_n, request_xn_s
-    real,dimension(NSPEC_ADV,3) :: buf_xn_n,buf_xn_s  ! AMVB 2009-11-06: formatting
-    real,dimension(3)           :: buf_ps_n,buf_ps_s  ! AMVB 2009-11-06: formatting
+    real,dimension(NSPEC_ADV,3) :: buf_xn_n,buf_xn_s 
+    real,dimension(3)           :: buf_ps_n,buf_ps_s 
 
 !     Initialize arrays holding boundary slices
 
