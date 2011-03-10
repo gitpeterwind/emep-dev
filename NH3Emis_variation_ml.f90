@@ -45,12 +45,15 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
       tnh3_fac(:,:,:)=0.0 !initialize
       
       GEMEMIS=1.
-      NDAYS    = nydays !day_of_year(ISTARTYEAR,12,31)!find number of days in year
+      NDAYS    = nydays !day_of_year(ISTARTYEAR,12,31)
+                        !find number of days in year
       NDAY =day_of_year(current_date%year,current_date%month,current_date%day) !day in year
       NHOUR= (NDAY-1)*24 + current_date%hour 
       TIME1=NHOUR/(24/TSPERDAY) +1
       if (MasterProc)then
-         write(6,*)'Date and nhour and ntstep in NH3Emis_variation',current_date%year,current_date%month,current_date%day,current_date%hour,NHOUR,TIME1
+         write(6,*)'Date and nhour and ntstep in NH3Emis_variation', &
+                    current_date%year,current_date%month,current_date%day, &
+                    current_date%hour,NHOUR,TIME1
       endif
 
       NTIMESTEPS=NDAYS*TSPERDAY 
@@ -60,30 +63,30 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
 
 
     do j = lj0,lj1
-        do i = li0,li1
+       do i = li0,li1
 
 
      ! - Set up debugging coordinates first. ---------------------------!
      ! If location matches debug i,j value, set debug_flag. 
 
-      debug_flag = .false. 
-      if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then
-         debug_flag = .true.
-         write(6,*)'Found coords for Tange, prog, i,j, ',me,i,j
-      endif
-           T2=t2_nwp(i,j,1)-T0 ! T2 in C not in K degrees
+        debug_flag = .false. 
+        if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then
+          debug_flag = .true.
+          write(6,*)'Found coords for Tange, prog, i,j, ',me,i,j
+        endif
+          T2=t2_nwp(i,j,1)-T0 ! T2 in C not in K degrees
      
-           if(foundu10_met .and. foundv10_met)then
+          if(foundu10_met .and. foundv10_met)then
               V10=u_10(i,j) 
 !           else
 !              V10=u_ref(i,j) !~45m wind??
+          endif
+          if ( DEBUG_NH3 .and. debug_flag )then !write out for Tange
+            write(6,*) 'DEBUG 2m nwp temp for Tange NDAY, NHOUR', &
+                       T2,me,i,j, NDAY,NHOUR
+            write(6,*) 'DEBUG 10m wind V10 foundu10_met foundv10_met ',&
+                       foundu10_met,foundv10_met,V10,me,i,j
            endif
-           if ( DEBUG_NH3 .and. debug_flag )then !write out for Tange
-            write(6,*) 'DEBUG 2m nwp temp for Tange NDAY, NHOUR',T2,me,i,j, NDAY,NHOUR
-            write(6,*) 'DEBUG 10m wind V10 foundu10_met foundv10_met ',foundu10_met,foundv10_met,V10,me,i,j
-           endif
-
-
 
 !C
 !C *******************************************
@@ -105,6 +108,7 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
           (1.0*GEMEMIS/(lNH3emis_pot(I_ISO_STABLE,i,j)))
 
 
+!C
 !C ***************************************
 !C * EMISSION VARIATION FOR OPEN STABLES *
 !C ***************************************
@@ -181,9 +185,9 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
           (1./(D1*SQRTTWOPI))*(GEMEMIS/(lNH3emis_pot(I_MANURE4,i,j)))*&
            EXP(-0.5*((TIME1-C1)/D1)**2.)
 !C
-!C *****************************************************
+!C ******************************************************
 !C * EMISSION VARIATION FOR MANURE TYPE 4a: EMPTY TANKS *
-!C *****************************************************
+!C ******************************************************
 !C
       C1=270.*TSPERDAY ! 24 -> TSPERDAY
       D1=09.*TSPERDAY ! 24 -> TSPERDAY
@@ -192,9 +196,10 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
            EXP(-0.5*((TIME1-C1)/D1)**2.)
  
 !C
-!C ****************************************************************************** 
-!C * EMISSION VARIATION FOR GRAZING CATTLE: ASSUMED TO FOLLOW THE GRASS PATTERN *
-!C ******************************************************************************
+!C ****************************************** 
+!C * EMISSION VARIATION FOR GRAZING CATTLE: *
+!C * ASSUMED TO FOLLOW THE GRASS PATTERN    *
+!C ******************************************
 !C
       C1=lddagtemp(7,i,j)*TSPERDAY ! 24 -> TSPERDAY
       D1=60.*TSPERDAY ! 24 -> TSPERDAY
@@ -211,7 +216,6 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
       tnh3_fac(I_WINTER_CROP,i,j)=(1./(D1*SQRTTWOPI))*&
            (GEMEMIS/(lNH3emis_pot(I_WINTER_CROP,i,j)))*&
            EXP(-0.5*((TIME1-C1)/D1)**2.)
-
 
 !C
 !C ***************************************
@@ -244,25 +248,27 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
            (GEMEMIS/(lNH3emis_pot(I_SPRING_GRASS,i,j)))*&
            EXP(-0.5*((TIME1-C1)/D1)**2.)
 !C
-!C *****************************************************
+!C ****************************************************
 !C * EMISSION VARIATION FOR MINERAL FERTIIZER: SPRING *
-
+!C ****************************************************
 !C
       C1=lddagtemp(2,i,j)*TSPERDAY ! 24 -> TSPERDAY
       D1=9.*TSPERDAY ! 24 -> TSPERDAY
       tnh3_fac(I_MINERAL_SPRING,i,j)=EXP(0.0223*T2)*VH10HELP*&
-          (1./(D1*SQRTTWOPI))*(0.9*GEMEMIS/(lNH3emis_pot(I_MINERAL_SPRING,i,j)))*&
-           EXP(-0.5*((TIME1-C1)/D1)**2.)
+          (1./(D1*SQRTTWOPI))*(0.9*GEMEMIS/&
+          (lNH3emis_pot(I_MINERAL_SPRING,i,j)))*&
+          EXP(-0.5*((TIME1-C1)/D1)**2.)
 !C
-!C *****************************************************
+!C ****************************************************
 !C * EMISSION VARIATION FOR MINERAL FERTIIZER: SUMMER *
-!C *****************************************************
+!C ****************************************************
 !C
       C1=lddagtemp(7,i,j)*TSPERDAY ! 24 -> TSPERDAY
       D1=16.*TSPERDAY ! 24 -> TSPERDAY
       tnh3_fac(I_MINERAL_AUTUMN,i,j)=EXP(0.0223*T2)*VH10HELP*&
-          (1./(D1*SQRTTWOPI))*(0.1*GEMEMIS/(lNH3emis_pot(I_MINERAL_AUTUMN,i,j)))*&
-           EXP(-0.5*((TIME1-C1)/D1)**2.)
+          (1./(D1*SQRTTWOPI))*(0.1*GEMEMIS/&
+          (lNH3emis_pot(I_MINERAL_AUTUMN,i,j)))*&
+          EXP(-0.5*((TIME1-C1)/D1)**2.)
 !C
 !C ************************************************
 !C * AMMONIA LOSSES FROM NH3 THREATMEANT OF GRASS *
@@ -278,9 +284,8 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
 !C ************************
 !C
       tnh3_fac(I_TRAFFIC,i,j)=GEMEMIS/(TSPERDAY *REAL(NDAYS)) ! 24 -> TSPERDAY
-!C
-!C
-      !write out for Tange
+
+!write out for Tange
       if ( DEBUG_NH3 .and.  i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j )then 
 ! output to file
 !         write(IO_NH3_DEB,'(3i3,i5,18F20.10)')current_date%month,&
@@ -296,14 +301,17 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
 !              tnh3_fac(I_TRAFFIC,i,j),sum(tnh3_fac(:,i,j))
 
          print *, '-------------DEBUG VARIATIONS-------------------------'
-         write(6,'(3i3,3i5,F6.0,17F20.10)')current_date%month,current_date%day,current_date%hour,TIME1,&
-              I,J,T2,tnh3_fac(I_ISO_STABLE,i,j),&
-              tnh3_fac(I_OPEN_STABLE,i,j),tnh3_fac(I_STORAGE,i,j),tnh3_fac(I_WINTER_CROP,i,j),&
-              tnh3_fac(I_SPRING_CROP,i,j), tnh3_fac(I_SPRING_SBEET,i,j), tnh3_fac(I_SPRING_GRASS,i,j), &
-              tnh3_fac(I_MANURE1,i,j), tnh3_fac(I_MANURE2,i,j),&
-              tnh3_fac(I_MANURE3,i,j),tnh3_fac(I_MANURE4,i,j),tnh3_fac(I_MANURE4a,i,j),tnh3_fac(I_MINERAL_SPRING,i,j),&
-              tnh3_fac(I_MINERAL_AUTUMN,i,j),tnh3_fac(I_GRAZ_CATTLE,i,j),&
-              tnh3_fac(I_NH3_GRASS,i,j), tnh3_fac(I_TRAFFIC,i,j)
+         write(6,'(3i3,3i5,F6.0,17F20.10)')&
+           current_date%month,current_date%day,current_date%hour,TIME1,&
+           I,J,T2,tnh3_fac(I_ISO_STABLE,i,j),&
+           tnh3_fac(I_OPEN_STABLE,i,j),tnh3_fac(I_STORAGE,i,j),&
+           tnh3_fac(I_WINTER_CROP,i,j),tnh3_fac(I_SPRING_CROP,i,j),&
+           tnh3_fac(I_SPRING_SBEET,i,j), tnh3_fac(I_SPRING_GRASS,i,j), &
+           tnh3_fac(I_MANURE1,i,j), tnh3_fac(I_MANURE2,i,j),&
+           tnh3_fac(I_MANURE3,i,j),tnh3_fac(I_MANURE4,i,j),&
+           tnh3_fac(I_MANURE4a,i,j),tnh3_fac(I_MINERAL_SPRING,i,j),&
+           tnh3_fac(I_MINERAL_AUTUMN,i,j),tnh3_fac(I_GRAZ_CATTLE,i,j),&
+           tnh3_fac(I_NH3_GRASS,i,j), tnh3_fac(I_TRAFFIC,i,j)
       endif 
 
   enddo !i
@@ -313,10 +321,9 @@ end subroutine NH3emis_variation
 !+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 !hf NH3emis
-!------------------------------------------------------------------------------
+!-----------------------------------------------------------------------
 subroutine SetNH3()
-!------------------------------------------------------------------------------
-
+!-----------------------------------------------------------------------
 
   integer :: i,j,k
   real    :: ehlpcom,ehlpcom0
@@ -341,13 +348,14 @@ subroutine SetNH3()
               emnh3(k,i,j) = lEmis50_nh3(k,i,j)*ehlpcom *tnh3_fac(k,i,j) &
               *NTPERYEAR *xm2(i,j)/14.0 !from kg(N)/m2/s to  molecules/cm3/s
               
-              if ( DEBUG_NH3 .and.  i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then !write out for Tange
+              if ( DEBUG_NH3 .and. i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then !write out for Tange
                  write(6,*)'DEBUG for Tange' 
                  write(6,*)'k and emnh3', k, emnh3(k,i,j)
                  write(6,*)'proc,lEmis50_nh3',me, lEmis50_nh3(k,i,j)
                  write(6,*)'tnh3_fac(k,i,j)', tnh3_fac(k,i,j)*NTPERYEAR 
                  write(6,*)'NH3Emisvariation ',emnh3(k,i,j)
-                 write(6,*)'NTPERYEAR, nydays, TSPERDAY',NTPERYEAR,nydays,TSPERDAY
+                 write(6,*)'NTPERYEAR, nydays, TSPERDAY',NTPERYEAR,&
+                            nydays,TSPERDAY
               endif 
            enddo
 
@@ -358,4 +366,3 @@ subroutine SetNH3()
 end subroutine SetNH3
 
 end module NH3Emis_variation_ml
-

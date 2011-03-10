@@ -85,10 +85,10 @@ pw done   InterpolationRoutines_ml.f90
           Io_ml.f90
           Io_Nums_ml.f90
 av done   Io_Progs_ml.f90
-          KeyValue_ml.f90
+mg done   KeyValue_ml.f90
 ds --     LandDefs_ml.f90
 ds --     LandPFT_ml.f90
-          Landuse_ml.f90
+mg done   Landuse_ml.f90
           local2global.f90
           LocalVariables_ml.f90
           MARS_ml.f90
@@ -100,7 +100,7 @@ ds done   MicroMet_ml.f90
           MosaicOutputs_ml.f90
 av done   Nest_ml.f90
 pw done   NetCDF_ml.f90
-          NH3Emis_variation_ml.f90 - ds suggests move to FUTURE_NH3Emis_variation_ml.f90
+mg done   NH3Emis_variation_ml.f90 - ds suggests move to FUTURE_NH3Emis_variation_ml.f90
           NH3variables_ml.f90 - ds suggests move to FUTURE_NH3variables_ml.f90
           OutputChem_ml.f90
 av done   Output_hourly.f90
