@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -45,9 +45,6 @@
 
   use CheckStop_ml,     only: CheckStop
   use ChemSpecs_adv_ml
-!  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
-!    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
-!    For ugX/m3 output use in combination with to_ug_X.
   use ChemSpecs_shl_ml
   use ChemChemicals_ml,  only: species
   use ChemGroups_ml,     only: chemgroups
@@ -104,9 +101,6 @@
 !     "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
 !     "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
 !     "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
-!     "COLUMN_CO_k08  ","COLUMN_C2H6_k08","COLUMN_HCHO_k08","COLUMN_CH4_k08 ", "COLUMN_NO2_k08 ",&
-!     "COLUMN_CO_k12  ","COLUMN_C2H6_k12","COLUMN_HCHO_k12","COLUMN_CH4_k12 ", "COLUMN_NO2_k12 ",&
-!     "COLUMN_CO_k16  ","COLUMN_C2H6_k16","COLUMN_HCHO_k16","COLUMN_CH4_k16 ", "COLUMN_NO2_k16 ",&
 !     "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
       "COLUMN_NO2_k20 " /)
 
@@ -136,26 +130,17 @@
     ,NLEVELS_SONDE =  20               &   ! No. k-levels (9 => 0--2500 m)
     ,FREQ_SONDE  =    1               &   ! Interval (hrs) between outputs
     ,NADV_SONDE  =   9                &   ! No.  advected species
-!PCM    ,NADV_SONDE  =   22                &   ! No.  advected species
     ,NSHL_SONDE  =    3                &   ! No. short-lived species
-    ,NXTRA_SONDE =    7                    ! No. Misc. met. params  (now th)
+    ,NXTRA_SONDE =    4                    ! No. Misc. met. params
 
    integer, public, parameter, dimension(NADV_SONDE) :: &
    SONDE_ADV =  (/ IXADV_O3, IXADV_NO2, IXADV_NO, IXADV_PAN,  &
-! Uncomment PCM to get SOA-relaetd outputs
-!PCMIXADV_AER_ASOA, &
-!PCM                IXADV_AER_BSOA, IXADV_AER_POA, IXADV_AER_OPOA, &
-!PCM                IXADV_AER_OC, IXADV_AER_POC, IXADV_AER_FFUELOC, &
-!PCM                IXADV_AER_WOODOC, IXADV_FFIRE_BC, IXADV_EC_F_FFUEL, &
-!PCM                IXADV_EC_C_FFUEL, IXADV_EC_F_WOOD, IXADV_EC_C_WOOD,IXADV_CO, &
                 IXADV_NO3_c, IXADV_NO3_f, IXADV_SO4,  IXADV_NH4_f, IXADV_NH3/)
 
    integer, public, parameter, dimension(NSHL_SONDE) :: &
     SONDE_SHL =  (/ IXSHL_OH, IXSHL_OD, IXSHL_OP /)
    character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
-!   SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /)
-    SONDE_XTRA=  (/"PM25  ", "PMco  ", & 
-                   "NOy   ", "z_mid ", "p_mid ", "th    ", "Kz_m2s" /)
+   SONDE_XTRA=  (/ "NOy   ", "z_mid ", "p_mid ", "th    " /) !, "Kz_m2s" /)
 
 
  !   can access d_3d fields through index here, by
@@ -278,7 +263,7 @@
  !    Note that the hourly output uses **lots** of disc space, so specify
  !    as few as you need and with as small format as possible (cf max value).
 
- ! ** REMEMBER : ADV species are mixing ratioes !!
+ ! ** REMEMBER : ADV species are mixing ratios !!
  ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
  ! ** REMEMBER : No spaces in name, except at end !!
 
