@@ -39,34 +39,34 @@
 ! sea salt production, particle water etc.
 !    
 !----------------------------------------------------------------------
- !TEST use AOTx_ml, only: Calc_GridAOTx
- use ModelConstants_ml, only : DEBUG_AOT
- use Par_ml, only : limax, ljmax
+
+   use ModelConstants_ml, only : DEBUG_AOT
+   use Par_ml, only : limax, ljmax
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS, AOD,      &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
-                                 Aero_water, SEASALT   !DUST -> USE_DUST
+                                Aero_water, SEASALT   !DUST -> USE_DUST
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
    use Ammonium_ml,       only: Ammonium
    use AOD_PM_ml,         only: AOD_calc
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, setup_bio! rcbio for debug
+   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, setup_bio !rcbio for debug
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
-   use Chemfields_ml,     only: xn_adv  ! For DEBUG 
+   use Chemfields_ml,     only: xn_adv    ! For DEBUG 
    use Chemsolver_ml,     only: chemistry
    use DefPhotolysis_ml,  only: setup_phot
-   use DryDep_ml, only : drydep
+   use DryDep_ml,         only: drydep
    use DustProd_ml,       only: WindDust
    use ChemSpecs_tot_ml                   ! DEBUG ONLY
    use ChemSpecs_adv_ml                   ! DEBUG ONLY
    use GridValues_ml,     only: debug_proc, debug_li, debug_lj
-   use Io_Progs_ml,       only : datewrite
-   use ModelConstants_ml, only :  PPB, KMAX_MID, dt_advec, &
-                                  nprint, END_OF_EMEPDAY, &
-                                  USE_DUST, &
-                  DebugCell, & ! DEBUG only
+   use Io_Progs_ml,       only: datewrite
+   use ModelConstants_ml, only:  PPB, KMAX_MID, dt_advec, &
+                                 nprint, END_OF_EMEPDAY, &
+                                 USE_DUST, &
+                                 DebugCell, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
 
    use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol
@@ -75,10 +75,10 @@
                                 ,IRUNBEG, JRUNBEG  !! for testing
    use SeaSalt_ml,        only: SeaSalt_flux
    use Setup_1d_ml,       only: setup_1d, &
-                                setup_rcemis, reset_3d
-                                !FUTURE setup_nh3 ! NH3emis
+                                setup_rcemis, reset_3d, &
+                                setup_nh3  ! hb NH3emis (NMR-NH3 project)
    use Setup_1dfields_ml, only: first_call, rcbio,  &
-                                 amk, rcemis, xn_2d  ! DEBUG for testing
+                                amk, rcemis, xn_2d  ! DEBUG for testing
    use TimeDate_ml,       only: current_date
 
 !--------------------------------
@@ -95,7 +95,7 @@ subroutine runchem(numt)
 
    integer, intent(in) :: numt      
 
-!/ local
+!  local
    integer :: i, j
    integer :: errcode
    integer :: nmonth, nday, nhour     
@@ -113,7 +113,7 @@ subroutine runchem(numt)
    Jan_1st    = ( nmonth == 1 .and. nday == 1 )
    End_of_Run = ( mod(numt,nprint) == 0       )
 
-  !.... ****  processes calls *************************
+! Processes calls 
 
    errcode = 0
 
@@ -160,7 +160,7 @@ subroutine runchem(numt)
              call setup_rcemis(i,j)
 
 ! Called every adv step, only updated every third hour
-             !FUTURE call setup_nh3(i,j)    ! NH3emisa, experimental
+             call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
 
              if ( SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
@@ -202,14 +202,14 @@ subroutine runchem(numt)
              call Add_2timing(31,tim_after,tim_before, &
                                            "Runchem:chemistry")
                 
-              !== Alternating Dry Deposition and Equilibrium chemistry
-              !  Check that one and only one eq is chosen
+           !  Alternating Dry Deposition and Equilibrium chemistry
+           !  Check that one and only one eq is chosen
 
                 if(mod(nstep,2) /= 0 ) then 
 
                         if ( EQUILIB_EMEP )        call ammonium() 
-                        if ( EQUILIB_MARS )        call My_MARS(debug_flag)
-                        if ( EQUILIB_EQSAM )       call My_EQSAM(debug_flag) 
+                        if ( EQUILIB_MARS )        call My_MARS()
+                        if ( EQUILIB_EQSAM )       call My_EQSAM() 
 
                         call DryDep(i,j)
 
@@ -217,8 +217,8 @@ subroutine runchem(numt)
 
                         call DryDep(i,j)
                         if ( EQUILIB_EMEP )        call ammonium() 
-                        if ( EQUILIB_MARS )        call My_MARS(debug_flag)
-                        if ( EQUILIB_EQSAM )       call My_EQSAM(debug_flag) 
+                        if ( EQUILIB_MARS )        call My_MARS()
+                        if ( EQUILIB_EQSAM )       call My_EQSAM() 
                    endif
                    !????????????????????????????????????????????????????
 
@@ -243,8 +243,8 @@ subroutine runchem(numt)
                       if ( AOD )  &
                         call AOD_calc (i,j,debug_flag)
 
-                   !** Modelling PM water at filter equlibration conditions:
-                   !** T=20C and Rh=50% for comparability with gravimetric PM
+                   !  Modelling PM water at filter equlibration conditions:
+                   !  T=20C and Rh=50% for comparability with gravimetric PM
  
                      if ( nhour == END_OF_EMEPDAY .or.  End_of_Run ) then
                         ambient = .false.
@@ -259,7 +259,7 @@ subroutine runchem(numt)
                      call Add_2timing(33,tim_after,tim_before,&
                                             "Runchem:post stuff")
 
-                     first_call = .false.   !** end of first call **** !
+                     first_call = .false.   ! end of first call 
 
       end do ! j
     end do ! i
