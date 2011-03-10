@@ -152,7 +152,7 @@ subroutine Init_GasCoeff()
 
   !Declaration of local variables
 
-  integer :: icmp, iallwes
+  integer :: icmp
   real    :: Schmidt !..  number
     
 
