@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -27,6 +27,7 @@
 !*****************************************************************************! 
 module Rb_ml
 
+use ModelConstants_ml,    only :  DEBUG_RB
 use PhysicalConstants_ml, only :  KARMAN
                     
 use Wesely_ml,    only  :Wesely_tab2 &  ! Wesely Table 2 for 14 gases
@@ -36,8 +37,6 @@ private
 
 public   ::  Rb_gas
 
-logical, private, parameter :: MY_DEBUG = .false.
- 
     
 contains
 ! =======================================================================
@@ -94,7 +93,7 @@ contains
 
   end do GASLOOP
 
-   if ( MY_DEBUG ) then
+   if ( DEBUG_RB ) then
       print *,   "RB DRYDEP_GAS", size(DRYDEP_GAS), DRYDEP_GAS(1)
       print *,   "RB water",  water, "Rb(1) ", Rb(1)
    end if

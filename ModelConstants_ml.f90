@@ -200,6 +200,7 @@ integer, public, parameter :: &
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
   ,DEBUG_PHYCHEM        = .false. &
+  ,DEBUG_RB             = .false. &
   ,DEBUG_RSUR           = .false. &
   ,DEBUG_SEASALT        = .false. &
   ,DEBUG_SOILNO         = .false. &

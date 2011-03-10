@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -35,11 +35,6 @@ module ChemFunctions_ml
 !
 !** includes
 !   troe - standrad chemical function
-!
-!   Depends on: none - self-contained.
-!   Language: F
-!   History:
-!   ds - 2000-Jan. 2008
 !____________________________________________________________________
  use LocalVariables_ml,     only : Grid   ! => izen
  use ModelConstants_ml,     only : K1  => KCHEMTOP, K2 => KMAX_MID
