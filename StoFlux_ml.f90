@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2010 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -27,7 +27,7 @@
 !*****************************************************************************! 
 module StoFlux_ml
   use CheckStop_ml
-  use DO3SE_ml, only : do3se, nSumVPD, SumVPD_LC  !, MAXnSumVPD
+  use DO3SE_ml, only : do3se, nSumVPD, SumVPD_LC
   use Io_Progs_ml, only : current_date, datewrite
   use LandDefs_ml, only : LandType, STUBBLE,NLanduse_DEF, iLC_grass
   use LocalVariables_ml, only : L, Grid, Sub
@@ -149,7 +149,6 @@ contains
 
           ! VPD limitation for wheat
 
-         !if ( LandType(iL)%is_iam .and. LandType(iL)%is_crop ) then
          if ( do3se(iL)%VPDcrit > 0.0  ) then
               ivpd = mapSumVPD(iL)
               if( L%g_sun > 0.0 ) SumVPD(i,j,ivpd) = SumVPD(i,j,ivpd) + L%vpd*dt_advec/3600.0
