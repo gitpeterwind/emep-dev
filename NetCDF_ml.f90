@@ -30,24 +30,15 @@
 !
 ! Routines for netCDF output
 !
-! Written by Peter january 2003
-!
-!compile with options:
-!f90 -L/home/u4/mifahik/netcdf/lib64 -I/home/u4/mifahik/netcdf/include -64 NetCDF_ml.f90 -lnetcdf
-!
-!view results.nc with:
-!xrdb -load /home/u4/mifahik/.app-defaults/Ncview  (once only)
-!/home/u4/mifahik/bin/ncview results.nc
-!or
-!
-!/home/u4/mifahik/bin/ncdump results.nc |less
+! Written by Peter january 2003->
 !
 !for details see:
-!http://www.unidata.ucar.edu/packages/netcdf/f90/Documentation/f90-html-docs/
+!http://www.unidata.ucar.edu/software/netcdf/
 !
 !
-!To improve: When output is onto the same file, but with different positions for the
-!lower left corner, the coordinates i_EMEP j_EMEP and long lat will be wrong
+!To improve: When output is onto the same file, but with different positions 
+!for the lower left corner, the coordinates i_EMEP j_EMEP and long lat will 
+!be wrong
 !
   use My_Outputs_ml,     only : FREQ_HOURLY, &
                                 NHOURLY_OUT, &      ! No. outputs
@@ -63,8 +54,8 @@
                                ,debug_proc, debug_li, debug_lj &
                                ,yp_EMEP_official,fi_EMEP,GRIDWIDTH_M_EMEP&
                                ,grid_north_pole_latitude&
-                               ,grid_north_pole_longitude&
-                               ,GlobalPosition,glat_fdom,glon_fdom,ref_latitude&
+                               ,grid_north_pole_longitude,GlobalPosition&
+                               ,glat_fdom,glon_fdom,ref_latitude&
                                ,projection, sigma_mid,gb_stagg,gl_stagg,glon&
                                ,sigma_bnd&
                                ,glat,lb2ij,A_bnd,B_bnd
@@ -99,21 +90,24 @@
   character (len=125) :: fileName ,period_type
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
-  integer      :: ncFileID_new=closedID  !don't save because should always be redefined (in case several routines are using ncFileID_new with different filename_given)
+  integer      :: ncFileID_new=closedID  !don't save because should always be 
+                  !redefined (in case several routines are using ncFileID_new 
+                  !with different filename_given)
   integer,save :: ncFileID_inst=closedID
   integer,save :: ncFileID_hour=closedID
   integer,save :: ncFileID_day=closedID
   integer,save :: ncFileID_month=closedID
   integer,save :: ncFileID_year=closedID
   integer,save :: outCDFtag=0
-  integer, public, parameter :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 !CDF typr for output
-  character (len=18),  parameter :: Default_projection_name = 'General_Projection'
+  !CDF types for output:
+  integer, public, parameter  :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 
+  character (len=18),parameter::Default_projection_name = 'General_Projection'
 
   public :: Out_netCDF
   public :: CloseNetCDF
   public :: Init_new_netCDF
   public :: GetCDF
-  public :: WriteCDF
+  public :: WriteCDF !for testing purposes
   public :: Read_Inter_CDF
   public :: ReadField_CDF
 
@@ -167,15 +161,15 @@ case(IOU_HOUR)
   enddo
   GIMAXcdf=min(GIMAXcdf,GIMAX)
   GJMAXcdf=min(GJMAXcdf,GJMAX)
-  !write(*,*)'sizes CDF ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 
 ! Output selected model levels
   if(SELECT_LEVELS_HOURLY)then
-    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf,&
-                          KLEVcdf=LEVELS_HOURLY)
+    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
+                          KMAXcdf,KLEVcdf=LEVELS_HOURLY)
   else
   if( DEBUG_NETCDF ) write(*,*) "Creating ", trim(fileName),trim(period_type)
-    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf)
+    call CreatenetCDFfile(fileName,GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,&
+                          KMAXcdf)
   endif
 
 case(IOU_INST)
@@ -189,7 +183,8 @@ case default
   call CreatenetCDFfile(fileName,GIMAX,GJMAX,IRUNBEG,JRUNBEG,KMAX_MID)
 end select
 
-if( DEBUG_NETCDF ) write(*,*) "Finished Init_new_netCDF", trim(fileName),trim(period_type)
+if( DEBUG_NETCDF ) write(*,*) "Finished Init_new_netCDF", trim(fileName),&
+                  trim(period_type)
 end subroutine Init_new_netCDF
 
 ! Output selected model levels
@@ -209,9 +204,9 @@ real :: xcoord(GIMAX),ycoord(GJMAX),kcoord(KMAX_MID)
 
 character(len=8)  :: created_date,lastmodified_date
 character(len=10) :: created_hour,lastmodified_hour
-integer :: ncFileID,iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
-integer :: iEMEPVarID,jEMEPVarID,latVarID,longVarID,PTVarID
-real :: izero,jzero,scale_at_projection_origin
+integer :: iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
+integer :: ncFileID,iEMEPVarID,jEMEPVarID,latVarID,longVarID,PTVarID
+real :: izero,scale_at_projection_origin
 character(len=80) ::UsedProjection
 
   ! fileName: Name of the new created file
@@ -221,8 +216,10 @@ character(len=80) ::UsedProjection
 !Check that the dimensions are > 0
   if(GIMAXcdf<=0.or.GJMAXcdf<=0.or.KMAXcdf<=0)then
     write(*,*)'WARNING:'
-    write(*,*)trim(fileName),' not created. Requested area too small (or outside domain) '
-    write(*,*)'sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
+    write(*,*)trim(fileName),&
+              ' not created. Requested area too small (or outside domain) '
+    write(*,*)'sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
+              GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
     return
   endif
 
@@ -355,15 +352,13 @@ character(len=80) ::UsedProjection
   call check(nf90_put_att(ncFileID, PTVarID, "units", "Pa"))
   call check(nf90_put_att(ncFileID, PTVarID, "long_name", "Pressure at top"))
 
- !call check(nf90_def_var(ncFileID, "time", nf90_int, dimids = timeDimID, varID = VarID) )
   call check(nf90_def_var(ncFileID, "time", nf90_double, dimids = timeDimID, varID = VarID) )
   if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown'.and.&
-     trim(period_type) /= 'hourly' .and.trim(period_type) /= 'fullrun')then ! AMVB 2009-11-06: hourly time units
+     trim(period_type) /= 'hourly' .and.trim(period_type) /= 'fullrun')then 
     call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   else
     call check(nf90_put_att(ncFileID, VarID, "long_name", "time at end of period"))
   endif
- !call check(nf90_put_att(ncFileID, VarID, "units", "seconds since 1970-1-1 00:00:00.0 +00:00"))
   call check(nf90_put_att(ncFileID, VarID, "units", "days since 1900-1-1 0:0:0"))
 
 
@@ -479,7 +474,6 @@ character(len=80) ::UsedProjection
   if(DEBUG_NETCDF) write(*,*) "NetCDF: lon lat written"
 
   !Define vertical levels
-!AMVB 2010-08-02: Output selected model levels
   if(present(KLEVcdf))then     !order is defined in KLEVcdf
     do k=1,KMAXcdf
       if(KLEVcdf(k)==0)then
@@ -488,7 +482,6 @@ character(len=80) ::UsedProjection
         kcoord(k)=sigma_mid(KMAX_MID-KLEVcdf(k)+1) !1-->20;2-->19;...;20-->1
       endif
     enddo
- !if(KMAXcdf==KMAX_MID)then
   elseif(KMAXcdf==KMAX_MID)then
     do k=1,KMAX_MID
       kcoord(k)=sigma_mid(k)
@@ -517,17 +510,18 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer,                         intent(in) :: iotyp
   real    ,intent(in) :: scale
   real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
-  integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. Only level ik is written if defined
-  integer, optional, intent(in) :: CDFtype != OUTtype. output type (Integer*1, Integer*2,Integer*4, real*8 or real*4)
+  integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. 
+                                                      !Only level ik is written if defined
+  integer, optional, intent(in) :: CDFtype != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
   character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
   !NB if the file fileName_given exist (also from earlier runs) it will be appended
 
   character(len=len(def1%name)) :: varname
   character*8 ::lastmodified_date
   character*10 ::lastmodified_hour,lastmodified_hour0,created_hour
-  integer :: varID,new,nrecords,ncFileID=closedID
-  integer :: nyear,nmonth,nday,nhour,ndate(4)
-  integer :: info,d,alloc_err,ijk,itag,status,i,j,k,nseconds
+  integer :: varID,nrecords,ncFileID=closedID
+  integer :: ndate(4)
+  integer :: info,d,alloc_err,ijk,status,i,j,k
   integer :: i1,i2,j1,j2
   real :: buff(MAXLIMAX*MAXLJMAX*KMAX_MID)
   real*8 , allocatable,dimension(:,:,:)  :: R8data3D
@@ -535,11 +529,10 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer*4, allocatable,dimension(:,:,:)  :: Idata3D
   integer :: OUTtype !local version of CDFtype
   integer :: iotyp_new
-  integer :: iDimID,jDimID,kDimID,timeDimID,timeVarID
+  integer :: iDimID,jDimID,kDimID,timeVarID
   integer :: GIMAX_old,GJMAX_old,KMAX_old
   integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
-  integer :: is_leap, nseconds_time(1)
-  real*8 :: rdays,rdays_time(1)
+  real*8  :: rdays,rdays_time(1)
 
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
@@ -611,9 +604,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
   if(DEBUG_NETCDF) then
     if(iotyp_new==1)then
-      write(*,*),' Out_NetCDF: cases new ', trim(fileName_given), iotyp
+      write(*,*)' Out_NetCDF: cases new ', trim(fileName_given), iotyp
     else
-      write(*,*),' Out_NetCDF: cases old ', trim(fileName), iotyp
+      write(*,*)' Out_NetCDF: cases old ', trim(fileName), iotyp
     end if
   endif
 
@@ -783,9 +776,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      if(status == nf90_noerr) then
 !             print *, 'variable exists: ',varname
-        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: variable exists: ',varname!,nf90_strerror(status)
+        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: variable exists: ',varname
      else
-        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: creating variable: ',varname!,nf90_strerror(status)
+        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: creating variable: ',varname
         call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      endif
 
@@ -796,18 +789,10 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      !find the number of records already written
      call check(nf90_get_att(ncFileID, VarID, "numberofrecords",   nrecords))
-     !  print *,'number of dataset saved: ',nrecords
+     if(DEBUG_NETCDF)  print *,'number of dataset saved: ',nrecords
      !test if new record is needed
      if(present(ik).and.nrecords>0)then
         !The new record may already exist
-        !use time as record reference, (instead of "numberofrecords")
-!        call idate2nctime(ndate,nseconds,iotyp)
-!       call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
-!        call check(nf90_get_var(ncFileID, timeVarID, nseconds_time,start=(/ nrecords /)))
-!        !check if this is a newer time
-!        if((nseconds/=nseconds_time(1)))then
-!           nrecords=nrecords+1 !start a new record
-!        endif
         call idate2nctime(ndate,rdays,iotyp)
         call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = timeVarID))
         call check(nf90_get_var(ncFileID, timeVarID, rdays_time,start=(/ nrecords /)))
@@ -819,7 +804,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         !increase nrecords, to define position of new data
         nrecords=nrecords+1
      endif
-     !  print *,'writing on dataset: ',nrecords
+     if(DEBUG_NETCDF)   print *,'writing on dataset: ',nrecords
 
      !append new values
      if(OUTtype==Int1 .or. OUTtype==Int2 .or. OUTtype==Int4)then
@@ -891,10 +876,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      call check(nf90_get_att(ncFileID, nf90_global, "lastmodified_hour", lastmodified_hour0  ))
      call check(nf90_get_att(ncFileID, nf90_global, "created_hour", created_hour  ))
      call Date_And_Time(date=lastmodified_date,time=lastmodified_hour)
-     !    print *, 'date now: ',lastmodified_hour,' date before ',lastmodified_hour0,' date start ', created_hour
 
      !write or change attributes NB: strings must be of same length as originally
-
      call check(nf90_put_att(ncFileID, VarID, "numberofrecords",   nrecords))
 
      !update dates
@@ -904,8 +887,6 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
      !get variable id
      call check(nf90_inq_varid(ncid = ncFileID, name = "time", varID = VarID))
-!     call idate2nctime(ndate,nseconds,iotyp)!middle of period: !NB WORKS ONLY FOR COMPLETE PERIODS
-!     call check(nf90_put_var(ncFileID, VarID, nseconds, start = (/nrecords/) ) )
      call idate2nctime(ndate,rdays,iotyp)
      call check(nf90_put_var(ncFileID, VarID, rdays, start = (/nrecords/) ) )
 
@@ -936,7 +917,6 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   integer :: varID,nrecords
   real :: scale
   integer :: OUTtypeCDF !NetCDF code for type
-  character (len = 50) ::tmpstring
 
   if(OUTtype==Int1)then
      OUTtypeCDF=nf90_byte
@@ -968,10 +948,10 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
 
   !define new variable
   if(ndim==3)then
-     call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,     &
+     call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,&
           dimids = (/ iDimID, jDimID, kDimID , timeDimID/), varID=varID ) )
   elseif(ndim==2)then
-     call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,     &
+     call check(nf90_def_var(ncid = ncFileID, name = varname, xtype = OUTtypeCDF,&
           dimids = (/ iDimID, jDimID , timeDimID/), varID=varID ) )
   else
      print *, 'createnewvariable: unexpected ndim ',ndim
@@ -1011,9 +991,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   elseif(OUTtype==Real8)then
      call check(nf90_put_att(ncFileID, varID, "_FillValue", nf90_fill_double  ))
   endif
-!     call check(nf90_put_att(ncFileID, varID, "periodlength",   "yearly"))
 
-!25/10/2005     call check(nf90_put_att(ncFileID, varID, "xfelt_ident",ident ))
   call check(nf90_put_att(ncFileID, varID, "current_date_first",ndate ))
   call check(nf90_put_att(ncFileID, varID, "current_date_last",ndate ))
 
@@ -1036,12 +1014,9 @@ end subroutine  createnewvariable
 
   subroutine CloseNetCDF
 !close open files
-!NB the data in a NetCDF file is not "safe" before the file
-!is closed. The files are NOT automatically properly
-!closed after end of program, and data may be lost if the files are not
-!closed explicitely.
-
-use Par_ml,           only : me
+!NB the data in a NetCDF file is not "safe" before the file is closed. 
+!The files are NOT automatically properly closed after end of program,
+! and data may be lost if the files are not closed explicitely.
 
 integer :: ncFileID
 
@@ -1099,14 +1074,12 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   integer :: status,ndims,alloc_err
   integer :: totsize,xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),startvec(NF90_MAX_VAR_DIMS)
-  integer :: ncFileID,VarID,i,j,k
+  integer :: ncFileID,VarID,i
   character*100::name
   real :: scale,offset,scalefactors(2)
   integer, allocatable:: Ivalues(:)
 
-!  Nrec=size(var,3)
-
-  print *,'GetCDF  reading ',trim(fileName), 'nstart ', nstart
+  if(me==0)print *,'GetCDF  reading ',trim(fileName), 'nstart ', nstart
   !open an existing netcdf dataset
   fileneeded=.true.!default
   if(present(needed))then
@@ -1205,6 +1178,8 @@ end subroutine GetCDF
 
 subroutine WriteCDF(varname,vardate,filename_given,newfile)
 
+!Routine to write data directly into a new file.
+!used for testing only
 
  character (len=*),intent(in)::varname!variable name, or group of variable name
  type(date), intent(in)::vardate!variable name, or group of variable name
@@ -1214,7 +1189,7 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: dat ! Data arrays
  character (len=100):: fileName
  real ::scale
- integer :: n,iotyp,ndim,kmax,icmp,dim,ndate(4),nseconds
+ integer :: n,iotyp,ndim,kmax,icmp,ndate(4),nseconds
  type(Deriv) :: def1 ! definition of fields
 
  ndate(1)=vardate%year
@@ -1252,10 +1227,10 @@ subroutine WriteCDF(varname,vardate,filename_given,newfile)
  def1%avg=.false.      !not used
  def1%index=0          !not used
  def1%scale=scale      !not used
-!FEB2011 !FEB2011 def1%inst=.true.      !not used
-!FEB2011!FEB2011  def1%year=.false.     !not used
-!FEB2011!FEB2011  def1%month=.false.    !not used
-!FEB2011!FEB2011  def1%day=.false.      !not used
+! def1%inst=.true.      !not used
+! def1%year=.false.     !not used
+! def1%month=.false.    !not used
+! def1%day=.false.      !not used
  def1%name='O3'        !written
  def1%unit='mix_ratio'       !written
 
@@ -1518,7 +1493,8 @@ ijk=0
            ig1jgk=ig1+(jg-1)*dims(1)+(k-1)*dims(1)*dims(2)
            igjg1k=ig+(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
            ig1jg1k=ig1+(jg1-1)*dims(1)+(k-1)*dims(1)*dims(2)
-           Rvar(ijk)=Rvalues(igjgk)*(1-di)*(1-dj)+Rvalues(igjg1k)*(1-di)*dj+Rvalues(ig1jgk)*di*(1-dj)+Rvalues(ig1jg1k)*di*dj
+           Rvar(ijk)=Rvalues(igjgk)*(1-di)*(1-dj)+Rvalues(igjg1k)*(1-di)*dj+&
+                     Rvalues(ig1jgk)*di*(1-dj)+Rvalues(ig1jg1k)*di*dj
         enddo
      enddo
   enddo
@@ -1547,6 +1523,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      needed,debug_flag,UnDef)
   !
   !reads data from netcdf file and interpolates data into model local (subdomain) grid
+  !under development!
   !
   !dimensions and indices:
   !Rvar is assumed to have declared dimensions MAXLIMAX,MAXLJMAX in 2D.
@@ -1573,20 +1550,22 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !"Flight Levels" are so specific that we will probably move them in an own routine
 
   !interpolation:
-  !'zero_order' gives value at closest gridcell. Probably good enough for most applications. Does not smooth out values
+  !'zero_order' gives value at closest gridcell. Probably good enough for most applications. 
+  !Does not smooth out values
   !'conservative' and 'mass_conservative' give smoother fields and are approximatively 
   !integral conservative (integral over a region is conserved). The initial gridcells 
   !are subdivided into smaller subcells and each subcell is assigned to a cell in the model grid
-  !'conservative' can be used for emissions given in kg/m2 (or kg/m2/s) or landuse or most fields. The value
-  !in the netcdf file and in model gridcell are of the similar.
-  !'mass_conservative' can be used for emissions in kg (or kg/s). If the gricell in the model are twice as small
-  !as the gridcell in the netcdf file, the values will also be reduced by a factor 2.
+  !'conservative' can be used for emissions given in kg/m2 (or kg/m2/s) or landuse or most fields. 
+  !The value in the netcdf file and in model gridcell are of the similar.
+  !'mass_conservative' can be used for emissions in kg (or kg/s). If the gricell in the model are 
+  !twice as small as the gridcell in the netcdf file, the values will also be reduced by a factor 2.
 
   !Technical, future developements:
   !This routine is likely to change a lot in the future: can be divided into simpler routines; 
   !more functionalities will be introduced.
   !Should also be usable as standalone.
-  !All MPI processes read the same file simultaneously (i.e. in parallel). They read only the chunk of data they need for themselves.
+  !All MPI processes read the same file simultaneously (i.e. in parallel). 
+  !They read only the chunk of data they need for themselves.
 
   use netcdf
 
@@ -1606,11 +1585,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   integer :: ncFileID,VarID,lonVarID,latVarID,status,xtype,ndims,dimids(NF90_MAX_VAR_DIMS),nAtts
   integer :: dims(NF90_MAX_VAR_DIMS),totsize,i,j,k
   integer :: startvec(NF90_MAX_VAR_DIMS)
-  integer ::alloc_err, nf_status
+  integer ::alloc_err
   character*100 ::name
-  real :: scale,offset,scalefactors(2),di,dj,dloni,dlati
-  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,ig1jg1k,igjg1k,ig1jgk,igjgk,jg1,ig1,ig,jg,ijk,i361,ijn,n
-  integer :: ijk1,ijk2,ijk3,ijk4
+  real :: scale,offset,scalefactors(2),dloni,dlati
+  integer ::ij,jdiv,idiv,Ndiv,Ndiv2,igjgk,ig,jg,ijk,n
   integer ::imin,imax,jmin,jjmin,jmax,igjg,k2
   integer, allocatable:: Ivalues(:)  ! I counts all data
   integer, allocatable:: Nvalues(:)  !ds counts all values
@@ -1618,18 +1596,17 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real ::lat,lon,maxlon,minlon,maxlat,minlat
   logical ::fileneeded, debug,data3D
   character(len = 50) :: interpol_used, data_projection=""
-  real :: tot,ir,jr,Grid_resolution
+  real :: ir,jr,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
   real :: P_FL(0:NFLmax),Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
-  logical ::  UnDef_used,OnlyDefinedValues
+  logical ::  OnlyDefinedValues
 
   real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
   integer, allocatable :: IIij(:,:,:),JJij(:,:,:)
   real :: FillValue=0,Pcounted
   logical :: Flight_Levels
   integer :: k_FL,k_FL2
-!ds Added for new Interpolations (nearest 4 neighbours)
   real, dimension(4) :: Weight
   real :: Undefined  , sumWeights
   integer, dimension(4) :: ijkn
@@ -1641,6 +1618,13 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !_______________________________________________________________________________
 
   fileneeded=.true.!default
+
+  debug = .false.
+  if(present(debug_flag))then
+     debug = debug_flag .and. MasterProc
+     if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
+  end if
+
   if(present(needed))   fileneeded=needed
 
   !open an existing netcdf dataset
@@ -1657,12 +1641,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      endif
   endif
 
-
-  debug = .false.
-  if(present(debug_flag))then
-     debug = debug_flag .and. MasterProc
-     if ( debug ) write(*,*) 'ReadCDF start: ',trim(filename),':', trim(varname)
-  end if
 
 
   interpol_used='zero_order'!default
@@ -1978,8 +1956,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
-                 debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
-                                 i== debug_li .and. j== debug_lj )
                        if(data3D)k2=kend-kstart+1
                        if(.not. Flight_Levels)then
                           do k=1,k2
@@ -1988,19 +1964,12 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                              Nvalues(ijk)=Nvalues(ijk)+1
                              igjgk=igjg+(k-1)*dims(1)*dims(2)
 
-                         !if ( debug_ij ) write(*,"(a,5i4,2f12.5,2i4,2es12.3)")&
-                         !  '++ Ivalues' , ig, jg, idiv, jdiv, Ndiv, lon, lat,&
-                         !  Ivalues(ijk), Nvalues(ijk), Rvalues(igjgk), FillValue
-
                              if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                                 Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                              else
                                 !Not defined: don't include this Rvalue
                                 Ivalues(ijk)=Ivalues(ijk)-1
 
-                                !if ( debug_ij ) write(*,"(a,2i4,2es12.3)") &
-                                !    ' -- IValues!' , Ivalues(ijk), &
-                                !        Nvalues(ijk), Rvalues(igjgk)
                              endif
                           enddo
                        else
@@ -2061,7 +2030,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     if(interpol_used=='mass_conservative')then
                        !used for example for emissions in kg (or kg/s)
                        Rvar(ijk)=Rvar(ijk)/Ndiv2! Total sum of values from all cells is constant
-                       if ( debug_ij ) write(*,"(a,a,3i5,es12.4)") 'DEBUG  -- mass!' , trim(varname), Ivalues(ijk), Nvalues(ijk), Ndiv2, Rvar(ijk)
+                       if ( debug_ij ) write(*,"(a,a,3i5,es12.4)") 'DEBUG  -- mass!' , &
+                              trim(varname), Ivalues(ijk), Nvalues(ijk), Ndiv2, Rvar(ijk)
                     else
                        !used for example for emissions in kg/m2 (or kg/m2/s)
                        ! integral is approximately conserved
@@ -2126,9 +2096,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
 !Make interpolation coefficients.
 !Coefficients could be saved and reused if called several times.
-if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
-       write(*,"(a)") "DEBUG_RF G2G ", me, debug_proc
-end if
+     if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
+        write(*,"(a)") "DEBUG_RF G2G ", me, debug_proc
+     end if
      call grid2grid_coeff(glon,glat,IIij,JJij,Weight1,Weight2,Weight3,Weight4,&
                   Rlon,Rlat,dims(1),dims(2), MAXLIMAX, MAXLJMAX, limax, ljmax,&
                     ( DEBUG_NETCDF_RF .and. debug_proc ), &
@@ -2169,15 +2139,14 @@ end if
         Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
      endif
 
-!NEEDS CLEANUP!
      k=1
      do i=1,limax
         do j=1,ljmax
 
-           Weight(1) = Weight1(i,j)  !ds tmp
-           Weight(2) = Weight2(i,j)  !ds tmp
-           Weight(3) = Weight3(i,j)  !ds tmp
-           Weight(4) = Weight4(i,j)  !ds tmp
+           Weight(1) = Weight1(i,j)  
+           Weight(2) = Weight2(i,j)  
+           Weight(3) = Weight3(i,j)  
+           Weight(4) = Weight4(i,j)  
 
            ijkn(1)=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
            ijkn(2)=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
@@ -2187,36 +2156,20 @@ end if
            ijk=i+(j-1)*MAXLIMAX
            Rvar(ijk)    = 0.0
            sumWeights   = 0.0
-if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
-       write(*,*) "DEBUG_RF START ", me, debug_proc, debug_li, debug_lj
-       write(*,*) "DEBUG_RF UNDEF ", Undefined, FillValue
-end if
 
            do k = 1, 4
               ii = IIij(i,j,k)
               jj = JJij(i,j,k)
-if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
-    write(*,"(a,2i3,es10.4,i6,f12.4)") "DEBUG_RF RVAR ", me, k, Weight(k), ijkn(k),  Rvalues(ijkn(k))
-end if
               if ( Rvalues(ijkn(k) )  > FillValue ) then
                    Rvar(ijk) =  Rvar(ijk) + Weight(k)*Rvalues(ijkn(k))
                   sumWeights = sumWeights + Weight(k)
-if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
-       write(*,"(a,i2,f8.4,f12.4,i6,f12.4)") "DEBUG_RF ADD ", k, Weight(k), sumWeights, ijkn(k),  Rvalues(ijkn(k))
-end if
               end if
            enddo !k
 
            if ( sumWeights > 1.0e-9 ) then
                 Rvar(ijk) =  Rvar(ijk)/sumWeights
-if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
-       write(*,"(a,2es12.4)") "DEBUG_RF  VALID", sumWeights, Rvar(ijk)
-end if
            else
                 Rvar(ijk) = FillValue
-if( DEBUG_NETCDF_RF .and. debug_proc .and. i==debug_li .and. j==debug_lj ) then
-       write(*,"(a,2es12.4)") "DEBUG_RF FILL", sumWeights, Rvar(ijk)
-end if
            end if
 
         enddo !j
@@ -2238,9 +2191,12 @@ end if
 
 
   !  CALL MPI_FINALIZE(INFO)
-  !   CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
+  !  CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 
   return
+
+!code below only used for testing purposes
+
      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
      if(debug)write(*,*)'writing results in file',trim(varname)
 
@@ -2248,12 +2204,12 @@ end if
   def1%class='Readtest' !written
   def1%avg=.false.      !not used
   def1%index=0          !not used
-  def1%scale=1.0      !not used
-!FEBN2011  def1%inst=.true.      !not used
-!FEBN2011  def1%year=.false.     !not used
-!FEBN2011  def1%month=.false.    !not used
-!FEBN2011  def1%day=.false.      !not used
-  def1%name=trim(varname)        !written
+  def1%scale=1.0        !not used
+!  def1%inst=.true.      !not used
+!  def1%year=.false.     !not used
+!  def1%month=.false.    !not used
+!  def1%day=.false.      !not used
+  def1%name=trim(varname)!written
   def1%unit='g/m2'       !written
 
   if(data3D)then
