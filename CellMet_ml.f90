@@ -41,8 +41,9 @@ use Landuse_ml, only : LandCover, ice_landcover    ! Provides SGS, hveg, LAI ...
 use LocalVariables_ml, only: Grid, Sub, ResetSub
 use MicroMet_ml, only :  PsiH, PsiM, AerRes    !functions
 use MetFields_ml, only: ps, u_ref
-use MetFields_ml, only: cc3dmax, nwp_sea, sdepth,ice_nwp, surface_precip, fh,fl,z_mid, z_bnd, &
-           q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp, zen, coszen, Idirect, Idiffuse !ACB snow_flag
+use MetFields_ml, only: cc3dmax, nwp_sea, sdepth,ice_nwp, surface_precip, &
+   fh,fl,z_mid, z_bnd, q, roa, rh2m, rho_surf, th, pzpbl, t2_nwp, ustar_nwp,&
+    zen, coszen, Idirect, Idiffuse
 use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, PT
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 use SoilWater_ml, only : fSW
@@ -119,14 +120,12 @@ contains
 
      Grid%is_NWPsea = nwp_sea(i,j)
      Grid%is_allNWPsea = ( nwp_sea(i,j) .and. LandCover(i,j)%ncodes == 1)
- !ACB    Grid%snow      = snow(i,j)
      Grid%sdepth    = sdepth(i,j,1)
      Grid%ice_nwp   = max( ice_nwp(i,j,1), ice_landcover(i,j) ) 
      Grid%snowice   = ( Grid%sdepth  > 0.0 .or. Grid%ice_nwp > 0.0 )
 
      Grid%fSW       = fSW(i,j)
 
-    !ds 25/2/2009.. following Branko's comments, 
     ! we limit u* to a physically plausible value
     ! to prevent numerical problems
 
@@ -152,7 +151,7 @@ contains
     end if
 
   nlu = LandCover(i,j)%ncodes
-  !ECO08: Added for safety
+  ! Added for safety
   Sub(:)          = ResetSub !
   Sub(:)%coverage = 0.0
   Sub(:)%LAI      = 0.0
