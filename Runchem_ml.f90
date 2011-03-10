@@ -40,11 +40,9 @@
 !    
 !----------------------------------------------------------------------
 
-   use ModelConstants_ml, only : DEBUG_AOT
-   use Par_ml, only : limax, ljmax
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS, AOD,      &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
-                                Aero_water, SEASALT   !DUST -> USE_DUST
+                                Aero_water   !DUST -> USE_DUST
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
@@ -61,16 +59,16 @@
    use DustProd_ml,       only: WindDust
    use ChemSpecs_tot_ml                   ! DEBUG ONLY
    use ChemSpecs_adv_ml                   ! DEBUG ONLY
-   use GridValues_ml,     only: debug_proc, debug_li, debug_lj
-   use Io_Progs_ml,       only: datewrite
-   use ModelConstants_ml, only:  PPB, KMAX_MID, dt_advec, &
-                                 nprint, END_OF_EMEPDAY, &
-                                 USE_DUST, &
-                                 DebugCell, & ! DEBUG only
+   use GridValues_ml,     only : debug_proc, debug_li, debug_lj
+   use Io_Progs_ml,       only : datewrite
+   use ModelConstants_ml, only : USE_DUST, USE_SEASALT, USE_AOD, & 
+                                 PPB, KMAX_MID, dt_advec,        &
+                                 nprint, END_OF_EMEPDAY,         &
+                                  
+                  DebugCell,  DEBUG_AOT, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
-
    use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol
-   use Par_ml,            only : lj0,lj1,li0,li1  &
+   use Par_ml,            only : lj0,lj1,li0,li1, limax, ljmax  &
                                 ,gi0, gj0, me &    !! for testing
                                 ,IRUNBEG, JRUNBEG  !! for testing
    use SeaSalt_ml,        only: SeaSalt_flux
@@ -162,7 +160,7 @@ subroutine runchem(numt)
 ! Called every adv step, only updated every third hour
              !FUTURE call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
 
-             if ( SEASALT )  &
+             if ( USE_SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)
 
              if ( USE_DUST )     &
@@ -240,7 +238,7 @@ subroutine runchem(numt)
                         call WetDeposition(i,j,debug_flag)
 
                       !// Calculate Aerosol Optical Depth
-                      if ( AOD )  &
+                      if ( USE_AOD )  &
                         call AOD_calc (i,j,debug_flag)
 
                    !  Modelling PM water at filter equlibration conditions:
