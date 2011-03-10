@@ -107,12 +107,6 @@
   !FUTURE public :: setup_nh3 ! NH3emis   , experimental version
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
-  ! We define a column array for isoprene and terpene for use in
-  ! the chemical solver. All values except for k=KMAX_MID will
-  ! remain zero however
-  !dsPCM real, dimension(NBVOC,KMAX_MID), public, save :: rcbio = 0.0  !ispop and terpene
-!DSBIO  real, dimension(MAXLIMAX,MAXLJMAX,NBVOC), public, save :: NatEmisSum 
-
 contains
  !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
    subroutine setup_1d(i,j)
@@ -120,7 +114,6 @@ contains
  !..   extracts data along one vertical column for input to chemical
  !     solver concentrations for chemistry......
  !
-!DSGC ! Outputs, amk, o2k, rcairlig, ...
 
     integer, intent(in) :: i,j    ! coordinates of column
 
@@ -181,8 +174,8 @@ contains
 
    o2(:) = 0.21 *amk(:)
    n2(:) = amk(:) - o2(:)
-!FAKE   o2(:) = 0.2095 *amk(:)
-!FAKE   n2(:) = 0.7808 *amk(:)
+!   o2(:) = 0.2095 *amk(:)
+!   n2(:) = 0.7808 *amk(:)
    tinv(:) = 1./temp(:)
 
 
@@ -314,27 +307,20 @@ contains
 
      endif
 
-! Biogenics:
-! Hard-coded for now, for isoprene only:
-!RB: adding apinene also
-!dsPCM     rcemis(C5H8,KMAX_MID) =  rcemis(C5H8,KMAX_MID) + rcbio(BIO_ISOP)
-!dsPCM     rcemis(APINENE,KMAX_MID) =  rcemis(APINENE,KMAX_MID) + rcbio(BIO_TERP)
-
-
      if ( USE_FOREST_FIRES  .and. burning(i,j)  ) then
 
        call Fire_rcemis(i,j)
 
      endif  !ForestFires
 
-!Soil NOx
+   !Soil NOx
      if( USE_SOIL_NOX)then
         rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
         !ds rcemis(NO2,KMAX_MID)=rcemis(NO2,KMAX_MID)+SoilNOx(i,j)
      endif
 
-!Mass Budget calculations
-!   Adding up the emissions in each timestep
+   !Mass Budget calculations
+   !   Adding up the emissions in each timestep
 
 
    scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
@@ -382,15 +368,6 @@ contains
  
          do k = KCHEMTOP, KMAX_MID
  
-
-!EGU - just testing units
-!         xn2molem3 = 1.0/AVOG * 1.0e6
-!         xn2ugC   = xn2molem3 * 12.0 * 1.0e6
-!         xn2ugS   = xn2molem3 * 32.0 * 1.0e6
-!         ugS2xn   = 1/xn2ugS = AVOG/(32.0*1.0e12)
-!           xn_2d(SO4,k) =  0.5 * AVOG/(32.0*1.0e12)
-
-
            ! 1)/ Short-lived species - no need to scale with M
 
             do n = 1, NSPEC_SHL
