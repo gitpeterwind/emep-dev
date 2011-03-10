@@ -147,6 +147,10 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_7beta32  ALL - cleanup by 17:30 on Mar 10th xxxxxxxxxxxxxxxxxxxxxxx
+
+rtagged for safety and benchmark
+
 xxxxxxxx h08:45       Dave       Mar 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Add USE_AIRCRAFT_NOX; USE_LIGHTNING_NOX to ModelConstants_ml
