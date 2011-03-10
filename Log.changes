@@ -15,6 +15,11 @@ IMPORTANT NOTE:
 
 KNOWN PROBLEMS
 
+Some jobs needed after Mar-11th tests (ds will do)
+  - Solver_ml - remove Reimer code
+  - Decide SoilMoisture
+  - Decide kaero
+
 None? 
 I (DS) have re-writting My_Derived and Derived to use the array
 OutputConcs.  This harmonises 2d and 3d, ppb, ug, ugN, etc., and
