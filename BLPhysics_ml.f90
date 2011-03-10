@@ -42,11 +42,11 @@ module BLPhysics_ml
     !"Sb"   ! Seibert
 
  logical, parameter, public :: PIELKE = .true.
- real, public, parameter :: KZ_MINIMUM = 0.001   ! m2/s
+ real, public, parameter :: KZ_MINIMUM = 0.001 ! m2/s
  real, public, parameter :: KZ_MAXIMUM = 1.0e3 ! m2/s - as old kzmax
  real, public, parameter :: KZ_SBL_LIMIT = 0.1 ! m2/s - Defines stable BL height
  ! TI code had unstable if delq > 0.00001, ca. fh >10-8 so excluded neutral
- real, public, parameter :: OB_invL_LIMIT =  -1.0e-10 ! 
+ real, public, parameter :: OB_invL_LIMIT =  -1.0e-10
  real, public, parameter :: MIN_USTAR_LAND = 0.1 ! ms - Defines stable BL height
 
  real, parameter, private :: EPS=0.01  !prevents div by zero for WS
