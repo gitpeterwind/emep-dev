@@ -44,7 +44,7 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
- use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c
+ use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c, SeaSalt_g
  use ChemChemicals_ml,     only : species
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO, QSSGI
  use GridValues_ml,        only : glat, glon
@@ -98,10 +98,9 @@
    logical, intent(in) :: debug_flag
 
    real, parameter :: Z10 = 10.0  ! 10m height
-   integer :: k, ii, jj, nlu, ilu, lu
+   integer :: ii, jj, nlu, ilu, lu
    real    :: invdz, n2m, u10, u10_341, Tw, flux_help, total_flux
-   real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA) &
-              , ss_gigant 
+   real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA) 
 !//---------------------------------------------------
  
   if ( my_first_call ) then 
@@ -217,6 +216,7 @@
             write(6,'(a20,i5,2es13.4)') 'Flux coarse ->  ',ii,d3(ii),SS_prod(QSSCO,i,j)
           enddo
 
+!..'Giant' particles emission [molec/cm3/s]
           do ii = NFIN+NCOA+1, NFIN+NCOA+NGIG
                SS_prod(QSSGI,i,j) = SS_prod(QSSGI,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
@@ -251,7 +251,7 @@
 
   implicit none
 
-  integer :: i, k
+  integer :: i
   real    :: a1, a2
   real, dimension(SS_MONA) :: Rrange, rdry
 

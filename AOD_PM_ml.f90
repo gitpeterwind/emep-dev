@@ -31,8 +31,9 @@
 
   !-----------------------------------------------------------------------! 
   ! Calculates Aerosol Optical Depth (AOD) for 0.5 um radiation based on 
-  ! Mie calculated average scattering efficiency and particle size 
-  ! distribution. Complex refractive indices are from GADS
+  ! aerosol mass concentrations and specific extinction cross-sections 
+  ! based on Tegen et al. JGR (1997) and Kinne et al., ACP (2005)
+  ! (implicit assumption on wetted aerosols)
   !-----------------------------------------------------------------------!
  use Chemfields_ml,        only : AOD
  use ChemChemicals_ml,     only : species  
@@ -53,16 +54,6 @@
   public ::   AOD_calc 
 
   real, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: kext 
-!.. Specific extinction cross-sections are in My_Chem_ml
-!  real, parameter, dimension(7) ::    &
-!.. Specific extinction cross-sections [m2/g]
-!        EXTSP  = (/8.5,  8.5,  8.5,  5.7,  9.0,  1.0, 3.0 /),  &
-       !test EXTSP  = (/8.5,  8.5,  8.5,  5.7,  9.0,  0.9, 0.4 /),  &
-
-!.. Specific extinction cross-sections for dry particles
-!        EXTdry = (/5.0,  5.0,  5.0,  5.0,  9.0,  0.9, 0.2 /),  &
-!.. Growth factor
-!        GF     = (/1.7,  1.7,  1.7,  1.3,  1.0,  1.0, 2.0 /)
 
   contains
 
@@ -81,7 +72,6 @@
    logical, intent(in) :: debug
 
    integer :: k, n, itot
-   real    :: kext_help
    real, parameter ::  lambda = 0.55e-6
 
 !-----------------------------------------------------------------
@@ -116,8 +106,8 @@
 
      kext(i,j,k) = kext(i,j,k) * 1.0e6 / AVOG 
 
-     if(debug .and. (k == 18 .or. k == KMAX_MID) )  &
-            write(6,'(a17,i4,es15.3)') '> Ext. coeff', k, kext(i,j,k)
+!     if(debug .and. (k == 18 .or. k == KMAX_MID) )  &
+!            write(6,'(a17,i4,es15.3)') '> Ext. coeff', k, kext(i,j,k)
 
 !.. Aerosol extinction optical depth : integral over all vertical layers
 !.. [1/m} * [m]
@@ -130,8 +120,8 @@
 
   enddo                        !_______________ vertical layer loop
 
-!  if(debug )  write(6,'(a30,2i4,es15.3)') '>>>  AOD  <<<',   &
-!              i_fdom(i), j_fdom(j), AOD(i,j)
+  if(debug )  write(6,'(a30,2i4,es15.3)') '>>>  AOD  <<<',   &
+              i_fdom(i), j_fdom(j), AOD(i,j)
 
 
    end subroutine AOD_calc

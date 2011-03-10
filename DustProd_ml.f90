@@ -29,7 +29,8 @@
 
  module DustProd_ml
 
-  !-- Calculates wind blown dust production based on works by
+  !-- Under developments and testing ----------------
+  !   Calculates wind blown dust production based on works by
   !   Zender et al. (2003). JGR, 108, 4416-4437
   !   Alfaro & Gomes (2001). JGR, 106, 18075-18084 
   !   Gomes et al. (2003). Catena, 52, 257-271.
@@ -49,7 +50,7 @@
                                   rho_surf, SoilWater, foundSoilWater,  &
                                   clay_frac, sand_frac !ACB snow_flag
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
-    NPROC, MasterProc, USE_DUST
+                                  NPROC, MasterProc, USE_DUST
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,MAXLIMAX,MAXLJMAX
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
@@ -63,13 +64,13 @@
 
   public ::  WindDust       
 
-  real, public           :: DU_prod (NDU,MAXLIMAX,MAXLJMAX)  
-  real, public           :: DUST_flux (MAXLIMAX,MAXLJMAX)
-  real, public, save     :: kg2molecDU, m_to_nDU, frac_fine, frac_coar,  &
-                            soil_dns_dry, help_ustar_th
-  real, parameter        :: soil_dens = 2650.0  ! [kg/m3]
-  logical, private, save :: my_first_call = .true.
-  integer, save          :: dry_period(MAXLIMAX, MAXLJMAX) = 72
+  real, public                :: DU_prod (NDU,MAXLIMAX,MAXLJMAX)  
+  real, public                :: DUST_flux (MAXLIMAX,MAXLJMAX)
+  real, private, save         :: kg2molecDU, m_to_nDU, frac_fine, frac_coar,  &
+                                 soil_dns_dry, help_ustar_th
+  real, parameter             :: soil_dens = 2650.0  ! [kg/m3]
+  logical, private, save      :: my_first_call = .true.
+  integer, save               :: dry_period(MAXLIMAX, MAXLJMAX) = 72
   logical, parameter, private :: DEBUG_DUST = .false.
   character(len=20)           :: soil_type
   contains
@@ -80,10 +81,11 @@
 
    implicit none
 
-   integer, intent(in) :: i,j            ! coordinates of column
+   integer, intent(in) :: i,j                 ! coordinates of column
    logical, intent(in) :: debug_flag
 
-   integer, parameter  :: Ndust = 2      ! number of size classes 
+   integer, parameter  :: Ndust = 2, &        ! number of size classes 
+                          DU_F = 1, DU_C = 2
    integer, parameter  :: LU_DESERT = 13
    real   , parameter  :: Ro_water = 1000.0 
    real, parameter, dimension(Ndust) ::                    &
@@ -96,14 +98,14 @@
                                             !     MaB97 p.4392, GMB98 p.6207
                      !z0 = 0.5e-3,  & !(for desert..) 1.e-4 saltation roughness length 
                      z10 = 10.0             ! Z=10m
-   real ::  Mflux = 0.0 , Nflux = 0.0
-   real ::  delz, cover, z0, vh2o_sat, gr_h2o, v_h2o, ustar_moist_cor   &
+   real ::  Mflux = 0.0 
+   real ::  cover, z0, vh2o_sat, gr_h2o, v_h2o, ustar_moist_cor         &
           , gwc_thr, dust_lim, soil_dns_dry, ustar_z0_cor, u_th10, u10  &
-          , ustar_salt, alfa, ustar_th, uratio, ustar, invL, ln10       &
-          , owens, clay, frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
+          , alfa, ustar_th, uratio, ustar, invL , owens, clay           &
+          , frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
 
    logical :: arable, dust_prod = .false.
-   integer :: n, ii, jj,nlu, ilu, lu
+   integer :: nlu, ilu, lu
 
 !_______________________________________________________
     if ( USE_DUST .eqv. .false. ) then
@@ -111,7 +113,7 @@
         return
     end if
 
-    if ( my_first_call.and.MasterProc ) then 
+    if ( my_first_call.and. MasterProc ) then 
      write(6,*)'***    Call for init_dust     ***   '
 
         call init_dust
@@ -123,7 +125,7 @@
 !_______________________________________________________
 
 
- if(DEBUG_DUST .and. debug_flag) write(6,*)'***   WINDBLOWN DUST',  &
+ if(DEBUG_DUST) write(6,*)'***   WINDBLOWN DUST',  &
                                  i_fdom(i), j_fdom(j)
 
  if ((glat(i,j)>65.0 .and. glon(i,j)>50.0)) return ! Avoid dust production in N. Siberia
@@ -147,16 +149,16 @@
   DRY:  if (dry_period(i,j)*dt_advec/3600.0 >= 48.0) then
 
      if(DEBUG_DUST .and. debug_flag) &
-     write(6,'(a30,f10.4)')'>> DRY >>', dry_period(i,j)*dt_advec/3600.0
+     write(6,'(a30,f10.4)')'>> DRY period>>', dry_period(i,j)*dt_advec/3600.0
 
 !/.. No dust production when soil is frozen, or covered by snow,
 !/.. or wet (crude approximation by surface Rh)
-!ACB Grid%snow == 1
-  FROST: if ( Grid%t2C > 0.0 .and.  Grid%sdepth > 0 .and.  & 
+
+  FROST: if ( Grid%t2C > 0.0 .and.  Grid%sdepth == 0.0 .and.  & 
                                     rh(KMAX_MID) < 0.85)  then
 
     if(DEBUG_DUST .and. debug_flag) write(6,'(a25,2f10.2,i4)')   &
-          '>>      FAVOURABLE >>', Grid%t2C, rh(KMAX_MID), Grid%sdepth 
+          '>> FAVOURABLE for DUST>>', Grid%t2C, rh(KMAX_MID), Grid%sdepth 
 !ACB Grid%snow
 
 
@@ -282,10 +284,6 @@
         alfa = 1.0e-5  !1.e-5 
   endif
 
-!*** TEST as in CHIMERE
-!        alfa = 5.0e-5  !1.e-5 
-!*** TEST as in CHIMERE
-
 !  else                                 ! ---------  temp/root crops ------
 !        z0  = max (0.1 * landuse_hveg(i,j,ilu), 0.001)
 !        dust_lim = 0.01
@@ -314,7 +312,6 @@
 
 !//___   Final threshold friction velocity
 
-
 !TEST       ustar_th =0.25  ! TEST
 
    ustar_th =                 & ! [m s-1] Threshold friction velocity for saltation
@@ -325,13 +322,11 @@
    if (DEBUG_DUST .and. debug_flag)  then
       write(6,'(3es12.3)') ustar_th, ustar_moist_cor, ustar_z0_cor
       write(6,'(a35,f8.3,2(a8,f6.3))')  &
-        'FINAL U*_th= ',ustar_th,'U*=',ustar,'Ratio=',ustar_th/ustar
+        'FINALLY U*_th= ',ustar_th,'U*=',ustar,'Ratio=',ustar_th/ustar
    endif
 
 
     flx_hrz_slt = 0.0
-!   flx_vrt_dst = 0.0
-
 
 ! >>>>>  Check for saltation to occur [Whi79 p.4648(19), MaB97 p.16422(28)]        
 
@@ -452,37 +447,38 @@
 
   if (dust_prod) then
 
-!!.. vertical dust mass flux: fine and coarse [kg/m2/s] -> [ng/m3/s] 
-! fine  (0.10-2006; 0.05-2007)
-     DU_prod(1,i,j) = 0.05 * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
-! coarse (0.23-2006; 0.15-2007)
-     DU_prod(2,i,j) = 0.17 * flx_vrt_dst * kg2molecDU /Grid%DeltaZ   
-
+!.. Vertical dust mass flux: fine and coarse [kg/m2/s] -> [ng/m3/s]
+ 
 ! TEST: stuff below needs to be tested
 !   call get_dustfrac(frac_fin, frac_coa, ustar) 
-!!.. vertical dust flux [kg/m2/s] -> [kg/m3/s]*AVOG/M e-3 -> [molec/cm3/s] 
-!   DU_prod(1,i,j) = frac_fin * flx_vrt_dst * kg2molecDU / delz   
-!   DU_prod(2,i,j) = frac_coa * flx_vrt_dst * kg2molecDU / delz  
+
+! fine and coarse dust fractions assigned now  loosely based on Alfaro&Gomes(2001)
+     frac_fine = 0.05    ! fine fraction 0.10 was found too large 
+     frac_coar = 0.17    ! coarse fraction also 0.15-0.23 was tested
+!!.. vertical dust flux [kg/m2/s] -> [kg/m3/s]*AVOG/M e-3 -> [molec/cm3/s]  
+     DU_prod(DU_F,i,j) = 0.05 * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
+     DU_prod(DU_C,i,j) = 0.17 * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
 
 !//__Dust flux [kg/m2/s] for check
-    DUST_flux(i,j) =   flx_vrt_dst ! * (frac_fin + frac_coar) 
+     DUST_flux(i,j) =   flx_vrt_dst ! * (frac_fin + frac_coar) 
  
-    dust_prod = .false.   ! Zero-setting
+     dust_prod = .false.   ! Zero-setting
 
-    if(DEBUG_DUST .and. debug_flag) &
-      write(6,'(//a15,2es12.4,a15,e12.4,2f6.3)') '>>M-DU prod >>',   &
-      DU_prod(1,i,j),  DU_prod(2,i,j), ' > TOTAL >', DUST_flux(i,j), &
-      frac_fin, frac_coa
+    if(DEBUG_DUST .and. debug_flag) write(6,'(//a15,2es12.4,a15,e12.4,2f6.3)') &
+       '<< DUST OUT>>', DU_prod(DU_F,i,j),  DU_prod(DU_C,i,j), ' > TOTAL >',         &
+       DUST_flux(i,j), frac_fin, frac_coa
+
   endif  ! dust_prod
 
-  if(DEBUG_DUST .and. debug_flag) write(6,'(//a15,2es12.4,a15,e12.4,2f6.3)') &
-     '<< DUST OUT>>', DU_prod(1,i,j),  DU_prod(2,i,j), ' > TOTAL >',         &
-     DUST_flux(i,j), frac_fin, frac_coa
+  if(DEBUG_DUST .and. debug_flag) write(6,*) &
+       '<< No DUST production>>   > TOTAL >', DUST_flux(i,j)
 
    end subroutine WindDust
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+! >=================================================================<
+
+
+! <=================================================================>
 
   subroutine init_dust
 
@@ -491,29 +487,28 @@
  
   implicit none
 
-  integer :: i, k
+  integer :: i
   real    :: Re_opt, k_help1, k_help2, help_ust
   real, parameter   :: D_opt = 75.0e-6  ! [um] Optimal particle size for uplift
-!......................................
   integer, parameter  :: Nsoil = 3, Ndust = 4
-  real    :: lnsig, sqrt2, dead_erf, ERFfun, x1,x2, y, tot_soil
+  real    :: sqrt2, x1,x2, y, tot_soil
   integer :: isoil, idu
-  real, dimension(Nsoil,Ndust)  :: dif1, dif2
+  real, dimension(Nsoil,Ndust)  :: help_diff
   real, dimension(Ndust)    :: sum_soil
   real, dimension (Ndust) :: d1 = (/0.1, 1., 2.5, 5. /)
   real, dimension (Ndust) :: d2 = (/1., 2.5, 5., 10. /)
-!//__ different soil size distributions
-!  real, dimension (3) :: mass_fr = (/ 2.6e-6,    0.781,    0.219/) 
+!//__ different soil size distributions are tested
+  real, dimension (Nsoil) :: dsoil   = (/ 0.832,  4.82,  19.38 /)
+  real, dimension (Nsoil) :: mass_fr = (/ 0.036,  0.957, 0.007 /) 
+  real, dimension (Nsoil) :: sig_soil= (/ 2.10,   1.9 ,  1.60  /)
+!  real, dimension (3) :: mass_fr = (/ 2.6e-6, 0.781,  0.219/) 
 !  real, dimension (3) :: dsoil   = (/ 0.0111, 2.524, 42.10 /)  ! [um] MMD 
-!  real, dimension (3) :: sig_soil= (/ 1.89 ,     2.0 ,      2.13    /)  ! [frc] GSD
-!  real, dimension (3) :: dsoil   = (/  1.5 ,   6.7,   14.2 /)  ! [um] MMD 
-!  real, dimension (3) :: sig_soil= (/  1.7 ,  1.6 ,    1.5 /)  ! [frc] GSD
-  real, dimension (Nsoil) :: dsoil   = (/ 0.832 ,  4.82 , 19.38 /)
-  real, dimension (Nsoil) :: mass_fr = (/ 0.036,  0.957,  0.007 /) 
-  real, dimension (Nsoil) :: sig_soil= (/ 2.10 ,  1.9 ,   1.60  /)
+!  real, dimension (3) :: sig_soil= (/ 1.89 ,  2.0 ,   2.13 /)  ! [frc] GSD
+!  real, dimension (3) :: dsoil   = (/  1.5 ,  6.7,   14.2  /)  ! [um] MMD 
+!  real, dimension (3) :: sig_soil= (/  1.7 ,  1.6 ,  1.5   /)  ! [frc] GSD
 !---------------------------------------------
 
-  if (me == 0) then
+  if (DEBUG_DUST .and. MasterProc) then
    write(6,*)
    write(6,*) ' >> DUST init <<',soil_dens
   endif
@@ -527,8 +522,8 @@
     k_help1 = 1.0 + 6.e-7 / ( soil_dens *GRAV *(D_opt**2.5) )      !   SQUARED      
     k_help2 = soil_dens * GRAV * D_opt
                              !   SQUARED
-!   if (me == 0) write(6,'(a25,f5.1,3e12.4)')  &
-!               'ROsoil/Re_opt/K1/K2 ',soil_dens,Re_opt, k_help1, k_help2
+   if (DEBUG_DUST .and. MasterProc) write(6,'(a25,f5.1,3e12.4)')  &
+               'ROsoil/Re_opt/K1/K2 ',soil_dens,Re_opt, k_help1, k_help2
 
 !//__ U_star_threshold
     if ( Re_opt < 0.03 ) then
@@ -538,14 +533,14 @@
       help_ust = 1.928 * Re_opt**0.0922 - 1.0 ! [frc] IvW82 p. 114 (3), MaB95 p. 16417 (6)
       help_ust = 0.129 * 0.129 /  help_ust ! [frc]                       SQUARED
 
-     if (me == 0)  write(6,'(a20,e12.4)') 'U* =', help_ust
+     if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U* =', help_ust
 
     else 
       help_ust = 1.0- 0.0858 * exp(-0.0617 *(Re_opt-10.0)) ! [frc] IvW82 p. 114(3), 
                                                            ! MaB95 p. 16417 (7)
       help_ust = 0.12*0.12 * help_ust*help_ust  ! [frc]                  SQUARED
 
-     if (me == 0) write(6,'(a20,e12.4)') 'U* =', help_ust
+     if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U* =', help_ust
 
     endif     ! Re_opt < 0.03
          
@@ -553,7 +548,7 @@
 
     help_ustar_th = sqrt (k_help1 * k_help2 * help_ust)
 
-    if (me == 0) write(6,'(a20,e12.4)') 'U*t help =', help_ustar_th
+    if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U*t help =', help_ustar_th
 
 !// =======================================
 !TEST       sand_frac = 0.6   ! sand fraction in soil
@@ -562,8 +557,9 @@
 !// Bulk density of dry surface soil [Zender, (8)]
 !     soil_dns_dry = soil_dens * (1.0 - vh2o_sat)    ! [kg m-3]
 
-!//__ Calculate mass dust fractions : fine and coarse
-    if (me == 0) then
+!//__ Calculate mass dust fractions : fine and coarse - JUST BEING TESTED!!!!!
+
+    if (DEBUG_DUST .and. MasterProc) then
       write(6,*)
       write(6,*) ' >> DUST fractions <<', Nsoil, Ndust
       write(6,'(a15,3e12.4)') 'Sigma =', (sig_soil(i),i=1,Nsoil)
@@ -576,53 +572,45 @@
 
     do isoil = 1, Nsoil
        y = log (sig_soil(isoil) ) * sqrt2
-
-!      if (me == 0) write (6,'(a15,i4,2e12.4)') &
-!                   'TEST 1', isoil, log(sig_soil(isoil)),y
-
     do idu = 1, Ndust 
-
-!      if (me == 0) write (6,'(a15,2i3,3f8.3,e12.4)')  &
-!                  'TEST 2', isoil,idu,d1(idu),d2(idu),dsoil(isoil),y
-
        x1 = log ( d1(idu) / dsoil(isoil) ) / y
        x2 = log ( d2(idu) / dsoil(isoil) ) / y
 
-       if (MasterProc) write (6,'(a,4e12.4)') 'DUST TEST 3', &
+       if (DEBUG_DUST .and. MasterProc) write (6,'(a,4e12.4)') 'DUST TEST 3', &
                                x1,x2,ERFfunc(x1),ERFfunc(x2)
 
-       dif2(isoil,idu) = 0.5 * ( ERFfunc(x2) - ERFfunc(x1) )
-       dif2(isoil,idu) =  dif2(isoil,idu) * mass_fr(isoil)
+       help_diff(isoil,idu) = 0.5 * ( ERFfunc(x2) - ERFfunc(x1) )  &
+                                  * mass_fr(isoil)
 
-       sum_soil(idu) =  sum_soil(idu) + dif2(isoil,idu)
-       tot_soil = tot_soil + dif2(isoil,idu)
+       sum_soil(idu) =  sum_soil(idu) + help_diff(isoil,idu)
+       tot_soil = tot_soil + help_diff(isoil,idu)
 
      enddo
    enddo
 
-   frac_fine =  sum_soil(1) + sum_soil(2) +  sum_soil(3) 
+   frac_fine =  sum_soil(1) + sum_soil(2) + sum_soil(3) 
    frac_coar =  sum_soil(4)
 
-!   if (me == 0)  then
-!     do idu = 1,Ndust 
-!      write (6,'(a25,2f8.4,3(f8.3),2f12.3)') ' Dust frac in bins:',  &
-!             d1(idu), d2(idu), (dif2(isoil,idu), isoil=1,3),         &
-!             sum_soil(idu),sum_soil(idu)/tot_soil
-!     enddo
-!     write (6,'(a30,2f8.4)') ' ** FINE / COARSE **',frac_fine, frac_coar
-!   endif
+   if (DEBUG_DUST .and. MasterProc)  then
+     do idu = 1,Ndust 
+      write (6,'(a25,2f8.4,3(f8.3),2f12.3)') ' Dust frac in bins:',  &
+             d1(idu), d2(idu), (help_diff(isoil,idu), isoil=1,3),         &
+             sum_soil(idu),sum_soil(idu)/tot_soil
+     enddo
+     write (6,'(a30,2f8.4)') ' ** FINE / COARSE **',frac_fine, frac_coar
+   endif
 
   end subroutine init_dust
-!>------------------------------------------------------<
+! >=================================================================<
 
-!<------------------------------------------------------<
+! <=================================================================>
   subroutine get_dustfrac(frac_fine, frac_coarse, ustar)
-!== Calculates fine/coarse dust fractions dependenden on U*,
-!   based Alfaro & Gomes (2001) - under testing
+
+ ! Calculates fine/coarse dust fractions dependenden on U*,
+ ! based Alfaro & Gomes (2001) - JUST BEING TESTED!!!!!
 
    real :: frac_fine, frac_coarse, ustar, a
-   integer :: iclass
-
+ 
    if (ustar < 0.35) then
       frac_fine   = 0.02
       frac_coarse = 0.09

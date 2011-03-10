@@ -1,29 +1,62 @@
+! < ForestFire_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
+!          Chemical transport Model>
+!*****************************************************************************!
+!*
+!*  Copyright (C) 2007-2011 met.no
+!*
+!*  Contact information:
+!*  Norwegian Meteorological Institute
+!*  Box 43 Blindern
+!*  0313 OSLO
+!*  NORWAY
+!*  email: emep.mscw@met.no
+!*  http://www.emep.int
+!*
+!*    This program is free software: you can redistribute it and/or modify
+!*    it under the terms of the GNU General Public License as published by
+!*    the Free Software Foundation, either version 3 of the License, or
+!*    (at your option) any later version.
+!*
+!*    This program is distributed in the hope that it will be useful,
+!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
+!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!*    GNU General Public License for more details.
+!*
+!*    You should have received a copy of the GNU General Public License
+!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!*****************************************************************************!
+
 module ForestFire_ml
-  use CheckStop_ml,     only : CheckStop
-  use ChemChemicals_ml, only : species
-  use ChemSpecs_tot_ml, only : NO, CO
-  use Country_ml,       only : IC_BB   ! FFIRE
-  use EmisDef_ml,  only :  &
+ !----------------------------------------------------------------
+ ! Uses emissions from GFED 3 (Global Forest Emission database)
+ ! http://www.falw.vu/~gwerf/GFED/
+ ! Currently programmed for 8-daily data (available for 2001 - 2007)
+ !----------------------------------------------------------------
+  use CheckStop_ml,      only : CheckStop
+  use ChemChemicals_ml,  only : species
+  use ChemSpecs_tot_ml,  only : NO, CO
+  use Country_ml,        only : IC_BB   ! FFIRE
+  use EmisDef_ml,        only :  &
      ISNAP_NAT   &  ! ForeFires are assigned to SNAP-11 usually
     ,NEMIS_FILES &
     ,EMIS_NAME  ! lets us know which pollutants are wanted, e.g. sox, pm25
 
-  use EmisGet_ml, only : &
+  use EmisGet_ml,        only : &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
         ,iqrc2itot                   &  !maps from split index to total index
         ,emis_nsplit     ! No. spec per file, e.g. nox has 2, for NO and NO2
 
-  use GridValues_ml, only : i_fdom, j_fdom, debug_li, debug_lj, debug_proc
-  use Io_ml,       only : PrintLog
+  use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, debug_proc
+  use Io_ml,             only : PrintLog
   use MetFields_ml,      only : z_bnd
   use ModelConstants_ml, only : MasterProc, KMAX_MID, &
                                 USE_FOREST_FIRES, DEBUG_FORESTFIRE, &
                                 IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
-  use NetCDF_ml, only : ReadField_CDF, Out_netCDF,  Real4 ! Reads, writes 
-  use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
-  use Par_ml, only : MAXLIMAX, MAXLJMAX, li0, li1, lj0, lj1, me
+  use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,  Real4 ! Reads, writes 
+  use OwnDataTypes_ml,   only : Deriv, TXTLEN_SHORT
+  use Par_ml,            only : MAXLIMAX, MAXLJMAX, li0, li1, lj0, lj1, me
   use PhysicalConstants_ml, only : AVOG
-  use ReadField_ml, only : ReadField    ! Reads ascii fields
+  use ReadField_ml,      only : ReadField    ! Reads ascii fields
   use Setup_1dfields_ml, only : rcemis
   use SmallUtils_ml,     only : find_index
   use TimeDate_ml,only : nydays, nmdays, date, current_date   ! No. days per year, date-type 
@@ -54,12 +87,12 @@ implicit none
      ,iqrc    &! index of species among speciated, e.g. SO2=1, SO4=2,NO=3 etc.
      ,itot     ! index of species in xn_2d. Use iqrc2itot array to map
 
-   character(len=10), private :: emep_poll, gfed_poll
+   character(len=TXTLEN_SHORT), private :: emep_poll, gfed_poll
 
    type, private :: BB_Defs
       character(len=TXTLEN_SHORT) :: emep ! e.g.  nox
       character(len=TXTLEN_SHORT) :: gfed ! e.g. NOx
-      real                         :: MW    ! mol wt. assumed in emission file
+      real                        :: MW    ! mol wt. assumed in emission file
    end type
 
   ! GFED table ============================================================
