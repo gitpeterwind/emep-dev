@@ -208,13 +208,8 @@ module InterpolationRoutines_ml
 
     !compute the great circle distance between to points given in 
     !spherical coordinates. Sphere has radius 1.
-    real, intent(in) ::fi1,lambda1,fi2,lambda2 !NB: in DEGREES here
+    real, intent(in) ::fi1,lambda1,fi2,lambda2 !NB: all in DEGREES here
     real :: dist
-
-
-    ! sind not allowed in gfortran, so replaced. Also, 360 removed
-    !dist=2*asin(sqrt(sind(0.5*(lambda1-lambda2+360.0))**2+&
-    !     cosd(lambda1+360.0)*cosd(lambda2+360.0)*sind(0.5*(fi1-fi2+360.0))**2))
 
     dist=2*asin(sqrt(sin(DEG2RAD*0.5*(lambda1-lambda2))**2+&
          cos(DEG2RAD*lambda1)*cos(DEG2RAD*lambda2)*&
@@ -261,26 +256,26 @@ module InterpolationRoutines_ml
          print "(a,i3,a,i3)", "Interpolate from data:", NXD, " x ", NYD
          print *, " "
          print "(9x,9f10.3)", ( dlon(i,1),i=1, NXD )  !j=1 fake
-         print "(12x,a)" , "--------------------------------------------------------"
+         print "(12x,a)" , "-------------------------------------------------"
          do j = NYD, 1, -1
            print "(f9.1,9f10.3)", dlat(1,j), ( values_data(i,j), i = 1, NXD)
          end do
-         print "(12x,a)" , "--------------------------------------------------------"
+         print "(12x,a)" , "-------------------------------------------------"
      end if
 
      call grid2grid_coeff( &
        glon,glat, & ! 
        IIij,JJij,    & ! Gives coordinates of 4 nearest pts
        Weight1,Weight2,Weight3,Weight4, & ! and weights
-       dlon,dlat,NXD,NYD, &
-       NXG, NYG, NXG, NYG, debug, 1, 1) !ds 1,1 is just a crude coord, while checking
+       dlon,dlat,NXD,NYD, NXG, NYG, NXG, NYG, debug, &
+        1, 1) !1,1 is just a crude coord, while checking
 
       do i=1,limax
         do j=1,ljmax
-           Weight(1) = Weight1(i,j)  !ds tmp
-           Weight(2) = Weight2(i,j)  !ds tmp
-           Weight(3) = Weight3(i,j)  !ds tmp
-           Weight(4) = Weight4(i,j)  !ds tmp
+           Weight(1) = Weight1(i,j)  
+           Weight(2) = Weight2(i,j)  
+           Weight(3) = Weight3(i,j)  
+           Weight(4) = Weight4(i,j)  
 
            values_grid(i,j)= 0.0
            sumWeights      = 0.0
@@ -289,14 +284,10 @@ module InterpolationRoutines_ml
               ii = IIij(i,j,k)
               jj = JJij(i,j,k)
               if ( values_data(ii,jj) > Undefined ) then
-                  values_grid(i,j)= values_grid(i,j)+Weight(k)*values_data(ii,jj)
-                  sumWeights = sumWeights + Weight(k)
+                values_grid(i,j)= values_grid(i,j)+Weight(k)*values_data(ii,jj)
+                sumWeights = sumWeights + Weight(k)
               end if
 
-             !if(debug .and. i==1)then
-             ! print "(4i4,3f12.4)", i,j,ii,jj,Weight(k), &
-             !   values_data(ii,jj), values_grid(i,j)
-             !end if
            end do
 
            if ( sumWeights > 1.0e-9 ) then
@@ -313,11 +304,11 @@ module InterpolationRoutines_ml
          print *, "To model grid:", NXG, " x ", NYG
          print *, " "
          print "(9x,9f10.3)", ( glon(i,1),i=1, NXG )  !j=1 fake
-         print "(12x,a)" , "--------------------------------------------------------"
+         print "(12x,a)" , "--------------------------------------------------"
          do j =  NYG, 1, -1
            print "(f9.1,9f10.3)", glat(1,j), ( values_grid(i,j), i = 1, NXG)
          end do
-         print "(12x,a)" , "--------------------------------------------------------"
+         print "(12x,a)" , "--------------------------------------------------"
     end if
 
   end subroutine Nearest4interp
@@ -345,7 +336,7 @@ module InterpolationRoutines_ml
     integer, intent(in) :: debug_li, debug_lj
 
     real :: dist(0:4)
-    integer :: i,j,II,JJ, k
+    integer :: i,j,II,JJ
 
     !find interpolation constants
     !note that i,j are local
@@ -412,13 +403,13 @@ module InterpolationRoutines_ml
           dist(0)=(dist(3)+dist(4))
           Weight3(i,j)=(1.0-Weight1(i,j)-Weight2(i,j))*(1.0-dist(3)/dist(0))
           Weight4(i,j)=1.0-Weight1(i,j)-Weight2(i,j)-Weight3(i,j)
-                if(debug.and.i==debug_li.and.j==debug_lj) then
-                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal0", dist(0)
-                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal1", dist(1), Weight1(i,j)
-                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal2", dist(2), Weight2(i,j)
-                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal3", dist(3), Weight3(i,j)
-                    write(*,"(a,4es12.3)") "DEBUG-g2gFinal4", dist(4), Weight4(i,j)
-                end if
+          if(debug.and.i==debug_li.and.j==debug_lj) then
+             write(*,"(a,4es12.3)") "DEBUG-g2gFinal0", dist(0)
+             write(*,"(a,4es12.3)") "DEBUG-g2gFinal1", dist(1), Weight1(i,j)
+             write(*,"(a,4es12.3)") "DEBUG-g2gFinal2", dist(2), Weight2(i,j)
+             write(*,"(a,4es12.3)") "DEBUG-g2gFinal3", dist(3), Weight3(i,j)
+             write(*,"(a,4es12.3)") "DEBUG-g2gFinal4", dist(4), Weight4(i,j)
+          end if
 
        enddo
     enddo
