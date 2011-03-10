@@ -44,7 +44,7 @@ program myeul
 
   use Advection_ml,     only : vgrid,adv_var, assign_nmax,assign_dtadvec
   use Aqueous_ml,       only : init_aqueous, Init_WetDep   !  Initialises & tabulates
-  use AirEmis_ml,       only : aircraft_nox, lightning
+  use AirEmis_ml,       only : lightning
   use Biogenics_ml,     only : Init_BVOC, SetDailyBVOC  !dsBVOC
 ! hb NH3emis
   use calc_emis_potential_ml,only : NH3emis_potential,lNH3emis_pot, &
@@ -402,8 +402,6 @@ endif
         !subroutines/data that must be updated every month
 
         call readdiss(newseason)
-
-!rv3_5_14: aircraft from "newmonth"      if ( AIRNOX ) call aircraft_nox(newseason)
 
         if (MasterProc .and. DEBUG_UNI ) write(6,*) 'maaned og sesong', &
              numt,mm,mm_old,newseason,oldseason
