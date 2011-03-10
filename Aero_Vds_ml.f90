@@ -2,16 +2,16 @@
   module Aero_Vds_ml
 !==============================================================================
   use PhysicalConstants_ml, only : FREEPATH, VISCO, BOLTZMANN, PI, GRAV, ROWATER
-  use My_Aerosols_ml,       only : NSIZE, FINE_PM, COAR_PM, GIG_PM
+  use My_Aerosols_ml,       only : NSIZE
   use ModelConstants_ml,    only : DEBUG_VDS
  
   ! DESCRIPTION
   ! Calculates laminar sub-layer resistance (rb) and gravitational settling 
   ! velocity (vs) for particles
-  ! Finally: vd= vs+1/(ra+rb+ra*rb*vs),   where
-  ! vs - gravitational settling velocity,
-  ! ra - aerodynamic resistance, rb - viscous sub-layer resistance,
-  ! rc - surface resistance (assumed zero for particles)
+  ! In DryDep_ml: Vd= Vs/(1.0 - exp ( -(Ra + Rb)*Vs ),   where
+  ! Vs - gravitational settling velocity,
+  ! Ra - aerodynamic resistance, Rb=1/Vds - viscous sub-layer resistance,
+  ! Surface resistance is assumed zero for particles
   !---------------------------------------------------------------------------
 
  implicit none
@@ -43,9 +43,6 @@
   public  :: RuijgrokDrySO4
   public  :: RuijgrokWetSO4
   public  :: Wesely1985
-!TMP  public  :: McDonaldForest
-
-!  public  :: Slinn - to be re-added from Aero_Rb, after mods
 
 contains
 
@@ -58,13 +55,11 @@ contains
     !  here we use Di
 
      real, intent(in) :: tsK, roa ! temp, air density, Rel.hum
-!     integer, parameter :: NSIZE = 2  ! In My_Aerosols
      real  :: Vs(NSIZE)
-
-   !QUERIES should FREEPATH, VISCO be constants? 
 
    ! here we use dp=0.33 equivalent to McDonald et al.2007, Table 3 
    ! data for accumulation mode, background.
+   ! Extra 'giant' size is used for sea salt only
 
      real, parameter, dimension(NSIZE) ::   &
                  diam   = (/ 0.33e-6, 4.0e-6, 8.5e-6 /),  &
@@ -72,11 +67,11 @@ contains
                  PMdens = (/ 1600.0, 2200.0, 2200.0 /) ! kg/m3
      real, parameter :: one2three = 1.0/3.0
      integer :: imod 
-     real    :: lnsig2, dg, dg_dry, r_cm, rw, Rh, GF3, part_dens, & !slip, &
-                knut, Di1, Di, vind, &
-                stoke, schmidt, &  ! Stoke's and Schmidt numbers
-                vsmo, vs1          ! Settling velocity
-
+     real    :: lnsig2, dg, & 
+                knut, Di,   & ! Knudsen number, Diffusion coefficient
+                Di_help, vs_help
+     !vind, vsmo, slip, stoke, schmidt ! slip correction, Stokes and Schmidt numbers
+ !-----------------------------------------------------------------------------------
 
     do imod = 1, NSIZE
 
@@ -88,26 +83,15 @@ contains
 
         knut = 2.0*FREEPATH/dg   ! Knut's number
 
-!... slip correction coefficient  
-!	slipmo= 1.+ knut*       &               ! for monodisperse
-!                (1.257+0.4*exp(-1.1* /knut))
-!NOT-USED?	slip =  1.+ 1.246*knut                  ! for polydisperse
+        Di_help =BOLTZMANN*tsK/(3*PI*dg *VISCO *roa)                    ! A30, dpg
+        vs_help= dg*dg * PMdens(imod) * GRAV / (18.0* VISCO*roa)        ! A32
 
-!== monodisperse aerosols =====
-!     Dimo =BOLTZMANN*tsK*slipmo/(3*PI*dg *VISCO*roa)        ! diffusion coefficient
-!     vsmo =dg*dg *PMdens(imod) *GRAV*slipmo/(18.*VISCO*roa) ! gravitational settling
+       !... Diffusion coefficient for poly-disperse 
+        Di = Di_help*(exp(-2.5*lnsig2)+1.246*knut*exp(-4.*lnsig2))      ! A29, dpk 
+       !... Settling velocity for poly-disperse 
+        vs(imod) = vs_help*(exp(8.0*lnsig2)+1.246*knut*exp(3.5*lnsig2)) ! A31, k=3
 
-!== polydisperse aerosols (log-normal size distribution) =====
-
-        Di1 =BOLTZMANN*tsK/(3*PI*dg *VISCO *roa)                    ! A30, dpg
-
-        ! diffusion coefficient:
-        Di = Di1*(exp(-2.5*lnsig2)+1.246*knut*exp(-4.*lnsig2))      ! A29, dpk 
-
-        vs1= dg*dg * PMdens(imod) * GRAV / (18.0* VISCO*roa)           ! A32
-        vs(imod) = vs1*(exp(8.0*lnsig2)+1.246*knut*exp(3.5*lnsig2)) ! A31, k=3
-
-        if ( DEBUG_VDS ) write (6,'(a19,i3,f8.3)'), "** Settling Vd **",imod, vs(imod)*100.0
+        if (DEBUG_VDS) write(6,'(a19,i3,f8.3)') "** Settling Vd **",imod,vs(imod)*100.0
 
      end do !imod
    end function SettlingVelocity
@@ -291,118 +275,7 @@ contains
         end if
    end function GallagherWT
    !-- ----------------------------------------------------------------------
-!TMP   function McDonaldForest(dpMed,ustar) result(Vds)
-!TMP     real, intent(in) :: dpMed, ustar
-!TMP     real :: Vds
-!TMP     real :: X
-!TMP     integer :: i
-!TMP     real,dimension(7) :: a! = (/ 0.0000614,0.0012994,0.0023525, &
-!TMP     a = (/ 0.0000614,0.0012994,0.0023525, &
-!TMP                                -0.0647616,-0.0794396,1.2454391,3.8075140 /)
-!TMP     Vds = a(7)
-!TMP     X = log(dpMed)
-!TMP     do i = 1, 6
-!TMP         Vds = Vds + a(7-i) * X**i
-!TMP     end do 
-!TMP     Vds = 0.001 * exp(Vds)
-!TMP
-!TMP   end function McDonaldForest
 
-
-     
-   !-- ----------------------------------------------------------------------
 ! =================================================================
 
 end module Aero_Vds_ml
-
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-
-!=============================================================================
-! From Aero_Rb, should be developed in Slinn function
-! Need to reconsider snow, conv etc.
-! 
-!TMP! -------------------------------------------------------------------
-!TMP
-!TMP!// Stokes and Schmidt numbers:
-!TMP
-!TMP   ! == monodisperse ======
-!TMP	! STmo=vsmo*ustar*ustar/VISCO/GRAV
-!TMP	! SCmo=VISCO/dimo
-!TMP   ! == polydisperse ======
-!TMP	 schmidt = VISCO/Di              ! Schmidt number
-!TMP	 stoke = vs(imod)*ustar*ustar/VISCO/GRAV ! Stoke number(based on depth 
-!TMP                                              ! of laminar layer)
-!TMP
-!TMP !// collection efficiency  =======================
-!TMP !      coleff=1./sc**(2./3.) + 1./10.**(3/stoke)
-!TMP !=================================================
-!TMP
-!TMP         vind = max( 0.005, v50 )   ! wind at 50m height
-!TMP
-!TMP
-!TMP
-!TMP      if( LandType(lu)%is_water )    then !//===  WATER surface  ( Slinn & Slinn, 1980 ) =
-!TMP
-!TMP      	   coleff= ustar / (KARMAN * vind) *      &          ! polydisperse
-!TMP                  (exp(-0.5*log(schmidt)) + exp(-3./stoke*log10) )   
-!TMP
-!TMP      elseif ( LandType(lu)%is_conif )  then !//===  CONIFEROUS ==============
-!TMP
-!TMP           stoke = vs(imod)*ustar/(AHAT*GRAV)   ! vegetation (Slinn, 1982)
-!TMP           coleff= exp(-2./3.*log(schmidt)) + stoke/(1.+ stoke*stoke)  !  Slinn 
-!TMP
-!TMP      elseif ( LandType(lu)%is_veg ) then !//===  other VEGETATIVE surfaces ======
-!TMP
-!TMP          if ( snow > 0 .or. tsK <= 273.)   then   !... covered with snow or frozen 
-!TMP
-!TMP              coleff= exp(-2./3.*log(schmidt)) + exp(-3./stoke*log10)  ! polydisperse  
-!TMP
-!TMP          else   !... snowfree  
-!TMP
-!TMP               stoke = vs(imod)*ustar/(AHAT*GRAV)     ! Stoke for vegetation (Slinn, 1982)
-!TMP               coleff= exp(-2./3.*log(schmidt)) + stoke/(1.+ stoke*stoke)  !  Slinn 
-!TMP          endif
-!TMP
-!TMP      else    !//====  urban/desert/ice always ===============================
-!TMP              !..   Slinn at al(1978), Seinfeld(1997), Binkowski 
-!TMP
-!TMP           coleff= exp(-2./3.*log(schmidt)) + exp(-3./stoke*log10)  ! polydisperse
-!TMP
-!TMP      endif        
-!TMP
-!TMP! .. laminar layer resistance .....................................
-!TMP    !  rb= 1./ustar/colef                  !     Seinfeld
-!TMP    !  rb= 0.4*vind/(ustar*ustar*colef)      !     Slinn
-!TMP
-!TMP!// ==  bounce-off for coarse particles (Slinn, 1982) ===============
-!TMP   !... for fine aerosol
-!TMP
-!TMP       reb = 1.
-!TMP 
-!TMP   !... for coarse aerosol 
-!TMP
-!TMP      if(imod == NSIZE )  then
-!TMP
-!TMP        if( .not. (LandType(lu)%is_water .and. wetarea == 0.0))  & ! not on water/wet surface
-!TMP
-!TMP            reb = max (1.e-7, exp(-2. * sqrt(stoke)))           
-!TMP      endif
-!TMP
-!TMP!//== enhanced dry.dep under convective conditions (Wesely at al,1985) ====
-!TMP
-!TMP      convfac = 0. 
-!TMP     
-!TMP!  only for (low) vegetation 
-!TMP
-!TMP      if (LandType(lu)%is_veg .and. snow == 0)  convfac = conv  
-!TMP
-!TMP!// == sub-laminar layer resistance ====================
-!TMP
-!TMP     rb (imod)  = 1. /(ustar*(1.+ 0.24 *convfac)) /(coleff*reb)
-!TMP     rbw (imod) = 1. /(ustar*(1.+ 0.24 *convfac)) /coleff   ! no bounce-off on
-!TMP                                                            ! wet surfaces 
-!TMP
-!TMP!..monodisperse: rb1= 1./(ustar*(1. + 0.24 * conv))/(colef1*reb) 
-!TMP
-!TMP       end do MODEloop
-!=============================================================================
