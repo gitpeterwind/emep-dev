@@ -143,7 +143,7 @@ section: ``Input Data'')
 \item
 Download the Unified EMEP model source code (description in 
 section~\ref{sec:ModelCode} and the files are available from the EMEP 
-Open Source website under ``Download'' section: ``Model Cod'')
+Open Source website under ``Download'' section: ``Model Code'')
 \item
 Follow the instructions for 'Submitting a Run' description in
 Chapter~\ref{ch:SubmitARun}.% and/or on the EMEP Open Source website
@@ -177,7 +177,7 @@ Table~\ref{Tab:modelfiles}
 Type      & Filename          \\
 \hline
 & \\
-{\bf Model code directory} & Unify/Unimod.rv3 \\ 
+{\bf Model code directory} & Unify/Unimod.rv3\_7 \\ 
 \hline
 modules files & *.f90 \\
 include files & *.inc \\
@@ -193,9 +193,10 @@ The model source code is written in Fortran 90/95 programming language.
 There are three makefiles provided. ``Makefile'' is for a SGI Origin 3800
 computer, ``Makefile\_snow'' is for an Itanium2 cluster and the
 ``Makefile\_njord'' is for an IBM power5+ cluster. The run script, 
-``modrun.sh'', is written in Perl and is initially meant for an Itanium2
-cluster. A detailed description about  how to handle this script
-is given in Chapter~\ref{ch:SubmitARun}, ``Submitting a Run''.  
+``modrun.sh'', can easily be modified to work on your computer system.
+% A detailed 
+% description about  how to handle this script
+% is given in Chapter~\ref{ch:SubmitARun}, ``Submitting a Run''.  
 
 
 \section{Model grid}

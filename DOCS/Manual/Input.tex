@@ -37,21 +37,21 @@ PM$_{2.5}$ and PM$_{co}$). ASCII$^*$ means ASCII files with header.
 Meteorology  &  meteoYYYYMMDD.nc \quad (366+1 files) & netCDF\\
 & & \\
 Boundary and initial conditions & Boundary\_and\_Initial\_Conditions.nc & netCDF\\
+BVOC emissions & EMEP\_EuroBVOC\_KRS09.nc & netCDF\\
 Landuse & Inputs.Landuse & ASCII$^*$\\
-%BVOC emissions & Inputs.BVOC & ASCII$^*$\\
 Land/Sea mask & landsea\_mask.dat & ASCII\\
 Sites locations for surface output & sites.dat & ASCII$^*$\\
 Sondes locations for vertical output & sondes.dat & ASCII$^*$\\
 %Snow cover & snowcMM.dat.170  \quad (12 files) & ASCII\\
 Natural SO$_2$ & natso2MM.dat  \quad (12 files) & ASCII\\
 Volcanoes & Volcanoes.dat & ASCII$^*$\\
-&& \\
-{\bf Emission data directory } & EMEP\_GriddedData/Emissions/&  \\
-\hline
+ && \\
+% {\bf Emission data directory } & EMEP\_GriddedData/Emissions/&  \\
+% \hline
 Emissions & GridPOLL  \quad (7 files) & ASCII\\
-&& \\
-{\bf Grid-independent data directory} & Common/ & \\
-\hline
+ && \\
+% {\bf Grid-independent data directory} & Common/ & \\
+% \hline
 Time factors for monthly emissions& MonthlyFac.POLL  \quad (7 files) & ASCII\\
 Time factors for daily emissions &  DailyFac.POLL  \quad (7 files)
 & ASCII\\
@@ -139,6 +139,19 @@ ice            & \% & Fraction of ice \\
 Monthly files
 
 D3\_O3\_Logan, D3\_CH3COO2,D3\_H2O2,D3\_OH
+
+\subsubsection{BVOC emissions}
+
+Biogenic emissions of isoprene and monoterpene are calculated in the model as a function of temperature 
+and solar radiation, using the landuse datasets.  For more details about how the
+calcluations are performed, please read Chapter 4.2 of the EMEP
+Status Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
+
+Biogenic VOC emission potentials (i.e. rates at 30$^\circ$C and full sunlight)
+are included for four different forest types in the {\bf netCDF } file \\
+EMEP\_EuroBVOC\_KRS09.nc. 
+The emission potentials have unit $\mu g/m^{2} /h$.
+
 
 \subsection{Landuse}
 
