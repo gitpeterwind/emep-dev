@@ -138,7 +138,7 @@ ZD_OZONE/
 ds --     My_Aerosols_ml.f90
 ds --     My_Derived_ml.f90
 ds --     My_Outputs_ml.f90
-          My_SOA_ml.f90
+ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 

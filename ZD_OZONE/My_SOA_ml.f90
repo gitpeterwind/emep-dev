@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -26,25 +26,12 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
 module OrganicAerosol_ml
-! From BOX3D on 9/8/01
-   ! Calculates the amount of condesible species in the gas and aerosol
-   ! phases. 
-   ! Methodology from Andersson-Sk\"old and Simpson, 2000, Secondary Organic
-   ! Aerosol Formation in Northern Europe: a Model Study, to be published
-   ! in JGR.
-   !
-   ! Usage: call OrganicAerosol from Runchem, after setup of 1d-fields
-   ! finished.  The subroutine initialises itself on the first call
-   ! and thereafter modifies two external variables:
-   !   xn(SOA,k) : the concentrations of SOA 
-   !   Fgas(X,k) : The fraction of X which is gas and not aeorosl
-   !
-   ! Dave Simpson, August 2001 
+
    !--------------------------------------------------------------------------
-   ! nb - we use all of ChemSpecs_tot_ml since different model versions
-   !  will have different species names. This module is intended to
-   !  insensitive to the actual names one day, so this should be
-   !  revised .. one day   - ds.
+   ! This module is fake - for initial 2011 public-domain ozone model only, pending
+   ! decision as to which SOA scheme to release as default.
+   ! Contact David.Simpson@met.no for more information if interested in SOA
+   ! schemes
    !--------------------------------------------------------------------------
    use ModelConstants_ml,    only : CHEMTMIN, CHEMTMAX, &
                                     K2 => KMAX_MID, K1 => KCHEMTOP
