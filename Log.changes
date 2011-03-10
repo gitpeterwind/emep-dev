@@ -48,8 +48,8 @@ Files and cleanup status.
 st        Advection_ml.f90
           Aero_Vds_ml.f90
           Aero_water_ml.f90
-          AirEmis_ml.f90 - can delete aircraft_nox subroutine !
-                          (& rename as Lightning_ml)
+an done   AirEmis_ml.f90 - can delete aircraft_nox subroutine !
+                          (& rename as Lightning_ml) NOT DONE!!!
 ds done   Ammonium_ml.f90
           AOD_PM_ml.f90
 ds done   AOTnPOD_ml.f90
