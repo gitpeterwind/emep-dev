@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -63,15 +63,15 @@
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
                                  DebugCell, MasterProc, DEBUG_SOLVER
-    use Par_ml,            only: me, MAXLIMAX, MAXLJMAX  ! me for TEST
- use PhysicalConstants_ml, only:  RGAS_J !TTTT
+    use Par_ml,            only: me, MAXLIMAX, MAXLJMAX
+    use PhysicalConstants_ml, only:  RGAS_J
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
                                  rc_Rn222,      & ! Pb210
                                  xn_2d,         & 
                                  rh,            & 
                                  Fgas,   & ! fraction in gas-phase, for SOA
                                  rcss,amk,      & ! Sea salt emission rate
-                                 rcnh3,         & ! NH3emis
+                                 !FUTURE rcnh3,         & ! NH3emis
                                  rcbio            ! bvoc
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
     use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
@@ -113,8 +113,7 @@ contains
     integer, save ::  nchem         ! No chem time-steps
     real    ::  dt2 
     real    ::  P, L                ! Production, loss terms
-    real    :: psd_h2o2 ! Pseudo H2O2 concentration (lower when high so2)
-    real    :: xextrapol, L1,L2,P1,P2,C1,C2,DIVID    !help variable
+    real    :: xextrapol   !help variable
 
     ! Concentrations : xold=old, x=current, xnew=predicted
     ! - dimensioned to have same size as "x" 
@@ -301,8 +300,8 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
  real, dimension(nchemMAX),intent(out) :: dti,coeff1,coeff2,cc
  integer,                  intent(out) :: nchem
 
- real    :: ttot,dt_first,dt_max,dtleft,tleft,step,dt(nchemMAX)
- real :: dt_init   ! DSGC time (seconds) with initially short time-steps
+ real    :: ttot,step,dt(nchemMAX)
+ real :: dt_init   ! time (seconds) with initially short time-steps
  integer :: i,j
 !_________________________
 
