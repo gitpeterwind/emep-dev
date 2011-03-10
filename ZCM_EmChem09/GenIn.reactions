@@ -324,5 +324,5 @@ rcbio(BIO_TERP,k)                    = APINENE ;
 *
 * Add ammonia
 nh3:rcemis(NH3,k)                          = NH3 ;
-rcnh3(k)                               = NH3 ;  # hbNH3
+* FUTURE rcnh3(k)                               = NH3 ;  # hbNH3
 *
