@@ -33,7 +33,6 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! DESCRIPTION 
 ! Routine to cross check the mass balance of the model
-! Cleanup, May 2007, SV
 ! 29/10/02 - output formatting and descriptions improved, ds.
 ! 1/10/01 - code for derived fields removed. MY_MASS_PRINT ADDED, ds
 ! Oct, 2001 - ** new ** mass budget method by jej
@@ -179,13 +178,12 @@ contains
                                                  ! nn - Total no. of short
                                                  ! lived and advected species
                                                  ! info - printing info
-  integer :: ispec, ifam                         ! Species and family index
+  integer :: ifam                                ! family index
   real, dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
   character(len=TXTLEN_NAME)  :: spec_name       ! Species name
   integer, parameter :: NFAMILIES = 3            ! No. of families         
   character(len=8), dimension(NFAMILIES), save :: family_name = &
            (/ "Sulphur ", "Nitrogen", "Carbon  " /)
-  integer ispec_name
 
   real, dimension(NFAMILIES) ::family_init  & ! initial total mass of 
                                               ! species family
@@ -210,7 +208,7 @@ contains
         		  gtotldep, & ! local dry deposition
         		  gtotox      ! oxidation of SO2 
 
-  real :: totdiv,helsum,ammfac, natoms
+  real :: totdiv,helsum, natoms
 
     sum_mass(:)     = 0.
     frac_mass(:)    = 0.
@@ -321,6 +319,7 @@ contains
     family_ddep(:) = 0.
     family_wdep(:) = 0.
     family_em(:)   = 0.
+    natoms = 0.0
 
     write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
 
