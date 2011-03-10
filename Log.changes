@@ -49,7 +49,8 @@ Files and cleanup status.
 st        Advection_ml.f90
           Aero_Vds_ml.f90
           Aero_water_ml.f90
-          AirEmis_ml.f90
+          AirEmis_ml.f90 - can delete aircraft_nox subroutine !
+                          (& rename as Lightning_ml)
 ds done   Ammonium_ml.f90
           AOD_PM_ml.f90
           AOTnPOD_ml.f90
@@ -57,7 +58,7 @@ ds done   Ammonium_ml.f90
           Biogenics_ml.f90
           BLPhysics_ml.f90
           BoundaryConditions_ml.f90
-          CellMet_ml.f90
+ds --     CellMet_ml.f90
           CheckStop_ml.f90
           ChemFunctions_ml.f90
           Chem_ml.f90
@@ -126,7 +127,7 @@ ds --     SubMet_ml.f90
 av done   TimeDate_ml.f90
           Timefactors_ml.f90
           Timing_ml.f90
-Skip:     Tmp_Met_ml.f90   - will make fake version, leave rest for future
+ds --     Tmp_Met_ml.f90   - will make fake version, leave rest for future
           Trajectory_ml.f90
           Unimod.f90
           Volcanos_ml.f90
