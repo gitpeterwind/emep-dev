@@ -321,7 +321,7 @@ contains
   integer :: iemis          ! index over emissions (so2,nox,..)
   integer :: iland          ! index over countries 
   integer :: nmnd, nmnd2    ! this month, next month.
-  integer :: weekday,nday,n ! 1=Monday, 2=Tuesday etc.
+  integer :: weekday        ! 1=Monday, 2=Tuesday etc.
   real    :: xday           ! used in interpolation
   integer :: yyyy,dd 
 
