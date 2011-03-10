@@ -1,6 +1,6 @@
 ! <Landuse_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
-!*****************************************************************************! 
+!***************************************************************************! 
 !* 
 !*  Copyright (C) 2007-2011 met.no
 !* 
@@ -24,25 +24,27 @@
 !* 
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!***************************************************************************! 
 module Landuse_ml
 
-use CheckStop_ml,      only: CheckStop,StopAll
-use DO3SE_ml,   only : fPhenology
+use CheckStop_ml,   only: CheckStop,StopAll
+use DO3SE_ml,       only: fPhenology
 use GridAllocate_ml,only: GridAllocate
-use GridValues_ml,  only: glat_fdom, glat, i_fdom, j_fdom, & ! latitude, coordinates
-                          i_local, j_local, &
-                         debug_proc, debug_li, debug_lj
+use GridValues_ml,  only: glat_fdom, glat    & ! latitude,
+                          , i_fdom, j_fdom   & ! coordinates
+                          , i_local, j_local &
+                          , debug_proc, debug_li, debug_lj
 use Io_ml,          only: open_file, ios, Read_Headers, Read2DN, IO_TMP
 use KeyValue_ml,    only: KeyVal,KeyValue, LENKEYVAL
-use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, STUBBLE, Growing_Season,&
+use LandDefs_ml,    only: Init_LandDefs, LandType, LandDefs, &
+                          STUBBLE, Growing_Season,&
                           NLanduse_DEF,NLANDUSE_EMEP
-use LandPFT_ml,     only: MapPFT_LAI, pft_lai
-use MetFields_ml,       only :nwp_sea ,foundnwp_sea
-use ModelConstants_ml,  only : DEBUG_i, DEBUG_j, NLANDUSEMAX, &
-                          USE_PFT_MAPS, DEBUG_LANDPFTS, &
-                          DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
-                          DomainName, MasterProc
+use LandPFT_ml,       only: MapPFT_LAI, pft_lai
+use MetFields_ml,     only: nwp_sea ,foundnwp_sea
+use ModelConstants_ml,only: DEBUG_i, DEBUG_j, NLANDUSEMAX, &
+                            USE_PFT_MAPS, DEBUG_LANDPFTS, &
+                            DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
+                            DomainName, MasterProc
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
@@ -80,9 +82,9 @@ private
          ,Astart    &! Start photosynthetic activity, for DO3SE
          ,Aend       ! 
    real,   dimension(NLUMAX) :: &
-          fraction  &!  (coverage) ! 
+          fraction  &! (coverage)
          ,LAI       &! Leaf-area-index (m2/m2)
-         ,SAI       &! Surface-area-index (m2/m2)   (leaves+bark, etc.)
+         ,SAI       &! Surface-area-index (m2/m2) (leaves+bark, etc.)
          ,hveg      &! Max. height of veg.
          ,fphen     &! Potential (age) factor for Jarvis-calc
          ,Eiso      &! Emission potential, isoprene
@@ -98,7 +100,7 @@ private
   integer, public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
           WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
  
- ! For some flux work, experimental  XXXXXXXx
+ ! For some flux work, experimental
 
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_cover, ice_landcover 
 
@@ -124,7 +126,6 @@ contains
 
    logical :: filefound
    integer :: i,j,lu, index_lu, maxlufound
-   real, dimension(NLANDUSEMAX) :: tmp
    character(len=20), dimension(NLANDUSEMAX+10) :: Headers
    type(KeyVal), dimension(10)      :: KeyValues ! Info on units, coords, etc.
    character(len=50) :: fname
@@ -150,9 +151,9 @@ contains
    maxlufound = 0   
    Nlines = 0
 
-   landuse_ncodes(:,:)   = 0       !/**  initialise  **/
-   landuse_codes(:,:,:)  = 0       !/**  initialise  **/
-   landuse_data  (:,:,:) = 0.0     !/**  initialise  **/
+   landuse_ncodes(:,:)   = 0     !/**  initialise  **/
+   landuse_codes(:,:,:)  = 0     !/**  initialise  **/
+   landuse_data  (:,:,:) = 0.0   !/**  initialise  **/
 
 !------------------------------------------------------------------------------
 
@@ -173,16 +174,15 @@ contains
          
          call CheckStop( errmsg , "Read Headers" // fname )
          
-         
          ! The first two columns are assumed for now to be ix,iy, hence:
-         
+
          NHeaders = NHeaders -2
          call CheckStop( NHeaders /= NLANDUSE_EMEP, &
               "Inputs.Landuse not consistent with NLANDUSE_EMEP")
 
           NLanduse_DEF=NHeaders        
         
-         ! **** HERE we set the Landuse_codes *****************
+         ! *** HERE we set the Landuse_codes ***
          do i = 1,  NLanduse_DEF
             Land_codes(i) = trim ( Headers(i+2) )
          end do
@@ -240,7 +240,8 @@ contains
       end do  !j
    end do  !i
 
-   if (DEBUG_LANDUSE) write(6,*) "Landuse_ml: me, Nlines, maxlufound = ", me, Nlines, maxlufound
+   if (DEBUG_LANDUSE) write(6,*) "Landuse_ml: me, Nlines, maxlufound = ", &
+                                  me, Nlines, maxlufound
 
   end subroutine  ReadLanduse
  
@@ -276,19 +277,19 @@ contains
       !/ -- Calculate growing seasons where needed and water_fraction
       !          (for Rn emissions)
 
-        water_cover(:,:) = 0.0         !for Pb210 
-        ice_landcover(:,:)   = 0.0         !for Pb210 
+        water_cover(:,:) = 0.0    !for Pb210 
+        ice_landcover(:,:) = 0.0  !for Pb210 
 
         do i = li0, li1
           do j = lj0, lj1
 
-             debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj ) 
+             debug_flag = ( debug_proc .and. i == debug_li .and. j == debug_lj )
              do ilu= 1, LandCover(i,j)%ncodes
                 lu      = LandCover(i,j)%codes(ilu)
                 call CheckStop( lu < 0 .or. lu > NLANDUSEMAX , &
                                 "SetLandUse out of range" )
 
-                if ( LandDefs(lu)%SGS50 > 0 ) then  ! need to set growing seasons 
+                if ( LandDefs(lu)%SGS50 > 0 ) then ! need to set growing seasons 
 
                     call Growing_season( lu,abs(glat(i,j)),&  
                             LandCover(i,j)%SGS(ilu),LandCover(i,j)%EGS(ilu) )
@@ -312,8 +313,10 @@ contains
                  LandCover(i,j)%fphen(ilu) =  0.0          
              end if
 
-             if ( LandType(lu)%is_water ) water_cover(i,j) = LandCover(i,j)%fraction(ilu)
-             if ( LandType(lu)%is_ice   ) ice_landcover(i,j) = LandCover(i,j)%fraction(ilu)
+             if ( LandType(lu)%is_water ) water_cover(i,j) = &
+                                          LandCover(i,j)%fraction(ilu)
+             if ( LandType(lu)%is_ice   ) ice_landcover(i,j) = &
+                                          LandCover(i,j)%fraction(ilu)
              
 
             end do ! ilu
@@ -338,7 +341,7 @@ contains
    !Landcover data can be set either from simplified LPJ
    !PFTs, or from the "older" DO3SE inputs file
 
-     if ( USE_PFT_MAPS ) then !- Check for LPJ-derived data ----------------------
+     if ( USE_PFT_MAPS ) then !- Check for LPJ-derived data -
          if ( current_date%month /= old_month ) then 
            call MapPFT_LAI( current_date%month )
          end if
@@ -410,12 +413,12 @@ contains
                      LandCover(i,j)%LAI(ilu) / LandDefs(lu)%LAImax
                    xSAIadd = ( 5.0/3.5 - 1.0) * LandCover(i,j)%LAI(ilu)
                 else if ( effectivdaynumber < LandCover(i,j)%EGS(ilu) ) then
-                   hveg = LandDefs(lu)%hveg_max             ! not needed?
-                   xSAIadd = 1.5   ! Sensescent
+                   hveg = LandDefs(lu)%hveg_max  ! not needed?
+                   xSAIadd = 1.5  ! Sensescent
                 end if
                 LandCover(i,j)%SAI(ilu) = LandCover(i,j)%LAI(ilu)  + xSAIadd
 
-             !! end if ! crops
+             ! end if ! crops
 
 
            ! Just used reduced LAI for high latitudes for now, because of tests
@@ -481,24 +484,23 @@ result (Poly)
 !
 
 !   Inputs
-    integer, intent(in) :: jdayin      !day of year
-    real, intent(in) ::    Ymin        !minimum value of Y
-    real, intent(in) ::    Ystart      !value Y at start of growing season
-    real, intent(in) ::    Ymax        !maximum value of Y
-    integer, intent(in) ::    Sday        !start day (e.g. of growing season)
-    integer, intent(in) ::    LenS        !length of Start period (S..S1 above)
-    integer, intent(in) ::    Eday        !end day (e.g. of growing season)
-    integer, intent(in) ::    LenE        !length of end period (E..E1 above)
+    integer, intent(in) :: jdayin     !day of year
+    real, intent(in) ::    Ymin       !minimum value of Y
+    real, intent(in) ::    Ystart     !value Y at start of growing season
+    real, intent(in) ::    Ymax       !maximum value of Y
+    integer, intent(in) ::    Sday    !start day (e.g. of growing season)
+    integer, intent(in) ::    LenS    !length of Start period (S..S1 above)
+    integer, intent(in) ::    Eday    !end day (e.g. of growing season)
+    integer, intent(in) ::    LenE    !length of end period (E..E1 above)
 
 !  Output:
     real ::   Poly  ! value at day jday
 
 ! Local
-    integer :: jday  ! day of year, after any co-ordinate change
-    integer ::    S   !  start day
-    integer ::    E   !  end day
+    integer :: jday ! day of year, after any co-ordinate change
+    integer ::    S ! start day
+    integer ::    E ! end day
     
-
     jday = jdayin
     E = Eday
     S = Sday
@@ -523,6 +525,7 @@ result (Poly)
     else
 
         Poly =Ymax
+
     end if
     
 
