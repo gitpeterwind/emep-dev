@@ -86,8 +86,8 @@ ds --     DryDep_ml.f90
           Io_Nums_ml.f90
 av done   Io_Progs_ml.f90
           KeyValue_ml.f90
-          LandDefs_ml.f90
-          LandPFT_ml.f90
+ds --     LandDefs_ml.f90
+ds --     LandPFT_ml.f90
           Landuse_ml.f90
           local2global.f90
           LocalVariables_ml.f90
@@ -118,7 +118,7 @@ av done   Output_hourly.f90
 ds --     Setup_1d_ml.f90
           Sites_ml.f90
           SmallUtils_ml.f90
-          SoilWater_ml.f90
+ds --     SoilWater_ml.f90
 ds --     Solver.f90
 ds --     StoFlux_ml.f90
 ds --     SubMet_ml.f90
