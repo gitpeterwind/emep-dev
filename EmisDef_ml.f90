@@ -36,25 +36,10 @@
 !_____________________________________________________________________________
 implicit none
 
-  !! No. emission files to be read for non-speciated
-
-!ds   integer, public, parameter :: NEMIS_FILES =      7 
-!ds
-!ds   !/** The names used below must have length of 6 characters and must
-!ds   !    belong to the full list given in Emissions_ml, as they will
-!ds   !    be used together with information in that module. An error
-!ds   !    message (fatal)  will be produced if this is not the case.
-!ds   !-----------------------------------------------------------------
-!ds
-!ds    character(len=6), public, save, dimension(NEMIS_FILES) :: &
-!ds      EMIS_NAME  = &
-!ds      (/ "sox   ", "co    "   &   ! =non-split first
-!ds       , "nh3   ", "pm25  ", "pmco  "   &
-!ds       , "nox   ", "voc   "  /)                       ! =to be split
-
-    !************ Definitions of NEMIS_FILES ad EMIS_NAME are now
-    !************ deduced by GenChem from the GenIn.reactions file.
-    !
+    ! Definitions of number of emission files (NEMIS_FILES) and 
+    ! emission names (EMIS_NAME) are deduced by GenChem from the 
+    ! GenIn.reactions file.
+    
        include 'CM_Emis.inc'
 
     !----------------- basic emissions file definitions --------------------!
@@ -72,22 +57,23 @@ implicit none
 
     ! Note on SNAP sectors:
     ! ----------------------
-    ! SNAP1  =  public power stations,150m nat gas
-    ! SNAP2  =  Comm./inst. combustion
-    ! SNAP3  =  Industrial combustion !60m nat gas
+    ! SNAP1  =  Combustion in energy and transformation industries,
+    !           e.g.  public power stations, 150m nat gas
+    ! SNAP2  =  Non-industrial combustion
+    ! SNAP3  =  Industrial combustion  !60m nat gas
     ! SNAP4  =  Production processes
-    ! SNAP5  =  Extracton fossil fuels
-    ! SNAP6  =  Solvents
+    ! SNAP5  =  Extraction and distribution of fossil fuels
+    ! SNAP6  =  Solvent use
     ! SNAP7  =  Road traffic
-    ! SNAP8  =  Other mobile (trains+planes, ...)
-    ! SNAP9  =  Waste! .. ds + some ground level
+    ! SNAP8  =  Other mobile sources (trains, planes, ships)
+    ! SNAP9  =  Waste treatment and disposal
     ! SNAP10 =  Agriculture
     ! SNAP11 =  Nature
 
 
 
-  !/.. First, define here the characteristics of the EMEP/CORINAIR
-  !    SNAP sector emissions data-bases:
+  ! First, define here the characteristics of the EMEP/CORINAIR
+  ! SNAP sector emissions data-bases:
 
 
 
@@ -95,22 +81,22 @@ implicit none
    integer, public, parameter :: FNCMAX =  20  ! Max. No. countries (with
                                                ! flat emissions) per grid
 
-   !/.. Sector specific information
+  ! Sector specific information
 
    integer, public, parameter :: &
           NSECTORS  = 11       ! Number of SNAP-sectors in emissions
-!
+
+! Variables for NMR-NH3 project
 ! hb NH3emis (ISNAP_AGR, ISNAP_TRAF)
-! SCENARIO
    integer, public, parameter :: &
           ANTROP_SECTORS=10, &   ! Non-natural sectors
-          ISNAP_NAT  = 11,&      ! SNAP index for volcanoe emissions
-          ISNAP_SHIP = 8,&       ! SNAP index for flat emissions,e.g ship
-          ISNAP_AGR =10,&        ! Note that flat emissions do NOT necessarily
-          ISNAP_TRAF =7          ! belong to the same SNAP sector
+          ISNAP_NAT  = 11,   &   ! SNAP index for volcanoe emissions
+          ISNAP_SHIP = 8,    &   ! SNAP index for flat emissions, e.g ship
+          ISNAP_AGR  = 10,   &   ! Note that flat emissions do NOT necessarily
+          ISNAP_TRAF = 7         ! belong to the same SNAP sector
 
-!  New vertical allocation from SNAP sectors.
-!       - allocations are guesswork  - should be investigated
+
+! Vertical allocation from SNAP sectors
 
    integer, public, parameter :: NEMISLAYERS = 7
    real, public, parameter, &
@@ -131,7 +117,7 @@ implicit none
         1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP10
         1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0    & ! SNAP11
         /), &
-        (/NEMISLAYERS,NSECTORS /) )!hf stakheigth
+        (/NEMISLAYERS,NSECTORS /) )
 
 
    !SeaSalt
@@ -145,17 +131,17 @@ implicit none
                                  ,QDUCO = 2     ! production of coarse dust
 
 
-   !/** Volcanos. 
-    logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes from VolcanoesLL.dat 
-                                                          ! and disregard them from gridSOx
+   !Volcanos. 
+   logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes 
+                                                         ! from VolcanoesLL.dat 
+                                                         ! and disregard them 
+                                                         ! from gridSOx
 
-   !/** Forest fires.  ! Moved to ModelConstants_ml
-   !dsPCM logical, public, parameter :: FOREST_FIRES = .false.  ! Problems in code??
-
- ! hb NH3emis                                                                  
-   !NH3 emissions set by meteorology and special activity data                 
+ ! NMR-NH3 project specific variables                         
+ ! NH3 emissions set by meteorology and special activity data                 
     logical, public, parameter :: NH3EMIS_VAR = .false.   
-    real, public, save  :: dknh3_agr !reported nh3emis (IC_NMR) read from gridXXfile
+    real, public, save  :: dknh3_agr ! reported nh3emis (IC_NMR) 
+                                     ! read from gridXXfile
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 ! MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD MOD  MOD MOD MOD MOD MOD MOD MOD
