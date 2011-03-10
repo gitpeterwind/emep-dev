@@ -39,8 +39,8 @@ module CoDep_ml
   !---------------------------------------------------------------------------
   ! For basic reference and methods, see
   !
-  ! Unidoc =
-  ! EMEP Report 1/2003, Part I. Unified EMEP Model Description.Valid for Rns_NH3
+  ! Fagerli et al., 2011, in preperation  for Rbs_SO2
+  ! Simpson et al. 2011, in preperation for general model documentation
   !
   ! Also,
   ! RIS: Smith, R.I., Fowler, D., Sutton, M.A., Flechard, C: and Coyle, M.
@@ -51,7 +51,6 @@ module CoDep_ml
   ! Smith,  Unpublished Note
   ! Eiko Nemitz papers
   !
-  !For Rns_SO2 : paper TO BE PUBLISHED SOON!
   !---------------------------------------------------------------------------
 
   implicit none
@@ -72,25 +71,18 @@ module CoDep_ml
   integer, private, parameter :: TMIN = -40, TMAX = 40 ! Allowed temp. range
   integer, private, parameter :: NTAB  = 100   ! No. intervals used for tabulation
 
-  !ds NOTUSED real, private, save, dimension(0:100,2) :: tab_humidity_fac
    real, private, save, dimension(0:100)   :: tab_exp_rh  ! For eqn (8.16)
    real, private, save, dimension(0:NTAB) :: &
            tab_acidity_fac,                &
            tab_F2,&                            ! For Unimod eqn (8.16)
            tab_F4, &                           ! for Rns_NH3
-!hf CoDep
            tab_F3                              !For Rns SO2 
 
   !/ Calculated values /outputs):
    real, public, save ::  &
-!hf CoDep       ,RgsS_wet          &!
        humidity_fac      &! to interpolate Gns  across different RH
        ,Rns_NH3           & ! Resistance for NH3 on ground (water) surface
        ,Rns_SO2             ! Resistance for SO2 on ground (water) surface
-
-! Resistances for SO2 in low NH3 conditions
-
-   real, private, parameter :: CEHd = 180.0, CEHw = 100.0  !  dry, wet, m/s
 
    logical, private, parameter :: MY_DEBUG = .false.
    real, private, parameter  :: MAX_SN = 3.0 !max SO2/NH3 ratio
@@ -99,7 +91,6 @@ module CoDep_ml
 contains
 ! =======================================================================
 
-!hf CoDep
   subroutine CoDep_factors( so2nh3ratio24hr,so2nh3ratio, Ts_C, frh, &
                             forest, debug_flag)
 ! =======================================================================
@@ -135,7 +126,6 @@ contains
    integer :: ia_SN_24hr       ! 10*a_SN_24hr
 
    integer :: IRH              ! RH as percent
-   real :: acidity_fac  ! to interpolate RgsS between high-low SO2/NH3 ratios 
  
    if ( my_first_call ) then
 
@@ -151,19 +141,13 @@ contains
    itemp     =  min(itemp, TMAX)   ! For safety
 
 
-!hf CoDep REVISE 0.6 factor WHY LIMIT a_SN to 2 for nh3???
+    a_SN  = min(MAX_SN,so2nh3ratio)
 
-    a_SN  = min(MAX_SN,so2nh3ratio)  ! NOTE: we multiply bu 0.6 to
-                              ! correct for vertical grad error in local nh3
-                              ! Unidoc, eqn (8.15) 
-!hf   ia_SN = int( NTAB * a_SN/3.0 + 0.4999999 )   ! Spread values frm 0 to 2.0
-   ia_SN = nint( NTAB * a_SN/MAX_SN )   ! Spread values from 0-3 to 0:100
+    ia_SN = nint( NTAB * a_SN/MAX_SN )   ! Spread values from 0-3 to 0:100
 
 
-!hf CoDep Cap a_SN_24hr at 3
-   a_SN_24hr  = min(MAX_SN,so2nh3ratio24hr)    ! NOTE: we multiply bu 0.6 to
-                              ! correct for vertical grad error in local nh3
-                              ! Unidoc, eqn (8.15) 
+   ! Cap a_SN_24hr at 3
+   a_SN_24hr  = min(MAX_SN,so2nh3ratio24hr) 
    ia_SN_24hr = nint( NTAB * a_SN_24hr/MAX_SN )
 
 
@@ -237,7 +221,7 @@ contains
     !/**  Tabulates humidity factors, 
 
      real :: a_SN, a_SN_24hr
-     integer :: IRH, veg, ia_SN, ia_SN_24hr
+     integer :: IRH, ia_SN, ia_SN_24hr
 
     ! Acidity factor
 
