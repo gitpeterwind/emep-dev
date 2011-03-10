@@ -94,7 +94,7 @@ ds --     LandPFT_ml.f90
           MARS_ml.f90
           MassBudget_ml.f90
           MetFields_ml.f90
-pw --     Met_ml.f90
+pw done   Met_ml.f90
 ds done   MicroMet_ml.f90
           ModelConstants_ml.f90
           MosaicOutputs_ml.f90
