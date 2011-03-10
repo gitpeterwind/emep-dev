@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2011 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -54,15 +54,14 @@ module AOTx_ml
                                 ,STARTMONTH_CROPS=5,ENDMONTH_CROPS=7 ! EU only!
   logical, parameter, private :: T=.true., F=.false.
 
-! VEGO3 definitions for AFstY and AOTX
+! VEGO3 definitions for PODY(formerly AFstY) and AOTX
 !
-! AFstY vs Fst - not that the accumulated AFstY is processed here.
+! PODY vs Fst - not that the accumulated PODY  is processed here.
 ! the instantaneous Fst is set as for Canopy O3 in METCONCS
           ! N.B. AOTs have several definitions. We usually want
           ! the ICP-veg Mapping Manual (MM) ones. Other
           ! possibilities are EU (8-20daytime) or UN (May-July for
           ! crops)
-! Accumulation period often to F,0,999 - not used for IAM (yet)
    !================== 
     type, public:: O3cl
        character(len=TXTLEN_DERIV) :: name ! e.g. POD1_IAM_DF
@@ -83,6 +82,7 @@ module AOTx_ml
 
     type(O3cl), public, parameter, dimension(26) :: &
      VEGO3_DEFS    =  (/ &
+         ! name               class X/Y   defn   txtLC relSGS Sacc Eacc
    O3cl( "POD1_IAM_DF   ",   "POD", 1.0,  "- ", "IAM_DF",F,0,999 ), & 
    O3cl( "POD0_IAM_DF   ",   "POD", 0.0,  "- ", "IAM_DF",F,0,999 ), &
    O3cl( "POD1_IAM_MF   ",   "POD", 1.0,  "- ", "IAM_MF",F,0,999 ), & 
@@ -111,9 +111,9 @@ module AOTx_ml
    O3cl( "MMAOT40_IAM_DF","AOT", 40.0, "MM", "IAM_DF",F,0,999 ), & !
    O3cl( "MMAOT40_IAM_MF","AOT", 40.0, "MM", "IAM_MF",F,0,999 ), & !
    O3cl( "MMAOT40_IAM_CR","AOT", 40.0, "MM", "IAM_CR",F,0,999 ), &
-! IAM_CR is a bit fake, we use 3m O3
+! IAM_CR, we use 3m O3
    O3cl( "EUAOT40_Crops ", "AOT", 40.0, "EU", "IAM_CR",F,0,999 ), &  
-! IAM_DF is a bit fake, we use 3m O3
+! IAM_DF, we use 3m O3
    O3cl( "EUAOT40_Forests", "AOT", 40.0, "EU", "IAM_DF",F,0,999 ), &  
    O3cl( "MMAOT40_IAM_WH ","AOT", 40.0, "MM", "IAM_WH",F,0,999 ) &
     /) !NB -last not found. Could just be skipped, but kept
@@ -198,11 +198,11 @@ contains
 
     if ( o3>X ) then  ! Add AOT, scaling for time-fraction
 
-        aot = (o3-X)  ! BUG-fix. dt_advec takes care of:* dt_advec/3600.0
+        aot = (o3-X)  ! dt_advec takes care of 3600s elsewhere
 
     end if
     if ( DEBUG_AOT .and. debug_flag .and. present( debug_txt )) then
-       call datewrite("XXX"//trim(debug_txt) // "defn:" // &
+       call datewrite("AOTxdebug"//trim(debug_txt) // "defn:" // &
          trim(vego3_outputs(iO3cl)%defn), iLC, &
            (/ real(Grid%izen), X,  o3, aot /) )
     end if
@@ -251,10 +251,8 @@ contains
     if ( DEBUG_AOT .and. debug_flag .and. present( debug_txt )) then
        o3_ref = xn_adv(IXADV_O3,debug_li,debug_lj,KMAX_MID) * PPBINV
        o3   = o3_ref * cfac(IXADV_O3,debug_li,debug_lj)
-       write(*,"(a, 4i5,f7.1,3f10.3)") "CalcGridAOT:"//debug_txt,&
-          current_date%month,current_date%day, &
-          current_date%hour,current_date%seconds, &
-               zen(debug_li,debug_lj), o3_ref, o3, aot(debug_li,debug_lj)
+       call datewrite("CalcGridAOT:"//debug_txt, (/ zen(debug_li,debug_lj), &
+            o3_ref, o3, aot(debug_li,debug_lj) /) )
     end if
 
   end function Calc_GridAOTx
@@ -320,7 +318,7 @@ contains
  !=========================================================================
 
 
- ! Will move SOMO and maxo3 here.
+! Will move SOMO and maxo3 here in future versions
 !current definitions:
 !SOMO35: daily max is found over 00:00 to 24:00. (not emepday)
 !SOMO35: accumulated over one year
