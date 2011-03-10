@@ -132,7 +132,7 @@ subroutine SeibertRiB_Hmix_3d (u,v, zm, theta, pzpbl)
   real, dimension(:,:,:), intent(in) :: zm ! mid-cell height
   real, dimension(:,:,:), intent(in) :: theta !pot. temp
   real, intent(out) :: pzpbl(:,:)
-  integer :: k, n, kmax
+  integer :: k
   real, parameter :: Ric = 0.25  ! critical Ric
   real,dimension(size(pzpbl,1),size(pzpbl,2)) :: RiB, Theta1 ! pot temp of lowest cell
 
@@ -255,7 +255,7 @@ subroutine PielkeBlackadarKz (u,v, zm, zb, th, Kz, Pielke_flag, debug_flag)
 
   real, dimension(KMAX_BND) :: Ris   ! Richardson number, sigma (???) coords
 
-  integer :: k, km, km1
+  integer :: k, km
   real :: xl2    ! mixing length squared
   real, save :: zmmin = 200.0 !QUERY, Pielke or EMEP?
   real :: Ric, Ric0 !critical Richardson number variables
@@ -319,7 +319,7 @@ end subroutine PielkeBlackadarKz
  !----------------------------------------------------------------------------
 
  !----------------------------------------------------------------------------
-subroutine Test_BLM (mm,dd,hh,ss,fH,u,v, zm, zb, pb, exnm, &
+subroutine Test_BLM (mm,dd,hh,fH,u,v, zm, zb, pb, exnm, &
           th, Kz, Kz_nwp, invL, ustar, zi )
   integer, intent(in) :: mm, dd, hh, ss    ! date
   real, intent(in)               :: fh     ! heart flux, -ve = Unstable
@@ -419,11 +419,9 @@ subroutine TI_Hmix (Kz, zm, zb, fh, th, exnm, pb, zi, debug_flag)
   logical, intent(in) :: debug_flag
 
   real, dimension(KMAX_BND) :: &
-       Ris   &! Richardson number, sigma coords
       ,xksm   ! spacially smoothed Kz in z direction, m2/s.
 
   integer :: k, km, km1, km2, kp, nh1, nh2
-  real :: Ric, Ric0 !critical Richardson number variables
 
   real, parameter :: DTZ = 3600.0 !time interval for integration of surface 
                                   !heat fluxes in ABL-height calculations, s
@@ -607,10 +605,10 @@ end subroutine TI_Hmix
 
     real, parameter :: FHSL = 0.04 ! surface layer as fraction zi
 
-    real :: ux3 ,hsl ,hsurfl  &
+    real :: ux3 ,hsl  &
          ,zimhs ,zimz ,zmhs
     real  ::  Kzhs  ,dKzdz ,Kzzi ,hs
-    integer :: i,k
+    integer :: k
 
     !c..exchange parameter and its vertical derivative at z = hs
 

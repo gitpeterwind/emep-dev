@@ -1747,7 +1747,7 @@ end if ! NH3_U10
   ! to avoid possible errors!
 
       call Test_BLM( mm=current_date%month, dd=current_date%day, &
-           hh=current_date%hour, ss=current_date%seconds, fH=fh(i,j,nr), &
+           hh=current_date%hour, fH=fh(i,j,nr), &
            u=u_mid(i,j,:),v=v_mid(i,j,:), zm=z_mid(i,j,:), &
            zb=z_bnd(i,j,:), exnm=exnm(i,j,:), Kz=Kz_m2s(i,j,:), &
            Kz_nwp=Kz_nwp(:), invL=invL_nwp(i,j), &
