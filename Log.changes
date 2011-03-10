@@ -100,8 +100,8 @@ ds done   MicroMet_ml.f90
           MosaicOutputs_ml.f90
 av done   Nest_ml.f90
 pw done   NetCDF_ml.f90
-          NH3Emis_variation_ml.f90
-          NH3variables_ml.f90
+          NH3Emis_variation_ml.f90 - ds suggests move to FUTURE_NH3Emis_variation_ml.f90
+          NH3variables_ml.f90 - ds suggests move to FUTURE_NH3variables_ml.f90
           OutputChem_ml.f90
 av done   Output_hourly.f90
           OwnDataTypes_ml.f90
@@ -126,7 +126,7 @@ ds --     SubMet_ml.f90
 av done   TimeDate_ml.f90
           Timefactors_ml.f90
           Timing_ml.f90
-ds --     Tmp_Met_ml.f90   - will make fake version, leave rest for future
+ds --     Tmp_Met_ml.f90  - ds suggests move to FUTURE_Tmp_Met_ml.f90
           Trajectory_ml.f90
           Unimod.f90
           Volcanos_ml.f90
