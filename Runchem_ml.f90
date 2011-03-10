@@ -75,8 +75,8 @@
                                 ,IRUNBEG, JRUNBEG  !! for testing
    use SeaSalt_ml,        only: SeaSalt_flux
    use Setup_1d_ml,       only: setup_1d, &
-                                setup_rcemis, reset_3d, &
-                                setup_nh3 ! hb NH3emis
+                                setup_rcemis, reset_3d
+                                !FUTURE setup_nh3 ! NH3emis
    use Setup_1dfields_ml, only: first_call, rcbio,  &
                                  amk, rcemis, xn_2d  ! DEBUG for testing
    use TimeDate_ml,       only: current_date
@@ -160,7 +160,7 @@ subroutine runchem(numt)
              call setup_rcemis(i,j)
 
 ! Called every adv step, only updated every third hour
-             call setup_nh3(i,j)    ! NH3emisa, experimental
+             !FUTURE call setup_nh3(i,j)    ! NH3emisa, experimental
 
              if ( SEASALT )  &
              call SeaSalt_flux(i,j,debug_flag)

@@ -45,9 +45,6 @@ use Advection_ml,     only: vgrid, adv_var, assign_nmax, assign_dtadvec
 use Aqueous_ml,       only: init_aqueous, Init_WetDep   !  Initialises & tabulates
 use AirEmis_ml,       only: lightning
 use Biogenics_ml,     only: Init_BVOC, SetDailyBVOC
-use calc_emis_potential_ml, only: NH3emis_potential,& ! NH3emis experimental
-                             lNH3emis_pot, readNH3emis, lEmis50_nh3
-use NH3Emis_variation_ml,  only: SetNH3               ! NH3emis experimental
 use BoundaryConditions_ml, only: BoundaryConditions
 use CheckStop_ml,     only: CheckStop
 use ChemChemicals_ml, only: define_chemicals
@@ -55,14 +52,12 @@ use ChemGroups_ml,    only: Init_ChemGroups
 use DefPhotolysis_ml, only: readdiss
 use Derived_ml,       only: Init_Derived
 use DerivedFields_ml, only: f_2d, f_3d
-use DO3SE_ml,         only: Init_DO3SE                ! LPJ
+use DO3SE_ml,         only: Init_DO3SE 
 use EcoSystem_ml,     only: Init_EcoSystems
-use EmisDef_ml,       only: NH3EMIS_VAR               ! NH3emis experimental
 use Emissions_ml,     only: Emissions, newmonth
 use ForestFire_ml,    only: Fire_Emis
 use GridValues_ml,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles
-use Io_ml,            only: IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE,&
-                            IO_NH3_DEB                ! NH3emis experimental
+use Io_ml,            only: IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE
 use Io_Progs_ml,      only: read_line, PrintLog
 use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
 use MassBudget_ml,    only: Init_massbudget, massbudget
@@ -240,20 +235,6 @@ if (MasterProc.and.DEBUG_UNI) print *,"Calling emissions with year",current_date
 
 call Emissions(current_date%year)
 
-! NH3emis experimental: write temporal emis variation for Tange to file
-if (NH3EMIS_VAR) then
-!  open(IO_NH3_DEB,FILE='out.Tange.dat')
-!  write(IO_NH3_DEB,'(4a7,18a12)')"mm","dd","hh","TIME1","ISO_STABLE",&
-!                 "OPEN_STABLE","STORAGE","WIN_CROP","SPR_CROP",&
-!                 "SPR_SBEET","SPR_GRASS","MANURE1","MANURE2","MANURE3",&
-!                 "MANURE4","MANURE4a","MIN_SPRING","MIN_AUTUMN",&
-!                 "GRAZ_CATTLE","NH3_GRASS","TRAFFIC","SUM "
-  call readNH3emis() !read 16.7km activity NH3 emissions
-  print *,'New ammonia emissions on proc ',me,sum(lEmis50_nh3)
-  call NH3emis_potential(current_date%year) !calc emission potential
-  print *,'Potential emissions on proc '  ,me,sum(lNH3emis_pot)
-endif
-
 
 ! daynumber needed  for BCs, so call here to get initial
 daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
@@ -318,7 +299,7 @@ mm_old = 0
 oldseason = 0
 do numt = 2, nterm + nadd         ! 3-hourly time-loop
 
-  if (NH3EMIS_VAR) call SetNH3()  ! NH3emis experimental
+  !FUTURE if (NH3EMIS_VAR) call SetNH3()  ! NH3emis experimental
 
   mm = current_date%month
   select case (mm)
@@ -443,3 +424,25 @@ CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
 CALL MPI_FINALIZE(INFO)
 
 end program myeul
+
+!===========================================================================
+!  Experimental NH3 emissions code moved here for safety
+!FUTURE use calc_emis_potential_ml, only: NH3emis_potential,& ! NH3emis experimental
+!FUTURE                              lNH3emis_pot, readNH3emis, lEmis50_nh3
+!FUTURE use NH3Emis_variation_ml,  only: SetNH3               ! NH3emis experimental
+!FUTURE use EmisDef_ml,       only: NH3EMIS_VAR               ! NH3emis experimental
+!FUTURE                             IO_NH3_DEB                ! NH3emis experimental
+!FUTURE ! NH3emis experimental: write temporal emis variation for Tange to file
+!FUTURE if (NH3EMIS_VAR) then
+!FUTURE !  open(IO_NH3_DEB,FILE='out.Tange.dat')
+!FUTURE !  write(IO_NH3_DEB,'(4a7,18a12)')"mm","dd","hh","TIME1","ISO_STABLE",&
+!FUTURE !                 "OPEN_STABLE","STORAGE","WIN_CROP","SPR_CROP",&
+!FUTURE !                 "SPR_SBEET","SPR_GRASS","MANURE1","MANURE2","MANURE3",&
+!FUTURE !                 "MANURE4","MANURE4a","MIN_SPRING","MIN_AUTUMN",&
+!FUTURE !                 "GRAZ_CATTLE","NH3_GRASS","TRAFFIC","SUM "
+!FUTURE   call readNH3emis() !read 16.7km activity NH3 emissions
+!FUTURE   print *,'New ammonia emissions on proc ',me,sum(lEmis50_nh3)
+!FUTURE   call NH3emis_potential(current_date%year) !calc emission potential
+!FUTURE   print *,'Potential emissions on proc '  ,me,sum(lNH3emis_pot)
+!FUTURE endif
+!FUTURE 

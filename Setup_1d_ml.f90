@@ -34,7 +34,7 @@
 
 
   !-----------------------------------------------------------------------!
-  use NH3variables_ml,       only : NNH3 ! hb NH3emis   
+  !FUTURE use NH3variables_ml,       only : NNH3 ! hb NH3emis   
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
   use BoundaryConditions_ml, only : BGN_2D
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
@@ -51,8 +51,7 @@
   use ChemChemicals_ml,        only :  species
   use ChemSpecs_tot_ml,        only :  SO4,C5H8,NO,NO2,SO2,CO
   use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
-                                      IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F, &
-                                       IXADV_NH3 ! hb NH3emis
+                                      IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
   use ChemSpecs_shl_ml,        only :  NSPEC_SHL
   use ChemRates_rct_ml,       only :  set_rct_rates, rct
   use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
@@ -60,7 +59,7 @@
                                      GridArea_m2, & !dsbvoc
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB,&
-                                     i_fdom, j_fdom ! hb NH3emis
+                                     i_fdom, j_fdom ! 
   use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use MetFields_ml,          only :  ps
@@ -105,10 +104,9 @@
 
   public :: setup_1d   ! Extracts results for i,j column from 3-D fields
   public :: setup_rcemis ! Emissions  (formerly "poll")
-  public :: setup_nh3 ! hb NH3emis   
+  !FUTURE public :: setup_nh3 ! NH3emis   , experimental version
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
-  !dsPCM real, dimension(NBVOC), public, save :: rcbio  !ispop and terpene
   ! We define a column array for isoprene and terpene for use in
   ! the chemical solver. All values except for k=KMAX_MID will
   ! remain zero however
@@ -373,57 +371,7 @@ contains
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.) 
 
   end subroutine setup_rcemis
-  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine setup_nh3(i,j)  ! EXPERIMENTAL
-  !                                                                            
-  !---- assign nh3 rates  ------------------------------------------------     
-  !                                                                            
-  !                                                                            
-  !  use NH3 emission potential for each activity sector, T2 and wind          
-  !                                                                            
-  !  Output : rcnh3 - nh3 emissions for 1d column                              
-  !                                                                            
-  !  Called from Setup_1d_ml, every advection timestep                         
-  !----------------------------------------------------------------------------
-    !  input         
-    use calc_emis_potential_ml, only :emnh3
-    integer, intent(in) ::  i,j
-    real ::scaling,scaling_k
-    real :: snh3
-    integer :: k
-
-    !  local  
-                                                     
-    rcnh3(:)=0.0
-    snh3=sum(emnh3(:,i,j))
-
-    if (NH3EMIS_VAR  )then
-
-       rcnh3(KMAX_MID) = snh3 
-       scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
-
-       do k = KCHEMTOP,KMAX_MID
-         scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
-
-          totem( IXADV_NH3 ) = totem( IXADV_NH3 ) + &
-               rcnh3(k) * scaling_k
-       enddo
-
-       if ( DEBUG_NH3 .and. i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then
-         write(6,*)'Tange coordinates, proc, i,j, ',me,i,j
-         write(6,*)'rcnh3',rcnh3(KMAX_MID)
-         write(6,*)'sum emnh3',sum(emnh3(:,i,j)),snh3
-         write(6,*)'emnh3 1',emnh3(1,i,j)
-       endif
-    else
-       rcnh3(KMAX_MID) =0.0
-    endif
-
- 
-
-
-  end subroutine setup_nh3
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<  
 
   subroutine reset_3d(i,j)
@@ -463,3 +411,50 @@ contains
 
 end module Setup_1d_ml
 !_____________________________________________________________________________!
+!Experimental code. Will re-instate in future
+  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+   !FUTURE  subroutine setup_nh3(i,j)  ! EXPERIMENTAL
+   !FUTURE  !                                                                            
+   !FUTURE  !---- assign nh3 rates  ------------------------------------------------     
+   !FUTURE  !                                                                            
+   !FUTURE  !                                                                            
+   !FUTURE  !  use NH3 emission potential for each activity sector, T2 and wind          
+   !FUTURE  !                                                                            
+   !FUTURE  !  Output : rcnh3 - nh3 emissions for 1d column                              
+   !FUTURE  !                                                                            
+   !FUTURE  !  Called from Setup_1d_ml, every advection timestep                         
+   !FUTURE  !----------------------------------------------------------------------------
+   !FUTURE    !  input         
+   !FUTURE    use calc_emis_potential_ml, only :emnh3
+   !FUTURE    integer, intent(in) ::  i,j
+   !FUTURE    real ::scaling,scaling_k
+   !FUTURE    real :: snh3
+   !FUTURE    integer :: k
+   !FUTURE
+   !FUTURE    !  local  
+   !FUTURE                                                     
+   !FUTURE    rcnh3(:)=0.0
+   !FUTURE    snh3=sum(emnh3(:,i,j))
+   !FUTURE
+   !FUTURE    if (NH3EMIS_VAR  )then
+   !FUTURE
+   !FUTURE       rcnh3(KMAX_MID) = snh3 
+   !FUTURE       scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
+   !FUTURE
+   !FUTURE       do k = KCHEMTOP,KMAX_MID
+   !FUTURE         scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
+   !FUTURE
+   !FUTURE          totem( IXADV_NH3 ) = totem( IXADV_NH3 ) + &
+   !FUTURE               rcnh3(k) * scaling_k
+   !FUTURE       enddo
+   !FUTURE
+   !FUTURE       if ( DEBUG_NH3 .and. i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j)then
+   !FUTURE         write(6,*)'Tange coordinates, proc, i,j, ',me,i,j
+   !FUTURE         write(6,*)'rcnh3',rcnh3(KMAX_MID)
+   !FUTURE         write(6,*)'sum emnh3',sum(emnh3(:,i,j)),snh3
+   !FUTURE         write(6,*)'emnh3 1',emnh3(1,i,j)
+   !FUTURE       endif
+   !FUTURE    else
+   !FUTURE       rcnh3(KMAX_MID) =0.0
+   !FUTURE    endif
