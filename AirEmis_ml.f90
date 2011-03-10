@@ -28,13 +28,8 @@
 module AirEmis_ml
 
   ! NOx emissions from lightning
-  ! ANCAT emissions converted from Kg/month/gridcell to flux 
-  ! in molecules cm-3 s-1 on ANCAT grid (2.8 x 2.8 degree). 
-  ! Emissions on (finer) model grid then assigned from the ANCAT grid where
-  ! model grid falls within. Note that lightning emissions is given on a t21.
-  !
-  ! Ref: Gardner et.al., 1997, The ANCAT/EC global inventory of NOx emission
-  !      from aircraft, Atm. Environ., 31(12), 1751-1766.
+  ! Emissions converted from Kg/month/gridcell to flux 
+  ! in molecules cm-3 s-1 on T21 (5.65x5.65deg) resolution 
   ! 
   ! Variable listing is given below
   
@@ -80,7 +75,7 @@ module AirEmis_ml
 
 
 
-! Definition of the ancat grid   ~ t21 :
+! Definition of the grid   ~ t21 :
 ! Data read in from N --> S  and from longitude 0  ( not from +-180 )  
 
       real, dimension(GGL)    ::     ygrida       ! grid mid. pt. N-S
@@ -111,7 +106,7 @@ module AirEmis_ml
             363175270173.37, 373812845114.06, 380960223957.41, &
             384550674664.23/
 
-! ---- Defines the ANCAT grid ----------------------------------------------
+! ---- Defines the grid ----------------------------------------------
 
 
 
