@@ -146,6 +146,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx h18:15    Svetlana       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Final version of SeaSalt_ml.f90 with 'giant' bin and 
+adjusted giant diameter Aero_Vds_ml.f90
+
 xxxxxxxx h16:14      Peter      Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 put an older version of Met_ml as the present one had wrongly replaced integer*2 with integer
