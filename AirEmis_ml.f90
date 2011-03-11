@@ -117,7 +117,7 @@ module AirEmis_ml
 
      if(me == 0)then
      sumnox = 0.
-     write(fname,fmt='(''lightn'',i2.2,''.dat'')')     &
+     write(fname,fmt='(''lightning'',i2.2,''.dat'')')     &
         current_date%month
 
 ! - open and read 1 line of header

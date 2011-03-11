@@ -723,7 +723,7 @@ foreach my $scenflag ( @runs ) {
     my $mm = sprintf "%2.2d", $mmm ; # WHY DO WE NEED THIS?????
     #SNOW $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
-    $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightn$mm.dat";
+    $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
     if ( $SoilDir ) { # Not yet for EMEP domain
       foreach my $bc ( qw ( DUST_c_ext DUST_f_ext )) { #
@@ -792,7 +792,7 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
   }
 
-  $ifile{"$DATA_LOCAL/rough.dat"} = "rough.dat"; # Roughness length;
+  $ifile{"$DATA_LOCAL/rough.dat"} = "landsea_mask.dat"; # Roughness length;
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 
