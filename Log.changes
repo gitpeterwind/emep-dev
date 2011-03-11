@@ -147,6 +147,12 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx h15:20      Peter       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+run.pl: landsea_mask.dat, lightning$mm.dat
+AirEmis: lightning.mm.dat
+
+
 xxxxxxxx h14:00      Peter       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ModelConstants_ml: defined EECCA as domain and rundomain (and 8*4 procs)
