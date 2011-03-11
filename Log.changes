@@ -20,6 +20,8 @@ Some jobs needed after Mar-11th tests (ds will do)
   - Decide SoilMoisture
   - Decide kaero
   - SoilWater - should implement readneightbour routine
+  - ModelConstants_ml - removed BVOC_2010 option
+  - Update EMEP_EuroBVOC.nc?
 
 None? 
 I (DS) have re-writting My_Derived and Derived to use the array
@@ -146,6 +148,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc1  ALL            Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+labelled for Benchmark, for comparison to earlier.
+End of changes for this busy week I think!
+
 xxxxxxxx h18:15    Svetlana       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Final version of SeaSalt_ml.f90 with 'giant' bin and 
