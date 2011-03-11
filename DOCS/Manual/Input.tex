@@ -36,7 +36,7 @@ PM$_{2.5}$ and PM$_{co}$). ASCII$^*$ means ASCII files with header.
 \hline
 Meteorology  &  meteoYYYYMMDD.nc \quad (366+1 files) & netCDF\\
 & & \\
-Boundary and initial conditions & Boundary\_and\_Initial\_Conditions.nc & netCDF\\
+Global Ozone & GLOBAL\_O3.nc & netCDF\\
 BVOC emissions & EMEP\_EuroBVOC\_KRS09.nc & netCDF\\
 Landuse & Inputs.Landuse & ASCII$^*$\\
 Land/Sea mask & landsea\_mask.dat & ASCII\\
@@ -61,14 +61,15 @@ Lightning emissions & lt21-nox.datMM  \quad (12 files) & ASCII$^*$\\
 %Military aircraft emissions & amilt42-nox.dat & ASCII\\
 %Commercial aircraft emissions & aSEASONt42-nox.dat \quad (4 files)& ASCII\\
 Aircraft emissions & AircraftEmis\_FL.nc & netCDF \\
-VOC speciation & vocsplit.defaults.BASE\_MAR2004 & ASCII\\
- & vocsplit.special.BASE\_MAR2004  & ASCII\\
-NOx speciation & noxsplit.default.2000 & ASCII\\
- &noxsplit.special.BASE\_MAR2004& ASCII\\  
-Emission factors for scenario runs & femis.dat & ASCII\\
+% VOC speciation & vocsplit.defaults.BASE\_MAR2004 & ASCII\\
+%  & vocsplit.special.BASE\_MAR2004  & ASCII\\
+% NOx speciation & noxsplit.default.2000 & ASCII\\
+%  &noxsplit.special.BASE\_MAR2004& ASCII\\  
+Splitfiles & &\\
 Photo-dissociation rates & jclear.SEASON \quad (4 files) & ASCII\\
  & jcl1.SEASON \quad (4 files) & ASCII\\
  & jcl3.SEASON \quad (4 files) & ASCII\\
+Emission factors for scenario runs & femis.dat & ASCII\\
 \hline
 \end{tabular}
 \end{small}
@@ -88,23 +89,27 @@ is still in GDV convention).
 
 \subsubsection{Meteorology}
 
-The meteorology input data is from the Integrated Forecast System (IFS), an global operational 
-forecasting model from the European Centre for Medium-Range Weather Forecasts (ECMWF). 
+The meteorological input data used for the Unified EMEP Model is based on
+forecast experiment runs with the Integrated Forecast System (IFS), a global
+operational forecasting model from the European Centre for Medium-Range
+Weather Forecasts (ECMWF).
 
-The daily ``meteoYYYYMMDD.nc'' files with 3-hourly values are in netCDF 
-(CF1.0 convention) format.
+The daily ``meteoYYYYMMDD.nc'' files with 3-hourly values are in netCDF
+(CF1.0 convention) format. The IFS forecasts has been run by MSC-W as
+independent experiments on the HPCs at ECMWF with special requests on
+some output parameters. The meterorological fields are retrieved on a
+0.2$\deg\times$0.2$\deg$ rotated spherical grid and interpolated to
+50$\times$50 km$^2$ polar-stereographic grid projection. Vertically, the fields
+on 60 eta levels from the IFS model are interpolated onto the 20 EMEP sigma
+levels. The version of the IFS model used for preparing these fields,
+Cycle 36r1, are documented in http://www.ecmwf.int/research/ifsdocs/index.html.
+Meteorological fields currently used for Unified EMEP Model runs are given in
+Table~\ref{Tab:metinput}. Some verification and description of these
+meteorological fields are given in Chapter 7 of the EMEP Status Report
+1/2010.
 
-The parameters extracted from the ECMWF Meteorological output
-currently used for Unified EMEP Model runs are given in 
-Table~\ref{Tab:metinput}. A further description of these
-meteorological fields is given in Chapter 3 of the EMEP Status Report
-1/2003 Part I (Simpson {\sl et al.}, 2003).
+{\bf Acknowledgement:} ECMWF, met.no
 
-{\bf Acknowledgement:} met.no
-
-Please acknowledge The Norwegian Meteorological Institute in all
-publications using these data.
- 
 \begin{table}[hb]
 \caption{Input meteorological data used in the Unified EMEP Model
    \label{Tab:metinput}}
@@ -119,26 +124,42 @@ $\dot{\sigma}$ & s$^{-1}$ & Vertical wind in $\sigma$ coordinates \\
 $\theta$       & K  & Potential temperature \\
 $CL$             & \% & 3D Cloud cover            \\
 $PR$             & mm & Precipitation         \\
+$CW$             & kg/kg & Cloud water          \\
 \hline
 \multicolumn{3}{l}{2D fields - for Surface} \\
-$P_s$             & hPa & Surface pressure                     \\
-$T_2$          & K  & Temperature at 2m height               \\
-$Rh_2$             & \% & Relative humidity at 2m height \\
+$PS$             & hPa & Surface pressure                     \\
+$T2$          & K  & Temperature at 2m height               \\
+$Rh2$             & \% & Relative humidity at 2m height \\
 SH              & W m$^{-2}$ & Surface flux of sensible heat \\
 LH             & W m$^{-2}$ & Surface flux of latent heat \\
 $\tau$         & M m$^{-2}$ & Surface stress               \\
 SST            & K & Sea surface temperature \\
+SWC            & m$^3$/m$^{3}$ & Soil water content        \\
+DSWC           & m$^3$/m$^{3}$ & Deep soil water content   \\
 sdepth         & m & Snow depth \\
 ice            & \% & Fraction of ice \\  
 \hline
 \end{tabular}
 \end{table}
 
-\subsubsection{Boundary and Initial Conditions}
 
-Monthly files
 
-D3\_O3\_Logan, D3\_CH3COO2,D3\_H2O2,D3\_OH
+\subsubsection{Global Ozone}
+
+Initial concentration of ozone are required in order to
+initialise model runs. Boundary conditions along the sides of the model
+domain and at the top of the domain are then required as the model is
+running.
+
+The GLOBAL\_O3.nc file contains monthly averaged fields in netCDF format. 
+The initial and background
+concentrations are based on the Logan (1998) climatology. The Logan
+climatology is scaled according to the Mace Head measurements as
+described in Simpson {\sl et al.} (2003). For a number of other species, 
+background/initial conditions are set within the model using functions 
+based on observations (Simpson {\sl et al.}, 2003 and Fagerli {\sl et al.}, 2004)
+
+
 
 \subsubsection{BVOC emissions}
 
@@ -319,38 +340,38 @@ provide username and password. On the new page, search for 'Emissions for EMEP',
 links directly to the Readme file and the emission data file on netCDF format. Download the 
 emission data file and place it in the input folder.
 
-\subsection{VOC speciation}
-Speciation of VOC emissions are specified for each source-sector,
-derived from the detailed United Kingdom speciation given in PORG
-(1993). The Unified EMEP model uses a `lumped-molecule' approach to
-VOC emissions and modelling, in which for example model species NC4H10
-represents all C3+ alkanes, and o-xylene represents all aromatic
-species. Therefore, each of the species from the detailed UK inventory
-has been assigned to one of the Unified EMEP model's species according
-to its reactivity and chemical composition, as given in
-Andersson-Sk\"{o}ld and Simpson (1997). Although the exact VOC speciation
-used can be varied (``vocsplit.special.BASE\_MAR2004'') to suit
-particular emission scenarios (e.g. Reis {\sl et al.}, 2000), a default split
-(``vocsplit.defaults.BASE\_MAR2004'') is typically used, as given in
-Table 4.3 in Chapter 4 of the EMEP Status Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
-
-There are two available {\bf ASCII} files which one can choose to
-run the model with, depending on whether a particular scenario should be
-suited or not. However, the files
-``vocsplit.defaults.BASE\_MAR2004'' and ``vocsplit.special.BASE\_MAR2004''
-have currently the same content.
-
-\subsection{NOx speciation}
-Speciation of NO$_x$ emissions are specified for each source-sector and
-for each country if the file ``noxsplit.special.BASE\_MAR2004'' is
-chosen for the model run. The amount of NO$_{2}$ compared to
-other NO is determined by these split-files.
-
-There are two downloadable {\bf ASCII} files which one can choose to
-run the model with, depending on whether a particular scenario should be
-suited or not.
-The file ``noxsplit.default.2000'' is only sector dependent and the file
-``noxsplit.special.BASE\_MAR2004'' is both sector and country dependent.
+% \subsection{VOC speciation}
+% Speciation of VOC emissions are specified for each source-sector,
+% derived from the detailed United Kingdom speciation given in PORG
+% (1993). The Unified EMEP model uses a `lumped-molecule' approach to
+% VOC emissions and modelling, in which for example model species NC4H10
+% represents all C3+ alkanes, and o-xylene represents all aromatic
+% species. Therefore, each of the species from the detailed UK inventory
+% has been assigned to one of the Unified EMEP model's species according
+% to its reactivity and chemical composition, as given in
+% Andersson-Sk\"{o}ld and Simpson (1997). Although the exact VOC speciation
+% used can be varied (``vocsplit.special.BASE\_MAR2004'') to suit
+% particular emission scenarios (e.g. Reis {\sl et al.}, 2000), a default split
+% (``vocsplit.defaults.BASE\_MAR2004'') is typically used, as given in
+% Table 4.3 in Chapter 4 of the EMEP Status Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
+% 
+% There are two available {\bf ASCII} files which one can choose to
+% run the model with, depending on whether a particular scenario should be
+% suited or not. However, the files
+% ``vocsplit.defaults.BASE\_MAR2004'' and ``vocsplit.special.BASE\_MAR2004''
+% have currently the same content.
+% 
+% \subsection{NOx speciation}
+% Speciation of NO$_x$ emissions are specified for each source-sector and
+% for each country if the file ``noxsplit.special.BASE\_MAR2004'' is
+% chosen for the model run. The amount of NO$_{2}$ compared to
+% other NO is determined by these split-files.
+% 
+% There are two downloadable {\bf ASCII} files which one can choose to
+% run the model with, depending on whether a particular scenario should be
+% suited or not.
+% The file ``noxsplit.default.2000'' is only sector dependent and the file
+% ``noxsplit.special.BASE\_MAR2004'' is both sector and country dependent.
 
 \subsection{Emission factor for scenario runs}
 Scenario run in the case of the Unified EMEP model means a run to test

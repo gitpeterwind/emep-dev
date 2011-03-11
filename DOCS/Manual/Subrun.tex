@@ -77,15 +77,24 @@ rm INPUT.PARA
 
 \end{verbatim}
 
-The script is pretty self-explanatory, first the script links 
-all the input files so you check if all the input files are in 
-the right directory. 
+This bach shell script is designed so that the user can easily 
+change it to fit his needs. It only asks for the minimum information 
+to start the Unified EMEP model. 
+The script is pretty self-explanatory, it assumes that there are one directory 
+with all the input files. 
+When downloading the input files it is important that all the input files 
+are kept in one directory. If the user want to divide between the files, e.g. 
+all the meteorology files kept in one place the script needs to edited for this.  
+The script linkes all the input files to the where the model is running. 
+
+The next part of the script sets the different settings for the model run. 
 The trendyear can be set to change the boundary emissions for 
 earlier and future years, see the modules {\bf BoundaryConditions\_ml.f90 } 
 and {\bf GlobalBCs\_ml.f90 } to understand better what the trendyear 
-setting does. 
+setting does. The default setting is the year you are running for, in this case 
+2008. 
 The runlabel1 option sets the name of the different output netCDF 
-files. 
+files , see Table \ref{ch:output}. 
 Startyear has to be set equal to the year 
 that the metdata is available. The period you want to run the 
 EMEP model is set with startmonth, and startday and the last day is 
@@ -94,21 +103,29 @@ set with endmonth and endday. \\
 It is recommended to submit the script as a batch job. Please check the submission soutine 
 on the computer system you are running on. 
 When setting the number of nodes, it is important that it equals to the number set in the fortran module 
-{\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with NPROCX and 
-NPROCY. The sum of these two is the number of nodes used. \\
+{\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with {\bf NPROCX } and 
+{\bf NPROCY }. The product of these two is the number of nodes used. 
+The approximate time and CPU usage is described in Section {sec:compinf}\\
 
-When the job is no longer model is finnished or has crashed for some reason, there will be an output log file and 
-an error file in the directory. If the run was successful, a message stating 
+When the job is no longer running, it is either finnished or has crashed for some reason, 
+there will be an output log file and an error file in the directory. 
+If the run was successful, a message stating 
 \begin{verbatim}
-Eulmod: Successful exit atCET ..date..
+   Eulmod: Successful exit atCET ..end time date and time ..
+
+LOOKING FOR LAST SITES sondes.MMYY
+FOUND LAST sondes sondes.MMYY
+
 \end{verbatim}
 will be stated at the end of the log file, before listing up site and sonde files. 
-The model results will also produced in the same directory, or you can set you own working directory in 
-the script. For more information about the model results output files, see chapter \ref{ch:output}.\\
+The way the script is set up now, the model results will be produced to the directory where 
+the code and script lies. 
+Here again, the user can edit the script to create an output directory. 
+For more information about the model result output files, see chapter \ref{ch:output}.\\
 
-If for some reason 
-the model crashed, please check both the log and error file for any clue of the crash. After fixing the 
-problem the job can be submitted again. If the model has crashed, then the links to the inputdatas are not cleaned. 
+If for some reason the model crashed, please check both the log and error file for any 
+clue of the crash. After fixing the problem the job can be submitted again. If the 
+model has crashed, then the links to the inputdatas are not cleaned. 
 
 The script can also be submitted interactivelly, and either have the output be written to the screen or to 
 named output log and error files. 
@@ -147,7 +164,7 @@ runs for source-receptor calculations.
 Emission factors for reduced emissions of pollutants from different
 sectors and countries can be defined in the input file called
 ``femis.dat'', which can be found in the downloaded input data
-directory, {\sl input\_data/Common/}.
+directory.
 
 An example of the ``femis.dat'' file for a base run is shown below:
 
