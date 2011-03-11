@@ -1301,8 +1301,7 @@ end if ! NH3_U10
     !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     !
     !     This subroutine reads parameterfields from file
-    !     reading surface roughness classes from file: rough.dat
-    !     reading snow                      from file: snowc.dat
+    !     reading surface roughness classes from file: landsea_mask.dat
     !
     !     ... fields as used in meteorological model
     !++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -1322,7 +1321,7 @@ end if ! NH3_U10
     if ( callnum == 1  ) then
 
        if ( MasterProc  ) then
-          write(fname,fmt='(''rough.dat'')')
+          write(fname,fmt='(''landsea_mask.dat'')')
           write(6,*) 'filename for landuse ',fname
        end if
        needed_found=.false.
