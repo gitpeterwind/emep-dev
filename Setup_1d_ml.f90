@@ -72,11 +72,11 @@
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,USE_FOREST_FIRES                & !
+    ,USE_SEASALT                     &
     ,USE_LIGHTNING_EMIS              & !
     ,USE_SOIL_NOX, USE_DUST          & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis
-  use My_Aerosols_ml,       only : SEASALT
   use Landuse_ml,            only : water_cover, ice_landcover
   use Par_ml,                only :  me& !!(me for tests)
                              ,MAXLIMAX,MAXLJMAX & !ds NatEmis
@@ -285,7 +285,7 @@ contains
 
      !/** Add sea salt production
 
-     if ( SEASALT  ) then
+     if ( USE_SEASALT  ) then
 
           do iqrc = 1, NSS
             rcss(iqrc,KMAX_MID) = SS_prod(iqrc,i,j)

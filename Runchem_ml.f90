@@ -40,7 +40,7 @@
 !    
 !----------------------------------------------------------------------
 
-   use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS, AOD,      &
+   use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,      &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
                                 Aero_water   !DUST -> USE_DUST
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &

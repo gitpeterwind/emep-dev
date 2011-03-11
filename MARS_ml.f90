@@ -24,13 +24,19 @@
 !* 
 !*    You should have received a copy of the GNU General Public License
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-!*****************************************************************************! 
+!*****************************************************************************!
+ 
 module MARS_ml
+ ! -----------------------------------------------------------------------
+ ! Calculates gas-aerosol equilibrium for SO4, HNO3-NO3 and NH3-NH4 system
+ ! Made available by Frank Binkowski (originally from EPA's RPM model)
+ ! Presently not in use, EQSAM is used for inorganic equilibrium stuff
+ !------------------------------------------------------------------------
 
- use Io_ml,           only : ios
- use Aero_water_ml,   only:  Awater
- use ModelConstants_ml, only : NPROC
- use Par_ml,          only : me
+ use Io_ml,              only : ios
+ use MARS_Aero_water_ml, only:  Awater
+ use ModelConstants_ml,  only : NPROC
+ use Par_ml,             only : me
  implicit none
  private
 
@@ -748,7 +754,7 @@ module MARS_ml
           A0 = - (T21 * RK2SA * RKNWET                      &
              + RK2SA * RKNWET * ZSO4 + RK2SA * RKNA * TNO3 )   
          
-          CALL CUBIC ( A2, A1, A0, NR, CRUTES,deb )
+          CALL CUBIC ( A2, A1, A0, NR, CRUTES )
        
 !...Code assumes the smallest positive root is in CRUTES(1)
  
@@ -824,20 +830,19 @@ module MARS_ml
 !>-------------------------------------------------------------------------------<
 !<------------------------------------------------------------------------------->
 
-      subroutine cubic(a2,a1,a0,nr,crutes,deb)
+      subroutine cubic(a2,a1,a0,nr,crutes)
 
   !.. subroutine  to find the roots of a cubic equation / 3rd order polynomial
   !.. formulae can be found in numer. recip.  on page 145
   !..  kiran  developed  this version on 25/4/1990
-  !..  dr. francis binkowski modified the routine on 6/24/91, 8/7/97
-!=======
+  !..  Dr. Francis Binkowski modified the routine on 6/24/91, 8/7/97
+  !--------------------------------------------------------------
 
       implicit none
 
       real, intent(in)     :: a2,a1,a0
       integer, intent(out) :: nr      
       real, intent(out)    :: crutes(3)
-      logical, intent(in)  :: deb
 !.. local
       real ::  qq,rr,a2sq,theta, sqrt3, one3rd
       real ::  dum1,dum2,part1,part2,part3,rrsq,phi,yy1,yy2,yy3
@@ -996,12 +1001,7 @@ module MARS_ml
       INTEGER    XSTAT3       ! Special  error
       PARAMETER (XSTAT3 = 3)
       INTEGER ERRMARK
-      INTEGER IDUM
-      INTEGER JDUM
-      INTEGER LAYER
-
       INTEGER IA2
-
       CHARACTER*120 XMSG
 
 !...........PARAMETERS and their descriptions:

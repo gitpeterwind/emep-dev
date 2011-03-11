@@ -48,9 +48,11 @@ logical, public, parameter :: USE_AIRCRAFT_EMIS= .true.
 logical, public, parameter :: USE_LIGHTNING_EMIS= .true.
 logical, public, parameter :: USE_SOIL_NOX     = .false.
 logical, public, parameter :: USE_BVOC_2010    = .true.
+logical, public, parameter :: USE_SEASALT      = .true.
 logical, public, parameter :: USE_DUST         = .false.
+logical, public, parameter :: DO_SAHARA        = .false.     ! Turn on/off BG Saharan Dust
+logical, public, parameter :: USE_AOD          = .false.
 logical, public, parameter :: USE_PFT_MAPS     = .false.
-logical, public, parameter :: DO_SAHARA = .false.     ! Turn on/off BG Saharan Dust
 logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget outputs
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.

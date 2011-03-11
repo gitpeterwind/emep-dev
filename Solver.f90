@@ -46,8 +46,6 @@
   ! variable timestep (Peter Wind)
   !=======================================================================!
  
-
-    use My_Aerosols_ml,    only: SEASALT
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3   
     use Biogenics_ml,      only: BIO_ISOP, BIO_TERP
     use CheckStop_ml,      only: CheckStop
@@ -62,7 +60,8 @@
     use GridValues_ml,     only : GRIDWIDTH_M
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
-                                 DebugCell, MasterProc, DEBUG_SOLVER
+                                 DebugCell, MasterProc, DEBUG_SOLVER,       &
+                                 USE_SEASALT
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX
     use PhysicalConstants_ml, only:  RGAS_J
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
