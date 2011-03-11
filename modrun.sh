@@ -1,36 +1,25 @@
 #!/bin/bash
+# Basic script to run the emep model
 
-#Minimum script to run the emep model
-
-#link to the input data
-inputdir=./Base
+# Link the input data into the run directory
+inputdir=./input_data
 ln -s $inputdir/* .
 
-#define some input data
-trendyear=2008 #emission year
-runlabel1=rv3_7 #short label
-runlabel2=Opensource_setup #long label
-startyear=2008 #start year (metdata)
-startmonth=1 #start month (metdata)
-startday=1 #start day (metdata)
-endmonth=1 #end month (metdata)
-endday=1 #end day (metdata)
+# Define the run parameters
+trendyear=2008              # emission year
+runlabel1=rv3_7             # short label
+runlabel2=Opensource_setup  # long label
+startdate="2008 01 01"      # start date (metdata)
+  enddate="2008 12 31"      # end date (metdata)
 
-#put input data into a temporary file called INPUT.PARA
-cat>>    'INPUT.PARA'<<    EOF
-$trendyear
-$runlabel1
-$runlabel2
-$startyear
-$startmonth
-$startday
-$endmonth
-$endday
-EOF
+# Put run parameters into a temporary file
+echo -e "$trendyear\n$runlabel1\n$runlabel2\n$startdate\n$enddate" > INPUT.PARA
 
-#run the model
+# Run the model
 mpirun Unimod
 
-#clean the links to the input data
-ls $inputdir|xargs rm
+# Clean the links to the input data
+for L in *; do
+  test -L $L && rm -f $L
+done
 rm INPUT.PARA
