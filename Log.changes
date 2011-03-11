@@ -82,7 +82,7 @@ an done   EmisGet_ml.f90
 an done   Emissions_ml.f90
 st done   EQSAM_ml.f90
 st done   ForestFire_ml.f90
-          Functions_ml.f90
+ab done   Functions_ml.f90
           global2local.f90
 av done   GlobalBCs_ml.f90
 mg done   GridAllocate_ml.f90
@@ -99,7 +99,7 @@ mg done   Landuse_ml.f90
 av done   LocalVariables_ml.f90
 st done   MARS_ml.f90
 pw done   MassBudget_ml.f90
-          MetFields_ml.f90
+ab done   MetFields_ml.f90
 pw done   Met_ml.f90
 ds done   MicroMet_ml.f90
 pw done   ModelConstants_ml.f90   st changes (see below)
@@ -111,19 +111,19 @@ mg done   NH3variables_ml.f90 - ds  moved to FUTURE_NH3variables_ml.f90
           OutputChem_ml.f90
 av done   Output_hourly.f90
           OwnDataTypes_ml.f90
-pw done   Par_ml.f90
+pw done   Par_ml.f90 - ab deleted i,j not used
 pw done   PhyChem_ml.f90
-          PhysicalConstants_ml.f90
+ab done   PhysicalConstants_ml.f90
 jej done  Radiation_ml.f90
 ds done   Rb_ml.f90
 an done   ReadField_ml.f90
           Rsurface_ml.f90
 an done   Runchem_ml.f90
 st done   SeaSalt_ml.f90      - finel small shanges are possible today
-          Setup_1dfields_ml.f90 
+ab done   Setup_1dfields_ml.f90 
 ds --     Setup_1d_ml.f90     - st small changes (see below)
 mg done   Sites_ml.f90
-          SmallUtils_ml.f90
+ab done   SmallUtils_ml.f90
 ds --     SoilWater_ml.f90 -- needs (small) work after Friday
 ds done   Solver.f90       - st small changes (see below)
 ds done   StoFlux_ml.f90
@@ -133,7 +133,7 @@ av done   TimeDate_ml.f90
 an done   Timefactors_ml.f90
           Timing_ml.f90
 ds moved   Tmp_Met_ml.f90  - ds moved to FUTURE_Tmp_Met_ml.f90
-          Trajectory_ml.f90
+ab done   Trajectory_ml.f90
 av/ds done Unimod.f90
 av done   Volcanos_ml.f90
 pw done   Wesely_ml.f90

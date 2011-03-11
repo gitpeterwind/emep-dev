@@ -197,7 +197,7 @@ private
 
     implicit none
         integer, intent(in) :: min_grids  ! u4
-    integer i, j, ime, imex, imey, rest
+    integer ime, imex, imey, rest
            
 !
 !

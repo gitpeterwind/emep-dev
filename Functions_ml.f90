@@ -165,7 +165,7 @@ module Functions_ml
 
    real :: p_kPa
    real   , intent(in)          :: h_km
-   real :: t    ! Temperature (K)
+!   real :: t    ! Temperature (K)
 
    if( h_km < 11.0 ) then   ! = p_kPa > 22.632
       ! t = 288.15/(p_kPa/101.325)**(-1.0/5.255876)
@@ -289,18 +289,18 @@ module Functions_ml
   !-------------------------------------------------------------------
   !-------------------------------------------------------------------
  
-   real function ERF(xx)
+  real function ERF(xx)
 
   ! calculates error function Erf() for particles size distribution
 
-	real, intent (in) :: xx
-        real :: pi
+    real, intent (in) :: xx
+    real :: pi
 
-	pi=4.*atan(1.)
-        ERF = sqrt(1.0 - exp( -4.0 * xx * xx / pi ) )
+    pi=4.*atan(1.)
+    ERF = sqrt(1.0 - exp( -4.0 * xx * xx / pi ) )
 
-       return
-      end function ERF
+    return
+  end function ERF
   !-------------------------------------------------------------------
   !-------------------------------------------------------------------
 
