@@ -69,7 +69,7 @@
 
   integer, parameter :: SS_MAAR= 7, SS_MONA= 3, &   !Number size ranges for
                                                     !Maartinsson's and Monahan's 
-                        NFIN= 6, NCOA= 2, NGIG=2, & !Number fine&coarse&giant bins     
+                        NFIN= 7, NCOA= 2, NGIG=1, & !Number fine&coarse&giant bins     
                         SSdens = 2200.0             ! sea salt density [kg/m3]
 
   real, save, dimension(SS_MAAR) :: dp3, a, b
