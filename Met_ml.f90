@@ -178,7 +178,7 @@ contains
     character (len = 100), save  ::  meteoname   ! name of the meteofile
     character (len = 100)        ::  namefield & ! name of the requested field
          ,validity    ! field is either instaneous or averaged
-    integer ::   ndim,nyear,nmonth,nday,nhour
+    integer ::   ndim,nyear,nmonth,nday,nhour,k
     integer ::   nr   ! Fields are interpolate in
                       ! time (NMET = 2): between nr=1 and nr=2
 
@@ -1430,7 +1430,7 @@ end if ! NH3_U10
     real, dimension(KMAX_BND) :: p_bnd !TESTzi
     real, dimension(KMAX_MID) :: Kz_nwp 
     real    :: Kz_min, stab_h
-!    logical :: Pielke_flag    ! choice in Blackadar/Pielke equations
+    logical :: Pielke_flag    ! choice in Blackadar/Pielke equations
 
     integer i,j,k,numt, nr
 
@@ -2368,8 +2368,8 @@ end if ! NH3_U10
     character (len = *),intent(out) ::validity
     integer,intent(in)              :: nrec,ndim
 
-    integer :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
-    integer, allocatable ::var_global(:,:,:)   ! faster if defined with
+    integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
+    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
     ! fixed dimensions for all
     ! nodes?
     real :: scalefactors(2)
@@ -2434,7 +2434,7 @@ end if ! NH3_U10
     real,intent(out) :: scalefactors(2)
     integer, intent(in) :: nstart,GIMAX,IRUNBEG,GJMAX,JRUNBEG,KMAX
     integer, intent(inout) ::  nfetch
-    integer, dimension(GIMAX*GJMAX*KMAX*NFETCH),intent(out) :: var
+    integer*2, dimension(GIMAX*GJMAX*KMAX*NFETCH),intent(out) :: var
     integer :: varID,ndims
     integer :: ncFileID,status
     real :: scale,offset
