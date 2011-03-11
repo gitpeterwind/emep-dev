@@ -52,12 +52,12 @@ Files and cleanup status.
 !----------------------------------------------------------
 
 st pw     Advection_ml.f90
-          Aero_Vds_ml.f90
-          Aero_water_ml.f90
+st done   Aero_Vds_ml.f90
+st done   Aero_water_ml.f90
 an done   AirEmis_ml.f90 - can delete aircraft_nox subroutine !
                           (& rename as Lightning_ml) NOT DONE!!!
 ds done   Ammonium_ml.f90
-          AOD_PM_ml.f90
+st done   AOD_PM_ml.f90
 ds done   AOTnPOD_ml.f90
           Aqueous_n_WetDep_ml.f90     jej - please update scav coeffs.
           Biogenics_ml.f90
@@ -80,16 +80,16 @@ mg done   EcoSystem_ml.f90
 an done   EmisDef_ml.f90
 an done   EmisGet_ml.f90
 an done   Emissions_ml.f90
-          EQSAM_ml.f90
-          ForestFire_ml.f90
+st done   EQSAM_ml.f90
+st done   ForestFire_ml.f90
           Functions_ml.f90
           global2local.f90
 av done   GlobalBCs_ml.f90
 mg done   GridAllocate_ml.f90
 mg done   GridValues_ml.f90
 pw done   InterpolationRoutines_ml.f90
-          Io_ml.f90
-          Io_Nums_ml.f90
+st done   Io_ml.f90
+st done   Io_Nums_ml.f90
 av done   Io_Progs_ml.f90
 mg done   KeyValue_ml.f90
 ds --     LandDefs_ml.f90
@@ -97,12 +97,12 @@ ds --     LandPFT_ml.f90
 mg done   Landuse_ml.f90
           local2global.f90
 av done   LocalVariables_ml.f90
-          MARS_ml.f90
+st done   MARS_ml.f90
 pw done   MassBudget_ml.f90
           MetFields_ml.f90
 pw done   Met_ml.f90
 ds done   MicroMet_ml.f90
-pw done   ModelConstants_ml.f90
+pw done   ModelConstants_ml.f90   st changes (see below)
           MosaicOutputs_ml.f90
 av done   Nest_ml.f90
 pw done   NetCDF_ml.f90
@@ -119,13 +119,13 @@ ds done   Rb_ml.f90
 an done   ReadField_ml.f90
           Rsurface_ml.f90
 an done   Runchem_ml.f90
-          SeaSalt_ml.f90
-          Setup_1dfields_ml.f90
-ds --     Setup_1d_ml.f90
+st done   SeaSalt_ml.f90      - finel small shanges are possible today
+          Setup_1dfields_ml.f90 
+ds --     Setup_1d_ml.f90     - st small changes (see below)
 mg done   Sites_ml.f90
           SmallUtils_ml.f90
 ds --     SoilWater_ml.f90 -- needs (small) work after Friday
-ds done   Solver.f90
+ds done   Solver.f90       - st small changes (see below)
 ds done   StoFlux_ml.f90
 ds --     SubMet_ml.f90
           Tabulations_ml.f90
@@ -140,12 +140,28 @@ pw done   Wesely_ml.f90
 
 ZD_OZONE/
 
-ds --     My_Aerosols_ml.f90
+ds --     My_Aerosols_ml.f90     - st small changes (see below)
 ds --     My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx h11:00      Svetlana       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+In ModelConstants_ml.f90
+logical, public, parameter :: USE_SEASALT      = .true.
+logical, public, parameter :: USE_AOD          = .false.
+logical, public, parameter :: USE_FOREST_FIRES = .false.
+Correspondent modifications in Runchem_ml.f90, Solver.f90, Setup_1d_ml.f90
+........................................
+
+Aero_water_ml.f90 changed to MARS_Aero_water_ml.f90 (as it had the same name
+as subroutine Aero_water() in My_Aerosols_ml.f90)
+Correspondent changes in MARS_ml.f90 and Makefile.SRCS
+
+ForestFires_ml.f90: len=TXTLEN_SHORT is assigned to emep_poll, gfed_poll 
+instead of too short len=10 
 
 xxxxxxxx h23:15       Alvaro       Mar 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
