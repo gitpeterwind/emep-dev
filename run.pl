@@ -8,9 +8,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=64:ib
+#PBS -lnodes=32:ib
 # wall time limit of run
-#PBS -lwalltime=04:20:00
+#PBS -lwalltime=07:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -148,7 +148,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2006";
+my $year = "2008";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -188,7 +188,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EMEP"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -429,7 +429,7 @@ $month_days[2] += leap_year($year);
 my $mm1   =  "01";       # first month, use 2-digits!
 my $mm2   =  "01";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $dd2   =  31;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2   =  1;       # End day (can be too large; will be limited to max number of days in the month)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm1   =  "01";
@@ -754,8 +754,8 @@ foreach my $scenflag ( @runs ) {
 #EUCAARI, but all?
 # Skip:  $ifile{"$DATA_LOCAL/Boundary_and_Initial_Conditions.nc"} =
 #                     "Boundary_and_Initial_Conditions.nc" unless $GRID eq "MACC02";
-  $ifile{"$DataDir/GLOBAL_Boundary_and_Initial_Conditions.nc"} =
-                  "GLOBAL_Boundary_and_Initial_Conditions.nc";
+  $ifile{"$DataDir/GLOBAL_O3.nc"} =
+                  "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
   $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc";
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
@@ -781,7 +781,7 @@ foreach my $scenflag ( @runs ) {
 #Prelim BVOC attempt
   $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
 #New EURO BVOC
-  $ifile{"$DataDir/EMEP_EuroBVOC_KRS09.nc"} = "LOCAL_BVOC.nc";
+  $ifile{"$DataDir/EMEP_EuroBVOC_KRS09.nc"} = "EMEP_EuroBVOC.nc";
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
   my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");

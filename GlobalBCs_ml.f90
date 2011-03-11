@@ -478,6 +478,10 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     bc_rawdata = max(15.0*PPB,bc_rawdata-O3fix)
     bc_rawdata = bc_rawdata*trend_o3
 
+  case (IBC_H2O2, IBC_OH, IBC_CH3COO2)
+
+     bc_rawdata=1.0E-25
+
   case (IBC_NO  ,IBC_NO2  ,IBC_HNO3,IBC_CO, &
         IBC_C2H6,IBC_C4H10,IBC_PAN ,IBC_NO3_c)
     ! NB since we only call once per month we add 15 days to

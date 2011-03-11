@@ -67,8 +67,8 @@ character(len=4),public, save, dimension(NBVOC) :: &
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
 character(len=*), parameter, public :: &
- DomainName = "EMEP-50kmEurope"
-!  DomainName = "EMEP-50kmEECCA"
+! DomainName = "EMEP-50kmEurope"
+  DomainName = "EMEP-50kmEECCA"
 ! DomainName = "EMEPCWF-0.25degEurope"
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
@@ -91,9 +91,9 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
+ RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! EMEP domain in EECCA
- RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
 ! RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
 ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
@@ -112,7 +112,7 @@ integer, public, parameter, dimension(4) ::  &
 
 integer, public, parameter ::  &
   NPROCX      =   8        & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+, NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================

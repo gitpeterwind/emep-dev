@@ -59,7 +59,7 @@ an done   AirEmis_ml.f90 - can delete aircraft_nox subroutine !
 ds done   Ammonium_ml.f90
 st done   AOD_PM_ml.f90
 ds done   AOTnPOD_ml.f90
-          Aqueous_n_WetDep_ml.f90     jej - please update scav coeffs.
+jej done  Aqueous_n_WetDep_ml.f90     jej - please update scav coeffs.
           Biogenics_ml.f90
 mg done   BLPhysics_ml.f90
 av done   BoundaryConditions_ml.f90
@@ -68,9 +68,9 @@ ds done   CheckStop_ml.f90
           ChemFunctions_ml.f90
           Chem_ml.f90
 ds done   CoDep_ml.f90
-          Convection_ml.f90
+jej done  Convection_ml.f90
 an done   Country_ml.f90
-          DefPhotolysis_ml.f90
+jej done  DefPhotolysis_ml.f90
 an done   DerivedFields_ml.f90
 ds --     Derived_ml.f90
           DO3SE_ml.f90
@@ -83,7 +83,7 @@ an done   Emissions_ml.f90
 st done   EQSAM_ml.f90
 st done   ForestFire_ml.f90
 ab done   Functions_ml.f90
-          global2local.f90
+jej done  global2local.f90
 av done   GlobalBCs_ml.f90
 mg done   GridAllocate_ml.f90
 mg done   GridValues_ml.f90
@@ -95,7 +95,7 @@ mg done   KeyValue_ml.f90
 ds --     LandDefs_ml.f90
 ds --     LandPFT_ml.f90
 mg done   Landuse_ml.f90
-          local2global.f90
+jej done  local2global.f90
 av done   LocalVariables_ml.f90
 st done   MARS_ml.f90
 pw done   MassBudget_ml.f90
@@ -103,12 +103,12 @@ ab done   MetFields_ml.f90
 pw done   Met_ml.f90
 ds done   MicroMet_ml.f90
 pw done   ModelConstants_ml.f90   st changes (see below)
-          MosaicOutputs_ml.f90
+jej done  MosaicOutputs_ml.f90
 av done   Nest_ml.f90
 pw done   NetCDF_ml.f90
 mg done   NH3Emis_variation_ml.f90 - ds moved to FUTURE_NH3Emis_variation_ml.f90
 mg done   NH3variables_ml.f90 - ds  moved to FUTURE_NH3variables_ml.f90
-          OutputChem_ml.f90
+jej done  OutputChem_ml.f90
 av done   Output_hourly.f90
           OwnDataTypes_ml.f90
 pw done   Par_ml.f90 - ab deleted i,j not used
@@ -128,10 +128,10 @@ ds --     SoilWater_ml.f90 -- needs (small) work after Friday
 ds done   Solver.f90       - st small changes (see below)
 ds done   StoFlux_ml.f90
 ds --     SubMet_ml.f90
-          Tabulations_ml.f90
+jej done  Tabulations_ml.f90
 av done   TimeDate_ml.f90
 an done   Timefactors_ml.f90
-          Timing_ml.f90
+jej done  Timing_ml.f90
 ds moved   Tmp_Met_ml.f90  - ds moved to FUTURE_Tmp_Met_ml.f90
 ab done   Trajectory_ml.f90
 av/ds done Unimod.f90
@@ -146,6 +146,18 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx h14:00      Peter       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+ModelConstants_ml: defined EECCA as domain and rundomain (and 8*4 procs)
+GlobalBCs_ml:  added case (IBC_H2O2, IBC_OH, IBC_CH3COO2)     bc_rawdata=1.0E-25
+(these were not set at all)
+
+run.pl: 
+link EMEP_EuroBVOC_KRS09.nc to  EMEP_EuroBVOC.nc
+link GLOBAL_O3.nc to GLOBAL_O3.nc (instead of GLOBAL_Boundary_and_Initial_Conditions.nc)
+
+Cleaned by Joffen: Aqueous_n_WetDep_ml.f90, Convection_ml.f90
 
 xxxxxxxx h11:00      Svetlana       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

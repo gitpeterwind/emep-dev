@@ -82,9 +82,16 @@ module Aqueous_ml
   use MetFields_ml,              only : ps
   use OrganicAerosol_ml,    only: ORGANIC_AEROSOLS
   use OwnDataTypes_ml,           only : depmap, typ_i3  ! has adv, calc, vg
-  use PhysicalConstants_ml,only : GRAV
-  use Setup_1dfields_ml,   only : xn_2d, amk, Fpart, Fgas
+  use PhysicalConstants_ml, only: GRAV  &   
+                                 ,AVOG  &    ! Avogadro's No.
+                                 ,RGAS_ATML  ! Gas-constant
+  use Setup_1dfields_ml,   only : xn_2d, amk, Fpart, Fgas &
+                                 ,temp  &    ! temperature (K)
+                                 ,itemp      ! temperature (K)
   use SmallUtils_ml,  only : find_index
+
+
+
 
   implicit none
   private
@@ -267,12 +274,12 @@ contains
 
     integer :: itot, icalc, n, nc, if2, igr, isp, alloc_err, atw
 
-  !/ INCLOUDFAC is A/v_xmi where A is 5.2 m3 kg-1 s-1, 
-  !  and v_xmi is the fallspeed (5 m/s). 
+  !/ SUBCLFAC is A/FALLSPEED where A is 5.2 m3 kg-1 s-1, 
+  !  and the fallspeed of the raindroplets is assumed to be 5 m/s. 
     real, parameter ::  FALLSPEED = 5.0               ! m/s 
     real, parameter ::  SUBCLFAC = 5.2 / FALLSPEED
 
-  !/ e is the scavenging efficiency (0.1 for fine particles, 0.4 for course)
+  !/ e is the scavenging efficiency (0.02 for fine particles, 0.4 for course)
 
     real, parameter ::  EFF25 = 0.02*SUBCLFAC  & 
                       , EFFCO = 0.4*SUBCLFAC   &
@@ -280,7 +287,7 @@ contains
 
    !/.. setup the scavenging ratios for in-cloud and sub-cloud. For
    !    gases, sub-cloud = 0.5 * incloud. For particles, sub-cloud=
-   !    efficiency * INCLOUDFAC.
+   !    efficiency * SUBCLFAC
    !/..                             W_Sca  W_sub
     WetDep(CWDEP_SO2)   = WScav(   0.3,  0.15)  ! Berge+Jakobsen
     WetDep(CWDEP_SO4)   = WScav(   1.0,  EFF25) ! Berge+Jakobsen
@@ -296,7 +303,7 @@ contains
     WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
     WetDep(CWDEP_ROOH)   = WScav(  0.05,  0.015) ! assumed half of HCHO
 
-  ! Other PM compounds treated with SO4LIKE array defined above
+  ! Other PM compounds treated with SO4-LIKE array defined above
 
    !####################### gather indices from My_Derived
    ! WDEP_WANTED array, and determine needed indices in d_2d
@@ -314,14 +321,15 @@ contains
 
           if(igr>0) then
               nwgrp = nwgrp + 1
-              tmpgroup(nwgrp) = typ_i3( igr, if2, atw )  ! link to array of species integers
+              tmpgroup(nwgrp) = typ_i3( igr, if2, atw )  ! link to array of 
+                                                         ! species integers
           end if
 
        else if ( WDEP_WANTED(n)%txt2 == "PREC" ) then
 
           WDEP_PREC= find_index("WDEP_PREC",f_2d(:)%name)
-          igr = -999 ! just fior printout
-          isp = -999 ! just fior printout
+          igr = -999 ! just for printout
+          isp = -999 ! just for printout
           atw = -999
 
        else ! SPEC
@@ -486,7 +494,6 @@ subroutine init_aqueous()
 ! surrounding cloudfree volume.
 !-----------------------------------------------------------------------
 
-  use PhysicalConstants_ml, only: AVOG ! Avogadro's No.
 
   real, parameter :: &
      Hplus = 5.0e-5                    ! H+ (Hydrogen ion concentration)
@@ -568,8 +575,6 @@ subroutine setup_aqurates(b ,cloudwater,incloud)
 ! sets the rate-coefficients for thr aqueous-phase reactions
 !-----------------------------------------------------------------------
 
-  use Setup_1dfields_ml, only : &
-     itemp          ! temperature (K)
 
   real, dimension(KUPPER:KMAX_MID) :: &
      b            & ! cloud-aread (fraction)
@@ -633,10 +638,6 @@ subroutine get_frac(cloudwater,incloud)
 ! intent in from used modules  : cloudwater and logical incloud
 ! intent out to rest of module : frac_aq
 
-  use Setup_1dfields_ml, only : &
-      temp       & ! temperature (K)
-     ,itemp        ! temperature (K)
-  use PhysicalConstants_ml, only: RGAS_ATML ! Gas-constant
 
 ! local
   real, dimension (KUPPER:KMAX_MID) :: &

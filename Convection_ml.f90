@@ -1,43 +1,43 @@
 module Convection_ml
 
-!If subsidence is included, ps3d could actually be any constant (in k), and will 
-!recover the same value after the subsidience.
+!If subsidence is included, ps3d could actually be any constant (in k), and 
+! will recover the same value after the subsidience.
 !
 !In the global report 2010 ps3d=1, and xn_adv is the mixing ratio
 !
 !We define the mass of pollutant in a level to be proportionnal to xn_adv*dp(k)
-!Note that dp(k) is defined as fixed under convection, i.e. the amount of air and dp 
-!are not consistent during convection, but rather in a transition state. 
-!In principle we can imagine that the convection is called many times with a small dt_conv,
-!but on the other hand this will give instantaneous mixing between convection and 
-!subsidience, which is not corrrect either
+!Note that dp(k) is defined as fixed under convection, i.e. the amount of air 
+!and dp are not consistent during convection, but rather in a transition state. 
+!In principle we can imagine that the convection is called many times with a 
+!small dt_conv, but on the other hand this will give instantaneous mixing 
+!between convection and subsidience, which is not corrrect either
 !-----------------------------------------------------------------------------------
 
 
- use Chemfields_ml, only     : xn_adv
- use ChemSpecs_adv_ml , only : NSPEC_ADV
- use ModelConstants_ml, only : KMAX_BND,KMAX_MID,PT
- use MetFields_ml ,only      : ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
- use GridValues_ml, only     : dA,dB
- use Par_ml,           only  : MAXLIMAX,MAXLJMAX,limax,ljmax
+ use Chemfields_ml,        only  : xn_adv
+ use ChemSpecs_adv_ml ,    only  : NSPEC_ADV
+ use ModelConstants_ml,    only  : KMAX_BND,KMAX_MID,PT
+ use MetFields_ml ,        only  : ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
+ use GridValues_ml,        only  : dA, dB, sigma_bnd
+ use Par_ml,               only  : MAXLIMAX,MAXLJMAX,limax,ljmax
+ use PhysicalConstants_ml, only  : GRAV
+
+
 
  contains
 
  subroutine convection_pstar(ps3d,dt_conv)
 
-    use PhysicalConstants_ml, only: GRAV
-    use GridValues_ml, only : sigma_bnd
     implicit none
     real ,intent(inout):: ps3d(MAXLIMAX,MAXLJMAX,KMAX_MID),dt_conv
    
     real ::xn_in_core(NSPEC_ADV,KMAX_MID+1)
     real ::mass_air_grid(KMAX_MID),mass_air_grid0(KMAX_MID), mass_air_core(KMAX_MID)
-    real ::mass_exchanged,mass, mass1, mass0
+    real ::mass_exchanged,mass
     real :: mass_air_grid_k_temp,xn_buff(NSPEC_ADV,KMAX_MID)
-    real :: massij_k(KMAX_MID),dk(KMAX_MID),dp(KMAX_MID),totdk
-    integer ::k,i,j,kk,k_fill,k1
+    real :: dk(KMAX_MID),dp(KMAX_MID),totdk
+    integer ::k,i,j,k_fill,k1
    INCLUDE 'mpif.h'
-  INTEGER STATUS(MPI_STATUS_SIZE),INFO
   
 
 
