@@ -277,10 +277,10 @@ module Biogenics_ml
        varname = "Fake"
        HaveLocalEF(:) = .false.
 
-       call ReadField_CDF('LOCAL_BVOC.nc',varname,&
+       call ReadField_CDF('EMEP_EURO_BVOC.nc',varname,&
            loc,1,interpol='zero_order',needed=.true.,debug_flag=.true.)
 
-       if( debug_proc ) write(*,*)  "LOCAL_BVOC i,j fake ", &
+       if( debug_proc ) write(*,*)  "EMEP_EURO_BVOC i,j fake ", &
           loc(debug_li, debug_lj)
 
      do iVeg = 1, size(VegName)
@@ -288,7 +288,7 @@ module Biogenics_ml
        HaveLocalEF(ibvoc) = .true.
        do iEmis = 1, size(BVOC_USED)
           varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
-          call ReadField_CDF('LOCAL_BVOC.nc',varname,&
+          call ReadField_CDF('EMEP_EURO_BVOC.nc',varname,&
              loc,1,interpol='zero_order',needed=.true.,debug_flag=.false.)
          if( debug_proc ) write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
              trim(varname), loc(debug_li, debug_lj), iVeg, ibvoc, iEmis
