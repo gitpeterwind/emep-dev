@@ -287,22 +287,6 @@ module Functions_ml
 
   end function T_2_Tpot
   !-------------------------------------------------------------------
-  !-------------------------------------------------------------------
- 
-  real function ERF(xx)
-
-  ! calculates error function Erf() for particles size distribution
-
-    real, intent (in) :: xx
-    real :: pi
-
-    pi=4.*atan(1.)
-    ERF = sqrt(1.0 - exp( -4.0 * xx * xx / pi ) )
-
-    return
-  end function ERF
-  !-------------------------------------------------------------------
-  !-------------------------------------------------------------------
 
  real function ERFfunc(x)
 
@@ -319,7 +303,7 @@ module Functions_ml
     call calerf(x,result,jint)
 
     ERFfunc=result
-    return
+
   end function ERFfunc
 !--------------------------------------------------------------------
    

@@ -37,7 +37,7 @@
 
  use CheckStop_ml,         only : CheckStop
  use EmisDef_ml,           only : NDU, QDUFI, QDUCO
- use Functions_ml,         only : ERF, ERFfunc
+ use Functions_ml,         only : ERFfunc
  use ChemChemicals_ml,     only : species
  use ChemSpecs_tot_ml,     only : DUST_NAT_F
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 

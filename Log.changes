@@ -146,6 +146,9 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx h15:35      Svetlana       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+ERF function is removed from Functions_ml.f90 and DustProd_ml.f90
 
 xxxxxxxx h15:20      Peter       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
