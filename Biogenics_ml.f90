@@ -67,7 +67,7 @@ module Biogenics_ml
                            USE_PFT_MAPS, NLANDUSEMAX, IOU_INST, & 
                            KT => KCHEMTOP, KG => KMAX_MID, & 
                            DEBUG_BIO, BVOC_USED, MasterProc
-  use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,  Real4
+  use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
   use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1,me
   use PhysicalConstants_ml,  only :  AVOG, GRAV
@@ -86,7 +86,6 @@ module Biogenics_ml
   public ::  setup_bio
   public ::  SetDailyBVOC
   private :: TabulateECF
-  private :: Export_Bio
 
   INCLUDE 'mpif.h'
   INTEGER STATUS(MPI_STATUS_SIZE),INFO
@@ -341,6 +340,12 @@ module Biogenics_ml
       if ( daynumber == last_daynumber ) return
       last_daynumber = daynumber
 
+      if ( DEBUG_BIO .and.  my_first_call  ) then
+           allocate(  workarray(MAXLIMAX,MAXLJMAX), stat=alloc_err )
+           call CheckStop( alloc_err , "workarray alloc failed"  )
+           workarray = 0.0
+      end if
+
       do i = 1, MAXLIMAX
       do j = 1, MAXLJMAX
 
@@ -377,20 +382,21 @@ module Biogenics_ml
                      ( day_embvoc(i, j, ibvoc), ibvoc = 1, size(BVOC_USED) ) 
                   
               end if
+              ! When debugging it helps with an LAI map
+              if( DEBUG_BIO .and. my_first_call ) &
+                 workarray(i,j) = workarray(i,j) + &
+                    LandCover(i,j)%LAI(iiL)*LandCover(i,j)%fraction(iiL)
         end do LULOOP
       end do
       end do
 
       if ( DEBUG_BIO ) then
          if ( my_first_call  ) then ! print out 1st day
-              allocate(  workarray(MAXLIMAX,MAXLJMAX),&
-                        stat=alloc_err )
-              write(*,"(a,i3)") "workarray success????", alloc_err
-              call CheckStop( alloc_err , "workarray alloc failed"  )
-                  workarray(:,:) = day_embvoc(:,:,1)
-                  call Export_Bio("Eiso", workarray )
-                  workarray(:,:) = day_embvoc(:,:,2) + day_embvoc(:,:,3)
-                  call Export_Bio("Emt", workarray )
+              call printCDF("BIO-LAI", workarray, "m2/m2" )
+              workarray(:,:) = day_embvoc(:,:,1)
+              call printCDF("BIO-Eiso", workarray, "ug/m2/h" )
+              workarray(:,:) = day_embvoc(:,:,2) + day_embvoc(:,:,3)
+              call printCDF("BIO-Emt", workarray, "ug/m2/h" )
               deallocate(  workarray )
          end if
        end if
@@ -525,27 +531,4 @@ module Biogenics_ml
   end subroutine setup_bio
 
   !----------------------------------------------------------------------------
- subroutine Export_Bio(name, array)
-    real, dimension(:,:), intent(in) :: array
-    character(len=*), intent(in) :: name
-    character(len=60) :: fname
-    type(Deriv) :: def1 ! definition of fields
-    
-    def1%class='Biogenics' !written
-    def1%avg=.false.      !not used
-    def1%index=0          !not used
-    def1%scale=1.0      !not used
-    def1%name=trim(name)   ! eg 'EmisPot'        !written
-    def1%unit='ug/m2/h'       !written
-    
-    fname = "OUTBIO_" // trim(name) // ".nc"
-
-    !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
-
-    if(MasterProc) write(*,*) "TEST EXPORT BIO:"//trim(fname),  maxval(array)
-    call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
-           CDFtype=Real4,fileName_given=fname)
-  end subroutine Export_Bio
-
-
 end module Biogenics_ml

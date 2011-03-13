@@ -104,6 +104,7 @@
   character (len=18),parameter::Default_projection_name = 'General_Projection'
 
   public :: Out_netCDF
+  public :: printCDF   ! minimal caller for Out_netCDF
   public :: CloseNetCDF
   public :: Init_new_netCDF
   public :: GetCDF
@@ -2257,5 +2258,30 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   return
 
 end subroutine ReadField_CDF
+
+subroutine printCDF(name, array,unit)
+    ! Minimal print out to cdf, for real numbe, 2-d arrays
+    character(len=*), intent(in) :: name
+    real, dimension(:,:), intent(in) :: array
+    character(len=*), intent(in) :: unit
+
+    character(len=60) :: fname
+    type(Deriv) :: def1 ! definition of fields
+
+    def1%class='print-cdf' !written
+    def1%avg=.false.      !not used
+    def1%index=0          !not used
+    def1%scale=1.0      !not used
+    def1%name=trim(name)   ! written
+    def1%unit=trim(unit)
+    
+    fname = "PRINTCDF_" // trim(name) // ".nc"
+
+    !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
+
+    if(MasterProc) write(*,*) "TEST printCDF :"//trim(fname),  maxval(array)
+    call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
+           CDFtype=Real4,fileName_given=fname)
+  end subroutine printCDF
 
 end module NetCDF_ml

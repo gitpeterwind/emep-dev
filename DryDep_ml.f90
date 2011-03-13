@@ -58,7 +58,8 @@ module DryDep_ml
 
  use ChemChemicals_ml, only : species
  use ChemSpecs_adv_ml     ! Might need any species
- use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, O3
+ use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, &
+                               NO2, SO2, NH3, O3
  use DO3SE_ml,         only : do3se, f_phen
  use EcoSystem_ml,     only : EcoSystemFrac, Is_EcoSystem,  &
                              NDEF_ECOSYSTEMS, DEF_ECOSYSTEMS
@@ -159,7 +160,6 @@ module DryDep_ml
 
      call Init_DepMap()               ! Maps CDDEP to IXADV
      call Init_GasCoeff()             ! Sets Wesely coeffs.
-!FEB2011 call Init_MosaicOutputs()
 
      nadv = 0
      do n = 1, NDRYDEP_ADV  
@@ -371,26 +371,25 @@ module DryDep_ml
  
     !/ SO2/NH3 for Rsur calc
     Grid%so2nh3ratio = &
-               xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID) / & 
-               max(1.0,xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID))
+               xn_2d(SO2,KMAX_MID) / max(1.0,xn_2d(NH3,KMAX_MID))
 
     Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
 
-  ! Surrogate for NO2 compensation point approach, 
-  ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
+  ! Surrogate for NO2 compensation point approach, assuming 
+  ! c.p.=4 ppb (actually use 1.0e11 #/cm3):        
+  ! Aiming at dC/dt = -Vg.(C-4)/dz instead of -Vg.C/dz
+  ! factor difference is then:   C-4/C in ppb units
   ! Note, xn_2d has no2 in #/cm-3
 
     no2fac = 1.0 ! QUERY!!!!
-    !no2fac = max( 1.0, xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID) )
-    !no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
-
+    no2fac = max( 1.0, xn_2d(NO2,KMAX_MID) )
+    no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
 
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
-         write(*,"(a,2i4,3es12.4)") "DRYDEP CONCS SO2,NH3,O3 (ppb) ", i,j, &
-          xn_2d(NSPEC_SHL+IXADV_SO2,KMAX_MID)*surf_ppb, &
-          xn_2d(NSPEC_SHL+IXADV_NH3,KMAX_MID)*surf_ppb, &
-            xn_2d(NSPEC_SHL+IXADV_O3,KMAX_MID)*surf_ppb
+         write(*,"(a,2i4,4es12.4)") "DRYDEP CONCS SO2,NH3,O3 (ppb) ", i,j, &
+          xn_2d(SO2,KMAX_MID)*surf_ppb, xn_2d(NH3,KMAX_MID)*surf_ppb, &
+            xn_2d(O3,KMAX_MID)*surf_ppb, no2fac
     end if
 
     call Setup_StoFlux( daynumber )
@@ -478,13 +477,14 @@ module DryDep_ml
                        Vds = Vds * 2.0 ! for nitrate-like
                   end if
 
-              else !!!  Vds NOV08
+              else !!!
 
                 !/  Use Wesely et al  for other veg & sea
 
                  ! Vds = Nemitz2004( 0.4, L%ustar, L%invL )
                  Vds = Wesely300( L%ustar, L%invL )
-                  if (n==CDDEP_PMfN .and. L%invL<0.0 ) then ! We allow nitrate to deposit x 2
+                  ! We allow nitrate to deposit x 2
+                  if (n==CDDEP_PMfN .and. L%invL<0.0 ) then 
                        Vds = Vds * 2.0 ! for nitrate-like
                   end if
 
@@ -508,13 +508,13 @@ module DryDep_ml
           end if
         end if
 
-        !FEB2009 Vds ================================================
+         ! ================================================
 
 
             else                           ! gases
 
-           ! After's Hilde's changes, no wet-dry needed
-
+           ! NB no wet-dry difference needed here
+ 
               Vg_ref(n) = 1. / ( L%Ra_ref + Rb(n) + Rsur(n) ) 
 
               Vg_3m (n) = 1. / ( L%Ra_3m + Rb(n) + Rsur(n) ) 

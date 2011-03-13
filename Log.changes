@@ -153,10 +153,15 @@ xxxxxxxx rv3_7rc2  Dave           Mar 13 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 Biogenics_ml corrected and cleaned. Notation updated. 
   No BVOC_2010 option now - this is the only method. IQ_DMS moved to
   EmisDef_ml, first_dms_read moved to Emissions_ml
+  Replaces ExportBIO routine with calls to new printCDF routine
 
 Aqueous_ml - some print-outs moved to DEBUG
 
 Derived_ml - cleanup and DEBUG changes
+
+DryDep_ml  - NO2fac re-instated (for now, until we get a proper soil-NO
+              treatment)
+             Tidy-up, use of SO2 instead of IXADV_SHL+IADV_SO2 etc.
 
 EmisDef_ml - IQ_DMS added
 
@@ -165,6 +170,9 @@ Emissions_ml - first_dms_read put here
 MetFields_ml - small extra tidy-up
 
 ModelConstants_ml - no BVOC_2010 option.
+
+NetCDF_ml  - printCDF added - for "easy" output to cdf in e.g. debugging, 
+               call printCDF("Example,array,"ugS/m3")
 
 Rurface_ml - small tidy up. Still could do with more (snow)
 
