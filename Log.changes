@@ -61,8 +61,8 @@ an done   AirEmis_ml.f90 - can delete aircraft_nox subroutine !
 ds done   Ammonium_ml.f90
 st done   AOD_PM_ml.f90
 ds done   AOTnPOD_ml.f90
-jej done  Aqueous_n_WetDep_ml.f90     jej - please update scav coeffs.
-          Biogenics_ml.f90
+jej done  Aqueous_n_WetDep_ml.f90
+ds done   Biogenics_ml.f90
 mg done   BLPhysics_ml.f90
 av done   BoundaryConditions_ml.f90
 ds done   CellMet_ml.f90
@@ -74,7 +74,7 @@ jej done  Convection_ml.f90
 an done   Country_ml.f90
 jej done  DefPhotolysis_ml.f90
 an done   DerivedFields_ml.f90
-ds --     Derived_ml.f90
+ds nearly done  Derived_ml.f90 -ALVARO - could you check the ALVARO-2-DAVE bits?
           DO3SE_ml.f90
 ds --     DryDep_ml.f90
           DustProd_ml.f90
@@ -123,7 +123,7 @@ an done   ReadField_ml.f90
 an done   Runchem_ml.f90
 st done   SeaSalt_ml.f90      - finel small shanges are possible today
 ab done   Setup_1dfields_ml.f90 
-ds --     Setup_1d_ml.f90     - st small changes (see below)
+ds done   Setup_1d_ml.f90
 mg done   Sites_ml.f90
 ab done   SmallUtils_ml.f90
 ds --     SoilWater_ml.f90 -- needs (small) work after Friday
@@ -143,11 +143,43 @@ pw done   Wesely_ml.f90
 ZD_OZONE/
 
 ds --     My_Aerosols_ml.f90     - st small changes (see below)
-ds --     My_Derived_ml.f90
+ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc2  Dave           Mar 13 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Biogenics_ml corrected and cleaned. Notation updated. 
+  No BVOC_2010 option now - this is the only method. IQ_DMS moved to
+  EmisDef_ml, first_dms_read moved to Emissions_ml
+
+Aqueous_ml - some print-outs moved to DEBUG
+
+Derived_ml - cleanup and DEBUG changes
+
+EmisDef_ml - IQ_DMS added
+
+Emissions_ml - first_dms_read put here
+
+MetFields_ml - small extra tidy-up
+
+ModelConstants_ml - no BVOC_2010 option.
+
+Rurface_ml - small tidy up. Still could do with more (snow)
+
+SeaSalt_ml - changed copyright dates
+
+SetUp_1d_ml - cleaned
+Unimod.f90 - BVOC_2010 stuff removed.
+
+run.pl - Inputs.BVOC line removed
+
+ZD_OZONE/My_Derived_ml - DEBUG change
+
+ZCM_EmChem09 - reme kaero HNO3 -> NO3_c reaction. Seems to do
+   more harm than good.
+
 xxxxxxxx rv3_7rc1  ALL            Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 labelled for Benchmark, for comparison to earlier.

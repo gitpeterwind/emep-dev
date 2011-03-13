@@ -376,7 +376,15 @@ module DryDep_ml
 
     Grid%so2nh3ratio24hr = so2nh3_24hr(i,j)
 
-    no2fac = 1.0
+  ! Surrogate for NO2 compensation point approach, 
+  ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
+  ! Note, xn_2d has no2 in #/cm-3
+
+    no2fac = 1.0 ! QUERY!!!!
+    !no2fac = max( 1.0, xn_2d(NSPEC_SHL+IXADV_NO2,KMAX_MID) )
+    !no2fac = max(0.00001,  (no2fac-1.0e11)/no2fac)
+
+
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
          write(*,"(a,2i4,3es12.4)") "DRYDEP CONCS SO2,NH3,O3 (ppb) ", i,j, &
@@ -397,9 +405,9 @@ module DryDep_ml
 
     if ( DEBUG_DRYDEP .and. debug_flag ) then
          call datewrite("DRYDEP VS",NSIZE,(/ Grid%t2, Grid%rho_ref, Vs /) )
-         if( maxval(Vs) > 0.02 ) write(*,*) "DRYDEP LIM!"
+   !      if( maxval(Vs) > 0.02 ) write(*,*) "DRYDEP LIM!"
     end if
-     Vs(:) = min( Vs(:), 0.02) 
+   !  Vs(:) = min( Vs(:), 0.02) 
 
     !/ And start the sub-grid stuff over different landuse (iL)
 
@@ -518,11 +526,11 @@ module DryDep_ml
          ! assuming c.p.=4 ppb (ca. 1.0e11 #/cm3):        
          ! Note, xn_2d has no2 in #/cm-3
 
-          ! if ( n == CDDEP_NO2 ) then
-!
-!            Vg_ref(CDDEP_NO2) = Vg_ref(CDDEP_NO2) * no2fac
-!            Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
-!          end if ! CDDEP_NO2
+          if ( n == CDDEP_NO2 ) then
+
+            Vg_ref(CDDEP_NO2) = Vg_ref(CDDEP_NO2) * no2fac
+            Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
+          end if ! CDDEP_NO2
 
           ! new!
           !SUB0   Grid%Vg_ref(n) = Grid%Vg_ref(n) + L%coverage * Vg_ref(n)
@@ -534,6 +542,7 @@ module DryDep_ml
 
 
          if ( n <= NDRYDEP_GASES )  then    ! gases
+             !QUERY - do we need Gsur for anything now?!
 
              Sub(iL)%Gsur(n) = 1.0/Rsur(n) ! Note iL, not iiL 
              Sub(iL)%Gns(n)  = Gns(n)  ! Note iL, not iiL 

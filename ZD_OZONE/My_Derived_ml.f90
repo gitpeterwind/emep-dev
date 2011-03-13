@@ -204,7 +204,7 @@ private
     character(len=TXTLEN_DERIV), public, parameter, dimension(11) :: &
   D2_EXTRA = (/ &
        "SURF_ppbC_VOC     " &
-      ,"SOMO0             " &
+      ,"T2m               " &
       ,"Area_Grid_km2     " &
       ,"Area_Conif_Frac   " &
       ,"Area_Decid_Frac   " &
@@ -314,9 +314,7 @@ private
 !     dimension( size(MOSAIC_METCONCS)*size( MET_LCS) ),  save :: OutMET
 
 !----------------------
-   !======= MY_DERIVED SYSTEM ======================================
 
-  ! use character arrays to specify which outputs are wanted
 
    type(typ_s3), dimension(14), public, parameter :: WDEP_WANTED = (/ &
          typ_s3( "PREC     ", "PREC ", "mm  " )  &
@@ -490,7 +488,7 @@ private
               call AddArray(  tag_name(1:1) , wanted_deriv2d, &
                      NOT_SET_STRING, errmsg)
               call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
-              if(MasterProc) write(*,*) "Xd-2d-DONE ", n, trim(outname)
+              if(DEBUG.and.MasterProc) write(*,*) "Xd-2d-DONE ", n, trim(outname)
 
               if( outdim == "3d" ) then
                   tag_name(1) = "D3_" // trim(outunit) // "_" //  trim(outname)

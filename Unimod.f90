@@ -71,8 +71,8 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             nprint,nterm,iyr_trend,                       &
                             IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
                             USE_CONVECTION, USE_SOILWATER, USE_SOIL_NOX,  &
-                            USE_FOREST_FIRES, USE_BVOC_2010,              &
-                            USE_DUST,DO_SAHARA, USE_LIGHTNING_EMIS,       &
+                            USE_FOREST_FIRES, USE_DUST,DO_SAHARA, &
+                            USE_LIGHTNING_EMIS,       &
                             FORECAST       ! FORECAST mode
 use NetCDF_ml,        only: Init_new_netCDF
 use OutputChem_ml,    only: WrtChem
@@ -188,7 +188,6 @@ if( MasterProc ) then
   if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
   if(  USE_SOIL_NOX   ) call PrintLog("SoilNOx    switch on")
   if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
-  if(  USE_BVOC_2010 )  call PrintLog("BVOC 2010 switch on")
   call PrintLog("Options used of (dust, sahara)")
   if(  USE_DUST        )call PrintLog("Dust switch on")
   if(  DO_SAHARA       )call PrintLog("Sahara switch on")
@@ -362,10 +361,10 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
   call Meteoread(numt)
   call Add_2timing(10,tim_after,tim_before,"Meteoread")
 
-  call SetLandUse()    !Moved here from DryDep !LPJ
+  call SetLandUse()
   call Add_2timing(11,tim_after,tim_before,"SetLanduse")
 
-  call SetDailyBVOC(daynumber)  !dsBVOC
+  call SetDailyBVOC(daynumber)
 
   if (USE_FOREST_FIRES) call Fire_Emis(daynumber)
 

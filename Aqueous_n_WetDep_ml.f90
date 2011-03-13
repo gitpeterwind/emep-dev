@@ -341,7 +341,7 @@ contains
           end if
        end if
 
-       if( MasterProc )  then
+       if( DEBUG .and. MasterProc )  then
             write(6,"(2a,4i5)") "WETPPP ", trim(f_2d(if2)%name), if2, igr , atw
             if(igr>0) write(*,*) "WETFGROUP ", nwgrp, chemgroups(igr)%ptr, atw
             if(isp>0) write(*,*) "WETFSPEC  ", nwspec, isp, atw

@@ -243,7 +243,7 @@ if ($EUCAARI) {
   @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-my $testv = "rv3_7beta31";
+my $testv = "rv3_7rc2";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -766,8 +766,6 @@ foreach my $scenflag ( @runs ) {
   $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
 # new inputs style (Aug 2007)  with compulsory headers:
-#NOT NEEDED if using BVOC_2010 .eqv. .true.
-  $ifile{"$DATA_LOCAL/Inputs.2BVOC"} = "Inputs.BVOC";
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
  #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";

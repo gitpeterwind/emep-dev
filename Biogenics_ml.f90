@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -29,7 +29,7 @@ module Biogenics_ml
 
   !/-- Reads in BVOC emisions factors 
   !
-  !     1) From LPJ or defaults globally
+  !     1) From defaults globally
   !
   !     2) from local file if available (e.g. Europe, used by default)
   !
@@ -52,16 +52,12 @@ module Biogenics_ml
   !    by the ReadField_CDF interpolation routines. No need to worry about
   !    conserving these very imperfect numbers accurately ;-)
   !
-  !  ( MEGAN assumes rates for 5 m2/m2 LAI.... think about later)
-  !
-  !    Dave Simpson, 2010
+  !    Dave Simpson, 2010-2011
   !---------------------------------------------------------------------------
 
-
   use CheckStop_ml,      only: CheckStop
-  use GridValues_ml    , only : xm2, glat, &
-          i_fdom,j_fdom,debug_proc,debug_li,debug_lj
-  use Io_ml            , only : IO_FORES, open_file, ios, Read2DN, PrintLog, datewrite
+  use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
+  use Io_ml            , only : IO_FORES, open_file, ios, PrintLog, datewrite
   use KeyValue_ml,       only : KeyVal,KeyValue
   use LandDefs_ml,       only: LandType, LandDefs
   use LandPFT_ml,        only: MapPFT_LAI, pft_lai
@@ -69,12 +65,12 @@ module Biogenics_ml
   use LocalVariables_ml, only : Grid  ! -> izen, DeltaZ
   use ModelConstants_ml, only : NPROC, MasterProc, TINY, &
                            USE_PFT_MAPS, NLANDUSEMAX, IOU_INST, & 
-                           KT => KCHEMTOP, KG => KMAX_MID, & ! DSBIO
-                           DEBUG_BIO, BVOC_USED, USE_BVOC_2010, MasterProc
+                           KT => KCHEMTOP, KG => KMAX_MID, & 
+                           DEBUG_BIO, BVOC_USED, MasterProc
   use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,  Real4
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
   use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1,me
-  use PhysicalConstants_ml,  only :  AVOG, GRAV ! , PI
+  use PhysicalConstants_ml,  only :  AVOG, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : rcbio  
   use SmallUtils_ml, only : find_index
@@ -99,23 +95,20 @@ module Biogenics_ml
   integer, public, parameter :: BIO_TERP=2 ! Used for final emis, sum of MTP+MTL
   integer, public, save ::  last_bvoc_LC   !max index land-cover with BVOC (min 4)
 
- ! Set true if LCC read from e.g. Euro_.nc:
- ! (Currently for 1st four LCC)
+ ! Set true if LCC read from e.g. EMEP_EuroBVOC.nc:
+ ! (Currently for 1st four LCC, CF, DF, BF, NF)
   logical, private, dimension(NLANDUSEMAX), save :: HaveLocalEF 
 
-  !TEST
   real, public, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)) :: &
-  !TEST real, public, save, dimension(MAXLIMAX,MAXLJMAX,2) :: &
-      emforest    & !  Gridded standard (30deg. C, full light) emissions
-     ,EmisNat       !  will be transferred to d_2d emis sums
+     EmisNat       !  will be transferred to d_2d emis sums
 
 
-  !standard emission factors per LC  for LAI=5 m2/m2
+  !standard emission factors (EFs) per LC
   !Need to dimension later for Emtp, Emtl, last_bvoc_LC
   real, private, save, allocatable, dimension(:,:,:,:) :: &
      bvocEF       !  Gridded std. emissions per PFT
 
-  !standard emission factors per LC  for daily LAI
+  !standard emission factors per LC for daily LAI
   real, private, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)) :: &
      day_embvoc   !  emissions scaled by daily LAI
 
@@ -128,9 +121,6 @@ module Biogenics_ml
 
   real, public, save, dimension(N_ECF,40) :: canopy_ecf  ! Canopy env. factors
                                                         
-  integer, public, parameter :: IQ_DMS = 35  ! code for DMS emissions
-  logical, public, save :: first_dms_read
-
   contains
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -138,29 +128,18 @@ module Biogenics_ml
 
 !    Read natural BVOC emission potentials
 !-----------------------------------------------------------------------------
-!   Emissions now read from 50x50 landuse file, forests.dat, derived from 
-!   landuse.mar2004. Emission rates now based upon Simpson et al., 1999, JGR,
-!   Vol 104, D7, 8113-8152.
-
+!   Emission potentials (EFs) now read a netcdf of ca. 50x50 resolution.
+!   This fie, EMEP_EuroBVOC.nc uses the ICP-Forests species map as processed
+!   by Renate Koeble at JRC (e.g.
+!   EFs now a mixure of rates from Simpson et al., 1999, JGR, Vol 104, D7, 
+!   8113-8152, and Keenan, T. et al., ACP, 2009, 9, 4053-4076 
 
     integer i, j, n ,d, info, alloc_err
     real sumland
 
-    real ::  bvocsum, bvocsum1
-
-    ! Specify the assumed coords and units - Read2DN will check that the data
-    ! conform to these.
-    type(keyval), dimension(2) :: CheckValues = &
-        (/ keyval("Units","ug/m2/h"), keyval("Coords","ModelCoords") /)
-
       if ( size(BVOC_USED) == 0 ) then
         call PrintLog("No Biogenic Emissions ", MasterProc)
         return
-      end if
-      if( USE_BVOC_2010 ) then
-         call PrintLog("BVOC Emission Style: 2010", MasterProc)
-      else
-         call PrintLog("BVOC Emission Style: 2003", MasterProc)
       end if
 
    !====================================
@@ -187,7 +166,6 @@ module Biogenics_ml
 
    !====================================
 
- if ( USE_BVOC_2010  .or. DEBUG_BIO ) then
     call GetEuroBVOC()
    !====================================
 
@@ -196,49 +174,25 @@ module Biogenics_ml
    ! Emissions factors shoudl now by ug/m2(grid)/h
 
     call MergedBVOC() 
- end if ! BVOC_2010
    !====================================
 
-    emforest = 0.0
-    if ( USE_BVOC_2010 .eqv. .false. ) then
-      call Read2DN("Inputs.BVOC",2,emforest,CheckValues)
-      call CheckStop( minval(emforest) < 0.0, "Negative BVOC emis!")
-    end if
    !========================================================================!
 
-      if( debug_proc .and. DEBUG_BIO ) then
-          write(*,"(a8,i3,2i4,9f9.2)") "BIONEW ", size(BVOC_USED), &
-              i_fdom(debug_li), j_fdom(debug_lj), &
-            ( emforest(debug_li,debug_lj,i), i=1,2) !!!!,&
-!BIO           ( emforest(debug_li,debug_lj,i), i=1,size(BVOC_USED)) !!!!,&
-!Z               (euro_bvoc(debug_li,debug_lj,i,BIO_ISOP), i=1,size(VegName))
-      end if
-
+     ! old summation. Kept to demonstrate mpi_allreduce
      !output sums. Remember that "shadow" area not included here.
-      do i = 1,  2 !! size(BVOC_USED) 
-         bvocsum   = sum ( emforest(li0:li1,lj0:lj1,i) )
-         CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
-           MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-         if ( MasterProc  ) write(6,"(a20,i4,2es12.4)") &
-              'Biogenics_ml, ibio, sum1',i, bvocsum, bvocsum1
-      end do
-
-! No, we would need the day:Embvoc every ady to get the equivalent annual
-! sum
-!      if( DEBUG_BIO .and. USE_BVOC_2010 ) then
-!            do n = 1, size(BVOC_USED)
-!               bvocsum   = sum ( bvocEF(li0:li1,lj0:lj1,n) )
-!               CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
-!                 MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-!               if ( MasterProc  ) &
-!                write(6,"(a20,i4,2es12.4)") 'Biogenics_ml, Merge',n, &
-!                  bvocsum, bvocsum1
-!            end do !n
-!      end if
+     ! do i = 1,  2 !! size(BVOC_USED) 
+     !    bvocsum   = sum ( emforest(li0:li1,lj0:lj1,i) )
+     !    CALL MPI_ALLREDUCE(bvocsum,bvocsum1, 1, &
+     !      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
+     !    if ( MasterProc  ) write(6,"(a20,i4,2es12.4)") &
+     !         'Biogenics_ml, ibio, sum1',i, bvocsum, bvocsum1
+     ! end do
 
    end subroutine Init_BVOC
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
    subroutine Get_LCinfo() ! Gets landcover info, last_bvoc_LC
+      ! Checks for default bvoc emissions from each landcover category
+      ! (read from Inputs_LandDefs.csv file)
       integer :: iL
 
         do iL= 1, size(LandType(:)%pft )
@@ -248,7 +202,7 @@ module Biogenics_ml
             if( LandDefs(iL)%Emtl > 0 ) last_bvoc_LC = iL
 
          end do
-         if( MasterProc ) write(*,*) " LAST BVOC LC (pre 4):", last_bvoc_LC
+         if( MasterProc ) write(*,*) " LAST BVOC LC from LandDefs:", last_bvoc_LC
 
        ! We need at least 4 for CF, DF, NF, BF in Euro file
          last_bvoc_LC =  max(last_bvoc_LC, 4 ) 
@@ -261,27 +215,21 @@ module Biogenics_ml
 !.....................................................................
 !**    DESCRIPTION:
 
-!    Reads the processed LPJ-based LAIv and BVOC emission potentials.
-!    The LPJ data have been merged into 4 EMEP forest classes and two
-!    other veg, for either C3 or C4 vegetation.
-!    Normed_LAIv is relative LAI, with max value 1.0
-
+!    Reads the processed BVOC emission potentials.
 
     real    :: loc(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
-    integer ::  n, pft, ivar, iVeg, iEmis, ibvoc
+    integer :: n, pft, ivar, iVeg, iEmis, ibvoc
     character(len=1000) :: varname
     character(len=2), dimension(4) :: VegName = (/ "CF", "DF", "NF", "BF" /)
 
 
-       varname = "Fake"
-       HaveLocalEF(:) = .false.
-
-       call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
-           loc,1,interpol='zero_order',needed=.true.,debug_flag=.true.)
-
-       if( debug_proc ) write(*,*)  "EMEP_EuroBVOC i,j fake ", &
-          loc(debug_li, debug_lj)
+       !varname = "Fake"
+       !HaveLocalEF(:) = .false.
+       !call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
+       !    loc,1,interpol='zero_order',needed=.true.,debug_flag=.true.)
+       !if( debug_proc ) write(*,*)  "EMEP_EuroBVOC i,j fake ", &
+       !   loc(debug_li, debug_lj)
 
      do iVeg = 1, size(VegName)
        ibvoc = find_index( VegName(iveg), LandDefs(:)%code )
@@ -292,6 +240,8 @@ module Biogenics_ml
              loc,1,interpol='zero_order',needed=.true.,debug_flag=.false.)
          if( debug_proc ) write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
              trim(varname), loc(debug_li, debug_lj), iVeg, ibvoc, iEmis
+         if( debug_proc ) write(*, "(2a,2es12.3)") "EURO-BVOC:minmax ", &
+             trim(varname), minval(loc), maxval(loc)
          bvocEF(:,:,ibvoc,iEmis) = loc(:,:)
        end do
      end do
@@ -373,12 +323,14 @@ module Biogenics_ml
 
   subroutine SetDailyBVOC(daynumber)
 
+      ! Scales emission potentials for daily LAI changes
+
       integer, intent(in) :: daynumber
       integer, save :: last_daynumber = -999, alloc_err
       integer :: i, j, n, nlu, iL, iiL, ibvoc
       integer :: pft  ! pft associated with LAI data
-      real :: LAIfac  ! Multiplies by land-fraction and then divides by 5
-      real :: b    !  Just for printout
+      real :: LAIfac  ! Multiplies by land-fraction
+      real :: b       !  Just for printout
       logical :: use_local, debug
       logical :: my_first_call = .true.
       real, allocatable, dimension(:,:) ::  workarray
@@ -437,7 +389,7 @@ module Biogenics_ml
               call CheckStop( alloc_err , "workarray alloc failed"  )
                   workarray(:,:) = day_embvoc(:,:,1)
                   call Export_Bio("Eiso", workarray )
-                  workarray(:,:) = day_embvoc(:,:,2)
+                  workarray(:,:) = day_embvoc(:,:,2) + day_embvoc(:,:,3)
                   call Export_Bio("Emt", workarray )
               deallocate(  workarray )
          end if
@@ -495,7 +447,7 @@ module Biogenics_ml
   integer, intent(in) ::  i,j
 
   integer la,it2m,n,k,base,top,iclcat
-  real :: E2003, E2010 , MT2003, MTP, MTL
+  real :: E_ISOP , E_MTP, E_MTL
 
 ! To get from ug/m2/h to molec/cm3/s
 ! ug -> g  1.0e-9; g -> mole / MW; x AVOG
@@ -519,10 +471,6 @@ module Biogenics_ml
   it2m = min(it2m,40)
 
   rcbio(:,KG) = 0.0
-  EmisNat(i,j,:) = 0.0
-  MTP = 0.0
-  MTL = 0.0
-
 
   if ( Grid%izen <= 90) then ! Isoprene in daytime only:
 
@@ -534,70 +482,42 @@ module Biogenics_ml
 
      ! E in ug/m2/h
 
-      ! both just for print out
-      E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
-      E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
+      E_ISOP = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
+
       ! Add light-dependent terpenes to pool-only
-      if(BIO_TERP > 0) MTL = &
+      if(BIO_TERP > 0) E_MTL = &
              day_embvoc(i,j,BIO_MTL)*canopy_ecf(ECF_TERP,it2m)*cL
 
      !  molecules/cm3/s
      ! And we scale EmisNat to get units kg/m2 consistent with
      ! Emissions_ml (snapemis).  ug/m2/h -> kg/m2/s needs 1.0-9/3600.0. 
-     if ( USE_BVOC_2010 ) then
 
-        E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
-        rcbio(BIO_ISOP,KG) = E2010 * biofac_ISOP/Grid%DeltaZ
-        EmisNat(i,j,BIO_ISOP)= E2010 * 1.0e-9/3600.0
-     else 
-        E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * cL 
-        rcbio(BIO_ISOP,KG) = E2003     * biofac_ISOP/Grid%DeltaZ
-        EmisNat(i,j,BIO_ISOP)= E2003 * 1.0e-9/3600.0
-     end if
+      E_ISOP = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * cL 
+      rcbio(BIO_ISOP,KG)   = E_ISOP * biofac_ISOP/Grid%DeltaZ
+      EmisNat(i,j,BIO_ISOP)= E_ISOP * 1.0e-9/3600.0
 
+  else ! night
+     EmisNat(i,j,BIO_ISOP) = 0.0
+     E_MTL = 0.0
+     E_ISOP = 0.0
   endif ! daytime
 
-  if ( BIO_TERP > 0 ) then
-    if ( USE_BVOC_2010 ) then
-     ! add pool-only terpenes rate;
-        MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
-        rcbio(BIO_TERP,KG)    = (MTL+MTP) * biofac_TERP/Grid%DeltaZ
-        EmisNat(i,j,BIO_TERP) = (MTL+MTP) * 1.0e-9/3600.0
-     else 
+    if ( BIO_TERP > 0 ) then
 
-       MT2003 = emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m) 
-       rcbio(BIO_TERP,KG) =  MT2003 * biofac_TERP/Grid%DeltaZ
-       EmisNat(i,j,BIO_TERP)=  MT2003 * 1.0e-9/3600.0  ! Nov4th
-     end if
-  end if
+     ! add pool-only terpenes rate;
+        E_MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
+        rcbio(BIO_TERP,KG)    = (E_MTL+E_MTP) * biofac_TERP/Grid%DeltaZ
+        EmisNat(i,j,BIO_TERP) = (E_MTL+E_MTP) * 1.0e-9/3600.0
+    end if
  
-     if ( DEBUG_BIO .and. debug_proc .and.  &
-            i==debug_li .and. j==debug_lj .and. &
+    if ( DEBUG_BIO .and. debug_proc .and. i==debug_li .and. j==debug_lj .and. &
          current_date%seconds == 0 ) then
 
-      ! just for print out
-      ! both just for print out
-      E2003 = emforest(i,j,BIO_ISOP)  *canopy_ecf(BIO_ISOP,it2m) * max(cL,0.0)
-      E2010 = day_embvoc(i,j,BIO_ISOP)*canopy_ecf(BIO_ISOP,it2m) * max(cL,0.0) 
-       MTP = day_embvoc(i,j,BIO_MTP)*canopy_ecf(ECF_TERP,it2m)
-       MT2003 = emforest(i,j,BIO_TERP)*canopy_ecf(BIO_TERP,it2m) 
-
-        call datewrite("DBIO NatEmis env ", it2m,  &
-          (/ max(par,0.0), max(cL,0.0), &
+      call datewrite("DBIO env ", it2m, (/ max(par,0.0), max(cL,0.0), &
             canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m) /) )
-        call datewrite("DBIO NatEmis for ", &
-          (/ emforest(i,j,1),  emforest(i,j,2) /) )
-        call datewrite("DBIO NatEmis EIcmp ", (/  E2003, E2010 /) ) 
-        call datewrite("DBIO NatEmis EMTcmp ", (/  MT2003, MTP /) ) 
-        call datewrite("DBIO NatEmis rc  ", &
-          (/ rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG) /) )
-        call datewrite("DBIO NatEmis EmisNat  ", EmisNat(i,j,:) )
-
-!        write(*,"(a,3i3,f6.1,3f7.3,9es9.2)") "DBIO NatEmis-2003 ", &
-!        write(*,"(a,3i3,f6.1,3f7.3,9es9.2)") "DBIO NatEmis ", &
-!          current_date%month, current_date%day, current_date%hour, &
-!          par, cL, canopy_ecf(BIO_ISOP,it2m),canopy_ecf(BIO_TERP,it2m), E2003, E2010, MTP, MTL, &
-!          rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG),  EmisNat(i,j,BIO_ISOP), EmisNat(i,j,BIO_TERP)
+      call datewrite("DBIO EISOP EMTP EMTL ", (/  E_ISOP, E_MTP, E_MTL /) ) 
+      call datewrite("DBIO rc ", (/ rcbio(BIO_ISOP,KG), rcbio(BIO_TERP,KG) /) )
+      call datewrite("DBIO EmisNat ", EmisNat(i,j,:) )
 
      end if
 
@@ -615,10 +535,6 @@ module Biogenics_ml
     def1%avg=.false.      !not used
     def1%index=0          !not used
     def1%scale=1.0      !not used
-!FEB2011    def1%inst=.true.      !not used
-!FEB2011    def1%year=.false.     !not used
-!FEB2011    def1%month=.false.    !not used
-!FEB2011    def1%day=.false.      !not used
     def1%name=trim(name)   ! eg 'EmisPot'        !written
     def1%unit='ug/m2/h'       !written
     

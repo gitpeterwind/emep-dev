@@ -107,9 +107,8 @@ module MetFields_ml
        ,roa    &  ! kg/m3
        ,cw        ! cloudwater
   real,public, save, dimension(MAXLIMAX,MAXLJMAX,KMAX_BND,NMET) :: &
-        SigmaKz      &! vertical diffusivity in sigma coords
+        SigmaKz  &! vertical diffusivity in sigma coords
        ,sdot     &! vertical velocity, sigma coords, 1/s
-! hb 23.02.2010 Kz from meteo
        ,Kz_met    ! vertical diffusivity in sigma coordinates from meteorology
 
 
@@ -162,9 +161,7 @@ module MetFields_ml
     ,ustar_nwp         & ! friction velocity m/s ustar^2 = tau/roa
     ,invL_nwp          & ! friction velocity m/s ustar^2 = tau/roa
     ,pzpbl             & ! stores H(ABL) for averaging and plotting purposes, m
-    ,u_10                ! hb NH3emis
-! QUERY - get rid of if possible. Shouldn't need array anyway?
-! NOT HERE    ,Kz_min               ! Min Kz below hmix  !hf Hilde&Anton
+    ,u_10                ! FUTURE NH3emis
 
 
 !  temporary placement of solar radiation variations QUERY?
@@ -175,10 +172,6 @@ module MetFields_ml
       ,Idiffuse     &  ! diffuse solar radiation (W/m^2)
       ,Idirect         ! total direct solar radiation (W/m^2)
 
-
- !ACB! QUERY - is usage still monthly?
- !ACB integer,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
- !ACB      snow        ! monthly snow (1=true), read in MetModel_LandUse
 
  logical,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
        nwp_sea     ! Sea in NWP mode, determined in HIRLAM from roughness class
@@ -199,15 +192,12 @@ module MetFields_ml
     ,foundsdepth    & ! false if no snow_flag depth in metdata
     ,foundice       & ! false if no ice_nwp coverage (%) in metdata
     ,foundnwp_sea   &  ! false if no rough file is found QUERY description?
-  ! (when read) at level  boundaries QUERY?
-  ! and therefore do not need to be
+  ! (when read) at level  boundaries and therefore do not need to be
   ! interpolated.
-! hb 23.02.2010 Kz from meteo
     ,foundKz_met    & ! false if no Kz from meteorology
     ,foundconv      & ! false if convection not found or not used
-! hb NH3emis 10m wind from meteo
+  ! Introduced for FUTURE NH3, but also sea-salt
     ,foundu10_met   & ! false if no u10 from meteorology
-! hb NH3emis 10m wind from meteo
     ,foundv10_met   & ! false if no v10 from meteorology
     ,foundprecip    & ! false if no precipitationfrom meteorology
     ,foundcloudwater  !false if no cloudwater found

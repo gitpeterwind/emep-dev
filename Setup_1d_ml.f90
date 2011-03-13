@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -41,28 +41,27 @@
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
   use DustProd_ml,           only :  DU_prod   ! Dust
-  use EmisDef_ml,           only : NSS, NDU & !SeaS, Dust
-                                  ,NH3EMIS_VAR ! hb NH3Emis
-  use EmisGet_ml,          only :  nrcemis, iqrc2itot  !DSRC added nrcemis
+  use EmisDef_ml,            only : NSS, NDU  !SeaS, Dust
+                                  !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
+  use EmisGet_ml,            only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP, SoilNOx
   use ForestFire_ml,         only : Fire_rcemis, burning
   use Functions_ml,          only :  Tpot_2_T
-  use ChemChemicals_ml,        only :  species
-  use ChemSpecs_tot_ml,        only :  SO4,C5H8,NO,NO2,SO2,CO
-  use ChemSpecs_adv_ml,        only :  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
+  use ChemChemicals_ml,      only :  species
+  use ChemSpecs_tot_ml,      only :  SO4,C5H8,NO,NO2,SO2,CO
+  use ChemSpecs_adv_ml,      only :  NSPEC_ADV, IXADV_NO2, IXADV_O3, &
                                       IXADV_SO4, IXADV_NO3_f, IXADV_NH4_F
-  use ChemSpecs_shl_ml,        only :  NSPEC_SHL
-  use ChemRates_rct_ml,       only :  set_rct_rates, rct
-  use ChemRates_rcmisc_ml,    only :  rcmisc, set_rcmisc_rates
-  use GridValues_ml,         only :  sigma_mid, xmd, &
-                                     GridArea_m2, & !dsbvoc
+  use ChemSpecs_shl_ml,      only :  NSPEC_SHL
+  use ChemRates_rct_ml,      only :  set_rct_rates, rct
+  use ChemRates_rcmisc_ml,   only :  rcmisc, set_rcmisc_rates
+  use GridValues_ml,         only :  sigma_mid, xmd, GridArea_m2, & 
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB,&
-                                     i_fdom, j_fdom !
+                                     i_fdom, j_fdom
   use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use MetFields_ml,          only :  ps
-  use MetFields_ml,                only :  roa, th, q, t2_nwp, cc3dmax &
+  use MetFields_ml,          only :  roa, th, q, t2_nwp, cc3dmax &
                                     ,zen, Idirect, Idiffuse,z_bnd
   use ModelConstants_ml,     only :  &
      ATWAIR                          &
@@ -76,11 +75,10 @@
     ,USE_LIGHTNING_EMIS              & !
     ,USE_SOIL_NOX, USE_DUST          & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
-    ,DEBUG_i, DEBUG_j, DEBUG_NH3 ! hb NH3emis
+    ,DEBUG_i, DEBUG_j  !FUTURE , DEBUG_NH3 !NH3emis
   use Landuse_ml,            only : water_cover, ice_landcover
-  use Par_ml,                only :  me& !!(me for tests)
-                             ,MAXLIMAX,MAXLJMAX & !ds NatEmis
-                             ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG !hf VOL
+  use Par_ml,                only :  me,MAXLIMAX,MAXLJMAX & 
+                             ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
   use PhysicalConstants_ml,  only :  AVOG, PI, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : &
@@ -90,20 +88,19 @@
     ,rcss, rcwbd          &  !Sea salt, Dust
     ,rh, temp, tinv, itemp,pp      &  !
     ,amk, o2, n2, h2o     &  ! Air concentrations
-    ,rcbio                &  ! dsPCM
-    ,rcnh3                   ! hb NH3emis
+    ,rcbio                   ! BVOC
+!FUTURE    ,rcnh3                   ! NH3emis
   use SeaSalt_ml,        only : SS_prod
   use Tabulations_ml,    only :  tab_esat_Pa
-  use TimeDate_ml,           only :  current_date, date
+  use TimeDate_ml,       only :  current_date, date
   use Volcanos_ml
   implicit none
   private
   !-----------------------------------------------------------------------!
 
-
   public :: setup_1d   ! Extracts results for i,j column from 3-D fields
   public :: setup_rcemis ! Emissions  (formerly "poll")
-  !FUTURE public :: setup_nh3 ! NH3emis   , experimental version
+ !FUTURE public :: setup_nh3 ! NH3emis   , experimental version
   public :: reset_3d     ! Exports results for i,j column to 3-D fields
 
 contains
@@ -173,7 +170,7 @@ contains
 
    o2(:) = 0.21 *amk(:)
    n2(:) = amk(:) - o2(:)
-!   o2(:) = 0.2095 *amk(:)
+!   o2(:) = 0.2095 *amk(:) ! more exact, but prefer o3+n2 to add to 100%
 !   n2(:) = 0.7808 *amk(:)
    tinv(:) = 1./temp(:)
 
@@ -315,7 +312,6 @@ contains
    !Soil NOx
      if( USE_SOIL_NOX)then
         rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
-        !ds rcemis(NO2,KMAX_MID)=rcemis(NO2,KMAX_MID)+SoilNOx(i,j)
      endif
 
    !Mass Budget calculations

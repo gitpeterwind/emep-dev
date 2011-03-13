@@ -137,6 +137,9 @@ implicit none
                                                          ! and disregard them 
                                                          ! from gridSOx
 
+  integer, public, parameter :: IQ_DMS = 35  ! code for DMS emissions
+
+ ! FUTURE work
  ! NMR-NH3 project specific variables                         
  ! NH3 emissions set by meteorology and special activity data                 
     logical, public, parameter :: NH3EMIS_VAR = .false.   

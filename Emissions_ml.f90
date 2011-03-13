@@ -38,7 +38,6 @@
 !  with the 3D model.
 !_____________________________________________________________________________
 
-  use Biogenics_ml, only: first_dms_read,IQ_DMS
   use CheckStop_ml,only : CheckStop
   use ChemSpecs_shl_ml, only: NSPEC_SHL
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
@@ -53,6 +52,7 @@
                      ,EMIS_NAME   & ! Names of species ("sox  ",...)
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
+                     ,IQ_DMS      & ! code for DMS emissions
                      ,VERTFAC       ! vertical emission split
   use EmisGet_ml, only : EmisGet, EmisSplit, &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
@@ -130,6 +130,8 @@
  ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
 
   real, public, dimension(MAXLIMAX,MAXLJMAX,NEMIS_FILES), save :: SumSnapEmis
+
+  logical, save, private  :: first_dms_read
 
   ! Emissions for input to chemistry routines
 

@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -26,10 +26,9 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
 module Rsurface_ml
-use LandDefs_ml,       only : LandDefs !hf CoDep extra
+use LandDefs_ml,       only : LandDefs
 use CheckStop_ml,      only : CheckStop
-use CoDep_ml,          only : CoDep_factors, &!hf CoDep RgsS_dry, RgsS_wet, &
-                                 humidity_fac, Rns_NH3, Rns_SO2
+use CoDep_ml,          only : CoDep_factors, humidity_fac, Rns_NH3, Rns_SO2
 use DO3SE_ml,          only : g_stomatal, do3se
 
 use LocalVariables_ml, only : iL, L, G => Grid
@@ -42,7 +41,6 @@ use Radiation_ml, only : CanopyPAR
 use TimeDate_ml,  only : current_date
 use Wesely_ml,    only : Wesely_tab2 &  ! Wesely Table 2 for 14 gases
    ,WES_HNO3, WES_NH3,DRx,WES_SO2    ! Indices and Ratio of diffusivities to ozone
-!hf snow
 use MetFields_ml, only : foundsdepth, foundice
 implicit none
 private
@@ -125,7 +123,6 @@ contains
 ! Output:
 
    real,dimension(:),intent(out) :: Rsur   
-!hf Rs
    real,dimension(:),intent(out) :: Gns   
 
    character(len=*), intent(out) :: errmsg
@@ -181,9 +178,6 @@ contains
                             !but it might be ice without snow..
     fsnow = min(fsnow,1.0)  
     fsnow = max(fsnow,0.0)
- !ACB   if ( .not. foundsdepth)then
- !ACB      fsnow=G%snow !snow from climatology files, 1 or 0
- !ACB   endif
 
     if (L%is_ice) fsnow=1.0 !ice_nwp in Landuse
                             !to ensure it is treated
@@ -192,8 +186,8 @@ contains
    
 
     if ( DEBUG_RSUR .and. debug_flag ) then
-        write(*,"(a,i4,3f8.4)") "IN RSUR snow_flag ", &
-           current_date%hour,  Sdmax, G%sdepth, fsnow
+        write(*,"(a,i4,6f8.4)") "IN RSUR snow_flag ", &
+           current_date%hour,  L%hveg, Sdmax, G%ice_nwp, G%sdepth, fsnow
     end if
 
 

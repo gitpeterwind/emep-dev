@@ -41,34 +41,31 @@ private
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested 
 ! (for convection use foundconv in permanent code)
-logical, public, parameter :: USE_CONVECTION   = .false.
-logical, public, parameter :: USE_SOILWATER    = .false.
-logical, public, parameter :: USE_FOREST_FIRES = .false.
-logical, public, parameter :: USE_AIRCRAFT_EMIS= .true.
-logical, public, parameter :: USE_LIGHTNING_EMIS= .true.
-logical, public, parameter :: USE_SOIL_NOX     = .false.
-logical, public, parameter :: USE_BVOC_2010    = .true.
-logical, public, parameter :: USE_SEASALT      = .true.
-logical, public, parameter :: USE_DUST         = .false.
-logical, public, parameter :: DO_SAHARA        = .false.     ! Turn on/off BG Saharan Dust
-logical, public, parameter :: USE_AOD          = .false.
-logical, public, parameter :: USE_PFT_MAPS     = .false.
+logical, public, parameter :: USE_CONVECTION     = .false.
+logical, public, parameter :: USE_SOILWATER      = .false.
+logical, public, parameter :: USE_FOREST_FIRES   = .false.
+logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.
+logical, public, parameter :: USE_LIGHTNING_EMIS = .true.
+logical, public, parameter :: USE_SOIL_NOX       = .false.
+logical, public, parameter :: USE_SEASALT        = .true.
+logical, public, parameter :: USE_DUST           = .false.
+logical, public, parameter :: DO_SAHARA          = .false.     ! Turn on/off BG Saharan Dust
+logical, public, parameter :: USE_AOD            = .false.
+logical, public, parameter :: USE_PFT_MAPS       = .false.
 logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget outputs
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
-! rest of code.
-! iso = isoprene, mtp = monoterpenes from pools, mtl = monoterpenes
-! with light dependence
+! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
+! mtl = monoterpenes with light dependence
 integer, public, parameter ::   NBVOC = 3
 character(len=4),public, save, dimension(NBVOC) :: &
   BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
-!!BVOC_USED = (/ "isoprene","terpene "/)
 
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
 character(len=*), parameter, public :: &
 ! DomainName = "EMEP-50kmEurope"
-  DomainName = "EMEP-50kmEECCA"
+ DomainName = "EMEP-50kmEECCA"
 ! DomainName = "EMEPCWF-0.25degEurope"
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
@@ -92,7 +89,7 @@ integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
-! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! EMEP domain in EECCA
+! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
 ! RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
@@ -142,14 +139,14 @@ integer, private, parameter :: &
 ! DEBUG_ii= 88, DEBUG_jj= 21 ! Aveiro+i2
 ! DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
 ! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
-! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
+ DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
 ! DEBUG_ii= 74, DEBUG_jj= 79 ! Payerne_HIRHAM
 ! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
-!  DEBUG_ii= 71, DEBUG_jj= 55 ! Harwell
-  DEBUG_ii= 86, DEBUG_jj= 92 ! Bothnian Bay, test for sea ice
+! DEBUG_ii= 71, DEBUG_jj= 55 ! Harwell
+! DEBUG_ii= 86, DEBUG_jj= 92 ! Bothnian Bay, test for sea ice
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 ! DEBUG_ii= 76, DEBUG_jj= 35 ! Sea,  North sea
