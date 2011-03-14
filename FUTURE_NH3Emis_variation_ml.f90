@@ -8,7 +8,7 @@ use NH3variables_ml,        only :I_ISO_STABLE,I_OPEN_STABLE,I_STORAGE &
 use calc_emis_potential_ml, only : lddagtemp,lNH3emis_pot, lEmis50_nh3, emnh3
 use TimeDate_ml,            only : nydays, current_date
 use MetFields_ml,           only : t2_nwp,u_ref, &
-                                   foundv10_met,ps, roa foundws10_met,,ws_10m
+                                   foundv10_met,ps, roa,foundws10_met,ws_10m
 use Par_ml,                 only : MAXLIMAX,MAXLJMAX,me,li0,lj0,li1,lj1
 use GridValues_ml ,         only : i_fdom, j_fdom, sigma_bnd, xm2  
 use ModelConstants_ml,      only : DEBUG_i, DEBUG_j, PT, DEBUG_NH3, &
