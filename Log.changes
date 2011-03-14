@@ -148,9 +148,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7rc2  Peter           Mar 14 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7rc3  Peter, Dave     Mar 14 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Met_ml.f90: read units and transform deep_soil_water
+
+Solver_ml : now switches off Reactions1 if DEBUG_DRYRUN = .true.
+            saves some CPU when testing e.g. soil-water or sea-salt
+            (sea-salt calcs are in Reactions2)
+
 
 xxxxxxxx rv3_7rc2  Dave           Mar 13 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

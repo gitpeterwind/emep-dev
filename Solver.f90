@@ -61,7 +61,7 @@
     use Io_ml,             only : IO_LOG, datewrite
     use ModelConstants_ml, only: KMAX_MID, KCHEMTOP, dt_advec,dt_advec_inv, &
                                  DebugCell, MasterProc, DEBUG_SOLVER,       &
-                                 USE_SEASALT
+                                 DEBUG_DRYRUN, USE_SEASALT
     use Par_ml,            only: me, MAXLIMAX, MAXLJMAX
     use PhysicalConstants_ml, only:  RGAS_J
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
@@ -130,14 +130,15 @@ real :: tmprc, tmpf, tmprate, tmpv !TTTT
 
     if ( first_call ) then
        call makedt(dti,nchem,coeff1,coeff2,cc)
-       first_call = .false.
        if ( MasterProc ) then
            write(IO_LOG,"(a,i4)") 'Chem dts: nchemMAX: ', nchemMAX
            write(IO_LOG,"(a,i4)") 'Chem dts: nchem: ', nchem
            write(IO_LOG,"(a,i4)") 'Chem dts: NUM_INITCHEM: ', NUM_INITCHEM
            write(IO_LOG,"(a,f7.2)") 'Chem dts: DT_INITCHEM: ', DT_INITCHEM
            write(IO_LOG,"(a,i4)") 'Chem dts: EXTRA_ITER: ', EXTRA_ITER
+           if(DEBUG_DRYRUN) write(*,*) "DEBUG_DRYRUN Solver"
        end if
+       first_call = .false.
     endif
 
 !======================================================
@@ -191,6 +192,10 @@ real :: tmprc, tmpf, tmprate, tmpv !TTTT
 
 !== Here comes all chemical reactions
 !=============================================================================
+          if ( DEBUG_DRYRUN ) then
+            ! Skip fast chemistry
+          else
+
           do iter = 1, toiter(k)
 !
 ! The chemistry is iterated several times, more close to the ground than aloft.
@@ -218,6 +223,7 @@ real :: tmprc, tmpf, tmprate, tmpv !TTTT
                 !endif
           end do !! End iterations
           ! Just before SO4, look after slower? species
+          end if ! DEBUG_DRYRUN 
 
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
            include 'CM_Reactions2.inc'
