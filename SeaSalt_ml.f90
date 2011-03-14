@@ -52,7 +52,8 @@
  use LocalVariables_ml,    only : Sub, Grid
  use MetFields_ml,         only : u_ref
  use MetFields_ml,         only : z_bnd, z_mid, sst,  &
-                                  nwp_sea, u_ref, foundSST  
+                                  nwp_sea, u_ref, foundSST, &
+                                   foundws10_met,ws_10m
  use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, &
                                   DEBUG_SEASALT, DEBUG_i,DEBUG_j
@@ -138,8 +139,12 @@
 
          !.. Calculate wind velocity over water at Z10=10m 
 
-         u10 = Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
+          if(foundws10_met)then
+              u10=ws_10m(i,j,1) 
+          else 
+              u10 = Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
                            Sub(lu)%z0,  Sub(lu)%invL)
+          end if
 
          if (u10 <= 0.0) u10 = 1.0e-5  ! make sure u10!=0 because of LOG(u10)
 
