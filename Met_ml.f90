@@ -91,7 +91,7 @@ module Met_ml
     ,Kz_m2s_toSigmaKz        & 
     ,SigmaKz_2_m2s
 
-  use CheckStop_ml,         only : CheckStop
+  use CheckStop_ml,         only : CheckStop,StopAll
   use Functions_ml,         only : Exner_tab, Exner_nd
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
        ,glon,glat, glat_fdom, glon_fdom, MIN_ADVGRIDS   &
@@ -177,8 +177,8 @@ contains
 
     character (len = 100), save  ::  meteoname   ! name of the meteofile
     character (len = 100)        ::  namefield & ! name of the requested field
-         ,validity    ! field is either instaneous or averaged
-    integer ::   ndim,nyear,nmonth,nday,nhour,k
+         ,unit='   ',validity='    '    ! field is either instaneous or averaged
+    integer ::   ndim,nyear,nmonth,nday,nhour
     integer ::   nr   ! Fields are interpolate in
                       ! time (NMET = 2): between nr=1 and nr=2
 
@@ -287,23 +287,23 @@ contains
 
     namefield='u_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,     &
-         validity,u_xmj(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+         unit,validity,u_xmj(1:MAXLIMAX,1:MAXLJMAX,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
 
     namefield='v_wind'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity,v_xmi(1:MAXLIMAX,1:MAXLJMAX,:,nr))
+         unit,validity,v_xmi(1:MAXLIMAX,1:MAXLJMAX,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='specific_humidity'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, q(:,:,:,nr))
+         unit,validity, q(:,:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='sigma_dot'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, sdot(:,:,:,nr))
+         unit,validity, sdot(:,:,:,nr))
     if(validity==field_not_found)then
        foundsdot = .false.
        if(MasterProc)write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
@@ -313,12 +313,12 @@ contains
 
     namefield='potential_temperature'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, th(:,:,:,nr))
+         unit,validity, th(:,:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='3D_cloudcover'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, cc3d(:,:,:))
+         unit,validity, cc3d(:,:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     if(trim(validity)/='averaged')then
@@ -327,18 +327,18 @@ contains
 
     namefield='precipitation'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, pr(:,:,:))
+         unit,validity, pr(:,:,:))
     foundprecip = .true.
     if(validity==field_not_found)then
        foundprecip = .false.       
        !Will construct 3D precipitations from 2D precipitations
        namefield='large_scale_precipitations'
        call Getmeteofield(meteoname,namefield,nrec,2,&
-            validity, surface_precip(:,:))
+            unit,validity, surface_precip(:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
        namefield='convective_precipitations'
        call Getmeteofield(meteoname,namefield,nrec,2,&
-            validity, temp(:,:))
+            unit,validity, temp(:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
        surface_precip=surface_precip+temp
 
@@ -347,7 +347,7 @@ contains
        foundcloudwater = .true.
        if(nr==2)cw(:,:,:,1)=cw(:,:,:,2)
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            validity, cw(:,:,:,nr))
+            unit,validity, cw(:,:,:,nr))
        if(validity==field_not_found)foundcloudwater = .false.
        if(MasterProc.and.foundcloudwater)then
           write(*,*)'WARNING: 3D precipitations not found. Using 2D precipitations and cloudwater to make 3D'
@@ -367,7 +367,7 @@ contains
     if(USE_CONVECTION)then
        namefield='convective_updraft_flux'
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            validity, cnvuf(:,:,:))
+            unit,validity, cnvuf(:,:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
        cnvuf=max(0.0,cnvuf)!no negative upward fluxes
        cnvuf(:,:,KMAX_BND)=0.0!no flux through surface
@@ -375,18 +375,18 @@ contains
        
        namefield='convective_downdraft_flux'
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            validity, cnvdf(:,:,:))
+            unit,validity, cnvdf(:,:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
        cnvdf=min(0.0,cnvdf)!no positive downward fluxes
        cnvdf(:,:,KMAX_BND)=0.0!no flux through surface
        cnvdf(:,:,1)=0.0!no flux through top
     endif
 
-! hb 23.02.2010 Kz from meteo
+! Kz from meteo
     if (NWP_Kz) then
         namefield='eddy_diffusion_coefficient'
         call Getmeteofield(meteoname,namefield,nrec,ndim,&
-             validity, Kz_met(:,:,:,nr))
+             unit,validity, Kz_met(:,:,:,nr))
         if(validity==field_not_found)then
            foundKz_met = .false.
         if(MasterProc)write(*,*)'WARNING: Kz will be derived in model '
@@ -412,18 +412,18 @@ contains
 
     namefield='surface_pressure'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, ps(:,:,nr))
+         unit,validity, ps(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     namefield='temperature_2m'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, t2_nwp(:,:,nr))
+         unit,validity, t2_nwp(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
 
     namefield='relative_humidity_2m'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, rh2m(:,:,nr))
+         unit,validity, rh2m(:,:,nr))
     if(validity==field_not_found)then
         if(MasterProc)write(*,*)'WARNING: relative_humidity_2m not found'
         rh2m(:,:,nr) = -999.9  ! ?
@@ -434,26 +434,26 @@ contains
 
     namefield='surface_flux_sensible_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, fh(:,:,nr))
+         unit,validity, fh(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
     if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
 
     namefield='surface_flux_latent_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, fl(:,:,nr))
+         unit,validity, fl(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
     if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
 
     namefield='surface_stress'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, tau(:,:,nr))
+         unit,validity, tau(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
     tau=max(0.0,tau)
     if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
 
     namefield='sea_surface_temperature'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        validity, sst(:,:,nr))
+        unit,validity, sst(:,:,nr))
     if(validity==field_not_found)then
        if(MasterProc)write(*,*)'WARNING: sea_surface_temperature not found '
        foundSST = .false.
@@ -463,7 +463,7 @@ contains
 
     namefield='soil_water_content'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        validity, SoilWater(:,:,nr))
+        unit,validity, SoilWater(:,:,nr))
     if(validity==field_not_found)then
        if(MasterProc)write(*,*)'WARNING: SoilWater not found '
        foundSoilWater = .false.
@@ -477,17 +477,27 @@ contains
          namefield='soil_water_second_layer'
     end if
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        validity, SoilWater_deep(:,:,nr))
+        unit,validity, SoilWater_deep(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: deep_SoilWater not found '
+       if(MasterProc)write(*,*)'WARNING: ',trim(namefield),' not found '
        foundSoilWater_deep = .false.
     else
        foundSoilWater_deep = .true.
+       if ( trim(unit) == "m" ) then  ! PARLAM has metres of water
+          if(MasterProc.and.numt==1)write(*,*)'Assuming PARLAM definition of Soilwater '
+          SoilWater_deep = min( SoilWater_deep/0.02, 1.0 )
+       else if(trim(unit)=='m3/m3')then
+          if(MasterProc.and.numt==1)write(*,*)'Assuming IFS definition of Soilwater '
+          SoilWater_deep = min( SoilWater_deep/0.7, 1.0 ) 
+       else   ! units not defined yet
+          if(numt==1)write(*,*)trim(unit)
+          call StopAll("Need units for deep soil water")
+       endif
     endif
 
     namefield='snow_depth'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        validity, sdepth(:,:,nr))
+        unit,validity, sdepth(:,:,nr))
     if(validity==field_not_found)then
        if(MasterProc)write(*,*)'WARNING: snow_flag depth not found '
        foundsdepth = .false.
@@ -498,7 +508,7 @@ contains
 
     namefield='fraction_of_ice' !is really percentage
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        validity, ice_nwp(:,:,nr))
+        unit,validity, ice_nwp(:,:,nr))
     if(validity==field_not_found)then
        if(MasterProc)write(*,*)'WARNING: ice_nwp coverage (%) not found '
        foundice = .false.
@@ -512,7 +522,7 @@ if ( NH3_U10 ) then
     ndim=2
     namefield='u10'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, u10(:,:,nr))
+         unit,validity, u10(:,:,nr))
     if(validity==field_not_found)then
        if(MasterProc)write(*,*)'WARNING: u10 not found '
        foundu10_met = .false.
@@ -524,7 +534,7 @@ if ( NH3_U10 ) then
     ndim=2
     namefield='v10'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         validity, v10(:,:,nr))
+         unit,validity, v10(:,:,nr))
     if(validity==field_not_found)then
        if(MasterProc)write(*,*)'WARNING: v10 not found '
        foundv10_met = .false.
@@ -1430,7 +1440,7 @@ end if ! NH3_U10
     real, dimension(KMAX_BND) :: p_bnd !TESTzi
     real, dimension(KMAX_MID) :: Kz_nwp 
     real    :: Kz_min, stab_h
-    logical :: Pielke_flag    ! choice in Blackadar/Pielke equations
+!    logical :: Pielke_flag    ! choice in Blackadar/Pielke equations
 
     integer i,j,k,numt, nr
 
@@ -2353,7 +2363,7 @@ end if ! NH3_U10
 
 
   subroutine Getmeteofield(meteoname,namefield,nrec,&
-       ndim,validity,field)
+       ndim,unit,validity,field)
     !
     ! Read the meteofields and distribute to nodes
     !
@@ -2365,7 +2375,7 @@ end if ! NH3_U10
     ! or     (MAXLIMAX,MAXLJMAX,KMAX)
 
     character (len = *),intent(in)  ::meteoname,namefield
-    character (len = *),intent(out) ::validity
+    character (len = *),intent(out) ::unit,validity
     integer,intent(in)              :: nrec,ndim
 
     integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
@@ -2383,7 +2393,7 @@ end if ! NH3_U10
        allocate(var_global(GIMAX,GJMAX,KMAX))
        nfetch=1
        call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
-            JRUNBEG,KMAX,nrec,nfetch,scalefactors,validity)
+            JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity)
     else
        allocate(var_global(1,1,1)) !just to have the array defined
     endif
@@ -2392,7 +2402,8 @@ end if ! NH3_U10
     call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
          KMAX,1,1)
     CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
-    CALL MPI_BCAST(validity,20,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(validity,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+    CALL MPI_BCAST(unit,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
 
 
     deallocate(var_global)
@@ -2412,12 +2423,8 @@ end if ! NH3_U10
 
 
 
-
-
-
-
   subroutine GetCDF_short(varname,fileName,var,GIMAX,IRUNBEG,GJMAX,JRUNBEG &
-       ,KMAX,nstart,nfetch,scalefactors,validity)
+       ,KMAX,nstart,nfetch,scalefactors,unit,validity)
     !
     ! open and reads CDF file
     !
@@ -2430,7 +2437,7 @@ end if ! NH3_U10
     character (len=*),intent(in) :: fileName
 
     character (len = *),intent(in) ::varname
-    character (len = *),intent(out) ::validity
+    character (len = *),intent(out) ::unit,validity
     real,intent(out) :: scalefactors(2)
     integer, intent(in) :: nstart,GIMAX,IRUNBEG,GJMAX,JRUNBEG,KMAX
     integer, intent(inout) ::  nfetch
@@ -2467,6 +2474,12 @@ end if ! NH3_U10
     status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
     if(status == nf90_noerr) scalefactors(2) = offset
 
+    !find unit
+    unit='                                                         '
+    status = nf90_get_att(ncFileID, VarID, "units", unit  )
+    if(status /= nf90_noerr)then
+       unit='unknown' !default
+    endif
     !find validity
     status = nf90_get_att(ncFileID, VarID, "validity", period_read  )
     if(status == nf90_noerr)then
