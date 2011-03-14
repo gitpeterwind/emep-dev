@@ -7,8 +7,8 @@ use NH3variables_ml,        only :I_ISO_STABLE,I_OPEN_STABLE,I_STORAGE &
                             ,I_MANURE4a,NNH3,TSPERDAY
 use calc_emis_potential_ml, only : lddagtemp,lNH3emis_pot, lEmis50_nh3, emnh3
 use TimeDate_ml,            only : nydays, current_date
-use MetFields_ml,           only : t2_nwp,u_10,u_ref, foundu10_met,&
-                                   foundv10_met,ps, roa 
+use MetFields_ml,           only : t2_nwp,u_ref, &
+                                   foundv10_met,ps, roa foundws10_met,,ws_10m
 use Par_ml,                 only : MAXLIMAX,MAXLJMAX,me,li0,lj0,li1,lj1
 use GridValues_ml ,         only : i_fdom, j_fdom, sigma_bnd, xm2  
 use ModelConstants_ml,      only : DEBUG_i, DEBUG_j, PT, DEBUG_NH3, &
@@ -73,14 +73,14 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
       endif
            T2=t2_nwp(i,j,1)-T0 ! T2 in C not in K degrees
      
-           if(foundu10_met .and. foundv10_met)then
-              V10=u_10(i,j) 
+           if(foundws10_met)then
+              V10=ws_10m(i,j,1) 
 !           else
 !              V10=u_ref(i,j) !~45m wind??
            endif
            if ( DEBUG_NH3 .and. debug_flag )then !write out for Tange
             write(6,*) 'DEBUG 2m nwp temp for Tange NDAY, NHOUR',T2,me,i,j, NDAY,NHOUR
-            write(6,*) 'DEBUG 10m wind V10 foundu10_met foundv10_met ',foundu10_met,foundv10_met,V10,me,i,j
+            write(6,*) 'DEBUG 10m wind V10 foundu10_met foundv10_met ',foundws10_met,V10,me,i,j
            endif
 
 

@@ -149,8 +149,9 @@ module MetFields_ml
        ,sdepth          & !  Snowdepth, m
        ,ice_nwp             & ! QUERY why real?
        ,sst     &  ! SST Sea Surface Temprature- ONLY from 2002
-       ,u10     &  ! hb NH3emis 10m wind u-direction
-       ,v10        ! hb NH3emis 10m wind v-direction
+       ,ws_10m    ! wind speed 10m
+!       ,u10     &  ! NH3emis 10m wind u-direction
+!       ,v10        ! NH3emis 10m wind v-direction
  
 
  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
@@ -160,8 +161,8 @@ module MetFields_ml
     ,Tpot2m            & ! Potential temp at 2m
     ,ustar_nwp         & ! friction velocity m/s ustar^2 = tau/roa
     ,invL_nwp          & ! friction velocity m/s ustar^2 = tau/roa
-    ,pzpbl             & ! stores H(ABL) for averaging and plotting purposes, m
-    ,u_10                ! FUTURE NH3emis
+    ,pzpbl               ! stores H(ABL) for averaging and plotting purposes, m
+!    ,u_10                ! FUTURE NH3emis
 
 
 !  temporary placement of solar radiation variations QUERY?
@@ -197,6 +198,7 @@ module MetFields_ml
     ,foundKz_met    & ! false if no Kz from meteorology
     ,foundconv      & ! false if convection not found or not used
   ! Introduced for FUTURE NH3, but also sea-salt
+    ,foundws10_met   & ! false if no u10 from meteorology
     ,foundu10_met   & ! false if no u10 from meteorology
     ,foundv10_met   & ! false if no v10 from meteorology
     ,foundprecip    & ! false if no precipitationfrom meteorology

@@ -126,6 +126,7 @@ module Met_ml
   use Io_ml ,               only : IO_INFIELD, ios, IO_ROUGH, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
+  use NetCDF_ml,         only : printCDF ! testoutputs
   use netcdf
   use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
@@ -516,33 +517,24 @@ contains
        foundice = .true.
     endif
 
-
-    ! u10 10m wind in x direction
-if ( NH3_U10 ) then
-    ndim=2
-    namefield='u10'
+    namefield='u10'!first component of ws_10m
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, u10(:,:,nr))
+        unit,validity, temp(:,:))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: u10 not found '
-       foundu10_met = .false.
+       foundws10_met = .false.
     else
-       foundu10_met = .true.
+       namefield='v10' !second component of ws_10m
+       call Getmeteofield(meteoname,namefield,nrec,ndim,&
+            unit,validity, ws_10m(:,:,nr))
+       if(validity==field_not_found)then
+          foundws10_met = .false.
+       else
+          foundws10_met = .true.
+          ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+temp(:,:)**2)
+!          call printCDF('ws_10m',ws_10m(:,:,1),unit)
+       endif
     endif
 
-  ! v10 10m wind in y direction
-    ndim=2
-    namefield='v10'
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-         unit,validity, v10(:,:,nr))
-    if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: v10 not found '
-       foundv10_met = .false.
-    else
-       foundv10_met = .true.
-    endif
-
-end if ! NH3_U10
 
   end subroutine Meteoread
 
@@ -1158,12 +1150,9 @@ end if ! NH3_U10
             + (sdepth(:,:,2)   - sdepth(:,:,1))*div
        ice_nwp(:,:,1)    = ice_nwp(:,:,1)                 &
             + (ice_nwp(:,:,2)   - ice_nwp(:,:,1))*div
-       if ( NH3_U10 ) then
-          u10(:,:,1)    = u10(:,:,1)             &
-               + (u10(:,:,2)   - u10(:,:,1))*div
-          v10(:,:,1)    = v10(:,:,1)             &
-               + (v10(:,:,2)   - v10(:,:,1))*div
-       end if
+       if(foundws10_met) ws_10m(:,:,1) = ws_10m(:,:,1) &
+            + ws_10m(:,:,2) - ws_10m(:,:,1)*div
+
        !  precipitation and cloud cover are no longer interpolated
 
     else
@@ -1192,10 +1181,9 @@ end if ! NH3_U10
        fl(:,:,1)     = fl(:,:,2)
 
        sst(:,:,1)    = sst(:,:,2)
-       if ( NH3_U10 ) then
-          u10(:,:,1)    = u10(:,:,2)
-          v10(:,:,1)    = v10(:,:,2)
-       end if ! NH3_U10
+
+       if(foundws10_met) ws_10m(:,:,1) = ws_10m(:,:,2)
+
     endif
 
     call met_derived(1) !update derived meteo fields
@@ -1239,14 +1227,6 @@ end if ! NH3_U10
           u_ref(i,j)= sqrt( u_mid(i,j,KMAX_MID)**2 + v_mid(i,j,KMAX_MID)**2 )
        enddo
     enddo
-    if ( NH3_U10 ) then 
-       ! Note that this calc is slightly wrong - would need staggered winds
-       do j = 1,ljmax
-          do i = 1,limax
-             u_10(i,j) = sqrt((u10(i,j,1))**2+(v10(i,j,1))**2)
-          enddo
-       enddo
- end if ! NH3_U10
 
 
     ! Tmp ustar solution. May need re-consideration for MM5 etc., but

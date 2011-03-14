@@ -151,6 +151,8 @@ ds done   My_SOA_ml.f90
 xxxxxxxx rv3_7rc3  Peter, Dave     Mar 14 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Met_ml.f90: read units and transform deep_soil_water
+Met_ml, MetFields_ml, FUTURE_NH3Emis_variation_ml: read wind speed at 10 meters into ws_10m
+removed the parts that defined u10 and v10 separately.
 
 Solver_ml : now switches off Reactions1 if DEBUG_DRYRUN = .true.
             saves some CPU when testing e.g. soil-water or sea-salt
