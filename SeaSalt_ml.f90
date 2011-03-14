@@ -151,8 +151,11 @@
          u10_341=exp(log(u10) * (3.41))
 
          if(DEBUG_SEASALT .and. debug_flag) &
-             write(6,'(a30,2f12.4,es14.4)')'** U*, U10, invL ** ', &
-                Sub(lu)%ustar, u10,Sub(lu)%invL
+             write(6,'(a,L2,4f12.4,es14.4)')'** U*, Uref, U10, Uh, invL ** ',&
+               foundws10_met, Sub(lu)%ustar, Grid%u_ref, u10, &
+               Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
+                           Sub(lu)%z0,  Sub(lu)%invL), &
+               Sub(lu)%invL
 
          !.. Sea surface temperature is not always available (e.g. pre-2001 at
          ! MET.NO), so we need an alternative. As emissions are most

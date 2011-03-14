@@ -150,9 +150,23 @@ ds done   My_SOA_ml.f90
 !----------------------------------------------------------
 xxxxxxxx rv3_7rc3  Peter, Dave     Mar 14 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+INTERIM version. ws_10m seems high
+
 Met_ml.f90: read units and transform deep_soil_water
-Met_ml, MetFields_ml, FUTURE_NH3Emis_variation_ml: read wind speed at 10 meters into ws_10m
-removed the parts that defined u10 and v10 separately.
+Met_ml, MetFields_ml, FUTURE_NH3Emis_variation_ml: read wind speed at 10 meters
+   into ws_10m removed the parts that defined u10 and v10 separately.
+
+   Added subroutine extendarea to get an array containing neighbours beyond
+   MAXLIMAX, MAXLJMAX. Used in SoilWater_ml to average over 3x3 area
+
+Met_ml : dave added temp2 while trying to figure out why sw_10m is so high.
+         Should be removed once explanation found!
+
+SeaSalt_ml - modified to use ws_10m, but this ws_10m v. high compared to u_ref
+             bug in ws_10m?
+
+SoilWater_ml - now works with IFS and 3x3 average values. The latter needed
+            to cope with coastal areas, and adds some robustness (hopefully)
 
 Solver_ml : now switches off Reactions1 if DEBUG_DRYRUN = .true.
             saves some CPU when testing e.g. soil-water or sea-salt

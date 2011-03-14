@@ -144,14 +144,12 @@ module MetFields_ml
        ,tau       & ! surf. stress  N/m^2
   ! These fields only available for EMEP/PARLAM from 2002 on
        ,rh2m            & !  RH at 2m
-       ,SoilWater       & !  Upper 7.2cm
-       ,SoilWater_deep  & !  Next 6x7cm
+       ,SoilWater       & !  Shallow  (Upper 7.2cm in PARLAM)
+       ,SoilWater_deep  & !  Deep (Next 6x7cm in PARLAM), converted to relative value 
        ,sdepth          & !  Snowdepth, m
        ,ice_nwp             & ! QUERY why real?
-       ,sst     &  ! SST Sea Surface Temprature- ONLY from 2002
+       ,sst     &  ! SST Sea Surface Temprature- ONLY from 2002 in PARLAM
        ,ws_10m    ! wind speed 10m
-!       ,u10     &  ! NH3emis 10m wind u-direction
-!       ,v10        ! NH3emis 10m wind v-direction
  
 
  real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &
@@ -162,7 +160,6 @@ module MetFields_ml
     ,ustar_nwp         & ! friction velocity m/s ustar^2 = tau/roa
     ,invL_nwp          & ! friction velocity m/s ustar^2 = tau/roa
     ,pzpbl               ! stores H(ABL) for averaging and plotting purposes, m
-!    ,u_10                ! FUTURE NH3emis
 
 
 !  temporary placement of solar radiation variations QUERY?
@@ -180,6 +177,10 @@ module MetFields_ml
   real,public, save, dimension(MAXLIMAX,MAXLJMAX) :: &   !st-dust
        clay_frac  &  ! clay fraction (%) in the soil
       ,sand_frac     ! sand fraction (%) in the soil
+
+  ! Different NWP outputs for soil water are possible. We can currently
+  ! cope with two:
+  character(len=10), public, save  :: SoilWaterSource  ! IFS or PARLAM
 
 ! Logical flags, used to determine if some met fields are present in the
 ! input or not:

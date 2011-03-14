@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -107,7 +107,7 @@ module Met_ml
        ,IIFULLDOM, JJFULLDOM, NPROC  &
        ,MasterProc, DEBUG_MET,DEBUG_i, DEBUG_j, identi, V_RAIN, nmax  &
        ,DEBUG_BLM, DEBUG_Kz & 
-       ,NH3_U10   & !dshb  -- temporary
+       ,NH3_U10   & !FUTURE
        ,DomainName & !HIRHAM
        ,USE_DUST & 
        ,nstep,USE_CONVECTION & 
@@ -159,6 +159,7 @@ module Met_ml
   public :: metint
   public :: BLPhysics
   public :: GetCDF_short
+  public :: extendarea  ! returns array which includes neighbours
 
 contains
 
@@ -189,6 +190,7 @@ contains
     real :: nsec                                 ! step in seconds
 
     real :: temp(MAXLIMAX,MAXLJMAX)!temporary metfields
+    real :: temp2(MAXLIMAX,MAXLJMAX)!temporary metfields
     logical :: fexist  
 
     nr=2 !set to one only when the first time meteo is read
@@ -203,9 +205,9 @@ contains
        foundSST  = .false.
        foundSoilWater  = .false.
        foundSoilWater_deep  = .false.
-       foundKz_met = .false.  ! hb 23.02.2010 Kz from meteo
-       foundu10_met = .false. ! hb NH3emis
-       foundv10_met = .false. ! hb NH3emis
+       foundKz_met = .false.  ! Kz from meteo
+       foundu10_met = .false. ! from FUTURE NH3emis
+       foundv10_met = .false. ! from FUTURE NH3emis
        foundprecip = .false.
        foundcloudwater = .false.
 
@@ -485,15 +487,19 @@ contains
     else
        foundSoilWater_deep = .true.
        if ( trim(unit) == "m" ) then  ! PARLAM has metres of water
-          if(MasterProc.and.numt==1)write(*,*)'Assuming PARLAM definition of Soilwater '
+          SoilWaterSource = "PARLAM"
           SoilWater_deep = min( SoilWater_deep/0.02, 1.0 )
+
        else if(trim(unit)=='m3/m3')then
-          if(MasterProc.and.numt==1)write(*,*)'Assuming IFS definition of Soilwater '
+         !IFS has a fairly complex soil water system, with field capacity of 
+         ! up to 0.766 for organic soils. More medium soils have ca. 0.43
+          SoilWaterSource = "IFS"
           SoilWater_deep = min( SoilWater_deep/0.7, 1.0 ) 
        else   ! units not defined yet
           if(numt==1)write(*,*)trim(unit)
           call StopAll("Need units for deep soil water")
        endif
+       if(MasterProc.and.numt==1)write(*,*)'Assuming definition of Soilwater: ' // trim(SoilWaterSource)
     endif
 
     namefield='snow_depth'
@@ -525,12 +531,14 @@ contains
     else
        namefield='v10' !second component of ws_10m
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            unit,validity, ws_10m(:,:,nr))
+            unit,validity, temp2(:,:))
+            !ds unit,validity, ws_10m(:,:,nr))
        if(validity==field_not_found)then
           foundws10_met = .false.
        else
           foundws10_met = .true.
-          ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+temp(:,:)**2)
+          ws_10m(:,:,nr)=sqrt(temp2(:,:)**2+temp(:,:)**2)
+          !ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+temp(:,:)**2)
 !          call printCDF('ws_10m',ws_10m(:,:,1),unit)
        endif
     endif
@@ -1812,6 +1820,94 @@ contains
     enddo
 
   end subroutine smoosp
+  !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+  subroutine extendarea(f,h,debug_flag)
+
+    !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+    !c
+    !c    written by David Simpson March 2011
+    !     based upon the smoosp routine
+    !     - returns extended array array, reading neighbour procs as needed
+    !c----------------------------------------------------------------------
+
+    real, intent(inout) :: f(:,:)
+    real, intent(inout) :: h(:,:)
+    logical, intent(in), optional :: debug_flag
+    logical :: mydebug = .false.
+    integer :: limax 
+
+    real, dimension(size(f,1),2)            :: f_south,f_north
+    real, dimension(size(f,2)+2*2,2)        :: f_west,f_east
+
+    integer :: thick ! = size(h,1) - size(f,1) ! Caller has to make h > f 
+    integer :: iif,jjf,is,i,j,ii,jj,iifl,jjfl
+    if ( present(debug_flag)  ) mydebug = debug_flag
+
+    thick = ( size(h,1) - size(f,1) ) ! Caller has to make h > f 
+    iif=size(f,1)
+    jjf=size(f,2)
+
+    if( modulo(thick,2) /= 0 ) then
+       print *, "ERROR extendarea para,s ", me, iif , jjf, thick
+       print *, "ERROR extendarea mod ", modulo(thick,2)
+       call StopAll("ERROR extendarea thickness not even!")
+    end if
+    thick = thick / 2
+
+
+    ! readneighbours twice
+    iifl=iif+2*thick
+    jjfl=jjf+2*thick
+    if(mydebug .and. MasterProc ) write(*,*) "DEBUG extendarea", iif,jjf,thick
+
+    call readneighbors(f,f_south,f_north,f_west,f_east,thick)
+
+    do j=1,jjf
+       jj=j+thick
+       do i=1,iif
+          ii=i+thick
+          h(ii,jj) = f(i,j)
+       enddo
+    enddo
+    do j=1,thick
+       do i=1,iif
+          ii=i+thick
+          h(ii,j) = f_south(i,j)
+       enddo
+    enddo
+
+    do j=1,thick
+       jj=j+jjf+thick
+       do i=1,iif
+          ii=i+thick
+          h(ii,jj) = f_north(i,j)
+       enddo
+    enddo
+
+    do j=1,jjfl
+       do i=1,thick
+          h(i,j) = f_west(j,i)
+       enddo
+    enddo
+
+    do j=1,jjfl
+       do i=1,thick
+          ii=i+iif+thick
+          h(ii,j) = f_east(j,i)
+       enddo
+    enddo
+
+!    do j=1,jjf
+!       jj=j+thick
+!       do i=1,iif
+!          ii=i+thick
+!          f(i,j)=h2(ii,jj)
+!       enddo
+!    enddo
+!
+  end subroutine extendarea
   !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 

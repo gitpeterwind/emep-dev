@@ -42,7 +42,7 @@ private
 ! will be removed when code is sufficiently tested 
 ! (for convection use foundconv in permanent code)
 logical, public, parameter :: USE_CONVECTION     = .false.
-logical, public, parameter :: USE_SOILWATER      = .false.
+logical, public, parameter :: USE_SOILWATER      = .true.
 logical, public, parameter :: USE_FOREST_FIRES   = .false.
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.
@@ -139,17 +139,16 @@ integer, private, parameter :: &
 ! DEBUG_ii= 88, DEBUG_jj= 21 ! Aveiro+i2
 ! DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
 ! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
- DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
+! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
 ! DEBUG_ii= 74, DEBUG_jj= 79 ! Payerne_HIRHAM
 ! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
-! DEBUG_ii= 71, DEBUG_jj= 55 ! Harwell
 ! DEBUG_ii= 86, DEBUG_jj= 92 ! Bothnian Bay, test for sea ice
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
-! DEBUG_ii= 76, DEBUG_jj= 35 ! Sea,  North sea
+ DEBUG_ii= 76, DEBUG_jj= 35 ! Sea,  North sea
 ! DEBUG_ii= 91, DEBUG_jj= 67 ! Tange
 ! DEBUG_ii=103, DEBUG_jj= 32 ! Prades, SMDge
 
@@ -169,7 +168,7 @@ integer, public, parameter :: &
   ,DEBUG_DERIVED        = .false. &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
   ,DEBUG_DO3SE          = .false. &
-  ,DEBUG_DRYRUN         = .false. & ! Skips chemistry and advection
+  ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_FORESTFIRE     = .false. &
   ,DEBUG_MET            = .false. &
@@ -188,6 +187,7 @@ integer, public, parameter :: &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_MY_WETDEP    = .false. &
+    ,DEBUG_SEASALT      = .false. &
     ,DEBUG_SOA          = .false. &
     ,DEBUG_SOLVER       = .false. &
     ,DEBUG_WETDEP       = .false. &
@@ -201,7 +201,6 @@ integer, public, parameter :: &
   ,DEBUG_PHYCHEM        = .false. &
   ,DEBUG_RSUR           = .false. &
   ,DEBUG_RB             = .false. &
-  ,DEBUG_SEASALT        = .false. &
   ,DEBUG_SOILNO         = .false. &
   ,DEBUG_SUBMET         = .false. &
   ,DEBUG_SETUP_1DCHEM   = .false. &
