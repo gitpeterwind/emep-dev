@@ -76,7 +76,7 @@ use Emissions_ml,     only: SumSnapEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, &
                          GRIDWIDTH_M, GridArea_m2
 use Io_Progs_ml,      only: datewrite
-use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd
+use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd,u_ref,ws_10m
 use MetFields_ml,     only: ps, t2_nwp
 use MetFields_ml,     only: SoilWater_deep, Idirect, Idiffuse
 use ModelConstants_ml, only: &
@@ -381,6 +381,10 @@ call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
 ! "HMIX00","HMIX12", ....
 
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
+               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+call AddNewDeriv( "ws_10m","ws_10m",  "-","-",   "m/s", &
+               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
 
 call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
@@ -780,6 +784,14 @@ if ( FORECAST .and. num_deriv3d>0 ) & ! only dayly (and hourly) output
           case ( "USTAR_NWP" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = ustar_nwp(i,j)
+          end forall
+          case ( "ws_10m" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = ws_10m(i,j,1)
+          end forall
+          case ( "u_ref" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = u_ref(i,j)
           end forall
 
           case ( "SoilWater_deep" )

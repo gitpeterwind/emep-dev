@@ -201,7 +201,7 @@ private
 
 
   !============ Extra parameters for model evaluation: ===================!
-    character(len=TXTLEN_DERIV), public, parameter, dimension(11) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
   D2_EXTRA = (/ &
        "SURF_ppbC_VOC     " &
       ,"T2m               " &
@@ -214,6 +214,8 @@ private
       ,"Snow_m            " & 
       ,"SoilWater_deep    " &
       ,"USTAR_NWP         " &
+      ,"ws_10m            " &
+      ,"u_ref             " &
   /)
 
 
