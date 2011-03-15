@@ -69,25 +69,16 @@ module SoilWater_ml
 
 contains
    subroutine Set_SoilWater()
-      integer :: i, j, ii, jj, ii2, jj2
+      integer :: i, j, hourloc
       logical :: my_first_call = .true.
       logical :: mydebug
-      real :: land, sumland,  REW ! For SW tests
-      integer :: old_day=-999, old_hour = -999,  hourloc
-
-     ! We will average SW over a 3x3 area, excluding nwp sea squares. This
-     ! helps to avoid coastal effects, and in any case we only aim to capture
-     ! large scale dryness. Soil water modelling is too tricky, and within a 
-     ! grid square there may be many soil textures. We can never capture this
-     ! properly, so try to get SW 'about-right'
-
-      real, dimension(MAXLIMAX+4,MAXLJMAX+4) :: & ! extended areas for averaging
-         xsw, xsea   ! soil water and sea-fraction values
+      real    :: REW       !  Relative soil water
 
       if( DEBUG_SOILWATER .and. debug_proc ) write(*,*) "DEBUG_SW START: ", &
-        current_date%day, current_date%hour, current_date%seconds, old_day
+        current_date%day, current_date%hour, current_date%seconds
 
       if ( .not. USE_SOILWATER  ) return ! and fSW has been set to 1. at start
+
 
       ! We reset once per day, but need to loop through the cells to find
       ! the 3am reset point
