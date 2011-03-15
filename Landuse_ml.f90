@@ -103,6 +103,7 @@ private
  ! For some flux work, experimental
 
  real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_cover, ice_landcover 
+ logical,public,save :: water_cover_set = .false.
 
  character(len=80), private :: errmsg
 
@@ -327,7 +328,9 @@ contains
           end do ! j
         end do ! i
 
-        my_first_call = .false.
+        water_cover_set = .true.  ! just to inform other routines
+        my_first_call   = .false.
+
    !======================================================================
     end if ! my_first_call
    !======================================================================

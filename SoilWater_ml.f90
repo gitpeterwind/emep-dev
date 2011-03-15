@@ -53,12 +53,12 @@ module SoilWater_ml
 !  ----------------------:-----------------x
 !                 0      D                MAM
 !
-!   MAM = 0.02 in HIRLAM - max possible water
-!    or ca. 0.7 in IFS (organic soils, wetlands have v. high values)
+!   MAM = max possible water, whatever units are available
+!    (= 0.02 m in PARLAM data, or ca. 0.7 in IFS (organic soils, wetlands
+!     have v. high values). 
 !   DAM = D/MAM, min 0, max 1.0
 
-    !real, private, parameter ::   SoilMAM = 0.02  ! HIRLAM
-    real, private, save ::   SoilDAM  ! assumed fraction of
+    real, private, parameter :: SoilDAM = 0.5  ! assumed fraction of
                             ! MAXM when decline begins, D on figure
                             ! DO NOT SET TO ZERO!
 !    real, dimension(366), public, save :: SWP = 0.0  ! daily soil water potential
@@ -87,27 +87,12 @@ contains
       if( DEBUG_SOILWATER .and. debug_proc ) write(*,*) "DEBUG_SW START: ", &
         current_date%day, current_date%hour, current_date%seconds, old_day
 
-      if (my_first_call ) then
-        ! Need to assume some values when soil drying affects gsto
-         SoilDAM = 0.0
-         if( SoilWaterSource=="IFS")    SoilDAM = 0.3
-         if( SoilWaterSource=="PARLAM") SoilDAM = 0.5
-      end if
-         
-      ! We rest once per day, but need to loop through the cells to find
+      if ( .not. USE_SOILWATER  ) return ! and fSW has been set to 1. at start
+
+      ! We reset once per day, but need to loop through the cells to find
       ! the 3am reset point
-      !if ( current_date%day      == old_day .and. .not. my_first_call ) return
 
-      if ( current_date%seconds  /= 0       .and. .not. my_first_call ) return
-
-     ! If NWP thinks this is a sea-square, but we anyway have land,
-     ! the soil moisture might be very strange.  We search neighbouring
-     ! grids and make a land-weighted mean SW
-
-        if ( .not. USE_SOILWATER  ) return ! and fSW has been set to 1. at start
-
-        call extendarea( SoilWater_deep(:,:,1), xsw, debug_flag=.true.)
-        call extendarea( water_cover(:,:),   xsea, debug_flag=.true.)
+      if ( current_date%seconds /= 0 .and. .not. my_first_call ) return
 
         do j = 1, ljmax
            do i = 1, limax
@@ -123,38 +108,7 @@ contains
              if ( my_first_call ) hourloc = 3 ! fake to get started
              if ( hourloc /= 3  ) cycle  ! Only set one per day, at 3am
 
-
-     ! Take a 3x3 average of the land-weighted values for SW. Seems best not
-     ! to "believe" NWP models too much for this param, and the variation in
-     ! a grid is so big anyway. We aim at the broad effect.
-     ! (Alternative might be to find max values?)
-
-             REW = 0.0
-             sumland  = 0.0
-             do ii = -1, 1
-             do jj = -1, 1
-               ii2=i+ii+2  ! coord in extended array of thickenss 2
-               jj2=j+jj+2
-               if( xsw(ii2,jj2) > 1.0e-10 ) then ! have some SW to work with
-                  land    = 1.0 - xsea(ii2,jj2)
-                  sumland = sumland + land
-                  REW = REW + land*xsw(ii2,jj2)
-                 if ( mydebug ) then
-                  write(*,"(a,2i5,8f12.4)") "SUBSWF: ", ii2, jj2,&
-                    water_cover(i,j), xsea(ii2,jj2), SoilWater_deep(i,j,1),&
-                      xsw(ii2,jj2), REW, land, sumland
-                 end if
-                end if
-             end do
-             end do
-
-             if( sumland > 0.1 ) then
-                REW = REW/sumland
-             else
-                REW = 1.0
-             end if
-
-             !REW      = SoilWater_deep(i,j,1) !!!!/ SoilMAM ! Now done in Met_ml
+             REW      = SoilWater_deep(i,j,1) !!!!/ SoilMAM ! Now done in Met_ml
 
              if ( REW < SoilDAM ) then
                fSW(i,j) = REW/SoilDAM

@@ -144,15 +144,18 @@ integer, private, parameter :: &
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
 ! DEBUG_ii= 74, DEBUG_jj= 79 ! Payerne_HIRHAM
-! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+ DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 86, DEBUG_jj= 92 ! Bothnian Bay, test for sea ice
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
- DEBUG_ii= 76, DEBUG_jj= 35 ! Sea,  North sea
+!DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
+! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
+! DEBUG_ii= 80, DEBUG_jj= 52 ! Irish sea    
 ! DEBUG_ii= 91, DEBUG_jj= 67 ! Tange
 ! DEBUG_ii=103, DEBUG_jj= 32 ! Prades, SMDge
 
 integer, public, parameter :: &
+! DEBUG_i= 62, DEBUG_j= 45  ! SEA 
   DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
 
@@ -171,7 +174,6 @@ integer, public, parameter :: &
   ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_FORESTFIRE     = .false. &
-  ,DEBUG_MET            = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_Kz             = .false. &
   ,DEBUG_MY_DERIVED     = .false. &
@@ -183,7 +185,6 @@ integer, public, parameter :: &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_IOPROG         = .false. &
-  ,DEBUG_MOSAICS        = .false. &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_MY_WETDEP    = .false. &
@@ -194,6 +195,8 @@ integer, public, parameter :: &
   ,DEBUG_LANDDEFS       = .false. &
   ,DEBUG_LANDUSE        = .false. &
   ,DEBUG_LANDPFTS       = .false. &
+  ,DEBUG_MET            = .false. &
+  ,DEBUG_MOSAICS        = .false. &
   ,DEBUG_NETCDF         = .false. &
   ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_ml
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental

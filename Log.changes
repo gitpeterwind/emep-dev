@@ -121,12 +121,12 @@ ds done   Rb_ml.f90
 an done   ReadField_ml.f90
           Rsurface_ml.f90
 an done   Runchem_ml.f90
-st done   SeaSalt_ml.f90      - finel small shanges are possible today
+st ds done   SeaSalt_ml.f90      - finel small shanges are possible today
 ab done   Setup_1dfields_ml.f90 
 ds done   Setup_1d_ml.f90
 mg done   Sites_ml.f90
 ab done   SmallUtils_ml.f90
-ds --     SoilWater_ml.f90 -- needs (small) work after Friday
+ds done   SoilWater_ml.f90
 ds done   Solver.f90       - st small changes (see below)
 ds done   StoFlux_ml.f90
 ds --     SubMet_ml.f90
@@ -142,13 +142,42 @@ pw done   Wesely_ml.f90
 
 ZD_OZONE/
 
-ds --     My_Aerosols_ml.f90     - st small changes (see below)
+ds done   My_Aerosols_ml.f90     - st small changes (see below)
 ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7rc?  Alvaro          Mar 15 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7rc4  Alvaro, Dave, Peter  Mar 15 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Dave+Peter:
+More soil water changes + bug-fix for ws_10m 
+   
+Landuse_ml - water_cover_set flag added. Needed since water_cover not
+     available until nterm > 2
+
+Met_ml .... further manipulation of SoilWater_deep values:
+
+       ! Take a 5x5 average of the land-weighted values for SW. Seems
+       !  best not to "believe" NWP models too much for this param, and
+       !  the variation in a grid is so big anyway. We aim at the broad
+      !  effect. (Alternattve might be to find max values?)
+
+       Also, shallow soil water "switched off" if units /= "m". Seemed
+       safest for OpenSource2011 
+
+       bug-fix on sw_10m
+
+ModelConstants_ml - smal re-arrangement (alphabetical debugs)
+
+Mosaics_ml  - DEBUG added in "MOS f2D" output
+
+SoilWater_ml, simplified since code now in Met_ml
+
+run.pl  $MetDir added to RunLog outputs. Source of met for 2008 was getting
+        confusing!
+
+Alvaro's changes:
 
 Treatment of NetCDF output on FORECAST & SOURCE_RECEPTOR modes:
   - NetCDF files: create only when necesary

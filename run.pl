@@ -207,6 +207,11 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
+
+#DS added Mar 2011. Use EC for standard 2008 runs?
+#Also print $MetDir into RunLog later
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year == 2008 );
+
   if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
     $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";
     $MetDir   = "$DataDir/$GRID/metdata/$year" if $GRID eq "HIRHAM";
@@ -245,7 +250,7 @@ if ($EUCAARI) {
   @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-my $testv = "rv3_7rc2";
+my $testv = "rv3_7rc4";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -897,6 +902,7 @@ foreach my $scenflag ( @runs ) {
 Emission units: Gg/year
 ------------------------------
 Emissions: $emisdir
+Meteo: $MetDir
 Version: $testv
 Chemical scheme: $Chem
 Processors $NDX $NDY
