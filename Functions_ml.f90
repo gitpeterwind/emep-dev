@@ -64,7 +64,7 @@ module Functions_ml
  public :: T_2_Tpot        ! Inverse as Exner_nd
  public :: Exner_tab       ! Tabulation. Must be called first
 
- public :: ERF,  ERFfunc    ! Error functions
+ public :: ERFfunc    ! Error functions
 
  !/- Interpolation constants
 
