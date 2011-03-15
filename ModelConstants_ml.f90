@@ -88,7 +88,7 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
- RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA
+ RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
