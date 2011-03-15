@@ -1159,7 +1159,7 @@ contains
        ice_nwp(:,:,1)    = ice_nwp(:,:,1)                 &
             + (ice_nwp(:,:,2)   - ice_nwp(:,:,1))*div
        if(foundws10_met) ws_10m(:,:,1) = ws_10m(:,:,1) &
-            + ws_10m(:,:,2) - ws_10m(:,:,1)*div
+            + (ws_10m(:,:,2) - ws_10m(:,:,1))*div
 
        !  precipitation and cloud cover are no longer interpolated
 

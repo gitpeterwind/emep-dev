@@ -148,8 +148,10 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7rc3  Peter, Dave     Mar 14 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7rc3  Peter, Dave     Mar 14-15 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+
+Bug corrected 15 March in Met_ml: ws_10 no more high.
 INTERIM version. ws_10m seems high
 
 Met_ml.f90: read units and transform deep_soil_water
