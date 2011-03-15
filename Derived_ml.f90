@@ -133,6 +133,7 @@ private
 
    integer, public, save :: num_deriv2d, num_deriv3d
    integer, private, save :: Nadded2d = 0, Nadded3d=0 ! No. defined derived
+   integer, public, save :: iou_min=IOU_INST, iou_max=IOU_HOUR_MEAN
 
   ! The 2-d and 3-d fields use the above as a time-dimension. We define
   ! LENOUTxD according to how fine resolution we want on output. For 2d
@@ -580,77 +581,63 @@ do ind = 1, size(D3_OTHER)
   end select
 end do
 
-! SOURCE_RECEPTOR in FORECAST mode
-if ( SOURCE_RECEPTOR .and. num_deriv2d>0 .and. & ! We assume that
-     .not. FORECAST) &                           ! no daily outputs are wanted
-!ALVARO-2-DAVE?  def_2d(:)%iotype = IOU_MON                ! daily outputs are wanted.
-  where(def_2d%iotype == IOU_DAY)def_2d%iotype=IOU_MON ! on SOURCE_RECEPTOR mode
-!FEB2011         def_2d(:)%day = .false.               ! daily outputs are wanted.
-!FEB2011     end if
+  ! Get indices of wanted fields in larger def_xx arrays:
+  do i = 1, num_deriv2d
+    ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
+    if (ind>0) then
+      f_2d(i) = def_2d(ind)
+      call CheckStop ( found_ind2d(ind) > 0,  &
+        "REQUESTED 2D DERIVED ALREADY DEFINED: " // trim( def_2d(ind)%name) )
+      found_ind2d(ind)  = 1
+    else
+      print *,"OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
+      print *,"OOOPS N,N :", num_deriv2d, Nadded2d
+      if (MasterProc) then
+        print "(a,i4,a)",("Had def_2d: ",idebug,&
+          trim(def_2d(idebug)%name),idebug = 1, Nadded2d)
+        call CheckStop("OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
+      endif
+    endif
+    if (DEBUG.and.MasterProc) print "(2(a,i4),3(1x,a))","Index f_2d ",i,  &
+      " = def ",ind,trim(def_2d(ind)%name),trim(def_2d(ind)%unit),trim(def_2d(ind)%class)
+  enddo
 
-if ( FORECAST .and. num_deriv2d>0 ) & ! only dayly (and hourly) output
-!ALVARO-2-DAVE?  def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
-  where(def_2d%iotype > IOU_DAY)def_2d%iotype=-999 ! on FORECAST mode
-!FEB2011        def_2d(:)%inst  = .false.             ! on FORECAST mode
-!FEB2011        def_2d(:)%year  = .false.
-!FEB2011        def_2d(:)%month = .false.
-!FEB2011     end if
-if ( FORECAST .and. num_deriv3d>0 ) & ! only dayly (and hourly) output
-!ALVARO-2-DAVE?  def_2d(:)%iotype  = IOU_DAY              ! on FORECAST mode !DAVE-2-ALVARO?
-  where(def_3d%iotype > IOU_DAY)def_3d%iotype=-999 ! on FORECAST mode
-!FEB2011        def_3d(:)%inst  = .false.
-!FEB2011        def_3d(:)%year  = .false.
-!FEB2011        def_3d(:)%month = .false.
-!FEB2011     end if
-
-     ! Get indices of wanted fields in larger def_xx arrays:
-      do i = 1, num_deriv2d
-          ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
-          if ( ind>0) then
-
-               f_2d(i) = def_2d(ind)
-
-               call CheckStop ( found_ind2d(ind) > 0,  &
-                  "REQUESTED 2D DERIVED ALREADY DEFINED: "// &
-                      trim( def_2d(ind)%name)  )
-               found_ind2d(ind)  = 1
-
-          else
-            print *,   "OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
-            print *,   "OOOPS N,N :", num_deriv2d, Nadded2d
-            if(  MasterProc  ) then
-               do idebug = 1, Nadded2d
-                write (*,"(a,i4,a)") "Had def_2d: ", idebug, def_2d(idebug)%name
-               end do
-               call CheckStop("OOPS STOPPED" // trim( wanted_deriv2d(i) ) )
-            end if
-          end if
-          if (  DEBUG .and. MasterProc  ) then
-               write(*,"(a,i4,a,i4,3a)") "Index f_2d ", i, " = def ", ind, &
-                 trim(def_2d(ind)%name),trim(def_2d(ind)%unit), &
-                    trim(def_2d(ind)%class)
-          end if
-      end do
-
-      do i = 1, num_deriv3d
-          if(DEBUG .and. MasterProc) write(*,*) "CHECK 3d", &
-               num_deriv3d, i, trim(wanted_deriv3d(i))
-          ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
-          call CheckStop ( found_ind3d(ind) > 0,  &
-            "REQUESTED 3D DERIVED ALREADY DEFINED: "// def_3d(ind)%name  )
-          found_ind3d(ind)  = 1
-          f_3d(i) = def_3d(ind)
-          if ( DEBUG .and. MasterProc ) write(*,*) "Index f_3d ", i,&
-                " = def ", ind
-      end do
+  do i = 1, num_deriv3d
+    if (DEBUG.and.MasterProc) print *,"CHECK 3d", &
+      num_deriv3d, i, trim(wanted_deriv3d(i))
+    ind = find_index( wanted_deriv3d(i), def_3d(:)%name )
+    call CheckStop ( found_ind3d(ind) > 0,  &
+      "REQUESTED 3D DERIVED ALREADY DEFINED: "// trim(def_3d(ind)%name)  )
+    found_ind3d(ind)  = 1
+    f_3d(i) = def_3d(ind)
+    if (DEBUG.and.MasterProc) print "(2(a,i4),3(1x,a))","Index f_3d ",i,  &
+      " = def ",ind,trim(def_3d(ind)%name),trim(def_3d(ind)%unit),trim(def_3d(ind)%class)
+  enddo
 
 
-   !Initialise to zero
+  !Initialise to zero
+  if (num_deriv2d > 0) d_2d(:,:,:,:) = 0.0
+  if (num_deriv3d > 0) d_3d(:,:,:,:,:) = 0.0
 
-      if ( num_deriv2d > 0  ) d_2d( :,:,:,:) = 0.0
-      if ( num_deriv3d > 0  ) d_3d( :,:,:,:,:) = 0.0
+  debug_flag = ( DEBUG  .and. debug_proc )
 
-      debug_flag = ( DEBUG  .and. debug_proc )
+  ! Determine actual output time ranges for Wanted output
+  iou_min=+999
+  iou_max=-999
+  if(num_deriv2d>0)then
+    iou_min=min(iou_min,minval(f_2d%iotype))
+    iou_max=max(iou_max,maxval(f_2d%iotype))
+  endif
+  if(num_deriv3d>0)then
+    iou_min=min(iou_min,minval(f_3d%iotype))
+    iou_max=max(iou_max,maxval(f_3d%iotype))
+  endif
+
+  if (SOURCE_RECEPTOR.and..not.FORECAST)&  ! We assume that no daily & hourly outputs
+    iou_max=IOU_MON                        ! are wanted on SOURCE_RECEPTOR mode
+
+  if (FORECAST) &                          ! Only dayly & hourly outputs
+    iou_min=IOU_DAY                        ! are wanted on FORECAST mode
 
   end subroutine Define_Derived
  !=========================================================================

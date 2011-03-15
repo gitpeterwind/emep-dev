@@ -148,6 +148,30 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc?  Alvaro          Mar 15 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Treatment of NetCDF output on FORECAST & SOURCE_RECEPTOR modes:
+  - NetCDF files: create only when necesary
+  - SOURCE_RECEPTOR mode: no IOU_DAY output
+  - FORECAST mode: only IOU_DAY & IOU_HOUR output
+
+run.pl: Small bugx-fix in FORECAST mode
+
+Derived_ml: New public variables iou_min & iou_max contain the min & max
+  admisible values for def%iotype to be written out:
+  - by defount this correspond to the minval & maxval of f_2d%iotype & f_23%iotype
+  - in SOURCE_RECEPTOR mode iou_max=IOU_MON
+  - in FORECAST mode iou_min=IOU_DAY
+
+OutputChem_ml: new logical function wanted_iou, to determine if a particular
+  def%iotype is to be written out:
+  - wanted_iou uses of iou_min & iou_max
+  - Output_f2d & Output_f3d use wanted_iou
+  - use date2string (TimeDate_ExtraUtil_ml) to generate monthly (ASCII) filenames
+  - Additional indent & code formatting
+
+Unimod: use wanted_iou to determine if a particular NetCDF file is needed
+
 xxxxxxxx rv3_7rc3  Peter, Dave     Mar 14-15 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 ERF removed from Functions_ml

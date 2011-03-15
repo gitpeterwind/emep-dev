@@ -50,7 +50,7 @@ use CheckStop_ml,     only: CheckStop
 use ChemChemicals_ml, only: define_chemicals
 use ChemGroups_ml,    only: Init_ChemGroups
 use DefPhotolysis_ml, only: readdiss
-use Derived_ml,       only: Init_Derived
+use Derived_ml,       only: Init_Derived, iou_min, iou_max
 use DerivedFields_ml, only: f_2d, f_3d
 use DO3SE_ml,         only: Init_DO3SE 
 use EcoSystem_ml,     only: Init_EcoSystems
@@ -75,14 +75,13 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             USE_LIGHTNING_EMIS,       &
                             FORECAST       ! FORECAST mode
 use NetCDF_ml,        only: Init_new_netCDF
-use OutputChem_ml,    only: WrtChem
+use OutputChem_ml,    only: WrtChem, wanted_iou
 use Par_ml,           only: me, GIMAX, GJMAX, Topology, parinit
 use PhyChem_ml,       only: phyche    ! Calls phys/chem routines each dt_advec
 use Sites_ml,         only: sitesdef  ! to get output sites
 use Tabulations_ml,   only: tabulate
 use TimeDate_ml,      only: date, current_date, day_of_year, daynumber,&
                             startdate, enddate
-
 use TimeDate_ExtraUtil_ml,only : date2string, assign_NTERM
 use Trajectory_ml,    only: trajectory_init,trajectory_in
 use Nest_ml,          only: wrtxn,          & ! write nested output (IC/BC)
@@ -266,18 +265,19 @@ if (MasterProc.and.DEBUG_UNI) print *,"vgrid finish"
 
 ! open only output netCDF files if needed
 if (MasterProc) then
-  print *, "NETCDFINITS; maxval", maxval(f_2d%iotype)
+  print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
   ! The fullrun file contains the accumulated or average results
   ! over the full run period, often a year, but even just for
   ! a few timesteps if that is all that is run:
-  call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
-  call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
-
-  if(maxval(f_2d%iotype)==IOU_HOUR.or.NHOURLY_OUT>0) &
+  if (wanted_iou(IOU_YEAR)) &
+    call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
+  if (wanted_iou(IOU_INST)) &
+    call Init_new_netCDF(trim(runlabel1)//'_inst.nc',IOU_INST)
+  if (wanted_iou(IOU_HOUR).or.NHOURLY_OUT>0) &
     call Init_new_netCDF(trim(runlabel1)//'_hour.nc',IOU_HOUR)
-  if(maxval(f_2d%iotype)>=IOU_DAY ) &
+  if (wanted_iou(IOU_DAY)) &
     call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
-  if(maxval(f_2d%iotype)>=IOU_MON ) &
+  if (wanted_iou(IOU_MON)) &
     call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
 endif
 
