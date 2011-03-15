@@ -5,18 +5,18 @@ In this chapter we provide detailed information on how to run the
 regional Unified EMEP model for two different types of
 simulations, namely: 
 
-\begin{itemize}
+\begin{description}
 
-\item {\bf Base run} \\
+\item[Base run]
 This is the default set up for yearly transport model calculations
-in 50x50 km$^2$ grid. 
-\item{\bf Scenario run} \\
+in $50\times50$~km$^2$ grid. 
+\item[Scenario run]
  A run with reduced emissions from a particular country or several
  countries is called 
-a ``Scenario run''. It is the basic type of run for source-receptor
+a ``Scenario run''. It is the basic type of run for the source-receptor
 calculations. 
 
-\end{itemize}
+\end{description}
 
 \noindent
 Details about the submission of these
@@ -36,58 +36,54 @@ future as a reference run for the other simulations.\\
 
 This is an example of a minimum modrun.sh script to run the model.
 
-
+\begin{quote}
 \begin{verbatim}
 #!/bin/bash
 
-#Minimum script to run the emep model
+# Minimalistic script for run the Unified EMEP model
 
-#link to the input data
-inputdir=./Base
-ln -s $inputdir/* .
+# Link the input data
+inputdir=.
+ln -s $inputdir/met/*   .   # Driving meteorology
+ln -s $inputdir/input/* .   # Other input files
 
-#define some input data
-trendyear=2008 #emission year
-runlabel1=rv3_7 #short label
-runlabel2=Opensource_setup #long label
-startyear=2008 #start year (metdata)
-startmonth=1 #start month (metdata)
-startday=1 #start day (metdata)
-endmonth=1 #end month (metdata)
-endday=31 #end day (metdata)
+# Define some run parameters
+trendyear=2008              # emission year
+runlabel1=Base              # short label
+runlabel2=Opensource_setup  # long label
+startdate="2008 01 01"      # start date (metdata)
+  enddate="2008 01 01"      # end date (metdata)
 
-#put input data into a temporary file called INPUT.PARA
-cat>>    'INPUT.PARA'<<    EOF
+# Put the run parameters in a temporary file
+cat > INPUT.PARA << EOF
 $trendyear
 $runlabel1
 $runlabel2
-$startyear
-$startmonth
-$startday
-$endmonth
-$endday
+$startdate
+$enddate
 EOF
 
-#run the model
-mpirun Unimod
+# Run the model
+mpirun $inputdir/code/Unimod
 
-#clean the links to the input data
-ls $inputdir|xargs rm
+# Clean the links to the input data and remove INPUT.PARA
+ls $inputdir/met  |xargs rm
+ls $inputdir/input|xargs rm
 rm INPUT.PARA
 
 \end{verbatim}
-
+\end{quote}
 This bach shell script is designed so that the user can easily 
 change it to fit his needs. It only asks for the minimum information 
 to start the Unified EMEP model. 
-The script is pretty self-explanatory, it assumes that there are one directory 
-with all the input files. 
-When downloading the input files it is important that all the input files 
-are kept in one directory. If the user want to divide between the files, e.g. 
-all the meteorology files kept in one place the script needs to edited for this.  
-The script linkes all the input files to the where the model is running. 
+The script is pretty self-explanatory. It assumes two directories for input data 
+one with all the metdata for 2008, and for January 1$^{st}$ 2009 (366 +1 files), 
+and one input directory for all the other input files. You need to set the right paths 
+for the input directories.  
+All the input files in the input directories are linked to the directory where you are working from. 
+  
 
-The next part of the script sets the different settings for the model run. 
+The next part of the script sets the different parameters for the model run. 
 The trendyear can be set to change the boundary emissions for 
 earlier and future years, see the modules {\bf BoundaryConditions\_ml.f90 } 
 and {\bf GlobalBCs\_ml.f90 } to understand better what the trendyear 
@@ -95,32 +91,35 @@ setting does. The default setting is the year you are running for, in this case
 2008. 
 The runlabel1 option sets the name of the different output netCDF 
 files , see Table \ref{ch:output}. 
-Startyear has to be set equal to the year 
-that the metdata is available. The period you want to run the 
-EMEP model is set with startmonth, and startday and the last day is 
-set with endmonth and endday. \\
+The startdate and enddate parameters are set for the timeperiod you want the model 
+to run over (YYYY MM DD), and you need meteorology data for the period.
+
+To run the model, the correct path to where the code to the Unified EMEP model 
+has to be set (mpirun path\_to\_the\_modelcode/Unimod).  
 
 It is recommended to submit the script as a batch job. Please check the submission soutine 
 on the computer system you are running on. 
 When setting the number of nodes, it is important that it equals to the number set in the fortran module 
 {\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with {\bf NPROCX } and 
-{\bf NPROCY }. The product of these two is the number of nodes used. 
+{\bf NPROCY.} The product of these two is the number of nodes used. 
 The approximate time and CPU usage is described in Section {sec:compinf}\\
 
 When the job is no longer running, it is either finnished or has crashed for some reason, 
 there will be an output log file and an error file in the directory. 
 If the run was successful, a message stating 
+\begin{quote}
 \begin{verbatim}
-   Eulmod: Successful exit atCET ..end time date and time ..
 
-LOOKING FOR LAST SITES sondes.MMYY
-FOUND LAST sondes sondes.MMYY
+ ++++++++++++++++++++++++++++++++++++++++++++++++
+ programme is finished
+
 
 \end{verbatim}
-will be stated at the end of the log file, before listing up site and sonde files. 
-The way the script is set up now, the model results will be produced to the directory where 
-the code and script lies. 
-Here again, the user can edit the script to create an output directory. 
+\end{quote}
+will be stated at the end of the log file, before printing the Timing.out file.   
+The model results will be produced to where the modrun.sh script is. Please make 
+sure there is enough disk place for the modelresults. 
+%Here again, the user can edit the script to create an output directory. 
 For more information about the model result output files, see chapter \ref{ch:output}.\\
 
 If for some reason the model crashed, please check both the log and error file for any 
@@ -128,7 +127,7 @@ clue of the crash. After fixing the problem the job can be submitted again. If t
 model has crashed, then the links to the inputdatas are not cleaned. 
 
 The script can also be submitted interactivelly, and either have the output be written to the screen or to 
-named output log and error files. 
+named error and output log files. 
  
 
 
@@ -142,6 +141,7 @@ To set a smaller domain, one needs only to specify the
 coordinates of the new domain in {\bf RUNDOMAIN} in the Fortran module
 called {\bf ModelConstants\_ml.f90}. For example:
 
+\begin{quote}
 
 \begin{verbatim}
   
@@ -149,11 +149,13 @@ called {\bf ModelConstants\_ml.f90}. For example:
         RUNDOMAIN = (/  36, 100, 50, 150 /)  ! smaller EECCA domain
 
 \end{verbatim}
+\end{quote}
 
 tells the model to run in the domain with x coordinates ranging from
 36 to 100 and y coordinates from 50 to 150.\\ 
 
 \section{Scenario run}
+\label{sec:scenrun}
 
 The EMEP  model can be used to test the impact of reduced emission of
 one or more pollutants from a particular country or a number of
@@ -167,6 +169,7 @@ sectors and countries can be defined in the input file called
 directory.
 
 An example of the ``femis.dat'' file for a base run is shown below:
+\begin{quote}
 
 \begin{verbatim}
 ------------------------------------------
@@ -175,7 +178,7 @@ Name  5     sox    nox   voc   nh3  pm25
 
 ------------------------------------------
 \end{verbatim}
-
+\end{quote}
 \noindent
 This base run example means that there is 100\% (1.0) emission of sox (SO$_x$),
 nox (NO$_x$), voc (VOC), nh3 (NH$_3$) and pm25 (PM$_{2.5}$) from all
@@ -214,7 +217,7 @@ pollutants treated in the file.
 
 An example of ``femis.dat'' file describing 50\% reduced emission of
 ``sox'' from sector 10 (the emission from agriculture) in the UK can be given as:  
-
+\begin{quote}
 \begin{verbatim}
 -----------------------------------------
 Name  5    sox    nox   voc   nh3  pm25 
@@ -222,7 +225,7 @@ Name  5    sox    nox   voc   nh3  pm25
 
 -----------------------------------------
 \end{verbatim}        
-
+\end{quote}
 For a scenario run ``femis.dat'' file should be edited 
 manually depending on the factor of
 reduction one would like to test with any pollutant from any sector

@@ -1,72 +1,66 @@
 \chapter{Output files}
 \label{ch:output}
 
-
-
 Output files from a model run are written out in either ASCII, or
-(for most data outputs) in netCDF format into the working directory. 
-The model will write out the output files in the same directory as the model 
-code, if there is not a working directory path set. 
+(for most data outputs) in netCDF format. 
+The different netCDF files, the Runlog output, and the zipped sites and sondes 
+files are named after the runlabel1 parameter set in modrun.sh. 
+The model result output will be produced to the same directory as where you submittet 
+your run with the modrun.sh script, which will be described in Chapter \ref{ch:SubmitARun}.
+ 
 
 
-The different netCDF files will be called after the runlabel1 set in the modrun.sh script 
-described in Chapter \ref{ch:SubmitARun}.
-
-
-\begin{table}
+\begin{table}[h!]
 \caption[List of model output files]{List of output files written in the
   working directory after a  model run. 
 Note: YY: year, MM: month.}\label{tab:output}
-\vspace{1cm}
+\vspace{0.5cm}
 
-%\begin{small}
+\begin{center}
 \hspace{-1cm}
 \begin{tabular}{lll}
-\hline\hline
+\hline
 {\bf Output data files} &  {\bf Short description} & {\bf Format}\\
-\hline\hline
-    rv3\_7\_day.nc & Gridded daily values of a selection & netCDF\\
+\hline
+    Base\_day.nc & Gridded daily values of a selection & netCDF\\
 &   of compounds.& \\ 
-    rv3\_7\_hour.nc &Gridded hourly values of a selection &
+    Base\_hour.nc &Gridded hourly values of a selection &
     netCDF\\  
  &  of compounds.& \\
-    rv3\_7\_inst.nc &Gridded instantaneous values of a selection
+    Base\_inst.nc &Gridded instantaneous values of a selection
      & netCDF\\
  &  of compounds.& \\
-    rv3\_7\_month.nc & Gridded monthly values of a selection&
+    Base\_month.nc & Gridded monthly values of a selection&
     netCDF\\
  &  of compounds.& \\
-    rv3\_7\_fullrun.nc & Gridded yearly values of a selection&
+    Base\_fullrun.nc & Gridded yearly values of a selection&
     netCDF\\
  &  of compounds. & \\
     sites.MMYY & Surface daily values of a selection&  ASCII\\
  & of stations and compounds per month.& \\
-    rv3\_7.sites.tgz & All the ``sites.MMYY'' files in one zipped tar file. & ASCII\\\hline
+    Base.sites.tgz & All the 'sites.MMYY' files in one zipped tar file. & ASCII\\
     sondes.MMYY & Vertical daily values of a selection& ASCII\\
  &  of stations and compounds per month.& \\
-    rv3\_7.sondes.tgz& All the ``sondes.MMYY'' files in one zipped tar file.&
-    ASCII\\ 
-& &\\ 
-& &\\ \hline\hline
+    Base.sondes.tgz& All the 'sondes.MMYY' files in one zipped tar file.& ASCII\\ 
+& &\\ \hline
 {\bf Additional files} &  {\bf Short description} & {\bf Format}\\
-\hline\hline
-    rv3\_7\_RunLog & Total emissions of different air   & ASCII\\
+    Base\_RunLog & Total emissions of different air   & ASCII\\
  & pollutants per country& \\
 eulmod.res & Mass budget of different compounds & ASCII\\
 % INPUT.PARA & List of input parameters & ASCII\\\hline
 % Remove.sh & Removes the links to the input data at the& ASCII\\
 % & end of the run&\\\hline
-Timing.out & Timing log file& ASCII \\
+%Timing.out & Timing log file& ASCII \\
  
 \hline
 \end{tabular}
-%\end{small}
+\end{center}
 
 \label{Tab:outputs}
 \end{table}
 
 
-
+\newpage
 \section{Ascii outputs: sites and sondes}\label{sec:sitesonde}
 
 
@@ -88,11 +82,12 @@ Both sites and sondes are specified and handled in similar ways, in
 the module {\bf Sites\_ml}, so we treat them both together below.
 Locations are specified in input files ('sites.dat' and 'sondes.dat')
 whose directory-locations should be specified in {\bf run.pl}.
-sites.dat and sondes.dat start with a description of the file contents
+'sites.dat' and 'sondes.dat' start with a description of the file contents
 followed by a list of the stations. For example, a sondes.dat file
 may look like this:
 
 \begin{small}
+\begin{quote}
 \begin{verbatim}
 # "Sondes: names, locations, elevations"
 # "Area: Northern Hemisphere"
@@ -112,12 +107,14 @@ Sodankyla         67.39   26.65  20  ! comment
 Ny_Alesund        78.93   11.88  20  ! comment
 Hohenpeissenberg  47.80   11.02  20  ! comment
 \end{verbatim}
-\end{small}
 
+\end{quote}
+\end{small}
 Or, in cases where latitudes and longitudes are used rather than grid
 indices to specify the locations of the stations:
 
 \begin{small}
+\begin{quote}
 \begin{verbatim}
 # "Sondes: names, locations, elevations"
 # "Area: EMEP-Europe"
@@ -138,8 +135,9 @@ Colle_Gnifetti    105   47  20  ! comment
 Schauinsland      101   51  20  ! comment
 Mt._Zeppelin       59  104  20  ! comment
 \end{verbatim}
-\end{small}
 
+\end{quote}
+\end{small}
 
 The first line in each file is a header telling what is in the file.
 Then, the contents are described in more detail. Text strings after
@@ -191,10 +189,11 @@ into the output files by modifying the module called { \bf My\_Derived\_ml.f90}.
 
 Most datafiels are defined by the array {\bf OutputConcs }. A defined output 
 field for ozone in ppb is for example given  as:
+\begin{quote}
 \begin{verbatim}
  typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
 \end{verbatim}
-
+\end{quote}
 This will give a 'SURF\_ppb\_O3' 2-dimensional field in the output netCDF file for 
 the fullrun, monthly and daily output. 
 Setting the dimensions to 3D will give an additional 3-dimensional field. 
@@ -213,12 +212,12 @@ in { \bf My\_Derived\_ml.f90 }.
 
 
 The output frequency is set in { \bf Derived\_ml.f90 }, for example for the surface fields:
-
+\begin{quote}
 \begin{verbatim}
  call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY )
 \end{verbatim}
-
+\end{quote}
  Where the IOU\_DAY setting gives the field in the fullrun.nc, month.nc in addition to the day.nc 
 model output files. IOU\_MON gives the field in the fullrun.nc and the month.nc file. 
 

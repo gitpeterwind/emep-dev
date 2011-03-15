@@ -43,7 +43,7 @@ The EMEP code is provided under the GNU General Public License version 3
 \url{http://www.gnu.org/copyleft/gpl.html}).
 \newpage 
 Each code module is prefaced with something like:
-
+\begin{quote}
 \begin{verbatim}
 ! <EXAMPLE_CODE.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
@@ -72,7 +72,7 @@ Each code module is prefaced with something like:
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************!
 \end{verbatim}
-
+\end{quote}
 And a copy of the license file, {\bf gpl.txt}, is provided with the
 model code source files.
 
@@ -163,8 +163,8 @@ The tar file is called ``EMEP\_Unified\_model.tar'' and is downloadable from
 the EMEP Open Source website.
 
 All model files needed for a model run will be found under the
-directory {\bf Unify/Unimod.rv3\_7/} where the model source code, 
-makefiles, the runscript and a copy of the license file are stored, 
+directory {\bf EMEP\_Unified\_model.OpenSource/code/} where the model source code, 
+makefiles, and a copy of the license file are stored, 
 once this tar file is untarred. An overview is given in 
 Table~\ref{Tab:modelfiles}
 
@@ -178,12 +178,12 @@ Table~\ref{Tab:modelfiles}
 Type      & Filename          \\
 \hline
 & \\
-{\bf Model code directory} & Unify/Unimod.rv3\_7 \\ 
+{\bf Model code directory} & EMEP\_Unified\_model.OpenSource2011/code \\ 
 \hline
 modules files & *.f90 \\
 include files & *.inc \\
 makefiles & Makefile\_* \\
-run script & modrun.sh \\
+%run script & modrun.sh \\
 a copy of the licence & gpl.txt \\
 \hline
 \end{tabular}
@@ -193,8 +193,12 @@ a copy of the licence & gpl.txt \\
 The model source code is written in Fortran 90/95 programming language.
 There are three makefiles provided. ``Makefile'' is for a SGI Origin 3800
 computer, ``Makefile\_snow'' is for an Itanium2 cluster and the
-``Makefile\_njord'' is for an IBM power5+ cluster. The run script, 
-``modrun.sh'', can easily be modified to work on your computer system.
+``Makefile\_njord'' is for an IBM power5+ cluster. 
+
+In adittion there will be a runscript called ``modrun.sh'', that will be placed 
+in the EMEP\_Unified\_model.OpenSource2011  diirectory. The run script, 
+``modrun.sh'', can easily be modified to work on your computer system. This 
+script is described in detail in Chapter \ref{ch:SubmitARun}. 
 % A detailed 
 % description about  how to handle this script
 % is given in Chapter~\ref{ch:SubmitARun}, ``Submitting a Run''.  

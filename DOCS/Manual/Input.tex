@@ -3,7 +3,16 @@
 
 This chapter provides an overview on the necessary input files to run 
 the Unified EMEP model. A complete set of input files is provided in
-the EMEP Open Source web page to allow model runs for the year 2005.
+the EMEP Open Source web page to allow model runs for the year 2008. 
+
+The inputfiles are zipped in 13 different files. After unzipping all of them, 
+there will be two files un EMEP\_Unified_model.OpenSource20100. All the meteorology 
+are palced under /met, and the rest of the input files under /input. 
+There are 12 zipped files for the meteorology, one or each month, the last file for 
+December also includes January 1{^st} 2009. The last zipped input file contains 
+all other input files needed for running the EMEP model, except AircraftEmis_FL.nc. 
+All the files, both meteorological and 
+the other input files, will be described in this chapter.
 
 {\bf IMPORTANT:} The input data available in the EMEP Open Source Web
 site should be appropriately acknowledged when used for model runs.
@@ -24,6 +33,7 @@ Note: YYYY: year, MM: month, DD: day, SEASON: seasons, POLL: pollutant
 type (NH$_3$, CO, NO$_x$, SO$_x$, NMVOC,
 PM$_{2.5}$ and PM$_{co}$). ASCII$^*$ means ASCII files with header.
 \label{Tab:inputdata}}
+\begin{center}
 \begin{small}
 \hspace{-1cm}
 \begin{tabular}{lll}
@@ -38,6 +48,8 @@ Meteorology  &  meteoYYYYMMDD.nc \quad (366+1 files) & netCDF\\
 & & \\
 Global Ozone & GLOBAL\_O3.nc & netCDF\\
 BVOC emissions & EMEP\_EuroBVOC\_KRS09.nc & netCDF\\
+Aircraft emissions & AircraftEmis\_FL.nc & netCDF \\
+Surface Pressure & SurfacePressure.nc & netCDF \\
 Landuse & Inputs.Landuse & ASCII$^*$\\
 Land/Sea mask & landsea\_mask.dat & ASCII\\
 Sites locations for surface output & sites.dat & ASCII$^*$\\
@@ -60,7 +72,6 @@ Stomatal conductance & Inputs\_DO3SE.csv & ASCII$^*$\\
 Lightning emissions & lt21-nox.datMM  \quad (12 files) & ASCII$^*$\\
 %Military aircraft emissions & amilt42-nox.dat & ASCII\\
 %Commercial aircraft emissions & aSEASONt42-nox.dat \quad (4 files)& ASCII\\
-Aircraft emissions & AircraftEmis\_FL.nc & netCDF \\
 % VOC speciation & vocsplit.defaults.BASE\_MAR2004 & ASCII\\
 %  & vocsplit.special.BASE\_MAR2004  & ASCII\\
 % NOx speciation & noxsplit.default.2000 & ASCII\\
@@ -73,19 +84,20 @@ Emission factors for scenario runs & femis.dat & ASCII\\
 \hline
 \end{tabular}
 \end{small}
-
+\end{center}
 
 \end{table}
 
+\newpage
 \subsection{NetCDF files}
 
 
-The 3-hourly meteorological input data and the boundary and initial 
-conditions input files are provided in netCDF format. 
-We presently follow as much as possible the netCDF CF1.0 conventions 
-(\url{http://www.unidata.ucar.edu/software/netcdf/}) for both input
-and output data (except the Boundary\_and\_Initial\_Conditions file which
-is still in GDV convention).
+The 3-hourly meteorological input data, boudary and initial data for ozone, 
+Biogenic Volatile Organic Compounds data, and the aircraft and surface pressure 
+data files are given in netCDF format using the CF1.0 coventions 
+(http://www.unidata.ucar.edu/software/netcdf/).
+
+
 
 \subsubsection{Meteorology}
 
@@ -110,9 +122,10 @@ meteorological fields are given in Chapter 7 of the EMEP Status Report
 
 {\bf Acknowledgement:} ECMWF, met.no
 
-\begin{table}[hb]
+\begin{table}[h!]
 \caption{Input meteorological data used in the Unified EMEP Model
    \label{Tab:metinput}}
+\begin{center}
 \begin{tabular}{p{6cm}lll}
 \hline
 Parameter      & Unit & Description          \\
@@ -140,6 +153,7 @@ sdepth         & m & Snow depth \\
 ice            & \% & Fraction of ice \\  
 \hline
 \end{tabular}
+\end{center}
 \end{table}
 
 
@@ -172,6 +186,32 @@ Biogenic VOC emission potentials (i.e. rates at 30$^\circ$C and full sunlight)
 are included for four different forest types in the {\bf netCDF } file \\
 EMEP\_EuroBVOC\_KRS09.nc. 
 The emission potentials have unit $\mu g/m^{2} /h$.
+
+
+
+
+
+
+\subsection{Aircraft emissions}
+In the Unified EMEP model aircraft emissions are 'OFF' by default. 
+They can be switched 'ON' by setting USE\_AIRCRAFT\_EMIS = .true. in { \bf ModelConstants\_ml.f90.} 
+The model will then use data provided by the EU-Framework Programme 6 Integrated 
+Project QUANTIFY (\url{http://www.pa.op.dlr.de/quantify}). However, before using 
+these data a protocol has to be signed, which is why the data file can not be provided 
+directly on the EMEP Open Source website. If you want to use aircraft emissions go to 
+\url{http://www.pa.op.dlr.de/quantify}, click on 'QUANTIFY emission inventories and scenarios', 
+and then click on 'Register'. That page will provide information about the registration 
+process and the protocol that has to be signed. Once you are registered, click 'Login' and 
+provide username and password. On the new page, search for 'Emissions for EMEP', which 
+links directly to the Readme file and the emission data file on netCDF format. Download the 
+emission data file and place it in the input folder.
+
+\subsection{Surface Pressure}
+
+If USE\_AIRCRAFT\_EMIS = .true. in { \bf ModelConstants\_ml.f90,} then in adittion to the Aircraft 
+Emission file, there will be need for a SurfacePressure.nc file, which is already in the /input folder. 
+The netCDF file consistes of sureface pressure fields for each of the months in 2008 called surface_pressure, and one filed for the 
+whole year called surface_pressure_year. All fields are given in Pa. 
 
 
 \subsection{Landuse}
@@ -326,19 +366,7 @@ levels, with global coverage and are provided as 12 {\bf ASCII} files
 ``lt21-nox.datMM''.
 
 
-\subsection{Aircraft emissions}
-In the Unified EMEP model aircraft emissions are 'OFF' by default. 
-They can be switched 'ON' by setting USE\_AIRCRAFT\_EMIS = TRUE in ModelConstants\_ml.f90. 
-The model will then use data provided by the EU-Framework Programme 6 Integrated 
-Project QUANTIFY (\url{http://www.pa.op.dlr.de/quantify}). However, before using 
-these data a protocol has to be signed, which is why the data file can not be provided 
-directly on the EMEP Open Source website. If you want to use aircraft emissions go to 
-\url{http://www.pa.op.dlr.de/quantify}, click on 'QUANTIFY emission inventories and scenarios', 
-and then click on 'Register'. That page will provide information about the registration 
-process and the protocol that has to be signed. Once you are registered, click 'Login' and 
-provide username and password. On the new page, search for 'Emissions for EMEP', which 
-links directly to the Readme file and the emission data file on netCDF format. Download the 
-emission data file and place it in the input folder.
+
 
 % \subsection{VOC speciation}
 % Speciation of VOC emissions are specified for each source-sector,
