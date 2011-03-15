@@ -404,7 +404,8 @@ module MosaicOutputs_ml
     if ( first_call ) then  ! need to find indices
        do imc = 1, nMosaic
          MosaicOutput(imc)%f2d  = find_index(MosaicOutput(imc)%name ,f_2d(:)%name)
-         if(MasterProc) write(*,*) "MOS f2D", imc, trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
+         if(DEBUG .and. MasterProc) write(*,*) "MOS f2D", imc, &
+             trim(MosaicOutput(imc)%name),  MosaicOutput(imc)%f2d
        end do
 
        if ( DEBUG .and. debug_flag ) then
