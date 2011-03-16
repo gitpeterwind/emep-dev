@@ -48,6 +48,7 @@ module ChemFunctions_ml
   public :: troeInLog  ! When log(Fc) provided
   public :: IUPAC_troe ! Using the approximate expression for F from Atkinson et al., 2006 (ACP6, 3625)
   public ::  kaero
+  public ::  kaero2
   public ::  RiemerN2O5
   public ::  ec_ageing_rate
   public ::  kmt3      ! For 3-body reactions, from Robert OCt 2009
@@ -323,6 +324,21 @@ module ChemFunctions_ml
 
   end function kaero
 
+  function kaero2() result(rate) 
+    ! reduced rates, and only in lowest 10 layers
+     real, dimension(K1:K2) :: rate
+     integer :: k
+     
+    do k = 10, K2
+      if ( rh(k)  > 0.9) then
+         rate(k) = 1.0e-5
+      else
+         rate(k) = 5.0e-6
+      end if
+    end do !k
+
+
+  end function kaero2
  !---------------------------------------------------------------------
   function ec_ageing_rate() result(rate) 
  

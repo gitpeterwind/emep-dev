@@ -67,14 +67,14 @@ mg done   BLPhysics_ml.f90
 av done   BoundaryConditions_ml.f90
 ds done   CellMet_ml.f90
 ds done   CheckStop_ml.f90
-          ChemFunctions_ml.f90
+ds done   ChemFunctions_ml.f90
           Chem_ml.f90
 ds done   CoDep_ml.f90
 jej done  Convection_ml.f90
 an done   Country_ml.f90
 jej done  DefPhotolysis_ml.f90
 an done   DerivedFields_ml.f90
-ds nearly done  Derived_ml.f90 -ALVARO - could you check the ALVARO-2-DAVE bits?
+ds avdone Derived_ml.f90
           DO3SE_ml.f90
 ds --     DryDep_ml.f90
           DustProd_ml.f90
@@ -148,6 +148,21 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc5 Dave Mar 16th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+BLPhysics - small tidy
+BoundaryConditions_ml  & GlobalBCs_ml
+  - replaced uneeded OH and CH3COO2 stuff with SEASALT_F,C
+   (skip G for now. They don't travel far)
+ChemFunctions_ml - added kero2 with slower rates  and limit to k>=10
+ModelConstants_ml - sets USE_SOILWATER false. IFS stuff too hard for now!
+Setup_1d_ml - mini clean up
+Setup_1dfields_ml - clean up
+
+ZCM_EmChem09/GenIn.reactions - use kaero2
+ZCM_EmChem09/SAFE.CM_BoundaryConditions.inc - added sea salt
+ZCM_EmChem09/EMISSPLIT - voc files re-commented 
+
 xxxxxxxx rv3_7rc4  Alvaro, Dave, Peter  Mar 15 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Dave+Peter:

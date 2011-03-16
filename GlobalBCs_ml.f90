@@ -92,8 +92,8 @@ integer, public, parameter :: &
   ,IBC_NH4_f    = 14   &
   ,IBC_NO3_f    = 15   &
   ,IBC_NO3_c    = 16   &
-  ,IBC_CH3COO2  = 17   &
-  ,IBC_OH       = 18   &
+  ,IBC_SEASALT_f= 17   &
+  ,IBC_SEASALT_c= 18   &
   ,IBC_DUST_f   = 19   &      ! Dust
   ,IBC_DUST_c   = 20   &      ! Dust
   ,NGLOB_BC     = IBC_DUST_c  ! Totan no. species setup in this module
@@ -360,8 +360,10 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     SpecBC(IBC_SO4  )  = sineconc( 0.15 ,180.0, 0.00, 1.6  , 0.05, 0.03,PPB)!W99
     SpecBC(IBC_NO   )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.03, 0.02,PPB)
     SpecBC(IBC_NO2  )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04,PPB)
-    SpecBC(IBC_PAN  )  = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 ,PPB)!bcKz change vmin
+    SpecBC(IBC_PAN  )  = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 ,PPB)!Kz change vmin
     SpecBC(IBC_CO   )  = sineconc( 125.0, 75.0, 35.0, 25.0 , 70.0, 30.0,PPB)!JEJ-W
+   SpecBC(IBC_SEASALT_F)=sineconc( 6.0  , 15.0,  3.0,  1.6 , 0.01, 0.01,PPB)    
+   SpecBC(IBC_SEASALT_C)=sineconc( 0.8  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB)
     SpecBC(IBC_C2H6 )  = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05,PPB)
     SpecBC(IBC_C4H10)  = sineconc( 2.0  , 45.0, 1.0 , 6.0  , 0.05, 0.05,PPB)
     SpecBC(IBC_HCHO )  = sineconc( 0.7  ,180.0, 0.3 , 6.0  , 0.05, 0.05,PPB)
@@ -374,8 +376,6 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
  ! all BCs read in are in mix. ratio, thus hmin,vmin needs to be in mix. ratio for thosetio for those
     SpecBC(IBC_O3   )  = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,10.0*PPB  ,1.)!N1
     SpecBC(IBC_H2O2 )  = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,0.01*PPB  ,1.)
-    SpecBC(IBC_OH   )  = sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.)
-    SpecBC(IBC_CH3COO2)= sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-7*PPB,1.)
   ! Dust: the factor PPB converts from PPB to mixing ratio.
     SpecBC(IBC_DUST_c)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-15,1.0)
     SpecBC(IBC_DUST_f)=sineconc(-99.9 ,-99.9,-99.9,-99.9 ,-99.9,1.0e-15,1.0)
@@ -478,7 +478,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     bc_rawdata = max(15.0*PPB,bc_rawdata-O3fix)
     bc_rawdata = bc_rawdata*trend_o3
 
-  case (IBC_H2O2, IBC_OH, IBC_CH3COO2)
+  case ( IBC_H2O2 )
 
      bc_rawdata=1.0E-25
 
@@ -515,6 +515,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     endif
 
   case (IBC_SO2   , IBC_SO4  , IBC_HCHO , &
+        IBC_SEASALT_f,IBC_SEASALT_C, &
         IBC_CH3CHO, IBC_NH4_f, IBC_NO3_f)
     ! (No vertical variation for S in marine atmosphere, see W99)
     ! aNO3 and NH4 assumed to act as SO4

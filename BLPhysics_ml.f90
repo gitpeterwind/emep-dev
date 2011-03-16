@@ -1,16 +1,15 @@
 module BLPhysics_ml
+
  ! Collection of boundary layer met routines. Will move more code from tiphys
  !  here in future. Try to keep 1-D or elemental to allow use in offline codes 
  ! (*No* routines in use, except for testing)
- ! Copiedfrom Unimod.rv18WTA  14th Feb 2010
- ! use GridValues_ml,  only : sigma_bnd
 
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, KWINDTOP, PT
  use PhysicalConstants_ml, only : KARMAN, GRAV
  implicit none
  private
 
-!ds minimum value now generally calculated as z_mid(19), but we
+! minimum value now generally calculated as z_mid(19), but we
 !   keep a fixed value for smoothing. 
  real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
  real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
@@ -74,7 +73,7 @@ public :: SigmaKz_2_m2s ! hb 23.02.2010 Kz from meteo
 public :: Kz_m2s_toSigmaKz
 
 ! Conversion of Kz in sigma coordinates to m2/s,
-! from HF Kz(sigma)=Kz*ro**2*(GRAV/p*)**2
+!  Kz(sigma)=Kz*ro**2*(GRAV/p*)**2
 ! We can call this conversion routine as either scalar or array
   interface SigmaKz_2_m2s
      module procedure SigmaKz_2_m2s_scalar

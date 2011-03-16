@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -36,11 +36,10 @@
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC
-  use EmisDef_ml,            only :  NSS, NDU !dsBVOC , NBVOC   !SeaS, Dust
-  use ChemSpecs_tot_ml,        only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
-  use ChemSpecs_shl_ml,        only :  NSPEC_SHL
-  !ds use ChemSpecs_bgn_ml,        only :  NSPEC_COL
-  use Chemfields_ml,        only :  NSPEC_COL
+  use EmisDef_ml,            only :  NSS, NDU !SeaS, Dust
+  use ChemSpecs_tot_ml,      only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
+  use ChemSpecs_shl_ml,      only :  NSPEC_SHL
+  use Chemfields_ml,         only :  NSPEC_COL
   implicit none
   private
 
@@ -66,20 +65,19 @@
                   ,Fpart = 0.0      ! Fraction as gas-phase
 
  !Emissions in column. We assume that these only involve advected species
-   real, public, dimension(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID), save :: rcemis   !emissions
+   real, public, dimension(NSPEC_SHL+1:NSPEC_TOT,KCHEMTOP:KMAX_MID), save ::&
+         rcemis   !emissions
 
-!useDSGC   real, public, dimension(NBVOC ,KCHEMTOP:KMAX_MID), save   :: rcbio  !  Biogenic emissions
-
-  !dsPCM - reinstated
   ! We define a column array for isoprene and terpene for use in
   ! the chemical solver. All values except for k=KMAX_MID will
   ! remain zero however
 
-   real, public, dimension(NBVOC ,KCHEMTOP:KMAX_MID), save  :: rcbio = 0.0  !  Biogenic emissions
-   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3  ! hb NH3emis
-   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222  ! 210Pb emissions, ds Pb210
-   real, public, dimension(NSS,KCHEMTOP:KMAX_MID),     save :: rcss   ! Sea salt emissions
-   real, public, dimension(NDU,KCHEMTOP:KMAX_MID),     save :: rcwbd  ! windblown dust emissions
+  ! Emission arrays:
+   real, public, dimension(NBVOC,KCHEMTOP:KMAX_MID), save :: rcbio = 0.0 ! BVOC
+  !FUTURE real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3 
+   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222  ! 210Pb
+   real, public, dimension(NSS,KCHEMTOP:KMAX_MID), save :: rcss  ! Sea salt
+   real, public, dimension(NDU,KCHEMTOP:KMAX_MID), save :: rcwbd ! windblown dust
 
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)

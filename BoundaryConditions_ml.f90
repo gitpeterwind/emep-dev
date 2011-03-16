@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -82,7 +82,7 @@ use GlobalBCs_ml,      only:  &
   ,IBC_SO2, IBC_SO4, IBC_HCHO, IBC_CH3CHO &
   ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
   ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_NH4_f,IBC_NO3_f,IBC_NO3_c&
-  ,IBC_H2O2,IBC_CH3COO2, IBC_DUST_f, IBC_DUST_c  &  ! Dust
+  ,IBC_H2O2, IBC_DUST_f, IBC_DUST_c,IBC_SEASALT_F, IBC_SEASALT_C &
   ,setgl_actarray
 use GridValues_ml,     only: glon, glat   & ! full domain lat, long
                             ,sigma_mid    & !sigma layer midpoint

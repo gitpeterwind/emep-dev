@@ -42,7 +42,7 @@ private
 ! will be removed when code is sufficiently tested 
 ! (for convection use foundconv in permanent code)
 logical, public, parameter :: USE_CONVECTION     = .false.
-logical, public, parameter :: USE_SOILWATER      = .true.
+logical, public, parameter :: USE_SOILWATER      = .false. !needs more work for IFS!
 logical, public, parameter :: USE_FOREST_FIRES   = .false.
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.
