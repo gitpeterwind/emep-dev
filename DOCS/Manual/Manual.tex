@@ -7,6 +7,22 @@
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{parskip}
 \usepackage[margin=2.5cm]{geometry}
+
+\usepackage{fancyhdr}
+\setlength{\headheight}{15pt}
+ 
+\pagestyle{fancyplain}
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+ 
+\lhead{\fancyplain{}{\thepage}}
+\chead{}
+\rhead{\fancyplain{}{\textit{\leftmark}}}
+\lfoot{}
+\cfoot{}
+\rfoot{}
+
+
+
 %\hypersetup{
 %    pdfborder={0 0 0}    % fits the width of the page to the window
 %}
@@ -39,11 +55,11 @@
 \tableofcontents
 
 \input{Intro}
-\input{Input}
-\input{Output}
-\input{Subrun}
+%\input{Input}
+%\input{Output}
+%\input{Subrun}
 
-\input{references}
+%\input{references}
 
 % More coding comments .....
 %\input{Structure}   %  - same as in cookbook

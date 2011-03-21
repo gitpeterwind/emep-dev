@@ -44,6 +44,7 @@ The EMEP code is provided under the GNU General Public License version 3
 \newpage 
 Each code module is prefaced with something like:
 \begin{quote}
+\begin{small}
 \begin{verbatim}
 ! <EXAMPLE_CODE.f90 - A component of the EMEP MSC-W Unified Eulerian
 !          Chemical transport Model>
@@ -72,6 +73,7 @@ Each code module is prefaced with something like:
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************!
 \end{verbatim}
+\end{small}
 \end{quote}
 And a copy of the license file, {\bf gpl.txt}, is provided with the
 model code source files.
@@ -101,8 +103,11 @@ To compile the Unified EMEP model you need:\\
 It is necessary to compile with double precision reals (8 bytes
 reals). The program has been used on computers ranging from a Linux laptop to supercomputers 
 (Itanium2 cluster, Intel Xeon cluster, Cray XT4, IBM power5+). It is compatible with all 
-compilers tested so far:  Intel, PGI, gfortran, XL fortran. Examples of Makefiles are provided 
-with the model code source files.
+compilers tested so far:  Intel, PGI, gfortran, XL fortran. A Makefile is included,  
+the path to netcdf (INCL and LLIB) have to be adapted to your machine, and the fortran 
+compiler (F90) and flags (F90FLAGS) to the compiler you are using.
+
+
 
 The code has been tested with 1 to 1024 CPU, and scales well (for large grids).  If only one 
 CPU is used 1-2 GB memory is required and if more than one,
@@ -163,7 +168,7 @@ The tar file is called ``EMEP\_Unified\_model.tar'' and is downloadable from
 the EMEP Open Source website.
 
 All model files needed for a model run will be found under the
-directory {\bf EMEP\_Unified\_model.OpenSource/code/} where the model source code, 
+directory \\ {\bf EMEP\_Unified\_model.OpenSource2011/code/} where the model source code, 
 makefiles, and a copy of the license file are stored, 
 once this tar file is untarred. An overview is given in 
 Table~\ref{Tab:modelfiles}
@@ -182,7 +187,7 @@ Type      & Filename          \\
 \hline
 modules files & *.f90 \\
 include files & *.inc \\
-makefiles & Makefile\_* \\
+makefiles & Makefile and Makefile.SRCS \\
 %run script & modrun.sh \\
 a copy of the licence & gpl.txt \\
 \hline
@@ -190,13 +195,39 @@ a copy of the licence & gpl.txt \\
 \end{center}
 \end{table}
 
-The model source code is written in Fortran 90/95 programming language.
-There are three makefiles provided. ``Makefile'' is for a SGI Origin 3800
-computer, ``Makefile\_snow'' is for an Itanium2 cluster and the
-``Makefile\_njord'' is for an IBM power5+ cluster. 
+% The model source code is written in Fortran 90/95 programming language.
+% There are three makefiles provided. ``Makefile'' is for a SGI Origin 3800
+% computer, ``Makefile\_snow'' is for an Itanium2 cluster and the
+% ``Makefile\_njord'' is for an IBM power5+ cluster. 
+The Makefile needs to be adapted to suit your computer system.
+\begin{quote}
+\begin{small}
+\begin{verbatim}
+###################################################
 
-In adittion there will be a runscript called ``modrun.sh'', that will be placed 
-in the EMEP\_Unified\_model.OpenSource2011  diirectory. The run script, 
+LIBS = -lnetcdf
+INCL = -I/global/apps/netcdf/3.6.2/include
+LLIB = -L/global/apps/netcdf/3.6.2/lib
+
+F90 = mpif90
+
+#GNU gfortran compiler (version 4.4.3 or later) 
+F90FLAGS =  -ffree-line-length-none -fdefault-real-8   -O3
+
+#Intel ifort compiler
+F90FLAGS =  -shared-intel -r8  -recursive -O3
+
+###################################################
+\end{verbatim}
+\end{small}
+\end{quote}
+
+The path to netCDF (INCL and LLIB) has to be set correctly, and the fortran compiler 
+(F90) and flags (F90FLAGS) has to be changed to the compiler you are using. 
+
+
+In adittion there is a runscript called ``modrun.sh'', which will be placed 
+in the EMEP\_Unified\_model.OpenSource2011  directory. The run script, 
 ``modrun.sh'', can easily be modified to work on your computer system. This 
 script is described in detail in Chapter \ref{ch:SubmitARun}. 
 % A detailed 
