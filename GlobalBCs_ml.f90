@@ -44,6 +44,8 @@ use GridValues_ml,  only: glat_fdom, GlobalPosition
 use Functions_ml,   only: StandardAtmos_kPa_2_km ! for use in Hz scaling
 use GridValues_ml,  only: lb2ij, AN, glat_fdom, glon_fdom,A_mid, B_mid
 use Io_ml,          only: IO_GLOBBC, ios, open_file
+use LocalVariables_ml, only : Sub, Grid
+use MetFields_ml,   only: nwp_sea
 use ModelConstants_ml, only: PPB, KMAX_MID, Pref, MasterProc, DO_SAHARA, &
                           IIFULLDOM, JJFULLDOM
 use NetCDF_ml,      only: GetCDF, Read_Inter_CDF
@@ -94,8 +96,9 @@ integer, public, parameter :: &
   ,IBC_NO3_c    = 16   &
   ,IBC_SEASALT_f= 17   &
   ,IBC_SEASALT_c= 18   &
-  ,IBC_DUST_f   = 19   &      ! Dust
-  ,IBC_DUST_c   = 20   &      ! Dust
+  ,IBC_SEASALT_g= 19   &
+  ,IBC_DUST_f   = 20   &      ! Dust
+  ,IBC_DUST_c   = 21   &      ! Dust
   ,NGLOB_BC     = IBC_DUST_c  ! Totan no. species setup in this module
 
 
@@ -361,9 +364,10 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     SpecBC(IBC_NO   )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.03, 0.02,PPB)
     SpecBC(IBC_NO2  )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04,PPB)
     SpecBC(IBC_PAN  )  = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 ,PPB)!Kz change vmin
-    SpecBC(IBC_CO   )  = sineconc( 125.0, 75.0, 35.0, 25.0 , 70.0, 30.0,PPB)!JEJ-W
-   SpecBC(IBC_SEASALT_F)=sineconc( 6.0  , 15.0,  3.0,  1.6 , 0.01, 0.01,PPB)    
-   SpecBC(IBC_SEASALT_C)=sineconc( 0.8  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB)
+    SpecBC(IBC_CO   )  = sineconc( 5.0, 75.0, 35.0, 25.0 , 70.0, 30.0,PPB)!JEJ-W
+    SpecBC(IBC_SEASALT_F)=sineconc( 0.5  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB) 
+    SpecBC(IBC_SEASALT_C)=sineconc( 3.0  , 15.0,  1.0,  1.6 , 0.01, 0.01,PPB)
+    SpecBC(IBC_SEASALT_G)=sineconc( 1.0  , 15.0,  0.5,  1.0 , 0.01, 0.01,PPB)
     SpecBC(IBC_C2H6 )  = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05,PPB)
     SpecBC(IBC_C4H10)  = sineconc( 2.0  , 45.0, 1.0 , 6.0  , 0.05, 0.05,PPB)
     SpecBC(IBC_HCHO )  = sineconc( 0.7  ,180.0, 0.3 , 6.0  , 0.05, 0.05,PPB)
@@ -515,7 +519,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     endif
 
   case (IBC_SO2   , IBC_SO4  , IBC_HCHO , &
-        IBC_SEASALT_f,IBC_SEASALT_C, &
+!        IBC_SEASALT_f,IBC_SEASALT_C, &
         IBC_CH3CHO, IBC_NH4_f, IBC_NO3_f)
     ! (No vertical variation for S in marine atmosphere, see W99)
     ! aNO3 and NH4 assumed to act as SO4
@@ -524,6 +528,13 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     !  increases the concs don't change much.
     cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
     bc_rawdata(:,:,:) =    SpecBC(ibc)%surf  + SpecBC(ibc)%amp*cosfac
+
+  case (IBC_SEASALT_f, IBC_SEASALT_C, IBC_SEASALT_G)
+    ! Only for sea grids (check on ice cover should also be done)
+    if ( Grid%is_NWPsea ) then
+     cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
+     bc_rawdata(:,:,:) =    SpecBC(ibc)%surf  + SpecBC(ibc)%amp*cosfac
+    endif
 
     !/ - correct for latitude functions
     if (DEBUG_Logan) print *,"LOGAN HORIZ",ibc,SpecBC(ibc)%surf,cosfac

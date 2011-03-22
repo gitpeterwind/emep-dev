@@ -83,10 +83,11 @@ use GlobalBCs_ml,      only:  &
   ,IBC_O3,IBC_HNO3,IBC_PAN,IBC_CO,IBC_C2H6   &
   ,IBC_C4H10, IBC_NO ,IBC_NO2,IBC_NH4_f,IBC_NO3_f,IBC_NO3_c&
   ,IBC_H2O2, IBC_DUST_f, IBC_DUST_c,IBC_SEASALT_F, IBC_SEASALT_C &
-  ,setgl_actarray
+  ,IBC_SEASALT_G ,setgl_actarray
 use GridValues_ml,     only: glon, glat   & ! full domain lat, long
                             ,sigma_mid    & !sigma layer midpoint
                             ,debug_proc, i_fdom, j_fdom  ! for debugging
+use LocalVariables_ml, only: Grid
 use MetFields_ml,      only: z_mid       ! height of half layers
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
                             ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc, PPB

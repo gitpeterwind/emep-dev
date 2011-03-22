@@ -131,7 +131,7 @@ private
    character(len=TXTLEN_SHORT), private, parameter ::&
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
-   type(typ_s5i), public, parameter, dimension(36) :: &
+   type(typ_s5i), public, parameter, dimension(37) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D),&
          typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D),& 
@@ -151,7 +151,8 @@ private
          typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
          typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
          typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D),&
+         typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D),&
          typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D),& 
          typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D),& 
        ! ppb
