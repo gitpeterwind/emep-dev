@@ -148,6 +148,15 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc5 Svetlana Mar 22th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+More improvement on sea salt:
+
+Aero_Vds_ml.f90             - diameter of 'giant' particle
+BoundaryConditions_ml.f90   - BICs for 3 size fractions of sea salt
+GlobalBCs_ml.f90            -  --   #  ---- # ----- # ----
+ZD_OZONE/My_Derived_ml.f90  - SEASALT_G is in
+ZCM_EmChem09/SAFE.CM_BoundaryConditions.inc - BICs for 3 sizes of sea salt
+
 xxxxxxxx rv3_7rc5 Dave Mar 16th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 BLPhysics - small tidy
