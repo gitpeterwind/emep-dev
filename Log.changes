@@ -148,7 +148,7 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7rc5 Svetlana Mar 22th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7rc6 Svetlana Mar 22th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 More improvement on sea salt:
 
 Aero_Vds_ml.f90             - diameter of 'giant' particle
