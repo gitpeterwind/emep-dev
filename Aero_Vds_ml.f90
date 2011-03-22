@@ -62,7 +62,7 @@ contains
    ! Extra 'giant' size is used for sea salt only
 
      real, parameter, dimension(NSIZE) ::   &
-                 diam   = (/ 0.33e-6, 4.0e-6, 7.0e-6 /),  &
+                 diam   = (/ 0.33e-6, 4.0e-6, 8.5e-6 /),  &
                  sigma  = (/ 1.8, 2.0, 2.2 /),                    &
                  PMdens = (/ 1600.0, 2200.0, 2200.0 /) ! kg/m3
      real, parameter :: one2three = 1.0/3.0
