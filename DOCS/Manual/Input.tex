@@ -5,12 +5,14 @@ This chapter provides an overview on the necessary input files to run
 the Unified EMEP model. A complete set of input files is provided in
 the EMEP Open Source web page to allow model runs for the year 2008. 
 
-The inputfiles are zipped in 13 different files. After unzipping all of them, 
-there will be two files un EMEP\_Unified_model.OpenSource20100. All the meteorology 
-are palced under /met, and the rest of the input files under /input. 
-There are 12 zipped files for the meteorology, one or each month, the last file for 
-December also includes January 1{^st} 2009. The last zipped input file contains 
-all other input files needed for running the EMEP model, except AircraftEmis_FL.nc. 
+The inputfiles are zipped in 13 different files. 
+There are 12 zipped files for the meteorology, one or each month, called meteo2008MM.tar.bz2 (where MM 
+is the month). 
+The last file for December also include the met file for January 1$^{st}$ 2009. 
+The last zipped input file (called other\_input\_files.tar.bz2) contains all other input 
+files needed for running the EMEP model, except AircraftEmis\_FL.nc.
+After unzipping all of the tar files, there will be two directories under EMEP\_Unified\_model.OpenSource2011. 
+All the meteorology are palced under /met, and the rest of the input files under /input. 
 All the files, both meteorological and 
 the other input files, will be described in this chapter.
 
@@ -40,7 +42,6 @@ PM$_{2.5}$ and PM$_{co}$). ASCII$^*$ means ASCII files with header.
  && \\
 \hline
 {\bf Data} &  {\bf Name} & {\bf Format}\\
-\hline\hline
 % && \\
 % {\bf Meteorology data directory} & EMEP\_metdata/YYYY/&  \\
 \hline
@@ -210,8 +211,8 @@ emission data file and place it in the input folder.
 
 If USE\_AIRCRAFT\_EMIS = .true. in { \bf ModelConstants\_ml.f90,} then in adittion to the Aircraft 
 Emission file, there will be need for a SurfacePressure.nc file, which is already in the /input folder. 
-The netCDF file consistes of sureface pressure fields for each of the months in 2008 called surface_pressure, and one filed for the 
-whole year called surface_pressure_year. All fields are given in Pa. 
+The netCDF file consistes of sureface pressure fields for each of the months in 2008 called surface\_pressure, and one filed for the 
+whole year called surface\_pressure\_year. All fields are given in Pa. 
 
 
 \subsection{Landuse}
