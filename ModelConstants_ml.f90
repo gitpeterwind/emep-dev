@@ -41,7 +41,6 @@ private
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested 
 ! (for convection use foundconv in permanent code)
-<<<<<<< ModelConstants_ml.f90
 logical, public, parameter :: USE_CONVECTION     = .true.   !
 logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for IFS!
 logical, public, parameter :: USE_FOREST_FIRES   = .false.  ! Needs global files, future
