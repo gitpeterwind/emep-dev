@@ -41,17 +41,18 @@ private
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested 
 ! (for convection use foundconv in permanent code)
-logical, public, parameter :: USE_CONVECTION     = .true.
-logical, public, parameter :: USE_SOILWATER      = .false. !needs more work for IFS!
-logical, public, parameter :: USE_FOREST_FIRES   = .false.
-logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.
-logical, public, parameter :: USE_LIGHTNING_EMIS = .true.
-logical, public, parameter :: USE_SOIL_NOX       = .false.
-logical, public, parameter :: USE_SEASALT        = .true.
-logical, public, parameter :: USE_DUST           = .false.
-logical, public, parameter :: DO_SAHARA          = .false.     ! Turn on/off BG Saharan Dust
+<<<<<<< ModelConstants_ml.f90
+logical, public, parameter :: USE_CONVECTION     = .true.   !
+logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for IFS!
+logical, public, parameter :: USE_FOREST_FIRES   = .false.  ! Needs global files, future
+logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.  ! Needs global file, see manual
+logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
+logical, public, parameter :: USE_SOIL_NOX       = .false.  ! Future use 
+logical, public, parameter :: USE_SEASALT        = .true.   ! ok
+logical, public, parameter :: USE_DUST           = .false.  ! Experimental
+logical, public, parameter :: DO_SAHARA          = .false.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_AOD            = .false.
-logical, public, parameter :: USE_PFT_MAPS       = .false.
+logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
 logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget outputs
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
