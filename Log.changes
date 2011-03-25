@@ -148,6 +148,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc8 Dave 25th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+USE_CONVECTION = .false.
+
+
 xxxxxxxx rv3_7rc7 Dave/Birthe 24-25th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Dave:
