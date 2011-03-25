@@ -208,7 +208,7 @@ nadd = 0
 nprint = nterm
 if (nterm>nprint) nadd = 1
 
-if (MasterProc) print *,'nterm, nprint',nterm, nprint
+if (MasterProc) print *,'nterm, nprint:',nterm, nprint
 
 !-------------------------------------------------------------------
 !

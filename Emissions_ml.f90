@@ -205,7 +205,7 @@ contains
   real, dimension(NEMIS_FILES)       :: emsum    ! Sum emis over all countries
   real, dimension(NLAND,NEMIS_FILES) :: sumemis  ! Sum of emissions per country
 
-  if (MasterProc) write(6,*) "Emissions called with me, year", me, year
+  if (MasterProc) write(6,*) "Reading emissions for year",  year
 
   ! 0) set molwts, conversion factors (e.g. tonne NO2 -> tonne N), and
   !    emission indices (IQSO2=.., )
@@ -222,6 +222,7 @@ contains
 
   if( MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
 
+     write(6,*) "Reading monthly and daily timefactors"
     !=========================
      call timefactors(year)               ! => fac_emm, fac_edd, day_factor
     !=========================

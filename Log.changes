@@ -148,6 +148,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc9 Peter 25th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Cleaning the standard output (screen output)
+Not finished
+
 xxxxxxxx rv3_7rc8 Dave 25th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 USE_CONVECTION = .false.

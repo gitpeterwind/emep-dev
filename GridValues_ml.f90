@@ -418,8 +418,8 @@ contains
     CALL MPI_ALLREDUCE(MPIbuff, glacmin  , 1, &
          MPI_DOUBLE_PRECISION, MPI_MIN, MPI_COMM_WORLD, INFO) 
     
-    if(me==0) write(unit=6,fmt="(a30,4f9.4)") &
-                    "GridValues: max/min for glat,glon", &
+    if(me==0) write(unit=6,fmt="(a,4f9.2)") &
+                    " GridValues: max/min for lat,lon ", &
                      gbacmax,gbacmin,glacmax,glacmin
 
     if ( DEBUG_GRID ) then

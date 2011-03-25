@@ -215,8 +215,7 @@ contains
 !    in "NewDayFactors", and scale efac_mm if necessary.
 
 
-  write(unit=6,fmt=*) "Time factor interpolation "
-  write(unit=6,fmt=*) "for nmdays(2) = ", nmdays(2), " gives nydays= ", nydays
+  write(unit=6,fmt="(a,I6,a,I5)")" Time factors normalisation: ",nydays,' days in ',year 
 
   do iemis = 1, NEMIS_FILES
        n = 0

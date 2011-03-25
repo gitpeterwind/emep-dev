@@ -197,7 +197,7 @@ subroutine open_file(io_num,mode,fname,needed,skip)
       ios = NO_FILE
     else
       open(unit=io_num,file=fname,status="old",action="read",iostat=ios)
-      if( MasterProc ) write(unit=6,fmt=*) "File opened: ", fname, ios
+      if( MasterProc .and. DEBUG_IOPROG) write(unit=6,fmt=*) "File opened: ", fname, ios
       ! *** skip header lines if requested ****
       if ( present( skip ) ) then ! Read (skip) some lines at start of file
         do i = 1, skip

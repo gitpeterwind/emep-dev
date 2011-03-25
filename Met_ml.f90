@@ -335,7 +335,7 @@ contains
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
 
     if(trim(validity)/='averaged')then
-       if(MasterProc)write(*,*)'WARNING: 3D cloud cover is not averaged'
+       if(MasterProc.and.numt==1)write(*,*)'WARNING: 3D cloud cover is not averaged'
     endif
 
     namefield='precipitation'
@@ -363,13 +363,13 @@ contains
             unit,validity, cw(:,:,:,nr))
        if(validity==field_not_found)foundcloudwater = .false.
        if(MasterProc.and.foundcloudwater)then
-          write(*,*)'WARNING: 3D precipitations not found. Using 2D precipitations and cloudwater to make 3D'
-          if(nr==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and cloudwater"
+          if(numt==1)write(*,*)' WARNING: 3D precipitations not found. Using 2D precipitations and cloudwater to make 3D'
+          if(numt==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and cloudwater"
        endif
        !if cloudwater not available, will use RH to determine the height of release
        if(MasterProc.and..not.foundcloudwater)then
-          write(*,*)'WARNING: 3D precipitations not found. Using 2D precipitations and relative humidity to make 3D'
-          if(nr==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and humidity"
+          if(numt==1)write(*,*)' WARNING: 3D precipitations not found. Using 2D precipitations and relative humidity to make 3D'
+          if(numt==1)write(unit=IO_LOG,fmt="(a)")"3D precipitations:  derived from 2D and humidity"
        endif
 
     else
@@ -402,7 +402,7 @@ contains
              unit,validity, Kz_met(:,:,:,nr))
         if(validity==field_not_found)then
            foundKz_met = .false.
-        if(MasterProc)write(*,*)'WARNING: Kz will be derived in model '
+        if(MasterProc.and.numt==1)write(*,*)' WARNING: Kz will be derived in model '
         else
            foundKz_met = .true.
         endif
@@ -438,7 +438,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, rh2m(:,:,nr))
     if(validity==field_not_found)then
-        if(MasterProc)write(*,*)'WARNING: relative_humidity_2m not found'
+        if(MasterProc.and.numt==1)write(*,*)'WARNING: relative_humidity_2m not found'
         rh2m(:,:,nr) = -999.9  ! ?
     else
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
@@ -468,7 +468,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, sst(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: sea_surface_temperature not found '
+       if(MasterProc.and.numt==1)write(*,*)' WARNING: sea_surface_temperature not found '
        foundSST = .false.
     else
        foundSST = .true.
@@ -478,13 +478,13 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, SoilWater(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: SoilWater not found '
+       if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater not found '
        foundSoilWater = .false.
 
     !  The shallow soil water is intended for the experimental dust modelling
     !  and only implementted with HIRLAM-type inputs so far
     else if ( trim(unit) /= "m" ) then  ! PARLAM/HIRLAM has metres of water in top 7.2 cm
-       if(MasterProc)write(*,*)'WARNING: SoilWater-shallow not HIRLAM, skipping'
+       if(MasterProc.and.numt==1)write(*,*)'WARNING: SoilWater-shallow not HIRLAM, skipping'
        foundSoilWater = .false.
     else
        foundSoilWater = .true.
@@ -494,13 +494,13 @@ contains
   !========================================
     namefield='deep_soil_water_content'
     if(DomainName == "HIRHAM" ) then
-         write(*,*) "Rename soil water in HIRHAM"
+         if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
          namefield='soil_water_second_layer'
     end if
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, SoilWater_deep(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: ',trim(namefield),' not found '
+       if(MasterProc.and.numt==1)write(*,*)' WARNING: ',trim(namefield),' not found '
        foundSoilWater_deep = .false.
     else
        !<<<<<<< process SW <<<<<<<<<<<<<<<<<<<<<<<
@@ -526,7 +526,7 @@ contains
 
        SoilWater_deep(:,:,nr) = min( SoilWater_deep(:,:,nr)/SoilMax, 1.0 ) 
 
-       if(MasterProc.and.numt==1) write(*,*)'Met_ml Soilwater: ' // &
+       if(MasterProc.and.numt==1) write(*,*)' Met_ml Soilwater: ' // &
              trim(SoilWaterSource), SoilMax
 
        if ( water_cover_set ) then  ! smooth the SoilWater values:
@@ -618,7 +618,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, sdepth(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: snow_flag depth not found '
+       if(MasterProc.and.numt==1)write(*,*)' WARNING: snow_depth not found '
        foundsdepth = .false.
     else
        foundsdepth = .true.
@@ -629,7 +629,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, ice_nwp(:,:,nr))
     if(validity==field_not_found)then
-       if(MasterProc)write(*,*)'WARNING: ice_nwp coverage (%) not found '
+       if(MasterProc.and.numt==1)write(*,*)' WARNING: ice_nwp coverage (%) not found '
        foundice = .false.
     else
        foundice = .true.
@@ -682,7 +682,7 @@ contains
     !*********initialize grid parameters*********
 56  FORMAT(a5,i4.4,i2.2,i2.2,a3)
     write(meteoname,56)'meteo',nyear,nmonth,nday,'.nc'
-    if(MasterProc)write(*,*)'looking for ',trim(meteoname)
+    if(DEBUG_MET.and.MasterProc)write(*,*)'looking for ',trim(meteoname)
 
 
     call Getgridparams(meteoname,GRIDWIDTH_M,xp,yp,fi,xm_i,xm_j,xm2,&
@@ -2728,14 +2728,15 @@ contains
     character (len = 50) :: timeunit
 
     if(MasterProc)then
-       !open an existing netcdf dataset
+       print *,'Defining grid properties from ',trim(meteoname)
+      !open an existing netcdf dataset
        status = nf90_open(path=trim(meteoname),mode=nf90_nowrite,ncid=ncFileID)
 
        if(status /= nf90_noerr) then
           print *,'not found',trim(meteoname)
           METEOfelt=1
        else
-          print *,'  reading ',trim(meteoname)
+!          print *,'  reading ',trim(meteoname)
           projection=''
          call check(nf90_get_att(ncFileID,nf90_global,"projection",projection))
           if(trim(projection)=='Rotated_Spherical'.or.trim(projection)=='rotated_spherical'&
@@ -2767,7 +2768,7 @@ contains
           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=kdimID,len=KMAX_file))
           call check(nf90_inquire_dimension(ncid=ncFileID,dimID=timedimID,len=Nhh))
 
-          write(*,*)'dimensions meteo grid',GIMAX_file,GJMAX_file,KMAX_file,Nhh
+          write(*,*)'dimensions meteo grid:',GIMAX_file,GJMAX_file,KMAX_file,Nhh
 
           if(GIMAX_file/=IIFULLDOM.or.GJMAX_file/=JJFULLDOM)then
              write(*,*)'IIFULLDOM,JJFULLDOM ',IIFULLDOM,JJFULLDOM
