@@ -161,7 +161,7 @@
 
     dt_advec_inv=1.0/dt_advec
 
-   if(me==0)write(*,*)'dt_advec set to: ',dt_advec
+   if(me==0)write(*,fmt="(a,F8.1,a)")' advection time step (dt_advec) set to: ',dt_advec,' seconds'
 
   end subroutine assign_dtadvec
 
@@ -179,11 +179,11 @@
     nmax = (3600*metstep)/dt_advec
 
     if (me .eq. 0) then
-      write(6,*)
-      write(6,*)'**********************************************'
-      write(6,*)'nmax and dt_advec : ',nmax,dt_advec
-      write(6,*)'**********************************************'
-      write(6,*)
+!      write(6,*)
+!      write(6,*)'**********************************************'
+      write(6,fmt="(I3,a)")nmax,' advection steps within each metstep'
+!      write(6,*)'**********************************************'
+!      write(6,*)
     endif
 
   end subroutine assign_nmax

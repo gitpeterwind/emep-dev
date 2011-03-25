@@ -355,10 +355,9 @@ subroutine assign_NTERM(NTERM)
   NTERM=1+ceiling(tdif_secs(ts1,ts2)/spMETSTEP) !NTERM=1+#time-step
   if(NTERM<=1)then
     if(MasterProc)then
-      write(*,*)'WARNING: enddate before startdate'
+      write(*,*)'WARNING: enddate before startdate, running only one metstep'
       write(*,*)'Start date: ',startdate
       write(*,*)'End   date: ',enddate
-      write(*,*)'WARNING: running only one metstep'
     endif
     NTERM=max(2,NTERM)!run at least one period
   endif
