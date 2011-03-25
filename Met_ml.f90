@@ -514,6 +514,7 @@ contains
          ! Typical values in January are even down to 0.2. We choose 0.5
          ! as our max, and SoilWater_ml will consider drying effects after
          ! down to 0.25
+          call StopAll("Soil Water Handling with IFS not yet implemented")
           SoilWaterSource = "IFS"
           SoilMax = 0.5
        else   ! units not defined yet

@@ -250,7 +250,7 @@ if ($EUCAARI) {
   @emislist = qw ( sox nox nh3 co voc pm25 pmco );
 }
 
-my $testv = "rv3_7rc6";
+my $testv = "rv3_7rc7";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -433,8 +433,8 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1   =  "01";       # first month, use 2-digits!
-my $mm2   =  "01";       # last month, use 2-digits!
+my $mm1   =  "07";       # first month, use 2-digits!
+my $mm2   =  "07";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
 my $dd2   =  1;       # End day (can be too large; will be limited to max number of days in the month)
 
@@ -775,18 +775,15 @@ foreach my $scenflag ( @runs ) {
 # new inputs style (Aug 2007)  with compulsory headers:
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
- #LPJ prep $ifile{"$DataDir/Inputs_LandDefs.csv_25.02.2009"} = "Inputs_LandDefs.csv";
- #$ifile{"$DataDir/Inputs_LandDefs_20100317.csv"} = "Inputs_LandDefs.csv";
- #$ifile{"$DataDir/Inputs_LandDefs_20101016.csv"} = "Inputs_LandDefs.csv";
-  $ifile{"$DataDir/LandInputs_Jan2011/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Jan2011/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/LandInputs_Mar2011/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$DataDir/LandInputs_Mar2011/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
 
 #Prelim BVOC attempt
   $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";
 #New EURO BVOC
-  $ifile{"$DataDir/EMEP_EuroBVOC_KRS09.nc"} = "EMEP_EuroBVOC.nc";
+  $ifile{"$DataDir/LandInputs_Mar2011/EMEP_EuroBVOC.nc"} = "EMEP_EuroBVOC.nc";
 
 # Seasonal stuff  ----    Can't we improve this? e.g. every month?
   my %seasons = ( "jan" => "01", "apr" => "02", "jul" => "03" , "oct"=> "04");

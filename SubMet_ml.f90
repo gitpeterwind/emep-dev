@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -98,8 +98,8 @@ contains
     
     
     logical, save ::  my_first_call = .true.
-!FEB2009    integer, parameter ::  NITER = 1           ! no. iterations to be performed
-    integer ::  NITER     ! no. iterations to be performed
+    integer, parameter ::  NITER = 1           ! no. iterations to be performed
+    !testing integer ::  NITER     ! no. iterations to be performed
 
     integer :: iter                ! iteration variable
 
@@ -123,7 +123,6 @@ contains
         Sub(iL)%LE     = Grid%LE         ! First guess = NWP value
         Sub(iL)%t2     = Grid%t2         ! First guess = NWP value
         Sub(iL)%t2C    = Grid%t2C        ! First guess = NWP value
-!hf is_veg and is_ice added
         Sub(iL)%is_veg = LandType(iL)%is_veg
         Sub(iL)%is_ice = LandType(iL)%is_ice
 
@@ -191,7 +190,6 @@ contains
 
              z_1m   = (Sub(iL)%hveg + 1.0) - Sub(iL)%d
              z_3m   = max(3.0,Sub(iL)%hveg)
-!CHECK!!!! z_3m z_3md....
 
         end if
           
@@ -206,9 +204,9 @@ contains
           Sub(iL)%invL  = Grid%invL  
         else  ! Calculate ustar, invL for each landcover
 
-    NITER = 1
-    if ( Grid%Hd > -1 ) NITER = 2  ! Almost neutral to unstable
-    if ( Grid%Hd > 1  ) NITER = 4  ! more unstable
+    !NITER = 1
+    !TEST if ( Grid%Hd > -1 ) NITER = 2  ! Almost neutral to unstable
+    !TEST if ( Grid%Hd > 1  ) NITER = 4  ! more unstable
 
     do iter = 1, NITER 
 
@@ -247,11 +245,12 @@ contains
         !FEB2009 Sub(iL)%invL  = max( -1.0, Sub(iL)%invL ) !! limit very unstable
         ! Sub(iL)%invL  = min(  1.0, Sub(iL)%invL ) !! limit very stable
 
-      !FEB2009 added: To a good approx we can omit the PsiM(z0/L) term
+      ! To a good approx we could omit the PsiM(z0/L) term, but needed at ca. invL->-1
+
        Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
         (log( Sub(iL)%z_refd/Sub(iL)%z0 ) &
            - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)  &
-           + PsiM( Sub(iL)%z0*Sub(iL)%invL    ))  ! SMALL BUT NEEDED AT ca. invL->-1
+           + PsiM( Sub(iL)%z0*Sub(iL)%invL    )) 
 
     if (  DEBUG_SUBMET .and. debug_flag ) then
         write(6,"(a12,20f9.3)") "UKDEP SUBA", Sub(iL)%z0, Sub(iL)%d, &

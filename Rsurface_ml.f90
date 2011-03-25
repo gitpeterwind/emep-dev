@@ -197,9 +197,6 @@ contains
   !===========================================================================
   !/**  Adjustment for low temperatures (Wesely, 1989, p.1296, left column)
 
-!hf snow    Rlow = 1000.0*exp(-L%t2C - 4.0)
-!hf snow
-
     lowTcorr = exp(0.2*(-1 -L%t2C))!Zhang,2003 & Erisman 1994
     lowTcorr = min(2.0,lowTcorr)   !Zhang,2003 & Erisman 1994
     lowTcorr = max(1.0,lowTcorr)   !Zhang,2003 & Erisman 1994
@@ -217,8 +214,7 @@ contains
 
 
   !===========================================================================
-  !/** get CEH humidity factor and RgsS_dry and RgsS_wet:
-  !21.10.2008 Get Rns_SO2
+  ! Get Rns_SO2
 
        call CoDep_factors(G%so2nh3ratio24hr,G%so2nh3ratio,&
               L%t2C,L%rh,L%is_forest, debug_flag)
@@ -230,9 +226,7 @@ contains
   !/** Calculate stomatal conductance if daytime and LAI > 0 and snowdepth
   !    less than 1m above vegetation (1m chosen arbitrary)
 
-   !g_sto 0 when snow covering canopy as adviced by Juha-Pekka 
-!HERE WAS THE BUG!!
-!   if( leafy_canopy  .and. G%Idirect > 0.001 .and. G%sdepth> (1.0 +Sdmax) ) then  ! Daytime 
+   !g_sto 0 when snow covering canopy
    if( leafy_canopy  .and. G%Idirect > 0.001 .and. G%sdepth< (1.0 +Sdmax) ) then  ! Daytime 
 
         call CanopyPAR(L%LAI, G%coszen, G%Idirect, G%Idiffuse, &
@@ -255,7 +249,6 @@ contains
 !Need to find a way to define vegetation outside growing season - Rns_SO2 and NH3 should be used here as well
 
   !/** Calculate Rinc, Gext 
-  !       (use multiplication for snow, since snow=0 or 1)
 
      if(  canopy ) then   
 
@@ -319,16 +312,14 @@ contains
      !-------------------------------------------------------------------------
 
      !  code obtained from Wesely during 1994 personal communication
-     !  but changed (ds) to allow Vg(HNO3) to exceed Vg(SO2)
+     !  but changed to allow Vg(HNO3) to exceed Vg(SO2)
+     !  lowT based on: Rc=10scm-1 for -5, Rc=50scm-1 at -18 in Johanson&Granat, 1986
 
         if ( iwes == WES_HNO3 ) then
             lowT= -L%t2C *2.0
             Rsur(icmp)  = max(10.0,lowT) !not so affected by snow_flag, e.g. Erisman 1994,table 6,
-!FEB2009 - reimplement Vg limitation for HNO3. 10 cm/s max is enoug
-! anyway!
-            Rsur(icmp)  = max(1.0,lowT) !not so affected by snow_flag, e.g. Erisman 1994,table 6,
-                                        !Cadle,1985
-        !lowT based on: Rc=10scm-1 for -5, Rc=50scm-1 at -18 in Johanson&Granat, 1986
+           ! - reimplement Vg limitation for HNO3. 10 cm/s max is enough anyway!
+           ! Rsur(icmp)  = max(1.0,lowT) !Cadle,1985
 
             cycle GASLOOP
         end if
@@ -388,9 +379,8 @@ contains
            Gns(icmp) = 1.0e-5*Hstar*GnsS + f0*GnsO
            Rgs = 1.0/Gns(icmp)  ! Eqn. (9) !hf was  f0/do3se(iL)%RgsO
            Rsur(icmp)   = Rgs
-      ! write(*,"(a20,2i3,3g12.3)")  "RSURFACE Rgs (i): ", iL, icmp, Rgs_dry, Rgs_wet
 
-       end if  ! end of canopy tests 
+      end if  ! end of canopy tests 
 
 
       ! write(*,"(a20,2i3,3g12.3)")  "RSURFACE Rsur(i): ", iL, icmp, Rsur_dry(icmp), Rsur_wet(icmp)

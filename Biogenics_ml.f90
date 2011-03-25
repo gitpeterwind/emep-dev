@@ -218,7 +218,7 @@ module Biogenics_ml
 
     real    :: loc(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
-    integer :: n, pft, ivar, iVeg, iEmis, ibvoc
+    integer :: n, pft, ivar, iVeg, iEmis, ibvoc, i,j
     character(len=1000) :: varname
     character(len=2), dimension(4) :: VegName = (/ "CF", "DF", "NF", "BF" /)
 
@@ -243,16 +243,27 @@ module Biogenics_ml
              trim(varname), minval(loc), maxval(loc)
          bvocEF(:,:,ibvoc,iEmis) = loc(:,:)
        end do
-     end do
 
       ! Make a mask where we can use the local bvoc. Should be the same from
       ! all EFs, since only non-def areas set to -999, otherwise zero or +
+      ! If any values exist, should exist for all entries, hence check.
 
-      where(loc>-1.0)
-          EuroMask = .true.
-      else where 
-          EuroMask = .false.
-      end where
+       if( iVeg == 1 )  then
+          where(loc>-1.0)
+            EuroMask = .true.
+          end where
+       else  ! Just check that following maps are consistent
+           do i=1,MAXLIMAX
+           do j=1,MAXLJMAX
+             if ( EuroMask(i,j) .and. loc(i,j)<0.0 ) then
+               write(*,*) "MASK ERROR", me, i_fdom(i), j_fdom(j)
+               call CheckStop("EuroMask BVOC ERROR")
+             end if
+           end do
+           end do
+       end if
+                
+     end do
 
   end subroutine GetEuroBVOC
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -279,10 +290,9 @@ module Biogenics_ml
             pft     = LandType(iL)%pft
 
            if( debug_flag ) then
-               write(*,"(a,2i7,2L)") &
+               write(*,"(a,2i7,2L,i3)") &
                    "TryMergeBVOC" //trim(LandDefs(iL)%name), iL, pft, &
-                     use_local, HaveLocalEF(iL)
-               write(*,*) "TryMergeBVOC last_bvoc_LC = ", last_bvoc_LC
+                     use_local, HaveLocalEF(iL), last_bvoc_LC
            end if
 
            if( use_local .and. HaveLocalEF(iL) ) then 
@@ -294,7 +304,9 @@ module Biogenics_ml
                bvocEF(i,j,iL,BIO_ISOP) = LandDefs(iL)%Eiso * LandDefs(iL)%BiomassD 
                bvocEF(i,j,iL,BIO_MTP)  = LandDefs(iL)%Emtp * LandDefs(iL)%BiomassD
                bvocEF(i,j,iL,BIO_MTL)  = LandDefs(iL)%Emtl * LandDefs(iL)%BiomassD
-                if( debug_flag ) write(*,*) "MergeBVOC: Outside local", iL
+                if( debug_flag ) write(*,"(a,i3,8f8.2)") &
+                  "MergeBVOC: Outside local", iL, LandDefs(iL)%BiomassD,&
+                   LandDefs(iL)%Eiso, LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
            else
                 if( debug_flag ) write(*,*) "MergeBVOC: Outside LCC", iL
            end if
@@ -360,11 +372,19 @@ module Biogenics_ml
             iL      = LandCover(i,j)%codes(iiL)
 
             if ( iL >  last_bvoc_LC ) cycle
-            if ( LandCover(i,j)%LAI(iiL)<1.0e-5 ) cycle ! no veg:
+
+            !for tundra and wetlands we have zero LAI, so omit
+            !LAI scaling. Not an ideal system.... rewrite one day.
              
-              LAIfac = LandCover(i,j)%LAI(iiL)/LandDefs(IL)%LAImax
-              LAIfac= min(LAIfac, 1.0)
+              if( LandCover(i,j)%LAI(iiL)< 1.0e-5 ) then ! likely wetlands, tundra
+                 LAIfac = 1.0
+                 if( debug ) write(*,*)"BVOC TUNDRA/WETLANDS",iL,LandCover(i,j)%LAI(iiL)
+              else
+                LAIfac = LandCover(i,j)%LAI(iiL)/LandDefs(IL)%LAImax
+                LAIfac= min(LAIfac, 1.0)
+              end if
               LAIfac = LAIfac * LandCover(i,j)%fraction(iiL)
+              
 
               do ibvoc = 1, size(BVOC_USED) 
                 day_embvoc(i,j,ibvoc) = day_embvoc(i,j,ibvoc) + &

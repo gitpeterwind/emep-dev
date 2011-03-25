@@ -106,6 +106,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 70+OFFSET_j,  110+OFFSET_j /) ! (changeable)
+! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 80+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 
 integer, public, parameter ::  &
   NPROCX      =   8        & ! Actual number of processors in longitude
@@ -144,7 +145,8 @@ integer, private, parameter :: &
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
 ! DEBUG_ii= 74, DEBUG_jj= 79 ! Payerne_HIRHAM
- DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+ DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 86, DEBUG_jj= 92 ! Bothnian Bay, test for sea ice
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay

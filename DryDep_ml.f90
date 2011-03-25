@@ -48,16 +48,19 @@ module DryDep_ml
   !   WASP, 143, 123-137
   ! Tuovinen, J.-P.,Ashmore, M.R.,Emberson, L.D.,Simpson, D., 2004, "Testing
   !   and improving the EMEP ozone deposition module", Atmos.Env.,38,2373-2385
+  !
+  ! Also, handling of dry/wet and co-dep procedure changed following discussions
+  ! with CEH: Fagerli et al., in preperation....
 
  use My_Aerosols_ml,    only : NSIZE  
 
  use Aero_Vds_ml,  only : SettlingVelocity, GPF_Vds300, Wesely300
  use CheckStop_ml, only: CheckStop
- use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow !hf CoDep!,xn_adv
+ use Chemfields_ml , only : cfac, so2nh3_24hr,Grid_snow 
 
 
  use ChemChemicals_ml, only : species
- use ChemSpecs_adv_ml     ! Might need any species
+ use ChemSpecs_adv_ml         ! several species needed
  use ChemSpecs_tot_ml, only : NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL, &
                                NO2, SO2, NH3, O3
  use DO3SE_ml,         only : do3se, f_phen
@@ -90,7 +93,7 @@ module DryDep_ml
  use Rb_ml,                only : Rb_gas
  use Rsurface_ml
  use Setup_1dfields_ml,    only : xn_2d,amk, Fpart, Fgas
- use SoilWater_ml,         only : fSW !  SWP ! = 0.0 always for now!
+ use SoilWater_ml,         only : fSW !  =1.0 always for now with EC metdata. Can change with PARLAM
  use StoFlux_ml,  only:   unit_flux, &! = sto. flux per m2
                           lai_flux,  &! = lai * unit_flux
                           Setup_StoFlux, Calc_StoFlux  ! subs
@@ -532,7 +535,6 @@ module DryDep_ml
             Vg_3m (CDDEP_NO2) = Vg_3m (CDDEP_NO2) * no2fac
           end if ! CDDEP_NO2
 
-          ! new!
           !SUB0   Grid%Vg_ref(n) = Grid%Vg_ref(n) + L%coverage * Vg_ref(n)
           !SUB0   Grid%Vg_3m(n)  = Grid%Vg_3m(n)  + L%coverage * Vg_3m(n)
             Sub(0)%Vg_ref(n) = Sub(0)%Vg_ref(n) + L%coverage * Vg_ref(n)
@@ -587,14 +589,10 @@ module DryDep_ml
          
        !=======================
 
-        !TEST
         if (  LandType(iL)%flux_wanted ) then
-        !if ( STO_FLUXES ) then
 
             n = CDDEP_O3
 
-
-           !TEST
            Ra_diff = L%Ra_ref - L%Ra_3m   
            c_hveg3m = xn_2d(FLUX_TOT,KMAX_MID)  &     ! #/cm3 units
                         * ( 1.0-Ra_diff*Vg_ref(n) )
@@ -637,7 +635,6 @@ module DryDep_ml
        !=======================
        !=======================
 
-        !NEW
          call Calc_StoFlux(nFlux, iL_fluxes(1:nFlux), debug_flag )
 
 

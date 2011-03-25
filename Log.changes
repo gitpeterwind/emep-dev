@@ -76,7 +76,7 @@ jej done  DefPhotolysis_ml.f90
 an done   DerivedFields_ml.f90
 ds avdone Derived_ml.f90
           DO3SE_ml.f90
-ds --     DryDep_ml.f90
+ds done   DryDep_ml.f90
           DustProd_ml.f90
 mg done   EcoSystem_ml.f90
 an done   EmisDef_ml.f90
@@ -119,7 +119,7 @@ ab done   PhysicalConstants_ml.f90
 jej done  Radiation_ml.f90
 ds done   Rb_ml.f90
 an done   ReadField_ml.f90
-          Rsurface_ml.f90
+ds done   Rsurface_ml.f90
 an done   Runchem_ml.f90
 st ds done   SeaSalt_ml.f90      - finel small shanges are possible today
 ab done   Setup_1dfields_ml.f90 
@@ -129,7 +129,7 @@ ab done   SmallUtils_ml.f90
 ds done   SoilWater_ml.f90
 ds done   Solver.f90       - st small changes (see below)
 ds done   StoFlux_ml.f90
-ds --     SubMet_ml.f90
+ds done   SubMet_ml.f90
 jej done  Tabulations_ml.f90
 av done   TimeDate_ml.f90
 an done   Timefactors_ml.f90
@@ -148,11 +148,32 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7rc7 Birthe/Dave  24th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7rc7 Dave/Birthe 24-25th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+Dave:
+
+
+BVOC inputs changed. Just now run.pl hard-coded to read from mifads directory.
+Will recode when benchmarked 
+
+Biogenics_ml       - Small re-write to cope with latest EMEP_EuroBVOC.nc
+                     now copes with BVOC from wetlands, tundra.
+
+DryDep_ml          - cleanup (could be improved)
+
+Met_ml             - StopAll called if soil water attempt on IFS meteorology
+
+ModelConstants_ml  - USE_CONVECTION set true - regretted later!
+
+Rsurface_ml        - cleanup (could be improved)
+
+run.pl             - points to Inputs_Mar2011 for Inputs*csv
+                     and EMEP_EuroBVOC.nc
+
+SubMet_ml          - NITER set to 1 again. Simpler
+
+Birthe:
 DOC changes
-
-USE_CONVECTION set true
 
 xxxxxxxx rv3_7rc6 Svetlana Mar 22th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 More improvement on sea salt:
