@@ -75,7 +75,7 @@
   use ModelConstants_ml, only : KMAX_BND,KMAX_MID,NMET, nstep, nmax, &
                   dt_advec, dt_advec_inv,  PT,KCHEMTOP, NPROCX,NPROCY,NPROC, &
                   FORECAST,& 
-                  USE_CONVECTION
+                  USE_CONVECTION,DEBUG_ADV
   use MetFields_ml,      only : ps,sdot,SigmaKz,u_xmj,v_xmi,cnvuf,cnvdf
   use MassBudget_ml,     only : fluxin,fluxout
   use My_Timing_ml,      only : Code_timer, Add_2timing, tim_before,tim_after
@@ -181,7 +181,7 @@
     if (me .eq. 0) then
 !      write(6,*)
 !      write(6,*)'**********************************************'
-      write(6,fmt="(I3,a)")nmax,' advection steps within each metstep'
+      write(6,fmt="(I3,a,I2,a)")nmax,' advection steps within each metstep (',metstep,' hours)'
 !      write(6,*)'**********************************************'
 !      write(6,*)
     endif
@@ -228,7 +228,6 @@
     real dt_xys,dt_xy(KMAX_MID),dt_s,div
     integer niterxys,niterxy(KMAX_MID),niters,nxy,ndiff
     integer iterxys,iterxy,iters
-    logical, parameter :: DEBUG_ADV = .false.
 
 
     call Code_timer(tim_before)
@@ -818,7 +817,7 @@
                        MPI_MAX,MPI_COMM_WORLD,INFO)
     dt_smax = 1./scmax
 42  FORMAT(A,F10.2)
-    if(me==0.and. firstcall)write(*,42)'dt_smax',dt_smax
+    if(me==0.and. firstcall.and.DEBUG_ADV)write(*,42)'dt_smax',dt_smax
     niters = int(dt_advec/dt_smax)+1
     dt_s = dt_advec/real(niters)
 

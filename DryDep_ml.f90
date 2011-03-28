@@ -226,7 +226,7 @@ module DryDep_ml
    ! We process the various combinations of gas-species and ecosystem:
    ! starting with DryDep, e.g. DDEP_SO2_m2CF
  
-     if(MasterProc) write(6,*) "Init_DepMap D2D FINISHED"
+     if(MasterProc.and.DEBUG_DRYDEP) write(6,*) "Init_DepMap D2D FINISHED"
 
   end subroutine Init_DepMap
 

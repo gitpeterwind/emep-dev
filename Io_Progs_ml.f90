@@ -162,7 +162,7 @@ subroutine check_file(fname,fexist,needed,errmsg)
   errmsg = "ok"
   inquire(file=fname,exist=fexist)
 
-  write(unit=6,fmt=*) "check_file::: ", fname
+  if(DEBUG_IOPROG)write(unit=6,fmt=*) "check_file::: ", fname
   if ( .not. fexist .and. .not. needed ) then
     write(unit=6,fmt=*) "not needed, skipping....."
     ios = 0
@@ -170,7 +170,7 @@ subroutine check_file(fname,fexist,needed,errmsg)
     ios = -1
     print *, "ERROR: Missing!!! in check-file"
   else
-    write(unit=6,fmt=*) "ok. File exists"
+    write(unit=6,fmt=*) "Reading ",trim(fname)
   end if
 end subroutine check_file
 !-------------------------------------------------------------------------
@@ -404,7 +404,7 @@ subroutine Read2D(fname,data2d,idata2d)
 
   if ( MasterProc ) then
     close(IO_TMP)
-    write(6,*) fname // "Read2D: me, Nlines, Nused = ", me, Nlines, Nused
+    if(DEBUG_IOPROG)write(6,*) fname // " Read2D: me, Nlines, Nused = ", me, Nlines, Nused
   end if
 end subroutine Read2D
 !-------------------------------------------------------------------------
@@ -505,7 +505,7 @@ subroutine Read2DN(fname,Ndata,data2d,CheckValues,HeadersRead)
 
   if ( MasterProc ) then
     close(IO_TMP)
-    write(6,*) fname // "Read2DN: me, Nlines = ", me, Nlines
+    if(DEBUG_IOPROG)write(6,*) fname // " Read2DN: me, Nlines = ", me, Nlines
   end if
 end subroutine Read2DN
 !-------------------------------------------------------------------------

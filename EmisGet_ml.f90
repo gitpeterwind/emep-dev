@@ -52,7 +52,7 @@
   use KeyValue_ml,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
-                               MasterProc
+                               MasterProc,DEBUG_GETEMIS
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
@@ -357,11 +357,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   ! Pollutant names wil be checked against those defined in My_Emis_ml 
 
   read(unit=IO_EMIS,fmt="(a200)") txt
-  write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
+  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
 
   call wordsplit(txt,NCOLS_MAX,polltxt,ncols,ios)
-  write(unit=6,fmt=*) "In femis, header is: ",  txt
-  write(unit=6,fmt=*) "In femis, file has ", ncols, " columns (-2)"
+  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, header is: ",  txt
+  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, file has ", ncols, " columns (-2)"
   call CheckStop( ncols > NCOLS_MAX , "EmisGet:femisncols ncols > NCOLS_MAX" )
    if(ios>0)return
 
@@ -381,12 +381,12 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                 if ( polltxt(ic+2) == trim ( EMIS_NAME(ie) ) ) then
                     qc(ie) = ic
                     n = n + 1
-                    write(unit=6,fmt=*) "In femis: ", polltxt(ic+2),  &
+                    if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis: ", polltxt(ic+2),  &
                               " assigned to ", ie, EMIS_NAME(ie)
                   exit EMLOOP
                 end if
       end do EMLOOP ! ie
-       if (oldn == n)   &
+       if (oldn == n .and.DEBUG_GETEMIS)   &
            write(unit=6,fmt=*) "femis: ",polltxt(ic+2)," NOT assigned"
   end do COLS   ! ic
 
@@ -403,11 +403,16 @@ READEMIS: do   ! ************* Loop over emislist files *******************
       call CheckStop( ios > 0 , "EmisGet: read error in femis" )
 
       n = n + 1
-      write(unit=6,fmt=*) "FEMIS READ", inland, isec, (e_f(ic),ic=1,ncols)
+      if(DEBUG_GETEMIS)write(unit=6,fmt=*) "FEMIS READ", inland, isec, (e_f(ic),ic=1,ncols)
+      write(unit=6,fmt="(a,a,I3,a,i3,a)") " Emission factors from femis.dat,  ", "landcode =",& 
+      inland, ",  sector code =",isec, " (sector 0 applies to all sectors) :"
+      write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", ((trim(polltxt(qc(ie)+2))," =",e_f(qc(ie)),&
+           ",  "),ie=1,NEMIS_FILES-1), ((trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," "),ie=NEMIS_FILES,NEMIS_FILES)
 
       if (inland == 0 ) then     ! Apply factors to all countries
           iland1 = 1 
           iland2 = NLAND
+
       else                       ! Apply factors to country "inland"
 
 ! find country number  corresponding to index as written in emisfile
@@ -454,7 +459,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   close(IO_EMIS)
 
-  write(unit=6,fmt=*) "In femis, read ", n, "records from femis."
+  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, read ", n, "records from femis."
   if ( DEBUG.and.MasterProc ) then    ! Extra checks
      write(unit=6,fmt=*) "DEBUG_EMISGET: UK femis gives: "
      write(unit=6,fmt="(6x, 30a10)") (EMIS_NAME(ie), ie=1,NEMIS_FILES)
@@ -565,13 +570,15 @@ READEMIS: do   ! ************* Loop over emislist files *******************
         nsplit = nsplit - 2
 
         if ( MasterProc ) then
-          write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
-          write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
+          if(DEBUG_GETEMIS)write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
+          if(DEBUG_GETEMIS)write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
+          write(unit=6,fmt=*) "Splitting ", trim(EMIS_NAME(ie)), " emissions into ",&
+               ((trim(Headers(i+2)),' '),i=1,nsplit),'using ',trim(fname)
         end if
 
            do i = 1, nsplit
               intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
-              if(MasterProc) write(*,*) "SPLITINFO iem ", i,idef, intext(idef,i)
+              if(MasterProc.and.DEBUG_GETEMIS) write(*,*) "SPLITINFO iem ", i,idef, intext(idef,i)
               itot = find_index(intext(idef,i), species(:)%name )
               if ( defaults ) then
                 if ( Headers(i+2) /= "UNREAC" ) then 
@@ -591,13 +598,13 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                       tmp_emis_masscorr(iqrc) = 1.0/Emis_MolWt(ie)
                   end if
                 end if ! defaults
-                if ( MasterProc .and. itot>0 )  write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
+                if ( MasterProc .and.DEBUG_GETEMIS.and. itot>0 )  write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
                    "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
                      trim(species(itot)%name ), " MW:", 1.0/tmp_emis_masscorr(iqrc)
                  end if
               !end if defaults
            end do
-           if ( MasterProc )  write(6,"(a,i4,a,i4)") "Compare ns: used=", &
+           if ( MasterProc.and.DEBUG_GETEMIS )  write(6,"(a,i4,a,i4)") "Compare ns: used=", &
                 emis_nsplit(ie), "including any UNREAC:", nsplit
            
         n = 0
@@ -676,7 +683,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
        call CheckStop(  defaults .and. n  /=  NSECTORS, &
                         "ERROR: EmisGet: defaults .and. n  /=  NSECTORS" )
-       if(MasterProc) write(unit=6,fmt=*) "Read ", n, " records from ",fname
+       if(MasterProc.and.DEBUG_GETEMIS) write(unit=6,fmt=*) "Read ", n, " records from ",fname
 
     end do IDEF_LOOP 
   end do ! ie

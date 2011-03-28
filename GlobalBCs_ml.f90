@@ -241,8 +241,8 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     trend_voc= exp(-0.01*0.85*(1990-iyr_trend)) ! Zander,1975-1990
   end if
   if (MasterProc.and.first_call) then
-    print "(a20,i5)","GLOBAL TREND YEAR ",  iyr_trend
-    print "(a20,3f8.3)","TRENDS O3,CO,VOC ", trend_o3, trend_co, trend_voc
+    print "(a,i5)"," Trend year: ",  iyr_trend
+    print "(a,3f8.3)"," Trends for O3,CO and VOC: ", trend_o3, trend_co, trend_voc
   endif
 
 !==================================================================
@@ -452,7 +452,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
       read(IO_GLOBBC,*) bc_rawdata
       close(IO_GLOBBC)
     endif
-    print *,"dsOH READ OZONE3 ",trim(fname),": ",&
+    if(DEBUG_GLOBBC)print *,"dsOH READ OZONE3 ",trim(fname),": ",&
       bc_rawdata(IGLOB/2,JGLOB/2,20)
 
     ! Mace Head adjustment: get mean ozone from Eastern sector
@@ -475,9 +475,11 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
       ! grid coordinates of Mace Head
       call lb2ij(macehead_lon,macehead_lat, iMH,jMH)
 
-      print "(a10,2f7.2,i4,i6,3f8.3)","O3FIXes ",iMH,jMH, &
+      if(DEBUG_GLOBBC)print "(a10,2f7.2,i4,i6,3f8.3)","O3FIXes ",iMH,jMH, &
         month,icount,bc_rawdata(nint(iMH),nint(jMH),20)/PPB,&
         macehead_O3(month),O3fix/PPB
+      print "(a,f8.3)",' MaceHead correction for O3: ',-O3fix/PPB
+      
     endif
     bc_rawdata = max(15.0*PPB,bc_rawdata-O3fix)
     bc_rawdata = bc_rawdata*trend_o3

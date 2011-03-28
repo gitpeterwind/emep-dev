@@ -319,7 +319,7 @@ contains
          unit,validity, sdot(:,:,:,nr))
     if(validity==field_not_found)then
        foundsdot = .false.
-       if(MasterProc)write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
+       if(MasterProc.and.numt==1)write(*,*)'WARNING: sigma_dot will be derived from horizontal winds '
     else
        foundsdot = .true.
     endif
@@ -1430,7 +1430,7 @@ contains
 
        if ( MasterProc  ) then
           write(fname,fmt='(''landsea_mask.dat'')')
-          write(6,*) 'filename for landuse ',fname
+          write(6,*) 'reading land-sea map from ',fname
        end if
        needed_found=.false.
        call ReadField(IO_ROUGH,fname,r_class,needed_found,fill_needed=.true.)

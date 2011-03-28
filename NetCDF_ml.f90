@@ -230,9 +230,9 @@ character(len=80) ::UsedProjection
      UsedProjection=trim(projection)
   endif
 
-  write(*,*)'create ',trim(fileName)
-  write(*,*)'UsedProjection ',trim(UsedProjection)
-  write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
+  write(*,*)'creating ',trim(fileName)
+  if(DEBUG_NETCDF)write(*,*)'UsedProjection ',trim(UsedProjection)
+  if(DEBUG_NETCDF)write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
     GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
   call check(nf90_create(path = trim(fileName), &
         cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
@@ -283,8 +283,8 @@ character(len=80) ::UsedProjection
   call check(nf90_def_dim(ncid = ncFileID, name = "time", len = nf90_unlimited, dimid = timeDimID))
 
   call Date_And_Time(date=created_date,time=created_hour)
-  write(6,*) 'created_date: ',created_date
-  write(6,*) 'created_hour: ',created_hour
+  if(DEBUG_NETCDF)write(6,*) 'created_date: ',created_date
+  if(DEBUG_NETCDF)write(6,*) 'created_hour: ',created_hour
 
   ! Write global attributes
   call check(nf90_put_att(ncFileID, nf90_global, "Conventions", "CF-1.0" ))
@@ -496,7 +496,7 @@ character(len=80) ::UsedProjection
   call check(nf90_put_var(ncFileID, PTVarID, PT ))
 
   call check(nf90_close(ncFileID))
-  write(*,*)'NetCDF: file created, end of CreatenetCDFfile'
+  if(DEBUG_NETCDF)write(*,*)'NetCDF: file created, end of CreatenetCDFfile'
 end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
@@ -1080,7 +1080,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   real :: scale,offset,scalefactors(2)
   integer, allocatable:: Ivalues(:)
 
-  if(me==0)print *,'GetCDF  reading ',trim(fileName), 'nstart ', nstart
+  if(me==0.and.DEBUG_NETCDF)print *,'GetCDF  reading ',trim(fileName), ' nstart ', nstart
   !open an existing netcdf dataset
   fileneeded=.true.!default
   if(present(needed))then
@@ -1108,7 +1108,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
 
   if(status == nf90_noerr) then
-     print *, 'variable exists: ',trim(varname)
+     if(DEBUG_NETCDF)print *, 'variable exists: ',trim(varname)
   else
      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
      nfetch=0
@@ -1328,7 +1328,7 @@ endif
   !open an existing netcdf dataset
   status=nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
   if(status == nf90_noerr) then
-     print *, 'reading ',trim(filename)
+     print *, 'reading ',trim(varname), ' from ',trim(filename)
   else
      nfetch=0
      if(fileneeded)then
@@ -1345,7 +1345,7 @@ endif
   !test if the variable is defined and get varID:
   status = nf90_inq_varid(ncid = ncFileID, name = trim(varname), varID = VarID)
   if(status == nf90_noerr) then
-     print *, 'variable exists: ',trim(varname)
+     if(DEBUG_NETCDF)print *, 'variable exists: ',trim(varname)
   else
      nfetch=0
      if(fileneeded)then
@@ -1465,7 +1465,7 @@ if(interpol_used=='zero_order')then
      enddo
   enddo
 elseif(interpol_used=='bilinear')then
-write(*,*)'bilinear interpolation',dims(1)
+if(DEBUG_NETCDF)write(*,*)'bilinear interpolation',dims(1)
 !interpolation 2:
 !bilinear
 ijk=0
@@ -1643,7 +1643,6 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   endif
 
 
-
   interpol_used='zero_order'!default
   if(present(interpol))then
      interpol_used=interpol
@@ -1718,6 +1717,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
     call check(nf90_get_att(ncFileID, nf90_global, "projection", data_projection ),"Proj")
     if ( debug ) write(*,*) 'data projection from file ',trim(data_projection)
   end if
+  if(MasterProc)write(*,*)'Interpolating ',trim(varname),' from ',trim(filename),' to present grid'
 
   if(trim(data_projection)=="lon lat")then ! here we have simple 1-D lat, lon
      allocate(Rlon(dims(1)), stat=alloc_err)
@@ -2079,10 +2079,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 !_________________________________________________________________________________________________________
   else ! data_projection)/="lon lat"
 
-     if(MasterProc)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+     if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
 
      call CheckStop(interpol_used=='mass_conservative', "ReadField_CDF: only linear interpolation implemented")
-     if(interpol_used=='zero_order'.and.MasterProc)&
+     if(interpol_used=='zero_order'.and.MasterProc.and.debug)&
           write(*,*)'zero_order interpolation asked, but performing linear interpolation'
 
      call CheckStop(data3D, "ReadField_CDF : 3D not yet implemented for general projection")

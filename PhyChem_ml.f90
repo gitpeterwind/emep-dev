@@ -247,7 +247,10 @@ contains
                         current_date%hour    == END_OF_EMEPDAY)
 
           if( End_of_Day .and. me == 0 ) then
-              write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY, Hour,seconds=", &
+             print "(a,i2.2,a,i2.2,a,i2.2,a)",' End of EMEP-day (',&
+                  current_date%hour, ':',current_date%seconds/60,':'&
+                  ,current_date%seconds-60*(current_date%seconds/60),')'
+             if(DEBUG_PHYCHEM)write(*,"(a20,2i4,i6)") "END_OF_EMEPDAY ", &
                 END_OF_EMEPDAY, current_date%hour,current_date%seconds
           endif
 

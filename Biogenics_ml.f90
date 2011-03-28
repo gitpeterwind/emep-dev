@@ -201,7 +201,8 @@ module Biogenics_ml
             if( LandDefs(iL)%Emtl > 0 ) last_bvoc_LC = iL
 
          end do
-         if( MasterProc ) write(*,*) " LAST BVOC LC from LandDefs:", last_bvoc_LC
+         if( MasterProc.and.DEBUG_BIO)&
+              write(*,*) " LAST BVOC LC from LandDefs:",last_bvoc_LC
 
        ! We need at least 4 for CF, DF, NF, BF in Euro file
          last_bvoc_LC =  max(last_bvoc_LC, 4 ) 
@@ -274,7 +275,7 @@ module Biogenics_ml
       real :: biso, bmt    !  Just for printout
       logical :: use_local, debug_flag
 
-      if( MasterProc ) write(*,*) "Into MergedBVOC"
+      if( MasterProc .and.DEBUG_BIO) write(*,*) "Into MergedBVOC"
 
       do i = 1, MAXLIMAX
       do j = 1, MAXLJMAX
@@ -346,7 +347,7 @@ module Biogenics_ml
       logical :: my_first_call = .true.
       real, allocatable, dimension(:,:) ::  workarray
 
-      if( MasterProc ) write(*,"(a,3i5)") "Into SetDailyBVOC", &
+      if( MasterProc .and.DEBUG_BIO ) write(*,"(a,3i5)") "Into SetDailyBVOC", &
             daynumber, last_daynumber, last_bvoc_LC
 
       if ( daynumber == last_daynumber ) return

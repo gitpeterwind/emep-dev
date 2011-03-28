@@ -435,7 +435,7 @@ private
        if(DEBUG .and. MasterProc)  print *, "VEGO3 NUMS ", n, n1,&
             trim( VEGO3_WANTED(n) )
       end do
-      call WriteArray(VEGO3_OUTPUTS(:)%name,nVEGO3," VEGO3 OUTPUTS")
+      if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,size(VEGO3_WANTED)," VEGO3 OUTPUTS:")
       call Add_MosaicVEGO3(M, nVEGO3)  ! M=monthly
       nOutVEGO3 = nVEGO3
 
@@ -498,7 +498,7 @@ private
                   call AddArray(  tag_name(1:1) , wanted_deriv3d, &
                      NOT_SET_STRING, errmsg)
                   call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
-                  if(MasterProc) write(*,*) "Xd-3d-DONE ", n, trim(tag_name(1))
+                  if(DEBUG.and.MasterProc) write(*,*) "Xd-3d-DONE ", n, trim(tag_name(1))
               end if
          else
             call StopAll("Not coded yet")
@@ -519,15 +519,15 @@ private
 
 
      if ( MasterProc ) then
-       write(*,*) "Init_My_Deriv, mynum_deriv2d = ", mynum_deriv2d
-       write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
-       if(  DEBUG ) then
-         do i = 1, mynum_deriv2d
-           write(*,*) "DEBUG DERIV2D ", i, mynum_deriv2d, wanted_deriv2d(i)
-         end do
-       end if
-       call WriteArray(wanted_deriv2d,mynum_deriv2d," Wanted 2d array is")
-       call WriteArray(wanted_deriv3d,mynum_deriv3d," Wanted 3d array is")
+        if(  DEBUG ) then
+           write(*,*) "Init_My_Deriv, mynum_deriv2d = ", mynum_deriv2d
+           write(*,*) "Init_My_Deriv, mynum_deriv3d = ", mynum_deriv3d
+           do i = 1, mynum_deriv2d
+              write(*,*) "DEBUG DERIV2D ", i, mynum_deriv2d, wanted_deriv2d(i)
+           end do
+        end if
+       call WriteArray(wanted_deriv2d,mynum_deriv2d," Required 2D output ")
+       call WriteArray(wanted_deriv3d,mynum_deriv3d," Required 3D output ")
 
      end if
 

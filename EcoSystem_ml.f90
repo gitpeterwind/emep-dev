@@ -59,11 +59,11 @@ contains
     logical :: debug_flag
     real :: coverage
 
+      if( MasterProc ) &
+           write(*,*) "Defining ecosystems: ",((trim(DEF_ECOSYSTEMS(iEco))," "),iEco = 1, NDEF_ECOSYSTEMS)
     do iEco = 1, NDEF_ECOSYSTEMS
 
-       if( MasterProc ) &
-           write(*,*) "======== DEP REECEIVERS " // DEF_ECOSYSTEMS(iEco)
-
+ 
        name = "Area_"//trim(DEF_ECOSYSTEMS(iEco))//"_Frac"
        unit = "Fraction"
        if(iEco==FULL_ECOGRID) then

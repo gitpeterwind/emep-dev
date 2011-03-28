@@ -368,12 +368,12 @@ contains
          itot  = WDepMap(n)%ind
          Calc2tot(icalc,0) =  Calc2tot(icalc,0)  + 1
          nc = Calc2tot(icalc,0)
-     if( MasterProc ) write(6,"(a,4i5)") "CHECKING WetDep Calc2tot ", &
+     if( MasterProc .and.DEBUG) write(6,"(a,4i5)") "CHECKING WetDep Calc2tot ", &
             n,icalc,itot,nc
          Calc2tot(icalc,nc) = itot
       end do 
 
-     if( MasterProc ) then
+     if( MasterProc.and.DEBUG ) then
       write(*,*) "FINAL WetDep Calc2tot "
       do icalc = 1, NWETDEP_CALC
         write(*,"(i3,i4,15(1x,a))") icalc, Calc2tot(icalc,0 ), &

@@ -265,7 +265,7 @@ if (MasterProc.and.DEBUG_UNI) print *,"vgrid finish"
 
 ! open only output netCDF files if needed
 if (MasterProc) then
-  print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
+  if(DEBUG_UNI)print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
   ! The fullrun file contains the accumulated or average results
   ! over the full run period, often a year, but even just for
   ! a few timesteps if that is all that is run:
@@ -371,8 +371,9 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
   call Add_2timing(12,tim_after,tim_before,"Fires+BVOC")
 
   daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
-  if (MasterProc) print *,'TIME TEST ',&
-    'current date ',current_date,"day number ",daynumber
+  if (MasterProc) print "(a,2I2.2,I4,3x,i2.2,a,i2.2,a,i2.2)",' current date and time: ',&
+      current_date%day,current_date%month,current_date%year,&
+     current_date%hour, ':',current_date%seconds/60,':',current_date%seconds-60*(current_date%seconds/60)
 
 
   call Code_timer(tim_before)

@@ -143,7 +143,7 @@ module AirEmis_ml
 
          close(IO_LIGHT)
 
-         write(6,*) 'lightning sum nox in AirEmis',sumnox
+         write(6,*) 'Sum of NOx emissions from lightning: ',sumnox
 
       endif
 
@@ -225,7 +225,7 @@ module AirEmis_ml
             end do    !lat 
          end do       !k
             
-         write(6,*) 'SUMNOX, ANCAT:',sumnox
+         if(MY_DEBUG)write(6,*) 'SUMNOX, ANCAT:',sumnox
       endif        !me=0
 
 
@@ -352,7 +352,7 @@ module AirEmis_ml
         MPIbuff=sum2
         CALL MPI_ALLREDUCE(MPIbuff,sum2, 1, &
         MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-      if(me == 0) write(6,*) 'ancat on limited area:',sum,sum2
+      if(me == 0.and.MY_DEBUG) write(6,*) 'ancat on limited area:',sum,sum2
 
   end subroutine air_inter
   !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

@@ -148,10 +148,15 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7rc9 Peter 25th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7rc9 Peter 25-28th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Cleaning the standard output (screen output)
-Not finished
+Modified (at least):
+EmisGet_ml.f90 Landuse_ml.f90 EcoSystem_ml.f90 Derived_ml.f90 
+Aqueous_n_WetDep_ml.f90 Io_Progs_ml.f90 Sites_ml.f90 Emissions_ml.f90 
+AirEmis_ml.f90 BoundaryConditions_ml.f90 NetCDF_ml.f90 MassBudget_ml.f90 
+GlobalBCs_ml.f90 Met_ml.f90 Biogenics_ml.f90 DryDep_ml.f90 Advection_ml.f90 
+ModelConstants_ml.f90 Unimod.f90 PhyChem_ml.f90
 
 xxxxxxxx rv3_7rc8 Dave 25th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

@@ -154,7 +154,7 @@ contains
       CALL MPI_ALLREDUCE(MPIbuff, sumint , NSPEC_ADV, &
       MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
 
-    if(MasterProc)then
+    if(MasterProc.and.EXTENDEDMASSBUDGET)then
          do n = 1,NSPEC_ADV
        if(sumint(n) >  0. ) then
              write(IO_RES,"(a15,i4,4x,e10.3)") "Initial mass",n,sumint(n) 

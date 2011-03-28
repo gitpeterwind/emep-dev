@@ -334,7 +334,7 @@ private
 !-------------------------------------------------------------------------------
 ! Areas of deposition-related ecosystems. Set externally
   do n = 1, NDEF_ECOSYSTEMS
-     if(MasterProc) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
+     if(DEBUG.and.MasterProc) write(*,*) "ECODEF ",n, trim( DepEcoSystem(n)%name )
 
      call AddDeriv( DepEcoSystem(n) )
 
@@ -457,8 +457,9 @@ do ind = 1, size( OutputConcs(:)%txt1 )
      dname = "D3_" // trim( outunit ) // "_" // trim( outname )
 
      ! Always print out 3D info. Good to help avoid using 3d unless really needed!
-     if( MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") "ADD-3D ", ind, iout, &
-      trim(dname),";", trim(class), outmm, outdd, OutputConcs(ind)%ind,unitscale
+     if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
+      trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
+      !, OutputConcs(ind)%ind,unitscale
 
      call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
              iout  , -99, F,   unitscale,     T,   OutputConcs(ind)%ind, & 
@@ -498,7 +499,7 @@ do ind = 1, size( WDEP_WANTED(:)%txt1 )
      call AddNewDeriv( dname, "WDEP", "-", "-", unittxt , &
               iadv , -99,   F,   unitscale,     F,  IOU_DAY ) 
    end if
-   if(MasterProc) write(*,*) "WETTING ", trim(dname), " ",  trim(unittxt)
+   if(MasterProc) write(*,*) "Wet deposition output: ", trim(dname), " ",  trim(unittxt)
 end do
 
 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &

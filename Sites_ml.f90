@@ -279,12 +279,12 @@ subroutine Init_sites(fname,io_num,NMAX, nglobal,nlocal, &
 
     if ( ix<RUNDOMAIN(1) .or. ix>RUNDOMAIN(2) .or. &
          iy<RUNDOMAIN(3) .or. iy>RUNDOMAIN(4) ) then
-      if(MasterProc) write(6,"(A,': ',A,2(1X,I0),1X,A)") &
-        "sitesdef", trim(s), ix, iy, "outside computational domain"
+      if(MasterProc) write(6,"(A,': ',A,2(A,1X,I0),A)") &
+        "site", trim(s), ', i =',ix, ', j =',iy, ", outside computational domain"
     elseif ( ix==RUNDOMAIN(1) .or. ix==RUNDOMAIN(2) .or. &
              iy==RUNDOMAIN(3) .or. iy==RUNDOMAIN(4) ) then
-      if(MasterProc) write(6,"(A,': ',A,2(1X,I0),1X,A)") &
-        "sitesdef", trim(s), ix, iy, "on computational domain"
+      if(MasterProc) write(6,"(A,': ',A,2(A,1X,I0),A)") &
+        "site", trim(s), ', i =',ix, ', j =',iy, ", on domain boundary"
     else
       comment = " ok - inside domain         "
       n = n + 1

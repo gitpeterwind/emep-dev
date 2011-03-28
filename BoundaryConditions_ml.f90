@@ -400,8 +400,9 @@ subroutine My_bcmap(iyr_trend)
                                  !exp(-0.01*0.6633*(1975-iyr_trend)) ! Zander,1951-1975
   endif
   trend_ch4 = top_misc_bc(IBC_CH4)/1780.0
-  if (MasterProc) print "(a20,i5,2f12.3)","TREND CH4", &
+  if (MasterProc.and.DEBUG_MYBC) print "(a20,i5,2f12.3)","TREND CH4", &
     iyr_trend, trend_ch4, top_misc_bc(IBC_CH4)
+  if (MasterProc) print "(a,f12.3,a,I5,a)"," CH4 ", top_misc_bc(IBC_CH4), ' (trend year ',iyr_trend,')'
 
   top_misc_bc(IBC_CH4) =  top_misc_bc(IBC_CH4) * PPB
   top_misc_bc(IBC_H2)  =  600.0 * PPB
@@ -499,7 +500,7 @@ subroutine Set_bcmap()
 
   if (DEBUG_BCS) print "(A,/10i5)","TEST SET_BCMAP bc_used: ",&
     (bc_used(ibc),ibc=1, NTOT_BC)
-  if (MasterProc) print *,"Finished Set_bcmap: Nbcused is ", sum(bc_used)
+  if (MasterProc.and.DEBUG_BCS) print *,"Finished Set_bcmap: Nbcused is ", sum(bc_used)
 
   allocate(spc_changed2adv(num_adv_changed))
   allocate(spc_changed2bgn(num_bgn_changed))

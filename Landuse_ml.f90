@@ -187,7 +187,8 @@ contains
          do i = 1,  NLanduse_DEF
             Land_codes(i) = trim ( Headers(i+2) )
          end do
-         
+         if(MasterProc)write(*,*)NLanduse_DEF,' landuse categories defined from Inputs.Landuse:'
+         if(MasterProc)write(*,fmt="(20(A,1x))")(trim(Land_codes(i)),i=1,NLanduse_DEF)
          ! Then data:
          
          call Read2DN("Inputs.Landuse",NLanduse_DEF,landuse_in,&

@@ -315,10 +315,10 @@ contains
 
 
     if ( MasterProc ) then
-        write(unit=6,fmt=*) "Country totals"
-        write(unit=IO_LOG,fmt=*) "Country totals"
-        write(unit=6,fmt="(2a4,3x,30a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
-        write(unit=IO_LOG,fmt="(2a4,3x,30a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
+        write(unit=6,fmt=*) "Total emissions by countries:"
+        write(unit=IO_LOG,fmt=*) "Total emissions by countries:"
+        write(unit=6,fmt="(2a4,11x,30a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
+        write(unit=IO_LOG,fmt="(2a4,11x,30a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
 
         do ic = 1, NLAND
            ccsum = sum( sumemis(ic,:) )
@@ -941,7 +941,7 @@ endif
 
               write(fname,fmt='(''natso2'',i2.2,''.dat'')')     &
                 current_date%month
-              write(6,*) 'filename for nat-so2',fname
+              write(6,*) 'Reading DMS emissions from ',trim(fname)
               endif
 
               call ReadField(IO_DMS,fname,rdemis)
