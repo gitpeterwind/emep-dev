@@ -73,39 +73,39 @@ rm INPUT.PARA
 
 \end{verbatim}
 \end{quote}
-This bach shell script is designed so that the user can easily 
-change it to fit his needs. It only asks for the minimum information 
-to start the Unified EMEP model. 
-The script is pretty self-explanatory. It assumes two directories for input data 
-one with all the metdata for 2008, and for January 1$^{st}$ 2009 (366 +1 files), 
+This bash shell script is designed so that users can easily 
+adapt it to fit their needs. It contain the minimum information 
+required to run the Unified EMEP model. 
+The script should be self-explanatory. It assumes two directories for input data. 
+One with all the metdata for 2008, and for January 1$^{st}$ 2009 (366 +1 files), 
 and one input directory for all the other input files. You need to set the right paths 
 for the input directories.  
-All the input files in the input directories are linked to the directory where you are working from. 
+All the input files in the input directories are linked to the directory you are working from. 
   
 
 The next part of the script sets the different parameters for the model run. 
 The trendyear can be set to change the boundary emissions for 
 earlier and future years, see the modules {\bf BoundaryConditions\_ml.f90 } 
 and {\bf GlobalBCs\_ml.f90 } to understand better what the trendyear 
-setting does. The default setting is the year you are running for, in this case 
-2008. 
+setting does. The default setting is the meteorological year you are running for, 
+in this case 2008. 
 The runlabel1 option sets the name of the different output netCDF 
 files , see Table \ref{ch:output}. 
 The startdate and enddate parameters are set for the timeperiod you want the model 
-to run over (YYYY MM DD), and you need meteorology data for the period.
+to run (YYYY MM DD), and you need meteorology data for the period.
 
-To run the model, the correct path to where the code to the Unified EMEP model 
+To run the model, the correct path  to the Unified EMEP model code 
 has to be set (mpirun path\_to\_the\_modelcode/Unimod).  
 
-It is recommended to submit the script as a batch job. Please check the submission soutine 
+It is recommended to submit the script as a batch job. Please check the submission routine 
 on the computer system you are running on. 
-When setting the number of nodes, it is important that it equals to the number set in the fortran module 
+When setting the number of nodes, it is important that it equals to the number set in the FORTRAN module 
 {\bf ModelConstants\_ml.f90}. In the module you set the wanted nodes in the x- and y-direction with {\bf NPROCX } and 
 {\bf NPROCY.} The product of these two is the number of nodes used. 
-The approximate time and CPU usage is described in Section {sec:compinf}\\
+The approximate time and CPU usage is described in Section \ref{sec:compinf}\\
 
-When the job is no longer running, it is either finnished or has crashed for some reason, 
-there will be an output log file and an error file in the directory. 
+When the job is no longer running or in the queue, it is either finished or has crashed for some reason. 
+There is an output log file and error file written to the directory where your modrun.s script is. 
 If the run was successful, a message stating 
 \begin{quote}
 \begin{verbatim}
@@ -117,29 +117,29 @@ If the run was successful, a message stating
 \end{verbatim}
 \end{quote}
 will be stated at the end of the log file, before printing the Timing.out file.   
-The model results will be produced to where the modrun.sh script is. Please make 
-sure there is enough disk place for the modelresults. 
+The model results will be written to this same directory. Please make 
+sure there is enough disk place for the model results. 
 %Here again, the user can edit the script to create an output directory. 
 For more information about the model result output files, see chapter \ref{ch:output}.\\
 
-If for some reason the model crashed, please check both the log and error file for any 
+If for some reason the model crashed, please check both the log and the error file for any 
 clue of the crash. After fixing the problem the job can be submitted again. If the 
-model has crashed, then the links to the inputdatas are not cleaned. 
+model has crashed, then the links to the input data are not removed. 
 
-The script can also be submitted interactivelly, and either have the output be written to the screen or to 
+The script can also be submitted interactively, and either have the output written to the screen or to 
 named error and output log files. 
  
-
+\newpage
 
 \subsection{Setting the model domain}
 
 It is possible to run the model on a smaller domain than the full
-regional model domain, which is defined by  x coordinates ranging
+regional model domain, as defined by  x coordinates ranging
 from 1 to 132 and y coordinates ranging from 1 to 159. 
 
 To set a smaller domain, one needs only to specify the
 coordinates of the new domain in {\bf RUNDOMAIN} in the Fortran module
-called {\bf ModelConstants\_ml.f90}. For example:
+ {\bf ModelConstants\_ml.f90}. For example:
 
 \begin{quote}
 
@@ -166,7 +166,7 @@ runs for source-receptor calculations.
 Emission factors for reduced emissions of pollutants from different
 sectors and countries can be defined in the input file called
 ``femis.dat'', which can be found in the downloaded input data
-directory.
+directory, see section \ref{sec:femis}.
 
 An example of the ``femis.dat'' file for a base run is shown below:
 \begin{quote}
@@ -180,7 +180,7 @@ Name  5     sox    nox   voc   nh3  pm25
 \end{verbatim}
 \end{quote}
 \noindent
-This base run example means that there is 100\% (1.0) emission of sox (SO$_x$),
+This base run example means that there are (1.0), no emission reductions of sox (SO$_x$),
 nox (NO$_x$), voc (VOC), nh3 (NH$_3$) and pm25 (PM$_{2.5}$) from all
 sectors in the UK. 
 
@@ -190,7 +190,7 @@ sectors in the UK.
 the second line represents the country code. (27 is the code for UK.)
 The codes for all countries can be found in  Fortran module {\bf
   Country\_ml.f90}. Please note that the country code must be the same
-which is used in the emission files for the given country. Some
+as in the emission files for the given country. Some
 countries and areas are divided into sub-areas in the emission
 files. In this case, one line for each sub-area has to be included
 into the ``femis.dat'' file. Countries and areas where emissions are
@@ -214,6 +214,7 @@ the first text (``Name'') in the first line gives the number of
 pollutants treated in the file.   
               
 \end{itemize}
+\newpage
 
 An example of ``femis.dat'' file describing 50\% reduced emission of
 ``sox'' from sector 10 (the emission from agriculture) in the UK can be given as:  
@@ -227,12 +228,12 @@ Name  5    sox    nox   voc   nh3  pm25
 \end{verbatim}        
 \end{quote}
 For a scenario run ``femis.dat'' file should be edited 
-manually depending on the factor of
+manually depending on the level of
 reduction one would like to test with any pollutant from any sector
 and/or any country. Several lines can be written in the file.
 
 Once the ``femis.dat''  file is
-edited, the run can be submitted.  
+edited, the scenario run can be submitted.  
 
 
 
