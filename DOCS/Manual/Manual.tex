@@ -7,6 +7,11 @@
 \usepackage[pdfborder={0 0 0}]{hyperref}
 \usepackage{parskip}
 \usepackage[margin=2.5cm]{geometry}
+\usepackage[margin=2cm]{caption}
+\usepackage{etoolbox}
+\patchcmd{\quote}{\rightmargin}{\leftmargin 1em \rightmargin}{}{}
+
+
 
 \usepackage{fancyhdr}
 \setlength{\headheight}{15pt}
@@ -49,11 +54,11 @@
 %\begin{landscape}
 
 \title{The Unified EMEP Model - User's Guide}
-\date{(draft 23$^{th}$ March 2011)}
+\date{(draft 28$^{th}$ March 2011)}
 \maketitle
 
 \tableofcontents
-
+\setcounter{page}{0}
 \input{Intro}
 \input{Input}
 \input{Output}
