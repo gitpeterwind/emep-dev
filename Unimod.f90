@@ -264,11 +264,11 @@ call vgrid           !  initialisation of constants used in vertical advection
 if (MasterProc.and.DEBUG_UNI) print *,"vgrid finish"
 
 ! open only output netCDF files if needed
-if (MasterProc) then
-  if(DEBUG_UNI)print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
+  if(MasterProc.and.DEBUG_UNI)print *, "NETCDFINITS: minval, maxval", iou_min, iou_max
   ! The fullrun file contains the accumulated or average results
   ! over the full run period, often a year, but even just for
   ! a few timesteps if that is all that is run:
+
   if (wanted_iou(IOU_YEAR)) &
     call Init_new_netCDF(trim(runlabel1)//'_fullrun.nc',IOU_YEAR)
   if (wanted_iou(IOU_INST)) &
@@ -279,7 +279,6 @@ if (MasterProc) then
     call Init_new_netCDF(trim(runlabel1)//'_day.nc',IOU_DAY)
   if (wanted_iou(IOU_MON)) &
     call Init_new_netCDF(trim(runlabel1)//'_month.nc',IOU_MON)
-endif
 
 call metvar(1)
 call adv_var(1)

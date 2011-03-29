@@ -43,7 +43,7 @@ private
 ! (for convection use foundconv in permanent code)
 logical, public, parameter :: USE_CONVECTION     = .false.  ! false works best for Euro runs,
                                                             ! essential for global
-logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for IFS!
+logical, public, parameter :: USE_SOILWATER      = .false.  ! needs more work for IFS!
 logical, public, parameter :: USE_FOREST_FIRES   = .false.  ! Needs global files, future
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok

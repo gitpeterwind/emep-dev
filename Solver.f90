@@ -342,8 +342,8 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
 
     if( MasterProc ) then
 
-      write(*,*)'Number of timesteps in Solver: ',nchem
-      27 format('timestep ',I3,F13.6,' total: ',F13.6)
+      write(*,*)'Number of chemistry timesteps within one dt_advec: ',nchem
+      27 format(' chem timestep ',I3,F13.6,' total: ',F13.6)
 
       ttot=0.0
       do i=1,nchem

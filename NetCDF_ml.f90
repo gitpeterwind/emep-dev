@@ -127,7 +127,9 @@ character(len=*),  intent(in)  :: fileName
 integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
 integer :: ih
 
-call CloseNetCDF
+call CloseNetCDF !must be called by all procs, to syncronize outCDFtag
+
+if(MasterProc)then
 if( DEBUG_NETCDF ) write(*,*)'Init_new_netCDF ',trim(fileName),iotyp
 
 select case (iotyp)
@@ -186,6 +188,8 @@ end select
 
 if( DEBUG_NETCDF ) write(*,*) "Finished Init_new_netCDF", trim(fileName),&
                   trim(period_type)
+endif
+
 end subroutine Init_new_netCDF
 
 ! Output selected model levels
@@ -501,7 +505,7 @@ end subroutine CreatenetCDFfile
 
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
+subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given,overwrite)
 
   !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
@@ -515,6 +519,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
                                                       !Only level ik is written if defined
   integer, optional, intent(in) :: CDFtype != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
   character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
+  logical, optional, intent(in) :: overwrite !overwrite if file already exists (in case fileName_given)
   !NB if the file fileName_given exist (also from earlier runs) it will be appended
 
   character(len=len(def1%name)) :: varname
@@ -534,7 +539,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer :: GIMAX_old,GJMAX_old,KMAX_old
   integer :: GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf
   real*8  :: rdays,rdays_time(1)
-
+  logical :: overwrite_local
 
   i1=1;i2=GIMAX;j1=1;j2=GJMAX  !start and end of saved area
   if(present(ist))i1=max(ist-IRUNBEG+1,i1)
@@ -559,6 +564,8 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   iotyp_new=0
   if(present(fileName_given))then
      !NB if the file already exist (also from earlier runs) it will be appended
+     overwrite_local=.false.
+     if(present(overwrite))overwrite_local=overwrite
      if(me==0)then
         if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' , me, trim(fileName_given)
         !try to open the file
@@ -567,7 +574,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
         JSMBEGcdf=JRUNBEG+j1-1
         GIMAXcdf=i2-i1+1
         GJMAXcdf=j2-j1+1
-        if(status /= nf90_noerr) then !the file does not exist yet
+        if(status /= nf90_noerr .or. overwrite_local) then !the file does not exist yet or is overwritten
            write(6,*) 'creating file: ',trim(fileName_given)
            period_type = 'unknown'
            call CreatenetCDFfile(trim(fileName_given),GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAX)
@@ -632,7 +639,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   else
      return
   endif
-  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: filename ', trim(fileName), iotyp
+  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF, filename ', trim(fileName), iotyp
 
   call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3")
 
@@ -2281,7 +2288,7 @@ subroutine printCDF(name, array,unit)
 
     if(MasterProc) write(*,*) "TEST printCDF :"//trim(fname),  maxval(array)
     call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
-           CDFtype=Real4,fileName_given=fname)
+           CDFtype=Real4,fileName_given=fname,overwrite=.true.)
   end subroutine printCDF
 
 end module NetCDF_ml

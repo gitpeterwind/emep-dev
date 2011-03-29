@@ -52,7 +52,7 @@
   use KeyValue_ml,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
-                               MasterProc,DEBUG_GETEMIS
+                               MasterProc,DEBUG_GETEMIS,USE_FOREST_FIRES
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
@@ -547,6 +547,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               ios = 0
               if(MasterProc) &
                  write(*,fmt=*) "emis_split: no specials for:",EMIS_NAME(ie)
+              call CheckStop(trim(EMIS_NAME(ie))=='voc'.and.USE_FOREST_FIRES &
+                   , "emissplit.specials.voc must exist if FOREST_FIRES used" )
+
               exit IDEF_LOOP
           endif
        end if
