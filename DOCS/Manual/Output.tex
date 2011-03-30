@@ -9,6 +9,8 @@ The model output is written to the same directory as where you submitted
 your run with the modrun.sh script, as described in Chapter \ref{ch:SubmitARun}.
  
 
+\COMMENT{I removed the Base.sites.tgz, Base.sondes.tgz - not part
+of modrun.sh. Also eulmod.res and Base\_inst - seems not to be used these days}
 
 \begin{table}[h!]
 \caption[List of model output files]{List of output files written in the
@@ -26,8 +28,8 @@ Note: YY: year, MM: month.}\label{tab:output}
     Base\_hour.nc &Gridded hourly values of a selection &
     netCDF\\  
  &  of compounds.& \\
-    Base\_inst.nc &Gridded instantaneous values of a selection
-     & netCDF\\
+%    Base\_inst.nc &Gridded instantaneous values of a selection
+%     & netCDF\\
  &  of compounds.& \\
     Base\_month.nc & Gridded monthly values of a selection&
     netCDF\\
@@ -37,15 +39,15 @@ Note: YY: year, MM: month.}\label{tab:output}
  &  of compounds. & \\
     sites.MMYY & Surface daily values of a selection&  ASCII\\
  & of stations and compounds per month.& \\
-    Base.sites.tgz & All the 'sites.MMYY' files in one zipped tar file. & ASCII\\
+%    Base.sites.tgz & All the 'sites.MMYY' files in one zipped tar file. & ASCII\\
     sondes.MMYY & Vertical daily values of a selection& ASCII\\
  &  of stations and compounds per month.& \\
-    Base.sondes.tgz& All the 'sondes.MMYY' files in one zipped tar file.& ASCII\\ 
+%    Base.sondes.tgz& All the 'sondes.MMYY' files in one zipped tar file.& ASCII\\ 
 & &\\ \hline
 {\bf Additional files} &  {\bf Short description} & {\bf Format}\\
-    Base\_RunLog & Total emissions of different air   & ASCII\\
+    Base\_RunLog & Summary log of runs, including total emissions of different air   & ASCII\\
  & pollutants per country& \\
-eulmod.res & Mass budget for different compounds & ASCII\\
+%% eulmod.res & Mass budget for different compounds & ASCII\\
 % INPUT.PARA & List of input parameters & ASCII\\\hline
 % Remove.sh & Removes the links to the input data at the& ASCII\\
 % & end of the run&\\\hline
@@ -62,6 +64,7 @@ Timing.out & Timing log file& ASCII \\
 \newpage
 \section{ASCII outputs: sites and sondes}\label{sec:sitesonde}
 
+\COMMENT{This section is more about inputs than outputs. Could be moved ealier?}
 
 Two main options are available for the output of ASCII files for comparison
 with measurements or detailed model analysis. These are
@@ -81,7 +84,7 @@ Both sites and sondes are specified and handled in similar ways, in
 the module {\bf Sites\_ml.f90}, so we treat them both together below.
 Locations are specified in the input files ``sites.dat'' and ``sondes.dat''. 
 The files start with a description of its content
-followed by a list of the stations. For example, a sondes.dat file
+followed by a list of the stations. For example, a sondes.dat \NEW{input} file
 may look like this:
 
 \begin{small}
@@ -109,7 +112,7 @@ Hohenpeissenberg  47.80   11.02  20  ! comment
 \end{quote}
 \end{small}
 
-Or, in cases where grid inidicies are used rather than latitudes and 
+Or, in cases where grid indicies are used rather than latitudes and 
 longitudes. This is useful if you want sites and sonde output from a line 
 or an area from the model. 
 
@@ -179,7 +182,8 @@ values are given for all 20 levels, starting with the ground-level values.
 % \end{itemize}
 
 The netCDF output files can contain both 2D and 3D data fields. The module 
-{ \bf Derived\_ml.f90 } contains an extensive set of predefined outputs. 
+{ \bf Derived\_ml.f90 } contains an extensive set of predefined outputs, and
+others are defined as required in { \bf My\_Derived\_ml.f90}. 
 The user may choose which of these possible data fields should be written 
 into the output files by modifying the module called { \bf My\_Derived\_ml.f90}.\\
 

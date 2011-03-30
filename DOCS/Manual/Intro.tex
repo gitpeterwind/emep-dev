@@ -8,7 +8,23 @@ to help users wishing to understand or change
 the model in terms of domains, outputs, chemistry, etc.
 
 
-The main documentation for the model is given in:
+\NEW{
+Documentation for this version of the model is currently (March 2011)
+being written up for submission to the EMEP special issue
+in the journal Atmos. Chem. and Physics. This paper
+will be referred to as Simpson et al. (2011) in
+this manual, and if accepted links provided on the EMEP web-page. 
+The provisional title is:
+\begin{itemize}
+\item
+Simpson, D., Benedictow, A., Berge, H., Bergstr\"om, R.  Fagerli, H., Gauss, M., Hayman, G.D., Jenkin, M.W., Jonson, J.E., Ny\'iri, A, Semeena, V.S, Tsyro, S., Valdebenito, \'A., and Wind, P.,
+The EMEP  MSC-W chemical transport model, 
+\end{itemize}
+}
+\QUERY{Waiting for Garry Hayman and Mike Jenkin to confirm co-authorship}
+
+
+The main documentation for the older version of the model is still relevant and is given in:
 
 \begin{itemize}
 \item
@@ -52,7 +68,7 @@ Each code module is prefaced with something like:
 !          Chemical transport Model>
 !*****************************************************************************!
 !*
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !*
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -120,7 +136,10 @@ It takes $\sim$3.5 hrs on 64*Xeon X5355 (2.66GHz) for 1 year simulation.
 
 When downloading input data in order to do a ``base run'' please make
 sure that there are 35 Gb disc space available, especially due to
-large meteorology input files.
+large meteorology input files. 
+\NEW{(The model can be run for shorter periods
+than one year though, so users only need to download meteorology for the
+period they are interested in.)}
 
  
 
@@ -211,10 +230,15 @@ script is described in detail in Chapter \ref{ch:SubmitARun}.
 \label{sec:ModelGrid}
 
 The current EMEP model version, and the provided gridded input data,
-have a horizontal resolution of 50$\times$50 km$^2$ and are defined on a
+have a horizontal resolution of 50$\times$50 km$^2$ \NEW{(at 60$^\circ$N)}
+and are defined on a
 polar stereographic projection with 20 sigma levels vertically. 
-The model uses the same horizontal and vertical grid resolution as the 
-meteorological data provided with the model. The physical
+The model \NEW{is very flexible with regard to the horizontal
+resolution, in that it readily makes use of}
+\DEL{uses the same horizontal and vertical grid resolution as the}
+meteorological data provided with the model. The vertical
+resolution is currently still restricted to the fixed 20 layer
+system. The physical
 description is given in detail in Chapter 2 of the EMEP Status Report
 1/2003 Part I (Simpson {\sl et al.}, 2003).
 

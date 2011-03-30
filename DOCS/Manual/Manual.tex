@@ -11,7 +11,11 @@
 \usepackage{etoolbox}
 \patchcmd{\quote}{\rightmargin}{\leftmargin 1em \rightmargin}{}{}
 
-
+\usepackage{ulem}   % added by dave to allow strike-out below
+\newcommand{\QUERY}[1]{{\color{red}{#1}}}
+\newcommand{\NEW}[1]{{\color{blue}{#1}}}
+\newcommand{\DEL}[1]{{\color{red}{\sout{#1}}}}
+\newcommand{\COMMENT}[1]{{\color{magenta}{#1}}}
 
 \usepackage{fancyhdr}
 \setlength{\headheight}{15pt}
@@ -54,7 +58,7 @@
 %\begin{landscape}
 
 \title{The Unified EMEP Model - User's Guide}
-\date{(draft 28$^{th}$ March 2011)}
+\date{(draft 30$^{th}$ March 2011)}
 \maketitle
 
 \tableofcontents

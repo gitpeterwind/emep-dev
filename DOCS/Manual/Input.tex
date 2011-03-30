@@ -28,7 +28,7 @@ any use of these data.
 \caption[List of input data files]{List of input data files.
 Note: YYYY: year, MM: month, DD: day, SS: seasons, POLL: pollutant
 type (NH$_3$, CO, NO$_x$, SO$_x$, NMVOC,
-PM$_{2.5}$ and PM$_{co}$). ASCII$^*$ means ASCII files with header.
+PM$_{2.5}$ and PM$_{co}$). 
 \label{Tab:inputdata}}
 \begin{center}
 \begin{small}
@@ -41,9 +41,9 @@ Meteorology  &  meteoYYYYMMDD.nc \quad (366+1 files) & netCDF\\
 & & \\
 {\bf Other Input files} & input/ &\\
 Global Ozone & GLOBAL\_O3.nc & netCDF\\
-BVOC emissions & EMEP\_EuroBVOC\_KRS09.nc & netCDF\\
-Aircraft emissions & AircraftEmis\_FL.nc & netCDF \\
-Surface Pressure & SurfacePressure.nc & netCDF \\
+BVOC emissions & EMEP\_EuroBVOC.nc & netCDF\\
+Aircraft emissions & AircraftEmis\_FL.nc & netCDF$\dagger$ \\
+Surface Pressure & SurfacePressure.nc & netCDF$\dagger$ \\
 & & \\
 Landuse & Inputs.Landuse & ASCII$^*$\\
 Land/Sea mask & landsea\_mask.dat & ASCII\\
@@ -55,17 +55,20 @@ Time factors for daily emissions &  DailyFac.POLL  \quad (7 files) & ASCII\\
 Landuse definitions & Inputs\_LandDefs.csv & ASCII$^*$\\
 Stomatal conductance & Inputs\_DO3SE.csv & ASCII$^*$\\
 Lightning emissions & lightningMM.dat  \quad (12 files) & ASCII$^*$\\
-Splitfiles & DAVID&\\
+Emissions speciation & emissplit.defaults.POLL & ASCII$^*$\\
+                     & emissplit.specials.POLL & ASCII$^{*,\dagger}$\\
 Photo-dissociation rates & jclearSS.dat \quad (4 files) & ASCII\\
  & jcl1kmSS.dat \quad (4 files) + jcl1.jun & ASCII\\
  & jcl3kmSS.dat \quad (4 files) + jcl3.jun & ASCII\\
-Dust files & sand\_frac.dat clay\_frac.dat & ASCII\\
- & DUST\_f.MM DUST\_c.MM & ASCII\\
+Dust files & sand\_frac.dat clay\_frac.dat & ASCII$\dagger$\\
+ & DUST\_f.MM DUST\_c.MM & ASCII$\dagger$\\
 Sites locations for surface output & sites.dat & ASCII$^*$\\
 Sondes locations for vertical output & sondes.dat & ASCII$^*$\\
 Emission factors for scenario runs & femis.dat & ASCII\\
 \hline
-\end{tabular}
+\end{tabular}\\
+Notes: $\dagger$ - optional (in most cases); 
+$^*$ means ASCII files with header.
 \end{small}
 \end{center}
 
@@ -119,17 +122,18 @@ $CW$             & kg/kg & Cloud water          \\
 \multicolumn{3}{l}{2D fields - for Surface} \\
 $PS$             & hPa & Surface pressure                     \\
 $T2$          & K  & Temperature at 2m height               \\
-$Rh2$             & \% & Relative humidity at 2m height \\
+$Rh2$             & \% & Relative humidity at 2m height$\ast$ \\
 SH              & W m$^{-2}$ & Surface flux of sensible heat \\
 LH             & W m$^{-2}$ & Surface flux of latent heat \\
 $\tau$         & N m$^{-2}$ & Surface stress               \\
 SST            & K & Sea surface temperature \\
-SWC            & m$^3$/m$^{3}$ & Soil water content        \\
-DSWC           & m$^3$/m$^{3}$ & Deep soil water content   \\
+SWC            & m$^3$/m$^{3}$ & Soil water content$^\ast$        \\
+DSWC           & m$^3$/m$^{3}$ & Deep soil water content$^\ast$   \\
 sdepth         & m & Snow depth \\
 ice            & \% & Fraction of ice \\  
 \hline
-\end{tabular}
+\end{tabular}\\
+Notes: $\ast$ not yet used
 \end{center}
 \end{table}
 
@@ -145,24 +149,31 @@ running.
 The GLOBAL\_O3.nc file contains monthly averaged fields in netCDF format. 
 The initial and background
 concentrations are based on the Logan (1998) climatology. The Logan
-climatology is scaled according to the Mace Head measurements as
+climatology is scaled by Unimod according to the Mace Head measurements as
 described in Simpson {\sl et al.} (2003). For a number of other species, 
 background/initial conditions are set within the model using functions 
-based on observations (Simpson {\sl et al.}, 2003 and Fagerli {\sl et al.}, 2004)
+based on observations (Simpson {\sl et al.}, 2003 and Fagerli {\sl et al.}, 2004).
 
 
 
 \subsection{BVOC emissions}
 
-Biogenic emissions of isoprene and monoterpene are calculated in the model as a function of temperature 
-and solar radiation, using the landuse datasets.  For more details about how the
-calculations are performed, please read Chapter 4.2 of the EMEP
-Status Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
+Biogenic emissions of isoprene and monoterpene are calculated in the
+model as a function of temperature and solar radiation, using the landuse
+datasets. \NEW{The light and temperature depencies are similar to those
+used in the original Open-Source model}, see 
+Chapter 4.2 of the EMEP Status Report 1/2003 Part I (Simpson
+{\sl et al.}, 2003).
 
 Biogenic VOC emission potentials (i.e. rates at 30$^\circ$C and full sunlight)
 are included for four different forest types in the netCDF file 
-EMEP\_EuroBVOC\_KRS09.nc. 
-The emission potentials have unit $\mu g/m^{2} /h$.
+EMEP\_EuroBVOC.nc. These emission potentials have unit $\mu g/m^{2} /h$, and
+refer to emissions per area of the appropriate forest category. In 
+addition, default emission potentials are given for other
+land-cover categories in the file Inputs\_LandDefs.csv. 
+The underlying emission potentials, land-cover data bases, and model
+coding have however changed substantially for rv3\_7. The new approach
+is documented in Simpson {\sl et al.}, 2011.
 
 
 
@@ -219,7 +230,7 @@ EMEP grid cell in the {\bf ASCII file} ``Inputs.Landuse''.
 
 
 \subsection{Land/Sea mask}
-This file, based on HIRLAM roughness length, is used
+This file, based on \DEL{HIRLAM} \NEW{the meteorological model's} roughness length, is used
 to assign a land/sea mask within the Unified EMEP model, since there is
 a need to modify the stability information for coastal grid cells
 (which contain land, but is not resolved by the NWP model supplying 
@@ -235,7 +246,7 @@ EMEP model use 0 for ocean, and $\geq$ 1 as land.
 \subsection{Natural $SO_2$}
 Natural $SO_2$ emissions (dimethylsulfide (DMS) from sea) are provided 
 as monthly gridded files.  
-The values are given at the surface in $\mu g /m³ $ for each grid cell in the domain. 
+The values are given at the surface in $\mu$g/m$^2$ for each grid cell in the domain. 
 
 \subsection{Volcanoes}
 
@@ -248,7 +259,7 @@ The input file ``VolcanoesLL.dat'' in {\bf ASCII} format contains the input data
  Enta and Stromboli. The two first columns gives their latitudes and longitudes, their height as sigma level
  in column 3 and their emission in ktons per year in column 4. 
 
-\subsection{Emissions}
+\subsection{Gridded Emissions}
 The emission input for the Unified EMEP model consists of gridded
 annual national emissions based on emission data reported every year
 to EMEP/MSC-W (until 2005) 
@@ -288,33 +299,99 @@ the 12 consecutive columns represent the time factors corresponding to
 the months of the year. In the daily files there are 7 consecutive columns representing 
 the time factor for each day of the week. 
 
+\COMMENT{I moved all emission-related factors here}
+
+\subsection{Emission factor for scenario runs}\label{sec:femis}
+Scenario run in the case of the Unified EMEP model means a run to test
+the impact of one or more pollutants from a particular
+country. 
+
+Emission factors are applied to specified countries and
+emission sectors and can be set by changing the {\bf ASCII} file
+``femis.dat''. 
+This file can be changed by the users according to their needs.
+
+The file contains 10 columns. The first column represents
+the country code (\url{http://www.emep.int/grid/country_numbers.txt}),
+the second represents the sector
+(\url{http://reports.eea.eu.int/technical_report_2001_3/en}) 
+where `0' means all sectors, and then in the next 7 columns one can specify
+which emissions to reduce. Here 1.0 means no reduction of the given
+pollutant 
+(sox/nox/voc/nh3/co/pm25/pmco) from sectors of specified country. The
+number following the first text (``Name'') in line 1 (number 5 in
+the downloaded file) gives the number of pollutants treated in the file.
+
+
+\subsection{Chemical speciation of emissions}
+
+\NEW{
+Many of the emission files give emissions of a group of compounds, e.g.
+NOx includes NO+NO$_2$, and VOC can include many compounds. The information
+needed to retreive emissions of individual compounds from these the
+gridded files is given in  files labelled emissplit.defaults.$poll$ or
+emissplit.specials.$poll$, where $poll$ can be nox, voc, etc.
+
+The defaults file give the emission split for each SNAP sector (
+one per row, with second index being the SNAP sector), which
+is applied to all countries by default. 
+
+The specials files are in general optional, and can be used to specify
+speciation for particular countries or SNAP sectors. Th
+1st column specifies the country code of interest, the second the SNAP sector. 
+
+If forest fires are used, then the file emissplit.specials.voc is required
+(not optional), and the country-code 101 used to specify the VOC speciation
+of forest fires in this file.
+}
+
+\subsection{Lightning emissions}
+Emissions of NO$_{x}$ from lightning are included in the model
+as monthly averages on a T21 (5.65$^{\circ}$$\times$5.65$^{\circ}$) resolution (K{\o}hler {\sl et al.}, 1995). 
+The lightning emissions are defined on a 64$\times$32 grid with 17 vertical
+levels, with global coverage, and are provided as 12 {\bf ASCII} files
+``lt21-nox.datMM''.
+
+
+
 \subsection{Landuse definitions}
 For the vegetative landuse categories where stomatal modeling is
-undertaken, the start and end of the growing season (SGS, EGS) must be specified. 
+undertaken, the start and end of the growing season (SGS, EGS, in days) must be specified. 
 The calculation of SGS and EGS with respect to latitude is done 
 in the module {\bf LandDefs\_ml.f90}. 
-The development of the leaf area index (LAI) within the growing season
-is given in the ASCII file ``Inputs\_LandDefs.csv''. 
+The parameters needed to specify the
+development of the leaf area index (LAI) within the growing season
+are given in the ASCII file ``Inputs\_LandDefs.csv''. 
 For more information, see chapter 5  of the EMEP Status Report 1/2003 Part I (Simpson {\sl et al.}, 2003).
 
 
-The file contains a header briefly explaining the contents of the 
+The file, designed to be opened with excel or gnumeric,
+contains a header briefly explaining the contents of the 
 14 columns. 
 The first three columns are representing the landuse name, code (which
 are consistent with those in ``Landuse.Input'' file) and
-type (grouping of the landuse classes). The fourth column gives
-the maximum height of vegetation ($m$), the fifth indicates albedo (\%) and
-the sixth indicates possible source of NH$_{x}$ (0 off/1 on). Column 7 to 10
-defines the growing season (day number), column 11 and 12 lists the
-LAI minimum  and maximum ($m^{2}/m^{2}$) and finally column 13 and 14
+type (grouping of the landuse classes). The fourth column 
+\NEW{(PFT) gives a plant-functional type code (for future use),
+the fifth gives}
+the maximum height of vegetation ($m$), the sixth indicates albedo (\%) and
+the seventh indicates possible source of NH$_{x}$ (0 off/1 on,
+curently not used). Columns 8 to 11
+define the growing season (day number), column 12 and 13 lists the
+LAI minimum  and maximum ($m^{2}/m^{2}$) and \DEL{finally}
+columns 14 and 15
 defines the length of the LAI increase and decline periods (no. of days).
+\NEW{
+Finally, the last four columns give default values of 
+foliar biomass and biogenic VOC emission potentials. See Simpson
+et al., 2011 for details.
+}
 
 
 \subsection{Stomatal conductance}
 Parameters for the stomatal conductance model, deposition of O$_{3}$ and
 stomatal exchange (DO3SE) must be specified. That are based upon the ideas in
 Emberson {\sl et al.}, 2000, and are discussed in Simpson and Emberson,
-2006.  
+2006 and Tuovinen et al. 2004.
 
 The  ASCII file ``Inputs\_DO3SE.csv'' provides land-phenology data
 of each landuse type for stomatal conductance calculations. The 
@@ -327,18 +404,6 @@ in the Unified EMEP model. The first two columns represent the
 landuse code (which are consistent with those in ``Landuse.Input'' file)
 and name. The next 22 values are different phenology factors.
 
-\subsection{Lightning emissions}
-Emissions of NO$_{x}$ from lightning are included in the model
-as monthly averages on a T21 (5.65$^{\circ}$$\times$5.65$^{\circ}$) resolution (K{\o}hler {\sl et al.}, 1995). 
-The lightning emissions are defined on a 64$\times$32 grid with 17 vertical
-levels, with global coverage, and are provided as 12 {\bf ASCII} files
-``lt21-nox.datMM''.
-
-
-
-
-\subsection{Split files}
-DAVID
 
 \subsection{Photo-dissociation rates}
 The photo-dissociation rates (J-values) are provided as lookup
@@ -387,26 +452,4 @@ for a set of specified measurement site locations and concentrations for the ver
 column above a set of specified locations. These site and sonde locations are listed 
 in the {\bf ASCII} files ``sites.dat`` and ``sondes.dat`` files. These files can be 
 changed by the user, this is described in section \ref{sec:sitesonde}.
-
-
-\subsection{Emission factor for scenario runs}\label{sec:femis}
-Scenario run in the case of the Unified EMEP model means a run to test
-the impact of one or more pollutants from a particular
-country. 
-
-Emission factors are applied to specified countries and
-emission sectors and can be set by changing the {\bf ASCII} file
-``femis.dat''. 
-This file can be changed by the users according to their needs.
-
-The file contains 10 columns. The first column represents
-the country code (\url{http://www.emep.int/grid/country_numbers.txt}),
-the second represents the sector
-(\url{http://reports.eea.eu.int/technical_report_2001_3/en}) 
-where `0' means all sectors, and then in the next 7 columns one can specify
-which emissions to reduce. Here 1.0 means no reduction of the given
-pollutant 
-(sox/nox/voc/nh3/co/pm25/pmco) from sectors of specified country. The
-number following the first text (``Name'') in line 1 (number 5 in
-the downloaded file) gives the number of pollutants treated in the file.
 
