@@ -44,7 +44,7 @@
   use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
                                NEMIS_FILES, EMIS_NAME, &
                                ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
-                               ! NMR-NH3 specific variables (hb NH3Emis)
+                               ! NMR-NH3 specific variables (for FUTURE )
                                NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF
   use GridAllocate_ml,   only: GridAllocate
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
@@ -52,6 +52,7 @@
   use KeyValue_ml,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
+              SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                                MasterProc,DEBUG_GETEMIS,USE_FOREST_FIRES
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
@@ -149,7 +150,8 @@
       globemis   (:,:,:,:) = 0.0
       globemis_flat(:,:,:) = 0.0
 
-      if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", iemis, trim(emisname)
+      if (DEBUG) write(unit=6,fmt=*) "Called EmisGet with index, name", &
+           iemis, trim(emisname)
       fname = "emislist." // emisname
       call open_file(IO_EMIS,"r",fname,needed=.true.)
       call CheckStop(ios,"EmisGet: ios error in emission file")
@@ -204,12 +206,19 @@ READEMIS: do   ! ************* Loop over emislist files *******************
    
               ! Test that ship emissions are only in sector ISNAP_SHIP
                do isec=1,(ISNAP_SHIP-1) 
+                  if ( MasterProc.and.tmpsec(isec) /= 0) &
+                     write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
+                        iic,i,j,isec,tmpsec(isec)
+
                   call CheckStop(tmpsec(isec) /= 0,  &
                         "EmisGet: NOT FLAT EMISSIONS")
                enddo
                do isec=ISNAP_SHIP+1,NSECTORS
-                  call CheckStop(tmpsec(isec) /= 0,  &
-                        "EmisGet: NOT FLAT EMISSIONS")
+                  if ( MasterProc.and.tmpsec(isec) /= 0) &
+                     write(*,"(a,3i4,i3,f12.4)")"SEA"//trim(emisname), &
+                        iic,i,j,isec,tmpsec(isec)
+                  !call CheckStop(tmpsec(isec) /= 0,  &
+                  !      "EmisGet: NOT FLAT EMISSIONS")
                enddo
               ! end test
 
@@ -269,7 +278,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
              if ( trim ( emisname ) == "voc" ) tmpsec(11:11) = 0.0
   
-            ! NH3emis (EXPERIMENTAL for NMR-NH3 project)
+            ! NH3emis (FUTURE/EXPERIMENTAL for NMR-NH3 project)
             ! For NH3 activity data, set 'static emissions' to zero
             ! For northwestern Europe, read in Sector_NH3Emis.txt in run.pl
             ! Traffic emis are zero in the Danish emissions
@@ -360,8 +369,10 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, header0 is: ",  trim(txt)
 
   call wordsplit(txt,NCOLS_MAX,polltxt,ncols,ios)
-  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, header is: ",  txt
-  if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, file has ", ncols, " columns (-2)"
+  if(DEBUG_GETEMIS) then
+     write(unit=6,fmt=*) "In femis, header is: ",  txt
+     write(unit=6,fmt=*) "In femis, file has ", ncols, " columns (-2)"
+  end if
   call CheckStop( ncols > NCOLS_MAX , "EmisGet:femisncols ncols > NCOLS_MAX" )
    if(ios>0)return
 
@@ -381,8 +392,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                 if ( polltxt(ic+2) == trim ( EMIS_NAME(ie) ) ) then
                     qc(ie) = ic
                     n = n + 1
-                    if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis: ", polltxt(ic+2),  &
-                              " assigned to ", ie, EMIS_NAME(ie)
+                    if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis: ", &
+                       polltxt(ic+2), " assigned to ", ie, EMIS_NAME(ie)
                   exit EMLOOP
                 end if
       end do EMLOOP ! ie
@@ -403,11 +414,15 @@ READEMIS: do   ! ************* Loop over emislist files *******************
       call CheckStop( ios > 0 , "EmisGet: read error in femis" )
 
       n = n + 1
-      if(DEBUG_GETEMIS)write(unit=6,fmt=*) "FEMIS READ", inland, isec, (e_f(ic),ic=1,ncols)
-      write(unit=6,fmt="(a,a,I3,a,i3,a)") " Emission factors from femis.dat,  ", "landcode =",& 
-      inland, ",  sector code =",isec, " (sector 0 applies to all sectors) :"
-      write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", ((trim(polltxt(qc(ie)+2))," =",e_f(qc(ie)),&
-           ",  "),ie=1,NEMIS_FILES-1), ((trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," "),ie=NEMIS_FILES,NEMIS_FILES)
+      if(DEBUG_GETEMIS)write(unit=6,fmt=*) "FEMIS READ", inland, &
+          isec, (e_f(ic),ic=1,ncols)
+      write(unit=6,fmt="(2a,I3,a,i3,a)") " Emission factors from femis.dat, ",&
+        "landcode =", inland, ",  sector code =",isec, &
+        " (sector 0 applies to all sectors) :"
+      write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", ((trim(polltxt(qc(ie)+2)),&
+       " =",e_f(qc(ie)), ",  "), ie=1,NEMIS_FILES-1), &
+        ((trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," "), &
+            ie=NEMIS_FILES,NEMIS_FILES)
 
       if (inland == 0 ) then     ! Apply factors to all countries
           iland1 = 1 
@@ -561,9 +576,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
        !  the following lines expect one line of a header text with the
        !  species names, followed by lines of the following format:
        !  iland, isec, tmp1, tmp2.... tmpN+1, where the N+1'th column
-       !  is  optional, and for non-reactive species. These non-reactives are not used in  
-       !  the rest of the program, but are sometimes needed (e.g. VOC)
-       !  to check mass-balance.
+       !  is  optional, and for non-reactive species. These non-reactives are
+       !  not used in  the rest of the program, but are sometimes needed 
+       !  (e.g. VOC) !  to check mass-balance.
 
         call Read_Headers(IO_EMIS,errmsg,nsplit,NKeys,Headers, MassValue)
         read(MassValue(1)%value,fmt=*) Emis_MolWt(ie)
@@ -573,15 +588,19 @@ READEMIS: do   ! ************* Loop over emislist files *******************
         nsplit = nsplit - 2
 
         if ( MasterProc ) then
-          if(DEBUG_GETEMIS)write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
-          if(DEBUG_GETEMIS)write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
-          write(unit=6,fmt=*) "Splitting ", trim(EMIS_NAME(ie)), " emissions into ",&
+          if(DEBUG_GETEMIS) then
+             write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
+             write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
+          end if
+          write(unit=6,fmt=*) "Splitting ", trim(EMIS_NAME(ie)), &
+             " emissions into ",&
                ((trim(Headers(i+2)),' '),i=1,nsplit),'using ',trim(fname)
         end if
 
            do i = 1, nsplit
               intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
-              if(MasterProc.and.DEBUG_GETEMIS) write(*,*) "SPLITINFO iem ", i,idef, intext(idef,i)
+              if(MasterProc.and.DEBUG_GETEMIS) write(*,*) "SPLITINFO iem ",&
+                    i,idef, intext(idef,i)
               itot = find_index(intext(idef,i), species(:)%name )
               if ( defaults ) then
                 if ( Headers(i+2) /= "UNREAC" ) then 
@@ -601,13 +620,16 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                       tmp_emis_masscorr(iqrc) = 1.0/Emis_MolWt(ie)
                   end if
                 end if ! defaults
-                if ( MasterProc .and.DEBUG_GETEMIS.and. itot>0 )  write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
+                if ( MasterProc .and.DEBUG_GETEMIS.and. itot>0 ) &
+                   write(6,"(a,i2,i4,a,i4,a,a,f6.1)") &
                    "Mapping idef,iqrc:", idef, iqrc, "->", itot, &
-                     trim(species(itot)%name ), " MW:", 1.0/tmp_emis_masscorr(iqrc)
+                     trim(species(itot)%name ), " MW:", &
+                       1.0/tmp_emis_masscorr(iqrc)
                  end if
               !end if defaults
            end do
-           if ( MasterProc.and.DEBUG_GETEMIS )  write(6,"(a,i4,a,i4)") "Compare ns: used=", &
+           if ( MasterProc.and.DEBUG_GETEMIS ) &
+               write(6,"(a,i4,a,i4)") "Compare ns: used=", &
                 emis_nsplit(ie), "including any UNREAC:", nsplit
            
         n = 0
@@ -639,12 +661,12 @@ READEMIS: do   ! ************* Loop over emislist files *******************
            end if
            if ( .not. defaults ) then
              ! Check that specials headers match defaults
-              if ( DEBUG .and. MasterProc ) print *, "SPLIT CHECK SPECIES", idef
+              if ( DEBUG .and. MasterProc ) print *,"SPLIT CHECK SPECIES",idef
               do nn=1,emis_nsplit(ie)  
                   if ( MasterProc ) then
                     if (intext(1,nn) /= intext(0,nn) ) then
-                       print *, "SPLIT ERROR DEF ", nn, "D:",trim(intext(0,nn))
-                       print *, "SPLIT ERROR SPC ", nn, "S:", trim(intext(1,nn))
+                      print *, "SPLIT ERROR DEF ", nn, "D:",trim(intext(0,nn))
+                      print *, "SPLIT ERROR SPC ", nn, "S:",trim(intext(1,nn))
                     end if
                   end if ! masterproc
                     
@@ -686,7 +708,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
        call CheckStop(  defaults .and. n  /=  NSECTORS, &
                         "ERROR: EmisGet: defaults .and. n  /=  NSECTORS" )
-       if(MasterProc.and.DEBUG_GETEMIS) write(unit=6,fmt=*) "Read ", n, " records from ",fname
+       if(MasterProc.and.DEBUG_GETEMIS) &
+           write(unit=6,fmt=*) "Read ", n, " records from ",fname
 
     end do IDEF_LOOP 
   end do ! ie

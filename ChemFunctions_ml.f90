@@ -116,8 +116,8 @@ module ChemFunctions_ml
 
      !- F**x == exp(x*logF)
 
-!    give Fc already as log(Fc)
-!DSGC - no! Keep as proper Fc. Slower but less confusing
+!    could have Fc already as log(Fc) to save CPU, but for now
+!    keep as proper Fc. Slower but less confusing
 
 !     rctroe = k0M / ( 1.0 + k0M/kinf) * exp(x*log(Fc))
      rctroe = k0M / ( 1.0 + y) * exp(x*log(Fc))
@@ -282,7 +282,6 @@ module ChemFunctions_ml
 ! old Setup_ml had:
 ! setup weighting factor for hydrolysis  
 !     f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(NO3_f,k)) )
-!Query - no aNH4 above?
 ! then FastReactions had for L(N2O5):
 !     + (0.9*f_Riemer(k)+0.1) * rcmisc(8,k)* &
 !                 ( VOLFACSO4*xnew(SO4)      & !Total sulpate aerosol surface
@@ -323,7 +322,7 @@ module ChemFunctions_ml
 
 
   end function kaero
-
+  !---------------------------------------------------------------------
   function kaero2() result(rate) 
     ! reduced rates, and only in lowest 10 layers
      real, dimension(K1:K2) :: rate

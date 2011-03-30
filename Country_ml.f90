@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -44,7 +44,8 @@ module Country_ml
  ! country/region/emission_type. As an example defining Bavaria as 
  ! a separate region with timefactors as in Germany.
 
-  use ModelConstants_ml, only : DomainName, IIFULLDOM
+  use ModelConstants_ml, only : DomainName, IIFULLDOM, &
+                                SEAFIX_GEA_NEEDED ! see below
   implicit none
 
   public :: Country_Init     ! sets country details
@@ -298,7 +299,8 @@ Country( IC_BLS) = cc(  "BLS" , 34 ,T, 34,  1  , "The Black Sea                 
 !emission data only, not the HIRHAM domain! When e.g. interpolated EMEP emissions
 !are used on the HIRHAM domain, this is not a problem.
  
-if ( DomainName == "HIRHAM" .and. IIFULLDOM == 182 ) then ! Special fix for HIRHAM/GEA
+!if ( DomainName == "HIRHAM" .and. IIFULLDOM == 182 ) then ! Special fix for HIRHAM/GEA
+if ( SEAFIX_GEA_NEEDED ) then ! Special fix for HIRHAM/GEA
 
   Country( IC_BAS) = cc(  "BAS" , 30 ,F, 30,  1  , "The Baltic Sea                " )
   Country( IC_NOS) = cc(  "NOS" , 31 ,F, 31,  1  , "The North Sea                 " )

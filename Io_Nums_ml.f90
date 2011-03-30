@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -63,10 +63,8 @@ implicit none
    ,IO_JOST     = 49  &! newjostinit(c) - read  global mixing ratios
    ,IO_GLOBBC   = 49  &! read  global mixing ratios e.g. Logan
    ,IO_GLOBBC2  = 91  &! read  global mixing ratios e.g. h2o2
-   ,IO_INFIELD  = 50  &! infield.F(c) -reads fil000xx  
    ,IO_DO3SE    = 51  &! for DO3SE inputs(c)
-   ,IO_ROUGH    = 52  &! inpar.f -reads roughn. class  
- !ACB ,IO_SNOW     = 53  &! newmonth(c): for snow
+   ,IO_ROUGH    = 52  &! inpar.f -reads roughn. class   for landsea masl
    ,IO_VOLC     = 54  &
    ,IO_DJ       = 55  &! readdiss.f(c) - inp. solar r.
    ,IO_AIRCR    = 66  &! phyche.f(c) - write aircraft conc.

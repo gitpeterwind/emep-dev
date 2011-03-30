@@ -94,8 +94,8 @@ st done   Io_ml.f90
 st done   Io_Nums_ml.f90
 av done   Io_Progs_ml.f90
 mg done   KeyValue_ml.f90
-ds --     LandDefs_ml.f90
-ds --     LandPFT_ml.f90
+ds done   LandDefs_ml.f90
+ds done   LandPFT_ml.f90
 mg done   Landuse_ml.f90
 jej done  local2global.f90
 av done   LocalVariables_ml.f90
@@ -112,7 +112,7 @@ mg done   NH3Emis_variation_ml.f90 - ds moved to FUTURE_NH3Emis_variation_ml.f90
 mg done   NH3variables_ml.f90 - ds  moved to FUTURE_NH3variables_ml.f90
 jej done  OutputChem_ml.f90
 av done   Output_hourly.f90
-          OwnDataTypes_ml.f90
+ds done   OwnDataTypes_ml.f90
 pw done   Par_ml.f90 - ab deleted i,j not used
 pw done   PhyChem_ml.f90
 ab done   PhysicalConstants_ml.f90
@@ -148,6 +148,20 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc10 Dave 30th March xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+SEAFIX_GEA_NEEDED - logical replaces previous fix for GEA data. (Used
+to be if ( DomainName == "HIRHAM" .and. IIFULLDOM == 182 ) ...
+Changes to: Country_ml, ModelConstants_ml
+
+MassBudget_ml - printout of fracmass hidden in EXTENDEDMASSBUDGET test,
+                 since the calculation is broken somewhere
+
+My_Derived_ml - many outputs removed, including 3d
+
+Formatting in GetEmis_ml, remove Reimer from Solver_ml,
+   copyright -2011 in  many routines.
+
 xxxxxxxx rv3_7rc9 Peter 25-28-29th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Cleaning the standard output (screen output)

@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2010 met.no
+!*  Copyright (C) 2010-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute

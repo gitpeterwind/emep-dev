@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -32,13 +32,6 @@ module Functions_ml
 ! and Standard Atmosphere p -> H conversion
 !____________________________________________________________________
 !
-!** includes
-!
-!   Depends on: none - self-contained.
-!   Language: F
-!   History:
-!   ds - 2000-Jan. 2001
-!____________________________________________________________________
   use PhysicalConstants_ml, only : KAPPA, PI, DEG2RAD
   implicit none
   private
@@ -53,7 +46,6 @@ module Functions_ml
   public :: StandardAtmos_kPa_2_km   ! US Standard Atmosphere conversion
   public :: StandardAtmos_km_2_kPa   ! US Standard Atmosphere conversion
 
-!  public :: inside_1234 !test wether a point is inside the quadrilateral 1234 
 
   public :: great_circle_distance!distance between two points following the surface on a unit sphere
 

@@ -15,7 +15,7 @@ LLIB = -L/global/apps/netcdf/3.6.2/lib
 F90 = mpif90
 
 LDFLAGS =  -shared-intel -CB -r8  -recursive   -debug-parameters all -traceback  -ftrapuv -g -fpe0 -O0 -convert big_endian -IPF_fp_relaxed $(INCL)
-LDFLAGS =  -shared-intel -r8  -recursive   -O3 -ftz -convert big_endian  -IPF_fp_relaxed 
+#LDFLAGS =  -shared-intel -r8  -recursive   -O3 -ftz -convert big_endian  -IPF_fp_relaxed 
 F90FLAGS =  $(LDFLAGS) $(INCL)
 
 
