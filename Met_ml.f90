@@ -125,7 +125,7 @@ module Met_ml
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
        add_secs,timestamp,&
        make_timestamp, make_current_date, nydays, startdate, enddate
-  use Io_ml ,               only : IO_INFIELD, ios, IO_ROUGH, &
+  use Io_ml ,               only : ios, IO_ROUGH, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
   use NetCDF_ml,         only : printCDF ! testoutputs

@@ -196,7 +196,7 @@ real :: tmprc, tmpf, tmprate, tmpv !TTTT
             ! Skip fast chemistry
           else
 
-          do iter = 1, toiter(k)
+            do iter = 1, toiter(k)
 !
 ! The chemistry is iterated several times, more close to the ground than aloft.
 ! For some reason, it proved faster for some compilers to include files as given below
@@ -221,7 +221,7 @@ real :: tmprc, tmpf, tmprate, tmpv !TTTT
                 !if(k>=KEMISTOP)then
                 !   include 'My_FastReactions.inc'
                 !endif
-          end do !! End iterations
+            end do !! End iterations
           ! Just before SO4, look after slower? species
           end if ! DEBUG_DRYRUN 
 
@@ -247,40 +247,6 @@ real :: tmprc, tmpf, tmprate, tmpv !TTTT
         end if
 
     enddo ! End of vertical k-loop
-    if( DEBUG_SOLVER .and.  debug_flag  ) then
-
-       tmprate = 1.0/(600*exp(-(rh(20)/0.28)**2.8) + 5) ! Chang
-      call datewrite("S:Riemer", (/ rh(20),  &
-         xn_2d(SO4,20), xn_2d(NO3_f,20), 60.0*rcmisc(19,20), tmprate /) )
-
-!TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-!real, parameter, private :: VOLFACSO4 = 96.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-!real, parameter, private :: VOLFACNO3 = 62.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-!real, parameter, private :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-
-
-       k = 20
-       if ( rh(k)  > 0.4) then
-
-          tmpv  = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) ! mean mol. speed,m/s
-          tmprc = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean mol. speed,m/s
-             /(4*(2.5 - rh(k)*1.25)) !density, corrected for rh (moderate approx.)
-
-          tmpf = 96.0*xn_2d(SO4,k)/( 96.*xn_2d(SO4,k) + 62.0*xn_2d(NO3_f,k) + 1.0 )
-
-          tmprate =  (0.9*tmpf + 0.1) * tmprc *  &
-             ( VOLFACSO4 * xn_2d(SO4,k) + VOLFACNO3 * xn_2d(NO3_f,k) &
-              + VOLFACNH4 * xn_2d(NH4_f,k) )    !Total aerosol surface
-        else
-          tmpv=0.0
-          tmprc=0.0
-          tmpf =0.0
-          tmprate= 0.0
-        endif
-      call datewrite("TTT:Riemer", (/  tmpv, tmprc, tmpf, tmprate /) )
-
-!TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-    end if
 
   end subroutine chemistry
 

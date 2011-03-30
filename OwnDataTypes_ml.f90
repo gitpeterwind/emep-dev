@@ -1,3 +1,30 @@
+! <OwnDataTypes_ml.f90 - A component of the EMEP MSC-W Unified Eulerian
+!          Chemical transport Model>
+!*****************************************************************************! 
+!* 
+!*  Copyright (C) 2010-2011 met.no
+!* 
+!*  Contact information:
+!*  Norwegian Meteorological Institute
+!*  Box 43 Blindern
+!*  0313 OSLO
+!*  NORWAY
+!*  email: emep.mscw@met.no
+!*  http://www.emep.int
+!*  
+!*    This program is free software: you can redistribute it and/or modify
+!*    it under the terms of the GNU General Public License as published by
+!*    the Free Software Foundation, either version 3 of the License, or
+!*    (at your option) any later version.
+!* 
+!*    This program is distributed in the hope that it will be useful,
+!*    but WITHOUT ANY WARRANTY; without even the implied warranty of
+!*    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+!*    GNU General Public License for more details.
+!* 
+!*    You should have received a copy of the GNU General Public License
+!*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+!*****************************************************************************! 
 module OwnDataTypes_ml
 implicit none
 
@@ -90,10 +117,6 @@ implicit none
     logical  :: avg           ! True => average data (divide by nav at end),
                               !  else accumulate over run period
     integer  :: iotype        ! sets output timing
-!FEB    logical  :: inst     ! True when instantaneous values needed
-!FEB    logical  :: year     ! True when yearly averages wanted
-!FEB    logical  :: month    ! True when monthly averages wanted
-!FEB    logical  :: day      ! True when daily averages wanted
   end type
 
   !==================
@@ -138,7 +161,6 @@ subroutine print_Deriv_type(w)
   write(6,"(a,a10)")    "txt    :", w%txt
   write(6,"(a,es10.3)") "scale  :", w%scale
   write(6,*)        "dt_scale:", w%dt_scale
-  !failed, why? write(6,fmt="(L8)")        "avg:",      w%avg
   write(6,*)        "avg:",      w%avg
 end subroutine print_Deriv_type
 

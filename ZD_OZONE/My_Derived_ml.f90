@@ -131,60 +131,62 @@ private
    character(len=TXTLEN_SHORT), private, parameter ::&
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
-   type(typ_s5i), public, parameter, dimension(37) :: &
+   !type(typ_s5i), public, parameter, dimension(37) :: &
+   type(typ_s5i), public, parameter, dimension(29) :: &
       OutputConcs = (/  &
-         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D),&
-         typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! Remember, species have upper case, so not _f !
-         typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D),&  
-         typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D),& 
+        ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
+        ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! ug/m3
-         typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D),&
-         typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D),&
-         typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+        ,typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+       ! ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+       ! ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+       ! ,typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+         !typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+         !typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D),& 
        ! ppb
-         typ_s5i("O3        ", "ppb", D3,"AIR_CONCS", SPEC, D),&  !#20 test 3d
-         typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D),& ! also have ugN
-         typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D),& ! also have ugN 
-         typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
-         typ_s5i("HCHO      ", "ugC", D2,"AIR_CONCS", SPEC, D),& !#25
+        ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)&  !#20 test 3d
+        ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN
+        ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+        ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+         !typ_s5i("HCHO      ", "ugC", D2,"AIR_CONCS", SPEC, D),& !#25
        ! ugC/m3
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units
 ! ****** UPPER CASE ONLY ************
 ! Sorry, this is a limitation that GenChem converts all names to
 ! uppercase:
-         typ_s5i("OXN       ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("NOX       ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("PM25      ",  "ug ", D3,"AIR_CONCS", GROUP, D),& !3D
-         typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D),& 
-         typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
-         typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) /)
+        ,typ_s5i("OXN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("NOX       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("PM25      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !3D
+        ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+         !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
+         !typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) 
 !     ,typ_ss( "PM25ANTHR","ug") &
 !     ,typ_ss( "PM10ANTHR","ug") &
+       /)
 
 ! Tropospheric columns
-   integer, public, parameter, dimension(5) :: COLUMN_MOLEC_CM2 = &
-          (/ CO, CH4, C2H6, HCHO, NO2 /)
+   integer, public, parameter, dimension(1) :: COLUMN_MOLEC_CM2 = &
+          (/ NO2 /) ! , CO, CH4, C2H6, HCHO, NO2 /)
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
@@ -202,7 +204,8 @@ private
 
 
   !============ Extra parameters for model evaluation: ===================!
-    character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
+    !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
   D2_EXTRA = (/ &
        "SURF_ppbC_VOC     " &
       ,"T2m               " &
@@ -213,10 +216,10 @@ private
       ,"Area_Crops_Frac   " &
       ,"HMIX              " & !alt HMIX00 ,HMIX12 ...
       ,"Snow_m            " & 
-      ,"SoilWater_deep    " &
+      !,"SoilWater_deep    " &
       ,"USTAR_NWP         " &
-      ,"ws_10m            " &
-      ,"u_ref             " &
+      !,"ws_10m            " &
+      !,"u_ref             " &
   /)
 
 
@@ -250,39 +253,39 @@ private
    !- specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
-    type(typ_s5i), public, parameter, dimension(11) :: &
+    type(typ_s5i), public, parameter, dimension(1) :: &
          NewMosaic = (/ &
              typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
-            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
-            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
+            !,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
+            !,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
+            !,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
+            !,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
+            !,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
+            !,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
+            !,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
+            !,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
+            !,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
+            !,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
          /)
 
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
 ! Any string used here must have been defined in AOTnPOD_ml.
 !
-    character(len=TXTLEN_DERIV), public, parameter, dimension(20) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
      VEGO3_WANTED  =  (/ &
          "POD1_IAM_DF    ",&
          "POD1_IAM_MF    ",&
          "POD1_DF        ",&
          "POD1_CF        ",&
          "POD3_TC        ",&
-         "POD3_TC30d     ",&
-         "POD3_TC55d     ",&
+        ! "POD3_TC30d     ",&
+        ! "POD3_TC55d     ",&
          "POD3_IAM_CR    ",&
-         "POD3_IAM_CR30d ",&
-         "POD3_IAM_CR55d ",&
-         "POD6_IAM_CR    ",&
-         "POD6_IAM_CR30d ",& 
-         "POD6_IAM_CR55d ",&
+        ! "POD3_IAM_CR30d ",&
+        ! "POD3_IAM_CR55d ",&
+        ! "POD6_IAM_CR    ",& ! Not recommended - not robust
+        ! "POD6_IAM_CR30d ",&  ! Not recommended - not robust
+        ! "POD6_IAM_CR55d ",& ! Not recommended - not robust
          "MMAOT40_TC     ",&
          "MMAOT40_IAM_DF ",&
          "MMAOT40_IAM_MF ",&
@@ -296,16 +299,17 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(2) :: &
-      MOSAIC_METCONCS = (/ "RH      " &
-                          ,"CanopyO3" & !SKIP 
+    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
+      MOSAIC_METCONCS = (/ "VPD     " /) ! &
+                         ! ,"CanopyO3" & !SKIP 
          !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
                         !SKIP  ,"USTAR   ", "INVL    "  &
-                       /)
+                       !/)
                           ! "g_sto" needs more work - only set as L%g_sto
 
-    character(len=TXTLEN_DERIV), public, save, dimension(4) :: &
-      MET_LCS  = (/ "DF    " , "CF    ", "BF    ", "NF    " /) !, "IAM_DF", "IAM_MF"/)
+    character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
+      MET_LCS  = (/ "DF    " /) !, "CF    ", "BF    ", "NF    " /) !, 
+                                !"IAM_DF", "IAM_MF"/)
 
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
     !character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &

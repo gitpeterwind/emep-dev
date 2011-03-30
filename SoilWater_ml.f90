@@ -68,6 +68,11 @@ module SoilWater_ml
 
 
 contains
+
+  ! WARNING - THE SOIL MOISTURE WORK IS STILL UNDERWAY, AND IS NOT
+  ! FUNCTIONING FOR THE IFS METEOROLOGY USED IN THE OPENSOURCE 2011
+  ! CODE. THE CODE BELOW WORKS FOR PARLAM METEOROLOGY, BUT STILL NEEDS
+  ! TESTING. RECOMMENDATION = USE_SOILWATER = .false. in ModelConstants_ml
    subroutine Set_SoilWater()
       integer :: i, j, hourloc
       logical :: my_first_call = .true.

@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007 met.no
+!*  Copyright (C) 2007-2011 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -119,8 +119,6 @@ private
   real, public, save, dimension(NSPEC_ADV) ::  &
       amax = -2.0   &  ! maximum concentration in field -2
      ,amin =  2.0      ! minimum concentration in field  2
-
-  logical, private, parameter :: DEBUG = .false.
 
   public :: Init_massbudget
   public :: massbudget
@@ -303,7 +301,8 @@ contains
     end do
 
 
-   if ( MasterProc ) then
+  ! if ( MasterProc ) then
+  if ( MasterProc .and. EXTENDEDMASSBUDGET) then     ! printout from node 0
 
     do n = 1,NSPEC_ADV
       if (gtotem(n) > 0.0 ) write(6,*)          &

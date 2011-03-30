@@ -43,7 +43,7 @@ private
 ! (for convection use foundconv in permanent code)
 logical, public, parameter :: USE_CONVECTION     = .false.  ! false works best for Euro runs,
                                                             ! essential for global
-logical, public, parameter :: USE_SOILWATER      = .false.  ! needs more work for IFS!
+logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for IFS!
 logical, public, parameter :: USE_FOREST_FIRES   = .false.  ! Needs global files, future
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
@@ -60,6 +60,16 @@ logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget o
 integer, public, parameter ::   NBVOC = 3
 character(len=4),public, save, dimension(NBVOC) :: &
   BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
+
+!The GEA emission data, which is used for EUCAARI runs on the HIRHAM domain
+!have in several sea grid cells non-zero emissions in other sectors than SNAP8
+!and there are also NH3 emission over sea areas. The former problem makes 
+!the code crash if the sea areas are defined  as sea (sea=T), so we treat 
+!them as land in the EUCAARI/HIRHAM runs (sea=F). This is a problem with GEA 
+!emission data only, not the HIRHAM domain! When e.g. interpolated EMEP emissions
+!are used on the HIRHAM domain, this is not a problem.
+ 
+logical, public, parameter :: SEAFIX_GEA_NEEDED = .false. ! only if problems
 
 !=============================================================================
 !+ 1) Define first dimensions that might change quite often -  for different
@@ -137,18 +147,14 @@ integer, private, parameter :: &
 ! DEBUG_ii= 96, DEBUG_jj= 40 ! High VG_SO2_CF!
 ! DEBUG_ii=111, DEBUG_jj= 54 ! High VG_PMCO_CF!
 ! DEBUG_ii=101, DEBUG_jj= 51 ! Schauinsland
-! DEBUG_ii= 87, DEBUG_jj= 20 ! Aveiro (QUERY?)
-! DEBUG_ii= 88, DEBUG_jj= 21 ! Aveiro+i2
 ! DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
 ! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
-! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
+ DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
-! DEBUG_ii= 74, DEBUG_jj= 79 ! Payerne_HIRHAM
 ! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
- DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
-! DEBUG_ii= 86, DEBUG_jj= 92 ! Bothnian Bay, test for sea ice
+! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 !DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
@@ -159,9 +165,9 @@ integer, private, parameter :: &
 
 integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA 
-!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
-  DEBUG_i= 0, DEBUG_j= 0    ! default
+!  DEBUG_i= 0, DEBUG_j= 0    ! default
 
 !=============================================================================
 ! Some flags for model setup
@@ -232,6 +238,7 @@ logical, public, parameter :: FORECAST = .false.
 
 ! NH3 module as set up originally with U10 from met: kept for safety only.
 ! Will be replaced by sub.grid calculation of wind in future.
+! Keep false until code re-implemented
 
 logical, public, parameter :: NH3_U10 = .false.
 
