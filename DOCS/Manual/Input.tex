@@ -90,11 +90,11 @@ Weather Forecasts (ECMWF).
 The IFS forecasts has been run by MSC-W as
 independent experiments on the HPCs at ECMWF with special requests on
 some output parameters. The meteorological fields are retrieved on a
-0.2$\deg\times$0.2$\deg$ rotated spherical grid and interpolated to
+0.2$^{\circ}\times$0.2$^{\circ}$ rotated spherical grid and interpolated to
 50$\times$50 km$^2$ polar-stereographic grid projection. Vertically, the fields
 on 60 eta levels from the IFS model are interpolated onto the 20 EMEP sigma
 levels. The version of the IFS model used for preparing these fields,
-Cycle 36r1, is documented in {\url http://www.ecmwf.int/research/ifsdocs/index.html}.
+Cycle 36r1, is documented in \url{http://www.ecmwf.int/research/ifsdocs/index.html}.
 Meteorological fields currently used for Unified EMEP Model runs are given in
 Table~\ref{Tab:metinput}. Some verification and description of these
 meteorological fields are given in Chapter 7 of the EMEP Status Report
@@ -160,8 +160,8 @@ based on observations (Simpson {\sl et al.}, 2003 and Fagerli {\sl et al.}, 2004
 
 Biogenic emissions of isoprene and monoterpene are calculated in the
 model as a function of temperature and solar radiation, using the landuse
-datasets. \NEW{The light and temperature depencies are similar to those
-used in the original Open-Source model}, see 
+datasets. The light and temperature depencies are similar to those
+used in the original Open-Source model, see 
 Chapter 4.2 of the EMEP Status Report 1/2003 Part I (Simpson
 {\sl et al.}, 2003).
 
@@ -230,7 +230,7 @@ EMEP grid cell in the {\bf ASCII file} ``Inputs.Landuse''.
 
 
 \subsection{Land/Sea mask}
-This file, based on \DEL{HIRLAM} \NEW{the meteorological model's} roughness length, is used
+This file, based on the meteorological model's roughness length, is used
 to assign a land/sea mask within the Unified EMEP model, since there is
 a need to modify the stability information for coastal grid cells
 (which contain land, but is not resolved by the NWP model supplying 
@@ -292,14 +292,14 @@ Monthly and daily time factors for emission of the 7 compounds
 (CO, NH$_{3}$, NO$_{x}$, PM$_{2.5}$, PM$_{co}$, SO$_{x}$ and VOC). 
 There is one file available per compound in {\bf ASCII} format. 
 
-The first two columns in the files represent the country code
+The first two columns in the files represent the country code \\
 (\url{http://www.emep.int/grid/country_numbers.txt}), the second column 
-represents the sector (\url{http://webdab.emep.int/sectors.html}. In the monthly files, 
+represents the sector (\url{http://webdab.emep.int/sectors.html}). In the monthly files, 
 the 12 consecutive columns represent the time factors corresponding to 
 the months of the year. In the daily files there are 7 consecutive columns representing 
 the time factor for each day of the week. 
 
-\COMMENT{I moved all emission-related factors here}
+% \COMMENT{I moved all emission-related factors here}
 
 \subsection{Emission factor for scenario runs}\label{sec:femis}
 Scenario run in the case of the Unified EMEP model means a run to test
@@ -311,11 +311,12 @@ emission sectors and can be set by changing the {\bf ASCII} file
 ``femis.dat''. 
 This file can be changed by the users according to their needs.
 
-The file contains 10 columns. The first column represents
+The file contains several columns (the number is flexible). The first column represents
 the country code (\url{http://www.emep.int/grid/country_numbers.txt}),
 the second represents the sector
 (\url{http://reports.eea.eu.int/technical_report_2001_3/en}) 
-where `0' means all sectors, and then in the next 7 columns one can specify
+where `0' means all sectors, and then in the remaining
+ columns one can specify
 which emissions to reduce. Here 1.0 means no reduction of the given
 pollutant 
 (sox/nox/voc/nh3/co/pm25/pmco) from sectors of specified country. The
@@ -325,7 +326,7 @@ the downloaded file) gives the number of pollutants treated in the file.
 
 \subsection{Chemical speciation of emissions}
 
-\NEW{
+%\NEW{
 Many of the emission files give emissions of a group of compounds, e.g.
 NOx includes NO+NO$_2$, and VOC can include many compounds. The information
 needed to retreive emissions of individual compounds from these the
@@ -337,17 +338,17 @@ one per row, with second index being the SNAP sector), which
 is applied to all countries by default. 
 
 The specials files are in general optional, and can be used to specify
-speciation for particular countries or SNAP sectors. Th
-1st column specifies the country code of interest, the second the SNAP sector. 
+speciation for particular countries or SNAP sectors. The
+1${^st}$ column specifies the country code of interest, the second the SNAP sector. 
 
 If forest fires are used, then the file emissplit.specials.voc is required
 (not optional), and the country-code 101 used to specify the VOC speciation
 of forest fires in this file.
-}
+% }
 
 \subsection{Lightning emissions}
 Emissions of NO$_{x}$ from lightning are included in the model
-as monthly averages on a T21 (5.65$^{\circ}$$\times$5.65$^{\circ}$) resolution (K{\o}hler {\sl et al.}, 1995). 
+as monthly averages on a T21 (5.65$^{\circ}\times$5.65$^{\circ}$) resolution (K{\o}hler {\sl et al.}, 1995). 
 The lightning emissions are defined on a 64$\times$32 grid with 17 vertical
 levels, with global coverage, and are provided as 12 {\bf ASCII} files
 ``lt21-nox.datMM''.
@@ -371,20 +372,21 @@ contains a header briefly explaining the contents of the
 The first three columns are representing the landuse name, code (which
 are consistent with those in ``Landuse.Input'' file) and
 type (grouping of the landuse classes). The fourth column 
-\NEW{(PFT) gives a plant-functional type code (for future use),
-the fifth gives}
+% \NEW{
+(PFT) gives a plant-functional type code (for future use),
+ the fifth gives
 the maximum height of vegetation ($m$), the sixth indicates albedo (\%) and
 the seventh indicates possible source of NH$_{x}$ (0 off/1 on,
 curently not used). Columns 8 to 11
 define the growing season (day number), column 12 and 13 lists the
-LAI minimum  and maximum ($m^{2}/m^{2}$) and \DEL{finally}
+LAI minimum  and maximum ($m^{2}/m^{2}$) and 
 columns 14 and 15
 defines the length of the LAI increase and decline periods (no. of days).
-\NEW{
+% \NEW{
 Finally, the last four columns give default values of 
 foliar biomass and biogenic VOC emission potentials. See Simpson
 et al., 2011 for details.
-}
+% }
 
 
 \subsection{Stomatal conductance}

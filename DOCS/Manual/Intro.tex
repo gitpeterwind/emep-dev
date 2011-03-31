@@ -8,20 +8,20 @@ to help users wishing to understand or change
 the model in terms of domains, outputs, chemistry, etc.
 
 
-\NEW{
 Documentation for this version of the model is currently (March 2011)
 being written up for submission to the EMEP special issue
 in the journal Atmos. Chem. and Physics. This paper
 will be referred to as Simpson et al. (2011) in
 this manual, and if accepted links provided on the EMEP web-page. 
-The provisional title is:
+The provisional title and author list is:
+
 \begin{itemize}
 \item
 Simpson, D., Benedictow, A., Berge, H., Bergstr\"om, R.  Fagerli, H., Gauss, M., Hayman, G.D., Jenkin, M.W., Jonson, J.E., Ny\'iri, A, Semeena, V.S, Tsyro, S., Tuovinen, J.P., Valdebenito, \'A., and Wind, P.,
-The EMEP  MSC-W chemical transport model, 
+The EMEP  MSC-W chemical transport model.
 \end{itemize}
-}
-\QUERY{Waiting for Garry Hayman and Mike Jenkin to confirm co-authorship}
+
+% \QUERY{Waiting for Garry Hayman and Mike Jenkin to confirm co-authorship}
 
 
 The main documentation for the older version of the model is still relevant and is given in:
@@ -43,14 +43,21 @@ H.~Fagerli and D.~Simpson and S.~Tsyro,
 
 \end{itemize}
 
- Copies of both reports can be obtained from the EMEP website: \\
+with a summary of recent changes given in:
+\begin{itemize}
+\item
+Simpson, D.; Michael Gauss, S. T. \& Valdebenito, \'A. Model Updates Transboundary acidification, eutrophication and ground level ozone in Europe. EMEP Status Report 1/2010, The Norwegian Meteorological Institute, Oslo, Norway, 2010, 105-109
+\end{itemize}
+
+
+ Copies of these reports can be obtained from the EMEP website: \\
 \url{http://www.emep.int}, and a HTML copy of EMEP Status Report
 1/2003 is
 available at 
 \url{http://www.emep.int/UniDoc/index.html}
 
 The model source code is available from the  EMEP Open Source
-  website: \url{http://www.emep.int/OpenSource/index.html}
+  website:\\ \url{http://www.emep.int/OpenSource/index.html}
 
 \newpage
 
@@ -136,11 +143,8 @@ It takes $\sim$3.5 hrs on 64*Xeon X5355 (2.66GHz) for 1 year simulation.
 
 When downloading input data in order to do a ``base run'' please make
 sure that there are 35 Gb disc space available, especially due to
-large meteorology input files. 
-\NEW{(The model can be run for shorter periods
-than one year though, so users only need to download meteorology for the
-period they are interested in.)}
-
+large meteorology input files. The model can be run for shorter periods, users 
+can download meteorology for only the period they are interested in, pluss one day. 
  
 
 \section{Getting Started}
@@ -175,9 +179,10 @@ Open Source website under ``Download'' section: ``Model Code'')
 Follow the instructions for 'Submitting a Run' description in
 Chapter~\ref{ch:SubmitARun}.
 \item
-Download some model results for comparison (description in
+Download some model results for comparison, description in
 Chapter~\ref{ch:output} and the files are available from the EMEP 
-Open Source website under ``Download'' section: ``Model Results'')
+Open Source website under ``Download'' section: ``Model Results''. 
+
 \end{itemize}
 
 \section{Model code}
@@ -230,12 +235,11 @@ script is described in detail in Chapter \ref{ch:SubmitARun}.
 \label{sec:ModelGrid}
 
 The current EMEP model version, and the provided gridded input data,
-have a horizontal resolution of 50$\times$50 km$^2$ \NEW{(at 60$^\circ$N)}
+have a horizontal resolution of 50$\times$50 km$^2$ (at 60$^\circ$N)
 and are defined on a
 polar stereographic projection with 20 sigma levels vertically. 
-The model \NEW{is very flexible with regard to the horizontal
-resolution, in that it readily makes use of}
-\DEL{uses the same horizontal and vertical grid resolution as the}
+The model is very flexible with regard to the horizontal
+resolution, in that it readily makes use of 
 meteorological data provided with the model. The vertical
 resolution is currently still restricted to the fixed 20 layer
 system. The physical

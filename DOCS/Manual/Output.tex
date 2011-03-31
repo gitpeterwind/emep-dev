@@ -7,10 +7,15 @@ The different netCDF files, the Runlog output, and the zipped sites and sondes
 files are named after the runlabel1 parameter set in modrun.sh. 
 The model output is written to the same directory as where you submitted 
 your run with the modrun.sh script, as described in Chapter \ref{ch:SubmitARun}.
+
+To compare you you model results, there has been made available model result files 
+that can be downloaded  from the EMEP Open Source website under ``Download'' section: ``Model Results''. 
+There are both model results for a run over a whole year, and a test run over two days from 
+January 1$^{st}$ to 2$^{nd}$. These are placed in an output/ directory. 
  
 
-\COMMENT{I removed the Base.sites.tgz, Base.sondes.tgz - not part
-of modrun.sh. Also eulmod.res and Base\_inst - seems not to be used these days}
+% \COMMENT{I removed the Base.sites.tgz, Base.sondes.tgz - not part
+% of modrun.sh. Also eulmod.res and Base\_inst - seems not to be used these days}
 
 \begin{table}[h!]
 \caption[List of model output files]{List of output files written in the
@@ -45,8 +50,8 @@ Note: YY: year, MM: month.}\label{tab:output}
 %    Base.sondes.tgz& All the 'sondes.MMYY' files in one zipped tar file.& ASCII\\ 
 & &\\ \hline
 {\bf Additional files} &  {\bf Short description} & {\bf Format}\\
-    Base\_RunLog & Summary log of runs, including total emissions of different air   & ASCII\\
- & pollutants per country& \\
+    Base\_RunLog & Summary log of runs, including total emissions  & ASCII\\
+ &  of different air pollutants per country& \\
 %% eulmod.res & Mass budget for different compounds & ASCII\\
 % INPUT.PARA & List of input parameters & ASCII\\\hline
 % Remove.sh & Removes the links to the input data at the& ASCII\\
@@ -64,7 +69,7 @@ Timing.out & Timing log file& ASCII \\
 \newpage
 \section{ASCII outputs: sites and sondes}\label{sec:sitesonde}
 
-\COMMENT{This section is more about inputs than outputs. Could be moved ealier?}
+% \COMMENT{This section is more about inputs than outputs. Could be moved ealier?}
 
 Two main options are available for the output of ASCII files for comparison
 with measurements or detailed model analysis. These are
@@ -84,7 +89,7 @@ Both sites and sondes are specified and handled in similar ways, in
 the module {\bf Sites\_ml.f90}, so we treat them both together below.
 Locations are specified in the input files ``sites.dat'' and ``sondes.dat''. 
 The files start with a description of its content
-followed by a list of the stations. For example, a sondes.dat \NEW{input} file
+followed by a list of the stations. For example, a sondes.dat input file
 may look like this:
 
 \begin{small}
@@ -132,7 +137,6 @@ or an area from the model.
 name ix iy lev #HEADERS
 -    index index level #SKIP
 #DATA:
-
 \end{verbatim}
 
 \end{quote}
@@ -156,13 +160,15 @@ Both sites.dat and sondes.dat files are optional, but recommended.
 The species and meteorological data requested for site and sone output
  are specified in {\bf My\_Outputs.f90} by the use of arrays. Only a 
 few met fields are defined so far but more can be added into 
-{\bf Sites\_ml.f90} as required. The outputs consist
-of a header giving the number of sites requested, species/met data requested, and
-then the actual values for each variable for each staion. For the sonde data
-values are given for all 20 levels, starting with the ground-level values.
+{\bf Sites\_ml.f90} as required. 
+
+The outputs consist of a header giving the number of sites requested, 
+species/met data requested, and then the actual values for each 
+variable for each staion. For the sonde data values are given for 
+all 20 levels, starting with the ground-level values.
 
 
-
+\newpage
 
 \section{NetCDF outputs, Derived fields}
 
@@ -191,7 +197,9 @@ Most data fields are defined by the array OutputConcs. A defined output
 field for ozone in ppb is for example given  as:
 \begin{quote}
 \begin{verbatim}
+
  typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D),& 
+
 \end{verbatim}
 \end{quote}
 This will give a 'SURF\_ppb\_O3' 2-dimensional surface field in the output netCDF file for 
@@ -214,8 +222,10 @@ in { \bf My\_Derived\_ml.f90 }.
 The output frequency is set in { \bf Derived\_ml.f90 }, for example for the surface fields:
 \begin{quote}
 \begin{verbatim}
+
  call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY )
+
 \end{verbatim}
 \end{quote}
  Where the IOU\_DAY setting gives the field in the fullrun.nc, month.nc in addition to the day.nc 
