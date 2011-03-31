@@ -301,11 +301,10 @@ contains
     end do
 
 
-  ! if ( MasterProc ) then
-  if ( MasterProc .and. EXTENDEDMASSBUDGET) then     ! printout from node 0
+   if ( MasterProc ) then   ! printout from node 0
 
     do n = 1,NSPEC_ADV
-      if (gtotem(n) > 0.0 ) write(6,*)          &
+      if (gtotem(n) > 0.0 .and. EXTENDEDMASSBUDGET) write(6,*)   &
                            'tot. emission of species ',n,gtotem(n)
     end do
 

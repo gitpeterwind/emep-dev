@@ -148,6 +148,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7rc11 Dave 31th March xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Repaired massbudget; temporary fix.
+The wdep was no longer calculated in Aqueous_n_WetDep
+
+DEBUG_i= 0, DEBUG_j= 0 in ModelConstants to remove debug outputs.
+
 xxxxxxxx rv3_7rc10 Dave 30th March xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 SEAFIX_GEA_NEEDED - logical replaces previous fix for GEA data. (Used
