@@ -63,7 +63,8 @@ module Aqueous_ml
   use ChemChemicals_ml, only: species
   use ChemSpecs_tot_ml
   use ChemSpecs_adv_ml          ! IXADV_SO2, IXADV_SO4, etc.
-  use ChemGroups_ml, only : ChemGroups
+  use ChemGroups_ml, only : ChemGroups, INDEX_WDEP_SOX_GROUP, &
+         INDEX_WDEP_RDN_GROUP, INDEX_WDEP_OXN_GROUP
   use DerivedFields_ml, only : f_2d, d_2d     ! Contains Wet deposition fields
   use GridValues_ml, only : gridwidth_m,xm2,dA,dB
   use Io_ml,             only : IO_DEBUG, datewrite
@@ -783,9 +784,9 @@ subroutine WetDeposition(i,j,debug_flag)
        end do ! n2
 
 !Hardcoded TEMPORARY!
-       if(igr==30)totwdep(IXADV_SO4)  = totwdep(IXADV_SO4)+wdep
-       if(igr==3)totwdep(IXADV_HNO3)  = totwdep(IXADV_HNO3)+wdep
-       if(igr==21)totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)+wdep
+       if(igr==INDEX_WDEP_SOX_GROUP)totwdep(IXADV_SO4)  = totwdep(IXADV_SO4)+wdep
+       if(igr==INDEX_WDEP_OXN_GROUP)totwdep(IXADV_HNO3)  = totwdep(IXADV_HNO3)+wdep
+       if(igr==INDEX_WDEP_RDN_GROUP)totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)+wdep
        
        d_2d(f2d,i,j,IOU_INST) = wdep * fwt
      end do ! n
