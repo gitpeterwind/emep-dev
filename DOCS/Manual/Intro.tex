@@ -182,6 +182,13 @@ Chapter~\ref{ch:SubmitARun}.
 Download some model results for comparison, description in
 Chapter~\ref{ch:output} and the files are available from the EMEP 
 Open Source website under ``Download'' section: ``Model Results''. 
+%NEWTOOLS:
+\item
+If wanted, download some helper programmes to read site and sonde outputs, 
+see sections~\ref{sec:tools},\ref{sec:sitesonde}.
+The files are available from the EMEP
+Open Source website under ``Download'' section: ``Tools''.
+
 
 \end{itemize}
 
@@ -229,6 +236,18 @@ in the \\{\bf EMEP\_Unified\_model.OpenSource2011/}  directory. The run script,
 ``modrun.sh'', can easily be modified to work on your computer system. This 
 script is described in detail in Chapter \ref{ch:SubmitARun}. 
  
+
+
+%NEWTOOLS
+\section{Helper tools}
+\label{sec:tools}
+
+For users interested in reading the ascii site and sonde specific outputs,
+two help programmes (Rd\_sites.f90, Rd\_sondes.f90) are provided, 
+in the \\{\bf EMEP\_Unified\_model.OpenSource2011/tools}  directory. These
+programmes are readily compiled with e.g. gfortran, and can be run without
+arguments to obtain usage instructions. See section~\ref{sec:sitesonde}
+for more details.
 
 
 \section{Model grid}

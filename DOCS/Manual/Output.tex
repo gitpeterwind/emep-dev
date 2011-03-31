@@ -14,9 +14,6 @@ There are both model results for a run over a whole year, and a test run over tw
 January 1$^{st}$ to 2$^{nd}$. These are placed in an output/ directory. 
  
 
-% \COMMENT{I removed the Base.sites.tgz, Base.sondes.tgz - not part
-% of modrun.sh. Also eulmod.res and Base\_inst - seems not to be used these days}
-
 \begin{table}[h!]
 \caption[List of model output files]{List of output files written in the
   working directory after a  model run. 
@@ -69,7 +66,6 @@ Timing.out & Timing log file& ASCII \\
 \newpage
 \section{ASCII outputs: sites and sondes}\label{sec:sitesonde}
 
-% \COMMENT{This section is more about inputs than outputs. Could be moved ealier?}
 
 Two main options are available for the output of ASCII files for comparison
 with measurements or detailed model analysis. These are
@@ -165,7 +161,18 @@ few met fields are defined so far but more can be added into
 The outputs consist of a header giving the number of sites requested, 
 species/met data requested, and then the actual values for each 
 variable for each staion. For the sonde data values are given for 
-all 20 levels, starting with the ground-level values.
+all 20 levels, starting with the ground-level values. These files
+are best read using some helper programmes, which we provide in
+the "Tools" directory:
+
+\begin{description}
+\item[Rd\_sites.f90] - reads the sites outout file for one month, and allows the
+user to select site and component. Produces several outputs (SITES.hrly etc.), including
+hourly values, daily mean and max. The code is quite short and easy to modify
+\item[Rd\_sondes.f90] - similar to Rd\_sites, but for the sondes output.
+\end{description}
+
+Simply compile and run the executable to obtain usage instructions.
 
 
 \newpage
