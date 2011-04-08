@@ -215,9 +215,9 @@ subroutine set_output_defs
   ! and less error-prone. Numbers can be changed as desired.
 
  !integer, save :: ix1 = 36, ix2 = 167, iy1=12, iy2 =  122  ! EMEP
-  integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  ! restricted EMEP
- !integer, save :: ix1=IRUNBEG, ix2=IRUNBEG+GIMAX-1,  &
- !                 iy1=JRUNBEG, iy2=JRUNBEG+GJMAX-1   ! all
+ ! integer, save :: ix1 = 65, ix2 = 167, iy1=12, iy2 =  122  ! restricted EMEP
+ integer, save :: ix1=IRUNBEG, ix2=IRUNBEG+GIMAX-1,  &
+                  iy1=JRUNBEG, iy2=JRUNBEG+GJMAX-1   ! all
 
   ! WARNING: If the specification of the subdomain is different for
   !            different components (ix1=125 for ozone and ix1=98 for
