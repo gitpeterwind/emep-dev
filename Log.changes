@@ -148,7 +148,12 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7rc11 Dave 31th March xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7rc12 Peter 8th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+My_Outputs_ml: output the entire grid (old was for emep grid, not eecca)
+EmisGet and EcoSystem: changed write to screen format for compatibility with gfortran
+
+xxxxxxxx rv3_7rc11 Dave and Peter 31th March xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Repaired massbudget; temporary fix.
 The wdep was no longer calculated in Aqueous_n_WetDep

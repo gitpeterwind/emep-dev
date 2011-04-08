@@ -419,9 +419,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
       write(unit=6,fmt="(2a,I3,a,i3,a)") " Emission factors from femis.dat, ",&
         "landcode =", inland, ",  sector code =",isec, &
         " (sector 0 applies to all sectors) :"
-      write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", ((trim(polltxt(qc(ie)+2)),&
-       " =",e_f(qc(ie)), ",  "), ie=1,NEMIS_FILES-1), &
-        ((trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," "), &
+      write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", (trim(polltxt(qc(ie)+2)),&
+       " =",e_f(qc(ie)), ",  ", ie=1,NEMIS_FILES-1), &
+        (trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," ", &
             ie=NEMIS_FILES,NEMIS_FILES)
 
       if (inland == 0 ) then     ! Apply factors to all countries
@@ -594,7 +594,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
           end if
           write(unit=6,fmt=*) "Splitting ", trim(EMIS_NAME(ie)), &
              " emissions into ",&
-               ((trim(Headers(i+2)),' '),i=1,nsplit),'using ',trim(fname)
+               (trim(Headers(i+2)),' ',i=1,nsplit),'using ',trim(fname)
         end if
 
            do i = 1, nsplit

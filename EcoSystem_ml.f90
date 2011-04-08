@@ -60,7 +60,7 @@ contains
     real :: coverage
 
       if( MasterProc ) &
-           write(*,*) "Defining ecosystems: ",((trim(DEF_ECOSYSTEMS(iEco))," "),iEco = 1, NDEF_ECOSYSTEMS)
+           write(*,*) "Defining ecosystems: ",(trim(DEF_ECOSYSTEMS(iEco))," ",iEco = 1, NDEF_ECOSYSTEMS)
     do iEco = 1, NDEF_ECOSYSTEMS
 
  
