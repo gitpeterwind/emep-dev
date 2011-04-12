@@ -148,6 +148,16 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_8_1  Peter 12th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+First version of a Nesting with general vertical coordinates. Can use external BIC files such as 
+MOZART or TRANSPHORM. Needs still some testing and filenames are hardcoded for now.
+When new external file are included, more flexibility can be introduced.
+Should be backwards compatible. The vertical coordinates are read from the info in the netcdf files,
+or an external file in the case they are not found (MOZART).
+
+Modified: Nest_ml, ModelConstants_ml,NetCDF_ml.
+
 xxxxxxxx rv3_7rc12 Peter 8th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 My_Outputs_ml: output the entire grid (old was for emep grid, not eecca)

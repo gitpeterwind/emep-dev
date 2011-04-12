@@ -222,6 +222,7 @@ integer, public, parameter :: &
   ,DEBUG_SITES          = .false. &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_VOLC           = .false. & ! Volcanoes
+  ,DEBUG_NEST           = .false. &
   ,DEBUG_NEST_ICBC      = .false.   ! IFS-MOZART BC
 
 !=============================================================================

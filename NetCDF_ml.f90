@@ -71,10 +71,10 @@
   use Par_ml,            only : me,GIMAX,GJMAX,tgi0,tgj0,tlimax,tljmax, &
                         MAXLIMAX, MAXLJMAX,IRUNBEG,JRUNBEG,limax,ljmax,gi0,gj0
   use PhysicalConstants_ml,  only : PI, EARTH_RADIUS
-  use TimeDate_ml,       only: nmdays,leapyear ,current_date, date
+  use TimeDate_ml,       only: nmdays,leapyear ,current_date, date,julian_date
   use TimeDate_ExtraUtil_ml,only: idate2nctime
-  use Functions_ml,      only: StandardAtmos_km_2_kPa
-
+  use Functions_ml,       only: StandardAtmos_km_2_kPa
+  use SmallUtils_ml,      only: wordsplit
 
   implicit none
 
@@ -111,6 +111,7 @@
   public :: WriteCDF !for testing purposes
   public :: Read_Inter_CDF
   public :: ReadField_CDF
+  public :: ReadTimeCDF
 
   private :: CreatenetCDFfile
   private :: createnewvariable
@@ -2290,5 +2291,99 @@ subroutine printCDF(name, array,unit)
     call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
            CDFtype=Real4,fileName_given=fname,overwrite=.true.)
   end subroutine printCDF
+
+
+  subroutine ReadTimeCDF(filename,TimesInDays,NTime_Read)
+    !Read times in file under CF convention and convert into days since 1900-01-01 00:00:00
+    character(len=*) ,intent(in)::filename
+    real,intent(out) ::TimesInDays(*)
+    integer, intent(in)  :: NTime_Read !number of records to read
+
+    real, allocatable ::times(:)
+    integer :: i,ntimes,status
+    integer :: varID,ncFileID,ndims
+    integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
+  
+    character*50 ::varname,period,since,date,time,name,timeunit,wordarray(4)
+    character*1 ::s1,s2
+
+    integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
+
+
+    status = nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
+    call CheckStop(status /= nf90_noerr, "ReadTimeCDF, file not found: "//trim(fileName))
+
+    varname='time'
+    status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
+    
+    if(status == nf90_noerr) then
+       if(DEBUG_NETCDF)print *, 'variable exists: ',trim(varname)
+    else
+       print *, 'variable does not exist: ',trim(varname),'file: ',trim(fileName),nf90_strerror(status)
+       call StopAll("ReadTimeCDF : time not found")
+       return
+    endif
+    
+    call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
+    if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
+    call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(1),  len=ntimes))
+    call CheckStop(ntimes<NTime_Read, "to few records in "//trim(fileName))
+    allocate(times(NTime_Read))
+    call check(nf90_get_var(ncFileID, VarID, times,count=(/NTime_Read/)))
+
+    call check(nf90_get_att(ncFileID, VarID, "units", timeunit  ))
+
+!must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
+
+!    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
+    call wordsplit(trim(timeunit),4,wordarray,nwords,errcode)
+    period=wordarray(1)
+    since=wordarray(2)
+    date=wordarray(3)
+    time=wordarray(4)
+
+    call CheckStop(trim(since)/='since', "since error "//trim(since))
+
+    if(wordarray(3)(1:1)/='0')then
+       read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
+       read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
+
+    if(DEBUG_NETCDF.and.me==0)write(*,fmt="(a,I4.4,a1,I2.2,a1,I2.2,a,I2.2,a1,I2.2,a1,I2.2)")&
+         'nest refdate ',yyyy,s1,mo,s2,dd,' time ',hh,s1,mi,s2,ss
+    ss=ss+60*mi+3600*hh
+    julian=julian_date(yyyy,mo,dd)
+    julian_1900=julian_date(1900,1,1)
+    diff_1900=julian-julian_1900
+!    if(me==0)write(*,*)'julians ',diff_1900,julian,julian_1900
+    if(trim(period)=='days')then
+       do i=1,NTime_Read
+          TimesInDays(i)=diff_1900+times(i)+ss/(24.0*3600.0)
+       enddo
+    elseif(trim(period)=='seconds')then
+       do i=1,NTime_Read
+          TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
+       enddo
+    else
+       call StopAll("ReadTimeCDF : time unit not recognized")
+    endif
+
+    else
+
+    if(DEBUG_NETCDF.and.me==0)write(*,*)'assuming days since 0-01-01 00:00 and 365days'
+       !assume units = "days since 0-01-01 00:00" 
+       !and calendar = "365_day"
+    yyyy=int(times(1)/365)
+    
+    julian=julian_date(yyyy,1,1)
+    julian_1900=julian_date(1900,1,1)
+    diff_1900=julian-julian_1900
+
+       do i=1,NTime_Read
+          TimesInDays(i)=diff_1900+times(i)-yyyy*365
+      enddo
+
+    endif
+    deallocate(times)
+  end subroutine ReadTimeCDF
 
 end module NetCDF_ml
