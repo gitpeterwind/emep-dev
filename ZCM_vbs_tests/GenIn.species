@@ -27,12 +27,9 @@ OXYO2,0,oxyo2,xx,xx,xx,0,0,0,xx,RO2,,!
 MEKO2,0,CH3COCHO2CH3,xx,xx,xx,0,0,0,xx,RO2,,"!(from MEK)"
 MALO2,0,CH3COCH(OH)CH(O2)CHO,xx,xx,xx,0,0,0,xx,RO2,,!
 MVKO2,0,HOCH2CH(OO)C(CH3)=O,xx,xx,xx,0,0,0,xx,RO2,,"!(also OOCH2CH(OH)C(CH3)=CH2 - see P&S"
-MACRO2,0,CH2CH(CH3)C(=O)O2,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from P&S NOT MCM MACRO2!)"
+MACRO2,0,O=CHC(O2)(CH3)CH2OH,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
+MACO3,0,CH2C(CH3)C(=O)O2,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from MCM)"
 TERPPeroxy,0,terpperoxy,xx,xx,xx,0,0,0,xx,RO2,,"!From terpene degradation"
-CH2CCH3,1,CH2CO2CH3,xx,xx,xx,0,0,0,xx,RO2,,"!(from macr degredation; from P&S)"
-CH3COO2,1,CH3COO2,xx,xx,xx,0,0,0,xx,RO2,,!
-ISONO3,1,C5H8NO5,xx,xx,xx,0,0,0,xx,OXN;RO2,,"!isoprene-NO3 adduct"
-ISNIR,1,isnir,xx,xx,xx,0,0,0,xx,OXN;RO2,,"!peroxy radical from ISNI"
 O3,1,O3,xx,O3,xx,0,0,0,xx,OX,,!
 NO,1,NO,xx,xx,xx,0,0,0,xx,NOX;OXN,,!
 NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOX;OX;OXN,,!
@@ -40,9 +37,13 @@ PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,,!
 MPAN,1,CH2CH(CH3)C(=0)O2NO2,xx,PAN,xx,0,0,0,xx,OXN,,"!( from macr degredation)"
 NO3,1,NO3,xx,xx,xx,0,0,0,xx,OXN,,!
 N2O5,1,N2O5,xx,xx,xx,0,0,0,xx,OXN,,!
+ISONO3,1,isono3,xx,xx,xx,0,0,0,xx,OXN,,"!isoprene-NO3 adduct"
 HNO3,1,HNO3,xx,HNO3,HNO3,0,0,0,xx,OXN,,!
-MACR,1,CH2=CCH3CHO,xx,xx,xx,0,0,0,xx,xx,,"!Metharolein"
-ISNI,1,C5H9NO4,xx,xx,xx,0,0,0,xx,OXN,,"!isoprene-nitrates from ISRO2+NO reaction"
+HONO,1,HONO,xx,HNO2,HNO3,0,0,0,xx,OXN,,"!Wet-dep rate might be too high"
+CH3COO2,1,CH3COO2,xx,xx,xx,0,0,0,xx,xx,,!
+MACR,1,CH2=CCH3CHO,xx,xx,xx,0,0,0,xx,xx,,!(structure?)
+ISNI,1,isni,xx,xx,xx,0,0,0,xx,OXN,,!isoprene-nitrate
+ISNIR,1,isnir,xx,xx,xx,0,0,0,xx,OXN,,"!isopr adduct"
 GLYOX,1,HCOHCO,xx,xx,xx,0,0,0,xx,xx,,!
 MGLYOX,1,CH3COCHO,xx,xx,xx,0,0,0,xx,xx,,!
 MAL,1,CH3COCH=CHCHO,xx,ALD,xx,0,0,0,xx,xx,,!
@@ -66,15 +67,17 @@ OXYO2H,1,oxyo2H,xx,xx,xx,0,0,0,xx,ROOH,,"!from oxyo2 + ho2"
 MEKO2H,1,CH3COCHO2HCH3,xx,xx,xx,0,0,0,xx,ROOH,,!
 MALO2H,1,CH3COCHOHCHO2CHO,xx,xx,xx,0,0,0,xx,ROOH,,!
 MVKO2H,1,mvko2H,xx,xx,xx,0,0,0,xx,ROOH,,"!from mvko2 + ho2"
-MARO2H,1,maro2H,xx,xx,xx,0,0,0,xx,ROOH,,"!from MACRO2 + HO2"
+MACROOH,1,O=CHC(CH3)(OOH)CH2OH,xx,xx,xx,0,0,0,xx,ROOH,,"!from macro2 + ho2"
+MACO3H,1,CH2=C(CH3)C(=O)OOH,xx,xx,xx,0,0,0,xx,ROOH,,"!from maco3 + ho2"
+MACO2H,1,CH2=C(CH3)C(=O)OH,xx,xx,xx,0,0,0,xx,xx,,"!Methacrylic acid from maco3 + ho2"
 ISRO2H,1,isro2H,xx,xx,xx,0,0,0,xx,ROOH,,"!from isoprene degredation + ho2"
 H2O2,1,H2O2,xx,SO2,H2O2,0,0,0,xx,ROOH,,"!re-consider dry dep link"
 CH3COO2H,1,CH3COO2H,xx,xx,xx,0,0,0,xx,ROOH,,!
-CH2CO2HCH3,1,CH2CO2HCH3,xx,xx,xx,0,0,0,xx,ROOH,,"!from ch2cch3 + ho2"
 ISONO3H,1,isono3H,xx,xx,xx,0,0,0,xx,ROOH,,"!from isono3 + ho2"
 ISNIRH,1,isnirH,xx,xx,xx,0,0,0,xx,ROOH,,"!from isnir + ho2"
 CH3OH,1,CH3OH,xx,xx,xx,0,0,0,xx,xx,,!
 C2H5OH,1,C2H5OH,xx,xx,xx,0,0,0,xx,xx,,!
+ACETOL,1,CH3COCH2OH,xx,ALD,xx,0,0,0,xx,xx,,"!hydroxy acetone"
 H2,1,H2,xx,xx,xx,0,0,0,xx,xx,,!
 CO,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
 CH4,1,CH4,xx,xx,xx,0,0,0,xx,xx,,!
@@ -135,15 +138,16 @@ AER_FFUELOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 AER_WOODOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 AER_BGNDOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 "***************************************************"
-SO4,1,SO4,xx,PMfS,SO4,8.5,0,0,xx,PM25;PM10;PM25anthr;PM10anthr;SIA;SOX;AOD,,!
-NO3_c,1,NO3_c,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;SIA;OXN;TNO3,,"!Coarse nitrate"
+SO4,1,SO4,xx,PMfS,SO4,8.5,0,0,xx,PM10;PM25;PM10anthr;PM25anthr;SIA;SOX;AOD,,!
 NH3,1,NH3,xx,NH3,NH3,0,0,0,xx,RDN,,!
-NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM25;PM10;PM25anthr;PM10anthr;SIA;AOD,,"! in equilib module"
-NO3_f,1,NO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM25;PM10;PM25anthr;PM10anthr;SIA;OXN;TNO3;AOD,,"!in equilib module"
-PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM25,,!fires...(for consistency with EmChem09 only)
-SeaSalt_f,1,xx,58,PMfS,PMf,5.7,0,0,xx,PM25;PM10;SS;AOD,,!
-SeaSalt_c,1,xx,58,PMc,PMc,0,0,0,xx,PMCO;PM10;SS,,!
-Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PM10;PM25;DUST;AOD,,!
+NO3_f,1,NO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM10;PM25;PM25anthr;PM10anthr;SIA;OXN;TNO3;AOD,,"!in equilib module"
+NO3_c,1,NO3_c,xx,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;SIA;OXN;TNO3,,"!Coarse nitrate"
+NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PM25;PM10anthr;PM25anthr;SIA;AOD,,"! in equilib module"
+PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25,,!fires...(for consistency with EmChem09 only)
+SeaSalt_f,1,xx,58,PMfS,SSf,3.0,0,0,xx,PM25;PM10;SS;AOD,,!
+SeaSalt_c,1,xx,58,PMc,SSc,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
+SeaSalt_g,1,xx,58,PMg,SSg,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
+Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PM25;PM10;DUST;AOD,,!
 Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;AOD,,!
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!

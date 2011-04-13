@@ -32,7 +32,7 @@
   bc2xn_adv(IBC_NH4_f    ,IXADV_NH4_f    )   =   1.0
   bc2xn_adv(IBC_H2O2    ,IXADV_H2O2    )   =   1.0
 !EMEP:
-  bc2xn_adv(IBC_CH3COO2 ,IXADV_CH3COO2 )   =   1.0
+!  bc2xn_adv(IBC_CH3COO2 ,IXADV_CH3COO2 )   =   1.0
 !SKIP  bc2xn_adv(IBC_CH3COO2 ,IXADV_C2O3 )   =   1.0 !CB05
 !QUERY??
 
