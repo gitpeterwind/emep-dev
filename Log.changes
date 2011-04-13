@@ -155,7 +155,7 @@ The code compiles but has not yet been tested so I expect a few bugs (to be hand
 Updates should only affect the SOA version of the model.
 
 Modified: ZCM_vbs_tests/GenIn.reactions, GenIn.species, CM_BoundaryConditions.inc
-          ZD_VBS/My_Derived_ml.f90
+          ZD_VBS/My_Derived_ml.f90, My_SOA_ml.f90
 
 xxxxxxxx rv3_8_1  Peter 12th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

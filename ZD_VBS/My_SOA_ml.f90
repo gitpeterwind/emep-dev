@@ -127,7 +127,7 @@ module OrganicAerosol_ml
     integer, private, parameter :: NUM_NONVOLEC = size(NONVOLEC_GROUP)
     integer, private, parameter :: NUM_NONVOL = NUM_NONVOLOC+NUM_NONVOLEC
     integer, private, parameter, dimension(NUM_NONVOL) ::  &
-      NONVOL = (/ NONVOLOC_GROUP, NONVOLEC_GROUP /) ! OC+EC in partitioning OM
+      NONVOL = (/ POC_F_WOOD,POC_F_FFUEL,POC_C_FFUEL,FFIRE_OC, EC_F_WOOD_NEW,EC_F_WOOD_AGE,EC_C_WOOD,EC_F_FFUEL_NEW,EC_F_FFUEL_AGE,EC_C_FFUEL,FFIRE_BC /) ! OC+EC in partitioning OM
     real, private, dimension(NUM_NONVOL,K1:K2), save :: ug_nonvol 
 
     real,  private, dimension(S1:S2,CHEMTMIN:CHEMTMAX) :: tabCiStar
