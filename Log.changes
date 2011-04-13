@@ -148,6 +148,15 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_8_2beta1  Robert 13th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Updating the SOA (VBS) scheme to include EmChem09 chemistry (earlier versions based on EmChem03)
+The code compiles but has not yet been tested so I expect a few bugs (to be handled within a couple of days)
+Updates should only affect the SOA version of the model.
+
+Modified: ZCM_vbs_tests/GenIn.reactions, GenIn.species, CM_BoundaryConditions.inc
+          ZD_VBS/My_Derived_ml.f90
+
 xxxxxxxx rv3_8_1  Peter 12th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 First version of a Nesting with general vertical coordinates. Can use external BIC files such as 
