@@ -132,7 +132,7 @@ private
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
    !type(typ_s5i), public, parameter, dimension(37) :: &
-   type(typ_s5i), public, parameter, dimension(31) :: &
+   type(typ_s5i), public, parameter, dimension(33) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -178,6 +178,8 @@ private
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("ASOA      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("BSOA      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("PCM       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PCM_HELP  ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
@@ -192,15 +194,15 @@ private
    character(len=3), public, parameter, dimension(1) :: COLUMN_LEVELS = &
       (/  "k20" /) ! , "k16", "k12", "k08" /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
        "SURF_MAXO3  " &
-      ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
-      ,"SURF_ug_ASOA " & !an eucaari
-      ,"SURF_ug_BSOA " & !an eucaari
-      ,"SURF_ug_PM25 " & !dsMay2010
-      ,"SURF_ugN_OXN " & !dsMay2010
-      ,"SURF_ugN_RDN " & !dsMay2010
+!      ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
+!      ,"SURF_ug_ASOA " & !an eucaari
+!      ,"SURF_ug_BSOA " & !an eucaari
+!      ,"SURF_ug_PM25 " & !dsMay2010
+!      ,"SURF_ugN_OXN " & !dsMay2010
+!      ,"SURF_ugN_RDN " & !dsMay2010
       ,"SURF_PM25water" & 
       ,"SOMO35      " & 
       ,"PSURF       " &  ! Surface  pressure (for cross section):
@@ -359,11 +361,11 @@ private
     ! PC-gfortran runs.
 
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
-    ! character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-     character(len=TXTLEN_DERIV), public, save, dimension(8) :: &
-       D3_OTHER  = (/ "D3_PM25water", "D3_ug_PM25", "D3_ug_PM25anthr", &
-                      "D3_ugC_ECf", "D3_SS", "D3_DUST", "D3_ASOA", "D3_BSOA"/)
-     != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /)
+    character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
+    ! character(len=TXTLEN_DERIV), public, save, dimension(8) :: &
+       D3_OTHER  != (/ "D3_PM25water", "D3_ug_PM25", "D3_ug_PM25anthr", &
+                 !     "D3_ugC_ECf", "D3_SS", "D3_DUST", "D3_ASOA", "D3_BSOA"/)
+     != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /) !*** does not run with these 
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
