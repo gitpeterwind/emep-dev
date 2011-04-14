@@ -148,10 +148,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_8_2beta1  Robert 13th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_8_2beta1  Robert 13th April (minor update 15th April) xxxxxxxxxxxxxxxxxx
 
 Updating the SOA (VBS) scheme to include EmChem09 chemistry (earlier versions based on EmChem03)
-The code compiles but has not yet been tested so I expect a few bugs (to be handled within a couple of days)
+First test runs: After a bug fix in ZD_VBS/My_Derived_ml.f90 the SOA-code runs. More bugs are still likely. So check results carefully if you run the SOA-model!
+
 Updates should only affect the SOA version of the model.
 
 Modified: ZCM_vbs_tests/GenIn.reactions, GenIn.species, CM_BoundaryConditions.inc
