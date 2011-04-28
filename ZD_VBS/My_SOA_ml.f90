@@ -51,8 +51,7 @@ module OrganicAerosol_ml
 
 !dsrb added:
    use ChemGroups_ml, only :    &
-       NONVOLOC_GROUP &
-      ,NONVOLEC_GROUP &
+      NONVOLPCM_GROUP &
       ,ASOA => ASOA_GROUP &
       ,BSOA => BSOA_GROUP &
 !rb only_for_semi-volatile_POA      ,POA  => POA_GROUP &
@@ -123,12 +122,10 @@ module OrganicAerosol_ml
 
     real, private, dimension(S1:S2,K1:K2), save :: ug_semivol 
 !dsrb - use new NONVOLOC grpup to define:
-    integer, private, parameter :: NUM_NONVOLOC = size(NONVOLOC_GROUP)
-    integer, private, parameter :: NUM_NONVOLEC = size(NONVOLEC_GROUP)
-    integer, private, parameter :: NUM_NONVOL = NUM_NONVOLOC+NUM_NONVOLEC
-    integer, private, parameter, dimension(NUM_NONVOL) ::  &
-      NONVOL = (/ POC_F_WOOD,POC_F_FFUEL,POC_C_FFUEL,FFIRE_OC, EC_F_WOOD_NEW,EC_F_WOOD_AGE,EC_C_WOOD,EC_F_FFUEL_NEW,EC_F_FFUEL_AGE,EC_C_FFUEL,FFIRE_BC /) ! OC+EC in partitioning OM
-    real, private, dimension(NUM_NONVOL,K1:K2), save :: ug_nonvol 
+    integer, private, parameter :: NUM_NONVOLPCM = size(NONVOLPCM_GROUP)
+!    integer, private, parameter, dimension(NUM_NONVOL) ::  &
+!      NONVOL = (/ NONVOLOC_GROUP, NONVOLEC_GROUP /) ! OC+EC in partitioning OM
+    real, private, dimension(NUM_NONVOLPCM,K1:K2), save :: ug_nonvol 
 
     real,  private, dimension(S1:S2,CHEMTMIN:CHEMTMAX) :: tabCiStar
 
@@ -222,7 +219,7 @@ module OrganicAerosol_ml
 
          Fpart(:,:)         = 0.0
          !dsrb Fpart(NONVOLOC,:)  = 1.0 ! ds added EC here also. OK?
-         Fpart(NONVOL,:)  = 1.0
+         Fpart(NONVOLPCM_GROUP,:)  = 1.0
          !Grid_SOA_Fgas    = 1.0 - 1.0e-10
          do k = K1, K2
             Grid_COA(:,:,k) = BGND_OA(k)  ! Use OA, not OC here
@@ -288,9 +285,9 @@ module OrganicAerosol_ml
 
  ! ============ Non-volatile species first ============================
 
-  do i = 1, NUM_NONVOL  ! OA/OC for POC about 1.333
+  do i = 1, NUM_NONVOLPCM  ! OA/OC for POC about 1.333
     !dsrb ispec = NONVOLOC(i)
-    ispec = NONVOL(i)
+    ispec = NONVOLPCM_GROUP(i)
 
     ug_nonvol(i,:) = molcc2ugm3 * xn(ispec,:)*species(ispec)%molwt
 
@@ -346,9 +343,9 @@ module OrganicAerosol_ml
            write(unit=6,fmt="(a3,a15,3a10,a4,4a10)") "SOA","Species", "xn", &
                "Ci* ", "Ki"," ", "Fpart", "ng"
 
-           do i = 1, NUM_NONVOL
+           do i = 1, NUM_NONVOLPCM
               !dsrb ispec = NONVOLOC(i)
-              ispec = NONVOL(i)
+              ispec = NONVOLPCM_GROUP(i)
               write(unit=6,fmt="(a4,i3,a15,es10.2,2f10.3,a4,es10.3,f13.4)")&
                 "NVOL", ispec,&
                 species(ispec)%name, xn(ispec,K2),-999.999, &
