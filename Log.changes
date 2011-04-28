@@ -148,6 +148,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_8_2beta2 (to be renamed?) Robert 28th April  xxxxxxxxxxxxxxxxxx
+
+Very minor update:
+Modified the SOA (VBS) code slightly. Replaced the NONVOLOC_GROUP and NONVOLEC_GROUP by NONVOLPCM_GROUP (since these groups are only used for partitioning semivolatile OA between gas and particle phases)
+
+Modified: ZCM_vbs_tests/GenIn.species
+          ZD_VBS/My_SOA_ml.f90
+
 xxxxxxxx rv3_8_2beta1  Robert 13th April (minor update 15th April) xxxxxxxxxxxxxxxxxx
 
 Updating the SOA (VBS) scheme to include EmChem09 chemistry (earlier versions based on EmChem03)
