@@ -148,15 +148,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_8_2beta2 (to be renamed?) Robert 28th April  xxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7_2 Robert 13-15th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Very minor update:
 Modified the SOA (VBS) code slightly. Replaced the NONVOLOC_GROUP and NONVOLEC_GROUP by NONVOLPCM_GROUP (since these groups are only used for partitioning semivolatile OA between gas and particle phases)
 
 Modified: ZCM_vbs_tests/GenIn.species
           ZD_VBS/My_SOA_ml.f90
-
-xxxxxxxx rv3_8_2beta1  Robert 13th April (minor update 15th April) xxxxxxxxxxxxxxxxxx
 
 Updating the SOA (VBS) scheme to include EmChem09 chemistry (earlier versions based on EmChem03)
 First test runs: After a bug fix in ZD_VBS/My_Derived_ml.f90 the SOA-code runs. More bugs are still likely. So check results carefully if you run the SOA-model!
@@ -166,7 +164,7 @@ Updates should only affect the SOA version of the model.
 Modified: ZCM_vbs_tests/GenIn.reactions, GenIn.species, CM_BoundaryConditions.inc
           ZD_VBS/My_Derived_ml.f90, My_SOA_ml.f90
 
-xxxxxxxx rv3_8_1  Peter 12th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7_1  Peter 12th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 First version of a Nesting with general vertical coordinates. Can use external BIC files such as 
 MOZART or TRANSPHORM. Needs still some testing and filenames are hardcoded for now.
