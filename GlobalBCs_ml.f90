@@ -163,7 +163,6 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
   integer,          intent(inout) :: errcode   ! i/o number
 
   logical, save :: first_call = .true.
-!  logical, parameter :: DO_SAHARA = .false.     ! Turn on/off BG Saharan Dust
   real, dimension(IGLOB,JGLOB,KMAX_MID) :: bc_rawdata   ! Data (was rtcdmp)
 
   type(UStrend):: US=UStrend(1.0,1.0,1.0)
