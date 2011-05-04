@@ -43,7 +43,8 @@
   use My_Outputs_ml,     only : FREQ_HOURLY, &
                                 NHOURLY_OUT, &      ! No. outputs
                                 Asc2D, hr_out, &      ! Required outputs
-                                SELECT_LEVELS_HOURLY, LEVELS_HOURLY
+                                SELECT_LEVELS_HOURLY, LEVELS_HOURLY, &
+                                NLEVELS_HOURLY 
   use Chemfields_ml,     only : xn_shl,xn_adv
   use CheckStop_ml,      only : CheckStop,StopAll
   use ChemSpecs_shl_ml,  only : NSPEC_SHL
@@ -165,6 +166,7 @@ case(IOU_HOUR)
   enddo
   GIMAXcdf=min(GIMAXcdf,GIMAX)
   GJMAXcdf=min(GJMAXcdf,GJMAX)
+  KMAXcdf =min(KMAXcdf ,NLEVELS_HOURLY) 
 
 ! Output selected model levels
   if(SELECT_LEVELS_HOURLY)then
