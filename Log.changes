@@ -148,6 +148,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7_3 Dave  4th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+BUG fixed - IBC_CO   reset to 125 from 5 ppb. Bug introduced in rv3_7rc6 - do
+    not use any of the versions after that, including the open-source!
+
 xxxxxxxx rv3_7_2 Robert 13-15th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Very minor update:
