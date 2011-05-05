@@ -148,6 +148,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7_5 Robert 5th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Changed the SOA (VBS) scheme. Now using higher SOA yields from AVOCs and include aging of ASOA, BSOA and POA. 
+                              Also include dry deposition of gaseous fraction of semi-volatile OOA (ASOA, BSOA and OPOA).
+
+Modified: ZCM_vbs_tests/GenIn.species
+          ZCM_vbs_tests/GenIn.reactions
+
 xxxxxxxx rv3_7_4 Svetlana  4th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 More Bugs fixed:
