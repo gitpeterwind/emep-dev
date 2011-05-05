@@ -148,12 +148,12 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_7_6 Agnes 5th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_7_5 Agnes, Robert 5th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+Agnes:
 Mace Head correction for 2009 is included in GlobalBCs_ml.f90
 
-xxxxxxxx rv3_7_5 Robert 5th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
+Robert:
 Changed the SOA (VBS) scheme. Now using higher SOA yields from AVOCs and include aging of ASOA, BSOA and POA. 
                               Also include dry deposition of gaseous fraction of semi-volatile OOA (ASOA, BSOA and OPOA).
 
