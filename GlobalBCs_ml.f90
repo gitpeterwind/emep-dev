@@ -253,12 +253,12 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
 ! Here we use the meteorology year to get a reaslistic O3.
 !      Later we use iyr_trend to adjust for other years, say for 2050.
 
-! For 2010, 2020 "trend" runs  - use 10 yr average as base-O3
+! For 2010, 2020 "trend" runs  - use 12 yr average as base-O3
 ! then later scale by trend_o3:
 
-  if ( iyr_trend /= year ) then ! use defaults from 1998-2008 average
-    macehead_O3 = (/ 40.3, 42.1, 45.4, 46.5, 43.6, 36.0, &
-                     30.4, 30.1, 33.9, 37.4, 39.4, 39.0 /)
+  if ( iyr_trend /= year ) then ! use defaults from 1998-2009 average
+    macehead_O3 = (/ 40.1, 42.2, 45.6, 46.5, 43.4, 36.3, &
+                     30.5, 30.0, 34.0, 37.0, 39.9, 39.0 /)
   else
     select case (year)
     case(1990)
@@ -330,9 +330,14 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     case(2008)
     macehead_O3 = (/ 41.0, 45.1, 48.0, 46.3, 44.2, 37.1, &
                      30.8, 31.3, 34.3, 37.5, 37.9, 40.0 /)
-    case default ! from 1998-2008 average
-    macehead_O3 = (/ 40.3, 42.1, 45.4, 46.5, 43.6, 36.0, &
-                     30.4, 30.1, 33.9, 37.4, 39.4, 39.0 /)
+! 2009 Mace Head correction calculated using IE31 O3 data and
+! trajectory sectors (based on ECMWF met) for 2009
+    case(2009)
+    macehead_O3 = (/ 37.7, 43.3, 46.5, 46.2, 41.6, 39.1, &
+                     31.0, 29.0, 34.5, 34.4, 40.5, 38.4 /)
+    case default ! from 1998-2009 average
+    macehead_O3 = (/ 40.1, 42.2, 45.6, 46.5, 43.4, 36.3, &
+                     30.5, 30.0, 34.0, 37.0, 39.5, 39.0 /)
     endselect
   endif
 !=========== Generated from Mace Head Data =======================
