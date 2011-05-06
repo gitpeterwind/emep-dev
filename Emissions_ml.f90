@@ -43,13 +43,13 @@
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
   use ChemChemicals_ml, only: species
   use Country_ml,    only : NLAND,Country_Init,Country, IC_NAT
+  use My_Emis_ml, only : NEMIS_FILES & ! No. emission files
+                        ,EMIS_NAME    ! Names of species ("sox  ",...)
   use EmisDef_ml, only : NSECTORS & ! No. sectors
                      ,NEMISLAYERS & ! No. vertical layers for emission
                      ,NCMAX       & ! Max. No. countries per grid
                      ,FNCMAX      & ! Max. No. countries (with flat emissions)
                                     ! per grid
-                     ,NEMIS_FILES & ! No. emission files
-                     ,EMIS_NAME   & ! Names of species ("sox  ",...)
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
                      ,IQ_DMS      & ! code for DMS emissions

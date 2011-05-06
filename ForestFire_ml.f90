@@ -36,9 +36,9 @@ module ForestFire_ml
   use ChemChemicals_ml,  only : species
   use ChemSpecs_tot_ml,  only : NO, CO
   use Country_ml,        only : IC_BB   ! FFIRE
-  use EmisDef_ml,        only :  &
-     ISNAP_NAT   &  ! ForeFires are assigned to SNAP-11 usually
-    ,NEMIS_FILES &
+  use EmisDef_ml,        only : ISNAP_NAT ! Fires are assigned to SNAP-11 usually
+  use My_Emis_ml,        only :  &
+     NEMIS_FILES &
     ,EMIS_NAME  ! lets us know which pollutants are wanted, e.g. sox, pm25
 
   use EmisGet_ml,        only : &

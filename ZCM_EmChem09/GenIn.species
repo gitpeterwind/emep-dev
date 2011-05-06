@@ -101,9 +101,9 @@ NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PM25;PM10anthr;PM25anthr;SIA;AOD,,
 *EC_c_age,1,C,12,PMc,PMc,0,0,0,xx,PM10;PM10anthr;PMCO;AOD,,"
 PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25;PM25anthr,,"!Primary; fine <2.5um"
 PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PM25,,!fires...
-CO_FIRE,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
+* CO_FIRE,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
 CO_BIC,1,CO,xx,xx,xx,0,0,0,xx,xx,,!
-PPMCO,1,xx,12,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;,,"!Primary; 2.5--10u"
+PPM_c,1,xx,12,PMc,PMc,0,0,0,xx,PM10;PMCO;PM10anthr;,,"!Primary; 2.5--10u"
 SeaSalt_f,1,xx,58,PMfS,SSf,3.0,0,0,xx,PM25;PM10;SS;AOD,,!
 SeaSalt_c,1,xx,58,PMc,SSc,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
 SeaSalt_g,1,xx,58,PMg,SSg,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!

@@ -41,8 +41,8 @@
   use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country, &
                                ! NMR-NH3 specific variables (hb NH3Emis)
                                IC_NMR 
+  use My_Emis_ml,        only: NEMIS_FILES, EMIS_NAME
   use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
-                               NEMIS_FILES, EMIS_NAME, &
                                ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
                                ! NMR-NH3 specific variables (for FUTURE )
                                NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF
@@ -66,6 +66,7 @@
   public  :: EmisGet           ! Collects emissions of each pollutant
   public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
   private :: femis             ! Sets emissions control factors 
+  private :: CountEmisSpecs    !
 
 
   INCLUDE 'mpif.h'
@@ -93,6 +94,11 @@
   ! some common variables
   character(len=40), private :: fname             ! File name
   character(len=80), private :: errmsg
+
+ ! Import list of the emitted species we need to find in the 
+ ! emissplit files.
+  include 'CM_EmisSpecs.inc'
+  logical, dimension(NEMIS_SPECS) :: EmisSpecFound = .false.
 
  contains
 
@@ -599,6 +605,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
            do i = 1, nsplit
               intext(idef,i) = Headers(i+2)   ! 1st 2 columns are cc, isec:
+
+             ! Match spec against EMIS_SPECS:
+
+              call CountEmisSpecs( intext(idef,i) )
+
               if(MasterProc.and.DEBUG_GETEMIS) write(*,*) "SPLITINFO iem ",&
                     i,idef, intext(idef,i)
               itot = find_index(intext(idef,i), species(:)%name )
@@ -715,6 +726,17 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   end do ! ie
   ios = 0
   
+  ! By now we should have found all the species required for the 
+  ! chemical scheme:
+
+  do ie = 1, NEMIS_SPECS
+    if ( EmisSpecFound(ie) .eqv. .false. ) then
+       print *, "ERROR: EmisSpec not found!! " // trim(EMIS_SPECS(ie))
+       call CheckStop ( any( EmisSpecFound .eqv. .false.), &
+           "EmisSpecFound Error" )
+    end if
+  end do
+
   ! Now, we know how many split species we have, nrcsplit, so we allocate
   !  and fill emisfrac:
   nrcemis = sum( emis_nsplit(:) )
@@ -725,11 +747,22 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   allocate(emis_masscorr(nrcemis),stat=allocerr)
   call CheckStop(allocerr, "Allocation error for emis_masscorr")
   emisfrac(:,:,:)     = tmp_emisfrac(1:nrcemis,:,:)
-  iqrc2itot(:)     = tmp_iqrc2itot(1:nrcemis)
+  iqrc2itot(:)        = tmp_iqrc2itot(1:nrcemis)
   emis_masscorr(:)    = tmp_emis_masscorr(1:nrcemis)
 
    
  end subroutine EmisSplit
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
+ subroutine CountEmisSpecs( inspec )
+  character(len=*), intent(in) :: inspec
+  integer :: ind
+
+  ind = find_index(inspec, EMIS_SPECS)
+  call CheckStop ( ind > NEMIS_SPECS, "CountEmisSpecs Error" )
+  if ( ind > 0 ) EmisSpecFound( ind ) = .true.
+
+ end subroutine CountEmisSpecs
 
 end module EmisGet_ml

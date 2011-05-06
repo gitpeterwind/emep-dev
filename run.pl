@@ -8,9 +8,10 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=32:ib
+#PBS -lnodes=8
+#32:ib
 # wall time limit of run
-#PBS -lwalltime=09:20:00
+#PBS -lwalltime=00:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -242,15 +243,14 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 
 my (@emislist, $Chem );
 
-if ($EUCAARI) {
-  $Chem     = "Eucaari_Trends";      # Label for chemical scheme used
-  @emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
-} else {
-  $Chem     = "EmChem09";            # Label for chemical scheme used
-  @emislist = qw ( sox nox nh3 co voc pm25 pmco );
-}
+my $CityZen = 0 ;
+  #$Chem     = "Eucaari_Trends";      # Label for chemical scheme used
+$Chem     = "EmChem09";            # Label for chemical scheme used
+$Chem     = "vbs_tests";
+#@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
+@emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
 
-my $testv = "rv3_7_5";
+my $testv = "rv3_7_5hcz";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -716,10 +716,24 @@ foreach my $scenflag ( @runs ) {
       $ifile{"$RFEmisDir/Emis08_EECCA/MonthlyFac.$poll"} = "MonthlyFac.$poll";
       $ifile{"$RFEmisDir/Emis08_EECCA/DailyFac.$poll"} = "DailyFac.$poll";
     } else {
-      $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-      $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+
+      # $RCA/CityZen change to avoid having 20 different PM25 time-series
+
+      if ( -f "$timeseries/MonthlyFac.$poll" ) {
+         $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+         $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
+      } else { # Assume same as PM25, works e.g for ocffl, etc.
+         print "Monthly Daily Fac pm25 fill in for $poll\n";
+         my $TMPWDIR = "$WORKROOT/$USER/$testv.tmpdir";
+         mkdir($TMPWDIR) unless -d $TMPWDIR;
+         cp ("$timeseries/MonthlyFac.pm25", "$TMPWDIR/MonthlyFac.$poll");
+         cp ("$timeseries/DailyFac.pm25",   "$TMPWDIR/DailyFac.$poll");
+         $ifile{"$TMPWDIR/MonthlyFac.$poll"} = "MonthlyFac.$poll";
+         $ifile{"$TMPWDIR/DailyFac.$poll"} = "DailyFac.$poll";
+
+      }
     }
-#DSRC
+
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
     # specials aren't required
     $ifile{"$SplitDir/emissplit.specials.$poll"} = "emissplit.specials.$poll"

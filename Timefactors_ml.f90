@@ -47,7 +47,8 @@
 !_____________________________________________________________________________
   use CheckStop_ml, only : CheckStop
   use Country_ml,   only : NLAND
-  use EmisDef_ml,   only : NSECTORS, NEMIS_FILES, EMIS_NAME
+  use My_Emis_ml,   only : NEMIS_FILES, EMIS_NAME
+  use EmisDef_ml,   only : NSECTORS
   use TimeDate_ml,  only:            &  ! subroutine, sets:
                      date,           &  ! date-type definition
                      nmdays, nydays, &  ! days per month (12), days per year

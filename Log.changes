@@ -148,6 +148,50 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3_7_6 Dave,   6th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+   ***** New emissions setup in GenIn.reactions etc.
+
+   ** My_Emis_ml  is now back, but hopefully easier than before.
+   ** CM_Emis.inc removed
+   ** CM_EmisSpec.inc created by GenChem
+   ** run.pl now uses MonthlyFac.pm25 for unknown emissions labels,
+      removing earlier usage of ocfile, ocffl, etc.
+
+   ** Emissions are now at lower heights.
+
+
+   EmisDef - lower heights for emissions
+   EmisGet - deals with new emissions, and checks that we have all
+             that are needed (compares emissplit files to CM_EmisSpec list).
+   GenChem.pl - changed for new rcemis
+   Makefile.SRCS added My_Emis_ml.f90
+
+   ZCM_EmChem09 files adapted for above
+   ZCM_vbs_tests files adapted for above for PM25 usage
+
+
+  Explanation of main change
+  ---------------------------
+  In the GenIn.reactions files we now use e.g.:
+
+  rcemis:POC_FFUEL_f =
+
+  then GenChem will make a list of the species which are wanted in
+  CM_EmisSpecs.inc, here POC_FFUEL_f.  (the old system needed the name
+  of the emission  file, which here was sometimes pm25, sometimes ocfile,
+  sometimes ocffl.)
+
+  If the run.pl provides PM25 emissions, the emissplit.defaults.pm25 (which
+  should be part of the ZCM_ directory) needs to have POC_FFUEL_f. If
+  run.pl provided POC emissions, then emissplit.defaults.ocff would need
+  to include the POC_FFUEL_f.
+
+  Thus we let GenChem tell the code which species it needs, and the user
+  has to make sure that for that chemistry there are appropriate emissplit
+  files.
+
 xxxxxxxx rv3_7_5 Agnes, Robert 5th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Agnes:

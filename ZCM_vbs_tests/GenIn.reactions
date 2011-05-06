@@ -188,7 +188,6 @@ KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MAC
 2.1e-6                Rn222 = Pb210 ;
 _func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
-* SKIP _func_kaero()              HNO3 = NO3_c        ;
 _func_kaero2()              HNO3 = NO3_c        ;
 TROE_NO_OP                 OP + NO  + {M}   = NO2     ; A97,J, jofmiss
 TROE_NO2_NO3               NO2 + NO3  = N2O5          ; A97,J
@@ -279,60 +278,59 @@ DJ(IDNO2,k)*0.222   HONO           = OH + NO ;
 * placed at the beginning.(as (k) is tagged onto the end of the
 * of the rate term. See beta*rcemis_SO2
 *
-nox:rcemis(NO,k)                           = NO    ;
-nox:rcemis(NO2,k)                          = NO2    ;
-sox:rcemis(SO2,k)                          = SO2    ;
-sox:rcemis(SO4,k)                          = SO4    ;
-co:rcemis(CO,k)                           = CO    ;
-* rcemis(QRCCH4,k)                          = CH4    ;
-voc:rcemis(C2H6,k)                         = C2H6    ;
-voc:rcemis(NC4H10,k)                       = NC4H10    ;
-voc:rcemis(C2H4,k)                         = C2H4    ;
-voc:rcemis(C3H6,k)                         = C3H6    ;
-voc:rcemis(OXYL,k)                         = OXYL    ;
-voc:rcemis(HCHO,k)                         = HCHO    ;
-voc:rcemis(CH3CHO,k)                       = CH3CHO    ;
-voc:rcemis(MEK,k)                          = MEK    ;
-voc:rcemis(C2H5OH,k)                       = C2H5OH    ;
-voc:rcemis(CH3OH,k)                        = CH3OH    ;
-voc:rcemis(GLYOX,k)                       = GLYOX    ;
-voc:rcemis(MGLYOX,k)                      = MGLYOX    ;
-voc:rcemis(C5H8,k)                        = C5H8    ; # Anthropogenic isoprene
+rcemis:NO                           = NO    ;
+rcemis:NO2                          = NO2    ;
+rcemis:SO2                          = SO2    ;
+rcemis:SO4                          = SO4    ;
+rcemis:CO                           = CO    ;
+rcemis:NH3                          = NH3 ;
+rcemis:C2H6                         = C2H6    ;
+rcemis:NC4H10                       = NC4H10    ;
+rcemis:C2H4                         = C2H4    ;
+rcemis:C3H6                         = C3H6    ;
+rcemis:OXYL                         = OXYL    ;
+rcemis:HCHO                         = HCHO    ;
+rcemis:CH3CHO                       = CH3CHO    ;
+rcemis:MEK                          = MEK    ;
+rcemis:C2H5OH                       = C2H5OH    ;
+rcemis:CH3OH                        = CH3OH    ;
+rcemis:GLYOX                       = GLYOX    ;
+rcemis:MGLYOX                      = MGLYOX    ;
+rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 *
+*
+* OPOA method (assuming semi-volatile POA-emissions 2.5 times the inventory POA-emissions, as in Shrivastava et al., 2008) 
+rcemis:POC_f_FFUEL = 0.03 FFUEL_ng10 +  0.06 FFUEL_ng100 +  0.09 FFUEL_ug1 + 0.14 FFUEL_ug10 +  0.18 FFUEL_ug1e2 +  0.30 FFUEL_ug1e3 +  0.40 FFUEL_ug1e4 +  0.50 FFUEL_ug1e5 +  0.80 FFUEL_ug1e6  ;
+*
+* To use nonvolatile POC emissions (traditional assumption) uncomment the below line and remove the above line (and the aging reactions further down)
+rcemis:POC_c_FFUEL               = POC_c_FFUEL ;
+rcemis:EC_f_FFUEL                = EC_f_FFUEL ;
+rcemis:EC_c_FFUEL                = EC_c_FFUEL ;
+rcemis:POC_f_WOOD                = POC_f_WOOD ;
+rcemis:EC_f_WOOD                 = EC_f_WOOD ;
+rcemis:EC_c_WOOD                 = EC_c_WOOD ;
+rcemis:REMPPM25                  = REMPPM25 ;
+rcemis:REMPPM_C                  = REMPPM_C ;
+*
+*
+* <----------- Biogenic/natural emissions ----------------------------->
+*
+rcemis:FFIRE_OC                   = FFIRE_OC + PPM25_Fire ;
+rcemis:FFIRE_BC                   = FFIRE_BC + PPM25_Fire ;
+*
+rcbio(BIO_ISOP,k)                        = C5H8    ;
+rcbio(BIO_TERP,k)                    = APINENE ;
 rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
 rcss(QSSGI,k)                           = SeaSalt_g ;
-*
-* OPOA method (assuming semi-volatile POA-emissions 2.5 times the inventory POA-emissions, as in Shrivastava et al., 2008) 
-pocffl:rcemis(POC_f_FFUEL,k) = 0.03 FFUEL_ng10 +  0.06 FFUEL_ng100 +  0.09 FFUEL_ug1 +  0.14 FFUEL_ug10 +  0.18 FFUEL_ug1e2 +  0.30 FFUEL_ug1e3 +  0.40 FFUEL_ug1e4 +  0.50 FFUEL_ug1e5 +  0.80 FFUEL_ug1e6  ;
-* To use nonvolatile POC emissions (traditional assumption) uncomment the below line and remove the above line (and the aging reactions further down)
-*pocffl:rcemis(POC_f_FFUEL,k)                 = POC_f_FFUEL ;
-poccfl:rcemis(POC_c_FFUEL,k)                 = POC_c_FFUEL ;
-ecffl:rcemis(EC_f_FFUEL_new,k)                   = EC_f_FFUEL_new ;
-eccfl:rcemis(EC_c_FFUEL,k)                   = EC_c_FFUEL ;
-*
-pocfwd:rcemis(POC_f_WOOD,k)                  = POC_f_WOOD ;
-ecfwd:rcemis(EC_f_WOOD_new,k)                    = EC_f_WOOD_new ;
-eccwd:rcemis(EC_c_WOOD,k)                    = EC_c_WOOD ;
-*
 rc_Rn222(k)                                = Rn222    ;
 *
-* <----------- Biogenic emissions ----------------------------->
-rcbio(BIO_ISOP,k)                        = C5H8    ;
-rcbio(BIO_TERP,k)                    = APINENE ;
-*
 * Add ammonia
-nh3:rcemis(NH3,k)                          = NH3 ;
 * FUTURE rcnh3(k)                          = NH3 ;  # hbNH3
 *
 *
-*pm25:rcemis(PPM25,k)                      = PPM25 ;
-*pmco:rcemis(PPMCO,k)                      = PPMCO ;
-*rcemis(PPM25_Fire,k)                 = PPM25_Fire ;
-forfoc:rcemis(FFIRE_OC,k)                   = FFIRE_OC + PPM25_Fire ;
-forfbc:rcemis(FFIRE_BC,k)                   = FFIRE_BC + PPM25_Fire ;
-0.0                                  = DUST_NAT_F ;  # Dust
-0.0                                  = DUST_NAT_C ;
+* 0.0                                  = DUST_NAT_F ;  # Dust
+* 0.0                                  = DUST_NAT_C ;
 *
 *
 *DSGC *************************************************************

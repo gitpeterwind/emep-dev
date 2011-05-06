@@ -71,7 +71,7 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 * ;
 1.85e-20*EXP(2.82*LOG(TEMP))*EXP(-987.0*TINV)  OH + CH4 = CH3O2  ; acp2006, V6, p3625-4055, Atkinson et al.
 1.44e-13+M*3.43e-33                 OH     + CO    = HO2               ; IUPAC 2005
-1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
+* 1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
 1.44e-13+M*3.43e-33                 [OH]   + CO_BIC     =             ;  tracer
 2.3e-12*EXP(360.0*TINV)             CH3O2  + NO    = HCHO + HO2 + NO2  ; acp2006
 7.4e-13*EXP(-520.0*TINV)            CH3O2  + CH3O2 = 2. HCHO + 2. HO2  ; acp2006
@@ -279,51 +279,41 @@ DJ(IDNO2,k)*0.222   HONO           = OH + NO ;
 * placed at the beginning.(as (k) is tagged onto the end of the
 * of the rate term. See beta*rcemis_SO2
 *
-nox:rcemis(NO,k)                           = NO    ;
-nox:rcemis(NO2,k)                          = NO2    ;
-sox:rcemis(SO2,k)                          = SO2    ;
-sox:rcemis(SO4,k)                          = SO4    ;
-co:rcemis(CO,k)                           = CO    ;
-* rcemis(QRCCH4,k)                          = CH4    ;
-voc:rcemis(C2H6,k)                         = C2H6    ;
-voc:rcemis(NC4H10,k)                       = NC4H10    ;
-voc:rcemis(C2H4,k)                         = C2H4    ;
-voc:rcemis(C3H6,k)                         = C3H6    ;
-voc:rcemis(OXYL,k)                         = OXYL    ;
-voc:rcemis(HCHO,k)                         = HCHO    ;
-voc:rcemis(CH3CHO,k)                       = CH3CHO    ;
-voc:rcemis(MEK,k)                          = MEK    ;
-voc:rcemis(C2H5OH,k)                       = C2H5OH    ;
-voc:rcemis(CH3OH,k)                        = CH3OH    ;
-voc:rcemis(GLYOX,k)                       = GLYOX    ;
-voc:rcemis(MGLYOX,k)                      = MGLYOX    ;
-voc:rcemis(C5H8,k)                        = C5H8    ; # Anthropogenic isoprene
+rcemis:NO                          = NO    ;
+rcemis:NO2                          = NO2    ;
+rcemis:SO2                          = SO2    ;
+rcemis:SO4                          = SO4    ;
+rcemis:NH3                            = NH3 ;
+rcemis:CO                           = CO    ;
+rcemis:C2H6                         = C2H6    ;
+rcemis:NC4H10                       = NC4H10    ;
+rcemis:C2H4                         = C2H4    ;
+rcemis:C3H6                         = C3H6    ;
+rcemis:OXYL                         = OXYL    ;
+rcemis:HCHO                         = HCHO    ;
+rcemis:CH3CHO                       = CH3CHO    ;
+rcemis:MEK                          = MEK    ;
+rcemis:C2H5OH                       = C2H5OH    ;
+rcemis:CH3OH                        = CH3OH    ;
+rcemis:GLYOX                       = GLYOX    ;
+rcemis:MGLYOX                      = MGLYOX    ;
+rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 *
+rcemis:PPM25                     = PPM25 ;
+rcemis:PPM_c                     = PPM_c ;
+*
+*rcemis:EC_c_new                = EC_c_new ;
+*rcemis:EC_c_age                = EC_c_age ;
+* <----------- Biogenic/natural emissions ----------------------------->
+rcbio(BIO_ISOP,k)                        = C5H8    ;
+rcbio(BIO_TERP,k)                    = APINENE ;
+rc_Rn222(k)                             = Rn222    ;
 rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
 rcss(QSSGI,k)                           = SeaSalt_g ;
-*
-rc_Rn222(k)                             = Rn222    ;
-*
-*USEPPM ECfi:rcemis(EC_f_new,k)                = EC_f_new ;
-*USEPPM ECfi:rcemis(EC_f_age,k)                = EC_f_age ;
-*USEPPM OCfi:rcemis(POC_f,k)                   = POC_f  ;
-*rcemis(EC_c_new,k)                = EC_c_new ;
-*rcemis(EC_c_age,k)                = EC_c_age ;
-pm25:rcemis(PPM25,k)                     = PPM25 ;
-pmco:rcemis(PPMCO,k)                     = PPMCO ;
-*DS 0.0                                  = DUST_NAT_F ;  # Dust
-*DS 0.0                                  = DUST_NAT_C ;
-* <----------- Fire tracers ----------------------------------->
-*
-pm25:rcemis(PPM25_FIRE,k)           = PPM25_FIRE ;
-co:rcemis(CO_FIRE,k)                     = CO_FIRE    ;
-*
-* <----------- Biogenic emissions ----------------------------->
-rcbio(BIO_ISOP,k)                        = C5H8    ;
-rcbio(BIO_TERP,k)                    = APINENE ;
+rcemis:PPM25_FIRE                  = PPM25_FIRE ;
+* rcemis:CO_FIRE                     = CO_FIRE    ;
 *
 * Add ammonia
-nh3:rcemis(NH3,k)                          = NH3 ;
 * FUTURE rcnh3(k)                          = NH3 ;  # hbNH3
 *

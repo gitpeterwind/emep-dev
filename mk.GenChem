@@ -9,9 +9,9 @@
 run=Test03   # CRI_v2_R5
 run=EmChem03c   # CRI_v2_R5
 run=OSRM    # CRI_v2_R5
-run=vbs_tests   # VBS based Organic Aerosol Model
 run=Eucaari_Trends 
 run=CRI_v2_R5
+run=vbs_tests   # VBS based Organic Aerosol Model
 run=EmChem09    # CRI_v2_R5
 # ==========================================
 cdir=$PWD            #  Current when starting. Assumed now as a Unimod
@@ -45,7 +45,7 @@ cat GenOut_ChemGroups_ml.f90 \
 mv GenOut_Reactions1.inc  $odir/CM_Reactions1.inc
 mv GenOut_Reactions2.inc  $odir/CM_Reactions2.inc
 mv GenOut_DryDep.inc      $odir/CM_DryDep.inc
-mv GenOut_Emis.inc        $odir/CM_Emis.inc
+mv GenOut_EmisSpecs.inc   $odir/CM_EmisSpecs.inc
 mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
 
 #rm GenOut_*                # Clean up current directory

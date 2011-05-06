@@ -55,6 +55,7 @@ use My_Derived_ml,  only : &
       OutputConcs,  &  ! added Feb 2011
       WDEP_WANTED, &   ! added Jan 2011
       D3_OTHER
+use My_Emis_ml,       only: EMIS_NAME
 
 use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat
@@ -71,7 +72,6 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
-use EmisDef_ml,       only: EMIS_NAME
 use Emissions_ml,     only: SumSnapEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, &
                          GRIDWIDTH_M, GridArea_m2
