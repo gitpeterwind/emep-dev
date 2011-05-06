@@ -170,6 +170,8 @@ xxxxxxxx rv3_7_6 Dave,   6th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
    ZCM_EmChem09 files adapted for above
    ZCM_vbs_tests files adapted for above for PM25 usage
+   ** EMISSPLIT directory added to ZCM_vbs_tests
+      (All $Chem should have an EMISSPLIT directory, see below)
 
 
   Explanation of main change
@@ -192,6 +194,12 @@ xxxxxxxx rv3_7_6 Dave,   6th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   has to make sure that for that chemistry there are appropriate emissplit
   files.
 
+  EMISSPLIT directories should contain all the emissplit.default etc. files.
+  Note that we can have emissplits for many different "grid" files, they do
+  not have to be used. Thus, we can have emissplit for "PM25" in the case
+  that we run gridPM25, and also an emissplit.defaults.ocfile in case we
+  are running with gridOCfine. No need to change GenIn. files or Unimod :-)
+ 
 xxxxxxxx rv3_7_5 Agnes, Robert 5th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Agnes:

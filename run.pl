@@ -8,10 +8,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=8
-#32:ib
+#PBS -lnodes=32:ib
 # wall time limit of run
-#PBS -lwalltime=00:20:00
+#PBS -lwalltime=09:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -250,7 +249,7 @@ $Chem     = "vbs_tests";
 #@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
 
-my $testv = "rv3_7_5hcz";
+my $testv = "rv3_7_6";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";

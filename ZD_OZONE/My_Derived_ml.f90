@@ -52,6 +52,7 @@ module My_Derived_ml
   !   of the bigger d_2d arrays
   !---------------------------------------------------------------------------
 
+use My_Emis_ml,     only :  EMIS_NAME
 use AOTx_ml, only : O3cl, VEGO3_OUTPUTS, VEGO3_DEFS
 use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
@@ -62,7 +63,6 @@ use ChemGroups_ml  ! Allow all groups to ease compilation
                    !,  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV, IXADV_ indices
-use EmisDef_ml,     only :  EMIS_NAME
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa
