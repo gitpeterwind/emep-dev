@@ -506,7 +506,15 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   allocate(hyam(KMAX_ext+1))
   allocate(hybm(KMAX_ext+1))
   allocate(P_ext(KMAX_ext))
-  if(.not.allocated(ndays_ext))allocate(ndays_ext(Next))
+  if(allocated(ndays_ext))then
+     if(size(ndays_ext)<Next)then
+        if(Masterproc)write(*,*)'Sizes times old, new ',size(ndays_ext),Next
+        deallocate(ndays_ext)
+        allocate(ndays_ext(Next))
+     endif
+  else
+     allocate(ndays_ext(Next))
+  endif
 
   if(MasterProc)then
    !Read lon lat of the external grid (global)

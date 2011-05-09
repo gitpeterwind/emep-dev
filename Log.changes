@@ -149,6 +149,10 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_7_7 Peter,   9th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Bug in Nest_ml, when the IC file is different from the BC file
+
 xxxxxxxx rv3_7_6 Dave,   6th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
    ***** New emissions setup in GenIn.reactions etc.
