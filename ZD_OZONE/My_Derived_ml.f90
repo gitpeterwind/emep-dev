@@ -205,7 +205,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(8) :: &
   D2_EXTRA = (/ &
        "SURF_ppbC_VOC     " &
       ,"T2m               " &
@@ -215,9 +215,9 @@ private
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
       ,"HMIX              " & !alt HMIX00 ,HMIX12 ...
-      ,"Snow_m            " & 
+      !,"Snow_m            " & 
       !,"SoilWater_deep    " &
-      ,"USTAR_NWP         " &
+      !,"USTAR_NWP         " &
       !,"ws_10m            " &
       !,"u_ref             " &
   /)
@@ -242,9 +242,9 @@ private
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) ! , &
        !    SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" &! "Water_D" &
-                    , "Decid  ", "Crops  " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" /) !&! "Water_D" &
+                  !  , "Decid  ", "Crops  " /)
 
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
@@ -323,22 +323,22 @@ private
 !----------------------
 
 
-   type(typ_s3), dimension(14), public, parameter :: WDEP_WANTED = (/ &
+   type(typ_s3), dimension(7), public, parameter :: WDEP_WANTED = (/ &
          typ_s3( "PREC     ", "PREC ", "mm  " )  &
         ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
         ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
         ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
         ,typ_s3( "SS       ", "GROUP", "mgSS" )  &
       ! 
-        ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
-        ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
-        ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
-        ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
-        ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
+      !  ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
+      !  ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
+      !  ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
+      !  ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
+      !  ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
         ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
         ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
-        ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
-        ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
+      !  ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
+      ! ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
      /)
 
 
