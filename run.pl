@@ -244,8 +244,8 @@ my (@emislist, $Chem );
 
 my $CityZen = 0 ;
   #$Chem     = "Eucaari_Trends";      # Label for chemical scheme used
-$Chem     = "EmChem09";            # Label for chemical scheme used
 $Chem     = "vbs_tests";
+$Chem     = "EmChem09";            # Label for chemical scheme used
 #@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
 
@@ -267,11 +267,6 @@ my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-file
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
 $SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
 
-#.. For using emissions of EC/OC instead of PMx
-# Avoid directories which depend on domain, unless global files!
-#my $RFEmisDir   = "/global/work/mifast/Data_RF";   # Split-Fraction files for EC/OC
-#my $TNOemisDir  = "/global/work/mifast/Emis_TNO";  # TNO EC/OC emissions
-
 #ds check: and change
 chdir "$ProgDir";
 #die "Dir wrong!!!!! $testv label does not match in ENV$ENV{PWD}\n"
@@ -280,7 +275,6 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
 my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
-#my $SplitDir    = "$DataDir/SPLITS_NOV2009/BASE_NAEI2000_GH2009.$Chem" ;
 $SplitDir    = "$ChemDir/EMISSPLIT"; # FOR ALL NOW, Nov 20th! if $EUCAARI;
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
 
@@ -741,7 +735,6 @@ foreach my $scenflag ( @runs ) {
 
   foreach my $mmm ( $mm1 .. $mm2, $mm1, $mm2 ) {
     my $mm = sprintf "%2.2d", $mmm ; # WHY DO WE NEED THIS?????
-    #SNOW $ifile{"$DATA_LOCAL/snowc$mm.dat"} =  "snowc$mm.dat";
     $ifile{"$DATA_LOCAL/natso2$mm.dat"} =  "natso2$mm.dat";
     $ifile{"$DataDir/lt21-nox.dat$mm"} =  "lightning$mm.dat";
 # BIC for Saharan dust
