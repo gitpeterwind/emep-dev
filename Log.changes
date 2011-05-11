@@ -149,6 +149,11 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_7_xx Tove/Dave, 11th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+(NOT rtagged yet. Small change for vbs only)
+
+ZCM_vbs_tests/My_Derived  use My_Emis_ml instead of  EmisDef_ml 
+
 xxxxxxxx rv3_7_7 Peter,   9th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug in Nest_ml, when the IC file is different from the BC file (allocated to small ndays_ext). 
