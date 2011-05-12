@@ -119,11 +119,15 @@ real(kind=8),save :: rtime_saved(2)
 
 !YYYY, YY, MM, DD, hh will be replaced by numbers by the program. For details, see detail2str in TimeDate_ExtraUtil_ml.f90
 character(len=130),save  :: filename_read_BC_template='/global/work/mifapw/emep/Data/RCA/Boundary_conditions/YYYY/YYYYMMDDhh00_ll.nc'
+!character(len=130),save  :: filename_read_BC_template='/global/work/mifajej/TRANSPHORM/Data/EMAC_YYYYMM_TRANSPHORM.nc'
 
-character(len=130),save  :: filename_read_BC
 character(len=130),save  :: filename_read_3D='/global/work/mifapw/emep/Data/RCA/Boundary_conditions/YYYY/YYYYMMDDhh00_ll.nc'
+!character(len=130),save  :: filename_read_3D='/global/work/mifajej/TRANSPHORM/MACC/spinnup/EMEP_IN.nc'
 character(len=130),save  :: filename_eta='/global/work/mifapw/emep/Data/MACC02/Boundary_conditions/mozart_eta.zaxis'
 character(len=30),save  :: filename_write='EMEP_OUT.nc'
+
+
+character(len=130),save  :: filename_read_BC
 integer,save :: date_nextfile(4)!date corresponding to the next BC file to read
 integer,save :: NHOURS_Stride_BC   !number of hours between start of two consecutive records in BC files
 integer, public, parameter :: NHOURS_Stride_BC_default=6 !time between records if only one record per file (RCA for example)
