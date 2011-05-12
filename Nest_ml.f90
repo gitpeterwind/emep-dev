@@ -39,13 +39,14 @@ module Nest_ml
 !
 ! Set MODE (NEST_MODE in ModelConstants_ml) and istart,jstart,iend,jend
 ! Choose NHOURSAVE and NHOURREAD
+! Also filename_read_BC_template and filename_read_3D shoudl point to appropriate files
 !
 ! Grids may have any projection.
 ! Horizontal interpolation uses a weighted average of the four closest points
 ! This will work also if points in the present grid are not covered by the external grid.
+! Vertical interpolation is done from hybrid coordinates.
 !
 !To do:
-!  At present the vertical coordinates cannot be interpolated and must be the same in both grid.
 !  It should be possible to save only xn_adv_bnd if the inner grid is known for the outer grid.
 !  The routines should be thought together with GlobalBC_ml (can it replace it?)
 
