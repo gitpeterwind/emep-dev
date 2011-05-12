@@ -149,6 +149,27 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_7_8 Peter,   12th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Upgrade of the Nest_ml routines.
+Can use non-emep netcdf files for BC/IC; flexibilities introduced for nesting:
+-vertical coordinates can be hybrid, downwards or upwards, possibly defined in an ad-hoc file (ifs-mozart)
+-number of records in each file can be: 1 (RCA), some (mozart), all (emep), variable (transphorm)
+-time can be defined with any "days since" date 
+-time can be defined in a 365days convention, but still use 29th of February (mozart!)
+-IC and BC files can be different
+-chemical components to be nested can be selected and to some degrees added together
+-units can be PPB
+-short accepted
+
+The number of opportunities for bugs is huge...
+
+NetCDF_ml: ReadTime more general. Compatible with 365 days calendar
+SmallUtils_ml: wordsplit with ":" as sepaparator and an optional separator as input (dates need "-" as separator)
+Met_ml: allow to read ustar_nwp instead of tau (for WRF)
+PhyChem_ml: thour defined as = current_date (was shifted by 0.5 dt_advec before) NB: this will slightly modify results!
+            timings for nesting read and write
+
 xxxxxxxx rv3_7_xx Tove/Dave, 11th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 (NOT rtagged yet. Small change for vbs only)
 

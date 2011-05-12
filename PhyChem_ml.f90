@@ -101,9 +101,7 @@ contains
        !     Hours since midnight at any time-step
        !    using current_date we have already nstep taken into account
 
-       thour = real(current_date%hour) + current_date%seconds/3600.0 &
-                   + 0.5*dt_advec/3600.0
-
+       thour = real(current_date%hour) + current_date%seconds/3600.0
 
        if ( DEBUG_PHYCHEM .and. debug_proc ) then
           call debug_concs("PhyChe start ")
@@ -118,11 +116,14 @@ contains
 
         if (me == 0) write(6,"(a15,i6,f8.3)") 'timestep nr.',nstep,thour
 
-        call wrtxn(current_date,.false.) !Write xn_adv for future nesting
-        call readxn(current_date) !Read xn_adv from earlier runs
-        if(FORECAST.and.numt==2.and.nstep==1)call hourly_out()!Zero hour output
-
         call Code_timer(tim_before)
+        call wrtxn(current_date,.false.) !Write xn_adv for future nesting
+        call Add_2timing(18,tim_after,tim_before,"nest: Write")
+        call readxn(current_date) !Read xn_adv from earlier runs
+        call Add_2timing(19,tim_after,tim_before,"nest: Read")
+        if(FORECAST.and.numt==2.and.nstep==1)call hourly_out()!Zero hour output
+        call Add_2timing(35,tim_after,tim_before,"phyche:outs")
+
 
         call EmisSet(current_date)
         call Add_2timing(15,tim_after,tim_before,"phyche:EmisSet")

@@ -2305,8 +2305,8 @@ subroutine printCDF(name, array,unit)
     integer :: i,ntimes,status
     integer :: varID,ncFileID,ndims
     integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
-  
-    character*50 ::varname,period,since,date,time,name,timeunit,wordarray(4)
+    integer, parameter::wordarraysize=20
+    character*50 ::varname,period,since,date,time,name,timeunit,wordarray(wordarraysize)
     character*1 ::s1,s2
 
     integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
@@ -2338,53 +2338,86 @@ subroutine printCDF(name, array,unit)
 !must be of the form " xxxx since yyyy-mm-dd hh:mm:ss"
 
 !    read(timeunit,fmt="(a,a,a,a)")period,since,date,time
-    call wordsplit(trim(timeunit),4,wordarray,nwords,errcode)
+    call wordsplit(trim(timeunit),wordarraysize,wordarray,nwords,errcode,separator='-')
+    if(DEBUG_NETCDF.and.me==0)write(*,*)(trim(wordarray(i)),i=1,8)
     period=wordarray(1)
+    call CheckStop(trim(period)/='days', "Error: only time in days implemented "//trim(period))
     since=wordarray(2)
-    date=wordarray(3)
-    time=wordarray(4)
-
     call CheckStop(trim(since)/='since', "since error "//trim(since))
 
-    if(wordarray(3)(1:1)/='0')then
-       read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
-       read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
+    read(wordarray(3),*)yyyy
+    read(wordarray(4),*)mo
+    read(wordarray(5),*)dd
+    read(wordarray(6),*)hh
+    mi=0
+    ss=0
+!    read(wordarray(7),*)mi
+!    read(wordarray(8),*)ss  !did not work ??? 
 
-    if(DEBUG_NETCDF.and.me==0)write(*,fmt="(a,I4.4,a1,I2.2,a1,I2.2,a,I2.2,a1,I2.2,a1,I2.2)")&
-         'nest refdate ',yyyy,s1,mo,s2,dd,' time ',hh,s1,mi,s2,ss
-    ss=ss+60*mi+3600*hh
-    julian=julian_date(yyyy,mo,dd)
-    julian_1900=julian_date(1900,1,1)
-    diff_1900=julian-julian_1900
-!    if(me==0)write(*,*)'julians ',diff_1900,julian,julian_1900
-    if(trim(period)=='days')then
-       do i=1,NTime_Read
-          TimesInDays(i)=diff_1900+times(i)+ss/(24.0*3600.0)
-       enddo
-    elseif(trim(period)=='seconds')then
-       do i=1,NTime_Read
-          TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
-       enddo
+
+    if(yyyy/=0)then
+!       read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
+!       read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
+
+       if(DEBUG_NETCDF.and.me==0)write(*,fmt="(a,I4.4,a1,I2.2,a1,I2.2,a,I2.2,a1,I2.2,a1,I2.2)")&
+            'nest refdate ',yyyy,'-',mo,'-',dd,' time ',hh,':',mi,':',ss
+       ss=ss+60*mi+3600*hh
+       julian=julian_date(yyyy,mo,dd)
+       julian_1900=julian_date(1900,1,1)
+       diff_1900=julian-julian_1900
+       !    if(me==0)write(*,*)'julians ',diff_1900,julian,julian_1900
+       if(trim(period)=='days')then
+          do i=1,NTime_Read
+             TimesInDays(i)=diff_1900+times(i)+ss/(24.0*3600.0)
+          enddo
+       elseif(trim(period)=='seconds')then
+          do i=1,NTime_Read
+             TimesInDays(i)=diff_1900+(times(i)+ss)/(3600.0*24.0)
+          enddo
+       else
+          call StopAll("ReadTimeCDF : time unit not recognized")
+       endif
+
     else
-       call StopAll("ReadTimeCDF : time unit not recognized")
-    endif
 
-    else
-
-    if(DEBUG_NETCDF.and.me==0)write(*,*)'assuming days since 0-01-01 00:00 and 365days'
+       if(DEBUG_NETCDF.and.me==0)write(*,*)'assuming days since 0-01-01 00:00 and 365days'
        !assume units = "days since 0-01-01 00:00" 
        !and calendar = "365_day"
-    yyyy=int(times(1)/365)
-    
-    julian=julian_date(yyyy,1,1)
-    julian_1900=julian_date(1900,1,1)
-    diff_1900=julian-julian_1900
-
+       yyyy=int(times(1)/365)
+       
+       julian=julian_date(yyyy,1,1)
+       julian_1900=julian_date(1900,1,1)
+       diff_1900=julian-julian_1900
+       
        do i=1,NTime_Read
           TimesInDays(i)=diff_1900+times(i)-yyyy*365
-      enddo
+       enddo
+       !for leap years and dates after 28th February add one day to get Julian days
+       if(mod(yyyy,4)==0)then
+          do i=1,NTime_Read
+             if(times(i)-yyyy*365>59.999)then
+                !later than midnight the 28th february (28th Feb is 59th day)
+                TimesInDays(i)=TimesInDays(i)+1.0
+             endif
+          enddo
+!if the current date in the model is 29th of february, then this date is not defined in the 
+!365 days calendar. We then assume that the 60th day is 29th of february in the netcdf file
+!and not the 1st of march.
+!Keep this separately as this may be defined differently in different situations.
+!This implementation works for the IFS-MOZART BC
+          if(current_date%month==2.and.current_date%day==29)then
+             write(*,*)'WARNING: assuming 29th of February for ',trim(filename)
+             do i=1,NTime_Read
+                if(int(times(i)-yyyy*365)==60)then
+                   !move 1st march to 29th february
+                   TimesInDays(i)=TimesInDays(i)-1.0
+                endif
+             enddo
+          endif
 
+       endif
     endif
+
     deallocate(times)
   end subroutine ReadTimeCDF
 

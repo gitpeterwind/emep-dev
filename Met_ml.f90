@@ -460,10 +460,17 @@ contains
     namefield='surface_stress'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, tau(:,:,nr))
+    if(validity==field_not_found)then
+       namefield='ustar_nwp'
+       call Getmeteofield(meteoname,namefield,nrec,ndim,&
+            unit,validity, ustar_nwp(:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-    tau=max(0.0,tau)
-    if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
-
+       foundustar=.true.
+    else
+       tau=max(0.0,tau)
+       if(validity=='averaged')tau(:,:,1)=tau(:,:,nr)
+    endif
+    
     namefield='sea_surface_temperature'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, sst(:,:,nr))

@@ -62,7 +62,7 @@ contains
 
 !===========================================================================
 
-subroutine wordsplit(text,nword_max,wordarray,nwords,errcode)
+subroutine wordsplit(text,nword_max,wordarray,nwords,errcode,separator)
 !**************************************************************
 !   Subroutine takes in a character string and splits it into
 !   a word-array, of length nwords
@@ -76,21 +76,24 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode)
   character(len=*), dimension(:), intent(out) :: wordarray
   integer,          intent(out) :: nwords      ! No. words found
   integer,          intent(out) :: errcode      ! No. words found
+  character(len=1), optional, intent(in) ::  separator  ! additional separators
 
   !-- local
   logical   :: wasinword   ! true if we are in or have just left a word
   integer   :: i, is, iw
-  character(len=1) ::  c
+  character(len=1) ::  c,s
 
   errcode = 0
   wasinword = .false.   !To be safe, with spaces at start of line
   is = 0 ! string index
   iw = 1 ! Word index
+  s=' '
+  if(present(separator))s=separator
   wordarray(1) = ""
 
   do i = 1, len_trim(text)
     c = text(i:i)
-    if( c /= " " .and. c /= "," ) then
+    if( c /= " " .and. c /= "," .and. c /= ":" .and. c /= s ) then
       is = is + 1
       wordarray(iw)(is:is) = c
       wasinword = .true.
@@ -102,7 +105,7 @@ subroutine wordsplit(text,nword_max,wordarray,nwords,errcode)
     endif
   enddo
   nwords = iw
-  if (  nwords >= nword_max ) then
+  if (  nwords > nword_max ) then
     errcode = 2
     print *, "ERROR in WORDSPLIT : Problem at ", text
     print *,"Too many words"
