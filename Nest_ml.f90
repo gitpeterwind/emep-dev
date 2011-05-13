@@ -39,7 +39,7 @@ module Nest_ml
 !
 ! Set MODE (NEST_MODE in ModelConstants_ml) and istart,jstart,iend,jend
 ! Choose NHOURSAVE and NHOURREAD
-! Also filename_read_BC_template and filename_read_3D shoudl point to appropriate files
+! Also filename_read_BC_template and filename_read_3D should point to appropriate files
 !
 ! Grids may have any projection.
 ! Horizontal interpolation uses a weighted average of the four closest points
@@ -274,9 +274,7 @@ subroutine readxn(indate)
     if(.not.FORECAST) call reset_3D(ndays_indate)
     if(MasterProc) print *,'NEST: READING BC DATA from ',trim(filename_read_BC)
     call read_newdata_LATERAL(ndays_indate) 
-    date_nextfile=ndate!force to reread first record in order to fill two values for interpolation
-    call read_newdata_LATERAL(ndays_indate) 
-    !the first hour only this set is used, no real interpolation between two records
+    !the first hour only these values are used, no real interpolation between two records
   endif
   
 
@@ -1114,6 +1112,24 @@ subroutine read_newdata_LATERAL(ndays_indate)
                            +Weight(i,j,4)*data(IIij(i,j,4),JJij(i,j,4),k2_ext(kt)))*weight_k2(kt)
   enddo DO_SPEC
 
+  if(first_call)then
+     !copy 2 into 1 so that both are well defined
+     rtime_saved(1)=rtime_saved(2)!put  time in 1
+     DO_SPEC_init1: do n= 1, NSPEC_ADV  !copy BC used to nr=1
+        if(.not.(adv_bc(n)%wanted.and.adv_bc(n)%found)) cycle DO_SPEC_init1
+        !store the old values in 1
+        if(iw>=1)     forall (k=1:KMAX_BC, j=1:ljmax) &
+             xn_adv_bndw(n,j,k,1)=xn_adv_bndw(n,j,k,2)
+        if(ie<=limax) forall (k=1:KMAX_BC, j=1:ljmax) &
+             xn_adv_bnde(n,j,k,1)=xn_adv_bnde(n,j,k,2)
+        if(js>=1)     forall (k=1:KMAX_BC, i=1:limax) &
+             xn_adv_bnds(n,i,k,1)=xn_adv_bnds(n,i,k,2)
+        if(jn<=ljmax) forall (k=1:KMAX_BC, i=1:limax) &
+             xn_adv_bndn(n,i,k,1)=xn_adv_bndn(n,i,k,2)
+        if(kt>=1)     forall (i=1:limax, j=1:ljmax) &
+             xn_adv_bndt(n,i,j,1)=xn_adv_bndt(n,i,j,2)
+     enddo DO_SPEC_init1
+  endif
 
   deallocate(data)
   if(MasterProc) call check(nf90_close(ncFileID))
