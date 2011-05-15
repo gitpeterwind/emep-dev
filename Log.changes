@@ -170,8 +170,8 @@ Met_ml: allow to read ustar_nwp instead of tau (for WRF)
 PhyChem_ml: thour defined as = current_date (was shifted by 0.5 dt_advec before) NB: this will slightly modify results!
             timings for nesting read and write
 
-xxxxxxxx rv3_7_xx Tove/Dave, 11th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-(NOT rtagged yet. Small change for vbs only)
+Tove/Dave, 11th May 2011 
+(Small change for vbs only)
 
 ZCM_vbs_tests/My_Derived  use My_Emis_ml instead of  EmisDef_ml 
 
