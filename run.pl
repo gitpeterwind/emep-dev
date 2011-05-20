@@ -10,7 +10,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=32:ib
 # wall time limit of run
-#PBS -lwalltime=09:20:00
+#PBS -lwalltime=00:20:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -249,7 +249,7 @@ $Chem     = "EmChem09";            # Label for chemical scheme used
 #@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
 
-my $testv = "rv3_7_6";
+my $testv = "rv3_7_8";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";

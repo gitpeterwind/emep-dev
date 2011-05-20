@@ -1,0 +1,36 @@
+
+#------- start from a "working" model code, after mk.GenChem, cpZD_OZONE/My*, make clean
+
+v=rv3_7_8                               # Input version flag
+tdir=/home/mifads/Unify                 # top directory
+idir=$tdir/Unimod.$v                    # Input dir
+
+odir=$tdir/OpenSource2011.rv3_7r1       # Output dir, may have different flag
+cdir=$odir/code                         # code directory
+mkdir -p $cdir                            
+
+
+echo "Making $cdir"
+
+#-- 1)  Code ------------------------------------------------------------------
+
+  cd $idir
+  for i in *.f90 *.inc gpl.txt modrun.sh
+  do
+    cp $i   $cdir
+  done
+  
+  rm $cdir/FUTURE*         # FUTURE routines not wanted
+
+#-- 2)  dependencies ----------------------------------------------------------
+
+  awk '{if(NR>4) print $0 }'   $idir/.depend > $cdir/dependencies
+
+
+#-- 3)  Makefile stuff ----------------------------------------------------------
+
+  cp $idir/Makefile.Open $cdir/Makefile      # OpenSource Makefile
+
+  cat $idir/Makefile.SRCS                    > $cdir/Makefile.SRCS
+  sed "s/SRCS/FOBJ/" $idir/Makefile.SRCS | \
+     sed "s/.f90/.o/" | sed "s/.inc$/.o/"    >>  $cdir/Makefile.SRCS

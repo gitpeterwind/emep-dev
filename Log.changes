@@ -148,6 +148,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7_9 Dave,    20th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+gpl.txt added to directory
+Makefile.Open added (copied from OpenSource)
+
+mk.OpenSource added - prelim script to automate generation of OpenSource directory
+          (seems to work for code directory and . Need to add inputs)
 
 xxxxxxxx rv3_7_8 Peter,   12th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
