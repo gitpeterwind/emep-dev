@@ -153,8 +153,8 @@ xxxxxxxx rv3_7_9 Dave,    20th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 mk.OpenSource added - ** prelim ** script to automate generation of 
     OpenSource directory
-    (only partially working. creates directory okay and compiles f90 to .o,
-     but fails at loads step.  Need to add inputs directory later also)
+    (only partially working. creates directory okay and compiles.
+     Need to add inputs directory later also)
 
 gpl.txt added to directory
 Makefile.Open added (copied from OpenSource)

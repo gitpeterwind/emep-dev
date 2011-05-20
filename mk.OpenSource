@@ -33,4 +33,4 @@ echo "Making $cdir"
 
   cat $idir/Makefile.SRCS                    > $cdir/Makefile.SRCS
   sed "s/SRCS/FOBJ/" $idir/Makefile.SRCS | \
-     sed "s/.f90/.o/" | sed "s/.inc$/.o/"    >>  $cdir/Makefile.SRCS
+     sed "s/.f90/.o/g" | sed "s/.inc$/.o/"    >>  $cdir/Makefile.SRCS
