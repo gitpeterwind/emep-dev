@@ -148,6 +148,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3.8,              24th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+ PUBLIC-DOMAIN RELEASE :-)
+
+ Input.tex small change (for dust module) from Svetlana
+
 xxxxxxxx rv3_7_10, Dave      24th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 CellMet_ml: fixed snowice following query of Guus Velders
