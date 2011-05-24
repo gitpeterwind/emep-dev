@@ -35,6 +35,12 @@
   !   Alfaro & Gomes (2001). JGR, 106, 18075-18084 
   !   Gomes et al. (2003). Catena, 52, 257-271.
 
+!!!! IMPORTANT: 
+!    SoilWater is available from IFS, but (due to uncertain quality
+!    and inconsistency btw soil properties in IFS and sand and clay 
+!    content from JRC used here) in this version 
+!    foundSoilWater = .false. from Met_ml.f90 (see comments below)   
+
  use CheckStop_ml,         only : CheckStop
  use EmisDef_ml,           only : NDU, QDUFI, QDUCO
  use Functions_ml,         only : ERFfunc
@@ -45,9 +51,10 @@
  use Landuse_ml,           only : LandCover, NLUMAX 
  use LandDefs_ml,          only:  LandType
  use LocalVariables_ml,    only : Sub, Grid
- use MetFields_ml,         only : z_bnd, z_mid, u_ref, ustar_nwp, roa,  &
-                                  t2_nwp, sdepth, fh, ps, surface_precip,  &
-                                  rho_surf, SoilWater, foundSoilWater,  &
+ use MetFields_ml,         only : z_bnd, z_mid, u_ref, ustar_nwp, roa,    &
+                                  t2_nwp, sdepth, fh, ps, surface_precip, &
+                                  rho_surf, SoilWater, foundSoilWater,    &
+                                  foundws10_met, ws_10m,                  &
                                   clay_frac, sand_frac !ACB snow_flag
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
                                   NPROC, MasterProc, USE_DUST
@@ -113,7 +120,7 @@
         return
     end if
 
-    if ( my_first_call.and. MasterProc ) then 
+    if ( my_first_call ) then 
      write(6,*)'***    Call for init_dust     ***   '
 
         call init_dust
@@ -125,7 +132,7 @@
 !_______________________________________________________
 
 
- if(DEBUG_DUST) write(6,*)'***   WINDBLOWN DUST',  &
+ if(DEBUG_DUST .and. debug_flag ) write(6,*)'***   WINDBLOWN DUST',  &
                                  i_fdom(i), j_fdom(j)
 
  if ((glat(i,j)>65.0 .and. glon(i,j)>50.0)) return ! Avoid dust production in N. Siberia
@@ -185,6 +192,8 @@
      if(DEBUG_DUST .and. debug_flag) write(6,'(a15,i5,f10.3)')   &
                                      '-----> Landuse', lu, cover
 
+     flx_hrz_slt = 0.0
+
 !//  Sandblasting coefficient  Alfa [1/m] = Flux_vert/Flux_horiz
 !--------------------------------------------------------------
 !   Dust production is EXTREMELY sensitive to this parameter, which changes 
@@ -197,7 +206,7 @@
 !//__ Clay content in soil (limited to 0.2 ___
      clay = min (clay_frac(i,j), 0.20) ! [frc]
 
-!== Testing ====
+!== Testing ==== 
 !    ln10 = log(10.0) 
 !    alfa = 100.0 * exp(ln10 * (13.4 * clay - 6.0))  ! [m-1]     MaB95 p. 16423 (47)
 !    if (DEBUG_DUST .and. debug_flag)  &
@@ -207,9 +216,6 @@
 !! >>>>>  For now values to ALFA are assigned below 
 
 
-!//__ U* from NWP model ____
-     ustar = Grid%ustar 
-
 !//__ Threshold U* for saltation for particle (D_opt=70um) - dry ground
 
      ustar_th = help_ustar_th / sqrt(roa(i,j,KMAX_MID,1)) ! [m s-1] 
@@ -217,18 +223,27 @@
      if(DEBUG_DUST .and. debug_flag) write(6,'(a20,3f15.5)')  &
                 '>> U*/U*th/ro >>', ustar,ustar_th,roa(i,j,KMAX_MID,1)
 
-!//___  Inhibition of saltation by soil moisture
 
-   ustar_moist_cor = 1.0
+!//___  Inhibition of saltation by soil moisture (Fecan et al., 1999)
 
-   if (foundSoilWater) then
+  ustar_moist_cor = 1.0
+
+!//__ Minimal soil moisture at which U*_thresh icreases
+  gwc_thr = (0.17 + 0.14 * clay)* clay    ! [kg/kg] [m3 m-3] 
+  gwc_thr = max ( gwc_thr, 0.1)   ! Lower threshold limit (Vautard, AE, 2005)
+ 
+
+  if (foundSoilWater) then    ! Soil Moisture in met data
 
 !__ Saturated volumetric water content (sand-dependent)
      vh2o_sat = 0.489-0.126 * sand_frac(i,j)       ! [m3 m-3] 
 !__ Bulk density of dry surface soil [Zender, (8)]
      soil_dns_dry = soil_dens * (1.0 - vh2o_sat)    ! [kg m-3]
-!__ Volumetric soil water content [m3/m3] SoilWater[m/0.072m]
-     v_h2o = SoilWater(i,j,1)/0.072
+!__ Volumetric soil water content [m3/m3] 
+     v_h2o = SoilWater(i,j,1)
+              !-- Note, in HIRLAM SoilWater is in [m/0.072m] -> conversion
+              !   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
+
 !__ Gravimetric soil water content [kg kg-1]  
      gr_h2o = v_h2o * Ro_water/soil_dns_dry       
 
@@ -237,23 +252,29 @@
                                    sand_frac(i,j),vh2o_sat,soil_dns_dry
      write(6,'(a30,3f15.5)') ' SW/VolW/GrW/ ',SoilWater(i,j,1),v_h2o,gr_h2o
      endif
-
-!//__ Minimal soil moisture at which U*_thresh icreases
-     gwc_thr = (0.17 + 0.14 * clay)* clay  *5.   ! [kg/kg] [m3 m-3]  
- 
-   else  !.. No SoilWater in met.input
-     gwc_thr = 0.1 
-  endif
-
+! Soil water correction
      if (gr_h2o > gwc_thr) &
        ustar_moist_cor = sqrt(1.0 + 1.21 *  &
                  (100.*(gr_h2o - gwc_thr))**0.68) ! [frc] FMB99 p.155(15) 
 
-     if(DEBUG_DUST .and. debug_flag) write(6,'(a25,e12.4,f10.4)')   &
+     if(DEBUG_DUST .and. debug_flag) write(6,'(a25,2f10.4)')   &
                      '>> U*_moist_corr  >>',gwc_thr, ustar_moist_cor
+ 
+  else  !.. No SoilWater in met.input; Moisture correction for U*t will be 1.
+
+!... Correction to U*th can be assigned dependent on the typical soil wetness:
+! 1.1-1.75 for sand (gr_h2o = 0.1-2%) ; 1.5-2.5 for loam (gr_h2o = 4-10%) and
+!                                               for clay (gr_h2o = 9-15%)
+
+     if(DEBUG_DUST .and. debug_flag) then
+       write(6,'(a30,f8.2,2f12.4)') '++ No SoilWater in meteorology++'
+       write(6,'(a25,f10.4)')   &
+                     '>> U*_moist_corr  >>', ustar_moist_cor                                 
+     endif 
+
+  endif
 
 ! ===================================
-
   
 !// Limitation of available erodible elements and aerodynamic roughness length
   if (lu == LU_DESERT)       then      ! ---------  desert -----
@@ -319,45 +340,40 @@
             ustar_moist_cor * & ! [frc] Adjustment for moisture
             ustar_z0_cor        ! [frc] Adjustment for roughness
 
+
+!//__ Account for wind gustiness under free convection (Beljaars,QJRMS,1994)
+
+!   if (foundws10_met) then
+!       u10=ws_10m(i,j,1) 
+!   else 
+!       u10 = Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
+!                           Sub(lu)%z0,  Sub(lu)%invL)
+!   end if
+!   ustar = KARMAN/log(10.0/z0) *   &
+!           sqrt(u10*u10 + 1.44 *Grid%wstar*Grid%wstar)
+!   endif
+!.. Gives too low U*; Sub(lu)%ustar=0.1 always-> both too low to generate dust
+
+!//__ U* from NWP model ____
+    ustar = Grid%ustar 
+
    if (DEBUG_DUST .and. debug_flag)  then
       write(6,'(3es12.3)') ustar_th, ustar_moist_cor, ustar_z0_cor
-      write(6,'(a35,f8.3,2(a8,f6.3))')  &
-        'FINALLY U*_th= ',ustar_th,'U*=',ustar,'Ratio=',ustar_th/ustar
+      write(6,'(a35,f8.3,3(a10,f6.3))') 'FINALLY U*_th= ',ustar_th,' U*=',ustar, &
+                                   ' U*NWP=',Grid%ustar,' U*sub=',Sub(lu)%ustar
    endif
-
-
-    flx_hrz_slt = 0.0
 
 ! >>>>>  Check for saltation to occur [Whi79 p.4648(19), MaB97 p.16422(28)]        
 
-    if (ustar > ustar_th .and. ustar > 0.35) then   
+    if (ustar > ustar_th ) then            ! .and. ustar > 0.35) then   
          dust_prod = .true.
 
-
     if(DEBUG_DUST .and. debug_flag) write(6,'(a30,f8.2)')  &
-         ' Saltation occur  => ',   ustar_th/ustar
+         ' Saltation occur U*th/U* => ',   ustar_th/ustar
 
-!//__ Increase of friction velocity by surface roughness length
-!//__                                 and friction speeds (Owens effect)
-
-!//__ wind speed at 10m
-    invL = -KARMAN * GRAV * Grid%Hd / ( CP*Grid%rho_s   &
-                                       *ustar*ustar*ustar *Grid%t2)
-!  u10 = u_ref(i,j) + ustar/KARMAN * (log(z10/z_ref) - PsiM(z10*invL) + PsiM(z_ref*invL))
-
-    u10 = Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
-                     Sub(lu)%z0,  Sub(lu)%invL )
-
-!//__ Threshold 10 m wind speed [m s-1] for saltation
-    u_th10 = ustar_th/KARMAN * log(z10/z0) 
-!..or    u_th10 = u10 * ustar_th / ustar ! [m s-1]
-
-    if(DEBUG_DUST .and. debug_flag)  write(6,'(a20,2f12.4,2e12.4)')   &
-            'Ro/T2/Hd/invL', Grid%rho_s, Grid%t2, Grid%Hd, Grid%invL
-    if(DEBUG_DUST .and. debug_flag)  write(6,'(a20,4f12.4)')          &
-            'Uref/U10/ratio/Uth10', Grid%u_ref, u10, ustar_th/ustar, u_th10
-
-
+!//  Increase of friction velocity =========== NOT USED ==========  NOT USED
+!    by surface roughness length and friction speeds (Owens effect)
+ 
   !== Saltation roughens the boundary layer, AKA "Owen's effect"
   !  GMB98 p. 6206 Fig. 1 shows observed/computed u* dependence on observed U(1 m)
   !  GMB98 p. 6209 (12) has u* in cm s-1 and U, Ut in m s-1, personal communication, 
@@ -366,13 +382,16 @@
   !  Increase in friction velocity due to saltation varies as square of 
   !  difference between reference wind speed and reference threshold speed
  
+!//__ Threshold 10 m wind speed [m s-1] for saltation
+!    u_th10 = ustar_th/KARMAN * log(z10/z0) 
+!!..or    u_th10 = u10 * ustar_th / ustar ! [m s-1]
 !//__  Friction velocity increase from saltation GMB98 p. 6209
-
-    owens = 0.003* (u10 - u_th10)*(u10 - u_th10)   !  [m s-1]
+!    owens = 0.003* (u10 - u_th10)*(u10 - u_th10)   !  [m s-1]
 !      ustar = ustar + owens ! [m s-1] Saltating friction velocity
+!    if(DEBUG_DUST .and. debug_flag)  write(6,'(a20,3f10.3)')   &
+!             'Owens effect ',ustar-owens, owens , ustar
+! ============================================  NOT USED ==========  NOT USED
 
-    if(DEBUG_DUST .and. debug_flag)  write(6,'(a20,3f10.3)')   &
-             'Owens effect ',ustar-owens, owens , ustar
 
 !//__ Calculate U*th / U* ratio
     uratio = ustar_th / ustar 
@@ -403,12 +422,9 @@
 !     endif
 !        flx_vrt_dst =  flx_vrt_dst + flx_hrz_slt * alfa * cover
 
-!// ___  Vertical dust flux [kg/m2/s], scaled with area fraction and
-!//       added for all landuses
-!TEST         flx_vrt_dst =  flx_vrt_dst + flx_hrz_slt * alfa * dust_lim
-  
-
-!TEST..  to limit the dust production to reasonable (estimated) values
+!//  Vertical dust flux [kg/m2/s], scaled with area fraction and
+!//  added for erodible landuses. 
+!//  (dust production is limited to reasonable (estimated) values
    if (lu == LU_DESERT)  then 
       flx_vrt_dst  =  flx_vrt_dst + min(1.e-7, flx_hrz_slt * alfa * dust_lim)
    else
@@ -454,10 +470,10 @@
 
 ! fine and coarse dust fractions assigned now  loosely based on Alfaro&Gomes(2001)
      frac_fine = 0.05    ! fine fraction 0.10 was found too large 
-     frac_coar = 0.17    ! coarse fraction also 0.15-0.23 was tested
+     frac_coar = 0.20    ! coarse fraction also 0.15-0.23 was tested
 !!.. vertical dust flux [kg/m2/s] -> [kg/m3/s]*AVOG/M e-3 -> [molec/cm3/s]  
-     DU_prod(DU_F,i,j) = 0.05 * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
-     DU_prod(DU_C,i,j) = 0.17 * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
+     DU_prod(DU_F,i,j) = frac_fine * flx_vrt_dst * kg2molecDU /Grid%DeltaZ 
+     DU_prod(DU_C,i,j) = frac_coar * flx_vrt_dst * kg2molecDU /Grid%DeltaZ    
 
 !//__Dust flux [kg/m2/s] for check
      DUST_flux(i,j) =   flx_vrt_dst ! * (frac_fin + frac_coar) 
