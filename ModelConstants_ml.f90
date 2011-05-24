@@ -121,7 +121,7 @@ integer, public, parameter, dimension(4) ::  &
 
 integer, public, parameter ::  &
   NPROCX      =   8        & ! Actual number of processors in longitude
-, NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
