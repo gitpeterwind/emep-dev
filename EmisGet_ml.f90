@@ -217,7 +217,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                         iic,i,j,isec,tmpsec(isec)
 
                   call CheckStop(tmpsec(isec) /= 0,  &
-                        "EmisGet: NOT FLAT EMISSIONS")
+                   "EmisGet: NOT FLAT EMISSIONS - check SEAFIX_GEA_NEEDED comments in ModelConstants_ml")
                enddo
                do isec=ISNAP_SHIP+1,NSECTORS
                   if ( MasterProc.and.tmpsec(isec) /= 0) &
