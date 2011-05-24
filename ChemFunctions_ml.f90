@@ -36,11 +36,11 @@ module ChemFunctions_ml
 !** includes
 !   troe - standrad chemical function
 !____________________________________________________________________
- use LocalVariables_ml,     only : Grid   ! => izen
+ use LocalVariables_ml,     only : Grid   ! => izen, is_NWPsea
  use ModelConstants_ml,     only : K1  => KCHEMTOP, K2 => KMAX_MID
  use PhysicalConstants_ml,  only : AVOG, RGAS_J, DAY_ZEN
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
- use ChemSpecs_tot_ml,        only : SO4, NO3_f, NH4_f
+ use ChemSpecs_tot_ml,        only : SO4, NO3_f, NH4_f, NO3_c
   implicit none
   private
 
@@ -256,9 +256,9 @@ module ChemFunctions_ml
 ! Then
 !      K = VOLFAC *S *v/(4*rho)
 !
-! rcmisc(8,k) (in My_Chem)=v/(4*rho) 
+! rcmisc k=v/(4*rho) 
 !
-!      K = VOLFAC *rcmisc(8,k) *S
+!      K = VOLFAC *rcmisc() *S
 ! According to Riemer et al, 2003, we weight the reaction probability
 ! according to the composition of the aerosol
 !
@@ -267,40 +267,39 @@ module ChemFunctions_ml
 !   alpha2=0.002
 !   f= Mso4/(Mso4+Mno3), M=aerosol mass concentration
  
-! N2O5 -> aerosol based upon  based on Riemer 2003
+! N2O5 -> aerosol based upon  based on Riemer 2003 and
+! (May 2011) updated based upon results shown in Riemer et al., 2009.
+! We do not attempt to model OC, but simply reduce the rate by
+! a factor of two to loosely account for this effect. 
 ! J08 - changed from use of more accurate xnew to xn_2d, since
 ! surface area won't change so much, and anyway the uncertainties
 ! are large. (and xn_2d leads to fewer dependencies)
 
   function RiemerN2O5() result(rate) 
      real, dimension(K1:K2) :: rate
-     real    :: rc   ! was rcmisc(8,)
+     real    :: rc
      real    :: f   ! Was f_Riemer
      real, parameter :: EPSIL = 1.0  ! One mol/cm3 to stop div by zero
      integer :: k
-     
-! old Setup_ml had:
-! setup weighting factor for hydrolysis  
-!     f_Riemer(k)=96.*xn_2d(SO4,k)/( (96.*xn_2d(SO4,k))+(62.*xn_2d(NO3_f,k)) )
-! then FastReactions had for L(N2O5):
-!     + (0.9*f_Riemer(k)+0.1) * rcmisc(8,k)* &
-!                 ( VOLFACSO4*xnew(SO4)      & !Total sulpate aerosol surface
-!                 + VOLFACNO3*xnew(NO3_f)     & !Total sulpate aerosol surface
-!                 + VOLFACNH4*xnew(NH4_f)  )  & !Total sulpate aerosol surface
-   
+     real :: xNO3  ! As the partitioning between fine and coarse is so difficult
+                   ! we include both in the nitrate used here.
 
      do k = K1, K2
        if ( rh(k)  > 0.4) then
+          xNO3 = x(NO3_f,k) + x(NO3_c,k) 
 
           rc = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean mol. speed,m/s
              /(4*(2.5 - rh(k)*1.25)) !density, corrected for rh (moderate approx.)
 
-          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0*x(NO3_f,k) + EPSIL )
+          !ORIG f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0* x(NO3_f,k)  + EPSIL )
+          f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0* xNO3  + EPSIL )
 
 
           rate(k) =  (0.9*f + 0.1) * rc *  &
-             ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * x(NO3_f,k) &
-              + VOLFACNH4 * x(NH4_f,k) )    !Total aerosol surface
+             0.5 * & ! very loosely based on OC effects from Reimer 2009 
+             !ORIG ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * x(NO3_f,k)  &
+             ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * xNO3  &
+              + VOLFACNH4 * x(NH4_f,k) )    !SIA aerosol surface
         else
           rate(k) = 0.0
         endif
@@ -309,6 +308,7 @@ module ChemFunctions_ml
   end function RiemerN2O5
   !---------------------------------------------------------------------
   function kaero() result(rate) 
+    ! Former rate for HNO3 -> NO3_c, not now used
      real, dimension(K1:K2) :: rate
      integer :: k
      
@@ -324,19 +324,24 @@ module ChemFunctions_ml
   end function kaero
   !---------------------------------------------------------------------
   function kaero2() result(rate) 
-    ! reduced rates, and only in lowest 10 layers
+    ! New rate for HNO3 -> NO3_c, used only over sea squares
+    ! as very crude simulation of sea-salt HNO3 interactions
+    ! near surface (layer 16 ca. 600m).
      real, dimension(K1:K2) :: rate
      integer :: k
      
-    do k = 10, K2
-      if ( rh(k)  > 0.9) then
-         rate(k) = 1.0e-5
-      else
-         rate(k) = 5.0e-6
-      end if
-    end do !k
-
-
+    if ( Grid%is_NWPsea) then
+      rate(K1:15) = 0.0
+      do k = 16, K2
+        if ( rh(k)  > 0.9) then
+           rate(k) = 1.0e-4
+        else
+           rate(k) = 5.0e-6
+        end if
+      end do !k
+    else ! over land
+      rate(K1:K2) = 0.0
+    end if
   end function kaero2
  !---------------------------------------------------------------------
   function ec_ageing_rate() result(rate) 

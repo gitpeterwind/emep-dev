@@ -148,6 +148,20 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_7_10, Dave      24th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+CellMet_ml: fixed snowice following query of Guus Velders
+
+ChemFunctions_ml: 
+
+    Riemer - included NO3_c (for robustness) and reduced rate by factor
+    2 for OA effect (RIemer et al., 2009)
+
+    kaero2 - only over sea squares, and mainly for levels  k=16..20
+
+EmisGet_ml:  added explanation of possible need for SEAFIX in checkstop
+    comment
+
 xxxxxxxx rv3_7_9b Svetlana,  24th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Some fixing in DustProd_ml.f90

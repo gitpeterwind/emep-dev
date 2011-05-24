@@ -122,7 +122,8 @@ contains
      Grid%is_allNWPsea = ( nwp_sea(i,j) .and. LandCover(i,j)%ncodes == 1)
      Grid%sdepth    = sdepth(i,j,1)
      Grid%ice_nwp   = max( ice_nwp(i,j,1), ice_landcover(i,j) ) 
-     Grid%snowice   = ( Grid%sdepth  > 0.0 .or. Grid%ice_nwp > 0.0 )
+     !bug Grid%snowice   = ( Grid%sdepth  > 0.0 .or. Grid%ice_nwp > 0.0 )
+     Grid%snowice   = ( Grid%sdepth  > 1.0e-10 .or. Grid%ice_nwp > 1.0e-10 )
 
      Grid%fSW       = fSW(i,j)
 
