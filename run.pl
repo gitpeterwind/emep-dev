@@ -117,7 +117,7 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #   %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
 # Dave's start of 2008 OpenSource-2011 check. 
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
+#   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
@@ -150,7 +150,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2000";
+my $year = "2006";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -190,7 +190,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EMEP"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -249,7 +249,7 @@ $Chem     = "EmChem09";            # Label for chemical scheme used
 #@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
 
-my $testv = "rv3_7_10";
+my $testv = "rv3_8";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -426,10 +426,10 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1   =  "07";       # first month, use 2-digits!
-my $mm2   =  "07";       # last month, use 2-digits!
+my $mm1   =  "01";       # first month, use 2-digits!
+my $mm2   =  "12";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $dd2   =  1;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2   =  31;       # End day (can be too large; will be limited to max number of days in the month)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm1   =  "01";

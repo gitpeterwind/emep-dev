@@ -15,13 +15,11 @@ IMPORTANT NOTE:
 
 KNOWN PROBLEMS
 
+Sea-salt in GlobalBCs!
+
 Some jobs needed after Mar-11th tests (ds will do)
-  - Solver_ml - remove Reimer code
   - Decide SoilMoisture
-  - Decide kaero
   - SoilWater - should implement readneightbour routine
-  - ModelConstants_ml - removed BVOC_2010 option
-  - Update EMEP_EuroBVOC.nc?
 
 None? 
 I (DS) have re-writting My_Derived and Derived to use the array
@@ -148,6 +146,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3.8.1, Dave       15th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Aero_Vds:
+New Dp for coarse aerosol, Dp=2.5um. Hence 50% in PM25, 50% in PMco
+
+ZCM_EmChem09/GenIn.reactions:
+Decided on kaero in  HNO3 -> NO3_c
 
 xxxxxxxx rv3.8,              24th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

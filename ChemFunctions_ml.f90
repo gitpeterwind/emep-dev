@@ -48,7 +48,7 @@ module ChemFunctions_ml
   public :: troeInLog  ! When log(Fc) provided
   public :: IUPAC_troe ! Using the approximate expression for F from Atkinson et al., 2006 (ACP6, 3625)
   public ::  kaero
-  public ::  kaero2
+  public ::  kaero2    ! for testing
   public ::  RiemerN2O5
   public ::  ec_ageing_rate
   public ::  kmt3      ! For 3-body reactions, from Robert OCt 2009
@@ -291,13 +291,11 @@ module ChemFunctions_ml
           rc = sqrt(3.0 * RGAS_J * itemp(k) / 0.108) & ! mean mol. speed,m/s
              /(4*(2.5 - rh(k)*1.25)) !density, corrected for rh (moderate approx.)
 
-          !ORIG f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0* x(NO3_f,k)  + EPSIL )
           f = 96.0*x(SO4,k)/( 96.*x(SO4,k) + 62.0* xNO3  + EPSIL )
 
 
           rate(k) =  (0.9*f + 0.1) * rc *  &
              0.5 * & ! very loosely based on OC effects from Reimer 2009 
-             !ORIG ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * x(NO3_f,k)  &
              ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * xNO3  &
               + VOLFACNH4 * x(NH4_f,k) )    !SIA aerosol surface
         else
