@@ -147,7 +147,9 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
-xxxxxxxx rv3.8.1, Dave       15th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3.8s,  Dave       15th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+(s= back to simpler kaero, after many many tests)
 
 Aero_Vds:
 New Dp for coarse aerosol, Dp=2.5um. Hence 50% in PM25, 50% in PMco
