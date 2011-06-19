@@ -132,7 +132,7 @@ private
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
    !type(typ_s5i), public, parameter, dimension(37) :: &
-   type(typ_s5i), public, parameter, dimension(29) :: &
+   type(typ_s5i), public, parameter, dimension(32) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -151,9 +151,9 @@ private
         ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-       ! ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-       ! ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-       ! ,typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D)&
          !typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D),& 
          !typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D),& 
        ! ppb
@@ -174,14 +174,12 @@ private
         ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("PM25      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !3D
+        ,typ_s5i("PMFINE    ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !3D
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
          !typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) 
-!     ,typ_ss( "PM25ANTHR","ug") &
-!     ,typ_ss( "PM10ANTHR","ug") &
        /)
 
 ! Tropospheric columns
@@ -537,7 +535,7 @@ private
 
   end subroutine Init_My_Deriv
  !=========================================================================
-  subroutine My_DerivFunc( e_2d, class , density )
+  subroutine My_DerivFunc( e_2d, class )!  , density )
 
     ! We define here here any functions which cannot easily be defined
     ! in the more general Derived_ml. 
@@ -546,7 +544,7 @@ private
   character(len=*), intent(in)    :: class       ! Class of data
   integer, save :: num_warnings = 0  ! crude counter for now
 
-  real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+  ! real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
   ! density = 1 ( or = roa when unit ug)
 
   select case ( class )

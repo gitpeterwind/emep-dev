@@ -214,7 +214,7 @@ character(len=8)  :: created_date,lastmodified_date
 character(len=10) :: created_hour,lastmodified_hour
 integer :: iDimID,jDimID,kDimID,timeDimID,VarID,iVarID,jVarID,kVarID,i,j,k
 integer :: ncFileID,iEMEPVarID,jEMEPVarID,latVarID,longVarID,PTVarID
-real :: izero,scale_at_projection_origin
+real :: scale_at_projection_origin
 character(len=80) ::UsedProjection
 
   ! fileName: Name of the new created file
@@ -1619,7 +1619,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   logical :: Flight_Levels
   integer :: k_FL,k_FL2
   real, dimension(4) :: Weight
-  real :: Undefined  , sumWeights
+  real               :: sumWeights
   integer, dimension(4) :: ijkn
   integer :: ii, jj
 
@@ -2306,8 +2306,7 @@ subroutine printCDF(name, array,unit)
     integer :: varID,ncFileID,ndims
     integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
     integer, parameter::wordarraysize=20
-    character*50 ::varname,period,since,date,time,name,timeunit,wordarray(wordarraysize)
-    character*1 ::s1,s2
+    character*50 ::varname,period,since,name,timeunit,wordarray(wordarraysize)
 
     integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
 

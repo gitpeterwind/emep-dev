@@ -115,7 +115,7 @@ contains
 
    !/* local
 
-    integer           :: k, n, ispec, irc    ! loop variables
+    integer           :: k, n, ispec    ! loop variables
     real              :: qsat ! saturation water content
 
     do k = KCHEMTOP, KMAX_MID
@@ -218,7 +218,7 @@ contains
      integer, intent(in) ::  i,j     ! coordinates of column
 
    !  local
-     integer ::  iqrc,k,n, itot
+     integer ::  iqrc,k, itot
      real    :: scaling, scaling_k
      real    :: eland   ! for Pb210  - emissions from land
 
@@ -359,7 +359,7 @@ contains
   subroutine reset_3d(i,j)
 
     integer, intent(in) :: i,j
-    integer :: k, n, ispec, irc    ! loop variables
+    integer :: k, n, ispec    ! loop variables
 
 
          do k = KCHEMTOP, KMAX_MID

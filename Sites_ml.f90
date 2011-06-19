@@ -53,7 +53,7 @@ use Io_ml,             only : check_file,open_file,ios &
                               , Read_Headers,read_line
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml,  only : NSPEC_SHL
-use ChemGroups_ml,     only : OXN_GROUP, PM25_GROUP, PMCO_GROUP
+use ChemGroups_ml,     only : OXN_GROUP, PMFINE_GROUP, PMCO_GROUP
 use ChemChemicals_ml,  only : species               ! for species names
 use MetFields_ml,      only : t2_nwp, th, pzpbl  &  ! output with concentrations
                               , z_bnd, z_mid, roa, Kz_m2s, q
@@ -527,9 +527,12 @@ subroutine siteswrt_sondes(xn_adv,xn_shl)
         case ( "PM25" )    !!  PM data converted to ug m-3
           sum_PM(:) = 0.
           do k = 1, KMAX_MID
-            sum_PM(k) = dot_product(xn_adv(PM25_GROUP-NSPEC_SHL,ix,iy,k),&
-                                  to_ug_ADV(PM25_GROUP-NSPEC_SHL)) &
-                      * roa(ix,iy,k,1)
+            sum_PM(k) = (dot_product(xn_adv(PMFINE_GROUP-NSPEC_SHL,ix,iy,k),&
+                                  to_ug_ADV(PMFINE_GROUP-NSPEC_SHL)) &
+                          + 0.5 * &  ! 50% of PMcoare in PM2.5, since Dp=2.5
+                          dot_product(xn_adv(PMCO_GROUP-NSPEC_SHL,ix,iy,k),&
+                                  to_ug_ADV(PMCO_GROUP-NSPEC_SHL)) &
+                        ) * roa(ix,iy,k,1)
           enddo !k
           out(nn+1:nn+KMAX_MID,i) = sum_PM(KMAX_MID:1:-1)
 

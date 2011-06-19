@@ -178,7 +178,6 @@ contains
                                                  ! info - printing info
   integer :: ifam                                ! family index
   real, dimension(NSPEC_ADV,KMAX_MID) ::  sumk   ! total mass in each layer
-  character(len=TXTLEN_NAME)  :: spec_name       ! Species name
   integer, parameter :: NFAMILIES = 3            ! No. of families         
   character(len=8), dimension(NFAMILIES), save :: family_name = &
            (/ "Sulphur ", "Nitrogen", "Carbon  " /)
@@ -195,16 +194,15 @@ contains
                               ,family_input & ! total family mass input
                               ,family_fracmass  ! mass fraction (should be 1.0)
 
-  real, dimension(NSPEC_ADV) :: xmax, xmin, & ! min and max value for the 
-        			      ! individual species
-                                sum_mass,   & ! total mass of species
-                                frac_mass,  & ! mass budget fraction (should 
-        			      ! be one) for groups of species
-             	gfluxin, gfluxout,  & ! flux in  and out
-        		 gtotem,    & ! total emission
-        	gtotddep, gtotwdep, & ! total dry and wet deposition
-        		  gtotldep, & ! local dry deposition
-        		  gtotox      ! oxidation of SO2 
+  real, dimension(NSPEC_ADV) :: &
+        xmax, xmin, & ! min and max value for the individual species
+        sum_mass,   & ! total mass of species
+        frac_mass,  & ! mass budget fraction (should=1) for groups of species
+        gfluxin, gfluxout,  & ! flux in  and out
+        gtotem,    & ! total emission
+        gtotddep, gtotwdep, & ! total dry and wet deposition
+        gtotldep, & ! local dry deposition
+        gtotox      ! oxidation of SO2 
 
   real :: totdiv,helsum, natoms
 

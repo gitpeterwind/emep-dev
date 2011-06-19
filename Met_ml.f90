@@ -1944,8 +1944,8 @@ contains
 
     !cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
     !c
-    !c    written by David Simpson March 2011
     !     based upon the smoosp routine
+    !c    adapted by David Simpson March 2011
     !     - returns extended array array, reading neighbour procs as needed
     !c----------------------------------------------------------------------
 
@@ -1953,13 +1953,12 @@ contains
     real, intent(inout) :: h(:,:)
     logical, intent(in), optional :: debug_flag
     logical :: mydebug = .false.
-    integer :: limax 
 
     real, dimension(size(f,1),2)            :: f_south,f_north
     real, dimension(size(f,2)+2*2,2)        :: f_west,f_east
 
     integer :: thick ! = size(h,1) - size(f,1) ! Caller has to make h > f 
-    integer :: iif,jjf,is,i,j,ii,jj,iifl,jjfl
+    integer :: iif,jjf,i,j,ii,jj,iifl,jjfl
     if ( present(debug_flag)  ) mydebug = debug_flag
 
     thick = ( size(h,1) - size(f,1) ) ! Caller has to make h > f 

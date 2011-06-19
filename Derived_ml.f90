@@ -980,7 +980,7 @@ end do
 
           case ( "COLUMN" ) ! MFAC gives #/cm3, 100 is for m -> cm
 
-            read(unit=f_2d(n)%subclass,fmt="(a1i2)") txt2, klow ! Connvert e.g. k20 to klow=20
+            read(unit=f_2d(n)%subclass,fmt="(a1,i2)") txt2, klow ! Connvert e.g. k20 to klow=20
             !klow = f_2d(n)%LC  ! here we have used LC to set vertical limit
 
             do j = 1, ljmax
@@ -1095,7 +1095,7 @@ end do
                  write(*,*) "My_Deriv index?, avg ", f_2d(n)%avg
              end if
 
-             call My_DerivFunc( d_2d(n,:,:,IOU_INST), typ, density )
+             call My_DerivFunc( d_2d(n,:,:,IOU_INST), typ ) ! , density )
 
         end select
 

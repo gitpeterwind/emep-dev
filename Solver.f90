@@ -124,7 +124,6 @@ contains
     real, dimension(nchemMAX), save :: &
                         coeff1,coeff2,cc ! coefficients for variable timestep
     integer :: nextraiter
-real :: tmprc, tmpf, tmprate, tmpv !TTTT
 
 !======================================================
 

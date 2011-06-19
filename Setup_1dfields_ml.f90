@@ -75,9 +75,9 @@
   ! Emission arrays:
    real, public, dimension(NBVOC,KCHEMTOP:KMAX_MID), save :: rcbio = 0.0 ! BVOC
   !FUTURE real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3 
-   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222  ! 210Pb
-   real, public, dimension(NSS,KCHEMTOP:KMAX_MID), save :: rcss  ! Sea salt
-   real, public, dimension(NDU,KCHEMTOP:KMAX_MID), save :: rcwbd ! windblown dust
+   real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222 = 0.0  ! 210Pb
+   real, public, dimension(NSS,KCHEMTOP:KMAX_MID), save :: rcss = 0.0  ! Sea salt
+   real, public, dimension(NDU,KCHEMTOP:KMAX_MID), save :: rcwbd = 0.0 ! windblown dust
 
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)

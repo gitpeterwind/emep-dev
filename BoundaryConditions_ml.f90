@@ -74,8 +74,11 @@ module BoundaryConditions_ml
 ! -----------------------------------------------------------------------
 
 use CheckStop_ml,      only: CheckStop
+use ChemChemicals_ml         ! provide species names
 use Chemfields_ml,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
 use ChemSpecs_adv_ml         ! provide NSPEC_ADV and IXADV_*
+use ChemSpecs_shl_ml         ! provide NSPEC_SHL
+use ChemGroups_ml,     only: SS_GROUP !  Sea-salt special
 use GlobalBCs_ml,      only:  &
    NGLOB_BC                   &  ! Number of species from global-model
   ,GetGlobalData              &  ! Sub., reads global data+vert interp.
@@ -86,16 +89,20 @@ use GlobalBCs_ml,      only:  &
   ,IBC_SEASALT_G ,setgl_actarray
 use GridValues_ml,     only: glon, glat   & ! full domain lat, long
                             ,sigma_mid    & !sigma layer midpoint
-                            ,debug_proc, i_fdom, j_fdom  ! for debugging
+                            ,debug_proc, debug_li, debug_lj & ! debugging
+                            ,i_fdom, j_fdom  ! for debugging
+use Io_Progs_ml,       only: datewrite
 use LocalVariables_ml, only: Grid
-use MetFields_ml,      only: z_mid       ! height of half layers
+use MetFields_ml,      only: z_mid, nwp_sea       ! height of half layers
 use ModelConstants_ml, only: KMAX_MID  &  ! Number of levels in vertical
+                            ,USE_SEASALT & 
                             ,DEBUG_BCS, DEBUG_i, DEBUG_j, MasterProc, PPB
 use Par_ml,          only: &
    MAXLIMAX, MAXLJMAX, limax, ljmax, me &
   ,neighbor, NORTH, SOUTH, EAST, WEST   &  ! domain neighbours
   ,NOPROC&
   ,IRUNBEG,JRUNBEG,li1,li0,lj0,lj1
+use SmallUtils_ml, only : find_index 
 
 implicit none
 private
@@ -233,7 +240,7 @@ subroutine BoundaryConditions(year,iyr_trend,month)
   endif
 
 !MUST CONTAIN DECIDED DIMENSION FOR READ-IN DATA
-! iglobac and jglobac are no the actual domains (the chosen domain)
+! iglobac and jglobac are now the actual domains (the chosen domain)
 ! given in the same coord as the data we read
   call setgl_actarray(iglobact,jglobact)
 
@@ -314,6 +321,8 @@ subroutine BoundaryConditions(year,iyr_trend,month)
 
 
   if (DEBUG_BCS.and.debug_proc.and.i_test>0) then
+    i = i_test
+    j = j_test
     print "(a20,3i4,2f8.2)","DEBUG BCS Rorvik", me, i,j,glon(i,j),glat(i,j)
     print "(a20,3i4)","DEBUG BCS Rorvik DIMS",num_adv_changed,iglobact,jglobact
     do k = 1, KMAX_MID
@@ -605,7 +614,10 @@ subroutine Set_BoundaryConditions(mode,iglobact,jglobact,bc_adv,bc_bgn)
   real, intent(in) :: bc_adv(num_adv_changed,iglobact,jglobact,KMAX_MID), &
                       bc_bgn(num_bgn_changed,iglobact,jglobact,KMAX_MID)
   logical, dimension(MAXLIMAX,MAXLJMAX,KMAX_MID) :: mask
-  integer :: i, j, k, n
+  integer :: i, j, k, n, nadv, ntot
+  real    :: bc_fac      ! Set to 1.0, except sea-salt over land = 0.01
+  logical :: bc_seaspec  ! if sea-salt species
+  character(len=20) :: txtout 
 
    if (mode=="3d") then
     mask(:,:,:) = .true.    ! We set everything
@@ -632,11 +644,47 @@ subroutine Set_BoundaryConditions(mode,iglobact,jglobact,bc_adv,bc_bgn)
   ! and are only needed for the sub-domain actually used, i.e. for
   ! limax, ljmax.
 
-  !/- Advected species
-  forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_adv_changed, mask(i,j,k))
-    xn_adv(spc_changed2adv(n),i,j,k) =   &
-        bc_adv(n,(i_fdom(i)-IRUNBEG+1),(j_fdom(j)-JRUNBEG+1),k)
-  endforall
+  !/- Advected species. Sea-salt is special as we only want BICs over sea-areas
+  !forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_adv_changed, mask(i,j,k))
+  do n = 1, num_adv_changed
+    nadv = spc_changed2adv(n)
+    ntot = nadv + NSPEC_SHL 
+
+    bc_seaspec = .false.
+    if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
+      bc_seaspec = .true.
+    end if
+    if ( debug_proc ) write (*,*) "SEAINDEX", &
+           trim(species(ntot)%name), n, ntot, bc_seaspec
+
+    do k = 1, KMAX_MID
+      do j = 1, ljmax
+        do i = 1, limax
+          if ( mask(i,j,k) ) then
+
+            bc_fac     = 1.0
+           ! Parentheses needed to get correct precedence (dangerous!): 
+            if ( bc_seaspec .and. ( nwp_sea(i,j) .eqv. .false. ) ) bc_fac = 0.01
+
+            !xn_adv(spc_changed2adv(n),i,j,k) =   &
+            xn_adv(nadv,i,j,k) =   &
+               bc_fac * &  ! used for sea-salt species 
+                 bc_adv(n,(i_fdom(i)-IRUNBEG+1),(j_fdom(j)-JRUNBEG+1),k)
+          end if !mask
+        end do ! i
+      end do ! j
+    end do ! k
+   !endforall
+    if ( DEBUG_BCS .and. debug_proc ) then
+     i=debug_li
+     j=debug_lj
+     k=KMAX_MID
+     txtout = "BCSET:" // trim(species(ntot)%name)
+     call datewrite( trim(txtout), n, (/ xn_adv(nadv,i,j,k),  &
+           bc_adv(n,(i_fdom(i)-IRUNBEG+1),(j_fdom(j)-JRUNBEG+1),k) /) )
+    end if ! DEBUG
+ end do !n
+ 
 
   !/- Non-advected background species
   forall(i=1:limax, j=1:ljmax, k=1:KMAX_MID, n=1:num_bgn_changed)

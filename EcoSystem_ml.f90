@@ -56,8 +56,6 @@ contains
     character(len=TXTLEN_SHORT) :: unit
     integer :: iEco
     logical, parameter :: T = .true., F = .false. ! shorthands only
-    logical :: debug_flag
-    real :: coverage
 
       if( MasterProc ) &
            write(*,*) "Defining ecosystems: ",(trim(DEF_ECOSYSTEMS(iEco))," ",iEco = 1, NDEF_ECOSYSTEMS)

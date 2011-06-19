@@ -782,6 +782,7 @@ contains
         real :: buffer(MAXLIMAX,MAXLJMAX),SumSoilNOx,SumSoilNOx_buff
 
 if( USE_AIRCRAFT_EMIS )then
+airn = 0.0 !ssp8W
 !AIRCRAFT
 kstart=KCHEMTOP
 kend=KMAX_MID
@@ -806,7 +807,8 @@ call ReadField_CDF('AircraftEmis_FL.nc','NOx',airn,nstart=current_date%month,kst
 ! from month to seconds: ndaysmonth*24*3600
 
 conv=0.001*AVOG/species(NO2)%molwt*GRAV/gridwidth_m**2*1.0e-6/(nmdays(current_date%month)*24*3600)
-do k=KEMISTOP,KMAX_MID
+!do k=KEMISTOP,KMAX_MID
+do k=KCHEMTOP,KMAX_MID  !ssp8X
 do j=1,ljmax
 do i=1,limax
 

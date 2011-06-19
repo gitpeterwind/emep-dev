@@ -313,9 +313,12 @@ contains
      do n = 1, size( WDEP_WANTED(:)%txt1 )
 
        if2   = find_index("WDEP_"//WDEP_WANTED(n)%txt1,f_2d(:)%name)
+       atw = -999
        if( WDEP_WANTED(n)%txt3 == "mgS" ) atw = atwS
        if( WDEP_WANTED(n)%txt3 == "mgN" ) atw = atwN
        if( WDEP_WANTED(n)%txt3 == "mgSS") atw = 58
+       if( WDEP_WANTED(n)%txt3 == "mm")   atw = 999 ! Dummy for precip
+       call CheckStop( atw <1 , "AQUEOUS ATW PROBLEM:" // trim(WDEP_WANTED(n)%txt3)  ) 
 
        if ( WDEP_WANTED(n)%txt2 == "GROUP" ) then
 

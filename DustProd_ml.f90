@@ -106,9 +106,9 @@
                      !z0 = 0.5e-3,  & !(for desert..) 1.e-4 saltation roughness length 
                      z10 = 10.0             ! Z=10m
    real ::  Mflux = 0.0 
-   real ::  cover, z0, vh2o_sat, gr_h2o, v_h2o, ustar_moist_cor         &
-          , gwc_thr, dust_lim, soil_dns_dry, ustar_z0_cor, u_th10, u10  &
-          , alfa, ustar_th, uratio, ustar, invL , owens, clay           &
+   real ::  cover, z0, vh2o_sat, gr_h2o, v_h2o, ustar_moist_cor    &
+          , gwc_thr, dust_lim, soil_dns_dry, ustar_z0_cor   &
+          , alfa, ustar_th, uratio, ustar, clay           &
           , frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
 
    logical :: arable, dust_prod = .false.

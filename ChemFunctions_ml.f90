@@ -347,7 +347,6 @@ module ChemFunctions_ml
 !.. Sets ageing rates for fresh EC based on Riemer et al.; ACP (2004). 
 
      real, dimension(K1:K2) :: rate
-     integer :: k
  
     if ( Grid%izen <= DAY_ZEN ) then  ! daytime
 

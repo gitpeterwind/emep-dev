@@ -15,7 +15,8 @@ IMPORTANT NOTE:
 
 KNOWN PROBLEMS
 
-Sea-salt in GlobalBCs!
+** June 19th ** Found that results are processor dependent if USE_AIRCRAFT_EMIS = true
+   Origin of problem not found.
 
 Some jobs needed after Mar-11th tests (ds will do)
   - Decide SoilMoisture
@@ -147,6 +148,59 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_8_1,  Dave/Svetlana 19th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+  *** BUG fixed and BUG found (not solved!) ***
+
+  *** If USE_AIRCRAFT_EMIS is set .true. the results are slightly
+      processor dependent. If false, they aren't. Set as .false.
+      for now.
+      Previous runs also seem to have only had aircraft emissions in
+      bottom 6 levels of model, so pretty low-flying aircraft in any
+      case.
+
+Biogenic_ml - extra initialise (not needed I think, but safe)
+              use limax instead of MAXLIMAX
+              small tidy-ups
+
+BoundaryConditions_ml - special treatment for sea-salt added. Set BICs to 1%
+               over land areas.
+               Various safety debugging added datewrite
+
+Emissions_ml - problems found, not fully resolved. airn was set from
+    KEMISTOP to KMAXMID, whereas it should from KCHEMTOP.
+
+GlobalBCs_ml - * bug-fix * Removed Grid%is_NWPsea code.
+                 small extra comments on sea-salt. 
+
+My_Derived_ml -  change PM25 to PMFINE, since PM25=PMFINE+0.5*PMCO
+               (density removed from My_DerivFunc call - not used)
+
+Sites_ml - added PM25 = PMFINE + 0.5*PMCO
+
+ZCM_EmChem09/
+   GenIn.species - removed CO_BIC, C2H6_BIC,
+                   ** change PM25 to PMFINE, since PM25=PMFINE+0.5*PMCO
+                   removed "anthro" groups
+   GenIn.reactions - removed CO_BIC
+   SAFE_BoundaryConditions.inc - removed CO_BIC, C2H6_BIC
+
+Small clean-up after gfortran pedantic check:
+   (mainly removing unused variables.)
+    ChemFunctions_ml
+    DefPhotolysis
+    Derived_ml (density removed from My_DerivFunc call - not used)
+    DustProd_ml
+    Ecosystem_ml
+    LandPFT_ml
+    MassBudget_ml
+    Met_ml
+    Nest_ml
+    NetCDF_ml
+    Setup_1d_ml (initialised some rc rates also)
+    Solver_ml
+    
+ 
 xxxxxxxx rv3.8s,  Dave       15th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 (s= back to simpler kaero, after many many tests)

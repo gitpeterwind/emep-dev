@@ -101,6 +101,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
+! RUNDOMAIN = (/  1, 50,  1, 50 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
 ! RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
@@ -121,7 +122,7 @@ integer, public, parameter, dimension(4) ::  &
 
 integer, public, parameter ::  &
   NPROCX      =   8        & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+, NPROCY      =   1        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -149,11 +150,11 @@ integer, private, parameter :: &
 ! DEBUG_ii=101, DEBUG_jj= 51 ! Schauinsland
 ! DEBUG_ii=103, DEBUG_jj= 50 ! Mid-Europe
 ! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
- DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
+! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
-! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+ DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
@@ -165,9 +166,9 @@ integer, private, parameter :: &
 
 integer, public, parameter :: &
 ! DEBUG_i= 62, DEBUG_j= 45  ! SEA 
-!  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
+  DEBUG_i= DEBUG_II+OFFSET_i, DEBUG_j= DEBUG_JJ+OFFSET_j    ! EMEP/EECCA
 ! DEBUG_i= 9, DEBUG_j= 201                                  ! MACC02
-  DEBUG_i= 0, DEBUG_j= 0    ! default
+!  DEBUG_i= 0, DEBUG_j= 0    ! default
 
 !=============================================================================
 ! Some flags for model setup

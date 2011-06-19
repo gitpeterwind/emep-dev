@@ -536,11 +536,10 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     bc_rawdata(:,:,:) =    SpecBC(ibc)%surf  + SpecBC(ibc)%amp*cosfac
 
   case (IBC_SEASALT_f, IBC_SEASALT_C, IBC_SEASALT_G)
-    ! Only for sea grids (check on ice cover should also be done)
-    if ( Grid%is_NWPsea ) then
+    ! In BoundaryConditions, overland BICs will be reduced, but here
+    ! we set the full 3-D array.
      cosfac = cos( twopi_yr * (daynumber+15.0-SpecBC(ibc)%dmax))
      bc_rawdata(:,:,:) =    SpecBC(ibc)%surf  + SpecBC(ibc)%amp*cosfac
-    endif
 
     !/ - correct for latitude functions
     if (DEBUG_Logan) print *,"LOGAN HORIZ",ibc,SpecBC(ibc)%surf,cosfac

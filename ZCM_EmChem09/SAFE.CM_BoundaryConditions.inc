@@ -15,9 +15,9 @@
   bc2xn_adv(IBC_SO4     ,IXADV_SO4    )    =   1.0
   bc2xn_adv(IBC_PAN     ,IXADV_PAN     )   =   1.0
   bc2xn_adv(IBC_CO      ,IXADV_CO      )   =   1.0
-  bc2xn_adv(IBC_CO      ,IXADV_CO_BIC  )   =   1.0
+!BIC  bc2xn_adv(IBC_CO      ,IXADV_CO_BIC  )   =   1.0
 !EMEP:
-  bc2xn_adv(IBC_C2H6    ,IXADV_C2H6_BIC)   =   1.0
+!BIC  bc2xn_adv(IBC_C2H6    ,IXADV_C2H6_BIC)   =   1.0
 !CB  bc2xn_adv(IBC_C2H6    ,IXADV_ETHA    )   =   1.0 !CB05  C2H6
 !EMEP:
   bc2xn_adv(IBC_C4H10   ,IXADV_NC4H10  )   =   1.0

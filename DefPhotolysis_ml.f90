@@ -59,7 +59,7 @@
    real, public, dimension(NRCPHOT,KCHEMTOP:KMAX_MID), &
         save :: rcphot       ! photolysis rates    -   main output
 
-   real, public, save :: sum_rcphot     ! was jej's sum1, for debug only
+   real, public, save :: sum_rcphot     !  for debug only
    logical, public, parameter :: DEBUG_DJ = .false.
 
    integer, parameter, private ::  &
@@ -243,7 +243,6 @@
                ,iclcat    ! cloud type
 
         real clear        ! clear sky fraction
-        real sum1
 
 !---- assign photolysis rates ------------------------------------------------
 
@@ -291,7 +290,6 @@
 
               end if  ! base<CLOUDTOP
             end if   ! end cc3dmax
-4732        continue
 
 
 

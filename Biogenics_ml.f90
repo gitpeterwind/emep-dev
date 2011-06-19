@@ -69,7 +69,7 @@ module Biogenics_ml
                            DEBUG_BIO, BVOC_USED, MasterProc
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
-  use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,li0,li1,lj0,lj1,me
+  use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,me, limax, ljmax
   use PhysicalConstants_ml,  only :  AVOG, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : rcbio  
@@ -99,7 +99,7 @@ module Biogenics_ml
   logical, private, dimension(NLANDUSEMAX), save :: HaveLocalEF 
 
   real, public, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)) :: &
-     EmisNat       !  will be transferred to d_2d emis sums
+     EmisNat =0.0      !  will be transferred to d_2d emis sums
 
 
   !standard emission factors (EFs) per LC
@@ -109,7 +109,7 @@ module Biogenics_ml
 
   !standard emission factors per LC for daily LAI
   real, private, save, dimension(MAXLIMAX,MAXLJMAX,size(BVOC_USED)) :: &
-     day_embvoc   !  emissions scaled by daily LAI
+     day_embvoc = 0.0   !  emissions scaled by daily LAI
 
   logical, private, dimension(MAXLIMAX,MAXLJMAX) :: EuroMask
 
@@ -133,8 +133,7 @@ module Biogenics_ml
 !   EFs now a mixure of rates from Simpson et al., 1999, JGR, Vol 104, D7, 
 !   8113-8152, and Keenan, T. et al., ACP, 2009, 9, 4053-4076 
 
-    integer i, j, n ,d, info, alloc_err
-    real sumland
+    integer :: alloc_err
 
       if ( size(BVOC_USED) == 0 ) then
         call PrintLog("No Biogenic Emissions ", MasterProc)
@@ -217,9 +216,8 @@ module Biogenics_ml
 
 !    Reads the processed BVOC emission potentials.
 
-    real    :: loc(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
-    logical :: my_first_call = .true.
-    integer :: n, pft, ivar, iVeg, iEmis, ibvoc, i,j
+    real    :: loc(MAXLIMAX,MAXLJMAX) = 0.0  ! Emissions read from file
+    integer :: iVeg, iEmis, ibvoc, i,j
     character(len=1000) :: varname
     character(len=2), dimension(4) :: VegName = (/ "CF", "DF", "NF", "BF" /)
 
@@ -270,15 +268,15 @@ module Biogenics_ml
   !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
    subroutine MergedBVOC()
 
-      integer :: i, j, n, nlu, iL, iiL
+      integer :: i, j, nlu, iL, iiL
       integer :: pft
       real :: biso, bmt    !  Just for printout
       logical :: use_local, debug_flag
 
       if( MasterProc .and.DEBUG_BIO) write(*,*) "Into MergedBVOC"
 
-      do i = 1, MAXLIMAX
-      do j = 1, MAXLJMAX
+      do i = 1, limax !PPP MAXLIMAX
+      do j = 1, ljmax !PPP MAXLJMAX
 
         nlu = LandCover(i,j)%ncodes
 
@@ -291,7 +289,7 @@ module Biogenics_ml
             pft     = LandType(iL)%pft
 
            if( debug_flag ) then
-               write(*,"(a,2i7,2L,i3)") &
+               write(*,"(a,2i7,2L2,i3)") &
                    "TryMergeBVOC" //trim(LandDefs(iL)%name), iL, pft, &
                      use_local, HaveLocalEF(iL), last_bvoc_LC
            end if
@@ -321,7 +319,7 @@ module Biogenics_ml
                 biso   = bvocEF(i, j,iL, BIO_ISOP) 
                 bmt    = bvocEF(i, j,iL, BIO_TERP) 
               end if
-              write(*,"(a,2i4,2L,f9.4,9f10.3)") "MergeBVOC", &
+              write(*,"(a,2i4,2L2,f9.4,9f10.3)") "MergeBVOC", &
                  iL, pft,  use_local, HaveLocalEF(iL),  &
                    LandCover(i,j)%fraction(iiL), biso, bmt, LandDefs(iL)%Eiso, &
                      LandDefs(iL)%Emtp, LandDefs(iL)%Emtl
@@ -339,12 +337,11 @@ module Biogenics_ml
 
       integer, intent(in) :: daynumber
       integer, save :: last_daynumber = -999, alloc_err
-      integer :: i, j, n, nlu, iL, iiL, ibvoc
-      integer :: pft  ! pft associated with LAI data
+      integer :: i, j, nlu, iL, iiL, ibvoc
       real :: LAIfac  ! Multiplies by land-fraction
       real :: b       !  Just for printout
-      logical :: use_local, debug
-      logical :: my_first_call = .true.
+      logical :: debug
+      logical, save :: my_first_call = .true.
       real, allocatable, dimension(:,:) ::  workarray
 
       if( MasterProc .and.DEBUG_BIO ) write(*,"(a,3i5)") "Into SetDailyBVOC", &
@@ -359,8 +356,8 @@ module Biogenics_ml
            workarray = 0.0
       end if
 
-      do i = 1, MAXLIMAX
-      do j = 1, MAXLJMAX
+      do i = 1, limax !PPP MAXLIMAX
+      do j = 1, ljmax !PPP MAXLJMAX
 
         nlu = LandCover(i,j)%ncodes
 
@@ -430,7 +427,7 @@ module Biogenics_ml
     !-----------------------------------------------------
     ! ag suffix  = Alex Guenther's parameter values
 
-    real    :: agts, agr, agtm, agct1, agct2, agct ,itk, fac
+    real    :: agts, agr, agtm, agct1, agct2, agct ,itk
     integer :: it, i
 
     agts = 303.
@@ -473,7 +470,7 @@ module Biogenics_ml
 
   integer, intent(in) ::  i,j
 
-  integer la,it2m,n,k,base,top,iclcat
+  integer :: it2m
   real :: E_ISOP , E_MTP, E_MTL
 
 ! To get from ug/m2/h to molec/cm3/s
@@ -488,7 +485,6 @@ module Biogenics_ml
   real, parameter :: &
       CL1 = 1.066  , &    ! Guenther et al's params
       ALPHA = 0.0027      ! Guenther et al's params
-  real :: tmpdz ! dzTEST
 
   if ( size(BVOC_USED) == 0  ) return   ! e.g. for ACID only
 

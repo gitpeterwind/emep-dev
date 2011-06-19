@@ -84,7 +84,7 @@ contains
 
     real    :: lpj(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
-    integer ::  n, pft, ivar, iLC, alloc_err, iiLC
+    integer ::  n, pft
     character(len=20) :: varname
 
 return ! JAN31TEST. This code will be completed during 2011
@@ -130,7 +130,7 @@ return ! JAN31TEST. This code will be completed during 2011
 
     real    :: lpj(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
-    integer ::  n, pft, ivar
+    integer ::  pft, ivar
     character(len=20) :: varname
 
     ! Ebvoc already includes monthly LAI changes - might be wrong?

@@ -357,27 +357,27 @@ if(RCA)then
     endif
     if(js>=1)then
 !south
-       xn_adv(IXADV_H2,:,js,:)=        5e-7	
-       xn_adv(IXADV_C2H4,:,js,:)=      5e-11	
-       xn_adv(IXADV_C3H6,:,js,:)=      1.6e-11	
-       xn_adv(IXADV_C2H5OH,:,js,:)=    7e-11	
-       xn_adv(IXADV_MEK,:,js,:)=       2.5e-11	
-       xn_adv(IXADV_CH3O2H,:,js,:)=    1e-10	
-       xn_adv(IXADV_MGLYOX,:,js,:)=    2e-12	
-       xn_adv(IXADV_GLYOX,:,js,:)=     4e-12	
-       xn_adv(IXADV_C2H5OOH,:,js,:)=   1e-12	
+       xn_adv(IXADV_H2,:,js,:)=        5e-7
+       xn_adv(IXADV_C2H4,:,js,:)=      5e-11
+       xn_adv(IXADV_C3H6,:,js,:)=      1.6e-11
+       xn_adv(IXADV_C2H5OH,:,js,:)=    7e-11
+       xn_adv(IXADV_MEK,:,js,:)=       2.5e-11
+       xn_adv(IXADV_CH3O2H,:,js,:)=    1e-10
+       xn_adv(IXADV_MGLYOX,:,js,:)=    2e-12
+       xn_adv(IXADV_GLYOX,:,js,:)=     4e-12
+       xn_adv(IXADV_C2H5OOH,:,js,:)=   1e-12
     endif
     if(jn<=ljmax)then
 !north
-       xn_adv(IXADV_H2,:,jn,:)=        5e-7	
-       xn_adv(IXADV_C2H4,:,jn,:)=      2e-10	
-       xn_adv(IXADV_C3H6,:,jn,:)=      2e-10	
-       xn_adv(IXADV_C2H5OH,:,jn,:)=    4e-10	
-       xn_adv(IXADV_MEK,:,jn,:)=       2.5e-11	
-       xn_adv(IXADV_CH3O2H,:,jn,:)=    1e-12	
-       xn_adv(IXADV_MGLYOX,:,jn,:)=    2e-12	
-       xn_adv(IXADV_GLYOX,:,jn,:)=     4e-12	
-       xn_adv(IXADV_C2H5OOH,:,jn,:)=   1e-12	
+       xn_adv(IXADV_H2,:,jn,:)=        5e-7
+       xn_adv(IXADV_C2H4,:,jn,:)=      2e-10
+       xn_adv(IXADV_C3H6,:,jn,:)=      2e-10
+       xn_adv(IXADV_C2H5OH,:,jn,:)=    4e-10
+       xn_adv(IXADV_MEK,:,jn,:)=       2.5e-11
+       xn_adv(IXADV_CH3O2H,:,jn,:)=    1e-12
+       xn_adv(IXADV_MGLYOX,:,jn,:)=    2e-12
+       xn_adv(IXADV_GLYOX,:,jn,:)=     4e-12
+       xn_adv(IXADV_C2H5OOH,:,jn,:)=   1e-12
     endif
 endif
 
@@ -444,10 +444,6 @@ subroutine wrtxn(indate,WriteNow)
   def1%avg=.false.      ! not used
   def1%index=0          ! not used
   def1%scale=scale      ! not used
-!FEB2011   def1%inst=.true.      ! not used
-!FEB2011   def1%year=.false.     ! not used
-!FEB2011   def1%month=.false.    ! not used
-!FEB2011   def1%day=.false.      ! not used
   def1%iotype=iotyp     ! not used
   def1%name=''          ! written
   def1%unit='mix_ratio' ! written
@@ -549,11 +545,11 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   integer, intent(out), dimension(KMAX_MID) :: k1_ext,k2_ext
   real, intent(out), dimension(KMAX_MID) :: weight_k1,weight_k2
   integer ,intent(out)::N_ext,KMAX_ext,GIMAX_ext,GJMAX_ext
-  real(kind=8) :: ndays_indate,ndays(2)
+  real(kind=8) :: ndays_indate
   integer :: ncFileID,idimID,jdimID, kdimID,timeDimID,varid,status !,timeVarID
   integer :: ndate(4) !nseconds_indate,
   real :: dist(0:4),P_emep
-  integer :: ios,i,j,k,n,k_ext,KMAX_BC,II,JJ !nseconds(1),n,n1,k
+  integer :: i,j,k,n,k_ext,II,JJ !nseconds(1),n,n1,k
   real, allocatable, dimension(:,:) ::lon_ext,lat_ext
   real, allocatable, dimension(:) ::hyam,hybm,P_ext
   character(len=80) ::projection,word
