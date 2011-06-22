@@ -150,6 +150,8 @@ ds done   My_SOA_ml.f90
 
 xxxxxxxx rv3_8_2,  Dave/Svetlana/Birthe 20th June 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
+ USED FOR SOURCE RECEPTOR JUNE 2011
+
 io_min set to IOU_YEAR is SOURCE_RECEPTOR 
 
 xxxxxxxx rv3_8_1,  Dave/Svetlana 19th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
