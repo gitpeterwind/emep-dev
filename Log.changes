@@ -148,7 +148,11 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
-xxxxxxxx rv3_8_1,  Dave/Svetlana 19th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_8_2,  Dave/Svetlana/Birthe 20th June 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+io_min set to IOU_YEAR is SOURCE_RECEPTOR 
+
+xxxxxxxx rv3_8_1,  Dave/Svetlana 19th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
   *** BUG fixed and BUG found (not solved!) ***
 

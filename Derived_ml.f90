@@ -637,6 +637,9 @@ end do
   if (SOURCE_RECEPTOR.and..not.FORECAST)&  ! We assume that no daily & hourly outputs
     iou_max=IOU_MON                        ! are wanted on SOURCE_RECEPTOR mode
 
+  if (SOURCE_RECEPTOR) &                   ! We need yearly for SR always 
+    iou_min=IOU_YEAR                       !
+
   if (FORECAST) &                          ! Only dayly & hourly outputs
     iou_min=IOU_DAY                        ! are wanted on FORECAST mode
 
