@@ -1713,7 +1713,7 @@ contains
             if ( StableKzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
               do j=1,ljmax
                  do i=1,limax
-                   if ( invL_nwp(i,j) > OB_invL_LIMIT ) then !neutral and unstable
+                   if ( invL_nwp(i,j) >= OB_invL_LIMIT ) then !neutral and unstable
                      do k = 2, KMAX_MID
                        Kz_m2s(i,j,k) = &
                           JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j) )
