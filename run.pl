@@ -116,8 +116,8 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EMEP"  ,year=>2005,emis=>"Modrun07/OpenSourceEmis"     ) ;
 # Dave's preference for EMEP:
 #   %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
- Dave's start of 2008 OpenSource-2011 check. 
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
+# Dave's start of 2008 OpenSource-2011 check. 
+#   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
