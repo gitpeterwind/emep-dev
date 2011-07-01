@@ -154,7 +154,9 @@ Met_ml -- minor change, > changed to >= for JericevizKz (presumably
 
 xxxxxxxx rv3_8_2,  Dave/Svetlana/Birthe 20th June 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
- USED FOR SOURCE RECEPTOR JUNE 2011
+                                      *******************************
+ USED FOR SOURCE RECEPTOR JUNE 2011   = EMEP/MSC-W version v.2011-06
+                                      *******************************
 
 io_min set to IOU_YEAR is SOURCE_RECEPTOR 
 
