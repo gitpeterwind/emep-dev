@@ -1610,7 +1610,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real :: ir,jr,Grid_resolution
   type(Deriv) :: def1 ! definition of fields
   integer, parameter ::NFL=23,NFLmax=50 !number of flight level (could be read from file)
-  real :: P_FL(0:NFLmax),Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
+  real :: P_FL(0:NFLmax),P_FL0,Psurf_ref(MAXLIMAX, MAXLJMAX),P_EMEP,dp!
   logical ::  OnlyDefinedValues
 
   real, allocatable :: Weight1(:,:),Weight2(:,:),Weight3(:,:),Weight4(:,:)
@@ -1788,6 +1788,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            do k=0,NFLmax
               P_FL(k)=1000*StandardAtmos_km_2_kPa(k*0.610)
            enddo
+           P_FL0=P_FL(0)
            Flight_Levels=.true.
            call CheckStop(interpol_used/='mass_conservative',&
            "only mass_conservative interpolation implemented for Flight Levels")
@@ -1816,8 +1817,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
     if ( debug ) write(*,*) 'interpol_used: ',interpol_used
 
      !Find chunk of data required (local)
-     maxlon=maxval(gl_stagg)
-     minlon=minval(gl_stagg)
+     maxlon=max(maxval(gl_stagg),maxval(glon))
+     minlon=min(minval(gl_stagg),minval(glon))
      maxlat=maxval(gb_stagg)
      minlat=minval(gb_stagg)
 
@@ -1834,6 +1835,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         imin=mod( floor((minlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
         imax=mod(ceiling((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
         if(imax==1)imax=dims(1)!covered entire circle
+        if(minlon-Rlon(1)<0.0)then
+           imin=1!cover entire circle
+           imax=dims(1)!cover entire circle
+        endif
      else
         call CheckStop("Not tested: negativ dloni")
         imin=mod(floor((maxlon-Rlon(1))*dloni)+dims(1),dims(1))+1!NB lon  -90 = +270
@@ -2012,6 +2017,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                              endif
                           enddo
 
+                          P_FL(0)=P_FL0!may have changed above
                        endif !Flight levels
 
                     endif
