@@ -147,7 +147,8 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_8_....Peter  6th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_8_3  ...Peter  6th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
+                     Dave  22nd June 2011 (minor)
 
 Two (small) bugs in the interpolation routines for the Aircraft emissions. (ReadField_CDF in NetCDF_ml)
 When the surface pressure of standard atmosphere is smaller than the pressure read from SurfacePressure.nc, the standard surface pressure was modified for all cells in the subdomain, giving a dependence on the number of procs. The differences have only numerical significance.
@@ -155,10 +156,12 @@ Also changed the definition of "maxlon" in the routine as, this also could poten
 
 NB: we still have as default:  USE_AIRCRAFT_EMIS  = .false.
 
-xxxxxxxx rv3_8_....Dave  22nd June 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Met_ml -- minor change, > changed to >= for JericevizKz (presumably
    v. little diff, if any.)
+
+Rsurface - comments improved for HNO3 low-temp correction
+
 
 xxxxxxxx rv3_8_2,  Dave/Svetlana/Birthe 20th June 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
