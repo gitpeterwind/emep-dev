@@ -86,7 +86,6 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 *----- ethane chemistry ----------------------------------- ;
 * ;
 6.9e-12*EXP(-1000.0*TINV)     OH     + C2H6 = C2H5O2 + {H2O}     ; IUPAC2007
-6.9e-12*EXP(-1000.0*TINV)    [OH]    + C2H6 =                    ; tracer
 2.55e-12*EXP(380.0*TINV)      C2H5O2  + NO  = HO2 + CH3CHO + NO2 ; IUPAC2005
 3.8e-13*EXP(900.0*TINV)       C2H5O2  + HO2 = C2H5OOH            ; IUPAC2005
 8.01e-12                      C2H5OOH + OH  = CH3CHO + OH     ; Saunders ACP3, 2003, 161-180 CR 

@@ -152,6 +152,9 @@ xxxxxxxx rv3_8_4     Dave   9th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
   BICs re-instated for C2H6 and CH3CHO (had ben dropped at some stage), but
   not with much lower CH3CHO than before - 0.3 ppb instead of 2ppb.
   Small effect on concentrations, with only PAN being slightly higher now.
+
+  Another small bug found, we had a reaction [OH] + C2H6  which
+  should have been [OH] + C2H6_BIC in old code, now deleted
   
   SUGGEST FOR OPEN-SOURCE
 
