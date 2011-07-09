@@ -1,11 +1,11 @@
 
 #------- start from a "working" model code, after mk.GenChem, cpZD_OZONE/My*, make clean
 
-v=rv3_8_3                             # Input version flag
+v=rv3_8_4                             # Input version flag
 tdir=$HOME/Unify                      # top directory - change $HOME as required
 idir=$tdir/Unimod.$v                  # Input dir
 
-odir=$tdir/OpenSource2011.rv3_8_3     # Output dir, choose flag or location
+odir=$tdir/OpenSource2011.rv3_8_4     # Output dir, choose flag or location
 cdir=$odir/code                       # code directory
 mkdir -p $cdir                            
 
