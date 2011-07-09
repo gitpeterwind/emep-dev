@@ -117,7 +117,7 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #   %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
 # Dave's start of 2008 OpenSource-2011 check. 
-#   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
+   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 if (%BENCHMARK) {
@@ -249,7 +249,7 @@ $Chem     = "EmChem09";            # Label for chemical scheme used
 #@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
 
-my $testv = "rv3_8_1";
+my $testv = "rv3_8_4";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";

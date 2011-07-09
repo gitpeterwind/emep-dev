@@ -147,6 +147,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_8_4     Dave   9th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+  BICs re-instated for C2H6 and CH3CHO (had ben dropped at some stage), but
+  not with much lower CH3CHO than before - 0.3 ppb instead of 2ppb.
+  Small effect on concentrations, with only PAN being slightly higher now.
+  
+  SUGGEST FOR OPEN-SOURCE
+
 xxxxxxxx rv3_8_3  ...Peter  6th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
                      Dave  22nd June 2011 (minor)
 

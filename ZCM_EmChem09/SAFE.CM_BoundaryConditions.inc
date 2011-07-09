@@ -18,6 +18,7 @@
 !BIC  bc2xn_adv(IBC_CO      ,IXADV_CO_BIC  )   =   1.0
 !EMEP:
 !BIC  bc2xn_adv(IBC_C2H6    ,IXADV_C2H6_BIC)   =   1.0
+  bc2xn_adv(IBC_C2H6    ,IXADV_C2H6)       =   1.0
 !CB  bc2xn_adv(IBC_C2H6    ,IXADV_ETHA    )   =   1.0 !CB05  C2H6
 !EMEP:
   bc2xn_adv(IBC_C4H10   ,IXADV_NC4H10  )   =   1.0
@@ -29,7 +30,8 @@
   bc2xn_adv(IBC_SEASALT_F  ,IXADV_SEASALT_F  )   =   1.0
   bc2xn_adv(IBC_SEASALT_C  ,IXADV_SEASALT_C  )   =   1.0
   bc2xn_adv(IBC_SEASALT_G  ,IXADV_SEASALT_G  )   =   1.0
-!CB:  bc2xn_adv(IBC_CH3CHO  ,IXADV_ALD2    )   =   1.0 !CB05 ????
+!CB: bc2xn_adv(IBC_CH3CHO  ,IXADV_ALD2    )   =   1.0 !CB05 ????
+  bc2xn_adv(IBC_CH3CHO   ,IXADV_CH3CHO  )   =   1.0
   bc2xn_adv(IBC_NO3_f    ,IXADV_NO3_f  )   =   1.0
   bc2xn_adv(IBC_NO3_c    ,IXADV_NO3_c  )   =   1.0
   bc2xn_adv(IBC_NH4_f    ,IXADV_NH4_f    )   =   1.0

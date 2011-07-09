@@ -375,7 +375,8 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     SpecBC(IBC_C2H6 )  = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05,PPB)
     SpecBC(IBC_C4H10)  = sineconc( 2.0  , 45.0, 1.0 , 6.0  , 0.05, 0.05,PPB)
     SpecBC(IBC_HCHO )  = sineconc( 0.7  ,180.0, 0.3 , 6.0  , 0.05, 0.05,PPB)
-    SpecBC(IBC_CH3CHO) = sineconc( 2.0  ,180.0, 0.5 , 6.0  , 0.05, 0.05,PPB)
+    SpecBC(IBC_CH3CHO) = sineconc( 0.3  ,180.0, 0.05 , 6.0  , 0.005, 0.005,PPB) !NAMBLEX,Solberg,etc.
+  !older    SpecBC(IBC_CH3CHO) = sineconc( 2.0  ,180.0, 0.5 , 6.0  , 0.05, 0.05,PPB)
     SpecBC(IBC_HNO3 )  = sineconc( 0.07 ,180.0, 0.03, 999.9,0.025, 0.03,PPB)
                          !~=NO3, but with opposite seasonal var.
     SpecBC(IBC_NO3_f ) = sineconc( 0.07 , 15.0, 0.03, 1.6  ,0.025, 0.02,PPB) !ACE-2
