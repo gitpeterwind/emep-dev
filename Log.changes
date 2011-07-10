@@ -147,6 +147,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3_8_5     Dave  10th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+  Derived_ml - comment line corrected
+
+  EmisGet - improved error messages (needed!)
+
 xxxxxxxx rv3_8_4     Dave   9th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
   BICs re-instated for C2H6 and CH3CHO (had ben dropped at some stage), but
