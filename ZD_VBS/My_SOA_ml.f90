@@ -60,8 +60,6 @@ module OrganicAerosol_ml
       ,FFUELOC  => FFUELOC_GROUP &
       ,WOODOC  => WOODOC_GROUP
 
-!dsrb doesn'rt exist now   use ChemSOA_ml    ! Includes tabulate_VPsoa, tabVPsoa
-
    use GridValues_ml, only: sigma_mid 
    use ModelConstants_ml,    only :  PT
 
@@ -94,17 +92,15 @@ module OrganicAerosol_ml
 !            Grid_SOA_Fgas           !EXC Grid_SOA_gamma
 
   real,public, save, dimension(LIDIM,LJDIM,K1:K2) :: Grid_COA
-!VBS            Grid_avg_mw &
 
   real, private, dimension(K1:K2), save :: &
         COA           & ! Org. aerosol, ug/m3
-!VBS    avg_mw        & ! Avg. mol. wt.
        ,BGND_OC       & ! FAKE FOR NOW, 0.50 ugC/m3 at surface
        ,BGND_OA         ! Assumed OA/OC=2, -> 1 ug/m3
 
 
   !VBS real, private, dimension(S1:S2,K1:K2), save :: &
-  ! TMP - we assign Fparty for all species for now, since
+  ! TMP - we assign Fpart for all species for now, since
   ! it makes it easier to code for nonvol and vol
 ! From Setup_1dfields now
 !  real, private, dimension(1:NSPEC_TOT,K1:K2), save :: &
@@ -138,14 +134,6 @@ module OrganicAerosol_ml
 !EGU - find indices of SO4-like particles (PMc included for now - tmp!)
 ! for SOA we need a separate array, since Fgas will be needed
 
-!dsrb - not needed now?
-!dsrb  integer, public, parameter, dimension(NUM_NONVOLOC+NUM_NONVOLEC) ::&
-!dsrb   SO4LIKE_DEP = (/ NONVOLOC, NONVOLEC /)
-!dsrb
-!dsrb  integer, public, parameter, dimension(NUM_VOL) ::&
-!dsrb   SOALIKE_DEP = (/ VOL /)
-
-
    !/-- DEBUG variables
    !    Usually, DEBUG_SOA gives extra outputs. debug_flag is used to allow
    !    some extra outputs for a gven i,j - set in CTM model.
@@ -171,8 +159,8 @@ module OrganicAerosol_ml
          xn2ugC   = xn2molem3 * 12.0 * 1.0e6
          ugC2xn   = 1/xn2ugC
 
-  !ds 27/7/2003 - Use Standard Atmosphere to get average heights of layers
-  ! Taken from Unimod.BVKam2X and Warneck
+  ! Use Standard Atmosphere to get average heights of layers
+  ! see e.g. Warneck
 
        p_kPa(:) = 0.001*( PT + sigma_mid(:)*(101325.0-PT) ) ! Pressure in kPa
        h_km     = StandardAtmos_kPa_2_km(p_kPa)
@@ -384,7 +372,11 @@ module OrganicAerosol_ml
   ! Set Fgas for later chemistry, and eset 3-D fields
 
    Fgas(S1:S2,:)  = 1.0 - Fpart(S1:S2,:)
-   Grid_COA(i_pos,j_pos,:)              = COA(:)
+   Grid_COA(i_pos,j_pos,:)              = COA(:)   ! still in ug/m3
+
+!CITYZEN. PCM_F is for output only. Has MW 1 to avoid confusion with OC 
+!do not use ugC outputs, just ug
+   xn(PCM_F,:)  = COA(:) * ugC2xn * 12.0
 
     !Grid_SOA_Fgas(S1:S2, i_pos,j_pos,:)  = Fgas(S1:S2,:)
     !VBS Grid_avg_mw(i_pos,j_pos,:)       = avg_mw(:)
@@ -452,6 +444,7 @@ module OrganicAerosol_ml
        k=20
        write(unit=6,fmt="(a,3i3,2f7.2,f5.2,20es9.2)")"xns ug ", &
          nmonth, nday, nhour, &
+         xn(PCM_F,20)*xn2ugC, & 
          COA(20), surfOC,surfBGNDOC, surfASOA, surfBSOA,surfFFUELOC, surfWOODOC!, &
 !vbs      xn2ugC*xn(AER_IBSOA,k), xn2ugC*xn(AER_TBSOA,k), xn2ugC*xn(AER_SBSOA,k)
 

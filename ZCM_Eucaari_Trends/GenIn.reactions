@@ -71,7 +71,8 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 * ;
 1.85e-20*EXP(2.82*LOG(TEMP))*EXP(-987.0*TINV)  OH + CH4 = CH3O2  ; acp2006, V6, p3625-4055, Atkinson et al.
 1.44e-13+M*3.43e-33                 OH     + CO    = HO2               ; IUPAC 2005
-1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
+*1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
+*1.44e-13+M*3.43e-33                 [OH]   + CO_BIC     =             ;  tracer
 2.3e-12*EXP(360.0*TINV)             CH3O2  + NO    = HCHO + HO2 + NO2  ; acp2006
 7.4e-13*EXP(-520.0*TINV)            CH3O2  + CH3O2 = 2. HCHO + 2. HO2  ; acp2006
 1.03e-13*EXP(365.0*TINV)-7.4e-13*EXP(-520.0*TINV)  CH3O2 + CH3O2 = CH3OH + HCHO  ; acp2006
@@ -202,15 +203,11 @@ TROE_OH_NO                 OH + NO = HONO          ; IUPAC 2002
 *
 *<----- EC ageing ------- -------------------------------------------->
 * ;
-*_func_ec_ageing_rate()               EC_f_new = EC_f_age ;
+*USEPPM _func_ec_ageing_rate()               EC_f_new = EC_f_age ;
 
 *ECageing                            EC_f_new = EC_f_age ; # to use const ageing rate
 *ECageing                            EC_c_new = EC_c_age ; # to use const ageing rate
 *_func_ec_ageing_rate()              EC_c_new = EC_c_age ;
-* VBS version:
-_func_ec_ageing_rate()               EC_f_FFUEL_new = EC_f_FFUEL_age ;
-_func_ec_ageing_rate()               EC_f_WOOD_new = EC_f_WOOD_age ;
-*
 * ;
 
 *Wet * <---------- Wet scavenging ------------------------------------->
@@ -280,101 +277,118 @@ DJ(IDNO2,k)*0.222   HONO           = OH + NO ;
 * placed at the beginning.(as (k) is tagged onto the end of the
 * of the rate term. See beta*rcemis_SO2
 *
-nox:rcemis(NO,k)                           = NO    ;
-nox:rcemis(NO2,k)                          = NO2    ;
-sox:rcemis(SO2,k)                          = SO2    ;
-sox:rcemis(SO4,k)                          = SO4    ;
-co:rcemis(CO,k)                           = CO    ;
-* rcemis(QRCCH4,k)                          = CH4    ;
-voc:rcemis(C2H6,k)                         = C2H6    ;
-voc:rcemis(NC4H10,k)                       = NC4H10    ;
-voc:rcemis(C2H4,k)                         = C2H4    ;
-voc:rcemis(C3H6,k)                         = C3H6    ;
-voc:rcemis(OXYL,k)                         = OXYL    ;
-voc:rcemis(HCHO,k)                         = HCHO    ;
-voc:rcemis(CH3CHO,k)                       = CH3CHO    ;
-voc:rcemis(MEK,k)                          = MEK    ;
-voc:rcemis(C2H5OH,k)                       = C2H5OH    ;
-voc:rcemis(CH3OH,k)                        = CH3OH    ;
-voc:rcemis(GLYOX,k)                       = GLYOX    ;
-voc:rcemis(MGLYOX,k)                      = MGLYOX    ;
-voc:rcemis(C5H8,k)                        = C5H8    ; # Anthropogenic isoprene
+rcemis:NO                           = NO    ;
+rcemis:NO2                          = NO2    ;
+rcemis:SO2                          = SO2    ;
+rcemis:SO4                          = SO4    ;
+rcemis:CO                           = CO    ;
+rcemis:NH3                          = NH3 ;
+rcemis:C2H6                         = C2H6    ;
+rcemis:NC4H10                       = NC4H10    ;
+rcemis:C2H4                         = C2H4    ;
+rcemis:C3H6                         = C3H6    ;
+rcemis:OXYL                         = OXYL    ;
+rcemis:HCHO                         = HCHO    ;
+rcemis:CH3CHO                       = CH3CHO    ;
+rcemis:MEK                          = MEK    ;
+rcemis:C2H5OH                       = C2H5OH    ;
+rcemis:CH3OH                        = CH3OH    ;
+rcemis:GLYOX                       = GLYOX    ;
+rcemis:MGLYOX                      = MGLYOX    ;
+rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 *
-rcss(QSSFI,k)                           = SeaSalt_f ;
-rcss(QSSCO,k)                           = SeaSalt_c ;
 *
-rc_Rn222(k)                             = Rn222    ;
+* OPOA method (assuming semi-volatile POA-emissions 2.5 times the inventory POA-emissions, as in Shrivastava et al., 2008) 
+rcemis:POC_f_FFUEL = 0.03 FFUEL_ng10 +  0.06 FFUEL_ng100 +  0.09 FFUEL_ug1 + 0.14 FFUEL_ug10 +  0.18 FFUEL_ug1e2 +  0.30 FFUEL_ug1e3 +  0.40 FFUEL_ug1e4 +  0.50 FFUEL_ug1e5 +  0.80 FFUEL_ug1e6  ;
 *
-*VBS ECfi:rcemis(EC_f_new,k)                = EC_f_new ;
-*VBS ECfi:rcemis(EC_f_age,k)                = EC_f_age ;
-*VBS OCfi:rcemis(POC_f,k)                   = POC_f  ;
-*rcemis(EC_c_new,k)                = EC_c_new ;
-*rcemis(EC_c_age,k)                = EC_c_age ;
+* To use nonvolatile POC emissions (traditional assumption) uncomment the below line and remove the above line (and the aging reactions further down)
+* EUCAARI rcemis:POC_c_FFUEL               = POC_c_FFUEL ;
+rcemis:EC_f_FFUEL                = EC_f_FFUEL ;
+* EUCAARI rcemis:EC_c_FFUEL                = EC_c_FFUEL ;
+rcemis:POC_f_WOOD                = POC_f_WOOD ;
+rcemis:EC_f_WOOD                 = EC_f_WOOD ;
+* EUCAARI rcemis:EC_c_WOOD                 = EC_c_WOOD ;
+* EUCAARI rcemis:REMPPM25                  = REMPPM25 ;
+* EUCAARI rcemis:REMPPM_C                  = REMPPM_C ;
 *
-* From RB; but with all emissions taken from poc and 
-* OPOA method (assuming semi-volatile POA-emissions 2.5 times the inventory POA-emissions, as in Shrivastava et al., 2008) [in this version the traditional nonvolatile POA emissions are used, to change to the semivolatile approach uncomment the following line]:
-*pocffl:rcemis(POC_f_FFUEL,k) = 0.03 FFUEL_ng10 +  0.06 FFUEL_ng100 +  0.09 FFUEL_ug1 +  0.14 FFUEL_ug10 +  0.18 FFUEL_ug1e2 +  0.30 FFUEL_ug1e3 +  0.40 FFUEL_ug1e4 +  0.50 FFUEL_ug1e5 +  0.80 FFUEL_ug1e6  ;
-* Here use nonvolatile POC emissions (traditional assumption) [to use the semi-volatile POA emissions remove the following line]
-ocfi:rcemis(POC_f_FFUEL,k)                 = POC_f_FFUEL ;
-ocfi:rcemis(POC_c_FFUEL,k)                 = POC_c_FFUEL ;
-ecfi:rcemis(EC_f_FFUEL_new,k)              = EC_f_FFUEL_new ;
-ecfi:rcemis(EC_f_FFUEL_age,k)              = EC_f_FFUEL_age ;
-ecfi:rcemis(EC_c_FFUEL,k)                  = EC_c_FFUEL ;
 *
-ocfi:rcemis(POC_f_WOOD,k)                  = POC_f_FFUEL ;  # Should be POC_f_WOOD ;
-ecfi:rcemis(EC_f_WOOD_new,k)               = EC_f_FFUEL_new ;  # Should be EC_f_WOOD_new ;
-ecfi:rcemis(EC_f_WOOD_age,k)               = EC_f_FFUEL_age ;  # Should be EC_f_WOOD_new ;
-*Don't have: ecco:rcemis(EC_c_WOOD,k)      = EC_c_WOOD ;
+* <----------- Biogenic/natural emissions ----------------------------->
 *
-
-
-*pm25:rcemis(PPM25,k)                     = PPM25 ;
-*pmco:rcemis(PPMCO,k)                     = PPMCO ;
-0.0                                  = DUST_NAT_F ;  # Dust
-0.0                                  = DUST_NAT_C ;
-* <----------- Fire tracers ----------------------------------->
+* EUCAARI rcemis:FFIRE_OC                   = FFIRE_OC + PPM25_Fire ;
+* EUCAARI rcemis:FFIRE_BC                   = FFIRE_BC + PPM25_Fire ;
 *
-* EUCAARI - no fires in trend runs
-* pm25:rcemis(PPM25_FIRE,k)                = PPM25_FIRE ;
-co:rcemis(CO_FIRE,k)                     = CO_FIRE    ;
-*
-* <----------- Biogenic emissions ----------------------------->
 rcbio(BIO_ISOP,k)                        = C5H8    ;
 rcbio(BIO_TERP,k)                    = APINENE ;
+rcss(QSSFI,k)                           = SeaSalt_f ;
+rcss(QSSCO,k)                           = SeaSalt_c ;
+rcss(QSSGI,k)                           = SeaSalt_g ;
+rc_Rn222(k)                                = Rn222    ;
 *
 * Add ammonia
-nh3:rcemis(NH3,k)                          = NH3 ;
-rcnh3(k)                               = NH3 ;  # hbNH3
+* FUTURE rcnh3(k)                          = NH3 ;  # hbNH3
 *
-
-*SOA.reactions:
+*
+* 0.0                                  = DUST_NAT_F ;  # Dust
+* 0.0                                  = DUST_NAT_C ;
+*
+*
+*DSGC *************************************************************
+*DSGC * Kamens chemistry, with rates still in ppm-1 min-1 or min-1 ;
+*DSGC * EMEP version
+*DSGC *
+*DSGC * We multiply by f1 for first order rates and f2 for 2nd order
+*DSGC * to get to s cm molecule-1 and s-1
+*DSGC *************************************************************
+*DSGC *
+*DSGC f2*1.492*exp(-732*TINV)     APINENE + O3 = 0.18 PINACID + 0.8 OH + 0.5 HO2 + 0.12 PINALD + 0.43 OXYPINALD + 0.12 CO + 0.18 CRGPROD2 + 0.21 HCHO + 0.09 PINALIC + 0.09 CH3OH ; 
+*
 ******************************************** VBS Lane **************
 
 * VBS scheme 
-* Alkane SOA
-KRO2NO                 [NO] + [SECC4H9O2] = 0.05 ALK5_ug10 ;
-KHO2RO2                [SECC4H9O2] + [HO2] =  0.1 ALK5_ug10 ;
+* Alkane SOA  Tsimpidi et al. (2010) have higher yields for ALK5 and a bit lower for ALK4)
+* Lane (2008) yields for ALK5 (from the SAPRC99 mechanism), which represents C7-C22 n-alkanes, C6-C16 cycloalkanes and branched/unspeciated C8-C18 alkaned
+*KRO2NO                 [NO] + [SECC4H9O2] = 0.05 ALK5_ug10 ;
+*KHO2RO2                [SECC4H9O2] + [HO2] =  0.1 ALK5_ug10 ;
+* Perhaps the ALK4 yields are more apropriate for the EMEP model chemistry? ALK4 represents mostly pentanes and hexanes, test this here but use the yields from Tsimpidi et al., (2010 ACP vol 10 p525), these yields are based on an assumed SOA density of 1.5 g cm-3
+KRO2NO                 [NO] + [SECC4H9O2] = 0.038 ALK4_ug10 ;
+KHO2RO2                [SECC4H9O2] + [HO2] =  0.075 ALK4_ug10 ;
 
-*Alkene SOA
-KRO2NO                 [NO] + [PRRO2] = 0.0001 OLE1_ug1 + 0.001 OLE1_ug10 + 0.008 OLE1_ug1e2 + 0.03 OLE1_ug1e3 ;
-KHO2RO2                [PRRO2] + [HO2]   = 0.001 OLE1_ug1 + 0.002 OLE1_ug10 + 0.012 OLE1_ug1e2 + 0.045 OLE1_ug1e3 ;
+*Alkene SOA 
+* Lane (2008) yields for OLE1 (SAPRC99 propenes, and C4-C15 terminal alkenes)
+*KRO2NO                 [NO] + [PRRO2] = 0.0001 OLE1_ug1 + 0.001 OLE1_ug10 + 0.008 OLE1_ug1e2 + 0.03 OLE1_ug1e3 ;
+*KHO2RO2                [PRRO2] + [HO2]   = 0.001 OLE1_ug1 + 0.002 OLE1_ug10 + 0.012 OLE1_ug1e2 + 0.045 OLE1_ug1e3 ;
+* Updated SOA yields from Tsimpidi et al., 2010 (based on SOA density of 1.5 g cm-3)
+KRO2NO                 [NO] + [PRRO2] = 0.001 OLE1_ug1 + 0.005 OLE1_ug10 + 0.038 OLE1_ug1e2 + 0.15 OLE1_ug1e3 ;
+KHO2RO2                [PRRO2] + [HO2]   = 0.005 OLE1_ug1 + 0.009 OLE1_ug10 + 0.060 OLE1_ug1e2 + 0.225 OLE1_ug1e3 ;
 
 * Aromatic SOA
-*ds: Use Lane's ARO2, sim to ARO1 anyway (odd?)
-KRO2NO                 [OXYO2] + [NO]     =  0.001 ARO2_ug1 + 0.13 ARO2_ug10 + 0.2 ARO2_ug1e2 + 0.29 ARO2_ug1e3 ;
-KHO2RO2                [OXYO2] + [HO2]    =  0.05 ARO2_ug1 + 0.2 ARO2_ug10 + 0.25 ARO2_ug1e2 + 0.35 ARO2_ug1e3 ;
+*ds: Use Lane's ARO2, sim to ARO1 anyway (odd?) Is ARO2 really the best choice for the EMEP chemistry? ARO1 represents lighter aromatics. NOTE! Newer experiments have shown much higher yields from aromatics, see e.g., Tsimpidi et al. (2010)
+*KRO2NO                 [OXYO2] + [NO]     =  0.001 ARO2_ug1 + 0.13 ARO2_ug10 + 0.2 ARO2_ug1e2 + 0.29 ARO2_ug1e3 ;
+*KHO2RO2                [OXYO2] + [HO2]    =  0.05 ARO2_ug1 + 0.2 ARO2_ug10 + 0.25 ARO2_ug1e2 + 0.35 ARO2_ug1e3 ;
+* Updated SOA yields from Hildebrandt et al., 2009(ACP9, p2973) based on yields from toluene oxidation. Note that Tsimpidi et al., use different yields (see below, lower for the high-NOx reaction, higher low-volatility yield for the low-NOx path)
+KRO2NO                 [OXYO2] + [NO]     =  0.01 TOL_ug1 + 0.24 TOL_ug10 + 0.45 TOL_ug1e2 + 0.7 TOL_ug1e3 ;
+KHO2RO2                [OXYO2] + [HO2]    =  0.01 TOL_ug1 + 0.24 TOL_ug10 + 0.7 TOL_ug1e2 + 0.7 TOL_ug1e3 ;
+* Tsimpidi et al. (2010) use the following yields for ARO2 (and rather similar values for ARO1) should probably be tested for comparison
+*KRO2NO                 [OXYO2] + [NO]     =  0.002 ARO2_ug1 + 0.195 ARO2_ug10 + 0.3 ARO2_ug1e2 + 0.435 ARO2_ug1e3 ;
+*KHO2RO2                [OXYO2] + [HO2]    =  0.075 ARO2_ug1 + 0.3 ARO2_ug10 + 0.375 ARO2_ug1e2 + 0.525 ARO2_ug1e3 ;
 
-* Isoprene SOA
-KRO2NO                 [ISRO2] + [NO]  = 0.0002 ISOP_ug1 + 0.015 ISOP_ug10 + 0.01 ISOP_ug1e2  ;
-KHO2RO2                [ISRO2] + [HO2]  = 0.006 ISOP_ug1 + 0.02 ISOP_ug10 + 0.01 ISOP_ug1e2 ;
+* Isoprene SOA (Tsimpidi et al., use higher yields of low volatile ISOP_ug1 from the highNOx-path and scale yields for SOA-density of 1.5!)
+*KRO2NO                 [ISRO2] + [NO]  = 0.0002 ISOP_ug1 + 0.015 ISOP_ug10 + 0.01 ISOP_ug1e2  ;
+*KHO2RO2                [ISRO2] + [HO2]  = 0.006 ISOP_ug1 + 0.02 ISOP_ug10 + 0.01 ISOP_ug1e2 ;
+* Yields from Tsimpidi et al., 2010 (assumed SOA density of 1.5 g cm-3)
+KRO2NO                 [ISRO2] + [NO]  = 0.001 ISOP_ug1 + 0.023 ISOP_ug10 + 0.015 ISOP_ug1e2  ;
+KHO2RO2                [ISRO2] + [HO2]  = 0.009 ISOP_ug1 + 0.03 ISOP_ug10 + 0.015 ISOP_ug1e2 ;
 
 6.3e-16*exp(-580.0*TINV)   APINENE + [O3] = TERPPeroxy ; # + 0.3 SESQPeroxy ; 
 *
 * assume OH, NO3 treated the same:
 1.2e-11*exp(444.0*TINV)    [OH] + apinene = TERPPeroxy ; #From Kam
 1.2e-12*exp(490.0*TINV)    apinene + [NO3] = TERPPeroxy ; #From Kam
-*
-KRO2NO   TERPPeroxy + NO  = NO2 + 0.008 TERP_ug1 + 0.081 TERP_ug10 + 0.134 TERP_ug1e2 + 0.338 TERP_ug1e3 ;
+* (Lane 2008?)
+*KRO2NO   TERPPeroxy + NO  = NO2 + 0.008 TERP_ug1 + 0.081 TERP_ug10 + 0.134 TERP_ug1e2 + 0.338 TERP_ug1e3 ;
+*KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 + 0.405 TERP_ug1e3 ;
+* Yields from Tsimpidi et al., 2010 (assumed SOA density of 1.5 g cm-3)
+KRO2NO   TERPPeroxy + NO  = NO2 + 0.012 TERP_ug1 + 0.122 TERP_ug10 + 0.201 TERP_ug1e2 + 0.5 TERP_ug1e3 ;
 KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 + 0.405 TERP_ug1e3 ;
 *
 *KRO2NO   SESQPeroxy + NO  = NO2 + 0.05 SESQ_ug1 + 0.1 SESQ_ug10 + 0.5 SESQ_ug1e2 ;
@@ -455,18 +469,19 @@ KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 
 *DSGC *WET_SO2      PINALIC                          =    ;
 *DSGC *DRY_PAN      PINALDPAN                     =    ;
 *===========================================================================
-* Aging of SOA as in Lane et al., 2008
+* Aging of SOA as in Lane et al., 2008 (Tsimpidi et al., 2010, seem to use 10 times faster aging also for SOA!)
+* NOTE! At the moment neglect the mass increase due to uptake of oxygen in aging reactions (typically others assume 7.5% mass increase per aging reaction). Something similiar should probably be done in a future version of the EMEP-VBS as well.
 *
-4.0e-12*Fgas(ALK5_ug10,:)  ALK5_ug10 + [OH]     =  ALK5_UG1  ;
+4.0e-12*Fgas(ALK4_ug10,:)  ALK4_ug10 + [OH]     =  ALK4_UG1  ;
 4.0e-12*Fgas(OLE1_ug1,:)   [OH] + OLE1_ug1      = OLE1_ng100 ;
 4.0e-12*Fgas(OLE1_ug10,:)  [OH] + OLE1_ug10     = OLE1_ug1 ;
 4.0e-12*Fgas(OLE1_ug1e2,:) [OH] + OLE1_ug1e2    = OLE1_ug10 ;
 4.0e-12*Fgas(OLE1_ug1e3,:) [OH] + OLE1_ug1e3    = OLE1_ug1e2 ; 
 *
-4.0e-12*Fgas(ARO2_ug1,:)   [OH] + ARO2_ug1      = ARO2_ng100 ;
-4.0e-12*Fgas(ARO2_ug10,:)  [OH] + ARO2_ug10     = ARO2_ug1 ;
-4.0e-12*Fgas(ARO2_ug1e2,:) [OH] + ARO2_ug1e2    = ARO2_ug10 ; 
-4.0e-12*Fgas(ARO2_ug1e3,:) [OH] + ARO2_ug1e3    = ARO2_ug1e2 ;
+4.0e-12*Fgas(TOL_ug1,:)   [OH] + TOL_ug1      = TOL_ng100 ;
+4.0e-12*Fgas(TOL_ug10,:)  [OH] + TOL_ug10     = TOL_ug1 ;
+4.0e-12*Fgas(TOL_ug1e2,:) [OH] + TOL_ug1e2    = TOL_ug10 ; 
+4.0e-12*Fgas(TOL_ug1e3,:) [OH] + TOL_ug1e3    = TOL_ug1e2 ;
 *
 4.0e-12*Fgas(ISOP_ug1,:)   [OH] + ISOP_ug1      = ISOP_ng100 ;
 4.0e-12*Fgas(ISOP_ug10,:)  [OH] + ISOP_ug10     = ISOP_ug1   ;
@@ -478,22 +493,22 @@ KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 
 4.0e-12*Fgas(TERP_ug1e2,:) [OH] + TERP_ug1e2    = TERP_ug10  ;
 4.0e-12*Fgas(TERP_ug1e3,:) [OH] + TERP_ug1e3    = TERP_ug1e2 ;
 *
-*aging of POA follows Shrivastava for FFUEL (but neglecting the mass increase suggested by Shrivastava et al.). In this version we neglect POA aging and semi-volatility. To add this uncomment the following (and remember to change GenIn.species as well).
-** skip 4.0e-11               [OH] + FFUEL_ng10  
-*4.0e-11*Fgas(FFUEL_ng100,:)    [OH] + FFUEL_ng100   = OXFFUEL_ng10  ;
-*4.0e-11*Fgas(FFUEL_ug1,:)      [OH] + FFUEL_ug1     = OXFFUEL_ng100 ;
-*4.0e-11*Fgas(FFUEL_ug10,:)     [OH] + FFUEL_ug10    = OXFFUEL_ug1   ;
-*4.0e-11*Fgas(FFUEL_ug1e2,:)    [OH] + FFUEL_ug1e2   = OXFFUEL_ug10  ;
-*4.0e-11*Fgas(FFUEL_ug1e3,:)    [OH] + FFUEL_ug1e3   = OXFFUEL_ug1e2 ;
-*4.0e-11*Fgas(FFUEL_ug1e4,:)    [OH] + FFUEL_ug1e4   = OXFFUEL_ug1e3 ;
-*4.0e-11*Fgas(FFUEL_ug1e5,:)    [OH] + FFUEL_ug1e5   = OXFFUEL_ug1e4 ;
-*4.0e-11*Fgas(FFUEL_ug1e6,:)    [OH] + FFUEL_ug1e6   = OXFFUEL_ug1e5 ;
+*aging of POA follows Shrivastava for FFUEL (but neglecting the mass increase suggested by Shrivastava et al., should probably be added in a future version of the EMEP-VBS as well). 
+* skip 4.0e-11               [OH] + FFUEL_ng10  
+4.0e-11*Fgas(FFUEL_ng100,:)    [OH] + FFUEL_ng100   = OXFFUEL_ng10  ;
+4.0e-11*Fgas(FFUEL_ug1,:)      [OH] + FFUEL_ug1     = OXFFUEL_ng100 ;
+4.0e-11*Fgas(FFUEL_ug10,:)     [OH] + FFUEL_ug10    = OXFFUEL_ug1   ;
+4.0e-11*Fgas(FFUEL_ug1e2,:)    [OH] + FFUEL_ug1e2   = OXFFUEL_ug10  ;
+4.0e-11*Fgas(FFUEL_ug1e3,:)    [OH] + FFUEL_ug1e3   = OXFFUEL_ug1e2 ;
+4.0e-11*Fgas(FFUEL_ug1e4,:)    [OH] + FFUEL_ug1e4   = OXFFUEL_ug1e3 ;
+4.0e-11*Fgas(FFUEL_ug1e5,:)    [OH] + FFUEL_ug1e5   = OXFFUEL_ug1e4 ;
+4.0e-11*Fgas(FFUEL_ug1e6,:)    [OH] + FFUEL_ug1e6   = OXFFUEL_ug1e5 ;
 
-*4.0e-11*Fgas(OXFFUEL_ng100,:)    [OH] + OXFFUEL_ng100   = OXFFUEL_ng10  ;
-*4.0e-11*Fgas(OXFFUEL_ug1,:)      [OH] + OXFFUEL_ug1     = OXFFUEL_ng100 ;
-*4.0e-11*Fgas(OXFFUEL_ug10,:)     [OH] + OXFFUEL_ug10    = OXFFUEL_ug1   ;
-*4.0e-11*Fgas(OXFFUEL_ug1e2,:)    [OH] + OXFFUEL_ug1e2   = OXFFUEL_ug10  ;
-*4.0e-11*Fgas(OXFFUEL_ug1e3,:)    [OH] + OXFFUEL_ug1e3   = OXFFUEL_ug1e2 ;
-*4.0e-11*Fgas(OXFFUEL_ug1e4,:)    [OH] + OXFFUEL_ug1e4   = OXFFUEL_ug1e3 ;
-*4.0e-11*Fgas(OXFFUEL_ug1e5,:)    [OH] + OXFFUEL_ug1e5   = OXFFUEL_ug1e4 ;
+4.0e-11*Fgas(OXFFUEL_ng100,:)    [OH] + OXFFUEL_ng100   = OXFFUEL_ng10  ;
+4.0e-11*Fgas(OXFFUEL_ug1,:)      [OH] + OXFFUEL_ug1     = OXFFUEL_ng100 ;
+4.0e-11*Fgas(OXFFUEL_ug10,:)     [OH] + OXFFUEL_ug10    = OXFFUEL_ug1   ;
+4.0e-11*Fgas(OXFFUEL_ug1e2,:)    [OH] + OXFFUEL_ug1e2   = OXFFUEL_ug10  ;
+4.0e-11*Fgas(OXFFUEL_ug1e3,:)    [OH] + OXFFUEL_ug1e3   = OXFFUEL_ug1e2 ;
+4.0e-11*Fgas(OXFFUEL_ug1e4,:)    [OH] + OXFFUEL_ug1e4   = OXFFUEL_ug1e3 ;
+4.0e-11*Fgas(OXFFUEL_ug1e5,:)    [OH] + OXFFUEL_ug1e5   = OXFFUEL_ug1e4 ;
 *

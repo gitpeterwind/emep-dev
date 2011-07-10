@@ -52,6 +52,7 @@ module My_Derived_ml
   !   of the bigger d_2d arrays
   !---------------------------------------------------------------------------
 
+use My_Emis_ml,     only :  EMIS_NAME
 use AOTx_ml, only : O3cl, VEGO3_OUTPUTS, VEGO3_DEFS
 use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
@@ -62,7 +63,6 @@ use ChemGroups_ml  ! Allow all groups to ease compilation
                    !,  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV, IXADV_ indices
-use My_Emis_ml,     only :  EMIS_NAME
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa
@@ -131,8 +131,8 @@ private
    character(len=TXTLEN_SHORT), private, parameter ::&
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
-   !type(typ_s5i), public, parameter, dimension(37) :: &
-   type(typ_s5i), public, parameter, dimension(33) :: &
+   !EUCtype(typ_s5i), public, parameter, dimension(32) :: &
+   type(typ_s5i), public, parameter, dimension(37) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -144,21 +144,19 @@ private
         ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! Remember, species have upper case, so not _f !
         ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
-        ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
         ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! ug/m3
         ,typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-       ! ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-       ! ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-       ! ,typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-         !typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D),& 
-         !typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D),& 
+        ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D)&
        ! ppb
-        ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)&  !#20 test 3d
-        ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN
+        ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
+        ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
         ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
         ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
@@ -174,18 +172,22 @@ private
         ,typ_s5i("RDN       ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("TNO3      ",  "ugN", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SIA       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("PM25      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !3D
+        ,typ_s5i("PMFINE    ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !30
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("ASOA      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("BSOA      ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
-        ,typ_s5i("PCM       ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("PCM_HELP  ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+      !CityZen Extras +4
+        ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+       ! SOA, PCM_F etc. are special and need appropriate units. Do
+       ! not confuse! Only PCM has proper ug units, the others are
+       ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
+       ! = sum of all EC and OM components.)
+        ,typ_s5i("AER_ASOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
+        ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PCM_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
          !typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) 
-!     ,typ_ss( "PM25ANTHR","ug") &
-!     ,typ_ss( "PM10ANTHR","ug") &
        /)
 
 ! Tropospheric columns
@@ -196,21 +198,10 @@ private
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(4) :: &
   D2_SR = (/ &
-       "SURF_MAXO3  " &
-!      ,"SURF_ug_SIA " & !ds rv3_5_6 using groups
-!      ,"SURF_ug_ASOA " & !an eucaari
-!      ,"SURF_ug_BSOA " & !an eucaari
-!      ,"SURF_ug_PM25 " & !dsMay2010
-!      ,"SURF_ugN_OXN " & !dsMay2010
-!      ,"SURF_ugN_RDN " & !dsMay2010
+       "SURF_MAXO3    " &
       ,"SURF_PM25water" & 
-      ,"SOMO35      " & 
-      ,"PSURF       " &  ! Surface  pressure (for cross section):
-  /)
-    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
-  D2_PM = (/ &
-       "SURF_ugC_ECf", "SURF_SS", "SURF_DU", &         ! , "SURF_ugC_EC"
-       "SURF_ug_TNO3","SURF_ug_PM25anthr", "SURF_PM25water" &  !,"SURF_ugN_TOXN", "SURF_ugN_RDN"
+      ,"SOMO35        " & 
+      ,"PSURF         " &  ! Surface  pressure (for cross section):
   /)
 
 
@@ -220,7 +211,7 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(10) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(8) :: &
   D2_EXTRA = (/ &
        "SURF_ppbC_VOC     " &
       ,"T2m               " &
@@ -230,9 +221,9 @@ private
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
       ,"HMIX              " & !alt HMIX00 ,HMIX12 ...
-      ,"Snow_m            " & 
+      !,"Snow_m            " & 
       !,"SoilWater_deep    " &
-      ,"USTAR_NWP         " &
+      !,"USTAR_NWP         " &
       !,"ws_10m            " &
       !,"u_ref             " &
   /)
@@ -257,9 +248,9 @@ private
       DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) ! , &
        !    SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
-      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" &! "Water_D" &
-                    , "Decid  ", "Crops  " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" /) !&! "Water_D" &
+                  !  , "Decid  ", "Crops  " /)
 
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
@@ -338,22 +329,22 @@ private
 !----------------------
 
 
-   type(typ_s3), dimension(14), public, parameter :: WDEP_WANTED = (/ &
+   type(typ_s3), dimension(7), public, parameter :: WDEP_WANTED = (/ &
          typ_s3( "PREC     ", "PREC ", "mm  " )  &
         ,typ_s3( "SOX      ", "GROUP", "mgS " )  & ! Will get WDEP_SOX group
         ,typ_s3( "OXN      ", "GROUP", "mgN " )  &
         ,typ_s3( "RDN      ", "GROUP", "mgN " )  &
         ,typ_s3( "SS       ", "GROUP", "mgSS" )  &
       ! 
-        ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
-        ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
-        ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
-        ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
-        ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
+      !  ,typ_s3( "SO2      ", "SPEC ", "mgS ") &  ! Makes WPEP_SO2
+      !  ,typ_s3( "SO4      ", "SPEC ", "mgS ") &
+      !  ,typ_s3( "HNO3     ", "SPEC ", "mgN ") &
+      !  ,typ_s3( "NO3_F    ", "SPEC ", "mgN ") &
+      !  ,typ_s3( "NO3_C    ", "SPEC ", "mgN ") &
         ,typ_s3( "NH4_F    ", "SPEC ", "mgN ") &
         ,typ_s3( "NH3      ", "SPEC ", "mgN ") &
-        ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
-        ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
+      !  ,typ_s3( "SEASALT_F", "SPEC ", "mgSS") &
+      ! ,typ_s3( "SEASALT_C", "SPEC ", "mgSS") &
      /)
 
 
@@ -361,11 +352,10 @@ private
     ! PC-gfortran runs.
 
     ! other (non-ppb) 3D output, set as zero-size (eg 4:1) for normal runs
-    character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
-    ! character(len=TXTLEN_DERIV), public, save, dimension(8) :: &
-       D3_OTHER  != (/ "D3_PM25water", "D3_ug_PM25", "D3_ug_PM25anthr", &
-                 !     "D3_ugC_ECf", "D3_SS", "D3_DUST", "D3_ASOA", "D3_BSOA"/)
-     != (/ "D3_ug_PM25", "D3_ug_PMc",  "D3_m_TH", "D3_m2s_Kz" /) !*** does not run with these 
+     character(len=TXTLEN_DERIV), public, save, dimension(4:1) :: &
+     !character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
+       D3_OTHER  != (/ "D3_PM25water" /) !**** Under construction *******
+     != (/ "D3_m_TH", "D3_m2s_Kz" /)
 
     integer, private :: i,j,k,n, ivoc, index    ! Local loop variables
 
@@ -380,9 +370,6 @@ private
     dimension(size(COLUMN_MOLEC_CM2)*size(COLUMN_LEVELS)) ::&
             tmpname ! e.g. DDEP_SO2_m2Conif
     character(len=100) :: errmsg
-! hb new 3D output
-!    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)) ::&
-!    character(len=TXTLEN_DERIV), dimension(NALL_SURF_UG+size(SURF_PPB)+size(D3_PPB)) ::&
     character(len=TXTLEN_DERIV), &
        dimension(size( OutputConcs(:)%txt1 ) ) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
@@ -556,7 +543,7 @@ private
 
   end subroutine Init_My_Deriv
  !=========================================================================
-  subroutine My_DerivFunc( e_2d, class , density )
+  subroutine My_DerivFunc( e_2d, class )!  , density )
 
     ! We define here here any functions which cannot easily be defined
     ! in the more general Derived_ml. 
@@ -565,7 +552,7 @@ private
   character(len=*), intent(in)    :: class       ! Class of data
   integer, save :: num_warnings = 0  ! crude counter for now
 
-  real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
+  ! real, intent(in), dimension(MAXLIMAX,MAXLJMAX)  :: density
   ! density = 1 ( or = roa when unit ug)
 
   select case ( class )
