@@ -624,7 +624,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                   tmp_iqrc2itot(iqrc) = itot
                   itot2iqrc(itot)     = iqrc
 
-                 !DSRC Now, get factor needed for scaling emissions to molec
+                 ! Now, get factor needed for scaling emissions to molec
                   if ( Emis_MolWt(ie) == 0 ) then
                       tmp_emis_masscorr(iqrc) = 1.0/species(itot)%molwt
                   else
@@ -649,8 +649,13 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
            call read_line(IO_EMIS,txtinput,ios)
            if ( ios /=  0 ) exit READ_DATA     ! End of file
-           read(unit=txtinput,fmt=*)  iland, isec, (tmp(i),i=1, nsplit)
-           call CheckStop( ios ,"EmisGet: ios error on "//trim(fname) )
+           read(unit=txtinput,fmt=*,iostat=ios)  iland, isec, (tmp(i),i=1, nsplit)
+           if( MasterProc .and. ios /= 0 ) then
+               print *, "ERROR: EmisGet: Failure reading emispslit file"
+               print *, "Expecting to split into nsplit=", nsplit
+               print *, "reading this record:", trim(txtinput)
+              call CheckStop( ios ,"EmisGet: ios error on "//trim(fname) )
+           end if
 
            n = n + 1
            if ( DEBUG .and. MasterProc ) then
@@ -730,8 +735,13 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   ! chemical scheme:
 
   do ie = 1, NEMIS_SPECS
-    if ( EmisSpecFound(ie) .eqv. .false. ) then
+    !if ( MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
+    if ( ( EmisSpecFound(ie) .eqv. .false.) ) then
        print *, "ERROR: EmisSpec not found!! " // trim(EMIS_SPECS(ie))
+       print *, "ERROR: EmisSpec - emissions of this compound were specified",&
+&               " in the CM_reactions files, but not found in the ",&
+&               " emissplit.defaults files. Make sure that the sets of files",&
+&               " are consistent."
        call CheckStop ( any( EmisSpecFound .eqv. .false.), &
            "EmisSpecFound Error" )
     end if

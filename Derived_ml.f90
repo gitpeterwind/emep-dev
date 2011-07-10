@@ -418,10 +418,17 @@ do ind = 1, size( OutputConcs(:)%txt1 )
      itot = find_index( trim( outname ) , species(:)%name ) 
      iout = itot - NSPEC_SHL   ! set to iadv
 
+     if( MasterProc .and. itot <0 ) then
+        write(*,*) "ERROR! My_Derived has asked for a species to be output",&
+&                  " that isn't in the CM_ChemSpecs list (below). FIX!"
+        do i =1, size( species(:)%name ) 
+           write(*,"(a,i4,2a12)") "CONCLIST ", i, trim(species(i)%name ), trim(outname)
+        end do
      call CheckStop(itot<0, "OutputConcs Species not found " // trim(dname) )
+     end if
      txt = "SURF_UG"
 
-   else if ( outtyp == "GROUP" ) then ! Simple species
+   else if ( outtyp == "GROUP" ) then ! groups of species
 
     igrp = find_index( trim( outname ), GROUP_ARRAY(:)%name )
 
