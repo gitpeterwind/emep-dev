@@ -142,6 +142,10 @@ module Country_ml
   integer, parameter, public :: IC_RS  =  72   ! Serbia
   integer, parameter, public :: IC_ME  =  73   ! Montenegro
 
+!Extra cc for rest CityZen
+  integer, parameter, public :: IC_RAA  =  170   ! Rest of Africa and Asia
+  integer, parameter, public :: IC_SEA  =  171   ! Ship
+
   ! Biomass-burnung (Wild-fires etc.) allocated to a country-number
   ! Allows easy use of emissplits to allocate speciation
 
@@ -428,6 +432,9 @@ Country( IC_AOX ) = cc(  "AOX" , 90 ,F,  90, 12  ,"Extended EMEP-external part o
 ! b) Domain x = -16-132 y = -11-0
 Country( IC_NAX ) = cc(  "NAX" , 91 ,F,  91, 1   ,"EMEP-external part of North Africa               " )
 
+!Extra cc for rest CityZen
+Country( IC_RAA ) = cc(  "RAA" , 170 ,F,  170, 1, "Rest of Africa and Asia" )
+Country( IC_SEA ) = cc(  "SEA" , 171 ,F,  171, 1, "Ships" )
 
   end subroutine Country_Init
 end module Country_ml
