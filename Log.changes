@@ -147,6 +147,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_8_6     Agnes,Dave,Mike  14th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+CityZen updates 
+
+    Harmonise BICs: 
+    copied ZCM_EmChem09/SAFE- ... BICs to ZCM_Eucaari_Trends *and* ZCM_vbs_tests
+
+    Added countries 170, 171 for extended area
 
 xxxxxxxx rv3_8_5     Dave  10th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
