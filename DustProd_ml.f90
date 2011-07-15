@@ -57,7 +57,7 @@
                                   foundws10_met, ws_10m,                  &
                                   clay_frac, sand_frac !ACB snow_flag
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
-                                  NPROC, MasterProc, USE_DUST
+                                  NPROC, MasterProc, USE_DUST, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,MAXLIMAX,MAXLJMAX
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
@@ -78,7 +78,6 @@
   real, parameter             :: soil_dens = 2650.0  ! [kg/m3]
   logical, private, save      :: my_first_call = .true.
   integer, save               :: dry_period(MAXLIMAX, MAXLJMAX) = 72
-  logical, parameter, private :: DEBUG_DUST = .false.
   character(len=20)           :: soil_type
   contains
 
@@ -543,7 +542,7 @@
 
 !//__ U_star_threshold
     if ( Re_opt < 0.03 ) then
-      stop 'Dust: Reynolds < 0.03'
+      call CheckStop( 'ERROR: Dust: Reynolds < 0.03' )
 
     else if ( Re_opt < 10.0 ) then
       help_ust = 1.928 * Re_opt**0.0922 - 1.0 ! [frc] IvW82 p. 114 (3), MaB95 p. 16417 (6)
