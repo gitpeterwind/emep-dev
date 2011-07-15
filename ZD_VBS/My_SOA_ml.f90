@@ -54,6 +54,7 @@ module OrganicAerosol_ml
       NONVOLPCM_GROUP &
       ,ASOA => ASOA_GROUP &
       ,BSOA => BSOA_GROUP &
+      ,ECFINE => ECFINE_GROUP &                    &
 !rb only_for_semi-volatile_POA      ,POA  => POA_GROUP &
 !rb only_for_semi-volatile_POA      ,OPOA  => OPOA_GROUP &
       ,FFUELEC  => FFUELEC_GROUP &
@@ -94,7 +95,7 @@ module OrganicAerosol_ml
   real,public, save, dimension(LIDIM,LJDIM,K1:K2) :: Grid_COA
 
   real, private, dimension(K1:K2), save :: &
-        COA           & ! Org. aerosol, ug/m3
+        COA           & ! Org. aerosol, ug/m3  (includes EC as absorber)
        ,BGND_OC       & ! FAKE FOR NOW, 0.50 ugC/m3 at surface
        ,BGND_OA         ! Assumed OA/OC=2, -> 1 ug/m3
 
@@ -122,6 +123,7 @@ module OrganicAerosol_ml
 !    integer, private, parameter, dimension(NUM_NONVOL) ::  &
 !      NONVOL = (/ NONVOLOC_GROUP, NONVOLEC_GROUP /) ! OC+EC in partitioning OM
     real, private, dimension(NUM_NONVOLPCM,K1:K2), save :: ug_nonvol 
+    real, private, dimension(K1:K2), save :: ug_ec ! CityZen added 
 
     real,  private, dimension(S1:S2,CHEMTMIN:CHEMTMAX) :: tabCiStar
 
@@ -185,8 +187,6 @@ module OrganicAerosol_ml
        do i=S1,S2
          do it=CHEMTMIN,CHEMTMAX
 
-           !dsrb tabCiStar(i,it) = VBS(i)%CiStar * 300.0/it * &
-           !dsrb        exp( VBS(i)%DeltaH * kJ/RGAS_J * (1.0/300.0 - 1.0/it) )
            tabCiStar(i,it) = species(i)%CiStar * 300.0/it * &
                   exp( species(i)%DeltaH * kJ/RGAS_J * (1.0/300.0 - 1.0/it) )
          end do
@@ -232,7 +232,8 @@ module OrganicAerosol_ml
    integer :: nmonth, nday, nhour, seconds
 
   ! Outputs:
-   real :: surfOC, surfASOA, surfBSOA, surfFFUELOC, surfWOODOC, surfBGNDOC !for semivolatile POA runs, surfOPOA, surfPOA
+   real :: surfOC, surfASOA, surfBSOA, surfFFUELOC, surfWOODOC, surfBGNDOC
+    !for semivolatile POA runs, surfOPOA, surfPOA
 
 
    nmonth = current_date%month
@@ -283,6 +284,9 @@ module OrganicAerosol_ml
     Fpart(i,:)=1.0
     Fgas(i,:)=0.0
 
+  end do
+  do k = K1, K2 
+    ug_ec(k) = molcc2ugm3 * sum( xn(ECFINE,k) ) * 12.0 !! *species(ispec)%molwt
   end do
 
   ! ============ SOA species now, iteratrion needed ===================
@@ -376,7 +380,8 @@ module OrganicAerosol_ml
 
 !CITYZEN. PCM_F is for output only. Has MW 1 to avoid confusion with OC 
 !do not use ugC outputs, just ug
-   xn(PCM_F,:)  = COA(:) * ugC2xn * 12.0
+!   xn(PCM_F,:)  = COA(:)                  * ugC2xn * 12.0
+   xn(AER_OM_F,:)  = ( COA(:) - ug_ec(:) )   * ugC2xn * 12.0
 
     !Grid_SOA_Fgas(S1:S2, i_pos,j_pos,:)  = Fgas(S1:S2,:)
     !VBS Grid_avg_mw(i_pos,j_pos,:)       = avg_mw(:)
@@ -444,7 +449,7 @@ module OrganicAerosol_ml
        k=20
        write(unit=6,fmt="(a,3i3,2f7.2,f5.2,20es9.2)")"xns ug ", &
          nmonth, nday, nhour, &
-         xn(PCM_F,20)*xn2ugC, & 
+         xn(AER_OM_F,20)*xn2ugC, & 
          COA(20), surfOC,surfBGNDOC, surfASOA, surfBSOA,surfFFUELOC, surfWOODOC!, &
 !vbs      xn2ugC*xn(AER_IBSOA,k), xn2ugC*xn(AER_TBSOA,k), xn2ugC*xn(AER_SBSOA,k)
 

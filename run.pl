@@ -249,7 +249,7 @@ $Chem     = "EmChem09";            # Label for chemical scheme used
 #@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
 @emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
 
-my $testv = "rv3_8_5";
+my $testv = "rv3_8_6";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";

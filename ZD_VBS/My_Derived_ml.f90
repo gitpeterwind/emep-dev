@@ -132,20 +132,21 @@ private
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
    !EUCtype(typ_s5i), public, parameter, dimension(32) :: &
-   type(typ_s5i), public, parameter, dimension(37) :: &
+   type(typ_s5i), public, parameter, dimension(29) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+! Omit for CityZen
+!        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! Remember, species have upper case, so not _f !
-        ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
-        ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
-        ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
+!        ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
+!        ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! ug/m3
         ,typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
@@ -157,7 +158,7 @@ private
        ! ppb
         ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
         ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
-        ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+       ! ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
         ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
          !typ_s5i("HCHO      ", "ugC", D2,"AIR_CONCS", SPEC, D),& !#25
@@ -176,16 +177,20 @@ private
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-      !CityZen Extras +4
+      !CityZen Outputs
+        ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d
+        ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
         ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("AER_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+        ,typ_s5i("AER_OC    ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+        ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
        ! SOA, PCM_F etc. are special and need appropriate units. Do
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
        ! = sum of all EC and OM components.)
-        ,typ_s5i("AER_ASOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
-        ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PCM_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+       ! ,typ_s5i("AER_ASOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
+       ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
          !typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) 
        /)

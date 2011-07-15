@@ -147,14 +147,44 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_8_6     Agnes,Dave,Mike  14th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_8_6   Dave, Agnes,Mike  14th-15th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
-CityZen updates 
+CityZen updates  (using ZCM_Eucaari_trends and Z_VBS directories)
 
+
+   Country_ml
+    Added countries 170, 171 for extended area
+
+   DustProd_ml
+    Moved DEBUG_DUST to ModelConstants_ml
+    use CheckStop, not stop (avoids MPI problems)
+
+   ZCM_Eucaari_trends
+   ------------------
     Harmonise BICs: 
     copied ZCM_EmChem09/SAFE- ... BICs to ZCM_Eucaari_Trends *and* ZCM_vbs_tests
 
-    Added countries 170, 171 for extended area
+    Changes in GenIn.species:
+     Added AER_OM_F as helper species
+     removed PM10, PMFINE groups from all SOA species. Only specify
+     these groups for AER_OM_F and various EC components.
+     
+     Used PMGIANT group for SEASALT_G instead of PMCO - that is for
+     the MMD=2.5um particles.
+
+      EMISSPLIT - "_NEW" suffix dropped on emissplit.defaults.ecfi
+
+   ZD_VBS
+   -------
+
+   My_Emis_ml added as default for VBS, with ocfi, ecfi. This is a temporary
+   measure until GenChem sorts out which emissions are needed.
+
+   My_SOA_ml:  use of AER_OM_F, ECFINE added
+
+   My_Derived_ml: use of AER_OM_F. Commented out some ugN outputs, added
+   ug/m3 and some cityzen requests.
+
 
 xxxxxxxx rv3_8_5     Dave  10th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
