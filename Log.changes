@@ -185,6 +185,9 @@ CityZen updates  (using ZCM_Eucaari_trends and Z_VBS directories)
    My_Derived_ml: use of AER_OM_F. Commented out some ugN outputs, added
    ug/m3 and some cityzen requests.
 
+   ZD_OZONE
+   --------
+     hr_out only for O3 as default.
 
 xxxxxxxx rv3_8_5     Dave  10th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 

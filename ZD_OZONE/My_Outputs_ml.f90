@@ -159,7 +159,7 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 logical, public, parameter :: Hourly_ASCII = .false.
 ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
 
-integer, public            :: NHOURLY_OUT =  6 ! No. outputs
+integer, public            :: NHOURLY_OUT =  1 ! No. outputs
 integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
 integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
@@ -285,17 +285,17 @@ subroutine set_output_defs
 !  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).
 !    For ugX/m3 output use in combination with to_ug_X.
-    hr_out(2)= Asc2D("NH4_f-air","ADVugXX","(f8.4)",&
-              IXADV_NH4_f,  ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NH4_f),600.0)
-    hr_out(3)= Asc2D("NO3_f-air", "ADVugXX","(f8.4)",&
-              IXADV_NO3_f,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NO3_f),600.0)
-    hr_out(4)= Asc2D("SO4-air", "ADVugXX","(f8.4)",&
-              IXADV_SO4,   ix1,ix2,iy1,iy2,1, "ugS",to_ug_S(IXADV_SO4),400.0)
-    hr_out(5)= Asc2D("cNO3-air","ADVugXX","(f8.4)",&
-              IXADV_NO3_c,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NO3_c),400.0)
-!Hourly accumulated deposition. NB if(hr_out%unit=="")f_2d%unit is used
-    hr_out(6)=Asc2D("sox_wdep" ,"D2D","(f9.4)",&
-              find_index("WDEP_SOX",f_2d(:)%name),ix1,ix2,iy1,iy2,1,"",1.0,-999.9)
+!Skip    hr_out(2)= Asc2D("NH4_f-air","ADVugXX","(f8.4)",&
+!Skip              IXADV_NH4_f,  ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NH4_f),600.0)
+!Skip    hr_out(3)= Asc2D("NO3_f-air", "ADVugXX","(f8.4)",&
+!Skip              IXADV_NO3_f,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NO3_f),600.0)
+!Skip    hr_out(4)= Asc2D("SO4-air", "ADVugXX","(f8.4)",&
+!Skip              IXADV_SO4,   ix1,ix2,iy1,iy2,1, "ugS",to_ug_S(IXADV_SO4),400.0)
+!Skip    hr_out(5)= Asc2D("cNO3-air","ADVugXX","(f8.4)",&
+!Skip              IXADV_NO3_c,ix1,ix2,iy1,iy2,1, "ugN",to_ug_N(IXADV_NO3_c),400.0)
+!Skip!Hourly accumulated deposition. NB if(hr_out%unit=="")f_2d%unit is used
+!Skip    hr_out(6)=Asc2D("sox_wdep" ,"D2D","(f9.4)",&
+!Skip              find_index("WDEP_SOX",f_2d(:)%name),ix1,ix2,iy1,iy2,1,"",1.0,-999.9)
 
  ! Extra parameters - need to be coded in Sites_ml also.
  ! So far we can choose from T2, or th (pot. temp.) or from d_2d arrays.
