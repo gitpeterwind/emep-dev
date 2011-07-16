@@ -167,7 +167,6 @@ contains
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  subroutine massbudget()
 
-  ! Converted from old masbud.f by ds, March 2001
   ! sums over all sulphur and nitrogen, so is model independant.
 
 
