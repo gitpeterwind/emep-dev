@@ -15,8 +15,8 @@ IMPORTANT NOTE:
 
 KNOWN PROBLEMS
 
-** June 19th ** Found that results are processor dependent if USE_AIRCRAFT_EMIS = true
-   Origin of problem not found.
+**** Aug 2nd. Found MW 64 in Biogenic_ml, biofac_ISOP. Should be
+     68. Will cvs soon, DS ******
 
 Some jobs needed after Mar-11th tests (ds will do)
   - Decide SoilMoisture
