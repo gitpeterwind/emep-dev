@@ -44,7 +44,7 @@ module PhyChem_ml
    use DerivedFields_ml,  only : d_2d, f_2d
    use DryDep_ml,      only : init_drydep
    use Emissions_ml,   only : EmisSet
-   use GridValues_ml,  only : debug_proc, debug_li,debug_lj,& !ds jun2005
+   use GridValues_ml,  only : debug_proc, debug_li,debug_lj,&
                              glon, glat, projection, Pole_included
    use Met_ml,         only : metint
    use MetFields_ml,   only : ps, roa,z_bnd,z_mid, cc3dmax, &
