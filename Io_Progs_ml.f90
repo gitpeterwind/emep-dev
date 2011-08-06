@@ -534,10 +534,10 @@ subroutine datewrite_a (txt,array,txt_pattern)
   logical :: use_pattern=.false.
   use_pattern=.false.;if(present(txt_pattern))use_pattern=txt_pattern
   if(use_pattern)then
-    write(*,"(a,1x, 20es10.0)") "dw:" // date2string(txt,current_date), &
+    write(*,"(a,1x, 20es11.0)") "dw:" // date2string(txt,current_date), &
       array
   else
-    write(*,"(a,3i3,i5,1x, 20es10.3)") "dw:" // trim(txt), &
+    write(*,"(a,3i3,i5,1x, 20es11.3)") "dw:" // trim(txt), &
       current_date%month, current_date%day, current_date%hour, &
       current_date%seconds, array
   endif

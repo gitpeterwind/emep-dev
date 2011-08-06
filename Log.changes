@@ -147,6 +147,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+ 
+Small changes
+Io_Progs_ml  datewrite formated extended to es11.3. Former 10.3
+merged with negative numbers.
+
 xxxxxxxx rv3_8_6   Dave, Agnes,Mike  14th-15th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 CityZen updates  (using ZCM_Eucaari_trends and Z_VBS directories)
