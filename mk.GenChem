@@ -6,30 +6,30 @@
 # 3) Run GenVOC to get speciation
 #
 #====== Set run here =======================
-run=Test03   # CRI_v2_R5
-run=EmChem03c   # CRI_v2_R5
-run=OSRM    # CRI_v2_R5
-run=Eucaari_Trends 
-run=CRI_v2_R5
-run=vbs_tests   # VBS based Organic Aerosol Model, upd, new system
-run=EmChem09
+# changed - see below...
+#run=Test03   # CRI_v2_R5
+#run=EmChem03c   # CRI_v2_R5
+#run=OSRM    # CRI_v2_R5
+#run=Eucaari_Trends 
+#run=CRI_v2_R5
 #
-cdir=$PWD            #  Current when starting. Assumed now as a Unimod
-wdir=$PWD/ZCM_$run   # work-directory, with input files
-odir=$PWD/ZCM_$run   # We keep output in work-directory 
-echo $odir
-#mkdir $odir
 # ==========================================
-cd ZCM_$run
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
+run=EmChem09
 spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
 rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
 
 #VBS upd?
-#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_PMupd VBS_upd )  #  VBS NPNA
-#rcns=( EmChem09base SeaSalt VBS_Lane VBS_ageing VBS_OPOAemis  )
+run=vbs_tests   # VBS based Organic Aerosol Model, upd, new system
+spcs=( EmChem09base SeaSalt Dust VBS_help VBS_PMupd VBS_upd )  #  VBS NPNA
+rcns=( EmChem09base SeaSalt VBS_Lane VBS_ageing VBS_OPOAemis  )
 
+#---------------- create GenIn files...
+cdir=$PWD       #  Current when starting. Assumed now as a Unimod
+wdir=$PWD/ZCM_$run   # work-directory, with input files
+cd $wdir
+#
 mv GenIn.species GenIn.species.bk # Safety
 echo "Species Files:" > CM_chempackages.txt
 for spec in ${spcs[@]}   # Wow, bash is cryptic!
@@ -51,18 +51,20 @@ do
   cat $reac.reactions >>  GenIn.reactions
 done
 echo " " >> CM_chempackages.txt
-cd  $cdir
 # ==========================================
 
 #GenSort.pl $run   # Creates GenIn.species, so be careful !#
 
 # 1) Runs GenChem to get chemical mechanism 
 #######################################################################
-cd $wdir
 
 $cdir/GenChem.pl
 
 # Mar 17th 2009, added fake GenSpec_bgn_ml
+
+#odir=$PWD/ZCM_$run   # We keep output in work-directory 
+odir=$wdir           # We keep output in work-directory 
+echo $odir
 
 cat GenOut_ChemRates*inc    > $odir/CM_ChemRates_ml.f90
 
