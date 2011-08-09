@@ -1352,18 +1352,23 @@ sub print_rates {
      # 2010 groups  assigned from GenIn.species
 	my $Ngroup = 0;
 	my $MaxNgroup = 0;
+	# Check first for empty, e.g. SS can be empty
         foreach my $g ( keys %grp ) {
            my $N = @{ $grp{$g} }; 
-	   $Ngroup ++ ;
+	   print "DELETE KEY $g\n" if ( $N < 1 ) ; 
+	   delete ( $grp{$g} )     if ( $N < 1 ) ; 
+	}
+        foreach my $g ( keys %grp ) {
+           my $N = @{ $grp{$g} }; 
+  	   $Ngroup ++ ;
 	   $MaxNgroup = $N if $N > $MaxNgroup ;
 	   $outline = join(",", @{ $grp{$g} });
-	 print "  TESTSS $g  N$N group is: @{ $grp{$g} }\n";
-         print GROUPS "\n  integer, public, parameter ::  INDEX_${g}_GROUP = $Ngroup";
-         print GROUPS "\n  integer, public, target, save, dimension($N) :: &
-             ${g}_GROUP     = (/ $outline /)\n";
-	 $ngroups += 1;
-         $groupsub .= "\n p => ${g}_GROUP \n chemgroups($ngroups) = typ_sp(\"$g\", p )\n"; 
-             
+	   print "  TESTSS $g  N$N group is: @{ $grp{$g} }\n";
+           print GROUPS "\n  integer, public, parameter ::  INDEX_${g}_GROUP = $Ngroup";
+           print GROUPS "\n  integer, public, target, save, dimension($N) :: &
+                 ${g}_GROUP     = (/ $outline /)\n";
+	   $ngroups += 1;
+           $groupsub .= "\n p => ${g}_GROUP \n chemgroups($ngroups) = typ_sp(\"$g\", p )\n"; 
 	}
 	# Tmp for now  and horrible code -
 	# print out again but in group array
@@ -1383,10 +1388,10 @@ sub print_rates {
 	my @out = 0;
 	my $comma = "";
         foreach my $g ( keys %grp ) {
-           for my $col ( 0 .. $MaxNgroup-1 ) { $out[$col] = "0"; };
            my $N = @{ $grp{$g} }; 
-	   my $col = 0;
-	   for my $gg (  @{ $grp{$g} } )  {
+           for my $col ( 0 .. $MaxNgroup-1 ) { $out[$col] = "0"; };
+  	   my $col = 0;
+  	   for my $gg (  @{ $grp{$g} } )  {
 		$out[$col] = $gg;
 		$col ++;
 	   }
@@ -1435,10 +1440,12 @@ sub print_rates {
                WDEP_SOXGROUP = (/ $outline /)\n";
 
 	 $N = @wdep_seagroup;
-	 $MaxN = $N if $N > $MaxN ;
-	 $outline = join(",",@wdep_seagroup);
-         print GROUPS "  integer, public, parameter, dimension($N) :: &
+	 if ( $N > 0 ) {
+	   $MaxN = $N if $N > $MaxN ;
+	   $outline = join(",",@wdep_seagroup);
+           print GROUPS "  integer, public, parameter, dimension($N) :: &
                WDEP_SSALTGROUP = (/ $outline /)\n";
+         }
 
 	 $N = @wdep_rdngroup;
 	 $MaxN = $N if $N > $MaxN ;
