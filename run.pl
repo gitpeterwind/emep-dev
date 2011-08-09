@@ -246,22 +246,22 @@ my $CityZen = 0 ;
 my $VBS   = 0;
 my $Chem     = "EmChem09";
 
-#---- emislist --------------------------------------------------------
-open(EMIS,"<CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
-  my @emislist = split(/,/,<EMIS>);
-  print "EMISLIST ", join(" ", @emislist ), "\n"; 
-close(EMIS);
-#----  chem packages  (e.g. EmChembase PMmass ) -----------------------
-open(CHEM,"<CM_chempackages.txt") or die "Need CM_emislist.cvs file!\n";
-  my @packages = <CHEM> or die "Need CM_chempackage.txt!\n" ;
-  print "CHEM packages:\n @packages\n";
-close(CHEM);
-#----------------------------------------------------------------------
-
 my $testv = "rv3_8_7";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
+
+#---- emislist --------------------------------------------------------
+open(EMIS,"<$ProgDir/CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
+  my @emislist = split(/,/,<EMIS>);
+  print "EMISLIST ", join(" ", @emislist ), "\n"; 
+close(EMIS);
+#----  chem packages  (e.g. EmChembase PMmass ) -----------------------
+open(CHEM,"<$ProgDir/CM_chempackages.txt") or die "Need CM_emislist.cvs file!\n";
+  my @packages = <CHEM> or die "Need CM_chempackage.txt!\n" ;
+  print "CHEM packages:\n @packages\n";
+close(CHEM);
+#----------------------------------------------------------------------
 
 # Check that the code directory has the chem files we want:
 # Now use mk.GenChem, CM_ files erased from ZCM_ directories
