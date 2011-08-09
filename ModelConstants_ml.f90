@@ -45,7 +45,7 @@ logical, public, parameter :: USE_CONVECTION     = .false.  ! false works best f
                                                             ! essential for global
 logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for IFS!
 logical, public, parameter :: USE_FOREST_FIRES   = .false.  ! Needs global files, future
-logical, public, parameter :: USE_AIRCRAFT_EMIS  = .false.  ! Needs global file, see manual
+logical, public, parameter :: USE_AIRCRAFT_EMIS  = .true.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
 logical, public, parameter :: USE_SOIL_NOX       = .false.  ! Future use 
 logical, public, parameter :: USE_SEASALT        = .true.   ! ok
@@ -75,8 +75,8 @@ logical, public, parameter :: SEAFIX_GEA_NEEDED = .false. ! only if problems
 !+ 1) Define first dimensions that might change quite often -  for different
 !     run domains
 character(len=*), parameter, public :: &
-! DomainName = "EMEP-50kmEurope"
- DomainName = "EMEP-50kmEECCA"
+ DomainName = "EMEP-50kmEurope"
+! DomainName = "EMEP-50kmEECCA"
 ! DomainName = "EMEPCWF-0.25degEurope"
 ! DomainName = "EMEPCWF-0.20degEurope"
 ! DomainName = "HIRHAM"
@@ -85,8 +85,8 @@ logical, parameter, public :: IS_GLOBAL = .false.
 
 integer, public, parameter ::  &
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
-! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
- IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+ IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
+! IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
 ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
 ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
 ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
@@ -94,12 +94,12 @@ integer, public, parameter ::  &
 
 ! The difference between EMEP and EECCA is confusing...
 integer, public, parameter :: &
-! OFFSET_i=  0, OFFSET_j=  0    ! EMEP
- OFFSET_i=-35, OFFSET_j=-11    ! EECCA
+ OFFSET_i=  0, OFFSET_j=  0    ! EMEP
+! OFFSET_i=-35, OFFSET_j=-11    ! EECCA
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
- RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
+! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/  1, 50,  1, 50 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
@@ -113,7 +113,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
 ! RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
 ! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
-! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
+ RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
@@ -121,8 +121,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 80+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 
 integer, public, parameter ::  &
-  NPROCX      =   8        & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   4        & ! Actual number of processors in longitude
+, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================

@@ -163,6 +163,8 @@ FILE CHANGES!!!
 FILES REMOVED:
      My_Emis_ml   - not needed now. GenChem figures it out.
      GenIn.species, GenIn.reactions 
+     ZCM_vbs_tests/GenIn.reactions, GenIn.species  CM_BoundaryConditions.inc
+      (the latter should be identical to the EmChem09.)
 
 FILES ADDED:
 

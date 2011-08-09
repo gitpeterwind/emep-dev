@@ -1,0 +1,6 @@
+*
+* <----------- Biogenic/natural emissions ----------------------------->
+*
+rcss(QSSFI,k)                           = SeaSalt_f ;
+rcss(QSSCO,k)                           = SeaSalt_c ;
+rcss(QSSGI,k)                           = SeaSalt_g ;

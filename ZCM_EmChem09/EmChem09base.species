@@ -100,20 +100,3 @@ NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PMFINE;SIA;AOD,,"! in equilib modu
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!
 *
-*
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-*
-SeaSalt_f,1,xx,58,PMfS,SSf,3.0,0,0,xx,PMFINE;PM10;SS;AOD,,!
-SeaSalt_c,1,xx,58,PMc,SSc,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
-SeaSalt_g,1,xx,58,PMg,SSg,0.4,0,0,xx,PMCO;PM10;SS;AOD,,!
-*
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-*
-Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PMFINE;PM10;DUST;AOD,,!
-Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;AOD,,!
-*
-*"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
-*
-PPM25,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PMFINE;,,"!Primary; fine <2.5um"
-PPM25_FIRE,1,xx,12,PMfS,PMf,0,0,0,xx,PM10;PMFINE,,!fires...
-PPM_c,1,xx,12,PMc,PMc,0,0,0,xx,PM10;PMCO,,"!Primary; 2.5--10u"

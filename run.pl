@@ -8,9 +8,10 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=64:ib
+#PBS -lnodes=8
+# 64:ib
 # wall time limit of run
-#PBS -lwalltime=05:50:00
+#PBS -lwalltime=00:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -190,7 +191,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EMEP"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -240,16 +241,24 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
 
-my (@emislist, $Chem );
-
 my $CityZen = 0 ;
   #$Chem     = "Eucaari_Trends";      # Label for chemical scheme used
-$Chem     = "vbs_tests";
-$Chem     = "EmChem09";            # Label for chemical scheme used
-#@emislist = qw ( sox nox nh3 co voc ecfi ocfi) ;
-@emislist = qw ( sox nox nh3 co voc pm25 pmco ); 
+my $VBS   = 0;
+my $Chem     = "EmChem09";
 
-my $testv = "rv3_8_6";
+#---- emislist --------------------------------------------------------
+open(EMIS,"<CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
+  my @emislist = split(/,/,<EMIS>);
+  print "EMISLIST ", join(" ", @emislist ), "\n"; 
+close(EMIS);
+#----  chem packages  (e.g. EmChembase PMmass ) -----------------------
+open(CHEM,"<CM_chempackages.txt") or die "Need CM_emislist.cvs file!\n";
+  my @packages = <CHEM> or die "Need CM_chempackage.txt!\n" ;
+  print "CHEM packages:\n @packages\n";
+close(CHEM);
+#----------------------------------------------------------------------
+
+my $testv = "rv3_8_7";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -333,9 +342,7 @@ $emisdir = "$EMIS_INP/emissions/${emisscen}/${emisyear}" if $GRID eq "HIRHAM";
 
 $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
-
-# Emissions for global Radiative Forcing runs
-#$emisdir = "/global/work/nyiri/Emission_globalRF" if $RF;
+$pm_emisdir = "/home/mifarb/Unify/MyData/D_EGU/${GRID}_GRID" if $VBS; 
 
 #EMISSIONS: FORECAST settings
 if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
@@ -426,10 +433,10 @@ $month_days[2] += leap_year($year);
 #Only 360 days in HIRHAM metdata. We ignore leaps
 @month_days   = (0,31,28,31,30,31,30,31,31,30,31,30,24) if $GRID eq "HIRHAM";
 
-my $mm1   =  "01";       # first month, use 2-digits!
-my $mm2   =  "12";       # last month, use 2-digits!
+my $mm1   =  "07";       # first month, use 2-digits!
+my $mm2   =  "07";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $dd2   =  31;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2   =  2;       # End day (can be too large; will be limited to max number of days in the month)
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm1   =  "01";
@@ -679,24 +686,37 @@ foreach my $scenflag ( @runs ) {
 
   my %ifile   = ();   # List of input data-files
 
-# First, emission files are labelled e.g. gridSOx, whiuch we assign to
+# First, emission files are labelled e.g. gridSOx, which we assign to
 # emislist.sox to ensure compatability with the names (sox,...) used
 # in the model. It doesn't matter if we have extra mapping here,it
 # is  GenIn.reactions and the associated emislist that decides what gets used.
-# eg if having pm25:rcemis(PM25) = OC we would get PM25
-# but if having ocfi:rcemis(POCfi) = POCfi we would get POCfi
-# (Hence ok for HIRHAM, RF etc.)
+# e.g. lines such as:
+#  emisfiles:sox,nox,co,voc,nh3
+#  emisfiles:pm25
+# etc.
 
   my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC",
                   "sox" => "SOx", "nox" => "NOx" ,
                   "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
+ # VBS specials
+                  "pocfwd" => "POCfWD", 
+                  "pocffl" => "POCfFL", "poccfl"   => "POCcFL",
+                  "ecfwd" => "ECfWD", "eccwd" => "ECcWD", 
+                  "ecffl" => "ECfFL", "eccfl" => "ECcFL", 
+                  "forfbc"   => "FORFBC", "forfoc"   => "FORFOC",
+ #  Sometimes used also:
                   "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine" ) ;
                   # sometimes was "ocfi" => "POCfine"   ) ;
-
 
   foreach my $poll  ( @emislist  ) {
     my $dir = $emisdir;
     $dir = $pm_emisdir if $poll =~ /pm/;   # FIX needed prior to 2000
+ # VBS specials #rb Wood burning, Fossil fuel and Forest fire PM from TNO files
+    $dir = $pm_emisdir if $poll =~ /wd/;   #
+    $dir = $pm_emisdir if $poll =~ /fl/;   #
+    $dir = $pm_emisdir if $poll =~ /forf/;   #
+print "TESTING PM $poll $dir\n";
+
 # hb NH3emis, new emis files
     if(($NH3EMIS_VAR)&&($poll eq "nh3")){
       $dir = "/home/nyiri/emis_NMR";
@@ -713,6 +733,8 @@ foreach my $scenflag ( @runs ) {
       # $RCA/CityZen change to avoid having 20 different PM25 time-series
 
       if ( -f "$timeseries/MonthlyFac.$poll" ) {
+         print "FINDS??? Daily Fac pm25 fill in for $poll\n";
+         system("wc $timeseries/MonthlyFac.$poll");
          $ifile{"$timeseries/MonthlyFac.$poll"} = "MonthlyFac.$poll";
          $ifile{"$timeseries/DailyFac.$poll"} = "DailyFac.$poll";
       } else { # Assume same as PM25, works e.g for ocffl, etc.
@@ -758,7 +780,8 @@ foreach my $scenflag ( @runs ) {
     $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
     $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
   } else {
-    $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+    #DS $ifile{"$DataDir/femis.dat"} =  "femis.dat";
+    $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
   }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
@@ -905,9 +928,11 @@ foreach my $scenflag ( @runs ) {
 Emission units: Gg/year
 ------------------------------
 Emissions: $emisdir
+Emislist: @emislist
 Meteo: $MetDir
 Version: $testv
 Chemical scheme: $Chem
+@packages
 Processors $NDX $NDY
 SR?  $SR
 CWF? $CWF

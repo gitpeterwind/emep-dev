@@ -47,8 +47,7 @@
 !_____________________________________________________________________________
   use CheckStop_ml, only : CheckStop
   use Country_ml,   only : NLAND
-  use My_Emis_ml,   only : NEMIS_FILES, EMIS_NAME
-  use EmisDef_ml,   only : NSECTORS
+  use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE
   use TimeDate_ml,  only:            &  ! subroutine, sets:
                      date,           &  ! date-type definition
                      nmdays, nydays, &  ! days per month (12), days per year
@@ -69,13 +68,13 @@
   !-- time factor stuff: 
 
   real, public, save, &
-     dimension(NLAND,NSECTORS,NEMIS_FILES) :: timefac ! overall emission 
+     dimension(NLAND,NSECTORS,NEMIS_FILE) :: timefac ! overall emission 
                                                       ! timefactor 
                                                       ! calculated daily
   real, public, save,  &
-     dimension(NLAND,12,NSECTORS,NEMIS_FILES) :: fac_emm  ! Monthly factors
+     dimension(NLAND,12,NSECTORS,NEMIS_FILE) :: fac_emm  ! Monthly factors
   real, public, save,  &
-     dimension(NLAND, 7,NSECTORS,NEMIS_FILES) :: fac_edd  ! Daily factors
+     dimension(NLAND, 7,NSECTORS,NEMIS_FILE) :: fac_edd  ! Daily factors
 
   real, public, save, dimension(NSECTORS,0:1):: day_factor  ! Day/night factor 
 
@@ -147,9 +146,9 @@ contains
 
    fac_emm(:,:,:,:) = 1.0
 
-   do iemis = 1, NEMIS_FILES
+   do iemis = 1, NEMIS_FILE
 
-       fname2 = "MonthlyFac." // trim ( EMIS_NAME(iemis) )
+       fname2 = "MonthlyFac." // trim ( EMIS_FILE(iemis) )
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
        call CheckStop( ios, &
@@ -177,9 +176,9 @@ contains
 
   fac_edd(:,:,:,:) = 1.0
 
-  do iemis = 1, NEMIS_FILES
+  do iemis = 1, NEMIS_FILE
 
-       fname2 = "DailyFac." // trim ( EMIS_NAME(iemis) )
+       fname2 = "DailyFac." // trim ( EMIS_FILE(iemis) )
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
 
        call CheckStop( ios, &
@@ -206,7 +205,7 @@ contains
        close(IO_TIMEFACS)
        if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
 
-  enddo  ! NEMIS_FILES
+  enddo  ! NEMIS_FILE
 
 ! #######################################################################
 ! 3) Normalise the monthly-daily factors. This is needed in order to
@@ -218,7 +217,7 @@ contains
 
   write(unit=6,fmt="(a,I6,a,I5)")" Time factors normalisation: ",nydays,' days in ',year 
 
-  do iemis = 1, NEMIS_FILES
+  do iemis = 1, NEMIS_FILE
        n = 0
        do isec = 1, NSECTORS
            do ic = 1, NLAND
@@ -343,7 +342,7 @@ contains
 
 !   Calculate monthly and daily factors for emissions 
 
-    do iemis = 1, NEMIS_FILES
+    do iemis = 1, NEMIS_FILE
       do isec = 1, NSECTORS 
          do iland = 1, NLAND
 

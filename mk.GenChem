@@ -11,14 +11,48 @@ run=EmChem03c   # CRI_v2_R5
 run=OSRM    # CRI_v2_R5
 run=Eucaari_Trends 
 run=CRI_v2_R5
-run=vbs_tests   # VBS based Organic Aerosol Model
-run=EmChem09    # CRI_v2_R5
-# ==========================================
+run=vbs_tests   # VBS based Organic Aerosol Model, upd, new system
+run=EmChem09
+#
 cdir=$PWD            #  Current when starting. Assumed now as a Unimod
 wdir=$PWD/ZCM_$run   # work-directory, with input files
 odir=$PWD/ZCM_$run   # We keep output in work-directory 
 echo $odir
 #mkdir $odir
+# ==========================================
+cd ZCM_$run
+# Construct GenIn.species and GenIn.reactions from wanted sub-sets:
+#EmChem09 
+spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
+rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
+
+#VBS upd?
+#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_PMupd VBS_upd )  #  VBS NPNA
+#rcns=( EmChem09base SeaSalt VBS_Lane VBS_ageing VBS_OPOAemis  )
+
+mv GenIn.species GenIn.species.bk # Safety
+echo "Species Files:" > CM_chempackages.txt
+for spec in ${spcs[@]}   # Wow, bash is cryptic!
+do
+  echo "+ SPECIES  FILE" $spec
+  echo -n " $spec" >> CM_chempackages.txt
+  cat $spec.species >>  GenIn.species
+done
+echo " " >> CM_chempackages.txt
+
+# Reactions
+mv GenIn.reactions GenIn.reactions.bk
+echo "Reaction Files:" >> CM_chempackages.txt
+
+for reac in ${rcns[@]}   # Wow, bash is cryptic!
+do
+  echo "+ REACTION FILE" $reac
+  echo -n " $reac" >> CM_chempackages.txt
+  cat $reac.reactions >>  GenIn.reactions
+done
+echo " " >> CM_chempackages.txt
+cd  $cdir
+# ==========================================
 
 #GenSort.pl $run   # Creates GenIn.species, so be careful !#
 
@@ -46,6 +80,7 @@ mv GenOut_Reactions1.inc  $odir/CM_Reactions1.inc
 mv GenOut_Reactions2.inc  $odir/CM_Reactions2.inc
 mv GenOut_DryDep.inc      $odir/CM_DryDep.inc
 mv GenOut_EmisSpecs.inc   $odir/CM_EmisSpecs.inc
+mv GenOut_EmisFile.inc    $odir/CM_EmisFiles.inc
 mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
 
 #rm GenOut_*                # Clean up current directory

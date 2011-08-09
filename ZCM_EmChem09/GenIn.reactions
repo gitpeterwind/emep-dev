@@ -8,6 +8,7 @@
 *   lines beginning with "DRY" are dry deposition terms  
 *   lines beginning with "WET" are dry deposition terms  
 *   lines beginning with "rcemis" are emission terms  
+*   lines beginning with "emisfiles" give name of  emission files, e.g. nox
 *   ;
 *   Some coefficients are defined in GenIn.shorthand, e.g. KHO2RO2 
 *   Anything else is simply used as the rate coefficient.  
@@ -71,8 +72,8 @@ FH2O*1.9e-33*EXP(980.0*TINV)*M    HO2 + HO2 = H2O2          ; IUPAC 2001
 * ;
 1.85e-20*EXP(2.82*LOG(TEMP))*EXP(-987.0*TINV)  OH + CH4 = CH3O2  ; acp2006, V6, p3625-4055, Atkinson et al.
 1.44e-13+M*3.43e-33                 OH     + CO    = HO2               ; IUPAC 2005
-* 1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
-* 1.44e-13+M*3.43e-33                 [OH]   + CO_BIC     =             ;  tracer
+*1.44e-13+M*3.43e-33                 [OH]   + CO_FIRE    =             ;  tracer
+*1.44e-13+M*3.43e-33                 [OH]   + CO_BIC     =             ;  tracer
 2.3e-12*EXP(360.0*TINV)             CH3O2  + NO    = HCHO + HO2 + NO2  ; acp2006
 7.4e-13*EXP(-520.0*TINV)            CH3O2  + CH3O2 = 2. HCHO + 2. HO2  ; acp2006
 1.03e-13*EXP(365.0*TINV)-7.4e-13*EXP(-520.0*TINV)  CH3O2 + CH3O2 = CH3OH + HCHO  ; acp2006
@@ -188,8 +189,6 @@ KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MAC
 _func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
 _func_kaero()              HNO3 = NO3_c        ;
-*TEST _func_kaero2()              HNO3 = NO3_c        ;
-*TEST _func_kaero2()             HNO3 = NO3_c        ;  Only applies over sea areas
 TROE_NO_OP                 OP + NO  + {M}   = NO2     ; A97,J, jofmiss
 TROE_NO2_NO3               NO2 + NO3  = N2O5          ; A97,J
 TROE_N2O5                  N2O5       = NO2 + NO3     ; A97,J
@@ -279,12 +278,14 @@ DJ(IDNO2,k)*0.222   HONO           = OH + NO ;
 * placed at the beginning.(as (k) is tagged onto the end of the
 * of the rate term. See beta*rcemis_SO2
 *
-rcemis:NO                          = NO    ;
+emisfiles:sox,nox,co,voc,nh3
+*
+rcemis:NO                           = NO    ;
 rcemis:NO2                          = NO2    ;
 rcemis:SO2                          = SO2    ;
 rcemis:SO4                          = SO4    ;
-rcemis:NH3                            = NH3 ;
 rcemis:CO                           = CO    ;
+rcemis:NH3                          = NH3 ;
 rcemis:C2H6                         = C2H6    ;
 rcemis:NC4H10                       = NC4H10    ;
 rcemis:C2H4                         = C2H4    ;
@@ -299,21 +300,24 @@ rcemis:GLYOX                       = GLYOX    ;
 rcemis:MGLYOX                      = MGLYOX    ;
 rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 *
-rcemis:PPM25                     = PPM25 ;
-rcemis:PPM_c                     = PPM_c ;
-*
-*rcemis:EC_c_new                = EC_c_new ;
-*rcemis:EC_c_age                = EC_c_age ;
 * <----------- Biogenic/natural emissions ----------------------------->
-rcbio(BIO_ISOP,k)                        = C5H8    ;
-rcbio(BIO_TERP,k)                    = APINENE ;
-rc_Rn222(k)                             = Rn222    ;
-rcss(QSSFI,k)                           = SeaSalt_f ;
-rcss(QSSCO,k)                           = SeaSalt_c ;
-rcss(QSSGI,k)                           = SeaSalt_g ;
-rcemis:PPM25_FIRE                  = PPM25_FIRE ;
-* rcemis:CO_FIRE                     = CO_FIRE    ;
+*
+rcbio(BIO_ISOP,k)                       = C5H8    ;
+rcbio(BIO_TERP,k)                       = APINENE ;
+rc_Rn222(k)                                = Rn222    ;
 *
 * Add ammonia
 * FUTURE rcnh3(k)                          = NH3 ;  # hbNH3
 *
+*
+* <----------- Biogenic/natural emissions ----------------------------->
+*
+rcss(QSSFI,k)                           = SeaSalt_f ;
+rcss(QSSCO,k)                           = SeaSalt_c ;
+rcss(QSSGI,k)                           = SeaSalt_g ;
+*
+emisfiles:pm25,pmco
+*
+rcemis:PPM25                     = PPM25 ;
+rcemis:PPM_c                     = PPM_c ;
+rcemis:PPM25_FIRE                = PPM25_FIRE ;

@@ -52,6 +52,7 @@ module OrganicAerosol_ml
 !dsrb added:
    use ChemGroups_ml, only :    &
       NONVOLPCM_GROUP &
+      NVABSOM_GROUP &
       ,ASOA => ASOA_GROUP &
       ,BSOA => BSOA_GROUP &
       ,ECFINE => ECFINE_GROUP &                    &
@@ -120,10 +121,11 @@ module OrganicAerosol_ml
     real, private, dimension(S1:S2,K1:K2), save :: ug_semivol 
 !dsrb - use new NONVOLOC grpup to define:
     integer, private, parameter :: NUM_NONVOLPCM = size(NONVOLPCM_GROUP)
+    integer, private, parameter :: NUM_NVABSOM = size(NVABSOM_GROUP)
 !    integer, private, parameter, dimension(NUM_NONVOL) ::  &
 !      NONVOL = (/ NONVOLOC_GROUP, NONVOLEC_GROUP /) ! OC+EC in partitioning OM
-    real, private, dimension(NUM_NONVOLPCM,K1:K2), save :: ug_nonvol 
-    real, private, dimension(K1:K2), save :: ug_ec ! CityZen added 
+    real, private, dimension(NUM_NVABSOM,K1:K2), save :: ug_nonvol 
+    !real, private, dimension(K1:K2), save :: ug_ecf ! CityZen added 
 
     real,  private, dimension(S1:S2,CHEMTMIN:CHEMTMAX) :: tabCiStar
 
@@ -273,10 +275,11 @@ module OrganicAerosol_ml
 
 
  ! ============ Non-volatile species first ============================
+ ! NVABSOM - Only include fine OM! That is no EC and no coarse OM!
 
-  do i = 1, NUM_NONVOLPCM  ! OA/OC for POC about 1.333
+  do i = 1, NUM_NVABSOM  ! OA/OC for POC about 1.333
     !dsrb ispec = NONVOLOC(i)
-    ispec = NONVOLPCM_GROUP(i)
+    ispec = NVABSOM_GROUP(i)
 
     ug_nonvol(i,:) = molcc2ugm3 * xn(ispec,:)*species(ispec)%molwt
 
@@ -285,9 +288,9 @@ module OrganicAerosol_ml
     Fgas(i,:)=0.0
 
   end do
-  do k = K1, K2 
-    ug_ec(k) = molcc2ugm3 * sum( xn(ECFINE,k) ) * 12.0 !! *species(ispec)%molwt
-  end do
+  !do k = K1, K2 
+  !  ug_ecf(k) = molcc2ugm3 * sum( xn(ECFINE,k) ) * 12.0 !! *species(ispec)%molwt
+  !end do
 
   ! ============ SOA species now, iteratrion needed ===================
 
@@ -380,8 +383,8 @@ module OrganicAerosol_ml
 
 !CITYZEN. PCM_F is for output only. Has MW 1 to avoid confusion with OC 
 !do not use ugC outputs, just ug
-!   xn(PCM_F,:)  = COA(:)                  * ugC2xn * 12.0
-   xn(AER_OM_F,:)  = ( COA(:) - ug_ec(:) )   * ugC2xn * 12.0
+
+   xn(AER_OM_F,:)  =  COA(:) * ugC2xn * 12.0
 
     !Grid_SOA_Fgas(S1:S2, i_pos,j_pos,:)  = Fgas(S1:S2,:)
     !VBS Grid_avg_mw(i_pos,j_pos,:)       = avg_mw(:)

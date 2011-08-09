@@ -52,7 +52,6 @@ module My_Derived_ml
   !   of the bigger d_2d arrays
   !---------------------------------------------------------------------------
 
-use My_Emis_ml,     only :  EMIS_NAME
 use AOTx_ml, only : O3cl, VEGO3_OUTPUTS, VEGO3_DEFS
 use CheckStop_ml,  only: CheckStop, StopAll
 use Chemfields_ml, only : xn_adv, xn_shl, cfac
@@ -63,6 +62,7 @@ use ChemGroups_ml  ! Allow all groups to ease compilation
                    !,  eg. OXN_GROUP, DDEP_OXNGROUP, BVOC_GROUP
 use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV, IXADV_ indices
+use EmisDef_ml,     only :  EMIS_FILE
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa
@@ -394,8 +394,8 @@ private
      call CheckStop( errmsg, errmsg // "COL_ADD too long" )
 
   ! Emission sums - we always add these (good policy!)
-   do  i = 1, size(EMIS_NAME)
-     tag_name(1) = "Emis_mgm2_" // trim(EMIS_NAME(i))
+   do  i = 1, size(EMIS_FILE)
+     tag_name(1) = "Emis_mgm2_" // trim(EMIS_FILE(i))
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
    do  i = 1, size(BVOC_GROUP)
