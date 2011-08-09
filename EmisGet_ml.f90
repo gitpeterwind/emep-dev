@@ -311,7 +311,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              ! Sum over all sectors, store as Ktonne:
 
               sumemis(ic,iemis) = sumemis(ic,iemis)   &
-                                  + 0.001 * sum (globemis (:,i,j,iland))
+                                  + 0.001 * sum (e_fact(:,ic,iemis)*tmpsec(:))
+
+!rb: Old version (below) does not work if same grid point occurs several times in emis-file
+!    Probably the same problem for ship emissions etc. Not changed now!
+!     + 0.001 * sum (globemis (:,i,j,iland))
               
         end do READEMIS 
         

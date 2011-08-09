@@ -147,6 +147,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3_8_7b  Robert, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Minor bug fix (should only influence the Log-files)
+
+EmisGet_ml: Earlier version gave erroneous (too large) national total emissions in the log files if the same grid point occurs more than once in a given emission file.
+
  
 xxxxxxxx rv3_8_7   Dave, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
