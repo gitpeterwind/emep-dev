@@ -318,67 +318,68 @@ subroutine readxn(indate)
   enddo
 
 if(RCA)then
+    call CheckStop("WORK NEEDED: RCA BICs commented out in Nest_ml - not consistent with all chem schemes")
 !some components put to a fixed value
-    if(kt==1)then
-       !top
-       xn_adv(IXADV_H2,:,:,kt)=       5e-7   
-       xn_adv(IXADV_C2H4,:,:,kt)=     2e-10  
-       xn_adv(IXADV_C3H6,:,:,kt)=     5e-11  
-       xn_adv(IXADV_C2H5OH,:,:,kt)=   4e-10  
-       xn_adv(IXADV_MEK,:,:,kt)=      2.5e-11
-       xn_adv(IXADV_CH3O2H,:,:,kt)=   7.5e-11
-       xn_adv(IXADV_MGLYOX,:,:,kt)=   0      
-       xn_adv(IXADV_GLYOX,:,:,kt)=    0      
-       xn_adv(IXADV_C2H5OOH,:,:,kt)=  1e-12  
-   endif
-    if(iw>=1)then
-!west
-       xn_adv(IXADV_H2,iw,:,:)=       5e-7   
-       xn_adv(IXADV_C2H4,iw,:,:)=     2e-10  
-       xn_adv(IXADV_C3H6,iw,:,:)=     5e-11  
-       xn_adv(IXADV_C2H5OH,iw,:,:)=   4e-10  
-       xn_adv(IXADV_MEK,iw,:,:)=      2.5e-11
-       xn_adv(IXADV_CH3O2H,iw,:,:)=   1e-10  
-       xn_adv(IXADV_MGLYOX,iw,:,:)=   2e-12  
-       xn_adv(IXADV_GLYOX,iw,:,:)=    6e-12  
-       xn_adv(IXADV_C2H5OOH,iw,:,:)=  1e-12  
-    endif
-    if(ie<=limax)then
-!east
-       xn_adv(IXADV_H2,ie,:,:)=        5e-7   
-       xn_adv(IXADV_C2H4,ie,:,:)=      2e-10  
-       xn_adv(IXADV_C3H6,ie,:,:)=      2e-10  
-       xn_adv(IXADV_C2H5OH,ie,:,:)=    6e-10  
-       xn_adv(IXADV_MEK,ie,:,:)=       5e-11  
-       xn_adv(IXADV_CH3O2H,ie,:,:)=    1e-10  
-       xn_adv(IXADV_MGLYOX,ie,:,:)=    1.5e-12
-       xn_adv(IXADV_GLYOX,ie,:,:)=     1.3e-11
-       xn_adv(IXADV_C2H5OOH,ie,:,:)=   1e-12  
-    endif
-    if(js>=1)then
-!south
-       xn_adv(IXADV_H2,:,js,:)=        5e-7
-       xn_adv(IXADV_C2H4,:,js,:)=      5e-11
-       xn_adv(IXADV_C3H6,:,js,:)=      1.6e-11
-       xn_adv(IXADV_C2H5OH,:,js,:)=    7e-11
-       xn_adv(IXADV_MEK,:,js,:)=       2.5e-11
-       xn_adv(IXADV_CH3O2H,:,js,:)=    1e-10
-       xn_adv(IXADV_MGLYOX,:,js,:)=    2e-12
-       xn_adv(IXADV_GLYOX,:,js,:)=     4e-12
-       xn_adv(IXADV_C2H5OOH,:,js,:)=   1e-12
-    endif
-    if(jn<=ljmax)then
-!north
-       xn_adv(IXADV_H2,:,jn,:)=        5e-7
-       xn_adv(IXADV_C2H4,:,jn,:)=      2e-10
-       xn_adv(IXADV_C3H6,:,jn,:)=      2e-10
-       xn_adv(IXADV_C2H5OH,:,jn,:)=    4e-10
-       xn_adv(IXADV_MEK,:,jn,:)=       2.5e-11
-       xn_adv(IXADV_CH3O2H,:,jn,:)=    1e-12
-       xn_adv(IXADV_MGLYOX,:,jn,:)=    2e-12
-       xn_adv(IXADV_GLYOX,:,jn,:)=     4e-12
-       xn_adv(IXADV_C2H5OOH,:,jn,:)=   1e-12
-    endif
+!RCA    if(kt==1)then
+!RCA       !top
+!RCA       xn_adv(IXADV_H2,:,:,kt)=       5e-7   
+!RCA       xn_adv(IXADV_C2H4,:,:,kt)=     2e-10  
+!RCA       xn_adv(IXADV_C3H6,:,:,kt)=     5e-11  
+!RCA       xn_adv(IXADV_C2H5OH,:,:,kt)=   4e-10  
+!RCA       xn_adv(IXADV_MEK,:,:,kt)=      2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,:,:,kt)=   7.5e-11
+!RCA       xn_adv(IXADV_MGLYOX,:,:,kt)=   0      
+!RCA       xn_adv(IXADV_GLYOX,:,:,kt)=    0      
+!RCA       xn_adv(IXADV_C2H5OOH,:,:,kt)=  1e-12  
+!RCA   endif
+!RCA    if(iw>=1)then
+!RCA!west
+!RCA       xn_adv(IXADV_H2,iw,:,:)=       5e-7   
+!RCA       xn_adv(IXADV_C2H4,iw,:,:)=     2e-10  
+!RCA       xn_adv(IXADV_C3H6,iw,:,:)=     5e-11  
+!RCA       xn_adv(IXADV_C2H5OH,iw,:,:)=   4e-10  
+!RCA       xn_adv(IXADV_MEK,iw,:,:)=      2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,iw,:,:)=   1e-10  
+!RCA       xn_adv(IXADV_MGLYOX,iw,:,:)=   2e-12  
+!RCA       xn_adv(IXADV_GLYOX,iw,:,:)=    6e-12  
+!RCA       xn_adv(IXADV_C2H5OOH,iw,:,:)=  1e-12  
+!RCA    endif
+!RCA    if(ie<=limax)then
+!RCA!east
+!RCA       xn_adv(IXADV_H2,ie,:,:)=        5e-7   
+!RCA       xn_adv(IXADV_C2H4,ie,:,:)=      2e-10  
+!RCA       xn_adv(IXADV_C3H6,ie,:,:)=      2e-10  
+!RCA       xn_adv(IXADV_C2H5OH,ie,:,:)=    6e-10  
+!RCA       xn_adv(IXADV_MEK,ie,:,:)=       5e-11  
+!RCA       xn_adv(IXADV_CH3O2H,ie,:,:)=    1e-10  
+!RCA       xn_adv(IXADV_MGLYOX,ie,:,:)=    1.5e-12
+!RCA       xn_adv(IXADV_GLYOX,ie,:,:)=     1.3e-11
+!RCA       xn_adv(IXADV_C2H5OOH,ie,:,:)=   1e-12  
+!RCA    endif
+!RCA    if(js>=1)then
+!RCA!south
+!RCA       xn_adv(IXADV_H2,:,js,:)=        5e-7
+!RCA       xn_adv(IXADV_C2H4,:,js,:)=      5e-11
+!RCA       xn_adv(IXADV_C3H6,:,js,:)=      1.6e-11
+!RCA       xn_adv(IXADV_C2H5OH,:,js,:)=    7e-11
+!RCA       xn_adv(IXADV_MEK,:,js,:)=       2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,:,js,:)=    1e-10
+!RCA       xn_adv(IXADV_MGLYOX,:,js,:)=    2e-12
+!RCA       xn_adv(IXADV_GLYOX,:,js,:)=     4e-12
+!RCA       xn_adv(IXADV_C2H5OOH,:,js,:)=   1e-12
+!RCA    endif
+!RCA    if(jn<=ljmax)then
+!RCA!north
+!RCA       xn_adv(IXADV_H2,:,jn,:)=        5e-7
+!RCA       xn_adv(IXADV_C2H4,:,jn,:)=      2e-10
+!RCA       xn_adv(IXADV_C3H6,:,jn,:)=      2e-10
+!RCA       xn_adv(IXADV_C2H5OH,:,jn,:)=    4e-10
+!RCA       xn_adv(IXADV_MEK,:,jn,:)=       2.5e-11
+!RCA       xn_adv(IXADV_CH3O2H,:,jn,:)=    1e-12
+!RCA       xn_adv(IXADV_MGLYOX,:,jn,:)=    2e-12
+!RCA       xn_adv(IXADV_GLYOX,:,jn,:)=     4e-12
+!RCA       xn_adv(IXADV_C2H5OOH,:,jn,:)=   1e-12
+!RCA    endif
 endif
 
 
