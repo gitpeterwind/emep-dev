@@ -148,9 +148,35 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
  
-Small changes
-Io_Progs_ml  datewrite formated extended to es11.3. Former 10.3
-merged with negative numbers.
+xxxxxxxx rv3_8_7   Dave, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+FILE CHANGES!!!
+
+   - mk.GenChem and GenChem  do more work :-)
+   - No GenIn.reactions or GenIn.species
+   - Instead, have sub-sets of these, e.g. EmChem09base, PMmass, ...
+   - creates CM_emislist.csv and CM_chempackages.txt to be used
+     in run.pl
+   - Now, use mk.GenChem to select sub-sets of chemical schemes.
+   - run.pl simpler for user because of these changes (no need to set emislist).
+
+FILES REMOVED:
+     My_Emis_ml   - not needed now. GenChem figures it out.
+     GenIn.species, GenIn.reactions 
+
+FILES ADDED:
+
+Other small changes:
+
+ EMIS_NAME becomes EMIS_FILE throughout code. (Easier for GenChem)
+
+ Io_Progs_ml  datewrite formated extended to es11.3. Former 10.3
+ merged with negative numbers.
+
+ ZD_OZONE/My_Derived_ml - some CityZen outputs commented out.
+
+ ZD_VBS/My_SOA_ml -  use of NVABSOM. In progress
+
 
 xxxxxxxx rv3_8_6   Dave, Agnes,Mike  14th-15th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 

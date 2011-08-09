@@ -36,10 +36,8 @@ module ForestFire_ml
   use ChemChemicals_ml,  only : species
   use ChemSpecs_tot_ml,  only : NO, CO
   use Country_ml,        only : IC_BB   ! FFIRE
-  use EmisDef_ml,        only : ISNAP_NAT ! Fires are assigned to SNAP-11 usually
-  use My_Emis_ml,        only :  &
-     NEMIS_FILES &
-    ,EMIS_NAME  ! lets us know which pollutants are wanted, e.g. sox, pm25
+  use EmisDef_ml,        only : ISNAP_NAT &! Fires are assigned to SNAP-11 usually
+   ,NEMIS_FILE, EMIS_FILE  ! which pollutants are wanted, e.g. sox, pm25
 
   use EmisGet_ml,        only : &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
@@ -76,7 +74,7 @@ implicit none
 
   integer, private, save ::  ieCO  ! index for CO
 
-  logical, private, save, dimension(NEMIS_FILES) ::  fires_found 
+  logical, private, save, dimension(NEMIS_FILE) ::  fires_found 
 
   real, private, allocatable, dimension(:), save ::   unitsfac
 
@@ -194,9 +192,9 @@ contains
     ieCO = -999
     fires_found(:) = .false.
 
-    do iem = 1, NEMIS_FILES
+    do iem = 1, NEMIS_FILE
 
-       emep_poll = EMIS_NAME(iem)
+       emep_poll = EMIS_FILE(iem)
        n = find_index(emep_poll, gfed_defs(:)%emep )
        gfed_poll = gfed_defs(n)%gfed
 
@@ -213,8 +211,8 @@ contains
          call ReadField_CDF('GLOBAL_ForestFireEmis.nc',gfed_poll,&
               rdemis,nstart,interpol='zero_order',needed=.true.)
 
-         if ( my_first_call ) then ! Assume NEMIS_FILES for now
-             allocate(BiomassBurningEmis(NEMIS_FILES,MAXLIMAX,MAXLJMAX),&
+         if ( my_first_call ) then ! Assume NEMIS_FILE for now
+             allocate(BiomassBurningEmis(NEMIS_FILE,MAXLIMAX,MAXLJMAX),&
                           stat=alloc_err)
              call CheckStop( alloc_err, "BB alloc problem")
   
@@ -242,8 +240,8 @@ contains
 
    !/ If GFED doesn't have emissions, we create them from CO
 
-    do iem = 1, NEMIS_FILES
-       emep_poll = EMIS_NAME(iem)
+    do iem = 1, NEMIS_FILE
+       emep_poll = EMIS_FILE(iem)
        n = find_index(emep_poll, gfed_defs(:)%emep )
        gfed_poll = gfed_defs(n)%gfed
 
@@ -288,9 +286,9 @@ contains
 
      iqrc = 0   ! index over emisfrac
 
-     do ie = 1, NEMIS_FILES
+     do ie = 1, NEMIS_FILE
 
-       emep_poll = EMIS_NAME(ie)
+       emep_poll = EMIS_FILE(ie)
        n = find_index(emep_poll, gfed_defs(:)%emep ) ! row in gfed table
        gfed_poll = gfed_defs(n)%gfed
 
@@ -388,7 +386,7 @@ contains
      end do
 
      iqrc = 0   ! index over emisfrac
-     EMLOOP : do iem = 1, NEMIS_FILES
+     EMLOOP : do iem = 1, NEMIS_FILE
 
         do f = 1, emis_nsplit( iem )
 

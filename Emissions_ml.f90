@@ -43,9 +43,9 @@
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
   use ChemChemicals_ml, only: species
   use Country_ml,    only : NLAND,Country_Init,Country, IC_NAT
-  use My_Emis_ml, only : NEMIS_FILES & ! No. emission files
-                        ,EMIS_NAME    ! Names of species ("sox  ",...)
   use EmisDef_ml, only : NSECTORS & ! No. sectors
+                     ,NEMIS_FILE & ! No. emission files
+                     ,EMIS_FILE   & ! Names of species ("sox  ",...)
                      ,NEMISLAYERS & ! No. vertical layers for emission
                      ,NCMAX       & ! Max. No. countries per grid
                      ,FNCMAX      & ! Max. No. countries (with flat emissions)
@@ -121,15 +121,15 @@
  ! The output emission matrix for the 11-SNAP data is snapemis:
  !
 
-  real, private, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES) &
+  real, private, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE) &
             , save ::  snapemis      ! main emission arrays, in kg/m2/s
 
-  real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILES) &
+  real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE) &
             , save ::  snapemis_flat ! main emission arrays, in kg/m2/s  
 
  ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
 
-  real, public, dimension(MAXLIMAX,MAXLJMAX,NEMIS_FILES), save :: SumSnapEmis
+  real, public, dimension(MAXLIMAX,MAXLJMAX,NEMIS_FILE), save :: SumSnapEmis
 
   logical, save, private  :: first_dms_read
 
@@ -198,12 +198,12 @@ contains
   integer :: fic 
   integer :: ic               ! country codes 
   integer :: isec             ! loop variables: emission sectors
-  integer :: iem              ! loop variable over pollutants (1..NEMIS_FILES)
+  integer :: iem              ! loop variable over pollutants (1..NEMIS_FILE)
 
 
   ! Emission sums (after e_fact adjustments):
-  real, dimension(NEMIS_FILES)       :: emsum    ! Sum emis over all countries
-  real, dimension(NLAND,NEMIS_FILES) :: sumemis  ! Sum of emissions per country
+  real, dimension(NEMIS_FILE)       :: emsum    ! Sum emis over all countries
+  real, dimension(NLAND,NEMIS_FILE) :: sumemis  ! Sum of emissions per country
 
   if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -237,8 +237,8 @@ contains
 
   ! ####################################
   ! Broadcast  monthly and Daily factors 
-    CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS_FILES,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS_FILES,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
+    CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( day_factor ,8*2*NSECTORS,MPI_BYTE,               0,MPI_COMM_WORLD,INFO) 
 
   !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -283,13 +283,13 @@ contains
 
    end if
 
-   do iem = 1, NEMIS_FILES
+   do iem = 1, NEMIS_FILE
       ! now again test for me=0
       if ( MasterProc ) then
 
            ! read in global emissions for one pollutant
            ! *****************
-             call EmisGet(iem,EMIS_NAME(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
+             call EmisGet(iem,EMIS_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                           globemis,globnland,globland,sumemis,&
                           globemis_flat,flat_globnland,flat_globland)
            ! *****************
@@ -311,22 +311,22 @@ contains
        call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
                1,GIMAX,GJMAX,FNCMAX,1,1)
 
-    end do ! iem = 1, NEMIS_FILES-loop
+    end do ! iem = 1, NEMIS_FILE-loop
 
 
     if ( MasterProc ) then
         write(unit=6,fmt=*) "Total emissions by countries:"
         write(unit=IO_LOG,fmt=*) "Total emissions by countries:"
-        write(unit=6,fmt="(2a4,11x,30a12)")  "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
-        write(unit=IO_LOG,fmt="(2a4,11x,30a12)") "  N "," CC ",(EMIS_NAME(iem),iem=1,NEMIS_FILES)
+        write(unit=6,fmt="(2a4,11x,30a12)")  "  N "," CC ",(EMIS_FILE(iem),iem=1,NEMIS_FILE)
+        write(unit=IO_LOG,fmt="(2a4,11x,30a12)") "  N "," CC ",(EMIS_FILE(iem),iem=1,NEMIS_FILE)
 
         do ic = 1, NLAND
            ccsum = sum( sumemis(ic,:) )
            if ( ccsum > 0.0 ) then
                     write(unit=6,fmt="(i3,1x,a4,3x,30f12.2)") &
-                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILES)
+                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILE)
                     write(unit=IO_LOG,fmt="(i3,1x,a4,3x,30f12.2)")& 
-                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILES)
+                        ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILE)
            end if
         end do
     end if
@@ -369,18 +369,18 @@ contains
         write(unit=6,fmt=*) "No. days in Emissions: ", nydays
         write(unit=6,fmt=*) "tonne_to_kgm2s in Emissions: ", tonne_to_kgm2s
         write(unit=6,fmt=*) "Emissions sums:"
-        do iem = 1, NEMIS_FILES
-           write(unit=6,fmt="(a15,f12.2)") EMIS_NAME(iem),emsum(iem)
+        do iem = 1, NEMIS_FILE
+           write(unit=6,fmt="(a15,f12.2)") EMIS_FILE(iem),emsum(iem)
         end do
     endif
               
 
-    do iem = 1, NEMIS_FILES
+    do iem = 1, NEMIS_FILE
        conv = tonne_to_kgm2s
-       if ( trim(EMIS_NAME(iem)) == "co" )  iemCO = iem  ! save this index
+       if ( trim(EMIS_FILE(iem)) == "co" )  iemCO = iem  ! save this index
  
         if ( DEBUG .and.  debug_proc .and. iem == iemCO ) then
-          write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_NAME(iem)), &
+          write(*,"(a,2es10.3)") "SnapPre:" // trim(EMIS_FILE(iem)), &
                   sum( snapemis (:,debug_li,debug_lj,:,iem) ) &
                  ,sum( snapemis_flat (debug_li,debug_lj,:,iem) )
         end if
@@ -396,7 +396,7 @@ contains
        end forall
 
         if ( DEBUG .and.  debug_proc .and. iem == iemCO ) then
-          write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_NAME(iem)), &
+          write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iem)), &
                   sum( snapemis (:,debug_li,debug_lj,:,iem) ) &
                  ,sum( snapemis_flat (debug_li,debug_lj,:,iem) )
         end if
@@ -447,7 +447,7 @@ contains
   character(len=30) :: errormsg
   
   errormsg = "ok"
-  if ( size(EMIS_NAME) /= NEMIS_FILES    ) errormsg = " size EMISNAME wrong "
+  if ( size(EMIS_FILE) /= NEMIS_FILE    ) errormsg = " size EMISNAME wrong "
 
   call CheckStop(errormsg,"Failed consistency check")
 
@@ -495,7 +495,7 @@ contains
   integer :: ficc,fncc                       ! No. of countries with
   integer :: iqrc                            ! emis indices 
   integer :: isec             ! loop variables: emission sectors
-  integer :: iem              ! loop variable over 1..NEMIS_FILES
+  integer :: iem              ! loop variable over 1..NEMIS_FILE
   integer :: itot             ! index in xn()
 
   ! Save daytime value between calls, initialise to zero
@@ -614,7 +614,7 @@ contains
 
                    iqrc = 0   ! index over emisfrac
 
-                   do iem = 1, NEMIS_FILES 
+                   do iem = 1, NEMIS_FILE 
 
                       tfac = timefac(iland_timefac,isec,iem) * &
                                  day_factor(isec,daytime_iland)
@@ -679,7 +679,7 @@ contains
 
             iqrc  = 0   ! index over emis
 
-            do iem = 1, NEMIS_FILES 
+            do iem = 1, NEMIS_FILE 
 
                 sf =  snapemis_flat(i,j,ficc,iem)    
 
@@ -714,7 +714,7 @@ contains
    end do ! i
  end do ! j
         if ( DEBUG .and.  debug_proc ) then    ! emis sum kg/m2/s
-          call datewrite("SnapSum, kg/m2/s:" // trim(EMIS_NAME(iemCO)), &
+          call datewrite("SnapSum, kg/m2/s:" // trim(EMIS_FILE(iemCO)), &
                   (/ SumSnapEmis(debug_li,debug_lj,iemCO)  /) )
         end if
 
@@ -766,13 +766,13 @@ contains
     real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     character*20 fname
     real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
-    integer :: IQSO2                   ! Index of sox in  EMIS_NAME
+    integer :: IQSO2                   ! Index of sox in  EMIS_FILE
     integer errcode
     real,    allocatable, dimension(:,:,:,:)  :: globemis 
     integer :: month,iem,ic,iic,isec, err3,icc
     real :: duml,dumh,tmpsec(NSECTORS),conv
     logical , save :: first_call=.true.
-    real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILES) &
+    real, dimension(NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,NEMIS_FILE) &
             ::  snapemis_month ! monthly emissions tonne/month
 
    ! For now, only the global runs use the Monthly files
@@ -928,8 +928,8 @@ endif
 !  Natural SO2 emissions
 
           IQSO2 = 0
-          do i = 1, NEMIS_FILES
-            if ( trim( EMIS_NAME(i) ) == "sox" ) IQSO2 = i
+          do i = 1, NEMIS_FILE
+            if ( trim( EMIS_FILE(i) ) == "sox" ) IQSO2 = i
           end do
 
           if ( IQSO2 < 1 ) then
@@ -1010,7 +1010,7 @@ endif
        allocate(globemis(NSECTORS,GIMAX,GJMAX,NCMAX),stat=err3)
        call CheckStop(err3, "Allocation error err3 - globland")
     end if
-    do iem = 1, NEMIS_FILES
+    do iem = 1, NEMIS_FILE
 !      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
 !           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
@@ -1020,7 +1020,7 @@ endif
          globemis = 0.0
 
          write(fname,fmt='(''grid'',A,i2.2)')     &
-              trim(EMIS_NAME(iem))//'.',month
+              trim(EMIS_FILE(iem))//'.',month
          write(6,*) 'filename for GLOBAL emission',fname
          call open_file(IO_EMIS,"r",fname,needed=.true.)
          call CheckStop( ios , "ios error: emislist" // fname )
@@ -1058,7 +1058,7 @@ endif
    end do ! iem = 1, NEMIS-loop
 
    ic=1 
-   do iem = 1, NEMIS_FILES
+   do iem = 1, NEMIS_FILE
 !         write(*,*)'iem=',iem
 !      if (trim(EMIS_NAME(iem)).ne.'nox' .and. trim(EMIS_NAME(iem)).ne.'co'.and.&
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&

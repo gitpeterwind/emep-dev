@@ -41,8 +41,8 @@
   use Country_ml,        only: NLAND, IC_NAT, IC_VUL, Country, &
                                ! NMR-NH3 specific variables (hb NH3Emis)
                                IC_NMR 
-  use My_Emis_ml,        only: NEMIS_FILES, EMIS_NAME
   use EmisDef_ml,        only: NSECTORS, ANTROP_SECTORS, NCMAX, FNCMAX, & 
+                               NEMIS_FILE, EMIS_FILE, & 
                                ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
                                ! NMR-NH3 specific variables (for FUTURE )
                                NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF
@@ -77,18 +77,18 @@
   ! e_fact is the emission control factor (increase/decrease/switch-off)
   ! e_fact is read in from the femis file and applied within EmisGet
   real, private, save, &
-         dimension(NSECTORS,NLAND,NEMIS_FILES)  :: e_fact 
+         dimension(NSECTORS,NLAND,NEMIS_FILE)  :: e_fact 
 
   ! emisfrac is used at each time-step of the model run to split
   ! emissions such as VOC, PM into species. 
 
   integer, public, parameter :: NMAX = NSPEC_ADV 
   integer, public, save :: nrcemis, nrcsplit
-  integer, public, dimension(NEMIS_FILES) , save :: emis_nsplit
+  integer, public, dimension(NEMIS_FILE) , save :: emis_nsplit
   real, public,allocatable, dimension(:,:,:), save :: emisfrac
   integer, public,allocatable, dimension(:), save :: iqrc2itot
   integer, public, dimension(NSPEC_TOT), save :: itot2iqrc
-  integer, public, dimension(NEMIS_FILES), save :: Emis_MolWt
+  integer, public, dimension(NEMIS_FILE), save :: Emis_MolWt
   real, public,allocatable, dimension(:), save :: emis_masscorr
 
   ! some common variables
@@ -348,7 +348,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                        ,isec, isec1 , isec2        & ! loop vars: emis sectors
                        ,ncols, n, oldn               ! No. cols. in "femis" 
   integer, parameter        :: NCOLS_MAX = 20  ! Max. no. cols. in "femis"
-  integer, dimension(NEMIS_FILES) :: qc        ! index for sorting femis columns
+  integer, dimension(NEMIS_FILE) :: qc        ! index for sorting femis columns
   real, dimension(NCOLS_MAX):: e_f             ! factors read from femis
   character(len=200) :: txt                    ! For read-in 
   character(len=20), dimension(NCOLS_MAX)::  polltxt ! to read line 1
@@ -394,12 +394,12 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   n = 0
   COLS: do ic=1,ncols
       oldn = n
-      EMLOOP: do ie=1, NEMIS_FILES
-                if ( polltxt(ic+2) == trim ( EMIS_NAME(ie) ) ) then
+      EMLOOP: do ie=1, NEMIS_FILE
+                if ( polltxt(ic+2) == trim ( EMIS_FILE(ie) ) ) then
                     qc(ie) = ic
                     n = n + 1
                     if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis: ", &
-                       polltxt(ic+2), " assigned to ", ie, EMIS_NAME(ie)
+                       polltxt(ic+2), " assigned to ", ie, EMIS_FILE(ie)
                   exit EMLOOP
                 end if
       end do EMLOOP ! ie
@@ -407,7 +407,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
            write(unit=6,fmt=*) "femis: ",polltxt(ic+2)," NOT assigned"
   end do COLS   ! ic
 
-  call CheckStop( n < NEMIS_FILES , "EmisGet: too few femis items" )
+  call CheckStop( n < NEMIS_FILE , "EmisGet: too few femis items" )
 
   
   n = 0
@@ -426,9 +426,9 @@ READEMIS: do   ! ************* Loop over emislist files *******************
         "landcode =", inland, ",  sector code =",isec, &
         " (sector 0 applies to all sectors) :"
       write(unit=6,fmt="(a,14(a,a,F5.2,a))") " ", (trim(polltxt(qc(ie)+2)),&
-       " =",e_f(qc(ie)), ",  ", ie=1,NEMIS_FILES-1), &
+       " =",e_f(qc(ie)), ",  ", ie=1,NEMIS_FILE-1), &
         (trim(polltxt(qc(ie)+2))," =",e_f(qc(ie))," ", &
-            ie=NEMIS_FILES,NEMIS_FILES)
+            ie=NEMIS_FILE,NEMIS_FILE)
 
       if (inland == 0 ) then     ! Apply factors to all countries
           iland1 = 1 
@@ -461,7 +461,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
       end if
 
 
-      do ie = 1,NEMIS_FILES
+      do ie = 1,NEMIS_FILE
 
           do iq = iland1, iland2
               do isec = isec1, isec2
@@ -470,7 +470,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
           end do !iq
 
           if (DEBUG ) then
-              write(unit=6,fmt=*) "IN NEMIS_FILES LOOP WE HAVE : ", ie, &
+              write(unit=6,fmt=*) "IN NEMIS_FILE LOOP WE HAVE : ", ie, &
                                        qc(ie), e_f( qc(ie) )
               write(unit=6,fmt=*) "loops over ", isec1, isec2, iland1, iland2
           end if ! DEBUG
@@ -483,10 +483,10 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   if(DEBUG_GETEMIS)write(unit=6,fmt=*) "In femis, read ", n, "records from femis."
   if ( DEBUG.and.MasterProc ) then    ! Extra checks
      write(unit=6,fmt=*) "DEBUG_EMISGET: UK femis gives: "
-     write(unit=6,fmt="(6x, 30a10)") (EMIS_NAME(ie), ie=1,NEMIS_FILES)
+     write(unit=6,fmt="(6x, 30a10)") (EMIS_FILE(ie), ie=1,NEMIS_FILE)
      do isec = 1, 11
       write(unit=6,fmt="(i6, 30f10.4)") isec, &
-          (e_fact(isec,27,ie),ie=1,NEMIS_FILES)
+          (e_fact(isec,27,ie),ie=1,NEMIS_FILE)
      end do
   end if ! DEBUG
   ios = 0
@@ -514,7 +514,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 !------------------------------------------------------------------------- 
 
   !-- local
-  integer ::  ie             ! emission index in EMIS_NAME (1..NEMIS_FILES)
+  integer ::  ie             ! emission index in EMIS_FILE (1..NEMIS_FILE)
   integer ::  itot           ! Index in IX_ arrays
   integer ::  iqrc           ! index of split compound in emisfrac   
 
@@ -545,7 +545,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   iqrc = 0               ! Starting index in emisfrac array
   nrcsplit= 0                 !
 
-  do ie = 1, NEMIS_FILES 
+  do ie = 1, NEMIS_FILE 
 
     IDEF_LOOP: do idef = 0, 1
 
@@ -553,7 +553,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
        if ( defaults ) then
 
-          fname = trim( "emissplit.defaults." // EMIS_NAME(ie) )
+          fname = trim( "emissplit.defaults." // EMIS_FILE(ie) )
           call open_file(IO_EMIS,"r",fname,needed=.true.)
 
           call CheckStop( ios, "EmisGet: ioserror:split.defaults " )
@@ -561,14 +561,14 @@ READEMIS: do   ! ************* Loop over emislist files *******************
        else 
     !** If specials exists, they will overwrite the defaults
 
-          fname = trim( "emissplit.specials." // EMIS_NAME(ie) )
+          fname = trim( "emissplit.specials." // EMIS_FILE(ie) )
           call open_file(IO_EMIS,"r",fname,needed=.false.)
 
           if ( ios == NO_FILE ) then  
               ios = 0
               if(MasterProc) &
-                 write(*,fmt=*) "emis_split: no specials for:",EMIS_NAME(ie)
-              call CheckStop(trim(EMIS_NAME(ie))=='voc'.and.USE_FOREST_FIRES &
+                 write(*,fmt=*) "emis_split: no specials for:",EMIS_FILE(ie)
+              call CheckStop(trim(EMIS_FILE(ie))=='voc'.and.USE_FOREST_FIRES &
                    , "emissplit.specials.voc must exist if FOREST_FIRES used" )
 
               exit IDEF_LOOP
@@ -598,7 +598,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
              write(unit=6,fmt=*) "Will try to split ", nsplit , " times"
              write(unit=6,fmt=*) "Emis_MolWt  = ", Emis_MolWt(ie)
           end if
-          write(unit=6,fmt=*) "Splitting ", trim(EMIS_NAME(ie)), &
+          write(unit=6,fmt=*) "Splitting ", trim(EMIS_FILE(ie)), &
              " emissions into ",&
                (trim(Headers(i+2)),' ',i=1,nsplit),'using ',trim(fname)
         end if

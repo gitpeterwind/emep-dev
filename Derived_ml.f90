@@ -55,7 +55,6 @@ use My_Derived_ml,  only : &
       OutputConcs,  &  ! added Feb 2011
       WDEP_WANTED, &   ! added Jan 2011
       D3_OTHER
-use My_Emis_ml,       only: EMIS_NAME
 
 use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat
@@ -72,6 +71,7 @@ use DerivedFields_ml, only: MAXDEF_DERIV2D, MAXDEF_DERIV3D, &
                             def_2d, def_3d, f_2d, f_3d, d_2d, d_3d
 use EcoSystem_ml,     only: DepEcoSystem, NDEF_ECOSYSTEMS, &
                             EcoSystemFrac,FULL_ECOGRID
+use EmisDef_ml,       only: EMIS_FILE
 use Emissions_ml,     only: SumSnapEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, &
                          GRIDWIDTH_M, GridArea_m2
@@ -535,8 +535,8 @@ call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
 ! Need 1.0e6 to get from kg/m2 to mg/m2 accumulated.
 !
 ! Future option - might make use of Emis_Molwt to get mg(N)/m2
-do  ind = 1, size(EMIS_NAME)
-  dname = "Emis_mgm2_" // trim(EMIS_NAME(ind))
+do  ind = 1, size(EMIS_FILE)
+  dname = "Emis_mgm2_" // trim(EMIS_FILE(ind))
   call AddNewDeriv( dname, "SnapEmis", "-", "-", "mg/m2", &
                      ind , -99, T,  1.0e6,  F,  IOU_DAY )
 end do ! ind

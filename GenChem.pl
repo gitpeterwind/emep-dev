@@ -64,6 +64,7 @@ our $grp_style = 0;
 our %grp;   # Will be hash of arrays,  e.g. $grp{"NOX"} = [ "NO", "NO2" ]
 
 our @emis_specs = ();
+our @emis_files = ();
 
 # Some descriptive variables for later output
  my ( $line, $linenum, $rate ) ;  # Input line
@@ -173,7 +174,10 @@ if ( $nrcmisc > 0 ) {
 	  print "  TESTQQ $gg group is: @{ $grp{$gg} }\n";
 	}
  print_groups();   # DDEP_OXNGROUP etc.
- print_emis();     #  "nox ", etc.
+ print_emisstuff("File",@emis_files );     #  "nox ", etc.
+ print_emisstuff("Specs",@emis_specs );     #  "nox ", etc.
+ print_femis(@emis_files );     #  "nox ", etc.
+ print_emislist(@emis_files );     #  "nox ", etc.
 
 #print_speciesmap() ;
 
@@ -380,6 +384,12 @@ print LOG "\n\n............... read_reactions .........................
 		print " PRE $line \n";
         	$line =~ s/\;.*/;/ ;             #  Remove comments
 		print " POST $line \n";
+	        if( $line =~ /emisfile/i ) {
+			printall( "Process EMISFILES??: emisfile $line \n" );
+ 			process_emisfile( $line ) ; # rcemis:NO2
+			#printall( "Process??: K $k \n" );
+			next;  # Not a reaction
+		 }
   
 		$neqn++ ;
 	        printall ("."x66 . "\n");
@@ -582,7 +592,6 @@ sub define_rates {
 		$k = $rate ;
 		     # $nrcc++ ;    # $rate_label[$neqn] = "RCC(" . $nrcc. ")"    ;
 	} elsif ( $rate =~ /rcemis/i ) {
-		# $nemis++ ; NOT USED HERE
 		printall( "Process??: RATE $rate \n" );
 		$k = process_emis( $rate ) ; # rcemis:NO2
 		printall( "Process??: K $k \n" );
@@ -1335,10 +1344,10 @@ sub print_rates {
 	 print GROUPS "\n! ------- Gas/particle species ------------------\n";
 
         print "RRRRRRRRRRRRRRRRRRRRRRRRRR ; \n";
-	foreach my $gg ( keys %grp ) {
-          my $N = @{ $grp{$gg} }; 
-	  print "  TESTRR $gg  N$N group is: @{ $grp{$gg} }\n";
-	}
+	#foreach my $gg ( keys %grp ) {
+        #  my $N = @{ $grp{$gg} }; 
+	#  print "  TESTRR $gg  N$N group is: @{ $grp{$gg} }\n";
+	#}
 
      # 2010 groups  assigned from GenIn.species
 	my $Ngroup = 0;
@@ -1460,19 +1469,45 @@ sub print_rates {
 	close(GROUPS);
 }
 ###############################################################################
- sub print_emis {
-        my $Nemis = @emis_specs;
+ sub print_femis {
+        my $Nemis = @emis_files;
+	printall( "ENTERING FEMIS print $Nemis\n");
+        open(EMIS,">femis.defaults") or die "FAIL FEMIS\n"; 
+	print EMIS "Name  $Nemis  ";
+	foreach my $e ( @emis_files ){
+		printf EMIS "%10s", lc($e);
+	}
+	print EMIS "\n 28    0 ";
+	foreach my $e ( @emis_files ){
+		printf EMIS "%10.1f", 1.0 ;
+	}
+	print EMIS "\n ";
+        close(EMIS);
+}
+###############################################################################
+ sub print_emislist {
+	my ( @emis) = @_;
+	printall( "ENTERING EMISLIST \n");
+        open(EMIS,">CM_emislist.csv") or die "FAIL FEMIS\n"; 
+	print EMIS  join(",",@emis );
+        close(EMIS);
+}
+###############################################################################
+ sub print_emisstuff {
+	my ( $nam, @emis) = @_;
+	print "EMISstuff NAM $nam FILES @emis\n";
+        my $Nemis = @emis;
         my $MaxLen = 12;
 	printall( "ENTERING EMIS print $Nemis\n");
-        open(EMIS,">GenOut_EmisSpecs.inc") or die "FAIL EMIS_SPECS\n"; 
+        open(EMIS,">GenOut_Emis$nam.inc") or die "FAIL EMIS_$nam\n"; 
 
-	print EMIS "  integer, parameter ::  NEMIS_SPECS  = $Nemis\n";
-	print EMIS "  character(len=$MaxLen), save, dimension(NEMIS_SPECS):: &\n";
-	print EMIS "      EMIS_SPECS =  (/ &\n";
+	print EMIS "  integer, parameter, public ::  NEMIS_$nam  = $Nemis\n";
+	print EMIS "  character(len=$MaxLen), save, dimension(NEMIS_$nam), public:: &\n";
+	print EMIS "      EMIS_$nam =  (/ &\n";
 	my $comma = "";
-	foreach my $e ( @emis_specs ){
+	foreach my $e ( @emis ){
 		die "LONG EMIS name $e > $MaxLen \n" if length($e) >= $MaxLen ;
-		printf EMIS "%12s \"%-12s\" &\n", $comma, uc($e); 
+		printf EMIS "%12s \"%-12s\" &\n", $comma,$e;  # uc($e); 
 		$comma = ",";
 	}
 	print EMIS " /)\n ";
@@ -1500,13 +1535,32 @@ sub expand_shorthands {
 	return $s;
 } # end of expand_shorthands(
 #########################################################################
+sub process_emisfile {
+	my $arg = shift;
+	my ( $emis, $files, $rate ); 
+	if( $arg =~ /:/) { # e.g. emisfiles=sox,nox,nh3
+		( $emis, $files ) = split(/:/,$arg); 
+		my @files = split(/,/,$files); 
+		my $found = 0;
+		foreach my $f ( @files ) {
+		   foreach my $e ( @emis_files ) {
+			$found = 1 if $f eq $e ;
+		   }
+		   push( @emis_files, lc($f) ) unless $found;
+		}
+		$rate =  1; #"emisxxxx($f,k)";
+		#printall( "RCEMIS RATE: $rate \n" );
+		printall( "EMISFILES EMISF @emis_files\n" );
+	}
+	return $rate;
+}
+#########################################################################
 sub process_emis {
 	my $arg = shift;
 	my ( $rcemis, $spec, $rate ); 
 	if( $arg =~ /:/) {
 		( $rcemis, $spec ) = split(/:/,$arg); 
 		my $found = 0;
-		#foreach my $e ( @emis_files ) {
 		foreach my $e ( @emis_specs ) {
 			$found = 1 if $spec eq $e ;
 			printall( "RCEMIS FOUND: $spec \n" );
