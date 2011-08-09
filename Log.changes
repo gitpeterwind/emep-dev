@@ -148,6 +148,16 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_8_7c  Dave, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+(We can merge all these changes into one rtagged cvs once we are 
+ done. I am not rtagging each one yet.)
+
+GenChem.pl - now works even without seasalt. Unimod doesn't though :-(
+
+run.pl - ProgDir added for CM_emislist.csv, CM_chempackages.txt
+
+Nest_ml - RCA stuff commented out. Not consistent with CRI
+
 xxxxxxxx rv3_8_7b  Robert, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 One major (only influencing VBS-model) and one minor correction/bug fix.
@@ -158,7 +168,8 @@ Updating the EMISSPLIT files for OC-emissions in the VBS-scheme.
 
 Minor bug fix (should only influence the Log-files)
 
-EmisGet_ml: Earlier version gave erroneous (too large) national total emissions in the log files if the same grid point occurs more than once in a given emission file.
+EmisGet_ml: Earlier version gave erroneous (too large) national total emissions
+  in the log files if the same grid point occurs more than once in a given emission file.
 
  
 xxxxxxxx rv3_8_7   Dave, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
