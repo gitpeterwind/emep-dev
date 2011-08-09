@@ -150,6 +150,12 @@ ds done   My_SOA_ml.f90
 
 xxxxxxxx rv3_8_7b  Robert, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
+One major (only influencing VBS-model) and one minor correction/bug fix.
+
+Updating the EMISSPLIT files for OC-emissions in the VBS-scheme. 
+     Earlier versions had an error in the MASS_ASSUMED.
+     Now MASS_ASSUMED = 12 (emissions are assumed given in units of C)
+
 Minor bug fix (should only influence the Log-files)
 
 EmisGet_ml: Earlier version gave erroneous (too large) national total emissions in the log files if the same grid point occurs more than once in a given emission file.
