@@ -2,7 +2,7 @@
 # 
 # Key-word, MASS_ASSUMED= 0 by default, 
 # change when emissions have artificial mass, e.g. 46 for NOx as NO2
-: MASS_ASSUMED 0 
+: MASS_ASSUMED 12 
 99 99   POC_F_WOOD       #HEADERS
 #DATA
 0   1   100.00
