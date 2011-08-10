@@ -50,6 +50,12 @@ module My_Derived_ml
   !   Derived fields such as d_2d only exist in Derived_ml, so are
   !   accessed here through subroutine calls - using just the (i,j) part
   !   of the bigger d_2d arrays
+  !
+  !  NOTE!! 11 Aug 2011: This is a special version of My_Derived_ml for the 
+  !         EMEP VBS model. It is not yet tested enough and should be considered
+  !         under development! Use at your own risk and be prepared that things 
+  !         are likely to change. If you are interested in using this model
+  !         version it is a good idea to contact David Simpson and/or Robert Bergström first.
   !---------------------------------------------------------------------------
 
 use AOTx_ml, only : O3cl, VEGO3_OUTPUTS, VEGO3_DEFS
@@ -132,7 +138,7 @@ private
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
    !EUCtype(typ_s5i), public, parameter, dimension(32) :: &
-   type(typ_s5i), public, parameter, dimension(29) :: &
+   type(typ_s5i), public, parameter, dimension(47) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -178,19 +184,39 @@ private
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
       !CityZen Outputs
-        ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d
-        ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
-        ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("AER_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
-        ,typ_s5i("AER_OC    ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+      !  ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d
+      !  ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+      !  ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+      !  ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+        ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+        ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
         ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
        ! SOA, PCM_F etc. are special and need appropriate units. Do
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
        ! = sum of all EC and OM components.)
-       ! ,typ_s5i("AER_ASOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
-       ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_ASOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
+        ,typ_s5i("PART_BSOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_FFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_OFFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_WOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_OWOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_FFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_OFFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_F_WOOD ", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_F_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_ASOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_WOODOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_FFIREOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OWDOA_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OFFIOA_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
          !typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) 
        /)
