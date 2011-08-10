@@ -21,9 +21,9 @@ spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
 rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
 
 #VBS upd?
-run=vbs_tests   # VBS based Organic Aerosol Model, upd, new system
-spcs=( EmChem09base SeaSalt Dust VBS_help VBS_PMupd VBS_upd )  #  VBS NPNA
-rcns=( EmChem09base SeaSalt VBS_Lane VBS_ageing VBS_OPOAemis  )
+#run=vbs_tests   # VBS based Organic Aerosol Model, upd, new system
+#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_PMupd VBS_upd )  #  VBS NPNA
+#rcns=( EmChem09base SeaSalt VBS_Lane VBS_ageing VBS_OPOAemis  )
 
 #---------------- create GenIn files...
 cdir=$PWD       #  Current when starting. Assumed now as a Unimod
