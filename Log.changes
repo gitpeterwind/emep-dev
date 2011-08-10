@@ -147,6 +147,12 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_8_7d?  Peter, 10th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Problem in Nest_ml when nesting lon-lat grids. The debuggers show an error in:
+call check(nf90_get_var(ncFileID, varID, lat_ext(1,:) ))
+corrected into a safer version
+
 
 xxxxxxxx rv3_8_7c  Dave, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 (We can merge all these changes into one rtagged cvs once we are 

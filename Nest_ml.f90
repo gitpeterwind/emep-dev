@@ -551,7 +551,7 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
   integer :: ndate(4) !nseconds_indate,
   real :: dist(0:4),P_emep
   integer :: i,j,k,n,k_ext,II,JJ !nseconds(1),n,n1,k
-  real, allocatable, dimension(:,:) ::lon_ext,lat_ext
+  real, allocatable, dimension(:,:) ::lon_ext,lat_ext,temp_lat(:)
   real, allocatable, dimension(:) ::hyam,hybm,P_ext
   character(len=80) ::projection,word
   logical :: reversed_k_BC,time_exists
@@ -654,10 +654,12 @@ subroutine init_nest(ndays_indate,filename_read,IIij,JJij,Weight,&
         lon_ext(:,i)=lon_ext(:,1)
       enddo
       call check(nf90_inq_varid(ncid = ncFileID, name = "lat", varID = varID))
-      call check(nf90_get_var(ncFileID, varID, lat_ext(1,:) ))
+      allocate(temp_lat(GJMAX_ext))
+      call check(nf90_get_var(ncFileID, varID, temp_lat ))
       do i=1,GIMAX_ext
-        lat_ext(i,:)=lat_ext(1,:)
+        lat_ext(i,:)=temp_lat(:)
       enddo
+      deallocate(temp_lat)
     else
       call check(nf90_inq_varid(ncid = ncFileID, name = "lon", varID = varID))
       call check(nf90_get_var(ncFileID, varID, lon_ext ))
