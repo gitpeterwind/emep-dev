@@ -475,7 +475,7 @@ module Biogenics_ml
 
 ! To get from ug/m2/h to molec/cm3/s
 ! ug -> g  1.0e-9; g -> mole / MW; x AVOG
-  real, save :: biofac_ISOP = 1.0e-12*AVOG/64.0/3600.0   ! needs /Grid%DeltaZ
+  real, save :: biofac_ISOP = 1.0e-12*AVOG/68.0/3600.0   ! needs /Grid%DeltaZ
   real, save :: biofac_TERP = 1.0e-12*AVOG/136.0/3600.0  ! needs /Grid%DeltaZ
 
  ! Light effects added for isoprene emissions
