@@ -146,10 +146,14 @@ ds done   My_SOA_ml.f90
 !----------------------------------------------------------
 xxxxxxxx rv3_9_0beta?[not finished yet]  Robert, 11th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 NOTE! This version is expected to give slightly changed results compared to 
-earlier versions [the isoprene emissions change slightly] 
-(so should be given a new revision number)
+earlier versions (so should be given a new revision number)
 
-Minor bug fix in Biogenics_ml (MW of isoprene changed from 64 to 68)
+ForestFire_ml: Changed the "assumed mass" for particulate OC emissions from wildfires from 0 to 12, 
+which has a big impact on forest fire OM emissions if the non-C part is modelled! 
+Important for partitioning OA-models!
+
+Minor bug fix in Biogenics_ml (MW of isoprene changed from 64 to 68) 
+   -> Will give slightly different isoprene emissions
 
 Updating mk.GenChem with new SOA scheme options (VBS)
    - Added a number of files in ZCM_vbs_tests (VBS_*.reactions and VBS_*.species, used by mk.GenChem to generate the VBS based chemistry schemes)
