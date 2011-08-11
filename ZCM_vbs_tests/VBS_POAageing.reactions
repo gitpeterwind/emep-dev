@@ -1,0 +1,78 @@
+*===========================================================================
+*aging of POA follows Shrivastava for FFUEL. 
+* skip 4.0e-11               [OH] + FFUEL_ng10  
+4.0e-11*Fgas(FFUEL_ng100,:)    [OH] + FFUEL_ng100   = OXFFUEL_ng10  ;
+4.0e-11*Fgas(FFUEL_ug1,:)      [OH] + FFUEL_ug1     = OXFFUEL_ng100 ;
+4.0e-11*Fgas(FFUEL_ug10,:)     [OH] + FFUEL_ug10    = OXFFUEL_ug1   ;
+4.0e-11*Fgas(FFUEL_ug1e2,:)    [OH] + FFUEL_ug1e2   = OXFFUEL_ug10  ;
+4.0e-11*Fgas(FFUEL_ug1e3,:)    [OH] + FFUEL_ug1e3   = OXFFUEL_ug1e2 ;
+4.0e-11*Fgas(FFUEL_ug1e4,:)    [OH] + FFUEL_ug1e4   = OXFFUEL_ug1e3 ;
+4.0e-11*Fgas(FFUEL_ug1e5,:)    [OH] + FFUEL_ug1e5   = OXFFUEL_ug1e4 ;
+4.0e-11*Fgas(FFUEL_ug1e6,:)    [OH] + FFUEL_ug1e6   = OXFFUEL_ug1e5 ;
+
+4.0e-11*Fgas(OXFFUEL_ng100,:)    [OH] + OXFFUEL_ng100   = OXFFUEL_ng10 + 0.0756 O_FFUEL_ng10 ;
+4.0e-11*Fgas(OXFFUEL_ug1,:)      [OH] + OXFFUEL_ug1     = OXFFUEL_ng100 + 0.0756 O_FFUEL_ng100 ;
+4.0e-11*Fgas(OXFFUEL_ug10,:)     [OH] + OXFFUEL_ug10    = OXFFUEL_ug1 + 0.0756 O_FFUEL_ug1  ;
+4.0e-11*Fgas(OXFFUEL_ug1e2,:)    [OH] + OXFFUEL_ug1e2   = OXFFUEL_ug10 + 0.0756 O_FFUEL_ug10  ;
+4.0e-11*Fgas(OXFFUEL_ug1e3,:)    [OH] + OXFFUEL_ug1e3   = OXFFUEL_ug1e2 + 0.0756 O_FFUEL_ug1e2 ;
+4.0e-11*Fgas(OXFFUEL_ug1e4,:)    [OH] + OXFFUEL_ug1e4   = OXFFUEL_ug1e3 + 0.0756 O_FFUEL_ug1e3 ;
+4.0e-11*Fgas(OXFFUEL_ug1e5,:)    [OH] + OXFFUEL_ug1e5   = OXFFUEL_ug1e4 + 0.0756 O_FFUEL_ug1e4 ;
+
+4.0e-11*Fgas(O_FFUEL_ng100,:)    [OH] + O_FFUEL_ng100   =  1.075 O_FFUEL_ng10 ;
+4.0e-11*Fgas(O_FFUEL_ug1,:)      [OH] + O_FFUEL_ug1     =  1.075 O_FFUEL_ng100 ;
+4.0e-11*Fgas(O_FFUEL_ug10,:)     [OH] + O_FFUEL_ug10    =  1.075 O_FFUEL_ug1  ;
+4.0e-11*Fgas(O_FFUEL_ug1e2,:)    [OH] + O_FFUEL_ug1e2   =  1.075 O_FFUEL_ug10  ;
+4.0e-11*Fgas(O_FFUEL_ug1e3,:)    [OH] + O_FFUEL_ug1e3   =  1.075 O_FFUEL_ug1e2 ;
+4.0e-11*Fgas(O_FFUEL_ug1e4,:)    [OH] + O_FFUEL_ug1e4   =  1.075 O_FFUEL_ug1e3 ;
+
+*aging of WOODOA follows Shrivastava for FFUEL.
+4.0e-11*Fgas(WOODOA_ng100,:)    [OH] + WOODOA_ng100   = OXWOODOA_ng10  ;
+4.0e-11*Fgas(WOODOA_ug1,:)      [OH] + WOODOA_ug1     = OXWOODOA_ng100 ;
+4.0e-11*Fgas(WOODOA_ug10,:)     [OH] + WOODOA_ug10    = OXWOODOA_ug1   ;
+4.0e-11*Fgas(WOODOA_ug1e2,:)    [OH] + WOODOA_ug1e2   = OXWOODOA_ug10  ;
+4.0e-11*Fgas(WOODOA_ug1e3,:)    [OH] + WOODOA_ug1e3   = OXWOODOA_ug1e2 ;
+4.0e-11*Fgas(WOODOA_ug1e4,:)    [OH] + WOODOA_ug1e4   = OXWOODOA_ug1e3 ;
+4.0e-11*Fgas(WOODOA_ug1e5,:)    [OH] + WOODOA_ug1e5   = OXWOODOA_ug1e4 ;
+4.0e-11*Fgas(WOODOA_ug1e6,:)    [OH] + WOODOA_ug1e6   = OXWOODOA_ug1e5 ;
+
+4.0e-11*Fgas(OXWOODOA_ng100,:)    [OH] + OXWOODOA_ng100   = OXWOODOA_ng10 + 0.0756 O_WOODOA_ng10 ;
+4.0e-11*Fgas(OXWOODOA_ug1,:)      [OH] + OXWOODOA_ug1     = OXWOODOA_ng100 + 0.0756 O_WOODOA_ng100 ;
+4.0e-11*Fgas(OXWOODOA_ug10,:)     [OH] + OXWOODOA_ug10    = OXWOODOA_ug1 + 0.0756 O_WOODOA_ug1  ;
+4.0e-11*Fgas(OXWOODOA_ug1e2,:)    [OH] + OXWOODOA_ug1e2   = OXWOODOA_ug10 + 0.0756 O_WOODOA_ug10  ;
+4.0e-11*Fgas(OXWOODOA_ug1e3,:)    [OH] + OXWOODOA_ug1e3   = OXWOODOA_ug1e2 + 0.0756 O_WOODOA_ug1e2 ;
+4.0e-11*Fgas(OXWOODOA_ug1e4,:)    [OH] + OXWOODOA_ug1e4   = OXWOODOA_ug1e3 + 0.0756 O_WOODOA_ug1e3 ;
+4.0e-11*Fgas(OXWOODOA_ug1e5,:)    [OH] + OXWOODOA_ug1e5   = OXWOODOA_ug1e4 + 0.0756 O_WOODOA_ug1e4 ;
+
+4.0e-11*Fgas(O_WOODOA_ng100,:)    [OH] + O_WOODOA_ng100   =  1.075 O_WOODOA_ng10 ;
+4.0e-11*Fgas(O_WOODOA_ug1,:)      [OH] + O_WOODOA_ug1     =  1.075 O_WOODOA_ng100 ;
+4.0e-11*Fgas(O_WOODOA_ug10,:)     [OH] + O_WOODOA_ug10    =  1.075 O_WOODOA_ug1  ;
+4.0e-11*Fgas(O_WOODOA_ug1e2,:)    [OH] + O_WOODOA_ug1e2   =  1.075 O_WOODOA_ug10  ;
+4.0e-11*Fgas(O_WOODOA_ug1e3,:)    [OH] + O_WOODOA_ug1e3   =  1.075 O_WOODOA_ug1e2 ;
+4.0e-11*Fgas(O_WOODOA_ug1e4,:)    [OH] + O_WOODOA_ug1e4   =  1.075 O_WOODOA_ug1e3 ;
+
+*aging of FFIREOA follows Shrivastava for FFUEL.
+4.0e-11*Fgas(FFIREOA_ng100,:)    [OH] + FFIREOA_ng100   = OXFFIREOA_ng10  ;
+4.0e-11*Fgas(FFIREOA_ug1,:)      [OH] + FFIREOA_ug1     = OXFFIREOA_ng100 ;
+4.0e-11*Fgas(FFIREOA_ug10,:)     [OH] + FFIREOA_ug10    = OXFFIREOA_ug1   ;
+4.0e-11*Fgas(FFIREOA_ug1e2,:)    [OH] + FFIREOA_ug1e2   = OXFFIREOA_ug10  ;
+4.0e-11*Fgas(FFIREOA_ug1e3,:)    [OH] + FFIREOA_ug1e3   = OXFFIREOA_ug1e2 ;
+4.0e-11*Fgas(FFIREOA_ug1e4,:)    [OH] + FFIREOA_ug1e4   = OXFFIREOA_ug1e3 ;
+4.0e-11*Fgas(FFIREOA_ug1e5,:)    [OH] + FFIREOA_ug1e5   = OXFFIREOA_ug1e4 ;
+4.0e-11*Fgas(FFIREOA_ug1e6,:)    [OH] + FFIREOA_ug1e6   = OXFFIREOA_ug1e5 ;
+
+4.0e-11*Fgas(OXFFIREOA_ng100,:)    [OH] + OXFFIREOA_ng100   = OXFFIREOA_ng10 + 0.0756 O_FFIREOA_ng10 ;
+4.0e-11*Fgas(OXFFIREOA_ug1,:)      [OH] + OXFFIREOA_ug1     = OXFFIREOA_ng100 + 0.0756 O_FFIREOA_ng100 ;
+4.0e-11*Fgas(OXFFIREOA_ug10,:)     [OH] + OXFFIREOA_ug10    = OXFFIREOA_ug1 + 0.0756 O_FFIREOA_ug1  ;
+4.0e-11*Fgas(OXFFIREOA_ug1e2,:)    [OH] + OXFFIREOA_ug1e2   = OXFFIREOA_ug10 + 0.0756 O_FFIREOA_ug10  ;
+4.0e-11*Fgas(OXFFIREOA_ug1e3,:)    [OH] + OXFFIREOA_ug1e3   = OXFFIREOA_ug1e2 + 0.0756 O_FFIREOA_ug1e2 ;
+4.0e-11*Fgas(OXFFIREOA_ug1e4,:)    [OH] + OXFFIREOA_ug1e4   = OXFFIREOA_ug1e3 + 0.0756 O_FFIREOA_ug1e3 ;
+4.0e-11*Fgas(OXFFIREOA_ug1e5,:)    [OH] + OXFFIREOA_ug1e5   = OXFFIREOA_ug1e4 + 0.0756 O_FFIREOA_ug1e4 ;
+
+4.0e-11*Fgas(O_FFIREOA_ng100,:)    [OH] + O_FFIREOA_ng100   =  1.075 O_FFIREOA_ng10 ;
+4.0e-11*Fgas(O_FFIREOA_ug1,:)      [OH] + O_FFIREOA_ug1     =  1.075 O_FFIREOA_ng100 ;
+4.0e-11*Fgas(O_FFIREOA_ug10,:)     [OH] + O_FFIREOA_ug10    =  1.075 O_FFIREOA_ug1  ;
+4.0e-11*Fgas(O_FFIREOA_ug1e2,:)    [OH] + O_FFIREOA_ug1e2   =  1.075 O_FFIREOA_ug10  ;
+4.0e-11*Fgas(O_FFIREOA_ug1e3,:)    [OH] + O_FFIREOA_ug1e3   =  1.075 O_FFIREOA_ug1e2 ;
+4.0e-11*Fgas(O_FFIREOA_ug1e4,:)    [OH] + O_FFIREOA_ug1e4   =  1.075 O_FFIREOA_ug1e3 ;
+
+*
