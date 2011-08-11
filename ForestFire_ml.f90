@@ -125,7 +125,7 @@ implicit none
       BB_Defs("eccfl ", "-     ",  0.0 ), & ! rb: is this really needed?
       BB_Defs("voc   ", "NMHC  ", 0    ), &  
       BB_Defs("forfbc", "BC    ", 12.0 ), &
-      BB_Defs("forfoc", "OC    ", 0    ), &
+      BB_Defs("forfoc", "OC    ", 12.0 ), & ! used to be zero? But GFED OC-emissions should be in units of C? 
       BB_Defs("pmco  ", "TPM   ", 0    ) /)   ! nearest. QUERY pm25<<pmco though
   ! =======================================================================
 
