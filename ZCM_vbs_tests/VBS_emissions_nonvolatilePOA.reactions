@@ -1,0 +1,18 @@
+*
+* All primary OA emissions are considered nonvolatile ("traditional approach")
+*
+rcemis:POC_f_FFUEL               = POC_f_FFUEL ;
+*
+emisfiles:pocffl,poccfl,ecffl,eccfl,pocfwd,ecfwd,eccwd,forfoc,forfbc
+*
+rcemis:POC_c_FFUEL               = POC_c_FFUEL ;
+rcemis:EC_f_FFUEL                = EC_f_FFUEL ;
+rcemis:EC_c_FFUEL                = EC_c_FFUEL ;
+*
+rcemis:POC_f_WOOD                = POC_f_WOOD ;
+rcemis:EC_f_WOOD                 = EC_f_WOOD ;
+* rcemis:REMPPM25                  = REMPPM25 ;
+* rcemis:REMPPM_C                  = REMPPM_C ;
+*
+rcemis:FFIRE_OC                   = FFIRE_OC + PPM25_Fire ;
+rcemis:FFIRE_BC                   = FFIRE_BC + PPM25_Fire ;
