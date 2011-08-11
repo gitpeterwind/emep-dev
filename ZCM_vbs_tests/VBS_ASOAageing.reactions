@@ -1,0 +1,15 @@
+*===========================================================================
+* Aging of ASOA as in Murphy and Pandis (2009). (Tsimpidi et al., 2010, seem to use 4 times faster aging also for SOA!)
+* NOTE! At the moment neglect the mass increase due to uptake of oxygen in aging reactions (within the ug1-ug1000 range, typically others assume 7.5% mass increase per aging reaction). For the X_ng100 species we assume a higher OM/OC ratio (corresponding to OOA-I ?). This may need updating/refining.
+*
+1.0e-11*Fgas(ALK4_ug10,:)  ALK4_ug10 + [OH]     =  ALK4_UG1  ;
+1.0e-11*Fgas(OLE1_ug1,:)   [OH] + OLE1_ug1      = OLE1_ng100 ;
+1.0e-11*Fgas(OLE1_ug10,:)  [OH] + OLE1_ug10     = OLE1_ug1 ;
+1.0e-11*Fgas(OLE1_ug1e2,:) [OH] + OLE1_ug1e2    = OLE1_ug10 ;
+1.0e-11*Fgas(OLE1_ug1e3,:) [OH] + OLE1_ug1e3    = OLE1_ug1e2 ; 
+*
+1.0e-11*Fgas(ARO2_ug1,:)   [OH] + ARO2_ug1      = ARO2_ng100 ;
+1.0e-11*Fgas(ARO2_ug10,:)  [OH] + ARO2_ug10     = ARO2_ug1 ;
+1.0e-11*Fgas(ARO2_ug1e2,:) [OH] + ARO2_ug1e2    = ARO2_ug10 ; 
+1.0e-11*Fgas(ARO2_ug1e3,:) [OH] + ARO2_ug1e3    = ARO2_ug1e2 ;
+*
