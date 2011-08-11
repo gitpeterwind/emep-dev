@@ -6,7 +6,6 @@
 # 3) Run GenVOC to get speciation
 #
 #====== Set run here =======================
-# changed - see below...
 #run=Test03   # CRI_v2_R5
 #run=EmChem03c   # CRI_v2_R5
 #run=OSRM    # CRI_v2_R5
@@ -20,10 +19,24 @@ run=EmChem09
 spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
 rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
 
-#VBS upd?
-#run=vbs_tests   # VBS based Organic Aerosol Model, upd, new system
-#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_PMupd VBS_upd )  #  VBS NPNA
-#rcns=( EmChem09base SeaSalt VBS_Lane VBS_ageing VBS_OPOAemis  )
+#VBS 
+#run=vbs_tests   # VBS based Organic Aerosol Model, different versions use different spcs and rcns, choose one set below
+
+# VBS-PAA (VBS based primary emissions and aging of all POA and SOA)
+#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_nonvolatile VBS_paa )  #  VBS PAA 
+#rcns=( EmChem09base SeaSalt VBS_SOAformation VBS_POAageing VBS_SOAageing VBS_PAPemis  ) # VBS PAA
+
+# VBS PAP (VBS based primary emissions and aging of all POA)
+#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_nonvolatile VBS_paa )  #  VBS PAP 
+#rcns=( EmChem09base SeaSalt VBS_SOAformation VBS_PAPageing VBS_PAPemis  ) # VBS PAP
+
+# VBS PAPA (VBS based primary emissions and aging of all POA and ASOA, note! not same ageing rate as in VBS PAA!)
+#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_nonvolatile VBS_paa )  #  VBS PAPA 
+#rcns=( EmChem09base SeaSalt VBS_SOAformation VBS_PAPageing VBS_ASOAageing VBS_PAPemis  ) # VBS PAPA 
+
+#VBS NPNA (VBS for SOA formation, no ageing reactions and only nonvolatile POA)
+#spcs=( EmChem09base SeaSalt Dust VBS_help VBS_nonvolatile VBS_paa )  #  VBS NPNA 
+#rcns=( EmChem09base SeaSalt VBS_SOAformation VBS_NONVOLemis  ) # VBS NPNA
 
 #---------------- create GenIn files...
 cdir=$PWD       #  Current when starting. Assumed now as a Unimod
