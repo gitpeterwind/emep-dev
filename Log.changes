@@ -152,7 +152,7 @@ earlier versions [the isoprene emissions change slightly]
 Minor bug fix in Biogenics_ml (MW of isoprene changed from 64 to 68)
 
 Updating mk.GenChem with new SOA scheme options (VBS)
-   - Remains to add a number of files in ZCM_vbs_tests!
+   - Added a number of files in ZCM_vbs_tests (VBS_*.reactions and VBS_*.species, used by mk.GenChem to generate the VBS based chemistry schemes)
 
 Many (still preliminary) changes in the VBS versions of My_SOA_ml and My_Derived_ml (in the ZCM_vbs_tests/ directory). Changed names for many of the help species and added possibility to store a number of new fields.
 
