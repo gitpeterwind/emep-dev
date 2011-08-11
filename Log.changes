@@ -15,9 +15,6 @@ IMPORTANT NOTE:
 
 KNOWN PROBLEMS
 
-**** Aug 2nd. Found MW 64 in Biogenic_ml, biofac_ISOP. Should be
-     68. Will cvs soon, DS ******
-
 Some jobs needed after Mar-11th tests (ds will do)
   - Decide SoilMoisture
   - SoilWater - should implement readneightbour routine
@@ -147,6 +144,18 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_9_0beta?[not finished yet]  Robert, 11th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+NOTE! This version is expected to give slightly changed results compared to 
+earlier versions [the isoprene emissions change slightly] 
+(so should be given a new revision number)
+
+Minor bug fix in Biogenics_ml (MW of isoprene changed from 64 to 68)
+
+Updating mk.GenChem with new SOA scheme options (VBS)
+   - Remains to add a number of files in ZCM_vbs_tests!
+
+Many (still preliminary) changes in the VBS versions of My_SOA_ml and My_Derived_ml (in the ZCM_vbs_tests/ directory). Changed names for many of the help species and added possibility to store a number of new fields.
+
 xxxxxxxx rv3_8_7d?  Peter, 10th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Problem in Nest_ml when nesting lon-lat grids. The debuggers show an error in:
