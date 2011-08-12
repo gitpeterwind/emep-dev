@@ -144,7 +144,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3_9beta, Dave, Peter, Robert, 9th - 11th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+rtagged now - accumulates changes from   rv3_8_7 as listed below.
+
+
 xxxxxxxx rv3_9_0beta?[not finished yet]  Robert, 11th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
 NOTE! This version is expected to give slightly changed results compared to 
 earlier versions (so should be given a new revision number)
 
