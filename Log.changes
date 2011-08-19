@@ -144,6 +144,21 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_9_1beta, Peter, 19th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Technical change in the outputting of netcdf data:
+NetCDF_ml
+ModelConstants_ml
+Nest_ml
+OutputChem_ml
+ALL the parameters (variables) are defined (created) in the NetCDF file before the data 
+is written in the first record.
+Because of the way the netcdf is stored, all the data has to be copied each time a new variable is defined,
+therefore it is very inefficient to add and write new variables succesively. See
+http://www.unidata.ucar.edu/software/netcdf/docs/netcdf/Parts-of-a-NetCDF-Classic-File.html#Parts-of-a-NetCDF-Classic-File
+
+This will not improve performance much in yearly runs, but will significantly help short runs: testing, CWF etc.
+
 
 xxxxxxxx rv3_9beta, Dave, Peter, Robert, 9th - 11th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 

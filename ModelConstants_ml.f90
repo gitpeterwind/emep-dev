@@ -345,7 +345,8 @@ real, public, parameter :: MFAC = 0.001*AVOG/ATWAIR
 integer, public, parameter ::  &
   IOU_INST=1, IOU_YEAR=2, IOU_MON=3, IOU_DAY=4, & ! Derived output
   IOU_HOUR_PREVIOUS=5,                          & ! Aux. field
-  IOU_HOUR=6, IOU_HOUR_MEAN=7                     ! Hourly  output
+  IOU_HOUR=6, IOU_HOUR_MEAN=7                   & ! Hourly  output
+  ,IOU_MAX_MAX=7                                  ! Max values for of IOU (for array declarations)
 
 character(len=*), public, parameter :: model="EMEP_MSC-W"
 

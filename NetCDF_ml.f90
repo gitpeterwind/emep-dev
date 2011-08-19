@@ -506,9 +506,10 @@ character(len=80) ::UsedProjection
   if(DEBUG_NETCDF)write(*,*)'NetCDF: file created, end of CreatenetCDFfile'
 end subroutine CreatenetCDFfile
 
+
 !_______________________________________________________________________
 
-subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given,overwrite)
+subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given,overwrite,create_var_only)
 
   !The use of fileName_given is probably slower than the implicit filename used by defining iotyp.
 
@@ -522,8 +523,11 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
                                                       !Only level ik is written if defined
   integer, optional, intent(in) :: CDFtype != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
   character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
-  logical, optional, intent(in) :: overwrite !overwrite if file already exists (in case fileName_given)
   !NB if the file fileName_given exist (also from earlier runs) it will be appended
+
+  logical, optional, intent(in) :: overwrite !overwrite if file already exists (in case fileName_given)
+  logical, optional, intent(in) :: create_var_only !only create the variable, without writing the data content
+  logical:: create_var_only_local !only create the variable, without writing the data content
 
   character(len=len(def1%name)) :: varname
   character*8 ::lastmodified_date
@@ -549,11 +553,12 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   if(present(ien))i2=min(ien-IRUNBEG+1,i2)
   if(present(jst))j1=max(jst-JRUNBEG+1,j1)
   if(present(jen))j2=min(jen-JRUNBEG+1,j2)
-
+  create_var_only_local=.false.
+  if(present(create_var_only))create_var_only_local=create_var_only
   !Check that that the area is larger than 0
   if((i2-i1)<0.or.(j2-j1)<0.or.kmax<=0)return
 
-  !make variable name
+ !make variable name
   write(varname,fmt='(A)')trim(def1%name)
   if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: START ' , me, trim(varname)
 
@@ -615,9 +620,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
   if(DEBUG_NETCDF) then
     if(iotyp_new==1)then
-      write(*,*)' Out_NetCDF: cases new ', trim(fileName_given), iotyp
+      write(*,*)' Out_NetCDF: cases new file', trim(fileName_given), iotyp
     else
-      write(*,*)' Out_NetCDF: cases old ', trim(fileName), iotyp
+      write(*,*)' Out_NetCDF: cases old file', trim(fileName), iotyp
     end if
   endif
 
@@ -646,8 +651,58 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
   call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3")
 
+
   OUTtype=Real4  !default value
   if(present(CDFtype))OUTtype=CDFtype
+
+  if(me==0)then
+
+     ndate(1)  = current_date%year
+     ndate(2)  = current_date%month
+     ndate(3)  = current_date%day
+     ndate(4)  = current_date%hour
+
+     !test if the file is already open
+     if(ncFileID==closedID)then
+        !open an existing netcdf dataset
+        call check(nf90_open(path = trim(fileName), mode = nf90_write, &
+              ncid = ncFileID), "nf90_open"//trim(fileName) )
+       if(iotyp_new==1)then      !needed in case iotyp is defined
+           ncFileID_new = ncFileID!not really needed
+        elseif(iotyp==IOU_YEAR)then
+           ncFileID_year = ncFileID
+        elseif(iotyp==IOU_MON)then
+           ncFileID_month = ncFileID
+        elseif(iotyp==IOU_DAY)then
+           ncFileID_day = ncFileID
+        elseif(iotyp==IOU_HOUR)then
+           ncFileID_hour = ncFileID
+        elseif(iotyp==IOU_INST)then
+           ncFileID_inst = ncFileID
+        endif
+     endif
+
+     !test first if the variable is already defined:
+     status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
+
+     if(status == nf90_noerr) then
+!             print *, 'variable exists: ',varname
+        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: variable exists: ',varname
+     else
+        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: creating variable: ',varname
+        call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
+     endif
+  endif!me==0
+
+  if(create_var_only_local)then
+     !Don't write the data
+     !For performance: need to create all variables before writing data
+     if(DEBUG_NETCDF)write(*,*)'variable ONLY created. Finished'
+     if(me==0.and.iotyp_new==1)call check(nf90_close(ncFileID))
+     return
+  endif!create var only
+
+
 
   !buffer the wanted part of data
   ijk=0
@@ -761,37 +816,6 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      ndate(2)  = current_date%month
      ndate(3)  = current_date%day
      ndate(4)  = current_date%hour
-
-     !test if the file is already open
-     if(ncFileID==closedID)then
-        !open an existing netcdf dataset
-        call check(nf90_open(path = trim(fileName), mode = nf90_write, &
-              ncid = ncFileID), "nf90_open"//trim(fileName) )
-       if(iotyp_new==1)then      !needed in case iotyp is defined
-           ncFileID_new = ncFileID!not really needed
-        elseif(iotyp==IOU_YEAR)then
-           ncFileID_year = ncFileID
-        elseif(iotyp==IOU_MON)then
-           ncFileID_month = ncFileID
-        elseif(iotyp==IOU_DAY)then
-           ncFileID_day = ncFileID
-        elseif(iotyp==IOU_HOUR)then
-           ncFileID_hour = ncFileID
-        elseif(iotyp==IOU_INST)then
-           ncFileID_inst = ncFileID
-        endif
-     endif
-
-     !test first if the variable is already defined:
-     status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
-
-     if(status == nf90_noerr) then
-!             print *, 'variable exists: ',varname
-        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: variable exists: ',varname
-     else
-        if (DEBUG_NETCDF) write(6,*) 'Out_NetCDF: creating variable: ',varname
-        call  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
-     endif
 
 
      !get variable id
@@ -929,6 +953,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   real :: scale
   integer :: OUTtypeCDF !NetCDF code for type
 
+
   if(OUTtype==Int1)then
      OUTtypeCDF=nf90_byte
   elseif(OUTtype==Int2)then
@@ -1007,6 +1032,7 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   call check(nf90_put_att(ncFileID, varID, "current_date_last",ndate ))
 
   call check(nf90_enddef(ncid = ncFileID))
+!  call check(nf_enddef(ncFileID))
 
 end subroutine  createnewvariable
 !_______________________________________________________________________

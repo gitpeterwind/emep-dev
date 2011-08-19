@@ -87,6 +87,7 @@ logical , public,parameter :: RCA = .false.        ! Use limited set of IC and B
 !coordinates of subdomain to write
 !coordinates relative to LARGE domain (only used in write mode)
 integer ::istart=60,jstart=11,iend=107,jend=58 !ENEA NB: version has changed, these numbers where for small domain!!!
+!integer ::istart=RUNDOMAIN(1),jstart=RUNDOMAIN(3),iend=RUNDOMAIN(2),jend=RUNDOMAIN(4) !entire domain
 
 !/-- subroutines
 
@@ -435,7 +436,6 @@ subroutine wrtxn(indate,WriteNow)
      !write(command,*)'rm ',trim(fileName_write)
      !call system(command)
     endif
-    first_call=.false.
   endif
 
   ndim=3 !3-dimensional
@@ -449,14 +449,26 @@ subroutine wrtxn(indate,WriteNow)
   def1%name=''          ! written
   def1%unit='mix_ratio' ! written
 
+  if(first_call)then
+     !do first one loop to define the fields, without writing them (for performance purposes)
+     do n= 1, NSPEC_ADV
+        ! !do n= 1, NSPEC_ADV-4  !ENEA
+        def1%name= species(NSPEC_SHL+n)%name       !written
+        dat=xn_adv(n,:,:,:)
+        call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
+             ist=istart,jst=jstart,ien=iend,jen=jend,fileName_given=fileName_write,create_var_only=.true.)
+     enddo
+  endif
+  
   do n= 1, NSPEC_ADV
  !do n= 1, NSPEC_ADV-4  !ENEA
     def1%name= species(NSPEC_SHL+n)%name       !written
     dat=xn_adv(n,:,:,:)
     call Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype=Real4,&
-        ist=istart,jst=jstart,ien=iend,jen=jend,fileName_given=fileName_write)
+        ist=istart,jst=jstart,ien=iend,jen=jend,fileName_given=fileName_write,create_var_only=.false.)
   enddo
 
+    first_call=.false.
   return
 end subroutine wrtxn
 
