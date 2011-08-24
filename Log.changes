@@ -144,11 +144,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_9_1beta2, Robert,23th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_2, Robert,23th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Minor update in SOA-model. Now include vegetation fire BC (FFIRE_BC) in the EC_f group. 
 
-xxxxxxxx rv3_9_1beta, Peter, 19th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_1, Peter, 19th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Technical change in the outputting of netcdf data:
 NetCDF_ml
