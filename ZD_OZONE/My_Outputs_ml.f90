@@ -202,7 +202,7 @@ contains
 subroutine set_output_defs
    implicit none
 
-   character(len=44) :: errmsg  ! Local error message
+   character(len=144) :: errmsg  ! Local error message
    integer           :: i       ! Loop index
 
   real, parameter :: atwC=12.0

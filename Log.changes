@@ -144,6 +144,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
+xxxxxxxx rv3_9_3, Peter,23 September 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Minibug in error message ZD_OZONE/My_Outputs
+(more changes to come)
+
 xxxxxxxx rv3_9_2, Robert,23th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Minor update in SOA-model. Now include vegetation fire BC (FFIRE_BC) in the EC_f group. 
