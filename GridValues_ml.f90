@@ -222,8 +222,11 @@ contains
 
     ! -------------- Find debug coords  and processor ------------------
 
-    do i = 1, MAXLIMAX
-       do j = 1, MAXLJMAX
+    debug_proc = .false.
+    !do i = 1, MAXLIMAX
+    !   do j = 1, MAXLJMAX
+    do i = li0, limax
+       do j = lj0, ljmax
           if( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
              debug_li = i
              debug_lj = j
