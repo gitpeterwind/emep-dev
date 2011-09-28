@@ -37,6 +37,8 @@ Run mk.GenChem!!!!
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
 
+Also - GenChem makes femis.defaults in the ZCM_... directory
+
 CLEAN-UP: all code should be checked to remove old comments before
 the public release. Ideally compile code on PC with gfortran's
 pedantic debug switches (see Makefile_gfortran) - gives loads of
@@ -144,7 +146,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
-xxxxxxxx rv3_9_3, Peter,23 September 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxx rv3_9_4, Dave   28th Sep    2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+   GridValues_ml: changed loop in GridValues to find debug_proc.
+                  (old version found .true. on 2 processors, presumably
+                   due to the overlap of domains)
+
+vxxxxxxx rv3_9_3, Peter,23 September 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Minibug in error message ZD_OZONE/My_Outputs
 (more changes to come)
@@ -155,7 +164,7 @@ Minor update in SOA-model. Now include vegetation fire BC (FFIRE_BC) in the EC_f
 
 xxxxxxxx rv3_9_1, Peter, 19th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
-Technical change in the outputting of netcdf data:
+T
 NetCDF_ml
 ModelConstants_ml
 Nest_ml
