@@ -225,8 +225,8 @@ contains
     debug_proc = .false.
     !do i = 1, MAXLIMAX
     !   do j = 1, MAXLJMAX
-    do i = li0, limax
-       do j = lj0, ljmax
+    do i = li0, li1 ! limax
+       do j = lj0, lj1 ! ljmax
           if( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
              debug_li = i
              debug_lj = j
