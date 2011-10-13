@@ -246,7 +246,7 @@ my $CityZen = 0 ;
 my $VBS   = 0;
 my $Chem     = "EmChem09";
 
-my $testv = "rv3_8_7";
+my $testv = "rv3_9_5";
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
@@ -780,7 +780,6 @@ print "TESTING PM $poll $dir\n";
     $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
     $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
   } else {
-    #DS $ifile{"$DataDir/femis.dat"} =  "femis.dat";
     $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
   }
 
