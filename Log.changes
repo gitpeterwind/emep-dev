@@ -147,6 +147,13 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_9_5, Hilde, Dave 7th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+  ZD_Ozone/My_Derived - set to re-include  some standard outputs
+
+  GridValues_ml  - another change to stop debug_proc happening on
+                   two processors
+
 xxxxxxxx rv3_9_4, Dave   28th Sep    2011 xxxxxxxxxxxxxxxxxxxxxxx
 
    GridValues_ml: changed loop in GridValues to find debug_proc.
