@@ -147,6 +147,10 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_9_6, Robert 17th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+  ZCM_vbs_tests/VBS_SOAformation.reactions - Updated RO2 + HO2 reaction rates in the VBS-based SOA forming reactions (to be the same as in the EmChem09 photochemistry scheme), only influence the PCM model 
+
 xxxxxxxx rv3_9_5, Hilde, Dave 7th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
   ZD_Ozone/My_Derived - set to re-include  some standard outputs
