@@ -8,7 +8,7 @@
 *KRO2NO                 [NO] + [SECC4H9O2] = 0.038 ALK4_ug10 ;
 *KHO2RO2                [SECC4H9O2] + [HO2] =  0.075 ALK4_ug10 ;
 KRO2NO                 [NO] + [SECC4H9O2] = 0.027 ALK4_ug10 ; Tsimpidi yields are mass based M(ALK4_ug10) = 1.407*M(nC4H10) 
-KHO2RO2                [SECC4H9O2] + [HO2] =  0.0533 ALK4_ug10 ;
+0.625*KHO2RO2          [SECC4H9O2] + [HO2] =  0.0533 ALK4_ug10 ;
 
 *Alkene SOA 
 * Lane (2008) yields for OLE1 (SAPRC99 propenes, and C4-C15 terminal alkenes)
@@ -16,7 +16,7 @@ KHO2RO2                [SECC4H9O2] + [HO2] =  0.0533 ALK4_ug10 ;
 *KRO2NO                 [NO] + [PRRO2] = 0.001 OLE1_ug1 + 0.005 OLE1_ug10 + 0.038 OLE1_ug1e2 + 0.15 OLE1_ug1e3 ;
 *KHO2RO2                [PRRO2] + [HO2]   = 0.005 OLE1_ug1 + 0.009 OLE1_ug10 + 0.060 OLE1_ug1e2 + 0.225 OLE1_ug1e3 ;
 KRO2NO                 [NO] + [PRRO2] = 0.000686 OLE1_ug1 + 0.00343 OLE1_ug10 + 0.02608 OLE1_ug1e2 + 0.10294 OLE1_ug1e3 ; M(OLE1_ugX)=1.457*M(C3H6)
-KHO2RO2                [PRRO2] + [HO2]   = 0.00343 OLE1_ug1 + 0.006176 OLE1_ug10 + 0.041176 OLE1_ug1e2 + 0.154412 OLE1_ug1e3 ;
+0.52*KHO2RO2            [PRRO2] + [HO2]   = 0.00343 OLE1_ug1 + 0.006176 OLE1_ug10 + 0.041176 OLE1_ug1e2 + 0.154412 OLE1_ug1e3 ;
 
 * Aromatic SOA
 *ds: Use Lane's ARO2, sim to ARO1 anyway (odd?) Is ARO2 really the best choice for the EMEP chemistry? ARO1 represents lighter aromatics. NOTE! Newer experiments have shown much higher yields from aromatics, see e.g., Tsimpidi et al. (2010)
@@ -28,7 +28,7 @@ KHO2RO2                [PRRO2] + [HO2]   = 0.00343 OLE1_ug1 + 0.006176 OLE1_ug10
 *KHO2RO2                [OXYO2] + [HO2]    =  0.075 ARO2_ug1 + 0.3 ARO2_ug10 + 0.375 ARO2_ug1e2 + 0.525 ARO2_ug1e3 ;
 * Tsimpidi et al. (2010), [M(ARO2_ugX) = 1.902*M(OXYL)] 
 KRO2NO                 [OXYO2] + [NO]     =  0.00105 ARO2_ug1 + 0.10253 ARO2_ug10 + 0.15774 ARO2_ug1e2 + 0.22872 ARO2_ug1e3 ;
-KHO2RO2                [OXYO2] + [HO2]    =  0.03943 ARO2_ug1 + 0.15774 ARO2_ug10 + 0.19717 ARO2_ug1e2 + 0.27604 ARO2_ug1e3 ;
+0.859*KHO2RO2          [OXYO2] + [HO2]    =  0.03943 ARO2_ug1 + 0.15774 ARO2_ug10 + 0.19717 ARO2_ug1e2 + 0.27604 ARO2_ug1e3 ;
 
 * Isoprene SOA (Tsimpidi et al., use higher yields of low volatile ISOP_ug1 from the highNOx-path and scale yields for SOA-density of 1.5!)
 * Yields from Tsimpidi et al., 2010 (assumed SOA density of 1.5 g cm-3)
@@ -36,7 +36,7 @@ KHO2RO2                [OXYO2] + [HO2]    =  0.03943 ARO2_ug1 + 0.15774 ARO2_ug1
 *KHO2RO2                [ISRO2] + [HO2]  = 0.009 ISOP_ug1 + 0.03 ISOP_ug10 + 0.015 ISOP_ug1e2 ;
 * Tsimpidi et al., 2010, [M(ISOP_ugX) = 1.765*M(C5H8)]
 KRO2NO                 [ISRO2] + [NO]  = 0.000567 ISOP_ug1 + 0.013033 ISOP_ug10 + 0.0085 ISOP_ug1e2  ;
-KHO2RO2                [ISRO2] + [HO2]  = 0.0051 ISOP_ug1 + 0.017 ISOP_ug10 + 0.0085 ISOP_ug1e2 ;
+0.706*KHO2RO2          [ISRO2] + [HO2]  = 0.0051 ISOP_ug1 + 0.017 ISOP_ug10 + 0.0085 ISOP_ug1e2 ;
 
 *a-pinene SOA
 6.3e-16*exp(-580.0*TINV)   APINENE + [O3] = TERPPeroxy ; # + 0.3 SESQPeroxy ; 
@@ -49,8 +49,8 @@ KHO2RO2                [ISRO2] + [HO2]  = 0.0051 ISOP_ug1 + 0.017 ISOP_ug10 + 0.
 *KRO2NO   TERPPeroxy + NO  = NO2 + 0.012 TERP_ug1 + 0.122 TERP_ug10 + 0.201 TERP_ug1e2 + 0.5 TERP_ug1e3 ;
 *KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 + 0.405 TERP_ug1e3 ;
 * Tsimpidi et al., 2010, [M(TERP_ugX) = 1.5*M(APINENE)]
-KRO2NO   TERPPeroxy + NO  = NO2 + 0.008 TERP_ug1 + 0.08133 TERP_ug10 + 0.134 TERP_ug1e2 + 0.3333 TERP_ug1e3 ;
-KHO2RO2  TERPPeroxy + HO2 = 0.048 TERP_ug1 + 0.04067 TERP_ug10 + 0.15933 TERP_ug1e2 + 0.27 TERP_ug1e3 ;
+KRO2NO         TERPPeroxy + NO  = NO2 + 0.008 TERP_ug1 + 0.08133 TERP_ug10 + 0.134 TERP_ug1e2 + 0.3333 TERP_ug1e3 ;
+0.914*KHO2RO2  TERPPeroxy + HO2 = 0.048 TERP_ug1 + 0.04067 TERP_ug10 + 0.15933 TERP_ug1e2 + 0.27 TERP_ug1e3 ;
 
 *
 *KRO2NO   SESQPeroxy + NO  = NO2 + 0.05 SESQ_ug1 + 0.1 SESQ_ug10 + 0.5 SESQ_ug1e2 ;
