@@ -49,8 +49,8 @@
                     
     logical, public, parameter :: AERO_DYNAMICS     = .false.  &  
                                 , EQUILIB_EMEP      = .false.  & !old Ammonium stuff
-                                , EQUILIB_MARS      = .false.  & !MARS
-                                , EQUILIB_EQSAM     = .true.     !EQSAM
+                                , EQUILIB_MARS      = .true.  & !MARS
+                                , EQUILIB_EQSAM     = .false.     !EQSAM
                                 
 !    logical, public, parameter :: SEASALT = .true. , AOD = .false. 
  
