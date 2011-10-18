@@ -99,10 +99,10 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
+!  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/  1, 50,  1, 50 /)     ! Orig EMEP domain in EECCA
-! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
+ RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
 ! RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
 ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
@@ -113,7 +113,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
 ! RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
 ! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
- RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
+! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
@@ -121,8 +121,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 80+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 
 integer, public, parameter ::  &
-  NPROCX      =   4        & ! Actual number of processors in longitude
-, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   8        & ! Actual number of processors in longitude
+, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -152,9 +152,9 @@ integer, private, parameter :: &
 ! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
 ! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
-! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
+ DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
- DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
@@ -176,6 +176,7 @@ integer, public, parameter :: &
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::      &
    DEBUG_AQUEOUS        = .false. &
+  ,DEBUG_pH        = .false. &
   ,DEBUG_ADV            = .false. &
   ,DEBUG_AOT            = .false. &
   ,DEBUG_BCS            = .false. &
@@ -198,7 +199,7 @@ integer, public, parameter :: &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_IOPROG         = .false. &
-  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
+  ,DEBUG_RUNCHEM        = .true. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_MY_WETDEP    = .false. &
     ,DEBUG_SEASALT      = .false. &
