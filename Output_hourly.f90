@@ -317,6 +317,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             forall ( i=1:limax, j=1:ljmax)
               hourly(i,j) = hourly(i,j)                     &
                         + xn_adv(ispec,i,j,iik)             &
+                        *                  unit_conv        & ! Units conv.
                         * roa(i,j,iik,1)                    & ! density.
                         * (z_bnd(i,j,iik)-z_bnd(i,j,iik+1))   ! level thickness
             end forall

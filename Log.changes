@@ -149,8 +149,8 @@ ds done   My_SOA_ml.f90
 
 xxxxxxxx rv3_9_7, Alvaro 17th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
-Output_hourly: Missing unti conversion (%unitconv) on COLUMN ouput type.
-Only houtly column output for single species are afected.
+Output_hourly: Missing unit conversion (%unitconv) on COLUMN output type.
+Only hourly column output for single species are affected.
 
 xxxxxxxx rv3_9_6, Robert 17th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
