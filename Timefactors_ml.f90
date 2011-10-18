@@ -45,6 +45,8 @@
 !
 !  D. Simpson,    3/2/99
 !_____________________________________________________________________________
+!hf
+  use PhysicalConstants_ml, only : PI
   use CheckStop_ml, only : CheckStop
   use Country_ml,   only : NLAND
   use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE
@@ -73,6 +75,10 @@
                                                       ! calculated daily
   real, public, save,  &
      dimension(NLAND,12,NSECTORS,NEMIS_FILE) :: fac_emm  ! Monthly factors
+!hf
+  real, public, save,  &
+     dimension(12) :: fac_cemm  ! Change in monthly factors over the years
+
   real, public, save,  &
      dimension(NLAND, 7,NSECTORS,NEMIS_FILE) :: fac_edd  ! Daily factors
 
@@ -112,6 +118,9 @@ contains
   integer :: weekday            ! 1=monday, 2=tuesday etc.
   real    :: xday, sumfac       ! used in interpolation, testing
   character(len=100) :: errmsg
+!hf
+  real :: fracchange
+  real, dimension(NLAND,NEMIS_FILE):: sumfacc !factor to normalize monthly changes                                                         
 
 
 ! Factor giving nighttime  emission ratio. 
@@ -145,6 +154,21 @@ contains
 !  1) Read in Monthly factors
 
    fac_emm(:,:,:,:) = 1.0
+!hf
+   fac_cemm(:) = 1.0
+   fracchange=0.005*(year -1990)
+   fracchange=max(0.0,fracchange) !do not change before 1990
+   fracchange=min(0.1,fracchange) !stop change after 2010 
+                                  !equal 1.1/0.9=1.22 summer/winter change
+   write(unit=6,fmt=*) "Change summer/winter ratio in SNAP1 by ", fracchange
+
+   do mm=1,12
+      !Assume max change for august and february
+      fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12 )
+      write(unit=6,fmt=*) "Change in emis mm, fac_cemm ", mm,fac_cemm(mm)
+   enddo
+!hf end
+
 
    do iemis = 1, NEMIS_FILE
 
@@ -167,6 +191,21 @@ contains
 
        close(IO_TIMEFACS)
 
+!hf Apply change in monthly factors for SNAP 1
+          sumfacc(:,:)=0.0
+          do ic = 1, NLAND
+             do mm=1,12
+                fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*fac_cemm(mm)
+                sumfacc(ic,iemis)=sumfacc(ic,iemis)+fac_emm(ic,mm,1,iemis)
+             enddo
+          enddo
+!hf normalize
+          do ic = 1, NLAND
+             do mm=1,12
+                fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfacc(ic,iemis)
+             enddo
+          enddo
+!hf end
        if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2 
    enddo  ! iemis
 
