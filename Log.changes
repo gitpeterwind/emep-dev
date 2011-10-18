@@ -145,7 +145,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+
 !----------------------------------------------------------
+xxxxxxxx rv3_9_8, Hilde 18th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
+3 changes: 1)Explicit pH calculation (using ion balance, also including CO2-HCO3)
++ 2) change of seasonality of emissions + 3) use MARS for equilibrium
+
+Aqueous_n_WetDep_ml.f90: pH calculation included
+Timefactors: 10% change in summer/winter ratio over 10 years for SNAP 1 (Grennfelt&Hov)
+My_Aerosols_ml.f90: call MARS instead of EQSAM
+ModelConstants_ml: DEBUG_pH
 
 xxxxxxxx rv3_9_7, Alvaro 17th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
