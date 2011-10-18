@@ -19,7 +19,7 @@ Some jobs needed after Mar-11th tests (ds will do)
   - Decide SoilMoisture
   - SoilWater - should implement readneightbour routine
 
-None? 
+None?
 I (DS) have re-writting My_Derived and Derived to use the array
 OutputConcs.  This harmonises 2d and 3d, ppb, ug, ugN, etc., and
 has either simple species or groups.  No problems known, but this
@@ -120,7 +120,7 @@ an done   ReadField_ml.f90
 ds done   Rsurface_ml.f90
 an done   Runchem_ml.f90
 st ds done   SeaSalt_ml.f90      - finel small shanges are possible today
-ab done   Setup_1dfields_ml.f90 
+ab done   Setup_1dfields_ml.f90
 ds done   Setup_1d_ml.f90
 mg done   Sites_ml.f90
 ab done   SmallUtils_ml.f90
@@ -147,9 +147,14 @@ ds done   My_SOA_ml.f90
 
 !----------------------------------------------------------
 
+xxxxxxxx rv3_9_7, Alvaro 17th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Output_hourly: Missing unti conversion (%unitconv) on COLUMN ouput type.
+Only houtly column output for single species are afected.
+
 xxxxxxxx rv3_9_6, Robert 17th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
-  ZCM_vbs_tests/VBS_SOAformation.reactions - Updated RO2 + HO2 reaction rates in the VBS-based SOA forming reactions (to be the same as in the EmChem09 photochemistry scheme), only influence the PCM model 
+  ZCM_vbs_tests/VBS_SOAformation.reactions - Updated RO2 + HO2 reaction rates in the VBS-based SOA forming reactions (to be the same as in the EmChem09 photochemistry scheme), only influence the PCM model
 
 xxxxxxxx rv3_9_5, Hilde, Dave 7th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -171,7 +176,7 @@ Minibug in error message ZD_OZONE/My_Outputs
 
 xxxxxxxx rv3_9_2, Robert,23th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
-Minor update in SOA-model. Now include vegetation fire BC (FFIRE_BC) in the EC_f group. 
+Minor update in SOA-model. Now include vegetation fire BC (FFIRE_BC) in the EC_f group.
 
 xxxxxxxx rv3_9_1, Peter, 19th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -180,7 +185,7 @@ NetCDF_ml
 ModelConstants_ml
 Nest_ml
 OutputChem_ml
-ALL the parameters (variables) are defined (created) in the NetCDF file before the data 
+ALL the parameters (variables) are defined (created) in the NetCDF file before the data
 is written in the first record.
 Because of the way the netcdf is stored, all the data has to be copied each time a new variable is defined,
 therefore it is very inefficient to add and write new variables succesively. See
@@ -196,14 +201,14 @@ rtagged now - accumulates changes from   rv3_8_7 as listed below.
 
 xxxxxxxx rv3_9_0beta?[not finished yet]  Robert, 11th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
-NOTE! This version is expected to give slightly changed results compared to 
+NOTE! This version is expected to give slightly changed results compared to
 earlier versions (so should be given a new revision number)
 
-ForestFire_ml: Changed the "assumed mass" for particulate OC emissions from wildfires from 0 to 12, 
-which has a big impact on forest fire OM emissions if the non-C part is modelled! 
+ForestFire_ml: Changed the "assumed mass" for particulate OC emissions from wildfires from 0 to 12,
+which has a big impact on forest fire OM emissions if the non-C part is modelled!
 Important for partitioning OA-models!
 
-Minor bug fix in Biogenics_ml (MW of isoprene changed from 64 to 68) 
+Minor bug fix in Biogenics_ml (MW of isoprene changed from 64 to 68)
    -> Will give slightly different isoprene emissions
 
 Updating mk.GenChem with new SOA scheme options (VBS)
@@ -219,7 +224,7 @@ corrected into a safer version
 
 
 xxxxxxxx rv3_8_7c  Dave, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
-(We can merge all these changes into one rtagged cvs once we are 
+(We can merge all these changes into one rtagged cvs once we are
  done. I am not rtagging each one yet.)
 
 GenChem.pl - now works even without seasalt. Unimod doesn't though :-(
@@ -232,7 +237,7 @@ xxxxxxxx rv3_8_7b  Robert, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 One major (only influencing VBS-model) and one minor correction/bug fix.
 
-Updating the EMISSPLIT files for OC-emissions in the VBS-scheme. 
+Updating the EMISSPLIT files for OC-emissions in the VBS-scheme.
      Earlier versions had an error in the MASS_ASSUMED.
      Now MASS_ASSUMED = 12 (emissions are assumed given in units of C)
 
@@ -241,7 +246,7 @@ Minor bug fix (should only influence the Log-files)
 EmisGet_ml: Earlier version gave erroneous (too large) national total emissions
   in the log files if the same grid point occurs more than once in a given emission file.
 
- 
+
 xxxxxxxx rv3_8_7   Dave, 9th August 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 FILE CHANGES!!!
@@ -256,7 +261,7 @@ FILE CHANGES!!!
 
 FILES REMOVED:
      My_Emis_ml   - not needed now. GenChem figures it out.
-     GenIn.species, GenIn.reactions 
+     GenIn.species, GenIn.reactions
      ZCM_vbs_tests/GenIn.reactions, GenIn.species  CM_BoundaryConditions.inc
       (the latter should be identical to the EmChem09.)
 
@@ -288,14 +293,14 @@ CityZen updates  (using ZCM_Eucaari_trends and Z_VBS directories)
 
    ZCM_Eucaari_trends
    ------------------
-    Harmonise BICs: 
+    Harmonise BICs:
     copied ZCM_EmChem09/SAFE- ... BICs to ZCM_Eucaari_Trends *and* ZCM_vbs_tests
 
     Changes in GenIn.species:
      Added AER_OM_F as helper species
      removed PM10, PMFINE groups from all SOA species. Only specify
      these groups for AER_OM_F and various EC components.
-     
+
      Used PMGIANT group for SEASALT_G instead of PMCO - that is for
      the MMD=2.5um particles.
 
@@ -330,7 +335,7 @@ xxxxxxxx rv3_8_4     Dave   9th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
   Another small bug found, we had a reaction [OH] + C2H6  which
   should have been [OH] + C2H6_BIC in old code, now deleted
-  
+
   SUGGEST FOR OPEN-SOURCE
 
 xxxxxxxx rv3_8_3  ...Peter  6th July 2011 xxxxxxxxxxxxxxxxxxxxxxx
@@ -355,7 +360,7 @@ xxxxxxxx rv3_8_2,  Dave/Svetlana/Birthe 20th June 2011 xxxxxxxxxxxxxxxxxxxxxxx
  USED FOR SOURCE RECEPTOR JUNE 2011   = EMEP/MSC-W version v.2011-06
                                       *******************************
 
-io_min set to IOU_YEAR is SOURCE_RECEPTOR 
+io_min set to IOU_YEAR is SOURCE_RECEPTOR
 
 xxxxxxxx rv3_8_1,  Dave/Svetlana 19th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -380,7 +385,7 @@ Emissions_ml - problems found, not fully resolved. airn was set from
     KEMISTOP to KMAXMID, whereas it should from KCHEMTOP.
 
 GlobalBCs_ml - * bug-fix * Removed Grid%is_NWPsea code.
-                 small extra comments on sea-salt. 
+                 small extra comments on sea-salt.
 
 My_Derived_ml -  change PM25 to PMFINE, since PM25=PMFINE+0.5*PMCO
                (density removed from My_DerivFunc call - not used)
@@ -408,8 +413,8 @@ Small clean-up after gfortran pedantic check:
     NetCDF_ml
     Setup_1d_ml (initialised some rc rates also)
     Solver_ml
-    
- 
+
+
 xxxxxxxx rv3.8s,  Dave       15th June 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 (s= back to simpler kaero, after many many tests)
@@ -430,7 +435,7 @@ xxxxxxxx rv3_7_10, Dave      24th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 CellMet_ml: fixed snowice following query of Guus Velders
 
-ChemFunctions_ml: 
+ChemFunctions_ml:
 
     Riemer - included NO3_c (for robustness) and reduced rate by factor
     2 for OA effect (RIemer et al., 2009)
@@ -454,7 +459,7 @@ Added emissplit files for TNO/EUCAARI style EC/OC emissions
 xxxxxxxx rv3_7_9 Dave,    20th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
-mk.OpenSource added - ** prelim ** script to automate generation of 
+mk.OpenSource added - ** prelim ** script to automate generation of
     OpenSource directory
     (only partially working. creates directory okay and compiles.
      Need to add inputs directory later also)
@@ -468,7 +473,7 @@ Upgrade of the Nest_ml routines.
 Can use non-emep netcdf files for BC/IC; flexibilities introduced for nesting:
 -vertical coordinates can be hybrid, downwards or upwards, possibly defined in an ad-hoc file (ifs-mozart)
 -number of records in each file can be: 1 (RCA), some (mozart), all (emep), variable (transphorm)
--time can be defined with any "days since" date 
+-time can be defined with any "days since" date
 -time can be defined in a 365days convention, but still use 29th of February (mozart!)
 -IC and BC files can be different
 -chemical components to be nested can be selected and to some degrees added together
@@ -483,14 +488,14 @@ Met_ml: allow to read ustar_nwp instead of tau (for WRF)
 PhyChem_ml: thour defined as = current_date (was shifted by 0.5 dt_advec before) NB: this will slightly modify results!
             timings for nesting read and write
 
-Tove/Dave, 11th May 2011 
+Tove/Dave, 11th May 2011
 (Small change for vbs only)
 
-ZCM_vbs_tests/My_Derived  use My_Emis_ml instead of  EmisDef_ml 
+ZCM_vbs_tests/My_Derived  use My_Emis_ml instead of  EmisDef_ml
 
 xxxxxxxx rv3_7_7 Peter,   9th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Bug in Nest_ml, when the IC file is different from the BC file (allocated to small ndays_ext). 
+Bug in Nest_ml, when the IC file is different from the BC file (allocated to small ndays_ext).
 
 xxxxxxxx rv3_7_6 Dave,   6th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -542,14 +547,14 @@ xxxxxxxx rv3_7_6 Dave,   6th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   not have to be used. Thus, we can have emissplit for "PM25" in the case
   that we run gridPM25, and also an emissplit.defaults.ocfile in case we
   are running with gridOCfine. No need to change GenIn. files or Unimod :-)
- 
+
 xxxxxxxx rv3_7_5 Agnes, Robert 5th May 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Agnes:
 Mace Head correction for 2009 is included in GlobalBCs_ml.f90
 
 Robert:
-Changed the SOA (VBS) scheme. Now using higher SOA yields from AVOCs and include aging of ASOA, BSOA and POA. 
+Changed the SOA (VBS) scheme. Now using higher SOA yields from AVOCs and include aging of ASOA, BSOA and POA.
                               Also include dry deposition of gaseous fraction of semi-volatile OOA (ASOA, BSOA and OPOA).
 
 Modified: ZCM_vbs_tests/GenIn.species
@@ -586,7 +591,7 @@ Modified: ZCM_vbs_tests/GenIn.reactions, GenIn.species, CM_BoundaryConditions.in
 
 xxxxxxxx rv3_7_1  Peter 12th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-First version of a Nesting with general vertical coordinates. Can use external BIC files such as 
+First version of a Nesting with general vertical coordinates. Can use external BIC files such as
 MOZART or TRANSPHORM. Needs still some testing and filenames are hardcoded for now.
 When new external file are included, more flexibility can be introduced.
 Should be backwards compatible. The vertical coordinates are read from the info in the netcdf files,
@@ -624,10 +629,10 @@ xxxxxxxx rv3_7rc9 Peter 25-28-29th xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Cleaning the standard output (screen output)
 Modified (at least):
-EmisGet_ml.f90 Landuse_ml.f90 EcoSystem_ml.f90 Derived_ml.f90 
-Aqueous_n_WetDep_ml.f90 Io_Progs_ml.f90 Sites_ml.f90 Emissions_ml.f90 
-AirEmis_ml.f90 BoundaryConditions_ml.f90 NetCDF_ml.f90 MassBudget_ml.f90 
-GlobalBCs_ml.f90 Met_ml.f90 Biogenics_ml.f90 DryDep_ml.f90 Advection_ml.f90 
+EmisGet_ml.f90 Landuse_ml.f90 EcoSystem_ml.f90 Derived_ml.f90
+Aqueous_n_WetDep_ml.f90 Io_Progs_ml.f90 Sites_ml.f90 Emissions_ml.f90
+AirEmis_ml.f90 BoundaryConditions_ml.f90 NetCDF_ml.f90 MassBudget_ml.f90
+GlobalBCs_ml.f90 Met_ml.f90 Biogenics_ml.f90 DryDep_ml.f90 Advection_ml.f90
 ModelConstants_ml.f90 Unimod.f90 PhyChem_ml.f90 CheckStop_ml.f90
 
 Model stops if no specials 'voc'.and.USE_FOREST_FIRES
@@ -644,7 +649,7 @@ Dave:
 
 
 BVOC inputs changed. Just now run.pl hard-coded to read from mifads directory.
-Will recode when benchmarked 
+Will recode when benchmarked
 
 Biogenics_ml       - Small re-write to cope with latest EMEP_EuroBVOC.nc
                      now copes with BVOC from wetlands, tundra.
@@ -687,13 +692,13 @@ Setup_1dfields_ml - clean up
 
 ZCM_EmChem09/GenIn.reactions - use kaero2
 ZCM_EmChem09/SAFE.CM_BoundaryConditions.inc - added sea salt
-ZCM_EmChem09/EMISSPLIT - voc files re-commented 
+ZCM_EmChem09/EMISSPLIT - voc files re-commented
 
 xxxxxxxx rv3_7rc4  Alvaro, Dave, Peter  Mar 15 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Dave+Peter:
-More soil water changes + bug-fix for ws_10m 
-   
+More soil water changes + bug-fix for ws_10m
+
 Landuse_ml - water_cover_set flag added. Needed since water_cover not
      available until nterm > 2
 
@@ -705,7 +710,7 @@ Met_ml .... further manipulation of SoilWater_deep values:
       !  effect. (Alternattve might be to find max values?)
 
        Also, shallow soil water "switched off" if units /= "m". Seemed
-       safest for OpenSource2011 
+       safest for OpenSource2011
 
        bug-fix on sw_10m
 
@@ -772,7 +777,7 @@ Solver_ml : now switches off Reactions1 if DEBUG_DRYRUN = .true.
 
 xxxxxxxx rv3_7rc2  Dave           Mar 13 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Biogenics_ml corrected and cleaned. Notation updated. 
+Biogenics_ml corrected and cleaned. Notation updated.
   No BVOC_2010 option now - this is the only method. IQ_DMS moved to
   EmisDef_ml, first_dms_read moved to Emissions_ml
   Replaces ExportBIO routine with calls to new printCDF routine
@@ -793,7 +798,7 @@ MetFields_ml - small extra tidy-up
 
 ModelConstants_ml - no BVOC_2010 option.
 
-NetCDF_ml  - printCDF added - for "easy" output to cdf in e.g. debugging, 
+NetCDF_ml  - printCDF added - for "easy" output to cdf in e.g. debugging,
                call printCDF("Example,array,"ugS/m3")
 
 Rurface_ml - small tidy up. Still could do with more (snow)
@@ -817,7 +822,7 @@ End of changes for this busy week I think!
 
 xxxxxxxx h18:15    Svetlana       Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Final version of SeaSalt_ml.f90 with 'giant' bin and 
+Final version of SeaSalt_ml.f90 with 'giant' bin and
 adjusted giant diameter Aero_Vds_ml.f90
 
 xxxxxxxx h16:14      Peter      Mar 11 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -840,7 +845,7 @@ ModelConstants_ml: defined EECCA as domain and rundomain (and 8*4 procs)
 GlobalBCs_ml:  added case (IBC_H2O2, IBC_OH, IBC_CH3COO2)     bc_rawdata=1.0E-25
 (these were not set at all)
 
-run.pl: 
+run.pl:
 link EMEP_EuroBVOC_KRS09.nc to  EMEP_EuroBVOC.nc
 link GLOBAL_O3.nc to GLOBAL_O3.nc (instead of GLOBAL_Boundary_and_Initial_Conditions.nc)
 
@@ -859,8 +864,8 @@ Aero_water_ml.f90 changed to MARS_Aero_water_ml.f90 (as it had the same name
 as subroutine Aero_water() in My_Aerosols_ml.f90)
 Correspondent changes in MARS_ml.f90 and Makefile.SRCS
 
-ForestFires_ml.f90: len=TXTLEN_SHORT is assigned to emep_poll, gfed_poll 
-instead of too short len=10 
+ForestFires_ml.f90: len=TXTLEN_SHORT is assigned to emep_poll, gfed_poll
+instead of too short len=10
 
 xxxxxxxx h23:15       Alvaro       Mar 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -959,10 +964,10 @@ Aqueous_n_WetDep_ml.f90       - scavenging ratio for SSg
 My_Aerosols_ml.f90            - NSIZE = 3
 Wesely_ml.f90                 - new CDDEP_PMg = 15 and AERO_SIZE=3
 EmisDef_ml.f90                - QSSGI index
-Solver.f90                    
+Solver.f90
 -----
 ZCM_EmChem09/GenIn.species
-             GenIn.reactions 
+             GenIn.reactions
 
 xxxxxxxx rv3_7beta29  Alvaro   Mar 8 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -1120,7 +1125,7 @@ ModelConstants_ml
 xxxxxxxx rv3_7beta28 Mar  1 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Main change is usage of iotype in f_2d Deriv arrays. Changes lablled with
-FEB2011, pending merge with Alvaro's version and checks for FORECAST mode. 
+FEB2011, pending merge with Alvaro's version and checks for FORECAST mode.
 
 Derived_ml,
 
@@ -1150,7 +1155,7 @@ NetCDF_ml
 OutputChem_ml
     iotype usage added
     QUERY - need to check usage for FORECAST especially
-    
+
 Unimod.f90
      iotype usage added.
 
@@ -1159,22 +1164,22 @@ Biogenics_ml, ForestFire_ml, Nest_ml
 
 xxxxxxxx rv3_7beta27 Feb 28 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Removed NTERM from run.pl. Instead endday and endmonth are defined and 
+Removed NTERM from run.pl. Instead endday and endmonth are defined and
 NTERM is calculated in the model.
 Also removed NASS, which was not used anyway.
 
 Note: if enddate is before startdate, 3-hour run is performed.
-      if endday is larger than the number of days in the month (for example 
-        endday=33), it is set as the number of days of the month; this is 
-        to avoid thinking about leap years etc.   
-      The new code will not work with old run.pl, since the variables read in have changed. 
+      if endday is larger than the number of days in the month (for example
+        endday=33), it is set as the number of days of the month; this is
+        to avoid thinking about leap years etc.
+      The new code will not work with old run.pl, since the variables read in have changed.
 
 NB: CWF runs are broken now. run.pl is not yet updated for CWF!
 
 Unimod.f90: call assign_NTERM(NTERM). Better comments when wrong number of PROCS.
 TimeDate_ml:defined assign_NTERM(NTERM) and moved startdate,enddate there.
 Met_ml: moved startdate,enddate out of this module
-ModelConstants_ml and MassBudget_ml: defined EXTENDEDMASSBUDGET to be set 
+ModelConstants_ml and MassBudget_ml: defined EXTENDEDMASSBUDGET to be set
                         as true if all the massbalance output is required
 
 modrun.pl: completely changed and simplified
@@ -1228,7 +1233,7 @@ xxxxxxxx rv3_7beta23  Dave   Feb 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 New (again!) groups system!   Removal of My_WetDep_ml :-)
 
-1. New chemgroups array added in CM_ChemGroups_ml, with pointers to the 
+1. New chemgroups array added in CM_ChemGroups_ml, with pointers to the
    different group arrays, see below.
 
 2. CM_ChemGroups_ml.f90 now kept as separate file, not in CM_ChemSpecs_ml
@@ -1240,7 +1245,7 @@ New (again!) groups system!   Removal of My_WetDep_ml :-)
    these properly set in GenIn.species
 
 5. My_WetDep_ml merged with Aqueous_ml - > Aqueous_n_WetDep_ml. All chemistry
-   dependencies are now through the imported CM_WetDep.inc file. 
+   dependencies are now through the imported CM_WetDep.inc file.
 
 
 These changes also make "older" code like ZCM_Eucaari_Trends, or newer
@@ -1297,7 +1302,7 @@ xxxxxxxx rv3_7beta22  Dave   Feb 10 2011 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
  ** BUG fix ** My_WetDep_ml
     NaCl wet deposition output: now use fSS, not fN
 
-Derived_ml.f90 & 
+Derived_ml.f90 &
 Ecosystem_ml.f90
 MosaicOutputs_ml.f90
 
