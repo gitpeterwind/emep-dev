@@ -147,7 +147,9 @@ ds done   My_SOA_ml.f90
 
 
 !----------------------------------------------------------
-xxxxxxxx rv3_9_10, Hilde 19th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_11, Hilde 19th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+(rv3_9_10 accidently used earlier for rv3_7_10. Skip to 11 here)
 
 
 Timefactors  - use iyr_trend instead of year
