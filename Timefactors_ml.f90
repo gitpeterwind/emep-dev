@@ -46,6 +46,7 @@
 !  D. Simpson,    3/2/99
 !_____________________________________________________________________________
 !hf
+  use ModelConstants_ml, only : iyr_trend
   use PhysicalConstants_ml, only : PI
   use CheckStop_ml, only : CheckStop
   use Country_ml,   only : NLAND
@@ -156,7 +157,7 @@ contains
    fac_emm(:,:,:,:) = 1.0
 !hf
    fac_cemm(:) = 1.0
-   fracchange=0.005*(year -1990)
+   fracchange=0.005*(iyr_trend -1990)
    fracchange=max(0.0,fracchange) !do not change before 1990
    fracchange=min(0.1,fracchange) !stop change after 2010 
                                   !equal 1.1/0.9=1.22 summer/winter change
