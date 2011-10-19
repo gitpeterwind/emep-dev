@@ -147,6 +147,10 @@ ds done   My_SOA_ml.f90
 
 
 !----------------------------------------------------------
+xxxxxxxx rv3_9_9, Robert 18th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+  ZCM_EmChem09/EmChem09base.reactions - Changed the amount of RO2H formed in some RO2 + HO2 reactions to take into account formation of SOA
+
 xxxxxxxx rv3_9_8, Hilde 18th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 3 changes: 1)Explicit pH calculation (using ion balance, also including CO2-HCO3)
 + 2) change of seasonality of emissions + 3) use MARS for equilibrium
