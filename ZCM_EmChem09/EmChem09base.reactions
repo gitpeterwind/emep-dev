@@ -107,7 +107,7 @@ KRC68                         C2H5OOH + OH  = C2H5O2       ;
 * ;
 2.03e-17*(TEMP**2)*EXP(78.0*TINV)    OH + NC4H10  = SECC4H9O2 ; IUPAC2007
 KRO2NO                   NO + SECC4H9O2  = NO2 + 0.65 HO2 + 0.65 MEK + 0.35 CH3CHO + 0.35 C2H5O2 ;
-0.625*KHO2RO2            SECC4H9O2 + HO2 = BURO2H ;
+0.625*KHO2RO2            SECC4H9O2 + HO2 = 0.95 BURO2H ; 5% lost to S/IVOC SOA species
 *
 2.53e-18*(TEMP**2)*EXP(503.0*TINV)  OH     + MEK = MEKO2    ; IUPAC2007
 KRO2NO                   MEKO2  + NO  = NO2 + CH3COO2 + CH3CHO   ;
@@ -129,14 +129,14 @@ KRC92                    ETRO2H + OH = ETRO2   ;
 * ;
 5.5e-15*EXP(-1880.0*TINV)   O3 + C3H6 = 0.545 HCHO + 0.545 CH3CHO + 0.56 CO + 0.36 OH + 0.28 HO2 + 0.09 H2O2 + 0.1 CH4 + 0.28 CH3O2 + 0.075 {HCOOH} + 0.075 {CH3COOH} ; updated rate constant, products based on MCM scheme, Perhaps we should add the simple acids to the EMEP scheme (HCOOH and CH3COOH)?
 KRO2NO                 NO     + PRRO2 = NO2 + CH3CHO + HCHO + HO2 ;
-0.52*KHO2RO2           PRRO2  + HO2   = PRRO2H ;
+0.52*KHO2RO2           PRRO2  + HO2   = 0.795 PRRO2H ; 20.5% lost to S/IVOC SOA species
 * old version KRC91                  PRRO2H + OH    = MEK + OH  ; !Creates carbon atom!
 2.44e-11               PRRO2H + OH    = ACETOL + OH ; rate updated from MCM, product should be ACETOL, consider introducing this species? Why not temperature dependent? Much higher rate than earlier (T-dep) version?
 KRC92                  PRRO2H + OH    = PRRO2   ;
 *
 1.36e-11               OXYL   + OH     =  OXYO2 ; updated (MCM)
 KRO2NO                 OXYO2  + NO     =  NO2 + MGLYOX + MAL + HO2 ;
-0.859*KHO2RO2          OXYO2  + HO2    =  OXYO2H ;
+0.859*KHO2RO2          OXYO2  + HO2    =  0.33 OXYO2H ; 67% lost to S/IVOC SOA species
 4.2e-11                OXYO2H + OH     =  OXYO2   ; one back reaction (for ca 55% of the OXYO2H) is at 7.62d-11 in MCM, so this rate should probably be increased, from 1.7e-11, at least to 4.2d-11, the other OXYO2H products do not react back to OXYO2!
 5.58e-11               MAL    + OH     = MALO2  ; MAL = C5DICARB in MCM
 KRO2NO                 MALO2  + NO     = NO2 + HO2 + MGLYOX + GLYOX   ;
@@ -151,7 +151,7 @@ KRO2NO                 MALO2  + NO     = NO2 + HO2 + MGLYOX + GLYOX   ;
 1.03e-14*EXP(-1995.0*TINV) C5H8 + O3   = 0.67 MACR + 0.26 MVK + 0.3 OP + 0.55 OH + 0.07 C3H6 + 0.8 HCHO + 0.06 HO2 + 0.05 CO ;
 2.7E-11*EXP(390.0*TINV)  C5H8  + OH    = ISRO2 ; IUPAC2008
 KRO2NO                   ISRO2 + NO    = 0.32 MACR + 0.42 MVK + 0.74 HCHO + 0.14 ISNI + 0.12 ISRO2 + 0.78 HO2 + 0.86 NO2 ;
-0.706*KHO2RO2            ISRO2 + HO2   = ISRO2H ;
+0.706*KHO2RO2            ISRO2 + HO2   = 0.97 ISRO2H ; 3% lost to S/IVOC SOA species
 2.6e-12*EXP(610.0*TINV)  MVK + OH      = MVKO2   ; IUPAC2007
 KRO2NO                   MVKO2 + NO    = 0.684 CH3CHO + 0.684 CH3COO2 + 0.266 MGLYOX + 0.266 HCHO + 0.05 ISNI + 0.95 NO2 + 0.95 HO2    ; would have been great to have hydroxy acetaldehyde in the scheme... PERHAPS test a version including this species (HOCH2CHO)?
 7.5e-11                  ISRO2H + OH   = OH + ISRO2   ; suggested by CR based on MCM 
