@@ -219,7 +219,7 @@ private
      end if
 
           call Define_Derived()
-          call Setups()
+          call Setups()  ! just for VOC now
 
     end subroutine Init_Derived
 
@@ -244,6 +244,7 @@ private
        logical, intent(in), optional :: Is3D
        type(Deriv) :: inderiv
 
+if( trim(name) == "HMIX" .and. MasterProc ) print *, "ADDNEWDERIVE", iotype !NOV2011
        inderiv = Deriv(trim(name),trim(class),trim(subclass),&
                            trim(txt),trim(unit),index,f2d,dt_scale, scale,&
                             avg,iotype)
@@ -304,6 +305,7 @@ private
     character(len=10) :: unittxt
     character(len=3)  :: subclass
     character(len=TXTLEN_SHORT) ::  outname, outunit, outtyp, outdim
+    integer :: outind
 
    integer :: ind, iadv, itot, idebug, n, n2, iLC, igrp, iout
 
@@ -373,8 +375,8 @@ call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY ) 
 
-call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-               -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
+!TEST call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
+!TEST                -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
 
 call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
                -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
@@ -411,70 +413,91 @@ do ind = 1, size( OutputConcs(:)%txt1 )
    outunit= trim( OutputConcs(ind)%txt2 )   ! eg ugN, which gives unitstxt ugN/m3
    outdim = trim( OutputConcs(ind)%txt3 )   ! 2d or 3d
    outtyp = trim( OutputConcs(ind)%txt5 )   ! SPEC or GROUP
+   outind = OutputConcs(ind)%ind    !  H, D, M - fequency of output
    txt2   = "-" ! not needed?
 
-   if ( outtyp == "SPEC" ) then ! Simple species
+   if ( outtyp == "MISC" ) then ! Simple species
 
-     itot = find_index( trim( outname ) , species(:)%name ) 
-     iout = itot - NSPEC_SHL   ! set to iadv
+       iout = -99 ! find_index( wanted_deriv2d(i), def_2d(:)%name )
+       class  = trim( OutputConcs(ind)%txt4 )   ! SPEC or GROUP
+       unitscale = 1.0
+       if( outunit == "ppb") unitscale = PPBINV
 
-     if( MasterProc .and. itot <0 ) then
-        write(*,*) "ERROR! My_Derived has asked for a species to be output",&
-&                  " that isn't in the CM_ChemSpecs list (below). FIX!"
-        do i =1, size( species(:)%name ) 
-           write(*,"(a,i4,2a12)") "CONCLIST ", i, trim(species(i)%name ), trim(outname)
-        end do
-     call CheckStop(itot<0, "OutputConcs Species not found " // trim(dname) )
-     end if
-     txt = "SURF_UG"
+       if(MasterProc ) write(*,"(i3,a,i4,a)")  me, &
+            "Deriv:D2MET " // trim(outname), outind, trim(class)
 
-   else if ( outtyp == "GROUP" ) then ! groups of species
+       call AddNewDeriv( outname,class,  "-","-",  outunit, &
+                     iout,  -99,  F, unitscale,  T, outind )
+      ! WAS
+      !call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
+      !                  -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
+      !call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
+            !   -1 , -99,  F, PPBINV,  T,  IOU_DAY ) 
 
-    igrp = find_index( trim( outname ), GROUP_ARRAY(:)%name )
+   else ! SPEC and GROUPS of specs.
 
-    txt = "SURF_UG_GROUP"   ! ppb not implementde yet
-    itot = -1
-    iout = igrp
-   else
+       if ( outtyp == "SPEC" ) then ! Simple species
 
-     call StopAll("OutputConcs Error " // trim( outtyp ) )
-   end if
+          itot = find_index( trim( outname ) , species(:)%name ) 
+          iout = itot - NSPEC_SHL   ! set to iadv
 
-   call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
+          call CheckStop(itot<0, &
+               "OutputConcs Species not found " // trim(outname) )
+          txt = "SURF_UG"
 
-   class = "SURF_MASS_" // trim(outtyp)
-   if (  volunit .and. itot > 0 ) class = "SURF_PPB_" // trim(outtyp)
-   if (  volunit .and. itot < 1 ) call StopAll(&
+       else if ( outtyp == "GROUP" ) then ! groups of species
+
+          igrp = find_index( trim( outname ), GROUP_ARRAY(:)%name )
+
+          txt = "SURF_UG_GROUP"   ! ppb not implementde yet
+          itot = -1
+          iout = igrp
+       else
+
+           call StopAll("Derived:OutputConcs Error " // trim( outtyp ) //":" //trim( outname ) )
+
+       end if
+
+       call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
+  
+       class = "SURF_MASS_" // trim(outtyp)
+       if (  volunit .and. itot > 0 ) class = "SURF_PPB_" // trim(outtyp)
+       if (  volunit .and. itot < 1 ) call StopAll(&
            "SURF_PPB_GROUPS not implemented yet:"// trim(dname) )
                                                 
-   dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
+       dname = "SURF_" // trim( outunit ) // "_" // trim( outname )
 
-   if( DEBUG.and.MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
+       if( DEBUG.and.MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
         "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
               OutputConcs(ind)%ind,unitscale
 
-   call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
+       call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
              iout  , -99,  F,   unitscale,     T,  OutputConcs(ind)%ind )
 
-  if ( outdim == "3d" ) then
+       if ( outdim == "3d" ) then
 
-     class = "3D_MASS_" // trim(outtyp)
-     if (  volunit .and. itot > 0 ) class = "3D_PPB_" // trim(outtyp)
+          class = "3D_MASS_" // trim(outtyp)
+          if (  volunit .and. itot > 0 ) class = "3D_PPB_" // trim(outtyp)
 
-     dname = "D3_" // trim( outunit ) // "_" // trim( outname )
+          dname = "D3_" // trim( outunit ) // "_" // trim( outname )
 
-     ! Always print out 3D info. Good to help avoid using 3d unless really needed!
-     if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
-      trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
-      !, OutputConcs(ind)%ind,unitscale
+          ! Always print out 3D info. Good to help avoid using 3d unless really needed!
+          if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
+           trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
+           !, OutputConcs(ind)%ind,unitscale
 
-     call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
+          call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
              iout  , -99, F,   unitscale,     T,   OutputConcs(ind)%ind, & 
              Is3D=.true. )
 
-  end if ! 3d
+       end if ! 3d
+
+   end if
 end do ! OutputConcs
 
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 do ind = 1, size( WDEP_WANTED(:)%txt1 )
 
@@ -509,8 +532,8 @@ do ind = 1, size( WDEP_WANTED(:)%txt1 )
    if(MasterProc) write(*,*) "Wet deposition output: ", trim(dname), " ",  trim(unittxt)
 end do
 
-call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
-         -1 , -99,  F, PPBINV,  T,  IOU_DAY ) 
+!NOV2011 call AddNewDeriv( "SURF_ppbC_VOC", "VOC", "-", "-", "ppb", &
+!NOV2011          -1 , -99,  F, PPBINV,  T,  IOU_DAY ) 
 
 !Emissions:
 ! We use mg/m2 outputs for consistency with depositions
@@ -594,8 +617,15 @@ end do
     ind = find_index( wanted_deriv2d(i), def_2d(:)%name )
     if (ind>0) then
       f_2d(i) = def_2d(ind)
+      if ( found_ind2d(ind) > 0 ) then
+          print *, "YYYY", me, trim( wanted_deriv2d(i) )
+          do n = 1, size(def_2d(:)%name)
+             print *, "YYYY def2d", n, trim( def_2d(n)%name )
+          end do
+
       call CheckStop ( found_ind2d(ind) > 0,  &
         "REQUESTED 2D DERIVED ALREADY DEFINED: " // trim( def_2d(ind)%name) )
+       end if
       found_ind2d(ind)  = 1
     else
       print *,"OOOPS wanted_deriv2d not found: ", wanted_deriv2d(i)
@@ -650,6 +680,8 @@ end do
   if (FORECAST) &                          ! Only dayly & hourly outputs
     iou_min=IOU_DAY                        ! are wanted on FORECAST mode
 
+  if (MasterProc) print "(a,2i4)","IOU_MAX ",  iou_max, iou_min
+
   end subroutine Define_Derived
  !=========================================================================
   subroutine Setups()
@@ -684,7 +716,8 @@ end do
             end if
           end do
          !====================================================================
-          if (DEBUG  .and. MasterProc )then
+          !if (DEBUG  .and. MasterProc )then
+          if ( MasterProc )then
                write(6,*) "Derived VOC setup returns ", nvoc, "vocs"
                write(6,"(a12,/,(20i3))")  "indices ", voc_index(1:nvoc)
                write(6,"(a12,/,(20i3))")  "carbons ", voc_carbon(1:nvoc)
@@ -773,7 +806,8 @@ end do
         end if
 
         index = f_2d(n)%index
-        if ( DEBUG .and. MasterProc .and. first_call ) then
+        !if ( DEBUG .and. MasterProc .and. first_call ) then
+        if (  MasterProc .and. first_call ) then
            write(*,"(a,i4,a,i4,a)") "DEBUG Derived 2d", n, &
               trim(f_2d(n)%name), index, trim(typ)
         end if
@@ -1649,6 +1683,12 @@ end do
   else if ( txt .eq.  "mgSS" ) then
       unitscale = 1.0e6
       unitstxt  = "mg/m2"
+  else if ( txt .eq.  "m" ) then
+      unitscale = 1.0
+      unitstxt  = "m"
+  else if ( txt == "raw" ) then
+      unitscale = 1.0
+      unitstxt  = "raw"
   else
       call StopAll("Units Scale Error "// txt )
   end if

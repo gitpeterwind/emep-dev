@@ -152,6 +152,72 @@ ds done   My_SOA_ml.f90
 
 
 !----------------------------------------------------------
+xxxxxxxx rv3_9_13, Dave, 11th Nov  2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Bug-fixes
+
+  Aqueous_n_WetDep_ml.f90 - small re-arrangement to stop use of
+    negative kcloudtop as index  - caught by debug options in Makefile
+
+  BLPhysics_ml.f90
+      - added Kdef as required input to JericevicKz and BrostWyngaardKz
+        Kz set to Kdef above Hmix
+        (should optimise later, as subroutine probably)
+
+   Met_ml
+      - pass Kz_m2 (as calculated by Pielke/Blackader) as Kdef, see
+        BLPhysics comments
+        * Kz previously seems to have become undefined, or strange values
+      
+       
+
+
+Extensions
+
+   
+  BLPhysics_ml.f90
+     VogelezangHoltslag_Hmix added as option
+     FluxPROFILE parameter added
+
+  CellMet_ml,    USE_ZREF added - allows reference height to be 
+     different to lowest z_mid
+
+  Derived_ml - start to simplify outputs, e.g. for HMIX, T2m, etc.
+  My_Derived_ml - start to simplify outputs, e.g. for HMIX, T2m, etc.
+
+  DryDep - small debug changes
+
+  GridValues - small debug changes (as some code, and me, is getting
+    confused by li0 vs. 1, etc.)
+
+  Landuse_ml 
+     - added likely_coastal as logical
+     - renamed rater_cover to more accurate water_fraction
+
+   LocalVariables_ml - added z_ref as well as z_mid
+
+   Met_ml
+      - added "landify" - some in-testing code (commented out)
+        may be used in future to ensure that grids with land-cover
+        but defined as nwp_sea get their parameters from neighboroughing
+        land
+
+   MicroMet_ml
+      - added Launiainen1995 possibility  - as default
+        (avoids iteration in SubMet)
+
+  ModelConstants_ml -  added USE_ZREF, see CellMet
+
+  SeaSalt_ml - just changed name water_fraction
+  Setup_1d_ml - just changed name water_fraction
+  SoilWater_ml - just changed name water_fraction
+
+  SubMet_ml - added use of FluxPROFILE == Ln1995 for testing
+    (default is still iteration)
+
+
+  Unimod.f90 - moved call to Topology before MeteoGridRead(cyclicgrid)
+
 xxxxxxxx rv3_9_12, Robert 27th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Minor update of aging reactions for POA in VBS-model (slight increase 

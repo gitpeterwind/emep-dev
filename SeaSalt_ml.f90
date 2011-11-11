@@ -48,7 +48,7 @@
  use ChemChemicals_ml,     only : species
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO, QSSGI
  use GridValues_ml,        only : glat, glon
- use Landuse_ml,           only : LandCover, water_cover
+ use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
  use MetFields_ml,         only : u_ref
  use MetFields_ml,         only : z_bnd, z_mid, sst,  &
@@ -210,7 +210,7 @@
           do ii = 1, NFIN
                SS_prod(QSSFI,i,j) = SS_prod(QSSFI,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
-                                  * water_cover(i,j) 
+                                  * water_fraction(i,j) 
             if(DEBUG_SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'Flux fine ->  ',ii,d3(ii),SS_prod(QSSFI,i,j)
           enddo
@@ -219,7 +219,7 @@
           do ii = NFIN+1, NFIN+NCOA
                SS_prod(QSSCO,i,j) = SS_prod(QSSCO,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
-                                  * water_cover(i,j)
+                                  * water_fraction(i,j)
             if(DEBUG_SEASALT .and. debug_flag) &
             write(6,'(a20,i5,2es13.4)') 'Flux coarse ->  ',ii,d3(ii),SS_prod(QSSCO,i,j)
           enddo
@@ -228,7 +228,7 @@
           do ii = NFIN+NCOA+1, NFIN+NCOA+NGIG
                SS_prod(QSSGI,i,j) = SS_prod(QSSGI,i,j)   &
                                   + ss_flux(ii) * d3(ii) * n2m   &
-                                  * water_cover(i,j)
+                                  * water_fraction(i,j)
           enddo
 
 !... Crude fix for the effect of lower salinity in the Baltic Sea

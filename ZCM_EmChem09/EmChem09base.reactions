@@ -186,6 +186,7 @@ KRO2NO                   ISONO3 + NO   = 1.1 NO2 + 0.8 HO2 + 0.85 ISNI + 0.1 MAC
 *
 *k=1.0/(5.51614*24.0*3600.0):
 2.1e-6                Rn222 = Pb210 ;
+2.1e-6                Rnwater = ; # TEST
 _func_RiemerN2O5()         N2O5 = 2. HNO3                  ;
 1.0e-12*h2o                Pb210 = ; # FAKE FAKE TO GET RCMISC(9)
 _func_kaero()              HNO3 = NO3_c        ;
@@ -305,6 +306,7 @@ rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 rcbio(BIO_ISOP,k)                       = C5H8    ;
 rcbio(BIO_TERP,k)                       = APINENE ;
 rc_Rn222(k)                                = Rn222    ;
+rc_Rnwater(k)                             = Rnwater    ;
 *
 * Add ammonia
 * FUTURE rcnh3(k)                          = NH3 ;  # hbNH3

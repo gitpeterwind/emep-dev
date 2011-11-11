@@ -43,7 +43,20 @@
 ! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
 !----------------------------------------------------------------------
 
-   implicit none
+ use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
+ use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f
+ use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP
+ use ChemChemicals_ml,    only :  species
+ use PhysicalConstants_ml, only : AVOG
+
+ use MARS_ml, only: rpmares
+ use Setup_1dfields_ml,  only :  temp, rh
+
+ use EQSAM_v03d_ml,      only :  eqsam_v03d
+ use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
+ use Setup_1dfields_ml,  only :  pp
+
+ implicit none
 
    !/-- public           !!  true if wanted
                     
@@ -63,22 +76,14 @@ contains
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-      subroutine My_MARS
+      subroutine My_MARS(debug_flag)
 
  !..................................................................
  ! Pretty old F. Binkowski code from EPA CMAQ-Models3
  ! JGR, 108, D6, 4183
  !..................................................................
 
- use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f
- use Setup_1dfields_ml,  only :  temp, rh
- use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
- use ChemChemicals_ml,    only :  species
- use PhysicalConstants_ml, only : AVOG
- use MARS_ml, only: rpmares
-
- implicit none
+ logical, intent(in) :: debug_flag 
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
 
  !.. local
@@ -86,7 +91,6 @@ contains
              aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
              coef
   integer :: k, errmark
-  logical, parameter :: debsub = .false.
  !-----------------------------------
 
    coef = 1.e12 / AVOG
@@ -103,7 +107,7 @@ contains
  !--------------------------------------------------------------------------                
       call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rh(k), temp(k),   &
                     aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
-                    ERRMARK,debsub) 
+                    ERRMARK,debug_flag) 
  !--------------------------------------------------------------------------
 
       xn_2d(HNO3,k)  = max (FLOOR, gNO3out / (species(HNO3)%molwt *coef) )
@@ -119,7 +123,8 @@ contains
 
  !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
-      subroutine My_EQSAM
+      subroutine My_EQSAM(debug_flag)
+ logical, intent(in) :: debug_flag 
 
     !..................................................................
     !EQSAM - Equlibrium Simplified Aerosol Model by Swen Metzger
@@ -129,14 +134,6 @@ contains
     !       JGR, 107(D16), 10.1029/2001JD001102, 2002.
     !..................................................................
 
- use EQSAM_v03d_ml,      only :  eqsam_v03d
- use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f,NO3
- use Setup_1dfields_ml,  only :  temp, rh,pp
- use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
- use PhysicalConstants_ml, only : AVOG
-
- implicit none
 
  real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
 
@@ -162,11 +159,10 @@ contains
              gCLout(KCHEMTOP:KMAX_MID),  &
              gSO4out(KCHEMTOP:KMAX_MID)
 
-  logical :: debsub = .false.
  !-----------------------------------
 
 
-  if ( debsub  ) then ! Selected debug cell
+  if ( debug_flag  ) then ! Selected debug cell
     write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
@@ -198,7 +194,7 @@ contains
       xn_2d(NH4_f,KCHEMTOP:KMAX_MID)  = max(FLOOR,aNH4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
       xn_2d(SO4,KCHEMTOP:KMAX_MID)   = max(FLOOR,aSO4out(KCHEMTOP:KMAX_MID)*AVOG/1.e12 )
 
- if ( debsub ) then ! Selected debug cell
+ if ( debug_flag ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
@@ -213,7 +209,7 @@ contains
  !water 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-      subroutine Aero_water(i,j, ambient)
+      subroutine Aero_water(i,j, ambient, debug_flag)
 
   !.....................................................................
   ! EQSAM is called before every daily output to calculate aerosol water 
@@ -236,6 +232,7 @@ contains
 
  integer, intent(in)  :: i, j
  logical, intent(in)  :: ambient
+ logical, intent(in)  :: debug_flag
  !.. local
   real    :: so4in(KCHEMTOP:KMAX_MID),   &
              no3in(KCHEMTOP:KMAX_MID),   &
@@ -258,11 +255,10 @@ contains
              rlhum(KCHEMTOP:KMAX_MID),tmpr(KCHEMTOP:KMAX_MID)
 
   real, parameter ::    FLOOR = 1.0E-30         ! minimum concentration  
-  logical :: debsub = .false.
  !-----------------------------------
 
 
-  if ( debsub ) then ! Selected debug cell
+  if ( debug_flag ) then ! Selected debug cell
     write(*,*)'Before EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif
@@ -302,7 +298,7 @@ contains
       PM25_water_rh50 (i,j)             = max(0., aH2Oout(KMAX_MID) )
  endif
 
- if ( debsub ) then ! Selected debug cell
+ if ( debug_flag ) then ! Selected debug cell
     write(*,*)'After EQSAM',xn_2d(SO4,20),xn_2d(HNO3,20),&
                xn_2d(NH3,20),xn_2d(NO3_f,20),xn_2d(NH4_f,20)
   endif

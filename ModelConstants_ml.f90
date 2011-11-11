@@ -52,8 +52,15 @@ logical, public, parameter :: USE_SEASALT        = .true.   ! ok
 logical, public, parameter :: USE_DUST           = .false.  ! Experimental
 logical, public, parameter :: DO_SAHARA          = .false.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_AOD            = .false.
+logical, public, parameter :: USE_ZREF           = .false.  ! testing
 logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
 logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget outputs
+
+!Boundary layer profiles
+  character(len=4), parameter, public :: FluxPROFILE = &
+!     "Iter"   ! 
+      "Ln95"   ! ! will use Launiainen1995 
+
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
 ! mtl = monoterpenes with light dependence
@@ -142,6 +149,7 @@ logical, public, save ::  DebugCell  = .false.
 integer, private, parameter :: &
 ! DEBUG_ii= 79, DEBUG_jj= 56 ! Eskdalemuir
 ! DEBUG_ii= 73, DEBUG_jj= 48 ! Mace Head
+! DEBUG_ii= 88, DEBUG_jj= 53 ! Sibton     
 ! DEBUG_ii= 91, DEBUG_jj= 71 ! Rorvik
 ! DEBUG_ii= 82, DEBUG_jj= 72 ! Voss, has some snow
 ! DEBUG_ii=110, DEBUG_jj= 48 ! High Vg!
@@ -152,9 +160,9 @@ integer, private, parameter :: &
 ! DEBUG_ii= 93, DEBUG_jj= 57 ! Elspeetsche (52d12',5d45') 92.83, 56.64
 ! DEBUG_ii= 92, DEBUG_jj= 56 ! Cabauw
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
- DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
+! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
-! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+ DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
@@ -199,12 +207,13 @@ integer, public, parameter :: &
   ,DEBUG_EMISSIONS      = .false. &
   ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_IOPROG         = .false. &
-  ,DEBUG_RUNCHEM        = .true. & ! DEBUG_RUNCHEM is SPECIAL
+  ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_MY_WETDEP    = .false. &
     ,DEBUG_SEASALT      = .false. &
     ,DEBUG_SOA          = .false. &
     ,DEBUG_SOLVER       = .false. &
+    ,DEBUG_SUBMET         = .false. &
     ,DEBUG_WETDEP       = .false. &
   ,DEBUG_LANDDEFS       = .false. &
   ,DEBUG_LANDUSE        = .false. &
@@ -219,7 +228,6 @@ integer, public, parameter :: &
   ,DEBUG_RSUR           = .false. &
   ,DEBUG_RB             = .false. &
   ,DEBUG_SOILNO         = .false. &
-  ,DEBUG_SUBMET         = .false. &
   ,DEBUG_SETUP_1DCHEM   = .false. &
   ,DEBUG_SETUP_1DBIO    = .false. &
   ,DEBUG_SITES          = .false. &

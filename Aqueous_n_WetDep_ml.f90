@@ -485,11 +485,13 @@ subroutine Setup_Clouds(i,j,debug_flag)
 
   end do
 
-  if ( prclouds_present .and. kcloudtop == -1 ) then
+  if ( kcloudtop == -1 ) then
+     if ( prclouds_present ) then
      if ( DEBUG ) write(6,"(a20,2i5,3es12.4)") &
         "ERROR prclouds sum_cw", &
          i,j, maxval(lwc(i,j,KUPPER:KMAX_MID),1) , &
          maxval(pr(i,j,:)), pr_acc(KMAX_MID)
+     end if
      kcloudtop = KUPPER ! for safety
   end if
 

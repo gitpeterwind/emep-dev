@@ -159,7 +159,7 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 logical, public, parameter :: Hourly_ASCII = .false.
 ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
 
-integer, public            :: NHOURLY_OUT =  1 ! No. outputs
+integer, public            :: NHOURLY_OUT =  2 ! No. outputs
 integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
 integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
@@ -281,6 +281,10 @@ subroutine set_output_defs
 
     hr_out(1)= Asc2D("o3_3m", "ADVppbv", "(f9.4)",&
                 IXADV_o3,   ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0)
+
+!TEST
+   hr_out(2)= Asc2D("HMIX","D2D", "(f6.1)", &
+     find_index("HMIX",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "m",1.0,10000.0)
 
 !  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).

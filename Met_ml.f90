@@ -79,6 +79,7 @@ module Met_ml
     ,Test_BLM                & ! Tests all Kz, Hmix routines
     ,PBL_ZiMAX, PBL_ZiMIN    & ! max  and min PBL heights
     ,JericevicRiB_Hmix       & ! TESTING
+    ,JericevicRiB_Hmix0      & ! Used, now allows shallow SBL
     ,Venkatram_Hmix          & ! TESTING
     ,Zilitinkevich_Hmix      & ! TESTING
     ,SeibertRiB_Hmix_3d      & ! TESTING
@@ -93,6 +94,7 @@ module Met_ml
 
   use CheckStop_ml,         only : CheckStop,StopAll
   use Functions_ml,         only : Exner_tab, Exner_nd
+  use Functions_ml,         only : T_2_Tpot  !OS_TESTS
   use GridValues_ml,        only : xmd, i_fdom, j_fdom, METEOfelt, projection &
        ,glon,glat, glat_fdom, glon_fdom, MIN_ADVGRIDS   &
        ,Poles, Pole_included, xm_i, xm_j, xm2, sigma_bnd,sigma_mid &
@@ -101,7 +103,7 @@ module Met_ml
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid
 
-  use Landuse_ml, only : water_cover, water_cover_set
+  use Landuse_ml, only : water_fraction, water_frac_set, likely_coastal
   use MetFields_ml 
   use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
   use ModelConstants_ml,    only : PASCAL, PT, CLOUDTHRES, METSTEP  &
@@ -151,6 +153,11 @@ module Met_ml
   ! (Nhh=8): 1=00:00 2=03:00 ... 8=21:00
   ! if nhour_first=3 then 1=03:00 2=06:00...8=24:00
 
+  integer, parameter, private :: NEXTEND = 2 ! no. box to side of (i,j) 
+  real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND), save  ::&
+         xwf  ! extension of water fraction, save after 1st call
+  logical, private  :: xwf_done = .false. ! extended water-fraction array
+
   character (len = 100)        ::  field_not_found='field_not_found'
 
 
@@ -162,6 +169,7 @@ module Met_ml
   public :: BLPhysics
   public :: GetCDF_short
   public :: extendarea  ! returns array which includes neighbours
+  public :: landify     ! replaces met variables from mixed sea/land with land
 
 contains
 
@@ -193,9 +201,6 @@ contains
 
     real :: temp(MAXLIMAX,MAXLJMAX)!temporary metfields
     ! Avergaing of soil water used box from +/- NEXTEND (e.g. -1 to +1)
-    integer, parameter :: NEXTEND = 2 ! no. box to side of (i,j) 
-    real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND), save  ::&
-         xwf  ! extension of water fraction, save after 1st call
     real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
          xsw   ! extension of soil water
     real :: tmpsw, landfrac, sumland  ! for soil water averaging
@@ -407,12 +412,13 @@ contains
            foundKz_met = .true.
         endif
         Kz_met=max(0.0,Kz_met)  ! only positive Kz
-    end if
-    if( debug_proc .and. DEBUG_Kz)then
+
+        if( debug_proc .and. DEBUG_Kz)then
           write(6,*)               &
          '*** After Kz', sum(Kz_met(:,:,:,nr)), minval(Kz_met(:,:,:,nr)), &
                maxval(Kz_met(:,:,:,nr)),maxval(Kz_met(:,:,KMAX_BND,nr)), &
                DEBUG_Kz, NWP_Kz, nr, nrec, ndim, namefield
+        end if
 
     endif
 
@@ -432,6 +438,7 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, t2_nwp(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+       !call landify(t2_nwp(:,:,nr) ,t2_nwp(:,:,nr),NEXTEND,"t2nwp") 
 
 
     namefield='relative_humidity_2m'
@@ -444,26 +451,31 @@ contains
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
        rh2m(:,:,nr) = 0.01 * rh2m(:,:,nr)  ! Convert from % to fraction 
     endif
+       !call landify(rh2m(:,:,nr) ,rh2m(:,:,nr),NEXTEND,"rh2m") 
 
     namefield='surface_flux_sensible_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, fh(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+       !call landify(fh(:,:,nr) ,fh(:,:,nr),NEXTEND,"fh") 
     if(validity=='averaged')fh(:,:,1)=fh(:,:,nr)
 
     namefield='surface_flux_latent_heat'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, fl(:,:,nr))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
+       !call landify(fl(:,:,nr) ,fl(:,:,nr),NEXTEND,"fl") 
     if(validity=='averaged')fl(:,:,1)=fl(:,:,nr)
 
     namefield='surface_stress'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
          unit,validity, tau(:,:,nr))
+       !call landify(tau(:,:,nr) ,tau(:,:,nr),NEXTEND,"tau") 
     if(validity==field_not_found)then
        namefield='ustar_nwp'
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
             unit,validity, ustar_nwp(:,:))
+       !call landify(ustar_nwp(:,:) ,ustar_nwp(:,:),NEXTEND) 
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
        foundustar=.true.
     else
@@ -536,7 +548,7 @@ contains
        if(MasterProc.and.numt==1) write(*,*)' Met_ml Soilwater: ' // &
              trim(SoilWaterSource), SoilMax
 
-       if ( water_cover_set ) then  ! smooth the SoilWater values:
+       if ( water_frac_set ) then  ! smooth the SoilWater values:
 
          ! If NWP thinks this is a sea-square, but we anyway have land,
          ! the soil moisture might be very strange.  We search neighbouring
@@ -546,7 +558,7 @@ contains
            call extendarea( SoilWater_deep(:,:,nr), xsw, DEBUG_SOILWATER)
 
            if ( .not. xwf_done ) then ! only need to do this once
-            call extendarea( water_cover(:,:),       xwf, DEBUG_SOILWATER)
+            call extendarea( water_fraction(:,:),       xwf, DEBUG_SOILWATER)
             xwf_done = .true.
            end if
 
@@ -563,7 +575,7 @@ contains
 
                 tmpsw = 0.0  ! Relative SW
                 sumland  = 0.0
-                if( water_cover(i,j) < 0.999 ) then !some land
+                if( water_fraction(i,j) < 0.999 ) then !some land
                    do jj = -NEXTEND, NEXTEND
                      do ii = -NEXTEND, NEXTEND
                          ii2=i+ii+NEXTEND  ! coord in extended array
@@ -574,7 +586,7 @@ contains
                             tmpsw   = tmpsw + landfrac * xsw(ii2,jj2)
                             if ( DEBUG_SOILWATER .and.i==debug_li.and.j==debug_lj ) then
                               write(*,"(a,2i4,8f10.4)") "METSWX: ", ii2, jj2,&
-                                water_cover(i,j), xwf(ii2,jj2), &
+                                water_fraction(i,j), xwf(ii2,jj2), &
                                 SoilWater_deep(i,j,nr),&
                                 xsw(ii2,jj2), tmpsw, landfrac, sumland
                             end if ! DEBUG
@@ -588,7 +600,7 @@ contains
                    end if
                 else
                    SoilWater_deep(i,j,nr) = 1.0 ! same as sea
-                end if ! water_cover
+                end if ! water_fraction
        
                 !if( sumland > 0.1 ) then
                 !   SoilWater_deep(i,j,nr) = tmpsw/sumland
@@ -603,12 +615,12 @@ contains
                i =  debug_li
                j =  debug_lj
                write(*,"(a,f7.4,2i4,f12.4)") "DEBUG_METSWF: ", &
-                water_cover(i,j), nr, current_date%day, SoilWater_deep(i,j,nr)
+                water_fraction(i,j), nr, current_date%day, SoilWater_deep(i,j,nr)
             end if
 
        else ! for sea values we usually have zero or negative. Set to 1.0
             where ( SoilWater_deep(:,:,nr) < 1.0e-3 ) SoilWater_deep(:,:,nr) = 1.0
-       endif ! water_cover_set test
+       endif ! water_frac_set test
        !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     endif ! validity test
   end if ! USE_SOILWATER
@@ -656,6 +668,7 @@ contains
        else
           foundws10_met = .true.
           ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+temp(:,:)**2)
+          !call landify(ws_10m(:,:,nr) ,ws_10m(:,:,nr),NEXTEND,"WS10") 
 !          call printCDF('ws_10m',ws_10m(:,:,1),unit)
        endif
     endif
@@ -1545,9 +1558,10 @@ contains
     real, dimension(KMAX_BND) :: p_bnd !TESTzi
     real, dimension(KMAX_MID) :: Kz_nwp 
     real    :: Kz_min, stab_h
-!    logical :: Pielke_flag    ! choice in Blackadar/Pielke equations
 
     integer i,j,k,numt, nr
+    real :: theta2
+    logical :: debug_flag
 
     call CheckStop( KZ_SBL_LIMIT < 1.01*KZ_MINIMUM,   &
          "SBLlimit too low! in Met_ml")
@@ -1620,16 +1634,18 @@ contains
          ! Use for all methods except NWP_Kz
          ! Do the physics for each i,j for now. Optimise later
 
+         
           do j=1,ljmax
              do i=1,limax
 
+               debug_flag = ( DEBUG_Kz .and. debug_proc .and. &
+                   i == debug_iloc .and. j == debug_jloc ) 
+ 
             call PielkeBlackadarKz ( &
               u_mid(i,j,:),  v_mid(i,j,:),  &
               z_mid(i,j,:),  z_bnd(i,j,:),  &
               th(i,j,:,nr),  Kz_m2s(i,j,:), &
-              PIELKE, &     !Pielke_flag, &
-              .false. )
-              !( debug_proc .and. i == debug_iloc .and. j == debug_jloc )  )
+              PIELKE, debug_flag ) 
 
              enddo
           enddo
@@ -1677,24 +1693,48 @@ contains
                  do i=1,limax
                     do j=1,ljmax
 
-                      call JericevicRiB_Hmix(&
+                      theta2 = t2_nwp(i,j,nr) * T_2_Tpot(ps(i,j,nr))
+                      call JericevicRiB_Hmix0(&
                           u_mid(i,j,:), v_mid(i,j,:),  &
-                          z_mid(i,j,:), th(i,j,:,nr),  &
-                          pzpbl(i,j))
+                          z_mid(i,j,:), th(i,j,:,nr),  & ! WHY nr??
+                          pzpbl(i,j), theta2, likely_coastal(i,j) )
+!                      if(  pzpbl(i,j)  < z_bnd(i,j,20) ) then
+!                        write(*,"(a8,i2,2i4,5f8.3,f7.2)") "PZPBL ", nr, i_fdom(i), j_fdom(j), t2_nwp(i,j,nr), theta2, th(i,j,20,nr), u_mid(i,j,20), v_mid(i,j,20),pzpbl(i,j)
+!                      end if !OS_TEST debug
                       end do
                    end do
+ 
+                 !ORIG do i=1,limax
+                 !ORIG   do j=1,ljmax
+
+                 !ORIG     call JericevicRiB_Hmix(&
+                 !ORIG         u_mid(i,j,:), v_mid(i,j,:),  &
+                 !ORIG         z_mid(i,j,:), th(i,j,:,nr),  &
+                 !ORIG         pzpbl(i,j))
+                 !ORIG     end do
+                 !ORIG  end do
               else
                  call CheckStop("Need HmixMethod")
               end if ! end of newer methods
 
            ! Set limits on Zi
-           ! mid-call at k=19 is lowest we can resolve, so set as min
               forall(i=1:limax,j=1:ljmax)
-                 pzpbl(i,j) = max( z_mid(i,j,KMAX_MID-1), pzpbl(i,j))
+                 pzpbl(i,j) = max( PBL_ZiMIN, pzpbl(i,j))
                  pzpbl(i,j) = min( PBL_ZiMAX, pzpbl(i,j) )
               end forall
+           ! mid-call at k=19 is lowest we can resolve, so set as min
+           !ORIG   forall(i=1:limax,j=1:ljmax)
+           !ORIG      pzpbl(i,j) = max( z_mid(i,j,KMAX_MID-1), pzpbl(i,j))
+           !ORIG      pzpbl(i,j) = min( PBL_ZiMAX, pzpbl(i,j) )
+           !ORIG   end forall
 
           end if ! Hmix done
+    !..spatial smoothing of new zi: Need fixed minimum here. 100 or 50 m is okay
+    !  First, we make sure coastal areas had "land-like" values.
+
+     !call landify(pzpbl,pzpbl,NEXTEND,"pzbpl") 
+     call smoosp(pzpbl,PBL_ZiMIN,PBL_ZiMAX)
+! and for later...
 
         !======================================================================
         ! Kz choices:
@@ -1703,7 +1743,12 @@ contains
              do k = 2, KMAX_MID
               do j=1,ljmax
                  do i=1,limax
-                 Kz_m2s(i,j,k) = JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j) )
+                 Kz_m2s(i,j,k) = JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k) )
+               !if v.low zi, then set Kz at bottom boundary
+               ! to zero to stop dispersion.
+!OCT2011                 if ( k==KMAX_MID .and. pzpbl(i,j) <= z_bnd(i,j,KMAX_MID) ) then
+!OCT2011                    Kz_m2s(i,j,k) = 0.0
+!OCT2011                 end if
              end do
              end do
              end do
@@ -1711,16 +1756,34 @@ contains
           else  ! Specify unstable, stable separately:
 
             if ( StableKzMethod == "JG" ) then  ! Jericevic/Grisogono for both Stable/Unstable
+
+
+
               do j=1,ljmax
                  do i=1,limax
-                   if ( invL_nwp(i,j) >= OB_invL_LIMIT ) then !neutral and unstable
+                  if ( invL_nwp(i,j) >= OB_invL_LIMIT ) then !neutral and unstable
                      do k = 2, KMAX_MID
-                       Kz_m2s(i,j,k) = &
-                          JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j) )
+                       if( z_bnd(i,j,k) <  pzpbl(i,j) ) then ! OCT2011: 
+                         Kz_m2s(i,j,k) = &
+                          JericevicKz( z_bnd(i,j,k), pzpbl(i,j), ustar_nwp(i,j) , Kz_m2s(i,j,k))
+                       !else
+                       !  keep Kz from Pielke/BLackadar
+                       end if !OCT2011
                      end do
                    end if
                  end do
               end do
+              if(DEBUG_Kz .and. debug_proc ) then  
+                   i = debug_iloc
+                   j = debug_jloc
+                   if(invL_nwp(i,j) >= OB_invL_LIMIT ) then  
+                     do k = 15, KMAX_MID
+                       write(*,"(a,i3,f7.1,3es11.3)") "DEBUG SKz_m2s",k,&
+                         pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), &
+                         Kz_m2s(i,j,k)
+                      end do
+                    endif
+               endif
 
 
             else if ( StableKzMethod == "BW" ) then
@@ -1730,7 +1793,7 @@ contains
                      do i=1,limax
                        if ( invL_nwp(i,j) > 1.0e-10 ) then !stable ! leaves gap near zero
                            Kz_m2s(i,j,k) = BrostWyngaardKz(z_bnd(i,j,k),pzpbl(i,j),&
-                                           ustar_nwp(i,j),invL_nwp(i,j)) 
+                                           ustar_nwp(i,j),invL_nwp(i,j), Kz_m2s(i,j,k)) 
                        end if
                  end do
                  end do
@@ -1753,6 +1816,17 @@ contains
                      end if
                    end do
                  end do
+              if(DEBUG_Kz .and. debug_proc ) then  
+                   i = debug_iloc
+                   j = debug_jloc
+                  if(invL_nwp(i,j) <  OB_invL_LIMIT ) then  
+                     do k = 15, KMAX_MID
+                        write(*, "(a,f7.1,3es10.3)") "DEBUG UKz_m2s", &
+                           pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), &
+                           Kz_m2s(i,j,k)
+                      end do
+                  endif
+               endif
          
               else
                  call CheckStop("Need UnstableKzMethod")
@@ -1761,10 +1835,11 @@ contains
            end if  ! Specify unstable, stable separately:
     end if
 
+    !..spatial smoothing of new zi: Need fixed minimum here. 100 or 50 m is okay
+    !  First, we make sure coastal areas had "land-like" values.
 
-    !..spatial smoothing of new zi: Need fixed minimum here. 100 m is okay
-
-     call smoosp(pzpbl,PBL_ZiMIN,PBL_ZiMAX)
+    !MOVED call landify(pzpbl,pzpbl,NEXTEND) 
+    !MOBVED  call smoosp(pzpbl,PBL_ZiMIN,PBL_ZiMAX)
 
   !************************************************************************!
   ! test some alternative options for Kz and Hmix
@@ -1784,6 +1859,7 @@ contains
            u=u_mid(i,j,:),v=v_mid(i,j,:), zm=z_mid(i,j,:), &
            zb=z_bnd(i,j,:), exnm=exnm(i,j,:), Kz=Kz_m2s(i,j,:), &
            Kz_nwp=Kz_nwp(:), invL=invL_nwp(i,j), &
+           q=q(i,j,:,nr),  & ! TEST Vogel
            ustar=ustar_nwp(i,j), th=th(i,j,:,nr), pb=p_bnd(:), zi=pzpbl(i,j))
   !************************************************************************!
       ! if ( USE_MIN_Kz) then
@@ -1949,7 +2025,7 @@ contains
     !     - returns extended array array, reading neighbour procs as needed
     !c----------------------------------------------------------------------
 
-    real, intent(inout) :: f(:,:)
+    real, intent(in) :: f(:,:)
     real, intent(inout) :: h(:,:)
     logical, intent(in), optional :: debug_flag
     logical :: mydebug = .false.
@@ -2026,7 +2102,92 @@ contains
   end subroutine extendarea
   !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+  subroutine landify(x,xout,nx,intxt)
+    real, dimension(MAXLIMAX,MAXLJMAX), intent(in) :: x
+    real, dimension(MAXLIMAX,MAXLJMAX), intent(out) :: xout
+    integer, intent(in) :: nx   ! search radius
+    real, dimension(MAXLIMAX+2*nx,MAXLJMAX+2*nx)  :: xx  ! extended
+    character(len=*), intent(in), optional :: intxt
+    character(len=30) :: txt
+    logical, parameter :: debug_flag = .true.
+    real :: sumland, sumx, landfrac
+    integer :: i,j, ii, jj, ii2, jj2
+    txt = "Landify"
+    if ( present(intxt) )  txt = trim(txt) // trim(intxt)
+    if(MasterProc) write(*, *) "Landify " // trim(txt) 
 
+       xout = x ! safety
+
+    if( .not. water_frac_set  ) then
+       xout = x ! safety
+       return   ! will happen on 1st time-step
+     end if
+
+    ! We need the extended water-fraction too, but just once
+    if ( .not. xwf_done ) then ! only need to do this once
+         call extendarea( water_fraction(:,:), xwf, debug_flag)
+         xwf_done = .true.
+    end if
+
+   ! Then the data we are working with:
+
+    call extendarea( x(:,:), xx(:,:), debug_flag )
+    xout(:,:)= 0.0  ! Relative SW
+
+    do j = lj0, lj1   !  1, ljmax
+       do i = li0, li1   !  1, limax
+   
+         ! Take a 5x5 average of the land-weighted values for SW. Seems
+         !  best not to "believe" NWP models too much for this param, and
+         !  the variation in a grid is so big anyway. We aim at the broad
+         !  effect. (Alternative might be to find max values?)
+
+           sumland  = 0.0
+           sumx     = 0.0
+
+           if( likely_coastal(i,j) ) then !some land
+              do jj = -nx, nx
+                do ii = -nx, nx
+                    ii2=i+ii+NEXTEND  ! coord in extended array !CHECK!
+                    jj2=j+jj+NEXTEND
+
+                    if( xwf(ii2,jj2) < 0.5 .and.  &! ! likely not NWP sea
+                    !if( xx(ii2,jj2) > 1.0e-10 ) then ! have some data to work with
+                        xx(ii2,jj2) > 1.0e-10 ) then ! have some data to work with
+                       landfrac    =  1.0 - xwf(ii2,jj2) 
+                       sumland = sumland + landfrac
+                       sumx    = sumx    + landfrac * xx(ii2,jj2)
+                       if ( debug_flag .and.i==debug_li.and.j==debug_lj ) then
+                         write(*,"(a,2i4,8f10.4)") trim(txt), ii2, jj2,&
+                           water_fraction(i,j), xwf(ii2,jj2), x(i,j), &
+                           xx(ii2,jj2), sumx, landfrac, sumland
+                       end if ! DEBUG
+                    end if ! xsw
+                end do!ii
+              end do!jj
+
+              if ( sumland > 0.001 ) then
+                xout(i,j) = sumx/sumland
+              else
+                xout(i,j)  = x(i,j)
+              end if
+              if ( debug_flag .and.i==debug_li.and.j==debug_lj ) then
+                    write(*,"(a,8f10.4)") "DONE"//trim(txt), sumland, x(i,j), xout(i,j)
+              end if
+           else
+              xout(i,j)  = x(i,j)
+           end if ! water_fraction
+       
+             end do ! i
+            end do ! j
+           ! if ( DEBUG_SOILWATER.and.debug_proc ) then
+           !    i =  debug_li
+           !    j =  debug_lj
+           !    write(*,"(a,f7.4,2i4,f12.4)") "DEBUG_METSWF: ", &
+           !     water_fraction(i,j), nr, current_date%day, SoilWater_deep(i,j,nr)
+           ! end if
+
+  end subroutine landify
 
   subroutine readneighbors(data,data_south,data_north,data_west,data_east,thick)
 

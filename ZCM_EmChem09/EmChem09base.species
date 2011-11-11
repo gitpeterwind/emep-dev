@@ -98,5 +98,6 @@ NO3_f,1,NO3_f,xx,PMfN,PMf,8.5,0,0,xx,PM10;PMFINE;SIA;OXN;TNO3;AOD,,"!in equilib 
 NO3_c,1,NO3_c,xx,PMc,PMc,0,0,0,xx,PM10;PMCO;SIA;OXN;TNO3,,"!Coarse nitrate"
 NH4_f,1,NH4_f,xx,PMfN,PMf,8.5,0,0,xx,RDN;PM10;PMFINE;SIA;AOD,,"! in equilib module"
 Rn222,1,xx,222,xx,xx,0,0,0,xx,xx,,!
+Rnwater,1,xx,222,xx,xx,0,0,0,xx,xx,,!
 Pb210,1,xx,210,PMfS,PMf,0,0,0,xx,xx,,!
 *

@@ -197,8 +197,10 @@ call Init_timing()
 call Code_Timer(tim_before0)
 tim_before = tim_before0
 
+!TRIEDcall Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
 call MeteoGridRead(cyclicgrid)    ! define grid projection and parameters
-call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
+!
+ call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
 call assign_NTERM(NTERM)          ! set NTERM, the number of 3-hourly periods
 call assign_dtadvec(GRIDWIDTH_M)  ! set dt_advec
 

@@ -33,7 +33,8 @@ module MARS_ml
  ! Presently not in use, EQSAM is used for inorganic equilibrium stuff
  !------------------------------------------------------------------------
 
- use Io_ml,              only : ios
+ use CheckStop_ml,       only : CheckStop
+ use Io_ml,              only : ios, datewrite
  use MARS_Aero_water_ml, only:  Awater
  use ModelConstants_ml,  only : NPROC
  use Par_ml,             only : me
@@ -478,7 +479,15 @@ module MARS_ml
         ASO4 = TSO4 * MWSO4
         ANO3 = 0.0
         ANH4 = YNH4 * MWNH4
-        WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O )
+!if(deb) call datewrite("MARS debug ", -1,(/ ASO4, ANH4, AH2O /) )
+
+!if( ASO4 + ANH4 +  AH2O < 1.0-10 ) then
+!   call datewrite("MARS failing? ", -1,(/ ASO4, ANH4, AH2O /) )
+!   print *, "MARS PROB ", ASO4, ANH4, AH2O, TSO4, YNH4
+!   call CheckStop("MARS")
+!end if
+        WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O + FLOOR  )
+        !CRUDE FIX? WFRAC = AH2O / ( ASO4 + ANH4 +  AH2O )
 !!!!       IF ( WFRAC == 0.0 )  RETURN   ! No water       
         IF ( WFRAC < 0.2 ) THEN
  

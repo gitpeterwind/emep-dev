@@ -34,6 +34,8 @@ module SubMet_ml
 !  The sub-grid part of this module is also undergoing constant change!!
 !=============================================================================
 
+use Functions_ml, only : T_2_Tpot  !needed if FluxPROFILE == Ln95
+use MetFields_ml, only : ps        !needed if FluxPROFILE == Ln95
 
 use BLPhysics_ml, only : MIN_USTAR_LAND
 use CheckStop_ml, only : CheckStop
@@ -41,13 +43,15 @@ use LandDefs_ml,   only: LandType
 use Landuse_ml,    only: LandCover
 use LocalVariables_ml, only: Grid, Sub
 use MicroMet_ml, only :  PsiM, AerRes    !functions
+use MicroMet_ml, only :  Launiainen1995
 use ModelConstants_ml, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_flag
+                              , USE_ZREF & ! TEST
+                              , FluxPROFILE &
                               , USE_SOILWATER 
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
 implicit none
 private
-
 
   public :: Get_Submet    ! calculates met. data for sub-grid areas
 
@@ -114,6 +118,8 @@ contains
     real :: e       ! vapour pressure at surface
     real :: Ra_2m   ! to get 2m qw
 
+real :: theta2
+
 
     ! initial guesses for u*, t*, 1/L
         Sub(iL)%ustar  = Grid%ustar      ! First guess = NWP value
@@ -164,6 +170,7 @@ contains
 ! relation is only valid for  u* < 1 m/s, which gives z0 < 1 cm/s.
 
 
+
         if ( Sub(iL)%is_water ) then ! water
              Sub(iL)%d  = 0.0
              Sub(iL)%z0 = CHARNOCK * Sub(iL)%ustar * Sub(iL)%ustar/GRAV
@@ -193,11 +200,16 @@ contains
 
         end if
           
+   if ( USE_ZREF ) then 
+        Sub(iL)%z_refd = Grid%z_ref
+   else
         Sub(iL)%z_refd = Grid%z_ref - Sub(iL)%d  !  minus displacement height
+    end if
         z_3md  = z_3m  - Sub(iL)%d               !  minus displacement height
 
 
         rho_surf = Grid%psurf/(RGAS_KG * Sub(iL)%t2 )
+
 
         if( Grid%is_allNWPsea ) then
           Sub(iL)%ustar = Grid%ustar
@@ -207,6 +219,41 @@ contains
     !NITER = 1
     !TEST if ( Grid%Hd > -1 ) NITER = 2  ! Almost neutral to unstable
     !TEST if ( Grid%Hd > 1  ) NITER = 4  ! more unstable
+
+    !NEW
+
+     if ( FluxPROFILE == "Fn1995") then !TESTING
+
+        theta2 = Grid%t2 * T_2_Tpot( Grid%psurf )
+        call Launiainen1995( Grid%u_ref, Sub(iL)%z_refd, Sub(iL)%z0, Sub(iL)%z0, &
+         theta2, Grid%theta_ref, Sub(iL)%invL )
+
+       !NOW DIRECT!
+        Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
+         (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
+           + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
+
+        if (  DEBUG_SUBMET .and. debug_flag ) then
+            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH  SUBI", iter,iL, &
+                Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
+                  Sub(iL)%z_refd, z_3md, &
+                 Sub(iL)%invL, Sub(iL)%ustar, Grid%invL, Grid%ustar
+            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH  ZZZZ", iter,iL, &
+                Grid%z_mid, Grid%z_ref, Sub(iL)%z_refd
+        end if
+
+        if( Sub(iL)%invL > 10.0 .or. Sub(iL)%invL < -10.0 ) then
+           print "(a12,i2,5f8.3,10f12.3)", "VDHH  STOP", iL, &
+                Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
+                  Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
+           print "(a12,i2,5f8.3,10f12.3)", "VDHH  MET", iL, Grid%u_ref, Grid%t2, theta2, Grid%theta_ref, &
+             9.81 * Sub(iL)%z_refd * (Grid%theta_ref -theta2 ) / &
+                    ( theta2 *  Grid%u_ref**2 + 0.001 ),  Grid%Hd, Grid%invL
+           call CheckStop("VDHH STOP")
+        end if
+
+
+     else ! Iter by default 
 
     do iter = 1, NITER 
 
@@ -220,7 +267,7 @@ contains
         !..z0-values ...
 
         if ( DEBUG_SUBMET .and. debug_flag ) then
-            write(6,"(a12,i2,5f8.3,10f12.3)") "UKDEP SUBI", iter, &
+            write(6,"(a12,i2,i3,5f8.3,2f12.3)") "UKDEP SUBI", iter,iL, &
                 Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                   Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
         end if
@@ -247,26 +294,31 @@ contains
 
       ! To a good approx we could omit the PsiM(z0/L) term, but needed at ca. invL->-1
 
-       Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
-        (log( Sub(iL)%z_refd/Sub(iL)%z0 ) &
-           - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)  &
-           + PsiM( Sub(iL)%z0*Sub(iL)%invL    )) 
+        Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
+         (log( Sub(iL)%z_refd/Sub(iL)%z0 ) &
+            - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)  &
+            + PsiM( Sub(iL)%z0*Sub(iL)%invL    )) 
 
     if (  DEBUG_SUBMET .and. debug_flag ) then
-        write(6,"(a12,20f9.3)") "UKDEP SUBA", Sub(iL)%z0, Sub(iL)%d, &
+        write(6,"(a12,i2,i3,5f8.3,2f12.3)") "UKDEP SUBi", iter,iL, &
+                Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
+                  Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
+        write(6,"(a12,i3,3f7.1,20g11.3)") "UKDEP SUBA",iL, Sub(iL)%z0, Sub(iL)%d, &
           Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
-              Sub(iL)%ustar, Sub(iL)%invL
-   ! , & log( Sub(iL)%z_refd/Sub(iL)%z0 ), & PsiM( Sub(iL)%z_refd*Sub(iL)%invL )
+              Sub(iL)%ustar, Sub(iL)%invL , &
+           log( Sub(iL)%z_refd/Sub(iL)%z0 ), PsiM( Sub(iL)%z_refd*Sub(iL)%invL )
     end if
        Sub(iL)%ustar = max( Sub(iL)%ustar, MIN_USTAR_LAND )
     end do ! iter
     end if ! allNWPsea
 
+  end if ! FluxPROFILE
 
     if (  DEBUG_SUBMET .and. debug_flag ) then
         write(6,"(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
           Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
               Sub(iL)%ustar, Sub(iL)%t2, Sub(iL)%invL
+        write(*,*) "UKDEP LOGICS ", iL, Sub(iL)%is_water, Sub(iL)%is_forest, Grid%is_allNWPsea
 
 
         if ( my_first_call ) then ! title line

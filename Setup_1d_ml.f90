@@ -76,7 +76,7 @@
     ,USE_SOIL_NOX, USE_DUST          & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j  !FUTURE , DEBUG_NH3 !NH3emis
-  use Landuse_ml,            only : water_cover, ice_landcover
+  use Landuse_ml,            only : water_fraction, ice_landcover
   use Par_ml,                only :  me,MAXLIMAX,MAXLJMAX & 
                              ,gi0,gi1,gj0,gj1,IRUNBEG,JRUNBEG
   use PhysicalConstants_ml,  only :  AVOG, PI, GRAV
@@ -85,6 +85,7 @@
      xn_2d                &  ! concentration terms
     ,rcemis               &  ! emission terms
     ,rc_Rn222             &  ! for Pb210
+    ,rc_Rnwater           &  ! TEST
     ,rcss, rcwbd          &  !Sea salt, Dust
     ,rh, temp, tinv, itemp,pp      &  !
     ,amk, o2, n2, h2o     &  ! Air concentrations
@@ -342,14 +343,17 @@ contains
   ! Soil Rn222 emissions from non-ice covered land, + water
   ! at rate of 1 atom/cm2/s
 
-     eland = 1.0 - water_cover(i,j) - ice_landcover(i,j)
+     eland = 1.0 - water_fraction(i,j) - ice_landcover(i,j)
 
 ! initialize, needed in My_Reactions
      rc_Rn222(:)=0.0
+     rc_Rnwater(:)=0.0 ! TEST
 
 ! z_bnd is in m, not cm, so need to divide by 100.
      rc_Rn222(KMAX_MID) = &
-            ( 0.00182 * water_cover(i,j)  + eland ) / &
+            ( 0.00182 * water_fraction(i,j)  + eland ) / &
+            ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
+     rc_Rnwater(KMAX_MID) = water_fraction(i,j)  / &
             ((z_bnd(i,j,KMAX_BND-1) - z_bnd(i,j,KMAX_BND))*100.)
 
   end subroutine setup_rcemis

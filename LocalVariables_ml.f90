@@ -62,7 +62,8 @@ type, public :: GridDat
   real    :: sdepth       ! snowdepth (m)
   real    :: ice_nwp      ! ice_nwp (%)
   real    :: psurf        ! Surface pressure (Pa)
-  real    :: z_ref        ! Height of grid centre (m)
+  real    :: z_ref        ! Used top of SL, = min(0.1 zi, z_mid)
+  real    :: z_mid        ! Height of grid centre (m)
   real    :: DeltaZ       ! Depth of grid centre (m)
   real    :: qw_ref       ! Specific humidity
   real    :: rho_ref      ! Air density (kg/m3)

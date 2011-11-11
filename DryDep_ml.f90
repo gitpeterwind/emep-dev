@@ -439,9 +439,9 @@ module DryDep_ml
                    L%coverage, L%LAI, L%hveg,daynumber, &
                    Grid%sdepth, fSW(i,j),L%t2C !ACB Grid%snow_flag
 
-                write(6,"(a,i4,2f7.2,2es10.2,3f8.3)") "DMET SUB", &
-                  iL, Grid%ustar, L%ustar, Grid%invL, &
-                  L%invL, L%Ra_ref, L%Ra_3m,L%rh
+                write(6,"(a,i4,3f7.2,7es10.2)") "DMET SUB", &
+                  iL, Grid%ustar, L%ustar, L%rh,  Grid%invL, &
+                  L%invL, L%Ra_ref, L%Ra_3m
 
              end if
 
@@ -578,8 +578,9 @@ module DryDep_ml
                call datewrite("DEPO3 ", iL, &
                    (/ Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
                    !(/ Mosaic_VgRef(n,iL) , Vg_ref(n), Sub(iL)%Vg_ref(n) /) )
-               call datewrite("DEPDVG", iL, (/ L%coverage, 1.0*n,& ! gs in cm/s :
-                 L%LAI,100.0*L%g_sto, L%Ra_ref, Rb(n), min( 999.0,Rsur(n) ),  &
+               call datewrite("DEPDVGA", iL, (/ L%coverage, 1.0*n,& 
+                 L%LAI,100.0*L%g_sto, L%Ra_ref, Rb(n), min( 999.0,Rsur(n) ) /) )
+               call datewrite("DEPDVGB", iL, (/ L%coverage, 1.0*n,& 
                 100.0*Vg_3m(n), 100.0*Vg_ref(n), Vg_ratio(n) /) )
             end do
 

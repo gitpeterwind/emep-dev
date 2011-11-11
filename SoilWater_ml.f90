@@ -28,7 +28,7 @@
 module SoilWater_ml
  use GridValues_ml,     only : debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
                              longitude => glon
- use Landuse_ml,        only : water_cover
+ use Landuse_ml,        only : water_fraction
  use LocalVariables_ml, only: Grid
  use Met_ml,            only : extendarea
  use MetFields_ml,      only : SoilWater_deep, nwp_sea, SoilWaterSource
@@ -98,8 +98,8 @@ contains
              mydebug = ( DEBUG_SOILWATER .and. debug_proc.and. i==debug_li.and.j==debug_lj ) 
              if ( mydebug ) write(*,*) "CHECK_SWF", hourloc, " date ", current_date
 
-!TMP          !if ( nwp_sea(i,j) .and. water_cover(i,j) < 0.9 ) then
-!TMP          if ( water_cover(i,j) < 0.9 ) then
+!TMP          !if ( nwp_sea(i,j) .and. water_fraction(i,j) < 0.9 ) then
+!TMP          if ( water_fraction(i,j) < 0.9 ) then
 
              if ( my_first_call ) hourloc = 3 ! fake to get started
              if ( hourloc /= 3  ) cycle  ! Only set one per day, at 3am
@@ -127,7 +127,7 @@ contains
          REW   = SoilWater_deep(i,j,1) !done:/ SoilMAM
 
          write(*,"(a,f7.4,i4,f7.4,i4,2f12.4,L8,f12.4)") "DEBUG_SWF: ", &
-           water_cover(i,j), daynumber, SoilWater_deep(i,j,1), hourloc,&
+           water_fraction(i,j), daynumber, SoilWater_deep(i,j,1), hourloc,&
             REW, fSW(i,j), nwp_sea(i,j)
              
       end if

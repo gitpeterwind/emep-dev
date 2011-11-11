@@ -131,11 +131,30 @@ private
    character(len=TXTLEN_SHORT), private, parameter ::&
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
-   !EUCtype(typ_s5i), public, parameter, dimension(32) :: &
-   type(typ_s5i), public, parameter, dimension(32) :: &
+   !REMEMBER - KEEP UPPER CASE FOR ALL GASES
+   type(typ_s5i), public, parameter, dimension(32+9) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
+!Added NOV2011
+! Here we use the 4th text field to give the "class" or "typ". Derived_ml
+! will look for this in the select case (typ) 
+!CAN allow lower case ...
+        ,typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", H)& !hourly tests
+        ,typ_s5i("T2m       ", "degC",D2,"T2m      ","MISC", D)&
+        ,typ_s5i("Snow_m    ", "m",   D2,"SNOW     ","MISC", D)&
+        ,typ_s5i("SURF_ppbC_VOC  ", "ppb", D2,"VOC      ","MISC", D)&!?CHECK??
+! Could also add from earlier D2_EXTRA array:
+      !,"SoilWater_deep    " &
+      !,"USTAR_NWP         " &
+      !,"ws_10m            " &
+      !,"u_ref             " &
+!.... down to here
+        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("CO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PPM25     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PPM_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
 ! Omit for CityZen
         ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
@@ -216,21 +235,13 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(8) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
   D2_EXTRA = (/ &
-       "SURF_ppbC_VOC     " &
-      ,"T2m               " &
-      ,"Area_Grid_km2     " &
+       "Area_Grid_km2     " &
       ,"Area_Conif_Frac   " &
       ,"Area_Decid_Frac   " &
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
-      ,"HMIX              " & !alt HMIX00 ,HMIX12 ...
-      !,"Snow_m            " & 
-      !,"SoilWater_deep    " &
-      !,"USTAR_NWP         " &
-      !,"ws_10m            " &
-      !,"u_ref             " &
   /)
 
 
@@ -247,11 +258,12 @@ private
    ! depositions for in netcdf files. DDEP_ECOS must match one of
    ! the DEP_RECEIVERS  from EcoSystem_ml.
    !
-    integer, public, parameter :: NNDRYDEP = 3 ! 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
-   !integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
-    integer, public, parameter, dimension(NNDRYDEP) :: &
-      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /) ! , &
-       !    SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
+   ! integer, public, parameter :: NNDRYDEP = 3 ! 7 + 1 !JUST HNO3: size(DDEP_OXNGROUP)
+    integer, public, parameter, dimension(7+size(DDEP_OXNGROUP)) :: &
+    !integer, public, parameter, dimension(NNDRYDEP) :: &
+      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX, & !  /) ! , &
+           SO2,  SO4, NH3, NH4_f, DDEP_OXNGROUP /)
+           !SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
 
     character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
       DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" /) !&! "Water_D" &
@@ -264,19 +276,25 @@ private
    !- specify some species and land-covers we want to output
    ! dep. velocities for in netcdf files. Set in My_DryDep_ml.
 
-    type(typ_s5i), public, parameter, dimension(1) :: &
+    type(typ_s5i), public, parameter, dimension(17) :: &
          NewMosaic = (/ &
              typ_s5i( "Mosaic", "VG", "O3       ", "Grid","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
-            !,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
-            !,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
-            !,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
+            ,typ_s5i( "Mosaic", "VG", "O3       ", "CF  ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "O3       ", "SNL ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "W   ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "CF  ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "HNO3     ", "SNL ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "SNL ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "SNL ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "NO3_F    ", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "NO3_C    ", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "W   ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "W   ","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_F", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "VG", "SEASALT_C", "Grid","cms",D ) &
+            ,typ_s5i( "Mosaic", "Rs", "SO2      ", "Grid","sm",D ) &
+            ,typ_s5i( "Mosaic", "Rs", "NH3      ", "Grid","sm",D ) &
          /)
 
 ! VEGO3 outputs for PODY and AOTX - see AOTnPOD_ml for definitions,
@@ -310,16 +328,17 @@ private
 
 ! For met-data and canopy concs/fluxes ...
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(1) :: &
-      MOSAIC_METCONCS = (/ "VPD     " /) ! &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
+      MOSAIC_METCONCS = (/ "VPD     "  &
                          ! ,"CanopyO3" & !SKIP 
          !,"VPD     ", "FstO3   " "EVAP    ", "Gsto    " &
-                        !SKIP  ,"USTAR   ", "INVL    "  &
-                       !/)
+                        !SKIP  
+                       ,"USTAR   ", "INVL    "  &
+                       /)
                           ! "g_sto" needs more work - only set as L%g_sto
 
-    character(len=TXTLEN_DERIV), public, save, dimension(1) :: &
-      MET_LCS  = (/ "DF    " /) !, "CF    ", "BF    ", "NF    " /) !, 
+    character(len=TXTLEN_DERIV), public, save, dimension(2) :: &
+      MET_LCS  = (/ "DF    ", "GR    " /) !, "CF    ", "BF    ", "NF    " /) !, 
                                 !"IAM_DF", "IAM_MF"/)
 
       !MET_LCS  = (/ "GR    " , "IAM_CR", "IAM_DF", "IAM_MF"/)
@@ -379,7 +398,7 @@ private
        dimension(size( OutputConcs(:)%txt1 ) ) ::&
           tag_name    ! Needed to concatanate some text in AddArray calls
                       ! - older (gcc 4.1?) gfortran's had bug
-    character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp
+    character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
 
     call Init_MosaicMMC(MOSAIC_METCONCS)  ! sets MMC_USTAR etc.
 
@@ -447,7 +466,7 @@ private
          call CheckStop(  n1>size(VEGO3_DEFS(:)%name) .or. n1<1 , &
                    "VEGO3 not found"//trim(VEGO3_WANTED(n)) )
          VEGO3_OUTPUTS(n) = VEGO3_DEFS(n1)
-       if(DEBUG .and. MasterProc)  print *, "VEGO3 NUMS ", n, n1,&
+       if(DEBUG .and. MasterProc)  write(*,*) "VEGO3 NUMS ", n, n1,&
             trim( VEGO3_WANTED(n) )
       end do
       if(MasterProc)call WriteArray(VEGO3_OUTPUTS(:)%name,size(VEGO3_WANTED)," VEGO3 OUTPUTS:")
@@ -486,6 +505,7 @@ private
 
      mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
 
+
    ! Add the pollutants wanted from OutputConcs:
    !type(typ_s5i), public, parameter, dimension(27) :: &
    !   OutputConcs = (/  typ_s5i("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
@@ -497,11 +517,20 @@ private
          outunit= trim(OutputConcs(n)%txt2)
          outdim = trim(OutputConcs(n)%txt3)
          outtyp = trim(OutputConcs(n)%txt4)
-
+         outclass = trim(OutputConcs(n)%txt5) ! MISC or SPEC or GROUP
+ 
          if( outdim == "3d" ) txt = "D3"  ! Will simplify later
          if( outdim == "2d" ) txt = "SURF"  ! Will simplify later
 
-         if( outtyp == "AIR_CONCS" ) then 
+         if( outclass == "MISC" ) then 
+
+              tag_name(1)= trim(outname) ! Just use raw name here
+
+              call AddArray( tag_name(1:1) , wanted_deriv2d, &
+                     NOT_SET_STRING, errmsg)
+  
+         else if( outtyp == "AIR_CONCS" ) then 
+
               tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
               call AddArray(  tag_name(1:1) , wanted_deriv2d, &
                      NOT_SET_STRING, errmsg)
@@ -515,8 +544,11 @@ private
                   call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
                   if(DEBUG.and.MasterProc) write(*,*) "Xd-3d-DONE ", n, trim(tag_name(1))
               end if
+
+
          else
-            call StopAll("Not coded yet")
+            call StopAll("My_Deriv: Not coded yet" // &
+              trim(outname) //":"//trim(outtyp) )
          end if
 
       end do
@@ -530,6 +562,8 @@ private
          call CheckStop( errmsg, errmsg // "Wanted D3 too long" )
        end if
      end if
+!DS TEST HERE
+     mynum_deriv2d  = LenArray( wanted_deriv2d, NOT_SET_STRING )
      mynum_deriv3d  = LenArray( wanted_deriv3d, NOT_SET_STRING )
 
 
@@ -577,7 +611,7 @@ private
       case  default
 
           if ( MasterProc .and. num_warnings < 100 ) then
-            write(*,*) "WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
+            write(*,*) "My_Deriv:WARNING - REQUEST FOR UNDEFINED OUTPUT:", n, class
             num_warnings = num_warnings + 1
           end if
      end select

@@ -122,7 +122,6 @@ subroutine runchem(numt)
 
          !****** debug cell set here *******
           debug_flag =  .false.  
-          debug_flag =  .false.  
           if ( DEBUG .and. debug_proc ) then
 
              debug_flag = ( debug_li == i .and. debug_lj == j ) 
@@ -206,8 +205,8 @@ subroutine runchem(numt)
                 if(mod(nstep,2) /= 0 ) then 
 
                         if ( EQUILIB_EMEP )        call ammonium() 
-                        if ( EQUILIB_MARS )        call My_MARS()
-                        if ( EQUILIB_EQSAM )       call My_EQSAM() 
+                        if ( EQUILIB_MARS )        call My_MARS(debug_flag)
+                        if ( EQUILIB_EQSAM )       call My_EQSAM(debug_flag) 
 
                         call DryDep(i,j)
 
@@ -215,8 +214,8 @@ subroutine runchem(numt)
 
                         call DryDep(i,j)
                         if ( EQUILIB_EMEP )        call ammonium() 
-                        if ( EQUILIB_MARS )        call My_MARS()
-                        if ( EQUILIB_EQSAM )       call My_EQSAM() 
+                        if ( EQUILIB_MARS )        call My_MARS(debug_flag)
+                        if ( EQUILIB_EQSAM )       call My_EQSAM(debug_flag) 
                    endif
                    !????????????????????????????????????????????????????
 
@@ -246,10 +245,10 @@ subroutine runchem(numt)
  
                      if ( nhour == END_OF_EMEPDAY .or.  End_of_Run ) then
                         ambient = .false.
-                        call Aero_water(i,j, ambient)  !
+                        call Aero_water(i,j, ambient, debug_flag)  !
                      else
                         ambient = .true.
-                        call Aero_water(i,j, ambient)
+                        call Aero_water(i,j, ambient, debug_flag)
                      endif                    
 
                      call reset_3d(i,j)

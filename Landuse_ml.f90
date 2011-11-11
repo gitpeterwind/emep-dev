@@ -97,13 +97,15 @@ private
  !=============================================
 
 
+  logical, public,save,dimension(MAXLIMAX,MAXLJMAX) :: likely_coastal  = .false.
+
   integer, public,save,dimension(MAXLIMAX,MAXLJMAX) :: &
           WheatGrowingSeason  ! Growing season (days), IAM_WHEAT =1 for true
  
  ! For some flux work, experimental
 
- real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_cover, ice_landcover 
- logical,public,save :: water_cover_set = .false.
+ real,public,save,dimension(MAXLIMAX,MAXLJMAX) :: water_fraction, ice_landcover 
+ logical,public,save :: water_frac_set = .false.
 
  character(len=80), private :: errmsg
 
@@ -279,8 +281,9 @@ contains
       !/ -- Calculate growing seasons where needed and water_fraction
       !          (for Rn emissions)
 
-        water_cover(:,:) = 0.0    !for Pb210 
+        water_fraction(:,:) = 0.0    !for Pb210 
         ice_landcover(:,:) = 0.0  !for Pb210 
+        likely_coastal(:,:) = .false.   ! already done, but just for clarity
 
         do i = li0, li1
           do j = lj0, lj1
@@ -315,7 +318,7 @@ contains
                  LandCover(i,j)%fphen(ilu) =  0.0          
              end if
 
-             if ( LandType(lu)%is_water ) water_cover(i,j) = &
+             if ( LandType(lu)%is_water ) water_fraction(i,j) = &
                                           LandCover(i,j)%fraction(ilu)
              if ( LandType(lu)%is_ice   ) ice_landcover(i,j) = &
                                           LandCover(i,j)%fraction(ilu)
@@ -323,13 +326,22 @@ contains
 
             end do ! ilu
             if(.not. foundnwp_sea)then
-               if(water_cover(i,j)>water_fraction_THRESHOLD) &
+               if(water_fraction(i,j)>water_fraction_THRESHOLD) &
                   nwp_sea(i,j) = .true.
             endif
+
+          ! We don't want to trust some squares with a mixture of sea
+          ! and land for micromet purposes, e.g. T2 can be very wrong
+          ! We mark these as likely coastal:
+           if ( nwp_sea(i,j) )  then
+               if (  water_fraction(i,j) < 0.95 ) likely_coastal(i,j) = .true.
+           else if ( water_fraction(i,j) > 0.2 ) then
+                 likely_coastal(i,j) = .true.
+           end if !
           end do ! j
         end do ! i
 
-        water_cover_set = .true.  ! just to inform other routines
+        water_frac_set = .true.  ! just to inform other routines
         my_first_call   = .false.
 
    !======================================================================

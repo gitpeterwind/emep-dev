@@ -235,6 +235,8 @@ contains
        end do
     end do
     if( debug_proc ) write(*,*) "GridValues debug:", me, debug_li, debug_lj
+    write(*,"(a,2i4,i3,4i4,L2,2i4)") "GridValues debug:", DEBUG_i, DEBUG_j, &
+          me, li0, li1, lj0, lj1, debug_proc , debug_li, debug_lj
     !------------------------------------------------------------------
 
 

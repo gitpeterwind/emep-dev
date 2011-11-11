@@ -66,6 +66,7 @@
     use PhysicalConstants_ml, only:  RGAS_J
     use Setup_1dfields_ml, only: rcemis,        & ! photolysis, emissions
                                  rc_Rn222,      & ! Pb210
+                                 rc_Rnwater,    & ! Pb210
                                  xn_2d,         & 
                                  rh,            & 
                                  Fgas,   & ! fraction in gas-phase, for SOA
