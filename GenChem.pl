@@ -290,7 +290,7 @@ sub read_species {
 
 		print "LINE $line TYPE $typ N $n\n";
 
-                if ( is_integer( $formula ) )
+                if ( is_integer( $formula ) or is_float( $formula ) )
                 {       $molwt{$spec} = $formula;
                         print LOG "INPUT MOLWT: $spec= $molwt{$spec}\n";
                 }
@@ -299,8 +299,16 @@ sub read_species {
                         count_atoms($spec,$formula)
                 }
 
+
                 if ($molwt{$spec} == 1 and $in_rmm ne "-" )
                         { $molwt{$spec} = $in_rmm }
+
+                if ( is_float( $in_rmm ) or is_integer( $in_rmm ) )
+                {
+                        $molwt{$spec} = $in_rmm;
+                        print LOG "INPUT MOLWT: $spec= $molwt{$spec}\n";
+                }
+
 
                 unless ( defined ( $count{$spec}{"C"} )) {
                    if ($count{$spec}{"C"} == 0 and $in_ncarbon != 0)
@@ -1065,7 +1073,7 @@ sub print_species {
 
   type, public :: Chemical 
        character(len=20) :: name
-       integer           :: molwt
+       real              :: molwt
        integer           :: nmhc      ! nmhc (1) or not(0)
        integer           :: carbons   ! Carbon-number
        real              :: nitrogens ! Nitrogen-number
@@ -1090,7 +1098,7 @@ END_CHEMSTART
 	    $nnum = $count{$spec}{"N"};   # to save interpolating inside string!
 	    $snum = $count{$spec}{"S"};   # to save interpolating inside string!
             printf F 
-           "     species(%s) = Chemical(\"%-12s\",%4d,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",  
+           "     species(%s) = Chemical(\"%-12s\",%9.4f,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",  
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
                    $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i];
             print "SPECF ", 
