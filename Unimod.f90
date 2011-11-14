@@ -56,7 +56,7 @@ use DO3SE_ml,         only: Init_DO3SE
 use EcoSystem_ml,     only: Init_EcoSystems
 use Emissions_ml,     only: Emissions, newmonth
 use ForestFire_ml,    only: Fire_Emis
-use GridValues_ml,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles
+use GridValues_ml,    only: MIN_ADVGRIDS, GRIDWIDTH_M, Poles, DefDebugProc
 use Io_ml,            only: IO_MYTIM,IO_RES,IO_LOG,IO_TMP,IO_DO3SE
 use Io_Progs_ml,      only: read_line, PrintLog
 use Landuse_ml,       only: InitLandUse, SetLanduse, Land_codes
@@ -200,7 +200,8 @@ tim_before = tim_before0
 !TRIEDcall Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
 call MeteoGridRead(cyclicgrid)    ! define grid projection and parameters
 !
- call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
+call Topology(cyclicgrid,Poles)   ! def GlobalBoundaries & subdomain neighbors
+call DefDebugProc()               ! Sets debug_proc, debug_li, debuglj
 call assign_NTERM(NTERM)          ! set NTERM, the number of 3-hourly periods
 call assign_dtadvec(GRIDWIDTH_M)  ! set dt_advec
 

@@ -147,6 +147,19 @@ ds done   My_SOA_ml.f90
 
 
 !----------------------------------------------------------
+xxxxxxxx rv3_9_15, Dave   14th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Safer setting of debug_proc, through new subroutine in GridValues
+(since best setting needed li0, li1, etc., and this info
+only becomes available after Topology called.)
+
+GridValues_ml - debug_proc code moved to separate subroutine
+
+ModelConstants_ml - added DEBUG_GRIDVALUES
+
+Unimod.f90 - call to DefDebugProc added
+
+
 xxxxxxxx rv3_9_14, Robert 14th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Updating GenChem.pl to use REAL values for molar weights rather than INTEGER.
