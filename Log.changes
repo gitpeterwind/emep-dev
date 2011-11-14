@@ -146,6 +146,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 
+xxxxxxxx rv3_9_15, Peter   14th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+NetCDF_ml:
+Bug in ReadField_CDF /= corrected from >:
+              if ( Rvalues(ijkn(k) )  /= FillValue ) then
+
+
 !----------------------------------------------------------
 xxxxxxxx rv3_9_15, Dave   14th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 

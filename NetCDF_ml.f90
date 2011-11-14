@@ -2203,7 +2203,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
            do k = 1, 4
               ii = IIij(i,j,k)
               jj = JJij(i,j,k)
-              if ( Rvalues(ijkn(k) )  > FillValue ) then
+              if ( Rvalues(ijkn(k) )  /= FillValue ) then
                    Rvar(ijk) =  Rvar(ijk) + Weight(k)*Rvalues(ijkn(k))
                   sumWeights = sumWeights + Weight(k)
               end if
