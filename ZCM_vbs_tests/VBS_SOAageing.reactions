@@ -1,25 +1,35 @@
 *===========================================================================
 * Aging of SOA as in Lane et al., 2008 (Tsimpidi et al., 2010, seem to use 10 times faster aging also for SOA!)
-* NOTE! At the moment neglect the mass increase due to uptake of oxygen in aging reactions (within the ug1-ug1000 range, typically others assume 7.5% mass increase per aging reaction). For the X_ng100 species we assume a higher OM/OC ratio (corresponding to OOA-I ?). This may need updating/refining.
+* NOTE! Test mass increase due to uptake of oxygen in aging reactions (assume 7.5% mass increase per aging reaction).
 *
-4.0e-12*Fgas(ALK4_ug10,:)  ALK4_ug10 + [OH]     =  ALK4_UG1  ;
-4.0e-12*Fgas(OLE1_ug1,:)   [OH] + OLE1_ug1      = OLE1_ng100 ;
-4.0e-12*Fgas(OLE1_ug10,:)  [OH] + OLE1_ug10     = OLE1_ug1 ;
-4.0e-12*Fgas(OLE1_ug1e2,:) [OH] + OLE1_ug1e2    = OLE1_ug10 ;
-4.0e-12*Fgas(OLE1_ug1e3,:) [OH] + OLE1_ug1e3    = OLE1_ug1e2 ; 
+4.0e-12*Fgas(ALK4_ug10,:)  ALK4_ug10 + [OH]     =  ALK4_ug1 + 0.3825 O_ASOA_ug1 ;
+4.0e-12*Fgas(ALK4_ug1,:)  ALK4_ug1 + [OH]     =  ALK4_ng100 + 0.3825 O_ASOA_ng100 ;
 *
-4.0e-12*Fgas(ARO2_ug1,:)   [OH] + ARO2_ug1      = ARO2_ng100 ;
-4.0e-12*Fgas(ARO2_ug10,:)  [OH] + ARO2_ug10     = ARO2_ug1 ;
-4.0e-12*Fgas(ARO2_ug1e2,:) [OH] + ARO2_ug1e2    = ARO2_ug10 ; 
-4.0e-12*Fgas(ARO2_ug1e3,:) [OH] + ARO2_ug1e3    = ARO2_ug1e2 ;
+4.0e-12*Fgas(OLE1_ug1,:)   [OH] + OLE1_ug1      = OLE1_ng100 + 0.287 O_ASOA_ng100 ;
+4.0e-12*Fgas(OLE1_ug10,:)  [OH] + OLE1_ug10     = OLE1_ug1 + 0.287 O_ASOA_ug1 ;
+4.0e-12*Fgas(OLE1_ug1e2,:) [OH] + OLE1_ug1e2    = OLE1_ug10 + 0.287 O_ASOA_ug10 ;
+4.0e-12*Fgas(OLE1_ug1e3,:) [OH] + OLE1_ug1e3    = OLE1_ug1e2 + 0.287 O_ASOA_ug1e2 ; 
 *
-4.0e-12*Fgas(ISOP_ug1,:)   [OH] + ISOP_ug1      = ISOP_ng100 ;
-4.0e-12*Fgas(ISOP_ug10,:)  [OH] + ISOP_ug10     = ISOP_ug1   ;
-4.0e-12*Fgas(ISOP_ug1e2,:) [OH] + ISOP_ug1e2    = ISOP_ug10  ;
-4.0e-12*Fgas(ISOP_ug1e3,:) [OH] + ISOP_ug1e3    = ISOP_ug1e2 ;
+4.0e-12*Fgas(ARO2_ug1,:)   [OH] + ARO2_ug1      = ARO2_ng100 + 0.945 O_ASOA_ng100 ;
+4.0e-12*Fgas(ARO2_ug10,:)  [OH] + ARO2_ug10     = ARO2_ug1 + 0.945 O_ASOA_ug1 ;
+4.0e-12*Fgas(ARO2_ug1e2,:) [OH] + ARO2_ug1e2    = ARO2_ug10 + 0.945 O_ASOA_ug10 ; 
+4.0e-12*Fgas(ARO2_ug1e3,:) [OH] + ARO2_ug1e3    = ARO2_ug1e2 + 0.945 O_ASOA_ug1e2 ;
 *
-4.0e-12*Fgas(TERP_ug1,:)   [OH] + TERP_ug1      = TERP_ng100 ;
-4.0e-12*Fgas(TERP_ug10,:)  [OH] + TERP_ug10     = TERP_ug1   ;
-4.0e-12*Fgas(TERP_ug1e2,:) [OH] + TERP_ug1e2    = TERP_ug10  ;
-4.0e-12*Fgas(TERP_ug1e3,:) [OH] + TERP_ug1e3    = TERP_ug1e2 ;
+4.0e-12*Fgas(ISOP_ug1,:)   [OH] + ISOP_ug1      = ISOP_ng100 + 0.5625 O_BSOA_ng100 ;
+4.0e-12*Fgas(ISOP_ug10,:)  [OH] + ISOP_ug10     = ISOP_ug1 + 0.5625 O_BSOA_ug1  ;
+4.0e-12*Fgas(ISOP_ug1e2,:) [OH] + ISOP_ug1e2    = ISOP_ug10 + 0.5625 O_BSOA_ug10 ;
+4.0e-12*Fgas(ISOP_ug1e3,:) [OH] + ISOP_ug1e3    = ISOP_ug1e2 + 0.5625 O_BSOA_ug1e2 ;
+*
+4.0e-12*Fgas(TERP_ug1,:)   [OH] + TERP_ug1      = TERP_ng100 + 0.956 O_BSOA_ng100 ;
+4.0e-12*Fgas(TERP_ug10,:)  [OH] + TERP_ug10     = TERP_ug1 + 0.956 O_BSOA_ug1  ;
+4.0e-12*Fgas(TERP_ug1e2,:) [OH] + TERP_ug1e2    = TERP_ug10 + 0.956 O_BSOA_ug10 ;
+4.0e-12*Fgas(TERP_ug1e3,:) [OH] + TERP_ug1e3    = TERP_ug1e2 + 0.956 O_BSOA_ug1e2 ;
+*
+4.0e-12*Fgas(O_ASOA_ug1,:)      [OH] + O_ASOA_ug1     =  1.075 O_ASOA_ng100 ;
+4.0e-12*Fgas(O_ASOA_ug10,:)     [OH] + O_ASOA_ug10    =  1.075 O_ASOA_ug1  ;
+4.0e-12*Fgas(O_ASOA_ug1e2,:)    [OH] + O_ASOA_ug1e2   =  1.075 O_ASOA_ug10  ;
+*
+4.0e-12*Fgas(O_BSOA_ug1,:)      [OH] + O_BSOA_ug1     =  1.075 O_BSOA_ng100 ;
+4.0e-12*Fgas(O_BSOA_ug10,:)     [OH] + O_BSOA_ug10    =  1.075 O_BSOA_ug1  ;
+4.0e-12*Fgas(O_BSOA_ug1e2,:)    [OH] + O_BSOA_ug1e2   =  1.075 O_BSOA_ug10  ;
 *
