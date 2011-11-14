@@ -46,6 +46,8 @@
                             
  use ModelConstants_ml,    only : KMAX_BND, KMAX_MID  &! vertical extent
       ,DEBUG_i, DEBUG_j  &    ! full-domain coordinate of debug-site
+      ,DEBUG_GRIDVALUES  &
+      ,MasterProc        &
       ,NPROC, IIFULLDOM,JJFULLDOM, PT, Pref
  use Par_ml, only : &
         MAXLIMAX,MAXLJMAX & ! max. possible i, j in this domain
@@ -61,6 +63,7 @@
  !-- contains subroutine:
 
  Public :: DefGrid ! => GRIDWIDTH_M, map-factor stuff, calls other routines
+ Public :: DefDebugProc ! =>  sets debug_proc, debug_li, debug_lj
  Public :: ij2lbm  ! polar stereo grid to longitude latitude
  Public :: lb2ijm  ! longitude latitude to grid in polar stereo
  Public :: ij2ijm  ! polar grid1 to polar grid2
@@ -174,7 +177,6 @@
 
   !/** internal parameters
 
-  logical, private, parameter ::  DEBUG_GRID = .false.  ! for debugging
   character (len=100),public::projection
   integer, public, parameter :: MIN_ADVGRIDS = 5 !minimum size of a subdomain
   integer, public :: Poles(2) !Poles(1)=1 if North pole is found, Poles(2)=1:SP
@@ -220,23 +222,6 @@ contains
     j_local = (/ (n - gj0 - JRUNBEG + 2, n=1, JJFULLDOM) /)
 
 
-    ! -------------- Find debug coords  and processor ------------------
-
-    debug_proc = .false.
-    !do i = 1, MAXLIMAX
-    !   do j = 1, MAXLJMAX
-    do i = li0, li1 ! limax
-       do j = lj0, lj1 ! ljmax
-          if( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
-             debug_li = i
-             debug_lj = j
-             debug_proc = .true.
-          end if
-       end do
-    end do
-    if( debug_proc ) write(*,*) "GridValues debug:", me, debug_li, debug_lj
-    write(*,"(a,2i4,i3,4i4,L2,2i4)") "GridValues debug:", DEBUG_i, DEBUG_j, &
-          me, li0, li1, lj0, lj1, debug_proc , debug_li, debug_lj
     !------------------------------------------------------------------
 
 
@@ -322,7 +307,7 @@ contains
    ! projection='Stereographic'
        call Position()
 
-    if ( DEBUG_GRID ) then
+    if ( DEBUG_GRIDVALUES ) then
        if ( me == 0 ) then
          write(*,800) "GRIDTAB","me","ISM","JSM","gi0","gj0",&
               "li0","li1","lix","MXI",&
@@ -345,6 +330,35 @@ contains
 
   end subroutine DefGrid
   ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+  subroutine DefDebugProc()
+  !-------------------------------------------------------------------! 
+  ! -------------- Find debug coords  and processor ------------------
+  !-------------------------------------------------------------------! 
+
+    integer ::  i, j
+
+    debug_proc = .false.
+
+    do i = li0, li1
+       do j = lj0, lj1
+          if( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
+             debug_li = i
+             debug_lj = j
+             debug_proc = .true.
+          end if
+       end do
+    end do
+
+    if( debug_proc ) write(*,*) "GridValues debug_proc found:", &
+            me, debug_li, debug_lj
+    if ( DEBUG_GRIDVALUES ) then
+        write(*,"(a,2i4,i3,4i4,L2,2i4)") "GridValues debug:", &
+          DEBUG_i, DEBUG_j, me, li0, li1, lj0, lj1, &
+          debug_proc , debug_li, debug_lj
+    end if
+
+  end subroutine DefDebugProc
   ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   subroutine Position()
   !-------------------------------------------------------------------! 
@@ -427,7 +441,7 @@ contains
                     " GridValues: max/min for lat,lon ", &
                      gbacmax,gbacmin,glacmax,glacmin
 
-    if ( DEBUG_GRID ) then
+    if ( DEBUG_GRIDVALUES ) then
        do j = 1, MAXLJMAX
          do i = 1, MAXLIMAX
            if ( i_fdom(i) == DEBUG_i .and. j_fdom(j) == DEBUG_j ) then
