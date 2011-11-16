@@ -47,10 +47,10 @@ KRO2NO                 [ISRO2] + [NO]  = 0.000567 ISOP_ug1 + 0.013033 ISOP_ug10 
 * (Lane 2008?)
 * Yields from Tsimpidi et al., 2010 (assumed SOA density of 1.5 g cm-3)
 *KRO2NO   TERPPeroxy + NO  = NO2 + 0.012 TERP_ug1 + 0.122 TERP_ug10 + 0.201 TERP_ug1e2 + 0.5 TERP_ug1e3 ;
-*KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 + 0.405 TERP_ug1e3 ;
+*KHO2RO2  TERPPeroxy + HO2 = 0.1073 TERP_ug1 + 0.0918 TERP_ug10 + 0.3587 TERP_ug1e2 + 0.6075 TERP_ug1e3 ;
 * Tsimpidi et al., 2010, [M(TERP_ugX) = 1.5*M(APINENE)]
 KRO2NO         TERPPeroxy + NO  = NO2 + 0.008 TERP_ug1 + 0.08133 TERP_ug10 + 0.134 TERP_ug1e2 + 0.3333 TERP_ug1e3 ;
-0.914*KHO2RO2  TERPPeroxy + HO2 = 0.048 TERP_ug1 + 0.04067 TERP_ug10 + 0.15933 TERP_ug1e2 + 0.27 TERP_ug1e3 ;
+0.914*KHO2RO2  TERPPeroxy + HO2 = 0.072 TERP_ug1 + 0.061 TERP_ug10 + 0.239 TERP_ug1e2 + 0.405 TERP_ug1e3 ;
 
 *
 *KRO2NO   SESQPeroxy + NO  = NO2 + 0.05 SESQ_ug1 + 0.1 SESQ_ug10 + 0.5 SESQ_ug1e2 ;
