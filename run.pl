@@ -246,10 +246,15 @@ my $CityZen = 0 ;
 my $VBS   = 0;
 my $Chem     = "EmChem09";
 
-my $testv = "rv3_9_15";
+my $testv = "rv3_9_17";
+
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
 my $ChemDir  = "$ProgDir/ZCM_$Chem";
+# Check:
+die "No ProgDir! $ProgDir\n" unless -d $ProgDir;
+die "No ChemDir! $ChemDir\n" unless -d $ChemDir;
+
 
 #---- emislist --------------------------------------------------------
 open(EMIS,"<$ProgDir/CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";

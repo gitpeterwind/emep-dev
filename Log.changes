@@ -144,7 +144,16 @@ ds done   My_Aerosols_ml.f90     - st small changes (see below)
 ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
+!
 
+xxxxxxxx rv3_9_17, Robert 16th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Bug fix in organic aerosol (VBS) model. Earlier version had too low BSOA yield from terpene oxidation in low-NOx conditions. Increased VBS-yields by a factor 1.5 for TERPPEROXY+HO2 reaction.
+
+   Updated file:
+   ZCM_vbs_tests/VBS_SOAformation.reactions
+
+run.pl (Dave) - added 2 directory checks to lessen confusion
 
 xxxxxxxx rv3_9_16, Peter   14th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -154,13 +163,6 @@ Bug in ReadField_CDF /= corrected from >:
 
 
 !----------------------------------------------------------
-xxxxxxxx rv3_9_16, Robert 16th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
-
-Bug fix in organic aerosol (VBS) model. Earlier version had too low BSOA yield from terpene oxidation in low-NOx conditions. Increased VBS-yields by a factor 1.5 for TERPPEROXY+HO2 reaction.
-
-   Updated file:
-   ZCM_vbs_tests/VBS_SOAformation.reactions
-
 xxxxxxxx rv3_9_15, Dave   14th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Safer setting of debug_proc, through new subroutine in GridValues
