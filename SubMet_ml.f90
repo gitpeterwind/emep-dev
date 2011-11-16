@@ -34,6 +34,7 @@ module SubMet_ml
 !  The sub-grid part of this module is also undergoing constant change!!
 !=============================================================================
 
+use CheckStop_ml, only: StopAll
 use Functions_ml, only : T_2_Tpot  !needed if FluxPROFILE == Ln95
 use MetFields_ml, only : ps        !needed if FluxPROFILE == Ln95
 
@@ -130,6 +131,7 @@ real :: theta2
         Sub(iL)%t2     = Grid%t2         ! First guess = NWP value
         Sub(iL)%t2C    = Grid%t2C        ! First guess = NWP value
         Sub(iL)%is_veg = LandType(iL)%is_veg
+        Sub(iL)%is_crop = LandType(iL)%is_crop !TEST NH3
         Sub(iL)%is_ice = LandType(iL)%is_ice
 
         Sub(iL)%is_water  = LandType(iL)%is_water
@@ -222,7 +224,7 @@ real :: theta2
 
     !NEW
 
-     if ( FluxPROFILE == "Fn1995") then !TESTING
+     if ( FluxPROFILE == "Fn95") then !TESTING
 
         theta2 = Grid%t2 * T_2_Tpot( Grid%psurf )
         call Launiainen1995( Grid%u_ref, Sub(iL)%z_refd, Sub(iL)%z0, Sub(iL)%z0, &
@@ -234,26 +236,21 @@ real :: theta2
            + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
 
         if (  DEBUG_SUBMET .and. debug_flag ) then
-            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH  SUBI", iter,iL, &
+            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH SUBI", iter,iL, &
                 Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                   Sub(iL)%z_refd, z_3md, &
                  Sub(iL)%invL, Sub(iL)%ustar, Grid%invL, Grid%ustar
-            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH  ZZZZ", iter,iL, &
+            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH ZZZZ", iter,iL, &
                 Grid%z_mid, Grid%z_ref, Sub(iL)%z_refd
         end if
 
-        if( Sub(iL)%invL > 10.0 .or. Sub(iL)%invL < -10.0 ) then
-           print "(a12,i2,5f8.3,10f12.3)", "VDHH  STOP", iL, &
-                Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
-                  Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
-           print "(a12,i2,5f8.3,10f12.3)", "VDHH  MET", iL, Grid%u_ref, Grid%t2, theta2, Grid%theta_ref, &
-             9.81 * Sub(iL)%z_refd * (Grid%theta_ref -theta2 ) / &
-                    ( theta2 *  Grid%u_ref**2 + 0.001 ),  Grid%Hd, Grid%invL
-           call CheckStop("VDHH STOP")
+        if( DEBUG_SUBMET .and. &
+            Sub(iL)%invL > 10.0 .or. Sub(iL)%invL < -10.0 ) then
+           call CheckStop("FluxPROFILE STOP")
         end if
 
 
-     else ! Iter by default 
+     else if ( FluxPROFILE == "Iter" ) then  
 
     do iter = 1, NITER 
 
@@ -267,7 +264,7 @@ real :: theta2
         !..z0-values ...
 
         if ( DEBUG_SUBMET .and. debug_flag ) then
-            write(6,"(a12,i2,i3,5f8.3,2f12.3)") "UKDEP SUBI", iter,iL, &
+            write(6,"(a12,i2,i3,5f8.3,2f12.3)") "SUBMET ITER", iter,iL, &
                 Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                   Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
         end if
@@ -300,25 +297,29 @@ real :: theta2
             + PsiM( Sub(iL)%z0*Sub(iL)%invL    )) 
 
     if (  DEBUG_SUBMET .and. debug_flag ) then
-        write(6,"(a12,i2,i3,5f8.3,2f12.3)") "UKDEP SUBi", iter,iL, &
+        write(6,"(a12,i2,i3,5f8.3,2f12.3)") "SUBMET ITERi ", iter,iL, &
                 Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                   Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
-        write(6,"(a12,i3,3f7.1,20g11.3)") "UKDEP SUBA",iL, Sub(iL)%z0, Sub(iL)%d, &
+        write(6,"(a12,i3,3f7.1,20g11.3)") "SUBMET ITERA ",iL, Sub(iL)%z0, Sub(iL)%d, &
           Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
               Sub(iL)%ustar, Sub(iL)%invL , &
            log( Sub(iL)%z_refd/Sub(iL)%z0 ), PsiM( Sub(iL)%z_refd*Sub(iL)%invL )
     end if
        Sub(iL)%ustar = max( Sub(iL)%ustar, MIN_USTAR_LAND )
     end do ! iter
-    end if ! allNWPsea
+
+  else
+     call StopAll("Incorrect FluxPROFILE")
 
   end if ! FluxPROFILE
+    end if ! allNWPsea
 
     if (  DEBUG_SUBMET .and. debug_flag ) then
-        write(6,"(a12,10f9.3)") "UKDEP SUBL", Sub(iL)%z0, Sub(iL)%d, &
-          Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
-              Sub(iL)%ustar, Sub(iL)%t2, Sub(iL)%invL
-        write(*,*) "UKDEP LOGICS ", iL, Sub(iL)%is_water, Sub(iL)%is_forest, Grid%is_allNWPsea
+        write(6,"(a12,10f9.3)") "SUBMET" // trim(FluxProfile), Sub(iL)%z0, &
+         Sub(iL)%d, Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, &
+         Sub(iL)%Hd, Sub(iL)%ustar, Sub(iL)%t2, Sub(iL)%invL
+        write(*,*) "UKDEP LOGICS ", iL, &
+         Sub(iL)%is_water, Sub(iL)%is_forest, Grid%is_allNWPsea
 
 
         if ( my_first_call ) then ! title line
