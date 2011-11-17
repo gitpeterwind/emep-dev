@@ -131,7 +131,7 @@ real :: theta2
         Sub(iL)%t2     = Grid%t2         ! First guess = NWP value
         Sub(iL)%t2C    = Grid%t2C        ! First guess = NWP value
         Sub(iL)%is_veg = LandType(iL)%is_veg
-        Sub(iL)%is_crop = LandType(iL)%is_crop !TEST NH3
+!        Sub(iL)%is_crop = LandType(iL)%is_crop !TEST NH3
         Sub(iL)%is_ice = LandType(iL)%is_ice
 
         Sub(iL)%is_water  = LandType(iL)%is_water

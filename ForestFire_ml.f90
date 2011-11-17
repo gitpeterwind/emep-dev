@@ -44,7 +44,7 @@ module ForestFire_ml
         ,iqrc2itot                   &  !maps from split index to total index
         ,emis_nsplit     ! No. spec per file, e.g. nox has 2, for NO and NO2
 
-  use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, debug_proc
+  use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, debug_proc,xm2,GRIDWIDTH_M
   use Io_ml,             only : PrintLog
   use MetFields_ml,      only : z_bnd
   use ModelConstants_ml, only : MasterProc, KMAX_MID, &
@@ -52,7 +52,7 @@ module ForestFire_ml
                                 IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
   use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,  Real4 ! Reads, writes 
   use OwnDataTypes_ml,   only : Deriv, TXTLEN_SHORT
-  use Par_ml,            only : MAXLIMAX, MAXLJMAX, li0, li1, lj0, lj1, me
+  use Par_ml,            only : MAXLIMAX, MAXLJMAX, li0, li1, lj0, lj1, me,limax,ljmax
   use PhysicalConstants_ml, only : AVOG
   use ReadField_ml,      only : ReadField    ! Reads ascii fields
   use Setup_1dfields_ml, only : rcemis
@@ -85,16 +85,22 @@ implicit none
      ,iqrc    &! index of species among speciated, e.g. SO2=1, SO4=2,NO=3 etc.
      ,itot     ! index of species in xn_2d. Use iqrc2itot array to map
 
-   character(len=TXTLEN_SHORT), private :: emep_poll, gfed_poll
+   character(len=TXTLEN_SHORT), private :: emep_poll, FF_poll
 
    type, private :: BB_Defs
       character(len=TXTLEN_SHORT) :: emep ! e.g.  nox
-      character(len=TXTLEN_SHORT) :: gfed ! e.g. NOx
+      character(len=TXTLEN_SHORT) :: FFfd ! ForestFirefiledef e.g. NOx
       real                        :: MW    ! mol wt. assumed in emission file
    end type
 
   ! GFED table ============================================================
     integer, private, parameter :: NDEFINED_EMEP  = 16 ! No pollutants in file
+
+!choose which data set to use (choose only one!)
+!GFED may be removed in the future (since it is less accurate)
+    logical :: USE_GFED = .false.
+    logical :: USE_FINN = .true.
+
 
    !/ Defintions of GFED data. If known, we assign the GFED pollutant which
    !  corresponds to each possible EMEP emission file. Simply add EMEP 
@@ -129,62 +135,98 @@ implicit none
       BB_Defs("pmco  ", "TPM   ", 0    ) /)   ! nearest. QUERY pm25<<pmco though
   ! =======================================================================
 
+!NB: TEMPORARY, TO BE DEFINED correctly!!!!!
+    type(BB_Defs), private, dimension(NDEFINED_EMEP) :: FINN_defs = (/ &
+      BB_Defs("sox   ", "SO2   ", 64.0 ), & 
+      BB_Defs("co    ", "CO    ", 28.0 ), &  
+      BB_Defs("pm25  ", "PM25  ", 0    ), & ! species(PPM25)%molwt ), & 
+      BB_Defs("nox   ", "NO    ", 30.0 ), & ! as NO what about NO2? , assign 100% in emissplit
+      BB_Defs("nh3   ", "NH3   ",  1.0 ), & ! 
+      BB_Defs("pocffl", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("poccfl", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("pocfwd", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("eccwd ", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("ecfwd ", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("ecffl ", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("eccfl ", "-     ",  0.0 ), & ! rb: is this really needed?
+      BB_Defs("voc   ", "-     ", 0    ), &  
+      BB_Defs("forfbc", "BC    ", 12.0 ), &
+      BB_Defs("forfoc", "OC    ", 12.0 ), & ! used to be zero? But GFED OC-emissions should be in units of C? 
+      BB_Defs("pmco  ", "-     ", 0    ) /)   ! nearest. QUERY pm25<<pmco though
+  ! =======================================================================
+
+    type(BB_Defs), private, dimension(NDEFINED_EMEP) :: FF_defs
+
 contains
-   subroutine Fire_Emis(daynumber)
+  subroutine Fire_Emis(daynumber)
 
-!.....................................................................
-!**    DESCRIPTION:
+    !.....................................................................
+    !**    DESCRIPTION:
 
-!    Reads forest-fire emissions. So far set up for GFED 8d, but in
-!    principal we can re-code by simply adding alternative
-!    subroutines, e.g. to cope with pre-2001 monthly emissions
+    !    Reads forest-fire emissions. So far set up for GFED 8d, but in
+    !    principal we can re-code by simply adding alternative
+    !    subroutines, e.g. to cope with pre-2001 monthly emissions
 
     integer, intent(in) :: daynumber   ! daynumber (1,..... ,365)
 
 
     real    :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
-    integer :: nstart, alloc_err
+    integer :: i,j,nstart, alloc_err
     logical :: my_first_call = .true.   ! DSFF
     integer :: dd_old = -1,  n
+    real    :: fac
 
-!// Input emissions are monthly RETRO [kg/m2/s], GFED [g/m2/8days]
+    !// Input emissions are monthly RETRO [kg/m2/s], GFED [g/m2/8days]
     real, save :: to_kgm2s = 1.0e-3 /(8*24.0*60.0*60.0)
 
-    if (current_date%year<2001) then
-        if( my_first_call .and. MasterProc  ) then
-           call PrintLog("NO 8d GFED FOREST FIRES BEFORE 2001")
-        end if
-        my_first_call = .false.
-        return
-    end if
-    if (current_date%year>2007) then
-        if( my_first_call .and. MasterProc  ) then
-           call PrintLog("NO 8d GFED FOREST FIRES AFTER 2007")
-        end if
-        my_first_call = .false.
-        return
-    end if
 
-    if ( DEBUG_FORESTFIRE .and. MasterProc ) then 
-        write(*,*) "Into the FIRE days:", current_date%year, &
-             daynumber, dd_old, mod ( daynumber, 8 ), my_first_call
-    end if
+    if(USE_GFED)then
+       if (current_date%year<2001) then
+          if( my_first_call .and. MasterProc  ) then
+             call PrintLog("NO 8d GFED FOREST FIRES BEFORE 2001")
+          end if
+          my_first_call = .false.
+          return
+       end if
+       if (current_date%year>2007) then
+          if( my_first_call .and. MasterProc  ) then
+             call PrintLog("NO 8d GFED FOREST FIRES AFTER 2007")
+          end if
+          my_first_call = .false.
+          return
+       end if
+
+       if ( DEBUG_FORESTFIRE .and. MasterProc ) then 
+          write(*,*) "Into the FIRE days:", current_date%year, &
+               daynumber, dd_old, mod ( daynumber, 8 ), my_first_call
+       end if
+
+       ! GFED Fire emissions are called at 8 days intervals (1, 9, 17, ....)
+       ! 46 values available each year: day 361 is the last one.
+       ! Return unless new period
+
+
+       if ( .not. my_first_call .and. mod ( daynumber, 8 ) /= 1  ) return
+       nstart=(current_date%year-2001)*46+(daynumber+7)/8
+
+       FF_defs=gfed_defs
+
+    endif
+
+    if(USE_FINN)then
+       FF_defs=FINN_defs
+    endif
+
 
     if (dd_old == daynumber) return   ! Only calculate once per day max
 
 
-   ! Fire emissions are called at 8 days intervals (1, 9, 17, ....)
-   ! 46 values available each year: day 361 is the last one.
-   ! Return unless new period
-
-    if ( .not. my_first_call .and. mod ( daynumber, 8 ) /= 1  ) return
     dd_old= daynumber
 
 
-    nstart=(current_date%year-2001)*46+(daynumber+7)/8
 
     if(DEBUG_FORESTFIRE .and. MasterProc) &
-            write(*,*) "FOREST_FIRE: ", daynumber,nstart
+         write(*,*) "FOREST_FIRE: ", daynumber,nstart
 
     ! We need to look for forest-fire emissions which are equivalent
     ! to the standard emission files:
@@ -195,69 +237,94 @@ contains
     do iem = 1, NEMIS_FILE
 
        emep_poll = EMIS_FILE(iem)
-       n = find_index(emep_poll, gfed_defs(:)%emep )
-       gfed_poll = gfed_defs(n)%gfed
+       n = find_index(emep_poll, FF_defs(:)%emep )
+       FF_poll = trim(FF_defs(n)%FFfd)
 
        if(DEBUG_FORESTFIRE .and. MasterProc) then
           write(*,"(a,i3,1x,2a8,2i3,a)") "FIRE SETUP: ", &
-            iem, trim(emep_poll), trim(gfed_poll), len_trim(gfed_poll) &
-           ,n,  trim(gfed_defs(n)%gfed)
+               iem, trim(emep_poll), trim(FF_poll), len_trim(FF_poll) &
+               ,n,  trim(FF_defs(n)%FFfd)
        end if
-       
-       if ( len_trim(gfed_poll) > 1 ) then
 
-         fires_found(iem) = .true.
+       if ( len_trim(FF_poll) > 1 ) then
 
-         call ReadField_CDF('GLOBAL_ForestFireEmis.nc',gfed_poll,&
-              rdemis,nstart,interpol='zero_order',needed=.true.)
+          fires_found(iem) = .true.
 
-         if ( my_first_call ) then ! Assume NEMIS_FILE for now
+          if(USE_GFED)then
+             call ReadField_CDF('GLOBAL_ForestFireEmis.nc',FF_poll,&
+                  rdemis,nstart,interpol='zero_order',needed=.true.)
+             !unit conversion to GFED [g/m2/month]->[kg/m2/s]
+             rdemis = rdemis * to_kgm2s 
+          endif
+          if(USE_FINN)then
+             call ReadField_CDF('GLOBAL_ForestFireEmis_FINN.nc',FF_poll,&
+                  rdemis,daynumber,interpol='conservative',needed=.true.,debug_flag=.true.)
+             !unit conversion to FINN 
+             if(FF_poll=='OC'.or.FF_poll=='BC'.or.FF_poll=='PM25')then
+                !unit is [kg/day]
+                fac=1.0
+             else
+                !unit is [mole/day]
+                fac=FF_defs(n)%MW/1000.0
+             endif
+
+             ![kg or mole /day]->[kg/m2/s]
+             fac=fac/(GRIDWIDTH_M*GRIDWIDTH_M * 24*3600)
+             do j=1,ljmax
+                do i=1,limax
+                   rdemis(i,j)=rdemis(i,j)*fac*xm2(i,j)
+                enddo
+             enddo
+          endif
+
+
+          if ( my_first_call ) then ! Assume NEMIS_FILE for now
              allocate(BiomassBurningEmis(NEMIS_FILE,MAXLIMAX,MAXLJMAX),&
-                          stat=alloc_err)
+                  stat=alloc_err)
              call CheckStop( alloc_err, "BB alloc problem")
-  
+
              call Fire_setup()   ! Gets InvMolwWtFac
 
              my_first_call = .false.
 
-         end if
+          end if
 
-        !/ CO is special. Keep the index
-         if ( trim(gfed_poll) == "CO" ) ieCO = iem
+          !/ CO is special. Keep the index
+          if ( trim(FF_poll) == "CO" ) ieCO = iem
 
-        ! Assign and convert units: GFED [g/m2/month]->[kg/m2/s]
+          ! Assign . units should be [kg/m2/s] here
 
-         BiomassBurningEmis(iem,:,:) = rdemis(:,:) * to_kgm2s 
+          BiomassBurningEmis(iem,:,:) = rdemis(:,:)
 
-         call PrintLog("ForestFire_ml :: Assigns " // &
-                         trim(gfed_poll) , MasterProc)
+          call PrintLog("ForestFire_ml :: Assigns " // &
+               trim(FF_poll) , MasterProc)
 
        else
-          call PrintLog("ForestFire_ml :: No GFED emis for " // &
-                         trim(gfed_poll) , MasterProc)
+          call PrintLog("ForestFire_ml :: No ForestFires emis for " // &
+               trim(FF_defs(n)%emep) , MasterProc)
        end if
     end do
 
-   !/ If GFED doesn't have emissions, we create them from CO
+    !/ If FFfile doesn't have emissions, we create them from CO
 
     do iem = 1, NEMIS_FILE
        emep_poll = EMIS_FILE(iem)
-       n = find_index(emep_poll, gfed_defs(:)%emep )
-       gfed_poll = gfed_defs(n)%gfed
+       n = find_index(emep_poll, FF_defs(:)%emep )
+       FF_poll = FF_defs(n)%FFfd
 
-       if ( gfed_poll == "-" ) then ! Use CO. unitsfac will convert later
+       if ( FF_poll == "-" ) then ! Use CO. unitsfac will convert later
 
-         BiomassBurningEmis(iem,:,:) = BiomassBurningEmis(ieCO,:,:)
+          BiomassBurningEmis(iem,:,:) = BiomassBurningEmis(ieCO,:,:)
 
-         fires_found(iem) = .true. !??? not really used yet
-         call PrintLog("ForestFire_ml :: Estimates " // trim(emep_poll), &
-                MasterProc)
-            
+          fires_found(iem) = .true. !??? not really used yet
+          call PrintLog("ForestFire_ml :: Estimates " // trim(emep_poll), &
+               MasterProc)
+
        end if
     end do
 
-   !/ Logical to let Unimod know if there is any emission here to
-   !  worry about
+    !/ Logical to let Unimod know if there is any emission here to
+    !  worry about
 
     burning(:,:) =  ( BiomassBurningEmis(ieCO,:,:) > 1.0e-19 )
 
@@ -284,25 +351,29 @@ contains
     allocate( unitsfac(nrcemis), stat=alloc_err)
     call CheckStop( alloc_err, "BB MWF alloc problem")
 
+    if(USE_GFED)    FF_defs = gfed_defs
+    if(USE_FINN)    FF_defs = FINN_defs
+
+
      iqrc = 0   ! index over emisfrac
 
      do ie = 1, NEMIS_FILE
 
        emep_poll = EMIS_FILE(ie)
-       n = find_index(emep_poll, gfed_defs(:)%emep ) ! row in gfed table
-       gfed_poll = gfed_defs(n)%gfed
+       n = find_index(emep_poll, FF_defs(:)%emep ) ! row in gfed table
+       FF_poll = FF_defs(n)%FFfd
 
        do f = 1, emis_nsplit( ie )
 
            iqrc = iqrc + 1
            itot = iqrc2itot(iqrc)  !index in xn_2d array
 
-           if ( len_trim(gfed_poll) > 1 ) then
+           if ( len_trim(FF_poll) > 1 ) then
 
-              if ( gfed_defs(n)%MW > 0 ) then ! use GFED's MW
+              if ( FF_defs(n)%MW > 0 ) then ! use GFED's MW
 
                 unitsfac(iqrc) = emisfrac(iqrc,ISNAP_NAT,IC_BB) / &
-                                     gfed_defs(n)%MW
+                                     FF_defs(n)%MW
 
               else ! use EMEP model's MW 
 
@@ -311,7 +382,7 @@ contains
 
               end if
 
-           else if ( gfed_poll == "-" ) then
+           else if ( FF_poll == "-" ) then
 
          ! Factors to get from CO to emissions of other species, here NH3
          !
@@ -319,18 +390,18 @@ contains
          ! Andreae+Merlet 2001 have NH3 emission of ca. 1 g/kg as NH3
 
                 unitsfac(iqrc) = &
-                    gfed_defs(n)%MW/efCO  & ! When "-", MW is really emis factor
+                    FF_defs(n)%MW/efCO  & ! When "-", MW is really emis factor
                   * emisfrac(iqrc,ISNAP_NAT,IC_BB) / &
                     species(itot)%molwt
 
            else 
 
-              call CheckStop( gfed_poll, "GFED case not found")
+              call CheckStop( FF_poll, "ForestFire case not found")
 
            end if
            if(DEBUG_FORESTFIRE .and. MasterProc) then
               write(*,"(a,3i3,1x,3a8,2es10.3)") "ForestFire_ml :: Setup-fac " , &
-                iem, f, iqrc,  trim(emep_poll), trim(gfed_poll), &
+                iem, f, iqrc,  trim(emep_poll), trim(FF_poll), &
                    trim(species(itot)%name), &
                    emisfrac(iqrc,ISNAP_NAT,IC_BB), unitsfac(iqrc)
            end if

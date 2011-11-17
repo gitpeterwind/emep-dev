@@ -144,8 +144,20 @@ ds done   My_Aerosols_ml.f90     - st small changes (see below)
 ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
-
 !
+xxxxxxxx rv3_9_19, Peter 17th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+ForestFire emissions from "FINN":
+http://bai.acd.ucar.edu/Data/fire/
+
+Put new files in DataDir (Global, 2002 to March 2011, 0.1 degrees res).
+NB: these files are produced with netcdf compression (needs netcdf version 4 to be read)
+
+Modified:
+ForestFire_ml
+run.pl
+(SubMet_ml)
+
 xxxxxxxx rv3_9_18, Peter 17th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Use new version of NetCDF
