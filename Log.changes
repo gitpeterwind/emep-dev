@@ -144,7 +144,28 @@ ds done   My_Aerosols_ml.f90     - st small changes (see below)
 ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
+
 !
+xxxxxxxx rv3_9_18, Peter 17th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Use new version of NetCDF
+Change Makefile and Makefile_stallo
+Some cleaning of makefiles also.
+
+Remember to do a make clean or make depend.
+
+Note: this version links to the dynamic library (.so , i.e. is linked at runtime). (The static 4.1.1
+library (.a) on Stallo is broken now.)
+The new version of netcdf allows onthefly (de)compression of data.
+You must use a new version of ncview/ncdump to look at "compressed" data.
+Update your path to ncview and ncdump to 
+/global/apps/netcdf/4.1.1/ncview-2.0b4/bin/ncview
+/global/apps/netcdf/4.1.1/bin/ncdump
+(or do a module load netcdf)
+
+Small change in NetCDF_ml (ReadField_CDF, larger maxlat for safety).
+
+
 
 xxxxxxxx rv3_9_17, Robert 16th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 

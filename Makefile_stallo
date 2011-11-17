@@ -7,19 +7,18 @@ include Makefile.SRCS
 
 ###################################################
 
-LIBS = -lnetcdf
-INCL = -I/global/apps/netcdf/3.6.2/include
-LLIB = -L/global/apps/netcdf/3.6.2/lib
+LIBS = -lnetcdf -lnetcdff 
+INCL = /global/apps/netcdf/4.1.1/include
+LLIB = /global/apps/netcdf/4.1.1/lib
 
 
 F90 = mpif90
 
-#LDFLAGS =  -shared-intel -CB -r8   -recursive  -debug-parameters all -traceback  -ftrapuv -g -fpe0 -O0 -convert big_endian -IPF_fp_relaxed $(INCL)
-LDFLAGS =  -shared-intel -r8   -recursive  -O3 -ftz -convert big_endian  -IPF_fp_relaxed 
-F90FLAGS =  $(LDFLAGS) $(INCL)
+F90FLAGS =  -shared-intel -CB -r8  -recursive   -debug-parameters all -traceback  -ftrapuv -g -fpe0 -O0 -convert big_endian -IPF_fp_relaxed -I$(INCL)
+F90FLAGS =  -shared-intel -r8  -recursive   -O2 -ftz -convert big_endian  -IPF_fp_relaxed -I$(INCL)
+LDFLAGS =  $(F90FLAGS)  -L$(LLIB) -Wl,-rpath,$(LLIB) $(LIBS)
 
 
-LD = mpif90
 
 
 .SUFFIXES: $(SUFFIXES)  .f90
@@ -37,7 +36,7 @@ include .depend
 depend .depend:
 	/home/mifapw/bin/makedepf90 $(SRCS) \
 	-o $(PROG) \
-	-l "$(F90) $(LDFLAGS) $(LLIB) -o $(PROG) $(FOBJ) $(INCL) $(LIBS)" > .depend
+	-l "$(F90)   -o $(PROG) $(FOBJ) $(LDFLAGS) " > .depend
 
 clean: diskclean touchdepend depend
 
