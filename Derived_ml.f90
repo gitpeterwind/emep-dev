@@ -57,7 +57,7 @@ use My_Derived_ml,  only : &
       D3_OTHER
 
 use AOTx_ml,          only: Calc_GridAOTx
-use Biogenics_ml,     only: EmisNat
+use Biogenics_ml,     only: EmisNat, BIO_SOILNO, BIO_SOILNH3
 use CheckStop_ml,     only: CheckStop, StopAll
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             PM25_water, PM25_water_rh50
@@ -90,6 +90,8 @@ use ModelConstants_ml, only: &
   ,DEBUG_AOT       &  
   ,DEBUG => DEBUG_DERIVED,  DEBUG_COLUMN, MasterProc &
   ,SOURCE_RECEPTOR &
+  ,USE_SOILNOX &
+  ,USE_SOILNH3 &
   ,PT           &
   ,FORECAST     & ! only dayly (and hourly) output on FORECAST mode
   ,NTDAY        & ! Number of 2D O3 to be saved each day (for SOMO)
@@ -543,8 +545,8 @@ end do
 ! BVOC called every dt_advec, so use dt_scale=1.0e6 to get from kg/m2/s to
 !  mg/m2 accumulated (after multiplication by dt_advec)
 
-     !Deriv(name,       class,    subc,  txt,           unit
-     !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
+    ! AddNewDeriv( name,class,subclass,txt,unit,
+    !    index,f2d, dt_scale,scale, avg,iotype,Is3D)
 
   do  ind = 1, size(BVOC_GROUP)
      itot = BVOC_GROUP(ind)
@@ -552,6 +554,14 @@ end do
      call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
                  ind , -99, T ,    1.0e6,     F, IOU_DAY )  
    end do
+   if ( USE_SOILNOX ) then
+     call AddNewDeriv( "Emis_mgm2_SoilNO", "NatEmis", "-", "-", "mg/m2", &
+                 BIO_SOILNO , -99, T ,    1.0e6,     F, IOU_DAY )  
+   end if
+   if ( USE_SOILNH3 ) then
+     call AddNewDeriv( "Emis_mgm2_SoilNH3", "NatEmis", "-", "-", "mg/m2", &
+                 BIO_SOILNH3 , -99, T ,    1.0e6,     F, IOU_DAY )  
+   end if
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
 ! d_2d every advection step, so get kg/m2. 
@@ -867,6 +877,17 @@ end do
               !NOT YET - keep hPa in sites:d_2d( n, i,j,IOU_INST) = ps(i,j,1)
             end forall
 
+
+          case ( "SOILNO" )
+
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = exp( (t2_nwp(i,j,2)-273.15-20)*log(2.1) / 10.0 )
+            end forall
+
+            if ( debug_flag ) then
+             write(*,fmt="(a12,i4,f12.3)") "SOILNO" , n , &
+                     d_2d(n,debug_li,debug_lj,IOU_INST)
+            end if
 
           case ( "HMIX", "HMIX00", "HMIX12" )
 

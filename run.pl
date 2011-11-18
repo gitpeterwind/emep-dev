@@ -191,7 +191,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EMEP"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER

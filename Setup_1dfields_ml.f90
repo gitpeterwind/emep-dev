@@ -73,7 +73,7 @@
   ! remain zero however
 
   ! Emission arrays:
-   real, public, dimension(NBVOC,KCHEMTOP:KMAX_MID), save :: rcbio = 0.0 ! BVOC
+   real, public, dimension(NBVOC+1,KCHEMTOP:KMAX_MID), save :: rcbio = 0.0 ! BVOC
   !FUTURE real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3 
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222 = 0.0  ! 210Pb
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rnwater = 0.0  ! TEST

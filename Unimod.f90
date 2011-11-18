@@ -70,7 +70,7 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             runlabel2,  &   ! explanatory text
                             nprint,nterm,iyr_trend,                       &
                             IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
-                            USE_CONVECTION, USE_SOILWATER, USE_SOIL_NOX,  &
+                            USE_CONVECTION, USE_SOILWATER, USE_SOILNOX,  &
                             USE_FOREST_FIRES, USE_DUST,DO_SAHARA, &
                             USE_LIGHTNING_EMIS,       &
                             FORECAST       ! FORECAST mode
@@ -185,7 +185,7 @@ if( MasterProc ) then
   call PrintLog("Options used of (convec., soilwater, soilnox, forest fires)")
   if(  USE_CONVECTION ) call PrintLog("Convection used")
   if(  USE_SOILWATER  ) call PrintLog("SoilWater  switch on")
-  if(  USE_SOIL_NOX   ) call PrintLog("SoilNOx    switch on")
+  if(  USE_SOILNOX   ) call PrintLog("SoilNOx    switch on")
   if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
   call PrintLog("Options used of (dust, sahara)")
   if(  USE_DUST        )call PrintLog("Dust switch on")

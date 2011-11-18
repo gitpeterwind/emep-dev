@@ -36,6 +36,7 @@
   !-----------------------------------------------------------------------!
   !FUTURE use NH3variables_ml,       only : NNH3 ! hb NH3emis
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
+  use Biogenics_ml,        only : SoilNOx
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
@@ -44,7 +45,7 @@
   use EmisDef_ml,            only : NSS, NDU  !SeaS, Dust
                                   !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
   use EmisGet_ml,            only :  nrcemis, iqrc2itot  !DSRC added nrcemis
-  use Emissions_ml,          only :  gridrcemis, KEMISTOP, SoilNOx
+  use Emissions_ml,          only :  gridrcemis, KEMISTOP
   use ForestFire_ml,         only : Fire_rcemis, burning
   use Functions_ml,          only :  Tpot_2_T
   use ChemChemicals_ml,      only :  species
@@ -73,7 +74,7 @@
     ,USE_FOREST_FIRES                & !
     ,USE_SEASALT                     &
     ,USE_LIGHTNING_EMIS              & !
-    ,USE_SOIL_NOX, USE_DUST          & !
+    ,USE_SOILNOX, USE_GLOBAL_SOILNOX, USE_DUST          & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j  !FUTURE , DEBUG_NH3 !NH3emis
   use Landuse_ml,            only : water_fraction, ice_landcover
@@ -311,7 +312,7 @@ contains
      endif  !ForestFires
 
    !Soil NOx
-     if( USE_SOIL_NOX)then
+     if( USE_GLOBAL_SOILNOX)then !NEEDS CHECKING NOV2011
         rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
      endif
 

@@ -70,6 +70,8 @@ use ModelConstants_ml, only : ATWAIR  &
                         , SOX_INDEX, OXN_INDEX, RDN_INDEX &
                         , MasterProc  &
                         , SOURCE_RECEPTOR  &
+                        , USE_SOILNOX &
+                        , USE_SOILNH3 &
                         , DEBUG => DEBUG_MY_DERIVED &
                         , M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
                         , KMAX_MID & ! =>  z dimension
@@ -422,6 +424,14 @@ private
      tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
+   if ( USE_SOILNOX ) then
+     tag_name(1) = "Emis_mgm2_SoilNO"
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end if
+   if ( USE_SOILNH3 ) then
+     tag_name(1) = "Emis_mgm2_SoilNH3"
+     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
+   end if
 
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?

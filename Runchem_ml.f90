@@ -49,7 +49,7 @@
    use Ammonium_ml,       only: Ammonium
    use AOD_PM_ml,         only: AOD_calc
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, setup_bio !rcbio for debug
+   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP,  BIO_SOILNO, setup_bio ! for debug
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
    use Chemfields_ml,     only: xn_adv    ! For DEBUG 
@@ -169,6 +169,7 @@ subroutine runchem(numt)
              if ( DEBUG .and. debug_flag  ) then
                call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
                 rcbio(BIO_ISOP,KMAX_MID), rcemis(C5H8,KMAX_MID), &
+                rcbio(BIO_SOILNO,KMAX_MID), rcemis(C5H8,KMAX_MID), &
                 xn_2d(NO,20),xn_2d(C5H8,20) /) )
              end if
 

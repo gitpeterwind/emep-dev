@@ -47,7 +47,7 @@
   !=======================================================================!
  
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3   
-    use Biogenics_ml,      only: BIO_ISOP, BIO_TERP
+    use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, BIO_SOILNO
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use EmisDef_ml,        only: QSSFI, QSSCO, QSSGI

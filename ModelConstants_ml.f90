@@ -47,9 +47,11 @@ logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for
 logical, public, parameter :: USE_FOREST_FIRES   = .false.  ! Needs global files, future
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .true.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
-logical, public, parameter :: USE_SOIL_NOX       = .false.  ! Future use 
+logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
+logical, public, parameter :: USE_SOILNOX        = .true.  ! Future use 
+logical, public, parameter :: USE_SOILNH3        = .true.  ! Future use 
 logical, public, parameter :: USE_SEASALT        = .true.   ! ok
-logical, public, parameter :: USE_DUST           = .false.  ! Experimental
+logical, public, parameter :: USE_DUST           = .true.  ! Experimental
 logical, public, parameter :: DO_SAHARA          = .false.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_AOD            = .false.
 logical, public, parameter :: USE_ZREF           = .false.  ! testing
@@ -65,6 +67,7 @@ logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget o
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
 ! mtl = monoterpenes with light dependence
 integer, public, parameter ::   NBVOC = 3
+integer, public, parameter ::   NSOIL_EMIS = 2 ! NO
 character(len=4),public, save, dimension(NBVOC) :: &
   BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
 
@@ -106,7 +109,7 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
+!  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/  1, 50,  1, 50 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
@@ -120,16 +123,16 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
 ! RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
 ! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
-! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
+ RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
-! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
+! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 33+OFFSET_j,  55+OFFSET_j /) ! (France)
+! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 70+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 80+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 
 integer, public, parameter ::  &
-  NPROCX      =   8        & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   4        & ! Actual number of processors in longitude
+, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -162,7 +165,8 @@ integer, private, parameter :: &
 ! DEBUG_ii= 97, DEBUG_jj= 62 ! Waldhof
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
- DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+ DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
 ! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
@@ -193,7 +197,6 @@ integer, public, parameter :: &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
   ,DEBUG_DO3SE          = .false. &
   ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
-  ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_FORESTFIRE     = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
@@ -210,6 +213,7 @@ integer, public, parameter :: &
   ,DEBUG_IOPROG         = .false. &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
+    ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
     ,DEBUG_MY_WETDEP    = .false. &
     ,DEBUG_SEASALT      = .false. &
     ,DEBUG_SOA          = .false. &
@@ -228,11 +232,11 @@ integer, public, parameter :: &
   ,DEBUG_PHYCHEM        = .false. &
   ,DEBUG_RSUR           = .false. &
   ,DEBUG_RB             = .false. &
-  ,DEBUG_SOILNO         = .false. &
   ,DEBUG_SETUP_1DCHEM   = .false. &
   ,DEBUG_SETUP_1DBIO    = .false. &
   ,DEBUG_SITES          = .false. &
   ,DEBUG_SOILWATER      = .false. &
+  ,DEBUG_SOILNOX        = .false. &
   ,DEBUG_VOLC           = .false. & ! Volcanoes
   ,DEBUG_NEST           = .false. &
   ,DEBUG_NEST_ICBC      = .false.   ! IFS-MOZART BC

@@ -305,6 +305,7 @@ rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 *
 rcbio(BIO_ISOP,k)                       = C5H8    ;
 rcbio(BIO_TERP,k)                       = APINENE ;
+rcbio(BIO_SOILNO,k)                     = NO ;
 rc_Rn222(k)                                = Rn222    ;
 rc_Rnwater(k)                             = Rnwater    ;
 *

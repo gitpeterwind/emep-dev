@@ -33,6 +33,7 @@ module PhyChem_ml
 !     Output of hourly data
 !
 !-----------------------------------------------------------------------------
+   use Biogenics_ml,     only : Set_SoilNOx
    use CoDep_ml, only : make_so2nh3_24hr
    use ChemSpecs_adv_ml, only : IXADV_SO2, IXADV_NH3, IXADV_O3
    use My_Outputs_ml , only : NHOURLY_OUT, FREQ_SITE, FREQ_SONDE, FREQ_HOURLY
@@ -191,6 +192,7 @@ contains
 
          !===================================
            call Set_SoilWater()
+           call Set_SoilNOx()
 
          !===================================
            call init_drydep()

@@ -113,6 +113,8 @@
    logical :: arable, dust_prod = .false.
    integer :: nlu, ilu, lu
 
+   !if(DEBUG_DUST ) write(6,'(a30,3i5,es12.3,L3)')'>> DS INRAIN >>', &
+   !       i, j,    dry_period(i,j),surface_precip(i,j), debug_flag
 !_______________________________________________________
     if ( USE_DUST .eqv. .false. ) then
         call PrintLog("Skipping soil dust")
@@ -143,6 +145,8 @@
   flx_vrt_dst = 0.0   ! vertical dust flux 
   Mflux = 0.0  
 
+   if(DEBUG_DUST .and. debug_flag) write(6,'(a30,i5,es12.3)')'>> DS RAIN >>', &
+                                   dry_period(i,j),surface_precip(i,j)
 
 !/.. Crude assumption: dust generation if Pr < 2.4 mm per day (surpace_prec[mm/h])
  NO_PRECIP:  if (surface_precip(i,j) < 0.1) then

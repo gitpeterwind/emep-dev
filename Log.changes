@@ -145,6 +145,58 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+xxxxxxxx rv3_9_20, DAve  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+
+Soil NO emissions added  (working version for EECCA/EMEP)
+
+Soil NH3 "placeholder" emissions added. Do not use!!!!
+      (but arrays exist in case anybody wants to experiment)
+
+
+ISSUES -
+
+This versions works for European soil-NO emissions, but work still
+needed on a few issues for e.g. global usage, or NH3
+
+    (1) Soil-NO needs maps of annual N-deposition. Temporary 1-year average
+        set now. Need to make proper system, e.g. with 5-year avg. 
+        Also need to consider "trends" for future scenarios
+
+        Currently map is in hard-coded mifads directory. Will move to mifapw
+        when procedure files.
+
+    (2) Can now have either the hourly calculations or the monthly
+        global fields. Ideal is probably hourly for Europe and
+        monthly outside. 
+
+    (3) Not sure the global soil works, since now rcbio is used
+        check 
+
+    (4) NH3 should be in reactions too?
+
+
+Biogenic_ml -  soil emissions added here
+
+Derived_ml - has USE_SOILNOX, USE_SOILNH3 etc.
+
+Emissions_ml - Reads map of Annual N-deposition, or if USE_GLOBAL_SOILNOX
+      reads global soil NO as before. (Will move all to Biogenics in
+      another step.)
+
+PhyChem_ml  added call Set_SoilNOx(I)
+RunChem_ml - added rcbio, BIO_SOILNO
+Setup_1d_ml - sets rcemis for soils only if USE_GLOBAL_SOILNOX
+    (was if USE_SOILNOX)
+Solver_ml - BIO_SOILNO
+
+ZCM_EmChem09/EmChem09base.reactions - added rcbio(BIO_SOILNO,k)
+ZD_OZONE/My_Derived_ml - added Emis_mgm2_SoilNNNN possibilities
+
+Misc:
+
+  Dust_ml - printout testing of dry_period
+
 xxxxxxxx rv3_9_19, Peter 17th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 ForestFire emissions from "FINN":

@@ -38,6 +38,7 @@
 !  with the 3D model.
 !_____________________________________________________________________________
 
+  use Biogenics_ml,            only : SoilNOx, AnnualNdep
   use CheckStop_ml,only : CheckStop
   use ChemSpecs_shl_ml, only: NSPEC_SHL
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
@@ -65,15 +66,16 @@
                            ,sigma_bnd, xmd, glat, glon,dA,dB
   use Io_Nums_ml,       only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,      only : ios, open_file, datewrite
-  use MetFields_ml,     only : roa, ps, z_bnd   ! ps in Pa, roa in kg/m3
+  use MetFields_ml,     only : roa, ps, z_bnd ! ps in Pa, roa in kg/m3
+  use MetFields_ml,     only : t2_nwp   ! DS_TEST SOILNO - was zero!
   use ModelConstants_ml,only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
                               NBVOC,     &      ! > 0 if forest voc wanted
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
-                              DEBUG_SOILNO, & 
+                              DEBUG_SOILNOX , & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               USE_AIRCRAFT_EMIS, &
-                              USE_SOIL_NOX
+                              USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
                              limax,ljmax,li0,lj0,li1,lj1, &
@@ -145,7 +147,6 @@
   ! and for budgets (not yet used - not changed dimension)
    real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
 
-   real, public, save, dimension(MAXLIMAX,MAXLJMAX) :: SoilNOx
    integer, private, save :: iemCO  ! index of CO emissions, for debug
 
 contains
@@ -821,23 +822,33 @@ enddo
 endif
 
 !Soil NOx emissions
-if(USE_SOIL_NOX)then 
+if(USE_SOILNOX)then 
 
+  ! TMP TMP - hard-coded mifads directory. Will update soon!!!!
+  ! read in map of annual N-deposition produced from pre-runs of EMEP model
+  ! with script mk.annualNdep
+  ! 
+   call ReadField_CDF('/home/mifads/Unify/MyData/annualNdep.nc',&
+     'Ndep_m2',AnnualNdep,1, interpol='zero_order',needed=.true.,debug_flag=.true.)
 
-do j=1,ljmax
+   call CheckStop(USE_GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
+   ! We then calculate SoulNOx in Biogenics_ml
+else
+
+  do j=1,ljmax
    do i=1,limax
       SoilNOx(i,j)=0.0      
       buffer(i,j)=0.0      
    enddo
-enddo
+  enddo
 
-nstart=(current_date%year-1996)*12 + current_date%month
-if(nstart>0.and.nstart<=120)then
+  nstart=(current_date%year-1996)*12 + current_date%month
+  if(nstart>0.and.nstart<=120)then
    !the month is defined
    call ReadField_CDF('nox_emission_1996-2005.nc','NOX_EMISSION',SoilNOx,nstart=nstart,&
    interpol='conservative',known_projection="lon lat",needed=.true.,debug_flag=.true.)
-  if ( DEBUG_SOILNO.and.debug_proc ) write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
-else
+  if ( DEBUG_SOILNOX .and.debug_proc ) write(*,*) "PROPER YEAR of SOILNO ", current_date%year, nstart
+  else
    !the year is not defined; average over all years
    Nyears=10 !10 years defined
    do iyr=1,Nyears 
@@ -849,53 +860,57 @@ else
            SoilNOx(i,j)=SoilNOx(i,j)+buffer(i,j)
          end do
       end do
-      if ( DEBUG_SOILNO.and.debug_proc ) then
+      if ( DEBUG_SOILNOX .and.debug_proc ) then
          write(*,"(a,2i6,es10.3,a,2es10.3)") "Averaging SOILNO  inputs", &
            1995+(i-1), nstart,SoilNOx(debug_li, debug_lj), &
             "max: ", maxval(buffer), maxval(SoilNOx)
-      !else if ( DEBUG_SOILNO ) then
+      !else if ( DEBUG_SOILNOX  ) then
       !     write(*,"(a,2i6,a,es10.3)") &
       !  "Averaging SOILNO  inputs", 1995+(i-1), nstart, "max: ", maxval(SoilNOx)
       end if
    enddo
    SoilNOx=SoilNOx/Nyears
-endif
-if ( DEBUG_SOILNO .and. debug_proc ) then
-   write(*,"(a,i3,2es10.3)") "After SOILNO ", me, maxval(SoilNOx), SoilNOx(debug_li, debug_lj)
-!else if ( DEBUG_SOILNO ) then
+  endif
+end if ! DS_TEST
+
+if ( DEBUG_SOILNOX ) then !!!  .and. debug_proc ) then
+   !write(*,"(a,i3,2es10.3)") "After SOILNO ", me, maxval(SoilNOx), SoilNOx(debug_li, debug_lj)
+   write(*,"(a,i3,3es10.3)") "After SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3), t2_nwp(2,2,2)
+!else if ( DEBUG_SOILNOX  ) then
 !   write(*,"(a,i3,es10.3, 2f8.2)") "After SOILNO ", me, maxval(SoilNOx), gb(1,1), gl(1,1)
-end if
+end if ! SOIL_N
 
 !for testing, compute total soil NOx emissions within domain
 !convert from g/m2/day into kg/day
-SumSoilNOx_buff=0.0
-SumSoilNOx=0.0
-do j=1,ljmax
+if ( USE_GLOBAL_SOILNOX ) then 
+  SumSoilNOx_buff=0.0
+  SumSoilNOx=0.0
+  SoilNOx = 0.0  ! Stops the NEGs!
+  do j=1,ljmax
    do i=1,limax      
       SumSoilNOx_buff=SumSoilNOx_buff+0.001*SoilNOx(i,j)*gridwidth_m**2*xmd(i,j)      
    enddo
-enddo
-CALL MPI_ALLREDUCE(SumSoilNOx_buff, SumSoilNOx , 1, &
+  enddo
+  CALL MPI_ALLREDUCE(SumSoilNOx_buff, SumSoilNOx , 1, &
      MPI_DOUBLE_PRECISION, MPI_SUM, MPI_COMM_WORLD, INFO) 
-if(MasterProc)write(*,*)'Soil NOx emissions this month within domain',SumSoilNOx,' kg per day'
+  if(MasterProc)write(*,*)'GLOBAL Soil NOx emissions this month within domain',&
+        SumSoilNOx,' kg per day'
 
-! convert from g(N)/m2/day into molecules/cm3/s
-! from g to molecules: AVOG/14  14=molweight N
-! use roa to find dz for consistency with other emissions 
-! (otherwise could have used z_bnd directly)
-! dz=dP/(roa*GRAV)  dP=dA(k) + dB(k)*ps(i,j,1)
-! dV=dz*1e6 (1e6 for m3->cm3)
-! from month to seconds: ndaysmonth*24*3600
+  ! convert from g(N)/m2/day into molecules/cm3/s from g to molecules:
+  !  AVOG/14  14=molweight N, use roa to find dz for consistency with other
+  !  emissions (otherwise could have used z_bnd directly) dz=dP/(roa*GRAV)
+  !  dP=dA(k) + dB(k)*ps(i,j,1) dV=dz*1e6 (1e6 for m3->cm3) from month to
+  !  seconds: ndaysmonth*24*3600
 
-conv=AVOG/14.0*GRAV*1.0e-6/(24*3600)
-k=KMAX_MID!surface
-do j=1,ljmax
+  conv=AVOG/14.0*GRAV*1.0e-6/(24*3600)
+  k=KMAX_MID!surface
+  do j=1,ljmax
    do i=1,limax      
       SoilNOx(i,j)=SoilNOx(i,j)*conv*(roa(i,j,k,1))/(dA(k) + dB(k)*ps(i,j,1))     
    enddo
-enddo
+  enddo
 
-endif
+end if
 
 
 ! DMS
