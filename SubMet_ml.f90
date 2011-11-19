@@ -224,7 +224,7 @@ real :: theta2
 
     !NEW
 
-     if ( FluxPROFILE == "Fn95") then !TESTING
+     if ( FluxPROFILE == "Ln95") then !TESTING
 
         theta2 = Grid%t2 * T_2_Tpot( Grid%psurf )
         call Launiainen1995( Grid%u_ref, Sub(iL)%z_refd, Sub(iL)%z0, Sub(iL)%z0, &
