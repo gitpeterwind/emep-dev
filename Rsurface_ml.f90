@@ -36,7 +36,7 @@ use LocalVariables_ml, only : iL, L, G => Grid
   !      PARsun,PARshade,LAIsunfrac, RgsO, RgsS, is_water, is_forest
   ! G (Grid)  provides snow, sdepth so2nh3ratio, 
 
-use ModelConstants_ml, only: DEBUG_RSUR
+use ModelConstants_ml, only: DEBUG_RSUR, NO_CROPNH3DEP
 use Radiation_ml, only : CanopyPAR
 use TimeDate_ml,  only : current_date
 use Wesely_ml,    only : Wesely_tab2 &  ! Wesely Table 2 for 14 gases
@@ -361,6 +361,14 @@ contains
 
 
            Rsur(icmp) = 1.0/( L%LAI*DRx(iwes) *L%g_sto + Gns(icmp)  )
+
+           if ( NO_CROPNH3DEP ) then ! Stop NH3 deposition for growing crops 
+                                     ! Crude reflection of likely emission
+
+              if ( L%is_crop .and.  L%LAI > 0.1 ) Rsur(icmp) =  1.0e10
+           end if
+
+
 
       ! write(*,"(a20,2i3,3g12.3)")  "RSURFACE Gs  (i): ", iL, icmp, GnsO, Gns_dry, Gns_wet
 

@@ -477,7 +477,7 @@ module DryDep_ml
 
                   Vds = GPF_Vds300(L%ustar,L%invL, L%SAI )
                   if (n==CDDEP_PMfN .and. L%invL<0.0 ) then ! We allow nitrate to deposit x 2
-                       Vds = Vds * 2.0 ! for nitrate-like
+                       Vds = Vds * 3.0 ! for nitrate-like
                   end if
 
               else !!!
@@ -488,7 +488,7 @@ module DryDep_ml
                  Vds = Wesely300( L%ustar, L%invL )
                   ! We allow nitrate to deposit x 2
                   if (n==CDDEP_PMfN .and. L%invL<0.0 ) then 
-                       Vds = Vds * 2.0 ! for nitrate-like
+                       Vds = Vds * 3.0 ! for nitrate-like
                   end if
 
               end if

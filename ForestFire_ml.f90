@@ -117,7 +117,7 @@ implicit none
        integer :: emep
      end type bbtype
 
-        include 'CM_BBtoEmChem09.inc'
+        include 'BiomassBurningMapping.inc'
 
   ! matrix to get from forest-fire species to EMEP ones
 
@@ -150,6 +150,11 @@ contains
     integer :: dd_old = -1,  n
     real    :: fac
     character(len=TXTLEN_SHORT), dimension(NBBSPECS) :: FF_names
+
+    logical :: calc_remppm = .false.    ! Needed to get REMPPM25
+    integer :: ieOC, ieBC, iePM25       !    " / "
+    real    :: OMbb
+     
 
     !// Input emissions are monthly RETRO [kg/m2/s], GFED [g/m2/8days]
     real, save :: to_kgm2s = 1.0e-3 /(8*24.0*60.0*60.0)
@@ -203,8 +208,9 @@ contains
     do n = 1,  NBBSPECS 
 
        FF_poll = trim(FF_defs(n)%txt)
+       iemep = FF_defs(n)%emep
+
        if(DEBUG_FORESTFIRE .and. MasterProc) then
-          iemep = FF_defs(n)%emep
           write(*,"( a,2i3,1x,2a8,2i3,a)") "FIRE SETUP: ", &
             n, iemep, trim(species(iemep)%name), &
                 trim(FF_poll), len_trim(FF_poll)
@@ -243,6 +249,14 @@ contains
                    rdemis(i,j)=rdemis(i,j)*fac*xm2(i,j)
                 enddo
              enddo
+
+            ! For FINN1 we have OC and BC as well as PM25. Where the
+            ! emep model asks for FFIRE_REMPPM25 we need to get this
+            ! by substraction
+             if ( trim(species(iemep)%name) == "FFIRE_REMPPM25" ) calc_remppm = .true. 
+             if ( trim(FF_poll) == "OC" ) ieOC = n
+             if ( trim(FF_poll) == "BC" ) ieBC = n
+             if ( trim(FF_poll) == "PM25" ) iePM25 = n
       endif ! FINN
 
       if ( my_first_call ) then ! Assume NEMIS_FILE for now
@@ -271,6 +285,21 @@ contains
 
     burning(:,:) =  ( BiomassBurningEmis(ieCO,:,:) > 1.0e-19 )
 
+    ! If needed, calculate REMPPM25, assuming OM/OC = 1.3 
+
+     if ( calc_remppm ) then
+       do j =lj0, lj1
+       do i =li0, li1
+        OMbb = 1.3*BiomassBurningEmis(ieOC,i,j) + BiomassBurningEmis(ieBC,i,j) 
+        if ( DEBUG_FORESTFIRE .and. MasterProc.and. burning(i,j)  ) then
+          write(*,"(a,2i4,3es10.3)") "BURN REMPPM25, ", i_fdom(i), j_fdom(j), &
+            BiomassBurningEmis(iePM25,i,j), OMbb, &
+            BiomassBurningEmis(iePM25,i,j) - OMbb
+        end if
+        BiomassBurningEmis(iePM25,i,j) = max( BiomassBurningEmis(iePM25,i,j) -OMbb, 0.0 )
+      end do
+      end do
+     end if
 
   end subroutine Fire_Emis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

@@ -115,7 +115,7 @@ type, public :: SubDat
   ,SGS = INOT_SET         & ! Start, growing seasons (day num)
   ,EGS = INOT_SET           ! End, growing seasons (day num)
   logical :: &
-    is_forest, is_water , is_veg, is_ice
+    is_forest, is_water , is_veg, is_ice, is_crop
   real ::                 &
      t2C       = NOT_SET  & ! Surface (2m) temperature in degrees C
     ,t2        = NOT_SET  & ! Surface (2m) temperature in degrees K

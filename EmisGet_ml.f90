@@ -48,12 +48,12 @@
                                NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF
   use GridAllocate_ml,   only: GridAllocate
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
-                               Read_Headers, read_line
+                               Read_Headers, read_line, PrintLog
   use KeyValue_ml,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
               SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                               MasterProc,DEBUG_GETEMIS,USE_FOREST_FIRES
+                               MasterProc,DEBUG_GETEMIS
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
@@ -572,8 +572,6 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               ios = 0
               if(MasterProc) &
                  write(*,fmt=*) "emis_split: no specials for:",EMIS_FILE(ie)
-              call CheckStop(trim(EMIS_FILE(ie))=='voc'.and.USE_FOREST_FIRES &
-                   , "emissplit.specials.voc must exist if FOREST_FIRES used" )
 
               exit IDEF_LOOP
           endif
@@ -739,15 +737,16 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   ! chemical scheme:
 
   do ie = 1, NEMIS_SPECS
-    !if ( MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
-    if ( ( EmisSpecFound(ie) .eqv. .false.) ) then
-       print *, "ERROR: EmisSpec not found!! " // trim(EMIS_SPECS(ie))
-       print *, "ERROR: EmisSpec - emissions of this compound were specified",&
+    if ( MasterProc .and. ( EmisSpecFound(ie) .eqv. .false.) ) then
+       call PrintLog("WARNING: EmisSpec not found in snapemis. Ok if in forest fire!! " // trim(EMIS_SPECS(ie)) )
+       write(*,*) "WARNING: EmisSpec - emissions of this compound were specified",&
 &               " in the CM_reactions files, but not found in the ",&
 &               " emissplit.defaults files. Make sure that the sets of files",&
 &               " are consistent."
-       call CheckStop ( any( EmisSpecFound .eqv. .false.), &
-           "EmisSpecFound Error" )
+       ! Emissions can now be found in ForestFire module. No need to 
+       ! stop
+       ! call CheckStop ( any( EmisSpecFound .eqv. .false.), &
+       !    "EmisSpecFound Error" )
     end if
   end do
 

@@ -52,8 +52,9 @@ use My_Derived_ml, only : &
 use My_Derived_ml,  only : &
       COLUMN_MOLEC_CM2, &
       COLUMN_LEVELS   , &
-      OutputConcs,  &  ! added Feb 2011
-      WDEP_WANTED, &   ! added Jan 2011
+      OutputFields,  & 
+      nOutputFields,  & 
+      WDEP_WANTED, & 
       D3_OTHER
 
 use AOTx_ml,          only: Calc_GridAOTx
@@ -406,22 +407,22 @@ call AddNewDeriv( "Idiffuse","Idiffuse",  "-","-",   "W/m2", &
                -99,  -99, F, 1.0,  T,  IOU_DAY )
 
 
-! OutputConcs can contain both 2d and 3d specs. We automatically
+! OutputFields can contain both 2d and 3d specs. We automatically
 ! set 2d if 3d wanted
 
-do ind = 1, size( OutputConcs(:)%txt1 )
+do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
 
-   outname = trim( OutputConcs(ind)%txt1 )
-   outunit= trim( OutputConcs(ind)%txt2 )   ! eg ugN, which gives unitstxt ugN/m3
-   outdim = trim( OutputConcs(ind)%txt3 )   ! 2d or 3d
-   outtyp = trim( OutputConcs(ind)%txt5 )   ! SPEC or GROUP
-   outind = OutputConcs(ind)%ind    !  H, D, M - fequency of output
+   outname = trim( OutputFields(ind)%txt1 )
+   outunit= trim( OutputFields(ind)%txt2 )   ! eg ugN, which gives unitstxt ugN/m3
+   outdim = trim( OutputFields(ind)%txt3 )   ! 2d or 3d
+   outtyp = trim( OutputFields(ind)%txt5 )   ! SPEC or GROUP
+   outind = OutputFields(ind)%ind    !  H, D, M - fequency of output
    txt2   = "-" ! not needed?
 
    if ( outtyp == "MISC" ) then ! Simple species
 
        iout = -99 ! find_index( wanted_deriv2d(i), def_2d(:)%name )
-       class  = trim( OutputConcs(ind)%txt4 )   ! SPEC or GROUP
+       class  = trim( OutputFields(ind)%txt4 )   ! SPEC or GROUP
        unitscale = 1.0
        if( outunit == "ppb") unitscale = PPBINV
 
@@ -444,7 +445,7 @@ do ind = 1, size( OutputConcs(:)%txt1 )
           iout = itot - NSPEC_SHL   ! set to iadv
 
           call CheckStop(itot<0, &
-               "OutputConcs Species not found " // trim(outname) )
+               "OutputFields Species not found " // trim(outname) )
           txt = "SURF_UG"
 
        else if ( outtyp == "GROUP" ) then ! groups of species
@@ -456,7 +457,7 @@ do ind = 1, size( OutputConcs(:)%txt1 )
           iout = igrp
        else
 
-           call StopAll("Derived:OutputConcs Error " // trim( outtyp ) //":" //trim( outname ) )
+           call StopAll("Derived:OutputFields Error " // trim( outtyp ) //":" //trim( outname ) )
 
        end if
 
@@ -471,10 +472,10 @@ do ind = 1, size( OutputConcs(:)%txt1 )
 
        if( DEBUG.and.MasterProc ) write(*,"(a,2i4,3(1x,a),2L3,i4,es10.2)") &
         "ADD   ", ind, iout, trim(dname),";", trim(class), outmm, outdd, &
-              OutputConcs(ind)%ind,unitscale
+              OutputFields(ind)%ind,unitscale
 
        call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-             iout  , -99,  F,   unitscale,     T,  OutputConcs(ind)%ind )
+             iout  , -99,  F,   unitscale,     T,  OutputFields(ind)%ind )
 
        if ( outdim == "3d" ) then
 
@@ -486,16 +487,16 @@ do ind = 1, size( OutputConcs(:)%txt1 )
           ! Always print out 3D info. Good to help avoid using 3d unless really needed!
           if( MasterProc ) write(*,"(a,3(1x,a),a,L3,a,L3,i4,es10.2)") " ADDED 3D outputs",  &
            trim(dname)," ; class =", trim(class), ', monthly =',outmm,', daily =',outdd
-           !, OutputConcs(ind)%ind,unitscale
+           !, OutputFields(ind)%ind,unitscale
 
           call AddNewDeriv( dname, class, "-", "-", trim( unittxt ) , &
-             iout  , -99, F,   unitscale,     T,   OutputConcs(ind)%ind, & 
+             iout  , -99, F,   unitscale,     T,   OutputFields(ind)%ind, & 
              Is3D=.true. )
 
        end if ! 3d
 
    end if
-end do ! OutputConcs
+end do ! OutputFields
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -818,7 +819,7 @@ end do
         index = f_2d(n)%index
         !if ( DEBUG .and. MasterProc .and. first_call ) then
         if (  MasterProc .and. first_call ) then
-           write(*,"(a,i4,a,i4,a)") "DEBUG Derived 2d", n, &
+           write(*,"(a,i4,a,i4,a)") "1st call Derived 2d", n, &
               trim(f_2d(n)%name), index, trim(typ)
         end if
 

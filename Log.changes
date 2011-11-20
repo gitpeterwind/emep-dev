@@ -146,6 +146,35 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_20soa, Dave  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+Main changes:
+
+1) SOA ZCM_EmChem09soa directory added. Use when VBS wanted for policy runs
+
+2) Stopped dry-dep of NH3 over growing crops
+
+3) Also,Vds(N) = 3*vds(S), not 2
+
+4) Derived and My_Derived. Started process to simplify, but needs
+   more work. For now....
+
+4a) ZD_VBS/My_Derived and ZD_OZONE/My_Derived now identical. Will merge
+into one soon.  Note that now it is okay to ask for things that will
+not be found, so we can ask for SOA, but will only get it if present.
+
+mk.GenChem modified for above directory
+
+GenChem.pl now allows emission names of lengt 30, not 12
+
+EmisGet - removed need for emissplit.specials.voc if FOREST_FIRES used
+
+Rsurface_ml - very high Rsur for NH3 over crops (when LAI > 0.1)
+
+Biogenics_ml - commented out some USE_SOILNH3 lines.
+
+ISSUES? Just check Weidinm. for OMbb assumption,also ACET?
+
 xxxxxxxx rv3_9_20ff, Dave  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 ForestFires_ml -

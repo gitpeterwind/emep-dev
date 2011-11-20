@@ -243,9 +243,9 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 my $CityZen = 0 ;
   #$Chem     = "Eucaari_Trends";      # Label for chemical scheme used
 my $VBS   = 0;
-my $Chem     = "EmChem09";
+my $Chem     = "EmChem09soa";
 
-my $testv = "rv3_9_20ff";
+my $testv = "rv3_9_20soa";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code

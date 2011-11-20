@@ -64,14 +64,13 @@ use ChemChemicals_ml, only : species               !  For mol. wts.
 use ChemSpecs_adv_ml         ! Use NSPEC_ADV, IXADV_ indices
 use EmisDef_ml,     only :  EMIS_FILE
 use GridValues_ml, only : debug_li, debug_lj, debug_proc
+use Io_Progs_ml,   only: PrintLog
 use LandDefs_ml,  only : LandDefs, LandType, Check_LandCoverPresent ! e.g. "CF"
 use MetFields_ml,        only : z_bnd, roa
 use ModelConstants_ml, only : ATWAIR  &
                         , SOX_INDEX, OXN_INDEX, RDN_INDEX &
                         , MasterProc  &
                         , SOURCE_RECEPTOR  &
-                        , USE_SOILNOX &
-                        , USE_SOILNH3 &
                         , DEBUG => DEBUG_MY_DERIVED &
                         , M=>IOU_MON, D=>IOU_DAY, H=>IOU_HOUR &
                         , KMAX_MID & ! =>  z dimension
@@ -134,7 +133,10 @@ private
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
    !REMEMBER - KEEP UPPER CASE FOR ALL GASES
-   type(typ_s5i), public, parameter, dimension(32+9+1) :: &
+   type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
+   integer, public, save :: nOutputFields = 0
+
+   type(typ_s5i), public, parameter, dimension(32+9+26) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -158,7 +160,6 @@ private
         ,typ_s5i("PPM25     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("PPM_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
 ! Omit for CityZen
-        ,typ_s5i("PPM25_FIRE", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
@@ -214,7 +215,39 @@ private
        ! ,typ_s5i("AER_ASOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
        ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
-         !typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) 
+        ,typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) &
+       ! ============================================================
+       ! SOA additions (26 entries)
+        ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+        ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
+        ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
+        ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
+       ! SOA, PCM_F etc. are special and need appropriate units. Do
+       ! not confuse! Only PCM has proper ug units, the others are
+       ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
+       ! = sum of all EC and OM components.)
+        ,typ_s5i("PART_ASOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
+        ,typ_s5i("PART_BSOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_FFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_OFFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_WOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_OWOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_FFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_OFFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_F_WOOD ", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_F_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_ASOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_WOODOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_FFIREOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OWDOA_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OFFIOA_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+       ! ============================================================
        /)
 
 ! Tropospheric columns
@@ -425,14 +458,6 @@ private
      tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
-   if ( USE_SOILNOX ) then
-     tag_name(1) = "Emis_mgm2_SoilNO"
-     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-   end if
-   if ( USE_SOILNH3 ) then
-     tag_name(1) = "Emis_mgm2_SoilNH3"
-     call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
-   end if
 
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
@@ -518,6 +543,8 @@ private
 
 
    ! Add the pollutants wanted from OutputConcs:
+   ! to both OutputFields and wanted_deriv arrays (TOO MESSY)
+   ! Requested species which are not present will trigger warnings
    !type(typ_s5i), public, parameter, dimension(27) :: &
    !   OutputConcs = (/  typ_s5i("SO2", "ugS", D2,"AIR_CONCS", SPEC, M),&
    !                     typ_s5i("SO4", "ugS", D2,"AIR_CONCS", SPEC, M),& 
@@ -539,13 +566,27 @@ private
 
               call AddArray( tag_name(1:1) , wanted_deriv2d, &
                      NOT_SET_STRING, errmsg)
+              nOutputFields = nOutputFields + 1
+              OutputFields(nOutputFields) = OutputConcs(n) 
   
          else if( outtyp == "AIR_CONCS" ) then 
+
+             if( outclass == SPEC ) then ! check if available
+              n1 = find_index(outname,species(:)%name)
+              if ( n1 < 1 ) then 
+                if(DEBUG.and.MasterProc) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
+                call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
+                      //trim(outname), MasterProc)
+                cycle
+              end if
+             end if
 
               tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
               call AddArray(  tag_name(1:1) , wanted_deriv2d, &
                      NOT_SET_STRING, errmsg)
               call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
+              nOutputFields = nOutputFields + 1
+              OutputFields(nOutputFields) = OutputConcs(n) 
               if(DEBUG.and.MasterProc) write(*,*) "Xd-2d-DONE ", n, trim(outname)
 
               if( outdim == "3d" ) then
@@ -553,6 +594,8 @@ private
                   call AddArray(  tag_name(1:1) , wanted_deriv3d, &
                      NOT_SET_STRING, errmsg)
                   call CheckStop( errmsg, errmsg // trim(outname) // " too long" )
+                  nOutputFields = nOutputFields + 1
+                  OutputFields(nOutputFields) = OutputConcs(n) 
                   if(DEBUG.and.MasterProc) write(*,*) "Xd-3d-DONE ", n, trim(tag_name(1))
               end if
 

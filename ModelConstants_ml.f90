@@ -57,6 +57,7 @@ logical, public, parameter :: USE_AOD            = .false.
 logical, public, parameter :: USE_ZREF           = .false.  ! testing
 logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
 logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget outputs
+logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition for growing crops
 
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
@@ -168,9 +169,9 @@ integer, private, parameter :: &
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
 ! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
- DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
+! DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
-! DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
+ DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 !DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
 ! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK

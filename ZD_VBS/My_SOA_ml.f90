@@ -214,7 +214,7 @@ module OrganicAerosol_ml
 
          if ( MasterProc ) then 
             do i = S1, S2
-               write(6,"(a27,i4,a16,i5,i3,8es12.3)") &
+               write(6,"(a,i4,a16,f7.1,i3,8es12.3)") &
                 " Tab SOA: MW, Carbons, C*:", i, trim(species(i)%name), &
                  species(i)%molwt, species(i)%carbons, & !VBStabVPsoa(i,298)
                  tabCiStar(i,273), tabCiStar(i,303)

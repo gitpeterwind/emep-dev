@@ -802,7 +802,7 @@ print LOG "PRINTSPLIT NEWLINE N$n  $newline\n" if $DEBUG;
 
  while ( $copy =~ /\n/g ) {
 	$n++ ;
-	 print LOG "COPYADD $n\n";
+	 #print LOG "COPYADD $n\n";
  }
  my $lastn = $n;
 print LOG "PRINTSPLIT LASTN N$n\n" if $DEBUG;
@@ -1512,7 +1512,7 @@ sub print_rates {
 	my ( $nam, @emis) = @_;
 	print "EMISstuff NAM $nam FILES @emis\n";
         my $Nemis = @emis;
-        my $MaxLen = 12;
+        my $MaxLen = 30; # Was 12
 	printall( "ENTERING EMIS print $Nemis\n");
         open(EMIS,">GenOut_Emis$nam.inc") or die "FAIL EMIS_$nam\n"; 
 
@@ -1521,7 +1521,7 @@ sub print_rates {
 	print EMIS "      EMIS_$nam =  (/ &\n";
 	my $comma = "";
 	foreach my $e ( @emis ){
-		die "LONG EMIS name $e > $MaxLen \n" if length($e) >= $MaxLen ;
+		die "ERROR: LONG EMIS name $e > $MaxLen \n" if length($e) >= $MaxLen ;
 		printf EMIS "%12s \"%-12s\" &\n", $comma,$e;  # uc($e); 
 		$comma = ",";
 	}
@@ -1608,14 +1608,14 @@ sub process_groups {
 	    my $gwet = "WDEP_$g";
 	    push @{ $grp{$gwet}},uc($spec);
 	    foreach my $gg ( keys %grp ) {
-	      print "  TESTWETGG $gwet $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
+	     # print "  TESTWETGG $gwet $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
 	    }
 	  } # wet
 	  if( $dry ne "-" ) { # Creates groups such as DRY_OXN, DRY_xxxx ... many!
 	    my $gdry = "DDEP_$g";
 	    push @{ $grp{$gdry}},uc($spec);
 	    foreach my $gg ( keys %grp ) {
-	      print "  TESTdry $gdry $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
+	     # print "  TESTdry $gdry $gg group is: @{ $grp{$gg} }\n"; # if $g eq "SOX";
 	    }
 	  } # dry
    	}

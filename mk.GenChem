@@ -17,12 +17,23 @@
 ffires=FINNv1  # Can be GFED or FINNv1
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
-run=EmChem09
-spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
-rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
+#run=EmChem09
+#spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
+#rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
+
+#EmChem09soa   -   SOA implementation for policy runs
+run=EmChem09soa
+spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_vbs_tests/VBS_help ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
+#DS, version using PM25, PMCO inventories: Nov 2011
+rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
 
 #VBS 
 #run=vbs_tests   # VBS based Organic Aerosol Model, different versions use different spcs and rcns, choose one set below
+
+#VBS NPAS (Nonvolatile POA, VBS for SOA formation and aging of SOA)
+#spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust VBS_help VBS_nonvolatile VBS_partitioning )  #  VBS NPNA
+#rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt VBS_SOAformation VBS_SOAageing VBS_emissions_nonvolatilePOA  ) # VBS NPNA
+
 
 # VBS-PAA (VBS based primary emissions and aging of all POA and SOA)
 #spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust VBS_help VBS_nonvolatile VBS_partitioning )  #  VBS PAA 
@@ -106,7 +117,7 @@ mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
 cp $odir/CM* $cdir
 cp $odir/SAFE.CM_BoundaryConditions.inc $cdir/CM_BoundaryConditions.inc  # Special
 # FINNv1 or GFED:
-cp $odir/BiomassBurning_${ffires}_to_EmChem09.inc $cdir/CM_BBtoEmChem09.inc  # Special
+cp $odir/BiomassBurning_${ffires}_to_$run.inc $cdir/BiomassBurningMapping.inc  # Special
 cd $cdir
 
 
