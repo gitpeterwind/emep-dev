@@ -134,7 +134,7 @@ private
         D2    = "2d", D3 = "3d", SPEC  = "SPEC", GROUP ="GROUP"
 
    !REMEMBER - KEEP UPPER CASE FOR ALL GASES
-   type(typ_s5i), public, parameter, dimension(32+9) :: &
+   type(typ_s5i), public, parameter, dimension(32+9+1) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -158,6 +158,7 @@ private
         ,typ_s5i("PPM25     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("PPM_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
 ! Omit for CityZen
+        ,typ_s5i("PPM25_FIRE", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 

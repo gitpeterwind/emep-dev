@@ -13,6 +13,8 @@
 #run=CRI_v2_R5
 #
 # ==========================================
+# Must specify source of biomass-burning
+ffires=FINNv1  # Can be GFED or FINNv1
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
 run=EmChem09
@@ -103,6 +105,8 @@ mv GenOut_WetDep.inc      $odir/CM_WetDep.inc
 
 cp $odir/CM* $cdir
 cp $odir/SAFE.CM_BoundaryConditions.inc $cdir/CM_BoundaryConditions.inc  # Special
+# FINNv1 or GFED:
+cp $odir/BiomassBurning_${ffires}_to_EmChem09.inc $cdir/CM_BBtoEmChem09.inc  # Special
 cd $cdir
 
 

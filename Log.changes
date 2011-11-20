@@ -145,8 +145,28 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
-xxxxxxxx rv3_9_20, DAve  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
+xxxxxxxx rv3_9_20ff, Dave  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
+
+ForestFires_ml -
+
+  .... continued work with the  new forest-fires routine
+
+ --  re-arranged to avoid older use of snapemis and to
+ just work directly with rcemis. 
+
+New include files:
+
+ ZCM_EmChem09/BiomassBuring_FINNv1_toEmChem09
+ ZCM_EmChem09/BiomassBuring_FINNv1_toEmChem09
+
+ ... which mk.GenChem copies to CM_BBtoEmChem09.
+
+mk.GenChem - copies BiomassBurning files as noted above
+
+ZD_OZONE/My_Derived_ml -added PPM25_FIRE
+
+xxxxxxxx rv3_9_20, Dave  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Soil NO emissions added  (working version for EECCA/EMEP)
 

@@ -44,7 +44,7 @@ private
 logical, public, parameter :: USE_CONVECTION     = .false.  ! false works best for Euro runs,
                                                             ! essential for global
 logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for IFS!
-logical, public, parameter :: USE_FOREST_FIRES   = .false.  ! Needs global files, future
+logical, public, parameter :: USE_FOREST_FIRES   = .true.  ! Needs global files, future
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .true.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
 logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
@@ -114,7 +114,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 50,  1, 50 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56, 147, 12, 102 /)     ! EGU
-! RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
+ !RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
 ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
 ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10
@@ -125,10 +125,11 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
 ! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
+! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
+! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 15+OFFSET_j,  50+OFFSET_j /) ! (changeable)
+! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 ! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 33+OFFSET_j,  55+OFFSET_j /) ! (France)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 70+OFFSET_j,  110+OFFSET_j /) ! (changeable)
-! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 80+OFFSET_j,  110+OFFSET_j /) ! (changeable)
 
 integer, public, parameter ::  &
   NPROCX      =   8        & ! Actual number of processors in longitude
@@ -166,9 +167,10 @@ integer, private, parameter :: &
 ! DEBUG_ii=116, DEBUG_jj= 63 ! K-Puszta
 ! DEBUG_ii=102, DEBUG_jj= 48 ! Payerne
 ! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
+! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
  DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
-! DEBUG_ii= 85, DEBUG_jj= 15 ! biomass burnung, Aug 2003
+! DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 !DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
 ! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
