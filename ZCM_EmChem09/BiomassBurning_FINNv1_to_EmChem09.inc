@@ -26,7 +26,7 @@
    ,bbtype("NO2 ",0.046 , 1.000, NO2         ) &
    ,bbtype("SO2 ",0.064 , 1.000, SO2         ) &
    ,bbtype("NH3 ",0.017 , 1.000, NH3         ) &
-   ,bbtype("ACET",0.058 , 1.000, C2H6        ) & ! CHECK acetone or acetylene?
+   ,bbtype("ACET",0.058 , 1.000, C2H6        ) & !acetone 
    ,bbtype("ALD2",0.044 , 1.000, CH3CHO      ) &
    ,bbtype("ALK4",0.058 , 1.000, NC4H10      ) &
    ,bbtype("C2H6",0.030 , 1.000, C2H6        ) &
