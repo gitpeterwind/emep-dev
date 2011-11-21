@@ -621,7 +621,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
                   emis_nsplit(ie) = emis_nsplit(ie) + 1
                
                   call CheckStop( itot<1, &
-                   "EmisSplit FAILED "//trim(intext(idef,i)) )
+                   "EmisSplit FAILED "//trim(intext(idef,i)) //&
+                   " possible incorrect Chem in run script?" )
 
                   tmp_iqrc2itot(iqrc) = itot
                   itot2iqrc(itot)     = iqrc
