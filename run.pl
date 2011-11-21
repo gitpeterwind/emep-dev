@@ -8,9 +8,10 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=64:ib
+#PBS -lnodes=8
+#64:ib
 # wall time limit of run
-#PBS -lwalltime=05:50:00
+#PBS -lwalltime=00:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -117,9 +118,10 @@ my %BENCHMARK;
 # Dave's preference for EMEP:
 #   %BENCHMARK = (grid=>"EMEP"  ,year=>2006,emis=>"Modrun10/EMEP_trend_2000-2008/2006");
 # Dave's start of 2008 OpenSource-2011 check. 
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/Modrun11/2011-Trend2009-CEIP");
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
@@ -150,7 +152,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2006";
+my $year = "2009";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -210,7 +212,7 @@ if ($STALLO) {
 
 #DS added Mar 2011. Use EC for standard 2008 runs?
 #Also print $MetDir into RunLog later
-  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year == 2008 );
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 2005 );
 
   if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
     $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";
@@ -245,7 +247,7 @@ my $CityZen = 0 ;
 my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 
-my $testv = "rv3_9_20soa";
+my $testv = "rv3_9_20landify";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -332,6 +334,7 @@ my $EMIS_OLD = "/global/work/nyiri/Emission_Trends";
 $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun10/EMEP_trend_2000-2008/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun10/EMEP_trend_2000-2008/2008" if $year > 2008 ;
+$emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year == 2009 ;
 
 
 #TMP and should be improved because it gives errors for
