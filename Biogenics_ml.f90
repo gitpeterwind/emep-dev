@@ -553,10 +553,10 @@ module Biogenics_ml
     end if
 
     !EXPERIMENTAL
-    !if ( USE_SOILNH3 ) then
-    !    rcbio(BIO_SOILNH3,KG)    = SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
-    !    EmisNat(i,j, BIO_SOILNH3) =  SoilNH3(i,j) * 1.0e-9/3600.0
-    !end if
+    if ( USE_SOILNH3 ) then
+        rcbio(BIO_SOILNH3,KG)    = SoilNH3(i,j) * biofac_SOILNH3/Grid%DeltaZ
+        EmisNat(i,j, BIO_SOILNH3) =  SoilNH3(i,j) * 1.0e-9/3600.0
+    end if
      
  
     if ( DEBUG_BIO .and. debug_proc .and. i==debug_li .and. j==debug_lj .and. &
