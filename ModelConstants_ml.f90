@@ -68,7 +68,7 @@ logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition 
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
 ! mtl = monoterpenes with light dependence
 integer, public, parameter ::   NBVOC = 3
-integer, public, parameter ::   NSOIL_EMIS = 2 ! NO
+integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
 character(len=4),public, save, dimension(NBVOC) :: &
   BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
 
