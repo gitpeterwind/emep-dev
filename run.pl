@@ -333,8 +333,7 @@ $EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
 my $EMIS_OLD = "/global/work/nyiri/Emission_Trends";
 $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun10/EMEP_trend_2000-2008/$year" if ( $year > 1999 ) and ($year < 2009);
-$emisdir = "$EMIS_INP/Modrun10/EMEP_trend_2000-2008/2008" if $year > 2008 ;
-$emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year == 2009 ;
+$emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 
 
 #TMP and should be improved because it gives errors for

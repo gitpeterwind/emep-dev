@@ -48,6 +48,7 @@ use MicroMet_ml, only :  Launiainen1995
 use ModelConstants_ml, only :  DEBUG_SUBMET &  ! Needs DEBUG_RUNCHEM to get debug_flag
                               , USE_ZREF & ! TEST
                               , FluxPROFILE &
+                              , LANDIFY_MET   &
                               , USE_SOILWATER 
 use PhysicalConstants_ml, only : PI, RGAS_KG, CP, GRAV, KARMAN, CHARNOCK, T0
 
@@ -131,7 +132,6 @@ real :: theta2
         Sub(iL)%t2     = Grid%t2         ! First guess = NWP value
         Sub(iL)%t2C    = Grid%t2C        ! First guess = NWP value
         Sub(iL)%is_veg = LandType(iL)%is_veg
-!        Sub(iL)%is_crop = LandType(iL)%is_crop !TEST NH3
         Sub(iL)%is_ice = LandType(iL)%is_ice
 
         Sub(iL)%is_water  = LandType(iL)%is_water
@@ -141,12 +141,15 @@ real :: theta2
 
      ! If NWP thinks this is a sea-square, but we anyway have land,
      ! the surface temps will be wrong and so will stability gradients.
-     ! As a simple substitute, we assume neutral conditions for these
+     ! Use of LANDIFY_MET should have corrected this to some extent. If
+     ! not in use, as a simple substitute, we assume neutral conditions for these
      ! situations.
-        if( Grid%is_NWPsea  .and. (.not. Sub(iL)%is_water) ) then
-             Sub(iL)%invL = 0.0
-             Sub(iL)%Hd   = 0.0
-        end if
+
+      if ( .not. LANDIFY_MET .and. &
+              Grid%is_NWPsea  .and. (.not. Sub(iL)%is_water) ) then
+           Sub(iL)%invL = 0.0
+           Sub(iL)%Hd   = 0.0
+      end if
 
 
 !    The zero-plane displacement (d) is the height that
@@ -202,11 +205,11 @@ real :: theta2
 
         end if
           
-   if ( USE_ZREF ) then 
-        Sub(iL)%z_refd = Grid%z_ref
-   else
-        Sub(iL)%z_refd = Grid%z_ref - Sub(iL)%d  !  minus displacement height
-    end if
+        if ( USE_ZREF ) then  !EXPERIMENTAL. Not recommended so far
+           Sub(iL)%z_refd = Grid%z_ref
+        else
+           Sub(iL)%z_refd = Grid%z_ref - Sub(iL)%d  !  minus displacement height
+        end if
         z_3md  = z_3m  - Sub(iL)%d               !  minus displacement height
 
 
@@ -236,21 +239,20 @@ real :: theta2
            + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
 
         if (  DEBUG_SUBMET .and. debug_flag ) then
-            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH SUBI", iter,iL, &
+            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH  SUBI", iter,iL, &
                 Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                   Sub(iL)%z_refd, z_3md, &
                  Sub(iL)%invL, Sub(iL)%ustar, Grid%invL, Grid%ustar
-            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH ZZZZ", iter,iL, &
+            write(6,"(a12,i2,i3,5f8.3,10f12.3)") "VDHH  ZZZZ", iter,iL, &
                 Grid%z_mid, Grid%z_ref, Sub(iL)%z_refd
         end if
 
-        if( DEBUG_SUBMET .and. &
+       if( DEBUG_SUBMET .and. &
             Sub(iL)%invL > 10.0 .or. Sub(iL)%invL < -10.0 ) then
            call CheckStop("FluxPROFILE STOP")
         end if
 
-
-     else if ( FluxPROFILE == "Iter" ) then  
+   else if ( FluxPROFILE == "Iter" ) then
 
     do iter = 1, NITER 
 
@@ -263,17 +265,11 @@ real :: theta2
         !..L=F(u*), since we do not know the EMEP subgrid averaged 
         !..z0-values ...
 
-        if ( DEBUG_SUBMET .and. debug_flag ) then
+       if ( DEBUG_SUBMET .and. debug_flag ) then
             write(6,"(a12,i2,i3,5f8.3,2f12.3)") "SUBMET ITER", iter,iL, &
                 Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                   Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
-        end if
-
-       !FEB2009 Sub(iL)%ustar = Grid%u_ref * KARMAN/ &
-       !FEB2009  (log( Sub(iL)%z_refd/Sub(iL)%z0 ) - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)&
-       !FEB2009    + PsiM( Sub(iL)%z0*Sub(iL)%invL ) )
-
-       !FEB2009 Sub(iL)%ustar = max( Sub(iL)%ustar, 1.0e-2)
+       end if
 
     !  We must use L (the Monin-Obukhov length) to calculate deposition,
     ! Thus, we calculate T* and then L, based on sub-grid data. 
@@ -296,23 +292,26 @@ real :: theta2
             - PsiM( Sub(iL)%z_refd*Sub(iL)%invL)  &
             + PsiM( Sub(iL)%z0*Sub(iL)%invL    )) 
 
-    if (  DEBUG_SUBMET .and. debug_flag ) then
-        write(6,"(a12,i2,i3,5f8.3,2f12.3)") "SUBMET ITERi ", iter,iL, &
+          if (  DEBUG_SUBMET .and. debug_flag ) then
+              write(6,"(a12,i2,i3,5f8.3,2f12.3)") "SUBMET ITERi ", iter,iL, &
                 Sub(iL)%hveg, Sub(iL)%z0, Sub(iL)%d, &
                   Sub(iL)%z_refd, z_3md, Sub(iL)%invL, Sub(iL)%ustar
-        write(6,"(a12,i3,3f7.1,20g11.3)") "SUBMET ITERA ",iL, Sub(iL)%z0, Sub(iL)%d, &
-          Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, Sub(iL)%Hd,&
-              Sub(iL)%ustar, Sub(iL)%invL , &
-           log( Sub(iL)%z_refd/Sub(iL)%z0 ), PsiM( Sub(iL)%z_refd*Sub(iL)%invL )
-    end if
+              write(6,"(a12,i3,3f7.1,20g11.3)") "SUBMET ITERA ",iL, &
+                Sub(iL)%z0, Sub(iL)%d, &
+                Sub(iL)%z_refd, 0.001*Grid%psurf, Sub(iL)%t2, rho_surf, &
+               Sub(iL)%Hd, Sub(iL)%ustar, Sub(iL)%invL , &
+               log( Sub(iL)%z_refd/Sub(iL)%z0 ), &
+                PsiM( Sub(iL)%z_refd*Sub(iL)%invL )
+           end if
+
        Sub(iL)%ustar = max( Sub(iL)%ustar, MIN_USTAR_LAND )
     end do ! iter
-
   else
      call StopAll("Incorrect FluxPROFILE")
 
   end if ! FluxPROFILE
-    end if ! allNWPsea
+
+ end if ! allNWPsea
 
     if (  DEBUG_SUBMET .and. debug_flag ) then
         write(6,"(a12,10f9.3)") "SUBMET" // trim(FluxProfile), Sub(iL)%z0, &
