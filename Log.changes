@@ -146,7 +146,17 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
-xxxxxxxx rv3_9_20... in progress          xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_20landify  Dave 21st Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+ModelConstants_ml, Met_ml.f90 - "landify"
+
+  if LANDIFY_MET = .false. , no change
+  if LANDIFY_MET = .true. ,  then meteorology for coastal sites (where
+   NWP_sea is true, but land exists) is created from neighboring
+   land grid-squares.  Improves model performance for some coastal
+   sites a lot with PARLAM met. Seems to have less effect for IFS
+   but checking continues.
+
 
 mk.GenChem - ammended with if-test for $run. Saves having to
   uncomment spcs and rcns each time.
@@ -157,6 +167,10 @@ My_Derived_ml
     ZD_OZONE versions anyway now.)
 
 EmisGet_ml - more helpful error message for EmisSplit
+
+run.pl - lines for 2009 added
+
+SubMet_ml - use of LANDIFY
 
 xxxxxxxx rv3_9_20soa, Dave  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
