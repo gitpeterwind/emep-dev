@@ -573,13 +573,18 @@ private
 
              if( outclass == SPEC ) then ! check if available
               n1 = find_index(outname,species(:)%name)
+             else if ( outclass == GROUP ) then ! check if available
+              n1 = find_index(outname,GROUP_ARRAY(:)%name)
+             end if
+
               if ( n1 < 1 ) then 
                 if(DEBUG.and.MasterProc) write(*,*) "Xd-2d-SKIP ", n, trim(outname)
                 call PrintLog("WARNING: Requested My_Derived OutputField not found: "&
-                      //trim(outname), MasterProc)
+                   // " " //trim(outclass) // ":"   //trim(outname), MasterProc)
                 cycle
               end if
-             end if
+
+!             end if
 
               tag_name(1) = "SURF_" // trim(outunit) // "_" //  trim(outname)
               call AddArray(  tag_name(1:1) , wanted_deriv2d, &

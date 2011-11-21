@@ -151,6 +151,9 @@ xxxxxxxx rv3_9_20... in progress          xxxxxxxxxxxxxxxxxxxxxxx
 mk.GenChem - ammended with if-test for $run. Saves having to
   uncomment spcs and rcns each time.
 
+My_Derived_ml (identical now in ZD_OZONE and ZD_VBS remember):
+   - now copes with missing groups
+
 xxxxxxxx rv3_9_20soa, Dave  20th Nov 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
 Main changes:
