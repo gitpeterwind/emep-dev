@@ -17,15 +17,30 @@
 ffires=FINNv1  # Can be GFED or FINNv1
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
-#run=EmChem09
-#spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
-#rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
+run=EmChem09soa
+if [ $run == EmChem09 ]; then
+  echo "RUN EmChem09 chosen"
+  spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
+  rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 
+
+elif [ $run == EmChem09soa ]; then
+  echo "RUN EmChem09soa chosen"
+  spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
+         ../ZCM_EmChem09/Dust ../ZCM_vbs_tests/VBS_help \
+         ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
+  rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
+         ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
+         ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
+else
+  echo "SELECTION of run failed!! "
+  exit
+fi
 
 #EmChem09soa   -   SOA implementation for policy runs
-run=EmChem09soa
-spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_vbs_tests/VBS_help ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
+#run=EmChem09soa
+#spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_vbs_tests/VBS_help ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
 #DS, version using PM25, PMCO inventories: Nov 2011
-rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
+#rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
 
 #VBS 
 #run=vbs_tests   # VBS based Organic Aerosol Model, different versions use different spcs and rcns, choose one set below
