@@ -41,6 +41,11 @@
 !    content from JRC used here) in this version 
 !    foundSoilWater = .false. from Met_ml.f90 (see comments below)   
 
+! REFS: FMB99 = F\'ecan, F., Marticorena, B. and Bergametti,
+! G. (1999). Parameterization of the increase of the aeolian erosion
+! threshold wind friction velocity to soil moisture for arid and semi-arid
+! areas. Ann. Geophysicae, 17,149-157.
+
  use CheckStop_ml,         only : CheckStop
  use EmisDef_ml,           only : NDU, QDUFI, QDUCO
  use Functions_ml,         only : ERFfunc
