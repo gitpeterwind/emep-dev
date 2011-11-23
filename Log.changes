@@ -162,7 +162,16 @@ exceeds 99%, I rescale (at least 1% other is then enforced.) See
 The effect should be to increase SOA a little, since OA condensation
 is proportional to the avaialble mass of OM.
  
-USE_DUST set .false.
+My_Derived_ml - set some OM outputs to monthly (M) instead if
+   daily, to reduce file size
+
+ModelConsants
+    USE_DUST set .false.
+    comments to discourage use of Ln95, SOILNH3
+
+ZCM_EmChem09, ZCM_EmChem09soa:
+      SEASALT_G removed from SAFE_CM.Boundar..
+
 
 xxxxxxxx rv3_9_20ss       Svetlana 23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 

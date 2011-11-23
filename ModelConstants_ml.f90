@@ -51,7 +51,7 @@ logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design bet
 logical, public, parameter :: USE_SOILNOX        = .true.   !  ok, but diff for global + Euro runs
 logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
 logical, public, parameter :: USE_SEASALT        = .true.   ! ok
-logical, public, parameter :: USE_DUST           = .true.  ! Experimental
+logical, public, parameter :: USE_DUST           = .false.  ! Experimental
 logical, public, parameter :: DO_SAHARA          = .false.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_AOD            = .false.
 logical, public, parameter :: USE_ZREF           = .false.  ! testing
@@ -62,7 +62,7 @@ logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition 
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
      "Iter"   ! 
-!      "Ln95"   ! ! will use Launiainen1995 
+!      "Ln95"   ! ! will use Launiainen1995  EXPERIMENTAL. Fails in some areas
 
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
@@ -110,8 +110,8 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-!  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
- RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
+  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
+! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56+OFFSET_i, 147+OFFSET_i, 12+OFFSET_i, 102+OFFSET_i /)     ! EGU
  !RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
@@ -132,8 +132,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
 integer, public, parameter ::  &
-  NPROCX      =   4        & ! Actual number of processors in longitude
-, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   8        & ! Actual number of processors in longitude
+, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================

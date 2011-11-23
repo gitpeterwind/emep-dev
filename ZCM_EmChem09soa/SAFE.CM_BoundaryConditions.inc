@@ -29,7 +29,7 @@
 !EMEP:
   bc2xn_adv(IBC_SEASALT_F  ,IXADV_SEASALT_F  )   =   1.0
   bc2xn_adv(IBC_SEASALT_C  ,IXADV_SEASALT_C  )   =   1.0
-  bc2xn_adv(IBC_SEASALT_G  ,IXADV_SEASALT_G  )   =   1.0
+!  bc2xn_adv(IBC_SEASALT_G  ,IXADV_SEASALT_G  )   =   1.0
 !CB: bc2xn_adv(IBC_CH3CHO  ,IXADV_ALD2    )   =   1.0 !CB05 ????
   bc2xn_adv(IBC_CH3CHO   ,IXADV_CH3CHO  )   =   1.0
   bc2xn_adv(IBC_NO3_f    ,IXADV_NO3_f  )   =   1.0

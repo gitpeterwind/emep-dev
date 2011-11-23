@@ -8,10 +8,9 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=8
-#64:ib
+#PBS -lnodes=64:ib
 # wall time limit of run
-#PBS -lwalltime=00:50:00
+#PBS -lwalltime=08:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -197,7 +196,7 @@ my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
 my $MetDriver = "H20" ; # DS consider condition "EC";  #"H20";
-   $MetDriver = "EC" if $year == 2008; #CHECK
+   $MetDriver = "EC" if $year >= 2005; # Available Nov 2011
 
 my ($HOMEROOT, $WORKROOT, $MetDir);
 our $DataDir;
@@ -247,7 +246,7 @@ my $CityZen = 0 ;
 my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 
-my $testv = "rv3_9_20landify";
+my $testv = "rv3_9_21";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code

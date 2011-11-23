@@ -219,34 +219,34 @@ private
        ! ============================================================
        ! SOA additions (26 entries)
         ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
-        ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
-        ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
+        ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC !!
+        ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
         ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
        ! SOA, PCM_F etc. are special and need appropriate units. Do
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
        ! = sum of all EC and OM components.)
-        ,typ_s5i("PART_ASOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
-        ,typ_s5i("PART_BSOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PART_FFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PART_OFFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PART_WOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PART_OWOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PART_FFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("PART_OFFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("EC_F_WOOD ", "ug", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("EC_F_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("PART_ASOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)&  !! ALWAYS as ugC
+        ,typ_s5i("PART_BSOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("PART_FFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("PART_OFFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("PART_WOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("PART_OWOODOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("PART_FFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("PART_OFFIREOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("EC_F_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("EC_F_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("PART_ASOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_WOODOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_FFIREOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_XO_OWDOA_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_XO_OFFIOA_O", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_FFIREOA_OM", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OWDOA_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
+        ,typ_s5i("PART_XO_OFFIOA_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
        ! ============================================================
        /)
 
