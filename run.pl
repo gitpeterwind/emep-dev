@@ -120,7 +120,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/Modrun11/2011-Trend2009-CEIP");
+  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
