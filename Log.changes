@@ -146,6 +146,24 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_21         Dave     23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+EMISPSLIT - new emissplit.specials.pm25 and defaults.pmco
+
+The pmco is kept simple, and no attempt is made to produce a specials
+file for that.
+
+The pm25 is calculated from IIASA's EC, OC - as sent earlier
+to Agnes/Svetlana. I have used OM=1.25*OC (which is consistent
+with the SOA scheme assumption that POM is CH3-like. When this
+exceeds 99%, I rescale (at least 1% other is then enforced.) See
+~mifads/D_Emis/EmisSplitNov2010/PM_EMISSPLITS_RESCALING/mkp.EmisSplit
+
+The effect should be to increase SOA a little, since OA condensation
+is proportional to the avaialble mass of OM.
+ 
+USE_DUST set .false.
+
 xxxxxxxx rv3_9_20ss       Svetlana 23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Sea salt is back to 2-size fractions representation, fine and coarse.
