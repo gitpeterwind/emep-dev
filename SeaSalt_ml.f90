@@ -44,9 +44,9 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
- use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c, SeaSalt_g
+ use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c !, SeaSalt_g
  use ChemChemicals_ml,     only : species
- use EmisDef_ml,           only : NSS, QSSFI, QSSCO, QSSGI
+ use EmisDef_ml,           only : NSS, QSSFI, QSSCO !, QSSGI
  use GridValues_ml,        only : glat, glon
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
@@ -69,8 +69,9 @@
   public ::  SeaSalt_flux   ! subroutine
 
   integer, parameter :: SS_MAAR= 7, SS_MONA= 3, &   !Number size ranges for
-                                                    !Maartinsson's and Monahan's 
-                        NFIN= 7, NCOA= 2, NGIG=1, & !Number fine&coarse&giant bins     
+                                                    !Maartinsson's and Monahan's
+                        NFIN= 7, NCOA= 3      , &   !Number fine&coarse bins 
+!                        NFIN= 7, NCOA= 2, NGIG= 1, &   
                         SSdens = 2200.0             ! sea salt density [kg/m3]
 
   real, save, dimension(SS_MAAR) :: dp3, a, b
@@ -225,11 +226,11 @@
           enddo
 
 !..'Giant' particles emission [molec/cm3/s]
-          do ii = NFIN+NCOA+1, NFIN+NCOA+NGIG
-               SS_prod(QSSGI,i,j) = SS_prod(QSSGI,i,j)   &
-                                  + ss_flux(ii) * d3(ii) * n2m   &
-                                  * water_fraction(i,j)
-          enddo
+!          do ii = NFIN+NCOA+1, NFIN+NCOA+NGIG
+!               SS_prod(QSSGI,i,j) = SS_prod(QSSGI,i,j)   &
+!                                  + ss_flux(ii) * d3(ii) * n2m   &
+!                                 * water_fraction(i,j)
+!          enddo
 
 !... Crude fix for the effect of lower salinity in the Baltic Sea
 

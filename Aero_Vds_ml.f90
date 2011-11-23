@@ -65,10 +65,10 @@ contains
      real, parameter, dimension(NSIZE) ::   &
                 ! diam   = (/ 0.33e-6, 4.0e-6, 8.5e-6 /),  &
                 !Mc: diam   = (/ 0.33e-6, 1.7e-6, 8.5e-6 /),  &
-                 diam   = (/ 0.33e-6, 2.5e-6, 8.5e-6 /),  &
+                 diam   = (/ 0.33e-6, 2.5e-6, 4.0e-6 /),  &
                 ! sigma  = (/ 1.8, 2.0, 2.2 /),                    &
-                 sigma  = (/ 1.8, 1.8, 2.2 /),                    &
-                 PMdens = (/ 1600.0, 2200.0, 2200.0 /) ! kg/m3
+                 sigma  = (/ 1.8, 1.8, 2.0 /),                    &
+                 PMdens = (/ 1600.0, 1600.0, 2200.0 /) ! kg/m3
      real, parameter :: one2three = 1.0/3.0
      integer :: imod 
      real    :: lnsig2, dg, & 
