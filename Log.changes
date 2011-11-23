@@ -146,7 +146,7 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
-xxxxxxxx rv3_9_20landify  Svetlana 23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_20ss       Svetlana 23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Sea salt is back to 2-size fractions representation, fine and coarse.
 In Aero_Vd_ml: fine MMD is the same for as for all aerosols, 
