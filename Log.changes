@@ -146,6 +146,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_20landify  Svetlana 23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Sea salt is back to 2-size fractions representation, fine and coarse.
+In Aero_Vd_ml: fine MMD is the same for as for all aerosols, 
+introduced coarse MMD = 4um for sea salt (dry dep. as SSc in SeaSalt.species)
+Annual mean bias is 2% for 2009 (-12% to 14% seasonally)
+
 xxxxxxxx rv3_9_20landify  Dave 21st Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 ModelConstants_ml, Met_ml.f90 - "landify"
