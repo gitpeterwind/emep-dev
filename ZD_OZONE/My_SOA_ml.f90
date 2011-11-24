@@ -50,6 +50,8 @@ module OrganicAerosol_ml
     logical, public, parameter :: ORGANIC_AEROSOLS = .false.
     real, public, dimension(A1:A2,K1:K2), save :: Fgas  ! Fraction in gas-phase
 
+    character(len=*), public, parameter :: SOA_MODULE_FLAG="NotUsed"
+
    contains
    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
    !+ Driver routine for Secondary Organic Aerosol  module

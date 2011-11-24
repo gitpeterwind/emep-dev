@@ -153,6 +153,9 @@ xxxxxxxx rv3_9_23     in progress  Dave       24th Nov 2011  xxxxxxxxxxxxxxxxxxx
  
    - should stop code if attempt is made to run VBS with OZONE My_SOA
 
+   outputs adjusted for forest-fire associated OM and other
+   NONVOL outputs (spotted by RObert)
+
 xxxxxxxx rv3_9_22     Svetlana & Alvaro       24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Runchem_ml.f90:

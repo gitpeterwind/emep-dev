@@ -54,11 +54,11 @@
    use CheckStop_ml,      only: CheckStop
    use Chemfields_ml,     only: xn_adv    ! For DEBUG 
    use Chemsolver_ml,     only: chemistry
+   use ChemSpecs_tot_ml                   ! DEBUG ONLY
+   use ChemSpecs_adv_ml                   ! DEBUG ONLY
    use DefPhotolysis_ml,  only: setup_phot
    use DryDep_ml,         only: drydep
    use DustProd_ml,       only: WindDust
-   use ChemSpecs_tot_ml                   ! DEBUG ONLY
-   use ChemSpecs_adv_ml                   ! DEBUG ONLY
    use GridValues_ml,     only : debug_proc, debug_li, debug_lj
    use Io_Progs_ml,       only : datewrite
    use ModelConstants_ml, only : USE_DUST, USE_SEASALT, USE_AOD, & 
@@ -67,7 +67,8 @@
                                   
                   DebugCell,  DEBUG_AOT, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
-   use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol
+   use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol, &
+                  SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
    use Par_ml,            only : lj0,lj1,li0,li1, limax, ljmax  &
                                 ,gi0, gj0, me &    !! for testing
                                 ,IRUNBEG, JRUNBEG  !! for testing
@@ -110,6 +111,11 @@ subroutine runchem(numt)
 
    Jan_1st    = ( nmonth == 1 .and. nday == 1 )
    End_of_Run = ( mod(numt,nprint) == 0       )
+
+   ! Just safety
+   if ( ORGANIC_AEROSOLS ) & 
+      call CheckStop( SOA_MODULE_FLAG == "NotUsed", &
+         "Wrong My_SOA? Flag is "// trim(SOA_MODULE_FLAG) )
 
 ! Processes calls 
 
@@ -173,7 +179,7 @@ subroutine runchem(numt)
                 xn_2d(NO,20),xn_2d(C5H8,20) /) )
              end if
 
-             if ( ORGANIC_AEROSOLS )  &
+             if ( ORGANIC_AEROSOLS ) &
                call OrganicAerosol(i,j,debug_flag)
 
              call Add_2timing(30,tim_after,tim_before,  &

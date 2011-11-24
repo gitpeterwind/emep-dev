@@ -160,6 +160,7 @@ module OrganicAerosol_ml
 
     logical, private, save :: my_first_call = .true.  ! True for 1st call only
     character(len=20), public, save :: soa_errmsg = "ok"
+    character(len=*), public, parameter :: SOA_MODULE_FLAG="VBS"
 
    contains
    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

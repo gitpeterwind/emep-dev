@@ -238,12 +238,18 @@ private
         ,typ_s5i("EC_F_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
-        ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, M)& 
+        ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+!Needed for forest-fire checks
+        ,typ_s5i("NONVOL_FFUELOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NONVOL_WOODOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NONVOL_FFIREOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+!
         ,typ_s5i("PART_ASOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_WOODOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        ,typ_s5i("PART_FFIREOA_OM", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
+        !zero for NONVOL:
+        !,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        !,typ_s5i("PART_WOODOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        !,typ_s5i("PART_FFIREOA_OM", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         ,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         ,typ_s5i("PART_XO_OWDOA_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         ,typ_s5i("PART_XO_OFFIOA_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
