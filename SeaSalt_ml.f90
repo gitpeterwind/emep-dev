@@ -237,7 +237,7 @@
           if ( (glat(i,j) > 52.0 .and. glat(i,j) < 67.0)     .and.   &  
                (glon(i,j) > 13.0 .and. glon(i,j) < 30.0) )   then 
           
-                 SS_prod(:,i,j) =  0.5 * SS_prod(:,i,j)
+                 SS_prod(:,i,j) =  0.2 * SS_prod(:,i,j)
           endif
   
           if(DEBUG_SEASALT .and. debug_flag) write(6,'(a35,2es15.4)')  &

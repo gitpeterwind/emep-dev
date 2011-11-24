@@ -146,7 +146,7 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
-xxxxxxxx rv3_9_21     Svetlana & Alvaro       24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_22     Svetlana & Alvaro       24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Runchem_ml.f90:
 PM25_water_rh50 will be calculated every time step and averaged
@@ -166,6 +166,11 @@ If SELECT_LEVELS_HOURLY (My_Outputs_ml, used in FORECAST mode)
 PMwater outputs PM25_water_rh50 for surface level and PM25_water form model mid-levels.
 The new hourly output type PMwaterSRF will provide PM25_water_rh50 regardless
 of the level selected.
+
+
+SeaSalt_ml 
+   - reduced assumed salt and hence emissions over Baltic sea 
+
 
 xxxxxxxx rv3_9_21         Dave     23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
