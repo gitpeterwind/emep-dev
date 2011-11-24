@@ -317,7 +317,7 @@ rc_Rnwater(k)                             = Rnwater    ;
 *
 rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
-rcss(QSSGI,k)                           = SeaSalt_g ;
+*rcss(QSSGI,k)                           = SeaSalt_g ;
 *
 emisfiles:pm25,pmco
 *

@@ -13,8 +13,7 @@ module BLPhysics_ml
 
 ! minimum value now generally calculated as z_mid(19), but we
 !   keep a fixed value for smoothing. 
- !real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
- real, parameter, public :: PBL_ZiMIN=50.   ! EMEP/TI and smooth(zi)
+ real, parameter, public :: PBL_ZiMIN=100.   ! EMEP/TI and smooth(zi)
  real, parameter, public :: PBL_ZiMAX=3000.  ! EMEP/TI
 
 ! Choose one Hmix method here (not needed for NWP?)
