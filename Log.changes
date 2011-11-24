@@ -146,7 +146,18 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_21     Alvaro       24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Wrong PM water content on multi-level houtly output (Output_hourly.f90).
+This bug was introduced on rv3_7beta7. It is specially relevant on FORECAST mode.
+
+The PMwater outly output type (intorduced on rv3_6_1) should
+output PM water content at model mid-levels (PM25_water). Instead it outputed
+surface values (PM25_water_rh50) which was updated only once a day at END_OF_EMEPDAY
+(Aero_water call on runchem).
+
 xxxxxxxx rv3_9_21     Svetlana     24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
 Change in Runchem_ml.f90
 PM25_water_rh50 will be calcutaed every time step and averaged
 (was calculated at the end of a day - do not remember why)
@@ -166,7 +177,7 @@ exceeds 99%, I rescale (at least 1% other is then enforced.) See
 
 The effect should be to increase SOA a little, since OA condensation
 is proportional to the avaialble mass of OM.
- 
+
 My_Derived_ml - set some OM outputs to monthly (M) instead if
    daily, to reduce file size
 
@@ -181,7 +192,7 @@ ZCM_EmChem09, ZCM_EmChem09soa:
 xxxxxxxx rv3_9_20ss       Svetlana 23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Sea salt is back to 2-size fractions representation, fine and coarse.
-In Aero_Vd_ml: fine MMD is the same for as for all aerosols, 
+In Aero_Vd_ml: fine MMD is the same for as for all aerosols,
 introduced coarse MMD = 4um for sea salt (dry dep. as SSc in SeaSalt.species)
 Annual mean bias is 2% for 2009 (-12% to 14% seasonally)
 
@@ -200,7 +211,7 @@ ModelConstants_ml, Met_ml.f90 - "landify"
 mk.GenChem - ammended with if-test for $run. Saves having to
   uncomment spcs and rcns each time.
 
-My_Derived_ml 
+My_Derived_ml
    - now copes with missing groups
    ***  removed from ZD_VBS ****  (SOA groups can be kept in the
     ZD_OZONE versions anyway now.)
@@ -247,7 +258,7 @@ ForestFires_ml -
   .... continued work with the  new forest-fires routine
 
  --  re-arranged to avoid older use of snapemis and to
- just work directly with rcemis. 
+ just work directly with rcemis.
 
 New include files:
 
@@ -274,7 +285,7 @@ This versions works for European soil-NO emissions, but work still
 needed on a few issues for e.g. global usage, or NH3
 
     (1) Soil-NO needs maps of annual N-deposition. Temporary 1-year average
-        set now. Need to make proper system, e.g. with 5-year avg. 
+        set now. Need to make proper system, e.g. with 5-year avg.
         Also need to consider "trends" for future scenarios
 
         Currently map is in hard-coded mifads directory. Will move to mifapw
@@ -282,10 +293,10 @@ needed on a few issues for e.g. global usage, or NH3
 
     (2) Can now have either the hourly calculations or the monthly
         global fields. Ideal is probably hourly for Europe and
-        monthly outside. 
+        monthly outside.
 
     (3) Not sure the global soil works, since now rcbio is used
-        check 
+        check
 
     (4) NH3 should be in reactions too?
 
@@ -336,7 +347,7 @@ Note: this version links to the dynamic library (.so , i.e. is linked at runtime
 library (.a) on Stallo is broken now.)
 The new version of netcdf allows onthefly (de)compression of data.
 You must use a new version of ncview/ncdump to look at "compressed" data.
-Update your path to ncview and ncdump to 
+Update your path to ncview and ncdump to
 /global/apps/netcdf/4.1.1/ncview-2.0b4/bin/ncview
 /global/apps/netcdf/4.1.1/bin/ncdump
 (or do a module load netcdf)
@@ -383,7 +394,7 @@ Updating GenChem.pl to use REAL values for molar weights rather than INTEGER.
    ZCM_vbs_tests/VBS_SOAageing.reactions
       and
    ZCM_vbs_tests/VBS_partitioning.species
-     - Added O_ASOA and O_BSOA species to the VBS-chemistry to keep track of extra oxygen added in 
+     - Added O_ASOA and O_BSOA species to the VBS-chemistry to keep track of extra oxygen added in
        aging reactions of SOA.
 
 
@@ -403,18 +414,18 @@ Bug-fixes
       - pass Kz_m2 (as calculated by Pielke/Blackader) as Kdef, see
         BLPhysics comments
         * Kz previously seems to have become undefined, or strange values
-      
-       
+
+
 
 
 Extensions
 
-   
+
   BLPhysics_ml.f90
      VogelezangHoltslag_Hmix added as option
      FluxPROFILE parameter added
 
-  CellMet_ml,    USE_ZREF added - allows reference height to be 
+  CellMet_ml,    USE_ZREF added - allows reference height to be
      different to lowest z_mid
 
   Derived_ml - start to simplify outputs, e.g. for HMIX, T2m, etc.
@@ -425,7 +436,7 @@ Extensions
   GridValues - small debug changes (as some code, and me, is getting
     confused by li0 vs. 1, etc.)
 
-  Landuse_ml 
+  Landuse_ml
      - added likely_coastal as logical
      - renamed rater_cover to more accurate water_fraction
 
@@ -455,7 +466,7 @@ Extensions
 
 xxxxxxxx rv3_9_12, Robert 27th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx
 
-Minor update of aging reactions for POA in VBS-model (slight increase 
+Minor update of aging reactions for POA in VBS-model (slight increase
 of Oxygen-addition for aged Wood Burning and Wildfire OA)
 
 xxxxxxxx rv3_9_11, Hilde 19th Oct 2011 xxxxxxxxxxxxxxxxxxxxxxx

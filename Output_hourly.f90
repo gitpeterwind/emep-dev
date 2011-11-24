@@ -50,7 +50,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
                               SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
   use CheckStop_ml,     only: CheckStop
-  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water_rh50
+  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water
   use ChemGroups_ml,    only: chemgroups
   use Derived_ml,       only: num_deriv2d        ! D2D houtly output type
   use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
@@ -305,7 +305,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         case ( "PMwater" )  ! PM water content in ug/m3
           if(trim(hr_out(ih)%unit)/="ug/m3")hr_out(ih)%unit="ug"
           forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = PM25_water_rh50(i,j)
+            hourly(i,j) = PM25_water(i,j,ik)
           end forall
 
         case ( "COLUMN" )    ! Column output in ug/m2, ugX/m2, molec/cm2
