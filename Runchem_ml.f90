@@ -241,17 +241,17 @@ subroutine runchem(numt)
                       if ( USE_AOD )  &
                         call AOD_calc (i,j,debug_flag)
 
-                   !  Modelling PM water at filter equlibration conditions:
-                   !  T=20C and Rh=50% for comparability with gravimetric PM
- 
-                     if ( nhour == END_OF_EMEPDAY .or.  End_of_Run ) then
-                        ambient = .false.
-                        call Aero_water(i,j, ambient, debug_flag)  !
-                     else
+                   !  PM water:
+! st                    if ( nhour == END_OF_EMEPDAY .or.  End_of_Run ) then
+
+                   !  For filter equlibration conditions (2D at surface):
+                   !  T=20C and Rh=50% for comparability with gravimetric PM 
+                        ambient = .false.  ! 
+                        call Aero_water(i,j, ambient, debug_flag)  
+                   !  For real conditions (3D)                    
                         ambient = .true.
                         call Aero_water(i,j, ambient, debug_flag)
-                     endif                    
-
+                   
                      call reset_3d(i,j)
 
                      call Add_2timing(33,tim_after,tim_before,&

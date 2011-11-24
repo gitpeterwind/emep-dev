@@ -146,6 +146,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_21     Svetlana     24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+Change in Runchem_ml.f90
+PM25_water_rh50 will be calcutaed every time step and averaged
+(was calculated at the end of a day - do not remember why)
+
 xxxxxxxx rv3_9_21         Dave     23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 EMISPSLIT - new emissplit.specials.pm25 and defaults.pmco
