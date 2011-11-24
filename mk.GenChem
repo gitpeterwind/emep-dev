@@ -17,7 +17,7 @@
 ffires=FINNv1  # Can be GFED or FINNv1
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
-run=EmChem09
+run=EmChem09soa
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
   spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
