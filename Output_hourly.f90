@@ -50,7 +50,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
                               SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
   use CheckStop_ml,     only: CheckStop
-  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water
+  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water, PM25_water_rh50
   use ChemGroups_ml,    only: chemgroups
   use Derived_ml,       only: num_deriv2d        ! D2D houtly output type
   use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
@@ -202,6 +202,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             ik=KMAX_MID              ! surface/lowermost level
             if(any(hr_out_type==(/"BCVppbv     ","BCVugXX     ","BCVugXXgroup"/)))&
               hr_out_type(1:3)="ADV" ! ensure surface output
+            if(any(hr_out_type==(/"PMwater"/)))&
+              hr_out_type=trim(hr_out_type)//"SRF"
           else
             ik=KMAX_MID-ik+1         ! model level to be outputed
             if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup"/)))&
@@ -302,11 +304,13 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             print "(A,'=',I0,1X,A,'=',30(I0,:,'+'))", "K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
-        case ( "PMwater" )  ! PM water content in ug/m3
-          if(trim(hr_out(ih)%unit)/="ug/m3")hr_out(ih)%unit="ug"
-          forall ( i=1:limax, j=1:ljmax)
-            hourly(i,j) = PM25_water(i,j,ik)
-          end forall
+        case ( "PMwater" )    ! PM water content in ug/m3 at model mid-levels
+          if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water(i,j,ik)
+
+        case ( "PMwaterSRF" )  ! PM water content in ug/m3 at surface level
+          if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
+          forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water_rh50(i,j)
 
         case ( "COLUMN" )    ! Column output in ug/m2, ugX/m2, molec/cm2
           itot = NSPEC_SHL + ispec

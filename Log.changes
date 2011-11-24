@@ -146,21 +146,26 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
-xxxxxxxx rv3_9_21     Alvaro       24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_21     Svetlana & Alvaro       24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
-Wrong PM water content on multi-level houtly output (Output_hourly.f90).
+Runchem_ml.f90:
+PM25_water_rh50 will be calculated every time step and averaged
+(was calculated at the end of a day - do not remember why)
+
+Output_hourly.f90:
+Wrong PM water content on multi-level hourly output.
 This bug was introduced on rv3_7beta7. It is specially relevant on FORECAST mode.
 
-The PMwater outly output type (intorduced on rv3_6_1) should
-output PM water content at model mid-levels (PM25_water). Instead it outputed
-surface values (PM25_water_rh50) which was updated only once a day at END_OF_EMEPDAY
+The PMwater hourly output type (introduced on rv3_6_1) should
+output PM water content at model mid-levels (PM25_water). Instead it outputted
+surface values (PM25_water_rh50) which were updated only once a day at END_OF_EMEPDAY
 (Aero_water call on runchem).
 
-xxxxxxxx rv3_9_21     Svetlana     24th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
-
-Change in Runchem_ml.f90
-PM25_water_rh50 will be calcutaed every time step and averaged
-(was calculated at the end of a day - do not remember why)
+Now, by default PMwater outputs PM25_water for model mid-levels.
+If SELECT_LEVELS_HOURLY (My_Outputs_ml, used in FORECAST mode)
+PMwater outputs PM25_water_rh50 for surface level and PM25_water form model mid-levels.
+The new hourly output type PMwaterSRF will provide PM25_water_rh50 regardless
+of the level selected.
 
 xxxxxxxx rv3_9_21         Dave     23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
