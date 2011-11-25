@@ -65,7 +65,7 @@ integer, public, parameter :: &
   ,FREQ_SITE  =        1      & ! Interval (hrs) between outputs
   ,NADV_SITE  = NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
   ,NSHL_SITE  = NSPEC_SHL  & ! No. short-lived species
-  ,NXTRA_SITE_MISC =    4     & ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
   ,NXTRA_SITE_D2D  =    3       ! No. Misc. met. params  ( e.g. T2, d_2d)
 
 integer, public, parameter, dimension(NADV_SITE) :: &
@@ -84,7 +84,7 @@ integer, public, parameter, dimension(NSHL_SITE) :: &
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
 character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
-  SITE_XTRA_MISC=(/"th   ","T2   ","ws_10m ","rh2m  "/)
+  SITE_XTRA_MISC=(/"th   ","T2   "/)
 
 !These variables must have been set in My_Derived for them to be used.
 character(len=18), public, parameter, dimension(NXTRA_SITE_D2D) :: &
