@@ -232,6 +232,7 @@ integer, public, parameter :: &
   ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_ml
   ,DEBUG_NH3            = .false. & ! NH3Emis experimental
   ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
+  ,DEBUG_OUT_HOUR       = .true. & ! Debug Output_hourly.f90
   ,DEBUG_PHYCHEM        = .false. &
   ,DEBUG_RSUR           = .false. &
   ,DEBUG_RB             = .false. &
