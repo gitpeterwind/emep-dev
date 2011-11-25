@@ -57,10 +57,12 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use OwnDataTypes_ml,  only: Deriv
   use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
   use ChemChemicals_ml ,only: species            ! Gives names
-  use GridValues_ml,    only: i_fdom, j_fdom     ! Gives emep coordinates
+  use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
+                              debug_li,debug_lj
   use Io_ml,            only: IO_HOURLY
-  use ModelConstants_ml,only: KMAX_MID, DEBUG_i, DEBUG_j, MasterProc, &
-                              IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS
+  use ModelConstants_ml,only: KMAX_MID, MasterProc, &
+                              IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS, &
+                              DEBUG => DEBUG_OUT_HOUR
   use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,      &
                               Idirect, Idiffuse, z_bnd
   use NetCDF_ml,        only: Out_netCDF,                             &
@@ -86,8 +88,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
 ! local variables
   logical, save     :: my_first_call = .true. ! Set false after file opened
-  logical, save     :: debug_flag = .false.
-  integer, save     :: i_debug, j_debug       ! Coords matching i,j
   integer msnr                        ! Message number for rsend
   real hourly(MAXLIMAX,MAXLJMAX)      ! Local hourly value  (e.g. ppb)
   real ghourly(GIMAX,GJMAX)           ! Global hourly value (e.g. ppb)
@@ -101,7 +101,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   character(len=TXTLEN_DERIV) :: name ! For output file, species names
   character(len=4)  :: suffix         ! For date "mmyy"
   integer, save :: prev_month = -99   ! Initialise with non-possible month
-  logical, parameter :: DEBUG = .true.
   type(Deriv) :: def1           ! for NetCDF
   real :: scale                 ! for NetCDF
   integer ::CDFtype,nk,klevel   ! for NetCDF
@@ -128,18 +127,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       hr_out(ih)%nk  = min(KMAX_MID,hr_out(ih)%nk)
     enddo ! ih
 
-    if ( DEBUG ) then
-      do j = 1, ljmax
-        do i = 1, limax
-          if ( i_fdom(i)==DEBUG_i .and. j_fdom(j)==DEBUG_j) then
-            debug_flag = .true.
-            i_debug = i
-            j_debug = j
-            !print *, "DEBUG FOUNDIJ me ", me, " IJ ", i, j
-          endif
-        enddo
-      enddo
-    endif ! DEBUG
     my_first_call = .false.
   endif  ! first_call
 
@@ -185,7 +172,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec
       name  = hr_out(ih)%name
-      if ( DEBUG .and. debug_flag ) &
+      if ( DEBUG ) &
         print "(A,2(1X,I0),1X,A,/A,1X,A)",&
           "DEBUG OH", me, ispec, trim(name),&
           "INTO HOUR TYPE", trim(hr_out(ih)%type)
@@ -252,7 +239,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                    !BCV * cfac(ispec,i,j) &    ! 50m->3m conversion
                         * unit_conv            ! Units conv.
           end forall
-          if ( DEBUG .and. debug_flag ) &
+          if ( DEBUG ) &
             print "(2(A,'=',I0,1X))", "K-level", ik, trim(name), itot
 
         case ( "ADVugXX" )  !ug/m3, ugX/m3 output at the surface
@@ -276,7 +263,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * unit_conv       &     ! Units conv.
                         * roa(i,j,ik,1)         ! density.
           end forall
-          if ( DEBUG .and. debug_flag ) &
+          if ( DEBUG  ) &
             print "(2(A,'=',I0,1X))", "K-level", ik, trim(name), itot
 
         case ( "ADVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at the surface
@@ -287,7 +274,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                                      *gunit_conv(:))  & ! Units conv.
                         * roa(i,j,KMAX_MID,1)           ! density.
           end forall
-          if ( DEBUG .and. debug_flag ) &
+          if ( DEBUG  ) &
             print "(A,1X,A,'=',30(I0,:,'+'))", "Surface", trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
@@ -298,7 +285,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                                       gunit_conv(:))  & ! Units conv.
                         * roa(i,j,ik,1)                 ! density.
           end forall
-          if ( DEBUG .and. debug_flag ) &
+          if ( DEBUG ) &
             print "(A,'=',I0,1X,A,'=',30(I0,:,'+'))", "K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
@@ -335,7 +322,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * (z_bnd(i,j,iik)-z_bnd(i,j,iik+1))   ! level thickness
             end forall
           enddo
-          if ( DEBUG .and. debug_flag ) &
+          if ( DEBUG ) &
             print "(A,'=',I0,1X,A,'=',30(I0,:,'+'))", "K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
@@ -398,9 +385,9 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
               d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)=d_2d(ispec,i,j,IOU_YEAR)
             end forall
           endif
-          if( DEBUG  .and. debug_flag) &
+          if( DEBUG ) &
             print "(a,2i3,2es12.3)","HHH DEBUG D2D", ispec, ih, &
-              hr_out(ih)%unitconv, hourly(i_debug,j_debug)
+              hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
         case DEFAULT
           call CheckStop( "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%type)//&
@@ -408,10 +395,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
       end select OPTIONS
 
-      if(DEBUG .and. debug_flag ) then
-        i = i_debug
-        j = j_debug
-        print *,"DEBUG-HOURLY-TH ",me,ih,ispec,hourly(i,j),&
+      if(DEBUG) then
+        print *,"DEBUG-HOURLY-TH ",me,ih,ispec,hourly(debug_li,debug_lj),&
                 hr_out(ih)%unitconv
       endif
 
@@ -476,7 +461,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             ispec, ih, name, hr_out(ih)%name, ik,                        &
             current_date%year,current_date%month,current_date%day,current_date%hour
 
-          if ( DEBUG .and. debug_flag ) print *, "TTTHOUR ISTS", me, ist, ien, jst, jen
+          if ( DEBUG ) print *, "TTTHOUR ISTS", me, ist, ien, jst, jen
 
           !/ In model coordinates we have:
           ist = max(1,hr_out(ih)%ix1-IRUNBEG+1)
@@ -529,7 +514,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%type)//&
                         "hourly, wrong group unit='"//trim(hr_out(ih)%unit)//"'!")
     end select
-    if ( DEBUG .and. debug_flag ) print "(A,'=',30(A,':',I0,:,'+'))",&
+    if ( DEBUG ) print "(A,'=',30(A,':',I0,:,'+'))",&
       trim(name),(trim(species(gspec(ispec)+NSPEC_SHL)%name),gspec(ispec),ispec=1,size(gspec))
   end subroutine group_setup
 
