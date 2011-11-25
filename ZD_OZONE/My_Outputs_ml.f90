@@ -65,7 +65,7 @@ integer, public, parameter :: &
   ,FREQ_SITE  =        1      & ! Interval (hrs) between outputs
   ,NADV_SITE  = NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
   ,NSHL_SITE  = NSPEC_SHL  & ! No. short-lived species
-  ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_MISC =    4     & ! No. Misc. met. params  ( e.g. T2, d_2d)
   ,NXTRA_SITE_D2D  =    3       ! No. Misc. met. params  ( e.g. T2, d_2d)
 
 integer, public, parameter, dimension(NADV_SITE) :: &
@@ -84,7 +84,7 @@ integer, public, parameter, dimension(NSHL_SITE) :: &
 !** fields in SITE_XTRA and their names in SITE_XTRA_CODE
 
 character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
-  SITE_XTRA_MISC=(/"th   ","T2   "/)
+  SITE_XTRA_MISC=(/"th   ","T2   ","ws_10m ","rh2m  "/)
 
 !These variables must have been set in My_Derived for them to be used.
 character(len=18), public, parameter, dimension(NXTRA_SITE_D2D) :: &
@@ -159,7 +159,7 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 logical, public, parameter :: Hourly_ASCII = .false.
 ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
 
-integer, public            :: NHOURLY_OUT =  2 ! No. outputs
+integer, public            :: NHOURLY_OUT =  9 ! No. outputs
 integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
 integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
@@ -281,10 +281,26 @@ subroutine set_output_defs
 
     hr_out(1)= Asc2D("o3_3m", "ADVppbv", "(f9.4)",&
                 IXADV_o3,   ix1,ix2,iy1,iy2,1, "ppbv",PPBINV,600.0)
+    hr_out(2)=Asc2D("pmfine_3m"  ,"ADVugXXgroup","(f9.4)",&
+        find_index("PMFINE",chemgroups(:)%name),ix1,ix2,iy1,iy2,1,"ug",1.0,-999.9)
+    hr_out(3)=Asc2D("pm10_3m"  ,"ADVugXXgroup","(f9.4)",&
+        find_index("PM10",chemgroups(:)%name),ix1,ix2,iy1,iy2,1,"ug",1.0,-999.9)
+    hr_out(4)=Asc2D("no2_3m"   ,"ADVppbv","(f9.4)",&
+             IXADV_NO2  ,ix1,ix2,iy1,iy2,1,"ppbv",PPBINV ,600.0*1.91)
+    hr_out(5)= Asc2D("T2_C",   "T2_C   ", "(f5.1)",     &
+               -99,     ix1,ix2,iy1,iy2,1, "degC",1.0   ,100.0)
+    hr_out(6)=  Asc2D("ws_10m",   "ws_10m   ", "(f5.1)",     &
+               -99,     ix1,ix2,iy1,iy2,1, "m/s",1.0   ,100.0)
+    hr_out(7)=  Asc2D("rh2m",   "rh2m   ", "(f8.3)",     &
+               -99,     ix1,ix2,iy1,iy2,1, "%",1.0   ,100.0)
+    hr_out(8)=Asc2D("pm_h2o_3m","PMwater","(f9.4)",&
+             00         ,ix1,ix2,iy1,iy2,1,"ug",1.0,-999.9)
+    hr_out(9)=Asc2D("no3_c_3m"  ,"ADVugXX","(f9.4)",&
+             IXADV_NO3_C ,ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO3_C),-999.9)
 
 !TEST
-   hr_out(2)= Asc2D("HMIX","D2D", "(f6.1)", &
-     find_index("HMIX",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "m",1.0,10000.0)
+ !  hr_out(2)= Asc2D("HMIX","D2D", "(f6.1)", &
+ !    find_index("HMIX",f_2d(:)%name), ix1,ix2,iy1,iy2,1, "m",1.0,10000.0)
 
 !  Use "ADVugXX" for ug output (ug/m3, ugS/m3, ugC/m3)
 !    For ug/m3  output use in combination with to_ug_ADV(IXADV_XX).

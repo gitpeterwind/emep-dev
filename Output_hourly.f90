@@ -50,7 +50,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
                               SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
   use CheckStop_ml,     only: CheckStop
-  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water, PM25_water_rh50
+  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water_rh50
   use ChemGroups_ml,    only: chemgroups
   use Derived_ml,       only: num_deriv2d        ! D2D houtly output type
   use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
@@ -61,7 +61,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use Io_ml,            only: IO_HOURLY
   use ModelConstants_ml,only: KMAX_MID, DEBUG_i, DEBUG_j, MasterProc, &
                               IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS
-  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip,         &
+  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,      &
                               Idirect, Idiffuse, z_bnd
   use NetCDF_ml,        only: Out_netCDF,                             &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose
@@ -101,7 +101,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   character(len=TXTLEN_DERIV) :: name ! For output file, species names
   character(len=4)  :: suffix         ! For date "mmyy"
   integer, save :: prev_month = -99   ! Initialise with non-possible month
-  logical, parameter :: DEBUG = .false.
+  logical, parameter :: DEBUG = .true.
   type(Deriv) :: def1           ! for NetCDF
   real :: scale                 ! for NetCDF
   integer ::CDFtype,nk,klevel   ! for NetCDF
@@ -202,8 +202,6 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             ik=KMAX_MID              ! surface/lowermost level
             if(any(hr_out_type==(/"BCVppbv     ","BCVugXX     ","BCVugXXgroup"/)))&
               hr_out_type(1:3)="ADV" ! ensure surface output
-            if(any(hr_out_type==(/"PMwater"/)))&
-              hr_out_type=trim(hr_out_type)//"SRF"
           else
             ik=KMAX_MID-ik+1         ! model level to be outputed
             if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup"/)))&
@@ -304,13 +302,11 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             print "(A,'=',I0,1X,A,'=',30(I0,:,'+'))", "K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
-        case ( "PMwater" )    ! PM water content in ug/m3 at model mid-levels
-          if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water(i,j,ik)
-
-        case ( "PMwaterSRF" )  ! PM water content in ug/m3 at surface level
-          if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
-          forall(i=1:limax,j=1:ljmax) hourly(i,j) = PM25_water_rh50(i,j)
+        case ( "PMwater" )  ! PM water content in ug/m3
+          if(trim(hr_out(ih)%unit)/="ug/m3")hr_out(ih)%unit="ug"
+          forall ( i=1:limax, j=1:ljmax)
+            hourly(i,j) = PM25_water_rh50(i,j)
+          end forall
 
         case ( "COLUMN" )    ! Column output in ug/m2, ugX/m2, molec/cm2
           itot = NSPEC_SHL + ispec
@@ -354,6 +350,16 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         case ( "T2_C   " )        ! No cfac for surf.variable
           forall ( i=1:limax, j=1:ljmax)
             hourly(i,j) = t2_nwp(i,j,1) - 273.15     ! Skip Units conv.
+          end forall
+
+        case ( "rh2m   " )        ! No cfac for surf.variable
+          forall ( i=1:limax, j=1:ljmax)
+            hourly(i,j) = rh2m(i,j,1)*100              ! Skip Units conv.
+          end forall
+
+        case ( "ws_10m   " )        ! No cfac for surf.variable
+          forall ( i=1:limax, j=1:ljmax)
+            hourly(i,j) = ws_10m(i,j,1)              ! Skip Units conv.
           end forall
 
         case ( "theta  " )        ! No cfac for met.variable
