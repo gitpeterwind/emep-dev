@@ -136,7 +136,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(31+9+26) :: &
+   type(typ_s5i), public, parameter, dimension(31+9+24+2) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -145,17 +145,18 @@ private
 ! will look for this in the select case (typ) 
 !CAN allow lower case ...
         ,typ_s5i("HMIX      ", "m",   D2,"HMIX     ","MISC", H)& !hourly tests
+        ,typ_s5i("ws_10m    ", "m",   D2,"ws_10m   ","MISC", H)& !hourly tests
+        ,typ_s5i("rh2m      ", "m",   D2,"rh2m     ","MISC", H)& !hourly tests
         ,typ_s5i("T2m       ", "degC",D2,"T2m      ","MISC", D)&
         ,typ_s5i("Snow_m    ", "m",   D2,"SNOW     ","MISC", D)&
         ,typ_s5i("SURF_ppbC_VOC  ", "ppb", D2,"VOC      ","MISC", D)&!?CHECK??
 ! Could also add from earlier D2_EXTRA array:
       !,"SoilWater_deep    " &
       !,"USTAR_NWP         " &
-      !,"ws_10m            " &
       !,"u_ref             " &
 !.... down to here
-        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("RN222     ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("RNWATER   ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("CO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("PPM25     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("PPM_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
@@ -177,14 +178,12 @@ private
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-!       ,typ_s5i("SEASALT_G ", "ug ", D2,"AIR_CONCS", SPEC, D)&
        ! ppb
         ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
         ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
         ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
         ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
-         !typ_s5i("HCHO      ", "ugC", D2,"AIR_CONCS", SPEC, D),& !#25
        ! ugC/m3
 ! GenChem produces a number of groups of species.
 ! Here we say which ones we want for different units

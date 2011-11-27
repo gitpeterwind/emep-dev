@@ -47,10 +47,12 @@ logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for
 logical, public, parameter :: USE_FOREST_FIRES   = .true.  ! Needs global files, future
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .true.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
-logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
 logical, public, parameter :: USE_SOILNOX        = .true.   !  ok, but diff for global + Euro runs
-logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
+logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition for growing crops
 logical, public, parameter :: USE_SEASALT        = .true.   ! ok
+! More experimental:
+logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
+logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
 logical, public, parameter :: USE_DUST           = .false.  ! Experimental
 logical, public, parameter :: DO_SAHARA          = .false.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_AOD            = .false.
@@ -58,7 +60,6 @@ logical, public, parameter :: USE_ZREF           = .false.  ! testing
 logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
 logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget outputs
 logical, public, parameter :: LANDIFY_MET        = .false.!extended massbudget outputs
-logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition for growing crops
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
      "Iter"   ! 
@@ -110,7 +111,7 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
+!  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56+OFFSET_i, 147+OFFSET_i, 12+OFFSET_i, 102+OFFSET_i /)     ! EGU
@@ -128,12 +129,13 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 15+OFFSET_j,  50+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
-! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 33+OFFSET_j,  55+OFFSET_j /) ! (France)
+!RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 33+OFFSET_j,  55+OFFSET_j /) ! (France)
+ RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
 integer, public, parameter ::  &
-  NPROCX      =   8        & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   4        & ! Actual number of processors in longitude
+, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
@@ -171,7 +173,8 @@ integer, private, parameter :: &
 ! DEBUG_ii= 85, DEBUG_jj= 50 ! Harwell
 ! DEBUG_ii= 93, DEBUG_jj= 47 !  Grignon, France
 ! DEBUG_ii= 90, DEBUG_jj= 104 !  Wetland, Tundra
- DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
+! DEBUG_ii= 72-OFFSET_i, DEBUG_jj= 37-OFFSET_j ! biomass burnung, Aug 2003
+ DEBUG_ii= 90-OFFSET_i, DEBUG_jj= 27-OFFSET_j ! biomass burnung, Jul 2009 
 ! DEBUG_ii= 85, DEBUG_jj= 35 ! Sea, Bay of Biscay
 !DEBUG_ii= 76, DEBUG_jj= 65 ! Sea,  North sea
 ! DEBUG_ii= 66, DEBUG_jj= 50 ! Sea,  west UK
@@ -190,19 +193,18 @@ integer, public, parameter :: &
 
 ! Debug flag DEBUG_XXX  applied in subroutine XXX
  logical, public, parameter ::      &
-   DEBUG_AQUEOUS        = .false. &
-  ,DEBUG_pH        = .false. &
-  ,DEBUG_ADV            = .false. &
+   DEBUG_ADV            = .false. &
   ,DEBUG_AOT            = .false. &
+  ,DEBUG_AQUEOUS        = .false. &
   ,DEBUG_BCS            = .false. &
   ,DEBUG_BIO            = .false. &
+  ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_DERIVED        = .false. &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
   ,DEBUG_DO3SE          = .false. &
   ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
   ,DEBUG_ECOSYSTEMS     = .false. &
   ,DEBUG_FORESTFIRE     = .false. &
-  ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
   ,DEBUG_Kz             = .false. &
   ,DEBUG_MY_DERIVED     = .false. &
   ,DEBUG_DRYDEP         = .false. &
@@ -214,6 +216,20 @@ integer, public, parameter :: &
   ,DEBUG_GETEMIS        = .false. &
   ,DEBUG_GRIDVALUES     = .false. &
   ,DEBUG_IOPROG         = .false. &
+  ,DEBUG_LANDDEFS       = .false. &
+  ,DEBUG_LANDUSE        = .false. &
+  ,DEBUG_LANDPFTS       = .false. &
+  ,DEBUG_MET            = .false. &
+  ,DEBUG_MOSAICS        = .false. &
+  ,DEBUG_NEST           = .false. &
+  ,DEBUG_NEST_ICBC      = .false. & ! IFS-MOZART BC
+  ,DEBUG_NETCDF         = .false. &
+  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_ml
+  ,DEBUG_NH3            = .false. & ! NH3Emis experimental
+  ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
+  ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
+  ,DEBUG_pH             = .false. &
+  ,DEBUG_PHYCHEM        = .false. &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
@@ -223,17 +239,6 @@ integer, public, parameter :: &
     ,DEBUG_SOLVER       = .false. &
     ,DEBUG_SUBMET         = .false. &
     ,DEBUG_WETDEP       = .false. &
-  ,DEBUG_LANDDEFS       = .false. &
-  ,DEBUG_LANDUSE        = .false. &
-  ,DEBUG_LANDPFTS       = .false. &
-  ,DEBUG_MET            = .false. &
-  ,DEBUG_MOSAICS        = .false. &
-  ,DEBUG_NETCDF         = .false. &
-  ,DEBUG_NETCDF_RF      = .false. & ! ReadField_CDF in NetCDF_ml
-  ,DEBUG_NH3            = .false. & ! NH3Emis experimental
-  ,DEBUG_OUTPUTCHEM     = .false. & ! Output of netcdf results
-  ,DEBUG_OUT_HOUR       = .true. & ! Debug Output_hourly.f90
-  ,DEBUG_PHYCHEM        = .false. &
   ,DEBUG_RSUR           = .false. &
   ,DEBUG_RB             = .false. &
   ,DEBUG_SETUP_1DCHEM   = .false. &
@@ -241,9 +246,7 @@ integer, public, parameter :: &
   ,DEBUG_SITES          = .false. &
   ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
-  ,DEBUG_VOLC           = .false. & ! Volcanoes
-  ,DEBUG_NEST           = .false. &
-  ,DEBUG_NEST_ICBC      = .false.   ! IFS-MOZART BC
+  ,DEBUG_VOLC           = .false.   ! Volcanoes
 
 !=============================================================================
 ! 3)  Source-receptor runs?
