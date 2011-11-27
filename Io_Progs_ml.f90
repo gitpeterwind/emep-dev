@@ -64,7 +64,8 @@ public :: Read2DN       !  Reads x,y,z1...z2 data for simple case
 public :: PrintLog      !  writes message to both RunLog and unit 6
 public :: datewrite     ! writes date then data - helper sub
 private :: datewrite_ia,&   ! int, array vesion
-           datewrite_a      !  array versions
+           datewrite_iia,&  !  array of ints and reals version
+           datewrite_a      !  array of reals
 public :: Self_Test
 
 logical, public :: fexist                      ! true if file exists
@@ -75,7 +76,7 @@ integer, private, parameter :: MAXLINELEN = 9000 ! Max length of ascii inputs
 integer, private, parameter :: MAXHEADERS = 900  ! Max  No. headers
 
 interface datewrite
-  module procedure datewrite_ia,datewrite_a
+  module procedure datewrite_ia,datewrite_iia,datewrite_a
 end interface datewrite
 
 contains
@@ -542,6 +543,30 @@ subroutine datewrite_a (txt,array,txt_pattern)
       current_date%seconds, array
   endif
 end subroutine datewrite_a
+subroutine datewrite_iia (txt,ii,array,txt_pattern)
+  ! to write out date, integer + supplied data array
+  character(len=*), intent(in) :: txt
+  integer,  dimension(:), intent(in) :: ii  ! arrays of integers, max 5
+  real, dimension(:), intent(in) :: array
+  logical, intent(in), optional :: txt_pattern
+  logical :: use_pattern=.false.
+  integer :: Ni
+  integer,  dimension(5):: iout ! arrays of integers, max 5
+  Ni = size(ii)
+  call CheckStop(Ni>5, "Too many integers in datewrite: only coded for 5")
+  call CheckStop(maxval(ii)>9999, "Too big integer in datewrite_iia: only coded for i5")
+  iout = -1
+  iout(1:Ni) = ii
+  use_pattern=.false.;if(present(txt_pattern))use_pattern=txt_pattern
+  if(use_pattern)then
+    write(*,"(a,1x, 5i5, 20es11.2)") "dw:" // date2string(txt,current_date), &
+      iout, array
+  else
+    write(*,"(a,3i3,i5,1x, 5i5, 20es11.2)") "dw:" // trim(txt), &
+      current_date%month, current_date%day, current_date%hour, &
+      current_date%seconds, iout, array
+  endif
+end subroutine datewrite_iia
 !-------------------------------------------------------------------------
 subroutine Self_Test()
 ! The input files are designed to read nicely in gnumeric and other spread-
