@@ -11,12 +11,12 @@
    ,NCMSPECS  = 17   ! No EMEP chemical mech specs used
 
   !-----------------------------------------------------------------------!
-  ! Column-1 gives GFED species ,
-  ! Column-2 gives MW if needed to get to kg/day. Not needed for GFED
+  ! Column-1 gives FINNv1 species ,
+  ! Column-2 gives MW if needed to get to kg/day.
   !  (Some FINN emissions are given with mass basis, kg/day, so just
   !    set to 1.0. Others are given as mole/day, so multiply by MW/1000
   !    to get kg/day)
-  ! Column-3 gives mass fraction of GFED emissions assign to EMEP species
+  ! Column-3 gives mass fraction of FINN emissions assign to EMEP species
   ! Column-4 gives EMEP species 
   !-----------------------------------------------------------------------!
 
