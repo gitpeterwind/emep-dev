@@ -50,7 +50,7 @@ module ForestFire_ml
 
   use GridValues_ml,     only : i_fdom, j_fdom, debug_li, debug_lj, &
                                  debug_proc,xm2,GRIDWIDTH_M
-  use Io_ml,             only : PrintLog
+  use Io_ml,             only : PrintLog, datewrite
   use MetFields_ml,      only : z_bnd
   use ModelConstants_ml, only : MasterProc, KMAX_MID, &
                                 USE_FOREST_FIRES, DEBUG_FORESTFIRE, &
@@ -60,7 +60,6 @@ module ForestFire_ml
   use Par_ml,            only : MAXLIMAX, MAXLJMAX, li0, li1, lj0, lj1, &
                                   me,limax,ljmax
   use PhysicalConstants_ml, only : AVOG
-  use ReadField_ml,      only : ReadField    ! Reads ascii fields
   use Setup_1dfields_ml, only : rcemis
   use SmallUtils_ml,     only : find_index
  ! No. days per year, date-type :
@@ -119,6 +118,8 @@ implicit none
 
         include 'BiomassBurningMapping.inc'
 
+  ! just to keep track
+   real, private, save ::  sum_emis(NBB_DEFS) ! debug
   ! matrix to get from forest-fire species to EMEP ones
 
     type, private :: bbmap
@@ -148,19 +149,17 @@ contains
     integer :: i,j,nstart, alloc_err
     logical :: my_first_call = .true.   ! DSFF
     integer :: dd_old = -1,  n
-    real    :: fac
+    real    :: fac, to_kgm2s   
     character(len=TXTLEN_SHORT), dimension(NBBSPECS) :: FF_names
 
     logical :: calc_remppm = .false.    ! Needed to get REMPPM25
     integer :: ieOC, ieBC, iePM25       !    " / "
     real    :: OMbb
-     
-
-    !// Input emissions are monthly RETRO [kg/m2/s], GFED [g/m2/8days]
-    real, save :: to_kgm2s = 1.0e-3 /(8*24.0*60.0*60.0)
+    integer ::  loc_maxemis(2) ! debug
 
     call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
 
+    nstart = -1 ! reset for GFED
     if(USE_GFED)then
        if (current_date%year<2001) then
           if( my_first_call .and. MasterProc  ) then
@@ -192,6 +191,10 @@ contains
     endif ! GFED
 
 
+    if ( DEBUG_FORESTFIRE .and. MasterProc ) then 
+       write(*,*) "Into the FIRE days:", current_date%year, &
+            daynumber, dd_old, mod ( daynumber, 8 ), my_first_call
+    end if
     if (dd_old == daynumber) return   ! Only calculate once per day max
     dd_old = daynumber
 
@@ -220,16 +223,19 @@ contains
              call ReadField_CDF('GLOBAL_ForestFireEmis.nc',FF_poll,&
                   rdemis,nstart,interpol='zero_order',needed=.true.,&
                   UnDef=0.0) ! DS added 20/11 to avoid Ivalues==0 line 2457
-             !unit conversion to GFED [g/m2/month]->[kg/m2/s]
+             !unit conversion to GFED [g/m2/8day]->[kg/m2/s]
+             ! to_kgm2s = 1.0e-3 /(8*24.0*60.0*60.0)
+             to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
              rdemis = rdemis * to_kgm2s 
       endif
       if(USE_FINN)then
-!             print *, "FFIRE FINN ", me, n,  trim(FF_poll)
+           print *, "FFIRE FINN ", me, n, daynumber,  trim(FF_poll)
              call ReadField_CDF('GLOBAL_ForestFireEmis_FINN.nc',FF_poll,&
                   rdemis,daynumber,interpol='conservative',needed=.true.,&
                   UnDef=0.0, & ! DS added 20/11 to avoid Ivalues==0 line 2457
-                  debug_flag=.true.)
-             !unit conversion now done in CM_BBto..in file
+                  debug_flag=DEBUG_FORESTFIRE)
+
+             !unit conversion now done in BiomassBurningMapping.inc file
              ! since it depends on the chemical scheme
              !unit conversion to FINN 
              !if(FF_poll=='OC'.or.FF_poll=='BC'.or.FF_poll=='PM25')then
@@ -275,8 +281,10 @@ contains
 
       BiomassBurningEmis(n,:,:) = rdemis(:,:)
 
-      call PrintLog("ForestFire_ml :: Assigns " // &
-               trim(FF_poll) , MasterProc)
+      call PrintLog("ForestFire_ml :: Assigns "//trim(FF_poll) , MasterProc)
+
+      if(DEBUG_FORESTFIRE) sum_emis(n) = sum_emis(n) + &
+                               sum( BiomassBurningEmis(n,:,:) )
 
   end do ! BB_DEFS
 
@@ -301,6 +309,16 @@ contains
       end do
      end if
 
+     if ( DEBUG_FORESTFIRE .and. debug_proc ) then
+       n = ieCO
+       FF_poll = trim(FF_defs(n)%txt)
+       loc_maxemis = maxloc(BiomassBurningEmis(n,:,: ) )
+       call datewrite("SUM_FF: "//trim(FF_poll),  &
+          (/ daynumber, n, i_fdom(loc_maxemis(1)), j_fdom(loc_maxemis(2)) /) ,&
+          (/  sum_emis(n), maxval(BiomassBurningEmis(n,:,: ) ), &
+             BiomassBurningEmis(n,debug_li,debug_lj) /) &
+        ) 
+     end if ! debug_proc
   end subroutine Fire_Emis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
   subroutine Fire_setup()
@@ -308,11 +326,6 @@ contains
    ! Pre-calculate conversion factors to get from BiomassBurning's kg/m2/s 
    ! to molecules/cm3/s. 
    ! 
-   ! We need to assign the correct mol. wt., sometimes from GFED assumptions,
-   ! sometimes from EMEP species.
-   !
-   ! We also handle the case where GFED doesn't have emissions, but an 
-   ! emission factor can be assumed (e.g. NH3).
 
     integer :: idef, f, n, alloc_err, iFF, nFF
     integer :: iemep, nemep
@@ -332,19 +345,23 @@ contains
           last_FF_poll = trim(FF_poll)
 !         if(MasterProc) print *, "MATCH+1 FFIRE ", n, iemep, nemep, nFF, trim(FF_defs(n)%txt)
        end if
-!if(MasterProc) print *, "END MATCH FFIRE ", n, iemep, nemep, nFF, trim(FF_defs(n)%txt)
+      !if(MasterProc) print *, "END MATCH FFIRE ", n, iemep, nemep, nFF, trim(FF_defs(n)%txt)
 
-!DSBB  unitsfac(iqrc) = emisfrac(iqrc,ISNAP_NAT,IC_BB) /species(itot)%molwt
-!DSBB  !// And one final conversion factor.
-!DSBB  !// fires [kg/m2/s] -> [kg/m3/s] -> [molec/cm3/s] (after division by DeltaZ and MW)
-!DSBB  !        1 kg ->  1.0e3 g
-!DSBB  !         /m2 ->  1.0e-6 /cm2
-!DSBB  ! Need MW in g/mole and delta-z in cm
-!DSBB
-!DSBB     unitsfac(:) =  unitsfac(:)  * 0.001 * AVOG
+  !// And one final conversion factor.
+  ! The biomassBurning array is kept in kg/m2/s for consistency with other
+  ! emissions. We will later convert to molecules/cm3/s after spreading
+  ! through a vertical distance dz
+  !
+  ! If we had E in kg/m2/s, we would then take
+  !  E*1.0e3  -> g/m2/s
+  !  E*0.1    -> g/cm2/s
+  !  E*0.1 /MW * Av -> molec/cm2/s
+  !  E*0.001 /MW * Av / DZ -> molec/cm3/s where DZ is spread in m
+  !  i.e. fmap should be 0.001*Av/MW
+  !  (plus account for the fraction of the inventory assigned to EMEP species)
 
-       fac =  FF_defs(n)%unitsfac  &  ! MW scale if needed
-            * FF_defs(n)%frac      &  ! mass-fraction split
+       fac =  &!BUG  FF_defs(n)%unitsfac  &  ! MW scale if needed
+              FF_defs(n)%frac      &  ! mass-fraction split
             * 0.001 * AVOG /species(iemep)%molwt
 
        fmap(nemep) = bbmap( iemep,  nFF, fac ) 
@@ -377,10 +394,11 @@ contains
      debug_flag = ( DEBUG_FORESTFIRE .and. &
                      debug_proc .and. i == debug_li .and. j == debug_lj ) 
 
-      if ( debug_flag ) then
+!TMP      if ( debug_flag ) then
+if(BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  then 
         write(*,"(a,5i4,es12.3,f9.3)") "BurningDEBUG ", me, i,j, &
               i_fdom(i), j_fdom(j), BiomassBurningEmis(ieCO,i,j)
-      end if
+     end if
 
     !/ Here we just divide by the number of levels. Biased towards
     !  different levels since thickness and air content differ. Simple though.
@@ -418,6 +436,7 @@ contains
 !DSBB    !   tmpemis(iqrc) * dtgrid * xmd(i,j)
 
         end do ! n
+ !       call Export_FireNc()
 
   end subroutine Fire_rcemis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

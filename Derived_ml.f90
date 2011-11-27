@@ -77,7 +77,8 @@ use Emissions_ml,     only: SumSnapEmis
 use GridValues_ml,    only: debug_li, debug_lj, debug_proc, sigma_mid, xm2, &
                          GRIDWIDTH_M, GridArea_m2
 use Io_Progs_ml,      only: datewrite
-use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd,u_ref,ws_10m
+use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd,u_ref,&
+         ws_10m, rh2m
 use MetFields_ml,     only: ps, t2_nwp
 use MetFields_ml,     only: SoilWater_deep, Idirect, Idiffuse
 use ModelConstants_ml, only: &
@@ -378,18 +379,20 @@ call AddNewDeriv( "AOT40_Grid", "GRIDAOT","subclass","-", "ppb h", &
 call AddNewDeriv( "PSURF ","PSURF",  "SURF","-",   "hPa", &
                -99,  -99,  F,  1.0,  T,   IOU_DAY ) 
 
-!TEST call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
-!TEST                -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
 
 call AddNewDeriv( "Snow_m","SNOW",  "-","-",   "m", &
                -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
 
-! "HMIX00","HMIX12", ....
 
 call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
-call AddNewDeriv( "ws_10m","ws_10m",  "-","-",   "m/s", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+!Most met params are now better specified in My_Derived.
+!MOVED call AddNewDeriv( "ws_10m","ws_10m",  "-","-",   "m/s", &
+!MOVED                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
+!MOVED call AddNewDeriv( "HMIX  ","HMIX",  "-","-",   "m", &
+!MOVED                -99,  -99,  F,  1.0,  T,  IOU_DAY ) 
+! "HMIX00","HMIX12", ....
+
 call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
 
@@ -831,6 +834,10 @@ end do
           case ( "ws_10m" )
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = ws_10m(i,j,1)
+          end forall
+          case ( "rh2m" )
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = rh2m(i,j,1)
           end forall
           case ( "u_ref" )
             forall ( i=1:limax, j=1:ljmax )
@@ -1576,7 +1583,7 @@ end do
    if(DEBUG .and. debug_proc) then
       i=debug_li
       j=debug_lj
-      write(*,"(a,i4,a,2i4,f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
+      write(*,"(a,i4,a,i4,2f6.1,2es12.3)") "DEBUG GROUP-PM", ig, &
         trim(species(itot)%name), iadv, species(itot)%molwt,&
            scale, xn_adv(iadv,i,j,k), ug_2d(i,j)
     end if

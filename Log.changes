@@ -166,10 +166,24 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
-xxxxxxxx rv3_9_24  in progress                27th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_24  Dave                       27th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+
+  ForestFire_ml ***  BUG FIX  **** 
+
+     A units conversion (e.g. 0.028 for CO) was applied twice, leading to far too
+     low forest-fire emissions
+  
+  Derived_ml - AddDeriv for ws_10m  commented out, moved to My_Derived
+               rh2m added
 
   Io_Progs_ml - added another datewrite to print up to 5 ints, then array of reals
 
+  ModelConstants_ml. Small tidy up - alphabetical DEBUGs
+
+   My_Derived - ws_10m and rh2m added here. RN222 and RNWATER commented out.
+
+   My_Outputs - added ws_10m and rh2m for sites output.
 
 xxxxxxxx rv3_9_23   Birthe/Dave               25th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
