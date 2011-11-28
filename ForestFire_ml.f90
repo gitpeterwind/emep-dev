@@ -220,6 +220,7 @@ contains
        end if
 
        if(USE_GFED)then
+           print *, "WARNING! FFIRE GFED USED! May not be working properly check results!"
              call ReadField_CDF('GLOBAL_ForestFireEmis.nc',FF_poll,&
                   rdemis,nstart,interpol='zero_order',needed=.true.,&
                   UnDef=0.0) ! DS added 20/11 to avoid Ivalues==0 line 2457
@@ -227,11 +228,18 @@ contains
              ! to_kgm2s = 1.0e-3 /(8*24.0*60.0*60.0)
              to_kgm2s = 1.0e-3 /(8*24.0*3600.0)
              rdemis = rdemis * to_kgm2s 
+            ! For GFED we have OC and BC as well as PM25. Where the
+            ! emep model asks for FFIRE_REMPPM25 we need to get this
+            ! by substraction
+             if ( trim(species(iemep)%name) == "FFIRE_REMPPM25" ) calc_remppm = .true.
+             if ( trim(FF_poll) == "OC" ) ieOC = n
+             if ( trim(FF_poll) == "BC" ) ieBC = n
+             if ( trim(FF_poll) == "PM25" ) iePM25 = n
       endif
       if(USE_FINN)then
            print *, "FFIRE FINN ", me, n, daynumber,  trim(FF_poll)
              call ReadField_CDF('GLOBAL_ForestFireEmis_FINN.nc',FF_poll,&
-                  rdemis,daynumber,interpol='conservative',needed=.true.,&
+                  rdemis,daynumber,interpol='mass_conservative',needed=.true.,&
                   UnDef=0.0, & ! DS added 20/11 to avoid Ivalues==0 line 2457
                   debug_flag=DEBUG_FORESTFIRE)
 
@@ -293,12 +301,13 @@ contains
 
     burning(:,:) =  ( BiomassBurningEmis(ieCO,:,:) > 1.0e-19 )
 
-    ! If needed, calculate REMPPM25, assuming OM/OC = 1.3 
+    ! If needed, calculate REMPPM25, assuming OM/OC = 1.3  
+    !RB: But we assume OM/OC=1.7 for forest fire emissions in the EMEP model? Test changing to 1.7 here also
 
      if ( calc_remppm ) then
        do j =lj0, lj1
        do i =li0, li1
-        OMbb = 1.3*BiomassBurningEmis(ieOC,i,j) + BiomassBurningEmis(ieBC,i,j) 
+        OMbb = 1.7*BiomassBurningEmis(ieOC,i,j) + BiomassBurningEmis(ieBC,i,j) 
         if ( DEBUG_FORESTFIRE .and. MasterProc.and. burning(i,j)  ) then
           write(*,"(a,2i4,3es10.3)") "BURN REMPPM25, ", i_fdom(i), j_fdom(j), &
             BiomassBurningEmis(iePM25,i,j), OMbb, &

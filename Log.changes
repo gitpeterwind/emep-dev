@@ -167,6 +167,27 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_25  Robert                    28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+ForestFire_ml.f90 - Updated the reading of FINN emissions (interpol='mass_conservative' 
+                    instead of 'conservative', should give correct scaling factor)
+                    Changed assumed OM/OC ratio from 1.3 to 1.7 for FFIRE POA
+                    Started updating the GFED handling (but probably still not working properly!!!)
+
+ZCM_EmChem09soa/BiomassBurning_FINNv1_to_EmChem09soa.inc - Changed OM/OC ratio to 1.7 for FFIRE emissions
+                BiomassBurning_GFED_to_EmChem09soa.inc - Updated OM/OC ratio and some other parameters
+                VBS_nonvolatile.species - Introducing new groups NVFFUELOC10 
+
+ZD_VBS/My_SOA_ml.f90 - Introduced split of NVFFUELOC into NVFFUELOC25 and NVFFUELOC10, 
+                       updated storing to handle both partitioning and nonvolatile POA 
+                       in a similar way [NOTE some hardcoding of OM/OC ratios!!! 
+                       Assumes OM/OC=1.25 for FFUEL POA and 1.7 for WOOD POA and FFIRE POA]
+
+ZCM_vbs_tests/VBS_help.species & VBS_nonvolatile.species - Added the number 25 to some
+                       group names (to indicate that they are in PM2.5)
+                       added NONVOL_FFUELOC10 (as well as NONVOL_FFUELOC25)
+              VBS_partitioning.species - Added the number 25 to some group names
+ 
 xxxxxxxx rv3_9_25  Svetlana                    28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 PM water calculations by MARS (instead of EQSAM): 3D for ambient conditions

@@ -14,7 +14,7 @@
 #
 # ==========================================
 # Must specify source of biomass-burning
-ffires=FINNv1  # Can be GFED or FINNv1
+ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
 run=EmChem09soa
