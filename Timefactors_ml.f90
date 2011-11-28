@@ -43,14 +43,18 @@
 !  
 !  Sets the day/night emissions variation in day_factor
 !
-!  D. Simpson,    3/2/99
+!  D. Simpson,    3/2/99-11 0 H. Fagerli, 2011
 !_____________________________________________________________________________
-!hf
+
   use ModelConstants_ml, only : iyr_trend
   use PhysicalConstants_ml, only : PI
   use CheckStop_ml, only : CheckStop
   use Country_ml,   only : NLAND
-  use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE
+  use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE, ISNAP_DOM
+  use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
+  use Met_ml,       only : Getmeteofield
+  use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
+  use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
   use TimeDate_ml,  only:            &  ! subroutine, sets:
                      date,           &  ! date-type definition
                      nmdays, nydays, &  ! days per month (12), days per year
@@ -58,6 +62,8 @@
                      day_of_year        ! day count in year
   use Io_ml,        only :            &
                      open_file,       & ! subroutine
+                     check_file,       & ! subroutine
+                     PrintLog,        &
                      ios,  IO_TIMEFACS  ! i/o error number, i/o label
 
   implicit none
@@ -67,6 +73,7 @@
 
   public :: NewDayFactors
   public :: timefactors
+  public :: DegreeDayFactors
 
   !-- time factor stuff: 
 
@@ -76,6 +83,10 @@
                                                       ! calculated daily
   real, public, save,  &
      dimension(NLAND,12,NSECTORS,NEMIS_FILE) :: fac_emm  ! Monthly factors
+ ! We keep track of min value for degree-day work
+ !ds
+  real, public, save,  &
+     dimension(NLAND,NSECTORS,NEMIS_FILE) :: fac_min ! Min of Monthly factors
 !hf
   real, public, save,  &
      dimension(12) :: fac_cemm  ! Change in monthly factors over the years
@@ -85,7 +96,10 @@
 
   real, public, save, dimension(NSECTORS,0:1):: day_factor  ! Day/night factor 
 
-  logical, private, parameter :: DEBUG = .false.
+  ! Heating-degree day factor for SNAP-2. Independent of country:
+  logical, public, save :: Gridded_SNAP2_Factors = .false.
+  real, public, dimension (MAXLIMAX,MAXLJMAX), save :: gridfac_HDD
+  real, private, dimension (MAXLIMAX,MAXLJMAX), save :: tmpt2
 
   ! Used for general file calls and mpi routines below
 
@@ -142,7 +156,7 @@ contains
                      , 1.0  &! 11. Nature
                      /)
 
-  if (DEBUG) write(unit=6,fmt=*) "into timefactors.f "
+  if (DEBUG) write(unit=6,fmt=*) "into timefactors "
 
    call CheckStop( nydays < 365, &
       "Timefactors: ERR:Call set_nmdays before timefactors?")
@@ -152,9 +166,10 @@ contains
 
 
 !  #################################
-!  1) Read in Monthly factors
+!  1) Read in Monthly factors, and determine min value (for baseload)
 
    fac_emm(:,:,:,:) = 1.0
+   fac_min(:,:,:) = 1.0
 !hf
    fac_cemm(:) = 1.0
    fracchange=0.005*(iyr_trend -1990)
@@ -184,6 +199,10 @@ contains
            read(IO_TIMEFACS,fmt=*,iostat=ios) inland, insec, &
              (fac_emm(inland,mm,insec,iemis),mm=1,12)
            if ( ios <  0 ) exit     ! End of file
+
+           fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
+           if( DEBUG ) write(*,"(a,3i4,f8.3)") "MIN tfac ", &
+                   inland,insec,iemis, fac_min(inland,insec,iemis)
 
            call CheckStop( ios, "Timefactors: Read error in Monthlyfac")
 
@@ -395,8 +414,92 @@ contains
          enddo ! iland  
       enddo ! isec   
    enddo ! iemis 
+
  end subroutine NewDayFactors
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+ subroutine DegreeDayFactors(daynumber)
+
+!.....................................................................
+!**    DESCRIPTION:
+!   Generally called with daynumber, and then reads the gridded degree-day
+!   based factors for emissions.
+!   If called with daynumber = 0, just checks existance of file. If not
+!   found, can use default country-based (GENEMIS) factors.
+
+    integer, intent(in) :: daynumber   ! daynumber (1,..... ,365)
+   
+
+    integer :: nstart, alloc_err
+    logical :: my_first_call = .true.   ! DSFF
+    integer :: dd_old = -1,  n
+    integer,dimension(2)  :: ijloc   ! debug only 
+    integer :: iii, jjj              ! debug only 
+    real :: checkmax
+    character(len=80) :: errmsg, units
+
+!      Gridded_SNAP2_Factors = .false.
+!      return
+
+   !/ See if we have a file to work with....
+    if ( daynumber == 0 ) then
+      call check_file("DegreeDayFac.nc", Gridded_SNAP2_Factors,&
+        needed=.false., errmsg=errmsg )
+      if ( Gridded_SNAP2_Factors ) then
+         call PrintLog("Found DEGREE-day factors", MasterProc)
+      else
+         call PrintLog("Not-found: DEGREE-day factors", MasterProc)
+      end if
+      return
+    end if
+
+    !===============================================
+    if ( .not. Gridded_SNAP2_Factors )  return !
+    !===============================================
+
+   !/ We have a file, calculate every day ... .
+
+    if (dd_old == daynumber) return   ! Only calculate once per day max
+    dd_old= daynumber
+!
+!    call ReadField_CDF('DegreeDayFac.nc',"DegreeDayFac",&
+!              gridfac_HDD,daynumber,interpol='zero_order',needed=.true.,debug_flag=DEBUG)
+
+   ! DegreeDays have the same domain/grid as the met data, so we can use:
+
+    call Getmeteofield('DegreeDayFac.nc',"DegreeDayFac1000",nrec=daynumber,ndim=2,&
+         unit=units,validity=errmsg, field=gridfac_HDD(:,:))
+       call CheckStop(errmsg=="field_not_found", "DegreeDay field not found:")
+    call Getmeteofield('DegreeDayFac.nc',"temperature_24h",nrec=daynumber,ndim=2,&
+         unit=units,validity=errmsg, field=tmpt2(:,:))
+       call CheckStop(errmsg=="field_not_found", "DegreeDayT2 field not found:")
+
+    if ( DEBUG ) then
+       ijloc = maxloc( gridfac_HDD(li0:li1,lj0:lj1))
+       iii = ijloc(1)+li0-1
+       jjj = ijloc(2)+lj0-1
+       checkmax = maxval( gridfac_HDD(li0:li1,lj0:lj1))
+
+       !print "(a,i3, 4x, 3i4,4x,3i4)", "DEBUG GRIDFAC IJS", me,  li0, li1, MAXLIMAX, lj0, lj1, MAXLJMAX
+       print "(a,2i4,3f10.2,20i4)", "DEBUG GRIDFAC MAx", me, daynumber, &
+           checkmax, gridfac_HDD(iii,jjj), tmpt2(iii,jjj),  ijloc(1), ijloc(2), i_fdom(iii), j_fdom(jjj)
+  
+       if( me==3) then
+           write(*,"(a,3i4,2f12.3)") "GRIDFACDAY ", daynumber, &
+             i_fdom(iii), j_fdom(jjj),  tmpt2(iii,jjj), 0.001*gridfac_HDD(iii,jjj)
+       end if
+    end if
+    gridfac_HDD = 0.001 * gridfac_HDD ! CRUDE and TMP
+
+
+    if ( DEBUG .and. debug_proc ) then
+       iii = debug_li
+       jjj = debug_lj
+       print *, "DEBUG GRIDFAC", me, daynumber, iii, jjj, tmpt2(iii,jjj),  gridfac_HDD(iii, jjj)
+    end if
+
+
+   end subroutine DegreeDayFactors
 
 end module Timefactors_ml
 

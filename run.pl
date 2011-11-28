@@ -246,7 +246,7 @@ my $CityZen = 0 ;
 my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 
-my $testv = "rv3_9_24";
+my $testv = "rv3_9_26hdd";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -816,6 +816,13 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/LandInputs_Mar2011/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
+
+# DEGREE DAYS:
+  my $HDD = "/home/mifads/Work/EMEP_Projects/DegreeDay/DegreeDayFac-${GRID}-$year.nc";
+  if ( -f "$HDD" ) {
+    $ifile{"$HDD"} = "DegreeDayFac.nc";
+  }
+
 
 #Prelim BVOC attempt
   $ifile{"$DataDir/GLOBAL_LAInBVOC.nc"} = "GLOBAL_LAInBVOC.nc";

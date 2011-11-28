@@ -170,6 +170,7 @@ module Met_ml
   public :: BLPhysics
   public :: GetCDF_short
   public :: extendarea  ! returns array which includes neighbours
+  public :: Getmeteofield
   public :: landify     ! replaces met variables from mixed sea/land with land
 
 contains
