@@ -14,22 +14,23 @@ PART_FFUELOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 PART_OFFUELOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 PART_XO_OFFLOA25_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged primary FFUEL OA
 PART_FFUELOA25_OM,1,ffueloa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total fine particulate OA from "FFUEL" POA emissions (for storing in units of ug/m3)
-PART_WOODOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-PART_OWOODOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-PART_XO_OWDOA_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged wood burning OA
-PART_WOODOA_OM,1,woodoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate wild fire OA (for storing in units of ug/m3)
-PART_FFIREOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-PART_OFFIREOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-PART_XO_OFFIOA_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged wild fire OA
-PART_FFIREOA_OM,1,ffireoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate wild fire OA (for storing in units of ug/m3)
+PART_WOODOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_OWOODOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_XO_OWDOA25_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged wood burning OA
+PART_WOODOA25_OM,1,woodoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate wild fire OA (for storing in units of ug/m3)
+PART_FFIREOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_OFFIREOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_XO_OFFIOA25_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged wild fire OA
+PART_FFIREOA25_OM,1,ffireoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate wild fire OA (for storing in units of ug/m3)
 PART_TBSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 PART_IBSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 PART_OC10,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total OC (in PM10!?, that is, includes coarse OC!)
 PART_OC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OC in PM2.5
-NONVOL_FFUELOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-NONVOL_WOODOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+NONVOL_FFUELOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+NONVOL_FFUELOC10,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+NONVOL_WOODOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 NONVOL_BGNDOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
-NONVOL_FFIREOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+NONVOL_FFIREOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
 "***************************************************"
 "** do not include PART_OM in PM10 PMFINE to avoid double-count"
 PART_OM_F,1,sumom,1.,xx,xx,0,0,0,xx,PCM_HELP;PMFINE;PM10,,! Includes OM
