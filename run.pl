@@ -802,6 +802,7 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
+  $ifile{"$DataDir/SoilTypes_IFS.nc"} = "SoilTypes_IFS.nc";
 # hb NH3emis
 # New ammonia emissions  ---   NB no read permissions yet!!
   $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
