@@ -1248,13 +1248,23 @@ contains
 
     if(SoilWaterSource == "IFS")then
 !has to convert from m3/m3 to Soil Moisture Index
-         SoilWater(:,:,nr)=(SoilWater(:,:,nr)-pwp(:,:))/(fc(:,:)-pwp(:,:)) !Soil Moisture Index
+        do i = li0, li1    ! NEWTEST 1, MAXLIMAX
+        do j = lj0, lj1    ! NEWTEST 1, MAXLJMAX
+            if ( DEBUG_SOILWATER .and. &
+                ( fc(i,j)-pwp(i,j) < 1.0e-10 )  ) then
+               print  "(a,7i5,4f12.3)", "PWPFC ", me, i_fdom(i), j_fdom(j),  i,j, limax, ljmax, &
+                  fc(i,j),pwp(i,j), maxval(pwp), maxval(fc)
+            end if
+            ! Soil Moisture Index
+            SoilWater(i,j,nr)=(SoilWater(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j))
+            SoilWater_deep(i,j,nr)=(SoilWater_deep(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j)) 
+         end do
+         end do
  !          call printCDF('SMI',SoilWater(:,:,nr),' ')
  !          call printCDF('pwp',pwp,' ')
  !          call printCDF('fc',fc,' ')
+
        SoilWater(:,:,nr)=max(0.0,SoilWater(:,:,nr))
-     
-       SoilWater_deep(:,:,nr)=(SoilWater_deep(:,:,nr)-pwp(:,:))/(fc(:,:)-pwp(:,:)) !Soil Moisture Index
        SoilWater_deep(:,:,nr) = max(0.0, SoilWater_deep(:,:,nr) ) 
 
     endif
