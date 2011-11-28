@@ -504,6 +504,11 @@ contains
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, SoilWater(:,:,nr))
     if(validity==field_not_found)then
+       namefield='soil_wetness_surface'
+       call Getmeteofield(meteoname,namefield,nrec,ndim,&
+            unit,validity, SoilWater(:,:,nr))
+    endif
+    if(validity==field_not_found)then
        if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater not found '
        foundSoilWater = .false.
 
