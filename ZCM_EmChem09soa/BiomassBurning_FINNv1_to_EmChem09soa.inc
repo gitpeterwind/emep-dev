@@ -14,8 +14,9 @@
   ! Column-1 gives FINNv1 species ,
   ! Column-2 gives MW if needed to get to kg/day.
   !  (Some FINN emissions are given with mass basis, kg/day, so just
-  !    set to 1.0. Others are given as mole/day, so multiply by MW/1000
-  !    to get kg/day)
+  !    set to 1.0, except for OC, which is given in units of C and 
+  !    needs to be scaled from OC to OM. Others are given as mole/day, 
+  !    so multiply by MW/1000 to get kg/day )
   ! Column-3 gives mass fraction of FINN emissions assign to EMEP species
   ! Column-4 gives EMEP species 
   !-----------------------------------------------------------------------!
@@ -36,7 +37,7 @@
    ,bbtype("MEK ",0.072 , 1.000, MEK         ) &
    ,bbtype("PRPE",0.042 , 1.000, C3H6        ) & !CHECK!
    ,bbtype("PM25",1.0   , 1.000, FFIRE_REMPPM25 ) & !  Need to subtract OM, BC
-   ,bbtype("OC  ",1.0   , 1.000, FFIRE_OC    ) &
+   ,bbtype("OC  ",1.7   , 1.000, FFIRE_OC    ) &
    ,bbtype("BC  ",1.0   , 1.000, FFIRE_BC    ) &
  /)
 ! Not used in EmChem09 standard
