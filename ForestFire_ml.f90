@@ -75,7 +75,6 @@ implicit none
   public :: Fire_rcemis
   private :: Export_FireNc
 
-!LATER  logical, public, dimension(366), save ::  fires_found
   logical, public, dimension(MAXLIMAX,MAXLJMAX), save ::  burning
   real, private, allocatable, dimension(:,:,:), save :: BiomassBurningEmis
 
@@ -403,8 +402,8 @@ contains
      debug_flag = ( DEBUG_FORESTFIRE .and. &
                      debug_proc .and. i == debug_li .and. j == debug_lj ) 
 
-!TMP      if ( debug_flag ) then
-if(BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  then 
+    if ( debug_flag ) then
+      if(BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  &
         write(*,"(a,5i4,es12.3,f9.3)") "BurningDEBUG ", me, i,j, &
               i_fdom(i), j_fdom(j), BiomassBurningEmis(ieCO,i,j)
      end if
@@ -418,7 +417,6 @@ if(BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  then
  
      do n = 1,  NCMSPECS
 
-!DSBB           if ( .not. fires_found(iem) ) cycle EMLOOP
           iFF = fmap(n)%bbspec
           iem = fmap(n)%emep
 
@@ -445,7 +443,7 @@ if(BiomassBurningEmis(ieCO,i,j) > 1.0e-10)  then
 !DSBB    !   tmpemis(iqrc) * dtgrid * xmd(i,j)
 
         end do ! n
- !       call Export_FireNc()
+ !       call Export_FireNc() ! Caused problems on last attempt
 
   end subroutine Fire_rcemis
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
