@@ -131,7 +131,7 @@ module Met_ml
   use Io_ml ,               only : ios, IO_ROUGH, datewrite, &
                                    IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
-  use NetCDF_ml,         only : printCDF ! testoutputs
+  use NetCDF_ml,         only : printCDF,ReadField_CDF ! testoutputs
   use netcdf
   use TimeDate_ExtraUtil_ml,only: nctime2idate,date2string
 
@@ -510,8 +510,11 @@ contains
     !  The shallow soil water is intended for the experimental dust modelling
     !  and only implementted with HIRLAM-type inputs so far
     else if ( trim(unit) /= "m" ) then  ! PARLAM/HIRLAM has metres of water in top 7.2 cm
-       if(MasterProc.and.numt==1)write(*,*)'WARNING: SoilWater-shallow not HIRLAM, skipping'
-       foundSoilWater = .false.
+
+       if(MasterProc.and.numt==1)write(*,*)'WARNING: TESTING SoilWater-shallow from IFS'
+       !transform from m3/m3 to Soil Moisture Index and meters in metvar
+       foundSoilWater = .true.
+       SoilWaterSource = "IFS"
     else
        foundSoilWater = .true.
     endif
@@ -540,15 +543,17 @@ contains
          ! Typical values in January are even down to 0.2. We choose 0.5
          ! as our max, and SoilWater_ml will consider drying effects after
          ! down to 0.25
-          call StopAll("Soil Water Handling with IFS not yet implemented")
+          !call StopAll("Soil Water Handling with IFS not yet implemented")
           SoilWaterSource = "IFS"
-          SoilMax = 0.5
+          SoilMax = 0.5!?? not needed for SMI
+          SoilMax = 1.0!?? not needed for SMI
        else   ! units not defined yet
           if(numt==1)write(*,*)trim(unit)
           call StopAll("Need units for deep soil water")
        endif
 
      ! Make SoilWater relative 0 < SW < 1:
+     !transformed in metvar
 
        SoilWater_deep(:,:,nr) = min( SoilWater_deep(:,:,nr)/SoilMax, 1.0 ) 
 
@@ -790,7 +795,11 @@ contains
        end do
        if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
        !-------------------------------------------------------------------
-
+       if( SoilWaterSource == "IFS")then
+          !needed for transforming IFS soil water
+       call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp,1,interpol='conservative',needed=.true.,debug_flag=.true.)
+       call ReadField_CDF('SoilTypes_IFS.nc','fc',fc,1,interpol='conservative',needed=.true.,debug_flag=.true.)
+       endif
     end if !numt == 1
 
 
@@ -1232,7 +1241,18 @@ contains
        enddo
     endif
 
+    if(SoilWaterSource == "IFS")then
+!has to convert from m3/m3 to Soil Moisture Index
+         SoilWater(:,:,nr)=(SoilWater(:,:,nr)-pwp(:,:))/(fc(:,:)-pwp(:,:)) !Soil Moisture Index
+ !          call printCDF('SMI',SoilWater(:,:,nr),' ')
+ !          call printCDF('pwp',pwp,' ')
+ !          call printCDF('fc',fc,' ')
+       SoilWater(:,:,nr)=max(0.0,SoilWater(:,:,nr))
+     
+       SoilWater_deep(:,:,nr)=(SoilWater_deep(:,:,nr)-pwp(:,:))/(fc(:,:)-pwp(:,:)) !Soil Moisture Index
+       SoilWater_deep(:,:,nr) = max(0.0, SoilWater_deep(:,:,nr) ) 
 
+    endif
 
     call met_derived(nr) !compute derived meteo fields
 
@@ -1788,9 +1808,9 @@ contains
               if(debug_proc ) then  
                    i = debug_iloc
                    j = debug_jloc
-              if(DEBUG_Kz.and.invL_nwp(i,j) >= OB_invL_LIMIT ) then  
+              if(invL_nwp(i,j) >= OB_invL_LIMIT ) then  
                    do k = 15, KMAX_MID
-                      write(*, "(a,i3,f7.1,3es11.3)") "DEBUG SKz_m2s",k,&
+                   print "(a,i3,f7.1,3es11.3)", "DEBUG SKz_m2s",k,&
                       pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
                    end do
                endif
@@ -1827,15 +1847,14 @@ contains
                      end if
                    end do
                  end do
-              if(DEBUG_Kz .and. debug_proc) then  
+              if(debug_proc) then  
                    i = debug_iloc
                    j = debug_jloc
-                  if(invL_nwp(i,j) <  OB_invL_LIMIT ) then  
-                     do k = 15, KMAX_MID
-                       write(*,"(a,f7.1,3es12.3)") "DEBUG UKz_m2s", &
-                      pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
-                     end do
-                 endif
+              if(invL_nwp(i,j) <  OB_invL_LIMIT ) then  
+                   do k = 15, KMAX_MID
+                   print "(a,f7.1,3es10.3)", "DEBUG UKz_m2s", pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
+                   end do
+               endif
                endif
          
               else

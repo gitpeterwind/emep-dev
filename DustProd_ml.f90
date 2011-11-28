@@ -60,7 +60,8 @@
                                   t2_nwp, sdepth, fh, ps, surface_precip, &
                                   rho_surf, SoilWater, foundSoilWater,    &
                                   foundws10_met, ws_10m,                  &
-                                  clay_frac, sand_frac !ACB snow_flag
+                                  clay_frac, sand_frac,                   & 
+                                  pwp,SoilWaterSource
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
                                   NPROC, MasterProc, USE_DUST, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
@@ -237,8 +238,13 @@
   ustar_moist_cor = 1.0
 
 !//__ Minimal soil moisture at which U*_thresh icreases
-  gwc_thr = (0.17 + 0.14 * clay)* clay    ! [kg/kg] [m3 m-3] 
-  gwc_thr = max ( gwc_thr, 0.1)   ! Lower threshold limit (Vautard, AE, 2005)
+     if(SoilWaterSource /= "IFS")then
+        gwc_thr = (0.17 + 0.14 * clay)* clay    ! [kg/kg] [m3 m-3] 
+        gwc_thr = max ( gwc_thr, 0.1)   ! Lower threshold limit (Vautard, AE, 2005)
+     else
+        !use a threshold consistent with the one IFS uses
+        gwc_thr=pwp(i,j)
+     endif
  
 
   if (foundSoilWater) then    ! Soil Moisture in met data
@@ -253,7 +259,12 @@
               !   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
 
 !__ Gravimetric soil water content [kg kg-1]  
-     gr_h2o = v_h2o * Ro_water/soil_dns_dry       
+        gr_h2o = v_h2o * Ro_water/soil_dns_dry       
+
+!__ Put also gwc_thr (=pwp) in same unit
+        if(SoilWaterSource == "IFS")then
+           gwc_thr=gwc_thr* Ro_water/soil_dns_dry
+        endif
 
      if(DEBUG_DUST .and. debug_flag) then
      write(6,'(a30,f8.2,2f12.4)') 'Sand/Water_sat/soil_dens',  &

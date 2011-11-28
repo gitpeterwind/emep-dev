@@ -43,7 +43,7 @@ private
 ! (for convection use foundconv in permanent code)
 logical, public, parameter :: USE_CONVECTION     = .false.  ! false works best for Euro runs,
                                                             ! essential for global
-logical, public, parameter :: USE_SOILWATER      = .false.  !needs more work for IFS!
+logical, public, parameter :: USE_SOILWATER      = .true.  !for deep soilwater,  under testing
 logical, public, parameter :: USE_FOREST_FIRES   = .true.  ! Needs global files, future
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .true.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
@@ -53,7 +53,7 @@ logical, public, parameter :: USE_SEASALT        = .true.   ! ok
 ! More experimental:
 logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
 logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
-logical, public, parameter :: USE_DUST           = .false.  ! Experimental
+logical, public, parameter :: USE_DUST           = .true.  ! Experimental
 logical, public, parameter :: DO_SAHARA          = .false.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_AOD            = .false.
 logical, public, parameter :: USE_ZREF           = .false.  ! testing

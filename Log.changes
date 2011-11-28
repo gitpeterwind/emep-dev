@@ -166,6 +166,14 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+xxxxxxxx rv3_9_25  Peter                       28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Changed DustProd_ml.f90 to use IFS threshold. Uses IFS soilmap and parameters.
+Started to add Soil Moisture Index in Met_ml.f90 for deep soil water from IFS.
+Switched on swich for Soilwater and Dust in ModelConstants_ml
+changes also in MetFields_ml.f90,Met_ml.f90
+
+
 xxxxxxxx rv3_9_24  Dave                       27th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 

@@ -159,8 +159,9 @@ module MetFields_ml
     ,Tpot2m            & ! Potential temp at 2m
     ,ustar_nwp         & ! friction velocity m/s ustar^2 = tau/roa
     ,invL_nwp          & ! friction velocity m/s ustar^2 = tau/roa
-    ,pzpbl               ! stores H(ABL) for averaging and plotting purposes, m
-
+    ,pzpbl             & ! stores H(ABL) for averaging and plotting purposes, m
+    ,pwp               & ! Permanent Wilting Point
+    ,fc                  ! Field Capacity
 
 !  temporary placement of solar radiation variations QUERY?
  
