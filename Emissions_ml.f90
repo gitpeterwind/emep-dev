@@ -51,6 +51,7 @@
                      ,NCMAX       & ! Max. No. countries per grid
                      ,FNCMAX      & ! Max. No. countries (with flat emissions)
                                     ! per grid
+                     ,ISNAP_DOM   & ! snap index for domestic/resid emis
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
                      ,IQ_DMS      & ! code for DMS emissions
@@ -72,7 +73,8 @@
                               IS_GLOBAL, & 
                               NBVOC,     &      ! > 0 if forest voc wanted
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
-                              DEBUG_SOILNOX , & 
+                              DEBUG_SOILNOX , DEBUG_EMISTIMEFACS, & 
+                              USE_DEGREEDAY_FACTORS, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               USE_AIRCRAFT_EMIS, &
                               USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
@@ -82,10 +84,13 @@
                              MSG_READ1,MSG_READ7
   use PhysicalConstants_ml,  only :  GRAV,  AVOG
   use ReadField_ml, only : ReadField    ! Reads ascii fields
-  use TimeDate_ml,  only : nydays, nmdays, date, current_date ! No. days per 
-                                                              ! year, date-type 
+  use TimeDate_ml,  only : nydays, nmdays, date, current_date, &! No. days per 
+                           daynumber                         ! year, date-type 
   use Timefactors_ml, only :   &
                NewDayFactors   &         ! subroutines
+              ,DegreeDayFactors      &   ! degree-days used for SNAP-2
+              ,Gridded_SNAP2_Factors, gridfac_HDD & 
+              ,fac_min &
               ,timefac, day_factor       ! time-factors
   use Timefactors_ml, only : timefactors   &                 ! subroutine
                              ,fac_emm, fac_edd, day_factor   ! time-factors
@@ -220,6 +225,9 @@ contains
   !=========================
 
   ios = 0
+
+  if ( USE_DEGREEDAY_FACTORS ) &
+  call DegreeDayFactors(0)         ! See if we have gridded SNAP-2
 
   if( MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
 
@@ -515,6 +523,7 @@ contains
   integer :: flat_iland    ! country codes (countries with flat emissions)
 
   integer, save :: oldday = -1, oldhour = -1
+  real ::  oldtfac
 
 ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland
@@ -545,6 +554,9 @@ contains
 
               !==========================
                call NewDayFactors(indate)
+               if ( USE_DEGREEDAY_FACTORS) & 
+               call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd, day_factor
+   
               !==========================
 
                oldday = indate%day
@@ -619,6 +631,25 @@ contains
 
                       tfac = timefac(iland_timefac,isec,iem) * &
                                  day_factor(isec,daytime_iland)
+
+                      !Degree days - only SNAP-2 
+                      if ( USE_DEGREEDAY_FACTORS .and. &
+                          isec == ISNAP_DOM .and. Gridded_SNAP2_Factors ) then
+
+                        oldtfac = tfac
+                        tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
+                          ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) & ! T-dep load
+                           * day_factor(isec, daytime_iland)
+
+                        if ( debug_proc .and. indate%hour == 12 .and.  &
+                                 iem==1.and.i==debug_li .and. j==debug_lj)  then  ! 
+                           write(*,"(a,2i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
+                              isec, iland, daynumber, indate%hour, &
+                                 timefac(iland_timefac,isec,iem), t2_nwp(i,j,2)-273.15, &
+                                   fac_min(iland,isec,iem),  gridfac_HDD(i,j), tfac
+                        end if
+                        !tfac = gridfac_HDD(i,j) * day_factor(isec, daytime_iland)
+                      end if ! =============== HDD 
 
                       s =  tfac * snapemis(isec,i,j,icc,iem)
 

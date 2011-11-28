@@ -167,6 +167,29 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_26hdd      Dave     28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+*** Needs pre-processed file with daily DegreeDays. Currently
+     in mifads directory for 2009. Easy to generate -  run
+    ~mifads/bin/DegreeDayFac  to see usage
+    (code in /Work/EMEP_Projects/DegreeDay/DegreeDayFac.f90)
+
+Added option to use degree-days to calculate emission variation.
+
+ EmisDef_ml - add ISNAP_DOM  =  2
+
+ Emissions_ml - uses Gridded_SNAP2_Factors. DegreeDayFactors etc.
+
+ ForestFire_ml - reduced outputs except on debug
+
+ Met_ml make Getmeteofield public
+
+ ModelConstants_ml - USE_DEGREEDAY_FACTORS
+
+ Timefactors -  uses Gridded_SNAP2_Factors. DegreeDayFactors etc.
+
+ run.pl - link to DegreeDayFac-${GRID}-$yy
+
 xxxxxxxx rv3_9_26  Svetlana, Dave, Robert      28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Robert:
@@ -277,7 +300,9 @@ SeaSalt_ml
    - reduced assumed salt and hence emissions over Baltic sea 
 
 
+>>>>>>> 1.780
 xxxxxxxx rv3_9_21         Dave     23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
 
 EMISPSLIT - new emissplit.specials.pm25 and defaults.pmco
 

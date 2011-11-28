@@ -86,6 +86,7 @@ implicit none
 ! hb NH3emis (ISNAP_AGR, ISNAP_TRAF)
    integer, public, parameter :: &
           ANTROP_SECTORS=10, &   ! Non-natural sectors
+          ISNAP_DOM  =  2,   &   ! Dommestic/residential, for degree-day Timefactors
           ISNAP_NAT  = 11,   &   ! SNAP index for volcanoe emissions
           ISNAP_SHIP = 8,    &   ! SNAP index for flat emissions, e.g ship
           ISNAP_AGR  = 10,   &   ! Note that flat emissions do NOT necessarily
