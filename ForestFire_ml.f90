@@ -156,7 +156,8 @@ contains
     real    :: OMbb
     integer ::  loc_maxemis(2) ! debug
 
-    call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
+    if( my_first_call ) &
+        call PrintLog("Biomass Mapping: "//trim(BiomassBurningMapping),MasterProc)
 
     nstart = -1 ! reset for GFED
     if(USE_GFED)then
@@ -219,7 +220,7 @@ contains
        end if
 
        if(USE_GFED)then
-           print *, "WARNING! FFIRE GFED USED! May not be working properly check results!"
+           write(*,*) "WARNING! FFIRE GFED USED! May not be working properly check results!"
              call ReadField_CDF('GLOBAL_ForestFireEmis.nc',FF_poll,&
                   rdemis,nstart,interpol='zero_order',needed=.true.,&
                   UnDef=0.0) ! DS added 20/11 to avoid Ivalues==0 line 2457
@@ -236,7 +237,8 @@ contains
              if ( trim(FF_poll) == "PM25" ) iePM25 = n
       endif
       if(USE_FINN)then
-           print *, "FFIRE FINN ", me, n, daynumber,  trim(FF_poll)
+             if( DEBUG_FORESTFIRE ) &
+              write(*,*) "FFIRE FINN ", me, n, daynumber,  trim(FF_poll)
              call ReadField_CDF('GLOBAL_ForestFireEmis_FINN.nc',FF_poll,&
                   rdemis,daynumber,interpol='mass_conservative',needed=.true.,&
                   UnDef=0.0, & ! DS added 20/11 to avoid Ivalues==0 line 2457
