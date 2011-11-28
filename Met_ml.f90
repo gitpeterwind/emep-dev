@@ -542,7 +542,7 @@ contains
        if ( trim(unit) == "m" ) then  ! PARLAM has metres of water
           SoilWaterSource = "PARLAM"
           SoilMax = 0.02   
-       else if(trim(unit)=='m3/m3')then
+       else if(unit(1:5)='m3/m3')then
          !IFS has a fairly complex soil water system, with field capacity of 
          ! up to 0.766 for organic soils. More medium soils have ca. 0.43
          ! Typical values in January are even down to 0.2. We choose 0.5
