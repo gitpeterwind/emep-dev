@@ -173,9 +173,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       ispec = hr_out(ih)%spec
       name  = hr_out(ih)%name
       if ( DEBUG ) &
-        print "(A,2(1X,I0),1X,A,/A,1X,A)",&
-          "DEBUG OH", me, ispec, trim(name),&
-          "INTO HOUR TYPE", trim(hr_out(ih)%type)
+        write(6,'(A,2(1X,I0),1X,A,/A,1X,A)')"DEBUG OH", me, ispec, &
+          trim(name),"INTO HOUR TYPE", trim(hr_out(ih)%type)
 
       if(any(hr_out_type==(/"COLUMN     " ,"COLUMNgroup"/)))then
         ik=KMAX_MID-hr_out(ih)%nk+1  ! top of the column
@@ -240,7 +239,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * unit_conv            ! Units conv.
           end forall
           if ( DEBUG ) &
-            print "(2(A,'=',I0,1X))", "K-level", ik, trim(name), itot
+            write(6,'(A,I0,1X)')"K-level", ik, trim(name), itot
 
         case ( "ADVugXX" )  !ug/m3, ugX/m3 output at the surface
           itot = NSPEC_SHL + ispec
@@ -264,7 +263,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * roa(i,j,ik,1)         ! density.
           end forall
           if ( DEBUG  ) &
-            print "(2(A,'=',I0,1X))", "K-level", ik, trim(name), itot
+            write(6,'(a,i5,a10,i5)')"K-level", ik, trim(name), itot
 
         case ( "ADVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at the surface
           call group_setup()
@@ -275,7 +274,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * roa(i,j,KMAX_MID,1)           ! density.
           end forall
           if ( DEBUG  ) &
-            print "(A,1X,A,'=',30(I0,:,'+'))", "Surface", trim(name), gspec+NSPEC_SHL
+            write(6,'(2a10,i7)')"Surface", trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
         case ( "BCVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at model mid-levels
@@ -286,7 +285,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * roa(i,j,ik,1)                 ! density.
           end forall
           if ( DEBUG ) &
-            print "(A,'=',I0,1X,A,'=',30(I0,:,'+'))", "K-level", ik, trim(name), gspec+NSPEC_SHL
+            write(6,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
         case ( "PMwater" )  ! PM water content in ug/m3
@@ -323,7 +322,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             end forall
           enddo
           if ( DEBUG ) &
-            print "(A,'=',I0,1X,A,'=',30(I0,:,'+'))", "K-level", ik, trim(name), gspec+NSPEC_SHL
+            write(6,'(a10,i7,a10,i7)')"K-level", ik, trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
         case ( "SHLmcm3" )        ! No cfac for short-lived species
@@ -386,7 +385,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             end forall
           endif
           if( DEBUG ) &
-            print "(a,2i3,2es12.3)","HHH DEBUG D2D", ispec, ih, &
+            write(6,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
               hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
         case DEFAULT
@@ -396,7 +395,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       end select OPTIONS
 
       if(DEBUG) then
-        print *,"DEBUG-HOURLY-TH ",me,ih,ispec,hourly(debug_li,debug_lj),&
+        write(6,*)"DEBUG-HOURLY-TH ",me,ih,ispec,hourly(debug_li,debug_lj),&
                 hr_out(ih)%unitconv
       endif
 
@@ -461,7 +460,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             ispec, ih, name, hr_out(ih)%name, ik,                        &
             current_date%year,current_date%month,current_date%day,current_date%hour
 
-          if ( DEBUG ) print *, "TTTHOUR ISTS", me, ist, ien, jst, jen
+          if ( DEBUG ) write(6,*)"TTTHOUR ISTS", me, ist, ien, jst, jen
 
           !/ In model coordinates we have:
           ist = max(1,hr_out(ih)%ix1-IRUNBEG+1)
@@ -514,8 +513,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%type)//&
                         "hourly, wrong group unit='"//trim(hr_out(ih)%unit)//"'!")
     end select
-    if ( DEBUG ) print "(A,'=',30(A,':',I0,:,'+'))",&
-      trim(name),(trim(species(gspec(ispec)+NSPEC_SHL)%name),gspec(ispec),ispec=1,size(gspec))
+    if ( DEBUG ) write(6,*) name,trim(species(gspec(ispec)+NSPEC_SHL)%name),&
+                            gspec(ispec),ispec,size(gspec)
   end subroutine group_setup
 
 end subroutine hourly_out
