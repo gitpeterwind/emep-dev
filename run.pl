@@ -803,6 +803,8 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
   $ifile{"$DataDir/SoilTypes_IFS.nc"} = "SoilTypes_IFS.nc";
+  my $tmpndep = "/home/mifads/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
+  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
 # hb NH3emis
 # New ammonia emissions  ---   NB no read permissions yet!!
   $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);

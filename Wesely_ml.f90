@@ -111,7 +111,7 @@ integer, public, parameter :: &
   ! example, if DDEP_NH3=4 then the 4th element of DRYDEP must be WES_NH3.
 
   integer, public, parameter :: NDRYDEP_GASES = 11  ! gases
-  integer, public, parameter :: NDRYDEP_AER = 4    ! aerosols
+  integer, public, parameter :: NDRYDEP_AER = 5    ! aerosols
   integer, public, parameter :: NDRYDEP_CALC = NDRYDEP_GASES + NDRYDEP_AER
 
 

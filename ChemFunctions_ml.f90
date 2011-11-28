@@ -295,7 +295,7 @@ module ChemFunctions_ml
 
 
           rate(k) =  (0.9*f + 0.1) * rc *  &
-             0.5 * & ! very loosely based on OC effects from Reimer 2009 
+!RESTORE TO ORIG    0.5 * & ! very loosely based on OC effects from Reimer 2009 
              ( VOLFACSO4 * x(SO4,k) + VOLFACNO3 * xNO3  &
               + VOLFACNH4 * x(NH4_f,k) )    !SIA aerosol surface
         else
