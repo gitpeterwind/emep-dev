@@ -174,6 +174,10 @@ Switched on swich for Soilwater and Dust in ModelConstants_ml
 changes also in MetFields_ml.f90,Met_ml.f90
 SoilTypes_IFS.nc in run.pl
 
+Birthe: Added output in Output_hourly.f90 for Phillipe runs. Should be commented 
+out when  done with these runs. Also changed from print to write, and rearranged 
+Debug for a DEBUG_OUT_HOUR in ModelConstants.f90
+
 
 xxxxxxxx rv3_9_24  Dave                       27th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
