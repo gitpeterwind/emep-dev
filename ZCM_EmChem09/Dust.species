@@ -2,4 +2,4 @@
 *"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
 *
 Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PMFINE;PM10;DUST;AOD,,!
-Dust_nat_c,1,xx,200,PMc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;AOD,,!
+Dust_nat_c,1,xx,200,DUc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;AOD,,!

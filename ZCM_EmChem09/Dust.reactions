@@ -1,0 +1,3 @@
+* <----------- Biogenic/natural emissions ----------------------------->
+rcwbd(QDUFI,k)                          = DUST_NAT_F ;  # Dust
+rcwbd(QDUCO,k)                          = DUST_NAT_C ;

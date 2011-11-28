@@ -21,7 +21,7 @@ run=EmChem09soa
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
   spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
-  rcns=( EmChem09base SeaSalt PMmass )  # EmChem09 a
+  rcns=( EmChem09base SeaSalt Dust PMmass )  # EmChem09 a
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml!!"
@@ -29,6 +29,7 @@ elif [ $run == EmChem09soa ]; then
          ../ZCM_EmChem09/Dust ../ZCM_vbs_tests/VBS_help \
          ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
   rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
+	 ../ZCM_EmChem09/Dust \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
          ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
 else

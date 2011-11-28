@@ -166,6 +166,19 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+
+xxxxxxxx rv3_9_25  Svetlana                    28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+PM water calculations by MARS (instead of EQSAM): 3D for ambient conditions
+and surface 2D for at Rh=50% (for comparison with obs):
+Runchem_ml.f90 and My_Aerosol_ml.f90
+
+Windblown dust is calculated now: DustProd_ml.f90 (also EmisDef_ml.f90, Solver.f90,
+ModelConstants_ml.f90, mk.Genchem;  in ZCM_EmChem09: Dust.species, Dust.Reactions)
+
+Introduces dry deposition velocities for coarse sea salt and dust: SSc and DUc
+(Wesely_ml.f90, Aero_Vd_ml.f90, ZCM_EmChem09/SeaSalt.species)
+
 xxxxxxxx rv3_9_25  Peter                       28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Changed DustProd_ml.f90 to use IFS threshold. Uses IFS soilmap and parameters.

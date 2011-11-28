@@ -43,18 +43,18 @@
 ! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
 !----------------------------------------------------------------------
 
- use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f
- use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP
- use ChemChemicals_ml,    only :  species
- use PhysicalConstants_ml, only : AVOG
+ use ChemSpecs_tot_ml,     only :  SO4, NH3, HNO3, NO3_f, NH4_f, SEASALT_F
+ use ChemSpecs_shl_ml,     only :  NSPEC_SHL
+ use ChemChemicals_ml,     only :  species
+ use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,    & !PMwater 
+                                   cfac
+ use EQSAM_v03d_ml,        only :  eqsam_v03d
+ use MARS_ml,              only :  rpmares
+ use ModelConstants_ml,    only :  KMAX_MID, KCHEMTOP
+ use PhysicalConstants_ml, only :  AVOG
+ use Setup_1dfields_ml,    only :  xn_2d,       & ! SIA concentration 
+                                   temp, rh, pp
 
- use MARS_ml, only: rpmares
- use Setup_1dfields_ml,  only :  temp, rh
-
- use EQSAM_v03d_ml,      only :  eqsam_v03d
- use Setup_1dfields_ml,  only :  xn_2d     ! SIA concentration 
- use Setup_1dfields_ml,  only :  pp
 
  implicit none
 
@@ -68,8 +68,8 @@
 !    logical, public, parameter :: SEASALT = .true. , AOD = .false. 
  
  !.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
-    integer, public, parameter :: NSIZE = 3
-                               !   FINE_PM = 1, COAR_PM = 2, GIG_PM = 3    
+    integer, public, parameter :: NSIZE = 4
+           !   FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4    
 
 
 contains
@@ -220,14 +220,6 @@ contains
   ! Atmos. Chem.. Phys., 5, 602, 1-8, 2005.
   !.....................................................................
 
- use EQSAM_v03d_ml,      only :  eqsam_v03d
- use Setup_1dfields_ml,  only :  xn_2d      ! SIA concentration 
- use Chemfields_ml,      only :  PM25_water, PM25_water_rh50 !PMwater  
- use ChemSpecs_tot_ml,     only :  NH3, HNO3, SO4, NO3_f, NH4_f, SEASALT_F
- use Setup_1dfields_ml,  only :  temp, rh,pp
- use ModelConstants_ml,  only :  KMAX_MID, KCHEMTOP   
- use PhysicalConstants_ml, only : AVOG
-
  implicit none
 
  integer, intent(in)  :: i, j
@@ -305,6 +297,77 @@ contains
 
  end subroutine  Aero_water
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+ !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+      subroutine Aero_water_MARS(i,j, debug_flag)
+
+ !..................................................................
+ ! Pretty old F. Binkowski code from EPA CMAQ-Models3
+ ! JGR, 108, D6, 4183
+ !..................................................................
+
+ integer, intent(in)  :: i, j
+ logical, intent(in)  :: debug_flag
+ real, parameter      :: FLOOR = 1.0E-30  ! minimum concentration  
+
+ !.. local
+  real    :: rlhum(KCHEMTOP:KMAX_MID), tmpr(KCHEMTOP:KMAX_MID)
+  real    :: so4in, no3in, nh4in, hno3in, nh3in,   &
+             aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out,   &
+             coef
+  integer :: k, errmark
+ !-----------------------------------
+
+   coef = 1.e12 / AVOG
+
+ !.. PM2.5 water at ambient conditions (3D)
+   rlhum(:) = rh(:) 
+   tmpr(:)  = temp(:)
+
+    do k = KCHEMTOP, KMAX_MID
+  
+!//.... molec/cm3 -> ug/m3
+      so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef
+      hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef 
+      nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef
+      no3in  = xn_2d(NO3_f,k) * species(NO3_f)%molwt  *coef
+      nh4in  = xn_2d(NH4_f,k) * species(NH4_f)%molwt  *coef
+
+
+ !--------------------------------------------------------------------------                
+      call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+                    aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+                    ERRMARK,debug_flag) 
+ !--------------------------------------------------------------------------
+
+!//....aerosol water (ug/m**3) 
+      PM25_water(i,j,k) = max (0., aH2Oout )
+
+    enddo  ! k-loop
+
+!.. PM2.5 water at equilibration conditions for gravimetric PM (Rh=50% and t=20C)
+                            
+    rlhum(:) = 0.5
+    tmpr(:)  = 293.15
+    k = KMAX_MID
+!//.... molec/cm3 -> ug/m3
+      so4in  = xn_2d(SO4,k) * species(SO4)%molwt  *coef *cfac(SO4-NSPEC_SHL,i,j) 
+      hno3in = xn_2d(HNO3,k)* species(HNO3)%molwt *coef *cfac(HNO3-NSPEC_SHL,i,j)
+      nh3in  = xn_2d(NH3,k) * species(NH3)%molwt  *coef *cfac(NH3-NSPEC_SHL,i,j)
+      no3in  = xn_2d(NO3_f,k) * species(NO3_f)%molwt *coef *cfac(NO3_f-NSPEC_SHL,i,j)
+      nh4in  = xn_2d(NH4_f,k) * species(NH4_f)%molwt *coef *cfac(NH4_f-NSPEC_SHL,i,j)
+!--------------------------------------------------------------------------                
+      call rpmares (so4in, hno3in,no3in ,nh3in, nh4in , rlhum(k), tmpr(k),   &
+                    aSO4out, aNO3out, aH2Oout, aNH4out, gNH3out, gNO3out, &
+                    ERRMARK,debug_flag) 
+ !--------------------------------------------------------------------------
+
+      PM25_water_rh50 (i,j) = max (0., aH2Oout )
+
+
+ end subroutine  Aero_water_MARS
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
  end module My_Aerosols_ml
 

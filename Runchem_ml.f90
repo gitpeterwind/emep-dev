@@ -42,7 +42,7 @@
 
    use My_Aerosols_ml,    only: My_MARS, My_EQSAM, AERO_DYNAMICS,      &
                                 EQUILIB_EMEP, EQUILIB_MARS, EQUILIB_EQSAM,  &
-                                Aero_water   !DUST -> USE_DUST
+                                Aero_water, Aero_water_MARS   !DUST -> USE_DUST
    use My_Timing_ml,      only: Code_timer, Add_2timing,  &
                                 tim_before, tim_after
 
@@ -247,16 +247,17 @@ subroutine runchem(numt)
                       if ( USE_AOD )  &
                         call AOD_calc (i,j,debug_flag)
 
-                   !  PM water:
-! st                    if ( nhour == END_OF_EMEPDAY .or.  End_of_Run ) then
+                   !  Calculates PM water: 1. for ambient condition (3D)
+                   !  and for filter equlibration conditions (2D at surface) 
+                   !  T=20C and Rh=50% for comparability with gravimetric PM
+ 
+                     call Aero_water_MARS(i,j, debug_flag)
 
-                   !  For filter equlibration conditions (2D at surface):
-                   !  T=20C and Rh=50% for comparability with gravimetric PM 
-                        ambient = .false.  ! 
-                        call Aero_water(i,j, ambient, debug_flag)  
-                   !  For real conditions (3D)                    
-                        ambient = .true.
-                        call Aero_water(i,j, ambient, debug_flag)
+!.. Water from EQSAM .......
+!                        ambient = .false.  ! For Rh=50%
+!                        call Aero_water(i,j, ambient, debug_flag)                     
+!                        ambient = .true.  !  For real conditions (3D) 
+!                        call Aero_water(i,j, ambient, debug_flag)
                    
                      call reset_3d(i,j)
 

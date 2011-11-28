@@ -123,9 +123,10 @@ integer, public, parameter :: &
 !OP renamed to ROOH, FIN to PMf, COA to PMc
 ! specials for aerosols. we have 2 fine, 1 coarse and 1 'giant'type
   integer, public, parameter :: &
-       CDDEP_PMfS = 12, CDDEP_PMfN = 13, CDDEP_PMc = 14, CDDEP_SSc = 15
-  integer, dimension(CDDEP_PMfS:CDDEP_SSc), public, parameter :: &
-       AERO_SIZE = (/ 1, 1, 2, 3 /) !1=fine,2=coarse,3=coarse sea salt
+       CDDEP_PMfS = 12, CDDEP_PMfN = 13, CDDEP_PMc = 14,  &
+       CDDEP_SSc = 15,  CDDEP_DUc = 16
+  integer, dimension(CDDEP_PMfS:CDDEP_DUc), public, parameter :: &
+       AERO_SIZE = (/ 1, 1, 2, 3, 4 /) !1=fine,2=coarse,3=coarse sea salt, 4=dust
 
   integer, public, parameter :: CDDEP_SET = -99    
 

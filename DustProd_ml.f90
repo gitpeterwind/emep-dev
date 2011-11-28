@@ -305,6 +305,7 @@
      if ( (glat(i,j) > 36.0 .and. glon(i,j) < 0.0) .or.   &  
           (glat(i,j) > 37.0 .and. glon(i,j) < 45.0) )    then 
         soil_type = 'European Arid'
+        z0 = 0.5e-4        !TEST
         dust_lim = 0.05
         alfa = 1.3e-5 
 !        alfa = 1.5e-5    ! As for TFMM spring 2005

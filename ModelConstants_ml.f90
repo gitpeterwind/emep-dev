@@ -54,7 +54,7 @@ logical, public, parameter :: USE_SEASALT        = .true.   ! ok
 logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
 logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
 logical, public, parameter :: USE_DUST           = .true.  ! Experimental
-logical, public, parameter :: DO_SAHARA          = .false.  ! Turn on/off BG Saharan Dust
+logical, public, parameter :: DO_SAHARA          = .true.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_AOD            = .false.
 logical, public, parameter :: USE_ZREF           = .false.  ! testing
 logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
@@ -117,7 +117,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 56+OFFSET_i, 147+OFFSET_i, 12+OFFSET_i, 102+OFFSET_i /)     ! EGU
  !RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
 ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
-! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
+ RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10
 ! RUNDOMAIN = (/ 20, 167,  1, 122 /)     ! OSPAR/HELCOM domain
 ! RUNDOMAIN = (/ 18, 169,  1, 124 /)     ! OSPAR/HELCOM domain+borders
@@ -130,12 +130,12 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 15+OFFSET_j,  50+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 45+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 !RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 33+OFFSET_j,  55+OFFSET_j /) ! (France)
- RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
+! RUNDOMAIN = (/ 80+OFFSET_i, 106+OFFSET_i, 13+OFFSET_j,  35+OFFSET_j /) ! Southern domain
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
 integer, public, parameter ::  &
-  NPROCX      =   4        & ! Actual number of processors in longitude
-, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   8        & ! Actual number of processors in longitude
+, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
