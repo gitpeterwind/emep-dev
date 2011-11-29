@@ -167,6 +167,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_27  Dave ..... in progress   29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Met_ml - prints chaged t writes in Met_ml (these were already write in rv3_9_20
+ - some reversal of code?)
+
 xxxxxxxx rv3_9_26hdd      Dave     28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 *** Needs pre-processed file with daily DegreeDays. Currently
