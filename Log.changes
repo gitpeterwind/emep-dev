@@ -166,17 +166,24 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
-xxxxxxxx rv3_9_26b  Robert                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxx rv3_9_27b  Robert                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
 My_Derived_ml.f90 - Removed some non-used species corrected the names of some OA-group components
 
-xxxxxxxx rv3_9_26  Svetlana                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_27 Svetlana, Dave              29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+ST:
 Dust outputs in My_Derived_ml.f90
 (SURF_ug_) DUST_NAT_F, DUST_NAT_C, and DUST
 
-xxxxxxxx rv3_9_27  Dave ..... in progress   29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
-Met_ml - prints chaged t writes in Met_ml (these were already write in rv3_9_20
- - some reversal of code?)
+DS:
+Met_ml - prints changed to write in Met_ml (these were already write in rv3_9_20
+ - some reversal of code?). Some more use of DEBUG_Kz
+
+Timefactors - also just tidy up of print/write
+
 
 xxxxxxxx rv3_9_26hdd      Dave     28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
