@@ -166,6 +166,9 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+xxxxxxxx rv3_9_26  Svetlana                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+Dust outputs in My_Derived_ml.f90
+(SURF_ug_) DUST_NAT_F, DUST_NAT_C, and DUST
 
 xxxxxxxx rv3_9_27  Dave ..... in progress   29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -195,9 +198,6 @@ Added option to use degree-days to calculate emission variation.
 
  run.pl - link to DegreeDayFac-${GRID}-$yy
 
-xxxxxxxx rv3_9_26  Svetlana                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
-Dust outputs in My_Derived_ml.f90
-(SURF_ug_) DUST_NAT_F, DUST_NAT_C, and DUST
 
 xxxxxxxx rv3_9_26  Svetlana, Dave, Robert      28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
