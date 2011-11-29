@@ -166,6 +166,9 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+xxxxxxxx rv3_9_26b  Robert                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+My_Derived_ml.f90 - Removed some non-used species corrected the names of some OA-group components
+
 xxxxxxxx rv3_9_26  Svetlana                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 Dust outputs in My_Derived_ml.f90
 (SURF_ug_) DUST_NAT_F, DUST_NAT_C, and DUST
