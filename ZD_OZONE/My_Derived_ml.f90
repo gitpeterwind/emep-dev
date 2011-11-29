@@ -136,7 +136,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(31+9+24+2) :: &
+   type(typ_s5i), public, parameter, dimension(34+9+24+2) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -178,6 +178,8 @@ private
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
        ! ppb
         ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
         ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
@@ -199,6 +201,7 @@ private
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
       !CityZen Outputs
       !  ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d
       !  ,typ_s5i("NO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
