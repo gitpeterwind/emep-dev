@@ -17,7 +17,8 @@
 ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
-run=EmChem09soa
+run=CRI_v2_R5
+
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
   spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
@@ -32,8 +33,14 @@ elif [ $run == EmChem09soa ]; then
 	 ../ZCM_EmChem09/Dust \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
          ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
+
+elif [ $run == CRI_v2_R5 ]; then
+  echo "RUN CRI_v2_R5 chosen"
+  spcs=( CRI_v2_R5base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_EmChem09/PMmass )  # EmChem09
+  rcns=( CRI_v2_R5base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/PMmass )  # EmChem09 a
+
 else
-  echo "SELECTION of run failed!! "
+  echo "SELECTION of run $run failed!! "
   exit
 fi
 
