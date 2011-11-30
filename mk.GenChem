@@ -17,7 +17,8 @@
 ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
 #EmChem09 
-run=CRI_v2_R5
+#run=CRI_v2_R5
+run=EmChem09soa
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"

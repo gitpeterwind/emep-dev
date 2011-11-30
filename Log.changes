@@ -167,6 +167,36 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_28   Dave/Robert               30th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Bug-fix   some POC_ components that were a part of PART_OM_F were  included  also
+included  in PMFINE, resulting in some double count.
+
+Fixed in ZCM_EmChem09soa files
+
+Also, "WOOD" EC, OC emissions removed in ZCM_EmChem09soa/EMISSPLIT files since they
+were basically fake. Better zero than low values that will one day confuse somebody.
+
+
+Met_ml DEBUG_Kz added, but we have print again. Why? This was changed below?
+
+Timefactors_ml - debug cleanup
+
+mk.GenChem - defaulted to EmChem09soa (but users should check!
+)
+
+PMFINE label removed from:
+ZCM_EmChem09soa/VBS_nonvolatil
+
+WOOD removed from
+ZCM_EmChem09soa/EMISSPLIT/emissplit.defaults.pm25
+ZCM_EmChem09soa/EMISSPLIT/emissplit.defaults.pmco
+
+My_Derived_ml - commented out WOOD outputs (to precent future
+  confusion. All organics are now called FFUEL, which is also
+  confusing, but zero wood should give a hint.)
+
+
 
 xxxxxxxx rv3_9_27c  Dave                      29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 

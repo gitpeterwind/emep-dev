@@ -201,8 +201,9 @@ contains
            if ( ios <  0 ) exit     ! End of file
 
            fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
-           if( DEBUG ) write(*,"(a,3i4,f8.3)") "MIN tfac ", &
-                   inland,insec,iemis, fac_min(inland,insec,iemis)
+           if( DEBUG.and.insec==ISNAP_DOM  ) write(*,"(a,3i3,f7.3,a,12f6.1)") "MIN tfac ", &
+               inland,insec,iemis, fac_min(inland,insec,iemis),&
+                 " : ",  ( fac_emm(inland,mm,insec,iemis), mm=1,12)
 
            call CheckStop( ios, "Timefactors: Read error in Monthlyfac")
 
@@ -345,12 +346,12 @@ contains
     if (DEBUG) write(unit=6,fmt=*) "End of subroutine timefactors"
 
     if (DEBUG ) then 
-       print *, " test of time factors, UK: "
+       write( *,*) " test of time factors, UK: "
        do mm = 1, 12
-           print "(i2,i6,f8.3,3f8.4)", mm, nydays, sumfac,  &
+           write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
             fac_emm(27,mm,2,1), fac_edd(27,1,2,1), fac_edd(27,7,2,1)
        end do ! mm
-       print *, " day factors traffic are", day_factor(7,0), day_factor(7,1)
+       write(*,*) " day factors traffic are", day_factor(7,0), day_factor(7,1)
     end if ! DEBUG
 
  end subroutine timefactors
@@ -480,11 +481,11 @@ contains
        jjj = ijloc(2)+lj0-1
        checkmax = maxval( gridfac_HDD(li0:li1,lj0:lj1))
 
-       !print "(a,i3, 4x, 3i4,4x,3i4)", "DEBUG GRIDFAC IJS", me,  li0, li1, MAXLIMAX, lj0, lj1, MAXLJMAX
-       print "(a,2i4,3f10.2,20i4)", "DEBUG GRIDFAC MAx", me, daynumber, &
-           checkmax, gridfac_HDD(iii,jjj), tmpt2(iii,jjj),  ijloc(1), ijloc(2), i_fdom(iii), j_fdom(jjj)
+       write(*,"(a,2i4,3f10.2,20i4)") "DEBUG GRIDFAC MAx", me, daynumber, &
+           checkmax, gridfac_HDD(iii,jjj), tmpt2(iii,jjj), &
+             ijloc(1), ijloc(2), i_fdom(iii), j_fdom(jjj)
   
-       if( me==3) then
+       if( debug_proc ) then
            write(*,"(a,3i4,2f12.3)") "GRIDFACDAY ", daynumber, &
              i_fdom(iii), j_fdom(jjj),  tmpt2(iii,jjj), 0.001*gridfac_HDD(iii,jjj)
        end if
@@ -495,7 +496,7 @@ contains
     if ( DEBUG .and. debug_proc ) then
        iii = debug_li
        jjj = debug_lj
-       print *, "DEBUG GRIDFAC", me, daynumber, iii, jjj, tmpt2(iii,jjj),  gridfac_HDD(iii, jjj)
+       write(*,*) "DEBUG GRIDFAC", me, daynumber, iii, jjj, tmpt2(iii,jjj),  gridfac_HDD(iii, jjj)
     end if
 
 

@@ -1824,7 +1824,7 @@ contains
               if(debug_proc ) then  
                    i = debug_iloc
                    j = debug_jloc
-              if(invL_nwp(i,j) >= OB_invL_LIMIT ) then  
+              if(DEBUG_Kz .and. invL_nwp(i,j) >= OB_invL_LIMIT ) then  
                    do k = 15, KMAX_MID
                    print "(a,i3,f7.1,3es11.3)", "DEBUG SKz_m2s",k,&
                       pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
@@ -1866,7 +1866,7 @@ contains
               if(debug_proc) then  
                    i = debug_iloc
                    j = debug_jloc
-              if(invL_nwp(i,j) <  OB_invL_LIMIT ) then  
+              if(DEBUG_Kz .and. invL_nwp(i,j) <  OB_invL_LIMIT ) then  
                    do k = 15, KMAX_MID
                    print "(a,f7.1,3es10.3)", "DEBUG UKz_m2s", pzpbl(i,j), invL_nwp(i,j), ustar_nwp(i,j), Kz_m2s(i,j,k)
                    end do
