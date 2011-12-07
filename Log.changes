@@ -167,6 +167,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_29   Peter               7th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Bug in Convection_ml. BC where modified by the routine. No effect for global runs, becase they don't have BC.
+
+
 xxxxxxxx rv3_9_28   Dave/Robert               30th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Bug-fix   some POC_ components that were a part of PART_OM_F were  included  also
