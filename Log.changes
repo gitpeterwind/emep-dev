@@ -166,6 +166,11 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+xxxxxxxx rv3_9_30   Robert             14th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Bug-fix   ZD_VBS/My_SOA_ml.f90 - Factor of 12 too low OM-concentrations stored in netcdf-files for 
+                                 FFIREOA25_OM, WOODOA25_OM and FFUELOA25_OM in earlier versions (only affects  
+                                 stored "help" species, that is no change in the "real" model species)
 
 xxxxxxxx rv3_9_29   Peter               7th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 

@@ -444,9 +444,9 @@ module OrganicAerosol_ml
      xn(PART_ASOA_OM,k)  = sum ( ug_semivol(ASOA,k) ) * ugC2xn * 12.0 
      xn(PART_BSOA_OM,k)  = sum ( ug_semivol(BSOA,k) ) * ugC2xn * 12.0 
 !RB want to have PART_FFUELOA25/FFIREOA/WOODOA_OM working also with nonvolatile POA emissions, test this hard coded version first
-     xn(PART_FFUELOA25_OM,k)  = sum ( ug_semivol(FFUELOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFUELOC25,k) * 1.25
-     xn(PART_WOODOA25_OM,k)  = sum ( ug_semivol(WOODOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_WOODOC25,k) * 1.7
-     xn(PART_FFIREOA25_OM,k)  = sum ( ug_semivol(FFIREOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFIREOC25,k) * 1.7
+     xn(PART_FFUELOA25_OM,k)  = sum ( ug_semivol(FFUELOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFUELOC25,k) * 1.25 * 12.0 ! factor 12.0 from M(OC25-components)=12 and M(OM-components)=1, OM/OC=1.25 assumed for Primary FFUELOC emissions
+     xn(PART_WOODOA25_OM,k)  = sum ( ug_semivol(WOODOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_WOODOC25,k) * 1.7 * 12.0 ! OM/OC=1.25 assumed for Primary WOODOC and FFIRE emissions
+     xn(PART_FFIREOA25_OM,k)  = sum ( ug_semivol(FFIREOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFIREOC25,k) * 1.7 * 12.0 
 
 !HARDCODE
 !   xn(AER_TBSOA,k)  =  xn(AER_BSOA,k)  ! Just in case TBSOA is wanted for kam
