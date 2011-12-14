@@ -50,7 +50,7 @@
  use EmisDef_ml,           only : NDU, QDUFI, QDUCO
  use Functions_ml,         only : ERFfunc
  use ChemChemicals_ml,     only : species
- use ChemSpecs_tot_ml,     only : DUST_NAT_F
+ use ChemSpecs_tot_ml,     only : DUST_WB_F !DUST_NAT_F
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
  use Io_ml,                only : PrintLog
  use Landuse_ml,           only : LandCover, NLUMAX 
@@ -112,8 +112,8 @@
                      z10 = 10.0             ! Z=10m
    real ::  Mflux = 0.0 
    real ::  cover, z0, vh2o_sat, gr_h2o, v_h2o, ustar_moist_cor    &
-          , gwc_thr, dust_lim, soil_dns_dry, ustar_z0_cor   &
-          , alfa, ustar_th, uratio, ustar, clay           &
+          , gwc_thr, dust_lim, soil_dns_dry, ustar_z0_cor, u10     &
+          , u10g_2, u10_gust, alfa, ustar_th, uratio, ustar, clay  &
           , frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
 
    logical :: arable, dust_prod = .false.
@@ -132,7 +132,8 @@
 
         call init_dust
 
-          kg2molecDU = 1.0e-3 * AVOG / species(DUST_NAT_F)%molwt 
+          kg2molecDU = 1.0e-3 * AVOG / species(DUST_WB_F)%molwt
+                                      !species(DUST_NAT_F)%molwt 
           my_first_call = .false.
 
     end if !  my_first_call
@@ -362,19 +363,30 @@
 
 
 !//__ Account for wind gustiness under free convection (Beljaars,QJRMS,1994)
-
+!!!!!!!  Under Testing  !!!!!!!
+!
 !   if (foundws10_met) then
 !       u10=ws_10m(i,j,1) 
 !   else 
 !       u10 = Wind_at_h (Grid%u_ref, Grid%z_ref, Z10, Sub(lu)%d,   &
 !                           Sub(lu)%z0,  Sub(lu)%invL)
 !   end if
-!   ustar = KARMAN/log(10.0/z0) *   &
-!           sqrt(u10*u10 + 1.44 *Grid%wstar*Grid%wstar)
+!   
+!   u10g_2 = u10*u10 + 1.44 *Grid%wstar*Grid%wstar
+!
+!   if ( u10g_2 > 0.0 ) then
+!       u10_gust = sqrt(u10*u10 + 1.44 *Grid%wstar*Grid%wstar)
+!   else
+!       u10_gust = u10
 !   endif
+!
+!   ustar = KARMAN/log(10.0/z0) *   &
+!           sqrt(u10_gust*u10_gust + 1.44 *Grid%wstar*Grid%wstar)
+
 !.. Gives too low U*; Sub(lu)%ustar=0.1 always-> both too low to generate dust
 
 !//__ U* from NWP model ____
+
     ustar = Grid%ustar 
 
    if (DEBUG_DUST .and. debug_flag)  then
@@ -391,17 +403,17 @@
     if(DEBUG_DUST .and. debug_flag) write(6,'(a30,f8.2)')  &
          ' Saltation occur U*th/U* => ',   ustar_th/ustar
 
-!//  Increase of friction velocity =========== NOT USED ==========  NOT USED
-!    by surface roughness length and friction speeds (Owens effect)
- 
-  !== Saltation roughens the boundary layer, AKA "Owen's effect"
-  !  GMB98 p. 6206 Fig. 1 shows observed/computed u* dependence on observed U(1 m)
-  !  GMB98 p. 6209 (12) has u* in cm s-1 and U, Ut in m s-1, personal communication, 
-  !  D. Gillette, 19990529
-  !  With everything in MKS, the 0.3 coefficient in GMB98 (12) becomes 0.003 
-  !  Increase in friction velocity due to saltation varies as square of 
-  !  difference between reference wind speed and reference threshold speed
- 
+!----     !!!!!!!  Under Testing  !!!!!!! --------------------------
+!//  Increase of friction velocity by surface roughness length 
+!    and friction speeds (Owens effect)
+!== Saltation roughens the boundary layer, AKA "Owen's effect"
+!  GMB98 p. 6206 Fig. 1 shows observed/computed u* dependence on observed U1m
+!  GMB98 p. 6209 (12) has u* in cm s-1 and U, Ut in m s-1 (pers. comm.)  
+!  D. Gillette, 19990529
+!  With everything in MKS, the 0.3 coefficient in GMB98 (12) becomes 0.003 
+!  Increase in friction velocity due to saltation varies as square of 
+!  difference between reference wind speed and reference threshold speed
+
 !//__ Threshold 10 m wind speed [m s-1] for saltation
 !    u_th10 = ustar_th/KARMAN * log(z10/z0) 
 !!..or    u_th10 = u10 * ustar_th / ustar ! [m s-1]
@@ -410,8 +422,7 @@
 !      ustar = ustar + owens ! [m s-1] Saltating friction velocity
 !    if(DEBUG_DUST .and. debug_flag)  write(6,'(a20,3f10.3)')   &
 !             'Owens effect ',ustar-owens, owens , ustar
-! ============================================  NOT USED ==========  NOT USED
-
+!----------------------------------------------------------------------
 
 !//__ Calculate U*th / U* ratio
     uratio = ustar_th / ustar 

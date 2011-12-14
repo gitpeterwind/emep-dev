@@ -1,5 +1,7 @@
 *
 *"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments*"
 *
-Dust_nat_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PMFINE;PM10;DUST;AOD,,!
-Dust_nat_c,1,xx,200,DUc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;AOD,,!
+Dust_wb_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PMFINE;PM10;DUST;DUST_NAT_F;AOD,,!
+Dust_wb_c,1,xx,200,DUc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;DUST_NAT_C;AOD,,!
+Dust_sah_f,1,xx,200,PMfS,PMf,1.0,0,0,xx,PMFINE;PM10;DUST;DUST_NAT_F;AOD,,!
+Dust_sah_c,1,xx,200,DUc,PMc,0.3,0,0,xx,PMCO;PM10;DUST;DUST_NAT_C;AOD,,!

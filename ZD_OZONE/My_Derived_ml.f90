@@ -178,8 +178,10 @@ private
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
-        ,typ_s5i("DUST_NAT_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
-        ,typ_s5i("DUST_NAT_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("DUST_WB_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("DUST_WB_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("DUST_SAH_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("DUST_SAH_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
        ! ppb
         ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
         ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
@@ -200,7 +202,9 @@ private
         ,typ_s5i("PMFINE    ",  "ug ", D2,"AIR_CONCS", GROUP, D)& !30
         ,typ_s5i("PM10      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("PMCO      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
-        ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("SS        ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("DUST_NAT_F",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("DUST_NAT_C",  "ug ", D2,"AIR_CONCS", GROUP, D)&
         ,typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D)& 
       !CityZen Outputs
       !  ,typ_s5i("O3        ", "ug ", D2,"AIR_CONCS", SPEC, D)& ! test 3d

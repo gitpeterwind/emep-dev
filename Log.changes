@@ -166,6 +166,13 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+xxxxxxxx rv3_9_30   Svetlana           14th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Natural dust is split to WB (windblown) and SAH (Saharan):
+DustProd_ml.f90, My_Derived_ml.f90
+ZCM_EmChem09/Dust.species and Dust.reactions,
+SAFE.CM_BoundaryConditions.inc in ZCM_EmChem09 and ZCM_EmChem09soa
+
 xxxxxxxx rv3_9_30   Robert             14th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Bug-fix   ZD_VBS/My_SOA_ml.f90 - Factor of 12 too low OM-concentrations stored in netcdf-files for 
