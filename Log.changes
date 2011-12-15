@@ -11,7 +11,7 @@ IMPORTANT NOTE:
   ]
     make clean
     make
-    edit run.pl for year etc.
+    edit run.pl for year, Chem etc.
 
 SOIL NOx ISSUES - Mainly think about (1) for policy
 
@@ -168,6 +168,9 @@ ds done   My_SOA_ml.f90
 !
 
 xxxxxxxx rv3_9_32   Dave       15th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Output_hourly.f90 - bug fix, but results don't change for normal usage
+   (showed up with DEBUG_OUT_HOUR true, debug in Makefile)
 
 ZD_OZONE/My_Derived_ml - added SoilNO emissions
 ZD_OZONE/My_Outputs_ml - added SoilNO emissions
