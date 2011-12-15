@@ -38,8 +38,8 @@
   bc2xn_adv(IBC_H2O2    ,IXADV_H2O2    )   =   1.0
 !EMEP:
 !SS  bc2xn_adv(IBC_CH3COO2 ,IXADV_CH3COO2 )   =   1.0
-  bc2xn_adv(IBC_DUST_f  ,IXADV_DUST_NAT_F )  = 1.0  !Dust
-  bc2xn_adv(IBC_DUST_c  ,IXADV_DUST_NAT_C )  = 1.0  !Dust
+  bc2xn_adv(IBC_DUST_f  ,IXADV_DUST_SAH_F )  = 1.0  !Dust
+  bc2xn_adv(IBC_DUST_c  ,IXADV_DUST_SAH_C )  = 1.0  !Dust
 !SKIP  bc2xn_adv(IBC_CH3COO2 ,IXADV_C2O3 )   =   1.0 !CB05
 !QUERY??
 
