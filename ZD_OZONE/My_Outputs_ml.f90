@@ -66,7 +66,7 @@ integer, public, parameter :: &
   ,NADV_SITE  = NSPEC_ADV  & ! No. advected species (1 up to NSPEC_ADV)
   ,NSHL_SITE  = NSPEC_SHL  & ! No. short-lived species
   ,NXTRA_SITE_MISC =    2     & ! No. Misc. met. params  ( e.g. T2, d_2d)
-  ,NXTRA_SITE_D2D  =    5       ! No. Misc. met. params  ( e.g. T2, d_2d)
+  ,NXTRA_SITE_D2D  =    9       ! No. Misc. met. params  ( e.g. T2, d_2d)
 
 integer, public, parameter, dimension(NADV_SITE) :: &
   SITE_ADV =  (/ (isite, isite=1,NADV_SITE) /)  ! Everything
@@ -89,15 +89,19 @@ character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
 !These variables must have been set in My_Derived for them to be used.
 character(len=18), public, parameter, dimension(NXTRA_SITE_D2D) :: &
   SITE_XTRA_D2D= (/ &
-    "HMIX           ","PSURF          ", &
-    "ws_10m         ", &
-    "rh2m           ", &
+    "HMIX             ","PSURF            ", &
+    "ws_10m           ", &
+    "rh2m             ", &
+    "Emis_mgm2_C5H8   ", &
+    "Emis_mgm2_APINENE", &
+    "Emis_mgm2_SoilNO ",&
+    "Emis_mgm2_nox    ",&
 !   "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
 !   "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
 !   "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
 !   "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
 !   "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
-    "COLUMN_NO2_k20 " /)
+    "COLUMN_NO2_k20   " /)
 
 !/*** Aircraft outputs   (used in Polinat_ml)
 !==============================================================
