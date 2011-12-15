@@ -58,7 +58,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use ChemSpecs_shl_ml ,only: NSPEC_SHL          ! Maps indices
   use ChemChemicals_ml ,only: species            ! Gives names
   use GridValues_ml,    only: i_fdom, j_fdom,&   ! Gives emep coordinates
-                              debug_li,debug_lj
+                              debug_proc, debug_li,debug_lj
   use Io_ml,            only: IO_HOURLY
   use ModelConstants_ml,only: KMAX_MID, MasterProc, &
                               IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS, &
@@ -119,7 +119,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   !/ Ensure that domain limits specified in My_Outputs lie within
   !  model domain. In emep coordinates we have:
 
-    do ih = 1, NHOURLY_OUT
+    do ih = 1, NHOURLY_OUT 
       hr_out(ih)%ix1 = max(IRUNBEG,hr_out(ih)%ix1)
       hr_out(ih)%iy1 = max(JRUNBEG,hr_out(ih)%iy1)
       hr_out(ih)%ix2 = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
@@ -165,16 +165,17 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
     hr_out_type=hr_out(ih)%type
     hr_out_nk=hr_out(ih)%nk
     if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup",&
-                          "COLUMN      ","COLUMNgroup "/)))hr_out_nk=1
+                          "COLUMN      ","COLUMNgroup ","D2D         "/)))hr_out_nk=1
 
     KVLOOP: do k = 1,hr_out_nk
 
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec
       name  = hr_out(ih)%name
-      if ( DEBUG ) &
-        write(6,'(A,2(1X,I0),1X,A,/A,1X,A)')"DEBUG OH", me, ispec, &
-          trim(name),"INTO HOUR TYPE", trim(hr_out(ih)%type)
+      if ( DEBUG .and. debug_proc ) &
+        write(6,'(a,2i4,1X,a,/a,1X,a)')"DEBUG DERIV HOURLY", ih, ispec, &
+          trim(name),"INTO HOUR TYPE:", &
+           trim(hr_out(ih)%type) // " "//trim(hr_out(ih)%name)
 
       if(any(hr_out_type==(/"COLUMN     " ,"COLUMNgroup"/)))then
         ik=KMAX_MID-hr_out(ih)%nk+1  ! top of the column
@@ -219,6 +220,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
    !----------------------------------------------------------------
 
       OPTIONS: select case ( trim(hr_out_type) )
+        
         case ( "ADVppbv" )
           itot = NSPEC_SHL + ispec
           name = species(itot)%name
@@ -266,7 +268,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
             write(6,'(a,i5,a10,i5)')"K-level", ik, trim(name), itot
 
         case ( "ADVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at the surface
-          call group_setup()
+          call group_setup(ih)
           forall ( i=1:limax, j=1:ljmax)
             hourly(i,j) = dot_product(xn_adv(gspec,i,j,KMAX_MID),&
                                       cfac(gspec,i,j) & ! 50m->3m conversion
@@ -274,11 +276,11 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * roa(i,j,KMAX_MID,1)           ! density.
           end forall
           if ( DEBUG  ) &
-            write(6,'(2a10,i7)')"Surface", trim(name), gspec+NSPEC_SHL
+            write(6,'(2a10,99i5)')"Surface", trim(name), gspec+NSPEC_SHL
           deallocate(gspec,gunit_conv)
 
         case ( "BCVugXXgroup" )  ! GROUP output in ug/m3, ugX/m3 at model mid-levels
-          call group_setup()
+          call group_setup(ih)
           forall ( i=1:limax, j=1:ljmax)
             hourly(i,j) = dot_product(xn_adv(gspec,i,j,ik), &
                                       gunit_conv(:))  & ! Units conv.
@@ -310,7 +312,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           enddo
 
         case ( "COLUMNgroup" )! GROUP Column output in ug/m2, ugX/m2, molec/cm2
-          call group_setup()
+          call group_setup(ih)
           if(ih>1) hourly(:,:) = 0.0
           do iik=ik,KMAX_MID
             forall ( i=1:limax, j=1:ljmax)
@@ -369,22 +371,35 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           end forall
 
         case ( "D2D" )
+         ! Here ispec is the index in the f_2d arrays
           call CheckStop(ispec<1.or.ispec>num_deriv2d,"ERROR-DEF! Hourly_out: "&
                          //trim(hr_out(ih)%name)//", wrong D2D id!")
           if(hr_out(ih)%unit=="") hr_out(ih)%unit = f_2d(ispec)%unit
           unit_conv = hr_out(ih)%unitconv*f_2d(ispec)%scale
           if(f_2d(ispec)%avg)then           ! non accumulated variables
+              if( DEBUG .and. debug_proc ) write(*,*) " D2Davg ",&
+              trim(hr_out(ih)%name), ih, ispec, trim(f_2d(ispec)%name), f_2d(ispec)%avg
             forall ( i=1:limax, j=1:ljmax)
               hourly(i,j) = d_2d(ispec,i,j,IOU_INST) * unit_conv
             end forall
           else                              ! hourly accumulated variables
+              if( DEBUG .and. debug_proc ) then
+                 i=debug_li
+                 j=debug_lj
+                 write(*,"(2a,2i4,a,3g12.3)") "OUTHOUR D2Dpre ",&
+                   trim(hr_out(ih)%name), ih, ispec,&
+                    trim(f_2d(ispec)%name),&
+                    d_2d(ispec,i,j,IOU_YEAR),& 
+                    d_2d(ispec,i,j,IOU_HOUR_PREVIOUS),  unit_conv
+               end if
+              
             forall ( i=1:limax, j=1:ljmax)
               hourly(i,j) = (d_2d(ispec,i,j,IOU_YEAR)&
                             -d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)) * unit_conv
               d_2d(ispec,i,j,IOU_HOUR_PREVIOUS)=d_2d(ispec,i,j,IOU_YEAR)
             end forall
           endif
-          if( DEBUG ) &
+          if( DEBUG .and. debug_proc ) &
             write(6,'(a,2i3,2es12.3)')"HHH DEBUG D2D", ispec, ih, &
               hr_out(ih)%unitconv, hourly(debug_li,debug_lj)
 
@@ -394,9 +409,9 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
       end select OPTIONS
 
-      if(DEBUG) then
-        write(6,*)"DEBUG-HOURLY-TH ",me,ih,ispec,hourly(debug_li,debug_lj),&
-                hr_out(ih)%unitconv
+      if(DEBUG .and. debug_proc ) then
+        write(6,"(a,3i4,2g12.3)")"DEBUG-HOURLY-OUT:"//trim(hr_out(ih)%name),&
+           me,ih,ispec, hourly(debug_li,debug_lj), hr_out(ih)%unitconv
       endif
 
       !/ Get maximum value of hourly array
@@ -488,13 +503,22 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
   contains
 
-  subroutine group_setup()
+  subroutine group_setup(ih)
+    integer, intent(in) :: ih
+    integer :: ispec, n ! for debug
+    integer :: gindex, gsize ! Index and size of group, for clarity
+
+    gindex = hr_out(ih)%spec
+
     if(allocated(gspec)) deallocate(gspec)
-    select case ( hr_out(ih)%spec )
+    select case ( gindex  )
       case (1:size(chemgroups))
-        name = trim(chemgroups(hr_out(ih)%spec)%name)//"_"//trim(hr_out(ih)%unit)
-        allocate(gspec(size(chemgroups(hr_out(ih)%spec)%ptr)))
-        gspec=chemgroups(hr_out(ih)%spec)%ptr-NSPEC_SHL
+        name = trim(chemgroups( gindex )%name)//"_"//trim(hr_out(ih)%unit)
+        gsize = size( chemgroups( gindex )%ptr )
+        allocate( gspec( gsize ) )
+        gspec=chemgroups( gindex )%ptr-NSPEC_SHL
+        if ( DEBUG.and.debug_proc ) &
+           write(*,*) "GROUP_SETUP "//trim(name), ih, gindex, gspec
       case DEFAULT
         call CheckStop( "ERROR-DEF! Hourly_out: "//&
                         " hourly variable "//trim(hr_out(ih)%name)//&
@@ -513,8 +537,13 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         "ERROR-DEF! Hourly_out: "//trim(hr_out(ih)%type)//&
                         "hourly, wrong group unit='"//trim(hr_out(ih)%unit)//"'!")
     end select
-    if ( DEBUG ) write(6,*) name,trim(species(gspec(ispec)+NSPEC_SHL)%name),&
+    if ( DEBUG ) then
+     do ispec = 1, gsize
+        write(6,*) "GROUP_SETUP DONE "//trim(name) // " ",  &
+               trim(species(gspec(ispec)+NSPEC_SHL)%name),&
                             gspec(ispec),ispec,size(gspec)
+     end do
+    end if
   end subroutine group_setup
 
 end subroutine hourly_out
