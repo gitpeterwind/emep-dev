@@ -167,6 +167,12 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_33   Dave       16th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+BUG-fix ... for years prior to 2008 (EECCA) the deep soil water
+was incorrectly set when the data weren't found. Now defaults
+to fSW = 1.0 if no data found, and prints warning to RunLog.
+
 xxxxxxxx rv3_9_32   Dave       15th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Output_hourly.f90 - bug fix, but results don't change for normal usage

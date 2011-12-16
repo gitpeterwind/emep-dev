@@ -28,10 +28,12 @@
 module SoilWater_ml
  use GridValues_ml,     only : debug_proc, debug_li, debug_lj, i_fdom, j_fdom,&
                              longitude => glon
+ use Io_Progs_ml,       only : PrintLog
  use Landuse_ml,        only : water_fraction
  use LocalVariables_ml, only: Grid
  use Met_ml,            only : extendarea
- use MetFields_ml,      only : SoilWater_deep, nwp_sea, SoilWaterSource
+ use MetFields_ml,      only : SoilWater_deep, nwp_sea, SoilWaterSource &
+                               ,foundSoilWater_deep  ! false if no SW-deep
  use ModelConstants_ml, only : USE_SOILWATER, DEBUG_SOILWATER
  use Par_ml,            only : limax, ljmax, MAXLIMAX, MAXLJMAX, me
  use TimeDate_ml,       only : current_date, daynumber
@@ -83,6 +85,12 @@ contains
         current_date%day, current_date%hour, current_date%seconds
 
       if ( .not. USE_SOILWATER  ) return ! and fSW has been set to 1. at start
+      if ( .not. foundSoilWater_deep  ) then
+        if( my_first_call ) &
+           call PrintLog("WARNING: USE_SOILWATER=true, but no deep SW found")
+        my_first_call = .false.
+        return ! and fSW has been set to 1. at start
+      end if
 
 
       ! We reset once per day, but need to loop through the cells to find
