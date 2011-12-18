@@ -655,7 +655,10 @@ rcemis:BPINENE                        = BPINENE ; # Anthropogenic
 *
 * <----------- Biogenic/natural emissions ----------------------------->
 rcbio(BIO_ISOP,k)                       = C5H8    ;
-rcbio(BIO_TERP,k)                       = APINENE ;
+* Dec 2011. We keep only isoprene for Garry's paper:
+*SKIP rcbio(BIO_TERP,k)                       = APINENE ;
+* But add Soil NO
+rcbio(BIO_SOILNO,k)                       = NO ;
 rc_Rn222(k)                             = Rn222    ;
 
 *

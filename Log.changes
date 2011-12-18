@@ -171,6 +171,10 @@ xxxxxxxx rv3_9_3xx  not rtagged 6th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
   run.pl - Modrun11 set as default.
 
+  ZCM_CRI_v2_R5
+     commnted out APIN in RCBIO
+     added soil NO
+
 xxxxxxxx rv3_9_33   Dave       16th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 BUG-fix ... for years prior to 2008 (EECCA) the deep soil water
