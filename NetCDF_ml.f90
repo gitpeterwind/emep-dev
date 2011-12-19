@@ -1845,8 +1845,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      !Find chunk of data required (local)
      maxlon=max(maxval(gl_stagg),maxval(glon))
      minlon=min(minval(gl_stagg),minval(glon))
-     maxlat=maxval(gb_stagg)
-     minlat=minval(gb_stagg)
+     maxlat=max(maxval(gb_stagg),maxval(glat))
+     minlat=min(minval(gb_stagg),minval(glat))
 
      if(debug) then
          write(*,*) "SET Grid resolution:" // trim(fileName), Grid_resolution
@@ -2340,10 +2340,10 @@ subroutine printCDF(name, array,unit)
     integer :: varID,ncFileID,ndims
     integer :: xtype,dimids(NF90_MAX_VAR_DIMS),nAtts
     integer, parameter::wordarraysize=20
-    character*50 ::varname,period,since,name,timeunit,wordarray(wordarraysize)
+    character*50 ::varname,period,since,name,timeunit,wordarray(wordarraysize),calendar
 
     integer :: yyyy,mo,dd,hh,mi,ss,julian,julian_1900,diff_1900,nwords,errcode
-
+    logical:: proleptic_gregorian
 
     status = nf90_open(path = trim(fileName), mode = nf90_nowrite, ncid = ncFileID)
     call CheckStop(status /= nf90_noerr, "ReadTimeCDF, file not found: "//trim(fileName))
@@ -2386,9 +2386,17 @@ subroutine printCDF(name, array,unit)
     ss=0
 !    read(wordarray(7),*)mi
 !    read(wordarray(8),*)ss  !did not work ??? 
+    status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
+    proleptic_gregorian=.false.
+    if(status == nf90_noerr)then
+       if(trim(calendar)=='proleptic_gregorian')then
+          if(DEBUG_NETCDF.and.me==0)write(*,*)'found proleptic_gregorian calendar'
+          proleptic_gregorian=.true.
+       endif
+    endif
 
 
-    if(yyyy/=0)then
+    if(yyyy/=0.or.proleptic_gregorian)then
 !       read(date,fmt="(I4.4,a1,I2.2,a1,I2.2)")yyyy,s1,mo,s2,dd
 !       read(time,fmt="(I2.2,a1,I2.2,a1,I2.2)")hh,s1,mi,s2,ss
 

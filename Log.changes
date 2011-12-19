@@ -167,6 +167,11 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_3xx Peter not rtagged 19th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+ReadTime: include the proleptic_gregorian calendar
+
+
 xxxxxxxx rv3_9_3xx  not rtagged 6th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
   run.pl - Modrun11 set as default.
