@@ -1232,7 +1232,7 @@ subroutine reset_3D(ndays_indate)
      CALL MPI_BCAST(data,8*GIMAX_ext*GJMAX_ext*KMAX_ext,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
      
      !overwrite everything 3D (init)
-     forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax) &
+     forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) &
       xn_adv(n,i,j,k)=(Weight(i,j,1)*data(IIij(i,j,1),JJij(i,j,1),k1_ext(k)) &
                      +Weight(i,j,2)*data(IIij(i,j,2),JJij(i,j,2),k1_ext(k)) &
                      +Weight(i,j,3)*data(IIij(i,j,3),JJij(i,j,3),k1_ext(k)) &

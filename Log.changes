@@ -170,6 +170,11 @@ ds done   My_SOA_ml.f90
 xxxxxxxx rv3_9_3xx Peter not rtagged 19th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 ReadTime: include the proleptic_gregorian calendar
+Nest_ml: for 3D IC files with different vertical levels was wrong.
+	replaced 
+	forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax) 
+with
+	forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) 
 
 
 xxxxxxxx rv3_9_3xx  not rtagged 6th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
