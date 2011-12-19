@@ -147,6 +147,7 @@ contains
     real    :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     integer :: i,j,nstart, alloc_err
     logical :: my_first_call = .true.   ! DSFF
+    logical :: my_first_defs = .true. 
     integer :: dd_old = -1,  n
     real    :: fac, to_kgm2s   
     character(len=TXTLEN_SHORT), dimension(NBBSPECS) :: FF_names
@@ -290,12 +291,14 @@ contains
 
       BiomassBurningEmis(n,:,:) = rdemis(:,:)
 
-      call PrintLog("ForestFire_ml :: Assigns "//trim(FF_poll) , MasterProc)
+      if ( my_first_defs ) call PrintLog(&
+        "ForestFire_ml :: Assigns "//trim(FF_poll) , MasterProc)
 
       if(DEBUG_FORESTFIRE) sum_emis(n) = sum_emis(n) + &
                                sum( BiomassBurningEmis(n,:,:) )
 
   end do ! BB_DEFS
+      my_first_defs  = .false.
 
     !/ Logical to let Unimod know if there is any emission here to
     !  worry about
