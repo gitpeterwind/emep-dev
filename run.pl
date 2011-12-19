@@ -10,7 +10,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=64:ib
 # wall time limit of run
-#PBS -lwalltime=08:50:00
+#PBS -lwalltime=24:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -249,8 +249,9 @@ my $CityZen = 0 ;
   #$Chem     = "Eucaari_Trends";      # Label for chemical scheme used
 my $VBS   = 0;
 my $Chem     = "EmChem09soa";
+#$Chem     = "CRI_v2_R5";
 
-my $testv = "rv3_9_33";
+my $testv = "rv3_9_4";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -322,20 +323,10 @@ my ($EMIS_INP, $emisdir, $pm_emisdir);
 $EMIS_INP = "$DATA_LOCAL"                   if $STALLO;
 $EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
 
-# Dave trying to tidy up::
-#$emisdir = "$EMIS_INP/Modrun06/2006-Trend$year-V7"  if (1990 <= $year) and
-#                                                      ($year <= 2004);
-#$emisdir = "$EMIS_INP/Modrun07/2007-Trend2005-V9"   if $year eq 2005;
-#$emisdir = "$EMIS_INP/Modrun08/2008-Trend2006-V9-Extended_PM_corrected-V2"
-#                                                    if $year eq 2006;
-#$emisdir = "$EMIS_INP/Modrun09/2009-Trend2007-CEIP" if $year eq 2007;
-#$emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
-#$emisdir = "$EMIS_INP/Modrun10/2010-Trend2008_CEIP" if $year eq 2008;
-
-#dave: Use Modrun10 if possible:
+#dave: Use Modrun11 if possible:
 my $EMIS_OLD = "/global/work/nyiri/Emission_Trends";
 $emisdir = "$EMIS_OLD/$year" if $year < 2000;
-$emisdir = "$EMIS_INP/Modrun10/EMEP_trend_2000-2008/$year" if ( $year > 1999 ) and ($year < 2009);
+$emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 
 
