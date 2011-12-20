@@ -136,6 +136,7 @@ real :: theta2
 
         Sub(iL)%is_water  = LandType(iL)%is_water
         Sub(iL)%is_forest = LandType(iL)%is_forest
+        Sub(iL)%is_crop   = LandType(iL)%is_crop   
 
         if( USE_SOILWATER ) Sub(iL)%fSW    = Grid%fSW
 
