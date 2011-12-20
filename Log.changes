@@ -167,6 +167,24 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_3xx Dave 20th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Bug-fix, but lickily they cancelled out
+The 1st bug was that L%is_crop wasn't set
+The 2nd bug was that L%is_crop was used for all gases, not just NH3
+
+the net effect was that the intended setting of Rsur to high values for
+NH3 over crops never happened.
+
+Submited fix now sets NO
+
+  ModelConstants_ml: 
+   NO_CROPNH3DEP      = .false.   - set false now to keep same results
+
+   Rsurface_ml - NO_CROPNH3DEP only aplied for NH3
+
+   SubMet_ml - set L%is_crop
+
 xxxxxxxx rv3_9_34 Dave/Peter 19th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Peter:
