@@ -48,7 +48,7 @@ logical, public, parameter :: USE_FOREST_FIRES   = .true.  ! Needs global files,
 logical, public, parameter :: USE_AIRCRAFT_EMIS  = .true.  ! Needs global file, see manual
 logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
 logical, public, parameter :: USE_SOILNOX        = .true.   !  ok, but diff for global + Euro runs
-logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition for growing crops
+logical, public, parameter :: NO_CROPNH3DEP      = .false.  !Stop NH3 deposition for growing crops
 logical, public, parameter :: USE_SEASALT        = .true.   ! ok
 ! More experimental:
 logical, public, parameter :: USE_DUST           = .true.  ! Experimental
