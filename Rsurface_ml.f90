@@ -26,7 +26,7 @@
 !*    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 !*****************************************************************************! 
 module Rsurface_ml
-use LandDefs_ml,       only : LandDefs
+use LandDefs_ml,       only : LandDefs, LandType
 use CheckStop_ml,      only : CheckStop
 use CoDep_ml,          only : CoDep_factors, humidity_fac, Rns_NH3, Rns_SO2
 use DO3SE_ml,          only : g_stomatal, do3se
@@ -362,13 +362,20 @@ contains
 
            Rsur(icmp) = 1.0/( L%LAI*DRx(iwes) *L%g_sto + Gns(icmp)  )
 
-           if ( NO_CROPNH3DEP ) then ! Stop NH3 deposition for growing crops 
-                                     ! Crude reflection of likely emission
+         ! Stop NH3 deposition for growing crops 
+         ! Crude reflection of likely emission
+           if ( NO_CROPNH3DEP .and. DRYDEP_CALC(icmp) == WES_NH3 ) then
 
-              if ( L%is_crop .and.  L%LAI > 0.1 ) Rsur(icmp) =  1.0e10
+              if ( L%is_crop .and.  L%LAI > 0.1 ) then
+                   if ( DEBUG_RSUR .and. debug_flag .and. L%is_crop ) then 
+                      write(*,"(a,i4,2i4,L2,f8.2)")  "NO_CROPNH3DEP ", &
+                       iL, DRYDEP_CALC(icmp), WES_NH3, L%is_crop, L%LAI
+                   end if
+
+                 Rsur(icmp) =  1.0e10  ! BIG number
+
+              end if
            end if
-
-
 
       ! write(*,"(a20,2i3,3g12.3)")  "RSURFACE Gs  (i): ", iL, icmp, GnsO, Gns_dry, Gns_wet
 
@@ -391,7 +398,8 @@ contains
       end if  ! end of canopy tests 
 
 
-      ! write(*,"(a20,2i3,3g12.3)")  "RSURFACE Rsur(i): ", iL, icmp, Rsur_dry(icmp), Rsur_wet(icmp)
+      if(DEBUG_RSUR.and.debug_flag) write(*,"(a20,2i3,L2,3g12.3)")  &
+             "RSURFACE Rsur(i): ", iL, icmp, L%is_crop,  Rsur(icmp)
 
 
   end do GASLOOP
@@ -399,10 +407,13 @@ contains
 
    if ( DEBUG_RSUR ) then
        if ( debug_flag ) then 
-      write(*,"(a,2i4)")  "RSURFACE DRYDEP_CALC", size(DRYDEP_CALC), DRYDEP_CALC(1)
-      write(*,"(a,i3,2f7.3,5L2)")  "RSURFACE iL, LAI, SAI, LOGIS ", iL, L%LAI, L%SAI, &
-                       L%is_forest, L%is_water, L%is_veg, canopy, leafy_canopy
-      write(*,"(a,i3,4g12.3)")  "RSURFACE xed Gs", iL, do3se(iL)%RgsO,do3se(iL)%RgsS, lowTcorr, Rinc
+      write(*,"(a,2i4)")  "RSURFACE DRYDEP_CALC", &
+            size(DRYDEP_CALC), DRYDEP_CALC(1)
+      write(*,"(a,i3,2f7.3,5L2)")  "RSURFACE iL, LAI, SAI, LOGIS ", &
+            iL, L%LAI, L%SAI, L%is_forest, L%is_water, L%is_veg, &
+              canopy, leafy_canopy
+      write(*,"(a,i3,4g12.3)")  "RSURFACE xed Gs", iL, &
+             do3se(iL)%RgsO,do3se(iL)%RgsS, lowTcorr, Rinc
      end if
    end if
  end subroutine Rsurface
