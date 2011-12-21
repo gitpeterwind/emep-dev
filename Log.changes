@@ -167,6 +167,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_3yy Alvaro 21th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Output_hourly.f90:
+Wrong PM water content on multi-level hourly output.
+This bug was introduced on rv3_7beta7, fixed on rv3_9_22,
+and re-introduced in rv3_9_23. It is specially relevant on FORECAST mode.
+
 xxxxxxxx rv3_9_3xx Dave 20th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug-fix, but lickily they cancelled out
@@ -178,7 +185,7 @@ NH3 over crops never happened.
 
 Submited fix now sets NO
 
-  ModelConstants_ml: 
+  ModelConstants_ml:
    NO_CROPNH3DEP      = .false.   - set false now to keep same results
 
    Rsurface_ml - NO_CROPNH3DEP only aplied for NH3
@@ -192,10 +199,10 @@ Peter:
    ReadTime: include the proleptic_gregorian calendar
 
    Nest_ml: for 3D IC files with different vertical levels was wrong.
-	replaced 
-	forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax) 
+	replaced
+	forall (k=1:KMAX_ext, j=1:ljmax, i=1:limax)
     with
-	forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax) 
+	forall (k=1:KMAX_MID, j=1:ljmax, i=1:limax)
 
 Dave:
 
@@ -230,8 +237,8 @@ SAFE.CM_BoundaryConditions.inc in ZCM_EmChem09 and ZCM_EmChem09soa
 
 xxxxxxxx rv3_9_30   Robert             14th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
-Bug-fix   ZD_VBS/My_SOA_ml.f90 - Factor of 12 too low OM-concentrations stored in netcdf-files for 
-                                 FFIREOA25_OM, WOODOA25_OM and FFUELOA25_OM in earlier versions (only affects  
+Bug-fix   ZD_VBS/My_SOA_ml.f90 - Factor of 12 too low OM-concentrations stored in netcdf-files for
+                                 FFIREOA25_OM, WOODOA25_OM and FFUELOA25_OM in earlier versions (only affects
                                  stored "help" species, that is no change in the "real" model species)
 
 xxxxxxxx rv3_9_29   Peter               7th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
@@ -281,7 +288,7 @@ xxxxxxxx rv3_9_27c  Dave                      29th Nov 2011  xxxxxxxxxxxxxxxxxxx
 Added ZCM_CRI_v2_R5 for those wanting something a bit heavier :-)
 
     (Chemistry is about 3 times larger than EmChem09.)
- 
+
 
 xxxxxxxx rv3_9_27b  Robert                    29th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -327,26 +334,26 @@ Added option to use degree-days to calculate emission variation.
 xxxxxxxx rv3_9_26  Svetlana, Dave, Robert      28th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Robert:
-ForestFire_ml.f90 - Updated the reading of FINN emissions (interpol='mass_conservative' 
+ForestFire_ml.f90 - Updated the reading of FINN emissions (interpol='mass_conservative'
                     instead of 'conservative', should give correct scaling factor)
                     Changed assumed OM/OC ratio from 1.3 to 1.7 for FFIRE POA
                     Started updating the GFED handling (but probably still not working properly!!!)
 
 ZCM_EmChem09soa/BiomassBurning_FINNv1_to_EmChem09soa.inc - Changed OM/OC ratio to 1.7 for FFIRE emissions
                 BiomassBurning_GFED_to_EmChem09soa.inc - Updated OM/OC ratio and some other parameters
-                VBS_nonvolatile.species - Introducing new groups NVFFUELOC10 
+                VBS_nonvolatile.species - Introducing new groups NVFFUELOC10
 
-ZD_VBS/My_SOA_ml.f90 - Introduced split of NVFFUELOC into NVFFUELOC25 and NVFFUELOC10, 
-                       updated storing to handle both partitioning and nonvolatile POA 
-                       in a similar way [NOTE some hardcoding of OM/OC ratios!!! 
+ZD_VBS/My_SOA_ml.f90 - Introduced split of NVFFUELOC into NVFFUELOC25 and NVFFUELOC10,
+                       updated storing to handle both partitioning and nonvolatile POA
+                       in a similar way [NOTE some hardcoding of OM/OC ratios!!!
                        Assumes OM/OC=1.25 for FFUEL POA and 1.7 for WOOD POA and FFIRE POA]
 
 ZCM_vbs_tests/VBS_help.species & VBS_nonvolatile.species - Added the number 25 to some
                        group names (to indicate that they are in PM2.5)
                        added NONVOL_FFUELOC10 (as well as NONVOL_FFUELOC25)
               VBS_partitioning.species - Added the number 25 to some group names
- 
-Svetlana: 
+
+Svetlana:
 
 PM water calculations by MARS (instead of EQSAM): 3D for ambient conditions
 and surface 2D for at Rh=50% (for comparison with obs):
@@ -371,19 +378,19 @@ Switched on swich for Soilwater and Dust in ModelConstants_ml
 changes also in MetFields_ml.f90,Met_ml.f90
 SoilTypes_IFS.nc in run.pl
 
-Birthe: Added output in Output_hourly.f90 for Phillipe runs. Should be commented 
-out when  done with these runs. Also changed from print to write, and rearranged 
+Birthe: Added output in Output_hourly.f90 for Phillipe runs. Should be commented
+out when  done with these runs. Also changed from print to write, and rearranged
 Debug for a DEBUG_OUT_HOUR in ModelConstants.f90
 
 
 xxxxxxxx rv3_9_24  Dave                       27th Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 
-  ForestFire_ml ***  BUG FIX  **** 
+  ForestFire_ml ***  BUG FIX  ****
 
      A units conversion (e.g. 0.028 for CO) was applied twice, leading to far too
      low forest-fire emissions
-  
+
   Derived_ml - AddDeriv for ws_10m  commented out, moved to My_Derived
                rh2m added
 
@@ -402,7 +409,7 @@ xxxxxxxx rv3_9_23   Birthe/Dave               25th Nov 2011  xxxxxxxxxxxxxxxxxxx
 
    safety test - added SOA_MODULE_FLAG="VBS" in ZD_VBS/My_SOA_ml
      and = "NotUsed" in ZD_OZONE/My_SOA_ml.
- 
+
    - should stop code if attempt is made to run VBS with OZONE My_SOA
 
    outputs adjusted for forest-fire associated OM and other
@@ -430,8 +437,8 @@ The new hourly output type PMwaterSRF will provide PM25_water_rh50 regardless
 of the level selected.
 
 
-SeaSalt_ml 
-   - reduced assumed salt and hence emissions over Baltic sea 
+SeaSalt_ml
+   - reduced assumed salt and hence emissions over Baltic sea
 
 
 xxxxxxxx rv3_9_21         Dave     23d Nov 2011  xxxxxxxxxxxxxxxxxxxxxxx
