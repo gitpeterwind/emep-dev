@@ -167,16 +167,16 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
-xxxxxxxx rv3_9_3yy Alvaro 21th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_9_35 Alvaro, Dave 21th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
+Alvaro, 21st Dec:
 Output_hourly.f90:
 Wrong PM water content on multi-level hourly output.
 This bug was introduced on rv3_7beta7, fixed on rv3_9_22,
 and re-introduced in rv3_9_23. It is specially relevant on FORECAST mode.
 
-xxxxxxxx rv3_9_3xx Dave 20th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-
-Bug-fix, but lickily they cancelled out
+Dave, 20th Dec.
+Bug-fix, but luckily they cancelled out
 The 1st bug was that L%is_crop wasn't set
 The 2nd bug was that L%is_crop was used for all gases, not just NH3
 
