@@ -191,7 +191,8 @@ real :: theta2
            ! results shows that this provides the best u* values for
            ! forests.
              Sub(iL)%d  =  0.78 * Sub(iL)%hveg   ! Jarvis, 1976
-             Sub(iL)%z0 =  min( 0.07 * Sub(iL)%hveg, 0.5 )
+             !Sub(iL)%z0 =  min( 0.07 * Sub(iL)%hveg, 0.5 )
+             Sub(iL)%z0 =  min( 0.07 * Sub(iL)%hveg, 1.0 )
              z_1m   = (Sub(iL)%hveg + 1.0) - Sub(iL)%d
              z_3m   = max(3.0,Sub(iL)%hveg)
         else

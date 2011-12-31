@@ -669,8 +669,8 @@ module Biogenics_ml
                          bx = max(bx,0.0)
                          by = 1.0 - bx
                          beta =  ( bx*by *4.0) 
-                         enox = enox + f*80.0* beta 
-                         enh3 = enh3 + f * 1000.0 * beta
+                         enox = enox + f*80.0*ft* beta 
+                         enh3 = enh3 + f * 1000.0*ft * beta
                     end if
 
                     

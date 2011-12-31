@@ -167,6 +167,25 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_9_36 Dave 31st Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Various "bug-fixes" (or doing things as intended)
+
+Biogenics_ml
+  Added temperature variation to soil-NO  from crops
+
+ModelConstants_ml
+ Set NO_CROPNH3DEP true
+
+SubMet_ml
+ Set z0 = min( z0, 1.0) instead of 0.5
+
+
+run.pl
+  uses LandInputs_Dec2011   - higher trees
+ 
+
+
 xxxxxxxx rv3_9_35 Alvaro, Dave 21th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Alvaro, 21st Dec:
