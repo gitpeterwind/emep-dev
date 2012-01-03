@@ -167,6 +167,16 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
 
+xxxxxxxx rv3_10   Dave 3rd Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+new label, since 37 seemed a bit high, and since rv3:9_36 was anyway
+a result-change from other rv3_9_xx series. Another result 
+change here:
+
+ChemFunctions_ml.f90 - now uses aerosol radius in VOLFACs 
+consistent with that used in dry-deposition, namely number
+median radius 68nm instead of 34.
+
 xxxxxxxx rv3_9_36 Dave 31st Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Various "bug-fixes" (or doing things as intended)

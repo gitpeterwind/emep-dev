@@ -60,9 +60,12 @@ module ChemFunctions_ml
 ! Schell B, Ackermann I, Kessler C, Hass H
 ! JGR 108 (D4): FEB 27 2003 
 
-  real, parameter, public :: VOLFACSO4 = 96.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-  real, parameter, public :: VOLFACNO3 = 62.0/(AVOG) * 0.90236 *0.02/0.034e-6 
-  real, parameter, public :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+  !real, parameter, public :: VOLFACSO4 = 96.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+  !real, parameter, public :: VOLFACNO3 = 62.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+  !real, parameter, public :: VOLFACNH4 = 18.0/(AVOG) * 0.90236 *0.02/0.034e-6 
+  real, parameter, public :: VOLFACSO4 = 96.0/(AVOG) * 1.2648  *0.02/0.068e-6 
+  real, parameter, public :: VOLFACNO3 = 62.0/(AVOG) * 1.2648  *0.02/0.068e-6 
+  real, parameter, public :: VOLFACNH4 = 18.0/(AVOG) * 1.2648  *0.02/0.068e-6 
 
 
   !========================================
