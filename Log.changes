@@ -173,7 +173,11 @@ Small bug in extendarea (Met_ml):
 
 Small effet on results, but can give sightly different results for different number of CPUs
 
-There are still small differences when varying the number of CPU -> still another bug!
+fac_min was defined only for MasterProc (in Timefactors_ml). Redefined it after the broadcast in Emission_ml.
+Slightly different definition, since now defined after renormalization.
+Relatively small differences in results since this is only used for sector 2.
+
+Finally same results on a 2 days test with 8x4 and 2x16 processor partition
 
 xxxxxxxx rv3_10   Dave 3rd Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 

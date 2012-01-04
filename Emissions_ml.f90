@@ -201,7 +201,7 @@ contains
   integer, allocatable, dimension(:,:)      :: flat_globnland 
   integer, allocatable, dimension(:,:,:)    :: flat_globland 
   integer :: err1, err2, err3, err4, err5, err6 ! Error messages
-  integer :: fic 
+  integer :: fic ,insec,inland,iemis 
   integer :: ic               ! country codes 
   integer :: isec             ! loop variables: emission sectors
   integer :: iem              ! loop variable over pollutants (1..NEMIS_FILE)
@@ -249,6 +249,15 @@ contains
     CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( day_factor ,8*2*NSECTORS,MPI_BYTE,               0,MPI_COMM_WORLD,INFO) 
+
+!define fac_min for all processors
+    do iemis = 1, NEMIS_FILE
+       do insec = 1, NSECTORS
+          do inland = 1, NLAND
+             fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
+          enddo
+       enddo
+    enddo
 
   !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   ! c4b) Set up DMS factors here - to be used in newmonth

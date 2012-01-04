@@ -200,7 +200,9 @@ contains
              (fac_emm(inland,mm,insec,iemis),mm=1,12)
            if ( ios <  0 ) exit     ! End of file
 
-           fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
+           !defined after renormalization and send to al processors:
+           ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
+
            if( DEBUG.and.insec==ISNAP_DOM  ) write(*,"(a,3i3,f7.3,a,12f6.1)") "MIN tfac ", &
                inland,insec,iemis, fac_min(inland,insec,iemis),&
                  " : ",  ( fac_emm(inland,mm,insec,iemis), mm=1,12)
