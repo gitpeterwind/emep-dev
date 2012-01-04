@@ -2082,9 +2082,9 @@ contains
     integer :: iif,jjf,i,j,ii,jj,iifl,jjfl
     if ( present(debug_flag)  ) mydebug = debug_flag
 
-    thick = ( size(h,1) - size(f,1) ) ! Caller has to make h > f 
-    iif=size(f,1)
-    jjf=size(f,2)
+    thick = ( size(h,1) - size(f,1) ) ! Caller has to make h > f ;NB: NOT SAFE!
+    iif=limax
+    jjf=ljmax
 
     if( modulo(thick,2) /= 0 ) then
        print *, "ERROR extendarea para,s ", me, iif , jjf, thick

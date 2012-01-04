@@ -166,6 +166,14 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 !
+xxxxxxxx rv3_10_1   Peter 4th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Small bug in extendarea (Met_ml):
+   iif=limax and    jjf=ljmax (instead of using size, which gives maxlimax)
+
+Small effet on results, but can give sightly different results for different number of CPUs
+
+There are still small differences when varying the number of CPU -> still another bug!
 
 xxxxxxxx rv3_10   Dave 3rd Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
