@@ -166,6 +166,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_3   Peter 10th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+NetCDF_ml.f90:
+Netcdf output file in compressed netcdf-4 format. Make sure you use libraries linked to netcdf-4 
+(for example by writing module load netcdf, module load nco).
+
+Landuse_ml.f90:
+Started to include new landuse reading (experimental so far, not default).
+
+
 xxxxxxxx rv3_10_2   Peter 6th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Nest_ml with MODE=100 option. Use monthly BC. Experimental so far.to be merged with Global_BC_ml

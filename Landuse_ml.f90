@@ -45,6 +45,7 @@ use ModelConstants_ml,only: DEBUG_i, DEBUG_j, NLANDUSEMAX, &
                             USE_PFT_MAPS, DEBUG_LANDPFTS, &
                             DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
                             DomainName, MasterProc
+use NetCDF_ml,      only: ReadField_CDF
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
@@ -117,7 +118,10 @@ contains
    logical :: filefound
 
     !=====================================
+     filefound=.false.
      call ReadLandUse(filefound) !=> Land_codes, Percentage cover per grid
+
+     if(.not.filefound)call ReadLandUse_CDF(filefound) !=> Land_codes, Percentage cover per grid
 
      call CheckStop(.not.filefound,"InitLanduse failed!")
 
@@ -249,6 +253,110 @@ contains
 
   end subroutine  ReadLanduse
  
+  subroutine ReadLanduse_CDF(filefound)
+    !Read data in other grid and interpolate to present grid
+    !
+    !So far only basic version for use in TNO7. Under construction
+    !
+    implicit none
+    logical :: filefound
+    integer :: i,j,lu, index_lu, maxlufound
+    logical :: debug_flag
+    real :: sumfrac
+
+
+    ! temporary arrays used.  Will re-write one day....
+    real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
+    real, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_data ! tmp, with all data
+    integer, dimension(MAXLIMAX,MAXLJMAX):: landuse_ncodes ! tmp, with all data
+    integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
+
+    if ( DEBUG_LANDUSE .and. MasterProc ) &
+         write(*,*) "LANDUSE: Starting ReadLandUse "
+
+
+    if (MasterProc ) write(*,*) "LANDUSE_CDF: experimental so far"
+    filefound=.false.
+    return
+
+    maxlufound = 0   
+
+    landuse_ncodes(:,:)   = 0     !/**  initialise  **/
+    landuse_codes(:,:,:)  = 0     !/**  initialise  **/
+    landuse_data  (:,:,:) = 0.0   !/**  initialise  **/
+
+    !hardcoded so far -> to softimize
+
+    NLanduse_DEF=19
+    Land_codes(1) = 'CF' 
+    Land_codes(2) = 'DF' 
+    Land_codes(3) = 'NF' 
+    Land_codes(4) = 'BF' 
+    Land_codes(5) = 'TC' 
+    Land_codes(6) = 'MC' 
+    Land_codes(7) = 'RC' 
+    Land_codes(8) = 'SNL' 
+    Land_codes(9) = 'GR' 
+    Land_codes(10) = 'MS' 
+    Land_codes(11) = 'WE' 
+    Land_codes(12) = 'TU' 
+    Land_codes(13) = 'DE' 
+    Land_codes(14) = 'W' 
+    Land_codes(15) = 'ICE' 
+    Land_codes(16) = 'U' 
+    Land_codes(17) = 'IAM_CR' 
+    Land_codes(18) = 'IAM_DF'
+    Land_codes(19) = 'IAM_MF'
+    do lu=1,NLanduse_DEF
+       !TO DO:
+       !read LanduseGLC.nc as default and overwrite with PS_5km where available
+       !
+       if(me==0)write(*,*)'Reading landuse ',trim(Land_codes(lu))
+       !   call ReadField_CDF('/scratch/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
+       call ReadField_CDF('/scratch/mifapw/emep/Data/Landuse_PS_5km.nc',& !SLOW!
+            Land_codes(lu),landuse_in(1,1,lu),1,interpol='conservative', &
+            needed=.true.,debug_flag=.true.)
+       !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&
+       !        Land_codes(lu),landuse_tmp,1,interpol='conservative', &
+       !        needed=.true.,debug_flag=.true.)
+       !   do j = lj0, lj1
+       !      do i = li0, li1
+       !         if(landuse_in(i,j,lu)<-0.1)landuse_in(i,j,lu)=landuse_tmp(i,j)
+       !      end do  !j
+       !   end do  !i
+    enddo
+
+    do i = li0, li1
+       do j = lj0, lj1
+          do lu = 1, NLanduse_DEF
+             if ( landuse_in(i,j,lu) > 0.0 ) then
+
+                call GridAllocate("LANDUSE",i,j,lu,NLUMAX, &
+                     index_lu, maxlufound, landuse_codes, landuse_ncodes)
+                landuse_data(i,j,index_lu) = &
+                     landuse_data(i,j,index_lu) + landuse_in(i,j,lu)!already in fraction unit
+             endif
+          end do ! lu
+          LandCover(i,j)%ncodes  = landuse_ncodes(i,j)
+          LandCover(i,j)%codes(:) = landuse_codes(i,j,:)
+          LandCover(i,j)%fraction(:)  = landuse_data(i,j,:)
+          sumfrac = sum( LandCover(i,j)%fraction(:) )
+
+          if (  sumfrac < 0.99 .or. sumfrac > 1.01 ) then
+             write(unit=errmsg,fmt="(a19,3i4,f12.4,8i4)") &
+                  "Land SumFrac Error ", me,  &
+                  i_fdom(i),j_fdom(j), sumfrac, li0, li1, lj0, lj1, &
+                  i_fdom(li0), j_fdom(lj0), i_fdom(li1), j_fdom(lj1)
+             call CheckStop(errmsg)
+          end if
+
+       end do  !j
+    end do  !i
+
+    filefound=.true.
+
+  end subroutine ReadLanduse_CDF
+
   !=========================================================================
   subroutine  SetLandUse()
     integer :: i,j,ilu,lu ! indices
