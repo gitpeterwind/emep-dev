@@ -312,8 +312,8 @@ contains
        !read LanduseGLC.nc as default and overwrite with PS_5km where available
        !
        if(me==0)write(*,*)'Reading landuse ',trim(Land_codes(lu))
-       !   call ReadField_CDF('/scratch/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
-       call ReadField_CDF('/scratch/mifapw/emep/Data/Landuse_PS_5km.nc',& !SLOW!
+       !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
+       call ReadField_CDF('/global/work/mifapw/emep/Data/Landuse_PS_5km.nc',& !SLOW!
             Land_codes(lu),landuse_in(1,1,lu),1,interpol='conservative', &
             needed=.true.,debug_flag=.true.)
        !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&
