@@ -242,7 +242,7 @@ character(len=80) ::UsedProjection
   if(DEBUG_NETCDF)write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
     GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
   call check(nf90_create(path = trim(fileName), &
-        cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
+        cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
 
   ! Define the dimensions
   if(UsedProjection=='Stereographic')then
@@ -992,6 +992,9 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
   else
      print *, 'createnewvariable: unexpected ndim ',ndim
   endif
+!define variable as to be compressed
+        call check(nf90_def_var_deflate(ncFileid ,varID,shuffle=0,deflate=1 ,deflate_level=4) )
+
   !     FillValue=0.
   scale=1.
   !define attributes of new variable

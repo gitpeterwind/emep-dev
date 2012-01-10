@@ -169,8 +169,10 @@ ds done   My_SOA_ml.f90
 xxxxxxxx rv3_10_3   Peter 10th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 NetCDF_ml.f90:
-Netcdf output file in compressed netcdf-4 format. Make sure you use libraries linked to netcdf-4 
+Netcdf output file in compressed netcdf-4 format. 
+For postprocessing, if you get error messages, make sure you use libraries linked to netcdf-4 
 (for example by writing module load netcdf, module load nco).
+
 
 Landuse_ml.f90:
 Started to include new landuse reading (experimental so far, not default).
