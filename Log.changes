@@ -166,6 +166,12 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_4  Dave 13th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxxxx
+
+run.pl - uses LAndInputs_Jan2012
+          Higher (20m) trees and some small changes in land-defs
+          Will change results a bit, by increasing deposition
+
 xxxxxxxx rv3_10_3   Peter 10th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 NetCDF_ml.f90:

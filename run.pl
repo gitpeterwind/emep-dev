@@ -10,7 +10,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=64:ib
 # wall time limit of run
-#PBS -lwalltime=08:50:00
+#PBS -lwalltime=07:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -251,7 +251,7 @@ my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
 
-my $testv = "rv3_10";
+my $testv = "rv3_10_4";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -807,8 +807,8 @@ print "TESTING PM $poll $dir\n";
 # new inputs style (Aug 2007)  with compulsory headers:
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
-  $ifile{"$DataDir/LandInputs_Dec2011/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
-  $ifile{"$DataDir/LandInputs_Dec2011/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+  $ifile{"$DataDir/LandInputs_Jan2012/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
+  $ifile{"$DataDir/LandInputs_Jan2012/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
   # Extended to get isoprene, HCHO EC, OC /(huge list!)
