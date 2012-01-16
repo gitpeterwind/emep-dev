@@ -214,6 +214,8 @@ contains
          
       else
          filefound=.false.
+         if(MasterProc)Write(*,*)'Inputs.Landuse not found'
+         return
          call StopAll('Inputs.Landuse not found') 
       endif
 
