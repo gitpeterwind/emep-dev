@@ -3004,7 +3004,7 @@ contains
 
           ihh=1
           n1=1
-          if(trim(timeunit)==trim("days since 1900-1-1 0:0:0"))then
+          if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
              write(*,*)'Meteo date in days since 1900-1-1 0:0:0'
              call check(nf90_get_var(ncFileID,timeVarID,ndays,&
                   start=(/ihh/),count=(/n1 /)))
@@ -3023,7 +3023,7 @@ contains
 
           do ihh=1,Nhh
 
-             if(trim(timeunit)==trim("days since 1900-1-1 0:0:0"))then
+             if(trim(timeunit(1:19))==trim("days since 1900-1-1"))then
                 call check(nf90_get_var(ncFileID, timeVarID, ndays,&
                      start=(/ ihh /),count=(/ n1 /)))
                 call nctime2idate(ndate,ndays(1))
