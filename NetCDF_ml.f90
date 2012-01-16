@@ -59,7 +59,9 @@
                                ,glat_fdom,glon_fdom,ref_latitude&
                                ,projection, sigma_mid,gb_stagg,gl_stagg,glon&
                                ,sigma_bnd&
-                               ,glat,lb2ij,A_bnd,B_bnd
+                               ,glat,lb2ij,A_bnd,B_bnd&
+                               ,lb2ij,lb2ijm,ij2lb&
+                               ,ref_latitude_EMEP,xp_EMEP_old,yp_EMEP_old
   use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                                ,MasterProc &
@@ -243,6 +245,7 @@ character(len=80) ::UsedProjection
     GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
   call check(nf90_create(path = trim(fileName), &
         cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
+!        cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
 
   ! Define the dimensions
   if(UsedProjection=='Stereographic')then
@@ -503,7 +506,7 @@ character(len=80) ::UsedProjection
   call check(nf90_put_var(ncFileID, PTVarID, PT ))
 
   call check(nf90_close(ncFileID))
-  if(DEBUG_NETCDF)write(*,*)'NetCDF: file created, end of CreatenetCDFfile'
+  if(DEBUG_NETCDF)write(*,*)'NetCDF: file created, end of CreatenetCDFfile ',ncFileID
 end subroutine CreatenetCDFfile
 
 
@@ -560,7 +563,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
  !make variable name
   write(varname,fmt='(A)')trim(def1%name)
-  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: START ' , me, trim(varname)
+  if(DEBUG_NETCDF.and.MasterProc) write(*,*)'Out_NetCDF: START ' , me, trim(varname)
 
   !to shorten the output we can save only the components explicitely named here
   !if(varname.ne.'D2_NO2'.and.varname.ne.'D2_O3' &
@@ -575,9 +578,9 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      overwrite_local=.false.
      if(present(overwrite))overwrite_local=overwrite
      if(me==0)then
-        if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' , me, trim(fileName_given)
         !try to open the file
-        status=nf90_open(path = trim(fileName_given), mode = nf90_write, ncid = ncFileID)
+        status=nf90_open(path = trim(fileName_given), mode = nf90_share+nf90_write, ncid = ncFileID)
+        if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: fileName_given ' , trim(fileName_given),overwrite_local,status == nf90_noerr, ncfileID,trim(nf90_strerror(status))
         ISMBEGcdf=IRUNBEG+i1-1
         JSMBEGcdf=JRUNBEG+j1-1
         GIMAXcdf=i2-i1+1
@@ -618,7 +621,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      ncFileID_new=ncFileID
   endif
 
-  if(DEBUG_NETCDF) then
+  if(DEBUG_NETCDF.and.MasterProc) then
     if(iotyp_new==1)then
       write(*,*)' Out_NetCDF: cases new file', trim(fileName_given), iotyp
     else
@@ -647,7 +650,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   else
      return
   endif
-  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF, filename ', trim(fileName), iotyp
+  if(DEBUG_NETCDF.and.MasterProc) write(*,*)'Out_NetCDF, filename ', trim(fileName), iotyp,ncFileID
 
   call CheckStop(ndim /= 2 .and. ndim /= 3, "NetCDF_ml: ndim must be 2 or 3")
 
@@ -697,7 +700,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   if(create_var_only_local)then
      !Don't write the data
      !For performance: need to create all variables before writing data
-     if(DEBUG_NETCDF)write(*,*)'variable ONLY created. Finished'
+     if(DEBUG_NETCDF.and.MasterProc)write(*,*)'variable ONLY created. Finished'
      if(me==0.and.iotyp_new==1)call check(nf90_close(ncFileID))
      return
   endif!create var only
@@ -931,7 +934,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
      endif
   endif !me=0
 
-  if(DEBUG_NETCDF) write(*,*)'Out_NetCDF: FINISHED '
+  if(DEBUG_NETCDF.and.MasterProc) write(*,*)'Out_NetCDF: FINISHED '
 end subroutine Out_netCDF
 
 !_______________________________________________________________________
@@ -1572,7 +1575,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !
   !undefined field values:
   !Some data can be missing/not defined for some gridpoints;
-  !If Undef is present, it is used as value for these undefined gridpoints;
+  !If general projection is used (not lon lat or polarstereo), it takes the nearest value.
+  !If Undef is present, it is used as value for undefined gridpoints;
   !If it is not present, an error occurs if data is missing.
   !Data can be undefined either because it is outside the domain in the netcdf file,
   !or because it has the value defined in "FillValue" ("FillValue" defined from netcdf file) 
@@ -1650,8 +1654,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   real, dimension(4) :: Weight
   real               :: sumWeights
   integer, dimension(4) :: ijkn
-  integer :: ii, jj
-
+  integer :: ii, jj,i_ext,j_ext
+  real::an_ext,xp_ext,yp_ext,fi_ext,ref_lat_ext,xp_ext_div,yp_ext_div,Grid_resolution_div,an_ext_div
+  real ::buffer1(MAXLIMAX, MAXLJMAX),buffer2(MAXLIMAX, MAXLJMAX)
   !_______________________________________________________________________________
   !
   !1)           General checks and init
@@ -1691,7 +1696,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  interpol_used/='conservative'.and.&
                  interpol_used/='mass_conservative',&
          'interpolation method not recognized')
-  if ( debug ) write(*,*) 'ReadCDF interp set: ',trim(filename),':', trim(interpol)
+  if ( debug ) write(*,*) 'ReadCDFstereo interp set: ',trim(filename),':', trim(interpol)
 
 
   !test if the variable is defined and get varID:
@@ -1981,11 +1986,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         do ij=1,MAXLIMAX*MAXLJMAX*k2
            Ivalues(ij)=0
            NValues(ij) = 0
-           if(present(UnDef))then
-              Rvar(ij)=UnDef!default value
-           else
-              Rvar(ij)=0.0
-           endif
+           Rvar(ij)=0.0
         enddo
 
         do jg=1,dims(2)
@@ -2073,6 +2074,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     i,j,k,me,maxlon,minlon,maxlat,minlat,glon(i,j),glat(i,j), &
                     Ivalues(ijk)
                        call CheckStop("Interpolation error")
+                    else
+                       Rvar(ijk)=UnDef
                     endif
                  else
                     if(interpol_used=='mass_conservative')then
@@ -2124,7 +2127,258 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      endif
 !_________________________________________________________________________________________________________
 !_________________________________________________________________________________________________________
-  else ! data_projection)/="lon lat"
+  elseif(data_projection=="Stereographic")then
+     !we assume that data is originally in Polar Stereographic projection
+     if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
+
+    !get coordinates
+     !check that there are dimensions called i and j
+     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(1), name=name ),name)
+     call CheckStop(trim(name)/='i',"i not found")
+     call check(nf90_inquire_dimension(ncid = ncFileID, dimID = dimids(2), name=name ),name)
+     call CheckStop(trim(name)/='j',"j not found")
+
+     call CheckStop(data3D,"3D data in Stereographic projection not yet implemented")
+
+     status=nf90_get_att(ncFileID, nf90_global, "Grid_resolution", Grid_resolution )
+     if(status /= nf90_noerr)then
+        Grid_resolution=GRIDWIDTH_M_EMEP
+        if ( debug )write(*,*)'Grid_resolution assumed =',Grid_resolution
+     endif
+     status = nf90_get_att(ncFileID, nf90_global, "xcoordinate_NorthPole", xp_ext )
+     if(status /= nf90_noerr)then
+        xp_ext=xp_EMEP_old
+        if ( debug )write(*,*)'xcoordinate_NorthPole assumed =',xp_ext
+     endif
+     status=nf90_get_att(ncFileID, nf90_global, "ycoordinate_NorthPole", yp_ext )
+     if(status /= nf90_noerr)then
+        yp_ext=yp_EMEP_old
+        if ( debug )write(*,*)'ycoordinate_NorthPole assumed =',yp_ext
+     endif
+     status=nf90_get_att(ncFileID, nf90_global, "fi", fi_ext )
+     if(status /= nf90_noerr)then
+        fi_ext=fi_EMEP
+        if ( debug )write(*,*)'fi assumed =',fi_ext
+     endif
+     status=nf90_get_att(ncFileID, nf90_global, "ref_latitude", ref_lat_ext  )
+     if(status /= nf90_noerr)then
+        ref_lat_ext=ref_latitude_EMEP
+        if ( debug )write(*,*)'ref_latitude assumed =',ref_lat_ext
+     endif
+     an_ext=EARTH_RADIUS*(1.0+sin(ref_lat_ext*PI/180.0))/Grid_resolution
+
+!read entire grid in a first implementation
+     startvec=1
+     totsize=1
+     
+     do i=1,ndims
+        totsize=totsize*dims(i)
+     enddo
+     if ( debug )write(*,*)'totsize ',totsize,ndims
+     allocate(Rvalues(totsize), stat=alloc_err)
+     call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
+          errmsg="RRvaluesStereo")
+     if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
+        !scale data if it is packed
+        scalefactors(1) = 1.0 !default
+        scalefactors(2) = 0.  !default
+        status = nf90_get_att(ncFileID, VarID, "scale_factor", scale  )
+        if(status == nf90_noerr) scalefactors(1) = scale
+        status = nf90_get_att(ncFileID, VarID, "add_offset",  offset )
+        if(status == nf90_noerr) scalefactors(2) = offset
+        Rvalues=Rvalues*scalefactors(1)+scalefactors(2)
+        FillValue=FillValue*scalefactors(1)+scalefactors(2)
+        if ( debug ) then
+           write(*,*)' Start scaling mpixtype',xtype
+           write(*,*)' FillValue scaled to',FillValue
+           write(*,*)' Max(RValues)   ',maxval(RValues)
+        end if
+     else ! Real
+        if ( debug ) then
+           write(*,*)' xtype real ',xtype
+           write(*,*)' FillValue still',FillValue
+           write(*,*)' Max(RValues)   ',maxval(RValues)
+           write(*,*)' Min(RValues)   ',minval(RValues)
+        end if
+     endif
+
+     if(interpol_used=='conservative'.or.interpol_used=='mass_conservative')then
+        !conserves integral (almost, does not take into account local differences in mapping factor)
+        !takes weighted average over gridcells covered by model gridcell
+
+        !divide the external grid into pieces significantly smaller than the fine grid
+        !Divide each global gridcell into Ndiv x Ndiv pieces
+        Ndiv=1!5*nint(Grid_resolution/GRIDWIDTH_M)
+        Ndiv=max(1,Ndiv)
+        Ndiv2=Ndiv*Ndiv
+        Grid_resolution_div=Grid_resolution/Ndiv
+        xp_ext_div=(xp_ext+0.5)*Ndiv-0.5
+        yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
+        an_ext_div=an_ext*Ndiv
+        
+        if(projection/='Stereographic'.and.projection/='lon lat')then
+           !the method should be revised or used only occasionally
+           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
+        endif
+        k2=1
+        if(data3D)k2=kend-kstart+1
+        allocate(Ivalues(MAXLIMAX*MAXLJMAX*k2))
+        allocate(Nvalues(MAXLIMAX*MAXLJMAX*k2))
+        do ij=1,MAXLIMAX*MAXLJMAX*k2
+           Ivalues(ij)=0
+           NValues(ij) = 0
+!           if(present(UnDef))then
+!              Rvar(ij)=UnDef!default value
+!           else
+              Rvar(ij)=0.0
+!           endif
+        enddo
+
+        do jg=1,dims(2)
+           do jdiv=1,Ndiv
+              j_ext=(jg-1)*Ndiv+jdiv
+              do ig=1,dims(1)
+                 igjg=ig+(jg-1)*dims(1)
+                 do idiv=1,Ndiv
+                    i_ext=(ig-1)*Ndiv+idiv
+                    call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
+                    call lb2ij(lon,lat,ir,jr)!back to model coordinates
+                    i=nint(ir)-tgi0(me)+1!convert from rundomain to local domain
+                    j=nint(jr)-tgj0(me)+1
+83                  format(2I4,33F9.2)
+                    !if ( debug .and.me==0) write(*,83)i,j,ir,jr,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
+ 
+                    if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
+                       ij=i+(j-1)*MAXLIMAX
+                       k2=1
+                       if(data3D)k2=kend-kstart+1
+                       do k=1,k2
+                          ijk=k+(ij-1)*k2
+                          Ivalues(ijk)=Ivalues(ijk)+1
+                          Nvalues(ijk)=Nvalues(ijk)+1
+                          igjgk=igjg+(k-1)*dims(1)*dims(2)
+                          
+                          if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                             Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
+                          else
+                             !Not defined: don't include this Rvalue
+                             Ivalues(ijk)=Ivalues(ijk)-1
+                             
+                          endif
+                       enddo
+                    endif
+                 enddo
+              enddo
+           enddo
+        enddo
+        k2=1
+        if(data3D)k2=kend-kstart+1
+        do k=1,k2
+           do i=1,limax
+              do j=1,ljmax
+                 ij=i+(j-1)*MAXLIMAX
+                 ijk=k+(ij-1)*k2
+
+                 debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
+                                 i== debug_li .and. j== debug_lj )
+                 if ( debug_ij ) write(*,*) 'DEBUG  -- INValues!' , Ivalues(ijk), Nvalues(ijk)
+                 if(Ivalues(ijk)<=0.)then
+                    if( .not.present(UnDef))then
+                       write(*,"(a,a,4i4,6g10.3,i6)") &
+                       'ERROR, NetCDF_ml no values found!', &
+                        trim(fileName) // ":" // trim(varname), &
+                    i,j,k,me,maxlon,minlon,maxlat,minlat,glon(i,j),glat(i,j), &
+                    Ivalues(ijk)
+                       call CheckStop("Interpolation error")
+                    else
+                       Rvar(ijk)=UnDef
+                    endif
+                 else
+                    if(interpol_used=='mass_conservative')then
+                       !used for example for emissions in kg (or kg/s)
+                       Rvar(ijk)=Rvar(ijk)/Ndiv2! Total sum of values from all cells is constant
+                       if ( debug_ij ) write(*,"(a,a,3i5,es12.4)") 'DEBUG  -- mass!' , &
+                              trim(varname), Ivalues(ijk), Nvalues(ijk), Ndiv2, Rvar(ijk)
+                    else
+                       !used for example for emissions in kg/m2 (or kg/m2/s)
+                       ! integral is approximately conserved
+                       Rvar(ijk)=Rvar(ijk)/Ivalues(ijk)
+                       if ( debug_ij ) write(*,"(a,a,3i5,es12.4)") &
+                          'DEBUG  -- approx!' ,  trim(varname),&
+                           Ivalues(ijk), Nvalues(ijk),Ndiv2, Rvar(ijk)
+
+                    endif
+                 endif
+              enddo
+           enddo
+        enddo
+
+        deallocate(Ivalues)
+        deallocate(Nvalues)
+
+     elseif(interpol_used=='zero_order')then
+        !interpolation 1:
+        !nearest gridcell
+
+        Ndiv=1
+        Grid_resolution_div=Grid_resolution/Ndiv
+        xp_ext_div=(xp_ext+0.5)*Ndiv-0.5
+        yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
+        an_ext_div=an_ext*Ndiv
+     if(MasterProc.and.debug)write(*,*)'zero_order interpolation ',an_ext_div,xp_ext_div,yp_ext_div,dims(1),dims(2)
+        
+        if(projection/='Stereographic'.and.projection/='lon lat')then
+           !the method should be revised or used only occasionally
+           if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
+        endif
+
+
+        call lb2ijm(maxlimax,maxljmax,glon,glat,buffer1,buffer2,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
+        i_ext=nint(buffer1(1,1))
+        j_ext=nint(buffer2(1,1))
+        call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
+        k2=1
+        if(data3D)k2=kend-kstart+1
+        do j=1,ljmax
+           do i=1,limax
+              ij=i+(j-1)*MAXLIMAX
+              i_ext=nint(buffer1(i,j))
+              j_ext=nint(buffer2(i,j))
+             if(i_ext>=1.and.i_ext<=dims(1).and.j_ext>=1.and.j_ext<=dims(2))then
+
+                 do k=1,k2
+                    ijk=k+(ij-1)*k2
+
+                    igjgk=i_ext+(j_ext-1)*dims(1)+(k-1)*dims(1)*dims(2)
+                    
+                  if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
+                       Rvar(ijk)=Rvalues(igjgk)
+                   else
+                       if(present(UnDef))then
+                          Rvar(ijk)=UnDef!default value
+                       else
+                          Rvar(ijk)=Rvalues(igjgk)
+                       endif
+                    endif
+                 enddo
+              else
+                 do k=1,k2
+                    ijk=k+(ij-1)*k2
+                    if(present(UnDef))then
+                       Rvar(ijk)=UnDef!default value
+                    else
+                       !                    if ( debug ) write(*,*)'WARNING: gridcell out of map. Set to ',FillValue
+                       call StopAll("ReadField_CDF: values outside grid required")
+                    endif
+                 enddo
+              endif
+           enddo
+        enddo
+
+
+     endif
+
+  else ! data_projection /="lon lat" .and. data_projection/="Stereographic"
 
      if(MasterProc.and.debug)write(*,*)'interpolating from ', trim(data_projection),' to ',trim(projection)
 
@@ -2246,7 +2500,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 !code below only used for testing purposes
 
      CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-     if(debug)write(*,*)'writing results in file',trim(varname)
+     if(debug)write(*,*)'writing results in file. Variable: ',trim(varname)
 
   !only for tests:
   def1%class='Readtest' !written
@@ -2291,14 +2545,15 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
     CALL MPI_FINALIZE(INFO)
      stop
   else
-      if(trim(varname)=='NOX_EMISSION')then
+      if(trim(varname)=='CF')then
+!      if(.true.)then
     n=2
      k2=1
      call Out_netCDF(IOU_INST,def1,n,k2, &
-          Rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc')
+          Rvar,1.0,CDFtype=Real4,fileName_given='ReadField2D.nc',overwrite=.false.)
     CALL MPI_BARRIER(MPI_COMM_WORLD, INFO)
-    CALL MPI_FINALIZE(INFO)
-     stop
+!    CALL MPI_FINALIZE(INFO)
+!     stop
      endif
    endif
 
@@ -2307,7 +2562,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 end subroutine ReadField_CDF
 
 subroutine printCDF(name, array,unit)
-    ! Minimal print out to cdf, for real numbe, 2-d arrays
+    ! Minimal print out to cdf, for real numbers, 2-d arrays
     character(len=*), intent(in) :: name
     real, dimension(:,:), intent(in) :: array
     character(len=*), intent(in) :: unit

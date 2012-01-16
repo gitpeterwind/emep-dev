@@ -42,7 +42,8 @@
 ! Nov. 2001 - tidied up a bit (ds). Use statements moved to top of module
 !CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 
- use Functions_ml,    only : great_circle_distance
+use CheckStop_ml,    only : CheckStop,StopAll
+use Functions_ml,    only : great_circle_distance
                             
  use ModelConstants_ml,    only : KMAX_BND, KMAX_MID  &! vertical extent
       ,DEBUG_i, DEBUG_j  &    ! full-domain coordinate of debug-site
@@ -68,6 +69,7 @@
  Public :: lb2ijm  ! longitude latitude to grid in polar stereo
  Public :: ij2ijm  ! polar grid1 to polar grid2
  Public :: lb2ij   ! longitude latitude to (i,j) in any grid projection
+ Public :: ij2lb  ! polar stereo grid to longitude latitude
 
  Public :: GlobalPosition
  private :: Position ! => lat(glat), long (glon)
@@ -144,9 +146,10 @@
 
 ! EMEP grid definitions (old and official)
   real, public, parameter :: xp_EMEP_official=8.&
-                            ,yp_EMEP_official=110.&
-                            ,fi_EMEP=-32.&
-                            ,GRIDWIDTH_M_EMEP=50000.&
+                            ,yp_EMEP_official=110.0&
+                            ,fi_EMEP=-32.0&
+                            ,ref_latitude_EMEP=60.0&
+                            ,GRIDWIDTH_M_EMEP=50000.0&
                             ,an_EMEP = 237.7316364 &! = 6.370e6*(1.0+0.5*sqrt(3.0))/50000.
                             ,xp_EMEP_old =  43.0&
                             ,yp_EMEP_old = 121.0
@@ -541,48 +544,120 @@ end subroutine GlobalPosition
 
   subroutine lb2ijm(imax,jmax,glon,glat,xr2,yr2,fi2,an2,xp2,yp2)
     !-------------------------------------------------------------------! 
-    !   calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
+    !   calculates coordinates xr2, yr2 (real values) from glat(lat),glon(long) 
     !
-    !   input: xp2,yp2:   coord. of the polar point in grid2
+    !   input: glon,glat:   coord. of the polar point in grid1
     !          an2:   number of grid-distances from pole to equator in grid2.
     !          fi2:      rotational angle for the grid2 (at i2=0).
     !          i1max,j1max: number of points (grid1) in  x- og y- direction
     !
     !
-    !   output: i2(i1,j1): i coordinates in grid2 
-    !           j2(i1,j1): j coordinates in grid2 
+    !   output: xr2(i1,j1): i coordinates in grid2 (with decimals)
+    !           yr2(i1,j1): j coordinates in grid2 (with decimals)
     !-------------------------------------------------------------------! 
 
-
-    integer :: imax,jmax,i1, j1
-    real    :: fi2,an2,xp2,yp2
-    real    :: glon(imax,jmax),glat(imax,jmax)
-    real    :: xr2(imax,jmax),yr2(imax,jmax)
-
+    real, intent(in)    :: glon(imax,jmax),glat(imax,jmax) 
+    real, intent(out)   :: xr2(imax,jmax),yr2(imax,jmax)
+    real, intent(in), optional    :: fi2,an2,xp2,yp2
+    integer, intent(in) :: imax,jmax
+    real  :: fi_loc,an_loc,xp_loc,yp_loc
     real, parameter :: PI=3.14159265358979323
-    real    :: PId4,dr,dr2
+    real    :: PId4,dr,dr2,dist,dist2,dist3
+    integer ::i,j,ip1,jp1, ir2, jr2,i1,j1
 
 
-    PId4    = PI/4.      
-    dr2    = PI/180.0/2.      ! degrees to radians /2
-    dr    = PI/180.0      ! degrees to radians 
+   if(projection=='Stereographic'.or.(present(fi2).and.present(an2).and.present(xp2).and.present(yp2)))then
+     PId4  =PI/4.      
+     dr2   =PI/180.0/2.   ! degrees to radians /2
+     dr    =PI/180.0      ! degrees to radians 
+     fi_loc=fi
+     an_loc=an
+     xp_loc=xp
+     yp_loc=yp
 
+    if(present(fi2))fi_loc=fi2
+    if(present(an2))an_loc=an2
+    if(present(xp2))xp_loc=xp2
+    if(present(yp2))yp_loc=yp2
     do j1 = 1, jmax
        do i1 = 1, imax
+          xr2(i1,j1)=xp_loc+an_loc*tan(PId4-glat(i1,j1)*dr2)*sin(dr*(glon(i1,j1)-fi_loc))
+          yr2(i1,j1)=yp_loc-an_loc*tan(PId4-glat(i1,j1)*dr2)*cos(dr*(glon(i1,j1)-fi_loc))
+       enddo
+    enddo
+  else if(projection=='lon lat')then! lon-lat grid
+    do j1 = 1, jmax
+       do i1 = 1, imax
+     xr2(i1,j1)=(glon(i1,j1)-glon_fdom(1,1))/(glon_fdom(2,1)-glon_fdom(1,1))+1
+     if(xr2(i1,j1)<0.5)xr2=xr2+360.0/(glon_fdom(2,1)-glon_fdom(1,1))
+     yr2(i1,j1)=(glat(i1,j1)-glat_fdom(1,1))/(glat_fdom(1,2)-glat_fdom(1,1))+1
+       enddo
+    enddo
+  else!general projection, Use only info from glon_fdom and glat_fdom
+        call StopAll('lb2ijm: conversion not yet tested. (You could try the method below)')
+     
+!VERY SLOW, specially for large grids
+    do j1 = 1, jmax
+       do i1 = 1, imax
+     dist=10.0!max distance is PI
+     do j=1,JJFULLDOM
+        do i=1,IIFULLDOM
+           if(dist>great_circle_distance(glon(i1,j1),glat(i1,j1),glon_fdom(i,j) &
+               ,glat_fdom(i,j)))then
+              dist=great_circle_distance(glon(i1,j1),glat(i1,j1),glon_fdom(i,j) &
+               ,glat_fdom(i,j))
+              xr2(i1,j1)=i
+              yr2(i1,j1)=j
+           endif
+        enddo
+     enddo
 
-          xr2(i1,j1)=xp2+an2*tan(PId4-glat(i1,j1)*dr2) &
-                            *sin(dr*(glon(i1,j1)-fi2))
-          yr2(i1,j1)=yp2-an2*tan(PId4-glat(i1,j1)*dr2) &
-                            *cos(dr*(glon(i1,j1)-fi2))
+!find the real part of i and j by comparing distances to neighbouring cells
+!
+!     C
+!    /|\
+!   / | \
+!  /  |  \
+! A---D---B
+!
+!A=(i,j) ,B=(i+1,j), C=(glon,glat)
+!dist=AC, dist2=BC, dist3=AB
+!AD=(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3)
+!
+     ir2 = nint(xr2(i1,j1))
+     jr2 = nint(yr2(i1,j1))
+     ip1=ir2+1
+     if(ip1>IIFULLDOM)ip1=ip1-2
+     dist2=great_circle_distance(glon(i1,j1),glat(i1,j1),glon_fdom(ip1,jr2),glat_fdom(ip1,jr2))
+     dist3=great_circle_distance( glon_fdom(ir2,jr2), &
+                                  glat_fdom(ir2,jr2), &
+                                  glon_fdom(ip1,jr2), &
+                                  glat_fdom(ip1,jr2))
 
-       end do ! i
-    end do ! j
+     xr2(i1,j1)=xr2(i1,j1)+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
 
+
+     jp1=jr2+1
+     if(jp1>JJFULLDOM)jp1=jp1-2
+
+     dist2=great_circle_distance(glon(i1,j1),glat(i1,j1),glon_fdom(ir2,jp1),glat_fdom(ir2,jp1))
+!GFORTRAN CHANGE
+     dist3=great_circle_distance( glon_fdom(ir2,jr2), &
+                                  glat_fdom(ir2,jr2), &
+                                  glon_fdom(ir2,jp1), & 
+                                  glat_fdom(ir2,jp1) )
+
+     yr2(i1,j1)=yr2(i1,j1)+(dist*dist+dist3*dist3-dist2*dist2)/(2*dist3*dist3)
+
+       enddo
+    enddo
+
+endif
   end subroutine lb2ijm
 
  subroutine lb2ij(gl2,gb2,xr2,yr2,fi2,an2,xp2,yp2)
 
-!Note: this routine is not supposed to be CPU optimized
+!Note: this routine is not yet CPU optimized
  !-------------------------------------------------------------------! 
  !      calculates coordinates xr2, yr2 (real values) from gl(lat),gb(long) 
  !
@@ -592,8 +667,8 @@ end subroutine GlobalPosition
  !              i1max,j1max: number of points (grid1) in  x- og y- direction
  !
  !
- !      output: i2(i1,j1): i coordinates in grid2 
- !              j2(i1,j1): j coordinates in grid2 
+ !      output: xr2(i1,j1): i coordinates in grid2 
+ !              yr2(i1,j1): j coordinates in grid2 
  !-------------------------------------------------------------------! 
 
     real, intent(in)    :: gl2,gb2 
@@ -732,6 +807,58 @@ end subroutine GlobalPosition
     end do ! j
 
   end subroutine ij2lbm
+
+  subroutine ij2lb(i,j,lon,lat,fi,an,xp,yp)
+  !-------------------------------------------------------------------! 
+  !      calculates l(lat),b(long) (geographical coord.) 
+  !      from i,j coordinates in polar stereographic projection 
+  !
+  !      input:  i,j
+  !              xp,yp:   coord. of the polar point.
+  !              an:      number of grid-distances from pole to equator.
+  !              fi:      rotational angle for the x,y grid (at i=0).
+  !              imax,jmax:   number of points in  x- og y- direction
+  !              glmin:   gives min.value of geographical lenght
+  !                       =>  glmin <= l <= glmin+360.  
+  !                           (example glmin = -180. or 0.)
+  !                       if "geopos","georek" is used
+  !                       then glmin must be the lenght i(1,1) in the
+  !                       geographical grid (gl1 to "geopos")
+  !      output: lon: longitude glmin <= lon <= glmin+360. 
+  !              lat: latitude  -90. <= lat <= +90. 
+  !-------------------------------------------------------------------! 
+
+    integer :: i, j
+    real    :: lon,lat
+    real    :: fi, an, xp, yp 
+    real    :: om, om2, glmin, glmax,dy, dy2,rp,rb, rl, dx, dr
+    real, parameter :: PI=3.14159265358979323
+
+    glmin = -180.0
+
+    glmax = glmin + 360.0
+    dr    = PI/180.0      ! degrees to radians
+    om    = 180.0/PI      ! radians to degrees (om=Norwegian omvendt?)
+    om2   = om * 2.0
+
+!    do j = 1, jmax          
+       dy  = yp - j            
+       dy2 = dy*dy
+!       do i = 1, imax       
+
+         dx = i - xp    ! ds - changed
+         rp = sqrt(dx*dx+dy2)           ! => distance to pole
+         rb = 90.0 - om2 * atan(rp/AN)  ! => latitude
+         rl = 0.0
+         if (rp >  1.0e-10) rl = fi + om*atan2(dx,dy)
+         if (rl <  glmin)   rl = rl + 360.0
+         if (rl >  glmax)   rl = rl - 360.0
+         lon=rl                   ! longitude
+         lat=rb                   ! latitude
+!       end do ! i
+!    end do ! j
+
+  end subroutine ij2lb
 
   subroutine ij2ijm(in_field,imaxin,jmaxin,out_field,imaxout,jmaxout, &
                    fiin,anin,xpin,ypin,fiout,anout,xpout,ypout)

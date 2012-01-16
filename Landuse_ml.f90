@@ -45,7 +45,7 @@ use ModelConstants_ml,only: DEBUG_i, DEBUG_j, NLANDUSEMAX, &
                             USE_PFT_MAPS, DEBUG_LANDPFTS, &
                             DEBUG_LANDUSE, NPROC, IIFULLDOM, JJFULLDOM, &
                             DomainName, MasterProc
-use NetCDF_ml,      only: ReadField_CDF
+use NetCDF_ml,      only: ReadField_CDF,printcdf
 use Par_ml,         only: li0, lj0, li1, lj1, MAXLIMAX, MAXLJMAX, &
                           limax, ljmax, me
 use SmallUtils_ml,  only: find_index, NOT_FOUND, WriteArray
@@ -118,9 +118,14 @@ contains
    logical :: filefound
 
     !=====================================
+
+!ReadLandUse_CDF to be used as default when glc2000 data is improved?
+
+
      filefound=.false.
      call ReadLandUse(filefound) !=> Land_codes, Percentage cover per grid
 
+!ReadLandUse_CDF use Max Posch 5km landuse over emep area and glc200 where this dat is not defined.
      if(.not.filefound)call ReadLandUse_CDF(filefound) !=> Land_codes, Percentage cover per grid
 
      call CheckStop(.not.filefound,"InitLanduse failed!")
@@ -212,7 +217,7 @@ contains
          call StopAll('Inputs.Landuse not found') 
       endif
 
- 
+!      call printCDF('LU', landuse_in(:,:,1),'??')
 
     do i = li0, li1
        do j = lj0, lj1
@@ -267,6 +272,7 @@ contains
 
     ! temporary arrays used.  Will re-write one day....
     real, dimension(MAXLIMAX,MAXLJMAX,NLANDUSEMAX):: landuse_in ! tmp, with all data
+    real, dimension(MAXLIMAX,MAXLJMAX):: landuse_tmp ! tmp, with all data
     real, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_data ! tmp, with all data
     integer, dimension(MAXLIMAX,MAXLJMAX):: landuse_ncodes ! tmp, with all data
     integer, dimension(MAXLIMAX,MAXLJMAX,NLUMAX):: landuse_codes ! tmp, with all data
@@ -276,8 +282,8 @@ contains
 
 
     if (MasterProc ) write(*,*) "LANDUSE_CDF: experimental so far"
-    filefound=.false.
-    return
+!    filefound=.false.
+!    return
 
     maxlufound = 0   
 
@@ -313,21 +319,23 @@ contains
        !
        if(me==0)write(*,*)'Reading landuse ',trim(Land_codes(lu))
        !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&!fast but unprecise
-       call ReadField_CDF('/global/work/mifapw/emep/Data/Landuse_PS_5km.nc',& !SLOW!
+       call ReadField_CDF('Landuse_PS_5km.nc',& !SLOW!
             Land_codes(lu),landuse_in(1,1,lu),1,interpol='conservative', &
-            needed=.true.,debug_flag=.true.)
-       !   call ReadField_CDF('/global/work/mifapw/emep/Data/LanduseGLC.nc',&
-       !        Land_codes(lu),landuse_tmp,1,interpol='conservative', &
-       !        needed=.true.,debug_flag=.true.)
-       !   do j = lj0, lj1
-       !      do i = li0, li1
-       !         if(landuse_in(i,j,lu)<-0.1)landuse_in(i,j,lu)=landuse_tmp(i,j)
-       !      end do  !j
-       !   end do  !i
+            needed=.true.,debug_flag=.true.,UnDef=-9.9E19) !NB: Undef must be largenegative, 
+!          because it is avergaed over many points, and the final result must still be negative
+          call ReadField_CDF('LanduseGLC.nc',&
+               Land_codes(lu),landuse_tmp,1,interpol='conservative', &
+               needed=.true.,debug_flag=.true.)
+          do j = 1, ljmax
+             do i = 1, limax
+                if(landuse_in(i,j,lu)<-0.1)landuse_in(i,j,lu)=landuse_tmp(i,j)
+             end do  !j
+          end do  !i
     enddo
+     ! call printCDF('LU_cdf', landuse_in(:,:,1),'??')
 
-    do i = li0, li1
-       do j = lj0, lj1
+    do i = 1, limax
+       do j = 1, ljmax
           do lu = 1, NLanduse_DEF
              if ( landuse_in(i,j,lu) > 0.0 ) then
 

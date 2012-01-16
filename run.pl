@@ -798,8 +798,11 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
   $ifile{"$DataDir/SoilTypes_IFS.nc"} = "SoilTypes_IFS.nc";
+#TEMPORARY SETUP
   my $tmpndep = "/home/mifads/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
   $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
+  $ifile{"$DataDir/annualNdep_tmp.nc"} = "annualNdep.nc";
+
 # hb NH3emis
 # New ammonia emissions  ---   NB no read permissions yet!!
   $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
@@ -807,8 +810,13 @@ print "TESTING PM $poll $dir\n";
 # new inputs style (Aug 2007)  with compulsory headers:
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
+
+  $ifile{"$DataDir/Landuse_PS_5km.nc"} ="Landuse_PS_5km.nc";
+  $ifile{"$DataDir/LanduseGLC.nc"} ="LanduseGLC.nc";
+
   $ifile{"$DataDir/LandInputs_Jan2012/Inputs_DO3SE.csv"} = "Inputs_DO3SE.csv";
   $ifile{"$DataDir/LandInputs_Jan2012/Inputs_LandDefs.csv"} = "Inputs_LandDefs.csv";
+
   $ifile{"$DataDir/sondesLL.dat"} = "sondes.dat";
   $ifile{"$DataDir/sitesLL.dat"} = "sites.dat";
   # Extended to get isoprene, HCHO EC, OC /(huge list!)

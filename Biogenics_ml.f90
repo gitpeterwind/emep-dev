@@ -247,7 +247,7 @@ module Biogenics_ml
        do iEmis = 1, size(BVOC_USED)
           varname = trim(BVOC_USED(iEmis)) // "_" // trim(VegName(iVeg))
           call ReadField_CDF('EMEP_EuroBVOC.nc',varname,&
-             loc,1,interpol='zero_order',needed=.true.,debug_flag=.false.)
+             loc,1,interpol='zero_order',needed=.true.,debug_flag=.false.,UnDef=-999.0)
          if( debug_proc ) write(*, "(2a,f12.3,3i2)") "EURO-BVOC:E ", &
              trim(varname), loc(debug_li, debug_lj), iVeg, ibvoc, iEmis
          if( debug_proc ) write(*, "(2a,2es12.3)") "EURO-BVOC:minmax ", &

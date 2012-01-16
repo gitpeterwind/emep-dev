@@ -166,11 +166,32 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+
+xxxxxxxx rv3_10_5   Peter 16th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+New routine for direct interpolation from polar stereographic projection
+Now zeroth-order interpolation needs Undef to be defined, or all values must be well defined.
+This will slightly change the results. 
+In the future the file from MaxPosch+GLC2000 can be used for Landuse. GLC2000 input still needs some improvements(?).
+
+Modified:
+NetCDF_ml
+GridValuse_ml
+Landuse_ml.f90
+Biogenics_ml
+Emissions_ml
+run.pl
+
+File annualNdep.nc temporarily copied to $DataDir as annualNdep_tmp.nc.
+
+
+=======
 xxxxxxxx rv3_10_4  Dave 13th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl - uses LAndInputs_Jan2012
           Higher (20m) trees and some small changes in land-defs
           Will change results a bit, by increasing deposition
+
 
 xxxxxxxx rv3_10_3   Peter 10th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
