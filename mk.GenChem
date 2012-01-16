@@ -16,7 +16,8 @@
 # Must specify source of biomass-burning
 ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
-#EmChem09 
+run=EmChem09 
+run=CB05 
 #run=CRI_v2_R5
 run=EmChem09soa
 
@@ -40,6 +41,10 @@ elif [ $run == CRI_v2_R5 ]; then
   spcs=( CRI_v2_R5base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_EmChem09/PMmass )  # EmChem09
   rcns=( CRI_v2_R5base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/PMmass )  # EmChem09 a
 
+elif [ $run == CB05 ]; then
+  echo "RUN CB05 chosen"
+  spcs=( CB05base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_EmChem09/PMmass )  # EmChem09
+  rcns=( CB05base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/PMmass )  # EmChem09 a
 else
   echo "SELECTION of run $run failed!! "
   exit
