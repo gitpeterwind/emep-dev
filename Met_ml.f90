@@ -3134,6 +3134,8 @@ contains
           call check(nf90_inq_varid(ncid = ncFileID, name = "k", varID = varID))
           call check(nf90_get_var(ncFileID, varID, sigma_mid ))
 
+          call check(nf90_close(ncFileID))
+
 
        endif !found meteo
     endif !me=0
