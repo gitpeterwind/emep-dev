@@ -167,10 +167,12 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 
-xxxxxxxx rv3_10_6???  Dave 16th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_6  Dave, Peter 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
-Started to add CB05 chemistry, but maybe only partial commit. Will
-sort out tomorrow (17th). Sorry.
+Peter - added Emissions_ml from _5 commit
+
+Dave: Started to add CB05 chemistry, but maybe only partial commit. Will
+continue
 
 xxxxxxxx rv3_10_5   Peter 16th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
