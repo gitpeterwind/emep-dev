@@ -4173,7 +4173,6 @@ plus other improvements arising from chemistry comparison with
 Garry Hayman. This '09 version is now the default chemistry.
 
 Plus (Alvaro)
-============
 My_Derived_ml - made compatable with older gfortran through use of
 tag_name (gfortran or gcc bug, solved for those with Ubuntu Jaunty
 of Karmic, affects Hardy, in which   "AAA" // "BBB" wasn't accepted for
