@@ -166,13 +166,21 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_6b  Robert 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
-xxxxxxxx rv3_10_6  Dave, Peter 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA model version PAPA. 
+        Updated file: ZCM_vbs_tests/VBS_ASOAageing.reactions [Now identical to the version used in the EMEP-VBS paper submitted to ACPD] 
+
+        Note: Some other files may still not be updated. Will be fixed soon.
+
+xxxxxxxx rv3_10_6  Dave, Peter, Robert 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Peter - added Emissions_ml from _5 commit
 
 Dave: Started to add CB05 chemistry, but maybe only partial commit. Will
 continue
+
+Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA model version PAPA. Present version is 
 
 xxxxxxxx rv3_10_5   Peter 16th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
