@@ -868,8 +868,8 @@ if(USE_SOILNOX)then
   ! read in map of annual N-deposition produced from pre-runs of EMEP model
   ! with script mk.annualNdep
   ! 
-   call ReadField_CDF('/home/mifads/Unify/MyData/annualNdep.nc',&
-     'Ndep_m2',AnnualNdep,1, interpol='zero_order',needed=.true.,debug_flag=.true.)
+   call ReadField_CDF('annualNdep.nc',&
+     'Ndep_m2',AnnualNdep,1, interpol='zero_order',needed=.true.,debug_flag=.true.,UnDef=0.0)
 
    call CheckStop(USE_GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
    ! We then calculate SoulNOx in Biogenics_ml
