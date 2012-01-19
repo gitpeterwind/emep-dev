@@ -1,0 +1,38 @@
+"*Helper species - sums of various SOA, EC etc..."
+"*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
+"***************************************************"
+GAS_ASOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+GAS_BSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+GAS_FFUELOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+GAS_OFFUELOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+GAS_XO_OFFLOA_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_ASOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_BSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_ASOA_OM,1,asoaom,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate ASOA from AVOC oxidation (for storing in units of ug/m3)
+PART_BSOA_OM,1,bsoaom,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate BSOA from BVOC oxidation (for storing in units of ug/m3)
+PART_FFUELOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_OFFUELOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_XO_OFFLOA25_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged primary FFUEL OA
+PART_FFUELOA25_OM,1,ffueloa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total fine particulate OA from "FFUEL" POA emissions (for storing in units of ug/m3)
+PART_WOODOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_OWOODOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_XO_OWDOA25_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged wood burning OA
+PART_WOODOA25_OM,1,woodoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate wild fire OA (for storing in units of ug/m3)
+PART_FFIREOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_OFFIREOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_XO_OFFIOA25_O,1,O,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Added oxygen in aged wild fire OA
+PART_FFIREOA25_OM,1,ffireoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate wild fire OA (for storing in units of ug/m3)
+PART_TBSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_IBSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+PART_OC10,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total OC (in PM10!?, that is, includes coarse OC!)
+PART_OC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OC in PM2.5
+NONVOL_FFUELOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from primary non-volatile OA emissions (NOTE!!! May include non-fossil [wood burning] component if the SNAP-2 emissions are not split!)
+NONV_FFUELOC_COARSE,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Coarse OA (2.5-10um) [C-units] from primary Non-volatile OA emissions (NOTE!!! May include non-fossil [wood burning] component if the SNAP-2 emissions are not split!)
+NONVOL_WOODOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+NONVOL_BGNDOC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+NONVOL_FFIREOC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,!
+"***************************************************"
+"** do not include PART_OM in PM10 PMFINE to avoid double-count"
+PART_OM_F,1,sumom,1.,xx,xx,0,0,0,xx,PCM_HELP;PMFINE;PM10,,! Includes OM
+"***************************************************"
+
