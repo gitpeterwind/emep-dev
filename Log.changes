@@ -166,6 +166,49 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+
+xxxxxxxx rv3_10_7  Dave, 19th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+
+Start of modified system for nesting external boundary and initial conditions.
+Needed because we want to avoid chemistry-specific  (eg EmChem09) indices
+in the main code, and to make it explicit to users that the BIC mapping
+is very dependent on chem scheme and external data.
+
+Nest_ml
+          "chemistry"-dependent bits removed, functionality now
+          through new files given below. Code much shorter
+          since species mapping moved to external files, and
+          some repetition of the same procedures unified.
+          Now only needs NSPEC_ADV from GenSpecs_adv_ml.
+          "print" changed to write.
+          Prefix "Nest:" added to many write-outs, to make it easier to
+          search log files.
+
+Makefile.SRCS - add My_ExternalBICs_ml.f90
+
+*** New: 
+
+File: ZD_OZONE/My_ExternalBICs_ml.f90  - a do-nothing file  for the usual case
+        where the model uses the standard BICs. Copied along with other My* files
+
+Directory: ZD_EXTRA
+File: MOZART_EmChem09_ExternalBICs_ml.f90
+File: README.txt - explains usage
+
+The MOZART file is intended as a starter, but includes I think the same
+functionality as the code in the previous Nest_ml. *NOT TESTED* except
+for compilation (as ds has never used Nest_ml, and hence has nothing to
+test with). If more complication is desired, then this can be done
+within this module I hope, simply "use"-ing other modules to grab'
+any needed information (such as date).
+
+
+To-Do: *test* and update MOZART .f90
+       * clean-up* Nest_ml, much code now commented out
+        Should also make files for RCA, HTAP as appropriate. These will also
+        be put in ZD_EXTRA
+
 xxxxxxxx rv3_10_6b  Robert 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA model version PAPA. 
@@ -173,14 +216,18 @@ Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA mod
 
         Note: Some other files may still not be updated. Will be fixed soon.
 
-xxxxxxxx rv3_10_6  Dave, Peter, Robert 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_6  Dave, Peter 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Peter - added Emissions_ml from _5 commit
 
 Dave: Started to add CB05 chemistry, but maybe only partial commit. Will
 continue
 
-Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA model version PAPA. Present version is 
+mk.GenChem - cb05 possible. No SOA though.
+
+ZCM_CB05 files
+
+
 
 xxxxxxxx rv3_10_5   Peter 16th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
