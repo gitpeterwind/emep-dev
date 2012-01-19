@@ -2,21 +2,21 @@
 * Aging of ASOA as in Murphy and Pandis (2009). (Tsimpidi et al., 2010, seem to use 4 times faster aging also for SOA!)
 * NOTE! 7.5% mass increase per aging reaction assumed. 
 *
-1.0e-11*Fgas(ALK4_ug10,:)  ALK4_ug10 + [OH]     =  ALK4_UG1 + 0.3825 O_ASOA_ug1 ;
-1.0e-11*Fgas(ALK4_ug1,:)   ALK4_ug1 + [OH]     =  ALK4_ng100 + 0.3825 O_ASOA_ng100 ;
+1.0e-11*Fgas(ALK4_ug10,:)  ALK4_ug10 + [OH]     =  ALK4_ug1 + 6.12 NON_C_ASOA_ug1 ;
+1.0e-11*Fgas(ALK4_ug1,:)   ALK4_ug1 + [OH]     =  ALK4_ng100 + 6.12 NON_C_ASOA_ng100 ;
 *
-1.0e-11*Fgas(OLE1_ug1,:)   [OH] + OLE1_ug1      = OLE1_ng100 + 0.287 O_ASOA_ng100 ;
-1.0e-11*Fgas(OLE1_ug10,:)  [OH] + OLE1_ug10     = OLE1_ug1 + 0.287 O_ASOA_ug1 ;
-1.0e-11*Fgas(OLE1_ug1e2,:) [OH] + OLE1_ug1e2    = OLE1_ug10 + 0.287 O_ASOA_ug10 ;
-1.0e-11*Fgas(OLE1_ug1e3,:) [OH] + OLE1_ug1e3    = OLE1_ug1e2 + 0.287 O_ASOA_ug1e2 ; 
+1.0e-11*Fgas(OLE1_ug1,:)   [OH] + OLE1_ug1      = OLE1_ng100 + 4.59 NON_C_ASOA_ng100 ;
+1.0e-11*Fgas(OLE1_ug10,:)  [OH] + OLE1_ug10     = OLE1_ug1 + 4.59 NON_C_ASOA_ug1 ;
+1.0e-11*Fgas(OLE1_ug1e2,:) [OH] + OLE1_ug1e2    = OLE1_ug10 + 4.59 NON_C_ASOA_ug10 ;
+1.0e-11*Fgas(OLE1_ug1e3,:) [OH] + OLE1_ug1e3    = OLE1_ug1e2 + 4.59 NON_C_ASOA_ug1e2 ; 
 *
-1.0e-11*Fgas(ARO2_ug1,:)   [OH] + ARO2_ug1      = ARO2_ng100 + 0.945 O_ASOA_ng100 ;
-1.0e-11*Fgas(ARO2_ug10,:)  [OH] + ARO2_ug10     = ARO2_ug1 + 0.945 O_ASOA_ug1 ;
-1.0e-11*Fgas(ARO2_ug1e2,:) [OH] + ARO2_ug1e2    = ARO2_ug10 + 0.945 O_ASOA_ug10 ; 
-1.0e-11*Fgas(ARO2_ug1e3,:) [OH] + ARO2_ug1e3    = ARO2_ug1e2 + 0.945 O_ASOA_ug1e2 ;
+1.0e-11*Fgas(ARO2_ug1,:)   [OH] + ARO2_ug1      = ARO2_ng100 + 15.12 NON_C_ASOA_ng100 ;
+1.0e-11*Fgas(ARO2_ug10,:)  [OH] + ARO2_ug10     = ARO2_ug1 + 15.12 NON_C_ASOA_ug1 ;
+1.0e-11*Fgas(ARO2_ug1e2,:) [OH] + ARO2_ug1e2    = ARO2_ug10 + 15.12 NON_C_ASOA_ug10 ; 
+1.0e-11*Fgas(ARO2_ug1e3,:) [OH] + ARO2_ug1e3    = ARO2_ug1e2 + 15.12 NON_C_ASOA_ug1e2 ;
 *
-1.0e-11*Fgas(O_ASOA_ug1,:)      [OH] + O_ASOA_ug1     =  1.075 O_ASOA_ng100 ;
-1.0e-11*Fgas(O_ASOA_ug10,:)     [OH] + O_ASOA_ug10    =  1.075 O_ASOA_ug1  ;
-1.0e-11*Fgas(O_ASOA_ug1e2,:)    [OH] + O_ASOA_ug1e2   =  1.075 O_ASOA_ug10  ;
+1.0e-11*Fgas(NON_C_ASOA_ug1,:)      [OH] + NON_C_ASOA_ug1     =  1.075 NON_C_ASOA_ng100 ;
+1.0e-11*Fgas(NON_C_ASOA_ug10,:)     [OH] + NON_C_ASOA_ug10    =  1.075 NON_C_ASOA_ug1  ;
+1.0e-11*Fgas(NON_C_ASOA_ug1e2,:)    [OH] + NON_C_ASOA_ug1e2   =  1.075 NON_C_ASOA_ug10  ;
 *
 
