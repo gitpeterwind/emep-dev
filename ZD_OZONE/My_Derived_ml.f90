@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(34+4+21) :: &
+   type(typ_s5i), public, parameter, dimension(59) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -235,9 +235,10 @@ private
        ! = sum of all EC and OM components.)
         ,typ_s5i("PART_ASOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)&  !! ALWAYS as ugC
         ,typ_s5i("PART_BSOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-        ,typ_s5i("PART_FFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!        ,typ_s5i("PART_SOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)&
+         ,typ_s5i("PART_FFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
        ! ,typ_s5i("PART_OFFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       !DS  ,typ_s5i("PART_WOODOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+         ,typ_s5i("PART_WOODOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
        ! ,typ_s5i("PART_OWOODOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("PART_FFIREOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
        ! ,typ_s5i("PART_OFFIREOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
@@ -247,16 +248,17 @@ private
         ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
 !Needed for forest-fire checks
-        ,typ_s5i("NONVOL_FFUELOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NONVOL_FFUELOC10", "ug", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("NONVOL_FFUELOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NONV_FFUELOC_COARSE", "ug", D2,"AIR_CONCS", SPEC, D)&
        !DS  ,typ_s5i("NONVOL_WOODOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NONVOL_FFIREOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
+!        ,typ_s5i("NONVOL_FFIREOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
 !
         ,typ_s5i("PART_ASOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_BSOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-        !zero for NONVOL:
+!        ,typ_s5i("PART_SOA_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+         !zero for NONVOL:
         ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
-       !DS  ,typ_s5i("PART_WOODOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
+        ,typ_s5i("PART_WOODOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_FFIREOA25_OM", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OWDOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!

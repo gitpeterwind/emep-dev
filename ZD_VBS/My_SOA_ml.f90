@@ -60,22 +60,22 @@ module OrganicAerosol_ml
       ,NVABSOM_GROUP & ! contains the nonvolatile absorbing species for OA partitioning
       ,ASOA => ASOA_GROUP &
       ,BSOA => BSOA_GROUP &
-      ,FFUELOA25 => FFUELOA25_GROUP & ! for summing all semivolatile POA+OPOA from "fossil fuel"
       ,ECFINE => ECFINE_GROUP &                    
-      ,VFFUELOA25  => VFFUELOA25_GROUP &   ! for VBS FFUELOA25_C
-      ,OFFUELOA25  => OFFUELOA25_GROUP & ! for VBS FFUELOA25_C with aging
-      ,OX_OFFUELOA25 => OFFOAEXTRAO25_GROUP &! for VBS FFUELOA25_C with aging
-      ,WOODOA25  => WOODOA25_GROUP &    ! for summing all semivolatile WOOD BURNING OA
-      ,VWOODOA25  => VWOODOA25_GROUP &    ! for VBS WOOD BURNING OA
-      ,OWOODOA25  => OWOODOA25_GROUP &  ! for VBS WOOD BURNING OA with aging
-      ,OX_OWOODOA25 => OWOODOAEXTRAO25_GROUP & ! for VBS WOOD BURNING OA with aging
-      ,FFIREOA25  => FFIREOA25_GROUP &    ! for summing all semivolatile Wildfire OA
-      ,VFFIREOA25  => VFFIREOA25_GROUP &    ! for VBS Wildfire OA
-      ,OFFIREOA25  => OFFIREOA25_GROUP &  ! for VBS Wildfire OA with aging
-      ,OX_OFFIREOA25 => OFFIREOAEXTRAO25_GROUP & ! for VBS Wildfire OA with aging
-      ,FFUELEC  => FFUELEC_GROUP &
+      ,SVFFUELOA25  => SVFFUELOA25_GROUP &   ! for VBS semivolatile FFUELOA25 (total POA+OPOA!)
+!XResearch      ,PFFUELOA25  => PFFUELOA25_GROUP & ! for VBS primary FFUELOA25 not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile POA as well? 
+!Research      ,OFFUELOA25  => OFFUELOA25_GROUP & ! for VBS oxidised FFUELOA25 (aged POA)
+!Research      ,OX_OFFUELOA25 => OFFOAEXTRAO25_GROUP &! for VBS FFUELOA25_C with aging (added "oxygen")
+      ,SVWOODOA25  => SVWOODOA25_GROUP &    ! for VBS semivolatile WOOD BURNING OA (primary + aged!)
+!XResearch      ,PWOODOA25  => PWOODOA25_GROUP &  ! for VBS primary WOOD BURNING OA not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile WOOD BURNING OA as well? 
+!Research      ,OWOODOA25  => OWOODOA25_GROUP &  ! for VBS oxidised (aged) WOOD BURNING OA 
+!Research      ,OX_OWOODOA25 => OWOODOAEXTRAO25_GROUP & ! for VBS WOOD BURNING OA with aging (added "oxygen")
+      ,SVFFIREOA25  => SVFFIREOA25_GROUP &    ! for VBS semivolatile Wildfire OA (primary + aged!)
+!XResearch      ,PFFIREOA25  => PFFIREOA25_GROUP &  ! for VBS primary Wildfire OA not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile FFIRE POA as well? 
+!Research      ,OFFIREOA25  => OFFIREOA25_GROUP &  ! for VBS oxidised (aged) Wildfire OA
+!Research      ,OX_OFFIREOA25 => OFFIREOAEXTRAO25_GROUP & ! for VBS Wildfire OA with aging (added "oxygen")
+       ,FFUELEC  => FFUELEC_GROUP &
       ,NVFFUELOC25  => NVFFUELOC25_GROUP & ! only non-volatile FFUELOC emissions (PM2.5 fraction)
-      ,NVFFUELOC10  => NVFFUELOC10_GROUP & ! only non-volatile FFUELOC emissions (PM10 fraction, that is all of it)
+      ,NVFFUELOCCO  => NVFFUELOC_COARSE_GROUP & ! only non-volatile FFUELOC emissions (PM2.5-10 fraction, i.e., the coarse fraction)
       ,NVWOODOC25  => NVWOODOC25_GROUP & ! only non-volatile WOODOC emissions, zero in VBS-PAX type runs
       ,NVFFIREOC25  => NVFFIREOC25_GROUP ! only non-volatile FFIREOC emissions, zero in VBS-PAX type runs
 
@@ -253,7 +253,8 @@ module OrganicAerosol_ml
    integer :: nmonth, nday, nhour, seconds
 
   ! Outputs:
-   real :: surfOC25, surfASOA, surfBSOA, surfFFUELOC25, surfWOODOC25, surfBGNDOC, surfOFFUELOA25_C, surfFFUELOA25_C, surfOWOODOA25, surfWOODOA25, surfOFFIREOA25, surfFFIREOA25
+!   real :: surfOC25, surfASOA, surfBSOA, surfFFUELOC25, surfWOODOC25, surfBGNDOC, surfOFFUELOA25_C, surfFFUELOA25_C, surfOWOODOA25, surfWOODOA25, surfOFFIREOA25, surfFFIREOA25
+   real :: surfOC25, surfASOA, surfBSOA, surfBGNDOC, surfFFUELOA25_C, surfWOODOA25_C, surfFFIREOA25_C
 
 
    nmonth = current_date%month
@@ -359,10 +360,14 @@ module OrganicAerosol_ml
            do i = 1, NUM_NONVOLPCM
               !dsrb ispec = NONVOLOC(i)
               ispec = NONVOLPCM_GROUP(i)
-              write(unit=6,fmt="(a4,i3,a15,es10.2,2f10.3,a4,es10.3,f13.4)")&
+!              write(unit=6,fmt="(a4,i3,a15,es10.2,2f10.3,a4,es10.3,f13.4)")&
+!                "NVOL", ispec,&
+!                species(ispec)%name, xn(ispec,K2),-999.999, &
+!                -999.999, " => ", Fpart(ispec,K2), 1000.0*ug_nonvol(i, K2)
+              write(unit=6,fmt="(a4,i3,a15,es10.2,2f10.3)")&
                 "NVOL", ispec,&
                 species(ispec)%name, xn(ispec,K2),-999.999, &
-                -999.999, " => ", Fpart(ispec,K2), 1000.0*ug_nonvol(i, K2)
+                -999.999
            end do
 
            do ispec = S1,S2
@@ -421,48 +426,48 @@ module OrganicAerosol_ml
      xn(PART_BSOA_C,k)  = sum ( Fpart(BSOA,k) *xn(BSOA,k)  *species(BSOA)%carbons )
      xn(GAS_BSOA_C,k)  = sum ( Fgas( BSOA,k) *xn(BSOA,k)  *species(BSOA)%carbons )
      xn(NONVOL_FFUELOC25,k) = sum ( xn(NVFFUELOC25,k) *species(NVFFUELOC25)%carbons)
-     xn(NONVOL_FFUELOC10,k) = sum ( xn(NVFFUELOC10,k) *species(NVFFUELOC10)%carbons)
+     xn(NONV_FFUELOC_COARSE,k) = sum ( xn(NVFFUELOCCO,k) *species(NVFFUELOCCO)%carbons)
      xn(NONVOL_WOODOC25,k)  = sum ( xn(NVWOODOC25,k)  *species(NVWOODOC25)%carbons )
      xn(NONVOL_FFIREOC25,k)  = sum ( xn(NVFFIREOC25,k)  *species(NVFFIREOC25)%carbons )
 !RB want to have PART_FFUELOA25/FFIREOA/WOODOA_C working also with nonvolatile POA emissions, test this hard coded version first
-     xn(PART_FFUELOA25_C,k)  = sum ( Fpart(VFFUELOA25,k) *xn(VFFUELOA25,k) *species(VFFUELOA25)%carbons ) + &
+     xn(PART_FFUELOA25_C,k)  = sum ( Fpart(SVFFUELOA25,k) *xn(SVFFUELOA25,k) *species(SVFFUELOA25)%carbons ) + &
 	xn(NONVOL_FFUELOC25,k)
-     xn(GAS_FFUELOA_C,k)  = sum ( Fgas(VFFUELOA25,k) *xn(VFFUELOA25,k) *species(VFFUELOA25)%carbons )
-     xn(PART_OFFUELOA25_C,k)  = sum ( Fpart(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
-     xn(GAS_OFFUELOA_C,k)  = sum ( Fgas(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
-     xn(PART_XO_OFFLOA25_O,k)  = sum ( Fpart(OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
-     xn(GAS_XO_OFFLOA_O,k)  = sum ( Fgas( OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
-     xn(PART_WOODOA25_C,k)  = sum ( Fpart(VWOODOA25,k) *xn(VWOODOA25,k)  *species(VWOODOA25)%carbons ) + &
+!Research     xn(GAS_FFUELOA_C,k)  = sum ( Fgas(SVFFUELOA25,k) *xn(SVFFUELOA25,k) *species(SVFFUELOA25)%carbons )
+!Research     xn(PART_OFFUELOA25_C,k)  = sum ( Fpart(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
+!Research     xn(GAS_OFFUELOA_C,k)  = sum ( Fgas(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
+!Research     xn(PART_XO_OFFLOA25_O,k)  = sum ( Fpart(OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
+!Research     xn(GAS_XO_OFFLOA_O,k)  = sum ( Fgas( OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
+     xn(PART_WOODOA25_C,k)  = sum ( Fpart(SVWOODOA25,k) *xn(SVWOODOA25,k)  *species(SVWOODOA25)%carbons )  + &
 	xn(NONVOL_WOODOC25,k) 
-     xn(PART_OWOODOA25_C,k)  = sum ( Fpart(OWOODOA25,k) *xn(OWOODOA25,k)  *species(OWOODOA25)%carbons )
-     xn(PART_XO_OWDOA25_O,k)  = sum ( Fpart(OX_OWOODOA25,k) *xn(OX_OWOODOA25,k) )
-     xn(PART_FFIREOA25_C,k)  = sum ( Fpart(VFFIREOA25,k) *xn(VFFIREOA25,k)  *species(VFFIREOA25)%carbons ) + &
+!PPOA     xn(PART_OWOODOA25_C,k)  = sum ( Fpart(OWOODOA25,k) *xn(OWOODOA25,k)  *species(OWOODOA25)%carbons )
+!PPOA     xn(PART_XO_OWDOA25_O,k)  = sum ( Fpart(OX_OWOODOA25,k) *xn(OX_OWOODOA25,k) )
+     xn(PART_FFIREOA25_C,k)  = sum ( Fpart(SVFFIREOA25,k) *xn(SVFFIREOA25,k)  *species(SVFFIREOA25)%carbons )  + &
 	xn(NONVOL_FFIREOC25,k)
-     xn(PART_OFFIREOA25_C,k)  = sum ( Fpart(OFFIREOA25,k) *xn(OFFIREOA25,k)  *species(OFFIREOA25)%carbons )
-     xn(PART_XO_OFFIOA25_O,k)  = sum ( Fpart(OX_OFFIREOA25,k) *xn(OX_OFFIREOA25,k) )
+!PPOA     xn(PART_OFFIREOA25_C,k)  = sum ( Fpart(OFFIREOA25,k) *xn(OFFIREOA25,k)  *species(OFFIREOA25)%carbons )
+!PPOA     xn(PART_XO_OFFIOA25_O,k)  = sum ( Fpart(OX_OFFIREOA25,k) *xn(OX_OFFIREOA25,k) )
 !Test for storing in ug/m3, Use with caution! 
      xn(PART_ASOA_OM,k)  = sum ( ug_semivol(ASOA,k) ) * ugC2xn * 12.0 
      xn(PART_BSOA_OM,k)  = sum ( ug_semivol(BSOA,k) ) * ugC2xn * 12.0 
 !RB want to have PART_FFUELOA25/FFIREOA/WOODOA_OM working also with nonvolatile POA emissions, test this hard coded version first
-     xn(PART_FFUELOA25_OM,k)  = sum ( ug_semivol(FFUELOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFUELOC25,k) * 1.25 * 12.0 ! factor 12.0 from M(OC25-components)=12 and M(OM-components)=1, OM/OC=1.25 assumed for Primary FFUELOC emissions
-     xn(PART_WOODOA25_OM,k)  = sum ( ug_semivol(WOODOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_WOODOC25,k) * 1.7 * 12.0 ! OM/OC=1.25 assumed for Primary WOODOC and FFIRE emissions
-     xn(PART_FFIREOA25_OM,k)  = sum ( ug_semivol(FFIREOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFIREOC25,k) * 1.7 * 12.0 
+     xn(PART_FFUELOA25_OM,k)  = sum ( ug_semivol(SVFFUELOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFUELOC25,k) * 1.25 * 12.0 ! factor 12.0 from M(OC25-components)=12 and M(OM-components)=1, OM/OC=1.25 assumed for Primary FFUELOC emissions
+     xn(PART_WOODOA25_OM,k)  = sum ( ug_semivol(SVWOODOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_WOODOC25,k) * 1.7 * 12.0 ! OM/OC=1.7 assumed for Primary WOODOC and FFIRE emissions
+     xn(PART_FFIREOA25_OM,k)  = sum ( ug_semivol(SVFFIREOA25,k) ) * ugC2xn * 12.0 + xn(NONVOL_FFIREOC25,k) * 1.7 * 12.0 
 
 !HARDCODE
 !   xn(AER_TBSOA,k)  =  xn(AER_BSOA,k)  ! Just in case TBSOA is wanted for kam
 !...............................................................................
-   xn(PART_TBSOA_C,k)  = &
-     Fpart( TERP_ng100,k) *xn(TERP_ng100,k)  *species(TERP_ng100)%carbons + &
-     Fpart( TERP_ug1,k) *xn(TERP_ug1,k)  *species(TERP_ug1)%carbons + &
-     Fpart( TERP_ug10,k) *xn(TERP_ug10,k)  *species(TERP_ug10)%carbons + &
-     Fpart( TERP_ug1e2,k) *xn(TERP_ug1e2,k)  *species(TERP_ug1e2)%carbons + &
-     Fpart( TERP_ug1e3,k) *xn(TERP_ug1e3,k)  *species(TERP_ug1e3)%carbons
-   xn(PART_IBSOA_C,k)  = &
-     Fpart( ISOP_ng100,k) *xn(ISOP_ng100,k)  *species(ISOP_ng100)%carbons + &
-     Fpart( ISOP_ug1,k) *xn(ISOP_ug1,k)  *species(ISOP_ug1)%carbons + &
-     Fpart( ISOP_ug10,k) *xn(ISOP_ug10,k)  *species(ISOP_ug10)%carbons + &
-     Fpart( ISOP_ug1e2,k) *xn(ISOP_ug1e2,k)  *species(ISOP_ug1e2)%carbons + &
-     Fpart( ISOP_ug1e3,k) *xn(ISOP_ug1e3,k)  *species(ISOP_ug1e3)%carbons
+!Research   xn(PART_TBSOA_C,k)  = &
+!Research     Fpart( TERP_ng100,k) *xn(TERP_ng100,k)  *species(TERP_ng100)%carbons + &
+!Research     Fpart( TERP_ug1,k) *xn(TERP_ug1,k)  *species(TERP_ug1)%carbons + &
+!Research     Fpart( TERP_ug10,k) *xn(TERP_ug10,k)  *species(TERP_ug10)%carbons + &
+!Research     Fpart( TERP_ug1e2,k) *xn(TERP_ug1e2,k)  *species(TERP_ug1e2)%carbons + &
+!Research     Fpart( TERP_ug1e3,k) *xn(TERP_ug1e3,k)  *species(TERP_ug1e3)%carbons
+!Research   xn(PART_IBSOA_C,k)  = &
+!Research     Fpart( ISOP_ng100,k) *xn(ISOP_ng100,k)  *species(ISOP_ng100)%carbons + &
+!Research     Fpart( ISOP_ug1,k) *xn(ISOP_ug1,k)  *species(ISOP_ug1)%carbons + &
+!Research     Fpart( ISOP_ug10,k) *xn(ISOP_ug10,k)  *species(ISOP_ug10)%carbons + &
+!Research     Fpart( ISOP_ug1e2,k) *xn(ISOP_ug1e2,k)  *species(ISOP_ug1e2)%carbons + &
+!Research     Fpart( ISOP_ug1e3,k) *xn(ISOP_ug1e3,k)  *species(ISOP_ug1e3)%carbons
 !   xn(PART_SBSOA,k)  = &
 !     Fpart( SESQ_ug1,k) *xn(SESQ_ug1,k)  *species(SESQ_ug1)%carbons + &
 !    Fpart( SESQ_ug10,k) *xn(SESQ_ug10,k)  *species(SESQ_ug10)%carbons + &
@@ -476,36 +481,36 @@ module OrganicAerosol_ml
 !removed not used?   xn(PART_POC,:) =  xn(PART_FFUELOC,:) + xn(PART_FFUELOA25_C,:)
 ! Hopefully this works for both VBS-NPNA and VBS-PAx type runs. 
 ! WARNING! Test changing to WOODOC25, FFIREOC25 and NONVOLOC25 may cause problems here, especially if coarse components are inlcuded later! But this is rather hard coded anyway...
-   xn(PART_OC10,:)  =  xn(PART_ASOA_C,:)+xn(PART_BSOA_C,:)+xn(NONVOL_FFUELOC10,:) + &
-                    xn(NONVOL_WOODOC25,:)+ xn(NONVOL_BGNDOC,:)+xn(PART_OFFUELOA25_C,:)+ &
-                    xn(PART_FFUELOA25_C,:)+xn(PART_OWOODOA25_C,:)+xn(PART_WOODOA25_C,:)+ &
-                    xn(PART_OFFIREOA25_C,:)+xn(PART_FFIREOA25_C,:)+ xn(NONVOL_FFIREOC25,:)
+   xn(PART_OC10,:)  =  xn(PART_ASOA_C,:)+xn(PART_BSOA_C,:)+xn(NONV_FFUELOC_COARSE,:) + &
+                    xn(NONVOL_BGNDOC,:)+ &
+                    xn(PART_FFUELOA25_C,:)+xn(PART_WOODOA25_C,:)+ &
+                    xn(PART_FFIREOA25_C,:)
 !WARNING! The below will NOT work for NPNA (nonvolatile) type runs. These include fine and coarse OC in NONVOL_FFUELOC. So for these runs the FFUELOC-contribution has to be added separately!!!
-!Test shidting to NONVOL_FFUELOC25!
-   xn(PART_OC25,:)  =  xn(PART_ASOA_C,:)+xn(PART_BSOA_C,:)+ xn(NONVOL_FFUELOC25,:)+&
-                    xn(NONVOL_WOODOC25,:)+ xn(NONVOL_BGNDOC,:)+xn(PART_OFFUELOA25_C,:)+ &
-                    xn(PART_FFUELOA25_C,:)+xn(PART_OWOODOA25_C,:)+xn(PART_WOODOA25_C,:)+ &
-                    xn(PART_OFFIREOA25_C,:)+xn(PART_FFIREOA25_C,:)+ xn(NONVOL_FFIREOC25,:)
+!Test shifting to NONVOL_FFUELOC25!
+   xn(PART_OC25,:)  =  xn(PART_ASOA_C,:)+ xn(PART_BSOA_C,:)+ &
+                    xn(NONVOL_BGNDOC,:)+ &
+                    xn(PART_FFUELOA25_C,:)+xn(PART_WOODOA25_C,:)+ &
+                    xn(PART_FFIREOA25_C,:)
 
    surfASOA  = xn2ugC* xn(PART_ASOA_C,K2) ! sum ( Fpart(ASOA,K2) * xn(ASOA,K2)*species(ASOA)%carbons )
    surfBSOA  = xn2ugC* xn(PART_BSOA_C,K2) ! sum ( Fpart(BSOA,K2) * xn(BSOA,K2)*species(BSOA)%carbons )
 ! Is this used? Then we need the nonvolatile parts as well!?
-   surfOFFUELOA25_C  = xn2ugC* xn(PART_OFFUELOA25_C,K2) !
+!Obsolete?Research   surfOFFUELOA25_C  = xn2ugC* xn(PART_OFFUELOA25_C,K2) !
    surfFFUELOA25_C  = xn2ugC* xn(PART_FFUELOA25_C,K2) ! 
-   surfOWOODOA25 = xn2ugC* xn(PART_OWOODOA25_C,K2) !
-   surfWOODOA25 = xn2ugC* xn(PART_WOODOA25_C,K2) !
-   surfOFFIREOA25 = xn2ugC* xn(PART_OFFIREOA25_C,K2) !
-   surfFFIREOA25 = xn2ugC* xn(PART_FFIREOA25_C,K2) !
+!Obsolete?Research   surfOWOODOA25 = xn2ugC* xn(PART_OWOODOA25_C,K2) !
+   surfWOODOA25_C = xn2ugC* xn(PART_WOODOA25_C,K2) !
+!Obsolete?Research   surfOFFIREOA25 = xn2ugC* xn(PART_OFFIREOA25_C,K2) !
+   surfFFIREOA25_C = xn2ugC* xn(PART_FFIREOA25_C,K2) !
 
-!CHECK this! Is it used also for partitioning runs? Then the partitioning parts are needed as well!!!
-   surfFFUELOC25 = xn2ugC* xn(NONVOL_FFUELOC25,K2) ! sum ( Fpart(FFUELOC,K2) * xn(FFUELOC,K2)*species(FFUELOC)%carbons )
-   surfWOODOC25  = xn2ugC* xn(NONVOL_WOODOC25,K2) ! sum ( Fpart(WOODOC,K2) * xn(WOODOC,K2)*species(WOODOC)%carbons )
-
+!What's this? Obsolete?
+!   surfFFUELOC25 = xn2ugC* xn(NONVOL_FFUELOC25,K2) ! sum ( Fpart(FFUELOC,K2) * xn(FFUELOC,K2)*species(FFUELOC)%carbons )
+!   surfWOODOC25  = xn2ugC* xn(NONVOL_WOODOC25,K2) ! sum ( Fpart(WOODOC,K2) * xn(WOODOC,K2)*species(WOODOC)%carbons )
+!WHAT ABOUT FFIREOC25??? 
 ! FAKEugC*sum ( Fpart(BGND_OC,K2) * &
                   !FAKE       xn(BGND_OC,K2)*species(BGND_OC)%carbons )
 
    surfBGNDOC  = BGND_OC(K2)
-   surfOC25    = surfASOA+surfBSOA+surfFFUELOC25+surfWOODOC25+surfBGNDOC+surfOFFUELOA25_C+surfFFUELOA25_C+surfWOODOA25+surfOWOODOA25+surfFFIREOA25+surfOFFIREOA25 ! 
+   surfOC25    = surfASOA+surfBSOA+surfFFUELOA25_C+surfWOODOA25_C+surfBGNDOC+surfFFIREOA25_C !
 ! DO we need surfOC10 as well? 
 
    !/ Sum of Biogenics -----------------------
@@ -513,12 +518,15 @@ module OrganicAerosol_ml
    if ( debug_flag .and. seconds == 0 ) then
 
        k=20
-       write(unit=6,fmt="(a,3i3,2f7.2,f5.2,20es9.2)")"xns ug ", &
+       write(unit=6,fmt="(a,3i3,2f7.2,f5.2,11es9.2)")"xns ug ", &
          nmonth, nday, nhour, &
          xn(PART_OM_F,20)*xn2ugC, & 
-         COA(20), surfOC25,surfBGNDOC, surfASOA, surfBSOA,surfFFUELOA25_C, &
-         surfOFFUELOA25_C,surfFFUELOC25, surfWOODOA25, surfOWOODOA25, surfWOODOC25, &
-         surfFFIREOA25, surfOFFIREOA25!, &
+         COA(20), surfOC25,surfBGNDOC, surfASOA, surfBSOA, surfFFUELOA25_C, &
+         surfWOODOA25_C, &
+         surfFFIREOA25_C!, &
+!         COA(20), surfOC25,surfBGNDOC, surfASOA, surfBSOA,surfFFUELOA25_C, &
+!         surfOFFUELOA25_C,surfFFUELOC25, surfWOODOA25, surfOWOODOA25, surfWOODOC25, &
+!         surfFFIREOA25, surfOFFIREOA25!, &
 !vbs      xn2ugC*xn(PART_IBSOA,k), xn2ugC*xn(PART_TBSOA,k), xn2ugC*xn(PART_SBSOA,k)
 
    endif
