@@ -167,6 +167,34 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 
+xxxxxxxx rv3_10_8  Robert, 19th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Simplified EmChem09soa scheme. 
+   Removed many unused species and changed some component names. 
+   Reduced the level of detail for the stored ASOA and BSOA species; 
+   now only keep track of ASOA and BSOA (and not subgroups of these) 
+   [further reduction is possible to only store SOA (=ASOA+BSOA)]. 
+ 
+The updated code should give close to identical results to the earlier version but note that to use the "research" version of the VBS-SOA scheme some editing of ZD_VBS/My_SOA_ml.f90 is necessary.
+
+The new code is significantly faster than the old one (almost 20% in the first tests).
+
+Updated files: mk.GenChem
+               ZD_VBS/My_SOA_ml.f90
+               ZD_OZONE/My_Derived_ml.f90
+               ZCM_vbs_tests/VBS_partitioning.species
+                             VBS_help.species
+                             VBS_SOAageing.reactions
+                             VBS_SOAformation.reactions
+                             VBS_ASOAageing.reactions                          
+               ZCM_EmChem09soa/VBS_nonvolatile.species
+                               VBS_emissions_nonvolatilePOA_FromPM25.reactions
+New files:     ZCM_vbs_tests/VBS_SOAageing_Detailed.reactions
+                             VBS_SOAformation_Detailed.reactions
+                             VBS_help_Detailed.species
+                             VBS_partitioning_Detailed.species
+  
+
 xxxxxxxx rv3_10_7  Dave, 19th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 
