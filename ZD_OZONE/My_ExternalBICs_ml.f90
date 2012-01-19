@@ -1,5 +1,5 @@
 module My_ExternalBICs_ml
-!EXTERNAL Boundary and Initial Conditions:
+!External Boundary and Initial Conditions, if needed:
 ! Here = Dummy values - when BICs set using EMEP defaults
 ! Replace this module by eg MOZART_ExternalBICs_ml if using
 ! input from other (eg global) models.
