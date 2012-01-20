@@ -166,6 +166,18 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+Pollen_ml itrodused for calculating birch pollen emission
+Calculates pollen emission based on a code by Sofiev et al. (in prep)
+
+-Introduces a new species, pollen_b (birch pollen) in mChem09
+-Is called from Runchem_ml.
+-Can be turned on in ModelConstands_ml
+-Adds a new dry and wet deposition.
+
+
+
 xxxxxxxx rv3_10_9  Peter, 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 Output_hourly.f90
