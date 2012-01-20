@@ -65,7 +65,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               DEBUG => DEBUG_OUT_HOUR
   use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,      &
                               Idirect, Idiffuse, z_bnd
-  use NetCDF_ml,        only: Out_netCDF,                             &
+  use NetCDF_ml,        only: Out_netCDF,         CloseNetCDF,                    &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
   use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
@@ -508,6 +508,10 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
     enddo KVLOOP
   enddo HLOOP
+
+!Not closing seems to give a segmentation fault when pening the daily file
+!Probably just a bug in the netcdf4/hdf5 library.
+  call CloseNetCDF
 
   contains
 
