@@ -68,8 +68,8 @@
 !    logical, public, parameter :: SEASALT = .true. , AOD = .false. 
  
  !.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
-    integer, public, parameter :: NSIZE = 4
-           !   FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4    
+    integer, public, parameter :: NSIZE = 5
+           !   FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
 
 
 contains

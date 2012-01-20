@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(59) :: &
+   type(typ_s5i), public, parameter, dimension(60) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -179,6 +179,7 @@ private
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("POLLEN_B  ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_WB_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_WB_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_SAH_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
@@ -287,13 +288,14 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
   D2_EXTRA = (/ &
        "Area_Grid_km2     " &
       ,"Area_Conif_Frac   " &
       ,"Area_Decid_Frac   " &
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
+      ,"AreaPOLL          " &
   /)
 
 

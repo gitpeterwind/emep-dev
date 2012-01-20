@@ -255,7 +255,7 @@ my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
 
-my $testv = "rv3_10_6";
+my $testv = "rv3_10_10";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code

@@ -170,6 +170,8 @@ xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 *NEW* Pollen_ml itroduced for calculating birch pollen emission
       Calculates pollen emission based on a code by Sofiev et al. (in prep)
+** but ** Experimental! Needs to accumulate heat, so cannot start in eg May.
+          Will likely use externally calculated heat-sums in future.
 
 -Introduces a new species, pollen_b (birch pollen) in EmChem09
 - Aero_Vds_ml.f90 - added pollen properties for diam, sigma and PMdens
