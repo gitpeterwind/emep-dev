@@ -509,7 +509,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
     enddo KVLOOP
   enddo HLOOP
 
-!Not closing seems to give a segmentation fault when pening the daily file
+!Not closing seems to give a segmentation fault when opening the daily file
 !Probably just a bug in the netcdf4/hdf5 library.
   call CloseNetCDF
 
