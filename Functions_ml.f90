@@ -49,6 +49,8 @@ module Functions_ml
 
   public :: great_circle_distance!distance between two points following the surface on a unit sphere
 
+  public :: heaviside ! The heaviside function, 0 for x<0 and 1 for x>0 (x==0?)
+
  !/- Exner subroutines: ------------------------------------------------------
 
  public :: Exner_nd        ! (p/P0)**KAPPA
@@ -534,6 +536,25 @@ module Functions_ml
            sin(DEG2RAD*0.5*(fi1-fi2))**2))
 
   end function great_circle_distance
+
+!-----------------------------------------------------------------------
+! The heaviside function, 0 for x<0 and 1 for x>0 (x==0?)
+! For x=0, one could have 0.5, but numerically this is too tricky to code
+! and with double precision a very rare event.
+  function heaviside(x) 
+  
+   real, intent(in) :: x
+   real             :: heaviside
+  
+  
+   if (x<0) then
+     heaviside = 0.0
+   else
+     heaviside = 1.0
+   end if
+  
+  end function heaviside
+!-----------------------------------------------------------------------
 
 
 !program Test_exn

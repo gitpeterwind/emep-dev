@@ -320,6 +320,12 @@ module MosaicOutputs_ml
                atw  = species( ispec )%nitrogens * atwN
                units  =  "mgN/m2"
 
+             else if ( species(ispec)%nitrogens ==  0 .and. &
+                      species(ispec)%sulphurs  == 0 ) then
+                atw = species(ispec)%molwt 
+                write(*,*) "Mosaic Molweight ", trim(species(ispec)%name), atw
+                units = "mg/m2"
+
              else
                call StopAll("ERROR: OutDDep atw failure "// &
                    species( ispec )%name)

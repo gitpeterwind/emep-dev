@@ -168,19 +168,20 @@ ds done   My_SOA_ml.f90
 
 xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
-Pollen_ml itrodused for calculating birch pollen emission
-Calculates pollen emission based on a code by Sofiev et al. (in prep)
+*NEW* Pollen_ml itroduced for calculating birch pollen emission
+      Calculates pollen emission based on a code by Sofiev et al. (in prep)
 
 -Introduces a new species, pollen_b (birch pollen) in EmChem09
-- Aqueous_n_WetDep_ml.f90 -added a new wetdeposition CWDEP_POLLw
 - Aero_Vds_ml.f90 - added pollen properties for diam, sigma and PMdens
-- My_Aerosols_ml.f90 - add NSIZE by 1 to NSIZE=5
-- Wesely_ml.f90 - added one dry aerosol, CDDEP_POLLd and AERO_SIZE
+- Aqueous_n_WetDep_ml.f90 -added a new wetdeposition CWDEP_POLLw
+- Derived_ml.f90 - added output, and an output for pollen emission AreaPOLL.
+- ModelConstants_ml.f90 - added USE_POLLEN and DEBUG_POLLEN
 - MosaicOutputs_ml.f90 - added molweight of pollen
 - Runchem_ml.f90 - calls for Pollen_ml
-- ModelConstants_ml.f90 - added USE_POLLEN and DEBUG_POLLEN
+- Wesely_ml.f90 - added one dry aerosol, CDDEP_POLLd and AERO_SIZE
+- My_Aerosols_ml.f90 - add NSIZE by 1 to NSIZE=5
 - My_Derived_ml.f90 - added wetdep, drydep and SURF_ug_POLLEN_B
-- Derived_ml.f90 - added output, and an output for pollen emission AreaPOLL.
+- mk.GenChem Pollen added to EmChem09
 
 
 

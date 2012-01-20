@@ -136,6 +136,9 @@ implicit none
                                  ,QDUFI = 1 &   ! production of fine dust
                                  ,QDUCO = 2     ! production of coarse dust
 
+   !Pollen
+   integer, public, parameter ::  NPOL  = 1 &   ! number of dust size modes
+                                 ,QPOL  = 1 
 
    !Volcanos. 
    logical, public, parameter :: VOLCANOES_LL  = .true.  ! Read Volcanoes 

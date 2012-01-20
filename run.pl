@@ -241,6 +241,10 @@ if ($STALLO) {
 
 # DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
+# Pollen data
+my $PollenDir = "/home/birthems/Unify/MyData";
+
+
 
 # Boundary conditions: set source direcories here:
 # BCs can come from Logan, Fortuin, UiO (CTM2) or EMEP model runs:
@@ -847,6 +851,12 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DATA_LOCAL/rough.dat"} = "landsea_mask.dat"; # Roughness length;
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
+
+# For Pollen 
+  if ( $PollenDir ) {
+      $ifile{"$PollenDir/pollen_data.nc"} = "pollen_data.nc";
+  }
+
 
 # For windblown dust
    if ( $SoilDir ) {

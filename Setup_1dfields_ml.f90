@@ -36,7 +36,7 @@
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
   use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC, NSOIL_EMIS
-  use EmisDef_ml,            only :  NSS, NDU !SeaS, Dust
+  use EmisDef_ml,            only :  NSS, NDU, NPOL !SeaS, Dust
   use ChemSpecs_tot_ml,      only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
   use ChemSpecs_shl_ml,      only :  NSPEC_SHL
   use Chemfields_ml,         only :  NSPEC_COL
@@ -79,6 +79,7 @@
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rnwater = 0.0  ! TEST
    real, public, dimension(NSS,KCHEMTOP:KMAX_MID), save :: rcss = 0.0  ! Sea salt
    real, public, dimension(NDU,KCHEMTOP:KMAX_MID), save :: rcwbd = 0.0 ! windblown dust
+   real, public, dimension(NPOL,KCHEMTOP:KMAX_MID), save :: rcpol = 0.0 ! Pollen (birch)
 
    real, public, dimension(KCHEMTOP:KMAX_MID), save :: &
           rh                  & ! RH (fraction, 0-1)

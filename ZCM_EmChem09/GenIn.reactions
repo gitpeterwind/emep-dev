@@ -318,9 +318,19 @@ rc_Rnwater(k)                             = Rnwater    ;
 rcss(QSSFI,k)                           = SeaSalt_f ;
 rcss(QSSCO,k)                           = SeaSalt_c ;
 *rcss(QSSGI,k)                           = SeaSalt_g ;
+* <----------- Biogenic/natural emissions ----------------------------->
+rcwbd(QDUFI,k)                          = DUST_WB_F ;  # Dust
+rcwbd(QDUCO,k)                          = DUST_WB_C ;
 *
 emisfiles:pm25,pmco
 *
 rcemis:PPM25                     = PPM25 ;
 rcemis:PPM_c                     = PPM_c ;
 rcemis:PPM25_FIRE                = PPM25_FIRE ;
+*
+* <----------- Biogenic/natural emissions ----------------------------->
+*
+*rcss(QSSFI,k)                           = SeaSalt_f ;
+*rcss(QSSCO,k)                           = SeaSalt_c ;
+*rcss(QSSGI,k)                           = SeaSalt_g ;
+rcpol(QPOL,k)                           = Pollen_b ;

@@ -19,20 +19,23 @@ ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working prope
 #EmChem09 
 #run=CB05
 #run=CRI_v2_R5
+run=EmChem09
 run=EmChem09soa
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base SeaSalt Dust PMmass )  # EmChem09
-  rcns=( EmChem09base SeaSalt Dust PMmass )  # EmChem09 a
+  spcs=( EmChem09base SeaSalt Dust PMmass Pollen )  # EmChem09
+  rcns=( EmChem09base SeaSalt Dust PMmass Pollen )  # EmChem09 a
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
   spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
          ../ZCM_EmChem09/Dust ../ZCM_vbs_tests/VBS_help \
+         ../ZCM_EmChem09/Pollen \
          ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
   rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
          ../ZCM_EmChem09/Dust \
+         ../ZCM_EmChem09/Pollen \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
          ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
 

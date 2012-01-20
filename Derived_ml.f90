@@ -107,6 +107,7 @@ use Par_ml,    only: MAXLIMAX,MAXLJMAX, &   ! => max. x, y dimensions
                      gi0,gj0,IRUNBEG,JRUNBEG,&! for i_fdom, j_fdom
                      li0,lj0,limax, ljmax    ! => used x, y area
 use PhysicalConstants_ml,  only : PI,KAPPA
+use Pollen_ml, only : AreaPOLL
 use SmallUtils_ml, only: find_index, LenArray, NOT_SET_STRING
 use TimeDate_ml, only : day_of_year,daynumber,current_date
 implicit none
@@ -585,6 +586,9 @@ call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
 call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
                       -99 , -99, F, 1.0,   T, IOU_DAY ) 
 
+call AddNewDeriv("AreaPOLL", "AreaPOLL", "-", "-", "-", &
+                      -99 , -99, F, 1.0,   F, IOU_DAY )
+
 ! As for GRIDAOT, we can use index for the threshold
 call AddNewDeriv( "SOMO35","SOMO",  "SURF","-",   "ppb.day", &
                   35, -99, F, 1.0,   F,   IOU_MON ) 
@@ -928,6 +932,12 @@ end do
 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = PM25_water_rh50(i,j)
+            end forall
+
+           case ( "AreaPOLL" )        !/ Aerosol Optical Depth
+
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = AreaPOLL(i,j)   
             end forall
 
           case ( "AOD" )        !/ Aerosol Optical Depth
@@ -1710,6 +1720,9 @@ end do
       unitscale = 1.0e6
       unitstxt  = "mgN/m2"
   else if ( txt .eq.  "mgSS" ) then
+      unitscale = 1.0e6
+      unitstxt  = "mg/m2"
+  else if ( txt .eq.  "mgP" ) then
       unitscale = 1.0e6
       unitstxt  = "mg/m2"
   else if ( txt .eq.  "m" ) then

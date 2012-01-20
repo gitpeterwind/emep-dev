@@ -225,7 +225,7 @@ module Aqueous_ml
   end type WScav
   
 
-  integer, public, parameter :: NWETDEP_CALC =  13 ! No. of solublity classes
+  integer, public, parameter :: NWETDEP_CALC =  14 ! No. of solublity classes
 
    !  Note - these are for "master" or model species - they do not
    !  need to be present in the chemical scheme. However, the chemical
@@ -245,7 +245,8 @@ module Aqueous_ml
      CWDEP_SSf  = 10, &
      CWDEP_SSc  = 11, &
      CWDEP_SSg  = 12, &
-     CWDEP_ROOH = 13   ! TEST!!
+     CWDEP_POLLw = 13, &
+     CWDEP_ROOH = 14   ! TEST!!
 
 
 
@@ -314,6 +315,7 @@ contains
     WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
     WetDep(CWDEP_PMf)   = WScav(   1.0,  EFF25) !!
     WetDep(CWDEP_PMc)   = WScav(   1.0,  EFFCO) !!
+    WetDep(CWDEP_POLLw)  = WScav(   1.0,  SUBCLFAC) ! pollen
     WetDep(CWDEP_ROOH)   = WScav(  0.05,  0.015) ! assumed half of HCHO
 
   ! Other PM compounds treated with SO4-LIKE array defined above
@@ -328,6 +330,7 @@ contains
        if( WDEP_WANTED(n)%txt3 == "mgS" ) atw = atwS
        if( WDEP_WANTED(n)%txt3 == "mgN" ) atw = atwN
        if( WDEP_WANTED(n)%txt3 == "mgSS") atw = 58
+       if( WDEP_WANTED(n)%txt3 == "mgP")  atw = 12
        if( WDEP_WANTED(n)%txt3 == "mm")   atw = 999 ! Dummy for precip
        call CheckStop( atw <1 , "AQUEOUS ATW PROBLEM:" // trim(WDEP_WANTED(n)%txt3)  ) 
 

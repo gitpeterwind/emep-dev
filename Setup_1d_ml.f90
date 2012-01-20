@@ -42,7 +42,7 @@
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
   use DustProd_ml,           only :  DU_prod   ! Dust
-  use EmisDef_ml,            only : NSS, NDU  !SeaS, Dust
+  use EmisDef_ml,            only : NSS, NDU, NPOL  !SeaS, Dust, POllen
                                   !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
   use EmisGet_ml,            only :  nrcemis, iqrc2itot  !DSRC added nrcemis
   use Emissions_ml,          only :  gridrcemis, KEMISTOP
@@ -72,6 +72,7 @@
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
     ,USE_FOREST_FIRES                & !
+    ,USE_POLLEN                      & ! Pollen
     ,USE_SEASALT                     &
     ,USE_LIGHTNING_EMIS              & !
     ,USE_SOILNOX, USE_GLOBAL_SOILNOX, USE_DUST          & !
@@ -87,12 +88,13 @@
     ,rcemis               &  ! emission terms
     ,rc_Rn222             &  ! for Pb210
     ,rc_Rnwater           &  ! TEST
-    ,rcss, rcwbd          &  !Sea salt, Dust
+    ,rcss, rcwbd, rcpol   &  !Sea salt, Dust, pollen
     ,rh, temp, tinv, itemp,pp      &  !
     ,amk, o2, n2, h2o     &  ! Air concentrations
     ,rcbio                   ! BVOC
 !FUTURE    ,rcnh3                   ! NH3emis
   use SeaSalt_ml,        only : SS_prod
+  use Pollen_ml,         only : Pollen_prod
   use Tabulations_ml,    only :  tab_esat_Pa
   use TimeDate_ml,       only :  current_date, date
   use Volcanos_ml
@@ -292,6 +294,7 @@ contains
 
      endif
 
+
      !/** Add windblown dust production
 
      if ( USE_DUST  ) then
@@ -301,6 +304,15 @@ contains
 
 !       if(debug) write(6,'(a25,3i4,2es12.3)') '>> WBDust emissions >>',   &
 !             i_fdom(i), j_fdom(j), iqrc, DU_prod(iqrc,i,j), rcwbd(iqrc,KMAX_MID)
+          enddo
+
+     endif
+
+     if ( USE_POLLEN  ) then
+
+          do iqrc = 1, NPOL
+            rcpol(iqrc,KMAX_MID) = Pollen_prod(iqrc,i,j)
+            !write(*,*) "Fra Setup_1d:", rcpol(iqrc,KMAX_MID)
           enddo
 
      endif

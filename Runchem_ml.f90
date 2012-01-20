@@ -49,7 +49,7 @@
    use Ammonium_ml,       only: Ammonium
    use AOD_PM_ml,         only: AOD_calc
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP,  BIO_SOILNO, setup_bio ! for debug
+   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP,  BIO_SOILNO, setup_bio ! for debug 
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
    use Chemfields_ml,     only: xn_adv    ! For DEBUG 
@@ -64,11 +64,14 @@
    use ModelConstants_ml, only : USE_DUST, USE_SEASALT, USE_AOD, & 
                                  PPB, KMAX_MID, dt_advec,        &
                                  nprint, END_OF_EMEPDAY,         &
+                                 USE_POLLEN,                     &
+
                                   
                   DebugCell,  DEBUG_AOT, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
    use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol, &
                   SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
+   use Pollen_ml,         only : Pollen_flux,Pollen_prod
    use Par_ml,            only : lj0,lj1,li0,li1, limax, ljmax  &
                                 ,gi0, gj0, me &    !! for testing
                                 ,IRUNBEG, JRUNBEG  !! for testing
@@ -78,7 +81,7 @@
                                 !FUTURE setup_nh3  ! NH3emis (NMR-NH3 project)
    use Setup_1dfields_ml, only: first_call, rcbio,  &
                                 amk, rcemis, xn_2d  ! DEBUG for testing
-   use TimeDate_ml,       only: current_date
+   use TimeDate_ml,       only: current_date,daynumber
 
 !--------------------------------
    implicit none
@@ -170,6 +173,11 @@ subroutine runchem(numt)
 
              if ( USE_DUST )     &
              call WindDust (i,j,debug_flag)
+
+             if ( USE_Pollen .and. daynumber >  59) &
+             call Pollen_flux (i,j,debug_flag)
+             !if (debug_) write(6,*) "2 Runchem polled_prod",&
+             !                              Pollen_prod(1,i,j)
 
 
              if ( DEBUG .and. debug_flag  ) then

@@ -50,7 +50,7 @@
     use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, BIO_SOILNO
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
-    use EmisDef_ml,        only: QSSFI, QSSCO, QDUFI, QDUCO
+    use EmisDef_ml,        only: QSSFI, QSSCO, QDUFI, QDUCO,QPOL
     use Emissions_ml,      only: KEMISTOP    
     use ChemGroups_ml,     only: RO2_POOL, RO2_GROUP
     use ChemSpecs_tot_ml           ! => NSPEC_TOT, O3, NO2, etc.
@@ -71,6 +71,7 @@
                                  rh,            & 
                                  Fgas,   & ! fraction in gas-phase, for SOA
                                  rcss, rcwbd, amk, & ! Sea salt, dust emission rate
+                                 rcpol,         & ! Pollen
                                  !FUTURE rcnh3,         & ! NH3emis
                                  rcbio            ! bvoc
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
