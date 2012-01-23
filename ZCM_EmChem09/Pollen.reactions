@@ -1,0 +1,5 @@
+*
+* <----------- Biogenic/natural emissions ----------------------------->
+* Pollen
+*
+rcpol(QPOL,k)                           = Pollen_b ;
