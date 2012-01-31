@@ -309,7 +309,7 @@ contains
     WetDep(CWDEP_HNO3)  = WScav(   1.4,  0.5)   ! 
     WetDep(CWDEP_H2O2)  = WScav(   1.4,  0.5)   ! 
     WetDep(CWDEP_HCHO)  = WScav(   0.1,  0.03)  ! 
-    WetDep(CWDEP_ECfn)  = WScav(   0.0,  EFF25)
+    WetDep(CWDEP_ECfn)  = WScav(   0.05,  EFF25)
     WetDep(CWDEP_SSf)   = WScav(   1.6,  EFF25)
     WetDep(CWDEP_SSc)   = WScav(   1.6,  EFFCO)
     WetDep(CWDEP_SSg)   = WScav(   1.6,  EFFGI)
