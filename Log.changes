@@ -166,6 +166,14 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_10  Svetlana 31th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+
+** EC ageing included:    EC_F_FFUEL_NEW   EC_F_FFUEL_AGE .....
+ZCM_EmChem09soa/VBS_nonvolatile.species
+ZCM_EmChem09soa/VBS_emissions_nonvolatilePOA_FromPM25.reactions
+
+Aqueous_n_WetDep_ml.f90 - in-cloud scavenging for new EC is put to 5%
+
 xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 *NEW* Pollen_ml itroduced for calculating birch pollen emission
