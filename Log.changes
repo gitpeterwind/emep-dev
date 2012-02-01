@@ -166,7 +166,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_10  Svetlana 31th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_11  Peter 1st Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Bug in ReadField_CDF when converting from stereographic to lat lon.
+Occurs only if you run in a rundomain which is smaller than fulldomain.
+The BVOC will be wrong in this case.
+bug introduced in rv3_10_5.
+
+
+
+xxxxxxxx rv3_10_10  Svetlana 31th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 ** EC ageing included:    EC_F_FFUEL_NEW   EC_F_FFUEL_AGE .....
 ZCM_EmChem09soa/VBS_nonvolatile.species
@@ -174,7 +183,7 @@ ZCM_EmChem09soa/VBS_emissions_nonvolatilePOA_FromPM25.reactions
 
 Aqueous_n_WetDep_ml.f90 - in-cloud scavenging for new EC is put to 5%
 
-xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 *NEW* Pollen_ml itroduced for calculating birch pollen emission
       Calculates pollen emission based on a code by Sofiev et al. (in prep)
@@ -195,14 +204,14 @@ xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
 
 
 
-xxxxxxxx rv3_10_9  Peter, 20th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_9  Peter, 20th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Output_hourly.f90
 Close the netcdf_hourly file after each hour.
 Not closing seems to give a segmentation fault when opening the daily file
 Probably due to a bug in the netcdf4/hdf5 library.
 
-xxxxxxxx rv3_10_8  Robert, 19th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_8  Robert, 19th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Simplified EmChem09soa scheme. 
    Removed many unused species and changed some component names. 
@@ -230,7 +239,7 @@ New files:     ZCM_vbs_tests/VBS_SOAageing_Detailed.reactions
                              VBS_partitioning_Detailed.species
   
 
-xxxxxxxx rv3_10_7  Dave, 19th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_7  Dave, 19th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 
 Start of modified system for nesting external boundary and initial conditions.
@@ -272,14 +281,14 @@ To-Do: *test* and update MOZART .f90
         Should also make files for RCA, HTAP as appropriate. These will also
         be put in ZD_EXTRA
 
-xxxxxxxx rv3_10_6b  Robert 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_6b  Robert 18th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA model version PAPA. 
         Updated file: ZCM_vbs_tests/VBS_ASOAageing.reactions [Now identical to the version used in the EMEP-VBS paper submitted to ACPD] 
 
         Note: Some other files may still not be updated. Will be fixed soon.
 
-xxxxxxxx rv3_10_6  Dave, Peter 18th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_6  Dave, Peter 18th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Peter - added Emissions_ml from _5 commit
 
@@ -292,7 +301,7 @@ ZCM_CB05 files
 
 
 
-xxxxxxxx rv3_10_5   Peter 16th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_5   Peter 16th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 New routine for direct interpolation from polar stereographic projection
 Now zeroth-order interpolation needs Undef to be defined, or all values must be well defined.
@@ -311,14 +320,14 @@ File annualNdep.nc temporarily copied to $DataDir as annualNdep_tmp.nc.
 
 Met:ml: timeunit(1:19)
 
-xxxxxxxx rv3_10_4  Dave 13th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_4  Dave 13th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl - uses LAndInputs_Jan2012
           Higher (20m) trees and some small changes in land-defs
           Will change results a bit, by increasing deposition
 
 
-xxxxxxxx rv3_10_3   Peter 10th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_3   Peter 10th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 NetCDF_ml.f90:
 Netcdf output file in compressed netcdf-4 format. 
@@ -330,7 +339,7 @@ Landuse_ml.f90:
 Started to include new landuse reading (experimental so far, not default).
 
 
-xxxxxxxx rv3_10_2   Peter 6th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_2   Peter 6th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Nest_ml with MODE=100 option. Use monthly BC. Experimental so far.to be merged with Global_BC_ml
 
@@ -338,7 +347,7 @@ made great_circle_distance in InterpolationRoutines_ml private, as it is already
 
 
 !
-xxxxxxxx rv3_10_1   Peter 4th Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_1   Peter 4th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Small bug in extendarea (Met_ml):
    iif=limax and    jjf=ljmax (instead of using size, which gives maxlimax)
@@ -351,7 +360,7 @@ Relatively small differences in results since this is only used for sector 2.
 
 Finally same results on a 2 days test with 8x4 and 2x16 processor partition
 
-xxxxxxxx rv3_10   Dave 3rd Jan  2011  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10   Dave 3rd Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 new label, since 37 seemed a bit high, and since rv3:9_36 was anyway
 a result-change from other rv3_9_xx series. Another result 

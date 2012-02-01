@@ -61,7 +61,8 @@
                                ,sigma_bnd&
                                ,glat,lb2ij,A_bnd,B_bnd&
                                ,lb2ij,lb2ijm,ij2lb&
-                               ,ref_latitude_EMEP,xp_EMEP_old,yp_EMEP_old
+                               ,ref_latitude_EMEP,xp_EMEP_old,yp_EMEP_old&
+                               ,i_local,j_local
   use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
                                ,MasterProc &
@@ -2242,9 +2243,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                  do idiv=1,Ndiv
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
-                    call lb2ij(lon,lat,ir,jr)!back to model coordinates
-                    i=nint(ir)-tgi0(me)+1!convert from rundomain to local domain
-                    j=nint(jr)-tgj0(me)+1
+                    call lb2ij(lon,lat,ir,jr)!back to model (fulldomain) coordinates
+                    i=i_local(nint(ir))!convert from fulldomain to local domain
+                    j=j_local(nint(jr))
 83                  format(2I4,33F9.2)
                     !if ( debug .and.me==0) write(*,83)i,j,ir,jr,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
  
