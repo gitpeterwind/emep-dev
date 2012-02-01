@@ -167,15 +167,13 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 xxxxxxxx rv3_10_11  Peter 1st Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+                  + Svetlana 31th Jan  2012 
 
 Bug in ReadField_CDF when converting from stereographic to lat lon.
 Occurs only if you run in a rundomain which is smaller than fulldomain.
 The BVOC will be wrong in this case.
 bug introduced in rv3_10_5.
 
-
-
-xxxxxxxx rv3_10_10  Svetlana 31th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 ** EC ageing included:    EC_F_FFUEL_NEW   EC_F_FFUEL_AGE .....
 ZCM_EmChem09soa/VBS_nonvolatile.species
@@ -185,7 +183,7 @@ Aqueous_n_WetDep_ml.f90 - in-cloud scavenging for new EC is put to 5%
 
 xxxxxxxx rv3_10_10  Birthe, David 20th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
-*NEW* Pollen_ml itroduced for calculating birch pollen emission
+*NEW* Pollen_ml introduced for calculating birch pollen emission
       Calculates pollen emission based on a code by Sofiev et al. (in prep)
 ** but ** Experimental! Needs to accumulate heat, so cannot start in eg May.
           Will likely use externally calculated heat-sums in future.
