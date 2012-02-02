@@ -166,6 +166,12 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_12  Peter 2nd Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Modified the formula in  ReadField_CDF (rv3_10_11), as it was not safe.
+(worked OK on Stallo, but not on Gardar).
+i=i_local(nint(ir)) -> i=nint(ir)-gi0-IRUNBEG+2
+
 xxxxxxxx rv3_10_11  Peter 1st Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
                   + Svetlana 31th Jan  2012 
 

@@ -2244,8 +2244,11 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
                     call lb2ij(lon,lat,ir,jr)!back to model (fulldomain) coordinates
-                    i=i_local(nint(ir))!convert from fulldomain to local domain
-                    j=j_local(nint(jr))
+                    !convert from fulldomain to local domain                                             
+                    !ir,jr may be any integer, therefore should not use i_local array                    
+                    i=nint(ir)-gi0-IRUNBEG+2
+                    j=nint(jr)-gj0-JRUNBEG+2
+
 83                  format(2I4,33F9.2)
                     !if ( debug .and.me==0) write(*,83)i,j,ir,jr,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
  
