@@ -166,6 +166,9 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_12  Svetlana 2nd Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+** Addition to EC ageing   - modified My_Derived_ml.f90
+
 xxxxxxxx rv3_10_12  Peter 2nd Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Modified the formula in  ReadField_CDF (rv3_10_11), as it was not safe.

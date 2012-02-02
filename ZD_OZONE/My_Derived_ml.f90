@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(60) :: &
+   type(typ_s5i), public, parameter, dimension(61) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -243,8 +243,10 @@ private
        ! ,typ_s5i("PART_OWOODOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("PART_FFIREOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
        ! ,typ_s5i("PART_OFFIREOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       !DS  ,typ_s5i("EC_F_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
-        ,typ_s5i("EC_F_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
+!none yet        ,typ_s5i("EC_F_WOOD_NEW ", "ug", D2,"AIR_CONCS", SPEC, D)&
+!none yet        ,typ_s5i("EC_F_WOOD_AGE ", "ug", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("EC_F_FFUEL_NEW", "ug", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("EC_F_FFUEL_AGE", "ug", D2,"AIR_CONCS", SPEC, D)&
        !DS  ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
         ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
