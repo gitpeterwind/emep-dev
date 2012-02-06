@@ -166,6 +166,32 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_15 Peter 6th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Many changes in loops: replaced almost all "li0,li1" into "1,limax".
+The idea is that we always compute for the whole domain, the exceptions are that we don't want do update the concentrations in xn_adv (and possibly in budgets).
+Some small differences very close to the boundaries, I think they may come from the "landify"
+
+moved everything which was in the "my_first_call" in SetLandUse, over to the InitLanduse subroutine. It seems more logical, and was necessary to get before the BC update.
+(where landsea_nwp must be set for SeaSalt). 
+This also changed other concentrations I noticed: because "landify" uses "likely_coastal" which was not yet set before the first call to metdata.
+
+Also commented out the link to rough.dat in run.pl: don't use it by default, as it is probably wrong anyway: it was wrong in EECCA, and is not defined for IFS anyway.
+
+List of modules modified:
+run.pl
+Landuse_ml.f90 .
+Met_ml.f90 .
+Runchem_ml.f90 .
+Volcanos_ml.f90 .
+FUTURE_NH3Emis_variation_ml.f90 .
+ForestFire_ml.f90 .
+Emissions_ml.f90 .
+Biogenics_ml.f90 .
+DryDep_ml.f90 .
+Io_Progs_ml.f90 .
+
+
 xxxxxxxx rv3_10_14 Dave 6th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 mk.GenChem   - simplified:

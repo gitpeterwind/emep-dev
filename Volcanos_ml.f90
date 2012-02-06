@@ -51,7 +51,7 @@ use Io_ml,                only: ios, NO_FILE, open_file,      &
 use ModelConstants_ml,    only: KMAX_BND, KMAX_MID, PT, MasterProc, &
                                 DEBUG=>DEBUG_VOLC
 use MetFields_ml,         only: roa, ps
-use Par_ml,               only: IRUNBEG, JRUNBEG, li0, lj0, li1, lj1, &
+use Par_ml,               only: IRUNBEG, JRUNBEG, ljmax, limax, &
                                 gi0, gi1, gj0, gj1 ! Test if on correct processor
 use PhysicalConstants_ml, only: GRAV, AVOG
 use TimeDate_ml,          only: nydays             ! No. days per year
@@ -226,11 +226,11 @@ subroutine Set_Volc
 
     if (DEBUG) print '(A,4I6,6I6,4I6)','Volcan: check1 ',  &
       i,j, i_volc(volc_no),j_volc(volc_no),           &
-      i_local(i),j_local(j), li0, li1, lj0, lj1,      &
+      i_local(i),j_local(j), 1, limax, 1, ljmax,      &
       gi0,gi1,gj0,gj1
 
-    if ((i_local(i)>=li0).and.(i_local(i)<=li1).and.  &
-        (j_local(j)>=lj0).and.(j_local(j)<=lj1)) then
+    if ((i_local(i)>=1).and.(i_local(i)<=limax).and.  &
+        (j_local(j)>=1).and.(j_local(j)<=ljmax)) then
 
       unit_conv1 = GRAV* 0.001*AVOG/ &
                   (sigma_bnd(KMAX_BND-k+1) - sigma_bnd(KMAX_BND-k))
@@ -258,11 +258,11 @@ subroutine Scale_Volc
 
     if (DEBUG) print '(A,4I6,6I6,4I6)','Volcan: check2 ', &
       i,j, i_volc(volc_no),j_volc(volc_no),           &
-      i_local(i),j_local(j), li0, li1, lj0, lj1,      &
+      i_local(i),j_local(j), 1, limax,1, ljmax,      &
       gi0,gi1,gj0,gj1
 
-    if ((i_local(i)>=li0).and.(i_local(i)<=li1).and.  &
-        (j_local(j)>=lj0).and.(j_local(j)<=lj1)) then
+    if ((i_local(i)>=1).and.(i_local(i)<=limax).and.  &
+        (j_local(j)>=1).and.(j_local(j)<=ljmax)) then
       i_l = i_local(i) !local i
       j_l = j_local(j) !local j
 

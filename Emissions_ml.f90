@@ -80,7 +80,7 @@
                               USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
-                             limax,ljmax,li0,lj0,li1,lj1, &
+                             limax,ljmax, &
                              MSG_READ1,MSG_READ7
   use PhysicalConstants_ml,  only :  GRAV,  AVOG
   use ReadField_ml, only : ReadField    ! Reads ascii fields
@@ -403,12 +403,12 @@ contains
                  ,sum( snapemis_flat (debug_li,debug_lj,:,iem) )
         end if
 
-       forall (ic=1:NCMAX, j=lj0:lj1, i=li0:li1, isec=1:NSECTORS)
+       forall (ic=1:NCMAX, j=1:ljmax, i=1:limax, isec=1:NSECTORS)
           snapemis (isec,i,j,ic,iem) = &
                  snapemis (isec,i,j,ic,iem) * conv * xm2(i,j)
        end forall
 
-       forall (fic=1:FNCMAX, j=lj0:lj1, i=li0:li1)
+       forall (fic=1:FNCMAX, j=1:ljmax, i=1:limax)
           snapemis_flat(i,j,fic,iem) = &
                  snapemis_flat(i,j,fic,iem) * conv * xm2(i,j)
        end forall
@@ -597,8 +597,8 @@ contains
         !..........................................
         ! Process each grid:
 
-        do j = lj0,lj1
-            do i = li0,li1
+        do j = 1,ljmax
+            do i = 1,limax
 
                ncc = nlandcode(i,j)            ! No. of countries in grid
 
@@ -772,8 +772,8 @@ contains
   ! We now scale gridrcemis to get emissions in molecules/cm3/s
 
    do k= KEMISTOP, KMAX_MID
-     do j = lj0,lj1
-        do i = li0,li1
+     do j = 1,ljmax
+        do i = 1,limax
 
               ehlpcom= roa(i,j,k,1)/(ps(i,j,1)-PT)
               do iqrc =1, NRCEMIS
@@ -1053,8 +1053,8 @@ end if
    !Read monthly emission files
 
    if(first_call)then
-      do j=lj0,lj1
-         do i=li0,li1
+      do j=1,ljmax
+         do i=1,limax
             nlandcode(i,j)=nlandcode(i,j)+1
             icc=nlandcode(i,j)
             landcode(i,j,icc)=67 
@@ -1124,8 +1124,8 @@ end if
 !           trim(EMIS_NAME(iem)).ne.'pm25'.and.&
 !           trim(EMIS_NAME(iem)).ne.'voc'.and.trim(EMIS_NAME(iem)).ne.'nh3'.and.trim(EMIS_NAME(iem)).ne.'sox')cycle !
       conv = tonnemonth_to_kgm2s
-      do j=lj0,lj1
-         do i=li0,li1
+      do j=1,ljmax
+         do i=1,limax
             icc=nlandcode(i,j) !67
            do isec=1,NSECTORS
               snapemis (isec,i,j,icc,iem) = &

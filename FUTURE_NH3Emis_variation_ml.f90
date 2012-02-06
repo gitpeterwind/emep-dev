@@ -9,7 +9,7 @@ use calc_emis_potential_ml, only : lddagtemp,lNH3emis_pot, lEmis50_nh3, emnh3
 use TimeDate_ml,            only : nydays, current_date
 use MetFields_ml,           only : t2_nwp,u_ref, &
                                    foundv10_met,ps, roa,foundws10_met,ws_10m
-use Par_ml,                 only : MAXLIMAX,MAXLJMAX,me,li0,lj0,li1,lj1
+use Par_ml,                 only : MAXLIMAX,MAXLJMAX,me,limax,ljmax
 use GridValues_ml ,         only : i_fdom, j_fdom, sigma_bnd, xm2  
 use ModelConstants_ml,      only : DEBUG_i, DEBUG_j, PT, DEBUG_NH3, &
                                    KMAX_MID, MasterProc
@@ -59,8 +59,8 @@ subroutine NH3emis_variation() !only one grid cell (and later one timestep at a 
       SQRTTWOPI=(PI*2.)**0.5
 
 
-    do j = lj0,lj1
-        do i = li0,li1
+    do j = 1,ljmax
+        do i = 1,limax
 
 
      ! - Set up debugging coordinates first. ---------------------------!
@@ -329,8 +329,8 @@ subroutine SetNH3()
      ehlpcom0 = GRAV* 0.001*AVOG/ (sigma_bnd(KMAX_MID+1) - sigma_bnd(KMAX_MID))
      emnh3(:,:,:)=0.0
   
-     do j = lj0,lj1
-        do i = li0,li1
+     do j = 1,ljmax
+        do i = 1,limax
       
            ehlpcom = ehlpcom0 * roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
            !tnh3_fac(k,i,j) is the fraction of emissions per 3 hour(1/3h)

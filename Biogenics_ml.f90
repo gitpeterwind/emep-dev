@@ -73,7 +73,7 @@ module Biogenics_ml
   use NetCDF_ml,        only : ReadField_CDF, printCDF
   use OwnDataTypes_ml,  only : Deriv, TXTLEN_SHORT
   use Par_ml   , only :  MAXLIMAX,MAXLJMAX,MSG_READ1,me, limax, ljmax
-  use Par_ml,            only : li0, li1, lj0, lj1, MAXLIMAX, MAXLJMAX, me
+  use Par_ml,            only : limax, ljmax, MAXLIMAX, MAXLJMAX, me
   use PhysicalConstants_ml,  only :  AVOG, GRAV
   use Radiation_ml,          only : PARfrac, Wm2_uE
   use Setup_1dfields_ml,     only : rcbio  
@@ -598,8 +598,8 @@ module Biogenics_ml
       if ( current_date%hour > 7 .and. current_date%hour < 20 ) hfac = 1.5
 
 
-        do j = lj0, lj1
-           do i =  li0, li1
+        do j = 1, ljmax
+           do i =  1, limax
 
              nlc = LandCover(i,j)%ncodes
 
@@ -702,7 +702,7 @@ module Biogenics_ml
       if ( DEBUG_SOILNOX .and. debug_proc ) then
          i = debug_li
          j = debug_lj
-         write(*,"(a,4i4)") "RESET_SOILNOX: ",  li0, li1, lj0, lj1
+         write(*,"(a,4i4)") "RESET_SOILNOX: ",  1, limax, 1, ljmax
          write(*,"(a,2i4,2f12.4,es12.4)") "RESET_SOILNOX: ", &
                  daynumber, current_date%hour, t2_nwp(i,j,1), SoilNOx(i,j), AnnualNdep(i,j)
       end if

@@ -44,7 +44,7 @@ use Io_Nums_ml,             only: IO_TMP, IO_LOG
 use ModelConstants_ml,      only: DEBUG_IOPROG, DEBUG_i, DEBUG_j, DomainName, &
                                   MasterProc, IIFULLDOM, JJFULLDOM
 use KeyValue_ml,            only: KeyVal, KeyValue, LENKEYVAL
-use Par_ml,                 only: me, li0, li1, lj0, lj1
+use Par_ml,                 only: me, limax,ljmax
 use SmallUtils_ml,          only: wordsplit, WriteArray
 use TimeDate_ml,            only: date,current_date
 use TimeDate_ExtraUtil_ml,  only: date2string
@@ -390,7 +390,7 @@ subroutine Read2D(fname,data2d,idata2d)
 
     i = i_local(i_fdom)   ! Convert to local coordinates
     j = j_local(j_fdom)
-    if ( i >= li0 .and. i <= li1 .and. j >= lj0 .and. j <= lj1  ) then
+    if ( i >= 1 .and. i <= limax .and. j >= 1 .and. j <= ljmax  ) then
       Nused = Nused + 1
       if ( DEBUG_IOPROG .and. i_fdom==DEBUG_i .and. j_fdom==DEBUG_j ) &
         write(*,*) "READ TXTINPUT", me, i_fdom, j_fdom," => ",&
@@ -497,7 +497,7 @@ subroutine Read2DN(fname,Ndata,data2d,CheckValues,HeadersRead)
 
     i = i_local(i_fdom)   ! Convert to local coordinates
     j = j_local(j_fdom)
-    if ( i >= 1 .and. i <= li1 .and. j >=1 .and. j <= lj1  ) then
+    if ( i >= 1 .and. i <= limax .and. j >=1 .and. j <= ljmax  ) then
       if ( DEBUG_IOPROG .and. i_fdom==DEBUG_i .and. j_fdom == DEBUG_j )&
         write(*,*)"READ TXTINPUT", me, i_fdom, j_fdom, " => ", i,j,tmp(1)
       data2d(i,j,1:Ndata) = tmp(1:Ndata)

@@ -784,7 +784,7 @@ print "TESTING PM $poll $dir\n";
     $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
     $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
   } else {
-    $ifile{"$ChemDir/femis.defaults"} =  "femis.dat";  # created now by GenChem
+    $ifile{"$ChemDir/femis.defaults"} =  "femis.defaults";  # created now by GenChem
   }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
@@ -848,7 +848,7 @@ print "TESTING PM $poll $dir\n";
     $ifile{"$DataDir/jcl3.$s"} = "jcl3km$seasons{$s}.dat";
   }
 
-  $ifile{"$DATA_LOCAL/rough.dat"} = "landsea_mask.dat"; # Roughness length;
+#  $ifile{"$DATA_LOCAL/rough.dat"} = "landsea_mask.dat"; # Roughness length;
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 

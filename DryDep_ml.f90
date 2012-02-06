@@ -88,7 +88,7 @@ module DryDep_ml
 
  use MosaicOutputs_ml,     only : Add_MosaicOutput, MMC_RH
  use OwnDataTypes_ml,      only : depmap
- use Par_ml,               only : li0,li1,lj0,lj1, me
+ use Par_ml,               only : limax,ljmax, me
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG, NMOLE_M3
  use Rb_ml,                only : Rb_gas
  use Rsurface_ml
@@ -179,8 +179,8 @@ module DryDep_ml
 ! use EcoSystem_ml, only :: EcoSystemFrac, Is_EcoSystem
 
    EcoSystemFrac(:,:,:) = 0.0
-   do j = lj0, lj1
-     do i = li0, li1
+   do j = 1, ljmax
+     do i = 1, limax
        debug_flag = ( DEBUG_ECOSYSTEMS .and. debug_proc .and. &
           i == debug_li .and. j == debug_lj )
 

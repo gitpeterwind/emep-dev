@@ -118,7 +118,7 @@ module Met_ml
        ,LANDIFY_MET  & 
        ,CW_THRESHOLD,RH_THRESHOLD
   use Par_ml           ,    only : MAXLIMAX,MAXLJMAX,GIMAX,GJMAX, me  &
-       ,limax,ljmax,li0,li1,lj0,lj1  &
+       ,limax,ljmax  &
        ,neighbor,WEST,EAST,SOUTH,NORTH,NOPROC  &
        ,MSG_NORTH2,MSG_EAST2,MSG_SOUTH2,MSG_WEST2  &
        ,MFSIZEINP, IRUNBEG,JRUNBEG, tgi0, tgj0,gi0,gj0  &
@@ -1249,8 +1249,8 @@ contains
 
     if(SoilWaterSource == "IFS")then
 !has to convert from m3/m3 to Soil Moisture Index
-        do i = li0, li1    ! NEWTEST 1, MAXLIMAX
-        do j = lj0, lj1    ! NEWTEST 1, MAXLJMAX
+        do i = 1, limax   ! NEWTEST 1, MAXLIMAX
+        do j = 1, ljmax    ! NEWTEST 1, MAXLJMAX
             if ( DEBUG_SOILWATER .and. &
                 ( fc(i,j)-pwp(i,j) < 1.0e-10 )  ) then
                print  "(a,7i5,4f12.3)", "PWPFC ", me, i_fdom(i), j_fdom(j),  i,j, limax, ljmax, &
@@ -1498,14 +1498,14 @@ contains
           write(fname,fmt='(''landsea_mask.dat'')')
           write(6,*) 'reading land-sea map from ',fname
        end if
-       needed_found=.false.
-       call ReadField(IO_ROUGH,fname,r_class,needed_found,fill_needed=.true.)
+       foundnwp_sea=.false.
+       call ReadField(IO_ROUGH,fname,r_class,foundnwp_sea,fill_needed=.true.)
 
        ! And convert from real to integer field
 
        nwp_sea(:,:) = .false.
 
-       if(needed_found)then
+       if(foundnwp_sea)then
           do j=1,ljmax
              do i=1,limax
                 if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.
@@ -2168,7 +2168,7 @@ contains
     end if
 
      if ( DEBUG_MET.and. debug_proc ) write(*,"(a,6i4,L2)") "Landify start ", &
-            debug_li, debug_lj, li0, li1, lj0, lj1,  xwf_done
+            debug_li, debug_lj, 1, limax, 1, ljmax,  xwf_done
 
     ! We need the extended water-fraction too, but just once
     if ( .not. xwf_done ) then ! only need to do this once
@@ -2187,8 +2187,8 @@ contains
     oldx = 0.0
     if( debug_proc ) oldx = x(debug_li, debug_lj) 
 
-    do j = lj0, lj1   !  1, ljmax
-       do i = li0, li1   !  1, limax
+    do j = 1, ljmax
+       do i = 1, limax
    
          ! Take a 5x5 average of the land-weighted values for SW. Seems
          !  best not to "believe" NWP models too much for this param, and

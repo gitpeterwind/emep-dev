@@ -124,8 +124,8 @@ subroutine runchem(numt)
 
    errcode = 0
 
-    do j = lj0, lj1
-      do i = li0, li1
+    do j = 1, ljmax
+      do i = 1, limax
 
           call Code_Timer(tim_before)
 
@@ -267,7 +267,10 @@ subroutine runchem(numt)
 !                        ambient = .true.  !  For real conditions (3D) 
 !                        call Aero_water(i,j, ambient, debug_flag)
                    
-                     call reset_3d(i,j)
+                     if(i>=li0.and.i<=limax.and.j>=lj0.and.j<=ljmax)then
+!DO NOT UPDATE BC. BC are frozen
+                        call reset_3d(i,j)
+                     endif
 
                      call Add_2timing(33,tim_after,tim_before,&
                                             "Runchem:post stuff")

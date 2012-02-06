@@ -57,7 +57,7 @@ module ForestFire_ml
                                 IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR
   use NetCDF_ml,         only : ReadField_CDF, Out_netCDF,Real4 ! Reads, writes 
   use OwnDataTypes_ml,   only : Deriv, TXTLEN_SHORT
-  use Par_ml,            only : MAXLIMAX, MAXLJMAX, li0, li1, lj0, lj1, &
+  use Par_ml,            only : MAXLIMAX, MAXLJMAX, &
                                   me,limax,ljmax
   use PhysicalConstants_ml, only : AVOG
   use Setup_1dfields_ml, only : rcemis
@@ -309,8 +309,8 @@ contains
     !RB: But we assume OM/OC=1.7 for forest fire emissions in the EMEP model? Test changing to 1.7 here also
 
      if ( calc_remppm ) then
-       do j =lj0, lj1
-       do i =li0, li1
+       do j =1, ljmax
+       do i =1, limax
         OMbb = 1.7*BiomassBurningEmis(ieOC,i,j) + BiomassBurningEmis(ieBC,i,j) 
         if ( DEBUG_FORESTFIRE .and. MasterProc.and. burning(i,j)  ) then
           write(*,"(a,2i4,3es10.3)") "BURN REMPPM25, ", i_fdom(i), j_fdom(j), &
