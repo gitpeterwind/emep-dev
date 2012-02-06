@@ -640,6 +640,11 @@ contains
 
                       tfac = timefac(iland_timefac,isec,iem) * &
                                  day_factor(isec,daytime_iland)
+                        !if ( debug_proc .and.  &
+                        !         iem==1.and.i==debug_li .and. j==debug_lj)  then  ! 
+                        !  call datewrite("TestFac", isec, &
+                        !   (/ real(daytime_iland), day_factor(isec, daytime_iland) /) )
+                        !end if
 
                       !Degree days - only SNAP-2 
                       if ( USE_DEGREEDAY_FACTORS .and. &

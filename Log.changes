@@ -166,10 +166,26 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_1.. Dave started 3rd Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_14 Dave 6th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+mk.GenChem   - simplified:
+               added an array extras=( SeaSalt Dust Pollen )
+               which can be used by all other schemes.
+              (Also, Pollen isn't yet a default species, and
+               none of these needed in SR runs for example. Now
+               easily skipped using mk.GenChem)
+
+Pollen_ml    - removed hard-coded Pollen_b, used ipoll and find_index
+                 instead.
 
 ZCM_CRI_v2_R5   - emissplit files added, from rv3_9_34chem_cri. Probably
 need to edit the PM ones, but just added for now.
+
+ZCM_EmChem09/GenIn.species removed --- they haven't been used for
+   ages as mk.GenChem creates them
+
+ZCM_EmChem09/GenIn.reactions removed --- they haven't been used for
+   ages as mk.GenChem creates them
 
 xxxxxxxx rv3_10_13  Svetlana 3rd Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 

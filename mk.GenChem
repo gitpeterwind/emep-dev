@@ -13,46 +13,59 @@
 #run=CRI_v2_R5
 #
 # ==========================================
+# ==========================================
 # Must specify source of biomass-burning
 ffires=FINNv1  # Can be FINNv1, the other option (GFED) may not be working properly!
 # Construct GenIn.species and GenIn.reactions from wanted sub-sets:
-#EmChem09 
+
+#Specify chemical setup. Needs to have associated ZCM_ file, but can use specs
+# and reactions from any existing ZCM.
 #run=CB05
-#run=CRI_v2_R5
+run=CRI_v2_R5
 run=EmChem09
 run=EmChem09soa
 
+# Some species which can be common to most schemes are
+# treated here. Also, these are usually not needed for
+# SR runs (they don't affect other compounds), so we can
+# easily skip them
+xdir=$PWD/ZCM_EmChem09 # has some common extra files, e.g. seasalt & dust
+extras=( $xdir/SeaSalt $xdir/Dust  $xdir/Pollen )
+
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base SeaSalt Dust PMmass Pollen )  # EmChem09
-  rcns=( EmChem09base SeaSalt Dust PMmass Pollen )  # EmChem09 a
+  spcs=( EmChem09base PMass )  # EmChem09
+  rcns=( EmChem09base PMmass )  # EmChem09 a
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
-  spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
-         ../ZCM_EmChem09/Dust ../ZCM_vbs_tests/VBS_help \
-         ../ZCM_EmChem09/Pollen \
-         ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt \
-         ../ZCM_EmChem09/Dust \
-         ../ZCM_EmChem09/Pollen \
+  spcs=( ../ZCM_EmChem09/EmChem09base \
+         ../ZCM_vbs_tests/VBS_help    \
+          ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
+  rcns=( ../ZCM_EmChem09/EmChem09base \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
-         ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
+          ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
 
 elif [ $run == CRI_v2_R5 ]; then
   echo "RUN CRI_v2_R5 chosen"
-  spcs=( CRI_v2_R5base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_EmChem09/PMmass )  # EmChem09
-  rcns=( CRI_v2_R5base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/PMmass )  # EmChem09 a
+  spcs=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )  # EmChem09
+  rcns=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )  # EmChem09 a
 
 elif [ $run == CB05 ]; then
   echo "RUN CB05 chosen"
-  spcs=( CB05base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust ../ZCM_EmChem09/PMmass )  # EmChem09
-  rcns=( CB05base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/PMmass )  # EmChem09 a
+  spcs=( CB05base ../ZCM_EmChem09/PMmass )  # EmChem09
+  rcns=( CB05base ../ZCM_EmChem09/PMmass )  # EmChem09 a
 
 else
   echo "SELECTION of run $run failed!! "
   exit
 fi
+
+# Add the usual common stuff
+spcs=("${spcs[@]}" "${extras[@]}")
+rcns=("${rcns[@]}" "${extras[@]}")
+echo "NEW SPECS ", ${spcs[@]} 
+echo "NEW REACTIONS ", ${rcns[@]} 
 
 #VBS 
 #run=vbs_tests   # VBS based Organic Aerosol Model, different versions use different spcs and rcns, choose one set below
@@ -68,20 +81,20 @@ fi
 
 
 # VBS-PAA (VBS based primary emissions and aging of all POA and SOA)
-#spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAA 
-#rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt VBS_SOAformation_Detailed VBS_POAageing VBS_SOAageing_Detailed VBS_emissions_partitioningPOA  ) # VBS PAA
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAA 
+#rcns=( ../ZCM_EmChem09/EmChem09base VBS_SOAformation_Detailed VBS_POAageing VBS_SOAageing_Detailed VBS_emissions_partitioningPOA  ) # VBS PAA
 
 # VBS PAP (VBS based primary emissions and aging of all POA)
-#spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAP 
-#rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt VBS_SOAformation_Detailed VBS_POAageing VBS_emissions_partitioningPOA  ) # VBS PAP
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAP 
+#rcns=( ../ZCM_EmChem09/EmChem09base VBS_SOAformation_Detailed VBS_POAageing VBS_emissions_partitioningPOA  ) # VBS PAP
 
 # VBS PAPA (VBS based primary emissions and aging of all POA and ASOA, note! not same ageing rate as in VBS PAA!)
-#spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAPA 
-#rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt VBS_SOAformation_Detailed VBS_POAageing VBS_ASOAageing VBS_emissions_partitioningPOA  ) # VBS PAPA 
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAPA 
+#rcns=( ../ZCM_EmChem09/EmChem09base VBS_SOAformation_Detailed VBS_POAageing VBS_ASOAageing VBS_emissions_partitioningPOA  ) # VBS PAPA 
 
 #VBS NPNA (VBS for SOA formation, no ageing reactions and only nonvolatile POA)
-#spcs=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt ../ZCM_EmChem09/Dust VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS NPNA 
-#rcns=( ../ZCM_EmChem09/EmChem09base ../ZCM_EmChem09/SeaSalt VBS_SOAformation_Detailed VBS_emissions_nonvolatilePOA  ) # VBS NPNA
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS NPNA 
+#rcns=( ../ZCM_EmChem09/EmChem09base  VBS_SOAformation_Detailed VBS_emissions_nonvolatilePOA  ) # VBS NPNA
 
 #---------------- create GenIn files...
 cdir=$PWD       #  Current when starting. Assumed now as a Unimod

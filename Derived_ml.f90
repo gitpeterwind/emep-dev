@@ -1581,6 +1581,7 @@ end do
     end select
 
     if(ik==0)then
+      call CheckStop( iadv < 1, "ug_2d derived failed here")
       forall ( i=1:limax, j=1:ljmax )
         ug_2d( i,j) = ug_2d( i,j) + xn_adv(iadv,i,j,k) *scale * cfac(iadv,i,j)
       end forall

@@ -54,6 +54,7 @@ module Pollen_ml
   use NetCDF_ml,            only : ReadField_CDF, Out_netCDF
   use PhysicalConstants_ml, only : AVOG ,PI
   use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
+  use SmallUtils_ml,        only : find_index
   use TimeDate_ml,          only : current_date,daynumber
 
 !-------------------------------------
@@ -104,6 +105,7 @@ module Pollen_ml
 
    integer, intent(in) :: i,j    ! coordinates of column
    logical, intent(in) :: debug_flag
+   integer :: ipoll   !DS replaces Pollen_b
    real                :: scale,lim,invdz,n_to_mPOLL
   
 ! Reas in the different fields
@@ -118,7 +120,9 @@ module Pollen_ml
 ! calculating grains to molecular weight   grains/m2*s --> mol/cm3*s 
        invdz  = 1.0e-6 / Grid%DeltaZ       ! 1/dZ [1/cm3]
        n_to_mPOLL = POLL_DENS * PI *  (D_poll**3 ) / 6.0 
-       n2m = n_to_mPOLL * invdz * AVOG / species(Pollen_b)%molwt * 1.0e-18
+       ipoll = find_index("POLLEN_B", species(:)%name ) 
+       n2m = n_to_mPOLL * invdz * AVOG / species(ipoll)%molwt * 1.0e-18
+       !DS n2m = n_to_mPOLL * invdz * AVOG / species(Pollen_b)%molwt * 1.0e-18
 
      my_first_call_pollen = .false. 
       
