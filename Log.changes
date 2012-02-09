@@ -166,6 +166,13 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_17 Peter 9th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
+
+Removed huges arrays from BoundaryConditions_ml. They were not necessary and made the code explode for large grids.
+Later the BC routines should be merged with Nest_ml; this is not finished yet, but has to wait.
+
+
+
 xxxxxxxx rv3_10_16 Peter 9th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 The landuse must be defined before the metread (it was not).
@@ -180,6 +187,12 @@ Corrected a bug introduced in rv3_10_15 in RunChem (limax->li1)
 The changes in rv3_10_15/16 will also change results, because it was wrong before:
 If the landuse etc. are not defined in the outer frame, some routines (smoosp, extendarea) will use wrong data.
 (The largest change are in the first day)
+
+Modified:
+Landuse_ml.f90
+Met_ml.f90
+Runchem_ml.f90 
+Unimod.f90
 
 xxxxxxxx rv3_10_15 Peter 6th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
