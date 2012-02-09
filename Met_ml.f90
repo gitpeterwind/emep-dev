@@ -201,7 +201,7 @@ contains
 
     real :: nsec                                 ! step in seconds
 
-    real :: temp(MAXLIMAX,MAXLJMAX)!temporary metfields
+    real :: buff(MAXLIMAX,MAXLJMAX)!temporary metfields
     ! Avergaing of soil water used box from +/- NEXTEND (e.g. -1 to +1)
     real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
          xsw   ! extension of soil water
@@ -358,9 +358,9 @@ contains
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
        namefield='convective_precipitations'
        call Getmeteofield(meteoname,namefield,nrec,2,&
-            unit,validity, temp(:,:))
+            unit,validity, buff(:,:))
        call CheckStop(validity==field_not_found, "meteo field not found:" // trim(namefield))
-       surface_precip=surface_precip+temp
+       surface_precip=surface_precip+buff
 
        !if available, will use cloudwater to determine the height of release
        namefield='cloudwater'
@@ -674,7 +674,7 @@ contains
 
     namefield='u10'!first component of ws_10m
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, temp(:,:))
+        unit,validity, buff(:,:))
     if(validity==field_not_found)then
        foundws10_met = .false.
     else
@@ -685,7 +685,7 @@ contains
           foundws10_met = .false.
        else
           foundws10_met = .true.
-          ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+temp(:,:)**2)
+          ws_10m(:,:,nr)=sqrt(ws_10m(:,:,nr)**2+buff(:,:)**2)
           if(LANDIFY_MET) &
          call landify(ws_10m(:,:,nr),"WS10") 
 !          call printCDF('ws_10m',ws_10m(:,:,1),unit)
@@ -1503,9 +1503,9 @@ contains
 
        ! And convert from real to integer field
 
-       nwp_sea(:,:) = .false.
 
        if(foundnwp_sea)then
+          nwp_sea(:,:) = .false.
           do j=1,ljmax
              do i=1,limax
                 if ( nint(r_class(i,j)) == 0 ) nwp_sea(i,j) = .true.

@@ -267,7 +267,7 @@ subroutine runchem(numt)
 !                        ambient = .true.  !  For real conditions (3D) 
 !                        call Aero_water(i,j, ambient, debug_flag)
                    
-                     if(i>=li0.and.i<=limax.and.j>=lj0.and.j<=ljmax)then
+                     if(i>=li0.and.i<=li1.and.j>=lj0.and.j<=lj1)then
 !DO NOT UPDATE BC. BC are frozen
                         call reset_3d(i,j)
                      endif

@@ -205,6 +205,9 @@ call DefDebugProc()               ! Sets debug_proc, debug_li, debuglj
 call assign_NTERM(NTERM)          ! set NTERM, the number of 3-hourly periods
 call assign_dtadvec(GRIDWIDTH_M)  ! set dt_advec
 
+! daynumber needed  for BCs, so call here to get initial
+daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
+
 !     Decide the frequency of print-out
 !
 nadd = 0
@@ -228,6 +231,8 @@ call trajectory_init()
 
 call Add_2timing(2,tim_after,tim_before,"After define_Chems, readpar")
 
+call SetLandUse() !  Reads Inputs.Landuse, Inputs.LandPhen
+
 call MeteoRead(1)
 
 call Add_2timing(3,tim_after,tim_before,"After infield")
@@ -237,12 +242,7 @@ if (MasterProc.and.DEBUG_UNI) print *,"Calling emissions with year",current_date
 call Emissions(current_date%year)
 
 
-! daynumber needed  for BCs, so call here to get initial
-daynumber=day_of_year(current_date%year,current_date%month,current_date%day)
-
 call MetModel_LandUse(1)   !
-
-call InitLandUse()  !  Reads Inputs.Landuse, Inputs.LandPhen
 
 ! Read data for DO3SE (deposition O3 and  stomatal exchange) module
 ! (also used for other gases!)
@@ -337,7 +337,6 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
 
     call Add_2timing(8,tim_after,tim_before,"init_aqueous")
   endif    ! mm_old.ne.mm
-
   call Code_timer(tim_before)
   ! Monthly call to BoundaryConditions.
   if (mm_old /= mm) then   ! START OF NEW MONTH !!!!!
@@ -353,6 +352,7 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
     if (DEBUG_UNI) print *, "Finished Initmass" , me
   endif
 
+
   oldseason = newseason
   mm_old = mm
 
@@ -360,12 +360,14 @@ do numt = 2, nterm + nadd         ! 3-hourly time-loop
 
   if (DEBUG_UNI) print *, "1st Infield" , me, " numu ", numt
 
-  call Meteoread(numt)
-  call Add_2timing(10,tim_after,tim_before,"Meteoread")
-
   call SetLandUse()
   call Add_2timing(11,tim_after,tim_before,"SetLanduse")
 
+  
+  call Meteoread(numt)
+  call Add_2timing(10,tim_after,tim_before,"Meteoread")
+
+  
   call SetDailyBVOC(daynumber)
 
   if (USE_FOREST_FIRES) call Fire_Emis(daynumber)

@@ -186,10 +186,11 @@ contains
 
 
           end do ! ilu
-          if(.not. foundnwp_sea)then
-             if(water_fraction(i,j)>water_fraction_THRESHOLD) &
-                  nwp_sea(i,j) = .true.
-          endif
+
+!set default values for nwp_sea
+          if(water_fraction(i,j)>water_fraction_THRESHOLD) &
+               nwp_sea(i,j) = .true.
+
 
           ! We don't want to trust some squares with a mixture of sea
           ! and land for micromet purposes, e.g. T2 can be very wrong
@@ -203,8 +204,7 @@ contains
     end do ! i
 
     water_frac_set = .true.  ! just to inform other routines
-
-
+    
   end subroutine InitLanduse
  !==========================================================================
   subroutine ReadLanduse(filefound)
@@ -462,11 +462,14 @@ contains
         write(*,*) "LANDUSE: SetLandUse, me, day ", me, daynumber, debug_proc
     end if
 
-!    if ( my_first_call ) then
-!        my_first_call   = .false.
-!PW content moved into InitLanduse
    !======================================================================
-!    end if ! my_first_call
+    if ( my_first_call ) then
+       !read in data from file
+        my_first_call   = .false.
+        
+        call InitLanduse()
+
+    end if ! my_first_call
    !======================================================================
 
     if ( daynumber == old_daynumber ) then
