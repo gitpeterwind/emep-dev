@@ -173,6 +173,7 @@ Later the BC routines should be merged with Nest_ml; this is not finished yet, b
 
 Should be faster too.
 
+Pollen_ml.f90 - The heatsum is calculated every metstep, and the birch forest is reduced from 60 degrees north. Birthe
 
 xxxxxxxx rv3_10_16 Peter 9th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
