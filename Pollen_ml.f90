@@ -50,7 +50,8 @@ module Pollen_ml
 !  use CellMet_ml,           only : Grid
 !  use SubMet_ml,            only : Sub, Grid !%t2 %rh
   use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, &
-                                   DEBUG_POLLEN,nmax!, DEBUG_i,DEBUG_j
+                                   DEBUG_POLLEN,nmax, nstep,&
+                                   METSTEP !, DEBUG_i,DEBUG_j
   use NetCDF_ml,            only : ReadField_CDF, Out_netCDF
   use PhysicalConstants_ml, only : AVOG ,PI
   use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
@@ -65,16 +66,18 @@ module Pollen_ml
   public ::   Pollen_flux  ! subroutine
 
   real, public, dimension(NPOL,MAXLIMAX,MAXLJMAX) :: Pollen_prod
-  real, public, dimension(MAXLIMAX,MAXLJMAX)::AreaPOLL,heatsum
-  real, dimension(MAXLIMAX,MAXLJMAX):: h, &     !Heatsum 
-                                       R, &     !Summed pollen release
-                                       h_day, & !Temperature summed over a day
-                                       birch_frac, & ! Fraction of birch, read in
-                                       h_c, &   ! Heatsum thresholds, read in
-                                       corr     ! correction field for p. emission, read in
-  real                                 :: scale,lim,n2m
+  real, public, dimension(MAXLIMAX,MAXLJMAX)::AreaPOLL,& ! emission of pollen 
+                                              heatsum,&  ! heatsum, needs to be remembered for forecast
+                                              Pollen_rest! what is available pollen pr m2, fr forecast
+  real, dimension(MAXLIMAX,MAXLJMAX)   :: h, &     !Heatsum 
+                                          R, &     !Summed pollen release
+                                          h_day, & !Temperature summed over a day
+                                          birch_frac, & ! Fraction of birch, read in
+                                          h_c, &   ! Heatsum thresholds, read in
+                                          corr     ! correction field for p. emission, read in
+  real                                 :: scale,lim,n2m,lat_factor
   integer, dimension(MAXLIMAX,MAXLJMAX):: day
-  integer                           :: step,OpenStatus,IOSTAT,it,jt
+  integer                              :: step,OpenStatus,IOSTAT,it,jt
   real,private, parameter  :: &
       T_cutoff = 273.2+3.5  & ! Cut-off temperature
      ,dH  = 50         & ! Flowering period in degree days
@@ -123,7 +126,7 @@ module Pollen_ml
        ipoll = find_index("POLLEN_B", species(:)%name ) 
        n2m = n_to_mPOLL * invdz * AVOG / species(ipoll)%molwt * 1.0e-18
        !DS n2m = n_to_mPOLL * invdz * AVOG / species(Pollen_b)%molwt * 1.0e-18
-
+     Pollen_rest(:,:) = N_TOT
      my_first_call_pollen = .false. 
       
    end if !  my_first_call
@@ -139,18 +142,20 @@ module Pollen_ml
  !  Sums up the temperatures that day for each timestep (20 min).
  !  The heatsum are then divided by timesteps, and added using the 
  !  function heatsum_calc. 
+ if (nstep == 1 ) then   ! Heatsum calculation only each meteorological timestep
       if (day(i,j)==current_date%day) then
          h_day(i,j) = h_day(i,j) + Grid%t2
          step = step + 1
       else 
          day(i,j) = current_date%day
-         h(i,j) = h(i,j)+ heatsum_calc((h_day(i,j)/(nmax*8)),T_cutoff)
-         if (debug_flag .and. DEBUG_POLLEN) write(6,'(a10,f10.4,3f8.3,2I)') "Heatsum: ",& 
-                         h_day(i,j)/(nmax*8),heatsum_calc((h_day(i,j)/(nmax*8)),T_cutoff),&
-                         h(i,j),h_c(i,j),i,j
+         h(i,j) = h(i,j)+ heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff)
+         if (debug_flag .and. DEBUG_POLLEN) write(6,'(a10,f10.4,3f8.3,3I)') "Heatsum: ",& 
+                         h_day(i,j)/(24/METSTEP),heatsum_calc((h_day(i,j)/(24/METSTEP)),&
+                         T_cutoff),h(i,j),h_c(i,j),i,j,24/METSTEP
          h_day(i,j) = Grid%t2
       end if
     ! End of heatsum calculations
+end if ! heatsum calc each timestep
 
      heatsum(i,j) = h(i,j) ! if you want to output the heatsum field
  
@@ -161,6 +166,13 @@ module Pollen_ml
 	 scale = 0
 
       else 
+
+       ! reduce birch from 60 degrees north:
+       if (glat(i,j) >= 60.0 ) then
+          lat_factor = max(0.3, 1.0-0.005 * (glat(i,j)-60.0))
+          birch_frac(i,j) = birch_frac(i,j) * lat_factor
+       end if
+
 
 !<----------------------------------------------------------------------------------------------- 
 !  Scale is calculated from the different meteorological conditions using functions below  
@@ -176,7 +188,7 @@ module Pollen_ml
         AreaPOLL(i,j) = N_TOT*scale*birch_frac(i,j) ! [grains/m2/s]
 !<-----------------------------------------------------------------------------------------------
   !!! Need to convert grains/m2*s --> mol/cm3*s
-
+        Pollen_rest(i,j) = N_TOT - R(i,j) ! pollen grains left pr m2 after release
         Pollen_prod(QPOL,i,j) = Pollen_prod(QPOL,i,j)* n2m
    
     if (debug_flag .or. DEBUG_POLLEN ) write(6,'(x,a10,2f7.4,f6.2)') "Result: ", &
