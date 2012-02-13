@@ -166,14 +166,18 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_18 Birthe 13th Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
+
+Pollen_ml.f90 - The heatsum is calculated every metstep, and the birch forest
+                 is reduced from 60 degrees north.
+
 xxxxxxxx rv3_10_17 Peter 9th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
-Removed huges arrays from BoundaryConditions_ml. They were not necessary and made the code explode for large grids.
-Later the BC routines should be merged with Nest_ml; this is not finished yet, but has to wait.
+Removed huges arrays from BoundaryConditions_ml. They were not necessary
+and made the code explode for large grids.  Later the BC routines should
+be merged with Nest_ml; this is not finished yet, but has to wait.
 
 Should be faster too.
-
-Pollen_ml.f90 - The heatsum is calculated every metstep, and the birch forest is reduced from 60 degrees north. Birthe
 
 xxxxxxxx rv3_10_16 Peter 9th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
