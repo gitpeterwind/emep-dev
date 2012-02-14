@@ -142,7 +142,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
      if(old_day/=day)then
         !create new hourly file
         old_day=day
-        217FORMAT(A,I3.3,A)
+        217 FORMAT(A,I3.3,A)
         write(filename,217)trim(runlabel1)//'_hour_',day,'.nc'
         call Init_new_netCDF(trim(filename),IOU_HOUR)        
      endif
@@ -151,7 +151,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
      if(old_month/=month)then
         !create new hourly file
         old_month=month
-        write(filename,217)trim(runlabel1)//'_hour_',month,'.nc'
+        218 FORMAT(A,I2.2,A)
+        write(filename,218)trim(runlabel1)//'_hour_',month,'.nc'
         call Init_new_netCDF(trim(filename),IOU_HOUR)        
      endif
   endif
