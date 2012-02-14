@@ -166,6 +166,17 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_19 Peter 14th Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
+
+Output_ml, ModelConstants_ml: allow for separate hourly files every day or month. 
+
+For large grids, these where becoming excessively large.
+
+NB:needs special attention to be used (i.e. set .true.) until newer libraries are installed!
+Will not work well by default on Stallo because of library bugs (the code may crash).
+Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2 
+
+
 xxxxxxxx rv3_10_18 Birthe 13th Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
 
 Pollen_ml.f90 - The heatsum is calculated every metstep, and the birch forest

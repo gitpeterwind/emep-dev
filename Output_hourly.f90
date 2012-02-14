@@ -49,6 +49,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               Hourly_ASCII, &    ! ASCII output or not
                               to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
                               SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
+ 
   use CheckStop_ml,     only: CheckStop
   use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water, PM25_water_rh50
   use ChemGroups_ml,    only: chemgroups
@@ -62,15 +63,16 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   use Io_ml,            only: IO_HOURLY
   use ModelConstants_ml,only: KMAX_MID, MasterProc, &
                               IOU_INST, IOU_HOUR, IOU_YEAR, IOU_HOUR_PREVIOUS, &
-                              DEBUG => DEBUG_OUT_HOUR
-  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,      &
+                              DEBUG => DEBUG_OUT_HOUR,runlabel1,&
+                              DAILY_HOURLYFILE, MONTHLY_HOURLYFILE
+ use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,      &
                               Idirect, Idiffuse, z_bnd
-  use NetCDF_ml,        only: Out_netCDF,         CloseNetCDF,                    &
+  use NetCDF_ml,        only: Out_netCDF,         CloseNetCDF, Init_new_netCDF,  &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
   use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
                               me, IRUNBEG, JRUNBEG, limax, ljmax
-  use TimeDate_ml,      only: current_date
+  use TimeDate_ml,      only: current_date,daynumber
 
   implicit none
 
@@ -109,10 +111,16 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   integer, allocatable, dimension(:) :: gspec       ! group array of indexes
   real,    allocatable, dimension(:) :: gunit_conv  ! group array of unit conv. factors
 
+  integer,save :: old_month=-1,old_day=-1
+  integer :: month,day
+  character*200::filename
+
+
   if ( NHOURLY_OUT <= 0 ) then
     if ( MasterProc .and. DEBUG ) print *,"DEBUG Hourly_out: nothing to output!"
     return
   endif
+
 
   if ( my_first_call ) then
 
@@ -129,6 +137,24 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
     my_first_call = .false.
   endif  ! first_call
+  if(DAILY_HOURLYFILE)then
+     day=daynumber
+     if(old_day/=day)then
+        !create new hourly file
+        old_day=day
+        217FORMAT(A,I3.3,A)
+        write(filename,217)trim(runlabel1)//'_hour_',day,'.nc'
+        call Init_new_netCDF(trim(filename),IOU_HOUR)        
+     endif
+  elseif(MONTHLY_HOURLYFILE)then
+     month=current_date%month
+     if(old_month/=month)then
+        !create new hourly file
+        old_month=month
+        write(filename,217)trim(runlabel1)//'_hour_',month,'.nc'
+        call Init_new_netCDF(trim(filename),IOU_HOUR)        
+     endif
+  endif
 
   if( MasterProc .and. Hourly_ASCII .and. current_date%month/=prev_month ) then
     if(prev_month>0) close(IO_HOURLY)      ! Close last-months file
