@@ -1,0 +1,85 @@
+**********************************************************
+* GenIn.species: List of Species for the
+* CB05 chemical mechanism
+**********************************************************
+"#GROUPED_STYLE - fewer columns than Garry's new-style files"
+OD,0,O,xx,xx,xx,0,0,0,xx,xx,,!radical!
+OP,0,O,xx,xx,xx,0,0,0,xx,xx,,!radical!
+OH,0,OH,xx,xx,xx,0,0,0,xx,xx,,!radical!
+HO2,0,HO2,xx,xx,xx,0,0,0,xx,RO2,,!radical!
+CXO3,0,cxo3,xx,xx,xx,0,0,0,xx,RO2,,!
+XO2,0,xo2,xx,xx,xx,0,0,0,xx,RO2,!
+XO2N,0,xo2n,xx,xx,xx,0,0,0,xx,RO2,!
+HCO3,0,hco3,xx,xx,xx,0,0,0,xx,RO2,!
+CH3O2,0,CH3O2,xx,xx,xx,0,0,0,xx,RO2,!
+TO2,0,to2,xx,xx,xx,0,0,0,xx,RO2,!
+*******,Added,by,Dave,xx,xx,0, 0,0,xx,xx,,advected,!
+RO2POOL,1,ro2pool,1.00,xx,xx,0, 0,0,xx,xx,,other,!
+*,,,,xx,xx,0, 0,0,,0,xx,xx,,,!
+NO,1,NO,46.01,xx,xx,0,0,0,xx,NOx;OXN,!
+NO2,1,NO2,xx,NO2,xx,0,0,0,xx,NOx;OXN,!
+CO,1,CO,28.01,xx,xx,0,0,0,xx,xx,,CO,!
+O3,1,O3,xx,O3,xx,0,0,0,xx,xx,,O3,!
+H2O2,1,H2O2,xx,SO2,H2O2,0,0,0,xx,ROOH,!
+NO3,1,NO3,xx,xx,xx,0,0,0,xx,OXN,!
+N2O5,1,N2O5,xx,xx,xx,0,0,0,,OXN,xx,xx,,NOy,!
+HONO,1,HONO,xx,HNO2,HNO3,0,0,0,xx,OXN,!
+HNO3,1,HNO3,xx,HNO3,HNO3,0,0,0,xx,OXN,!
+HO2NO2,1,HO2NO2,xx,xx,xx,0,0,0,xx,OXN,!
+H2,1,H2,xx,xx,xx,0,0,0,xx,HOx,!
+HCHO,1,HCHO,30.03,HCHO,HCHO,0,0,0,xx,xx,aldehyde,!
+CH3CHO,1,CH3CHO,44.05,ALD,xx,0,0,0,,xx,xx,,aldehyde,!
+CH3COO2,1,c2o3,xx,xx,xx,0,0,0,xx,RO2,!
+PAN,1,CH3COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,!
+ALDX,1,aldx,44.05,ALD,xx,0,0,0,xx,xx,,aldehyde,!
+PANX,1,C2H5COO2NO2,xx,PAN,xx,0,0,0,xx,OXN,!formula=fake
+*DS PANX,1,panx,xx,PAN,xx,0,0,0,xx,OXN,!
+C2H5OH,1,C2H5OH,46.07,xx,xx,0,0,0,xx,xx,,alcohol,!
+MEOH,1,CH3OH,32.04,xx,xx,0,0,0,xx,xx,,alcohol,!
+CH3OOH,1,CH3OOH,xx,ROOH,xx,0,0,0,xx,xx,,RO2,!
+FACD,1,facd,xx,xx,xx,0,0,0,xx,xx,,acid,!
+C2H6,1,C2H6,30.07,xx,xx,0,0,0,xx,xx,,alkane,!
+ROOH,1,rooh,xx,ROOH,xx,0,0,0,xx,xx,,ROOH,!
+AACD,1,aacd,xx,xx,xx,0,0,0,xx,xx,,acid,!
+PACD,1,pacd,xx,xx,xx,0,0,0,xx,xx,,acid,!
+PAR,1,par,14.03,xx,xx,0,0,0,xx,xx,,alkane,!
+ROR,1,ror,xx,xx,xx,0,0,0,xx,xx,,radical,!
+C2H4,1,C2H4,28.05,xx,xx,0,0,0,xx,xx,,ethene,!
+OLE,1,ole,28.05,xx,xx,0,0,0,xx,xx,,alkene,!
+IOLE,1,iole,28.05,xx,xx,0,0,0,xx,xx,,alkene,!
+C5H8,1,C5H8,68.12,xx,xx,0,0,0,xx,BVOC,biogenic,!
+ISPD,1,ispd,xx,xx,xx,0,0,0,xx,xx,,product,!
+TERP,1,terp,136.24,xx,xx,0,0,0,BVOC,xx,xx,,biogenic,!
+TOLUENE,1,C7H8,92.14,xx,xx,0,0,0,xx,xx,,aromatic,!
+XYLENE,1,C8H10,106.17,xx,xx,0,0,0,xx,xx,,aromatic,!
+CRES,1,cres,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
+OPEN,1,open,xx,xx,xx,0,0,0,xx,xx,,other,!
+CRO,1,cro,xx,xx,xx,0,0,0,xx,xx,,radical,!
+CH3COCHO,1,CH3COCHO,xx,ALD,xx,0,0,0,xx,xx,,aldehyde,!
+ORGNIT,1,orgnit,xx,xx,xx,0,0,0,xx,OXN,!
+PFRM,1,HCHO,30.03,ALD,xx,0,0,0,xx,xx,,aldehyde,!
+PACT,1,CH3CHO,44.05,ALD,xx,0,0,0,xx,xx,,aldehyde,!
+BUTD,1,C4H6,xx,xx,xx,0,0,0,xx,xx,,alkene,!
+PACR,1,CH2CHCHO,xx,ALD,xx,0,0,0,xx,xx,,aldehyde,!
+SACR,1,sacr,xx,ALD,xx,0,0,0,xx,xx,,aldehyde,!
+TOLU,1,C7H8,92.14,xx,xx,0,0,0,xx,xx,,aromatic,!
+MXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
+OXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
+PXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
+APIN,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
+BPIN,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
+CL2,1,cl2,xx,xx,xx,0,0,0,xx,xx,,other,!
+HOCL,1,hocl,xx,xx,xx,0,0,0,xx,xx,,other,!
+CL,1,cl,xx,xx,xx,0,0,0,xx,xx,,other,!
+CLO,1,clo,xx,xx,xx,0,0,0,xx,xx,,other,!
+FMCL,1,fmcl,xx,xx,xx,0,0,0,xx,xx,,other,!
+"#SLOW
+SO2,1,SO2,64.06,SO2,SO2,0,0,0,xx,SOx,!
+CH4,1,CH4,16.04,xx,xx,0,0,0,xx,xx,,methane,!
+NH3,1,NH3,17.03,NH3,NH3,0,0,0,xx,RDN,!
+SO4,1,SO4,96.06,PMfS,SO4,8.5,0,0,xx,SOx;PM;AOD,!
+NH4_f,1,NH4,18.01,PMfN,PMf,0,0,0,xx,PM;RDN,!
+NO3_f,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN,!
+NO3_c,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN,!
+Rn222,1,rn222,222.00,xx,xx,0,0,0,xx,,,other,!
+Pb210,1,pb210,210.00,PMfS,PMf,0,0,0,xx,xx,,other,!
