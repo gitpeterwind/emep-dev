@@ -160,6 +160,7 @@ module Met_ml
   logical, private  :: xwf_done = .false. ! extended water-fraction array
 
   character (len = 100)        ::  field_not_found='field_not_found'
+    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
 
 
   public :: MeteoGridRead
@@ -234,6 +235,11 @@ contains
        ! xp and yp should be shifted here, and coordinates must be shifted when
        ! meteofields are read (not yet implemented)
 
+   if(MasterProc)then
+       allocate(var_global(GIMAX,GJMAX,KMAX_MID))
+    else
+       allocate(var_global(1,1,1)) !just to have the array defined
+    endif
 
 
     else
@@ -2781,7 +2787,7 @@ contains
     integer,intent(in)              :: nrec,ndim
 
     integer*2 :: var_local(MAXLIMAX,MAXLJMAX,KMAX_MID)
-    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
+!    integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
     ! fixed dimensions for all
     ! nodes?
     real :: scalefactors(2)
@@ -2792,23 +2798,26 @@ contains
     if(ndim==3)KMAX=KMAX_MID
     if(ndim==2)KMAX=1
     if(MasterProc)then
-       allocate(var_global(GIMAX,GJMAX,KMAX))
+!       allocate(var_global(GIMAX,GJMAX,KMAX))
        nfetch=1
        call GetCDF_short(namefield,meteoname,var_global,GIMAX,IRUNBEG,GJMAX, &
             JRUNBEG,KMAX,nrec,nfetch,scalefactors,unit,validity)
     else
-       allocate(var_global(1,1,1)) !just to have the array defined
+!       allocate(var_global(1,1,1)) !just to have the array defined
     endif
 
     !note: var_global is defined only for me=0
     call global2local_short(var_global,var_local,MSG_READ4,GIMAX,GJMAX,&
          KMAX,1,1)
+
     CALL MPI_BCAST(scalefactors,8*2,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(validity,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
     CALL MPI_BCAST(unit,50,MPI_BYTE,0,MPI_COMM_WORLD,INFO)
+!scalefactors=1.0
+!validity=' '
+!unit=' '
 
-
-    deallocate(var_global)
+!    deallocate(var_global)
 
 
     ijk=0
@@ -2848,7 +2857,9 @@ contains
     integer :: ncFileID,status
     real :: scale,offset
     character *100 :: period_read
-
+    character *200,save :: filename_save='notsaved'
+    integer,save :: ncFileID_save=-99
+   
     validity='                                     ' !initialisation
     period_read='                                     ' !initialisation
     scalefactors(1) = 1.0 !default
@@ -2857,14 +2868,23 @@ contains
     ndims=3
     if(KMAX==1)ndims=2
     !open an existing netcdf dataset
+    if(trim(filename_save)==trim(filename))then
+       ncFileID=ncFileID_save
+    else
+       if(ncFileID_save/=-99)then
+          call check(nf90_close(ncFileID_save))
+          filename_save='notsaved'
+       endif
     call check(nf90_open(path=trim(fileName),mode=nf90_nowrite,ncid=ncFileID))
-
+    ncFileID_save=ncFileID
+filename_save=trim(filename)
+ endif
     !get varID:
     status = nf90_inq_varid(ncid=ncFileID,name=trim(varname),varID=VarID)
     if(status /= nf90_noerr)then
        validity=field_not_found
-       var=0
-       call check(nf90_close(ncFileID))
+       var=0.0
+      ! call check(nf90_close(ncFileID))
        return
     endif
 
@@ -2906,8 +2926,8 @@ contains
        call check(nf90_get_var(ncFileID, VarID, var,&
             start=(/IRUNBEG,JRUNBEG,1,nstart/),count=(/GIMAX,GJMAX,KMAX,nfetch /)))
     endif
-
-    call check(nf90_close(ncFileID))
+!var=0.0
+!    call check(nf90_close(ncFileID))
 
   end subroutine GetCDF_short
 
