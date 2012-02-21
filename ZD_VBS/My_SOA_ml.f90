@@ -190,7 +190,7 @@ module OrganicAerosol_ml
 
        do k = K1, K2
             BGND_OC(k) = BGND_OC(k) * exp( -h_km(k)/9.1 )
-            if(DEBUG .and. MasterProc ) write(*,"(a,i4,2f8.3)"), &
+            if(DEBUG .and. MasterProc ) write(*,"(a,i4,2f8.3)") &
                "BGND_OC ", k, h_km(k),  BGND_OC(k)
        end do
        BGND_OA(:) = 2*BGND_OC(:)   ! Assume OA/OC = 2 for bgnd

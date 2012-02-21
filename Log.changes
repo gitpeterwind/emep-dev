@@ -166,6 +166,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_20 Peter 21st Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
+
+Met_ml.f90 faster meteo reading 
+
+Preparations for SR. Compatibility for other compilers (gfortran or IBM xlf90):
+ZD_VBS/My_SOA_ml.f90 ("," removed )
+BLPhysics_ml: SigmaKz_2_m2s_scalar redefined as subroutine (was not used anyway)
+
+CM_EmisSpec.inc all  EMIS_Specs should have the same number of characters (please put blanks to fill the spaces)
+
 xxxxxxxx rv3_10_19 Peter 14th Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
 
 Output_ml, ModelConstants_ml: allow for separate hourly files every day or month. 

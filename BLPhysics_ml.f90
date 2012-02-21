@@ -858,7 +858,7 @@ subroutine fake_zbnd(z)
   z(20) =       91.302
   z(21) =       91.302
 end subroutine fake_zbnd
-function SigmaKz_2_m2s_scalar (roa,ps) result(Kz_fac)   ! hb
+subroutine SigmaKz_2_m2s_scalar (roa,ps,Kz_fac)   ! hb
   real, intent(in) :: roa
   real, intent(in) :: ps
   real :: fac
@@ -867,7 +867,7 @@ function SigmaKz_2_m2s_scalar (roa,ps) result(Kz_fac)   ! hb
      fac= (ps - PT)/(GRAV*roa)
      Kz_fac= fac*fac
 
-end function SigmaKz_2_m2s_scalar
+end subroutine SigmaKz_2_m2s_scalar
 
 subroutine SigmaKz_2_m2s_arrays (SigmaKz,roa,ps,Kz)
   real, intent(in), dimension(:,:,:) :: SigmaKz, roa
