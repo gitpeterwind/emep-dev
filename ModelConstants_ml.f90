@@ -231,7 +231,7 @@ integer, public, parameter :: &
   ,DEBUG_OUT_HOUR       = .false. & ! Debug Output_hourly.f90
   ,DEBUG_pH             = .false. &
   ,DEBUG_PHYCHEM        = .false. &
-  ,DEBUG_POLLEN         = .true.  &
+  ,DEBUG_POLLEN         = .false.  &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
