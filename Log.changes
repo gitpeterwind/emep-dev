@@ -166,6 +166,11 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_2xx  Dave-in-progress 012  xxxxxxxxxxxxxxxxxxxxxx
+
+GenChem.pl - formatting in print_emisstuff adjusted to give same
+   number of characters in CM_EmisSpec.inc and CM_EmisFiles.inc
+
 xxxxxxxx rv3_10_20 Peter 21st Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
 
 Met_ml.f90 faster meteo reading 

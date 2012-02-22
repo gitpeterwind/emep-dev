@@ -1510,9 +1510,14 @@ sub print_rates {
 ###############################################################################
  sub print_emisstuff {
 	my ( $nam, @emis) = @_;
+        my $MaxLen; # Was 12
 	print "EMISstuff NAM $nam FILES @emis\n";
         my $Nemis = @emis;
-        my $MaxLen = 30; # Was 12
+        $MaxLen = 0; # Was 12
+	foreach my $e ( @emis ){
+		my $length=length($e);
+		$MaxLen = $length if $length > $MaxLen ;
+	}
 	printall( "ENTERING EMIS print $Nemis\n");
         open(EMIS,">GenOut_Emis$nam.inc") or die "FAIL EMIS_$nam\n"; 
 
@@ -1520,9 +1525,11 @@ sub print_rates {
 	print EMIS "  character(len=$MaxLen), save, dimension(NEMIS_$nam), public:: &\n";
 	print EMIS "      EMIS_$nam =  (/ &\n";
 	my $comma = "";
+	my $outfmt = "%12s \"%-${MaxLen}s\" &\n"; 
 	foreach my $e ( @emis ){
-		die "ERROR: LONG EMIS name $e > $MaxLen \n" if length($e) >= $MaxLen ;
-		printf EMIS "%12s \"%-12s\" &\n", $comma,$e;  # uc($e); 
+		#die "ERROR: LONG EMIS name $e > $MaxLen \n" if length($e) > $MaxLen ;
+		#printf EMIS "%12s \"%s\" &\n", $comma,$e;  # uc($e); 
+		printf EMIS "$outfmt", $comma,$e;  # uc($e); 
 		$comma = ",";
 	}
 	print EMIS " /)\n ";
