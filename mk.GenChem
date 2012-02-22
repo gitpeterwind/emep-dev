@@ -32,8 +32,8 @@ run=EmChem09soa
 # easily skip them
 xdir=$PWD/ZCM_EmChem09 # has some common extra files, e.g. seasalt & dust
 extras=( $xdir/SeaSalt $xdir/Dust  $xdir/Pollen )
+extras=( ) #   Minimum set!
 extras=( $xdir/SeaSalt $xdir/Dust $xdir/Isotopes ) #  $xdir/Pollen )
-extras=( ) #  $xdir/SeaSalt $xdir/Dust $xdir/Isotopes ) #  $xdir/Pollen )
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
