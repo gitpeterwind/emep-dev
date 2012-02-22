@@ -364,10 +364,11 @@ contains
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
              bc_seaspec = .false.
-!FEB2012. If SeaSalt isn't called from mk.GenChem, we don't have the SS_GROUP, so
-!         we search for the simple SEASALT name.
+!FEB2012. If SeaSalt isn't called from mk.GenChem, we don't have the SS_GROUP,
+!         so we search for the simple SEASALT name.
 !            if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
-             if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
+             if ( USE_SEASALT .and. &
+                  ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
 
