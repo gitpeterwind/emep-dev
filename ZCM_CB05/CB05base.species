@@ -66,8 +66,8 @@ TOLU,1,C7H8,92.14,xx,xx,0,0,0,xx,xx,,aromatic,!
 MXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
 OXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
 PXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
-APIN,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
-BPIN,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
+APINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
+BPINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
 CL2,1,cl2,xx,xx,xx,0,0,0,xx,xx,,other,!
 HOCL,1,hocl,xx,xx,xx,0,0,0,xx,xx,,other,!
 CL,1,cl,xx,xx,xx,0,0,0,xx,xx,,other,!
@@ -81,5 +81,5 @@ SO4,1,SO4,96.06,PMfS,SO4,8.5,0,0,xx,SOx;PM;AOD,!
 NH4_f,1,NH4,18.01,PMfN,PMf,0,0,0,xx,PM;RDN,!
 NO3_f,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN,!
 NO3_c,1,NO3,62.00,PMfN,PMf,0,0,0,xx,PM;OXN,!
-Rn222,1,rn222,222.00,xx,xx,0,0,0,xx,,,other,!
-Pb210,1,pb210,210.00,PMfS,PMf,0,0,0,xx,xx,,other,!
+*ISOTOPES Rn222,1,rn222,222.00,xx,xx,0,0,0,xx,,,other,!
+*ISOTOPES Pb210,1,pb210,210.00,PMfS,PMf,0,0,0,xx,xx,,other,!

@@ -43,10 +43,11 @@
 ! 4. EQUILIB_EQSAM - run EQSAM equilibrium model
 !----------------------------------------------------------------------
 
- use ChemSpecs_tot_ml,     only :  SO4, NH3, HNO3, NO3_f, NH4_f, SEASALT_F
+ use CheckStop_ml,         only :  StopAll
+ use ChemSpecs_tot_ml,     only :  SO4, NH3, HNO3, NO3_f, NH4_f
  use ChemSpecs_shl_ml,     only :  NSPEC_SHL
  use ChemChemicals_ml,     only :  species
- use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,    & !PMwater 
+ use Chemfields_ml,        only :  PM25_water, PM25_water_rh50,  & !PMwater 
                                    cfac
  use EQSAM_v03d_ml,        only :  eqsam_v03d
  use MARS_ml,              only :  rpmares
@@ -65,8 +66,6 @@
                                 , EQUILIB_MARS      = .true.  & !MARS
                                 , EQUILIB_EQSAM     = .false.     !EQSAM
                                 
-!    logical, public, parameter :: SEASALT = .true. , AOD = .false. 
- 
  !.. Number of aerosol sizes (1-fine, 2-coarse, 3-'giant' for sea salt )
     integer, public, parameter :: NSIZE = 5
            !   FINE_PM = 1, COAR_NO3 = 2, COAR_SS = 3, COAR DUST = 4,pollen = 5    
@@ -262,7 +261,8 @@ contains
       no3in(KCHEMTOP:KMAX_MID)  = xn_2d(NO3_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
       nh4in(KCHEMTOP:KMAX_MID)  = xn_2d(NH4_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
 
-      NAin(KCHEMTOP:KMAX_MID)   = xn_2d(SEASALT_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+!NEEDS WORK: NAin(KCHEMTOP:KMAX_MID)   = xn_2d(SEASALT_f,KCHEMTOP:KMAX_MID)*1.e12/AVOG
+      call StopAll("Sea-salt not implemented in eqsam in Nov 2011 plus versions")
       CLin(:) =  NAin(:)
 !      NAin(KCHEMTOP:KMAX_MID)  = 0.
 !      CLin(KCHEMTOP:KMAX_MID)  = 0.

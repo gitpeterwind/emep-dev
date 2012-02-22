@@ -166,10 +166,57 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_2xx  Dave-in-progress 012  xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_21 Dave 22nd Feb 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+GenChem- changes to allow easier use or exclusion of seasalt, dust,
+   pollen, isotopes - ie the inert stuff that can be used by any
+   chemical mechanism:
+
+mk.GenChem
+
+   Use of "extras" array extended to Isotopes, and to Boundary conditions
+   (new "bics" array), so we have:
+
+ ZCM_EmChem09: (added)
+
+   Isotopes.species
+   Isotopes.reactions
+
+   EmChem09base.BoundaryConditions
+   SeaSalt.BoundaryConditions
+   Dust.BoundaryConditions
+
+ ZCM_CB05:
+
+   CB05.BoundaryConditions (was SAFE....)
+
+  - these are called in as appropriate by mk.GenChem, and can be used
+   from other chemical schemes
+
+   - also changed APIN, BPIN to APINENE, BPINENE - simplifies emis output
+
+ ** Deleted: 
+
+   ZCM_EmChem09/SAFE.CM_BoundaryConditions.inc
+   ZCM_EmChem09soa/SAFE.CM_BoundaryConditions.inc
+   ZCM_CB05/SAFE.CM_BoundaryConditions.inc
 
 GenChem.pl - formatting in print_emisstuff adjusted to give same
    number of characters in CM_EmisSpec.inc and CM_EmisFiles.inc
+
+DustProd_ml - uses find_index instead of hard-coded DUST_WB_F
+
+Pollen_ml - Use of Pollen_b commented out. Thought I had done this earlier.
+
+SeaSalt_ml -  use of SS_GROUP replaced by search for "SEASALT_" in names.
+   Needed to allow runs without SeaSalt.species
+
+ZD_OZONE/My_Aerosols - StopAll added in case of EQSAM, until we sort
+   out SEASALT usage
+
+ZD_OZONE/My_Outputs  -  Fake hr_out(06) added to avoid hard-coded Rb222
+   index. This whole module should be removed....
+
 
 xxxxxxxx rv3_10_20 Peter 21st Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
 

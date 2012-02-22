@@ -44,7 +44,7 @@
 ! Programmed by Svetlana Tsyro
 !-----------------------------------------------------------------------------
 
- use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c !, SeaSalt_g
+!FEB2012 use ChemSpecs_tot_ml,     only : SeaSalt_f, SeaSalt_c !, SeaSalt_g
  use ChemChemicals_ml,     only : species
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO !, QSSGI
  use GridValues_ml,        only : glat, glon
@@ -59,6 +59,7 @@
                                   DEBUG_SEASALT, DEBUG_i,DEBUG_j
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
+ use SmallUtils_ml,        only : find_index
  use TimeDate_ml,          only : current_date
 
  !-------------------------------------
@@ -103,6 +104,7 @@
    integer :: ii, jj, nlu, ilu, lu
    real    :: invdz, n2m, u10, u10_341, Tw, flux_help, total_flux
    real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA) 
+   integer :: ipoll !FEB2012
 !//---------------------------------------------------
  
   if ( my_first_call ) then 
@@ -205,7 +207,9 @@
 !.. conversion factor from [part/m2/s] to [molec/cm3/s]
 
           invdz  = 1.0e-6 / Grid%DeltaZ       ! 1/dZ [1/cm3]
-          n2m = n_to_mSS * invdz *AVOG / species(SeaSalt_f)%molwt *1.0e-15
+          ipoll = find_index("SEASALT_F", species(:)%name )
+  !FEB2012        n2m = n_to_mSS * invdz *AVOG / species(SeaSalt_f)%molwt *1.0e-15
+          n2m = n_to_mSS * invdz *AVOG / species(ipoll)%molwt *1.0e-15
 
 !.. Fine particles emission [molec/cm3/s]
           do ii = 1, NFIN

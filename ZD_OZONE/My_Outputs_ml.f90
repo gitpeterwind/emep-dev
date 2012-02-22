@@ -264,8 +264,11 @@ subroutine set_output_defs
              IXADV_SO2  ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_SO2)  ,-999.9)
     hr_out(05)=Asc2D("co_3km"    ,"BCVugXX","(f9.4)",&
              IXADV_CO   ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_CO)   ,-999.9)
-    hr_out(06)=Asc2D("Rn222_3km" ,"BCVugXX","(f9.4)",&
-             IXADV_Rn222,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_Rn222),-999.9)
+!    hr_out(06)=Asc2D("Rn222_3km" ,"BCVugXX","(f9.4)",&
+!             IXADV_Rn222,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_Rn222),-999.9)
+! FAKE to get compilation for now, since Rn222 moved to "extras" in mk.GenChem
+    hr_out(06)=Asc2D("co_3km"    ,"BCVugXX","(f9.4)",&
+             IXADV_CO   ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_CO)   ,-999.9)
     hr_out(07)=Asc2D("pm25_3km"  ,"BCVugXXgroup","(f9.4)",&
         find_index("PM25",chemgroups(:)%name),ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
     hr_out(08)=Asc2D("pm10_3km"  ,"BCVugXXgroup","(f9.4)",&

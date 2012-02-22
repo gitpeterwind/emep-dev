@@ -40,7 +40,7 @@ module Pollen_ml
 !
 !-----------------------------------------------------------------------!
 
-  use ChemSpecs_tot_ml,     only : Pollen_b
+!FEB2012  use ChemSpecs_tot_ml,     only : Pollen_b
   use ChemChemicals_ml,     only : species
   use EmisDef_ml,           only : QPOL,NPOL
   use Functions_ml,         only : heaviside

@@ -78,7 +78,7 @@ use ChemChemicals_ml         ! provide species names
 use Chemfields_ml,     only: xn_adv, xn_bgn, NSPEC_BGN  ! emep model concs.
 use ChemSpecs_adv_ml         ! provide NSPEC_ADV and IXADV_*
 use ChemSpecs_shl_ml         ! provide NSPEC_SHL
-use ChemGroups_ml,     only: SS_GROUP !  Sea-salt special
+!FEB2012 use ChemGroups_ml,     only: SS_GROUP !  Sea-salt special
 use GlobalBCs_ml,      only:  &
    NGLOB_BC                   &  ! Number of species from global-model
   ,GetGlobalData              &  ! Sub., reads global data+vert interp.
@@ -364,11 +364,16 @@ contains
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
              bc_seaspec = .false.
-             if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
+!FEB2012. If SeaSalt isn't called from mk.GenChem, we don't have the SS_GROUP, so
+!         we search for the simple SEASALT name.
+!            if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
+             if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
-             !             if ( debug_proc ) write (*,*) "SEAINDEX", &
-             !                  trim(species(ntot)%name), n, ntot, bc_seaspec
+
+             if ( debug_proc ) write (*,*) "SEAINDEX", &
+                  trim(species(ntot)%name), n, ntot, bc_seaspec,&
+                       index( species(ntot)%name, "SEASALT_")
 
              do k = 1, KMAX_MID
                 do j = 1, ljmax
@@ -412,7 +417,8 @@ contains
              iem = spc_used_adv(ibc,n)
              ntot = iem + NSPEC_SHL 
              bc_seaspec = .false.
-             if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
+             !FEB2012 if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
+             if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
                 bc_seaspec = .true.
              end if
              !             if ( debug_proc ) write (*,*) "SEAINDEX", &
@@ -984,7 +990,8 @@ subroutine Set_BoundaryConditions(mode,iglobact,jglobact,bc_adv,bc_bgn)
     ntot = nadv + NSPEC_SHL 
 
     bc_seaspec = .false.
-    if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
+!FEB2012    if ( USE_SEASALT .and. ( find_index( ntot, SS_GROUP(:) ) > 0 ) ) then
+    if ( USE_SEASALT .and. ( index( species(ntot)%name, "SEASALT_" ) > 0 ) ) then
       bc_seaspec = .true.
     end if
     if ( debug_proc ) write (*,*) "SEAINDEX", &

@@ -1525,11 +1525,8 @@ sub print_rates {
 	print EMIS "  character(len=$MaxLen), save, dimension(NEMIS_$nam), public:: &\n";
 	print EMIS "      EMIS_$nam =  (/ &\n";
 	my $comma = "";
-	my $outfmt = "%12s \"%-${MaxLen}s\" &\n"; 
 	foreach my $e ( @emis ){
-		#die "ERROR: LONG EMIS name $e > $MaxLen \n" if length($e) > $MaxLen ;
-		#printf EMIS "%12s \"%s\" &\n", $comma,$e;  # uc($e); 
-		printf EMIS "$outfmt", $comma,$e;  # uc($e); 
+		printf EMIS "%12s \"%${MaxLen}s\" &\n", $comma,$e;  # uc($e); 
 		$comma = ",";
 	}
 	print EMIS " /)\n ";

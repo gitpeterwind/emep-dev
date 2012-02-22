@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -50,7 +50,7 @@
  use EmisDef_ml,           only : NDU, QDUFI, QDUCO
  use Functions_ml,         only : ERFfunc
  use ChemChemicals_ml,     only : species
- use ChemSpecs_tot_ml,     only : DUST_WB_F !DUST_NAT_F
+!FEB2012  use ChemSpecs_tot_ml,     only : DUST_WB_F !DUST_NAT_F
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
  use Io_ml,                only : PrintLog
  use Landuse_ml,           only : LandCover, NLUMAX 
@@ -70,6 +70,7 @@
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
  use TimeDate_ml,          only : daynumber
  use Setup_1dfields_ml,    only : rh
+ use SmallUtils_ml,        only : find_index ! FEB2012
 
 !-----------------------------------------------
   implicit none
@@ -117,7 +118,7 @@
           , frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
 
    logical :: arable, dust_prod = .false.
-   integer :: nlu, ilu, lu
+   integer :: nlu, ilu, lu, ipoll
 
    !if(DEBUG_DUST ) write(6,'(a30,3i5,es12.3,L3)')'>> DS INRAIN >>', &
    !       i, j,    dry_period(i,j),surface_precip(i,j), debug_flag
@@ -132,7 +133,12 @@
 
         call init_dust
 
-          kg2molecDU = 1.0e-3 * AVOG / species(DUST_WB_F)%molwt
+          ipoll = find_index("DUST_WB_F", species(:)%name )
+print *, "DUSTY ", me, ipoll !, DUST
+          call CheckStop( ipoll < 1, "Dust asked for, but not found")
+          kg2molecDU = 1.0e-3 * AVOG / species(ipoll)%molwt
+
+          !FEB2012 kg2molecDU = 1.0e-3 * AVOG / species(DUST_WB_F)%molwt
                                       !species(DUST_NAT_F)%molwt 
           my_first_call = .false.
 

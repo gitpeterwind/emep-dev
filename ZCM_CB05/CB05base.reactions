@@ -189,14 +189,14 @@ KNO3AL                                   PACT + NO3 = NO3 ;
 2.31e-11                                 MXYL + OH = OH ;
 1.36e-11                                 OXYL + OH = OH ;
 1.43e-11                                 PXYL + OH = OH ;
-1.20e-11*exp(440*tinv)                   APIN + OH = OH ;
-6.30e-16*exp(-580*tinv)                  APIN + O3 = O3 ;
-1.20e-12*exp(490*tinv)                   APIN + NO3 = NO3 ;
-2.79e-11                                 APIN + OP = OP ;
-2.38e-11*exp(357*tinv)                   BPIN + OH = OH ;
-2.51e-12                                 BPIN + O3 = O3 ;
-1.50e-17                                 BPIN + NO3 = NO3 ;
-2.81e-11                                 BPIN + OP = OP ;
+1.20e-11*exp(440*tinv)                   APINENE + OH = OH ;
+6.30e-16*exp(-580*tinv)                  APINENE + O3 = O3 ;
+1.20e-12*exp(490*tinv)                   APINENE + NO3 = NO3 ;
+2.79e-11                                 APINENE + OP = OP ;
+2.38e-11*exp(357*tinv)                   BPINENE + OH = OH ;
+2.51e-12                                 BPINENE + O3 = O3 ;
+1.50e-17                                 BPINENE + NO3 = NO3 ;
+2.81e-11                                 BPINENE + OP = OP ;
 * 5.00e-05                                 TRACER =   ;
 * 1.00e-04                                 AROMAER = pSOA ;
 * 1.00e-04                                 BIOAER = pSOA ;
@@ -235,7 +235,7 @@ rcemis:NH3                               = NH3 ;
 rcbio(BIO_ISOP,k)                       = C5H8    ;
 * rcbio(BIO_TERP,k)                       = TERP ;
 rcbio(BIO_SOILNO,k)                     = NO ;
-rc_Rn222(k)                                = Rn222    ;
+* ISOTOPES rc_Rn222(k)                                = Rn222    ;
 * 
 * Deposition
 * - dry deposition
@@ -307,9 +307,9 @@ aqrck(ICLRC3,k)                          SO2 + {Fe} = SO4   ;
 *
 *----- Isotope Processes ----------------------------------- ;
 *
-rc_Rn222(k)                              = Rn222 ;
-2.1e-6                                   Rn222 = Pb210 ;
-1.0e-12*h2o                              Pb210 = ;
+*ISOTOPE rc_Rn222(k)                              = Rn222 ;
+*ISOTOPE 2.1e-6                                   Rn222 = Pb210 ;
+*ISOTOPE 1.0e-12*h2o                              Pb210 = ;
 *
 *----- Uptake Processes ------------------------------------ ;
 *
