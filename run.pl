@@ -10,7 +10,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=64:ib
 # wall time limit of run
-#PBS -lwalltime=07:50:00
+#PBS -lwalltime=09:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing

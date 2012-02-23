@@ -31,15 +31,15 @@ run=EmChem09soa
 # SR runs (they don't affect other compounds), so we can
 # easily skip them
 xdir=$PWD/ZCM_EmChem09 # has some common extra files, e.g. seasalt & dust
-extras=( $xdir/SeaSalt $xdir/Dust  $xdir/Pollen )
+extras=( $xdir/SeaSalt $xdir/Dust  $xdir/Pollen )  # Experimental inc. pollen
 extras=( ) #   Minimum set!
-extras=( $xdir/SeaSalt $xdir/Dust $xdir/Isotopes ) #  $xdir/Pollen )
+extras=( $xdir/SeaSalt $xdir/Dust $xdir/Isotopes ) #  Standard(?)
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base PMmass )  # EmChem09
-  rcns=( EmChem09base PMmass )  # EmChem09 a
-  bics=( EmChem09base )  # EmChem09 a
+  spcs=( EmChem09base PMmass )  
+  rcns=( EmChem09base PMmass ) 
+  bics=( EmChem09base )
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
@@ -49,18 +49,18 @@ elif [ $run == EmChem09soa ]; then
   rcns=( ../ZCM_EmChem09/EmChem09base \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
-  bics=( $xdir/EmChem09base )  # 
+  bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
 
 elif [ $run == CRI_v2_R5 ]; then
   echo "RUN CRI_v2_R5 chosen"
-  spcs=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )  # EmChem09
-  rcns=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )  # EmChem09 a
-  exit # bics not done yet
+  spcs=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )
+  rcns=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )
+  bics=( CRI_v2_R5base )
 
 elif [ $run == CB05 ]; then
   echo "RUN CB05 chosen"
-  spcs=( CB05base ../ZCM_EmChem09/PMmass )  # EmChem09
-  rcns=( CB05base ../ZCM_EmChem09/PMmass )  # EmChem09 a
+  spcs=( CB05base ../ZCM_EmChem09/PMmass )
+  rcns=( CB05base ../ZCM_EmChem09/PMmass )
   bics=( CB05base ) 
 
 else

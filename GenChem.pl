@@ -1526,7 +1526,7 @@ sub print_rates {
 	print EMIS "      EMIS_$nam =  (/ &\n";
 	my $comma = "";
 	foreach my $e ( @emis ){
-		printf EMIS "%12s \"%${MaxLen}s\" &\n", $comma,$e;  # uc($e); 
+		printf EMIS "%12s \"%-${MaxLen}s\" &\n", $comma,$e;  # uc($e); 
 		$comma = ",";
 	}
 	print EMIS " /)\n ";

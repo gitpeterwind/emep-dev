@@ -112,7 +112,7 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-!  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
+  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56+OFFSET_i, 147+OFFSET_i, 12+OFFSET_i, 102+OFFSET_i /)     ! EGU
@@ -125,7 +125,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 201,  1, 161 /)     ! EMEP-CWF, GEMS 0.25 domain
 ! RUNDOMAIN = (/  1, 301, 26, 221 /)     ! EMEP-CWF, GEMS 0.25 extended domain
 ! RUNDOMAIN = (/  1, 321,  1, 221 /)     ! EMEP-CWF, MACC 0.20 domain
- RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
+! RUNDOMAIN = (/ 70+OFFSET_i, 90+OFFSET_i, 43+OFFSET_j,  63+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 60+OFFSET_i, 86+OFFSET_i, 43+OFFSET_j,  59+OFFSET_j /) ! (UK)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 55+OFFSET_j,  70+OFFSET_j /) ! (changeable)
 ! RUNDOMAIN = (/ 85+OFFSET_i,120+OFFSET_i, 15+OFFSET_j,  50+OFFSET_j /) ! (changeable)
@@ -135,8 +135,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
 integer, public, parameter ::  &
-  NPROCX      =   2       & ! Actual number of processors in longitude
-, NPROCY      =   4        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   8       & ! Actual number of processors in longitude
+, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================

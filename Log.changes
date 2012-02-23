@@ -166,7 +166,10 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_21 Dave 22nd Feb 2012   xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_21 Dave 23rd Feb 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+(Bug-fix on 22nd on GenChem.pl: formatting wrong in CM_EmisFiles)
+
 
 GenChem- changes to allow easier use or exclusion of seasalt, dust,
    pollen, isotopes - ie the inert stuff that can be used by any
@@ -195,11 +198,15 @@ mk.GenChem
 
    - also changed APIN, BPIN to APINENE, BPINENE - simplifies emis output
 
+Added:  ZCM_CRI_v2_R5/CRI_v2_R5.BoundaryConditions
+
  ** Deleted: 
 
    ZCM_EmChem09/SAFE.CM_BoundaryConditions.inc
    ZCM_EmChem09soa/SAFE.CM_BoundaryConditions.inc
    ZCM_CB05/SAFE.CM_BoundaryConditions.inc
+   ZCM_CRI_v2_R5/SAFE.CM_BoundaryConditions.inc
+
 
 GenChem.pl - formatting in print_emisstuff adjusted to give same
    number of characters in CM_EmisSpec.inc and CM_EmisFiles.inc
