@@ -327,8 +327,8 @@ module OrganicAerosol_ml
     ug_nonvol(i,:) = molcc2ugm3 * xn(ispec,:)*species(ispec)%molwt
 
 !rb: something is strange with the output from sites (at least) for the non-volatile components test setting Fpart to 1 here also (but should not really be necessary since it is already done in the initialisation above)
-    Fpart(i,:)=1.0
-    Fgas(i,:)=0.0
+!FEB2012    Fpart(i,:)=1.0
+!FEB2012    Fgas(i,:)=0.0
 
   end do
   !do k = K1, K2 

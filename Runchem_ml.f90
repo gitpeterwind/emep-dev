@@ -70,6 +70,7 @@
                   DebugCell,  DEBUG_AOT, & ! DEBUG only
                   DEBUG => DEBUG_RUNCHEM, DEBUG_i, DEBUG_j,nstep, NPROC
    use OrganicAerosol_ml, only: ORGANIC_AEROSOLS, OrganicAerosol, &
+           Init_OrganicAerosol, & !FEB2012
                   SOA_MODULE_FLAG   ! ="VBS" or "NotUsed"
    use Pollen_ml,         only : Pollen_flux,Pollen_prod
    use Par_ml,            only : lj0,lj1,li0,li1, limax, ljmax  &
@@ -115,10 +116,12 @@ subroutine runchem(numt)
    Jan_1st    = ( nmonth == 1 .and. nday == 1 )
    End_of_Run = ( mod(numt,nprint) == 0       )
 
-   ! Just safety
-   if ( ORGANIC_AEROSOLS ) & 
-      call CheckStop( SOA_MODULE_FLAG == "NotUsed", &
+   if ( ORGANIC_AEROSOLS .and. first_call ) then 
+
+      call CheckStop( SOA_MODULE_FLAG == "NotUsed", & ! Just safety
          "Wrong My_SOA? Flag is "// trim(SOA_MODULE_FLAG) )
+
+   end if
 
 ! Processes calls 
 
@@ -144,6 +147,9 @@ subroutine runchem(numt)
  ! Prepare some near-surface grid and sub-scale meteorology
  ! for MicroMet
              call Get_CellMet(i,j,debug_flag) 
+
+             !FEB2012 - we need to get the gas fraction of semivols:
+             if ( ORGANIC_AEROSOLS ) call Init_OrganicAerosol(i,j,debug_flag)
 
              call setup_1d(i,j)   
 
