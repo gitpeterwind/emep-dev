@@ -70,6 +70,8 @@ private
     ,PM25_water (MAXLIMAX,MAXLJMAX,KMAX_MID)         = 0.0  &  !3D PM water
     ,PM25_water_rh50 (MAXLIMAX,MAXLJMAX)             = 0.0     !gravimetric PM water
 
+  real, public, save, allocatable:: Fgas3d (:,:,:,:)  ! for SOA
+
   real, public, dimension(MAXLIMAX,MAXLJMAX) :: AOD
 
   real, save, public :: &

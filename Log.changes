@@ -156,8 +156,7 @@ jej done  Timing_ml.f90
 ds moved   Tmp_Met_ml.f90  - ds moved to FUTURE_Tmp_Met_ml.f90
 ab done   Trajectory_ml.f90
 av/ds done Unimod.f90
-av done   Volcanos_ml.f90
-pw done   Wesely_ml.f90
+av done   Volcanos_ml.f90 pw done   Wesely_ml.f90
 
 ZD_OZONE/
 
@@ -165,6 +164,24 @@ ds done   My_Aerosols_ml.f90     - st small changes (see below)
 ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
+
+xxxxxxxx rv3_10_22 Dave 27th Feb 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+(Obs! Partial,  EmChem09soa works. Changes not passed to 
+       EmChem09 My_SOA_ml yet)
+
+BUG-FIX on SOA:   Fgas/Fpart were not being initialised right.
+   Need to store Fgas in 3D array
+
+Chem_ml  - added Fgas3D array
+
+Runchem_ml - call to Init_OrganicAerosol at start of i,j loop -
+   allocates Fgas3d on 1st call, and sets Fgas, Fpart on all
+   calls(
+
+ZD_VBS/My_SOA - modified to use Fgas3D
+
+
 
 xxxxxxxx rv3_10_21 Dave 23rd Feb 2012   xxxxxxxxxxxxxxxxxxxxxx
 

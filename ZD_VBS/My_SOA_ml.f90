@@ -1,4 +1,3 @@
-!TOTO- check BGND OC or OM
 module OrganicAerosol_ml
 
   ! Calculates the amount of condensible species in the gas and aerosol phases. 
@@ -51,6 +50,7 @@ module OrganicAerosol_ml
 
   ! Functions + GridValues + PT only for BGNDOC
    use Functions_ml, only: StandardAtmos_kPa_2_km !ds for use in Hz scaling
+   use ChemFields_ml,      only : Fgas3d   !  stores 3-d  between time-steps
    use ChemChemicals_ml,      only : species   ! for molwts
    use ChemSpecs_tot_ml,  S1 => FIRST_SEMIVOL , S2 => LAST_SEMIVOL
 
@@ -95,7 +95,7 @@ module OrganicAerosol_ml
 
    !/-- subroutines
 
-    private  :: Init_OrganicAerosol
+    public   :: Init_OrganicAerosol
     public   :: OrganicAerosol
 
 
@@ -144,7 +144,7 @@ module OrganicAerosol_ml
     real, private, dimension(NUM_NVABSOM,K1:K2), save :: ug_nonvol 
     !real, private, dimension(K1:K2), save :: ug_ecf ! CityZen added 
 
-    real,  private, dimension(S1:S2,CHEMTMIN:CHEMTMAX) :: tabCiStar
+    real,  private, save, dimension(S1:S2,CHEMTMIN:CHEMTMAX) :: tabCiStar
 
     integer, private, save :: NITER = 2              ! No. iterations for Ksoa
     real, private, save :: xn2molem3  ! Conversion from molec/cm3 to mole/m3
@@ -159,20 +159,24 @@ module OrganicAerosol_ml
    !    Usually, DEBUG_SOA gives extra outputs. debug_flag is used to allow
    !    some extra outputs for a gven i,j - set in CTM model.
 
-    logical, private, save :: my_first_call = .true.  ! True for 1st call only
+    !FEB2012 logical, private, save :: my_first_call = .true.  ! True for 1st call only
     character(len=20), public, save :: soa_errmsg = "ok"
     character(len=*), public, parameter :: SOA_MODULE_FLAG="VBS"
 
    contains
    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-   subroutine Init_OrganicAerosol(debug_flag)
+   subroutine Init_OrganicAerosol(i,j,debug_flag)
+   integer, intent(in) :: i,j
    logical, intent(in) :: debug_flag
-   integer :: i, it, k
+   integer :: is,  it, k
    real, parameter :: kJ = 1000.0  
-  !ds Use of standard atmosphere 
-   real, dimension(K2), save :: p_kPa, h_km
+   real, dimension(K2), save :: p_kPa, h_km ! for standard atmosphere 
+   logical, save :: my_first_call = .true.
 
 
+   if ( my_first_call ) then
+    !=========================================================================
+    ! Set up background OM 
       ! Need to convert aeros to ug/m3 or ugC/m3.  Since xn is in molecules/cm3
       ! we divide by AVOG to get mole/cm3, multiply by 1e6 to get mole/m3,
       ! by  mol. weight to get g/m3 and by 1e6 to get ug/m3
@@ -181,8 +185,7 @@ module OrganicAerosol_ml
          xn2ugC   = xn2molem3 * 12.0 * 1.0e6
          ugC2xn   = 1/xn2ugC
 
-  !ds 27/7/2003 - Use Standard Atmosphere to get average heights of layers
-  ! Taken from Unimod.BVKam2X and Warneck
+  ! Use Standard Atmosphere to get average heights of layers
 
        p_kPa(:) = 0.001*( PT + sigma_mid(:)*(101325.0-PT) ) ! Pressure in kPa
        h_km     = StandardAtmos_kPa_2_km(p_kPa)
@@ -195,48 +198,69 @@ module OrganicAerosol_ml
        end do
        BGND_OA(:) = 2*BGND_OC(:)   ! Assume OA/OC = 2 for bgnd
 
+       do k = K1, K2
+          Grid_COA(:,:,k) = BGND_OA(k)  ! Use OA, not OC here
+       end do
 
-
-       ! Tabulate change of Fcond 
+    !=========================================================================
+    ! Set up Tables for Fcond 
        !  Smog-chamber data from 310K
        ! Ci = 1.0e6*P0/RT 
        ! Now, pi(T) = Ai exp(-Hi/RT)
        ! And pi(T) = Pi(Tref) * exp( H/RT * (1/Tref - 1/T) )
        ! ->  Ci(T) = Ci(Tref) * Tref/T * exp(...)
 
-       do i=S1,S2
+       do is=S1,S2
          do it=CHEMTMIN,CHEMTMAX
 
 !rb: C*-values are given for 298K according to most(?) publications.
-           tabCiStar(i,it) = species(i)%CiStar * 298./it * &
-                  exp( species(i)%DeltaH * kJ/RGAS_J * (1.0/298. - 1.0/it) )
+           tabCiStar(is,it) = species(is)%CiStar * 298./it * &
+                  exp( species(is)%DeltaH * kJ/RGAS_J * (1.0/298. - 1.0/it) )
          end do
        end do
 
 
          if ( MasterProc ) then 
-            do i = S1, S2
+            do is = S1, S2
                write(6,"(a,i4,a16,f7.1,i3,8es12.3)") &
-                " Tab SOA: MW, Carbons, C*:", i, trim(species(i)%name), &
-                 species(i)%molwt, species(i)%carbons, & !VBStabVPsoa(i,298)
-                 tabCiStar(i,273), tabCiStar(i,303)
+                " Tab SOA: MW, Carbons, C*:", is, trim(species(is)%name), &
+                 species(is)%molwt, species(is)%carbons, & !VBStabVPsoa(is,298)
+                 tabCiStar(is,273), tabCiStar(is,303)
             end do
          end if
 
 
-       ! Initial values only:
+       !Feb2012:
+        print *, "FEB2012 ALLOCATE ", S1,S2, K1, K2
+         allocate( Fgas3d(S1:S2,LIDIM,LJDIM,K1:K2) )
 
-         Fpart(:,:)         = 0.0
-         !dsrb Fpart(NONVOLOC,:)  = 1.0 ! ds added EC here also. OK?
-         Fpart(NONVOLPCM_GROUP,:)  = 1.0
-         !Grid_SOA_Fgas    = 1.0 - 1.0e-10
-         do k = K1, K2
-            Grid_COA(:,:,k) = BGND_OA(k)  ! Use OA, not OC here
-         end do
+       !+ initial guess (1st time-step only)
+       ! Fgas3D is only defined for the semivol stuff, so no need for nonvol here
+       ! We need to assume something on 1st time-step though:
+         Fgas3d = 1.0
+
+       ! Initial values. Should not change except for semi-volatiles
+
+        Fpart(:,:)         = 0.0
+        Fpart(NONVOLPCM_GROUP,:)  = 1.0
+        Fgas(:,:)         = max(0.0, 1.0 - Fpart(:,:) )
+
            !VBS Grid_avg_mw    = 250.0              ! Da
            !EXC Grid_SOA_gamma = 1.0
+    !=========================================================================
+        my_first_call = .false.
+    end if ! my_first_call
 
-   end subroutine Init_OrganicAerosol
+    ! FEB2012
+    ! We need to set Fgas at start of each Runchem i,j loop, as it is
+    ! used for rcemis:
+
+      Fgas(S1:S2,:) = Fgas3d(S1:S2,i,j,:)     ! Semivolatiles only in 3D Fgas
+      Fpart(S1:S2,:)  = 1-Fgas(S1:S2,:)
+
+!      Fgas(NONVOLPCM_GROUP,:) = 0.0             !  not needed, shouldn't change
+
+  end subroutine Init_OrganicAerosol
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
    subroutine OrganicAerosol(i_pos,j_pos,debug_flag)
@@ -264,12 +288,12 @@ module OrganicAerosol_ml
 
    if( DEBUG .and. debug_flag) write(unit=*,fmt=*) "Into SOA"
 
-   if ( my_first_call ) then
+   !FEB2012 nif ( my_first_call ) then
 
-       call Init_OrganicAerosol(debug_flag)
-       my_first_call = .false.
+   !FEB2012 n    call Init_OrganicAerosol(debug_flag)
+   !FEB2012 n    my_first_call = .false.
 
-   endif
+   !FEB2012 nendif
 
 
 
@@ -403,6 +427,7 @@ module OrganicAerosol_ml
 
    Fgas(S1:S2,:)  = 1.0 - Fpart(S1:S2,:)
    Grid_COA(i_pos,j_pos,:)              = COA(:)
+   Fgas3d(S1:S2,i_pos,j_pos,:) = Fgas(S1:S2,:) !FEB2012
 
 !CITYZEN. PCM_F is for output only. Has MW 1 to avoid confusion with OC
 !do not use ugC outputs, just ug
