@@ -189,6 +189,10 @@ module MosaicOutputs_ml
 
           itot = find_index( poll,  species(:)%name )
           iadv = itot - NSPEC_SHL
+          if( iadv < 1 ) then
+                if(MasterProc) write(*,*) "MOSSPEC not found ", iadv, trim(name)
+                cycle MC_LOOP
+          end if
           call CheckStop( iadv < 1 .or. iadv > NSPEC_ADV, &
                  " ERR: Mc  _SPECS: Mc_SPECS" )
 
