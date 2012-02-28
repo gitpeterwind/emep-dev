@@ -50,7 +50,7 @@
  use GridValues_ml ,  only : carea,xmd     ! cell area, 1/xm2 where xm2 is 
                                            ! the area factor in the middle 
                                            ! of the cell 
- use Io_ml         ,  only : IO_RES        ! =25
+ use Io_ml         ,  only : IO_RES, PrintLog   ! io=25
  use MetFields_ml  ,  only : ps            ! surface pressure  
  use ModelConstants_ml,                 &
                       only : KMAX_MID   &  ! Number of levels in vertical
@@ -180,6 +180,7 @@ contains
   integer, parameter :: NFAMILIES = 3            ! No. of families         
   character(len=8), dimension(NFAMILIES), save :: family_name = &
            (/ "Sulphur ", "Nitrogen", "Carbon  " /)
+  character(len=200) :: logtxt
 
   real, dimension(NFAMILIES) ::family_init  & ! initial total mass of 
                                               ! species family
@@ -316,11 +317,12 @@ contains
     family_em(:)   = 0.
     natoms = 0.0
 
-    write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
+    call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
 
      do ifam = 1, 3
 
-       write(6,"(a8,i3,a12)") 'family ', ifam,  family_name(ifam) 
+       write(logtxt,"(a,i3,a12)") 'Mass balance ', ifam, family_name(ifam) 
+       call PrintLog(logtxt)
        do n = 1, NSPEC_ADV
 
          nn = NSPEC_SHL + n
@@ -355,22 +357,23 @@ contains
                                  / family_input(ifam)
 
 
-      write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'      
-      write(6,*)
-
-      write(6,"(a9,5a12)") "family", "sumint", "summas", &
+      call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
+      write(logtxt,"(a9,5a12)")" ", "sumint", "summas", &
                                "fluxout","fluxin", "fracmass"
-      write(6,"(a9,5es12.4)") family_name(ifam), &
+      call PrintLog(logtxt)
+     
+      write(logtxt,"(a9,5es12.4)") family_name(ifam), &
              family_init(ifam), family_mass(ifam),family_outflow(ifam), &
              family_inflow(ifam), family_fracmass(ifam)
+      call PrintLog(logtxt)
 
-      write(6,*)
-      write(6,"(a9,3a14)") "ifam", "totddep","totwdep","totem"
-      write(6,"(i9,3es14.3)") ifam, family_ddep(ifam)*ATWAIR  &
+      write(logtxt,"(a9,3a14)") "ifam", "totddep","totwdep","totem"
+      call PrintLog(logtxt)
+      write(logtxt,"(i9,3es14.3)") ifam, family_ddep(ifam)*ATWAIR  &
                         , family_wdep(ifam)*ATWAIR  &
                         , family_em(ifam) 
-      write(6,*)
-      write(6,*)'++++++++++++++++++++++++++++++++++++++++++++++++'
+      call PrintLog(logtxt)
+      call PrintLog('++++++++++++++++++++++++++++++++++++++++++++++++')
 
     end do  ! ifam = 1,3
     
