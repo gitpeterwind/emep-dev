@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -48,6 +48,7 @@
  use ChemChemicals_ml,     only : species
  use EmisDef_ml,           only : NSS, QSSFI, QSSCO !, QSSGI
  use GridValues_ml,        only : glat, glon
+ use Io_Progs_ml,          only : PrintLog
  use Landuse_ml,           only : LandCover, water_fraction
  use LocalVariables_ml,    only : Sub, Grid
  use MetFields_ml,         only : u_ref
@@ -56,6 +57,7 @@
                                    foundws10_met,ws_10m
  use MicroMet_ml,          only : Wind_at_h
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, &
+                                  MasterProc, & 
                                   DEBUG_SEASALT, DEBUG_i,DEBUG_j
  use Par_ml,               only : MAXLIMAX,MAXLJMAX   ! => x, y dimensions
  use PhysicalConstants_ml, only : CHARNOCK, AVOG ,PI
@@ -82,6 +84,8 @@
   real, public, dimension(NSS,MAXLIMAX,MAXLJMAX) :: SS_prod !Sea salt flux
 
   logical, private, save :: my_first_call = .true.
+  logical, private, save :: seasalt_found
+  integer, private, save :: iseasalt   ! index of SEASALT_F
 
   contains
 
@@ -104,19 +108,36 @@
    integer :: ii, jj, nlu, ilu, lu
    real    :: invdz, n2m, u10, u10_341, Tw, flux_help, total_flux
    real    :: ss_flux(SS_MAAR+SS_MONA), d3(SS_MAAR+SS_MONA) 
-   integer :: ipoll !FEB2012
 !//---------------------------------------------------
  
   if ( my_first_call ) then 
 
-    call init_seasalt
+    ! We might have USE_SEASALT=.true. in ModelConstants, but the
+    ! chemical scheme might not have seasalt species. We check.
+
+    iseasalt = find_index("SEASALT_F", species(:)%name )
+
+    if ( iseasalt < 1 ) then
+       seasalt_found = .false.
+       SS_prod(:,:,:) = 0.0
+       call PrintLog("WARNING: SeaSalt asked for but not found",MasterProc)
+    else
+        seasalt_found = .true.
+        call init_seasalt()
+    end if
     
     my_first_call = .false.
 
   end if !  my_first_call
  !....................................
 
+  if ( .not. seasalt_found  ) return 
+
+ !....................................
+
+
     SS_prod(:,i,j) = 0.0
+
 
     if ( .not. Grid%is_NWPsea .or. Grid%snowice ) return ! quick check
 
@@ -207,9 +228,9 @@
 !.. conversion factor from [part/m2/s] to [molec/cm3/s]
 
           invdz  = 1.0e-6 / Grid%DeltaZ       ! 1/dZ [1/cm3]
-          ipoll = find_index("SEASALT_F", species(:)%name )
+  !FEB2012b        ipoll = find_index("SEASALT_F", species(:)%name )
   !FEB2012        n2m = n_to_mSS * invdz *AVOG / species(SeaSalt_f)%molwt *1.0e-15
-          n2m = n_to_mSS * invdz *AVOG / species(ipoll)%molwt *1.0e-15
+          n2m = n_to_mSS * invdz *AVOG / species(iseasalt)%molwt *1.0e-15
 
 !.. Fine particles emission [molec/cm3/s]
           do ii = 1, NFIN
