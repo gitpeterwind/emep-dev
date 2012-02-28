@@ -170,7 +170,8 @@ contains
 
    fac_emm(:,:,:,:) = 1.0
    fac_min(:,:,:) = 1.0
-!hf
+
+  ! Summer/winter SNAP1 ratios reduced from 1990 to 2010:
    fac_cemm(:) = 1.0
    fracchange=0.005*(iyr_trend -1990)
    fracchange=max(0.0,fracchange) !do not change before 1990
@@ -180,10 +181,11 @@ contains
 
    do mm=1,12
       !Assume max change for august and february
-      fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12 )
-      write(unit=6,fmt=*) "Change in emis mm, fac_cemm ", mm,fac_cemm(mm)
+      fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12.0 )
+      write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") "Change in fac_cemm ", mm,fac_cemm(mm),&
+         " Testmm ", (mm - 8)/ 12
    enddo
-!hf end
+   write(*,"(a,f8.4)") "Mean fac_cemm ", sum( fac_cemm(:) )/12.0
 
 
    do iemis = 1, NEMIS_FILE
@@ -214,7 +216,7 @@ contains
 
        close(IO_TIMEFACS)
 
-!hf Apply change in monthly factors for SNAP 1
+! Apply change in monthly factors for SNAP 1
           sumfacc(:,:)=0.0
           do ic = 1, NLAND
              do mm=1,12
@@ -222,7 +224,7 @@ contains
                 sumfacc(ic,iemis)=sumfacc(ic,iemis)+fac_emm(ic,mm,1,iemis)
              enddo
           enddo
-!hf normalize
+! normalize
           do ic = 1, NLAND
              do mm=1,12
                 fac_emm(ic,mm,1,iemis)=fac_emm(ic,mm,1,iemis)*12./sumfacc(ic,iemis)
