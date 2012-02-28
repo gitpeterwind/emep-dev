@@ -56,7 +56,7 @@ RA19AO2,0,ra19ao2,xx,xx,xx,0,0,0,xx,RO2,,!C0
 RA19CO2,0,ra19co2,xx,xx,xx,0,0,0,xx,RO2,,!C0
 RTN28O2,0,rtn28o2,xx,xx,xx,0,0,0,xx,RO2,,!C0
 RTN26O2,0,rtn26o2,xx,xx,xx,0,0,0,xx,RO2,,!C0
-NRTN28O2,0,nrtn28o2,xx,xx,xx,0,0,0,xx,RO2;OXN,,!C10
+NRTN28O2,0,nrtn28o2,xx,xx,xx,0,0,0,xx,RO2,,!C10, OXN-also-but skip
 RTN25O2,0,rtn25o2,xx,xx,xx,0,0,0,xx,RO2,,!C0
 RTN24O2,0,rtn24o2,xx,xx,xx,0,0,0,xx,RO2,,!C0
 RTN23O2,0,rtn23o2,xx,xx,xx,0,0,0,xx,RO2,,!C0
