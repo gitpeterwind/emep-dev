@@ -50,7 +50,6 @@
  use EmisDef_ml,           only : NDU, QDUFI, QDUCO
  use Functions_ml,         only : ERFfunc
  use ChemChemicals_ml,     only : species
-!FEB2012  use ChemSpecs_tot_ml,     only : DUST_WB_F !DUST_NAT_F
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
  use Io_ml,                only : PrintLog
  use Landuse_ml,           only : LandCover, NLUMAX 
@@ -70,7 +69,7 @@
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
  use TimeDate_ml,          only : daynumber
  use Setup_1dfields_ml,    only : rh
- use SmallUtils_ml,        only : find_index ! FEB2012
+ use SmallUtils_ml,        only : find_index
 
 !-----------------------------------------------
   implicit none
@@ -84,6 +83,8 @@
                                  soil_dns_dry, help_ustar_th
   real, parameter             :: soil_dens = 2650.0  ! [kg/m3]
   logical, private, save      :: my_first_call = .true.
+  logical, private, save      :: dust_found
+  integer, private, save      :: ipoll
   integer, save               :: dry_period(MAXLIMAX, MAXLJMAX) = 72
   character(len=20)           :: soil_type
   contains
@@ -118,10 +119,8 @@
           , frac_fin, frac_coa, flx_hrz_slt,  flx_vrt_dst
 
    logical :: arable, dust_prod = .false.
-   integer :: nlu, ilu, lu, ipoll
+   integer :: nlu, ilu, lu
 
-   !if(DEBUG_DUST ) write(6,'(a30,3i5,es12.3,L3)')'>> DS INRAIN >>', &
-   !       i, j,    dry_period(i,j),surface_precip(i,j), debug_flag
 !_______________________________________________________
     if ( USE_DUST .eqv. .false. ) then
         call PrintLog("Skipping soil dust")
@@ -129,22 +128,34 @@
     end if
 
     if ( my_first_call ) then 
-     write(6,*)'***    Call for init_dust     ***   '
 
-        call init_dust
+        ipoll = find_index("DUST_WB_F", species(:)%name )
+        dust_found = .true.
+        if( ipoll < 1 ) then
+            call PrintLog( "WARNING: Dust asked for, but not found"&
+                  ,MasterProc)
+            dust_found = .false.
+        else
 
-          ipoll = find_index("DUST_WB_F", species(:)%name )
-print *, "DUSTY ", me, ipoll !, DUST
-          call CheckStop( ipoll < 1, "Dust asked for, but not found")
-          kg2molecDU = 1.0e-3 * AVOG / species(ipoll)%molwt
+           if(MasterProc) write(6,*)'***    Call for init_dust     ***   '
 
-          !FEB2012 kg2molecDU = 1.0e-3 * AVOG / species(DUST_WB_F)%molwt
-                                      !species(DUST_NAT_F)%molwt 
+           call init_dust
+
+           kg2molecDU = 1.0e-3 * AVOG / species(ipoll)%molwt
+
+        end if
+        if(DEBUG_DUST) print *, "DUSTY ", me, ipoll, dust_found
+          !FEB2012 call CheckStop( ipoll < 1, "Dust asked for, but not found")
+
           my_first_call = .false.
 
     end if !  my_first_call
 !_______________________________________________________
 
+
+ !++++++++++++++++++++++++++++
+ if ( .not. dust_found ) return
+ !++++++++++++++++++++++++++++
 
  if(DEBUG_DUST .and. debug_flag ) write(6,*)'***   WINDBLOWN DUST',  &
                                  i_fdom(i), j_fdom(j)
@@ -586,22 +597,19 @@ print *, "DUSTY ", me, ipoll !, DUST
       help_ust = 1.928 * Re_opt**0.0922 - 1.0 ! [frc] IvW82 p. 114 (3), MaB95 p. 16417 (6)
       help_ust = 0.129 * 0.129 /  help_ust ! [frc]                       SQUARED
 
-     if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U* =', help_ust
-
     else 
       help_ust = 1.0- 0.0858 * exp(-0.0617 *(Re_opt-10.0)) ! [frc] IvW82 p. 114(3), 
                                                            ! MaB95 p. 16417 (7)
       help_ust = 0.12*0.12 * help_ust*help_ust  ! [frc]                  SQUARED
 
-     if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U* =', help_ust
-
     endif     ! Re_opt < 0.03
-         
+
 !//__ This method minimizes the number of square root computations performed
 
     help_ustar_th = sqrt (k_help1 * k_help2 * help_ust)
 
-    if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U*t help =', help_ustar_th
+    if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U*, U*t help =',&
+           help_ust, help_ustar_th
 
 !// =======================================
 !TEST       sand_frac = 0.6   ! sand fraction in soil
