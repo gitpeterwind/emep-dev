@@ -42,6 +42,7 @@ module OrganicAerosol_ml
    implicit none
 
    !/-- subroutines
+    public  :: Init_OrganicAerosol
     public  :: OrganicAerosol
 
 
@@ -55,6 +56,14 @@ module OrganicAerosol_ml
    contains
    !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
    !+ Driver routine for Secondary Organic Aerosol  module
+
+   subroutine Init_OrganicAerosol(i,j,debug_flag)
+     integer, intent(in) :: i,j
+     logical, intent(in) :: debug_flag  ! for debugging purposes only
+
+     ! empty 
+     
+   end subroutine Init_OrganicAerosol
 
    subroutine OrganicAerosol(i,j,debug_flag)
      integer, intent(in) :: i,j
