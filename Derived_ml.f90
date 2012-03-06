@@ -304,7 +304,7 @@ if( trim(name) == "HMIX" .and. MasterProc ) print *, "ADDNEWDERIVE", iotype !NOV
 
     real    :: unitscale
     logical :: volunit   ! set true for volume units, e.g. ppb
-    logical :: outmm, outdd, outhh   ! sets time-intervals
+    logical :: outmm, outdd  ! sets time-intervals
 
     character(len=30) :: dname, txt, txt2, class
     character(len=10) :: unittxt
@@ -1476,13 +1476,13 @@ end do
       integer, intent(in) :: period   ! Either IOU_DAY or IOU_MON
 
        if ( period <= LENOUT2D ) then
-           nav_2d  (:,period) = 0.0
+           nav_2d  (:,period) = 0
            d_2d(:,:,:,period) = 0.0
        end if
 
 
        if ( num_deriv3d > 0 .and.  period <= LENOUT3D ) then
-           nav_3d    (:,period) = 0.0
+           nav_3d    (:,period) = 0
            d_3d(:,:,:,:,period) = 0.0
        end if
 

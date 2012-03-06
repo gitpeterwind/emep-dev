@@ -113,7 +113,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
   integer,save :: old_month=-1,old_day=-1
   integer :: month,day
-  character*200::filename
+  character(len=200) ::filename
 
 
   if ( NHOURLY_OUT <= 0 ) then
@@ -544,7 +544,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
 
   subroutine group_setup(ih)
     integer, intent(in) :: ih
-    integer :: ispec, n ! for debug
+    integer :: ispec ! for debug
     integer :: gindex, gsize ! Index and size of group, for clarity
 
     gindex = hr_out(ih)%spec

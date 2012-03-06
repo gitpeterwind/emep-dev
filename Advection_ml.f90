@@ -176,7 +176,9 @@
 
     call CheckStop(mod(3600*metstep,nint(dt_advec)).ne.0, "3600*metstep/dt_advec must be an integer")
 
-    nmax = (3600*metstep)/dt_advec
+   ! Use nint for safety anyway:
+
+    nmax = nint(  (3600*metstep)/dt_advec )
 
     if (me .eq. 0) then
 !      write(6,*)

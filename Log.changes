@@ -165,6 +165,12 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_24 Dave  6th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+Many small changes to make gfortran pedantic happier
+(inc. h_plus removed from get_frac arguments in Aqueous_)
+Shouldn't affect results
+
 xxxxxxxx rv3_10_23 Dave 28th Feb 2012   xxxxxxxxxxxxxxxxxxxxxx
 
 

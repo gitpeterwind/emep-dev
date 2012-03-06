@@ -125,7 +125,6 @@ contains
                         dti             ! variable timestep*(c+1)/(c+2)
     real, dimension(nchemMAX), save :: &
                         coeff1,coeff2,cc ! coefficients for variable timestep
-    integer :: nextraiter
 
 !======================================================
 
@@ -272,9 +271,9 @@ subroutine  makedt(dti,nchem,coeff1,coeff2,cc)
  real, dimension(nchemMAX),intent(out) :: dti,coeff1,coeff2,cc
  integer,                  intent(out) :: nchem
 
- real    :: ttot,step,dt(nchemMAX)
+ real    :: ttot, dt(nchemMAX)
  real :: dt_init   ! time (seconds) with initially short time-steps
- integer :: i,j
+ integer :: i
 !_________________________
 
   nchem=nchemMax !number of chemical timesteps inside dt_advec

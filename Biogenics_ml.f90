@@ -577,12 +577,11 @@ module Biogenics_ml
 
 
    subroutine Set_SoilNOx()
-      integer :: i, j, n, nLC, iLC, LC
+      integer :: i, j, nLC, iLC, LC
       logical :: my_first_call = .true.
-      logical :: mydebug
       real    :: f, ft, fn, ftn
       real    :: enox, enh3  ! emissions, ugN/m2/h
-      real :: fb, beta, bmin, bmax, bx, by ! for beta function
+      real :: beta, bmin, bmax, bx, by ! for beta function
       real :: hfac
 
       if( DEBUG_SOILNOX .and. debug_proc ) write(*,*) "DEBUG_SOILNOX START: ", &

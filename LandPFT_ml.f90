@@ -84,7 +84,7 @@ contains
 
     real    :: lpj(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
     logical :: my_first_call = .true.
-    integer ::  n, pft
+    integer :: pft
     character(len=20) :: varname
 
 return ! JAN31TEST. This code will be completed during 2011

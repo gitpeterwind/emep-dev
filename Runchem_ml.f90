@@ -103,7 +103,7 @@ subroutine runchem(numt)
    integer :: errcode
    integer :: nmonth, nday, nhour     
    logical ::  Jan_1st, End_of_Run
-   logical :: ambient
+!   logical :: ambient
    logical ::  debug_flag    ! =>   Set true for selected i,j
    !TEST real, dimension(limax,ljmax) :: aotpre, aotpost
 

@@ -149,7 +149,7 @@ module Pollen_ml
       else 
          day(i,j) = current_date%day
          h(i,j) = h(i,j)+ heatsum_calc((h_day(i,j)/(24/METSTEP)),T_cutoff)
-         if (debug_flag .and. DEBUG_POLLEN) write(6,'(a10,f10.4,3f8.3,3I)') "Heatsum: ",& 
+         if (debug_flag .and. DEBUG_POLLEN) write(6,'(a10,f10.4,3f8.3,3I4)') "Heatsum: ",& 
                          h_day(i,j)/(24/METSTEP),heatsum_calc((h_day(i,j)/(24/METSTEP)),&
                          T_cutoff),h(i,j),h_c(i,j),i,j,24/METSTEP
          h_day(i,j) = Grid%t2
@@ -159,11 +159,14 @@ end if ! heatsum calc each timestep
 
      heatsum(i,j) = h(i,j) ! if you want to output the heatsum field
  
-      ! if heatum is over hetasum threhold for the grid cell, the pollen emission can start calculating 
+      ! if heatsum is over heatsum threhold for the grid cell, the pollen
+      !  emission can start calculating 
       lim = (1-prob_in)*h_c(i,j)
       
-      if (h(i,j)<lim .or. Grid%t2<T_cutoff .or. surface_precip(i,j)>prec_max .or. R(i,j)>N_TOT*corr(i,j)) then 
-	 scale = 0
+      if (h(i,j)<lim .or. Grid%t2<T_cutoff &
+                     .or. surface_precip(i,j)>prec_max &
+                     .or. R(i,j)>N_TOT*corr(i,j)) then 
+         scale = 0
 
       else 
 
@@ -191,9 +194,8 @@ end if ! heatsum calc each timestep
         Pollen_rest(i,j) = N_TOT - R(i,j) ! pollen grains left pr m2 after release
         Pollen_prod(QPOL,i,j) = Pollen_prod(QPOL,i,j)* n2m
    
-    if (debug_flag .or. DEBUG_POLLEN ) write(6,'(x,a10,2f7.4,f6.2)') "Result: ", &
-                                                       Pollen_prod(QPOL,i,j),&
-                                                       R(i,j)/N_TOT,AreaPOLL(i,j)
+    if (debug_flag .or. DEBUG_POLLEN ) write(6,'(a,2f7.4,f6.2)') "Result: ", &
+             Pollen_prod(QPOL,i,j), R(i,j)/N_TOT,AreaPOLL(i,j)
   
       end if
 

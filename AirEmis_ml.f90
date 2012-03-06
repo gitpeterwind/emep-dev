@@ -90,7 +90,7 @@ module AirEmis_ml
                                                      ! molecules/cm3/s 
             
 
-      character*20 fname
+      character(len=20) :: fname
 
       data ygrdum / 85.76058712, 80.26877907, 74.74454037, &
                 69.21297617, 63.67863556, 58.14295405, &

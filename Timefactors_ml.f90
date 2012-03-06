@@ -434,10 +434,7 @@ contains
 
     integer, intent(in) :: daynumber   ! daynumber (1,..... ,365)
    
-
-    integer :: nstart, alloc_err
-    logical :: my_first_call = .true.   ! DSFF
-    integer :: dd_old = -1,  n
+    integer, save :: dd_old = -1
     integer,dimension(2)  :: ijloc   ! debug only 
     integer :: iii, jjj              ! debug only 
     real :: checkmax

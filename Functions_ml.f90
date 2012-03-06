@@ -261,7 +261,7 @@ module Functions_ml
      integer :: ix1
 
         x1 = (p-PBAS)/PINC
-        ix1 = x1
+        ix1 = int( x1 )
         fTpot =  tab_exf(ix1) + (x1-ix1)*(tab_exf(ix1+1) - tab_exf(ix1))
 
   end function Tpot_2_T
@@ -275,7 +275,7 @@ module Functions_ml
      integer :: ix1
 
         x1 = (p-PBAS)/PINC
-        ix1 = x1
+        ix1 = int( x1 )
         exf =  tab_exf(ix1) + (x1-ix1)*(tab_exf(ix1+1) - tab_exf(ix1))
         fT = 1.0/exf
 

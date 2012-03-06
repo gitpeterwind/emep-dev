@@ -54,14 +54,15 @@ module OrganicAerosol_ml
    use ChemChemicals_ml,      only : species   ! for molwts
    use ChemSpecs_tot_ml,  S1 => FIRST_SEMIVOL , S2 => LAST_SEMIVOL
 
-!dsrb added:
    use ChemGroups_ml, only :    &
-      NONVOLPCM_GROUP &
-      ,NVABSOM_GROUP & ! contains the nonvolatile absorbing species for OA partitioning
-      ,ASOA => ASOA_GROUP &
-      ,BSOA => BSOA_GROUP &
-      ,ECFINE => ECFINE_GROUP &                    
-      ,SVFFUELOA25  => SVFFUELOA25_GROUP &   ! for VBS semivolatile FFUELOA25 (total POA+OPOA!)
+    NONVOLPCM_GROUP &
+    ,NVABSOM_GROUP & ! nonvolatile absorbing species for OA partitioning
+    ,ASOA => ASOA_GROUP &
+    ,BSOA => BSOA_GROUP &
+    ,ECFINE => ECFINE_GROUP &                    
+    ,SVFFUELOA25  => SVFFUELOA25_GROUP & ! semi-volatile FFUELOA25 
+                                         !  (=total POA+OPOA!)
+!
 !XResearch      ,PFFUELOA25  => PFFUELOA25_GROUP & ! for VBS primary FFUELOA25 not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile POA as well? 
 !Research      ,OFFUELOA25  => OFFUELOA25_GROUP & ! for VBS oxidised FFUELOA25 (aged POA)
 !Research      ,OX_OFFUELOA25 => OFFOAEXTRAO25_GROUP &! for VBS FFUELOA25_C with aging (added "oxygen")
@@ -73,11 +74,14 @@ module OrganicAerosol_ml
 !XResearch      ,PFFIREOA25  => PFFIREOA25_GROUP &  ! for VBS primary Wildfire OA not needed but may be helpful to separate POA from OPOA, QUERY/OPEN ISSUE: Should perhaps include non-volatile FFIRE POA as well? 
 !Research      ,OFFIREOA25  => OFFIREOA25_GROUP &  ! for VBS oxidised (aged) Wildfire OA
 !Research      ,OX_OFFIREOA25 => OFFIREOAEXTRAO25_GROUP & ! for VBS Wildfire OA with aging (added "oxygen")
-       ,FFUELEC  => FFUELEC_GROUP &
-      ,NVFFUELOC25  => NVFFUELOC25_GROUP & ! only non-volatile FFUELOC emissions (PM2.5 fraction)
-      ,NVFFUELOCCO  => NVFFUELOC_COARSE_GROUP & ! only non-volatile FFUELOC emissions (PM2.5-10 fraction, i.e., the coarse fraction)
-      ,NVWOODOC25  => NVWOODOC25_GROUP & ! only non-volatile WOODOC emissions, zero in VBS-PAX type runs
-      ,NVFFIREOC25  => NVFFIREOC25_GROUP ! only non-volatile FFIREOC emissions, zero in VBS-PAX type runs
+!
+  ,FFUELEC     => FFUELEC_GROUP &
+  ,NVFFUELOC25 => NVFFUELOC25_GROUP & ! non-vol. FFUELOC emis. (in PM2.5)
+  ,NVFFUELOCCO => NVFFUELOC_COARSE_GROUP & ! non-vol. " " , (PM2.5-10 frac.)
+  ,NVWOODOC25  => NVWOODOC25_GROUP & ! non-vol. WOODOC emissions 
+                                     !  (zero in VBS-PAX type runs)
+  ,NVFFIREOC25 => NVFFIREOC25_GROUP  ! only non-vol. FFIREOC emissions
+                                     ! (zero in VBS-PAX type runs)
 
    use GridValues_ml, only: sigma_mid 
    use ModelConstants_ml,    only :  PT
@@ -113,7 +117,8 @@ module OrganicAerosol_ml
   real,public, save, dimension(LIDIM,LJDIM,K1:K2) :: Grid_COA
 
   real, private, dimension(K1:K2), save :: &
-        COA           & ! Org. aerosol, ug/m3  (this version does not include EC as absorber)
+        COA           & ! Org. aerosol, ug/m3  
+                        ! (this version does not include EC as absorber)
        ,BGND_OC       & ! FAKE FOR NOW, 0.50 ugC/m3 at surface
        ,BGND_OA         ! Assumed OA/OC=2, -> 1 ug/m3
 
@@ -151,16 +156,11 @@ module OrganicAerosol_ml
     real, private, save :: xn2ugC, ugC2xn
 
 
-! Set some indices for deposition, used in DryDep_ml and Aqueous_ml
-!EGU - find indices of SO4-like particles (PMc included for now - tmp!)
-! for SOA we need a separate array, since Fgas will be needed
-
    !/-- DEBUG variables
    !    Usually, DEBUG_SOA gives extra outputs. debug_flag is used to allow
    !    some extra outputs for a gven i,j - set in CTM model.
 
-    !FEB2012 logical, private, save :: my_first_call = .true.  ! True for 1st call only
-    character(len=20), public, save :: soa_errmsg = "ok"
+    character(len=20), public, save     :: soa_errmsg     = "ok"
     character(len=*), public, parameter :: SOA_MODULE_FLAG="VBS"
 
    contains
@@ -268,12 +268,12 @@ module OrganicAerosol_ml
    integer, intent(in) :: i_pos, j_pos
    logical, intent(in) :: debug_flag 
 
-   integer :: i, it, k, iter, ispec   ! loop variables 
+   integer :: i,  k, iter, ispec   ! loop variables 
 !   real, save :: molcc2ngm3 = 1.0e9*1.0e6/AVOG  !molecules/cc-> ng/m3
    real, save :: molcc2ugm3 = 1.0e12/AVOG  !molecules/cc-> ng/m3
 !   real, save :: ngm32molcc = AVOG/1.0e15  !molecules/cc <- ng/m3
-   real, save :: ugm32molcc = AVOG/1.0e12  !molecules/cc <- ng/m3
-   real :: Nmoles , Ksoa
+!   real, save :: ugm32molcc = AVOG/1.0e12  !molecules/cc <- ng/m3
+   real :: Ksoa
    integer :: nmonth, nday, nhour, seconds
 
   ! Outputs:
@@ -456,18 +456,18 @@ module OrganicAerosol_ml
      xn(NONVOL_FFIREOC25,k)  = sum ( xn(NVFFIREOC25,k)  *species(NVFFIREOC25)%carbons )
 !RB want to have PART_FFUELOA25/FFIREOA/WOODOA_C working also with nonvolatile POA emissions, test this hard coded version first
      xn(PART_FFUELOA25_C,k)  = sum ( Fpart(SVFFUELOA25,k) *xn(SVFFUELOA25,k) *species(SVFFUELOA25)%carbons ) + &
-	xn(NONVOL_FFUELOC25,k)
+     xn(NONVOL_FFUELOC25,k)
 !Research     xn(GAS_FFUELOA_C,k)  = sum ( Fgas(SVFFUELOA25,k) *xn(SVFFUELOA25,k) *species(SVFFUELOA25)%carbons )
 !Research     xn(PART_OFFUELOA25_C,k)  = sum ( Fpart(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
 !Research     xn(GAS_OFFUELOA_C,k)  = sum ( Fgas(OFFUELOA25,k) *xn(OFFUELOA25,k)  *species(OFFUELOA25)%carbons )
 !Research     xn(PART_XO_OFFLOA25_O,k)  = sum ( Fpart(OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
 !Research     xn(GAS_XO_OFFLOA_O,k)  = sum ( Fgas( OX_OFFUELOA25,k) *xn(OX_OFFUELOA25,k) )
      xn(PART_WOODOA25_C,k)  = sum ( Fpart(SVWOODOA25,k) *xn(SVWOODOA25,k)  *species(SVWOODOA25)%carbons )  + &
-	xn(NONVOL_WOODOC25,k) 
+     xn(NONVOL_WOODOC25,k) 
 !PPOA     xn(PART_OWOODOA25_C,k)  = sum ( Fpart(OWOODOA25,k) *xn(OWOODOA25,k)  *species(OWOODOA25)%carbons )
 !PPOA     xn(PART_XO_OWDOA25_O,k)  = sum ( Fpart(OX_OWOODOA25,k) *xn(OX_OWOODOA25,k) )
      xn(PART_FFIREOA25_C,k)  = sum ( Fpart(SVFFIREOA25,k) *xn(SVFFIREOA25,k)  *species(SVFFIREOA25)%carbons )  + &
-	xn(NONVOL_FFIREOC25,k)
+       xn(NONVOL_FFIREOC25,k)
 !PPOA     xn(PART_OFFIREOA25_C,k)  = sum ( Fpart(OFFIREOA25,k) *xn(OFFIREOA25,k)  *species(OFFIREOA25)%carbons )
 !PPOA     xn(PART_XO_OFFIOA25_O,k)  = sum ( Fpart(OX_OFFIREOA25,k) *xn(OX_OFFIREOA25,k) )
 !Test for storing in ug/m3, Use with caution! 

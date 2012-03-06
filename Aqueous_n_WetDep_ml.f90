@@ -643,30 +643,29 @@ subroutine setup_aqurates(b ,cloudwater,incloud,pres)
         ,caqo3    & ! rate of oxidation of so2 with H2O2
         ,caqsx      ! rate of oxidation of so2 with o2 ( Fe )
 
-!hf ph
+! PH
   real, dimension(KUPPER:KMAX_MID) :: &
    phfactor &
    ,h_plus 
 
   real, parameter :: CO2conc_ppm = 392 !mix ratio for CO2 in ppm
   real :: CO2conc !Co2 in mol/l
-!hf
-  real :: invhplus04, K1_fac,K1K2_fac, Heff,Heff_NH3
-  real, parameter :: pH_ITER = 5 ! num iter to calc pH. Could probably be reduced     
+ !real :: invhplus04, K1_fac,K1K2_fac, Heff,Heff_NH3
+  real :: invhplus04, K1K2_fac, Heff,Heff_NH3
+  integer, parameter :: pH_ITER = 5 ! num iter to calc pH. Could probably be reduced     
   real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
 
   integer k, iter
 
 
 
-!  call get_frac(cloudwater,incloud) ! => frac_aq
-  call get_frac(cloudwater,incloud,h_plus) ! => frac_aq, pH dependent
+  call get_frac(cloudwater,incloud) ! => frac_aq
 
     
 ! initialize:
   aqrck(:,:)=0.
 
-!hf ph
+! for PH
   so4_aq(:)=0.0
   no3_aq(:)=0.0
   nh4_aq(:)=0.0
@@ -764,7 +763,7 @@ end subroutine setup_aqurates
 
 
 !-----------------------------------------------------------------------
-subroutine get_frac(cloudwater,incloud,h_plus)
+subroutine get_frac(cloudwater,incloud)
 
 !-----------------------------------------------------------------------
 ! DESCRIPTION
@@ -777,26 +776,24 @@ subroutine get_frac(cloudwater,incloud,h_plus)
 
 
 ! local
-  real, dimension (KUPPER:KMAX_MID) :: &
+  real, dimension (KUPPER:KMAX_MID), intent(in) :: &
       cloudwater   ! Volume fraction - see notes above.
-  logical, dimension(KUPPER:KMAX_MID) :: &
+  logical, dimension(KUPPER:KMAX_MID), intent(in) :: &
       incloud      ! True for in-cloud k values
-  real, dimension (KUPPER:KMAX_MID) :: VfRT ! Vf * Rgas * Temp
-!hf ph
-  real, dimension (KUPPER:KMAX_MID) :: h_plus
+  real    :: VfRT ! Vf * Rgas * Temp
   integer :: ih, k ! index over species with Henry's law, vertical level k
 
 ! Make sure frac_aq is zero outside clouds:
-  frac_aq(:,:) = 0.
+  frac_aq(:,:) = 0.0
 
   do k = KUPPER, KMAX_MID
      if ( incloud(k) ) then
 
-        VfRT(k) = cloudwater(k) * RGAS_ATML * temp(k)
+        VfRT = cloudwater(k) * RGAS_ATML * temp(k)
 
 ! Get aqueous fractions:
         do ih = 1, NHENRY
-           frac_aq(ih,k) = 1.0 / ( 1.0+1.0/( H(ih,itemp(k))*VfRT(k) ) )
+           frac_aq(ih,k) = 1.0 / ( 1.0+1.0/( H(ih,itemp(k))*VfRT ) )
         end do
 
      end if

@@ -1011,7 +1011,7 @@ module MARS_ml
       PARAMETER (XSTAT3 = 3)
       INTEGER ERRMARK
       INTEGER IA2
-      CHARACTER*120 XMSG
+      CHARACTER(len=120) :: XMSG
 
 !...........PARAMETERS and their descriptions:
 
@@ -1024,8 +1024,7 @@ module MARS_ml
 
 !...........SCRATCH LOCAL VARIABLES and their descriptions:
 
-      CHARACTER*16 PNAME            ! driver program name
-      SAVE         PNAME
+      CHARACTER(len=16), save :: PNAME            ! driver program name
 
       INTEGER      IAN                  ! anion indX
       INTEGER      ICAT                 ! cation indX

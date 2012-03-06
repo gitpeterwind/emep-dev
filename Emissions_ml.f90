@@ -810,7 +810,7 @@ contains
     integer i, j,k, iyr
     integer n, flat_ncmaxfound         ! Max. no. countries w/flat emissions
     real :: rdemis(MAXLIMAX,MAXLJMAX)  ! Emissions read from file
-    character*20 fname
+    character(len=20) :: fname
     real ktonne_to_kgm2s, tonnemonth_to_kgm2s  ! Units conversion
     integer :: IQSO2                   ! Index of sox in  EMIS_FILE
     integer errcode
