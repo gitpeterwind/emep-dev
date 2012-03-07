@@ -165,6 +165,12 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_2xx  Dave  7th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+   (not rtagged)
+
+ZCM_EmChem09/Isotopes.species, reactions added. (Forgot to do this
+  in earlier runs).
+
 xxxxxxxx rv3_10_24 Dave  6th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
 
 Many small changes to make gfortran pedantic happier
