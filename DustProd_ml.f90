@@ -57,7 +57,9 @@
  use LocalVariables_ml,    only : Sub, Grid
  use MetFields_ml,         only : z_bnd, z_mid, u_ref, ustar_nwp, roa,    &
                                   t2_nwp, sdepth, fh, ps, surface_precip, &
-                                  rho_surf, SoilWater, foundSoilWater,    &
+                                  rho_surf, &
+                                  SoilWater => SoilWater_uppr,  &
+                                  foundSoilWater => foundSoilWater_uppr,    &
                                   foundws10_met, ws_10m,                  &
                                   clay_frac, sand_frac,                   & 
                                   pwp,SoilWaterSource

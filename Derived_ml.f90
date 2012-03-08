@@ -80,7 +80,7 @@ use Io_Progs_ml,      only: datewrite
 use MetFields_ml,     only: roa,pzpbl,Kz_m2s,th,zen, ustar_nwp, z_bnd,u_ref,&
          ws_10m, rh2m
 use MetFields_ml,     only: ps, t2_nwp
-use MetFields_ml,     only: SoilWater_deep, Idirect, Idiffuse
+use MetFields_ml,     only: SoilWater_deep, SoilWater_uppr, Idirect, Idiffuse
 use ModelConstants_ml, only: &
    KMAX_MID     & ! =>  z dimension
   ,NPROC        & ! No. processors
@@ -848,16 +848,19 @@ end do
               d_2d( n, i,j,IOU_INST) = u_ref(i,j)
           end forall
 
-          case ( "SoilWater_deep" )
+          case ( "SoilWater_deep" ) 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
           end forall
           if ( debug_flag ) call write_debug(n,index, "SoilWater_DEEP")
+if(debug_flag) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
 
-          case ( "SoilWater" ) ! Not used so far. (=shallow)
+          case ( "SoilWater_uppr" ) ! Not used so far. (=shallow)
             forall ( i=1:limax, j=1:ljmax )
-              d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
+              d_2d( n, i,j,IOU_INST) = SoilWater_uppr(i,j,1)
           end forall
+          if ( debug_flag ) call write_debug(n,index, "SoilWater_uppr")
+if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
 
           case ( "T2m" )
             forall ( i=1:limax, j=1:ljmax )

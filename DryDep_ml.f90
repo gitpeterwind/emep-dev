@@ -76,7 +76,7 @@ module DryDep_ml
  use LocalVariables_ml,only : Grid, Sub, L, iL ! Grid and sub-scale Met/Veg data
  use MassBudget_ml,    only : totddep
  use MetFields_ml,     only : u_ref, rh2m
- use MetFields_ml,     only : tau, sdepth, SoilWater, SoilWater_deep, th,pzpbl
+ use MetFields_ml,     only : tau, sdepth, SoilWater_deep, th,pzpbl
  use MicroMet_ml,      only : AerRes, Wind_at_h
  use ModelConstants_ml,only : dt_advec,PT,KMAX_MID, KMAX_BND ,&
                                   DEBUG_i, DEBUG_j, NPROC, &

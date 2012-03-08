@@ -182,8 +182,7 @@ contains
    do mm=1,12
       !Assume max change for august and february
       fac_cemm(mm)  = 1.0 + fracchange * cos ( 2 * PI * (mm - 8)/ 12.0 )
-      write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") "Change in fac_cemm ", mm,fac_cemm(mm),&
-         " Testmm ", (mm - 8)/ 12
+      write(unit=6,fmt="(a,i3,f8.3,a,f8.3)") "Change in fac_cemm ", mm,fac_cemm(mm)
    enddo
    write(*,"(a,f8.4)") "Mean fac_cemm ", sum( fac_cemm(:) )/12.0
 

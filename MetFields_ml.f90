@@ -144,7 +144,7 @@ module MetFields_ml
        ,tau       & ! surf. stress  N/m^2
   ! These fields only available for EMEP/PARLAM from 2002 on
        ,rh2m            & !  RH at 2m
-       ,SoilWater       & !  Shallow  (Upper 7.2cm in PARLAM)
+       ,SoilWater_uppr  & !  Shallow  (Upper 7.2cm in PARLAM)
        ,SoilWater_deep  & !  Deep (Next 6x7cm in PARLAM), converted to relative value 
        ,sdepth          & !  Snowdepth, m
        ,ice_nwp             & ! QUERY why real?
@@ -190,7 +190,7 @@ module MetFields_ml
     ,foundsdot      & ! If not found: compute using divergence=0
     ,sdot_at_mid    & ! set false if sdot is defined
     ,foundSST       & ! false if no SeaSurfaceT in metdata
-    ,foundSoilWater       & ! false if no SW-shallow
+    ,foundSoilWater_uppr  & ! false if no SW-shallow
     ,foundSoilWater_deep  & ! false if no SW-deep
     ,foundsdepth    & ! false if no snow_flag depth in metdata
     ,foundice       & ! false if no ice_nwp coverage (%) in metdata

@@ -221,7 +221,7 @@ contains
        foundustar = .false.
        foundsdot = .false.
        foundSST  = .false.
-       foundSoilWater  = .false.
+       foundSoilWater_uppr  = .false.
        foundSoilWater_deep  = .false.
        foundKz_met = .false.  ! Kz from meteo
        foundu10_met = .false. ! from FUTURE NH3emis
@@ -509,26 +509,27 @@ contains
 
     namefield='soil_water_content'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, SoilWater(:,:,nr))
+        unit,validity, SoilWater_uppr(:,:,nr))
     if(validity==field_not_found)then
        namefield='soil_wetness_surface'
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
-            unit,validity, SoilWater(:,:,nr))
+            unit,validity, SoilWater_uppr(:,:,nr))
     endif
     if(validity==field_not_found)then
-       if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater not found '
-       foundSoilWater = .false.
+       if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater_uppr not found '
+       foundSoilWater_uppr = .false.
 
     !  The shallow soil water is intended for the experimental dust modelling
     !  and only implementted with HIRLAM-type inputs so far
     else if ( trim(unit) /= "m" ) then  ! PARLAM/HIRLAM has metres of water in top 7.2 cm
 
-       if(MasterProc.and.numt==1)write(*,*)'WARNING: TESTING SoilWater-shallow from IFS'
+       if(MasterProc.and.numt==1) &
+             write(*,*)'WARNING: Assuming SoilWater  from IFS'
        !transform from m3/m3 to Soil Moisture Index and meters in metvar
-       foundSoilWater = .true.
+       foundSoilWater_uppr = .true.
        SoilWaterSource = "IFS"
     else
-       foundSoilWater = .true.
+       foundSoilWater_uppr = .true.
     endif
 
   if ( USE_SOILWATER ) then  !just deep here
@@ -567,10 +568,10 @@ contains
      ! Make SoilWater relative 0 < SW < 1:
      !transformed in metvar
 
-       SoilWater_deep(:,:,nr) = min( SoilWater_deep(:,:,nr)/SoilMax, 1.0 ) 
+     !SKIP  SoilWater_deep(:,:,nr) = min( SoilWater_deep(:,:,nr)/SoilMax, 1.0 ) 
 
-       if(MasterProc.and.numt==1) write(*,*)' Met_ml Soilwater: ' // &
-             trim(SoilWaterSource), SoilMax
+       if(MasterProc.and.numt==1) write(*,*)' Met_ml Soilwater_deep: ' // &
+             trim(SoilWaterSource), SoilMax, maxval( SoilWater_deep(:,:,nr) )
 
        if ( water_frac_set ) then  ! smooth the SoilWater values:
 
@@ -623,7 +624,7 @@ contains
                         SoilWater_deep(i,j,nr) = 1.0 ! same as sea
                    end if
                 else
-                   SoilWater_deep(i,j,nr) = 1.0 ! same as sea
+                   SoilWater_deep(i,j,nr) = 1.0 ! same as sea !QUERY!!!!!
                 end if ! water_fraction
        
                 !if( sumland > 0.1 ) then
@@ -811,6 +812,22 @@ contains
           !needed for transforming IFS soil water
        call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp,1,interpol='conservative',needed=.true.,debug_flag=.true.)
        call ReadField_CDF('SoilTypes_IFS.nc','fc',fc,1,interpol='conservative',needed=.true.,debug_flag=.true.)
+
+       ! Notes on IFS:
+       ! Fc  has max 1.0. Set to 1.0 over sea
+       ! pwp has max 0.335 Set to 0.0 over sea
+       if ( DEBUG_SOILWATER.and.debug_proc ) then
+            i =  debug_li
+            j =  debug_lj
+            write(*,"(a,2i4,3f12.4)") "DEBUG_METSWF-IFS: swd pwp fc", &
+             nr, current_date%day, SoilWater_deep(i,j,nr), pwp(i,j), fc(i,j)
+            write(*,"(a,2i4,3f12.4)") "DEBUG_METSWF-IFS maxvals:   ", &
+             nr, current_date%day, maxval ( SoilWater_deep ), &
+                  maxval( pwp), maxval( fc)
+            write(*,"(a,2i4,3f12.4)") "DEBUG_METSWF-IFS minvals:   ", &
+             nr, current_date%day, minval ( SoilWater_deep ), &
+                  minval( pwp), minval( fc)
+        end if
        endif
     end if !numt == 1
 
@@ -1257,22 +1274,49 @@ contains
 !has to convert from m3/m3 to Soil Moisture Index
         do i = 1, limax   ! NEWTEST 1, MAXLIMAX
         do j = 1, ljmax    ! NEWTEST 1, MAXLJMAX
-            if ( DEBUG_SOILWATER .and. &
-                ( fc(i,j)-pwp(i,j) < 1.0e-10 )  ) then
-               print  "(a,7i5,4f12.3)", "PWPFC ", me, i_fdom(i), j_fdom(j),  i,j, limax, ljmax, &
-                  fc(i,j),pwp(i,j), maxval(pwp), maxval(fc)
-            end if
+          if ( DEBUG_SOILWATER ) then 
+               !if( ( fc(i,j)-pwp(i,j) < 1.0e-10 )  ) then
+               !  write(*, "(a,7i5,4f12.3)") "WARNING: PWPFC Problem? ", &
+               !   me, i_fdom(i), j_fdom(j),  i,j, limax, ljmax, &
+               !     fc(i,j),pwp(i,j), maxval(pwp), maxval(fc)
+               ! end if
+             ! Can get negative values. Remember pwp=0 over sea:
+             if( pwp(i,j) > 0.0 .and. SoilWater_uppr(i,j,nr)-pwp(i,j) < 1.0e-10 ) then
+               write(*, "(a,7i5,4f12.3)") "WARNING: METSWFS NEG Problem? ", &
+                  me, i_fdom(i), j_fdom(j),  i,j, limax, ljmax, &
+                    fc(i,j),pwp(i,j), SoilWater_uppr(i,j,nr)
+             end if
+             if( SoilWater_uppr(i,j,nr) >  fc(i,j) ) then
+               write(*, "(a,7i5,4f12.3)") "WARNING: METSWFS >1 Problem? ", &
+                  me, i_fdom(i), j_fdom(j),  i,j, limax, ljmax, &
+                    fc(i,j),pwp(i,j), SoilWater_uppr(i,j,nr)
+              end if
+           end if
             ! Soil Moisture Index
-            SoilWater(i,j,nr)=(SoilWater(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j))
+            SoilWater_uppr(i,j,nr)=(SoilWater_uppr(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j))
             SoilWater_deep(i,j,nr)=(SoilWater_deep(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j)) 
+
+            if ( DEBUG_SOILWATER .and. ( SoilWater_uppr(i,j,nr) > 1.0  .or. &
+                  SoilWater_deep(i,j,nr) > 1.0 ) ) then
+               write(*, "(a,7i5,4f12.3)") "WARNING: METSWF Problem? ", &
+                me, i_fdom(i), j_fdom(j),  i,j, limax, ljmax, &
+                fc(i,j),pwp(i,j), SoilWater_uppr(i,j,nr), SoilWater_deep(i,j,nr)
+            end if
          end do
          end do
- !          call printCDF('SMI',SoilWater(:,:,nr),' ')
+ !          call printCDF('SMI',SoilWater_uppr(:,:,nr),' ')
  !          call printCDF('pwp',pwp,' ')
  !          call printCDF('fc',fc,' ')
 
-       SoilWater(:,:,nr)=max(0.0,SoilWater(:,:,nr))
+       SoilWater_uppr(:,:,nr)=max(0.0,SoilWater_uppr(:,:,nr))
        SoilWater_deep(:,:,nr) = max(0.0, SoilWater_deep(:,:,nr) ) 
+
+       if ( DEBUG_SOILWATER.and.debug_proc ) then
+            i =  debug_li
+            j =  debug_lj
+            write(*,"(a,2i4,3f12.4)") "DEBUG_METSWFScaled: swd pwp fc", &
+             nr, current_date%day, SoilWater_deep(i,j,nr), pwp(i,j), fc(i,j)
+       endif
 
     endif
 
@@ -1320,8 +1364,8 @@ contains
             + (t2_nwp(:,:,2) - t2_nwp(:,:,1))*div
        rh2m(:,:,1) = rh2m(:,:,1)  &
             + (rh2m(:,:,2) - rh2m(:,:,1))*div
-       SoilWater(:,:,1) = SoilWater(:,:,1)   &
-            + (SoilWater(:,:,2) - SoilWater(:,:,1))*div
+       SoilWater_uppr(:,:,1) = SoilWater_uppr(:,:,1)   &
+            + (SoilWater_uppr(:,:,2) - SoilWater_uppr(:,:,1))*div
        SoilWater_deep(:,:,1) = SoilWater_deep(:,:,1)    &
             + (SoilWater_deep(:,:,2) - SoilWater_deep(:,:,1))*div
 
@@ -1359,7 +1403,7 @@ contains
        ps(:,:,1)     = ps(:,:,2)
        t2_nwp(:,:,1) = t2_nwp(:,:,2)
        rh2m(:,:,1) = rh2m(:,:,2)
-       SoilWater(:,:,1) = SoilWater(:,:,2)
+       SoilWater_uppr(:,:,1) = SoilWater_uppr(:,:,2)
        SoilWater_deep(:,:,1) = SoilWater_deep(:,:,2)
        sdepth(:,:,1) = sdepth(:,:,2)
        ice_nwp(:,:,1) = ice_nwp(:,:,2)
