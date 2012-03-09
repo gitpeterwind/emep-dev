@@ -43,7 +43,7 @@
   use ChemSpecs_shl_ml, only: NSPEC_SHL
   use ChemSpecs_tot_ml, only: NSPEC_TOT,NO2
   use ChemChemicals_ml, only: species
-  use Country_ml,    only : NLAND,Country_Init,Country, IC_NAT
+  use Country_ml,    only : NLAND,Country_Init,Country,IC_NAT,IC_FI,IC_NO,IC_SE
   use EmisDef_ml, only : NSECTORS & ! No. sectors
                      ,NEMIS_FILE & ! No. emission files
                      ,EMIS_FILE   & ! Names of species ("sox  ",...)
@@ -55,19 +55,27 @@
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
                      ,IQ_DMS      & ! code for DMS emissions
-                     ,VERTFAC       ! vertical emission split
+                     ,VERTFAC     & ! vertical emission split
+                     ,NROAD_FILES & ! No. road dust emis potential files
+                     ,ROAD_FILE   & ! Names of road dust emission files
+                     ,NROADDUST   & ! No. road dust components 
+                     ,QROADDUST_FI & ! fine road dust emissions (PM2.5) 
+                     ,QROADDUST_CO & ! coarse road dust emis
+                     ,ROADDUST_FINE_FRAC & ! fine (PM2.5) fraction of road dust emis 
+                     ,SNAP_HOURFAC  ! hourly emission variation for SNAP sectors
   use EmisGet_ml, only : EmisGet, EmisSplit, &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
         ,iqrc2itot                   &  ! maps from split index to total index
         ,emis_masscorr               &  ! 1/molwt for most species
-        ,emis_nsplit                    ! No. species per emis file
+        ,emis_nsplit                 &  ! No. species per emis file
+        ,RoadDustGet                    
   use GridValues_ml, only:  GRIDWIDTH_M    & ! size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
                            ,sigma_bnd, xmd, glat, glon,dA,dB
   use Io_Nums_ml,       only : IO_LOG, IO_DMS, IO_EMIS
   use Io_Progs_ml,      only : ios, open_file, datewrite
-  use MetFields_ml,     only : roa, ps, z_bnd ! ps in Pa, roa in kg/m3
+  use MetFields_ml,     only : roa, ps, z_bnd, surface_precip ! ps in Pa, roa in kg/m3
   use MetFields_ml,     only : t2_nwp   ! DS_TEST SOILNO - was zero!
   use ModelConstants_ml,only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
@@ -76,7 +84,8 @@
                               DEBUG_SOILNOX , DEBUG_EMISTIMEFACS, & 
                               USE_DEGREEDAY_FACTORS, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
-                              USE_AIRCRAFT_EMIS, &
+                              USE_AIRCRAFT_EMIS,USE_ROADDUST, &
+                              USE_HOURLY_EMISVAR, &
                               USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -85,7 +94,7 @@
   use PhysicalConstants_ml,  only :  GRAV,  AVOG
   use ReadField_ml, only : ReadField    ! Reads ascii fields
   use TimeDate_ml,  only : nydays, nmdays, date, current_date, &! No. days per 
-                           daynumber                         ! year, date-type 
+                           daynumber,day_of_week                ! year, date-type, weekday 
   use Timefactors_ml, only :   &
                NewDayFactors   &         ! subroutines
               ,DegreeDayFactors      &   ! degree-days used for SNAP-2
@@ -123,6 +132,9 @@
  ! for flat emissions, i.e. no vertical extent:
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: flat_nlandcode
    integer, private, save, dimension(MAXLIMAX,MAXLJMAX,FNCMAX):: flat_landcode
+ ! for road dust emission potentials:
+   integer, private, save, dimension(MAXLIMAX,MAXLJMAX)       :: road_nlandcode
+   integer, private, save, dimension(MAXLIMAX,MAXLJMAX,NCMAX) :: road_landcode
 
  !
  ! The output emission matrix for the 11-SNAP data is snapemis:
@@ -133,6 +145,9 @@
 
   real, private, dimension(MAXLIMAX,MAXLJMAX,FNCMAX,NEMIS_FILE) &
             , save ::  snapemis_flat ! main emission arrays, in kg/m2/s  
+
+  real, private, dimension(MAXLIMAX,MAXLJMAX,NCMAX,NROAD_FILES) & ! Not sure if it is really necessary to keep the country info; gives rather messy code but consistent with the rest at least (and can do the seasonal scaling for Nordic countries in the code instead of as preprocessing) 
+            , save ::  roaddust_emis_pot ! main road dust emission potential arrays, in kg/m2/s (to be scaled!)
 
  ! We store the emissions for output to d_2d files and netcdf in kg/m2/s
 
@@ -148,6 +163,8 @@
    real, public, allocatable, save, dimension(:,:,:,:) :: &
         gridrcemis      & ! varies every time-step (as ps changes)
        ,gridrcemis0       ! varies every hour
+   real, public, allocatable, save, dimension(:,:,:) :: &
+        gridrcroadd       ! Road dust emissions
 
   ! and for budgets (not yet used - not changed dimension)
    real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
@@ -200,7 +217,10 @@ contains
   real,    allocatable, dimension(:,:,:)    :: globemis_flat
   integer, allocatable, dimension(:,:)      :: flat_globnland 
   integer, allocatable, dimension(:,:,:)    :: flat_globland 
-  integer :: err1, err2, err3, err4, err5, err6 ! Error messages
+  real,    allocatable, dimension(:,:,:)    :: globroad_dust_pot ! Road dust emission potentials
+  integer, allocatable, dimension(:,:)      :: road_globnland 
+  integer, allocatable, dimension(:,:,:)    :: road_globland 
+  integer :: err1, err2, err3, err4, err5, err6, err7, err8, err9 ! Error messages
   integer :: fic ,insec,inland,iemis 
   integer :: ic               ! country codes 
   integer :: isec             ! loop variables: emission sectors
@@ -210,6 +230,10 @@ contains
   ! Emission sums (after e_fact adjustments):
   real, dimension(NEMIS_FILE)       :: emsum    ! Sum emis over all countries
   real, dimension(NLAND,NEMIS_FILE) :: sumemis  ! Sum of emissions per country
+
+  ! Road dust emission potential sums (just for testing the code, the actual emissions are weather dependent!)
+  real, dimension(NROAD_FILES)       :: roaddustsum    ! Sum emission potential over all countries
+  real, dimension(NLAND,NROAD_FILES) :: sumroaddust    ! Sum of emission potentials per country
 
   if (MasterProc) write(6,*) "Reading emissions for year",  year
 
@@ -245,10 +269,13 @@ contains
 
 
   ! ####################################
-  ! Broadcast  monthly and Daily factors 
+  ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
     CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( day_factor ,8*2*NSECTORS,MPI_BYTE,               0,MPI_COMM_WORLD,INFO) 
+    if(USE_HOURLY_EMISVAR .or. USE_ROADDUST)THEN
+       CALL MPI_BCAST( SNAP_HOURFAC ,8*24*NSECTORS,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
+    endif
 
 !define fac_min for all processors
     do iemis = 1, NEMIS_FILE
@@ -283,13 +310,23 @@ contains
        allocate(flat_globland(GIMAX,GJMAX,FNCMAX),stat=err5)
        allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
 
+       if(USE_ROADDUST)then
+          allocate(road_globnland(GIMAX,GJMAX),stat=err7)
+          allocate(road_globland(GIMAX,GJMAX,NCMAX),stat=err8)
+          allocate(globroad_dust_pot(GIMAX,GJMAX,NCMAX),stat=err9)
+       endif
+
        call CheckStop(err1, "Allocation error 1 - globland")
        call CheckStop(err2, "Allocation error 2 - globland")
        call CheckStop(err3, "Allocation error 3 - globland")
        call CheckStop(err4, "Allocation error 4 - globland")
        call CheckStop(err5, "Allocation error 5 - globland")
        call CheckStop(err6, "Allocation error 6 - globland")
-
+       if(USE_ROADDUST)then
+         call CheckStop(err7, "Allocation error 7 - globroadland")
+         call CheckStop(err8, "Allocation error 8 - globroadland")
+         call CheckStop(err9, "Allocation error 9 - globroad_dust_pot")
+       endif ! road dust
 
        ! Initialise with 0
        globnland(:,:) = 0      
@@ -298,6 +335,12 @@ contains
        globemis(:,:,:,:) = 0  
        flat_globland(:,:,:)=0 
        globemis_flat(:,:,:) =0
+
+       if(USE_ROADDUST)then
+         road_globnland(:,:)=0
+         road_globland(:,:,:)=0
+         globroad_dust_pot(:,:,:)=0.
+       endif ! road dust
 
    end if
 
@@ -329,8 +372,42 @@ contains
        call global2local(globemis_flat,snapemis_flat(1,1,1,iem),MSG_READ1,   &
                1,GIMAX,GJMAX,FNCMAX,1,1)
 
-    end do ! iem = 1, NEMIS_FILE-loop
+   end do ! iem = 1, NEMIS_FILE-loop
 
+   if(USE_ROADDUST) then
+    do iem = 1, NROAD_FILES
+      ! now again test for me=0
+      if ( MasterProc ) then
+
+           ! read in road dust emission potentials from one file
+! There will be two road dust files; one for highways(plus some extras) and one for non-highways
+! Each file contains spring (Mar-May) and rest-of-the-year (June-February) emission potentials
+! However, this will be changed so that only "rest-of-the-year" data are read and the spring scaling
+! for the Nordic countries is handled in the EmisSet routine!
+! Emission potentials are for PM10 so should be split into PM-fine (10%) and PM-coarse (90%)
+! There should also be some modifications to take into account temporal variations due to different
+! traffic intensities and differences due to surface wetness and a climatological factor.
+           ! *****************
+             call RoadDustGet(iem,ROAD_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
+                          sumroaddust,&
+                          globroad_dust_pot,road_globnland,road_globland)
+           ! *****************
+
+
+           roaddustsum(iem) = sum( globroad_dust_pot(:,:,:) )    ! 
+      endif  ! MasterProc
+
+      call CheckStop(ios, "ios error: RoadDustGet")
+
+      ! Send data to processors
+      ! as  e.g. snapemis (NSECTORS,MAXLIMAX,MAXLJMAX,NCMAX,iem)
+      ! send to nodes
+
+       call global2local(globroad_dust_pot,roaddust_emis_pot(1,1,1,iem),MSG_READ1,   &
+               1,GIMAX,GJMAX,NCMAX,1,1)
+
+    end do ! iem = 1, NROAD_FILES-loop
+     end if !USE_DUST
 
     if ( MasterProc ) then
         write(unit=6,fmt=*) "Total emissions by countries:"
@@ -347,7 +424,25 @@ contains
                         ic, Country(ic)%code, (sumemis(ic,i),i=1,NEMIS_FILE)
            end if
         end do
-    end if
+
+        if(USE_ROADDUST)THEN
+
+           write(unit=6,fmt=*) "Total road dust emission potentials by countries:"
+           write(unit=IO_LOG,fmt=*) "Total road dust emission potentials by countries:"
+           write(unit=6,fmt="(2a4,11x,30a12)")  "  N "," CC ",(ROAD_FILE(iem),iem=1,NROAD_FILES)
+           write(unit=IO_LOG,fmt="(2a4,11x,30a12)") "  N "," CC ",(ROAD_FILE(iem),iem=1,NROAD_FILES)
+
+           do ic = 1, NLAND
+              ccsum = sum( sumroaddust(ic,:) )
+              if ( ccsum > 0.0 ) then
+                 write(unit=6,fmt="(i3,1x,a4,3x,30f12.2)") &
+                      ic, Country(ic)%code, (sumroaddust(ic,i),i=1,NROAD_FILES)
+                 write(unit=IO_LOG,fmt="(i3,1x,a4,3x,30f12.2)")& 
+                      ic, Country(ic)%code, (sumroaddust(ic,i),i=1,NROAD_FILES)
+              end if
+           end do
+        endif ! ROAD DUST
+     end if
 
     ! now all values are read, snapemis is distributed, globnland and 
     ! globland are ready for distribution
@@ -361,14 +456,19 @@ contains
       call global2local_int(flat_globland,flat_landcode,326,&
                             GIMAX,GJMAX,FNCMAX,1,1)
 
+      if(USE_ROADDUST)THEN
+         call global2local_int(road_globnland,road_nlandcode,326,&
+              GIMAX,GJMAX,1,1,1)  !extra array
+         call global2local_int(road_globland,road_landcode,326,&
+              GIMAX,GJMAX,NCMAX,1,1)
+      endif
+
      ! Broadcast volcanoe info derived in EmisGet 
 
         CALL MPI_BCAST(nvolc,4*1,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
         CALL MPI_BCAST(i_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
         CALL MPI_BCAST(j_volc,4*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
         CALL MPI_BCAST(emis_volc,8*nvolc,MPI_BYTE,0,MPI_COMM_WORLD,INFO) 
-
-
 
 !    Conversions 
 !
@@ -377,7 +477,6 @@ contains
 !    annual emission values to surface flux (kg/m2/s) is found by division
 !    with (nydays*24*60*60)s and (h*h)m2 and multiply by 1.e+3.
 !    The conversion factor then equals 1.27e-14
-
 
     tonne_to_kgm2s  = 1.0e3 / (nydays * 24.0 * 3600.0 * &
                                GRIDWIDTH_M * GRIDWIDTH_M)
@@ -413,12 +512,25 @@ contains
                  snapemis_flat(i,j,fic,iem) * conv * xm2(i,j)
        end forall
 
+
         if ( DEBUG .and.  debug_proc .and. iem == iemCO ) then
           write(*,"(a,2es10.3)") "SnapPos:" // trim(EMIS_FILE(iem)), &
                   sum( snapemis (:,debug_li,debug_lj,:,iem) ) &
                  ,sum( snapemis_flat (debug_li,debug_lj,:,iem) )
         end if
     enddo !iem
+
+    if(USE_ROADDUST)THEN
+       do iem = 1, NROAD_FILES
+          conv = tonne_to_kgm2s
+          
+          forall (ic=1:NCMAX, j=1:ljmax, i=1:limax)
+             roaddust_emis_pot(i,j,ic,iem) = &
+                  roaddust_emis_pot(i,j,ic,iem) * conv * xm2(i,j)
+          end forall
+       enddo ! iem
+    endif !road dust
+
 
 !    if ( VOLCANOES ) then
        
@@ -438,13 +550,23 @@ contains
        deallocate(flat_globland,stat=err5)
        deallocate(globemis_flat,stat=err6)
 
+       if(USE_ROADDUST)THEN
+          deallocate(road_globnland,stat=err7)
+          deallocate(road_globland,stat=err8)
+          deallocate(globroad_dust_pot,stat=err9)
+       endif
+
        call CheckStop(err1, "De-Allocation error 1 - globland") 
        call CheckStop(err2, "De-Allocation error 2 - globland")
        call CheckStop(err3, "De-Allocation error 3 - globland")
        call CheckStop(err4, "De-Allocation error 4 - globland")
        call CheckStop(err5, "De-Allocation error 5 - globland")
        call CheckStop(err6, "De-Allocation error 6 - globland")
-
+       if(USE_ROADDUST)THEN
+          call CheckStop(err7, "De-Allocation error 7 - roadglob")
+          call CheckStop(err8, "De-Allocation error 8 - roadglob")
+          call CheckStop(err9, "De-Allocation error 9 - roadglob")
+       endif
     end if
 
     ! now we have nrecmis and can allocate for gridrcemis:
@@ -453,6 +575,10 @@ contains
    allocate(gridrcemis0(NRCEMIS,KEMISTOP:KMAX_MID,MAXLIMAX,MAXLJMAX),stat=err2)
    call CheckStop(err1, "Allocation error 1 - gridrcemis") 
    call CheckStop(err2, "Allocation error 2 - gridrcemis0")
+   if(USE_ROADDUST)THEN
+      allocate(gridrcroadd(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err3)
+      call CheckStop(err1, "Allocation error 3 - gridrcroadd")
+   endif
 
   end subroutine Emissions
 
@@ -518,9 +644,11 @@ contains
 
   ! Save daytime value between calls, initialise to zero
   integer, save, dimension(NLAND) ::  daytime = 0  !  0=night, 1=day
+  integer, save, dimension(NLAND) ::  localhour = 1  ! 1-24 local hour in the different countries, ? How to handle Russia, with multiple timezones???
   integer                         ::  hourloc      !  local hour 
   logical                         ::  hourchange   !             
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
+  real, dimension(7), parameter   :: d_fac=(/1.02,1.06,1.08,1.1,1.14,0.81,0.79/) ! weekday factor for road dust emissions
 
   real ::  ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
@@ -531,11 +659,11 @@ contains
                            ! (for flat emissions)
   integer :: flat_iland    ! country codes (countries with flat emissions)
 
-  integer, save :: oldday = -1, oldhour = -1
+  integer, save :: oldday = -1, oldhour = -1, wday ! wday = day of the week 1-7
   real ::  oldtfac
 
 ! If timezone=-100, calculate daytime based on longitude rather than timezone
-  integer :: daytime_longitude, daytime_iland
+  integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland
  
 ! Initialize
     ehlpcom0(:)=0.0
@@ -546,7 +674,6 @@ contains
 
   ! Scaling for totemadd:
      dtgrid = dt_advec * GRIDWIDTH_M * GRIDWIDTH_M 
-
 
    ! The emis array only needs to be updated every full hour. The 
    ! time-factor calculation needs to know if a local-time causes a shift 
@@ -565,8 +692,12 @@ contains
                call NewDayFactors(indate)
                if ( USE_DEGREEDAY_FACTORS) & 
                call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd, day_factor
-   
               !==========================
+
+               if(USE_ROADDUST)THEN
+                 wday=day_of_week(indate%year,indate%month,indate%day)
+                 if(wday==0)wday=7 ! Sunday -> 7
+               endif
 
                oldday = indate%day
            endif
@@ -582,6 +713,8 @@ contains
        daytime(iland) = 0
        hourloc        = indate%hour + Country(iland)%timezone
 
+       localhour(iland) = hourloc
+
        if ( hourloc  >=   7 .and.  hourloc <= 18 ) daytime(iland)=1
 
     end do ! iland
@@ -592,7 +725,7 @@ contains
          totemadd(:)  = 0.
          gridrcemis0(:,:,:,:) = 0.0 
          SumSnapEmis(:,:,:) = 0.0
-
+         gridrcroadd(:,:,:) = 0.0
 
         !..........................................
         ! Process each grid:
@@ -604,10 +737,10 @@ contains
 
                 ! find the approximate local time:
                   hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
+                  hour_longitude=hourloc
                   daytime_longitude=0
                   if( hourloc>=7.and.hourloc<= 18) daytime_longitude=1
-    
-         
+             
               !*************************************************
               ! First loop over non-flat (one sector) emissions
               !*************************************************
@@ -619,9 +752,12 @@ contains
 
                 if(Country(iland)%timezone==-100)then
                    daytime_iland=daytime_longitude
+                   hour_iland=hour_longitude
                 else
                    daytime_iland=daytime(iland)
+                   hour_iland=localhour(iland)
                 endif
+
 
                  !  As each emission sector has a different diurnal profile
                  !  and possibly speciation, we loop over each sector, adding
@@ -638,8 +774,13 @@ contains
 
                    do iem = 1, NEMIS_FILE 
 
-                      tfac = timefac(iland_timefac,isec,iem) * &
-                                 day_factor(isec,daytime_iland)
+                      if(USE_HOURLY_EMISVAR)THEN
+                         tfac = timefac(iland_timefac,isec,iem) * &
+                              SNAP_HOURFAC(hour_iland,isec)
+                      else
+                         tfac = timefac(iland_timefac,isec,iem) * &
+                              day_factor(isec,daytime_iland)
+                      endif
                         !if ( debug_proc .and.  &
                         !         iem==1.and.i==debug_li .and. j==debug_lj)  then  ! 
                         !  call datewrite("TestFac", isec, &
@@ -651,9 +792,15 @@ contains
                           isec == ISNAP_DOM .and. Gridded_SNAP2_Factors ) then
 
                         oldtfac = tfac
-                        tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
-                          ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) & ! T-dep load
-                           * day_factor(isec, daytime_iland)
+                        if(USE_HOURLY_EMISVAR)THEN
+                           tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
+                                ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) & ! T-dep load
+                                * SNAP_HOURFAC(hour_iland,isec)
+                        else
+                           tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
+                                ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) & ! T-dep load
+                                * day_factor(isec, daytime_iland)
+                        endif
 
                         if ( debug_proc .and. indate%hour == 12 .and.  &
                                  iem==1.and.i==debug_li .and. j==debug_lj)  then  ! 
@@ -757,6 +904,57 @@ contains
 
 !      ==================================================
        end do !ficc 
+
+       if(USE_ROADDUST)then
+  NO_PRECIP: if(surface_precip(i,j) < 0.1) then ! Limit as in TNO-model (but Lotos/Euros has precip in mm/3h) In the EMEP case this is in mm/h, so should be equivalent with 2.4mm per day
+
+! should use the temporal variation for road dust (SNAP_HOURFAC(HH,7))
+! and a weekday factor (initially taken from TNO model, could use country
+! dependent factor in the future)
+
+! Temporal variation taken from TNO -> No monthly variation and a single
+! weekday and diurnal variation (same for all countries)     
+! -> Need to know day_of_week
+!    Relatively weak variation with day of week so use a simplified approach
+!    
+         ncc = road_nlandcode(i,j) ! number of countries in grid point
+         do icc = 1, ncc    
+            iland = road_landcode(i,j,icc)
+            
+            if(Country(iland)%timezone==-100)then
+               hour_iland=hour_longitude
+            else
+               hour_iland=localhour(iland)
+            endif
+
+            if(((icc.eq.IC_FI).or.(icc.eq.IC_NO).or.(icc.eq.IC_SE)).and. & ! Nordic countries
+                 ((indate%month.eq.3).or.(indate%month.eq.4).or.(indate%month.eq.5)))then ! spring road dust
+               tfac = SNAP_HOURFAC(hour_iland,7)*D_FAC(wday)*2.0 ! Doubling in Mar-May (as in TNO model)
+            else
+               tfac = SNAP_HOURFAC(hour_iland,7)*D_FAC(wday)
+            endif
+
+            do iem = 1, NROAD_FILES
+                s = tfac * roaddust_emis_pot(i,j,icc,iem)
+! 
+                gridrcroadd(QROADDUST_FI,i,j)=gridrcroadd(QROADDUST_FI,i,j)+ &
+                     ROADDUST_FINE_FRAC*s
+                gridrcroadd(QROADDUST_CO,i,j)=gridrcroadd(QROADDUST_CO,i,j)+ &
+                     (1.-ROADDUST_FINE_FRAC)*s
+
+             enddo ! nroad files
+                
+          enddo ! icc
+
+! should pick the correct emissions (spring or rest of year)
+! and add the emissions from HIGHWAYplus and NONHIGHWAYS,
+! using correct fine and coarse fractions.
+       else ! precipitation
+          gridrcroadd(:,i,j)=0.
+       endif NO_PRECIP
+ 
+  endif ! ROADDUST
+
    end do ! i
  end do ! j
         if ( DEBUG .and.  debug_proc ) then    ! emis sum kg/m2/s
@@ -765,6 +963,7 @@ contains
         end if
 
     call Set_Volc !set hourly volcano emission(rcemis_volc0)
+
 
   end if ! hourchange 
 
@@ -776,6 +975,7 @@ contains
         do i = 1,limax
 
               ehlpcom= roa(i,j,k,1)/(ps(i,j,1)-PT)
+!RB: This should also be done for the road dust emissions
               do iqrc =1, NRCEMIS
                  gridrcemis(iqrc,k,i,j) =  &
                     gridrcemis0(iqrc,k,i,j)* ehlpcom
@@ -783,6 +983,18 @@ contains
         end do ! i
       end do ! j
    end do ! k
+
+   if(USE_ROADDUST)THEN
+      do j = 1,ljmax
+         do i = 1,limax
+            ehlpcom= roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
+              do iqrc =1, NROADDUST
+                 gridrcroadd(iqrc,i,j) =  &
+                      gridrcroadd(iqrc,i,j)* ehlpcom
+              enddo  ! iqrc
+           end do ! i
+        end do ! j
+     endif
 
  ! Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
 

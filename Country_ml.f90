@@ -141,6 +141,7 @@ module Country_ml
   integer, parameter, public :: IC_RUX =  71   ! RU outside old EMEP domain
   integer, parameter, public :: IC_RS  =  72   ! Serbia
   integer, parameter, public :: IC_ME  =  73   ! Montenegro
+  integer, parameter, public :: IC_RUE =  93   ! Russian Federation in the extended EMEP domain (RU+RFE+RUX)
 
 !Extra cc for rest CityZen
   integer, parameter, public :: IC_RAA  =  170   ! Rest of Africa and Asia
@@ -354,7 +355,7 @@ Country( IC_ATX) = cc(  "ATX" , 70 ,T,  32, 1  , "Atlantic outside. EMEP        
 Country( IC_RUX) = cc(  "RUX" , 71 ,F,  42, 4  , "Russian Fed. outside emep     " )
 Country( IC_RS)  = cc(  "RS " , 72 ,F,  72, 1  , "Serbia                        " )
 Country( IC_ME)  = cc(  "ME " , 73 ,F,  73, 1  , "Montenegro                    " )
-
+Country( IC_RUE) = cc(  "RUE" , 93 ,F,  93, -100 , "Russian Federeation (all)   " )   
 ! Biomass burning
 Country( IC_BB)  = cc(  "BB ", 101,F,  101, 0  , "Biomass burning (wild)        " )
 

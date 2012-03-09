@@ -52,9 +52,11 @@ logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition 
 logical, public, parameter :: USE_SEASALT        = .true.   ! ok
 ! More experimental:
 logical, public, parameter :: USE_DUST           = .true.  ! Experimental
+logical, public, parameter :: USE_ROADDUST       = .false.  ! NOT YET WORKING! UNDER DEVELOPMENT/DEBUGGING! Testing the TNO Road Dust routine 
 logical, public, parameter :: DO_SAHARA          = .true.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
 logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
+logical, public, parameter :: USE_HOURLY_EMISVAR = .false.  ! NOT FULLY TESTED YET! Use hourly (SNAP-sector dependent ) emission (rather than just day-night variation)
 logical, public, parameter :: USE_AOD            = .false.
 logical, public, parameter :: USE_ZREF           = .false.  ! testing
 logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
@@ -74,7 +76,7 @@ integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
 character(len=4),public, save, dimension(NBVOC) :: &
   BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
 
-!The GEA emission data, which is used for EUCAARI runs on the HIRHAM domain
+!The GEA emission data, which is used for EUCAARI runs on the HIRHAM domains
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8
 !and there are also NH3 emission over sea areas. The former problem makes 
 !the code crash if the sea areas are defined  as sea (sea=T), so we treat 
@@ -112,7 +114,7 @@ integer, public, parameter :: &
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
-!  RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
+! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
 ! RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56+OFFSET_i, 147+OFFSET_i, 12+OFFSET_i, 102+OFFSET_i /)     ! EGU
@@ -235,6 +237,7 @@ integer, public, parameter :: &
   ,DEBUG_RUNCHEM        = .false. & ! DEBUG_RUNCHEM is SPECIAL
     ,DEBUG_AEROSOL      = .false. & ! ...needed for intended debugs are to work
     ,DEBUG_DUST           = .false. & ! Skips fast chemistry to save some CPU
+    ,DEBUG_ROADDUST     = .false. &
     ,DEBUG_MY_WETDEP    = .false. &
     ,DEBUG_SEASALT      = .false. &
     ,DEBUG_SOA          = .false. &

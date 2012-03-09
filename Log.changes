@@ -165,6 +165,34 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_26_beta  Robert  9th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+Started implementing a test version of the TNO Road dust emissions.
+NOTE! The new routine is not yet working properly (some bug(s) remains to 
+be removed; probably some unit/scaling factor is wrong and there may be 
+other problems as well). 
+So for standard use USE_ROADDUST should be kept .false. !
+
+Another update:
+Added possibility to use SNAP-dependent hourly emission variations (the 
+factors taken from the EuroDelta-project) - not checked in detail yet 
+(so may contain bugs). 
+To use/test this set:   USE_HOURLY_EMISVAR = .true. in ModelConstants_ml.f90
+
+Other changes/updates:
+Country_ml   - added country code 93 for Russian Federation in ext EMEP domain
+EmisDef_ml   - added SNAP_HOURFAC(24,NSECTORS) containing hourly scaling factors for SNAP-sector emissions
+             - Started to add Road Dust parameters (likely to be updated/changed)
+EmisGet_ml   - added routine for reading road dust emission potentials RoadDustGet (likely to be updated/changed)
+Emissions_ml - Started to add Road Dust parameters (likely to be updated/changed)
+ModelConstants_ml  - added USE_HOURLY_EMISVAR (for hourly variation of SNAP-sector emissions)
+                   - USE_ROADDUST [to be kept .false. until bugs fixed!] (for turning on/off the TNO road dust emissions)
+Setup_1d_ml  - adding road dust emissions (rcroadd)
+ZCM_EmChem09/Dust.species   - added fine and coarse road dust species:
+                              DUST_ROAD_F and DUST_ROAD_C
+ZCM_EmChem09/Dust.reactions - added fine and coarse road dust emissions
+
+
 xxxxxxxx rv3_10_25  Dave  7-8th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
 
 ZCM_EmChem09/Isotopes.species, reactions added. (Forgot to do this

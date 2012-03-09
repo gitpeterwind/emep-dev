@@ -72,7 +72,7 @@ use ModelConstants_ml,only: MasterProc, &   ! set true for host processor, me==0
                             IOU_INST,IOU_HOUR, IOU_YEAR,IOU_MON, IOU_DAY, &
                             USE_CONVECTION, USE_SOILWATER, USE_SOILNOX,  &
                             USE_FOREST_FIRES, USE_DUST,DO_SAHARA, &
-                            USE_LIGHTNING_EMIS,       &
+                            USE_LIGHTNING_EMIS, USE_ROADDUST,     &
                             FORECAST       ! FORECAST mode
 use NetCDF_ml,        only: Init_new_netCDF
 use OutputChem_ml,    only: WrtChem, wanted_iou
@@ -189,6 +189,7 @@ if( MasterProc ) then
   if(  USE_FOREST_FIRES)call PrintLog("ForestFires switch on")
   call PrintLog("Options used of (dust, sahara)")
   if(  USE_DUST        )call PrintLog("Dust switch on")
+  if(  USE_ROADDUST    )call PrintLog("Road Dust switch on")
   if(  DO_SAHARA       )call PrintLog("Sahara switch on")
 endif
 

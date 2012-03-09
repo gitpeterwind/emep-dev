@@ -94,6 +94,10 @@
   real, public, save,  &
      dimension(NLAND, 7,NSECTORS,NEMIS_FILE) :: fac_edd  ! Daily factors
 
+!  real, public, save,  &
+!     dimension(24,NSECTORS) :: fac_ehh  ! Hourly factors (only dependent on snap sector!)
+! use SNAP_HOURFAC instead, at the moment set in EmisDef_ml.f90
+
   real, public, save, dimension(NSECTORS,0:1):: day_factor  ! Day/night factor 
 
   ! Heating-degree day factor for SNAP-2. Independent of country:
@@ -140,6 +144,9 @@ contains
 
 ! Factor giving nighttime  emission ratio. 
 ! Note this is hard-coded with NSECTORS=11. 
+!
+! Hourly variations are also available in a test version. (USE_HOURLY_EMISVAR)
+!
 
    real, parameter, dimension(NSECTORS) ::  & 
         DAY_NIGHT = (/      & 

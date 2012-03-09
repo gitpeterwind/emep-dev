@@ -42,10 +42,10 @@
   use CheckStop_ml,          only :  CheckStop
   use DerivedFields_ml,            only : d_2d
   use DustProd_ml,           only :  DU_prod   ! Dust
-  use EmisDef_ml,            only : NSS, NDU, NPOL  !SeaS, Dust, POllen
+  use EmisDef_ml,            only : NSS, NDU, NPOL, NROADDUST  !SeaS, Dust, POllen
                                   !FUTURE ,NH3EMIS_VAR ! FUTURE NH3Emis
   use EmisGet_ml,            only :  nrcemis, iqrc2itot  !DSRC added nrcemis
-  use Emissions_ml,          only :  gridrcemis, KEMISTOP
+  use Emissions_ml,          only :  gridrcemis, gridrcroadd, KEMISTOP
   use ForestFire_ml,         only : Fire_rcemis, burning
   use Functions_ml,          only :  Tpot_2_T
   use ChemChemicals_ml,      only :  species
@@ -75,7 +75,7 @@
     ,USE_POLLEN                      & ! Pollen
     ,USE_SEASALT                     &
     ,USE_LIGHTNING_EMIS              & !
-    ,USE_SOILNOX, USE_GLOBAL_SOILNOX, USE_DUST          & !
+    ,USE_SOILNOX, USE_GLOBAL_SOILNOX, USE_DUST, USE_ROADDUST    & !
     ,KMAX_MID ,KMAX_BND, KCHEMTOP    & ! Start and upper k for 1d fields
     ,DEBUG_i, DEBUG_j  !FUTURE , DEBUG_NH3 !NH3emis
   use Landuse_ml,            only : water_fraction, ice_landcover
@@ -88,7 +88,8 @@
     ,rcemis               &  ! emission terms
     ,rc_Rn222             &  ! for Pb210
     ,rc_Rnwater           &  ! TEST
-    ,rcss, rcwbd, rcpol   &  !Sea salt, Dust, pollen
+    ,rcss, rcwbd, rcpol   &  !Sea salt, Wind blown dust, pollen
+    ,rcroadd              &  !Road dust
     ,rh, temp, tinv, itemp,pp      &  !
     ,amk, o2, n2, h2o     &  ! Air concentrations
     ,rcbio                   ! BVOC
@@ -233,6 +234,7 @@ contains
     rcemis(:,:)=0.
     rcss(:,:) = 0.  !SeaS
     rcwbd(:,:) = 0.  ! Dust
+    rcroadd(:,:) = 0. ! Road dust
      do k=KEMISTOP,KMAX_MID
 
         do iqrc = 1, NRCEMIS
@@ -308,6 +310,15 @@ contains
           enddo
 
      endif
+
+     if ( USE_ROADDUST  ) then
+
+          do iqrc = 1, NROADDUST
+            rcroadd(iqrc,KMAX_MID) = gridrcroadd(iqrc,i,j)
+          enddo
+
+     endif
+
 
      if ( USE_POLLEN  ) then
 
