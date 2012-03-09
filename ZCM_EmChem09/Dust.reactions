@@ -1,3 +1,6 @@
 * <----------- Biogenic/natural emissions ----------------------------->
 rcwbd(QDUFI,k)                          = DUST_WB_F ;  # Dust
 rcwbd(QDUCO,k)                          = DUST_WB_C ;
+* <----------- Road dust emissions ----------------------------->
+rcroadd(QROADDUST_FI,k)                  = DUST_ROAD_F ;  # Fine Road Dust
+rcroadd(QROADDUST_CO,k)                  = DUST_ROAD_C ;  # Coarse Road Dust
