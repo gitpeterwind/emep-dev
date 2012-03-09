@@ -130,7 +130,11 @@ implicit none
    real, public, parameter, &
      dimension(24,NSECTORS) ::    &
 
-   SNAP_HOURFAC =                    &  ! Hourly variation of SNAP emissions
+   SNAP_HOURFAC =                    &  ! Hourly variation of SNAP emissions.
+!                                 These factors are taken from the Euro-Delta 
+!                                 project and were originally provided by TNO;
+!                                 the emission variation was constructed by 
+!                                 Jan Pieter Bloos (IMAU/TNO)
              reshape (          &  ! 
 !       Hour1 , ...       Hour24
     (/  0.79,0.72,0.72,0.71,0.74,0.8,0.92,1.08,       & ! SNAP1
