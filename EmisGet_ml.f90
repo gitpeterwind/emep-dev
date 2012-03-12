@@ -53,7 +53,7 @@
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
               SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                               MasterProc,DEBUG_GETEMIS
+                               MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
@@ -814,6 +814,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
    !>============================
 
     if ( my_first_road ) then
+         if(DEBUG_ROADDUST)WRITE(*,*)"initializing sumroaddust!"
          sumroaddust(:,:) =  0.0       ! initialize sums
          ios = 0
          my_first_road = .false.
@@ -822,7 +823,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
       globroad_dust_pot(:,:,:) = 0.0
 
-      if (DEBUG) write(unit=6,fmt=*) "Called RoadDustGet with index, name", &
+      if (DEBUG_ROADDUST) write(unit=6,fmt=*) "Called RoadDustGet with index, name", &
            iemis, trim(emisname)
 !      fname = "emislist." // emisname
       fname = emisname
@@ -843,8 +844,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
 !            write(*,*)'dust to dust',iic,i,j, tmpdust,dumspring
 
-
-            if( DEBUG .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
+            if( DEBUG_ROADDUST .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
                 "DEBUG RoadDustGet "//trim(emisname) // ":" , iic, tmpdust,dumspring
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop(ios > 0,"RoadDustGet: ios error2 in emission file")
@@ -880,150 +880,8 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
               globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
                         + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
-            i = i-IRUNBEG+1     ! for RESTRICTED domain
-            j = j-JRUNBEG+1     ! for RESTRICTED domain
-
-            if ( i  <=  0 .or. i  >  GIMAX .or.   &
-                 j  <=  0 .or. j  >  GJMAX .or.   &
-                 ic <=  0 .or. ic >  NLAND  )&
-             cycle READEMIS
-
-             ! ..........................................................
-             ! generate new land allocation in 50 km grid. First, we check if
-             ! country "ic" has already  been found within that grid. If not,
-             ! then ic is added to landcode and nlandcode increased by one.
-
-              call GridAllocate("ROAD"// trim ( emisname ),i,j,ic,NCMAX, &
-                                 iland,ncmaxfound,road_globland,road_globnland)
-
-              globroad_dust_pot(i,j,iland) = globroad_dust_pot(i,j,iland) &
-                        + tmpdust
+            if( DEBUG_ROADDUST .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
+                "DEBUG RoadDustGet iland, globrdp",iland,globroad_dust_pot(i,j,iland)
 
 !RB   NOTE!!!! A climatological factor is still missing for the road dust!
 !              should increase the emissions in dry areas by up to a factor of ca 3.3
@@ -1039,7 +897,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
         end do READEMIS
         
-!        write(*,*)'done one, got sumroaddust=',sumroaddust(:,iemis)        
+        if(DEBUG_ROADDUST) write(*,*)'done one, got sumroaddust=',sumroaddust(:,iemis)        
 
         close(IO_EMIS)
         ios = 0

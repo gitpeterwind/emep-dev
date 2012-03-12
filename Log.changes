@@ -165,7 +165,7 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_26_beta  Robert  9th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_26_beta  Robert  9 (+12th bug fix) Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
 
 Started implementing a test version of the TNO Road dust emissions.
 NOTE! The new routine is not yet working properly (some bug(s) remains to 
