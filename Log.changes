@@ -165,6 +165,12 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_26_beta3 Robert 13th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+A few more bugs removed in the road dust module from the rv3_10_26_beta 
+version (see below). Still NOT finished or tested! 
+So keep USE_ROADDUST=.false. !
+
 xxxxxxxx rv3_10_26_beta2 Alvaro 13th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
 
 Expand mk.GenChmem & Makefile for standard EMEP/MACC setup from command line.
@@ -190,12 +196,13 @@ Makefile   - add 'EMEP' & 'MACC' compilation targets for standard setup.
              are loaded before EMEP & MACC targets. The modules/versions are
                intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1
 
-xxxxxxxx rv3_10_26_beta  Robert  9 (+12th bug fix) Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_26_beta  Robert  9 (+12-13th bug fixes) Mar 2012   xxxxxxx
 
 Started implementing a test version of the TNO Road dust emissions.
-NOTE! The new routine is not yet working properly (some bug(s) remains to
-be removed; probably some unit/scaling factor is wrong and there may be
-other problems as well).
+NOTE! The new routine is not yet tested properly (some bug(s) probably 
+remains to be removed). The "climatological" factor (based on average 
+soil water) is not yet included!
+
 So for standard use USE_ROADDUST should be kept .false. !
 
 Another update:

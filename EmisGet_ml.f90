@@ -45,7 +45,8 @@
                                NEMIS_FILE, EMIS_FILE, & 
                                ISNAP_SHIP, ISNAP_NAT, VOLCANOES_LL, &
                                ! NMR-NH3 specific variables (for FUTURE )
-                               NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF
+                               NH3EMIS_VAR,dknh3_agr,ISNAP_AGR,ISNAP_TRAF, &
+                               NROADDUST
   use GridAllocate_ml,   only: GridAllocate
   use Io_ml,             only: open_file, NO_FILE, ios, IO_EMIS, &
                                Read_Headers, read_line, PrintLog
@@ -53,7 +54,7 @@
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
               SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
-                               MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST
+                               MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
   use Par_ml,            only: me
   use SmallUtils_ml,     only: wordsplit, find_index
   use Volcanos_ml
@@ -91,6 +92,7 @@
   integer, public, dimension(NSPEC_TOT), save :: itot2iqrc
   integer, public, dimension(NEMIS_FILE), save :: Emis_MolWt
   real, public,allocatable, dimension(:), save :: emis_masscorr
+  real, public,allocatable, dimension(:), save :: roaddust_masscorr
 
   ! some common variables
   character(len=40), private :: fname             ! File name
@@ -765,6 +767,19 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   iqrc2itot(:)        = tmp_iqrc2itot(1:nrcemis)
   emis_masscorr(:)    = tmp_emis_masscorr(1:nrcemis)
 
+!rb: not ideal place for this but used here for a start
+! Temporary solution! Need to find the molweight from the
+! GenChem input but just to get something running first set
+! a hard coded molar mass of 200. 
+  if(USE_ROADDUST)THEN
+     allocate(roaddust_masscorr(NROADDUST),stat=allocerr)
+     call CheckStop(allocerr, "Allocation error for emis_masscorr")
+     if(MasterProc) &
+          write(*,fmt=*)"NOTE! WARNING! Molar mass assumed to be 200.0 for all road dust components. Emissions will be in ERROR if another value is set in the GenChem input!"
+     do ie=1,NROADDUST
+        roaddust_masscorr(ie)=1.0/200.
+     enddo
+  endif
    
  end subroutine EmisSplit
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<

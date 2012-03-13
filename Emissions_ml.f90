@@ -68,7 +68,8 @@
         ,iqrc2itot                   &  ! maps from split index to total index
         ,emis_masscorr               &  ! 1/molwt for most species
         ,emis_nsplit                 &  ! No. species per emis file
-        ,RoadDustGet                    
+        ,RoadDustGet                 &  
+        ,roaddust_masscorr              ! 1/200. Hard coded at the moment, needs proper setting in EmisGet_ml...   
   use GridValues_ml, only:  GRIDWIDTH_M    & ! size of grid (m)
                            ,xm2            & ! map factor squared
                            ,debug_proc,debug_li,debug_lj & 
@@ -82,6 +83,7 @@
                               NBVOC,     &      ! > 0 if forest voc wanted
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               DEBUG_SOILNOX , DEBUG_EMISTIMEFACS, & 
+                              DEBUG_ROADDUST , &
                               USE_DEGREEDAY_FACTORS, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               USE_AIRCRAFT_EMIS,USE_ROADDUST, &
@@ -917,6 +919,11 @@ contains
 ! -> Need to know day_of_week
 !    Relatively weak variation with day of week so use a simplified approach
 !    
+
+!            if( DEBUG_ROADDUST .and. debug_proc .and. i==DEBUG_li .and. j==DEBUG_lj )THEN
+!               write(*,*)"DEBUG ROADDUST! Dry! ncc=", road_nlandcode(i,j)
+!            endif
+
          ncc = road_nlandcode(i,j) ! number of countries in grid point
          do icc = 1, ncc    
             iland = road_landcode(i,j,icc)
@@ -936,6 +943,10 @@ contains
 
             do iem = 1, NROAD_FILES
                 s = tfac * roaddust_emis_pot(i,j,icc,iem)
+!            if( DEBUG_ROADDUST .and. debug_proc .and. i==DEBUG_li .and. j==DEBUG_lj )THEN
+!               write(*,*)"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
+!                          iem,tfac,icc,roaddust_emis_pot(i,j,icc,iem),s
+!            endif
 ! 
                 gridrcroadd(QROADDUST_FI,i,j)=gridrcroadd(QROADDUST_FI,i,j)+ &
                      ROADDUST_FINE_FRAC*s
@@ -985,15 +996,25 @@ contains
    end do ! k
 
    if(USE_ROADDUST)THEN
+      if( DEBUG_ROADDUST .and. debug_proc)then
+         write(*,*)"Before the unit scaling", &
+              gridrcroadd(1,DEBUG_li,DEBUG_lj), &
+              gridrcroadd(2,DEBUG_li,DEBUG_lj)
+      endif
       do j = 1,ljmax
          do i = 1,limax
             ehlpcom= roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
               do iqrc =1, NROADDUST
                  gridrcroadd(iqrc,i,j) =  &
-                      gridrcroadd(iqrc,i,j)* ehlpcom
+                      gridrcroadd(iqrc,i,j)* ehlpcom * ehlpcom0(KMAX_MID) * roaddust_masscorr(iqrc)
               enddo  ! iqrc
            end do ! i
         end do ! j
+      if( DEBUG_ROADDUST .and. debug_proc)then
+         write(*,*)"After the unit scaling", &
+              gridrcroadd(1,DEBUG_li,DEBUG_lj), &
+              gridrcroadd(2,DEBUG_li,DEBUG_lj)
+      endif
      endif
 
  ! Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
