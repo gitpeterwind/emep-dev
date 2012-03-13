@@ -1,4 +1,4 @@
-
+#!/bin/bash
 # Script to prepare CM_ files for Unimod
 #
 # 1) RUns GenChem to get chemical mechanism
@@ -9,7 +9,7 @@
 #run=Test03   # CRI_v2_R5
 #run=EmChem03c   # CRI_v2_R5
 #run=OSRM    # CRI_v2_R5
-#run=Eucaari_Trends 
+#run=Eucaari_Trends
 #run=CRI_v2_R5
 #
 # ==========================================
@@ -35,10 +35,36 @@ extras=( $xdir/SeaSalt $xdir/Dust  $xdir/Pollen )  # Experimental inc. pollen
 extras=( ) #   Minimum set!
 extras=( $xdir/SeaSalt $xdir/Dust $xdir/Isotopes ) #  Standard(?)
 
+# Take options from command line.
+#  Available options are:
+#   -f $ffires
+#   -r $run
+#   -e ${extra[0]},${extra[1]},...
+while getopts ":f:r:e:" OPT; do
+ #echo "$0 -$OPT $OPTARG"
+  case "$OPT" in
+  f)ffires=$OPTARG;;
+  r)run=$OPTARG;;
+  e)extras=( ${OPTARG//,/ } )
+    for N in ${!extras[*]};do
+      [[ -s ${extras[$N]}.species ]] || extras[$N]=$PWD/${extras[$N]}
+      [[ -s ${extras[$N]}.species ]] || extras[$N]=${extras[$N]/$PWD/$xdir}
+      if [[ ! -s ${extras[$N]}.species ]]; then
+        extras=( ${OPTARG//,/ } )
+        echo -e "Unknown option:\n\t$0 -$OPT ${extras[$N]}"
+        exit
+      fi
+    done;;
+  esac
+done
+(( $OPTIND > 1 )) &&
+echo -e "Command line options:\n\t$0 -f $ffires -r $run -e '`echo ${extras[*]//$PWD/.}|tr ' ' ','`'"
+# exit 1
+
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base PMmass )  
-  rcns=( EmChem09base PMmass ) 
+  spcs=( EmChem09base PMmass )
+  rcns=( EmChem09base PMmass )
   bics=( EmChem09base )
 
 elif [ $run == EmChem09soa ]; then
@@ -61,7 +87,7 @@ elif [ $run == CB05 ]; then
   echo "RUN CB05 chosen"
   spcs=( CB05base ../ZCM_EmChem09/PMmass )
   rcns=( CB05base ../ZCM_EmChem09/PMmass )
-  bics=( CB05base ) 
+  bics=( CB05base )
 
 else
   echo "SELECTION of run $run failed!! "
@@ -73,10 +99,10 @@ spcs=("${spcs[@]}" "${extras[@]}")
 rcns=("${rcns[@]}" "${extras[@]}")
 bics=("${bics[@]}" "${extras[@]}")
 
-echo "NEW SPECS ", ${spcs[@]} 
-echo "NEW REACTIONS ", ${rcns[@]} 
+echo "NEW SPECS ", ${spcs[@]}
+echo "NEW REACTIONS ", ${rcns[@]}
 
-#VBS 
+#VBS
 #run=vbs_tests   # VBS based Organic Aerosol Model, different versions use different spcs and rcns, choose one set below
 #ALSO YOU NEED TO MODIFY ZD_VBS/My_SOA_ml.f90 to work with the research versions of the VBS code (except the NPNA version that probably works with an unmodified version of ZD_VBS/My_SOA_ml.f90
 
@@ -90,19 +116,19 @@ echo "NEW REACTIONS ", ${rcns[@]}
 
 
 # VBS-PAA (VBS based primary emissions and aging of all POA and SOA)
-#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAA 
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAA
 #rcns=( ../ZCM_EmChem09/EmChem09base VBS_SOAformation_Detailed VBS_POAageing VBS_SOAageing_Detailed VBS_emissions_partitioningPOA  ) # VBS PAA
 
 # VBS PAP (VBS based primary emissions and aging of all POA)
-#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAP 
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAP
 #rcns=( ../ZCM_EmChem09/EmChem09base VBS_SOAformation_Detailed VBS_POAageing VBS_emissions_partitioningPOA  ) # VBS PAP
 
 # VBS PAPA (VBS based primary emissions and aging of all POA and ASOA, note! not same ageing rate as in VBS PAA!)
-#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAPA 
-#rcns=( ../ZCM_EmChem09/EmChem09base VBS_SOAformation_Detailed VBS_POAageing VBS_ASOAageing VBS_emissions_partitioningPOA  ) # VBS PAPA 
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS PAPA
+#rcns=( ../ZCM_EmChem09/EmChem09base VBS_SOAformation_Detailed VBS_POAageing VBS_ASOAageing VBS_emissions_partitioningPOA  ) # VBS PAPA
 
 #VBS NPNA (VBS for SOA formation, no ageing reactions and only nonvolatile POA)
-#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS NPNA 
+#spcs=( ../ZCM_EmChem09/EmChem09base VBS_help_Detailed VBS_nonvolatile VBS_partitioning_Detailed )  #  VBS NPNA
 #rcns=( ../ZCM_EmChem09/EmChem09base  VBS_SOAformation_Detailed VBS_emissions_nonvolatilePOA  ) # VBS NPNA
 
 #---------------- create GenIn files...
@@ -145,15 +171,15 @@ echo " " >> CM_BoundaryConditions.inc.txt
 
 #GenSort.pl $run   # Creates GenIn.species, so be careful !#
 
-# 1) Runs GenChem to get chemical mechanism 
+# 1) Runs GenChem to get chemical mechanism
 #######################################################################
 
 $cdir/GenChem.pl
 
 # Mar 17th 2009, added fake GenSpec_bgn_ml
 
-#odir=$PWD/ZCM_$run   # We keep output in work-directory 
-odir=$wdir           # We keep output in work-directory 
+#odir=$PWD/ZCM_$run   # We keep output in work-directory
+odir=$wdir           # We keep output in work-directory
 echo $odir
 
 cat GenOut_ChemRates*inc    > $odir/CM_ChemRates_ml.f90
@@ -190,7 +216,7 @@ cd $cdir
 # 2) Copies Boundary Condition files
 #######################################################################
 # This file needs creating by hand
-#cp BoundaryConditions.$run   $odir/CM_BoundaryConditions.inc   
+#cp BoundaryConditions.$run   $odir/CM_BoundaryConditions.inc
 
 # 3) Run GenVOC to get speciation
 #######################################################################

@@ -165,18 +165,43 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_26_beta2 Alvaro 13th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+Expand mk.GenChmem & Makefile for standard EMEP/MACC setup from command line.
+
+The following command lines are now possible:
+  make modules  # check modules/versions loaded for standard EMEP/MACC make
+  make EMEP     # EMEP mk.GenChmem call, link and make
+  make MACC     # MACC mk.GenChmem call, link and make
+# EMEP GenChmem standard setup assumed in Makefile
+  make EMEP-GenChem-EmChem09soa
+  mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f FINNv1
+# MACC GenChmem standard setup assumed in Makefile
+  make MACC-GenChem-EmChem09soa
+  mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f GFED
+
+mk.GenChem - options for $run, $extras & $ffires from command line.
+             Command line options are -r $run -e $extras -f $ffires
+
+Makefile   - add 'EMEP' & 'MACC' compilation targets for standard setup.
+           - add 'SR-EMEP' & 'SR-MACC' compilation targets for SR setup,
+             i.e. no extras in mk.GenChmem  (-e "").
+           - add 'module' compilation tag. It checks if certain modules/versions
+             are loaded before EMEP & MACC targets. The modules/versions are
+               intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1
+
 xxxxxxxx rv3_10_26_beta  Robert  9 (+12th bug fix) Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
 
 Started implementing a test version of the TNO Road dust emissions.
-NOTE! The new routine is not yet working properly (some bug(s) remains to 
-be removed; probably some unit/scaling factor is wrong and there may be 
-other problems as well). 
+NOTE! The new routine is not yet working properly (some bug(s) remains to
+be removed; probably some unit/scaling factor is wrong and there may be
+other problems as well).
 So for standard use USE_ROADDUST should be kept .false. !
 
 Another update:
-Added possibility to use SNAP-dependent hourly emission variations (the 
-factors taken from the EuroDelta-project) - not checked in detail yet 
-(so may contain bugs). 
+Added possibility to use SNAP-dependent hourly emission variations (the
+factors taken from the EuroDelta-project) - not checked in detail yet
+(so may contain bugs).
 To use/test this set:   USE_HOURLY_EMISVAR = .true. in ModelConstants_ml.f90
 
 Other changes/updates:
@@ -209,7 +234,7 @@ SoilWater renamed to SoilWater_uppr in:
 Also,
 
 Timefactors_ml - small tidy up
-  
+
 
 xxxxxxxx rv3_10_24 Dave  6th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
 
@@ -286,7 +311,7 @@ mk.GenChem
 
 Added:  ZCM_CRI_v2_R5/CRI_v2_R5.BoundaryConditions
 
- ** Deleted: 
+ ** Deleted:
 
    ZCM_EmChem09/SAFE.CM_BoundaryConditions.inc
    ZCM_EmChem09soa/SAFE.CM_BoundaryConditions.inc
@@ -313,7 +338,7 @@ ZD_OZONE/My_Outputs  -  Fake hr_out(06) added to avoid hard-coded Rb222
 
 xxxxxxxx rv3_10_20 Peter 21st Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
 
-Met_ml.f90 faster meteo reading 
+Met_ml.f90 faster meteo reading
 
 Preparations for SR. Compatibility for other compilers (gfortran or IBM xlf90):
 ZD_VBS/My_SOA_ml.f90 ("," removed )
@@ -323,13 +348,13 @@ CM_EmisSpec.inc all  EMIS_Specs should have the same number of characters (pleas
 
 xxxxxxxx rv3_10_19 Peter 14th Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
 
-Output_ml, ModelConstants_ml: allow for separate hourly files every day or month. 
+Output_ml, ModelConstants_ml: allow for separate hourly files every day or month.
 
 For large grids, these where becoming excessively large.
 
 NB:needs special attention to be used (i.e. set .true.) until newer libraries are installed!
 Will not work well by default on Stallo because of library bugs (the code may crash).
-Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2 
+Until this is fixed, you must compile with netcdf/4.1.3 and link and run with compiler 12.1.2
 
 
 xxxxxxxx rv3_10_18 Birthe 13th Feb  2012  xxxxxxxxxxxxxxxxxxxxxx
@@ -363,7 +388,7 @@ If the landuse etc. are not defined in the outer frame, some routines (smoosp, e
 Modified:
 Landuse_ml.f90
 Met_ml.f90
-Runchem_ml.f90 
+Runchem_ml.f90
 Unimod.f90
 
 xxxxxxxx rv3_10_15 Peter 6th Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
@@ -373,7 +398,7 @@ The idea is that we always compute for the whole domain, the exceptions are that
 Some small differences very close to the boundaries, I think they may come from the "landify"
 
 moved everything which was in the "my_first_call" in SetLandUse, over to the InitLanduse subroutine. It seems more logical, and was necessary to get before the BC update.
-(where landsea_nwp must be set for SeaSalt). 
+(where landsea_nwp must be set for SeaSalt).
 This also changed other concentrations I noticed: because "landify" uses "likely_coastal" which was not yet set before the first call to metdata.
 
 Also commented out the link to rough.dat in run.pl: don't use it by default, as it is probably wrong anyway: it was wrong in EECCA, and is not defined for IFS anyway.
@@ -416,10 +441,10 @@ ZCM_EmChem09/GenIn.reactions removed --- they haven't been used for
 xxxxxxxx rv3_10_13  Svetlana 3rd Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Bug for sea salt BICs in BoundaryConditions_ml.f90 corrected
-(BIC is switched off when USE_SEASALT=false)                  
+(BIC is switched off when USE_SEASALT=false)
 
 xxxxxxxx rv3_10_12  Svetlana 2nd Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
-                  &  Peter 
+                  &  Peter
 
 ST: Addition to EC ageing   - modified My_Derived_ml.f90
 
@@ -429,7 +454,7 @@ Modified the formula in  ReadField_CDF (rv3_10_11), as it was not safe.
 i=i_local(nint(ir)) -> i=nint(ir)-gi0-IRUNBEG+2
 
 xxxxxxxx rv3_10_11  Peter 1st Feb  2012  xxxxxxxxxxxxxxxxxxxxxxx
-                  + Svetlana 31th Jan  2012 
+                  + Svetlana 31th Jan  2012
 
 Bug in ReadField_CDF when converting from stereographic to lat lon.
 Occurs only if you run in a rundomain which is smaller than fulldomain.
@@ -473,12 +498,12 @@ Probably due to a bug in the netcdf4/hdf5 library.
 
 xxxxxxxx rv3_10_8  Robert, 19th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
-Simplified EmChem09soa scheme. 
-   Removed many unused species and changed some component names. 
-   Reduced the level of detail for the stored ASOA and BSOA species; 
-   now only keep track of ASOA and BSOA (and not subgroups of these) 
-   [further reduction is possible to only store SOA (=ASOA+BSOA)]. 
- 
+Simplified EmChem09soa scheme.
+   Removed many unused species and changed some component names.
+   Reduced the level of detail for the stored ASOA and BSOA species;
+   now only keep track of ASOA and BSOA (and not subgroups of these)
+   [further reduction is possible to only store SOA (=ASOA+BSOA)].
+
 The updated code should give close to identical results to the earlier version but note that to use the "research" version of the VBS-SOA scheme some editing of ZD_VBS/My_SOA_ml.f90 is necessary.
 
 The new code is significantly faster than the old one (almost 20% in the first tests).
@@ -490,14 +515,14 @@ Updated files: mk.GenChem
                              VBS_help.species
                              VBS_SOAageing.reactions
                              VBS_SOAformation.reactions
-                             VBS_ASOAageing.reactions                          
+                             VBS_ASOAageing.reactions
                ZCM_EmChem09soa/VBS_nonvolatile.species
                                VBS_emissions_nonvolatilePOA_FromPM25.reactions
 New files:     ZCM_vbs_tests/VBS_SOAageing_Detailed.reactions
                              VBS_SOAformation_Detailed.reactions
                              VBS_help_Detailed.species
                              VBS_partitioning_Detailed.species
-  
+
 
 xxxxxxxx rv3_10_7  Dave, 19th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
@@ -519,7 +544,7 @@ Nest_ml
 
 Makefile.SRCS - add My_ExternalBICs_ml.f90
 
-*** New: 
+*** New:
 
 File: ZD_OZONE/My_ExternalBICs_ml.f90  - a do-nothing file  for the usual case
         where the model uses the standard BICs. Copied along with other My* files
@@ -543,8 +568,8 @@ To-Do: *test* and update MOZART .f90
 
 xxxxxxxx rv3_10_6b  Robert 18th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
-Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA model version PAPA. 
-        Updated file: ZCM_vbs_tests/VBS_ASOAageing.reactions [Now identical to the version used in the EMEP-VBS paper submitted to ACPD] 
+Robert: Minor update of SOA aging reactions in "research-version" of VBS-SOA model version PAPA.
+        Updated file: ZCM_vbs_tests/VBS_ASOAageing.reactions [Now identical to the version used in the EMEP-VBS paper submitted to ACPD]
 
         Note: Some other files may still not be updated. Will be fixed soon.
 
@@ -565,7 +590,7 @@ xxxxxxxx rv3_10_5   Peter 16th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 New routine for direct interpolation from polar stereographic projection
 Now zeroth-order interpolation needs Undef to be defined, or all values must be well defined.
-This will slightly change the results. 
+This will slightly change the results.
 In the future the file from MaxPosch+GLC2000 can be used for Landuse. GLC2000 input still needs some improvements(?).
 
 Modified:
@@ -590,8 +615,8 @@ run.pl - uses LAndInputs_Jan2012
 xxxxxxxx rv3_10_3   Peter 10th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 NetCDF_ml.f90:
-Netcdf output file in compressed netcdf-4 format. 
-For postprocessing, if you get error messages, make sure you use libraries linked to netcdf-4 
+Netcdf output file in compressed netcdf-4 format.
+For postprocessing, if you get error messages, make sure you use libraries linked to netcdf-4
 (for example by writing module load netcdf, module load nco).
 
 
@@ -603,7 +628,7 @@ xxxxxxxx rv3_10_2   Peter 6th Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 Nest_ml with MODE=100 option. Use monthly BC. Experimental so far.to be merged with Global_BC_ml
 
-made great_circle_distance in InterpolationRoutines_ml private, as it is already defined in Functions_ml 
+made great_circle_distance in InterpolationRoutines_ml private, as it is already defined in Functions_ml
 
 
 !
@@ -623,10 +648,10 @@ Finally same results on a 2 days test with 8x4 and 2x16 processor partition
 xxxxxxxx rv3_10   Dave 3rd Jan  2012  xxxxxxxxxxxxxxxxxxxxxxx
 
 new label, since 37 seemed a bit high, and since rv3:9_36 was anyway
-a result-change from other rv3_9_xx series. Another result 
+a result-change from other rv3_9_xx series. Another result
 change here:
 
-ChemFunctions_ml.f90 - now uses aerosol radius in VOLFACs 
+ChemFunctions_ml.f90 - now uses aerosol radius in VOLFACs
 consistent with that used in dry-deposition, namely number
 median radius 68nm instead of 34.
 
@@ -646,7 +671,7 @@ SubMet_ml
 
 run.pl
   uses LandInputs_Dec2011   - higher trees
- 
+
 
 
 xxxxxxxx rv3_9_35 Alvaro, Dave 21th Dec 2011  xxxxxxxxxxxxxxxxxxxxxxx
