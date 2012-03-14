@@ -165,13 +165,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_26_beta3 Robert 13th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+
+xxxxxxxx rv3_10_27  Robert/Alvaro, 14/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Robert 13th Mar 2012: 
 
 A few more bugs removed in the road dust module from the rv3_10_26_beta 
 version (see below). Still NOT finished or tested! 
 So keep USE_ROADDUST=.false. !
 
-xxxxxxxx rv3_10_26_beta2 Alvaro 13th Mar 2012   xxxxxxxxxxxxxxxxxxxxxx
+Alvaro 13th Mar 2012:
 
 Expand mk.GenChmem & Makefile for standard EMEP/MACC setup from command line.
 
