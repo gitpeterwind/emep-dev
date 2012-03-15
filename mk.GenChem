@@ -35,31 +35,60 @@ extras=( $xdir/SeaSalt $xdir/Dust  $xdir/Pollen )  # Experimental inc. pollen
 extras=( ) #   Minimum set!
 extras=( $xdir/SeaSalt $xdir/Dust $xdir/Isotopes ) #  Standard(?)
 
-# Take options from command line.
-#  Available options are:
-#   -f $ffires
-#   -r $run
-#   -e ${extra[0]},${extra[1]},...
-while getopts ":f:r:e:" OPT; do
- #echo "$0 -$OPT $OPTARG"
-  case "$OPT" in
-  f)ffires=$OPTARG;;
-  r)run=$OPTARG;;
-  e)extras=( ${OPTARG//,/ } )
-    for N in ${!extras[*]};do
-      [[ -s ${extras[$N]}.species ]] || extras[$N]=$PWD/${extras[$N]}
-      [[ -s ${extras[$N]}.species ]] || extras[$N]=${extras[$N]/$PWD/$xdir}
-      if [[ ! -s ${extras[$N]}.species ]]; then
-        extras=( ${OPTARG//,/ } )
-        echo -e "Unknown option:\n\t$0 -$OPT ${extras[$N]}"
-        exit
-      fi
-    done;;
-  esac
-done
-(( $OPTIND > 1 )) &&
-echo -e "Command line options:\n\t$0 -f $ffires -r $run -e '`echo ${extras[*]//$PWD/.}|tr ' ' ','`'"
-# exit 1
+# Variables for HELP & GETOPTS functions
+ERGO=`basename $0`
+VERB='off';[[ "$*" = *-v* ]] && VERB='on'
+[[ "$VERB" = 'on' ]] && echo -e "$ERGO verbose mode: $VERB"
+# Print ussage & exits
+HELP(){
+  local EE=`echo ${extras[*]/$PWD\//}|tr ' ' ','`
+  cat << _EOF
+'$ERGO' prepare Chemestry files (CM_.f90) for Unimod
+
+Usage:
+  $ERGO [-h] [-v] [-f fire] [-r run] [-e extra1[,extra2[...]]]
+
+Examples:
+# EMEP GenChmem standard setup assumed in \`make EMEP\`
+  mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f FINNv1
+# MACC GenChmem standard setup assumed in \`make MACC\`
+  mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f GFED
+
+Options:
+  -h        Print this help and exits
+  -v        Turns on verbose mode (currently: $VERB)
+  -f ffire  Sets \$ffires variable (currently: $ffires)
+  -r run    Sets \$run variable    (currently: $run)
+  -e extras Sets \$extras variable (currently: ${EE:-'none'})
+_EOF
+  (( $# )) && echo -e "\nCurrent call:\n\t$ERGO $*"
+  exit
+}
+# Processes command line options. Option -h for help
+GETOPTS(){
+  local rdir=$PWD/ZCM_$run N=0 EE=()
+  while getopts ":f:r:e:vh" OPT; do
+    [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
+    case "$OPT" in
+    f)ffires=$OPTARG;;
+    r)run=$OPTARG;rdir=$PWD/ZCM_$run;
+      [[ -d $rdir ]] || HELP $* "\nUnknown run option:\n\t-$OPT $OPTARG";;
+    e)extras=( );EE=( )
+      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
+      for N in ${!EE[*]};do
+        ${extras[$N]}=${EE[$N]}
+        [[ -s ${extras[$N]}.species ]] || extras[$N]=$PWD/${EE[$N]}
+        [[ -s ${extras[$N]}.species ]] || extras[$N]=$rdir/${EE[$N]}
+        [[ -s ${extras[$N]}.species ]] || extras[$N]=$xdir/${EE[$N]}
+        [[ -s ${extras[$N]}.species ]] ||
+          HELP $* "\nUnknown extras option:\n\t-$OPT ${EE[$N]}"
+      done;;
+    v);;
+    h)HELP $*;exit;;
+    *)HELP $* "\nUnknown $ERGO option:\n\t-$OPT $OPTARG" ;;
+    esac
+  done
+};GETOPTS $* #-vh
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"

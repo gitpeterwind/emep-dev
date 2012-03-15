@@ -59,9 +59,9 @@ EMEP-GenChem-%:
 MACC-GenChem-%:
 	mk.GenChem -r $* -f GFED   -e SeaSalt,Dust,Isotopes
 SR-EMEP-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e ""
+	mk.GenChem -r $* -f FINNv1 -e none
 SR-MACC-GenChem-%:
-	mk.GenChem -r $* -f GFED   -e ""
+	mk.GenChem -r $* -f GFED   -e none
 
 # Check if intended modules are loaded
 MODULES = intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1
