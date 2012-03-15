@@ -166,7 +166,8 @@
         gridrcemis      & ! varies every time-step (as ps changes)
        ,gridrcemis0       ! varies every hour
    real, public, allocatable, save, dimension(:,:,:) :: &
-        gridrcroadd       ! Road dust emissions
+        gridrcroadd     & ! Road dust emissions
+       ,gridrcroadd0      ! varies every hour
 
   ! and for budgets (not yet used - not changed dimension)
    real, public,  save, dimension(NSPEC_SHL+1:NSPEC_TOT) ::  totemadd
@@ -395,8 +396,8 @@ contains
                           globroad_dust_pot,road_globnland,road_globland)
            ! *****************
 
-
            roaddustsum(iem) = sum( globroad_dust_pot(:,:,:) )    ! 
+
       endif  ! MasterProc
 
       call CheckStop(ios, "ios error: RoadDustGet")
@@ -579,7 +580,9 @@ contains
    call CheckStop(err2, "Allocation error 2 - gridrcemis0")
    if(USE_ROADDUST)THEN
       allocate(gridrcroadd(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err3)
-      call CheckStop(err1, "Allocation error 3 - gridrcroadd")
+      allocate(gridrcroadd0(NROADDUST,MAXLIMAX,MAXLJMAX),stat=err4)
+      call CheckStop(err3, "Allocation error 3 - gridrcroadd")
+      call CheckStop(err4, "Allocation error 4 - gridrcroadd0")
    endif
 
   end subroutine Emissions
@@ -727,7 +730,7 @@ contains
          totemadd(:)  = 0.
          gridrcemis0(:,:,:,:) = 0.0 
          SumSnapEmis(:,:,:) = 0.0
-         gridrcroadd(:,:,:) = 0.0
+         gridrcroadd0(:,:,:) = 0.0
 
         !..........................................
         ! Process each grid:
@@ -943,15 +946,21 @@ contains
 
             do iem = 1, NROAD_FILES
                 s = tfac * roaddust_emis_pot(i,j,icc,iem)
-!            if( DEBUG_ROADDUST .and. debug_proc .and. i==DEBUG_li .and. j==DEBUG_lj )THEN
-!               write(*,*)"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
-!                          iem,tfac,icc,roaddust_emis_pot(i,j,icc,iem),s
-!            endif
-! 
-                gridrcroadd(QROADDUST_FI,i,j)=gridrcroadd(QROADDUST_FI,i,j)+ &
+            if( DEBUG_ROADDUST .and. debug_proc .and. i==DEBUG_li .and. j==DEBUG_lj )THEN
+               write(*,*)"DEBUG ROADDUST! iem,tfac,icc,roaddust_emis_pot,s", &
+                          iem,tfac,icc,roaddust_emis_pot(i,j,icc,iem),s
+            endif
+ 
+                gridrcroadd0(QROADDUST_FI,i,j)=gridrcroadd0(QROADDUST_FI,i,j)+ &
                      ROADDUST_FINE_FRAC*s
-                gridrcroadd(QROADDUST_CO,i,j)=gridrcroadd(QROADDUST_CO,i,j)+ &
+                gridrcroadd0(QROADDUST_CO,i,j)=gridrcroadd0(QROADDUST_CO,i,j)+ &
                      (1.-ROADDUST_FINE_FRAC)*s
+
+                if ( DEBUG_ROADDUST .AND. debug_proc .and.i==debug_li .and. j==debug_lj)  then  ! 
+                   write(*,*)"gridrcroadfine",gridrcroadd0(QROADDUST_FI,i,j)
+                   write(*,*)"gridrcroadcoarse",gridrcroadd0(QROADDUST_CO,i,j)
+                end if
+
 
              enddo ! nroad files
                 
@@ -961,7 +970,7 @@ contains
 ! and add the emissions from HIGHWAYplus and NONHIGHWAYS,
 ! using correct fine and coarse fractions.
        else ! precipitation
-          gridrcroadd(:,i,j)=0.
+          gridrcroadd0(:,i,j)=0.
        endif NO_PRECIP
  
   endif ! ROADDUST
@@ -1006,7 +1015,7 @@ contains
             ehlpcom= roa(i,j,KMAX_MID,1)/(ps(i,j,1)-PT)
               do iqrc =1, NROADDUST
                  gridrcroadd(iqrc,i,j) =  &
-                      gridrcroadd(iqrc,i,j)* ehlpcom * ehlpcom0(KMAX_MID) * roaddust_masscorr(iqrc)
+                      gridrcroadd0(iqrc,i,j)* ehlpcom * ehlpcom0(KMAX_MID) * roaddust_masscorr(iqrc)
               enddo  ! iqrc
            end do ! i
         end do ! j

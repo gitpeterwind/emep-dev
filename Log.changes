@@ -165,6 +165,12 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_28b  Robert  15th Mar 2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Bug fix for Road Dust emissions in - Emissions_ml.f90
+
+Emissions now at least seem to be of the correct order of magnitude... ;-)
+Still not soil moisture "climate-correction" included.
 
 xxxxxxxx rv3_10_27  Robert/Alvaro, 14/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
