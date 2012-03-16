@@ -52,7 +52,7 @@ logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition 
 logical, public, parameter :: USE_SEASALT        = .true.   ! ok
 ! More experimental:
 logical, public, parameter :: USE_DUST           = .true.  ! Experimental
-logical, public, parameter :: USE_ROADDUST       = .false.  ! NOT YET WORKING! UNDER DEVELOPMENT/DEBUGGING! Testing the TNO Road Dust routine 
+logical, public, parameter :: USE_ROADDUST       = .false.  ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor 
 logical, public, parameter :: DO_SAHARA          = .true.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
 logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!

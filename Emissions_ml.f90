@@ -61,7 +61,8 @@
                      ,NROADDUST   & ! No. road dust components 
                      ,QROADDUST_FI & ! fine road dust emissions (PM2.5) 
                      ,QROADDUST_CO & ! coarse road dust emis
-                     ,ROADDUST_FINE_FRAC & ! fine (PM2.5) fraction of road dust emis 
+                     ,ROADDUST_FINE_FRAC & ! fine (PM2.5) fraction of road dust emis
+                     , ROADDUST_CLIMATE_FILE & ! TEMPORARY! file for road dust climate factors 
                      ,SNAP_HOURFAC  ! hourly emission variation for SNAP sectors
   use EmisGet_ml, only : EmisGet, EmisSplit, &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
@@ -84,6 +85,7 @@
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               DEBUG_SOILNOX , DEBUG_EMISTIMEFACS, & 
                               DEBUG_ROADDUST , &
+                              DEBUG_I,DEBUG_J, &
                               USE_DEGREEDAY_FACTORS, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               USE_AIRCRAFT_EMIS,USE_ROADDUST, &
@@ -223,12 +225,15 @@ contains
   real,    allocatable, dimension(:,:,:)    :: globroad_dust_pot ! Road dust emission potentials
   integer, allocatable, dimension(:,:)      :: road_globnland 
   integer, allocatable, dimension(:,:,:)    :: road_globland 
+  real,    allocatable, dimension(:,:)      :: RoadDustEmis_climate_factor ! Climatic factor for scaling road dust emissions (in TNO model based on yearly average soil water)
   integer :: err1, err2, err3, err4, err5, err6, err7, err8, err9 ! Error messages
   integer :: fic ,insec,inland,iemis 
   integer :: ic               ! country codes 
   integer :: isec             ! loop variables: emission sectors
   integer :: iem              ! loop variable over pollutants (1..NEMIS_FILE)
-
+  character(len=40) :: fname  ! File name
+  character(len=300) :: inputline 
+  real    :: tmpclimfactor
 
   ! Emission sums (after e_fact adjustments):
   real, dimension(NEMIS_FILE)       :: emsum    ! Sum emis over all countries
@@ -313,22 +318,23 @@ contains
        allocate(flat_globland(GIMAX,GJMAX,FNCMAX),stat=err5)
        allocate(globemis_flat(GIMAX,GJMAX,FNCMAX),stat=err6)
 
-       if(USE_ROADDUST)then
-          allocate(road_globnland(GIMAX,GJMAX),stat=err7)
-          allocate(road_globland(GIMAX,GJMAX,NCMAX),stat=err8)
-          allocate(globroad_dust_pot(GIMAX,GJMAX,NCMAX),stat=err9)
-       endif
-
        call CheckStop(err1, "Allocation error 1 - globland")
        call CheckStop(err2, "Allocation error 2 - globland")
        call CheckStop(err3, "Allocation error 3 - globland")
        call CheckStop(err4, "Allocation error 4 - globland")
        call CheckStop(err5, "Allocation error 5 - globland")
        call CheckStop(err6, "Allocation error 6 - globland")
+
        if(USE_ROADDUST)then
+          allocate(road_globnland(GIMAX,GJMAX),stat=err7)
+          allocate(road_globland(GIMAX,GJMAX,NCMAX),stat=err8)
+          allocate(globroad_dust_pot(GIMAX,GJMAX,NCMAX),stat=err9)
+          allocate(RoadDustEmis_climate_factor(GIMAX,GJMAX),stat=err1)
+
          call CheckStop(err7, "Allocation error 7 - globroadland")
          call CheckStop(err8, "Allocation error 8 - globroadland")
          call CheckStop(err9, "Allocation error 9 - globroad_dust_pot")
+         call CheckStop(err1, "Allocation error 1 - RoadDustEmis_climate_factor")
        endif ! road dust
 
        ! Initialise with 0
@@ -343,6 +349,7 @@ contains
          road_globnland(:,:)=0
          road_globland(:,:,:)=0
          globroad_dust_pot(:,:,:)=0.
+         RoadDustEmis_climate_factor(:,:)=1.0 ! default, no scaling
        endif ! road dust
 
    end if
@@ -378,6 +385,52 @@ contains
    end do ! iem = 1, NEMIS_FILE-loop
 
    if(USE_ROADDUST) then
+
+! First Temporary/Test handling of climate factors. Read from file. Should be enough to do this on MasterProc
+
+      if ( MasterProc )then
+!      if(.true.)then
+      if (DEBUG_ROADDUST) write(unit=6,fmt=*) "Setting road dust climate scaling factors from", &
+           trim(roaddust_climate_file)
+      fname = roaddust_climate_file
+      call open_file(IO_EMIS,"r",fname,needed=.true.)
+      call CheckStop(ios,"RoadDust climate file: ios error in emission file")
+ 
+      read(unit=IO_EMIS,fmt="(a200)",iostat=ios) inputline 
+      if( inputline(1:1) .ne. "#" ) then ! Is a  comment
+         write(*,*)'ERROR in road dust climate factor file!'
+         write(*,*)'First line should be a comment line, starting with #'
+      else 
+         IF(DEBUG_ROADDUST) write(*,*)'I read the comment line:',inputline
+      endif
+
+READCLIMATEFACTOR: do   ! ************* Loop over emislist files *******************
+
+            read(unit=IO_EMIS,fmt=*,iostat=ios) i,j, tmpclimfactor
+
+            if ( ios <  0 ) exit READCLIMATEFACTOR  ! End of file
+            call CheckStop(ios > 0,"RoadDust climate file: ios error2 in climate factor file")
+
+            i = i-IRUNBEG+1     ! for RESTRICTED domain
+            j = j-JRUNBEG+1     ! for RESTRICTED domain
+
+            if ( i  <=  0 .or. i  >  GIMAX .or.   &
+                 j  <=  0 .or. j  >  GJMAX   )&
+             cycle READCLIMATEFACTOR
+
+            RoadDustEmis_climate_factor(i,j) = tmpclimfactor
+
+            if( DEBUG_ROADDUST .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
+                "DEBUG RoadDust climate factor (read from file)", RoadDustEmis_climate_factor(i,j)
+
+         enddo READCLIMATEFACTOR
+!      else
+!         write(unit=6,fmt=*) "Test run set road dust climate factor to 1 everywhere!"
+!         RoadDustEmis_climate_factor(:,:) = 1.0
+!      endif
+
+      endif !MasterProc
+
     do iem = 1, NROAD_FILES
       ! now again test for me=0
       if ( MasterProc ) then
@@ -389,7 +442,9 @@ contains
 ! for the Nordic countries is handled in the EmisSet routine!
 ! Emission potentials are for PM10 so should be split into PM-fine (10%) and PM-coarse (90%)
 ! There should also be some modifications to take into account temporal variations due to different
-! traffic intensities and differences due to surface wetness and a climatological factor.
+! traffic intensities and differences due to surface wetness (handled in EmisSet) 
+! and a climatological factor (handled here).
+
            ! *****************
              call RoadDustGet(iem,ROAD_FILE(iem),IRUNBEG,JRUNBEG,GIMAX,GJMAX, &
                           sumroaddust,&
@@ -397,6 +452,21 @@ contains
            ! *****************
 
            roaddustsum(iem) = sum( globroad_dust_pot(:,:,:) )    ! 
+
+! Strange effect of adding climate factor? Should be in the range 1-3.3 (that is never below 1!)
+! so should increase road dust but the results in the sites file indicate that sometimes  
+! less road dust is stored with the climate factor included????
+! Something seems to be wrong. Should be checked in detail!!
+
+      do i=1,GIMAX
+         do j=1,GJMAX
+            if(DEBUG_ROADDUST)then
+               WRITE(*,*)"i,j,RDECF:",i,j,RoadDustEmis_climate_factor(i,j)
+            endif
+            globroad_dust_pot(i,j,:)=RoadDustEmis_climate_factor(i,j)*globroad_dust_pot(i,j,:)
+         enddo
+      enddo
+
 
       endif  ! MasterProc
 

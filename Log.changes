@@ -165,6 +165,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_29beta Robert 16/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Crude handling of "climate-correction" factor for road dust emissions
+introduced. Reading this factor from a simple text-file.
+
+To be updated with something based on EMEP soil water!
+
+changed file: Emissions_ml.f90
+ 
+
 xxxxxxxx rv3_10_28 Robert/Alvaro, 15/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Robert:
