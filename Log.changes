@@ -172,7 +172,7 @@ introduced. Reading this factor from a simple text-file.
 
 To be updated with something based on EMEP soil water!
 
-changed file: Emissions_ml.f90
+changed files: Emissions_ml.f90, EmisDef_ml.f90
  
 
 xxxxxxxx rv3_10_28 Robert/Alvaro, 15/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
