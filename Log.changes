@@ -165,7 +165,11 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_29beta Robert 16-19/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_29beta Robert 16-21/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Updated road dust emission potential files (21/3). 
+Now based on interpolating the TNO-data to the EMEP grid using 10x10points per TNO grid point.
+    - updated files: run.pl and EmisGet_ml.f90
 
 Crude handling of "climate-correction" factor for road dust emissions
 introduced. Reading this factor from a simple text-file.

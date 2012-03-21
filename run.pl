@@ -290,7 +290,7 @@ my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-file
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
 $SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
 
-# TEST! Road dust NOTE! These files are just for tests (to be updated) and the code may not be working properly yet!
+# TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
 my $RoadDir     = "/home/mifarb/Unify/MyData/TNO_traffic/" ;
 
 #ds check: and change
@@ -867,11 +867,11 @@ print "TESTING PM $poll $dir\n";
     $ifile{"$SoilDir/sand_isric_percent_ext.dat"} = "sand_frac.dat";
    }
 
-# TEST!!! Road dust NOTE! These files are just for tests (to be updated) and the code may not be working properly yet!
+# TEST!!! Road dust NOTE! The road dust code is NOT thoroughly tested yet!
 # NOTE ALSO THAT the Climate factors in the file below are just rough estimates based on the TNO soil water data, to be updated with something based on EMEP soil water!
    if ( $RoadDir ) {
-    $ifile{"$RoadDir/Testversion_RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
-    $ifile{"$RoadDir/Testversion_RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
+    $ifile{"$RoadDir/RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
+    $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
     $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
    }
 

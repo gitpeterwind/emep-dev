@@ -821,7 +821,6 @@ READEMIS: do   ! ************* Loop over emislist files *******************
   !--local
   integer :: i, j, isec, iland,         &  ! loop variables
              iic,ic                        ! country code (read from file)
-  real    :: dumspring                     ! dummy variable, spring time road dust emission potentials (Mar-May)
   real    :: tmpdust                       ! for reading road dust emission potential file
   integer, save :: ncmaxfound = 0          ! Max no. countries found in grid
   character(len=300) :: inputline
@@ -834,6 +833,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
          ios = 0
          my_first_road = .false.
     endif
+
   !>============================
 
       globroad_dust_pot(:,:,:) = 0.0
@@ -855,12 +855,12 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
 READEMIS: do   ! ************* Loop over emislist files *******************
 
-            read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, tmpdust,dumspring
+            read(unit=IO_EMIS,fmt=*,iostat=ios) iic,i,j, tmpdust
 
-!            write(*,*)'dust to dust',iic,i,j, tmpdust,dumspring
+!            write(*,*)'dust to dust',iic,i,j, tmpdust
 
             if( DEBUG_ROADDUST .and. i==DEBUG_i .and. j==DEBUG_j ) write(*,*) &
-                "DEBUG RoadDustGet "//trim(emisname) // ":" , iic, tmpdust,dumspring
+                "DEBUG RoadDustGet "//trim(emisname) // ":" , iic, tmpdust
             if ( ios <  0 ) exit READEMIS            ! End of file
             call CheckStop(ios > 0,"RoadDustGet: ios error2 in emission file")
 
