@@ -165,9 +165,34 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_29b2   Alvaro 22/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Nesting external boundary and initial conditions (rv3_10_7 follow up).
+Exterrnal BCs for IFS-MOZART on FORECAST mode. Further testing is needed...
+
+Nest_ml, My_ExternalBICs_ml:
+ - Move filename_read_BC,filename_read_3D & filename_write to My_ExternalBICs_ml
+ - filename_read_BC (and potentially filename_read_3D & filename_write) are
+   set acording to the date if the date is provided, e.g. by
+     'call set_extbic(idate=date_nextfile)'.
+
+IFSMOZ_ExternalBICs_ml.f90:
+ - provide My_ExternalBICs_ml for IFS-MOZART BCs on FORECAST mode.
+   For use instead of My_ExternalBICs_ml.f90.
+ - 2 different IFS-MOZART BCs are pre-set:
+    - IFS_MOZ_f7kn (MARS EXPVER=fkya) in use up to 2011-11-30 (GEMS, MACC).
+    - IFS-MOZ_fkya (MARS EXPVER=fkya) in use since 2011-12-01 (MACC-II).
+    - Selection is handeled automatically based on the date.
+
+Makefile:
+ - Compile with IFSMOZ_ExternalBICs_ml instead of My_ExternalBICs_ml for
+   MACC and SR-MACC targets.
+ - Change depend target so .depend is updated any time a f90 file in $(SRCS) changes.
+   All f90 files in $(SRCS) are needed for depend target to be made.
+
 xxxxxxxx rv3_10_29beta Robert 16-21/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Updated road dust emission potential files (21/3). 
+Updated road dust emission potential files (21/3).
 Now based on interpolating the TNO-data to the EMEP grid using 10x10points per TNO grid point.
     - updated files: run.pl and EmisGet_ml.f90
 
