@@ -184,6 +184,11 @@ IFSMOZ_ExternalBICs_ml.f90:
     - IFS-MOZ_fkya (MARS EXPVER=fkya) in use since 2011-12-01 (MACC-II).
     - Selection is handeled automatically based on the date.
 
+Nest_ml:
+  - wrtxn will write only variables which have at least one value /=0.0.
+    This should limit the number of "unused variables" writen into the FORECAST
+    dump/restart files.
+
 Makefile:
  - Compile with IFSMOZ_ExternalBICs_ml instead of My_ExternalBICs_ml for
    MACC and SR-MACC targets.
