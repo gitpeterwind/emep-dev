@@ -38,7 +38,8 @@ module  My_Outputs_ml
 use CheckStop_ml,     only: CheckStop
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml
-use ChemChemicals_ml,  only: species
+use ChemChemicals_ml,  only: chemical,species
+
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
@@ -211,6 +212,7 @@ subroutine set_output_defs
    character(len=144) :: errmsg  ! Local error message
    integer           :: i       ! Loop index
 
+  type(chemical), dimension(:), pointer :: species_adv
   real, parameter :: atwC=12.0
   real, parameter :: to_mgSIA=PPBINV/ATWAIR*1000.0   &  ! conversion to mg
                     ,to_ugSIA=PPBINV/ATWAIR          &  ! conversion to ug
@@ -234,10 +236,11 @@ subroutine set_output_defs
   !  Use "ADVugXX" for ug output (ug/m3, ugC/m3, ugN/m3, ugS/m3)
   !    For ug/m3  output use in combination with to_ug_ADV(ixadv).
   !    For ugX/m3 output use in combination with to_ug_X(ixadv).
-  to_ug_ADV=species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%molwt    *PPBINV/ATWAIR
-  to_ug_C = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%carbons  *atwC*PPBINV/ATWAIR
-  to_ug_N = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%nitrogens*atwN*PPBINV/ATWAIR
-  to_ug_S = species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)%sulphurs *atwS*PPBINV/ATWAIR
+  species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
+  to_ug_ADV= species_adv%molwt    *PPBINV/ATWAIR
+  to_ug_C  = species_adv%carbons  *atwC*PPBINV/ATWAIR
+  to_ug_N  = species_adv%nitrogens*atwN*PPBINV/ATWAIR
+  to_ug_S  = species_adv%sulphurs *atwS*PPBINV/ATWAIR
 
   !/** Hourly outputs
   !    Note that the hourly output uses **lots** of disc space, so specify
@@ -254,35 +257,39 @@ subroutine set_output_defs
     if(.not.allocated(hr_out))allocate(hr_out(NHOURLY_OUT))
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
-    hr_out(01)=Asc2D("o3_3km"    ,"BCVugXX","(f9.4)",&
-             IXADV_O3   ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_O3)   ,600.0*2.0)
-    hr_out(02)=Asc2D("no_3km"    ,"BCVugXX","(f9.4)",&
-             IXADV_NO   ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_NO)   ,-999.9)!60000.0*1.21)
-    hr_out(03)=Asc2D("no2_3km"   ,"BCVugXX","(f9.4)",&
-             IXADV_NO2  ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_NO2)  ,600.0*1.91)
-    hr_out(04)=Asc2D("so2_3km"   ,"BCVugXX","(f9.4)",&
-             IXADV_SO2  ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_SO2)  ,-999.9)
-    hr_out(05)=Asc2D("co_3km"    ,"BCVugXX","(f9.4)",&
-             IXADV_CO   ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_CO)   ,-999.9)
-!    hr_out(06)=Asc2D("Rn222_3km" ,"BCVugXX","(f9.4)",&
-!             IXADV_Rn222,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_Rn222),-999.9)
-! FAKE to get compilation for now, since Rn222 moved to "extras" in mk.GenChem
-    hr_out(06)=Asc2D("co_3km"    ,"BCVugXX","(f9.4)",&
-             IXADV_CO   ,ix1,ix2,iy1,iy2,4,"ug",to_ug_ADV(IXADV_CO)   ,-999.9)
+    hr_out(01)=Asc2D("o3_3km"    ,"BCVugXX","(f9.4)",IXADV_O3   ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_O3)   ,600.0*2.0)
+    hr_out(02)=Asc2D("no_3km"    ,"BCVugXX","(f9.4)",IXADV_NO   ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO)   ,-999.9)!60000.0*1.21)
+    hr_out(03)=Asc2D("no2_3km"   ,"BCVugXX","(f9.4)",IXADV_NO2  ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_NO2)  ,600.0*1.91)
+    hr_out(04)=Asc2D("so2_3km"   ,"BCVugXX","(f9.4)",IXADV_SO2  ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_SO2)  ,-999.9)
+    hr_out(05)=Asc2D("co_3km"    ,"BCVugXX","(f9.4)",IXADV_CO   ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(IXADV_CO)   ,-999.9)
+    hr_out(06)=Asc2D("Rn222_3km" ,"BCVugXX","(f9.4)",&
+             find_index("RN222",species_adv(:)%name),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",to_ug_ADV(i)          ,-999.9)
+    call CheckStop(hr_out(06)%spec<1,"set_output_defs: Unknown specie 'RN222'")
     hr_out(07)=Asc2D("pm25_3km"  ,"BCVugXXgroup","(f9.4)",&
-        find_index("PM25",chemgroups(:)%name),ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
+!            find_index("PM25",chemgroups(:)%name),&
+             find_index("PMFINE",chemgroups(:)%name),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                   ,-999.9)
+    call CheckStop(hr_out(07)%spec<1,"set_output_defs: Unknown group 'PM25'")
     hr_out(08)=Asc2D("pm10_3km"  ,"BCVugXXgroup","(f9.4)",&
-        find_index("PM10",chemgroups(:)%name),ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
-    hr_out(09)=Asc2D("pm_h2o_3km","PMwater","(f9.4)",&
-             00         ,ix1,ix2,iy1,iy2,4,"ug",1.0,-999.9)
+             find_index("PM10",chemgroups(:)%name),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                   ,-999.9)
+    call CheckStop(hr_out(08)%spec<1,"set_output_defs: Unknown group 'PM10'")
+    hr_out(09)=Asc2D("pm_h2o_3km","PMwater","(f9.4)",00         ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                   ,-999.9)
 ! Partial/Full COLUMN/COLUMgroup calculations:
 !   hr_out%nk indecate the number of levels in the column,
 !     1<%nk<KMAX_MID  ==>  Partial column: %nk lowermost levels
 !        oterwise     ==>  Full column: all model levels
-    hr_out(10)=Asc2D("no2_col"   ,"COLUMN","(f9.4)",&
-             IXADV_NO2  ,ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9)
-!   hr_out(10)=Asc2D("no2_col"   ,"COLUMN","(f9.4)",&
-!            IXADV_NO2  ,ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15,-999.9)
+    hr_out(10)=Asc2D("no2_col"   ,"COLUMN","(f9.4)",IXADV_NO2  ,&
+             ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9)
+!   hr_out(10)=Asc2D("no2_col"   ,"COLUMN","(f9.4)",IXADV_NO2  ,&
+!            ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15,-999.9)
   else
     if(.not.allocated(hr_out))allocate(hr_out(NHOURLY_OUT))
 !**               name     type     ofmt

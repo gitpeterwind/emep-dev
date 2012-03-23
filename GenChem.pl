@@ -4,11 +4,11 @@ use warnings;
 # =====================================================================
 #  GenChem - a perl script to read in equations and output
 #  production and loss terms for fortran programmes.
-# 
-# Dave Simpson    1998-2010: 
-# Includes: species checks, atom-balance,  use of shorthands, 
+#
+# Dave Simpson    1998-2010:
+# Includes: species checks, atom-balance,  use of shorthands,
 #  rate-simplication, various user-changeable options.
-# 
+#
 # Modified by Garry Hayman and Dave, 2009 for new-style input files
 # and EMEP rv3_3 model version.
 #  =====================================================================
@@ -59,8 +59,8 @@ open(LOG,">Log.GenOut");    # An extensive log - should be read!
 
 # flag to cope with new-style files from Garry. New files allow RO2_POOL to be used
 # And grouped style from Dave, added Mar 2010
-my $old_style = 0;  
-our $grp_style = 0;  
+my $old_style = 0;
+our $grp_style = 0;
 our %grp;   # Will be hash of arrays,  e.g. $grp{"NOX"} = [ "NO", "NO2" ]
 
 our @emis_specs = ();
@@ -92,12 +92,12 @@ our @emis_files = ();
  my (@lhs,  @rhs) = ();               # Initialise lhs and rhs species
  my (@lhtracer,  @rhtracer) = ();     # Initialise lhs and rhs tracers
  my (%lhfactor,  %rhfactor ) = ();    # Initialise lhs and rhs factors
- my (%prod,  %loss ) = ();            # Initialise 
+ my (%prod,  %loss ) = ();            # Initialise
  my ($neqn, $nrct, $nrctroe, $nrcmisc ) = (0,0,0,0);  # rct = Temp-dependant
- my ( $nddep,  $nwdep ) = (0,0); 
+ my ( $nddep,  $nwdep ) = (0,0);
  my ( $ddep_txt, $wdep_txt );
- my ( @rate_label, @rct, @rcttext, @rctroe, @rctroetext, 
-	 @rcmisc, @rcmisctext ) = (); 
+ my ( @rate_label, @rct, @rcttext, @rctroe, @rctroetext,
+	 @rcmisc, @rcmisctext ) = ();
  my ( %atoms, %molwt, %count, %nmhc, %shorthand ) = ("", "", "", "" );
 
  # Common statements for output:
@@ -106,25 +106,25 @@ our @emis_files = ();
   my $LOGPUB   = " logical, public, parameter :: " ;
   my $HLINE = "!-----------------------------------------------------------\n";
   my $TLINE = "!>_________________________________________________________<\n";
- 
+
 #======================================================================
 # CONSIDER REMOVING!
  my ( $rct, $rctroe, $rcmisc)    = qw ( rct rctroe rcmisc );
- my  %description = ( 
-           $adv => "Advected species", 
+ my  %description = (
+           $adv => "Advected species",
            $shl => "Short-lived (non-advected) species ",
            $tot => "All reacting species ",
            $rct => "Rate-coefficients - temperature dependant",
-           $rctroe => 
+           $rctroe =>
             "Rate-coefficients - pressure & temperature dependant (Troe)",
            $rcmisc => "Rate-coefficients - complex dependancies"
-       ); 
+       );
 
        #  These rates require different used variables
  my %UsedVariables = (
 	   $rct    => "
   use Setup_1dfields_ml      ! => tinv, h2o, m, Fgas
-  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP" 
+  use ModelConstants_ml,     only : KMAX_MID,KCHEMTOP"
 
 	  ,$rcmisc => "
   use ChemFunctions_ml       ! => kaero, RiemerN2O5
@@ -191,7 +191,7 @@ sub read_species {
           Note we have to be careful with case here. The model name
           for the species is in uppercase, but the chemical forumla
           read in needs correct case, e.g. Na, Cl, etc.
-          New:   
+          New:
            The input typ can be:       0 for non-advected species
                                        1 for advected species
                                        2 for gas-particle (soa) species
@@ -215,7 +215,7 @@ sub read_species {
 		$SlowSpec = $nspecies[$tot] + 1 if $line =~ /^\"#SLOW/ ;
 		print "LINE $line STYLE $grp_style \n";
                 next if $line =~ /^"#/ ; # would be OLD_STYLE of SLOW
-		
+
                 my ( $spec, $typ, $formula, $comment, $in_ncarbon, $class );
 		my ( $extinc, $cstar, $DeltaH ) = 0.0x3; # Aerosol params
 		my ( $groups, @groups );
@@ -225,8 +225,8 @@ sub read_species {
 		   ( $spec, $typ, $formula, $comment )  = split(/\s+/,$line,4);
 		   die " OLD NOT USED NOW \n";
 		} elsif ( $grp_style ) {
-			#( $spec, $typ, $formula, $in_rmm,  
-			#$extinc, $cstar, $DeltaH, 
+			#( $spec, $typ, $formula, $in_rmm,
+			#$extinc, $cstar, $DeltaH,
 			#$groups, $comment )  = split(/,/,$line,10);
 			$line =~ s/xx/-/g; # Oocalc didn't like -
 			my @r = split(/,/,$line);
@@ -244,7 +244,7 @@ sub read_species {
 			my $tgroups  = $r[ find_rec("Groups",@headers ) ];
 			#die "TESTED T$tgroups should be ten\n";
 
-	       		# Assign species to groups if given: 
+	       		# Assign species to groups if given:
 	               	unless ( $groups =~ "-" ) {
 				print "PG SPEC $spec G $groups\n";
 			       process_groups($spec, $groups, $dry, $wet );
@@ -257,7 +257,7 @@ sub read_species {
 
 	    	} else { # Garry's new style:
 		   die " GH NOT USED NOW \n";
-                   ( $spec, $typ, $formula, $in_rmm, $in_ncarbon, 
+                   ( $spec, $typ, $formula, $in_rmm, $in_ncarbon,
 		       $class, $comment )  = split(/\s+/,$line,7);
 		   push(@ro2pool,$spec) if $class eq "peroxy";
 	       	}
@@ -267,7 +267,7 @@ sub read_species {
 		my $n = $nspecies[$tot];
 		$species[$tot][$n ]    = $spec ;
 		$species_tot[$n]       = $spec ;
-		$speciesmap[$tot][$n]  = $n ; 
+		$speciesmap[$tot][$n]  = $n ;
 	        $extinc[$n]  = $extinc;
 	        $CiStar[$n]  = $cstar;
 	        $DeltaH[$n]  = $DeltaH;
@@ -282,11 +282,11 @@ sub read_species {
 		}
 
 		# also for advected, short-lived, semi-vol types:
-		
+
 		$nspecies[$typ]++;
 		$n = $nspecies[$typ];
 		$species[$typ][$n ]    = $spec ;
-		$speciesmap[$typ][$n]  = $n ; 
+		$speciesmap[$typ][$n]  = $n ;
 
 		print "LINE $line TYPE $typ N $n\n";
 
@@ -339,19 +339,19 @@ print LOG "\n\n............... read_shorthand ........................
          XT           temp(iq)
          H2O          H2O(iq)
          FH2O         (1.+1.4e-21*h2o*exp(2200./XT))
-         and creates shorthand with expansions, e.g. \$shorthand{XT}= temp(iq) 
+         and creates shorthand with expansions, e.g. \$shorthand{XT}= temp(iq)
 .........................................................................  ";
         my ( $line,$pattern,$expanded);
 #       global: establishes $shorthand{$pattern}
 
         open(F,"<GenIn.shorthand");
 	printall ("\n\n\nThe following SHORTHANDS were processed: \n\n");
- 
+
         while ( $line = uc <F> ) {         # Reads a line, make upper-case
                 chomp($line) ;              # Remove newline character
                 next if $line =~ /^\*/ ;   # comment line (starts with *): skip
                 next if $line =~ /^\s*$/ ; # empty line : skip
-        
+
                 my @input = split(/\s+/,$line,3);   # split line into 3 columns
                                                  # (3th column contains any comments)
 		$pattern  = $input[0];
@@ -369,22 +369,22 @@ print LOG "\n\n............... read_shorthand ........................
 		printall ("$pattern  - >   $shorthand{$pattern}\n") ;
         }
         close(F), printall ("\n\n ...................     \n") ;
-} # end of sub read_shorthand 
+} # end of sub read_shorthand
 
 #########################################################################
 sub read_reactions {
 print LOG "\n\n............... read_reactions .........................
          reads from GenIn.reactions, assign nspec, and species[nspec]
 ........................................................................\n" ;
-         my ($i, $term);   
+         my ($i, $term);
 
 	 $linenum = 0;     # Line No. of input file, for checking
          open(F,"GenIn.reactions") or die "FAILURE: open of GenIn.reactions\n";
- 
+
          while ( $line = uc <F> ) { # Reads a line at a time from F, upper-case
                 chomp($line) ;       # Remove newline character
 		$linenum++ ;
-	
+
         	next if $line =~ /^\*/ ;        # comment line (starts with *)
         	next if $line =~ /^\s*$/ ;      # blank line (skip)
         	next if $line =~ /YA\(\d+\)/ ;  #  Garry's SOA
@@ -398,12 +398,12 @@ print LOG "\n\n............... read_reactions .........................
 			#printall( "Process??: K $k \n" );
 			next;  # Not a reaction
 		 }
-  
+
 		$neqn++ ;
 	        printall ("."x66 . "\n");
 	        printall (" "x19 . "Processing Line $linenum Equation $neqn :\n $line\n\n");
 		# check for improper equations (e.g. forgotten comment lines without *)
-		die "Not a proper equation! No = sign! " unless $line =~ /=/ ; 
+		die "Not a proper equation! No = sign! " unless $line =~ /=/ ;
 
 		my @terms = split ' ',$line ;      # split $line into terms
 
@@ -412,21 +412,21 @@ print LOG "\n\n............... read_reactions .........................
 
 		# Split rates into constants, variables, emis terms, etc:
 
-		$rate_label[$neqn] = define_rates() ;  
+		$rate_label[$neqn] = define_rates() ;
 
 		# Process LHS (reactants)
 
-	 	$i = 0 ;  
+	 	$i = 0 ;
 		@lhs = (); @lhtracer = (); %lhfactor = ();
 		#while( ( $term = $terms[++$i]) ne "=" ) {   # Loop through $terms
 			#	printall("TESTING TERM $i $term \n" );
 			#}
-		#$i = 0 ;  
+		#$i = 0 ;
 		while( ($term = $terms[++$i]) ne "=" ) {   # Loop through $terms
 			printall("TESTING TERM $i $term \n" );
 			if ( $term  eq "+" ){
 				;
-			} elsif ( $term =~ /\+/ ){     # Check for easy-to-make error	
+			} elsif ( $term =~ /\+/ ){     # Check for easy-to-make error
 				die "ERROR!! Found + sign without surrounding space. Correct!\n";
 
 			} elsif ( $term =~ /{.+}/ ){     # Tracers specified with {XX}
@@ -459,7 +459,7 @@ print LOG "\n\n............... read_reactions .........................
 			} elsif ( $term eq "+" ){
 			   ;
 			} elsif ($term =~ /{.+}/ ){ # Matches {} - tracers
-			   push(@rhtracer,$term) ;  # Add tracer 
+			   push(@rhtracer,$term) ;  # Add tracer
 			   count_tracer($term);    # Count atom
 			   if( $factor != 1) {printall("Used RH factor $factor for $term\n")};
 			   $rhfactor{$term} = $factor, $factor = 1;
@@ -482,7 +482,7 @@ print LOG "\n\n............... read_reactions .........................
 
 ########################################################################
 sub count_atoms {
-##      Counts the number of each atom of carbon, nitrogen, etc., 
+##      Counts the number of each atom of carbon, nitrogen, etc.,
 ##      - should one day add the whole periodic table to catch all
 ##        possibilities ! Note that for species whose weight could
 ##        not be determined a value of 1 is used.
@@ -490,14 +490,14 @@ sub count_atoms {
 my($spec, $formula) = @_;
 my($num) ;
 # Global - defines %atoms, calculates $count[$spec][$atom]
- 
- 
+
+
 %atoms = ("C" => 12, "H" => 1, "N" => 14, "O" => 16, "S" => 32 );
 
 # Perl note - the following uses a match with parentheses =~ /(x)(y)/
 # perl sets $1 = x and $2 = y in this case, and seems to reset $2 to ""
 # if y doesn't exist. Hmm... useful, but I don't know the rules used.
- 
+
 	#print LOG "Count_atom: $spec = $formula \t\t ";
         print LOG "Atoms: \t ";
         # look for H12, C3, etc., first, count  the atoms.
@@ -526,7 +526,7 @@ my($num) ;
         if ( $count{$spec}{"S"} >= 1.0 ) { $nmhc{$spec} = 0 };
         if ( $count{$spec}{"N"} >= 1.0 ) { $nmhc{$spec} = 0 };
 
-	if ( $molwt{$spec} == 0 ) { 
+	if ( $molwt{$spec} == 0 ) {
 		print LOG "; NOT RECOGNISED ! " , $molwt{$spec}=1;
 	}
 
@@ -538,7 +538,7 @@ sub define_rates {
 #  ............... define_rates ..........................
 #  splits rate-coefficients into proper constants, variables with
 #  dimension DIMFLAG (=iq here, could be ix,iy if wanted), emission terms, etc.
-#  Uses some cryptic perl notation, but it is effective! 
+#  Uses some cryptic perl notation, but it is effective!
 #
 #      Perl memos:
 #       =~ is pattern matching operator, which uses following
@@ -549,11 +549,11 @@ sub define_rates {
 	my $k ;
 	my $oldrate = $rate ;  # oldrate for Log
 
-# First, we check if rate constant is one of the shorthands, e.g. KHO2RO2. If so 
+# First, we check if rate constant is one of the shorthands, e.g. KHO2RO2. If so
 # we substitute the value (e.g. 1.0e-11)  into rate and carry on. To make
 # the search easy, we first add spaces around operators
 	printall("-------------------\n START Rate $oldrate\n");
-	$rate =~ s/(\*|\+|\-\/)/ $1 /g ; 
+	$rate =~ s/(\*|\+|\-\/)/ $1 /g ;
 
 	$rate = expand_shorthands($rate);
 	#foreach my $shorthand (keys(%shorthand)){
@@ -592,11 +592,11 @@ sub define_rates {
 # Now we continue to process, looking for pure numbers first:
     {   local $^W=0;   # Switch off -w flag for number checking
 
-	if ( $rate =~ /[\*\+]/ )  { 
+	if ( $rate =~ /[\*\+]/ )  {
                 simplify_rate($rate) ;     # Simplify any arithmetic expressions:
 	}
 
-	if ( &is_float($rate) ) { 
+	if ( &is_float($rate) ) {
 		$k = $rate ;
 		     # $nrcc++ ;    # $rate_label[$neqn] = "RCC(" . $nrcc. ")"    ;
 	} elsif ( $rate =~ /rcemis/i ) {
@@ -618,14 +618,14 @@ sub define_rates {
 		$nrctroe++ ;
 		#A08 $k = "rctroe($nrctroe,$DIMFLAG)"  ;
 		$rate = lc($rate) ;
-		printall( "A08TROE->RCMISC = $nrcmisc RATE $rate\n" ); 
+		printall( "A08TROE->RCMISC = $nrcmisc RATE $rate\n" );
 		#A08 $rctroe[$nrctroe] = $rate ;
 		#A08 $rctroetext[$nrctroe] = "rctroe($nrctroe,:)" ;  # older : $k ;
 		#A08 new: add to rcmisc:
 		$rcmisc[$nrcmisc] = lc($rate) ;
 		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
 	} elsif ( $rate =~ /(^[A-Z])/ ) {   # e.g. KRO2HO2,DJ_2  --> DJ_2(iq)
-#M00		if ( $rate =~ /[\*\+\-]/ )  {  
+#M00		if ( $rate =~ /[\*\+\-]/ )  {
 #M00                     die "Error in $rate, line $linenum :
 #M00                     Rate-coefficients cannot begin with variable names, (e.g. K*3.0),
 #M00                     put variable last (e.g. 3.0*K) or use GenIn.shorthands !\n" ;
@@ -637,12 +637,12 @@ sub define_rates {
 		$nrcmisc++ ;
 		$k = "rcmisc($nrcmisc,$DIMFLAG)";
 		$rate =~ s/_FUNC_//;
-		printall( "Function->RCMISC = $nrcmisc RATE $rate\n" ); 
+		printall( "Function->RCMISC = $nrcmisc RATE $rate\n" );
 		$rcmisc[$nrcmisc] = lc($rate) ;
 		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
 	} elsif  ( $misc == 1 ) {   # Complex expression
 		$nrcmisc++ ;
-		printall( "MRCMISC = $nrcmisc\n" ); 
+		printall( "MRCMISC = $nrcmisc\n" );
 		$k = "rcmisc($nrcmisc,$DIMFLAG)";
 		$rcmisc[$nrcmisc] = lc($rate) ;
 		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
@@ -664,11 +664,11 @@ sub define_rates {
       } # end of -w=0 bit
 	printall("END  Rate $oldrate\n -------------------\n");
 	my $retval = $k;   # Returns rate coeffient string
-	
-} # end of sub define_rates 
+
+} # end of sub define_rates
 ########################################################################
 sub process_lhs {
-# Processes left hand side of equation and creates or adds to 
+# Processes left hand side of equation and creates or adds to
 # string $LOSS =  .." for fortran code output, where $LOSS is
 # the user-defined loss variable, e.g. L or L(iq)
 #######################################################################
@@ -682,19 +682,19 @@ sub process_lhs {
 
 #             check for e.g. fgas()*diacid  and that species exists !
 
-		$lhs[$i] = check_multipliers( $lhs[$i] ) ; 
+		$lhs[$i] = check_multipliers( $lhs[$i] ) ;
 	printall("CHECK_MATCH FROM LHS $lhs[$i]\n");
 		check_match( $lhs[$i] ) ;
 
-		if ( $loss{$lhs[$i]} ){   
-			$loss{$lhs[$i]} .= 
+		if ( $loss{$lhs[$i]} ){
+			$loss{$lhs[$i]} .=
                           ( $CONTLINE . "   + $rate_label[$neqn]" );
-		} else {                 
-			$loss{$lhs[$i]} = 
+		} else {
+			$loss{$lhs[$i]} =
                          "\n      $LOSS =" . $CONTLINE . "     $rate_label[$neqn]" ;
 		}
 		if ( $nlhs == 2 ) {
-			$other = ($i==0) ? 1 : 0 ;   
+			$other = ($i==0) ? 1 : 0 ;
                 	$loss{$lhs[$i]} .=  "* $CPNEW($lhs[$other] $CPDIM)" ;
 		}
 		$flux .=  " * $CPNEW($lhs[$i] $CPDIM)" ;
@@ -704,18 +704,18 @@ sub process_lhs {
                                    "  line:  $line\n NLHS= $nlhs \n @lhs " };
 
 	print "fff: $nlhs FFF  $flux\n";
-	my $retval = $flux ;    
+	my $retval = $flux ;
 
-} # end of sub set_losses 
+} # end of sub set_losses
 #######################################################################
 sub check_match {
-#                 Checks that the species from lhs or rhs exists in 
+#                 Checks that the species from lhs or rhs exists in
 #                 the species array
 #######################################################################
 	my( $test_spec) = @_ ;   # @_ is argument to subroutine
 
 	printall("CHECKING MATCH TEST SPEC $test_spec\n");
-	# Urghhhhh, but from Prog. Perl, p272 
+	# Urghhhhh, but from Prog. Perl, p272
 	#my $n = $nspecies[$tot] - 1;
 	my $n = $nspecies[$tot]; # J08 fix...
 	die "N TOO LOW " if $n < 0;
@@ -723,13 +723,13 @@ sub check_match {
 
 	foreach my $s ( @known ) {
 	   return ("species found") if  $test_spec eq $s ;
-	} 
+	}
 	# Shouldn't get here...
 	my $nn = 0;
         foreach my $s ( @known ) {
 	   $nn ++;
 	   print "testing $test_spec against known N$nn Spec: $s\n";
-	} 
+	}
 	die "Species $test_spec not found at line $linenum   !!!! \n";
 } # end of sub check_match
 #######################################################################
@@ -740,7 +740,7 @@ sub count_tracer {
 #######################################################################
         my( $test_spec) = @_ ;   # @_ is argument to subroutine
 
-	# Urghhhhh, but from Prog. Perl, p272 
+	# Urghhhhh, but from Prog. Perl, p272
 	my $n = $nspecies[$tot] - 1;
 # if ( $n < 0 ) { print "ZEROCOUNT_TRACER S$test_spec\n"; }
         my @known =  @{ $species[$tot] }[ 0 .. $n ];
@@ -750,13 +750,13 @@ sub count_tracer {
         }
 #print " NEWTRACER$test_spec\n";
 	# If we got to here, we have a new tracer
-        count_atoms($test_spec,$test_spec); 
+        count_atoms($test_spec,$test_spec);
         printall ("New tracer, $test_spec,  processed, mol. wt is $molwt{$test_spec} \n");
 } # end of sub count_tracer
 
 #######################################################################
 sub process_rhs {
-## Processes right hand side of equation and creates or adds to 
+## Processes right hand side of equation and creates or adds to
 ## string "P =  .." for fortran code output. The user-defined variable
 ## $PROD can be e.g. "P" or "P(iq)" or whatever.
 #######################################################################
@@ -766,7 +766,7 @@ sub process_rhs {
 	if ( $factor != 1 ){ $flux = $factor . "*" . $flux }
 
 	if ( $prod{$spec} and $factor > 0 )
-	{   
+	{
 		$prod{$spec}    .= ( $CONTLINE . "   + $flux" )  ;
 	}
 	elsif ( $prod{$spec} and $factor < 0 )
@@ -774,7 +774,7 @@ sub process_rhs {
 		$prod{$spec}    .= ( $CONTLINE . "    $flux" )  ;
 	}
 	else
-	{                 
+	{
 		$prod{$spec}    = "\n      $PROD = " . $CONTLINE . "     " .  $flux ;
 	}
 
@@ -784,7 +784,7 @@ sub process_rhs {
 sub printsplit {
 # Splits up lines after 15 newlines. Important assumption is that
 # we can use the first line (e.g. P= &) as a pattern for the new
-# continuation lines (givving, e.g. P = P + ) 
+# continuation lines (givving, e.g. P = P + )
  my($copy) = shift;
  my $n = 0;
  my $newline;
@@ -844,12 +844,12 @@ sub output_prod_loss {
 		$eqntext = $CHEMEQN_TEXT ;    # Text to call 2-step
  		$noloss = $noprod = 0 ;
                 if ( not defined ($loss{$species[$tot][$i]}) ) {
-                    $loss{$species[$tot][$i]} = "      ! $LOSS = 0.0\n"; 
+                    $loss{$species[$tot][$i]} = "      ! $LOSS = 0.0\n";
 		    $eqntext = $CHEMEQN_NOLOSS ;  # Text to call 2-step
 		    $noloss = 1;
 		}
                 if ( not defined ($prod{$species[$tot][$i]}) ) {
-                    $prod{$species[$tot][$i]} = "      ! $PROD = 0.0\n"; 
+                    $prod{$species[$tot][$i]} = "      ! $PROD = 0.0\n";
 		    $eqntext = $CHEMEQN_NOPROD ;  # Text to call 2-step
 		    $noprod = 1;
 		}
@@ -858,8 +858,8 @@ sub output_prod_loss {
 		}
 		if( $species[$tot][$i] eq "RO2POOL" ){
 		    print "RO2 POOL FOUND \n";
-                    $prod{$species[$tot][$i]} = "      ! $PROD = 0.0\n"; 
-                    $loss{$species[$tot][$i]} = "      ! $LOSS = 0.0\n"; 
+                    $prod{$species[$tot][$i]} = "      ! $PROD = 0.0\n";
+                    $loss{$species[$tot][$i]} = "      ! $LOSS = 0.0\n";
 		    #$eqntext = "      xnew(RO2POOL) = sum( xnew(RO2_POOL) )!!!!\n\n"   ;  # Text to call 2-step
 		    $eqntext = "      xnew(RO2POOL) = sum( xnew(RO2_GROUP) )!!!!\n\n"   ;  # Text to call 2-step
 			print "RO2 POOL EQN $eqntext \n";
@@ -867,7 +867,7 @@ sub output_prod_loss {
 
 		foreach my $eqn ( $prod{$species[$tot][$i]}, $loss{$species[$tot][$i]} ){
 		print OUTFILE "!DSGC eqn $eqn\n============\n" if $DEBUG;
-		  if( $eqn ){ 
+		  if( $eqn ){
 			$eqn = printsplit($eqn);   # For long-lines
 			print OUTFILE "$eqn \n" };
 		}
@@ -877,9 +877,9 @@ sub output_prod_loss {
 		print OUTFILE $LOOP_TAILTEXT;
 	        close(OUTFILE) if $i == $SlowSpec-1;
 	}
-    
+
 	close(OUTFILE);
-} # end of sub output_prod_loss 
+} # end of sub output_prod_loss
 #########################################################################
 sub carbon_count_etc {
 # Checks the number of atoms on the left and right hand-sides of
@@ -892,9 +892,9 @@ sub carbon_count_etc {
 	foreach $spec ( @lhs, @lhtracer ) {
 	    $sumleft{$atom} += $count{$spec}{$atom} ;
 	}
-	foreach $spec ( @rhs, @rhtracer ) { 
-            $sumright{$atom} += ( $count{$spec}{$atom} * $rhfactor{$spec} ); 
-        } 
+	foreach $spec ( @rhs, @rhtracer ) {
+            $sumright{$atom} += ( $count{$spec}{$atom} * $rhfactor{$spec} );
+        }
 	if( $sumleft{$atom} != $sumright{$atom} ) {
 		if( $in_balance == 0 ) {printall ("Check balance!...........\n")}
 		$in_balance = 1;
@@ -918,7 +918,7 @@ print LOG "Simplifying complex rate expression for line $linenum
 
 	my ( @ratebits ) = split(/[\*]/,$ratestring);
 	foreach my $r ( @ratebits ) {
-		if ( is_float($r) ) { 
+		if ( is_float($r) ) {
 			$const = $const*$r  ;
 		} else { # must be variable..
 			$var .= "*$r" ;
@@ -926,9 +926,9 @@ print LOG "Simplifying complex rate expression for line $linenum
 		print "RATEBIT is $r => Constants: $const Variables: $var  \n" ;
 	}
 	$rate = $const . $var ;
-	$rate =~ s/^ 1 \* //x;  # Remove initial "1*" 
+	$rate =~ s/^ 1 \* //x;  # Remove initial "1*"
 	printall ("SIMPLIFIES  $ratestring  -- to ->  \n") ;
-} 
+}
 #########################################################################
 sub check_multipliers {
 # checks for e.g. fgas(xxx)*diacid. Only copes with one
@@ -936,8 +936,8 @@ sub check_multipliers {
 	my ($lhsterm) = @_ ;
 	my ($mult,$spec);
 	return $lhsterm  if ( not $lhsterm =~ /\*/ );
- 
-        print LOG "Checking for multipliers for line $linenum : 
+
+        print LOG "Checking for multipliers for line $linenum :
            rate: $rate", "."x50, "\n";
 
 	( $mult, $spec ) = split(/\*/,$lhsterm) ;
@@ -951,7 +951,7 @@ sub check_multipliers {
 #########################################################################
 ## =====================================================================
 # Writes to both STOUT and LOG file...
-sub printall {   
+sub printall {
         my($string) = @_ ;
 	print "$string";
         print LOG "$string";
@@ -964,7 +964,7 @@ sub printall {
 # ftp://ftp.ccs.neu.edu/net/mirrors/ftp.funet.fi/pub/languages/
 #       perl/CPAN/doc/FMTEYEWTK/is_numeric.html
 # or, maybe faster, through http://www.perl.com
-# 
+#
 # Subroutine to determine if input is a float.
 sub is_float {
     local $^W = 0;     # switches off some unwanted messages
@@ -996,19 +996,19 @@ sub print_species {
 #    Genspec_adv_ml.inc
 #        NSPEC_ADV=66
 #        integer
-#    &   OP, OH, O3, HO2 
+#    &   OP, OH, O3, HO2
 #        parameter( OP=1)      ! Weight = 16
 ########################################################################
     my ( $i, $top, $aero_txt );
     my ( %txt )       = ( $tot => "tot",  $adv => "adv", $shl => "shl" );
-    my ( %nspec_txt ) = ( $tot => "NSPEC_TOT", 
-                          $adv => "NSPEC_ADV", 
+    my ( %nspec_txt ) = ( $tot => "NSPEC_TOT",
+                          $adv => "NSPEC_ADV",
                           $shl => "NSPEC_SHL" );
     my($cnum,$nnum,$snum);  # Carbon, nitrogen and sulphur numbers.
     my($module, $end_of_line, $Use);
 
-    my %ixlab     = ( $tot => "",          
-                      $adv => "IXADV_",    
+    my %ixlab     = ( $tot => "",
+                      $adv => "IXADV_",
                       $shl => "IXSHL_"    ) ;
 
     foreach my $s ( $tot, $adv, $shl ) {
@@ -1019,16 +1019,16 @@ sub print_species {
         open(F,">GenOut_$module.inc");
         $Use = "none";
         start_module($module,\*F,$Use);
-	print F	"!+ Defines indices and NSPEC for $txt{$s} : $description{$s}\n\n"; 
+	print F	"!+ Defines indices and NSPEC for $txt{$s} : $description{$s}\n\n";
 
         my $nspectxt = "module $module\n
            integer, public, parameter :: $nspec_txt{$s}=$nspecies[$s] \n";
 
-	if ( $s == $tot && $naerosol == 0 ) {   # aerosols kept in totals file 
+	if ( $s == $tot && $naerosol == 0 ) {   # aerosols kept in totals file
                 $first_semivol=-999;
                 $last_semivol=-999;
 	}
-	if ( $s == $tot  ) {   # aerosols kept in totals file 
+	if ( $s == $tot  ) {   # aerosols kept in totals file
 		$aero_txt    = "\n  ! Aerosols:
            integer, public, parameter :: &
                 NAEROSOL=$naerosol,   &!   Number of aerosol species
@@ -1039,14 +1039,14 @@ sub print_species {
 	}
 
         # 1 ) nspec and species numbers
-	print F	"!   ( Output from GenChem, sub print_species ) \n"; 
+	print F	"!   ( Output from GenChem, sub print_species ) \n";
 	print F "\n  $INTPUB $nspec_txt{$s} = $nspecies[$s] \n $aero_txt";
 
 	for($i=1;$i<=$nspecies[$s]; $i++){
 
-		if ( $i == 1 || $i%10 == 0 ) { # Declare integer 
+		if ( $i == 1 || $i%10 == 0 ) { # Declare integer
 			print F	"\n\n  $INTPUB  & \n" ;
-        		$end_of_line = "    " ; 
+        		$end_of_line = "    " ;
 		}
 		printf F  "$end_of_line";
 		my $n = $speciesmap[$s][$i] ;   # Gets n for totals list
@@ -1056,7 +1056,7 @@ sub print_species {
         }
 	print F "\n\n $HLINE  end module $module\n";
         close(F);
-     } # loop over $s 
+     } # loop over $s
 
 
      $module = "ChemChemicals_ml";
@@ -1066,12 +1066,12 @@ sub print_species {
 
     print F <<"END_CHEMSTART";
 
-  !/--   Characteristics of species: 
+  !/--   Characteristics of species:
   !/--   Number, name, molwt, carbon num, nmhc (1) or not(0)
- 
+
   public :: define_chemicals    ! Sets names, molwts, carbon num, advec, nmhc
 
-  type, public :: Chemical 
+  type, public :: Chemical
        character(len=20) :: name
        real              :: molwt
        integer           :: nmhc      ! nmhc (1) or not(0)
@@ -1082,7 +1082,7 @@ sub print_species {
        real              :: CiStar     ! VBS param
        real              :: DeltaH    ! VBS param
   end type Chemical
-  type(Chemical), public, dimension(NSPEC_TOT) :: species
+  type(Chemical), public, dimension(NSPEC_TOT), target :: species
 
   contains
     subroutine define_chemicals()
@@ -1097,25 +1097,25 @@ END_CHEMSTART
 	    $cnum = $count{$spec}{"C"};   # to save interpolating inside string!
 	    $nnum = $count{$spec}{"N"};   # to save interpolating inside string!
 	    $snum = $count{$spec}{"S"};   # to save interpolating inside string!
-            printf F 
-           "     species(%s) = Chemical(\"%-12s\",%9.4f,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",  
+            printf F
+           "     species(%s) = Chemical(\"%-12s\",%9.4f,%3d,%3d,%4d,%3d,%5.1f,%8.4f,%7.1f ) \n",
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
                    $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i];
-            print "SPECF ", 
+            print "SPECF ",
                    $species[$tot][$i], $species[$tot][$i],$molwt{$spec}, $nmhc{$spec},
                    $cnum, $nnum, $snum, $extinc[$i], $CiStar[$i], $DeltaH[$i], "\n";
 	}
 
         print F "   end subroutine define_chemicals\n";
-        print F " end module $module\n $HLINE"; 
+        print F " end module $module\n $HLINE";
 	close(F);
 
-} # end of sub write_species 
+} # end of sub write_species
 
 #########################################################################
 #sub print_speciesmap {
 #
-#     my $module = "ChemSpecs_maps_ml"; 
+#     my $module = "ChemSpecs_maps_ml";
 #     my $Use  = "
 #       use ChemSpecs_adv_ml, only : NSPEC_ADV
 #       use ChemSpecs_shl_ml, only : NSPEC_SHL
@@ -1143,9 +1143,9 @@ END_CHEMSTART
 #		}
 #		printf F "  /)\n\n";
 #	}
-#        print F " end module $module\n $HLINE"; 
+#        print F " end module $module\n $HLINE";
 #	close(F);
-#} # end of sub 
+#} # end of sub
 ##################################################################################
 sub start_module {   # Simply writes start of  module with horizontal lines and
    my($module) = shift ;
@@ -1159,7 +1159,7 @@ sub start_module {   # Simply writes start of  module with horizontal lines and
    } else {
         $EndBit       = "implicit none\n  private";    # Not needed if no use statements
    }
-        
+
    print $F <<"MODSTART";
 $TLINE
   module  $module
@@ -1197,13 +1197,13 @@ sub print_rates {
   start_module( $module, \*F, $UsedVariables{$rctype} );
 
   print F "
-  !+ Tabulates $description{$rctype} 
+  !+ Tabulates $description{$rctype}
 
     public :: set_${rctype}_rates
 
     integer, parameter, public :: $Nrctype = $nrc   !! No. coefficients
 
-    real, save, public, dimension($Nrctype,$Krange) :: $defrc 
+    real, save, public, dimension($Nrctype,$Krange) :: $defrc
 
 " ;
 
@@ -1231,23 +1231,23 @@ sub print_rates {
 	}
 
         foreach ( @rctext ) {
-		if($_){ 
+		if($_){
 			$tmpout = "       $_ = $rc[$i] \n" ;
 			my $split_at; # = "\*" ;
-			if ( length( $tmpout ) > 80 ) { 
-			        $split_at = "[\,]" ; 
+			if ( length( $tmpout ) > 80 ) {
+			        $split_at = "[\,]" ;
 			    # Need to avoid split at comma in e.g. rcmisc(12,:)
 				$tmpout =~ s/($split_at\w)/$CONTLINE    $1/g ;
 			} # And try again if needed...
-			#if ( length( $tmpout ) > 80 ) { 
-			#        $split_at = "[\*]" ; 
+			#if ( length( $tmpout ) > 80 ) {
+			#        $split_at = "[\*]" ;
 			#	$tmpout =~ s/($split_at\w)/$CONTLINE    $1/g ;
 			#}
 			#$tmpout =~ s/rc/rc_/g ;    # Change rct to rc_t
 			$tmpout =~ s/\,iq\)/\)/ ;    # Remove dimension flag here
-#			$tmpout =~ s/(XT|xt)/t/g ;    # Change XT  to t     
-			$tmpout =~ s/(XT|xt)/temp/g ;    # Change XT  to t     
-			print F  $tmpout ; 
+#			$tmpout =~ s/(XT|xt)/t/g ;    # Change XT  to t
+			$tmpout =~ s/(XT|xt)/temp/g ;    # Change XT  to t
+			print F  $tmpout ;
 	  	}
 		else {
 			print "IS SS@_ THIS NEEDED?!!!!\n";
@@ -1259,10 +1259,10 @@ sub print_rates {
   print F  "end module  $module\n";
   close(F);
 
-} # end of sub print_rate  
+} # end of sub print_rate
 ###############################################################################
  sub process_alldep {
-	my $ddep = shift; 
+	my $ddep = shift;
 	my $wdep = shift;
 	my  $adv = shift;
 	my $found = 0;
@@ -1279,7 +1279,7 @@ sub print_rates {
 
         foreach my $n ( @{ $grp{"OXN"} } ) {
            my $same_spec =  specs_equal($adv, $n ); # Ignores case
-	   push(@ddep_oxngroup,$adv) if  $same_spec; 
+	   push(@ddep_oxngroup,$adv) if  $same_spec;
 	   push(@wdep_oxngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
 	}
         foreach my $s ( @{ $grp{"SOX"} } ) {
@@ -1296,7 +1296,7 @@ sub print_rates {
            my $same_spec =  specs_equal($adv, $r ); # Ignores case
 	   push(@ddep_rdngroup,$adv) if $same_spec;
 	   push(@wdep_rdngroup,$adv) if ( $same_spec && $wdep ne "-" ) ;
-	   printall( "WETDRY FOUND RDN WET ADV$adv R$r WDEP$wdep\n") if $adv eq $r; 
+	   printall( "WETDRY FOUND RDN WET ADV$adv R$r WDEP$wdep\n") if $adv eq $r;
 	}
 
 	$nddep += 1;
@@ -1353,7 +1353,7 @@ sub print_rates {
 
         print "RRRRRRRRRRRRRRRRRRRRRRRRRR ; \n";
 	#foreach my $gg ( keys %grp ) {
-        #  my $N = @{ $grp{$gg} }; 
+        #  my $N = @{ $grp{$gg} };
 	#  print "  TESTRR $gg  N$N group is: @{ $grp{$gg} }\n";
 	#}
 
@@ -1362,12 +1362,12 @@ sub print_rates {
 	my $MaxNgroup = 0;
 	# Check first for empty, e.g. SS can be empty
         foreach my $g ( keys %grp ) {
-           my $N = @{ $grp{$g} }; 
-	   print "DELETE KEY $g\n" if ( $N < 1 ) ; 
-	   delete ( $grp{$g} )     if ( $N < 1 ) ; 
+           my $N = @{ $grp{$g} };
+	   print "DELETE KEY $g\n" if ( $N < 1 ) ;
+	   delete ( $grp{$g} )     if ( $N < 1 ) ;
 	}
         foreach my $g ( keys %grp ) {
-           my $N = @{ $grp{$g} }; 
+           my $N = @{ $grp{$g} };
   	   $Ngroup ++ ;
 	   $MaxNgroup = $N if $N > $MaxNgroup ;
 	   $outline = join(",", @{ $grp{$g} });
@@ -1376,15 +1376,15 @@ sub print_rates {
            print GROUPS "\n  integer, public, target, save, dimension($N) :: &
                  ${g}_GROUP     = (/ $outline /)\n";
 	   $ngroups += 1;
-           $groupsub .= "\n p => ${g}_GROUP \n chemgroups($ngroups) = typ_sp(\"$g\", p )\n"; 
+           $groupsub .= "\n p => ${g}_GROUP \n chemgroups($ngroups) = typ_sp(\"$g\", p )\n";
 	}
 	# Tmp for now  and horrible code -
 	# print out again but in group array
  	# get size of group hash and max size (need to pre-process)
-	my $gsize = keys( %grp ); 
+	my $gsize = keys( %grp );
 	print GROUPS "\n\n!GROUP ARRAY SIZE $gsize MAXN $MaxNgroup \n";
 	print GROUPS "
-  type, public :: gtype 
+  type, public :: gtype
        character(len=20) :: name
        integer :: Ngroup
        integer, dimension($MaxNgroup) :: itot   ! indices from xn_tot arrays
@@ -1396,7 +1396,7 @@ sub print_rates {
 	my @out = 0;
 	my $comma = "";
         foreach my $g ( keys %grp ) {
-           my $N = @{ $grp{$g} }; 
+           my $N = @{ $grp{$g} };
            for my $col ( 0 .. $MaxNgroup-1 ) { $out[$col] = "0"; };
   	   my $col = 0;
   	   for my $gg (  @{ $grp{$g} } )  {
@@ -1471,23 +1471,23 @@ sub print_rates {
 	    $outline = -99 ; # if  $old_style  ;
 	    $N = 1;
          }
-         print GROUPS 
+         print GROUPS
 	    "  integer, public, parameter :: SIZE_RO2_POOL      = $N\n";
          print GROUPS "  integer, public, parameter, dimension($N) :: &
      RO2_POOL      = (/ $outline /)\n";
 
         print GROUPS "   type(typ_sp), dimension($ngroups), public, save :: chemgroups\n\n";
         print GROUPS $groupsub;
-        print GROUPS "\n   nullify(p)\n"; 
-        print GROUPS "\n\n end subroutine Init_ChemGroups\n $HLINE"; 
-        print GROUPS "\n\n end module $module\n $HLINE"; 
+        print GROUPS "\n   nullify(p)\n";
+        print GROUPS "\n\n end subroutine Init_ChemGroups\n $HLINE";
+        print GROUPS "\n\n end module $module\n $HLINE";
 	close(GROUPS);
 }
 ###############################################################################
  sub print_femis {
         my $Nemis = @emis_files;
 	printall( "ENTERING FEMIS print $Nemis\n");
-        open(EMIS,">femis.defaults") or die "FAIL FEMIS\n"; 
+        open(EMIS,">femis.defaults") or die "FAIL FEMIS\n";
 	print EMIS "Name  $Nemis  ";
 	foreach my $e ( @emis_files ){
 		printf EMIS "%10s", lc($e);
@@ -1503,7 +1503,7 @@ sub print_rates {
  sub print_emislist {
 	my ( @emis) = @_;
 	printall( "ENTERING EMISLIST \n");
-        open(EMIS,">CM_emislist.csv") or die "FAIL FEMIS\n"; 
+        open(EMIS,">CM_emislist.csv") or die "FAIL FEMIS\n";
 	print EMIS  join(",",@emis );
         close(EMIS);
 }
@@ -1519,14 +1519,14 @@ sub print_rates {
 		$MaxLen = $length if $length > $MaxLen ;
 	}
 	printall( "ENTERING EMIS print $Nemis\n");
-        open(EMIS,">GenOut_Emis$nam.inc") or die "FAIL EMIS_$nam\n"; 
+        open(EMIS,">GenOut_Emis$nam.inc") or die "FAIL EMIS_$nam\n";
 
 	print EMIS "  integer, parameter, public ::  NEMIS_$nam  = $Nemis\n";
 	print EMIS "  character(len=$MaxLen), save, dimension(NEMIS_$nam), public:: &\n";
 	print EMIS "      EMIS_$nam =  (/ &\n";
 	my $comma = "";
 	foreach my $e ( @emis ){
-		printf EMIS "%12s \"%-${MaxLen}s\" &\n", $comma,$e;  # uc($e); 
+		printf EMIS "%12s \"%-${MaxLen}s\" &\n", $comma,$e;  # uc($e);
 		$comma = ",";
 	}
 	print EMIS " /)\n ";
@@ -1556,10 +1556,10 @@ sub expand_shorthands {
 #########################################################################
 sub process_emisfile {
 	my $arg = shift;
-	my ( $emis, $files, $rate ); 
+	my ( $emis, $files, $rate );
 	if( $arg =~ /:/) { # e.g. emisfiles=sox,nox,nh3
-		( $emis, $files ) = split(/:/,$arg); 
-		my @files = split(/,/,$files); 
+		( $emis, $files ) = split(/:/,$arg);
+		my @files = split(/,/,$files);
 		my $found = 0;
 		foreach my $f ( @files ) {
 		   foreach my $e ( @emis_files ) {
@@ -1576,9 +1576,9 @@ sub process_emisfile {
 #########################################################################
 sub process_emis {
 	my $arg = shift;
-	my ( $rcemis, $spec, $rate ); 
+	my ( $rcemis, $spec, $rate );
 	if( $arg =~ /:/) {
-		( $rcemis, $spec ) = split(/:/,$arg); 
+		( $rcemis, $spec ) = split(/:/,$arg);
 		my $found = 0;
 		foreach my $e ( @emis_specs ) {
 			$found = 1 if $spec eq $e ;

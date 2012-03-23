@@ -170,6 +170,12 @@ xxxxxxxx rv3_10_29b2   Alvaro 22-23/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 Nesting external boundary and initial conditions (rv3_10_7 follow up).
 External BCs for IFS-MOZART on FORECAST mode. Further testing is needed...
 
+FORECAST hourly output definition has been re-touched following up changes to
+mk.GenChem Isotopes.species/.reactions (rv3_10_21)
+
+Multy level hourly output is can not be wrtitten write in compressed netCDF-4 format.
+Therefore, the FORECAST output is not compressed.
+
 Nest_ml, My_ExternalBICs_ml:
  - Move filename_read_BC,filename_read_3D & filename_write to My_ExternalBICs_ml
  - filename_read_BC (and potentially filename_read_3D & filename_write) are
@@ -198,6 +204,12 @@ Makefile:
 NetCDF_ml,ModelConsants_ml:
  - Explicit choice of NetCDF compressed output (NETCDF_COMPRESS_OUTPUT in ModelConsants_ml)
  - No compressed output on FORECAST mode. Compressed output otherwise.
+
+My_Outputs_ml,GenChem.pl:
+ - New pointer variable for short hand reference of properties for advected species
+     species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
+ - Change on FORECAST outly output definition.
+   Simulation will CheckStop variable Rn222 if not found in species_adv(:)%name.
 
 xxxxxxxx rv3_10_29beta Robert 16-21/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
