@@ -201,7 +201,7 @@ integer, public, parameter :: &
   ,DEBUG_BCS            = .false. &
   ,DEBUG_BIO            = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
-  ,DEBUG_DERIVED        = .true. &
+  ,DEBUG_DERIVED        = .false. &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
   ,DEBUG_DO3SE          = .false. &
   ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
@@ -249,7 +249,7 @@ integer, public, parameter :: &
   ,DEBUG_SETUP_1DCHEM   = .false. &
   ,DEBUG_SETUP_1DBIO    = .false. &
   ,DEBUG_SITES          = .false. &
-  ,DEBUG_SOILWATER      = .true. &
+  ,DEBUG_SOILWATER      = .false. &
   ,DEBUG_SOILNOX        = .false. &
   ,DEBUG_VOLC           = .false.   ! Volcanoes
 
@@ -264,6 +264,9 @@ logical, public, parameter :: SOURCE_RECEPTOR = .false.
 ! only dayly and hourly output is required on FORECAST mode, so in Derived_ml,
 ! we set all other output types to false if FORECAST=.true..
 logical, public, parameter :: FORECAST = .false.
+
+! Compress NetCDF output? (nc4 feature)
+logical, public, parameter :: NETCDF_COMPRESS_OUTPUT=.not.FORECAST
 
 !Hourly output in smaller files?
 !NB: will not work well by default on Stallo per 14th Feb 2012 because of library bugs!

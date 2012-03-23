@@ -36,15 +36,15 @@
 !http://www.unidata.ucar.edu/software/netcdf/
 !
 !
-!To improve: When output is onto the same file, but with different positions 
-!for the lower left corner, the coordinates i_EMEP j_EMEP and long lat will 
+!To improve: When output is onto the same file, but with different positions
+!for the lower left corner, the coordinates i_EMEP j_EMEP and long lat will
 !be wrong
 !
   use My_Outputs_ml,     only : FREQ_HOURLY, &
                                 NHOURLY_OUT, &      ! No. outputs
                                 Asc2D, hr_out, &      ! Required outputs
                                 SELECT_LEVELS_HOURLY, LEVELS_HOURLY, &
-                                NLEVELS_HOURLY 
+                                NLEVELS_HOURLY
   use Chemfields_ml,     only : xn_shl,xn_adv
   use CheckStop_ml,      only : CheckStop,StopAll
   use ChemSpecs_shl_ml,  only : NSPEC_SHL
@@ -65,7 +65,7 @@
                                ,i_local,j_local
   use InterpolationRoutines_ml,  only : grid2grid_coeff
   use ModelConstants_ml, only : KMAX_MID,KMAX_BND, runlabel1, runlabel2 &
-                               ,MasterProc &
+                               ,MasterProc, FORECAST, NETCDF_COMPRESS_OUTPUT &
                                ,DEBUG_NETCDF, DEBUG_NETCDF_RF &
                                ,NPROC, IIFULLDOM,JJFULLDOM &
                                ,IOU_INST,IOU_HOUR,IOU_HOUR_MEAN, IOU_YEAR &
@@ -94,8 +94,8 @@
   character (len=125) :: fileName ,period_type
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
-  integer      :: ncFileID_new=closedID  !don't save because should always be 
-                  !redefined (in case several routines are using ncFileID_new 
+  integer      :: ncFileID_new=closedID  !don't save because should always be
+                  !redefined (in case several routines are using ncFileID_new
                   !with different filename_given)
   integer,save :: ncFileID_inst=closedID
   integer,save :: ncFileID_hour=closedID
@@ -104,7 +104,7 @@
   integer,save :: ncFileID_year=closedID
   integer,save :: outCDFtag=0
   !CDF types for output:
-  integer, public, parameter  :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5 
+  integer, public, parameter  :: Int1=1,Int2=2,Int4=3,Real4=4,Real8=5
   character (len=18),parameter::Default_projection_name = 'General_Projection'
 
   public :: Out_netCDF
@@ -169,7 +169,7 @@ case(IOU_HOUR)
   enddo
   GIMAXcdf=min(GIMAXcdf,GIMAX)
   GJMAXcdf=min(GJMAXcdf,GJMAX)
-  KMAXcdf =min(KMAXcdf ,NLEVELS_HOURLY) 
+  KMAXcdf =min(KMAXcdf ,NLEVELS_HOURLY)
 
 ! Output selected model levels
   if(SELECT_LEVELS_HOURLY)then
@@ -244,9 +244,13 @@ character(len=80) ::UsedProjection
   if(DEBUG_NETCDF)write(*,*)'UsedProjection ',trim(UsedProjection)
   if(DEBUG_NETCDF)write(*,fmt='(A,8I7)')'with sizes (IMAX,JMAX,IBEG,JBEG,KMAX) ',&
     GIMAXcdf,GJMAXcdf,ISMBEGcdf,JSMBEGcdf,KMAXcdf
-  call check(nf90_create(path = trim(fileName), &
-        cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
-!        cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
+  if(NETCDF_COMPRESS_OUTPUT)then
+    call check(nf90_create(path = trim(fileName), &
+      cmode = nf90_hdf5, ncid = ncFileID),"create:"//trim(fileName))
+  else
+    call check(nf90_create(path = trim(fileName), &
+      cmode = nf90_clobber, ncid = ncFileID),"create:"//trim(fileName))
+  endif
 
   ! Define the dimensions
   if(UsedProjection=='Stereographic')then
@@ -366,7 +370,7 @@ character(len=80) ::UsedProjection
 
   call check(nf90_def_var(ncFileID, "time", nf90_double, dimids = timeDimID, varID = VarID) )
   if(trim(period_type) /= 'instant'.and.trim(period_type) /= 'unknown'.and.&
-     trim(period_type) /= 'hourly' .and.trim(period_type) /= 'fullrun')then 
+     trim(period_type) /= 'hourly' .and.trim(period_type) /= 'fullrun')then
     call check(nf90_put_att(ncFileID, VarID, "long_name", "time at middle of period"))
   else
     call check(nf90_put_att(ncFileID, VarID, "long_name", "time at end of period"))
@@ -523,7 +527,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
   integer,                         intent(in) :: iotyp
   real    ,intent(in) :: scale
   real, dimension(MAXLIMAX,MAXLJMAX,KMAX), intent(in) :: dat ! Data arrays
-  integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area. 
+  integer, optional, intent(in) :: ist,jst,ien,jen,ik !start and end of saved area.
                                                       !Only level ik is written if defined
   integer, optional, intent(in) :: CDFtype != OUTtype. (Integer*1, Integer*2,Integer*4, real*8 or real*4)
   character (len=*),optional, intent(in):: fileName_given!filename to which the data must be written
@@ -997,8 +1001,8 @@ subroutine  createnewvariable(ncFileID,varname,ndim,ndate,def1,OUTtype)
      print *, 'createnewvariable: unexpected ndim ',ndim
   endif
 !define variable as to be compressed
-        call check(nf90_def_var_deflate(ncFileid ,varID,shuffle=0,deflate=1 ,deflate_level=4) )
-
+  if(NETCDF_COMPRESS_OUTPUT) &
+    call check(nf90_def_var_deflate(ncFileid ,varID,shuffle=0,deflate=1 ,deflate_level=4) )
   !     FillValue=0.
   scale=1.
   !define attributes of new variable
@@ -1058,7 +1062,7 @@ end subroutine  createnewvariable
 
   subroutine CloseNetCDF
 !close open files
-!NB the data in a NetCDF file is not "safe" before the file is closed. 
+!NB the data in a NetCDF file is not "safe" before the file is closed.
 !The files are NOT automatically properly closed after end of program,
 ! and data may be lost if the files are not closed explicitely.
 
@@ -1332,7 +1336,7 @@ subroutine Read_Inter_CDF(fileName,varname,Rvar,varGIMAX,varGJMAX,varKMAX,nstart
 !
 !reads data from netcdf file and interpolates data into full-domain model grid
 !
-!the data in filename must have global coverage and lat-lon projection 
+!the data in filename must have global coverage and lat-lon projection
 !
 !Typical use: Master node reads the data with this routine and distributes the data to all subdomains.
 !
@@ -1580,36 +1584,36 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   !If Undef is present, it is used as value for undefined gridpoints;
   !If it is not present, an error occurs if data is missing.
   !Data can be undefined either because it is outside the domain in the netcdf file,
-  !or because it has the value defined in "FillValue" ("FillValue" defined from netcdf file) 
+  !or because it has the value defined in "FillValue" ("FillValue" defined from netcdf file)
   !
 
   !projections:
   !Lon-lat projection in the netcdf file is implemented with most functionalities.
-  !General projection in the netcdf file is still primitive. Limitations are: no 3D, 
+  !General projection in the netcdf file is still primitive. Limitations are: no 3D,
   !   no Undef, only linear interpolation, cpu expensive.
-  !The netcdf file projection is defined by user in "known_projection" or read from 
+  !The netcdf file projection is defined by user in "known_projection" or read from
   !netcdf file (in attribute "projection").
-  !If the model grid projection is not lon-lat and not stereographic the method is not 
+  !If the model grid projection is not lon-lat and not stereographic the method is not
   !very CPU efficient in th epresent version.
   !Vertical interpolation is not implemented, except from "Fligh Levels", but
   !"Flight Levels" are so specific that we will probably move them in an own routine
 
   !interpolation:
-  !'zero_order' gives value at closest gridcell. Probably good enough for most applications. 
+  !'zero_order' gives value at closest gridcell. Probably good enough for most applications.
   !Does not smooth out values
-  !'conservative' and 'mass_conservative' give smoother fields and are approximatively 
-  !integral conservative (integral over a region is conserved). The initial gridcells 
+  !'conservative' and 'mass_conservative' give smoother fields and are approximatively
+  !integral conservative (integral over a region is conserved). The initial gridcells
   !are subdivided into smaller subcells and each subcell is assigned to a cell in the model grid
-  !'conservative' can be used for emissions given in kg/m2 (or kg/m2/s) or landuse or most fields. 
+  !'conservative' can be used for emissions given in kg/m2 (or kg/m2/s) or landuse or most fields.
   !The value in the netcdf file and in model gridcell are of the similar.
-  !'mass_conservative' can be used for emissions in kg (or kg/s). If the gricell in the model are 
+  !'mass_conservative' can be used for emissions in kg (or kg/s). If the gricell in the model are
   !twice as small as the gridcell in the netcdf file, the values will also be reduced by a factor 2.
 
   !Technical, future developements:
-  !This routine is likely to change a lot in the future: can be divided into simpler routines; 
+  !This routine is likely to change a lot in the future: can be divided into simpler routines;
   !more functionalities will be introduced.
   !Should also be usable as standalone.
-  !All MPI processes read the same file simultaneously (i.e. in parallel). 
+  !All MPI processes read the same file simultaneously (i.e. in parallel).
   !They read only the chunk of data they need for themselves.
 
   use netcdf
@@ -1886,7 +1890,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         jmax=max(1,min(dims(2),ceiling((maxlat-Rlat(1))*dlati)+1))
      else!if starting to count from north pole
         jmin=max(1,min(dims(2),floor((maxlat-Rlat(1))*dlati)))!maxlat is closest to Rlat(1)
-        jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dlati)+1))        
+        jmax=max(1,min(dims(2),ceiling((minlat-Rlat(1))*dlati)+1))
      endif
 
 
@@ -2171,7 +2175,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 !read entire grid in a first implementation
      startvec=1
      totsize=1
-     
+
      do i=1,ndims
         totsize=totsize*dims(i)
      enddo
@@ -2216,7 +2220,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         xp_ext_div=(xp_ext+0.5)*Ndiv-0.5
         yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
         an_ext_div=an_ext*Ndiv
-        
+
         if(projection/='Stereographic'.and.projection/='lon lat')then
            !the method should be revised or used only occasionally
            if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
@@ -2244,14 +2248,14 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     i_ext=(ig-1)*Ndiv+idiv
                     call ij2lb(i_ext,j_ext,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div)
                     call lb2ij(lon,lat,ir,jr)!back to model (fulldomain) coordinates
-                    !convert from fulldomain to local domain                                             
-                    !ir,jr may be any integer, therefore should not use i_local array                    
+                    !convert from fulldomain to local domain
+                    !ir,jr may be any integer, therefore should not use i_local array
                     i=nint(ir)-gi0-IRUNBEG+2
                     j=nint(jr)-gj0-JRUNBEG+2
 
 83                  format(2I4,33F9.2)
                     !if ( debug .and.me==0) write(*,83)i,j,ir,jr,lon,lat,fi_ext,an_ext_div,xp_ext_div,yp_ext_div,fi,xp,yp,Rvalues(igjg)
- 
+
                     if(i>=1.and.i<=limax.and.j>=1.and.j<=ljmax)then
                        ij=i+(j-1)*MAXLIMAX
                        k2=1
@@ -2261,13 +2265,13 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                           Ivalues(ijk)=Ivalues(ijk)+1
                           Nvalues(ijk)=Nvalues(ijk)+1
                           igjgk=igjg+(k-1)*dims(1)*dims(2)
-                          
+
                           if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                              Rvar(ijk)=Rvar(ijk)+Rvalues(igjgk)
                           else
                              !Not defined: don't include this Rvalue
                              Ivalues(ijk)=Ivalues(ijk)-1
-                             
+
                           endif
                        enddo
                     endif
@@ -2330,7 +2334,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
         yp_ext_div=(yp_ext+0.5)*Ndiv-0.5
         an_ext_div=an_ext*Ndiv
      if(MasterProc.and.debug)write(*,*)'zero_order interpolation ',an_ext_div,xp_ext_div,yp_ext_div,dims(1),dims(2)
-        
+
         if(projection/='Stereographic'.and.projection/='lon lat')then
            !the method should be revised or used only occasionally
            if(me==0)write(*,*)'WARNING: interpolation method may be CPU demanding'
@@ -2354,7 +2358,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
                     ijk=k+(ij-1)*k2
 
                     igjgk=i_ext+(j_ext-1)*dims(1)+(k-1)*dims(1)*dims(2)
-                    
+
                   if(OnlyDefinedValues.or.Rvalues(igjgk)/=FillValue)then
                        Rvar(ijk)=Rvalues(igjgk)
                    else
@@ -2449,10 +2453,10 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      do i=1,limax
         do j=1,ljmax
 
-           Weight(1) = Weight1(i,j)  
-           Weight(2) = Weight2(i,j)  
-           Weight(3) = Weight3(i,j)  
-           Weight(4) = Weight4(i,j)  
+           Weight(1) = Weight1(i,j)
+           Weight(2) = Weight2(i,j)
+           Weight(3) = Weight3(i,j)
+           Weight(4) = Weight4(i,j)
 
            ijkn(1)=IIij(i,j,1)-startvec(1)+1+(JJij(i,j,1)-startvec(2))*dims(1)
            ijkn(2)=IIij(i,j,2)-startvec(1)+1+(JJij(i,j,2)-startvec(2))*dims(1)
@@ -2580,7 +2584,7 @@ subroutine printCDF(name, array,unit)
     def1%scale=1.0      !not used
     def1%name=trim(name)   ! written
     def1%unit=trim(unit)
-    
+
     fname = "PRINTCDF_" // trim(name) // ".nc"
 
     !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
@@ -2612,7 +2616,7 @@ subroutine printCDF(name, array,unit)
 
     varname='time'
     status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
-    
+
     if(status == nf90_noerr) then
        if(DEBUG_NETCDF)print *, 'variable exists: ',trim(varname)
     else
@@ -2620,7 +2624,7 @@ subroutine printCDF(name, array,unit)
        call StopAll("ReadTimeCDF : time not found")
        return
     endif
-    
+
     call check(nf90_Inquire_Variable(ncFileID,VarID,name,xtype,ndims,dimids,nAtts))
     if(ndims>1)write(*,*)'WARNING: time has more than 1 dimension!? ',ndims
     call check(nf90_inquire_dimension(ncid=ncFileID, dimID=dimids(1),  len=ntimes))
@@ -2647,7 +2651,7 @@ subroutine printCDF(name, array,unit)
     mi=0
     ss=0
 !    read(wordarray(7),*)mi
-!    read(wordarray(8),*)ss  !did not work ??? 
+!    read(wordarray(8),*)ss  !did not work ???
     status=nf90_get_att(ncFileID, VarID, "calendar", calendar )
     proleptic_gregorian=.false.
     if(status == nf90_noerr)then
@@ -2684,14 +2688,14 @@ subroutine printCDF(name, array,unit)
     else
 
        if(DEBUG_NETCDF.and.me==0)write(*,*)'assuming days since 0-01-01 00:00 and 365days'
-       !assume units = "days since 0-01-01 00:00" 
+       !assume units = "days since 0-01-01 00:00"
        !and calendar = "365_day"
        yyyy=int(times(1)/365)
-       
+
        julian=julian_date(yyyy,1,1)
        julian_1900=julian_date(1900,1,1)
        diff_1900=julian-julian_1900
-       
+
        do i=1,NTime_Read
           TimesInDays(i)=diff_1900+times(i)-yyyy*365
        enddo
@@ -2703,7 +2707,7 @@ subroutine printCDF(name, array,unit)
                 TimesInDays(i)=TimesInDays(i)+1.0
              endif
           enddo
-!if the current date in the model is 29th of february, then this date is not defined in the 
+!if the current date in the model is 29th of february, then this date is not defined in the
 !365 days calendar. We then assume that the 60th day is 29th of february in the netcdf file
 !and not the 1st of march.
 !Keep this separately as this may be defined differently in different situations.
