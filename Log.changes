@@ -165,7 +165,8 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_29b2   Alvaro 22-23/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_29  Alvaro 22-23/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+(rtag includes RObert's beta changes below)
 
 Nesting external boundary and initial conditions (rv3_10_7 follow up).
 External BCs for IFS-MOZART on FORECAST mode. Further testing is needed...
@@ -212,6 +213,7 @@ My_Outputs_ml,GenChem.pl:
    Simulation will CheckStop variable Rn222 if not found in species_adv(:)%name.
 
 xxxxxxxx rv3_10_29beta Robert 16-21/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+(not rtagged)
 
 Updated road dust emission potential files (21/3).
 Now based on interpolating the TNO-data to the EMEP grid using 10x10points per TNO grid point.
