@@ -165,7 +165,7 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_29  Alvaro 22-23/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_10_29  Alvaro 22-23,28/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 (rtag includes RObert's beta changes below)
 
 Nesting external boundary and initial conditions (rv3_10_7 follow up).
@@ -211,6 +211,11 @@ My_Outputs_ml,GenChem.pl:
      species_adv=>species(NSPEC_SHL+1:NSPEC_SHL+NSPEC_ADV)
  - Change on FORECAST outly output definition.
    Simulation will CheckStop variable Rn222 if not found in species_adv(:)%name.
+
+run.pl:
+ - Use username variables (e.g. $ALVARO) explicitly mark data outside $DataDir.
+ - Pattern for forecast & analysis IFS-MOZART BC files
+ - Link BC vertical description file for FORECAST runs.
 
 xxxxxxxx rv3_10_29beta Robert 16-21/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 (not rtagged)

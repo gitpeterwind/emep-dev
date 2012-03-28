@@ -184,9 +184,10 @@ my $AGNES      = "nyiri";
 my $ALVARO     = "alvarov";
 my $ROBERT     = "mifarb";
 my $HALDIS     = "mifahb";
+my $BIRTHE     = "birthems";
 
 my $USER = $ENV{"USER"};
-if ($USER eq "mifapw") {$USER="$USER/emep"};
+if ($PETER =~ m/$USER/) { $USER="$PETER" };
 print "USER = $USER\n";
 
 
@@ -207,7 +208,7 @@ our $DataDir;
 if ($STALLO) {
   $HOMEROOT = "/home";
   $WORKROOT = "/global/work";
-  $DataDir  = "/global/work/mifapw/emep/Data";
+  $DataDir  = "/global/work/$PETER/Data";
   $MetDir   = "$DataDir/$GRID/metdata/$year" ;
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
@@ -236,13 +237,13 @@ if ($STALLO) {
   $HOMEROOT = "/home/ntnu";
   $WORKROOT = "/work";
   $MetDir   = "/work/emep/metdata/$year" ;
-  $DataDir  = "/home/ntnu/mifapw/emep/Data";
+  $DataDir  = "/home/ntnu/$PETER/Data";
 }
 
 # DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Pollen data
-my $PollenDir = "/home/birthems/Unify/MyData";
+my $PollenDir = "/home/$BIRTHE/Unify/MyData";
 
 
 
@@ -255,7 +256,7 @@ my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
 
-my $testv = "rv3_10_28";
+my $testv = "rv3_10_29";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -268,7 +269,7 @@ die "No ChemDir! $ChemDir\n" unless -d $ChemDir;
 #---- emislist --------------------------------------------------------
 open(EMIS,"<$ProgDir/CM_emislist.csv") or die "Need CM_emislist.cvs file!\n";
   my @emislist = split(/,/,<EMIS>);
-  print "EMISLIST ", join(" ", @emislist ), "\n"; 
+  print "EMISLIST ", join(" ", @emislist ), "\n";
 close(EMIS);
 #----  chem packages  (e.g. EmChembase PMmass ) -----------------------
 open(CHEM,"<$ProgDir/CM_chempackages.txt") or die "Need CM_emislist.cvs file!\n";
@@ -285,13 +286,20 @@ close(CHEM);
 my $WORKDIR     = "$WORKROOT/$USER/$testv.$year";  # working and result directory
    $WORKDIR     = "$WORKROOT/$USER/Benchmark/$GRID.$year" if (%BENCHMARK);
 my $MyDataDir   = "$HOMEROOT/$USER/Unify/MyData";           # for each user's private input
-my $CWFDUMPDIR  = "$WORKROOT/$USER/$testv.dump" if $CWF;  # Forecast nest/dump files
-my $CWFBCDir    = "$DataDir/$GRID/Boundary_conditions" if $CWF;    # CWF BC-files
 my $SoilDir     = "$DATA_LOCAL/dust_input";               # Saharan BIC
 $SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
 
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
-my $RoadDir     = "/home/mifarb/Unify/MyData/TNO_traffic/" ;
+my $RoadDir     = "/home/$ROBERT/Unify/MyData/TNO_traffic/" ;
+$RoadDir = 0 if $CWF;
+
+# Forecast: nest/dump dir, BCs pattern
+my ($CWFDUMPDIR, $CWFBC) if $CWF;
+if ($CWF) {
+  $CWFDUMPDIR = "$WORKROOT/$USER/$testv.dump";
+  $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_FC/cwf-mozifs_h%08d00_raqbc.nc" # IFS-MOZ Forecast
+# $CWFBC = "$DataDir/$GRID/Boundary_conditions/%04d_IFS-MOZART_AN/h%08d00_raqbc.nc";           # IFS-MOZ ReAnalysus
+}
 
 #ds check: and change
 chdir "$ProgDir";
@@ -331,7 +339,7 @@ $EMIS_INP = "$DATA_LOCAL"                   if $STALLO;
 $EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
 
 #dave: Use Modrun11 if possible:
-my $EMIS_OLD = "/global/work/nyiri/Emission_Trends";
+my $EMIS_OLD = "/global/work/$AGNES/Emission_Trends";
 $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
@@ -340,8 +348,8 @@ $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 #TMP and should be improved because it gives errors for
 # other domains!
 #.. For using emissions of EC/OC instead of PMx
-my $RFEmisDir = "/global/work/mifast/Data_RF"; # Split-Fraction files for EC/OC
-my $TNOemisDir = "/global/work/mifast/Emis_TNO"; # TNO EC/OC emissions
+my $RFEmisDir = "/global/work/$SVETLANA/Data_RF"; # Split-Fraction files for EC/OC
+my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
 
 
 $emisdir = $TNOemisDir if $EUCAARI;
@@ -349,7 +357,7 @@ $emisdir = "$EMIS_INP/emissions/${emisscen}/${emisyear}" if $GRID eq "HIRHAM";
 
 $pm_emisdir = $emisdir;
 $pm_emisdir = "$EMIS_INP/2006-Trend2000-V7"  if $year < 2000;
-$pm_emisdir = "/home/mifarb/Unify/MyData/D_EGU/${GRID}_GRID" if $VBS; 
+$pm_emisdir = "/home/$ROBERT/Unify/MyData/D_EGU/${GRID}_GRID" if $VBS;
 
 #EMISSIONS: FORECAST settings
 if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
@@ -370,14 +378,14 @@ if (%BENCHMARK){
 #Dave, reset to Emission_Trends for Chem project, Oct 18th
 my $TREND_RUNS = 0;
 if ($STALLO && $TREND_RUNS ) {
-  $EMIS_INP = "/global/work/nyiri/Emission_Trends";
+  $EMIS_INP = "/global/work/$AGNES/Emission_Trends";
   die "Year not in trend run series!! " unless -f $EMIS_INP/$year;
   $emisdir = "$EMIS_INP/$year";
   $pm_emisdir = $emisdir;
 }
 #
 if ( $STALLO && $GRID eq "GLOBAL" ) {
-  $EMIS_INP = "/global/work/mifapw/emep/Data/GLOBAL/MonthlyEmis";
+  $EMIS_INP = "/global/work/$PETER/Data/GLOBAL/MonthlyEmis";
   $emisdir = $EMIS_INP;
   $pm_emisdir = $emisdir;
 }
@@ -582,7 +590,7 @@ foreach my $scenflag ( @runs ) {
 
     my $mmlast = $mm2 + 1;
     my $yylast = $year;
-   if ( $mmlast > 12 ) { 
+   if ( $mmlast > 12 ) {
       $yylast = $yylast + 1;
       $mmlast = 1;
     }
@@ -596,17 +604,18 @@ foreach my $scenflag ( @runs ) {
       my $old = sprintf "$MetDir/meteo${CWFBASE}_%02d.nc",$n;
       if (-e $old) {
         chop($CWFDATE[2]=`date -d '$CWFBASE $n day' +%Y%m%d`);
-        my $new = "meteo${CWFDATE[2]}.nc";
+        my $new = "meteo$CWFDATE[2].nc";
         mylink( "Linking:", $old,$new ) ;
       # IFS-MOZART BC file
-        $old = sprintf "$CWFBCDir/%04d/bc${CWFBASE}_fc%02d.nc",substr($CWFBASE,0,4),$n;
-        $new = "EMEP_IN_BC_${CWFDATE[2]}.nc";
+        $old = sprintf "$CWFBC",substr($CWFDATE[2],0,4),$CWFDATE[2];
+        $new = "EMEP_IN_BC_$CWFDATE[2].nc";
         if (-e $old) {
           mylink( "Linking:", $old,$new );
           $cwfbc=$old;
         } else {
-          print "BC file for $CWFBASE not available (yet). Try yesterdays BC file\n";
-          $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr($CWFDATE[0],0,4),$n+1;
+          die "BC file for $CWFDATE[2] not available (yet)" if ($CWFBC =~ m/_AN.+h$year/);
+          print "BC file for $CWFDATE[2] not available (yet). Try $CWFDATE[0] BC file\n";
+          $old = sprintf "$CWFBC",substr($CWFDATE[0],0,4),$CWFDATE[0];
           if (-e $old) {
             mylink( "Linking:", $old,$new ) if (-e $old);
             $cwfbc=$old;
@@ -614,8 +623,7 @@ foreach my $scenflag ( @runs ) {
         }
       } else {
       # meteo not in place !!!!!
-        print "Meteo file $old for $CWFBASE not available (yet). Try later ...\n";
-        exit 0;
+        die "Meteo file $old for $CWFBASE not available (yet). Try later ...\n";
       }
     }
 # Forecast nest/dump files
@@ -638,7 +646,7 @@ foreach my $scenflag ( @runs ) {
         $CWFDATE[1]=$CWFDATE[0];
         chop($CWFDATE[0]=`date -d '$CWFDATE[0] 1 day ago' +%Y%m%d`);
       # IFS-MOZART BC file
-        $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[1]}_fc%02d.nc",substr(${CWFDATE[1]},0,4),0;
+        $old = sprintf "$CWFBC",substr($CWFDATE[1],0,4),$CWFDATE[1];
         $new = "EMEP_IN_BC_${CWFDATE[1]}.nc";
         if (-e $old) {
       # we manage to link the BC file
@@ -647,10 +655,11 @@ foreach my $scenflag ( @runs ) {
           $cwfbc=$old;
         } else {
           print "BC file for $CWFDATE[1] not available (yet) (spin-up). Try yesterdays BC file\n";
-          $old = sprintf "$CWFBCDir/%04d/bc${CWFDATE[0]}_fc%02d.nc",substr(${CWFDATE[0]},0,4),1;
+          $old = sprintf "$CWFBC",substr($CWFDATE[0],0,4),$CWFDATE[0];
           if (-e $old) {
             mylink( "Linking:", $old,$new );
             print "Managed to link yesterdays BC file for the extra spin-up day!\n";
+            $cwfbc=$old;
           }
         }
       # see if we can link to a dump file ...
@@ -679,7 +688,7 @@ foreach my $scenflag ( @runs ) {
     }
     my $mmlast = $mm2 + 1;
     my $yylast = $year;
-    if ( $mmlast > 12 ) { 
+    if ( $mmlast > 12 ) {
       $yylast = $yylast + 1;
       $mmlast = 1;
     }
@@ -706,10 +715,10 @@ foreach my $scenflag ( @runs ) {
                   "sox" => "SOx", "nox" => "NOx" ,
                   "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
  # VBS specials
-                  "pocfwd" => "POCfWD", 
+                  "pocfwd" => "POCfWD",
                   "pocffl" => "POCfFL", "poccfl"   => "POCcFL",
-                  "ecfwd" => "ECfWD", "eccwd" => "ECcWD", 
-                  "ecffl" => "ECfFL", "eccfl" => "ECcFL", 
+                  "ecfwd" => "ECfWD", "eccwd" => "ECcWD",
+                  "ecffl" => "ECfFL", "eccfl" => "ECcFL",
                   "forfbc"   => "FORFBC", "forfoc"   => "FORFOC",
  #  Sometimes used also:
                   "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine" ) ;
@@ -726,7 +735,7 @@ print "TESTING PM $poll $dir\n";
 
 # hb NH3emis, new emis files
     if(($NH3EMIS_VAR)&&($poll eq "nh3")){
-      $dir = "/home/nyiri/emis_NMR";
+      $dir = "/home/$AGNES/emis_NMR";
       $ifile{"$dir/gridNH3_NMR_$year"} = "emislist.$poll";
     }else{
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
@@ -806,13 +815,13 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
   $ifile{"$DataDir/SoilTypes_IFS.nc"} = "SoilTypes_IFS.nc";
 #TEMPORARY SETUP
-  my $tmpndep = "/home/mifads/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
+  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
   $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
   $ifile{"$DataDir/annualNdep_tmp.nc"} = "annualNdep.nc";
 
 # hb NH3emis
 # New ammonia emissions  ---   NB no read permissions yet!!
-  $ifile{"/home/mifahb/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
+  $ifile{"/home/$HALDIS/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
 # new inputs style (Aug 2007)  with compulsory headers:
   $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
@@ -831,7 +840,7 @@ print "TESTING PM $poll $dir\n";
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
 
 # DEGREE DAYS:
-  my $HDD = "/home/mifads/Work/EMEP_Projects/DegreeDay/DegreeDayFac-${GRID}-$year.nc";
+  my $HDD = "/home/$DAVE/Work/EMEP_Projects/DegreeDay/DegreeDayFac-${GRID}-$year.nc";
   if ( -f "$HDD" ) {
     $ifile{"$HDD"} = "DegreeDayFac.nc";
   }
@@ -855,7 +864,7 @@ print "TESTING PM $poll $dir\n";
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
 
-# For Pollen 
+# For Pollen
   if ( $PollenDir ) {
       $ifile{"$PollenDir/pollen_data.nc"} = "pollen_data.nc";
   }
@@ -874,6 +883,9 @@ print "TESTING PM $poll $dir\n";
     $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
     $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
    }
+# IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)
+  $ifile{"$DataDir/$GRID/Boundary_conditions/mozart_eta.zaxis"} = "EMEP_IN_BC_eta.zaxis"
+    if ( $CWF and -e $cwfbc and $cwfbc =~ m/IFS-MOZART/ );
 
   foreach my $old ( sort keys %ifile ) {  # CHECK and LINK
     if ( -r $old ) {
