@@ -165,8 +165,8 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_10_29  Alvaro 22-23,28/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
-(rtag includes RObert's beta changes below)
+xxxxxxxx rv3_10_29  Alvaro 28/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+(rtag includes up to  RObert's beta changes below)
 
 Nesting external boundary and initial conditions (rv3_10_7 follow up).
 External BCs for IFS-MOZART on FORECAST mode. Further testing is needed...
