@@ -53,6 +53,8 @@ Examples:
   mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f FINNv1
 # MACC GenChmem standard setup assumed in \`make MACC\`
   mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f GFED
+# Testing CRI_v2_R5, no extras
+  mk.GenChmem -r CRI_v2_R5 -e none
 
 Options:
   -h        Print this help and exits
