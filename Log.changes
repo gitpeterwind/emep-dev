@@ -165,6 +165,11 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_10_30x Dave   30/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+(not rtagged yet)
+
+mk.GenChem - added example lines for CTI_V2_R5 chem, and no extras
+
 xxxxxxxx rv3_10_29  Alvaro 28/3/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 (rtag includes up to  RObert's beta changes below)
 
