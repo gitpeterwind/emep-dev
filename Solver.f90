@@ -225,11 +225,11 @@ contains
                 !endif
             end do !! End iterations
           ! Just before SO4, look after slower? species
-          end if ! DEBUG_DRYRUN 
 
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
            include 'CM_Reactions2.inc'
           !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+          end if ! DEBUG_DRYRUN 
 
        end do ! ichem 
  

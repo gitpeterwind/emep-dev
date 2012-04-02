@@ -59,6 +59,7 @@
                                      debug_proc, debug_li, debug_lj,&
                                      A_mid,B_mid,gridwidth_m,dA,dB,&
                                      i_fdom, j_fdom
+  use Io_Progs_ml,           only : datewrite !MASS
   use LocalVariables_ml,     only :  Grid
   use MassBudget_ml,         only :  totem    ! sum of emissions
   use MetFields_ml,          only :  ps
@@ -68,6 +69,7 @@
      ATWAIR                          &
     ,DEBUG_SETUP_1DCHEM              &
     ,DEBUG_SETUP_1DBIO               &
+    ,DEBUG_MASS                      &
     ,dt_advec                        & ! time-step
     ,PT                              & ! Pressure at top
     ,MFAC                            & ! converts roa (kg/m3 to M, molec/cm3)
@@ -348,8 +350,17 @@ contains
 
    do k = KCHEMTOP,KMAX_MID
 
+ 
 
        scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
+
+  if ( DEBUG_MASS .and. debug_proc .and.  &
+            i==debug_li .and. j==debug_lj ) then ! .and. 
+!            current_date%seconds == 0 ) then
+    call datewrite("MASSRC ", k, (/ dB(k)*ps(i,j,1), xmd(i,j), ps(i,j,1), scaling_k /) )
+
+!     write(6,"(a,i3,5es12.3)") "MASSRC ", k, dB(k), dB(k)*ps(i,j,1), xmd(i,j), scaling_k /) )
+  end if
 
        do iqrc = 1, NSPEC_ADV
 
