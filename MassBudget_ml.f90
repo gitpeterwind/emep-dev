@@ -33,14 +33,7 @@
 ! >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ! DESCRIPTION 
 ! Routine to cross check the mass balance of the model
-! 29/10/02 - output formatting and descriptions improved, ds.
-! 1/10/01 - code for derived fields removed. MY_MASS_PRINT ADDED, ds
-! Oct, 2001 - ** new ** mass budget method by jej
-! Nov.2001, ds, "use" statements moved to top, much code moved to REMOVED 
-! section at end
 !_____________________________________________________________________________
-
-!! use DryDep_ml, only : NDRYDEP_ADV, DDepMap , DryDep_Budget
 
  use ChemChemicals_ml, only : species       ! species identifier
  use ChemSpecs_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
@@ -50,7 +43,9 @@
  use GridValues_ml ,  only : carea,xmd     ! cell area, 1/xm2 where xm2 is 
                                            ! the area factor in the middle 
                                            ! of the cell 
+ use GridValues_ml ,  only : debug_proc, debug_li, debug_lj
  use Io_ml         ,  only : IO_RES, PrintLog   ! io=25
+ use Io_ml         ,  only : datewrite   ! MASS
  use MetFields_ml  ,  only : ps            ! surface pressure  
  use ModelConstants_ml,                 &
                       only : KMAX_MID   &  ! Number of levels in vertical
@@ -59,6 +54,7 @@
                             ,PT         &  ! Pressure at top
                             ,ATWAIR     &  ! Mol. weight of air(Jones,1992)
                             ,TXTLEN_NAME&
+                            ,DEBUG_MASS &  
                             ,EXTENDEDMASSBUDGET
  use Par_ml,          only : MAXLIMAX   & 
                             ,MAXLJMAX   &  
@@ -68,6 +64,7 @@
                             ,gi0, gj0   &
                             ,GIMAX,GJMAX
  use Setup_1dfields_ml, only : amk ! Air concentrations 
+ use TimeDate_ml,       only :  current_date
 
 !Variable listing
 !MAXLIMAX    ==> Maximum number of local points in longitude
@@ -231,6 +228,13 @@ contains
             xmin(:) = amin1(xmin(:),xn_adv(:,i,j,k))
 
             sumk(:,k) = sumk(:,k) + xn_adv(:,i,j,k)*helsum
+
+  if ( DEBUG_MASS .and. debug_proc .and.  &
+            i==debug_li .and. j==debug_lj ) then
+!            current_date%seconds == 0 ) then
+     call datewrite("MASSBUD", k, (/ carea(k), ps(i,j,1), PT,  xmd(i,j) /) )
+  end if
+
 
         enddo
       enddo
