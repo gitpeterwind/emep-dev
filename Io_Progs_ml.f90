@@ -522,7 +522,7 @@ subroutine datewrite_ia (txt,ii,array,txt_pattern)
     write(*,"(a,1x, i0, 20es11.2)") "dw:" // date2string(txt,current_date), &
       ii, array
   else
-    write(*,"(a,3i3,i5,1x, i0, 20es11.2)") "dw:" // trim(txt), &
+    write(*,"(a,3i3,i5,1x, i0, 20es14.5)") "dw:" // trim(txt), &
       current_date%month, current_date%day, current_date%hour, &
       current_date%seconds, ii, array
   endif
