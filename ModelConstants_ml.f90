@@ -222,6 +222,7 @@ integer, public, parameter :: &
   ,DEBUG_LANDDEFS       = .false. &
   ,DEBUG_LANDUSE        = .false. &
   ,DEBUG_LANDPFTS       = .false. &
+  ,DEBUG_MASS           = .false. &
   ,DEBUG_MET            = .false. &
   ,DEBUG_MOSAICS        = .false. &
   ,DEBUG_NEST           = .false. &
