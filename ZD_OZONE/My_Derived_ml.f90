@@ -475,11 +475,11 @@ private
    end do
    do  i = 1, size(BVOC_GROUP)
      itot = BVOC_GROUP(i)
-     tag_name(1) = "Emis_mgm2_" // trim(species(itot)%name)
+     tag_name(1) = "Emis_mgm2_BioNat" // trim(species(itot)%name)
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end do
   if ( USE_SOILNOX ) then
-     tag_name(1) = "Emis_mgm2_SoilNO"
+     tag_name(1) = "Emis_mgm2_BioNatNO"
      call AddArray( tag_name(1:1), wanted_deriv2d, NOT_SET_STRING, errmsg)
    end if
 
