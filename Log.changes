@@ -165,6 +165,19 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_11 Peter, Dave 4th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+SMI1 and SMI3 read in Met_ml
+moved the postprocessing parts from MeteoRead to metvar (MeteoRead should only read data, and metvar modify the data).
+Met_ml.f90
+MetFields_ml.f90
+
+use 1,limax in RunChem and avoid accumulating totemis, totddep and totwdep in outer frame.
+Runchem_ml.f90
+DryDep_ml.f90
+Aqueous_n_WetDep_ml.f90
+MassBudget_ml.f90
+
 xxxxxxxx rv3_11beta Dave 4th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 (Prelim version. Fixes fracmass, but leaves zero dep on outer boundary.
  Will work further with this.)

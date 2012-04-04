@@ -204,6 +204,8 @@ module MetFields_ml
     ,foundu10_met   & ! false if no u10 from meteorology
     ,foundv10_met   & ! false if no v10 from meteorology
     ,foundprecip    & ! false if no precipitationfrom meteorology
-    ,foundcloudwater  !false if no cloudwater found
+    ,foundcloudwater& !false if no cloudwater found
+    ,foundSMI1& ! false if no Soil Moisture Index level 1 (shallow)
+    ,foundSMI3 ! false if no Soil Moisture Index level 3 (deep)
 
 end module MetFields_ml

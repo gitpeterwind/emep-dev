@@ -157,7 +157,7 @@ module Met_ml
   integer, parameter, private :: NEXTEND = 2 ! no. box to side of (i,j) 
   real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND), save  ::&
          xwf  ! extension of water fraction, save after 1st call
-  logical, private  :: xwf_done = .false. ! extended water-fraction array
+  logical, save, private  :: xwf_done = .false. ! extended water-fraction array
 
   character (len = 100)        ::  field_not_found='field_not_found'
     integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
@@ -203,13 +203,9 @@ contains
     real :: nsec                                 ! step in seconds
 
     real :: buff(MAXLIMAX,MAXLJMAX)!temporary metfields
-    ! Avergaing of soil water used box from +/- NEXTEND (e.g. -1 to +1)
-    real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
-         xsw   ! extension of soil water
-    real :: tmpsw, landfrac, sumland  ! for soil water averaging
     real :: SoilMax  ! Max value soil-water-deep, used to normalise SW
-    integer :: i, j, ii,jj,ii2,jj2
-    logical :: fexist  , xwf_done
+    integer :: i, j
+    logical :: fexist 
 
     nr=2 !set to one only when the first time meteo is read
 
@@ -228,6 +224,8 @@ contains
        foundv10_met = .false. ! from FUTURE NH3emis
        foundprecip = .false.
        foundcloudwater = .false.
+       foundSMI1=.false.
+       foundSMI3=.false.
 
        next_inptime = current_date
 
@@ -507,147 +505,99 @@ contains
        foundSST = .true.
     endif
 
-    namefield='soil_water_content'
+    SoilWaterSource = "IFS"! use as default?
+
+    namefield='SMI1'
     call Getmeteofield(meteoname,namefield,nrec,ndim,&
         unit,validity, SoilWater_uppr(:,:,nr))
-    if(validity==field_not_found)then
-       namefield='soil_wetness_surface'
+
+    if(validity/=field_not_found)then
+       foundSMI1=.true.
+       foundSoilWater_uppr = .true.
+    else
+       
+       namefield='soil_water_content'
        call Getmeteofield(meteoname,namefield,nrec,ndim,&
             unit,validity, SoilWater_uppr(:,:,nr))
-    endif
-    if(validity==field_not_found)then
-       if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater_uppr not found '
-       foundSoilWater_uppr = .false.
-
-    !  The shallow soil water is intended for the experimental dust modelling
-    !  and only implementted with HIRLAM-type inputs so far
-    else if ( trim(unit) /= "m" ) then  ! PARLAM/HIRLAM has metres of water in top 7.2 cm
-
-       if(MasterProc.and.numt==1) &
-             write(*,*)'WARNING: Assuming SoilWater  from IFS'
-       !transform from m3/m3 to Soil Moisture Index and meters in metvar
-       foundSoilWater_uppr = .true.
-       SoilWaterSource = "IFS"
-    else
-       foundSoilWater_uppr = .true.
-    endif
-
-  if ( USE_SOILWATER ) then  !just deep here
-  !========================================
-    namefield='deep_soil_water_content'
-    if(DomainName == "HIRHAM" ) then
-         if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
-         namefield='soil_water_second_layer'
-    end if
-    call Getmeteofield(meteoname,namefield,nrec,ndim,&
-        unit,validity, SoilWater_deep(:,:,nr))
-    if(validity==field_not_found)then
-       if(MasterProc.and.numt==1)write(*,*)' WARNING: ',trim(namefield),' not found '
-       foundSoilWater_deep = .false.
-    else
-       !<<<<<<< process SW <<<<<<<<<<<<<<<<<<<<<<<
-       foundSoilWater_deep = .true.
-       if ( trim(unit) == "m" ) then  ! PARLAM has metres of water
-          SoilWaterSource = "PARLAM"
-          SoilMax = 0.02   
-       else if(unit(1:5)=='m3/m3')then
-         !IFS has a fairly complex soil water system, with field capacity of 
-         ! up to 0.766 for organic soils. More medium soils have ca. 0.43
-         ! Typical values in January are even down to 0.2. We choose 0.5
-         ! as our max, and SoilWater_ml will consider drying effects after
-         ! down to 0.25
-          !call StopAll("Soil Water Handling with IFS not yet implemented")
-          SoilWaterSource = "IFS"
-          SoilMax = 0.5!?? not needed for SMI
-          SoilMax = 1.0!?? not needed for SMI
-       else   ! units not defined yet
-          if(numt==1)write(*,*)trim(unit)
-          call StopAll("Need units for deep soil water")
+       if(validity==field_not_found)then
+          namefield='soil_wetness_surface'
+          call Getmeteofield(meteoname,namefield,nrec,ndim,&
+               unit,validity, SoilWater_uppr(:,:,nr))
        endif
+       if(validity==field_not_found)then
+          if(MasterProc.and.numt==1)write(*,*)' WARNING: SoilWater_uppr not found '
+          foundSoilWater_uppr = .false.
+          
+          !  The shallow soil water is intended for the experimental dust modelling
+          !  and only implementted with HIRLAM-type inputs so far
+       else if ( trim(unit) /= "m" ) then  ! PARLAM/HIRLAM has metres of water in top 7.2 cm
+          
+          if(MasterProc.and.numt==1) &
+               write(*,*)'WARNING: Assuming SoilWater  from IFS'
+          !transform from m3/m3 to Soil Moisture Index and meters in metvar
+          foundSoilWater_uppr = .true.
+          SoilWaterSource = "IFS"
+       else
+          foundSoilWater_uppr = .true.
+       endif
+    endif
+  if ( USE_SOILWATER ) then  !just deep here
 
-     ! Make SoilWater relative 0 < SW < 1:
-     !transformed in metvar
+     !========================================
+     !The in the long term, all meteofile should have Soil Moisture Index defined
+     
+     namefield='SMI3'
+     call Getmeteofield(meteoname,namefield,nrec,ndim,&
+          unit,validity, SoilWater_deep(:,:,nr))
+     
+     if(validity/=field_not_found)then
+        foundSMI3=.true.
+        foundSoilWater_deep = .true.
+        
+     else
+        
+        !Search for other fields which can be used for making SMI
+        namefield='deep_soil_water_content'
+        if(DomainName == "HIRHAM" ) then
+           if(MasterProc.and.numt==1)write(*,*) " Rename soil water in HIRHAM"
+           namefield='soil_water_second_layer'
+        end if
+        call Getmeteofield(meteoname,namefield,nrec,ndim,&
+             unit,validity, SoilWater_deep(:,:,nr))
+        if(validity==field_not_found)then
+           if(MasterProc.and.numt==1)write(*,*)' WARNING: ',trim(namefield),' not found '
+           foundSoilWater_deep = .false.
+        else
+           !<<<<<<< process SW <<<<<<<<<<<<<<<<<<<<<<<
+           foundSoilWater_deep = .true.
+           if ( trim(unit) == "m" ) then  ! PARLAM has metres of water
+              SoilWaterSource = "PARLAM"
+              SoilMax = 0.02   
+           else if(unit(1:5)=='m3/m3')then
+              !IFS has a fairly complex soil water system, with field capacity of 
+              ! up to 0.766 for organic soils. More medium soils have ca. 0.43
+              ! Typical values in January are even down to 0.2. We choose 0.5
+              ! as our max, and SoilWater_ml will consider drying effects after
+              ! down to 0.25
+              !call StopAll("Soil Water Handling with IFS not yet implemented")
+              SoilWaterSource = "IFS"
+              SoilMax = 0.5!?? not needed for SMI
+              SoilMax = 1.0!?? not needed for SMI
+           else   ! units not defined yet
+              if(numt==1)write(*,*)trim(unit)
+              call StopAll("Need units for deep soil water")
+           endif
+           ! Make SMI from SoilWater in metvar
+           
+           !SKIP  SoilWater_deep(:,:,nr) = min( SoilWater_deep(:,:,nr)/SoilMax, 1.0 ) 
+           
+           if(MasterProc.and.numt==1) write(*,*)'max Met_ml Soilwater_deep: ' // &
+                trim(SoilWaterSource), SoilMax, maxval( SoilWater_deep(:,:,nr) )
 
-     !SKIP  SoilWater_deep(:,:,nr) = min( SoilWater_deep(:,:,nr)/SoilMax, 1.0 ) 
+        endif !found deep_soil_water_content
 
-       if(MasterProc.and.numt==1) write(*,*)' Met_ml Soilwater_deep: ' // &
-             trim(SoilWaterSource), SoilMax, maxval( SoilWater_deep(:,:,nr) )
+     endif !SMI3 found
 
-       if ( water_frac_set ) then  ! smooth the SoilWater values:
-
-         ! If NWP thinks this is a sea-square, but we anyway have land,
-         ! the soil moisture might be very strange.  We search neighbouring
-         ! grids and make a land-weighted mean SW
-         ! Skip on 1st numt, since water fraction set a little later. No harm done...
-
-           call extendarea( SoilWater_deep(:,:,nr), xsw, DEBUG_SOILWATER)
-
-           if ( .not. xwf_done ) then ! only need to do this once
-            call extendarea( water_fraction(:,:),       xwf, DEBUG_SOILWATER)
-            xwf_done = .true.
-           end if
-
-           if(DEBUG_SOILWATER .and. debug_proc)&
-             write(*,*)'Met_ml water xwf_done: ', me, xwf_done
-   
-            do j = 1, ljmax
-             do i = 1, limax
-   
-              ! Take a 5x5 average of the land-weighted values for SW. Seems
-              !  best not to "believe" NWP models too much for this param, and
-              !  the variation in a grid is so big anyway. We aim at the broad
-              !  effect. (Alternative might be to find max values?)
-
-                tmpsw = 0.0  ! Relative SW
-                sumland  = 0.0
-                if( water_fraction(i,j) < 0.999 ) then !some land
-                   do jj = -NEXTEND, NEXTEND
-                     do ii = -NEXTEND, NEXTEND
-                         ii2=i+ii+NEXTEND  ! coord in extended array
-                         jj2=j+jj+NEXTEND
-                         if( xsw(ii2,jj2) > 1.0e-10 ) then ! have some SW to work with
-                            landfrac    =  1.0 - xwf(ii2,jj2) 
-                            sumland = sumland +  landfrac
-                            tmpsw   = tmpsw + landfrac * xsw(ii2,jj2)
-                            if ( DEBUG_SOILWATER .and.i==debug_li.and.j==debug_lj ) then
-                              write(*,"(a,2i4,8f10.4)") "METSWX: ", ii2, jj2,&
-                                water_fraction(i,j), xwf(ii2,jj2), &
-                                SoilWater_deep(i,j,nr),&
-                                xsw(ii2,jj2), tmpsw, landfrac, sumland
-                            end if ! DEBUG
-                         end if ! xsw
-                     end do!ii
-                   end do!jj
-                   if( sumland > 0.01) then
-                        SoilWater_deep(i,j,nr) = tmpsw/sumland
-                   else
-                        SoilWater_deep(i,j,nr) = 1.0 ! same as sea
-                   end if
-                else
-                   SoilWater_deep(i,j,nr) = 1.0 ! same as sea !QUERY!!!!!
-                end if ! water_fraction
-       
-                !if( sumland > 0.1 ) then
-                !   SoilWater_deep(i,j,nr) = tmpsw/sumland
-                !   if(DEBUG_SOILWATER) call CheckStop( tmpsw > sumland, "METSW ERROR")
-                !else
-                !   SoilWater_deep(i,j,nr) = 1.0  ! also over water
-                !end if
-   
-             end do ! i
-            end do ! j
-            if ( DEBUG_SOILWATER.and.debug_proc ) then
-               i =  debug_li
-               j =  debug_lj
-               write(*,"(a,f7.4,2i4,f12.4)") "DEBUG_METSWF: ", &
-                water_fraction(i,j), nr, current_date%day, SoilWater_deep(i,j,nr)
-            end if
-
-       else ! for sea values we usually have zero or negative. Set to 1.0
-            where ( SoilWater_deep(:,:,nr) < 1.0e-3 ) SoilWater_deep(:,:,nr) = 1.0
-       endif ! water_frac_set test
-       !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    endif ! validity test
   end if ! USE_SOILWATER
 
   if ( DEBUG_SOILWATER.and.debug_proc ) then
@@ -777,10 +727,16 @@ contains
     real   prhelp_sum,divk(KMAX_MID),sumdiv
     real   inv_METSTEP
 
-    integer :: i, j, k, kk, nr,info
+    integer :: i, j, k, kk, nr,info, ii,jj,ii2,jj2
     integer request_s,request_n,request_e,request_w
     real ::Ps_extended(0:MAXLIMAX+1,0:MAXLJMAX+1),Pmid,Pu1,Pu2,Pv1,Pv2
     real :: relh1,relh2,temperature,swp,wp
+
+    real :: tmpsw, landfrac, sumland  ! for soil water averaging
+
+    ! Avergaing of soil water used box from +/- NEXTEND (e.g. -1 to +1)
+    real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
+         xsw   ! extension of soil water
 
     nr = 2
     if (numt == 1) then
@@ -1270,8 +1226,92 @@ contains
        enddo
     endif
 
-    if(SoilWaterSource == "IFS")then
-!has to convert from m3/m3 to Soil Moisture Index
+
+
+    if(foundSMI3.or.foundSoilWater_deep)then
+
+       if ( water_frac_set ) then  ! smooth the SoilWater values:
+
+         ! If NWP thinks this is a sea-square, but we anyway have land,
+         ! the soil moisture might be very strange.  We search neighbouring
+         ! grids and make a land-weighted mean SW
+         ! Skip on 1st numt, since water fraction set a little later. No harm done...
+
+           call extendarea( SoilWater_deep(:,:,nr), xsw, DEBUG_SOILWATER)
+
+           if ( .not. xwf_done ) then ! only need to do this once
+            call extendarea( water_fraction(:,:),       xwf, DEBUG_SOILWATER)
+            xwf_done = .true.
+           end if
+
+           if(DEBUG_SOILWATER .and. debug_proc)&
+             write(*,*)'Met_ml water xwf_done: ', me, xwf_done
+   
+            do j = 1, ljmax
+             do i = 1, limax
+   
+              ! Take a 5x5 average of the land-weighted values for SW. Seems
+              !  best not to "believe" NWP models too much for this param, and
+              !  the variation in a grid is so big anyway. We aim at the broad
+              !  effect. (Alternative might be to find max values?)
+
+                tmpsw = 0.0  ! Relative SW
+                sumland  = 0.0
+                if( water_fraction(i,j) < 0.999 ) then !some land
+                   do jj = -NEXTEND, NEXTEND
+
+
+                     do ii = -NEXTEND, NEXTEND
+                         ii2=i+ii+NEXTEND  ! coord in extended array
+                         jj2=j+jj+NEXTEND
+                         if( xsw(ii2,jj2) > 1.0e-10 ) then ! have some SW to work with
+                            landfrac    =  1.0 - xwf(ii2,jj2) 
+                            sumland = sumland +  landfrac
+                            tmpsw   = tmpsw + landfrac * xsw(ii2,jj2)
+                            if ( DEBUG_SOILWATER .and.i==debug_li.and.j==debug_lj ) then
+                              write(*,"(a,2i4,8f10.4)") "METSWX: ", ii2, jj2,&
+                                water_fraction(i,j), xwf(ii2,jj2), &
+                                SoilWater_deep(i,j,nr),&
+                                xsw(ii2,jj2), tmpsw, landfrac, sumland
+                            end if ! DEBUG
+                         end if ! xsw
+                     end do!ii
+                   end do!jj
+                   if( sumland > 0.01) then
+                        SoilWater_deep(i,j,nr) = tmpsw/sumland
+                   else
+                        SoilWater_deep(i,j,nr) = 1.0 ! same as sea
+                   end if
+                else
+                   SoilWater_deep(i,j,nr) = 1.0 ! same as sea !QUERY!!!!!
+                end if ! water_fraction
+       
+                !if( sumland > 0.1 ) then
+                !   SoilWater_deep(i,j,nr) = tmpsw/sumland
+                !   if(DEBUG_SOILWATER) call CheckStop( tmpsw > sumland, "METSW ERROR")
+                !else
+                !   SoilWater_deep(i,j,nr) = 1.0  ! also over water
+                !end if
+   
+             end do ! i
+            end do ! j
+            if ( DEBUG_SOILWATER.and.debug_proc ) then
+
+               i =  debug_li
+               j =  debug_lj
+               write(*,"(a,f7.4,2i4,f12.4)") "DEBUG_METSWF: ", &
+                water_fraction(i,j), nr, current_date%day, SoilWater_deep(i,j,nr)
+            end if
+
+       else ! for sea values we usually have zero or negative. Set to 1.0
+            where ( SoilWater_deep(:,:,nr) < 1.0e-3 ) SoilWater_deep(:,:,nr) = 1.0
+       endif ! water_frac_set test
+       !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    endif ! validity test
+
+
+    if(SoilWaterSource == "IFS".and.(.not.foundSMI1 .or. .not.foundSMI3 ))then
+!has to convert from m3/m3 to Soil Moisture Index if not already in SMI units
         do i = 1, limax   ! NEWTEST 1, MAXLIMAX
         do j = 1, ljmax    ! NEWTEST 1, MAXLJMAX
           if ( DEBUG_SOILWATER ) then 
@@ -1293,8 +1333,8 @@ contains
               end if
            end if
             ! Soil Moisture Index
-            SoilWater_uppr(i,j,nr)=(SoilWater_uppr(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j))
-            SoilWater_deep(i,j,nr)=(SoilWater_deep(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j)) 
+            if(.not.foundSMI1)SoilWater_uppr(i,j,nr)=(SoilWater_uppr(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j))
+            if(.not.foundSMI3)SoilWater_deep(i,j,nr)=(SoilWater_deep(i,j,nr)-pwp(i,j))/(fc(i,j)-pwp(i,j)) 
 
             if ( DEBUG_SOILWATER .and. ( SoilWater_uppr(i,j,nr) > 1.0  .or. &
                   SoilWater_deep(i,j,nr) > 1.0 ) ) then
