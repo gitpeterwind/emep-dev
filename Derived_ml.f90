@@ -58,7 +58,8 @@ use My_Derived_ml,  only : &
       D3_OTHER
 
 use AOTx_ml,          only: Calc_GridAOTx
-use Biogenics_ml,     only: EmisNat, BIO_SOILNO, BIO_SOILNH3
+!DSA12use Biogenics_ml,     only: EmisNat, BIO_SOILNO, BIO_SOILNH3
+use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop, StopAll
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &
                             PM25_water, PM25_water_rh50
@@ -553,20 +554,19 @@ end do
     ! AddNewDeriv( name,class,subclass,txt,unit,
     !    index,f2d, dt_scale,scale, avg,iotype,Is3D)
 
-  do  ind = 1, size(BVOC_GROUP)
-     itot = BVOC_GROUP(ind)
-     dname = "Emis_mgm2_" // trim(species(itot)%name)
+  do  ind = 1, NEMIS_BioNat !DSA12 size(BVOC_GROUP)
+     dname = "Emis_mgm2_BioNat" // trim(EMIS_BioNat(ind) )
      call AddNewDeriv( dname, "NatEmis", "-", "-", "mg/m2", &
                  ind , -99, T ,    1.0e6,     F, IOU_DAY )  
    end do
-   if ( USE_SOILNOX ) then
-     call AddNewDeriv( "Emis_mgm2_SoilNO", "NatEmis", "-", "-", "mg/m2", &
-                 BIO_SOILNO , -99, T ,    1.0e6,     F, IOU_DAY )  
-   end if
-   if ( USE_SOILNH3 ) then
-     call AddNewDeriv( "Emis_mgm2_SoilNH3", "NatEmis", "-", "-", "mg/m2", &
-                 BIO_SOILNH3 , -99, T ,    1.0e6,     F, IOU_DAY )  
-   end if
+!DSA12   if ( USE_SOILNOX ) then
+!DSA12     call AddNewDeriv( "Emis_mgm2_SoilNO", "NatEmis", "-", "-", "mg/m2", &
+!DSA12                 BIO_SOILNO , -99, T ,    1.0e6,     F, IOU_DAY )  
+!DSA12   end if
+!DSA12   if ( USE_SOILNH3 ) then
+!DSA12     call AddNewDeriv( "Emis_mgm2_SoilNH3", "NatEmis", "-", "-", "mg/m2", &
+!DSA12                 BIO_SOILNH3 , -99, T ,    1.0e6,     F, IOU_DAY )  
+!DSA12   end if
 
 ! SNAP emissions called every hour, given in kg/m2/s, but added to
 ! d_2d every advection step, so get kg/m2. 

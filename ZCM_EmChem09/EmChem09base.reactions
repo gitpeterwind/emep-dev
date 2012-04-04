@@ -303,9 +303,10 @@ rcemis:C5H8                        = C5H8    ; # Anthropogenic isoprene
 *
 * <----------- Biogenic/natural emissions ----------------------------->
 *
-rcbio(BIO_ISOP,k)                       = C5H8    ;
-rcbio(BIO_TERP,k)                       = APINENE ;
-rcbio(BIO_SOILNO,k)                     = NO ;
+*emisextra:C5H8,APINENE,NO
+rcbio:C5H8                       = C5H8    ;
+rcbio:APINENE                    = APINENE ;
+rcbio:NO                         = NO ;
 *FEB2012 rc_Rn222(k)                                = Rn222    ;
 *FEB2012 rc_Rnwater(k)                             = Rnwater    ;
 *

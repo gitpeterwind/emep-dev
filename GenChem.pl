@@ -39,13 +39,16 @@ use warnings;
  my $LOOP_TAILTEXT =  "";    #  e.g.     "END DO\n";
 
  my $CHEMEQN_TEXT =  "
-      xnew(SPEC)=  max(0.0, ( xold(SPEC) + dt2 * P)) /(1.0 + dt2*L )\n";
+      xnew(SPEC)=  ( xold(SPEC) + dt2 * P) /(1.0 + dt2*L )\n";
+      #if( xnew(SPEC) < 0.0 ) print *, \"NEGNEG!!! SPEC\", xold(SPEC), P, L\n";
+      #xnew(SPEC)=  ( xold(SPEC) + dt2 * P) /(1.0 + dt2*L )\n";
+      
 
  my $CHEMEQN_NOLOSS  =  "
-      xnew(SPEC)=  max(0.0,  xold(SPEC) + dt2 * P)\n";
+      xnew(SPEC)=  xold(SPEC) + dt2 * P\n";
 
  my $CHEMEQN_NOPROD  =  "
-      xnew(SPEC)=  max(0.0, xold(SPEC)) / ( 1.0 + dt2 * L )\n";
+      xnew(SPEC)=  xold(SPEC) / ( 1.0 + dt2 * L )\n";
 
  my $CHEMEQN_NOTERMS =  "!Nothing to do for SPEC! xnew(SPEC)=  max(0.0, xold(SPEC))\n";
 
@@ -65,6 +68,7 @@ our %grp;   # Will be hash of arrays,  e.g. $grp{"NOX"} = [ "NO", "NO2" ]
 
 our @emis_specs = ();
 our @emis_files = ();
+our @bionat_specs = (); # For isoprene, terpenes, soil-NO etc.
 
 # Some descriptive variables for later output
  my ( $line, $linenum, $rate ) ;  # Input line
@@ -176,6 +180,7 @@ if ( $nrcmisc > 0 ) {
  print_groups();   # DDEP_OXNGROUP etc.
  print_emisstuff("File",@emis_files );     #  "nox ", etc.
  print_emisstuff("Specs",@emis_specs );     #  "nox ", etc.
+ print_emisstuff("BioNat",@bionat_specs );     #  "nox ", etc.
  print_femis(@emis_files );     #  "nox ", etc.
  print_emislist(@emis_files );     #  "nox ", etc.
 
@@ -556,11 +561,6 @@ sub define_rates {
 	$rate =~ s/(\*|\+|\-\/)/ $1 /g ;
 
 	$rate = expand_shorthands($rate);
-	#foreach my $shorthand (keys(%shorthand)){
-	#	if ($rate =~ /\b $shorthand \b/x ) {
-	#		$rate =~ s/$shorthand/$shorthand{$shorthand}/;
-	#	}
-	#}
 	printall("Expand shorthands:  $rate \n");
 
 # Then, we see what type of rate we have. We exclude exponentials
@@ -598,17 +598,19 @@ sub define_rates {
 
 	if ( &is_float($rate) ) {
 		$k = $rate ;
-		     # $nrcc++ ;    # $rate_label[$neqn] = "RCC(" . $nrcc. ")"    ;
 	} elsif ( $rate =~ /rcemis/i ) {
 		printall( "Process??: RATE $rate \n" );
 		$k = process_emis( $rate ) ; # rcemis:NO2
 		printall( "Process??: K $k \n" );
+	} elsif ( $rate =~ /rcbio/i ) {
+		printall( "Process??: BIO RATE $rate \n" );
+		$k = process_emis( $rate ) ; # rcbio:NO
+		printall( "Process??: BIO K $k \n" );
 	} elsif ( $rate =~ /aqrck/i ) {
 		$k = $rate ;
 	} elsif ( $rate =~ /DJ/i ) {   # e.g. DJ(iq,2)
 		$rate =~ s/DJ/rcphot/;
 		$k = $rate ;
-		#$k = lc($rate) ;
 	} elsif ( $rate =~ /DRY|WET/i ) {   # e.g. DJ(iq,2)
 		$k = "$rate($DIMFLAG)" ;
 
@@ -616,12 +618,8 @@ sub define_rates {
 		$nrcmisc++ ;
 		$k = "rcmisc($nrcmisc,$DIMFLAG)";
 		$nrctroe++ ;
-		#A08 $k = "rctroe($nrctroe,$DIMFLAG)"  ;
 		$rate = lc($rate) ;
 		printall( "A08TROE->RCMISC = $nrcmisc RATE $rate\n" );
-		#A08 $rctroe[$nrctroe] = $rate ;
-		#A08 $rctroetext[$nrctroe] = "rctroe($nrctroe,:)" ;  # older : $k ;
-		#A08 new: add to rcmisc:
 		$rcmisc[$nrcmisc] = lc($rate) ;
 		$rcmisctext[$nrcmisc] = "rcmisc($nrcmisc,:)" ;    # older: $k ;
 	} elsif ( $rate =~ /(^[A-Z])/ ) {   # e.g. KRO2HO2,DJ_2  --> DJ_2(iq)
@@ -1582,12 +1580,25 @@ sub process_emis {
 		my $found = 0;
 		foreach my $e ( @emis_specs ) {
 			$found = 1 if $spec eq $e ;
-			printall( "RCEMIS FOUND: $spec \n" );
+			printall( "RCEMIS FOUND: $spec \n" ) if $found;
 		}
 		push( @emis_specs, $spec ) unless $found;
-		$rate = "rcemis($spec,k)";
+	        $rate = "rcemis($spec,k)" unless $found ; # Only add if not already set
+
+print "PROCESS_EMIS $arg  $rcemis : $spec \n";
+		if ( $rcemis eq "RCBIO" ) {
+	  	     $rate = "0 !Skip bio rate since rcemis exists" if $found ; # Only add if not already set
+		     my $found = 0;
+		     foreach my $e ( @bionat_specs ) {
+			$found = 1 if $spec eq $e ;
+			printall( "RCBIONAT FOUND: $spec \n" ) if $found;
+		     }
+		     printall( "NEW RCBIONAT FOUND: $spec \n" ) if $found;
+		     push( @bionat_specs, $spec ) unless $found;
+		}
 		printall( "RCEMIS RATE: $rate \n" );
 		printall( "RCEMIS EMISF @emis_specs\n" );
+		printall( "RCEMIS BIONA @bionat_specs\n" );
 	} else {
 		$rate = $arg;
 		die "No emission file specified for $arg\n";

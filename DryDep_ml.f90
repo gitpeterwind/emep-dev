@@ -701,6 +701,9 @@ module DryDep_ml
 
          if ( DepLoss(nadv) < 0.0 .or. &
               DepLoss(nadv)>xn_2d(ntot,KMAX_MID) ) then
+             print "(a,2i4,a,4es12.4)", "NEGXN ", ntot, ncalc, &
+                 trim(species(ntot)%name), xn_2d(ntot,KMAX_MID), Fgas(ntot,KMAX_MID),&
+                 Fpart(ntot,KMAX_MID), DepLoss(nadv), vg_fac(ncalc)
              call CheckStop("NEGXN DEPLOSS" )
          end if
 

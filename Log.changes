@@ -165,6 +165,56 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_11beta Dave 4th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+(Prelim version. Fixes fracmass, but leaves zero dep on outer boundary.
+ Will work further with this.)
+
+Changes to fix mass-balance problems, and simplify emissions
+Code changes flagged with !DSA12 for now.(A12 = April 2012)
+
+Biogenics_ml:   rcbio replaced by rcemis, and use of CM_EmisNat and
+                EMIS_BioNat from GenChem
+
+Derived_ml:   modified to use EMIS_BioNat from GenChem
+
+DryDep_ml,   extra debug printout
+
+EmisGet_ml,   extra debug printout
+
+GenChem.pl  
+             Now produced CM_EmisNat.inc with biogenics
+             rcbio read from GenIn.reactions  is used to flag such components
+
+             Equations changed!
+              max(xnew, ...) removed from CM_Reactions
+              as change in Solver puts test on xold instead
+
+GridValues_ml - extra debug
+
+MassBudget_ml - routine emis_massbudget created here, from code that was in Setup_1d_ml
+
+ModelConstants_ml - removed NSOIL_EMIS
+Runchem_ml
+               - uses loops of li0, li1 for now. Solved fracmass problem, but leaves zero
+                 deposition on outer boundaries.
+               - call setup_rcemis moved before setup_bio, so that rcemis now initialises
+                 rcemis to zero, fills in with SNAP-emissions, and setup_bio adds 
+                 isoprene, soil-NO, etc.
+               - call to  emis_massbudget_1d done after all this.
+Setup_1d_ml
+               - code for totem mass-budget moved to MassBudget_ml
+
+Setup_1dfields_ml - rcbio removed
+
+Solver_ml    - xold(n) = max( xold(n), 0.0 )  added. Avoids need for max in CM_Reactions
+
+ZCM_EmChem09/EmChem09base.reactions new rcbio style: 
+   rcbio:C5H8                       = C5H8    ;
+   rcbio:APINENE                    = APINENE ;
+   rcbio:NO                         = NO ;
+     (GenChem treates rcbio as special)
+
+
 xxxxxxxx rv3_10_30 Dave 2nd April (started  30/3)/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 mk.GenChem - added example lines for CTI_V2_R5 chem, and no extras

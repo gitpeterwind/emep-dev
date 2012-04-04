@@ -47,7 +47,7 @@
   !=======================================================================!
  
     use Aqueous_ml,        only: aqrck, ICLOHSO2, ICLRC1, ICLRC2, ICLRC3   
-    use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, BIO_SOILNO
+    !DSA12use Biogenics_ml,      only: BIO_ISOP, BIO_TERP, BIO_SOILNO, rcbio
     use CheckStop_ml,      only: CheckStop
     use DefPhotolysis_ml         ! => IDHNO3, etc.
     use EmisDef_ml,        only: QSSFI, QSSCO, QDUFI, QDUCO, QPOL, &
@@ -73,9 +73,9 @@
                                  Fgas,   & ! fraction in gas-phase, for SOA
                                  rcss, rcwbd, amk, & ! Sea salt, dust emission rate
                                  rcroadd,       & ! Road dust emission rate
-                                 rcpol,         & ! Pollen
+                                 rcpol !,         & ! Pollen
                                  !FUTURE rcnh3,         & ! NH3emis
-                                 rcbio            ! bvoc
+!DSA12                                 rcbio            ! bvoc
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk
     use ChemFunctions_ml, only :VOLFACSO4,VOLFACNO3,VOLFACNH4 !TEST TTTT
   implicit none
@@ -181,6 +181,8 @@ contains
 
              xextrapol = xnew(n) + (xnew(n)-x(n)) *cc(ichem)
              xold(n) = coeff1(ichem)*xnew(n) - coeff2(ichem)*x(n)
+!DSA12
+             xold(n) = max( xold(n), 0.0 ) 
              x(n) = xnew(n)
              xnew(n) = xextrapol
 
@@ -243,10 +245,6 @@ contains
             Dchem(:,k,i,j) = (xnew(:) - xn_2d(:,k))*dt_advec_inv
             xn_2d(:,k) = xnew(:)
 
-        if (debug_flag.and.k==KMAX_MID) then
-          write(*,"(a,2i4,3es10.3)") "SOLVER ", C5H8, BIO_ISOP,&
-             RCEMIS(C5H8,K), RCBIO(BIO_ISOP,K), xn_2d(C5H8,k)
-        end if
 
     enddo ! End of vertical k-loop
 

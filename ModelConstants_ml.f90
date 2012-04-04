@@ -71,10 +71,10 @@ logical, public, parameter :: USE_POLLEN         = .false.!EXPERIMENTAL. Only wo
 ! Biogenics. Use 3 even if no terpene chemistry - simplifies
 ! rest of code.  iso = isoprene, mtp = monoterpenes from pools, 
 ! mtl = monoterpenes with light dependence
-integer, public, parameter ::   NBVOC = 3
-integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
-character(len=4),public, save, dimension(NBVOC) :: &
-  BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
+!DSA12 integer, public, parameter ::   NSOIL_EMIS = 2 ! NO + NH3
+ integer, public, parameter ::   NBVOC = 3
+ character(len=4),public, save, dimension(NBVOC) :: &
+   BVOC_USED = (/ "Eiso","Emt ","Emtl"/)
 
 !The GEA emission data, which is used for EUCAARI runs on the HIRHAM domains
 !have in several sea grid cells non-zero emissions in other sectors than SNAP8

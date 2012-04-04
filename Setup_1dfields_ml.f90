@@ -35,7 +35,8 @@
   !
   ! - new aray added to keep o2, m, and for MADE oh, etc
 
-  use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC, NSOIL_EMIS
+!DSA12  use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER, NBVOC, NSOIL_EMIS
+  use ModelConstants_ml,     only :  KMAX_MID, KCHEMTOP, KUPPER
   use EmisDef_ml,            only :  NSS, NDU, NROADDUST, NPOL !SeaS, Dust
   use ChemSpecs_tot_ml,      only :  NSPEC_TOT, FIRST_SEMIVOL, LAST_SEMIVOL
   use ChemSpecs_shl_ml,      only :  NSPEC_SHL
@@ -73,7 +74,7 @@
   ! remain zero however
 
   ! Emission arrays:
-   real, public, dimension(NBVOC+NSOIL_EMIS,KCHEMTOP:KMAX_MID), save :: rcbio = 0.0 ! BVOC
+!DSA12   real, public, dimension(NBVOC+NSOIL_EMIS,KCHEMTOP:KMAX_MID), save :: rcbio = 0.0 ! BVOC
   !FUTURE real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rcnh3 
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rn222 = 0.0  ! 210Pb
    real, public, dimension(KCHEMTOP:KMAX_MID), save   :: rc_Rnwater = 0.0  ! TEST

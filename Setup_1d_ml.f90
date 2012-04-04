@@ -36,7 +36,7 @@
   !-----------------------------------------------------------------------!
   !FUTURE use NH3variables_ml,       only : NNH3 ! hb NH3emis
   use AirEmis_ml,            only :  airn, airlig   ! airborne NOx emissions
-  use Biogenics_ml,        only : SoilNOx
+  use Biogenics_ml,        only : SoilNOx    !DSA12 , rcbio
   use Chemfields_ml,         only :  xn_adv,xn_bgn,xn_shl, &
                                    NSPEC_COL, NSPEC_BGN, xn_2d_bgn
   use CheckStop_ml,          only :  CheckStop
@@ -93,8 +93,8 @@
     ,rcss, rcwbd, rcpol   &  !Sea salt, Wind blown dust, pollen
     ,rcroadd              &  !Road dust
     ,rh, temp, tinv, itemp,pp      &  !
-    ,amk, o2, n2, h2o     &  ! Air concentrations
-    ,rcbio                   ! BVOC
+    ,amk, o2, n2, h2o    ! &  ! Air concentrations
+!DSA12    ,rcbio                   ! BVOC
 !FUTURE    ,rcnh3                   ! NH3emis
   use SeaSalt_ml,        only : SS_prod
   use Pollen_ml,         only : Pollen_prod
@@ -227,7 +227,7 @@ contains
 
    !  local
      integer ::  iqrc,k, itot
-     real    :: scaling, scaling_k
+     !DSA12 real    :: scaling, scaling_k
      real    :: eland   ! for Pb210  - emissions from land
 
     integer ::  i_help,j_help,i_l,j_l
@@ -342,39 +342,39 @@ contains
         rcemis(NO,KMAX_MID)=rcemis(NO,KMAX_MID)+SoilNOx(i,j)
      endif
 
-   !Mass Budget calculations
-   !   Adding up the emissions in each timestep
-
-
-   scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
-
-   do k = KCHEMTOP,KMAX_MID
-
- 
-
-       scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
-
-  if ( DEBUG_MASS .and. debug_proc .and.  &
-            i==debug_li .and. j==debug_lj ) then ! .and. 
-!            current_date%seconds == 0 ) then
-    call datewrite("MASSRC ", k, (/ dB(k)*ps(i,j,1), xmd(i,j), ps(i,j,1), scaling_k /) )
-
-!     write(6,"(a,i3,5es12.3)") "MASSRC ", k, dB(k), dB(k)*ps(i,j,1), xmd(i,j), scaling_k /) )
-  end if
-
-       do iqrc = 1, NSPEC_ADV
-
-          itot = iqrc + NSPEC_SHL
-          totem( iqrc ) = totem( iqrc ) + &
-                rcemis( itot, k ) * scaling_k
-          !if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
-          !    i==debug_li .and. j==debug_lj ) then
-          ! write(6,"(a,2i3,es10.3,2i4)") "MASSEQV:", iqrc, &
-          ! rcemis( iqrc,k), qrc2ixadv(iqrc)
-          !end if
-       end do
-
-   end do ! k loop
+!DSA12   !Mass Budget calculations
+!DSA12   !   Adding up the emissions in each timestep
+!DSA12
+!DSA12
+!DSA12   scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
+!DSA12
+!DSA12   do k = KCHEMTOP,KMAX_MID
+!DSA12
+!DSA12 
+!DSA12
+!DSA12       scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
+!DSA12
+!DSA12  if ( DEBUG_MASS .and. debug_proc .and.  &
+!DSA12            i==debug_li .and. j==debug_lj ) then ! .and. 
+!DSA12!            current_date%seconds == 0 ) then
+!DSA12    call datewrite("MASSRC ", k, (/ dB(k)*ps(i,j,1), xmd(i,j), ps(i,j,1), scaling_k /) )
+!DSA12
+!DSA12!     write(6,"(a,i3,5es12.3)") "MASSRC ", k, dB(k), dB(k)*ps(i,j,1), xmd(i,j), scaling_k /) )
+!DSA12  end if
+!DSA12
+!DSA12       do iqrc = 1, NSPEC_ADV
+!DSA12
+!DSA12          itot = iqrc + NSPEC_SHL
+!DSA12          totem( iqrc ) = totem( iqrc ) + &
+!DSA12                rcemis( itot, k ) * scaling_k
+!DSA12          !if ( DEBUG_SETUP_1DCHEM .and. debug_proc .and.  &
+!DSA12          !    i==debug_li .and. j==debug_lj ) then
+!DSA12          ! write(6,"(a,2i3,es10.3,2i4)") "MASSEQV:", iqrc, &
+!DSA12          ! rcemis( iqrc,k), qrc2ixadv(iqrc)
+!DSA12          !end if
+!DSA12       end do
+!DSA12
+!DSA12   end do ! k loop
 
   ! Soil Rn222 emissions from non-ice covered land, + water
   ! at rate of 1 atom/cm2/s

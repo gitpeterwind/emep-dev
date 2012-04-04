@@ -49,7 +49,8 @@
    use Ammonium_ml,       only: Ammonium
    use AOD_PM_ml,         only: AOD_calc
    use Aqueous_ml,        only: Setup_Clouds, prclouds_present, WetDeposition
-   use Biogenics_ml,      only: BIO_ISOP, BIO_TERP,  BIO_SOILNO, setup_bio ! for debug 
+   !DSA12 use Biogenics_ml,      only: BIO_ISOP, BIO_TERP,  BIO_SOILNO, setup_bio !DSA12, rcbio 
+   use Biogenics_ml,      only: setup_bio
    use CellMet_ml,        only: Get_CellMet
    use CheckStop_ml,      only: CheckStop
    use Chemfields_ml,     only: xn_adv    ! For DEBUG 
@@ -61,6 +62,7 @@
    use DustProd_ml,       only: WindDust
    use GridValues_ml,     only : debug_proc, debug_li, debug_lj
    use Io_Progs_ml,       only : datewrite
+   use MassBudget_ml,     only : emis_massbudget_1d
    use ModelConstants_ml, only : USE_DUST, USE_SEASALT, USE_AOD, & 
                                  PPB, KMAX_MID, dt_advec,        &
                                  nprint, END_OF_EMEPDAY,         &
@@ -80,7 +82,7 @@
    use Setup_1d_ml,       only: setup_1d, &
                                 setup_rcemis, reset_3d
                                 !FUTURE setup_nh3  ! NH3emis (NMR-NH3 project)
-   use Setup_1dfields_ml, only: first_call, rcbio,  &
+   use Setup_1dfields_ml, only: first_call, & ! DSA12 , rcbio,  &
                                 amk, rcemis, xn_2d  ! DEBUG for testing
    use TimeDate_ml,       only: current_date,daynumber
 
@@ -127,8 +129,10 @@ subroutine runchem(numt)
 
    errcode = 0
 
-    do j = 1, ljmax
-      do i = 1, limax
+    !TEST do j = 1, ljmax
+    !TEST   do i = 1, limax
+    do j = lj0, lj1 !  ljmax
+      do i = li0, li1 ! 1, limax
 
           call Code_Timer(tim_before)
 
@@ -153,12 +157,16 @@ subroutine runchem(numt)
 
              call setup_1d(i,j)   
 
+             call setup_rcemis(i,j) ! Sets initial rcemis. DSA12 moved
+
              call Add_2timing(27,tim_after,tim_before,&
-                                              "Runchem:setup_1d")
+                                              "Runchem:setup_1d+rcemis")
 
              call Setup_Clouds(i,j,debug_flag)
 
-             call setup_bio(i,j)    
+             call setup_bio(i,j)   ! Adds bio/nat to rcemis
+
+             call emis_massbudget_1d(i,j)   ! Adds bio/nat to rcemis
 
              call Add_2timing(28,tim_after,tim_before,  &
                                          "Runchem:setup_cl/bio")
@@ -169,7 +177,7 @@ subroutine runchem(numt)
              call Add_2timing(29,tim_after,tim_before,  &
                                            "Runchem:1st setups")
 
-             call setup_rcemis(i,j)
+!DSA12 moved             call setup_rcemis(i,j)
 
 ! Called every adv step, only updated every third hour
              !FUTURE call setup_nh3(i,j)    ! NH3emis, experimental (NMR-NH3)
@@ -188,9 +196,7 @@ subroutine runchem(numt)
 
              if ( DEBUG .and. debug_flag  ) then
                call datewrite("Runchem Pre-Chem", (/ rcemis(NO,20), &
-                rcbio(BIO_ISOP,KMAX_MID), rcemis(C5H8,KMAX_MID), &
-                rcbio(BIO_SOILNO,KMAX_MID), rcemis(C5H8,KMAX_MID), &
-                xn_2d(NO,20),xn_2d(C5H8,20) /) )
+                rcemis(C5H8,KMAX_MID), xn_2d(NO,20),xn_2d(C5H8,20) /) )
              end if
 
              if ( ORGANIC_AEROSOLS ) &

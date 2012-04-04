@@ -35,7 +35,9 @@
 ! Routine to cross check the mass balance of the model
 !_____________________________________________________________________________
 
- use ChemChemicals_ml, only : species       ! species identifier
+
+ use CheckStop_ml,      only : CheckStop
+ use ChemChemicals_ml,  only : species       ! species identifier
  use ChemSpecs_tot_ml,  only : NSPEC_TOT     ! No. species (long-lived)
  use ChemSpecs_adv_ml,  only : NSPEC_ADV     ! No. species (long-lived)
  use ChemSpecs_shl_ml,  only : NSPEC_SHL     ! No. species (shorshort-lived)
@@ -43,13 +45,15 @@
  use GridValues_ml ,  only : carea,xmd     ! cell area, 1/xm2 where xm2 is 
                                            ! the area factor in the middle 
                                            ! of the cell 
+ use GridValues_ml,   only : gridwidth_m,dA,dB
  use GridValues_ml ,  only : debug_proc, debug_li, debug_lj
  use Io_ml         ,  only : IO_RES, PrintLog   ! io=25
  use Io_ml         ,  only : datewrite   ! MASS
  use MetFields_ml  ,  only : ps            ! surface pressure  
- use ModelConstants_ml,                 &
-                      only : KMAX_MID   &  ! Number of levels in vertical
+ use ModelConstants_ml,  only : &
+    KMAX_MID , KCHEMTOP    & ! Start and upper k for 1d fields
                             ,MasterProc &  ! Master processor
+                            ,dt_advec   & ! time-step
                             ,NPROC      &  ! No. processors
                             ,PT         &  ! Pressure at top
                             ,ATWAIR     &  ! Mol. weight of air(Jones,1992)
@@ -63,7 +67,8 @@
                             ,limax,ljmax&
                             ,gi0, gj0   &
                             ,GIMAX,GJMAX
- use Setup_1dfields_ml, only : amk ! Air concentrations 
+ use PhysicalConstants_ml,  only :  GRAV
+ use Setup_1dfields_ml, only : amk, rcemis ! Air concentrations , emissions
  use TimeDate_ml,       only :  current_date
 
 !Variable listing
@@ -119,6 +124,7 @@ private
 
   public :: Init_massbudget
   public :: massbudget
+  public :: emis_massbudget_1d
 !  public :: DryDep_Budget
 
 contains
@@ -161,6 +167,40 @@ contains
  end subroutine Init_massbudget
 
 
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+ !xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+   subroutine emis_massbudget_1d(i,j)
+
+    integer, intent(in) :: i,j    ! coordinates of column
+    integer    :: k, iadv, itot   ! loop variables
+    real :: scaling, scaling_k
+
+   !Mass Budget calculations
+   !   Adding up the emissions in each timestep
+
+   scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
+
+   do k = KCHEMTOP,KMAX_MID
+
+       scaling_k = scaling * (dA(k) + dB(k)*ps(i,j,1))/amk(k)
+
+       if ( DEBUG_MASS .and. debug_proc .and.  &
+            i==debug_li .and. j==debug_lj ) then ! .and. 
+!            current_date%seconds == 0 ) then
+            call datewrite("MASSRC ", k, (/ dB(k)*ps(i,j,1), xmd(i,j), &
+                ps(i,j,1), scaling_k /) )
+       end if
+
+       do iadv = 1, NSPEC_ADV
+
+          itot = iadv + NSPEC_SHL
+          totem( iadv ) = totem( iadv ) + &
+                rcemis( itot, k ) * scaling_k
+       end do
+
+   end do ! k loop
+
+  end subroutine emis_massbudget_1d
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
  subroutine massbudget()
 
