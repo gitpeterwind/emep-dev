@@ -165,10 +165,41 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_11_1  Dave 4th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Mainly soil water associated changes, but bug-fix in USE_HOURLY Emissions done. Candidate
+for default.
+
+Derived_ml - added SMI_deep, SMI_uppr
+
+Dust_ml 
+   Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP), hence:
+
+      v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
+
+Emissions_ml - bug fix on hour_iland
+
+Met_ml
+
+   Modified Landify in Met_ml, to cope with upper and deep soil water
+   Some max/min statements. 
+   Extra comments
+   Small tidy-ups
+   ** Code ** not intended to work for non-SMI yet. Will fix another day
+    Also, need to check what happens near coasts.
+
+ModelConstants_ml - added DEBUG_LANDIFY
+
+My_Derived_ml - add SoilWater_deep and uppr
+
+My_Outputs_ml - longer text strings to enable e.g. Emis_mgm2_BioNatAPINENE
+
+
 xxxxxxxx rv3_11 Peter, Dave 4th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 SMI1 and SMI3 read in Met_ml
-moved the postprocessing parts from MeteoRead to metvar (MeteoRead should only read data, and metvar modify the data).
+moved the postprocessing parts from MeteoRead to metvar (MeteoRead should only
+ read data, and metvar modify the data).
 Met_ml.f90
 MetFields_ml.f90
 

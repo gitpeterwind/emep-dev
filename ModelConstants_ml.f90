@@ -56,7 +56,7 @@ logical, public, parameter :: USE_ROADDUST       = .false.  ! UNDER DEVELOPMENT!
 logical, public, parameter :: DO_SAHARA          = .true.  ! Turn on/off BG Saharan Dust
 logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
 logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
-logical, public, parameter :: USE_HOURLY_EMISVAR = .false.  ! NOT FULLY TESTED YET! Use hourly (SNAP-sector dependent ) emission (rather than just day-night variation)
+logical, public, parameter :: USE_HOURLY_EMISVAR = .true.  ! NOT FULLY TESTED YET! Use hourly (SNAP-sector dependent ) emission (rather than just day-night variation)
 logical, public, parameter :: USE_AOD            = .false.
 logical, public, parameter :: USE_ZREF           = .false.  ! testing
 logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
@@ -201,7 +201,7 @@ integer, public, parameter :: &
   ,DEBUG_BCS            = .false. &
   ,DEBUG_BIO            = .false. &
   ,DEBUG_BLM            = .false. & ! Produces matrix of differnt Kz and Hmix
-  ,DEBUG_DERIVED        = .false. &
+  ,DEBUG_DERIVED        = .true. &
     ,DEBUG_COLUMN       = .false. & ! Extra option in Derived
   ,DEBUG_DO3SE          = .false. &
   ,DEBUG_DRYRUN         = .false. & ! Skips fast chemistry to save some CPU
@@ -222,6 +222,7 @@ integer, public, parameter :: &
   ,DEBUG_LANDDEFS       = .false. &
   ,DEBUG_LANDUSE        = .false. &
   ,DEBUG_LANDPFTS       = .false. &
+  ,DEBUG_LANDIFY        = .false. &
   ,DEBUG_MASS           = .false. &
   ,DEBUG_MET            = .false. &
   ,DEBUG_MOSAICS        = .false. &

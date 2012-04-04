@@ -62,7 +62,7 @@
                                   foundSoilWater => foundSoilWater_uppr,    &
                                   foundws10_met, ws_10m,                  &
                                   clay_frac, sand_frac,                   & 
-                                  pwp,SoilWaterSource
+                                  pwp, fc, SoilWaterSource
  use ModelConstants_ml,    only : KMAX_MID, KMAX_BND, dt_advec, METSTEP, &
                                   NPROC, MasterProc, USE_DUST, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
@@ -274,9 +274,16 @@
 !__ Bulk density of dry surface soil [Zender, (8)]
      soil_dns_dry = soil_dens * (1.0 - vh2o_sat)    ! [kg m-3]
 !__ Volumetric soil water content [m3/m3] 
-     v_h2o = SoilWater(i,j,1)
+!DSA12 Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP)
+!DSA12     v_h2o = SoilWater(i,j,1)
               !-- Note, in HIRLAM SoilWater is in [m/0.072m] -> conversion
               !   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
+!DSA12
+! *** BUT *** the following is using IFS pwp. This is likely
+! the best we can do for the grid-average, but for dust it might be more
+! appropriate to calculate for specific landcover PWP values.
+! 
+     v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
 
 !__ Gravimetric soil water content [kg kg-1]  
         gr_h2o = v_h2o * Ro_water/soil_dns_dry       
@@ -290,6 +297,7 @@
      write(6,'(a30,f8.2,2f12.4)') 'Sand/Water_sat/soil_dens',  &
                                    sand_frac(i,j),vh2o_sat,soil_dns_dry
      write(6,'(a30,3f15.5)') ' SW/VolW/GrW/ ',SoilWater(i,j,1),v_h2o,gr_h2o
+     write(6,'(a30,3f15.5)') ' SW COMPS ',SoilWater(i,j,1), fc(i,j), pwp(i,j)
      endif
 ! Soil water correction
      if (gr_h2o > gwc_thr) &

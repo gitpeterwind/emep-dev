@@ -827,11 +827,21 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
 
                 if(Country(iland)%timezone==-100)then
                    daytime_iland=daytime_longitude
-                   hour_iland=hour_longitude
+                   hour_iland=hour_longitude + 1   !DSA12 - added 1 
                 else
                    daytime_iland=daytime(iland)
-                   hour_iland=localhour(iland)
+                   hour_iland=localhour(iland) + 1
                 endif
+                if( hour_iland > 24 ) hour_iland = 1 !DSA12
+
+                if( DEBUG_EMISTIMEFACS .and. debug_proc .and. &
+                       i==DEBUG_li .and. j==DEBUG_lj )THEN
+                    call datewrite("HOUR ILAND", (/ icc, iland, &
+                       daytime_iland, hour_iland, hourloc /), &
+                         (/ (indate%hour+24*(1+glon(i,j)/360.0))/24.0  /) )
+                    call datewrite("HOUR SNAP", hour_iland, &
+                        (/ SNAP_HOURFAC(hour_iland,1:6) /) ) ! Keep row short
+                end if
 
 
                  !  As each emission sector has a different diurnal profile

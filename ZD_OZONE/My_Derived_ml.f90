@@ -137,11 +137,11 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(61) :: &
+   type(typ_s5i), public, parameter, dimension(63) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
-!Added NOV2011
+!
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
 ! will look for this in the select case (typ) 
 !CAN allow lower case ...
@@ -151,8 +151,9 @@ private
         ,typ_s5i("T2m       ", "degC",D2,"T2m      ","MISC", D)&
         ,typ_s5i("Snow_m    ", "m",   D2,"SNOW     ","MISC", D)&
         ,typ_s5i("SURF_ppbC_VOC  ", "ppb", D2,"VOC      ","MISC", D)&!?CHECK??
+        ,typ_s5i("SMI_deep  ", "-",   D2,"SMI_deep ","MISC", D)&
+        ,typ_s5i("SMI_uppr  ", "-",   D2,"SMI_uppr ","MISC", D)&
 ! Could also add from earlier D2_EXTRA array:
-      !,"SoilWater_deep    " &
       !,"USTAR_NWP         " &
       !,"u_ref             " &
 !.... down to here
@@ -290,14 +291,16 @@ private
 
   !============ Extra parameters for model evaluation: ===================!
     !character(len=TXTLEN_DERIV), public, parameter, dimension(13) :: &
-    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+    character(len=TXTLEN_DERIV), public, parameter, dimension(5) :: &
   D2_EXTRA = (/ &
        "Area_Grid_km2     " &
       ,"Area_Conif_Frac   " &
       ,"Area_Decid_Frac   " &
       ,"Area_Seminat_Frac " &
       ,"Area_Crops_Frac   " &
-      ,"AreaPOLL          " &
+!      ,"SoilWater_deep    " & ! See SMI_deep above
+!      ,"SoilWater_uppr    " & ! See SMI_uppr above
+!      ,"AreaPOLL          " & ! Future usage. Should change name too
   /)
 
 

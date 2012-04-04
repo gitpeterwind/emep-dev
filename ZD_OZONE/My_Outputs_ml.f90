@@ -88,21 +88,22 @@ character(len=18), public, parameter, dimension(NXTRA_SITE_MISC) :: &
   SITE_XTRA_MISC=(/"th   ","T2   "/)
 
 !These variables must have been set in My_Derived for them to be used.
-character(len=18), public, parameter, dimension(NXTRA_SITE_D2D) :: &
+character(len=24), public, parameter, dimension(NXTRA_SITE_D2D) :: &
   SITE_XTRA_D2D= (/ &
-    "HMIX             ","PSURF            ", &
-    "ws_10m           ", &
-    "rh2m             ", &
-    "Emis_mgm2_C5H8   ", &
-    "Emis_mgm2_APINENE", &
-    "Emis_mgm2_SoilNO ",&
-    "Emis_mgm2_nox    ",&
+    "HMIX                   ",&
+    "PSURF                  ", &
+    "ws_10m                 ", &
+    "rh2m                   ", &
+    "Emis_mgm2_BioNatC5H8   ", &
+    "Emis_mgm2_BioNatAPINENE", &
+    "Emis_mgm2_BioNatNO     ",&
+    "Emis_mgm2_nox          ",&
 !   "SoilWater_deep ","EVAP_CF        ","EVAP_DF        ", &
 !   "EVAP_BF        ","EVAP_NF        ","WDEP_PREC      ", &
 !   "RH_GR          ","CanopyO3_GR    ","VPD_GR         ","FstO3_GR       ", &
 !   "RH_IAM_DF      ","CanopyO3_IAM_DF","VPD_IAM_DF     ","FstO3_IAM_DF   ", &
 !   "COLUMN_CO_k20  ","COLUMN_C2H6_k20","COLUMN_HCHO_k20","COLUMN_CH4_k20 ",
-    "COLUMN_NO2_k20   " /)
+    "COLUMN_NO2_k20         " /)
 
 !/*** Aircraft outputs   (used in Polinat_ml)
 !==============================================================

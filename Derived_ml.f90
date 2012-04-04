@@ -398,8 +398,10 @@ call AddNewDeriv( "USTAR_NWP","USTAR_NWP",  "-","-",   "m/s", &
 call AddNewDeriv( "u_ref","u_ref",  "-","-",   "m/s", &
                -99,  -99, F, 1.0,  T,  IOU_DAY ) 
 
-call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
-               -99,  -99, F, 1.0,  T,  IOU_DAY )
+!call AddNewDeriv( "SoilWater_deep","SoilWater_deep",  "-","-",   "m", &
+!               -99,  -99, F, 1.0,  T,  IOU_DAY )
+!call AddNewDeriv( "SoilWater_uppr","SoilWater_uppr",  "-","-",   "m", &
+!               -99,  -99, F, 1.0,  T,  IOU_DAY )
 
        !Deriv(name, class,    subc,  txt,           unit
       !Deriv index, f2d, dt_scale, scale, avg? rho Inst Yr Mn Day atw
@@ -848,14 +850,16 @@ end do
               d_2d( n, i,j,IOU_INST) = u_ref(i,j)
           end forall
 
-          case ( "SoilWater_deep" ) 
+          !case ( "SoilWater_deep" ) 
+          case ( "SMI_deep" ) 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_deep(i,j,1)
           end forall
           if ( debug_flag ) call write_debug(n,index, "SoilWater_DEEP")
 if(debug_flag) print *, "SOILW_DEEP ", n, SoilWater_deep(2,2,1)
 
-          case ( "SoilWater_uppr" ) ! Not used so far. (=shallow)
+          !case ( "SoilWater_uppr" ) ! Not used so far. (=shallow)
+          case ( "SMI_uppr" ) 
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = SoilWater_uppr(i,j,1)
           end forall
