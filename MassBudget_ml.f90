@@ -178,6 +178,9 @@ contains
    !Mass Budget calculations
    !   Adding up the emissions in each timestep
 
+    !Do not include values on outer frame
+    if(i<li0.or.i>li1.or.j<lj0.or.j>lj1)return
+
    scaling = dt_advec * xmd(i,j)* gridwidth_m*gridwidth_m / GRAV
 
    do k = KCHEMTOP,KMAX_MID

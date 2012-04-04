@@ -129,10 +129,10 @@ subroutine runchem(numt)
 
    errcode = 0
 
-    !TEST do j = 1, ljmax
-    !TEST   do i = 1, limax
-    do j = lj0, lj1 !  ljmax
-      do i = li0, li1 ! 1, limax
+    do j = 1, ljmax
+      do i = 1, limax
+!    do j = lj0, lj1 !  ljmax
+!      do i = li0, li1 ! 1, limax
 
           call Code_Timer(tim_before)
 

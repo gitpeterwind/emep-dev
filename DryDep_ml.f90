@@ -88,7 +88,7 @@ module DryDep_ml
 
  use MosaicOutputs_ml,     only : Add_MosaicOutput, MMC_RH
  use OwnDataTypes_ml,      only : depmap
- use Par_ml,               only : limax,ljmax, me
+ use Par_ml,               only : limax,ljmax, me,li0,li1,lj0,lj1
  use PhysicalConstants_ml, only : PI, KARMAN, GRAV, RGAS_KG, CP, AVOG, NMOLE_M3
  use Rb_ml,                only : Rb_gas
  use Rsurface_ml
@@ -814,16 +814,20 @@ module DryDep_ml
           end if
        end do GASLOOP2 ! n
 
-    !  DryDep Budget terms
 
       convfac =  convfac/amk(KMAX_MID)
-      do n = 1, NDRYDEP_ADV
-         nadv    = DDepMap(n)%ind
-         totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
-      enddo
+
+    !  DryDep Budget terms
+    !do not include values on outer frame
+      if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1))then
+         
+         do n = 1, NDRYDEP_ADV
+            nadv    = DDepMap(n)%ind
+            totddep( nadv ) = totddep (nadv) + DepLoss(nadv)*convfac
+         enddo
+      endif
 
        convfac2 = convfac * xm2(i,j) * inv_gridarea
-
 
       !.. Add DepLoss to budgets if needed:
 

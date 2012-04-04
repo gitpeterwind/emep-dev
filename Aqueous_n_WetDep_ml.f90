@@ -85,6 +85,7 @@ module Aqueous_ml
   use MetFields_ml,              only : ps
   use OrganicAerosol_ml,    only: ORGANIC_AEROSOLS
   use OwnDataTypes_ml,           only : depmap, typ_i3  ! has adv, calc, vg
+  use Par_ml,               only : limax,ljmax, me,li0,li1,lj0,lj1
   use PhysicalConstants_ml, only: GRAV  &   
                                  ,AVOG  &    ! Avogadro's No.
                                  ,RGAS_ATML,RGAS_J  ! Gas-constant
@@ -916,11 +917,14 @@ subroutine WetDeposition(i,j,debug_flag)
                itot, (/ wdeploss(itot) /) )
        end do ! n2
 
-!Hardcoded TEMPORARY!
-       if(igr==INDEX_WDEP_SOX_GROUP)totwdep(IXADV_SO4)  = totwdep(IXADV_SO4)+wdep
-       if(igr==INDEX_WDEP_OXN_GROUP)totwdep(IXADV_HNO3)  = totwdep(IXADV_HNO3)+wdep
-       if(igr==INDEX_WDEP_RDN_GROUP)totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)+wdep
-       
+       !Do not include values on outer frame
+       if(.not.(i<li0.or.i>li1.or.j<lj0.or.j>lj1))then
+          !Hardcoded TEMPORARY!
+          if(igr==INDEX_WDEP_SOX_GROUP)totwdep(IXADV_SO4)  = totwdep(IXADV_SO4)+wdep
+          if(igr==INDEX_WDEP_OXN_GROUP)totwdep(IXADV_HNO3)  = totwdep(IXADV_HNO3)+wdep
+          if(igr==INDEX_WDEP_RDN_GROUP)totwdep(IXADV_NH3)  = totwdep(IXADV_NH3)+wdep
+       endif
+
        d_2d(f2d,i,j,IOU_INST) = wdep * fwt
      end do ! n
 
