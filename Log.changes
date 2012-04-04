@@ -167,8 +167,8 @@ ds done   My_SOA_ml.f90
 
 xxxxxxxx rv3_11_1  Dave 4th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Mainly soil water associated changes, but bug-fix in USE_HOURLY Emissions done. Candidate
-for default.
+Mainly soil water associated changes, but bug-fix in USE_HOURLY Emissions done.
+(WARNING ** use with non-SMI data needs further workk/thought **)
 
 Derived_ml - added SMI_deep, SMI_uppr
 
@@ -177,7 +177,7 @@ Dust_ml
 
       v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
 
-Emissions_ml - bug fix on hour_iland
+Emissions_ml - bug fix on hour_iland (candidate for default method)
 
 Met_ml
 
@@ -190,7 +190,7 @@ Met_ml
 
 ModelConstants_ml - added DEBUG_LANDIFY
 
-My_Derived_ml - add SoilWater_deep and uppr
+My_Derived_ml - add SMI_deep and SMI_uppr
 
 My_Outputs_ml - longer text strings to enable e.g. Emis_mgm2_BioNatAPINENE
 
