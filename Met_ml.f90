@@ -103,6 +103,8 @@ module Met_ml
        ,grid_north_pole_latitude,grid_north_pole_longitude &
        ,GlobalPosition,DefGrid,gl_stagg,gb_stagg,A_mid,B_mid
 
+  use Io_ml ,               only : ios, IO_ROUGH, datewrite,PrintLog, &
+                                   IO_CLAY, IO_SAND, open_file, IO_LOG
   use Landuse_ml, only : water_fraction, water_frac_set, likely_coastal
   use MetFields_ml 
   use MicroMet_ml, only : PsiH  ! Only if USE_MIN_KZ
@@ -128,8 +130,6 @@ module Met_ml
   use TimeDate_ml,          only : current_date, date,Init_nmdays,nmdays, &
        add_secs,timestamp,&
        make_timestamp, make_current_date, nydays, startdate, enddate
-  use Io_ml ,               only : ios, IO_ROUGH, datewrite, &
-                                   IO_CLAY, IO_SAND, open_file, IO_LOG
   use ReadField_ml,         only : ReadField ! reads ascii fields
   use NetCDF_ml,         only : printCDF,ReadField_CDF ! testoutputs
   use netcdf
@@ -518,6 +518,7 @@ contains
         unit,validity, SoilWater_uppr(:,:,nr))
 
     if(validity/=field_not_found)then
+       if( .not.foundSMI1 ) call PrintLog("Met: found SMI1", MasterProc)
        foundSMI1=.true.
        foundSoilWater_uppr = .true.
     else
@@ -556,6 +557,7 @@ contains
           unit,validity, SoilWater_deep(:,:,nr))
      
      if(validity/=field_not_found)then
+        if( .not.foundSMI3 ) call PrintLog("Met: found SMI3", MasterProc)
         foundSMI3=.true.
         foundSoilWater_deep = .true.
         
@@ -588,9 +590,6 @@ contains
               if(numt==1)write(*,*)trim(unit)
               call StopAll("Need units for deep soil water")
            endif
-           ! Make SMI from SoilWater in metvar
-           
-           !SKIP  SoilWater_deep(:,:,nr) = min( SoilWater_deep(:,:,nr)/SoilMax, 1.0 ) 
            
            if(MasterProc.and.numt==1) write(*,*)'max Met_ml Soilwater_deep: ' // &
                 trim(SoilWaterSource), SoilMax, maxval( SoilWater_deep(:,:,nr) )
@@ -734,6 +733,7 @@ contains
     real :: relh1,relh2,temperature,swp,wp
 
     real :: tmpsw, landfrac, sumland  ! for soil water averaging
+    real :: tmpmax ! debug 
 
     ! Avergaing of soil water used box from +/- NEXTEND (e.g. -1 to +1)
     real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
@@ -749,32 +749,54 @@ contains
 
        call Exner_tab()
 
-       ! Look for processor containing debug coordinates
-       debug_iloc    = -999
-       debug_jloc    = -999
+       !DSA12 debug stuff already set
 
-       do i = 1, limax
-          do j = 1, ljmax
-!             if (DEBUG_MET .and. &
-              if( i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J ) then
-                debug_proc = .true.
-                debug_iloc    = i
-                debug_jloc    = j
-             end if
-          end do
-       end do
+        debug_iloc = debug_li
+        debug_jloc = debug_lj
+
+       ! Look for processor containing debug coordinates
+       !DSA12 debug_iloc    = -999
+       !DSA12 debug_jloc    = -999
+!DSA12
+!DSA12print "(a,i2,L2,4i4)", "DSA12 IJBUG START ", me, debug_proc, &
+!DSA12        debug_i, debug_j, debug_li, debug_lj
+!DSA12       do i = 1, limax
+!DSA12          do j = 1, ljmax
+!DSA12!             if (DEBUG_MET .and. &
+!DSA12              if( i_fdom(i) == DEBUG_I .and. j_fdom(j) == DEBUG_J ) then
+!DSA12print *, "DSA12 IJBUG QUERY FOUND  ", me, debug_proc, debug_i, debug_j, debug_li, debug_lj
+!DSA12                debug_proc = .true.
+!DSA12                debug_iloc    = i
+!DSA12                debug_jloc    = j
+!DSA12             end if
+!DSA12          end do
+!DSA12       end do
+!DSA12 print *, "DSA12 IJBUGend " , me, debug_proc, debug_iloc, debug_jloc
        if( debug_proc ) write(*,*) "DEBUG EXNER me", me, Exner_nd(99500.0)
        !-------------------------------------------------------------------
-       if( SoilWaterSource == "IFS")then
-          !needed for transforming IFS soil water
-       call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp, &
-                1,interpol='conservative',needed=.true.,debug_flag=.true.)
-       call ReadField_CDF('SoilTypes_IFS.nc','fc',fc, &
-                1,interpol='conservative',needed=.true.,debug_flag=.true.)
-
        ! Notes on IFS:
        ! Fc  has max 1.0. Set to 1.0 over sea
        ! pwp has max 0.335 Set to 0.0 over sea
+
+       if( SoilWaterSource == "IFS")then
+          !needed for transforming IFS soil water
+           call ReadField_CDF('SoilTypes_IFS.nc','pwp',pwp, &
+                1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.true.)
+           !call printCDF('pwp0',pwp,' ')
+           call ReadField_CDF('SoilTypes_IFS.nc','fc',fc, &
+                1,interpol='conservative',needed=.true.,UnDef=-999.,debug_flag=.true.)
+           !call printCDF('fc0',fc,' ')
+
+          ! landify(x,intxt,xmin,xmax,wfmin,xmask)
+          ! We use a global mask for water_fraction < 100%, but set wfmin to 1.0 
+          ! to allow all grids with some land to be processed
+          ! Fc and PWP should be above zero and  below 1, let's use 0.8
+
+           call landify( pwp(:,:), " PWP ", &
+              0.0, 0.8, 1.0, water_fraction < 1.0 ) ! mask for where there is land
+           call landify( fc(:,:), " FC  ", &
+              0.0, 0.8, 1.0, water_fraction < 1.0 ) ! mask for where there is land
+
        if ( DEBUG_SOILWATER.and.debug_proc ) then
             i =  debug_li
             j =  debug_lj
@@ -1235,7 +1257,10 @@ contains
 
     if(foundSMI3.or.foundSoilWater_deep)then
 
+      call datewrite("SMD testing water_frac here" , me, (/ -1.0 /) ) 
+      write(*,*) "SMD debug? ", me, debug_proc
       if ( water_frac_set ) then  ! smooth the SoilWater values:
+        call datewrite("SMD found water_frac here" , me, (/ -2.0 /) ) 
 
          ! If NWP thinks this is a sea-square, but we anyway have land,
          ! the soil moisture might be very strange.  We search neighbouring
@@ -1243,14 +1268,15 @@ contains
          ! Skip on 1st numt, since water fraction set a little later. No harm done...
 
 !DSA12 - changed landify routine to accept water_fraction as mask. Should
-! work almost the same as code below did.
+! works almost the same as code below did.
 ! Should move later also, after other units converted to SMI
+! NB  Some grid squares in EECCA have water cover of 99.998
 
-           call landify( SoilWater_deep(:,:,nr), "DEEP_SOILWATER", &
-                 water_fraction<0.999 ) ! mask for where there is land
-
-           call landify( SoilWater_uppr(:,:,nr), "UPPR_SOILWATER", &
-                 water_fraction<0.999 ) ! mask for where there is land
+           call landify( SoilWater_deep(:,:,nr), "SMI_DEEP", &
+              0.0, 1.0, 1.0, water_fraction < 1.0 )
+           ! Allow some negative SMI for upper levels
+           call landify( SoilWater_uppr(:,:,nr), "SMI_UPPR", &
+              -1.0, 1.0, 1.0, water_fraction < 1.0 )
 
 !DSA12           call extendarea( SoilWater_deep(:,:,nr), xsw, DEBUG_SOILWATER)
 !DSA12           call extendarea( SoilWater_deep(:,:,nr), xsw, DEBUG_SOILWATER)
@@ -1321,9 +1347,20 @@ contains
                 water_fraction(i,j), nr, current_date%day, SoilWater_uppr(i,j,nr)
             end if
 
-       else ! for sea values we usually have zero or negative. Set to 1.0
+       else ! water_frac not set yet
+            ! for sea values we usually have zero or negative. Set to 1.0
            !DSA12 - NEED TO THINK ABOUT THIS ONE !!!!!
-            where ( SoilWater_deep(:,:,nr) < 1.0e-3 ) SoilWater_deep(:,:,nr) = 1.0
+            call CheckStop("ERROR, Met_ml: SMD not set!!  here"  ) 
+            !call datewrite("SMD here" , me, (/ -3.0 /) ) 
+            !do i = 1, limax
+            !do j = 1, ljmax
+            !   if ( SoilWater_deep(i,j,nr) < 1.0e-3 ) then
+            !      write(*,*) "SMD ", me, i_fdom(i), j_fdom(j), SoilWater_deep(i,j,nr) 
+            !      SoilWater_deep(:,:,nr) = 1.0 ! ???
+            !   end if
+            !end do
+            !end do
+            !where ( SoilWater_deep(:,:,nr) < 1.0e-3 ) SoilWater_deep(:,:,nr) = 1.0
        endif ! water_frac_set test
        !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     endif ! validity test
@@ -1335,8 +1372,8 @@ contains
     !DSA12 - will cope with other met inputs another day
       call CheckStop('SW SHOULD NOT BE HERE ')
     !DSA12 -----------------------------------------------
-        do i = 1, limax   ! NEWTEST 1, MAXLIMAX
         do j = 1, ljmax    ! NEWTEST 1, MAXLJMAX
+        do i = 1, limax   ! NEWTEST 1, MAXLIMAX
           if ( DEBUG_SOILWATER ) then 
                !if( ( fc(i,j)-pwp(i,j) < 1.0e-10 )  ) then
                !  write(*, "(a,7i5,4f12.3)") "WARNING: PWPFC Problem? ", &
@@ -1368,8 +1405,8 @@ contains
          end do
          end do
  !          call printCDF('SMI',SoilWater_uppr(:,:,nr),' ')
- !          call printCDF('pwp',pwp,' ')
- !          call printCDF('fc',fc,' ')
+           call printCDF('pwp',pwp,' ')
+           call printCDF('fc',fc,' ')
 
 !DSA12 done below now.
 !DSA12       SoilWater_uppr(:,:,nr)=max(0.0,SoilWater_uppr(:,:,nr))
@@ -1379,11 +1416,28 @@ contains
     endif
 
 !DSA12 Dave added:
-! We shoudl now have SMI regardless of soil water data source. We
-! restrict this to be in range 0 --- 1.
-! Note dou
+! We should now have SMI regardless of soil water data source. We
+! restrict this to be in range 0 --- 1 for deep soil water. 
+! For upper-soil water, we allow some negative, since evaporation can dry the soil
+! bellow the PWP.
+! 
+! SMI = (SW-PWP)/((FC-PWP), therefore min SMI value should be -PWP/(FC-PWP)
+! Let's use 99% of this:
 
-       SoilWater_uppr(:,:,nr) = max(0.0,SoilWater_uppr(:,:,nr))
+    do i = 1, limax
+    do j = 1, ljmax
+      if( fc(i,j) > pwp(i,j) ) then ! Land values
+       tmpmax = -0.99 * pwp(i,j)/(fc(i,j)-pwp(i,j) )
+       SoilWater_uppr(i,j,nr) = max( tmpmax, SoilWater_uppr(i,j,nr) ) 
+      else
+       SoilWater_uppr(i,j,nr) = -999.  ! NOT NEEDED????
+      end if
+    end do
+    end do
+!!       SoilWater_uppr(:,:,nr) = max(  &
+!           -0.99 * pwp(:,:)/(fc(:,:)-pwp(:,:) ), &
+!           SoilWater_uppr(:,:,nr)  )
+
        SoilWater_deep(:,:,nr) = max(0.0, SoilWater_deep(:,:,nr) ) 
 
        SoilWater_uppr(:,:,nr) = min(1.0, SoilWater_uppr(:,:,nr))
@@ -2275,24 +2329,39 @@ contains
   end subroutine extendarea
   !  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
-  subroutine landify(x,intxt,xmask)
+  subroutine landify(x,intxt,xmin,xmax,wfmin,xmask)
     real, dimension(MAXLIMAX,MAXLJMAX), intent(inout) :: x
-    real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  :: xx  ! extended
-    logical, dimension(MAXLIMAX,MAXLJMAX), intent(in), optional :: xmask 
-    logical, dimension(MAXLIMAX,MAXLJMAX) :: mask 
     character(len=*), intent(in), optional :: intxt
+    real, intent(in), optional :: xmin, xmax  ! Limits of valid data for x
+    real, intent(in), optional :: wfmin ! Limits of valid data for water frac
+    logical, dimension(MAXLIMAX,MAXLJMAX), intent(in), optional :: xmask 
+
+    logical, dimension(MAXLIMAX,MAXLJMAX) :: mask 
+    real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  :: xx  ! extended
     character(len=30) :: txt, masktxt
+    real :: xwfmin, xxmin, xxmax  
     logical :: debug_flag
     real :: sumland, sumx, landfrac, oldx
     integer :: i,j, ii, jj, ii2, jj2
 
     txt = "Landify: "
     if ( present(intxt) )  txt = trim(txt) // trim(intxt)
-
-    if(MasterProc) write(*,*) trim(txt) , water_frac_set 
+    xwfmin = 0.5 ! Default fraction of water
+    if ( present(wfmin) )  xwfmin = wfmin
+    xxmin = 1.0e-10  ! Default  min value x
+    if ( present(xmin) )  xxmin = xmin
+    xxmax = 1.0e30   ! Default max value x
+    if ( present(xmax) )  xxmax = xmax
+    
+    if(MasterProc) then
+        write(*,*) trim(txt) , water_frac_set 
+        write(*,"(a,2g12.4)") 'Data Limits ', xxmin, xxmax
+        write(*,"(a,g12.4)")  'Water Limit ', xwfmin
+    end if
 
     if( .not. water_frac_set  ) then
        if(MasterProc) write(*,*) trim(txt) //  " skips 1st NTERM"
+       write(*,*) trim(txt) //  " skips 1st NTERM"
        return   !  on 1st time-step water_frac hasnt yet been set.
     end if
 
@@ -2304,8 +2373,12 @@ contains
       masktxt = "Coastal mask"
     end if
 
-     if ( DEBUG_MET.and. debug_proc ) write(*,"(a,6i4,L2,a)") "Landify start ", &
-            debug_li, debug_lj, 1, limax, 1, ljmax,  xwf_done, trim(masktxt)
+    write(*,"(a,7i4,L2,1x,a)") "LLandify start ", me, &
+         debug_li, debug_lj, 1, limax, 1, ljmax,  xwf_done, trim(masktxt)
+     if ( DEBUG_LANDIFY.and. debug_proc ) then
+        write(*,"(a,6i4,L2,1x,a)") "DLandify start ", &
+         debug_li, debug_lj, 1, limax, 1, ljmax,  xwf_done, trim(masktxt)
+     end if
 
     ! We need the extended water-fraction too, but just once
     if ( .not. xwf_done ) then ! only need to do this once
@@ -2318,7 +2391,7 @@ contains
 
     call extendarea( x(:,:), xx(:,:), debug_flag )
 
-    if ( DEBUG_MET .and. debug_proc) write(*,*) "Landify now ", &
+    if ( DEBUG_LANDIFY .and. debug_proc) write(*,*) "Landify now ", &
        xwf_done , likely_coastal(debug_li,debug_lj), mask(debug_li,debug_lj)
       
     oldx = 0.0
@@ -2334,7 +2407,8 @@ contains
 
            sumland  = 0.0
            sumx     = 0.0
-           debug_flag = ( DEBUG_MET .and. debug_proc .and. i==debug_li .and. j==debug_lj )
+           debug_flag = ( DEBUG_LANDIFY .and. debug_proc .and. &
+               i==debug_li .and. j==debug_lj )
 
            !DSA12 if( likely_coastal(i,j) ) then !some land
            if( mask(i,j) ) then ! likely coastal or water_frac <0.0 for SW
@@ -2344,14 +2418,16 @@ contains
                     jj2=j+jj+NEXTEND
 
 
-                    if( xwf(ii2,jj2) < 0.5 .and.  &! ! likely not NWP sea
-                    !if( xx(ii2,jj2) > 1.0e-10 ) then ! have some data to work with
-                        xx(ii2,jj2) > 1.0e-10 ) then ! have some data to work with
+!DSA12 Had 0.5, 1.0e-10 in original for met-data
+                    if( xwf(ii2,jj2)<= wfmin .and. &! was 0.5 likely not NWP sea
+                        xx(ii2,jj2) <= xxmax .and. &! Valid x range
+                        xx(ii2,jj2) >= xxmin ) then ! 
                        landfrac    =  1.0 - xwf(ii2,jj2) 
                        sumland = sumland + landfrac
                        sumx    = sumx    + landfrac * xx(ii2,jj2)
-                       if ( DEBUG_LANDIFY .and. debug_flag ) then
-                         write(*,"(a,4i4,8f9.3)") trim(txt), i,j, ii2, jj2,&
+                       if ( debug_flag ) then
+                         write(*,"(a,4i4,2f7.4,3g11.3,2f7.4)") "DBG"//trim(intxt), i,j, &
+                           ii2, jj2,&
                            water_fraction(i,j), xwf(ii2,jj2), x(i,j), &
                            xx(ii2,jj2), sumx, landfrac, sumland
                        end if ! DEBUG
@@ -2362,6 +2438,10 @@ contains
               if ( sumland > 0.001 ) then ! replace x with land-weighted values
 
                    x(i,j) = sumx/sumland
+                   if ( debug_flag ) then
+                         write(*,"(a,2i4,8g12.3)") "DBGDONE", i,j, &
+                           water_fraction(i,j), sumx, sumland, x(i,j)
+                   end if
 
               end if ! water_fraction
        

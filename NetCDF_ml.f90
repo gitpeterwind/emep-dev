@@ -1947,6 +1947,9 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      call check(nf90_get_var(ncFileID, VarID, Rvalues,start=startvec,count=dims),&
           errmsg="RRvalues")
 
+     if ( debug ) write(*,*) 'ReadCDF types ', &
+           xtype, NF90_INT, NF90_SHORT, NF90_BYTE
+
      if(xtype==NF90_INT.or.xtype==NF90_SHORT.or.xtype==NF90_BYTE)then
         !scale data if it is packed
         scalefactors(1) = 1.0 !default
@@ -2070,7 +2073,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
                  debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
                                  i== debug_li .and. j== debug_lj )
-                 if ( debug_ij ) write(*,*) 'DEBUG  -- INValues!' , Ivalues(ijk), Nvalues(ijk)
+                 if ( debug_ij ) write(*,"(a,9i5)") 'DEBUG  -- INValues!',&
+                       Ivalues(ijk), Nvalues(ijk), me, i,j,k
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
                        write(*,"(a,a,4i4,6g10.3,i6)") &
@@ -2289,7 +2293,8 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
 
                  debug_ij = ( DEBUG_NETCDF_RF .and. debug_proc .and. &
                                  i== debug_li .and. j== debug_lj )
-                 if ( debug_ij ) write(*,*) 'DEBUG  -- INValues!' , Ivalues(ijk), Nvalues(ijk)
+                 if ( debug_ij ) write(*,*) 'DEBUG  -- INValues!', &
+                       Ivalues(ijk), Nvalues(ijk)
                  if(Ivalues(ijk)<=0.)then
                     if( .not.present(UnDef))then
                        write(*,"(a,a,4i4,6g10.3,i6)") &
@@ -2589,7 +2594,7 @@ subroutine printCDF(name, array,unit)
 
     !Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,fileName_given)
 
-    if(MasterProc) write(*,*) "TEST printCDF :"//trim(fname),  maxval(array)
+    if(MasterProc) write(*,*) "OUTPUTS printCDF :"//trim(fname),  maxval(array)
     call Out_netCDF(IOU_INST,def1,2,1, array,1.0,&
            CDFtype=Real4,fileName_given=fname,overwrite=.true.)
   end subroutine printCDF
