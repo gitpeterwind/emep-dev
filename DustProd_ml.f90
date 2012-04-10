@@ -51,8 +51,10 @@
  use Functions_ml,         only : ERFfunc
  use ChemChemicals_ml,     only : species
  use GridValues_ml,        only : glat, glon, glat_fdom, glon_fdom, i_fdom, j_fdom 
- use Io_ml,                only : PrintLog
+ use GridValues_ml,        only : debug_proc, debug_li, debug_lj
+ use Io_ml,                only : PrintLog, datewrite
  use Landuse_ml,           only : LandCover, NLUMAX 
+ use Landuse_ml,           only : water_fraction ! DSA12
  use LandDefs_ml,          only:  LandType
  use LocalVariables_ml,    only : Sub, Grid
  use MetFields_ml,         only : z_bnd, z_mid, u_ref, ustar_nwp, roa,    &
@@ -67,6 +69,7 @@
                                   NPROC, MasterProc, USE_DUST, DEBUG_DUST
  use MicroMet_ml,          only : Wind_at_h
  use Par_ml,               only : me,MAXLIMAX,MAXLJMAX
+ use Par_ml,               only : limax, ljmax ! Debugging 
  use PhysicalConstants_ml, only : GRAV,  AVOG, PI, KARMAN, RGAS_KG, CP
                                   !! ECO_CROP, ECO_SEMINAT, Desert=13, Urban=17
  use TimeDate_ml,          only : daynumber
@@ -139,14 +142,14 @@
             dust_found = .false.
         else
 
-           if(MasterProc) write(6,*)'***    Call for init_dust     ***   '
+           if(MasterProc) write(6,*)'***  Call for init_dust  ***   '
 
            call init_dust
 
            kg2molecDU = 1.0e-3 * AVOG / species(ipoll)%molwt
 
         end if
-        if(DEBUG_DUST) print *, "DUSTY ", me, ipoll, dust_found
+        if(DEBUG_DUST.and.MasterProc) print *, "DUSTI ", ipoll, dust_found, debug_proc
           !FEB2012 call CheckStop( ipoll < 1, "Dust asked for, but not found")
 
           my_first_call = .false.
@@ -171,7 +174,7 @@
   flx_vrt_dst = 0.0   ! vertical dust flux 
   Mflux = 0.0  
 
-   if(DEBUG_DUST .and. debug_flag) write(6,'(a30,i5,es12.3)')'>> DS RAIN >>', &
+   if(DEBUG_DUST .and. debug_flag) write(6,'(a30,i5,es12.3)')'>>    RAIN >>', &
                                    dry_period(i,j),surface_precip(i,j)
 
 !/.. Crude assumption: dust generation if Pr < 2.4 mm per day (surpace_prec[mm/h])
@@ -190,14 +193,26 @@
 !/.. No dust production when soil is frozen, or covered by snow,
 !/.. or wet (crude approximation by surface Rh)
 
+!DSA12 QUERY: Why "FROST" term?
   FROST: if ( Grid%t2C > 0.0 .and.  Grid%sdepth == 0.0 .and.  & 
                                     rh(KMAX_MID) < 0.85)  then
 
     if(DEBUG_DUST .and. debug_flag) write(6,'(a25,2f10.2,i4)')   &
           '>> FAVOURABLE for DUST>>', Grid%t2C, rh(KMAX_MID), Grid%sdepth 
-!ACB Grid%snow
 
+!DSA12
+   if ( water_fraction(i,j)  > 0.99) then ! skip dust calcs
+      if(DEBUG_DUST) call datewrite("DUST: SEA! ", &
+        (/ i_fdom(i), j_fdom(j) /), (/ fc(i,j), water_fraction(i,j) /) )
+      return
+   end if
 
+!DSA12 - never called:
+!   if ( fc(i,j)  < 0.0 ) then
+!      call datewrite("DUST: NEG FC", (/ i_fdom(i), j_fdom(j) /), &
+!          (/ fc(i,j), water_fraction(i,j) /) )
+!      return
+!   end if
 !==  Land-use loop ===============================================
 
  nlu = LandCover(i,j)%ncodes
@@ -218,8 +233,8 @@
 
    DUST: if (arable .or. lu == LU_DESERT) then
 
-     if(DEBUG_DUST .and. debug_flag) write(6,'(a15,i5,f10.3)')   &
-                                     '-----> Landuse', lu, cover
+     if(DEBUG_DUST .and. debug_flag) write(6,'(a,i5,f10.3)')   &
+                                     'DUST: -----> Landuse', lu, cover
 
      flx_hrz_slt = 0.0
 
@@ -249,8 +264,9 @@
 
      ustar_th = help_ustar_th / sqrt(roa(i,j,KMAX_MID,1)) ! [m s-1] 
 
-     if(DEBUG_DUST .and. debug_flag) write(6,'(a20,3f15.5)')  &
-                '>> U*/U*th/ro >>', ustar,ustar_th,roa(i,j,KMAX_MID,1)
+!QUERY DS found zero ustar here
+     if(DEBUG_DUST .and. debug_flag) write(6,'(a,3f15.5)')  &
+                'DUST: >> U*/U*th/ro >>', ustar,ustar_th,roa(i,j,KMAX_MID,1)
 
 
 !//___  Inhibition of saltation by soil moisture (Fecan et al., 1999)
@@ -273,17 +289,35 @@
      vh2o_sat = 0.489-0.126 * sand_frac(i,j)       ! [m3 m-3] 
 !__ Bulk density of dry surface soil [Zender, (8)]
      soil_dns_dry = soil_dens * (1.0 - vh2o_sat)    ! [kg m-3]
+
 !__ Volumetric soil water content [m3/m3] 
 !DSA12 Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP)
 !DSA12     v_h2o = SoilWater(i,j,1)
               !-- Note, in HIRLAM SoilWater is in [m/0.072m] -> conversion
               !   if ( SoilWater_in_meter )   v_h2o = SoilWater(i,j,1)/0.072 
+!
 !DSA12
 ! *** BUT *** the following is using IFS pwp. This is likely
 ! the best we can do for the grid-average, but for dust it might be more
 ! appropriate to calculate for specific landcover PWP values.
 ! 
+! (Note, v_h2o should not end up negative here, see Met_ml.f90)
+
      v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
+  ! call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
+  if( v_h2o <= 0.0 ) then
+   print "(a,2i4,9f10.4)"," DUSTY DRY!!",  i_fdom(i), j_fdom(j), &
+      v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
+  ! v_h2o = max( 1.0e-12, v_h2o) 
+   call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
+  end if
+  !if( v_h2o > fc(i,j) ) then
+  ! print "(a,2i4,9f10.4)"," DUSTY WET!!",  i_fdom(i), j_fdom(j), &
+  !  v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
+
+    call CheckStop(v_h2o > fc(i,j),  "DUSTY WET" )
+
+  !end if
 
 !__ Gravimetric soil water content [kg kg-1]  
         gr_h2o = v_h2o * Ro_water/soil_dns_dry       
@@ -293,19 +327,18 @@
            gwc_thr=gwc_thr* Ro_water/soil_dns_dry
         endif
 
-     if(DEBUG_DUST .and. debug_flag) then
-     write(6,'(a30,f8.2,2f12.4)') 'Sand/Water_sat/soil_dens',  &
-                                   sand_frac(i,j),vh2o_sat,soil_dns_dry
-     write(6,'(a30,3f15.5)') ' SW/VolW/GrW/ ',SoilWater(i,j,1),v_h2o,gr_h2o
-     write(6,'(a30,3f15.5)') ' SW COMPS ',SoilWater(i,j,1), fc(i,j), pwp(i,j)
-     endif
 ! Soil water correction
      if (gr_h2o > gwc_thr) &
        ustar_moist_cor = sqrt(1.0 + 1.21 *  &
                  (100.*(gr_h2o - gwc_thr))**0.68) ! [frc] FMB99 p.155(15) 
 
-     if(DEBUG_DUST .and. debug_flag) write(6,'(a25,2f10.4)')   &
-                     '>> U*_moist_corr  >>',gwc_thr, ustar_moist_cor
+     if(DEBUG_DUST .and. debug_flag) then
+        write(6,'(a,f8.2,2f12.4)') 'DUST: Sand/Water_sat/soil_dens',  &
+                                   sand_frac(i,j),vh2o_sat,soil_dns_dry
+        write(6,'(a,3f15.5)') 'DUST: SW/VolW/GrW/ ',SoilWater(i,j,1),v_h2o,gr_h2o
+        write(6,'(a,3f15.5)') 'DUST: SW COMPS ',SoilWater(i,j,1), fc(i,j), pwp(i,j)
+        write(6,'(a,2f10.4)') 'DUST >> U*_moist_corr  >>',gwc_thr, ustar_moist_cor
+     endif
  
   else  !.. No SoilWater in met.input; Moisture correction for U*t will be 1.
 
@@ -314,9 +347,8 @@
 !                                               for clay (gr_h2o = 9-15%)
 
      if(DEBUG_DUST .and. debug_flag) then
-       write(6,'(a30,f8.2,2f12.4)') '++ No SoilWater in meteorology++'
-       write(6,'(a25,f10.4)')   &
-                     '>> U*_moist_corr  >>', ustar_moist_cor                                 
+       write(6,'(a,f8.2,2f12.4)') 'DUST ++ No SoilWater in meteorology++'
+       write(6,'(a,f10.4)')  'DUST: >> U*_moist_corr  >>', ustar_moist_cor                                 
      endif 
 
   endif
@@ -596,8 +628,8 @@
     k_help1 = 1.0 + 6.e-7 / ( soil_dens *GRAV *(D_opt**2.5) )      !   SQUARED      
     k_help2 = soil_dens * GRAV * D_opt
                              !   SQUARED
-   if (DEBUG_DUST .and. MasterProc) write(6,'(a25,f5.1,3e12.4)')  &
-               'ROsoil/Re_opt/K1/K2 ',soil_dens,Re_opt, k_help1, k_help2
+   if (DEBUG_DUST .and. MasterProc) write(6,'(a,f6.1,3e12.4)')  &
+               'DUST:ROsoil/Re_opt/K1/K2 ',soil_dens,Re_opt, k_help1, k_help2
 
 !//__ U_star_threshold
     if ( Re_opt < 0.03 ) then
@@ -618,7 +650,7 @@
 
     help_ustar_th = sqrt (k_help1 * k_help2 * help_ust)
 
-    if (DEBUG_DUST .and. MasterProc) write(6,'(a20,e12.4)') 'U*, U*t help =',&
+    if (DEBUG_DUST .and. MasterProc) write(6,'(a,2e12.4)') 'DUST: U*, U*t help =',&
            help_ust, help_ustar_th
 
 !// =======================================
@@ -632,8 +664,8 @@
 
     if (DEBUG_DUST .and. MasterProc) then
       write(6,*)
-      write(6,*) ' >> DUST fractions <<', Nsoil, Ndust
-      write(6,'(a15,3e12.4)') 'Sigma =', (sig_soil(i),i=1,Nsoil)
+      write(6,*) 'DUST: >> fractions <<', Nsoil, Ndust
+      write(6,'(a15,3e12.4)') 'DUST: Sigma =', (sig_soil(i),i=1,Nsoil)
     endif
 
     sum_soil(:) = 0.0
@@ -647,7 +679,7 @@
        x1 = log ( d1(idu) / dsoil(isoil) ) / y
        x2 = log ( d2(idu) / dsoil(isoil) ) / y
 
-       if (DEBUG_DUST .and. MasterProc) write (6,'(a,4e12.4)') 'DUST TEST 3', &
+       if (DEBUG_DUST .and. MasterProc) write (6,'(a,4e12.4)') 'DUST: TEST 3', &
                                x1,x2,ERFfunc(x1),ERFfunc(x2)
 
        help_diff(isoil,idu) = 0.5 * ( ERFfunc(x2) - ERFfunc(x1) )  &
@@ -664,11 +696,11 @@
 
    if (DEBUG_DUST .and. MasterProc)  then
      do idu = 1,Ndust 
-      write (6,'(a25,2f8.4,3(f8.3),2f12.3)') ' Dust frac in bins:',  &
+      write (6,'(a25,2f8.4,3(f8.3),2f12.3)') 'DUST: frac in bins:',  &
              d1(idu), d2(idu), (help_diff(isoil,idu), isoil=1,3),         &
              sum_soil(idu),sum_soil(idu)/tot_soil
      enddo
-     write (6,'(a30,2f8.4)') ' ** FINE / COARSE **',frac_fine, frac_coar
+     write (6,'(a,2f8.4)') 'DUST: ** FINE / COARSE **',frac_fine, frac_coar
    endif
 
   end subroutine init_dust

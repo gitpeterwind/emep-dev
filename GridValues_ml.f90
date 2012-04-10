@@ -172,7 +172,7 @@ use Functions_ml,    only : great_circle_distance
   real, public, save, dimension(MAXLIMAX,MAXLJMAX) :: GridArea_m2
 
   integer, public, save :: &
-              debug_li, debug_lj       ! Local Coordinates of debug-site
+    debug_li=-99, debug_lj=-99         ! Local Coordinates of debug-site
   logical, public, save :: debug_proc  ! Processor with debug-site
 
   integer, public, save :: METEOfelt=0 ! 1 if uses "old" (not CDF) meteo input
@@ -357,8 +357,7 @@ contains
             me, debug_li, debug_lj
     if ( DEBUG_GRIDVALUES ) then
         if(me==0) write(*,"(a,2a4,a3,4a4,a2,2a4,4a12)") "GridValues debug:", &
-          "D_i", "D_j", &
-          "me", "li0", "li1", "lj0", "lj1", &
+          "D_i", "D_j", "me", "li0", "li1", "lj0", "lj1", &
           "dp" , "d_li", "d_lj", "i_fdom(li0)","i_fdom(li1)", &
             "j_fdom(lj0)", "j_fdom(lj1)"
 

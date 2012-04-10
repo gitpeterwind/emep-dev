@@ -165,6 +165,32 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_11_2  Dave 10th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+(Committed to save work, but needs tidy up. Will remove all code labelled
+ !DSA12 at a later stage.)
+ !** Be careful with this code **!
+
+Mainly soil-moisture and dust related changes
+
+Dust_ml - now skips calculations if water_fraction > 0.99 
+          debugging added for use of PWP, FC.
+
+GridValues_ml - small debug changes
+
+Landuse_ml    - likely coastal now looks for any land, previously had<0.95
+
+Met_ml - 
+         Removed local calculation of debug_proc and coords. This has been
+         done already.
+
+         FC and PWP now processed through landify. Values over sea are -999
+         but these should never be called.
+         
+         landify routine modified to use different limits. Only tested
+         for FC, PWP and soil water stuff so far.
+
+NetCDF_ml - extra debug in ReadField_CDF
+
 xxxxxxxx rv3_11_1  Dave 4th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Mainly soil water associated changes, but bug-fix in USE_HOURLY Emissions done.
