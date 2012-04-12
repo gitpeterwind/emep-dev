@@ -1,0 +1,10 @@
+*
+* <----------- Volcanic ash/natural emissions from ASH ----------------------------->
+*
+rcash(ASH_1,k)                       = ASH_1    ;
+rcash(ASH_2,k)                       = ASH_2    ;
+rcash(ASH_3,k)                       = ASH_3    ;
+rcash(ASH_4,k)                       = ASH_4    ;
+rcash(ASH_5,k)                       = ASH_5    ;
+rcash(ASH_6,k)                       = ASH_6    ;
+rcash(ASH_7,k)                       = ASH_7    ;

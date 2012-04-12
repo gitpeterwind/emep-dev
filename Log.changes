@@ -165,6 +165,42 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_11_yy  Alvaro 12/4/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Emergency mode (eEMEP): Add Volcanoe tracers to a EmChem09base+PMmass.
+In the future only Volcanoe and Radiocative tracers will be kept on thios mode.
+
+Added files
+  ZCM_Emergency/ASH.species
+  ZCM_Emergency/ASH.reactions
+  ZCM_Emergency/Mastin&al2009a_table3.csv
+
+Added as simbolic links (intermin, might be removed ater on)
+  ZCM_Emergency/BiomassBurning_FINNv1_to_Emergency.inc
+  ZCM_Emergency/BiomassBurning_GFED_to_Emergency.inc
+  ZCM_Emergency/GenIn.shorthand
+
+mk.GenChem: add option for volcanic ash tracers (-V vol1,vol2,...)
+  * For each volcano name supplied 7 ash tracers are added
+  * Default eruption parameters set from Mastin&al2009a (see .csv)
+
+Makefile, mk.GenChem: standard eEMEP setup from command line
+  * eEMEP mk.GenChmem call, link and make
+    make eEMEP
+  * eEMEP GenChmem standard setup assumed in Makefile
+    make eEMEP-GenChem-Emergency
+    mk.GenChem -r Emergency -f FINNv1 -e none \
+      -V Vesuvius,Etna,Krísuvík,Katla,Askja
+  * Improve mk.GenChmem -h output
+
+run.pl, Makefile_stallo:
+  * Implement EMEP/MACC/eEMEP targets on Makefile_stallo
+  * 'module load netcdf/4.1.1' is needed for Model to compile from run.pl/Makefile_stallo
+  * 'make MACC' or 'make eEMEP' on Forecast mode
+
+Solver.f90, Setup_1dfields_ml.f90: Volcanic ash emission variable
+  * add rcash
+
 xxxxxxxx rv3_11_xx  in-progress    xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 
@@ -177,20 +213,20 @@ xxxxxxxx rv3_11_2  Dave 10th April xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Mainly soil-moisture and dust related changes
 
-Dust_ml - now skips calculations if water_fraction > 0.99 
+Dust_ml - now skips calculations if water_fraction > 0.99
           debugging added for use of PWP, FC.
 
 GridValues_ml - small debug changes
 
 Landuse_ml    - likely coastal now looks for any land, previously had<0.95
 
-Met_ml - 
+Met_ml -
          Removed local calculation of debug_proc and coords. This has been
          done already.
 
          FC and PWP now processed through landify. Values over sea are -999
          but these should never be called.
-         
+
          landify routine modified to use different limits. Only tested
          for FC, PWP and soil water stuff so far.
 
@@ -203,7 +239,7 @@ Mainly soil water associated changes, but bug-fix in USE_HOURLY Emissions done.
 
 Derived_ml - added SMI_deep, SMI_uppr
 
-Dust_ml 
+Dust_ml
    Now we have soil moisture index, SMI = (SW-PWP)/(FC-PWP), hence:
 
       v_h2o = pwp(i,j) + SoilWater(i,j,1) * (fc(i,j)-pwp(i,j) )
@@ -213,7 +249,7 @@ Emissions_ml - bug fix on hour_iland (candidate for default method)
 Met_ml
 
    Modified Landify in Met_ml, to cope with upper and deep soil water
-   Some max/min statements. 
+   Some max/min statements.
    Extra comments
    Small tidy-ups
    ** Code ** not intended to work for non-SMI yet. Will fix another day
@@ -256,7 +292,7 @@ DryDep_ml,   extra debug printout
 
 EmisGet_ml,   extra debug printout
 
-GenChem.pl  
+GenChem.pl
              Now produced CM_EmisNat.inc with biogenics
              rcbio read from GenIn.reactions  is used to flag such components
 
@@ -273,7 +309,7 @@ Runchem_ml
                - uses loops of li0, li1 for now. Solved fracmass problem, but leaves zero
                  deposition on outer boundaries.
                - call setup_rcemis moved before setup_bio, so that rcemis now initialises
-                 rcemis to zero, fills in with SNAP-emissions, and setup_bio adds 
+                 rcemis to zero, fills in with SNAP-emissions, and setup_bio adds
                  isoprene, soil-NO, etc.
                - call to  emis_massbudget_1d done after all this.
 Setup_1d_ml
@@ -283,7 +319,7 @@ Setup_1dfields_ml - rcbio removed
 
 Solver_ml    - xold(n) = max( xold(n), 0.0 )  added. Avoids need for max in CM_Reactions
 
-ZCM_EmChem09/EmChem09base.reactions new rcbio style: 
+ZCM_EmChem09/EmChem09base.reactions new rcbio style:
    rcbio:C5H8                       = C5H8    ;
    rcbio:APINENE                    = APINENE ;
    rcbio:NO                         = NO ;
