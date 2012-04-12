@@ -736,8 +736,8 @@ contains
     real :: tmpmax ! debug 
 
     ! Avergaing of soil water used box from +/- NEXTEND (e.g. -1 to +1)
-    real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
-         xsw   ! extension of soil water
+    !DSA12 real, dimension(MAXLIMAX+2*NEXTEND,MAXLJMAX+2*NEXTEND)  ::&
+    !DSA12      xsw   ! extension of soil water
 
     nr = 2
     if (numt == 1) then
@@ -1257,10 +1257,10 @@ contains
 
     if(foundSMI3.or.foundSoilWater_deep)then
 
-      call datewrite("SMD testing water_frac here" , me, (/ -1.0 /) ) 
+      !DSA12 call datewrite("SMD testing water_frac here" , me, (/ -1.0 /) ) 
       write(*,*) "SMD debug? ", me, debug_proc
       if ( water_frac_set ) then  ! smooth the SoilWater values:
-        call datewrite("SMD found water_frac here" , me, (/ -2.0 /) ) 
+        !DSA12 call datewrite("SMD found water_frac here" , me, (/ -2.0 /) ) 
 
          ! If NWP thinks this is a sea-square, but we anyway have land,
          ! the soil moisture might be very strange.  We search neighbouring
@@ -2373,8 +2373,6 @@ contains
       masktxt = "Coastal mask"
     end if
 
-    write(*,"(a,7i4,L2,1x,a)") "LLandify start ", me, &
-         debug_li, debug_lj, 1, limax, 1, ljmax,  xwf_done, trim(masktxt)
      if ( DEBUG_LANDIFY.and. debug_proc ) then
         write(*,"(a,6i4,L2,1x,a)") "DLandify start ", &
          debug_li, debug_lj, 1, limax, 1, ljmax,  xwf_done, trim(masktxt)
