@@ -167,15 +167,15 @@ ds done   My_SOA_ml.f90
 
 xxxxxxxx rv3_11_yy  Alvaro 12/4/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Emergency mode (eEMEP): Add Volcanoe tracers to a EmChem09base+PMmass.
-In the future only Volcanoe and Radiocative tracers will be kept on thios mode.
+Emergency mode (eEMEP): Add Volcanic ash tracers to a EmChem09base+PMmass.
+In the future only Volcanic ash and Radioactive tracers will be kept on this mode.
 
 Added files
   ZCM_Emergency/ASH.species
   ZCM_Emergency/ASH.reactions
   ZCM_Emergency/Mastin&al2009a_table3.csv
 
-Added as simbolic links (intermin, might be removed ater on)
+Added as symbolic links (might be removed later on)
   ZCM_Emergency/BiomassBurning_FINNv1_to_Emergency.inc
   ZCM_Emergency/BiomassBurning_GFED_to_Emergency.inc
   ZCM_Emergency/GenIn.shorthand

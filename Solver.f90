@@ -73,7 +73,8 @@
                                  Fgas,   & ! fraction in gas-phase, for SOA
                                  rcss, rcwbd, amk, & ! Sea salt, dust emission rate
                                  rcroadd,       & ! Road dust emission rate
-                                 rcpol !,         & ! Pollen
+                                 rcash,         & ! Volcanic ash
+                                 rcpol !,       & ! Pollen
                                  !FUTURE rcnh3,         & ! NH3emis
 !DSA12                                 rcbio            ! bvoc
  use Setup_1dfields_ml,     only : itemp, tinv, rh, x=> xn_2d, amk

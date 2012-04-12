@@ -41,18 +41,21 @@ VERB='off';[[ "$*" = *-v* ]] && VERB='on'
 [[ "$VERB" = 'on' ]] && echo -e "$ERGO verbose mode: $VERB"
 # Print ussage & exits
 HELP(){
-  local EE=`echo ${extras[*]/$PWD\//}|tr ' ' ','`
+  local EE=`echo ${extras[*]#*ZCM_}|tr ' ' ','` \
+        VV=`echo ${volcan[*]#*ZCM_}|tr ' ' ','`
   cat << _EOF
 '$ERGO' prepare Chemestry files (CM_.f90) for Unimod
 
 Usage:
-  $ERGO [-h] [-v] [-f fire] [-r run] [-e extra1[,extra2[...]]]
+  $ERGO [-h] [-v] [-f fire] [-r run] [-e extra1[,extra2[...]]] [-V volc1,[,volc2[...]]]
 
 Examples:
 # EMEP GenChmem standard setup assumed in \`make EMEP\`
   mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f FINNv1
 # MACC GenChmem standard setup assumed in \`make MACC\`
   mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f GFED
+# eEMEP GenChmem standard setup assumed in \`make eEMEP\`
+  mk.GenChem -r Emergency -f FINNv1 -e none -V Vesuvius,Etna,Krísuvík,Katla,Askja
 # Testing CRI_v2_R5, no extras
   mk.GenChmem -r CRI_v2_R5 -e none
 
@@ -62,14 +65,18 @@ Options:
   -f ffire  Sets \$ffires variable (currently: $ffires)
   -r run    Sets \$run variable    (currently: $run)
   -e extras Sets \$extras variable (currently: ${EE:-'none'})
+  -V volc   Sets \$volcan variable (currently: ${VV:-'none'})
 _EOF
   (( $# )) && echo -e "\nCurrent call:\n\t$ERGO $*"
-  exit
+  exit 1
 }
 # Processes command line options. Option -h for help
 GETOPTS(){
   local rdir=$PWD/ZCM_$run N=0 EE=()
-  while getopts ":f:r:e:vh" OPT; do
+# Volcano variables
+  local VolcCSV="$PWD/ZCM_Emergency/Mastin\&al2009a_table3.csv" \
+        ENC="ISO_8859-1" COL='1,5-6,8-9,11-14,16' volc='1234-67='
+  while getopts ":f:r:e:V:vh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
     case "$OPT" in
     f)ffires=$OPTARG;;
@@ -78,15 +85,32 @@ GETOPTS(){
     e)extras=( );EE=( )
       [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
       for N in ${!EE[*]};do
-        ${extras[$N]}=${EE[$N]}
+        extras[$N]=${EE[$N]}
         [[ -s ${extras[$N]}.species ]] || extras[$N]=$PWD/${EE[$N]}
         [[ -s ${extras[$N]}.species ]] || extras[$N]=$rdir/${EE[$N]}
         [[ -s ${extras[$N]}.species ]] || extras[$N]=$xdir/${EE[$N]}
         [[ -s ${extras[$N]}.species ]] ||
           HELP $* "\nUnknown extras option:\n\t-$OPT ${EE[$N]}"
       done;;
+    V)volcan=( );EE=( )
+      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
+      # cut     selects columns from $VolcCSV
+      # iconv   takes care of special character on Volcano NAME
+      # sed     replaces '-' & '=' in Volcano NUMBER and remove blanks
+      eval "grep '^# '      $VolcCSV|tee $rdir/volcanoes.csv" # Source info
+      eval "grep '^#NUMBER' $VolcCSV|cut -d',' -f$COL|
+            tee -a $rdir/volcanoes.csv"                       # Headers
+      for N in ${!EE[*]};do
+        eval "iconv -f $ENC $VolcCSV|grep `iconv -f $ENC <<< ${EE[$N]}`|
+        cut -d',' -f$COL|sed 's/^\(.\{4,7\}\)-/\1a/g;s/^\(.\{4,7\}\)=/\1b/g;s/, */,/g;'|
+        iconv -t $ENC|tee -a $rdir/volcanoes.csv"             # Volcano
+        volc=`tail -1 $rdir/volcanoes.csv|cut -d',' -f1|sed 's/^/v/'`
+        volcan[$N]=$rdir/ASH$volc
+        sed "s/ASH/$volc/g;" $rdir/ASH.species   > ${volcan[$N]}.species
+        sed "s/ASH/$volc/g;" $rdir/ASH.reactions > ${volcan[$N]}.reactions
+      done;;
     v);;
-    h)HELP $*;exit;;
+    h)HELP $*;;
     *)HELP $* "\nUnknown $ERGO option:\n\t-$OPT $OPTARG" ;;
     esac
   done
@@ -100,25 +124,32 @@ if [ $run == EmChem09 ]; then
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
-  spcs=( ../ZCM_EmChem09/EmChem09base \
+  spcs=( $xdir/EmChem09base \
          ../ZCM_vbs_tests/VBS_help    \
           ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( ../ZCM_EmChem09/EmChem09base \
+  rcns=( $xdir/EmChem09base \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)
 
 elif [ $run == CRI_v2_R5 ]; then
   echo "RUN CRI_v2_R5 chosen"
-  spcs=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )
-  rcns=( CRI_v2_R5base ../ZCM_EmChem09/PMmass )
+  spcs=( CRI_v2_R5base $xdir/PMmass )
+  rcns=( CRI_v2_R5base $xdir/PMmass )
   bics=( CRI_v2_R5base )
 
 elif [ $run == CB05 ]; then
   echo "RUN CB05 chosen"
-  spcs=( CB05base ../ZCM_EmChem09/PMmass )
-  rcns=( CB05base ../ZCM_EmChem09/PMmass )
+  spcs=( CB05base $xdir/PMmass )
+  rcns=( CB05base $xdir/PMmass )
   bics=( CB05base )
+
+elif [ $run == Emergency ]; then
+  echo "RUN Emergency chosen"
+  spcs=( $xdir/EmChem09base $xdir/PMmass )
+  rcns=( $xdir/EmChem09base $xdir/PMmass )
+  bics=( $xdir/EmChem09base )
+  extras=( "${extras[@]}" "${volcan[@]}" )
 
 else
   echo "SELECTION of run $run failed!! "

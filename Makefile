@@ -58,6 +58,12 @@ MACC SR-MACC: modules $$@-GenChem-EmChem09soa \
 	ln -sf $(filter %.f90,$+) . && \
 	ln -sf IFSMOZ_ExternalBICs_ml.f90 My_ExternalBICs_ml.f90 && \
 	$(MAKE) -j4 $(PROG)
+eEMEP: modules $$@-GenChem-Emergency \
+          ./ZD_OZONE/My_ExternalBICs_ml.f90 \
+	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90
+	ln -sf $(filter %.f90,$+) . && \
+	$(MAKE) -j4 $(PROG)
 
 EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
@@ -67,6 +73,9 @@ SR-EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e none
 SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFED   -e none
+eEMEP-GenChem-%:
+	mk.GenChem -r $* -f FINNv1 -e none \
+	  -V Vesuvius,Etna,Krísuvík,Katla,Askja
 
 # Check if intended modules are loaded
 MODULES = intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1

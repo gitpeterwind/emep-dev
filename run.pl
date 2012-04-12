@@ -136,7 +136,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #die " TO DO: Need still to create SR split files\n" if $SR ;
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
-my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP) if $CWF;
+my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP, $eCWF, $CWFMODE) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date (default today)
        $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
@@ -147,6 +147,8 @@ if ($CWF) {
   chop($CWFDATE[2] = `date -d '$CWFBASE ($CWFDAYS-1) day' +%Y%m%d`);  # end date
   chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d000000`); # 1st dump/nest
   chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d000000`); # 2nd dump/nest
+  $eCWF=0;                            # Emergency forecast
+  $CWFMODE=$eCWF?"eEMEP":"MACC";      # Standard Forecast model setup
 }
  $CWF=0 if %BENCHMARK;
 
@@ -256,7 +258,7 @@ my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
 
-my $testv = "rv3_11_1";
+my $testv = "rv3_11_2";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -532,10 +534,14 @@ chdir "$ProgDir";
 
 if ( $RESET ) { ########## Recompile everything!
 
-    # For now, we simply recompile everything!
-    system(@MAKE, "clean");
+  # For now, we simply recompile everything!
+  system(@MAKE, "clean");
+  if ($CWF and $CWFMODE) {
+    system(@MAKE, $CWFMODE);
+  } else {
     system(@MAKE, "depend");
     system(@MAKE, "all");
+  }
 }
 system "pwd";
 print "Check last files modified:\n";
@@ -544,8 +550,12 @@ system "ls -lht --time-style=long-iso -I\*{~,.o,.mod} | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-system (@MAKE, "depend") ;
-system (@MAKE, "all") == 0 or die "@MAKE all failed";
+if ($CWFMODE) {
+  system(@MAKE, $CWFMODE) == 0 or die "@MAKE $CWFMODE failed";
+} else {
+  system (@MAKE, "depend") ;
+  system (@MAKE, "all") == 0 or die "@MAKE all failed";
+}
 
 die "Done. COMPILE ONLY\n" if  $COMPILE_ONLY;  ## exit after make ##
 
