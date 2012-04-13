@@ -75,7 +75,7 @@ SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFED   -e none
 eEMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e none \
-	  -V Vesuvius,Etna,KrÃ­suvÃ­k,Katla,Askja
+	  -V Vesuvius,Etna,Krísuvík,Katla,Askja #-h
 
 # Check if intended modules are loaded
 MODULES = intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1

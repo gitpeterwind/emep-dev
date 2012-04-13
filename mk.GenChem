@@ -74,7 +74,7 @@ _EOF
 GETOPTS(){
   local rdir=$PWD/ZCM_$run N=0 EE=()
 # Volcano variables
-  local VolcCSV="$PWD/ZCM_Emergency/Mastin\&al2009a_table3.csv" \
+  local VolcCSV="$PWD/ZCM_Emergency/Mastin&al2009a_table3.csv" \
         ENC="ISO_8859-1" COL='1,5-6,8-9,11-14,16' volc='1234-67='
   while getopts ":f:r:e:V:vh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
@@ -97,14 +97,17 @@ GETOPTS(){
       # cut     selects columns from $VolcCSV
       # iconv   takes care of special character on Volcano NAME
       # sed     replaces '-' & '=' in Volcano NUMBER and remove blanks
-      eval "grep '^# '      $VolcCSV|tee $rdir/volcanoes.csv" # Source info
-      eval "grep '^#NUMBER' $VolcCSV|cut -d',' -f$COL|
-            tee -a $rdir/volcanoes.csv"                       # Headers
+      grep '^# '      "$VolcCSV"|tee $rdir/volcanoes.csv  # Source info
+      grep '^#NUMBER' "$VolcCSV"|cut -d',' -f$COL|
+        tee -a $rdir/volcanoes.csv                        # Headers
       for N in ${!EE[*]};do
-        eval "iconv -f $ENC $VolcCSV|grep `iconv -f $ENC <<< ${EE[$N]}`|
+        volc=`iconv -f $ENC "$VolcCSV"|grep -i $(iconv -f $ENC <<< ${EE[$N]})|
         cut -d',' -f$COL|sed 's/^\(.\{4,7\}\)-/\1a/g;s/^\(.\{4,7\}\)=/\1b/g;s/, */,/g;'|
-        iconv -t $ENC|tee -a $rdir/volcanoes.csv"             # Volcano
-        volc=`tail -1 $rdir/volcanoes.csv|cut -d',' -f1|sed 's/^/v/'`
+        iconv -t $ENC`                                    # Volcano description
+        [[ -n "$volc" ]] ||
+          HELP $* "\nUnknown volcano option:\n\t-$OPT ${EE[$N]}"
+        echo "$volc"|tee -a $rdir/volcanoes.csv
+        volc="v${volc%%,*}"                               # Tracer name
         volcan[$N]=$rdir/ASH$volc
         sed "s/ASH/$volc/g;" $rdir/ASH.species   > ${volcan[$N]}.species
         sed "s/ASH/$volc/g;" $rdir/ASH.reactions > ${volcan[$N]}.reactions
@@ -146,10 +149,10 @@ elif [ $run == CB05 ]; then
 
 elif [ $run == Emergency ]; then
   echo "RUN Emergency chosen"
-  spcs=( $xdir/EmChem09base $xdir/PMmass )
-  rcns=( $xdir/EmChem09base $xdir/PMmass )
+  spcs=( $xdir/EmChem09base $xdir/PMmass ${volcan[@]})
+  rcns=( $xdir/EmChem09base $xdir/PMmass ${volcan[@]})
   bics=( $xdir/EmChem09base )
-  extras=( "${extras[@]}" "${volcan[@]}" )
+ #extras=()
 
 else
   echo "SELECTION of run $run failed!! "
