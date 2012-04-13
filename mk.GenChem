@@ -75,7 +75,7 @@ GETOPTS(){
   local rdir=$PWD/ZCM_$run N=0 EE=()
 # Volcano variables
   local VolcCSV="$PWD/ZCM_Emergency/Mastin&al2009a_table3.csv" \
-        ENC="ISO_8859-1" COL='1,5-6,8-9,11-14,16' volc='1234-67='
+        ENC="-fISO_8859-1 -tUTF-8" COL='1,5-6,8-9,11-14,16' volc='1234-67='
   while getopts ":f:r:e:V:vh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
     case "$OPT" in
@@ -93,17 +93,16 @@ GETOPTS(){
           HELP $* "\nUnknown extras option:\n\t-$OPT ${EE[$N]}"
       done;;
     V)volcan=( );EE=( )
-      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
-      # cut     selects columns from $VolcCSV
+      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( `iconv $ENC <<< ${OPTARG//,/ }` )
       # iconv   takes care of special character on Volcano NAME
+      # cut     selects columns from $VolcCSV
       # sed     replaces '-' & '=' in Volcano NUMBER and remove blanks
       grep '^# '      "$VolcCSV"|tee $rdir/volcanoes.csv  # Source info
       grep '^#NUMBER' "$VolcCSV"|cut -d',' -f$COL|
         tee -a $rdir/volcanoes.csv                        # Headers
       for N in ${!EE[*]};do
-        volc=`iconv -f $ENC "$VolcCSV"|grep -i $(iconv -f $ENC <<< ${EE[$N]})|
-        cut -d',' -f$COL|sed 's/^\(.\{4,7\}\)-/\1a/g;s/^\(.\{4,7\}\)=/\1b/g;s/, */,/g;'|
-        iconv -t $ENC`                                    # Volcano description
+        volc=`iconv $ENC "$VolcCSV"|grep -i ${EE[$N]}|cut -d',' -f$COL|
+        sed 's/^\(.\{4,7\}\)-/\1a/g;s/^\(.\{4,7\}\)=/\1b/g;s/, */,/g;'` # Volcano description
         [[ -n "$volc" ]] ||
           HELP $* "\nUnknown volcano option:\n\t-$OPT ${EE[$N]}"
         echo "$volc"|tee -a $rdir/volcanoes.csv
