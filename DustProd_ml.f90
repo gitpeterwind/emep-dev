@@ -311,13 +311,15 @@
   ! v_h2o = max( 1.0e-12, v_h2o) 
    call CheckStop(v_h2o <= 0.0 ,  "DUSTY DRY" )
   end if
-  !if( v_h2o > fc(i,j) ) then
-  ! print "(a,2i4,9f10.4)"," DUSTY WET!!",  i_fdom(i), j_fdom(j), &
-  !  v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
+  if( v_h2o > fc(i,j) ) then
+   write(*,"(a,2i4,9f10.4)")," DUSTY WET!!",  i_fdom(i), j_fdom(j), &
+    v_h2o, pwp(i,j), fc(i,j), SoilWater(i,j,1), water_fraction(i,j)
 
+   if( v_h2o > fc(i,j)+0.00001 ) then
     call CheckStop(v_h2o > fc(i,j),  "DUSTY WET" )
+   end if
 
-  !end if
+  end if
 
 !__ Gravimetric soil water content [kg kg-1]  
         gr_h2o = v_h2o * Ro_water/soil_dns_dry       
