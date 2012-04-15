@@ -231,7 +231,7 @@ module OrganicAerosol_ml
 
 
        !Feb2012:
-        print *, "FEB2012 ALLOCATE ", S1,S2, K1, K2
+       ! print *, "FEB2012 ALLOCATE ", S1,S2, K1, K2
          allocate( Fgas3d(S1:S2,LIDIM,LJDIM,K1:K2) )
 
        !+ initial guess (1st time-step only)

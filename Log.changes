@@ -165,6 +165,10 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_12_     pending    2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+ZD_VBS/My_SOA_ml     print (FEB2012) removed
+
 xxxxxxxx rv3_12     Alvaro 13/4/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Small updates to previous. Re-tag as rv3_12 since emergencgy mode
