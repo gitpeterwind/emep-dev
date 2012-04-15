@@ -459,6 +459,8 @@ private
                       ! - older (gcc 4.1?) gfortran's had bug
     character(len=TXTLEN_SHORT) :: outname, outunit, outdim, outtyp, outclass
 
+if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
+
     call Init_MosaicMMC(MOSAIC_METCONCS)  ! sets MMC_USTAR etc.
 
 

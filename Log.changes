@@ -165,13 +165,59 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_12_     pending    2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_12_1 Dave,  ing    2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+Two main changes:
+
+1)  Hourly .nc outputs: to allow 3-D output of both grid-centre and surface in
+same file/variable. Examples set up for TOPO_TEST case.
+
+Works for simple species only so far, no groups, but the intention
+is to use Out3D to replace all the previous ADVppb, BCVug, etc... options.
+
+Outputs appear only in Base_hour. Will add day, month, fullrun later.
+
+2)  CB04 added into CVS. Code compiles and run. Further testing needed.
+
+
+Changes:
+
+Output_hourly   - coding for new Out3D type added, which can
+     outputs values from both grid centres and the surface (3m)
+     if klevel ik=0. (Uses surf_corrected logical to switch
+     onm cfac when ik=0)
+
+My_Outputs   - coding for new Out3D type added, which can
+     outputs values from both grid centres and the surface (3m)
+     if klevel ik=0.
+
+     Changes include nhourly_out, nlevels_hourly now being set 
+     at run time (were paramaters), with currently values set
+     for FORECAST, TOPO_TEST and the previous default
+
+ModelConstants_ml - added TOPO_TEST. Partly for Emma+Jakob, partly
+      to allow illustration of new Out3D options.
+
+
+Other:
+
+Dust_ml              extra debug. Found that DUSTY WET triggered in
+                      Makefile debug mode, floating point stuff.
+
+Met_ml               omit soil water stuff when USE_SOILWATER false
+                     (hopefully temporary solution)
+
+NetCDF_ml            some debugging stuff 
 
 ZD_VBS/My_SOA_ml     print (FEB2012) removed
 
+ZCM_CB05/CB05base.reactions - some tracer(?) species commented out
+ZCM_CB05/CB05base.species   - some tracer(?) species commented out
+
+
 xxxxxxxx rv3_12     Alvaro 13/4/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
-Small updates to previous. Re-tag as rv3_12 since emergencgy mode
+Small updates to previous. Re-tag as rv3_12 since emergency mode
 is a really new addition in CVS!!
 
 xxxxxxxx rv3_11_3   Alvaro 12/4/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx

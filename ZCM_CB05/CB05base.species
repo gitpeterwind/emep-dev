@@ -68,11 +68,11 @@ OXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
 PXYL,1,C8H10,xx,xx,xx,0,0,0,xx,xx,,aromatic,!
 APINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
 BPINENE,1,C10H16,136.24,xx,xx,0,0,0,xx,BVOC,biogenic,!
-CL2,1,cl2,xx,xx,xx,0,0,0,xx,xx,,other,!
-HOCL,1,hocl,xx,xx,xx,0,0,0,xx,xx,,other,!
-CL,1,cl,xx,xx,xx,0,0,0,xx,xx,,other,!
-CLO,1,clo,xx,xx,xx,0,0,0,xx,xx,,other,!
-FMCL,1,fmcl,xx,xx,xx,0,0,0,xx,xx,,other,!
+*SKIP CL2,1,cl2,xx,xx,xx,0,0,0,xx,xx,,other,!
+*SKIP HOCL,1,hocl,xx,xx,xx,0,0,0,xx,xx,,other,!
+*SKIP CL,1,cl,xx,xx,xx,0,0,0,xx,xx,,other,!
+*SKIP CLO,1,clo,xx,xx,xx,0,0,0,xx,xx,,other,!
+*SKIP FMCL,1,fmcl,xx,xx,xx,0,0,0,xx,xx,,other,!
 "#SLOW
 SO2,1,SO2,64.06,SO2,SO2,0,0,0,xx,SOx,!
 CH4,1,CH4,16.04,xx,xx,0,0,0,xx,xx,,methane,!

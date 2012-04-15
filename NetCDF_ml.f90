@@ -91,7 +91,7 @@
   character (len=125), save :: fileName_day = 'out_day.nc'
   character (len=125), save :: fileName_month = 'out_month.nc'
   character (len=125), save :: fileName_year = 'out_year.nc'
-  character (len=125) :: fileName ,period_type
+  character (len=125) :: fileName = 'NotSet' ,period_type !TESTHH
 
   integer,parameter ::closedID=-999     !flag for showing that a file is closed
   integer      :: ncFileID_new=closedID  !don't save because should always be
@@ -497,14 +497,17 @@ character(len=80) ::UsedProjection
       else
         kcoord(k)=sigma_mid(KMAX_MID-KLEVcdf(k)+1) !1-->20;2-->19;...;20-->1
       endif
+      if(DEBUG_NETCDF) write(*,*) "TESTHH netcdf KLEVcdf ", k, KLEVCDF(k), kcoord(k)
     enddo
   elseif(KMAXcdf==KMAX_MID)then
     do k=1,KMAX_MID
       kcoord(k)=sigma_mid(k)
+      if(DEBUG_NETCDF) write(*,*) "TESTHH netcdf  no KLEVcdf ", k, kcoord(k)
     enddo
   else
     do k=1,KMAXcdf
       kcoord(k)=sigma_mid(KMAX_MID-k+1) !REVERSE order of k !
+!      write(*,*) "TESTHH netcdf  KMAXcdf ", k, kcoord(k)
     enddo
   endif
   call check(nf90_put_var(ncFileID, kVarID, kcoord(1:KMAXcdf)) )
@@ -568,7 +571,7 @@ subroutine Out_netCDF(iotyp,def1,ndim,kmax,dat,scale,CDFtype,ist,jst,ien,jen,ik,
 
  !make variable name
   write(varname,fmt='(A)')trim(def1%name)
-  if(DEBUG_NETCDF.and.MasterProc) write(*,*)'Out_NetCDF: START ' , me, trim(varname)
+  if(DEBUG_NETCDF.and.MasterProc) write(*,*)'Out_NetCDF: START ',trim(varname)
 
   !to shorten the output we can save only the components explicitely named here
   !if(varname.ne.'D2_NO2'.and.varname.ne.'D2_O3' &

@@ -181,7 +181,9 @@ module Biogenics_ml
       ispec_NO   = find_index( "NO", EMIS_BioNat(:) ) 
       ispec_NH3  = find_index( "NH3", EMIS_BioNat(:) ) 
       call CheckStop( ispec_C5H8 < 1 , "BiogencERROR C5H8")
-      call CheckStop( ispec_APIN < 1 , "BiogencERROR APIN")
+      !call CheckStop( ispec_APIN < 1 , "BiogencERROR APIN")
+      if( ispec_APIN < 0 ) call PrintLog("WARNING: No APINENE Emissions")
+     
       call CheckStop( USE_SOILNOX .and. ispec_NO < 1 , "BiogencERROR NO")
 
       itot_C5H8 = find_index( "C5H8", species(:)%name    ) 

@@ -36,6 +36,7 @@ module  My_Outputs_ml
 ! -----------------------------------------------------------------------
 
 use CheckStop_ml,     only: CheckStop
+use ChemSpecs_tot_ml
 use ChemSpecs_adv_ml
 use ChemSpecs_shl_ml
 use ChemChemicals_ml,  only: chemical,species
@@ -43,6 +44,7 @@ use ChemChemicals_ml,  only: chemical,species
 use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
+                             TOPO_TEST, &
                              FORECAST, to_molec_cm3=>MFAC
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG
@@ -167,20 +169,23 @@ character(len=10), public, parameter, dimension(NXTRA_SONDE) :: &
 logical, public, parameter :: Hourly_ASCII = .false.
 ! Hourly_ASCII = .True. gives also Hourly files in ASCII format.
 
-integer, public            :: NHOURLY_OUT =  9 ! No. outputs
-integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
+!TESTHH integer, public            :: NHOURLY_OUT =  9 ! No. outputs
+!TESTHH integer, public, parameter :: NLEVELS_HOURLY = 4 ! No. outputs
+integer, public, save      :: nhourly_out    ! No. outputs
+integer, public, save      :: nlevels_hourly ! No. outputs
 integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
 ! Output selected model levels
-logical, public, parameter ::  SELECT_LEVELS_HOURLY = .false..or.FORECAST
+logical, public, parameter ::  SELECT_LEVELS_HOURLY = .false..or. (FORECAST.or.TOPO_TEST)
 ! Decide which levels to print out
 ! 20<==>uppermost model level (m01)
 ! 01<==>lowermost model level (m20)
 ! 00<==>surface approx. from lowermost model level
 ! 00 and 01 can be both printed out,
 ! but it might create loads of missing values...
-integer, public, parameter, dimension(NLEVELS_HOURLY) :: &
-  LEVELS_HOURLY = (/0,4,6,10/)
+!TESTHH integer, public, parameter, dimension(NLEVELS_HOURLY) :: &
+!TESTHH   LEVELS_HOURLY = (/0,4,6,10/)
+integer, public, dimension(:), allocatable :: levels_hourly  ! Set below
 
 type(Asc2D), public, dimension(:), allocatable :: hr_out  ! Set below
 
@@ -251,11 +256,28 @@ subroutine set_output_defs
   ! ** REMEMBER : SHL species are in molecules/cm3, not mixing ratio !!
   ! ** REMEMBER : No spaces in name, except at end !!
 
+if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
+
+  if(FORECAST)then
+    nhourly_out=10
+    nlevels_hourly = 4
+  else if ( TOPO_TEST ) then
+    nhourly_out=3
+    nlevels_hourly = 10  ! nb zero is one of levels in this system
+  else 
+    nhourly_out=9
+    nlevels_hourly = 1  ! nb zero is *not* one of levels
+  end if
+
+  if(.not.allocated(levels_hourly))allocate(levels_hourly(nlevels_hourly))
+  if(.not.allocated(hr_out))allocate(hr_out(nhourly_out))
+
   if(FORECAST)then
     ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
     iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
-    NHOURLY_OUT=10
-    if(.not.allocated(hr_out))allocate(hr_out(NHOURLY_OUT))
+    levels_hourly = (/0,4,6,10/)
+
+
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
     hr_out(01)=Asc2D("o3_3km"    ,"BCVugXX","(f9.4)",IXADV_O3   ,&
@@ -291,8 +313,21 @@ subroutine set_output_defs
              ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9)
 !   hr_out(10)=Asc2D("no2_col"   ,"COLUMN","(f9.4)",IXADV_NO2  ,&
 !            ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15,-999.9)
-  else
-    if(.not.allocated(hr_out))allocate(hr_out(NHOURLY_OUT))
+
+  else if ( TOPO_TEST ) then
+
+   ! nb Out3D uses totals, e.g. O3, not IXADV_O3
+   ! Number of definitions must match nhourly_out set above
+    levels_hourly = (/ (i, i= 0,nlevels_hourly-1) /)  ! -1 will give surfac
+    hr_out(01)=Asc2D("o3_3dppb"    ,"Out3D","(f9.4)",O3   ,&
+             ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv", PPBINV,600.0*2.0)
+    hr_out(02)=Asc2D("no2_3dppb"   ,"Out3D","(f9.4)",&
+             NO2  ,ix1,ix2,iy1,iy2,nlevels_hourly,"ppbv",PPBINV ,600.0*1.91)
+    hr_out(03)=Asc2D("o3_3dug"   ,"Out3D","(f9.4)",&
+         O3, ix1,ix2,iy1,iy2,nlevels_hourly,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0)
+
+    if(MasterProc ) print *, "TESTHH TOPO O3 SET", nlevels_hourly
+  else 
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
 
@@ -354,8 +389,9 @@ subroutine set_output_defs
   endif
 
   !/** Consistency checks
-   do i = 1, NHOURLY_OUT
+   do i = 1, nhourly_out
     ! We use ix1 to see if the array has been set.
+if(MasterProc ) print *, "TESTHH O3 ATEND", i, nlevels_hourly
     if ( hr_out(i)%ix1 < 1 .or.  hr_out(i)%ix1 > 999 ) then
       write(errmsg,*) "Failed consistency check in &
           &set_output_defs: Hourly is ",i, "Nhourly is ",NHOURLY_OUT

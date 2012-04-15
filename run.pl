@@ -10,7 +10,7 @@
 # ib for infiniband (fast interconnect).
 #PBS -lnodes=64:ib
 # wall time limit of run
-#PBS -lwalltime=09:50:00
+#PBS -lwalltime=07:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -124,6 +124,7 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/EMEP_trend_2000-2009/2009");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
@@ -258,7 +259,7 @@ my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
 
-my $testv = "rv3_11_2";
+my $testv = "rv3_12_1";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code

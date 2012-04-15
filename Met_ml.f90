@@ -511,6 +511,8 @@ contains
     !
     ! Start with shallow
 
+if( USE_DUST .and. .not.USE_SOILWATER ) call StopAll("Incosistent SM, DUST")
+if( USE_SOILWATER ) then
     SoilWaterSource = "IFS"! use as default?
 
     namefield='SMI1'
@@ -547,6 +549,7 @@ contains
           SoilWaterSource = "PARLAM"
        endif
     endif
+  end if ! USE_SOILWATER first one
   if ( USE_SOILWATER ) then  !just deep here
 
      !========================================
@@ -598,14 +601,14 @@ contains
 
      endif !SMI3 found
 
-  end if ! USE_SOILWATER
 
-  if ( DEBUG_SOILWATER.and.debug_proc ) then
-       i =  debug_li
-       j =  debug_lj
-       write(*,"(a,2i4,f12.4)") "DEBUG_METSWF2: ", &
-        nr, current_date%day, SoilWater_deep(i,j,nr)
-   end if
+     if ( DEBUG_SOILWATER.and.debug_proc ) then
+        i =  debug_li
+        j =  debug_lj
+        write(*,"(a,2i4,f12.4)") "DEBUG_METSWF2: ", &
+          nr, current_date%day, SoilWater_deep(i,j,nr)
+      end if
+  end if ! USE_SOILWATER
   !========================================
 
     namefield='snow_depth'
@@ -1255,10 +1258,11 @@ contains
 
 
 
+   if( USE_SOILWATER ) then
     if(foundSMI3.or.foundSoilWater_deep)then
 
       !DSA12 call datewrite("SMD testing water_frac here" , me, (/ -1.0 /) ) 
-      write(*,*) "SMD debug? ", me, debug_proc
+      !DSA12 write(*,*) "SMD debug? ", me, debug_proc
       if ( water_frac_set ) then  ! smooth the SoilWater values:
         !DSA12 call datewrite("SMD found water_frac here" , me, (/ -2.0 /) ) 
 
@@ -1362,6 +1366,7 @@ contains
             !end do
             !where ( SoilWater_deep(:,:,nr) < 1.0e-3 ) SoilWater_deep(:,:,nr) = 1.0
        endif ! water_frac_set test
+  end if ! USE_SOILWATER
        !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     endif ! validity test
 

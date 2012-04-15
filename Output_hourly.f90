@@ -50,7 +50,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               to_ug_ADV, to_ug_C, to_ug_S, to_ug_N, &
                               SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
  
-  use CheckStop_ml,     only: CheckStop
+  use CheckStop_ml,     only: CheckStop, StopAll
   use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water, PM25_water_rh50
   use ChemGroups_ml,    only: chemgroups
   use Derived_ml,       only: num_deriv2d        ! D2D houtly output type
@@ -67,7 +67,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               DAILY_HOURLYFILE, MONTHLY_HOURLYFILE
  use MetFields_ml,     only: t2_nwp,th, roa, surface_precip, ws_10m ,rh2m,      &
                               Idirect, Idiffuse, z_bnd
-  use NetCDF_ml,        only: Out_netCDF,         CloseNetCDF, Init_new_netCDF,  &
+  use NetCDF_ml,        only: Out_netCDF, CloseNetCDF, Init_new_netCDF,  &
                               Int1, Int2, Int4, Real4, Real8  !Output data type to choose
   use OwnDataTypes_ml,  only: TXTLEN_DERIV,TXTLEN_SHORT
   use Par_ml,           only: MAXLIMAX, MAXLJMAX, GIMAX,GJMAX,        &
@@ -97,7 +97,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   real :: unit_conv                   ! Unit conversion (ppb ug etc.)
   real :: g                           ! tmp - saves value of ghourly(i,j)
   integer, dimension(2) :: maxpos     ! Location of max value
-  integer i,j,ih,ispec,itot           ! indices
+  integer i,j,ih,ispec,itot,iadv      ! indices
   integer :: k,ik,iik                 ! Index for vertical level
   integer ist,ien,jst,jen             ! start and end coords
   character(len=TXTLEN_DERIV) :: name ! For output file, species names
@@ -114,10 +114,13 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   integer,save :: old_month=-1,old_day=-1
   integer :: month,day
   character(len=200) ::filename
+  logical, save :: debug_flag    ! = ( MasterProc .and. DEBUG )
+  logical       ::  surf_corrected  ! to get 3m values
 
 
   if ( NHOURLY_OUT <= 0 ) then
-    if ( MasterProc .and. DEBUG ) print *,"DEBUG Hourly_out: nothing to output!"
+    if ( MasterProc .and. DEBUG ) &
+       write(*,*) "DEBUG Hourly_out: nothing to output!"
     return
   endif
 
@@ -127,12 +130,15 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
   !/ Ensure that domain limits specified in My_Outputs lie within
   !  model domain. In emep coordinates we have:
 
+    debug_flag= ( debug_proc .and. DEBUG )
+
     do ih = 1, NHOURLY_OUT 
       hr_out(ih)%ix1 = max(IRUNBEG,hr_out(ih)%ix1)
       hr_out(ih)%iy1 = max(JRUNBEG,hr_out(ih)%iy1)
       hr_out(ih)%ix2 = min(GIMAX+IRUNBEG-1,hr_out(ih)%ix2)
       hr_out(ih)%iy2 = min(GJMAX+JRUNBEG-1,hr_out(ih)%iy2)
       hr_out(ih)%nk  = min(KMAX_MID,hr_out(ih)%nk)
+      if ( debug_flag ) write(*,*) "DEBUG Hourly nk ", ih, hr_out(ih)%nk
     enddo ! ih
 
     my_first_call = .false.
@@ -142,8 +148,9 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
      if(old_day/=day)then
         !create new hourly file
         old_day=day
-        217 FORMAT(A,I3.3,A)
-        write(filename,217)trim(runlabel1)//'_hour_',day,'.nc'
+        !TESTHH 217 FORMAT(A,I3.3,A)
+        write(filename,"(a,i3.3,a)")trim(runlabel1)//'_hour_',day,'.nc'
+        if ( debug_flag ) write(*,*) "DEBUG Day-Hourlyfile ", trim(filename)
         call Init_new_netCDF(trim(filename),IOU_HOUR)        
      endif
   elseif(MONTHLY_HOURLYFILE)then
@@ -152,7 +159,8 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
         !create new hourly file
         old_month=month
         218 FORMAT(A,I2.2,A)
-        write(filename,218)trim(runlabel1)//'_hour_',month,'.nc'
+        write(filename,"(a,i2.2,a)")trim(runlabel1)//'_hour_',month,'.nc'
+        if ( debug_flag ) write(*,*) "DEBUG Mon-Hourlyfile ", trim(filename)
         call Init_new_netCDF(trim(filename),IOU_HOUR)        
      endif
   endif
@@ -199,26 +207,40 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
       msnr  = 3475 + ih
       ispec = hr_out(ih)%spec
       name  = hr_out(ih)%name
-      if ( DEBUG .and. debug_proc ) &
-        write(6,'(a,2i4,1X,a,/a,1X,a)')"DEBUG DERIV HOURLY", ih, ispec, &
+      if ( debug_flag ) &
+        write(6,'(a,2i4,1X,a,/a,1X,2a,i3)')"DEBUG DERIV HOURLY", ih, ispec, &
           trim(name),"INTO HOUR TYPE:", &
-           trim(hr_out(ih)%type) // " "//trim(hr_out(ih)%name)
+           trim(hr_out(ih)%type) // " "//trim(hr_out(ih)%name), " nk:", hr_out_nk
 
       if(any(hr_out_type==(/"COLUMN     " ,"COLUMNgroup"/)))then
         ik=KMAX_MID-hr_out(ih)%nk+1  ! top of the column
         if(ik>=KMAX_MID)ik=1         ! 1-level column does not make sense
       else
         ik=KMAX_MID-k+1              ! all levels from model bottom are outputed,
+        if ( debug_flag ) write(6,*)"SELECT LEVELS? ", ik, SELECT_LEVELS_HOURLY
         if(SELECT_LEVELS_HOURLY)then ! or the output levels are taken
           ik=LEVELS_HOURLY(k)        ! from LEVELS_HOURLY array (default)
           hr_out_type=hr_out(ih)%type
+          if ( debug_flag ) write(6,*)"DEBUG SELECT LEVELS", ik, hr_out_type
+          if(ik== 0)then
+            surf_corrected = .true.  ! Will implement cfac   
+            if ( debug_flag ) write(6,'(a)')"DEBUG HOURLY Surf_correction", ik, k
+          else
+            surf_corrected = .false.   
+          end if
+!TESTHH QUERY: see below
           if(ik==0)then
             ik=KMAX_MID              ! surface/lowermost level
-            if(any(hr_out_type==(/"BCVppbv     ","BCVugXX     ","BCVugXXgroup"/)))&
+            if ( debug_flag ) write(6,*)"DEBUG LOWEST LEVELS", ik, hr_out_type
+            if(any(hr_out_type==(/"BCVppbv     ","BCVugXX     ",&
+                                  "BCVugXXgroup"/)))&
+!                                  "BCVugXXgroup","Out3D       "/)))&
               hr_out_type(1:3)="ADV" ! ensure surface output
             if(any(hr_out_type==(/"PMwater"/)))&
               hr_out_type=trim(hr_out_type)//"SRF"
           else
+!TESTHH QUERY:
+!DSQUERY - why not ik = KMAX_MID -ik ? With zero this would give KMAX_MID
             ik=KMAX_MID-ik+1         ! model level to be outputed
             if(any(hr_out_type==(/"ADVppbv     ","ADVugXX     ","ADVugXXgroup"/)))&
               ik=KMAX_MID            ! all ADV* types represent surface output
@@ -248,8 +270,11 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
    !  For molec/cm2 output, set hr_out%unitconv=to_molec_cm2.
    !----------------------------------------------------------------
 
+      if ( debug_flag ) write(*,"(5a,i4)") "DEBUG Hourly MULTI ",&
+              trim(hr_out(ih)%name), " case ", trim(hr_out_type), " k: ",  ik
       OPTIONS: select case ( trim(hr_out_type) )
         
+
         case ( "ADVppbv" )
           itot = NSPEC_SHL + ispec
           name = species(itot)%name
@@ -260,6 +285,41 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                         * unit_conv            ! Units conv.
           end forall
 
+        case ( "Out3D" )
+          itot = ispec
+          iadv  = ispec - NSPEC_SHL
+          name = species(itot)%name
+          unit_conv =  hr_out(ih)%unitconv
+
+          if ( index( hr_out(ih)%unit, "ppb" ) > 0 ) then
+             forall ( i=1:limax, j=1:ljmax)
+               hourly(i,j) = xn_adv(iadv ,i,j,ik) & !BCV:KMAX_MID) &
+                           * unit_conv            ! Units conv.
+             end forall
+          else if ( index(hr_out(ih)%unit, "ug" ) > 0 ) then
+          
+             forall ( i=1:limax, j=1:ljmax)
+                 hourly(i,j) = xn_adv(iadv ,i,j,ik) & !BCV:KMAX_MID) &
+                             * roa(i,j,ik,1)        & ! density.
+                             * unit_conv              ! Units conv.
+             end forall
+          else
+             call StopAll("ERROR: Output_hourly  unit problem"//trim(name) )
+
+          end if
+
+          if( surf_corrected .and. ik==KMAX_MID .and. itot > NSPEC_SHL ) then
+                   ! * cfac(ispec,i,j) &    ! 50m->3m conversion
+            forall ( i=1:limax, j=1:ljmax)
+              hourly(i,j) = hourly(i,j)*cfac(iadv,i,j)
+            end forall
+          end if 
+
+          if ( debug_flag ) then 
+            i=debug_li; j=debug_lj
+            write(6,'(A,2I4,1X,L2,2f10.4)')"Out3D K-level"//trim(name), ik,  &
+              itot, surf_corrected, hourly(i,j), cfac(ispec-NSPEC_SHL,i,j)
+          end if
         case ( "BCVppbv" )
           itot = NSPEC_SHL + ispec
           name = species(itot)%name
@@ -269,8 +329,9 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                    !BCV * cfac(ispec,i,j) &    ! 50m->3m conversion
                         * unit_conv            ! Units conv.
           end forall
+          !if( ik 
           if ( DEBUG ) &
-            write(6,'(A,I0,1X)')"K-level", ik, trim(name), itot
+            write(6,'(A,I0,1X,L2)')"K-level", ik, trim(name), itot, surf_corrected
 
         case ( "ADVugXX" )  !ug/m3, ugX/m3 output at the surface
           itot = NSPEC_SHL + ispec
