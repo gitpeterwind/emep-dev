@@ -146,6 +146,11 @@ elif [ $run == CB05 ]; then
   rcns=( CB05base $xdir/PMmass )
   bics=( CB05base )
 
+elif [ $run == CB04 ]; then
+  echo "RUN CB04 chosen"
+  spcs=( CB04base $xdir/PMmass )
+  rcns=( CB04base $xdir/PMmass )
+
 elif [ $run == Emergency ]; then
   echo "RUN Emergency chosen"
   spcs=( $xdir/EmChem09base $xdir/PMmass ${volcan[@]})
