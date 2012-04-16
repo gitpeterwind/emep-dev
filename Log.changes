@@ -165,7 +165,23 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_12_1 Dave,  ing    2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_13 Dave, 16/4/20122012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+* Bug fixes * found by Guus Velders,  16th April:
+Results will change!
+
+AOT40nPOD_ml:   8-20CET was set wrong to test for 9-21 UTC
+  changed.
+
+GLobalBCs_ml
+
+ error in 1993:
+    macehead_o3 = (/ 37.6, 40.4, 44.4, 42.6, 43.4, 29.2, &
+                     28.5, 29.6, 32.2,  0.0, 37.3, 38.3/)  
+
+Corrected (0.0 should be 33.3)
+
+xxxxxxxx rv3_12_1 Dave, 15/4/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Two main changes:
 
