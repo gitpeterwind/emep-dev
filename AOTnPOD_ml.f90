@@ -151,7 +151,7 @@ contains
    ! (nb hour is integer value)
 
     if ( vego3_outputs(iO3cl)%defn == "EU" .and.  &
-         (current_date%hour  <  8 .or. current_date%hour  > 18 )) then
+         (current_date%hour  <  7 .or. current_date%hour  > 18 )) then
           return
 
     else if ( Grid%izen >= AOT_HORIZON ) then  !UN or MM use daylight
