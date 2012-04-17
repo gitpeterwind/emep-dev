@@ -120,6 +120,7 @@ integer, public, parameter :: &
       ,CDDEP_NH3  = 4, CDDEP_NO2 = 5, CDDEP_PAN  = 6 &
       ,CDDEP_H2O2 = 7, CDDEP_ALD = 8, CDDEP_HCHO = 9, &
        CDDEP_ROOH = 10,  CDDEP_HNO2 = 11   !, CDDEP_PMf = 12, CDDEP_PMc = 13
+  integer, public, parameter :: CDDEP_RCHO = CDDEP_ALD ! Convenience
 !OP renamed to ROOH, FIN to PMf, COA to PMc
 ! specials for aerosols. we have 2 fine, 1 coarse and 1 'giant'type
   integer, public, parameter :: &

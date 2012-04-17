@@ -140,6 +140,12 @@ elif [ $run == CRI_v2_R5 ]; then
   rcns=( CRI_v2_R5base $xdir/PMmass )
   bics=( CRI_v2_R5base )
 
+elif [ $run == CRI_v2_0  ]; then
+  echo "RUN CRI_v2_0  chosen"
+  spcs=( CRI_v2_0base $xdir/PMmass )
+  rcns=( CRI_v2_0base $xdir/PMmass )
+  bics=( CRI_v2_0base )
+
 elif [ $run == CB05 ]; then
   echo "RUN CB05 chosen"
   spcs=( CB05base $xdir/PMmass )
@@ -150,6 +156,11 @@ elif [ $run == CB04 ]; then
   echo "RUN CB04 chosen"
   spcs=( CB04base $xdir/PMmass )
   rcns=( CB04base $xdir/PMmass )
+
+elif [ $run == OSRM ]; then
+  echo "RUN OSRM chosen"
+  spcs=( OSRMbase $xdir/PMmass )
+  rcns=( OSRMbase $xdir/PMmass )
 
 elif [ $run == Emergency ]; then
   echo "RUN Emergency chosen"

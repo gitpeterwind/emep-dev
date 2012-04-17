@@ -165,10 +165,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_13 Dave, 16/4/20122012 xxxxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_13_1 Dave, 17/4/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+ZCM_CRI_v2_0 added, compiles and runs but needs further
+  checks.
+
+xxxxxxxx rv3_13 Dave, 16/4/2012 xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 * Bug fixes * found by Guus Velders,  16th April:
 Results will change!
+(UPDATE 17th April, : AOT increases by ca. 10% with this change)
 
 AOT40nPOD_ml:   8-20CET was set wrong to test for 9-21 UTC
   changed.
