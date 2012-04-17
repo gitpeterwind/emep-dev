@@ -157,7 +157,7 @@ CARB15,1,carb15,xx,xx,xx,0,0,0,xx,carbonyl,,!C0
 C2H5CO3H,1,C2H5CO3H,xx,ROOH,ROOH,0,0,0,xx,ROOH,,!C3
 PPN,1,ppn-N,xx,PAN,xx,0,0,0,xx,PAN;OXN,,!C3 - add N to allow dep calculation
 HOCH2CHO,1,HOCH2CHO,xx,xx,xx,0,0,0,xx,RCHO,,!C2
-HOCH2CO3H,1,HOCH2CO3H,xx,xx,xx,0,0,0,xx,OXN,,!C0
+HOCH2CO3H,1,HOCH2CO3H,xx,xx,xx,0,0,0,xx,ROOH,,!C0 !Corrected, was OXN
 PHAN,1,phan-N,xx,PAN,xx,0,0,0,xx,PAN;OXN,,!C2  - add N to allow dep calculation
 CCARB12,1,ccarb12,xx,xx,xx,0,0,0,xx,carbonyl,,!C0
 UCARB12,1,ucarb12,xx,xx,xx,0,0,0,xx,carbonyl,,!C0
