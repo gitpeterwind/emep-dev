@@ -1,0 +1,18 @@
+# 0Cfine splits for Eucaari trend runs. Don't have wood, but label SNAP-2 as wood here
+# 
+# Key-word, MASS_ASSUMED= 0 by default, 
+# change when emissions have artificial mass, e.g. 46 for NOx as NO2
+: MASS_ASSUMED 0 
+99 99   POC_F_FFUEL  POC_F_WOOD     #HEADERS
+#DATA
+0   1   100.00          0.0
+0   2     0.00        100.0
+0   3   100.00          0.0
+0   4   100.00           0.0
+0   5   100.00           0.0
+0   6   100.00           0.0
+0   7   100.00           0.0
+0   8   100.00          0.0
+0   9   100.00          0.0
+0   10  100.00          0.0
+0   11  100.00          0.0
