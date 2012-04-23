@@ -102,6 +102,8 @@ integer, public, parameter ::  &
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
 ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
  IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
+! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of TNO28 domain
+! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
 ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
 ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
 ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
@@ -116,6 +118,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 182,  1, 197 /)     ! HIRHAM
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
+! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
+! RUNDOMAIN = (/  60,180, 12, 184 /)     !  test TNO7 area
 ! RUNDOMAIN = (/  30,  90,  10,  80 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
 ! RUNDOMAIN = (/ 56+OFFSET_i, 147+OFFSET_i, 12+OFFSET_i, 102+OFFSET_i /)     ! EGU
@@ -139,8 +143,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
 integer, public, parameter ::  &
-  NPROCX      =   8       & ! Actual number of processors in longitude
-, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   4       & ! Actual number of processors in longitude
+, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================
