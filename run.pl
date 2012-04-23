@@ -8,9 +8,10 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # ib for infiniband (fast interconnect).
-#PBS -lnodes=64:ib
+#PBS -lnodes=8
+#64:ib
 # wall time limit of run
-#PBS -lwalltime=07:50:00
+#PBS -lwalltime=00:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -119,7 +120,8 @@ my %BENCHMARK;
 # Use Modrun11 where possible:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2006,emis=>"Modrun11/EMEP_trend_2000-2009/2006");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun11/EMEP_trend_2000-2009/2007");
-  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008");
+#  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
@@ -158,7 +160,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2009";
+my $year = "2008";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -259,7 +261,7 @@ my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
 
-my $testv = "rv3_12_1";
+my $testv = "rv3_14";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -419,6 +421,7 @@ die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
 die "Domain mis-match Model: $XDIM Grid $GRID" if (
    ( $GRID eq "EMEP"     && $XDIM != 170 ) or
    ( $GRID eq "EECCA"    && $XDIM != 132 ) or
+   ( $GRID eq "TNO28"    && $XDIM != 210 ) or
    ( $GRID eq "EECCA_25" && $XDIM != 264 ) or
    ( $GRID eq "MACC02"   && $XDIM != 321 ) or
    ( $GRID eq "HIRHAM"   && $XDIM != 182 ) or
@@ -835,7 +838,8 @@ print "TESTING PM $poll $dir\n";
   $ifile{"/home/$HALDIS/Unimod_NMR_NH3/Unimod.rv3_6_8/Sector_NH3Emis.txt"}="Sector_NH3Emis.txt" if($NH3EMIS_VAR);
 
 # new inputs style (Aug 2007)  with compulsory headers:
-  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse";
+# From rv3_14 used only for FORECAST mode
+  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ( $FORECAST ) ;
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
   $ifile{"$DataDir/Landuse_PS_5km.nc"} ="Landuse_PS_5km.nc";
