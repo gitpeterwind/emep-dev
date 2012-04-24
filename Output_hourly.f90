@@ -51,7 +51,7 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
                               SELECT_LEVELS_HOURLY, LEVELS_HOURLY !Output selected model levels
  
   use CheckStop_ml,     only: CheckStop, StopAll
-  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water, PM25_water_rh50
+  use Chemfields_ml,    only: xn_adv,xn_shl, cfac, PM25_water, PM25_water_rh50, AOD
   use ChemGroups_ml,    only: chemgroups
   use Derived_ml,       only: num_deriv2d        ! D2D houtly output type
   use DerivedFields_ml, only: f_2d,d_2d          ! D2D houtly output type
@@ -390,6 +390,12 @@ subroutine hourly_out() !!  spec,ofmt,ix1,ix2,iy1,iy2,unitfac)
           if(hr_out(ih)%unit/="ug/m3")hr_out(ih)%unit="ug"
           forall(i=1:limax,j=1:ljmax)
             hourly(i,j) = PM25_water_rh50(i,j)
+          end forall
+
+        case ( "AOD" )
+          name = "AOD 550nm"
+          forall ( i=1:limax, j=1:ljmax)
+            hourly(i,j) = AOD(i,j)
           end forall
 
         case ( "COLUMN" )    ! Column output in ug/m2, ugX/m2, molec/cm2

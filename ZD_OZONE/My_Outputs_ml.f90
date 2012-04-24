@@ -259,12 +259,12 @@ subroutine set_output_defs
 if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
 
   if(FORECAST)then
-    nhourly_out=10
+    nhourly_out=11
     nlevels_hourly = 4
-  else if ( TOPO_TEST ) then
+  elseif ( TOPO_TEST ) then
     nhourly_out=3
     nlevels_hourly = 10  ! nb zero is one of levels in this system
-  else 
+  else
     nhourly_out=9
     nlevels_hourly = 1  ! nb zero is *not* one of levels
   end if
@@ -313,8 +313,10 @@ if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
              ix1,ix2,iy1,iy2,1,"ug",to_ug_ADV(IXADV_NO2),-999.9)
 !   hr_out(10)=Asc2D("no2_col"   ,"COLUMN","(f9.4)",IXADV_NO2  ,&
 !            ix1,ix2,iy1,iy2,1,"1e15molec/cm2",to_molec_cm2*1e-15,-999.9)
+    hr_out(11)=Asc2D("AOD_550nm" ,"AOD"   ,"(f9.4)",00         ,&
+             ix1,ix2,iy1,iy2,1," ",1.0    ,-9999.9)
 
-  else if ( TOPO_TEST ) then
+  elseif ( TOPO_TEST ) then
 
    ! nb Out3D uses totals, e.g. O3, not IXADV_O3
    ! Number of definitions must match nhourly_out set above
@@ -327,7 +329,7 @@ if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
          O3, ix1,ix2,iy1,iy2,nlevels_hourly,"ug",to_ug_ADV(IXADV_O3) ,600.0*2.0)
 
     if(MasterProc ) print *, "TESTHH TOPO O3 SET", nlevels_hourly
-  else 
+  else
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
 

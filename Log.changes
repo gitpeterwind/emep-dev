@@ -165,14 +165,16 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
-xxxxxxxx rv3_14   Dave, 23/4/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_14   Dave & Alvaro, 23-24/4/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl  - Inputs.Landuse now only used in FORECAST mode.
           Default is now to interpolate from 5km CCE/SEI data
         - extra setups for TNO28
 
 ModelConstants_ml - extra setups for TNO28
-                  - USE_* for FORECAST mode
+                  - Explicit settings for FORECAST mode (USE_*)
+
+My_Outputs_ml & Output_hourly - AOD as standard FORECAST output
 
 xxxxxxxx rv3_13_2 Dave, 20/4/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
