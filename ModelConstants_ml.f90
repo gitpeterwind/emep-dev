@@ -38,31 +38,40 @@ implicit none
 private
 
 !=============================================================================
+! FORECAST mode run:
+! * Nested IC/BC def in Nest_ml & IFSMOZ_ExternalBICs_ml
+! * Special hourly output def in My_Outputs_ml
+! * Only dayly and hourly output are required,
+!   all other output types to false in Derived_ml.
+logical, public, parameter :: &
+  FORECAST = .false.
+
 ! Some flags for model setup
 ! will be removed when code is sufficiently tested 
 ! (for convection use foundconv in permanent code)
-logical, public, parameter :: USE_CONVECTION     = .false.  ! false works best for Euro runs,
-logical, public, parameter :: USE_DEGREEDAY_FACTORS  = .true.  ! false works best for Euro runs,
-logical, public, parameter :: USE_SOILWATER      = .true.  !for deep soilwater,  under testing
-logical, public, parameter :: USE_FOREST_FIRES   = .true.  ! Needs global files, future
-logical, public, parameter :: USE_AIRCRAFT_EMIS  = .true.  ! Needs global file, see manual
-logical, public, parameter :: USE_LIGHTNING_EMIS = .true.   ! ok
-logical, public, parameter :: USE_SOILNOX        = .true.   !  ok, but diff for global + Euro runs
-logical, public, parameter :: NO_CROPNH3DEP      = .true.  !Stop NH3 deposition for growing crops
-logical, public, parameter :: USE_SEASALT        = .true.   ! ok
+logical, public, parameter ::         &
+  USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
+  USE_DEGREEDAY_FACTORS  = .true.,    & ! false works best for Euro runs,
+  USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
+  USE_FOREST_FIRES   = .not.FORECAST, & ! Needs global files, future
+  USE_AIRCRAFT_EMIS  = .true.,        & ! Needs global file, see manual
+  USE_LIGHTNING_EMIS = .true.,        & ! ok
+  USE_SOILNOX        = .true.,        & ! ok, but diff for global + Euro runs
+  NO_CROPNH3DEP      = .true.,        & ! Stop NH3 deposition for growing crops
+  USE_SEASALT        = .true.,        & ! ok
 ! More experimental:
-logical, public, parameter :: USE_DUST           = .false.  ! Experimental
-logical, public, parameter :: USE_ROADDUST       = .false.  ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor 
-logical, public, parameter :: DO_SAHARA          = .true.  ! Turn on/off BG Saharan Dust
-logical, public, parameter :: USE_GLOBAL_SOILNOX = .false.  ! Need to design better switch
-logical, public, parameter :: USE_SOILNH3        = .false.  ! DUMMY VALUES, DO NOT USE!
-logical, public, parameter :: USE_HOURLY_EMISVAR = .true.  ! NOT FULLY TESTED YET! Use hourly (SNAP-sector dependent ) emission (rather than just day-night variation)
-logical, public, parameter :: USE_AOD            = .false.
-logical, public, parameter :: USE_ZREF           = .false.  ! testing
-logical, public, parameter :: USE_PFT_MAPS       = .false.  ! Future option
-logical, public, parameter :: EXTENDEDMASSBUDGET = .false.!extended massbudget outputs
-logical, public, parameter :: LANDIFY_MET        = .false.!extended massbudget outputs
-logical, public, parameter :: USE_POLLEN         = .false.!EXPERIMENTAL. Only works if start Jan 1
+  USE_DUST           = .false.,       & ! Experimental
+  USE_ROADDUST       = .false.,       & ! UNDER DEVELOPMENT! Testing the TNO Road Dust routine. So far with simplified "climate-correction" factor
+  DO_SAHARA          = .not.FORECAST, & ! Turn on/off BG Saharan Dust
+  USE_GLOBAL_SOILNOX = .false.,       & ! Need to design better switch
+  USE_SOILNH3        = .false.,       & ! DUMMY VALUES, DO NOT USE!
+  USE_HOURLY_EMISVAR = .not.FORECAST, & ! NOT FULLY TESTED YET! Use hourly (SNAP-sector dependent ) emission (rather than just day-night variation)
+  USE_AOD            = FORECAST,      &
+  USE_ZREF           = .false.,       & ! testing
+  USE_PFT_MAPS       = .false.,       & ! Future option
+  EXTENDEDMASSBUDGET = .false.,       & ! extended massbudget outputs
+  LANDIFY_MET        = .false.,       & ! extended massbudget outputs
+  USE_POLLEN         = .false.          ! EXPERIMENTAL. Only works if start Jan 1
 !Boundary layer profiles
   character(len=4), parameter, public :: FluxPROFILE = &
      "Iter"   ! 
@@ -270,11 +279,6 @@ integer, public, parameter :: &
 ! Derived_ml, we set all IOU_DAY false if SOURCE_RECPTOR = .true..
 
 logical, public, parameter :: SOURCE_RECEPTOR = .false.
-
-! Forecast run?
-! only dayly and hourly output is required on FORECAST mode, so in Derived_ml,
-! we set all other output types to false if FORECAST=.true..
-logical, public, parameter :: FORECAST = .false.
 
 !Topography tests (tmp)
 logical, public, parameter :: TOPO_TEST = .false.

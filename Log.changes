@@ -172,6 +172,7 @@ run.pl  - Inputs.Landuse now only used in FORECAST mode.
         - extra setups for TNO28
 
 ModelConstants_ml - extra setups for TNO28
+                  - USE_* for FORECAST mode
 
 xxxxxxxx rv3_13_2 Dave, 20/4/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
@@ -201,7 +202,7 @@ GLobalBCs_ml
 
  error in 1993:
     macehead_o3 = (/ 37.6, 40.4, 44.4, 42.6, 43.4, 29.2, &
-                     28.5, 29.6, 32.2,  0.0, 37.3, 38.3/)  
+                     28.5, 29.6, 32.2,  0.0, 37.3, 38.3/)
 
 Corrected (0.0 should be 33.3)
 
@@ -231,7 +232,7 @@ My_Outputs   - coding for new Out3D type added, which can
      outputs values from both grid centres and the surface (3m)
      if klevel ik=0.
 
-     Changes include nhourly_out, nlevels_hourly now being set 
+     Changes include nhourly_out, nlevels_hourly now being set
      at run time (were paramaters), with currently values set
      for FORECAST, TOPO_TEST and the previous default
 
@@ -247,7 +248,7 @@ Dust_ml              extra debug. Found that DUSTY WET triggered in
 Met_ml               omit soil water stuff when USE_SOILWATER false
                      (hopefully temporary solution)
 
-NetCDF_ml            some debugging stuff 
+NetCDF_ml            some debugging stuff
 
 ZD_VBS/My_SOA_ml     print (FEB2012) removed
 

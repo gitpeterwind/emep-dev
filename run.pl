@@ -823,7 +823,8 @@ print "TESTING PM $poll $dir\n";
                   "GLOBAL_O3.nc";
   $ifile{"$DataDir/amilt42-nox.dat"} = "ancatmil.dat";#RENAME TO AIRCARAFT?!
   $ifile{"$DataDir/GLOBAL_ForestFireEmis.nc"} = "GLOBAL_ForestFireEmis.nc"; #GFED emissions
-  $ifile{"$DataDir/ForestFire_Emis_${year}.nc"} = "GLOBAL_ForestFireEmis_FINN.nc";#FINN emissions
+  $ifile{"$DataDir/ForestFire_Emis_$year.nc"} = "GLOBAL_ForestFireEmis_FINN.nc"
+    if ($year >= 2002 and $year <= 2011);#FINN emissions
   $ifile{"$DataDir/nox_emission_1996-2005.nc"} = "nox_emission_1996-2005.nc";
   $ifile{"$DataDir/AircraftEmis_FL.nc"} = "AircraftEmis_FL.nc";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
@@ -839,7 +840,7 @@ print "TESTING PM $poll $dir\n";
 
 # new inputs style (Aug 2007)  with compulsory headers:
 # From rv3_14 used only for FORECAST mode
-  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ( $FORECAST ) ;
+  $ifile{"$DATA_LOCAL/Inputs.Landuse"} = "Inputs.Landuse" if ( $CWF ) ;
   $ifile{"$DataDir/Landuse/landuseGLC2000_INT1.nc"} ="GLOBAL_landuse.nc";
 
   $ifile{"$DataDir/Landuse_PS_5km.nc"} ="Landuse_PS_5km.nc";
@@ -1045,7 +1046,7 @@ EOT
   if ($CWF) {
     my $old="EMEP_OUT.nc";
     my $new="$CWFDUMPDIR/$scenario\_dump.nc";    # today's dump
-    system("mv $old $new") if (-e "$old");
+    system("mkdir -p $CWFDUMPDIR/; mv $old $new") if (-e "$old");
     if ($SR) {
       ($old=$new)=~s/$CWFBASE/$CWFDATE[0]/g;      # yesterday's dump
       system("rm $old") if (-e $old);
