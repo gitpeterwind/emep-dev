@@ -73,8 +73,8 @@ use File::Compare;
 $| = 1; # autoflush STDOUT
 
 #Choose one machine
-my $VILJE=1;  #1 if Ve or Vilje is used
-my $STALLO=0; #1 if stallo is used
+my $VILJE=0;  #1 if Ve or Vilje is used
+my $STALLO=1; #1 if stallo is used
 my $TITAN=0;  #1 if titan is used
 
 # -j4 parallel make with 4 threads
@@ -324,7 +324,7 @@ $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 
-$emisdir = "$EMIS_INP/emis_$GRID" if $GRID = "TNO28";
+$emisdir = "$EMIS_INP/emis_$GRID" if $GRID eq "TNO28";
 
 
 #TMP and should be improved because it gives errors for
