@@ -3,7 +3,7 @@
 #Common script for Njord, Stallo and Titan.
 #Choose $VILJE=1 or $STALLO=1 or $TITAN=1
 #___________________________________________________________________
-#PBS queue commands
+# queue commands for PBS
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
