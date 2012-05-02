@@ -1,15 +1,15 @@
 #!/usr/bin/perl
 
 #Common script for Njord, Stallo and Titan.
-#Choose $NJORD=1 or $STALLO=1 or $TITAN=1
+#Choose $VILJE=1 or $STALLO=1 or $TITAN=1
 #___________________________________________________________________
-#Snykov or Stallo queue commands
+#PBS queue commands
 
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
-# ib for infiniband (fast interconnect).
-#PBS -lnodes=8
-#64:ib
+# Stallo, use ib for infiniband (fast interconnect).
+# Vilje, use ppn=16,  not :ib
+#PBS -lnodes=2:ppn=8:ib
 # wall time limit of run
 #PBS -lwalltime=00:50:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
@@ -20,33 +20,6 @@
 ##PBS -t 1-56
 #___________________________________________________________________
 
-#___________________________________________________________________
-#Njord queue commands
-
-#Queue system commands start with # @ (these are not comments!)
-#Be careful with uncommented lines starting with @ !
-
-# @ job_name = emep
-# @ job_type = parallel
-# @ account_no       = nn2890k
-# @ class = express
-# @ wall_clock_limit = 0:30:00
-# @ node = 1
-# @ tasks_per_node = 32
-# @ node_usage = not_shared
-# @ network.mpi = sn_all,shared,us
-# @ resources        = ConsumableCpus(1) ConsumableMemory(300 mb)
-# @ Requirements = ( Feature == "SMT" )
-#
-# @ notification     = never
-# @ checkpoint       = no
-# @ restart          = no
-#
-# @ error            = job.$(Host).$(jobid).err
-# @ output           = job.$(Host).$(jobid).out
-# @ queue
-#
-#___________________________________________________________________
 
 #___________________________________________________________________
 #Titan queue commands
@@ -100,17 +73,17 @@ use File::Compare;
 $| = 1; # autoflush STDOUT
 
 #Choose one machine
-my $NJORD=0;  #1 if njord is used
-my $STALLO=1; #1 if stallo is used
+my $VILJE=1;  #1 if Ve or Vilje is used
+my $STALLO=0; #1 if stallo is used
 my $TITAN=0;  #1 if titan is used
 
 # -j4 parallel make with 4 threads
 my @MAKE = ("gmake", "-j4", "--makefile=Makefile_snow");
-   @MAKE = ( "make", "-j4", "-f", "Makefile_njord")  if $NJORD==1 ;
+   @MAKE = ( "make", "-j4", "-f", "Makefile_vilje")  if $VILJE==1 ;
    @MAKE = ( "make", "-j4", "-f", "Makefile_stallo") if $STALLO==1 ;
    @MAKE = ( "make", "-j4", "-f", "Makefile_titan")  if $TITAN==1 ;
-die "Must choose STALLO **or** NJORD **or** TITAN!\n"
-  unless $STALLO+$NJORD+$TITAN==1;
+die "Must choose STALLO **or** VILJE **or** TITAN!\n"
+  unless $STALLO+$VILJE+$TITAN==1;
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -201,7 +174,7 @@ my $NH3EMIS_VAR = 0; # set to 1 if new temp NH3.
 
 my $METformat="cdf"; # felt or cdf
 
-my $GRID = "EECCA"; # HIRHAM-not-yet! EMEP or EECCA or GLOBAL or FORECAST
+my $GRID = "EECCA"; # TNO7, TNO14, TNO28, TNO56, EMEP, EECCA, MACC02, GLOBAL or FORECAST
    $GRID = "MACC02" if $CWF;
    $GRID = $BENCHMARK{'grid'} if %BENCHMARK;
 #DS Confusing list of possibilites. Needs  CHECK LATER
@@ -238,18 +211,18 @@ if ($STALLO) {
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA";
   $MetDir   = "$DataDir/$GRID/metcdf/$year" if ($GRID eq "EMEP") and
                                                ($METformat eq "cdf");
-} else {
-  $HOMEROOT = "/home/ntnu";
-  $WORKROOT = "/work";
-  $MetDir   = "/work/emep/metdata/$year" ;
-  $DataDir  = "/home/ntnu/$PETER/Data";
+} else { #Ve or Vilje
+  $HOMEROOT = "/home/metno";
+  $WORKROOT = "$HOMEROOT/$USER/work";
+  $MetDir   = "/home/metno/mifapw/work/Data/$GRID/metdata_EC/$year" ;
+  $DataDir  = "/home/metno/mifapw/work/Data";
 }
 
 # DataDir    = Main general Data directory
 my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Pollen data
 my $PollenDir = "/home/$BIRTHE/Unify/MyData";
-
+   $PollenDir = 0 unless $STALLO;
 
 
 # Boundary conditions: set source direcories here:
@@ -297,6 +270,8 @@ $SoilDir = 0 if ($GRID eq "EMEP") or ($GRID eq "MACC02");
 # TEST! Road dust NOTE! The road dust code may not be working properly yet! Not tested enough!
 my $RoadDir     = "/home/$ROBERT/Unify/MyData/TNO_traffic/" ;
 $RoadDir = 0 if $CWF;
+$RoadDir = 0 ;#default?
+
 
 # Forecast: nest/dump dir, BCs pattern
 my ($CWFDUMPDIR, $CWFBC) if $CWF;
@@ -340,7 +315,7 @@ my @runs     = ( $scenario );
 
 #EMISSIONS: default settings
 my ($EMIS_INP, $emisdir, $pm_emisdir);
-$EMIS_INP = "$DATA_LOCAL"                   if $STALLO;
+$EMIS_INP = "$DATA_LOCAL"                            ;
 $EMIS_INP = "$DATA_LOCAL/Emissions/Modruns" if $TITAN;
 
 #dave: Use Modrun11 if possible:
@@ -348,6 +323,8 @@ my $EMIS_OLD = "/global/work/$AGNES/Emission_Trends";
 $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
+
+$emisdir = "$EMIS_INP/emis_$GRID" if $GRID = "TNO28";
 
 
 #TMP and should be improved because it gives errors for
@@ -421,7 +398,10 @@ die "Global model requires NDY <= 2\n" if ( $GRID eq "GLOBAL" && $NDY > 2);
 die "Domain mis-match Model: $XDIM Grid $GRID" if (
    ( $GRID eq "EMEP"     && $XDIM != 170 ) or
    ( $GRID eq "EECCA"    && $XDIM != 132 ) or
+   ( $GRID eq "TNO7"     && $XDIM != 840 ) or
+   ( $GRID eq "TNO14"    && $XDIM != 420 ) or
    ( $GRID eq "TNO28"    && $XDIM != 210 ) or
+   ( $GRID eq "TNO56"    && $XDIM != 105 ) or
    ( $GRID eq "EECCA_25" && $XDIM != 264 ) or
    ( $GRID eq "MACC02"   && $XDIM != 321 ) or
    ( $GRID eq "HIRHAM"   && $XDIM != 182 ) or
@@ -457,7 +437,8 @@ $month_days[2] += leap_year($year);
 my $mm1   =  "07";       # first month, use 2-digits!
 my $mm2   =  "07";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $dd2   =  2;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2   =  0;       # End day (can be too large; will be limited to max number of days in the month)
+                      # put dd2=0 for 3 hours run/test.
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
   $mm1   =  "01";
@@ -830,8 +811,8 @@ print "TESTING PM $poll $dir\n";
   $ifile{"$DataDir/SurfacePressure.nc"} = "SurfacePressure.nc";
   $ifile{"$DataDir/SoilTypes_IFS.nc"} = "SoilTypes_IFS.nc";
 #TEMPORARY SETUP
-  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
-  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
+#  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
+#  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
   $ifile{"$DataDir/annualNdep_tmp.nc"} = "annualNdep.nc";
 
 # hb NH3emis
@@ -971,7 +952,7 @@ print "TESTING PM $poll $dir\n";
       print "DRY_RUN: not running '| mpirun ./$LPROG'\n";
       system("ls -lht --time-style=long-iso *")
     } else {
-      open (PROG, "| mpirun ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
+      open (PROG, "| mpiexec ./$LPROG") || die "Unable to execute $LPROG. Exiting.\\n" ;
       close(PROG);
     }
 

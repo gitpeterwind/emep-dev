@@ -126,7 +126,7 @@ implicit none
       integer :: bbspec
       real    :: fac
     end type bbmap
-    type(bbmap), dimension(NCMSPECS) :: fmap
+    type(bbmap), private, dimension(NCMSPECS) :: fmap
 
   ! =======================================================================
 
