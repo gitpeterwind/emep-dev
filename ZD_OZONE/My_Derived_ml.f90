@@ -181,6 +181,8 @@ private
         ,typ_s5i("SEASALT_F ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SEASALT_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("POLLEN_B  ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("DUST_ROAD_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
+!        ,typ_s5i("DUST_ROAD_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_WB_F ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_WB_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_SAH_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
