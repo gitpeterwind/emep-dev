@@ -454,6 +454,7 @@ if (%BENCHMARK){ # Allways runn full year on benchmark mode
 if ($SR) {
   print "SR is true\n";
   @runs = EMEP::Sr::initRuns();
+  @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
 }
 
 if ($CWF) {

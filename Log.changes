@@ -166,6 +166,12 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 
+xxxxxxxx rv3_14_1_2  Peter 4/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+small change in run.pl for SR runs on Ve. This gives one run per job on Ve.
+
+  @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
+
 xxxxxxxx rv3_14_1_1  Robert 3/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 No real update, just added the two road dust components DUST_ROAD_F and DUST_ROAD_C 
