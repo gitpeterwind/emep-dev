@@ -455,6 +455,7 @@ if ($SR) {
   print "SR is true\n";
   @runs = EMEP::Sr::initRuns();
   @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
+  print "PBS_ARRAY_INDEX:  $ENV{PBS_ARRAY_INDEX} \n";   # PBS Pro
 }
 
 if ($CWF) {
@@ -523,10 +524,12 @@ if ( $RESET ) { ########## Recompile everything!
   # For now, we simply recompile everything!
   system(@MAKE, "clean");
   if ($CWF and $CWFMODE) {
-    system(@MAKE, $CWFMODE);
+      system(@MAKE, $CWFMODE);
+  } elsif ($SR) {
+      #No recompile in SR runs
   } else {
-    system(@MAKE, "depend");
-    system(@MAKE, "all");
+      system(@MAKE, "depend");
+      system(@MAKE, "all");
   }
 }
 system "pwd";
