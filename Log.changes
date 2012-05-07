@@ -166,6 +166,14 @@ ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
 
+xxxxxxxx rv3_14_3  Agnes 7/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+New Mace Head data for 2010 added in GlobalBSs_ml.f90
+The "default" averages are also recalculated including 2010 
+(for the 13 years period of 1998-2010). 
+
+
+
 xxxxxxxx rv3_14_2  Peter 4/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
                    Robert 3/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
