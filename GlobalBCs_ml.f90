@@ -337,10 +337,10 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
                      31.0, 29.0, 34.5, 34.4, 40.5, 38.4 /)
 ! 2010 Mace Head correction calculated using IE31 O3 data and
 ! trajectory sectors (based on ECMWF met) for 2010
-    case(2010)  
-    macehead_O3 = (/ 36.8, 38.9, 43.9, 46.4, 41.7, 35.5, & 
-                     31.0, 31.3, 35.6, 36.7, 33.4, 33.8 /) 
- else 
+    case(2010)
+    macehead_O3 = (/ 36.8, 38.9, 43.9, 46.4, 41.7, 35.5, &
+                     31.0, 31.3, 35.6, 36.7, 33.4, 33.8 /)
+
     case default ! from 1998-2010 average
     macehead_O3 = (/ 39.8, 41.9, 45.4, 46.5, 43.2, 36.2, &
                      30.5, 30.1, 34.1, 37.0, 39.0, 38.5 /)
@@ -375,7 +375,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
     SpecBC(IBC_NO2  )  = sineconc( 0.1  , 15.0, 0.03, 4.0  , 0.05, 0.04,PPB)
     SpecBC(IBC_PAN  )  = sineconc( 0.20 ,120.0, 0.15, 999.9, 0.20, 0.1 ,PPB)!Kz change vmin
     SpecBC(IBC_CO   )  = sineconc( 125.0, 75.0, 35.0, 25.0 , 70.0, 30.0,PPB)!JEJ-W
-    SpecBC(IBC_SEASALT_F)=sineconc( 0.5  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB) 
+    SpecBC(IBC_SEASALT_F)=sineconc( 0.5  , 15.0,  0.3,  1.6 , 0.01, 0.01,PPB)
     SpecBC(IBC_SEASALT_C)=sineconc( 3.0  , 15.0,  1.0,  1.6 , 0.01, 0.01,PPB)
     SpecBC(IBC_SEASALT_G)=sineconc( 1.0  , 15.0,  0.5,  1.0 , 0.01, 0.01,PPB)
     SpecBC(IBC_C2H6 )  = sineconc( 2.0  , 75.0, 1.0 , 10.0 , 0.05, 0.05,PPB)
@@ -490,7 +490,7 @@ subroutine GetGlobalData(year,iyr_trend,month,ibc,used,        &
         month,icount,bc_rawdata(nint(iMH),nint(jMH),20)/PPB,&
         macehead_O3(month),O3fix/PPB
       print "(a,f8.3)",' MaceHead correction for O3: ',-O3fix/PPB
-      
+
     endif
     bc_rawdata = max(15.0*PPB,bc_rawdata-O3fix)
     bc_rawdata = bc_rawdata*trend_o3
