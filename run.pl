@@ -84,6 +84,7 @@ my @MAKE = ("gmake", "-j4", "--makefile=Makefile_snow");
    @MAKE = ( "make", "-j4", "-f", "Makefile_titan")  if $TITAN==1 ;
 die "Must choose STALLO **or** VILJE **or** TITAN!\n"
   unless $STALLO+$VILJE+$TITAN==1;
+my $MAKEMODE; #="EMEP2010";  # make EMEP2010
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -101,9 +102,11 @@ my %BENCHMARK;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/EMEP_trend_2000-2009/2009");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/2011-Trend2009-CEIP");
+   %BENCHMARK = (grid=>"EECCA" ,year=>2010,emis=>"Modrun12/2012-Trend2010-CEIP",chem=>"EmChem09soa",make=>"EMEP2010");
 if (%BENCHMARK) {
   $BENCHMARK{'debug'}   = 1;  # chech if all debug flags are .false.
   $BENCHMARK{'archive'} = 1;  # save summary info in $DataDir
+  $MAKEMODE = $BENCHMARK{'make'}?$BENCHMARK{'make'}:"EMEP" unless $MAKEMODE;  # comment for non EmChem09soa benchmarks
 }
 
 my $EUCAARI=0;
@@ -112,7 +115,7 @@ my $SR= 0;     # Set to 1 if source-receptor calculation
 #die " TO DO: Need still to create SR split files\n" if $SR ;
 
 my $CWF=0;     # Set to N for 'N'-day forecast mode (0 otherwise)
-my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP, $eCWF, $CWFMODE) if $CWF;
+my ($CWFBASE, $CWFDAYS, @CWFDATE, @CWFDUMP, $eCWF) if $CWF;
 if ($CWF) {
   chop($CWFBASE = `date +%Y%m%d`);   # Forecast base date (default today)
        $CWFDAYS = $CWF;              # Forecast lenght indays (default $CWF)
@@ -123,8 +126,8 @@ if ($CWF) {
   chop($CWFDATE[2] = `date -d '$CWFBASE ($CWFDAYS-1) day' +%Y%m%d`);  # end date
   chop($CWFDUMP[0] = `date -d '$CWFBASE 1 day' +%Y%m%d000000`); # 1st dump/nest
   chop($CWFDUMP[1] = `date -d '$CWFBASE 2 day' +%Y%m%d000000`); # 2nd dump/nest
-  $eCWF=0;                            # Emergency forecast
-  $CWFMODE=$eCWF?"eEMEP":"MACC";      # Standard Forecast model setup
+  $eCWF=0;                           # Emergency forecast
+  $MAKEMODE=$eCWF?"eEMEP":"MACC";    # Standard Forecast model setup
 }
  $CWF=0 if %BENCHMARK;
 
@@ -223,6 +226,9 @@ my $DATA_LOCAL = "$DataDir/$GRID";   # Grid specific data , EMEP, EECCA, GLOBAL
 # Pollen data
 my $PollenDir = "/home/$BIRTHE/Unify/MyData";
    $PollenDir = 0 unless $STALLO;
+# Eruption (eEMEP)
+my $EruptionDir = "/home/$ALVARO/Unify/MyData";
+   $EruptionDir = 0 unless $STALLO;
 
 
 # Boundary conditions: set source direcories here:
@@ -233,6 +239,7 @@ my $CityZen = 0 ;
 my $VBS   = 0;
 my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
+   $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
 my $testv = "rv3_14";
 
@@ -523,13 +530,13 @@ if ( $RESET ) { ########## Recompile everything!
 
   # For now, we simply recompile everything!
   system(@MAKE, "clean");
-  if ($CWF and $CWFMODE) {
-      system(@MAKE, $CWFMODE);
+  if ($MAKEMODE) {
+    system(@MAKE, $MAKEMODE);
   } elsif ($SR) {
-      #No recompile in SR runs
+    #No recompile in SR runs
   } else {
-      system(@MAKE, "depend");
-      system(@MAKE, "all");
+    system(@MAKE, "depend");
+    system(@MAKE, "all");
   }
 }
 system "pwd";
@@ -539,8 +546,8 @@ system "ls -lht --time-style=long-iso -I\*{~,.o,.mod} | head -6 ";
 #to be sure that we don't use an old version (recommended while developing)
 #unlink($PROGRAM);
 
-if ($CWFMODE) {
-  system(@MAKE, $CWFMODE) == 0 or die "@MAKE $CWFMODE failed";
+if ($MAKEMODE) {
+  system(@MAKE, $MAKEMODE) == 0 or die "@MAKE $MAKEMODE failed";
 } else {
   system (@MAKE, "depend") ;
   system (@MAKE, "all") == 0 or die "@MAKE all failed";
@@ -864,6 +871,21 @@ print "TESTING PM $poll $dir\n";
 #  $ifile{"$DATA_LOCAL/rough.dat"} = "landsea_mask.dat"; # Roughness length;
   #NOTNEEDED $ifile{"$DATA_LOCAL/Volcanoes.dat"} = "Volcanoes.dat" unless $EUCAARI;
   $ifile{"$DataDir/VolcanoesLL.dat"} = "VolcanoesLL.dat";
+# Volcanic Eruption (eEMEP)
+  if(($MAKEMODE eq "EMEP2010") or ($MAKEMODE eq "eEMEP")){
+    cp ("$ChemDir/eruptions.csv","eruptions.csv");
+    $ifile{"$ChemDir/volcanoes.csv"} = "volcanoes.csv";
+    print "$ChemDir/volcanoes.csv\n";
+    open(IN,"<$ChemDir/volcanoes.csv");
+    while(my $line = <IN>){
+      $line=~ s/#.*//;                 # Get rid of comment lines
+      my $vname = split(",",$line,1);  # Volcano tracer name
+      my $nbin=($MAKEMODE eq "EMEP2010")?"2bin":"7bin";
+      my $efile = "$EruptionDir/${vname}_$nbin.eruptions";
+      system("cat $efile >> eruptions.csv") if -e $efile;
+    }
+    close(IN);
+  }
 
 # For Pollen
   if ( $PollenDir ) {

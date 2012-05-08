@@ -55,7 +55,7 @@ Examples:
 # MACC GenChmem standard setup assumed in \`make MACC\`
   mk.GenChmem -r EmChem09soa -e SeaSalt,Dust,Isotopes -f GFED
 # eEMEP GenChmem standard setup assumed in \`make eEMEP\`
-  mk.GenChem -r Emergency -f FINNv1 -e none -V Vesuvius,Etna,Krísuvík,Katla,Askja
+  mk.GenChem -r Emergency -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.­k,Katla,Askja
 # Testing CRI_v2_R5, no extras
   mk.GenChmem -r CRI_v2_R5 -e none
 
@@ -74,8 +74,11 @@ _EOF
 GETOPTS(){
   local rdir=$PWD/ZCM_$run N=0 EE=()
 # Volcano variables
-  local VolcCSV="$PWD/ZCM_Emergency/Mastin&al2009a_table3.csv" \
-        ENC="-fISO_8859-1 -tUTF-8" COL='1,5-6,8-9,11-14,16' volc='1234-67='
+  local vdir=$PWD/ZCM_Emergency
+  local VolcCSV="$vdir/Mastin&al2009a_table3.csv" \
+        ErupCSV="$vdir/Mastin&al2009b_table3.csv" \
+        COL='1,5-6,8-9,11-14,16' volc='1234-67=' vbin=7bin
+# 1:NUMBER,5:NAME,6:LOCATION,8:LATITUDE,9:NS,11:LONGITUDE,12:EW,13:ELEV,14:TYPE,16:ERUPTION TYPE
   while getopts ":f:r:e:V:vh" OPT; do
     [[ "$VERB" = 'on' ]] && echo -e "Processing option:\n\t-$OPT '$OPTARG'"
     case "$OPT" in
@@ -93,23 +96,31 @@ GETOPTS(){
           HELP $* "\nUnknown extras option:\n\t-$OPT ${EE[$N]}"
       done;;
     V)volcan=( );EE=( )
-      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( `iconv $ENC <<< ${OPTARG//,/ }` )
-      # iconv   takes care of special character on Volcano NAME
+      [[ "$OPTARG" = \-* ]] || [[ "$OPTARG" = none ]] || EE=( ${OPTARG//,/ } )
+      for N in ${!EE[*]};do
+        [[ "${EE[$N]}" = *bin ]] && vbin="${EE[$N]}" && unset EE[$N]
+      done
+      case $vbin in
+      2bin|7bin)echo "Volcano $vbin configuration";;
+              *)HELP $* "\nUnknown volcano option:\n\t-$OPT $vbin";;
+      esac
       # cut     selects columns from $VolcCSV
       # sed     replaces '-' & '=' in Volcano NUMBER and remove blanks
       grep '^# '      "$VolcCSV"|tee $rdir/volcanoes.csv  # Source info
       grep '^#NUMBER' "$VolcCSV"|cut -d',' -f$COL|
         tee -a $rdir/volcanoes.csv                        # Headers
+      cp -f "$ErupCSV" $rdir/eruptions.csv
       for N in ${!EE[*]};do
-        volc=`iconv $ENC "$VolcCSV"|grep -i ${EE[$N]}|cut -d',' -f$COL|
-        sed 's/^\(.\{4,7\}\)-/\1a/g;s/^\(.\{4,7\}\)=/\1b/g;s/, */,/g;'` # Volcano description
+        volc=`grep -i ${EE[$N]} "$VolcCSV"|cut -d',' -f$COL|
+        sed 's/^\(.\{4,7\}\)-/\1A/g;s/^\(.\{4,7\}\)=/\1B/g;s/^/V/g;s/, */,/g;'` # Volcano description
         [[ -n "$volc" ]] ||
           HELP $* "\nUnknown volcano option:\n\t-$OPT ${EE[$N]}"
         echo "$volc"|tee -a $rdir/volcanoes.csv
         volc="v${volc%%,*}"                               # Tracer name
         volcan[$N]=$rdir/ASH$volc
-        sed "s/ASH/$volc/g;" $rdir/ASH.species   > ${volcan[$N]}.species
-        sed "s/ASH/$volc/g;" $rdir/ASH.reactions > ${volcan[$N]}.reactions
+        sed "s/_ASH_/$volc/g;" $vdir/ASH_$vbin.species   > ${volcan[$N]}.species
+        sed "s/_ASH_/$volc/g;" $vdir/ASH_$vbin.reactions > ${volcan[$N]}.reactions
+        [[ -s $vdir/${volc}_$vbin.eruptions ]] && cat $vdir/${volc}_$vbin.eruptions >> $rdir/eruptions.csv
       done;;
     v);;
     h)HELP $*;;
@@ -120,16 +131,16 @@ GETOPTS(){
 
 if [ $run == EmChem09 ]; then
   echo "RUN EmChem09 chosen"
-  spcs=( EmChem09base PMmass )
-  rcns=( EmChem09base PMmass )
+  spcs=( EmChem09base PMmass ${volcan[@]} )
+  rcns=( EmChem09base PMmass ${volcan[@]} )
   bics=( EmChem09base )
 
 elif [ $run == EmChem09soa ]; then
   echo "RUN EmChem09soa chosen. Remember to cp ZD_VBS/My_SOA_ml.f90!!"
-  spcs=( $xdir/EmChem09base \
+  spcs=( $xdir/EmChem09base ${volcan[@]} \
          ../ZCM_vbs_tests/VBS_help    \
           ./VBS_nonvolatile ../ZCM_vbs_tests/VBS_partitioning )  #  VBS NPNA
-  rcns=( $xdir/EmChem09base \
+  rcns=( $xdir/EmChem09base ${volcan[@]} \
          ../ZCM_vbs_tests/VBS_SOAformation ../ZCM_vbs_tests/VBS_SOAageing \
           ./VBS_emissions_nonvolatilePOA_FromPM25  ) # VBS NPNA
   bics=( $xdir/EmChem09base )  # No special SOA BICs (yet)

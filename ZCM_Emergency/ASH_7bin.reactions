@@ -1,0 +1,10 @@
+*
+* <----------- Volcanic ash/natural emissions from _ASH_ ----------------------------->
+*
+rcerup(_ASH__1,k)                      = _ASH__1    ;
+rcerup(_ASH__2,k)                      = _ASH__2    ;
+rcerup(_ASH__3,k)                      = _ASH__3    ;
+rcerup(_ASH__4,k)                      = _ASH__4    ;
+rcerup(_ASH__5,k)                      = _ASH__5    ;
+rcerup(_ASH__6,k)                      = _ASH__6    ;
+rcerup(_ASH__7,k)                      = _ASH__7    ;

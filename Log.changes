@@ -165,12 +165,62 @@ ds done   My_Derived_ml.f90
 ds done   My_Outputs_ml.f90
 ds done   My_SOA_ml.f90
 
+xxxxxxxx rv3_14_4  Alvaro 8/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+eEMEP update:
+* Include Volcanic ASH components into PM groups.
+* 2 and 7 bin configuration for Volcanic Ash tracers.
+* Handling of special characters in ZCM_Emergency/Mastin&al2009a_table3.csv.
+
+Other:
+* Allow usage of Volcanic eruption tracers from Emergency under EmChem09 and EmChem09soa.
+* Specify make target and chem mechanism in Benchmark run definition.
+
+Makefile, Makefile_stallo:
+  - specify number of bins for eEMEP volcanoes (-V 7bin,Vesuvius,...)
+  - use Kr.suv.k instead of Krísuvík in mk.GenChem call for eEMEP target
+  - specific targets for 2010 run (EMEP2010 and SR-EMEP2010)
+    with Eyjafjöll volcano tracers from Emergency (-V 2bin,Eyjafj.ll)
+
+mk.GenChem:
+  - Allow -V volc option for -e EmChem09 and EmChem09soa
+  - use _ASH_ as keyword for variable name in sed replacement
+  - remove ISO_8859-1/UTF-8 encoding changes
+  - Use capital letters on variable names for volcanic ash tracers
+  - 2bin and 7bin versions for of volcanoe tracers
+  - Mastin&al2009b defaults for volcano eruption
+
+run.pl
+  - New variable $MAKEMODE for specific make target, e.g. make EMEP2010.
+    Replaces FORECAST specific CWFMODE. Default benchmark target is make EMEP.
+  - EMEP2010 Benchmark with explicit make target ($BENCHMARK{'make'}="EMEP2010")
+    and chem mechanism ($BENCHMARK{'chem'}="EmChem09soa").
+    Note that pre-set compilation targets (e.g. EMEP, MACC. eEMEP) have pre-defined
+    chem mechanisms. Therefore, $BENCHMARK{'chem'} most be consistent with
+    $BENCHMARK{'make'}, when both hash keys are used.
+  - Deal with volcanic eruption files for eEMEP and EMEP2010 runs.
+    Link volcanoes.csv and copy eruptions.csv, files created from Mastin&al2009a,b by mk.GenChem,
+    to working directory. Extend eruptions.csv with specific eruption details found in $EruptionDir
+
+ZCM_Emergency/ASH*.species,ASH*.reactions
+  - Include Volcanic ASH components into PM groups
+  - Encapsulate _ASH_ for mk.GenChem sed replacement
+  - 2bin and 7bin versions ASH_?bin.species,ASH_?bin.reactions
+  - Add ASH tracers to AOD calculations. Extinction/Mass efficiency as Dust.
+
+ZCM_Emergency/Mastin&al2009a_table3.csv,Mastin&al2009b_table3.csv:
+  - Change encoding to UTF-8 (iconv -fISO_8859-1 -tUTF-8)
+  - Add Mastin&al2009b defaults for volcano eruption
+
+Setup_1dfields_ml, Setup_1d_ml, Solver, ZCM_Emergency/ASH*.reactions
+  - Rename rcash to rcerup, as it can also include SO2 emissions from volcanic eruptions
+  - Load volcanic emissions (Setup_1d_ml) if USE_EMERGENCY (ModelConstants_ml)
 
 xxxxxxxx rv3_14_3  Agnes 7/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 New Mace Head data for 2010 added in GlobalBSs_ml.f90
-The "default" averages are also recalculated including 2010 
-(for the 13 years period of 1998-2010). 
+The "default" averages are also recalculated including 2010
+(for the 13 years period of 1998-2010).
 
 
 
@@ -182,7 +232,7 @@ small change in run.pl for SR runs on Ve. This gives one run per job on Ve.
   @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
 
 
-No real update, just added the two road dust components DUST_ROAD_F and DUST_ROAD_C 
+No real update, just added the two road dust components DUST_ROAD_F and DUST_ROAD_C
 in ZD_OZONE/My_Derived_ml.f90 (as comment lines, so the executable should be identical to the 3_14_1)
 
 xxxxxxxx rv3_14_1  Peter 2/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
