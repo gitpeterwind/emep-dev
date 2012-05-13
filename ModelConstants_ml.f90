@@ -52,6 +52,7 @@ logical, public, parameter :: &
 logical, public, parameter ::         &
   USE_CONVECTION     = .false.,       & ! false works best for Euro runs,
   USE_DEGREEDAY_FACTORS  = .true.,    & ! false works best for Euro runs,
+  INERIS_FACS            = .false.,    & ! false works best for Euro runs,
   USE_SOILWATER      = .not.FORECAST, & ! for deep soilwater,  under testing
   USE_FOREST_FIRES   = .not.FORECAST, & ! Needs global files, future
   USE_AIRCRAFT_EMIS  = .true.,        & ! Needs global file, see manual
@@ -111,8 +112,10 @@ integer, public, parameter ::  &
 ! IIFULLDOM = 182, JJFULLDOM = 197 ! x,y-Dimensions of full HIRHAM domain
 ! IIFULLDOM = 170, JJFULLDOM = 133 ! x,y-Dimensions of full EMEP domain
  IIFULLDOM = 132, JJFULLDOM = 159 ! x,y-Dimensions of full EECA domain
-! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of TNO28 domain
-! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
+! IIFULLDOM = 840, JJFULLDOM = 832 ! x,y-Dimensions of full TNO07 domain     
+! IIFULLDOM = 420, JJFULLDOM = 416 ! x,y-Dimensions of full TNO14 domain   
+! IIFULLDOM = 210, JJFULLDOM = 208 ! x,y-Dimensions of full TNO28 domain 
+!  IIFULLDOM = 105, JJFULLDOM = 104 ! x,y-Dimensions of full TNO56 domain
 ! IIFULLDOM = 360, JJFULLDOM = 180 ! .... full GLOBAL domain
 ! IIFULLDOM = 201, JJFULLDOM = 161 ! .... full GEMS 0.25 domain
 ! IIFULLDOM = 301, JJFULLDOM = 221 ! .... full GEMS 0.25 extended domain
@@ -120,7 +123,7 @@ integer, public, parameter ::  &
 
 ! The difference between EMEP and EECCA is confusing...
 integer, public, parameter :: &
-! OFFSET_i=  0, OFFSET_j=  0    ! EMEP
+! OFFSET_i=  0, OFFSET_j=  0    ! EMEP or default 
  OFFSET_i=-35, OFFSET_j=-11    ! EECCA
 integer, public, parameter, dimension(4) ::  &
 !                 x0   x1  y0   y1
@@ -128,6 +131,13 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA = new EMEP domain
  RUNDOMAIN = (/  1, 100,  1, 100 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/  40,210, 12, 184 /)     !  SR TNO28 area
+! RUNDOMAIN = (/  1, 210,  1, 208 /)     ! TNO28  
+! RUNDOMAIN = (/  240, 720, 48, 736 /)    ! TNO07 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = (/  120, 360, 24, 368 /)    ! TNO14 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = (/  60, 180, 12, 184 /)     ! TNO28 reduced (15W-45E;30N-73N)
+! RUNDOMAIN = (/  60, 120, 62, 120 /)     ! TNO28  test
+!  RUNDOMAIN = (/  30, 90, 6, 92 /)        ! TNO56 reduced (15W-45E;30N-73N)
+
 ! RUNDOMAIN = (/  60,180, 12, 184 /)     !  test TNO7 area
 ! RUNDOMAIN = (/  30,  90,  10,  80 /)     ! Orig EMEP domain in EECCA
 ! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
@@ -152,8 +162,8 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/ 75+OFFSET_i,110+OFFSET_i, 25+OFFSET_j,  60+OFFSET_j /) ! (gets Esk)
 
 integer, public, parameter ::  &
-  NPROCX      =   4       & ! Actual number of processors in longitude
-, NPROCY      =   2        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
+  NPROCX      =   8       & ! Actual number of processors in longitude
+, NPROCY      =   8        & ! .. in latitude. NPROCY must be 2 for GLOBAL,
 , NPROC       = NPROCX * NPROCY
 
 !=============================================================================

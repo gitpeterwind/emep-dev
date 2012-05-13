@@ -3,10 +3,11 @@ IMPORTANT NOTE:
 
   * Instructions to run *
     check out clean version of Unimod (safest as there are several new files)
-    edit mk.GenChem, set "run" to  EmChem09 as standard, can be Eucaari_Trends
+    edit mk.GenChem, set "run" if not default (=EmChem09)
+     (type mk.GenChem -h for some examples)
     mk.GenChem
     cp ZD_OZONE/My* .
-  [option: if Eucaari_Trends, do also:
+  [option: if SOA wanted, do:
     cp ZD_VBS/My* .          # gets MySOA_ml and My_Derived including SOA
   ]
     make clean
@@ -36,10 +37,6 @@ needed on a few issues for e.g. global usage, or NH3
 
 KNOWN PROBLEMS
 
-Some jobs needed after Mar-11th tests (ds will do)
-  - Decide SoilMoisture
-  - SoilWater - should implement readneightbour routine
-
 None?
 I (DS) have re-writting My_Derived and Derived to use the array
 OutputConcs.  This harmonises 2d and 3d, ppb, ug, ugN, etc., and
@@ -67,103 +64,21 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-Files and cleanup status.
+xxxxxxxx rv3_15    Dave  13/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
--- indicates in-progress, otherwise mark done.
-!----------------------------------------------------------
+Emissions_ml   - if INERIS_FACS=.true. uses a degree-day
+   method  similar to Bertrand's HDD. This avoids the minumum
+   method DS had introduced - putting more emission into
+   winter. Methodology uses Dave's 18C Tbase, not yet
+   Betrand's 20C. Will sort out later as part of DegreeDay
+   file cleanup 
 
-st pw     Advection_ml.f90
-st done   Aero_Vds_ml.f90
-st done   Aero_water_ml.f90
-an done   AirEmis_ml.f90 - can delete aircraft_nox subroutine !
-                          (& rename as Lightning_ml) NOT DONE!!!
-ds done   Ammonium_ml.f90
-st done   AOD_PM_ml.f90
-ds done   AOTnPOD_ml.f90
-jej done  Aqueous_n_WetDep_ml.f90
-ds done   Biogenics_ml.f90
-mg done   BLPhysics_ml.f90
-av done   BoundaryConditions_ml.f90
-ds done   CellMet_ml.f90
-ds done   CheckStop_ml.f90
-ds done   ChemFunctions_ml.f90
-          Chem_ml.f90
-ds done   CoDep_ml.f90
-jej done  Convection_ml.f90
-an done   Country_ml.f90
-jej done  DefPhotolysis_ml.f90
-an done   DerivedFields_ml.f90
-ds avdone Derived_ml.f90
-          DO3SE_ml.f90
-ds done   DryDep_ml.f90
-          DustProd_ml.f90
-mg done   EcoSystem_ml.f90
-an done   EmisDef_ml.f90
-an done   EmisGet_ml.f90
-an done   Emissions_ml.f90
-st done   EQSAM_ml.f90
-st done   ForestFire_ml.f90
-ab done   Functions_ml.f90
-jej done  global2local.f90
-av done   GlobalBCs_ml.f90
-mg done   GridAllocate_ml.f90
-mg done   GridValues_ml.f90
-pw done   InterpolationRoutines_ml.f90
-st done   Io_ml.f90
-st done   Io_Nums_ml.f90
-av done   Io_Progs_ml.f90
-mg done   KeyValue_ml.f90
-ds done   LandDefs_ml.f90
-ds done   LandPFT_ml.f90
-mg done   Landuse_ml.f90
-jej done  local2global.f90
-av done   LocalVariables_ml.f90
-st done   MARS_ml.f90
-pw done   MassBudget_ml.f90
-ab done   MetFields_ml.f90
-pw done   Met_ml.f90
-ds done   MicroMet_ml.f90
-pw done   ModelConstants_ml.f90   st changes (see below)
-jej done  MosaicOutputs_ml.f90
-av done   Nest_ml.f90
-pw done   NetCDF_ml.f90
-mg done   NH3Emis_variation_ml.f90 - ds moved to FUTURE_NH3Emis_variation_ml.f90
-mg done   NH3variables_ml.f90 - ds  moved to FUTURE_NH3variables_ml.f90
-jej done  OutputChem_ml.f90
-av done   Output_hourly.f90
-ds done   OwnDataTypes_ml.f90
-pw done   Par_ml.f90 - ab deleted i,j not used
-pw done   PhyChem_ml.f90
-ab done   PhysicalConstants_ml.f90
-jej done  Radiation_ml.f90
-ds done   Rb_ml.f90
-an done   ReadField_ml.f90
-ds done   Rsurface_ml.f90
-an done   Runchem_ml.f90
-st ds done   SeaSalt_ml.f90      - finel small shanges are possible today
-ab done   Setup_1dfields_ml.f90
-ds done   Setup_1d_ml.f90
-mg done   Sites_ml.f90
-ab done   SmallUtils_ml.f90
-ds done   SoilWater_ml.f90
-ds done   Solver.f90       - st small changes (see below)
-ds done   StoFlux_ml.f90
-ds done   SubMet_ml.f90
-jej done  Tabulations_ml.f90
-av done   TimeDate_ml.f90
-an done   Timefactors_ml.f90
-jej done  Timing_ml.f90
-ds moved   Tmp_Met_ml.f90  - ds moved to FUTURE_Tmp_Met_ml.f90
-ab done   Trajectory_ml.f90
-av/ds done Unimod.f90
-av done   Volcanos_ml.f90 pw done   Wesely_ml.f90
+ModelConstants_ml - INERIS_FACS added for Bertrand's HDD method
+                    TNO/TFMM domnain defintions added
 
-ZD_OZONE/
+Log.changes - tidy up and exlanation at top updated
 
-ds done   My_Aerosols_ml.f90     - st small changes (see below)
-ds done   My_Derived_ml.f90
-ds done   My_Outputs_ml.f90
-ds done   My_SOA_ml.f90
+run.pl      - small extra debug info
 
 xxxxxxxx rv3_14_4  Alvaro 8/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 

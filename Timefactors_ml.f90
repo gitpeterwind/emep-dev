@@ -46,25 +46,25 @@
 !  D. Simpson,    3/2/99-11 0 H. Fagerli, 2011
 !_____________________________________________________________________________
 
-  use ModelConstants_ml, only : iyr_trend
-  use PhysicalConstants_ml, only : PI
   use CheckStop_ml, only : CheckStop
   use Country_ml,   only : NLAND
   use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE, ISNAP_DOM
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Met_ml,       only : Getmeteofield
   use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
+  use ModelConstants_ml, only : iyr_trend, INERIS_FACS
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
-  use TimeDate_ml,  only:            &  ! subroutine, sets:
-                     date,           &  ! date-type definition
-                     nmdays, nydays, &  ! days per month (12), days per year
-                     day_of_week,&      ! weekday
-                     day_of_year        ! day count in year
+  use PhysicalConstants_ml, only : PI
   use Io_ml,        only :            &
                      open_file,       & ! subroutine
                      check_file,       & ! subroutine
                      PrintLog,        &
                      ios,  IO_TIMEFACS  ! i/o error number, i/o label
+  use TimeDate_ml,  only:            &  ! subroutine, sets:
+                     date,           &  ! date-type definition
+                     nmdays, nydays, &  ! days per month (12), days per year
+                     day_of_week,&      ! weekday
+                     day_of_year        ! day count in year
 
   implicit none
   private
@@ -84,10 +84,10 @@
   real, public, save,  &
      dimension(NLAND,12,NSECTORS,NEMIS_FILE) :: fac_emm  ! Monthly factors
  ! We keep track of min value for degree-day work
- !ds
+ !
   real, public, save,  &
      dimension(NLAND,NSECTORS,NEMIS_FILE) :: fac_min ! Min of Monthly factors
-!hf
+ !
   real, public, save,  &
      dimension(12) :: fac_cemm  ! Change in monthly factors over the years
 

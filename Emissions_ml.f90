@@ -82,6 +82,7 @@
   use ModelConstants_ml,only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
                               NBVOC,     &      ! > 0 if forest voc wanted
+                              INERIS_FACS, &     ! INERIS/TFMM HDD20 method
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               DEBUG_SOILNOX , DEBUG_EMISTIMEFACS, & 
                               DEBUG_ROADDUST , &
@@ -877,7 +878,12 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
                           isec == ISNAP_DOM .and. Gridded_SNAP2_Factors ) then
 
                         oldtfac = tfac
-                        if(USE_HOURLY_EMISVAR)THEN
+                        if(INERIS_FACS)THEN ! Start of new system
+                                    ! INERIS have no "base" for SNAP-2
+                           tfac = gridfac_HDD(i,j)  & ! T-dep load
+                                * SNAP_HOURFAC(hour_iland,isec)
+
+                        else if(USE_HOURLY_EMISVAR)THEN
                            tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
                                 ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) & ! T-dep load
                                 * SNAP_HOURFAC(hour_iland,isec)

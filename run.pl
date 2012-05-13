@@ -9,9 +9,11 @@
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # Stallo, use ib for infiniband (fast interconnect).
 # Vilje, use ppn=16,  not :ib
-#PBS -lnodes=2:ppn=8:ib
+#VePBS -lnodes=2:ppn=8:ib
+#Stallo
+#PBS -lnodes=64:ib
 # wall time limit of run
-#PBS -lwalltime=03:30:00
+#PBS -lwalltime=07:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 # account for billing
@@ -241,7 +243,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv3_14";
+my $testv = "rv3_14_5";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -917,7 +919,7 @@ print "TESTING PM $poll $dir\n";
       mylink( "Inputs: ", $old,$new ) ;
     } else {
       print "Missing Input $old !!!\n";
-      die "ERROR: Missing OLD $old\n" unless $old =~ /special/;
+      die "ERROR: Missing OLD $old (or possibly wrong Chem$Chem\n" unless $old =~ /special/;
     }
   }
 
