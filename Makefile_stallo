@@ -30,7 +30,9 @@ LDFLAGS =  $(F90FLAGS)  -L$(LLIB) -Wl,-rpath,$(LLIB) $(LIBS)
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
 
-include .depend
+ifneq (,$(filter all $(PROG) %.o,$(MAKECMDGOALS)))
+  include .depend
+endif
 
 #
 depend .depend:
@@ -84,7 +86,7 @@ eEMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.k,Katla,Askja
 
 # Check if intended modules are loaded
-#DS/PW MODULES = intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1
+MODULES = #intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1
 fidmodule = $(findstring $(1),$(shell bash -c 'module list' 2>&1))
 chkmodule = $(if $(call fidmodule,$(1)),$(info Found module: $(1)),\
   $(error Missing module $(1): try 'module load $(1)'))
