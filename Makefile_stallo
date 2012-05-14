@@ -37,8 +37,7 @@ endif
 #
 depend .depend:
 	/home/mifapw/bin/makedepf90 $(SRCS) \
-	-o $(PROG) \
-	-l "$(F90)   -o $(PROG) $(FOBJ) $(LDFLAGS) " > .depend
+	-o $(PROG) -l "$(F90)   -o $(PROG) $(FOBJ) $(LDFLAGS) " > .depend
 
 clean: diskclean touchdepend depend
 
@@ -73,7 +72,7 @@ eEMEP: modules $$@-GenChem-Emergency \
 EMEP-GenChem-%:
 	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes
 EMEP2010-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll
+	mk.GenChem -r $* -f FINNv1 -e SeaSalt,Dust,Isotopes -V 2bin,Eyjafj.ll #-h
 MACC-GenChem-%:
 	mk.GenChem -r $* -f GFED   -e SeaSalt,Dust,Isotopes
 SR-EMEP-GenChem-%:
@@ -83,10 +82,10 @@ SR-EMEP2010-GenChem-%:
 SR-MACC-GenChem-%:
 	mk.GenChem -r $* -f GFED   -e none
 eEMEP-GenChem-%:
-	mk.GenChem -r $* -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.k,Katla,Askja
+	mk.GenChem -r $* -f FINNv1 -e none -V 7bin,Vesuvius,Etna,Kr.suv.k,Katla,Askja #-h
 
 # Check if intended modules are loaded
-MODULES = #intel-compiler/11.1 openmpi/1.4 netcdf/4.1.1
+MODULES = intel-compiler/11.1 openmpi/1.4 #netcdf/4.1.1
 fidmodule = $(findstring $(1),$(shell bash -c 'module list' 2>&1))
 chkmodule = $(if $(call fidmodule,$(1)),$(info Found module: $(1)),\
   $(error Missing module $(1): try 'module load $(1)'))
