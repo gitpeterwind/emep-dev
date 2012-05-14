@@ -64,16 +64,15 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv3_xx            /5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
-(not rtagged yet)
+xxxxxxxx rv3_14_5     14/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-Alvaro:
+Alvaro  14/5/2012:
 Makefile,Makefile_stallo 
   - commented MODULE check before compilation for netcdf/4.1.1
   - include .depend only when compiling a specific object (*.o)
     or when linking the full program (all or Unimod or '').
 
-xxxxxxxx rv3_15    Dave  13/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+Dave  13/5/2012:
 
 Emissions_ml   - if INERIS_FACS=.true. uses a degree-day
    method  similar to Bertrand's HDD. This avoids the minumum
