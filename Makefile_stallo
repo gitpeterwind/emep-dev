@@ -30,7 +30,9 @@ LDFLAGS =  $(F90FLAGS)  -L$(LLIB) -Wl,-rpath,$(LLIB) $(LIBS)
 # Include the dependency-list created by makedepf90 below
 all:  $(PROG)
 
-ifneq (,$(filter all $(PROG) %.o,$(MAKECMDGOALS)))
+ifndef MAKECMDGOALS
+  include .depend
+else ifneq (,$(filter all $(PROG) %.o,$(MAKECMDGOALS)))
   include .depend
 endif
 
