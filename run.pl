@@ -8,14 +8,16 @@
 #Queue system commands start with #PBS (these are not comments!)
 # lnodes= number of nodes, ppn=processor per node (max8 on stallo)
 # Stallo, use ib for infiniband (fast interconnect).
-# Vilje, use ppn=16,  not :ib
-#VePBS -lnodes=2:ppn=8:ib
+# Ve/Vilje, use ppn=16, do not use :ib
+#VePBS -lnodes=2:ppn=16
 #Stallo
-#PBS -lnodes=64:ib
+#PBS -lnodes=8:ppn=8:ib
 # wall time limit of run
 #PBS -lwalltime=07:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
+#make results readable for others: 
+#PBS -W umask=0022
 # account for billing
 #PBS -A nn2890k
 # multiple tasks for paralel SR runs (one task per country)
@@ -903,12 +905,15 @@ print "TESTING PM $poll $dir\n";
 
 # TEST!!! Road dust NOTE! The road dust code is NOT thoroughly tested yet!
 # NOTE ALSO THAT the Climate factors in the file below are just rough estimates based on the TNO soil water data, to be updated with something based on EMEP soil water!
-   if ( $RoadDir ) {
-    $ifile{"$RoadDir/RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
-    $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
-    $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
-   }
-
+  if ( ($GRID eq "EECCA") and ($RoadDir) ) {
+      $ifile{"$RoadDir/RoadDust_HIGHWAYplus_emis_potential.txt"} = "HIGHWAYplus";
+      $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
+      $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
+  }elsif(($GRID eq "TNO7") or ($GRID eq "TNO56")){
+      $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "HIGHWAYplus";
+      $ifile{"$DATA_LOCAL/HIGHWAYplus_RoadDust_potentials.txt"} = "NONHIGHWAY";
+      $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
+  }
 # IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)
   $ifile{"$DataDir/$GRID/Boundary_conditions/mozart_eta.zaxis"} = "EMEP_IN_BC_eta.zaxis"
     if ( $CWF and -e $cwfbc and $cwfbc =~ m/IFS-MOZART/ );

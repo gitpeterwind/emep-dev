@@ -511,7 +511,7 @@ contains
     !
     ! Start with shallow
 
-if( USE_DUST .and. .not.USE_SOILWATER ) call StopAll("Incosistent SM, DUST")
+if( USE_DUST .and. .not.USE_SOILWATER ) call StopAll("Inconsistent SM, DUST")
 if( USE_SOILWATER ) then
     SoilWaterSource = "IFS"! use as default?
 
@@ -3185,6 +3185,7 @@ filename_save=trim(filename)
 
        if(status /= nf90_noerr) then
           print *,'not found',trim(meteoname)
+          call StopAll("Meteo file not found")
           METEOfelt=1
        else
 !          print *,'  reading ',trim(meteoname)

@@ -64,6 +64,15 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv3_14_6 Peter    16/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+Met_ml.f90: Model stops if meteo file is not found (it did not before!)
+
+run.pl:
+#make results readable for others: 
+#PBS -W umask=0022
+new links for RoadDir
+
 xxxxxxxx rv3_14_5     14/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Alvaro  14/5/2012:
