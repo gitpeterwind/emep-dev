@@ -64,7 +64,7 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv3_14_6 Peter    16/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv3_14_7 Peter    16/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug in country total output (only printouts, model results are correct)
 EmisGet_ml.f90
