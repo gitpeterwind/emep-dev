@@ -66,6 +66,11 @@ Will keep list here near top of Log.changes.
 !----------------------------------------------------------
 xxxxxxxx rv3_14_6 Peter    16/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
+Bug in country total output (only printouts, model results are correct)
+EmisGet_ml.f90
+
+xxxxxxxx rv3_14_6 Peter    16/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
 Met_ml.f90: Model stops if meteo file is not found (it did not before!)
 
 run.pl:

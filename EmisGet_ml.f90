@@ -246,7 +246,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
               !......................................................
 
                  sumemis(ic,iemis) = sumemis(ic,iemis)   &
-                      + 0.001 * globemis_flat(i,j,flat_iland)  
+                      + 0.001 *  e_fact(ISNAP_SHIP,ic,iemis) * tmpsec(ISNAP_SHIP)
 
                 cycle READEMIS
              endif !ship emissions            
