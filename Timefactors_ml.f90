@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -51,9 +51,13 @@
   use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE, ISNAP_DOM
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Met_ml,       only : Getmeteofield
+!  use Met_ml,       only : Getraw2dfield  !INERIS
   use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
+  use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM, USE_EURODELTA_HOURLY
+  use NetCDF_ml,    only : ReadField_CDF , GetCDF  ! INERIS
   use ModelConstants_ml, only : iyr_trend, INERIS_FACS
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
+  use Par_ml,       only : IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_ml, only : PI
   use Io_ml,        only :            &
                      open_file,       & ! subroutine
@@ -83,6 +87,11 @@
                                                       ! calculated daily
   real, public, save,  &
      dimension(NLAND,12,NSECTORS,NEMIS_FILE) :: fac_emm  ! Monthly factors
+
+ ! Hourly for each day ! From EURODELTA/INERIS
+  real, public, save,  &
+     dimension(NSECTORS,24,7) :: fac_ehh24x7  !  Hour factors for 7 days
+
  ! We keep track of min value for degree-day work
  !
   real, public, save,  &
@@ -131,7 +140,7 @@ contains
 
   !-- local
   integer ::  inland, insec     ! Country and sector value read from femis
-  integer ::  i, ic, isec, n, idd, iday, mm, mm2 ! Loop and count variables
+  integer ::  i, ic, isec, n, idd, ihh, iday, mm, mm2 ! Loop and count variables
   integer ::  iemis             ! emission count variables
 
   integer :: weekday            ! 1=monday, 2=tuesday etc.
@@ -277,8 +286,41 @@ contains
 
   enddo  ! NEMIS_FILE
 
+!  #################################
+!  3) Read in hourly (24x7) factors
+   ! Hourly (11x24x7) emissions factor
+!
+    if ( USE_EURODELTA_HOURLY ) then
+       fname2 = "HOURLY-FACS"  ! From EURODELTA/INERIS
+       write(unit=6,fmt=*) "Starting HOURLY-FACS"
+       call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
+       call CheckStop( ios, "Timefactors: IOS error in HOURLY-FACS")
+       fac_ehh24x7 = -999.
+       do 
+           read(IO_TIMEFACS,fmt=*,iostat=ios) idd, insec, &
+             (fac_ehh24x7(insec,ihh,idd),ihh=1,24)
+
+           ! Use sumfac for mean, and normalise within each day/sector
+           ! (Sector 10 had a sum of 1.00625)
+           sumfac = sum(fac_ehh24x7(insec,:,idd))/24.0
+           if(DEBUG .and. MasterProc) write(*,"(a,2i3,3f12.5)") &
+              'HOURLY-FACS mean min max', idd, insec, sumfac, &
+                minval(fac_ehh24x7(insec,:,idd)), &
+                maxval(fac_ehh24x7(insec,:,idd))
+
+           fac_ehh24x7(insec,:,idd) = fac_ehh24x7(insec,:,idd) * 1.0/sumfac
+
+           !sumfac = sum(fac_ehh24x7(insec,:,idd))/24.0
+           !if(MasterProc) write(*,"(a,2i3,f12.5)") 'HOURLY-FACS B', &
+           !   idd, insec, sumfac
+
+           if ( ios <  0 ) exit     ! End of file
+       end do
+       call CheckStop ( any(fac_ehh24x7 < 0.0 ) , "Unfilled efac_ehh24x7")
+    end if
+
 ! #######################################################################
-! 3) Normalise the monthly-daily factors. This is needed in order to
+! 4) Normalise the monthly-daily factors. This is needed in order to
 !    account for leap years (nydays=366) and for the fact that different
 !    years have different numbers of e.g. Saturdays/Sundays. 
 !    Here we execute the same interpolations which are later done
@@ -361,7 +403,11 @@ contains
            write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
             fac_emm(27,mm,2,1), fac_edd(27,1,2,1), fac_edd(27,7,2,1)
        end do ! mm
-       write(*,*) " day factors traffic are", day_factor(7,0), day_factor(7,1)
+       write(*,"(a,2f8.3)") " day factors traffic are", &
+           day_factor(7,0), day_factor(7,1)
+       write(*,"(a,4f8.3)") " day factors traffic 24x7", &
+           fac_ehh24x7(7,1,4),fac_ehh24x7(7,13,4), &
+              minval(fac_ehh24x7), maxval(fac_ehh24x7)
     end if ! DEBUG
 
  end subroutine timefactors
@@ -444,14 +490,16 @@ contains
     integer,dimension(2)  :: ijloc   ! debug only 
     integer :: iii, jjj              ! debug only 
     real :: checkmax
-    character(len=80) :: errmsg, units
+    character(len=80) :: errmsg, units, varname
+    real, dimension(IIFULLDOM,JJFULLDOM) :: var2d_global
+    integer :: kmax=1, nfetch=1 ! for HDD
 
 !      Gridded_SNAP2_Factors = .false.
 !      return
 
    !/ See if we have a file to work with....
     if ( daynumber == 0 ) then
-      call check_file("DegreeDayFac.nc", Gridded_SNAP2_Factors,&
+      call check_file("DegreeDayFactors.nc", Gridded_SNAP2_Factors,&
         needed=.false., errmsg=errmsg )
       if ( Gridded_SNAP2_Factors ) then
          call PrintLog("Found DEGREE-day factors", MasterProc)
@@ -473,6 +521,18 @@ contains
 !    call ReadField_CDF('DegreeDayFac.nc',"DegreeDayFac",&
 !              gridfac_HDD,daynumber,interpol='zero_order',needed=.true.,debug_flag=DEBUG)
 
+    varname = "HDD18_Facs"    ! EMEP standard is Tbase=18C
+    if ( INERIS_FACS ) then
+      print *, "INERIS", me, " Day ", daynumber
+      varname = "HDD20_Facs"
+
+    if(MasterProc) call GetCDF('HDD_Facs','DegreeDayFactors.nc', &
+          var2d_global,IIFULLDOM,JJFULLDOM,1,daynumber,nfetch)
+
+    call global2local(var2d_global,gridfac_HDD,MSG_READ8,1,IIFULLDOM,JJFULLDOM,&
+         kmax,IRUNBEG,JRUNBEG)
+         call CheckStop(errmsg=="field_not_found", "INDegreeDay field not found:")
+    else
    ! DegreeDays have the same domain/grid as the met data, so we can use:
 
     call Getmeteofield('DegreeDayFac.nc',"DegreeDayFac1000",nrec=daynumber,ndim=2,&
@@ -481,6 +541,11 @@ contains
     call Getmeteofield('DegreeDayFac.nc',"temperature_24h",nrec=daynumber,ndim=2,&
          unit=units,validity=errmsg, field=tmpt2(:,:))
        call CheckStop(errmsg=="field_not_found", "DegreeDayT2 field not found:")
+    end if
+
+    if ( .not.INERIS_FACS ) then
+      gridfac_HDD = 0.001 * gridfac_HDD ! CRUDE and TMP
+    end if
 
     if ( DEBUG ) then
        ijloc = maxloc( gridfac_HDD(li0:li1,lj0:lj1))
@@ -493,11 +558,12 @@ contains
              ijloc(1), ijloc(2), i_fdom(iii), j_fdom(jjj)
   
        if( debug_proc ) then
-           write(*,"(a,3i4,2f12.3)") "GRIDFACDAY ", daynumber, &
-             i_fdom(iii), j_fdom(jjj),  tmpt2(iii,jjj), 0.001*gridfac_HDD(iii,jjj)
+           !write(*,"(a,3i4,2f12.3)") "GRIDFACDAYGEN ", daynumber, &
+           !  i_fdom(iii), j_fdom(jjj),  tmpt2(iii,jjj), gridfac_HDD(iii,jjj)
+           write(*,"(a,i4,f12.3)") "GRIDFACDAY ", daynumber, &
+             gridfac_HDD(debug_li,debug_lj)
        end if
     end if
-    gridfac_HDD = 0.001 * gridfac_HDD ! CRUDE and TMP
 
 
     if ( DEBUG .and. debug_proc ) then

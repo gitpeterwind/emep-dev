@@ -13,7 +13,7 @@
 #Stallo
 #PBS -lnodes=8:ppn=8:ib
 # wall time limit of run
-#PBS -lwalltime=07:30:00
+#PBS -lwalltime=00:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others: 
@@ -98,7 +98,7 @@ my %BENCHMARK;
 # Use Modrun11 where possible:
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2006,emis=>"Modrun11/EMEP_trend_2000-2009/2006");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun11/EMEP_trend_2000-2009/2007");
-   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
+#   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
@@ -113,7 +113,7 @@ if (%BENCHMARK) {
   $MAKEMODE = $BENCHMARK{'make'}?$BENCHMARK{'make'}:"EMEP" unless $MAKEMODE;  # comment for non EmChem09soa benchmarks
 }
 
-my $EUCAARI=0;
+my $INERIS_FACS=1;  # Used for timefactors, and e,g TNOxx tests
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 #die " TO DO: Need still to create SR split files\n" if $SR ;
@@ -140,7 +140,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2008";
+my $year = "2009";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -195,6 +195,7 @@ if ($STALLO) {
   $WORKROOT = "/global/work";
   $DataDir  = "/global/work/$PETER/Data";
   $MetDir   = "$DataDir/$GRID/metdata/$year" ;
+  $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID =~ /TNO/);
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year"  if ($GRID eq "MACC02");
   $MetDir   = "$DataDir/$GRID/metdata_CWF/$year" if ($GRID eq "MACC02") and $CWF;
   $MetDir   = "$DataDir/$GRID/metdata_H20/$year" if $GRID eq "EECCA"; # assumes $METformat eq "cdf";
@@ -203,13 +204,6 @@ if ($STALLO) {
 #Also print $MetDir into RunLog later
   $MetDir   = "$DataDir/$GRID/metdata_EC/$year" if ($GRID eq "EECCA" && $year >= 2005 );
 
-  if ( $EUCAARI ) { # NEEDS CHECKING FOR ALL CASES?
-    $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year";
-    $MetDir   = "$DataDir/$GRID/metdata/$year" if $GRID eq "HIRHAM";
-    $MetDir   = "$DataDir/$GRID/metdata_$MetDriver/$year"."_ny" if $GRID eq "EECCA";
-    # TMP, just to make something work for 2006
-    $MetDir   = "$DataDir/$GRID/metdata/$year" if $year != 2008;
-  }
 } elsif ($TITAN) {
   $HOMEROOT = "/usit/titan/u1";
   $WORKROOT = "/xanadu/d1";
@@ -246,6 +240,7 @@ my $Chem     = "EmChem09soa";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
 my $testv = "rv3_14_5";
+#$testv = "test";
 
 #User directories
 my $ProgDir  = "$HOMEROOT/$USER/Unify/Unimod.$testv";   # input of source-code
@@ -300,10 +295,8 @@ print "TESTING ENV:", $ENV{PWD}, "\n";
 
 
 my $SplitDir    = "$DataDir/SPLITS_JAN2010/BASE_NAEI2000_GH2009.$Chem" ;
-$SplitDir    = "$ChemDir/EMISSPLIT"; # FOR ALL NOW, Nov 20th! if $EUCAARI;
+$SplitDir    = "$ChemDir/EMISSPLIT"; 
 #RB:had "~mifarb/Unify/MyData/D_EGU/SPLITS_NOV2009v2/BASE_NAEI2000_GH2009.$Chem" ;
-
-my $timeseries  = "$DataDir";
 
 my $version     = "Unimod" ;
 my $PROGRAM     = "$ProgDir/$version";         # programme
@@ -335,7 +328,6 @@ $emisdir = "$EMIS_OLD/$year" if $year < 2000;
 $emisdir = "$EMIS_INP/Modrun11/EMEP_trend_2000-2009/$year" if ( $year > 1999 ) and ($year < 2009);
 $emisdir = "$EMIS_INP/Modrun11/2011-Trend2009-CEIP" if $year >= 2009 ;
 
-$emisdir = "$EMIS_INP/emis_$GRID" if $GRID eq "TNO28";
 
 
 #TMP and should be improved because it gives errors for
@@ -345,7 +337,7 @@ my $RFEmisDir = "/global/work/$SVETLANA/Data_RF"; # Split-Fraction files for EC/
 my $TNOemisDir = "/global/work/$SVETLANA/Emis_TNO"; # TNO EC/OC emissions
 
 
-$emisdir = $TNOemisDir if $EUCAARI;
+#$emisdir = $TNOemisDir if $EUCAARI;
 $emisdir = "$EMIS_INP/emissions/${emisscen}/${emisyear}" if $GRID eq "HIRHAM";
 
 $pm_emisdir = $emisdir;
@@ -359,6 +351,12 @@ if ( ($GRID eq "FORECAST") or ($GRID eq "GEMS025") or ($GRID eq "MACC02") ) {
 # $emisdir = "$EMIS_INP/2008_emis_EMEP_from_PS50" if $GRID eq "MACC02"; # MACC02
 # $emisdir = "$EMIS_INP/2008_emis_EMEP_MACC" if $GRID eq "MACC02"; # MACC02
   $emisdir = "$EMIS_INP/2007_emis_MACC" if $GRID eq "MACC02"; # MACC02
+  $pm_emisdir = $emisdir;
+}
+if ( $GRID =~ /TNO/)  {  # STALLO ONLY
+  die "Need to set emisdir for TNO, non-stallo" unless $STALLO;
+  $EMIS_INP = "/global/work/nyiri/emis_SRbase/INERIS_direct/$GRID";
+  $emisdir = $EMIS_INP;
   $pm_emisdir = $emisdir;
 }
 
@@ -721,6 +719,13 @@ foreach my $scenflag ( @runs ) {
 #  emisfiles:pm25
 # etc.
 
+my $timeseries  = "$DataDir";
+if ( $INERIS_FACS  ){
+
+   $timeseries  = "/home/mifads/Work/D_Emis/INERIS_Emis/eurodelta_emep";
+   $ifile{"$timeseries/HOURLY-FACS"} = "HOURLY-FACS";
+}
+
   my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC",
                   "sox" => "SOx", "nox" => "NOx" ,
                   "pm10" => "PM10", "pm25" => "PM25", "pmco" => "PMco",
@@ -751,12 +756,7 @@ print "TESTING PM $poll $dir\n";
       $ifile{"$dir/grid$gridmap{$poll}"} = "emislist.$poll"
     }
 
-    if ( $EUCAARI ) {
-      $ifile{"$RFEmisDir/Emis08_EECCA/MonthlyFac.$poll"} = "MonthlyFac.$poll";
-      $ifile{"$RFEmisDir/Emis08_EECCA/DailyFac.$poll"} = "DailyFac.$poll";
-    } else {
-
-      # $RCA/CityZen change to avoid having 20 different PM25 time-series
+    # copy pm25 if needed, avoid having 20 different PM25 time-series
 
       if ( -f "$timeseries/MonthlyFac.$poll" ) {
          print "FINDS??? Daily Fac pm25 fill in for $poll\n";
@@ -773,7 +773,6 @@ print "TESTING PM $poll $dir\n";
          $ifile{"$TMPWDIR/DailyFac.$poll"} = "DailyFac.$poll";
 
       }
-    }
 
     $ifile{"$SplitDir/emissplit.defaults.$poll"} = "emissplit.defaults.$poll";
     # specials aren't required
@@ -802,12 +801,11 @@ print "TESTING PM $poll $dir\n";
   }
 
 # Emissions setup:
-  if ($EUCAARI) { # DS RE-CHECK shouldn't be needed
-    $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
-    $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
-  } else {
+#  if ($EUCAARI) { # DS RE-CHECK shouldn't be needed
+#    $ifile{"$TNOemisDir/femis.dat"} =  "femis.dat";
+#    $ifile{"$DATA_LOCAL/emissions/femis.dat"} =  "femis.dat" if $GRID eq "HIRHAM" ;
+#  } else {
     $ifile{"$ChemDir/femis.defaults"} =  "femis.defaults";  # created now by GenChem
-  }
 
 # my $old="$DATA_LOCAL/Boundary_and_Initial_Conditions.nc";
 # my $new="Boundary_and_Initial_Conditions.nc";
@@ -852,10 +850,16 @@ print "TESTING PM $poll $dir\n";
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
 
 # DEGREE DAYS:
-  my $HDD = "/home/$DAVE/Work/EMEP_Projects/DegreeDay/DegreeDayFac-${GRID}-$year.nc";
-  if ( -f "$HDD" ) {
-    $ifile{"$HDD"} = "DegreeDayFac.nc";
-  }
+ #OLD my $HDD = "/home/$DAVE/Work/EMEP_Projects/DegreeDay/DegreeDayFac-${GRID}-$year.nc";
+#
+ my  $Tbase = 18; # EMEP std
+ $Tbase = 20 if $INERIS_FACS;
+ my $HDD = "/home/$DAVE/Work/EMEP_Projects/DegreeDay/HDD${Tbase}-${GRID}-$year.nc";
+ unless ( $GRID eq "FORECAST" ) {
+   die "NO HDD files " unless $HDD;   # Can comment out if USE_DEGREEDAYS
+         # set false in ModelConstants_ml
+   $ifile{"$HDD"} = "DegreeDayFactors.nc" if -f $HDD ;
+ }
 
 
 #Prelim BVOC attempt

@@ -369,7 +369,7 @@ READEMIS: do   ! ************* Loop over emislist files *******************
 
   if ( ios == NO_FILE ) then
         ios = 0
-        print *, "ERROR: NO FEMIS FILE"
+        write( *,*) "WARNING: NO FEMIS FILE"
         return !/** if no femis file, e_fact=1 as default **/ 
   endif
   call CheckStop( ios < 0 ,"EmisGet:ios error in femis.dat")

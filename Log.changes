@@ -64,6 +64,59 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+
+xxxxxxxx rv3_14_9 Dave     18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+  Submission of emission work. A little prelimary, in that this
+   works with the right combination of settings, but not all. 
+  (So ask Dave if problems. )
+
+  Emissions and changes:
+
+     (i) Heating degree-day (HDD) system improved to now use simpler
+     float-based HDD values. Can switch between "INERIS" and
+     "EMEP" style, see comments in rv3_14_5 log.
+
+
+      (The HDDxx files needed for this are currently in Dave's 
+       directory /home/mifads/Work/EMEP_Projects/DegreeDay on stallo.
+       These files can be generated for any meteo (I think) by  
+       running the code DegreeDayFactors in that directory. Run with
+       -h to get options. These shouldn't be needed with default
+       ModelConstants though.)
+
+
+     (ii) USE_EURODELTA_HOURLY introduced, to use the 11x7x24
+     EuroDelta HOURLY_FACS file. Should be new default if all
+     looks fine after testing.  Implementation is just a read
+     process so far, values not yet used. Array in fac_hh24x7.
+
+
+
+  ModelConstants_ml - USE_EURODELTA_HOURLY added.
+
+  Emissions_ml   -  
+
+    Better accounting for change of days with longitude:
+
+     bug-fix for areas far from CET:
+      replace: if( hour_iland > 24 ) hour_iland = 1 !DSA12
+      with   : if( hour_iland > 24 ) hour_iland = hour_iland -24
+
+     also wday (1=Monday etc) changed for local time
+
+   Par_ml - add MSG_READ 88 (probably not needed?)
+
+   Timeseries_ml
+
+     (i) Used GetCDF for HDD factors
+     (ii) Added read of HOURLY-FACS into fac_hh24x7.
+
+   run.pl : added $INERIS_FACS, HDD stuff, new $timeseries for
+    TNO and INERIS_FACS. Cleaned out old EUCAARI settings
+    Note, need to specify Tbase 18 or 20 for HDD facs
+
+
 xxxxxxxx rv3_14_8 Peter    18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug in RoadDust index:  hour_iland could be 0, while arrays start at 1.

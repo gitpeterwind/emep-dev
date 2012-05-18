@@ -1130,6 +1130,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   real :: scale,offset,scalefactors(2)
   integer, allocatable:: Ivalues(:)
 
+  print *,'GetCDF  reading ', me, trim(fileName), ' nstart ', nstart
   if(me==0.and.DEBUG_NETCDF)print *,'GetCDF  reading ',trim(fileName), ' nstart ', nstart
   !open an existing netcdf dataset
   fileneeded=.true.!default
@@ -1158,7 +1159,7 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
   status = nf90_inq_varid(ncid = ncFileID, name = varname, varID = VarID)
 
   if(status == nf90_noerr) then
-     if(DEBUG_NETCDF)print *, 'variable exists: ',trim(varname)
+     if(DEBUG_NETCDF)write(*,*) 'variable exists: ',trim(varname)
   else
      print *, 'variable does not exist: ',trim(varname),nf90_strerror(status)
      nfetch=0
@@ -1218,6 +1219,8 @@ subroutine GetCDF(varname,fileName,Rvar,varGIMAX,varGJMAX,varKMAX,nstart,nfetch,
      deallocate(Ivalues)
   elseif(xtype==NF90_FLOAT .or. xtype==NF90_DOUBLE)then
      call check(nf90_get_var(ncFileID, VarID, Rvar,start=startvec,count=dims))
+     if(DEBUG_NETCDF) &
+         write(*,*)'datatype real, read', me, maxval(Rvar), minval(Rvar)
   else
      write(*,*)'datatype not yet supported'!Char
      Call StopAll('GetCDF  datatype not yet supported')
@@ -1774,7 +1777,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   if(trim(data_projection)=="lon lat")then ! here we have simple 1-D lat, lon
      allocate(Rlon(dims(1)), stat=alloc_err)
      allocate(Rlat(dims(2)), stat=alloc_err)
-     if ( debug ) write(*,"(a,a,i5,i5,a,i5)") 'alloc lon lat ',&
+     if ( debug ) write(*,"(a,a,i5,i5,a,i5)") 'alloc_err lon lat ',&
       trim(data_projection), alloc_err, dims(1), "x", dims(2)
   else
      allocate(Rlon(dims(1)*dims(2)), stat=alloc_err)
@@ -1804,6 +1807,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
   Flight_Levels=.false.
 
 
+     if ( debug .and. filename == "DegreeDayFac.nc" ) print *, 'ABCD2 got to here'
   !_______________________________________________________________________________
   !
   !2)        Coordinates conversion and interpolation
@@ -1851,6 +1855,7 @@ recursive subroutine ReadField_CDF(fileName,varname,Rvar,nstart,kstart,kend,inte
      dlati=1.0/(Rlat(2)-Rlat(1))
 
      Grid_resolution = EARTH_RADIUS*360.0/dims(1)*PI/180.0
+     if ( debug .and. filename == "DegreeDayFac.nc" ) print *, 'ABCD3 got to here'
 
      !the method chosen depends on the relative resolutions
      if(.not.present(interpol).and.Grid_resolution/GRIDWIDTH_M>4)then

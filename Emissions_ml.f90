@@ -91,6 +91,7 @@
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               USE_AIRCRAFT_EMIS,USE_ROADDUST, &
                               USE_HOURLY_EMISVAR, &
+                              USE_EURODELTA_HOURLY, &
                               USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -107,7 +108,7 @@
               ,fac_min &
               ,timefac, day_factor       ! time-factors
   use Timefactors_ml, only : timefactors   &                 ! subroutine
-                             ,fac_emm, fac_edd, day_factor   ! time-factors
+                 ,fac_ehh24x7 ,fac_emm, fac_edd, day_factor   ! time-factors
   use Volcanos_ml
 
 
@@ -285,6 +286,9 @@ contains
     if(USE_HOURLY_EMISVAR .or. USE_ROADDUST)THEN
        CALL MPI_BCAST( SNAP_HOURFAC ,8*24*NSECTORS,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
     endif
+    if(USE_EURODELTA_HOURLY)THEN
+      CALL MPI_BCAST( fac_ehh24x7 ,8*NSECTORS*24*7,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
+    end if
 
 !define fac_min for all processors
     do iemis = 1, NEMIS_FILE
@@ -735,7 +739,8 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
                            ! (for flat emissions)
   integer :: flat_iland    ! country codes (countries with flat emissions)
 
-  integer, save :: oldday = -1, oldhour = -1, wday ! wday = day of the week 1-7
+  integer, save :: oldday = -1, oldhour = -1
+  integer, save :: wday , wday_loc ! wday = day of the week 1-7
   real ::  oldtfac
 
 ! If timezone=-100, calculate daytime based on longitude rather than timezone
@@ -770,14 +775,17 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
                call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd, day_factor
               !==========================
 
-               if(USE_ROADDUST)THEN
-                 wday=day_of_week(indate%year,indate%month,indate%day)
-                 if(wday==0)wday=7 ! Sunday -> 7
-               endif
+               !if(USE_ROADDUST)THEN
+               wday=day_of_week(indate%year,indate%month,indate%day)
+               if(wday==0)wday=7 ! Sunday -> 7
+               !endif
 
                oldday = indate%day
            endif
      end if
+
+       write(*,"(a,2f8.3)") " Emissions   traffic 24x7", &
+           fac_ehh24x7(7,1,4),fac_ehh24x7(7,13,4)
 
 
     !..........................................
@@ -828,20 +836,33 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
 
                 if(Country(iland)%timezone==-100)then
                    daytime_iland=daytime_longitude
-                   hour_iland=hour_longitude + 1   !DSA12 - added 1 
+                   hour_iland=hour_longitude + 1   ! add 1 to get 1..24 
                 else
                    daytime_iland=daytime(iland)
                    hour_iland=localhour(iland) + 1
                 endif
-                if( hour_iland > 24 ) hour_iland = 1 !DSA12
+                !if( hour_iland > 24 ) hour_iland = 1 !DSA12
+                wday_loc=wday 
+                if( hour_iland > 24 ) then
+                   hour_iland = hour_iland - 24
+                   wday_loc=wday + 1
+                   if(wday_loc==0)wday_loc=7 ! Sunday -> 7
+                end if
+
+                call CheckStop( hour_iland < 1, &
+                    "ERROR: HOUR Zero in Emissions_ml")
 
                 if( DEBUG_EMISTIMEFACS .and. debug_proc .and. &
+
                        i==DEBUG_li .and. j==DEBUG_lj )THEN
                     call datewrite("HOUR ILAND", (/ icc, iland, &
                        daytime_iland, hour_iland, hourloc /), &
                          (/ (indate%hour+24*(1+glon(i,j)/360.0))/24.0  /) )
                     call datewrite("HOUR SNAP", hour_iland, &
-                        (/ SNAP_HOURFAC(hour_iland,1:6) /) ) ! Keep row short
+                        (/ SNAP_HOURFAC(hour_iland,1:6) /) )
+                    call datewrite("HOUR 24x7traffic", &
+                        (/ wday, wday_loc, hour_iland /), &
+                         (/ fac_ehh24x7(7,hour_iland,wday_loc) /) )
                 end if
 
 
@@ -1112,7 +1133,7 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
               gridrcroadd(1,DEBUG_li,DEBUG_lj), &
               gridrcroadd(2,DEBUG_li,DEBUG_lj)
       endif
-     endif
+    endif
 
  ! Scale volc emissions to get emissions in molecules/cm3/s (rcemis_volc)
 
