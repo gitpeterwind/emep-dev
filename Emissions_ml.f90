@@ -1018,10 +1018,12 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
             iland = road_landcode(i,j,icc)
             
             if(Country(iland)%timezone==-100)then
-               hour_iland=hour_longitude
+               hour_iland=hour_longitude+1
             else
-               hour_iland=localhour(iland)
+               hour_iland=localhour(iland)+1
             endif
+
+            if( hour_iland > 24 ) hour_iland = 1
 
             if(((icc.eq.IC_FI).or.(icc.eq.IC_NO).or.(icc.eq.IC_SE)).and. & ! Nordic countries
                  ((indate%month.eq.3).or.(indate%month.eq.4).or.(indate%month.eq.5)))then ! spring road dust

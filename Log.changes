@@ -64,6 +64,10 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv3_14_8 Peter    18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+Bug in RoadDust index:  hour_iland could be 0, while arrays start at 1.
+
 xxxxxxxx rv3_14_7 Peter    16/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Bug in country total output (only printouts, model results are correct)
