@@ -52,6 +52,7 @@
                      ,FNCMAX      & ! Max. No. countries (with flat emissions)
                                     ! per grid
                      ,ISNAP_DOM   & ! snap index for domestic/resid emis
+                     ,ISNAP_TRAF  & ! snap index for road-traffic (SNAP7)
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
                      ,IQ_DMS      & ! code for DMS emissions
@@ -62,8 +63,7 @@
                      ,QROADDUST_FI & ! fine road dust emissions (PM2.5) 
                      ,QROADDUST_CO & ! coarse road dust emis
                      ,ROADDUST_FINE_FRAC & ! fine (PM2.5) fraction of road dust emis
-                     , ROADDUST_CLIMATE_FILE & ! TEMPORARY! file for road dust climate factors 
-                     ,SNAP_HOURFAC  ! hourly emission variation for SNAP sectors
+                     , ROADDUST_CLIMATE_FILE ! TEMPORARY! file for road dust climate factors 
   use EmisGet_ml, only : EmisGet, EmisSplit, &
          nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
         ,iqrc2itot                   &  ! maps from split index to total index
@@ -82,7 +82,7 @@
   use ModelConstants_ml,only : KMAX_MID, KMAX_BND, PT ,dt_advec, &
                               IS_GLOBAL, & 
                               NBVOC,     &      ! > 0 if forest voc wanted
-                              INERIS_FACS, &     ! INERIS/TFMM HDD20 method
+                              INERIS_SNAP2 , &     ! INERIS/TFMM HDD20 method
                               DEBUG => DEBUG_EMISSIONS,  MasterProc, & 
                               DEBUG_SOILNOX , DEBUG_EMISTIMEFACS, & 
                               DEBUG_ROADDUST , &
@@ -90,8 +90,6 @@
                               USE_DEGREEDAY_FACTORS, & 
                               NPROC, IIFULLDOM,JJFULLDOM , & 
                               USE_AIRCRAFT_EMIS,USE_ROADDUST, &
-                              USE_HOURLY_EMISVAR, &
-                              USE_EURODELTA_HOURLY, &
                               USE_SOILNOX, USE_GLOBAL_SOILNOX   ! one or the other
   use Par_ml,     only : MAXLIMAX,MAXLJMAX,me,gi0,gi1,gj0,gj1, &
                              GIMAX, GJMAX, IRUNBEG, JRUNBEG,  &   
@@ -105,10 +103,8 @@
                NewDayFactors   &         ! subroutines
               ,DegreeDayFactors      &   ! degree-days used for SNAP-2
               ,Gridded_SNAP2_Factors, gridfac_HDD & 
-              ,fac_min &
-              ,timefac, day_factor       ! time-factors
-  use Timefactors_ml, only : timefactors   &                 ! subroutine
-                 ,fac_ehh24x7 ,fac_emm, fac_edd, day_factor   ! time-factors
+              ,fac_min,timefactors   &                 ! subroutine
+              ,fac_ehh24x7 ,fac_emm, fac_edd, timefac   ! time-factors
   use Volcanos_ml
 
 
@@ -267,7 +263,7 @@ contains
 
      write(6,*) "Reading monthly and daily timefactors"
     !=========================
-     call timefactors(year)               ! => fac_emm, fac_edd, day_factor
+     call timefactors(year)               ! => fac_emm, fac_edd
     !=========================
 
   endif
@@ -282,13 +278,7 @@ contains
   ! Broadcast  monthly and Daily factors (and hourly factors if needed/wanted)
     CALL MPI_BCAST( fac_emm ,8*NLAND*12*NSECTORS*NEMIS_FILE,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
     CALL MPI_BCAST( fac_edd ,8*NLAND*7*NSECTORS*NEMIS_FILE,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
-    CALL MPI_BCAST( day_factor ,8*2*NSECTORS,MPI_BYTE,               0,MPI_COMM_WORLD,INFO) 
-    if(USE_HOURLY_EMISVAR .or. USE_ROADDUST)THEN
-       CALL MPI_BCAST( SNAP_HOURFAC ,8*24*NSECTORS,MPI_BYTE,   0,MPI_COMM_WORLD,INFO) 
-    endif
-    if(USE_EURODELTA_HOURLY)THEN
-      CALL MPI_BCAST( fac_ehh24x7 ,8*NSECTORS*24*7,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
-    end if
+    CALL MPI_BCAST( fac_ehh24x7 ,8*NSECTORS*24*7,MPI_BYTE,  0,MPI_COMM_WORLD,INFO) 
 
 !define fac_min for all processors
     do iemis = 1, NEMIS_FILE
@@ -298,6 +288,9 @@ contains
           enddo
        enddo
     enddo
+    if(INERIS_SNAP2 )THEN !  INERIS do not use any base-line for SNAP2
+        fac_min(:,ISNAP_DOM,:) = 0.
+    end if
 
   !::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
   ! c4b) Set up DMS factors here - to be used in newmonth
@@ -706,8 +699,7 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
   !     
   !   Monthly and weekday factors are pre-multiplied and stored in:
   !       real timefac(NLAND,NSECTORS,NEMIS_FILES)
-  !   And day-night factors are applied here:
-  !       day_factor(11,0:1)                  ! 0=night, 1=day
+  !   And day-hour factors in fac_ehh24x7
   !
   !*************************************************************************
 
@@ -728,7 +720,6 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
   integer                         ::  hourloc      !  local hour 
   logical                         ::  hourchange   !             
   real, dimension(NRCEMIS)        ::  tmpemis      !  local array for emissions
-  real, dimension(7), parameter   :: d_fac=(/1.02,1.06,1.08,1.1,1.14,0.81,0.79/) ! weekday factor for road dust emissions
 
   real ::  ehlpcom,ehlpcom0(KEMISTOP:KMAX_MID)
   real ::  tfac, dtgrid    ! time-factor (tmp variable); dt*h*h for scaling
@@ -742,6 +733,7 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
   integer, save :: oldday = -1, oldhour = -1
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   real ::  oldtfac
+  logical :: debug_tfac
 
 ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland
@@ -772,7 +764,7 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
               !==========================
                call NewDayFactors(indate)
                if ( USE_DEGREEDAY_FACTORS) & 
-               call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd, day_factor
+                 call DegreeDayFactors(daynumber) ! => fac_emm, fac_edd
               !==========================
 
                !if(USE_ROADDUST)THEN
@@ -784,8 +776,8 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
            endif
      end if
 
-       write(*,"(a,2f8.3)") " Emissions   traffic 24x7", &
-           fac_ehh24x7(7,1,4),fac_ehh24x7(7,13,4)
+     if(MasterProc)  write(*,"(a,2f8.3)") " EmisSet  traffic 24x7", &
+           fac_ehh24x7(ISNAP_TRAF,1,4),fac_ehh24x7(ISNAP_TRAF,13,4)
 
 
     !..........................................
@@ -797,7 +789,7 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
        daytime(iland) = 0
        hourloc        = indate%hour + Country(iland)%timezone
 
-       localhour(iland) = hourloc
+       localhour(iland) = hourloc  ! here from 0 to 23
 
        if ( hourloc  >=   7 .and.  hourloc <= 18 ) daytime(iland)=1
 
@@ -818,6 +810,8 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
             do i = 1,limax
 
                ncc = nlandcode(i,j)            ! No. of countries in grid
+               debug_tfac =  ( DEBUG_EMISTIMEFACS .and. debug_proc .and. &
+                                 i==DEBUG_li .and. j==DEBUG_lj )
 
                 ! find the approximate local time:
                   hourloc= mod(nint(indate%hour+24*(1+glon(i,j)/360.0)),24)
@@ -847,22 +841,19 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
                    hour_iland = hour_iland - 24
                    wday_loc=wday + 1
                    if(wday_loc==0)wday_loc=7 ! Sunday -> 7
+                   if(wday_loc>7 )wday_loc=1 
                 end if
 
                 call CheckStop( hour_iland < 1, &
-                    "ERROR: HOUR Zero in Emissions_ml")
+                    "ERROR: HOUR Zero in EmisSet")
 
-                if( DEBUG_EMISTIMEFACS .and. debug_proc .and. &
-
-                       i==DEBUG_li .and. j==DEBUG_lj )THEN
-                    call datewrite("HOUR ILAND", (/ icc, iland, &
-                       daytime_iland, hour_iland, hourloc /), &
-                         (/ (indate%hour+24*(1+glon(i,j)/360.0))/24.0  /) )
-                    call datewrite("HOUR SNAP", hour_iland, &
-                        (/ SNAP_HOURFAC(hour_iland,1:6) /) )
-                    call datewrite("HOUR 24x7traffic", &
-                        (/ wday, wday_loc, hour_iland /), &
-                         (/ fac_ehh24x7(7,hour_iland,wday_loc) /) )
+                if( debug_tfac ) then 
+                    write(*,"(a,i4,2i3,i5,2i4,3x,4i3)") "EmisSet DAYS times ", daynumber, &
+                     wday, wday_loc, iland, daytime_longitude, daytime_iland,&
+                      hour_longitude, hour_iland, hourloc, Country(iland)%timezone
+                    call datewrite("EmisSet DAY 24x7:", &
+                        (/ icc, iland, wday, wday_loc, hour_iland /), &
+                         (/ fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc) /) )
                 end if
 
 
@@ -881,47 +872,33 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
 
                    do iem = 1, NEMIS_FILE 
 
-                      if(USE_HOURLY_EMISVAR)THEN
                          tfac = timefac(iland_timefac,isec,iem) * &
-                              SNAP_HOURFAC(hour_iland,isec)
-                      else
-                         tfac = timefac(iland_timefac,isec,iem) * &
-                              day_factor(isec,daytime_iland)
-                      endif
-                        !if ( debug_proc .and.  &
-                        !         iem==1.and.i==debug_li .and. j==debug_lj)  then  ! 
-                        !  call datewrite("TestFac", isec, &
-                        !   (/ real(daytime_iland), day_factor(isec, daytime_iland) /) )
-                        !end if
+                              fac_ehh24x7(isec,hour_iland,wday_loc)
+
+                         if( debug_tfac .and. iem == 1 ) then 
+                              write(*,"(a,2i4,f8.3)") "EmisSet DAY TFAC:", &
+                                 isec, hour_iland, tfac
+                         end if
 
                       !Degree days - only SNAP-2 
                       if ( USE_DEGREEDAY_FACTORS .and. &
                           isec == ISNAP_DOM .and. Gridded_SNAP2_Factors ) then
 
                         oldtfac = tfac
-                        if(INERIS_FACS)THEN ! Start of new system
-                                    ! INERIS have no "base" for SNAP-2
-                           tfac = gridfac_HDD(i,j)  & ! T-dep load
-                                * SNAP_HOURFAC(hour_iland,isec)
 
-                        else if(USE_HOURLY_EMISVAR)THEN
-                           tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
-                                ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) & ! T-dep load
-                                * SNAP_HOURFAC(hour_iland,isec)
-                        else
-                           tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
-                                ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) & ! T-dep load
-                                * day_factor(isec, daytime_iland)
-                        endif
+                        ! If INERIS_SNAP2  set, the fac_min will be zero, otherwise
+                        ! we make use of a baseload even for SNAP2
 
-                        if ( debug_proc .and. indate%hour == 12 .and.  &
-                                 iem==1.and.i==debug_li .and. j==debug_lj)  then  ! 
+                        tfac = ( fac_min(iland,isec,iem) + & ! constant baseload
+                                ( 1.0-fac_min(iland,isec,iem) )* gridfac_HDD(i,j) ) &
+                                * fac_ehh24x7(isec,hour_iland,wday_loc)
+
+                        if ( debug_tfac .and. indate%hour == 12 .and. iem==1 )  then  ! 
                            write(*,"(a,2i3,2i4,7f8.3)") "SNAPHDD tfac ",  &
                               isec, iland, daynumber, indate%hour, &
                                  timefac(iland_timefac,isec,iem), t2_nwp(i,j,2)-273.15, &
                                    fac_min(iland,isec,iem),  gridfac_HDD(i,j), tfac
                         end if
-                        !tfac = gridfac_HDD(i,j) * day_factor(isec, daytime_iland)
                       end if ! =============== HDD 
 
                       s =  tfac * snapemis(isec,i,j,icc,iem)
@@ -1044,13 +1021,19 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
                hour_iland=localhour(iland)+1
             endif
 
-            if( hour_iland > 24 ) hour_iland = 1
+            wday_loc = wday ! DS added here also, for fac_ehh24x7
+            if( hour_iland > 24 ) then
+                hour_iland = 1
+                if(wday_loc==0)wday_loc=7 ! Sunday -> 7
+                if(wday_loc>7 )wday_loc=1 
+            end if
 
             if(((icc.eq.IC_FI).or.(icc.eq.IC_NO).or.(icc.eq.IC_SE)).and. & ! Nordic countries
                  ((indate%month.eq.3).or.(indate%month.eq.4).or.(indate%month.eq.5)))then ! spring road dust
-               tfac = SNAP_HOURFAC(hour_iland,7)*D_FAC(wday)*2.0 ! Doubling in Mar-May (as in TNO model)
+               !tfac = SNAP_HOURFAC(hour_iland,7)*D_FAC(wday)*2.0 ! Doubling in Mar-May (as in TNO model)
+               tfac =  fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc) *2.0 ! Doubling in Mar-May (as in TNO model)
             else
-               tfac = SNAP_HOURFAC(hour_iland,7)*D_FAC(wday)
+               tfac =  fac_ehh24x7(ISNAP_TRAF,hour_iland,wday_loc)
             endif
 
             do iem = 1, NROAD_FILES

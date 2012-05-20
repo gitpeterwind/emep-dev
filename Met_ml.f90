@@ -162,6 +162,9 @@ module Met_ml
   character (len = 100)        ::  field_not_found='field_not_found'
     integer*2, allocatable ::var_global(:,:,:)   ! faster if defined with
 
+ ! Aid for debugging check routine
+  character (len = 100), private, save :: call_msg=" Not set"
+
 
   public :: MeteoGridRead
   public :: MeteoRead
@@ -208,6 +211,7 @@ contains
     logical :: fexist 
 
     nr=2 !set to one only when the first time meteo is read
+    call_msg = "Meteoread"
 
 
     if(numt == 1)then !first time meteo is read
@@ -670,6 +674,7 @@ if( USE_SOILWATER ) then
 
     character (len = 100),save :: meteoname !name of the meteofile
 
+    call_msg = "MeteoGridRead"
 
     nyear=startdate(1)
     nmonth=startdate(2)
@@ -3009,6 +3014,7 @@ if( USE_SOILWATER ) then
     integer :: KMAX,ijk,i,k,j,nfetch
 
     validity=''
+    call_msg = "GetMeteofield" // trim(namefield)
 
     if(ndim==3)KMAX=KMAX_MID
     if(ndim==2)KMAX=1
@@ -3079,6 +3085,7 @@ if( USE_SOILWATER ) then
     period_read='                                     ' !initialisation
     scalefactors(1) = 1.0 !default
     scalefactors(2) = 0.  !default
+    call_msg = "GetCDF_short:"//trim(fileName)
 
     ndims=3
     if(KMAX==1)ndims=2
@@ -3178,6 +3185,7 @@ filename_save=trim(filename)
     real :: ndays(1),x1,x2,x3,x4
     character (len = 50) :: timeunit
 
+    call_msg = "Getgridparams"
     if(MasterProc)then
        print *,'Defining grid properties from ',trim(meteoname)
       !open an existing netcdf dataset
@@ -3600,6 +3608,7 @@ filename_save=trim(filename)
      
      if(ME==0.and.Pole_included==1)write(*,*)'The grid includes a pole'
      
+    call_msg = "Unset"
   end subroutine Getgridparams
 
 
@@ -3610,7 +3619,7 @@ filename_save=trim(filename)
     implicit none
     integer, intent ( in) :: status
 
-    call CheckStop( status, nf90_noerr, "Error in Met_ml/NetCDF stuff" &
+    call CheckStop( status, nf90_noerr, "Error in Met_ml/NetCDF stuff:" // trim(call_msg) &
          //  trim( nf90_strerror(status) ) )
 
   end subroutine check

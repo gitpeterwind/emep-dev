@@ -165,7 +165,7 @@ subroutine check_file(fname,fexist,needed,errmsg)
 
   if(DEBUG_IOPROG)write(unit=6,fmt=*) "check_file::: ", fname
   if ( .not. fexist .and. .not. needed ) then
-    write(unit=6,fmt=*) "not needed, skipping....."
+    write(unit=6,fmt=*) "not needed, skipping....." // trim(fname)
     ios = 0
   elseif ( .not. fexist .and. needed ) then
     ios = -1

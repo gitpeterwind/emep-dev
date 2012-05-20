@@ -51,11 +51,11 @@
   use EmisDef_ml,   only : NSECTORS, NEMIS_FILE, EMIS_FILE, ISNAP_DOM
   use GridValues_ml    , only : i_fdom,j_fdom, debug_proc,debug_li,debug_lj
   use Met_ml,       only : Getmeteofield
-!  use Met_ml,       only : Getraw2dfield  !INERIS
   use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_EMISTIMEFACS
-  use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM, USE_EURODELTA_HOURLY
-  use NetCDF_ml,    only : ReadField_CDF , GetCDF  ! INERIS
-  use ModelConstants_ml, only : iyr_trend, INERIS_FACS
+  use ModelConstants_ml, only : IIFULLDOM, JJFULLDOM
+  use ModelConstants_ml, only : iyr_trend
+  use ModelConstants_ml, only : INERIS_SNAP1, INERIS_SNAP2
+  use NetCDF_ml,    only : GetCDF 
   use Par_ml,       only : MAXLIMAX,MAXLJMAX, me, li0, lj0, li1, lj1
   use Par_ml,       only : IRUNBEG, JRUNBEG, MSG_READ8
   use PhysicalConstants_ml, only : PI
@@ -103,16 +103,10 @@
   real, public, save,  &
      dimension(NLAND, 7,NSECTORS,NEMIS_FILE) :: fac_edd  ! Daily factors
 
-!  real, public, save,  &
-!     dimension(24,NSECTORS) :: fac_ehh  ! Hourly factors (only dependent on snap sector!)
-! use SNAP_HOURFAC instead, at the moment set in EmisDef_ml.f90
-
-  real, public, save, dimension(NSECTORS,0:1):: day_factor  ! Day/night factor 
-
   ! Heating-degree day factor for SNAP-2. Independent of country:
   logical, public, save :: Gridded_SNAP2_Factors = .false.
   real, public, dimension (MAXLIMAX,MAXLJMAX), save :: gridfac_HDD
-  real, private, dimension (MAXLIMAX,MAXLJMAX), save :: tmpt2
+  !real, private, dimension (MAXLIMAX,MAXLJMAX), save :: tmpt2
 
   ! Used for general file calls and mpi routines below
 
@@ -140,37 +134,18 @@ contains
 
   !-- local
   integer ::  inland, insec     ! Country and sector value read from femis
-  integer ::  i, ic, isec, n, idd, ihh, iday, mm, mm2 ! Loop and count variables
+  integer ::  i, ic, isec, n 
+  integer ::  idd, idd2, ihh, iday, mm, mm2 ! Loop and count variables
   integer ::  iemis             ! emission count variables
 
   integer :: weekday            ! 1=monday, 2=tuesday etc.
   real    :: xday, sumfac       ! used in interpolation, testing
+  real    :: tmp24(24)          ! used for hourly factors
   character(len=100) :: errmsg
+  character(len=200) :: inputline
 !hf
   real :: fracchange
   real, dimension(NLAND,NEMIS_FILE):: sumfacc !factor to normalize monthly changes                                                         
-
-
-! Factor giving nighttime  emission ratio. 
-! Note this is hard-coded with NSECTORS=11. 
-!
-! Hourly variations are also available in a test version. (USE_HOURLY_EMISVAR)
-!
-
-   real, parameter, dimension(NSECTORS) ::  & 
-        DAY_NIGHT = (/      & 
-                       1.0  &! 1.  Power production
-                     , 0.8  &! 2.  Comm/res. combustion
-                     , 0.8  &! 3.  Industrial combustion
-                     , 1.0  &! 4.  Non-industrial combustion
-                     , 1.0  &! 5.  Processes
-                     , 0.5  &! 6.  Solvent use
-                     , 0.5  &! 7.  Road transport
-                     , 0.8  &! 8.  Other transport
-                     , 1.0  &! 9.  Waste
-                     , 0.6  &! 10. Agriculture
-                     , 1.0  &! 11. Nature
-                     /)
 
   if (DEBUG) write(unit=6,fmt=*) "into timefactors "
 
@@ -202,6 +177,8 @@ contains
    enddo
    write(*,"(a,f8.4)") "Mean fac_cemm ", sum( fac_cemm(:) )/12.0
 
+   if( INERIS_SNAP1 ) fac_cemm(:) = 1.0
+
 
    do iemis = 1, NEMIS_FILE
 
@@ -220,7 +197,8 @@ contains
            !defined after renormalization and send to al processors:
            ! fac_min(inland,insec,iemis) = minval( fac_emm(inland,:,insec,iemis) )
 
-           if( DEBUG.and.insec==ISNAP_DOM  ) write(*,"(a,3i3,f7.3,a,12f6.1)") "MIN tfac ", &
+           if( DEBUG.and.insec==ISNAP_DOM  ) &
+              write(*,"(a,3i3,f7.3,a,12f6.1)") "emm tfac ", &
                inland,insec,iemis, fac_min(inland,insec,iemis),&
                  " : ",  ( fac_emm(inland,mm,insec,iemis), mm=1,12)
 
@@ -287,18 +265,42 @@ contains
   enddo  ! NEMIS_FILE
 
 !  #################################
-!  3) Read in hourly (24x7) factors
-   ! Hourly (11x24x7) emissions factor
+!  3) Read in hourly (24x7) factors, options set in run script.
+   ! INERIS option has 11x24x7 emissions factor
+   ! TNO2005 option has 11x24 
+   ! EMEP2003 option has very simple day night
 !
-    if ( USE_EURODELTA_HOURLY ) then
-       fname2 = "HOURLY-FACS"  ! From EURODELTA/INERIS
+       fname2 = "HOURLY-FACS"  ! From EURODELTA/INERIS/TNO or EMEP2003
        write(unit=6,fmt=*) "Starting HOURLY-FACS"
        call open_file(IO_TIMEFACS,"r",fname2,needed=.true.)
-       call CheckStop( ios, "Timefactors: IOS error in HOURLY-FACS")
+
        fac_ehh24x7 = -999.
+
+       n = 0
        do 
-           read(IO_TIMEFACS,fmt=*,iostat=ios) idd, insec, &
-             (fac_ehh24x7(insec,ihh,idd),ihh=1,24)
+          read(IO_TIMEFACS,"(a)",iostat=ios) inputline
+          n = n + 1
+          write(*,*) "HourlyFacs ", n, trim(inputline)
+          if ( ios <  0 ) exit     ! End of file
+          if( index(inputline,"#")>0 ) then ! Headers
+            if(n==1) call PrintLog(trim(inputline))
+            cycle
+          else
+            read(inputline,fmt=*,iostat=ios) idd, insec, &
+              (tmp24(ihh),ihh=1,24)
+            if( DEBUG ) write(*,*) "HOURLY=> ",idd, insec, tmp24(1), tmp24(13)
+          end if
+
+            if(  idd == 0 ) then ! same values very day
+              do idd2 = 1, 7
+                fac_ehh24x7(insec,:,idd2) = tmp24(:)
+              end do
+              idd = 1 ! Used later
+            else
+                fac_ehh24x7(insec,:,idd) = tmp24(:)
+            end if
+
+             !(fac_ehh24x7(insec,ihh,idd),ihh=1,24)
 
            ! Use sumfac for mean, and normalise within each day/sector
            ! (Sector 10 had a sum of 1.00625)
@@ -310,14 +312,17 @@ contains
 
            fac_ehh24x7(insec,:,idd) = fac_ehh24x7(insec,:,idd) * 1.0/sumfac
 
-           !sumfac = sum(fac_ehh24x7(insec,:,idd))/24.0
-           !if(MasterProc) write(*,"(a,2i3,f12.5)") 'HOURLY-FACS B', &
-           !   idd, insec, sumfac
-
-           if ( ios <  0 ) exit     ! End of file
+       !    if ( ios <  0 ) exit     ! End of file
        end do
+       !do insec=1, 11; do idd   =1, 7; do ihh   =1, 24
+       !    if( fac_ehh24x7(insec,ihh,idd)  < 0.0 ) then 
+       !       print *, "Unfilled ", insec, idd, ihh, fac_ehh24x7(insec,ihh,idd)
+       !    end if
+       !end do; end do; end do
+       !call CheckStop ( any(fac_ehh24x7 < 0.0 ) , "Unfilled efac_ehh24x7")
+       if (DEBUG) write(unit=6,fmt=*) "Read ", n, " records from ", fname2
        call CheckStop ( any(fac_ehh24x7 < 0.0 ) , "Unfilled efac_ehh24x7")
-    end if
+
 
 ! #######################################################################
 ! 4) Normalise the monthly-daily factors. This is needed in order to
@@ -387,14 +392,6 @@ contains
 
 !#########################################################################
 !
-! Day/night factors are set from parameter DAY_NIGHT in emisdef_ml
-! daytime = 2 - nightime :
-
-  day_factor(:,0)  =  DAY_NIGHT(:)             ! Night
-  day_factor(:,1) = 2.0 - day_factor(:,0)      ! Day
-
-!#################################
-
     if (DEBUG) write(unit=6,fmt=*) "End of subroutine timefactors"
 
     if (DEBUG ) then 
@@ -403,8 +400,6 @@ contains
            write(*, "(i2,i6,f8.3,3f8.4)") mm, nydays, sumfac,  &
             fac_emm(27,mm,2,1), fac_edd(27,1,2,1), fac_edd(27,7,2,1)
        end do ! mm
-       write(*,"(a,2f8.3)") " day factors traffic are", &
-           day_factor(7,0), day_factor(7,1)
        write(*,"(a,4f8.3)") " day factors traffic 24x7", &
            fac_ehh24x7(7,1,4),fac_ehh24x7(7,13,4), &
               minval(fac_ehh24x7), maxval(fac_ehh24x7)
@@ -517,35 +512,16 @@ contains
 
     if (dd_old == daynumber) return   ! Only calculate once per day max
     dd_old= daynumber
-!
-!    call ReadField_CDF('DegreeDayFac.nc',"DegreeDayFac",&
-!              gridfac_HDD,daynumber,interpol='zero_order',needed=.true.,debug_flag=DEBUG)
 
-    varname = "HDD18_Facs"    ! EMEP standard is Tbase=18C
-    if ( INERIS_FACS ) then
-      print *, "INERIS", me, " Day ", daynumber
-      varname = "HDD20_Facs"
+     write(*,*) "HDD inputs", me, " Day ", daynumber
 
+   ! DegreeDays have the same domain/grid as the met data, so we can use:
     if(MasterProc) call GetCDF('HDD_Facs','DegreeDayFactors.nc', &
           var2d_global,IIFULLDOM,JJFULLDOM,1,daynumber,nfetch)
 
     call global2local(var2d_global,gridfac_HDD,MSG_READ8,1,IIFULLDOM,JJFULLDOM,&
          kmax,IRUNBEG,JRUNBEG)
          call CheckStop(errmsg=="field_not_found", "INDegreeDay field not found:")
-    else
-   ! DegreeDays have the same domain/grid as the met data, so we can use:
-
-    call Getmeteofield('DegreeDayFac.nc',"DegreeDayFac1000",nrec=daynumber,ndim=2,&
-         unit=units,validity=errmsg, field=gridfac_HDD(:,:))
-       call CheckStop(errmsg=="field_not_found", "DegreeDay field not found:")
-    call Getmeteofield('DegreeDayFac.nc',"temperature_24h",nrec=daynumber,ndim=2,&
-         unit=units,validity=errmsg, field=tmpt2(:,:))
-       call CheckStop(errmsg=="field_not_found", "DegreeDayT2 field not found:")
-    end if
-
-    if ( .not.INERIS_FACS ) then
-      gridfac_HDD = 0.001 * gridfac_HDD ! CRUDE and TMP
-    end if
 
     if ( DEBUG ) then
        ijloc = maxloc( gridfac_HDD(li0:li1,lj0:lj1))
@@ -553,8 +529,8 @@ contains
        jjj = ijloc(2)+lj0-1
        checkmax = maxval( gridfac_HDD(li0:li1,lj0:lj1))
 
-       write(*,"(a,2i4,3f10.2,20i4)") "DEBUG GRIDFAC MAx", me, daynumber, &
-           checkmax, gridfac_HDD(iii,jjj), tmpt2(iii,jjj), &
+       write(*,"(a,2i4,2f10.2,20i4)") "DEBUG GRIDFAC MAx", me, daynumber, &
+           checkmax, gridfac_HDD(iii,jjj), & !!! tmpt2(iii,jjj), &
              ijloc(1), ijloc(2), i_fdom(iii), j_fdom(jjj)
   
        if( debug_proc ) then
@@ -569,7 +545,8 @@ contains
     if ( DEBUG .and. debug_proc ) then
        iii = debug_li
        jjj = debug_lj
-       write(*,*) "DEBUG GRIDFAC", me, daynumber, iii, jjj, tmpt2(iii,jjj),  gridfac_HDD(iii, jjj)
+       !write(*,*) "DEBUG GRIDFAC", me, daynumber, iii, jjj, tmpt2(iii,jjj),  gridfac_HDD(iii, jjj)
+       write(*,*) "DEBUG GRIDFAC", me, daynumber, iii, jjj, gridfac_HDD(iii, jjj)
     end if
 
 

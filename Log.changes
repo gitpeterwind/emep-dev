@@ -64,18 +64,31 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
-xxxxxxxx rv3_14_9 Dave     18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+  Submission of emission work. 
 
-  Submission of emission work. A little prelimary, in that this
-   works with the right combination of settings, but not all. 
-  (So ask Dave if problems. )
+    Hourly and HDD emissions variation clean-up. Now just read these
+    from file linked through run.pl. If you want the old day/night from
+    EMEP use file HourlyFacs.EMEP2003, but the best system is probably
+    HourlyFacs.INERIS.
 
+  Input/timeseries directories:
+
+     Default EMEP and INERIS/EUROLDELTA use different files for
+     various timeseries directories.  Created (in $DataDir):
+
+       inputs_emepdefault_May2012
+       inputs_eurodelta_May2012
+
+     Choose which on in run.pl with INERIS_FACS.
+
+     
   Emissions and changes:
 
      (i) Heating degree-day (HDD) system improved to now use simpler
      float-based HDD values. Can switch between "INERIS" and
-     "EMEP" style, see comments in rv3_14_5 log.
+     "EMEP" style, with INERIS_SNAP2, see comments in rv3_14_5 log.
 
 
       (The HDDxx files needed for this are currently in Dave's 
@@ -86,16 +99,27 @@ xxxxxxxx rv3_14_9 Dave     18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
        ModelConstants though.)
 
 
-     (ii) USE_EURODELTA_HOURLY introduced, to use the 11x7x24
-     EuroDelta HOURLY_FACS file. Should be new default if all
-     looks fine after testing.  Implementation is just a read
-     process so far, values not yet used. Array in fac_hh24x7.
+     (ii) New ourly system introduced, to use the 11x7x24
+     EuroDelta HOURLY_FACS file. Should be new default. New
+     system can restore older defaults using files from
+     $timeseries directory.
+     Arrays read from file and  stored in fac_hh24x7.
+
+     (iii) INERIS_SNAP1 switches off the SNAP-1 year
+     correction. Default false
 
 
+  ModelConstants_ml - various HOURLY  settins removed. We should
+   have hourly emissions as default ;-)
+   Added INERIS_SNAP1, INERIS_SNAP2
 
-  ModelConstants_ml - USE_EURODELTA_HOURLY added.
+  EmisDef_ml     - removed SNAP_HOURFAC (values can be obtained through
+    new system with HourlyFacs.TNO2005 in run.pl)
 
+  
   Emissions_ml   -  
+
+    Consistent use of hourly and degree-day data for time-factor tfac
 
     Better accounting for change of days with longitude:
 
@@ -103,19 +127,37 @@ xxxxxxxx rv3_14_9 Dave     18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
       replace: if( hour_iland > 24 ) hour_iland = 1 !DSA12
       with   : if( hour_iland > 24 ) hour_iland = hour_iland -24
 
-     also wday (1=Monday etc) changed for local time
+     also wday (1=Monday etc) changed for local time (wday_loc)
 
-   Par_ml - add MSG_READ 88 (probably not needed?)
+
 
    Timeseries_ml
 
      (i) Used GetCDF for HDD factors
      (ii) Added read of HOURLY-FACS into fac_hh24x7.
 
+   Old Degree-day (with scaling-factors) code removed.
+   DAY_NIGHT and day_factor code removed
+
    run.pl : added $INERIS_FACS, HDD stuff, new $timeseries for
-    TNO and INERIS_FACS. Cleaned out old EUCAARI settings
+    TNO and INERIS/EURODELTA3. Cleaned out old EUCAARI settings
     Note, need to specify Tbase 18 or 20 for HDD facs
 
+  Other changes:
+
+  Io_Progs fname added in debug output
+
+  Met_ml - add call_msg txt, which can be used to pass messages
+     to "check" subtroutine. Helps to find out which file is 
+     causing problems.
+
+  Par_ml - add MSG_READ 88 (probably not needed?)
+
+
+
+xxxxxxxx rv3_14_9 Dave     18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+   Preliminary version of rv3_15 above, some problems found
 
 xxxxxxxx rv3_14_8 Peter    18/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
