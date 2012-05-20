@@ -11,9 +11,10 @@
 # Ve/Vilje, use ppn=16, do not use :ib
 #VePBS -lnodes=2:ppn=16
 #Stallo
-#PBS -lnodes=8:ppn=8:ib
+#PBS -lnodes=64
+#8:ppn=8:ib
 # wall time limit of run
-#PBS -lwalltime=00:30:00
+#PBS -lwalltime=07:30:00
 # lpmeme=memory to reserve per processor (max 16GB per node)
 #PBS -lpmem=1000MB
 #make results readable for others: 
@@ -101,7 +102,7 @@ my %BENCHMARK;
 #   %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
-#  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
+  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/EMEP_trend_2000-2009/2009");
@@ -113,7 +114,7 @@ if (%BENCHMARK) {
   $MAKEMODE = $BENCHMARK{'make'}?$BENCHMARK{'make'}:"EMEP" unless $MAKEMODE;  # comment for non EmChem09soa benchmarks
 }
 
-my $INERIS_FACS=1;  # Used for timefactors, and e,g TNOxx tests
+my $INERIS_FACS=0;  # Used for timefactors, and e,g TNOxx tests
 my $SR= 0;     # Set to 1 if source-receptor calculation
                # check also variables in package EMEP::Sr below!!
 #die " TO DO: Need still to create SR split files\n" if $SR ;
@@ -140,7 +141,7 @@ if ($CWF) {
 #  --- Here, the main changeable parameters are given. The variables
 #      are explained below, and derived variables set later.-
 
-my $year = "2009";
+my $year = "2008";
    $year = substr($CWFBASE,0,4) if $CWF;
    $year = $BENCHMARK{"year"} if %BENCHMARK;
 ( my $yy = $year ) =~ s/\d\d//; #  TMP - just to keep emission right
@@ -239,7 +240,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv3_14_5";
+my $testv = "rv3_15";
 #$testv = "test";
 
 #User directories
@@ -446,7 +447,7 @@ $month_days[2] += leap_year($year);
 my $mm1   =  "07";       # first month, use 2-digits!
 my $mm2   =  "07";       # last month, use 2-digits!
 my $dd1   =  1;       # Start day, usually 1
-my $dd2   =  0;       # End day (can be too large; will be limited to max number of days in the month)
+my $dd2   =  1;       # End day (can be too large; will be limited to max number of days in the month)
                       # put dd2=0 for 3 hours run/test.
 
 if (%BENCHMARK){ # Allways runn full year on benchmark mode
@@ -719,12 +720,17 @@ foreach my $scenflag ( @runs ) {
 #  emisfiles:pm25
 # etc.
 
-my $timeseries  = "$DataDir";
-if ( $INERIS_FACS  ){
+my $timeseries  = "$DataDir/inputs_emepdefaults_May2012";
+my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
 
-   $timeseries  = "/home/mifads/Work/D_Emis/INERIS_Emis/eurodelta_emep";
-   $ifile{"$timeseries/HOURLY-FACS"} = "HOURLY-FACS";
+if ( $INERIS_FACS  ){
+   $timeseries  = "$DataDir/inputs_eurodelta_May2012";
+   $Tbase = 20;
 }
+   #$ifile{"$timeseries/HourlyFacs.EMEP2003"} = "HOURLY-FACS";
+   #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
+# INERIS provided the most complete hourly file, we use as default
+$ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
 
   my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC",
                   "sox" => "SOx", "nox" => "NOx" ,
@@ -849,15 +855,14 @@ print "TESTING PM $poll $dir\n";
   # not default
   #$ifile{"$MyDataDir/sitesCPM_ds.dat"} = "sites.dat";
 
-# DEGREE DAYS:
- #OLD my $HDD = "/home/$DAVE/Work/EMEP_Projects/DegreeDay/DegreeDayFac-${GRID}-$year.nc";
+# DEGREE DAYS (Tbase set above, either 18 or 20):
 #
- my  $Tbase = 18; # EMEP std
- $Tbase = 20 if $INERIS_FACS;
- my $HDD = "/home/$DAVE/Work/EMEP_Projects/DegreeDay/HDD${Tbase}-${GRID}-$year.nc";
+ my $HDD = "$timeseries/HDD${Tbase}-${GRID}-$year.nc";
+ print "Looking for DegreeDayFac: $HDD \n";
+ system("wc $HDD");
  unless ( $GRID eq "FORECAST" ) {
-   die "NO HDD files " unless $HDD;   # Can comment out if USE_DEGREEDAYS
-         # set false in ModelConstants_ml
+   die "NO HDD files " unless -f $HDD;   # Can comment out if USE_DEGREEDAYS
+                                      # set false in ModelConstants_ml
    $ifile{"$HDD"} = "DegreeDayFactors.nc" if -f $HDD ;
  }
 
