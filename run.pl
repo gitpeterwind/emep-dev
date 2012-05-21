@@ -919,8 +919,8 @@ print "TESTING PM $poll $dir\n";
       $ifile{"$RoadDir/RoadDust_NonHighway_emis_potential.txt"} = "NONHIGHWAY";
       $ifile{"$RoadDir/RoughTestClimateFactorSoilWater.txt"} = "ROADDUST_CLIMATE_FAC";
   }elsif(($GRID eq "TNO7") or ($GRID eq "TNO56")){
-      $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "HIGHWAYplus";
-      $ifile{"$DATA_LOCAL/HIGHWAYplus_RoadDust_potentials.txt"} = "NONHIGHWAY";
+      $ifile{"$DATA_LOCAL/nonHIGHWAYs_RoadDust_potentials.txt"} = "NONHIGHWAY";
+      $ifile{"$DATA_LOCAL/HIGHWAYplus_RoadDust_potentials.txt"} = "HIGHWAYplus";
       $ifile{"$DATA_LOCAL/ClimateFactors_SMI.txt"} = "ROADDUST_CLIMATE_FAC";
   }
 # IFZ-MOZ BCs levels description (in cdo zaxisdes/eta format)

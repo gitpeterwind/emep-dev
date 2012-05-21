@@ -64,6 +64,11 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv3_15_1   Peter     21/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+"HIGHWAYplus" and "NONHIGHWAY" were exchanged in run.pl for tno7 and tno56
+No effect except in title of outputs, since they are treated identically for now
+
 xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
   Submission of emission work. 
