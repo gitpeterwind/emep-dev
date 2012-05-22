@@ -722,8 +722,8 @@ foreach my $scenflag ( @runs ) {
 
 my $timeseries  = "$DataDir/inputs_emepdefaults_May2012";
 my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
+# Emission heights
 $ifile{"$timeseries/EmisHeights_v3_9x.txt"} = "EmisHeights.txt";
-
 
 if ( $INERIS_FACS  ){
    $timeseries  = "$DataDir/inputs_eurodelta_May2012";
@@ -748,8 +748,6 @@ $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
                   "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine" ) ;
                   # sometimes was "ocfi" => "POCfine"   ) ;
 
-# Emission heights
-  $ifile{"$ProgDir/EmisHeights.txt"} = "EmisHeights.txt";
 
   foreach my $poll  ( @emislist  ) {
     my $dir = $emisdir;
