@@ -139,11 +139,7 @@ integer, public, parameter, dimension(4) ::  &
 ! RUNDOMAIN = (/  70, 110, 72, 110 /)     ! TNO28  test
 !  RUNDOMAIN = (/  30, 90, 6, 92 /)        ! TNO56 reduced (15W-45E;30N-73N)
 ! RUNDOMAIN = (/  60,180, 12, 184 /)     !  test TNO7 area
-! RUNDOMAIN = (/  30,  90,  10,  80 /)     ! Orig EMEP domain in EECCA
-! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain
-! RUNDOMAIN = (/ 56+OFFSET_i, 147+OFFSET_i, 12+OFFSET_i, 102+OFFSET_i /)     ! EGU
-! RUNDOMAIN = (/ 46, 86, 42, 72 /)     ! SMD
- !RUNDOMAIN = (/ 75, 137, 32,  82 /)     ! EGU
+! RUNDOMAIN = (/ 36, 167, 12, 122 /)     ! EMEP domain in PARLAM
 ! RUNDOMAIN = (/  1, 360,  1, 180 /)     ! FULL GLOBAL
 ! RUNDOMAIN = (/  1, 132,  1, 111 /)     ! EECCA, rep09
 ! RUNDOMAIN = (/  1, 132,  1, 159 /)     ! EECCA, rep10

@@ -58,7 +58,6 @@ use My_Derived_ml,  only : &
       D3_OTHER
 
 use AOTx_ml,          only: Calc_GridAOTx
-!DSA12use Biogenics_ml,     only: EmisNat, BIO_SOILNO, BIO_SOILNH3
 use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop, StopAll
 use Chemfields_ml,    only: xn_adv, xn_shl, cfac,xn_bgn, AOD,  &

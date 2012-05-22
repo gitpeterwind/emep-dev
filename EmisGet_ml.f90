@@ -53,6 +53,7 @@
   use KeyValue_ml,       only: KeyVal
   use ModelConstants_ml, only: NPROC, TXTLEN_NAME, DEBUG => DEBUG_GETEMIS, &
                                DEBUG_i, DEBUG_j, &
+                               KMAX_MID, &
               SEAFIX_GEA_NEEDED, & ! only if emission problems over sea
                                MasterProc,DEBUG_GETEMIS,DEBUG_ROADDUST,USE_ROADDUST
   use Par_ml,            only: me
@@ -66,6 +67,8 @@
 
   public  :: EmisGet           ! Collects emissions of each pollutant
   public  :: EmisSplit         ! => emisfrac, speciation of voc, pm25, etc.
+  public  :: EmisHeights       ! => nemis_kprofile, emis_kprofile
+                               !     vertical emissions profile
   public  :: RoadDustGet       ! Collects road dust emission potentials
   private :: femis             ! Sets emissions control factors 
   private :: CountEmisSpecs    !
@@ -93,6 +96,10 @@
   integer, public, dimension(NEMIS_FILE), save :: Emis_MolWt
   real, public,allocatable, dimension(:), save :: emis_masscorr
   real, public,allocatable, dimension(:), save :: roaddust_masscorr
+
+  ! vertical profiles for SNAP emis, read from EmisHeights.txt
+  integer, public, save :: nemis_kprofile
+  real, public,allocatable, dimension(:,:), save :: emis_kprofile
 
   ! some common variables
   character(len=40), private :: fname             ! File name
@@ -500,6 +507,40 @@ READEMIS: do   ! ************* Loop over emislist files *******************
  end subroutine femis
 
 ! <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+  subroutine EmisHeights()
+    integer :: snap, k, allocerr
+    real :: tmp(KMAX_MID)  ! values 
+    character(len=200) :: txtinput               ! For read-in 
+    character(len=20) :: txt1
+     call open_file(IO_EMIS,"r","EmisHeights.txt",needed=.true.)
+   
+     do
+        call read_line(IO_EMIS,txtinput,ios,'EmisHeight')
+        if(me==1) print *, "EMIS HEIGHTS" // trim(txtinput), ios
+        if ( ios <  0 ) exit     ! End of file
+          if( index(txtinput,"#")>0 ) then ! Headers
+            call PrintLog(trim(txtinput))
+            cycle
+          else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
+            read(txtinput,fmt=*,iostat=ios)  txt1, nemis_kprofile
+            call PrintLog(trim(txtinput))
+            allocate(emis_kprofile(nemis_kprofile,NSECTORS),stat=allocerr)
+            call CheckStop(allocerr, "Allocation error for emis_kprofile")
+            emis_kprofile(:,:) = -999.9 
+            cycle
+          else
+            read(txtinput,fmt=*,iostat=ios) snap, (tmp(k),k=1, nemis_kprofile)
+            if( DEBUG ) write(*,*) "VER=> ",snap, tmp(1), tmp(3)
+            emis_kprofile(:,snap) = tmp(:)
+          end if
+      end do
+
+     call CheckStop(nemis_kprofile < 1,"EmisGet: No EmisHeights set!!")
+     call CheckStop( any( emis_kprofile(:,:) < 0 ), "EmisHeight read failure" )
+     print *, "CLOSING EMIS HEIGHTS"
+     close(IO_EMIS)
+  end subroutine EmisHeights
+!>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   subroutine EmisSplit()
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

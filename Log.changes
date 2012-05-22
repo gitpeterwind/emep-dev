@@ -64,6 +64,20 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv3_15_2   Dave      22/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+
+EmisDef_ml - VERTFAC code removed :-)
+
+EmisGet_ml - EmisHeighs routine added to read in EmisHeights.txt file
+  and set nemis_kprofile, emis_kprofile
+   (the latter is allocatable, deduced from EmisHeights.txt)
+
+Emissions_ml - use of emis_kprofile 
+
+run.pl - copies input_emepdefaults/EmisHeights_v3_9.txt to EmisHeights.txt
+(INERIS option not set yet, will follow shortly)
+
 xxxxxxxx rv3_15_1   Peter     21/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 "HIGHWAYplus" and "NONHIGHWAY" were exchanged in run.pl for tno7 and tno56

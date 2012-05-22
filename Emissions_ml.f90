@@ -2,7 +2,7 @@
 !          Chemical transport Model>
 !*****************************************************************************! 
 !* 
-!*  Copyright (C) 2007-2011 met.no
+!*  Copyright (C) 2007-2012 met.no
 !* 
 !*  Contact information:
 !*  Norwegian Meteorological Institute
@@ -47,7 +47,7 @@
   use EmisDef_ml, only : NSECTORS & ! No. sectors
                      ,NEMIS_FILE & ! No. emission files
                      ,EMIS_FILE   & ! Names of species ("sox  ",...)
-                     ,NEMISLAYERS & ! No. vertical layers for emission
+                     !,NEMISLAYERS & ! No. vertical layers for emission
                      ,NCMAX       & ! Max. No. countries per grid
                      ,FNCMAX      & ! Max. No. countries (with flat emissions)
                                     ! per grid
@@ -56,7 +56,7 @@
                      ,ISNAP_SHIP  & ! snap index for ship emissions
                      ,ISNAP_NAT   & ! snap index for nat. (dms) emissions
                      ,IQ_DMS      & ! code for DMS emissions
-                     ,VERTFAC     & ! vertical emission split
+!                     ,VERTFAC     & ! vertical emission split
                      ,NROAD_FILES & ! No. road dust emis potential files
                      ,ROAD_FILE   & ! Names of road dust emission files
                      ,NROADDUST   & ! No. road dust components 
@@ -64,8 +64,10 @@
                      ,QROADDUST_CO & ! coarse road dust emis
                      ,ROADDUST_FINE_FRAC & ! fine (PM2.5) fraction of road dust emis
                      , ROADDUST_CLIMATE_FILE ! TEMPORARY! file for road dust climate factors 
-  use EmisGet_ml, only : EmisGet, EmisSplit, &
-         nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
+  use EmisGet_ml, only : EmisGet, EmisSplit &
+        ,EmisHeights                 &  ! Generates vertical distrib
+        ,nrcemis, nrcsplit, emisfrac &  ! speciation routines and array
+        ,nemis_kprofile, emis_kprofile &! Vertical emissions profile
         ,iqrc2itot                   &  ! maps from split index to total index
         ,emis_masscorr               &  ! 1/molwt for most species
         ,emis_nsplit                 &  ! No. species per emis file
@@ -161,7 +163,8 @@
 
   ! KEMISTOP added to avoid hard-coded KMAX_MID-3:
 
-   integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
+   !integer, public, parameter :: KEMISTOP = KMAX_MID - NEMISLAYERS + 1
+   integer, public, save :: KEMISTOP ! not defined yet= KMAX_MID - nemis_kprofile + 1
    real, public, allocatable, save, dimension(:,:,:,:) :: &
         gridrcemis      & ! varies every time-step (as ps changes)
        ,gridrcemis0       ! varies every hour
@@ -258,6 +261,9 @@ contains
 
   if ( USE_DEGREEDAY_FACTORS ) &
   call DegreeDayFactors(0)         ! See if we have gridded SNAP-2
+
+  call EmisHeights()     ! vertical emissions profile
+  KEMISTOP = KMAX_MID - nemis_kprofile + 1
 
   if( MasterProc) then   !::::::: ALL READ-INS DONE IN HOST PROCESSOR ::::
 
@@ -733,7 +739,7 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
   integer, save :: oldday = -1, oldhour = -1
   integer, save :: wday , wday_loc ! wday = day of the week 1-7
   real ::  oldtfac
-  logical :: debug_tfac
+  logical :: debug_tfac, debug_kprof
 
 ! If timezone=-100, calculate daytime based on longitude rather than timezone
   integer :: daytime_longitude, daytime_iland, hour_longitude, hour_iland
@@ -920,12 +926,21 @@ READCLIMATEFACTOR: do   ! ************* Loop over emislist files ***************
 
                    !  Assign to height levels 1-KEMISTOP
 
+                   !do k=KEMISTOP,KMAX_MID
                    do k=KEMISTOP,KMAX_MID
                       do iqrc =1, nrcemis
                          gridrcemis0(iqrc,k,i,j) =   &
                             gridrcemis0(iqrc,k,i,j) + tmpemis(iqrc)*   &
-                            ehlpcom0(k)*VERTFAC(KMAX_BND-k,isec) &
+                            ehlpcom0(k)*emis_kprofile(KMAX_BND-k,isec) &
+                            !ehlpcom0(k)*VERTFAC(KMAX_BND-k,isec) &
                             * emis_masscorr(iqrc)
+                        !if( debug_tfac.and. iqrc==1 ) then 
+                        !  write(*,"(a,2i3,2f8.3)") "KPROF ", &
+                        !    isec, KMAX_BND-k, &
+                        !    VERTFAC(KMAX_BND-k,isec),  &
+                        !    emis_kprofile(KMAX_BND-k,isec)
+                        !end if
+ 
                       end do ! iem
                    end do   ! k
 

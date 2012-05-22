@@ -95,26 +95,26 @@ implicit none
 
 ! Vertical allocation from SNAP sectors
 
-   integer, public, parameter :: NEMISLAYERS = 7
-   real, public, parameter, &
-     dimension(NEMISLAYERS,NSECTORS) ::    &
-
-   VERTFAC =                    &  ! Vertical distribution of SNAP emissions
-             reshape (          &  ! Vertical distribution of SNAP emissions
-!       Ground , ...       High
-    (/  0.0    , 0.00, 0.15, 0.40, 0.30, 0.15, 0.00,  & ! SNAP1
-        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP2
-        0.1    , 0.10, 0.15, 0.30, 0.30, 0.05, 0.0,   & ! SNAP3
-        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP4
-        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP5
-        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP6
-        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP7
-        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP8
-        0.1    , 0.15, 0.40, 0.35, 0.00, 0.00, 0.0,   & ! SNAP9
-        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP10
-        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0    & ! SNAP11
-        /), &
-        (/NEMISLAYERS,NSECTORS /) )
+!   integer, public, parameter :: NEMISLAYERS = 7
+!   real, public, parameter, &
+!     dimension(NEMISLAYERS,NSECTORS) ::    &
+!
+!   VERTFAC =                    &  ! Vertical distribution of SNAP emissions
+!             reshape (          &  ! Vertical distribution of SNAP emissions
+!!       Ground , ...       High
+!    (/  0.0    , 0.00, 0.15, 0.40, 0.30, 0.15, 0.00,  & ! SNAP1
+!        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP2
+!        0.1    , 0.10, 0.15, 0.30, 0.30, 0.05, 0.0,   & ! SNAP3
+!        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP4
+!        0.9    , 0.10, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP5
+!        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP6
+!        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP7
+!        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP8
+!        0.1    , 0.15, 0.40, 0.35, 0.00, 0.00, 0.0,   & ! SNAP9
+!        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP10
+!        1.0    , 0.00, 0.00, 0.00, 0.00, 0.00, 0.0    & ! SNAP11
+!        /), &
+!        (/NEMISLAYERS,NSECTORS /) )
     !(/  0.0    , 0.00, 0.08, 0.46, 0.29, 0.17, 0.00,  & ! SNAP1
     !    0.5    , 0.50, 0.00, 0.00, 0.00, 0.00, 0.0,   & ! SNAP2
     !    0.0    , 0.04, 0.19, 0.41, 0.30, 0.06, 0.0,   & ! SNAP3
