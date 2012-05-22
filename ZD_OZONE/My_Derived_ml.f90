@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(63) :: &
+   type(typ_s5i), public, parameter, dimension(65) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -266,6 +266,12 @@ private
         ,typ_s5i("PART_FFUELOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_WOODOA25_OM", "ug", D2,"AIR_CONCS", SPEC, D)& !NEVER as ugC!
         ,typ_s5i("PART_FFIREOA25_OM", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
+!SPECIAL PM25 will be sum of fine + fraction coarse
+! PUT AT END OF THIS LIST  !
+!---------------------------------------------
+        ,typ_s5i("SURF_ug_PM25",  "ug" ,  D2,"PM25     ","MISC", D)&
+        ,typ_s5i("SURF_ug_PM25X",  "ug" ,  D2,"PM25X     ","MISC", D)&
+!---------------------------------------------
         !,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OWDOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OFFIOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
@@ -470,8 +476,8 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
 
      call AddArray( "WDEP_" // WDEP_WANTED(:)%txt1, wanted_deriv2d, NOT_SET_STRING,errmsg)
      call CheckStop( errmsg, errmsg // "WDEP_WANTED too long" )
-     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
-     call CheckStop( errmsg, errmsg // "D2_SR too long" )
+!TEST     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+!TEST     call CheckStop( errmsg, errmsg // "D2_SR too long" )
      call AddArray( COL_ADD,  wanted_deriv2d, NOT_SET_STRING, errmsg)
      call CheckStop( errmsg, errmsg // "COL_ADD too long" )
 
@@ -492,6 +498,9 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
 
 
 
+! Do SR last, so we get PM25 after groups have been done
+     call AddArray( D2_SR,  wanted_deriv2d, NOT_SET_STRING, errmsg)
+     call CheckStop( errmsg, errmsg // "D2_SR too long" )
 
      if ( .not. SOURCE_RECEPTOR ) then !may want extra?
         call AddArray( D2_EXTRA, wanted_deriv2d, NOT_SET_STRING, errmsg)

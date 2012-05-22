@@ -1216,15 +1216,18 @@ enddo
 endif
 
 !Soil NOx emissions
-if(USE_SOILNOX)then 
+if(USE_SOILNOX)then  ! 
 
-  ! TMP TMP - hard-coded mifads directory. Will update soon!!!!
   ! read in map of annual N-deposition produced from pre-runs of EMEP model
-  ! with script mk.annualNdep
+  ! with script mkcdo.annualNdep
   ! 
    call ReadField_CDF('annualNdep.nc',&
      'Ndep_m2',AnnualNdep,1, interpol='zero_order',needed=.true.,debug_flag=.true.,UnDef=0.0)
 
+   if (DEBUG_SOILNOX .and. debug_proc ) then
+      write(*,"(a,4es12.3)") "SOILNOX AnnualDEBUG ", &
+           AnnualNdep(debug_li, debug_lj), maxval(AnnualNdep), minval(AnnualNdep)
+   end if
    call CheckStop(USE_GLOBAL_SOILNOX, "SOILNOX - cannot use global with Euro")
    ! We then calculate SoulNOx in Biogenics_ml
 else
@@ -1265,14 +1268,11 @@ else
    enddo
    SoilNOx=SoilNOx/Nyears
   endif
-end if ! DS_TEST
 
-if ( DEBUG_SOILNOX ) then !!!  .and. debug_proc ) then
-   !write(*,"(a,i3,2es10.3)") "After SOILNO ", me, maxval(SoilNOx), SoilNOx(debug_li, debug_lj)
-   write(*,"(a,i3,3es10.3)") "After SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3), t2_nwp(2,2,2)
-!else if ( DEBUG_SOILNOX  ) then
-!   write(*,"(a,i3,es10.3, 2f8.2)") "After SOILNO ", me, maxval(SoilNOx), gb(1,1), gl(1,1)
-end if ! SOIL_N
+  if ( DEBUG_SOILNOX ) then !!!  .and. debug_proc ) then
+    write(*,"(a,i3,3es10.3)") "After Global SOILNO ",  me, maxval(SoilNOx), SoilNOx(3, 3), t2_nwp(2,2,2)
+  end if ! SOIL_N
+end if ! DS_TEST
 
 !for testing, compute total soil NOx emissions within domain
 !convert from g/m2/day into kg/day

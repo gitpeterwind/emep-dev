@@ -64,6 +64,41 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta    Dave      22/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+*** THIS FILE HAS been committed while benchmark is in progress,
+given the urgency of the TNO28 SR runs. Should be okay, but be
+warned. 
+
+Please - do not CVS stuff at this stage without discussing with
+Dave, since these SR runs are important and we don't want the
+code to change much until they are finalised.
+*****
+
+Changes:
+
+Dp = 3 for NO3_c (instead of 2.5)
+
+EmisHeights.txt has 100% of SNAP2 emissions in lowest layer
+
+("Older" (1-2 days old!) code linked to EmisHeights_rv3_9.txt)
+
+Derived_ml, My_Derived_mk: PM25 and PM25X added. Adds a fraction
+   (fracPM25) of the coarse aerosol to PMFINE. Very hard-coded for now,
+    but easy to generalise later.)
+
+     PM25  has f* NO3_c
+     PM25X has f* (NO3_c + coarse EC + coarse POM)
+
+     where f is 0.27 for Dp=3um.
+
+run.pl:
+
+For 2020 runs  use the 5-year N-deposition climatology from Agnes,
+TNO28. Use the same file for all resolutions, otherwise there is too
+much work involved to generate this.
+
+
 xxxxxxxx rv3_15_2   Dave      22/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 

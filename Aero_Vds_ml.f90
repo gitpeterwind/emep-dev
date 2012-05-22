@@ -44,6 +44,13 @@
   public  :: RuijgrokWetSO4
   public  :: Wesely1985
 
+  real, public, parameter, dimension(NSIZE) ::   &
+                 ! diam   = (/ 0.33e-6, 4.0e-6, 8.5e-6 /),  &
+                 !Mc: diam   = (/ 0.33e-6, 1.7e-6, 8.5e-6 /),  &
+                  diam   = (/ 0.33e-6, 3.0e-6, 4.0e-6, 4.5e-6 ,22e-6 /),  &
+                 ! sigma  = (/ 1.8, 2.0, 2.2 /),                    &
+                  sigma  = (/ 1.8, 2.0, 2.0, 2.2 ,2.0/),                    &
+                  PMdens = (/ 1600.0, 2200.0, 2200.0, 2600.0, 800.0/) ! kg/m3
 contains
 
    !------------------------------------------------------------------------
@@ -62,13 +69,13 @@ contains
    ! and dp=1.7 for coarse
    ! Extra 'giant' size is used for sea salt only
 
-     real, parameter, dimension(NSIZE) ::   &
-                ! diam   = (/ 0.33e-6, 4.0e-6, 8.5e-6 /),  &
-                !Mc: diam   = (/ 0.33e-6, 1.7e-6, 8.5e-6 /),  &
-                 diam   = (/ 0.33e-6, 2.5e-6, 4.0e-6, 4.5e-6 ,22e-6 /),  &
-                ! sigma  = (/ 1.8, 2.0, 2.2 /),                    &
-                 sigma  = (/ 1.8, 1.8, 2.0, 2.2 ,2.0/),                    &
-                 PMdens = (/ 1600.0, 1600.0, 2200.0, 2600.0, 800.0/) ! kg/m3
+!     real, parameter, dimension(NSIZE) ::   &
+!                ! diam   = (/ 0.33e-6, 4.0e-6, 8.5e-6 /),  &
+!                !Mc: diam   = (/ 0.33e-6, 1.7e-6, 8.5e-6 /),  &
+!                 diam   = (/ 0.33e-6, 2.5e-6, 4.0e-6, 4.5e-6 ,22e-6 /),  &
+!                ! sigma  = (/ 1.8, 2.0, 2.2 /),                    &
+!                 sigma  = (/ 1.8, 1.8, 2.0, 2.2 ,2.0/),                    &
+!                 PMdens = (/ 1600.0, 1600.0, 2200.0, 2600.0, 800.0/) ! kg/m3
      real, parameter :: one2three = 1.0/3.0
      integer :: imod 
      real    :: lnsig2, dg, & 

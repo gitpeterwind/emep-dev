@@ -240,7 +240,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv3_15_2";
+my $testv = "rv4beta";
 #$testv = "test";
 
 #User directories
@@ -723,7 +723,7 @@ foreach my $scenflag ( @runs ) {
 my $timeseries  = "$DataDir/inputs_emepdefaults_May2012";
 my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
 # Emission heights
-$ifile{"$timeseries/EmisHeights_v3_9x.txt"} = "EmisHeights.txt";
+#pre rv4: $ifile{"$timeseries/EmisHeights_v3_9x.txt"} = "EmisHeights.txt";
 
 if ( $INERIS_FACS  ){
    $timeseries  = "$DataDir/inputs_eurodelta_May2012";
@@ -734,6 +734,8 @@ if ( $INERIS_FACS  ){
    #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
 # INERIS provided the most complete hourly file, we use as default
 $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
+
+$ifile{"$timeseries/EmisHeights.txt"} = "EmisHeights.txt";
 
   my %gridmap = ( "co" => "CO", "nh3" => "NH3", "voc" => "NMVOC",
                   "sox" => "SOx", "nox" => "NOx" ,
@@ -836,7 +838,12 @@ print "TESTING PM $poll $dir\n";
 #TEMPORARY SETUP
 #  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
 #  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
+
+if ( $iyr_trend > 2015 ) then 
+  $ifile{"$DataDir/annualNdep_TNO28_2020.nc"} = "annualNdep.nc";
+} else {
   $ifile{"$DataDir/annualNdep_tmp.nc"} = "annualNdep.nc";
+}
 
 # hb NH3emis
 # New ammonia emissions  ---   NB no read permissions yet!!

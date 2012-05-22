@@ -57,6 +57,7 @@ use My_Derived_ml,  only : &
       WDEP_WANTED, & 
       D3_OTHER
 
+use Aero_Vds_ml,      only: diam  !aerosol MMD (um)
 use AOTx_ml,          only: Calc_GridAOTx
 use Biogenics_ml,     only: EmisNat, NEMIS_BioNat, EMIS_BioNat
 use CheckStop_ml,     only: CheckStop, StopAll
@@ -157,6 +158,10 @@ private
     real, save,  public :: &     ! to be used for SOMO35
      D2_O3_DAY( MAXLIMAX, MAXLJMAX, NTDAY) = 0.
 
+   ! Fraction of NO3_c below 2.5 um (v. crude so far)
+
+     real, save, private :: fracPM25
+
 
   ! Counters to keep track of averaging
   ! Initialise to zero in Init.
@@ -225,6 +230,14 @@ private
 
           call Define_Derived()
           call Setups()  ! just for VOC now
+
+       if( nint( 1.0e7*diam(2) )==25 ) then
+           fracPM25 = 0.37
+       else if( nint( 1.0e7*diam(2) )== 30 ) then
+           fracPM25 = 0.27
+       end if
+       print *,  ' CFAC INIT PMFRACTION ', fracPM25, diam(2), nint(1.0e7*diam(2))
+       call CheckStop( fracPM25 < 0.01, "NEED TO SET FRACPM25")
 
     end subroutine Init_Derived
 
@@ -431,6 +444,12 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
        class  = trim( OutputFields(ind)%txt4 )   ! SPEC or GROUP
        unitscale = 1.0
        if( outunit == "ppb") unitscale = PPBINV
+       if(     OutputFields(ind)%txt4 == "PM25" &      
+          .or. OutputFields(ind)%txt4 == "PM25X" ) then 
+          itot = 0
+          call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
+          if(MasterProc ) write(*,*)"FRACTION UNITSCALE ", unitscale
+       end if
 
        if(MasterProc ) write(*,"(i3,a,i4,a)")  me, &
             "Deriv:D2MET " // trim(outname), outind, trim(class)
@@ -583,6 +602,8 @@ end do ! ind
 
 call AddNewDeriv("SURF_PM25water", "PM25water", "-", "-", "-", &
                       -99 , -99, F, 1.0,   T,  IOU_DAY )
+!call AddNewDeriv("SURF_PM25", "PM25", "-", "-", "-", &
+!                      -99 , -99, F, 1.0,   T,  IOU_DAY )
 
 call AddNewDeriv("AOD", "AOD", "-", "-", "-", &
                       -99 , -99, F, 1.0,   T, IOU_DAY ) 
@@ -775,7 +796,8 @@ end do
                 ! where M =  roa (kgair m-3) * MFAC  when ! scale in ug,  else 1
       logical :: first_call = .true.
       integer :: ipm25, ipmc ! will save some calcs for pm10
-      integer :: igrp, ngrp  !  DS new group methods
+      integer :: igrp, ngrp  ! group methods
+      integer, save :: ind_pmfine = -999, ind_pmwater = -999 !needed for PM25
 
       timefrac = dt/3600.0
       thour = current_date%hour+current_date%seconds/3600.0
@@ -939,6 +961,45 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             forall ( i=1:limax, j=1:ljmax )
               d_2d( n, i,j,IOU_INST) = PM25_water_rh50(i,j)
             end forall
+            ind_pmwater = n
+
+          case ( "PM25" )      ! Need to add PMFINE + fraction NO3_c
+      
+            !scale = 62.0
+            ! All this size class has the same cfac.
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
+                                       fracPM25 * &
+                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
+                     ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+            end forall
+
+          case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
+      
+            !scale = 62.0
+            ! All this size class has the same cfac.
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
+                                       fracPM25 * &
+                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
+                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) & 
+                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) & 
+                    + 15.0 * xn_adv(IXADV_POM_C_FFUEL,i,j,KMAX_MID) &
+                   ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+            end forall
+
+            if(DEBUG.and. debug_proc )  then
+                write(*,*) "FRACTION PM25", n, ind_pmfine, ind_pmwater
+                i= debug_li; j=debug_lj
+                write(*,"(a,2i4,4es12.3)") "Adding PM25FRACTIONS:", n, ind_pmfine,  &
+                   PM25_water_rh50(i,j), d_2d(ind_pmfine,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
+                       62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID) &
+                                     * cfac(IXADV_NO3_C,i,j) * density(i,j)
+                write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
+                         cfac(IXADV_NO3_C,i,j), cfac(IXADV_POM_C_FFUEL,i,j), &
+                        cfac(IXADV_EC_C_WOOD,i,j), cfac(IXADV_EC_C_FFUEL,i,j)
+
+            end if
 
            case ( "AreaPOLL" )        !/ Aerosol Optical Depth
 
@@ -1160,6 +1221,13 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
             call CheckStop(igrp>size( GROUP_ARRAY(:)%name ), &
                  "Outside GRP "//trim(f_2d(n)%name) )
             ngrp = GROUP_ARRAY(igrp)%Ngroup
+
+            if( GROUP_ARRAY(igrp)%name == "PMFINE" .and. ind_pmfine<0 ) then
+               ind_pmfine = n
+               if( MasterProc) write(*,"(a,2i4,2a15)") "FOUND FINE FRACTION ",&
+                   n, ind_pmfine, &
+                     trim(GROUP_ARRAY(igrp)%name), trim(f_2d(n)%name)
+            end if
             if(DEBUG.and. MasterProc ) then
                 write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
                 write(*,*) "CASENAM ", trim(f_2d(n)%name)
@@ -1170,6 +1238,11 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
               GROUP_ARRAY(igrp)%itot(1:ngrp) ,  density, 0, &
               GROUP_ARRAY(igrp)%name )
 
+            if(DEBUG.and. debug_proc .and. n==ind_pmfine )  then
+                i= debug_li; j=debug_lj
+                write(*,"(a,2i4,3es12.3)") "PMFINE FRACTION:", n, ind_pmfine,  &
+                   d_2d(ind_pmfine,i,j,IOU_INST)
+            end if
 
           case  default
 
