@@ -839,7 +839,7 @@ print "TESTING PM $poll $dir\n";
 #  my $tmpndep = "/home/$DAVE/Work/RESULTS/MAPS/AnnualSums/AnnualNdep";
 #  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
 
-if ( $iyr_trend > 2015 ) then 
+if ( $iyr_trend > 2015 )  {
   $ifile{"$DataDir/annualNdep_TNO28_2020.nc"} = "annualNdep.nc";
 } else {
   $ifile{"$DataDir/annualNdep_tmp.nc"} = "annualNdep.nc";
