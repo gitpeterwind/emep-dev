@@ -102,7 +102,7 @@ my %BENCHMARK;
    %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun11/EMEP_trend_2000-2009/2008",chem=>"EmChem09soa",make=>"EMEP");
 #  %BENCHMARK = (grid=>"TNO28" ,year=>2008,emis=>"emis_TNO28");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2005,emis=>"Modrun11/EMEP_trend_2000-2009/2005");
-  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
+#  %BENCHMARK = (grid=>"EECCA" ,year=>2008,emis=>"Modrun10/EMEP_trend_2000-2008/2008");
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2007,emis=>"Modrun09/2009-Trend2007-CEIP") ;
 #  %BENCHMARK = (grid=>"MACC02",year=>2008,emis=>"2008_emis_EMEP_MACC") ;
 #  %BENCHMARK = (grid=>"EECCA" ,year=>2009,emis=>"Modrun11/EMEP_trend_2000-2009/2009");
@@ -240,7 +240,7 @@ my $Chem     = "EmChem09soa";
 #$Chem     = "CRI_v2_R5";
    $Chem     = $BENCHMARK{'chem'} if $BENCHMARK{'chem'};
 
-my $testv = "rv3_15";
+my $testv = "rv3_15_2";
 #$testv = "test";
 
 #User directories
@@ -722,10 +722,13 @@ foreach my $scenflag ( @runs ) {
 
 my $timeseries  = "$DataDir/inputs_emepdefaults_May2012";
 my $Tbase = 18 ;  # Base-temperature for Degree-day (HDD) files
+$ifile{"$timeseries/EmisHeights_v3_9x.txt"} = "EmisHeights.txt";
+
 
 if ( $INERIS_FACS  ){
    $timeseries  = "$DataDir/inputs_eurodelta_May2012";
    $Tbase = 20;
+   die "No EmisHeights file for INERIS yet!"
 }
    #$ifile{"$timeseries/HourlyFacs.EMEP2003"} = "HOURLY-FACS";
    #$ifile{"$timeseries/HourlyFacs.TNO2005"} = "HOURLY-FACS";
@@ -744,6 +747,9 @@ $ifile{"$timeseries/HourlyFacs.INERIS"} = "HOURLY-FACS";
  #  Sometimes used also:
                   "ecfi" => "ECfine","ecco" => "ECcoar", "ocfi" => "OCfine" ) ;
                   # sometimes was "ocfi" => "POCfine"   ) ;
+
+# Emission heights
+  $ifile{"$ProgDir/EmisHeights.txt"} = "EmisHeights.txt";
 
   foreach my $poll  ( @emislist  ) {
     my $dir = $emisdir;
