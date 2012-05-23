@@ -26,6 +26,7 @@ IMPORTANT NOTE:
     make
     edit run.pl for year, Chem etc.
 
+   [option: if SR wanted, cp ZD_SR/My* .]
 
     Inputs
 
@@ -94,7 +95,23 @@ Will keep list here near top of Log.changes.
 xxxxxxxx rv4beta3 Dave             23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 BoundaryConditions_ml
+
   CH4 BICs updated for 2010 and later
+
+ModelConstants_ml and My_RunSettings.inc
+
+** New ** file RunSettings.inc, in ZD_SR and ZD_OZONE. 
+Has just one line, e.g.
+
+ cat ZD_SR/My_RunSettings.inc 
+  logical, save, public :: SOURCE_RECEPTOR = .true.
+
+Makefile now calls the appropriate one, on doing
+
+  make EMEP or make SR-EMEP
+
+
+
 
 xxxxxxxx rv4beta2 Dave, Svetlana   23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
