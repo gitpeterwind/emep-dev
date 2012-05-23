@@ -76,9 +76,10 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4betaSR2 Dave, Svetlana   23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta2 Dave, Svetlana   23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 PM25_rh50 and similar added to Derived_ml
+  and ZD_SR, ZD_OZONE My_Derived_ml
 
 Notation change for SOA/OM species: _C changed to _OC:
   ZCM_vbs_tests/VBS_help.species
