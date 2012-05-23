@@ -76,14 +76,25 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4betaSRb Dave      23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4betaSR2 Dave, Svetlana   23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+PM25_rh50 and similar added to Derived_ml
 
 Notation change for SOA/OM species: _C changed to _OC:
   ZCM_vbs_tests/VBS_help.species
   ZD_VBS/My_SOA_ml.f90
 
+Also OMCOARSE added as group in 
+
+   ZCM_vbs_tests/VBS_nonvolatile.species
+
+  Not strictly needed, as it is POM_c_FFUEL, but it is easier to
+  explain to IIASA (and to remember ourselves) ;-)
+
 ZCM_EmChem09soa/VBS_Nonvolatile.species - added ECcoarse group
 ZD_SR/My_Derived_ml Added extra Eocystem outputs, and ECcoarse
+
+Many outputs in ZD_SR/My_Derived commented out.
 
 xxxxxxxx rv4betaSR  Dave      23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
