@@ -51,7 +51,7 @@ touchdepend:
 .SECONDEXPANSION:
 EMEP EMEP2010 SR-EMEP2010: modules $$@-GenChem-EmChem09soa \
           ./ZD_OZONE/My_ExternalBICs_ml.f90 \
-	  ./ZD_OZONE/RunSettings.inc \
+	  ./ZD_OZONE/My_RunSettings.inc \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
 	ln -sf $(filter %.f90,$+) . && \
@@ -59,7 +59,7 @@ EMEP EMEP2010 SR-EMEP2010: modules $$@-GenChem-EmChem09soa \
 #For SR we use the small My_Derived
 SR-EMEP: modules $$@-GenChem-EmChem09soa \
           ./ZD_OZONE/My_ExternalBICs_ml.f90 \
-	  ./ZD_SR/RunSettings.inc \
+	  ./ZD_SR/My_RunSettings.inc \
 	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
 	ln -sf $(filter %.f90,$+) . && \
