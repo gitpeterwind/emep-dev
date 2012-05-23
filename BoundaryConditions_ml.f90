@@ -731,10 +731,16 @@ subroutine My_bcmap(iyr_trend)
   ! concentrations specified in misc_bc are transferred correctly into the
   ! boundary conditions.
 
-  ! set values of 1625 in 1980, 1780 in 1990, and 1820 in 2000. Interpolate
+  ! set values of 1625 in 1980, 1780 in 1990, 1820 in 2000, and 1970 in
+  ! 2010. Interpolate
   ! between these for other years. Values from EMEP Rep 3/97, Table 6.2 for
   ! 1980, 1990, and from CDIAC (Mace Head) data for 2000.
+  ! 2010 also from Mace Head
 
+  if( iyr_ytrend >= 2010) then
+    top_misc_bc(IBC_CH4) =  1870.0
+  else if ( iyr_trend >= 2000) then
+    top_misc_bc(IBC_CH4) = 1820 + (iyr_trend)*0.1*(1870-1820) 
   if ( iyr_trend >= 1990 ) then
     top_misc_bc(IBC_CH4) = 1780.0 + (iyr_trend-1990)*0.1*(1820-1780.0)
   else
