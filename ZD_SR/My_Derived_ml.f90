@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(50) :: &
+   type(typ_s5i), public, parameter, dimension(51) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -232,7 +232,9 @@ private
         ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
         ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC !!
         ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
-        ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
+!AS ECFINE        ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("ECFINE    ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
+        ,typ_s5i("ECCOARSE  ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
        ! SOA, PCM_F etc. are special and need appropriate units. Do
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
@@ -333,11 +335,11 @@ private
            !SO2,  SO4, NH3, NH4_f, HNO3 /) ! DDEP_OXNGROUP /)
     !SR:
      integer, public, parameter, dimension(3) :: &
-      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX  /)
+      DDEP_SPECS = (/ SOX_INDEX, OXN_INDEX, RDN_INDEX /)
 
-    character(len=TXTLEN_DERIV), public, parameter, dimension(3) :: &
-      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" /) !&! "Water_D" &
-                  !  , "Decid  ", "Crops  " /)
+    character(len=TXTLEN_DERIV), public, parameter, dimension(6) :: &
+      DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat", "Water_D" &
+                   , "Decid  ", "Crops  " /)
 
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &

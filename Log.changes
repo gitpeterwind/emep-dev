@@ -76,6 +76,11 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4betaSRa Dave      23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+ZCM_EmChem09soa/VBS_Nonvolatile.species - added ECcoarse group
+ZD_SR/My_Derived_ml Added extra Eocystem outputs, and ECcoarse
+
 xxxxxxxx rv4betaSR  Dave      23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 ZD_SR directory added
