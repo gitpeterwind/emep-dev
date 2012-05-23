@@ -444,8 +444,10 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
        class  = trim( OutputFields(ind)%txt4 )   ! SPEC or GROUP
        unitscale = 1.0
        if( outunit == "ppb") unitscale = PPBINV
-       if(     OutputFields(ind)%txt4 == "PM25" &      
-          .or. OutputFields(ind)%txt4 == "PM25X" ) then 
+       if(     OutputFields(ind)%txt4 == "PM25"  &      
+          .or. OutputFields(ind)%txt4 == "PM25X" & 
+          .or. OutputFields(ind)%txt4 == "PM25_rh50" & 
+          .or. OutputFields(ind)%txt4 == "PM25X_rh50" ) then 
           itot = 0
           call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
           if(MasterProc ) write(*,*)"FRACTION UNITSCALE ", unitscale
@@ -974,6 +976,15 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                      ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
             end forall
 
+          case ( "PM25_rh50" )      ! Need to add PMFINE + fraction NO3_c
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
+                                       PM25_water_rh50(i,j)*ATWAIR/PPBINV +  &
+                                       fracPM25 * &
+                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
+                     ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+            end forall
+
           case ( "PM25X" )      ! Need to add PMFINE + fraction NO3_c
       
             !scale = 62.0
@@ -988,11 +999,24 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                    ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
             end forall
 
+         case ( "PM25X_rh50" )      ! Need to add PMFINE + fraction NO3_c + water
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pmfine,i,j,IOU_INST) + &
+                                       PM25_water_rh50(i,j) * ATWAIR/PPBINV + &
+                                       fracPM25 * &
+                  (   62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID)  &
+                    + 12.0 * xn_adv(IXADV_EC_C_WOOD,i,j,KMAX_MID) & 
+                    + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) & 
+                    + 15.0 * xn_adv(IXADV_POM_C_FFUEL,i,j,KMAX_MID) &
+                   ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+            end forall
+
             if(DEBUG.and. debug_proc )  then
                 write(*,*) "FRACTION PM25", n, ind_pmfine, ind_pmwater
                 i= debug_li; j=debug_lj
                 write(*,"(a,2i4,4es12.3)") "Adding PM25FRACTIONS:", n, ind_pmfine,  &
-                   PM25_water_rh50(i,j), d_2d(ind_pmfine,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
+                   PM25_water_rh50(i,j)* ATWAIR/PPBINV, &
+                    d_2d(ind_pmfine,i,j,IOU_INST), d_2d( n, i,j,IOU_INST),&
                        62.0 * xn_adv(IXADV_NO3_C,i,j,KMAX_MID) &
                                      * cfac(IXADV_NO3_C,i,j) * density(i,j)
                 write(*,"(a,i4,f5.2,4es12.3)") "CFAC PM25FRACTIONS:", n, fracPM25,  &
@@ -1282,14 +1306,17 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                  d_2d(n,:,:,IOU_YEAR ) + af*d_2d(n,:,:,IOU_INST)
         if ( f_2d(n)%avg ) nav_2d(n,IOU_YEAR) = nav_2d(n,IOU_YEAR) + 1
 
-        if( debug_flag .and. n == 27  ) & ! C5H8 BvocEmis:
-              call datewrite("NatEmis-end-Derived", n, (/ af, & 
-                 SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index), &
-                 d_2d(n,debug_li,debug_lj,IOU_INST), &
-                 d_2d(n,debug_li,debug_lj,IOU_DAY), &
-                 d_2d(n,debug_li,debug_lj,IOU_MON), &
-                 d_2d(n,debug_li,debug_lj,IOU_YEAR) &
-               /) )
+        !if( debug_flag .and. n == 27  ) then ! C5H8 BvocEmis:
+        !if(  n == 27  ) then ! C5H8 BvocEmis:
+        !   print *, " TESTING NatEmis ", n, af, f_2d(n)%Index, f_2d(n)
+        !      call datewrite("NatEmis-end-Derived", n, (/ af, & 
+        !         SumSnapEmis( debug_li,debug_lj, f_2d(n)%Index), &
+        !         d_2d(n,debug_li,debug_lj,IOU_INST), &
+        !         d_2d(n,debug_li,debug_lj,IOU_DAY), &
+        !         d_2d(n,debug_li,debug_lj,IOU_MON), &
+        !         d_2d(n,debug_li,debug_lj,IOU_YEAR) &
+        !       /) )
+        !end if
 
      end do   ! num_deriv2d
 

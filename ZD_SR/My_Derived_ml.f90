@@ -137,10 +137,14 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(51) :: &
+   type(typ_s5i), public, parameter, dimension(37) :: &
       OutputConcs = (/  &
-         typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
-        ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
+       ! ppb
+         typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
+        ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
+        ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
+!SR      typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
 !
 ! Here we use the 4th text field to give the "class" or "typ". Derived_ml
 ! will look for this in the select case (typ) 
@@ -163,18 +167,20 @@ private
         !,typ_s5i("PPM25     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         !,typ_s5i("PPM_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
 ! Omit for CityZen
-        ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("NO        ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("NO2       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("NH3       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
 !SR     ,typ_s5i("HNO3      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
 !SR     ,typ_s5i("HONO      ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
 !SR     ,typ_s5i("PAN       ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! Remember, species have upper case, so not _f !
-        ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
-        ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
-        ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("NO3_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  
+!SR     ,typ_s5i("NO3_C     ", "ugN", D2,"AIR_CONCS", SPEC, D)&  ! 10 to here
+!SR     ,typ_s5i("NH4_F     ", "ugN", D2,"AIR_CONCS", SPEC, D)& 
        ! ug/m3
+        ,typ_s5i("SO2       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("SO4       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
+        ,typ_s5i("NH3       ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NO3_C     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
         ,typ_s5i("NH4_F     ", "ug ", D2,"AIR_CONCS", SPEC, D)& 
@@ -187,10 +193,6 @@ private
 !        ,typ_s5i("DUST_WB_C ", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_SAH_F", "ug ", D2,"AIR_CONCS", SPEC, D)&
 !        ,typ_s5i("DUST_SAH_C", "ug ", D2,"AIR_CONCS", SPEC, D)&
-       ! ppb
-        ,typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
-        ,typ_s5i("NO        ", "ppb", D2,"AIR_CONCS", SPEC, D)& !20 also have ugN
-        ,typ_s5i("NO2       ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! also have ugN 
 !SR        ,typ_s5i("HCHO      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
 !SR        ,typ_s5i("C5H8      ", "ppb", D2,"AIR_CONCS", SPEC, D)& 
        ! ugC/m3
@@ -230,8 +232,9 @@ private
        ! ============================================================
        ! SOA additions (26 entries)
         ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
-        ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC !!
-        ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
+        ,typ_s5i("OMCOARSE   ", "ug ", D2,"AIR_CONCS", GROUP, D)& !! Inert in EmChem09soa
+!SR     ,typ_s5i("PART_OC10  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC !!
+!SR     ,typ_s5i("PART_OC25  ", "ug ", D2,"AIR_CONCS", SPEC, M)&  !! NEVER as ugC AND note that for nonvolatile type VBS runs (NPNA etc) this lacks the FFUELOC component!!
 !AS ECFINE        ,typ_s5i("EC_F      ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("ECFINE    ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
         ,typ_s5i("ECCOARSE  ", "ug ", D2,"AIR_CONCS", GROUP, D)& 
@@ -239,25 +242,26 @@ private
        ! not confuse! Only PCM has proper ug units, the others are
        ! carbon-eqiuvalents (PCM is particulate carbonaceous matter
        ! = sum of all EC and OM components.)
-        ,typ_s5i("PART_ASOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)&  !! ALWAYS as ugC
-        ,typ_s5i("PART_BSOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-!        ,typ_s5i("PART_SOA_C", "ugC", D2,"AIR_CONCS", SPEC, M)&
-         ,typ_s5i("PART_FFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OFFUELOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-         ,typ_s5i("PART_WOODOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OWOODOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-        ,typ_s5i("PART_FFIREOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
-       ! ,typ_s5i("PART_OFFIREOA25_C", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!SR     ,typ_s5i("PART_ASOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&  !! ALWAYS as ugC
+!SR     ,typ_s5i("PART_BSOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!        ,typ_s5i("PART_SOA_OC", "ugC", D2,"AIR_CONCS", SPEC, M)&
+!SR      ,typ_s5i("PART_FFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+       ! ,typ_s5i("PART_OFFUELOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!SR      ,typ_s5i("PART_WOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+       ! ,typ_s5i("PART_OWOODOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+!SR     ,typ_s5i("PART_FFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
+       ! ,typ_s5i("PART_OFFIREOA25_OC", "ugC", D2,"AIR_CONCS", SPEC, M)& 
 !none yet        ,typ_s5i("EC_F_WOOD_NEW ", "ug", D2,"AIR_CONCS", SPEC, D)&
 !none yet        ,typ_s5i("EC_F_WOOD_AGE ", "ug", D2,"AIR_CONCS", SPEC, D)&
-        ,typ_s5i("EC_F_FFUEL_NEW", "ug", D2,"AIR_CONCS", SPEC, D)&
-        ,typ_s5i("EC_F_FFUEL_AGE", "ug", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("EC_F_FFUEL_NEW", "ug", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("EC_F_FFUEL_AGE", "ug", D2,"AIR_CONCS", SPEC, D)&
        !DS  ,typ_s5i("EC_C_WOOD ", "ug", D2,"AIR_CONCS", SPEC, M)& 
-        ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
-        ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
+!SR     ,typ_s5i("EC_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, M)& 
+!SR     ,typ_s5i("NONVOL_BGNDOC", "ug", D2,"AIR_CONCS", SPEC, D)& 
 !Needed for forest-fire checks
 !        ,typ_s5i("NONVOL_FFUELOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
-        ,typ_s5i("NONV_FFUELOC_COARSE", "ug", D2,"AIR_CONCS", SPEC, D)&
+!SR     ,typ_s5i("NONV_FFUELOC_COARSE", "ug", D2,"AIR_CONCS", SPEC, D)&
+        ,typ_s5i("POM_C_FFUEL", "ug", D2,"AIR_CONCS", SPEC, D)&
        !DS  ,typ_s5i("NONVOL_WOODOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
 !        ,typ_s5i("NONVOL_FFIREOC25", "ug", D2,"AIR_CONCS", SPEC, D)& 
 !
@@ -273,6 +277,8 @@ private
 !---------------------------------------------
         ,typ_s5i("SURF_ug_PM25",  "ug" ,  D2,"PM25     ","MISC", D)&
         ,typ_s5i("SURF_ug_PM25X",  "ug" ,  D2,"PM25X     ","MISC", D)&
+        ,typ_s5i("SURF_ug_PM25X_rh50",  "ug" ,  D2,"PM25X_rh50","MISC", D)&
+        ,typ_s5i("SURF_ug_PM25_rh50" ,  "ug" ,  D2,"PM25_rh50 ","MISC", D)&
 !---------------------------------------------
         !,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OWDOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
