@@ -1,17 +1,17 @@
 "*Helper species - sums of various SOA, EC etc..."
 "*Spec,adv,forumula,MW,DRY,WET,Extinc,Cstar,DeltaH,Empty,Groups,,!Comments"
 "***************************************************"
-GAS_ASOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total gas-phase ASOA-C from AVOC oxidation 
-PART_ASOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total particle-phase ASOA-C from AVOC oxidation
+GAS_ASOA_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total gas-phase ASOA-C from AVOC oxidation 
+PART_ASOA_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total particle-phase ASOA-C from AVOC oxidation
 PART_ASOA_OM,1,asoaom,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate ASOA from AVOC oxidation (for storing in units of ug/m3)
-GAS_BSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total gas-phase BSOA-C from BVOC oxidation
-PART_BSOA_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total particle-phase BSOA-C from BVOC oxidation
+GAS_BSOA_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total gas-phase BSOA-C from BVOC oxidation
+PART_BSOA_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total particle-phase BSOA-C from BVOC oxidation
 PART_BSOA_OM,1,bsoaom,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate SOA from BVOC oxidation (for storing in units of ug/m3)
-PART_FFUELOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from primary OA emissions (NOTE! May include non-fossil [wood burning] component if the SNAP-2 emissions are not split!)
+PART_FFUELOA25_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from primary OA emissions (NOTE! May include non-fossil [wood burning] component if the SNAP-2 emissions are not split!)
 PART_FFUELOA25_OM,1,ffueloa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total fine particulate OA from primary OA emissions [NOTE, see above!] (for storing in units of ug/m3)
-PART_WOODOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from (primary) residential wood burning OA emissions 
+PART_WOODOA25_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from (primary) residential wood burning OA emissions 
 PART_WOODOA25_OM,1,woodoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate OA2.5 from residential wood burning OA emissions (for storing in units of ug/m3)
-PART_FFIREOA25_C,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from (primary) wildfire OA emissions 
+PART_FFIREOA25_OC,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OA2.5 (C-units) from (primary) wildfire OA emissions 
 PART_FFIREOA25_OM,1,ffireoa,1.,xx,xx,0,0,0,xx,PCM_HELP,,! Total particulate wild fire OA (for storing in units of ug/m3)
 PART_OC10,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! Total OC (in PM10!?, that is, includes coarse OC!)
 PART_OC25,1,C,xx,xx,xx,0,0,0,xx,PCM_HELP,,! OC in PM2.5
