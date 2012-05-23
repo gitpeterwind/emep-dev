@@ -66,6 +66,7 @@ SR-EMEP: modules $$@-GenChem-EmChem09soa \
 	$(MAKE) -j4 $(PROG)
 MACC SR-MACC: modules $$@-GenChem-EmChem09soa \
 	  ./ZD_OZONE/IFSMOZ_ExternalBICs_ml.f90 \
+	  ./ZD_OZONE/My_RunSettings.inc \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
 	ln -sf $(filter %.f90,$+) . && \
@@ -73,6 +74,7 @@ MACC SR-MACC: modules $$@-GenChem-EmChem09soa \
 	$(MAKE) -j4 $(PROG)
 eEMEP: modules $$@-GenChem-Emergency \
           ./ZD_OZONE/My_ExternalBICs_ml.f90 \
+	  ./ZD_OZONE/My_RunSettings.inc \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_OZONE/My_SOA_ml.f90
 	ln -sf $(filter %.f90,$+) . && \
