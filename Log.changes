@@ -3,6 +3,18 @@ IMPORTANT NOTE:
 
   * Instructions to run *
     check out clean version of Unimod (safest as there are several new files)
+
+    Options:
+
+    1) Use the make system, e.g. type:
+        make EMEP
+        make SR-EMEP
+      or other targets. See Makefile for these
+
+       This is the easiest and safest method as of 2012!!
+
+    2) By hand:
+
     edit mk.GenChem, set "run" if not default (=EmChem09)
      (type mk.GenChem -h for some examples)
     mk.GenChem
@@ -19,12 +31,12 @@ SOIL NOx ISSUES - Mainly think about (1) for policy
 This versions works for European soil-NO emissions, but work still
 needed on a few issues for e.g. global usage, or NH3
 
-    (1) Soil-NO needs maps of annual N-deposition. Temporary 1-year average
-        set now. Need to make proper system, e.g. with 5-year avg.
+    (1) Soil-NO needs maps of annual N-deposition. 
+        Need to have climatalogical values, e.g.  5-year avg.
         Also need to consider "trends" for future scenarios
 
-        Currently map is in hard-coded mifads directory. Will move to mifapw
-        when procedure files.
+        Currently done with mkcdo.Ndep_5yrs in mifads/bin directory
+        on stallo. 
 
     (2) Can now have either the hourly calculations or the monthly
         global fields. Ideal is probably hourly for Europe and
@@ -50,7 +62,7 @@ IMPORTANT NOTE:
 The latest code does now CM_Emis.inc in CVS. This is generated from
 mk.GenChem, which reads the emissions needed from GenIn.reactions.
 
-Run mk.GenChem!!!!
+Run mk.GenChem  or e.g. make EMEP, see above!!!!
 
 NOTE: Now all all CM_ files are removed from the cvs system. You have to
 run GenChem!!!
@@ -64,6 +76,16 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4betaSR  Dave      23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+ZD_SR directory added
+ZD_SR/My_Derived_ml added for SR work
+
+Makefile modified for SR-EMEP target
+  (type make SR-EMEP to get the new Derived values)
+
+Explanationsat top of this file improved
+
 xxxxxxxx rv4beta    Dave      22/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 *** THIS FILE HAS been committed while benchmark is in progress,
