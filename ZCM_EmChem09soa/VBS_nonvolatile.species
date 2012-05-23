@@ -10,10 +10,10 @@ POM_c_FFUEL,1,CH3,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;NVFFUELOC_COARSE;NONVO
 *
 EC_f_WOOD_new,1,C,xx,PMfS,ECfn,7.5,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Primary wood burning fine EC emissions"
 EC_f_WOOD_age,1,C,xx,PMfS,PMf,11.0,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Aged wood burning fine EC emissions"
-EC_c_WOOD,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;WOODEC;NONVOLPCM,,"!Primary wood burning coarse EC emissions"
+EC_c_WOOD,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;WOODEC;ECCOARSE;NONVOLPCM,,"!Primary wood burning coarse EC emissions"
 EC_f_FFUEL_new,1,C,xx,PMfS,ECfn,7.5,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;FFUELEC;ECFINE;NONVOLPCM,,"!Primary fossil fuel burning fine EC emissions"
 EC_f_FFUEL_age,1,C,xx,PMfS,PMf,11.0,0,0,xx,EC_f;PMFINE;PM10;PPM25;PPM10;PCM;FFUELEC;ECFINE;NONVOLPCM,,"!Aged fossil fuel burning fine EC emissions"
-EC_c_FFUEL,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;FFUELEC;NONVOLPCM,,"!Primary fossil fuel burning coarse EC emissions"
+EC_c_FFUEL,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;FFUELEC;ECCOARSE;NONVOLPCM,,"!Primary fossil fuel burning coarse EC emissions"
 *
 * Two species represent any particle emissions which are not EC or OC. Uses a little
 * extra CPU if only OC, EC inventories are used, but makes for easy consistency with PMxx inventories
