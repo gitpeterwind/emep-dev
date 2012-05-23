@@ -737,7 +737,7 @@ subroutine My_bcmap(iyr_trend)
   ! 1980, 1990, and from CDIAC (Mace Head) data for 2000.
   ! 2010 also from Mace Head
 
-  if( iyr_ytrend >= 2010) then
+  if( iyr_trend >= 2010) then
     top_misc_bc(IBC_CH4) =  1870.0
   else if ( iyr_trend >= 2000) then
     top_misc_bc(IBC_CH4) = 1820 + (iyr_trend-2000)*0.1*(1870-1820) 
