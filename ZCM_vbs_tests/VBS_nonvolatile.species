@@ -8,7 +8,8 @@ POC_f_WOOD,1,CO,20.4,PMfS,PMf,0,0,0,xx,PMFINE;PM10;PCM;NVWOODOC25;NONVOLPCM;NVAB
 * Not sure if POC_f_FFUEL should be in NVABSOM group here (but needed in "nonvolatile" runs!)
 *
 POC_f_FFUEL,1,CH3,xx,PMfS,PMf,0,0,0,xx,PMFINE;PM10;PCM;NVFFUELOC25;NVFFUELOC10;NVABSOM,,"!Primary fossil fuel burning fine OC emissions, OA/OC=1.25"
-POC_c_FFUEL,1,CH3,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;NVFFUELOC10;NONVOLPCM,,"!Primary fossil fuel burning coarse OC emissions, OA/OC=1.25"
+* Added PART_OM_C group, for consistency with PART_OM_F. The latter isn't a simple species though. 
+POC_c_FFUEL,1,CH3,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;PART_OM_C;NVFFUELOC10;NONVOLPCM,,"!Primary fossil fuel burning coarse OC emissions, OA/OC=1.25"
 EC_f_WOOD,1,C,xx,PMfS,ECfn,0,0,0,xx,EC_f;PMFINE;PM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Primary wood burning fine EC emissions"
 * not used? EC_f_WOOD_age,1,C,xx,PMfS,PMf,0,0,0,xx,EC_f;PMFINE;PM10;PCM;WOODEC;ECFINE;NONVOLPCM,,"!Aged wood burning fine EC emissions"
 EC_c_WOOD,1,C,xx,PMc,PMc,0,0,0,xx,PMCO;PM10;PM10anthr;WOODEC;NONVOLPCM,,"!Primary wood burning coarse EC emissions"
