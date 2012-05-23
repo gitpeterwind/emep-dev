@@ -76,7 +76,11 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4betaSRa Dave      23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4betaSRb Dave      23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+Notation change for SOA/OM species: _C changed to _OC:
+  ZCM_vbs_tests/VBS_help.species
+  ZD_VBS/My_SOA_ml.f90
 
 ZCM_EmChem09soa/VBS_Nonvolatile.species - added ECcoarse group
 ZD_SR/My_Derived_ml Added extra Eocystem outputs, and ECcoarse
