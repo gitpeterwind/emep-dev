@@ -15,8 +15,8 @@ F90 = mpif90
 
 F90FLAGS =  -shared-intel -CB -r8 -recursive -debug-parameters all -traceback -ftrapuv -g -fpe0 -O0 \
   -convert big_endian -IPF_fp_relaxed -I$(INCL)
-F90FLAGS =  -shared-intel     -r8 -recursive -O2 -ftz \
-  -convert big_endian -IPF_fp_relaxed -I$(INCL)
+#F90FLAGS =  -shared-intel     -r8 -recursive -O2 -ftz \
+#  -convert big_endian -IPF_fp_relaxed -I$(INCL)
 LDFLAGS =  $(F90FLAGS)  -L$(LLIB) -Wl,-rpath,$(LLIB) $(LIBS)
 
 .SUFFIXES: $(SUFFIXES)  .f90
@@ -49,9 +49,16 @@ touchdepend:
 
 # GenChem config for standard EMEP & MACC runs
 .SECONDEXPANSION:
-EMEP SR-EMEP EMEP2010 SR-EMEP2010: modules $$@-GenChem-EmChem09soa \
+EMEP EMEP2010 SR-EMEP2010: modules $$@-GenChem-EmChem09soa \
           ./ZD_OZONE/My_ExternalBICs_ml.f90 \
 	  ./ZD_OZONE/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
+	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
+	ln -sf $(filter %.f90,$+) . && \
+	$(MAKE) -j4 $(PROG)
+#For SR we use the small My_Derived
+SR-EMEP: modules $$@-GenChem-EmChem09soa \
+          ./ZD_OZONE/My_ExternalBICs_ml.f90 \
+	  ./ZD_SR/My_Derived_ml.f90 ./ZD_OZONE/My_Outputs_ml.f90 \
 	  ./ZD_OZONE/My_Aerosols_ml.f90 ./ZD_VBS/My_SOA_ml.f90
 	ln -sf $(filter %.f90,$+) . && \
 	$(MAKE) -j4 $(PROG)
