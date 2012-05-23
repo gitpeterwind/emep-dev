@@ -26,6 +26,21 @@ IMPORTANT NOTE:
     make
     edit run.pl for year, Chem etc.
 
+
+    Inputs
+
+     HDD (Degree Day files)
+     ----------------------
+     If you get an error message such as:
+
+Looking for DegreeDayFac: /global/work/mifapw/emep/Data/inputs_emepdefaults_May2012/HDD18-TNO28-2008.nc 
+
+      you may need to generate this file. Use either:
+
+      i) DegreeDayFactors  from Dave's bin, and follow instruations, or
+      ii) look at mk.HDD in ~mifads/Work/D_Emis/DegreeDay
+      (both on stallo)
+
 SOIL NOx ISSUES - Mainly think about (1) for policy
 
 This versions works for European soil-NO emissions, but work still
@@ -189,7 +204,7 @@ xxxxxxxx rv3_15   Dave     20/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 
       (The HDDxx files needed for this are currently in Dave's 
-       directory /home/mifads/Work/EMEP_Projects/DegreeDay on stallo.
+       directory /home/mifads/Work/D_Emis/DegreeDay on stallo.
        These files can be generated for any meteo (I think) by  
        running the code DegreeDayFactors in that directory. Run with
        -h to get options. These shouldn't be needed with default
