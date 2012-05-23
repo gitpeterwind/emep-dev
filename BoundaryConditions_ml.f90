@@ -740,7 +740,7 @@ subroutine My_bcmap(iyr_trend)
   if( iyr_ytrend >= 2010) then
     top_misc_bc(IBC_CH4) =  1870.0
   else if ( iyr_trend >= 2000) then
-    top_misc_bc(IBC_CH4) = 1820 + (iyr_trend)*0.1*(1870-1820) 
+    top_misc_bc(IBC_CH4) = 1820 + (iyr_trend-2000)*0.1*(1870-1820) 
   if ( iyr_trend >= 1990 ) then
     top_misc_bc(IBC_CH4) = 1780.0 + (iyr_trend-1990)*0.1*(1820-1780.0)
   else
