@@ -89,7 +89,7 @@ my @MAKE = ("gmake", "-j4", "--makefile=Makefile_snow");
    @MAKE = ( "make", "-j4", "-f", "Makefile_titan")  if $TITAN==1 ;
 die "Must choose STALLO **or** VILJE **or** TITAN!\n"
   unless $STALLO+$VILJE+$TITAN==1;
-my $MAKEMODE; #="EMEP2010";  # make EMEP2010
+my $MAKEMODE=0; #="EMEP2010";  # make EMEP2010
 
 my %BENCHMARK;
 # OpenSource 2008
@@ -464,6 +464,12 @@ if (%BENCHMARK){ # Allways runn full year on benchmark mode
 if ($SR) {
   print "SR is true\n";
   @runs = EMEP::Sr::initRuns();
+  if ($ENV{'PBS_ARRAY_INDEX'} ){
+      print "PBS_ARRAY_INDEX:  $ENV{'PBS_ARRAY_INDEX'} \n" ; 
+      @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]); }  # PBS Pro, Ve, one run per job
+  else{
+      @runs = ($runs[0]);   # only one run
+  }
   @runs = ($runs[$ENV{'PBS_ARRAY_INDEX'}-1]) if $ENV{'PBS_ARRAY_INDEX'};   # PBS Pro, Ve, one run per job
   print "PBS_ARRAY_INDEX:  $ENV{PBS_ARRAY_INDEX} \n";   # PBS Pro
 }
@@ -840,7 +846,7 @@ print "TESTING PM $poll $dir\n";
 #  $ifile{"$tmpndep/AnnualNdep_BM_rv3_9_20soa-EmChem09soa.nc"} = "AnnualNdep.nc";
 
 if ( $iyr_trend > 2015 )  {
-  $ifile{"$DataDir/annualNdep_TNO28_2020.nc"} = "annualNdep.nc";
+  $ifile{"$DataDir/AnnualNdep_TNO28_2020.nc"} = "annualNdep.nc";
 } else {
   $ifile{"$DataDir/annualNdep_tmp.nc"} = "annualNdep.nc";
 }
@@ -1250,7 +1256,7 @@ $redn        = "0.85"; # 15% reduction
 
 # modify those to fill up your queues for SR effectively!!!
 @countries  = (@eu27, @sea, @noneu, @emep, @eecca, @eccomb);
-@polls       = qw (BASE NP A V S );  #  (any, all, at least 1)
+@polls       = qw (BASE N P A V S );  #  (any, all, at least 1)
 
 # multiple tasks for paralel SR runs: one task per country             # Queue system
 @countries=($countries[$ENV{'PBS_ARRAYID'}-1]) if $ENV{'PBS_ARRAYID'};   # PBS
@@ -1295,6 +1301,7 @@ sub generate_updated_femis {
   if( $pollut eq "V" ) { $voc = $redn  };
   if( $pollut eq "S" ) { $sox = $redn  };
   if( $pollut eq "N" ) { $nox = $redn  };
+  if( $pollut eq "P" ) { $pm25 = $pmco = $redn  };
   if( $pollut eq "NP" ) { $nox = $pm25 = $pmco = $redn  };
   if( $pollut eq "SNP" ) { $sox = $nox = $pm25 = $pmco =  $redn  };
   if( $pollut eq "AN" ) { $nh3 = $nox =  $redn  };

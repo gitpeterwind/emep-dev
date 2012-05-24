@@ -94,6 +94,12 @@ Will keep list here near top of Log.changes.
 !----------------------------------------------------------
 xxxxxxxx ongoing               24/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
+run.pl: 
+One run only for non arrays SR
+defined P as a reduction
+AnnualNdep_TNO28_2020.nc with capital A
+$MAKEMODE=0 default
+
 EmisGet_ml - Added MasterProc to PrintLog call
 
 Makefile (ZD_SR) changes copied to Makefile_stallo (pending better
