@@ -6,7 +6,7 @@ IMPORTANT NOTE:
 
     Options:
 
-    1) Use the make system, e.g. type:
+    1) Use the make system (stallo only!), e.g. type:
         make EMEP
         make SR-EMEP
       or other targets. See Makefile for these
@@ -92,7 +92,14 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4beta3 Dave             23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx ongoing               24/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+EmisGet_ml - Added MasterProc to PrintLog call
+
+Makefile (ZD_SR) changes copied to Makefile_stallo (pending better
+  system)
+
+xxxxxxxx rv4beta3 Dave/Peter   23/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 21:05 corrected (iyr_trend) to (iyr_trend-2000)
 
