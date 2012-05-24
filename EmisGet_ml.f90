@@ -519,11 +519,11 @@ READEMIS: do   ! ************* Loop over emislist files *******************
         if(me==1) print *, "EMIS HEIGHTS" // trim(txtinput), ios
         if ( ios <  0 ) exit     ! End of file
           if( index(txtinput,"#")>0 ) then ! Headers
-            call PrintLog(trim(txtinput))
+            call PrintLog(trim(txtinput),MasterProc)
             cycle
           else if( index(txtinput,"Nklevels")>0 ) then !  Number levels
             read(txtinput,fmt=*,iostat=ios)  txt1, nemis_kprofile
-            call PrintLog(trim(txtinput))
+            call PrintLog(trim(txtinput),MasterProc)
             allocate(emis_kprofile(nemis_kprofile,NSECTORS),stat=allocerr)
             call CheckStop(allocerr, "Allocation error for emis_kprofile")
             emis_kprofile(:,:) = -999.9 
