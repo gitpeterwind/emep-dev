@@ -92,14 +92,14 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
-xxxxxxxx rv4beta3 Svetlana   25/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx rv4beta4 Svetlana   25/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Included PM10_rh50 (PM10 + PM25water) as output parameter:
 Derived_ml.f90
 ZD_OZONE/My_Derived_ml.f90
 ZD_SR/My_Derived_ml.f90
 
-xxxxxxxx ongoing               24/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+xxxxxxxx ongoing Peter, Dave 24/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 run.pl: 
 One run only for non arrays SR
