@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(69) :: &
+   type(typ_s5i), public, parameter, dimension(71) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -226,7 +226,7 @@ private
        ! ,typ_s5i("AER_ASOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)&  !! ALWAYS as ugC
        ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
-       ! ,typ_s5i("PPM25_FIRE",  "ugC", D2,"AIR_CONCS", SPEC,  D) &
+        ,typ_s5i("PM_FIRE",  "ug", D2,"AIR_CONCS", GROUP,  D) &
        ! ============================================================
        ! SOA additions (26 entries)
         ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!
@@ -277,6 +277,7 @@ private
         ,typ_s5i("SURF_ug_PM25X",  "ug" ,  D2,"PM25X     ","MISC", D)&
         ,typ_s5i("SURF_ug_PM25X_rh50",  "ug" ,  D2,"PM25X_rh50","MISC", D)&
         ,typ_s5i("SURF_ug_PM25_rh50" ,  "ug" ,  D2,"PM25_rh50 ","MISC", D)&
+        ,typ_s5i("SURF_ug_PM10_rh50" ,  "ug" ,  D2,"PM10_rh50 ","MISC", D)&
 
 !---------------------------------------------
         !,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!

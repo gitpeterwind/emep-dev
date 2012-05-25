@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(37) :: &
+   type(typ_s5i), public, parameter, dimension(38) :: &
       OutputConcs = (/  &
        ! ppb
          typ_s5i("O3        ", "ppb", D2,"AIR_CONCS", SPEC, D)& ! test 3d
@@ -279,6 +279,7 @@ private
         ,typ_s5i("SURF_ug_PM25X",  "ug" ,  D2,"PM25X     ","MISC", D)&
         ,typ_s5i("SURF_ug_PM25X_rh50",  "ug" ,  D2,"PM25X_rh50","MISC", D)&
         ,typ_s5i("SURF_ug_PM25_rh50" ,  "ug" ,  D2,"PM25_rh50 ","MISC", D)&
+        ,typ_s5i("SURF_ug_PM10_rh50" ,  "ug" ,  D2,"PM10_rh50 ","MISC", D)&
 !---------------------------------------------
         !,typ_s5i("PART_XO_OFFLOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!
         !,typ_s5i("PART_XO_OWDOA25_O", "ug", D2,"AIR_CONCS", SPEC, M)& !NEVER as ugC!

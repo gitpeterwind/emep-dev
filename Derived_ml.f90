@@ -447,7 +447,8 @@ do ind = 1, nOutputFields  !!!!size( OutputFields(:)%txt1 )
        if(     OutputFields(ind)%txt4 == "PM25"  &      
           .or. OutputFields(ind)%txt4 == "PM25X" & 
           .or. OutputFields(ind)%txt4 == "PM25_rh50" & 
-          .or. OutputFields(ind)%txt4 == "PM25X_rh50" ) then 
+          .or. OutputFields(ind)%txt4 == "PM25X_rh50"&
+          .or. OutputFields(ind)%txt4 == "PM10_rh50" & ) then 
           itot = 0
           call Units_Scale( outunit , itot,  unitscale, unittxt, volunit )
           if(MasterProc ) write(*,*)"FRACTION UNITSCALE ", unitscale
@@ -799,8 +800,9 @@ end do
       logical :: first_call = .true.
       integer :: ipm25, ipmc ! will save some calcs for pm10
       integer :: igrp, ngrp  ! group methods
-      integer, save :: ind_pmfine = -999, ind_pmwater = -999 !needed for PM25
-
+      integer, save :: ind_pmfine = -999, ind_pmwater = -999, & !needed for PM25
+                       ind_pm10 = -999
+  
       timefrac = dt/3600.0
       thour = current_date%hour+current_date%seconds/3600.0
 
@@ -1009,6 +1011,12 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                     + 12.0 * xn_adv(IXADV_EC_C_FFUEL,i,j,KMAX_MID) & 
                     + 15.0 * xn_adv(IXADV_POM_C_FFUEL,i,j,KMAX_MID) &
                    ) * cfac(IXADV_NO3_C,i,j) * density(i,j)
+            end forall
+
+          case ( "PM10_rh50" )      ! Need to add PMFINE + fraction NO3_c
+            forall ( i=1:limax, j=1:ljmax )
+              d_2d( n, i,j,IOU_INST) = d_2d(ind_pm10,i,j,IOU_INST) + &
+                                       PM25_water_rh50(i,j)*ATWAIR/PPBINV
             end forall
 
             if(DEBUG.and. debug_proc )  then
@@ -1252,6 +1260,12 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                    n, ind_pmfine, &
                      trim(GROUP_ARRAY(igrp)%name), trim(f_2d(n)%name)
             end if
+            if( GROUP_ARRAY(igrp)%name == "PM10" .and. ind_pm10<0 ) then
+               ind_pm10 = n
+               if( MasterProc) write(*,"(a,2i4,2a15)") "FOUND PM10 FRACTION ",&
+                   n, ind_pm10, &
+                     trim(GROUP_ARRAY(igrp)%name), trim(f_2d(n)%name)
+            end if
             if(DEBUG.and. MasterProc ) then
                 write(*,*) "CASEGRP ", n, igrp, ngrp, trim(typ)
                 write(*,*) "CASENAM ", trim(f_2d(n)%name)
@@ -1266,6 +1280,11 @@ if(debug_flag) print *, "SOILW_UPPR ",  n,  SoilWater_uppr(2,2,1)
                 i= debug_li; j=debug_lj
                 write(*,"(a,2i4,3es12.3)") "PMFINE FRACTION:", n, ind_pmfine,  &
                    d_2d(ind_pmfine,i,j,IOU_INST)
+            end if
+            if(DEBUG.and. debug_proc .and. n==ind_pm10 )  then
+                i= debug_li; j=debug_lj
+                write(*,"(a,2i4,3es12.3)") "PM10 FRACTION:", n, ind_pm10,  &
+                   d_2d(ind_pm10,i,j,IOU_INST)
             end if
 
           case  default
