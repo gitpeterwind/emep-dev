@@ -47,7 +47,6 @@ module MosaicOutputs_ml
  use ModelConstants_ml, only : MasterProc, DEBUG => DEBUG_MOSAICS,&
    atwS, atwN, &
    NLANDUSEMAX, IOU_INST, &
-     IOU_MON, & !FEB2011 tmp
    SOX_INDEX, OXN_INDEX, RDN_INDEX ! indices for dep groups
 
  use OwnDataTypes_ml,  only: Deriv, print_deriv_type, &
@@ -283,10 +282,11 @@ module MosaicOutputs_ml
  end subroutine Add_MosaicVEGO3
 
  !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
- subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_SPECS,nDD)
+ subroutine Add_MosaicDDEP(DDEP_ECOS,DDEP_SPECS,DDEP_FREQ,nDD)
 
         character(len=*), dimension(:), intent(in) :: DDEP_ECOS
         integer, dimension(:), intent(in) :: DDEP_SPECS  ! eg NH3
+        integer, intent(in) :: DDEP_FREQ ! Day, Month, 
         integer, intent(out) :: nDD
         integer :: i, n, ispec, iadv
         character(len=TXTLEN_DERIV) :: name
@@ -358,7 +358,7 @@ module MosaicOutputs_ml
 
              MosaicOutput(nMosaic) = Deriv(  &
               name, "Mosaic", "DDEP", DDEP_ECOS(n), units, &
-                  iadv,-99, F, 1.0e6 * atw ,  F,   IOU_MON ) !FEB2011
+                  iadv,-99, F, 1.0e6 * atw ,  F,  DDEP_FREQ ) !FEB2011
 !QUERY - why no dt_scale??
 
           if(DEBUG .and. MasterProc) then

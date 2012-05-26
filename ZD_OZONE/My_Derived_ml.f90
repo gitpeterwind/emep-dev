@@ -344,6 +344,10 @@ private
       DDEP_ECOS  = (/ "Grid   " , "Conif  ", "Seminat" /) !&! "Water_D" &
                   !  , "Decid  ", "Crops  " /)
 
+   ! Frequency of dry-dep outputs
+    integer, public, parameter ::  DDEP_FREQ = M  ! (D)ay or (M)onth
+    
+
   ! Have many combinations: species x ecosystems
 !  type(Deriv), public, &
 !     dimension( size(DDEP_SPECS)*size(DDEP_ECOS) ), save :: OutDDep
@@ -535,7 +539,7 @@ if(MasterProc ) print *, "TESTHH INSIDE Init_My_Deriv"
 
       !------------- Depositions to ecosystems --------------------------------
 
-      call Add_MosaicDDEP(DDEP_ECOS,DDEP_SPECS,nDD)
+      call Add_MosaicDDEP(DDEP_ECOS,DDEP_SPECS,DDEP_FREQ,nDD)
       nOutDDep = nDD
 
       !------------- VEGO3 stuff ----------------------------------------------
