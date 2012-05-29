@@ -93,6 +93,13 @@ Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
 
+xxxxxxxx Svetlana      29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+Groups for PPM25, PPM_C and PPM10 are introduced:
+ ZCM_EmChem09soa/VBS_nonvolatile.species
+Output of PPM25 and PPM_C in included in ZD_OZONE/My_Derifed_ml.f90
+and ZD_SR/My_Derifed_ml.f90
+
 xxxxxxxx rv4beta5 Dave       26/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 Enabled daily DDEP output in My_Derived_ml. Set with DDEP_FREQ.
