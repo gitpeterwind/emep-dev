@@ -137,7 +137,7 @@ private
    type(typ_s5i), public, save, dimension(MAX_NUM_DERIV2D) :: OutputFields
    integer, public, save :: nOutputFields = 0
 
-   type(typ_s5i), public, parameter, dimension(73) :: &
+   type(typ_s5i), public, parameter, dimension(77) :: &
       OutputConcs = (/  &
          typ_s5i("SO2       ", "ugS", D2,"AIR_CONCS", SPEC, D)&
         ,typ_s5i("SO4       ", "ugS", D2,"AIR_CONCS", SPEC, D)& 
@@ -227,6 +227,11 @@ private
        ! ,typ_s5i("AER_BSOA  ", "ugC", D2,"AIR_CONCS", SPEC, D)& 
          !typ_s5i("DUST      ",  "ug ", D2,"AIR_CONCS", GROUP, D),&   !#35
         ,typ_s5i("PM_FIRE",  "ug", D2,"AIR_CONCS", GROUP,  D) &
+!-- Emergency: Volcanic Eruption (4 entries). Skipp groups if not found
+        ,typ_s5i("ASH       ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("ASH_F     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("ASH_C     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
+        ,typ_s5i("ASH_G     ",  "ug ", D2,"AIR_CONCS", GROUP, D)&
        ! ============================================================
        ! SOA additions (26 entries)
         ,typ_s5i("PART_OM_F  ", "ug ", D2,"AIR_CONCS", SPEC, D)&  !! NEVER as ugC !!

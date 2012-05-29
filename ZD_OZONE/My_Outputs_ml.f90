@@ -45,7 +45,8 @@ use ChemGroups_ml,     only: chemgroups
 use DerivedFields_ml,  only: f_2d               ! D2D houtly output type
 use ModelConstants_ml, only: PPBINV, PPTINV, ATWAIR, atwS, atwN, MasterProc, &
                              TOPO_TEST, &
-                             FORECAST, to_molec_cm3=>MFAC
+                             FORECAST, to_molec_cm3=>MFAC,&
+                             USE_EMERGENCY,DEBUG_EMERGENCY
 use OwnDataTypes_ml,   only: Asc2D
 use Par_ml,            only: GIMAX,GJMAX,IRUNBEG,JRUNBEG
 use SmallUtils_ml,     only: find_index
@@ -55,6 +56,7 @@ implicit none
 
 logical, public, parameter :: out_binary = .false.
 logical, public, parameter :: Ascii3D_WANTED = .false.
+logical, private,parameter :: HOUTLY_EMERGENCY=USE_EMERGENCY.AND.(FORECAST.OR.DEBUG_EMERGENCY)
 
 ! Site outputs   (used in Sites_ml)
 !==============================================================
@@ -176,7 +178,7 @@ integer, public, save      :: nlevels_hourly ! No. outputs
 integer, public, parameter :: FREQ_HOURLY = 1  ! 1 hours between outputs
 
 ! Output selected model levels
-logical, public, parameter ::  SELECT_LEVELS_HOURLY = .false..or. (FORECAST.or.TOPO_TEST)
+logical, public, parameter ::  SELECT_LEVELS_HOURLY = .false..or. (FORECAST.or.TOPO_TEST.or.HOUTLY_EMERGENCY)
 ! Decide which levels to print out
 ! 20<==>uppermost model level (m01)
 ! 01<==>lowermost model level (m20)
@@ -216,7 +218,8 @@ subroutine set_output_defs
    implicit none
 
    character(len=144) :: errmsg  ! Local error message
-   integer           :: i       ! Loop index
+  integer            :: i,j,ash  ! Loop & ash group indexes
+  character(len=9)   :: vent     ! Volcano (vent) name
 
   type(chemical), dimension(:), pointer :: species_adv
   real, parameter :: atwC=12.0
@@ -258,7 +261,23 @@ subroutine set_output_defs
 
 if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
 
-  if(FORECAST)then
+  if(HOUTLY_EMERGENCY)then
+    nlevels_hourly = 1
+    nhourly_out=4     !PM*,AOD
+    ash=find_index("ASH",chemgroups(:)%name)
+    call CheckStop(ash<1,"set_output_defs: Unknown group 'ASH'")
+    nhourly_out=nhourly_out+size(chemgroups(ash)%ptr)
+    vent="none"
+    do i=1,size(chemgroups(ash)%ptr)
+      if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)then
+        nhourly_out=nhourly_out-1
+      else
+        vent=species(chemgroups(ash)%ptr(i))%name(1:9)
+        if(MasterProc.and.DEBUG_EMERGENCY)&
+          write(*,*)'EMERGENCY: Volcanic Ash, Vent=',vent
+      endif
+    enddo
+  elseif(FORECAST)then
     nhourly_out=11
     nlevels_hourly = 4
   elseif ( TOPO_TEST ) then
@@ -272,11 +291,38 @@ if(MasterProc ) print *, "TESTHH INSIDE set_output_defs"
   if(.not.allocated(levels_hourly))allocate(levels_hourly(nlevels_hourly))
   if(.not.allocated(hr_out))allocate(hr_out(nhourly_out))
 
-  if(FORECAST)then
+  if(HOUTLY_EMERGENCY)then
+    ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
+    iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
+    levels_hourly = (/0/)
+
+    hr_out(01)=Asc2D("pm25_3km"  ,"BCVugXXgroup","(f9.4)",&
+!            find_index("PM25",chemgroups(:)%name),&
+             find_index("PMFINE",chemgroups(:)%name),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                   ,-999.9)
+    call CheckStop(hr_out(01)%spec<1,"set_output_defs: Unknown group 'PM25'")
+    hr_out(02)=Asc2D("pm10_3km"  ,"BCVugXXgroup","(f9.4)",&
+             find_index("PM10",chemgroups(:)%name),&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                   ,-999.9)
+    call CheckStop(hr_out(02)%spec<1,"set_output_defs: Unknown group 'PM10'")
+    hr_out(03)=Asc2D("pm_h2o_3km","PMwater","(f9.4)",00         ,&
+             ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0                   ,-999.9)
+    hr_out(04)=Asc2D("AOD_550nm" ,"AOD"   ,"(f9.4)",00         ,&
+             ix1,ix2,iy1,iy2,1," ",1.0    ,-9999.9)
+    j=04
+    vent="none"
+    do i=1,size(chemgroups(ash)%ptr)
+      if(species(chemgroups(ash)%ptr(i))%name(1:9)==vent)cycle
+      j=j+1
+      vent=species(chemgroups(ash)%ptr(i))%name(1:9)
+      hr_out(j)=Asc2D(vent,"BCVugXXgroup","(f9.4)",find_index(vent,chemgroups(:)%name),&
+              ix1,ix2,iy1,iy2,NLEVELS_HOURLY,"ug",1.0,-999.9)
+      call CheckStop(hr_out(j)%spec<1,"set_output_defs: Unknown group '"//vent//"'")
+    enddo
+  elseif(FORECAST)then
     ix1=IRUNBEG;ix2=IRUNBEG+GIMAX-1
     iy1=JRUNBEG;iy2=JRUNBEG+GJMAX-1
     levels_hourly = (/0,4,6,10/)
-
 
 !**               name     type     ofmt
 !**               ispec    ix1 ix2 iy1 iy2 nk sellev? unit conv  max
