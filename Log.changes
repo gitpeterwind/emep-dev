@@ -92,6 +92,11 @@ info on unused variables, etc.
 Will keep list here near top of Log.changes.
 
 !----------------------------------------------------------
+xxxxxxxx rv4beta8 Dave     29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
+
+SeaSalt_ml - added fix for Tw = max(270, Tw), following Peter's
+   bug finding
+
 xxxxxxxx rv4beta7 Alvaro   29/5/2012 xxxxxxxxxxxxxxxxxxxxxxxx
 
 eEMEP update (Alvaro):

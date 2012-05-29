@@ -191,6 +191,7 @@
           else
             Tw = Grid%t2
           endif
+          Tw = max(Tw, 270.0)! prevents unrealistic sub.zero values
 
 ! ====    Calculate sea salt fluxes in size bins  [part/m2/s] ========
          total_flux = 0.0
